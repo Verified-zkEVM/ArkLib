@@ -30,10 +30,10 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Canonical representatives in `𝒪` | infrastructure | `canonicalRepOf𝒪`, `mk_canonicalRepOf𝒪`, `canonicalRepOf𝒪_degree_lt`, `canonicalRepOf𝒪_natDegree_le` | The representative API is now explicit about positive `Y`-degree. |
 | `Λ`-weight on regular elements | infrastructure | `weight_Λ`, `weight_Λ_over_𝒪` | Basic zero and constructor/reduced-representative lemmas exist; more algebraic weight lemmas are still useful. |
 | Lemma A.1 | present-but-incomplete | `lemmaA1_embedding_eq_zero_of_many_rational_roots` | Main regular-function vanishing criterion remains open; the statement is now in a standalone field section, matching the reference proof setting. |
-| Claim A.2 regularity of `ξ` | present | `ClaimA2.ξ_regular`, `ClaimA2.embeddingOf𝒪Into𝕃_ξ` | The total Lean form of `ξ` has a concrete quotient representative `ξ_pre`; the paper weight theorem separately assumes `2 ≤ R.natDegree`. |
-| Claim A.2 bound for `ξ` | present-but-incomplete | `ClaimA2.ξ_weight_le` | Now has the needed low-degree guard; depends on the canonical quotient-weight argument and the divisibility `H ∣ R(x₀,Y,Z)`. |
-| Claim A.2 regular numerator elements `β` | present-but-incomplete | `ClaimA2.exists_hensel_numerator_sequence`, `ClaimA2.IsHenselNumeratorSequence` | No longer vacuous: the open theorem now asserts Hensel semantics plus the numerator weight bound. |
-| Hensel-lift coefficients `α`, `γ` | present-but-incomplete | `ClaimA2.α`, `ClaimA2.α'`, `ClaimA2.γ`, `ClaimA2.γ'`, `ClaimA2.βSeq_spec` | Definitions are stable, but their semantic content is supplied by the open `exists_hensel_numerator_sequence`. |
+| Claim A.2 regularity of `ξ` | present | `RationalFunctions.HenselNumerators.ξ_regular`, `RationalFunctions.HenselNumerators.embeddingOf𝒪Into𝕃_ξ` | The total Lean form of `ξ` has a concrete quotient representative `ξ_pre`; the paper weight theorem separately assumes `2 ≤ R.natDegree`. |
+| Claim A.2 bound for `ξ` | present-but-incomplete | `RationalFunctions.HenselNumerators.ξ_weight_le` | Now has the needed low-degree guard; depends on the canonical quotient-weight argument and the divisibility `H ∣ R(x₀,Y,Z)`. |
+| Claim A.2 regular numerator elements `β` | present-but-incomplete | `RationalFunctions.HenselNumerators.exists_hensel_numerator_sequence`, `RationalFunctions.HenselNumerators.IsHenselNumeratorSequence` | No longer vacuous: the open theorem now asserts Hensel semantics plus the numerator weight bound. |
+| Hensel-lift coefficients `α`, `γ` | present-but-incomplete | `RationalFunctions.HenselNumerators.α`, `RationalFunctions.HenselNumerators.α'`, `RationalFunctions.HenselNumerators.γ`, `RationalFunctions.HenselNumerators.γ'`, `RationalFunctions.HenselNumerators.βSeq_spec` | Definitions are stable, but their semantic content is supplied by the open `exists_hensel_numerator_sequence`. |
 
 ## Near-Term Work
 
@@ -45,5 +45,5 @@ facts around regular elements, canonical representatives, and `Λ`-weights:
 - weight behavior under addition and multiplication by powers of `X`;
 - reduced-representative rewrites that avoid unfolding quotient representatives manually.
 
-These lemmas should make `ClaimA2.ξ_weight_le` and `exists_hensel_numerator_sequence` more approachable while keeping
+These lemmas should make `RationalFunctions.HenselNumerators.ξ_weight_le` and `exists_hensel_numerator_sequence` more approachable while keeping
 each PR reviewable.

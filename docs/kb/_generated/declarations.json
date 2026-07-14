@@ -10564,7 +10564,7 @@
         {
           "doc": "Claim 5.7 establishes existens of a polynomial `R`. his is the extraction of this polynomial.",
           "kind": "def",
-          "line": 41,
+          "line": 42,
           "name": "ProximityGap.R",
           "namespace": "ProximityGap",
           "short_name": "R",
@@ -10573,7 +10573,7 @@
         {
           "doc": "Claim 5.7 establishes existens of a polynomial `H`. This is the extraction of this polynomial.",
           "kind": "def",
-          "line": 46,
+          "line": 47,
           "name": "ProximityGap.H",
           "namespace": "ProximityGap",
           "short_name": "H",
@@ -10582,16 +10582,52 @@
         {
           "doc": "An important property of the polynomial `H` extracted from Claim 5.7 is that it is irreducible.",
           "kind": "lemma",
-          "line": 51,
+          "line": 52,
           "name": "ProximityGap.irreducible_H",
           "namespace": "ProximityGap",
           "short_name": "irreducible_H",
           "signature": "lemma irreducible_H (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081) : Irreducible (H k \u03b4 x\u2080 h_gs) :="
         },
         {
+          "doc": "The factor `H` extracted from Claim 5.7 has positive degree in the `Y` variable, matching the Appendix A hypotheses needed for the function field construction.",
+          "kind": "lemma",
+          "line": 57,
+          "name": "ProximityGap.natDegree_H_pos",
+          "namespace": "ProximityGap",
+          "short_name": "natDegree_H_pos",
+          "signature": "lemma natDegree_H_pos (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081) :"
+        },
+        {
+          "doc": "The extracted `H` divides `R(x\u2080, Y, Z)`, as required for the Hensel setup in Claim A.2.",
+          "kind": "lemma",
+          "line": 62,
+          "name": "ProximityGap.H_dvd_evalX_R",
+          "namespace": "ProximityGap",
+          "short_name": "H_dvd_evalX_R",
+          "signature": "lemma H_dvd_evalX_R (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081) :"
+        },
+        {
+          "doc": "The specialization `R(x\u2080, Y, Z)` is separable in `Y`, as required for Claim A.2.",
+          "kind": "lemma",
+          "line": 67,
+          "name": "ProximityGap.evalX_R_separable",
+          "namespace": "ProximityGap",
+          "short_name": "evalX_R_separable",
+          "signature": "lemma evalX_R_separable (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081) :"
+        },
+        {
+          "doc": "The Claim A.2 hypotheses satisfied by the `R,H` pair extracted from Claim 5.7.",
+          "kind": "lemma",
+          "line": 73,
+          "name": "ProximityGap.claimA2_hypotheses",
+          "namespace": "ProximityGap",
+          "short_name": "claimA2_hypotheses",
+          "signature": "lemma claimA2_hypotheses (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081) :"
+        },
+        {
           "doc": "Claim 5.8 from [BCIKS20]. States that the approximate solution is actually a solution. This version of the claim is stated in terms of coefficients.",
           "kind": "lemma",
-          "line": 58,
+          "line": 81,
           "name": "ProximityGap.approximate_solution_is_exact_solution_coeffs",
           "namespace": "ProximityGap",
           "short_name": "approximate_solution_is_exact_solution_coeffs",
@@ -10600,7 +10636,7 @@
         {
           "doc": "Claim 5.8 from [BCIKS20]. States that the approximate solution is actually a solution. This version is in terms of polynomials.",
           "kind": "lemma",
-          "line": 75,
+          "line": 100,
           "name": "ProximityGap.approximate_solution_is_exact_solution_coeffs'",
           "namespace": "ProximityGap",
           "short_name": "approximate_solution_is_exact_solution_coeffs'",
@@ -10609,7 +10645,7 @@
         {
           "doc": "Claim 5.9 from [BCIKS20]. States that the solution `\u03b3` is linear in the variable `Z`.",
           "kind": "lemma",
-          "line": 92,
+          "line": 120,
           "name": "ProximityGap.solution_gamma_is_linear_in_Z",
           "namespace": "ProximityGap",
           "short_name": "solution_gamma_is_linear_in_Z",
@@ -10618,7 +10654,7 @@
         {
           "doc": "The linear represenation of the solution `\u03b3` extracted from Claim 5.9.",
           "kind": "def",
-          "line": 104,
+          "line": 134,
           "name": "ProximityGap.P",
           "namespace": "ProximityGap",
           "short_name": "P",
@@ -10627,7 +10663,7 @@
         {
           "doc": "The extracted `P` from Claim 5.9 equals `\u03b3`.",
           "kind": "lemma",
-          "line": 115,
+          "line": 145,
           "name": "ProximityGap.gamma_eq_P",
           "namespace": "ProximityGap",
           "short_name": "gamma_eq_P",
@@ -10636,7 +10672,7 @@
         {
           "doc": "The set `S'_x` from [BCIKS20] (just before Claim 5.10). The set of all `z \u2208 S'` such that `w(x,z)` matches `P_z(x)`.",
           "kind": "def",
-          "line": 124,
+          "line": 156,
           "name": "ProximityGap.matching_set_at_x",
           "namespace": "ProximityGap",
           "short_name": "matching_set_at_x",
@@ -10645,7 +10681,7 @@
         {
           "doc": "Claim 5.10 of [BCIKS20]. Needed to prove Claim 5.9. This claim states that `\u03b3(x) = w(x,Z)` if the cardinality `|S'_x|` is big enough.",
           "kind": "lemma",
-          "line": 135,
+          "line": 167,
           "name": "ProximityGap.solution_gamma_matches_word_if_subset_large",
           "namespace": "ProximityGap",
           "short_name": "solution_gamma_matches_word_if_subset_large",
@@ -10654,7 +10690,7 @@
         {
           "doc": "Claim 5.11 from [BCIKS20]. There exists a set of points `{x\u2080,...,x_{k+1}}` such that the sets S_{x_j} satisfy the condition in Claim 5.10.",
           "kind": "lemma",
-          "line": 153,
+          "line": 185,
           "name": "ProximityGap.exists_points_with_large_matching_subset",
           "namespace": "ProximityGap",
           "short_name": "exists_points_with_large_matching_subset",
@@ -10722,6 +10758,33 @@
           "doc": "",
           "kind": "theorem",
           "line": 74,
+          "name": "ProximityGap.pg_natDegree_pos_of_mem_normalizedFactors_of_separable",
+          "namespace": "ProximityGap",
+          "short_name": "pg_natDegree_pos_of_mem_normalizedFactors_of_separable",
+          "signature": "theorem pg_natDegree_pos_of_mem_normalizedFactors_of_separable (p : F[Z][X])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 99,
+          "name": "ProximityGap.pg_candidatePairs_snd_natDegree_pos",
+          "namespace": "ProximityGap",
+          "short_name": "pg_candidatePairs_snd_natDegree_pos",
+          "signature": "theorem pg_candidatePairs_snd_natDegree_pos (x\u2080 : F)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 109,
+          "name": "ProximityGap._anon_class_109",
+          "namespace": "ProximityGap",
+          "short_name": "_anon_class_109",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 121,
           "name": "ProximityGap.pg_card_normalizedFactors_toFinset_le_natDegree",
           "namespace": "ProximityGap",
           "short_name": "pg_card_normalizedFactors_toFinset_le_natDegree",
@@ -10730,16 +10793,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 76,
-          "name": "ProximityGap._anon_class_76",
+          "line": 123,
+          "name": "ProximityGap._anon_class_123",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_76",
+          "short_name": "_anon_class_123",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 140,
+          "line": 166,
           "name": "ProximityGap.pg_evalX_eq_map_evalRingHom",
           "namespace": "ProximityGap",
           "short_name": "pg_evalX_eq_map_evalRingHom",
@@ -10748,16 +10811,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 142,
-          "name": "ProximityGap._anon_class_142",
+          "line": 168,
+          "name": "ProximityGap._anon_class_168",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_142",
+          "short_name": "_anon_class_168",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "def",
-          "line": 148,
+          "line": 174,
           "name": "ProximityGap.pg_eval_on_Z",
           "namespace": "ProximityGap",
           "short_name": "pg_eval_on_Z",
@@ -10766,7 +10829,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 152,
+          "line": 178,
           "name": "ProximityGap.pg_exists_H_of_R_eval_zero",
           "namespace": "ProximityGap",
           "short_name": "pg_exists_H_of_R_eval_zero",
@@ -10775,16 +10838,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 162,
-          "name": "ProximityGap._anon_class_162",
+          "line": 188,
+          "name": "ProximityGap._anon_class_188",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_162",
+          "short_name": "_anon_class_188",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 263,
+          "line": 289,
           "name": "ProximityGap.pg_exists_R_of_Q_eval_zero",
           "namespace": "ProximityGap",
           "short_name": "pg_exists_R_of_Q_eval_zero",
@@ -10793,16 +10856,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 271,
-          "name": "ProximityGap._anon_class_271",
+          "line": 297,
+          "name": "ProximityGap._anon_class_297",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_271",
+          "short_name": "_anon_class_297",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 316,
+          "line": 342,
           "name": "ProximityGap.pg_exists_pair_for_z",
           "namespace": "ProximityGap",
           "short_name": "pg_exists_pair_for_z",
@@ -10811,16 +10874,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 330,
-          "name": "ProximityGap._anon_class_330",
+          "line": 356,
+          "name": "ProximityGap._anon_class_356",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_330",
+          "short_name": "_anon_class_356",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 385,
+          "line": 411,
           "name": "ProximityGap.pg_natDegree_evalX_le_natDegreeY",
           "namespace": "ProximityGap",
           "short_name": "pg_natDegree_evalX_le_natDegreeY",
@@ -10829,16 +10892,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 387,
-          "name": "ProximityGap._anon_class_387",
+          "line": 413,
+          "name": "ProximityGap._anon_class_413",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_387",
+          "short_name": "_anon_class_413",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 398,
+          "line": 424,
           "name": "ProximityGap.pg_sum_natDegreeY_Rset_le_natDegreeY_Q",
           "namespace": "ProximityGap",
           "short_name": "pg_sum_natDegreeY_Rset_le_natDegreeY_Q",
@@ -10847,16 +10910,16 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 402,
-          "name": "ProximityGap._anon_class_402",
+          "line": 428,
+          "name": "ProximityGap._anon_class_428",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_402",
+          "short_name": "_anon_class_428",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "theorem",
-          "line": 451,
+          "line": 477,
           "name": "ProximityGap.pg_card_candidatePairs_le_natDegreeY",
           "namespace": "ProximityGap",
           "short_name": "pg_card_candidatePairs_le_natDegreeY",
@@ -10865,10 +10928,10 @@
         {
           "doc": "",
           "kind": "class",
-          "line": 458,
-          "name": "ProximityGap._anon_class_458",
+          "line": 484,
+          "name": "ProximityGap._anon_class_484",
           "namespace": "ProximityGap",
-          "short_name": "_anon_class_458",
+          "short_name": "_anon_class_484",
           "signature": "class classical"
         }
       ]
@@ -22258,618 +22321,2557 @@
       ]
     },
     "ArkLib/Data/Polynomial/RationalFunctions.lean": {
+      "declarations": []
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/FunctionField.lean": {
       "declarations": [
         {
-          "doc": "Construction of the monisized polynomial `H_tilde` in Appendix A.1 of [BCIKS20]. Note: Here `H \u2208 F[X][Y]` translates to `H \u2208 F[Z][Y]` in [BCIKS20] and H_tilde in `Polynomial (RatFunc F)` translates to `H_tilde \u2208 F(Z)[T]` in [BCIKS20].",
+          "doc": "Construction of the monicized polynomial `H_tilde` in Appendix A.1 of [BCIKS20]. Note: Here `H \u2208 F[X][Y]` translates to `H \u2208 F[Z][Y]` in [BCIKS20], and `H_tilde` in `Polynomial (RatFunc F)` translates to `H_tilde \u2208 F(Z)[T]` in [BCIKS20].",
           "kind": "def",
-          "line": 41,
-          "name": "BCIKS20AppendixA.H_tilde",
-          "namespace": "BCIKS20AppendixA",
+          "line": 46,
+          "name": "RationalFunctions.H_tilde",
+          "namespace": "RationalFunctions",
           "short_name": "H_tilde",
           "signature": "def H_tilde (H : F[X][Y]) : Polynomial (RatFunc F) :="
         },
         {
-          "doc": "The monisized version H_tilde is irreducible if the originial polynomial H is irreducible.",
+          "doc": "",
           "kind": "lemma",
-          "line": 50,
-          "name": "BCIKS20AppendixA.irreducibleHTildeOfIrreducible",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "irreducibleHTildeOfIrreducible",
-          "signature": "lemma irreducibleHTildeOfIrreducible {H : Polynomial (Polynomial F)} :"
+          "line": 58,
+          "name": "RationalFunctions.univPolyHom_injective",
+          "namespace": "RationalFunctions",
+          "short_name": "univPolyHom_injective",
+          "signature": "lemma univPolyHom_injective :"
         },
         {
-          "doc": "The function field `\ud835\udd43 ` from Appendix A.1 of [BCIKS20].",
+          "doc": "",
+          "kind": "lemma",
+          "line": 62,
+          "name": "RationalFunctions.irreducible_comp_C_mul_X_iff",
+          "namespace": "RationalFunctions",
+          "short_name": "irreducible_comp_C_mul_X_iff",
+          "signature": "lemma irreducible_comp_C_mul_X_iff {K : Type} [Field K] (a : K) (ha : a \u2260 0)"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 72,
+          "name": "RationalFunctions.irreducible_map_univPolyHom_of_irreducible",
+          "namespace": "RationalFunctions",
+          "short_name": "irreducible_map_univPolyHom_of_irreducible",
+          "signature": "lemma irreducible_map_univPolyHom_of_irreducible"
+        },
+        {
+          "doc": "Corrected irreducibility statement for `H_tilde`: the paper assumes positive `Y`-degree. Without this hypothesis, a constant irreducible in `F[Z][Y]` can become a unit in `F(Z)[T]`.",
+          "kind": "lemma",
+          "line": 83,
+          "name": "RationalFunctions.irreducibleHTildeOfIrreducible_of_natDegree_pos",
+          "namespace": "RationalFunctions",
+          "short_name": "irreducibleHTildeOfIrreducible_of_natDegree_pos",
+          "signature": "lemma irreducibleHTildeOfIrreducible_of_natDegree_pos"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 87,
+          "name": "RationalFunctions._anon_class_87",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_87",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The monicized version `H_tilde` is irreducible if the original polynomial `H` is irreducible and has positive degree in `Y`, as assumed in Appendix A.1 of [BCIKS20].",
+          "kind": "lemma",
+          "line": 139,
+          "name": "RationalFunctions.irreducibleHTildeOfIrreducible",
+          "namespace": "RationalFunctions",
+          "short_name": "irreducibleHTildeOfIrreducible",
+          "signature": "lemma irreducibleHTildeOfIrreducible {F : Type} [Field F] {H : Polynomial (Polynomial F)}"
+        },
+        {
+          "doc": "The function field `\ud835\udd43` from Appendix A.1 of [BCIKS20].",
           "kind": "abbrev",
-          "line": 55,
-          "name": "BCIKS20AppendixA._anon_abbrev_55",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_abbrev_55",
+          "line": 145,
+          "name": "RationalFunctions._anon_abbrev_145",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_abbrev_145",
           "signature": "abbrev abbrev \ud835\udd43 (H : F[X][Y]) : Type :="
         },
         {
-          "doc": "The function field `\ud835\udd43 ` is indeed a field if and only if the generator of the ideal we quotient by is an irreducible polynomial.",
+          "doc": "The function field `\ud835\udd43` is a field when `H` is irreducible and has positive `Y`-degree.",
           "kind": "lemma",
-          "line": 60,
-          "name": "BCIKS20AppendixA.isField_of_irreducible",
-          "namespace": "BCIKS20AppendixA",
+          "line": 149,
+          "name": "RationalFunctions.isField_of_irreducible_of_natDegree_pos",
+          "namespace": "RationalFunctions",
+          "short_name": "isField_of_irreducible_of_natDegree_pos",
+          "signature": "lemma isField_of_irreducible_of_natDegree_pos {F : Type} [Field F] {H : F[X][Y]}"
+        },
+        {
+          "doc": "The function field `\ud835\udd43` is a field under the standard Appendix A irreducibility hypothesis.",
+          "kind": "lemma",
+          "line": 156,
+          "name": "RationalFunctions.isField_of_irreducible",
+          "namespace": "RationalFunctions",
           "short_name": "isField_of_irreducible",
-          "signature": "lemma isField_of_irreducible {H : F[X][Y]} : Irreducible H \u2192 IsField (\ud835\udd43 H) := by"
+          "signature": "lemma isField_of_irreducible {F : Type} [Field F] {H : F[X][Y]} (hHdeg : 0 < H.natDegree) :"
         },
         {
-          "doc": "The function field `\ud835\udd43` as defined above is a field.",
+          "doc": "The function field `\ud835\udd43` is a field under positive-degree irreducibility assumptions.",
           "kind": "instance",
-          "line": 71,
-          "name": "BCIKS20AppendixA._anon_instance_71",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_instance_71",
-          "signature": "instance noncomputable instance {H : F[X][Y]} [inst : Fact (Irreducible H)] : Field (\ud835\udd43 H) :="
+          "line": 164,
+          "name": "RationalFunctions._anon_instance_164",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_instance_164",
+          "signature": "instance noncomputable instance {F : Type} [Field F] {H : F[X][Y]} [hHdeg : Fact (0 < H.natDegree)]"
         },
         {
-          "doc": "The monisized polynomial `H_tilde` is in fact an element of `F[X][Y]`.",
+          "doc": "The integral monicized polynomial corresponding to `H_tilde`, with coefficients in `F[X]`.",
           "kind": "def",
-          "line": 75,
-          "name": "BCIKS20AppendixA.H_tilde'",
-          "namespace": "BCIKS20AppendixA",
+          "line": 169,
+          "name": "RationalFunctions.H_tilde'",
+          "namespace": "RationalFunctions",
           "short_name": "H_tilde'",
           "signature": "def H_tilde' (H : F[X][Y]) : F[X][Y] :="
         },
         {
           "doc": "If `H` has positive degree in `Y`, then `H_tilde' H` is monic.",
           "kind": "lemma",
-          "line": 88,
-          "name": "BCIKS20AppendixA.H_tilde'_monic",
-          "namespace": "BCIKS20AppendixA",
+          "line": 182,
+          "name": "RationalFunctions.H_tilde'_monic",
+          "namespace": "RationalFunctions",
           "short_name": "H_tilde'_monic",
           "signature": "lemma H_tilde'_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :"
         },
         {
           "doc": "",
           "kind": "class",
-          "line": 90,
-          "name": "BCIKS20AppendixA._anon_class_90",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_class_90",
+          "line": 184,
+          "name": "RationalFunctions._anon_class_184",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_184",
           "signature": "class classical"
         },
         {
           "doc": "",
           "kind": "lemma",
-          "line": 99,
-          "name": "BCIKS20AppendixA.monicize_term",
-          "namespace": "BCIKS20AppendixA",
+          "line": 193,
+          "name": "RationalFunctions.monicize_term",
+          "namespace": "RationalFunctions",
           "short_name": "monicize_term",
           "signature": "lemma monicize_term {K : Type} [Field K] (a b : K) (i d : \u2115)"
         },
         {
           "doc": "",
           "kind": "lemma",
-          "line": 130,
-          "name": "BCIKS20AppendixA.monicize_leading_term",
-          "namespace": "BCIKS20AppendixA",
+          "line": 224,
+          "name": "RationalFunctions.monicize_leading_term",
+          "namespace": "RationalFunctions",
           "short_name": "monicize_leading_term",
           "signature": "lemma monicize_leading_term {K : Type} [Field K] (a : K) (d : \u2115)"
         },
         {
           "doc": "The polynomial `H_tilde'` agrees with the monicization `H_tilde` after embedding into `Polynomial (RatFunc F)`.",
           "kind": "lemma",
-          "line": 162,
-          "name": "BCIKS20AppendixA.H_tilde_equiv_H_tilde'",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "H_tilde_equiv_H_tilde'",
-          "signature": "lemma H_tilde_equiv_H_tilde' (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by"
+          "line": 256,
+          "name": "RationalFunctions.map_H_tilde'_eq_H_tilde",
+          "namespace": "RationalFunctions",
+          "short_name": "map_H_tilde'_eq_H_tilde",
+          "signature": "lemma map_H_tilde'_eq_H_tilde (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by"
         },
         {
           "doc": "",
           "kind": "class",
-          "line": 163,
-          "name": "BCIKS20AppendixA._anon_class_163",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_class_163",
+          "line": 257,
+          "name": "RationalFunctions._anon_class_257",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_257",
           "signature": "class classical"
+        },
+        {
+          "doc": "The integral monicized polynomial `H_tilde'` is irreducible whenever `H` is irreducible and has positive degree in `Y`.",
+          "kind": "lemma",
+          "line": 347,
+          "name": "RationalFunctions.irreducibleHTilde'OfIrreducible",
+          "namespace": "RationalFunctions",
+          "short_name": "irreducibleHTilde'OfIrreducible",
+          "signature": "lemma irreducibleHTilde'OfIrreducible {H : F[X][Y]} (hHdeg : 0 < H.natDegree)"
         },
         {
           "doc": "The ring of regular elements `\ud835\udcaa` from Appendix A.1 of [BCIKS20].",
           "kind": "abbrev",
-          "line": 249,
-          "name": "BCIKS20AppendixA._anon_abbrev_249",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_abbrev_249",
+          "line": 359,
+          "name": "RationalFunctions._anon_abbrev_359",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_abbrev_359",
           "signature": "abbrev abbrev \ud835\udcaa (H : F[X][Y]) : Type :="
         },
         {
-          "doc": "The ring of regular elements field `\ud835\udcaa` is a indeed a ring.",
+          "doc": "The ring of regular elements `\ud835\udcaa` is a ring.",
           "kind": "instance",
-          "line": 253,
-          "name": "BCIKS20AppendixA._anon_instance_253",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_instance_253",
+          "line": 363,
+          "name": "RationalFunctions._anon_instance_363",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_instance_363",
           "signature": "instance noncomputable instance {H : F[X][Y]} : Ring (\ud835\udcaa H) :="
         },
         {
           "doc": "The ring homomorphism defining the embedding of `\ud835\udcaa` into `\ud835\udd43`.",
           "kind": "def",
-          "line": 257,
-          "name": "BCIKS20AppendixA.embeddingOf\ud835\udcaaInto\ud835\udd43",
-          "namespace": "BCIKS20AppendixA",
+          "line": 367,
+          "name": "RationalFunctions.embeddingOf\ud835\udcaaInto\ud835\udd43",
+          "namespace": "RationalFunctions",
           "short_name": "embeddingOf\ud835\udcaaInto\ud835\udd43",
           "signature": "def embeddingOf\ud835\udcaaInto\ud835\udd43 (H : F[X][Y]) : \ud835\udcaa H \u2192+* \ud835\udd43 H :="
         },
         {
+          "doc": "",
+          "kind": "lemma",
+          "line": 384,
+          "name": "RationalFunctions.H_tilde'_dvd_of_map_dvd_H_tilde",
+          "namespace": "RationalFunctions",
+          "short_name": "H_tilde'_dvd_of_map_dvd_H_tilde",
+          "signature": "lemma H_tilde'_dvd_of_map_dvd_H_tilde {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 415,
+          "name": "RationalFunctions.mem_span_H_tilde'_of_bivPolyHom_mem_span_H_tilde",
+          "namespace": "RationalFunctions",
+          "short_name": "mem_span_H_tilde'_of_bivPolyHom_mem_span_H_tilde",
+          "signature": "lemma mem_span_H_tilde'_of_bivPolyHom_mem_span_H_tilde {H p : F[X][Y]}"
+        },
+        {
+          "doc": "The regular quotient embeds injectively into the function-field quotient when `H` has positive degree in `Y`.",
+          "kind": "lemma",
+          "line": 425,
+          "name": "RationalFunctions.embeddingOf\ud835\udcaaInto\ud835\udd43_injective",
+          "namespace": "RationalFunctions",
+          "short_name": "embeddingOf\ud835\udcaaInto\ud835\udd43_injective",
+          "signature": "lemma embeddingOf\ud835\udcaaInto\ud835\udd43_injective {H : F[X][Y]} (hHdeg : 0 < H.natDegree) :"
+        },
+        {
           "doc": "The set of regular elements inside `\ud835\udd43 H`, i.e. the set of elements of `\ud835\udd43 H` that in fact lie in `\ud835\udcaa H`.",
           "kind": "def",
-          "line": 271,
-          "name": "BCIKS20AppendixA.regularElms_set",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set",
-          "signature": "def regularElms_set (H : F[X][Y]) : Set (\ud835\udd43 H) :="
+          "line": 436,
+          "name": "RationalFunctions.regularElementsSet",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet",
+          "signature": "def regularElementsSet (H : F[X][Y]) : Set (\ud835\udd43 H) :="
         },
         {
           "doc": "The regular elements inside `\ud835\udd43 H`, i.e. the elements of `\ud835\udd43 H` that in fact lie in `\ud835\udcaa H` as Type.",
           "kind": "def",
-          "line": 276,
-          "name": "BCIKS20AppendixA.regularElms",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms",
-          "signature": "def regularElms (H : F[X][Y]) : Type :="
+          "line": 441,
+          "name": "RationalFunctions.regularElements",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElements",
+          "signature": "def regularElements (H : F[X][Y]) : Type :="
         },
         {
           "doc": "Zero is regular.",
           "kind": "lemma",
-          "line": 281,
-          "name": "BCIKS20AppendixA.regularElms_set_zero",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_zero",
-          "signature": "lemma regularElms_set_zero (H : F[X][Y]) : (0 : \ud835\udd43 H) \u2208 regularElms_set H :="
+          "line": 446,
+          "name": "RationalFunctions.regularElementsSet_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_zero",
+          "signature": "lemma regularElementsSet_zero (H : F[X][Y]) : (0 : \ud835\udd43 H) \u2208 regularElementsSet H :="
         },
         {
           "doc": "One is regular.",
           "kind": "lemma",
-          "line": 286,
-          "name": "BCIKS20AppendixA.regularElms_set_one",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_one",
-          "signature": "lemma regularElms_set_one (H : F[X][Y]) : (1 : \ud835\udd43 H) \u2208 regularElms_set H :="
+          "line": 451,
+          "name": "RationalFunctions.regularElementsSet_one",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_one",
+          "signature": "lemma regularElementsSet_one (H : F[X][Y]) : (1 : \ud835\udd43 H) \u2208 regularElementsSet H :="
         },
         {
           "doc": "The regular elements are closed under addition.",
           "kind": "lemma",
-          "line": 290,
-          "name": "BCIKS20AppendixA.regularElms_set_add",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_add",
-          "signature": "lemma regularElms_set_add {H : F[X][Y]} {a b : \ud835\udd43 H}"
+          "line": 455,
+          "name": "RationalFunctions.regularElementsSet_add",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_add",
+          "signature": "lemma regularElementsSet_add {H : F[X][Y]} {a b : \ud835\udd43 H}"
         },
         {
           "doc": "The regular elements are closed under negation.",
           "kind": "lemma",
-          "line": 298,
-          "name": "BCIKS20AppendixA.regularElms_set_neg",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_neg",
-          "signature": "lemma regularElms_set_neg {H : F[X][Y]} {a : \ud835\udd43 H}"
+          "line": 463,
+          "name": "RationalFunctions.regularElementsSet_neg",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_neg",
+          "signature": "lemma regularElementsSet_neg {H : F[X][Y]} {a : \ud835\udd43 H}"
         },
         {
           "doc": "The regular elements are closed under subtraction.",
           "kind": "lemma",
-          "line": 304,
-          "name": "BCIKS20AppendixA.regularElms_set_sub",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_sub",
-          "signature": "lemma regularElms_set_sub {H : F[X][Y]} {a b : \ud835\udd43 H}"
+          "line": 469,
+          "name": "RationalFunctions.regularElementsSet_sub",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_sub",
+          "signature": "lemma regularElementsSet_sub {H : F[X][Y]} {a b : \ud835\udd43 H}"
         },
         {
           "doc": "The regular elements are closed under multiplication.",
           "kind": "lemma",
-          "line": 310,
-          "name": "BCIKS20AppendixA.regularElms_set_mul",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_mul",
-          "signature": "lemma regularElms_set_mul {H : F[X][Y]} {a b : \ud835\udd43 H}"
+          "line": 475,
+          "name": "RationalFunctions.regularElementsSet_mul",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_mul",
+          "signature": "lemma regularElementsSet_mul {H : F[X][Y]} {a b : \ud835\udd43 H}"
         },
         {
           "doc": "The regular elements are closed under natural powers.",
           "kind": "lemma",
-          "line": 318,
-          "name": "BCIKS20AppendixA.regularElms_set_pow",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_pow",
-          "signature": "lemma regularElms_set_pow {H : F[X][Y]} {a : \ud835\udd43 H}"
+          "line": 483,
+          "name": "RationalFunctions.regularElementsSet_pow",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_pow",
+          "signature": "lemma regularElementsSet_pow {H : F[X][Y]} {a : \ud835\udd43 H}"
+        },
+        {
+          "doc": "The regular elements are closed under finite sums.",
+          "kind": "lemma",
+          "line": 491,
+          "name": "RationalFunctions.regularElementsSet_sum",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_sum",
+          "signature": "lemma regularElementsSet_sum {\u03b9 : Type} {H : F[X][Y]} (s : Finset \u03b9) {f : \u03b9 \u2192 \ud835\udd43 H}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 494,
+          "name": "RationalFunctions._anon_class_494",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_494",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Finite products of regular elements are regular.",
+          "kind": "lemma",
+          "line": 506,
+          "name": "RationalFunctions.regularElementsSet_prod",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_prod",
+          "signature": "lemma regularElementsSet_prod {\u03b9 : Type} {H : F[X][Y]} (s : Finset \u03b9) {f : \u03b9 \u2192 \ud835\udd43 H}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 509,
+          "name": "RationalFunctions._anon_class_509",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_509",
+          "signature": "class classical"
         },
         {
           "doc": "Given an element `z \u2208 F`, `t_z \u2208 F` is a rational root of a bivariate polynomial if the pair `(z, t_z)` is a root of the bivariate polynomial.",
           "kind": "def",
-          "line": 327,
-          "name": "BCIKS20AppendixA.rationalRoot",
-          "namespace": "BCIKS20AppendixA",
+          "line": 522,
+          "name": "RationalFunctions.rationalRoot",
+          "namespace": "RationalFunctions",
           "short_name": "rationalRoot",
           "signature": "def rationalRoot (H : F[X][Y]) (z : F) : Type :="
         },
         {
           "doc": "The rational substitution `\u03c0_z` from Appendix A.3 defined on the whole ring of bivariate polynomials.",
           "kind": "def",
-          "line": 332,
-          "name": "BCIKS20AppendixA._anon_def_332",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_def_332",
+          "line": 527,
+          "name": "RationalFunctions._anon_def_527",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_def_527",
           "signature": "def noncomputable def \u03c0_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :"
         },
         {
           "doc": "The rational substitution `\u03c0_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the quotient ring `\ud835\udcaa`.",
           "kind": "def",
-          "line": 337,
-          "name": "BCIKS20AppendixA._anon_def_337",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "_anon_def_337",
-          "signature": "def noncomputable def \u03c0_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) : \ud835\udcaa H \u2192+* F :="
+          "line": 533,
+          "name": "RationalFunctions._anon_def_533",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_def_533",
+          "signature": "def noncomputable def \u03c0_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :"
         },
         {
           "doc": "The canonical representative of an element of `F[X][Y]` inside the ring of regular elements `\ud835\udcaa`, defined when `H` has positive degree in `Y`.",
           "kind": "def",
-          "line": 348,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa",
-          "namespace": "BCIKS20AppendixA",
+          "line": 545,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa",
           "signature": "def canonicalRepOf\ud835\udcaa {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) : F[X][Y] :="
         },
         {
           "doc": "The canonical representative has degree strictly smaller than the defining relation.",
           "kind": "lemma",
-          "line": 353,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa_degree_lt",
-          "namespace": "BCIKS20AppendixA",
+          "line": 550,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_degree_lt",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_degree_lt",
           "signature": "lemma canonicalRepOf\ud835\udcaa_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
         },
         {
           "doc": "The canonical representative has natural degree bounded by the defining relation.",
           "kind": "lemma",
-          "line": 360,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa_natDegree_le",
-          "namespace": "BCIKS20AppendixA",
+          "line": 557,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_natDegree_le",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_natDegree_le",
           "signature": "lemma canonicalRepOf\ud835\udcaa_natDegree_le {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
         },
         {
           "doc": "The canonical representative maps back to the original quotient element of `\ud835\udcaa`.",
           "kind": "lemma",
-          "line": 368,
-          "name": "BCIKS20AppendixA.mk_canonicalRepOf\ud835\udcaa",
-          "namespace": "BCIKS20AppendixA",
+          "line": 565,
+          "name": "RationalFunctions.mk_canonicalRepOf\ud835\udcaa",
+          "namespace": "RationalFunctions",
           "short_name": "mk_canonicalRepOf\ud835\udcaa",
           "signature": "lemma mk_canonicalRepOf\ud835\udcaa {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
         },
         {
           "doc": "Canonical representatives of quotient constructors are computed by `modByMonic`.",
           "kind": "lemma",
-          "line": 391,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa_mk",
-          "namespace": "BCIKS20AppendixA",
+          "line": 588,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_mk",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_mk",
           "signature": "lemma canonicalRepOf\ud835\udcaa_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y]) :"
         },
         {
           "doc": "The canonical representative of zero is zero.",
           "kind": "lemma",
-          "line": 406,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa_zero",
-          "namespace": "BCIKS20AppendixA",
+          "line": 603,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_zero",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_zero",
           "signature": "lemma canonicalRepOf\ud835\udcaa_zero {H : F[X][Y]} (hH : 0 < H.natDegree) :"
         },
         {
           "doc": "A polynomial whose degree is already below the relation is its own canonical representative.",
           "kind": "lemma",
-          "line": 411,
-          "name": "BCIKS20AppendixA.canonicalRepOf\ud835\udcaa_mk_eq_self_of_degree_lt",
-          "namespace": "BCIKS20AppendixA",
+          "line": 608,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_mk_eq_self_of_degree_lt",
+          "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_mk_eq_self_of_degree_lt",
           "signature": "lemma canonicalRepOf\ud835\udcaa_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)"
-        },
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Hensel.lean": {
+      "declarations": [
         {
-          "doc": "`\u039b` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients. The weight of the zero polynomial is `\u2212\u221e`. Requires `D \u2265 Bivariate.totalDegree H` to match definition in [BCIKS20].",
+          "doc": "The exponent of `\u03be` in the denominator of the `t`-th Hensel coefficient. The paper separates `t = 0`, where no `\u03be` factor appears, from `t \u2265 1`, where the exponent is `2*t - 1`.",
           "kind": "def",
-          "line": 421,
-          "name": "BCIKS20AppendixA.weight_\u039b",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b",
-          "signature": "def weight_\u039b (f H : F[X][Y]) (D : \u2115) : WithBot \u2115 :="
+          "line": 49,
+          "name": "RationalFunctions.HenselNumerators.henselDenominatorExponent",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselDenominatorExponent",
+          "signature": "def henselDenominatorExponent (t : \u2115) : \u2115 :="
         },
         {
-          "doc": "The zero polynomial has bottom `\u039b`-weight.",
+          "doc": "",
           "kind": "lemma",
-          "line": 431,
-          "name": "BCIKS20AppendixA.weight_\u039b_zero",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b_zero",
-          "signature": "lemma weight_\u039b_zero (H : F[X][Y]) (D : \u2115) :"
+          "line": 53,
+          "name": "RationalFunctions.HenselNumerators.henselDenominatorExponent_zero",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselDenominatorExponent_zero",
+          "signature": "lemma henselDenominatorExponent_zero : henselDenominatorExponent 0 = 0 := by"
         },
         {
-          "doc": "The weight function `\u039b` on the ring of regular elements `\ud835\udcaa` is defined as the weight their canonical representatives in `F[X][Y]`.",
+          "doc": "",
+          "kind": "lemma",
+          "line": 57,
+          "name": "RationalFunctions.HenselNumerators.henselDenominatorExponent_succ",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselDenominatorExponent_succ",
+          "signature": "lemma henselDenominatorExponent_succ (t : \u2115) :"
+        },
+        {
+          "doc": "A total degree for the trivariate polynomial `R`, represented as a polynomial in `Y` with bivariate coefficients in the `Z` and `X` variables.",
           "kind": "def",
-          "line": 437,
-          "name": "BCIKS20AppendixA.weight_\u039b_over_\ud835\udcaa",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b_over_\ud835\udcaa",
-          "signature": "def weight_\u039b_over_\ud835\udcaa {H : F[X][Y]} (hH : 0 < H.natDegree) (f : \ud835\udcaa H) (D : \u2115) :"
+          "line": 63,
+          "name": "RationalFunctions.HenselNumerators.trivariateTotalDegree",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "trivariateTotalDegree",
+          "signature": "def trivariateTotalDegree (R : F[X][X][Y]) : \u2115 :="
         },
         {
-          "doc": "The `\ud835\udcaa`-weight of zero is bottom.",
+          "doc": "Each coefficient of `R` is bounded by `trivariateTotalDegree R`.",
           "kind": "lemma",
-          "line": 443,
-          "name": "BCIKS20AppendixA.weight_\u039b_over_\ud835\udcaa_zero",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b_over_\ud835\udcaa_zero",
-          "signature": "lemma weight_\u039b_over_\ud835\udcaa_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (D : \u2115) :"
+          "line": 67,
+          "name": "RationalFunctions.HenselNumerators.coeff_totalDegree_add_index_le_trivariateTotalDegree",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_totalDegree_add_index_le_trivariateTotalDegree",
+          "signature": "lemma coeff_totalDegree_add_index_le_trivariateTotalDegree (R : F[X][X][Y]) {i : \u2115}"
         },
         {
-          "doc": "The `\ud835\udcaa`-weight of a quotient constructor is computed on its canonical remainder.",
-          "kind": "lemma",
-          "line": 449,
-          "name": "BCIKS20AppendixA.weight_\u039b_over_\ud835\udcaa_mk",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b_over_\ud835\udcaa_mk",
-          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y])"
+          "doc": "",
+          "kind": "class",
+          "line": 70,
+          "name": "RationalFunctions.HenselNumerators._anon_class_70",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_70",
+          "signature": "class classical"
         },
         {
-          "doc": "If a representative is already reduced, its `\ud835\udcaa`-weight is its polynomial `\u039b`-weight.",
-          "kind": "lemma",
-          "line": 456,
-          "name": "BCIKS20AppendixA.weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt",
-          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)"
-        },
-        {
-          "doc": "The set `S_\u03b2` from the statement of Lemma A.1 in Appendix A of [BCIKS20]. Note: Here `F[X][Y]` is `F[Z][T]`.",
+          "doc": "A canonical degree bound large enough for both `H` and all coefficients of `R`.",
           "kind": "def",
-          "line": 464,
-          "name": "BCIKS20AppendixA.S_\u03b2",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "S_\u03b2",
-          "signature": "def S_\u03b2 {H : F[X][Y]} (\u03b2 : \ud835\udcaa H) : Set F :="
+          "line": 75,
+          "name": "RationalFunctions.HenselNumerators.defaultDegreeBound",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "defaultDegreeBound",
+          "signature": "def defaultDegreeBound (R : F[X][X][Y]) (H : F[X][Y]) : \u2115 :="
         },
         {
-          "doc": "The statement of Lemma A.1 in Appendix A.3 of [BCIKS20].",
+          "doc": "",
           "kind": "lemma",
-          "line": 468,
-          "name": "BCIKS20AppendixA.Lemma_A_1",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "Lemma_A_1",
-          "signature": "lemma Lemma_A_1 {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) (D : \u2115)"
+          "line": 78,
+          "name": "RationalFunctions.HenselNumerators.defaultDegreeBound_ge_H",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "defaultDegreeBound_ge_H",
+          "signature": "lemma defaultDegreeBound_ge_H (R : F[X][X][Y]) (H : F[X][Y]) :"
         },
         {
-          "doc": "The embeddining of the coefficients of a bivarite polynomial into the bivariate polynomial ring with rational coefficients.",
-          "kind": "def",
-          "line": 475,
-          "name": "BCIKS20AppendixA.coeffAsRatFunc",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "coeffAsRatFunc",
-          "signature": "def coeffAsRatFunc : F[X] \u2192+* Polynomial (RatFunc F) :="
+          "doc": "",
+          "kind": "lemma",
+          "line": 82,
+          "name": "RationalFunctions.HenselNumerators.defaultDegreeBound_ge_R_coeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "defaultDegreeBound_ge_R_coeff",
+          "signature": "lemma defaultDegreeBound_ge_R_coeff (R : F[X][X][Y]) (H : F[X][Y]) {i : \u2115}"
         },
         {
-          "doc": "The embeddining of the coefficients of a bivarite polynomial into the function field `\ud835\udd43`.",
+          "doc": "Coefficients in `F[Z][X]` evaluated as power series over the function field: `Z` is sent to the function-field coefficient embedding, and the `X` variable is sent to `x\u2080 + S`, where `S` is the power-series variable. This realizes the local coordinate `S = X - x\u2080` of [BCIKS20] A.4, so that a root condition becomes an identity in `\ud835\udd43 H\u27e6S\u27e7 = L[[X - x\u2080]]`.",
           "kind": "def",
-          "line": 479,
-          "name": "BCIKS20AppendixA.liftToFunctionField",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "liftToFunctionField",
-          "signature": "def liftToFunctionField {H : F[X][Y]} : F[X] \u2192+* \ud835\udd43 H :="
+          "line": 91,
+          "name": "RationalFunctions.HenselNumerators.liftCoeffToPowerSeries",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "liftCoeffToPowerSeries",
+          "signature": "def liftCoeffToPowerSeries (x\u2080 : F) (H : F[X][Y]) :"
+        },
+        {
+          "doc": "Evaluation of the trivariate polynomial `R(X,Y,Z)` at a power series `\u0393` for the `Y` variable, with the `X` variable interpreted as `x\u2080 + S` (`S` the power-series variable, i.e. the local coordinate `X - x\u2080`) and `Z` interpreted in the function field of `H`.",
+          "kind": "def",
+          "line": 99,
+          "name": "RationalFunctions.HenselNumerators.evalRAtPowerSeries",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "evalRAtPowerSeries",
+          "signature": "def evalRAtPowerSeries (x\u2080 : F) (H : F[X][Y]) (R : F[X][X][Y])"
+        },
+        {
+          "doc": "The coefficient sequence obtained from a candidate sequence of regular numerators.",
+          "kind": "def",
+          "line": 104,
+          "name": "RationalFunctions.HenselNumerators.alphaOfNumerators",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "alphaOfNumerators",
+          "signature": "def alphaOfNumerators (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The local power series `\u03b3 = \u2211 \u03b1\u209c S\u1d57` induced by a candidate sequence of regular numerators, where `S = X - x\u2080` is the local coordinate of [BCIKS20] A.4. The `x\u2080`-shift is carried by `evalRAtPowerSeries` (`X \u21a6 x\u2080 + S`), not by `\u03b3`, matching the paper's `\u03b3 \u2208 L[[X - x\u2080]]`.",
+          "kind": "def",
+          "line": 115,
+          "name": "RationalFunctions.HenselNumerators.gammaOfNumerators",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "gammaOfNumerators",
+          "signature": "def gammaOfNumerators (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "A numerator sequence has the semantic content required by Claim A.2: it gives the Hensel lift starting at `T / W`, and the induced power series is a root of `R(x\u2080 + S, \u00b7, Z)`.",
+          "kind": "def",
+          "line": 123,
+          "name": "RationalFunctions.HenselNumerators.IsHenselNumeratorSequence",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "IsHenselNumeratorSequence",
+          "signature": "def IsHenselNumeratorSequence (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 130,
+          "name": "RationalFunctions.HenselNumerators.evalX_totalDegree_le_of_coeff_bound",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "evalX_totalDegree_le_of_coeff_bound",
+          "signature": "theorem evalX_totalDegree_le_of_coeff_bound (x\u2080 : F) (R : F[X][X][Y]) {D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 133,
+          "name": "RationalFunctions.HenselNumerators._anon_class_133",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_133",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The local power series `\u03b3 = \u2211 \u03b1\u209c S\u1d57 \u2208 \ud835\udd43 H\u27e6S\u27e7`, where `S = X - x\u2080` is the local coordinate of [BCIKS20] Appendix A.4. The `x\u2080`-shift lives in `evalRAtPowerSeries` (`X \u21a6 x\u2080 + S`), not in `\u03b3` itself, matching the paper's `\u03b3 \u2208 L[[X - x\u2080]]`.",
+          "kind": "def",
+          "line": 173,
+          "name": "RationalFunctions.HenselNumerators.gammaFromAlpha",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "gammaFromAlpha",
+          "signature": "def gammaFromAlpha (H : F[X][Y]) (\u03b1seq : \u2115 \u2192 \ud835\udd43 H) :"
         },
         {
           "doc": "",
           "kind": "def",
-          "line": 482,
-          "name": "BCIKS20AppendixA.liftBivariate",
-          "namespace": "BCIKS20AppendixA",
+          "line": 177,
+          "name": "RationalFunctions.HenselNumerators.HasNumeratorShape",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "HasNumeratorShape",
+          "signature": "def HasNumeratorShape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 182,
+          "name": "RationalFunctions.HenselNumerators.beta_zero_eq_X_of_shape",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "beta_zero_eq_X_of_shape",
+          "signature": "theorem beta_zero_eq_X_of_shape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 194,
+          "name": "RationalFunctions.HenselNumerators._anon_class_194",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_194",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 206,
+          "name": "RationalFunctions.HenselNumerators.coeff_mul_eq_zero_of_orders",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_mul_eq_zero_of_orders",
+          "signature": "theorem coeff_mul_eq_zero_of_orders {A : Type} [CommRing A] {m : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 220,
+          "name": "RationalFunctions.HenselNumerators.coeff_mul_of_low_order",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_mul_of_low_order",
+          "signature": "theorem coeff_mul_of_low_order {A : Type} [CommRing A] (n : \u2115) (P \u03b4 : PowerSeries A)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 237,
+          "name": "RationalFunctions.HenselNumerators.remainder_low_order",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "remainder_low_order",
+          "signature": "theorem remainder_low_order {A B : Type} [CommRing A] [CommRing B] (n : \u2115)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 283,
+          "name": "RationalFunctions.HenselNumerators.constantCoeff_liftCoeffToPowerSeries",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "constantCoeff_liftCoeffToPowerSeries",
+          "signature": "theorem constantCoeff_liftCoeffToPowerSeries (x\u2080 : F) (p : F[X][X]) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 301,
+          "name": "RationalFunctions.HenselNumerators.constantCoeff_eval\u2082_liftCoeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "constantCoeff_eval\u2082_liftCoeff",
+          "signature": "theorem constantCoeff_eval\u2082_liftCoeff (x\u2080 : F) (q : F[X][X][Y]) (\u0393 : PowerSeries (\ud835\udd43 H)) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 314,
+          "name": "RationalFunctions.HenselNumerators.constantCoeff_eval\u2082_derivative_eq_zeta",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "constantCoeff_eval\u2082_derivative_eq_zeta",
+          "signature": "theorem constantCoeff_eval\u2082_derivative_eq_zeta (x\u2080 : F) (R : F[X][X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 326,
+          "name": "RationalFunctions.HenselNumerators.coeff_evalR_split",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_evalR_split",
+          "signature": "theorem coeff_evalR_split (x\u2080 : F) (R : F[X][X][Y]) (n : \u2115) (hn : 1 \u2264 n)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 340,
+          "name": "RationalFunctions.HenselNumerators.coeff_zero_evalR",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_zero_evalR",
+          "signature": "theorem coeff_zero_evalR (x\u2080 : F) (R : F[X][X][Y]) (\u0393 : PowerSeries (\ud835\udd43 H)) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 349,
+          "name": "RationalFunctions.HenselNumerators.coeff_evalR_stable",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_evalR_stable",
+          "signature": "theorem coeff_evalR_stable (x\u2080 : F) (R : F[X][X][Y]) (n m : \u2115) (hm : m < n)"
+        },
+        {
+          "doc": "",
+          "kind": "def",
+          "line": 366,
+          "name": "RationalFunctions.HenselNumerators.bSeq",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq",
+          "signature": "def bSeq (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "def",
+          "line": 374,
+          "name": "RationalFunctions.HenselNumerators.alphaSeq",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "alphaSeq",
+          "signature": "def alphaSeq (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 379,
+          "name": "RationalFunctions.HenselNumerators.bSeq_succ_def",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq_succ_def",
+          "signature": "theorem bSeq_succ_def (x\u2080 : F) (R : F[X][X][Y]) (N : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 385,
+          "name": "RationalFunctions.HenselNumerators.bSeq_succ_eq_below",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq_succ_eq_below",
+          "signature": "theorem bSeq_succ_eq_below (x\u2080 : F) (R : F[X][X][Y]) (N i : \u2115) (hi : i < N + 1) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 390,
+          "name": "RationalFunctions.HenselNumerators.bSeq_zero",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq_zero",
+          "signature": "theorem bSeq_zero (x\u2080 : F) (R : F[X][X][Y]) (N : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 399,
+          "name": "RationalFunctions.HenselNumerators.bSeq_stable",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq_stable",
+          "signature": "theorem bSeq_stable (x\u2080 : F) (R : F[X][X][Y]) (N i : \u2115) (hi : i \u2264 N) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 414,
+          "name": "RationalFunctions.HenselNumerators.mk_bSeq_coeff_eq",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "mk_bSeq_coeff_eq",
+          "signature": "theorem mk_bSeq_coeff_eq (x\u2080 : F) (R : F[X][X][Y]) (N i : \u2115) (hi : i \u2264 N) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 421,
+          "name": "RationalFunctions.HenselNumerators.bSeq_eq_zero_of_gt",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "bSeq_eq_zero_of_gt",
+          "signature": "theorem bSeq_eq_zero_of_gt (x\u2080 : F) (R : F[X][X][Y]) (N j : \u2115) (hj : N < j) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 432,
+          "name": "RationalFunctions.HenselNumerators.coeff_delta_below",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_delta_below",
+          "signature": "theorem coeff_delta_below (x\u2080 : F) (R : F[X][X][Y]) (N i : \u2115) (hi : i < N + 1) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 438,
+          "name": "RationalFunctions.HenselNumerators.root_bSeq",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "root_bSeq",
+          "signature": "theorem root_bSeq (x\u2080 : F) (R : F[X][X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 484,
+          "name": "RationalFunctions.HenselNumerators.formalHenselAlphaSequence",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "formalHenselAlphaSequence",
+          "signature": "theorem formalHenselAlphaSequence (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 518,
+          "name": "RationalFunctions.HenselNumerators.gammaOfNumerators_eq_gammaFromAlpha",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "gammaOfNumerators_eq_gammaFromAlpha",
+          "signature": "theorem gammaOfNumerators_eq_gammaFromAlpha (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "def",
+          "line": 529,
+          "name": "RationalFunctions.HenselNumerators.henselCoeffResidual",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselCoeffResidual",
+          "signature": "def henselCoeffResidual (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 535,
+          "name": "RationalFunctions.HenselNumerators.hensel_numerator_sequence_of_alpha_shape",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "hensel_numerator_sequence_of_alpha_shape",
+          "signature": "theorem hensel_numerator_sequence_of_alpha_shape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 549,
+          "name": "RationalFunctions.HenselNumerators.mk_H_tilde_eq_W_pow_mul_eval2",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "mk_H_tilde_eq_W_pow_mul_eval2",
+          "signature": "theorem mk_H_tilde_eq_W_pow_mul_eval2 (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 587,
+          "name": "RationalFunctions.HenselNumerators.H_eval2_T_div_W_eq_zero",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "H_eval2_T_div_W_eq_zero",
+          "signature": "theorem H_eval2_T_div_W_eq_zero (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 599,
+          "name": "RationalFunctions.HenselNumerators.initial_root_at_x0",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "initial_root_at_x0",
+          "signature": "theorem initial_root_at_x0 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 605,
+          "name": "RationalFunctions.HenselNumerators._anon_class_605",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_605",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 610,
+          "name": "RationalFunctions.HenselNumerators.zeta_ne_zero_of_Hypotheses",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "zeta_ne_zero_of_Hypotheses",
+          "signature": "theorem zeta_ne_zero_of_Hypotheses (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 625,
+          "name": "RationalFunctions.HenselNumerators.exists_hensel_alpha_sequence",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "exists_hensel_alpha_sequence",
+          "signature": "theorem exists_hensel_alpha_sequence (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "Predicate: all coefficients of a power series over `\ud835\udd43 H` are regular (lie in the image of `\ud835\udcaa H`). This abstracts the \"regular power series\" used throughout the Hensel clearing argument.",
+          "kind": "def",
+          "line": 635,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular",
+          "signature": "def AllCoeffRegular (H : F[X][Y]) (\u03c6 : PowerSeries (\ud835\udd43 H)) : Prop :="
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 638,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.add",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.add",
+          "signature": "theorem AllCoeffRegular.add {H : F[X][Y]} {\u03c6 \u03c8 : PowerSeries (\ud835\udd43 H)}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 643,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.mul",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.mul",
+          "signature": "theorem AllCoeffRegular.mul {H : F[X][Y]} {\u03c6 \u03c8 : PowerSeries (\ud835\udd43 H)}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 652,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.pow",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.pow",
+          "signature": "theorem AllCoeffRegular.pow {H : F[X][Y]} {\u03c6 : PowerSeries (\ud835\udd43 H)}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 662,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.const",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.const",
+          "signature": "theorem AllCoeffRegular.const {H : F[X][Y]} {c : \ud835\udd43 H} (hc : c \u2208 regularElementsSet H) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 668,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.X",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.X",
+          "signature": "theorem AllCoeffRegular.X {H : F[X][Y]} : AllCoeffRegular H (PowerSeries.X) := by"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 673,
+          "name": "RationalFunctions.HenselNumerators.AllCoeffRegular.zero",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "AllCoeffRegular.zero",
+          "signature": "theorem AllCoeffRegular.zero {H : F[X][Y]} :"
+        },
+        {
+          "doc": "The image of a field constant `x\u2080 : F` in `\ud835\udd43 H` is a regular element.",
+          "kind": "theorem",
+          "line": 678,
+          "name": "RationalFunctions.HenselNumerators.fieldTo\ud835\udd43_regular",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "fieldTo\ud835\udd43_regular",
+          "signature": "theorem fieldTo\ud835\udd43_regular (x\u2080 : F) (H : F[X][Y]) :"
+        },
+        {
+          "doc": "Every coefficient of `liftCoeffToPowerSeries x\u2080 H p` is regular: the construction only uses `liftToFunctionField`-images of `F[X]`-coefficients, the regular constant `x\u2080`, and the power-series variable, all of which preserve regularity.",
+          "kind": "theorem",
+          "line": 687,
+          "name": "RationalFunctions.HenselNumerators.coeff_liftCoeff_regular",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "coeff_liftCoeff_regular",
+          "signature": "theorem coeff_liftCoeff_regular (x\u2080 : F) (H : F[X][Y]) (p : F[X][X]) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 689,
+          "name": "RationalFunctions.HenselNumerators._anon_class_689",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_689",
+          "signature": "class classical"
+        },
+        {
+          "doc": "**Residual simplification** (paper A.4): replacing `\u03b1seq` by its truncation `\u03b1trunc i = if i \u2264 t then \u03b1seq i else 0` cancels the linear term `\u03b6 \u00b7 \u03b1seq (t+1)` exactly. Hence the Hensel residual at step `t` equals the `(t+1)`-st coefficient of `R` evaluated at the *truncated* power series. This uses only the splitting lemma `coeff_evalR_split`; `hroot` is not needed.",
+          "kind": "theorem",
+          "line": 707,
+          "name": "RationalFunctions.HenselNumerators.henselCoeffResidual_eq_trunc",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselCoeffResidual_eq_trunc",
+          "signature": "theorem henselCoeffResidual_eq_trunc (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 717,
+          "name": "RationalFunctions.HenselNumerators._anon_class_717",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_717",
+          "signature": "class classical"
+        },
+        {
+          "doc": "**Per-degree clearing lemma** (paper A.4 core combinatorial bound). For the truncated power series `g = mk \u03b1trunc` whose nonzero coefficients (`i \u2264 t`) have the Hensel shape `\u03b1trunc i = embeddingOf\ud835\udcaaInto\ud835\udd43 (\u03b2prev \u27e8i\u27e9) / (W^{i+1} \u00b7 eta^{e_i})` with `\u03b2prev` regular and `e_i = henselDenominatorExponent i`, each degree-`j` summand of the expansion of `coeff (t+1) (eval\u2082 liftCoeff g R)`, after multiplication by the global clearing denominator `Ddiv = W^{t+2} \u00b7 eta^{E-1} \u00b7 W^{d-2}`, is a regular element. This is the combinatorial heart of [BCIKS20] Appendix A.4 (pp. 52\u201353). The denominator of a partit",
+          "kind": "theorem",
+          "line": 756,
+          "name": "RationalFunctions.HenselNumerators.henselClearedTerm_regular",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselClearedTerm_regular",
+          "signature": "theorem henselClearedTerm_regular (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 773,
+          "name": "RationalFunctions.HenselNumerators._anon_class_773",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_773",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 943,
+          "name": "RationalFunctions.HenselNumerators.henselCoeffResidual_regular_after_clearing",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselCoeffResidual_regular_after_clearing",
+          "signature": "theorem henselCoeffResidual_regular_after_clearing (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 966,
+          "name": "RationalFunctions.HenselNumerators._anon_class_966",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_966",
+          "signature": "class classical"
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Sequence.lean": {
+      "declarations": [
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 43,
+          "name": "RationalFunctions.HenselNumerators.regular_numerator_shape_succ",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "regular_numerator_shape_succ",
+          "signature": "theorem regular_numerator_shape_succ (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 61,
+          "name": "RationalFunctions.HenselNumerators._anon_class_61",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_61",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 117,
+          "name": "RationalFunctions.HenselNumerators.exists_regular_numerator_shape",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "exists_regular_numerator_shape",
+          "signature": "theorem exists_regular_numerator_shape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 124,
+          "name": "RationalFunctions.HenselNumerators._anon_class_124",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_124",
+          "signature": "class classical"
+        },
+        {
+          "doc": "There is a sequence of regular numerators `\u03b2_t` with the Hensel-lift semantics and the weight bound stated in Claim A.2 of Appendix A.4 of [BCIKS20].",
+          "kind": "lemma",
+          "line": 171,
+          "name": "RationalFunctions.HenselNumerators.exists_hensel_numerator_sequence",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "exists_hensel_numerator_sequence",
+          "signature": "lemma exists_hensel_numerator_sequence (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The chosen regular numerator sequence supplied by `exists_hensel_numerator_sequence`.",
+          "kind": "def",
+          "line": 188,
+          "name": "RationalFunctions.HenselNumerators._anon_def_188",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_188",
+          "signature": "def noncomputable def \u03b2Seq (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The specification satisfied by the chosen numerator sequence.",
+          "kind": "lemma",
+          "line": 198,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_198",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_198",
+          "signature": "lemma lemma \u03b2Seq_spec (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The regular element `\u03b2_t` giving the numerator of the `t`-th chosen Hensel coefficient.",
+          "kind": "def",
+          "line": 212,
+          "name": "RationalFunctions.HenselNumerators._anon_def_212",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_212",
+          "signature": "def noncomputable def \u03b2 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The chosen Hensel-lift coefficients induced by the regular numerator sequence.",
+          "kind": "def",
+          "line": 218,
+          "name": "RationalFunctions.HenselNumerators._anon_def_218",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_218",
+          "signature": "def def \u03b1 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [\u03c6 : Fact (Irreducible H)]"
+        },
+        {
+          "doc": "Variant of `\u03b1` taking explicit irreducibility and positive-degree hypotheses.",
+          "kind": "def",
+          "line": 223,
+          "name": "RationalFunctions.HenselNumerators._anon_def_223",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_223",
+          "signature": "def def \u03b1' (x\u2080 : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)"
+        },
+        {
+          "doc": "The chosen power series `\u03b3 = \u2211 \u03b1_t (X - x\u2080)^t`, induced by the selected regular numerator sequence from `exists_hensel_numerator_sequence`.",
+          "kind": "def",
+          "line": 229,
+          "name": "RationalFunctions.HenselNumerators._anon_def_229",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_229",
+          "signature": "def def \u03b3 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [\u03c6 : Fact (Irreducible H)]"
+        },
+        {
+          "doc": "Variant of `\u03b3` taking explicit irreducibility and positive-degree hypotheses.",
+          "kind": "def",
+          "line": 235,
+          "name": "RationalFunctions.HenselNumerators._anon_def_235",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_235",
+          "signature": "def def \u03b3' (x\u2080 : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)"
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Setup.lean": {
+      "declarations": [
+        {
+          "doc": "The algebraic hypotheses for Claim A.2 from Appendix A.4 of [BCIKS20], after specializing `R` at `X = x\u2080`.",
+          "kind": "structure",
+          "line": 50,
+          "name": "RationalFunctions.HenselNumerators.Hypotheses",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "Hypotheses",
+          "signature": "structure Hypotheses (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) : Prop where"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 54,
+          "name": "RationalFunctions.HenselNumerators.evalX_natDegree_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "evalX_natDegree_le",
+          "signature": "lemma evalX_natDegree_le {K : Type} [CommSemiring K] (x : K) (P : K[X][Y]) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 61,
+          "name": "RationalFunctions.HenselNumerators.evalX_ne_zero_of_Hypotheses",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "evalX_ne_zero_of_Hypotheses",
+          "signature": "lemma evalX_ne_zero_of_Hypotheses {x\u2080 : F} {R : F[X][X][Y]} {H : F[X][Y]}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 66,
+          "name": "RationalFunctions.HenselNumerators.H_natDegree_le_R_natDegree_of_Hypotheses",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "H_natDegree_le_R_natDegree_of_Hypotheses",
+          "signature": "lemma H_natDegree_le_R_natDegree_of_Hypotheses {x\u2080 : F} {R : F[X][X][Y]} {H : F[X][Y]}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 72,
+          "name": "RationalFunctions.HenselNumerators.derivative_evalX_coeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "derivative_evalX_coeff",
+          "signature": "lemma derivative_evalX_coeff (x\u2080 : F) (R : F[X][X][Y]) (i : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 86,
+          "name": "RationalFunctions.HenselNumerators.natDegree_derivative_evalX_coeff_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "natDegree_derivative_evalX_coeff_le",
+          "signature": "lemma natDegree_derivative_evalX_coeff_le (x\u2080 : F) (R : F[X][X][Y]) {D i : \u2115}"
+        },
+        {
+          "doc": "The leading coefficient `W` of `H` divides the leading coefficient of `R(x\u2080,Y,Z)`.",
+          "kind": "lemma",
+          "line": 100,
+          "name": "RationalFunctions.HenselNumerators.leadingCoeff_dvd_evalX_leadingCoeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "leadingCoeff_dvd_evalX_leadingCoeff",
+          "signature": "lemma leadingCoeff_dvd_evalX_leadingCoeff {x\u2080 : F} {R : F[X][X][Y]} {H : F[X][Y]}"
+        },
+        {
+          "doc": "The leading coefficient `W` of `H` divides the coefficient of `Y ^ R.natDegree` in `R(x\u2080,Y,Z)`. If specialization lowers the `Y`-degree, that coefficient is zero.",
+          "kind": "lemma",
+          "line": 111,
+          "name": "RationalFunctions.HenselNumerators.leadingCoeff_dvd_evalX_coeff_natDegree",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "leadingCoeff_dvd_evalX_coeff_natDegree",
+          "signature": "lemma leadingCoeff_dvd_evalX_coeff_natDegree {x\u2080 : F} {R : F[X][X][Y]} {H : F[X][Y]}"
+        },
+        {
+          "doc": "The leading coefficient `W` of `H` divides the top possible coefficient of `\u2202R/\u2202Y(x\u2080,Y,Z)`. This is the coefficient that remains after multiplying `\u03b6` by `W^(d-2)`.",
+          "kind": "lemma",
+          "line": 124,
+          "name": "RationalFunctions.HenselNumerators.leadingCoeff_dvd_evalX_derivative_coeff_pred",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "leadingCoeff_dvd_evalX_derivative_coeff_pred",
+          "signature": "lemma leadingCoeff_dvd_evalX_derivative_coeff_pred {x\u2080 : F} {R : F[X][X][Y]} {H : F[X][Y]}"
+        },
+        {
+          "doc": "The element `\u03b6` from Appendix A.4 of [BCIKS20].",
+          "kind": "def",
+          "line": 157,
+          "name": "RationalFunctions.HenselNumerators._anon_def_157",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_157",
+          "signature": "def def \u03b6 (R : F[X][X][Y]) (x\u2080 : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]"
+        },
+        {
+          "doc": "If the derivative specialization is constant in the function-field variable, then `\u03b6` is regular.",
+          "kind": "lemma",
+          "line": 166,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_166",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_166",
+          "signature": "lemma lemma \u03b6_regular_of_derivative_evalX_eq_C (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "If `R` has `Y`-degree at most one, then the specialized derivative is constant.",
+          "kind": "lemma",
+          "line": 175,
+          "name": "RationalFunctions.HenselNumerators.derivative_evalX_eq_C_of_natDegree_le_one",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "derivative_evalX_eq_C_of_natDegree_le_one",
+          "signature": "lemma derivative_evalX_eq_C_of_natDegree_le_one"
+        },
+        {
+          "doc": "In the constant-derivative, low-`Y`-degree case, the `\u03be` regularity witness is explicit.",
+          "kind": "lemma",
+          "line": 189,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_189",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_189",
+          "signature": "lemma lemma \u03be_regular_of_derivative_evalX_eq_C_of_natDegree_le_one"
+        },
+        {
+          "doc": "If `R` has `Y`-degree at most one, the regularity statement for `\u03be` follows from the constant-derivative case.",
+          "kind": "lemma",
+          "line": 205,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_205",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_205",
+          "signature": "lemma lemma \u03be_regular_of_natDegree_le_one"
+        },
+        {
+          "doc": "In the quadratic case, `\u03be = \u03b6` is regular by clearing the single denominator with the divisibility of the top derivative coefficient.",
+          "kind": "lemma",
+          "line": 217,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_217",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_217",
+          "signature": "lemma lemma \u03be_regular_of_natDegree_eq_two"
+        },
+        {
+          "doc": "Explicit polynomial representative for the regular element `\u03be = W^(d-2) \u00b7 \u03b6` of Claim A.2. For `2 \u2264 R.natDegree`, this is the polynomial obtained by clearing the single denominator that appears in `W^(d-2) \u00b7 \u03b6`; the divisibility `W \u2223 R'(x\u2080, Z)_{d-1}` is captured implicitly by Euclidean division in `F[X]`. For `R.natDegree \u2264 1`, the derivative specialization is constant in `Y`, so we take it as the representative.",
+          "kind": "def",
+          "line": 245,
+          "name": "RationalFunctions.HenselNumerators._anon_def_245",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_245",
+          "signature": "def noncomputable def \u03be_pre (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :="
+        },
+        {
+          "doc": "The image of `\u27e6\u03be_pre\u27e7` in the function field equals `W^(d-2) \u00b7 \u03b6`, matching Claim A.2's algebraic identity.",
+          "kind": "lemma",
+          "line": 258,
+          "name": "RationalFunctions.HenselNumerators.embeddingOf\ud835\udcaaInto\ud835\udd43_mk_\u03be_pre",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "embeddingOf\ud835\udcaaInto\ud835\udd43_mk_\u03be_pre",
+          "signature": "lemma embeddingOf\ud835\udcaaInto\ud835\udd43_mk_\u03be_pre (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "The regular element `\u03be = W(Z)^(d-2) * \u03b6` has a quotient representative in the total Lean form of Claim A.2 of Appendix A.4 of [BCIKS20]. For `R.natDegree < 2`, the natural-number exponent truncates to zero. The paper's weight bound is therefore stated separately with the explicit hypothesis `2 \u2264 R.natDegree`.",
+          "kind": "lemma",
+          "line": 320,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_320",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_320",
+          "signature": "lemma lemma \u03be_regular (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]"
+        },
+        {
+          "doc": "The regular element `\u03be = W(Z)^(d-2) * \u03b6` used in the Lean version of Claim A.2. The `Fact` and `Hypotheses` arguments are kept for API compatibility with downstream callers (`\u03b1`, `\u03b3`); they are needed for the embedding equation in `embeddingOf\ud835\udcaaInto\ud835\udd43_\u03be`.",
+          "kind": "def",
+          "line": 333,
+          "name": "RationalFunctions.HenselNumerators._anon_def_333",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_def_333",
+          "signature": "def noncomputable def \u03be (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [_\u03c6 : Fact (Irreducible H)]"
+        },
+        {
+          "doc": "The defining equation `embedding \u03be = W^(d-2) \u00b7 \u03b6`, the specialization of `embeddingOf\ud835\udcaaInto\ud835\udd43_mk_\u03be_pre` to `\u03be`.",
+          "kind": "lemma",
+          "line": 339,
+          "name": "RationalFunctions.HenselNumerators.embeddingOf\ud835\udcaaInto\ud835\udd43_\u03be",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "embeddingOf\ud835\udcaaInto\ud835\udd43_\u03be",
+          "signature": "lemma embeddingOf\ud835\udcaaInto\ud835\udd43_\u03be (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 346,
+          "name": "RationalFunctions.HenselNumerators.leadingCoeff_natDegree_le_of_totalDegree_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "leadingCoeff_natDegree_le_of_totalDegree_le",
+          "signature": "theorem leadingCoeff_natDegree_le_of_totalDegree_le {D : \u2115} (hD_H : Bivariate.totalDegree H \u2264 D) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 350,
+          "name": "RationalFunctions.HenselNumerators.cofactor_top_reduction_weight_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "cofactor_top_reduction_weight_le",
+          "signature": "theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q : F[X][Y]} {d D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 359,
+          "name": "RationalFunctions.HenselNumerators._anon_class_359",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_359",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 493,
+          "name": "RationalFunctions.HenselNumerators.weight_\u039b_over_\ud835\udcaa_add_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_add_le",
+          "signature": "theorem weight_\u039b_over_\ud835\udcaa_add_le {H : F[X][Y]} {D : \u2115} (hD_H : Bivariate.totalDegree H \u2264 D)"
+        },
+        {
+          "doc": "",
+          "kind": "def",
+          "line": 507,
+          "name": "RationalFunctions.HenselNumerators.xiPreLower",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreLower",
+          "signature": "def xiPreLower (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :="
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 514,
+          "name": "RationalFunctions.HenselNumerators.xiPreLower_coeff_natDegree_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreLower_coeff_natDegree_le",
+          "signature": "theorem xiPreLower_coeff_natDegree_le (x\u2080 : F) {D i : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 527,
+          "name": "RationalFunctions.HenselNumerators.xiPreLower_term_weight_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreLower_term_weight_le",
+          "signature": "theorem xiPreLower_term_weight_le (x\u2080 : F) (hHyp : Hypotheses x\u2080 R H) (hRdeg : 2 \u2264 R.natDegree)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 608,
+          "name": "RationalFunctions.HenselNumerators.xiPreLower_weight_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreLower_weight_le",
+          "signature": "theorem xiPreLower_weight_le (x\u2080 : F) (hHyp : Hypotheses x\u2080 R H) (hRdeg : 2 \u2264 R.natDegree)"
+        },
+        {
+          "doc": "",
+          "kind": "def",
+          "line": 619,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop",
+          "signature": "def xiPreTop (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :="
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 625,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree",
+          "signature": "theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 629,
+          "name": "RationalFunctions.HenselNumerators._anon_class_629",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_629",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 701,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_modByMonic_weight_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_modByMonic_weight_le",
+          "signature": "theorem xiPreTop_modByMonic_weight_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 708,
+          "name": "RationalFunctions.HenselNumerators._anon_class_708",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_708",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 746,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_modByMonic_coeff_natDegree_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_modByMonic_coeff_natDegree_le",
+          "signature": "theorem xiPreTop_modByMonic_coeff_natDegree_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 753,
+          "name": "RationalFunctions.HenselNumerators._anon_class_753",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_753",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 789,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_topCoeff_mul_natDegree_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_topCoeff_mul_natDegree_le",
+          "signature": "theorem xiPreTop_topCoeff_mul_natDegree_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 810,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_weight_over_\ud835\udcaa_le_of_H_natDegree_lt_R_natDegree",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_weight_over_\ud835\udcaa_le_of_H_natDegree_lt_R_natDegree",
+          "signature": "theorem xiPreTop_weight_over_\ud835\udcaa_le_of_H_natDegree_lt_R_natDegree (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 859,
+          "name": "RationalFunctions.HenselNumerators.xiPreTop_weight_over_\ud835\udcaa_le",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPreTop_weight_over_\ud835\udcaa_le",
+          "signature": "theorem xiPreTop_weight_over_\ud835\udcaa_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 866,
+          "name": "RationalFunctions.HenselNumerators._anon_class_866",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_866",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 895,
+          "name": "RationalFunctions.HenselNumerators.xiPre_eq_lower_add_top",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "xiPre_eq_lower_add_top",
+          "signature": "theorem xiPre_eq_lower_add_top (x\u2080 : F) (hRdeg : 2 \u2264 R.natDegree) :"
+        },
+        {
+          "doc": "The bound of the weight `\u039b` of the elements `\u03be` as stated in Claim A.2 of Appendix A.4 of [BCIKS20]. The explicit hypothesis `2 \u2264 R.natDegree` is needed because the paper uses `W^(d-2)`, while Lean's natural-number exponent would otherwise totalize the low-degree cases by truncation.",
+          "kind": "lemma",
+          "line": 905,
+          "name": "RationalFunctions.HenselNumerators._anon_lemma_905",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_lemma_905",
+          "signature": "lemma lemma \u03be_weight_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Weight.lean": {
+      "declarations": [
+        {
+          "doc": "`\u039b` is subadditive under multiplication of bivariate polynomials (bound form).",
+          "kind": "lemma",
+          "line": 46,
+          "name": "RationalFunctions.weight_\u039b_mul_le'",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_mul_le'",
+          "signature": "lemma weight_\u039b_mul_le' {f g H : F[X][Y]} {D bf bg : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 50,
+          "name": "RationalFunctions._anon_class_50",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_50",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The `\ud835\udcaa`-weight is invariant under negation.",
+          "kind": "lemma",
+          "line": 89,
+          "name": "RationalFunctions.HenselNumerators.weight_\u039b_over_\ud835\udcaa_neg",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_neg",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_neg {hH : 0 < H.natDegree} (a : \ud835\udcaa H) (D : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 91,
+          "name": "RationalFunctions.HenselNumerators._anon_class_91",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_91",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\ud835\udcaa`-weight is subadditive under multiplication (bound form).",
+          "kind": "lemma",
+          "line": 101,
+          "name": "RationalFunctions.HenselNumerators.weight_\u039b_over_\ud835\udcaa_mul_le'",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_mul_le'",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mul_le' {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 106,
+          "name": "RationalFunctions.HenselNumerators._anon_class_106",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_106",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`RegularWeightLe hH a D B`: the element `a : \ud835\udd43 H` is regular (in the image of `\ud835\udcaa H`) with a witness whose `\u039b`-weight is at most `B`. Bundles regularity together with a weight certificate so that the Hensel-clearing expansion can be carried out with `\u039b`-bookkeeping.",
+          "kind": "def",
+          "line": 116,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe",
+          "signature": "def RegularWeightLe {H : F[X][Y]} (hH : 0 < H.natDegree) (a : \ud835\udd43 H) (D B : \u2115) : Prop :="
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 120,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.mono",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.mono",
+          "signature": "lemma RegularWeightLe.mono {hH : 0 < H.natDegree} {a : \ud835\udd43 H} {D B B' : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 125,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.mul",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.mul",
+          "signature": "lemma RegularWeightLe.mul {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) {hH : 0 < H.natDegree}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 133,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.add",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.add",
+          "signature": "lemma RegularWeightLe.add {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) {hH : 0 < H.natDegree}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 142,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.neg",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.neg",
+          "signature": "lemma RegularWeightLe.neg {hH : 0 < H.natDegree} {a : \ud835\udd43 H} {D B : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 147,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.pow",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.pow",
+          "signature": "lemma RegularWeightLe.pow {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) {hH : 0 < H.natDegree}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 163,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.sum",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.sum",
+          "signature": "lemma RegularWeightLe.sum {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 \ud835\udd43 H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 167,
+          "name": "RationalFunctions.HenselNumerators._anon_class_167",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_167",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 177,
+          "name": "RationalFunctions.HenselNumerators.RegularWeightLe.prod",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RegularWeightLe.prod",
+          "signature": "lemma RegularWeightLe.prod {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 \ud835\udd43 H) (B : \u03b9 \u2192 \u2115)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 181,
+          "name": "RationalFunctions.HenselNumerators._anon_class_181",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_181",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Coefficient embeddings are regular with `\u039b`-weight at most their `X`-degree.",
+          "kind": "lemma",
+          "line": 196,
+          "name": "RationalFunctions.HenselNumerators.RWL_lift",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_lift",
+          "signature": "lemma RWL_lift {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree)"
+        },
+        {
+          "doc": "The leading coefficient lift `W` is regular with `\u039b`-weight at most `D`.",
+          "kind": "lemma",
+          "line": 203,
+          "name": "RationalFunctions.HenselNumerators.RWL_W",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_W",
+          "signature": "lemma RWL_W {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree) :"
+        },
+        {
+          "doc": "The power-series variable's coefficients are regular with weight `0`.",
+          "kind": "lemma",
+          "line": 215,
+          "name": "RationalFunctions.HenselNumerators.RWL_X",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_X",
+          "signature": "lemma RWL_X {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree) (n : \u2115) :"
+        },
+        {
+          "doc": "The field constant embedding has weight `0`.",
+          "kind": "lemma",
+          "line": 225,
+          "name": "RationalFunctions.HenselNumerators.RWL_fieldTo",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_fieldTo",
+          "signature": "lemma RWL_fieldTo {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree)"
+        },
+        {
+          "doc": "Coefficients of the local-coordinate binomial `(x\u2080 + S)^s` are weight-`0` regular.",
+          "kind": "lemma",
+          "line": 231,
+          "name": "RationalFunctions.HenselNumerators.RWL_binom_coeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_binom_coeff",
+          "signature": "lemma RWL_binom_coeff {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree)"
+        },
+        {
+          "doc": "Each coefficient of `liftCoeffToPowerSeries x\u2080 H p` is regular with weight at most the total degree of `p`.",
+          "kind": "lemma",
+          "line": 262,
+          "name": "RationalFunctions.HenselNumerators.RWL_coeff_liftCoeff",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_coeff_liftCoeff",
+          "signature": "lemma RWL_coeff_liftCoeff {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 266,
+          "name": "RationalFunctions.HenselNumerators._anon_class_266",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_266",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Sharp `\u039b`-weight bound on the leading-coefficient lift `W`: `\u039b(W) \u2264 D - dH`. This is the per-`W`-factor budget used in the sharp telescoping of [BCIKS20] A.4 (pp. 52\u201353); the looser `\u039b(W) \u2264 D` of `RWL_W` is not enough for the constant term to telescope.",
+          "kind": "lemma",
+          "line": 282,
+          "name": "RationalFunctions.HenselNumerators.RWL_W_sharp",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "RWL_W_sharp",
+          "signature": "lemma RWL_W_sharp {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D) (hH : 0 < H.natDegree) :"
+        },
+        {
+          "doc": "The sharp per-step `\u039b`-weight budget of [BCIKS20] A.4 (the bound on `\u039b(\u03b2\u209c)`): `sharp t = 1 + (t+1)\u00b7(D - dH) + e\u209c\u00b7((dY-1)\u00b7(D - dH + 1))`, where `dH = natDegreeY H`, `dY = natDegreeY R`, and `e\u209c = henselDenominatorExponent t`.  The `1` is the constant from the leading-coefficient divisibility, `(t+1)\u00b7(D-dH)` is the `W`-power contribution, and the last term is the `\u03be`-power contribution.  This bound telescopes linearly in `t`, unlike the loose multiplicative `(2t+1)\u00b7dY\u00b7D`.",
+          "kind": "def",
+          "line": 300,
+          "name": "RationalFunctions.HenselNumerators.numeratorShapeSharp",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "numeratorShapeSharp",
+          "signature": "def numeratorShapeSharp (R : F[X][X][Y]) (H : F[X][Y]) (D t : \u2115) : \u2115 :="
+        },
+        {
+          "doc": "The sharp bound weakens to the loose paper bound consumed by the final assembly: `sharp t \u2264 (2t+1)\u00b7dY\u00b7D`.  Pure arithmetic, using `dH \u2265 1`, `dH \u2264 dY`, `dH \u2264 D`, and `e\u209c \u2264 2t`.",
+          "kind": "lemma",
+          "line": 308,
+          "name": "RationalFunctions.HenselNumerators.numeratorShapeSharp_le_loose",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "numeratorShapeSharp_le_loose",
+          "signature": "lemma numeratorShapeSharp_le_loose (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "`RegularWeightLe`-version of the bridge from the embedded `\ud835\udcaa`-witness back to the `\ud835\udcaa`-weight: if `embeddingOf\ud835\udcaaInto\ud835\udd43 H b` is regular with `\u039b`-witness of weight `\u2264 B`, then so is the canonical witness `b` itself (by injectivity of the embedding).",
+          "kind": "lemma",
+          "line": 348,
+          "name": "RationalFunctions.HenselNumerators.weight_\u039b_over_\ud835\udcaa_of_RegularWeightLe_embedding",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_of_RegularWeightLe_embedding",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_of_RegularWeightLe_embedding {hH : 0 < H.natDegree} {D B : \u2115} (b : \ud835\udcaa H)"
+        },
+        {
+          "doc": "Bridge identity for the weight induction: the embedded `(t+1)`-st numerator equals the negated cleared residual.  This is the same algebraic computation as in `regular_numerator_shape_succ` (using `hshape` to identify `\u03b1seq(t+1)` with `embedding \u03b2\u209c\u208a\u2081 / Dfull` and `hroot` to kill the `coeff (t+1)` term), repackaged as an equation so the weight bound can be transported through it.",
+          "kind": "lemma",
+          "line": 358,
+          "name": "RationalFunctions.HenselNumerators.betaSucc_eq_neg_clearedResidual",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "betaSucc_eq_neg_clearedResidual",
+          "signature": "lemma betaSucc_eq_neg_clearedResidual (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 370,
+          "name": "RationalFunctions.HenselNumerators._anon_class_370",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_370",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Weight-tracking per-degree clearing lemma: the `\u039b`-graded analogue of `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is regular with sharp `\u039b`-weight at most `numeratorShapeSharp R H D (t+1)`.  The non-boundary branch is fully proven; the single boundary summand (`p.1 = 0`, `j = d \u2265 2`, `p.2 = t+1`) is the remaining gap (see the in-proof comment).",
+          "kind": "lemma",
+          "line": 412,
+          "name": "RationalFunctions.HenselNumerators.henselClearedTerm_weight",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselClearedTerm_weight",
+          "signature": "lemma henselClearedTerm_weight (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 434,
+          "name": "RationalFunctions.HenselNumerators._anon_class_434",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_434",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The cleared `(t+1)`-st Hensel residual `henselCoeffResidual \u00b7 Ddiv` (with `Ddiv` the global clearing denominator `W^{t+2}\u00b7\u03b7^{E-1}\u00b7W^{d-2}`) is regular with sharp `\u039b`-weight at most `numeratorShapeSharp R H D (t+1)`, given that every previous numerator `\u03b2seq s` (`s \u2264 t`) has sharp weight `\u2264 numeratorShapeSharp R H D s`. This is the quantitative (weight-tracking) heart of [BCIKS20] A.4 (pp. 52\u201353): it is the `\u039b`-graded analogue of `henselCoeffResidual_regular_after_clearing`, refining mere regularity to the sharp per-step weight budget that telescopes linearly in `t`.",
+          "kind": "lemma",
+          "line": 662,
+          "name": "RationalFunctions.HenselNumerators.henselClearedResidual_weight",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "henselClearedResidual_weight",
+          "signature": "lemma henselClearedResidual_weight (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 683,
+          "name": "RationalFunctions.HenselNumerators._anon_class_683",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "_anon_class_683",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Sharp `\u039b`-weight bound on every Hensel numerator: `\u039b(\u03b2\u209c) \u2264 numeratorShapeSharp R H D t`, i.e. `1 + (t+1)(D-dH) + e\u209c(dY-1)(D-dH+1)` ([BCIKS20] A.4, pp. 52\u201353).  Proved by strong induction, the successor step being `henselClearedResidual_weight` together with the identity `embeddingOf\ud835\udcaaInto\ud835\udd43 (\u03b2\u209c\u208a\u2081) = -(henselCoeffResidual \u00b7 Ddiv)`.",
+          "kind": "theorem",
+          "line": 730,
+          "name": "RationalFunctions.HenselNumerators.numerator_shape_weight_sharp",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "numerator_shape_weight_sharp",
+          "signature": "theorem numerator_shape_weight_sharp (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 781,
+          "name": "RationalFunctions.HenselNumerators.numerator_shape_weight_bound",
+          "namespace": "RationalFunctions.HenselNumerators",
+          "short_name": "numerator_shape_weight_bound",
+          "signature": "theorem numerator_shape_weight_bound (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/Lifts.lean": {
+      "declarations": [
+        {
+          "doc": "The embedding of the coefficients of a bivariate polynomial into the bivariate polynomial ring with rational coefficients.",
+          "kind": "def",
+          "line": 45,
+          "name": "RationalFunctions.coeffAsRatFunc",
+          "namespace": "RationalFunctions",
+          "short_name": "coeffAsRatFunc",
+          "signature": "def coeffAsRatFunc : F[X] \u2192+* Polynomial (RatFunc F) :="
+        },
+        {
+          "doc": "The embedding of coefficient polynomials into the function field `\ud835\udd43`.",
+          "kind": "def",
+          "line": 49,
+          "name": "RationalFunctions.liftToFunctionField",
+          "namespace": "RationalFunctions",
+          "short_name": "liftToFunctionField",
+          "signature": "def liftToFunctionField {H : F[X][Y]} : F[X] \u2192+* \ud835\udd43 H :="
+        },
+        {
+          "doc": "The embedding of bivariate polynomials into the function field `\ud835\udd43`.",
+          "kind": "def",
+          "line": 53,
+          "name": "RationalFunctions.liftBivariate",
+          "namespace": "RationalFunctions",
           "short_name": "liftBivariate",
           "signature": "def liftBivariate {H : F[X][Y]} : F[X][Y] \u2192+* \ud835\udd43 H :="
         },
         {
           "doc": "The image of the polynomial variable `T` in the function field `\ud835\udd43 H`.",
           "kind": "def",
-          "line": 486,
-          "name": "BCIKS20AppendixA.functionFieldT",
-          "namespace": "BCIKS20AppendixA",
+          "line": 57,
+          "name": "RationalFunctions.functionFieldT",
+          "namespace": "RationalFunctions",
           "short_name": "functionFieldT",
           "signature": "def functionFieldT {H : F[X][Y]} : \ud835\udd43 H :="
         },
         {
           "doc": "Quotient constructors in `\ud835\udcaa` embed by applying the bivariate lift.",
           "kind": "lemma",
-          "line": 491,
-          "name": "BCIKS20AppendixA.embeddingOf\ud835\udcaaInto\ud835\udd43_mk",
-          "namespace": "BCIKS20AppendixA",
+          "line": 62,
+          "name": "RationalFunctions.embeddingOf\ud835\udcaaInto\ud835\udd43_mk",
+          "namespace": "RationalFunctions",
           "short_name": "embeddingOf\ud835\udcaaInto\ud835\udd43_mk",
           "signature": "lemma embeddingOf\ud835\udcaaInto\ud835\udd43_mk (H : F[X][Y]) (p : F[X][Y]) :"
         },
         {
           "doc": "Every bivariate polynomial representative gives a regular element of the function field.",
           "kind": "lemma",
-          "line": 497,
-          "name": "BCIKS20AppendixA.regular_liftBivariate",
-          "namespace": "BCIKS20AppendixA",
+          "line": 68,
+          "name": "RationalFunctions.regular_liftBivariate",
+          "namespace": "RationalFunctions",
           "short_name": "regular_liftBivariate",
           "signature": "lemma regular_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :"
         },
         {
           "doc": "Bivariate-polynomial images are regular elements of the function field.",
           "kind": "lemma",
-          "line": 502,
-          "name": "BCIKS20AppendixA.regularElms_set_liftBivariate",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_liftBivariate",
-          "signature": "lemma regularElms_set_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :"
+          "line": 73,
+          "name": "RationalFunctions.regularElementsSet_liftBivariate",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_liftBivariate",
+          "signature": "lemma regularElementsSet_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :"
         },
         {
           "doc": "Coefficients embedded into `\ud835\udd43` are regular elements.",
           "kind": "lemma",
-          "line": 508,
-          "name": "BCIKS20AppendixA.regular_liftToFunctionField",
-          "namespace": "BCIKS20AppendixA",
+          "line": 79,
+          "name": "RationalFunctions.regular_liftToFunctionField",
+          "namespace": "RationalFunctions",
           "short_name": "regular_liftToFunctionField",
           "signature": "lemma regular_liftToFunctionField (H : F[X][Y]) (p : F[X]) :"
         },
         {
           "doc": "Coefficient-polynomial images are regular elements of the function field.",
           "kind": "lemma",
-          "line": 513,
-          "name": "BCIKS20AppendixA.regularElms_set_liftToFunctionField",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_liftToFunctionField",
-          "signature": "lemma regularElms_set_liftToFunctionField (H : F[X][Y]) (p : F[X]) :"
+          "line": 84,
+          "name": "RationalFunctions.regularElementsSet_liftToFunctionField",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_liftToFunctionField",
+          "signature": "lemma regularElementsSet_liftToFunctionField (H : F[X][Y]) (p : F[X]) :"
+        },
+        {
+          "doc": "Nonzero coefficient polynomials remain nonzero after embedding into the function field.",
+          "kind": "lemma",
+          "line": 89,
+          "name": "RationalFunctions.liftToFunctionField_ne_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "liftToFunctionField_ne_zero",
+          "signature": "lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}"
+        },
+        {
+          "doc": "The leading coefficient `W` of a positive-`Y`-degree `H` is nonzero in the function field.",
+          "kind": "lemma",
+          "line": 110,
+          "name": "RationalFunctions.liftToFunctionField_leadingCoeff_ne_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "liftToFunctionField_leadingCoeff_ne_zero",
+          "signature": "lemma liftToFunctionField_leadingCoeff_ne_zero {F : Type} [Field F] {H : F[X][Y]}"
+        },
+        {
+          "doc": "If `q \u2223 p` in `F[X]`, then `p / q` is regular after embedding into `\ud835\udd43`.",
+          "kind": "lemma",
+          "line": 117,
+          "name": "RationalFunctions.regularElementsSet_liftToFunctionField_div_of_dvd",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_liftToFunctionField_div_of_dvd",
+          "signature": "lemma regularElementsSet_liftToFunctionField_div_of_dvd {F : Type} [Field F] {H : F[X][Y]}"
+        },
+        {
+          "doc": "If `W = H.leadingCoeff` divides `p`, then `p / W` is regular after embedding into `\ud835\udd43`.",
+          "kind": "lemma",
+          "line": 132,
+          "name": "RationalFunctions.regularElementsSet_liftToFunctionField_div_leadingCoeff_of_dvd",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_liftToFunctionField_div_leadingCoeff_of_dvd",
+          "signature": "lemma regularElementsSet_liftToFunctionField_div_leadingCoeff_of_dvd {F : Type} [Field F]"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 142,
+          "name": "RationalFunctions.mul_pow_mul_div_pow_eq_lower",
+          "namespace": "RationalFunctions",
+          "short_name": "mul_pow_mul_div_pow_eq_lower",
+          "signature": "lemma mul_pow_mul_div_pow_eq_lower {K : Type} [Field K] {W T a : K}"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 156,
+          "name": "RationalFunctions.mul_pow_mul_div_pow_succ_eq_top",
+          "namespace": "RationalFunctions",
+          "short_name": "mul_pow_mul_div_pow_succ_eq_top",
+          "signature": "lemma mul_pow_mul_div_pow_succ_eq_top {K : Type} [Field K] {W T a : K}"
+        },
+        {
+          "doc": "Clearing denominators in `W^k \u00b7 P(T/W)` as an explicit sum: if `P.natDegree \u2264 k + 1`, then `W^k * eval\u2082 lift (T/W) P` decomposes into a low-degree polynomial sum plus a single `(P.coeff(k+1)/W) \u00b7 T^(k+1)` term. The divisibility `W \u2223 P.coeff(k+1)` is not needed here - the formula holds in `\ud835\udd43 H` directly via field division.",
+          "kind": "lemma",
+          "line": 167,
+          "name": "RationalFunctions.W_pow_mul_eval\u2082_div_eq_sum",
+          "namespace": "RationalFunctions",
+          "short_name": "W_pow_mul_eval\u2082_div_eq_sum",
+          "signature": "lemma W_pow_mul_eval\u2082_div_eq_sum {F : Type} [Field F] {H : F[X][Y]}"
         },
         {
           "doc": "The bivariate variable maps to the function-field variable `T`.",
           "kind": "lemma",
-          "line": 519,
-          "name": "BCIKS20AppendixA.liftBivariate_X",
-          "namespace": "BCIKS20AppendixA",
+          "line": 200,
+          "name": "RationalFunctions.liftBivariate_X",
+          "namespace": "RationalFunctions",
           "short_name": "liftBivariate_X",
           "signature": "lemma liftBivariate_X {H : F[X][Y]} :"
         },
         {
           "doc": "The function-field variable `T` is regular.",
           "kind": "lemma",
-          "line": 524,
-          "name": "BCIKS20AppendixA.regularElms_set_functionFieldT",
-          "namespace": "BCIKS20AppendixA",
-          "short_name": "regularElms_set_functionFieldT",
-          "signature": "lemma regularElms_set_functionFieldT (H : F[X][Y]) :"
+          "line": 205,
+          "name": "RationalFunctions.regularElementsSet_functionFieldT",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_functionFieldT",
+          "signature": "lemma regularElementsSet_functionFieldT (H : F[X][Y]) :"
+        },
+        {
+          "doc": "A linear polynomial evaluated at `T / W` is regular when its linear coefficient is divisible by `W = H.leadingCoeff`.",
+          "kind": "lemma",
+          "line": 211,
+          "name": "RationalFunctions.regularElementsSet_eval\u2082_linear_of_coeff_one_dvd",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_eval\u2082_linear_of_coeff_one_dvd",
+          "signature": "lemma regularElementsSet_eval\u2082_linear_of_coeff_one_dvd {F : Type} [Field F] {H : F[X][Y]}"
+        },
+        {
+          "doc": "Clearing denominators in `P(T / W)`: if `P` has degree at most `k + 1` and its top coefficient is divisible by `W = H.leadingCoeff`, then `W^k * P(T/W)` is regular.",
+          "kind": "lemma",
+          "line": 236,
+          "name": "RationalFunctions.regularElementsSet_mul_pow_eval\u2082_div_of_natDegree_le_succ_of_coeff_succ_dvd",
+          "namespace": "RationalFunctions",
+          "short_name": "regularElementsSet_mul_pow_eval\u2082_div_of_natDegree_le_succ_of_coeff_succ_dvd",
+          "signature": "lemma regularElementsSet_mul_pow_eval\u2082_div_of_natDegree_le_succ_of_coeff_succ_dvd"
         },
         {
           "doc": "Constant bivariate polynomials map through the coefficient embedding.",
           "kind": "lemma",
-          "line": 530,
-          "name": "BCIKS20AppendixA.liftBivariate_C",
-          "namespace": "BCIKS20AppendixA",
+          "line": 279,
+          "name": "RationalFunctions.liftBivariate_C",
+          "namespace": "RationalFunctions",
           "short_name": "liftBivariate_C",
           "signature": "lemma liftBivariate_C {H : F[X][Y]} (p : F[X]) :"
         },
         {
-          "doc": "The embeddining of the scalars into the function field `\ud835\udd43`.",
+          "doc": "The embedding of scalars into the function field `\ud835\udd43`.",
           "kind": "def",
-          "line": 535,
-          "name": "BCIKS20AppendixA.fieldTo\ud835\udd43",
-          "namespace": "BCIKS20AppendixA",
+          "line": 284,
+          "name": "RationalFunctions.fieldTo\ud835\udd43",
+          "namespace": "RationalFunctions",
           "short_name": "fieldTo\ud835\udd43",
           "signature": "def fieldTo\ud835\udd43 {H : F[X][Y]} : F \u2192+* \ud835\udd43 H :="
         },
         {
-          "doc": "Constructing power series over the function field `\ud835\udd43 H` out of a polynomial.",
+          "doc": "View a bivariate polynomial as a power series over `\ud835\udd43 H` by lifting its coefficients.",
           "kind": "def",
-          "line": 539,
-          "name": "BCIKS20AppendixA.polyToPowerSeries\ud835\udd43",
-          "namespace": "BCIKS20AppendixA",
+          "line": 288,
+          "name": "RationalFunctions.polyToPowerSeries\ud835\udd43",
+          "namespace": "RationalFunctions",
           "short_name": "polyToPowerSeries\ud835\udd43",
           "signature": "def polyToPowerSeries\ud835\udd43 (H : F[X][Y]) (P : F[X][Y]) : PowerSeries (\ud835\udd43 H) :="
-        },
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/RationalRootVanishing.lean": {
+      "declarations": [
         {
-          "doc": "The definition of `\u03b6` given in Appendix A.4 of [BCIKS20].",
-          "kind": "def",
-          "line": 554,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_554",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_554",
-          "signature": "def def \u03b6 (R : F[X][X][Y]) (x\u2080 : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] : \ud835\udd43 H :="
-        },
-        {
-          "doc": "If the derivative specialization is constant in the function-field variable, then `\u03b6` is regular.",
-          "kind": "lemma",
-          "line": 562,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_lemma_562",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_lemma_562",
-          "signature": "lemma lemma \u03b6_regular_of_derivative_evalX_eq_C (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "In the constant-derivative, low-`Y`-degree case, the `\u03be` regularity witness is explicit.",
-          "kind": "lemma",
-          "line": 571,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_lemma_571",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_lemma_571",
-          "signature": "lemma lemma \u03be_regular_of_derivative_evalX_eq_C_of_natDegree_le_one"
-        },
-        {
-          "doc": "There exist regular elements `\u03be = W(Z)^(d-2) * \u03b6` as defined in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "lemma",
-          "line": 586,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_lemma_586",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_lemma_586",
-          "signature": "lemma lemma \u03be_regular (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)] :"
-        },
-        {
-          "doc": "The elements `\u03be = W(Z)^(d-2) * \u03b6` as defined in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "def",
-          "line": 594,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_594",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_594",
-          "signature": "def def \u03be (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [\u03c6 : Fact (Irreducible H)] : \ud835\udcaa H :="
-        },
-        {
-          "doc": "The bound of the weight `\u039b` of the elements `\u03b6` as stated in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "lemma",
-          "line": 599,
-          "name": "BCIKS20AppendixA.ClaimA2.weight_\u03be_bound",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "weight_\u03be_bound",
-          "signature": "lemma weight_\u03be_bound (x\u2080 : F) (hH : 0 < H.natDegree) {D : \u2115}"
-        },
-        {
-          "doc": "There exist regular elements `\u03b2` with a weight bound as given in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "lemma",
-          "line": 607,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_lemma_607",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_lemma_607",
-          "signature": "lemma lemma \u03b2_regular (R : F[X][X][Y])"
-        },
-        {
-          "doc": "The definition of the regular elements `\u03b2` giving the numerators of the Hensel lift coefficients as defined in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "def",
-          "line": 617,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_617",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_617",
-          "signature": "def def \u03b2 (R : F[X][X][Y]) (t : \u2115) : \ud835\udcaa H :="
-        },
-        {
-          "doc": "The Hensel lift coefficients `\u03b1` are of the form as given in Claim A.2 of Appendix A.4 of [BCIKS20].",
-          "kind": "def",
-          "line": 625,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_625",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_625",
-          "signature": "def def \u03b1 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [\u03c6 : Fact (Irreducible H)] (t : \u2115) : \ud835\udd43 H :="
+          "doc": "",
+          "kind": "theorem",
+          "line": 43,
+          "name": "RationalFunctions.H_tilde_prime_coeff_natDegree_le_of_totalDegree",
+          "namespace": "RationalFunctions",
+          "short_name": "H_tilde_prime_coeff_natDegree_le_of_totalDegree",
+          "signature": "theorem H_tilde_prime_coeff_natDegree_le_of_totalDegree {H : F[X][Y]} {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D)"
         },
         {
           "doc": "",
-          "kind": "def",
-          "line": 630,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_630",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_630",
-          "signature": "def def \u03b1' (x\u2080 : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) (t : \u2115) : \ud835\udd43 H :="
-        },
-        {
-          "doc": "The power series `\u03b3 = \u2211 \u03b1^t (X - x\u2080)^t \u2208 \ud835\udd43 [[X - x\u2080]]` as defined in Appendix A.4 of [BCIKS20].",
-          "kind": "def",
-          "line": 635,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_635",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_635",
-          "signature": "def def \u03b3 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y]) [\u03c6 : Fact (Irreducible H)] : PowerSeries (\ud835\udd43 H) :="
+          "kind": "theorem",
+          "line": 51,
+          "name": "RationalFunctions.canonicalRep_coeff_natDegree_le_of_weight_bound",
+          "namespace": "RationalFunctions",
+          "short_name": "canonicalRep_coeff_natDegree_le_of_weight_bound",
+          "signature": "theorem canonicalRep_coeff_natDegree_le_of_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : \u2115} (\u03b2 : \ud835\udcaa H)"
         },
         {
           "doc": "",
+          "kind": "theorem",
+          "line": 59,
+          "name": "RationalFunctions.embedding_eq_zero_of_resultant_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "embedding_eq_zero_of_resultant_zero",
+          "signature": "theorem embedding_eq_zero_of_resultant_zero {H : F[X][Y]} [Fact (Irreducible H)] (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 62,
+          "name": "RationalFunctions._anon_class_62",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_62",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 91,
+          "name": "RationalFunctions.natDegree_det_le_of_perm_products_le",
+          "namespace": "RationalFunctions",
+          "short_name": "natDegree_det_le_of_perm_products_le",
+          "signature": "theorem natDegree_det_le_of_perm_products_le {\u03b9 : Type} [Fintype \u03b9] [DecidableEq \u03b9] (M : Matrix \u03b9 \u03b9 F[X]) {N : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 94,
+          "name": "RationalFunctions._anon_class_94",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_94",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 100,
+          "name": "RationalFunctions.natDegree_resultant_le_weight_bound",
+          "namespace": "RationalFunctions",
+          "short_name": "natDegree_resultant_le_weight_bound",
+          "signature": "theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 104,
+          "name": "RationalFunctions._anon_class_104",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_104",
+          "signature": "class classical"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 272,
+          "name": "RationalFunctions.poly_eq_zero_of_ncard_gt_bound_of_subset_roots",
+          "namespace": "RationalFunctions",
+          "short_name": "poly_eq_zero_of_ncard_gt_bound_of_subset_roots",
+          "signature": "theorem poly_eq_zero_of_ncard_gt_bound_of_subset_roots {p : F[X]} {S : Set F} {N : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 287,
+          "name": "RationalFunctions.resultant_eval_eq_resultant_map_eval_fixed_degrees",
+          "namespace": "RationalFunctions",
+          "short_name": "resultant_eval_eq_resultant_map_eval_fixed_degrees",
+          "signature": "theorem resultant_eval_eq_resultant_map_eval_fixed_degrees (p q : F[X][Y]) (z : F) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 293,
+          "name": "RationalFunctions.resultant_fixed_degree_eq_zero_of_common_root_of_monic_right",
+          "namespace": "RationalFunctions",
+          "short_name": "resultant_fixed_degree_eq_zero_of_common_root_of_monic_right",
+          "signature": "theorem resultant_fixed_degree_eq_zero_of_common_root_of_monic_right {p q : F[X]} {m n : \u2115} {t : F}"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 312,
+          "name": "RationalFunctions.Sbeta_subset_resultant_roots",
+          "namespace": "RationalFunctions",
+          "short_name": "Sbeta_subset_resultant_roots",
+          "signature": "theorem Sbeta_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 338,
+          "name": "RationalFunctions.weight_bot_embedding_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_bot_embedding_zero",
+          "signature": "theorem weight_bot_embedding_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) (D : \u2115)"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 341,
+          "name": "RationalFunctions._anon_class_341",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_341",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The statement of Lemma A.1 in Appendix A.3 of [BCIKS20].",
+          "kind": "lemma",
+          "line": 362,
+          "name": "RationalFunctions.lemmaA1_embedding_eq_zero_of_many_rational_roots",
+          "namespace": "RationalFunctions",
+          "short_name": "lemmaA1_embedding_eq_zero_of_many_rational_roots",
+          "signature": "lemma lemmaA1_embedding_eq_zero_of_many_rational_roots {H : F[X][Y]}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 368,
+          "name": "RationalFunctions._anon_class_368",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_368",
+          "signature": "class classical"
+        }
+      ]
+    },
+    "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean": {
+      "declarations": [
+        {
+          "doc": "`\u039b` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients. The weight of the zero polynomial is `\u2212\u221e`. Requires `D \u2265 Bivariate.totalDegree H` to match definition in [BCIKS20].",
           "kind": "def",
-          "line": 643,
-          "name": "BCIKS20AppendixA.ClaimA2._anon_def_643",
-          "namespace": "BCIKS20AppendixA.ClaimA2",
-          "short_name": "_anon_def_643",
-          "signature": "def def \u03b3' (x\u2080 : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H) : PowerSeries (\ud835\udd43 H) :="
+          "line": 47,
+          "name": "RationalFunctions.weight_\u039b",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b",
+          "signature": "def weight_\u039b (f H : F[X][Y]) (D : \u2115) : WithBot \u2115 :="
+        },
+        {
+          "doc": "The zero polynomial has bottom `\u039b`-weight.",
+          "kind": "lemma",
+          "line": 57,
+          "name": "RationalFunctions.weight_\u039b_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_zero",
+          "signature": "lemma weight_\u039b_zero (H : F[X][Y]) (D : \u2115) :"
+        },
+        {
+          "doc": "The weight function `\u039b` on regular elements is the weight of their canonical representatives in `F[X][Y]`.",
+          "kind": "def",
+          "line": 63,
+          "name": "RationalFunctions.weight_\u039b_over_\ud835\udcaa",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_over_\ud835\udcaa",
+          "signature": "def weight_\u039b_over_\ud835\udcaa {H : F[X][Y]} (hH : 0 < H.natDegree) (f : \ud835\udcaa H) (D : \u2115) :"
+        },
+        {
+          "doc": "The `\ud835\udcaa`-weight of zero is bottom.",
+          "kind": "lemma",
+          "line": 69,
+          "name": "RationalFunctions.weight_\u039b_over_\ud835\udcaa_zero",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_zero",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (D : \u2115) :"
+        },
+        {
+          "doc": "The `\ud835\udcaa`-weight of a quotient constructor is computed on its canonical remainder.",
+          "kind": "lemma",
+          "line": 75,
+          "name": "RationalFunctions.weight_\u039b_over_\ud835\udcaa_mk",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_mk",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y])"
+        },
+        {
+          "doc": "If a representative is already reduced, its `\ud835\udcaa`-weight is its polynomial `\u039b`-weight.",
+          "kind": "lemma",
+          "line": 82,
+          "name": "RationalFunctions.weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)"
+        },
+        {
+          "doc": "A monomial `n` in `f`'s support contributes a lower bound on `\u039b(f)`.",
+          "kind": "lemma",
+          "line": 96,
+          "name": "RationalFunctions.le_weight_\u039b_of_mem_support",
+          "namespace": "RationalFunctions",
+          "short_name": "le_weight_\u039b_of_mem_support",
+          "signature": "lemma le_weight_\u039b_of_mem_support {f H : F[X][Y]} {D : \u2115} {n : \u2115} (hn : n \u2208 f.support) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 99,
+          "name": "RationalFunctions._anon_class_99",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_99",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Characterization: `\u039b(f) \u2264 b` iff every monomial in `f`'s support contributes at most `b`.",
+          "kind": "lemma",
+          "line": 106,
+          "name": "RationalFunctions.weight_\u039b_le_iff",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_le_iff",
+          "signature": "lemma weight_\u039b_le_iff {f H : F[X][Y]} {D b : \u2115} :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 110,
+          "name": "RationalFunctions._anon_class_110",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_110",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\u039b(C c) \u2264 c.natDegree`.",
+          "kind": "lemma",
+          "line": 119,
+          "name": "RationalFunctions.weight_\u039b_C_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_C_le",
+          "signature": "lemma weight_\u039b_C_le (H : F[X][Y]) (D : \u2115) (c : F[X]) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 121,
+          "name": "RationalFunctions._anon_class_121",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_121",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\u039b(Y^k) \u2264 k \u00b7 m`.",
+          "kind": "lemma",
+          "line": 133,
+          "name": "RationalFunctions.weight_\u039b_X_pow_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_X_pow_le",
+          "signature": "lemma weight_\u039b_X_pow_le (H : F[X][Y]) (D k : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 136,
+          "name": "RationalFunctions._anon_class_136",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_136",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\u039b(C c \u00b7 Y^k) \u2264 k \u00b7 m + c.natDegree`.",
+          "kind": "lemma",
+          "line": 148,
+          "name": "RationalFunctions.weight_\u039b_C_mul_X_pow_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_C_mul_X_pow_le",
+          "signature": "lemma weight_\u039b_C_mul_X_pow_le (H : F[X][Y]) (D : \u2115) (c : F[X]) (k : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 151,
+          "name": "RationalFunctions._anon_class_151",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_151",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The `\u039b`-weight is invariant under negation.",
+          "kind": "lemma",
+          "line": 165,
+          "name": "RationalFunctions.weight_\u039b_neg",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_neg",
+          "signature": "lemma weight_\u039b_neg (f H : F[X][Y]) (D : \u2115) : weight_\u039b (-f) H D = weight_\u039b f H D := by"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 166,
+          "name": "RationalFunctions._anon_class_166",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_166",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\u039b(f + g) \u2264 max(\u039b(f), \u039b(g))`.",
+          "kind": "lemma",
+          "line": 174,
+          "name": "RationalFunctions.weight_\u039b_add_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_add_le",
+          "signature": "lemma weight_\u039b_add_le (f g H : F[X][Y]) (D : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 176,
+          "name": "RationalFunctions._anon_class_176",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_176",
+          "signature": "class classical"
+        },
+        {
+          "doc": "`\u039b(f \u2212 g) \u2264 max(\u039b(f), \u039b(g))`.",
+          "kind": "lemma",
+          "line": 231,
+          "name": "RationalFunctions.weight_\u039b_sub_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_sub_le",
+          "signature": "lemma weight_\u039b_sub_le (f g H : F[X][Y]) (D : \u2115) :"
+        },
+        {
+          "doc": "`\u039b` of a finite sum is bounded by the max of the summands' weights.",
+          "kind": "lemma",
+          "line": 238,
+          "name": "RationalFunctions.weight_\u039b_sum_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_sum_le",
+          "signature": "lemma weight_\u039b_sum_le {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 F[X][Y]) (H : F[X][Y]) (D : \u2115) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 240,
+          "name": "RationalFunctions._anon_class_240",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_240",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Bound on the `X`-degree of a coefficient of `H` from a `totalDegree` bound.",
+          "kind": "lemma",
+          "line": 249,
+          "name": "RationalFunctions.natDegree_coeff_le_of_totalDegree_le",
+          "namespace": "RationalFunctions",
+          "short_name": "natDegree_coeff_le_of_totalDegree_le",
+          "signature": "lemma natDegree_coeff_le_of_totalDegree_le (f : F[X][Y]) {D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 252,
+          "name": "RationalFunctions._anon_class_252",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_252",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Sub-additivity for `C c \u00b7 Y^k \u00b7 f`: given `\u039b(f) \u2264 b`, multiplying by `C c \u00b7 Y^k` adds `k \u00b7 m + c.natDegree` to the weight.",
+          "kind": "lemma",
+          "line": 263,
+          "name": "RationalFunctions.weight_\u039b_C_mul_X_pow_mul_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_C_mul_X_pow_mul_le",
+          "signature": "lemma weight_\u039b_C_mul_X_pow_mul_le {c : F[X]} {k : \u2115} {f H : F[X][Y]} {D b : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 268,
+          "name": "RationalFunctions._anon_class_268",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_268",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The `natDegree` of `H_tilde' H` matches that of `H` when `0 < H.natDegree`.",
+          "kind": "lemma",
+          "line": 318,
+          "name": "RationalFunctions.natDegree_H_tilde'",
+          "namespace": "RationalFunctions",
+          "short_name": "natDegree_H_tilde'",
+          "signature": "lemma natDegree_H_tilde' {H : F[X][Y]} (hH : 0 < H.natDegree) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 320,
+          "name": "RationalFunctions._anon_class_320",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_320",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The canonical representative has `Y`-degree strictly smaller than `H`.",
+          "kind": "lemma",
+          "line": 344,
+          "name": "RationalFunctions.canonicalRepOf\ud835\udcaa_natDegree_lt_H",
+          "namespace": "RationalFunctions",
+          "short_name": "canonicalRepOf\ud835\udcaa_natDegree_lt_H",
+          "signature": "lemma canonicalRepOf\ud835\udcaa_natDegree_lt_H {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 346,
+          "name": "RationalFunctions._anon_class_346",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_346",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The `\u039b`-weight of `H_tilde' H` is bounded by `d_H \u00b7 m`, where `d_H = H.natDegree`.",
+          "kind": "lemma",
+          "line": 356,
+          "name": "RationalFunctions.weight_\u039b_H_tilde'_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_H_tilde'_le",
+          "signature": "lemma weight_\u039b_H_tilde'_le {H : F[X][Y]} {D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 360,
+          "name": "RationalFunctions._anon_class_360",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_360",
+          "signature": "class classical"
+        },
+        {
+          "doc": "One reduction step in `modByMonic` does not increase `\u039b`-weight: subtracting `C(p.leadingCoeff) \u00b7 Y^(p.natDegree - d_H) \u00b7 H_tilde' H` from `p` keeps the weight bounded by `\u039b(p)`.",
+          "kind": "lemma",
+          "line": 429,
+          "name": "RationalFunctions.weight_\u039b_sub_leadingCoeff_mul_H_tilde'_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_sub_leadingCoeff_mul_H_tilde'_le",
+          "signature": "lemma weight_\u039b_sub_leadingCoeff_mul_H_tilde'_le {p H : F[X][Y]} {D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 435,
+          "name": "RationalFunctions._anon_class_435",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_435",
+          "signature": "class classical"
+        },
+        {
+          "doc": "Reduction modulo `H_tilde' H` does not increase `\u039b`-weight.",
+          "kind": "lemma",
+          "line": 459,
+          "name": "RationalFunctions.weight_\u039b_modByMonic_H_tilde'_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_modByMonic_H_tilde'_le",
+          "signature": "lemma weight_\u039b_modByMonic_H_tilde'_le {H : F[X][Y]} {D : \u2115}"
+        },
+        {
+          "doc": "",
+          "kind": "class",
+          "line": 463,
+          "name": "RationalFunctions._anon_class_463",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_class_463",
+          "signature": "class classical"
+        },
+        {
+          "doc": "The `\ud835\udcaa`-weight of a quotient constructor is bounded by any representative's `\u039b`-weight.",
+          "kind": "lemma",
+          "line": 498,
+          "name": "RationalFunctions.weight_\u039b_over_\ud835\udcaa_mk_le",
+          "namespace": "RationalFunctions",
+          "short_name": "weight_\u039b_over_\ud835\udcaa_mk_le",
+          "signature": "lemma weight_\u039b_over_\ud835\udcaa_mk_le {H : F[X][Y]} {D : \u2115}"
+        },
+        {
+          "doc": "The set `S_\u03b2` from the statement of Lemma A.1 in Appendix A of [BCIKS20]. Note: Here `F[X][Y]` is `F[Z][T]`.",
+          "kind": "def",
+          "line": 507,
+          "name": "RationalFunctions.S_\u03b2",
+          "namespace": "RationalFunctions",
+          "short_name": "S_\u03b2",
+          "signature": "def S_\u03b2 {H : F[X][Y]} (\u03b2 : \ud835\udcaa H) : Set F :="
+        },
+        {
+          "doc": "The rational substitution `\u03c0_z` can be computed on the canonical representative.",
+          "kind": "lemma",
+          "line": 512,
+          "name": "RationalFunctions._anon_lemma_512",
+          "namespace": "RationalFunctions",
+          "short_name": "_anon_lemma_512",
+          "signature": "lemma lemma \u03c0_z_eq_eval_canonicalRepOf\ud835\udcaa {H : F[X][Y]} (hH : 0 < H.natDegree)"
         }
       ]
     },
@@ -39900,8 +41902,8 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 4334,
-      "files": 226
+      "declarations": 4553,
+      "files": 234
     }
   }
 }

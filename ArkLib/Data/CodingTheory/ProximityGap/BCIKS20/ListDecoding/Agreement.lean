@@ -68,13 +68,13 @@ lemma evalX_R_separable (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     (Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs)).Separable :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.2.1
 
-open BCIKS20AppendixA.ClaimA2 in
+open RationalFunctions.HenselNumerators in
 /-- The Claim A.2 hypotheses satisfied by the `R,H` pair extracted from Claim 5.7. -/
 lemma claimA2_hypotheses (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     Hypotheses x₀ (R k δ x₀ h_gs) (H k δ x₀ h_gs) :=
   ⟨H_dvd_evalX_R k h_gs, evalX_R_separable k h_gs⟩
 
-open BCIKS20AppendixA.ClaimA2 in
+open RationalFunctions.HenselNumerators in
 /-- Claim 5.8 from [BCIKS20].
 States that the approximate solution is actually a solution. This version of the claim is stated in
 terms of coefficients. -/
@@ -89,10 +89,10 @@ lemma approximate_solution_is_exact_solution_coeffs
       (claimA2_hypotheses k h_gs)
       t
     =
-    (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs))
+    (0 : RationalFunctions.𝕃 (H k δ x₀ h_gs))
     := by sorry
 
-open BCIKS20AppendixA.ClaimA2 in
+open RationalFunctions.HenselNumerators in
 /-- Claim 5.8 from [BCIKS20].
 States that the approximate solution is actually a solution.
 This version is in terms of polynomials.
@@ -104,7 +104,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
         (claimA2_hypotheses k h_gs) =
         PowerSeries.mk (fun t =>
           if t ≥ k
-          then (0 : BCIKS20AppendixA.𝕃 (H k δ x₀ h_gs))
+          then (0 : RationalFunctions.𝕃 (H k δ x₀ h_gs))
           else PowerSeries.coeff t
             (γ'
               x₀
@@ -114,7 +114,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
               (claimA2_hypotheses k h_gs))) := by
    sorry
 
-open BCIKS20AppendixA.ClaimA2 in
+open RationalFunctions.HenselNumerators in
 /-- Claim 5.9 from [BCIKS20].
 States that the solution `γ` is linear in the variable `Z`. -/
 lemma solution_gamma_is_linear_in_Z
@@ -124,7 +124,7 @@ lemma solution_gamma_is_linear_in_Z
     γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs)
       (natDegree_H_pos k (x₀ := x₀) (δ := δ) h_gs)
       (claimA2_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
-        BCIKS20AppendixA.polyToPowerSeries𝕃 _
+        RationalFunctions.polyToPowerSeries𝕃 _
           (
             (Polynomial.map Polynomial.C v₀) +
             (Polynomial.C Polynomial.X) * (Polynomial.map Polynomial.C v₁)
@@ -140,13 +140,13 @@ noncomputable def P (δ : ℚ) (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q 
     (Polynomial.C Polynomial.X) * (Polynomial.map Polynomial.C v₁)
   )
 
-open BCIKS20AppendixA.ClaimA2 in
+open RationalFunctions.HenselNumerators in
 /-- The extracted `P` from Claim 5.9 equals `γ`. -/
 lemma gamma_eq_P (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   γ' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs)
     (natDegree_H_pos k (x₀ := x₀) (δ := δ) h_gs)
     (claimA2_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
-  BCIKS20AppendixA.polyToPowerSeries𝕃 _
+  RationalFunctions.polyToPowerSeries𝕃 _
     (P k δ x₀ h_gs) :=
   Classical.choose_spec
     (Classical.choose_spec (solution_gamma_is_linear_in_Z k (δ := δ) (x₀ := x₀) h_gs))

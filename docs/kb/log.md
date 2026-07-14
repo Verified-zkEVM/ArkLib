@@ -128,4 +128,4 @@ list-decoding branch.
 Updated `ArkLib/Data/Polynomial/RationalFunctions.lean` with an explicit function-field `T`
 variable, regular-element closure lemmas, and a concrete low-degree `ξ` regularity helper.
 The Appendix A rational-functions audit now records this as the next denominator-clearing layer
-toward `ClaimA2.ξ_regular`.
+toward `RationalFunctions.HenselNumerators.ξ_regular`.

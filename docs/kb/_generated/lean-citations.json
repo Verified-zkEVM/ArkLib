@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 74,
+    "files_with_citations": 81,
     "keys_cited": 25,
-    "total_citation_edges": 104
+    "total_citation_edges": 111
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -194,7 +194,28 @@
     "ArkLib/Data/Polynomial/Indicator.lean": [
       "ACFY24"
     ],
-    "ArkLib/Data/Polynomial/RationalFunctions.lean": [
+    "ArkLib/Data/Polynomial/RationalFunctions/FunctionField.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Hensel.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Sequence.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Setup.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Weight.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/Lifts.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/RationalRootVanishing.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean": [
       "BCIKS20"
     ],
     "ArkLib/Data/Polynomial/Trivariate.lean": [
@@ -313,7 +334,14 @@
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ReedSolomonGap.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/WeightedAgreement.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean",
-      "ArkLib/Data/Polynomial/RationalFunctions.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/FunctionField.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Hensel.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Sequence.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Setup.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Weight.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/Lifts.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/RationalRootVanishing.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean",
       "ArkLib/Data/Polynomial/Trivariate.lean",
       "ArkLib/ProofSystem/BatchedFri/Security.lean",
       "ArkLib/ProofSystem/Stir/ProximityGap.lean",
