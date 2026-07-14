@@ -198,11 +198,13 @@ def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool 
 elements have centered coefficients in `[⌈-b/2⌉, ⌈b/2⌉-1]`; c6 instead uses the symmetric ball
 `‖·‖∞ ≤ γ`, so `relOut` is *not* pointwise identical to Eq. (20) — it is the strictly weaker
 (larger) relation obtained by replacing the `S_b` box with its enclosing `ℓ∞` ball. For any
-`γ ≥ ⌈b/2⌉` the paper's `S_b` box is **contained** in c6's ball, hence `{Eq. (20)-valid
+`γ ≥ ⌊b/2⌋` the paper's `S_b` box is **contained** in c6's ball, hence `{Eq. (20)-valid
 transcripts} ⊆ relOut`: every honest/paper-accepted transcript is `relOut`-valid, so the CWSS
-theorem below covers the paper's verifier. This generalized `relOut` (rather than an exact `S_b`
-predicate, which is intentionally not defined) is the reduction's intended output relation, and is
-the relation downstream Hachi code should cite. No challenge-norm checks appear (the challenge
+theorem below covers the paper's verifier. This box→ball containment is formalized faithfully just
+below: the paper's exact `S_b` output relation is `paperRelOut` (built from the box `InSb`, Hachi
+[NOZ26] §2.1), and the inclusion is `paperRelOut_subset_relOut`. This generalized `relOut` is the
+reduction's intended output relation and the one downstream Hachi code should cite. No
+challenge-norm checks appear (the challenge
 TYPE carries `‖cᵢ‖₁ ≤ ω`), and no `‖z‖₂²` check appears (`‖z‖∞ ≤ …` is derived downstream from
 c6's `‖ẑ‖∞ ≤ γ` via the `J`-recomposition norm lemma, `Gadget/Norms.lean`) — both exactly as in the
 paper. -/
@@ -231,6 +233,88 @@ def relOut (base : ZMod q) (ω γ : ℕ) :
       vecLInftyNorm Φ resp.carrierDec ≤ γ ∧
       vecLInftyNorm Φ (PolyVec.flattenBlocks resp.innerDec) ≤ γ ∧
       vecLInftyNorm Φ resp.zDec ≤ γ }
+
+/-! ### The paper's exact `S_b` range check and the `paperRelOut ⊆ relOut` containment
+
+`relOut` relaxes Eq. (20)'s `S_b` box (Hachi [NOZ26] §2.1) to a symmetric `ℓ∞` ball. Here we
+formalize that box faithfully (`InSb`) and prove that the paper's exact output relation
+`paperRelOut` is contained in `relOut`, so the Lemma 8 CWSS theorem covers the paper's verifier. -/
+
+/-- **The paper's balanced-digit box `S_β`** (Hachi [NOZ26] §2.1, p. 9): a ring element lies in
+`S_β` when every centered coefficient (its `ZMod.valMinAbs` representative) is in the box
+`[⌈-β/2⌉, ⌈β/2⌉-1]`. In `ℕ`/`ℤ` arithmetic these endpoints are `⌈-β/2⌉ = -(β/2)` and
+`⌈β/2⌉-1 = (β+1)/2 - 1` (both `/` are `Nat` division). This is exactly the set the Figure 3
+verifier checks in Eq. (20) (`(ŵ, t̂, ẑ) ∈ S_b`). -/
+def InSb (β : ℕ) (a : Rq Φ) : Prop :=
+  ∀ k, k < Φ.φ.natDegree →
+    -((β / 2 : ℕ) : ℤ) ≤ (a.1.coeff k).valMinAbs ∧
+      (a.1.coeff k).valMinAbs ≤ (((β + 1) / 2 : ℕ) : ℤ) - 1
+
+/-- Vector version of `InSb`: every entry lies in the box `S_β`. -/
+def vecInSb (β : ℕ) {cols : ℕ} (z : PolyVec (Rq Φ) cols) : Prop := ∀ i, InSb Φ β (z i)
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Box ⊆ ball.** An `S_β` ring element has centered `ℓ∞` norm `≤ γ` for any `γ ≥ ⌊β/2⌋`: the box
+`[⌈-β/2⌉, ⌈β/2⌉-1]` has maximum centered magnitude `⌊β/2⌋ = β/2` (for both parities of `β`). -/
+theorem lInftyNorm_le_of_InSb {β γ : ℕ} (hγ : β / 2 ≤ γ) {a : Rq Φ} (h : InSb Φ β a) :
+    Rq.lInftyNorm Φ a ≤ γ := by
+  unfold Rq.lInftyNorm
+  refine Finset.sup_le fun k hk => ?_
+  obtain ⟨hlo, hhi⟩ := h k (Finset.mem_range.mp hk)
+  omega
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Vector box ⊆ ball: `vecInSb β z → vecLInftyNorm z ≤ γ` for any `γ ≥ ⌊β/2⌋`. -/
+theorem vecLInftyNorm_le_of_vecInSb {β γ cols : ℕ} (hγ : β / 2 ≤ γ)
+    {z : PolyVec (Rq Φ) cols} (h : vecInSb Φ β z) : vecLInftyNorm Φ z ≤ γ := by
+  unfold vecLInftyNorm
+  exact Finset.sup_le fun i _ => lInftyNorm_le_of_InSb Φ hγ (h i)
+
+/-- **`paperRelOut` — the Figure 3 / Eq. (20) verifier verbatim.** Identical to `relOut` except the
+c6 range checks are the paper's exact `S_b` box membership (`vecInSb`, Hachi [NOZ26] §2.1) instead
+of the symmetric `ℓ∞` ball. This is the relation the Hachi verifier actually checks; rows c1–c5
+mirror `relOut` verbatim (only c6 differs). -/
+def paperRelOut (base : ZMod q) (ω b : ℕ) :
+    Set ((QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
+          CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) ×
+         QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :=
+  { p | match p with
+    | ((stmt, v, chals), resp) =>
+      let c : PolyVec (Rq Φ) (2 ^ r) := fun i => (chals i).val
+      let z : PolyVec (Rq Φ) ((2 ^ m) * messageDigits) :=
+        Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ resp.zDec
+      -- c1–c5: the linear system, identical to `relOut`
+      Simple.commit Φ stmt.pp.dMatrix resp.carrierDec = v ∧
+      Simple.commit Φ stmt.pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
+      dot stmt.bvec (gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ resp.carrierDec) = stmt.y ∧
+      Hachi.tensorG1 Φ base messageDigits c resp.carrierDec =
+        dot stmt.avec (gadgetMatrix Φ base (2 ^ m) messageDigits *ᵥ z) ∧
+      Hachi.tensorG Φ base innerRows innerDigits c resp.innerDec =
+        stmt.pp.innerMatrix *ᵥ z ∧
+      -- c6: the paper's exact `S_b` box (Eq. (20)'s `(ŵ, t̂, ẑ) ∈ S_b`)
+      vecInSb Φ b resp.carrierDec ∧
+      vecInSb Φ b (PolyVec.flattenBlocks resp.innerDec) ∧
+      vecInSb Φ b resp.zDec }
+
+omit [NeZero q] in
+/-- **`paperRelOut ⊆ relOut`** — the paper-to-code containment (the reviewer's `paper_relOut ⊆
+relOut`). Every transcript the Figure 3 verifier accepts (Eq. (20), `(ŵ, t̂, ẑ) ∈ S_b`) is accepted
+by ArkLib's generalized `relOut` at any range `γ ≥ ⌊b/2⌋`: rows c1–c5 pass through verbatim, and
+each `S_b` box check (`vecInSb b`) implies the ball check `vecLInftyNorm ≤ γ` via
+`vecLInftyNorm_le_of_vecInSb`. In particular at the paper's own `γ := b` (`b ≥ ⌊b/2⌋`) this shows
+the Lemma 8 CWSS theorem (`quadEval_coordinateWiseSpecialSound`) covers the paper's verifier. -/
+theorem paperRelOut_subset_relOut (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ : b / 2 ≤ γ) :
+    paperRelOut Φ (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (zDigits := zDigits) (m := m) (r := r)
+        base ω b
+      ⊆ relOut Φ (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (zDigits := zDigits) (m := m) (r := r)
+        base ω γ := by
+  rintro ⟨⟨stmt, v, chals⟩, resp⟩ ⟨h1, h2, h3, h4, h5, hb1, hb2, hb3⟩
+  exact ⟨h1, h2, h3, h4, h5,
+    vecLInftyNorm_le_of_vecInSb Φ hγ hb1,
+    vecLInftyNorm_le_of_vecInSb Φ hγ hb2,
+    vecLInftyNorm_le_of_vecInSb Φ hγ hb3⟩
 
 /-- **`relIn` — Hachi Lemma 8's extraction disjunction**: a weak `VerifiedOpening` for `u` that is
 also eval-consistent (Eq. 15), or a Module-SIS solution for `B`, or one for `D`. The `.opening`

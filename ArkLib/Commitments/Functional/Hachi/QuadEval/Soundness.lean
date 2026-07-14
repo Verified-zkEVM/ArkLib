@@ -431,10 +431,12 @@ messageDigits` and `κ = 2ω`.
 generalized relation and exposes `(βSq, γ, κ)` as free parameters: `βSq = quadEvalBetaSq γ b …` is
 a squared-`ℓ₂` bound on the scaled blocks (the shape `VerifiedOpening` records), `γ` is the
 symmetric-ball range bound of c6, and `κ = 2ω`. Hachi Lemma 8 fixes the specific triple
-`(β̄, ω̄, γ̄) = (2·bᵗ, 2ω, b)`; instantiating `γ := b` recovers the paper's `S_b`/weak-opening
-contract — the `β̄ = 2·bᵗ` bound up to the documented constant-2 slack (see `quadEvalZL2SqBound`).
-No exact-`S_b` specialization theorem is proved here: the generalized statement is deliberate and,
-via the `relOut` containment, already covers the paper's verifier.
+`(β̄, ω̄, γ̄) = (2·bᵗ, 2ω, b)`. Instantiating `γ := b` matches `γ̄ = b` and `ω̄ = 2ω` exactly, but
+**not** `β̄`: ArkLib's `VerifiedOpening` records a squared-`ℓ₂` bound `βSq` on the scaled blocks
+(not the paper's `ℓ₂`/`ℓ∞` value `2·bᵗ`), a deliberate modeling choice (see `quadEvalZL2SqBound`).
+That `γ := b` instantiation is the named corollary `quadEval_coordinateWiseSpecialSound_paperParams`
+below. The paper's exact `S_b`-box output relation is `QuadEval/Reduction.paperRelOut`, with the
+`paperRelOut ⊆ relOut` containment proved as `QuadEval/Reduction.paperRelOut_subset_relOut`.
 
 Assembled by `coordinateWiseSpecialSound_of_mkWitness` (`SingleRound.lean`), which discharges
 every tree/extractor/guard obligation generically; the whole of Hachi Lemma 8 thereby reduces
@@ -455,6 +457,30 @@ theorem quadEval_coordinateWiseSpecialSound {ι : Type} {oSpec : OracleSpec ι} 
     (buildWitness 𝓜(q, α) (b : ZMod q))
     (fun stmtIn v fam resp hbranch hstar =>
       buildWitness_mem_relIn hq5 hκ hτ stmtIn v fam resp hbranch hstar)
+
+/-- **Paper-parameter instantiation of Hachi Lemma 8** — the named bridge to the paper's
+weak-opening contract. This is `quadEval_coordinateWiseSpecialSound` specialized to the paper's
+range `γ := b`. Two of the paper's three Lemma 8 bounds match **exactly**: `γ̄ = b` and `ω̄ = 2ω`.
+The third does **not**: the paper's `β̄ = 2·bᵗ` (an `ℓ₂`/`ℓ∞` bound on `‖c̄ᵢsᵢ‖`) is replaced by
+ArkLib's `βSq = quadEvalBetaSq b b zDigits (deg φ) m messageDigits`, a *squared-`ℓ₂`* bound on the
+scaled blocks carrying extra `2ᵐ·δ·(deg φ)` dimensional factors — a deliberate `VerifiedOpening`
+modeling choice, not a paper-faithful value (see `quadEvalZL2SqBound`). Later binding code should
+cite this entry point; the general-`γ` theorem above is the intentional ArkLib generalization, and
+`QuadEval/Reduction.paperRelOut_subset_relOut` proves the `paper ⊆ code` containment on the output
+relation (for `b / 2 ≤ γ`, in particular `γ := b`). -/
+theorem quadEval_coordinateWiseSpecialSound_paperParams {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (hq5 : q % 8 = 5) {b ω : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
+    (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
+        (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (m := m)
+        (r := r)).coordinateWiseSpecialSound init impl
+      (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
+        (C := ShortChallenge 𝓜(q, α) ω) (r := r))
+      (relIn 𝓜(q, α) (b : ZMod q)
+        (quadEvalBetaSq b b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) b (2 * ω))
+      (relOut (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) ω b) :=
+  quadEval_coordinateWiseSpecialSound (γ := b) init impl hq5 hκ hτ
 
 -- An `OracleVerifier` wrapper is deliberately not included: it needs an `OracleInterface`
 -- instance for `Simple.Commitment` (a query-model design decision that does not exist in the
