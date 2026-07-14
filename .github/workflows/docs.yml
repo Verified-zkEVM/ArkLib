@@ -3,13 +3,18 @@ name: Build and Deploy Website to GitHub Pages
 on:
   push:
     branches: [main]
+  pull_request:
   workflow_dispatch:
 
+# Sets permissions of the GITHUB_TOKEN to allow deployment to GitHub Pages.
 permissions:
-  contents: read
-  pages: write
-  id-token: write
+  contents: read          # Read access to repository contents
+  pages: write            # Write access to GitHub Pages
+  id-token: write         # Required to upload the site to GitHub Pages
+  issues: write           # Allow the blueprint check to comment
+  pull-requests: write    # Allow the blueprint check to comment
 
+# Cancel previous runs if a new commit is pushed to the same branch or PR.
 concurrency:
   group: ${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
@@ -17,74 +22,43 @@ concurrency:
 jobs:
   build:
     runs-on: ubuntu-latest
+    name: Build and deploy blueprint + documentation
+    # doc-gen4 setting preserved from the previous workflow.
+    env:
+      DISABLE_EQUATIONS: 1
     steps:
-      - name: Checkout project
-        uses: actions/checkout@v7
-
-      # --- Lean and Blueprint Build ---
-      - name: Cache Lean dependencies
-        uses: actions/cache@v6
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@54081f138730dfa15788a46383842cd2f914a1be # v1.3.0
         with:
-          path: ./.lake
-          key: ${{ runner.os }}-lean-docs-${{ hashFiles('lake-manifest.json') }}
-          restore-keys: |
-            ${{ runner.os }}-lean-docs-
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
+      - name: Checkout project
+        uses: actions/checkout@08c6903cd8c0fde910a37f88322edcfb5dd907a8 # v5.0.0
+        with:
+          fetch-depth: 0 # Fetch all history for all branches and tags
 
       - name: Build the project
         uses: leanprover/lean-action@v1.5.0
         with:
+          build: true
           lint: false
-          use-github-cache: false
+          use-github-cache: true
 
-      - name: Build project documentation
-        run: lake build ArkLib:docs
-        env:
-          DISABLE_EQUATIONS: 1
-
-      - name: Build blueprint
-        uses: xu-cheng/texlive-action@v3
+      # Builds the API docs (doc-gen4, via an isolated docbuild project), the
+      # blueprint (leanblueprint pdf + web), checks the blueprint declarations
+      # exist in the Lean sources, and deploys everything to GitHub Pages.
+      # Deploy/upload steps are gated to `push` events by the action itself, so
+      # pull requests get a validation-only build of the blueprint and decls.
+      - name: Build blueprint and documentation
+        uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
         with:
-          docker_image: ghcr.io/xu-cheng/texlive-full:20231201
-          run: |
-            apk update
-            apk add --update make py3-pip git pkgconfig graphviz graphviz-dev gcc musl-dev
-            git config --global --add safe.directory $GITHUB_WORKSPACE
-            python3 -m venv env
-            source env/bin/activate
-            pip install --upgrade pip requests wheel
-            # PyGraphviz 2.0 fails to link Graphviz plugins in this Alpine-based image.
-            pip install pygraphviz==1.14
-            pip install leanblueprint
-            leanblueprint pdf
-            leanblueprint web
-
-      # --- Combine and Deploy ---
-      - name: Prepare deployment directory
-        run: |
-          mkdir _deploy
-          # Copy landing page and assets
-          cp -r home_page/* _deploy/
-          # Create docs directory and copy Lean docs
-          mkdir -p _deploy/docs
-          cp -r ./.lake/build/doc/* _deploy/docs/
-          # Copy blueprint
-          cp blueprint/print/print.pdf _deploy/blueprint.pdf
-          # Copy blueprint HTML
-          mkdir -p _deploy/blueprint
-          cp -r blueprint/web/* _deploy/blueprint/
-
-      - name: Upload artifact
-        uses: actions/upload-pages-artifact@v5
-        with:
-          path: ./_deploy
-
-  deploy:
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    runs-on: ubuntu-latest
-    needs: build
-    steps:
-      - name: Deploy to GitHub Pages
-        id: deployment
-        uses: actions/deploy-pages@v5
+          blueprint: true
+          homepage: home_page
+          build-page: false
+          references: blueprint/src/references.bib
