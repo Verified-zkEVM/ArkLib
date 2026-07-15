@@ -1,4 +1,4 @@
-\section{The Subfield $R_q^H \cong \F_{q^k}$ (Hachi Lemma 5)}\label{sec:hachi_subfield}
+\section{The Subfield \texorpdfstring{$R_q^H \cong \F_{q^k}$}{R\_q\^{}H ≅ F\_(q\^{}k)} (Hachi Lemma 5)}\label{sec:hachi_subfield}
 
 This section is a blueprint for the one missing piece of Hachi~\cite{NOZ26} \S3, Lemma~5:
 that the fixed subring $R_q^H$ is a \emph{field} and is isomorphic to $\F_{q^k}$.
@@ -56,7 +56,7 @@ The point of this decomposition is that \emph{the cardinality is already known}
 (Theorem~\ref{thm:card_fixedSubring}), so once field-ness is established we get the isomorphism
 \emph{without} any finite-field Galois-descent analysis of the $\sigma_{4k+1}$-action.
 
-\subsection{Reduction to ``$R_q^H$ is a field''}
+\subsection{Reduction to ``\texorpdfstring{$R_q^H$}{R\_q\^{}H} is a field''}
 
 The whole difficulty concentrates in field-ness; everything else is generic algebra reused from
 Mathlib.
@@ -107,7 +107,7 @@ $R_q^H \subseteq R_q^{\sigma_{-1}}$, immediate from the definition of $R_q^H$ as
 factor is $R_q^{\sigma_{-1}}$.
 \end{lemma}
 
-\subsection{The crux: $R_q^{\sigma_{-1}}$ is a field}
+\subsection{The crux: \texorpdfstring{$R_q^{\sigma_{-1}}$}{R\_q\^{}σ(-1)} is a field}
 
 This is the only genuinely new mathematics. The route is the \emph{two-factor} decomposition of
 $R_q$ that is special to $q \equiv 5 \pmod 8$.
@@ -153,7 +153,7 @@ irreducible. (Extracted from the two normalized factors; coprimality of the dist
 irreducibles via \texttt{Irreducible.coprime\_iff\_not\_dvd}.)
 \end{lemma}
 
-\subsection{The swap (Phase 4): $\sigma_{-1}$ and polynomial reversal}
+\subsection{The swap (Phase 4): \texorpdfstring{$\sigma_{-1}$}{σ(-1)} and polynomial reversal}
 
 The proof is gated by one fact: $\sigma_{-1}$ interchanges the two factors. Rather than build the
 explicit CRT product $K \times K$, we work directly in $S := \F_q[X]/(X^{2^\alpha}+1)$ via a
@@ -168,7 +168,7 @@ $2^{\alpha+1}-1$,
 \]
 Since $\mathrm{mk}\,X$ is a unit, $\sigma_{-1}$ carries the ideal $(\mathrm{mk}\,p)$ onto
 $(\mathrm{mk}\,p^{\mathrm{rev}})$. Proved from Mathlib's
-\texttt{Polynomial.eval₂\_reverse\_mul\_pow} at the point $\inv{(\mathrm{mk}\,X)} = (\mathrm{mk}\,X)^{c}$.
+\texttt{Polynomial.eval₂\_reverse\_mul\_pow} at the point $(\mathrm{mk}\,X)^{-1} = (\mathrm{mk}\,X)^{c}$.
 \end{lemma}
 
 \begin{lemma}[No self-reciprocal factor]\label{lem:no_selfReciprocal}
