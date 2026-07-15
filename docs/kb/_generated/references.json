@@ -1,5 +1,5 @@
 {
-  "count": 55,
+  "count": 54,
   "entries": {
     "ACFY24": {
       "authors": [
@@ -949,16 +949,16 @@
     },
     "NOZ26": {
       "authors": [
-        "Nguyen, Ngoc Khanh",
-        "O'Rourke, George",
-        "Zhang, Jiapeng"
+        "Ngoc Khanh Nguyen",
+        "George O'Rourke",
+        "Jiapeng Zhang"
       ],
-      "authors_text": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
+      "authors_text": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
       "doi": "",
       "entry_type": "misc",
       "fields": {
-        "author": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
-        "howpublished": "Cryptology ePrint Archive, Paper 2026/156",
+        "author": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/156",
         "title": "Hachi: Efficient Lattice-Based Multilinear Polynomial Commitments over Extension Fields",
         "url": "https://eprint.iacr.org/2026/156",
         "year": "2026"
