@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
+import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Weak-Binding Security of the Inner-Outer Ajtai Commitment
@@ -52,14 +53,6 @@ variable {innerRows messageRows messageDigits outerRows blocks innerDigits : Nat
 -- `InnerOuter.Arithmetic`, active here since this namespace is nested in `…InnerOuter`.
 
 /-! ## Generic helpers -/
-
-/-- Boolean monotonicity of `pure` outcome probability into a disjunction. -/
-theorem probOutput_pure_bool_le_or (win inner outer : Bool)
-    (h : win = true → inner = true ∨ outer = true) :
-    Pr[= true | ((pure win) : ProbComp Bool)] ≤
-      Pr[= true | ((pure inner) : ProbComp Bool)] +
-        Pr[= true | ((pure outer) : ProbComp Bool)] := by
-  cases win <;> cases inner <;> cases outer <;> simp_all
 
 /-- The first index where two function-vectors differ, if any. -/
 def firstDiff? {T : Type*} [DecidableEq T] {n : Nat} (x y : Fin n → T) : Option (Fin n) :=
