@@ -51,7 +51,7 @@ def StateRestoration.KnowledgeSoundness (oSpec : OracleSpec ι) (StmtIn WitOut :
 e.g. DSFS's `D2SAlgo^f`, which samples during lookahead/backtrack — needs **private coins**. We
 model
 those by appending an extra oracle `auxSpec` after the SR interface `oSpec + chal`, giving the
-**Option A** order `(oSpec + srChallengeOracle …) + auxSpec`.  This is exactly the natural ambient
+order `(oSpec + srChallengeOracle …) + auxSpec`.  This is exactly the natural ambient
 of a compiled prover `D2SAlgo^f` (`oSpec`, then the challenge oracle, then its sampled
 coins), so the
 coins are answered at game time by a sampler `auxImpl` appended to the standard SR handler (see
@@ -62,7 +62,7 @@ abbrev StateRestoration.SoundnessWithCoins (oSpec : OracleSpec ι) (StmtIn : Typ
   OracleComp ((oSpec + srChallengeOracle StmtIn pSpec) + auxSpec) (StmtIn × pSpec.Messages)
 
 /-- **Coin-bearing** state-restoration knowledge-soundness prover — the KS analog of
-`SoundnessWithCoins`, additionally outputting a witness.  Same **Option A** ambient
+`SoundnessWithCoins`, additionally outputting a witness.  Same ambient
 `(oSpec + srChallengeOracle …) + auxSpec`. -/
 abbrev StateRestoration.KnowledgeSoundnessWithCoins (oSpec : OracleSpec ι) (StmtIn WitOut : Type)
     {n : ℕ} (pSpec : ProtocolSpec n) {κ : Type} (auxSpec : OracleSpec κ) :=
@@ -133,7 +133,7 @@ def srSoundnessGame (P : Prover.StateRestoration.Soundness oSpec StmtIn pSpec) :
   let transcript ← messages.deriveTranscriptSR stmtIn
   return ⟨transcript, stmtIn⟩
 
-/-- The state-restoration soundness game for a **coin-bearing** prover (Option A ambient
+/-- The state-restoration soundness game for a **coin-bearing** prover (ambient
 `(oSpec + chal) + auxSpec`). Identical to `srSoundnessGame`, but the prover may sample private coins
 `auxSpec`; the transcript derivation (over `oSpec + chal`) is lifted into the coin-extended spec. -/
 def srSoundnessGameWithCoins {κ : Type} {auxSpec : OracleSpec κ}
@@ -157,7 +157,7 @@ def srKnowledgeSoundnessGame
   let transcript ← messages.deriveTranscriptSR stmtIn
   return ⟨transcript, stmtIn, witOut⟩
 
-/-- The state-restoration knowledge-soundness game for a **coin-bearing** prover (Option A ambient
+/-- The state-restoration knowledge-soundness game for a **coin-bearing** prover (ambient
 `(oSpec + chal) + auxSpec`).  KS analog of `srSoundnessGameWithCoins`. -/
 def srKnowledgeSoundnessGameWithCoins {κ : Type} {auxSpec : OracleSpec κ}
     (P : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec auxSpec) :
@@ -186,7 +186,7 @@ def soundness
     return (stmtIn, stmtOut))).run' (← init)
   ] ≤ srSoundnessError
 
-/-- The false-acceptance probability of the coin-bearing SR experiment (Option A) for a *fixed*
+/-- The false-acceptance probability of the coin-bearing SR experiment for a *fixed*
 prover `srProver`.  The handler is the standard SR handler `impl.addLift srChallengeQueryImpl'` with
 the coin sampler appended on the outside (`… .addLift auxImpl`) — answering `oSpec` by `impl`, the
 pre-sampled challenge oracle by `srChallengeQueryImpl'`, the prover's private coins `auxSpec` by
@@ -253,8 +253,9 @@ def knowledgeSoundness
             return (stmtIn, extractedWitIn?, stmtOut, witOut))).run' (← init)
     ] ≤ srKnowledgeSoundnessError
 
-/-- Coin-bearing SR knowledge-soundness experiment (Option A) for a *fixed* extractor + coin-prover.
-The prover lives over the Option-A ambient `(oSpec + chal) + auxSpec` (coins answered by `auxImpl`,
+/-- Coin-bearing SR knowledge-soundness experiment for a *fixed* extractor + coin-prover.
+The prover lives over the ambient `(oSpec + chal) + auxSpec`
+(coins answered by `auxImpl`,
 appended to the standard SR handler), but the *straightline* extractor and the verifier live over
 **base** `oSpec` (they make no coin queries) and are `liftComp`-ed into the game spec.
 This keeps the extractor a base-`oSpec` object — exactly what a downstream FS extractor (DSFS

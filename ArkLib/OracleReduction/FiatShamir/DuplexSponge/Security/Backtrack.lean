@@ -830,8 +830,9 @@ private def BacktrackSequence.assembleEncodedMessage
 /-- BackTrack §5.2 Step 4(a).iii.E — verifier squeeze window check.
 
 Char-based view: for a verifier squeeze starting at block `squeezeStart` of length
-`lvCur` blocks (= `lvCur · r` chars), consecutive squeeze blocks must agree on their
-rate segments — i.e. for each `k' ∈ [lvCur)`,
+`lvCur` blocks (= `lvCur · r` chars), the `lvCur - 1` *internal* transitions between
+consecutive squeeze blocks must agree on their rate segments — i.e. for each
+`k' ∈ [lvCur - 1)`,
   `s_{R,out, squeezeStart+k'}  =  s_{R,in, squeezeStart+k'+1}`. -/
 private def BacktrackSequence.checkSqueezeWindow
     {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -839,7 +840,7 @@ private def BacktrackSequence.checkSqueezeWindow
     (seq : BacktrackSequence trace state)
     (squeezeStart lvCur : Nat) : Bool := Id.run do
   let mut ok : Bool := true
-  for k' in List.range lvCur do
+  for k' in List.range (lvCur - 1) do
     let outIdx := squeezeStart + k'
     let inIdx := squeezeStart + 1 + k'
     match seq.outputState[outIdx]?, seq.inputState[inIdx]? with
@@ -976,15 +977,25 @@ private def BacktrackSequence.extractCandidate
           | some v => v
           | none => Vector.replicate (messageSize j) (0 : U)
       return some { roundIdx := i, stmt := seq.stmt, salt := salt, encodedMessages := msgs }
-    -- Step 4(a).iii.E — verifier squeeze window check via `checkSqueezeWindow`
-    -- on the range `[L_ptr(i)+L_P(i), L_ptr(i)+L_P(i)+L_V(i))` (CO25 Step 4(a).iii.E).
+    -- Step 4(a).iii.E — verifier squeeze window check via `checkSqueezeWindow`.
+    -- With a nonempty prover message, the first squeeze query is the final message input
+    -- block `L_ptr(i)+L_P(i)-1`.  An empty message has no such block: after `Absorb []`
+    -- resets the squeeze cursor, its first squeeze query is instead the next block
+    -- `L_ptr(i)+L_P(i)`.  In both cases, only the `L_V(i)-1` internal squeeze transitions
+    -- are rate-preservation handoffs.  This is the corrected semantic reading of CO25 Step E:
+    -- it checks real `out[j]` / `in[j+1]` handoffs, never a phantom input after the final
+    -- squeeze query.
     let L_V_i := pSpec.Lᵥᵢ i
-    if L_ptr + L_P_i + L_V_i < m_k_plus_1 then
-      if not (seq.checkSqueezeWindow (L_ptr + L_P_i) L_V_i) then
+    let squeezeStart := if 0 < L_P_i then L_ptr + L_P_i - 1 else L_ptr + L_P_i
+    -- The last internal handoff ends at the final squeeze query itself, so an exact fit of the
+    -- corrected window is sufficient.  The paper's strict guard was only needed for its shifted
+    -- comparison against a phantom post-squeeze input state.
+    if L_ptr + L_P_i + L_V_i <= m_k_plus_1 then
+      if not (seq.checkSqueezeWindow squeezeStart L_V_i) then
         return none -- E squeeze window check failed ⇒ remove from S_BT
     else
       -- Step 4(a).iii.F — neither D (exact fit) nor E (squeeze fits) applies.
-      -- Char-based view: `L_ptr(i) + L_P(i) < m_k + 1 < L_ptr(i) + L_P(i) + L_V(i) + 1`,
+      -- Char-based view: `L_ptr(i) + L_P(i) < m_k + 1 < L_ptr(i) + L_P(i) + L_V(i)`,
       -- so the chain is mid-squeeze with not enough blocks remaining ⇒ invalid.
       return none
   -- Exhausted all rounds without hitting Step D — sequence is invalid.

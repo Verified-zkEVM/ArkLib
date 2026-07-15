@@ -37,7 +37,7 @@ IP SR game ≤ κ             (IP SR-soundness/KS hypothesis)
 ```
 
 Steps 1–2 use `lemma_5_1`.  Step 3 (Hyb_4 = IP SR game) requires the
-**Fiat–Shamir lifting theorem** (Seam #2 from `Section6_plan.md`) — currently
+**Fiat–Shamir lifting theorem** — currently
 absent from `Implications.lean`.  See `SingleSalt.lean` for the single-salt
 version (`theorem_3_18_soundness`, `theorem_3_19_straightline_ks`), from which
 these theorems follow as corollaries.
@@ -1165,7 +1165,7 @@ noncomputable def ksFactKernel [Inhabited WitOut]
           (E_std result.1 (default : WitOut) result.2.2.1 trP trV).run
         pure (result.1, witIn?, some result.2.1, (default : WitOut))
 
-set_option maxHeartbeats 1000000 in
+set_option maxHeartbeats 400000 in
 -- The de-abort rewrite then `probEvent_bind_congr'` over the wide read-out tuple is
 -- elaboration-heavy, so the heartbeat budget is raised.
 omit [VCVCompatible Salt] in

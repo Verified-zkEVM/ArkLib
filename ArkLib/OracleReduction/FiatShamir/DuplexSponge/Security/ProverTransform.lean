@@ -5,6 +5,8 @@ Authors: Quang Dao, Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SCacheHistory
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SSynthesis
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceDataStructures
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
@@ -21,11 +23,8 @@ the on-sponge `Vector U δ` type.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
-
 namespace DuplexSpongeFS.ProverTransform
-
 open Backtrack Lookahead DSTraceStorage TraceTransform
-
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
@@ -33,50 +32,15 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {δ : Nat}
 
 local instance : Inhabited U := ⟨0⟩
-
 noncomputable section
 
-section D2SQueryState
-
-
+section D2SQueryHelpers
 variable [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type}
   {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
-
-/-- CO25 §5.4 Item 1 — Internal mutable state of the `D2SQuery` oracle wrapper.
-
-- `trace` (`tr`): ordered `h`/`p`/`p⁻¹` query-answer pairs (bullet 1).
-- `cacheP` (`Cache_p`): `(s_in, s_out)` pairs sorted by input, consumed by Item 4(c)i (bullet 2).
-- `trΔ` (`tr_∇`): dedup index over `trace` for `O(log N)` `inlu`/`outlu` (CO25 Def. 5.2; bullet 3).
-
-`gᵢ`-response consistency (paper Item 4(e)i) is **not** carried in this struct — it is
-provided by `D2SAlgo`'s `tr_i` memo at the bridge layer (`D2SAlgoMemo`, threaded through
-`d2sCodecBridgeImplMemo`). Keeping `tr_i` out of `D2SQuery` matches the paper's placement of
-the memo inside `D2SAlgo` (Item 3, lines 1066-1075), and keeps the §5.8 hybrid `D2SQuery`
-analysis (`d2sQueryImpl`) independent of the bridge memo. -/
-structure D2SQueryState where
-  -- `tr`: ordered `('h', 𝕩, s_C)` / `('p', s_in, s_out)` / `('p⁻¹', …)` pairs (§5.4 Item 1)
-  trace : QueryLog (duplexSpongeChallengeOracle StmtIn U) := []
-  -- `Cache_p`: `(s_in, s_out) ∈ Σ^{r+c} × Σ^{r+c}` sorted by input (§5.4 Item 1, bullet 2)
-  cacheP : List (CanonicalSpongeState U × CanonicalSpongeState U) := []
-  -- `tr_∇`: deduplicated index for `O(log N)` `inlu`/`outlu` lookups (CO25 Def. 5.2, §5.1)
-  trΔ : TraceNabla T_H T_P StmtIn U :=
-    ⟨TraceTableOps.empty, TraceTableOps.empty⟩
-  -- Invariant: every entry in `trΔ` appears in `trace`. Maintained by construction:
-  -- each step that appends to `trace` either leaves `trΔ` unchanged or adds an entry
-  -- that matches the new trace element. Required by `backTrack` (CO25 §5.2).
-  h_inv : trΔ.IsSubsetOfQueryLog trace
-  -- Phantom: auto-binds `δ` and `pSpec` as implicit struct params (matches the original
-  -- shape pre-`gMemo`-deletion, so `set { st with … }` resolves `MonadStateOf` cleanly).
-  _phantom : Option (BacktrackOutput
-    (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := none
-
-instance : Inhabited (D2SQueryState
-    (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  ⟨{ h_inv := TraceNabla.IsSubsetOfQueryLog_empty_nil }⟩
 
 /-- Executable approximation of Item 4(d)/(e) tuple-image branching, tightened with
 `BackTrack`-shape checks and challenge-block length sanity. -/
@@ -95,44 +59,16 @@ def backtrackOutputMessagesInImage
     let hlt : j.1 < out.roundIdx.1 := of_decide_eq_true (List.mem_filter.mp hj).2
     inImage j (out.encodedMessages ⟨j, hlt⟩)
 
-/-- CO25 §5.4 Items 4(d)/(e) — paper predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)`, decided as a
-`Serialize`-image check on the recovered encoded messages. -/
-private noncomputable def d2sInCodecImagePredicate
+/-- Executable Item-4(d)/(e) branch predicate, exposed so support proofs can name the
+algorithmic case split rather than rely on anonymous `split` hypotheses.  It is CO25 §5.4's
+predicate `∀ ι ∈ [i], α̂_ι ∈ Im(φ_ι)`, decided by `Serialize`-image checks on the encoded
+messages recovered by `BackTrack`. -/
+noncomputable def d2sInCodecImagePredicate
     (out : BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) : Bool :=
   backtrackOutputMessagesInImage
     (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
     (inImage := messageInSerializeImage (pSpec := pSpec) (U := U))
     (out := out)
-
-private def popCacheByInput
-    (cache : List (CanonicalSpongeState U × CanonicalSpongeState U))
-    (stateIn : CanonicalSpongeState U) :
-    Option (CanonicalSpongeState U × List (CanonicalSpongeState U × CanonicalSpongeState U)) := by
-  induction cache with
-  | nil =>
-      exact none
-  | cons pair rest ih =>
-      let (qIn, qOut) := pair
-      by_cases hEq : qIn = stateIn
-      · exact some (qOut, rest)
-      · match ih with
-        | none => exact none
-        | some (qOut', rest') => exact some (qOut', pair :: rest')
-
-private def chainPairsFrom
-    (start : CanonicalSpongeState U)
-    (rest : List (CanonicalSpongeState U)) :
-    List (CanonicalSpongeState U × CanonicalSpongeState U) :=
-  match rest with
-  | [] => []
-  | next :: tail => (start, next) :: chainPairsFrom next tail
-
-private def mkStateFromSegments
-    (rateSeg : Vector U SpongeSize.R)
-    (capSeg : Vector U SpongeSize.C) :
-    CanonicalSpongeState U :=
-  (Vector.append rateSeg capSeg).cast (by
-    simp [SpongeSize.R_plus_C_eq_N])
 
 /-- CO25 §5.4 — `𝒰(Σ)` realization of `Unit →ₒ U` in `ProbComp`; used by §5.4 fresh-sample
 branches (Items 2(b), 3(b), 4(c)iii, 4(e)iiiC). -/
@@ -141,7 +77,7 @@ def d2sUnitSampleImpl [SampleableType U] :
   fun
   | () => $ᵗ U
 
-end D2SQueryState
+end D2SQueryHelpers
 
 section D2SChallengePlusUnit
 
@@ -253,12 +189,15 @@ private def d2sSampleArrayExact :
       let ⟨xs, hxs⟩ ← d2sSampleArrayExact m
       pure ⟨xs.push u, by simp [hxs]⟩
 
-private def d2sSampleVector (m : Nat) :
-    OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
-      (Vector U m) := do
-  let ⟨xs, hxs⟩ ← d2sSampleArrayExact
-    (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m
-  pure ⟨xs, hxs⟩
+private def d2sSampleVector :
+    (m : Nat) →
+      OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+        (Vector U m)
+  | 0 => pure #v[]
+  | m + 1 => do
+      let xs ← d2sSampleVector m
+      let u ← d2sSampleUnit (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      pure (xs.push u)
 
 /-- CO25 §5.4 Item 2(b) — Sample `s_{C,out} ← 𝒰(Σ^c)`. -/
 def d2sSampleCapacity :
@@ -271,6 +210,219 @@ def d2sSampleState :
     OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
       (CanonicalSpongeState U) :=
   d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) SpongeSize.N
+
+private lemma d2sSampleVector_simulateQ_probEvent_eq
+    [SampleableType U]
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (m : ℕ) (P : Vector U m → Prop) :
+    Pr[ P |
+      simulateQ
+        (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+        (d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m)]
+      =
+    Pr[ P | ($ᵗ (Vector U m)) ] := by
+  classical
+  have hdist : ∀ x : Vector U m,
+      Pr[= x |
+        simulateQ
+          (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+          (d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m)]
+        =
+      Pr[= x | ($ᵗ (Vector U m)) ] := by
+    intro x
+    induction m with
+    | zero =>
+        have hx : x = #v[] := by
+          apply Vector.ext
+          intro i hi
+          omega
+        have hcard : Fintype.card (Vector U 0) = 1 := by
+          apply Fintype.card_eq_one_iff.mpr
+          refine ⟨#v[], ?_⟩
+          intro y
+          apply Vector.ext
+          intro i hi
+          omega
+        subst x
+        simp [d2sSampleVector, probOutput_uniformSample, hcard]
+    | succ m ih =>
+        have hpush : Function.Injective2 (Vector.push (α := U) (n := m)) := by
+          intro xs ys x y hxy
+          simp [Vector.push_eq_push.mp hxy]
+        rw [show
+          simulateQ
+              (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+              (d2sSampleVector
+                (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) (m + 1))
+            =
+          Vector.push <$>
+            simulateQ
+              (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+              (d2sSampleVector
+                (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m) <*>
+            ($ᵗ U) by
+          simp [d2sSampleVector, d2sSampleUnit, d2sUnitSampleImpl, monad_norm]]
+        rw [show ($ᵗ (Vector U (m + 1))) =
+          Vector.push <$> ($ᵗ (Vector U m)) <*> ($ᵗ U) by
+          rfl]
+        let xp : Vector U m := Vector.cast (by omega : m + 1 - 1 = m) x.pop
+        have hxpush : Vector.push xp x.back = x := by
+          dsimp [xp]
+          have h : m + 1 - 1 = m := by omega
+          cases h
+          exact Vector.push_pop_back x
+        rw [← hxpush]
+        erw [probOutput_seq_map_eq_mul_of_injective2 _ _ _ hpush xp x.back,
+          probOutput_seq_map_eq_mul_of_injective2 _ _ _ hpush xp x.back,
+          ih (fun _ => True) xp]
+  rw [probEvent_eq_tsum_ite, probEvent_eq_tsum_ite]
+  apply tsum_congr
+  intro x
+  rw [hdist x]
+
+/-- Event-level distribution of CO25 §5.4 Item 2(b):
+sampling `s_{C,out} ← 𝒰(Σ^c)` through the D2S unit sampler is uniform over capacities. -/
+lemma d2sSampleCapacity_simulateQ_probEvent_eq
+    [SampleableType U]
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (P : Vector U SpongeSize.C → Prop) :
+    Pr[ P |
+      simulateQ
+        (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+        (d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))]
+      =
+    Pr[ P | ($ᵗ (Vector U SpongeSize.C)) ] := by
+  unfold d2sSampleCapacity
+  exact d2sSampleVector_simulateQ_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) gImpl SpongeSize.C P
+
+/-- Event-level distribution of CO25 §5.4 Items 3(b)/4(d)ii:
+sampling `s ← 𝒰(Σ^{r+c})` through the D2S unit sampler is uniform over sponge states. -/
+lemma d2sSampleState_simulateQ_probEvent_eq
+    [SampleableType U]
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (P : CanonicalSpongeState U → Prop) :
+    Pr[ P |
+      simulateQ
+        (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+        (d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))]
+      =
+    Pr[ P | ($ᵗ (CanonicalSpongeState U)) ] := by
+  unfold d2sSampleState CanonicalSpongeState
+  exact d2sSampleVector_simulateQ_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) gImpl SpongeSize.N P
+
+/-- `OptionT`-lifted form of `d2sSampleCapacity_simulateQ_probEvent_eq`.
+
+The concrete sigma Lemma-5.8 experiment runs `D2SQuery` in `OptionT ProbComp`; when the underlying
+query implementation is just a monad-lift of the `ProbComp` implementation, capacity sampling
+still has the uniform distribution, wrapped in `some`. -/
+lemma d2sSampleCapacity_simulateQ_liftTarget_probEvent_eq
+    [SampleableType U]
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (P : Option (Vector U SpongeSize.C) → Prop) :
+    Pr[ P |
+      (simulateQ
+        ((gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)).liftTarget
+          (OptionT ProbComp))
+        (d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run]
+      =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (Vector U SpongeSize.C)) ] := by
+  rw [simulateQ_liftTarget]
+  let impl := gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)
+  let comp := simulateQ impl
+    (d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+  have hlift : (liftM comp : OptionT ProbComp (Vector U SpongeSize.C)).run = some <$> comp := rfl
+  change Pr[ P | (liftM comp : OptionT ProbComp (Vector U SpongeSize.C)).run] =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (Vector U SpongeSize.C)) ]
+  rw [hlift]
+  rw [probEvent_map]
+  dsimp [comp, impl]
+  exact d2sSampleCapacity_simulateQ_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) gImpl (fun sampled => P (some sampled))
+
+/-- `OptionT`-lifted form of `d2sSampleState_simulateQ_probEvent_eq`. -/
+lemma d2sSampleState_simulateQ_liftTarget_probEvent_eq
+    [SampleableType U]
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (P : Option (CanonicalSpongeState U) → Prop) :
+    Pr[ P |
+      (simulateQ
+        ((gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)).liftTarget
+          (OptionT ProbComp))
+        (d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run]
+      =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (CanonicalSpongeState U)) ] := by
+  rw [simulateQ_liftTarget]
+  let impl := gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)
+  let comp := simulateQ impl
+    (d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+  have hlift : (liftM comp : OptionT ProbComp (CanonicalSpongeState U)).run = some <$> comp := rfl
+  change Pr[ P | (liftM comp : OptionT ProbComp (CanonicalSpongeState U)).run] =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (CanonicalSpongeState U)) ]
+  rw [hlift]
+  rw [probEvent_map]
+  dsimp [comp, impl]
+  exact d2sSampleState_simulateQ_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) gImpl (fun sampled => P (some sampled))
+
+/-- Concrete `D_Σ` form of the `OptionT`-lifted capacity sampler lemma. -/
+lemma d2sSampleCapacity_simulateQ_sigma_probEvent_eq
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    (P : Option (Vector U SpongeSize.C) → Prop) :
+    Pr[ P |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run]
+      =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (Vector U SpongeSize.C)) ] := by
+  have himpl :
+      ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        =
+      (((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g +
+        ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)).liftTarget
+          (OptionT ProbComp)) := by
+    funext q
+    cases q <;> rfl
+  rw [himpl]
+  exact d2sSampleCapacity_simulateQ_liftTarget_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+    ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g) P
+
+/-- Concrete `D_Σ` form of the `OptionT`-lifted state sampler lemma. -/
+lemma d2sSampleState_simulateQ_sigma_probEvent_eq
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    (P : Option (CanonicalSpongeState U) → Prop) :
+    Pr[ P |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run]
+      =
+    Pr[ fun sampled => P (some sampled) | ($ᵗ (CanonicalSpongeState U)) ] := by
+  have himpl :
+      ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        =
+      (((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g +
+        ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)).liftTarget
+          (OptionT ProbComp)) := by
+    funext q
+    cases q <;> rfl
+  rw [himpl]
+  exact d2sSampleState_simulateQ_liftTarget_probEvent_eq
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+    ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g) P
 
 /-- CO25 §5.4 Item 4(e)iiiC — Sample `s_C^{(0)}, …, s_C^{(k-1)} ← 𝒰(Σ^c)`. -/
 def d2sSampleCapacityList :
@@ -340,11 +492,30 @@ variable {T_H : Type} {T_P : Type}
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
 
+/-- State update for CO25 §5.4 Item 2(b/c): after a hash-cache miss, add the sampled hash
+answer to `tr_∇.h` and append the corresponding hash entry to the simulator trace. -/
+def d2sHashMissState
+    (stmt : StmtIn) (sampled : Vector U SpongeSize.C)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+  let trace' := st.trace ++ [⟨dsHashQuery stmt, sampled⟩]
+  let trΔ' : TraceNabla T_H T_P StmtIn U :=
+    { st.trΔ with h := TraceTableOps.add st.trΔ.h stmt sampled }
+  let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+    TraceNabla.IsSubsetOfQueryLog_append_hash st.h_inv stmt sampled
+  let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+    TraceNabla.MirrorsQueryLog_append_hash_add st.h_mirror stmt sampled
+  { st with trace := trace', trΔ := trΔ', h_inv := h_inv', h_mirror := h_mirror' }
+
 /-- CO25 §5.4 Item 2 — hash-oracle (`h`) branch of `D2SQuery`.
 
 Paper steps (lines 1039-1043): lookup `tr_∇.h.inlu(𝕩)`; on `⟂`, sample `s_{C,out} ← 𝒰(Σ^c)` and
 call `tr_∇.h.add(𝕩, s_{C,out})`; always append `('h', 𝕩, s_{C,out})` to `tr`. -/
-private def d2sHandleHashQuery
+def d2sHandleHashQuery
     (stmt : StmtIn) :
     StateT
       (D2SQueryState
@@ -354,32 +525,32 @@ private def d2sHandleHashQuery
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
       (Vector U SpongeSize.C) := do
   let st ← get
-  match TraceTableOps.inlu st.trΔ.h stmt with
+  match hLookup : TraceTableOps.inlu st.trΔ.h stmt with
   -- Item 2(a) — cache hit: `s_{C,out} := tr_∇.h.inlu(𝕩)`.
   | some capSeg =>
       let trace' := st.trace ++ [⟨dsHashQuery stmt, capSeg⟩]
       let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' := TraceNabla.IsSubsetOfQueryLog_append_any
         st.h_inv ⟨dsHashQuery stmt, capSeg⟩
-      set { st with trace := trace', h_inv := h_inv' }
+      let h_mem : (stmt, capSeg) ∈ TraceTableOps.entries st.trΔ.h :=
+        TraceTableOps.mem_entries_of_inlu_eq_some hLookup
+      let h_mirror' : st.trΔ.MirrorsQueryLog trace' :=
+        TraceNabla.MirrorsQueryLog_append_hash_existing st.h_mirror stmt capSeg h_mem
+      set { st with trace := trace', h_inv := h_inv', h_mirror := h_mirror' }
       return capSeg
   | none =>
       -- Item 2(b) — cache miss: `s_{C,out} ←$ 𝒰(Σ^c)`; then `tr_∇.h.add(𝕩, s_{C,out})`.
       let sampled ← StateT.lift <| OptionT.lift <| d2sSampleCapacity (U := U) (StmtIn := StmtIn)
         (pSpec := pSpec) (δ := δ)
       -- Item 2(c) — append `('h', 𝕩, s_{C,out})` to `tr`; return `s_{C,out}`.
-      let trace' := st.trace ++ [⟨dsHashQuery stmt, sampled⟩]
-      let trΔ' : TraceNabla T_H T_P StmtIn U :=
-        { st.trΔ with h := TraceTableOps.add st.trΔ.h stmt sampled }
-      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
-        TraceNabla.IsSubsetOfQueryLog_append_hash st.h_inv stmt sampled
-      set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+      set (d2sHashMissState (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stmt sampled st)
       return sampled
 
 /-- CO25 §5.4 Item 3 — inverse-permutation (`p⁻¹`) branch of `D2SQuery`.
 
 Paper steps (lines 1044-1046): lookup `tr_∇.p.outlu(s_out)`; on `⟂`, sample `s_in ← 𝒰(Σ^{r+c})`
 and call `tr_∇.p.add(s_in, s_out)`; always append `('p⁻¹', s_out, s_in)` to `tr`. -/
-private def d2sHandleInversePermQuery
+def d2sHandleInversePermQuery
     (stateOut : CanonicalSpongeState U) :
     StateT
       (D2SQueryState
@@ -389,13 +560,17 @@ private def d2sHandleInversePermQuery
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
       (CanonicalSpongeState U) := do
   let st ← get
-  match TraceTableOps.outlu st.trΔ.p stateOut with
+  match hLookup : TraceTableOps.outlu st.trΔ.p stateOut with
   -- Item 3(a) — reverse cache hit: `s_in := tr_∇.p.outlu(s_out)`.
   | some recovered =>
       let trace' := st.trace ++ [⟨dsPermInvQuery stateOut, recovered⟩]
       let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
         TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermInvQuery stateOut, recovered⟩
-      set { st with trace := trace', h_inv := h_inv' }
+      let h_mem : (recovered, stateOut) ∈ TraceTableOps.entries st.trΔ.p :=
+        TraceTableOps.mem_entries_of_outlu_eq_some hLookup
+      let h_mirror' : st.trΔ.MirrorsQueryLog trace' :=
+        TraceNabla.MirrorsQueryLog_append_perm_inv_existing st.h_mirror recovered stateOut h_mem
+      set { st with trace := trace', h_inv := h_inv', h_mirror := h_mirror' }
       return recovered
   | none =>
       -- Item 3(b) — miss: `s_in ←$ 𝒰(Σ^{r+c})`; then `tr_∇.p.add(s_in, s_out)`.
@@ -407,13 +582,15 @@ private def d2sHandleInversePermQuery
         { st.trΔ with p := TraceTableOps.add st.trΔ.p sampled stateOut }
       let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
         TraceNabla.IsSubsetOfQueryLog_append_perm_inv st.h_inv sampled stateOut
-      set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+      let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+        TraceNabla.MirrorsQueryLog_append_perm_inv_add st.h_mirror sampled stateOut
+      set { st with trace := trace', trΔ := trΔ', h_inv := h_inv', h_mirror := h_mirror' }
       return sampled
 
 /-- CO25 §5.4 Item 4(c) — `BackTrack` returned `.noResult`.
 
 Cache lookup (Item 4(c)i) → `tr_∇.p.inlu` (Item 4(c)ii) → fresh sampling fallback. -/
-private def d2sHandleBacktrackNoResult
+def d2sHandleBacktrackNoResult
     (stateIn : CanonicalSpongeState U) :
     StateT
       (D2SQueryState
@@ -424,30 +601,38 @@ private def d2sHandleBacktrackNoResult
       (CanonicalSpongeState U) := do
   -- find `s_out` for `s_in` from `Cache_p -> inlu -> sample`
   let st ← get
-  match popCacheByInput (U := U) st.cacheP stateIn with
-  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`. The paper adds to
-  -- `tr_∇.p` ONLY in Item 4(c)iii (its Eq. 47 consistency list excludes 4(c)i): a
-  -- Cache_p-popped answer must NOT enter `tr_∇`, so a later repeat `p`-query on the same
-  -- `s_in` falls through to 4(c)iii and can answer inconsistently — exactly the `E_func`
-  -- event that Lemma 5.8 bounds via the `Cache_p ∩ tr` count (CO25 Eqs. 31–33).
-  | some (cachedOut, cacheTail) =>
+  match popCacheEntryByInput (U := U) st.cacheP stateIn with
+  -- Item 4(c)i — cache pop: `(s_out, Cache_p') := pop(Cache_p, s_in)`.
+  --
+  -- `tr_∇` mirrors the forward pairs recorded in `tr` (with set semantics), so
+  -- the consumed cache pair must be inserted here as well.  This does *not* change the
+  -- cache-first priority: when a cached squeeze chunk conflicts with an existing `tr_∇` pair,
+  -- this branch still returns the cached value and the forward `E_func` event accounts for it
+  -- through the `Cache_p ∩ tr` term in CO25 Eqs. (31)--(33).
+  -- It does ensure that a later `p⁻¹` lookup sees the pair just recorded, rather than sampling a
+  -- fresh incompatible preimage.  This correction is needed by the Lemma 5.8 first-witness
+  -- analysis.
+  | some (cachedEntry, cacheTail) =>
+      let cachedOut := cachedEntry.stateOut
       -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
       let trace' := st.trace ++ [⟨dsPermQuery stateIn, cachedOut⟩]
-      let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
-        TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, cachedOut⟩
-      set { st with trace := trace', cacheP := cacheTail, h_inv := h_inv' }
+      let trΔ' : TraceNabla T_H T_P StmtIn U :=
+        { st.trΔ with p := TraceTableOps.insert st.trΔ.p stateIn cachedOut }
+      let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
+        TraceNabla.IsSubsetOfQueryLog_insert_perm st.h_inv stateIn cachedOut
+      let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+        TraceNabla.MirrorsQueryLog_append_perm_insert st.h_mirror stateIn cachedOut
+      let st' : D2SQueryState
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+        ⟨trace', cacheTail,
+          st.cacheHistory ++ [⟨cachedEntry, st.trace.length, st.trace⟩],
+          trΔ', h_inv', h_mirror',
+          st._phantom⟩
+      set st'
       return cachedOut
   | none =>
-      match TraceTableOps.inlu st.trΔ.p stateIn with
-      -- Item 4(c)ii — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
-      | some recovered =>
-          -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
-          let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
-          let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
-            TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
-          set { st with trace := trace', h_inv := h_inv' }
-          return recovered
-      | none =>
+      if hLookupNone : TraceTableOps.inlu st.trΔ.p stateIn = none then
           -- Item 4(c)iii — fresh sample: `s_out ←$ 𝒰(Σ^{r+c})`; `tr_∇.p.add(s_in, s_out)`.
           let sampledOut ← StateT.lift <| OptionT.lift <|
             d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
@@ -457,15 +642,36 @@ private def d2sHandleBacktrackNoResult
             { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
           let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
             TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
-          set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+          let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+            TraceNabla.MirrorsQueryLog_append_perm_add st.h_mirror stateIn sampledOut
+          set { st with trace := trace', trΔ := trΔ', h_inv := h_inv', h_mirror := h_mirror' }
           return sampledOut
+      else
+          -- Item 4(c)ii — forward cache hit: `s_out := tr_∇.p.inlu(s_in)`.
+          let hExists :
+              ∃ recovered : CanonicalSpongeState U,
+                TraceTableOps.inlu st.trΔ.p stateIn = some recovered :=
+            Option.ne_none_iff_exists'.mp hLookupNone
+          let recovered := Classical.choose hExists
+          have hLookup : TraceTableOps.inlu st.trΔ.p stateIn = some recovered :=
+            Classical.choose_spec hExists
+          -- Item 4(f) — append `('p', s_in, s_out)` to `tr` (shared across 4(c)/(d)/(e)).
+          let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
+          let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
+            TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
+          let h_mem : (stateIn, recovered) ∈ TraceTableOps.entries st.trΔ.p :=
+            TraceTableOps.mem_entries_of_inlu_eq_some hLookup
+          let h_mirror' : st.trΔ.MirrorsQueryLog trace' :=
+            TraceNabla.MirrorsQueryLog_append_perm_existing st.h_mirror stateIn recovered h_mem
+          set { st with trace := trace', h_inv := h_inv', h_mirror := h_mirror' }
+          return recovered
 
 /-- CO25 §5.4 Item 4(e)iii.B — synthesize `s_out` from the first rate block and chain the
 remaining rate blocks into `Cache_p` extensions.
 
 Parses `ρ̂_i ‖ z` as exactly `L_V(i)` rate segments: the first becomes the rate half of the
 sampled `s_out`; the rest seed paired states that extend `Cache_p`. -/
-private def d2sSynthesizeStateFromRateBlocks
+def d2sSynthesizeStateFromRateBlocks
     (rateBlocks : List (Vector U SpongeSize.R)) :
     StateT
       (D2SQueryState
@@ -473,7 +679,7 @@ private def d2sSynthesizeStateFromRateBlocks
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (AbortComp
         (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))
-      (CanonicalSpongeState U × List (CanonicalSpongeState U × CanonicalSpongeState U)) := do
+      (CanonicalSpongeState U × List (CacheEntry (StmtIn := StmtIn) (U := U))) := do
   let st ← get
   match rateBlocks with
   | [] => StateT.lift failure
@@ -483,18 +689,18 @@ private def d2sSynthesizeStateFromRateBlocks
         d2sSampleCapacityList (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
           rateBlocks.length
       let allStates :=
-        (rateBlocks.zip caps).map fun
-          (rc : Vector U SpongeSize.R × Vector U SpongeSize.C) =>
-          mkStateFromSegments (U := U) rc.1 rc.2
+        d2sSynthesisStates (U := U) rateBlocks caps
       -- Since `rateBlocks` is not empty, `allStates` is not empty.
       match allStates with
       | [] => StateT.lift failure -- Unreachable if length > 0
       | synthesized_s_out :: extraStates =>
           -- Item 4(e)iii.E — extend `Cache_p` by chaining
           --   `(s_out, s^{(1)}), …, (s^{(L_V(i)-2)}, s^{(L_V(i)-1)})`.
-          let extraPairs :=
-            chainPairsFrom (U := U) synthesized_s_out extraStates
-          pure (synthesized_s_out, st.cacheP ++ extraPairs)
+          let birthRawTraceLength := st.trace.length
+          let newEntries :=
+            cacheEntriesFromStateChain (StmtIn := StmtIn) (U := U)
+              birthRawTraceLength st.trace (synthesized_s_out :: extraStates)
+          pure (synthesized_s_out, st.cacheP ++ newEntries)
 
 /-- CO25 §5.4 Items 4(d)/4(e) — `BackTrack` returned `some (i, 𝕩, τ̂, α̂_1, …, α̂_i)`.
 
@@ -510,7 +716,7 @@ Paper Item 4(e) (in-image branch):
 The unconditional `g_i` query in (e)i is essential: `tr_i` (paper Item 3 of `D2SAlgo`, lived
 externally to D2SQuery) makes the bridge `ψ⁻¹ ∘ f ∘ φ⁻¹` deterministic w.r.t. the encoded
 query, so the cost of a repeat `gᵢ` call is a cache hit, not fresh randomness. -/
-private def d2sHandleBacktrackSome
+def d2sHandleBacktrackSome
     (stateIn : CanonicalSpongeState U)
     (backtrackOut : BacktrackOutput
       (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
@@ -532,13 +738,17 @@ private def d2sHandleBacktrackSome
         backtrackOut.roundIdx backtrackOut.stmt backtrackOut.salt
         backtrackOut.encodedMessages
     -- Paper Item 4(e)ii — `s_out := tr_∇.p.inlu(s_in)`, if any.
-    match TraceTableOps.inlu st.trΔ.p stateIn with
+    match hLookup : TraceTableOps.inlu st.trΔ.p stateIn with
     | some recovered =>
         -- Paper Item 4(f) — append `('p', s_in, s_out)` to `tr`; Item 4(g) returns `s_out`.
         let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
         let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
-        set { st with trace := trace', h_inv := h_inv' }
+        let h_mem : (stateIn, recovered) ∈ TraceTableOps.entries st.trΔ.p :=
+          TraceTableOps.mem_entries_of_inlu_eq_some hLookup
+        let h_mirror' : st.trΔ.MirrorsQueryLog trace' :=
+          TraceNabla.MirrorsQueryLog_append_perm_existing st.h_mirror stateIn recovered h_mem
+        set { st with trace := trace', h_inv := h_inv', h_mirror := h_mirror' }
         return recovered
     | none =>
         -- Paper Item 4(e)iii.A/B — sample `z`, concat `ρ̂_i ‖ z`, reshape into `L_V(i)`
@@ -558,17 +768,23 @@ private def d2sHandleBacktrackSome
           { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn s_out }
         let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn s_out
-        set { st with trace := trace', cacheP := cache', trΔ := trΔ', h_inv := h_inv' }
+        let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+          TraceNabla.MirrorsQueryLog_append_perm_add st.h_mirror stateIn s_out
+        set { st with trace := trace', cacheP := cache', trΔ := trΔ', h_inv := h_inv', h_mirror := h_mirror' }
         return s_out
   else
     -- Paper Item 4(d) — tuple not in image; `tr_∇.p.inlu(s_in)` else fresh sample
-    match TraceTableOps.inlu st.trΔ.p stateIn with
+    match hLookup : TraceTableOps.inlu st.trΔ.p stateIn with
     | some recovered =>
         -- Item 4(d)i — cache hit
         let trace' := st.trace ++ [⟨dsPermQuery stateIn, recovered⟩]
         let h_inv' : st.trΔ.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_any st.h_inv ⟨dsPermQuery stateIn, recovered⟩
-        set { st with trace := trace', h_inv := h_inv' }
+        let h_mem : (stateIn, recovered) ∈ TraceTableOps.entries st.trΔ.p :=
+          TraceTableOps.mem_entries_of_inlu_eq_some hLookup
+        let h_mirror' : st.trΔ.MirrorsQueryLog trace' :=
+          TraceNabla.MirrorsQueryLog_append_perm_existing st.h_mirror stateIn recovered h_mem
+        set { st with trace := trace', h_inv := h_inv', h_mirror := h_mirror' }
         return recovered
     | none =>
         -- Item 4(d)ii — fresh sample
@@ -579,7 +795,9 @@ private def d2sHandleBacktrackSome
           { st.trΔ with p := TraceTableOps.add st.trΔ.p stateIn sampledOut }
         let h_inv' : trΔ'.IsSubsetOfQueryLog trace' :=
           TraceNabla.IsSubsetOfQueryLog_append_perm st.h_inv stateIn sampledOut
-        set { st with trace := trace', trΔ := trΔ', h_inv := h_inv' }
+        let h_mirror' : trΔ'.MirrorsQueryLog trace' :=
+          TraceNabla.MirrorsQueryLog_append_perm_add st.h_mirror stateIn sampledOut
+        set { st with trace := trace', trΔ := trΔ', h_inv := h_inv', h_mirror := h_mirror' }
         return sampledOut
 
 /-- CO25 §5.4 Item 4 — forward-permutation (`p`) branch of `D2SQuery`.
@@ -588,7 +806,7 @@ Calls `BackTrack(tr, tr_∇, s_in)` (Item 4(a)) and dispatches:
 - `.err` → abort (Item 4(b));
 - `.noResult` → cache / `inlu` / sample fallback (Item 4(c));
 - `.some backtrackOut` → codec-image dispatch (Items 4(d)/4(e)). -/
-private def d2sHandleForwardPermQuery
+def d2sHandleForwardPermQuery
     (stateIn : CanonicalSpongeState U) :
     StateT
       (D2SQueryState (δ := δ) (T_H := T_H) (T_P := T_P)
@@ -611,6 +829,112 @@ private def d2sHandleForwardPermQuery
       d2sHandleBacktrackSome (δ := δ) (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn backtrackOut
 
+-- The support computation unfolds the nested `StateT` / `OptionT` simulator, which requires
+-- more than the default elaboration budget but remains below the project-wide 400k cap.
+set_option maxHeartbeats 400000 in
+lemma d2sHandleBacktrackNoResult_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (stateIn : CanonicalSpongeState U)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option (CanonicalSpongeState U ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sHandleBacktrackNoResult
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨dsPermQuery stateIn, a⟩] := by
+  intro a st' hi_eq
+  subst i
+  unfold d2sHandleBacktrackNoResult at hi
+  aesop
+
+/-- Peel a successful support point through the common abortable pattern
+`Option.elimM sample (pure none) body`.  The `none` branch cannot produce `some b`, so the output
+must come from a successful sampled value followed by the body. -/
+private lemma mem_support_option_elimM_some {α β : Type} {sample : ProbComp (Option α)}
+    {body : α → ProbComp (Option β)} {b : β}
+    (h : some b ∈ support (Option.elimM sample (pure none) body)) :
+    ∃ a, some a ∈ support sample ∧ some b ∈ support (body a) := by
+  simp only [Option.elimM] at h
+  rw [mem_support_bind_iff] at h
+  obtain ⟨o, ho, hb⟩ := h
+  cases o with
+  | none =>
+      simp at hb
+  | some a =>
+      exact ⟨a, ho, by simp at hb; exact hb⟩
+
+/-- Peel a successful support point through a nested `Option.map` over a probabilistic
+computation. -/
+private lemma mem_support_map_nested_option_some {α β : Type}
+    {sample : ProbComp (Option (Option α))} {f : α → β} {b : β}
+    (h : some (some b) ∈ support (Option.map (Option.map f) <$> sample)) :
+    ∃ a, some (some a) ∈ support sample ∧ f a = b := by
+  rw [support_map] at h
+  obtain ⟨ooa, hoo, hmap⟩ := h
+  cases ooa with
+  | none =>
+      simp only [Option.map_none] at hmap
+      cases hmap
+  | some oa =>
+      cases oa with
+      | none =>
+          simp only [Option.map_some, Option.map_none] at hmap
+          cases hmap
+      | some a =>
+          simp only [Option.map_some, Option.some.injEq] at hmap
+          subst hmap
+          exact ⟨a, hoo, rfl⟩
+
+set_option maxHeartbeats 400000 in
+-- This support proof normalizes the large generated monadic term for BackTrack's codec-image
+-- branch; the argument itself is just support peeling plus final-state projection.
+/-- The `.some backtrackOut` sub-branch of the forward permutation handler appends exactly the
+answered forward permutation query to the internal trace on every successful support point. -/
+lemma d2sHandleBacktrackSome_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (stateIn : CanonicalSpongeState U)
+    (backtrackOut : BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option (CanonicalSpongeState U ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sHandleBacktrackSome
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn backtrackOut).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨dsPermQuery stateIn, a⟩] := by
+  intro a st' hi_eq
+  subst i
+  unfold d2sHandleBacktrackSome at hi
+  cases hpred : d2sInCodecImagePredicate (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      backtrackOut
+  · simp [hpred] at hi
+    split at hi <;>
+      aesop
+  · simp [hpred] at hi
+    obtain ⟨rhoHat, _hrhoHat, hi⟩ := mem_support_option_elimM_some hi
+    split at hi
+    · aesop
+    · simp at hi
+      obtain ⟨rateBlocks, _hrateBlocks, hi⟩ := mem_support_option_elimM_some hi
+      obtain ⟨synth, _hsynth, hsynth⟩ := mem_support_map_nested_option_some hi
+      injection hsynth with ha hstEq
+      rw [← hstEq]
+      simp only
+      rw [ha]
+
 /-- CO25 §5.4 — `D2SQuery` one-step dispatcher over `d2sQueryOracles`: dispatches `h` (Item 2),
 `p⁻¹` (Item 3), `p` (Item 4 with BackTrack branches 4(b)-4(g)). -/
 def d2sQueryStep
@@ -629,6 +953,134 @@ def d2sQueryStep
   | dsPermQuery stateIn =>
       d2sHandleForwardPermQuery (δ := δ) (T_H := T_H) (T_P := T_P)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn
+
+/-- The hash branch of `d2sQueryStep` appends exactly the answered hash query to the internal D2S
+trace. -/
+lemma d2sHandleHashQuery_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (stmt : StmtIn)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option (Vector U SpongeSize.C ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sHandleHashQuery
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stmt).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨dsHashQuery stmt, a⟩] := by
+  intro a st' hi_eq
+  subst i
+  unfold d2sHandleHashQuery at hi
+  aesop
+
+/-- The forward-permutation branch of `d2sQueryStep` appends exactly the answered `p`-query to the
+internal D2S trace. -/
+lemma d2sHandleForwardPermQuery_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (stateIn : CanonicalSpongeState U)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option (CanonicalSpongeState U ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sHandleForwardPermQuery
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨dsPermQuery stateIn, a⟩] := by
+  intro a st' hi_eq
+  subst i
+  unfold d2sHandleForwardPermQuery at hi
+  cases hbt : backTrack (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      st.trace st.trΔ st.h_inv stateIn (st.trace.length + 1) with
+  | err =>
+      simp [hbt] at hi
+  | noResult =>
+      exact d2sHandleBacktrackNoResult_support_trace_append
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        gImpl auxImpl stateIn st (by
+          simp [hbt] at hi
+          exact hi) a st' rfl
+  | some backtrackOut =>
+      exact d2sHandleBacktrackSome_support_trace_append
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        gImpl auxImpl stateIn backtrackOut st (by
+          simp [hbt] at hi
+          exact hi) a st' rfl
+
+/-- The inverse-permutation branch of `d2sQueryStep` appends exactly the answered `p⁻¹`-query to
+the internal D2S trace. -/
+lemma d2sHandleInversePermQuery_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (stateOut : CanonicalSpongeState U)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option (CanonicalSpongeState U ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sHandleInversePermQuery
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateOut).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨dsPermInvQuery stateOut, a⟩] := by
+  intro a st' hi_eq
+  subst i
+  unfold d2sHandleInversePermQuery at hi
+  simp at hi
+  aesop
+
+/-- Any successful `d2sQueryStep` support point appends exactly the answered narrow query to the
+internal D2S trace.  This is the local operational fact later used by the Lemma-5.8 trace-bridge
+proofs. -/
+lemma d2sQueryStep_support_trace_append
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) (OptionT ProbComp))
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec) (OptionT ProbComp))
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (st : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {i : Option (Option ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+      D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((d2sQueryStep
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) q).run st))).run) :
+    ∀ a st', i = some (some (a, st')) →
+      st'.trace = st.trace ++ [⟨q, a⟩] := by
+  intro a st' hi_eq
+  cases q with
+  | inl stmt =>
+      exact d2sHandleHashQuery_support_trace_append
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        gImpl auxImpl stmt st hi a st' hi_eq
+  | inr q' =>
+      cases q' with
+      | inl stateIn =>
+          exact d2sHandleForwardPermQuery_support_trace_append
+            (δ := δ) (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+            gImpl auxImpl stateIn st hi a st' hi_eq
+      | inr stateOut =>
+          exact d2sHandleInversePermQuery_support_trace_append
+            (δ := δ) (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+            gImpl auxImpl stateOut st hi a st' hi_eq
 
 end StepImpl
 

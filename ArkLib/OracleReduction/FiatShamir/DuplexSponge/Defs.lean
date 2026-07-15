@@ -566,6 +566,29 @@ def duplexSpongeForwardOracle (StartType : Type) (U : Type) [SpongeUnit U] [Spon
     OracleSpec (StartType ⊕ CanonicalSpongeState U) :=
   (StartType →ₒ Vector U SpongeSize.C) + forwardPermutationOracle (CanonicalSpongeState U)
 
+/-- Paper-faithful embedding of the forward-only sponge surface into the full one
+(CO25 Figure 4 line 3, `𝒱^{h,p}` inside the `(h, p, p⁻¹)` world): hash queries map to hash
+queries and **forward-permutation queries map to the forward slot** of the permutation oracle.
+
+Declared with high priority — **audit finding A3**: the forward and inverse permutation slots
+have identical signatures (`State →ₒ State`), so unguided instance search resolves the
+sub-goal `forwardPermutationOracle ⊂ₒ permutationOracle` via `subSpec_add_right` and silently
+embeds the honest verifier's forward queries into the **inverse** slot, making the §5.6–§5.8
+experiments run `𝒱` against `p⁻¹`. -/
+instance (priority := high) subSpecForwardChallenge {StartType U : Type}
+    [SpongeUnit U] [SpongeSize] :
+    duplexSpongeForwardOracle StartType U ⊂ₒ duplexSpongeChallengeOracle StartType U where
+  monadLift
+    | ⟨.inl s, f⟩ => ⟨.inl s, f⟩
+    | ⟨.inr t, f⟩ => ⟨.inr (.inl t), f⟩
+  onQuery
+    | .inl s => .inl s
+    | .inr t => .inr (.inl t)
+  onResponse
+    | .inl _ => id
+    | .inr _ => id
+  liftM_eq_lift := by intro β q; rcases q with ⟨s | t, f⟩ <;> rfl
+
 section OracleDistribution
 
 /-- One sampled realization of the DSFS ideal oracle distribution `𝒟_𝔖`:

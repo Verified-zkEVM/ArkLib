@@ -105,6 +105,13 @@ class TraceTableOps (T : Type) (K V : outParam Type) where
   /-- `entries(t)` — enumerate all `(k, v)` pairs (CO25 §5.2 partial-key matching). -/
   entries : T → List (K × V)
 
+/-- Insert a table pair with set semantics.  The generic `add` operation deliberately retains the
+underlying implementation's insertion semantics; D2SQuery uses `insert` where the paper requires
+`tr_∇` to mirror the *set* of pairs in the external trace. -/
+def TraceTableOps.insert {T K V : Type} [TraceTableOps T K V] [DecidableEq K] [DecidableEq V]
+    (t : T) (k : K) (v : V) : T :=
+  if (k, v) ∈ TraceTableOps.entries t then t else TraceTableOps.add t k v
+
 /-! ### Refinement-model lawful class -/
 
 /-- Refinement-model lawfulness for a trace table, expressed via a `Multiset (K × V)` model.
@@ -134,6 +141,236 @@ extends TraceTableOps T K V where
   /-- `entries` reflects the abstract multiset content. Order is unspecified; only the multiset
   reading is stable. Used by paper §5.2 partial-key enumeration in `BackTrack`. -/
   toMultiSet_ofEntries : ∀ t, (TraceTableOps.entries t : Multiset (K × V)) = toMultiSet t
+
+/-- Membership after `add`, expressed at the public `entries` interface. -/
+lemma TraceTableOps.mem_entries_add_iff
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (k : K) (v : V) (pair : K × V) :
+    pair ∈ TraceTableOps.entries (TraceTableOps.add t k v) ↔
+      pair = (k, v) ∨ pair ∈ TraceTableOps.entries t := by
+  constructor
+  · intro h
+    have hms : pair ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add t k v) := by
+      rw [← LawfulTraceTable.toMultiSet_ofEntries]
+      exact Multiset.mem_coe.mpr h
+    rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at hms
+    rcases hms with hEq | hOld
+    · exact Or.inl hEq
+    · right
+      rw [← LawfulTraceTable.toMultiSet_ofEntries] at hOld
+      exact Multiset.mem_coe.mp hOld
+  · rintro (hEq | hOld)
+    · subst pair
+      have hms : (k, v) ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add t k v) := by
+        rw [LawfulTraceTable.toMultiSet_add]
+        exact Multiset.mem_cons_self _ _
+      rw [← LawfulTraceTable.toMultiSet_ofEntries] at hms
+      exact Multiset.mem_coe.mp hms
+    · have hms : pair ∈ LawfulTraceTable.toMultiSet t := by
+        rw [← LawfulTraceTable.toMultiSet_ofEntries]
+        exact Multiset.mem_coe.mpr hOld
+      have hnew : pair ∈ LawfulTraceTable.toMultiSet (TraceTableOps.add t k v) := by
+        rw [LawfulTraceTable.toMultiSet_add]
+        exact Multiset.mem_cons_of_mem hms
+      rw [← LawfulTraceTable.toMultiSet_ofEntries] at hnew
+      exact Multiset.mem_coe.mp hnew
+
+/-- Membership after idempotent `insert`. -/
+lemma TraceTableOps.mem_entries_insert_iff
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) (k : K) (v : V) (pair : K × V) :
+    pair ∈ TraceTableOps.entries (TraceTableOps.insert t k v) ↔
+      pair = (k, v) ∨ pair ∈ TraceTableOps.entries t := by
+  unfold TraceTableOps.insert
+  split
+  · constructor
+    · intro h
+      exact Or.inr h
+    · rintro (hEq | hOld)
+      · subst pair
+        assumption
+      · exact hOld
+  · exact TraceTableOps.mem_entries_add_iff t k v pair
+
+/-- A successful forward lookup certifies that its pair occurs in the public table contents. -/
+lemma TraceTableOps.mem_entries_of_inlu_eq_some
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V} (h : TraceTableOps.inlu t k = some v) :
+    (k, v) ∈ TraceTableOps.entries t := by
+  have hLookup := (LawfulTraceTable.inlu_eq_some t k v).mp h
+  apply Multiset.mem_coe.mp
+  rw [LawfulTraceTable.toMultiSet_ofEntries]
+  exact Multiset.count_pos.mp (by omega)
+
+/-- A successful backward lookup certifies that its normalized pair occurs in the public table
+contents. -/
+lemma TraceTableOps.mem_entries_of_outlu_eq_some
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V} (h : TraceTableOps.outlu t v = some k) :
+    (k, v) ∈ TraceTableOps.entries t := by
+  have hLookup := (LawfulTraceTable.outlu_eq_some t k v).mp h
+  apply Multiset.mem_coe.mp
+  rw [LawfulTraceTable.toMultiSet_ofEntries]
+  exact Multiset.count_pos.mp (by omega)
+
+/-- The permutation-table condition that each output has at most one preimage.  It is phrased over
+the lawful multiset model because `outlu` is sensitive to multiplicities, not merely membership. -/
+def TraceTableOps.OutputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) : Prop :=
+  ∀ k k' v,
+    (k, v) ∈ LawfulTraceTable.toMultiSet t →
+    (k', v) ∈ LawfulTraceTable.toMultiSet t → k' = k
+
+/-- The dual condition that each input has at most one output. -/
+def TraceTableOps.InputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    (t : T) : Prop :=
+  ∀ k v v',
+    (k, v) ∈ LawfulTraceTable.toMultiSet t →
+    (k, v') ∈ LawfulTraceTable.toMultiSet t → v' = v
+
+/-- Adding a genuinely new pair preserves multiset nodupness.  This separates the purely
+table-theoretic part of the D2SQuery prefix invariant from the trace-level bad-event argument. -/
+lemma TraceTableOps.nodup_add
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup)
+    (hFresh : (k, v) ∉ LawfulTraceTable.toMultiSet t) :
+    (LawfulTraceTable.toMultiSet (TraceTableOps.add t k v)).Nodup := by
+  rw [LawfulTraceTable.toMultiSet_add]
+  exact hNodup.cons hFresh
+
+/-- Set-semantic insertion preserves multiset nodupness.  In particular, the cache-pop update
+cannot introduce a duplicate table occurrence. -/
+lemma TraceTableOps.nodup_insert
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup) :
+    (LawfulTraceTable.toMultiSet (TraceTableOps.insert t k v)).Nodup := by
+  unfold TraceTableOps.insert
+  by_cases hMem : (k, v) ∈ TraceTableOps.entries t
+  · simp [hMem, hNodup]
+  · simp only [hMem, ↓reduceIte]
+    rw [LawfulTraceTable.toMultiSet_add]
+    apply hNodup.cons
+    intro hPair
+    apply hMem
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hPair
+
+/-- A forward-table addition preserves input functionality when the new input has no prior
+association. -/
+lemma TraceTableOps.inputFunctional_add
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hFunctional : TraceTableOps.InputFunctional t)
+    (hFreshInput : ∀ v', (k, v') ∉ LawfulTraceTable.toMultiSet t) :
+    TraceTableOps.InputFunctional (TraceTableOps.add t k v) := by
+  intro k' v' v'' hLeft hRight
+  rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at hLeft hRight
+  rcases hLeft with hLeft | hLeft <;> rcases hRight with hRight | hRight
+  · cases hLeft
+    cases hRight
+    rfl
+  · cases hLeft
+    exact False.elim (hFreshInput v'' hRight)
+  · cases hRight
+    exact False.elim (hFreshInput v' hLeft)
+  · exact hFunctional _ _ _ hLeft hRight
+
+/-- A permutation-table addition preserves output functionality when the new output has no prior
+preimage. -/
+lemma TraceTableOps.outputFunctional_add
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hFunctional : TraceTableOps.OutputFunctional t)
+    (hFreshOutput : ∀ k', (k', v) ∉ LawfulTraceTable.toMultiSet t) :
+    TraceTableOps.OutputFunctional (TraceTableOps.add t k v) := by
+  intro k' k'' v' hLeft hRight
+  rw [LawfulTraceTable.toMultiSet_add, Multiset.mem_cons] at hLeft hRight
+  rcases hLeft with hLeft | hLeft <;> rcases hRight with hRight | hRight
+  · cases hLeft
+    cases hRight
+    rfl
+  · cases hLeft
+    exact False.elim (hFreshOutput k'' hRight)
+  · cases hRight
+    exact (hFreshOutput k' hLeft).elim
+  · exact hFunctional _ _ _ hLeft hRight
+
+/-- Under a nodup, output-functional table prefix, the inverse lookup must return the recorded
+preimage.  This is the lookup fact used by the first-witness backward-`E_func` argument. -/
+lemma TraceTableOps.outlu_eq_some_of_nodup_of_outputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup)
+    (hFunctional : TraceTableOps.OutputFunctional t)
+    (hMem : (k, v) ∈ TraceTableOps.entries t) :
+    TraceTableOps.outlu t v = some k := by
+  have hMemMs : (k, v) ∈ LawfulTraceTable.toMultiSet t := by
+    rw [← LawfulTraceTable.toMultiSet_ofEntries]
+    exact Multiset.mem_coe.mpr hMem
+  apply (LawfulTraceTable.outlu_eq_some t k v).mpr
+  exact ⟨Multiset.count_eq_one_of_mem hNodup hMemMs,
+    fun k' hMem' => hFunctional k k' v hMemMs hMem'⟩
+
+/-- Under a nodup, input-functional table prefix, the forward lookup must return the recorded
+output. -/
+lemma TraceTableOps.inlu_eq_some_of_nodup_of_inputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K} {v : V}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup)
+    (hFunctional : TraceTableOps.InputFunctional t)
+    (hMem : (k, v) ∈ TraceTableOps.entries t) :
+    TraceTableOps.inlu t k = some v := by
+  have hMemMs : (k, v) ∈ LawfulTraceTable.toMultiSet t := by
+    rw [← LawfulTraceTable.toMultiSet_ofEntries]
+    exact Multiset.mem_coe.mpr hMem
+  apply (LawfulTraceTable.inlu_eq_some t k v).mpr
+  exact ⟨Multiset.count_eq_one_of_mem hNodup hMemMs,
+    fun v' hMem' => hFunctional k v v' hMemMs hMem'⟩
+
+/-- If a nodup, input-functional table has no forward lookup result, then that input has no
+recorded pair at all.  This turns an Item 4 `inlu = ⊥` branch into the freshness premise needed
+by `nodup_add`. -/
+lemma TraceTableOps.no_mem_of_inlu_eq_none_of_nodup_of_inputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {k : K}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup)
+    (hFunctional : TraceTableOps.InputFunctional t)
+    (hNone : TraceTableOps.inlu t k = none) :
+    ∀ v, (k, v) ∉ LawfulTraceTable.toMultiSet t := by
+  intro v hMem
+  have hEntries : (k, v) ∈ TraceTableOps.entries t := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hMem
+  have hSome := TraceTableOps.inlu_eq_some_of_nodup_of_inputFunctional
+    hNodup hFunctional hEntries
+  rw [hNone] at hSome
+  contradiction
+
+/-- The inverse dual of
+`no_mem_of_inlu_eq_none_of_nodup_of_inputFunctional`: a failed `outlu` means that no pair with
+that output is present, provided the prefix is nodup and output-functional. -/
+lemma TraceTableOps.no_mem_of_outlu_eq_none_of_nodup_of_outputFunctional
+    {T K V : Type} [DecidableEq K] [DecidableEq V] [LawfulTraceTable T K V]
+    {t : T} {v : V}
+    (hNodup : (LawfulTraceTable.toMultiSet t).Nodup)
+    (hFunctional : TraceTableOps.OutputFunctional t)
+    (hNone : TraceTableOps.outlu t v = none) :
+    ∀ k, (k, v) ∉ LawfulTraceTable.toMultiSet t := by
+  intro k hMem
+  have hEntries : (k, v) ∈ TraceTableOps.entries t := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hMem
+  have hSome := TraceTableOps.outlu_eq_some_of_nodup_of_outputFunctional
+    hNodup hFunctional hEntries
+  rw [hNone] at hSome
+  contradiction
 
 class LawfulTraceNablaImpl (T_H T_P StmtIn U : Type) [SpongeUnit U] [SpongeSize]
     [DecidableEq StmtIn] [DecidableEq U] where
@@ -210,6 +447,26 @@ def TraceNabla.IsSubsetOfQueryLog
   (∀ stmt cap, (stmt, cap) ∈ TraceTableOps.entries trΔ.h → ⟨.inl stmt, cap⟩ ∈ trace) ∧
   (∀ s_in s_out, (s_in, s_out) ∈ TraceTableOps.entries trΔ.p →
     ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace)
+
+/-- The set-level invariant required by D2SQuery: `tr_∇` contains exactly the hash pairs and
+normalized permutation pairs represented in the external trace.  Multiple occurrences of one pair
+in the trace still correspond to one table pair. -/
+def TraceNabla.MirrorsQueryLog
+    (trΔ : TraceNabla T_H T_P StmtIn U) (trace : DuplexSpongeTrace StmtIn U) : Prop :=
+  (∀ stmt cap, ⟨.inl stmt, cap⟩ ∈ trace ↔ (stmt, cap) ∈ TraceTableOps.entries trΔ.h) ∧
+  (∀ sIn sOut,
+    (⟨.inr (.inl sIn), sOut⟩ ∈ trace ∨ ⟨.inr (.inr sOut), sIn⟩ ∈ trace) ↔
+      (sIn, sOut) ∈ TraceTableOps.entries trΔ.p)
+
+/-- A mirror is, in particular, a table-to-trace subset invariant. -/
+lemma TraceNabla.MirrorsQueryLog.isSubset
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace) : trΔ.IsSubsetOfQueryLog trace := by
+  constructor
+  · intro stmt cap hEntry
+    exact (hMirror.1 stmt cap).mpr hEntry
+  · intro sIn sOut hEntry
+    exact (hMirror.2 sIn sOut).mpr hEntry
 
 /-- The fold step from `TraceNabla.ofQueryLog`, factored out for reuse in proofs. -/
 private def ofQueryLogStep
@@ -331,6 +588,154 @@ private lemma perm_ms_foldl_inv
         · exact Or.inr (Or.inl (List.mem_cons_of_mem _ h1))
         · exact Or.inr (Or.inr (List.mem_cons_of_mem _ h2))
 
+private lemma hash_entries_foldl_mono
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    {pair : StmtIn × Vector U SpongeSize.C}
+    (hMem : pair ∈ TraceTableOps.entries init.h) :
+    pair ∈ TraceTableOps.entries
+      (List.foldl ofQueryLogStep init trace).h := by
+  induction trace generalizing init with
+  | nil =>
+      exact hMem
+  | cons entry trace' ih =>
+      rcases entry with ⟨q, a⟩
+      rcases q with stmt | sIn | sOut
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with h := TraceTableOps.add init.h stmt a }
+          ((TraceTableOps.mem_entries_add_iff init.h stmt a pair).mpr (Or.inr hMem))
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with p := TraceTableOps.add init.p sIn a } hMem
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with p := TraceTableOps.add init.p a sOut } hMem
+
+private lemma perm_entries_foldl_mono
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    {pair : CanonicalSpongeState U × CanonicalSpongeState U}
+    (hMem : pair ∈ TraceTableOps.entries init.p) :
+    pair ∈ TraceTableOps.entries
+      (List.foldl ofQueryLogStep init trace).p := by
+  induction trace generalizing init with
+  | nil =>
+      exact hMem
+  | cons entry trace' ih =>
+      rcases entry with ⟨q, a⟩
+      rcases q with stmt | sIn | sOut
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with h := TraceTableOps.add init.h stmt a } hMem
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with p := TraceTableOps.add init.p sIn a }
+          ((TraceTableOps.mem_entries_add_iff init.p sIn a pair).mpr (Or.inr hMem))
+      · simp only [List.foldl_cons, ofQueryLogStep]
+        exact ih { init with p := TraceTableOps.add init.p a sOut }
+          ((TraceTableOps.mem_entries_add_iff init.p a sOut pair).mpr (Or.inr hMem))
+
+private lemma hash_mem_entries_foldl_of_mem
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    {stmt : StmtIn} {cap : Vector U SpongeSize.C}
+    (hMem : (⟨.inl stmt, cap⟩ :
+      Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace) :
+    (stmt, cap) ∈ TraceTableOps.entries
+      (List.foldl ofQueryLogStep init trace).h := by
+  induction trace generalizing init with
+  | nil =>
+      cases hMem
+  | cons entry trace' ih =>
+      rw [List.mem_cons] at hMem
+      rcases hMem with hHead | hTail
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt' | sIn | sOut
+        · injection hHead with hq ha
+          cases hq
+          cases ha
+          simp only [List.foldl_cons, ofQueryLogStep]
+          exact hash_entries_foldl_mono
+            { init with h := TraceTableOps.add init.h stmt cap } trace'
+            ((TraceTableOps.mem_entries_add_iff init.h stmt cap (stmt, cap)).mpr
+              (Or.inl rfl))
+        · cases hHead
+        · cases hHead
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt' | sIn | sOut
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with h := TraceTableOps.add init.h stmt' a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p sIn a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p a sOut } hTail
+
+private lemma perm_mem_entries_foldl_of_mem_fwd
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    {sIn sOut : CanonicalSpongeState U}
+    (hMem : (⟨.inr (.inl sIn), sOut⟩ :
+      Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace) :
+    (sIn, sOut) ∈ TraceTableOps.entries
+      (List.foldl ofQueryLogStep init trace).p := by
+  induction trace generalizing init with
+  | nil =>
+      cases hMem
+  | cons entry trace' ih =>
+      rw [List.mem_cons] at hMem
+      rcases hMem with hHead | hTail
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt | sIn' | sOut'
+        · cases hHead
+        · injection hHead with hq ha
+          cases hq
+          cases ha
+          simp only [List.foldl_cons, ofQueryLogStep]
+          exact perm_entries_foldl_mono
+            { init with p := TraceTableOps.add init.p sIn sOut } trace'
+            ((TraceTableOps.mem_entries_add_iff init.p sIn sOut (sIn, sOut)).mpr
+              (Or.inl rfl))
+        · cases hHead
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt | sIn' | sOut'
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with h := TraceTableOps.add init.h stmt a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p sIn' a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p a sOut' } hTail
+
+private lemma perm_mem_entries_foldl_of_mem_bwd
+    (init : TraceNabla T_H T_P StmtIn U)
+    (trace : DuplexSpongeTrace StmtIn U)
+    {sIn sOut : CanonicalSpongeState U}
+    (hMem : (⟨.inr (.inr sOut), sIn⟩ :
+      Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace) :
+    (sIn, sOut) ∈ TraceTableOps.entries
+      (List.foldl ofQueryLogStep init trace).p := by
+  induction trace generalizing init with
+  | nil =>
+      cases hMem
+  | cons entry trace' ih =>
+      rw [List.mem_cons] at hMem
+      rcases hMem with hHead | hTail
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt | sIn' | sOut'
+        · cases hHead
+        · cases hHead
+        · injection hHead with hq ha
+          cases hq
+          cases ha
+          simp only [List.foldl_cons, ofQueryLogStep]
+          exact perm_entries_foldl_mono
+            { init with p := TraceTableOps.add init.p sIn sOut } trace'
+            ((TraceTableOps.mem_entries_add_iff init.p sIn sOut (sIn, sOut)).mpr
+              (Or.inl rfl))
+      · rcases entry with ⟨q, a⟩
+        rcases q with stmt | sIn' | sOut'
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with h := TraceTableOps.add init.h stmt a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p sIn' a } hTail
+        · simp only [List.foldl_cons, ofQueryLogStep]
+          exact ih { init with p := TraceTableOps.add init.p a sOut' } hTail
+
 lemma TraceNabla.ofQueryLog_isSubset
     (trace : DuplexSpongeTrace StmtIn U) :
     (TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) trace).IsSubsetOfQueryLog trace := by
@@ -364,6 +769,37 @@ lemma TraceNabla.ofQueryLog_isSubset
     · simp [LawfulTraceTable.toMultiSet_empty] at hMem'
     · exact Or.inl h1
     · exact Or.inr h2
+
+/-- The canonical `tr_∇` built by folding over a trace mirrors exactly the represented hash and
+bidirectional permutation pairs in that trace. -/
+lemma TraceNabla.ofQueryLog_mirrors
+    (trace : DuplexSpongeTrace StmtIn U) :
+    (TraceNabla.ofQueryLog (T_H := T_H) (T_P := T_P) trace).MirrorsQueryLog trace := by
+  constructor
+  · intro stmt cap
+    constructor
+    · intro hMem
+      rw [ofQueryLog_eq_foldl]
+      exact hash_mem_entries_foldl_of_mem
+        (⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ :
+          TraceNabla T_H T_P StmtIn U) trace hMem
+    · intro hEntry
+      exact (TraceNabla.ofQueryLog_isSubset
+        (T_H := T_H) (T_P := T_P) trace).1 stmt cap hEntry
+  · intro sIn sOut
+    constructor
+    · intro hMem
+      rw [ofQueryLog_eq_foldl]
+      rcases hMem with hFwd | hBwd
+      · exact perm_mem_entries_foldl_of_mem_fwd
+          (⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ :
+            TraceNabla T_H T_P StmtIn U) trace hFwd
+      · exact perm_mem_entries_foldl_of_mem_bwd
+          (⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ :
+            TraceNabla T_H T_P StmtIn U) trace hBwd
+    · intro hEntry
+      exact (TraceNabla.ofQueryLog_isSubset
+        (T_H := T_H) (T_P := T_P) trace).2 sIn sOut hEntry
 
 private def ofQueryLogForwardOnlyStep
     (acc : TraceNabla T_H T_P StmtIn U)
@@ -801,6 +1237,242 @@ lemma TraceNabla.IsSubsetOfQueryLog_empty_nil :
     rw [LawfulTraceTable.toMultiSet_ofEntries, LawfulTraceTable.toMultiSet_empty] at hms
     simp at hms
 
+/-- The empty index mirrors the empty external trace. -/
+lemma TraceNabla.MirrorsQueryLog_empty_nil :
+    TraceNabla.MirrorsQueryLog
+      (⟨(TraceTableOps.empty : T_H), (TraceTableOps.empty : T_P)⟩ : TraceNabla T_H T_P StmtIn U)
+      [] := by
+  constructor
+  · intro stmt cap
+    constructor
+    · simp
+    · intro hMem
+      have hms : (stmt, cap) ∈ LawfulTraceTable.toMultiSet (TraceTableOps.empty : T_H) := by
+        rw [← LawfulTraceTable.toMultiSet_ofEntries]
+        exact Multiset.mem_coe.mpr hMem
+      rw [LawfulTraceTable.toMultiSet_empty] at hms
+      simp at hms
+  · intro sIn sOut
+    constructor
+    · simp
+    · intro hMem
+      have hms : (sIn, sOut) ∈ LawfulTraceTable.toMultiSet (TraceTableOps.empty : T_P) := by
+        rw [← LawfulTraceTable.toMultiSet_ofEntries]
+        exact Multiset.mem_coe.mpr hMem
+      rw [LawfulTraceTable.toMultiSet_empty] at hms
+      simp at hms
+
+/-- Appending a fresh hash pair and adding it to `tr_∇.h` preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_hash_add
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace) (stmt : StmtIn) (cap : Vector U SpongeSize.C) :
+    ({trΔ with h := TraceTableOps.add trΔ.h stmt cap} : TraceNabla T_H T_P StmtIn U)
+      |>.MirrorsQueryLog (trace ++ [⟨.inl stmt, cap⟩]) := by
+  constructor
+  · intro stmt' cap'
+    rw [TraceTableOps.mem_entries_add_iff]
+    simp only [List.mem_append, List.mem_singleton]
+    rw [hMirror.1]
+    constructor
+    · rintro (hOld | hNew)
+      · exact Or.inr hOld
+      · exact Or.inl (by simpa using hNew)
+    · rintro (hNew | hOld)
+      · exact Or.inr (by simpa using hNew)
+      · exact Or.inl hOld
+  · intro sIn sOut
+    constructor
+    · intro h
+      rcases h with hFwd | hBwd
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inl hOld)
+        · simp at hLast
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inr hOld)
+        · simp at hLast
+    · intro h
+      rcases (hMirror.2 _ _).mpr h with hFwd | hBwd
+      · exact Or.inl (List.mem_append_left _ hFwd)
+      · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- Appending a fresh forward permutation pair and adding its normalized pair to `tr_∇.p`
+preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_perm_add
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (sIn sOut : CanonicalSpongeState U) :
+    ({trΔ with p := TraceTableOps.add trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U)
+      |>.MirrorsQueryLog (trace ++ [⟨.inr (.inl sIn), sOut⟩]) := by
+  constructor
+  · intro stmt cap
+    constructor
+    · intro h
+      rcases List.mem_append.mp h with hOld | hLast
+      · exact (hMirror.1 _ _).mp hOld
+      · simp at hLast
+    · intro h
+      exact List.mem_append_left _ ((hMirror.1 _ _).mpr h)
+  · intro sIn' sOut'
+    rw [TraceTableOps.mem_entries_add_iff]
+    constructor
+    · rintro (hFwd | hBwd)
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact Or.inr ((hMirror.2 _ _).mp (Or.inl hOld))
+        · exact Or.inl (by simpa [and_comm] using hLast)
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact Or.inr ((hMirror.2 _ _).mp (Or.inr hOld))
+        · simp at hLast
+    · rintro (hNew | hOld)
+      · injection hNew with hIn hOut
+        subst sIn'
+        subst sOut'
+        exact Or.inl (List.mem_append_right _ (List.mem_singleton.mpr rfl))
+      · rcases (hMirror.2 _ _).mpr hOld with hFwd | hBwd
+        · exact Or.inl (List.mem_append_left _ hFwd)
+        · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- Appending a fresh inverse permutation pair and adding its normalized pair to `tr_∇.p`
+preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_perm_inv_add
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (sIn sOut : CanonicalSpongeState U) :
+    ({trΔ with p := TraceTableOps.add trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U)
+      |>.MirrorsQueryLog (trace ++ [⟨.inr (.inr sOut), sIn⟩]) := by
+  constructor
+  · intro stmt cap
+    constructor
+    · intro h
+      rcases List.mem_append.mp h with hOld | hLast
+      · exact (hMirror.1 _ _).mp hOld
+      · simp at hLast
+    · intro h
+      exact List.mem_append_left _ ((hMirror.1 _ _).mpr h)
+  · intro sIn' sOut'
+    rw [TraceTableOps.mem_entries_add_iff]
+    constructor
+    · rintro (hFwd | hBwd)
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact Or.inr ((hMirror.2 _ _).mp (Or.inl hOld))
+        · simp at hLast
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact Or.inr ((hMirror.2 _ _).mp (Or.inr hOld))
+        · exact Or.inl (by simpa [and_comm] using hLast)
+    · rintro (hNew | hOld)
+      · injection hNew with hIn hOut
+        subst sIn'
+        subst sOut'
+        exact Or.inr (List.mem_append_right _ (List.mem_singleton.mpr rfl))
+      · rcases (hMirror.2 _ _).mpr hOld with hFwd | hBwd
+        · exact Or.inl (List.mem_append_left _ hFwd)
+        · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- Repeating a hash pair already indexed by `tr_∇.h` preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_hash_existing
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace) (stmt : StmtIn) (cap : Vector U SpongeSize.C)
+    (hMem : (stmt, cap) ∈ TraceTableOps.entries trΔ.h) :
+    trΔ.MirrorsQueryLog (trace ++ [⟨.inl stmt, cap⟩]) := by
+  constructor
+  · intro stmt' cap'
+    constructor
+    · intro h
+      rcases List.mem_append.mp h with hOld | hLast
+      · exact (hMirror.1 _ _).mp hOld
+      · have hPair : (stmt', cap') = (stmt, cap) := by simpa using hLast
+        simpa [hPair] using hMem
+    · intro h
+      exact List.mem_append_left _ ((hMirror.1 _ _).mpr h)
+  · intro sIn sOut
+    constructor
+    · intro h
+      rcases h with hFwd | hBwd
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inl hOld)
+        · simp at hLast
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inr hOld)
+        · simp at hLast
+    · intro h
+      rcases (hMirror.2 _ _).mpr h with hFwd | hBwd
+      · exact Or.inl (List.mem_append_left _ hFwd)
+      · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- Repeating an indexed forward permutation pair preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_perm_existing
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (sIn sOut : CanonicalSpongeState U)
+    (hMem : (sIn, sOut) ∈ TraceTableOps.entries trΔ.p) :
+    trΔ.MirrorsQueryLog (trace ++ [⟨.inr (.inl sIn), sOut⟩]) := by
+  constructor
+  · intro stmt cap
+    constructor
+    · intro h
+      rcases List.mem_append.mp h with hOld | hLast
+      · exact (hMirror.1 _ _).mp hOld
+      · simp at hLast
+    · intro h
+      exact List.mem_append_left _ ((hMirror.1 _ _).mpr h)
+  · intro sIn' sOut'
+    constructor
+    · rintro (hFwd | hBwd)
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inl hOld)
+        · have hPair : (sIn', sOut') = (sIn, sOut) := by simpa using hLast
+          simpa [hPair] using hMem
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inr hOld)
+        · simp at hLast
+    · intro h
+      rcases (hMirror.2 _ _).mpr h with hFwd | hBwd
+      · exact Or.inl (List.mem_append_left _ hFwd)
+      · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- Repeating an indexed inverse permutation pair preserves the exact mirror invariant. -/
+lemma TraceNabla.MirrorsQueryLog_append_perm_inv_existing
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (sIn sOut : CanonicalSpongeState U)
+    (hMem : (sIn, sOut) ∈ TraceTableOps.entries trΔ.p) :
+    trΔ.MirrorsQueryLog (trace ++ [⟨.inr (.inr sOut), sIn⟩]) := by
+  constructor
+  · intro stmt cap
+    constructor
+    · intro h
+      rcases List.mem_append.mp h with hOld | hLast
+      · exact (hMirror.1 _ _).mp hOld
+      · simp at hLast
+    · intro h
+      exact List.mem_append_left _ ((hMirror.1 _ _).mpr h)
+  · intro sIn' sOut'
+    constructor
+    · rintro (hFwd | hBwd)
+      · rcases List.mem_append.mp hFwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inl hOld)
+        · simp at hLast
+      · rcases List.mem_append.mp hBwd with hOld | hLast
+        · exact (hMirror.2 _ _).mp (Or.inr hOld)
+        · have hPair : (sIn', sOut') = (sIn, sOut) := by simpa [and_comm] using hLast
+          simpa [hPair] using hMem
+    · intro h
+      rcases (hMirror.2 _ _).mpr h with hFwd | hBwd
+      · exact Or.inl (List.mem_append_left _ hFwd)
+      · exact Or.inr (List.mem_append_left _ hBwd)
+
+/-- The cache-pop transition appends a forward pair and inserts it set-semantically, preserving
+the exact mirror invariant whether the pair was already indexed or not. -/
+lemma TraceNabla.MirrorsQueryLog_append_perm_insert
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (sIn sOut : CanonicalSpongeState U) :
+    ({trΔ with p := TraceTableOps.insert trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U)
+      |>.MirrorsQueryLog (trace ++ [⟨.inr (.inl sIn), sOut⟩]) := by
+  unfold TraceTableOps.insert
+  split
+  · exact TraceNabla.MirrorsQueryLog_append_perm_existing hMirror sIn sOut ‹_›
+  · exact TraceNabla.MirrorsQueryLog_append_perm_add hMirror sIn sOut
+
 lemma TraceNabla.IsSubsetOfQueryLog_append_any
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
     (hSub : trΔ.IsSubsetOfQueryLog trace) (entry : duplexSpongeTraceEntry (StartType := StmtIn) (U := U)) :
@@ -854,6 +1526,18 @@ lemma TraceNabla.IsSubsetOfQueryLog_append_perm
       rcases hSub.2 _ _ h2 with hL | hR
       · exact Or.inl (List.mem_append_left _ hL)
       · exact Or.inr (List.mem_append_left _ hR)
+
+/-- Set-semantic variant of `IsSubsetOfQueryLog_append_perm`.  Used by the D2SQuery cache-pop
+branch: if the pair was already recorded, the table is unchanged; otherwise it is appended once. -/
+lemma TraceNabla.IsSubsetOfQueryLog_insert_perm
+    {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}
+    (hSub : trΔ.IsSubsetOfQueryLog trace) (sIn sOut : CanonicalSpongeState U) :
+    ({trΔ with p := TraceTableOps.insert trΔ.p sIn sOut} : TraceNabla T_H T_P StmtIn U)
+      |>.IsSubsetOfQueryLog (trace ++ [⟨.inr (.inl sIn), sOut⟩]) := by
+  unfold TraceTableOps.insert
+  split
+  · exact TraceNabla.IsSubsetOfQueryLog_append_any hSub _
+  · exact TraceNabla.IsSubsetOfQueryLog_append_perm hSub sIn sOut
 
 lemma TraceNabla.IsSubsetOfQueryLog_append_perm_inv
     {trΔ : TraceNabla T_H T_P StmtIn U} {trace : DuplexSpongeTrace StmtIn U}

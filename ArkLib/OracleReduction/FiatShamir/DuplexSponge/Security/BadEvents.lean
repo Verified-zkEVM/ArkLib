@@ -7,7 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
 
-set_option linter.style.longFile 1800
+set_option linter.style.longFile 2000
 
 /-!
 # Definition and analysis of bad events
@@ -129,6 +129,31 @@ lemma getBaseTrace_noRedundant
     (log : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
     hasNoRedundantEntries (getBaseTrace log) :=
   getBaseTraceAux_noRedundant log [] (noRedundantEntryDS_nil (StmtIn := StmtIn) (U := U))
+
+/-- In a non-redundant trace, a forward permutation representative has no earlier copy of its
+normalized pair in either direction.  This is the raw trace-side uniqueness fact used to relate
+the base trace to the multiplicity-sensitive `tr_∇.p` table. -/
+lemma hasNoRedundantEntries.forward_pair_not_mem_take
+    {log : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hNoRedundant : hasNoRedundantEntries log)
+    {i : ℕ} (hi : i < log.length)
+    {stateIn stateOut : CanonicalSpongeState U}
+    (hEntry : log[i] = ⟨.inr (.inl stateIn), stateOut⟩) :
+    ⟨.inr (.inl stateIn), stateOut⟩ ∉ log.take i ∧
+      ⟨.inr (.inr stateOut), stateIn⟩ ∉ log.take i := by
+  simpa [isRedundantEntryOfPrefix, hEntry] using hNoRedundant i hi
+
+/-- In a non-redundant trace, an inverse permutation representative has no earlier copy of its
+normalized pair in either direction. -/
+lemma hasNoRedundantEntries.inverse_pair_not_mem_take
+    {log : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hNoRedundant : hasNoRedundantEntries log)
+    {i : ℕ} (hi : i < log.length)
+    {stateIn stateOut : CanonicalSpongeState U}
+    (hEntry : log[i] = ⟨.inr (.inr stateOut), stateIn⟩) :
+    ⟨.inr (.inr stateOut), stateIn⟩ ∉ log.take i ∧
+      ⟨.inr (.inl stateIn), stateOut⟩ ∉ log.take i := by
+  simpa [isRedundantEntryOfPrefix, hEntry] using hNoRedundant i hi
 
 /-! ### Structural lemmas about `getBaseTrace` (membership / order bridge)
 
@@ -287,6 +312,60 @@ private lemma permInv_mem_getBaseTrace
   · exact hnrB h
   · exact hnrA h
 
+/-- Every normalized permutation pair represented anywhere in a raw trace has a representative in
+its base trace.  The proof selects the first occurrence in either direction; Definition 5.5 then
+ensures that this occurrence is retained.  This is the missing set-to-base bridge for transferring
+the D2SQuery table mirror to bad-event reasoning. -/
+lemma normalizedPermPair_mem_getBaseTrace_of_mem
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (sIn sOut : CanonicalSpongeState U)
+    (hmem : (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+      ⟨.inr (.inr sOut), sIn⟩ ∈ trace) :
+    (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨
+      ⟨.inr (.inr sOut), sIn⟩ ∈ getBaseTrace trace := by
+  classical
+  let P : ℕ → Prop := fun k =>
+    ((trace)[k]? = some ⟨.inr (.inl sIn), sOut⟩) ∨
+      (trace)[k]? = some ⟨.inr (.inr sOut), sIn⟩
+  have hExists : ∃ k, P k := by
+    rcases hmem with hFwd | hInv
+    · obtain ⟨k, hget⟩ := List.mem_iff_getElem?.mp hFwd
+      exact ⟨k, Or.inl hget⟩
+    · obtain ⟨k, hget⟩ := List.mem_iff_getElem?.mp hInv
+      exact ⟨k, Or.inr hget⟩
+  let k := Nat.find hExists
+  have hk : P k := Nat.find_spec hExists
+  have hFirst : ∀ m < k, ¬ P m := by
+    intro m hmk hm
+    have hle : k ≤ m := Nat.find_min' hExists hm
+    omega
+  have hnotEarlierFwd :
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    apply hFirst m hmk
+    left
+    rw [List.getElem?_eq_getElem hmLen]
+    exact congrArg some hget
+  have hnotEarlierInv :
+      (⟨.inr (.inr sOut), sIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    apply hFirst m hmk
+    right
+    rw [List.getElem?_eq_getElem hmLen]
+    exact congrArg some hget
+  rcases hk with hFwd | hInv
+  · exact Or.inl (permFwd_mem_getBaseTrace trace hFwd hnotEarlierFwd hnotEarlierInv)
+  · exact Or.inr (permInv_mem_getBaseTrace trace hInv hnotEarlierInv hnotEarlierFwd)
+
 /-- The accumulator is a prefix of `getBaseTraceAux` (entries are only ever appended). -/
 private lemma getBaseTraceAux_prefix
     (remaining acc : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
@@ -301,8 +380,10 @@ private lemma getBaseTraceAux_prefix
       · simp only [getBaseTraceAux, hRed, ↓reduceDIte]
         exact (List.prefix_append acc [entry]).trans (ih (acc ++ [entry]))
 
-/-- `getBaseTrace` of a shorter prefix is a prefix of `getBaseTrace` of a longer prefix. -/
-private lemma getBaseTrace_take_prefix
+/-- Base traces preserve raw-trace prefix order: filtering a shorter raw prefix gives a prefix of
+the filtered longer prefix.  This is the public raw-to-base bridge used by the Lemma 5.8
+first-witness argument. -/
+lemma getBaseTrace_take_prefix
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) {a b : ℕ} (hab : a ≤ b) :
     getBaseTrace (trace.take a) <+: getBaseTrace (trace.take b) := by
   classical
@@ -316,8 +397,8 @@ private lemma getBaseTrace_take_prefix
         unfold getBaseTrace
         rw [← getBaseTraceAux_append, ← hsplit]
 
-/-- Length of `getBaseTrace` is monotone in the prefix length. -/
-private lemma getBaseTrace_take_length_mono
+/-- Length form of `getBaseTrace_take_prefix`. -/
+lemma getBaseTrace_take_length_mono
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) {a b : ℕ} (hab : a ≤ b) :
     (getBaseTrace (trace.take a)).length ≤ (getBaseTrace (trace.take b)).length :=
   (getBaseTrace_take_prefix trace hab).length_le
@@ -325,7 +406,7 @@ private lemma getBaseTrace_take_length_mono
 /-- The base index of a non-redundant trace position `k` is `|getBaseTrace (trace.take k)|`, and the
 base trace there carries that entry.  This is the order-preserving "first occurrence ↦ base index"
 map used for Lemma 5.16. -/
-private lemma baseIdx_of_getElem?_not_redundant
+lemma baseIdx_of_getElem?_not_redundant
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     {k : ℕ} {e : Sigma (duplexSpongeChallengeOracle StmtIn U)}
     (hget : (trace)[k]? = some e)
@@ -356,8 +437,48 @@ private lemma baseIdx_of_getElem?_not_redundant
   have h2 : (getBaseTrace (trace.take k) ++ [e])[b]'hlen = e := by simp [hbdef]
   exact (hpre.getElem hlen).symm.trans h2
 
+/-- Strengthening of `baseIdx_of_getElem?_not_redundant`: the base prefix before the retained raw
+entry is exactly the base trace of the raw prefix before that entry. -/
+lemma basePrefix_of_getElem?_not_redundant
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    {k : ℕ} {e : Sigma (duplexSpongeChallengeOracle StmtIn U)}
+    (hget : (trace)[k]? = some e)
+    (hnr : ¬ isRedundantEntryOfPrefix (trace.take k) e) :
+    ∃ hb : (getBaseTrace (trace.take k)).length < (getBaseTrace trace).length,
+      (getBaseTrace trace).take (getBaseTrace (trace.take k)).length =
+          getBaseTrace (trace.take k) ∧
+        (getBaseTrace trace)[(getBaseTrace (trace.take k)).length]'hb = e := by
+  classical
+  rw [List.getElem?_eq_some_iff] at hget
+  obtain ⟨hk, hek⟩ := hget
+  have key : getBaseTraceAux (trace.drop k) (getBaseTrace (trace.take k)) = getBaseTrace trace := by
+    rw [getBaseTrace, getBaseTrace, ← getBaseTraceAux_append, List.take_append_drop]
+  have hsub : getBaseTrace (trace.take k) ⊆ trace.take k :=
+    (getBaseTrace_sublist (trace.take k)).subset
+  have hnr' : ¬ isRedundantEntryOfPrefix (getBaseTrace (trace.take k)) e :=
+    fun hc => hnr (isRedundantEntryOfPrefix_mono hsub hc)
+  have hdrop : trace.drop k = e :: trace.drop (k + 1) := by
+    rw [← hek]; exact List.drop_eq_getElem_cons hk
+  have hstep : getBaseTrace trace
+      = getBaseTraceAux (trace.drop (k + 1)) (getBaseTrace (trace.take k) ++ [e]) := by
+    rw [← key, hdrop]; simp only [getBaseTraceAux, hnr', ↓reduceDIte]
+  have hpre : (getBaseTrace (trace.take k) ++ [e]) <+: getBaseTrace trace := by
+    rw [hstep]; exact getBaseTraceAux_prefix _ _
+  have hpreBase : getBaseTrace (trace.take k) <+: getBaseTrace trace :=
+    (List.prefix_append (getBaseTrace (trace.take k)) [e]).trans hpre
+  have htake : (getBaseTrace trace).take (getBaseTrace (trace.take k)).length =
+      getBaseTrace (trace.take k) := by
+    have hprefixEq := (List.prefix_iff_eq_append.mp hpreBase).symm
+    rw [hprefixEq, List.take_left]
+  have hlen : (getBaseTrace (trace.take k)).length
+      < (getBaseTrace (trace.take k) ++ [e]).length := by simp
+  refine ⟨lt_of_lt_of_le hlen hpre.length_le, htake, ?_⟩
+  set b := (getBaseTrace (trace.take k)).length with hbdef
+  have h2 : (getBaseTrace (trace.take k) ++ [e])[b]'hlen = e := by simp [hbdef]
+  exact (hpre.getElem hlen).symm.trans h2
+
 /-- A hash entry indexed by a `getElem?` not occurring earlier survives into `getBaseTrace`. -/
-private lemma hash_mem_getBaseTrace
+lemma hash_mem_getBaseTrace
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     {stmt : StmtIn} {cap : Vector U SpongeSize.C} {k : ℕ}
     (hget : (trace)[k]? = some ⟨.inl stmt, cap⟩)
@@ -367,6 +488,85 @@ private lemma hash_mem_getBaseTrace
   intro hred
   simp only [isRedundantEntryOfPrefix] at hred
   exact hnr hred
+
+/-- Every hash pair represented anywhere in a raw trace has a representative in its base trace.
+The proof selects the first raw occurrence of the exact hash pair; Definition 5.5 then keeps it
+because no equal hash pair occurs earlier. -/
+lemma hash_pair_mem_getBaseTrace_of_mem
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    {stmt : StmtIn} {cap : Vector U SpongeSize.C}
+    (hmem : (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace) :
+    (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
+      getBaseTrace trace := by
+  classical
+  let P : ℕ → Prop := fun k =>
+    (trace)[k]? = some (⟨.inl stmt, cap⟩ :
+      Sigma (duplexSpongeChallengeOracle StmtIn U))
+  have hExists : ∃ k, P k := by
+    rw [List.mem_iff_getElem?] at hmem
+    exact hmem
+  let k := Nat.find hExists
+  have hk : P k := Nat.find_spec hExists
+  have hFirst : ∀ m < k, ¬ P m := by
+    intro m hmk hm
+    have hle : k ≤ m := Nat.find_min' hExists hm
+    omega
+  have hnotEarlier :
+      (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∉ trace.take k := by
+    rw [List.mem_take_iff_getElem]
+    rintro ⟨m, hm, hget⟩
+    have hmk : m < k := lt_of_lt_of_le hm (Nat.min_le_left _ _)
+    have hmLen : m < trace.length := lt_of_lt_of_le hm (Nat.min_le_right _ _)
+    exact hFirst m hmk (by
+      unfold P
+      rw [List.getElem?_eq_getElem hmLen]
+      exact congrArg some hget)
+  exact hash_mem_getBaseTrace trace hk hnotEarlier
+
+/-- Appending an entry that is already redundant relative to the current base trace does not
+change the base trace.  This is the generic cache-hit/consistency-response eliminator: if the
+new raw entry is already represented by `getBaseTrace trace`, it cannot become a fresh base
+representative. -/
+lemma getBaseTrace_append_singleton_of_redundant_base
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U))
+    (hred : isRedundantEntryOfPrefix (getBaseTrace trace) entry) :
+    getBaseTrace (trace ++ [entry]) = getBaseTrace trace := by
+  classical
+  unfold getBaseTrace
+  rw [getBaseTraceAux_append]
+  change getBaseTraceAux [entry] (getBaseTraceAux trace []) = getBaseTraceAux trace []
+  change isRedundantEntryOfPrefix (getBaseTraceAux trace []) entry at hred
+  rw [show getBaseTraceAux [entry] (getBaseTraceAux trace []) =
+      if hRed : isRedundantEntryOfPrefix (getBaseTraceAux trace []) entry then
+        getBaseTraceAux [] (getBaseTraceAux trace [])
+      else
+        getBaseTraceAux [] (getBaseTraceAux trace [] ++ [entry]) by rfl]
+  rw [dif_pos hred]
+  rfl
+
+/-- Appending an entry that is not redundant relative to the current base trace appends that entry
+to the base trace.  This is the generic fresh-representative counterpart of
+`getBaseTrace_append_singleton_of_redundant_base`. -/
+lemma getBaseTrace_append_singleton_of_not_redundant_base
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U))
+    (hnot : ¬ isRedundantEntryOfPrefix (getBaseTrace trace) entry) :
+    getBaseTrace (trace ++ [entry]) = getBaseTrace trace ++ [entry] := by
+  classical
+  unfold getBaseTrace
+  rw [getBaseTraceAux_append]
+  change getBaseTraceAux [entry] (getBaseTraceAux trace []) =
+    getBaseTraceAux trace [] ++ [entry]
+  change ¬ isRedundantEntryOfPrefix (getBaseTraceAux trace []) entry at hnot
+  rw [show getBaseTraceAux [entry] (getBaseTraceAux trace []) =
+      if hRed : isRedundantEntryOfPrefix (getBaseTraceAux trace []) entry then
+        getBaseTraceAux [] (getBaseTraceAux trace [])
+      else
+        getBaseTraceAux [] (getBaseTraceAux trace [] ++ [entry]) by rfl]
+  rw [dif_neg hnot]
+  rfl
 
 end Def_5_5_6_RedundantEntryDSHelpers
 
@@ -497,8 +697,7 @@ Note: `E_func(tr)` never holds for a true permutation `p` and its inverse `p⁻�
 
 **Strengthening:** bidirectional. Case 1 (`j`-th entry `p`-forward) is Eq. 26; Case 2 (`j`-th entry
 `p⁻¹`) has no paper counterpart but is *required* by `not_collisionFwdBwd_of_not_combined`
-(Lemma 5.10, Item 3). The `≠`-output conditions are forced by base-trace non-redundancy.
-See `DSFS-archive/BadEvents_deep_analysis.md` §7. -/
+(Lemma 5.10, Item 3). The `≠`-output conditions are forced by base-trace non-redundancy. -/
 def E_func : Prop :=
   let baseTrace := getBaseTrace trace
   ∃ j : Fin baseTrace.length, ∃ stateIn stateOut : CanonicalSpongeState U,
@@ -518,7 +717,7 @@ def E_func : Prop :=
 /-- CO25 Definition 5.7 — Combined bad event `E(tr)`.
 `E(tr)` is the disjunction `E_dup(tr) ∨ E_func(tr)`, i.e., either a capacity-segment
 duplication occurs or `p` behaves non-functionally.  Lemma 5.8 bounds `Pr[E(tr_P̃ ‖ tr_V)]`
-in both the real `𝒟_𝔖` and simulator `𝒟_Σ` experiments. -/
+in both the sponge `𝒟_𝔖` and simulator `𝒟_Σ` experiments. -/
 def E : Prop :=
   capacitySegmentDup trace ∨ E_func trace
 
@@ -544,7 +743,7 @@ noncomputable def lemma5_8Bound (U : Type) [SpongeUnit U] [SpongeSize] [Fintype 
   (7 * tShift ^ 2 - 3 * tShift) / (2 * ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C)
 
 /-- CO25 §5.6 — Run a concrete duplex-sponge experiment under an oracle implementation and return
-the full DS query-answer trace.  Used as the building block for both the real (`𝒟_𝔖`) and
+the full DS query-answer trace.  Used as the building block for both the sponge (`𝒟_𝔖`) and
 simulator (`𝒟_Σ`) trace distributions in Lemma 5.8. -/
 def traceDistOfConcreteExperiment
     {σ α : Type}
@@ -569,34 +768,52 @@ variable {StmtOut : Type}
   {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
 
+/-- Class predicate on the `[]ₒ + DS` query domain: is this a hash (`h`) query point? -/
+def isHashQueryPoint : ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Bool
+  | .inr (.inl _) => true
+  | _ => false
+
+/-- Class predicate on the `[]ₒ + DS` query domain: is this a forward-permutation (`p`) point? -/
+def isFwdPermQueryPoint : ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Bool
+  | .inr (.inr (.inl _)) => true
+  | _ => false
+
+/-- Class predicate on the `[]ₒ + DS` query domain: is this an inverse-permutation (`p⁻¹`)
+point? -/
+def isBwdPermQueryPoint : ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Bool
+  | .inr (.inr (.inr _)) => true
+  | _ => false
+
 /-- CO25 Lemma 5.8 — aggregate DS hash queries in the combined empty-plus-DS surface. -/
 def isLemma5_8HashQuery :
-    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inl _) => True
-  | _ => False
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop :=
+  fun t => isHashQueryPoint (StmtIn := StmtIn) (U := U) t = true
 
 /-- CO25 Lemma 5.8 — aggregate DS forward-permutation queries in the combined surface. -/
 def isLemma5_8PermQuery :
-    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inl _)) => True
-  | _ => False
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop :=
+  fun t => isFwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true
 
 /-- CO25 Lemma 5.8 — aggregate DS inverse-permutation queries in the combined surface. -/
 def isLemma5_8PermInvQuery :
-    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inr _)) => True
-  | _ => False
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop :=
+  fun t => isBwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true
 
-/-- CO25 Lemma 5.8 — semantic aggregate `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
-Each counter ranges over its entire oracle family, rather than resetting for every oracle input. -/
+/-- CO25 Lemma 5.8 — Semantic `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
+`IsLemma5_8QueryBound maliciousProver tₕ tₚ tₚᵢ` asserts that the prover makes **in total** at
+most `tₕ` hash queries, `tₚ` forward permutation queries, and `tₚᵢ` inverse permutation queries
+on the combined `[]ₒ + DS` surface that matches the §5.8 hybrid games (LHS=Hyb_0, RHS=Hyb_1).
+
+Formalized as three per-class `IsQueryBoundP` totals.  (A per-point
+`IsPerIndexQueryBound` with a constant budget would be strictly weaker — it caps each *specific*
+query point separately and admits unboundedly long traces — and cannot support the paper's
+`|tr̄| ≤ tₕ + 1 + tₚ + L + tₚᵢ` accounting.) -/
 abbrev IsLemma5_8QueryBound
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP maliciousProver isLemma5_8HashQuery tₕ ∧
-      OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermQuery tₚ ∧
-      OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermInvQuery tₚᵢ
+  OracleComp.IsQueryBoundP maliciousProver isLemma5_8HashQuery tₕ ∧
+  OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermQuery tₚ ∧
+  OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermInvQuery tₚᵢ
 
 /-- CO25 §5.6 — Project a `[]ₒ + DS` combined trace log down to just the DS component.
 The empty-oracle branch is unreachable, so we discard it via `PEmpty.elim`. -/
@@ -619,7 +836,7 @@ where the right summand is the abortable DS impl. -/
 private def lemma5_8EmptyQueryImplGeneric {m : Type → Type} : QueryImpl []ₒ m :=
   fun q => PEmpty.elim q
 
-/-- CO25 §5.6 (Option G) — Monad-reorder + logging wrapper. Reorders `StateT σ (OptionT ProbComp)`
+/-- CO25 §5.6 — Monad-reorder + logging wrapper. Reorders `StateT σ (OptionT ProbComp)`
 into `OptionT (StateT (σ × QueryLog) ProbComp)` so the log survives an abort (paper line 1417:
 "abort halts execution; trace is partial"), and appends `⟨q, a⟩` on each successful query. -/
 private def lemma5_8LoggingWrapper {σ : Type}
@@ -634,7 +851,39 @@ private def lemma5_8LoggingWrapper {σ : Type}
     | none => pure (none, st)
     | some (a, s') => pure (some a, (s', st.2 ++ [⟨q, a⟩]))
 
-/-- CO25 §5.6 (Option G) — Abortable Lemma-5.8 trace experiment, mirroring the §5.8 hybrid skeleton
+/-- CO25 §5.6 — the log-appending wrapper of the Lemma-5.8 experiments, standalone so
+support/counting lemmas can reason about it: each *successful* DS query appends the wide-tagged
+entry `⟨Sum.inr q, a⟩` to the `[]ₒ + DS` log; an abort leaves the log unchanged (paper line 1417:
+"abort halts execution; trace is partial"). -/
+def lemma5_8WrappedDSImpl {σ : Type}
+    (spongeImpl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (StateT σ (OptionT ProbComp))) :
+    QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (OptionT
+        (StateT (σ ×
+          QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
+  fun q => OptionT.mk fun st => do
+    let r ← (spongeImpl q st.1).run
+    match r with
+    | none => pure (none, st)
+    | some (a, s') => pure (some a, (s', st.2 ++ [⟨Sum.inr q, a⟩]))
+
+/-- The `[]ₒ + DS` combined implementation of the Lemma-5.8 experiments: the (uncallable) empty
+branch paired with the log-appending DS wrapper `lemma5_8WrappedDSImpl`. -/
+def lemma5_8CombinedImpl {σ : Type}
+    (spongeImpl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+      (StateT σ (OptionT ProbComp))) :
+    QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
+      (OptionT
+        (StateT (σ ×
+          QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
+  (lemma5_8EmptyQueryImplGeneric
+    (m := OptionT
+      (StateT (σ ×
+        QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)))
+  + lemma5_8WrappedDSImpl (StmtIn := StmtIn) (U := U) spongeImpl
+
+/-- CO25 §5.6 — Abortable Lemma-5.8 trace experiment, mirroring the §5.8 hybrid skeleton
 (`KeyLemma.dsfsGame` / `hybridGame`): the salted `maliciousProver` runs under `impl`, then the
 forward-only verifier `𝒱^{h,p} := V.toDSFS δ` (paper Figure 4 line 3) runs on its output, with the
 carrier `σ` (e.g. `D_𝔖.Carrier` / `D2SQueryState`) threaded throughout.
@@ -643,7 +892,7 @@ Returns `(tr_P̃, tr_V)`; the bad event `E` (Def 5.7) is evaluated on `tr_P̃ ++
 noncomputable def lemma5_8ProjectedTraceDistAbortable
     {σ : Type}
     (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
+    (spongeImpl : QueryImpl (duplexSpongeChallengeOracle StmtIn U)
       (StateT σ (OptionT ProbComp)))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
@@ -651,27 +900,9 @@ noncomputable def lemma5_8ProjectedTraceDistAbortable
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let s₀ ← init
   -- Log each DS query into the wide `[]ₒ + DS` log (tagged `Sum.inr`); the log is kept on abort.
-  let wrappedDSImpl :
-      QueryImpl (duplexSpongeChallengeOracle StmtIn U)
-        (OptionT
-          (StateT (σ ×
-            QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
-    fun q => OptionT.mk fun st => do
-      let r ← (impl q st.1).run
-      match r with
-      | none => pure (none, st)
-      | some (a, s') => pure (some a, (s', st.2 ++ [⟨Sum.inr q, a⟩]))
-  -- The `[]ₒ` summand is unreachable, so compose it via the generic empty impl.
-  let combinedImpl :
-      QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
-        (OptionT
-          (StateT (σ ×
-            QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)) :=
-    (lemma5_8EmptyQueryImplGeneric
-      (m := OptionT
-        (StateT (σ ×
-          QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) ProbComp)))
-    + wrappedDSImpl
+  -- The `[]ₒ` summand is unreachable (`lemma5_8CombinedImpl` pairs it with the generic empty
+  -- impl).
+  let combinedImpl := lemma5_8CombinedImpl (StmtIn := StmtIn) (U := U) spongeImpl
   -- Prover phase on a fresh log `[]`; the log accumulates the prover trace `tr_P̃`.
   let proverResult ← ((simulateQ combinedImpl maliciousProver).run) (s₀, [])
   match proverResult with
@@ -696,12 +927,12 @@ the combined trace down to the DS component. -/
 def lemma5_8ProjectedTraceDistOfConcreteExperiment
     {σ α : Type}
     (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (spongeImpl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
     (exp : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
   let combinedImpl :
       QueryImpl ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp) :=
-    (lemma5_8EmptyQueryImpl (σ := σ)) + impl
+    (lemma5_8EmptyQueryImpl (σ := σ)) + spongeImpl
   let outWithLog :
       OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
         (α × QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U)) :=
@@ -710,60 +941,54 @@ def lemma5_8ProjectedTraceDistOfConcreteExperiment
     (simulateQ combinedImpl outWithLog).run' (← init)
   pure (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trace)
 
-/-- CO25 §5.6 Lemma 5.8 — Shared experiment shape for both sides of Lemma 5.8.
-Runs the malicious prover under the DS oracle, then runs the DSFS verifier on the resulting
-`(statement, proof)` pair.  Returns the optional verifier output.
+/-- CO25 §5.6 Lemma 5.8 — Shared sequential experiment for the lazy simulator runner.
+The salted malicious prover produces `(statement, (salt, messages))`; the verifier consumes that
+same salted proof through the forward-only wide lift `runForwardVerifierWide`.  Thus this is
+exactly the computation underlying the success branch of
+`lemma5_8ProjectedTraceDistAbortable`, except that its wrapper log is not reset between phases.
 
-Type-level CO25 Figure 4 line 3: the honest verifier is invoked at the narrow forward-only spec
-`[]ₒ + duplexSpongeForwardOracle StmtIn U` (`𝒱^{h,p}` — no `p⁻¹`); its computation is then
-`liftComp`-ed into the wide spec used by the (adversarial) prover for trace concatenation. -/
+Type-level CO25 Figure 4 line 3: the honest verifier begins at the narrow forward-only surface
+`[]ₒ + duplexSpongeForwardOracle` (`𝒱^{h,p}`, with no `p⁻¹`); `runForwardVerifierWide` then lifts
+that computation into the adversary's wide `[]ₒ + duplexSpongeChallengeOracle` surface. -/
 def lemma5_8TraceExperiment
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver :
-      OracleComp (duplexSpongeChallengeOracle StmtIn U) (StmtIn × pSpec.Messages)) :
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut) := do
-  let _ : Codec pSpec U := codec
-  let ⟨stmtIn, messages⟩ ← maliciousProver
-  let verifyCompNarrow :
-      OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) (Option StmtOut) :=
-    ((Verifier.duplexSpongeFiatShamirForward
-        (oSpec := []ₒ) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
-        (U := U) V).run
-      stmtIn (fun i => match i with | ⟨0, _⟩ => messages)).run
-  liftComp verifyCompNarrow ([]ₒ + duplexSpongeChallengeOracle StmtIn U)
+  let ⟨stmtIn, proof⟩ ← maliciousProver
+  runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof
 
-/-- CO25 §5.6 (Option G) — Trivially lift a total `StateT σ ProbComp` DS implementation to the
+/-- CO25 §5.6 — Trivially lift a total `StateT σ ProbComp` DS implementation to the
 abortable shape `StateT σ (OptionT ProbComp)` required by `lemma5_8ProjectedTraceDistAbortable`.
 The lifted impl never produces `none`. -/
-private def lemma5_8TotalAbortLift {σ : Type}
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp)) :
+def lemma5_8TotalAbortLift {σ : Type}
+    (spongeImpl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp)) :
     QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ (OptionT ProbComp)) :=
-  fun q s => OptionT.lift (impl q s)
+  fun q s => OptionT.lift (spongeImpl q s)
 
-/-- CO25 Lemma 5.8 — Left-hand-side trace distribution (Option G — paper-faithful abort).
-Real DS execution under the explicit `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` implementation. The eager impl is
+/-- CO25 Lemma 5.8 — Left-hand-side trace distribution with explicit abort handling.
+Sponge DS execution under the explicit `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` implementation. The eager impl is
 total (never aborts), so the `OptionT`-layer is a dummy. Returns the pair `(tr_P̃, tr_V)`. -/
-noncomputable def lemma5_8RealTraceDist
-    {σReal : Type}
-    (initReal : ProbComp σReal)
-    (implReal : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σReal ProbComp))
+noncomputable def lemma5_8SpongeTraceDist
+    {σSponge : Type}
+    (initSponge : ProbComp σSponge)
+    (implSponge : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σSponge ProbComp))
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
     ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
               QueryLog (duplexSpongeChallengeOracle StmtIn U)) :=
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (δ := δ)
-    initReal
-    (lemma5_8TotalAbortLift (StmtIn := StmtIn) (U := U) implReal)
+    (init := initSponge)
+    (spongeImpl := lemma5_8TotalAbortLift (StmtIn := StmtIn) (U := U) implSponge)
     V maliciousProver
 
-/-- CO25 Lemma 5.8 — Right-hand-side trace distribution (Option G — paper-faithful abort).
+/-- CO25 Lemma 5.8 — Right-hand-side trace distribution with explicit abort handling.
 Simulator execution under eager `g ← 𝒟_Σ(λ, n)` with `D2SQuery` as the oracle implementation.
 The `d2sQueryImpl` runs in `StateT D2SQueryState (OptionT ProbComp)`: an `OptionT`-abort halts the
 experiment (paper line 1417). Returns the pair `(tr_P̃, tr_V)`.
 
 The `g` carrier is sampled **once** at experiment start from `𝒟_Σ`, captured by closure,
-and consulted deterministically by every `gᵢ` query. This mirrors `lemma5_8RealTraceDist`'s
+and consulted deterministically by every `gᵢ` query. This mirrors `lemma5_8SpongeTraceDist`'s
 eager `(h, p, p⁻¹) ← 𝒟_𝔖` sampling — CO25 Def. 4.2 + Lemma 5.8 statement. -/
 noncomputable def lemma5_8SigmaTraceDist
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
@@ -775,7 +1000,7 @@ noncomputable def lemma5_8SigmaTraceDist
   lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (U := U) (δ := δ)
     (init := pure default)
-    (impl := ProverTransform.d2sQueryImpl
+    (spongeImpl := ProverTransform.d2sQueryImpl
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
       (gImpl := fun q => OptionT.lift
@@ -785,55 +1010,11 @@ noncomputable def lemma5_8SigmaTraceDist
           QueryImpl.id' unifSpec) aux)))
     V maliciousProver
 
-
-set_option linter.unusedDecidableInType false in
-/-- CO25 Lemma 5.8 — Bad-event probability bound (paper-faithful eager statement).
-For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃ with `tₚ ≥ L` (where
-`L = pSpec.totalNumPermQueries = Lₚ + Lᵥ` is the verifier's total message/challenge
-permutation-query count, matching the §5.8 hybrid bookkeeping in `claim_5_21` / `_22` / `_24`),
-
-```
-max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
-  ≤ (7·T² − 3·T) / (2·|Σ|^c)
-```
-
-where `T = tₕ + 1 + tₚ + L + tₚᵢ`. Both sides match CO25 Lemma 5.8 verbatim:
-the left-hand side samples `(h, p, p⁻¹) ← 𝒟_𝔖(λ, n)` once at the start of the experiment
-(eager sampling, CO25 Def. 4.2) and corresponds to `KeyLemma.dsfsGame` (`Hyb_0`); the
-right-hand side runs `g ← 𝒟_Σ(λ, n)` via the `D2SQuery` simulator and corresponds to
-`KeyLemma.hybridGame` instantiated as `Hyb_1`. -/
-theorem lemma_5_8
-    [Fintype U]
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
-      IsLemma5_8QueryBound
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-        maliciousProver tₕ tₚ tₚᵢ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    max
-        (Pr[fun (tr : QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
-                      QueryLog (duplexSpongeChallengeOracle StmtIn U)) =>
-              BadEventDS.E (tr.1 ++ tr.2) |
-          lemma5_8RealTraceDist
-            (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U) (δ := δ)
-            (D_𝔖 StmtIn U).sample
-            ((D_𝔖 StmtIn U).eagerImpl)
-            V maliciousProver])
-        (Pr[fun (tr : QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
-                      QueryLog (duplexSpongeChallengeOracle StmtIn U)) =>
-              BadEventDS.E (tr.1 ++ tr.2) |
-          lemma5_8SigmaTraceDist
-            (T_H := T_H) (T_P := T_P) (δ := δ)
-            (StmtIn := StmtIn) (StmtOut := StmtOut)
-            (n := n) (pSpec := pSpec) (U := U)
-            V maliciousProver])
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
-  let _ := hMaliciousBound
-  let _ := hTp
-  sorry
+/- CO25 Lemma 5.8 — the bad-event probability bound `max{Pr[E|𝒟_𝔖], Pr[E|𝒟_Σ]} ≤ (7T²−3T)/(2|Σ|^c)`
+— is stated and assembled in `BadEventsProb.lean` as `BadEventDS.lemma_5_8`.  It could not live here
+because its proof factors through the per-index refactor + union bound (`BadEventsProb`), which
+imports this file.  Its finite-target union-bound arithmetic is fully proven; the remaining
+obligations are the per-side base-trace length and per-index freshness bounds. -/
 
 end Lemma_5_8
 
@@ -1007,6 +1188,143 @@ lemma not_collisionPerm_of_not_combined
 For a well-formed `(h, p, p⁻¹)` trace, if `E(tr) = 0` then `E_prp(tr) = 0`. -/
 theorem lemma_5_10 (h : ¬ E trace) : ¬ E_prp trace :=
   not_collisionPerm_of_not_combined (trace := trace) h
+
+/-- Outside the canonical combined bad event, normalized permutation pairs in the base trace are
+output-functional: one output state has at most one input state.  The two inverse-only
+representatives are handled by the backward half of the canonical bidirectional `E_func`; the
+other three direction combinations are the corresponding Lemma 5.10 collision cases. -/
+lemma normalizedPermPair_input_unique_of_not_E
+    (hNoBad : ¬ E trace)
+    {sIn sIn' sOut : CanonicalSpongeState U}
+    (hLeft : (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut), sIn⟩ ∈ getBaseTrace trace)
+    (hRight : (⟨.inr (.inl sIn'), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut), sIn'⟩ ∈ getBaseTrace trace) :
+    sIn' = sIn := by
+  by_contra hne
+  rcases hLeft with hFwd | hInv <;> rcases hRight with hFwd' | hInv'
+  · exact (not_collisionFwdFwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sIn, sIn', sOut, hFwd, hFwd', Ne.symm hne⟩
+  · exact (not_collisionFwdBwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sIn, sOut, sIn', hFwd, hInv', Ne.symm hne⟩
+  · exact (not_collisionFwdBwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sIn', sOut, sIn, hFwd', hInv, hne⟩
+  · rw [List.mem_iff_get] at hInv hInv'
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hInv
+    obtain ⟨⟨i', hi'⟩, hgi'⟩ := hInv'
+    simp only [List.get_eq_getElem] at hgi hgi'
+    have hidx : i ≠ i' := by
+      intro heq
+      subst heq
+      rw [hgi] at hgi'
+      exact hne (congrArg
+        (fun e => match e with | ⟨.inr (.inr _), s⟩ => s | _ => sIn') hgi').symm
+    rcases Nat.lt_or_gt_of_ne hidx with hlt | hlt
+    · apply hNoBad
+      right
+      refine ⟨⟨i', hi'⟩, sIn', sOut, Or.inr ⟨hgi', ⟨⟨i, hi⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sIn, hgi, Ne.symm hne⟩
+    · apply hNoBad
+      right
+      refine ⟨⟨i, hi⟩, sIn, sOut, Or.inr ⟨hgi, ⟨⟨i', hi'⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sIn', hgi', hne⟩
+
+/-- Transport the trace-level partial-permutation fact through D2SQuery's exact mirror.  Together
+with table nodupness, this is precisely the precondition of the safe `outlu` theorem. -/
+lemma table_outputFunctional_of_mirror_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace) (hNoBad : ¬ E trace) :
+    TraceTableOps.OutputFunctional trΔ.p := by
+  intro sIn sIn' sOut hLeft hRight
+  have hLeftEntries : (sIn, sOut) ∈ TraceTableOps.entries trΔ.p := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hLeft
+  have hRightEntries : (sIn', sOut) ∈ TraceTableOps.entries trΔ.p := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hRight
+  have hLeftRaw :
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut), sIn⟩ ∈ trace :=
+    (hMirror.2 sIn sOut).mpr hLeftEntries
+  have hRightRaw :
+      (⟨.inr (.inl sIn'), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut), sIn'⟩ ∈ trace :=
+    (hMirror.2 sIn' sOut).mpr hRightEntries
+  exact normalizedPermPair_input_unique_of_not_E (trace := trace) hNoBad
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn sOut hLeftRaw)
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn' sOut hRightRaw)
+
+/-- Outside the canonical combined bad event, normalized permutation pairs in the base trace are
+input-functional as well.  This is the forward dual of
+`normalizedPermPair_input_unique_of_not_E`. -/
+lemma normalizedPermPair_output_unique_of_not_E
+    (hNoBad : ¬ E trace)
+    {sIn sOut sOut' : CanonicalSpongeState U}
+    (hLeft : (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut), sIn⟩ ∈ getBaseTrace trace)
+    (hRight : (⟨.inr (.inl sIn), sOut'⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U))
+        ∈ getBaseTrace trace ∨ ⟨.inr (.inr sOut'), sIn⟩ ∈ getBaseTrace trace) :
+    sOut' = sOut := by
+  by_contra hne
+  rcases hLeft with hFwd | hInv <;> rcases hRight with hFwd' | hInv'
+  · rw [List.mem_iff_get] at hFwd hFwd'
+    obtain ⟨⟨i, hi⟩, hgi⟩ := hFwd
+    obtain ⟨⟨i', hi'⟩, hgi'⟩ := hFwd'
+    simp only [List.get_eq_getElem] at hgi hgi'
+    have hidx : i ≠ i' := by
+      intro heq
+      subst heq
+      rw [hgi] at hgi'
+      exact hne (congrArg
+        (fun e => match e with | ⟨.inr (.inl _), s⟩ => s | _ => sOut') hgi').symm
+    rcases Nat.lt_or_gt_of_ne hidx with hlt | hlt
+    · apply hNoBad
+      right
+      refine ⟨⟨i', hi'⟩, sIn, sOut', Or.inl ⟨hgi', ⟨⟨i, hi⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sOut, hgi, Ne.symm hne⟩
+    · apply hNoBad
+      right
+      refine ⟨⟨i, hi⟩, sIn, sOut, Or.inl ⟨hgi, ⟨⟨i', hi'⟩, hlt, ?_⟩⟩⟩
+      exact Or.inl ⟨sOut', hgi', hne⟩
+  · exact (not_collisionBwdFwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut', sIn, sOut, hInv', hFwd, hne⟩
+  · exact (not_collisionBwdFwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut, sIn, sOut', hInv, hFwd', Ne.symm hne⟩
+  · exact (not_collisionBwdBwd_of_not_combined (trace := trace) hNoBad)
+      ⟨sOut, sOut', sIn, hInv, hInv', Ne.symm hne⟩
+
+/-- The mirror also transports input functionality from the no-bad base trace to the D2SQuery
+permutation table. -/
+lemma table_inputFunctional_of_mirror_of_not_E
+    {T_H T_P : Type} [DecidableEq StmtIn] [DecidableEq U]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    (hMirror : trΔ.MirrorsQueryLog trace) (hNoBad : ¬ E trace) :
+    TraceTableOps.InputFunctional trΔ.p := by
+  intro sIn sOut sOut' hLeft hRight
+  have hLeftEntries : (sIn, sOut) ∈ TraceTableOps.entries trΔ.p := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hLeft
+  have hRightEntries : (sIn, sOut') ∈ TraceTableOps.entries trΔ.p := by
+    apply Multiset.mem_coe.mp
+    rw [LawfulTraceTable.toMultiSet_ofEntries]
+    exact hRight
+  have hLeftRaw :
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut), sIn⟩ ∈ trace :=
+    (hMirror.2 sIn sOut).mpr hLeftEntries
+  have hRightRaw :
+      (⟨.inr (.inl sIn), sOut'⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        ⟨.inr (.inr sOut'), sIn⟩ ∈ trace :=
+    (hMirror.2 sIn sOut').mpr hRightEntries
+  exact normalizedPermPair_output_unique_of_not_E (trace := trace) hNoBad
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn sOut hLeftRaw)
+    (normalizedPermPair_mem_getBaseTrace_of_mem trace sIn sOut' hRightRaw)
 
 end Lemma5_10
 
@@ -1626,7 +1944,8 @@ lemma lemma_5_16 (h : ¬ E trace)
       have := seq.inputState_length_eq_outputState_length_succ; omega
     by_cases h0 : 0 < seq.outputState.length
     · -- Step 0 exists; collide its query capacity with the hash anchor's answer capacity.
-      obtain ⟨i0, hi0val, hi0eq⟩ := fwdStep_base (trace := trace) (state := state) h S_BT hseq 0 h0 hpos
+      obtain ⟨i0, hi0val, hi0eq⟩ :=
+        fwdStep_base (trace := trace) (state := state) h S_BT hseq 0 h0 hpos
       obtain ⟨iH, hiHval, hiHeq⟩ := hashAnchor_base (trace := trace) (state := state) seq hpos
       have hij : i0 ≤ iH := by
         have h1 : i0.val ≤ iH.val := by
@@ -1639,7 +1958,9 @@ lemma lemma_5_16 (h : ¬ E trace)
     · -- No steps: `j_0 = |trace|`, but `j_h < |trace|`, so `j_h > j_0` is impossible.
       exfalso
       rw [Backtrack.BacktrackSequence.Index_snd_eq_length seq (by omega) hpos] at hgt
-      exact absurd hgt (by have := (Backtrack.BacktrackSequence.Index trace state seq).1.isLt; omega)
+      exact absurd hgt (by
+        have := (Backtrack.BacktrackSequence.Index trace state seq).1.isLt
+        omega)
   · -- `E_time_p`: step `ι` query is later than step `ι+1` query.
     obtain ⟨p, hp, ι, hι1, hgt⟩ := htime
     obtain ⟨seq, hseq, rfl⟩ := Finset.mem_image.mp hp
