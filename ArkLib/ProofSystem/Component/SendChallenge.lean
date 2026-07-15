@@ -29,6 +29,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   `[SampleableType (Fin ℓ → C)]` (available from `[SampleableType C]` via the derived `Fin`-domain
   product instance); it is not required for the definitions, `IsPure`, or the structure above.
 
+  Note: this round is `V_to_P` (a *challenge*), not a `P_to_V` prover message, so the challenge
+  vector `Fin ℓ → C` needs **no** `OracleInterface`. The `OracleVerifier` message-oracle argument
+  `[∀ i, OracleInterface (pSpec.Message i)]` is over the empty `MessageIdx` here (discharged by
+  `isEmptyElim`), so there is no hidden compile-time `OracleInterface (Fin ℓ → C)` dependency.
+
   ## References
 
   * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
@@ -91,12 +96,7 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     (oracleVerifier oSpec Statement OStatement C ℓ).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨(stmt, tr.challenges ⟨0, rfl⟩), oStmt⟩ := by
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure (stmt, tr.challenges ⟨0, rfl⟩) :
-          OptionT (OracleComp _) (Statement × (Fin ℓ → C)))
-      = (pure (stmt, tr.challenges ⟨0, rfl⟩) :
-          OptionT (OracleComp oSpec) (Statement × (Fin ℓ → C))) from rfl, pure_bind]
-  congr 1
+  rfl
 
 /-- The `SendChallenge` oracle verifier is pure: it deterministically appends the (transcript-read)
 challenge to the statement. This discharges the deterministic-left hypothesis of the CWSS append,
