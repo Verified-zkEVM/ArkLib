@@ -176,7 +176,7 @@ Still provisional until Lean clients elaborate:
 - exact universes and field layouts of `OracleFamily`, `SourceCtx`, `ClaimWith`, and `RunCore`;
 - the final `ResourceSchema` and stable-resource-identity representation;
 - compiler plan and backend capability field names;
-- whether existing `Spec.Chain` is sufficient for n-ary reduction presentation.
+- whether existing `TypeTree.Chain` is sufficient for n-ary reduction presentation.
 
 The prototype `ArkLib/Interaction` tree on this design branch is valuable evidence and a lemma
 bank. It is not proof that those APIs are current, stable, or mergeable wholesale.
@@ -201,8 +201,8 @@ The architecture has earned its abstraction when all of the following are true:
 - A closed DSL of every derived oracle; `ofQuery` remains the escape hatch.
 - One monolithic “secure protocol” structure; properties remain separate games plus bridges.
 - Category-theory-first APIs or calling translations “functors” before categories and laws exist.
-- A single transcript type: structural interaction transcripts, verifier views, world query logs,
-  and state-restoration move traces remain distinct with explicit conversions.
+- A single execution-record type: structural branch/execution paths, verifier views, world query
+  logs, and state-restoration move traces remain distinct with explicit conversions.
 - Solving quantum-access or impossible-relativization cases inside the classical runner.
 - Rebuilding generic UC machinery: PolyFun and VCVio already contain open-process and UC layers;
   the first oracle-reduction core merely does not depend on them.

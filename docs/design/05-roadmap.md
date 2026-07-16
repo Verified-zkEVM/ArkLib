@@ -94,7 +94,7 @@ Guarantee-transport obligations are surfaced by backend assignment from the firs
 
 ## Phase 7+ — Widening [XL, prioritize by demand]
 
-ZK/WI (programmable worlds, salting, local-view simulators); preprocessing/holography (five-phase games); parallel/shared-prefix combinators; **computational backends** (needs VCV-10): curve (KZG/Pedersen/IPA capability records — Nova generalizes) and lattice, with a gate: *one DLOG/AGM- or SIS-based backend theorem proved end-to-end through a `SecurityReduction`*; indifferentiability; full L6 refinement obligations from `00`; reduction-level associativity via gated PF-6 only if a client demands it.
+ZK/WI (programmable worlds, salting, local-view simulators); preprocessing/holography (five-phase games); parallel/shared-prefix combinators; **computational backends** (needs VCV-10): curve (KZG/Pedersen/IPA capability records — Nova generalizes) and lattice, with a gate: *one DLOG/AGM- or SIS-based backend theorem proved end-to-end through a `SecurityReduction`*; indifferentiability; full L6 refinement obligations from `00`; reduction-level associativity via gated PF-6B only if a client demands it.
 
 ## Dependency sketch
 
