@@ -363,8 +363,8 @@
       <span class="chip">28 files</span>
       <span class="chip">22 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–2 sorry-free</span>
-      <span class="chip">≈24 open sorries</span>
+      <span class="chip">rows 1–3 sorry-free</span>
+      <span class="chip">≈21 open sorries</span>
     </div>
   </div>
 </header>
@@ -524,7 +524,7 @@
       Design notes live beside the tree as <code>HACHI_*.md</code> — the corrected Lemma&nbsp;10 (<code>HACHI_LEMMA10_GAP.md</code>)
       and the ring-switching / packing plans. The composition
       home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
-      directly from the current working tree on the <code>hachi-skeleton</code> branch; “≈24 open sorries” counts genuine proof
+      directly from the current working tree on the <code>hachi-skeleton</code> branch; “≈21 open sorries” counts genuine proof
       terms inside <code>Hachi/</code> and excludes the generic guarded-append (B4) machinery, which lives under
       <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code>.
     </p>
@@ -555,8 +555,8 @@
       rows:[
       { n:3, kind:"bridge", name:"Rˡⁱⁿ adapter", sub:"RingSwitch", fn:"Rlin.lean",
         files:[["RingSwitch","Rlin.lean"]], ref:"§4.3 · reads Eq. 20", rounds:"0 rounds", cwss:"any",
-        relIn:"relOutE", relOut:"relRlinE", status:"wip", sorry:3, badges:["bridge"],
-        desc:"Zero-round adapter reading QuadEval's Eq.&nbsp;(20) output as an unstructured linear relation <code>Rˡⁱⁿ</code> — stacks the response ζ against the five verification rows as one block matrix. Sorried: the block-matrix assembly / unstacking and the block-row pull-back." },
+        relIn:"relOutE", relOut:"relRlinE", status:"proven", sorry:0, badges:["bridge"],
+        desc:"Zero-round adapter reading QuadEval's Eq.&nbsp;(20) output as an unstructured linear relation <code>Rˡⁱⁿ</code> — stacks the response ζ against the five verification rows as one block matrix. <b>Sorry-free &amp; axiom-clean:</b> the block matrix <code>M</code>/rhs <code>y</code> are assembled and the block-row equivalence <code>rlin_iff_relOut</code> is proven; <code>stack</code>/<code>unstack</code> are mutually inverse, so both the CWSS pull-back and the completeness direction hold." },
       { n:4, kind:"step", name:"HMZ25 lift", sub:"RingSwitch", fn:"Reduction.lean",
         files:[["RingSwitch","Reduction.lean"]], ref:"§4.3 · Fig 4 · Lemma 9", rounds:"msg t ; α ∈ F", cwss:"ℓ = 1, k = 2d",
         relIn:"relRlinE", relOut:"relLiftE", status:"wip", sorry:1, badges:[],
@@ -642,7 +642,7 @@
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["","RingSwitch.lean","umbrella","§4.3","—","umbrella",0],
-    ["RingSwitch","Rlin.lean","bridge","§4.3","3","wip",3],
+    ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","wip",1],
     ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",1],
@@ -664,7 +664,7 @@
   var counts = { proven:0, wip:0 };
   INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations, the entire QuadEval subprotocol (rows 1–2), and the Rˡⁱⁿ adapter (row 3)." },
     { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–9, escape threading, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];

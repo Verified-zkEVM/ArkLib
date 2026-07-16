@@ -99,7 +99,8 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 `Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`);
 `coordinateWiseSpecialSound_of_mkWitness_scalar` (`ScalarRound.lean`, consumed only by future
 proofs). *Escape threading* (F2.0): `quadEval_coordinateWiseSpecialSound_withEscape`.
-*Per-link math*: the F2 index bookkeeping (`rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE`),
+*Per-link math* (the F2 `R^lin` adapter — `rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE` — is now
+proven and sorry-free):
 Lemma 9 (`lift_coordinateWiseSpecialSound`), the F5 encodings (`Constraints.lean`), the
 un-batching (`mem_relLiftE_of_relBatchedE`), corrected Lemma 10
 (`zeroCheck_coordinateWiseSpecialSound`), the sum-to-point bridge, Lemma 11
