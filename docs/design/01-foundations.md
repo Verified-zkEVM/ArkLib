@@ -61,7 +61,8 @@ Do not rebuild the following:
   (`PFunctor/Dynamical/Run.lean`).
 - `PointedMachine.seqComp`, handler-parametric execution, responder/game wiring, simulation, and
   refinement (`PFunctor/Dynamical/*`).
-- `PFunctor.Trace` list/free-monoid carrier, relabel/filter operations, and sum projections.
+- `Control.Trace` and `PFunctor.Trace` stateless monoid/list emitters, including the polynomial
+  list/free-monoid carrier, relabel/filter operations, and sum projections.
 - `Interaction.Spec.Chain` and `StateChain` as existing n-ary/telescope candidates.
 - `Interaction.Concurrent.Front` and process prefixes for concurrent semantics.
 
@@ -91,10 +92,15 @@ def Cursor.residual : Cursor s → FreeM P α
 def Cursor.comp (c : Cursor s) : Cursor c.residual → Cursor s
 ```
 
-**PF-2 — Cursor restriction (required).** Restrict arbitrary displayed data, `Decoration`, and
-`Decoration.Over` to a cursor's **future residual subtree**; prove naturality with existing maps and
-base transport. This does not recover data along the visited spine. ArkLib separately folds the
-cursor spine and pairs it with concrete hidden-message prefix data in `FullPrefixAt`.
+**PF-2 — Cursor restriction (required).** A completely arbitrary `Displayed.Shape` cannot be
+restricted along a cursor: from an unconstrained value in `D.node a child` there is no canonical way
+to recover `child b`. Add `Displayed.Shape.ChildProjection`, its dependent
+`Displayed.OverShape.ChildProjection` counterpart, and define the cursor-spine traversal once
+against that capability. Supply the canonical specializations for `Decoration` and
+`Decoration.Over`; prove naturality with existing maps and base transport. Restriction returns data
+on the cursor's **future residual subtree** only. It does not recover data along the visited spine.
+ArkLib separately folds the cursor spine and pairs it with concrete hidden-message prefix data in
+`FullPrefixAt`.
 
 **PF-3 — Cursor decomposition through append (required).** Classify a cursor of dependent
 `FreeM.append s k` as either:
@@ -102,7 +108,10 @@ cursor spine and pairs it with concrete hidden-message prefix data in `FullPrefi
 - a cursor in `s` whose residual is explicitly witnessed to be an internal `.roll`; or
 - a completed `p : Path s` plus a cursor in `k p`.
 
-Split/join must be inverse and expose residual equations. This is the foundation RBR and reduction
+`Cursor.liftAppend` transports the first case through append; `Cursor.joinRight` follows a complete
+prefix path into the second case; an `AppendView` packages the disjoint classification. Split/join
+must be inverse, expose residual equations, commute with cursor composition, agree with terminal
+`Path.append`, and transport decoration restriction. This is the foundation RBR and reduction
 composition actually need.
 
 **PF-4 — Operational-prefix concatenation (gated).** If a concrete interaction-machine runtime needs
@@ -112,12 +121,17 @@ not depend on this PR. The client must specify the phase-boundary witness and an
 transport before PF-4 is promoted.
 
 **PF-5 — Pure causal transducers (required before compiler trace pipelines).** Add an effect-free
-`Control.Transducer ι ο` with state, `runFrom`/`runOpen`, identity, and sequential composition.
-Ordered-prefix causality follows from `runOpen_append`; it is not an arbitrary proof field. Terminal
-`finish` output is a separate `Finalizer`, because flushing can violate ordinary prefix monotonicity.
-Cost is an external certificate owned by the specialized client. Identity and associativity are
-stated under explicit behavioral equivalence (`∀ xs, runOpen T xs = runOpen U xs`) or a named state
-isomorphism, not structure equality across existential state carriers.
+stateful Kleisli–Mealy companion to the existing stateless `Control.Trace`/`PFunctor.Trace` APIs:
+`Control.Transducer ι ο` with state, `runFrom`/`runOpen`, identity, and sequential composition. Reuse
+the existing list/free-monoid trace carriers and relabel/filter algebra rather than introducing a
+second trace representation. Do not encode this as a `MooreMachine`: Moore output is a state
+observation made before an input, whereas a transducer's finite output chunk depends jointly on the
+current state and consumed input. Ordered-prefix causality follows from `runOpen_append`; it is not
+an arbitrary proof field. Terminal `finish` output is a separate `Finalizer`, because flushing can
+violate ordinary prefix monotonicity. Cost is an external certificate owned by the specialized
+client. Identity and associativity are stated under explicit behavioral equivalence
+(`∀ xs, T.runOpen xs = U.runOpen xs`) or a named state isomorphism, not structure equality across
+existential state carriers.
 
 **PF-6 — N-ary presentation/coherence (gated).** Do **not** add a new `Spec.Presentation` datatype as
 foundation work. First use existing `Spec.Chain`/`StateChain`; when a concrete three-reduction client

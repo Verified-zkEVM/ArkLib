@@ -107,16 +107,22 @@ constructor equations by `rfl`; no collision with `DynSystem.Prefix` or `Concurr
 
 **Module.** New `PolyFun/PFunctor/Free/Displayed/Cursor.lean`.
 
-**Declarations.** Generic `Displayed.restrict`; specializations `Decoration.restrict` and
-`Decoration.Over.restrict`. These describe the future residual subtree, not visited-prefix history.
+**Declarations.** `Displayed.Shape.ChildProjection` and its dependent
+`Displayed.OverShape.ChildProjection` counterpart; one generic cursor-spine restriction algorithm
+parameterized by that capability; canonical `Decoration.restrict` and
+`Decoration.Over.restrict` specializations. An unconstrained `Displayed.Shape` does not admit a
+generic `restrict`, because `D.node a child` need not expose any `child b`. These operations describe
+the future residual subtree, not visited-prefix history.
 
 **Central laws.** Root/down computation; restriction along `Cursor.comp`; naturality with existing
-`Decoration.map`, `Over.map`, and `Over.mapBase`; compatibility with `ofOver`/`toOver`.
+`Decoration.map`, `Over.map`, and `Over.mapBase`; compatibility with `ofOver`/`toOver`. The generic
+spine traversal is defined once; decoration layers provide only their local child projections.
 
 **Acceptance.** Constructor examples close by `rfl`; a dependent decoration proof closes with
 `simp only`; ArkLib can restrict role and oracle decorations at one protocol cursor.
 
-**Not included.** New generic decoration-map hierarchy—most of P3 in the old plan already exists.
+**Not included.** A claim that every displayed shape is navigable, or a new generic decoration-map
+hierarchy—most of P3 in the old plan already exists.
 
 ### PF-3 — `feat(free): cursor decomposition through dependent append`
 
@@ -126,13 +132,14 @@ constructor equations by `rfl`; no collision with `DynSystem.Prefix` or `Concurr
 
 **Semantic unit.** Classify a cursor through `FreeM.append s k` without casts.
 
-**Declarations.** A dependent classification with two disjoint cases: a cursor in `s` carrying an
-explicit witness that its residual is `.roll a rest`, or completed `p : Path s` plus cursor in
-`k p`; `split`, `join`, and residual projections. Decoration corollaries may be a small follow-up if
-they make this already substantial PR too broad.
+**Declarations.** `Cursor.IsNode`; `Cursor.liftAppend`; `Cursor.joinRight`; and a dependent
+`Cursor.AppendView` with two disjoint cases: a cursor in `s` carrying an explicit witness that its
+residual is an internal node, or completed `p : Path s` plus cursor in `k p`; `split`, `join`, and
+residual projections. Include the direct `Decoration` and `Decoration.Over` restriction corollaries.
 
 **Central laws.** Split/join inverses; residual equations; compatibility with terminal
-`Path.split/append`; composition respects the classification.
+`Path.split/append`; `liftAppend` and `joinRight` respect cursor composition; restriction through
+both cases agrees with `Decoration.append` and `Decoration.Over.append`.
 
 **Acceptance.** A dependent two-stage tree exercises both cases. The first ArkLib composition
 client decomposes a reachable cursor into stage-one/stage-two cases.
@@ -158,6 +165,12 @@ global event list is the append of both segments.
 ### PF-5 — `feat(control): causal finite-trace transducers`
 
 **Module.** New `PolyFun/Control/Transducer.lean`.
+
+**Existing substrate and boundary.** `Control.Trace` and `PFunctor.Trace` already provide stateless
+monoid/list emission and the canonical polynomial trace carrier; PF-5 reuses those representations
+and their relabel/filter algebra. A transducer is the stateful Kleisli–Mealy companion whose output
+chunk depends on both state and input. It is not represented as a `MooreMachine`, whose output is a
+state observation before an input is consumed.
 
 **Indicative interface.**
 
@@ -186,7 +199,8 @@ separate stronger results.
 **Acceptance.** Compose filter and expand transducers and compare with `PFunctor.Trace.mapPartial`.
 VCVio's query-log adapter is thin and attaches its own output-length/resource certificate.
 
-**Not included.** `coherence` or `cost` fields—causality is a theorem and cost is external.
+**Not included.** A second trace carrier, a forced `MooreMachine` encoding, or `coherence`/`cost`
+fields—causality is a theorem and cost is external.
 
 ### PF-6 — `feat(interaction): dependent concatenation of Spec.Chain` (gated)
 
