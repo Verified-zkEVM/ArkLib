@@ -26,12 +26,13 @@ compilers. Compilation factors into represent/lower/transport/Fiat–Shamir pass
 | [`00-end-state.md`](00-end-state.md) | The ambition: all of SNARKs, and what we write down now to enable it | directional |
 | [`01-foundations.md`](01-foundations.md) | Ownership by parametricity; current inventory; precise semantic deltas | **normative** |
 | [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) | Exact PolyFun, VCVio, and ArkLib PR slices and release train | operational |
+| [`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md) | Complete `TypeTree` / oracle branch-and-execution-path naming cutover | **normative** |
 | [`02-oracle-reduction-core.md`](02-oracle-reduction-core.md) | Claims, virtual oracles, closing, composition, core security (Δ side) | **normative** |
 | [`03-adversarial-oracle-execution.md`](03-adversarial-oracle-execution.md) | Worlds, traces, transducers, games, state restoration, extractors, budgets (Γ side) | normative core, fluid periphery |
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | The compiler passes, commitment capability records, BCS/Nova, guarantee transport | normative interfaces, fluid internals |
 | [`05-roadmap.md`](05-roadmap.md) | Phases, slices, gates, parallel tracks, risks, re-direction principles | fluid by design |
 
-Reading order for a new contributor: 00 → 01 → 01a overview → 02 → 03 → 04 → 05.
+Reading order for a new contributor: 00 → 01 → 01a overview → 01b → 02 → 03 → 04 → 05.
 
 ## Resolved decisions (log)
 
@@ -40,6 +41,12 @@ Reading order for a new contributor: 00 → 01 → 01a overview → 02 → 03 �
 - **D3 — First milestone** is the minimum-viable slice (single-round sumcheck completeness through claim-closing), before the three-slice triple. See `05` Phase 2.
 - **D4 — Exact quantitative theorems are the target.** Bounds must match or beat Chiesa–Yogev. The budget/error-functional algebra is therefore core (Γ side), not deferred; proof *strategies* may be refactored when consolidation is found.
 - **D5 — State restoration and world traces are scheduled before the compiler**, in parallel with the core security cutover.
+- **D6 — True-sight interaction names.** The generic sequential carrier is
+  `Interaction.TypeTree`, with `TypeTree.Path` as its complete branch. Its oracle-reduction
+  refinement is `Interaction.Oracle.TypeTree`, with `BranchPath` for structural continuation
+  choices and `ExecutionPath` for concrete runtime messages. At an oracle node the message remains
+  `x : X`; only the branch index is `PUnit`. `Protocol` is reserved for the decorated bundle. The
+  cutover is complete, without historical aliases; see `01b`.
 
 ## Ground rules carried forward from the audits
 

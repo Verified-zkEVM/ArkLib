@@ -27,7 +27,7 @@ PolyFun
   PF-1 Cursor ─→ PF-2 Cursor restriction ─→ PF-3 Cursor/append
   PF-4 Operational-prefix concatenation             (gated)
   PF-5 Causal transducer                            (parallel)
-  PF-6 Chain concatenation                          (gated)
+  PF-6A Polynomial normalization → PF-6R TypeTree rename → PF-6B Chain coherence (gated)
        ↓ candidate revision; tag after downstream acceptance
 
 VCVio
@@ -202,21 +202,56 @@ VCVio's query-log adapter is thin and attaches its own output-length/resource ce
 **Not included.** A second trace carrier, a forced `MooreMachine` encoding, or `coherence`/`cost`
 fields—causality is a theorem and cost is external.
 
-### PF-6 — `feat(interaction): dependent concatenation of Spec.Chain` (gated)
+### PF-6A — `feat(interaction): normalize polynomial iteration foundations`
+
+**Prerequisite.** The free polynomial/substitution-monoid stack through PR #55.
+
+**Scope.** Identify the undecorated sequential interaction polynomial definitionally with the free
+polynomial; expose its canonical substitution-monoid structure; present finite `Chain` as the
+sigma-friendly final-sequence approximant; introduce the canonical stopping-tree carrier and prove
+its fold/uniqueness interface. This is PolyFun PR #62 at `11e02c0` in the audited stack.
+
+**Boundary.** Preserve historical names in this PR. The isolated PF-6R cutover follows immediately.
+
+### PF-6R — `refactor(interaction): rename sequential specs to type trees`
+
+**Prerequisite.** PF-6A.
+
+**Semantic unit.** A complete true-sight API cutover with no representation change and no
+compatibility facade.
+
+**Declarations/modules.** Rename `Interaction.Spec` to `Interaction.TypeTree`,
+`Spec.Transcript` to `TypeTree.Path`, sequential `Spec.*` namespace members to `TypeTree.*`, and
+`Basic/Spec{,Fintype}.lean` to `Basic/TypeTree{,Fintype}.lean`. Rename exported specialization and
+conversion names that specifically encode the old carrier, including `DecoratedSpec`, `runSpec`,
+`Chain.toSpec`, `Telescope.toSpec`, paired/monadic `*Spec` specializations, `sampleTranscript`, and
+sequential transcript-operation families. Consolidate the concurrent bridge on `Path`/`StepRel`:
+`ObservedTranscript`, `ofTranscript`, event/transcript conversions, `TranscriptRel`, and
+`matchTranscript` become their path/step counterparts. Rename the sequential episode projection of
+`Concurrent.StepOver` from `spec` to `tree`.
+
+**Exclusions.** Preserve unrelated `Concurrent.Spec`, `SafetySpec`, VCVio `OracleSpec`, and
+Lean/Std `Do.Spec` names.
+
+**Acceptance.** No historical aliases or imports; the PF-6A definitional and universal-property
+canaries remain unchanged modulo names; the full PolyFun validation suite, generated-import check,
+maintained docs, and narrow negative searches pass. Exact map and downstream release train: `01b`.
+
+### PF-6B — `feat(interaction): dependent concatenation of TypeTree.Chain` (gated)
 
 **Promotion trigger.** A concrete ArkLib triple-reduction client cannot state operational
-reassociation using existing `Spec.Chain`/`StateChain`.
+reassociation using existing `TypeTree.Chain`/`TypeTree.StateChain`.
 
 **Module.** `PolyFun/Interaction/Basic/Chain/Append.lean`.
 
 **Candidate declaration.**
 
 ```lean
-Chain.then (c : Chain m) (k : Transcript (toSpec m c) → Chain n) : Chain (m + n)
+Chain.then (c : Chain m) (k : TypeTree.Path (toTypeTree m c) → Chain n) : Chain (m + n)
 ```
 
-Add propositional `toSpec_then`, telescope transcript join/split, and three-stage typed
-reassociation handling `Nat.add` and dependent transcript reindexing explicitly.
+Add propositional `toTypeTree_then`, telescope path join/split, and three-stage typed
+reassociation handling `Nat.add` and dependent path reindexing explicitly.
 
 **Acceptance.** The actual ArkLib client, not an isolated toy. Only a documented failure of this
 route authorizes a new `Presentation` datatype.
@@ -437,26 +472,27 @@ security candidate revisions arrive in separate mechanical bump PRs.
 **Prerequisite.** AR-0 and existing PolyFun append/strategy APIs.
 
 **Declarations.** `HonestProverOutput`, `Prover`, `Verifier`, `Reduction`, `execute`, identity, and
-`comp`. **Theorems:** `execute_comp`, identity laws, transcript split/append. **Acceptance:** two
+`comp`. **Theorems:** `execute_comp`, identity laws, path split/append. **Acceptance:** two
 dependent toy protocols; cast-free constructor equations; no oracle/security content.
 
-### AR-2A — `feat(interaction): oracle syntax and transcript projections`
+### AR-2A — `feat(interaction): oracle type trees and path projections`
 
-**Prerequisite.** AR-0. **Declarations:** `Oracle.Position`, `Oracle.Spec`, `PublicTranscript`,
-`FullTranscript`, execution lens/public projection, `OracleMessagesAt`. **Theorems:** full transcript
-as public transcript plus hidden-message fiber, round trips, payload-independent oracle continuation.
+**Prerequisite.** AR-0 after PF-6R. **Declarations:** `Oracle.Position`, `Oracle.TypeTree`,
+`BranchPath`, `ExecutionPath`, runtime lens/branch projection, `OracleMessagesAt`. **Theorems:**
+execution path as branch path plus hidden-message fiber, round trips, payload-independent oracle
+continuation.
 **Acceptance:** public–oracle–public and dependent-public-branch examples using `rfl`/`simp only`.
 
 ### AR-2B — `feat(interaction): role and oracle decorations`
 
 **Prerequisite.** AR-2A. **Declarations:** `RoleDeco`, `OracleDeco`, projections, accumulated
 visibility, PolyFun-decoration conversions. **Theorems:** map/append/projection naturality.
-**Acceptance:** recover exactly the public and oracle nodes of the AR-2A mixed protocol.
+**Acceptance:** recover exactly the public and oracle nodes of the AR-2A mixed type tree.
 
 ### AR-3A — `feat(interaction): accumulated oracle access`
 
 **Prerequisite.** AR-2B. **Declarations:** `answerAt`, query handles, accumulated message interface
-and implementation, full-transcript realization. **Theorems:** concrete-answer agreement, public
+and implementation, execution-path realization. **Theorems:** concrete-answer agreement, branch
 projection invariance, and future-message unavailability. **Acceptance:** passthrough and one-round
 sumcheck access.
 

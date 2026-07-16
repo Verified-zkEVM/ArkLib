@@ -27,25 +27,26 @@ witness. A paired output prevents accidental split-projection mixing; provenance
 runner distribution, not from the carrier type:
 
 ```lean
-structure CoreRun (pt : Spec.PublicTranscript (Context shared)) where
-  msgs       : Spec.OracleMessagesAt (Context shared) pt   -- prover oracle payloads
+structure CoreRun (path : Oracle.TypeTree.BranchPath (Context shared)) where
+  msgs       : Oracle.TypeTree.OracleMessagesAt (Context shared) path
+    -- prover oracle payloads
   inputEnv   : InputImpl shared                             -- the game's input behavior
-  outcome    : Terminal (OracleClaim (srcSpecAt shared pt) (Stmt pt) (Out pt)) Fault
-  proverOut  : ProverPayload pt
+  outcome    : Terminal (OracleClaim (srcSpecAt shared path) (Stmt path) (Out path)) Fault
+  proverOut  : ProverPayload path
 
-def executeCore … : OracleComp Γ.Surface ((pt : _) × CoreRun pt)
+def executeCore … : OracleComp Γ.Surface ((path : _) × CoreRun path)
 
-structure LoggedRun (pt : _) where
-  core       : CoreRun pt
-  deltaTrace : QueryLog (srcSpecAt shared pt)
+structure LoggedRun (path : _) where
+  core       : CoreRun path
+  deltaTrace : QueryLog (srcSpecAt shared path)
 
-def executeLogged … : OracleComp Γ.Surface ((pt : _) × LoggedRun pt)
+def executeLogged … : OracleComp Γ.Surface ((path : _) × LoggedRun path)
 
 def OracleRuntime.runArtifact (Γ : OracleRuntime Import Surface) :
     OracleComp Surface α → OracleComp Import (RuntimeArtifact Γ α)
 
 -- ArkLib dependent view of the VCVio artifact; constructor remains controlled
-abbrev ExecutionArtifact := RuntimeArtifact Γ ((pt : _) × LoggedRun pt)
+abbrev ExecutionArtifact := RuntimeArtifact Γ ((path : _) × LoggedRun path)
 ```
 
 `executeCore`/`CoreRun` are trace-free and belong to AR-6B. `LoggedRun`, the runtime adapter, and the
@@ -55,9 +56,9 @@ games; it is not a nominal run identifier or a proof of sampling provenance.
 Derived projections: `closingEnv` (from one `CoreRun`'s `inputEnv`+`msgs`), `closed`, and `VerifierLocalView` — defined **from the enclosing `LoggedRun.deltaTrace`** (Δ-queries are not in the Γ trace; recovering the view by replay would need a determinism theorem, so it is logged, not asserted), extractor views, RBR prefixes, compiler traces. Probability is the evaluation distribution of the VCVio runtime runner. Missing `SPMF` mass retains VCVio's existing failure/nontermination meaning; explicit protocol `fault` is a returned value. Terminal decoding either proves `NeverFail` or invokes the one named VCVio outcome materialization.
 
 Define `WorldTrace Γ` only as the named view/alias of `QueryLog Γ.Surface` equipped with ArkLib
-resource-schema routing; it is not a parallel carrier. **Four transcripts, never conflated:**
-`InteractionTranscript` / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace`. “Full transcript” in
-legacy code means the first; compiled extractors consume the third.
+resource-schema routing; it is not a parallel carrier. **Four execution records, never
+conflated:** `ExecutionPath` / `VerifierLocalView` / `WorldTrace` / `SRMoveTrace`. “Full transcript”
+in legacy code means `ExecutionPath`; compiled extractors consume `WorldTrace`.
 
 ## 3. Outcomes
 
@@ -112,7 +113,8 @@ structure SRMove (Π : PublicCoinIOP) where
 
 Axes (orthogonal, per round-3): adversary access / execution control / oracle evidence / output shape / algorithm class / model. Named points ArkLib defines:
 
-- `Extractor.OfflineFullTranscript` — the current IOP-layer object (concrete `InteractionTranscript`); correct at L3.
+- `Extractor.OfflineExecutionPath` — the current IOP-layer object (concrete
+  `Oracle.TypeTree.ExecutionPath`); correct at L3.
 - `Extractor.OfflineLoggedExecution` — eats `WorldTrace`s (adversary's and verifier's); the CY compiled-layer straightline notion. **Never silently substitute the former for the latter: doing so assumes away Merkle extraction** (round-4 correction).
 - `Extractor.QueryOnly`, `BlackBox.{OnePass, PrefixOracle, CheckpointRestore}`, `PrefixWitnessTransport`, `SpecialSoundnessTree`, `RBRTranscriptTree` — each a capability-record product, with view-reduction implications proved where they exist.
 

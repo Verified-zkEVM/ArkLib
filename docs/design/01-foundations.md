@@ -2,7 +2,9 @@
 
 **Normative architectural contract.** This document says what belongs in each library, records the
 foundation that already exists, and isolates the semantic deltas ArkLib actually needs. The
-PR-by-PR landing plan is [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md).
+PR-by-PR landing plan is [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md). The normative
+true-sight naming cutover is
+[`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md).
 
 The inventory was checked on 2026-07-13 against:
 
@@ -63,7 +65,8 @@ Do not rebuild the following:
   refinement (`PFunctor/Dynamical/*`).
 - `Control.Trace` and `PFunctor.Trace` stateless monoid/list emitters, including the polynomial
   list/free-monoid carrier, relabel/filter operations, and sum projections.
-- `Interaction.Spec.Chain` and `StateChain` as existing n-ary/telescope candidates.
+- `Interaction.TypeTree.Chain` and `TypeTree.StateChain` as existing n-ary/telescope candidates
+  (historically under `Interaction.Spec` before PF-6R).
 - `Interaction.Concurrent.Front` and process prefixes for concurrent semantics.
 
 Three existing “prefix-like” objects have different meanings and must not be conflated:
@@ -133,14 +136,28 @@ client. Identity and associativity are stated under explicit behavioral equivale
 (`∀ xs, T.runOpen xs = U.runOpen xs`) or a named state isomorphism, not structure equality across
 existential state carriers.
 
-**PF-6 — N-ary presentation/coherence (gated).** Do **not** add a new `Spec.Presentation` datatype as
-foundation work. First use existing `Spec.Chain`/`StateChain`; when a concrete three-reduction client
-needs operational reassociation, try dependent `Chain.then`, transcript join/split, and typed
-reassociation. A new presentation type requires a recorded failed client and design note.
+**PF-6A — Polynomial interaction normalization (land before the naming cutover).** Identify the
+undecorated type-tree polynomial with the free polynomial and expose its substitution-monoid,
+finite-chain, stopping-tree, fold, and uniqueness structure. This is PR #62; it deliberately keeps
+the historical names so the algebraic change remains reviewable.
+
+**PF-6R — Type-tree true-sight naming (required before further interaction foundations).** Perform
+the complete `Interaction.Spec → Interaction.TypeTree` and `Spec.Transcript → TypeTree.Path`
+cutover, including module paths, namespace-owned APIs, specialization names, tests, maintained
+documentation, and generated imports. Do not retain compatibility aliases. The representation and
+all computation/universal-property statements remain unchanged. See `01b` for the exact map and
+downstream train.
+
+**PF-6B — N-ary presentation/coherence (gated).** Do **not** add a new
+`TypeTree.Presentation` datatype as foundation work. First use existing
+`TypeTree.Chain`/`TypeTree.StateChain`; when a concrete three-reduction client needs operational
+reassociation, try dependent `Chain.then`, path join/split, and typed reassociation. A new
+presentation type requires a recorded failed client and design note.
 
 ### 1.3 PolyFun acceptance
 
-PF-1/2/3/5 are accepted only when both local laws and a downstream client pass:
+PF-1/2/3/5 are accepted only when both local laws and a downstream client pass. PF-6R additionally
+requires the exact negative-search and definitional-behavior gates in `01b`:
 
 - constructor and residual equations reduce by `rfl` where promised;
 - cursor restriction along composition equals direct restriction;
