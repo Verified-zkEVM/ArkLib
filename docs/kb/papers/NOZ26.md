@@ -6,13 +6,14 @@ year: "2026"
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2026/156
 source_metadata: ../sources/NOZ26/metadata.yml
-status: seeded
+status: active-audit
 related_modules:
   - ArkLib/ProofSystem/RingSwitching/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/Commitments/Functional/Hachi/Gadget.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
+  - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
 ---
 
 # NOZ26
@@ -65,6 +66,14 @@ Ring-switching layer:
 - `R_q` is **not an integral domain**, so the generic `[IsDomain L]` Schwartz–Zippel soundness
   theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
   with a different error and is out of scope for the current ring-switching module.
+- Hachi Lemma 10's uniform-vector CWSS argument is invalid for multivariate multilinear
+  polynomials: a coordinate-wise star supplies only an axis cross, which does not determine the
+  polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) restricts the two evaluation points
+  to Kronecker curves and uses univariate interpolation with `D = max(2, 2^{m₀}, 2^{mα})`. The
+  corrected CWSS theorem is proof-`sorry`-free and is composed into the escape-threaded opening
+  chain (`Composition.lean`); the weak-binding disjunct is discharged through `LiftCom`'s
+  norm-conditioned collision via a `liftShort` conjunct in the seam relations. See
+  [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
 
 ## Version Notes
 

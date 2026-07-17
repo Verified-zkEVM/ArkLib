@@ -48,6 +48,9 @@ used in `ArkLib/**/*.lean`, including:
 
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
+- [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
+  - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the Kronecker repair and the weak-binding seam
+    as integrated into the escape-threaded opening chain.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)

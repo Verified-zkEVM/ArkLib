@@ -212,6 +212,18 @@ theorem MLE_degreeOf (evals : (σ → Fin 2) → R) (i : σ) : degreeOf i (MLE e
 
 end DegreeOf
 
+/-- **Nondegeneracy of the `eq̃`-basis batching**: a multilinear extension is the zero polynomial
+iff every hypercube evaluation vanishes. Used to read batched zero-checks (e.g. Hachi's Eqs.
+(22)–(23)) back as per-constraint statements. -/
+theorem MLE_eq_zero_iff (evals : (σ → Fin 2) → R) : MLE evals = 0 ↔ ∀ x, evals x = 0 := by
+  constructor
+  · intro h x
+    have heval := MLE_eval_zeroOne (R := R) x evals
+    rw [h, map_zero] at heval
+    exact heval.symm
+  · intro h
+    simp [MLE, h]
+
 -- TODO: add lemmas about the uniqueness of multilinear polynomials up to evaluations on hypercube
 
 variable [DecidableEq R] [IsDomain R]
