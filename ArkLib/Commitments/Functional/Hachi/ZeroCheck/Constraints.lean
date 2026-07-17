@@ -23,12 +23,18 @@ import ArkLib.Data.MvPolynomial.Multilinear
   `m₀`-cube: rows are the `Zq`-coefficient vectors of the `zⱼ ∈ Rq` followed by the base-`b`
   gadget digits of the quotients `ρᵢ`, columns are the `d` coefficient positions. **Arity pin
   (F5)**: `2 ^ m₀` = (number of `z`-rows + number of `ρ`-digit rows) · `d`, padded to a power of
-  two; `m₁` is the row-batching arity (`2 ^ m₁ ≥ n` rows of the lifted system). The table's
-  entry function `wTable` and the `M̃_α` contraction `hAlphaEvals` are the genuine F5 index
-  bookkeeping and remain `sorry`; the batched polynomials `hZero`/`hAlpha` are built from them via
-  the real multilinear extension `MvPolynomial.MLE`, so their multilinearity
-  (`hZero_degreeOf_le`/`hAlpha_degreeOf_le` — the hypothesis of the corrected Lemma 10's Kronecker
-  interpolation) is **`sorry`-free**.
+  two; `m₁` is the row-batching arity (`2 ^ m₁ ≥ n` rows of the lifted system, the arity pin
+  `hAlphaEvals`/`rowPoint` require). The `M̃_α` contraction `hAlphaEvals` is now **concrete** — the
+  `α`-evaluated per-row lift defect, row-encoded into the `m₁`-cube (`hAlphaEvals_rowPoint`,
+  axiom-clean) — so `H_α ≡ 0` genuinely characterizes "every lifted row vanishes at `α`" (consumed
+  by the batching bridge). The table entry function `wTable` is now **concrete** too — it reads the
+  committed `z`/`ρ` coefficients directly (decoding the `m₀`-cube to `row := idx / d`,
+  `col := idx % d`), so `H₀ ≡ 0` is a genuine (non-vacuous) shortness statement on the committed
+  data. Both `hZero`/`hAlpha` are built via the real multilinear extension `MvPolynomial.MLE`, so
+  their multilinearity (`hZero_degreeOf_le`/`hAlpha_degreeOf_le` — the hypothesis of the corrected
+  Lemma 10's Kronecker interpolation) is **`sorry`-free**, and the whole zero-check is now
+  **axiom-clean**. Matching `H₀ ≡ 0` to `liftShort`'s two bounds `(bound, ρBound)` (the range-side
+  soundness step) and the sumcheck-polynomial stubs remain F5.
 
   ## The batched constraint polynomials (Eqs. (22)–(23))
 
@@ -101,7 +107,7 @@ def roundDegZero (b : ℕ) : ℕ := 2 * b
 /-- Per-round univariate degree of the linear sumcheck (`F_{α,τ₁}`): degree `≤ 2` (pin R8). -/
 def roundDegAlpha : ℕ := 2
 
-/-! ## The range factor and the table (genuine F5 content is `sorry`) -/
+/-! ## The range factor and the table (now concrete; range-side soundness is F5) -/
 
 /-- Hachi Eq. (23)'s per-entry range factor `P_b(v) := v·∏_{j=1}^{b-1} (v - j)·(v + j)`: the
 vanishing polynomial of the symmetric range `{-(b-1), …, b-1}`. -/
@@ -127,20 +133,66 @@ theorem rangeProduct_eq_zero_iff {b : ℕ} {v : F} :
       exact hv
 
 /-- **The Eq. (21) table**: the committed `(z, ρ)` re-read as an `F`-valued function on the
-`m₀`-cube — `Zq`-coefficient rows of the `zⱼ` (through the embedding `φF`), then base-`b`
-gadget-digit rows of the `ρᵢ`, zero-padded to `2 ^ m₀`. **Sorried (F5)**: index bookkeeping over
-the F2.1 conventions plus the `ρ`-digit decomposition (F3.4). -/
-def wTable (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
+`m₀`-cube. The cube point is decoded (via `finFunctionFinEquiv`) to a flat index `idx`, split into
+a `row := idx / d` and `column := idx % d` (`d = deg Φ.φ`); rows `< μ` read the `Zq`-coefficients
+of the committed `zⱼ ∈ Rq`, rows `μ ≤ · < μ + n` read the coefficients of the committed quotients
+`ρᵢ`, both mapped through the base-field embedding `φF`; all other cube points are zero-padded.
+
+**The coefficients are read directly** — the range test `H₀` is on the *committed* data, so that
+`H₀ ≡ 0 ⇒` every committed coefficient lies in `[−(b−1), b−1]` is a genuine (non-vacuous) shortness
+statement. (The paper's base-`b` gadget decomposition is the *honest prover's* pre-commit step to
+obtain short pieces; re-decomposing here would make every entry a base-`b` digit, hence trivially
+in range, and `H₀` would test nothing.) The `b` argument is retained for signature compatibility
+with `hZero`; matching `H₀ ≡ 0` to `liftShort`'s two bounds `(bound, ρBound)` is the range-side
+soundness step (F5, out of scope here). -/
+noncomputable def wTable (φF : ZMod q →+* F) (_b : ℕ) (w : LiftedWitness Φ μ n) :
     (Fin m₀ → Fin 2) → F :=
-  sorry
+  fun pt =>
+    let idx : ℕ := (finFunctionFinEquiv pt : Fin (2 ^ m₀))
+    let d : ℕ := Φ.φ.natDegree
+    if hz : idx / d < μ then
+      φF ((w.z ⟨idx / d, hz⟩).1.coeff (idx % d))
+    else if hr : idx / d - μ < n then
+      φF ((w.ρ ⟨idx / d - μ, hr⟩).coeff (idx % d))
+    else 0
+
+/-- **The `m₁`-cube point encoding row `i : Fin n`** (arity pin `n ≤ 2 ^ m₁`): the inverse image
+of `i` under the binary encoding `finFunctionFinEquiv : (Fin m₁ → Fin 2) ≃ Fin (2 ^ m₁)`. Rows
+with index `≥ n` are the zero-padding of the batching cube. -/
+def rowPoint (hn : n ≤ 2 ^ m₁) (i : Fin n) : Fin m₁ → Fin 2 :=
+  finFunctionFinEquiv.symm ⟨(i : ℕ), lt_of_lt_of_le i.isLt hn⟩
 
 /-- The `M̃_α`-contracted per-row value of Eq. (22): the Boolean-point coefficients of `H_α`,
-`i ↦ (∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ)) − ŷᵢ(α)`. **Sorried (F5)**: the `M̃_α` contraction
-(the `α`-evaluated lifted matrix `M`, including the `−(α^d + 1)` quotient columns) and the row
-targets `ŷᵢ(α)`. -/
-def hAlphaEvals (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (a : F)
+`i ↦ (∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ)) − ŷᵢ(α)`.
+
+**Given concretely (Lemma-10 design, Option A).** By the "represent the constraints by
+polynomials" identity of [NOZ26] §4.3, this `M̃_α`-contraction equals the `α`-evaluated per-row
+**defect** of the lift relation `relLift`,
+`evalAt α (∑ⱼ Mᵢⱼ·zⱼ) − evalAt α ŷᵢ − evalAt α (X^d+1)·evalAt α ρᵢ`, so we take that defect as
+the definition, row-encoded into the `m₁`-cube via `rowPoint` and zero-padded on rows `≥ n`. Its
+vanishing at every Boolean point is then exactly the `relLift` row constraint
+(`hAlphaEvals_rowPoint`) — the content the batching bridge's un-batching pull-back consumes. The
+literal table-contraction form (needed only for the sumcheck *summand* `sumcheckPolyAlpha`)
+remains F5 (`wTable`). The `b` argument is retained for signature compatibility with `hAlpha`. -/
+noncomputable def hAlphaEvals (φF : ZMod q →+* F) (_b : ℕ) (s : RlinStatement Φ n μ) (a : F)
     (w : LiftedWitness Φ μ n) : (Fin m₁ → Fin 2) → F :=
-  sorry
+  fun pt =>
+    if h : ((finFunctionFinEquiv pt : Fin (2 ^ m₁)) : ℕ) < n then
+      evalAt φF a (rowSum Φ s w.z ⟨_, h⟩)
+        - evalAt φF a ((s.yvec ⟨_, h⟩).1.toPoly)
+        - evalAt φF a Φ.φ.toPoly * evalAt φF a (w.ρ ⟨_, h⟩)
+    else 0
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Faithfulness of the row encoding**: at the Boolean point `rowPoint i`, the `H_α`
+coefficient `hAlphaEvals` is exactly row `i`'s `α`-evaluated lift defect. This is the bridge
+between `hAlpha ≡ 0` (via `MLE_eq_zero_iff`) and the per-row `relLift` constraints. -/
+theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (a : F)
+    (w : LiftedWitness Φ μ n) (hn : n ≤ 2 ^ m₁) (i : Fin n) :
+    hAlphaEvals Φ m₁ φF b s a w (rowPoint m₁ hn i) =
+      evalAt φF a (rowSum Φ s w.z i) - evalAt φF a ((s.yvec i).1.toPoly)
+        - evalAt φF a Φ.φ.toPoly * evalAt φF a (w.ρ i) := by
+  simp only [hAlphaEvals, rowPoint, Equiv.apply_symm_apply, Fin.eta, i.isLt, dif_pos]
 
 /-! ## The batched constraint polynomials (genuine multilinear extensions) -/
 

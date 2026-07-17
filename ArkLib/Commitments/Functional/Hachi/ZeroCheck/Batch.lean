@@ -22,10 +22,14 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   from `relLift`; it is the precondition of the weak-binding escape (`LiftCom.collision_mem`)
   invoked by the zero-check's extraction.
 
-  * **extraction direction** (the sorried pull-back `mem_relLiftE_of_relBatchedE`):
-    `H_α ≡ 0` ⇒ per-row constraints, by non-degeneracy of the `eq̃` basis; `H₀ ≡ 0` ⇒ per-entry
-    range membership over the *field* `F` (needs `2b − 1 < q` to read field roots as centered
-    `Zq`-representatives), threaded to `liftShort` under the norm-parameter hypotheses.
+  * **extraction direction** (the pull-back `mem_relLiftE_of_relBatchedE`, **axiom-clean**):
+    the only nontrivial conjunct is the per-row equation, recovered from `H_α ≡ 0` by non-degeneracy
+    of the `eq̃` basis (`MvPolynomial.MLE_eq_zero_iff`) followed by the row-encoding faithfulness
+    lemma `hAlphaEvals_rowPoint`. The `K.com`, `liftShort` and bound-sanity conjuncts are carried
+    **verbatim** by `relBatched`; in particular the *range* identity `H₀ ≡ 0` and the norm-parameter
+    hypotheses `2b ≤ q+1`, `b−1 ≤ bound` play **no role** in this pull-back (shortness is asserted
+    directly), so they are not assumed. The only genuine hypothesis is the row-encoding arity pin
+    `hn : n ≤ 2 ^ m₁`. (With `hAlphaEvals`/`wTable` now concrete, no `sorryAx` remains.)
 
   ## References
 
@@ -64,28 +68,44 @@ def relBatchedE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBou
     Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
   (relBatched Φ m₀ m₁ bound ρBound K φF b).withEscape K.esc
 
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Un-batching pull-back** (the bridge's `hRel`): the batched identities imply the lift's
-per-row and range claims. Escapes pass through.
+per-row claims. Escapes pass through.
 
-**Sorried.** Proof plan: `H_α ≡ 0` ⇒ all `eq̃`-basis coefficients vanish ⇒ the per-row
-`evalAt`-equations of `relLift` (faithfulness of the sorried `M̃_α`/table encodings, F5);
-`H₀ ≡ 0` ⇒ each table entry is a root of `X·∏_{j=1}^{b−1}(X − j)(X + j)` over the field `F` ⇒
-(with `hq : 2 * b ≤ q + 1` reading roots as centered representatives and `hb : b - 1 ≤ bound`)
-`liftShort bound ρBound w̃`; the `liftShort` and bound-sanity conjuncts are shared verbatim. -/
+The only nontrivial conjunct is the per-row equation, recovered from `H_α ≡ 0`: by
+`MvPolynomial.MLE_eq_zero_iff` every Boolean-point coefficient `hAlphaEvals` vanishes, and by
+`hAlphaEvals_rowPoint` the coefficient at `rowPoint i` is exactly row `i`'s `α`-evaluated lift
+defect, so the row equation of `relLift` follows. The `K.com`, `liftShort` and bound-sanity
+conjuncts are carried verbatim by `relBatched` — in particular the *range* identity `H₀ ≡ 0` and
+the norm-parameter hypotheses `2b ≤ q+1`, `b-1 ≤ bound` play **no role** in this pull-back
+(shortness is already asserted directly), so they are not assumed. The arity pin `hn : n ≤ 2 ^ m₁`
+is the batching cube's row-encoding requirement. -/
 theorem mem_relLiftE_of_relBatchedE
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁)
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
     (h : (X, w) ∈ relBatchedE Φ m₀ m₁ bound ρBound K φF b) :
     (X, w) ∈ relLiftE Φ bound ρBound K φF := by
-  sorry
+  rcases w with w | e
+  · -- real witness: only the per-row equation needs work
+    simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq] at h
+    obtain ⟨hcom, hshort, _hZero, hAlphaZ, hbound⟩ := h
+    simp only [relLiftE, Set.mem_withEscape_inl, relLift, Set.mem_setOf_eq]
+    refine ⟨hcom, fun i => ?_, hshort, hbound⟩
+    unfold hAlpha at hAlphaZ
+    rw [MvPolynomial.MLE_eq_zero_iff] at hAlphaZ
+    have hi := hAlphaZ (rowPoint m₁ hn i)
+    rw [hAlphaEvals_rowPoint] at hi
+    linear_combination hi
+  · -- escape: statement-independent pass-through
+    simpa only [relBatchedE, relLiftE, Set.mem_withEscape_inr] using h
 
 /-- **The batching bridge as a `CWSSPackage`**: zero-round `ReduceClaim` at `mapStmt := id`,
 reducing `relLiftE` to `relBatchedE` with no soundness error (the whole content is the sorried
 un-batching pull-back). -/
 def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound) :
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) :
     CWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
@@ -100,6 +120,6 @@ def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
     (relOut := relBatchedE Φ m₀ m₁ bound ρBound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
     (fun stmtIn witOut h =>
-      mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound ρBound K φF b hq hb stmtIn witOut h)
+      mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound ρBound K φF b hn stmtIn witOut h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

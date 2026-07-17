@@ -50,10 +50,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
      `≥ 2^m` Kronecker roots of the multilinear identity (`arm_eq_zero_of_family`), giving
      `H₀^{w̃} ≡ 0` and `H_α^{w̃} ≡ 0` — i.e. `relBatchedE` via `.inl w̃`.
 
-  The theorem is not *axiom-clean*: `hZero`/`hAlpha` are built on the still-`sorry` F5 encodings
-  `wTable`/`hAlphaEvals`, so `#print axioms` reports `sorryAx` transitively through them. The
-  Lemma-10 *argument* is `sorry`-free and parametric in those encodings; the standalone kernel
-  `arm_eq_zero_of_family` is axiom-clean.
+  The theorem is now **axiom-clean**: with the encodings `wTable`/`hAlphaEvals` made concrete,
+  `#print axioms zeroCheck_coordinateWiseSpecialSound` reports no `sorryAx` — only the ambient
+  `propext`/`Classical.choice`/`Quot.sound` (the `Classical.choice` is the documented
+  constructivity caveat: `buildWitnessE` selects branch witnesses by classical choice). The
+  standalone kernel `arm_eq_zero_of_family` is axiom-clean.
 
   ## References
 
