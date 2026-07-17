@@ -232,6 +232,62 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
   simp [foldWord, foldValue_k_1]
 
+/-- An explicit formula for `foldWord` when `k = 1` that
+  does not use Lagrange interpolation and avoids using `log`. -/
+theorem foldWord_k_1_no_choice {i : Fin (2 ^ (n - 1))} {α : F}
+  {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
+  (hj : domain j ^ 2 = domain.subdomain 1 i) (hj' : domain j' ^ 2 = domain.subdomain 1 i) :
+  foldWord domain f 1 α i =
+    ((f j + f j') / 2) + α * ((f j - f j') / (2 * domain j)) := by
+  have hn : n ≠ 0 := fun contra ↦ by
+    aesop (add safe [cases Fin, (by omega)])
+  have : NeZero n := ⟨hn⟩
+  rw [foldWord, foldValue_k_1]
+  extract_lets x u u'
+  have hroots := square_roots_explicit
+    (i := 0) (ω := domain) (x := domain.subdomain 1 i) (y := domain j)
+    (by omega) (by simp) hj
+  have hj' : domain j' ∈ ({domain j, -domain j} : Finset _) := by
+    simp [←hroots]
+    aesop (add safe (by rw [mem_subdomain_0_iff_mem]))
+  simp only [mem_insert, mem_singleton] at hj'
+  rcases hj' with hj' | hj'
+  · have hj' := CosetFftDomainClass.injective domain hj'
+    simp_all
+  · by_cases hu : u = j
+    · have hx : x = domain j := by simp [←hu, u]
+      have hu' : u' = j' := by
+        rw [←hx] at hj'
+        simp only [u']
+        exact CosetFftDomainClass.injective domain (by simp [hj'])
+      simp [hu, hu', hx]
+    · have hu : u = j' := by
+        have hu_mem : domain u ∈ ({domain j, -domain j} : Finset _) := by
+          simp only [←hroots, Nat.sub_zero, mem_filter, CosetFftDomainClass.mem_toFinset_iff_mem]
+          constructor
+          · rw [mem_subdomain_0_iff_mem]
+            simp
+          · simp [u, x]
+        simp only [mem_insert, mem_singleton] at hu_mem
+        rcases hu_mem with hu_mem | hu_mem
+        · have := CosetFftDomainClass.injective _ hu_mem
+          simp_all
+        · have := CosetFftDomainClass.injective domain (a₁ := u) (a₂ := j')
+          aesop
+      have hu' : u' = j := by
+        rw [←hj'] at hroots
+        have hdomu' : domain u' ∈ ({domain j, domain j'} : Finset _) := by
+          aesop
+            (add safe [(by rw [mem_subdomain_0_iff_mem]), (by rw [←hroots])])
+        simp only [mem_insert, mem_singleton] at hdomu'
+        rcases hdomu' with hdomu' | hdomu'
+        · exact CosetFftDomainClass.injective _ hdomu'
+        · rw [←hu] at hdomu'
+          have := congrArg domain <| CosetFftDomainClass.injective _ hdomu'
+          simp [u, u'] at this
+      aesop
+        (add safe [(by field_simp), (by grind)])
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
