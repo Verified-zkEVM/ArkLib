@@ -124,6 +124,14 @@ Work through these in order. Do not stop until every item is complete.
   keys yourself: grep each `[KEY]` used in docstrings against `blueprint/src/references.bib` and
   add any missing entry (then regenerate). A key can be "present-looking" but actually a different
   paper — confirm the entry's title/authors match the citation, not just that the key exists.
+- Also check for **duplicate BibTeX keys**: `grep -oE '^@[a-z]+\{[^,]+' blueprint/src/references.bib
+  | sort | uniq -d`. Neither `kb/lint` nor the sync script flags a key defined twice (the JSON dict
+  silently collapses it), but it is real bib cruft a reviewer will hit. Keep the better-formatted
+  entry and delete the other.
+- Docstrings must cite **papers, not internal planning documents**. Phrases like "per §1.2 of the
+  X plan" pointing at an out-of-repo design doc are dead references the day the PR merges — restate
+  the design rationale directly in the docstring and cite the underlying paper with a `[KEY]`
+  (e.g. `[NOZ26, Lemma 8]` for a specific result).
 - Also check the **reverse direction — orphan entries**: a BibTeX key (and/or a scaffolded
   `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/` page) that **no** `[KEY]` in any `.lean`
   docstring or blueprint `.tex` actually cites. `kb/lint` passes on these (they are internally

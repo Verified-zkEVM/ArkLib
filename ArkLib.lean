@@ -165,6 +165,7 @@ import ArkLib.OracleReduction.Cast
 import ArkLib.OracleReduction.Composition.Parallel.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Composition.Sequential.General
+import ArkLib.OracleReduction.Composition.Sequential.IsPure
 import ArkLib.OracleReduction.Equiv
 import ArkLib.OracleReduction.Execution
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -192,6 +193,8 @@ import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
@@ -219,6 +222,7 @@ import ArkLib.ProofSystem.Component.DoNothing
 import ArkLib.ProofSystem.Component.NoInteraction
 import ArkLib.ProofSystem.Component.RandomQuery
 import ArkLib.ProofSystem.Component.ReduceClaim
+import ArkLib.ProofSystem.Component.SendChallenge
 import ArkLib.ProofSystem.Component.SendClaim
 import ArkLib.ProofSystem.Component.SendWitness
 import ArkLib.ProofSystem.ConstraintSystem.Lookup
