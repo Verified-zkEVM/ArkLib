@@ -8,7 +8,7 @@ canonical_url: https://eprint.iacr.org/2026/156
 source_metadata: ../sources/NOZ26/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/ProofSystem/RingSwitching/Profile.lean
+  - ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/Commitments/Functional/Hachi/Gadget.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
@@ -37,9 +37,25 @@ Commitment layer:
 
 Ring-switching layer:
 
-- The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
-  to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
-  shape ArkLib factors out as `RingSwitchingProfile`.
+- The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
+  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
+  ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
+- The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
+  [`HMZ25`](HMZ25.md)): **formalized and proven** (sorry-free, axiom-clean) as
+  `liftPackage` / `lift_coordinateWiseSpecialSound` in Hachi's
+  `Commitments/Functional/Hachi/RingSwitch/Reduction.lean`, the cyclotomic instance of the generic
+  `Lift` construction `ProofSystem/RingSwitching/Lift/` (over the
+  committed-scalar shell in
+  `OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
+  presentation law-discharge lemmas in
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. It is consumed at row 4 of the Hachi opening
+  chain (composed in `Hachi/Composition.lean`).
+  Design decisions recorded there: the never-sent `(z, r)` is the output-relation witness
+  (D6); the `w̃`-commitment is the abstract, norm-conditioned weak-binding `LiftCom`
+  (Remark 2 / Lemma 7), its binding break threaded backwards through all seams as an escape
+  budget (`Set.withEscape`, design G1); the witness type carries `deg ρᵢ ≤ d − 1`
+  (the paper's `Z_q^{<d}`); the extraction target is `R^lin` over `R_q`, equivalent to the
+  paper's `Z_q[X]` identity by the quotient-witness correspondence.
 - The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
   automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
   laws for the Hachi instance.
@@ -49,7 +65,7 @@ Ring-switching layer:
 
 ## Main ArkLib Touchpoints
 
-- [`../../../ArkLib/ProofSystem/RingSwitching/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Profile.lean)
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean)
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
 - [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
@@ -80,10 +96,12 @@ Ring-switching layer:
 ## Open Formalization Gaps
 
 - Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
-  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
-- Formalize Hachi-specific soundness separately (does not reuse the field/domain soundness theorem).
+  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`
+  (the §3 packing head; the §4.3 HMZ25 lift, Lemma 9, is done — see above).
+- Formalize Hachi-specific soundness separately (does not reuse the field/domain soundness
+  theorem): done through Lemma 9 (rows 1–4 of the opening chain); Lemmas 10–11 and the
+  recursion adapters remain skeletons (see `Hachi/Composition.lean`'s inventory).
 - The norm-growth and short-element invertibility inputs (`Mic07`, `LS18`) are deferred.
-- The sumcheck / ring-switching evaluation machinery of the paper is not yet formalized.
 
 ## Version Notes
 

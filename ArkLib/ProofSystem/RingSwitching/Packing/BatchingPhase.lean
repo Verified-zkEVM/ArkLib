@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Prelude
-import ArkLib.ProofSystem.RingSwitching.Spec
+import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.Spec
 import ArkLib.OracleReduction.Basic
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
 
@@ -15,16 +15,32 @@ open scoped NNReal
 open Sumcheck.Structured
 
 /-!
-# Ring-Switching IOP Batching Phase
+# Batching phase — relocating the claim into the carrier
 
-This module implements the Batching Phase of the ring-switching IOP: steps 1-5.
-This phase is the initial phase of the Interactive Oracle Proof and consists of:
+First phase of the interactive packing reduction. Input: an evaluation claim `t(r) = s` over
+the small ring, held by a prover who also knows the packed polynomial `t'`. Output: a single
+sumcheck statement over the large ring. The phase does two things:
 
-## Construction 3.1 - Steps 1-5 (Batching Phase)
+* **Relocate.** The prover sends the folded carrier element `ŝ` — the packed polynomial,
+  coefficients embedded via `φ₁`, evaluated at the `φ₀`-image of the point's tail
+  (`embedded_MLP_eval`). The verifier reconstructs the original claim from `ŝ`'s *column*
+  coordinates (`eqWeightedCoordSum` against the point's head) and rejects on mismatch: an
+  `ŝ` that passes is consistent with the claimed `s`.
+* **Batch.** `ŝ`'s *row* coordinates carry `2^κ` separate evaluation claims about `t'`. A
+  random batching vector `r'' ∈ L^κ` collapses them into the single target
+  `s₀ := eqWeightedCoordSum (rows of ŝ) r''`, at soundness cost `κ/|L|` (Schwartz–Zippel);
+  the prover forms the matching sumcheck polynomial `h := A · t'`, where `A` is the public
+  multiplier assembled from the basis decomposition of eq̃ (`compute_A_MLE`).
 
-We define `(P, V)` as the following IOP, in which both parties have the common
-input `[f]`, `s ∈ L`, and `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`, and `P` has the further
-input `t(X_0, ..., X_{ℓ-1}) ∈ K[X_0, ..., X_{ℓ-1}]^⪯1`.
+The verifier is the family-shared check-then-update scalar-round verifier
+(`RingSwitching.scalarRoundOracleVerifier`); the statement/witness types at the two
+boundaries are `BatchingStmtIn`/`BatchingWitIn` in and the round-0 sumcheck
+statement/witness out.
+
+## Protocol steps ([DP24] Construction 3.1, steps 1–5)
+
+Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover additionally holds
+`t(X_0, ..., X_{ℓ-1}) ∈ K[X_0, ..., X_{ℓ-1}]^⪯1`.
 
 1. `P` computes `ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))` and sends `V` the A-element `ŝ`.
 2. `V` decomposes `ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v`.
@@ -36,14 +52,15 @@ input `t(X_0, ..., X_{ℓ-1}) ∈ K[X_0, ..., X_{ℓ-1}]^⪯1`.
   `P` defines the function
     `A: w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
     on `{0,1}^{ℓ'}` and writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension.
-  `P` defines `h(X_0, ..., X_{ℓ'-1}) := A(X_0, ..., X_{ℓ'-1}) ⋅ t'(X_0, ..., X_{ℓ'-1})`.c
+  `P` defines `h(X_0, ..., X_{ℓ'-1}) := A(X_0, ..., X_{ℓ'-1}) ⋅ t'(X_0, ..., X_{ℓ'-1})`.
 5. `V` decomposes `ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u`, and
   sets `s_0 := Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ ŝ_u`.
 
-Input: `witIn = BatchingWitIn, stmtIn = BatchingStmtIn, oStmt = aOStmtIn.OStmtIn`
+## Security scaffolding
 
-Output: `witOut = (Statement (L := L) (ℓ := ℓ')`
-  `(RingSwitchingBaseContext κ L K ℓ P) 0) × (SumcheckWitness L ℓ' 0), oStmt = aOStmtIn.OStmtIn`
+The round-by-round extractor (`batchingRbrExtractor`, which unpacks `t` from `t'`), the
+knowledge-state function, the per-challenge knowledge error (`κ/|L|` at the batching
+challenge), and the completeness/soundness statements. Leaf proofs are open (`sorry`).
 -/
 
 noncomputable section
@@ -135,44 +152,32 @@ noncomputable def oracleProver :
     }
     return (⟨stmtOut, oStmt⟩, witOut)
 
+/-- The batching-phase verifier as an instance of the family-shared check-then-update
+scalar-round verifier (`RingSwitching.scalarRoundOracleVerifier`, `RoundVerifiers.lean`):
+query ŝ (step 1), run Check 1 against the column decomposition (step 2, reject to
+`failureState` on failure), then update the statement with the batched sumcheck target `s₀`
+from the batching scalars `r''` (steps 3 and 5). -/
 noncomputable def oracleVerifier :
   OracleVerifier (oSpec:=[]ₒ)
     (StmtIn := BatchingStmtIn L ℓ) (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0)
     (OStmtOut := aOStmtIn.OStmtIn)
-    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K) (P:=P)) where
-  verify | stmt, pSpec_batching_challenges => do
-     -- Step 1: Query prover for ŝ (Message 0).
-    let s_hat : P.A ← query (spec := [pSpecBatching (κ:=κ)
-      (L:=L) (K:=K) (P:=P).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-
-    -- Step 2: Perform Check 1.
-    unless performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l
-      stmt.original_claim stmt.t_eval_point s_hat do
-      return (failureState κ L K P ℓ ℓ' stmt s_hat) -- Abort if check fails
-
-    -- Step 3: Sample batching scalars r'' (Challenge 1).
-    let r_batching : Fin κ → L := pSpec_batching_challenges ⟨1, by rfl⟩
-
-    -- Step 5: Compute s₀.
-    let s₀ := compute_s0 κ L K P s_hat r_batching
-
-    -- Construct the output statement for the next phase.
-    let ctx : RingSwitchingBaseContext κ L K ℓ P := {
-      t_eval_point := stmt.t_eval_point,
-      original_claim := stmt.original_claim,
-      s_hat := s_hat,
-      r_batching := r_batching
-    }
-    let stmtOut : Statement (L := L) (ℓ := ℓ') (RingSwitchingBaseContext κ L K ℓ P) 0 := {
-      ctx := ctx,
-      sumcheck_target := s₀,
-      challenges := Fin.elim0
-    }
-    return stmtOut
-  -- Standard embedding for empty oSpec.
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun i => rfl
+    (pSpec := pSpecBatching (κ:=κ) (L:=L) (K:=K) (P:=P)) :=
+  scalarRoundOracleVerifier
+    -- Step 2: Check 1.
+    (check := fun stmt (s_hat : P.A) =>
+      performCheckOriginalEvaluation κ L K P ℓ ℓ' h_l
+        stmt.original_claim stmt.t_eval_point s_hat)
+    -- Steps 3 & 5: absorb the batching scalars, compute s₀, build the sumcheck statement.
+    (accept := fun stmt s_hat r_batching =>
+      { ctx := {
+          t_eval_point := stmt.t_eval_point,
+          original_claim := stmt.original_claim,
+          s_hat := s_hat,
+          r_batching := r_batching },
+        sumcheck_target := compute_s0 κ L K P s_hat r_batching,
+        challenges := Fin.elim0 })
+    (reject := fun stmt s_hat => failureState κ L K P ℓ ℓ' stmt s_hat)
 
 /-- The Oracle Reduction for the Batching Phase. -/
 noncomputable def batchingOracleReduction : OracleReduction (oSpec:=[]ₒ)
@@ -190,7 +195,8 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 def batchingInputRelationProp (stmt : BatchingStmtIn L ℓ)
     (oStmt : ∀ j, aOStmtIn.OStmtIn j) (wit : BatchingWitIn L K ℓ ℓ') : Prop :=
-  wit.t' = packMLE κ L K ℓ ℓ' h_l P.basis wit.t ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
+  wit.t' = packMLE κ L K ℓ ℓ' h_l P.basis wit.t
+  ∧ stmt.original_claim = wit.t.val.aeval stmt.t_eval_point
   ∧ aOStmtIn.initialCompatibility ⟨wit.t', oStmt⟩
 
 /-- Input relation: the witness `t` and `t'` are consistent,

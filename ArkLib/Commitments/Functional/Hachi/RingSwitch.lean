@@ -6,27 +6,43 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 
 /-!
-# Hachi Ring-Switching Lift (Figure 4 / Lemma 9)
+# Hachi's `Lift` instance (Figure 4 / Lemma 9)
 
 Umbrella for `Hachi/RingSwitch/`: the entry of Hachi's [NOZ26, §4.3] sumcheck-based opening — the
 Huang–Mao–Zhang [HMZ25] ring-switching lift. Following [HMZ25], `M z = y` over the cyclotomic
 ring `Rq` holds **iff** there is a quotient `r` with `M z = y + (Xᵈ + 1)·r` over `Zq[X]`; the
 prover commits to the lifted witness `(z, r)` and both sides evaluate the lifted rows at a random
 `X := α ∈ F` (an extension field `F ⊇ Zq`). This "switches" the R_q-statement into the extension
-field where the sumcheck runs. (This is the §4.3 lift; the *separate* §3 F_{q^k}↔R_q packing
-reduction — also a ring-switching idea — lives under `ArkLib/ProofSystem/RingSwitching/`.)
+field where the sumcheck runs. (This is the §4.3 lift, the cyclotomic instance of
+`ProofSystem/RingSwitching/Lift/`; the *separate* §3 F_{q^k}↔R_q packing reduction —
+also a ring-switching idea — is planned as a `RingSwitchingProfile` instance under
+`ProofSystem/RingSwitching/Packing/`; see `ProofSystem/RingSwitching/Basic.lean` for the
+family taxonomy.)
+
+The name **Lift** is algebraic: the quotient-ring equation is lifted from equality modulo
+`Xᵈ + 1` to an exact polynomial equation by supplying `r`; only then is it evaluated in `F`.
+By contrast, **Packing** groups a basis-sized block of small-field coefficients into one
+`R_q` element. The two names expose the distinct operations hidden by the broader phrase
+“ring switching.”
 
 ## Folder structure
 
 * `RingSwitch/Rlin.lean` — the zero-round **entry adapter**: reinterprets `QuadEval`'s Eq. (20)
   output (the escape-threaded `relOutE` of the sibling `Escape.lean`) as the unstructured linear
   relation `R^lin` (`relRlinE`), the input the lift addresses. Statement reshaping only
-  (`ReduceClaim`), so it is CWSS for any structure; the sorried pieces are the block-matrix
-  assembly/unstacking and the block-row equivalence pull-back.
+  (`ReduceClaim`), so it is CWSS for any structure; the block-matrix assembly/unstacking and
+  the block-row equivalence are proven — **sorry-free**.
 * `RingSwitch/Reduction.lean` — **Hachi Figure 4 / Lemma 9**: the two-round lift (commit
   `t := Com(w̃)`; sample `α ← F`; evaluate the lifted rows at `α`), the abstract weak-binding
   commitment `LiftCom`, the output relation `relLift`, and the plain-special-sound CWSS theorem
-  `lift_coordinateWiseSpecialSound` at `k = 2d` (**sorried**: Lemma 9's interpolation extraction).
+  `lift_coordinateWiseSpecialSound` at `k = 2d` — **proven, sorry-free and axiom-clean**. It is
+  the **cyclotomic instance** of generic `Lift`
+  (`ProofSystem/RingSwitching/Lift/` — presentation data + laws, `checkAt`, and the
+  interpolation/descent engine), whose protocol shell is the committed-scalar seam
+  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`); the
+  `IsPresentation` law-discharge lemmas live in
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. Hachi keeps only its norms, its
+  statement's bound convention, and the commitment interface.
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Rlin`). Its output relation
 `relLiftE` is the input of the batching bridge in `ZeroCheck/`; the chain is composed in

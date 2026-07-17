@@ -72,7 +72,15 @@ per-row and range claims. Escapes pass through.
 (faithfulness of the sorried `M̃_α`/table encodings, F5); `H₀ ≡ 0` ⇒ each table entry is a root
 of `X·∏_{j=1}^{b−1}(X − j)(X + j)` over the field `F` ⇒ (with `hq : 2 * b ≤ q + 1` reading roots
 as centered representatives and `hb : b - 1 ≤ bound`, `hρ`-side analogously through the digit
-recomposition) `liftShort bound ρBound w̃`; the bound-sanity conjunct is shared verbatim. -/
+recomposition) `liftShort bound ρBound w̃`; the bound-sanity conjunct is shared verbatim.
+
+**⚠ Audit note (F4 adversarial review, 2026-07-16):** as stated this lemma is quantified over
+*all* `ρBound` but carries no hypothesis relating `ρBound` to the base-`b` digit recomposition
+of the `ρ`-rows (the `hb` analogue for the `RhoShort` conjunct); at e.g. `ρBound = 0` an honest
+instance with `ρ ≠ 0` satisfies `relBatched` yet violates `RhoShort`. Once the F5 encodings are
+filled faithfully, closing this sorry will require adding a hypothesis of the shape
+"(digit-recomposition constant of `b`, `τ_ρ`) `≤ ρBound`" — do not attempt to prove it as
+stated. -/
 theorem mem_relLiftE_of_relBatchedE
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)

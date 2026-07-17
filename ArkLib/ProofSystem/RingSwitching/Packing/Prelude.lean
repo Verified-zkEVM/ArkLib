@@ -8,24 +8,38 @@ import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
-import ArkLib.ProofSystem.RingSwitching.Profile
+import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
 import ArkLib.ProofSystem.Sumcheck.Structured
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic
 
 /-!
-# Ring-Switching IOP Prelude
+# Packing algebra and protocol vocabulary
 
-This module contains the core definitions and infrastructure for the ring-switching IOP,
-including tensor algebra operations, field extension handling, and basic protocol types.
+Everything the `Packing` protocol files speak about, one level below any particular
+message flow.
 
-## Main Components
+## Main components
 
-1. **Tensor Algebra operations**: Operations for handling tensor products
-between small field K and large field L, including embeddings `φ₀ : L → L ⊗[K] L`,
-`φ₁ : L → L ⊗[K] L`, and row/column decompositions with respect to a `K`-basis `β`.
-2. **Protocol Types**: Statement and witness types for each phase
-3. **Security Definitions**: Relations & Kstate for security analysis
+1. **The pack/unpack pair** — `packMLE` reads each `2^κ`-block of a `B`-multilinear's
+   evaluations as one `L`-element along the basis, producing a multilinear in `κ` fewer
+   variables; `unpackMLE` reverses it by reading off basis coordinates. These realize the
+   claim-preserving change of ring that the protocol then has to make checkable.
+2. **Carrier operations** — the tensor-algebra carrier `L ⊗[K] L` with its two embeddings
+   `φ₀ = · ⊗ 1`, `φ₁ = 1 ⊗ ·` and its row/column coordinate maps: the concrete data behind
+   the binary-tower profile instance `binaryTowerProfile` (defined at the end of this file).
+3. **Protocol subroutines** — `embedded_MLP_eval`, the honest folded carrier element
+   (the packed polynomial, coefficients embedded via `φ₁`, evaluated at the `φ₀`-image of
+   the point's tail); `eqWeightedCoordSum`, the verifier's coordinate-reconstruction
+   subroutine that every check of the protocol applies to some coordinate family; and
+   `compute_A_func`/`compute_A_MLE`, the public multiplier that turns the batched claim into
+   a sumcheck about the packed polynomial.
+4. **Protocol types and relations** — statement/witness types at the phase boundaries, the
+   `MLIOPCS` interface for the downstream opening (any protocol that opens a large-ring
+   multilinear evaluation claim, bundled with its completeness and round-by-round
+   knowledge-soundness obligations), and the relations/knowledge-state predicates the
+   security analysis threads through the phases.
 -/
 
 noncomputable section
@@ -163,28 +177,12 @@ def unpackMLE (β : Basis (Fin κ → Fin 2) K L) (t' : MultilinearPoly L ℓ') 
 **Component-wise `φ₁` embedding**.
 Takes a polynomial `t'` with coefficients in `L` and embeds it into a polynomial
 with coefficients in the tensor algebra `A` by applying `φ₁` to each coefficient.
-This is achieved by using `MvPolynomial.map`.
+The multilinear (`d = 1`) case of the family-shared degree-generic coefficient transport
+`RingSwitching.embedCoeffs` (`ArkLib/ProofSystem/RingSwitching/Transport/Coeffs.lean`).
 -/
 def componentWise_embed_MLE {A' : Type} [CommRing A'] (φ : L →+* A')
     (t' : MultilinearPoly L ℓ') : MultilinearPoly A' ℓ' :=
-  ⟨MvPolynomial.map (R:=L) (S₁ := A') (f:=φ) (t'.val), by
-    rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
-    intro i -- for any specific variable Xᵢ,
-      -- we prove its max individual degree is at most 1 in ANY monomial terms
-    calc
-      MvPolynomial.degreeOf i (MvPolynomial.map φ t'.val)
-      _ ≤ MvPolynomial.degreeOf i t'.val := by
-        refine degreeOf_le_iff.mpr ?_
-        intro m hm_support_mapped_t' -- consider any specific monomial term
-        have hm_in_support_t' : m ∈ t'.val.support := by
-          apply MvPolynomial.support_map_subset (f:=φ)
-          exact hm_support_mapped_t'
-        exact monomial_le_degreeOf i hm_in_support_t'
-      _ ≤ 1 := by
-        have h_og_t' := t'.property
-        simp only [MvPolynomial.mem_restrictDegree_iff_degreeOf_le] at h_og_t'
-        exact h_og_t' i
-  ⟩
+  embedCoeffs φ t'
 
 /-- Binius-named alias: component-wise `φ₁` embedding into the tensor algebra `L ⊗[K] L`. -/
 def componentWise_φ₁_embed_MLE (t' : MultilinearPoly L ℓ') :
@@ -322,6 +320,18 @@ variable (P : RingSwitchingProfile K L κ)
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
 
+/-- **The verifier's coordinate-reconstruction subroutine**: the eq̃-weighted sum
+`∑_{u ∈ {0,1}^κ} eq̃(u, r) ⋅ c u` of a `2^κ`-indexed coordinate family `c` at the round
+randomness `r` — equivalently, the evaluation at `r` of the multilinear extension of `c`
+(Boolean points cast into `L`). Every DP24 verifier check below is this sum at a different
+coordinate family and randomness: step 2 checks the original claim against the column
+coordinates of `ŝ`, step 5 batches the row coordinates of `ŝ` into the sumcheck target `s₀`,
+and step 8 weighs the row coordinates of the final eq̃-tensor. -/
+def eqWeightedCoordSum (c : (Fin κ → Fin 2) → L) (r : Fin κ → L) : L :=
+  Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
+    let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
+    (eqTilde u_as_L r) * c u
+
 /-- Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1})) -/
 def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
   P.A :=
@@ -333,13 +343,11 @@ def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
   let φ₀_mapped_r: Fin ℓ' → P.A := fun i => P.φ₀ (r_suffix i)
   φ₁_mapped_t'.val.eval φ₀_mapped_r
 
-/-- Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v. -/
+/-- Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v —
+`eqWeightedCoordSum` at the column coordinates of `ŝ` and the point prefix. -/
 def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : P.A) : Bool :=
   let r_prefix : Fin κ → L := fun i => r ⟨i.val, by omega⟩
-  let check_sum := Finset.sum Finset.univ fun (v : Fin κ → Fin 2) =>
-    let v_as_L : Fin κ → L := fun i => if (v i == 1) then 1 else 0
-    (eqTilde v_as_L r_prefix) * (P.decomposeColumns s_hat v)
-  decide (s = check_sum)
+  decide (s = eqWeightedCoordSum κ L (P.decomposeColumns s_hat) r_prefix)
 
 /-- Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})`
 `=: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u`.
@@ -388,12 +396,10 @@ def RingSwitching_SumcheckMultParam :
 }
 
 /-- Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`,
-where ŝ_u is the row components of ŝ. -/
+where ŝ_u is the row components of ŝ — `eqWeightedCoordSum` at the row coordinates of `ŝ`
+and the batching scalars. -/
 def compute_s0 (s_hat : P.A) (r''_batching : Fin κ → L) : L :=
-  Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
-    let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
-    (eqTilde u_as_L r''_batching)
-      * (P.decomposeRows s_hat u)
+  eqWeightedCoordSum κ L (P.decomposeRows s_hat) r''_batching
 
 /-- Compute the tensor `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` -/
 def compute_final_eq_tensor (r : Fin ℓ → L) (r' : Fin ℓ' → L) : P.A :=
@@ -409,12 +415,7 @@ Then compute `Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1
 def compute_final_eq_value (r_eval : Fin ℓ → L)
     (r'_challenges : Fin ℓ' → L) (r''_batching : Fin κ → L) : L :=
   let e_tensor := compute_final_eq_tensor κ L K P ℓ ℓ' h_l r_eval r'_challenges
-  let e_u : (Fin κ → Fin 2) → L := P.decomposeRows e_tensor
-  Finset.sum Finset.univ fun (u : Fin κ → Fin 2) =>
-    let u_as_L : Fin κ → L := fun i => if u i == 1 then 1 else 0
-    let eq_u_r_batching : L := -- `eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1})`
-      eqTilde u_as_L r''_batching
-    eq_u_r_batching * (e_u u)
+  eqWeightedCoordSum κ L (P.decomposeRows e_tensor) r''_batching
 
 /-- This condition ensures that the witness polynomial `H` has the
 correct structure `A(...) * t'(...)` -/

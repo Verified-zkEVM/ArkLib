@@ -31,10 +31,10 @@ sibling `Commitment.lean`.)
 
 1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
    (§4.2 / Figure 3 / Lemma 8).
-2. **`openCore`** (skeleton, pure links): the escape-threaded front `evalChainE` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
-   ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
-   sumcheck bridge.
+2. **`openCore`** (pure links; rows 3–4 proven, rows 5–7 skeleton): the escape-threaded front
+   `evalChainE` extended by the §4.3 stages up to the sumcheck bridge — R^lin adapter (F2,
+   proven) ▷ HMZ25 lift (Figure 4 / Lemma 9, **proven & axiom-clean**) ▷ batching bridge
+   (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷ sumcheck bridge.
 3. **`openingChain`** (skeleton, guarded tail): `openCore` ▷ᵍ the paired sumcheck loop
    (Figure 6 / Lemma 11, `m₀` guarded rounds) ▷ᵍ final evaluation (Figure 7 tail) ▷ᵍ the §4.5
    recursion adapters (partial evaluations ▷ᵍ `Z`-packing bridge ▷ᵍ trace handoff), landing on
@@ -96,12 +96,13 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 ## Sorry inventory of the composed chain (provenance of the certificate)
 
 *Generic machinery* (B4): `Verifier.IsGuarded.append`,
-`Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`);
-`coordinateWiseSpecialSound_of_mkWitness_scalar` (`ScalarRound.lean`, consumed only by future
-proofs). *Escape threading* (F2.0): `quadEval_coordinateWiseSpecialSound_withEscape`.
-*Per-link math* (the F2 `R^lin` adapter — `rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE` — is now
-proven and sorry-free):
-Lemma 9 (`lift_coordinateWiseSpecialSound`), the F5 encodings (`Constraints.lean`), the
+`Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`).
+*Escape threading* (F2.0): `quadEval_coordinateWiseSpecialSound_withEscape`.
+*Per-link math* (the F2 `R^lin` adapter — `rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE` — and
+the F4 HMZ25 lift — Lemma 9, `lift_coordinateWiseSpecialSound` on the proven scalar-round engine
+`coordinateWiseSpecialSound_of_mkWitness_scalar` and the `QuotientLift` algebra — are now proven,
+sorry-free and axiom-clean; rows 1–4 of the table carry no sorries):
+the F5 encodings (`Constraints.lean`), the
 un-batching (`mem_relLiftE_of_relBatchedE`), corrected Lemma 10
 (`zeroCheck_coordinateWiseSpecialSound`), the sum-to-point bridge, Lemma 11
 (`round_coordinateWiseSpecialSound`), F8 (`finalEval_coordinateWiseSpecialSound` + the

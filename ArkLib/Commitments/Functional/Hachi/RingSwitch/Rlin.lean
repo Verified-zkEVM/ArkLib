@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Escape
+import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 
 /-!
   # Eq. (20) → `R^lin` adapter (Hachi §4.3 entry; sumcheck-track milestone F2)
@@ -151,22 +152,27 @@ abbrev rlinCT (innerRows innerDigits r : Nat) : Nat := 2 ^ r * (innerRows * inne
 /-- The response-block width `cZ = (2^m · messageDigits) · zDigits` (`ẑ`); last column block. -/
 abbrev rlinCZ (messageDigits zDigits m : Nat) : Nat := 2 ^ m * messageDigits * zDigits
 
-/-- The `R^lin` statement ([NOZ26] §4.3): a public matrix `M`, a public right-hand side `y`, and
-a public `ℓ∞`-norm bound on the witness. -/
-structure RlinStatement (Φ : CyclotomicModulus (ZMod q)) (n μ : ℕ) where
+/-! The unstructured linear relation is the Hachi-specific seam between Eq. (20) and the
+`Lift`. The reusable ring-switching layer only needs an abstract input
+relation; keeping this statement here avoids baking `Rq`, its norm, and Hachi's bound convention
+into the generic protocol machinery. -/
+
+/-- Statement of Hachi's unstructured linear relation `R^lin`: a public matrix, a public
+right-hand side, and a public `ℓ∞`-norm bound on the witness. -/
+structure RlinStatement (n μ : ℕ) where
   /-- The public matrix `M ∈ Rq^{n×μ}`. -/
   M : ArkLib.Lattices.PolyMatrix (Rq Φ) n μ
   /-- The public right-hand side `y ∈ Rq^n`. -/
   yvec : ArkLib.Lattices.PolyVec (Rq Φ) n
-  /-- The public `ℓ∞`-norm bound on the witness (`b − 1` in the paper's `R^lin`; `γ` in this
-  chain, inherited from Eq. (20)'s c6). -/
+  /-- The public `ℓ∞`-norm bound on the witness. -/
   bound : ℕ
 
-/-- **The `R^lin` relation** ([NOZ26] §4.3): `M ζ = y` and `‖ζ‖∞ ≤ bound`. -/
-def relRlin {n μ : ℕ} : Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ) :=
+/-- Hachi's `R^lin` relation: knowledge of a short solution of the linear system. -/
+def relRlin {n μ : ℕ} :
+    Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ) :=
   {p | p.1.M *ᵥ p.2 = p.1.yvec ∧ vecLInftyNorm Φ p.2 ≤ p.1.bound}
 
-/-- Escape-threaded `R^lin` relation — the §4.3 chain's second seam. -/
+/-- Escape-threaded `R^lin` relation, consumed by `Lift`. -/
 def relRlinE {n μ : ℕ} (esc : Set E) :
     Set (RlinStatement Φ n μ × (ArkLib.Lattices.PolyVec (Rq Φ) μ ⊕ E)) :=
   (relRlin Φ).withEscape esc

@@ -75,3 +75,7 @@ theorem withEscape_empty_iff (rel : Set (S × W)) (s : S) (w : W ⊕ Empty) :
   · exact e.elim
 
 end Set
+
+/-- A left-inhabited sum is inhabited — `Nonempty (Wit ⊕ E)` for the escape-threaded witness
+types, from the existing witness `Nonempty` instances. -/
+instance {A E : Type*} [Nonempty A] : Nonempty (A ⊕ E) := ⟨.inl (Classical.arbitrary A)⟩

@@ -32,6 +32,11 @@ The paper is primary. Repository notes explain intent and known deviations but c
 paper faithfulness by themselves. Record the paper version and page/figure/equation references. If
 the primary source is unavailable, do not declare Stage 1 complete.
 
+If the user's requested approach contradicts the repo's verified design notes (e.g. a directed
+reuse or restructuring that a `HACHI_*.md`/KB analysis argues against), surface the conflict as an
+explicit scope question with a recommendation *before* Stage 1 design work, and record the user's
+decision in the scope manifest; do not silently follow either side.
+
 ## Global invariants
 
 Maintain these invariants throughout the task:
@@ -164,6 +169,11 @@ Apply these Hachi-specific attacks whenever the target can reach the relevant se
   an authorized repair replaces it.
 - Re-audit a “proven” dependency when its documented relation or bound is only a containment or a
   modeling generalization of the paper and becomes load-bearing for the target.
+- For escape-threaded links, remember `treeSpecialSound` is an `∃`-extractor statement: a
+  (mathematically) nonempty concrete escape set makes the instantiated `isCWSS` near-vacuous as a
+  proposition. Require the constructive anchor — the explicit witness assembler and its
+  membership theorem (the `buildWitness`/`liftBuildWitness` pattern) — to be public, named, and
+  cited by the module docstring as the auditable content.
 
 Produce a concrete non-vacuity certificate: at least one honest symbolic instance/transcript or
 small Lean example, plus a trace showing which verifier checks constrain which output-relation
@@ -252,7 +262,11 @@ identifiers until you rebuild it. Two other pervasive Hachi mechanics: `lake bui
 lean`) runs the style linters, so check long lines with `lake env lean -Dlinter.style.longLine=true`;
 and pure index/algebra helpers over the cyclotomic-ring variable block trigger `unusedSectionVars`
 for `[NeZero q]`/`[IsCyclotomic Φ]` — silence it with `omit [NeZero q] [IsCyclotomic Φ] in` placed
-*before* the docstring (between docstring and declaration it is a parse error).
+*before* the docstring (between docstring and declaration it is a parse error). Beware: this lint
+does **not** fire on `sorry`-bodied declarations, so a clean sorried skeleton can still hide
+unused section variables that surface only when the real proof lands; audit each frozen
+statement's section-variable usage before the freeze, or expect lint-forced `omit` signature
+narrowings afterwards and record them as explicit freeze amendments.
 
 Split a hard hole until each resulting obligation is independently below 6. Splitting is legitimate
 only when the helpers express real intermediate facts and do not merely restate the original goal,
@@ -290,7 +304,9 @@ re-run their exit gates, and create a new freeze.
 
 ## Stage 3 — discharge the frozen proof obligations
 
-Work through the proof DAG from leaves to public certificates. For one `sorry` at a time:
+Work through the proof DAG from leaves to public certificates. Bodies that were already verified
+*verbatim* (same statement, same context) in a Stage 2 spike file may be transcribed one file at a
+time, with steps 3–7 run after each file; everything else proceeds one `sorry` at a time:
 
 1. Re-open its exact goal and follow the reviewed plan.
 2. Replace only that proof body. Proof-local `have` statements are allowed; new top-level helpers,
@@ -360,7 +376,11 @@ Once the clean-room review is clean:
    count, milestone description, and “proven” claim. Do not erase a known paper deviation or open
    gap. Re-run documentation integrity checks after documentation changes.
 4. Update `Composition.lean` provenance, Hachi module docstrings, and `docs/kb/` when their factual
-   account changed. Never hand-edit generated `ArkLib.lean` or derived site output.
+   account changed. If the milestone introduces or extends use of a citation key, complete the
+   citation workflow (`blueprint/src/references.bib` entry + `docs/kb/papers/` page, per
+   `docs/wiki/blueprint-and-citations.md`) — the KB linter in `validate.sh` enforces both. Never
+   hand-edit generated `ArkLib.lean` or derived site output (regenerate via
+   `./scripts/update-lib.sh` after `git add`-ing new files).
 5. Run the self-improvement pass below before writing the final report.
 
 ## Self-improvement pass

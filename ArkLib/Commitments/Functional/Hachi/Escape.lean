@@ -46,10 +46,6 @@ open CompPoly ArkLib.Lattices.CyclotomicModulus
 open WeakBinding
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.SingleRound
 
-/-- A left-inhabited sum is inhabited — `Nonempty (Wit ⊕ E)` for the escape-threaded witness
-types, from the existing witness `Nonempty` instances. -/
-instance {A E : Type} [Nonempty A] : Nonempty (A ⊕ E) := ⟨.inl (Classical.arbitrary A)⟩
-
 section ThreadedRelations
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
