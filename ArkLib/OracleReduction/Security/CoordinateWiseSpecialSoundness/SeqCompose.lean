@@ -387,7 +387,7 @@ theorem Verifier.seqCompose_treeSpecialSound
     refine Verifier.append_treeSpecialSound init impl (V 0)
       (Verifier.seqCompose (Stmt ∘ Fin.succ) (fun i => V i.succ))
       (S 0) (ChallengeTreeShape.seqCompose (fun i => S i.succ)) f₀ hf₀ (h 0) ?_
-    exact htail
+    simpa [Function.comp_def] using htail
 
 /-- **`n`-ary CWSS composition.** The coordinate-wise special-soundness wrapper of
 `seqCompose_treeSpecialSound`, obtained by unfolding `coordinateWiseSpecialSound` to tree-soundness

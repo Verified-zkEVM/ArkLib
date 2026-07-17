@@ -225,7 +225,10 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     (oracleVerifier oSpec Statement OStatement).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, oStmt⟩ := by
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rfl
+  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
+        (pure stmt : OptionT (OracleComp _) Statement)
+      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
+  congr 1
 
 /-- The `CheckClaim` oracle verifier is pure: its underlying verifier deterministically returns the
 combined statement, which discharges the deterministic-left hypothesis of the CWSS binary append. -/

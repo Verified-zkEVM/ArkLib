@@ -34,6 +34,25 @@ noncomputable section
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
+namespace CWSSStructure
+
+/-- The canonical coordinate-wise structure on a **challenge-free** protocol
+  (`IsEmpty pSpec.ChallengeIdx`): every field is the empty eliminator, since there are no challenge
+  rounds to describe. `coordinateWiseSpecialSound_of_isEmpty_challengeIdx` proves CWSS for *any*
+  `D` on such a protocol, but the binary-append composition theorem
+  (`Verifier.append_coordinateWiseSpecialSound`) needs a *concrete* structure for the zero-round
+  left factor (a `ReduceClaim`/`CheckClaim` head); this is that structure. -/
+def ofIsEmpty {n : ℕ} {pSpec : ProtocolSpec n} [IsEmpty pSpec.ChallengeIdx] :
+    CWSSStructure pSpec where
+  coordIndex := fun i => isEmptyElim i
+  alphabet := fun i => isEmptyElim i
+  decompose := fun i => isEmptyElim i
+  soundnessParam := fun i => isEmptyElim i
+  arity := fun i => isEmptyElim i
+  arity_eq := funext fun i => isEmptyElim i
+
+end CWSSStructure
+
 namespace ProtocolSpec.ChallengeTree
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {arity : pSpec.ChallengeIdx → ℕ}
@@ -59,6 +78,7 @@ def onlyTranscript [IsEmpty pSpec.ChallengeIdx]
     (tree : ChallengeTree pSpec arity 0) : FullTranscript pSpec :=
   (fullTranscripts_eq_singleton tree).choose
 
+/-- The unique full transcript `onlyTranscript` is a member of the tree's `fullTranscripts`. -/
 theorem onlyTranscript_mem [IsEmpty pSpec.ChallengeIdx]
     (tree : ChallengeTree pSpec arity 0) :
     tree.onlyTranscript ∈ tree.fullTranscripts := by

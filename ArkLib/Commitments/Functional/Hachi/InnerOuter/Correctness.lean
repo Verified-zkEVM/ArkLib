@@ -5,13 +5,41 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
-import ArkLib.Commitments.Functional.Hachi.GadgetNorms
+import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
 
 /-!
 # Correctness of the Inner-Outer Ajtai Commitment
 
 Perfect correctness for lawful gadget decompositions: if the message and inner gadget
 decompositions invert their gadget matrices, an honest commitment always verifies.
+
+The honest opening pairs the committer's decompositions with the trivial challenge `cᵢ = 1`,
+under which the weak verifier `verify_weak` (Hachi's relaxed opening check, see
+`InnerOuter.Scheme`) collapses to the ordinary honest check. Correctness therefore splits into
+the structural gadget relations, which follow from lawfulness alone over any field, and the weak
+verifier's shortness side conditions, which the genuine base-`b` digit decomposition of `ZMod q`
+satisfies via the centered norm bounds of `Gadget/Norms`.
+
+## Main results
+
+Block-level facts about the honest decompositions `generateDecomps`, over any field `R`:
+
+* `generateDecomps_derivedMessage`: the derived message recovers the message, `G · sᵢ = mᵢ`.
+* `generateDecomps_inner_eq`: the inner gadget relation `G · t̂ᵢ = A sᵢ` holds.
+* `generateDecomps_message_checks`, `generateDecomps_inner_checks`: the corresponding per-block
+  `Simple.verify` checks all pass.
+
+Perfect correctness of the bundled `commitmentScheme`, over `R = ZMod q` (where the norms live):
+
+* `perfectlyCorrect_of_lawful`: for any lawful decompositions, assuming the trivial challenge is
+  admissible (`0 < ‖1‖₁ ≤ κ`) and the honest decompositions meet the shortness bounds
+  (`‖sᵢ‖₂² ≤ βSq`, `‖t̂‖∞ ≤ γ`).
+* `perfectlyCorrect_of_digits`: for genuine base-`b` digit decompositions; lawfulness is
+  discharged by `gadgetDecompose_lawful`, the shortness bounds remain hypotheses.
+* `perfectlyCorrect`: unconditional, for the concrete decomposition `zmodDigitDecomposition`
+  (the Hachi gadget inverse `G⁻¹`), with `βSq := (mr·md)·(deg φ)·(b-1)²` and `γ := b - 1`
+  discharged by `Gadget/Norms`, under only the digit-reconstruction hypotheses (`1 < b`,
+  `q ≤ b^digits`, `1 ≤ deg φ`), `1 ≤ κ`, and the no-wraparound condition `b - 1 ≤ q/2`.
 
 ## References
 
@@ -162,7 +190,7 @@ weak-verifier shortness side conditions. Instantiates `perfectlyCorrect_of_lawfu
 `gadgetDecompose` (lawful by `gadgetDecompose_lawful`), discharging gadget lawfulness; the
 trivial-challenge admissibility (`hκpos`, `hκle`) and the honest shortness bounds (`hβ`, `hγ`)
 remain explicit. For the concrete binary decomposition they are discharged unconditionally by
-`perfectlyCorrect` below (via `Rq.l1Norm_one` and the `GadgetNorms` bounds). -/
+`perfectlyCorrect` below (via `Rq.l1Norm_one` and the `Gadget/Norms` bounds). -/
 theorem perfectlyCorrect_of_digits (base : ZMod q) (βSq γ κ : Nat)
     (hdeg : 1 ≤ Φ.φ.natDegree) (hmsg : 0 < messageDigits) (hinner : 0 < innerDigits)
     (ddMsg : DigitDecomposition base messageDigits)
@@ -187,7 +215,7 @@ theorem perfectlyCorrect_of_digits (base : ZMod q) (βSq γ κ : Nat)
 and inner decompositions are the genuine base-`b` digit decomposition of `ZMod q`
 (`zmodDigitDecomposition`, the Hachi gadget inverse `G⁻¹`). All weak-verifier side conditions are
 discharged automatically: the trivial challenge `cᵢ = 1` is short (`Rq.l1Norm_one`), and the
-digit decompositions are short (`GadgetNorms`), with `βSq := (mr·md)·(deg φ)·(b-1)²` and
+digit decompositions are short (`Gadget/Norms`), with `βSq := (mr·md)·(deg φ)·(b-1)²` and
 `γ := b - 1`. The hypotheses are exactly those for reconstruction (`1 < b`, `q ≤ bᵈⁱᵍⁱᵗˢ`,
 `1 ≤ deg φ`, positive digit counts), plus `1 ≤ κ` and the no-wraparound condition `b - 1 ≤ q/2`
 for the centered digit norm. -/
