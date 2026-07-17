@@ -75,7 +75,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (mLow κ : ℕ) (bound rBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `i`-th true partial evaluation of the table (Eq. (24)):
@@ -145,7 +145,7 @@ def partialEvalProver {TCom : Type}
 `t` and *every* partial evaluation in the derived family is well-formed. This seam is the sound
 stopping point of the §4.5 peeling; collapsing it into the single `Z`-packed claim is the
 `Recursion/ZBatchBridge.lean` step (⚠ see there). -/
-def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     Set (PartialEvalStatement K.TCom F mLow κ × LiftedWitness Φ μ n) :=
   {p |
@@ -153,10 +153,10 @@ def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρ
     ∀ i, partialEvalAt Φ mLow κ φF p.2 p.1.pointLow i = p.1.partials i}
 
 /-- Escape-threaded per-`i` partial-evaluation relation. -/
-def relPartialEvalE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relPartialEvalE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relPartialEval Φ mLow κ bound ρBound K φF).withEscape K.esc
+  (relPartialEval Φ mLow κ bound rBound K φF).withEscape K.esc
 
 variable [SampleableType F]
 
@@ -170,20 +170,20 @@ statement, the mle splitting identity `wTableMleEval_split` plus the derivation 
 membership; escapes pass through. -/
 theorem partialEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom)
         (F := F)).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (relWEvalClaimE Φ (mLow + κ) bound ρBound b K φF)
-      (relPartialEvalE Φ mLow κ bound ρBound K φF) := by
+      (relWEvalClaimE Φ (mLow + κ) bound rBound b K φF)
+      (relPartialEvalE Φ mLow κ bound rBound K φF) := by
   sorry
 
 /-- **The partial-evaluation head as a `CWSSPackage`** (Hachi §4.5, Eq. (24)): the pure
 one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaimE` to the per-`i` claims `relPartialEvalE`. -/
 def partialEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     CWSSPackage init impl
       (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n ⊕ E)
@@ -191,13 +191,13 @@ def partialEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ P
       (pSpecPartialEval F κ) where
   verifier := partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaimE Φ (mLow + κ) bound ρBound b K φF
-  relOut := relPartialEvalE Φ mLow κ bound ρBound K φF
+  relIn := relWEvalClaimE Φ (mLow + κ) bound rBound b K φF
+  relOut := relPartialEvalE Φ mLow κ bound rBound K φF
   isPure := ⟨fun stmt tr =>
     ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
       deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩,
     fun _ _ => rfl⟩
-  isCWSS := partialEval_coordinateWiseSpecialSound Φ mLow κ bound ρBound b init impl K φF
+  isCWSS := partialEval_coordinateWiseSpecialSound Φ mLow κ bound rBound b init impl K φF
 
 end Protocol
 

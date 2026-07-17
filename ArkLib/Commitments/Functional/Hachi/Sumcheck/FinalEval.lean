@@ -70,7 +70,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (m₀ m₁ : ℕ) (bound rBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The final check ([NOZ26] Figure 7 tail): both final sumcheck targets against the public
@@ -121,7 +121,7 @@ def finalEvalProver {TCom : Type}
 /-- **The evaluation-claim relation** — the §4.3 chain's final seam and the recursion's input:
 `w̃` opens `t` and its table's multilinear extension evaluates to the claimed value at the
 point. -/
-def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     Set (WEvalStatement K.TCom F m₀ × LiftedWitness Φ μ n) :=
   {p |
@@ -129,10 +129,10 @@ def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρB
     wTableMleEval Φ m₀ φF b p.2 p.1.point = p.1.value}
 
 /-- Escape-threaded evaluation-claim relation. -/
-def relWEvalClaimE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relWEvalClaimE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relWEvalClaim Φ m₀ bound ρBound b K φF).withEscape K.esc
+  (relWEvalClaim Φ m₀ bound rBound b K φF).withEscape K.esc
 
 variable [SampleableType F]
 
@@ -147,20 +147,20 @@ recover `roundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is the p
 the bound-sanity conjunct is re-supplied by the guard; escapes pass through. -/
 theorem finalEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom)
         φF).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (roundRelE Φ m₀ m₁ bound ρBound K φF b m₀)
-      (relWEvalClaimE Φ m₀ bound ρBound b K φF) := by
+      (roundRelE Φ m₀ m₁ bound rBound K φF b m₀)
+      (relWEvalClaimE Φ m₀ bound rBound b K φF) := by
   sorry
 
 /-- **The final-evaluation step as a guarded package** (`GCWSSPackage`): the guarded one-message
 verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation
 claim `relWEvalClaimE`. Certificate: the sorried `finalEval_coordinateWiseSpecialSound`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     GCWSSPackage init impl
       (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n ⊕ E)
@@ -168,10 +168,10 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
       (pSpecFinalEval F) where
   verifier := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := roundRelE Φ m₀ m₁ bound ρBound K φF b m₀
-  relOut := relWEvalClaimE Φ m₀ bound ρBound b K φF
+  relIn := roundRelE Φ m₀ m₁ bound rBound K φF b m₀
+  relOut := relWEvalClaimE Φ m₀ bound rBound b K φF
   isGuarded := finalEvalVerifier_isGuarded Φ m₀ m₁ bound b φF
-  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound b init impl K φF
+  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound rBound b init impl K φF
 
 end Protocol
 

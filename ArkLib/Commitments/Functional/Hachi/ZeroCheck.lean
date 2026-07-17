@@ -6,55 +6,45 @@ Authors: Tobias Rothmann, Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 
 /-!
-# Hachi Zero-Check (Figure 5 / corrected Lemma 10)
+# Hachi Zero-Check (Figure 5 / Lemma 10)
 
 Umbrella for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [NOZ26] Eqs. (21)–(23))
 and the zero-check subprotocol that reduces the two polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` — the
-range constraints and the `α`-evaluated linear constraints, both `eq̃`-batched — to their
-evaluations at random points.
+`eq̃`-batched range constraints and `α`-evaluated linear constraints — to evaluations at derived
+points.
 
-## ⚠ The paper's Lemma 10 is repaired here
+## Deviation from the paper's Lemma 10
 
-Hachi's Lemma 10 (uniform-vector-challenge extraction) is **not provable as stated**: a
-coordinate-wise star certifies only axis-cross vanishing, and for `m ≥ 2` that does not imply
-`H ≡ 0`. `ZeroCheck/Reduction.lean` implements the adopted repair — two scalar **Kronecker seeds**
-`(ρ₀, ρ_α)`, with the evaluation points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, where
-univariate root counting is information-complete. The formal counterexample to the paper's
-argument is `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`; the specification boundary
-is recorded in `docs/kb/audits/noz26-zero-check-lemma10.md`.
+The paper's Lemma 10 argues extraction from uniform vector challenges, but a coordinate-wise
+family of accepting transcripts only certifies that `H` vanishes on an axis cross, which for
+`m ≥ 2` does not imply `H ≡ 0`. `ZeroCheck/Reduction.lean` instead draws two scalar seeds
+`(ρ₀, ρ_α)` and derives the evaluation points along the Kronecker curves
+`κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, where root counting determines a multilinear polynomial. The
+counterexample to the uniform-challenge argument is
+`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`, and the deviation is recorded in
+`docs/kb/audits/noz26-zero-check-lemma10.md`.
 
 ## Folder structure
 
-* `ZeroCheck/Constraints.lean` — the **shared constraint encoding** (Eqs. (21)–(23)): the table
-  `w̃`, the batched polynomials `H₀`/`H_α` (genuine `MvPolynomial.MLE`s, so their multilinearity
-  is `sorry`-free), the sumcheck polynomials `F_{0,τ₀}`/`F_{α,τ₁}` with their degree pins, the
-  Kronecker point `kroneckerPoint`, `hypercubeSum`, and `roundRel`/`roundRelE`. Consumed by both
-  this zero-check *and* the sumcheck round loop (`Sumcheck/`), so it sits at the shared base of the
-  batched-sumcheck machinery. The `M̃_α` contraction `hAlphaEvals` is now **concrete** — the
-  `α`-evaluated per-row lift defect (row-encoded into the `m₁`-cube), so `H_α` is a genuine
-  batched polynomial with meaningful coefficients (`hAlphaEvals_rowPoint`, axiom-clean). The table
-  entry function `wTable` is now **concrete** too (it reads the committed `z`/`ρ` coefficients
-  directly, so `H₀` non-vacuously tests shortness of the committed data). Only the range-side
-  soundness (`H₀ ≡ 0 ⇒ liftShort`) and the sumcheck-polynomial stubs remain F5.
-* `ZeroCheck/Batch.lean` — the zero-round **batching bridge** (entry head): reinterprets the lift's
-  per-row residual claims as the two `MvPolynomial` identities `H₀ ≡ 0 ∧ H_α ≡ 0`
-  (`relBatched`/`relBatchedE`, Eqs. (22)–(23)); the un-batching pull-back
-  `mem_relLiftE_of_relBatchedE` (`relBatchedE → relLiftE`, arity pin `n ≤ 2 ^ m₁`) is
-  **proof-`sorry`-free** (via `MLE_eq_zero_iff` + `hAlphaEvals_rowPoint`; the residual `sorryAx` is
-  only the `wTable`/`H₀` conjunct in its statement type).
-* `ZeroCheck/Reduction.lean` — **Hachi Figure 5 / corrected Lemma 10**: one challenge round
-  carrying the seed pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the
-  derived Kronecker points. The CWSS theorem `zeroCheck_coordinateWiseSpecialSound` (`relBatchedE
-  → relZeroCheckE`, `k = D = zeroCheckD m₀ m₁`) is **`sorry`-free and now axiom-clean** — its
-  escape/collision/root-counting extraction is complete, and with the encodings `hAlphaEvals`/
-  `wTable` now concrete, `#print axioms` reports no `sorryAx` (only the ambient
-  `propext`/`Classical.choice`/`Quot.sound`; the `Classical.choice` is from the classical-choice
-  branch selection in `buildWitnessE`, the documented constructivity caveat). The Kronecker kernel
-  `arm_eq_zero_of_family` is likewise axiom-clean.
+* `ZeroCheck/Constraints.lean` — the constraint encoding (Eqs. (21)–(23)): the table `w̃`, the
+  batched polynomials `H₀`/`H_α` (as `MvPolynomial.MLE`s), the sumcheck summands
+  `F_{0,τ₀}`/`F_{α,τ₁}` with their per-variable degrees, `kroneckerPoint`, `hypercubeSum`, and the
+  per-round relation `roundRel`/`roundRelE`. Shared between this zero-check and the sumcheck rounds
+  (`Sumcheck/`).
+* `ZeroCheck/Batch.lean` — the zero-round batching bridge: reinterprets the lift's per-row claims
+  as the two identities `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`/`relBatchedE`, Eqs. (22)–(23)). The
+  pull-back `mem_relLiftE_of_relBatchedE` (`relBatchedE → relLiftE`) recovers the per-row equation
+  via `MLE_eq_zero_iff` and `hAlphaEvals_rowPoint`, under the arity bound `n ≤ 2 ^ m₁`.
+* `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: one challenge round carrying the seed
+  pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the derived Kronecker
+  points. The coordinate-wise special soundness theorem
+  `zeroCheck_coordinateWiseSpecialSound` reduces `relBatchedE` to `relZeroCheckE` with
+  `k = D = zeroCheckD m₀ m₁`, its extraction handling escapes, weak-binding collisions, and
+  Kronecker root counting (`arm_eq_zero_of_family`).
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
-Its output relation `relZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`; the chain
-is composed in `Composition.lean` (`openCore`, row 6).
+Its output relation `relZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`, and the
+chain is composed in `Composition.lean`.
 
 ## References
 

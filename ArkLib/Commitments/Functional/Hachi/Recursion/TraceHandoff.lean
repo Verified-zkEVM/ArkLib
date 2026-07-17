@@ -67,7 +67,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ)
+variable (mLow κ : ℕ) (bound rBound : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -170,7 +170,7 @@ instantiation obligation. -/
 theorem handoff_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -179,7 +179,7 @@ theorem handoff_coordinateWiseSpecialSound
     (handoffVerifier (oSpec := oSpec) Φ' mLow φF pp'
         reinterpretCom).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (relHatEvalE Φ mLow κ bound ρBound zpow K φF)
+      (relHatEvalE Φ mLow κ bound rBound zpow K φF)
       (relInE Φ' base' βSq' γ' κ' K.esc) := by
   sorry
 
@@ -191,7 +191,7 @@ claim `relHatEvalE` to the **next iteration's** escape-threaded `QuadEval` input
 packings, not monomial bases of a point). -/
 def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -205,10 +205,10 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
       (pSpecHandoff Φ') where
   verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF pp' reinterpretCom
   struct := CWSSStructure.ofIsEmpty
-  relIn := relHatEvalE Φ mLow κ bound ρBound zpow K φF
+  relIn := relHatEvalE Φ mLow κ bound rBound zpow K φF
   relOut := relInE Φ' base' βSq' γ' κ' K.esc
   isGuarded := handoffVerifier_isGuarded Φ' mLow φF pp' reinterpretCom
-  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound ρBound init impl zpow K φF pp'
+  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound rBound init impl zpow K φF pp'
     reinterpretCom base' βSq' γ' κ'
 
 end Protocol

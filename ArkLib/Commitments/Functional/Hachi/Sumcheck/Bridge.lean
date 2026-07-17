@@ -38,7 +38,7 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
+variable (m₀ m₁ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The bridge's statement map: install the empty challenge prefix and the initial target pair
@@ -55,11 +55,11 @@ through; the bound-sanity conjunct is shared verbatim.
 **Sorried** (a corollary of the sorried F5 identities `sum_sumcheckPolyZero` /
 `sum_sumcheckPolyAlpha`, plus `challenges`-uniqueness `Fin 0 → F`). -/
 theorem mem_relZeroCheckE_of_roundRelE
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ)
     (s : ZeroCheckStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (toRoundStatement Φ m₁ φF s, w) ∈ roundRelE Φ m₀ m₁ bound ρBound K φF b 0) :
-    (s, w) ∈ relZeroCheckE Φ m₀ m₁ bound ρBound K φF b := by
+    (h : (toRoundStatement Φ m₁ φF s, w) ∈ roundRelE Φ m₀ m₁ bound rBound K φF b 0) :
+    (s, w) ∈ relZeroCheckE Φ m₀ m₁ bound rBound K φF b := by
   sorry
 
 /-- **The sumcheck bridge as a `CWSSPackage`**: zero-round `ReduceClaim` at
@@ -67,7 +67,7 @@ theorem mem_relZeroCheckE_of_roundRelE
 with no soundness error. -/
 noncomputable def sumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     CWSSPackage init impl
       (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
@@ -75,13 +75,13 @@ noncomputable def sumcheckBridgePackage (init : ProbComp σ)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (toRoundStatement Φ m₁ φF)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b
-  relOut := roundRelE Φ m₀ m₁ bound ρBound K φF b 0
+  relIn := relZeroCheckE Φ m₀ m₁ bound rBound K φF b
+  relOut := roundRelE Φ m₀ m₁ bound rBound K φF b 0
   isPure := ⟨fun stmt _ => toRoundStatement Φ m₁ φF stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b)
-    (relOut := roundRelE Φ m₀ m₁ bound ρBound K φF b 0)
+    (relIn := relZeroCheckE Φ m₀ m₁ bound rBound K φF b)
+    (relOut := roundRelE Φ m₀ m₁ bound rBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relZeroCheckE_of_roundRelE Φ m₀ m₁ bound ρBound K φF b)
+    (mem_relZeroCheckE_of_roundRelE Φ m₀ m₁ bound rBound K φF b)
 
 end ArkLib.Lattices.Ajtai.InnerOuter
