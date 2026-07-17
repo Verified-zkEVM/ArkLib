@@ -39,8 +39,13 @@ check-then-update shape is what the ring-switching constructions share on the wi
 * the `Packing` final step (`Packing/SumcheckPhase.lean`): `check` is the closing
   consistency equation of the relocation sumcheck;
 * deterministic one-message switch heads — a single carrier element plus a single algebraic
-  identity — are `messageRoundOracleVerifier` with that identity as `check` (the planned
-  Hachi §3 packing head is of this shape).
+  identity — are `messageRoundOracleVerifier` with that identity as `check` (the [NOZ26] §3
+  packing head is of this shape).
+
+## References
+
+* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
+  Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
 -/
 
 open OracleSpec OracleComp ProtocolSpec CoordinateWise.ScalarRound
@@ -58,6 +63,8 @@ so it is read through the default interface. -/
 instance {Msg : Type} : ∀ i, OracleInterface ((pSpecMessage Msg).Message i)
   | ⟨0, _⟩ => OracleInterface.instDefault
 
+/-- The one-message wire sends no challenge, so its `Challenge` family is empty and this
+`SampleableType` obligation is discharged vacuously. -/
 instance {Msg : Type} : ∀ i, SampleableType ((pSpecMessage Msg).Challenge i)
   | ⟨0, h⟩ => nomatch h
 

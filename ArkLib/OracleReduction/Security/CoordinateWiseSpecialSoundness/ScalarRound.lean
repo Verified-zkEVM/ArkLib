@@ -72,6 +72,8 @@ instance : ∀ i, SampleableType ((pSpecScalar Msg C).Challenge i)
   | ⟨0, h⟩ => nomatch h
   | ⟨1, _⟩ => (inferInstance : SampleableType C)
 
+/-- `OracleInterface` for each message index: round 0 carries the prover message `Msg`;
+round 1 is a challenge, so it has no message. -/
 instance : ∀ i, OracleInterface ((pSpecScalar Msg C).Message i)
   | ⟨0, _⟩ => (inferInstance : OracleInterface Msg)
   | ⟨1, h⟩ => nomatch h

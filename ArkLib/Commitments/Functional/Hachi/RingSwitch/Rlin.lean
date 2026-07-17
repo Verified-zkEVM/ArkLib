@@ -7,7 +7,7 @@ import ArkLib.Commitments.Functional.Hachi.Escape
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 
 /-!
-  # Eq. (20) → `R^lin` adapter (Hachi §4.3 entry; sumcheck-track milestone F2)
+  # Eq. (20) → `R^lin` adapter (Hachi §4.3 entry)
 
   Hachi §4.3 proves knowledge of a short solution of an **unstructured linear relation**
 
@@ -42,7 +42,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   and — guarding against a vacuous encoding — the completeness direction
   `mem_relRlinE_of_relOutE`.
 
-  Seam discipline (design decision G6): this file's `relIn` **is** `relOutE` (the escape-threaded
+  Seam discipline: this file's `relIn` **is** `relOutE` (the escape-threaded
   Eq. (20) relation from `Escape.lean`), and its `relOut` `relRlinE` is definitionally the next
   link's (`RingSwitch/Reduction.lean`) `relIn`.
 
@@ -136,12 +136,12 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type} {E : Type}
 /-! ## The `R^lin` statement and relation -/
 
 /-- Column count `μ` of the Eq. (20) block system: the stacked witness
-`ζ = ŵ ++ (flatten t̂ ++ ẑ)`. Associativity fixed once, here (F2.2 convention pin). -/
+`ζ = ŵ ++ (flatten t̂ ++ ẑ)`. Associativity fixed once, here. -/
 abbrev rlinCols (innerRows messageDigits innerDigits zDigits m r : Nat) : Nat :=
   2 ^ r * messageDigits + (2 ^ r * (innerRows * innerDigits) + 2 ^ m * messageDigits * zDigits)
 
 /-- Row count `n` of the Eq. (20) block system: the stacked rows `c1 ++ (c2 ++ (c3 ++ (c4 ++
-c5)))`. Associativity fixed once, here (F2.2 convention pin). -/
+c5)))`. Associativity fixed once, here. -/
 abbrev rlinRows (innerRows outerRows dRows : Nat) : Nat :=
   dRows + (outerRows + (1 + (1 + innerRows)))
 
@@ -405,7 +405,7 @@ theorem rlin_norm_iff (base : ZMod q) (ω γ : ℕ)
   rw [vecLInftyNorm_append, vecLInftyNorm_append]
 
 omit [NeZero q] in
-/-- **The block-row equivalence** ([NOZ26] §4.3, the substance of F2): an `R^lin` witness `ζ` at
+/-- **The block-row equivalence** ([NOZ26] §4.3): an `R^lin` witness `ζ` at
 the assembled statement `rlinStmt X` satisfies `relRlin` iff its un-stacking is an Eq. (20)-valid
 `QuadEvalResponse` at `X`. -/
 theorem rlin_iff_relOut (base : ZMod q) (ω γ : ℕ)
@@ -439,7 +439,7 @@ theorem mem_relOutE_of_relRlinE (base : ZMod q) (ω γ : ℕ) (esc : Set E)
       exact h
 
 omit [NeZero q] in
-/-- **Completeness / non-vacuity** (the F2 forward direction): every Eq. (20)-valid transcript's
+/-- **Completeness / non-vacuity**: every Eq. (20)-valid transcript's
 response stacks to an `R^lin` witness at the assembled statement. Guarantees the pull-back is not
 vacuous. Escapes pass through. -/
 theorem mem_relRlinE_of_relOutE (base : ZMod q) (ω γ : ℕ) (esc : Set E)

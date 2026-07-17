@@ -75,8 +75,7 @@ quotient-witness correspondence, the trace identity — belongs to exactly one c
 lives with it. In particular the two *data layers* do not unify: above a spanning-and-faithful
 core their law sets are incomparable (coordinate additivity is not derivable from
 `decomposeRows_spec` alone, and `rep` is not multiplicative on the nose), so no common parent
-structure would carry a lemma either side's proofs consume — see
-`HACHI_RING_SWITCHING_COMPARISON.md` §8.
+structure would carry a lemma either side's proofs consume.
 
 ## Folder structure
 
@@ -99,7 +98,5 @@ structure would carry a lemma either side's proofs consume — see
 * [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based
   Multilinear Polynomial Commitments over Extension Fields." Cryptology ePrint Archive (2026).
 
-See also the KB concept page `docs/kb/concepts/ring-switching.md` and the design note
-`HACHI_RING_SWITCHING_COMPARISON.md` (why the constructions cannot be unified at the
-protocol level).
+See also the KB concept page `docs/kb/concepts/ring-switching.md`.
 -/

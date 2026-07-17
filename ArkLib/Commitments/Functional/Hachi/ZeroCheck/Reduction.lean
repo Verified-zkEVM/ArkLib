@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 
 /-!
-  # Zero-check — Hachi Figure 5 / **corrected** Lemma 10 — skeleton (milestone F6)
+  # Zero-check — Hachi Figure 5 / **corrected** Lemma 10 — skeleton
 
   One challenge round reducing the batched polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` to their
   evaluations at random points: the verifier samples the points, and the (never-sent) committed
@@ -20,9 +20,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
   *axis cross* through the star's center, and for `m ≥ 2` cross-vanishing does not imply
   `H ≡ 0` — `H(t₁,t₂) = (t₁−a)(t₂−b)` vanishes on every axis line through `(a,b)` yet is
   nonzero, and an adversary can realize exactly this shape against the paper's own range check
-  with a single out-of-range entry. No choice of the paper's parameter `D` helps. Full analysis,
-  protocol-level counterexample, and the repair space: [`HACHI_LEMMA10_GAP.md`](../../../../../
-  HACHI_LEMMA10_GAP.md) (plan risk R7).
+  with a single out-of-range entry. No choice of the paper's parameter `D` helps.
 
   **Adopted repair (one round, Kronecker curve):** sample two independent scalar **seeds**
   `(ρ₀, ρ_α) ← F²` and derive the evaluation points on the Kronecker curves
@@ -73,6 +71,8 @@ section Instances
 
 variable {F : Type} [SampleableType F]
 
+/-- The zero-check's lone challenge (the Kronecker seed pair `F × F`) is sampleable
+whenever `F` is. -/
 instance : ∀ i, SampleableType ((pSpecZeroCheck F).Challenge i)
   | ⟨0, _⟩ => (inferInstance : SampleableType (F × F))
 
@@ -149,7 +149,7 @@ variable [SampleableType F]
 
 /-- **Corrected Hachi Lemma 10 (skeleton): one-round Kronecker-seed CWSS of the zero-check.**
 
-**Sorried (F6).** Extraction plan (`HACHI_LEMMA10_GAP.md` §3.K.3): an `SS(F, 2, D)` star of
+**Sorried.** Extraction plan: an `SS(F, 2, D)` star of
 `2D − 1` accepting branches has `D` pairwise-distinct `ρ₀`-values on its first arm (the second
 coordinate held at the center) and `D` pairwise-distinct `ρ_α`-values on its second arm. If two
 branch witnesses are escapes or distinct openings of `t`, pass through resp. invoke
@@ -160,7 +160,7 @@ share one `w̃`: the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` h
 distinct roots on the first arm, hence `K₀ = 0`; **Kronecker injectivity** of the pullback on
 multilinear polynomials (the still-missing `powAlgHom_injective_on_multilinear`) gives
 `H₀^{w̃} ≡ 0`. The second arm gives `H_α^{w̃} ≡ 0` identically. The axis-cross counterexample
-of the gap file cannot survive: its pullback is a nonzero univariate of degree `< 2^{m₀}`. -/
+cannot survive: its pullback is a nonzero univariate of degree `< 2^{m₀}`. -/
 theorem zeroCheck_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))

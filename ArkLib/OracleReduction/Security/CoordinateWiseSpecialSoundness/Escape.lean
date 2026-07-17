@@ -9,7 +9,7 @@ import ArkLib.OracleReduction.Prelude
   # Escape-threaded relations (`Set.withEscape`)
 
   Protocol-agnostic plumbing for **escape threading** in composed special-soundness chains
-  (Hachi [NOZ26] §4.3+; design decision G1 of the sumcheck-track plan).
+  (Hachi [NOZ26] §4.3+).
 
   In a composed reduction chain, a downstream extractor may fail to produce a "real" witness and
   instead produce a cryptographic **escape** — e.g. a binding break of a commitment introduced in

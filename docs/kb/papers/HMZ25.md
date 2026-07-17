@@ -5,6 +5,7 @@ title: "Sublinear Proofs over Polynomial Rings"
 year: 2025
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2025/199
+source_metadata: ../sources/HMZ25/metadata.yml
 status: seeded
 related_concepts:
   - ring-switching

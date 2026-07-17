@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 
 /-!
-  # Batching bridge — Hachi Eqs. (22)–(23) — skeleton (zero-round, part of milestone F6)
+  # Batching bridge — Hachi Eqs. (22)–(23) — skeleton (zero-round)
 
   Zero-round bridge between the lift's per-row/per-entry residual claims and the **batched
   polynomial-identity** form the zero-check tests:
@@ -69,15 +69,15 @@ per-row and range claims. Escapes pass through.
 
 **Sorried.** Proof plan: `H_α ≡ 0` ⇒ all `eq̃`-basis coefficients vanish (basis non-degeneracy:
 `eq̃(i', i) = δ_{i,i'}` on Boolean points) ⇒ the per-row `evalAt`-equations of `relLift`
-(faithfulness of the sorried `M̃_α`/table encodings, F5); `H₀ ≡ 0` ⇒ each table entry is a root
+(faithfulness of the sorried `M̃_α`/table encodings); `H₀ ≡ 0` ⇒ each table entry is a root
 of `X·∏_{j=1}^{b−1}(X − j)(X + j)` over the field `F` ⇒ (with `hq : 2 * b ≤ q + 1` reading roots
 as centered representatives and `hb : b - 1 ≤ bound`, `hρ`-side analogously through the digit
 recomposition) `liftShort bound ρBound w̃`; the bound-sanity conjunct is shared verbatim.
 
-**⚠ Audit note (F4 adversarial review, 2026-07-16):** as stated this lemma is quantified over
+**⚠ Audit note:** as stated this lemma is quantified over
 *all* `ρBound` but carries no hypothesis relating `ρBound` to the base-`b` digit recomposition
 of the `ρ`-rows (the `hb` analogue for the `RhoShort` conjunct); at e.g. `ρBound = 0` an honest
-instance with `ρ ≠ 0` satisfies `relBatched` yet violates `RhoShort`. Once the F5 encodings are
+instance with `ρ ≠ 0` satisfies `relBatched` yet violates `RhoShort`. Once the encodings are
 filled faithfully, closing this sorry will require adding a hypothesis of the shape
 "(digit-recomposition constant of `b`, `τ_ρ`) `≤ ρBound`" — do not attempt to prove it as
 stated. -/

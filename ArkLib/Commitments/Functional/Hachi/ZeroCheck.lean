@@ -19,7 +19,7 @@ Hachi's Lemma 10 (uniform-vector-challenge extraction) is **not provable as stat
 coordinate-wise star certifies only axis-cross vanishing, and for `m ≥ 2` that does not imply
 `H ≡ 0`. `ZeroCheck/Reduction.lean` implements the adopted repair — two scalar **Kronecker seeds**
 `(ρ₀, ρ_α)`, with the evaluation points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, where
-univariate root counting is information-complete. Full analysis: `HACHI_LEMMA10_GAP.md`.
+univariate root counting is information-complete.
 
 ## Folder structure
 

@@ -129,7 +129,7 @@ home_page/            site assets and assembled website root
     the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
     zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
     bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
-    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck.lean` re-exports the folder.
+    corrects [NOZ26] Lemma 10). `ZeroCheck.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
     sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
@@ -137,7 +137,7 @@ home_page/            site assets and assembled website root
     recursion's evaluation claim. `Sumcheck.lean` re-exports the folder.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
-    partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)
+    partial-evaluation soundness gap; see `Recursion/ZBatchBridge`), `TraceHandoff` (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
   - `Composition.lean` — the **CWSS composition home**: `evalChain` is the `bridgePackage ▷
     quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed CWSS certificate
@@ -225,8 +225,7 @@ home_page/            site assets and assembled website root
   over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
   embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) — plus the
   committed-scalar seam under `OracleReduction/`.
-  Background: KB concept page `docs/kb/concepts/ring-switching.md`; design note
-  `HACHI_RING_SWITCHING_COMPARISON.md`; blueprint section
+  Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.
 - Before assuming a file is authoritative, check whether it is source or derived output. See
