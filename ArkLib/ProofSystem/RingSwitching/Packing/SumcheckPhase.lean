@@ -47,7 +47,8 @@ challenges, which is what the downstream opening can consume.
      and sends P `r'ᵢ`.
 7. `P` computes `s' := t'(r'_0, ..., r'_{ℓ'-1})` and sends `V` `s'`.
 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-    decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`.
+    decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u` (row coordinates on the left tensor
+    factor).
 9. `V` requires
    `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
 
@@ -344,7 +345,7 @@ check-then-update one-message verifier (`RingSwitching.messageRoundOracleVerifie
 `RoundVerifiers.lean`): query the final constant `s'` (step 7), then
 
 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-   decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`;
+   decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u`;
 9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1})`
    `⋅ e_u) ⋅ s'` (reject to a dummy statement on failure), and hands the accepted claim
    to the downstream opening. -/

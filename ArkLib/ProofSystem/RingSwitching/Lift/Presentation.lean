@@ -276,9 +276,10 @@ theorem exists_rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
     rw [hmod, zero_add] at hdiv
     linear_combination -hdiv
 
-/-- **The per-row engine of [NOZ26] Lemma 9**, over an arbitrary presentation: if a row's
-lifted equation (with quotient `ρ` of degree `≤ d − 1`) holds under `evalAt` at `2d`
-pairwise-distinct points of a field `F`, the row equation holds over `S`. The defect
+/-- **The per-row recovery engine**, over an arbitrary presentation: if a row's lifted
+equation (with quotient `ρ` of degree `≤ d − 1`) holds under `evalAt` at `2d`
+pairwise-distinct points of a field `F`, the row equation holds over `S`
+([NOZ26] Lemma 9). The defect
 polynomial has degree `< 2d`, so the `2d` roots kill it; the resulting `R[X]` identity
 descends along the coset laws. The degree `d` is an explicit parameter tied to the modulus by
 `hd`, so instances can state witnesses against their own degree expression. -/

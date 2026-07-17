@@ -36,7 +36,7 @@ Use this page when a question is about:
 Ring switching reduces a multilinear evaluation claim `s = t(r)` over a **small** coefficient ring
 `B` (a binary-tower field, `𝔽₂`, or a cyclotomic ring `R_q`) to an evaluation claim over a **large**
 extension `L` and **without re-committing** over `L`. Field instances such as Binius pay only an
-additive `O(1/|L|)` soundness cost; Hachi's cyclotomic-ring instance has a separate CWSS-style
+additive `O(ℓ/|L|)` soundness cost (`O(1/|L|)` per challenge); Hachi's cyclotomic-ring instance has a separate CWSS-style
 soundness theorem because `R_q` is not a domain. This lets a PCS commit cheaply over a tiny ring
 while running sum-check and the final opening over a carrier large enough for the intended
 soundness argument.

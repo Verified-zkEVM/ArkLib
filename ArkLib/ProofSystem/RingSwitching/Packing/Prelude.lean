@@ -23,7 +23,8 @@ message flow.
 ## Main components
 
 1. **The pack/unpack pair** — `packMLE` reads each `2^κ`-block of a `B`-multilinear's
-   evaluations as one `L`-element along the basis, producing a multilinear in `κ` fewer
+   Boolean-cube evaluations (its coefficients in the multilinear Lagrange basis) as one
+   `L`-element along the basis, producing a multilinear in `κ` fewer
    variables; `unpackMLE` reverses it by reading off basis coordinates. These realize the
    claim-preserving change of ring that the protocol then has to make checkable.
 2. **Carrier operations** — the tensor-algebra carrier `L ⊗[K] L` with its two embeddings
@@ -62,15 +63,16 @@ variable (h_l : ℓ = ℓ' + κ)
 
 section TensorAlgebraOps
 /-!
-## Enhanced Tensor Algebra Operations
+## The tensor-algebra carrier
 
-Additional tensor algebra operations for the enhanced protocol specification.
-Based on the tensor algebra theory from Section 2.1.
+The concrete carrier of the binary-tower instance: `A = L ⊗[K] L`, its two embeddings
+`φ₀ = · ⊗ 1` and `φ₁ = 1 ⊗ ·`, and the row/column coordinate maps with respect to a
+`K`-basis `β` of `L`.
 -/
 
-/-- Tensor Algebra A = L ⊗_K L. Based on the spec,
-it's viewed as (2^κ)x(2^κ) arrays of K-elements.
-The imported TensorAlgebra file provides the leftAlgebra instances. -/
+/-- The tensor-algebra carrier `A = L ⊗[K] L`: as a `K`-module, a `(2^κ) × (2^κ)` array of
+`K`-elements, holding polynomial data (`φ₁`-factor) and evaluation-point data (`φ₀`-factor)
+independently. The imported `TensorAlgebra` file provides the left-algebra instances. -/
 abbrev TensorAlgebra (K L : Type*) [CommRing K] [CommRing L] [Algebra K L] := L ⊗[K] L
 
 /--
@@ -97,7 +99,7 @@ def φ₁ (L K : Type*) [CommRing K] [CommRing L] [Algebra K L] : L →+* Tensor
   map_add' α β := by simp only [tmul_add]
 
 open Module
-/-- Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} β_u ⊗ ŝ_u)`.
+/-- Decompose `ŝ` into row components `(ŝ =: Σ_{u ∈ {0,1}^κ} ŝ_u ⊗ β_u)`.
 This views `L ⊗ L` as a module over `L` (left action)
 and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
 def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
@@ -105,7 +107,7 @@ def decompose_tensor_algebra_rows {σ : Type*} (β : Basis σ K L)
   fun u =>
     (β.baseChange L).repr s_hat u
 
-/-- Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} ŝ_v ⊗ β_v)`.
+/-- Decompose `ŝ` into column components `(ŝ =: Σ_{v ∈ {0,1}^κ} β_v ⊗ ŝ_v)`.
 This views `L ⊗ L` as a module over `L` (right action)
 and finds the coordinates of `ŝ` with respect to the basis lifted from `β`. -/
 def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L ⊗[K] L) : σ → L :=
@@ -116,9 +118,9 @@ def decompose_tensor_algebra_columns {σ : Type*} (β : Basis σ K L) (s_hat : L
     letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     exact b.repr s_hat v
 /--
-**Definition 2.1 (MLE packing)**.
-Packs a small-field multilinear `t` into a large-field multilinear `t'` by
-reinterpreting chunks of `2^κ` coefficients as single `L`-elements.
+**MLE packing**: pack a small-ring multilinear `t` into a large-ring multilinear `t'` by
+reinterpreting each chunk of `2^κ` coefficients as a single `L`-element along the basis `β`
+([DP24] Definition 2.1).
 For each `w ∈ {0,1}^ℓ'`, the evaluation `t'(w)` is defined as:
 `t'(w) := ∑_{v ∈ {0,1}^κ} t(v₀, ..., v_{κ-1}, w₀, ..., w_{ℓ'-1}) ⋅ β_v`
 -/
@@ -193,10 +195,10 @@ end TensorAlgebraOps
 
 section ProtocolTypes
 /-!
-## Enhanced Protocol Type Definitions (Interfaces between phases)
+## Statement and witness types at the phase boundaries
 
-We define the Statement and Witness types at the boundaries of each phase
-following the enhanced specification.
+What each phase of the reduction consumes and produces, plus the downstream-opening
+interface.
 -/
 
 /-- Initial input (input to the Batching Phase): a polynomial-evaluation claim `s = t(r)`. -/
@@ -332,7 +334,10 @@ def eqWeightedCoordSum (c : (Fin κ → Fin 2) → L) (r : Fin κ → L) : L :=
     let u_as_L : Fin κ → L := fun i => if (u i == 1) then 1 else 0
     (eqTilde u_as_L r) * c u
 
-/-- Compute the tensor value ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1})) -/
+/-- The honest folded carrier element: the packed polynomial, coefficients embedded via
+`φ₁`, evaluated at the `φ₀`-image of the point's tail —
+`ŝ := φ₁(t')(φ₀(r_κ), ..., φ₀(r_{ℓ-1}))`. This is the prover's batching-phase message; its
+row/column coordinates carry the claims the verifier checks and batches. -/
 def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
   P.A :=
   -- This implements the identity:
@@ -343,17 +348,19 @@ def embedded_MLP_eval (t' : MultilinearPoly L ℓ') (r : Fin ℓ → L) :
   let φ₀_mapped_r: Fin ℓ' → P.A := fun i => P.φ₀ (r_suffix i)
   φ₁_mapped_t'.val.eval φ₀_mapped_r
 
-/-- Step 2 (V): Check 1: s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v —
-`eqWeightedCoordSum` at the column coordinates of `ŝ` and the point prefix. -/
+/-- The verifier's claim-consistency check: the claimed evaluation `s` must equal the
+eq̃-weighted reconstruction from `ŝ`'s column coordinates at the point prefix,
+`s ?= Σ_{v ∈ {0,1}^κ} eqTilde(v, r_{0..κ-1}) ⋅ ŝ_v` — `eqWeightedCoordSum` at
+`P.decomposeColumns` ([DP24] step 2, Check 1). -/
 def performCheckOriginalEvaluation (s : L) (r : Fin ℓ → L) (s_hat : P.A) : Bool :=
   let r_prefix : Fin κ → L := fun i => r ⟨i.val, by omega⟩
   decide (s = eqWeightedCoordSum κ L (P.decomposeColumns s_hat) r_prefix)
 
-/-- Step 4a: For each `w ∈ {0,1}^{ℓ'}`, P decompose `eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1})`
-`=: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u`.
-P define the function
-`A: w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
-on `{0,1}^{ℓ'}`.
+/-- The batched-multiplier function on the cube: for each `w ∈ {0,1}^{ℓ'}`, decompose
+`eq̃(r_κ, ..., r_{ℓ-1}, w_0, ..., w_{ℓ'-1}) =: Σ_{u ∈ {0,1}^κ} A_{w, u} ⋅ β_u` into basis
+coordinates and batch those with the eq̃-weights of the batching scalars,
+`A : w ↦ Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ A_{w, u}`
+([DP24] step 4a).
 -/
 def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
     (r''_batching : Fin κ → L) : ((Fin (ℓ') → (Fin 2)) → L) :=
@@ -371,7 +378,9 @@ def compute_A_func (original_r_eval_suffix : Fin ℓ' → L)
       let eq_u_r_batching : L := eqTilde u_as_L r''_batching
       A_w_u • eq_u_r_batching
 
-/-- Step 4b: P writes `A(X_0, ..., X_{ℓ'-1})` for its multilinear extension of `A_func`. -/
+/-- The batched multiplier `A(X_0, ..., X_{ℓ'-1})` — the multilinear extension of
+`compute_A_func`, the public factor of the relocation sumcheck's polynomial `h = A · t'`
+([DP24] step 4b). -/
 def compute_A_MLE
   (original_r_eval_suffix : Fin ℓ' → L) (r''_batching : Fin κ → L) :
   MultilinearPoly L ℓ' :=
@@ -395,9 +404,9 @@ def RingSwitching_SumcheckMultParam :
   combinator_natDegree_le := by intro _; exact Polynomial.natDegree_X_le
 }
 
-/-- Step 5 (V): Compute `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`,
-where ŝ_u is the row components of ŝ — `eqWeightedCoordSum` at the row coordinates of `ŝ`
-and the batching scalars. -/
+/-- The batched sumcheck target: `s₀ := Σ_{u ∈ {0,1}^κ} eqTilde(u, r'') ⋅ ŝ_u`, where `ŝ_u`
+are the row components of `ŝ` — `eqWeightedCoordSum` at `P.decomposeRows` and the batching
+scalars ([DP24] step 5). -/
 def compute_s0 (s_hat : P.A) (r''_batching : Fin κ → L) : L :=
   eqWeightedCoordSum κ L (P.decomposeRows s_hat) r''_batching
 

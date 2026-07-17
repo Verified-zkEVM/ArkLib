@@ -114,7 +114,7 @@ home_page/            site assets and assembled website root
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction`
-    is the **cyclotomic instance** of the generic quotient-evaluation switch
+    is the **cyclotomic instance** of the generic `Lift` switch
     (`ProofSystem/RingSwitching/Lift/`): `cyclotomicPresentation` + `IsPresentation`
     laws (discharged from `Data/Lattices/CyclotomicRing/QuotientLift.lean`), the generic
     `checkAt`, and the generic interpolation/descent engine, assembled through the
@@ -196,7 +196,7 @@ home_page/            site assets and assembled website root
   `Short` openings, escape budget for weak binding), the anchored relation/verifier/prover, the
   three-way extractor `buildWitness` (escape pass-through / collision escape / common-opening
   recovery), and its generic CWSS theorem + `CWSSPackage`; instantiated by Hachi's HMZ
-  quotient-evaluation ring switch. `Escape` provides `Set.withEscape`, the escape-threading of
+  ring-switching lift (`ProofSystem/RingSwitching/Lift/`). `Escape` provides `Set.withEscape`, the escape-threading of
   relations (`W ⊕ E` witnesses) used by composed extraction chains that can emit binding-break
   escapes mid-chain. `Guarded` is the **B4 skeleton**: `Verifier.IsGuardedWith`/`IsGuarded`
   (runtime-rejecting verifiers), the guarded package `GCWSSPackage` with its append `▷ᵍ`, and
