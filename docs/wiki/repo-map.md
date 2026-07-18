@@ -103,10 +103,42 @@ home_page/            site assets and assembled website root
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
     `bridge_coordinateWiseSpecialSound`. `QuadEval.lean` re-exports the reduction, its soundness,
     and the bridge.
+  - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is a **skeleton** split into one flat
+    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting a
+    `CWSSPackage`/`GCWSSPackage` with a sorried CWSS theorem, plus the front-threading file
+    `Escape.lean` at the Hachi root:
+  - `Escape.lean` — the escape-threaded front `evalChainE` (design G1): widens the finished
+    `QuadEval` front relations with an abstract weak-binding escape budget so every §4.3 seam has a
+    home for the `w̃`-commitment's binding break. Front glue, not a §4.3 subprotocol; sits at the
+    Hachi root beside `EvalSplit`/`Composition`.
+  - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
+    `R^lin` to a claim about the committed lifted witness evaluated at a random `α`. `RingSwitch/Rlin`
+    is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction` is the two-round lift
+    (`k = 2d`, the abstract `w̃`-commitment `LiftCom`). `RingSwitch.lean` re-exports the folder.
+    (Distinct from the §3 packing reduction under `ProofSystem/RingSwitching/`, also a ring-switch.)
+  - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
+    `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
+    encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
+    the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
+    zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
+    bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
+    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck.lean` re-exports the folder.
+  - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
+    opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
+    sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
+    `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
+    recursion's evaluation claim. `Sumcheck.lean` re-exports the folder.
+  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
+    partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)
+    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
   - `Composition.lean` — the **CWSS composition home**: `evalChain` is the `bridgePackage ▷
     quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed CWSS certificate
-    (`sorryAx`-free). Each further §3/§4.3+/§4.5 subprotocol lands as one more `CWSSPackage`
-    `▷`-appended here.
+    (`sorryAx`-free). `openCore` chains the escape-threaded front with the pure §4.3 links (rows
+    1–7 of the header's seam table), and `openingChain` /
+    `hachi_iteration_coordinateWiseSpecialSound` compose the guarded tail (sumcheck loop, final
+    eval, recursion adapters) into the full one-iteration certificate — a skeleton whose sorry
+    provenance is inventoried in the module header.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
     `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the remaining §4.3+
@@ -149,8 +181,14 @@ home_page/            site assets and assembled website root
   (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
   layer (tree shape recovery `tree_shape`, the star-center machinery, the tree extractor
   `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
-  evaluation reduction `QuadEval` (Lemma 8). The umbrella `CoordinateWiseSpecialSoundness.lean`
-  re-exports the core files.
+  evaluation reduction `QuadEval` (Lemma 8). `ScalarRound` is its skeletonized `(ℓ = 1, k)`
+  scalar-challenge twin (`pSpecScalar`, `scalarStructure`; assembly sorried) for Hachi's
+  Lemmas 9/11-shaped rounds. `Escape` provides `Set.withEscape`, the escape-threading of
+  relations (`W ⊕ E` witnesses) used by composed extraction chains that can emit binding-break
+  escapes mid-chain. `Guarded` is the **B4 skeleton**: `Verifier.IsGuardedWith`/`IsGuarded`
+  (runtime-rejecting verifiers), the guarded package `GCWSSPackage` with its append `▷ᵍ`, and
+  the (sorried) guarded binary CWSS append theorem. The umbrella
+  `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
 - Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
