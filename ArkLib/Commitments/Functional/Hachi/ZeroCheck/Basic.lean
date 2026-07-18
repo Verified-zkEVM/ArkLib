@@ -8,7 +8,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 /-!
 # Hachi Zero-Check (Figure 5 / corrected Lemma 10)
 
-Umbrella for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [NOZ26] Eqs. (21)–(23))
+Umbrella module for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [NOZ26]
+Eqs. (21)–(23))
 and the zero-check subprotocol that reduces the two polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` — the
 range constraints and the `α`-evaluated linear constraints, both `eq̃`-batched — to their
 evaluations at random points.
@@ -38,8 +39,8 @@ univariate root counting is information-complete. Full analysis: `HACHI_LEMMA10_
   `k = D` (**sorried**).
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
-Its output relation `relZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`; the chain
-is composed in `Composition.lean`.
+Its plain output relation `relZeroCheck` is the input of the sumcheck bridge in `Sumcheck/`;
+the chain is composed in `Composition.lean`.
 
 ## References
 
