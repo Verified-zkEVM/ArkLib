@@ -85,7 +85,10 @@ Work through these in order. Do not stop until every item is complete.
     with Python `len(line)`, never `awk`/`wc -c`. Otherwise treat the **default** `validate.sh`
     (build + Data warning budget + `check-imports` + `check-docs-integrity` + `kb/lint`) as the
     real gate. Capture its true exit with `rc=$?` on its own line — a trailing
-    `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate.
+    `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate. Piping
+    has the same trap: `./scripts/validate.sh | tail -40` reports `tail`'s exit and truncates the
+    failure detail (kb lint errors print near the end). Run it as
+    `./scripts/validate.sh > validate.log 2>&1` with `rc=$?` on the next line, then grep the log.
   - The **Data warning budget** fails on any non-`sorry` warning under `ArkLib/Data/`. A
     toolchain/Mathlib bump commonly introduces **deprecation** warnings (e.g.
     `X has been deprecated: Use Y instead`) — fix these by switching to the suggested name.
@@ -135,6 +138,15 @@ Work through these in order. Do not stop until every item is complete.
   keys yourself: grep each `[KEY]` used in docstrings against `blueprint/src/references.bib` and
   add any missing entry (then regenerate). A key can be "present-looking" but actually a different
   paper — confirm the entry's title/authors match the citation, not just that the key exists.
+- Know the `kb/lint.py` severity split: a **paper page whose `bibkey` has no BibTeX entry** is an
+  *Error* (fails `validate.sh`), while a **cited key with no paper page** is only a *Warning*.
+  Fix the warning too: `python3 scripts/kb/scaffold_paper.py <KEY>` scaffolds
+  `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/metadata.yml` from the bib entry — then
+  replace the TODO sections with real content (what the paper is, what ArkLib uses, touchpoint
+  modules) before staging; a page of TODOs is reviewer bait.
+- A validate/kb failure is not necessarily yours: it can be **pre-existing on `main`** (e.g. a kb
+  paper page merged before its BibTeX entry). Attribute it (`git show origin/main:<file>`), but
+  fix it in your PR anyway if cheap — it blocks *your* CI regardless of who introduced it.
 - Also check for **duplicate BibTeX keys**: `grep -oE '^@[a-z]+\{[^,]+' blueprint/src/references.bib
   | sort | uniq -d`. Neither `kb/lint` nor the sync script flags a key defined twice (the JSON dict
   silently collapses it), but it is real bib cruft a reviewer will hit. Keep the better-formatted

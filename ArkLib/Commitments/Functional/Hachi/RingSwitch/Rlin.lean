@@ -3,7 +3,10 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Escape
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+import ArkLib.ProofSystem.Component.ReduceClaim
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Eq. (20) → `R^lin` adapter — skeleton (Hachi §4.3 entry; sumcheck-track milestone F2)
@@ -29,13 +32,13 @@ import ArkLib.Commitments.Functional.Hachi.Escape
   `ReduceClaim` bridge realizing that reading. It is **statement reshaping only** — no soundness
   error, CWSS for any structure, pure verifier — assembled sorry-free from `ReduceClaim`; the
   **sorried** pieces are the assembly/unstacking functions (`rlinStmt`, `unstack`) and the
-  block-row equivalence pull-back (`mem_relOutE_of_relRlinE`) — pure index bookkeeping
+  block-row equivalence pull-back (`mem_relOut_of_relRlin`) — pure index bookkeeping
   (milestone F2.1/F2.2: `stackRows`/`pasteCols`/`finAppend` helpers plus the
   `tensorG`/`tensorG1`-as-matrix-rows rewriting lemmas over `QuadEval/Gadgets.lean`).
 
-  Seam discipline (design decision G6): this file's `relIn` **is** `relOutE` (the
-  escape-threaded Eq. (20) relation from `Escape.lean`), and its `relOut`
-  `relRlinE` is definitionally the next link's (`RingSwitch/Reduction.lean`) `relIn`.
+  Seam discipline (design decision G6): the package's public `relIn` **is** the plain Eq. (20)
+  `relOut`, and its public `relOut` is the next link's plain `relRlin`. The escape set is
+  transported independently.
 
   ## References
 
@@ -119,40 +122,46 @@ split along the stacking. Escapes pass through.
 component equations; c3/c4 via `dot`-associativity and a `tensorG1`-as-row lemma; c5 via a
 `tensorG`-as-matrix lemma plus `matVecMul` composition for `A·J`; the norm conjunct by a
 `vecLInftyNorm`-over-append lemma (`max ≤ γ ↔` three `≤ γ`). -/
-theorem mem_relOutE_of_relRlinE (base : ZMod q) (ω γ : ℕ) (esc : Set E)
+theorem mem_relOut_of_relRlin (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-    (w : PolyVec (Rq Φ) (rlinCols innerRows messageDigits innerDigits zDigits m r) ⊕ E)
-    (h : (rlinStmt (zDigits := zDigits) Φ base ω γ X, w) ∈ relRlinE Φ esc) :
-    (X, w.map (unstack Φ) id) ∈ relOutE (zDigits := zDigits) Φ base ω γ esc := by
+    (w : PolyVec (Rq Φ) (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (h : (rlinStmt (zDigits := zDigits) Φ base ω γ X, w) ∈ relRlin Φ) :
+    (X, unstack Φ w) ∈ relOut (zDigits := zDigits) Φ base ω γ := by
   sorry
 
-/-- **The `R^lin` adapter as a `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
-`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing the escape-threaded
-Eq. (20) relation `relOutE` to `relRlinE`. Assembled sorry-free from
+/-- **The `R^lin` adapter as an `EscapeCWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
+`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing plain `relOut` to
+plain `relRlin` while carrying `esc` unchanged. Assembled from
 `ReduceClaim.verifier_coordinateWiseSpecialSound`; all remaining work lives in the sorried
-`rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE`. -/
+`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`. -/
 def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (base : ZMod q) (ω γ : ℕ) (esc : Set E) :
-    CWSSPackage init impl
+    EscapeCWSSPackage init impl E
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-      (QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits ⊕ E)
+      (QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
       (RlinStatement Φ (rlinRows innerRows outerRows dRows)
         (rlinCols innerRows messageDigits innerDigits zDigits m r))
-      (PolyVec (Rq Φ) (rlinCols innerRows messageDigits innerDigits zDigits m r) ⊕ E)
+      (PolyVec (Rq Φ) (rlinCols innerRows messageDigits innerDigits zDigits m r))
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (rlinStmt (zDigits := zDigits) Φ base ω γ)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relOutE (zDigits := zDigits) Φ base ω γ esc
-  relOut := relRlinE Φ esc
+  relIn := relOut (zDigits := zDigits) Φ base ω γ
+  relOut := relRlin Φ
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ base ω γ stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relOutE (zDigits := zDigits) Φ base ω γ esc)
+    (relIn := (relOut (zDigits := zDigits) Φ base ω γ).withEscape esc)
     (relOut := relRlinE Φ esc)
     (mapWitInv := fun _ w => w.map (unstack Φ) id) (D := CWSSStructure.ofIsEmpty)
-    (mem_relOutE_of_relRlinE Φ base ω γ esc)
+    (fun X w h => by
+      cases w with
+      | inl w => exact mem_relOut_of_relRlin Φ base ω γ X w h
+      | inr e => exact h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

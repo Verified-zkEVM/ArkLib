@@ -130,9 +130,9 @@ def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρB
 
 /-- Escape-threaded evaluation-claim relation. -/
 def relWEvalClaimE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relWEvalClaim Φ m₀ bound ρBound b K φF).withEscape K.esc
+  (relWEvalClaim Φ m₀ bound ρBound b K φF).withEscape esc
 
 variable [SampleableType F]
 
@@ -148,30 +148,33 @@ the bound-sanity conjunct is re-supplied by the guard; escapes pass through. -/
 theorem finalEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom)
         φF).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (roundRelE Φ m₀ m₁ bound ρBound K φF b m₀)
-      (relWEvalClaimE Φ m₀ bound ρBound b K φF) := by
+      (roundRelE Φ m₀ m₁ bound ρBound K φF b m₀ esc)
+      (relWEvalClaimE Φ m₀ bound ρBound b K φF esc) := by
   sorry
 
-/-- **The final-evaluation step as a guarded package** (`GCWSSPackage`): the guarded one-message
+/-- **The final-evaluation step as a guarded `EscapeGCWSSPackage`**: the guarded one-message
 verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation
 claim `relWEvalClaimE`. Certificate: the sorried `finalEval_coordinateWiseSpecialSound`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
-    GCWSSPackage init impl
-      (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n ⊕ E)
-      (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n ⊕ E)
+    (φF : ZMod q →+* F) (esc : Set E) :
+    EscapeGCWSSPackage init impl E
+      (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
+      (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n)
       (pSpecFinalEval F) where
   verifier := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := roundRelE Φ m₀ m₁ bound ρBound K φF b m₀
-  relOut := relWEvalClaimE Φ m₀ bound ρBound b K φF
+  relIn := roundRel Φ m₀ m₁ bound ρBound K φF b m₀
+  relOut := relWEvalClaim Φ m₀ bound ρBound b K φF
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isGuarded := finalEvalVerifier_isGuarded Φ m₀ m₁ bound b φF
-  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound b init impl K φF
+  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound b init impl K φF esc
 
 end Protocol
 

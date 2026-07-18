@@ -39,9 +39,10 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 
   Extraction (sorried): a next-iteration witness at the mapped statement is a weak opening of
   the reinterpreted `t` that is eval-consistent for the `eq`-tensor bases with value `p`
-  (`QuadEval`'s `relInE` at `Φ'`), or an MSIS/escape. Pulling the opening back through the
+  (`QuadEval`'s plain `relIn` at `Φ'`). The package carries any ambient escape separately.
+  Pulling the opening back through the
   `ψ`/`Z`-packing bijection yields an opening `w̃` of `t`; Theorem 2 turns the eval-consistency
-  plus the **guard's** trace equation into `hatEval w̃ a₀ = value` — exactly `relHatEvalE`.
+  plus the **guard's** trace equation into `hatEval w̃ a₀ = value` — exactly `relHatEval`.
   (The extracted table entries are subfield-valued with small `Eq. (7)`-basis coordinates; the
   `Zq`-entry reading is recovered through the same bijection. The *semantic* content of this
   seam — unlike the `Z`-packing bridge before it — is pinned exactly by the trace: no slack.)
@@ -158,12 +159,12 @@ variable [SampleableType F]
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
 (the probability-phrased no-challenge bridge tolerates the guard): acceptance forces
-`traceCheck = true`; a next-iteration `relInE`-witness at the mapped statement is a weak opening
-of `reinterpretCom t` that is eval-consistent for the `eq`-tensor bases with value `p` (or an
-MSIS/escape — pass through, absorbing the next iteration's own MSIS disjuncts into the witness
-shape). Pull the opening back through the commitment reinterpretation and the `ψ`/`Z`-packing
+`traceCheck = true`; a next-iteration `relIn` witness at the mapped statement is a weak opening
+of `reinterpretCom t` that is eval-consistent for the `eq`-tensor bases with value `p`. Ambient
+escapes pass through independently. Pull the opening back through the commitment
+reinterpretation and the `ψ`/`Z`-packing
 bijection (`psi_bijective`) to an opening `w̃` of `t`; Theorem 2 (`traceH_psi_mul_conj`) turns
-eval-consistency plus the guard's trace equation into `hatEval w̃ a₀ = value` — `relHatEvalE`
+eval-consistency plus the guard's trace equation into `hatEval w̃ a₀ = value` — `relHatEval`
 membership. Norm bookkeeping through `ψ` is Lemma 6 (`cInfNorm_psi_le`, gate G1); the
 reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is the Phase-G `LiftCom`
 instantiation obligation. -/
@@ -171,6 +172,7 @@ theorem handoff_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (esc : Set E)
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -179,36 +181,40 @@ theorem handoff_coordinateWiseSpecialSound
     (handoffVerifier (oSpec := oSpec) Φ' mLow φF pp'
         reinterpretCom).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (relHatEvalE Φ mLow κ bound ρBound zpow K φF)
-      (relInE Φ' base' βSq' γ' κ' K.esc) := by
+      ((relHatEval Φ mLow κ bound ρBound zpow K φF).withEscape esc)
+      ((relIn Φ' base' βSq' γ' κ').withEscape esc) := by
   sorry
 
-/-- **The trace handoff as a guarded package** (`GCWSSPackage`; Hachi §4.5, Eqs. (27)–(28)):
+/-- **The trace handoff as a guarded escape-aware package** (Hachi §4.5, Eqs. (27)–(28)):
 the guarded one-message verifier with the empty challenge structure, reducing the `Z`-packed
-claim `relHatEvalE` to the **next iteration's** escape-threaded `QuadEval` input relation
-`relInE` over `Φ'` — the recursion loop's closing seam (the next iteration re-enters at
-`quadEvalPackageE Φ'`, bypassing the polynomial-level bridge: the bases are `eq`-tensor
-packings, not monomial bases of a point). -/
+plain claim `relHatEval` to the **next iteration's** ordinary `QuadEval` input relation `relIn`
+over `Φ'`, while carrying `esc` unchanged — the recursion loop's closing seam (the next
+iteration re-enters at `quadEvalPackage Φ'`, bypassing the polynomial-level bridge: the bases
+are `eq`-tensor packings, not monomial bases of a point). -/
 def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (esc : Set E)
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    GCWSSPackage init impl
-      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n ⊕ E)
+    EscapeGCWSSPackage init impl E
+      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')
-      (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits' ⊕ E)
+      (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
       (pSpecHandoff Φ') where
   verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF pp' reinterpretCom
   struct := CWSSStructure.ofIsEmpty
-  relIn := relHatEvalE Φ mLow κ bound ρBound zpow K φF
-  relOut := relInE Φ' base' βSq' γ' κ' K.esc
+  relIn := relHatEval Φ mLow κ bound ρBound zpow K φF
+  relOut := relIn Φ' base' βSq' γ' κ'
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isGuarded := handoffVerifier_isGuarded Φ' mLow φF pp' reinterpretCom
-  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound ρBound init impl zpow K φF pp'
+  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound ρBound init impl zpow K esc φF pp'
     reinterpretCom base' βSq' γ' κ'
 
 end Protocol

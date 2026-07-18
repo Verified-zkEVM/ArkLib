@@ -141,9 +141,9 @@ def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBo
 
 /-- Escape-threaded zero-check relation — the sumcheck bridge's seam. -/
 def relZeroCheckE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
+    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
     Set (ZeroCheckStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relZeroCheck Φ m₀ m₁ bound ρBound K φF b).withEscape K.esc
+  (relZeroCheck Φ m₀ m₁ bound ρBound K φF b).withEscape esc
 
 variable [SampleableType F]
 
@@ -164,32 +164,35 @@ of the gap file cannot survive: its pullback is a nonzero univariate of degree `
 theorem zeroCheck_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
+    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
     (zeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
         (TCom := K.TCom)).coordinateWiseSpecialSound init impl
       (zeroCheckStructure F m₀ m₁)
-      (relBatchedE Φ m₀ m₁ bound ρBound K φF b)
-      (relZeroCheckE Φ m₀ m₁ bound ρBound K φF b) := by
+      (relBatchedE Φ m₀ m₁ bound ρBound K φF b esc)
+      (relZeroCheckE Φ m₀ m₁ bound ρBound K φF b esc) := by
   sorry
 
-/-- **The zero-check as a `CWSSPackage`** (corrected Hachi Figure 5 / Lemma 10): the one-round
-seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing `relBatchedE` to
-`relZeroCheckE`. The certificate is the sorried `zeroCheck_coordinateWiseSpecialSound`. -/
+/-- **The zero-check as an `EscapeCWSSPackage`** (corrected Hachi Figure 5 / Lemma 10):
+the one-round seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing plain
+`relBatched` to `relZeroCheck` and carrying `esc` unchanged. -/
 def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    CWSSPackage init impl
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
+    EscapeCWSSPackage init impl E
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecZeroCheck F) where
   verifier := zeroCheckVerifier (oSpec := oSpec) Φ
   struct := zeroCheckStructure F m₀ m₁
-  relIn := relBatchedE Φ m₀ m₁ bound ρBound K φF b
-  relOut := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b
+  relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
+  relOut := relZeroCheck Φ m₀ m₁ bound ρBound K φF b
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt tr =>
     ⟨stmt.1, stmt.2.1, stmt.2.2, (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩,
     fun _ _ => rfl⟩
-  isCWSS := zeroCheck_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound init impl K φF b
+  isCWSS := zeroCheck_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound init impl K φF b esc
 
 end Protocol
 

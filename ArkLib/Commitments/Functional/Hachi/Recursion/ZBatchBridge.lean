@@ -11,15 +11,15 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
   Zero-round bridge collapsing the per-`i` partial-evaluation claims into the **single
   `Z`-packed claim** of Hachi Eq. (26):
 
-  * `relIn = relPartialEvalE` — `∀ i ∈ {0,1}^κ: partialEvalAt w̃ a₀ i = yᵢ`
+  * `relIn = relPartialEval` — `∀ i ∈ {0,1}^κ: partialEvalAt w̃ a₀ i = yᵢ`
     (`Recursion/PartialEval.lean`);
-  * `relOut = relHatEvalE` — `hatEval w̃ a₀ = ∑ᵢ yᵢ·Z^{⟨i⟩}`, where
+  * `relOut = relHatEval` — `hatEval w̃ a₀ = ∑ᵢ yᵢ·Z^{⟨i⟩}`, where
     `hatEval w̃ a₀ := ∑ⱼ ŵⱼ·eq(j, a₀)` with `ŵⱼ := ∑ᵢ w̃_{j‖i}·Z^{⟨i⟩}` (Eq. (25)); the
     statement map computes the public right-hand side `∑ᵢ yᵢ·zpow i`.
 
   The completeness direction is trivial (substitute the per-`i` claims). **The extraction
   direction — the paper's implicit "equivalence" claim below Eq. (26) — appears to be FALSE**,
-  and this bridge's sorried pull-back `mem_relPartialEvalE_of_relHatEvalE` is recorded as an
+  and this bridge's sorried pull-back `mem_relPartialEval_of_relHatEval` is recorded as an
   **open soundness question**, deliberately isolated in this one zero-round seam (mirroring how
   the Lemma 10 gap is isolated in the zero-check).
 
@@ -93,9 +93,9 @@ def relHatEval (zpow : Fin (2 ^ κ) → F)
 /-- Escape-threaded `Z`-packed claim relation. -/
 def relHatEvalE (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relHatEval Φ mLow κ bound ρBound zpow K φF).withEscape K.esc
+  (relHatEval Φ mLow κ bound ρBound zpow K φF).withEscape esc
 
 /-- The bridge's statement map: forget the peeled point half and pack the partial evaluations
 into the public right-hand side `∑ᵢ yᵢ·zpow i` of Eq. (26). -/
@@ -110,36 +110,43 @@ claims. **This statement is expected to be unprovable**: the packed claim constr
 the module docstring for the explicit `κ = 1` cheat). The sorry is kept — deliberately isolated
 in this zero-round seam — until a repair (batching challenge / generic §3.1 packing) is adopted;
 any repair changes this bridge's *protocol content*, not the surrounding seams. -/
-theorem mem_relPartialEvalE_of_relHatEvalE (zpow : Fin (2 ^ κ) → F)
+theorem mem_relPartialEval_of_relHatEval (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
-    (s : PartialEvalStatement K.TCom F mLow κ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEvalE Φ mLow κ bound ρBound zpow K φF) :
-    (s, w) ∈ relPartialEvalE Φ mLow κ bound ρBound K φF := by
+    (s : PartialEvalStatement K.TCom F mLow κ) (w : LiftedWitness Φ μ n)
+    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEval Φ mLow κ bound ρBound zpow K φF) :
+    (s, w) ∈ relPartialEval Φ mLow κ bound ρBound K φF := by
   sorry
 
-/-- **The `Z`-packing bridge as a `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
-`ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing `relPartialEvalE` to `relHatEvalE`.
+/-- **The `Z`-packing bridge as an `EscapeCWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)):
+zero-round `ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing plain `relPartialEval` to
+`relHatEval` and carrying `esc` unchanged.
 ⚠ Its certificate rests on the sorried — and expectedly unprovable as stated — un-packing
 pull-back; see the module docstring. -/
 def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
-    CWSSPackage init impl
-      (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n ⊕ E)
-      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n ⊕ E)
+    (φF : ZMod q →+* F) (esc : Set E) :
+    EscapeCWSSPackage init impl E
+      (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
+      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (toHatEvalStatement mLow κ zpow)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relPartialEvalE Φ mLow κ bound ρBound K φF
-  relOut := relHatEvalE Φ mLow κ bound ρBound zpow K φF
+  relIn := relPartialEval Φ mLow κ bound ρBound K φF
+  relOut := relHatEval Φ mLow κ bound ρBound zpow K φF
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relPartialEvalE Φ mLow κ bound ρBound K φF)
-    (relOut := relHatEvalE Φ mLow κ bound ρBound zpow K φF)
+    (relIn := relPartialEvalE Φ mLow κ bound ρBound K φF esc)
+    (relOut := relHatEvalE Φ mLow κ bound ρBound zpow K φF esc)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relPartialEvalE_of_relHatEvalE Φ mLow κ bound ρBound zpow K φF)
+    (fun s w h => by
+      cases w with
+      | inl w => exact mem_relPartialEval_of_relHatEval Φ mLow κ bound ρBound zpow K φF s w h
+      | inr e => exact h)
 
 end Bridge
 

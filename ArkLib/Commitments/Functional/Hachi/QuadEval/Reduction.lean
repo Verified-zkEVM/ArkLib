@@ -22,7 +22,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   (`QuadEvalStatement`, `QuadEvalResponse`, `QuadEvalWitness`), the short-challenge space
   (`ShortChallenge`, shortness carried by the subtype), the relations (`derivedMsgMatrix`,
   `evalConsistency` = Eq. (15), `relOut` = Eq. (20) + the `S_b` range checks, `relIn` = weak
-  opening ∨ Module-SIS(B) ∨ Module-SIS(D), `dShort`), and the protocol (the two-round
+  opening, `dShort`), and the protocol (the two-round
   `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩` of `CoordinateWise.SingleRound`,
   the pure pass-through `verifier`, and the honest `prover` skeleton). Round 0 (P→V) sends the
   short commitment `v = D ŵ`; round 1 (V→P) is the challenge vector; the triple `(ŵ, t̂, ẑ)` is
@@ -100,20 +100,34 @@ instance : Nonempty
     (QuadEvalResponse Φ innerRows messageRows messageDigits blocks innerDigits zDigits) :=
   ⟨⟨fun _ => 0, fun _ _ => 0, fun _ => 0⟩⟩
 
-/-- The extracted (input-side) witness of Hachi Lemma 8: either a weak `Opening` for `u`, or a
-Module-SIS solution for the outer matrix `B`, or one for the short-commitment matrix `D`. -/
-inductive QuadEvalWitness (Φ : CyclotomicModulus R)
-    (innerRows messageRows messageDigits blocks innerDigits : Nat) where
-  /-- A weak opening `(sᵢ, t̂ᵢ, c̄ᵢ)ᵢ` for the outer commitment `u`. -/
-  | opening (o : Opening Φ innerRows messageRows messageDigits blocks innerDigits)
-  /-- A Module-SIS solution for the outer matrix `B`. -/
-  | msisB (z : ModuleSIS.Solution Φ (blocks * (innerRows * innerDigits)))
-  /-- A Module-SIS solution for the short-commitment matrix `D`. -/
-  | msisD (z : ModuleSIS.Solution Φ (blocks * messageDigits))
+/-- The input-side witness of `QuadEval`: a genuine weak opening for `u`.
 
-/-- `QuadEvalWitness` is inhabited (a trivial `msisB` witness). -/
+Module-SIS breakages found by Hachi Lemma 8 are deliberately not constructors of this type.
+They live in the parallel `QuadEvalSISBreak` escape channel below, so the main relation seam from
+the polynomial bridge into `QuadEval` remains an ordinary opening relation. -/
+abbrev QuadEvalWitness (Φ : CyclotomicModulus R)
+    (innerRows messageRows messageDigits blocks innerDigits : Nat) :=
+  Opening Φ innerRows messageRows messageDigits blocks innerDigits
+
+/-- `QuadEvalWitness` is inhabited by the all-zero opening. The value need not satisfy `relIn`;
+the instance is used only as the total fallback of generic extractors outside accepting trees. -/
 instance : Nonempty (QuadEvalWitness Φ innerRows messageRows messageDigits blocks innerDigits) :=
-  ⟨.msisB (fun _ => 0)⟩
+  ⟨{ message := fun _ _ => 0, innerDecomp := fun _ _ => 0, challenge := fun _ => 0 }⟩
+
+/-- A concrete local escape produced by the three-case extractor of Hachi Lemma 8. The public
+matrix is carried with the kernel vector, making validity statement-independent once the escape
+has been produced. This is essential for threading the escape backwards through earlier protocol
+relations without attaching the originating `QuadEvalStatement`. -/
+inductive QuadEvalSISBreak (Φ : CyclotomicModulus R)
+    (innerRows messageDigits outerRows blocks innerDigits dRows : Nat) where
+  /-- A short nonzero kernel vector for the outer commitment matrix `B`. -/
+  | msisB
+      (matrix : Simple.PublicParams Φ outerRows (blocks * (innerRows * innerDigits)))
+      (solution : ModuleSIS.Solution Φ (blocks * (innerRows * innerDigits)))
+  /-- A short nonzero kernel vector for the carrier commitment matrix `D`. -/
+  | msisD
+      (matrix : Simple.PublicParams Φ dRows (blocks * messageDigits))
+      (solution : ModuleSIS.Solution Φ (blocks * messageDigits))
 
 end Defs
 
@@ -183,6 +197,45 @@ def evalConsistency (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m)) (b : PolyVec (
 `D`-matrix analogue of `outerShort`, at `subLInftyNormBound γ = 2·γ`. -/
 def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool :=
   fun z => decide (vecLInftyNorm Φ z ≤ subLInftyNormBound γ)
+
+/-- The statement-independent set of valid Module-SIS escapes that `QuadEval` may add while
+extracting. Each escape carries the matrix against which its solution is checked: `B` for a
+divergent inner decomposition, or `D` for a divergent carrier decomposition. -/
+def quadEvalSISSet (γ : ℕ) :
+    Set (QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows) :=
+  { e | match e with
+    | .msisB matrix solution =>
+        ModuleSIS.relation Φ (outerShort Φ γ) matrix solution = true
+    | .msisD matrix solution =>
+        ModuleSIS.relation Φ (dShort Φ γ) matrix solution = true }
+
+/-- A capability for embedding the local, concrete `QuadEval` SIS escapes into a common ambient
+escape type. `localEsc` is the part of the ambient escape budget introduced by `QuadEval`, and
+`mapsTo` certifies that every locally valid break maps into it. Other protocols can add their own
+escape subsets to the same `E`, while the ordinary `relIn`/`relOut` chain remains unchanged. -/
+structure QuadEvalEscapeMap (γ : ℕ) (E : Type) where
+  /-- Ambient encodings of valid escapes introduced by this `QuadEval` invocation. -/
+  localEsc : Set E
+  /-- Embed a concrete `QuadEval` SIS break into the common escape type. -/
+  toEscape :
+    QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows → E
+  /-- Valid local breaks land in `localEsc`. -/
+  mapsTo : Set.MapsTo toEscape (quadEvalSISSet Φ γ) localEsc
+
+namespace QuadEvalEscapeMap
+
+/-- The canonical embedding when the ambient escape type is exactly the concrete `QuadEval` SIS
+break type. This is useful for running `QuadEval` by itself; composed Hachi chains instead provide
+an embedding into their shared escape type. -/
+def self (γ : ℕ) :
+    QuadEvalEscapeMap Φ (innerRows := innerRows) (messageDigits := messageDigits)
+      (outerRows := outerRows) (blocks := blocks) (innerDigits := innerDigits) (dRows := dRows) γ
+      (QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows) where
+  localEsc := quadEvalSISSet Φ γ
+  toEscape := id
+  mapsTo := fun _ he => he
+
+end QuadEvalEscapeMap
 
 /-- **`relOut` — Hachi Eq. (20) (rows c1–c5 verbatim) plus a symmetric-`ℓ∞`-ball model of the
 `S_b` range checks (c6)** on `((stmt, v, c), (ŵ, t̂, ẑ))`, with `z := J ẑ`:
@@ -316,21 +369,14 @@ theorem paperRelOut_subset_relOut (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ :
     vecLInftyNorm_le_of_vecInSb Φ hγ hb2,
     vecLInftyNorm_le_of_vecInSb Φ hγ hb3⟩
 
-/-- **`relIn` — Hachi Lemma 8's extraction disjunction**: a weak `VerifiedOpening` for `u` that is
-also eval-consistent (Eq. 15), or a Module-SIS solution for `B`, or one for `D`. The `.opening`
-disjunct is the interface into `outputToModuleSIS_valid_of_verified` for the downstream
-cross-run knowledge-soundness step. -/
+/-- **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u`
+that is also eval-consistent (Eq. 15). Module-SIS outcomes are not witnesses of this relation;
+they are accumulated in parallel through `quadEvalSISSet` and `QuadEvalEscapeMap`. -/
 def relIn (base : ZMod q) (βSq γ κ : ℕ) :
     Set (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
          QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
-  { p | match p with
-    | (stmt, .opening o) =>
-        VerifiedOpening Φ base βSq γ κ stmt.pp.toPublicParams stmt.u o ∧
-        evalConsistency Φ base stmt.avec stmt.bvec stmt.y o
-    | (stmt, .msisB z) =>
-        ModuleSIS.relation Φ (outerShort Φ γ) stmt.pp.outerMatrix z = true
-    | (stmt, .msisD z) =>
-        ModuleSIS.relation Φ (dShort Φ γ) stmt.pp.dMatrix z = true }
+  { p | VerifiedOpening Φ base βSq γ κ p.1.pp.toPublicParams p.1.u p.2 ∧
+      evalConsistency Φ base p.1.avec p.1.bvec p.1.y p.2 }
 
 /-! ## The protocol: pure pass-through verifier and honest prover -/
 

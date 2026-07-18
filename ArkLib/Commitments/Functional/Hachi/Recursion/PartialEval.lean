@@ -154,9 +154,9 @@ def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρ
 
 /-- Escape-threaded per-`i` partial-evaluation relation. -/
 def relPartialEvalE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relPartialEval Φ mLow κ bound ρBound K φF).withEscape K.esc
+  (relPartialEval Φ mLow κ bound ρBound K φF).withEscape esc
 
 variable [SampleableType F]
 
@@ -171,33 +171,36 @@ membership; escapes pass through. -/
 theorem partialEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom)
         (F := F)).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (relWEvalClaimE Φ (mLow + κ) bound ρBound b K φF)
-      (relPartialEvalE Φ mLow κ bound ρBound K φF) := by
+      (relWEvalClaimE Φ (mLow + κ) bound ρBound b K φF esc)
+      (relPartialEvalE Φ mLow κ bound ρBound K φF esc) := by
   sorry
 
-/-- **The partial-evaluation head as a `CWSSPackage`** (Hachi §4.5, Eq. (24)): the pure
+/-- **The partial-evaluation head as an `EscapeCWSSPackage`** (Hachi §4.5, Eq. (24)): the pure
 one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
-`relWEvalClaimE` to the per-`i` claims `relPartialEvalE`. -/
+plain `relWEvalClaim` to the per-`i` claims `relPartialEval`, carrying `esc` unchanged. -/
 def partialEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
-    CWSSPackage init impl
-      (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n ⊕ E)
-      (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n ⊕ E)
+    (φF : ZMod q →+* F) (esc : Set E) :
+    EscapeCWSSPackage init impl E
+      (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
+      (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
       (pSpecPartialEval F κ) where
   verifier := partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaimE Φ (mLow + κ) bound ρBound b K φF
-  relOut := relPartialEvalE Φ mLow κ bound ρBound K φF
+  relIn := relWEvalClaim Φ (mLow + κ) bound ρBound b K φF
+  relOut := relPartialEval Φ mLow κ bound ρBound K φF
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt tr =>
     ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
       deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩,
     fun _ _ => rfl⟩
-  isCWSS := partialEval_coordinateWiseSpecialSound Φ mLow κ bound ρBound b init impl K φF
+  isCWSS := partialEval_coordinateWiseSpecialSound Φ mLow κ bound ρBound b init impl K φF esc
 
 end Protocol
 

@@ -66,13 +66,13 @@ home_page/            site assets and assembled website root
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
-  ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section, each
-  subfolder carrying an umbrella `.lean` re-export next to it (the `Ajtai/Simple.lean + Simple/`
-  convention); `ArkLib/Commitments/Functional/Hachi.lean` is the folder-level landing page, with
-  the full folder map in its module docstring. Layout:
-  - `Gadget/` (§2.1) — `Gadget/Basic` is the base-`b` gadget matrix `G` and its norm-reducing digit
+  ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section;
+  every subfolder carries its umbrella as `Basic.lean` inside that subfolder.
+  `ArkLib/Commitments/Functional/Hachi.lean` is the folder-level landing page, with the full
+  folder map in its module docstring. Layout:
+  - `Gadget/` (§2.1) — `Gadget/Core` is the base-`b` gadget matrix `G` and its norm-reducing digit
     decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both
-    directions the honest case and Lemma 8 need. `Gadget.lean` re-exports both.
+    directions the honest case and Lemma 8 need. `Gadget/Basic.lean` re-exports both.
   - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
     multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
     `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
@@ -82,8 +82,8 @@ home_page/            site assets and assembled website root
     *weak opening*, following [NOZ26, §4.1]), `Correctness` (perfect correctness for lawful
     gadget decompositions), `Security` (the weak-binding reduction to Module-SIS via
     `verify_weak`), and `Arithmetic` (pins the modulus to the power-of-two cyclotomic
-    `X^{2^α}+1`, which the security proofs genuinely require). `InnerOuter.lean` re-exports the
-    scheme, its correctness, and its weak-binding reduction.
+    `X^{2^α}+1`, which the security proofs genuinely require). `InnerOuter/Basic.lean`
+    re-exports the scheme, its correctness, and its weak-binding reduction.
   - `QuadEval/` (§4.2, "Polynomial Evaluation as Quadratic Equation", Figure 3) — Hachi's
     polynomial-evaluation reduction, which proves `f(x) = y` by expressing the evaluation as the
     quadratic form `bᵀ M a` and folding the `2ʳ` carrier blocks under the challenge vector (hence
@@ -91,7 +91,8 @@ home_page/            site assets and assembled website root
     folding protocol. `QuadEval/Gadgets` holds the gadget algebra (`PublicParamsD`, the
     honest-prover carrier/short commitment `v = D ŵ`, the `J`-decomposition of `z`, and the
     `tensorG`/`tensorG1` challenge combinations). `QuadEval/Reduction` is the 2-round protocol with
-    its types, `relOut` (Eq. (20) + range balls), and `relIn` (weak opening ∨ MSIS(B) ∨ MSIS(D)).
+    its types, plain `relOut` (Eq. (20) + range balls), plain `relIn` (eval-consistent weak
+    opening), and the parallel `QuadEvalSISBreak` escape set for MSIS(B/D) outcomes.
     `QuadEval/Soundness` is the subtract-and-divide extractor `buildWitness`, **Lemma 8**
     (coordinate-wise special soundness) as `quadEval_coordinateWiseSpecialSound` (`sorryAx`-free),
     the composable `quadEvalPackage`, and the reduction's derived norm constants
@@ -101,20 +102,16 @@ home_page/            site assets and assembled website root
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
-    `bridge_coordinateWiseSpecialSound`. `QuadEval.lean` re-exports the reduction, its soundness,
-    and the bridge.
+    `bridge_coordinateWiseSpecialSound`. `QuadEval/Basic.lean` re-exports the reduction, its
+    soundness, and the bridge.
   - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is a **skeleton** split into one flat
-    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting a
-    `CWSSPackage`/`GCWSSPackage` with a sorried CWSS theorem, plus the front-threading file
-    `Escape.lean` at the Hachi root:
-  - `Escape.lean` — the escape-threaded front `evalChainE` (design G1): widens the finished
-    `QuadEval` front relations with an abstract weak-binding escape budget so every §4.3 seam has a
-    home for the `w̃`-commitment's binding break. Front glue, not a §4.3 subprotocol; sits at the
-    Hachi root beside `EvalSplit`/`Composition`.
+    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting an
+    `EscapeCWSSPackage`/`EscapeGCWSSPackage` with plain public relations and a parallel escape set.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`. `RingSwitch/Rlin`
     is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction` is the two-round lift
-    (`k = 2d`, the abstract `w̃`-commitment `LiftCom`). `RingSwitch.lean` re-exports the folder.
+    (`k = 2d`, the abstract `w̃`-commitment `LiftCom`). `RingSwitch/Basic.lean` re-exports the
+    folder.
     (Distinct from the §3 packing reduction under `ProofSystem/RingSwitching/`, also a ring-switch.)
   - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
     `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
@@ -122,19 +119,21 @@ home_page/            site assets and assembled website root
     the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
     zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
     bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
-    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck.lean` re-exports the folder.
+    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
     sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
     `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
-    recursion's evaluation claim. `Sumcheck.lean` re-exports the folder.
+    recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports the folder.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the `bridgePackage ▷
-    quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed CWSS certificate
-    (`sorryAx`-free). `openCore` chains the escape-threaded front with the pure §4.3 links (rows
+    `Recursion/Basic.lean` re-exports the folder.
+  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the
+    `bridgePackage ▷ₑ quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed
+    CWSS certificate (`sorryAx`-free). `openCore` chains the plain relation flow and parallel
+    escape flow through the pure §4.3 links (rows
     1–7 of the header's seam table), and `openingChain` /
     `hachi_iteration_coordinateWiseSpecialSound` compose the guarded tail (sumcheck loop, final
     eval, recursion adapters) into the full one-iteration certificate — a skeleton whose sorry

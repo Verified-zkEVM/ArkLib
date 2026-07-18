@@ -136,7 +136,7 @@ theorem hAlpha_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
 combinator (degree 2), `F_{0,τ₀}` via the range combinator `∏ⱼ (X − j)` of degree `2b` (the
 `SumcheckMultiplierParam` docstring anticipates this Hachi case) — and the round consistency
 (`hypercubeSum` / `roundRel`) via `Sumcheck.Structured.sumcheckConsistencyProp` over
-`SumcheckDomain.boolDomain`. See the `Sumcheck.lean` umbrella. -/
+`SumcheckDomain.boolDomain`. See the `Sumcheck/Basic.lean` umbrella. -/
 
 /-- **`F_{0,τ₀}`** (the range sumcheck summand, [NOZ26] §4.3 "finish the proof using sumcheck"):
 `F_{0,τ₀}(x) := eq̃(τ₀, x)·w̃(x)·∏_{j=1}^{b−1}(w̃(x) − j)(w̃(x) + j)·1_{table}(x)`, where `w̃` is
@@ -237,8 +237,8 @@ def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound)
 
 /-- Escape-threaded per-round seam relation. -/
 def roundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
+    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) (esc : Set E) :
     Set (RoundStatement Φ K.TCom F n μ i × (LiftedWitness Φ μ n ⊕ E)) :=
-  (roundRel Φ m₀ m₁ bound ρBound K φF b i).withEscape K.esc
+  (roundRel Φ m₀ m₁ bound ρBound K φF b i).withEscape esc
 
 end ArkLib.Lattices.Ajtai.InnerOuter

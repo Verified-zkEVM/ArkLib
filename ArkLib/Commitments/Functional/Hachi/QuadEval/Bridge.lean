@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.ProofSystem.Component.ReduceClaim
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
@@ -29,7 +29,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   (`bridge_coordinateWiseSpecialSound`).
 
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
-  *extracted polynomial* evaluates to `y` at `xl ++ xh`, or a Module-SIS solution for `B`/`D`) that
+  *extracted polynomial* evaluates to `y` at `xl ++ xh`) that
   `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Composition.lean` chains the bridge
   before `QuadEval` (`evalChain = bridgePackage ▷ quadEvalPackage`), yielding the sorry-free
   `eval_coordinateWiseSpecialSound`.
@@ -43,7 +43,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   * `extractedPoly`: the polynomial read back from a weak opening's Eq. (15) derived-message
     matrix via `Hachi.toPolynomial` (round-trip: `toMatrix_extractedPoly`).
   * `relPolyEval`: the polynomial-level input relation described above.
-  * `bridgePackage`: the bridge as a composable `CWSSPackage` (empty challenge structure).
+  * `bridgePackage`: the bridge as a composable `EscapeCWSSPackage` with a passive escape set.
 
   ## Main results
 
@@ -89,7 +89,7 @@ section Defs
 
 variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι}
+variable {ι : Type} {oSpec : OracleSpec ι} {E : Type}
 
 /-- Input statement of the composed Hachi evaluation protocol at the polynomial level (Hachi
 §4.2/Figure 3, `Rq`-level): the public parameters `(A, B, D)`, the outer commitment `u`, the
@@ -142,7 +142,7 @@ section ZModDefs
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι}
+variable {ι : Type} {oSpec : OracleSpec ι} {E : Type}
 
 /-- The polynomial extracted from a weak opening: the inverse reshape (`Hachi.toPolynomial`) of the
 Eq. (15) derived-message matrix `M`. A bijection, so
@@ -161,26 +161,22 @@ omit [NeZero q] in
   simp only [extractedPoly, Hachi.toMatrix_toPolynomial]
 
 /-- **`relPolyEval` — the polynomial-level input relation** of the composed Hachi evaluation
-protocol: either a weak `VerifiedOpening` for `u` whose *extracted polynomial* evaluates to `y` at
-`xl ++ xh`, or a Module-SIS solution for the outer matrix `B`, or one for the short-commitment
-matrix `D`. It pulls back `QuadEval`'s `relIn` (whose opening disjunct is the matrix-level
-`evalConsistency`) through `toQuadEvalStatement`; the opening disjunct is the interface into a
+protocol: a weak `VerifiedOpening` for `u` whose *extracted polynomial* evaluates to `y` at
+`xl ++ xh`. It pulls back `QuadEval`'s ordinary `relIn` (whose second conjunct is the matrix-level
+`evalConsistency`) through `toQuadEvalStatement`; this is the interface into a
 `CMlPolynomial`-level functional commitment. -/
 def relPolyEval (base : ZMod q) (βSq γ κ : ℕ) :
     Set (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r ×
          QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
-  { p | match p with
-    | (s, .opening o) =>
-        VerifiedOpening Φ base βSq γ κ s.pp.toPublicParams s.u o ∧
-        CMlPolynomial.eval (extractedPoly Φ base o) (s.xl ++ s.xh) = s.y
-    | (s, .msisB z) => ModuleSIS.relation Φ (outerShort Φ γ) s.pp.outerMatrix z = true
-    | (s, .msisD z) => ModuleSIS.relation Φ (dShort Φ γ) s.pp.dMatrix z = true }
+  { p |
+    VerifiedOpening Φ base βSq γ κ p.1.pp.toPublicParams p.1.u p.2 ∧
+    CMlPolynomial.eval (extractedPoly Φ base p.2) (p.1.xl ++ p.1.xh) = p.1.y }
 
 omit [NeZero q] in
 /-- **Pull-back lemma** (the `hRel` for the bridge's CWSS): a `QuadEvalWitness` accepted by
 `QuadEval`'s `relIn` at the reinterpreted statement `toQuadEvalStatement Φ s` is accepted by
-`relPolyEval` at the polynomial-level statement `s`. The MSIS disjuncts are preserved verbatim
-(`toQuadEvalStatement` keeps `pp`); the opening disjunct converts the matrix-level `evalConsistency`
+`relPolyEval` at the polynomial-level statement `s`. The proof converts the matrix-level
+`evalConsistency`
 (`splitForm (derivedMsgMatrix …) (mb xl) (mb xh) = y`) to the `CMlPolynomial.eval` claim via
 `Hachi.splitForm_monomialBasis_eq_eval`. -/
 theorem mem_relPolyEval_of_relIn (base : ZMod q) (βSq γ κ : ℕ)
@@ -188,16 +184,12 @@ theorem mem_relPolyEval_of_relIn (base : ZMod q) (βSq γ κ : ℕ)
     (w : QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
     (h : (toQuadEvalStatement Φ s, w) ∈ relIn Φ base βSq γ κ) :
     (s, w) ∈ relPolyEval Φ base βSq γ κ := by
-  cases w with
-  | opening o =>
-      obtain ⟨hvo, hec⟩ := h
-      refine ⟨hvo, ?_⟩
-      change CMlPolynomial.eval (Hachi.toPolynomial (derivedMsgMatrix Φ base o)) (s.xl ++ s.xh)
-        = s.y
-      rw [← Hachi.splitForm_monomialBasis_eq_eval (derivedMsgMatrix Φ base o) s.xl s.xh]
-      exact hec
-  | msisB z => exact h
-  | msisD z => exact h
+  obtain ⟨hvo, hec⟩ := h
+  refine ⟨hvo, ?_⟩
+  change CMlPolynomial.eval (Hachi.toPolynomial (derivedMsgMatrix Φ base w)) (s.xl ++ s.xh)
+    = s.y
+  rw [← Hachi.splitForm_monomialBasis_eq_eval (derivedMsgMatrix Φ base w) s.xl s.xh]
+  exact hec
 
 omit [NeZero q] in
 /-- **CWSS of the bridge.** The zero-round `ReduceClaim` head is coordinate-wise special sound for
@@ -217,13 +209,13 @@ theorem bridge_coordinateWiseSpecialSound {σ : Type}
     (mapWitInv := fun _ w => w) (D := D)
     (mem_relPolyEval_of_relIn Φ base βSq γ κ)
 
-/-- **The polynomial-level bridge as a `CWSSPackage`** (Hachi [NOZ26, §4.2]): the zero-round
+/-- **The polynomial-level bridge as an `EscapeCWSSPackage`** (Hachi [NOZ26, §4.2]): the zero-round
 `ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure (`ofIsEmpty`) and its
-CWSS certificate `bridge_coordinateWiseSpecialSound`, ready to be `▷`-composed before `QuadEval`.
-Its `relOut` is `QuadEval`'s input relation `relIn`, so the seam with `quadEvalPackage` is `rfl`. -/
+CWSS certificate, ready to be `▷ₑ`-composed before `QuadEval`. Its public `relOut` is
+`QuadEval`'s ordinary input relation `relIn`, and it carries the escape set through unchanged. -/
 def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (base : ZMod q) (βSq γ κ : ℕ) :
-    CWSSPackage init impl
+    (base : ZMod q) (βSq γ κ : ℕ) (esc : Set E) :
+    EscapeCWSSPackage init impl E
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
@@ -233,8 +225,18 @@ def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
   struct := CWSSStructure.ofIsEmpty
   relIn := relPolyEval Φ base βSq γ κ
   relOut := relIn Φ base βSq γ κ
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => toQuadEvalStatement Φ stmt, fun _ _ => rfl⟩
-  isCWSS := bridge_coordinateWiseSpecialSound Φ init impl CWSSStructure.ofIsEmpty base βSq γ κ
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
+    (relIn := (relPolyEval Φ base βSq γ κ).withEscape esc)
+    (relOut := (relIn Φ base βSq γ κ).withEscape esc)
+    (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
+    (fun s w h => by
+      cases w with
+      | inl w => exact mem_relPolyEval_of_relIn Φ base βSq γ κ s w h
+      | inr e => exact h)
 
 end ZModDefs
 

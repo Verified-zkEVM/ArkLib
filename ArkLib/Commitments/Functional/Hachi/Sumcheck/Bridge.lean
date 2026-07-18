@@ -11,9 +11,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   Zero-round bridge from the zero-check's *point-evaluation* claims to the *initial sumcheck*
   claims consumed by the round loop ([NOZ26] §4.3, "finish the proof using sumcheck protocols"):
 
-  * `relIn = relZeroCheckE` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τ_α) = 0` at the derived Kronecker
+  * `relIn = relZeroCheck` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τ_α) = 0` at the derived Kronecker
     points;
-  * `relOut = roundRelE 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
+  * `relOut = roundRel 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
     `∑_{x ∈ {0,1}^{m₀}} F_{α,τ_α}(x) = a`, where the initial linear target
     `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the statement
     alone.
@@ -54,34 +54,40 @@ through; the bound-sanity conjunct is shared verbatim.
 
 **Sorried** (a corollary of the sorried F5 identities `sum_sumcheckPolyZero` /
 `sum_sumcheckPolyAlpha`, plus `challenges`-uniqueness `Fin 0 → F`). -/
-theorem mem_relZeroCheckE_of_roundRelE
+theorem mem_relZeroCheck_of_roundRel
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ)
-    (s : ZeroCheckStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (toRoundStatement Φ m₁ φF s, w) ∈ roundRelE Φ m₀ m₁ bound ρBound K φF b 0) :
-    (s, w) ∈ relZeroCheckE Φ m₀ m₁ bound ρBound K φF b := by
+    (s : ZeroCheckStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
+    (h : (toRoundStatement Φ m₁ φF s, w) ∈ roundRel Φ m₀ m₁ bound ρBound K φF b 0) :
+    (s, w) ∈ relZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
   sorry
 
-/-- **The sumcheck bridge as a `CWSSPackage`**: zero-round `ReduceClaim` at
-`mapStmt := toRoundStatement`, reducing `relZeroCheckE` to the round-`0` seam `roundRelE 0`
+/-- **The sumcheck bridge as an `EscapeCWSSPackage`**: zero-round `ReduceClaim` at
+`mapStmt := toRoundStatement`, reducing plain `relZeroCheck` to the round-`0` `roundRel`
 with no soundness error. -/
 noncomputable def sumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    CWSSPackage init impl
-      (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n ⊕ E)
+    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
+    EscapeCWSSPackage init impl E
+      (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (toRoundStatement Φ m₁ φF)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b
-  relOut := roundRelE Φ m₀ m₁ bound ρBound K φF b 0
+  relIn := relZeroCheck Φ m₀ m₁ bound ρBound K φF b
+  relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0
+  escIn := esc
+  escOut := esc
+  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => toRoundStatement Φ m₁ φF stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b)
-    (relOut := roundRelE Φ m₀ m₁ bound ρBound K φF b 0)
+    (relIn := (relZeroCheck Φ m₀ m₁ bound ρBound K φF b).withEscape esc)
+    (relOut := roundRelE Φ m₀ m₁ bound ρBound K φF b 0 esc)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relZeroCheckE_of_roundRelE Φ m₀ m₁ bound ρBound K φF b)
+    (fun s w h => by
+      cases w with
+      | inl w => exact mem_relZeroCheck_of_roundRel Φ m₀ m₁ bound ρBound K φF b s w h
+      | inr e => exact h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

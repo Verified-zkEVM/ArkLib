@@ -10,7 +10,7 @@ status: seeded
 related_modules:
   - ArkLib/ProofSystem/RingSwitching/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
-  - ArkLib/Commitments/Functional/Hachi/Gadget.lean
+  - ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
 ---
@@ -52,7 +52,7 @@ Ring-switching layer:
 - [`../../../ArkLib/ProofSystem/RingSwitching/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Profile.lean)
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
-- [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
+- [`ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean)
   — the gadget matrix and `gadgetDecompose`.
 - [`ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean`](../../../ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean)
   — weak binding.

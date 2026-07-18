@@ -307,7 +307,7 @@ theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α
 /-! ## Constant embedding and coefficient-vanishing facts
 
 General (any-modulus) degree/coefficient lemmas used by the inner-outer gadget commitment
-(`ArkLib/Commitments/Functional/Hachi/Gadget.lean`); the power-of-two special cases live in
+(`ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean`); the power-of-two special cases live in
 `Subfield/Basis.lean`. -/
 
 /-- `Φ.φ.natDegree`, the truncation length of decompositions, does not exceed `deg φ`. -/

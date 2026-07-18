@@ -156,9 +156,9 @@ def relLift (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
 /-- Escape-threaded lift relation — the seam consumed by the batching bridge
 (`ZeroCheck/Batch.lean`). -/
 def relLiftE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
+    (φF : ZMod q →+* F) (esc : Set E) :
     Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relLift Φ bound ρBound K φF).withEscape K.esc
+  (relLift Φ bound ρBound K φF).withEscape esc
 
 section Protocol
 
@@ -218,28 +218,31 @@ Assembled via `coordinateWiseSpecialSound_of_mkWitness_scalar` (F4.1); `2 ≤ 2d
 is the tree's obligation; only knowledge-error accounting, out of scope, needs `2d ≤ |F|`). -/
 theorem lift_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hd : 0 < Φ.φ.natDegree) :
+    (hd : 0 < Φ.φ.natDegree) (esc : Set E) :
     (liftVerifier (oSpec := oSpec) Φ bound ρBound K).coordinateWiseSpecialSound init impl
       (scalarStructure (2 * Φ.φ.natDegree) (by omega))
-      (relRlinE Φ (n := n) (μ := μ) K.esc)
-      (relLiftE Φ bound ρBound K φF) := by
+      (relRlinE Φ (n := n) (μ := μ) (esc ∪ K.esc))
+      (relLiftE Φ bound ρBound K φF esc) := by
   sorry
 
-/-- **The HMZ25 lift as a `CWSSPackage`** (Hachi [NOZ26] Figure 4 / Lemma 9): the two-round
+/-- **The HMZ25 lift as an `EscapeCWSSPackage`** (Hachi [NOZ26] Figure 4 / Lemma 9): the two-round
 commit-then-challenge verifier with the plain-special-soundness structure at `k = 2d`, reducing
-`relRlinE` to `relLiftE`. The certificate is the sorried `lift_coordinateWiseSpecialSound`. -/
+plain `relRlin` to `relLift`. In parallel, backwards extraction grows `esc` by `K.esc`. -/
 def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hd : 0 < Φ.φ.natDegree) :
-    CWSSPackage init impl
-      (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ ⊕ E)
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+    (hd : 0 < Φ.φ.natDegree) (esc : Set E) :
+    EscapeCWSSPackage init impl E
+      (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ)
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) where
   verifier := liftVerifier (oSpec := oSpec) Φ bound ρBound K
   struct := scalarStructure (2 * Φ.φ.natDegree) (by omega)
-  relIn := relRlinE Φ (n := n) (μ := μ) K.esc
-  relOut := relLiftE Φ bound ρBound K φF
+  relIn := relRlin Φ
+  relOut := relLift Φ bound ρBound K φF
+  escIn := esc ∪ K.esc
+  escOut := esc
+  escape_mono := Set.subset_union_left
   isPure := ⟨fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  isCWSS := lift_coordinateWiseSpecialSound Φ bound ρBound K φF init impl hd
+  isCWSS := lift_coordinateWiseSpecialSound Φ bound ρBound K φF init impl hd esc
 
 end Protocol
 
