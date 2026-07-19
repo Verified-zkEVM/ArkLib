@@ -35,16 +35,4 @@ lemma liftComp_bind_pure
   change (f <$> oa).liftComp superSpec = f <$> oa.liftComp superSpec
   exact OracleComp.liftComp_map superSpec oa f
 
-lemma bind_liftComp_map
-    {ι τ α β γ : Type} {spec : OracleSpec ι} {superSpec : OracleSpec τ}
-    [MonadLiftT (OracleQuery spec) (OracleQuery superSpec)]
-    (oa : OracleComp spec α) (f : α → β) (body : β → OracleComp superSpec γ) :
-    (do
-      let b ← f <$> OracleComp.liftComp oa superSpec
-      body b) =
-    (do
-      let a ← OracleComp.liftComp oa superSpec
-      body (f a)) := by
-  simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp_apply, pure_bind]
-
 end OracleComp

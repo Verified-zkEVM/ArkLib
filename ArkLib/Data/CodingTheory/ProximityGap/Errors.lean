@@ -614,8 +614,11 @@ private def row_of {ι : Type} {A : Type} {t : ℕ}
     (w : ι → (Fin t → A)) (k : Fin t) : ι → A :=
   fun j ↦ w j k
 
-/-- **ABF26 Lemma 4.7.** For any F-additive code `C` (here: a `Submodule F (ι → A)`) and
-`t : ℕ`: `ε_mca(C^≡t, δ) ≤ t · ε_mca(C, δ)`.
+/-- **Union-bound interleaving stability** (in-tree proof; not itself an ABF26-numbered
+lemma). For any F-additive code `C` (here: a `Submodule F (ι → A)`) and
+`t : ℕ`: `ε_mca(C^≡t, δ) ≤ t · ε_mca(C, δ)`. ABF26's `lemma:interleaving-mca`
+([Jo26]) states the exact *equality* `ε_mca(C^≡t, δ) = ε_mca(C, δ)`, which supersedes
+this bound — see `epsMCA_interleaved_eq` below.
 
 Proof recipe:
 1. `mcaEvent` for the interleaved code at `γ` implies `∃ k`, `mcaEvent` for the `k`-th row

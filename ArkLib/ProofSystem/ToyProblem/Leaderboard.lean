@@ -396,11 +396,29 @@ theorem winningSetSoundness_le_toySoundnessError {k : ℕ} [Nonempty ι] {C : Se
 
 /-! ## Bits of security -/
 
-/-- Provable security in bits of a soundness error `e`: `-log₂ e`. At `e = 0`
-(perfect soundness) `Real.logb 2 0 = 0`, so `bitsOfSecurity 0 = 0`; callers
-exhibiting genuine perfect soundness should special-case it. For the prize
-regime `e ∈ (0, 1)` so `bitsOfSecurity e > 0`. -/
-noncomputable def bitsOfSecurity (e : ℝ≥0∞) : ℝ := -Real.logb 2 e.toReal
+/-- Provable security in bits of a soundness error `e`: `-log₂ e`, with the honest
+boundary semantics (2026-07-18 carrier fix):
+
+* `e = 0` (perfect soundness) ↦ `⊤` (infinitely many bits) — previously the totalized
+  `Real.logb` made this `0`, silently conflating perfect soundness with no security;
+* `e ≥ 1` (useless bound) ↦ `0` (via the `ENNReal.ofReal` clamp of the negative log) —
+  bits can never be negative;
+* the prize regime `e ∈ (0, 1)` ↦ `ofReal (-log₂ e) > 0`, as before.
+
+(`e = ⊤` also lands on `0` via `toReal ⊤ = 0` making the log term `0` — an infinite
+"error" certifies nothing.) -/
+noncomputable def bitsOfSecurity (e : ℝ≥0∞) : ℝ≥0∞ :=
+  -- Explicit `Classical.propDecidable`: a bare `if` here silently captures the section's
+  -- `{A} [DecidableEq A]` variables (the unused-section-variable linter is off file-wide).
+  @ite _ (e = 0) (Classical.propDecidable _) ⊤ (ENNReal.ofReal (-Real.logb 2 e.toReal))
+
+/-- Perfect soundness is infinitely many bits. -/
+@[simp] lemma bitsOfSecurity_zero : bitsOfSecurity 0 = ⊤ := by simp [bitsOfSecurity]
+
+/-- Away from the perfect-soundness boundary, `bitsOfSecurity` is the clamped `-log₂`. -/
+lemma bitsOfSecurity_of_ne_zero {e : ℝ≥0∞} (h : e ≠ 0) :
+    bitsOfSecurity e = ENNReal.ofReal (-Real.logb 2 e.toReal) := by
+  simp [bitsOfSecurity, h]
 
 /-! ## Parameter record (KoalaBear-sextic regime)
 
@@ -536,26 +554,85 @@ theorem le_bestProvableError (p : ToyParams) {c : ℝ≥0∞}
     c ≤ bestProvableError p :=
   le_iInf₂ h
 
-/-! ## The two leaderboard interfaces
+/-! ## Actual-soundness interfaces (ABF26 Definition 6.11 = `winningSetSoundness`)
 
-Both are stated against the **same** common quantity `bestProvableError p`. A
-submission is an *inhabitant*. -/
+Unlike `SecurityLowerBound`/`SecurityUpperBound` (which bound the composed analysis
+functional `bestProvableError`), these bound the toy protocol's **actual** γ-round
+soundness error `winningSetSoundness p.enc δ` *at a fixed operating point δ*. The
+`bits` field is `ℝ≥0` (a security level is never negative). Added 2026-07-19 (B07,
+after review) so that "real-security bits" are backed by a statement literally about
+actual soundness — not the analysis frontier. -/
+
+/-- **Provable actual-soundness bits at operating point `δ`.** A proof that the actual
+γ-round soundness error (ABF26 Def 6.11) at `δ` is at most `2^(-bits)`: at least `bits`
+bits of *genuine* security at that δ. Route: `winningSetSoundness_le_epsMCA_add` (L6.10)
+plus an owed `ε_mca`/`Λ` bound. -/
+structure GammaSoundnessUpperBound (p : ToyParams) (δ : ℝ≥0) where
+  /-- Provable actual-soundness level at `δ`, in bits (nonneg). -/
+  bits : ℝ≥0
+  /-- Actual γ-round soundness at `δ` is at most `2^(-bits)`. -/
+  proof : winningSetSoundness p.enc δ ≤ (2 : ℝ≥0) ^ (-(bits : ℝ))
+
+/-- **Attack lower bound on actual soundness at operating point `δ`.** A proof that the
+actual γ-round soundness error (ABF26 Def 6.11) at `δ` is at least `2^(-bits)`: a genuine
+cheating strategy forcing security ≤ `bits` bits at that δ. Route:
+`epsCA_le_winningSetSoundness` (L6.13) plus an owed `ε_ca` lower bound. -/
+structure GammaSoundnessLowerBound (p : ToyParams) (δ : ℝ≥0) where
+  /-- Attack-forced actual-soundness ceiling at `δ`, in bits (nonneg). -/
+  bits : ℝ≥0
+  /-- Actual γ-round soundness at `δ` is at least `2^(-bits)`. -/
+  proof : (2 : ℝ≥0) ^ (-(bits : ℝ)) ≤ winningSetSoundness p.enc δ
+
+/-! ## The two composed-frontier interfaces
+
+Both are stated against the **same** common quantity `bestProvableError p` — the
+δ-swept, spot-check-inclusive **composed-protocol analysis frontier**. A submission
+is an *inhabitant*. Read the honesty note below carefully: these bound the analysis
+functional, NOT (directly) actual soundness.
+
+**Relation to actual soundness (B07, revised 2026-07-19 after review).** The
+per-δ infimand of `bestProvableError` is built from `winningSetSoundness p.enc δ`,
+which **is** ABF26 Definition 6.11's *actual* γ-round soundness error (a `⨆` of
+realized winning-challenge fractions over concrete violating instances — a cheating
+probability, not an upper-bound formula). Two proven, axiom-clean directions bound
+that actual soundness:
+
+  `ε_ca(C,δ,δ) ≤ winningSetSoundness p.enc δ ≤ ε_mca(C,δ) + |Λ(C^{⋈2},δ)|/|F|`
+
+(`epsCA_le_winningSetSoundness` L6.13, `winningSetSoundness_le_epsMCA_add` L6.10;
+plus `listDecoding_le_winningSetSoundness` L6.12). The genuine **actual-soundness
+anchors** live in the `GammaSoundnessUpperBound`/`GammaSoundnessLowerBound`
+structures below (`irsGammaSoundnessProvable` / `irsGammaSoundnessAttack`), stated
+directly against `winningSetSoundness` at a fixed operating point.
+
+**Two honesty caveats (do NOT overstate these as a single-point sandwich):**
+1. The `SecurityLowerBound`/`SecurityUpperBound` structures here bound the *composed*
+   `bestProvableError`, which additionally folds in the `(1-δ)^t` spot-check term and
+   the `⨅` over δ. They are analysis-frontier bounds; `SecurityLowerBound.bits ≤
+   bitsOfSecurity(bestProvableError) ≤ SecurityUpperBound.bits` (see the `bits`
+   interpretation lemmas), NOT a bound on `winningSetSoundness` itself.
+2. The provable actual-soundness anchor holds at `δ = 3/10`, the attack anchor at
+   `δ ∈ (117/250, δ_min)` — **different operating points**. So `65` and `117` are two
+   real facts about actual γ-round soundness at two different δ, NOT the two ends of a
+   single-point sandwich whose width is a bit gap. The `117 − 63.99 = 53.01` figure is
+   the width of the *composed analysis frontier* (`SecurityUpperBound.bits −
+   SecurityLowerBound.bits`), not an actual-soundness interval at one δ. -/
 
 /-- **Provable security lower bound** at parameter point `p`: a number `bits`
 and a proof that the δ-swept analysis frontier is `≤ 2^(-bits)` — i.e. "we
 can *prove* at least `bits` bits of security" (cf. [ABF26] §6.3). The intended
 route is `bestProvableError_le` at a chosen δ, then `winningSetSoundness_le_`
 `toySoundnessError` / `winningSetSoundness_le_epsMCA_add` (Lemmas 6.10 / 6.6 /
-6.8) plus numerics. `bits : ℝ` because the security level *is*
-`bitsOfSecurity e = -log₂ e`, a real for any soundness error `e ∈ (0,1)`
-(almost never an integer); the §6.3 figures the anchors quote are themselves
-fractional (the attack is `2^(-116.49)`, the C6.9 MCA branch `≈ 2^(-71.5)`,
-the spot-check `(1-δ)^128 ≈ 2^(-64.00)`). -/
+6.8) plus numerics. `bits : ℝ≥0` — a *fractional* real (the §6.3 figures are
+fractional: the attack is `2^(-116.49)`, the C6.9 MCA branch `≈ 2^(-71.5)`, the
+spot-check `(1-δ)^128 ≈ 2^(-64.00)`), but never **negative**: since
+`bestProvableError ≤ 1`, its bits-of-security `-log₂(·) ≥ 0`, so a negative-bits
+witness would be vacuous (2026-07-19 domain fix, review finding 5). -/
 structure SecurityLowerBound (p : ToyParams) where
-  /-- The provable security level, in bits. -/
-  bits : ℝ
+  /-- The provable security level, in bits (nonneg). -/
+  bits : ℝ≥0
   /-- The δ-swept analysis frontier is at most `2^(-bits)`. -/
-  proof : bestProvableError p ≤ (↑((2 : ℝ≥0) ^ (-bits)) : ℝ≥0∞)
+  proof : bestProvableError p ≤ (↑((2 : ℝ≥0) ^ (-(bits : ℝ))) : ℝ≥0∞)
 
 /-- **Provable security upper bound** at parameter point `p`: a number `bits`
 and a proof that the δ-swept analysis frontier is `≥ 2^(-bits)` — i.e. "no
@@ -566,10 +643,10 @@ security" (cf. [ABF26] §6.3–6.4). The witness floors the convex combination
 `listDecoding_le_winningSetSoundness` / `epsCA_le_winningSetSoundness`) for
 large δ, the spot-check term `(1-δ)^t` for small δ. -/
 structure SecurityUpperBound (p : ToyParams) where
-  /-- The provable security ceiling, in bits. -/
-  bits : ℝ
+  /-- The provable security ceiling, in bits (nonneg; see `SecurityLowerBound`). -/
+  bits : ℝ≥0
   /-- The δ-swept analysis frontier is at least `2^(-bits)`. -/
-  proof : (↑((2 : ℝ≥0) ^ (-bits)) : ℝ≥0∞) ≤ bestProvableError p
+  proof : (↑((2 : ℝ≥0) ^ (-(bits : ℝ))) : ℝ≥0∞) ≤ bestProvableError p
 
 /-! ## The leaderboard metric -/
 
@@ -579,7 +656,7 @@ attack (`hi`) and the best provable security (`lo`), both bounds on
 — at the KoalaBear-sextic regime it is the `117 − 63.99 = 53.01`-bit honest
 frontier (informally "≈116 vs ≈64"). -/
 def securityGap {p : ToyParams} (lo : SecurityLowerBound p) (hi : SecurityUpperBound p) : ℝ :=
-  hi.bits - lo.bits
+  (hi.bits : ℝ) - (lo.bits : ℝ)
 
 /-- **The [ABF26] §6 prize gap is honest** (`lo.bits ≤ hi.bits`, so
 `securityGap ≥ 0`). Proved by pure transitivity through the common scalar:
@@ -591,15 +668,16 @@ theorem SecurityLowerBound.bits_le_of {p : ToyParams}
     (lo : SecurityLowerBound p) (hi : SecurityUpperBound p) :
     lo.bits ≤ hi.bits := by
   -- `2^(-hi.bits) ≤ bestProvableError ≤ 2^(-lo.bits)` in `ℝ≥0∞`, then drop to `ℝ≥0`.
-  have hchain : (2 : ℝ≥0) ^ (-hi.bits) ≤ (2 : ℝ≥0) ^ (-lo.bits) :=
+  have hchain : (2 : ℝ≥0) ^ (-(hi.bits : ℝ)) ≤ (2 : ℝ≥0) ^ (-(lo.bits : ℝ)) :=
     ENNReal.coe_le_coe.mp (le_trans hi.proof lo.proof)
   -- Cast to `ℝ` and use strict monotonicity of `2^(·)`.
-  have hchainR : (2 : ℝ) ^ (-hi.bits) ≤ (2 : ℝ) ^ (-lo.bits) := by
+  have hchainR : (2 : ℝ) ^ (-(hi.bits : ℝ)) ≤ (2 : ℝ) ^ (-(lo.bits : ℝ)) := by
     have := (NNReal.coe_le_coe.mpr hchain)
     rwa [NNReal.coe_rpow, NNReal.coe_rpow, NNReal.coe_ofNat] at this
-  have hexp : -hi.bits ≤ -lo.bits :=
+  have hexp : -(hi.bits : ℝ) ≤ -(lo.bits : ℝ) :=
     (Real.rpow_le_rpow_left_iff (by norm_num : (1 : ℝ) < 2)).mp hchainR
-  linarith
+  have : (lo.bits : ℝ) ≤ (hi.bits : ℝ) := by linarith
+  exact_mod_cast this
 
 /-- `securityGap` is non-negative (cf. [ABF26] §6.3; the two sides bound the
 same scalar). -/
@@ -618,23 +696,32 @@ the error is positive), i.e. the certified provable level sits below the true
 frontier level, which sits below the attack ceiling. -/
 
 /-- A provable lower bound's `bits` is at most the true bits-of-security of
-the [ABF26] §6.3 frontier (equivalently to `lo.proof`, when the error is
-positive). -/
-theorem SecurityLowerBound.le_bitsOfSecurity {p : ToyParams} (lo : SecurityLowerBound p)
-    (h : 0 < bestProvableError p) : lo.bits ≤ bitsOfSecurity (bestProvableError p) := by
+the [ABF26] §6.3 frontier (equivalently to `lo.proof`). With the honest
+`bitsOfSecurity` boundary semantics, the perfect-soundness case `error = 0`
+gives `⊤` and the inequality holds unconditionally — no positivity hypothesis
+is needed (2026-07-18). -/
+theorem SecurityLowerBound.le_bitsOfSecurity {p : ToyParams} (lo : SecurityLowerBound p) :
+    ENNReal.ofReal lo.bits ≤ bitsOfSecurity (bestProvableError p) := by
+  rcases eq_or_ne (bestProvableError p) 0 with h0 | h0
+  · rw [h0, bitsOfSecurity_zero]; exact le_top
   have htop : bestProvableError p ≠ ⊤ := ne_top_of_le_ne_top ENNReal.coe_ne_top lo.proof
-  rw [bitsOfSecurity, le_neg,
-    Real.logb_le_iff_le_rpow (by norm_num) (ENNReal.toReal_pos h.ne' htop)]
+  rw [bitsOfSecurity_of_ne_zero h0]
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [le_neg,
+    Real.logb_le_iff_le_rpow (by norm_num) (ENNReal.toReal_pos h0 htop)]
   have := ENNReal.toReal_mono ENNReal.coe_ne_top lo.proof
   rwa [ENNReal.coe_toReal, NNReal.coe_rpow, NNReal.coe_ofNat] at this
 
 /-- A provable upper bound's `bits` is at least the true bits-of-security of
 the [ABF26] §6.3 frontier (equivalently to `hi.proof`, when the error is
-positive). -/
+positive — at `error = 0` the true level is `⊤` and no finite ceiling holds,
+so the positivity hypothesis is genuinely needed on this side). -/
 theorem SecurityUpperBound.bitsOfSecurity_le {p : ToyParams} (hi : SecurityUpperBound p)
     (h : 0 < bestProvableError p) (htop : bestProvableError p ≠ ⊤) :
-    bitsOfSecurity (bestProvableError p) ≤ hi.bits := by
-  rw [bitsOfSecurity, neg_le,
+    bitsOfSecurity (bestProvableError p) ≤ ENNReal.ofReal hi.bits := by
+  rw [bitsOfSecurity_of_ne_zero h.ne']
+  refine ENNReal.ofReal_le_ofReal ?_
+  rw [neg_le,
     Real.le_logb_iff_rpow_le (by norm_num) (ENNReal.toReal_pos h.ne' htop)]
   have := ENNReal.toReal_mono htop hi.proof
   rwa [ENNReal.coe_toReal, NNReal.coe_rpow, NNReal.coe_ofNat] at this
@@ -838,6 +925,124 @@ theorem koalaIRS_minRelDist :
     rw [← hbridge]; push_cast; norm_num
   exact_mod_cast hQ
 
+/-! ### γ-round actual-soundness anchors (ABF26 Definition 6.11; B07 re-plumb, 2026-07-18)
+
+`winningSetSoundness p.enc δ` is not an analysis functional: it **is** ABF26
+Definition 6.11's *actual* soundness error of the γ (combination-randomness) round —
+a `⨆` of realized winning-challenge fractions `|Ω|/|F|` over concrete violating
+instances. The two theorems below anchor the leaderboard's X and Y sides directly to
+that quantity, so each side is a statement about the *real* security of the γ-round,
+not about a proof technique:
+
+* **X (provable), `koalaIRS_gammaSoundness_le`** — at the operating point `δ = 3/10`
+  the actual γ-round soundness error is `≤ 2^(-65)` (≥ 65 bits of real security),
+  via the proven L6.10 bridge `winningSetSoundness_le_epsMCA_add` plus the single
+  owed external `ε_mca(C, 3/10) + |Λ(C^{≡2}, 3/10)|/|F| ≤ 2^(-65)`. A tighter
+  `ε_mca` (the Grand MCA Challenge) flows through this bridge into more real bits.
+* **Y (attack), `le_koalaIRS_gammaSoundness`** — on the whole band
+  `δ ∈ (117/250, δ_min)` the actual γ-round soundness error is `≥ 2^(-117)` (a
+  genuine attack forcing ≤ 117 bits at those operating points), via the proven L6.13
+  attack hook `epsCA_le_winningSetSoundness` plus the single owed external CS25 CA
+  lower bound. A tighter `ε_ca` lower bound is a better real attack.
+
+The composed anchors `irsLowerBoundT128` / `caUpperBoundAttack` are **derived** from
+these two (plus the sorry-free spot-check integer leaves): `bestProvableError` is the
+δ-swept composed convenience scalar, and the γ-round anchors are where the
+real-soundness content lives. Because the actual-soundness anchors use different values
+of `δ`, they do **not** form a sandwich on one γ-round soundness value and have no
+single-point bit-gap width. The `117 − 63.99 = 53.01` figure belongs only to the
+δ-swept, spot-check-inclusive `bestProvableError` frontier.
+
+**Scope caveat (owed):** the composed Y-anchor's *small-δ* band is floored by the
+spot-check term `(1-δ)^t`, an analysis-functional floor that is not (yet) a
+formalized attack on the composed protocol; the γ-round anchors above carry no such
+caveat. Formalizing the spot-check attack would upgrade the whole composed Y-anchor
+to a genuine composed-soundness bound. -/
+
+/-- **γ-round actual-soundness anchor, provable side (X).** The toy protocol's actual
+γ-round soundness error (ABF26 Definition 6.11 = `winningSetSoundness`) at the
+operating point `δ = 3/10` is at most `2^(-65)`: ≥ 65 bits of *real* γ-round security.
+Route: the **proven** L6.10 bridge `winningSetSoundness_le_epsMCA_add` reduces to
+`ε_mca(C, 3/10) + |Λ(C^{≡2}, 3/10)|/|F| ≤ 2^(-65)` — the single owed external
+coding-theory bound (see `irsLowerBoundT128`'s docstring for the regime discussion:
+`δ = 3/10` is above Johnson, so this is an open-regime admit, true in the safe
+direction). The composed anchor `irsLowerBoundT128` consumes this theorem. -/
+theorem koalaIRS_gammaSoundness_le :
+    winningSetSoundness koalaIRS.enc (3 / 10) ≤ (2 : ℝ≥0) ^ (-(65 : ℝ)) := by
+  have hmindist : ((minRelHammingDistCode koalaIRS.code : ℚ≥0) : ℝ≥0)
+      = ((2 ^ 20 + 1) / 2 ^ 21 : ℝ≥0) := by
+    rw [koalaIRS_minRelDist]; push_cast; norm_num
+  have hδmem : (3 / 10 : ℝ≥0) ∈
+      Set.Ioo (0 : ℝ≥0) ((minRelHammingDistCode koalaIRS.code : ℝ≥0)) := by
+    rw [Set.mem_Ioo, hmindist]; norm_num
+  refine le_trans (winningSetSoundness_le_epsMCA_add (C := koalaIRS.code)
+    (3 / 10 : ℝ≥0) hδmem koalaIRS.enc koalaIRS.enc_injective rfl) ?_
+  -- ★ THE single owed external coding-theory bound at the paper's §6.3 point
+  --   (|L| = 2^21, m = 2^20, ρ = 1/2, |F| = q^6 ≈ 2^186):
+  --   `ε_mca(C, 3/10) + |Λ(C^{≡2}, 3/10)|/|F| ≤ 2^(-65)`.
+  -- δ = 3/10 is far below the Elias capacity δ_E ≈ 0.4678 and the attack
+  -- threshold δ* = 0.468, so the interleaved list Λ(C^{≡2}, 3/10) is small
+  -- (≪ |F|), making |Λ|/|F| negligible and ε_mca(C, 3/10) small; the paper's
+  -- §6.3.1 analysis reports the companion figure ≈ 2^(-71.5) for this term.
+  -- NB (2026-07-05 audit): δ = 3/10 is ABOVE the Johnson bound, so no in-tree
+  -- positive ε_mca lemma applies at this exact δ (rs_epsMCA_johnson_range_bchks25
+  -- needs δ < 1-√(ρ+1/n)-η ≈ 0.2929). This is an OPEN-REGIME admit, true in the
+  -- safe (upper-bound) direction; a fully-derived version re-anchors at δ = 1-√ρ
+  -- through rs_epsMCA_johnson_range_bchks25 (rpow-tight). External-owed.
+  sorry
+
+/-- **γ-round actual-soundness anchor, attack side (Y).** On the whole large band
+`δ ∈ (117/250, δ_min)` (`δ_min = (2^20+1)/2^21`, `koalaIRS_minRelDist`), the toy
+protocol's actual γ-round soundness error (ABF26 Definition 6.11 =
+`winningSetSoundness`) is at least `2^(-117)`: a *genuine attack* forcing ≤ 117 bits
+of real γ-round security at those operating points. Route: the **proven** L6.13
+attack hook `epsCA_le_winningSetSoundness` (a CA lower bound is a realized cheating
+strategy) reduces to `2^(-117) ≤ ε_ca(C, δ, δ)` on the band — the single owed
+external CS25 CA lower bound (see `caUpperBoundAttack`'s docstring for why `ε_ca ≈ 1`
+across the band). The composed anchor `caUpperBoundAttack` consumes this theorem. -/
+theorem le_koalaIRS_gammaSoundness {δ : ℝ≥0}
+    (hlarge : (117 / 250 : ℝ≥0) < δ) (hδmin : δ < ((2 ^ 20 + 1) / 2 ^ 21 : ℝ≥0)) :
+    (2 : ℝ≥0) ^ (-(117 : ℝ)) ≤ winningSetSoundness koalaIRS.enc δ := by
+  have hδpos : (0 : ℝ≥0) < δ := lt_trans (by norm_num) hlarge
+  have hδlt1 : δ < 1 := lt_trans hδmin (by norm_num)
+  rw [← ENNReal.coe_le_coe]
+  -- The PROVEN L6.13 CA hook floors `winningSetSoundness` at `ε_ca(C, δ, δ)`
+  -- (no `N < |F|` requirement, so it applies across the whole large band).
+  refine le_trans ?_ (epsCA_le_winningSetSoundness (C := koalaIRS.code) δ hδpos hδlt1
+    koalaIRS.enc koalaIRS.enc_injective rfl)
+  -- ★ THE single owed external CA lower bound on `(δ*, δ_min)`:
+  --   `2^(-117) ≤ ε_ca(C, δ, δ)`.
+  -- CS25 (`thm:base-field-ca-lowerbound`) makes ε_ca ≈ 1 here: the crossover
+  -- δ* = 0.468 sits just above the CS25 non-vacuity threshold ≈ 0.4678 (= the
+  -- Elias capacity, where correlated agreement fails), so ε_ca(C, δ) ≈ 1 across
+  -- (δ*, 1-ρ), vastly exceeding 2^(-117); the thin [1-ρ, δ_min) sliver (width
+  -- 2^-21) is past CS25's δ < 1-ρ hypothesis but ε_ca → 1 there by general
+  -- capacity failure. (The 2^(-116.49) in tab:cs25-ca-lowerbound is the resulting
+  -- protocol soundness, NOT ε_ca itself.) No proven ε_ca lower bound exists in
+  -- ArkLib — irreducibly external, exactly as the lower anchor's ε_mca ceiling.
+  -- Cited external / external-owed.
+  sorry
+
+/-- **Actual-soundness provable anchor at `δ = 3/10`.** Wraps `koalaIRS_gammaSoundness_le`
+as a `GammaSoundnessUpperBound`: the toy protocol's *actual* γ-round soundness (ABF26 Def
+6.11) at `δ = 3/10` is `≤ 2^(-65)` — ≥ 65 bits of genuine security at that operating
+point. (Distinct δ from the attack anchor below; not a single-point sandwich.) -/
+noncomputable def irsGammaSoundnessProvable : GammaSoundnessUpperBound koalaIRS (3 / 10) where
+  bits := 65
+  proof := by
+    rw [show (((65 : ℝ≥0) : ℝ)) = (65 : ℝ) from by norm_num]
+    exact koalaIRS_gammaSoundness_le
+
+/-- **Actual-soundness attack anchor at `δ = 47/100`.** Wraps `le_koalaIRS_gammaSoundness`
+(instantiated at `δ = 47/100 ∈ (117/250, δ_min)`) as a `GammaSoundnessLowerBound`: the
+actual γ-round soundness (ABF26 Def 6.11) at `δ = 47/100` is `≥ 2^(-117)` — a genuine
+attack forcing security `≤ 117` bits at that operating point. -/
+noncomputable def irsGammaSoundnessAttack : GammaSoundnessLowerBound koalaIRS (47 / 100) where
+  bits := 117
+  proof := by
+    rw [show (((117 : ℝ≥0) : ℝ)) = (117 : ℝ) from by norm_num]
+    exact le_koalaIRS_gammaSoundness (δ := 47 / 100) (by norm_num) (by norm_num)
+
 /-- **ArkLib provable lower bound (≈64 bits) at the IRS/KoalaBear/`t=128`
 point.** Cites **Lemmas 6.10 / 6.6 / 6.8 of [ABF26]** and the §6.3.1
 "Knowledge soundness upperbound" analysis (`.tex` 2798–2825,
@@ -915,23 +1120,11 @@ noncomputable def irsLowerBoundT128 : SecurityLowerBound koalaIRS where
       rw [Set.mem_Ioo, hmindist]; norm_num
     refine le_trans (bestProvableError_le koalaIRS hδmem) ?_
     rw [ENNReal.coe_le_coe]
-    -- The `winningSetSoundness` term, via the proven L6.10 bridge, then the external bound.
-    have hW : winningSetSoundness koalaIRS.enc (3 / 10) ≤ (2 : ℝ≥0) ^ (-(65 : ℝ)) := by
-      refine le_trans (winningSetSoundness_le_epsMCA_add (C := koalaIRS.code)
-        (3 / 10 : ℝ≥0) hδmem koalaIRS.enc koalaIRS.enc_injective rfl) ?_
-      -- ★ THE single owed external coding-theory bound at the paper's §6.3 point
-      --   (|L| = 2^21, m = 2^20, ρ = 1/2, |F| = q^6 ≈ 2^186):
-      --   `ε_mca(C, 3/10) + |Λ(C^{≡2}, 3/10)|/|F| ≤ 2^(-65)`.
-      -- δ = 3/10 is far below the Elias capacity δ_E ≈ 0.4678 and the attack
-      -- threshold δ* = 0.468, so the interleaved list Λ(C^{≡2}, 3/10) is small
-      -- (≪ |F|), making |Λ|/|F| negligible and ε_mca(C, 3/10) small; the paper's
-      -- §6.3.1 analysis reports the companion figure ≈ 2^(-71.5) for this term.
-      -- NB (2026-07-05 audit): δ = 3/10 is ABOVE the Johnson bound, so no in-tree
-      -- positive ε_mca lemma applies at this exact δ (rs_epsMCA_johnson_range_bchks25
-      -- needs δ < 1-√(ρ+1/n)-η ≈ 0.2929). This is an OPEN-REGIME admit, true in the
-      -- safe (upper-bound) direction; a fully-derived version re-anchors at δ = 1-√ρ
-      -- through rs_epsMCA_johnson_range_bchks25 (rpow-tight; see docstring). External-owed.
-      sorry
+    -- The `winningSetSoundness` term: the γ-round actual-soundness anchor (B07
+    -- re-plumb, 2026-07-18) — proven L6.10 bridge + the single owed ε_mca external,
+    -- both factored into `koalaIRS_gammaSoundness_le`.
+    have hW : winningSetSoundness koalaIRS.enc (3 / 10) ≤ (2 : ℝ≥0) ^ (-(65 : ℝ)) :=
+      koalaIRS_gammaSoundness_le
     -- The spot-check term and the `2^(-64) ≤ 2^(-63.99)` headroom.
     have ha : ((1 : ℝ≥0) - 3 / 10) ^ (128 : ℕ) ≤ (2 : ℝ≥0) ^ (-(65 : ℝ)) := koala_spotcheck
     have h1ma : (1 - ((1 : ℝ≥0) - 3 / 10) ^ (128 : ℕ)) ≤ 1 := tsub_le_self
@@ -1062,24 +1255,10 @@ noncomputable def caUpperBoundAttack : SecurityUpperBound koalaIRS where
           _ = (1 - δ) ^ (128 : ℕ)
                 + winningSetSoundness koalaIRS.enc δ * (1 - (1 - δ) ^ (128 : ℕ)) := add_comm _ _
       refine le_trans ?_ hconvex
-      have hδlt1 : δ < 1 := lt_trans hδmin (by norm_num)
-      -- The PROVEN L6.13 CA hook floors `winningSetSoundness` at `ε_ca(C, δ, δ)`
-      -- (no `N < |F|` requirement, so it applies across the whole large band).
-      rw [← ENNReal.coe_le_coe]
-      refine le_trans ?_ (epsCA_le_winningSetSoundness (C := koalaIRS.code) δ hδpos hδlt1
-        koalaIRS.enc koalaIRS.enc_injective rfl)
-      -- ★ THE single owed external CA lower bound on `(δ*, δ_min)`:
-      --   `2^(-117) ≤ ε_ca(C, δ, δ)`.
-      -- CS25 (`thm:base-field-ca-lowerbound`) makes ε_ca ≈ 1 here: the crossover
-      -- δ* = 0.468 sits just above the CS25 non-vacuity threshold ≈ 0.4678 (= the
-      -- Elias capacity, where correlated agreement fails), so ε_ca(C, δ) ≈ 1 across
-      -- (δ*, 1-ρ), vastly exceeding 2^(-117); the thin [1-ρ, δ_min) sliver (width
-      -- 2^-21) is past CS25's δ < 1-ρ hypothesis but ε_ca → 1 there by general
-      -- capacity failure. (The 2^(-116.49) in tab:cs25-ca-lowerbound is the resulting
-      -- protocol soundness, NOT ε_ca itself.) No proven ε_ca lower bound exists in
-      -- ArkLib — irreducibly external, exactly as the lower anchor's ε_mca ceiling.
-      -- Cited external / external-owed.
-      sorry
+      -- The γ-round actual-soundness attack anchor (B07 re-plumb, 2026-07-18):
+      -- proven L6.13 hook + the single owed CS25 CA external, both factored into
+      -- `le_koalaIRS_gammaSoundness`.
+      exact le_koalaIRS_gammaSoundness hlarge hδmin
 
 /-- **The current leaderboard frontier.** At the KoalaBear-sextic anchor the
 honest certified anchors are `63.99` provable bits and a `117`-bit attack

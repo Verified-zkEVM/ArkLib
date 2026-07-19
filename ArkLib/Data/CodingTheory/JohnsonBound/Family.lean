@@ -80,7 +80,7 @@ noncomputable def Jqℓ (q ℓ : ℚ) (δ : ℚ) : ℝ :=
   `J(δ) := 1 - √(1 - δ)`
 
 Equals the `q → ∞` limit of `J_q(δ)` and the `q, ℓ → ∞` limit of `J_{q,ℓ}(δ)`.
-This is also the binary Johnson bound (q = 2, ℓ → ∞).
+(It is *not* the binary Johnson bound: `J_2(δ) = ½(1 - √(1 - 2δ)) ≠ 1 - √(1 - δ)`.)
 
 Distinct from the existing `JohnsonBound.J q δ`, which is the paper's `J_q(δ)`
 (the q-ary limit, parametrised by `q`). To avoid renaming the existing `J`, we
@@ -244,7 +244,7 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
     rw [johnson_denominator_def]
     rw [show (card α : ℚ) = q from rfl, ← hfrac_def]
     rw [hed_def, hdd_def]; ring
-  -- t := 1 - (1-ed)^2 ; then Denom = dd - t
+  -- t := 1 - (1-ed)^2; then Denom = dd - t
   set t : ℚ := 1 - (1 - ed)^2 with ht_def
   have hDenom2 : JohnsonDenominator B v = dd - t := by rw [hDenom, ht_def]; ring
   -- facts: 0 ≤ t ≤ x, b := frac*δ_min, b ≤ dd, x < b

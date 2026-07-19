@@ -19,13 +19,13 @@ mirrored declarations here** — they were verified to be same-name drop-ins
 `StateT σ ProbComp` → lawful target; all unify at ArkLib's instantiations).
 Before deleting, confirm the bump actually carries them.
 
-Three local names resolve to pre-existing upstream lemmas instead — at
-deletion time, **rename call sites**:
+Three local names resolved to pre-existing upstream lemmas — **DONE 2026-07-18**
+(dedup pass): call sites renamed and the local mirrors deleted.
 
-| ArkLib-local name | upstream replacement |
+| ArkLib-local name (removed) | upstream replacement |
 |---|---|
 | `OptionT.failure_bind` | `failure_bind` (Batteries, `@[simp]`) |
-| `StateT.run'_map_comm` | `StateT.run'_map'` (note: arg order differs) |
+| `StateT.run'_map_comm` | `StateT.run'_map'` (arg order differs: pass the state explicitly) |
 | `OracleComp.bind_liftComp_map` | `bind_map_left` (Mathlib) |
 
 **Not staged (genuinely ArkLib-specific, keep):**
@@ -34,3 +34,10 @@ deletion time, **rename call sites**:
 
 History note: `simulateQ_list_forIn` was staged here and has been deleted —
 the VCVio pin (`5f7707fb`, Lean 4.30 bump) now contains it upstream.
+
+History note (2026-07-18, dedup pass): the three rename-lemmas above were
+removed and their call sites re-pointed to upstream; the now-empty file
+`ToVCVio/ToMathlib/Control/StateT.lean` was deleted. Separately,
+`Data/Probability/Notation.lean`'s `Pr_eq_tsum_indicator` was removed as a
+duplicate of `Probability.prob_tsum_form_singleton`
+(`Data/Probability/Instances.lean`).

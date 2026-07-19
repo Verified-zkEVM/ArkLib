@@ -10,16 +10,18 @@ attack?* — into a single Lean scalar that contestants minimise.
   [`ArkLib/ProofSystem/ToyProblem/Impl/FRS.lean`](../../ArkLib/ProofSystem/ToyProblem/Impl/FRS.lean)
   (the folded-RS entry).
 - **Paper:** Arnon–Boneh–Fenzi, *Open Problems in List Decoding and Correlated
-  Agreement* (eprint 2026/680), §6.2 (Lemma 6.8), §6.4 (Lemmas 6.10, 6.12,
-  6.13), §6.3 ("Knowledge soundness upperbound" / "Soundness lowerbound"
-  parheads + Tables 2–5; §6.3.2 the folded / subspace-design analysis). The
+  Agreement* (eprint 2026/680), §6.2 Soundness (Lemmas 6.6, 6.8), §6.3 Attacks
+  (Construction 6.9, Lemma 6.10, Definition 6.11; §6.3.1 Lemma 6.12, §6.3.2
+  Lemma 6.13), §6.4 Concrete parametrizations ("Knowledge soundness upperbound" /
+  "Soundness lowerbound" parheads + the security-analysis tables; §6.4.2 the
+  folded / subspace-design analysis). The
   attack side is also Fenzi–Sanso, eprint 2025/2197 (Lemma 4.4 ≈ Lemma 6.12)
   and the [KKH26]-backed list-size tables.
 
 ## The one quantity both sides bound: a δ-swept frontier
 
 The two leaderboard sides must bound the **same** scalar or the gap between
-them is meaningless. ABF26's §6.3 analysis is a *sweep over the proximity
+them is meaningless. ABF26's §6.4 analysis is a *sweep over the proximity
 parameter δ*: any round-by-round analysis of Construction 6.2 picks an
 admissible `δ ∈ (0, δ_min(C))` (the L6.8/L6.10 range), after which round 1's
 true error is `winningSetSoundness enc δ` (Definition 6.11 — the paper says
@@ -34,11 +36,13 @@ bestProvableError p
 
 Key design points:
 
-- **Convex, not `max`.** The two round errors combine by the union bound
-  `(1-δ)^t + ε₀·(1 - (1-δ)^t)`, not the paper's printed `max(ε₀, (1-δ)^t)`. The
-  printed `max` is *false* as a round-by-round bound (`protocol62_knowledgeSound`,
-  author-confirmed; the two differ by `winningSetSoundness·(1-δ)^t`, negligible
-  in regime). The in-tree quantity uses the corrected convex form.
+- **Convex combination.** The two round errors combine by the union bound
+  `(1-δ)^t + ε₀·(1 - (1-δ)^t)`. The tex at `53a5055` prints the plain sum
+  `ε₀ + (1-δ)^t` in Lemma 6.6 — sound, but looser than the convex form by
+  `winningSetSoundness·(1-δ)^t` (negligible in regime). An earlier revision's
+  printed `max(ε₀, (1-δ)^t)` was *false* as a round-by-round bound
+  (`protocol62_knowledgeSound`, author-confirmed). The in-tree quantity uses
+  the tighter convex form.
 - **δ is swept, not pinned.** The two sides certify their bounds at *different*
   δ — the provable side optimizes near `δ = 1 − √ρ − η` (Johnson regime), the
   attack side works near `δ* = 0.468` (`tab:elias-lowerbound-thresholds`). A
@@ -62,7 +66,7 @@ Key design points:
   alphabet-generic, so the same machinery serves both.
 - **Honesty.** `bestProvableError` is what δ-relaxation round-by-round analyses
   can certify; the protocol's *true* security may exceed it. The leaderboard
-  narrows **this** quantity, per §6.3.
+  narrows **this** quantity, per §6.4.
 
 Two bounds sandwich it (in `ℝ≥0∞`):
 
@@ -119,10 +123,12 @@ convex combination at *every* admissible δ (it dominates both terms):
 
 Notes:
 
-- `bits : ℝ` (not `ℕ`) because the security level *is* `-log₂(error)`, a real
-  for any error in `(0,1)` — ABF26's own §6.3 figures are fractional (the
-  interleaved attack is `2^(-116.49)`, the spot-check `(1/√2+η)^128 ≈ 2^(-64.00)`).
-- `(2 : ℝ≥0) ^ (-bits)` is `NNReal.rpow` (real exponent), coerced into `ℝ≥0∞`:
+- Certificate fields use `bits : ℝ≥0` (`NNReal`, not `ℕ`): security levels are
+  non-negative but may be fractional — ABF26's own §6.4 figures include the
+  interleaved attack `2^(-116.49)` and spot-check
+  `(1/√2+η)^128 ≈ 2^(-64.00)`. The derived `bitsOfSecurity` value lives in
+  `ℝ≥0∞`, allowing perfect soundness (`error = 0`) to map to `⊤` bits.
+- `(2 : ℝ≥0) ^ (-(bits : ℝ))` is `NNReal.rpow` (real exponent), coerced into `ℝ≥0∞`:
   `bestProvableError` lives in `ℝ≥0∞` so that a degenerate parameter point with
   an *empty* admissible δ-range gives `⊤` (the conservative direction). In `ℝ≥0`
   the binder infimum collapses to `0` on empty inner sets, making every lower
@@ -153,6 +159,18 @@ degree-`< 2^20` Reed–Solomon encoder on `2^21` points (`ι = Fin (2^21)`,
 `k = 2^20`, realised rate `ρ = k/|ι| = 1/2`), with `koalaEnc_injective` proven
 sorry-free.
 
+There are two deliberately distinct kinds of anchor:
+
+| Actual γ-round anchor | Operating point | Certified statement |
+|---|---:|---|
+| `irsGammaSoundnessProvable : GammaSoundnessUpperBound koalaIRS (3/10)` | `δ = 3/10` | `winningSetSoundness koalaIRS.enc δ ≤ 2^(-65)` |
+| `irsGammaSoundnessAttack : GammaSoundnessLowerBound koalaIRS (47/100)` | `δ = 47/100` | `2^(-117) ≤ winningSetSoundness koalaIRS.enc δ` |
+
+These interfaces are stated directly against Definition 6.11 actual soundness. They
+use different operating points and therefore do **not** form a single-point soundness
+sandwich. The `53.01` figure below instead measures the two-sided uncertainty in the
+δ-swept, spot-check-inclusive `bestProvableError` analysis frontier.
+
 ### Interleaved Reed–Solomon — `koalaIRS` (`A = F`, `t = 128`)
 
 | Anchor | `bits` | Basis |
@@ -169,8 +187,8 @@ so `securityGap = 117 − 63.99 = 53.01` (`securityGap_koalaIRS_anchors`).
   the proven L6.12/L6.13 hooks are all axiom-clean. What remains `sorryAx` is
   exactly the external `ε_mca`/`ε_ca`/`Λ` bounds (BCHKS25/ACFY25/KKH26) — closing
   them means formalizing the prize's own coding theory, not session-level work
-  (axiom-clean is infeasible *by design*: the Johnson RS bound is vacuous at the
-  concrete `n = 4`).
+  (by design: those owed bounds *are* the Grand Challenges the prize poses, at the
+  real `RS[2^21, 2^20]` operating point).
 - **Honest rounding** (2026-06-10 review): the X route certifies `≈ 2^(-63.9998)`
   — the paper notes `(1/√2+η)^128 > 2^(-64)` strictly, so `64.00` is unreachable
   and the anchor is `63.99`. The Y side is a *ceiling* and rounds **up**: the
@@ -182,7 +200,7 @@ so `securityGap = 117 − 63.99 = 53.01` (`securityGap_koalaIRS_anchors`).
 [`Impl/FRS.lean`](../../ArkLib/ProofSystem/ToyProblem/Impl/FRS.lean) instantiates
 the *folded* code (a codeword symbol is a length-`s` tuple `Fin s → F`), the
 `A = Fin s → F` case of the same machinery. Row: `s = 2^5 = 32`, evaluation
-domain `|L| = 2^16`, message `k = 2^20`, rate `ρ = 1/2` (ABF26 §6.3.2, the
+domain `|L| = 2^16`, message `k = 2^20`, rate `ρ = 1/2` (ABF26 §6.4.2, the
 paper's worked example).
 
 **Where the pieces live (the split).** ArkLib holds the immutable, axiom-clean
@@ -197,7 +215,7 @@ ArkLib carries only finished/winning proofs. (Mirrors `Impl/FRS.lean` lines 36�
 
 | Anchor | `bits` | Basis |
 |---|---|---|
-| *open prize entry (external `proximity-prize` repo, **not** an ArkLib `SecurityLowerBound`)* — folded lower anchor, target value `29.10` | **29.10** | §6.3.2 τ-subspace-design analysis, `tab:subspace-design-security-analysis`, `s = 2^5`, `r = 8` (`τ(r) = s·ρ/(s−r+1)`), at `δ = 7/48`. Structured as a **full reduction**: spot-check `(41/48)^128 ≤ 2^(−29)·(116/125)` (integer fact `41^128·2^29·125 ≤ 116·48^128`) + the L6.10 bridge to `ε_mca + |Λ|/|F|` (one owed external admit), summed `≤ 2^(−29)·(933/1000) ≤ 2^(−29.10)` (integer fact `2·933^10 ≤ 10^30`). The single remaining owed external is the τ-subspace-design `ε_mca` term (the Grand MCA Challenge). |
+| *open prize entry (external `proximity-prize` repo, **not** an ArkLib `SecurityLowerBound`)* — folded lower anchor, target value `29.10` | **29.10** | §6.4.2 τ-subspace-design analysis, `tab:subspace-design-security-analysis`, `s = 2^5`, `r = 8` (`τ(r) = s·ρ/(s−r+1)`), at `δ = 7/48`. Structured as a **full reduction**: spot-check `(41/48)^128 ≤ 2^(−29)·(116/125)` (integer fact `41^128·2^29·125 ≤ 116·48^128`) + the L6.10 bridge to `ε_mca + |Λ|/|F|` (one owed external admit), summed `≤ 2^(−29)·(933/1000) ≤ 2^(−29.10)` (integer fact `2·933^10 ≤ 10^30`). The single remaining owed external is the τ-subspace-design `ε_mca` term (the Grand MCA Challenge). |
 | `frsUpperBound : SecurityUpperBound koalaFRS` (in ArkLib) | **128.01** | δ-sweep floor from the spot-check term alone: `⨅_δ (1−δ)^128 ≥ (1−δ_min)^128 ≈ 2^(−128.006)`, with the folded **MDS** relative distance `δ_min = 32769/65536 ≈ 0.50002`; rounds up to `128.01`. A **full reduction** via `le_bestProvableError` (drop the nonnegative `winningSetSoundness` term, floor `(1−δ)^128 ≥ (32767/65536)^128 ≥ 2^(−128.01)` by `koalaFRS_spotcheck_lb`, integer fact `256^100 ≤ 2·255^100`); it consumes the now-`sorry`-free folded distance `koalaFRS_minRelDist` (Track B: proven via `minDist_frsCode` modulo the shared `koalaFRSγ_exists`). (Stronger and *less owed* than the paper's per-`δ*` Elias point reading `2^(−127.63) = (1−0.499)^128` — that is not the sweep floor; no list-size bound enters.) |
 
 The corresponding security gap, computed over in the external repo, is
@@ -278,7 +296,7 @@ than duplicated as an ArkLib `SecurityLowerBound`.
 
 The large-folding row from the **same** `tab:subspace-design-security-analysis` /
 `tab:subspace-elias-lowerbound-thresholds` (both at `t = 128`). It is the genuine
-gap-closing demonstration: the §6.3.2 construction fixes `|F| = q^6 ≈ 2^186`,
+gap-closing demonstration: the §6.4.2 construction fixes `|F| = q^6 ≈ 2^186`,
 `k = 2^20`, `ρ = 1/2`, and the *unfolded* length `s·|L| = 2^21`, so folding
 `s = 2^12` sets `|L| = 2^21/s = 2^9 = 512` (validated against the paper's
 argument-size column: `R·(256·log|L| + 62·s)` gives the table's `3.91 MiB` only

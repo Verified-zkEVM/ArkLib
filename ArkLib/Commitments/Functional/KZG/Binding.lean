@@ -352,7 +352,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
           = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map_comm, ← simulateQ_map]
+            rw [← StateT.run'_map', ← simulateQ_map]
             rfl
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
@@ -417,8 +417,8 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
         (f := id) (post := fun _ => proj)
         (hBody := by
           intro τ
-          rw [← StateT.run'_map_comm (Option.map id),
-            ← StateT.run'_map_comm (Option.map proj)]
+          rw [← StateT.run'_map' (f := Option.map id),
+            ← StateT.run'_map' (f := Option.map proj)]
           apply congrArg (fun mx : StateT unifSpec.QueryCache ProbComp
             (Option (BindingOutput (p := p) n)) => mx.run' ∅)
           dsimp only [bodyBase, bodyExt]

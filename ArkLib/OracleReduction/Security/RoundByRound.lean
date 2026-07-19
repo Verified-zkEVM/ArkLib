@@ -5,6 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.Basic
+import ArkLib.ToVCVio.OracleComp.RbrGame
 
 /-!
   # Round-by-Round Security Definitions
@@ -388,6 +389,100 @@ class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   is_rbr_knowledge_sound : rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError
+
+/-! ### Worst-case-per-prefix variants (paper shape, e.g. ABF26 Definition A.5)
+
+The standard paper definition of round-by-round (knowledge) soundness bounds the bad
+transition probability for **every fixed transcript prefix**, quantified *before* the
+challenge draw. ArkLib's `rbrSoundness` / `rbrKnowledgeSoundness` above instead sample the
+prefix inside the game (via the prover run under the simulated oracles) and bound the
+resulting **mixture** over prefixes — a formally weaker property with the same error
+constants (safe direction: averaged ≤ worst-case). The definitions below are the faithful
+worst-case forms, and the two implication theorems discharge the averaged forms from them
+via the master mixture bound
+`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` (RbrGame.lean).
+Recorded 2026-07-18 (review finding B05); a protocol proven `WorstCase` gets the averaged
+form for free, and the coverage label for a theorem proven only in the averaged form is
+`present-but-different`. -/
+
+/-- **Worst-case-per-prefix round-by-round soundness** (the paper-shape definition, cf.
+ABF26 Definition A.5): for *every fixed* transcript prefix — not a prover-sampled one —
+the probability over only the fresh challenge of a bad transition (state function false
+at the prefix, true after appending the challenge) is at most the round error.
+Implies `rbrSoundness` with the same error
+(`rbrSoundnessWorstCase_implies_rbrSoundness`). -/
+def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
+  ∃ stateFunction : verifier.StateFunction init impl langIn langOut,
+  ∀ stmtIn ∉ langIn,
+  ∀ i : pSpec.ChallengeIdx,
+  ∀ transcript : Transcript i.1.castSucc pSpec,
+    Pr[fun challenge =>
+      ¬ stateFunction i.1.castSucc stmtIn transcript ∧
+        stateFunction i.1.succ stmtIn (transcript.concat challenge)
+      | $ᵗ (pSpec.Challenge i)] ≤ rbrSoundnessError i
+
+/-- **Worst-case-per-prefix round-by-round knowledge soundness** (paper shape, cf. ABF26
+Definition A.5): the knowledge analogue of `rbrSoundnessWorstCase`, with the bad-transition
+event of `rbrKnowledgeSoundness` evaluated at every fixed transcript prefix over only the
+fresh challenge. Implies `rbrKnowledgeSoundness` with the same error
+(`rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). -/
+def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
+    (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
+  ∃ WitMid : Fin (n + 1) → Type,
+  ∃ extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid,
+  ∃ kSF : verifier.KnowledgeStateFunction init impl relIn relOut extractor,
+  ∀ stmtIn : StmtIn,
+  ∀ i : pSpec.ChallengeIdx,
+  ∀ transcript : Transcript i.1.castSucc pSpec,
+    Pr[fun challenge =>
+      ∃ witMid,
+        ¬ kSF i.1.castSucc stmtIn transcript
+          (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
+          kSF i.1.succ stmtIn (transcript.concat challenge) witMid
+      | $ᵗ (pSpec.Challenge i)] ≤ rbrKnowledgeError i
+
+/-- Worst-case-per-prefix rbr soundness implies the (averaged) `rbrSoundness`, with the
+same error: the averaged game's prefix distribution is a mixture, and the challenge is
+drawn independently of the prefix, so the mixture probability is dominated by the
+per-prefix supremum (master bound
+`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le`). -/
+theorem rbrSoundnessWorstCase_implies_rbrSoundness
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0}
+    (h : rbrSoundnessWorstCase init impl langIn langOut verifier rbrSoundnessError) :
+    rbrSoundness init impl langIn langOut verifier rbrSoundnessError := by
+  obtain ⟨sF, hsF⟩ := h
+  refine ⟨sF, fun stmtIn hstmt WitIn WitOut witIn prover i => ?_⟩
+  exact ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le
+    init impl (prover.runToRound i.1.castSucc stmtIn witIn) i
+    (fun tr c => (tr.1, c))
+    (fun x => ¬ sF i.1.castSucc stmtIn x.1 ∧ sF i.1.succ stmtIn (x.1.concat x.2))
+    (fun tr => hsF stmtIn hstmt i tr.1)
+
+/-- Worst-case-per-prefix rbr knowledge soundness implies the (averaged)
+`rbrKnowledgeSoundness`, with the same error (same mixture argument as
+`rbrSoundnessWorstCase_implies_rbrSoundness`). -/
+theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
+    (h : rbrKnowledgeSoundnessWorstCase init impl relIn relOut verifier rbrKnowledgeError) :
+    rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError := by
+  obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
+  refine ⟨WitMid, extractor, kSF, fun stmtIn witIn prover i => ?_⟩
+  exact ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le
+    init impl (prover.runWithLogToRound i.1.castSucc stmtIn witIn) i
+    (fun tr c => (tr.1.1, c, tr.2))
+    (fun x => ∃ witMid,
+      ¬ kSF i.1.castSucc stmtIn x.1
+        (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) witMid) ∧
+        kSF i.1.succ stmtIn (x.1.concat x.2.1) witMid)
+    (fun tr => hkSF stmtIn i tr.1.1)
 
 /-- Implication: one-shot rbr knowledge soundness implies general rbr knowledge soundness (with the
   same error) -/

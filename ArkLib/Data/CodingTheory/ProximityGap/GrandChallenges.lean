@@ -179,11 +179,15 @@ threshold to `ε* = 2^(-128)`. These are paper-level numeric choices; we expose 
 open scoped NNReal
 
 /-- **ABF26 §1 prize rates** `{1/2, 1/4, 1/8, 1/16}`, indexed by `Fin 4` via
-`ρ_j := 2^(-(j+1))`. -/
-noncomputable def prizeRates (j : Fin 4) : ℝ≥0 := 1 / 2 ^ (j.val + 1)
+`ρ_j := 2^(-(j+1))`. Exact rational data (`ℚ≥0`, computable — 2026-07-18 carrier fix:
+these are discrete paper constants, not analytic quantities); coerce to `ℝ≥0` at the
+analytic boundary. -/
+def prizeRates (j : Fin 4) : ℚ≥0 := 1 / 2 ^ (j.val + 1)
 
-/-- **ABF26 §1 negligibility threshold** `ε* := 2^(-128)`. -/
-noncomputable def epsStar : ℝ≥0 := 1 / 2 ^ (128 : ℕ)
+/-- **ABF26 §1 negligibility threshold** `ε* := 2^(-128)`. Exact rational datum
+(`ℚ≥0`, computable — 2026-07-18 carrier fix); coerce to `ℝ≥0` at the analytic
+boundary. -/
+def epsStar : ℚ≥0 := 1 / 2 ^ (128 : ℕ)
 
 namespace GrandChallenges
 
@@ -221,13 +225,14 @@ def grandListDecodingChallengeRS (domain : ι ↪ F) [ReedSolomon.Smooth domain]
 /-- The **ABF26 §1 MCA prize**: resolve the Grand MCA Challenge (over a smooth domain)
 at *every* prize rate `ρ ∈ {1/2,1/4,1/8,1/16}` with `ε* = 2^(-128)`. -/
 def mcaPrize (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Prop :=
-  ∀ j : Fin 4, grandMCAChallengeRSrate domain (prizeRates j) epsStar
+  ∀ j : Fin 4, grandMCAChallengeRSrate domain (prizeRates j : ℝ≥0) (epsStar : ℝ≥0)
 
 /-- The **ABF26 §1 list-decoding prize** at interleaving `m`: resolve the Grand List
 Decoding Challenge (over a smooth domain) at every prize rate with `ε* = 2^(-128)`. -/
 def listDecodingPrize (domain : ι ↪ F) [ReedSolomon.Smooth domain] (m : ℕ) : Prop :=
   ∀ j : Fin 4,
-    grandListDecodingChallengeRS domain ⌊prizeRates j * (Fintype.card ι : ℝ≥0)⌋₊ m epsStar
+    grandListDecodingChallengeRS domain ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ m
+      (epsStar : ℝ≥0)
 
 /-! ## Witness-carrying resolutions for the Grand MCA Challenge
 
@@ -354,6 +359,88 @@ theorem grandMCAChallenge_of_resolution {C : LinearCode ι F} {ε_star : ℝ≥0
     (R : GrandMCAResolution (C : Set (ι → F)) ε_star) :
     grandMCAChallenge C ε_star :=
   ⟨R.kStar, R.lt_card, R.below, R.above⟩
+
+/-! ## Prize answers as data (2026-07-18 carrier fix)
+
+A competition *answer* must be exhibitable data, not merely inhabit a `Prop`: the
+submission carrier is a witness-returning structure. `GrandMCAAnswer` covers both the
+generic boundary-crossing case (a `GrandMCAResolution`) and the degenerate **all-good**
+regime that the crossing predicate `grandMCAChallenge` deliberately excludes (`ε_mca`
+within `ε*` on the whole grid — the paper's `δ* = 1` answer): with the all-good
+constructor, every `(C, ε*)` instance has a well-defined answer type. The `Prop`-valued
+`mcaPrize` / `listDecodingPrize` remain as logical traces. -/
+
+/-- A complete answer to the Grand MCA Challenge for `(C, ε*)`: either the boundary
+grid index (generic case), or an all-good certificate (`ε_mca ≤ ε*` at every grid
+point up to `1`, so the answer is `δ* = 1`). Data, not a `Prop`. -/
+inductive GrandMCAAnswer (C : Set (ι → F)) (ε_star : ℝ≥0) : Type where
+  /-- The generic case: the boundary crossing `k*`. -/
+  | boundary (R : GrandMCAResolution C ε_star)
+  /-- The all-good regime: no crossing exists because `ε_mca` is within `ε*` on the
+  whole grid (`δ* = 1`). Quantified over grid indices — by `epsMCA_eq_of_floor_eq`
+  this pins every real radius `δ ≤ 1` as well. -/
+  | allGood
+      (h : ∀ k : ℕ, k ≤ Fintype.card ι →
+        epsMCA (F := F) (A := F) C (gridPt (ι := ι) k) ≤ (ε_star : ENNReal))
+
+/-- A complete answer to the Grand List Decoding Challenge for `(C, m, ε*)`: the
+boundary grid index for `Λ(C^⋈m, ·)` against `ε*·|F|`, or the all-good certificate.
+Data, not a `Prop` (mirror of `GrandMCAAnswer`). -/
+inductive GrandListDecodingAnswer (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : Type where
+  /-- The generic case: a boundary index `k*` with the `Λ` crossing. -/
+  | boundary
+      (kStar : ℕ)
+      (lt_card : kStar < Fintype.card ι)
+      (below : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) kStar : ℝ) : ENNReal) ≤
+        (ε_star : ENNReal) * (Fintype.card F : ENNReal))
+      (above : (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) (kStar + 1) : ℝ) :
+        ENNReal) > (ε_star : ENNReal) * (Fintype.card F : ENNReal))
+  /-- The all-good regime: `Λ` within `ε*·|F|` on the whole grid. -/
+  | allGood
+      (h : ∀ k : ℕ, k ≤ Fintype.card ι →
+        (ListDecodable.Lambda (C^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
+          (ε_star : ENNReal) * (Fintype.card F : ENNReal))
+
+/-- A boundary MCA answer certifies the crossing predicate. (The all-good case does
+not — `grandMCAChallenge` asserts an actual crossing, which the all-good regime
+truthfully lacks; see the `grandMCAChallenge` docstring's Scope note.) -/
+theorem GrandMCAAnswer.toChallenge {C : LinearCode ι F} {ε_star : ℝ≥0}
+    (R : GrandMCAResolution ((C : Set (ι → F))) ε_star) :
+    grandMCAChallenge C ε_star :=
+  grandMCAChallenge_of_resolution R
+
+/-- A boundary list-decoding answer certifies the crossing predicate. -/
+theorem GrandListDecodingAnswer.toChallenge {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
+    {kStar : ℕ} (h1 : kStar < Fintype.card ι)
+    (h2 : (ListDecodable.Lambda (C^⋈(Fin m)) (gridPt (ι := ι) kStar : ℝ) : ENNReal) ≤
+      (ε_star : ENNReal) * (Fintype.card F : ENNReal))
+    (h3 : (ListDecodable.Lambda (C^⋈(Fin m)) (gridPt (ι := ι) (kStar + 1) : ℝ) : ENNReal) >
+      (ε_star : ENNReal) * (Fintype.card F : ENNReal)) :
+    grandListDecodingChallenge C m ε_star :=
+  ⟨kStar, h1, h2, h3⟩
+
+/-- **The ABF26 §1 MCA prize as a submission carrier**: a `GrandMCAAnswer` at every
+prize rate (`ρ ∈ {1/2, 1/4, 1/8, 1/16}`, `ε* = 2^(-128)`, smooth RS domain). This is
+the data a resolver must exhibit; `mcaPrize` is the corresponding logical trace for
+the boundary cases. -/
+structure MCAPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Type where
+  /-- The per-rate answers. -/
+  answer : ∀ j : Fin 4,
+    GrandMCAAnswer
+      ((ReedSolomon.code domain
+        ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ : Set (ι → F)))
+      (epsStar : ℝ≥0)
+
+/-- **The ABF26 §1 list-decoding prize as a submission carrier**: a
+`GrandListDecodingAnswer` at every prize rate. -/
+structure ListDecodingPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain]
+    (m : ℕ) : Type where
+  /-- The per-rate answers. -/
+  answer : ∀ j : Fin 4,
+    GrandListDecodingAnswer
+      ((ReedSolomon.code domain
+        ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ : Set (ι → F)))
+      m (epsStar : ℝ≥0)
 
 /-- A lower witness sits strictly below the upper edge of the boundary cell:
 `w.δ < (k+1)/n` for any resolution. -/

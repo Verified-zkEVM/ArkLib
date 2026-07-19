@@ -35,7 +35,8 @@ ArkLib's `OracleReduction` framework, following the conventions used by
 The `prover` / `verifier` / `oracleReduction` triple is complete.
 Completeness (C6.2, `oracleReduction_perfectCompleteness`) and
 round-by-round knowledge soundness (L6.8,
-`protocol62_rbrKnowledgeSound`) are **fully proven** here. Plain
+`protocol62_rbrKnowledgeSoundWorstCase`, with
+`protocol62_rbrKnowledgeSound` as its averaged corollary) are **fully proven** here. Plain
 knowledge soundness (L6.6, `protocol62_knowledgeSound`) is **fully
 proven** in the sibling file `Spec/KnowledgeSoundness.lean`, with the
 convex-combination error
@@ -375,15 +376,15 @@ historical trap — `Verifier.knowledgeSoundness` admitted an always-failing
 `OptionT` extractor that drove the bad-event probability to `0` — was fixed by
 PR #569 (`fix/knowledge-soundness-failing-extractor`), now merged and synced into
 this branch: extraction failure (`extractedWitIn? = none`) is scored against the
-prover. All three KS theorems are now proven and axiom-clean
+prover. All three KS families are now proven and axiom-clean
 (`[propext, Classical.choice, Quot.sound]`, verified 2026-07-03):
-`protocol62_knowledgeSound`, `protocol62_rbrKnowledgeSound` (below), and
+`protocol62_knowledgeSound`, `protocol62_rbrKnowledgeSoundWorstCase` plus its
+averaged corollary `protocol62_rbrKnowledgeSound` (below), and
 `simplifiedIOR_knowledgeSound` (`Spec/SimplifiedIOR.lean`). The rbrKS theorem
 carries the mathematical content; KS follows via the rbrKS → KS implication.
-(Honesty note: `protocol62_knowledgeSound` uses the classical `extractZero`
-extractor rather than the paper's efficient extractor, and
-`protocol62_rbrKnowledgeSound` is the challenge-averaged form, not Def A.5's
-worst-case-per-prefix — both are documented at their declarations.)
+(Honesty note: these alphabet-generic theorems use the classical `extractZero`
+extractor. `Spec/ErasureDecoder.lean` separately gives an executable scalar-RS
+dynamic-erasure extractor and the same worst-case and averaged RBR theorem shapes.)
 -/
 
 /-- Same as `prover` but exposed at the `OracleProver` signature. The
@@ -659,7 +660,7 @@ binds, short-circuiting the spot-check loop).
 
 The accepting direction delegates to `verifierBody_simulateQ_eq_pure`; the failing directions
 re-run the same defeq bridges (see that lemma's docstring for the toolkit) and collapse the
-failed `guard` via `simulateQ_optionT_failure` / `OptionT.failure_bind`, using
+failed `guard` via `simulateQ_optionT_failure` / Batteries' `failure_bind`, using
 `simulateQ_optionT_forIn_yield_pure_none` for a failure inside the spot-check `forIn`. This is
 the monadic core of the soundness direction (`accepts_of_mem_support_verifier_run` below):
 a successful simulated run forces both accept conditions. -/
@@ -818,7 +819,7 @@ lemma verifierBody_simulateQ_eq_pure_ite
                 OptionT (OracleComp ([]ₒ + ([OracleStatement ι A]ₒ +
                   [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit)
               = failure from by simp only [guard, if_neg hj]]
-          rw [simulateQ_optionT_failure, OptionT.failure_bind]
+          rw [simulateQ_optionT_failure, failure_bind]
           rfl
       -- Re-spell the goal's loop to `hForIn`'s LHS and collapse; failure then propagates.
       conv_lhs =>
@@ -835,7 +836,7 @@ lemma verifierBody_simulateQ_eq_pure_ite
       rw [show (pure none : OracleComp (emptySpec.{0, 0}) (Option PUnit))
           = ((failure : OptionT (OracleComp (emptySpec.{0, 0})) PUnit) :
               OracleComp (emptySpec.{0, 0}) (Option PUnit)) from rfl,
-        OptionT.failure_bind]
+        failure_bind]
   case neg =>
     rw [if_neg (fun hc ↦ h1 hc.1)]
     -- Bridge the `g`-query, resolve it by defeq, then fail on the linear-constraint guard.
@@ -869,7 +870,7 @@ lemma verifierBody_simulateQ_eq_pure_ite
           OptionT (OracleComp ([]ₒ + ([OracleStatement ι A]ₒ +
             [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) PUnit)
         = failure from by simp only [guard, if_neg h1]]
-    rw [simulateQ_optionT_failure, OptionT.failure_bind]
+    rw [simulateQ_optionT_failure, failure_bind]
     rfl
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
@@ -992,7 +993,19 @@ relaxed output relation, return one by choice; otherwise a dummy.
 
 Public (not `private`) because L6.10 reuses it verbatim: the C6.9 input relation is
 the same `R̃²_{C,δ}` (`outputRelationFor`), so the L6.10 straightline extractor is this
-same classical choice (`SimplifiedIOR.simplifiedIOR_knowledgeSound`). -/
+same classical choice (`SimplifiedIOR.simplifiedIOR_knowledgeSound`).
+
+**Generic extractor status (B06).** This is a *nonconstructive existence* selector: it is
+`noncomputable`, returning a witness via `Classical.choice`. It serves as the abstract
+knowledge-extractor *interface* the alphabet-generic L6.6 / L6.8 / L6.10 soundness
+proofs are stated against — the only property they consume is `extractZero_mem`. It is
+**not** the paper's deterministic `O(enc + ecor)` erasure-decoder ([ABF26] App A.1).
+Consequently the generic crown-jewel proofs continue to use `extractZero`.
+`Spec/ErasureDecoder.lean` supplies the separate scalar Reed--Solomon realization: its
+round-0 extractor consumes the fresh `γ` and post-transition witness `g`, computes the
+maximal agreement set, and uses pinned CompPoly Lagrange interpolation to erasure-decode
+both rows. That path proves its own decoder-specific worst-case RBR theorem without a
+raw-error decoder or a dependency pin change. -/
 noncomputable def extractZero (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
     Witness (F := F) k :=
@@ -1007,6 +1020,70 @@ lemma extractZero_mem {encode : (Fin k → F) → (ι → A)} {δ : ℝ≥0}
     (hw : ∃ M, (stmtIn, M) ∈ outputRelationFor k encode δ) :
     (stmtIn, extractZero k encode δ stmtIn) ∈ outputRelationFor k encode δ := by
   unfold extractZero; rw [dif_pos hw]; exact hw.choose_spec
+
+/-- **Decoder-parametrized extractor wrapper** (B06, conditional). Given a
+per-oracle decoder `dec : (ι → A) → (Fin k → F)`, decode each oracle codeword
+`stmtIn.2 i` independently. This is a *thin wrapper*: it delegates all work to `dec`
+and proves nothing about `dec`'s correctness on its own.
+
+`#print axioms erasureExtractor` is axiom-free — but only because it is trivial (it
+does nothing without a decoder). It is not, by itself, the computable extractor, and the
+alphabet-generic proofs still use `extractZero` (`Classical.choice`). The scalar-RS path
+in `Spec/ErasureDecoder.lean` does not use this fixed-input wrapper: after `γ` and `g` are
+known, it computes the actual agreement set and invokes its concrete erasure decoder on
+both rows. This avoids the raw-error-decoding problem entirely and retains the full
+`δ < δ_min` range.
+
+**Cost (aspirational, unclocked).** For an ideal decoder the paper's `O(enc + ecor)`
+would be one `dec` per oracle; ArkLib has no cost harness (prose bounds only, cf.
+`Data/CodingTheory/Erasure.lean`). Not realized end-to-end here. -/
+def erasureExtractor (dec : (ι → A) → (Fin k → F))
+    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
+    Witness (F := F) k :=
+  fun i ↦ dec (stmtIn.2 i)
+
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
+omit [AddCommGroup A] [Module F A] in
+/-- **Conditional membership for the wrapper.** If some valid witness `M` exists *and* the
+decoder already recovers it (`erasureExtractor dec stmtIn = M`), then the decoded witness
+lies in the relaxed output relation. Note this hypothesis is strictly stronger than
+`extractZero_mem`'s (which needs only existence): here the decoder's correctness is
+*assumed*, not established — this lemma does not by itself produce a valid witness, it
+merely propagates one the decoder is assumed to already find. Proven constructively (no
+`choose_spec`). -/
+lemma erasureExtractor_mem {encode : (Fin k → F) → (ι → A)} {δ : ℝ≥0}
+    {dec : (ι → A) → (Fin k → F)}
+    {stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)}
+    (hrec : ∃ M, (stmtIn, M) ∈ outputRelationFor k encode δ ∧
+      erasureExtractor k dec stmtIn = M) :
+    (stmtIn, erasureExtractor k dec stmtIn) ∈ outputRelationFor k encode δ := by
+  obtain ⟨M, hM, hEq⟩ := hrec
+  rw [hEq]; exact hM
+
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
+omit [AddCommGroup A] [Module F A] in
+/-- **Conditional reduction via an assumed left-inverse decoder.** If `dec` left-inverts
+`encode` on the oracle codewords of *every* valid witness (`dec (stmtIn.2 i) = M i`), the
+wrapper satisfies the output relation. The left-inverse hypothesis `hli` is the crux and
+is **assumed, not proven here**: for a Reed–Solomon / interpolation code an interpolating
+decoder reproduces `M i` only when it interpolates through `k` genuinely *uncorrupted*
+coordinates, and `outputRelationFor` guarantees only that *some* size-`≥ (1−δ)|ι|`
+agreement set exists — not which coordinates it contains. The scalar-RS transition
+extractor in `Spec/ErasureDecoder.lean` obtains those coordinates from the post-`γ`
+equality with the supplied `g`; this generic fixed-input lemma deliberately does not model
+that extra transition data. Cf.
+`Data/CodingTheory/Erasure.lean` (uniqueness below `minDist` erasures,
+`eq_of_consistent_with_erased`; existence of a — `noncomputable` — corrector,
+`additive_code_supports_erasure_correction_grs12`). -/
+lemma erasureExtractor_mem_of_leftInverse {encode : (Fin k → F) → (ι → A)} {δ : ℝ≥0}
+    {dec : (ι → A) → (Fin k → F)}
+    {stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)}
+    (hex : ∃ M, (stmtIn, M) ∈ outputRelationFor k encode δ)
+    (hli : ∀ M, (stmtIn, M) ∈ outputRelationFor k encode δ →
+      ∀ i, dec (stmtIn.2 i) = M i) :
+    (stmtIn, erasureExtractor k dec stmtIn) ∈ outputRelationFor k encode δ := by
+  obtain ⟨M, hM⟩ := hex
+  exact erasureExtractor_mem (k := k) ⟨M, hM, funext (hli M hM)⟩
 
 omit [DecidableEq ι] in
 /-- The L6.8 round-by-round extractor ([ABF26] §6.2): round 0 extracts a
@@ -1181,26 +1258,15 @@ lemma spotcheck_round_game_bound [Nonempty ι]
     exact ENNReal.coe_le_coe.mpr hbase
 
 omit [DecidableEq ι] in
-/-- **Lemma 6.8 of [ABF26]** (round-by-round knowledge soundness of
-Construction 6.2).
+/-- **Lemma 6.8 of [ABF26]** (worst-case-per-prefix round-by-round knowledge
+soundness of Construction 6.2), in the alphabet-generic classical-extractor form.
 
 For any `δ ∈ (0, δ_min(C))` and fixed injective linear encoder with
 range `C` (injectivity is implicit in the paper's encoding map and
 load-bearing for the extractor's per-list-pair counting),
-the IOR has round-by-round knowledge soundness (ArkLib's
-`OracleVerifier.rbrKnowledgeSoundness`, definitionally
-`toVerifier.rbrKnowledgeSoundness`) against `R̃_{C,δ}^2`, with
+the IOR has worst-case-per-fixed-prefix round-by-round knowledge soundness
+(`Verifier.rbrKnowledgeSoundnessWorstCase`) against `R̃_{C,δ}^2`, with
 per-round errors
-
-**Quantification note (paper Definition A.5 vs the ArkLib game).** The
-paper's rbr definition bounds the bad-transition probability for *every*
-fixed transcript prefix (worst case); ArkLib's game samples the prefix
-challenges uniformly inside the prover run and bounds the *mixture*. The
-in-tree statement is therefore the averaged form, implied by the paper's.
-The per-round lemmas feeding this proof (`gamma_round_game_bound`,
-`spotcheck_round_game_bound`) hold for every fixed prefix — i.e. they ARE
-the paper-strength worst-case facts — so the paper's mathematical content
-is fully in-tree; only the bundled top-level game statement averages.
 
   * `ε_mca(C, δ) + |Λ(C^{≡2}, δ)| / |F|` after the γ round,
   * `(1 − δ)^t` after the spot-check round.
@@ -1217,7 +1283,7 @@ and the two per-round bounds are `gamma_round_game_bound` (via
 `ToyProblem.gamma_transition_prob_le`) and `spotcheck_round_game_bound`,
 plugged into the game shape by
 `ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le`. -/
-theorem protocol62_rbrKnowledgeSound
+theorem protocol62_rbrKnowledgeSoundWorstCase
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -1227,8 +1293,9 @@ theorem protocol62_rbrKnowledgeSound
     (hC : Set.range encode = C)
     (hδ_pos : 0 < δ)
     (hδ_lt_min : δ < (minRelHammingDistCode C : ℝ≥0)) :
-      (oracleVerifier (k := k) (t := t) (encode : (Fin k → F) → (ι → A))).rbrKnowledgeSoundness
-        (WitOut := OutputWitness)
+      ((oracleVerifier (k := k) (t := t)
+        (encode : (Fin k → F) → (ι → A))).toVerifier).rbrKnowledgeSoundnessWorstCase
+        (WitIn := Witness (F := F) k) (WitOut := OutputWitness)
         init impl (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
         (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
           OutputWitness))
@@ -1240,31 +1307,55 @@ theorem protocol62_rbrKnowledgeSound
               ((Lambda (interleavedCodeSet (κ := Fin 2) C) (δ : ℝ)).toNat : ℝ≥0)
                 / (Fintype.card F : ℝ≥0)
           else (1 - δ) ^ t) := by
-  unfold OracleVerifier.rbrKnowledgeSoundness Verifier.rbrKnowledgeSoundness
+  unfold Verifier.rbrKnowledgeSoundnessWorstCase
   refine ⟨rbrWitMid (F := F) k,
     rbrExtractor k t (encode : (Fin k → F) → (ι → A)) δ,
     rbrKSF k t (encode : (Fin k → F) → (ι → A)) δ init impl, ?_⟩
-  intro stmtIn witIn prover i
+  intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv
   · -- Round 0 (combination randomness γ): the MCA + list-decoding bound.
-    refine probEvent_simulateQ_addLift_getChallenge_bind_le init impl
-      (prover.runWithLogToRound _ stmtIn witIn) ⟨⟨0, hi⟩, hdir⟩
-      (fun x c ↦ (x.1.1, c, x.2)) _ ?_
-    exact fun _ ↦ gamma_round_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min stmtIn
+    exact gamma_round_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min stmtIn
   · exact absurd hdir (fun h ↦ Direction.noConfusion h)
   · -- Round 2 (spot checks): the `(1-δ)^t` bound, per fixed `(γ, g)`.
-    refine probEvent_simulateQ_addLift_getChallenge_bind_le init impl
-      (prover.runWithLogToRound _ stmtIn witIn) ⟨⟨2, hi⟩, hdir⟩
-      (fun x c ↦ (x.1.1, c, x.2)) _ ?_
-    exact fun x ↦ spotcheck_round_game_bound k t (encode : (Fin k → F) → (ι → A)) δ
-      stmtIn (x.1.1 ⟨0, Nat.zero_lt_succ _⟩)
-      (x.1.1 ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
+    exact spotcheck_round_game_bound k t (encode : (Fin k → F) → (ι → A)) δ
+      stmtIn (transcript ⟨0, Nat.zero_lt_succ _⟩)
+      (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
   · exact absurd hi (by omega)
+
+omit [DecidableEq ι] in
+/-- Averaged L6.8 API retained for compatibility.  It is a direct corollary of
+`protocol62_rbrKnowledgeSoundWorstCase` through the general mixture implication, with
+exactly the same per-round error function. -/
+theorem protocol62_rbrKnowledgeSound
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (C : Set (ι → A)) (δ : ℝ≥0)
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (hinj : Function.Injective encode)
+    (hC : Set.range encode = C)
+    (hδ_pos : 0 < δ)
+    (hδ_lt_min : δ < (minRelHammingDistCode C : ℝ≥0)) :
+      (oracleVerifier (k := k) (t := t)
+        (encode : (Fin k → F) → (ι → A))).rbrKnowledgeSoundness
+        (WitOut := OutputWitness)
+        init impl (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+        (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
+          OutputWitness))
+        (fun i ↦
+          if i.1 = 0 then
+            (epsMCA (F := F) (A := A) C δ).toNNReal +
+              ((Lambda (interleavedCodeSet (κ := Fin 2) C) (δ : ℝ)).toNat : ℝ≥0)
+                / (Fintype.card F : ℝ≥0)
+          else (1 - δ) ^ t) := by
+  unfold OracleVerifier.rbrKnowledgeSoundness
+  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+    init impl (protocol62_rbrKnowledgeSoundWorstCase k t init impl C δ encode hinj hC
+      hδ_pos hδ_lt_min)
 
 end Protocol
 
 end Spec
 
 end ToyProblem
-

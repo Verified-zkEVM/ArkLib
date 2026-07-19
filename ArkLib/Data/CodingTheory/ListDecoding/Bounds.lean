@@ -309,19 +309,30 @@ section LargeAlphabetBarrier
 /-- **ABF26 Theorem 3.10 [BDG24, AGL23].** Large-alphabet barrier for generalized
 Singleton attainment. For every `ℓ ≥ 2` and `ρ ∈ (0, 1)` there exists a constant
 `α_ℓρ > 0` such that for every `η > 0` and every sufficiently large `n`, every linear
-error-correcting code `C ⊆ F^n` of rate at least `ρ` with `|Λ(C, ℓ/(ℓ+1) · (1-ρ-η))| ≤ ℓ`
+error-correcting code `C ⊆ F^n` of rate `ρ` with `|Λ(C, ℓ/(ℓ+1) · (1-ρ-η))| ≤ ℓ`
 satisfies:
 
   `|F| ≥ 2^{α_ℓρ / η}`
 
 i.e. attaining the generalized Singleton bound up to `η` slack requires alphabet size
 exponential in `1/η`. We existentially package the "sufficiently large" threshold as
-an explicit `n₀` parameter rather than relying on Lean's `eventually` API.
+an explicit `n₀` parameter rather than relying on Lean's `eventually` API. Per AGR23
+Theorem 1.1 the threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`, so `n₀` is (correctly) bound *inside*
+the `∀ η` quantifier.
 
-**Rate hypothesis.** Phrased as `Module.finrank F C ≥ ρ · n` (a lower bound; matches
-the paper's "rate at least ρ" reading and avoids the impossible real-equality
-`finrank/n = ρ` for irrational `ρ`). The rate-≥-ρ form is what the proof actually
-uses (the conclusion is a *lower* bound on `|F|`, monotone in the rate hypothesis).
+**Rate hypothesis (2026-07-18 source-fidelity fix).** Phrased as the exact pin
+`Module.finrank F C = ρ · n`, matching the sources' quantifier structure. Both sources
+prove the barrier for codes of a *fixed* rate `ρ`: AGR23 Theorem 1.1 reads "Let `C` be
+a code of rate `R`" with the constant `α_{L,R}` and the threshold `n ≥ Ω_{L,R}(1/ε)`
+depending on that exact rate, and BDG24 (the `ℓ = 2` progenitor) is stated for
+`[n, k]`-MDS codes of fixed dimension. The previous `finrank ≥ ρ·n` reading asserted a
+single uniform `α`/`n₀` for *all* rates above `ρ` — an uniformization neither source
+proves (their radius `ℓ/(ℓ+1)·(1−ρ−η)` is calibrated to the code's own rate, and a
+higher-rate code admits no valid `ε` re-parameterisation once `finrank/n ≥ ρ + η`);
+flagged as H01 in the 2026-07-17 review. For irrational `ρ` the equality is
+unsatisfiable and the statement is vacuous — as in the sources, whose asymptotic
+statements fix `ρ` as a constant and quantify over lengths realising it; instantiate
+at rational `ρ = finrank/n`.
 
 Admitted as an external result. -/
 theorem large_alphabet_barrier_bdg24_agl23
@@ -333,7 +344,7 @@ theorem large_alphabet_barrier_bdg24_agl23
             {F : Type} [Field F] [Fintype F] [DecidableEq F]
             (C : Submodule F (ι → F)),
             n₀ ≤ Fintype.card ι →
-            (Module.finrank F C : ℝ) ≥ ρ * Fintype.card ι →
+            (Module.finrank F C : ℝ) = ρ * Fintype.card ι →
             Lambda ((C : Set (ι → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)) ≤ (ℓ : ℕ∞) →
             (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α / η) := by
   sorry -- ABF26-T3.10; external admit [BrakensiekDG24, AlrabiahGR23] (tex L1460).
@@ -342,43 +353,167 @@ end LargeAlphabetBarrier
 
 section RandomLinear
 
-/-- **ABF26 Theorem 3.11 [GLMRSW22 Thm 4.1].** Random linear code lower bound. Fix a
-prime `q`, `δ ∈ (0, 1 - 1/q)`, and `ε ∈ (0, 1)`. There exists `γ > 0` such that for all
-`1 - H_q(δ) - γ < ρ < 1 - H_q(δ)` and all sufficiently large `n`, some linear code
-`C ⊆ F^n` of rate `ρ` satisfies:
+/-- **ABF26 Theorem 3.11 [GLMRSW22 Thm 4.1].** Random linear code lower bound —
+source-faithful high-probability (counting) form. GLMRSW22 Theorem 4.1 (verbatim, their
+variables): "Fix a prime power `q`, fix `p ∈ (0, 1 − 1/q)`, and fix `δ ∈ (0, 1)`. There
+exists `ε_{p,q,δ} > 0` such that for all `ε ∈ (0, ε_{p,q,δ})` and `n` sufficiently
+large, a random linear code in `F_q^n` of rate `1 − h_q(p) − ε` is not
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable with probability `1 − q^{−Ω(n)}`." Their random
+model (§1.2): "a uniformly random subspace of `F_q^n` of certain dimension" (their
+working model samples `Rn` uniform generator rows; total-variation-exponentially close,
+and of dimension exactly `Rn` with probability `1 − exp(−Ω(n))`).
 
-  `|Λ(C, δ)| > ⌊H_q(δ) / (1 - H_q(δ) - ρ) - ε⌋`
+Variable map (ABF26 T3.11 = the form below): GLMRSW22's radius `p` is our `δ`, their
+slack `δ` is our `ε`, their `ε_{p,q,δ}` is our `γ`, and their rate `1 − h_q(p) − ε`
+is our `ρ` (so their `ε = 1 − H_q(δ) − ρ`, giving the list bound
+`⌊H_q(δ)/(1 − H_q(δ) − ρ) − ε⌋`).
 
-The paper's full statement gives a `1 - q^{-Ω(n)}` probability over the choice of `C`;
-we existentially package this as "there exists a witness code" since ArkLib does not
-yet have a probability distribution over linear codes.
+**Probability as counting (2026-07-18 source-fidelity fix).** ArkLib has no probability
+distribution over linear codes, so the `1 − q^{−Ω(n)}` statement is carried in the
+equivalent finite counting form over the uniform family
+`{C : Submodule F (ι → F) | finrank C = k}`:
 
-**Two-sided rate pin.** The paper's code has rate exactly `ρ` ("a uniformly random
-linear code of rate ρ"). A one-sided `rate ≥ ρ` existential is vacuously witnessed by
-`C = ⊤` (rate 1, `Λ = |C|` huge); an exact equality `finrank/n = ρ` is unsatisfiable
-for irrational `ρ`. We therefore pin the rate two-sidedly into the band
-`ρ ≤ finrank/n ≤ ρ + 1/n` (i.e. `finrank = ⌈ρ·n⌉` up to the boundary case), so the
-witness genuinely sits at the paper's rate. -/
+  `#{C : finrank C = k ∧ |Λ(C, δ)| ≤ ⌊…⌋} ≤ q^{−c·n} · #{C : finrank C = k}`
+
+with `c > 0` the `Ω(n)` constant (dependence on `q, δ, ε, ρ` allowed by its binder
+position). The previous statement recorded only the bare existence of one witness code,
+losing the high-probability content (2026-07-17 review, SOURCE_LEDGER #8); the
+existence form is now *derived* in-tree as
+`random_linear_lambda_lower_exists_glmrsw22` below.
+
+**Dimension pin.** The paper's code has rate exactly `ρ`, with dimension `ρ·n` treated
+as an integer "for exposition". Exact real equality `k/n = ρ` is unsatisfiable for
+irrational `ρ`, so the dimension is pinned two-sidedly into the band
+`ρ ≤ k/n ≤ ρ + 1/n` (admitting exactly `k = ⌈ρ·n⌉` up to the boundary case), matching
+the pre-existing convention of this file. -/
 theorem random_linear_lambda_lower_glmrsw22
     (q : ℕ) (_hq_pp : IsPrimePow q)
     (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1 - 1 / q)
     (ε : ℝ) (_hε_pos : 0 < ε) (_hε_lt : ε < 1) :
     ∃ γ : ℝ, 0 < γ ∧
       ∀ ρ : ℝ, 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
+        ∃ c : ℝ, 0 < c ∧ ∃ n₀ : ℕ,
+          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+            {F : Type} [Field F] [Fintype F] [DecidableEq F],
+            Fintype.card F = q → n₀ ≤ Fintype.card ι →
+            ∀ k : ℕ,
+              ρ ≤ (k : ℝ) / Fintype.card ι →
+              (k : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι →
+              (({C : Submodule F (ι → F) | Module.finrank F C = k ∧
+                  Lambda ((C : Set (ι → F))) δ ≤
+                    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) :
+                      ℕ∞)}.ncard : ℝ))
+                ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) *
+                    (({C : Submodule F (ι → F) | Module.finrank F C = k}.ncard : ℝ)) := by
+  sorry -- ABF26-T3.11; external admit [GLMRSW22 Thm 4.1].
+
+/-- **Existence corollary of ABF26 T3.11 [GLMRSW22 Thm 4.1]** (derived in-tree from the
+high-probability counting form `random_linear_lambda_lower_glmrsw22`): some linear code
+`C ⊆ F^n` with dimension in the band `ρ ≤ finrank/n ≤ ρ + 1/n` satisfies
+
+  `|Λ(C, δ)| > ⌊H_q(δ) / (1 - H_q(δ) - ρ) - ε⌋` .
+
+This is the bare-existence statement the file previously admitted directly; it is now a
+*theorem*: the bad-event count is `< 1` of the family, the family
+`{C | finrank C = ⌈ρ·n⌉}` is nonempty (a coordinate-kernel subspace realises any
+dimension `≤ n`), so a good code exists.
+
+The extra hypothesis `0 ≤ ρ` (trivially true in the source's regime, where rates
+approach capacity `1 − H_q(δ) ≥ ρ > 1 − H_q(δ) − γ` from below with `γ` small) is
+needed here only because `Entropy.lean` does not yet prove `H_q(δ) < 1` for
+`δ < 1 − 1/q`, which would let `γ` be shrunk below `1 − H_q(δ)`. -/
+theorem random_linear_lambda_lower_exists_glmrsw22
+    (q : ℕ) (hq_pp : IsPrimePow q)
+    (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)
+    (ε : ℝ) (hε_pos : 0 < ε) (hε_lt : ε < 1) :
+    ∃ γ : ℝ, 0 < γ ∧
+      ∀ ρ : ℝ, 0 ≤ ρ → 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
         ∃ n₀ : ℕ,
           ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
             {F : Type} [Field F] [Fintype F] [DecidableEq F],
             Fintype.card F = q → n₀ ≤ Fintype.card ι →
-            -- Two-sided rate pin `ρ ≤ finrank/n ≤ ρ + 1/n`: exact equality is
-            -- unsatisfiable for irrational `ρ`, while a one-sided `≥ ρ` is
-            -- vacuously witnessed by `C = ⊤`. The band admits exactly the
-            -- integer dimension `k = ⌈ρ·n⌉` the paper's random code has.
             ∃ C : Submodule F (ι → F),
               ρ ≤ (Module.finrank F C : ℝ) / Fintype.card ι ∧
               (Module.finrank F C : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι ∧
-              (Lambda ((C : Set (ι → F))) δ : ENNReal) >
-                ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ENNReal) := by
-  sorry -- ABF26-T3.11; external admit [GLMRSW22 Thm 4.1].
+              ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) <
+                Lambda ((C : Set (ι → F))) δ := by
+  obtain ⟨γ, hγ_pos, hmain⟩ :=
+    random_linear_lambda_lower_glmrsw22 q hq_pp δ hδ_pos hδ_lt ε hε_pos hε_lt
+  refine ⟨γ, hγ_pos, fun ρ hρ0 hργ hρH => ?_⟩
+  obtain ⟨c, hc_pos, n₀, hbound⟩ := hmain ρ hργ hρH
+  refine ⟨n₀, fun {ι} _ _ _ {F} _ _ _ hcard hn => ?_⟩
+  have hn_pos : 0 < Fintype.card ι := Fintype.card_pos
+  have hn_posR : (0 : ℝ) < (Fintype.card ι : ℝ) := Nat.cast_pos.mpr hn_pos
+  -- `ρ ≤ 1` via `0 ≤ H_q(δ)`.
+  have hH_nonneg : 0 ≤ qEntropy q δ := by
+    rw [qEntropy_eq_qaryEntropy_div_log]
+    have hδ1 : δ ≤ 1 := by
+      have hq_inv : (0 : ℝ) ≤ 1 / (q : ℝ) := by positivity
+      linarith
+    exact div_nonneg
+      (Real.qaryEntropy_nonneg hδ_pos.le hδ1)
+      (Real.log_natCast_nonneg q)
+  have hρ1 : ρ ≤ 1 := hρH.le.trans (by linarith)
+  -- The paper's dimension: `k = ⌈ρ·n⌉`, which sits in the band.
+  set k : ℕ := ⌈ρ * (Fintype.card ι : ℝ)⌉₊ with hk_def
+  have hband1 : ρ ≤ (k : ℝ) / (Fintype.card ι : ℝ) := by
+    rw [le_div_iff₀ hn_posR]
+    exact Nat.le_ceil _
+  have hband2 : (k : ℝ) / (Fintype.card ι : ℝ) ≤ ρ + 1 / (Fintype.card ι : ℝ) := by
+    rw [div_le_iff₀ hn_posR]
+    have h1 : (k : ℝ) < ρ * (Fintype.card ι : ℝ) + 1 :=
+      Nat.ceil_lt_add_one (by positivity)
+    have h2 : (ρ + 1 / (Fintype.card ι : ℝ)) * (Fintype.card ι : ℝ)
+        = ρ * (Fintype.card ι : ℝ) + 1 := by
+      field_simp
+    rw [h2]
+    linarith
+  have hkn : k ≤ Fintype.card ι := Nat.ceil_le.mpr (by nlinarith)
+  -- The family `{C | finrank C = k}` is nonempty: a coordinate-kernel subspace works.
+  obtain ⟨t, -, htcard⟩ := Finset.exists_subset_card_eq
+    (show Fintype.card ι - k ≤ (Finset.univ : Finset ι).card by
+      simp only [Finset.card_univ]; omega)
+  have hwitness : ∃ C₀ : Submodule F (ι → F), Module.finrank F C₀ = k := by
+    refine ⟨LinearMap.ker (LinearMap.funLeft F F (fun x : ↥t => (x : ι))), ?_⟩
+    have hsurj : Function.Surjective (LinearMap.funLeft F F (fun x : ↥t => (x : ι))) :=
+      LinearMap.funLeft_surjective_of_injective F F _ Subtype.val_injective
+    have h1 := LinearMap.finrank_range_add_finrank_ker
+      (LinearMap.funLeft F F (fun x : ↥t => (x : ι)))
+    rw [LinearMap.range_eq_top.mpr hsurj, finrank_top, Module.finrank_pi,
+      Module.finrank_pi, Fintype.card_coe, htcard] at h1
+    omega
+  -- Bad-event count is strictly below the family count, so a good code exists.
+  set B : ℕ∞ :=
+    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) with hB_def
+  set bad : Set (Submodule F (ι → F)) :=
+    {C | Module.finrank F C = k ∧ Lambda ((C : Set (ι → F))) δ ≤ B} with hbad_def
+  set full : Set (Submodule F (ι → F)) := {C | Module.finrank F C = k} with hfull_def
+  have hsub : bad ⊆ full := fun C hC => hC.1
+  have hfull_pos : 0 < full.ncard := by
+    obtain ⟨C₀, hC₀⟩ := hwitness
+    exact (Set.ncard_pos (Set.toFinite full)).mpr ⟨C₀, hC₀⟩
+  have hlt : (bad.ncard : ℝ) < (full.ncard : ℝ) := by
+    have hkey := hbound hcard hn k hband1 hband2
+    have hq1 : (1 : ℝ) < (q : ℝ) := by exact_mod_cast lt_of_lt_of_le one_lt_two hq_pp.two_le
+    have hrpow : (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) < 1 :=
+      Real.rpow_lt_one_of_one_lt_of_neg hq1 (by nlinarith)
+    calc (bad.ncard : ℝ)
+        ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) * (full.ncard : ℝ) := hkey
+      _ < 1 * (full.ncard : ℝ) :=
+          mul_lt_mul_of_pos_right hrpow (by exact_mod_cast hfull_pos)
+      _ = (full.ncard : ℝ) := one_mul _
+  have hssub : bad ⊂ full := by
+    refine ⟨hsub, fun habs => ?_⟩
+    have : full.ncard ≤ bad.ncard := Set.ncard_le_ncard habs (Set.toFinite bad)
+    have : (full.ncard : ℝ) ≤ (bad.ncard : ℝ) := by exact_mod_cast this
+    linarith
+  obtain ⟨C, hCfull, hCbad⟩ := Set.exists_of_ssubset hssub
+  have hCk : Module.finrank F C = k := hCfull
+  refine ⟨C, ?_, ?_, ?_⟩
+  · rw [hCk]; exact hband1
+  · rw [hCk]; exact hband2
+  · by_contra hle
+    exact hCbad ⟨hCk, not_lt.mp hle⟩
 
 end RandomLinear
 
@@ -484,27 +619,32 @@ end ReedSolomonBounds
 
 section SubspaceDesignUpperBounds
 
-/-- **ABF26 Theorem 3.4 [CZ25 Theorem B.5].** τ-subspace-design codes are list-decodable
-up to capacity. Let `C : F^k → (F^s)^n` be a τ-subspace-design code. For every `η > 0`:
+/-- **ABF26 Theorem 3.4 [CZ25 Theorem B.5]** — source-native one-integer-parameter
+form. CZ25 Theorem B.5 (verbatim, their variables): "Given a `F`-linear code
+`C ⊆ (F^s)^n` of block length `n` and rate `R = k/sn`. Assume that `C ⊆ (F^s)^n` is a
+`(ℓ, ℓ(k−1)/(s−ℓ+1))`-strong subspace designable code for all `ℓ ≤ s`. Then, `C` is
+`(L/(L+1) · (1 − sR/(s−L+1)), L)` (average-radius) list-decodable for any `L ≤ s`."
 
-  `|Λ(C, 1 - τ(1/η) - η)| ≤ (1 - τ(1/η)) / η`
+In ABF26's τ-subspace-design abstraction (D2.16, `IsSubspaceDesign`; CZ25's strong
+subspace-designable premise corresponds to the profile `τ(ℓ) = sR/(s−ℓ+1)` of T2.18,
+up to `k` vs `k−1`), the statement reads: for every integer `1 ≤ L ≤ s`,
 
-Combined with `IsSubspaceDesign` (ABF26 D2.16) and `subspaceDesign_tau_lower`
-(L2.17), this gives a list-decoding bound up to capacity for any subspace-design code.
+  `|Λ(C, L/(L+1) · (1 − τ(L)))| ≤ L` .
 
-**Integer rounding of `τ(1/η)`.** The paper evaluates the profile `τ : ℕ → ℝ` at the
-*real* argument `1/η`, leaving the rounding implicit. We take the weakest faithful
-integer reading: the **radius** uses `τ(⌈1/η⌉)` (the *smaller*, conservative radius)
-while the **list bound** uses `τ(⌊1/η⌋)` (the *larger*, conservative bound). This
-mixed rounding is only sound for profiles that are non-decreasing on `{1, 2, …}` —
-without it a profile that *drops* between `⌊1/η⌋` and `⌈1/η⌉` falsifies the statement
-(2026-06-10 re-review counterexample: a rank-1 design with `τ = 1,1,0,…`) — so the
-monotonicity is now an explicit hypothesis `MonotoneOn τ (Set.Ici 1)` (true of every
-profile in scope, e.g. T2.18's FRS `τ(r) = sρ/(s-r+1)`; only `Ici 1` because T2.18's
-out-of-range convention `τ = 1` breaks monotonicity at `0`). `η ≤ 1` keeps both
-evaluation points in `Ici 1`. Any real-interpolated reading of the paper implies this
-form, and the FRS corollary C3.5 (where the real-valued `1/η` actually matters)
-recovers the exact interpolated radius directly from the FRS profile.
+Note the source has ONE integer parameter `L`, appearing in both the radius and the
+list bound. The ABF26 tex instead prints the `η`-form `|Λ(C, 1 − τ(1/η) − η)| ≤
+(1 − τ(1/η))/η` with `τ` applied to the *real* argument `1/η` — ill-typed for a
+profile `τ : ℕ → ℝ` whenever `1/η ∉ ℕ` (PAPER_REVS.md finding #10). A previous
+version of this admit mirrored the tex by inventing a mixed rounding (radius at
+`τ(⌈1/η⌉)`, bound at `τ(⌊1/η⌋)`) that no source licenses (2026-07-17 review, B08);
+as of 2026-07-18 the admit is the source's integer statement above, and the `η`-form
+is *derived* in-tree with one consistent rounding — see
+`subspaceDesign_list_decoding_eta_cz25` (and the generic
+`subspaceDesign_list_decoding_profile_le_cz25`).
+
+`1 ≤ L` is implicit in CZ25 (their proof derives a contradiction from `L + 1 ≥ 2`
+distinct polynomials; at `L = 0` the claim would fail for any word equal to a
+codeword), and `L ≤ s` is their stated range.
 
 Admitted as an external result. -/
 theorem subspaceDesign_list_decoding_cz25
@@ -512,12 +652,120 @@ theorem subspaceDesign_list_decoding_cz25
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
     (_h : IsSubspaceDesign s τ C)
-    (_hτ_mono : MonotoneOn τ (Set.Ici 1))
-    (η : ℝ) (_hη_pos : 0 < η) (_hη_le_one : η ≤ 1) :
-    (Lambda ((C : Set (ι → Fin s → F)))
-        (1 - τ (Nat.ceil (1 / η)) - η) : ENNReal) ≤
-      ENNReal.ofReal ((1 - τ (Nat.floor (1 / η))) / η) := by
+    (L : ℕ) (_hL_pos : 1 ≤ L) (_hL_le : L ≤ s) :
+    Lambda ((C : Set (ι → Fin s → F)))
+        ((L : ℝ) / (L + 1) * (1 - τ L)) ≤ (L : ℕ∞) := by
   sorry -- ABF26-T3.4; external admit [CZ25 Thm B.5].
+
+/-- **Generic profile-domination corollary of ABF26 T3.4 [CZ25 Thm B.5]** (derived
+in-tree from the integer admit `subspaceDesign_list_decoding_cz25`). If `t` dominates
+the profile `τ` on the integers `1 ≤ L ≤ 1/η` (and `1/η ≤ s` keeps the chosen integer
+inside CZ25's range), then
+
+  `|Λ(C, 1 − t − η)| ≤ (1 − t)/η` .
+
+This is the engine behind both the `⌊1/η⌋`-rounded `η`-form (T3.4 as printed in the
+tex, `subspaceDesign_list_decoding_eta_cz25`) and the folded-RS corollary C3.5
+(`frs_list_decoding_capacity_cz25`, where `t` is the *real-argument* FRS profile value
+`sρ/(s − 1/η + 1)`). The proof instantiates the integer theorem at
+`L := ⌊(1 − t)/η⌋` and uses monotonicity of `Λ` in the radius: `L + 1 > (1 − t)/η`
+makes the integer radius `L/(L+1)·(1 − τ(L))` at least `1 − t − η`, and `L ≤ (1 − t)/η`
+is the claimed list bound. This mirrors CZ25's own derivation of their Corollary 2.21
+from their Theorem 1.3. -/
+theorem subspaceDesign_list_decoding_profile_le_cz25
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
+    (h : IsSubspaceDesign s τ C)
+    (η t : ℝ) (hη_pos : 0 < η) (ht_nonneg : 0 ≤ t)
+    (hτ_le : ∀ L : ℕ, 1 ≤ L → (L : ℝ) ≤ 1 / η → τ L ≤ t)
+    (hs : 1 / η ≤ (s : ℝ)) :
+    (Lambda ((C : Set (ι → Fin s → F))) (1 - t - η) : ENNReal) ≤
+      ENNReal.ofReal ((1 - t) / η) := by
+  by_cases hquot : (1 : ℝ) ≤ (1 - t) / η
+  · -- Main case: `L := ⌊(1 − t)/η⌋ ≥ 1`.
+    set L : ℕ := ⌊(1 - t) / η⌋₊ with hL_def
+    have hL_pos : 1 ≤ L := Nat.floor_pos.mpr hquot
+    have hquot_nonneg : (0 : ℝ) ≤ (1 - t) / η := zero_le_one.trans hquot
+    have hLle : (L : ℝ) ≤ (1 - t) / η := Nat.floor_le hquot_nonneg
+    have hL_inv : (L : ℝ) ≤ 1 / η := hLle.trans (by gcongr; linarith)
+    have hτL : τ L ≤ t := hτ_le L hL_pos hL_inv
+    have hLs : L ≤ s := by exact_mod_cast hL_inv.trans hs
+    have key := subspaceDesign_list_decoding_cz25 s τ C h L hL_pos hLs
+    -- Radius comparison: `1 − t − η ≤ L/(L+1) · (1 − τ(L))`.
+    have hfloor : (1 - t) / η < (L : ℝ) + 1 := Nat.lt_floor_add_one _
+    have h1t : 1 - t < η * ((L : ℝ) + 1) := by
+      rw [div_lt_iff₀ hη_pos] at hfloor
+      linarith
+    have hrad : 1 - t - η ≤ (L : ℝ) / (L + 1) * (1 - τ L) := by
+      have hL1 : (0 : ℝ) < (L : ℝ) + 1 := by positivity
+      rw [div_mul_eq_mul_div, le_div_iff₀ hL1]
+      have hmul : (L : ℝ) * τ L ≤ (L : ℝ) * t :=
+        mul_le_mul_of_nonneg_left hτL (by positivity)
+      nlinarith [hmul, h1t]
+    have hchain : Lambda ((C : Set (ι → Fin s → F))) (1 - t - η) ≤ (L : ℕ∞) :=
+      (Lambda_mono hrad).trans key
+    calc (Lambda ((C : Set (ι → Fin s → F))) (1 - t - η) : ENNReal)
+        ≤ ((L : ℕ∞) : ENNReal) := ENat.toENNReal_le.mpr hchain
+      _ = (L : ENNReal) := ENat.toENNReal_coe L
+      _ ≤ ENNReal.ofReal ((1 - t) / η) := by
+          rw [← ENNReal.ofReal_natCast]
+          exact ENNReal.ofReal_le_ofReal hLle
+  · -- Degenerate case: `(1 − t)/η < 1` forces a negative radius and an empty list.
+    have hrad_neg : 1 - t - η < 0 := by
+      rw [not_le, div_lt_one hη_pos] at hquot
+      linarith
+    have hempty : ∀ f : ι → Fin s → F,
+        closeCodewordsRel ((C : Set (ι → Fin s → F))) f (1 - t - η) = ∅ := by
+      intro f
+      ext c
+      simp only [closeCodewordsRel, relHammingBall, Set.mem_setOf_eq,
+        Set.mem_empty_iff_false, iff_false, not_and]
+      intro _ hball
+      exact absurd (hball.trans_lt hrad_neg) (not_lt.mpr (by positivity))
+    have hzero : Lambda ((C : Set (ι → Fin s → F))) (1 - t - η) = 0 := by
+      have hrfl : Lambda ((C : Set (ι → Fin s → F))) (1 - t - η)
+          = ⨆ f : ι → Fin s → F,
+              (((closeCodewordsRel ((C : Set (ι → Fin s → F))) f (1 - t - η)).ncard :
+                ℕ∞)) := rfl
+      rw [hrfl]
+      simp [hempty]
+    rw [hzero]
+    simp
+
+/-- **ABF26 Theorem 3.4 [CZ25 Thm B.5] — `η`-form with one consistent rounding**
+(derived in-tree from the integer admit `subspaceDesign_list_decoding_cz25`). For a
+τ-subspace-design code `C ⊆ (F^s)^n` with `τ` non-decreasing and non-negative on
+`{1, 2, …}`, and any `0 < η ≤ 1` with `1/η ≤ s`:
+
+  `|Λ(C, 1 − τ(⌊1/η⌋) − η)| ≤ (1 − τ(⌊1/η⌋))/η` .
+
+The ABF26 tex prints this with the ill-typed real argument `τ(1/η)` (PAPER_REVS.md
+finding #10); here `1/η` is rounded ONE way (down) in both the radius and the bound,
+and the derivation from the integer theorem is carried out by
+`subspaceDesign_list_decoding_profile_le_cz25` with `t := τ(⌊1/η⌋)`, using
+`MonotoneOn τ (Set.Ici 1)` to dominate `τ` at the smaller instantiation point
+`⌊(1 − t)/η⌋ ≤ ⌊1/η⌋`. (`τ ≥ 0` — a design profile is a fraction of a dimension, cf.
+`subspaceDesign_tau_lower` — keeps that point below `⌊1/η⌋`; `η ≤ 1` keeps both points
+in `Ici 1`; `1/η ≤ s` keeps them in CZ25's range `L ≤ s`, a hypothesis the tex's
+abstract statement omits but its only instantiation C3.5 carries as `1/η < s`.) -/
+theorem subspaceDesign_list_decoding_eta_cz25
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
+    (h : IsSubspaceDesign s τ C)
+    (hτ_mono : MonotoneOn τ (Set.Ici 1)) (hτ_nonneg : ∀ r, 0 ≤ τ r)
+    (η : ℝ) (hη_pos : 0 < η) (hη_le_one : η ≤ 1) (hηs : 1 / η ≤ (s : ℝ)) :
+    (Lambda ((C : Set (ι → Fin s → F)))
+        (1 - τ (Nat.floor (1 / η)) - η) : ENNReal) ≤
+      ENNReal.ofReal ((1 - τ (Nat.floor (1 / η))) / η) := by
+  have hm : 1 ≤ ⌊1 / η⌋₊ := by
+    apply Nat.le_floor
+    rw [Nat.cast_one, le_div_iff₀ hη_pos, one_mul]
+    exact hη_le_one
+  refine subspaceDesign_list_decoding_profile_le_cz25 s τ C h η (τ ⌊1 / η⌋₊) hη_pos
+    (hτ_nonneg _) (fun L hL1 hLle => ?_) hηs
+  exact hτ_mono (Set.mem_Ici.mpr hL1) (Set.mem_Ici.mpr hm) (Nat.le_floor hLle)
 
 /-- **ABF26 Corollary 3.5 [CZ25 Corollary 2.21].** Folded Reed-Solomon codes are
 list-decodable up to capacity. Let `C := FRS[F, L, k, s, ω]` be a folded RS code of
@@ -525,8 +773,17 @@ rate `ρ`. For any `η > 0` with `1/η < s`:
 
   `|Λ(C, 1 - ρ·s/(s - 1/η + 1) - η)| ≤ (s·(1-ρ) + 1 - 1/η) / (η·(s + 1 - 1/η))`
 
-When `η ≥ √(3/s)`, the bound simplifies to `|Λ(C, 1 - ρ - η)| ≤ 1/η`. Derives from
-T3.4 + T2.18 (FRS is τ-subspace-design).
+When `η ≥ √(3/s)`, the bound simplifies to `|Λ(C, 1 - ρ - η)| ≤ 1/η`.
+
+**Derived in-tree (2026-07-18).** No longer a separate external admit: this is proved
+from T3.4's integer admit (`subspaceDesign_list_decoding_cz25`, via
+`subspaceDesign_list_decoding_profile_le_cz25` at the real-argument profile value
+`t := ρ·s/(s − 1/η + 1)`) together with T2.18 (`frs_is_subspaceDesign_gk16`, FRS is
+τ-subspace-design) — the same route CZ25 use to derive their Corollary 2.21 from their
+Theorem 1.3, and ABF26 to derive C3.5 from T3.4 + T2.18. Note the bound equals
+`(1 − t)/η` verbatim: `1 − sρ/(s−1/η+1) = (s(1−ρ)+1−1/η)/(s+1−1/η)`. The hypothesis
+`_hFn : n < |F|` is inherited from T2.18 (and implicit in CZ25's setting, where the
+`s·n` distinct evaluation points `α_i·γ^j` force `|F| > s·n > n`).
 
 **Rate convention.** The FRS code `FRS[F, L, k, s, ω] ⊆ (F^s)^n` has rate
 `ρ = k / (s·n)` per ABF26 Definition 2.5 (the alphabet is `F^s`), **not** `k/n`.
@@ -538,14 +795,13 @@ verbatim; e.g. the radius numerator `ρ·s = k/n`.
 so this statement must carry it as the hypothesis `_hadm` (in the in-tree strengthened
 GR08 form) together with `_hω : ω ≠ 0` (which admissibility alone does not imply when
 `0 ∉ L`). Without them the fold degenerates — e.g. at `ω = 0` or `ω = 1` all folds
-collapse — and the capacity bound is false.
-
-Admitted as an external result. -/
+collapse — and the capacity bound is false. -/
 theorem frs_list_decoding_capacity_cz25
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hs_pos : 0 < s)
+    (_hFn : Fintype.card ι < Fintype.card F)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (_hω : ω ≠ 0)
     (η : ℝ) (_hη_pos : 0 < η) (_hη_lt_s : 1 / η < s) :
@@ -556,7 +812,59 @@ theorem frs_list_decoding_capacity_cz25
     (Lambda ((ReedSolomon.Folded.frsCode domain k s ω : Set (ι → Fin s → F))) δ :
         ENNReal) ≤
       ENNReal.ofReal bound := by
-  sorry -- ABF26-C3.5; external admit [CZ25 Cor 2.21].
+  intro n ρ δ bound
+  have hn_pos : (0 : ℝ) < n := Nat.cast_pos.mpr Fintype.card_pos
+  have hs_posR : (0 : ℝ) < (s : ℝ) := Nat.cast_pos.mpr _hs_pos
+  have hdenom_pos : (0 : ℝ) < (s : ℝ) - 1 / η + 1 := by linarith
+  -- T2.18: FRS is τ-subspace-design for the explicit profile.
+  have hdesign : IsSubspaceDesign s
+      (fun r => if r ∈ Finset.Icc 1 s then (k : ℝ) / Fintype.card ι / (s - r + 1) else 1)
+      (ReedSolomon.Folded.frsCode domain k s ω) :=
+    frs_is_subspaceDesign_gk16 domain k s ω (Finset.univ.map domain)
+      (fun i => Finset.mem_map_of_mem domain (Finset.mem_univ i)) _hFn _hadm _hω
+  -- The real-argument profile value `t = ρ·s/(s − 1/η + 1) = (k/n)/(s − 1/η + 1)`.
+  have hρs : ρ * s = (k : ℝ) / n := by
+    have hs0 : (s : ℝ) ≠ 0 := hs_posR.ne'
+    have hn0 : n ≠ 0 := hn_pos.ne'
+    change (k : ℝ) / ((s : ℝ) * n) * s = (k : ℝ) / n
+    field_simp
+  have ht_nonneg : 0 ≤ ρ * s / ((s : ℝ) - 1 / η + 1) := by
+    rw [hρs]
+    positivity
+  have key := subspaceDesign_list_decoding_profile_le_cz25 s
+    (fun r => if r ∈ Finset.Icc 1 s then (k : ℝ) / Fintype.card ι / (s - r + 1) else 1)
+    (ReedSolomon.Folded.frsCode domain k s ω) hdesign η
+    (ρ * s / ((s : ℝ) - 1 / η + 1)) _hη_pos ht_nonneg
+    (fun L hL1 hLle => ?_) _hη_lt_s.le
+  · -- Convert `key` to the paper-display radius and bound.
+    have hδ_eq : δ = 1 - ρ * s / ((s : ℝ) - 1 / η + 1) - η := rfl
+    have hbound_eq : bound = (1 - ρ * s / ((s : ℝ) - 1 / η + 1)) / η := by
+      have hd2 : ((s : ℝ) - 1 / η + 1) ≠ 0 := hdenom_pos.ne'
+      have hη0 : η ≠ 0 := _hη_pos.ne'
+      -- The `1/η` nested inside `s ± 1/η ± 1` clears to `s·η + η − 1`; field_simp needs
+      -- *that* nonzero to fully cancel, so supply it (from `hdenom_pos · η`).
+      have hd3 : (-1 + (s : ℝ) * η + η) ≠ 0 := by
+        have hmul := mul_pos hdenom_pos _hη_pos
+        have heq : ((s : ℝ) - 1 / η + 1) * η = -1 + (s : ℝ) * η + η := by
+          field_simp; ring
+        rw [heq] at hmul; exact hmul.ne'
+      change (s * (1 - ρ) + 1 - 1 / η) / (η * (s + 1 - 1 / η))
+        = (1 - ρ * s / ((s : ℝ) - 1 / η + 1)) / η
+      have hkey : (-1 + (s : ℝ) * η + η) * (-1 + (s : ℝ) * η + η)⁻¹ = 1 :=
+        mul_inv_cancel₀ hd3
+      field_simp
+      linear_combination hkey
+    rw [hδ_eq, hbound_eq]
+    exact key
+  · -- Profile domination on `1 ≤ L ≤ 1/η`.
+    have hLs : (L : ℝ) < (s : ℝ) := lt_of_le_of_lt hLle _hη_lt_s
+    have hLs' : L ≤ s := le_of_lt (by exact_mod_cast hLs)
+    have hmem : L ∈ Finset.Icc 1 s := Finset.mem_Icc.mpr ⟨hL1, hLs'⟩
+    simp only [hmem, if_true]
+    rw [hρs]
+    have hn_eq : (Fintype.card ι : ℝ) = n := rfl
+    rw [hn_eq]
+    exact div_le_div_of_nonneg_left (by positivity) hdenom_pos (by linarith)
 
 end SubspaceDesignUpperBounds
 

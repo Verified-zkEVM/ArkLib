@@ -18,10 +18,13 @@ constraint `⟨m, v⟩ = μ` to `C`. Two results, of increasing fidelity:
   ε_mca(C_v, δ)` against the **stock** MCA error of the appended-coordinate code
   `C_v` (see the caveat: this over-counts, so it is only a bound).
 * `gamma_event_iff_constrainedMCA` / `gamma_transition_prob_eq_constrainedMCA` —
-  the faithful **equality**: under `hNoWit`, the toy γ-event coincides exactly with
-  the *constraint-pinned* MCA event `mcaEventConstrained` (constraint coordinate
-  mandatory, proximity measured on the data coordinates). This is the precise sense
-  in which "soundness *is* the constrained code's MCA experiment".
+  a per-instance **equivalence**: under `hNoWit`, the toy γ-event coincides with the
+  *constraint-pinned* event `mcaEventConstrained` (constraint coordinate mandatory,
+  proximity measured on the data coordinates). NB this is a restatement in MCA shape,
+  **not** a reduction to the library MCA experiment (`epsMCA`) of `constrainedCode` —
+  `mcaEventConstrained` is bespoke, phrased directly in `enc`/`v`, and its `¬`-clause
+  is redundant under `hNoWit`; see the theorem docstring. The genuine reduction to the
+  constrained code's MCA bad event is the `≤` bound above.
 
 Concretely, for the scalar alphabet `A = F` we adjoin the constraint value
 `⟨m, v⟩` as one extra coordinate (indexed by `Unit`):
@@ -57,9 +60,12 @@ Two things it does **not** establish, and should not be read to:
 * **Not an equality.** `mcaEvent` (hence `ε_mca`) quantifies over *all* agreement
   sets `S'` of size `≥ (1-δ)(n+1)`, including sets that *omit* the extra `Unit`
   coordinate. On such an `S'` the constraint is never tested, so that branch
-  reduces to a plain base-code-`C` MCA bad event. Hence `ε_mca(C_v, δ)`
-  *over-counts*: it is `≥ ε_mca(C, δ)` and is only an upper bound on the toy
-  soundness, not equal to it. The faithful *equality* uses the **constraint-pinned**
+  reduces to a plain base-code-`C` MCA bad event (at the larger `(1-δ)(n+1)` size
+  budget). Hence `ε_mca(C_v, δ)` *over-counts* relative to the toy soundness and is
+  only an upper bound on it, not equal to it. (No comparison with `ε_mca(C, δ)` is
+  proved here in either direction: embedding a base agreement set `S ⊆ ι` into
+  `ι ⊕ Unit` must clear the strictly larger `(1-δ)(n+1)` threshold, so the naive
+  monotonicity argument fails.) The per-instance *equivalence* uses the **constraint-pinned**
   MCA event `mcaEventConstrained` (constraint coordinate mandatory; proximity on the
   data coordinates `ι`) — see `gamma_event_iff_constrainedMCA`. Pinning into the
   *full* index `ι ⊕ Unit` with the stock `(1-δ)(n+1)` size budget does **not** give
@@ -184,14 +190,16 @@ theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
     exact le_iSup (fun u : WordStack F (Fin 2) (ι ⊕ Unit) ↦
       Pr_{let γ ← $ᵖ F}[mcaEvent (constrainedCode enc v) δ (u 0) (u 1) γ]) ![U₀, U₁]
 
-/-! ## The faithful equality (constraint-pinned MCA, proximity on data coordinates)
+/-! ## The per-instance equivalence (constraint-pinned event, proximity on data coordinates)
 
 The `≤` bound above over-counts, because `mcaEvent` over `ι ⊕ Unit` admits agreement
-sets that omit the constraint coordinate. The faithful statement of "soundness *is*
-the constrained code's MCA experiment" requires (i) the constraint coordinate to be
-mandatory and (ii) proximity measured on the data coordinates `ι` only — pinning
-into the full index with the stock `(1-δ)(n+1)` budget loses a `δ` of slack in the
-backward direction and fails to give an equality.
+sets that omit the constraint coordinate. An exact restatement of the toy γ-event in
+MCA shape requires (i) the constraint coordinate to be mandatory and (ii) proximity
+measured on the data coordinates `ι` only — pinning into the full index with the stock
+`(1-δ)(n+1)` budget loses a `δ` of slack in the backward direction and fails to give an
+equality. The resulting `mcaEventConstrained` is a bespoke event (not the library
+`mcaEvent`/`epsMCA` of any code), so the equivalence below is a per-instance
+restatement, not a reduction to the library MCA experiment.
 -/
 
 set_option linter.unusedFintypeInType false in

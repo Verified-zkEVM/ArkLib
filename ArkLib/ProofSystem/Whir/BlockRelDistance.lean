@@ -99,8 +99,8 @@ class DecidableBlockDisagreement
   `ArkLib/Data/CodingTheory/Basic/Distance.lean`): rather than reporting
   disagreement at each *coordinate*, this collects the *blocks* `z` for
   which at least one fiber-point `y ∈ Block z` disagrees. The
-  base-case relationship: at `k = 0`, every block is a singleton and
-  the two coincide. -/
+  base-case relationship: at `k = i` the fiber map `x ↦ x^(2^(k-i))` is the
+  identity, so every block is a singleton and the two coincide. -/
 noncomputable def disagreementSet
   (i k : ℕ) {S : Finset ι} {φ : ι ↪ F}
   [DecidableEq F] [DecidableEq ι] [Smooth φ]
@@ -128,7 +128,8 @@ noncomputable def blockRelDistance
 /-- notation `Δᵣ(i, k, f, S', φ', g)` is the (i,k)-wise block relative distance. -/
 scoped notation "Δᵣ( "i", "k", "f", "S'", "φ'", "g" )"  => blockRelDistance i k f S' φ' g
 
-/-- The block relative distance simplifies to the standard relative Hamming distance when `k=0`. -/
+/-- The block relative distance simplifies to the standard relative Hamming distance when
+  `k = i` (singleton blocks). -/
 lemma blockRelDistance_eq_relHammingDist_of_k_eq_i -- Renamed for clarity
   (i : ℕ) {S : Finset ι} {φ : ι ↪ F}
   [DecidableEq F] [DecidableEq ι] [Smooth φ]

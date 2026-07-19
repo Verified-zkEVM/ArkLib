@@ -400,7 +400,7 @@ theorem protocol62_knowledgeSound
       simp only [Option.getM, Option.elimM, Option.elim_none, Option.elim_some,
         pure_bind, bind_pure_comp]
       -- Collapse `some <$> oa >>= fun o => o.elim (pure none) f` to `oa >>= f` via bind_map_left.
-      simp only [bind_map_left, Function.comp, Option.elim_some]
+      simp only [bind_map_left, Option.elim_some]
       -- The goal is now `oa >>= fun x => ... = (fun x => g x.1) <$> oa`.
       -- Rewrite RHS as `oa >>= fun x => pure (g x.1)` via map_eq_bind_pure_comp.
       rw [map_eq_bind_pure_comp]

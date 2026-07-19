@@ -171,12 +171,26 @@ GKL24 bound is dominated by its second term. Admitted from the cited paper.
 
 The regime hypothesis `η < δ_min` is shared with Item 1 (the paper presents both bounds
 under one regime statement); included here for hypothesis-parity even though Item 2's
-RHS `2 / (η² |F|)` is well-defined for any `η > 0`. -/
+RHS `2 / (η² |F|)` is well-defined for any `η > 0`.
+
+**Source hypotheses restored (2026-07-18 fix).** BGKS20 Lemma 3.2 (positive form) is
+stated for a linear code `V ⊆ F_q^D` of distance `λ` and parameters `ε, δ > 0` with
+`ε < 1/3` **and** `δ < 1 − (1 − λ + ε)^{1/3}` (strict): if
+`Pr_x[Δ(u* + x·u, V) < δ] ≥ 2/(ε²·q)` then `u, u*` jointly agree with codewords on a
+set of density `≥ 1 − δ − ε`. Notation map: the source's `ε` is our `η` (the joint
+agreement set of density `1 − δ − ε` is exactly interleaved radius `δ_int = δ + η`),
+its `λ` is our `δ_min`, its `δ` is our `δ_fld`. The Lean statement (following ABF26
+T4.11's header, which drops them) previously omitted the source's `ε < 1/3` and
+`δ > 0`, and admitted the boundary `δ = 1 − ∛(1 − δ_min + η)` that the source's strict
+inequality excludes; without them the admit claimed the bound in regimes the source
+never proves (BGKS20's triple-agreement-set convexity argument is tuned to `ε < 1/3`).
+All three are now carried; regime re-derived from the BGKS20 PDF, not the ABF26 tex. -/
 theorem linear_epsCA_1_5_johnson_bgks20
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
-    (_hη : 0 < η) (_hη_lt_δ_min : η < δ_min)
-    (_hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
+    (_hη : 0 < η) (_hη_lt_third : (η : ℝ) < 1 / 3) (_hη_lt_δ_min : η < δ_min)
+    (_hδ_pos : 0 < δ)
+    (_hδ : (δ : ℝ) < 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCA (F := F) (A := A) ((C : Set (ι → A))) δ (δ + η) ≤
       ((2 : ENNReal) / ((η : ENNReal) ^ 2 * (Fintype.card F : ENNReal))) := by
   sorry -- ABF26-T4.11 Item 2; external admit [BGKS20 Lem 3.2].
@@ -189,21 +203,27 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /-- **ABF26 Theorem 4.9 Item 2 [BCHKS25 Theorem 1.3].** Reed-Solomon CA bound in the
-`δ_min/3`-to-Johnson regime. Let `C := RS[F, L, k]` with rate `ρ`. The paper's
-`thm:ud-rs` scopes **both** items under the unique-decoding-regime hypothesis
-`δ_fld ≤ (1-ρ)/2` ("Then, for δ_fld ≤ (1−ρ)/2 < δ_min(C)/2"); Item 2 additionally
-requires `δ_min(C)/3 ≤ δ_fld < δ_int`:
+`δ_min/3`-to-half-distance regime. Let `C := RS[F, L, k]` with rate `ρ`. BCHKS25
+Theorem 1.3's regime is `γ ∈ [δ/3, δ/2 − 1/n]` (with `δ := 1 − k/n`) — the upper end is
+**strictly inside** half-distance by the finite-length margin `1/n`. We state the
+source's `δ_fld ≤ (1-ρ)/2 − 1/n`; Item 2 additionally requires
+`δ_min(C)/3 ≤ δ_fld < δ_int`:
 
   `ε_ca(C, δ_fld, δ_int) ≤`
   `  max{ (1-ρ-δ_fld) / (δ_fld·(1-ρ-2·δ_fld)·|F|), δ_int / ((δ_int-δ_fld)·|F|) }`
 
-Without `δ_fld ≤ (1-ρ)/2` the first max-branch's factor `1-ρ-2·δ_fld` goes negative
-and the claimed bound is likely false in the breakdown band (cf. T4.17 [CS25]).
+**Why the `− 1/n` matters (2026-07-18 fix).** ABF26's `thm:ud-rs` header prints the
+regime as `δ_fld ≤ (1-ρ)/2`, *including* the endpoint at which the first max-branch's
+denominator factor `1-ρ-2·δ_fld` is `0`. In Lean's totalized arithmetic `x/0 = 0`, so at
+that endpoint the branch silently collapses to `0` and the admitted statement becomes
+false (reproduced by the 2026-07-17 review's kernel probe `SemanticBoundaries.lean`).
+The source's margin gives `1-ρ-2·δ_fld ≥ 2/n > 0`, restoring denominator positivity.
+The dropped margin is also recorded upstream as `PAPER_REVS.md` finding #9.
 Tighter than T4.8 (AHIV17) in the regime `δ_fld ≥ δ_min/3`. Admitted as an external
-result. -/
+result; regime re-derived from the BCHKS25 PDF, not the ABF26 tex. -/
 theorem rs_epsCA_bchks25_item2
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
-    (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2)
+    (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
     (_h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
                 / Fintype.card ι / 3 ≤ δ_fld)
     (_h_lt : δ_fld < δ_int) :
@@ -228,9 +248,10 @@ once `δ_int - δ_fld` is below `1/n`. We state the resulting bound on
 `ε_ca(C, δ_fld, δ_fld)`; the equality with `ε_mca` follows from L4.6 in the
 unique-decoding regime, which is itself an external admit.
 
-As with T4.9.2 (`rs_epsCA_bchks25_item2`), this inherits the paper `thm:ud-rs`
-enclosing hypothesis `δ_fld ≤ (1-ρ)/2` — the remark is a specialisation of Item 2
-and is only asserted inside that unique-decoding scope.
+As with T4.9.2 (`rs_epsCA_bchks25_item2`), this inherits the source's enclosing
+hypothesis `δ_fld ≤ (1-ρ)/2 − 1/n` (BCHKS25 Thm 1.3's regime, with the finite-length
+margin restored 2026-07-18 — see the T4.9.2 docstring) — the remark is a specialisation
+of Item 2 and is only asserted inside that unique-decoding scope.
 
 **This proof is machine-checked in-tree** from R4.2 (`epsCA_eq_of_floor_eq`, which is
 *proven*, sorry-free) plus T4.9.2 (`rs_epsCA_bchks25_item2`, an external admit). The only
@@ -252,7 +273,7 @@ keep `_hγ_lt : γ < 1` for hypothesis-parity with the paper even though `_h_no_
 it. -/
 theorem rs_epsCA_small_loss_r4_10
     (domain : ι ↪ F) (k : ℕ) (δ_fld : ℝ≥0) (γ : ℝ≥0)
-    (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2)
+    (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
     (_h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
                 / Fintype.card ι / 3 ≤ δ_fld)
     (_hγ_pos : 0 < γ) (_hγ_lt : (γ : ℝ) < 1)
@@ -319,10 +340,31 @@ The full numeric expression is preserved verbatim so future RS analyses can plug
 concrete `ρ`, `η`, and `n` values. Admitted as an external result.
 
 **Parameter improvement reference.** ABF26 cites [Hab25] alongside [BCHKS25] for
-this theorem; Haböck 2025 improves the constants / parameter regime but the
-asymptotic form is unchanged. Our statement matches the BCHKS25 form; a separate
-sharper-constant statement could be added as a corollary if a downstream consumer
-needs the tighter bound. -/
+this theorem; Haböck 2025's Theorem 2 has a different bound shape
+(`|E| ≤ ℓ⁷/3·(ρn)²` with `ℓ = (m+½)/√ρ` at radius `γ = 1 − (1 + 1/(2m))·√ρ`,
+`m ≥ 3`), via a [BCI+20]-style decoder analysis.
+
+**Relation to the source's native form (2026-07-18 docstring fix; the earlier claim
+"our statement matches the BCHKS25 form" was inaccurate).** Our statement is
+*verbatim ABF26 Theorem 4.12* (tex `thm:ld-rs`), ABF26's translation of BCHKS25
+Theorem 4.6 — it does **not** match the source's native form, which reads: for
+`C = RS_k[F_q, D, k]` of *dimension* `k+1` and "slightly reduced rate" `ρ := k/n`,
+any `u₀, …, u_M : D → F_q` and `γ ∈ (0, 1−√ρ)`, the set `E` of `z ∈ F_q` for which
+the curve `u₀ + z·u₁ + ⋯ + z^M·u_M` agrees with `C` on some `A ⊆ D`,
+`|A| ≥ (1−γ)·n`, not explained by joint agreement of `[u₀, …, u_M]` on `A`, satisfies
+`|E| ≤ M·((2(m+½)⁵ + 3(m+½)·γ·ρ)/(3·ρ^{3/2})·n + (m+½)/√ρ)` with
+`m = max(⌈√ρ/(1−√ρ−γ)⌉, 3)`. The ABF26 form differs in: (i) *probability vs count* —
+`ε_mca` is the line (`M = 1`) case with `|E|` divided by `|F|`; (ii) *rate
+convention* — the source's `ρ` is `(dim−1)/n`, while our `ρ_plus = k/n + 1/n =
+(dim+1)/n` for ArkLib's dimension-`k` `ReedSolomon.code`, an overshoot of `2/n`
+(conservative in the regime `δ < 1−√ρ_plus−η`, but the RHS is then *not* a pointwise
+substitution instance of the source's bound); (iii) *`m`-parameterization* — the
+source's `m` depends on the evaluation radius `γ`, ours on the slack `η` via
+`⌈√ρ_plus/(2η)⌉` (cf. Hab25's `γ = 1−(1+1/(2m))·√ρ` correspondence, under which
+`1−√ρ−γ = √ρ/(2m)`); (iv) *regime* — the source covers every `γ ∈ (0, 1−√ρ)`, ABF26
+restates at a slack `η` below the Johnson radius. Hypotheses left as ABF26's (both
+2026-06/07 reviews shape-passed them); a sharper statement in the source's native
+`(γ, m)` form could be added as a separate admit if a downstream consumer needs it. -/
 theorem rs_epsMCA_johnson_range_bchks25
     (domain : ι ↪ F) (k : ℕ) (η δ : ℝ≥0)
     (_hη : 0 < η)
@@ -446,7 +488,9 @@ formalized in ArkLib and must not be conflated:
 
 - [CS25 Corollary 1] = `rs_epsCA_breakdown_cs25` (T4.17, this file) — complete CA breakdown
   in an entropy-defined rate band.
-- [CS25 Theorem 2] = `rs_epsCA_implies_lambda_extended_cs25` (T5.3, `ListDecodingAndCA.lean`).
+- [CS25 Theorem 2] = `rs_epsCA_implies_lambda_cs25_int` (native integer-radius admit,
+  `ListDecodingAndCA.lean`), from which the ABF26-shaped T5.3
+  `rs_epsCA_implies_lambda_extended_cs25` is derived in-tree.
 - [CS25 Theorem 3] = **this declaration** — the third, distinct result: the
   subfield/extension-field CA lower bound near capacity.
 
@@ -601,12 +645,30 @@ with `s > 16/η²`. Then:
 `ρ = k / (s·n)` per ABF26 Definition 2.5 (the alphabet is `F^s`), **not** `k/n` —
 with `k/n` the radius `1 - ρ - η` would undershoot capacity by a factor-`s` error.
 
+**Folding admissibility (2026-07-18 fix).** GG25 Corollary 4.10 quantifies over
+`s`-folded RS codes *per its Definition 2.18 [GR08]*, which is not `frsCode` for an
+arbitrary `ω`: it requires (i) a field with `|F| > s·n`, and (ii) distinct evaluation
+points `α₁, …, α_n` with pairwise-disjoint `ω`-orbits (`αᵢ·ωᵗ ≠ αⱼ` for all `i ≠ j`,
+`t < s`). This statement previously took `frsCode domain k s ω` raw, with *no*
+hypotheses on `ω` or the domain, so it claimed the GG25 bound for degenerate folds —
+e.g. `ω = 0` or `ω` of multiplicative order `< s`, where a fold's `s`-tuple repeats
+entries and the subspace-design structure underlying the proof chain
+(GG25 Thm 2.19 [GK16] → Thm 4.8 → Cor 4.9/4.10) breaks — codes the source does not
+cover. We now carry the source hypotheses: `ReedSolomon.Folded.Admissible`
+(ArkLib's GR08 injectivity condition — GG25's inter-orbit clause plus the intra-orbit
+`ω`-order-`≥ s` strengthening documented in `ReedSolomon/Folded.lean`, exactly the
+condition used by `dim_frsCode`/`minDist_frsCode`), `ω ≠ 0`, and `|F| > s·n`
+(Definition 2.18's `q > sn`).
+
 A corollary of T4.13 via T2.18 (FRS is τ-subspace-design). Admitted as an external
 result. -/
 theorem frs_epsMCA_capacity_gg25
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (_hω : ω ≠ 0)
+    (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
+    (_hcard : s * Fintype.card ι < Fintype.card F)
     (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)
     (_hs_gt : (s : ℝ) > 16 / η ^ 2) :
     let n : ℝ := Fintype.card ι
@@ -618,47 +680,63 @@ theorem frs_epsMCA_capacity_gg25
         + 24 / (η ^ 3 * Fintype.card F)) := by
   sorry -- ABF26-T4.14; external admit [GG25 Cor 4.10].
 
-/-- **Tracked placeholder (NOT a faithful formalization of [BCGM25]).** This statement is
-strictly *weaker* than the cited [BCGM25] result and must not be read as capturing it; it is
-a survey-ledger shadow to be replaced by PR #489's real MCA-generator framework. It is recorded
-here only so the §4.2.2 row is not silently missing.
+/-- **[BCGM25 Theorem 8.2 + Definition 8.1], univariate-powers instance, list-decoding
+branch, CA consequence.** For any `F`-linear code `C ⊆ A^n` (any `F`-module alphabet `A`,
+matching [BCGM25]'s `Σ`), degree `k ≥ 1` with `|F| ≥ k + 1`, tradeoff `η ∈ (0, δ_min)`,
+and radius `δ ≤ 1 - (ρ_C + η)^{1/(k+2)}` (where `ρ_C := 1 - δ_min`):
 
-How it under-claims the source, on three axes:
-* **CA, not MCA.** [BCGM25] establishes *mutual* correlated agreement; this theorem bounds the
-  plain *correlated-agreement* curve error `epsCA_curves` (MCA ⇒ CA, so CA is strictly weaker).
-  The ABF26 branch has no curve-MCA notion yet — PR #489 supplies the real one.
-* **Single power curve, not general generators.** It fixes the power-curve family
-  `∑ i : Fin (k+1), γ^i · uᵢ` rather than [BCGM25]'s general class of polynomial generators.
-  (It is at least not a copy of T4.13 `subspaceDesign_epsMCA_gg25`, whose LHS is the affine
-  `epsMCA`.)
-* **Borrowed constants & extra hypothesis.** It gates on `IsSubspaceDesign` (BCGM25 covers all
-  linear codes) and reuses the GG25 affine bound shape `(t·n + 4t³)/|F|` rather than [BCGM25]'s
-  own polynomial-generator constants.
+  `ε_ca-curves(C, k, δ, δ) ≤ (n·γ_k/η)·(k/|F|)
+      + max( 2k / (η·((ρ_C+η)^{1/(k+2)} - (ρ_C+η)^{1/(k+1)})·|F|),
+             (k+1)·(k+2) / (η·|F|) )`,   `γ_k := 1 - (ρ_C+η)^{1/(k+1)}`.
 
-**What [BCGM25] actually says.** The correlated/mutual agreement of subspace-design codes is
-preserved not only under affine line combinations `u₀ + γ · u₁` but under arbitrary *polynomial
-generators* `∑ᵢ Gᵢ(γ) · uᵢ`. Stated in ABF26 §4.2.2 and footnote 2 of the introduction; not
-separately numbered as `T4.x`. [BCGM25] = ePrint 2025/2051 (Bordage–Chiesa–Guan–Manzur, "All
-Polynomial Generators Preserve Distance with Mutual Correlated Agreement").
+This is [BCGM25]'s error function `ξ_{C,k,|F|}` (Definition 8.1, middle branch) for the
+univariate powers generator `γ ↦ (1, γ, …, γ^k)` — exactly the power-curve family of
+`epsCA_curves` — instantiated at `S = F` via Theorem 8.2 (`s = 1` variable, `d₁ = k`;
+its hypothesis `|S| ≥ d + 1` is `|F| ≥ k + 1`). [BCGM25] proves *mutual* correlated
+agreement; since ArkLib's ABF26 branch has no curve-MCA notion yet (PR #489 supplies
+the real `IsMCAGenerator` framework), we admit the weaker CA consequence (MCA ⇒ CA)
+against the in-tree `epsCA_curves`. The `η < δ_min` hypothesis keeps `ρ_C + η < 1`, so
+the branch guard is non-vacuous and the bound's inner denominator
+`(ρ_C+η)^{1/(k+2)} - (ρ_C+η)^{1/(k+1)}` is strictly positive.
+
+**History (2026-07-18).** This replaces a tracked placeholder
+(`subspaceDesign_epsCA_curves_polynomial_generators_bcgm25`) that borrowed the GG25
+affine bound `(t·n + 4t³)/|F|` with a `k`-independent RHS — **false** for large curve
+degree `k` (exact counterexample at `n=1, t=1, q=7, k=6`: `ε ≥ 6/7 > 5/7`), as flagged
+by both 2026-07 reviews. [BCGM25]'s true error necessarily grows with `k`. [BCGM25] =
+ePrint 2025/2051 (Bordage–Chiesa–Guan–Manzur, "All Polynomial Generators Preserve
+Distance with Mutual Correlated Agreement"); statement re-derived from the PDF
+(Definition 8.1 + Theorem 8.2), not from ABF26's prose.
 
 **Canonical formalization lives elsewhere.** The genuine polynomial-generator MCA framework
 (`Generator` / `IsMCAGenerator` / `IsMCA`, formalizing [BCGM25] Lemmas 4.1, 4.2 and Definition
 4.3) is being built in `ProximityGap/MCAGenerator.lean` and `ProximityGap/ProximityGenerators.lean`
 by PR #489 (`Katy/MCAgens`). Once that lands and merges, **this entry should be restated in terms
 of `IsMCAGenerator` (or removed in favour of it).** Do not grow a parallel polynomial-generator
-notion under `CapacityBounds`. The `sorry` itself is a legitimate external admit (the paper gives
-no proof); the caveat above is solely about the statement being weaker than the source. -/
-theorem subspaceDesign_epsCA_curves_polynomial_generators_bcgm25
+notion under `CapacityBounds`. -/
+theorem linear_epsCA_curves_powers_bcgm25
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (_h : IsSubspaceDesign s τ C)
-    (t k : ℕ) (_ht : 0 < t) :
-    epsCA_curves (F := F) (A := Fin s → F) ((C : Set (ι → Fin s → F))) k
-        ((1 - τ (t + 1) - 3 / (2 * t)).toNNReal)
-        ((1 - τ (t + 1) - 3 / (2 * t)).toNNReal) ≤
-      ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
-  sorry -- ABF26-BCGM25; external admit. Polynomial-generator (curve) CA extension of T4.13.
+    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
+    (_hk : 1 ≤ k)
+    (_hcard : k + 1 ≤ Fintype.card F)
+    (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
+    (_hη : 0 < η) (_hη_lt_δ_min : η < δ_min)
+    (_hδ : (δ : ℝ) ≤ 1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2))) :
+    epsCA_curves (F := F) (A := A) ((C : Set (ι → A))) k δ δ ≤
+      ENNReal.ofReal
+        (((Fintype.card ι : ℝ)
+              * (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1))) / η)
+            * ((k : ℝ) / Fintype.card F)
+          + max
+              (2 * (k : ℝ) /
+                ((η : ℝ)
+                  * ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2))
+                      - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))
+                  * Fintype.card F))
+              (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
+  sorry -- external admit [BCGM25 Thm 8.2 + Def 8.1] (univariate powers, list branch, CA form).
 
 end SubspaceDesignFRS
 

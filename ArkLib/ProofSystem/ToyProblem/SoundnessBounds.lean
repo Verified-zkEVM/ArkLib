@@ -139,25 +139,25 @@ private lemma claimB1_bound_to_real {M s c : ℕ} (hc : 1 ≤ c) (hM : 1 ≤ M)
 /-- **Stacked-codeword matrix.** The interleaved word whose two columns are the
 codewords `enc m.1` and `enc m.2`; used to enumerate `Λ(C^{≡2}, δ, (f₁,f₂))` by
 message pairs in the proof of ABF26 Lemma 6.12. -/
-private def encStack {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
+def encStack {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
     (m : (Fin k → F) × (Fin k → F)) : Matrix ι (Fin 2) A :=
   Matrix.of (fun i j ↦ if j = 0 then enc m.1 i else enc m.2 i)
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-private lemma encStack_apply_zero {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
+lemma encStack_apply_zero {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
     (m : (Fin k → F) × (Fin k → F)) (i : ι) : encStack enc m i 0 = enc m.1 i := rfl
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-private lemma encStack_apply_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
+lemma encStack_apply_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
     (m : (Fin k → F) × (Fin k → F)) (i : ι) : encStack enc m i 1 = enc m.2 i := rfl
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-private lemma encStack_transpose_zero {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
+lemma encStack_transpose_zero {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
     (m : (Fin k → F) × (Fin k → F)) : (encStack enc m).transpose 0 = enc m.1 := by
   funext i; rfl
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-private lemma encStack_transpose_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
+lemma encStack_transpose_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A))
     (m : (Fin k → F) × (Fin k → F)) : (encStack enc m).transpose 1 = enc m.2 := by
   funext i; rfl
 
@@ -166,7 +166,7 @@ omit [Fintype F] [Field F] in
 `δᵣ` form used by `relCloseToWord_iff_exists_agreementCols`. The two differ only by
 the `DecidableEq` instance baked into `relHammingBall` (a `Subsingleton`, closed by
 `congr!`) and the `ℚ≥0`/`ℝ≥0`/`ℝ` coercion path. -/
-private lemma mem_relHammingBall_iff [Nonempty ι] (y : ι → Fin 2 → A)
+lemma mem_relHammingBall_iff [Nonempty ι] (y : ι → Fin 2 → A)
     (x : Matrix ι (Fin 2) A) (δ : ℝ≥0) :
     x ∈ relHammingBall y (δ : ℝ) ↔ (↑δᵣ(y, x) : ℝ≥0) ≤ δ := by
   have key : x ∈ relHammingBall y (δ : ℝ) ↔ (↑δᵣ(y, x) : ℝ) ≤ (δ : ℝ) := by
@@ -190,7 +190,7 @@ lies in `Λ(C^{≡2}, δ, fStar)` exactly when `fStar` agrees with the two colum
 `C = range enc`); the distance conjunct unfolds to the agreement set via
 `relCloseToWord_iff_exists_agreementCols` + `relDist_floor_bound_iff_complement_bound`,
 following the coercion handling of `mem_winningSetFor_zero_of_relClose`. -/
-private lemma encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
+lemma encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) {C : Set (ι → A)} (hC : Set.range enc = C)
     {δ : ℝ≥0} (hδ_lt : δ < 1) {fStar : ι → Fin 2 → A}
     (m : (Fin k → F) × (Fin k → F)) :
@@ -852,7 +852,7 @@ private def gammaEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ 
 omit [Field F] [Fintype F] in
 /-- The minimum relative Hamming distance of any code is at most `1` (it is
 either a relative Hamming distance between two words, or `0` by convention). -/
-private lemma minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
+lemma minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
     minRelHammingDistCode C ≤ 1 := by
   by_cases h : (possibleRelHammingDists C).Nonempty
   · obtain ⟨p, _, heq⟩ := minRelHammingDistCode_mem h
@@ -866,7 +866,7 @@ omit [Field F] [Fintype F] in
 agree on a column set covering a `(1-δ)`-fraction of `ι` with `δ < δ_min(C)`
 are equal: their relative Hamming distance is at most `δ`, but distinct
 codewords are at relative distance at least `δ_min(C) > δ`. -/
-private lemma codeword_eq_of_agree_on_large_set [Nonempty ι] {C : Set (ι → A)}
+lemma codeword_eq_of_agree_on_large_set [Nonempty ι] {C : Set (ι → A)}
     {δ : ℝ≥0} (hδ_lt : δ < (minRelHammingDistCode C : ℝ≥0)) {w₁ w₂ : ι → A}
     (hw₁ : w₁ ∈ C) (hw₂ : w₂ ∈ C) {S : Finset ι}
     (hScard : (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card)
@@ -892,7 +892,7 @@ private lemma codeword_eq_of_agree_on_large_set [Nonempty ι] {C : Set (ι → A
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
 /-- `encStack enc` is injective when `enc` is: the two columns of the stack
 recover `enc m.1` and `enc m.2`, hence (by injectivity of `enc`) the pair. -/
-private lemma encStack_injective {k : ℕ} {enc : (Fin k → F) →ₗ[F] (ι → A)}
+lemma encStack_injective {k : ℕ} {enc : (Fin k → F) →ₗ[F] (ι → A)}
     (hinj : Function.Injective enc) : Function.Injective (encStack enc) := by
   intro p q hpq
   have h1 : enc p.1 = enc q.1 := by
@@ -906,7 +906,7 @@ omit [Fintype ι] in
 `(a, b) ≠ (μ₁, μ₂)` then `a + γ·b = μ₁ + γ·μ₂` holds for at most one `γ`:
 when `b ≠ μ₂` the equation is affine in `γ` with nonzero slope; when `b = μ₂`
 it forces `a = μ₁`, contradicting the violation. -/
-private lemma affine_solution_card_le_one {a b μ₁ μ₂ : F}
+lemma affine_solution_card_le_one {a b μ₁ μ₂ : F}
     (h : ¬ (a = μ₁ ∧ b = μ₂)) :
     (Finset.univ.filter (fun γ : F ↦ a + γ * b = μ₁ + γ * μ₂)).card ≤ 1 := by
   classical
@@ -925,7 +925,7 @@ private lemma affine_solution_card_le_one {a b μ₁ μ₂ : F}
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
 /-- **Union bound over a uniform sample.** `Pr[P ∨ Q] ≤ Pr[P] + Pr[Q]` for a
 uniformly sampled `x`, by the card-filter route (`Finset.card_union_le`). -/
-private lemma Pr_or_le {α : Type} [Fintype α] [Nonempty α] (P Q : α → Prop) :
+lemma Pr_or_le {α : Type} [Fintype α] [Nonempty α] (P Q : α → Prop) :
     Pr_{let x ← $ᵖ α}[P x ∨ Q x]
       ≤ Pr_{let x ← $ᵖ α}[P x] + Pr_{let x ← $ᵖ α}[Q x] := by
   classical

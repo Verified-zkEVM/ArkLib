@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
-import ArkLib.ToVCVio.ToMathlib.Control.StateT
+import ToMathlib.Control.StateT
 import VCVio.EvalDist.Defs.NeverFails
 import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 import VCVio.OracleComp.SimSemantics.StateT.Basic
@@ -24,7 +24,7 @@ lemma simulateQ_randomOracle_map_uniformFin {α : Type} (n : ℕ) (f : Fin (n + 
       (f <$> uniformSample (Fin (n + 1)) : ProbComp α) :
         StateT unifSpec.QueryCache ProbComp α).run' ∅) =
       (f <$> uniformSample (Fin (n + 1))) := by
-  rw [simulateQ_map, StateT.run'_map_comm]
+  rw [simulateQ_map, StateT.run'_map']
   congr 1
 
 /-- If all outputs of the original `OracleComp` are successful and satisfy `P`, then the
@@ -215,7 +215,7 @@ lemma map_run'_eq_of_map_eq {m : Type → Type} {σ α β γ : Type}
     (mx : StateT σ m α) (my : StateT σ m β) (s : σ)
     (h : f <$> mx = g <$> my) :
     f <$> mx.run' s = g <$> my.run' s := by
-  rw [← StateT.run'_map_comm f, ← StateT.run'_map_comm g]
+  rw [← StateT.run'_map' _ f, ← StateT.run'_map' _ g]
   exact congrArg (fun mx : StateT σ m γ => mx.run' s) h
 
 end StateT
@@ -242,7 +242,7 @@ lemma StateT.run'_simulateQ_bind_map_eq_of_body
     (hBody : ∀ a, simulateQ impl (body₁ a) = f <$> simulateQ impl (body₂ a)) :
     (simulateQ impl (oa >>= body₁)).run' s =
       f <$> (simulateQ impl (oa >>= body₂)).run' s := by
-  rw [← StateT.run'_map_comm f]
+  rw [← StateT.run'_map' _ f]
   exact congrArg (fun mx : StateT σ ProbComp β => mx.run' s)
     (simulateQ_bind_map_eq_of_body impl oa body₁ body₂ f hBody)
 
@@ -514,8 +514,8 @@ lemma simulateQ_addLift_add_liftM_left
     {n : Type → Type} [Monad n] [LawfulMonad n] [MonadLiftT n m] [LawfulMonadLiftT n m]
     (impl : QueryImpl spec m₀) (impl₁ : QueryImpl spec₁ n) (impl₂ : QueryImpl spec₂ n)
     {α : Type} (x : OracleComp spec₁ α) :
-    simulateQ (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂)
-        : QueryImpl (spec + (spec₁ + spec₂)) m)
+    simulateQ (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂) :
+        QueryImpl (spec + (spec₁ + spec₂)) m)
       (liftM (liftM x : OracleComp (spec₁ + spec₂) α) : OracleComp (spec + (spec₁ + spec₂)) α)
       = (liftM (simulateQ impl₁ x) : m α) := by
   rw [show QueryImpl.add impl₁ impl₂ = impl₁ + impl₂ from rfl,
@@ -537,25 +537,14 @@ lemma simulateQ_addLift_add_liftM_right
     {n : Type → Type} [Monad n] [LawfulMonad n] [MonadLiftT n m] [LawfulMonadLiftT n m]
     (impl : QueryImpl spec m₀) (impl₁ : QueryImpl spec₁ n) (impl₂ : QueryImpl spec₂ n)
     {α : Type} (x : OracleComp spec₂ α) :
-    simulateQ (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂)
-        : QueryImpl (spec + (spec₁ + spec₂)) m)
+    simulateQ (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂) :
+        QueryImpl (spec + (spec₁ + spec₂)) m)
       (liftM (liftM x : OracleComp (spec₁ + spec₂) α) : OracleComp (spec + (spec₁ + spec₂)) α)
       = (liftM (simulateQ impl₂ x) : m α) := by
   rw [show QueryImpl.add impl₁ impl₂ = impl₁ + impl₂ from rfl,
     ← OracleComp.liftComp_eq_liftM, ← OracleComp.liftComp_eq_liftM,
     QueryImpl.addLift_def, QueryImpl.simulateQ_add_liftComp_right,
     simulateQ_liftTarget, QueryImpl.simulateQ_add_liftComp_right]
-
-/-- Binding a failed `OptionT` computation fails: `failure >>= f = failure`. The `OptionT`
-sibling of core's `OptionT.bind_throw`; phrased for the `Alternative`-flavoured `failure`
-that `guard`-based protocol verifiers produce. Candidate for upstreaming next to core's
-`OptionT.run_failure`. -/
-lemma OptionT.failure_bind.{u, v} {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {α β : Type u}
-    (f : α → OptionT m β) :
-    (failure : OptionT m α) >>= f = failure := by
-  apply OptionT.ext
-  simp only [OptionT.run_bind, OptionT.run_failure, Option.elimM, pure_bind, Option.elim_none]
 
 /-- `simulateQ` maps an `OptionT` `failure` (whose run is the underlying `pure none`) to
 `failure`: the `failure` companion of `simulateQ_pure` for `OptionT`-monadic computations.
@@ -610,5 +599,5 @@ lemma simulateQ_optionT_forIn_yield_pure_none
             OracleComp spec (Option (ForInStep β))) : OptionT n (ForInStep β))
             = (failure : OptionT n (ForInStep β)) from by
           rw [hbody x, if_neg hx]; rfl]
-        rw [OptionT.failure_bind]
+        rw [failure_bind]
         rfl

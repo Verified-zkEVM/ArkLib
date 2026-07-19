@@ -47,13 +47,15 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
       (ii) `∃ u ∈ C, u(S) = ∑ j : parℓ, rⱼ * fⱼ(S)`
       (iii) `∃ i : parℓ, ∀ u' ∈ C, u'(S) ≠ fᵢ(S)`
 
-  **Asymmetry with ABF26 `mcaEvent`.** Clause (iii) here is *per-row* — "some `fᵢ` is
+  **Relation to ABF26 `mcaEvent`.** Clause (iii) here is *per-row* — "some `fᵢ` is
   unmatched by any single codeword on `S`". The ABF26 `mcaEvent` (Def 4.3) instead asks
-  *jointly* that "no pair `(v₀, v₁)` of codewords agrees with `(f 0, f 1)` on `S`". The
-  per-row failure implies the joint failure (an unmatched row forces no joint pair) but
-  not the converse: the rows could each match different codewords with no consistent
-  pair. So `WHIR-event ⊆ ABF26-event` and `Pr[WHIR-event] ≤ Pr[ABF26-event]`. See
-  `proximityCondition_imp_mcaEvent_affineLine` below for the predicate-level bridge. -/
+  *jointly* that "no pair `(v₀, v₁)` of codewords agrees with `(f 0, f 1)` on `S`".
+  These coincide: the two components of a joint pair are independent codewords, so
+  "no pair jointly agrees on `S`" decomposes as "row 0 is unmatched OR row 1 is
+  unmatched", which is exactly the per-row clause. See
+  `proximityCondition_imp_mcaEvent_affineLine` (needs `δ < 1` to rule out the empty
+  witness set, an artifact of this definition nesting the row clause under `∀ s ∈ S`)
+  and its unconditional converse `mcaEvent_imp_proximityCondition_affineLine` below. -/
 def proximityCondition (f : parℓ → ι → F) (δ : ℝ≥0) (r : parℓ → F)
     (C : LinearCode ι F) : Prop :=
   ∃ S : Finset ι,
@@ -70,9 +72,9 @@ the WHIR event implies the ABF26 event. As a consequence
 transfers to a bound on WHIR's `Pr[proximityCondition]` and hence to
 `hasMutualCorrAgreement (affine-line generator) BStar (fun _ => ε)`.
 
-The converse implication does **not** hold (per-row failure is strictly stronger than
-joint failure), so this bridge is one-way only. See `proximityCondition` for the
-predicate-mismatch discussion.
+The converse also holds — see `mcaEvent_imp_proximityCondition_affineLine` below —
+because the two components of a joint pair are independent codewords, so joint failure
+decomposes into per-row failure. See `proximityCondition` for the discussion.
 
 The `δ < 1` hypothesis avoids the degenerate case where `(1 - δ)·n ≤ 0` permits an
 empty witness set `S` — `proximityCondition` becomes vacuously satisfiable (its `∃ i`
@@ -116,6 +118,33 @@ lemma proximityCondition_imp_mcaEvent_affineLine
       have hi1 : i = 1 := by omega
       rw [hi1] at hne
       exact hne hag.2
+
+omit [Fintype F] [DecidableEq F] [Nonempty ι] in
+/-- **Converse bridge: ABF26 `mcaEvent` ⟹ WHIR `proximityCondition` (affine-line case).**
+
+Together with `proximityCondition_imp_mcaEvent_affineLine` this shows the two events
+coincide (for `δ < 1`): the two components of a joint pair are independent codewords, so
+"no pair `(v₀, v₁)` jointly agrees with `(f 0, f 1)` on `S`" decomposes as "some row `fᵢ`
+is unmatched by every single codeword on `S`" — exactly the per-row clause (iii) of
+`proximityCondition`. Unlike the forward direction, no `δ < 1` hypothesis is needed. -/
+lemma mcaEvent_imp_proximityCondition_affineLine
+    {C : LinearCode ι F} {δ : ℝ≥0}
+    (f : Fin 2 → ι → F) (γ : F)
+    (h : ProximityGap.mcaEvent (F := F) (A := F) ((C : Set (ι → F))) δ (f 0) (f 1) γ) :
+    proximityCondition (parℓ := Fin 2) f δ (fun j ↦ if j = 0 then 1 else γ) C := by
+  obtain ⟨S, hS_card, ⟨w, hw_mem, hw_agree⟩, hno_pair⟩ := h
+  -- Joint failure decomposes into per-row failure: if every row were matched by some
+  -- codeword on `S`, those two codewords would form a jointly agreeing pair.
+  have hrow : ∃ i : Fin 2, ∀ u' ∈ (C : Set (ι → F)), ∃ s ∈ S, u' s ≠ f i s := by
+    by_contra hno
+    push Not at hno
+    obtain ⟨v₀, hv₀, h₀⟩ := hno 0
+    obtain ⟨v₁, hv₁, h₁⟩ := hno 1
+    exact hno_pair ⟨v₀, hv₀, v₁, hv₁, fun s hs => ⟨h₀ s hs, h₁ s hs⟩⟩
+  refine ⟨S, hS_card, w, hw_mem, fun s hs => ⟨?_, hrow⟩⟩
+  have hw := hw_agree s hs
+  simp only [Fin.sum_univ_two, smul_eq_mul] at hw ⊢
+  simpa using hw
 
 /-- **Probability-level corollary of the predicate bridge.** For any pair `(f 0, f 1)`,
 the probability over `γ ←$ᵖ F` of WHIR's `proximityCondition` (with affine-line `r =
