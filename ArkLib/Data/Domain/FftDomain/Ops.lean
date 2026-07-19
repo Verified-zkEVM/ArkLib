@@ -183,7 +183,6 @@ lemma domain_implies_char_ne_2 [NeZero n] (ω : D) :
   · exact h_ne_one h
   · exact h_ne_one (by rwa [h_neg_eq_pos] at h)
 
-@[simp]
 lemma domain_implies_2_ne_0 [NeZero n] (ω : D) :
   (2 : F) ≠ 0 := fun contra ↦ domain_implies_char_ne_2 ω <|
     ringChar.of_eq (CharP.ringChar_of_prime_eq_zero Nat.prime_two contra)

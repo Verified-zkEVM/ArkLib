@@ -116,7 +116,6 @@ lemma neg_mem_domain_iff_mem [nz : NeZero n] :
 lemma domain_implies_char_ne_2 [NeZero n] (ω : D) :
   ¬CharP F 2 := FftDomainClass.domain_implies_char_ne_2 (toFftDomain ω)
 
-@[simp]
 lemma domain_implies_2_ne_0 [NeZero n] (ω : D) :
   (2 : F) ≠ 0 := FftDomainClass.domain_implies_2_ne_0 (toFftDomain ω)
 

@@ -234,7 +234,7 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
 
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation and avoids using `log`. -/
-theorem foldWord_k_1_no_choice {i : Fin (2 ^ (n - 1))} {α : F}
+theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
   {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
   (hj : domain j ^ 2 = domain.subdomain 1 i) (hj' : domain j' ^ 2 = domain.subdomain 1 i) :
   foldWord domain f 1 α i =
