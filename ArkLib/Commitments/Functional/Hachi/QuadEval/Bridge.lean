@@ -211,7 +211,7 @@ theorem bridge_coordinateWiseSpecialSound {σ : Type}
 
 /-- **The polynomial-level bridge as an `EscapeCWSSPackage`** (Hachi [NOZ26, §4.2]): the zero-round
 `ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure (`ofIsEmpty`) and its
-CWSS certificate, ready to be `▷ₑ`-composed before `QuadEval`. Its public `relOut` is
+CWSS certificate, ready to be `▷`-composed before `QuadEval`. Its public `relOut` is
 `QuadEval`'s ordinary input relation `relIn`, and it carries the escape set through unchanged. -/
 def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (base : ZMod q) (βSq γ κ : ℕ) (esc : Set E) :

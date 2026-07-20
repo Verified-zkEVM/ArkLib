@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
-  # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`, `▷ᵍ`)
+  # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
 
   **Skeleton of milestone B4** of the Hachi sumcheck track (see
   `HACHI_SUMCHECK_TRACK_PLAN.md` §2): coordinate-wise special soundness (CWSS) composition
@@ -47,10 +47,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
     acceptance-probability `1` vs `failure`'s probability `0`; (ii) certify left-leaf outputs in
     `rel₂.language` via a guarded `accepting_of_mem`).
   * `GCWSSPackage` — the guarded analogue of `CWSSPackage` (`isPure` ↝ `isGuarded`), with
-    `CWSSPackage.toGuarded` and the composition `GCWSSPackage.append` = infix `▷ᵍ`.
+    `CWSSPackage.toGuarded` and the composition `GCWSSPackage.append` = infix `▷`
+    (explicit synonym `▷ᵍ`).
 
   A guarded n-ary `seqCompose` variant (B4.4) is deliberately not skeletonized here: the Hachi
-  composition builds its guarded loop by *recursion over binary `▷ᵍ`*
+  composition builds its guarded loop by *recursion over the binary guarded append*
   (`ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean`), which only needs the binary
   theorem.
 
@@ -151,7 +152,8 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- A **bundled guarded coordinate-wise-special-sound reduction**: `CWSSPackage` with the purity
 witness relaxed to a guardedness witness. Guarded packages compose with `GCWSSPackage.append`
-(infix `▷ᵍ`); a pure package enters the guarded world via `CWSSPackage.toGuarded`. -/
+(infix `▷`, explicit synonym `▷ᵍ`); a pure package enters the guarded world via
+`CWSSPackage.toGuarded`, or automatically through the mixed `▷` overloads below. -/
 structure GCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier (may reject at runtime). -/
@@ -192,7 +194,7 @@ guarded analogue of `CWSSPackage.append`/`▷`. The composed verdict is guarded 
 of both checks (`Verifier.IsGuarded.append`), and the composed certificate is the guarded binary
 append theorem `Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (both currently
 sorried B4 milestones — this definition is the *interface* the Hachi chain composes through).
-Written infix as `L₁ ▷ᵍ L₂`. -/
+Written infix as `L₁ ▷ L₂` (explicit synonym `▷ᵍ`). -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
@@ -215,6 +217,47 @@ end GCWSSPackage
 
 @[inherit_doc GCWSSPackage.append]
 scoped infixr:65 " ▷ᵍ " => GCWSSPackage.append
+
+/-! ### Lifting pure packages into a guarded chain
+
+A pure `CWSSPackage` enters the guarded world losslessly (`CWSSPackage.toGuarded`: the guard is
+the trivially-true check and the certificate is unchanged). The mixed appends below insert this
+lift automatically, so guarded packages need only be *defined* for the subprotocols whose checks
+genuinely reject at runtime. Together with the escape-lifting appends in `Escape.lean`, every
+ordered pair of package kinds (escape? × guarded?) composes at its join through the universal
+`▷` elaborator defined in `Escape.lean`: two pure packages compose pure (staying on the proven
+pure append theorem), while a single guarded factor moves the composite — visibly in its type —
+onto the guarded append theorem. -/
+
+section GuardedLift
+
+variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+
+/-- **Compose a pure left factor with a guarded right factor.** The left package is lifted with
+`CWSSPackage.toGuarded`; only the relation seam `hRel` remains (discharged by `rfl`).
+Dispatched by the universal `▷`. -/
+def CWSSPackage.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    GCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuarded.append L₂ hRel
+
+/-- **Compose a guarded left factor with a pure right factor.** The right package is lifted with
+`CWSSPackage.toGuarded`; only the relation seam `hRel` remains (discharged by `rfl`).
+Dispatched by the universal `▷`. -/
+def GCWSSPackage.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    GCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toGuarded hRel
+
+end GuardedLift
 
 end CoordinateWise
 

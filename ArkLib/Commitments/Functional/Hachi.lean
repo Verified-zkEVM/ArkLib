@@ -42,7 +42,7 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   guarded sumcheck stages of the opening chain.
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
   one iteration at the next ring's plain `QuadEval.relIn` relation.
-* `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷ₑ
+* `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
   quadEvalPackage`, followed by the opening subprotocols. Packages expose one plain `relIn` /
   `relOut` flow while a parallel escape set grows backwards at Figure 4 and `QuadEval`.
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and

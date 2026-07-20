@@ -29,8 +29,9 @@ theorem chain_cwss := chain.isCWSS
 ```
 
 Each protocol component exports its own package next to its CWSS theorem; the composition site only
-imports and chains them. `▷` is `scoped` in `CoordinateWise`, so `open scoped CoordinateWise`
-(or `open CoordinateWise`) activates it.
+imports and chains them. The universal `▷` is a single elaborator defined in `Escape.lean` (it
+dispatches over all four package kinds — pure, guarded, escape-aware, or both); it is `scoped` in
+`CoordinateWise`, so `open scoped CoordinateWise` (or `open CoordinateWise`) activates it.
 
 ## References
 
@@ -97,9 +98,6 @@ def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
       L₁.verifier L₂.verifier L₁.struct L₂.struct verify₁ hV₁ L₁.isCWSS h₂
 
 end CWSSPackage
-
-@[inherit_doc CWSSPackage.append]
-scoped infixr:65 " ▷ " => CWSSPackage.append
 
 end CoordinateWise
 

@@ -38,8 +38,8 @@ record-then-bridge convention reconciled with the structured round's `![...]` RB
   protocols" step. Pure reshaping through the batching identities.
 * `Sumcheck/Rounds.lean` — **Hachi Figure 6 / Lemma 11**: the `m₀`-round paired sumcheck loop
   (each round sends the univariate pair `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under a shared challenge `aᵢ`), with
-  **guarded** round verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`), composed by recursion over the guarded
-  append `▷ᵍ`. CWSS theorem `round_coordinateWiseSpecialSound` (**sorried**).
+  **guarded** round verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`), composed by recursion over the binary
+  guarded append. CWSS theorem `round_coordinateWiseSpecialSound` (**sorried**).
 * `Sumcheck/FinalEval.lean` — **Hachi Figure 7 tail**: the closing step — the prover sends the
   claimed evaluation `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and
   the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters.

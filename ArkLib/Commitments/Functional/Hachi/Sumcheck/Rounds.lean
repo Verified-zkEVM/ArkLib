@@ -38,8 +38,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   target_{i−1}` recovers the previous round's claim. (The guard fact is available to the round's
   own extraction: acceptance probability `1` on a guarded verifier forces `check = true`.)
 
-  The loop is composed by **recursion over the binary guarded append `▷ᵍ`**
-  (`roundsChain count = roundsChain (count−1) ▷ᵍ roundPackage (count−1)`, base = the identity
+  The loop is composed by **recursion over the binary guarded append**
+  (`roundsChain count = roundsChain (count−1) ▷ roundPackage (count−1)`, base = the identity
   package), so the only composition machinery it consumes is `Guarded.lean`'s B4 skeleton.
 
   **Sorried**: the per-round CWSS theorem `round_coordinateWiseSpecialSound` (Lemma 11).
@@ -209,7 +209,7 @@ def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
 instance : IsEmpty (roundsSpec F b 0).ChallengeIdx := ⟨fun i => Fin.elim0 i.1⟩
 
 /-- **The composed sumcheck loop, with its seam invariant** (Hachi Figure 7's round phase):
-`count` paired rounds chained by recursion over the binary guarded append `▷ᵍ` (base case: the
+`count` paired rounds chained by recursion over the binary guarded append (base case: the
 zero-round identity package), together with the proofs that the composite's `relIn`/`relOut`
 are the round-`0`/round-`count` seam relations — the recursion's seams are definitional only
 *per instance*, not for an open `count`, so the invariant must ride along. -/

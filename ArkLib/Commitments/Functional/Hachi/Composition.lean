@@ -21,8 +21,9 @@ verifier — may `failure` at runtime), bundling the verifier with its proof of 
 special soundness
 (CWSS), the knowledge-soundness notion under which a witness is extracted from a suitably
 structured tree of accepting transcripts. This file only **imports those packages and chains
-them**: pure links with `▷ₑ` and guarded links with `▷ₑᵍ`. Both the ordinary relation seam and
-the parallel escape seam must match. The guarded composition theorem lives in
+them** with the universal append `▷`, which dispatches on the factors' package kinds (pure,
+guarded, escape-aware, or both) and lifts to the join automatically. Both the ordinary relation
+seam and the parallel escape seam must match. The guarded composition theorem lives in
 `OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean`). The composed chain's
 `isCWSS` field is the CWSS certificate for the whole reduction. (Hachi as a `Commitment.Scheme` —
 the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the
@@ -30,18 +31,19 @@ sibling `Commitment.lean`.)
 
 ## The three layers of this file
 
-1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ₑ `QuadEval`
+1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
    (§4.2 / Figure 3 / Lemma 8).
 2. **`openCore`** (skeleton, pure links): the escape-aware `evalChain` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ₑ HMZ25 lift (Figure 4 / Lemma 9)
-   ▷ₑ batching bridge (Eqs. (22)–(23)) ▷ₑ zero-check (Figure 5 / **corrected** Lemma 10) ▷ₑ
+   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
+   ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
    sumcheck bridge.
-3. **`openingChain`** (skeleton, guarded tail): `openCore` ▷ₑᵍ the paired sumcheck loop
-   (Figure 6 / Lemma 11, `m₀` guarded rounds) ▷ₑᵍ final evaluation (Figure 7 tail) ▷ₑᵍ the
-   §4.5 recursion adapters (partial evaluations ▷ₑᵍ `Z`-packing bridge ▷ₑᵍ trace handoff),
-   landing on
+3. **`openingChain`** (skeleton, guarded tail): the pure `openCore` ▷ the paired sumcheck loop
+   (Figure 6 / Lemma 11, `m₀` guarded rounds) ▷ final evaluation (Figure 7 tail) ▷ the
+   §4.5 recursion adapters (pure partial evaluations ▷ pure `Z`-packing bridge ▷ guarded trace
+   handoff), landing on
    the **next iteration's** `QuadEval` input relation over the next ring `Φ'` — the recursion
-   loop's closing seam.
+   loop's closing seam. The universal `▷` lifts each pure factor into the escape-guarded world
+   automatically (`Escape.lean`, package-lattice section); no explicit `.toGuarded` calls.
 
 ## The composed verifier chain, seam by seam
 
@@ -77,8 +79,8 @@ backwards at the two extraction points that can create failures: Figure 4 adds `
   never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8, 9,
   12 are **guarded** (design D6): their runtime check reads data the next statement type drops
   (the previous sumcheck target; the final targets; the packed claim value) — exactly the paper's
-  runtime checks — and compose via `▷ₑᵍ`, whose composition theorem (B4) is the one sorried piece
-  of *generic* machinery.
+  runtime checks — and compose through the guarded append, whose composition theorem (B4) is the
+  one sorried piece of *generic* machinery.
 - Row 6 implements the **corrected Lemma 10**: the paper's uniform-vector star extraction is not
   provable (axis-cross counterexample); the challenge is a pair of scalar **Kronecker seeds**
   with the batching points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, giving genuine
@@ -158,7 +160,7 @@ def evalChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
         pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r) :=
   bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl (b : ZMod q)
       (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
-      (esc ∪ Q.localEsc) ▷ₑ
+      (esc ∪ Q.localEsc) ▷
     quadEvalPackage init impl hq5 hκ hτ esc Q
 
 /-- **Hachi evaluation reduction — coordinate-wise special soundness (Hachi [NOZ26, §4.2,
@@ -234,7 +236,7 @@ same workaround as `roundsSpecSampleable`). Requires a sampler for the fold chal
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
 /-- **The pure prefix of one Hachi opening iteration** (rows 1–7 of the chain table): the
-escape-aware evaluation front (`evalChain` = bridge ▷ₑ `QuadEval`) extended by the §4.3 stages
+escape-aware evaluation front (`evalChain` = bridge ▷ `QuadEval`) extended by the §4.3 stages
 with pure verifiers — the `R^lin` adapter, the HMZ25
 lift, the batching bridge, the (corrected-Lemma-10) zero-check, and the sumcheck bridge. Every
 ordinary relation seam and parallel escape seam is definitional (`rfl`). The public result
@@ -262,22 +264,26 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
       (h₂ := CoordinateWise.SingleRound.instSampleableTypeChallengePSpec)
-  evalChain (b := b) (γ := γ) init impl hq5 hκ hτ (esc ∪ K.esc) Q ▷ₑ
+  evalChain (b := b) (γ := γ) init impl hq5 hκ hτ (esc ∪ K.esc) Q ▷
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl (b : ZMod q) ω γ
-      (esc ∪ K.esc) ▷ₑ
-    liftPackage 𝓜(q, α) γ ρBound K φF init impl hd esc ▷ₑ
-    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb esc ▷ₑ
-    zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b esc ▷ₑ
+      (esc ∪ K.esc) ▷
+    liftPackage 𝓜(q, α) γ ρBound K φF init impl hd esc ▷
+    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb esc ▷
+    zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b esc ▷
     sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b esc
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
-`openCore` composed — through the guarded append `▷ₑᵍ` — with the guarded tail: the `m₀` paired
-sumcheck rounds (Lemma 11, guarded on the round checks), the final-evaluation step (guarded on
-the target checks), and the §4.5 recursion adapters (the pure partial-evaluation head, the ⚠
-`Z`-packing bridge of `HACHI_RECURSION_GAP.md`, and the guarded trace handoff). The chain lands
-on the plain `relIn Φ'` relation, with the ambient escape set carried separately — closing
-the recursion loop: iteration `i+1` is this chain re-instantiated at `Φ'` (entering at
-`quadEvalPackage`, without row 1).
+`openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on
+the round checks), the final-evaluation step (guarded on the target checks), and the §4.5
+recursion adapters (the pure partial-evaluation head, the ⚠ `Z`-packing bridge of
+`HACHI_RECURSION_GAP.md`, and the guarded trace handoff). Pure factors (`openCore`,
+`partialEvalPackage`, `zBatchPackage`) stay pure escape packages and are lifted into the
+escape-guarded world by the mixed appends behind the universal `▷` (the head seam, whose
+relation and escape identifications are the named `roundsChain_*` lemmas rather than `rfl`, uses
+`EscapeCWSSPackage.appendEscapeGuarded` explicitly). The chain lands on the plain `relIn Φ'`
+relation, with the ambient escape set carried separately — closing the recursion loop:
+iteration `i+1` is this chain re-instantiated at `Φ'` (entering at `quadEvalPackage`, without
+row 1).
 
 The certificate `openingChain.isCWSS` is the one-iteration CWSS statement; its provenance (which
 links are finished, skeleton-sorried, or gap-flagged) is inventoried in the module header. The
@@ -321,7 +327,7 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K Q esc φF hd hq2
-      hb).toGuarded.append
+      hb).appendEscapeGuarded
       (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF esc (mLow + κ))
       (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF esc
         (mLow + κ)).symm
@@ -331,9 +337,9 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF esc
       (mLow + κ))
     (roundsChain_escOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF esc
-      (mLow + κ))) ▷ₑᵍ
-  (partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF esc).toGuarded ▷ₑᵍ
-  (zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF esc).toGuarded ▷ₑᵍ
+      (mLow + κ))) ▷
+  partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF esc ▷
+  zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF esc ▷
   handoffPackage 𝓜(q, α) Φ' mLow κ γ ρBound init impl zpow K esc φF pp' reinterpretCom base' βSq'
     γ' κ'
 

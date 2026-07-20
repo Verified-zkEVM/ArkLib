@@ -448,7 +448,7 @@
       <p>Top to bottom is one opening of an <span class="mono">Rq</span>-committed multilinear polynomial, exactly as
         composed in <span class="mono">Composition.lean</span> (<span class="mono">openingChain</span>). Each link reduces
         one relation to the next; witnesses everywhere carry the escape budget <span class="mono">· ⊕ E</span>
-        (threaded by <span class="mono">Escape.lean</span>). The final link outputs a bare multilinear-evaluation
+        (a parallel escape seam carried per-package via <span class="mono">EscapeCWSSPackage</span>). The final link outputs a bare multilinear-evaluation
         claim <span class="mono">mle[w̃](a) = y′</span> on the committed table.</p>
     </div>
     <div id="spine"></div>
@@ -601,7 +601,7 @@
       desc:"The two-layer commitment the whole line opens against: the scheme with its weak openings, <b>perfect correctness</b>, and the <b>weak-binding reduction to Module-SIS</b> — plus the pinned power-of-two ring. All sorry-free, down to the [LS18] short-element invertibility the soundness rests on." },
   ];
   var SUB_CROSS = [
-    { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"proven", sorry:0,
+    { name:"Escape threading", ref:"milestone F2.0", files:[["CWSS","Escape.lean"]], status:"proven", sorry:0,
       desc:"Runs a parallel escape seam alongside the ordinary relation seam. It carries the Figure-4 <code>LiftCom</code> binding break and adds the QuadEval B/D Module-SIS breaks at the front without changing any public relation's witness type." },
     { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:12,
       desc:"The table w̃, the eq̃-batched constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). Definitions-only for now — the most sorried file in the tree." },
