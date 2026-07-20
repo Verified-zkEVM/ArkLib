@@ -230,11 +230,11 @@ lift, the batching bridge, the (corrected-Lemma-10) zero-check, and the sumcheck
 seam is definitional (`rfl`). The result reduces the polynomial-level `relPolyEvalE` to the
 round-`0` sumcheck seam `roundRelE 0`. -/
 noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ rBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ rBound))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁) :
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ) :
     CWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits ⊕ E)
@@ -249,10 +249,10 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
       (h₂ := CoordinateWise.SingleRound.instSampleableTypeChallengePSpec)
   evalChainE (b := b) (γ := γ) init impl hq5 hκ hτ K.esc ▷
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl (b : ZMod q) ω γ K.esc ▷
-    liftPackage 𝓜(q, α) γ rBound K φF init impl hd ▷
-    batchPackage 𝓜(q, α) m₀ m₁ γ rBound init impl K φF b hn ▷
-    zeroCheckPackage 𝓜(q, α) m₀ m₁ γ rBound init impl K φF b ▷
-    sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ rBound init impl K φF b
+    liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
+    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb ▷
+    zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
+    sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
 `openCore` composed — through the guarded append `▷ᵍ` — with the guarded tail: the `m₀` paired
@@ -268,11 +268,11 @@ links are finished, skeleton-sorried, or gap-flagged) is inventoried in the modu
 sumcheck arity is pinned to `m₀ := mLow + κ` so the recursion adapters can peel the top `κ`
 variables. -/
 noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ rBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ rBound))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -300,15 +300,15 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
           roundsSpec F b (mLow + κ)) ++ₚ pSpecFinalEval F).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
-  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hn).toGuarded.append
-      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ rBound b init impl K φF (mLow + κ))
-      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ rBound b init impl K φF
+  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hq2 hb).toGuarded.append
+      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
+      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
         (mLow + κ)).symm).append
-    (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ rBound b init impl K φF)
-    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ rBound b init impl K φF (mLow + κ))) ▷ᵍ
-  (partialEvalPackage 𝓜(q, α) mLow κ γ rBound b init impl K φF).toGuarded ▷ᵍ
-  (zBatchPackage 𝓜(q, α) mLow κ γ rBound init impl zpow K φF).toGuarded ▷ᵍ
-  handoffPackage 𝓜(q, α) Φ' mLow κ γ rBound init impl zpow K φF pp' reinterpretCom base' βSq'
+    (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF)
+    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))) ▷ᵍ
+  (partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF).toGuarded ▷ᵍ
+  (zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF).toGuarded ▷ᵍ
+  handoffPackage 𝓜(q, α) Φ' mLow κ γ ρBound init impl zpow K φF pp' reinterpretCom base' βSq'
     γ' κ'
 
 /-- **Hachi one-iteration opening — coordinate-wise special soundness (skeleton certificate).**
@@ -318,11 +318,11 @@ just `openingChain.isCWSS`; its assumptions are exactly the sorried links invent
 module header (in particular the ⚠ row-11 gap and the B4 guarded-append machinery). -/
 theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ rBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ rBound))
+    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -330,16 +330,16 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    ((openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl hq5 hκ
-        hτ K φF hd hn zpow Φ' pp' reinterpretCom base' βSq'
+    ((openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ
+        hτ K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq'
         γ' κ')).verifier.coordinateWiseSpecialSound init impl
-      (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl
-        hq5 hκ hτ K φF hd hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
+      (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
+        K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
       (relPolyEvalE 𝓜(q, α) (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) K.esc)
       (relInE Φ' base' βSq' γ' κ' K.esc) :=
-  (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl hq5 hκ hτ
-    K φF hd hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
+  (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
+    K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
 
 end OpeningChain
 

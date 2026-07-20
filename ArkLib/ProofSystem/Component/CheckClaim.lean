@@ -12,19 +12,35 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 
   This is a zero-round (oracle) reduction. There is no witness.
 
-  1. Reduction version: the input relation becomes a predicate on the statement. Verifier checks
-     this predicate, and returns the same statement if successful.
+  1. Reduction version: the input relation becomes a predicate `pred` on the statement. The verifier
+     `guard`s on `pred` (failing the `OptionT` computation when it does not hold) and returns the
+     same statement if successful. The output relation is trivial (`Set.univ`), since the predicate
+     has been checked by the verifier at runtime.
 
-  2. Oracle reduction version: the input relation becomes an oracle computation having as oracles
-     the oracle statements, and taking in the (non-oracle) statement as an input (i.e. via
-     `ReaderT`), and returning a `Prop`. Verifier performs this oracle computation, and returns the
-     same statement & oracle statement if successful.
+  2. Oracle reduction version: **the verifier is a pure pass-through**. It returns the input
+     statement and oracle statements unchanged and does *not* run any check at runtime; the checked
+     predicate `P : Statement → (∀ i, OStatement i) → Prop` is instead carried by the output
+     relation `oracleRelOut P relIn := relIn ∩ {x | P x.1.1 x.1.2}`. Acceptance is exactly
+     membership in `oracleRelOut.language`, i.e. `P` holding.
 
-  In both cases, the output relation is trivial (since the input relation has been checked by the
-  verifier).
+  ## Breaking change (oracle version)
 
-  Note: after the refactor (to disallow failure in `OracleComp`), this may become a special case
-  of `ReduceClaim`.
+  The oracle verifier's contract changed. **Previously** it took the predicate as a `pred :
+  ReaderT Statement (OracleComp [OStatement]ₒ) Prop` argument, ran it as an effectful oracle
+  computation, and could *fail* (`guard`) after querying the oracle statements. **Now** it takes no
+  predicate argument, never fails, and is `OracleVerifier.toVerifier.IsPure` — which is what lets it
+  be a left factor in a coordinate-wise-special-soundness / tree-soundness `append`. The predicate
+  has been moved from the runtime `guard` into `oracleRelOut`. This relation-level design is the
+  canonical one; the old effectful oracle verifier is intentionally obsolete and is not preserved.
+  (The `guard`-based *plain* reduction above is retained, since it can only be a rightmost factor.)
+
+  Consequently, the oracle output relation is no longer trivial: it is `oracleRelOut P relIn`, which
+  refines `relIn` by `P`. Completeness therefore holds under the explicit hypothesis that every
+  `relIn` input already satisfies `P` (`oracleReduction_completeness`), and soundness is captured by
+  `oracleVerifier_coordinateWiseSpecialSound`.
+
+  Note: with the pure pass-through oracle verifier (and the refactor to disallow failure in
+  `OracleComp`), this oracle reduction is a special case of `ReduceClaim` (identity maps).
 -/
 
 open OracleComp OracleInterface ProtocolSpec Function
