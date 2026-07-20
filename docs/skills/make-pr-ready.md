@@ -42,6 +42,24 @@ Work through these in order. Do not stop until every item is complete.
   revert, `git diff --cached --stat` shows huge index-vs-HEAD numbers for `_generated/` — that is
   the size of the revert, **not** new drift; do not panic. Confirm the post-commit guard view with
   `git diff --cached --quiet origin/main -- docs/kb/_generated/` (must be clean).
+- **Strip stray planning/scratch `.md` files.** A Markdown plan, design note, or working-notes
+  file that is **not already committed in the repo** (newly added by this branch, or still
+  untracked — e.g. `PLAN.md`, `NOTES.md`, `scratch/*.md`, an agent handoff/TODO dump) must
+  **never** make it into the PR. These are working artifacts, not repo documentation. Detect them
+  by listing the PR's added and untracked Markdown, then subtracting the curated docs a PR may
+  legitimately add (`docs/kb/papers/`, `docs/kb/sources/`, `docs/wiki/`, `docs/skills/`,
+  `blueprint/`, and top-level pages like `README`/`ROADMAP`/`CONTRIBUTING`):
+
+  ```bash
+  git diff --name-only --diff-filter=A origin/main...HEAD -- '*.md'   # newly-added, committed
+  git status --short -- '*.md'                                        # staged / untracked
+  ```
+
+  For any file that is a working plan rather than curated documentation, **warn the user** and
+  remove it from the stage/commit state — `git restore --staged <file>` to unstage, and
+  `git rm --cached <file>` (or delete the file / drop it from the commit) if the branch already
+  committed it. Never silently ship an agent's scratch plan; a legitimately-authored docs page
+  (a real `docs/kb/papers/<KEY>.md`, a `docs/wiki/` page) is fine and stays.
 
 ### 1. Follow the contribution guidelines
 
