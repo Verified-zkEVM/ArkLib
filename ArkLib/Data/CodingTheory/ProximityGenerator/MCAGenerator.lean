@@ -182,24 +182,13 @@ lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (
       (ε_mca + (Fintype.card ℓ : ℝ) • ε_mca') LC := by
   intro U γ
   -- `W x' i` is the `G'`-combination of the `i`-th "row" `(U (i, ·))` of the word matrix.
-  set W : S' → (ℓ → (ι → F)) := fun x' i => Matrix.vecMul (G' x') (fun j => U (i, j)) with hW
-  -- Key algebraic identity: the tensor combination factors as `G`-combination of the `W`-rows.
-  have key : ∀ (x : S) (x' : S'),
-      Matrix.vecMul (TensorGenerator_Explicit G G' (x, x')) U
-        = Matrix.vecMul (G x) (W x') := by
-    intro x x'
-    funext k
-    simp only [hW, Matrix.vecMul, dotProduct, TensorGenerator_Explicit, Fintype.sum_prod_type]
-    refine Finset.sum_congr rfl fun i _ => ?_
-    rw [Finset.mul_sum]
-    exact Finset.sum_congr rfl fun j _ => by ring
+  set W : S' → (ℓ → (ι → F)) := fun x' i => Matrix.vecMul (G' x') (fun j => U (i, j))
   -- Pointwise: an MCA violation of the tensor generator forces an MCA violation of `G` (on the
   -- `W`-rows) or of `G'` (on some individual row).
   have himp : ∀ p : S × S', IsMCA (TensorGenerator_Explicit G G') LC p U γ →
       IsMCA G LC p.1 (W p.2) γ ∨ ∃ i, IsMCA G' LC p.2 (fun j => U (i, j)) γ := by
-    rintro ⟨x, x'⟩ hmca
-    obtain ⟨T, hTcard, hTproj, ⟨i₀, j₀⟩, hij⟩ := hmca
-    rw [key x x'] at hTproj
+    rintro ⟨x, x'⟩ ⟨T, hTcard, hTproj, ⟨i₀, j₀⟩, hij⟩
+    rw [vecMul_tensorGenerator_explicit G G' U x x'] at hTproj
     by_cases hcase : ∃ i, projectedWord (W x' i) T ∉ projectedCode_submod LC T
     · exact Or.inl ⟨T, hTcard, hTproj, hcase⟩
     · simp only [not_exists, not_not] at hcase
@@ -223,9 +212,9 @@ lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (
     rw [prob_split_uniform_sampling_of_prod]
     refine Pr_seq_le_of_forall_le ($ᵖ S') ($ᵖ S)
       (fun x' _ => ∃ i, IsMCA G' LC x' (fun j => U (i, j)) γ) (fun _ => ?_)
-    refine le_trans (Pr_exists_le _ _) ?_
-    refine le_trans (Finset.sum_le_sum (fun i _ => hG'MCA (fun j => U (i, j)) γ)) ?_
-    exact le_of_eq (by rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul])
+    refine (Pr_exists_le _ _).trans ?_
+    refine (Finset.sum_le_card_nsmul _ _ _ fun i _ => hG'MCA (fun j => U (i, j)) γ).trans ?_
+    simp [Finset.card_univ, nsmul_eq_mul]
   -- Combine: the tensor MCA event implies one of the two, then union + additivity.
   refine le_trans (Pr_le_Pr_of_implies ($ᵖ (S × S')) _ _ himp) ?_
   refine le_trans (Pr_or_le ($ᵖ (S × S')) _ _) ?_

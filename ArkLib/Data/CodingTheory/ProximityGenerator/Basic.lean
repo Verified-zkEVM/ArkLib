@@ -124,6 +124,18 @@ def TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
     Generator (S × S') (ℓ × ℓ') F
   | (x, x'), (i, j) => G x i * G' x' j
 
+omit [Fintype ι] in
+/-- The tensor generator combination of a family `U : ℓ × ℓ' → (ι → F)` factors: it is the
+`G x`-combination of the rows `i ↦ Matrix.vecMul (G' x') (U (i, ·))`, each of which is the
+`G' x'`-combination of the `i`-th row of `U`. -/
+lemma vecMul_tensorGenerator_explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
+    (G : Generator S ℓ F) (G' : Generator S' ℓ' F) (U : ℓ × ℓ' → (ι → F)) (x : S) (x' : S') :
+    Matrix.vecMul (TensorGenerator_Explicit G G' (x, x')) U
+      = Matrix.vecMul (G x) (fun i => Matrix.vecMul (G' x') (fun j => U (i, j))) := by
+  funext k
+  simp [Matrix.vecMul, dotProduct, TensorGenerator_Explicit, Fintype.sum_prod_type,
+    Finset.mul_sum, mul_assoc]
+
 /-- The canonical linear isomorphism between the tensor product of function spaces
 and the function space on the product type. -/
 noncomputable def tensorProductPiFunEquiv (F : Type) [Field F] (ℓ ℓ' : Type)
