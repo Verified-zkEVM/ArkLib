@@ -188,8 +188,10 @@ lemma tensor_of_univ_is_MCA [Fintype F] (LC : LinearCode ι F) (ε : ℕ → I �
           (eS x') (eL.symm j')) = tensor_of_univ d := by
       funext x' j'
       rw [heS, heL]
-      simp only [TensorGenerator_Explicit, Equiv.toFun_as_coe, Fin.consEquiv_symm_apply,
+      simp only [TensorGenerator_Explicit, Fin.consEquiv_symm_apply,
         UnivariatePowers, tensor_of_univ, Fin.tail, Fin.prod_univ_succ]
+      simp_all only [Fin.consEquiv_symm_apply, eS, eL]
+      rfl
     have herr : ((ε (d 0)) + fun γ => ∑ i, ε (Fin.tail d i) γ)
         = (fun γ => ∑ i, ε (d i) γ) := by
       funext γ

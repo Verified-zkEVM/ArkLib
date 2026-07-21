@@ -37,6 +37,15 @@ _` and the basis vectors `PolyVec (Rq Φ) _` slot directly into the Ajtai commit
 `ArkLib.Lattices.Ajtai.Simple.commit` (which is itself a `matVecMul`) and the inner-outer
 construction.
 
+The reshape `toMatrix` has an explicit inverse `toPolynomial`, reading a matrix back into the
+coefficient vector along `splitEquiv`, with round-trip lemmas `toMatrix_toPolynomial` /
+`toPolynomial_toMatrix`. Through it, the bridge lemma `splitForm_monomialBasis_eq_eval` restates
+the bilinear form `splitForm M u v = u ⬝ᵥ (M *ᵥ v)` of *any* matrix `M` against the two monomial
+bases as the polynomial-level evaluation `eval (toPolynomial M) (xl ++ xh)`; the Hachi evaluation
+bridge (`QuadEval/Bridge.lean`) consumes it to turn its matrix-shaped consistency claim into a
+`CMlPolynomial` evaluation claim. `evalSplit` itself is linear in the coefficient vector
+(`evalSplit_add` / `evalSplit_smul`), as needed for random-linear-combination / batching steps.
+
 ## Index convention
 
 The coefficient/value vectors are indexed **little-endian** (bit `0` is the least significant), as
@@ -64,6 +73,7 @@ variable {R : Type*} {nl nh : Nat}
 def splitEquiv (nl nh : Nat) : Fin (2 ^ nh) × Fin (2 ^ nl) ≃ Fin (2 ^ (nl + nh)) :=
   finProdFinEquiv.trans (finCongr (by rw [Nat.mul_comm, ← pow_add]))
 
+/-- The underlying value of `splitEquiv nl nh (x, y)` is `y + 2 ^ nl * x`. -/
 @[simp] theorem splitEquiv_val (x : Fin (2 ^ nh)) (y : Fin (2 ^ nl)) :
     (splitEquiv nl nh (x, y)).val = y.val + 2 ^ nl * x.val := rfl
 
@@ -174,6 +184,55 @@ theorem evalSplit_eq_eval (p : CMlPolynomial R (nl + nh)) (xl : Vector R nl) (xh
   change (monomialBasis xl).get y * (toMatrix p y x * (monomialBasis xh).get x)
     = toMatrix p y x * ((monomialBasis xl).get y * (monomialBasis xh).get x)
   ring
+
+/-! ## The inverse reshape `toPolynomial`
+
+The reshape `toMatrix` has a definitional inverse `toPolynomial`: reading the matrix back into the
+coefficient vector along `splitEquiv`. Being a bijection, it lets the Hachi bridge phrase "the
+derived-message matrix evaluates to `y`" (`QuadEval.evalConsistency`) as the polynomial-level
+statement "`eval (toPolynomial M) x = y`" — computable and extraction-friendly, yet interchangeable
+with the matrix reading via the round-trip lemmas below. -/
+
+/-- Inverse reshape of `toMatrix`: read the `2 ^ nl × 2 ^ nh` matrix back into the
+`2 ^ (nl + nh)` coefficient vector along `splitEquiv` (entry `k` is `M row col` for
+`(col, row) = splitEquiv.symm k`, i.e. row = low/first variables, column = high/last variables). -/
+def toPolynomial (M : PolyMatrix R (2 ^ nl) (2 ^ nh)) : CMlPolynomial R (nl + nh) :=
+  Vector.ofFn fun k => M ((splitEquiv nl nh).symm k).2 ((splitEquiv nl nh).symm k).1
+
+omit [CommSemiring R] in
+/-- Coefficient `k` of `toPolynomial M` is the matrix entry at `splitEquiv.symm k`. -/
+@[simp] theorem toPolynomial_get (M : PolyMatrix R (2 ^ nl) (2 ^ nh))
+    (k : Fin (2 ^ (nl + nh))) :
+    (toPolynomial M).get k = M ((splitEquiv nl nh).symm k).2 ((splitEquiv nl nh).symm k).1 := by
+  simp only [toPolynomial, Vector.get_ofFn]
+
+omit [CommSemiring R] in
+/-- Round-trip: reshaping `toPolynomial M` back to a matrix recovers `M`. -/
+@[simp] theorem toMatrix_toPolynomial (M : PolyMatrix R (2 ^ nl) (2 ^ nh)) :
+    toMatrix (toPolynomial M) = M := by
+  funext i j
+  simp only [toMatrix, toPolynomial_get, Equiv.symm_apply_apply]
+
+omit [CommSemiring R] in
+/-- Round-trip: reshaping `toMatrix p` back to a polynomial recovers `p`. -/
+@[simp] theorem toPolynomial_toMatrix (p : CMlPolynomial R (nl + nh)) :
+    toPolynomial (toMatrix p) = p := by
+  apply Vector.ext
+  intro k hk
+  simp only [toPolynomial, Vector.getElem_ofFn, toMatrix, Vector.get_eq_getElem,
+    Prod.mk.eta, Equiv.apply_symm_apply]
+
+/-- **The bridge lemma.** The split bilinear form of the reshaped matrix against the monomial bases
+equals the multilinear evaluation of `toPolynomial M` at `xl ++ xh`. Phrased purely in this file's
+vocabulary; the Hachi evaluation reduction consumes it to connect `QuadEval.evalConsistency`
+(`splitForm (derivedMsgMatrix …) (mb xl) (mb xh) = y`) to the `CMlPolynomial`-level evaluation
+claim. -/
+theorem splitForm_monomialBasis_eq_eval (M : PolyMatrix R (2 ^ nl) (2 ^ nh))
+    (xl : Vector R nl) (xh : Vector R nh) :
+    splitForm M (monomialBasis xl).get (monomialBasis xh).get
+      = CMlPolynomial.eval (toPolynomial M) (xl ++ xh) := by
+  rw [← evalSplit_eq_eval (toPolynomial M) xl xh]
+  simp only [evalSplit, toMatrix_toPolynomial]
 
 /-- Coefficientwise additivity of `CMlPolynomial` (the `+` is `Vector.zipWith (·+·)`). -/
 private theorem coeff_add (p q : CMlPolynomial R (nl + nh)) (k : Fin (2 ^ (nl + nh))) :

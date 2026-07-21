@@ -132,14 +132,17 @@ private lemma witness_lift {F : Type} [NonBinaryField F] [DecidableEq F]
     · erw [Polynomial.degree_eq_natDegree h, WithBot.coe_lt_coe] at deg_bound
       erw [Polynomial.degree_eq_natDegree h', WithBot.coe_lt_coe]
       norm_cast at deg_bound ⊢
+      have hlt : Nat.instPreorder.toLT = instLTNat := rfl
       have : 2 ^ (s i).1 > 0 := by
         simp only [gt_iff_lt, Nat.ofNat_pos, pow_pos]
       apply lt_of_le_of_lt FoldingPolynomial.polyFold_natDegree_le
+      rw [hlt]
       have arith {a b c : ℕ} (h : b ≥ c) (h' : a ≤ c) : a + (b - c) = b - (c - a) := by
         rw [Nat.sub_sub_right b h', Nat.sub_add_comm h, Nat.add_comm]
-      rw [Iff.symm (Nat.mul_lt_mul_left this)]
-      apply lt_of_le_of_lt (Nat.mul_div_le _ _)
-      rw [←mul_assoc, ←pow_add, arith]
+      change q.natDegree / 2 ^ (s i).1 <
+        2 ^ ((∑ j', (s j').1) - ∑ j' ∈ finRangeTo (k + 1) (i.1 + 1), (s j').1) * d
+      rw [Nat.div_lt_iff_lt_mul this]
+      rw [mul_comm _ (2 ^ (s i).1), ← mul_assoc, ← pow_add, arith]
       · convert deg_bound
         rw [sum_finRangeTo_add_one]
         simp
@@ -559,8 +562,9 @@ def finalFoldProver :
         ⟨
           CompPoly.CPolynomial.FoldingPolynomial.cpolyFold p.1 (2 ^ (s (Fin.last k)).1) α,
           by
-            simpa only [(rfl : (Fin.last k).succ = (Fin.last (k + 1)))] using
-              witness_lift p.2
+            change CompPoly.CPolynomial.FoldingPolynomial.cpolyFold p.1
+              (2 ^ (s (Fin.last k)).1) α ∈ Witness F s d (Fin.last k).succ
+            exact witness_lift p.2
         ⟩
       ⟩
   | ⟨1, h⟩ => nomatch h
@@ -577,8 +581,8 @@ def finalFoldProver :
             obtain ⟨val, property⟩ := p
             exact val
           else
-          simpa [h, ↓reduceIte, OracleStatement] using
-            o ⟨j.1, Nat.lt_of_le_of_ne (Fin.is_le j) h⟩
+          rw [if_neg h]
+          exact o ⟨j.1, Nat.lt_of_le_of_ne (Fin.is_le j) h⟩
       ⟩,
       p
     ⟩
@@ -588,7 +592,7 @@ def getConst (F : Type) [NonBinaryField F] [DecidableEq F] :
     OracleComp [(pSpec F).Message]ₒ (CompPoly.CPolynomial F) :=
   liftM <|
     OracleSpec.query
-      (show [(pSpec F).Message]ₒ.Domain from ⟨⟨1, by rfl⟩, (by simpa using ())⟩)
+      (show [(pSpec F).Message]ₒ.Domain from ⟨⟨1, by rfl⟩, (by change Unit; exact ())⟩)
 
 
 /-- The oracle verifier for the final folding round of the FRI protocol.
@@ -734,12 +738,15 @@ def queryCodeword (k : ℕ) (s : Fin (k + 1) → ℕ+) {i : Fin (k + 1)}
           (∑ j' ∈ finRangeTo (k + 1) i.1, (s j').1)).toFinset) :
     OracleComp [FinalOracleStatement s ω]ₒ F :=
   liftM (cast (β := OracleQuery [FinalOracleStatement s ω]ₒ F)
-    (by {
-     simp
-  } )
+    (by simp only [range_lem₁])
     (OracleSpec.query
       (show [FinalOracleStatement s ω]ₒ.Domain from
-        ⟨⟨i.1, by omega⟩, (by simpa [Nat.ne_of_lt i.2] using w)⟩)))
+        ⟨⟨i.1, by omega⟩,
+          cast (by
+            unfold OracleInterface.Query finalOracleStatementInterface
+            simp only [Fin.mk.injEq, Nat.reduceAdd, Fin.isValue, Nat.ne_of_lt i.2,
+              ↓reduceIte]
+            congr 3) w⟩)))
 
 /- Used by the verifier to fetch the polynomial sent in final folding round. -/
 def getConst (k : ℕ) (s : Fin (k + 1) → ℕ+) :
@@ -805,9 +812,9 @@ def queryVerifier (k_le_n : (∑ j', (s j').1) ≤ n) (l : ℕ) [DecidableEq F] 
                                   · exact k_le_n
                               }
                             · obtain ⟨r, hr⟩ := r
-                              simpa using hr
+                              exact FftDomain.mem_toFinset_iff_mem.mp hr
                             · obtain ⟨s₀, hs₀⟩ := s₀
-                              simpa using hs₀
+                              exact CosetFftDomain.mem_toFinset_iff_mem.mp hs₀
                           }
                         ⟩
                       )

@@ -79,7 +79,7 @@ ArkLib, missing, or present in a materially different form.
 | Remark 4.4 MCA with proximity loss | missing | none | No matching notion was found. |
 | Fact 4.5 `εpg ≤ εca ≤ εmca` | missing | related CA/proximity-gap predicates in [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean) | Not expressible in current ArkLib interfaces because `εca` and `εmca` are not defined as numeric errors. |
 | Lemma 4.6 MCA equals CA below unique decoding radius | missing | none | No general theorem of this form was found. |
-| Lemma 4.7 interleaving degrades MCA by at most `t` | missing | none | No general interleaving-vs-MCA theorem was found. |
+| Lemma 4.7 interleaving degrades MCA by at most `t` | missing | none; see [`Jo26`](../papers/Jo26.md) | No general interleaving-vs-MCA theorem was found. Jo26 gives a sharper interleaving-stability target for generator MCA: no linear interleaving-width loss, exact transfer when the seed-set size is at most the field size, and a field-size weighted factor otherwise. |
 | Theorem 4.8 AHIV17 general-code unique-decoding bound | missing | related but different [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) | AHIV22 is present, but not this general `εmca/εca` statement. |
 | Theorem 4.9 RS unique-decoding results | present-but-different | `RS_correlatedAgreement_affineLines_uniqueDecodingRegime` and `RS_correlatedAgreement_affineLines` in [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean) and [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean) | Item 1 is represented via predicate-style CA for RS. Item 2, the BCHKS25 proximity-loss refinement, is missing. The main file still has a `sorry` in the non-unique-decoding branch. |
 | Remark 4.10 small proximity-loss simplification | missing | none | Depends on missing `εca` error-function interface. |
@@ -153,6 +153,8 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    still lists mutual correlated agreement as missing. The existing
    [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
    file is WHIR/proximity-generator specific and is not a drop-in formalization of Section 4.
+   Jo26 should be treated as the sharper follow-up reference for transferring generator-MCA bounds
+   to row-wise interleaved codes once the general MCA interface exists.
 
 3. Some core BCIKS20 interfaces are present, but the list-decoding regime branch is incomplete.
    In particular,
@@ -235,7 +237,9 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    missing Johnson corollaries.
 
 2. Add the general CA/MCA theorems in the unique-decoding regime first.
-   This includes the paper's Fact 4.5, Lemma 4.6, Lemma 4.7, and the AHIV17/BCHKS25 style results.
+   This includes the paper's Fact 4.5 and Lemma 4.6, and the AHIV17/BCHKS25 style results.
+   Treat Lemma 4.7's interleaving-loss statement as a baseline target sharpened by the newer
+   generator-MCA interleaving-stability results in [`Jo26`](../papers/Jo26.md).
 
 3. Add line-decoding and its implication to MCA before attempting the most recent capacity-level
    theorems.

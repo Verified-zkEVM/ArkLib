@@ -35,7 +35,6 @@ private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-@[simp]
 lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/
@@ -78,7 +77,7 @@ lemma sum_choose_K' [Zero F] (h_card : 2 ≤ card F) :
       (∑ x with x ≠ 0, (fun _ ↦ x1⁻¹) x • (Nat.cast (R := ℚ) ∘ x2) x) ≤
       ∑ α with α ≠ 0, choose_2 ↑(x2 α) by
     simp only [ne_eq, Function.comp_apply, smul_eq_mul] at this; convert this
-    rw [sum_eq_sum_diff_singleton_add (i := 0) (by simp)]
+    rw [sum_eq_sum_sdiff_singleton_add (i := 0) (by simp)]
     ring_nf; rw [sum_mul]
     apply Finset.sum_congr (ext _)
     all_goals grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
@@ -105,7 +104,7 @@ lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
   simp only [sum_choose_K_i]
   have : ∑ α, choose_2 ↑(K B i α) =
       choose_2 ↑(K B i 0) + ∑ α with α ≠ 0, choose_2 ↑(K B i α) := by
-    rw [sum_eq_sum_diff_singleton_add (i := (0 : F)) (by simp), add_comm]
+    rw [sum_eq_sum_sdiff_singleton_add (i := (0 : F)) (by simp), add_comm]
     exact congr_arg _ (sum_congr
       (by ext x; simp [mem_sdiff, mem_singleton, mem_filter]) fun _ _ ↦ rfl)
   linarith [sum_choose_K' h_card (B := B) (i := i)]
@@ -363,9 +362,11 @@ lemma johnson_unrefined [Zero F]
   have h_rewrite : (k B * (k B - 1) + (B.card - k B) *
       ((B.card - k B) / (card F - 1) - 1)) / B.card ≤ (B.card - 1) *
       (1 - d B / n) := by
-    have := almost_johnson_choose_2_elimed h_n h_B h_card; (
-    rw [div_le_iff₀] <;> first | positivity | convert this using 1; ring_nf
-    simpa [h_n.ne'] using by ring)
+    have this := almost_johnson_choose_2_elimed h_n h_B h_card
+    rw [div_le_iff₀ (by positivity)]
+    convert this using 1
+    · rfl
+    · field_simp [h_n.ne']
   convert h_rewrite using 1
   convert almost_johnson_lhs_div_B_card h_n h_B |> Eq.symm using 1
 
@@ -466,10 +467,13 @@ lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
   set frac := q / (q - 1)
   have h_frac_pos : 1 < frac := by rw [lt_div_iff₀] <;> linarith
   have h_sqrt_eq : 1 - √(1 - δ) = (1 / frac) * (1 - √(1 - frac * δ)) := by
-    convert h_eq using 1
-    rw [le_antisymm h_muln]
-    · norm_cast
-    · aesop
+    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from
+      by
+        dsimp [δ] at h_muln h_J_bound h_eq ⊢
+        norm_cast at h_muln h_J_bound h_eq ⊢
+        exact le_antisymm (h_J_bound.trans_eq h_eq.symm) h_muln]
+    rw [h_eq]
+    rfl
   have h_frac_eq : 1 - √(1 - δ) = δ / (1 + √(1 - δ)) ∧ (1 / frac) *
       (1 - √(1 - frac * δ)) = δ / (1 + √(1 - frac * δ)) := by
     constructor

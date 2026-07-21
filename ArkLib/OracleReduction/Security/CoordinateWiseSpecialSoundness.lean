@@ -6,6 +6,8 @@ Authors: Tobias Rothmann
 
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 
 /-!
   # Coordinate-Wise Special Soundness (CWSS)
@@ -24,6 +26,13 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
     (`toShape_append` / `toShape_seqCompose`), and preservation of CWSS under binary verifier append
     (`Verifier.append_coordinateWiseSpecialSound`) as a thin wrapper over the generic
     `Verifier.append_treeSpecialSound`.
+  * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
+    (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor
+    (`Verifier.treeSpecialSound_of_isEmpty_challengeIdx`).
+  * `SeqCompose` — the `n`-ary sequential composition of (coordinate-wise) tree special soundness:
+    the identity base case (`Verifier.id_treeSpecialSound`), the shape unfolding
+    `ChallengeTreeShape.seqCompose_succ`, and the compositions
+    `Verifier.seqCompose_treeSpecialSound` / `Verifier.seqCompose_coordinateWiseSpecialSound`.
 
   Plain `(k)`-special soundness is the `ℓᵢ = 1` instance (`CWSSStructure.ofSpecialSound`); see also
   `Security.SpecialSoundness`.

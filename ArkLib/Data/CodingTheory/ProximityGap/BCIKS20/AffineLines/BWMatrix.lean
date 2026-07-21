@@ -1194,7 +1194,11 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
     have hdet_sub : Matrix.det (A.submatrix (Function.Embedding.refl _) J0) = 0 :=
       RS_det_submatrix_eq_zero_of_det_eq_zero n A hdetA (Function.Embedding.refl _) J0
     have hdetK : Matrix.det (K.submatrix I0 J0) = 0 := by
-      simpa [A] using hdet_sub
+      have hmatrix : K.submatrix I0 J0 = A.submatrix (Function.Embedding.refl _) J0 := by
+        ext i j
+        rfl
+      rw [hmatrix]
+      exact hdet_sub
     exact hdet0 hdetK
   have hrle : r ≤ n := by
     simpa [r] using (Nat.findGreatest_le (P := P) n)
@@ -1334,7 +1338,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
         simp [haj]
       · intro t
         simp [ha_on t]
-    simpa [Matrix.mulVec] using hsum.symm
+    change (∑ j, K i j * a j) = ∑ t, K i (J' t) * u t
+    exact hsum.symm
   have hmulVec : Matrix.mulVec K a = 0 := by
     funext i
     by_cases hi : i ∈ Set.range I
@@ -1343,7 +1348,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
         have := congrArg (fun v : Fin (r + 1) → F[X] => v (Fin.castSucc t)) hBu
         simpa using this
       have hrow' : (∑ x : Fin (r + 1), K (I t) (J' x) * u x) = 0 := by
-        simpa [Matrix.mulVec, B, I', J'] using hrow
+        change (∑ x, B (Fin.castSucc t) x * u x) = 0 at hrow
+        simpa [B, I', J'] using hrow
       rw [hmul_formula (i := I t)]
       simpa using hrow'
     · -- i ∉ range I

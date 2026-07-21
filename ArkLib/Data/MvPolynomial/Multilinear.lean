@@ -167,8 +167,8 @@ theorem singleEqPolynomial_degreeOf (r : R) (i j : σ) :
     _ ≤ max (0 + (if i = j then 1 else 0)) 0 := by
       gcongr
       by_cases h : i = j
-      · simpa only [h] using degreeOf_X_le (R := R) j i
-      · simpa only [h] using le_of_eq (degreeOf_X_of_ne (R := R) h)
+      · simpa [h] using degreeOf_X_le (R := R) j i
+      · simpa [h] using le_of_eq (degreeOf_X_of_ne (R := R) h)
     _ = if i = j then 1 else 0 := by norm_num
 
 omit [DecidableEq σ] in

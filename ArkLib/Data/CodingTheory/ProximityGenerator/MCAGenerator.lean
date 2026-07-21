@@ -78,8 +78,9 @@ IsMCA (generatorByRightMul G A) LC x U γ → IsMCA G LC x (matrixMulCodewords A
     · contrapose! hj
       convert LinearCode.projectedCode_linearCombination LC T (fun i => matrixMulCodewords A U i)
         (fun i => B j i) (fun i => hj i) using 1
-      ext k
-      simp [matrixMulCodewords, ← Matrix.mul_apply, ← Matrix.mul_assoc, hB]
+      · rfl
+      · ext k
+        simp [matrixMulCodewords, ← Matrix.mul_apply, ← Matrix.mul_assoc, hB]
   exact le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ fun x h => isMCA_generatorByRightMul_of_isMCA x h)
     (hGMCA (matrixMulCodewords A U) γ)
 

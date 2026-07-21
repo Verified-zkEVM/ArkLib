@@ -440,8 +440,14 @@ theorem seqCompose_rbrSoundness
   | zero =>
     simp
     convert Verifier.id_rbrSoundness init impl using 1
-    funext ⟨i, _⟩
-    exact Fin.elim0 i
+    · exact Subsingleton.elim _ _
+    · apply heq_of_eq
+      funext i
+      exact Fin.elim0 i.val
+    · rfl
+    · apply heq_of_eq
+      funext i
+      exact Fin.elim0 i.val
   | succ m ih =>
     simp
     have := ih (fun i => lang i.succ) (fun i => V i.succ)
@@ -468,8 +474,14 @@ theorem seqCompose_rbrKnowledgeSoundness
   | zero =>
     simp
     convert Verifier.id_rbrKnowledgeSoundness init impl using 1
-    funext ⟨i, _⟩
-    exact Fin.elim0 i
+    · exact Subsingleton.elim _ _
+    · apply heq_of_eq
+      funext i
+      exact Fin.elim0 i.val
+    · rfl
+    · apply heq_of_eq
+      funext i
+      exact Fin.elim0 i.val
   | succ m ih =>
     simp
     have := ih (fun i => rel i.succ) (fun i => V i.succ)
@@ -503,9 +515,10 @@ theorem seqCompose_perfectCompleteness
     (h : ∀ i, (R i).perfectCompleteness init impl (rel i.castSucc) (rel i.succ)) :
       (OracleReduction.seqCompose Stmt OStmt Wit R).perfectCompleteness
         init impl (rel 0) (rel (Fin.last m)) := by
-  unfold perfectCompleteness Reduction.perfectCompleteness
-  convert seqCompose_completeness rel R 0 h
-  simp
+  change (OracleReduction.seqCompose Stmt OStmt Wit R).completeness
+    init impl (rel 0) (rel (Fin.last m)) 0
+  have hc := seqCompose_completeness rel R 0 h
+  simpa using hc
 
 end OracleReduction
 

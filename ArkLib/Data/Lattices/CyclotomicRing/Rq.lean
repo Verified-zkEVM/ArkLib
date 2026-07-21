@@ -304,6 +304,59 @@ theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α
     exact Polynomial.natDegree_lt_natDegree hne
       ((powTwoCyclotomic (R := R) α).degree_toPoly_lt_of_reduced a.2)
 
+/-! ## Constant embedding and coefficient-vanishing facts
+
+General (any-modulus) degree/coefficient lemmas used by the inner-outer gadget commitment
+(`ArkLib/Commitments/Functional/Hachi/Gadget.lean`); the power-of-two special cases live in
+`Subfield/Basis.lean`. -/
+
+/-- `Φ.φ.natDegree`, the truncation length of decompositions, does not exceed `deg φ`. -/
+theorem phi_natDegree_le_degree : (Φ.φ.natDegree : WithBot ℕ) ≤ Φ.φ.toPoly.degree :=
+  le_of_eq (by rw [CompPoly.CPolynomial.natDegree_toPoly,
+    Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero])
+
+/-- A reduced representative has zero coefficients at and beyond `deg φ`. -/
+theorem coeff_eq_zero_of_natDegree_le (a : Rq Φ) {k : ℕ} (hk : Φ.φ.natDegree ≤ k) :
+    a.1.coeff k = 0 := by
+  rw [CompPoly.CPolynomial.coeff_toPoly]
+  apply Polynomial.coeff_eq_zero_of_degree_lt
+  calc a.1.toPoly.degree
+      < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced a.2
+    _ = (Φ.φ.natDegree : WithBot ℕ) := by
+        rw [CompPoly.CPolynomial.natDegree_toPoly]
+        exact Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero
+    _ ≤ (k : WithBot ℕ) := by exact_mod_cast hk
+
+/-- Embed a base-ring scalar `c : R` as the constant element `C c ∈ Rq Φ`. -/
+def constRq (c : R) : Rq Φ := Rq.mk Φ (CompPoly.CPolynomial.C c)
+
+/-- The constant `constRq Φ c` has underlying polynomial `C c` (no reduction occurs, as
+`deg (C c) = 0 < deg φ`). -/
+theorem constRq_val (h1 : 1 ≤ Φ.φ.natDegree) (c : R) :
+    (constRq Φ c).1 = CompPoly.CPolynomial.C c := by
+  change Φ.reduce (CompPoly.CPolynomial.C c) = CompPoly.CPolynomial.C c
+  apply Φ.reduce_eq_self_of_degree_lt
+  rw [CompPoly.CPolynomial.toPoly_C]
+  have hpos : (0 : WithBot ℕ) < Φ.φ.toPoly.degree := by
+    rw [Polynomial.degree_eq_natDegree (IsCyclotomic.monic (Φ := Φ)).ne_zero,
+        ← CompPoly.CPolynomial.natDegree_toPoly]
+    exact_mod_cast (h1 : 0 < Φ.φ.natDegree)
+  exact lt_of_le_of_lt Polynomial.degree_C_le hpos
+
+/-- Multiplying by the constant `constRq Φ c` scales coefficients by `c`. -/
+theorem constRq_mul_coeff (h1 : 1 ≤ Φ.φ.natDegree) (c : R) (x : Rq Φ) (k : ℕ) :
+    (constRq Φ c * x).1.coeff k = c * x.1.coeff k := by
+  have hmul : (constRq Φ c * x).1 = Φ.reduce ((constRq Φ c).1 * x.1) := rfl
+  have hred : Φ.reduce (CompPoly.CPolynomial.C c * x.1) = CompPoly.CPolynomial.C c * x.1 := by
+    apply Φ.reduce_eq_self_of_degree_lt
+    rw [CompPoly.CPolynomial.toPoly_mul, CompPoly.CPolynomial.toPoly_C]
+    have hx : x.1.toPoly.degree < Φ.φ.toPoly.degree := Φ.degree_toPoly_lt_of_reduced x.2
+    rcases eq_or_ne c 0 with hc | hc
+    · simpa [hc] using lt_of_le_of_lt bot_le hx
+    · rwa [Polynomial.degree_C_mul hc]
+  rw [hmul, constRq_val Φ h1, hred]
+  exact CompPoly.CPolynomial.coeff_C_mul x.1 c k
+
 end Rq
 
 end ArkLib.Lattices.CyclotomicModulus

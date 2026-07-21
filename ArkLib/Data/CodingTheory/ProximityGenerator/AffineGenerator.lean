@@ -93,7 +93,9 @@ lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
       simp_all only [ne_eq, Submodule.eq_bot_iff, LinearMap.mem_range, LinearMap.coe_comp,
         Function.comp_apply, Submodule.mkQ_apply, forall_exists_index, forall_apply_eq_imp_iff,
         Submodule.Quotient.mk_eq_zero, not_forall]
-      exact ⟨Pi.single i 1, by simpa [Fintype.linearCombination_apply] using hi⟩
+      exact ⟨Pi.single i 1, by
+      simp_all only [Fintype.linearCombination_apply_single, one_smul, g]
+      exact hi⟩
     have hrank_null := LinearMap.finrank_range_add_finrank_ker g
     simp_all only [ne_eq, Module.finrank_fintype_fun_eq_card, Fintype.card_fin, ge_iff_le]
     exact Nat.le_sub_one_of_lt
@@ -198,6 +200,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
     have h_sum : ∑ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x) ∈
                   projectedCode_submod LC (T x))).card ≤ m * (Fintype.card F) ^ (s - 1) := by
       convert Finset.sum_le_sum h_per_seed_le using 1
+      · rfl
       · rw [Finset.sum_comm, Finset.sum_congr rfl]
         aesop
       · simp +zetaDelta

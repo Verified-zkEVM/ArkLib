@@ -234,10 +234,12 @@ theorem poly_gen_is_zero_evading
   convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1
   any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
   any_goals assumption
+  · rfl
   · convert rfl
     ext
     simp [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
-  · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
+  · have := @ENNReal.ofReal_div_of_pos
+    rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
     exact minSeedCard_pos S
   · exact LinearCombination.linearCombination_ne_zero hG.1 hx
   · exact MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
