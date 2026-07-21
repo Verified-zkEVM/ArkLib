@@ -501,15 +501,9 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   simp at h ⊢
   clear h
   refine le_trans ?_ this
-  simp
-  stop
-  refine probEvent_mono ?_
-  -- intro ⟨⟨tr, _, _⟩, chal⟩ hx
-  -- simp [StateFunction.toKnowledgeStateFunction]
-  -- intro hCastSucc witIn' hSucc
-  -- simp_all
-  -- have := stF.toFun_empty
-  -- TODO: Complete this proof
+  -- TODO: complete this proof (one-shot ⇒ round-by-round knowledge soundness).
+  -- Currently admitted; this coercion lemma is unused by the live worst-case route,
+  -- which goes through `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
   sorry
 
 end RoundByRound
