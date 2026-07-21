@@ -169,45 +169,39 @@ theorem linear_epsMCA_1_5_johnson_gkl24
 Same regime as the GKL24 form but stated in CA-with-proximity-loss shape. Tighter when the
 GKL24 bound is dominated by its second term. Admitted from the cited paper.
 
-The regime hypothesis `η < δ_min` is shared with Item 1 (the paper presents both bounds
-under one regime statement); included here for hypothesis-parity even though Item 2's
-RHS `2 / (η² |F|)` is well-defined for any `η > 0`.
-
-**Source hypotheses restored (2026-07-18 fix).** BGKS20 Lemma 3.2 (positive form) is
-stated for a linear code `V ⊆ F_q^D` of distance `λ` and parameters `ε, δ > 0` with
-`ε < 1/3` **and** `δ < 1 − (1 − λ + ε)^{1/3}` (strict): if
+**Hypotheses (2026-07-18 restoration + 2026-07-21 first-hand BGKS20 re-derivation).**
+BGKS20 Lemma 3.2 (positive form) is stated for a linear code `V ⊆ F_q^D` of distance `λ`
+and parameters `ε, δ > 0` with `ε < 1/3` **and** `δ < 1 − (1 − λ + ε)^{1/3}` (strict): if
 `Pr_x[Δ(u* + x·u, V) < δ] ≥ 2/(ε²·q)` then `u, u*` jointly agree with codewords on a
 set of density `≥ 1 − δ − ε`. Notation map: the source's `ε` is our `η` (the joint
 agreement set of density `1 − δ − ε` is exactly interleaved radius `δ_int = δ + η`),
-its `λ` is our `δ_min`, its `δ` is our `δ_fld`. The Lean statement (following ABF26
-T4.11's header, which drops them) previously omitted the source's `ε < 1/3` and
-`δ > 0`, and admitted the boundary `δ = 1 − ∛(1 − δ_min + η)` that the source's strict
-inequality excludes; without them the admit claimed the bound in regimes the source
-never proves (BGKS20's triple-agreement-set convexity argument is tuned to `ε < 1/3`).
-All three are now carried; regime re-derived from the BGKS20 PDF, not the ABF26 tex.
-`PAPER_REVS.md` finding #11 records the tex omission.
+its `λ` is our `δ_min`, its `δ` is our `δ_fld`.
 
-**Kept conservatively (2026-07-21; refined after a first-hand BGKS20 re-derivation).**
-Of the three hypotheses beyond ef-millenium's printed form, only `η < 1/3` (BGKS20's
-`ε < 1/3`) is genuinely load-bearing for *truth*: BGKS20 Lemma 3.2 pins a codeword line
-from three sampled points and needs them distinct via `|A| ≥ 2/η² > 6/η ⟺ η < 1/3` — a
-structural 3-point / cube-root (1.5-Johnson) barrier, stated in the source only for
-`ε < 1/3` with no extension. (The tempting "large `η` shrinks the RHS so the bound is
-harder" heuristic is UNSOUND: `epsCA` is antitone in `δ_int = δ + η`, so the LHS shrinks
-too — see `Errors.lean`.) Honest status: the bound is *unestablished* for `η ≥ 1/3`, not
-known false; keep `η < 1/3` absent a new proof or counterexample.
-The other two — `δ > 0` and the STRICT `δ < …` — are proof-only: the re-derivation shows
-the bound holds at `δ = 0` and at the exact boundary `δ = 1 − ∛(1−δ_min+η)` (reverse-Markov
-needs only the `+η` Jensen margin, which survives there; the RHS is `δ`-independent). They
-are retained only for source-parity and may be relaxed to ef-millenium's `δ ≥ 0` /
-non-strict `≤` (which would also remove the strict-vs-non-strict mismatch with the Item-1
-sibling `linear_epsMCA_1_5_johnson_gkl24`). PAPER_REVS #11 has details. -/
+The re-derivation classified the source's three extra hypotheses (which ABF26 T4.11's
+header drops):
+- `ε < 1/3` (our `η < 1/3`) is genuinely load-bearing for *truth*: BGKS20 pins a codeword
+  line from three sampled points and needs them distinct via `|A| ≥ 2/η² > 6/η ⟺ η < 1/3`
+  — a structural 3-point / cube-root (1.5-Johnson) barrier, stated in the source only for
+  `ε < 1/3` with no extension. (The tempting "large `η` shrinks the RHS so the bound is
+  harder" heuristic is UNSOUND: `epsCA` is antitone in `δ_int = δ + η`, so the LHS shrinks
+  too — see `Errors.lean`.) Honest status: the bound is *unestablished* for `η ≥ 1/3`, not
+  known false. **`η < 1/3` is kept** absent a new proof or counterexample.
+- `δ > 0` and the STRICT `δ < …` are proof-only: the bound holds at `δ = 0` and at the
+  exact boundary `δ = 1 − ∛(1−δ_min+η)` (reverse-Markov needs only the `+η` Jensen margin,
+  which survives there; the RHS is `δ`-independent). **These were relaxed (2026-07-21)** to
+  ef-millenium's `δ ≥ 0` (dropped) and non-strict `δ ≤ …`, matching the paper's printed form
+  and removing the strict-vs-non-strict mismatch with the Item-1 sibling
+  `linear_epsMCA_1_5_johnson_gkl24`.
+
+The regime hypothesis `η < δ_min` is shared with Item 1 (the paper presents both bounds
+under one regime statement) and is implied by `η > 0` together with the `δ`-bound; kept for
+hypothesis-parity. Regime re-derived from the BGKS20 PDF, not the ABF26 tex; `PAPER_REVS.md`
+finding #11 records the tex omission and this classification. -/
 theorem linear_epsCA_1_5_johnson_bgks20
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_third : (η : ℝ) < 1 / 3) (_hη_lt_δ_min : η < δ_min)
-    (_hδ_pos : 0 < δ)
-    (_hδ : (δ : ℝ) < 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
+    (_hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCA (F := F) (A := A) ((C : Set (ι → A))) δ (δ + η) ≤
       ((2 : ENNReal) / ((η : ENNReal) ^ 2 * (Fintype.card F : ENNReal))) := by
   sorry -- ABF26-T4.11 Item 2; external admit [BGKS20 Lem 3.2].
