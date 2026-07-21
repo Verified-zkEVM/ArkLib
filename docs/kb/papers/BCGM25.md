@@ -26,16 +26,16 @@ with Reed-Solomon refinements up to the Johnson bound.
 ## What ArkLib Uses From This Paper
 
 - Generator definitions and zero-evading/MDS/polynomial-generator interfaces in
-  [`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean).
+  [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean).
 - MCA generator definitions and linear-transformation closure statements in
-  [`ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean).
+  [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean).
 - The broader formalization target that polynomial-generator MCA bounds should become reusable
   coding-theory infrastructure rather than WHIR-only assumptions.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
-- [`ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
 - [`ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean`](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
 
 ## Version Notes
