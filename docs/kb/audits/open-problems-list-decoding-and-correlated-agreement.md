@@ -104,6 +104,13 @@ admit shrunk to a corner, +2 new deliberate statement admits (CS25 Thm 3, KKH26 
 
 ## Section 1 — Grand Challenges (introduction)
 
+> **δ-grid caveat (author-confirmed 2026-07-09).** Both challenges quote "the largest real
+> `δ*_C`", but `ε_mca(C, ·)` and `Λ(C^⋈m, ·)` are right-continuous **step functions** on the
+> `1/n` grid, so that maximum is generically unattained (sublevel set `[0, (k*+1)/n)`). Both
+> `GC1`/`GC2` are formalised in the **boundary-grid-index** form (`GrandMCAResolution` /
+> `GrandListResolution`: `ε(k*/n) ≤ ε* < ε((k*+1)/n)`), the paper's own operational resolution
+> criterion. Recorded upstream as `PAPER_REVS.md` finding #6.
+
 | ABF26 ID | Paper item | Status | Lean refs | Lean target | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `GC1` | Grand MCA Challenge (page 5): "determine the largest `δ*_C ∈ [0, 1]` such that `ε_mca(C, δ*_C) ≤ ε*`" | present (as predicate) | `ProximityGap.grandMCAChallenge` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | existing | Stated as a generic `Prop`-valued predicate over a `LinearCode ι F` and a threshold `ε* : ℝ≥0`. **Phase-1 instantiation framework (2026-06-03):** RS targets `grandMCAChallengeRS` / `grandMCAChallengeRSrate`, prize regime `prizeRates` (= {1/2,1/4,1/8,1/16}) + `epsStar` (= 2^-128) + `mcaPrize`, witness-carrying `GrandMCAResolution` with one-sided `MCALowerWitness`/`MCAUpperWitness` (bound any resolution's `δ*` via `epsMCA_mono`), and bridges from `CapacityBounds` (`MCALowerWitness.ofLe`/`ofJohnsonBCHKS25`, `MCAUpperWitness.ofGt`/`ofEpsCAGt`). Statement corrected 2026-06-10: the RS wrappers (`grandMCAChallengeRS`/`grandMCAChallengeRSrate`/`mcaPrize`) now require the prize box's smooth evaluation domain via a `ReedSolomon.Smooth domain` instance argument. Resolution is open. |
