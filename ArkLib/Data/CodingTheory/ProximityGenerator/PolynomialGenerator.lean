@@ -28,7 +28,7 @@ namespace PolynomialGenIsMCA
 
 open unitInterval CoreDefinitions
 
-variable {F : Type} [Field F] [Fintype F]
+variable {F : Type} [Field F]
          {ι : Type} [Fintype ι] [Nonempty ι]
 
 /-- A function assinging the maximum degree in the `i`-the variable of the collection of
@@ -263,7 +263,7 @@ lemma coeffMatrix_hasLeftPseudoInverse {s : ℕ} {ℓ : Type} [Fintype ℓ] [Dec
 `D`. Let `G` be a polynomial generator where each `S` is the whole field `F`.
 Then, for every `m ≥ 3`, `G` has MCA for with error `∑ i, ε_mca_RS`.
 Theorem 9.2 [BCGM25]. -/
-lemma PolyGen_MCA_RScode [Fintype F] (n m : ℕ) (hm : 3 ≤ m) {ℓ : Type} [Fintype ℓ] {s : ℕ}
+lemma polynomial_gen_MCA_RScode [Fintype F] (n m : ℕ) (hm : 3 ≤ m) {ℓ : Type} [Fintype ℓ] {s : ℕ}
     {P : ℓ → MvPolynomial (Fin s) F} (G : Generator ((Fin s) → F) ℓ F)
     (hG : IsPolynomialGeneratorOfFull G P) :
     letI ε := ∑ i : Fin s, ε_mca_RS k D n (deg_max P i) m
