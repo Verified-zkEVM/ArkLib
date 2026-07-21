@@ -79,9 +79,11 @@ home_page/            site assets and assembled website root
 - The Merkle tree implementations now live upstream in `VCVio`, so use
   `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
   instead of the old ArkLib-local modules.
-- Reed-Solomon code definitions live under the `ReedSolomon` namespace in
-  `ArkLib/Data/CodingTheory/ReedSolomon.lean`. The older `ReedSolomonCode` namespace has been
-  merged into `ReedSolomon`; use the consolidated name at new call sites.
+- Reed-Solomon code definitions live under the `ReedSolomon` namespace: the base RS code in
+  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
+  variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
+  [coding-theory-conventions.md](coding-theory-conventions.md)). The older `ReedSolomonCode`
+  namespace has been merged into `ReedSolomon`; use the consolidated name at new call sites.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs

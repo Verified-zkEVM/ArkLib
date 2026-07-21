@@ -271,7 +271,11 @@ The straightline extractor is the always-`some` classical choice
 post-PR-#569 game extraction failure scores against the prover, and the
 choice extractor succeeds whenever *any* relaxed witness exists, so the
 game event forces "no relaxed witness exists" and the bound reduces to
-the two-round prefix split described in the module docstring. -/
+the two-round prefix split described in the module docstring.
+
+The paper's extraction-time claim (`O(enc + ecor)`) is not modeled:
+ArkLib has no cost semantics, so this theorem carries only the error
+bound. -/
 theorem protocol62_knowledgeSound
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)

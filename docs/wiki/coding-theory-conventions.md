@@ -44,7 +44,7 @@ disambiguates the same quantity bounded under different regimes (e.g.
 
 | Kind | Convention | Examples |
 |---|---|---|
-| Paper-named function | Lean-id close to paper notation | `qEntropy`, `Jqℓ`, `Jcap`, `epsCA`, `epsMCA`, `Lambda`, `Lambda_at` |
+| Paper-named function | Lean-id close to paper notation | `qEntropy`, `Jqℓ`, `Jcap`, `epsCA`, `epsMCA`, `Lambda` (the point list `Λ(C,δ,f)` is the descriptive `closeCodewordsRel`) |
 | Descriptive function | snake_case describing the math | `restrictedRelHammingDist`, `hammingBallVolume`, `frsEvalOnPoints` |
 | Predicate / property | `IsX` style | `IsMDS`, `IsSubspaceDesign`, `IsFAdditive`, `LineDecodable`, `Admissible` |
 | Structure | PascalCase | `ExtensionFieldPresentation`, `WordStack`, `InterleavedWord` |
@@ -97,7 +97,7 @@ purposes but the notation itself is global).
 ### Conspicuously absent (only in docstring comments, not actual notation)
 
 - `Λ(C, δ, f)` and `Λ(C, δ)` — appear in `ListDecodability.lean` docstrings as
-  paper-aliases for `Lambda_at C δ f` and `Lambda C δ` respectively, but **no
+  paper-aliases for `closeCodewordsRel C f δ` and `Lambda C δ` respectively, but **no
   notation declaration**. Use the function names directly. If a future PR wants
   to add the notation, it should mirror the `Δ₀(...)` style declared at top
   level in `ListDecodability.lean`.
@@ -127,7 +127,7 @@ downstream proof becomes hard to read because of this choice.
 | Paper-style real-valued bounds | `ℝ` (then wrapped) | RHS of capacity-bound theorems |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | `epsCA`, `epsMCA`, `epsPG` |
 | Probabilities | `ENNReal` | `Pr_{...}[...]` notation |
-| List sizes | `ℕ∞` (then cast to `ENNReal` for bounds) | `Lambda`, `Lambda_at`'s `.ncard` |
+| List sizes | `ℕ∞` (then cast to `ENNReal` for bounds) | `Lambda`, `closeCodewordsRel`'s `.ncard` |
 | Polynomial degree-bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
 | Linear code carrier | `Submodule F (ι → A) = ModuleCode ι F A` | `ReedSolomon.code`, `Interleaved.irsCode`, `Folded.frsCode` |
 | Non-linear code carrier | `Set (ι → A) = Code ι A` | `extensionCode`, theorems over arbitrary alphabets |

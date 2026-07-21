@@ -729,11 +729,7 @@ be positive — the unguarded equality was refutable. `δ ∈ (0, 1)`: the paper
 Johnson functions/`ε` quantities are defined on `(0,1)` (`.tex` 1346) and [Jo26]
 does not cover the endpoints.
 
-Admitted as an external result.
-
-TODO(bib): `[Jo26]` (Sunghyeon Jo, *Interleaving Stability for Mutual Correlated
-Agreement and Curve Decodability*, ePrint 2026/891) has no entry in
-`blueprint/src/references.bib` yet; add it during the references.bib cleanup pass. -/
+Admitted as an external result. -/
 theorem epsMCA_interleaved_eq (C : Submodule F (ι → A)) (t : ℕ) (δ : ℝ≥0)
     (_ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
     epsMCA (F := F) (A := Fin t → A) ((C : Set (ι → A))^⋈ (Fin t)) δ =

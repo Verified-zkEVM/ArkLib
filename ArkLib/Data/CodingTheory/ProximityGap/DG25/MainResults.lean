@@ -514,7 +514,6 @@ lemma card_agreeing_cells_notin_D {U₀ U₁ : InterleavedWord A (Fin m) ι} {V�
     (R_star_star_filter_columns_not_in_D MC U₀ U₁ V₀ V₁ e D).card
     = (R_star (A := A) (F := F) (ι := ι) (C := MC) (e := e) U₀ U₁).card
       * (Fintype.card ι - D.card) := by
-  -- sorry
   classical
   let n := Fintype.card ι
   let D_compl := Finset.univ \ D
@@ -1157,7 +1156,6 @@ lemma prob_R_star_gt_threshold
         rw [←mul_assoc]
         simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true,
           ENNReal.natCast_ne_top, ENNReal.inv_mul_cancel, one_mul, le_refl]
-  -- sorry
   -- 6. Chain the inequalities: `(ϑ+1)ε/q < Pr[f] ≤ Pr[g] + Pr[f ∧ ¬g] ≤ Pr[g] + ϑε/q`
   have h_total_lt_Pr_g_add_term : cur_false_witness_threshold
     < Pr_{let r ← D}[g r] + prev_false_witness_threshold := by
