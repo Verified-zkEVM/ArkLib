@@ -116,6 +116,24 @@ lemma neg_mem_domain_iff_mem [nz : NeZero n] :
 lemma domain_implies_char_ne_2 [NeZero n] (ω : D) :
   ¬CharP F 2 := FftDomainClass.domain_implies_char_ne_2 (toFftDomain ω)
 
+lemma domain_implies_2_ne_0 [NeZero n] (ω : D) :
+  (2 : F) ≠ 0 := FftDomainClass.domain_implies_2_ne_0 (toFftDomain ω)
+
+lemma domain_implies_x_ne_neg_x [NeZero n] (ω : D) {x : F} (hx : x ≠ 0) :
+  x ≠ -x := FftDomainClass.domain_implies_x_ne_neg_x (toFftDomain ω) hx
+
+@[simp]
+lemma domain_implies_x_ne_neg_x_dep [DecidableEq F] [NeZero n] (ω : D) {x : ω} :
+  x.val ≠ -x.val := by
+  rcases x with ⟨x, hx⟩
+  exact domain_implies_x_ne_neg_x ω (by aesop)
+
+@[simp]
+lemma domain_implies_neg_x_ne_x_dep [DecidableEq F] [NeZero n] (ω : D) {x : ω} :
+  -x.val ≠ x.val := by
+  symm
+  simp
+
 end Smooth
 
 end CosetFftDomainClass
