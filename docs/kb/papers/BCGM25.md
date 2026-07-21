@@ -10,8 +10,8 @@ status: seeded
 related_concepts:
   - reed-solomon-proximity
 related_modules:
-  - ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean
-  - ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean
+  - ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean
 ---
 
 # BCGM25
@@ -34,8 +34,8 @@ with Reed-Solomon refinements up to the Johnson bound.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
-- [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean)
 - [`ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean`](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
 
 ## Version Notes
