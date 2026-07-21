@@ -187,13 +187,21 @@ never proves (BGKS20's triple-agreement-set convexity argument is tuned to `ε <
 All three are now carried; regime re-derived from the BGKS20 PDF, not the ABF26 tex.
 `PAPER_REVS.md` finding #11 records the tex omission.
 
-**Kept conservatively (2026-07-21 review).** These hypotheses are retained deliberately,
-not broadened back to the tex form. Unlike a pure well-formedness margin, `η < 1/3` is
-plausibly load-bearing for the *truth* of the bound, not merely for BGKS20's proof: the
-RHS `2/(η²·|F|)` shrinks as `η` grows while the conclusion's interleaved radius `δ + η`
-grows, so large `η` makes the claim strictly harder to satisfy. ef-millenium's broader
-printed statement (`η > 0`, non-strict `δ ≤ …`) has **not** been verified to hold without
-these, and may be false — do not drop them without a first-hand source re-derivation. -/
+**Kept conservatively (2026-07-21; refined after a first-hand BGKS20 re-derivation).**
+Of the three hypotheses beyond ef-millenium's printed form, only `η < 1/3` (BGKS20's
+`ε < 1/3`) is genuinely load-bearing for *truth*: BGKS20 Lemma 3.2 pins a codeword line
+from three sampled points and needs them distinct via `|A| ≥ 2/η² > 6/η ⟺ η < 1/3` — a
+structural 3-point / cube-root (1.5-Johnson) barrier, stated in the source only for
+`ε < 1/3` with no extension. (The tempting "large `η` shrinks the RHS so the bound is
+harder" heuristic is UNSOUND: `epsCA` is antitone in `δ_int = δ + η`, so the LHS shrinks
+too — see `Errors.lean`.) Honest status: the bound is *unestablished* for `η ≥ 1/3`, not
+known false; keep `η < 1/3` absent a new proof or counterexample.
+The other two — `δ > 0` and the STRICT `δ < …` — are proof-only: the re-derivation shows
+the bound holds at `δ = 0` and at the exact boundary `δ = 1 − ∛(1−δ_min+η)` (reverse-Markov
+needs only the `+η` Jensen margin, which survives there; the RHS is `δ`-independent). They
+are retained only for source-parity and may be relaxed to ef-millenium's `δ ≥ 0` /
+non-strict `≤` (which would also remove the strict-vs-non-strict mismatch with the Item-1
+sibling `linear_epsMCA_1_5_johnson_gkl24`). PAPER_REVS #11 has details. -/
 theorem linear_epsCA_1_5_johnson_bgks20
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
