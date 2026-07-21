@@ -410,7 +410,11 @@ private lemma Monad.map_of_prod_fst_eq_prod_fst {m : Type u → Type v} [Monad m
     (fun a => (c, a.1)) <$> ma = Prod.mk c <$> Prod.fst <$> ma := by
   simp only [Functor.map_map]
 
-/-- Logging the queries made by both parties do not change the output of the reduction -/
+/-- Logging the queries made by both parties do not change the output of the reduction.
+
+WIP (admitted): the proof below is a `sorry` (commented `calc` attempt in-tree). Note this
+lemma is `@[simp]`, so downstream `simp` proofs that fire it inherit `sorryAx`; the ABF26
+ToyProblem security surface does not (2026-07-21 Phase-A axiom sweep). -/
 @[simp]
 theorem Reduction.runWithLog_discard_logs_eq_run
     {stmt : StmtIn} {wit : WitIn}

@@ -315,6 +315,11 @@ theorem castSum_castLT {l' : List ℕ} {i : ℕ} (j : Fin i) :
 theorem castSum_castAdd {n m : ℕ} (i : Fin n) : castSum [n, m] (by simp) i = castAdd m i := by
   simp [castSum]
 
+/-- Case analysis on `Fin l.sum` by the list summand containing `i`.
+
+WIP (admitted): the recursive `natAdd` branch is a `sorry` (see the commented recursion
+sketch below); any definition elaborating through `sumCases` inherits `sorryAx`. No
+declaration in the ABF26 surface depends on it (2026-07-21 Phase-A axiom sweep). -/
 def sumCases {l : List ℕ} {motive : Fin l.sum → Sort*}
     (cases : ∀ (n : ℕ) (h : n ∈ l) (i : Fin n), motive (castSum l h i))
     (i : Fin l.sum) : motive i := match l with
