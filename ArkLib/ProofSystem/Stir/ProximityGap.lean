@@ -39,13 +39,14 @@ namespace STIR
     `ArkLib/Data/CodingTheory/ProximityGap/Errors.lean`) bounds the same "line δ-close
     but stack not jointly close" probability for **m = 2** (affine lines).
   - For **general m**, the analogue is `epsCA_curves C (m-1) δ_fld δ_int` (the
-    polynomial-curve variant) or the BCIKS20-specific RS bound stated here.
+    polynomial-curve variant).
 
-  This BCIKS20 lemma is the *witness-extraction* form: high `Pr[close]` forces the
-  existence of a large agreement set. The contrapositive bounds `Pr[close]` by
-  `err'(...)` when no such set exists — that is the bound `epsCA_curves C δ δ ≤
-  err'(...)` for `C = RS[F, ι, degree]`. A future bridge `proximity_gap_iff_epsCA_le`
-  would make this iff explicit; deferred per Phase 4 of `docs/kb/ABF26_INTEGRATION_PLAN.md`. -/
+  **Statement caveat (2026-07-21 audit).** The Lean statement below quantifies over an
+  *unconstrained* `GenFun : F → Fin m → F`, whereas BCIKS20 (and STIR) state this for
+  power/curve generators `r ↦ (1, r, …, r^{m-1})`; the over-general form is unsourced
+  and false-instantiable, a pre-existing defect at the merge-base (Phase-A audit annex).
+  Any future bridge (e.g. a `proximity_gap_iff_epsCA_le`) must first restrict `GenFun`
+  to the curve form; deferred per Phase 4 of `docs/kb/ABF26_INTEGRATION_PLAN.md`. -/
 lemma proximity_gap
   {F : Type} [Field F] [Fintype F] [DecidableEq F]
   {ι : Type} [Fintype ι] [Nonempty ι] {φ : ι ↪ F}

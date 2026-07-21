@@ -14,8 +14,8 @@ Plain (straightline) knowledge soundness of Construction 6.2
 
 ## The error term: the paper's sum, tightened to a convex combination
 
-[ABF26] Lemma 6.6 (current `.tex`, the `lem:toysoudness` statement at ~line
-2215) states the knowledge error as the **sum**
+[ABF26] Lemma 6.6 (current `.tex` @ `53a5055`, the `lem:toysoudness` statement at
+L2259–2264) states the knowledge error as the **sum**
 
   `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| + (1−δ)^t`.
 
@@ -231,7 +231,8 @@ the toy-problem IOR has knowledge soundness against the relaxed relation
   `(1 − δ)^t + ε₀ · (1 − (1 − δ)^t)`,    where `ε₀ := ε_mca(C, δ) + |Λ(C^{≡2}, δ)| / |F|`.
 
 This is `≤` the sum `ε₀ + (1 − δ)^t` stated in [ABF26] Lemma 6.6 (current
-`.tex`, ~line 2215), so it is at least as strong as the paper's bound. (An
+`.tex` @ `53a5055`, `lem:toysoudness` L2259–2264), so it is at least as strong as
+the paper's bound. (An
 earlier draft printed the unsound `max{ε₀, (1 − δ)^t}`; it was author-confirmed
 and corrected to the sum. See this file's module docstring for the full
 analysis.)

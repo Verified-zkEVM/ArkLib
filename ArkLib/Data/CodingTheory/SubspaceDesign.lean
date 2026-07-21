@@ -17,13 +17,15 @@ admits.
 
 - `CodingTheory.IsSubspaceDesign` — ABF26 Definition 2.16.
 
-## Main statements (external admits)
+## Main statements
 
-- `CodingTheory.ker_proj_eq_vanish_at` — bridge between `ker(proj i)` and `{a | a i = 0}`.
+- `CodingTheory.ker_proj_eq_vanish_at` — bridge between `ker(proj i)` and `{a | a i = 0}`
+  (proved in-tree).
 - `CodingTheory.subspaceDesign_tau_lower` — ABF26 Lemma 2.17 [GG25]: τ-subspace-design
-  code of rate `ρ` has `min_r τ(r) ≥ ρ - 1/n`.
+  code of rate `ρ` has `min_r τ(r) ≥ ρ - 1/n` (external admit).
 - `CodingTheory.frs_is_subspaceDesign_gk16` — ABF26 Theorem 2.18 [GK16]: folded RS codes
-  are τ-subspace-design for explicit τ.
+  are τ-subspace-design for explicit τ (external admit; carries GK16's `ω`-generator
+  hypothesis that the tex omits, see PAPER_REVS #13).
 
 ## Deferred
 
@@ -85,9 +87,15 @@ lemma ker_proj_eq_vanish_at {ι : Type*} {F : Type*} [Semiring F] {s : ℕ} (i :
   simp [LinearMap.mem_ker, LinearMap.proj_apply]
 
 /-- **ABF26 Lemma 2.17 [GG25].** For any τ-subspace-design code of rate `ρ`, the
-profile `τ` is lower-bounded by `ρ - 1/n` over the paper's range `r ∈ [s] = {1, …, s}`:
+profile `τ` is lower-bounded by `ρ - 1/n` on the range `r ∈ [s] = {1, …, s}`:
 
   `min_{r ∈ [s]} τ(r) ≥ ρ - 1/n` .
+
+**Range narrowed vs the sources (2026-07-21 note).** Both the tex
+(`lemma:subspace-design-limitation`, `min_{r ∈ ℕ} τ(r)`) and GG25 Lemma 2.16 state the
+bound for **all** `r ∈ ℕ`; the restriction to `[s]` here is ours, in the safe (weaker-admit)
+direction. `r = 0` is genuinely excluded (see below); `r > s` is dropped only because no
+in-tree consumer needs it.
 
 **Rate convention.** Per ABF26 Definition 2.5, the rate of a code over alphabet `Σ` is
 `log_{|Σ|}|C| / n`; for an `F`-additive code `C ⊆ (F^s)^n` this is
@@ -95,9 +103,9 @@ profile `τ` is lower-bounded by `ρ - 1/n` over the paper's range `r ∈ [s] = 
 **not** by `n`. The subtracted `1/n` term, by contrast, divides by the block length `n`
 only (paper: `min_r τ(r) ≥ ρ − 1/n`).
 
-The quantifier is restricted to `r ∈ Finset.Icc 1 s` to match the paper's `[s]`
-notation: outside this range the `IsSubspaceDesign` predicate places no
-constraint on `τ`, so the bound is vacuous for `r = 0` (where `A ≤ C` with
+The quantifier is restricted to `r ∈ Finset.Icc 1 s` (a narrowing of the sources' `r ∈ ℕ`
+range, per the note above): at `r = 0` the `IsSubspaceDesign` predicate places no
+constraint on `τ`, so the bound there is unprovable (`A ≤ C` with
 `finrank A ≤ 0` forces `A = ⊥`, making the design inequality `0 ≤ 0 · τ(0)`
 trivially satisfied by any `τ(0)` including ones violating the lower bound).
 
@@ -139,14 +147,30 @@ requires `(L, s)`-admissibility of `ω` (with `ω ≠ 0`), while the multiplicit
 additionally requires `char(F) > m`. We state only the FRS half here (hypotheses
 `_hFn : |F| > n`, `_hω : Admissible …`, `_hω0 : ω ≠ 0`); the multiplicity half is gated
 on `D2.19 / DA.7` (univariate-multiplicity definition), tracked separately. Admitted as
-an external result. -/
+an external result.
+
+**Source hypothesis restored (2026-07-21 Phase-A merge audit): `ω` generates `F×`.**
+The statement WITHOUT an order condition on `ω` is **false**: with `F = 𝔽₁₀₁`, `s = 2`,
+`ω = -1` (order 2), `k = 3`, `L = {1,…,7}` every previous hypothesis holds (admissibility
+only forces `ord(ω) ≥ s`), yet for `A := span{enc 1, enc X²}` the encodings collapse to
+repeated-entry vectors (since `(-x)² = x²` and `ω² = 1`), giving
+`∑ᵢ dim(A ⊓ ker projᵢ) = n = 7 > 6 = finrank A · τ(2) · n`. The load-bearing source fact
+is [GK16 Lemma 12]'s folded-Wronskian criterion, stated for **`γ` a generator of `F×`**
+(`W_γ(1, X^d) = X^d(γ^d − 1)` vanishes when `γ^d = 1`, `d < k`). The pinned tex
+(`thm:folded-rs-are-subspace-design`, L1263–1277) omits any order condition, and GG25's
+own restatement (Def 2.18 / Thm 2.19, `q > sn` only) is falsified by the same
+counterexample — recorded upstream as `PAPER_REVS.md` finding #13. We carry GK16's own
+generator hypothesis `_hω_gen` (not a weaker `ord(ω) ≥ k` guard, which blocks the known
+counterexample but is not licensed by the cited source — cf. the PAPER_REVS #12 lesson
+on unlicensed hybrid strengthenings). -/
 theorem frs_is_subspaceDesign_gk16
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (L : Finset F) (_hL_dom : ∀ i : ι, domain i ∈ L)
     (_hFn : Fintype.card ι < Fintype.card F)
-    (_hω : ReedSolomon.Folded.Admissible L s ω) (_hω0 : ω ≠ 0) :
+    (_hω : ReedSolomon.Folded.Admissible L s ω) (_hω0 : ω ≠ 0)
+    (_hω_gen : orderOf ω = Fintype.card F - 1) :
     let τ : ℕ → ℝ := fun r ↦
       if r ∈ Finset.Icc 1 s then
         (k : ℝ) / Fintype.card ι / (s - r + 1)

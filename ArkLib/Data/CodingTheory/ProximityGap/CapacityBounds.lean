@@ -672,12 +672,22 @@ condition used by `dim_frsCode`/`minDist_frsCode`), `ω ≠ 0`, and `|F| > s·n`
 (Definition 2.18's `q > sn`).
 
 A corollary of T4.13 via T2.18 (FRS is τ-subspace-design). Admitted as an external
-result. -/
+result.
+
+**Generator hypothesis (2026-07-21 Phase-A merge audit).** `_hω_gen : ω` generates `F×`
+is carried because this bound's proof chain runs through T2.18
+(`frs_is_subspaceDesign_gk16`), whose unguarded form is FALSE for low-order `ω`
+(counterexample `ω = -1` over `𝔽₁₀₁`, order 2 — admissibility only forces
+`ord(ω) ≥ s`; see the T2.18 docstring). GG25's own Def 2.18/Thm 2.19 restatement
+(`q > sn` only) is falsified by the same counterexample, so the generator condition is
+treated as the implicit source assumption inherited from [GK16 Lemma 12]; recorded
+upstream as PAPER_REVS #13. -/
 theorem frs_epsMCA_capacity_gg25
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hω : ω ≠ 0)
+    (_hω_gen : orderOf ω = Fintype.card F - 1)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (_hcard : s * Fintype.card ι < Fintype.card F)
     (η : ℝ) (_hη_pos : 0 < η) (_hη_lt : η < 1)

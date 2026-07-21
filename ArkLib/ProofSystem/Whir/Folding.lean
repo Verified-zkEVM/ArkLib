@@ -257,11 +257,14 @@ theorem folding_listdecoding_if_genMutualCorrAgreement
     `Λᵣ(0,k,f,S_0,C)` denotes Λᵣ at f : ι → F for code C and
     `Λᵣ(1,k,fold_k(f,(fun _ : Fin 1 => α)),S_1,C')` denotes Λᵣ at fold_k : ι^2 → F for code C'.
 
-  **ABF26 mapping.** Probabilistic correctness of folded-RS list decoding. The
-  `errStar` accounting comes from MCA bounds (ABF26 Def 4.3 `epsMCA`). The underlying
-  list-size bound for FRS specializes ABF26 T3.4 (`subspaceDesign_list_decoding_cz25`
-  in `ArkLib/Data/CodingTheory/ListDecoding/Bounds.lean`) via the folded-RS
-  τ-subspace-design property (T2.18). -/
+  **ABF26 mapping (loose; statement caveat).** In the WHIR paper this is Lemma 4.21,
+  proved *under* Theorem 4.20's premise that `Gen(2;α)` is a proximity generator with
+  mutual correlated agreement for `C'` with bound `B⋆` and error `err⋆`. The Lean
+  statement as admitted does NOT carry that MCA hypothesis — `BStar`/`errStar` are free
+  variables — so it is strictly stronger than the source (false-instantiable at
+  `errStar ≡ 0`); this is a pre-existing defect at the merge-base, recorded in the
+  2026-07-21 Phase-A audit annex. The conceptual ABF26 counterpart of the missing
+  premise is the `epsMCA` machinery (Def 4.3), not T3.4's list-size bound. -/
 lemma folding_preserves_listdecoding_base
   [Fintype F] {S : Finset ι} {k m : ℕ} (hm : 1 ≤ m) {φ : ι ↪ F}
   [Fintype ι] [DecidableEq ι] [Smooth φ] {δ : ℝ≥0}

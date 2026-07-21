@@ -795,7 +795,13 @@ verbatim; e.g. the radius numerator `ρ·s = k/n`.
 so this statement must carry it as the hypothesis `_hadm` (in the in-tree strengthened
 GR08 form) together with `_hω : ω ≠ 0` (which admissibility alone does not imply when
 `0 ∉ L`). Without them the fold degenerates — e.g. at `ω = 0` or `ω = 1` all folds
-collapse — and the capacity bound is false. -/
+collapse — and the capacity bound is false.
+
+**Generator hypothesis (2026-07-21 Phase-A merge audit).** `_hω_gen : ω` generates `F×`
+is inherited from the T2.18 leaf `frs_is_subspaceDesign_gk16`, whose unguarded form was
+shown FALSE for low-order `ω` (counterexample `ω = -1` over `𝔽₁₀₁`; see that decl's
+docstring and PAPER_REVS #13). It is also the classical folded-RS setting of CZ25 /
+Guruswami–Rudra (fold element a primitive/generator element). -/
 theorem frs_list_decoding_capacity_cz25
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -804,6 +810,7 @@ theorem frs_list_decoding_capacity_cz25
     (_hFn : Fintype.card ι < Fintype.card F)
     (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (_hω : ω ≠ 0)
+    (_hω_gen : orderOf ω = Fintype.card F - 1)
     (η : ℝ) (_hη_pos : 0 < η) (_hη_lt_s : 1 / η < s) :
     let n : ℝ := Fintype.card ι
     let ρ : ℝ := k / (s * n)
@@ -821,7 +828,7 @@ theorem frs_list_decoding_capacity_cz25
       (fun r => if r ∈ Finset.Icc 1 s then (k : ℝ) / Fintype.card ι / (s - r + 1) else 1)
       (ReedSolomon.Folded.frsCode domain k s ω) :=
     frs_is_subspaceDesign_gk16 domain k s ω (Finset.univ.map domain)
-      (fun i => Finset.mem_map_of_mem domain (Finset.mem_univ i)) _hFn _hadm _hω
+      (fun i => Finset.mem_map_of_mem domain (Finset.mem_univ i)) _hFn _hadm _hω _hω_gen
   -- The real-argument profile value `t = ρ·s/(s − 1/η + 1) = (k/n)/(s − 1/η + 1)`.
   have hρs : ρ * s = (k : ℝ) / n := by
     have hs0 : (s : ℝ) ≠ 0 := hs_posR.ne'
