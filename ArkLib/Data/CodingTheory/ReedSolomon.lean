@@ -185,8 +185,6 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
-
-
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
@@ -199,6 +197,18 @@ lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : 
   aesop
     (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     (add safe (by omega))
+
+/-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
+  if `p.degree < n`. -/
+lemma evalOnPoints_mem_code_of_degree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.degree < n) :
+  evalOnPoints α p ∈ code α n :=
+  mem_code_of_polynomial_of_degree_lt_of_eval p h_deg (by simp [evalOnPoints])
+
+/-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
+  if `p.natDegree < n`. -/
+lemma evalOnPoints_mem_code_of_natDegree_lt {α : ι ↪ F} {p : F[X]} (h_deg : p.natDegree < n) :
+  evalOnPoints α p ∈ code α n :=
+  mem_code_of_polynomial_of_natDegree_lt_of_eval p h_deg (by simp [evalOnPoints])
 
 /-- **Monotonicity of `code` in the degree bound.** If `n ≤ m`, the degree-`n` Reed-Solomon code
 is contained in the degree-`m` code over the same domain. -/
