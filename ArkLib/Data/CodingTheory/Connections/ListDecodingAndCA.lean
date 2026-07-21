@@ -117,6 +117,12 @@ distinct codeword pairs] = `Code.minDist C / n`.) The requirement
 The hypothesis `_hδ_lt_dist` restores the source form. PAPER_REVS.md
 finding #7 records the upstream (tex) omission.
 
+**Kept conservatively (2026-07-21 review).** `_hδ_lt_dist` is retained, not broadened
+back to the tex's `δ, η ∈ (0,1)`: the paper's printed form has not been verified true
+without it (above the code distance the list radius/`Λ(C,δ)` behaviour is exactly what
+GCXK25's `p < Δ_C` guards), so it is treated as an implicit source assumption rather than
+a droppable one. Do not drop it without a first-hand GCXK25 re-derivation.
+
 Admitted as an external result. -/
 theorem linear_listSize_to_epsMCA_gcxk25
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
@@ -277,7 +283,14 @@ radius at `f := ⌊δ·n⌋` and `ε := ε_ca(C, δ)`, using the `1/n`-quantisat
   field): the tex leaves it implicit, but the strictness step above needs
   `(q-n)/(kq) > 0`. At `n = |F|` the tex hypothesis would force `ε_ca = 0`, which no
   proper code attains (`ε_ca ≥ 1/|F|` via the `γ = 0` point of a line through a word
-  far from the code), so no non-vacuous instance is lost. -/
+  far from the code), so no non-vacuous instance is lost.
+
+**Kept conservatively (2026-07-21 review).** The `(n-k-1)/n` radius is retained, not
+widened to the tex's `δ_min`. This theorem is *derived* (not admitted) from the
+source-native integer form, so the source regime is also the regime in which the
+derivation is valid — the two extra `1/n` grid steps the tex allows are not merely
+unverified but sit at the unique-decoding boundary where CS25 gives no guarantee.
+Widening the radius would make the derivation fail, not silently admit a falsehood. -/
 theorem rs_epsCA_implies_lambda_extended_cs25
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (η : ℝ)
     (hk_pos : 0 < k)

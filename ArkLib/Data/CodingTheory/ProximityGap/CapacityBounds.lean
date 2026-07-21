@@ -184,7 +184,16 @@ T4.11's header, which drops them) previously omitted the source's `ε < 1/3` and
 `δ > 0`, and admitted the boundary `δ = 1 − ∛(1 − δ_min + η)` that the source's strict
 inequality excludes; without them the admit claimed the bound in regimes the source
 never proves (BGKS20's triple-agreement-set convexity argument is tuned to `ε < 1/3`).
-All three are now carried; regime re-derived from the BGKS20 PDF, not the ABF26 tex. -/
+All three are now carried; regime re-derived from the BGKS20 PDF, not the ABF26 tex.
+`PAPER_REVS.md` finding #11 records the tex omission.
+
+**Kept conservatively (2026-07-21 review).** These hypotheses are retained deliberately,
+not broadened back to the tex form. Unlike a pure well-formedness margin, `η < 1/3` is
+plausibly load-bearing for the *truth* of the bound, not merely for BGKS20's proof: the
+RHS `2/(η²·|F|)` shrinks as `η` grows while the conclusion's interleaved radius `δ + η`
+grows, so large `η` makes the claim strictly harder to satisfy. ef-millenium's broader
+printed statement (`η > 0`, non-strict `δ ≤ …`) has **not** been verified to hold without
+these, and may be false — do not drop them without a first-hand source re-derivation. -/
 theorem linear_epsCA_1_5_johnson_bgks20
     (C : ModuleCode ι F A) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
