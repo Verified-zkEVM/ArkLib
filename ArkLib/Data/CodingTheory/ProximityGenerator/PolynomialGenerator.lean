@@ -26,7 +26,8 @@ with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org
 
 namespace PolynomialGenIsMCA
 
-open unitInterval CoreDefinitions
+open unitInterval CoreDefinitions LinearTransformations
+open scoped ProbabilityTheory
 
 variable {F : Type} [Field F]
          {ι : Type} [Fintype ι] [Nonempty ι]
@@ -69,6 +70,75 @@ lemma ε_MCA_MDS_eq_ξ [DecidableEq F] (LC : LinearCode ι F) (d m : ℕ) (η : 
   simp only [LinearTransformations.ε_MCA_MDS, ξ, Nat.cast_add, Nat.cast_one]
   rw [show (↑d + 1 + 1 : ℝ) = ↑d + 2 from by ring,
     show (↑d + 1 - 1 : ℝ) = ↑d from by ring]
+
+/-- The iterated tensor product of a finite family of generators `Gᵢ : αᵢ → 𝔽^{ℓᵢ}`, over the
+product seed space `∏ᵢ αᵢ`: `(x₁, …, xₛ) ↦ ⊗ᵢ Gᵢ(xᵢ)`.  Both the full-field tensor
+`RSCode.tensor_of_univ` and the subset tensor `subTensor` are instances of this construction. -/
+def iterTensor {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
+    (G : ∀ i, Generator (α i) (ℓ i) F) : Generator (∀ i, α i) (∀ i, ℓ i) F :=
+  fun x j => ∏ i, G i (x i) (j i)
+
+omit [Nonempty ι] in
+/-- The iterated tensor of a family of MCA generators has MCA for any linear code `LC`, with error
+the sum `∑ᵢ εᵢ` of the factors' errors.  This is the `s`-fold iteration of Lemma 4.4
+(`tensor_of_MCA_is_MCA_tight`) [BCGM25]; it is the single induction underlying both
+`RSCode.tensor_of_univ_is_MCA` and `subTensor_MCA`. -/
+lemma iterTensor_is_MCA (LC : LinearCode ι F) :
+    ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
+      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)]
+      (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ),
+      (∀ i, IsMCAGenerator (G i) (ε i) LC) →
+      IsMCAGenerator (iterTensor G) (fun γ => ∑ i, ε i γ) LC := by
+  intro s
+  induction s with
+  | zero =>
+    intro α ℓ _ _ _ G ε _ U γ
+    classical
+    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (iterTensor G) LC x U γ := by
+      rintro x ⟨T, hT, hmem, j, hj⟩
+      apply hj
+      have hvec : Matrix.vecMul (iterTensor G x) U = U j := by
+        funext w
+        simp only [Matrix.vecMul, dotProduct]
+        rw [Fintype.sum_subsingleton _ j]
+        simp [iterTensor]
+      rwa [hvec] at hmem
+    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
+    simp
+  | succ s ih =>
+    intro α ℓ _ _ _ G ε hmca
+    letI : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
+    letI : ∀ i : Fin s, Nonempty (Fin.tail α i) := fun i => inferInstanceAs (Nonempty (α i.succ))
+    letI : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
+    set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
+      (Fin.consEquiv α).symm with heS
+    set eL : (ℓ 0 × (∀ i : Fin s, Fin.tail ℓ i)) ≃ (∀ i : Fin (s + 1), ℓ i) :=
+      Fin.consEquiv ℓ with heL
+    have hBin := tensor_of_MCA_is_MCA_tight LC
+      (G 0) (ε 0) (hmca 0)
+      (iterTensor (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G))
+      (fun γ => ∑ i, Fin.tail ε i γ)
+      (ih (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G) (Fin.tail ε)
+        (fun i => hmca (Fin.succ i)))
+    have hR := isMCAGenerator_reindex LC
+      (TensorGenerator_Explicit (G 0)
+        (iterTensor (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)))
+      _ hBin eS eL
+    have hgen : (fun (x' : ∀ i : Fin (s + 1), α i) (j' : ∀ i : Fin (s + 1), ℓ i) =>
+        TensorGenerator_Explicit (G 0)
+          (iterTensor (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)) (eS x') (eL.symm j'))
+        = iterTensor G := by
+      funext x' j'
+      rw [heS, heL]
+      simp only [TensorGenerator_Explicit, iterTensor, Fin.tail, Fin.prod_univ_succ]
+      simp_all only [eS, eL]
+      rfl
+    have herr : ((ε 0) + fun γ => ∑ i, Fin.tail ε i γ) = (fun γ => ∑ i, ε i γ) := by
+      funext γ
+      simp only [Pi.add_apply, Fin.sum_univ_succ]
+      rfl
+    rw [hgen, herr] at hR
+    exact hR
 
 end PolynomialGenIsMCA
 
@@ -154,51 +224,9 @@ lemma tensor_of_univ_is_MCA [Fintype F] (LC : LinearCode ι F) (ε : ℕ → I �
     (huniv : ∀ e : ℕ, IsMCAGenerator (UnivariatePowers e) (ε e) LC) :
     ∀ {s : ℕ} (d : Fin s → ℕ),
       IsMCAGenerator (tensor_of_univ d) (fun γ => ∑ i, ε (d i) γ) LC := by
-  intro s
-  induction s with
-  | zero =>
-    intro d U γ
-    classical
-    have hfalse : ∀ x : Fin 0 → F, ¬ IsMCA (tensor_of_univ d) LC x U γ := by
-      rintro x ⟨T, hT, hmem, j, hj⟩
-      apply hj
-      have hvec : Matrix.vecMul (tensor_of_univ d x) U = U j := by
-        funext w
-        simp only [Matrix.vecMul, dotProduct]
-        rw [Fintype.sum_subsingleton _ j]
-        simp [tensor_of_univ]
-      rwa [hvec] at hmem
-    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
-    simp
-  | succ s ih =>
-    intro d
-    set eS : (Fin (s + 1) → F) ≃ (F × (Fin s → F)) :=
-      (Fin.consEquiv (fun _ => F)).symm with heS
-    set eL : (Fin (d 0 + 1) × ((i : Fin s) → Fin (Fin.tail d i + 1)))
-        ≃ ((i : Fin (s + 1)) → Fin (d i + 1)) :=
-      Fin.consEquiv (fun i => Fin (d i + 1)) with heL
-    have hBin := tensor_of_MCA_is_MCA_tight LC
-      (UnivariatePowers (d 0)) (ε (d 0)) (huniv (d 0))
-      (tensor_of_univ (Fin.tail d)) (fun γ => ∑ i, ε (Fin.tail d i) γ)
-      (ih (Fin.tail d))
-    have hR := isMCAGenerator_reindex LC
-      (TensorGenerator_Explicit (UnivariatePowers (d 0)) (tensor_of_univ (Fin.tail d)))
-      _ hBin eS eL
-    have hgen : (fun (x' : Fin (s + 1) → F) (j' : (i : Fin (s + 1)) → Fin (d i + 1)) =>
-        TensorGenerator_Explicit (UnivariatePowers (d 0)) (tensor_of_univ (Fin.tail d))
-          (eS x') (eL.symm j')) = tensor_of_univ d := by
-      funext x' j'
-      rw [heS, heL]
-      simp only [TensorGenerator_Explicit, Fin.consEquiv_symm_apply,
-        UnivariatePowers, tensor_of_univ, Fin.tail, Fin.prod_univ_succ]
-      simp_all only [Fin.consEquiv_symm_apply, eS, eL]
-      rfl
-    have herr : ((ε (d 0)) + fun γ => ∑ i, ε (Fin.tail d i) γ)
-        = (fun γ => ∑ i, ε (d i) γ) := by
-      funext γ
-      simp only [Pi.add_apply, Fin.sum_univ_succ, Fin.tail]
-    rw [hgen, herr] at hR
-    exact hR
+  intro s d
+  exact iterTensor_is_MCA LC (fun i => UnivariatePowers (d i)) (fun i => ε (d i))
+    (fun i => huniv (d i))
 
 /-- The polynomial generator `G` is the right multiplication of the tensor generator by the
 coefficient matrix. (`G = G̃ · Aᵀ` in the proof of Theorem 9.2 [BCGM25]). -/
@@ -364,63 +392,14 @@ def subTensor {s : ℕ} (S : Fin s → Set F) (d : Fin s → ℕ) :
 `LC`, with error the sum `∑ᵢ ξ (dᵢ)` of the factors' errors.  This is the `s`-fold iteration of
 Lemma 4.4 (`tensor_of_MCA_is_MCA_tight`) [BCGM25], with each factor's MCA supplied by
 `subUnivPow_MCA`. -/
-lemma subTensor_MCA [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1) :
-    ∀ {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
-      (d : Fin s → ℕ), (∀ i, d i + 1 ≤ Fintype.card ↥(S i)) →
-      IsMCAGenerator (subTensor S d)
-        (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) LC := by
-  intro s
-  induction s with
-  | zero =>
-    intro S _ _ d _ U γ
-    classical
-    have hfalse : ∀ x : (∀ i : Fin 0, ↥(S i)), ¬ IsMCA (subTensor S d) LC x U γ := by
-      rintro x ⟨T, hT, hmem, j, hj⟩
-      apply hj
-      have hvec : Matrix.vecMul (subTensor S d x) U = U j := by
-        funext w
-        simp only [Matrix.vecMul, dotProduct]
-        rw [Fintype.sum_subsingleton _ j]
-        simp [subTensor]
-      rwa [hvec] at hmem
-    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
-    simp
-  | succ s ih =>
-    intro S _ _ d hcard
-    letI : ∀ i : Fin s, Fintype ↥(Fin.tail S i) := fun i => inferInstanceAs (Fintype ↥(S i.succ))
-    letI : ∀ i : Fin s, Nonempty ↥(Fin.tail S i) := fun i => inferInstanceAs (Nonempty ↥(S i.succ))
-    set eS : (∀ i : Fin (s + 1), ↥(S i)) ≃ (↥(S 0) × (∀ i : Fin s, ↥(Fin.tail S i))) :=
-      (Fin.consEquiv (fun i => ↥(S i))).symm with heS
-    set eL : (Fin (d 0 + 1) × ((i : Fin s) → Fin (Fin.tail d i + 1)))
-        ≃ ((i : Fin (s + 1)) → Fin (d i + 1)) :=
-      Fin.consEquiv (fun i => Fin (d i + 1)) with heL
-    have hBin := tensor_of_MCA_is_MCA_tight LC
-      (subUnivPow (S 0) (d 0)) (ξ LC (d 0) (Fintype.card ↥(S 0)) η)
-      (subUnivPow_MCA (S 0) LC (d 0) η hη (by simpa using hcard 0))
-      (subTensor (Fin.tail S) (Fin.tail d))
-      (fun γ => ∑ i, ξ LC (Fin.tail d i) (Fintype.card ↥(Fin.tail S i)) η γ)
-      (ih (Fin.tail S) (Fin.tail d) (by intro i; exact hcard i.succ))
-    have hR := isMCAGenerator_reindex LC
-      (TensorGenerator_Explicit (subUnivPow (S 0) (d 0)) (subTensor (Fin.tail S) (Fin.tail d)))
-      _ hBin eS eL
-    have hgen : (fun (x' : ∀ i : Fin (s + 1), ↥(S i))
-        (j' : (i : Fin (s + 1)) → Fin (d i + 1)) =>
-        TensorGenerator_Explicit (subUnivPow (S 0) (d 0)) (subTensor (Fin.tail S) (Fin.tail d))
-          (eS x') (eL.symm j')) = subTensor S d := by
-      funext x' j'
-      rw [heS, heL]
-      simp only [TensorGenerator_Explicit, subUnivPow, subTensor,
-        Fin.tail, Fin.prod_univ_succ]
-      simp_all only [eS, eL]
-      rfl
-    have herr : ((ξ LC (d 0) (Fintype.card ↥(S 0)) η)
-        + fun γ => ∑ i, ξ LC (Fin.tail d i) (Fintype.card ↥(Fin.tail S i)) η γ)
-        = (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) := by
-      funext γ
-      simp only [Pi.add_apply, Fin.sum_univ_succ, Fin.tail]
-      rfl
-    rw [hgen, herr] at hR
-    exact hR
+lemma subTensor_MCA [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1)
+    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+    (d : Fin s → ℕ) (hcard : ∀ i, d i + 1 ≤ Fintype.card ↥(S i)) :
+    IsMCAGenerator (subTensor S d)
+      (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) LC :=
+  iterTensor_is_MCA LC (fun i => subUnivPow (S i) (d i))
+    (fun i => ξ LC (d i) (Fintype.card ↥(S i)) η)
+    (fun i => subUnivPow_MCA (S i) LC (d i) η hη (hcard i))
 
 /-- The polynomial generator `G` is the right multiplication of the restricted tensor generator by
 the coefficient matrix (`G = G̃ · Aᵀ` in the proof of Theorem 8.2 [BCGM25]).  This reduces to the
