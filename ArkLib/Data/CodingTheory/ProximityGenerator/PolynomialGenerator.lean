@@ -58,16 +58,17 @@ noncomputable def ξ [DecidableEq F] (LC : LinearCode ι F) (d m : ℕ) (η : �
       else
       1
 
-/-- Theorem 8.2 (MCA for polynomial generators) [BCGM25]. -/
-theorem polynomial_gen_MCA [DecidableEq F] {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F) (d : ℕ)
-  (η : ℝ) (hη : 0 < η ∧ η < 1) {s : ℕ}
-  (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
-  (G : Generator (∀ i, S i) ℓ F)
-  (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
-  (hℓ : 2 ≤ Fintype.card ℓ) (hS : ∀ i : Fin s, (deg_max P i + 1) ≤ (Set.ncard (S i))) :
-  letI ε : I → ℝ := ∑ i : Fin s, (ξ LC (deg_max P i) (Set.ncard (S i)) η)
-  IsMCAGenerator G ε LC := by
-  sorry
+/-- The MDS error bound `ε_MCA_MDS` for output size `d + 1` (the univariate powers generator of
+degree `d`, whose code has dimension `d + 1`) coincides with the univariate-powers error `ξ` of
+degree `d`. This is the bridge that lets us feed `MDS_is_MCA` (Theorem 6.1) into the polynomial
+generator analysis: it is the identification, at the level of error functions, behind
+`ξ_{C,d,m} = ε_MCA_MDS_{C,d+1,m}`. -/
+lemma ε_MCA_MDS_eq_ξ [DecidableEq F] (LC : LinearCode ι F) (d m : ℕ) (η : ℝ) :
+    LinearTransformations.ε_MCA_MDS LC (d + 1) m η = ξ LC d m η := by
+  funext γ
+  simp only [LinearTransformations.ε_MCA_MDS, ξ, Nat.cast_add, Nat.cast_one]
+  rw [show (↑d + 1 + 1 : ℝ) = ↑d + 2 from by ring,
+    show (↑d + 1 - 1 : ℝ) = ↑d from by ring]
 
 end PolynomialGenIsMCA
 
@@ -284,3 +285,195 @@ lemma polynomial_gen_MCA_RScode [Fintype F] (n m : ℕ) (hm : 3 ≤ m) {ℓ : Ty
   rwa [_root_.funext fun γ => (Finset.sum_apply γ Finset.univ _).symm] at hmul
 
 end RSCode
+
+namespace PolynomialGenIsMCA
+
+open CoreDefinitions LinearTransformations LinearCode RSCode ReedSolomon MvPolynomial Matrix
+open unitInterval
+open scoped ProbabilityTheory ENNReal BigOperators
+
+variable {F : Type} [Field F] {ι : Type} [Fintype ι] [Nonempty ι]
+
+/-- The univariate powers generator of degree `d` restricted to a subset `Sᵢ ⊆ F` as its seed
+space: `x ↦ (1, x, …, x^d)`.  This is the univariate factor used in the proof of Theorem 8.2
+[BCGM25], now over the seed space `Sᵢ` rather than the whole field. -/
+def subUnivPow (Sᵢ : Set F) (d : ℕ) : Generator ↥Sᵢ (Fin (d + 1)) F :=
+  fun x j => (↑x : F) ^ (j : ℕ)
+
+/-- The code `C_G` of the restricted univariate powers generator is the Reed–Solomon code of
+degree `< d+1` over `Sᵢ`: its `M_G` matrix is the non-square Vandermonde matrix. -/
+lemma subUnivPow_fromColGenMat (Sᵢ : Set F) [Fintype ↥Sᵢ] [Nonempty ↥Sᵢ] (d : ℕ) :
+    fromColGenMat (M_G (subUnivPow Sᵢ d))
+      = ReedSolomon.code (Function.Embedding.subtype (· ∈ Sᵢ)) (d + 1) := by
+  have hMG : M_G (subUnivPow Sᵢ d)
+      = Vandermonde.nonsquare (d + 1) ((Function.Embedding.subtype (· ∈ Sᵢ)) : ↥Sᵢ → F) := by
+    ext x j
+    simp [M_G, subUnivPow, Vandermonde.nonsquare]
+  rw [hMG, genMatIsVandermonde]
+
+/-- The restricted univariate powers generator is an MDS generator (its code is Reed–Solomon,
+hence MDS). -/
+lemma subUnivPow_isMDSGenerator [DecidableEq F] (Sᵢ : Set F) [Fintype ↥Sᵢ] [Nonempty ↥Sᵢ] (d : ℕ)
+    (h : d + 1 ≤ Fintype.card ↥Sᵢ) : IsMDSGenerator (subUnivPow Sᵢ d) := by
+  unfold IsMDSGenerator
+  rw [subUnivPow_fromColGenMat]
+  exact ReedSolomon.isMDS_code h
+
+/-- The code `C_G` of the restricted univariate powers generator has dimension `d + 1`, matching
+its output size. -/
+lemma subUnivPow_dim (Sᵢ : Set F) [Fintype ↥Sᵢ] [Nonempty ↥Sᵢ] (d : ℕ)
+    (h : d + 1 ≤ Fintype.card ↥Sᵢ) :
+    LinearCode.dim (fromColGenMat (M_G (subUnivPow Sᵢ d))) = Fintype.card (Fin (d + 1)) := by
+  rw [subUnivPow_fromColGenMat, ReedSolomon.dim_eq_deg_of_le' h, Fintype.card_fin]
+
+/-- The restricted univariate powers generator has MCA for every linear code with error `ξ`.
+For `d ≥ 1` this is Theorem 6.1 (`MDS_is_MCA`) together with the identification `ε_MCA_MDS = ξ`
+(`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ` suffices. -/
+lemma subUnivPow_MCA [DecidableEq F] (Sᵢ : Set F) [Fintype ↥Sᵢ] [Nonempty ↥Sᵢ]
+    (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
+    (h : d + 1 ≤ Fintype.card ↥Sᵢ) :
+    IsMCAGenerator (subUnivPow Sᵢ d) (ξ LC d (Fintype.card ↥Sᵢ) η) LC := by
+  rcases Nat.eq_zero_or_pos d with hd | hd
+  · subst hd
+    classical
+    haveI : Subsingleton (Fin (0 + 1)) := inferInstanceAs (Subsingleton (Fin 1))
+    intro U γ
+    have hfalse : ∀ x : ↥Sᵢ, ¬ IsMCA (subUnivPow Sᵢ 0) LC x U γ := by
+      rintro x ⟨T, hT, hmem, j, hj⟩
+      apply hj
+      have hvec : Matrix.vecMul (subUnivPow Sᵢ 0 x) U = U j := by
+        funext w
+        simp only [Matrix.vecMul, dotProduct]
+        rw [Fintype.sum_subsingleton _ j]
+        simp [subUnivPow]
+      rwa [hvec] at hmem
+    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
+    simp
+  · have hℓ : 2 ≤ Fintype.card (Fin (d + 1)) := by rw [Fintype.card_fin]; omega
+    have hmca := MDS_is_MCA (subUnivPow Sᵢ d) (subUnivPow_isMDSGenerator Sᵢ d h)
+      (subUnivPow_dim Sᵢ d h) η hη hℓ LC
+    rwa [Fintype.card_fin, ε_MCA_MDS_eq_ξ] at hmca
+
+/-- The `s`-fold tensor product of restricted univariate powers generators, over the product seed
+space `∏ᵢ Sᵢ`: `(x₁, …, xₛ) ↦ ⊗ᵢ (1, xᵢ, …, xᵢ^{dᵢ})`. -/
+def subTensor {s : ℕ} (S : Fin s → Set F) (d : Fin s → ℕ) :
+    Generator (∀ i, ↥(S i)) ((i : Fin s) → Fin (d i + 1)) F :=
+  fun x j => ∏ i, (↑(x i) : F) ^ (j i : ℕ)
+
+/-- The tensor product of the restricted univariate powers generators has MCA for any linear code
+`LC`, with error the sum `∑ᵢ ξ (dᵢ)` of the factors' errors.  This is the `s`-fold iteration of
+Lemma 4.4 (`tensor_of_MCA_is_MCA_tight`) [BCGM25], with each factor's MCA supplied by
+`subUnivPow_MCA`. -/
+lemma subTensor_MCA [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1) :
+    ∀ {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+      (d : Fin s → ℕ), (∀ i, d i + 1 ≤ Fintype.card ↥(S i)) →
+      IsMCAGenerator (subTensor S d)
+        (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) LC := by
+  intro s
+  induction s with
+  | zero =>
+    intro S _ _ d _ U γ
+    classical
+    have hfalse : ∀ x : (∀ i : Fin 0, ↥(S i)), ¬ IsMCA (subTensor S d) LC x U γ := by
+      rintro x ⟨T, hT, hmem, j, hj⟩
+      apply hj
+      have hvec : Matrix.vecMul (subTensor S d x) U = U j := by
+        funext w
+        simp only [Matrix.vecMul, dotProduct]
+        rw [Fintype.sum_subsingleton _ j]
+        simp [subTensor]
+      rwa [hvec] at hmem
+    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
+    simp
+  | succ s ih =>
+    intro S _ _ d hcard
+    letI : ∀ i : Fin s, Fintype ↥(Fin.tail S i) := fun i => inferInstanceAs (Fintype ↥(S i.succ))
+    letI : ∀ i : Fin s, Nonempty ↥(Fin.tail S i) := fun i => inferInstanceAs (Nonempty ↥(S i.succ))
+    set eS : (∀ i : Fin (s + 1), ↥(S i)) ≃ (↥(S 0) × (∀ i : Fin s, ↥(Fin.tail S i))) :=
+      (Fin.consEquiv (fun i => ↥(S i))).symm with heS
+    set eL : (Fin (d 0 + 1) × ((i : Fin s) → Fin (Fin.tail d i + 1)))
+        ≃ ((i : Fin (s + 1)) → Fin (d i + 1)) :=
+      Fin.consEquiv (fun i => Fin (d i + 1)) with heL
+    have hBin := tensor_of_MCA_is_MCA_tight LC
+      (subUnivPow (S 0) (d 0)) (ξ LC (d 0) (Fintype.card ↥(S 0)) η)
+      (subUnivPow_MCA (S 0) LC (d 0) η hη (by simpa using hcard 0))
+      (subTensor (Fin.tail S) (Fin.tail d))
+      (fun γ => ∑ i, ξ LC (Fin.tail d i) (Fintype.card ↥(Fin.tail S i)) η γ)
+      (ih (Fin.tail S) (Fin.tail d) (by intro i; exact hcard i.succ))
+    have hR := isMCAGenerator_reindex LC
+      (TensorGenerator_Explicit (subUnivPow (S 0) (d 0)) (subTensor (Fin.tail S) (Fin.tail d)))
+      _ hBin eS eL
+    have hgen : (fun (x' : ∀ i : Fin (s + 1), ↥(S i))
+        (j' : (i : Fin (s + 1)) → Fin (d i + 1)) =>
+        TensorGenerator_Explicit (subUnivPow (S 0) (d 0)) (subTensor (Fin.tail S) (Fin.tail d))
+          (eS x') (eL.symm j')) = subTensor S d := by
+      funext x' j'
+      rw [heS, heL]
+      simp only [TensorGenerator_Explicit, subUnivPow, subTensor,
+        Fin.tail, Fin.prod_univ_succ]
+      simp_all only [eS, eL]
+      rfl
+    have herr : ((ξ LC (d 0) (Fintype.card ↥(S 0)) η)
+        + fun γ => ∑ i, ξ LC (Fin.tail d i) (Fintype.card ↥(Fin.tail S i)) η γ)
+        = (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) := by
+      funext γ
+      simp only [Pi.add_apply, Fin.sum_univ_succ, Fin.tail]
+      rfl
+    rw [hgen, herr] at hR
+    exact hR
+
+/-- The polynomial generator `G` is the right multiplication of the restricted tensor generator by
+the coefficient matrix (`G = G̃ · Aᵀ` in the proof of Theorem 8.2 [BCGM25]).  This reduces to the
+full-field factorization `generatorByRightMul_coeffMatrix` evaluated at the seed point
+`i ↦ (xᵢ : F)`. -/
+lemma generatorByRightMul_coeffMatrix_sub {s : ℕ} {ℓ : Type} [Fintype ℓ]
+    (S : Fin s → Set F) (P : ℓ → MvPolynomial (Fin s) F) (d : Fin s → ℕ)
+    (hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ d i)
+    (G : Generator (∀ i, ↥(S i)) ℓ F)
+    (hG : ∀ x, G x = MvPolynomial.eval (fun i => (↑(x i) : F)) ∘ P) :
+    generatorByRightMul (subTensor S d) (coeffMatrix P d) = G := by
+  funext x
+  have hsub : subTensor S d x = tensor_of_univ d (fun i => (↑(x i) : F)) := by
+    funext e; simp [subTensor, tensor_of_univ]
+  have hgbm := generatorByRightMul_coeffMatrix P d hdeg
+    (fun y => MvPolynomial.eval y ∘ P) (fun _ => rfl)
+  calc generatorByRightMul (subTensor S d) (coeffMatrix P d) x
+      = Matrix.vecMul (subTensor S d x) (coeffMatrix P d) := rfl
+    _ = Matrix.vecMul (tensor_of_univ d (fun i => (↑(x i) : F))) (coeffMatrix P d) := by rw [hsub]
+    _ = generatorByRightMul (tensor_of_univ d) (coeffMatrix P d) (fun i => (↑(x i) : F)) := rfl
+    _ = (MvPolynomial.eval (fun i => (↑(x i) : F)) ∘ P) := congrFun hgbm _
+    _ = G x := (hG x).symm
+
+/-- Theorem 8.2 (MCA for polynomial generators) [BCGM25]. -/
+theorem polynomial_gen_MCA [DecidableEq F] {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
+    (η : ℝ) (hη : 0 < η ∧ η < 1) {s : ℕ}
+    (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+    (G : Generator (∀ i, S i) ℓ F)
+    (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
+    (hS : ∀ i : Fin s, (deg_max P i + 1) ≤ (Set.ncard (S i))) :
+    letI ε : I → ℝ := ∑ i : Fin s, (ξ LC (deg_max P i) (Set.ncard (S i)) η)
+    IsMCAGenerator G ε LC := by
+  classical
+  show IsMCAGenerator G (∑ i : Fin s, ξ LC (deg_max P i) (Set.ncard (S i)) η) LC
+  have hcard : ∀ i : Fin s, Set.ncard (S i) = Fintype.card ↥(S i) := by
+    intro i; rw [Set.ncard_eq_toFinset_card', Set.toFinset_card]
+  have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
+    intro j i
+    simpa [deg_max] using
+      Finset.le_sup (f := fun j => (P j).degreeOf i) (Fintype.complete j)
+  have hcard_deg : ∀ i : Fin s, deg_max P i + 1 ≤ Fintype.card ↥(S i) := by
+    intro i; rw [← hcard i]; exact hS i
+  have htensor := subTensor_MCA LC η hη S (deg_max P) hcard_deg
+  have hmul := pseudoinverseGen (subTensor S (deg_max P))
+    (fun γ => ∑ i, ξ LC (deg_max P i) (Fintype.card ↥(S i)) η γ) LC htensor
+    (coeffMatrix P (deg_max P))
+    (coeffMatrix_hasLeftPseudoInverse P (deg_max P) hdeg hG.1)
+  rw [generatorByRightMul_coeffMatrix_sub S P (deg_max P) hdeg G hG.2] at hmul
+  have herr : (∑ i : Fin s, ξ LC (deg_max P i) (Set.ncard (S i)) η)
+      = (fun γ => ∑ i, ξ LC (deg_max P i) (Fintype.card ↥(S i)) η γ) := by
+    funext γ
+    rw [Finset.sum_apply]
+    exact Finset.sum_congr rfl (fun i _ => by rw [hcard i])
+  rwa [herr]
+
+end PolynomialGenIsMCA

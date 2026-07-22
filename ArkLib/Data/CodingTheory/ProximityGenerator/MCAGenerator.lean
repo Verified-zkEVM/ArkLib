@@ -239,4 +239,38 @@ lemma tensor_of_MCA_is_MCA_tight [Nonempty S] {S' : Type} [Fintype S'] [Nonempty
     IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε_mca') LC := by
   sorry
 
+noncomputable def ε_MCA_MDS [DecidableEq F] [Nonempty ι] (LC : LinearCode ι F) (ℓ s : ℕ) (η : ℝ) :
+    I → ℝ :=
+  letI n : ℝ := Fintype.card ι
+  letI δ_C : ℝ := (Code.minRelHammingDistCode (LC.carrier) : ℝ)
+  letI ρ_C : ℝ := 1 - δ_C
+  letI γ_ℓ : ℝ := 1 - (ρ_C + η) ^ (1 / ℓ : ℝ)
+  fun γ =>
+      if γ < (δ_C / (ℓ + 1) : ℝ) then
+      letI m' : ℝ := max (n * γ) 1
+      m' * ((ℓ - 1) / s : ℝ)
+    else
+      if γ ≤ 1 - (ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) then
+          (n * γ_ℓ / η) * ((ℓ - 1) / s) +
+          max (2 * (ℓ - 1) / (η * ((ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) - (ρ_C + η) ^ (1 / ℓ : ℝ)) * s))
+              (ℓ * (ℓ + 1) / (η * s) : ℝ)
+      else
+      1
+
+/-- Theorem 6.1 (MCA for MDS generators) [BCGM25].
+
+The paper requires that `C_G` has dimension `ℓ` (i.e. the generator has full column rank), which
+is the hypothesis `hdim` below; it is what makes the matrix `Mat(G(x₁), …, G(x_ℓ))` invertible in
+the counting arguments (Lemmas 5.2 and 6.2, via Lemma 3.6). It is stated as a separate hypothesis
+here because `IsMDSGenerator` only asserts that `C_G` meets the Singleton bound, which does not by
+itself force the dimension to be `ℓ`. If it later turns out to be derivable from the other
+hypotheses, `hdim` can be removed. -/
+theorem MDS_is_MCA {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] [Nonempty ι]
+  (G : Generator S ℓ F)
+  (hG : IsMDSGenerator G)
+  (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
+  (η : ℝ) (hη : 0 < η ∧ η < 1) (hℓ : 2 ≤ Fintype.card ℓ)
+  (LC : LinearCode ι F) :
+  IsMCAGenerator G (ε_MCA_MDS LC (Fintype.card ℓ) (Fintype.card S) η) LC := by sorry
+
 end LinearTransformations
