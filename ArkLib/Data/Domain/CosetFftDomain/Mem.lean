@@ -99,6 +99,12 @@ lemma not_zero_mem :
   obtain ⟨i, contra⟩ := contra
   exact CosetFftDomainClass.ne_zero ω i (by simp_all)
 
+@[simp]
+lemma ne_zero_dep [Fintype ι] [DecidableEq F] (x : ω) :
+  x.val ≠ 0 := fun contra ↦ by
+  have := x.2
+  simp_all
+
 /-- The finset of elements of a coset FFT domain is inhabited.
 
   There always exists `ω 0`.

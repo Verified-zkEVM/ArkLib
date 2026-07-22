@@ -23,7 +23,6 @@ coding-theory machinery as formalized in ArkLib.
 - [`../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
 - [`../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
 - [`../../../ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
-- [`../../../ArkLib/ProofSystem/Whir`](../../../ArkLib/ProofSystem/Whir)
 - [`../../../ArkLib/ProofSystem/Stir/ProximityGap.lean`](../../../ArkLib/ProofSystem/Stir/ProximityGap.lean)
 
 ## Notes

@@ -25,7 +25,7 @@ from all of these sources:
   figure, equations, lemma, bounds, and surrounding qualifications;
 - the target Lean files and their imports, docstrings, exported package, and consumers;
 - the seam table and sorry provenance in `Hachi/Composition.lean`;
-- `docs/kb/papers/NOZ26.md`, relevant `docs/kb/audits/`, and applicable `HACHI_*.md` design notes;
+- `docs/kb/papers/NOZ26.md` and relevant `docs/kb/audits/`;
 - the generic ArkLib definitions of the claimed security notion and composition operator.
 
 The paper is primary. Repository notes explain intent and known deviations but cannot establish
@@ -33,7 +33,7 @@ paper faithfulness by themselves. Record the paper version and page/figure/equat
 the primary source is unavailable, do not declare Stage 1 complete.
 
 If the user's requested approach contradicts the repo's verified design notes (e.g. a directed
-reuse or restructuring that a `HACHI_*.md`/KB analysis argues against), surface the conflict as an
+reuse or restructuring that a KB analysis argues against), surface the conflict as an
 explicit scope question with a recommendation *before* Stage 1 design work, and record the user's
 decision in the scope manifest; do not silently follow either side.
 
