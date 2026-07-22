@@ -9,18 +9,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
-permissions:
-  actions: read
-  contents: read
-  issues: write
-  pull-requests: read
-
 jobs:
   report:
     if: >-
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
     steps:
       - name: Locate pull request and timing artifact
         id: timing-context
@@ -248,46 +246,60 @@ jobs:
             const { owner, repo } = context.repo;
             const issue_number = Number('${{ steps.timing-context.outputs.pr-number }}');
 
+            const expectedCommentApiStatuses = new Set([403, 404, 410, 422, 429]);
+            const warnExpectedCommentApiFailure = (operation, error) => {
+              if (!Number.isInteger(error.status) ||
+                  !expectedCommentApiStatuses.has(error.status)) {
+                throw error;
+              }
+
+              const apiMessage = error.response?.data?.message || error.message || 'unknown error';
+              const permissionHint = error.status === 403
+                ? ' Check that the report job has `pull-requests: write` and that ' +
+                  'repository or organization Actions settings permit requested workflow permissions.'
+                : '';
+              core.warning(
+                `Could not ${operation} the build timing PR comment ` +
+                `(HTTP ${error.status}: ${apiMessage}).${permissionHint} ` +
+                'The report is still available in the job summary above.'
+              );
+            };
+
+            let comments;
             try {
-              const comments = await github.paginate(
+              comments = await github.paginate(
                 github.rest.issues.listComments,
                 { owner, repo, issue_number, per_page: 100 }
               );
-              const existing = comments.find(comment =>
-                comment.user?.type === 'Bot' && comment.body?.includes(marker)
-              );
+            } catch (error) {
+              warnExpectedCommentApiFailure('list existing comments for', error);
+              return;
+            }
 
-              if (existing) {
+            const existing = comments.find(comment =>
+              comment.user?.type === 'Bot' && comment.body?.includes(marker)
+            );
+
+            if (existing) {
+              try {
                 await github.rest.issues.updateComment({
                   owner,
                   repo,
                   comment_id: existing.id,
                   body,
                 });
-              } else {
+              } catch (error) {
+                warnExpectedCommentApiFailure('update', error);
+              }
+            } else {
+              try {
                 await github.rest.issues.createComment({
                   owner,
                   repo,
                   issue_number,
                   body,
                 });
-              }
-            } catch (error) {
-              // The rendered report is already attached to the job summary (see the
-              // previous step), so failing to post the PR comment must not fail this
-              // reporting job and surface as a red X on otherwise-green CI.
-              if (error.status === 403) {
-                core.warning(
-                  'Could not post the build timing PR comment: GITHUB_TOKEN is not ' +
-                  'permitted to write issue comments (HTTP 403 "Resource not accessible ' +
-                  'by integration"). For `workflow_run` jobs the token is capped at the ' +
-                  'repository default, so the `issues: write` permission declared in this ' +
-                  'workflow cannot take effect until write access is enabled under ' +
-                  'Settings → Actions → General → Workflow permissions ' +
-                  '(or a token/app granting `issues: write` is provided). The report is ' +
-                  'still available in the job summary above.'
-                );
-              } else {
-                core.warning(`Could not post the build timing PR comment: ${error.message}`);
+              } catch (error) {
+                warnExpectedCommentApiFailure('create', error);
               }
             }
