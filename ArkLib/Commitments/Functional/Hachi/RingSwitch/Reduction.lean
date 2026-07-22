@@ -14,12 +14,13 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
   (`ProofSystem/RingSwitching/Lift/`): the presentation is `Rq Φ` with canonical
   reduced representatives (`cyclotomicPresentation`, laws discharged from the `Rq` quotient
   bridge in `Data/Lattices/CyclotomicRing/QuotientLift.lean`). The generic layers supply
-  everything construction-shaped: the lifted witness and `checkAt` predicate plus the
-  `2d`-point interpolation/descent engine (`Lift`), and the commit-then-challenge
-  protocol with the escape/collision/common-opening extractor and CWSS plumbing (the
-  committed-scalar shell). Following the instantiation note in
-  `ProofSystem/RingSwitching/Lift.lean`, the package is assembled through the shell
-  with `liftCheckAt`/`liftRecover` passed as single opaque terms.
+  everything construction-shaped: the lifted witness and `checkAt` predicate, the
+  `2d`-point interpolation/descent recovery, the escape/collision/common-opening extractor,
+  and the CWSS plumbing. The composable package is therefore assembled **wholesale from generic
+  `Lift.package`** at `cyclotomicPresentation`; the single Hachi-specific obligation handed to it
+  is the norm implication `vecLInftyNorm_le_of_liftShort`. (See the note above `liftPackage` on
+  why the CWSS certificate is exposed as `liftPackage.isCWSS` rather than a standalone theorem in
+  Hachi's relation vocabulary.)
 
   The data that is genuinely specific to Hachi stays here:
 
@@ -153,103 +154,45 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 variable (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
   (φF : ZMod q →+* F)
 
-/-- Figure 4's pure statement-extending verifier — the committed-scalar shell (definitionally
-`Lift.verifier`). -/
-def liftVerifier :
-    Verifier oSpec (RlinStatement Φ n μ) (LiftStatement Φ K.TCom F n μ)
-      (pSpecScalar K.TCom F) :=
-  CommittedScalar.verifier K
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The **sole Hachi-specific obligation** of Lemma 9 in the generic-consumption model: the
+norm implication. A short lifted witness (`‖z‖∞ ≤ bound`) at a statement whose public bound
+dominates (`bound ≤ s.bound`) has `‖z‖∞ ≤ s.bound`. This is exactly generic `Lift`'s
+`short_zOk` hypothesis; the interpolation/descent recovery and the escape/collision extractor
+are supplied by the generic layer. -/
+theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWitness Φ μ n)
+    (hshort : liftShort Φ bound ρBound w) (hside : bound ≤ s.bound) :
+    vecLInftyNorm Φ w.z ≤ s.bound :=
+  le_trans hshort.1 hside
 
-/-- Honest prover shell.  Its commitment is definitionally derived from the output opening. -/
-def liftProver (WitIn : Type)
-    (computeW : RlinStatement Φ n μ → WitIn → LiftedWitness Φ μ n) :
-    Prover oSpec (RlinStatement Φ n μ) WitIn (LiftStatement Φ K.TCom F n μ)
-      (LiftedWitness Φ μ n) (pSpecScalar K.TCom F) :=
-  CommittedScalar.prover K computeW
+/-! ### Why the CWSS certificate is exposed only as `liftPackage.isCWSS`
 
-/-- Compatibility name for the generic branch-opening projection. -/
-noncomputable def respOpening (r : LiftedWitness Φ μ n ⊕ E) : LiftedWitness Φ μ n :=
-  CommittedScalar.responseOpening r
+We deliberately do **not** provide a standalone `lift_coordinateWiseSpecialSound` restated in
+Hachi's `relRlinE`/`relLiftE` relation vocabulary. Doing so forces the elaborator to check a
+`whnf` defeq between that vocabulary and the generic `Lift.relLin`/`Lift.relOutE`/`Lift.verifier`
+*inside the full `coordinateWiseSpecialSound` proposition* — which unfolds `Rq`'s computable layer
+(via the `verifier`) and times out (`maximum number of heartbeats` at `whnf`). The certificate is
+therefore `liftPackage.isCWSS` (generic `Lift.coordinateWiseSpecialSound` specialized). Crucially,
+the `▷` seams in `Composition.lean` still close by `rfl`: that `rfl` compares only the two relations
+(structurally identical after β-reduction — same `*ᵥ` subterms), never the verifier. -/
 
-omit [NeZero q] in
-@[simp] theorem respOpening_inl (w : LiftedWitness Φ μ n) :
-    respOpening Φ (Sum.inl (β := E) w) = w := rfl
-
-omit [NeZero q] in
-/-- The Hachi-specific algebraic obligation of Lemma 9: one short opening passing the local
-check at `2d` distinct points recovers `R^lin`. The interpolation, descent, and degree
-bookkeeping are the generic presentation engine
-(`Lift.Presentation.mulVec_eq_of_evalAt_rowSum`); this proof contributes only the
-norm implication. -/
-theorem liftRecover (hd : 0 < Φ.φ.natDegree) (s : RlinStatement Φ n μ)
-    (w : LiftedWitness Φ μ n) (fam : Fin (2 * Φ.φ.natDegree) → F)
-    (hinj : Function.Injective fam)
-    (hcheck : ∀ j, liftCheckAt Φ bound φF s (fam j) w)
-    (hshort : liftShort Φ bound ρBound w) : (s, w.z) ∈ relRlin Φ := by
-  haveI := isPresentation_cyclotomic Φ hd
-  refine ⟨?_, le_trans hshort.1 (hcheck ⟨0, by omega⟩).2⟩
-  funext i
-  exact (cyclotomicPresentation Φ).mulVec_eq_of_evalAt_rowSum φF.injective
-    (cyclotomicPresentation_modulus_natDegree Φ) (w.hρ i) hinj
-    (fun j => (hcheck j).1 i)
-
-/-- Explicit Hachi Lemma 9 assembler — the generic escape/collision/common-opening
-extractor, projecting the common opening to its `z`-component. -/
-noncomputable def liftBuildWitness (hd : 0 < Φ.φ.natDegree)
-    (s : RlinStatement Φ n μ) (t : K.TCom)
-    (fam : Fin (2 * Φ.φ.natDegree) → F)
-    (resp : Fin (2 * Φ.φ.natDegree) → (LiftedWitness Φ μ n ⊕ E)) :
-    PolyVec (Rq Φ) μ ⊕ E :=
-  CommittedScalar.buildWitness (by omega) K (fun w => w.z) s t fam resp
-
-omit [NeZero q] in
-/-- Hachi Lemma 9's auditable extraction theorem. The committed-scalar shell handles the
-three commitment cases; `liftRecover` supplies precisely the quotient-interpolation step. -/
-theorem liftBuildWitness_mem_relRlinE (hd : 0 < Φ.φ.natDegree)
-    (s : RlinStatement Φ n μ) (t : K.TCom)
-    (fam : Fin (2 * Φ.φ.natDegree) → F)
-    (resp : Fin (2 * Φ.φ.natDegree) → (LiftedWitness Φ μ n ⊕ E))
-    (hresp : ∀ j, ((s, t, fam j), resp j) ∈ relLiftE Φ bound ρBound K φF)
-    (hinj : Function.Injective fam) :
-    (s, liftBuildWitness Φ bound ρBound K hd s t fam resp) ∈ relRlinE Φ K.esc := by
-  simpa only [liftBuildWitness, relRlinE, relLiftE, relLift] using
-    CommittedScalar.buildWitness_mem (by omega) K (fun w => w.z)
-      (liftCheckAt Φ bound φF) (relRlin Φ)
-      (fun s' w fam' hinj' hcheck hshort =>
-        liftRecover Φ bound ρBound φF hd s' w fam' hinj' hcheck hshort)
-      s t fam resp hresp hinj
-
-omit [NeZero q] in
-/-- Hachi Lemma 9: CWSS at `k = 2d`, from the committed-scalar shell with `liftRecover` as
-the substantive algebra. -/
-theorem lift_coordinateWiseSpecialSound
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hd : 0 < Φ.φ.natDegree) :
-    (liftVerifier (oSpec := oSpec) Φ bound ρBound K).coordinateWiseSpecialSound init impl
-      (scalarStructure (2 * Φ.φ.natDegree) (by omega))
-      (relRlinE Φ (n := n) (μ := μ) K.esc)
-      (relLiftE Φ bound ρBound K φF) := by
-  simpa only [liftVerifier, relRlinE, relLiftE, relLift] using
-    CommittedScalar.coordinateWiseSpecialSound (by omega) K (fun w => w.z)
-      (liftCheckAt Φ bound φF) (relRlin Φ)
-      (fun s w fam hinj hcheck hshort =>
-        liftRecover Φ bound ρBound φF hd s w fam hinj hcheck hshort)
-      init impl
-
-/-- Hachi's `Lift` instance as a composable CWSS package. -/
-def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+/-- Hachi's `Lift` instance as a composable CWSS package, **assembled wholesale from generic
+`Lift.package`** at the cyclotomic presentation: the verifier, structure, purity witness, and
+CWSS certificate are all the generic layer's. Hachi supplies only the presentation data
+(`cyclotomicPresentation`/`isPresentation_cyclotomic`) and the norm implication
+(`vecLInftyNorm_le_of_liftShort`). -/
+noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
     CWSSPackage init impl
       (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ ⊕ E)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (pSpecScalar K.TCom F) where
-  verifier := liftVerifier Φ bound ρBound K
-  struct := scalarStructure (2 * Φ.φ.natDegree) (by omega)
-  relIn := relRlinE Φ K.esc
-  relOut := relLiftE Φ bound ρBound K φF
-  isPure := ⟨fun stmt tr =>
-    (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  isCWSS := lift_coordinateWiseSpecialSound Φ bound ρBound K φF init impl hd
+      (pSpecScalar K.TCom F) :=
+  haveI := isPresentation_cyclotomic Φ hd
+  Lift.package (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
+    (fun s z => vecLInftyNorm Φ z ≤ s.bound) (fun s => bound ≤ s.bound) K
+    φF.injective (cyclotomicPresentation_modulus_natDegree Φ)
+    (fun s w hshort hside => vecLInftyNorm_le_of_liftShort Φ bound ρBound s w hshort hside)
+    init impl
 
 end Protocol
 

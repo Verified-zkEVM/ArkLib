@@ -34,15 +34,16 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   the block-row equivalence are proven — **sorry-free**.
 * `RingSwitch/Reduction.lean` — **Hachi Figure 4 / Lemma 9**: the two-round lift (commit
   `t := Com(w̃)`; sample `α ← F`; evaluate the lifted rows at `α`), the abstract weak-binding
-  commitment `LiftCom`, the output relation `relLift`, and the plain-special-sound CWSS theorem
-  `lift_coordinateWiseSpecialSound` at `k = 2d` — **proven, sorry-free and axiom-clean**. It is
-  the **cyclotomic instance** of generic `Lift`
-  (`ProofSystem/RingSwitching/Lift/` — presentation data + laws, `checkAt`, and the
-  interpolation/descent engine), whose protocol shell is the committed-scalar seam
-  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`); the
+  commitment `LiftCom`, the output relation `relLift`, and the composable CWSS package
+  `liftPackage` at `k = 2d` (certificate `liftPackage.isCWSS`) — **proven, sorry-free and
+  axiom-clean**. It is the **cyclotomic instance** of generic `Lift`
+  (`ProofSystem/RingSwitching/Lift/` — presentation data + laws, `checkAt`, the
+  interpolation/descent engine, and the CWSS protocol shell): `liftPackage` is assembled
+  wholesale from generic `Lift.package`. The
   `IsPresentation` law-discharge lemmas live in
   `Data/Lattices/CyclotomicRing/QuotientLift.lean`. Hachi keeps only its norms, its
-  statement's bound convention, and the commitment interface.
+  statement's bound convention, the commitment interface, and the norm implication
+  `vecLInftyNorm_le_of_liftShort`.
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Rlin`). Its output relation
 `relLiftE` is the input of the batching bridge in `ZeroCheck/`; the chain is composed in

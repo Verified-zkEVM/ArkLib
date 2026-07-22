@@ -99,9 +99,9 @@ seam a home for the `w̃`-commitment's weak-binding break (`E` abstract, escape 
 `Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`).
 *Escape threading*: `quadEval_coordinateWiseSpecialSound_withEscape`.
 *Per-link math* (the `R^lin` adapter — `rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE` — and
-the HMZ25 lift — Lemma 9, `lift_coordinateWiseSpecialSound` on the proven scalar-round engine
-`coordinateWiseSpecialSound_of_mkWitness_scalar` and the `QuotientLift` algebra — are now proven,
-sorry-free and axiom-clean; rows 1–4 of the table carry no sorries):
+the HMZ25 lift — Lemma 9, `liftPackage.isCWSS` (generic `Lift.coordinateWiseSpecialSound`) on the
+proven scalar-round engine `coordinateWiseSpecialSound_of_mkWitness_scalar` and the `QuotientLift`
+algebra — are now proven, sorry-free and axiom-clean; rows 1–4 of the table carry no sorries):
 the encodings (`Constraints.lean`), the
 un-batching (`mem_relLiftE_of_relBatchedE`), corrected Lemma 10
 (`zeroCheck_coordinateWiseSpecialSound`), the sum-to-point bridge, Lemma 11
