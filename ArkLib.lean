@@ -283,12 +283,6 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured
 import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
-import ArkLib.ProofSystem.Whir.BlockRelDistance
-import ArkLib.ProofSystem.Whir.Folding
-import ArkLib.ProofSystem.Whir.MutualCorrAgreement
-import ArkLib.ProofSystem.Whir.OutofDomainSmpl
-import ArkLib.ProofSystem.Whir.ProximityGen
-import ArkLib.ProofSystem.Whir.RBRSoundness
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin
