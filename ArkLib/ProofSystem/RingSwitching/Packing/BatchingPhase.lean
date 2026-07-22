@@ -63,6 +63,11 @@ Common input `[f]`, `s ∈ L`, `(r_0, ..., r_{ℓ-1}) ∈ L^ℓ`; the prover add
 The round-by-round extractor (`batchingRbrExtractor`, which unpacks `t` from `t'`), the
 knowledge-state function, the per-challenge knowledge error (`κ/|L|` at the batching
 challenge), and the completeness/soundness statements. Leaf proofs are open (`sorry`).
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
 -/
 
 noncomputable section

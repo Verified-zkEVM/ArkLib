@@ -30,7 +30,7 @@ univariate root counting is information-complete.
   base of the batched-sumcheck machinery. Definitions only (**sorried**), with characterizing
   lemmas stated alongside.
 * `ZeroCheck/Batch.lean` — the zero-round **batching bridge** (entry head): reinterprets the lift's
-  per-row/per-entry residual claims as the two `MvPolynomial` identities `H₀ ≡ 0 ∧ H_α ≡ 0`
+  per-row/per-entry residual claims as the two `CMlPolynomialEval` identities `H₀ ≡ 0 ∧ H_α ≡ 0`
   (`relBatched`, Eqs. (22)–(23)). Statement reshaping only.
 * `ZeroCheck/Reduction.lean` — **Hachi Figure 5 / corrected Lemma 10**: one challenge round
   carrying the seed pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the

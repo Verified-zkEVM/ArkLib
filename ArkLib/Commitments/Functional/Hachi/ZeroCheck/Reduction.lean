@@ -127,6 +127,8 @@ def zeroCheckProver {TCom : Type} :
     pure (⟨stmt.1, stmt.2.1, stmt.2.2, c.1, c.2⟩, wit)
 
 /-- **The zero-check's output relation** (corrected Figure 5 residual claims): `w̃` opens `t`,
+is short (`liftShort`, the shortness precondition of the commitment's weak binding
+`LiftCom.collision_mem`, supplied to the accepting-branch collision case of the CWSS extractor),
 and both batched constraint polynomials vanish **at the derived Kronecker points**
 `τ₀ = κ_{m₀}(ρ₀)`, `τ_α = κ_{m₁}(ρ_α)`. -/
 def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
@@ -134,9 +136,11 @@ def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBo
     Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
-    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZero Φ m₀ φF b p.2) = 0 ∧
-    MvPolynomial.eval (kroneckerPoint m₁ p.1.seedα)
-      (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) = 0 ∧
+    liftShort Φ bound ρBound p.2 ∧
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2)
+        (Vector.ofFn (kroneckerPoint m₀ p.1.seed₀)) = 0 ∧
+    CMlPolynomialEval.eval (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2)
+        (Vector.ofFn (kroneckerPoint m₁ p.1.seedα)) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
 /-- Escape-threaded zero-check relation — the sumcheck bridge's seam. -/

@@ -68,6 +68,13 @@ head will discharge them from its trace identity. The `Lift` construction
 See also: the KB concept page `docs/kb/concepts/ring-switching.md` and the blueprint section
 `blueprint/src/proof_systems/ring_switching.tex` for the protocol, phases, and security
 statements.
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
+* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields."
 -/
 
 namespace RingSwitching

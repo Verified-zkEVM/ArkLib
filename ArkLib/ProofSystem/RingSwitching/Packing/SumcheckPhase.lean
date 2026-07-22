@@ -57,6 +57,11 @@ challenges, which is what the downstream opening can consume.
 Per-round and final-step extractors, knowledge-state functions, knowledge errors (`2/|L|`
 per round, `1/|L|` at the final step), and the composed statements for the whole
 loop-plus-final-step interaction. Leaf proofs are open (`sorry`).
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
 -/
 
 namespace RingSwitching.SumcheckPhase

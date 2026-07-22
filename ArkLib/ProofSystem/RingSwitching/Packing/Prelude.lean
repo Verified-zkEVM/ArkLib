@@ -41,6 +41,11 @@ message flow.
    multilinear evaluation claim, bundled with its completeness and round-by-round
    knowledge-soundness obligations), and the relations/knowledge-state predicates the
    security analysis threads through the phases.
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
 -/
 
 noncomputable section
