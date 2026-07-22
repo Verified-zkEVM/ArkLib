@@ -52,7 +52,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
       not_false_eq_true]), div_one]
     simp only [Nat.floor_natCast]
   set CRS := ReedSolomon.code α k
-  have h_dist_RS := ReedSolomon.dist_eq (F := A) (α := α)
+  have h_dist_RS := ReedSolomon.dist_eq_of_le (F := A) (α := α)
     (n := k) (ι := ι) (h := hk)
   have h_dist_CRS : ‖(CRS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
   have he_le_NNReal : (e : ℝ≥0)
@@ -86,7 +86,7 @@ theorem ReedSolomon_ProximityGapAffineLines_UniqueDecoding [Nontrivial (ReedSolo
     unfold errorBound
     have h_δ_mem : δ ∈ Set.Icc 0 (((1 : ℝ≥0) - (rate (ReedSolomon.code α k))) / 2) := by
       simp only [Set.mem_Icc, zero_le, true_and]
-      rw [rateOfLinearCode_eq_div' (h := by omega)]
+      rw [rateOfLinearCode_eq_div (h := by omega)]
       simp only [NNRat.cast_div, NNRat.cast_natCast]
       rw [←ReedSolomon.relativeUniqueDecodingRadius_RS_eq (F := A)
         (ι := ι) (h := by omega)]
@@ -127,7 +127,7 @@ theorem reedSolomon_multilinearCorrelatedAgreement_Nat [Nontrivial (ReedSolomon.
     set n := Fintype.card ι
     intro ϑ hϑ_gt_0 u h_prob_tensor_gt
     set C_RS: ModuleCode ι A A := ReedSolomon.code α k
-    have h_dist_RS := ReedSolomon.dist_eq  (F := A) (α := α)
+    have h_dist_RS := ReedSolomon.dist_eq_of_le (F := A) (α := α)
       (n := k) (ι := ι) (h := hk)
     have h_dist_CRS : ‖(C_RS : Set (ι → A))‖₀ = n - k + 1 := h_dist_RS
     -- 1. Apply ReedSolomon_ProximityGapAffineLines_UniqueDecoding (BCIKS20 Thm 4.1)

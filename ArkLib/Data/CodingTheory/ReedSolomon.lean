@@ -233,15 +233,15 @@ open NNReal
 variable [Field F]
 
 /-- Dimension formula for RS code with arbitrary finite index type `ι`. -/
-lemma dim_eq_deg_of_le {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
+lemma dim_eq_deg_of_le [Fintype ι]
+  {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
   LinearCode.dim (ReedSolomon.code α n) = n := by
   by_cases hcard : Fintype.card ι = 0
-  · rw [hcard] at h
-    rw [Fintype.card_eq_zero_iff] at hcard
-    simp only [nonpos_iff_eq_zero] at h
-    subst h
-    simp [ReedSolomon.code, dim, Module.finrank_eq_zero_of_subsingleton]
+  · aesop (add simp [
+      Module.finrank_eq_zero_of_subsingleton,
+      Fintype.card_eq_zero_iff,
+      ReedSolomon.code,
+      dim])
   · rw [LinearCode.dim]
     let f := ReedSolomon.evalOnPoints (F := F) α
     let S := Polynomial.degreeLT F n
@@ -289,8 +289,7 @@ lemma dim_eq_deg_of_le {ι : Type*} [Fintype ι] {F : Type*} [Field F]
 
 /-- The dimension of an RS-code equals the cardinality
   of the evaluation points if the original degree exceeds the cardinality. -/
-lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : Fintype.card ι < n) :
+lemma dim_eq_card_of_lt [Fintype ι] {α : ι ↪ F} (h : Fintype.card ι < n) :
   LinearCode.dim (ReedSolomon.code α n) = Fintype.card ι := by
   rw [LinearCode.dim]
   let f := ReedSolomon.evalOnPoints (F := F) α
@@ -322,46 +321,30 @@ lemma dim_eq_card_of_lt {ι : Type*} [Fintype ι] {F : Type*} [Field F]
 theorem dim_eq_min_deg_card {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     {n : ℕ} {α : ι ↪ F} :
   LinearCode.dim (ReedSolomon.code α n) = min n (Fintype.card ι) := by
-  by_cases hle : n ≤ Fintype.card ι
-  · simp [dim_eq_deg_of_le hle, hle]
-  · simp only [not_le] at hle
-    rw [dim_eq_card_of_lt hle]
-    simp
-    omega
+  by_cases hle : n ≤ Fintype.card ι <;>
+    aesop
+      (add simp [dim_eq_deg_of_le, dim_eq_card_of_lt])
+      (add safe (by omega))
 
 @[simp]
-lemma length_eq_domain_size (inj : Function.Injective α) :
-    length (ReedSolomon.code ⟨α, inj⟩ deg) = m := by
-  simp [length]
-
-/- lemma rateOfLinearCode_eq_div [NeZero n] (inj : Function.Injective α) (h : n ≤ m) : -/
-/-     rate (ReedSolomon.code ⟨α, inj⟩ n) = n / m := by -/
-/-   rwa [rate, dim_eq_deg_of_le, length_eq_domain_size] -/
-
-@[simp]
-lemma length_eq_domain_card' {ι : Type*} [Fintype ι] {F : Type*} [Field F] {deg : ℕ}
-    {α : ι ↪ F} :
-    length (ReedSolomon.code α deg) = Fintype.card ι := by
-  simp [length]
+lemma length_eq_domain_card [Fintype ι] {deg : ℕ} {α : ι ↪ F} :
+  length (ReedSolomon.code α deg) = Fintype.card ι := rfl
 
 /- The usual formula for the rate of an RS-code: the degree divided by
   the cardinality of the evaluation set. -/
-lemma rateOfLinearCode_eq_div' {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
-    rate (ReedSolomon.code α n) = n / Fintype.card ι := by
-  rw [rate, dim_eq_deg_of_le h, length_eq_domain_card']
+lemma rateOfLinearCode_eq_div [Fintype ι] {α : ι ↪ F} (h : n ≤ Fintype.card ι) :
+  rate (ReedSolomon.code α n) = n / Fintype.card ι := by
+  rw [rate, dim_eq_deg_of_le h, length_eq_domain_card]
 
 /- Assumption-less formula for the rate of an RS-code: the minimun of degree
   and the cardinality of the evaluation set divided by the cardinality. -/
-lemma rateOfLinearCode_eq_min_div
-    {ι : Type*} [Fintype ι] {F : Type*} [Field F]
-    {n : ℕ} {α : ι ↪ F} :
-    rate (ReedSolomon.code α n) = (min n (Fintype.card ι)) / Fintype.card ι := by
-  rw [rate, dim_eq_min_deg_card, length_eq_domain_card']
+lemma rateOfLinearCode_eq_min_div [Fintype ι] {α : ι ↪ F} :
+  rate (ReedSolomon.code α n) = (min n (Fintype.card ι)) / Fintype.card ι := by
+  rw [rate, dim_eq_min_deg_card, length_eq_domain_card]
 
 @[simp]
 lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :
-    minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) ≤ m := by
+  minDist ((ReedSolomon.code ⟨α, inj⟩ n) : Set (Fin m → F)) ≤ m := by
   convert dist_UB
   simp
 
@@ -397,23 +380,22 @@ lemma weight_constantCode [DecidableEq F] :
 
 @[simp]
 lemma constantCode_mem_code [NeZero n] :
-    constantCode x ι ∈ ReedSolomon.code α n := by
-  use C x
-  aesop (add simp [ReedSolomon.evalOnPoints, coeff_C, degreeLT])
+  constantCode x ι ∈ ReedSolomon.code α n :=
+  ⟨C x, by aesop (add simp [ReedSolomon.evalOnPoints, coeff_C, degreeLT])⟩
 
 @[simp]
 lemma constantCode_eq_ofNat_zero_iff [Nonempty ι] :
-    constantCode x ι = 0 ↔ x = 0 := by
+  constantCode x ι = 0 ↔ x = 0 := by
   unfold constantCode
   exact ⟨fun x ↦ Eq.mp (by simp) (congrFun x), (· ▸ rfl)⟩
 
 @[simp]
 lemma wt_constantCode [DecidableEq F] [NeZero x] :
-    wt (constantCode x ι) = Fintype.card ι := by unfold constantCode wt; aesop
+  wt (constantCode x ι) = Fintype.card ι := by aesop (add simp [constantCode, wt])
 
 end
 
-theorem minDist [Fintype ι] [Field F] [DecidableEq F]
+theorem minDist_of_le [Fintype ι] [Field F] [DecidableEq F]
   {α : ι ↪ F} [nz : NeZero n] (h : n ≤ Fintype.card ι) :
   Code.minDist (ReedSolomon.code α n : Set (ι → F)) = Fintype.card ι - n + 1 := by
   classical
@@ -445,22 +427,88 @@ theorem minDist [Fintype ι] [Field F] [DecidableEq F]
               by aesop
         else by simp [zeroes, h]
     have : zeroes.card + wt msg = Fintype.card ι := by
-      rw [wt, Finset.card_filter_add_card_filter_not]
-      simp
+      aesop (add simp [wt, Finset.card_filter_add_card_filter_not])
     omega
 
+@[simp]
+theorem code_Nontrivial [Field F] [nz : NeZero n] [Inhabited ι] {α : ι ↪ F} :
+  (ReedSolomon.code α n : Set (ι → F)).Nontrivial := by
+  have hn : n ≠ 0 := nz.out
+  have hn : 1 ≤ n := by omega
+  simp only [Set.Nontrivial, SetLike.mem_coe, ne_eq]
+  have h1 : evalOnPoints α 1 ∈ code α n :=
+    evalOnPoints_mem_code_of_natDegree_lt (by aesop)
+  exists (evalOnPoints α 0)
+  simp only [map_zero, zero_mem, true_and]
+  exists (evalOnPoints α 1)
+  simp only [h1, true_and]
+  intro contra
+  have := congrFun contra default
+  simp [evalOnPoints] at this
+
+@[simp]
+theorem minDist_n_0 [Fintype ι] [Field F] [DecidableEq F] {α : ι ↪ F} :
+  minDist (ReedSolomon.code α 0 : Set (ι → F)) = 0 := by simp [minDist]
+
+theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+  {α : ι ↪ F} [nz : NeZero n] :
+  minDist (ReedSolomon.code α n : Set (ι → F)) = Fintype.card ι - min n (Fintype.card ι) + 1 := by
+  classical
+  by_cases hle : n ≤ Fintype.card ι
+  · simp [hle, minDist_of_le hle]
+  · simp only [not_le] at hle
+    rw [min_eq_right (by grind)]
+    simp
+    have hmin : 0 < minDist (ReedSolomon.code α n : Set (ι → F)) := by
+      have := dist_pos_of_Nontrivial (ReedSolomon.code α n : Set (ι → F)) (by simp)
+      rw [dist_eq_minDist] at this
+      exact this
+    have hle : minDist (ReedSolomon.code α n : Set (ι → F)) ≤ 1 := by
+      simp [minDist]
+      exact csInf_le (by simp) <| by
+        simp only [Set.mem_setOf_eq]
+        let u : ι → F := fun i ↦ if i = default then 1 else 0
+        exists u
+        constructor
+        · rw [mem_code_iff_exists_polynomial]
+          exists (Lagrange.interpolate Finset.univ α u)
+          constructor
+          · exact lt_trans (Lagrange.degree_interpolate_lt _ (by cases α; aesop)) (by simp [hle])
+          · cases α
+            aesop
+              (erase simp Lagrange.interpolate_apply)
+              (add simp [evalOnPoints, Lagrange.eval_interpolate_at_node])
+        · exists 0
+          simp only [zero_mem, hammingDist_zero_right, hammingNorm, ne_eq, ite_eq_right_iff,
+            one_ne_zero, imp_false, Decidable.not_not, true_and, u]
+          constructor
+          · intro contra
+            have := congrFun contra default
+            simp at this
+          · rw [show 1 = Finset.card ({default} : Finset ι) by simp]
+            congr
+            ext a
+            aesop
+    omega
+
+
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] [Field F] [DecidableEq F]
-  {α : ι ↪ F} [NeZero n] (h : n ≤ Fintype.card ι) : LinearCode.IsMDS (ReedSolomon.code α n) := by
-  aesop
-    (add simp [IsMDS, length_eq_domain_card',
-               dim_eq_deg_of_le, Code.dist_eq_minDist, minDist])
+lemma isMDS_code {ι : Type} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+  {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by
+  simp only [IsMDS, Submodule.carrier_eq_coe, length_eq_domain_card]
+  rw [dist_eq_minDist, minDist_eq_card_sub_min_add_1, dim_eq_min_deg_card]
 
 /-- Distance equality for RS code with arbitrary finite index type `ι`. -/
-theorem dist_eq {ι : Type*} [Fintype ι] {F : Type*} {n : ℕ} {α : ι ↪ F}
+theorem dist_eq_of_le [Fintype ι] {α : ι ↪ F}
     [Field F] [DecidableEq F] [NeZero n] (h : n ≤ Fintype.card ι) :
-    Code.dist (R := F) ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - n + 1 := by
-  aesop (add simp [dist_eq_minDist, ReedSolomon.minDist])
+  dist ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - n + 1 := by
+  aesop (add simp [dist_eq_minDist, ReedSolomon.minDist_of_le])
+
+/-- Distance equality for RS code with arbitrary finite index type `ι`. -/
+theorem dist_eq [Fintype ι] [Inhabited ι] {α : ι ↪ F}
+    [Field F] [DecidableEq F] [NeZero n] :
+  dist ((ReedSolomon.code α n) : Set (ι → F)) = Fintype.card ι - min n (Fintype.card ι) + 1 := by
+  aesop (add simp [dist_eq_minDist, ReedSolomon.minDist_eq_card_sub_min_add_1])
 
 /-- Unique decoding radius for RS code with arbitrary finite index type `ι`. -/
 theorem uniqueDecodingRadius_RS_eq [Fintype ι]
@@ -468,10 +516,10 @@ theorem uniqueDecodingRadius_RS_eq [Fintype ι]
   (h : n ≤ Fintype.card ι) :
   Code.uniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code α n) =
     (Fintype.card ι - n) / 2 := by
-  aesop (add simp [uniqueDecodingRadius, dist_eq_minDist, ReedSolomon.minDist])
+  simp_all only [uniqueDecodingRadius, dist_eq_minDist, minDist_of_le, add_tsub_cancel_right]
 
 open NNReal in
-/-- Generalized relative unique decoding radius for RS code with arbitrary finite index type `ι`. -/
+/-- Relative unique decoding radius for RS code with arbitrary finite index type `ι`. -/
 theorem relativeUniqueDecodingRadius_RS_eq [Fintype ι]
   {α : ι ↪ F} [Field F] [DecidableEq F] [NeZero n]
   (h : n ≤ Fintype.card ι) :
@@ -482,7 +530,7 @@ theorem relativeUniqueDecodingRadius_RS_eq [Fintype ι]
     have h_n_eq_0 : n = 0 := by omega
     have h_n_ne_0 : n ≠ 0 := by exact Ne.symm (NeZero.ne' n)
     exact h_n_ne_0 h_n_eq_0
-  rw [Code.relativeUniqueDecodingRadius, ReedSolomon.dist_eq h]
+  rw [Code.relativeUniqueDecodingRadius, ReedSolomon.dist_eq_of_le h]
   simp only [Nat.cast_add, Nat.cast_tsub, Nat.cast_one, add_tsub_cancel_right]
   conv_lhs =>
     rw [NNReal.sub_div, NNReal.sub_div, div_div, mul_comm, ←div_div]
