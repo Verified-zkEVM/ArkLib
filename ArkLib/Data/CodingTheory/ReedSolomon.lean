@@ -668,6 +668,21 @@ lemma toPolynomial_lt_min_deg_card (c : ReedSolomon.code domain deg) :
       exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _
         (by aesop (add safe cases Function.Embedding))) (by simp)
 
+lemma toPolynomial_evalWord_of_degree_lt
+  {p : F[X]} (hp_deg : p.degree < deg) (hdeg : deg ≤ Fintype.card ι)
+  {hcode : evalOnPoints domain p ∈ ReedSolomon.code domain deg} :
+  toPolynomial ⟨evalOnPoints domain p, hcode⟩ = p := by
+  classical
+  rcases domain with ⟨domain, hdomain_inj⟩
+  apply Polynomial.eq_of_degrees_lt_of_eval_index_eq (v := domain) (s := univ)
+  · simp_all
+  · exact Lagrange.degree_interpolate_lt _ (by simp_all)
+  · exact lt_of_lt_of_le hp_deg (by simp [hdeg])
+  · aesop
+      (add safe cases Function.Embedding)
+      (erase simp Lagrange.interpolate_apply)
+      (add simp [Lagrange.eval_interpolate_at_node, toPolynomial_def])
+
 lemma toPolynomial_eval_at_domain
   {c : ReedSolomon.code domain deg} {i : ι} :
   (toPolynomial c).eval (domain i) = c.1 i := by
