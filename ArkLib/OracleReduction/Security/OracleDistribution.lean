@@ -323,12 +323,28 @@ noncomputable instance instSampleableTypeFSChallengeOracle
     [∀ i, VCVCompatible (pSpec.Message i)]
     [∀ i, VCVCompatible (pSpec.Challenge i)] :
     SampleableType (OracleFamily (ProtocolSpec.fsChallengeOracle Statement pSpec)) := by
-  -- `OracleFamily spec = (q : Domain) → spec.Range q` (dependent Pi over the domain sigma type).
-  -- Domain = Σ i : ChallengeIdx, (Statement × MessagesUpTo i.1.castSucc).
-  -- Range q = pSpec.Challenge q.1.
-  -- Each component is VCVCompatible; the full table is finite via FinEnum.sigma + Pi.finEnum.
-  -- The MessagesUpTo component needs pSpec.MessageUpTo k i = pSpec.Message i_orig; deferred.
-  sorry
+  -- Each prefix message type is definitionally the corresponding message type in `pSpec`.
+  letI : ∀ k : Fin (n + 1), Fintype (pSpec.MessagesUpTo k) := fun k => by
+    letI : ∀ i : pSpec.MessageIdxUpTo k, Fintype (pSpec.MessageUpTo k i) :=
+      fun i => (inferInstance :
+        Fintype (pSpec.Message ⟨i.1.castLE (by omega), i.property⟩))
+    infer_instance
+  -- The challenge-oracle domain is a sigma of a challenge index and its finite query type.
+  letI : Fintype (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain := by
+    dsimp only [ProtocolSpec.fsChallengeOracle, ProtocolSpec.srChallengeOracle,
+      OracleInterface.toOracleSpec, ProtocolSpec.challengeOracleInterfaceSR,
+      OracleSpec.toPFunctor, OracleInterface.Query]
+    infer_instance
+  -- Spell out the dependent range family to keep synthesis from repeatedly unfolding the spec.
+  letI : ∀ q : (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain,
+      Fintype ((ProtocolSpec.fsChallengeOracle Statement pSpec).Range q) :=
+    fun q => (inferInstance : Fintype (pSpec.Challenge q.1))
+  letI : Fintype (OracleFamily (ProtocolSpec.fsChallengeOracle Statement pSpec)) :=
+    Fintype.ofFinite _
+  -- A challenge table is nonempty because every challenge response type is inhabited.
+  letI : Nonempty (OracleFamily (ProtocolSpec.fsChallengeOracle Statement pSpec)) :=
+    ⟨fun q => (default : pSpec.Challenge q.1)⟩
+  apply SampleableType.ofFintype
 
 /-- `D_IP` over `fsChallengeOracle Statement pSpec`: uniform random function from prover-prefix
 queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := StmtIn × Vector U δ`. -/
