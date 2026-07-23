@@ -42,7 +42,7 @@ variable {ω : D} {k : ℕ} {x y : F}
 
 open Finset Polynomial
 
-/-- The `k`th roots of `x` from the domain `ω`.
+/-- The `2^k`th roots of `x` from the domain `ω`.
 
   This is the definition 4.16 from [ACFY24].
   Note, we do not require `x` to be from a subdomain. -/
@@ -54,19 +54,14 @@ def block (ω : D) (k : ℕ) (x : F) : Finset F :=
 lemma mem_block :
   y ∈ block ω k x ↔ y ∈ ω ∧ y ^ 2 ^ k = x := by simp [block]
 
-/-- There are no roots of `0` in any domain. -/
 @[simp]
-lemma block_x_0 :
-  block ω k 0 = ∅ := by aesop
-
-@[simp]
-lemma block_k_1 :
+lemma block_k_0 :
   block ω 0 x = if x ∈ ω then {x} else ∅ := by aesop
 
 /-- An alternative definition of `block` in terms of
   `Polynomial.nthRootsFinset`. -/
 lemma block_eq_nthRootsFinset :
-  block ω k x = nthRootsFinset (2 ^ k) x ∩ toFinset ω := by aesop (add unsafe cases Nat)
+  block ω k x = nthRootsFinset (2 ^ k) x ∩ toFinset ω := by aesop
 
 /-- The cardinality of a block does not exceed its degree. -/
 @[simp]
@@ -78,6 +73,10 @@ lemma card_block_le :
     exact le_trans
       (@Multiset.toFinset_card_le F (Classical.decEq F) _)
       (card_nthRoots _ _)
+
+/-- Blocks corresponding to different points are disjoint. -/
+theorem disjoint_block {x y : F} (hxy : x ≠ y) :
+  Disjoint (block ω k x) (block ω k y) := by aesop (add simp [disjoint_iff])
 
 /-- The set of indices of a block of `ω` at `x` of the degree `k`. -/
 def blockIdx (ω : D) (k : ℕ) (x : F) : Finset ι :=
@@ -101,17 +100,14 @@ lemma mem_blockIdx_iff_mem_block {i : ι} :
 lemma blockIdx_x_0 :
   blockIdx ω k 0 = ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
 
-lemma blockIdx_k_1_of_eq {i : ι} (hi : ω i = x) :
+lemma blockIdx_k_0_of_eq {i : ι} (hi : ω i = x) :
   blockIdx ω 0 x = {i} := by
   ext j
   have := CosetFftDomainClass.injective ω (a₁ := i) (a₂ := j)
-  aesop
-    (add simp [mem_blockIdx_iff_mem_block])
+  aesop (add simp [mem_blockIdx_iff_mem_block])
 
-lemma blockIdx_k_1_of_ne_mem (hx : x ∉ ω) :
-  blockIdx ω 0 x = ∅ := by
-  aesop
-    (add simp [mem_blockIdx_iff_mem_block])
+lemma blockIdx_k_0_of_ne_mem (hx : x ∉ ω) :
+  blockIdx ω 0 x = ∅ := by aesop (add simp [mem_blockIdx_iff_mem_block])
 
 /-- `blockIdx` is the preimage of `block`. -/
 lemma blockIdx_eq_preimage_block :
@@ -128,6 +124,11 @@ lemma card_blockIdx :
   aesop
     (add simp [blockIdx_eq_preimage_block, card_preimage])
     (add unsafe congrArg)
+
+/-- The sets of indices of blocks corresponding to different points are disjoint. -/
+theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :
+  Disjoint (blockIdx ω k x) (blockIdx ω k y) := by
+  aesop (add simp [disjoint_iff_ne, mem_blockIdx_iff_mem_block])
 
 end CosetFftDomainClass
 

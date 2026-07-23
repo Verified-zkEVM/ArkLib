@@ -322,6 +322,16 @@ theorem foldWord_codeword {d : ℕ}
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
   aesop
 
+theorem foldWord_evalOnPoints {α : F} {p : Polynomial F}
+  (hk : k ≤ n) (hp_deg : p.degree < 2 ^ n) :
+  foldWord domain (evalOnPoints domain p) k α =
+    evalOnPoints (domain.subdomain k)
+        (FoldingPolynomial.polyFold p (2 ^ k) α) := by
+  let f := evalOnPoints (domain : Fin (2 ^ n) ↪ F) p
+  have hcode : f ∈ code domain (2 ^ n) := by simp_all [evalOnPoints_mem_code_of_degree_lt, f]
+  rw [show evalOnPoints _ _ = (⟨f, hcode⟩ : code _ _) by rfl, foldWord_codeword hk]
+  simp_all [toPolynomial_evalWord_of_degree_lt, f]
+
 /-- Perfect completeness of folding: if a word belongs to an RS-code
   then its `foldWord` belongs to a folded RS-code.
 -/
