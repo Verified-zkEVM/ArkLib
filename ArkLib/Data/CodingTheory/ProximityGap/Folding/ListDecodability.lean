@@ -22,6 +22,15 @@ variable {n k : ℕ}
 variable {ω : SmoothCosetFftDomain n F}
 variable {f : Word F (Fin (2 ^ n))}
 
+/-!
+  This file contains a proof of Theorem 4.20 from [ACFY24] (WIP for now).
+
+## References
+
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+    with Super-Fast Verification*][ACFY24]
+-/
+
 /-- The block distance of foldings of two words does not exceed
   the block distance of the original words.
 
