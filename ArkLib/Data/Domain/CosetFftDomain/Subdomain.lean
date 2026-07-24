@@ -144,7 +144,7 @@ lemma subdomain_generator_pow_generator (i : ℕ) :
 set_option warning.simp.varHead false in
 @[simp]
 lemma subdomain_0_apply (i : Fin (2 ^ n)) :
-  subdomain ω 0 i = ω i := by
+  no_index (subdomain ω 0 i) = ω i := by
   aesop
     (add unsafe [cases Fin, cases Nat])
     (add safe (by grind))

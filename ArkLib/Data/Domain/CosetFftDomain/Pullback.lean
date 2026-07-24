@@ -181,11 +181,8 @@ lemma mem_pullback₁_iff_mem_pullback₂_l_0 {i : Fin (2 ^ n)} (hr : r ≤ n) :
   rw [←mem_pullback₁_iff_mem_pullback₂ (by omega) hr]
   simp only [Nat.sub_zero, Set.mem_image, SetLike.mem_coe, pow_zero, pow_one]
   constructor <;> intro ⟨x, hx₁, hx₂⟩ <;> exists x
-  · simp only [hx₁, true_and]
-    -- simp [hx₂] doesn't work although subdomain_0_apply is marked @[simp].
-    rw [subdomain_0_apply, hx₂]
-  · rw [subdomain_0_apply] at hx₂
-    aesop (add safe (by rw [CosetFftDomainClass.subdomain_0_apply]))
+  · simp [hx₁, hx₂]
+  · aesop (add safe (by rw [CosetFftDomainClass.subdomain_0_apply]))
 
 /-- The connection between components of the pullback set when `l = 1`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_1 {i : Fin (2 ^ n)} (h1r : 1 ≤ r) (hr : r ≤ n) :
