@@ -25,6 +25,10 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
 section Composition
 
+namespace OracleComp
+
+/-- If a value appears in the support after lifting an oracle computation to a larger oracle spec,
+then it already appeared in the original computation's support. -/
 theorem mem_support_liftM_oracleComp {ι τ : Type} {spec : OracleSpec ι}
     {superSpec : OracleSpec τ} {α : Type}
     [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
@@ -32,6 +36,8 @@ theorem mem_support_liftM_oracleComp {ι τ : Type} {spec : OracleSpec ι}
     (h : x ∈ support (liftM oa : OracleComp superSpec α)) : x ∈ support oa := by
   rw [← OracleComp.liftComp_eq_liftM (superSpec := superSpec) oa] at h
   exact OracleComp.mem_support_of_mem_support_liftComp oa x h
+
+end OracleComp
 
 namespace Prover
 
@@ -122,14 +128,14 @@ theorem seqCompose_preserves {m : ℕ} :
       rw [support_pure, Set.mem_singleton_iff] at hpure
       injection hpure with _htr hout
       have h₁' : (tr₁, stmt₂, ()) ∈ support (Prover.run stmt () (P 0)) :=
-        mem_support_liftM_oracleComp
+        OracleComp.mem_support_liftM_oracleComp
           (superSpec := oSpec + [((pSpec 0) ++ₚ tailSpec).Challenge]ₒ) h₁
       have h₂' : (tr₂, out, ()) ∈ support
           (Prover.run stmt₂ ()
             (Prover.seqCompose (fun i => Stmt i.succ) (fun _ => Unit)
               (fun i => P (Fin.succ i)))) := by
         cases hout
-        exact mem_support_liftM_oracleComp
+        exact OracleComp.mem_support_liftM_oracleComp
           (superSpec := oSpec + [((pSpec 0) ++ₚ tailSpec).Challenge]ₒ) h₂
       calc
         proj (Fin.last (m + 1)) out = proj (Fin.succ (Fin.last m)) out := rfl
