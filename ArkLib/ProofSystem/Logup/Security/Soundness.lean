@@ -1117,7 +1117,8 @@ omit [DecidableEq F] [SampleableType F]
 /-- Prover messages preserve failure of the outer bad-event invariant.
 
 The round-by-round soundness state only changes on verifier challenge rounds.  When the next round
-is prover-to-verifier, adding the prover message cannot move a transcript back into the invariant.-/
+is prover-to-verifier, adding the prover message cannot move a transcript back into the invariant.
+-/
 private theorem outerSoundnessState_next
     (m : Fin 4) (hDir : (outerPSpec F n params).dir m = .P_to_V)
     (stmtPair : StmtIn F n M × (∀ i, OStmtIn F n M i))
@@ -1154,7 +1155,8 @@ private theorem outerSoundnessState_full_prob_zero
     Pr[(· ∈ (logupMidRelation F n M params).language) |
       OptionT.mk do
         (simulateQ impl
-          (((outerVerifier oSpec F n M params).toVerifier).run stmtPair tr)).run' (← init)] = 0 := by
+          (((outerVerifier oSpec F n M params).toVerifier).run stmtPair tr)).run' (← init)]
+        = 0 := by
   classical
   have hnot :=
     outerSoundnessState_full_not_lang (F := F) (n := n) (M := M) (params := params)
