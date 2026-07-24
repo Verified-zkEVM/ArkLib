@@ -12,11 +12,11 @@ import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 /-!
 ## Main Results
 
-- Statement of Theorem 8.2 (MCA for polynomial generators) [BCGM25].
+- Theorem 8.2 (MCA for polynomial generators) [BCGM25].
 - Statement of Lemma 9.3 [BCGM25] - sorried out. It depends on the Guruswami-Sudan part of Proximity
 Gaps.
-- Statement and proof (using Lemma 9.3.) of Theorem 9.2 (Polynomial Generators have MCA for
-Reed-Solomon codes up to the Johnson bound) [BCGM25].
+- Theorem 9.2 (Polynomial Generators have MCA for Reed-Solomon codes up to the Johnson bound)
+(statement and proof assuming Lemma 9.3) [BCGM25].
 
 ## References
 
