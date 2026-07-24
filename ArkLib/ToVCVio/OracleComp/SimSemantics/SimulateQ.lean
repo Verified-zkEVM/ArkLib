@@ -5,7 +5,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
 import VCVio.OracleComp.SimSemantics.StateT.Basic
-import ArkLib.ToVCVio.ToMathlib.Control.StateT
+import ToMathlib.Control.StateT
 
 /-!
 # Additions to VCVio's `OracleComp.SimSemantics.SimulateQ`
@@ -20,5 +20,5 @@ lemma simulateQ_randomOracle_map_uniformFin {α : Type} (n : ℕ) (f : Fin (n + 
       (f <$> uniformSample (Fin (n + 1)) : ProbComp α) :
         StateT unifSpec.QueryCache ProbComp α).run' ∅) =
       (f <$> uniformSample (Fin (n + 1))) := by
-  rw [simulateQ_map, StateT.run'_map_comm]
+  rw [simulateQ_map, StateT.run'_map']
   congr 1
