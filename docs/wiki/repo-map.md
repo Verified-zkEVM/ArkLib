@@ -92,7 +92,9 @@ home_page/            site assets and assembled website root
     honest-prover carrier/short commitment `v = D ŵ`, the `J`-decomposition of `z`, and the
     `tensorG`/`tensorG1` challenge combinations). `QuadEval/Reduction` is the 2-round protocol with
     its types, plain `relOut` (Eq. (20) + range balls), plain `relIn` (eval-consistent weak
-    opening), and the parallel `QuadEvalSISBreak` escape set for MSIS(B/D) outcomes.
+    opening), and the parallel `QuadEvalSISBreak` escape set for MSIS(B/D) outcomes — key-tied:
+    escapes are validated by `quadEvalSISSet` against the fixed key parameter `pp`, which (like
+    the relations' key) is never statement data.
     `QuadEval/Soundness` is the subtract-and-divide extractor `buildWitness`, **Lemma 8**
     (coordinate-wise special soundness) as `quadEval_coordinateWiseSpecialSound` (`sorryAx`-free),
     the composable `quadEvalPackage`, and the reduction's derived norm constants

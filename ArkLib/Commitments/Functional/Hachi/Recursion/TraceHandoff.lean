@@ -88,14 +88,13 @@ def traceCheck {TCom : Type} (φF : ZMod q →+* F)
     (stmt : HatEvalStatement TCom F mLow) (p : Rq Φ') : Bool :=
   sorry
 
-/-- The next-iteration statement (Eq. (27) as a `QuadEval` claim over `Φ'`): public parameters
-`pp'`, the **reinterpreted** commitment `reinterpretCom stmt.t`, the `eq`-tensor bases derived
-from the low point (σ₋₁-twisted, design D5), and the evaluation `p`. **Sorried (G3)** — the
-`e`/`f` packing (`psi` on the `eq`-tensor halves) and the split bookkeeping
+/-- The next-iteration statement (Eq. (27) as a `QuadEval` claim over `Φ'`): the
+**reinterpreted** commitment `reinterpretCom stmt.t`, the `eq`-tensor bases derived
+from the low point (σ₋₁-twisted, design D5), and the evaluation `p`. (The next iteration's key
+`pp'` is not statement data; it enters only the next iteration's relations.) **Sorried (G3)** —
+the `e`/`f` packing (`psi` on the `eq`-tensor halves) and the split bookkeeping
 `mLow = m' + r' + (α' − κ)`. -/
 def toNextQuadEvalStatement {TCom : Type} (φF : ZMod q →+* F)
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
     (reinterpretCom : TCom → Commitment Φ' outerRows')
     (stmt : HatEvalStatement TCom F mLow) (p : Rq Φ') :
     QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
@@ -105,8 +104,6 @@ def toNextQuadEvalStatement {TCom : Type} (φF : ZMod q →+* F)
 /-- The trace-handoff verifier (Hachi §4.5, Eqs. (27)–(28)): **guarded** on the trace check,
 outputting the next iteration's `QuadEvalStatement` over `Φ'`. -/
 def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
     (reinterpretCom : TCom → Commitment Φ' outerRows') :
     Verifier oSpec (HatEvalStatement TCom F mLow)
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
@@ -114,26 +111,24 @@ def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
       (pSpecHandoff Φ') where
   verify := fun stmt tr =>
     if traceCheck Φ' mLow φF stmt (tr 0) then
-      pure (toNextQuadEvalStatement Φ' mLow φF pp' reinterpretCom stmt (tr 0))
+      pure (toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0))
     else failure
 
 omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
 /-- The trace-handoff verifier is guarded — definitionally, by `traceCheck`. -/
 theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
     (reinterpretCom : TCom → Commitment Φ' outerRows') :
-    (handoffVerifier (oSpec := oSpec) Φ' mLow φF pp' reinterpretCom).IsGuarded :=
+    (handoffVerifier (oSpec := oSpec) Φ' mLow
+      (innerRows' := innerRows') (messageDigits' := messageDigits') (innerDigits' := innerDigits')
+      (dRows' := dRows') (m' := m') (r' := r') φF reinterpretCom).IsGuarded :=
   ⟨fun stmt tr => traceCheck Φ' mLow φF stmt (tr 0),
-   fun stmt tr => toNextQuadEvalStatement Φ' mLow φF pp' reinterpretCom stmt (tr 0),
+   fun stmt tr => toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0),
    fun _ _ => rfl⟩
 
 /-- The honest trace-handoff prover skeleton: sends `p` (the parameter `computeP`, honestly
 Eq. (27)'s `eᵀ(σ₋₁(ψ(f))ᵀ ⊗ I)ψ(ŵ)`), and carries the witness forward as the next iteration's
 opening data (the parameter `computeWit` — the ψ-packed re-reading of `w̃`). -/
 def handoffProver {TCom WitOut : Type} (φF : ZMod q →+* F)
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
     (reinterpretCom : TCom → Commitment Φ' outerRows')
     (computeP : HatEvalStatement TCom F mLow → LiftedWitness Φ μ n → Rq Φ')
     (computeWit : LiftedWitness Φ μ n → WitOut) :
@@ -150,7 +145,7 @@ def handoffProver {TCom WitOut : Type} (φF : ZMod q →+* F)
   receiveChallenge
     | ⟨0, h⟩ => nomatch h
   output := fun ⟨stmt, wit⟩ =>
-    pure (toNextQuadEvalStatement Φ' mLow φF pp' reinterpretCom stmt (computeP stmt wit),
+    pure (toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (computeP stmt wit),
       computeWit wit)
 
 variable [SampleableType F]
@@ -178,11 +173,11 @@ theorem handoff_coordinateWiseSpecialSound
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    (handoffVerifier (oSpec := oSpec) Φ' mLow φF pp'
+    (handoffVerifier (oSpec := oSpec) Φ' mLow φF
         reinterpretCom).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
       ((relHatEval Φ mLow κ bound ρBound zpow K φF).withEscape esc)
-      ((relIn Φ' base' βSq' γ' κ').withEscape esc) := by
+      ((relIn Φ' pp' base' βSq' γ' κ').withEscape esc) := by
   sorry
 
 /-- **The trace handoff as a guarded escape-aware package** (Hachi §4.5, Eqs. (27)–(28)):
@@ -206,14 +201,14 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
         dRows')
       (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
       (pSpecHandoff Φ') where
-  verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF pp' reinterpretCom
+  verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF reinterpretCom
   struct := CWSSStructure.ofIsEmpty
   relIn := relHatEval Φ mLow κ bound ρBound zpow K φF
-  relOut := relIn Φ' base' βSq' γ' κ'
+  relOut := relIn Φ' pp' base' βSq' γ' κ'
   escIn := esc
   escOut := esc
   escape_mono := fun _ h => h
-  isGuarded := handoffVerifier_isGuarded Φ' mLow φF pp' reinterpretCom
+  isGuarded := handoffVerifier_isGuarded Φ' mLow φF reinterpretCom
   isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound ρBound init impl zpow K esc φF pp'
     reinterpretCom base' βSq' γ' κ'
 

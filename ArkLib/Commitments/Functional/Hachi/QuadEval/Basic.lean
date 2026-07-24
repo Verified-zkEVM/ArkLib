@@ -25,9 +25,10 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   lemmas at the heart of the Lemma 8 extraction.
 * `QuadEval/Reduction.lean` — the two-round protocol data: the statement/response/witness types,
   the challenge space `ShortChallenge`, the ordinary relations `relIn` (an eval-consistent weak
-  opening) and `relOut` (Eq. (20) + the range checks), the parallel `QuadEvalSISBreak` escape
-  set for Module-SIS(B/D) extraction outcomes, and the pure pass-through
-  `verifier` with the honest `prover` skeleton.
+  opening) and `relOut` (Eq. (20) + the range checks) over the fixed commitment key `pp`, the
+  parallel `QuadEvalSISBreak` escape set for Module-SIS(B/D) extraction outcomes (validated by
+  `quadEvalSISSet` against the same fixed `pp` — the key is a parameter, never statement data),
+  and the pure pass-through `verifier` with the honest `prover` skeleton.
 * `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extractor
   (`buildWitness`) and the coordinate-wise special soundness
   `quadEval_coordinateWiseSpecialSound`, bundled as the composable `quadEvalPackage`; also the

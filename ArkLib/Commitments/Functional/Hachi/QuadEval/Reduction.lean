@@ -22,7 +22,12 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   (`QuadEvalStatement`, `QuadEvalResponse`, `QuadEvalWitness`), the short-challenge space
   (`ShortChallenge`, shortness carried by the subtype), the relations (`derivedMsgMatrix`,
   `evalConsistency` = Eq. (15), `relOut` = Eq. (20) + the `S_b` range checks, `relIn` = weak
-  opening, `dShort`), and the protocol (the two-round
+  opening, `dShort`). The commitment key `(A, B, D)` is the *parameter* `pp` of the relations and
+  of the parallel Module-SIS escape channel (`QuadEvalSISBreak` / `quadEvalSISSet`), never
+  statement data — escapes are checkable against the fixed key alone, which both keeps them
+  statement-independent (threading through earlier protocol relations) and ties them to the
+  actual key rather than an adversary-chosen matrix. The file closes with the protocol (the
+  two-round
   `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩` of `CoordinateWise.SingleRound`,
   the pure pass-through `verifier`, and the honest `prover` skeleton). Round 0 (P→V) sends the
   short commitment `v = D ŵ`; round 1 (V→P) is the challenge vector; the triple `(ŵ, t̂, ẑ)` is
@@ -62,18 +67,22 @@ variable {innerRows messageRows messageDigits outerRows blocks innerDigits dRows
 `v = D ŵ` lives in the `D`-row space. -/
 abbrev CarrierCom (Φ : CyclotomicModulus R) (dRows : Nat) := Simple.Commitment Φ dRows
 
-/-- Input statement of Hachi's polynomial-evaluation reduction (Hachi §4.2, Figure 3): the public
-parameters `(A, B, D)`, the outer commitment `u`, the two evaluation basis vectors
-`a ∈ Rq^{2^m}` (`avec`) and `b ∈ Rq^{2^r}` (`bvec`) of Eq. (12), and the claimed evaluation
-`y = u_eval`.
+/-- Input statement of Hachi's polynomial-evaluation reduction (Hachi §4.2, Figure 3): the outer
+commitment `u`, the two evaluation basis vectors `a ∈ Rq^{2^m}` (`avec`) and `b ∈ Rq^{2^r}`
+(`bvec`) of Eq. (12), and the claimed evaluation `y = u_eval`.
 
-The dimension parameters (`messageRows`, `blocks`, …) are left generic on the structure; the
+The public parameters `(A, B, D)` are **not** statement data: the commitment key is fixed once
+for the whole reduction (honestly, sampled by `keygen`) and enters the relations as the
+parameter `pp`. Keeping the key out of the adversary-chosen statement is what ties the parallel
+Module-SIS escape channel (`quadEvalSISSet`) to the *actual* key — a statement-carried key would
+let escapes be validated against an adversary-chosen matrix.
+
+The dimension parameters (`messageRows`, `blocks`, …) are left generic on the structure (the
+full profile of the reduction instance, shared with the key's `PublicParamsD` type); the
 relations and protocol below specialize `messageRows := 2^m` and `blocks := 2^r` (the paper's
 Figure 3 shape), matching the genericity of the other reduction structures. -/
 structure QuadEvalStatement (Φ : CyclotomicModulus R)
     (innerRows messageRows messageDigits outerRows blocks innerDigits dRows : Nat) where
-  /-- Public matrices `(A, B, D)`. -/
-  pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits dRows
   /-- The outer commitment `u`. -/
   u : Commitment Φ outerRows
   /-- The inner evaluation basis `aᵀ = (x_{r+1}^{j₁} ⋯ x_l^{j_m})_j ∈ Rq^{2^m}` (Eq. 12). -/
@@ -114,20 +123,19 @@ the instance is used only as the total fallback of generic extractors outside ac
 instance : Nonempty (QuadEvalWitness Φ innerRows messageRows messageDigits blocks innerDigits) :=
   ⟨{ message := fun _ _ => 0, innerDecomp := fun _ _ => 0, challenge := fun _ => 0 }⟩
 
-/-- A concrete local escape produced by the three-case extractor of Hachi Lemma 8. The public
-matrix is carried with the kernel vector, making validity statement-independent once the escape
-has been produced. This is essential for threading the escape backwards through earlier protocol
-relations without attaching the originating `QuadEvalStatement`. -/
+/-- A concrete local escape produced by the three-case extractor of Hachi Lemma 8: a candidate
+kernel vector for the outer commitment matrix `B` or the carrier commitment matrix `D`. The
+escape carries only the solution; validity (`quadEvalSISSet`) is checked against the *fixed*
+commitment key `pp` — a parameter of the reduction, not statement data — so escapes remain
+statement-independent and thread backwards through earlier protocol relations without attaching
+the originating `QuadEvalStatement`. (Carrying the matrix inside the escape instead would let it
+be validated against an arbitrary — e.g. zero — matrix, making the escape set free.) -/
 inductive QuadEvalSISBreak (Φ : CyclotomicModulus R)
     (innerRows messageDigits outerRows blocks innerDigits dRows : Nat) where
   /-- A short nonzero kernel vector for the outer commitment matrix `B`. -/
-  | msisB
-      (matrix : Simple.PublicParams Φ outerRows (blocks * (innerRows * innerDigits)))
-      (solution : ModuleSIS.Solution Φ (blocks * (innerRows * innerDigits)))
+  | msisB (solution : ModuleSIS.Solution Φ (blocks * (innerRows * innerDigits)))
   /-- A short nonzero kernel vector for the carrier commitment matrix `D`. -/
-  | msisD
-      (matrix : Simple.PublicParams Φ dRows (blocks * messageDigits))
-      (solution : ModuleSIS.Solution Φ (blocks * messageDigits))
+  | msisD (solution : ModuleSIS.Solution Φ (blocks * messageDigits))
 
 end Defs
 
@@ -199,39 +207,48 @@ def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool 
   fun z => decide (vecLInftyNorm Φ z ≤ subLInftyNormBound γ)
 
 /-- The statement-independent set of valid Module-SIS escapes that `QuadEval` may add while
-extracting. Each escape carries the matrix against which its solution is checked: `B` for a
-divergent inner decomposition, or `D` for a divergent carrier decomposition. -/
-def quadEvalSISSet (γ : ℕ) :
+extracting, **relative to the fixed commitment key `pp`**: solutions are checked against `pp`'s
+`B` matrix (a divergent inner decomposition) or its `D` matrix (a divergent carrier
+decomposition). Checkability against the key alone — never against statement data — is what
+makes the set a genuine hardness target: an element is a Module-SIS break of the *actual* key
+([NOZ26] Remark 2 / Lemma 7), and for kernel-free keys the set is empty. -/
+def quadEvalSISSet
+    (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
+      dRows) (γ : ℕ) :
     Set (QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows) :=
   { e | match e with
-    | .msisB matrix solution =>
-        ModuleSIS.relation Φ (outerShort Φ γ) matrix solution = true
-    | .msisD matrix solution =>
-        ModuleSIS.relation Φ (dShort Φ γ) matrix solution = true }
+    | .msisB solution =>
+        ModuleSIS.relation Φ (outerShort Φ γ) pp.outerMatrix solution = true
+    | .msisD solution =>
+        ModuleSIS.relation Φ (dShort Φ γ) pp.dMatrix solution = true }
 
-/-- A capability for embedding the local, concrete `QuadEval` SIS escapes into a common ambient
-escape type. `localEsc` is the part of the ambient escape budget introduced by `QuadEval`, and
-`mapsTo` certifies that every locally valid break maps into it. Other protocols can add their own
-escape subsets to the same `E`, while the ordinary `relIn`/`relOut` chain remains unchanged. -/
-structure QuadEvalEscapeMap (γ : ℕ) (E : Type) where
+/-- A capability for embedding the local, concrete `QuadEval` SIS escapes (valid for the fixed
+key `pp`) into a common ambient escape type. `localEsc` is the part of the ambient escape budget
+introduced by `QuadEval`, and `mapsTo` certifies that every locally valid break maps into it.
+Other protocols can add their own escape subsets to the same `E`, while the ordinary
+`relIn`/`relOut` chain remains unchanged. -/
+structure QuadEvalEscapeMap
+    (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
+      dRows) (γ : ℕ) (E : Type) where
   /-- Ambient encodings of valid escapes introduced by this `QuadEval` invocation. -/
   localEsc : Set E
   /-- Embed a concrete `QuadEval` SIS break into the common escape type. -/
   toEscape :
     QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows → E
   /-- Valid local breaks land in `localEsc`. -/
-  mapsTo : Set.MapsTo toEscape (quadEvalSISSet Φ γ) localEsc
+  mapsTo : Set.MapsTo toEscape (quadEvalSISSet Φ pp γ) localEsc
 
 namespace QuadEvalEscapeMap
 
 /-- The canonical embedding when the ambient escape type is exactly the concrete `QuadEval` SIS
 break type. This is useful for running `QuadEval` by itself; composed Hachi chains instead provide
 an embedding into their shared escape type. -/
-def self (γ : ℕ) :
-    QuadEvalEscapeMap Φ (innerRows := innerRows) (messageDigits := messageDigits)
-      (outerRows := outerRows) (blocks := blocks) (innerDigits := innerDigits) (dRows := dRows) γ
+def self
+    (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
+      dRows) (γ : ℕ) :
+    QuadEvalEscapeMap Φ pp γ
       (QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows) where
-  localEsc := quadEvalSISSet Φ γ
+  localEsc := quadEvalSISSet Φ pp γ
   toEscape := id
   mapsTo := fun _ he => he
 
@@ -260,8 +277,10 @@ reduction's intended output relation and the one downstream Hachi code should ci
 challenge-norm checks appear (the challenge
 TYPE carries `‖cᵢ‖₁ ≤ ω`), and no `‖z‖₂²` check appears (`‖z‖∞ ≤ …` is derived downstream from
 c6's `‖ẑ‖∞ ≤ γ` via the `J`-recomposition norm lemma, `Gadget/Norms.lean`) — both exactly as in the
-paper. -/
-def relOut (base : ZMod q) (ω γ : ℕ) :
+paper. `pp` is the fixed commitment key `(A, B, D)` the c1/c2/c5 rows check against. -/
+def relOut
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ) :
     Set ((QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
           CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) ×
          QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :=
@@ -271,9 +290,9 @@ def relOut (base : ZMod q) (ω γ : ℕ) :
       let z : PolyVec (Rq Φ) ((2 ^ m) * messageDigits) :=
         Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ resp.zDec
       -- c1: `D ŵ = v`
-      Simple.commit Φ stmt.pp.dMatrix resp.carrierDec = v ∧
+      Simple.commit Φ pp.dMatrix resp.carrierDec = v ∧
       -- c2: `B (flatten t̂) = u`
-      Simple.commit Φ stmt.pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
+      Simple.commit Φ pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
       -- c3: `bᵀ (G_{2^r} ŵ) = y`
       dot stmt.bvec (gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ resp.carrierDec) = stmt.y ∧
       -- c4: `(cᵀ ⊗ G₁) ŵ = aᵀ (G_{2^m} z)`
@@ -281,7 +300,7 @@ def relOut (base : ZMod q) (ω γ : ℕ) :
         dot stmt.avec (gadgetMatrix Φ base (2 ^ m) messageDigits *ᵥ z) ∧
       -- c5: `(cᵀ ⊗ G_{n_A}) t̂ = A z`
       Hachi.tensorG Φ base innerRows innerDigits c resp.innerDec =
-        stmt.pp.innerMatrix *ᵥ z ∧
+        pp.innerMatrix *ᵥ z ∧
       -- c6: the `S_b` range checks (as `ℓ∞` balls)
       vecLInftyNorm Φ resp.carrierDec ≤ γ ∧
       vecLInftyNorm Φ (PolyVec.flattenBlocks resp.innerDec) ≤ γ ∧
@@ -327,7 +346,9 @@ theorem vecLInftyNorm_le_of_vecInSb {β γ cols : ℕ} (hγ : β / 2 ≤ γ)
 c6 range checks are the paper's exact `S_b` box membership (`vecInSb`, Hachi [NOZ26] §2.1) instead
 of the symmetric `ℓ∞` ball. This is the relation the Hachi verifier actually checks; rows c1–c5
 mirror `relOut` verbatim (only c6 differs). -/
-def paperRelOut (base : ZMod q) (ω b : ℕ) :
+def paperRelOut
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω b : ℕ) :
     Set ((QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
           CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) ×
          QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :=
@@ -337,13 +358,13 @@ def paperRelOut (base : ZMod q) (ω b : ℕ) :
       let z : PolyVec (Rq Φ) ((2 ^ m) * messageDigits) :=
         Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ resp.zDec
       -- c1–c5: the linear system, identical to `relOut`
-      Simple.commit Φ stmt.pp.dMatrix resp.carrierDec = v ∧
-      Simple.commit Φ stmt.pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
+      Simple.commit Φ pp.dMatrix resp.carrierDec = v ∧
+      Simple.commit Φ pp.outerMatrix (PolyVec.flattenBlocks resp.innerDec) = stmt.u ∧
       dot stmt.bvec (gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ resp.carrierDec) = stmt.y ∧
       Hachi.tensorG1 Φ base messageDigits c resp.carrierDec =
         dot stmt.avec (gadgetMatrix Φ base (2 ^ m) messageDigits *ᵥ z) ∧
       Hachi.tensorG Φ base innerRows innerDigits c resp.innerDec =
-        stmt.pp.innerMatrix *ᵥ z ∧
+        pp.innerMatrix *ᵥ z ∧
       -- c6: the paper's exact `S_b` box (Eq. (20)'s `(ŵ, t̂, ẑ) ∈ S_b`)
       vecInSb Φ b resp.carrierDec ∧
       vecInSb Φ b (PolyVec.flattenBlocks resp.innerDec) ∧
@@ -356,13 +377,11 @@ by ArkLib's generalized `relOut` at any range `γ ≥ ⌊b/2⌋`: rows c1–c5 p
 each `S_b` box check (`vecInSb b`) implies the ball check `vecLInftyNorm ≤ γ` via
 `vecLInftyNorm_le_of_vecInSb`. In particular at the paper's own `γ := b` (`b ≥ ⌊b/2⌋`) this shows
 the Lemma 8 CWSS theorem (`quadEval_coordinateWiseSpecialSound`) covers the paper's verifier. -/
-theorem paperRelOut_subset_relOut (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ : b / 2 ≤ γ) :
-    paperRelOut Φ (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
-        (innerDigits := innerDigits) (dRows := dRows) (zDigits := zDigits) (m := m) (r := r)
-        base ω b
-      ⊆ relOut Φ (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
-        (innerDigits := innerDigits) (dRows := dRows) (zDigits := zDigits) (m := m) (r := r)
-        base ω γ := by
+theorem paperRelOut_subset_relOut
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ : b / 2 ≤ γ) :
+    paperRelOut (zDigits := zDigits) Φ pp base ω b
+      ⊆ relOut (zDigits := zDigits) Φ pp base ω γ := by
   rintro ⟨⟨stmt, v, chals⟩, resp⟩ ⟨h1, h2, h3, h4, h5, hb1, hb2, hb3⟩
   exact ⟨h1, h2, h3, h4, h5,
     vecLInftyNorm_le_of_vecInSb Φ hγ hb1,
@@ -370,12 +389,15 @@ theorem paperRelOut_subset_relOut (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ :
     vecLInftyNorm_le_of_vecInSb Φ hγ hb3⟩
 
 /-- **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u`
-that is also eval-consistent (Eq. 15). Module-SIS outcomes are not witnesses of this relation;
-they are accumulated in parallel through `quadEvalSISSet` and `QuadEvalEscapeMap`. -/
-def relIn (base : ZMod q) (βSq γ κ : ℕ) :
+under the fixed key `pp` that is also eval-consistent (Eq. 15). Module-SIS outcomes are not
+witnesses of this relation; they are accumulated in parallel through `quadEvalSISSet` and
+`QuadEvalEscapeMap`. -/
+def relIn
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (βSq γ κ : ℕ) :
     Set (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows ×
          QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits) :=
-  { p | VerifiedOpening Φ base βSq γ κ p.1.pp.toPublicParams p.1.u p.2 ∧
+  { p | VerifiedOpening Φ base βSq γ κ pp.toPublicParams p.1.u p.2 ∧
       evalConsistency Φ base p.1.avec p.1.bvec p.1.y p.2 }
 
 /-! ## The protocol: pure pass-through verifier and honest prover -/
