@@ -18,11 +18,11 @@ We bound each phase separately and combine them with `OracleVerifier.append_soun
 turns the soundness of a composed verifier into the sum of the parts' errors.
 
 The paper's Theorem 4 presents the bound as `ε₁ + ε₂ + ε₃ + εsumcheck`, grouped by the
-mathematical bad events.  The formal proof below instead groups errors by the verifier phases where
-the relevant challenges are sampled.  In particular, the Lagrange-kernel contribution called `ε₂`
-in the paper is proved as part of the outer phase here, because the outer phase samples that point.
-Following Remark 3, this verifier also samples the outer challenge `x` from all of `F`, so the
-outer bound separately pays for the chance that `x` hits a denominator pole.
+mathematical bad events.  The formal proof below instead groups errors by the verifier phase that
+samples each challenge.  The random Lagrange-kernel point is sampled in the outer phase, so the
+error for hiding a nonzero domain identity is charged to the outer phase here.  Following
+Remark 3, this verifier also samples the outer challenge `x` from all of `F`, so the outer bound
+separately pays for the chance that `x` hits a denominator pole.
 -/
 
 open scoped NNReal BigOperators
@@ -53,8 +53,9 @@ claims into one.
 
 The first two terms are an unconditional union bound over denominator poles and roots of the
 cleared lookup identity. The `params.numGroups * n / |F|` term bounds the chance that the sampled
-Lagrange-kernel point hides one of the nonzero domain identities. The paper accounts for this as
-`ε₂`; here it appears in the outer-phase error because this phase samples the point. -/
+Lagrange-kernel point hides one of the nonzero domain identities. This is the same bad event that
+appears as the `ε₂` term in the paper, but it is charged to the outer phase here because this phase
+samples the point. -/
 noncomputable def logupOuterSoundnessError (F : Type) [Fintype F] (n M : ℕ)
     (params : ProtocolParams M) : ℝ≥0 :=
   ((((M + 1) * Fintype.card (Fin n → Fin 2) : ℕ) : ℝ≥0) /
@@ -64,21 +65,21 @@ noncomputable def logupOuterSoundnessError (F : Type) [Fintype F] (n M : ℕ)
     (((params.numGroups * n : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)) +
     ((1 : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
 
-/-- Current error budget assigned to the final LogUp point-check phase in the composed theorem.
+/-- Error budget for the final LogUp point-check phase.
 
 The final verifier has no fresh challenges: once the sumcheck final claim and retained oracles are
-fixed, it either accepts or rejects deterministically. Its standalone soundness error could
-therefore be stated as `0`.  The composed statement currently keeps a separate `K / |F|` term for
-this phase; the mathematical bad event corresponding to the paper's `ε₂` is already proved in
-`logupOuterSoundnessError`, so this definition can likely be tightened later. -/
+fixed, it either accepts or rejects deterministically. Its phase error is therefore `0`. The
+Lagrange-kernel bad event is already proved in `logupOuterSoundnessError`, where that random point
+is sampled. -/
 noncomputable def logupFinalCheckSoundnessError (F : Type) [Fintype F] (M : ℕ)
     (params : ProtocolParams M) : ℝ≥0 :=
-  ((params.numGroups : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
+  0
 
 /-- Full LogUp soundness error: the sum of the outer, embedded-sumcheck, and final-check errors.
 
-The current formal outer phase uses the general Schwartz-Zippel bound for a nonzero multilinear
-domain-identity MLE, so the outer contribution includes `K * n / |F|`. -/
+The outer contribution includes the probability that the sampled Lagrange-kernel point hides a
+nonzero domain identity. The final-check contribution is `0`, because that phase has no fresh
+random challenges. -/
 noncomputable def logupSoundnessError (F : Type) [Fintype F] (n M : ℕ) (params : ProtocolParams M)
     (sumcheckSoundnessError : ℝ≥0) : ℝ≥0 :=
   logupOuterSoundnessError F n M params + sumcheckSoundnessError +
@@ -1186,8 +1187,8 @@ private theorem outerSoundnessState_full_prob_zero
                     (params := params) tr
               | .helpers =>
                   outerTranscriptHelpersFull (F := F) (n := n) (M := M)
-                    (params := params) tr))
-          : OptionT (OracleComp oSpec)
+                    (params := params) tr)) :
+          OptionT (OracleComp oSpec)
               (StmtAfterOuter F n M params ×
                 (∀ i, OStmtAfterOuter F n M params i))) := by
     rw [← (OracleVerifier.run_eq_run_verifier
@@ -1963,8 +1964,7 @@ language, the reconstructed value `qAtPoint` disagrees with the claimed target a
 rejects. -/
 
 omit [SampleableType F] in
-/-- Soundness of the deterministic final LogUp point check, using the current final-phase error
-budget `logupFinalCheckSoundnessError`. -/
+/-- Soundness of the deterministic final LogUp point check with zero phase error. -/
 theorem logup_finalCheck_soundness :
     (finalCheckVerifier oSpec F n M params).soundness init impl
       (logupAfterSumcheckRelation F n M params).language
