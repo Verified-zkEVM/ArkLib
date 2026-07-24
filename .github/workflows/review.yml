@@ -1,7 +1,7 @@
 name: PR Review
 
 # Trusted CHATOPS-ONLY deployment of the consolidated OpenRouter review action
-# (lean4repo-utils/review@main). Invoked by a maintainer commenting `/review` on a PR.
+# (lean4repo-utils/review@0.3). Invoked by a maintainer commenting `/review` on a PR.
 # The auto pull_request trigger is intentionally dropped for now.
 on:
   issue_comment:
@@ -112,7 +112,7 @@ jobs:
           echo "Resolved KB spec_refs: ${spec_refs:-(none)}"
 
       - name: AI review
-        uses: alexanderlhicks/lean4repo-utils/review@main
+        uses: alexanderlhicks/lean4repo-utils/review@0.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           api_key: ${{ secrets.OPENROUTER_KEY }}
