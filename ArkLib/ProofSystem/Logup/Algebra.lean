@@ -277,7 +277,9 @@ def seqMultiplicity {ι : Type*} [Fintype ι] (a : ι → F) (z : F) : ℕ :=
 sizes of the index types, the set underlying `a` is contained in that of `b` iff there exist
 multiplicities `m` making the cleared logarithmic-derivative identity hold in `F[X]` (the cleared
 form of `∑_i 1/(X + a i) = ∑_j m j/(X + b j)`). The honest witness is the normalized multiplicity
-`m j = ma(b j)/mb(b j)`. Generalizes the paper's equal-length sequences to arbitrary index types. -/
+`m j = ma(b j)/mb(b j)`. Generalizes the paper's equal-length sequences to arbitrary index types.
+This theorem is kept as a faithful statement of Lemma 5; the later security proofs use evaluated
+and contrapositive specializations instead. -/
 theorem setInclusion_iff_cleared {ι κ : Type*} [Fintype ι] [Fintype κ]
     (hNa : Fintype.card ι < ringChar F) (hNb : Fintype.card κ < ringChar F)
     (a : ι → F) (b : κ → F) :
