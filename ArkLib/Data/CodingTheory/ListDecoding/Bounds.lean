@@ -282,25 +282,82 @@ error-correcting code of rate `ρ` with `|Λ(C, δ)| ≤ ℓ`. Then:
 
   `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}`
 
-Equivalently, `δ ≤ ℓ/(ℓ+1) · (1-ρ)`. Admitted as an external result.
+Equivalently, `δ ≤ ℓ/(ℓ+1) · (1-ρ)`.
 
-The hypothesis `_hC_card` (`|C| > ℓ`) is implicit in ST20's conventions (an `[n, k]`
-linear code with `k ≥ 1` and `|F| > ℓ` has `|C| = |F|^k > ℓ`): their pigeonhole proof
-produces `ℓ + 1` distinct codewords agreeing on a coordinate prefix, which requires
-`|C| ≥ ℓ + 1` to exist. Without it the statement is false at degenerate subspaces
-(e.g. `C = ⊥`, `ℓ = 1`, `δ` close to `1`: the floor exceeds `n` and the RHS drops
-below `1 = |C|`). -/
+**Rate hypothesis `_hδ_bound` (2026-07-24 fix).** The cardinality form of the bound
+requires the rate–radius relation `δ ≤ ℓ/(ℓ+1)·(1-ρ)` (with `ρ = dim C / n`), which ST20
+*derives* from `ℓ`-list-decodability. Carrying only the list-decoding premise `_hΛ` is
+**not** enough for the cardinality conclusion: the ternary length-3 repetition code
+`C = {000,111,222}` over `𝔽₃` is `(δ=1/2, ℓ=1)`-list-decodable (minimum distance 3, so the
+radius-`⌊δn⌋ = 1` balls are disjoint, giving `|Λ| ≤ 1`), yet
+`⌊(ℓ+1)/ℓ·δ·n⌋ = ⌊3⌋ = 3` forces the RHS to `3^0 = 1 < 3 = |C|`. The obstruction is the
+floor/integer-radius quantisation — `_hΛ` alone does not pin `δ·n` to the lattice on which
+the pigeonhole exponent is meaningful (flagged by external review, 2026-07-24). We therefore
+carry the equivalent rate–radius relation `_hδ_bound` as a hypothesis; under it the
+cardinality bound is a direct consequence of `|C| = |F|^{dim C}` and
+`⌊(ℓ+1)/ℓ·δ·n⌋ ≤ n - dim C`, so this leaf is now **proved in-tree** (axiom-clean) rather
+than admitted. The list-decoding premise `_hΛ` is retained to document the ST20 context in
+which `_hδ_bound` arises. -/
 theorem linear_C_le_generalized_singleton_st20
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
     (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
-    (_hC_card : ℓ < Set.ncard ((C : Set (ι → F))))
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (hδ_bound : δ ≤ (ℓ : ℝ) / (ℓ + 1) *
+      (1 - (Module.finrank F C : ℝ) / Fintype.card ι))
     (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
     (Set.ncard ((C : Set (ι → F))) : ℝ)
       ≤ (Fintype.card F : ℝ) ^
           ((Fintype.card ι : ℝ)
             - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) := by
-  sorry -- ABF26-T3.9; external admit [ST20 Thm 1.2].
+  classical
+  set q : ℕ := Fintype.card F with hq
+  set n : ℕ := Fintype.card ι with hn
+  set k : ℕ := Module.finrank F C with hk
+  -- `|C| = q ^ k` (linearity), reusing the idiom from `linear_lambda_ge_volume`.
+  have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]; rfl
+    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
+    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+  have hq1 : (1 : ℝ) ≤ (q : ℝ) := by
+    have : 1 < q := hq ▸ Fintype.one_lt_card
+    exact_mod_cast this.le
+  have hnpos : (0 : ℝ) < n := by rw [hn]; exact_mod_cast Fintype.card_pos
+  have hℓpos : (0 : ℝ) < ℓ := by exact_mod_cast _hℓ_pos
+  -- `k ≤ n` (rank of a subspace of `F^n` is at most `n`).
+  have hkn : k ≤ n := by
+    rw [hk, hn]
+    have h := Submodule.finrank_le C
+    rwa [Module.finrank_fintype_fun_eq_card] at h
+  -- From `_hδ_bound`, `(ℓ+1)/ℓ · δ ≤ 1 - k/n`, hence `(ℓ+1)/ℓ · δ · n ≤ n - k`.
+  have hmid : ((ℓ : ℝ) + 1) / ℓ * δ ≤ 1 - (k : ℝ) / n := by
+    have hfac : (0 : ℝ) < ((ℓ : ℝ) + 1) / ℓ := by positivity
+    calc ((ℓ : ℝ) + 1) / ℓ * δ
+        ≤ ((ℓ : ℝ) + 1) / ℓ * ((ℓ : ℝ) / ((ℓ : ℝ) + 1) * (1 - (k : ℝ) / n)) :=
+          mul_le_mul_of_nonneg_left hδ_bound (le_of_lt hfac)
+      _ = 1 - (k : ℝ) / n := by field_simp
+  have hstep : ((ℓ : ℝ) + 1) / ℓ * δ * n ≤ (n : ℝ) - k := by
+    calc ((ℓ : ℝ) + 1) / ℓ * δ * n
+        = (((ℓ : ℝ) + 1) / ℓ * δ) * n := by ring
+      _ ≤ (1 - (k : ℝ) / n) * n := mul_le_mul_of_nonneg_right hmid (le_of_lt hnpos)
+      _ = (n : ℝ) - k := by field_simp
+  have hfloor : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) ≤ n - k := by
+    rw [← Nat.cast_sub hkn] at hstep
+    calc Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n)
+        ≤ Nat.floor (((n - k : ℕ) : ℝ)) := Nat.floor_le_floor hstep
+      _ = n - k := Nat.floor_natCast _
+  -- Conclude: `q^k ≤ q^(n - ⌊…⌋)` since the exponent is `≥ k`.
+  have hexp : (k : ℝ) ≤ (n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ) := by
+    have hle : (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ) ≤ (n : ℝ) - k := by
+      have := hfloor
+      rw [← Nat.cast_sub hkn]
+      exact_mod_cast this
+    linarith
+  rw [hcard_C]
+  calc ((q ^ k : ℕ) : ℝ)
+      = (q : ℝ) ^ (k : ℝ) := by rw [Nat.cast_pow, Real.rpow_natCast]
+    _ ≤ (q : ℝ) ^ ((n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ)) :=
+        Real.rpow_le_rpow_of_exponent_le hq1 hexp
 
 end LowerBounds_General
 
