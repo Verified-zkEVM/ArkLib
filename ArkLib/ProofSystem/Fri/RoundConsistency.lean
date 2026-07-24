@@ -101,7 +101,7 @@ lemma generalised_round_consistency_completeness
     ext i
     conv =>
       lhs
-      rw [splitNth_def n f]
+      rw [eq_sum_splitNth n f]
     rw [eval_finset_sum, eval_finset_sum]
     conv =>
       lhs
