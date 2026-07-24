@@ -15,8 +15,14 @@ Soundness target for the LogUp lookup argument (Cryptology ePrint Archive, Paper
 The protocol verifier is the sequential composition of three phases (outer LogUp, embedded
 sumcheck, final point check), so its soundness error decomposes as a sum of one error per phase.
 We bound each phase separately and combine them with `OracleVerifier.append_soundness`, which
-turns the soundness of a composed verifier into the sum of the parts' errors. This matches the
-paper's Theorem 4, where the total error is `ε₁ + ε₂ + ε₃ + εsumcheck`.
+turns the soundness of a composed verifier into the sum of the parts' errors.
+
+The paper's Theorem 4 presents the bound as `ε₁ + ε₂ + ε₃ + εsumcheck`, grouped by the
+mathematical bad events.  The formal proof below instead groups errors by the verifier phases where
+the relevant challenges are sampled.  In particular, the Lagrange-kernel contribution called `ε₂`
+in the paper is proved as part of the outer phase here, because the outer phase samples that point.
+Following Remark 3, this verifier also samples the outer challenge `x` from all of `F`, so the
+outer bound separately pays for the chance that `x` hits a denominator pole.
 -/
 
 open scoped NNReal BigOperators
@@ -46,7 +52,9 @@ nonzero multilinear domain identity, and the batching scalar that combines the `
 claims into one.
 
 The first two terms are an unconditional union bound over denominator poles and roots of the
-cleared lookup identity. -/
+cleared lookup identity. The `params.numGroups * n / |F|` term bounds the chance that the sampled
+Lagrange-kernel point hides one of the nonzero domain identities. The paper accounts for this as
+`ε₂`; here it appears in the outer-phase error because this phase samples the point. -/
 noncomputable def logupOuterSoundnessError (F : Type) [Fintype F] (n M : ℕ)
     (params : ProtocolParams M) : ℝ≥0 :=
   ((((M + 1) * Fintype.card (Fin n → Fin 2) : ℕ) : ℝ≥0) /
@@ -56,11 +64,13 @@ noncomputable def logupOuterSoundnessError (F : Type) [Fintype F] (n M : ℕ)
     (((params.numGroups * n : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)) +
     ((1 : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
 
-/-- Soundness error of the final LogUp point check (paper's `ε₂ = K/|F|`).
+/-- Current error budget assigned to the final LogUp point-check phase in the composed theorem.
 
-This is the cost of reducing the domain identities to the Lagrange-kernel point evaluation, since
-scalar products with the Lagrange kernel translate to point evaluation of the multilinear
-extension. -/
+The final verifier has no fresh challenges: once the sumcheck final claim and retained oracles are
+fixed, it either accepts or rejects deterministically. Its standalone soundness error could
+therefore be stated as `0`.  The composed statement currently keeps a separate `K / |F|` term for
+this phase; the mathematical bad event corresponding to the paper's `ε₂` is already proved in
+`logupOuterSoundnessError`, so this definition can likely be tightened later. -/
 noncomputable def logupFinalCheckSoundnessError (F : Type) [Fintype F] (M : ℕ)
     (params : ProtocolParams M) : ℝ≥0 :=
   ((params.numGroups : ℕ) : ℝ≥0) / (Fintype.card F : ℝ≥0)
@@ -1953,8 +1963,8 @@ language, the reconstructed value `qAtPoint` disagrees with the claimed target a
 rejects. -/
 
 omit [SampleableType F] in
-/-- Soundness of the final LogUp point check, with error `logupFinalCheckSoundnessError`
-(paper's `ε₂ = K/|F|`). -/
+/-- Soundness of the deterministic final LogUp point check, using the current final-phase error
+budget `logupFinalCheckSoundnessError`. -/
 theorem logup_finalCheck_soundness :
     (finalCheckVerifier oSpec F n M params).soundness init impl
       (logupAfterSumcheckRelation F n M params).language
