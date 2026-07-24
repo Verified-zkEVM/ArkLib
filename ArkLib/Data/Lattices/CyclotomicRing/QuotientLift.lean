@@ -21,12 +21,13 @@ import ArkLib.Data.Lattices.Vectors
   `Commitments/Functional/Hachi/RingSwitch/Reduction.lean`, since `Data` does not import
   `ProofSystem`):
 
-  * `Rq.natDegree_val_toPoly_lt'` — representatives are degree-reduced (any modulus of
-    positive degree, generalizing the `powTwoCyclotomic`-pinned version);
   * `val_toPoly_injective` — representatives are injective;
   * `modulus_dvd_toPoly_add_sub` / `modulus_dvd_toPoly_mul_sub` — the coset laws: reduction
     changes the representative of a sum/product by a multiple of the modulus, via the
     semantic quotient bridge `quotientHom`.
+
+  The remaining presentation law — representatives are degree-reduced — is
+  `Rq.natDegree_val_toPoly_lt'` in `Rq.lean`, next to the other `Rq` degree lemmas.
 
   ## References
 
@@ -43,17 +44,7 @@ variable {R : Type*} [Field R]
 
 variable [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 
-/-! ## Degree bound and injectivity of canonical representatives -/
-
-/-- A reduced representative has `natDegree` below `d = deg φ` — the any-modulus version of
-`Rq.natDegree_val_toPoly_lt` (which is pinned to `powTwoCyclotomic`), with the dimension
-positivity `0 < d` as an explicit hypothesis. -/
-theorem Rq.natDegree_val_toPoly_lt' (hd : 0 < Φ.φ.natDegree) (a : Rq Φ) :
-    a.1.toPoly.natDegree < Φ.φ.natDegree := by
-  rcases eq_or_ne a.1.toPoly 0 with h0 | hne
-  · rw [h0, Polynomial.natDegree_zero]; exact hd
-  · rw [CompPoly.CPolynomial.natDegree_toPoly]
-    exact Polynomial.natDegree_lt_natDegree hne (Φ.degree_toPoly_lt_of_reduced a.2)
+/-! ## Injectivity of canonical representatives -/
 
 omit [IsCyclotomic Φ] in
 /-- Canonical representatives are injective: `Rq` elements with equal representative

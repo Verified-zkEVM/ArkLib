@@ -165,22 +165,10 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
     vecLInftyNorm Φ w.z ≤ s.bound :=
   le_trans hshort.1 hside
 
-/-! ### Why the CWSS certificate is exposed only as `liftPackage.isCWSS`
-
-We deliberately do **not** provide a standalone `lift_coordinateWiseSpecialSound` restated in
-Hachi's `relRlinE`/`relLiftE` relation vocabulary. Doing so forces the elaborator to check a
-`whnf` defeq between that vocabulary and the generic `Lift.relLin`/`Lift.relOutE`/`Lift.verifier`
-*inside the full `coordinateWiseSpecialSound` proposition* — which unfolds `Rq`'s computable layer
-(via the `verifier`) and times out (`maximum number of heartbeats` at `whnf`). The certificate is
-therefore `liftPackage.isCWSS` (generic `Lift.coordinateWiseSpecialSound` specialized). Crucially,
-the `▷` seams in `Composition.lean` still close by `rfl`: that `rfl` compares only the two relations
-(structurally identical after β-reduction — same `*ᵥ` subterms), never the verifier. -/
-
-/-- Hachi's `Lift` instance as a composable CWSS package, **assembled wholesale from generic
-`Lift.package`** at the cyclotomic presentation: the verifier, structure, purity witness, and
-CWSS certificate are all the generic layer's. Hachi supplies only the presentation data
+/-- Hachi's `Lift` instance as a composable CWSS package, reusing the generic ring-switching
+`Lift.package` at the cyclotomic presentation. Hachi supplies only the presentation data
 (`cyclotomicPresentation`/`isPresentation_cyclotomic`) and the norm implication
-(`vecLInftyNorm_le_of_liftShort`). -/
+(`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`. -/
 noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
     CWSSPackage init impl
