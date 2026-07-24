@@ -36,7 +36,6 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-variable {𝓑 : Fin 2 ↪ L}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 open scoped NNReal
@@ -102,7 +101,6 @@ def proximityChecksSpec (γ_challenges :
       let f_i_on_fiber : Fin (2^ϑ) → L := fun u =>
         let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
           let fiber_point_num_repr := Nat.joinBits (low := u) (high := next_suffix_of_v_fin)
-          simp at fiber_point_num_repr
           have h: 2 ^ (ℓ + 𝓡 - (i + ϑ) + ϑ) = 2 ^ (ℓ + 𝓡 - i) := by
             simp only [Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
               pow_right_inj₀]
@@ -151,8 +149,7 @@ def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
   OracleComp ([OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
   Fin.last ℓ)]ₒ) L :=
       OracleComp.lift <| by
-        simpa using
-          OracleSpec.query
+        exact OracleSpec.query
             (show
                 [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ.Domain from
               ⟨⟨j, by omega⟩, point⟩)
@@ -255,7 +252,6 @@ noncomputable def queryOracleVerifier :
         let f_i_on_fiber ← (List.finRange (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
           let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
             let fiber_point_num_repr := Nat.joinBits (low := u) (high := next_suffix_of_v_fin)
-            simp at fiber_point_num_repr
             have h: 2 ^ (ℓ + 𝓡 - (i + ϑ) + ϑ) = 2 ^ (ℓ + 𝓡 - i) := by
               simp only [Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
                 pow_right_inj₀]

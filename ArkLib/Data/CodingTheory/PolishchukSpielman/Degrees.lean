@@ -135,7 +135,7 @@ private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
   obtain ⟨m, hm⟩ : ∃ m > f.natDegree, ((swap f).coeff n).coeff m ≠ 0 := by
     exact ⟨((swap f).coeff n).natDegree, hn.2.2.2, by aesop⟩
   have h_coeff_swap : ((swap f).coeff n).coeff m = (f.coeff m).coeff n := by
-    convert ps_swap_coeff f m n using 1
+    convert ps_swap_coeff f m n using 1 <;> rfl
   exact hm.2 (h_coeff_swap.symm ▸ by rw [coeff_eq_zero_of_natDegree_lt hm.1]; aesop)
 
 private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f ≠ 0) :
@@ -147,7 +147,7 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
     contrapose! hN; aesop;
   have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
     convert hn.2 using 1;
-    convert ps_swap_coeff f N n using 1
+    convert ps_swap_coeff f N n using 1 <;> rfl
   have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 :=
     (ne_of_apply_ne Polynomial.coeff fun a ↦ h_swap_coeff_nonzero (congrFun a.symm N)).symm
   have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)
@@ -225,6 +225,7 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
     simp
   · refine le_natDegree_of_ne_zero ?_
     convert hx.2 using 1
+    all_goals rfl
 
 lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :

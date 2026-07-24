@@ -1,95 +1,131 @@
-  name: PR Review
+name: PR Review
 
-  on:
-    pull_request:
-      types: [opened]
-    issue_comment:
-      types: [created]
+# Trusted CHATOPS-ONLY deployment of the consolidated OpenRouter review action
+# (lean4repo-utils/review@main). Invoked by a maintainer commenting `/review` on a PR.
+# The auto pull_request trigger is intentionally dropped for now.
+on:
+  issue_comment:
+    types: [created]
 
-  concurrency:
-    group: ${{ github.workflow }}-${{ github.event.pull_request.number || github.event.issue.number }}
-    cancel-in-progress: true
+concurrency:
+  group: ${{ github.workflow }}-${{ github.event.issue.number }}
+  cancel-in-progress: false
 
-  jobs:
-    review:
-      if: >-
-        (
-          github.event_name == 'pull_request' &&
-          (
-            github.event.pull_request.author_association == 'OWNER' ||
-            github.event.pull_request.author_association == 'MEMBER' ||
-            github.event.pull_request.author_association == 'COLLABORATOR'
-          )
-        ) ||
-        (
-          github.event_name == 'issue_comment' &&
-          github.event.issue.pull_request &&
-          startsWith(github.event.comment.body, '/review') &&
-          (
-            github.event.comment.author_association == 'OWNER' ||
-            github.event.comment.author_association == 'MEMBER' ||
-            github.event.comment.author_association == 'COLLABORATOR'
-          )
-        )
-      runs-on: ubuntu-latest
-      timeout-minutes: 90
-      permissions:
-        contents: read
-        pull-requests: write
-      steps:
-        - name: Extract arguments from comment
-          id: get_args
-          if: github.event_name == 'issue_comment'
-          env:
-            COMMENT_BODY: ${{ github.event.comment.body }}
-          run: |
-            EOF=$(openssl rand -hex 8)
+# Least privilege: the reviewer's lean_tools execute model-directed Lean IO and the
+# action builds the PR-head code, so a token exfiltrated there must not be able to push
+# or merge. Only what posting a review needs.
+permissions:
+  contents: read
+  pull-requests: write
+  issues: write
 
-            awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
-              BEGIN {
-                ext = ""
-                repo = ""
-                com = ""
-                section = ""
-              }
-              /^External:/ { section="ext"; next }
-              /^Internal:/ { section="repo"; next }
-              /^Comments:/ { section="com"; next }
-              {
-                gsub(/\r/, "", $0);
-                gsub(/^[ \t]+|[ \t]+$/, "", $0);
-                if ($0 == "" || $0 == "/review") { next }
+jobs:
+  review:
+    # Chatops only, gated to trusted members. NOTE: `/review` here is a coarse prefix
+    # match — a member typing `/reviewer` would also match; harmless under the member
+    # gate, tighten to a word boundary if this ever opens to untrusted commenters.
+    if: >-
+      github.event.issue.pull_request &&
+      startsWith(github.event.comment.body, '/review') &&
+      (
+        github.event.comment.author_association == 'OWNER' ||
+        github.event.comment.author_association == 'MEMBER' ||
+        github.event.comment.author_association == 'COLLABORATOR'
+      )
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      # Parse the /review comment: `Internal:` lines → manual spec/KB refs, everything
+      # under `External:`/`Comments:` → free-text instructions (the action auto-extracts
+      # any URLs it mentions). Comment body is passed via env, never interpolated into
+      # the run: body (GHA expression-injection guard).
+      - name: Extract arguments from comment
+        id: get_args
+        env:
+          COMMENT_BODY: ${{ github.event.comment.body }}
+        shell: bash
+        run: |
+          EOF=$(openssl rand -hex 8)
+          awk -v eof="$EOF" -v gh_out="$GITHUB_OUTPUT" '
+            BEGIN { spec=""; com=""; section="" }
+            /^External:/ { section="com"; next }
+            /^Internal:/ { section="spec"; next }
+            /^Comments:/ { section="com"; next }
+            {
+              gsub(/\r/, "", $0); gsub(/^[ \t]+|[ \t]+$/, "", $0);
+              if ($0 == "" || $0 == "/review") { next }
+              if (section == "spec") { sub(/^- +/, ""); spec = (spec=="" ? $0 : spec "," $0) }
+              else if (section == "com") { com = (com=="" ? $0 : com "\n" $0) }
+            }
+            END {
+              printf "manual_spec_refs=%s\n", spec >> gh_out
+              printf "additional_comments<<%s\n%s\n%s\n", eof, com, eof >> gh_out
+            }
+          ' <<< "$COMMENT_BODY"
 
-                if (section == "ext") {
-                  sub(/^- +/, "");
-                  if (ext != "") { ext = ext "," $0 } else { ext = $0 }
-                }
-                else if (section == "repo") {
-                  sub(/^- +/, "");
-                  if (repo != "") { repo = repo "," $0 } else { repo = $0 }
-                }
-                else if (section == "com") {
-                  if (com != "") { com = com "\n" $0 } else { com = $0 }
-                }
-              }
-              END {
-                printf "external_refs=%s\n", ext >> gh_out
-                printf "repo_context_refs=%s\n", repo >> gh_out
-                printf "additional_comments<<%s\n", eof >> gh_out
-                printf "%s\n", com >> gh_out
-                printf "%s\n", eof >> gh_out
-              }
-            ' <<< "$COMMENT_BODY"
-          shell: bash
+      # Unguided KB grounding: map the PR''s changed .lean files to the papers they cite
+      # (docs/kb/_generated/lean-citations.json) and pass those KB pages as spec_refs, so
+      # a plain /review is grounded in the right paper summaries with no manual guidance.
+      # Read the citation JOIN from the BASE ref (data-only, fork-safe); do NOT execute
+      # any checked-out repo script. (The KB page CONTENT is read by the action from the
+      # PR head — acceptable for this trusted, manually-inspected pilot; base-ref content
+      # reading is part of the S2/S7 hardening.)
+      - name: Resolve KB context (base-ref citation join)
+        id: kb
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.issue.number }}
+          MANUAL_SPEC_REFS: ${{ steps.get_args.outputs.manual_spec_refs }}
+        shell: bash
+        run: |
+          set -euo pipefail
+          BASE_SHA="$(gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER" --jq '.base.sha')"
+          gh api "repos/$GITHUB_REPOSITORY/pulls/$PR_NUMBER/files" --paginate --jq '.[].filename' > /tmp/changed.txt
+          if gh api "repos/$GITHUB_REPOSITORY/contents/docs/kb/_generated/lean-citations.json?ref=$BASE_SHA" \
+               --jq '.content' 2>/dev/null | base64 -d > /tmp/citations.json; then :; else
+            echo "No lean-citations.json on base ref; proceeding without KB spec_refs."
+            echo '{}' > /tmp/citations.json
+          fi
+          # Join is pure data: filenames + JSON read from files, never interpolated.
+          spec_refs="$(python3 - <<'PY'
+          import json, os
+          try:
+              cites = json.load(open('/tmp/citations.json')).get('files', {})
+          except Exception:
+              cites = {}
+          changed = [l.strip() for l in open('/tmp/changed.txt') if l.strip().endswith('.lean')]
+          keys = []
+          for f in changed:
+              for k in cites.get(f, []):
+                  if k not in keys:
+                      keys.append(k)
+          refs = [f"docs/kb/papers/{k}.md" for k in keys]
+          # Merge any manual `Internal:` refs from the /review comment (dedup, keep order).
+          for r in (os.environ.get("MANUAL_SPEC_REFS", "") or "").split(","):
+              r = r.strip()
+              if r and r not in refs:
+                  refs.append(r)
+          print(",".join(refs))
+          PY
+          )"
+          echo "spec_refs=$spec_refs" >> "$GITHUB_OUTPUT"
+          echo "Resolved KB spec_refs: ${spec_refs:-(none)}"
 
-        - uses: alexanderlhicks/lean-review-workflow@main
-          with:
-            github_token: ${{ secrets.GITHUB_TOKEN }}
-            api_key: ${{ secrets.GEMINI_API_KEY }}
-            provider: gemini
-            model: gemini-3.1-pro-preview
-            pr_number: ${{ github.event.issue.number || github.event.pull_request.number }}
-            external_refs: "${{ steps.get_args.outputs.external_refs }}"
-            repo_context_refs: "${{ steps.get_args.outputs.repo_context_refs }}"
-            additional_comments: "${{ steps.get_args.outputs.additional_comments }}"
-
+      - name: AI review
+        uses: alexanderlhicks/lean4repo-utils/review@main
+        with:
+          github_token: ${{ secrets.GITHUB_TOKEN }}
+          api_key: ${{ secrets.OPENROUTER_KEY }}
+          pr_number: ${{ github.event.issue.number }}
+          # Auto-pulled KB paper pages for the changed files + any manual Internal: refs.
+          spec_refs: ${{ steps.kb.outputs.spec_refs }}
+          additional_comments: ${{ steps.get_args.outputs.additional_comments }}
+          # Coverage-first budget control: this sizes/trims prompts for large PRs,
+          # but advisory mode does not stop later files from being reviewed.
+          # Source these from workflow config, never PR content.
+          # llm_max_run_tokens: "400000"
+          # llm_budget_mode: advisory
+          # model: omitted → the action's default OpenRouter slug. Set an explicit slug
+          # here if you want a specific model for the pilot.
+          # lean_tools defaults true (full-quality, compiler-grounded review — trusted
+          # pilot). enable_web_search defaults false (web-search fees are not token-bounded).

@@ -8,6 +8,7 @@ Start with [`README.md`](README.md) for project overview.
 ## Fast Start
 
 1. For a convenient routine check, start with `./scripts/validate.sh`.
+   Before committing or pushing, run it in full; it enforces the `ArkLib/Data` zero-warning gate.
 2. On a cold clone, run `lake exe cache get` first.
 3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths before validation.
 4. If you also want Lean style linting, run `./scripts/validate.sh --lint`.
@@ -20,7 +21,7 @@ Start with [`README.md`](README.md) for project overview.
 - `ArkLib/Data/` - reusable math, coding theory, polynomials, and supporting definitions.
 - `ArkLib/OracleReduction/` - core IOR abstractions and security theory.
 - `ArkLib/ProofSystem/` - protocol formalizations built on the core.
-- `ArkLib/CommitmentScheme/` - commitments and opening arguments.
+- `ArkLib/Commitments/` - commitments and opening arguments.
 - `ArkLib/ToMathlib/` - local extensions intended for upstreaming.
 - `blueprint/src/` - deep design docs and bibliography.
 - `scripts/` - repo utilities.

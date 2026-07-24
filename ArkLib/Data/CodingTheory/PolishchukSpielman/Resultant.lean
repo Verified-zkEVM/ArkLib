@@ -173,6 +173,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
     let col : Fin (n + m) := .natAdd n j'
     let v_col : Fin (n + m) → F := fun k ↦ ev (U k col)
     suffices hx0 : ev (M1 i col) = 0 by
+      change eval x (M1 i (.natAdd n j')) = 0 at hx0
       exact dvd_iff_isRoot.2 (by simpa [IsRoot] using hx0)
     have hM0map : M0.map (⇑ev) = sylvester (B.map ev) (A.map ev) n m := by
       simpa [M0] using ps_sylvester_map ev A B m n
@@ -223,7 +224,8 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
   have hdivM1 : p ^ m ∣ M1.det :=
     ⟨q_mat.det, by
       rw [show M1.det = (∏ j, v j) * q_mat.det from by
-        simpa [hM1_scale] using det_mul_row v q_mat]
+        rw [hM1_scale]
+        exact det_mul_row v q_mat]
       simp [Fin.prod_univ_add, v]⟩
   simpa [p, m, hm, natDegreeY, resultant, M0] using (hdet1 ▸ hdivM1)
 

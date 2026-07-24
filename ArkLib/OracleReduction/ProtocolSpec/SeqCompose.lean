@@ -109,6 +109,18 @@ theorem rtake_append_right :
   simp only [rtake, Fin.vappend_eq_append]
   ext i : 2 <;> simp [Fin.rtake, Fin.append_right]
 
+/-- Left type transport for `++ₚ` at a `castAdd` index: the appended spec's type
+at an index in the first half is the left spec's type. -/
+theorem append_Type_castAdd (i : Fin m) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i) = pSpec₁.«Type» i := by
+  simp only [Fin.vappend_eq_append, Fin.append_left]
+
+/-- Right type transport for `++ₚ` at a `natAdd` index: the appended spec's type
+at an index in the second half is the right spec's type. -/
+theorem append_Type_natAdd (i : Fin n) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.natAdd m i) = pSpec₂.«Type» i := by
+  simp only [Fin.vappend_eq_append, Fin.append_right]
+
 namespace Transcript
 
 variable {k : Fin (m + n + 1)}
@@ -117,21 +129,20 @@ variable {k : Fin (m + n + 1)}
 
 This is defined to be the full transcript for the first half if `k ≥ m`. -/
 def fst (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) : pSpec₁.Transcript ⟨min k m, by omega⟩ :=
-  if hk : k ≤ m then
-    fun i => by
-    dsimp [take]; have := T ⟨i, lt_of_lt_of_le i.isLt (inf_le_left)⟩; simp at this; sorry
-    -- dcast (by sorry) (T ⟨i, lt_of_lt_of_le i.isLt (inf_le_left)⟩)
-  else
-    fun i => sorry
-    -- dcast (by sorry) (T ⟨i, by omega⟩)
+  fun i => by
+    have him : (i : ℕ) < min (k : ℕ) m := i.isLt
+    exact _root_.cast
+      (append_Type_castAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) ⟨i.val, by omega⟩)
+      (T ⟨i.val, by omega⟩)
 
 /-- The second half of a partial transcript for a concatenated protocol. -/
 def snd (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) : pSpec₂.Transcript ⟨k - m, by omega⟩ :=
-  if hk : k ≤ m then
-    fun i => Fin.elim0 (by simpa [hk] using i)
-  else
-    fun i => sorry
-    -- dcast (by sorry) (T ⟨m + i, by simp_all; dsimp at i; have := i.isLt; omega⟩)
+  fun i => by
+    have him : (i : ℕ) < (k : ℕ) - m := i.isLt
+    have hk := k.isLt
+    exact _root_.cast
+      (append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) ⟨i.val, by omega⟩)
+      (T ⟨m + i.val, by omega⟩)
 
 end Transcript
 
@@ -186,7 +197,8 @@ theorem rtake_append_right (T : FullTranscript pSpec₁) (T' : FullTranscript pS
   simp [rtake, Fin.rtake, append, Fin.cast, FullTranscript.cast, Transcript.cast]
   have : ⟨m + n - n + i.val, by omega⟩ = Fin.natAdd m i := by ext; simp
   rw! (castMode := .all) [this, Fin.happend_right]
-  sorry
+  apply eq_of_heq
+  exact ((eqRec_heq _ _).trans (cast_heq _ _)).trans (cast_heq _ _).symm
 
 /-- The first half of a transcript for a concatenated protocol -/
 def fst (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) : FullTranscript pSpec₁ :=
@@ -261,6 +273,20 @@ def ChallengeIdx.sumEquiv :
     by_cases hi : i < m <;>
     simp [ChallengeIdx.inl, ChallengeIdx.inr, hi]
     congr; omega
+
+/-- `sumEquiv.symm` maps a left-embedded composed challenge index back to `Sum.inl`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inl (i₁ : ChallengeIdx pSpec₁) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inl i₁)
+      = Sum.inl i₁ := by
+  rw [Equiv.symm_apply_eq]; simp
+
+/-- `sumEquiv.symm` maps a right-embedded composed challenge index back to `Sum.inr`. -/
+@[simp]
+theorem ChallengeIdx.sumEquiv_symm_inr (i₂ : ChallengeIdx pSpec₂) :
+    (ChallengeIdx.sumEquiv (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)).symm (ChallengeIdx.inr i₂)
+      = Sum.inr i₂ := by
+  rw [Equiv.symm_apply_eq]; simp
 
 /-- Sequential composition of a family of `ProtocolSpec`s, indexed by `i : Fin m`.
 
@@ -461,6 +487,19 @@ def seqComposeChallengeIdxToSigma {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, 
     simp [hk] at this
     exact this⟩⟩
 
+/-- The challenge type of a sequential composition at a combined challenge index equals the
+challenge type of the component protocol at the decoded component challenge index. This is the
+transport fact needed whenever per-round challenge data must be moved across `seqCompose`. -/
+theorem seqCompose_challenge_eq {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
+    (i : (seqCompose pSpec).ChallengeIdx) :
+    (seqCompose pSpec).Challenge i =
+      (pSpec (seqComposeChallengeIdxToSigma i).1).Challenge
+        (seqComposeChallengeIdxToSigma i).2 := by
+  unfold ProtocolSpec.Challenge seqComposeChallengeIdxToSigma
+  simp only [seqCompose_type]
+  conv_lhs => rw [← Fin.embedSum_splitSum i.1]
+  rw [Fin.vflatten_embedSum]
+
 /-- The equivalence between the challenge indices of the individual protocols and the challenge
     indices of the sequential composition. -/
 def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, ProtocolSpec (n i)) :
@@ -469,8 +508,10 @@ def seqComposeChallengeEquiv {m : ℕ} {n : Fin m → ℕ} (pSpec : ∀ i, Proto
   toFun := fun ⟨i, j⟩ => sigmaChallengeIdxToSeqCompose i j
   invFun := seqComposeChallengeIdxToSigma
   left_inv := by
-    intro ⟨_, _⟩; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
-    sorry
+    intro ⟨i, j⟩
+    simp only [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
+    rw! (castMode := .all) [Fin.splitSum_embedSum i j.1]
+    rfl
   right_inv := by intro; simp [seqComposeChallengeIdxToSigma, sigmaChallengeIdxToSeqCompose]
 
 def sigmaMessageIdxToSeqCompose {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
@@ -493,8 +534,10 @@ def seqComposeMessageEquiv {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, Protoco
   toFun := fun ⟨i, msgIdx⟩ => sigmaMessageIdxToSeqCompose i msgIdx
   invFun := seqComposeMessageIdxToSigma
   left_inv := by
-    intro ⟨i, ⟨j, h⟩⟩ ; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
-    sorry
+    intro ⟨i, j⟩
+    simp only [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
+    rw! (castMode := .all) [Fin.splitSum_embedSum i j.1]
+    rfl
   right_inv := by intro; simp [seqComposeMessageIdxToSigma, sigmaMessageIdxToSeqCompose]
 
 instance {m : ℕ} {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
