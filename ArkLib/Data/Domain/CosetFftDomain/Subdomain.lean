@@ -142,6 +142,19 @@ lemma subdomain_generator_pow_generator (i : ℕ) :
   (subdomain ω i).cosetGenerator = ω 0 ^ 2 ^ i := rfl
 
 set_option warning.simp.varHead false in
+@[simp]
+lemma subdomain_0_apply (i : Fin (2 ^ n)) :
+  subdomain ω 0 i = ω i := by
+  aesop
+    (add unsafe [cases Fin, cases Nat])
+    (add safe (by grind))
+    (add simp
+      [subdomain,
+       CosetFftDomainClass.subdomain_embed,
+       mkSubgroupUnit,
+       CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+
+set_option warning.simp.varHead false in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
 @[simp]
