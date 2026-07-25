@@ -35,7 +35,7 @@ theorem mem_support_liftM_oracleComp {ι τ : Type} {spec : OracleSpec ι}
     {oa : OracleComp spec α} {x : α}
     (h : x ∈ support (liftM oa : OracleComp superSpec α)) : x ∈ support oa := by
   rw [← OracleComp.liftComp_eq_liftM (superSpec := superSpec) oa] at h
-  exact OracleComp.mem_support_of_mem_support_liftComp oa x h
+  exact mem_support_of_mem_support_liftComp (superSpec := superSpec) oa x h
 
 end OracleComp
 
@@ -78,21 +78,24 @@ lemma seqCompose_succ {m : ℕ}
 /-- If every prover in a sequential composition preserves a projection of the statement, then the
 whole composed prover preserves that projection. -/
 theorem seqCompose_preserves {m : ℕ} :
-    ∀ {Stmt : Fin (m + 1) → Type} {O : Type}
+    ∀ {Stmt Wit : Fin (m + 1) → Type} {O : Type}
       {n : Fin m → ℕ} {pSpec : ∀ i, ProtocolSpec (n i)}
-      (P : (i : Fin m) → Prover oSpec (Stmt i.castSucc) Unit (Stmt i.succ) Unit (pSpec i))
+      (P : (i : Fin m) →
+        Prover oSpec (Stmt i.castSucc) (Wit i.castSucc) (Stmt i.succ) (Wit i.succ) (pSpec i))
       (proj : (i : Fin (m + 1)) → Stmt i → O),
-      (∀ (i : Fin m) (stmt : Stmt i.castSucc) (out : Stmt i.succ)
+      (∀ (i : Fin m) (stmt : Stmt i.castSucc) (wit : Wit i.castSucc)
+          (out : Stmt i.succ) (outWit : Wit i.succ)
           (tr : (pSpec i).FullTranscript),
-        (tr, out, ()) ∈ support (Prover.run stmt () (P i)) →
+        (tr, out, outWit) ∈ support (Prover.run stmt wit (P i)) →
           proj i.succ out = proj i.castSucc stmt) →
-      ∀ (stmt : Stmt 0) (out : Stmt (Fin.last m))
+      ∀ (stmt : Stmt 0) (wit : Wit 0) (out : Stmt (Fin.last m))
+        (outWit : Wit (Fin.last m))
         (tr : (ProtocolSpec.seqCompose pSpec).FullTranscript),
-        (tr, out, ()) ∈ support (Prover.run stmt () (Prover.seqCompose Stmt (fun _ => Unit) P)) →
+        (tr, out, outWit) ∈ support (Prover.run stmt wit (Prover.seqCompose Stmt Wit P)) →
         proj (Fin.last m) out = proj 0 stmt := by
   induction m with
   | zero =>
-      intro Stmt O n pSpec P proj hP stmt out tr h
+      intro Stmt Wit O n pSpec P proj hP stmt wit out outWit tr h
       rw [Prover.seqCompose_zero] at h
       simp only [Fin.vsum_zero, Fin.reduceLast, Nat.reduceAdd, ProtocolSpec.ChallengeIdx,
         ProtocolSpec.Challenge, Prover.run, Fin.isValue, Prover.id, ProtocolSpec.MessageIdx,
@@ -100,52 +103,62 @@ theorem seqCompose_preserves {m : ℕ} :
       cases h
       rfl
   | succ m ih =>
-      intro Stmt O n pSpec P proj hP stmt out tr h
+      intro Stmt Wit O n pSpec P proj hP stmt wit out outWit tr h
       let tailSpec : ProtocolSpec (Fin.vsum fun i : Fin m => n (Fin.succ i)) :=
         ProtocolSpec.seqCompose (fun i : Fin m => pSpec (Fin.succ i))
-      let tail : Prover oSpec (Stmt (Fin.succ 0)) Unit (Stmt (Fin.last (m + 1))) Unit
+      let tail : Prover oSpec (Stmt (Fin.succ 0)) (Wit (Fin.succ 0))
+          (Stmt (Fin.last (m + 1))) (Wit (Fin.last (m + 1)))
           tailSpec :=
-        Prover.seqCompose (fun i => Stmt i.succ) (fun _ => Unit)
+        Prover.seqCompose (fun i => Stmt i.succ) (fun i => Wit i.succ)
           (fun i => P (Fin.succ i))
       let trApp : ((pSpec 0) ++ₚ tailSpec).FullTranscript := tr
-      have h' : (trApp, out, ()) ∈ support (((do
-          let ⟨tr₁, stmt₂, wit₂⟩ ← liftM (Prover.run stmt () (P 0))
+      have h' : (trApp, out, outWit) ∈ support (((do
+          let ⟨tr₁, stmt₂, wit₂⟩ ← liftM (Prover.run stmt wit (P 0))
           let ⟨tr₂, stmt₃, wit₃⟩ ← liftM (Prover.run stmt₂ wit₂ tail)
           pure (tr₁ ++ₜ tr₂, stmt₃, wit₃)) :
             OracleComp (oSpec + [((pSpec 0) ++ₚ tailSpec).Challenge]ₒ)
-              (((pSpec 0) ++ₚ tailSpec).FullTranscript × Stmt (Fin.last (m + 1)) × Unit))) := by
-        rw [← @Prover.append_run ι oSpec (Stmt 0) Unit (Stmt (Fin.succ 0)) Unit
-          (Stmt (Fin.last (m + 1))) Unit (n 0)
+              (((pSpec 0) ++ₚ tailSpec).FullTranscript × Stmt (Fin.last (m + 1)) ×
+                Wit (Fin.last (m + 1))))) := by
+        change (trApp, out, outWit) ∈
+          support (Prover.run stmt wit (Prover.append (P 0) tail)) at h
+        rw [← @Prover.append_run ι oSpec (Stmt 0) (Wit 0)
+          (Stmt (Fin.succ 0)) (Wit (Fin.succ 0))
+          (Stmt (Fin.last (m + 1))) (Wit (Fin.last (m + 1))) (n 0)
           (Fin.vsum fun i : Fin m => n (Fin.succ i))
-          (pSpec 0) tailSpec (P 0) tail stmt ()]
+          (pSpec 0) tailSpec (P 0) tail stmt wit]
         simpa [trApp, tail, tailSpec, Prover.seqCompose_succ] using h
       rw [mem_support_bind_iff] at h'
       rcases h' with ⟨⟨tr₁, stmt₂, wit₂⟩, h₁, hrest⟩
-      cases wit₂
       rw [mem_support_bind_iff] at hrest
       rcases hrest with ⟨⟨tr₂, stmt₃, wit₃⟩, h₂, hpure⟩
-      cases wit₃
       rw [support_pure, Set.mem_singleton_iff] at hpure
-      injection hpure with _htr hout
-      have h₁' : (tr₁, stmt₂, ()) ∈ support (Prover.run stmt () (P 0)) :=
+      have hrestEq : (out, outWit) = (stmt₃, wit₃) := congrArg Prod.snd hpure
+      have hout : out = stmt₃ := congrArg Prod.fst hrestEq
+      have hwit : outWit = wit₃ := congrArg Prod.snd hrestEq
+      have h₁' : (tr₁, stmt₂, wit₂) ∈ support (Prover.run stmt wit (P 0)) :=
         OracleComp.mem_support_liftM_oracleComp
           (superSpec := oSpec + [((pSpec 0) ++ₚ tailSpec).Challenge]ₒ) h₁
-      have h₂' : (tr₂, out, ()) ∈ support
-          (Prover.run stmt₂ ()
-            (Prover.seqCompose (fun i => Stmt i.succ) (fun _ => Unit)
+      have h₂' : (tr₂, out, outWit) ∈ support
+          (Prover.run stmt₂ wit₂
+            (Prover.seqCompose (fun i => Stmt i.succ) (fun i => Wit i.succ)
               (fun i => P (Fin.succ i)))) := by
-        cases hout
+        rw [hout, hwit]
         exact OracleComp.mem_support_liftM_oracleComp
           (superSpec := oSpec + [((pSpec 0) ++ₚ tailSpec).Challenge]ₒ) h₂
       calc
         proj (Fin.last (m + 1)) out = proj (Fin.succ (Fin.last m)) out := rfl
         _ = proj (Fin.succ (0 : Fin (m + 1))) stmt₂ := by
-          exact ih
+          exact @ih
+            (fun i => Stmt i.succ)
+            (fun i => Wit i.succ)
+            O
+            (fun i => n (Fin.succ i))
+            (fun i => pSpec (Fin.succ i))
             (P := fun i => P (Fin.succ i))
             (proj := fun i => proj (Fin.succ i))
-            (fun i stmt out tr h => hP (Fin.succ i) stmt out tr h)
-            stmt₂ out tr₂ h₂'
-        _ = proj 0 stmt := hP 0 stmt stmt₂ tr₁ h₁'
+            (fun i stmt wit out outWit tr h => hP (Fin.succ i) stmt wit out outWit tr h)
+            stmt₂ wit₂ out outWit tr₂ h₂'
+        _ = proj 0 stmt := hP 0 stmt wit stmt₂ wit₂ tr₁ h₁'
 
 end Prover
 

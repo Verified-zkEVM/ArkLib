@@ -211,12 +211,15 @@ theorem prover_preserves_oracleStmt
     out.2 = stmt.2 := by
   refine @Prover.seqCompose_preserves ι oSpec n
     (Stmt := fun i => StatementRound R n i × (∀ j, OracleStatement R n deg j))
+    (Wit := fun _ => Unit)
     (O := ∀ j, OracleStatement R n deg j)
     (n := fun _ => 2)
     (pSpec := fun _ => SingleRound.pSpec R deg)
     (P := fun i => (SingleRound.oracleReduction R n deg D oSpec i).toReduction.prover)
-    (proj := fun _ stmt => stmt.2) ?_ stmt out tr ?_
-  · intro i stmt out tr h
+    (proj := fun _ stmt => stmt.2) ?_ stmt () out () tr ?_
+  · intro i stmt wit out outWit tr h
+    cases wit
+    cases outWit
     exact SingleRound.prover_preserves_oracleStmt R n deg D oSpec stmt out tr h
   · simpa [oracleReduction, OracleReduction.seqCompose, OracleProver.seqCompose,
       OracleReduction.toReduction] using h
