@@ -432,9 +432,9 @@ class IsRBRKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   is_rbr_knowledge_sound : rbrKnowledgeSoundness init impl relIn relOut verifier rbrKnowledgeError
 
-/-! ### Worst-case-per-prefix variants (paper shape, e.g. ABF26 Definition A.5)
+/-! ### Worst-case-per-prefix variants
 
-The standard paper definition of round-by-round (knowledge) soundness bounds the bad
+The standard literature definition of round-by-round (knowledge) soundness bounds the bad
 transition probability for **every fixed transcript prefix**, quantified *before* the
 challenge draw. ArkLib's `rbrSoundness` / `rbrKnowledgeSoundness` above instead sample the
 prefix inside the game (via the prover run under the simulated oracles) and bound the
@@ -451,10 +451,10 @@ free, so prefer proving the worst-case variant. It is also the easier obligation
 challenge only. Conversely, a result established solely in the averaged form does **not**
 yield the worst-case one; the implication runs in one direction. -/
 
-/-- **Worst-case-per-prefix round-by-round soundness** (the paper-shape definition, cf.
-ABF26 Definition A.5): for *every fixed* transcript prefix — not a prover-sampled one —
-the probability over only the fresh challenge of a bad transition (state function false
-at the prefix, true after appending the challenge) is at most the round error.
+/-- **Worst-case-per-prefix round-by-round soundness**, the standard literature shape: for
+*every fixed* transcript prefix — not a prover-sampled one — the probability over only the
+fresh challenge of a bad transition (state function false at the prefix, true after appending
+the challenge) is at most the round error.
 Implies `rbrSoundness` with the same error
 (`rbrSoundnessWorstCase_implies_rbrSoundness`). -/
 def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
@@ -469,10 +469,10 @@ def rbrSoundnessWorstCase (langIn : Set StmtIn) (langOut : Set StmtOut)
         stateFunction i.1.succ stmtIn (transcript.concat challenge)
       | $ᵗ (pSpec.Challenge i)] ≤ rbrSoundnessError i
 
-/-- **Worst-case-per-prefix round-by-round knowledge soundness** (paper shape, cf. ABF26
-Definition A.5): the knowledge analogue of `rbrSoundnessWorstCase`, with the bad-transition
-event of `rbrKnowledgeSoundness` evaluated at every fixed transcript prefix over only the
-fresh challenge. Implies `rbrKnowledgeSoundness` with the same error
+/-- **Worst-case-per-prefix round-by-round knowledge soundness**, the standard literature shape:
+the knowledge analogue of `rbrSoundnessWorstCase`, with the bad-transition event of
+`rbrKnowledgeSoundness` evaluated at every fixed transcript prefix over only the fresh
+challenge. Implies `rbrKnowledgeSoundness` with the same error
 (`rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`). -/
 def rbrKnowledgeSoundnessWorstCase (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut))

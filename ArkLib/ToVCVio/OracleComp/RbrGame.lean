@@ -372,8 +372,7 @@ possibly further-sampling) tail, the game probability is at most the convex comb
 tail game on every challenge *off* `p` — the off-prefix tail bound `ε₂` is charged on the full
 mass, and the prefix bound `ε₁` only on the remaining `(1 − ε₂)` fraction. Requires `ε₂ ≤ 1`.
 Dropping the `(1 − ε₂) ≤ 1` factor recovers the additive bound `ε₂ + ε₁`, so this is sharper
-by exactly `ε₁·ε₂`. Engine of *convex-form*
-knowledge-soundness errors (ABF26 Lemma 6.6). -/
+by exactly `ε₁·ε₂`. Engine of *convex-form* knowledge-soundness errors. -/
 theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     {β : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
