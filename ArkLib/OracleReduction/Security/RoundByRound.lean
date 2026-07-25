@@ -96,6 +96,26 @@ def toRoundByRound (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
     if m.castSucc = 0 then witIn else E m.castSucc stmtIn (Fin.init tr) default
   extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
 
+open Classical in
+/-- The relation-aware conversion of a one-shot extractor into a general round-by-round one.
+
+This differs from `toRoundByRound` in the intermediate step: it returns a witness that is *valid for
+the input relation* whenever one exists at all, rather than the extractor's output or the witness it
+was handed. The choice is classical — `extractMid` is a mathematical function, not an algorithm, so
+nothing is lost by selecting a valid witness non-constructively.
+
+The distinction is not cosmetic. The round-0 obligation of a `KnowledgeStateFunction` is
+`(stmtIn, extracted) ∈ relIn` (forced by `toFun_empty`), and `toRoundByRound`'s intermediate step
+hands back its `witIn` argument, which is universally quantified and so may be an arbitrary invalid
+witness. That obligation is therefore unprovable for `toRoundByRound`, which is why
+`toKnowledgeStateFunction` is stated against this variant. -/
+noncomputable def toRoundByRoundOfRel (E : RoundByRoundOneShot oSpec StmtIn WitIn pSpec)
+    (relIn : Set (StmtIn × WitIn)) :
+    RoundByRound oSpec StmtIn WitIn WitOut pSpec (fun _ => WitIn) where
+  eqIn := rfl
+  extractMid := fun _ stmtIn _ witIn => if h : ∃ v, (stmtIn, v) ∈ relIn then h.choose else witIn
+  extractOut := fun stmtIn tr _ => E (.last n) stmtIn tr default
+
 end RoundByRoundOneShot
 
 end Extractor
@@ -212,32 +232,54 @@ structure KnowledgeStateFunctionOneShot
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
     Pr[(· ∈ langOut) | OptionT.mk do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
 
+/-- The one-shot state function is false at any round index that is `0`, for any transcript.
+
+`toFun_empty` states this for the literal index `0` and the canonical empty transcript; this is the
+transported form, which is what round-by-round arguments actually need (the index at hand is
+typically `m.castSucc` together with a proof that it equals `0`). -/
+theorem KnowledgeStateFunctionOneShot.toFun_empty_of_eq_zero
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    (stF : KnowledgeStateFunctionOneShot init impl langIn langOut verifier)
+    (stmtIn : StmtIn) (m : Fin (n + 1)) (hm : m = 0) (tr : Transcript m pSpec) :
+    ¬ stF.toFun m stmtIn tr := by
+  subst hm
+  have : tr = default := by ext i; exact Fin.elim0 i
+  subst this
+  exact stF.toFun_empty stmtIn
+
 /-- A state function & a one-shot round-by-round extractor gives rise to a knowledge state function
   where the intermediate witness types are all equal to the input witness type -/
-def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
+noncomputable def KnowledgeStateFunctionOneShot.toKnowledgeStateFunction
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     (stF : KnowledgeStateFunctionOneShot init impl relIn.language relOut.language verifier)
     (oneShotE : Extractor.RoundByRoundOneShot oSpec StmtIn WitIn pSpec) :
-    verifier.KnowledgeStateFunction init impl relIn relOut oneShotE.toRoundByRound where
+    verifier.KnowledgeStateFunction init impl relIn relOut
+      (oneShotE.toRoundByRoundOfRel (WitOut := WitOut) relIn) where
   toFun := fun m stmtIn tr witIn => if m = 0 then (stmtIn, witIn) ∈ relIn else
-    stF.toFun m stmtIn tr ∨ (stmtIn, oneShotE m stmtIn tr default) ∈ relIn
+    stF.toFun m stmtIn tr ∨ ∃ v, (stmtIn, v) ∈ relIn
   toFun_empty := fun stmtIn witIn => by
     have := stF.toFun_empty stmtIn
     simp_all
   toFun_next := fun m hDir stmtIn tr msg witIn h => by
-    have stF_next := stF.toFun_next m hDir stmtIn tr msg
+    -- `m.succ ≠ 0`, so the hypothesis is the `else` branch.
+    rw [if_neg (Fin.succ_ne_zero m)] at h
     by_cases hm : m.castSucc = 0
-    · have stF_empty := stF.toFun_empty stmtIn
-      rw! (castMode := .all) [hm] at stF_next ⊢
-      simp_all [Extractor.RoundByRoundOneShot.toRoundByRound]
-      have : hm ▸ tr = default := by ext i; exact Fin.elim0 i
-      rw [this] at stF_next
-      simp_all
-      sorry
-    · simp_all
-      sorry
-    -- TODO: Complete this proof
+    · -- Round-0 obligation: produce a witness *valid for `relIn`*.
+      rw [if_pos hm]
+      -- The left disjunct of `h` is impossible: the state function is false on the empty
+      -- transcript, and `toFun_next` propagates that falsity across a `P_to_V` round.
+      have hstF : ¬ stF.toFun m.succ stmtIn (tr.concat msg) := by
+        refine stF.toFun_next m hDir stmtIn tr msg ?_
+        exact stF.toFun_empty_of_eq_zero (stmtIn := stmtIn) (m := m.castSucc) (hm := hm) (tr := tr)
+      have hex : ∃ v, (stmtIn, v) ∈ relIn := h.resolve_left hstF
+      -- `extractMid` selects such a valid witness.
+      simpa [Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, hex] using hex.choose_spec
+    · rw [if_neg hm]
+      refine h.imp_left ?_
+      -- Contrapositive of the one-shot `toFun_next`.
+      exact fun hsucc => not_not.mp fun hcast => stF.toFun_next m hDir stmtIn tr msg hcast hsucc
   toFun_full := fun stmtIn tr witOut h => by
     have := stF.toFun_full stmtIn tr
     contrapose! this
@@ -491,9 +533,14 @@ theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
 /-- Implication: one-shot rbr knowledge soundness implies general rbr knowledge soundness (with the
   same error).
 
-  **(admitted)** — the proof body is a `sorry`. Nothing currently consumes this theorem; to obtain
-  round-by-round knowledge soundness, prove the worst-case form and apply
-  `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, which is proved. -/
+  The two notions score the *same* game, so the proof is a pointwise comparison of their bad
+  events. The one-shot event carries an extra conjunct — that the extractor *fails* on the prover's
+  query log — which the general event cannot mention, because `Extractor.RoundByRound.extractMid`
+  never sees a query log. The bridge is that the general event forces `relIn` to contain **no**
+  witness at all for `stmtIn`: at round `0` because
+  `Extractor.RoundByRoundOneShot.toRoundByRoundOfRel` would otherwise have selected a valid witness,
+  and at later rounds because the induced state function carries `∃ v, (stmtIn, v) ∈ relIn` as a
+  disjunct. With no witness in existence the extra conjunct holds for free, whatever the log. -/
 theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
@@ -503,16 +550,33 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   unfold rbrKnowledgeSoundness
   unfold rbrKnowledgeSoundnessOneShot at h
   obtain ⟨stF, oneShotE, h⟩ := h
-  refine ⟨_, oneShotE.toRoundByRound, stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
+  refine ⟨_, oneShotE.toRoundByRoundOfRel relIn,
+    stF.toKnowledgeStateFunction init impl oneShotE, ?_⟩
   intro stmtIn witIn prover i
-  have := h stmtIn witIn prover i
-  simp at h ⊢
-  clear h
-  refine le_trans ?_ this
-  -- TODO: complete this proof (one-shot ⇒ round-by-round knowledge soundness).
-  -- Currently admitted; this coercion lemma is unused by the live worst-case route,
-  -- which goes through `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`.
-  sorry
+  -- Both notions score the *same* game, so it suffices to compare the two bad events pointwise.
+  refine le_trans (probEvent_mono'' ?_) (h stmtIn witIn prover i)
+  rintro ⟨transcript, challenge, proveQueryLog⟩ ⟨witMid, hcast, hsucc⟩
+  simp only [KnowledgeStateFunctionOneShot.toKnowledgeStateFunction,
+    Extractor.RoundByRoundOneShot.toRoundByRoundOfRel, if_neg (Fin.succ_ne_zero _)] at hcast hsucc
+  -- The crux: the general bad event forces `relIn` to have *no* witness for `stmtIn` at all.
+  -- That is what bridges the gap to the one-shot event, whose extractor sees the prover's query
+  -- log while `extractMid` cannot.
+  have hnex : ¬ ∃ v, (stmtIn, v) ∈ relIn := by
+    intro hex
+    by_cases hz : i.1.castSucc = 0
+    · -- Round-0 branch: `extractMid` would have selected a valid witness.
+      rw [if_pos hz] at hcast
+      exact hcast (by simpa [hex] using hex.choose_spec)
+    · rw [if_neg hz] at hcast
+      exact hcast (Or.inr hex)
+  refine ⟨fun hmem => hnex ⟨_, hmem⟩, ?_, hsucc.resolve_right hnex⟩
+  -- `¬ stF.toFun i.castSucc`: at a nonzero index it is the left half of `hcast`; at index `0`
+  -- it is the one-shot state function's empty-transcript axiom, transported along `hz`.
+  by_cases hz : i.1.castSucc = 0
+  · exact stF.toFun_empty_of_eq_zero (stmtIn := stmtIn) (m := i.1.castSucc)
+      (hm := hz) (tr := transcript)
+  · rw [if_neg hz] at hcast
+    exact fun hstF => hcast (Or.inl hstF)
 
 end RoundByRound
 
