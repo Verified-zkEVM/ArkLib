@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.General
 import ArkLib.ProofSystem.Logup.Protocol
@@ -124,8 +130,8 @@ theorem outerVerify_simulateQ_eq (stmt : StmtIn F n M) (oStmt : ∀ i, OStmtIn F
           let x : F := challenges (outerChallengeXIdx F n M params)
           let batch : BatchingChallenge F n params.numGroups :=
             challenges (outerChallengeBatchIdx F n M params)
-          pure { xChallenge := x, zChallenge := batch.1, batchingScalars := batch.2 }
-        : OptionT (OracleComp oSpec) (StmtAfterOuter F n M params)) := by
+          pure { xChallenge := x, zChallenge := batch.1, batchingScalars := batch.2 } :
+        OptionT (OracleComp oSpec) (StmtAfterOuter F n M params)) := by
   simp [outerVerifier, outerChallengeXIdx, outerChallengeBatchIdx]
   rfl
 

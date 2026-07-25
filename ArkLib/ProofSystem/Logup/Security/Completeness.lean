@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.ProofSystem.Logup.Security.Common
@@ -355,11 +361,21 @@ theorem logup_outer_completeness [Inhabited F] :
           apply Prod.ext
           · rfl
           · funext i
-            cases i <;> simp [oStmtAfter, outerMultiplicityMessageIdx,
-              outerHelpersMessageIdx]
+            cases i with
+            | input i =>
+                rfl
+            | multiplicity =>
+                rfl
+            | helpers =>
+                rfl
         · funext i
-          cases i <;> simp [outerMultiplicityMessageIdx,
-            outerHelpersMessageIdx]
+          cases i with
+          | input i =>
+              rfl
+          | multiplicity =>
+              rfl
+          | helpers =>
+              rfl
   · -- pole-probability bound `Pr[x avoids all table poles] ≥ 1 - |H|/|F|`
     refine le_trans (uniform_avoids_table_poles_prob (F := F) (n := n) (M := M) oStmt) ?_
     rw [OptionT.mk_bind]
@@ -382,9 +398,17 @@ theorem logup_outer_completeness [Inhabited F] :
       rw [QueryImpl.simulateQ_add_liftComp_right, simulateQ_liftTarget]
       erw [simulateQ_query]
       simp only [OracleSpec.query_def, OracleQuery.input_apply, ProtocolSpec.challengeQueryImpl,
-        OracleQuery.cont_apply, outerPSpec]
-      simp
-      · simpa [probEvent_uniformSample] using
+        OracleQuery.cont_apply]
+      simp only [ne_eq, probEvent_uniformSample, Nat.reduceAdd, Fin.vcons_fin_zero,
+        MultiplicityMessage, HelperMessages, BatchingChallenge, OStmtAfterOuter, OStmtIn,
+        Fin.reduceLast, Fin.isValue, Fin.reduceCastSucc, ProtocolSpec.Challenge,
+        ProtocolSpec.ChallengeIdx, OracleSpec.ofPFunctor_toPFunctor, liftM_map,
+        QueryImpl.liftTarget_self, Fin.succ_one_eq_two, Function.comp_apply, bind_map_left, id_eq,
+        Fin.reduceSucc, bind_assoc, StateT.run_bind, StateT.run_monadLift, monadLift_self,
+        bind_pure_comp, OracleSpec.ProgrammingPolicy.empty_apply, simulateQ_pure, Option.elim_some,
+        OptionT.mk_bind]
+      · change _ ≤ Pr[_ | (liftM ($ᵗ F : ProbComp F) : OptionT ProbComp F) >>= _]
+        simpa [probEvent_uniformSample] using
           (mul_le_probEvent_bind
             (mx := (liftM ($ᵗ F : ProbComp F) : OptionT ProbComp F))
             (p := fun x : F => ∀ u : (Fin n → Fin 2),
@@ -646,29 +670,78 @@ theorem finalCheckCompleteness :
     simp only [pure_bind, Option.elim_some]
     let colValue := fun i : Fin M =>
       MvPolynomial.eval stmt.finalClaim.challenges (oStmt (.input (.column i))).1
+    have hcolAnswer : ∀ i : Fin M,
+        ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt (.input (.column i))) =
+          colValue i := fun _ => rfl
     have hcols := simulateQ_optionT_mapM_pure qImpl
       (fun i : Fin M =>
         finalCheckQuery oSpec F n M params (.input (.column i)) stmt.finalClaim.challenges)
       colValue (Vector.finRange M) (by
         intro i
-        simpa [colValue, OracleInterface.answer] using
-          hquery (.input (.column i)) stmt.finalClaim.challenges)
+        change simulateQ qImpl
+            ((finalCheckQuery oSpec F n M params (.input (.column i))
+              stmt.finalClaim.challenges).run) =
+          (pure (some (colValue i)) : OracleComp oSpec (Option F))
+        rw [hquery (.input (.column i)) stmt.finalClaim.challenges]
+        change (pure (some
+          (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt (.input (.column i)))))) =
+          (pure (some (colValue i)) : OracleComp oSpec (Option F))
+        rw [hcolAnswer]
+        rfl)
     erw [simulateQ_option_elimM]
     erw [hcols]
     simp only [pure_bind, Option.elimM, Option.elim_some]
     let helperValue := fun k : Fin params.numGroups =>
       MvPolynomial.eval stmt.finalClaim.challenges (oStmt .helpers k).1
+    have hhelperAnswer : ∀ k : Fin params.numGroups,
+        ReaderT.run (OracleInterface.toOC.impl
+            (show OracleInterface.Query (OStmtAfterOuter F n M params .helpers) from
+              ⟨k, stmt.finalClaim.challenges⟩))
+            (oStmt .helpers) =
+          helperValue k := fun _ => rfl
     have hhelpers := simulateQ_optionT_mapM_pure qImpl
       (fun k : Fin params.numGroups =>
         finalCheckQuery oSpec F n M params .helpers ⟨k, stmt.finalClaim.challenges⟩)
       helperValue (Vector.finRange params.numGroups) (by
         intro k
-        simpa [helperValue, OracleInterface.answer] using
-          hquery .helpers ⟨k, stmt.finalClaim.challenges⟩)
+        change simulateQ qImpl
+            ((finalCheckQuery oSpec F n M params .helpers
+              ⟨k, stmt.finalClaim.challenges⟩).run) =
+          (pure (some (helperValue k)) : OracleComp oSpec (Option F))
+        rw [hquery .helpers ⟨k, stmt.finalClaim.challenges⟩]
+        change (pure (some
+          (ReaderT.run (OracleInterface.toOC.impl
+            (show OracleInterface.Query (OStmtAfterOuter F n M params .helpers) from
+              ⟨k, stmt.finalClaim.challenges⟩))
+            (oStmt .helpers)))) =
+          (pure (some (helperValue k)) : OracleComp oSpec (Option F))
+        rw [hhelperAnswer]
+        rfl)
     erw [simulateQ_option_elimM]
     erw [hhelpers]
     simp only [pure_bind, Option.elimM, Option.elim_some]
+    have hmultAnswer :
+        ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt .multiplicity) =
+          MvPolynomial.eval stmt.finalClaim.challenges (oStmt .multiplicity).1 := rfl
+    have htableAnswer :
+        ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt (.input .table)) =
+          MvPolynomial.eval stmt.finalClaim.challenges (oStmt (.input .table)).1 := rfl
     have hGuard' :
+        qAtPoint (params.group) stmt.outer.xChallenge stmt.outer.zChallenge
+            stmt.finalClaim.challenges stmt.outer.batchingScalars
+            (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+              (oStmt .multiplicity))
+            (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+              (oStmt (.input .table)))
+            colValue
+            helperValue =
+          stmt.finalClaim.target := by
+      simpa [hmultAnswer, htableAnswer, colValue, helperValue] using hGuard
+    have hGuardAnswer :
         qAtPoint (params.group) stmt.outer.xChallenge stmt.outer.zChallenge
             stmt.finalClaim.challenges stmt.outer.batchingScalars
             (OracleInterface.answer (oStmt .multiplicity) stmt.finalClaim.challenges)
@@ -676,9 +749,9 @@ theorem finalCheckCompleteness :
             colValue
             helperValue =
           stmt.finalClaim.target := by
-      simpa [OracleInterface.answer, colValue, helperValue] using hGuard
+      simpa [OracleInterface.answer] using hGuard'
     erw [simulateQ_option_elimM]
-    simp [guard, hGuard', OptionT.run_pure, Option.elimM]
+    simp [guard, hGuardAnswer, Option.elimM]
   have hVerifyDefault :
       simulateQ
           (OracleInterface.simOracle2 oSpec oStmt
@@ -687,7 +760,10 @@ theorem finalCheckCompleteness :
             (ProtocolSpec.FullTranscript.challenges
               (default : finalCheckPSpec.FullTranscript))).run) =
         (pure (some ()) : OracleComp oSpec (Option StmtOut)) := by
-    simpa [qImpl, finalCheckPSpec] using hVerify
+    change simulateQ qImpl
+        (((finalCheckVerifier oSpec F n M params).verify stmt (fun i => Fin.elim0 i)).run) =
+      (pure (some ()) : OracleComp oSpec (Option StmtOut))
+    exact hVerify
   have hVerifyDefaultT :
       OptionT.run
         (simulateQ
@@ -697,7 +773,14 @@ theorem finalCheckCompleteness :
             (ProtocolSpec.FullTranscript.challenges
               (default : finalCheckPSpec.FullTranscript)))) =
         (pure (some ()) : OracleComp oSpec (Option StmtOut)) := by
-    simpa [OptionT.run] using hVerifyDefault
+    change simulateQ
+        (OracleInterface.simOracle2 oSpec oStmt
+          (ProtocolSpec.FullTranscript.messages (default : finalCheckPSpec.FullTranscript)))
+        (((finalCheckVerifier oSpec F n M params).verify stmt
+          (ProtocolSpec.FullTranscript.challenges
+            (default : finalCheckPSpec.FullTranscript))).run) =
+      (pure (some ()) : OracleComp oSpec (Option StmtOut))
+    exact hVerifyDefault
   have hVerifyDefaultT' :
       OptionT.run
         (simulateQ
@@ -787,6 +870,14 @@ theorem logup_completeness :
     (finalCheckOracleReduction oSpec F n M params)
     hOuterSumcheck
     (finalCheckCompleteness oSpec F n M params init impl)
+  letI : ∀ i, SampleableType
+      (((outerPSpec F n params ++ₚ Sumcheck.Spec.pSpec F (logupSumcheckDegree M params) n)
+        ++ₚ finalCheckPSpec).Challenge i) :=
+    fun i => ProtocolSpec.instSampleableTypeChallengeAppend i
+  change ((((outerOracleReduction oSpec F n M params).append
+      (sumcheckOracleReduction oSpec F n M params)).append
+      (finalCheckOracleReduction oSpec F n M params)).completeness init impl
+        (inputRelation F n M) outputRelation (logupCompletenessError F n))
   simpa only [add_zero] using hFull
 
 end Completeness

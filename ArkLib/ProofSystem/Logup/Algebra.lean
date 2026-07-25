@@ -1,9 +1,13 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+
 import ArkLib.Data.MvPolynomial.Multilinear
 import Mathlib.Algebra.Polynomial.Taylor
 import Mathlib.Algebra.Order.Floor.Div
 import Mathlib.Tactic.DeriveFintype
-
-set_option linter.style.longFile 2000
 
 /-!
 # LogUp algebra and sumcheck polynomial
@@ -110,8 +114,9 @@ theorem batchedDomainIdentity_degreeOf
 
 /-- The generic batched sumcheck polynomial has individual degree at most `T + 2`.
 
-Compared with a single cleared identity, batching adds one equality-kernel factor, which contributes
-one more degree in each variable.  Constants such as the batching scalars do not affect the bound. -/
+Compared with a single cleared identity, batching adds one equality-kernel factor, which
+contributes one more degree in each variable.  Constants such as the batching scalars do not affect
+the bound. -/
 theorem batchedSumcheckPolynomial_degreeOf
     (zChallenge : Fin n → F) (batchingScalars : Fin K → F)
     (hphi : ∀ i v, MvPolynomial.degreeOf v (phiPoly i) ≤ 1)
@@ -1410,8 +1415,9 @@ theorem exists_nonzero_domainIdentityMLE_of_helperSum_zero_of_fractionalSum_ne_z
 
 /-- The equality-kernel-weighted sum of one group identity is its MLE evaluated at `z`.
 
-This specializes `sum_eqPolynomial_mul_eq_MLE_eval` to the Boolean table of cleared domain-identity
-values for group `k`.  It is the algebraic bridge from row-wise outer claims to point evaluations. -/
+This specializes `sum_eqPolynomial_mul_eq_MLE_eval` to the Boolean table of cleared
+domain-identity values for group `k`.  It is the algebraic bridge from row-wise outer claims to
+point evaluations. -/
 theorem domainIdentityKernelClaim_eq_eval_domainIdentityMLE
     (groups : Fin K → Finset (TermIdx M))
     (table : (Fin n → Fin 2) → F) (columns : Fin M → (Fin n → Fin 2) → F)
@@ -1696,9 +1702,10 @@ end Algebra
 /-! ## Final-point reconstructions
 
 The final LogUp verifier does not evaluate the whole polynomial `Q` directly.  Instead, after
-sumcheck fixes a point `r`, it receives scalar openings such as `m(r)`, `table(r)`, `column_i(r)`,
-and `helper_k(r)`.  This section defines the scalar expression reconstructed from those openings,
-mirroring the row-wise definitions above but with field elements instead of Boolean-row functions. -/
+sumcheck fixes a point `r`, it receives scalar openings such as `m(r)`, `table(r)`,
+`column_i(r)`, and `helper_k(r)`.  This section defines the scalar expression reconstructed from
+those openings, mirroring the row-wise definitions above but with field elements instead of
+Boolean-row functions. -/
 
 section AtPoint
 

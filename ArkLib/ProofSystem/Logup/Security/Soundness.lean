@@ -1,3 +1,9 @@
+/-
+Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: ArkLib Contributors
+-/
+
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Composition.Sequential.Append
@@ -1730,7 +1736,8 @@ private theorem logup_outer_soundness_from_local_algebra
                   (fun batch : BatchingChallenge F n params.numGroups => (tr, batch))
                   BadBatchPair
           _ ≤ ↑(rbrErr (outerChallengeBatchIdx F n M params)) := by
-                simpa [Function.comp_def, rbrErr, outerChallengeBatchIdx] using hUniform
+                simpa [Function.comp_def, rbrErr, outerChallengeBatchIdx, outerChallengeXIdx]
+                  using hUniform
   have hsound :=
     Verifier.rbrSoundness_implies_soundness
       (init := init) (impl := impl)
@@ -1954,6 +1961,7 @@ theorem logup_sumcheck_soundness (sumcheckSoundnessError : ℝ≥0)
         ((sumcheckVerifier oSpec F n M params).toVerifier)
         rbrErr hRbrLift
     convert hSound using 1
+    simp [logupSumcheckSoundnessError, rbrErr]
   exact OracleVerifier.soundness_mono (oSpec := oSpec) (F := F) (n := n) (M := M)
     (params := params) (init := init) (impl := impl) hSoundConcrete hSumcheckSoundness
 
@@ -2074,14 +2082,42 @@ theorem logup_finalCheck_soundness :
     MvPolynomial.eval stmt.finalClaim.challenges (oStmt (.input (.column i))).1
   let helperValue := fun k : Fin params.numGroups =>
     MvPolynomial.eval stmt.finalClaim.challenges (oStmt .helpers k).1
+  have hcolAnswer : ∀ i : Fin M,
+      ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+          (oStmt (.input (.column i))) =
+        colValue i := fun _ => rfl
+  have hhelperAnswer : ∀ k : Fin params.numGroups,
+      ReaderT.run (OracleInterface.toOC.impl
+          (show OracleInterface.Query (OStmtAfterOuter F n M params .helpers) from
+            ⟨k, stmt.finalClaim.challenges⟩))
+          (oStmt .helpers) =
+        helperValue k := fun _ => rfl
+  have hmultAnswer :
+      ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+          (oStmt .multiplicity) =
+        MvPolynomial.eval stmt.finalClaim.challenges (oStmt .multiplicity).1 := rfl
+  have htableAnswer :
+      ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+          (oStmt (.input .table)) =
+        MvPolynomial.eval stmt.finalClaim.challenges (oStmt (.input .table)).1 := rfl
   have hGuardFail' :
+      qAtPoint (params.group) stmt.outer.xChallenge stmt.outer.zChallenge
+          stmt.finalClaim.challenges stmt.outer.batchingScalars
+          (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt .multiplicity))
+          (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt (.input .table)))
+          colValue helperValue ≠
+        stmt.finalClaim.target := by
+    simpa [hmultAnswer, htableAnswer, colValue, helperValue] using hGuardFail
+  have hGuardFailAnswer :
       qAtPoint (params.group) stmt.outer.xChallenge stmt.outer.zChallenge
           stmt.finalClaim.challenges stmt.outer.batchingScalars
           (OracleInterface.answer (oStmt .multiplicity) stmt.finalClaim.challenges)
           (OracleInterface.answer (oStmt (.input .table)) stmt.finalClaim.challenges)
           colValue helperValue ≠
         stmt.finalClaim.target := by
-    simpa [OracleInterface.answer, colValue, helperValue] using hGuardFail
+    simpa [OracleInterface.answer] using hGuardFail'
   have hVerifyNone :
       simulateQ qImpl
           ((finalCheckVerifier oSpec F n M params).verify stmt (fun i => Fin.elim0 i)).run =
@@ -2098,8 +2134,17 @@ theorem logup_finalCheck_soundness :
         finalCheckQuery oSpec F n M params (.input (.column i)) stmt.finalClaim.challenges)
       colValue (Vector.finRange M) (by
         intro i
-        simpa [colValue, OracleInterface.answer] using
-          hquery (.input (.column i)) stmt.finalClaim.challenges)
+        change simulateQ qImpl
+            ((finalCheckQuery oSpec F n M params (.input (.column i))
+              stmt.finalClaim.challenges).run) =
+          (pure (some (colValue i)) : OracleComp oSpec (Option F))
+        rw [hquery (.input (.column i)) stmt.finalClaim.challenges]
+        change (pure (some
+          (ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
+            (oStmt (.input (.column i)))))) =
+          (pure (some (colValue i)) : OracleComp oSpec (Option F))
+        rw [hcolAnswer]
+        rfl)
     erw [simulateQ_option_elimM]
     erw [hcols]
     simp only [pure_bind, Option.elimM, Option.elim_some]
@@ -2108,13 +2153,24 @@ theorem logup_finalCheck_soundness :
         finalCheckQuery oSpec F n M params .helpers ⟨k, stmt.finalClaim.challenges⟩)
       helperValue (Vector.finRange params.numGroups) (by
         intro k
-        simpa [helperValue, OracleInterface.answer] using
-          hquery .helpers ⟨k, stmt.finalClaim.challenges⟩)
+        change simulateQ qImpl
+            ((finalCheckQuery oSpec F n M params .helpers
+              ⟨k, stmt.finalClaim.challenges⟩).run) =
+          (pure (some (helperValue k)) : OracleComp oSpec (Option F))
+        rw [hquery .helpers ⟨k, stmt.finalClaim.challenges⟩]
+        change (pure (some
+          (ReaderT.run (OracleInterface.toOC.impl
+            (show OracleInterface.Query (OStmtAfterOuter F n M params .helpers) from
+              ⟨k, stmt.finalClaim.challenges⟩))
+            (oStmt .helpers)))) =
+          (pure (some (helperValue k)) : OracleComp oSpec (Option F))
+        rw [hhelperAnswer]
+        rfl)
     erw [simulateQ_option_elimM]
     erw [hhelpers]
     simp only [pure_bind, Option.elimM, Option.elim_some]
     erw [simulateQ_option_elimM]
-    simp [guard, hGuardFail', Option.elimM]
+    simp [guard, hGuardFailAnswer, Option.elimM]
   -- Step 4: the verifier rejects for every transcript (the empty one), so the `toVerifier`
   -- verification computation is `pure none`.
   have hRejectRun :
@@ -2134,7 +2190,10 @@ theorem logup_finalCheck_soundness :
               (ProtocolSpec.FullTranscript.challenges
                 (default : finalCheckPSpec.FullTranscript))).run) =
           (pure none : OracleComp oSpec (Option StmtOut)) := by
-      simpa [qImpl, finalCheckPSpec] using hVerifyNone
+      change simulateQ qImpl
+          (((finalCheckVerifier oSpec F n M params).verify stmt (fun i => Fin.elim0 i)).run) =
+        (pure none : OracleComp oSpec (Option StmtOut))
+      exact hVerifyNone
     have hInnerT :
         OptionT.run
           (simulateQ
@@ -2143,7 +2202,14 @@ theorem logup_finalCheck_soundness :
             ((finalCheckVerifier oSpec F n M params).verify stmt
               (ProtocolSpec.FullTranscript.challenges default))) =
           (pure none : OracleComp oSpec (Option StmtOut)) := by
-      simpa [OptionT.run, finalCheckPSpec] using hInner
+      change simulateQ
+          (OracleInterface.simOracle2 oSpec oStmt
+            (ProtocolSpec.FullTranscript.messages (default : finalCheckPSpec.FullTranscript)))
+          (((finalCheckVerifier oSpec F n M params).verify stmt
+            (ProtocolSpec.FullTranscript.challenges
+              (default : finalCheckPSpec.FullTranscript))).run) =
+        (pure none : OracleComp oSpec (Option StmtOut))
+      exact hInner
     erw [hInnerT]
     simp
   -- Step 5: with the verifier rejecting, the whole reduction never produces output, so its run
