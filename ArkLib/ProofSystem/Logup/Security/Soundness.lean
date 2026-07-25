@@ -77,8 +77,7 @@ The final verifier has no fresh challenges: once the sumcheck final claim and re
 fixed, it either accepts or rejects deterministically. Its phase error is therefore `0`. The
 Lagrange-kernel bad event is already proved in `logupOuterSoundnessError`, where that random point
 is sampled. -/
-noncomputable def logupFinalCheckSoundnessError (F : Type) [Fintype F] (M : ℕ)
-    (params : ProtocolParams M) : ℝ≥0 :=
+noncomputable def logupFinalCheckSoundnessError : ℝ≥0 :=
   0
 
 /-- Full LogUp soundness error: the sum of the outer, embedded-sumcheck, and final-check errors.
@@ -89,7 +88,7 @@ random challenges. -/
 noncomputable def logupSoundnessError (F : Type) [Fintype F] (n M : ℕ) (params : ProtocolParams M)
     (sumcheckSoundnessError : ℝ≥0) : ℝ≥0 :=
   logupOuterSoundnessError F n M params + sumcheckSoundnessError +
-    logupFinalCheckSoundnessError F M params
+    logupFinalCheckSoundnessError
 
 /-- The generic Sumcheck soundness error used by LogUp's embedded sumcheck phase. -/
 noncomputable def logupSumcheckSoundnessError (F : Type) [CommSemiring F] [Fintype F] (n M : ℕ)
@@ -1977,7 +1976,7 @@ theorem logup_finalCheck_soundness :
     (finalCheckVerifier oSpec F n M params).soundness init impl
       (logupAfterSumcheckRelation F n M params).language
       outputRelation.language
-      (logupFinalCheckSoundnessError F M params) := by
+      (logupFinalCheckSoundnessError) := by
   classical
   unfold OracleVerifier.soundness Verifier.soundness
   intro WitIn WitOut witIn prover stmtPair hstmt
@@ -2129,7 +2128,7 @@ theorem logup_finalCheck_soundness :
     erw [simulateQ_bind]
     rw [hquery (.input .table) stmt.finalClaim.challenges]
     simp only [pure_bind, Option.elim_some]
-    have hcols := simulateQ_optionT_mapM_pure qImpl
+    have hcols := simulateQ_optionT_vector_mapM_pure qImpl
       (fun i : Fin M =>
         finalCheckQuery oSpec F n M params (.input (.column i)) stmt.finalClaim.challenges)
       colValue (Vector.finRange M) (by
@@ -2148,7 +2147,7 @@ theorem logup_finalCheck_soundness :
     erw [simulateQ_option_elimM]
     erw [hcols]
     simp only [pure_bind, Option.elimM, Option.elim_some]
-    have hhelpers := simulateQ_optionT_mapM_pure qImpl
+    have hhelpers := simulateQ_optionT_vector_mapM_pure qImpl
       (fun k : Fin params.numGroups =>
         finalCheckQuery oSpec F n M params .helpers ⟨k, stmt.finalClaim.challenges⟩)
       helperValue (Vector.finRange params.numGroups) (by

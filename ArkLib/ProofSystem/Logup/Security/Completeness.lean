@@ -674,7 +674,7 @@ theorem finalCheckCompleteness :
         ReaderT.run (OracleInterface.toOC.impl stmt.finalClaim.challenges)
             (oStmt (.input (.column i))) =
           colValue i := fun _ => rfl
-    have hcols := simulateQ_optionT_mapM_pure qImpl
+    have hcols := simulateQ_optionT_vector_mapM_pure qImpl
       (fun i : Fin M =>
         finalCheckQuery oSpec F n M params (.input (.column i)) stmt.finalClaim.challenges)
       colValue (Vector.finRange M) (by
@@ -701,7 +701,7 @@ theorem finalCheckCompleteness :
               ⟨k, stmt.finalClaim.challenges⟩))
             (oStmt .helpers) =
           helperValue k := fun _ => rfl
-    have hhelpers := simulateQ_optionT_mapM_pure qImpl
+    have hhelpers := simulateQ_optionT_vector_mapM_pure qImpl
       (fun k : Fin params.numGroups =>
         finalCheckQuery oSpec F n M params .helpers ⟨k, stmt.finalClaim.challenges⟩)
       helperValue (Vector.finRange params.numGroups) (by
