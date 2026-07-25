@@ -3,22 +3,15 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 -/
 
-import VCVio.OracleComp.QueryTracking.RandomOracle.Basic
+import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 import VCVio.OracleComp.SimSemantics.StateT.Basic
 import ToMathlib.Control.StateT
 
-/-!
-# Additions to VCVio's `OracleComp.SimSemantics.SimulateQ`
--/
+/-! Compatibility import for additions that now live in VCVio.
 
-open OracleSpec OracleComp
-
-/-- Simulating the random oracle leaves a mapped uniform `Fin` sample unchanged. -/
-lemma simulateQ_randomOracle_map_uniformFin {α : Type} (n : ℕ) (f : Fin (n + 1) → α) :
-    ((simulateQ (unifSpec.randomOracle :
-      QueryImpl unifSpec (StateT unifSpec.QueryCache ProbComp))
-      (f <$> uniformSample (Fin (n + 1)) : ProbComp α) :
-        StateT unifSpec.QueryCache ProbComp α).run' ∅) =
-      (f <$> uniformSample (Fin (n + 1))) := by
-  rw [simulateQ_map, StateT.run'_map']
-  congr 1
+`simulateQ_randomOracle_map_uniformFin` was upstreamed verbatim (statement and proof) to
+`VCVio/OracleComp/QueryTracking/RandomOracle/Simulation.lean`, which this file now imports so the
+name keeps resolving for downstream consumers. The local copy escaped the v4.31.0 dedup pass only
+because it and its upstream twin sit at root scope in *different* modules — this file imported
+`RandomOracle/Basic`, never `RandomOracle/Simulation`, so the two never met and no
+"already declared" error fired. -/
