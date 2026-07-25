@@ -40,20 +40,9 @@ upstream candidate only after the `Pr_{…}` notation itself moves.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
 bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,
-documented in their own section headers below.
-
-**Staging note.** This file is part of the first sub-PR of the ABF26 split, which lands the
-framework layer *ahead of its consumers*. Only
-`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` has an in-tree consumer today
-(the worst-case ⇒ averaged RBR implications in
-`ArkLib/OracleReduction/Security/RoundByRound.lean`). The `OptionT` bounds, the two
-`loggingOracle` lemmas, and `probEvent_uniformSample_eq_prob_uniformOfFintype` are consumed by
-`ArkLib/ProofSystem/ToyProblem/**`, which arrives in a later sub-PR; until then they are
-unreferenced *here* but not dead — each was checked to have a live tactic call site on the
-parent branch `feat/abf26-plan`, not merely a docstring mention. One earlier member of the
-`OptionT` family, `…_getChallenge_first_bind_le_add`, failed exactly that check (prose
-references only; the live call used the `_convex` sharpening) and was **removed** rather than
-staged.
+documented in their own section headers below. Those serve the *plain* (non-rbr)
+knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
+see the section header preceding them for why the rbr master bound does not apply there.
 -/
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
@@ -177,26 +166,23 @@ make the master lemma above inapplicable:
   (the prover's remaining moves plus the pure verifier/extractor projections) *after* it
   inside the same computation.
 
-The generic "zero off the challenge event" monotonicity step, together with its additive and
-convex prefix-split sharpenings (`probEvent_bind_le_probEvent`,
-`probEvent_bind_le_probEvent_add`, `probEvent_bind_le_probEvent_convex`), now lives
-**upstream in VCVio** (`VCVio/EvalDist/Monad/Basic.lean`); earlier revisions of this file
-carried local copies flagged as upstream candidates, and they were duly upstreamed. This
-file keeps only the ArkLib-specific `ProtocolSpec` glue built on top of them:
-`ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` is the master
-bound for the challenge-first `OptionT` game shape, consuming a challenge-only probability
-bound `Pr[fun c ↦ ∃ t, E (f c t) | $ᵗ _] ≤ ε` (the `∃ t` ranges over *all* possible tail
-outputs, which is exactly the worst-case form the per-round paper bounds provide). Its consumer
-lands in a **later sub-PR** of the ABF26 split:
-`ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean` (ABF26 Lemma 6.10). -/
+The underlying probabilistic steps — the "zero off the challenge event" monotonicity step and
+its additive and convex prefix-split sharpenings (`probEvent_bind_le_probEvent`,
+`probEvent_bind_le_probEvent_add`, `probEvent_bind_le_probEvent_convex`) — live upstream in
+VCVio (`VCVio/EvalDist/Monad/Basic.lean`). What follows is the ArkLib-specific `ProtocolSpec`
+glue built on top of them.
+
+The master bound for this shape is
+`ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. It consumes a
+challenge-only probability bound `Pr[fun c ↦ ∃ t, E (f c t) | $ᵗ _] ≤ ε`, where the `∃ t`
+ranges over *all* possible tail outputs — the worst-case form in which per-round soundness
+bounds are normally stated, so no reasoning about the tail's distribution is needed. -/
 
 /-! ### Logging glue
 
-Two generic `loggingOracle` lemmas shared by the knowledge-soundness game reductions. Their
-consumers land in a **later sub-PR** of the ABF26 split:
-`ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean` (ABF26 L6.10) and
-`ArkLib/ProofSystem/ToyProblem/Spec/KnowledgeSoundness.lean` (L6.6).
-Both are upstream VCV-io candidates. -/
+Two `loggingOracle` lemmas for knowledge-soundness reductions: one collapses a `pure`
+`OptionT` computation under logging, the other discards a query log beneath a continuation
+that only reads the run result (e.g. an extractor). Both are upstream VCV-io candidates. -/
 
 namespace loggingOracle
 

@@ -400,10 +400,14 @@ resulting **mixture** over prefixes — a formally weaker property with the same
 constants (safe direction: averaged ≤ worst-case). The definitions below are the faithful
 worst-case forms, and the two implication theorems discharge the averaged forms from them
 via the master mixture bound
-`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` (RbrGame.lean).
-Recorded 2026-07-18 (review finding B05); a protocol proven `WorstCase` gets the averaged
-form for free, and the coverage label for a theorem proven only in the averaged form is
-`present-but-different`. -/
+`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le`
+(`ArkLib/ToVCVio/OracleComp/RbrGame.lean`).
+
+Practical consequence: a protocol proven in the worst-case form gets the averaged form for
+free, so prefer proving the worst-case variant. It is also the easier obligation to discharge
+— it carries no prover quantifier at all, so one reasons about a fixed prefix and the fresh
+challenge only. Conversely, a result established solely in the averaged form does **not**
+yield the worst-case one; the implication runs in one direction. -/
 
 /-- **Worst-case-per-prefix round-by-round soundness** (the paper-shape definition, cf.
 ABF26 Definition A.5): for *every fixed* transcript prefix — not a prover-sampled one —
@@ -487,9 +491,9 @@ theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
 /-- Implication: one-shot rbr knowledge soundness implies general rbr knowledge soundness (with the
   same error).
 
-  **(admitted)** — the proof body is a `sorry`; pre-existing, not introduced by the ABF26 split.
-  Nothing in the tree consumes this theorem, and the live worst-case route goes through
-  `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness` instead. -/
+  **(admitted)** — the proof body is a `sorry`. Nothing currently consumes this theorem; to obtain
+  round-by-round knowledge soundness, prove the worst-case form and apply
+  `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness`, which is proved. -/
 theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
