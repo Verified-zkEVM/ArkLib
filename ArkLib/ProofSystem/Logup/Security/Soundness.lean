@@ -1475,8 +1475,10 @@ private theorem logup_outer_soundness_from_local_algebra
                     ProtocolSpec.challengeOracleInterface) F) =
               (liftM ($ᵗ F) : StateT σ ProbComp F) := by
             rw [simulateQ_query]
-            simp [qIn, ProtocolSpec.challengeQueryImpl, QueryImpl.liftTarget_apply,
-              outerChallengeXIdx]
+            simp only [ProtocolSpec.ChallengeIdx, Nat.reduceAdd, Fin.vcons_fin_zero,
+              MultiplicityMessage, HelperMessages, BatchingChallenge, ProtocolSpec.Challenge,
+              outerChallengeXIdx, Fin.isValue, OracleQuery.input_query, OracleQuery.cont_query,
+              QueryImpl.liftTarget_apply, ProtocolSpec.challengeQueryImpl, qIn]
             change id <$> (liftM (($ᵗ F) : ProbComp F) : StateT σ ProbComp F) =
               (liftM (($ᵗ F) : ProbComp F) : StateT σ ProbComp F)
             simp
@@ -1970,7 +1972,7 @@ The final check is deterministic: if the retained sumcheck final claim is not in
 language, the reconstructed value `qAtPoint` disagrees with the claimed target and the verifier
 rejects. -/
 
-omit [SampleableType F] in
+omit [SampleableType F] [Fintype F] in
 /-- Soundness of the deterministic final LogUp point check with zero phase error. -/
 theorem logup_finalCheck_soundness :
     (finalCheckVerifier oSpec F n M params).soundness init impl
