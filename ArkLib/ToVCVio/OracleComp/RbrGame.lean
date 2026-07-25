@@ -37,6 +37,19 @@ per-fixed-transcript bounds `∀ tr, Pr[ event tr · | $ᵗ (pSpec.Challenge i)]
 Everything here is ArkLib-local. The first two lemmas mention `ProtocolSpec`-specific
 definitions and hence belong to ArkLib core rather than VCV-io; the bridge lemma is an
 upstream candidate only after the `Pr_{…}` notation itself moves.
+
+Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
+bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,
+documented in their own section headers below.
+
+**Staging note.** This file is part of the first sub-PR of the ABF26 split, which lands the
+framework layer *ahead of its consumers*. Only
+`ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le` has an in-tree consumer today
+(the worst-case ⇒ averaged RBR implications in
+`ArkLib/OracleReduction/Security/RoundByRound.lean`). The `OptionT` bounds, the two
+`loggingOracle` lemmas, and `probEvent_uniformSample_eq_prob_uniformOfFintype` are consumed by
+`ArkLib/ProofSystem/ToyProblem/**`, which arrives in a later sub-PR; until then they are
+deliberately unreferenced rather than dead.
 -/
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
@@ -169,13 +182,16 @@ file keeps only the ArkLib-specific `ProtocolSpec` glue built on top of them:
 `ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le` is the master
 bound for the challenge-first `OptionT` game shape, consuming a challenge-only probability
 bound `Pr[fun c ↦ ∃ t, E (f c t) | $ᵗ _] ≤ ε` (the `∃ t` ranges over *all* possible tail
-outputs, which is exactly the worst-case form the per-round paper bounds provide). Used by
-ABF26 Lemma 6.10 (`ToyProblem.SimplifiedIOR.simplifiedIOR_knowledgeSound`). -/
+outputs, which is exactly the worst-case form the per-round paper bounds provide). Its consumer
+lands in a **later sub-PR** of the ABF26 split:
+`ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean` (ABF26 Lemma 6.10). -/
 
 /-! ### Logging glue
 
-Two generic `loggingOracle` lemmas shared by the knowledge-soundness game reductions (ABF26
-L6.10 in `ToyProblem/Spec/SimplifiedIOR.lean`, L6.6 in `ToyProblem/Spec/KnowledgeSoundness.lean`).
+Two generic `loggingOracle` lemmas shared by the knowledge-soundness game reductions. Their
+consumers land in a **later sub-PR** of the ABF26 split:
+`ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean` (ABF26 L6.10) and
+`ArkLib/ProofSystem/ToyProblem/Spec/KnowledgeSoundness.lean` (L6.6).
 Both are upstream VCV-io candidates. -/
 
 namespace loggingOracle

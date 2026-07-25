@@ -485,7 +485,11 @@ theorem rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
     (fun tr => hkSF stmtIn i tr.1.1)
 
 /-- Implication: one-shot rbr knowledge soundness implies general rbr knowledge soundness (with the
-  same error) -/
+  same error).
+
+  **(admitted)** — the proof body is a `sorry`; pre-existing, not introduced by the ABF26 split.
+  Nothing in the tree consumes this theorem, and the live worst-case route goes through
+  `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness` instead. -/
 theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
