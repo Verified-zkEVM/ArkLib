@@ -279,7 +279,7 @@ game's computation by *definitional* unification; the caller then proves `hoa` b
 rewriting without having to respell the game term. The conclusion fixes the oracle state `s`
 (rather than sampling it from an `init`) because the intended use is *inside* an outer game
 bound (e.g. the tail hypothesis of
-`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_add`), where the state has
+`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`), where the state has
 already been fixed; recover the `init`-sampled form with `probEvent_bind_le_of_forall_le`.
 
 (Intended outer bound: the tail hypothesis of

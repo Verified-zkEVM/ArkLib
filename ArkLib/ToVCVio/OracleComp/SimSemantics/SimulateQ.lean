@@ -5,7 +5,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 
 import VCVio.OracleComp.QueryTracking.RandomOracle.Simulation
 import VCVio.OracleComp.SimSemantics.StateT.Basic
-import ToMathlib.Control.StateT
 
 /-! Compatibility import for additions that now live in VCVio.
 

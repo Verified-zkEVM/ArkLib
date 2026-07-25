@@ -101,8 +101,11 @@ open Classical in
 
 This differs from `toRoundByRound` in the intermediate step: it returns a witness that is *valid for
 the input relation* whenever one exists at all, rather than the extractor's output or the witness it
-was handed. The choice is classical — `extractMid` is a mathematical function, not an algorithm, so
-nothing is lost by selecting a valid witness non-constructively.
+was handed. The choice is classical. Within ArkLib's current extensional security interface,
+`extractMid` is a mathematical function rather than an algorithm with a tracked running time, so
+selecting a valid witness non-constructively preserves the property formalized here. It does not
+establish the extraction-time bounds present in algorithmic formulations of round-by-round
+knowledge soundness.
 
 The distinction is not cosmetic. The round-0 obligation of a `KnowledgeStateFunction` is
 `(stmtIn, extracted) ∈ relIn` (forced by `toFun_empty`), and `toRoundByRound`'s intermediate step
@@ -232,6 +235,7 @@ structure KnowledgeStateFunctionOneShot
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
     Pr[(· ∈ langOut) | OptionT.mk do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- The one-shot state function is false at any round index that is `0`, for any transcript.
 
 `toFun_empty` states this for the literal index `0` and the canonical empty transcript; this is the
