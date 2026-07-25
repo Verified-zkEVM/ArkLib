@@ -49,7 +49,11 @@ framework layer *ahead of its consumers*. Only
 `ArkLib/OracleReduction/Security/RoundByRound.lean`). The `OptionT` bounds, the two
 `loggingOracle` lemmas, and `probEvent_uniformSample_eq_prob_uniformOfFintype` are consumed by
 `ArkLib/ProofSystem/ToyProblem/**`, which arrives in a later sub-PR; until then they are
-deliberately unreferenced rather than dead.
+unreferenced *here* but not dead — each was checked to have a live tactic call site on the
+parent branch `feat/abf26-plan`, not merely a docstring mention. One earlier member of the
+`OptionT` family, `…_getChallenge_first_bind_le_add`, failed exactly that check (prose
+references only; the live call used the `_convex` sharpening) and was **removed** rather than
+staged.
 -/
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
@@ -290,7 +294,10 @@ rewriting without having to respell the game term. The conclusion fixes the orac
 (rather than sampling it from an `init`) because the intended use is *inside* an outer game
 bound (e.g. the tail hypothesis of
 `probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_add`), where the state has
-already been fixed; recover the `init`-sampled form with `probEvent_bind_le_of_forall_le`. -/
+already been fixed; recover the `init`-sampled form with `probEvent_bind_le_of_forall_le`.
+
+(Intended outer bound: the tail hypothesis of
+`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex`.) -/
 theorem probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
     {P T β : Type}
     (s : σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -353,51 +360,6 @@ theorem probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
   obtain ⟨t, _, htz⟩ := hz
   exact ⟨t, z, htz, hE⟩
 
-/-- **Additive master bound for a challenge-first game.** For a game whose `Option`-valued
-computation starts with a fresh challenge draw and continues with an arbitrary (adversarial,
-possibly further-sampling) tail, the game probability is at most `ε₁ + ε₂` where `ε₁` bounds a
-challenge-only prefix event `p` and `ε₂` bounds the tail game on every challenge *off* `p`.
-This is the game-level form of `probEvent_bind_le_probEvent_add` and the engine of sum-form
-knowledge-soundness errors: instantiate `p` with the bad-challenge event of the first round
-and discharge the tail bound (e.g. via
-`probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le` at a later round). -/
-theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_add
-    {β : Type}
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (oa : OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option β)) (i : pSpec.ChallengeIdx)
-    (tail : pSpec.Challenge i → OracleComp (oSpec + [pSpec.Challenge]ₒ) (Option β))
-    (E : β → Prop) (p : pSpec.Challenge i → Prop) {ε₁ ε₂ : ℝ≥0∞}
-    (hoa : oa = do
-      let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-      tail c)
-    (h₁ : Pr[ p | $ᵗ (pSpec.Challenge i)] ≤ ε₁)
-    (h₂ : ∀ c, ¬ p c → ∀ s : σ,
-      Pr[ E | OptionT.mk
-        ((simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-          (tail c)).run' s)] ≤ ε₂) :
-    Pr[ E | OptionT.mk (do
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        oa).run' (← init))] ≤ ε₁ + ε₂ := by
-  subst hoa
-  -- Resolve the simulated challenge query into a top-level uniform draw, per initial state.
-  have hbody : ∀ s : σ,
-      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-        (do
-          let c ← liftComp (pSpec.getChallenge i) (oSpec + [pSpec.Challenge]ₒ)
-          tail c)).run' s
-      = ($ᵗ (pSpec.Challenge i)) >>= fun c ↦
-          (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
-            (tail c)).run' s := by
-    intro s
-    rw [simulateQ_bind, simulateQ_addLift_challengeQueryImpl_getChallenge,
-      StateT.run'_bind']
-    simp only [StateT.run_liftM, bind_assoc, pure_bind]
-  rw [OptionT.mk_bind]
-  refine probEvent_bind_le_of_forall_le fun s _ ↦ ?_
-  rw [hbody s, OptionT.mk_bind]
-  refine le_trans (probEvent_bind_le_probEvent_add (p := p) fun c _ hc ↦ h₂ c hc s)
-    (add_le_add (le_trans (le_of_eq (OptionT.probEvent_liftM _ _)) h₁) le_rfl)
-
 /-- The two algebraically-equal spellings of a convex combination `λ·1 + (1−λ)·ε` in `ℝ≥0∞`,
 for `λ, ε ≤ 1`. Used to turn the `λ + (1−λ)·ε` shape produced by
 `probEvent_bind_le_probEvent_convex` into the monotone-in-`λ` shape `ε + λ·(1−ε)`. -/
@@ -417,12 +379,14 @@ private lemma enn_convex_symm (a ε : ℝ≥0∞) (ha : a ≤ 1) (hε : ε ≤ 1
     ENNReal.toReal_sub_of_le hε ENNReal.one_ne_top, ENNReal.toReal_one]
   ring
 
-/-- **Convex master bound for a challenge-first game.** The sharpening of
-`probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_add`: instead of the additive
-`ε₁ + ε₂`, the game probability is at most the convex combination `ε₂ + ε₁·(1 − ε₂)` — the
-off-prefix tail bound `ε₂` is charged on the full mass, and the prefix bound `ε₁` only on the
-remaining `(1 − ε₂)` fraction. Requires `ε₂ ≤ 1`. Dropping the `(1 − ε₂) ≤ 1` factor recovers
-the additive bound `ε₂ + ε₁`, so the two differ by exactly `ε₁·ε₂`. Engine of *convex-form*
+/-- **Convex master bound for a challenge-first game.** For a game whose `Option`-valued
+computation starts with a fresh challenge draw and continues with an arbitrary (adversarial,
+possibly further-sampling) tail, the game probability is at most the convex combination
+`ε₂ + ε₁·(1 − ε₂)`, where `ε₁` bounds a challenge-only prefix event `p` and `ε₂` bounds the
+tail game on every challenge *off* `p` — the off-prefix tail bound `ε₂` is charged on the full
+mass, and the prefix bound `ε₁` only on the remaining `(1 − ε₂)` fraction. Requires `ε₂ ≤ 1`.
+Dropping the `(1 − ε₂) ≤ 1` factor recovers the additive bound `ε₂ + ε₁`, so this is sharper
+by exactly `ε₁·ε₂`. Engine of *convex-form*
 knowledge-soundness errors (ABF26 Lemma 6.6). -/
 theorem probEvent_optionT_simulateQ_addLift_getChallenge_first_bind_le_convex
     {β : Type}

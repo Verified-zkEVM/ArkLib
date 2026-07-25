@@ -8,8 +8,9 @@ additions that are candidates for upstreaming.
 Several files are now **compatibility shells**: their contents were upstreamed
 and deleted, leaving only the `import` so downstream modules keep resolving.
 `EvalDist/Defs/Support.lean`, `EvalDist/Instances/OptionT.lean`,
-`OracleComp/EvalDist.lean`, and `OracleComp/Coercions/SubSpec.lean` are all in
-that state. They can be removed once their importers are re-pointed upstream.
+`OracleComp/EvalDist.lean`, `OracleComp/Coercions/SubSpec.lean`, and
+`OracleComp/SimSemantics/SimulateQ.lean` are all in that state. They can be
+removed once their importers are re-pointed upstream.
 
 Workflow: prefer landing general statements upstream in VCV-io under the same
 names and the mirrored path; on the next VCVio bump, delete the corresponding
@@ -27,13 +28,14 @@ monad, `StateT σ ProbComp` → lawful target, `Type` → `Type*`); all unify at
 ArkLib's instantiations.
 
 Local names resolved to pre-existing upstream lemmas — call sites renamed and
-the local mirrors deleted:
+the local mirrors deleted. **These three rows are the deletions relative to the
+current baseline**; `git log` is the authority for anything older:
 
 | ArkLib-local name (removed) | upstream replacement |
 |---|---|
-| `OptionT.failure_bind` | `failure_bind` (Batteries, `@[simp]`) |
 | `StateT.run'_map_comm` | `StateT.run'_map'` (named args `(f := …)` at the call sites) |
 | `OracleComp.bind_liftComp_map` | `bind_map_left` (Mathlib) |
+| `simulateQ_randomOracle_map_uniformFin` | identical lemma in VCVio `RandomOracle/Simulation.lean` |
 
 **Not staged (genuinely ArkLib-specific, keep):**
 `OracleComp/RbrGame.lean` — references ArkLib's `ProtocolSpec`
@@ -45,10 +47,15 @@ History note: `simulateQ_list_forIn` was staged here and has been deleted — th
 then-current VCVio pin (`5f7707fb`, the Lean 4.30 bump) already contained it
 upstream.
 
-History note (2026-07-25, v4.31.0 bump `cbd4144b`): the three rename-lemmas
-above were removed and their call sites re-pointed upstream; the now-empty file
-`ToVCVio/ToMathlib/Control/StateT.lean` was deleted, and 29 further
-`OracleComp/SimSemantics/SimulateQ.lean` lemmas plus three
-`probEvent_bind_le_*` lemmas were dropped as already-upstreamed. Separately,
-`Data/Probability/Notation.lean`'s `Pr_eq_tsum_indicator` was removed as a
-duplicate of `prob_tsum_form_singleton` (`Data/Probability/Instances.lean`).
+History note (2026-07-25, v4.31.0 bump `cbd4144b`): the three lemmas in the table
+above were removed and their call sites re-pointed upstream, and the resulting
+empty files `ToVCVio/ToMathlib/Control/StateT.lean` (deleted),
+`OracleComp/SimSemantics/SimulateQ.lean` and `OracleComp/Coercions/SubSpec.lean`
+(both reduced to shells) were cleaned up.
+
+Scope caveat, because it is easy to overstate: a much larger dedup — roughly 550
+lines across `SimulateQ.lean` and `RbrGame.lean` — was performed while porting the
+ABF26 work onto this baseline, but those lemmas were **never present here**. They
+existed only on the source branch `feat/abf26-plan`, so that cleanup shows up as
+code *not added* rather than as deletions. Against this baseline the removal is
+just the three lemmas above.
