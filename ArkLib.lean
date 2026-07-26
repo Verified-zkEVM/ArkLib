@@ -54,6 +54,7 @@ import ArkLib.Data.Classes.HasSize
 import ArkLib.Data.Classes.Initialize
 import ArkLib.Data.Classes.Serde
 import ArkLib.Data.Classes.Slice
+import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
 import ArkLib.Data.CodingTheory.Basic.LinearCode
@@ -284,12 +285,6 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured
 import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
-import ArkLib.ProofSystem.Whir.BlockRelDistance
-import ArkLib.ProofSystem.Whir.Folding
-import ArkLib.ProofSystem.Whir.MutualCorrAgreement
-import ArkLib.ProofSystem.Whir.OutofDomainSmpl
-import ArkLib.ProofSystem.Whir.ProximityGen
-import ArkLib.ProofSystem.Whir.RBRSoundness
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin

@@ -62,8 +62,7 @@ variable {n : ℕ}
   such that `domain i ^ 2 ^ k = x`. -/
 noncomputable def foldWordAux (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (x : F) : Polynomial F :=
-  Lagrange.interpolate (blockIdx domain k x)
-    (fun i ↦ domain i) f
+  Lagrange.interpolate (blockIdx domain k x) domain f
 
 section
 
@@ -75,18 +74,9 @@ private lemma even_add_odd_eq_of_2_ne_0
   (x y z : F) (hz : z ≠ 0) (hchar : (2 : F) ≠ 0) :
   x = (x + y) / 2 + (x - y) / (2 * z) * z := by grind
 
-omit [DecidableEq F] in
-private lemma even_add_odd_eq_of_not_charp_2
-  (x y z : F) (hz : z ≠ 0) (hchar : ¬CharP F 2) :
-  x = (x + y) / 2 + (x - y) / (2 * z) * z :=
-  even_add_odd_eq_of_2_ne_0 _ _ _ hz <| fun contra ↦ hchar <|
-    ringChar.of_eq (CharP.ringChar_of_prime_eq_zero Nat.prime_two contra)
-
 /-- An explicit formula to compute `foldWordAux` when `k = 2`
   not involving Lagrange interpolation. -/
-lemma foldWordAux_of_k_2
-  [NeZero n]
-  {i : Fin (2 ^ (n - 1))} :
+lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :
   foldWordAux domain f 1 (domain.subdomain 1 i) =
     let x : domain := CosetFftDomain.twoNthRoot (i := 1)
       ⟨domain.subdomain 1 i, by simp⟩
@@ -147,10 +137,10 @@ lemma foldWordAux_of_k_2
   · intro x hx
     have hx : (x = domain j ∧ y.1 = domain j) ∨
               (x = domain j' ∧ y.1 = -domain j') := by aesop
-    have hj := even_add_odd_eq_of_not_charp_2 (f j) (f j') (domain j) (by simp)
-      (CosetFftDomainClass.domain_implies_char_ne_2 domain)
-    have hj' := even_add_odd_eq_of_not_charp_2 (f j') (f j) (domain j') (by simp)
-      (CosetFftDomainClass.domain_implies_char_ne_2 domain)
+    have hj := even_add_odd_eq_of_2_ne_0 (f j) (f j') (domain j) (by simp)
+      (CosetFftDomainClass.domain_implies_2_ne_0 domain)
+    have hj' := even_add_odd_eq_of_2_ne_0 (f j') (f j) (domain j') (by simp)
+      (CosetFftDomainClass.domain_implies_2_ne_0 domain)
     rcases hx with ⟨rfl, hy⟩ | ⟨rfl, hy⟩
     · rw [Lagrange.eval_interpolate_at_node _ CosetFftDomain.injOn (by simp),
           hy]
@@ -161,18 +151,22 @@ lemma foldWordAux_of_k_2
       simp
       grind
 
+/-- The degree of the auxiliary polynomial `foldWordAux`
+  is less than 2^k. -/
+@[simp]
+lemma foldWordAux_degree {k : ℕ} {x : F} :
+  (foldWordAux domain f k x).degree < 2 ^ k :=
+  lt_of_lt_of_le
+    (Lagrange.degree_interpolate_lt _ (by simp))
+    (by norm_cast; simp)
+
 /-- The natDegree of the auxiliary polynomial `foldWordAux`
-  is less than k. -/
+  is less than 2^k. -/
+@[simp]
 lemma foldWordAux_natDegree {k : ℕ} {x : F} :
   (foldWordAux domain f k x).natDegree < 2 ^ k := by
-  by_cases heq: foldWordAux domain f k x = 0
-  · aesop
-      (add safe (by omega))
-  · unfold foldWordAux at *
-    apply lt_of_lt_of_le
-    · rw [Polynomial.natDegree_lt_iff_degree_lt heq]
-      exact Lagrange.degree_interpolate_lt _ (by simp)
-    · simp
+  by_cases foldWordAux domain f k x = 0 <;>
+    aesop (add simp Polynomial.natDegree_lt_iff_degree_lt)
 
 /-- Compute value of the folded word.
   Takes the auxiliary polynomial `foldWordAux` and evaluates it on `a`,
@@ -186,8 +180,7 @@ lemma foldValue_def {α : F} {x : F} :
   foldValue domain f k α x = (foldWordAux domain f k x).eval α := rfl
 
 lemma foldValue_def' {α : F} {x : F} :
-  foldValue domain f k α x = (Lagrange.interpolate (blockIdx domain k x)
-    (fun i ↦ domain i) f).eval α := rfl
+  foldValue domain f k α x = (Lagrange.interpolate (blockIdx domain k x) domain f).eval α := rfl
 
 @[simp]
 lemma foldValue_pow_x_k {i : Fin (2 ^ n)} :
@@ -232,6 +225,35 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
   simp [foldWord, foldValue_k_1]
 
+/-- An explicit formula for `foldWord` when `k = 1` that
+  does not use Lagrange interpolation and avoids using `log`. -/
+theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
+  {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
+  (hj : domain j ^ 2 = domain.subdomain 1 i) (hj' : domain j' ^ 2 = domain.subdomain 1 i) :
+  foldWord domain f 1 α i =
+    ((f j + f j') / 2) + α * ((f j - f j') / (2 * domain j)) := by
+  have hn : n ≠ 0 := by aesop (add safe [cases Fin, (by omega)])
+  letI : NeZero n := ⟨hn⟩
+  rw [foldWord_k_1]
+  extract_lets x a b
+  have ha : domain a = x := by simp [a]
+  have hb : domain b = -x := by simp [b]
+  have hx : x ^ 2 = domain.subdomain 1 i := by simp [x]
+  have hj_cases : domain j = x ∨ domain j = -x := by aesop (add safe eq_or_eq_neg_of_sq_eq_sq)
+  have hj'_cases : domain j' = x ∨ domain j' = -x := by aesop (add safe eq_or_eq_neg_of_sq_eq_sq)
+  rcases hj_cases with hjx | hjx <;> rcases hj'_cases with hj'x | hj'x <;>
+    try
+      exfalso
+      exact hjj' (CosetFftDomain.injective (hjx.trans hj'x.symm))
+  · obtain rfl : j = a := CosetFftDomain.injective (hjx.trans ha.symm)
+    obtain rfl : j' = b := CosetFftDomain.injective (hj'x.trans hb.symm)
+    rw [ha]
+  · obtain rfl : j = b := CosetFftDomain.injective (hjx.trans hb.symm)
+    obtain rfl : j' = a := CosetFftDomain.injective (hj'x.trans ha.symm)
+    rw [hb]
+    field_simp
+    ring
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
@@ -247,7 +269,7 @@ private lemma eval_comm {f : Polynomial (Polynomial F)} {a x : F} :
 private lemma interpolate_eq_folding_poly_eval
   (hk : k ≤ n)
   (hx : x ∈ domain.subdomain k) :
-  ((Lagrange.interpolate (blockIdx domain k x) fun i ↦ domain i)
+  ((Lagrange.interpolate (blockIdx domain k x) domain)
     f) =
   (Polynomial.map (evalRingHom x)
     (FoldingPolynomial.foldingPolynomial (Y ^ 2 ^ k) ((Lagrange.interpolate univ ⇑domain) f))) :=
@@ -299,6 +321,16 @@ theorem foldWord_codeword {d : ℕ}
     FoldingPolynomial.polyFold]
   rw [eval_comm, interpolate_eq_folding_poly_eval hk (by simp)]
   aesop
+
+theorem foldWord_evalOnPoints {α : F} {p : Polynomial F}
+  (hk : k ≤ n) (hp_deg : p.degree < 2 ^ n) :
+  foldWord domain (evalOnPoints domain p) k α =
+    evalOnPoints (domain.subdomain k)
+        (FoldingPolynomial.polyFold p (2 ^ k) α) := by
+  let f := evalOnPoints (domain : Fin (2 ^ n) ↪ F) p
+  have hcode : f ∈ code domain (2 ^ n) := by simp_all [evalOnPoints_mem_code_of_degree_lt, f]
+  rw [show evalOnPoints _ _ = (⟨f, hcode⟩ : code _ _) by rfl, foldWord_codeword hk]
+  simp_all [toPolynomial_evalWord_of_degree_lt, f]
 
 /-- Perfect completeness of folding: if a word belongs to an RS-code
   then its `foldWord` belongs to a folded RS-code.
@@ -558,10 +590,7 @@ private lemma eval_comp_x_pow_map_eq {f : Polynomial (Polynomial F)} {x : F}
                (Polynomial.map
                 (Polynomial.evalRingHom (x ^ k))
                 f)) := by
-  induction f using Polynomial.induction_on
-  · aesop
-  · aesop
-  · simp_all [pow_succ]
+  induction f using Polynomial.induction_on <;> aesop (add simp pow_succ)
 
 private noncomputable def hammingDistComplementBound
   {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ :=

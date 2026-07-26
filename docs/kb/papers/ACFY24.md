@@ -27,22 +27,12 @@ It influences both coding-theory definitions in `ReedSolomon.lean` and protocol-
 
 - WHIR-specific Reed-Solomon definitions currently introduced in
   [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean).
-- Proximity-generator and mutual correlated-agreement notions in the
-  [`ArkLib/ProofSystem/Whir/`](../../../ArkLib/ProofSystem/Whir) subtree.
 - Protocol-level soundness and folding interfaces for the current WHIR formalization.
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
   cites the paper directly for WHIR-specific definitions.
-- [`ArkLib/ProofSystem/Whir/ProximityGen.lean`](../../../ArkLib/ProofSystem/Whir/ProximityGen.lean)
-  introduces proximity generators from Section 4.
-- [`ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean`](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
-  and
-  [`ArkLib/ProofSystem/Whir/BlockRelDistance.lean`](../../../ArkLib/ProofSystem/Whir/BlockRelDistance.lean)
-  formalize WHIR-specific coding-theory/protocol notions.
-- [`ArkLib/ProofSystem/Whir/RBRSoundness.lean`](../../../ArkLib/ProofSystem/Whir/RBRSoundness.lean)
-  ties the protocol story back into the soundness framework.
 
 ## Version Notes
 
