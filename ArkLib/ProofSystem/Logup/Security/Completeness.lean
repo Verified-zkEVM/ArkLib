@@ -577,47 +577,23 @@ theorem finalCheckCompleteness :
             (fun k => (oStmt .helpers k).1) stmt.outer.xChallenge stmt.outer.zChallenge
             stmt.outer.batchingScalars) =
         stmt.finalClaim.target := by
-    unfold logupAfterSumcheckRelation Sumcheck.Spec.relationRound at hRel
-    simp only [Set.mem_setOf_eq, logupSumcheckOracleStmt, logupSumcheckPolynomial] at hRel
-    have tailSize_zero : n - (Fin.last n : Fin (n + 1)) = 0 := by simp
-    let tail0 : Fin (n - (Fin.last n : Fin (n + 1))) → F :=
-      fun i => Fin.elim0 (Fin.cast (by simp) i)
-    have hfinalPoint :
-        Fin.append stmt.finalClaim.challenges tail0 ∘
-            Fin.cast (Sumcheck.Spec.relationRound._proof_1 n (Fin.last n)) =
-          stmt.finalClaim.challenges := by
-      funext i
-      change Fin.append stmt.finalClaim.challenges tail0
-          (Fin.cast (Sumcheck.Spec.relationRound._proof_1 n (Fin.last n)) i) =
-        stmt.finalClaim.challenges i
-      rw [Fin.append_right_nil stmt.finalClaim.challenges tail0 tailSize_zero]
-      congr 1
-    have hsum :
-        (∑ x ∈ Fintype.piFinset fun _ : Fin (n - (Fin.last n : Fin (n + 1))) =>
-            Finset.univ.map (booleanDomain F),
-          MvPolynomial.eval
-            (Fin.append stmt.finalClaim.challenges x ∘
-              Fin.cast (Sumcheck.Spec.relationRound._proof_1 n (Fin.last n)))
-            (logupQPolynomial (params.group) (oStmt (.input .table)).1
-              (fun i => (oStmt (.input (.column i))).1) (oStmt .multiplicity).1
-              (fun k => (oStmt .helpers k).1) stmt.outer.xChallenge stmt.outer.zChallenge
-              stmt.outer.batchingScalars)) =
-          MvPolynomial.eval stmt.finalClaim.challenges
-            (logupQPolynomial (params.group) (oStmt (.input .table)).1
-              (fun i => (oStmt (.input (.column i))).1) (oStmt .multiplicity).1
-              (fun k => (oStmt .helpers k).1) stmt.outer.xChallenge stmt.outer.zChallenge
-              stmt.outer.batchingScalars) := by
-      rw [Finset.sum_eq_single tail0]
-      · rw [hfinalPoint]
-        rfl
-      · intro b _ hb
-        exact False.elim (hb (funext fun i => Fin.elim0 (Fin.cast (by simp) i)))
-      · intro hnot
-        exact False.elim (hnot (by
-          rw [Fintype.mem_piFinset]
-          intro i
-          exact Fin.elim0 (Fin.cast tailSize_zero i)))
-    exact hsum ▸ hRel
+    change MvPolynomial.eval (fun i : Fin n => stmt.finalClaim.challenges i)
+        (logupQPolynomial (params.group) (oStmt (.input .table)).1
+          (fun i => (oStmt (.input (.column i))).1) (oStmt .multiplicity).1
+          (fun k => (oStmt .helpers k).1) stmt.outer.xChallenge stmt.outer.zChallenge
+          stmt.outer.batchingScalars) =
+      stmt.finalClaim.target
+    have hRel' :
+        ((stmt.finalClaim, logupSumcheckOracleStmt F n M params stmt.outer oStmt), ()) ∈
+          Sumcheck.Spec.relationRound F n (logupSumcheckDegree M params) (booleanDomain F)
+            (Fin.last n) := by
+      simpa [logupAfterSumcheckRelation] using hRel
+    have hEval :=
+      (Sumcheck.Spec.relationRound_last_iff
+        (R := F) (n := n) (deg := logupSumcheckDegree M params) (D := booleanDomain F)
+        (stmt := stmt.finalClaim)
+        (polyOracle := logupSumcheckOracleStmt F n M params stmt.outer oStmt)).1 hRel'
+    simpa [logupSumcheckOracleStmt, logupSumcheckPolynomial] using hEval
   have hGuard :
       qAtPoint (params.group) stmt.outer.xChallenge stmt.outer.zChallenge
           stmt.finalClaim.challenges stmt.outer.batchingScalars
