@@ -1,19 +1,20 @@
 # ArkLib additions to VCV-io
 
 This directory mirrors VCV-io's module structure (`OracleComp/`, `EvalDist/`, `ToMathlib/`, ...) and
-holds two kinds of thing:
+holds exactly one kind of thing: **additions the pinned VCVio predates** — `simulateQ` /
+`OracleComp` / distribution lemmas ArkLib needs before they exist upstream, each destined to move
+up and be deleted here.
 
-1. **Additions the pinned VCVio predates** — `simulateQ` / `OracleComp` / distribution lemmas ArkLib
-   needs before they exist upstream.
-2. **ArkLib-flavoured glue** whose statements mention ArkLib definitions.
-   `OracleComp/RbrGame.lean` is the current example: it mentions `ProtocolSpec` and is the one file
-   here that imports `ArkLib/OracleReduction/`.
+**Invariant: nothing in this directory imports ArkLib outside `ToVCVio` itself.** That is what makes
+a file here upstreamable by construction — it can be moved to VCVio unchanged. A lemma that needs
+`ArkLib/OracleReduction/`, `ArkLib/Data/`, or any other ArkLib layer does not belong here, however
+generic its content; it belongs beside its consumers in ArkLib core.
 
-   Do not read category 2 as "cannot be upstreamed". Mentioning an ArkLib type is often only
-   surface: `RbrGame.lean`'s mixture bounds, for instance, need nothing about protocols beyond
-   "a sub-oracle answered by a uniform sample", so generalising that one ingredient would let them
-   move upstream, leaving a thin adapter here. Check whether the ArkLib types are load-bearing
-   before concluding a lemma has to stay.
+Note the second clause: content that is *morally* generic but *depends* on ArkLib still fails the
+invariant. `ArkLib/OracleReduction/Security/RbrGame.lean` is the illustrative case — its mixture
+bounds need nothing about protocols beyond "a sub-oracle answered by a uniform sample", but they are
+stated over `ProtocolSpec`, so they sit in core with a note that generalising that one ingredient
+would let them move up. Upstream them by generalising first, then moving; not by parking them here.
 
 ## Working rule
 

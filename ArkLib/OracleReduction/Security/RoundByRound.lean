@@ -5,7 +5,7 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.Basic
-import ArkLib.ToVCVio.OracleComp.RbrGame
+import ArkLib.OracleReduction.Security.RbrGame
 
 /-!
   # Round-by-Round Security Definitions

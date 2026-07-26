@@ -6,9 +6,10 @@ Authors: Alexander Hicks
 
 import ArkLib.OracleReduction.ProtocolSpec.Basic
 import ArkLib.Data.Probability.Instances
+import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
-# Generic glue for the round-by-round (knowledge) soundness games
+# `ProtocolSpec` glue for the round-by-round (knowledge) soundness games
 
 ArkLib's round-by-round soundness games (`Verifier.rbrSoundness`,
 `Verifier.rbrKnowledgeSoundness` in `ArkLib/OracleReduction/Security/RoundByRound.lean`) all
@@ -34,29 +35,24 @@ per-fixed-transcript bounds `∀ tr, Pr[ event tr · | $ᵗ (pSpec.Challenge i)]
   `SampleableType` uniform sampler used by `challengeQueryImpl`) to the PMF-level
   `Pr_{ let x ←$ᵖ α }[…]` notation in which per-transcript bounds are usually proven.
 
-**Everything here is an upstreaming candidate.** The `ProtocolSpec` in these statements is surface,
-not substance: `challengeQueryImpl` is just `fun q => $ᵗ _`, i.e. "answer each query with a uniform
-sample of its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol,
-transcript, or round enters any proof below — they are `probEvent_bind_le_of_forall_le` plus a
-`simulateQ` normalisation. Generalising the challenge oracle to an arbitrary uniform-answer
-`QueryImpl` would let the mixture bounds move upstream unchanged, leaving only thin
-`ProtocolSpec`-shaped adapters here. The `loggingOracle` lemmas need no generalisation at all; the
-`$ᵗ`/`$ᵖ` bridge is blocked only by the `Pr_{…}` notation living in ArkLib.
+These statements are `ProtocolSpec`-specific and so live in ArkLib core, but their *content* is
+not: `challengeQueryImpl` is only `fun q => $ᵗ _`, i.e. "answer each query with a uniform sample of
+its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol, transcript or
+round enters any proof below — they are `probEvent_bind_le_of_forall_le` plus a `simulateQ`
+normalisation. Generalising the challenge oracle to an arbitrary uniform-answer `QueryImpl` would
+let the mixture bounds move upstream, leaving thin specialisations here. The `loggingOracle` lemmas
+they build on already sit in `ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean` for
+exactly that reason; `probEvent_uniformSample_eq_prob_uniformOfFintype` stays here only because it
+mentions ArkLib's `Pr_{…}` notation.
 
-Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its *generic*
+Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its generic
 `KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
-`Verifier.rbrKnowledgeSoundnessWorstCase` (round ↦ challenge index, context ↦ statement-and-prefix,
-`preState`/`postState`/`extractBefore` ↦ the knowledge state function and `extractMid`) — so an
-adapter is cheap. Two things it does *not* do, both relevant here: it has no averaged, prover-sampled
-notion, so the worst-case ⇒ averaged bridges in
-`ArkLib/OracleReduction/Security/RoundByRound.lean` are not subsumed by it; and its
-`KnowledgeTransitionFamily` is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do not
-transfer. Its source-shaped `KnowledgeExtractionFamily`/`ExtractionCondition` layer is a *different*
-notion from ArkLib's `rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and
-feeds the prover's query log to the extractor; do not treat the two as equivalent.
-
-The operational content of this file — connecting oracle execution under `simulateQ` to bounds on
-fixed contexts — is what such an abstract layer would still need, and is orthogonal to it.
+`Verifier.rbrKnowledgeSoundnessWorstCase`, but it has no averaged, prover-sampled notion, so the
+worst-case ⇒ averaged bridges in `Security/RoundByRound.lean` are not subsumed by it; and its
+transition family is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do not
+transfer. Its source-shaped `ExtractionCondition` is a *different* notion from ArkLib's
+`rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and feeds the prover's
+query log to the extractor.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
 bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,
@@ -197,40 +193,6 @@ The master bound for this shape is
 challenge-only probability bound `Pr[fun c ↦ ∃ t, E (f c t) | $ᵗ _] ≤ ε`, where the `∃ t`
 ranges over *all* possible tail outputs — the worst-case form in which per-round soundness
 bounds are normally stated, so no reasoning about the tail's distribution is needed. -/
-
-/-! ### Logging glue
-
-Two `loggingOracle` lemmas for knowledge-soundness reductions: one collapses a `pure`
-`OptionT` computation under logging, the other discards a query log beneath a continuation
-that only reads the run result (e.g. an extractor). Both are upstream VCV-io candidates. -/
-
-namespace loggingOracle
-
-/-- Logging a `pure` `OptionT` computation (e.g. an always-accepting or already-collapsed
-verifier `verify`) produces the same value with an empty query log. Stated over the
-`OptionT`-coerced `pure` so it rewrites knowledge-soundness game terms directly. -/
-lemma run_simulateQ_optionT_pure
-    {ιs : Type} {spec : OracleSpec ιs} {α : Type} (a : α) :
-    (simulateQ loggingOracle
-        ((pure a : OptionT (OracleComp spec) α) : OracleComp spec (Option α))).run
-      = (pure (some a, ∅) : OracleComp spec (Option α × QueryLog spec)) := by
-  rw [show ((pure a : OptionT (OracleComp spec) α) : OracleComp spec (Option α))
-      = (pure (some a) : OracleComp spec (Option α)) from rfl, simulateQ_pure]
-  rfl
-
-/-- Discard a query log under a continuation that only uses the run result (e.g. an extractor
-that ignores the logs): mapping a `Prod.fst`-factoring function over a logged run is mapping it
-over the bare run. Map-shaped companion of `loggingOracle.run_simulateQ_bind_fst`; apply by
-`Eq.trans` (definitional unification — the factored spelling is not `rw`-matchable). -/
-lemma map_fst_run_simulateQ {ιs : Type} {spec : OracleSpec.{0, 0} ιs}
-    {α β : Type} (oa : OracleComp spec α) (h : α → β) :
-    (fun x ↦ h x.1) <$> (simulateQ loggingOracle oa).run = h <$> oa := by
-  refine Eq.trans
-    (Eq.symm (Functor.map_map Prod.fst h ((simulateQ loggingOracle oa).run))) ?_
-  rw [loggingOracle.fst_map_run_simulateQ]
-
-end loggingOracle
-
 namespace ProtocolSpec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} [∀ j, SampleableType (pSpec.Challenge j)]
