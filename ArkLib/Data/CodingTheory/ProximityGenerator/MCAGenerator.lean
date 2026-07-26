@@ -266,7 +266,8 @@ the counting arguments (Lemmas 5.2 and 6.2, via Lemma 3.6). It is stated as a se
 here because `IsMDSGenerator` only asserts that `C_G` meets the Singleton bound, which does not by
 itself force the dimension to be `ℓ`. If it later turns out to be derivable from the other
 hypotheses, `hdim` can be removed. -/
-theorem MDS_is_MCA {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] [Nonempty ι]
+theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
+    [Nonempty ι]
     (G : Generator S ℓ F)
     (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)

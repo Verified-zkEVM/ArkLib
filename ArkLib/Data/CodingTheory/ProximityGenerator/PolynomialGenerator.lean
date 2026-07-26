@@ -340,8 +340,9 @@ lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype ↥
   exact ReedSolomon.isMDS_code h
 
 /-- The restricted univariate powers generator has MCA for every linear code with error `ξ`.
-For `d ≥ 1` this is Theorem 6.1 (`MDS_is_MCA`) together with the identification `ε_MCA_MDS = ξ`
-(`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ` suffices. -/
+For `d ≥ 1` this is Theorem 6.1 (`IsMDSGenerator.isMCAGenerator`) together with the identification
+`ε_MCA_MDS = ξ` (`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ`
+suffices. -/
 lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
     (s : Set F) [Fintype ↥s] [Nonempty ↥s]
     (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
@@ -367,8 +368,8 @@ lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [
     have hdim : LinearCode.dim (fromColGenMat (M_G (UnivariatePowersOn s d)))
         = Fintype.card (Fin (d + 1)) := by
       rw [UnivariatePowersOn.code_eq_reedSolomon, ReedSolomon.dim_eq_deg_of_le' h, Fintype.card_fin]
-    have hmca := MDS_is_MCA (UnivariatePowersOn s d) (UnivariatePowersOn.isMDSGenerator s d h)
-      hdim η hη hℓ LC
+    have hmca := isMCAGenerator_of_isMDSGenerator (UnivariatePowersOn s d)
+      (UnivariatePowersOn.isMDSGenerator s d h) hdim η hη hℓ LC
     rwa [Fintype.card_fin, ε_MCA_MDS_eq_ξ] at hmca
 
 /-- The `s`-fold tensor product of restricted univariate powers generators, over the product seed
