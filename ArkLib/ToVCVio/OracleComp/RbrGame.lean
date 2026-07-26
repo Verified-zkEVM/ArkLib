@@ -43,10 +43,20 @@ transcript, or round enters any proof below — they are `probEvent_bind_le_of_f
 `ProtocolSpec`-shaped adapters here. The `loggingOracle` lemmas need no generalisation at all; the
 `$ᵗ`/`$ᵖ` bridge is blocked only by the `Pr_{…}` notation living in ArkLib.
 
-See VCVio PR #475, which adds a protocol-agnostic round-by-round layer (`GameFamily`,
-`KnowledgeExtractionFamily`, `extractionCondition_iff_isBounded`). It overlaps this file and
-`ArkLib/OracleReduction/Security/RoundByRound.lean`; before it lands, decide whether ArkLib's
-round-by-round notions should be re-expressed on top of it rather than kept in parallel.
+Cf. VCVio PR #475, which adds a protocol-agnostic round-by-round layer. Its *generic*
+`KnowledgeTransitionFamily.IsBounded` packages exactly the inner worst-case obligation of
+`Verifier.rbrKnowledgeSoundnessWorstCase` (round ↦ challenge index, context ↦ statement-and-prefix,
+`preState`/`postState`/`extractBefore` ↦ the knowledge state function and `extractMid`) — so an
+adapter is cheap. Two things it does *not* do, both relevant here: it has no averaged, prover-sampled
+notion, so the worst-case ⇒ averaged bridges in
+`ArkLib/OracleReduction/Security/RoundByRound.lean` are not subsumed by it; and its
+`KnowledgeTransitionFamily` is law-free data, so ArkLib's `KnowledgeStateFunction` obligations do not
+transfer. Its source-shaped `KnowledgeExtractionFamily`/`ExtractionCondition` layer is a *different*
+notion from ArkLib's `rbrKnowledgeSoundnessOneShot`, which samples the prefix by running a prover and
+feeds the prover's query log to the extractor; do not treat the two as equivalent.
+
+The operational content of this file — connecting oracle execution under `simulateQ` to bounds on
+fixed contexts — is what such an abstract layer would still need, and is orthogonal to it.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
 bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,
