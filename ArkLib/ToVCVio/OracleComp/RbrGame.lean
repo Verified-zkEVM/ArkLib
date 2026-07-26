@@ -34,9 +34,19 @@ per-fixed-transcript bounds `∀ tr, Pr[ event tr · | $ᵗ (pSpec.Challenge i)]
   `SampleableType` uniform sampler used by `challengeQueryImpl`) to the PMF-level
   `Pr_{ let x ←$ᵖ α }[…]` notation in which per-transcript bounds are usually proven.
 
-Everything here is ArkLib-local. The first two lemmas mention `ProtocolSpec`-specific
-definitions and hence belong to ArkLib core rather than VCV-io; the bridge lemma is an
-upstream candidate only after the `Pr_{…}` notation itself moves.
+**Everything here is an upstreaming candidate.** The `ProtocolSpec` in these statements is surface,
+not substance: `challengeQueryImpl` is just `fun q => $ᵗ _`, i.e. "answer each query with a uniform
+sample of its answer type", and `QueryImpl.addLift` is already VCV-io's. No notion of protocol,
+transcript, or round enters any proof below — they are `probEvent_bind_le_of_forall_le` plus a
+`simulateQ` normalisation. Generalising the challenge oracle to an arbitrary uniform-answer
+`QueryImpl` would let the mixture bounds move upstream unchanged, leaving only thin
+`ProtocolSpec`-shaped adapters here. The `loggingOracle` lemmas need no generalisation at all; the
+`$ᵗ`/`$ᵖ` bridge is blocked only by the `Pr_{…}` notation living in ArkLib.
+
+See VCVio PR #475, which adds a protocol-agnostic round-by-round layer (`GameFamily`,
+`KnowledgeExtractionFamily`, `extractionCondition_iff_isBounded`). It overlaps this file and
+`ArkLib/OracleReduction/Security/RoundByRound.lean`; before it lands, decide whether ArkLib's
+round-by-round notions should be re-expressed on top of it rather than kept in parallel.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
 bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,

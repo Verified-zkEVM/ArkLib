@@ -5,9 +5,15 @@ holds two kinds of thing:
 
 1. **Additions the pinned VCVio predates** — `simulateQ` / `OracleComp` / distribution lemmas ArkLib
    needs before they exist upstream.
-2. **ArkLib-specific glue** that mentions ArkLib definitions and therefore does not belong upstream at
-   all. `OracleComp/RbrGame.lean` is the current example: it mentions `ProtocolSpec` and is the one
-   file here that imports `ArkLib/OracleReduction/`.
+2. **ArkLib-flavoured glue** whose statements mention ArkLib definitions.
+   `OracleComp/RbrGame.lean` is the current example: it mentions `ProtocolSpec` and is the one file
+   here that imports `ArkLib/OracleReduction/`.
+
+   Do not read category 2 as "cannot be upstreamed". Mentioning an ArkLib type is often only
+   surface: `RbrGame.lean`'s mixture bounds, for instance, need nothing about protocols beyond
+   "a sub-oracle answered by a uniform sample", so generalising that one ingredient would let them
+   move upstream, leaving a thin adapter here. Check whether the ArkLib types are load-bearing
+   before concluding a lemma has to stay.
 
 ## Working rule
 
