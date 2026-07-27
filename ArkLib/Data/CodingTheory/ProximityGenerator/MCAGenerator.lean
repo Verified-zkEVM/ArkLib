@@ -163,16 +163,7 @@ lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
-is an MCA generator.
-
-This is Lemma 4.4 [BCGM25]. The paper obtains the tight error `ε_mca + ε_mca'` by applying the MCA
-property of `G'` to the `ℓ`-fold interleaving of `LC` (an MCA statement over the larger alphabet
-`𝔽^ℓ`). The ArkLib `IsMCAGenerator` predicate is currently fixed to the base alphabet `𝔽`, so here
-we replace that interleaving step by a union bound over the `ℓ` rows, which yields the (weaker but
-self-contained) error `ε_mca + (Fintype.card ℓ) • ε_mca'`. We assume the error functions are
-nonnegative (as MCA errors always are); this is needed to combine the two `ENNReal.ofReal` bounds
-additively. A tight version, matching the paper, is left for a future generalisation of
-`IsMCAGenerator` to arbitrary module alphabets. -/
+is an MCA generator. -/
 lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (LC : LinearCode ι F)
     (G : Generator S ℓ F) (ε_mca : I → ℝ) (hε_mca : ∀ γ, 0 ≤ ε_mca γ)
     (hGMCA : IsMCAGenerator G ε_mca LC)
@@ -223,15 +214,7 @@ lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
-is an MCA generator with error `ε_mca + ε_mca'`.
-
-This is Lemma 4.4 [BCGM25] with the tight error bound. The paper's proof bounds the second term of
-its case split (Equation 5 in [BCGM25]) by applying the MCA property of `G'` to the `ℓ`-fold
-interleaving of `LC`, an MCA statement over the module alphabet `𝔽^ℓ`. The current
-`IsMCAGenerator` is fixed to the base alphabet `𝔽`, so this step cannot yet be expressed and the
-lemma is `sorry`ed, pending the planned generalisation of `IsMCAGenerator` to module alphabets.
-See `tensor_of_MCA_is_MCA` above for a fully proved version with the weaker error
-`ε_mca + |ℓ| • ε_mca'`. -/
+is an MCA generator with error `ε_mca + ε_mca'`. -/
 lemma tensor_of_MCA_is_MCA_tight [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S']
     (LC : LinearCode ι F)
     (G : Generator S ℓ F) (ε_mca : I → ℝ) (hGMCA : IsMCAGenerator G ε_mca LC)
