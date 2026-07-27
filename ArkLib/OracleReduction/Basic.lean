@@ -7,6 +7,201 @@ Authors: Quang Dao
 import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 
 /-!
+### OracleReduction.Basic — Conceptual Overview
+
+## What is an Oracle Reduction?
+
+An **Interactive Oracle Reduction (IOR)** — called `OracleReduction` here — is an
+interactive protocol between a **prover** and a **verifier** where:
+
+- The prover holds a private witness and sends messages round by round.
+- The verifier issues random challenges and, at the end, decides to accept or reject.
+- Crucially, the verifier does **not** read prover messages in the clear. Instead it
+  holds an *oracle* to each message and may query it at chosen points.
+
+This is the information-theoretic core of most modern SNARKs (FRI, PLONK, STARK, …).
+The `BCS transform` later replaces each oracle message with a Merkle commitment,
+turning an IOR into a non-interactive argument.
+
+### File Scope
+
+`OracleReduction/Basic.lean` defines the **primitive building blocks** from which
+all concrete protocol specifications in this library are assembled:
+
+| Concept              | Role in the model                                              |
+|----------------------|----------------------------------------------------------------|
+| `Prover`             | Stateful interactive machine; sends messages, receives challenges |
+| `Verifier`           | Checks the transcript; receives oracle handles, not raw messages |
+| `OracleVerifier`     | A verifier that issues typed oracle *queries* to message handles |
+| `OracleInterface`    | Specifies the query type and answer type for a message oracle  |
+| `embed`              | Lifts a reduction into a larger oracle context                 |
+| `Execution`          | The joint transcript produced by running Prover against Verifier |
+| `Soundness`          | Security predicate: no cheating prover convinces on false statements |
+| `Completeness`       | Honest prover always convinces on true statements              |
+
+---
+
+## The Prover
+
+```
+Prover : Statement → Witness → ProverState → Message × ProverState
+```
+
+The prover is a **stateful function**. At each round it:
+1. Receives the current challenge (or the initial statement + witness at round 0).
+2. Computes the next outgoing message.
+3. Updates its internal state.
+
+The state threading is explicit so that the prover can accumulate partial results
+across rounds (e.g., storing intermediate polynomial evaluations in FRI folding).
+
+## The Verifier
+
+```
+Verifier : Statement → OracleHandle[] → Challenge[] → Decision
+```
+
+The verifier receives:
+- The **public statement** (shared with the prover from the start).
+- A list of **oracle handles** — one per prover message per round. It never sees the
+  raw message; it can only interact with it through the oracle interface.
+- The list of **challenges** it chose during the interaction.
+
+At the end it outputs `accept` or `reject`.
+
+## The Oracle Verifier
+
+`OracleVerifier` is a refinement of `Verifier` that makes the query structure
+explicit in the type. Rather than an opaque decision function, it is described as:
+
+```
+OracleVerifier : Statement → List (OracleQuery msg_i) → Challenge[] → Decision
+```
+
+Each `OracleQuery` is typed by the `OracleInterface` of the corresponding message.
+This makes the **query complexity** of the verifier visible at the type level,
+which is essential for proving efficiency bounds and for the BCS transform.
+
+### OracleInterface
+
+```lean
+structure OracleInterface (Message : Type) where
+  Query  : Type       -- what the verifier asks
+  Answer : Type       -- what the oracle returns
+  oracle : Message → Query → Answer
+```
+
+For example, a polynomial oracle might have `Query := 𝔽` (an evaluation point) and
+`Answer := 𝔽` (the polynomial's value there), with `oracle f x := f.eval x`.
+
+## The `embed` Mechanism
+
+`embed` is the key **composition primitive**. It lifts an `OracleReduction` defined
+over a small oracle context `𝒪_small` into a larger context `𝒪_large` by:
+
+1. Injecting the small oracle interfaces into the larger list via an index map.
+2. Translating queries from the larger verifier back to queries in the smaller world.
+3. Leaving all prover behavior unchanged.
+
+This lets complex protocols be **built from smaller sub-reductions** without having
+to re-prove security from scratch — the composition theorems propagate soundness and
+completeness automatically.
+
+## Interaction, Execution, and Security: The Three Layers
+
+This file deliberately separates three concerns:
+
+### 1. Interaction (syntax)
+The types `Prover`, `Verifier`, `OracleVerifier`, and `OracleInterface` describe
+*what* the parties compute at each step. No probability, no security claim yet.
+
+### 2. Execution (semantics)
+`Execution` runs a `Prover` against a `Verifier` on a given statement and witness,
+threading state and collecting the transcript. It is a *deterministic* function of
+the random challenges (which are sampled by the calling context). This separation
+means the security definitions are stated over transcripts, not over the code of
+the parties.
+
+### 3. Security (properties)
+- **Completeness**: `∀ (x, w) ∈ R, Execution prover verifier x w accepts`.
+- **Soundness / Knowledge Soundness**: For every cheating prover strategy, the
+  probability of acceptance on a false statement is below some bound ε. In the
+  round-by-round variant (used here), this is stated per-round using a *state
+  function* that tracks how far the cheater has "committed" to a false path.
+
+Keeping these layers separate makes it possible to state and reuse security theorems
+generically (in `OracleReduction/Composition.lean` and `OracleReduction/Lifting.lean`)
+without knowing the details of any particular protocol.
+
+---
+
+## Relationship to the Rest of the Library
+
+```
+OracleReduction/Basic.lean          ← you are here
+        │
+        ├── OracleReduction/Composition.lean   sequential composition of reductions
+        ├── OracleReduction/Lifting.lean        context embedding / oracle lifting
+        │
+        └── Protocol/FRI/, Protocol/Sumcheck/  concrete protocol instances
+```
+
+Concrete protocols import `Basic.lean`, instantiate `Prover` and `OracleVerifier`
+with their specific types, and then invoke the generic completeness/soundness
+theorems from `Composition.lean`.
+
+---
+
+## Quick Reference: Key Definitions
+
+Below is a summary of the main definitions exported from this file, with the
+intended reading for each type parameter.
+
+```lean
+-- A single-round oracle interface for messages of type Msg
+structure OracleInterface (Msg : Type u) where
+  Query  : Type v
+  Answer : Type w
+  oracle : Msg → Query → Answer
+
+-- An n-round prover with state type St, message types Msgs, challenge types Chals
+structure Prover (Stmt Wit : Type) (n : ℕ)
+    (Msgs Chals : Fin n → Type) (St : Type) where
+  load      : Stmt → Wit → St
+  -- At round i: given current state and challenge, produce message and new state
+  prove     : (i : Fin n) → St → Chals i → Msgs i × St
+
+-- An n-round verifier with oracle access to messages
+structure OracleVerifier (Stmt : Type) (n : ℕ)
+    (Msgs Chals : Fin n → Type)
+    (OI : (i : Fin n) → OracleInterface (Msgs i))
+    (Decision : Type) where
+  -- At each round: produce a challenge (may query earlier oracles)
+  challenge : (i : Fin n) → Stmt → List (OI · |>.Answer) → Chals i
+  -- Final decision based on all oracle queries
+  decide    : Stmt → (∀ i, List (OI i).Query) → Decision
+
+-- Lift a reduction into a larger oracle context
+def embed : OracleReduction 𝒪_small → IndexMap 𝒪_small 𝒪_large
+          → OracleReduction 𝒪_large
+```
+
+*Note: the actual signatures in the file may use universe-polymorphic variants and
+additional typeclass constraints (e.g., `DecidableEq`, `Fintype`). The above is
+simplified for readability.*
+
+---
+
+## Contributing
+
+If you extend this file, please:
+- Keep the three-layer separation (interaction / execution / security) intact.
+- Add an `OracleInterface` instance in the relevant `Protocol/` subfolder, not here.
+- Reference this module docstring when writing protocol-specific documentation.
+-/
+
+
+/-!
 # Interactive (Oracle) Reductions
 
 This file defines the basic components of a public-coin **Interactive Oracle Reduction** (IOR).
