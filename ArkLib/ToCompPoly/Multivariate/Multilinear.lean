@@ -1,0 +1,140 @@
+/-
+Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Pablo Martín Vinuelas
+-/
+import ArkLib.Data.MvPolynomial.Multilinear
+import CompPoly.Multivariate.Operations
+
+/-!
+  # Computable multilinear extensions over `CMvPolynomial`
+
+  Additions to `CompPoly.Multivariate` not yet upstreamed to CompPoly.
+
+  `ArkLib/Data/MvPolynomial/Multilinear.lean` builds the multilinear extension `MvPolynomial.MLE`
+  of a hypercube evaluation table on top of Mathlib's `MvPolynomial`, which is noncomputable:
+  its carrier is a `Finsupp`, so nothing about it reduces. This file mirrors that construction on
+  CompPoly's computable `CMvPolynomial` — a tree-map of monomials — and establishes that the two
+  agree under the `fromCMvPolynomial` bridge.
+
+  ## Main definitions
+
+  * `CMvPolynomial.singleEqPolynomial`, `CMvPolynomial.eqPolynomial` — the computable `eq̃` factors
+    and their product.
+  * `CMvPolynomial.MLE` — the computable multilinear extension of a table
+    `(Fin n → Fin 2) → R`.
+
+  ## The correspondence
+
+  `fromCMvPolynomial_MLE` is the load-bearing theorem: `fromCMvPolynomial (MLE evals)` is
+  *definitionally the same polynomial* as `MvPolynomial.MLE evals`. Every property of the
+  computable side is then obtained by transporting the Mathlib-side proof rather than reproving
+  it — `MLE_eval_zeroOne`, `MLE_degreeOf`, `MLE_eq_zero_iff`, and membership in the multilinear
+  submodule `MvPolynomial.restrictDegree`.
+
+  This is the pattern the Hachi zero-check uses (`ZeroCheck/Constraints.lean`): the constraint
+  polynomials `H₀`/`H_α` are *defined* computably and their Mathlib images are what the soundness
+  argument reasons about.
+-/
+
+namespace CPoly
+
+namespace CMvPolynomial
+
+open CPoly BigOperators
+
+variable {n : ℕ} {R : Type*} [CommRing R] [BEq R] [LawfulBEq R]
+
+/-! ## `fromCMvPolynomial` commutes with big operators
+
+`fromCMvPolynomial` is the forward direction of the ring equivalence `CPoly.polyRingEquiv`, so
+Mathlib's `map_sum`/`map_prod` apply to it once it is seen through that bundling. -/
+
+theorem fromCMvPolynomial_sum {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∑ i ∈ s, f i) = ∑ i ∈ s, fromCMvPolynomial (f i) :=
+  map_sum (polyRingEquiv (n := n) (R := R)) f s
+
+theorem fromCMvPolynomial_prod {ι : Type*} (s : Finset ι) (f : ι → CMvPolynomial n R) :
+    fromCMvPolynomial (∏ i ∈ s, f i) = ∏ i ∈ s, fromCMvPolynomial (f i) :=
+  map_prod (polyRingEquiv (n := n) (R := R)) f s
+
+/-! ## The computable `eq̃` polynomial -/
+
+/-- The computable per-variable equality factor `(1 - r)·(1 - x) + r·x`, mirroring
+`MvPolynomial.singleEqPolynomial`. -/
+def singleEqPolynomial (r : R) (x : CMvPolynomial n R) : CMvPolynomial n R :=
+  (1 - C r) * (1 - x) + C r * x
+
+/-- The computable equality polynomial `eq̃(r, ·) = ∏ᵢ ((1 - rᵢ)(1 - Xᵢ) + rᵢ·Xᵢ)`, mirroring
+`MvPolynomial.eqPolynomial`. -/
+def eqPolynomial (r : Fin n → R) : CMvPolynomial n R :=
+  ∏ i : Fin n, singleEqPolynomial (r i) (X i)
+
+/-- The computable multilinear extension of a hypercube evaluation table, mirroring
+`MvPolynomial.MLE`: `MLE evals = ∑_{x ∈ {0,1}ⁿ} eq̃(x, ·)·evals(x)`. -/
+def MLE (evals : (Fin n → Fin 2) → R) : CMvPolynomial n R :=
+  ∑ x : Fin n → Fin 2, eqPolynomial (x : Fin n → R) * C (evals x)
+
+/-! ## Correspondence with `MvPolynomial.MLE` -/
+
+@[simp]
+theorem fromCMvPolynomial_singleEqPolynomial (r : R) (x : CMvPolynomial n R) :
+    fromCMvPolynomial (singleEqPolynomial r x)
+      = MvPolynomial.singleEqPolynomial r (fromCMvPolynomial x) := by
+  unfold singleEqPolynomial MvPolynomial.singleEqPolynomial
+  rw [CPoly.map_add, CPoly.map_mul, CPoly.map_mul, CPoly.map_sub, CPoly.map_sub, CPoly.map_one,
+    fromCMvPolynomial_C]
+
+@[simp]
+theorem fromCMvPolynomial_eqPolynomial (r : Fin n → R) :
+    fromCMvPolynomial (eqPolynomial r) = MvPolynomial.eqPolynomial r := by
+  unfold eqPolynomial MvPolynomial.eqPolynomial
+  rw [fromCMvPolynomial_prod]
+  exact Finset.prod_congr rfl fun i _ => by
+    rw [fromCMvPolynomial_singleEqPolynomial, fromCMvPolynomial_X]
+
+/-- **The bridge.** The computable multilinear extension maps onto Mathlib's under
+`fromCMvPolynomial`. Every downstream fact about `CMvPolynomial.MLE` is transported along this
+equation. -/
+@[simp]
+theorem fromCMvPolynomial_MLE (evals : (Fin n → Fin 2) → R) :
+    fromCMvPolynomial (MLE evals) = MvPolynomial.MLE evals := by
+  unfold MLE MvPolynomial.MLE
+  rw [fromCMvPolynomial_sum]
+  exact Finset.sum_congr rfl fun x _ => by
+    rw [CPoly.map_mul, fromCMvPolynomial_eqPolynomial, fromCMvPolynomial_C]
+
+/-! ## Transported properties -/
+
+/-- The computable MLE reproduces the table at every Boolean point. -/
+@[simp]
+theorem MLE_eval_zeroOne (x : Fin n → Fin 2) (evals : (Fin n → Fin 2) → R) :
+    (MLE evals).eval (x : Fin n → R) = evals x := by
+  rw [eval_equiv, fromCMvPolynomial_MLE]
+  exact MvPolynomial.MLE_eval_zeroOne x evals
+
+/-- The computable MLE is multilinear: degree at most `1` in every variable. -/
+theorem MLE_degreeOf (evals : (Fin n → Fin 2) → R) (i : Fin n) :
+    (MLE evals).degreeOf i ≤ 1 := by
+  rw [congrFun (degreeOf_equiv (S := R) (p := MLE evals)) i, ← MvPolynomial.degreeOf_def,
+    fromCMvPolynomial_MLE]
+  exact MvPolynomial.MLE_degreeOf evals i
+
+/-- The Mathlib image of a computable MLE lies in the multilinear submodule
+`MvPolynomial.restrictDegree _ _ 1`, the form the Hachi zero-check's root-counting argument
+consumes. -/
+theorem fromCMvPolynomial_MLE_mem_restrictDegree (evals : (Fin n → Fin 2) → R) :
+    fromCMvPolynomial (MLE evals) ∈ MvPolynomial.restrictDegree (Fin n) R 1 := by
+  rw [fromCMvPolynomial_MLE]
+  exact MvPolynomial.MLE_mem_restrictDegree evals
+
+/-- Nondegeneracy: a computable MLE is the zero polynomial iff its table vanishes identically.
+The computable counterpart of `MvPolynomial.MLE_eq_zero_iff`. -/
+theorem MLE_eq_zero_iff (evals : (Fin n → Fin 2) → R) :
+    MLE evals = 0 ↔ ∀ x, evals x = 0 := by
+  rw [eq_iff_fromCMvPolynomial, fromCMvPolynomial_MLE, CPoly.map_zero]
+  exact MvPolynomial.MLE_eq_zero_iff evals
+
+end CMvPolynomial
+
+end CPoly
