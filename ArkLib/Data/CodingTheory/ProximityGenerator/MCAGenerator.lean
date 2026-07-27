@@ -253,19 +253,12 @@ noncomputable def ε_MCA_MDS [DecidableEq F] [Nonempty ι] (LC : LinearCode ι F
     else
       if γ ≤ 1 - (ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) then
           (n * γ_ℓ / η) * ((ℓ - 1) / s) +
-          max (2 * (ℓ - 1) / (η * ((ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) - (ρ_C + η) ^ (1 / ℓ : ℝ)) * s))
+          max (2 * (ℓ - 1) / (η * ((ρ_C + η) ^ (1 / ((ℓ + 1) : ℝ)) - (ρ_C + η) ^ (1 / ℓ : ℝ)) * s))
               (ℓ * (ℓ + 1) / (η * s) : ℝ)
       else
       1
 
-/-- Theorem 6.1 (MCA for MDS generators) [BCGM25].
-
-The paper requires that `C_G` has dimension `ℓ` (i.e. the generator has full column rank), which
-is the hypothesis `hdim` below; it is what makes the matrix `Mat(G(x₁), …, G(x_ℓ))` invertible in
-the counting arguments (Lemmas 5.2 and 6.2, via Lemma 3.6). It is stated as a separate hypothesis
-here because `IsMDSGenerator` only asserts that `C_G` meets the Singleton bound, which does not by
-itself force the dimension to be `ℓ`. If it later turns out to be derivable from the other
-hypotheses, `hdim` can be removed. -/
+/-- Theorem 6.1 (MCA for MDS generators) [BCGM25]. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
     [Nonempty ι]
     (G : Generator S ℓ F)

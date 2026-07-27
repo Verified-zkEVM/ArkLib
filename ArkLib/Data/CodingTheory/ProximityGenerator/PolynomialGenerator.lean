@@ -156,7 +156,7 @@ variable {F : Type} [Field F]
 noncomputable def ε_mca_RS [Fintype F] (n d m : ℕ) : I → ℝ :=
   let ρ_sqrt := ReedSolomon.sqrtRate k D
   fun γ =>
-    if γ ≤ 1 - (1 + (1 / 2 * m : ℝ)) * ρ_sqrt then
+    if γ ≤ 1 - (1 + (1 / (2 * m : ℝ))) * ρ_sqrt then
       (|Fintype.card F| : ℝ)⁻¹  *  (m + 1 / 2) ^ 7  * (3 * (ρ_sqrt) ^ 3)⁻¹.toReal * d * n ^ 2
     else
       1
@@ -317,23 +317,23 @@ variable {F : Type} [Field F]
 /-- The univariate powers generator of degree `d` restricted to a subset `s ⊆ F` as its seed
 space: `x ↦ (1, x, …, x^d)`. This is the univariate factor used in the proof of Theorem 8.2
 [BCGM25], now over the seed space `s` rather than the whole field. -/
-def UnivariatePowersOn (s : Set F) (d : ℕ) : Generator ↥s (Fin (d + 1)) F :=
+def UnivariatePowersOn (s : Set F) (d : ℕ) : Generator s (Fin (d + 1)) F :=
   fun x j => (x : F) ^ (j : ℕ)
 
 /-- The code `C_G` of the restricted univariate powers generator is the Reed–Solomon code of
-degree `< d+1` over `s`: its `M_G` matrix is the non-square Vandermonde matrix. -/
-lemma UnivariatePowersOn.code_eq_reedSolomon (s : Set F) [Fintype ↥s] [Nonempty ↥s] (d : ℕ) :
+degree less than `d + 1` over `s`: its `M_G` matrix is the non-square Vandermonde matrix. -/
+lemma UnivariatePowersOn.code_eq_reedSolomon (s : Set F) [Fintype s] [Nonempty s] (d : ℕ) :
     fromColGenMat (M_G (UnivariatePowersOn s d))
       = ReedSolomon.code (Function.Embedding.subtype (· ∈ s)) (d + 1) := by
   have hMG : M_G (UnivariatePowersOn s d)
-      = Vandermonde.nonsquare (d + 1) ((Function.Embedding.subtype (· ∈ s)) : ↥s → F) := by
+      = Vandermonde.nonsquare (d + 1) ((Function.Embedding.subtype (· ∈ s)) : s → F) := by
     ext x j
     simp [M_G, UnivariatePowersOn, Vandermonde.nonsquare]
   rw [hMG, genMatIsVandermonde]
 
 /-- The restricted univariate powers generator is an MDS generator (its code is Reed–Solomon,
 hence MDS). -/
-lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype ↥s] [Nonempty ↥s]
+lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype s] [Nonempty s]
     (d : ℕ) (h : d + 1 ≤ Fintype.card ↥s) : IsMDSGenerator (UnivariatePowersOn s d) := by
   unfold IsMDSGenerator
   rw [UnivariatePowersOn.code_eq_reedSolomon]
@@ -344,7 +344,7 @@ For `d ≥ 1` this is Theorem 6.1 (`IsMDSGenerator.isMCAGenerator`) together wit
 `ε_MCA_MDS = ξ` (`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ`
 suffices. -/
 lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
-    (s : Set F) [Fintype ↥s] [Nonempty ↥s]
+    (s : Set F) [Fintype s] [Nonempty s]
     (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
     (h : d + 1 ≤ Fintype.card ↥s) :
     IsMCAGenerator (UnivariatePowersOn s d) (ξ LC d (Fintype.card ↥s) η) LC := by
@@ -375,7 +375,7 @@ lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [
 /-- The `s`-fold tensor product of restricted univariate powers generators, over the product seed
 space `∏ᵢ Sᵢ`: `(x₁, …, xₛ) ↦ ⊗ᵢ (1, xᵢ, …, xᵢ^{dᵢ})`. -/
 def tensorGeneratorPiUnivariateOn {s : ℕ} (S : Fin s → Set F) (d : Fin s → ℕ) :
-    Generator (∀ i, ↥(S i)) ((i : Fin s) → Fin (d i + 1)) F :=
+    Generator (∀ i, (S i)) ((i : Fin s) → Fin (d i + 1)) F :=
   fun x j => ∏ i, ((x i) : F) ^ (j i : ℕ)
 
 /-- The tensor product of the restricted univariate powers generators has MCA for any linear code
@@ -417,7 +417,7 @@ lemma generatorByRightMul_coeffMatrix_sub {s : ℕ} {ℓ : Type} [Fintype ℓ]
 theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
     {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
     (η : ℝ) (hη : 0 < η ∧ η < 1)
-    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype (S i)] [∀ i, Nonempty (S i)]
     (G : Generator (∀ i, S i) ℓ F)
     (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
     (hS : ∀ i : Fin s, (deg_max P i + 1) ≤ (Set.ncard (S i))) :
@@ -425,14 +425,14 @@ theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F
     IsMCAGenerator G ε LC := by
   classical
   show IsMCAGenerator G (∑ i : Fin s, ξ LC (deg_max P i) (Set.ncard (S i)) η) LC
-  have hcard : ∀ i : Fin s, Set.ncard (S i) = Fintype.card ↥(S i) := by
+  have hcard : ∀ i : Fin s, Set.ncard (S i) = Fintype.card (S i) := by
     intro i
     rw [Set.ncard_eq_toFinset_card', Set.toFinset_card]
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
     intro j i
     simpa [deg_max] using
       Finset.le_sup (f := fun j => (P j).degreeOf i) (Fintype.complete j)
-  have hcard_deg : ∀ i : Fin s, deg_max P i + 1 ≤ Fintype.card ↥(S i) := by
+  have hcard_deg : ∀ i : Fin s, deg_max P i + 1 ≤ Fintype.card (S i) := by
     intro i
     rw [← hcard i]
     exact hS i
