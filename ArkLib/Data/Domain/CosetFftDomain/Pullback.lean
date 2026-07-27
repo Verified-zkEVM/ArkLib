@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Ilia Vlasov, Aristotle (Harmonic)
+Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Tactic.CancelDenoms.Core
@@ -178,11 +178,8 @@ lemma mem_pullback₁_iff_mem_pullback₂ {i : Fin (2 ^ n)} (hl : l ≤ r) (hr :
 /-- The connection between components of the pullback set when `l = 0`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_0 {i : Fin (2 ^ n)} (hr : r ≤ n) :
   ω i ∈ ω '' pullback₁ ω 0 r s ↔ ω i ^ 2 ^ r ∈ subdomain ω r '' pullback₂ ω 0 r s := by
-  rw [←mem_pullback₁_iff_mem_pullback₂ (by omega) hr]
-  simp only [Nat.sub_zero, Set.mem_image, SetLike.mem_coe, pow_zero, pow_one]
-  constructor <;> intro ⟨x, hx₁, hx₂⟩ <;> exists x
-  · simp [hx₁, hx₂]
-  · aesop (add safe (by rw [CosetFftDomainClass.subdomain_0_apply]))
+  rw [←mem_pullback₁_iff_mem_pullback₂ (by simp) hr]
+  simp_all
 
 /-- The connection between components of the pullback set when `l = 1`. -/
 lemma mem_pullback₁_iff_mem_pullback₂_l_1 {i : Fin (2 ^ n)} (h1r : 1 ≤ r) (hr : r ≤ n) :
@@ -211,10 +208,10 @@ lemma card_pullback₂_eq (hl : l ≤ r) (hr : r ≤ n) (hs : s ⊆ (subdomain �
 lemma pullback₁_eq_biUnion_pullback₂ (hl : l ≤ r) (hr : r ≤ n) :
   pullback₁ ω l r s =
     Finset.biUnion (pullback₂ ω l r s)
-      (fun x ↦ blockIdx (subdomain ω l) (r - l) (subdomain ω r x)) := by
+      (blockIdx (subdomain ω l) (r - l) ∘ (subdomain ω r)) := by
   ext i
-  simp only [mem_pullback₁ hl hr, mem_biUnion, mem_pullback₂ hl hr, mem_blockIdx_iff_mem_block,
-    mem_block, mem_self, true_and]
+  simp only [mem_pullback₁ hl hr, mem_biUnion, mem_pullback₂ hl hr, Function.comp_apply,
+    mem_blockIdx_iff_mem_block, mem_block, mem_self, true_and]
   constructor
   · intro h
     obtain ⟨a, ha⟩ : (subdomain ω l) i ^ 2 ^ (r - l) ∈ subdomain ω r := by
@@ -229,18 +226,15 @@ lemma card_pullback_eq_mul_card_pullback₂ (hl : l ≤ r) (hr : r ≤ n) :
   #(pullback ω l r s) = 2 ^ (r - l) * #(pullback₂ ω l r s) := by
   rw [card_pullback_eq_card_pullback₁,
       pullback₁_eq_biUnion_pullback₂ hl hr,
-      Finset.card_biUnion (fun _ _ _ _ _ ↦ disjoint_blockIdx <| fun contra ↦ by
-          have contra := CosetFftDomainClass.injective _ contra
-          simp_all
-      ),
-      Finset.sum_equiv
-        (Equiv.refl _) (t := pullback₂ ω l r s)
-        (g := fun i ↦ 2 ^ (r - l))
-        (by simp) (fun i hi ↦ by
-          rw [card_blockIdx, card_block_of_mem_subdomain (by omega)]
-          rw [show l + (r - l) = r by omega]
-          simp)]
-  aesop (add safe (by ac_nf))
+      Finset.card_biUnion (by aesop (add safe (by rw [←Set.InjOn.pairwiseDisjoint_image])))]
+  calc
+    _ = ∑ u ∈ pullback₂ ω l r s, 2 ^ (r - l) :=
+      Finset.sum_equiv (Equiv.refl _) (by simp) (fun i hi ↦ by
+        simp only [Function.comp_apply, card_blockIdx]
+        rw [card_block_of_mem_subdomain (by omega)]
+        rw [show l + (r - l) = r by omega]
+        simp)
+    _ = _ := by aesop (add safe (by ac_nf))
 
 end Pullback
 
