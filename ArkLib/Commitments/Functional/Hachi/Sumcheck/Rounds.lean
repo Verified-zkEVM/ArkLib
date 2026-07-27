@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+import CompPoly.Univariate.Linear
 
 /-!
   # Paired sumcheck rounds — Hachi Figure 6 / Lemma 11 — skeleton (milestone F7)
@@ -59,10 +60,13 @@ section Wire
 
 variable (F : Type) [Field F] (b : ℕ)
 
-/-- A round message: the pair of univariate round polynomials `(g_i^{(0)}, g_i^{(α)})`, degree-
-bounded by the R8 pins (`roundDegZero b = 2b`, `roundDegAlpha = 2`). -/
+/-- A round message: the pair of computable univariate round polynomials
+`(g_i^{(0)}, g_i^{(α)})`, degree-bounded by the R8 pins (`roundDegZero b = 2b`,
+`roundDegAlpha = 2`). `CPolynomial.degreeLE_toPoly` connects each component to Mathlib's
+`Polynomial.degreeLE` when a proof needs the Mathlib API. -/
 @[reducible] def RoundMsg : Type :=
-  ↥(Polynomial.degreeLE F (roundDegZero b : ℕ)) × ↥(Polynomial.degreeLE F (roundDegAlpha : ℕ))
+  ↥(CPolynomial.degreeLE (R := F) (roundDegZero b : ℕ)) ×
+    ↥(CPolynomial.degreeLE (R := F) (roundDegAlpha : ℕ))
 
 /-- The concatenated wire format of `count` paired sumcheck rounds (each round is
 `pSpecScalar (RoundMsg F b) F`: one message pair, one scalar challenge). -/
@@ -88,7 +92,7 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [DecidableEq F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound rBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -113,7 +117,7 @@ def roundVerifier {TCom : Type} (i : ℕ) :
         (tr.messages ⟨0, rfl⟩).2.1.eval (tr.challenges ⟨1, rfl⟩)⟩
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The round verifier is guarded — definitionally, by `roundCheck`. -/
 theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
     (roundVerifier (oSpec := oSpec) Φ b (n := n) (μ := μ) (TCom := TCom)

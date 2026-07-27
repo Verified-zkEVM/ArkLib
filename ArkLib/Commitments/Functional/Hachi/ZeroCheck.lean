@@ -27,14 +27,21 @@ counterexample to the uniform-challenge argument is
 ## Folder structure
 
 * `ZeroCheck/Constraints.lean` — the constraint encoding (Eqs. (21)–(23)): the table `w̃`, the
-  batched polynomials `H₀`/`H_α` (as `MvPolynomial.MLE`s), the sumcheck summands
+  batched polynomials `H₀`/`H_α` (primarily as computable `CMvPolynomial.MLE`s, with Mathlib
+  views for proofs), the sumcheck summands
   `F_{0,τ₀}`/`F_{α,τ₁}` with their per-variable degrees, `kroneckerPoint`, `hypercubeSum`, and the
   per-round relation `roundRel`/`roundRelE`. Shared between this zero-check and the sumcheck rounds
   (`Sumcheck/`).
 * `ZeroCheck/Batch.lean` — the zero-round batching bridge: reinterprets the lift's per-row claims
   as the two identities `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`/`relBatchedE`, Eqs. (22)–(23)). The
   pull-back `mem_relLiftE_of_relBatchedE` (`relBatchedE → relLiftE`) recovers the per-row equation
-  via `MLE_eq_zero_iff` and `hAlphaEvals_rowPoint`, under the arity bound `n ≤ 2 ^ m₁`.
+  from `H_α ≡ 0` (via `MLE_eq_zero_iff` and `hAlphaEvals_rowPoint`, arity `n ≤ 2 ^ m₁`) and
+  **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
+  `(μ + n)·deg φ ≤ 2 ^ m₀` and range-base fits `b − 1 ≤ γ, ρBound`) — so shortness is proved,
+  not assumed (`relBatched` no longer carries a `liftShort` conjunct). The same holds at the
+  point-check seams: `relZeroCheck`/`roundRel` carry the range identity `cHZero … = 0` in place of
+  a `liftShort` conjunct, so the extractor's weak-binding branch derives the norm precondition of
+  `K.collision_mem` rather than assuming it. **No relation in the chain assumes shortness.**
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: one challenge round carrying the seed
   pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the derived Kronecker
   points. The coordinate-wise special soundness theorem

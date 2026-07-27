@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # HMZ25 lift — Hachi Figure 4 / Lemma 9 — skeleton (sumcheck-track milestone F4)
@@ -78,17 +79,17 @@ structure LiftedWitness (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) where
   /-- The `R^lin` witness `z ∈ Rq^μ`. -/
   z : PolyVec (Rq Φ) μ
   /-- The per-row quotient polynomials `rᵢ ∈ Zq[X]`. -/
-  r : Fin n → Polynomial (ZMod q)
+  r : Fin n → CPolynomial (ZMod q)
   /-- Structural degree bound: `deg rᵢ ≤ d − 2` (from `deg (∑ Mᵢⱼzⱼ − yᵢ) ≤ 2d − 2`). -/
   hr : ∀ i, (r i).natDegree ≤ Φ.φ.natDegree - 2
 
 /-- `LiftedWitness` is inhabited (the all-zero witness). -/
 instance : Nonempty (LiftedWitness Φ μ n) :=
-  ⟨⟨fun _ => 0, fun _ => 0, fun _ => by simp⟩⟩
+  ⟨⟨fun _ => 0, fun _ => 0, fun _ => Nat.zero_le _⟩⟩
 
 /-- Coefficient-range predicate on the quotient polynomials (the `r`-side of the Eq. (21) range
 claims; the exact constant is pinned by the F5 digit decomposition). -/
-def rShort (rBound : ℕ) (r : Fin n → Polynomial (ZMod q)) : Prop :=
+def rShort (rBound : ℕ) (r : Fin n → CPolynomial (ZMod q)) : Prop :=
   ∀ i k, ((r i).coeff k).valMinAbs.natAbs ≤ rBound
 
 /-- The combined shortness predicate of the lifted witness — the norm side of `relLift`, and the
@@ -123,17 +124,46 @@ evaluation challenge `α` (the statement-extending pass-through shape of `pSpecS
 abbrev LiftStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) : Type :=
   RlinStatement Φ n μ × TCom × F
 
-/-- The `i`-th lifted row's left-hand side `∑ⱼ Mᵢⱼ(X)·zⱼ(X) ∈ Zq[X]`, on canonical
-representatives (`CPolynomial.toPoly` of the reduced forms; each factor has degree `< d`, so the
-row sum has degree `≤ 2d − 2`). -/
+/-- The computable `i`-th lifted row
+`∑ⱼ Mᵢⱼ(X)·zⱼ(X) ∈ Zq[X]`, formed from the canonical `CPolynomial` representatives. -/
+def cRowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    CPolynomial (ZMod q) :=
+  ∑ j, (s.M i j).1 * (z j).1
+
+/-- Computable evaluation of a `Zq[X]` polynomial at `a ∈ F` through the base-field embedding. -/
+def cEvalAt (φF : ZMod q →+* F) (a : F) (p : CPolynomial (ZMod q)) : F :=
+  p.eval₂ φF a
+
+/-- Mathlib view of `cRowSum`, retained for degree and root-counting proofs. -/
 noncomputable def rowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
     Polynomial (ZMod q) :=
-  ∑ j, (s.M i j).1.toPoly * (z j).1.toPoly
+  (cRowSum Φ s z i).toPoly
 
-/-- Evaluation of a `Zq[X]`-polynomial at `a ∈ F` through the base-field embedding `φF`
-(the `Rq → Zq[X] → F` bridge of milestone F3). -/
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `rowSum` is the expected Mathlib sum of products of canonical representatives. -/
+theorem rowSum_eq_sum_toPoly (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    rowSum Φ s z i = ∑ j, (s.M i j).1.toPoly * (z j).1.toPoly := by
+  unfold rowSum cRowSum
+  rw [CPolynomial.toPoly_sum]
+  exact Finset.sum_congr rfl fun j _ => CPolynomial.toPoly_mul _ _
+
+/-- Mathlib evaluation homomorphism, retained as a specification-level view of `cEvalAt`. -/
 noncomputable def evalAt (φF : ZMod q →+* F) (a : F) : Polynomial (ZMod q) →+* F :=
   Polynomial.eval₂RingHom φF a
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable and Mathlib row-sum evaluations agree. -/
+theorem cEvalAt_cRowSum_eq_evalAt (φF : ZMod q →+* F) (a : F)
+    (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    cEvalAt φF a (cRowSum Φ s z i) = evalAt φF a (rowSum Φ s z i) := by
+  exact CPolynomial.eval₂_toPoly φF a (cRowSum Φ s z i)
+
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- Evaluation of any computable polynomial agrees with evaluation of its Mathlib image. -/
+theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
+    (p : CPolynomial (ZMod q)) :
+    cEvalAt φF a p = evalAt φF a p.toPoly := by
+  exact CPolynomial.eval₂_toPoly φF a p
 
 /-- **The lift's output relation** (Hachi Figure 4 / Lemma 9 residual claims, at the fixed
 challenge `α` of the transcript): `w̃ = (z, r)` opens `t`; every lifted row vanishes at `α`,
@@ -147,9 +177,9 @@ def relLift (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.2.1 ∧
-    (∀ i, evalAt φF p.1.2.2 (rowSum Φ p.1.1 p.2.z i) =
-          evalAt φF p.1.2.2 ((p.1.1.yvec i).1.toPoly) +
-            evalAt φF p.1.2.2 Φ.φ.toPoly * evalAt φF p.1.2.2 (p.2.r i)) ∧
+    (∀ i, cEvalAt φF p.1.2.2 (cRowSum Φ p.1.1 p.2.z i) =
+          cEvalAt φF p.1.2.2 (p.1.1.yvec i).1 +
+            cEvalAt φF p.1.2.2 Φ.φ * cEvalAt φF p.1.2.2 (p.2.r i)) ∧
     liftShort Φ bound rBound p.2 ∧
     bound ≤ p.1.1.bound}
 

@@ -37,13 +37,13 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The bridge's statement map: install the empty challenge prefix and the initial target pair
 `(0, zcTargetAlpha)` on the zero-check statement. -/
-noncomputable def toRoundStatement {TCom : Type} (φF : ZMod q →+* F)
+def toRoundStatement {TCom : Type} (φF : ZMod q →+* F)
     (s : ZeroCheckStatement Φ TCom F n μ) : RoundStatement Φ TCom F n μ 0 :=
   ⟨s, fun j => j.elim0, 0, zcTargetAlpha Φ m₁ φF s.rlin s.α (kroneckerPoint m₁ s.seedα)⟩
 
@@ -65,7 +65,7 @@ theorem mem_relZeroCheckE_of_roundRelE
 /-- **The sumcheck bridge as a `CWSSPackage`**: zero-round `ReduceClaim` at
 `mapStmt := toRoundStatement`, reducing `relZeroCheckE` to the round-`0` seam `roundRelE 0`
 with no soundness error. -/
-noncomputable def sumcheckBridgePackage (init : ProbComp σ)
+def sumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
