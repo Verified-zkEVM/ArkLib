@@ -67,7 +67,6 @@ lemma disagreementSet_k_0 :
     constructor
     · aesop
         (add simp [disagreementSet])
-        (add safe (by rw [mem_subdomain_0_iff_mem]))
     · simp only [Finset.mem_filter, mem_toFinset_iff_mem, hmem,
         true_and, disagreementSet, forall_exists_index]
       intro j hj
@@ -75,7 +74,6 @@ lemma disagreementSet_k_0 :
         have := CosetFftDomainClass.injective φ (a₁ := i)
         aesop
       aesop
-        (add safe (by rw [mem_subdomain_0_iff_mem]))
   · aesop
       (add simp [disagreementSet, blockIdx_k_0_of_ne_mem])
 
