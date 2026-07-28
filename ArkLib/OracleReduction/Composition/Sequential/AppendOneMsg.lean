@@ -106,8 +106,8 @@ theorem append_runToRound_one :
 /-- **L5b**: `processRound 1` as an explicit bind (the boundary-round step). -/
 theorem processRound_one_eq
     (c : OracleComp (oSpec + [(spec₁ M₁ ++ₚ spec₂ M₂).Challenge]ₒ)
-
-         ((spec₁ M₁ ++ₚ spec₂ M₂).Transcript (Fin.castSucc 1) × (P₁.append P₂).PrvState (Fin.castSucc 1))) :
+        ((spec₁ M₁ ++ₚ spec₂ M₂).Transcript (Fin.castSucc 1)
+          × (P₁.append P₂).PrvState (Fin.castSucc 1))) :
     Prover.processRound 1 (P₁.append P₂) c =
       c >>= fun pr =>
         liftc (M₁ := M₁) (M₂ := M₂) ((P₁.append P₂).sendMessage ⟨1, rfl⟩ pr.2) >>= fun w =>
@@ -252,8 +252,10 @@ theorem bridge_c {α : Type} (X : OracleComp oSpec α) :
           OracleComp (oSpec + [(spec₁ M₁ ++ₚ spec₂ M₂).Challenge]ₒ)
             (oSpec.Range t))) = impl t
       rw [simulateQ_query]
+      -- `pSpec` pinned explicitly: leaving it to unification here sends the
+      -- elaborator into a `CoeT (QueryImpl …)` search that times out.
       show id <$> (impl + QueryImpl.liftTarget (StateT σ ProbComp)
-        challengeQueryImpl) (Sum.inl t) = impl t
+        (challengeQueryImpl (pSpec := spec₁ M₁ ++ₚ spec₂ M₂))) (Sum.inl t) = impl t
       rw [id_map]
       exact QueryImpl.add_apply_inl _ _ _) X
 
@@ -281,8 +283,9 @@ theorem bridge_d {M α : Type} (X : OracleComp oSpec α) :
             (Sum.inl t) id) :
           OracleComp (oSpec + [(spec₁ M).Challenge]ₒ) (oSpec.Range t))) = impl t
       rw [simulateQ_query]
+      -- `pSpec` pinned explicitly: see the note in `bridge_c`.
       show id <$> (impl + QueryImpl.liftTarget (StateT σ ProbComp)
-        challengeQueryImpl) (Sum.inl t) = impl t
+        (challengeQueryImpl (pSpec := spec₁ M))) (Sum.inl t) = impl t
       rw [id_map]
       exact QueryImpl.add_apply_inl _ _ _) X
 
