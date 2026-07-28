@@ -439,7 +439,7 @@ theorem distinctXCoordinates_of_represents
     CompPoly.GuruswamiSudan.DistinctXCoordinates w.points := by
   rw [hrep]
   unfold CompPoly.GuruswamiSudan.DistinctXCoordinates
-  simpa using (List.nodup_ofFn.2 ωs.injective)
+  simpa [Function.comp_def] using (List.nodup_ofFn.2 ωs.injective)
 
 /-- Packed CompPoly agreement count is the ArkLib agreement-set cardinality. -/
 theorem matchingPointCount_represents_card
