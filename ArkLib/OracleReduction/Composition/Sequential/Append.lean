@@ -331,8 +331,35 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 -- theorem append_runToRound
 
-instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
-instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
+/-- The challenge type at a left-embedded index of the appended protocol is the
+left protocol's challenge type. -/
+theorem _root_.ProtocolSpec.Challenge_inl (i : pSpec₁.ChallengeIdx) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i) = pSpec₁.Challenge i := by
+  simp only [ProtocolSpec.append, Challenge, ChallengeIdx.inl, Fin.vappend_eq_append,
+    Fin.append_left]
+
+/-- The challenge type at a right-embedded index of the appended protocol is the
+right protocol's challenge type. -/
+theorem _root_.ProtocolSpec.Challenge_inr (i : pSpec₂.ChallengeIdx) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i) = pSpec₂.Challenge i := by
+  simp only [ProtocolSpec.append, Challenge, ChallengeIdx.inr, Fin.vappend_eq_append,
+    Fin.append_right]
+
+/-- The left component's challenge oracles embed into the appended protocol's:
+`ChallengeIdx.inl` on indices, transport along `Challenge_inl` on responses. -/
+instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
+  monadLift q := ⟨⟨ChallengeIdx.inl q.input.1, q.input.2⟩,
+    q.cont ∘ fun r => cast (ProtocolSpec.Challenge_inl q.input.1) r⟩
+  onQuery t := ⟨ChallengeIdx.inl t.1, t.2⟩
+  onResponse t r := cast (ProtocolSpec.Challenge_inl t.1) r
+
+/-- The right component's challenge oracles embed into the appended protocol's:
+`ChallengeIdx.inr` on indices, transport along `Challenge_inr` on responses. -/
+instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
+  monadLift q := ⟨⟨ChallengeIdx.inr q.input.1, q.input.2⟩,
+    q.cont ∘ fun r => cast (ProtocolSpec.Challenge_inr q.input.1) r⟩
+  onQuery t := ⟨ChallengeIdx.inr t.1, t.2⟩
+  onResponse t r := cast (ProtocolSpec.Challenge_inr t.1) r
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and
