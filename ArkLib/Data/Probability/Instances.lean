@@ -222,8 +222,6 @@ theorem do_two_uniform_sampling_eq_uniform_prod {α β : Type} [Fintype α] [Fin
     simp only [ite_eq_right_iff, one_ne_zero, imp_false]
     exact id (Ne.symm h_ne)
 
-section
-
 /-- The probability that a property `P` holds for a uniformly random `r : F` equals
 `ENNReal.ofReal` of the real-valued density `|{x : F // P x}| / |F|`. This is the
 `ENNReal.ofReal`-of-a-real-number form of `prob_uniform_eq_card_filter_div_card`, useful when the
@@ -236,7 +234,6 @@ theorem prob_uniform_eq_ofReal {F : Type} [Fintype F] [Nonempty F]
   rw [ENNReal.ofReal_div_of_pos] <;> norm_num
   exact Fintype.card_pos
 
-end
 
 /--
 **Generic Probability Splitting Lemma (via Equivalence)**

@@ -27,7 +27,7 @@ probability that the generator satisfies the MCA condition is bounded above by `
 - `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
 respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
 - `affine line generator`: A generator of the form `G : F → F²` such that `x ↦ (1,x)`.
-- `affine space generator`: A generator a generator of the form `G : F^ℓ → F^(ℓ + 1)` such that
+- `affine space generator`: A generator of the form `G : F^ℓ → F^(ℓ + 1)` such that
  `x ↦ (1,x)`.
 
 ## References
@@ -92,13 +92,13 @@ def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : Line
   (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
   let v := Matrix.vecMul (G x) (U)
   ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-  projectedWord v T ∈ projectedCode_submod LC T ∧
-  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode_submod LC T
+  projectedWord v T ∈ projectedCodeSubmod LC T ∧
+  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → ℝ)
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
   (LC : LinearCode ι F) : Prop :=
   ∀ U : ℓ → (ι → F), ∀ γ : I,
     Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)

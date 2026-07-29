@@ -49,17 +49,18 @@ some `U j` restricted to `T` does not lie in the code, then there is a codeword 
 not a codeword in the `T`-projected code. -/
 lemma exists_succ_not_mem [Fintype ι] {s : ℕ} (LC : LinearCode ι F) (T : Finset ι)
     (U : Fin (s + 1) → (ι → F)) (x : Fin s → F)
-    (hv : projectedWord (affineComb U x) T ∈ projectedCode_submod LC T)
-    (hj : ∃ j : Fin (s + 1), projectedWord (U j) T ∉ projectedCode_submod LC T) :
-    ∃ i : Fin s, projectedWord (U i.succ) T ∉ projectedCode_submod LC T := by
+    (hv : projectedWord (affineComb U x) T ∈ projectedCodeSubmod LC T)
+    (hj : ∃ j : Fin (s + 1), projectedWord (U j) T ∉ projectedCodeSubmod LC T) :
+    ∃ i : Fin s, projectedWord (U i.succ) T ∉ projectedCodeSubmod LC T := by
   contrapose! hj
   intro j
   induction j using Fin.inductionOn
   · have h_aff : affineComb U x = U 0 + linComb U x := by
       ext k; simp [affineComb, linComb, Matrix.vecMul, dotProduct, Fin.sum_univ_succ]
-    have hj' : ∀ i : Fin s, projectedWord (U i.succ) T ∈ projectedCode LC.carrier T := hj
-    have h_linComb : projectedWord (linComb U x) T ∈ projectedCode_submod LC T := by
-      change projectedWord (fun k => ∑ i, x i * U i.succ k) T ∈ projectedCode LC.carrier T
+    have hj' : ∀ i : Fin s, projectedWord (U i.succ) T ∈ projectedCode LC.carrier T :=
+      fun i => (LinearCode.mem_projectedCodeSubmod_iff LC T _).mp (hj i)
+    have h_linComb : projectedWord (linComb U x) T ∈ projectedCodeSubmod LC T := by
+      rw [LinearCode.mem_projectedCodeSubmod_iff]
       exact LinearCode.projectedCode_linearCombination LC T (fun i => U i.succ) x hj'
     have h_split : projectedWord (affineComb U x) T =
         projectedWord (U 0) T + projectedWord (linComb U x) T := by
@@ -72,7 +73,7 @@ lemma exists_succ_not_mem [Fintype ι] {s : ℕ} (LC : LinearCode ι F) (T : Fin
 /-- The quotient of the projected word space `T → F` by the projected code on `T`, used in the
 kernel/rank-nullity argument of Step 2. -/
 abbrev projectedQuotient [Fintype ι] (LC : LinearCode ι F) (T : Finset ι) : Type :=
-  (T → F) ⧸ LC.projectedCode_submod T
+  (T → F) ⧸ LC.projectedCodeSubmod T
 
 open Classical in
 /-- If some direction codeword `w i` does not project into the code on `T`, then the set of
@@ -80,12 +81,12 @@ coefficient vectors `l` whose combination `∑ i, l i • w i` projects into the
 at most `|F| ^ (s-1)`. -/
 lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
     (LC : LinearCode ι F) (T : Finset ι) (w : Fin s → (ι → F))
-    (hne : ∃ i, projectedWord (w i) T ∉ projectedCode_submod LC T) :
+    (hne : ∃ i, projectedWord (w i) T ∉ projectedCodeSubmod LC T) :
     (Finset.univ.filter (fun l : Fin s → F =>
-        projectedWord (fun k => ∑ i, l i * w i k) T ∈ projectedCode_submod LC T)).card
+        projectedWord (fun k => ∑ i, l i * w i k) T ∈ projectedCodeSubmod LC T)).card
       ≤ (Fintype.card F) ^ (s - 1) := by
   set g : (Fin s → F) →ₗ[F] projectedQuotient LC T :=
-    Submodule.mkQ (LC.projectedCode_submod T) ∘ₗ
+    Submodule.mkQ (LC.projectedCodeSubmod T) ∘ₗ
       LinearMap.funLeft F F (Subtype.val : T → ι) ∘ₗ Fintype.linearCombination F w with hg_def
   have hker : Module.finrank F (LinearMap.ker g) ≤ s - 1 := by
     obtain ⟨i, hi⟩ := hne
@@ -181,43 +182,43 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
   set m := Bset.card
   obtain ⟨T, hT⟩ :
     ∃ T : (Fin s → F) → (Finset ι), ∀ x, isB x → (T x).card ≥ (Fintype.card ι) * (1 - (γ : ℝ)) ∧
-      projectedWord (affineComb U x) (T x) ∈ projectedCode_submod LC (T x) ∧
-      ∃ j, projectedWord (U j) (T x) ∉ projectedCode_submod LC (T x) := by
+      projectedWord (affineComb U x) (T x) ∈ projectedCodeSubmod LC (T x) ∧
+      ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod LC (T x) := by
     choose! T hT using fun x (hx : isB x) => hx
     use T
   obtain ⟨lam, hlam⟩ : ∃ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x)
-                       ∈ projectedCode_submod LC (T x))).card ≤ m / (Fintype.card F : ℝ) := by
+                       ∈ projectedCodeSubmod LC (T x))).card ≤ m / (Fintype.card F : ℝ) := by
     have h_per_seed_le : ∀ x ∈ Bset, ∑ lam : Fin s → F, (if projectedWord (linComb U lam) (T x) ∈
-                projectedCode_submod LC (T x) then 1 else 0) ≤ (Fintype.card F) ^ (s - 1) := by
+                projectedCodeSubmod LC (T x) then 1 else 0) ≤ (Fintype.card F) ^ (s - 1) := by
       intro x hx
-      have h_ker : ∃ i : Fin s, projectedWord (U i.succ) (T x) ∉ projectedCode_submod LC (T x) :=
+      have h_ker : ∃ i : Fin s, projectedWord (U i.succ) (T x) ∉ projectedCodeSubmod LC (T x) :=
         exists_succ_not_mem LC (T x) U x (hT x (Finset.mem_filter.mp hx |>.2) |>.2.1)
               (hT x (Finset.mem_filter.mp hx |>.2) |>.2.2)
       have h_proj_bound := proj_lincomb_ker_card_le LC (T x) (fun i => U i.succ) h_ker
       aesop
     have h_sum : ∑ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x) ∈
-                  projectedCode_submod LC (T x))).card ≤ m * (Fintype.card F) ^ (s - 1) := by
+                  projectedCodeSubmod LC (T x))).card ≤ m * (Fintype.card F) ^ (s - 1) := by
       convert Finset.sum_le_sum h_per_seed_le using 1
       · rw [Finset.sum_comm, Finset.sum_congr rfl]
         aesop
       · simp +zetaDelta
     have havg := exists_avg_le hs (fun lam => (Bset.filter (fun x => projectedWord (linComb U lam)
-          (T x) ∈ LC.projectedCode_submod (T x) ) |> Finset.card)) m ?_
+          (T x) ∈ LC.projectedCodeSubmod (T x) ) |> Finset.card)) m ?_
     · exact havg.imp fun x hx => by rwa [le_div_iff₀' (Nat.cast_pos.mpr <| Fintype.card_pos)]
     · linarith
   obtain ⟨v, hv⟩ : ∃ v : Fin s → F, ((Bset.filter (fun x => ¬projectedWord (linComb U lam) (T x) ∈
-          projectedCode_submod LC (T x))).card : ℝ) / (Fintype.card F) ^ s ≤
+          projectedCodeSubmod LC (T x))).card : ℝ) / (Fintype.card F) ^ s ≤
           ((Finset.univ.filter (fun t : F => v + t • lam ∈ Bset ∧
            ¬projectedWord (linComb U lam) (T (v + t • lam)) ∈
-           projectedCode_submod LC (T (v + t • lam)))).card : ℝ) / (Fintype.card F) := by
+           projectedCodeSubmod LC (T (v + t • lam)))).card : ℝ) / (Fintype.card F) := by
     have hdir := exists_dir_line_ge lam (Bset.filter fun x => ¬projectedWord (linComb U lam) (T x) ∈
-            LC.projectedCode_submod (T x))
+            LC.projectedCodeSubmod (T x))
     aesop
   refine ⟨![affineComb U v, linComb U lam], le_trans ?_ (hv.trans ?_ )⟩
   · convert mul_le_mul_of_nonneg_right
         (show (1 - 1 / (Fintype.card F : ℝ)) * m ≤ (
           Finset.filter (fun x => ¬projectedWord (linComb U lam ) ( T x ) ∈
-          LC.projectedCode_submod (T x)) Bset |> Finset.card : ℝ) from ?_)
+          LC.projectedCodeSubmod (T x)) Bset |> Finset.card : ℝ) from ?_)
           (by positivity : 0 ≤ (Fintype.card F : ℝ) ⁻¹ ^ s) using 1
     · ring
     · ring
@@ -229,10 +230,10 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
         have hcard_gt_one : Fintype.card F > 1 := Fintype.one_lt_card
         have hpartition : Finset.card (Finset.filter
               (fun x => projectedWord (linComb U lam) (T x) ∈
-                projectedCode_submod LC (T x)) Bset)
+                projectedCodeSubmod LC (T x)) Bset)
             + Finset.card (Finset.filter
               (fun x => ¬projectedWord (linComb U lam) (T x) ∈
-                projectedCode_submod LC (T x)) Bset) = m := by
+                projectedCodeSubmod LC (T x)) Bset) = m := by
           rw [Finset.card_filter_add_card_filter_not]
         nlinarith [hcard_gt_one, hpartition]
   · gcongr
@@ -259,26 +260,29 @@ variable {ι : Type} [Fintype ι]
 The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `LC` implies that
 the affine space generator `Fˡ → Fˡ⁺¹`, `x ↦ (1, x)`, has MCA for `LC` with error
 `(1 - 1/|F|)⁻¹ • ε_mca`. -/
-theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 2) (ε_mca : I → ℝ) (LC : LinearCode ι F)
+theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I → ℝ≥0) (LC : LinearCode ι F)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca LC) :
-    letI a := (1 - 1 / Fintype.card F : ℝ)
+    letI a := (1 - 1 / Fintype.card F : ℝ≥0)
     letI ε_mca' := a⁻¹ • ε_mca
     IsMCAGenerator (AffineSpaceGenerator F ℓ) ε_mca' LC := by
   classical
   intro U γ
-  set a : ℝ := (1 - 1 / (Fintype.card F : ℝ))
-  have ha : 0 < a := by
-    have hq1 : (1 : ℝ) < (Fintype.card F : ℝ) := by exact_mod_cast Fintype.one_lt_card
-    rw [sub_pos, div_lt_one (by linarith)]
-    linarith
-  have hs : 1 ≤ ℓ := by omega
+  set a : ℝ≥0 := (1 - 1 / (Fintype.card F : ℝ≥0)) with ha_def
+  have hcard1 : (1 : ℝ) < (Fintype.card F : ℝ) := by exact_mod_cast Fintype.one_lt_card
+  have hinv_le : (1 : ℝ≥0) / (Fintype.card F : ℝ≥0) ≤ 1 := by
+    rw [div_le_one (by exact_mod_cast Fintype.card_pos)]
+    exact_mod_cast Fintype.card_pos
+  have ha_coe : (a : ℝ) = 1 - 1 / (Fintype.card F : ℝ) := by
+    rw [ha_def, NNReal.coe_sub hinv_le]; push_cast; ring
+  have ha : 0 < (a : ℝ) := by
+    rw [ha_coe, sub_pos, div_lt_one (by linarith)]; linarith
   rw [prob_uniform_eq_ofReal]
   have hcard : (Fintype.card (Fin ℓ → F) : ℝ) = (Fintype.card F : ℝ) ^ ℓ := by
     norm_cast
     rw [Fintype.card_fun, Fintype.card_fin]
   rw [hcard]
-  simp only [Pi.smul_apply, smul_eq_mul]
-  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hs LC U γ
+  simp only [Pi.smul_apply, smul_eq_mul, NNReal.coe_mul, NNReal.coe_inv]
+  obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hℓ LC U γ
   have hline := hGMCA W γ
   rw [prob_uniform_eq_ofReal] at hline
   set sp : ℝ :=
@@ -287,30 +291,13 @@ theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 2) (ε_mca : I
   set ln : ℝ :=
     ((Finset.univ.filter (fun t : F =>
         IsMCA (AffineLineGenerator F) LC t W γ)).card : ℝ) with hln
-  have hsp0 : 0 ≤ sp / (Fintype.card F : ℝ) ^ ℓ := by positivity
-  have hln0 : 0 ≤ ln / (Fintype.card F : ℝ) := by positivity
-  by_cases hε : 0 ≤ ε_mca γ
-  · have hlre : ln / (Fintype.card F : ℝ) ≤ ε_mca γ :=
-      (ENNReal.ofReal_le_ofReal_iff hε).mp hline
-    have hchain : a * (sp / (Fintype.card F : ℝ) ^ ℓ) ≤ ε_mca γ := le_trans hW hlre
-    have hfin : sp / (Fintype.card F : ℝ) ^ ℓ ≤ a⁻¹ * ε_mca γ := by
-      rw [inv_mul_eq_div, le_div_iff₀ ha, mul_comm]
-      exact hchain
-    exact ENNReal.ofReal_le_ofReal hfin
-  · push Not at hε
-    have h0 : ENNReal.ofReal (ε_mca γ) = 0 := ENNReal.ofReal_of_nonpos (le_of_lt hε)
-    rw [h0] at hline
-    have hln_le : ln / (Fintype.card F : ℝ) ≤ 0 :=
-      ENNReal.ofReal_eq_zero.mp (le_antisymm hline zero_le)
-    have hln_eq : ln / (Fintype.card F : ℝ) = 0 := le_antisymm hln_le hln0
-    have hchain : a * (sp / (Fintype.card F : ℝ) ^ ℓ) ≤ 0 := by
-      rw [← hln_eq]; exact hW
-    have hsp_eq : sp / (Fintype.card F : ℝ) ^ ℓ = 0 := by
-      by_contra h
-      have hpos : 0 < sp / (Fintype.card F : ℝ) ^ ℓ := lt_of_le_of_ne hsp0 (Ne.symm h)
-      have : 0 < a * (sp / (Fintype.card F : ℝ) ^ ℓ) := mul_pos ha hpos
-      linarith
-    rw [hsp_eq]
-    simp
+  have hlre : ln / (Fintype.card F : ℝ) ≤ (ε_mca γ : ℝ) :=
+    (ENNReal.ofReal_le_ofReal_iff (ε_mca γ).coe_nonneg).mp hline
+  have hchain : (a : ℝ) * (sp / (Fintype.card F : ℝ) ^ ℓ) ≤ (ε_mca γ : ℝ) :=
+    le_trans (ha_coe ▸ hW) hlre
+  have hfin : sp / (Fintype.card F : ℝ) ^ ℓ ≤ (a : ℝ)⁻¹ * (ε_mca γ : ℝ) := by
+    rw [inv_mul_eq_div, le_div_iff₀ ha, mul_comm]
+    exact hchain
+  exact ENNReal.ofReal_le_ofReal hfin
 
 end AffineMCAMain

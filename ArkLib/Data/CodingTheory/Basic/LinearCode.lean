@@ -255,56 +255,29 @@ scoped macro_rules
 
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
-We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
 def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
-`C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
+as the set of projected codewords.
 Definition 3.7 [BCGM25]. -/
 def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
   {w | ∃ c ∈ C, w = projectedWord c T}
 
 open Submodule
 
-def projectedCode_submod
-    [Field F]
-    [Fintype ι]
-    (LC : LinearCode ι F)
-    (T : Finset ι) :
-    Submodule F (T → F) :=
-{
-  carrier := projectedCode (LC.carrier) T,
-  zero_mem' := by
-    unfold projectedCode projectedWord
-    simp only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    use 0
-    exact And.intro (Submodule.zero_mem LC) (List.map_inj.mp rfl)
+/-- The projected code of a linear code, as a submodule of `T → F`.
+Definition 3.7 [BCGM25]. -/
+def projectedCodeSubmod [Field F] [Fintype ι] (LC : LinearCode ι F) (T : Finset ι) :
+  Submodule F (T → F) := LC.map (LinearMap.funLeft F F (Subtype.val : T → ι))
 
-  add_mem' := by
-    unfold projectedCode projectedWord
-    intros x y hx hy
-    simp_all only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    rcases hx with ⟨cx, hx⟩
-    rcases hy with ⟨cy, hy⟩
-    use (cx + cy)
-    apply And.intro ((Submodule.add_mem_iff_right LC hx.1).mpr hy.1)
-    ext i
-    simp [hx.2, hy.2]
+/-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
+lemma mem_projectedCodeSubmod_iff [Field F] (LC : LinearCode ι F) (T : Finset ι)
+    (w : T → F) : w ∈ projectedCodeSubmod LC T ↔ w ∈ projectedCode LC.carrier T :=
+  Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
 
-  smul_mem' := by
-    unfold projectedCode projectedWord
-    intros m x hx
-    simp_all only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    rcases hx with ⟨cx,hx⟩
-    use m • cx
-    apply And.intro (smul_mem LC m hx.1)
-    ext i
-    simp [hx.2]
-}
-
-/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code
-`C|[T]`, then so do all `F`-linear combinations of these. -/
+/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
+then so do all `F`-linear combinations of these. -/
 lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
     [Fintype α] (U : α → (ι → F)) (c : α → F)
     (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :
