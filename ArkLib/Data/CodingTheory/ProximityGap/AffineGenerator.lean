@@ -40,9 +40,8 @@ variable {ι : Type}
 
 /-- The affine line combination `vecMul (1, t) W = W 0 + t • W 1`. -/
 lemma line_vecMul (W : Fin 2 → (ι → F)) (t : F) :
-    Matrix.vecMul (AffineLineGenerator F t) W = W 0 + t • W 1 := by
-  ext k
-  simp [AffineLineGenerator, Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+  Matrix.vecMul (AffineLineGenerator F t) W = W 0 + t • W 1 := by
+  aesop (add simp [AffineLineGenerator, Matrix.vecMul])
 
 /-- If the affine combination restricted to `T` is in a linear code, but
 some `U j` restricted to `T` does not lie in the code, then there is a codeword `U (i + 1)` which is
@@ -57,9 +56,11 @@ lemma exists_succ_not_mem [Fintype ι] {s : ℕ} (LC : LinearCode ι F) (T : Fin
   induction j using Fin.inductionOn
   · have h_aff : affineComb U x = U 0 + linComb U x := by
       ext k; simp [affineComb, linComb, Matrix.vecMul, dotProduct, Fin.sum_univ_succ]
-    have hj' : ∀ i : Fin s, projectedWord (U i.succ) T ∈ projectedCode LC.carrier T := hj
+    have hj' : ∀ i : Fin s, projectedWord (U i.succ) T ∈ projectedCode LC T := by
+      simpa using hj
     have h_linComb : projectedWord (linComb U x) T ∈ projectedCode_submod LC T := by
-      change projectedWord (fun k => ∑ i, x i * U i.succ k) T ∈ projectedCode LC.carrier T
+      simp only [mem_projectedCode_submod]
+      change projectedWord (∑ i, x i • U i.succ) T ∈ projectedCode LC.carrier T
       exact LinearCode.projectedCode_linearCombination LC T (fun i => U i.succ) x hj'
     have h_split : projectedWord (affineComb U x) T =
         projectedWord (U 0) T + projectedWord (linComb U x) T := by
@@ -82,7 +83,7 @@ lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
     (LC : LinearCode ι F) (T : Finset ι) (w : Fin s → (ι → F))
     (hne : ∃ i, projectedWord (w i) T ∉ projectedCode_submod LC T) :
     (Finset.univ.filter (fun l : Fin s → F =>
-        projectedWord (fun k => ∑ i, l i * w i k) T ∈ projectedCode_submod LC T)).card
+        projectedWord (∑ i, l i • w i) T ∈ projectedCode_submod LC T)).card
       ≤ (Fintype.card F) ^ (s - 1) := by
   set g : (Fin s → F) →ₗ[F] projectedQuotient LC T :=
     Submodule.mkQ (LC.projectedCode_submod T) ∘ₗ
@@ -90,10 +91,8 @@ lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
   have hker : Module.finrank F (LinearMap.ker g) ≤ s - 1 := by
     obtain ⟨i, hi⟩ := hne
     have h_range : LinearMap.range g ≠ ⊥ := by
-      simp_all only [ne_eq, Submodule.eq_bot_iff, LinearMap.mem_range, LinearMap.coe_comp,
-        Function.comp_apply, Submodule.mkQ_apply, forall_exists_index, forall_apply_eq_imp_iff,
-        Submodule.Quotient.mk_eq_zero, not_forall]
-      exact ⟨Pi.single i 1, by simpa [Fintype.linearCombination_apply] using hi⟩
+      have : ∃ x, ¬g x = 0 := ⟨Pi.single i 1, by aesop⟩
+      simp_all [Submodule.eq_bot_iff]
     have hrank_null := LinearMap.finrank_range_add_finrank_ker g
     simp_all only [ne_eq, Module.finrank_fintype_fun_eq_card, Fintype.card_fin, ge_iff_le]
     exact Nat.le_sub_one_of_lt
@@ -101,16 +100,7 @@ lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
   have hcard : Fintype.card (LinearMap.ker g) ≤ (Fintype.card F) ^ (s - 1) := by
     rw [Module.card_eq_pow_finrank (K := F)]
     exact pow_le_pow_right₀ (Fintype.card_pos) hker
-  convert hcard using 1
-  simp only [LinearMap.mem_ker, hg_def, LinearMap.coe_comp, Function.comp_apply,
-    Submodule.mkQ_apply, Submodule.Quotient.mk_eq_zero]
-  rw [Fintype.card_subtype]
-  congr
-  ext
-  simp only [projectedWord, Fintype.linearCombination_apply, map_sum, map_smul]
-  congr! 1
-  ext
-  simp [Finset.sum_apply, LinearMap.funLeft_apply]
+  aesop (add simp [Fintype.card_subtype])
 
 /-- If a sum of nonnegative integer counts over all `|F|^s` coefficient vectors is bounded by
 `|F|^(s-1) * m`, then some coefficient vector achieves a count whose `|F|`-fold is at most `m`. -/
@@ -234,7 +224,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
               (fun x => ¬projectedWord (linComb U lam) (T x) ∈
                 projectedCode_submod LC (T x)) Bset) = m := by
           rw [Finset.card_filter_add_card_filter_not]
-        nlinarith [hcard_gt_one, hpartition]
+        aesop (add safe (by nlinarith))
   · gcongr
     intro h
     use T (v + ‹_› • lam)

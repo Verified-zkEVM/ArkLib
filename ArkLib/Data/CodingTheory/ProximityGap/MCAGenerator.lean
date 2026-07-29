@@ -44,12 +44,17 @@ def generatorByRightMul (G : Generator S ℓ F) (A : Matrix ℓ ℓ' F) : Genera
 given by `κ`.
 This is the generator `G'` inside Corollary 4.2 [BCGM25] -/
 def projectedGenerator (G : Generator S ℓ F) (κ : Set ℓ) : Generator S κ F :=
-    fun x ↦ Set.restrict κ (G x)
+  fun x ↦ Set.restrict κ (G x)
 
 /-- Let `U : ℓ' → (ι → F)` be a family of `ℓ'` codewords over `𝔽^ι`. Obtain a family of `ℓ`
 codewords by acting on `U` by left multiplication with an `ℓ × ℓ'` matrix `A`. -/
-def matrixMulCodewords (A : Matrix ℓ ℓ' F) (U : ℓ' → (ι → F)) : ℓ → (ι → F) :=
-  fun i k => ∑ j : ℓ', A i j * U j k
+def matrixMulCodewords (A : Matrix ℓ ℓ' F) (U : ℓ' → ι → F) : ℓ → ι → F :=
+  Matrix.row (A * Matrix.of U)
+
+omit [Fintype ι] [Fintype ℓ] in
+@[simp]
+lemma matrixMulCodewords_apply {A : Matrix ℓ ℓ' F} {U : ℓ' → ι → F} {i : ℓ} {k : ι} :
+  matrixMulCodewords A U i k = ∑ j : ℓ', A i j * U j k := rfl
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `A` a matrix
 with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
@@ -65,15 +70,13 @@ IsMCA (generatorByRightMul G A) LC x U γ → IsMCA G LC x (matrixMulCodewords A
     obtain ⟨B, hB⟩ := hA
     rintro ⟨T, hT_card, hT_proj, j, hj⟩
     refine ⟨T, hT_card, ?_, ?_⟩
-    · convert hT_proj using 1
-      ext i
-      simp only [generatorByRightMul, Matrix.vecMul_vecMul]
-      congr! 2
+    · aesop (add simp [generatorByRightMul, Matrix.vecMul_vecMul])
     · contrapose! hj
-      convert LinearCode.projectedCode_linearCombination LC T (fun i => matrixMulCodewords A U i)
-        (fun i => B j i) (fun i => hj i) using 1
-      ext k
-      simp [matrixMulCodewords, ← Matrix.mul_apply, ← Matrix.mul_assoc, hB]
+      simp only [mem_projectedCode_submod]
+      convert LinearCode.projectedCode_linearCombination LC T (matrixMulCodewords A U)
+        (B j) (fun _ => by simpa using hj _) using 1
+      have {k} : U j k = B.mulVec (A.mulVec (fun j_2 => U j_2 k)) j := by simp_all
+      aesop (add simp [mulVec])
   exact le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ fun x h => isMCA_generatorByRightMul_of_isMCA x h)
     (hGMCA (matrixMulCodewords A U) γ)
 

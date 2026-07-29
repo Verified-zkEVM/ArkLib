@@ -307,7 +307,7 @@ abbrev affineComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) :
 
 /-- The linear combination `∑ i, l i • U (i+1)` of the "direction" codewords. -/
 abbrev linComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (l : Fin s → F) : ι → F :=
-  fun k => ∑ i, l i * U i.succ k
+  ∑ i, l i • U i.succ
 
 omit [Fintype ι] [DecidableEq F] [Fintype F] in
 /-- The affine combination along the line `x ↦ v + t • lam` in seed space. -/

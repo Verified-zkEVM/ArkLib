@@ -259,63 +259,52 @@ We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
 def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
+@[simp]
+lemma projectedWord_apply {c : ι → F} {T : Finset ι} {i : T} :
+  projectedWord c T i = c i := rfl
+
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
 `C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
 Definition 3.7 [BCGM25]. -/
-def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
+def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
   {w | ∃ c ∈ C, w = projectedWord c T}
+
+lemma mem_projectedCode {C : Set (ι → F)} {T : Finset ι} {w : ↥T → F} :
+  w ∈ projectedCode C T ↔ ∃ c ∈ C, ∀ t (ht : t ∈ T), w ⟨t, ht⟩ = c t := by
+  aesop (add simp [projectedCode])
+
+lemma restrict_mem_projectedCode_iff {C : Set (ι → F)} {T : Finset ι} {w : ι → F} :
+  T.restrict w ∈ projectedCode C T ↔ ∃ c ∈ C, ∀ t ∈ T, w t = c t := by
+  aesop (add simp mem_projectedCode)
+
+lemma restrict_mem_projectedCode_of_codeword_eq {C : Set (ι → F)} {T : Finset ι} {w : ι → F}
+  (c : ι → F) (hcode : c ∈ C) (heval : ∀ t ∈ T, w t = c t) :
+  T.restrict w ∈ projectedCode C T := by
+  aesop (add simp mem_projectedCode)
 
 open Submodule
 
-def projectedCode_submod
-    [Field F]
-    [Fintype ι]
-    (LC : LinearCode ι F)
-    (T : Finset ι) :
-    Submodule F (T → F) :=
-{
-  carrier := projectedCode (LC.carrier) T,
-  zero_mem' := by
-    unfold projectedCode projectedWord
-    simp only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    use 0
-    exact And.intro (Submodule.zero_mem LC) (List.map_inj.mp rfl)
+def projectedCode_submod [Field F] (LC : LinearCode ι F) (T : Finset ι) : Submodule F (T → F) :=
+  LC.map (LinearMap.funLeft F F (Subtype.val : T → ι))
 
-  add_mem' := by
-    unfold projectedCode projectedWord
-    intros x y hx hy
-    simp_all only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    rcases hx with ⟨cx, hx⟩
-    rcases hy with ⟨cy, hy⟩
-    use (cx + cy)
-    apply And.intro ((Submodule.add_mem_iff_right LC hx.1).mpr hy.1)
-    ext i
-    simp [hx.2, hy.2]
+lemma projectedWord_eq_funLeft [Field F] {T : Finset ι} {c : ι → F} :
+  projectedWord c T =
+    (LinearMap.funLeft F F (Subtype.val : T → ι)) c := rfl
 
-  smul_mem' := by
-    unfold projectedCode projectedWord
-    intros m x hx
-    simp_all only [carrier_eq_coe, SetLike.mem_coe, Set.mem_setOf_eq]
-    rcases hx with ⟨cx,hx⟩
-    use m • cx
-    apply And.intro (smul_mem LC m hx.1)
-    ext i
-    simp [hx.2]
-}
+@[simp]
+lemma mem_projectedCode_submod [Field F] {LC : LinearCode ι F} {T : Finset ι} {w : ↥T → F} :
+  w ∈ projectedCode_submod LC T ↔ w ∈ projectedCode LC T := by
+  aesop (add simp [projectedCode_submod, mem_projectedCode])
 
 /-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code
 `C|[T]`, then so do all `F`-linear combinations of these. -/
 lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
-    [Fintype α] (U : α → (ι → F)) (c : α → F)
-    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :
-    projectedWord (fun k => ∑ j, c j * U j k) T ∈ projectedCode LC.carrier T := by
-  obtain ⟨w, hw⟩ : ∃ w ∈ LC, ∀ t ∈ T, w t = ∑ j, c j * U j t := by
-    choose w hw using hU
-    use ∑ j, c j • w j
-    exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
-      fun t ht => by simp [show ∀ j, U j t = w j t from
-        fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
-  exact ⟨w, hw.1, funext fun t => by simpa using Eq.symm (hw.2 t t.2)⟩
+    [Fintype α] (U : α → ι → F) (c : α → F)
+    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC T) :
+    projectedWord (∑ j, c j • U j) T ∈ projectedCode LC T := by
+  simp_all only [mem_projectedCode]
+  choose w hw using hU
+  exact ⟨∑ j, c j • w j, by aesop (add unsafe Submodule.sum_mem)⟩
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
 def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
