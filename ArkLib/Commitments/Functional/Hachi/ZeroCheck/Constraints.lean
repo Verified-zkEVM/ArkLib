@@ -41,24 +41,14 @@ import ArkLib.ToCompPoly.Multivariate.Multilinear
 
   ## Computable representation
 
-  The two constraint polynomials are *defined* over CompPoly's computable `CMvPolynomial`
-  (`cHZero`/`cHAlpha`, via `CMvPolynomial.MLE`), matching the rest of the Hachi stack, whose
-  witness ring `Rq Φ` and committed data `CMlPolynomial` are already CompPoly types. Their
-  Mathlib images `hZero`/`hAlpha` are obtained by applying the bridge `fromCMvPolynomial`, and
-  `hZero_eq_MLE`/`hAlpha_eq_MLE` identify those images with the corresponding
-  `MvPolynomial.MLE`s. Relations (`relBatched`, `relZeroCheck`, `roundRel`) are stated over the
-  computable objects; the soundness argument — Kronecker root counting, which needs Mathlib's
-  `restrictDegree` submodule and `powAlgHom` — runs on the Mathlib side and is connected back by
-  `cHZero_eq_zero_iff`/`eval_cHZero` and their `α`-counterparts
-  (`ArkLib/ToCompPoly/Multivariate/Multilinear.lean`).
+  The two constraint polynomials are *defined* in CompPoly's Boolean-evaluation representation
+  `CMlPolynomialEval`: a length-`2 ^ m` vector containing the values of the unique multilinear
+  polynomial on `{0,1}^m`. This matches Eqs. (22)–(23) directly and makes multilinearity
+  structural rather than a separate degree theorem.
 
-  The range side executes: `wTable`, `cHZero`, `cWTableMle`, `wTableMleEval` and even the Mathlib
-  view `hZero` and its bundled form `hZeroML` are ordinary `def`s, so the prover's range
-  polynomial and committed-table opening reduce to concrete monomial data.
-
-  The `α` side executes as well: `LiftedWitness.r`, `cRowSum`, and `cEvalAt` use
-  `CPolynomial`, so `hAlphaEvals` and `cHAlpha` contain no Mathlib polynomial computation.
-  `hAlpha` remains the noncomputable Mathlib image used only by the root-counting proof.
+  `hZeroML`/`hAlphaML` are derived Mathlib `restrictDegree` views of the same tables, used only by
+  the point-check relation and Kronecker root-counting proof. The full identities in `relBatched`
+  use `hZero`/`hAlpha` directly, so `H = 0` is simply equality of Boolean-evaluation vectors.
 
   ## The sumcheck summands
 
@@ -196,7 +186,7 @@ def hAlphaEvals (φF : ZMod q →+* F) (_b : ℕ) (s : RlinStatement Φ n μ) (�
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- At the Boolean point `rowPoint i`, the coefficient `hAlphaEvals` equals row `i`'s
-`α`-evaluated lift defect. This links `hAlpha ≡ 0` (via `MLE_eq_zero_iff`) to the per-row
+`α`-evaluated lift defect. This links `hAlpha ≡ 0` (via `hAlpha_eq_zero_iff`) to the per-row
 constraints of `relLift`. -/
 theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) (hn : n ≤ 2 ^ m₁) (i : Fin n) :
@@ -207,121 +197,79 @@ theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
 
 /-! ## The batched constraint polynomials -/
 
-/-- `H₀` (Eq. (23)) over CompPoly's `CMvPolynomial`: the range polynomial, the multilinear
-extension of the per-entry range factor `P_b(w̃(·))` in `τ ∈ F^{m₀}`. `H₀ ≡ 0` iff every table
-entry is a root of the range product, i.e. lies in `[−(b−1), b−1]` — with no side condition
-relating `b` to `q`, see `hZero_eq_zero_imp_liftShort`.
-
-This is the primary definition; `hZero` is its Mathlib image. It is a genuine (computable) `def`:
-`wTable`'s `z`-side reads `Rq` coefficients, which are CompPoly data. -/
-def cHZero (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    CMvPolynomial m₀ F :=
-  CMvPolynomial.MLE fun v => rangeProduct b (wTable Φ m₀ φF b w v)
-
-/-- `H_α` (Eq. (22)) over CompPoly's `CMvPolynomial`: the linear-constraint polynomial, the
-multilinear extension of the `M̃_α`-contracted per-row values `hAlphaEvals`. `H_α ≡ 0` iff every
-lifted row of `relLift` vanishes at `α`. Primary definition; `hAlpha` is its Mathlib image.
-
-The coefficient table uses only computable `CPolynomial` row operations and evaluation. -/
-def cHAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) : CMvPolynomial m₁ F :=
-  CMvPolynomial.MLE (hAlphaEvals Φ m₁ φF b s α w)
-
-/-- The Mathlib view of `cHZero`, the form the Kronecker root-counting argument reasons about. -/
+/-- `H₀` (Eq. (23)) in Boolean-evaluation/Lagrange form. Entry `x` is the range factor
+`P_b(w̃(x))`; the vector represents the unique multilinear extension of those `2 ^ m₀` values. -/
 def hZero (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    MvPolynomial (Fin m₀) F :=
-  fromCMvPolynomial (cHZero Φ m₀ φF b w)
+    CMlPolynomialEval F m₀ :=
+  Vector.ofFn fun i =>
+    rangeProduct b (wTable Φ m₀ φF b w (finFunctionFinEquiv.symm i))
 
-/-- The Mathlib view of `cHAlpha`. -/
-noncomputable def hAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) : MvPolynomial (Fin m₁) F :=
-  fromCMvPolynomial (cHAlpha Φ m₁ φF b s α w)
+/-- `H_α` (Eq. (22)) in Boolean-evaluation/Lagrange form. Entry `x` is the row-defect table
+`hAlphaEvals x`; the vector represents its unique multilinear extension. -/
+def hAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (w : LiftedWitness Φ μ n) : CMlPolynomialEval F m₁ :=
+  Vector.ofFn fun i => hAlphaEvals Φ m₁ φF b s α w (finFunctionFinEquiv.symm i)
 
-/-! ### The computable/Mathlib correspondence
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- `H₀` is zero exactly when every Boolean-table range constraint is zero. -/
+theorem hZero_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
+    hZero Φ m₀ φF b w = 0 ↔
+      ∀ x, rangeProduct b (wTable Φ m₀ φF b w x) = 0 := by
+  constructor
+  · intro h x
+    have hx := congrArg (fun p => p.get (finFunctionFinEquiv x)) h
+    calc
+      rangeProduct b (wTable Φ m₀ φF b w x) =
+          (0 : CMlPolynomialEval F m₀).get (finFunctionFinEquiv x) := by
+        simpa [hZero] using hx
+      _ = 0 := by rw [Vector.get_eq_getElem]; exact Vector.getElem_zero _ _
+  · intro h
+    apply Vector.ext
+    intro i hi
+    simpa [hZero] using h (finFunctionFinEquiv.symm ⟨i, hi⟩)
 
-Each computable constraint polynomial and its Mathlib image agree as multilinear extensions,
-are simultaneously zero, and have equal evaluations. These four lemma pairs are the only interface
-the downstream files need. -/
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- `hZero` is the `MvPolynomial.MLE` of the range table — the bridge from the computable
-definition to the Mathlib multilinear-extension API. -/
-theorem hZero_eq_MLE (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    hZero Φ m₀ φF b w = MLE fun v => rangeProduct b (wTable Φ m₀ φF b w v) :=
-  CMvPolynomial.fromCMvPolynomial_MLE _
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- `hAlpha` is the `MvPolynomial.MLE` of the per-row defect table. -/
-theorem hAlpha_eq_MLE (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- `H_α` is zero exactly when every Boolean-table row defect is zero. -/
+theorem hAlpha_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) :
-    hAlpha Φ m₁ φF b s α w = MLE (hAlphaEvals Φ m₁ φF b s α w) :=
-  CMvPolynomial.fromCMvPolynomial_MLE _
+    hAlpha Φ m₁ φF b s α w = 0 ↔
+      ∀ x, hAlphaEvals Φ m₁ φF b s α w x = 0 := by
+  constructor
+  · intro h x
+    have hx := congrArg (fun p => p.get (finFunctionFinEquiv x)) h
+    calc
+      hAlphaEvals Φ m₁ φF b s α w x =
+          (0 : CMlPolynomialEval F m₁).get (finFunctionFinEquiv x) := by
+        simpa [hAlpha] using hx
+      _ = 0 := by rw [Vector.get_eq_getElem]; exact Vector.getElem_zero _ _
+  · intro h
+    apply Vector.ext
+    intro i hi
+    simpa [hAlpha] using h (finFunctionFinEquiv.symm ⟨i, hi⟩)
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The computable range polynomial vanishes iff its Mathlib image does. -/
-theorem cHZero_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    cHZero Φ m₀ φF b w = 0 ↔ hZero Φ m₀ φF b w = 0 := by
-  rw [hZero, eq_iff_fromCMvPolynomial, CPoly.map_zero]
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The computable linear-constraint polynomial vanishes iff its Mathlib image does. -/
-theorem cHAlpha_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) :
-    cHAlpha Φ m₁ φF b s α w = 0 ↔ hAlpha Φ m₁ φF b s α w = 0 := by
-  rw [hAlpha, eq_iff_fromCMvPolynomial, CPoly.map_zero]
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- Computable and Mathlib evaluation of the range polynomial agree. -/
-theorem eval_cHZero (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
-    (cHZero Φ m₀ φF b w).eval a = MvPolynomial.eval a (hZero Φ m₀ φF b w) :=
-  CPoly.eval_equiv
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- Computable and Mathlib evaluation of the linear-constraint polynomial agree. -/
-theorem eval_cHAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) (a : Fin m₁ → F) :
-    (cHAlpha Φ m₁ φF b s α w).eval a = MvPolynomial.eval a (hAlpha Φ m₁ φF b s α w) :=
-  CPoly.eval_equiv
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- `H₀` has degree `≤ 1` in each variable — it is a multilinear extension. This is the bound
-that makes its Kronecker restriction univariate of degree `< 2 ^ m₀`. -/
-theorem hZero_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
-    (j : Fin m₀) : (hZero Φ m₀ φF b w).degreeOf j ≤ 1 := by
-  rw [hZero_eq_MLE]; exact MLE_degreeOf _ j
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- `H_α` has degree `≤ 1` in each variable — it is a multilinear extension. -/
-theorem hAlpha_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) (j : Fin m₁) :
-    (hAlpha Φ m₁ φF b s α w).degreeOf j ≤ 1 := by
-  rw [hAlpha_eq_MLE]; exact MLE_degreeOf _ j
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The computable range polynomial is multilinear. -/
-theorem cHZero_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
-    (j : Fin m₀) : (cHZero Φ m₀ φF b w).degreeOf j ≤ 1 :=
-  CMvPolynomial.MLE_degreeOf _ j
-
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The computable linear-constraint polynomial is multilinear. -/
-theorem cHAlpha_degreeOf_le (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (w : LiftedWitness Φ μ n) (j : Fin m₁) :
-    (cHAlpha Φ m₁ φF b s α w).degreeOf j ≤ 1 :=
-  CMvPolynomial.MLE_degreeOf _ j
-
-/-- `H₀` bundled as an element of the multilinear subtype `restrictDegree _ _ 1`, the form the
-zero-check's root-counting argument (`arm_eq_zero_of_family`) takes as input. -/
-def hZeroML (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
+/-- Mathlib multilinear view of `H₀`, used only by Kronecker root counting. -/
+noncomputable def hZeroML (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
     MvPolynomial.restrictDegree (Fin m₀) F 1 :=
-  ⟨hZero Φ m₀ φF b w,
-    (mem_restrictDegree_iff_degreeOf_le _ _).mpr fun j => hZero_degreeOf_le Φ m₀ φF b w j⟩
+  ⟨MLE fun x => rangeProduct b (wTable Φ m₀ φF b w x),
+    MLE_mem_restrictDegree _⟩
 
-/-- `H_α` bundled as an element of the multilinear subtype `restrictDegree _ _ 1`. -/
+/-- Mathlib multilinear view of `H_α`, used only by Kronecker root counting. -/
 noncomputable def hAlphaML (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) : MvPolynomial.restrictDegree (Fin m₁) F 1 :=
-  ⟨hAlpha Φ m₁ φF b s α w,
-    (mem_restrictDegree_iff_degreeOf_le _ _).mpr fun j => hAlpha_degreeOf_le Φ m₁ φF b s α w j⟩
+  ⟨MLE (hAlphaEvals Φ m₁ φF b s α w), MLE_mem_restrictDegree _⟩
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/
+theorem hZeroML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
+    (hZeroML Φ m₀ φF b w).val = 0 ↔ hZero Φ m₀ φF b w = 0 := by
+  rw [hZeroML, MLE_eq_zero_iff, hZero_eq_zero_iff]
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H_α` vanishes. -/
+theorem hAlphaML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (w : LiftedWitness Φ μ n) :
+    (hAlphaML Φ m₁ φF b s α w).val = 0 ↔ hAlpha Φ m₁ φF b s α w = 0 := by
+  rw [hAlphaML, MLE_eq_zero_iff, hAlpha_eq_zero_iff]
 
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/
@@ -403,10 +351,10 @@ theorem wTable_rRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
   rw [dif_neg (by omega : ¬ μ + (i : ℕ) < μ), dif_pos (by omega : μ + (i : ℕ) - μ < n)]
   simp only [Nat.add_sub_cancel_left, Fin.eta]
 
-omit [IsCyclotomic Φ] in
+omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Range-side soundness (F5).** If the batched range polynomial `H₀^{w̃}` vanishes
 identically then `w̃` is short. Each committed coefficient is a table entry (`wTable`), hence a
-root of `P_b` (`MLE_eq_zero_iff`), hence a centered residue of absolute value `≤ b − 1`
+root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `≤ b − 1`
 (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`); the norm bounds follow because the declared
 bounds dominate the range base (`b − 1 ≤ bound`, `b − 1 ≤ rBound`). The arity
 `(μ + n)·deg φ ≤ 2^{m₀}` guarantees every coefficient position is a genuine cube point. This is
@@ -417,7 +365,7 @@ theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound rBound : ℕ
     (hbound : b - 1 ≤ bound) (hrBound : b - 1 ≤ rBound)
     (w : LiftedWitness Φ μ n) (h : hZero Φ m₀ φF b w = 0) :
     liftShort Φ bound rBound w := by
-  rw [hZero_eq_MLE, MvPolynomial.MLE_eq_zero_iff] at h
+  rw [hZero_eq_zero_iff] at h
   refine ⟨?_, ?_⟩
   · -- z-side: `vecLInftyNorm w.z ≤ bound`
     apply Finset.sup_le
@@ -461,9 +409,8 @@ theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound rBound : ℕ
 /-- The range sumcheck summand `F_{0,τ₀}`, characterized by `∑_{x} F_{0,τ₀}(x) = H₀(τ₀)`
 (`sum_sumcheckPolyZero`) with per-variable degree `roundDegZero b = 2b`.
 
-Unlike `H₀`/`H_α` this one is genuinely evaluated by the prover in every sumcheck round, so it is
-carried in the computable representation (it is *not* multilinear, hence not an
-`CMvPolynomial.MLE`). -/
+Unlike `H₀`/`H_α` this one is genuinely evaluated by the prover in every sumcheck round. It is not
+multilinear, so it remains a general `CMvPolynomial`. -/
 def sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) : CMvPolynomial m₀ F :=
   sorry
@@ -491,31 +438,33 @@ def hypercubeSum (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) : F :=
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
-      (cHZero Φ m₀ φF b w).eval τ₀ := by
+      MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val := by
   sorry
 
 omit [NeZero q] in
-/-- `sum_sumcheckPolyZero` in Mathlib terms, via `eval_cHZero`. -/
+/-- Alias of `sum_sumcheckPolyZero` retained for the sumcheck bridge. -/
 theorem sum_sumcheckPolyZero' (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₀ (hZero Φ m₀ φF b w) := by
-  rw [sum_sumcheckPolyZero, eval_cHZero]
+      MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val :=
+  sum_sumcheckPolyZero Φ m₀ φF b τ₀ w
 
 /-- The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`. -/
 theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
-      (cHAlpha Φ m₁ φF b s α w).eval τ₁ + zcTargetAlpha Φ m₁ φF s α τ₁ := by
+      MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
+        zcTargetAlpha Φ m₁ φF s α τ₁ := by
   sorry
 
 omit [NeZero q] in
-/-- `sum_sumcheckPolyAlpha` in Mathlib terms, via `eval_cHAlpha`. -/
+/-- Alias of `sum_sumcheckPolyAlpha` retained for the sumcheck bridge. -/
 theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
-      MvPolynomial.eval τ₁ (hAlpha Φ m₁ φF b s α w) + zcTargetAlpha Φ m₁ φF s α τ₁ := by
-  rw [sum_sumcheckPolyAlpha, eval_cHAlpha]
+      MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
+        zcTargetAlpha Φ m₁ φF s α τ₁ :=
+  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w
 
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
@@ -549,22 +498,20 @@ structure RoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ
 
 variable (bound rBound : ℕ)
 
-/-- The per-round relation of the paired sumcheck ([NOZ26] Lemma 11): `w̃` opens `t`, is short
-carries the range identity `H₀^{w̃} ≡ 0`, and both partial-hypercube-sum claims at the current
-challenge prefix equal the current targets. The final conjunct `bound ≤ rlin.bound` ties the global
-norm parameter to the statement's declared bound.
+/-- The per-round relation of the paired sumcheck ([NOZ26] Lemma 11): `w̃` opens `t`, is short,
+and both partial-hypercube-sum claims at the current challenge prefix equal the current targets.
+The final conjunct `bound ≤ rlin.bound` ties the global norm parameter to the statement's declared
+bound.
 
-**Shortness is not assumed here.** Where this relation previously carried a `liftShort` conjunct it
-now carries `cHZero … = 0`, from which `liftShort` is *derived* on demand by
-`hZero_eq_zero_imp_liftShort` — the same derivation the batching bridge uses. Lemma 11's extraction
-plan routes differing openings through the norm-conditioned `K.collision_mem`, and that shortness
-is now discharged from `H₀ ≡ 0` rather than assumed. See `relZeroCheck`. -/
+The shortness conjunct is a temporary semantic admissibility condition needed when differing
+round witnesses are routed through the norm-conditioned weak-binding escape `K.collision_mem`.
+The global identity `H₀ ≡ 0` is intentionally not carried through the sumcheck seams. -/
 def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (RoundStatement Φ K.TCom F n μ i × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.zc.t ∧
-    cHZero Φ m₀ φF b p.2 = 0 ∧
+    liftShort Φ bound rBound p.2 ∧
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b (kroneckerPoint m₀ p.1.zc.seed₀) p.2) i
         p.1.challenges = p.1.target₀ ∧
     hypercubeSum m₀

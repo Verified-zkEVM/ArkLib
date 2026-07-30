@@ -54,7 +54,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open CompPoly ArkLib.Lattices.CyclotomicModulus
+open CompPoly CPoly ArkLib.Lattices.CyclotomicModulus
 open OracleComp OracleSpec ProtocolSpec
 open CoordinateWise CoordinateWise.ChallengeRound
 
@@ -78,7 +78,7 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -115,16 +115,26 @@ def zeroCheckProver {TCom : Type} :
 
 /-- The zero-check's output relation (Figure 5's residual claims): `w̃` opens `t`, is short
 (`liftShort`), and both batched constraint polynomials vanish at the points derived from the
-seeds — `H₀` at `κ_{m₀}(ρ₀)` and `H_α` at `κ_{m₁}(ρ_α)`. -/
+seeds — `H₀` at `κ_{m₀}(ρ₀)` and `H_α` at `κ_{m₁}(ρ_α)`.
+
+The primary polynomials `hZero`/`hAlpha` are `CMlPolynomialEval` Boolean-value vectors.
+`hZeroML`/`hAlphaML` are their propositionally equivalent Mathlib multilinear views, used here
+because the existing Kronecker root-counting kernel is stated over `MvPolynomial.restrictDegree`.
+
+The shortness conjunct is a temporary semantic admissibility condition needed by the
+norm-conditioned weak-binding escape `K.collision_mem`: a single point evaluation of `H₀` does
+not imply that the corresponding opening is short. In particular, this relation deliberately
+does not assume the global identity `H₀ ≡ 0`; that identity remains the conclusion extracted by
+the zero-check into `relBatchedE`. -/
 def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
     liftShort Φ bound rBound p.2 ∧
-    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZero Φ m₀ φF b p.2) = 0 ∧
+    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZeroML Φ m₀ φF b p.2).val = 0 ∧
     MvPolynomial.eval (kroneckerPoint m₁ p.1.seedα)
-      (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) = 0 ∧
+      (hAlphaML Φ m₁ φF b p.1.rlin p.1.α p.2).val = 0 ∧
     bound ≤ p.1.rlin.bound}
 
 /-- `relZeroCheck` extended with the escape branch (`.inr e` requires `e ∈ K.esc`); the input
@@ -136,6 +146,7 @@ def relZeroCheckE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBo
 
 /-! ## The Kronecker root-counting step -/
 
+omit [BEq F] [LawfulBEq F] in
 /-- If a special-sound family of seed pairs (parameter `D ≥ 2^m`) has, at coordinate `i`, every
 seed `ρ` satisfying `H(κ_m(ρ)) = 0` for one fixed multilinear `H`, then `H ≡ 0`. The family
 supplies `D ≥ 2^m` distinct seeds at coordinate `i` (`IsSpecialSoundFamily.exists_coord_finset`);
@@ -245,19 +256,21 @@ theorem buildWitnessE_mem_relBatchedE
     have hall : ∀ j, resp j = resp 0 := fun j => not_ne_iff.mp (fun hne => h ⟨j, hne⟩)
     rcases hr0 : resp 0 with w0 | e0
     · -- common opening `w0`: both identities vanish by root counting
-      obtain ⟨hc0, hs0⟩ := hopen 0 w0 hr0
+      obtain ⟨hc0, _⟩ := hopen 0 w0 hr0
       have hbound : bound ≤ stmt.1.bound := by
         have := hrel 0; rw [hr0, relZeroCheckE, Set.mem_withEscape_inl] at this
         simp only [relZeroCheck, Set.mem_setOf_eq] at this
         exact this.2.2.2.2
       simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq]
-      refine ⟨hc0, hs0, ?_, ?_, hbound⟩
-      · -- H₀ ≡ 0
+      refine ⟨hc0, ?_, ?_, hbound⟩
+      · -- H₀ ≡ 0. Root counting uses the derived Mathlib multilinear view.
+        rw [← hZeroML_eq_zero_iff]
         refine arm_eq_zero_of_family hm₀ fam hfam 0 (hZeroML Φ m₀ φF b w0) (fun j => ?_)
         have hj := hrel j; rw [(hall j).trans hr0, relZeroCheckE, Set.mem_withEscape_inl] at hj
         simp only [relZeroCheck, Set.mem_setOf_eq] at hj
         exact hj.2.2.1
-      · -- H_α ≡ 0
+      · -- H_α ≡ 0, using the corresponding derived Mathlib view.
+        rw [← hAlphaML_eq_zero_iff]
         refine arm_eq_zero_of_family hm₁ fam hfam 1
           (hAlphaML Φ m₁ φF b stmt.1 stmt.2.2 w0) (fun j => ?_)
         have hj := hrel j; rw [(hall j).trans hr0, relZeroCheckE, Set.mem_withEscape_inl] at hj
@@ -288,7 +301,8 @@ theorem zeroCheck_coordinateWiseSpecialSound
     (buildWitnessE Φ bound rBound K (zeroCheckD m₀ m₁))
     (fun stmt fam resp hrel hfam =>
       buildWitnessE_mem_relBatchedE Φ m₀ m₁ bound rBound K φF b
-        (two_pow_m₀_le_zeroCheckD m₀ m₁) (two_pow_m₁_le_zeroCheckD m₀ m₁) stmt fam resp hrel hfam)
+        (two_pow_m₀_le_zeroCheckD m₀ m₁) (two_pow_m₁_le_zeroCheckD m₀ m₁)
+        stmt fam resp hrel hfam)
 
 /-- The zero-check packaged as a `CWSSPackage` (Hachi Figure 5 / Lemma 10): the one-round seed-pair
 verifier with the `(ℓ, k) = (2, D)` structure, reducing `relBatchedE` to `relZeroCheckE`. -/

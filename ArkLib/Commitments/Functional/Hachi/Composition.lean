@@ -100,13 +100,20 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 `coordinateWiseSpecialSound_of_mkWitness_scalar` (`ScalarRound.lean`, consumed only by future
 proofs). *Escape threading* (F2.0): `quadEval_coordinateWiseSpecialSound_withEscape`.
 *Per-link math*: the F2 index bookkeeping (`rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE`),
-Lemma 9 (`lift_coordinateWiseSpecialSound`), the F5 encodings (`Constraints.lean`), corrected
-Lemma 10 (`zeroCheck_coordinateWiseSpecialSound`), the sum-to-point bridge, Lemma 11
+Lemma 9 (`lift_coordinateWiseSpecialSound`), the remaining F5 sumcheck encodings
+(`sumcheckPolyZero`, `sumcheckPolyAlpha`, `zcTargetAlpha`, `hypercubeSum`, and their sum
+identities), the sum-to-point bridge, Lemma 11
 (`round_coordinateWiseSpecialSound`), F8 (`finalEval_coordinateWiseSpecialSound` + the
 `finalCheck` encoding), G2 (`partialEval_coordinateWiseSpecialSound` + its encoding defs), G3
 (`handoff_coordinateWiseSpecialSound` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
 Every sorried encoding def carries an in-situ `**Sorried**` docstring naming its milestone.
 *Flagged as an open gap (not merely unproven)*: `mem_relPartialEvalE_of_relHatEvalE` (row 11).
+*Proven and axiom-clean* (beyond rows 1–2): the concrete `CMlPolynomialEval` encodings
+`hZero`/`hAlpha` and their zero-characterization bridges; the range-side soundness
+`H₀ ≡ 0 ⇒ liftShort` (`hZero_eq_zero_imp_liftShort`); the complete batching pull-back
+`mem_relLiftE_of_relBatchedE` (row 5); and the corrected Lemma 10 extraction and CWSS theorem
+`zeroCheck_coordinateWiseSpecialSound` (row 6). Thus row 5 derives shortness rather than assuming
+it, and the remaining `openCore` sorries come from other links.
 
 ## References
 
@@ -233,7 +240,9 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁) :
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
+    (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
+    (hbγ : b - 1 ≤ γ) (hbρ : b - 1 ≤ ρBound) :
     CWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits ⊕ E)
@@ -249,7 +258,7 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
   evalChainE (b := b) (γ := γ) init impl hq5 hκ hτ K.esc ▷
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl (b : ZMod q) ω γ K.esc ▷
     liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
-    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn ▷
+    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hμn hbγ hbρ ▷
     zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
     sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
 
@@ -272,6 +281,8 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
+    (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
+    (hbγ : b - 1 ≤ γ) (hbρ : b - 1 ≤ ρBound)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -299,7 +310,8 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
           roundsSpec F b (mLow + κ)) ++ₚ pSpecFinalEval F).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
-  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hn).toGuarded.append
+  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hn hμn hbγ
+        hbρ).toGuarded.append
       (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
       (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
         (mLow + κ)).symm).append
@@ -322,6 +334,8 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
+    (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
+    (hbγ : b - 1 ≤ γ) (hbρ : b - 1 ≤ ρBound)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -330,15 +344,15 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     ((openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl hq5 hκ
-        hτ K φF hd hn zpow Φ' pp' reinterpretCom base' βSq'
+        hτ K φF hd hn hμn hbγ hbρ zpow Φ' pp' reinterpretCom base' βSq'
         γ' κ')).verifier.coordinateWiseSpecialSound init impl
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl
-        hq5 hκ hτ K φF hd hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
+        hq5 hκ hτ K φF hd hn hμn hbγ hbρ zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
       (relPolyEvalE 𝓜(q, α) (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) K.esc)
       (relInE Φ' base' βSq' γ' κ' K.esc) :=
   (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) (b := b) init impl hq5 hκ hτ
-    K φF hd hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
+    K φF hd hn hμn hbγ hbρ zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
 
 end OpeningChain
 

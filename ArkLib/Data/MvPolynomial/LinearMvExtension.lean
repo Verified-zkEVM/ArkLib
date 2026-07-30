@@ -425,6 +425,53 @@ theorem multilinear_eq_zero_of_kronecker_roots [IsDomain F]
       omega
   exact (powAlgHom_eq_zero_iff H.2).mp hp
 
+/-- **The `2^m` root count is sharp: `2^m − 1` Kronecker seeds never suffice.** For *any* finite
+set `s` of at most `2^m − 1` scalar seeds there is a **nonzero** multilinear `H` vanishing on the
+curve at every seed of `s`. Take the univariate `p = ∏_{ρ ∈ s} (X − ρ)`, of degree `≤ 2^m − 1`, and
+push it up with `linearMvExtension`; `powAlgHom` inverts that, so `H ≠ 0`, while
+`eval_powAlgHom_eq_eval_kronecker` turns each root of `p` into a curve evaluation of `H`.
+
+This is the exact companion of `multilinear_eq_zero_of_kronecker_roots`, and it is why the Hachi
+zero-check's seam relations must carry the range *identity* rather than deriving it from their point
+evaluation: the extractor's collision branch shares an opening across only `2^m − 1` seeds — one
+short of the root count — so it could never conclude `H₀ ≡ 0` for a single colliding opening. See
+`ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean` (`relZeroCheck`) and
+`docs/kb/audits/noz26-zero-check-lemma10.md`. -/
+theorem exists_nonzero_multilinear_vanishing_on_kronecker_seeds [Nontrivial F] (s : Finset F)
+    (hcard : s.card ≤ 2 ^ m - 1) :
+    ∃ H : MvPolynomial.restrictDegree (Fin m) F 1,
+      H.val ≠ 0 ∧ ∀ τ ∈ s, MvPolynomial.eval (kroneckerPoint (m := m) τ) H.val = 0 := by
+  classical
+  set p : Polynomial F := ∏ ρ ∈ s, (Polynomial.X - Polynomial.C ρ) with hpdef
+  have hmonic : p.Monic :=
+    hpdef ▸ Polynomial.monic_prod_of_monic _ _ fun ρ _ => Polynomial.monic_X_sub_C ρ
+  have hpne : p ≠ 0 := hmonic.ne_zero
+  have hnat : p.natDegree = s.card := by
+    rw [hpdef, Polynomial.natDegree_prod_of_monic _ _ fun ρ _ => Polynomial.monic_X_sub_C ρ]
+    simp
+  -- `p` lies in the degree-`< 2^m` window, so it has a multilinear extension.
+  have hlt : p.degree < (2 ^ m : ℕ) := by
+    have h1 : 1 ≤ 2 ^ m := Nat.one_le_pow m 2 (by norm_num)
+    rw [Polynomial.degree_eq_natDegree hpne]
+    exact Nat.cast_lt.mpr (by omega)
+  have hpm : p ∈ Polynomial.degreeLT F (2 ^ m) := Polynomial.mem_degreeLT.mpr hlt
+  have hinv : powAlgHom (linearMvExtension (⟨p, hpm⟩ : Polynomial.degreeLT F (2 ^ m))) = p :=
+    powAlgHom_is_right_inverse_to_linearMvExtension _
+  have hmemH : linearMvExtension (⟨p, hpm⟩ : Polynomial.degreeLT F (2 ^ m)) ∈
+      MvPolynomial.restrictDegree (Fin m) F 1 :=
+    (MvPolynomial.mem_restrictDegree_iff_degreeOf_le _ _).mpr fun _ => linearMvExtension_degreeOf_lt
+  -- nonzero, since `powAlgHom` recovers the nonzero `p`
+  have hne : linearMvExtension (⟨p, hpm⟩ : Polynomial.degreeLT F (2 ^ m)) ≠ 0 := by
+    intro hzero
+    rw [hzero, map_zero] at hinv
+    exact hpne hinv.symm
+  have hroots : ∀ τ ∈ s, MvPolynomial.eval (kroneckerPoint (m := m) τ)
+      (linearMvExtension (⟨p, hpm⟩ : Polynomial.degreeLT F (2 ^ m))) = 0 := by
+    intro τ hτ
+    rw [← eval_powAlgHom_eq_eval_kronecker, hinv, hpdef, Polynomial.eval_prod]
+    exact Finset.prod_eq_zero hτ (by simp)
+  exact ⟨⟨_, hmemH⟩, hne, hroots⟩
+
 end
 
 end LinearMvExtension

@@ -58,6 +58,15 @@ theorem fromCMvPolynomial_prod {ι : Type*} (s : Finset ι) (f : ι → CMvPolyn
     fromCMvPolynomial (∏ i ∈ s, f i) = ∏ i ∈ s, fromCMvPolynomial (f i) :=
   map_prod (polyRingEquiv (n := n) (R := R)) f s
 
+/-- `CPoly.map_sub` restated with an `HSub.hSub` head.
+
+CompPoly states it as `fromCMvPolynomial (Sub.sub a b) = …`, whose head symbol is `Sub.sub`
+rather than the `HSub.hSub` that `a - b` elaborates to, so `rw`'s keyed matching never fires on
+it. The two sides are reducibly defeq (`Lawful.sub p₁ p₂ = p₁ + (-p₂)`), so restating is enough. -/
+theorem fromCMvPolynomial_sub (a b : CMvPolynomial n R) :
+    fromCMvPolynomial (a - b) = fromCMvPolynomial a - fromCMvPolynomial b :=
+  CPoly.map_sub a b
+
 /-! ## The computable `eq̃` polynomial -/
 
 /-- The computable per-variable equality factor `(1 - r)·(1 - x) + r·x`, mirroring
@@ -82,8 +91,8 @@ theorem fromCMvPolynomial_singleEqPolynomial (r : R) (x : CMvPolynomial n R) :
     fromCMvPolynomial (singleEqPolynomial r x)
       = MvPolynomial.singleEqPolynomial r (fromCMvPolynomial x) := by
   unfold singleEqPolynomial MvPolynomial.singleEqPolynomial
-  rw [CPoly.map_add, CPoly.map_mul, CPoly.map_mul, CPoly.map_sub, CPoly.map_sub, CPoly.map_one,
-    fromCMvPolynomial_C]
+  rw [CPoly.map_add, CPoly.map_mul, CPoly.map_mul, fromCMvPolynomial_sub, fromCMvPolynomial_sub,
+    CPoly.map_one, fromCMvPolynomial_C]
 
 @[simp]
 theorem fromCMvPolynomial_eqPolynomial (r : Fin n → R) :
@@ -116,8 +125,7 @@ theorem MLE_eval_zeroOne (x : Fin n → Fin 2) (evals : (Fin n → Fin 2) → R)
 /-- The computable MLE is multilinear: degree at most `1` in every variable. -/
 theorem MLE_degreeOf (evals : (Fin n → Fin 2) → R) (i : Fin n) :
     (MLE evals).degreeOf i ≤ 1 := by
-  rw [congrFun (degreeOf_equiv (S := R) (p := MLE evals)) i, ← MvPolynomial.degreeOf_def,
-    fromCMvPolynomial_MLE]
+  rw [congrFun (degreeOf_equiv (S := R) (p := MLE evals)) i, fromCMvPolynomial_MLE]
   exact MvPolynomial.MLE_degreeOf evals i
 
 /-- The Mathlib image of a computable MLE lies in the multilinear submodule

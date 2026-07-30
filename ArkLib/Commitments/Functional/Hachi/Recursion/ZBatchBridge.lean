@@ -67,7 +67,7 @@ section Bridge
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (mLow κ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 

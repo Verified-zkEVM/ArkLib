@@ -247,6 +247,61 @@ enforced by the relation rather than by a runtime `guard`. -/
 def oracleRelOut : Set ((Statement × ∀ i, OStatement i) × Unit) :=
   relIn ∩ {x | P x.1.1 x.1.2}
 
+/-- **Perfect completeness of the pure pass-through `CheckClaim` oracle reduction.** Because the
+verifier no longer checks `P` at runtime (it is a pure pass-through, with `P` living in
+`oracleRelOut`), completeness needs the explicit hypothesis `hP` that every `relIn` input already
+satisfies `P`. Under `hP`, the prover forwards `⟨stmt, oStmt⟩` unchanged and the verifier returns it
+deterministically, so the output `⟨⟨stmt, oStmt⟩, ()⟩` lies in `oracleRelOut P relIn = relIn ∩ {x |
+P x.1.1 x.1.2}`. -/
+@[simp]
+theorem oracleReduction_completeness
+    (hP : ∀ stmt oStmt, (⟨⟨stmt, oStmt⟩, ()⟩ : (Statement × ∀ i, OStatement i) × Unit) ∈ relIn →
+      P stmt oStmt) :
+    (oracleReduction oSpec Statement OStatement).perfectCompleteness init impl
+      relIn (oracleRelOut P relIn) := by
+  simp only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
+    Reduction.completeness, ENNReal.coe_zero, tsub_zero]
+  intro ⟨stmt, oStmt⟩ witIn hIn
+  -- Reduce the run to a deterministic `pure` of the (unchanged) input.
+  have hrun : (oracleReduction oSpec Statement OStatement).toReduction.run
+      ⟨stmt, oStmt⟩ witIn =
+      (pure ((default, ((stmt, oStmt), ())), (stmt, oStmt)) : OptionT (OracleComp _) _) := by
+    simp only [oracleReduction, OracleReduction.toReduction, Reduction.run, oracleProver,
+      oracleVerifier, OracleVerifier.toVerifier, Prover.run, Verifier.run, Prover.runToRound]
+    rfl
+  rw [hrun]
+  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
+  refine ⟨?_, ?_⟩
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    simp only [probFailure_eq_zero, zero_add]
+    apply probOutput_eq_zero_of_not_mem_support
+    simp only [support_bind, Set.mem_iUnion, not_exists]
+    intro s _ hmem
+    change none ∈ _root_.support
+      (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
+        OracleComp _ _)) s) at hmem
+    rw [simulateQ_pure] at hmem
+    change none ∈ _root_.support
+      (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
+        StateT σ ProbComp _).run s) at hmem
+    rw [StateT.run_pure] at hmem
+    simp [map_pure] at hmem
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    change some x ∈ _root_.support
+      (StateT.run' (simulateQ _ (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
+        OracleComp _ _)) s) at hx
+    rw [simulateQ_pure] at hx
+    change some x ∈ _root_.support
+      (Prod.fst <$> (pure (some ((default, ((stmt, oStmt), ())), (stmt, oStmt))) :
+        StateT σ ProbComp _).run s) at hx
+    rw [StateT.run_pure] at hx
+    simp [map_pure, support_pure] at hx
+    cases hx
+    exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
+
 /-- **Coordinate-wise special soundness of `CheckClaim`.** The verifier is a pure pass-through with
 no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
 `coordinateWiseSpecialSound_of_isEmpty_challengeIdx`) to a transcript-level obligation. The

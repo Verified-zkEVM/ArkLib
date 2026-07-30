@@ -66,7 +66,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (mLow κ : ℕ) (bound rBound : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
@@ -116,7 +116,7 @@ def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
       pure (toNextQuadEvalStatement Φ' mLow φF pp' reinterpretCom stmt (tr 0))
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
+omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] [BEq F] [LawfulBEq F] in
 /-- The trace-handoff verifier is guarded — definitionally, by `traceCheck`. -/
 theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')

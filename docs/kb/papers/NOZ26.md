@@ -72,15 +72,15 @@ Ring-switching layer:
   to Kronecker curves and uses univariate interpolation with `D = max(2, 2^{m₀}, 2^{mα})`. The
   corrected CWSS theorem is proof-`sorry`-free and is composed into the escape-threaded opening
   chain (`Composition.lean`); the weak-binding disjunct is discharged through `LiftCom`'s
-  norm-conditioned collision via a `liftShort` conjunct in the seam relations. See
+  norm-conditioned collision. At the batching bridge, shortness is **derived** from the range
+  identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
+  At the point-check and sumcheck seams, `relZeroCheck`/`roundRel` temporarily assume `liftShort`
+  because a point or partial-sum claim does not imply the norm condition needed by weak binding.
+  The identities themselves are represented as `CMlPolynomialEval` Boolean-value vectors,
+  matching the paper's multilinear `H₀` and `Hα`; Mathlib `restrictDegree` views are derived only
+  for the existing Kronecker proof.
+  See
   [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
-
-## Version Notes
-
-- Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the ePrint version.
-- Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness.
-
-## Known Divergences From ArkLib
 
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
@@ -90,12 +90,18 @@ Ring-switching layer:
 
 - Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
   `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
-- Formalize Hachi-specific soundness separately (does not reuse the field/domain soundness theorem).
+- Complete the still-sorried Hachi-specific links, notably Lemma 9, the sumcheck bridge and
+  summands, Lemma 11, final evaluation, and recursion handoff. The corrected Lemma 10 and its
+  batching bridge are already proved.
 - The norm-growth and short-element invertibility inputs (`Mic07`, `LS18`) are deferred.
-- The sumcheck / ring-switching evaluation machinery of the paper is not yet formalized.
+- Resolve the documented `m₀`/`m₁` arity choice for `sumcheckPolyAlpha` before filling its body.
+- Resolve the flagged `Z`-packing/partial-evaluation knowledge-soundness gap in the recursion chain.
 
 ## Version Notes
 
+- Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the January 30, 2026 ePrint version for
+  the zero-check audit.
+- Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness.
 - Builds on the ring-switching idea of Huang–Mao–Zhang (ePrint 2025) and integrates Greyhound
   (CRYPTO 2024); track which version is cited if proof obligations depend on exact statements.
 

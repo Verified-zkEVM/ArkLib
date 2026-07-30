@@ -69,7 +69,7 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound rBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -92,7 +92,7 @@ def finalEvalVerifier {TCom : Type} (φF : ZMod q →+* F) :
       pure ⟨stmt.zc.t, stmt.challenges, tr 0⟩
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
 theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)

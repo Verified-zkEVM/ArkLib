@@ -13,18 +13,19 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   * `relLiftE` — `w̃` opens `t`, the per-row `α`-evaluated constraints hold, `w̃` is short
     (`RingSwitch/Reduction.lean`);
   * `relBatchedE` — `w̃` opens `t`, the batched polynomials `H₀^{w̃}` and `H_α^{w̃}` are identically
-    zero (Eqs. (22)–(23), `ZeroCheck/Constraints.lean`), and `w̃` is short.
+    zero (Eqs. (22)–(23), `ZeroCheck/Constraints.lean`).
 
   The statement and witness are unchanged (`ReduceClaim` at `mapStmt := id`); only the reading of
   the claims changes, which separates the batching algebra from the Kronecker root counting of the
-  zero-check. The `liftShort` conjunct is carried through unchanged, since it is the shortness
-  precondition of the commitment's weak binding (`LiftCom.collision_mem`) used later by the
-  zero-check's extractor.
+  zero-check. Shortness is **not** a conjunct of `relBatchedE`: the range identity `H₀^{w̃} ≡ 0`
+  already forces every committed coefficient into `[−(b−1), b−1]`, so `liftShort` is *derived*, not
+  assumed — the range machinery is load-bearing (review PR #656, resolution option 1).
 
   The reduction's content is the pull-back `mem_relLiftE_of_relBatchedE` from `relBatchedE` to
-  `relLiftE`: the per-row equation is recovered from `H_α ≡ 0` via `MvPolynomial.MLE_eq_zero_iff`
-  and `hAlphaEvals_rowPoint`, and the remaining conjuncts are carried over directly. Its only
-  hypothesis is the row-encoding arity bound `n ≤ 2 ^ m₁`.
+  `relLiftE`: the per-row equation is recovered from `H_α ≡ 0` via `hAlpha_eq_zero_iff`
+  and `hAlphaEvals_rowPoint`, and shortness from `H₀ ≡ 0` via `hZero_eq_zero_imp_liftShort`. Its
+  hypotheses are the arity bounds `n ≤ 2 ^ m₁` and `(μ + n)·deg φ ≤ 2 ^ m₀`, positivity
+  `0 < deg φ`, and the range-base fits `b − 1 ≤ bound`, `b − 1 ≤ rBound`.
 
   ## References
 
@@ -34,24 +35,28 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open CompPoly ArkLib.Lattices.CyclotomicModulus
+open CompPoly CPoly ArkLib.Lattices.CyclotomicModulus
 open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- The batched relation (Hachi Eqs. (22)–(23) as polynomial identities): `w̃` opens `t`, is short
-(`liftShort`), the range polynomial `H₀^{w̃}` and the linear-constraint polynomial `H_α^{w̃}` are
-both identically zero, and `bound ≤ rlin.bound`. This is the zero-check's input relation. -/
+/-- The batched relation (Hachi Eqs. (22)–(23) as polynomial identities): `w̃` opens `t`, the
+range polynomial `H₀^{w̃}` and the linear-constraint polynomial `H_α^{w̃}` are both identically
+zero, and `bound ≤ rlin.bound`. This is the zero-check's input relation.
+
+Shortness is **not** a conjunct here: `H₀ ≡ 0` already forces `w̃` short (every committed
+coefficient is a root of the range factor `P_b`), so `liftShort` is *derived* — not assumed — by
+the pull-back `mem_relLiftE_of_relBatchedE` (via `hZero_eq_zero_imp_liftShort`). This is the
+range machinery being load-bearing rather than inert. -/
 def relBatched (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.2.1 ∧
-    liftShort Φ bound rBound p.2 ∧
     hZero Φ m₀ φF b p.2 = 0 ∧
     hAlpha Φ m₁ φF b p.1.1 p.1.2.2 p.2 = 0 ∧
     bound ≤ p.1.1.bound}
@@ -63,29 +68,40 @@ def relBatchedE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBoun
     Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
   (relBatched Φ m₀ m₁ bound rBound K φF b).withEscape K.esc
 
-omit [NeZero q] [IsCyclotomic Φ] in
-/-- The batched identities imply the lift's per-row claims; escapes pass through.
+-- `[IsCyclotomic Φ]` is needed to synthesize the `Rq`/`wTable` instances inside the `hZero` term
+-- carried by `relBatchedE` and by `hZero_eq_zero_imp_liftShort`, but the linter's usage analysis
+-- misses instance-synth-only section vars.
+set_option linter.unusedSectionVars false in
+omit [NeZero q] in
+/-- The batched identities imply the lift's per-row **and shortness** claims; escapes pass through.
 
-The per-row equation is recovered from `H_α ≡ 0`: by `MvPolynomial.MLE_eq_zero_iff` every
+The per-row equation is recovered from `H_α ≡ 0`: by `hAlpha_eq_zero_iff` every
 Boolean-point coefficient `hAlphaEvals` vanishes, and by `hAlphaEvals_rowPoint` the coefficient at
-`rowPoint i` is row `i`'s `α`-evaluated lift defect, giving the row equation of `relLift`. The
-`K.com`, `liftShort`, and bound conjuncts are shared between the two relations. The range identity
-`H₀ ≡ 0` is not needed here, since shortness is asserted directly. The hypothesis `hn : n ≤ 2 ^ m₁`
-is the row-encoding bound of the batching cube. -/
+`rowPoint i` is row `i`'s `α`-evaluated lift defect, giving the row equation of `relLift`.
+Shortness (`liftShort`, `relLift`'s norm conjunct) is **derived** from the range identity
+`H₀ ≡ 0` via `hZero_eq_zero_imp_liftShort`: every committed coefficient is a root of the range
+factor `P_b`, hence a centered residue of absolute value `≤ b − 1`, which meets the norm bounds
+under `hbound : b − 1 ≤ bound` and `hrBound : b − 1 ≤ rBound`. The `K.com` and bound conjuncts are
+shared between the two relations. The hypotheses are the row-encoding bound `hn : n ≤ 2 ^ m₁`, the
+column-encoding bound `hμn : (μ + n)·deg φ ≤ 2 ^ m₀`, and `hd : 0 < deg φ`. No anti-wraparound
+condition on `q` is needed — see `valMinAbs_natAbs_le_of_rangeProduct_eq_zero`. -/
 theorem mem_relLiftE_of_relBatchedE
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁)
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hrBound : b - 1 ≤ rBound)
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
     (h : (X, w) ∈ relBatchedE Φ m₀ m₁ bound rBound K φF b) :
     (X, w) ∈ relLiftE Φ bound rBound K φF := by
   rcases w with w | e
-  · -- real witness: only the per-row equation needs work
+  · -- real witness: recover the per-row equation and derive shortness from `H₀ ≡ 0`
     simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq] at h
-    obtain ⟨hcom, hshort, _hZero, hAlphaZ, hbound⟩ := h
+    obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
+    have hshort : liftShort Φ bound rBound w :=
+      hZero_eq_zero_imp_liftShort Φ m₀ φF b bound rBound hd hμn hbound hrBound w hZeroZ
     simp only [relLiftE, Set.mem_withEscape_inl, relLift, Set.mem_setOf_eq]
-    refine ⟨hcom, fun i => ?_, hshort, hbound⟩
-    unfold hAlpha at hAlphaZ
-    rw [MvPolynomial.MLE_eq_zero_iff] at hAlphaZ
+    refine ⟨hcom, fun i => ?_, hshort, hbound'⟩
+    rw [hAlpha_eq_zero_iff] at hAlphaZ
     have hi := hAlphaZ (rowPoint m₁ hn i)
     rw [hAlphaEvals_rowPoint] at hi
     linear_combination hi
@@ -97,7 +113,9 @@ reducing `relLiftE` to `relBatchedE` with no soundness error, its correctness su
 `mem_relLiftE_of_relBatchedE`. -/
 def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) :
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hrBound : b - 1 ≤ rBound) :
     CWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
@@ -112,6 +130,7 @@ def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
     (relOut := relBatchedE Φ m₀ m₁ bound rBound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
     (fun stmtIn witOut h =>
-      mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound rBound K φF b hn stmtIn witOut h)
+      mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound rBound K φF b hn hd hμn hbound hrBound
+        stmtIn witOut h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter
