@@ -196,7 +196,7 @@ noncomputable def buildWitnessE
   else resp 0
 
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- `collideOrPass a c` lands in `relBatchedE` (always as an escape) provided `a ≠ c` and each of
 `a`, `c` is either a `K.esc` escape or a short opening of the shared commitment `stmt.t`. -/
 theorem collideOrPass_mem_relBatchedE
