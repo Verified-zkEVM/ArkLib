@@ -33,7 +33,8 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
   commitment's message-packing convention is chosen (Phase G, `LiftCom` instantiation) to make
   `Com_{d}(w̃) = Com'_{d′}(ψ(ŵ))` a definitional re-indexing. This is what ties the next
   iteration's extracted openings back to `t` (`reinterpretCom` below abstracts the re-reading);
-  norm growth under `ψ` is Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`, the `cInfNorm_psi_le` sorry, gate G1).
+  norm growth under `ψ` is the proved Lemma 6 bound
+  (`‖ψ(a)‖∞ ≤ 2β`, `cInfNorm_psi_le`; former gate G1).
 
   ## Soundness shape
 

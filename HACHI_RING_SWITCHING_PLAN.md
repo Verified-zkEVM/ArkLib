@@ -36,7 +36,7 @@ claim (batching challenge + sumcheck) because its carrier `L ⊗_K L` is strictl
 Hachi's carrier *is* `L`, so the residual claim is already a native evaluation claim and goes
 straight to the Fig. 3 chain. **Split the module at that seam.**
 
-## 1. Verified current state (all anchors re-derived on the working tree, 2026-07-07)
+## 1. Verified current state (Lemma 5/6 status revalidated 2026-07-30)
 
 ### 1.1 Hachi chain — the consumer, done through Lemma 8
 
@@ -68,7 +68,7 @@ straight to the Fig. 3 chain. **Split the module at that seam.**
   `toMatrix` (:140), `evalSplit_eq_eval` (:162), `toPolynomial` (:189), `eval_eq_sum` (:125),
   `monomialBasis_get` (:130). Reusable verbatim over the subring `B` below.
 
-### 1.2 Lattice layer — Theorem 2 proven; exactly two sorries, both off the §3 path
+### 1.2 Lattice layer — Theorem 2 and Lemma 6 proved; one Lemma 5 gap
 
 - `psi` ([Subfield/Packing.lean:61](ArkLib/Data/Lattices/CyclotomicRing/Subfield/Packing.lean#L61)),
   `psi_add` (:74), `psi_bijective`
@@ -87,11 +87,12 @@ straight to the Fig. 3 chain. **Split the module at that seam.**
   `traceH`/computable `traceHComp` ([Galois/Trace.lean:68/73](ArkLib/Data/Lattices/CyclotomicRing/Galois/Trace.lean#L68)),
   Eq. (7) generators `fixedBasisMap` (Cardinality.lean:53), `vElt`
   ([Subfield/Basis.lean:419](ArkLib/Data/Lattices/CyclotomicRing/Subfield/Basis.lean#L419)).
-- Sorries: `no_selfReciprocal_factor`
+- Remaining sorry: `no_selfReciprocal_factor`
   ([Subfield/Field.lean:207, sorry at :211](ArkLib/Data/Lattices/CyclotomicRing/Subfield/Field.lean#L207);
-  gates only the Lemma 5 *field* upgrade of `fixedSubring`; **becomes load-bearing in Phase F**) and
-  `cInfNorm_psi_le` ([Subfield/NormBound.lean:98/:103](ArkLib/Data/Lattices/CyclotomicRing/Subfield/NormBound.lean#L98);
-  Lemma 6; needed only for the §4.5 recursion, Phase G).
+  gates only the Lemma 5 *field* upgrade of `fixedSubring`; **becomes load-bearing in Phase F**).
+  Lemma 6 is now proved as `cInfNorm_psi_le`
+  ([Subfield/NormBound.lean](ArkLib/Data/Lattices/CyclotomicRing/Subfield/NormBound.lean)) and is
+  `sorryAx`-free.
 - Missing glue (Phase A): `conjAut` involution, `conjAut` fixes `fixedSubring` pointwise,
   `psi_smul`, the `Algebra ↥(fixedSubring α k) (Rq …)` instance, unit-ness of `(2^α/2^κ : Rq)`.
 
@@ -685,8 +686,9 @@ out of scope (D12/R6).
 
 ### Phase G — §4.5 recursion handoff (~4–6 days, after F)
 
-- **G1.** Close `cInfNorm_psi_le` (NormBound.lean:98; "index bookkeeping" plan in docstring) —
-  Lemma 6, `‖ψ(a)‖∞ ≤ 2β`, needed to commit `ψ(ŵ)` without re-decomposition.
+- **G1 (closed).** `cInfNorm_psi_le` proves Lemma 6, `‖ψ(a)‖∞ ≤ 2β`, using the support of
+  `R_q^H` elements and the fact that at most two packed summands contribute to each coefficient.
+  This is the bound needed to commit `ψ(ŵ)` without re-decomposition.
 - **G2.** Partial-evaluations step for `mle[w̃]` (Eq. (24)) — the Phase E head re-instantiated at
   the `eq̃`/evaluation convention (paper uses `eq(j, a₀)` here, not monomials — the
   `PackingScheme.weights` knob absorbs exactly this difference).
@@ -801,8 +803,8 @@ in `relPolyEval`/`relIn`/`relOut` today.
 - **R8 — degree bookkeeping** (F5): repo docstrings say round degree `2b+1`, the factor count
   gives `2b`, the paper's proof-size table suggests `b+1` coefficients. Everything downstream is
   degree-parametric; F5 pins the true value once, early.
-- **R9 — two sorries as future gates**: `no_selfReciprocal_factor` gates F1 (and only F1, given
-  D10); `cInfNorm_psi_le` gates G1. Neither touches Phases A–E.
+- **R9 — remaining Lemma 5 gate**: `no_selfReciprocal_factor` gates F1 (and only F1, given
+  D10). The former Lemma 6/G1 gate `cInfNorm_psi_le` is closed.
 - **R10 — the substrate's pure-with-dummy round verifier is CWSS-incompatible.** Because the
   round check `Σ_b g_i(b) = target` depends only on the shared message and the input statement
   (not the challenge), a failed check sends *every* sibling branch of a tree node to the

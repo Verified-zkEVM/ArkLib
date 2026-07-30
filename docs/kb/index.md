@@ -48,6 +48,9 @@ used in `ArkLib/**/*.lean`, including:
 
 - [`audits/README.md`](audits/README.md) - audit conventions and migration notes for paper-to-code
   comparison pages.
+- [`audits/noz26-subfield-lemmas5-6.md`](audits/noz26-subfield-lemmas5-6.md)
+  - Hachi §3 Lemmas 5–6 paper-to-Lean audit, including the remaining Lemma 5 factor-swap gap
+    and the completed Lemma 6 norm proof.
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
   - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the Kronecker repair and the weak-binding seam
     as integrated into the escape-threaded opening chain.

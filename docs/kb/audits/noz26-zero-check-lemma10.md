@@ -7,12 +7,18 @@ Figure 5 and Lemma 10).
 
 Last revalidated against the formalization: **30 July 2026**.
 
-> **Status (integrated).** The corrected Lemma 10 is now formalized *inside* the escape-threaded
+> **Status (integrated, with a link-5 encoding gap).** The corrected Lemma 10 is now formalized
+> *inside* the escape-threaded
 > opening chain: `zeroCheckPackage` reduces `relBatchedE → relZeroCheckE` and is composed as
 > `batchPackage ▷ zeroCheckPackage ▷ sumcheckBridgePackage` in `Composition.lean` (`openCore`).
 > The CWSS theorem `zeroCheck_coordinateWiseSpecialSound` is **`sorry`-free and axiom-clean** (the
-> `H_α`/`H₀` encodings `hAlphaEvals`/`wTable` are now concrete), and the link-5 batching bridge's
-> un-batching pull-back `mem_relLiftE_of_relBatchedE` is likewise **proven and axiom-clean**.
+> `H_α`/`H₀` values used by the theorem are concrete), and the link-5 batching bridge's
+> un-batching pull-back `mem_relLiftE_of_relBatchedE` is likewise **proven and axiom-clean relative
+> to those definitions**. Link 5 is nevertheless **not yet a faithful formalization of paper
+> Eq. (22)**: `hAlphaEvals` is defined directly as the target per-row lift defect. The paper's
+> contraction from `M̃_α`, `w̃`, and `α̃`, and a theorem proving that contraction equal to the
+> defect, are absent. The package also has no forward/honest-completeness theorem
+> `relLiftE → relBatchedE`.
 > **The range half is now load-bearing:** shortness (`liftShort`) is *derived* from the range
 > identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`, resolution *option 1*),
 > not carried as a free conjunct of `relBatched`.
@@ -41,15 +47,16 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Paper object or claim | Lean declaration | Status | Concern |
 | --- | --- | --- | --- |
 | Batched range identity, Eq. (23) | `ZeroCheck.hZero : CMlPolynomialEval F m₀` | represented, **concrete, computable, load-bearing** | The stored vector is exactly the Boolean table of range factors; multilinearity is structural. Entry content `wTable` reads the committed `z`/`r` coefficients directly, and `H₀ ≡ 0 ⇒ liftShort` is proven by `hZero_eq_zero_imp_liftShort`. |
-| Batched row identity, Eq. (22) | `ZeroCheck.hAlpha : CMlPolynomialEval F m₁` | represented, **concrete, computable** | The stored vector is the per-row defect table `hAlphaEvals`; multilinearity is structural and `hAlphaEvals_rowPoint` recovers each lift equation. |
+| Batched row identity, Eq. (22) | `ZeroCheck.hAlpha : CMlPolynomialEval F m₁` | **partial / specification shortcut** | The stored vector is the per-row defect table `hAlphaEvals`, so multilinearity and the pull-back are proved. But the paper defines this identity through the `M̃_α`/`w̃`/`α̃` contraction. That contraction and its equivalence to the direct defect table are not formalized. |
 | Figure-5 point checks | `ZeroCheck.relZeroCheck` / `relZeroCheckE` | deliberately repaired | Points are derived from scalar Kronecker seeds, not sampled uniformly as vectors; evaluation uses `CMlPolynomialEval.eval` directly; escape-threaded (`Set.withEscape K.esc`). |
 | Axis-cross counterexample | `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross` | proven | Formally refutes the identity-testing step used by the uniform-vector argument. |
 | Kronecker root-counting kernel | `LinearMvExtension.multilinear_eq_zero_of_kronecker_roots`, `ZeroCheck.arm_eq_zero_of_family` | proven, **axiom-clean** | `D ≥ 2^m` univariate roots + Kronecker injectivity; no `sorryAx`. |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.buildWitnessE`, `buildWitnessE_mem_relBatchedE` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
 | Lemma-10 binding alternative | `LiftCom.escOfCollision` via `K.collision_mem` | integrated | Distinct short openings of the shared `t` become an escape `e ∈ K.esc` (Hachi weak binding). |
 | Corrected Lemma 10 CWSS | `ZeroCheck.zeroCheck_coordinateWiseSpecialSound` | sorry-free, **axiom-clean** | `(ℓ, k) = (2, D)`; assembled by `ChallengeRound.coordinateWiseSpecialSound_of_mkWitness`; `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
-| Link-5 un-batching pull-back | `ZeroCheck.mem_relLiftE_of_relBatchedE` (`batchPackage`) | **proven, axiom-clean** | `relBatchedE → relLiftE`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). |
-| Link-5/link-6/link-7 composition | `batchPackage ▷ zeroCheckPackage ▷ sumcheckBridgePackage` (`openCore`) | **defined, compiles** | The seam relations match by `rfl`; the whole chain builds. |
+| Link-5 un-batching pull-back | `ZeroCheck.mem_relLiftE_of_relBatchedE` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatchedE → relLiftE`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The missing obligation is to derive the current `H_α` table from paper Eq. (22), not the already-proved pull-back from that table. |
+| Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLiftE` witness satisfies `relBatchedE`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
+| Link-5/link-6/link-7 composition | `batchPackage ▷ zeroCheckPackage ▷ sumcheckBridgePackage` (`openCore`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
 
 ## Polynomial representation: multilinear value vectors and proof views
 
@@ -71,7 +78,7 @@ views `hZeroML` and `hAlphaML` rebuild the same value tables with `MvPolynomial.
 | Range factor `P_b` | `rangeProduct` (scalar) | — | `rangeProduct_eq_zero_iff` |
 | Table `w̃`, Eq. (21) | `wTable` | — | `wTable_zRow`, `wTable_rRow` |
 | `H₀`, Eq. (23) | `hZero : CMlPolynomialEval F m₀` | `hZeroML` | `hZero_eq_zero_iff`, `hZeroML_eq_zero_iff` |
-| `H_α`, Eq. (22) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlphaML_eq_zero_iff` |
+| `H_α` defect-table specification (intended to represent Eq. (22)) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlphaML_eq_zero_iff`; no bridge from the paper's `M̃_α`/`w̃`/`α̃` contraction |
 | `mle[w̃]` and its opening | `cWTableMle`, `wTableMleEval` | — | `wTableMleEval_eq` |
 | Round message `(g⁽⁰⁾, g⁽ᵅ⁾)` | `CPolynomial.degreeLE` subtypes | `Polynomial.degreeLE` | `CPolynomial.degreeLE_toPoly` |
 
@@ -151,10 +158,14 @@ supplies admissibility evidence before the collision branch.
 
 ## Residual gaps (out of Lemma-10 scope)
 
-- **F5 encoding — now concrete.** `hZero`/`hAlpha` are genuine multilinear extensions, and both
-  coefficient functions are now **concrete** (no longer `sorry`):
+- **F5 encoding — concrete values, but incomplete paper correspondence.** `hZero`/`hAlpha` are
+  genuine multilinear extensions, and both coefficient functions are concrete (no longer
+  `sorry`):
   - `hAlphaEvals` = the `α`-evaluated per-row lift defect, row-encoded into the `m₁`-cube via
-    `rowPoint` (`hAlphaEvals_rowPoint`, axiom-clean); arity pin `n ≤ 2 ^ m₁`.
+    `rowPoint` (`hAlphaEvals_rowPoint`, axiom-clean); arity pin `n ≤ 2 ^ m₁`. This is a direct
+    specification of the desired result, not yet a formalization of the paper's Eq. (22)
+    contraction. A definition of that contraction and an extensional-equality theorem are still
+    required.
   - `wTable` reads the committed `z`/`r` coefficients **directly** (decoding the `m₀`-cube to
     `row := idx / d`, `col := idx % d`), so `H₀ ≡ 0` is a genuine (non-vacuous) shortness statement
     on the committed data. (Re-decomposing to base-`b` digits would be vacuous — digits are always
@@ -181,7 +192,9 @@ supplies admissibility evidence before the collision branch.
     `liftShort`'s two bounds is the pair of hypotheses `b − 1 ≤ γ` (z-side) and `b − 1 ≤ ρBound`
     (r-side), together with the column-encoding arity
     `(μ+n)·deg φ ≤ 2^{m₀}`; these are threaded through `batchPackage` and `openCore`.
-  `K.com` and the bound conjunct are carried verbatim.
+  `K.com` and the bound conjunct are carried verbatim. This proves the CWSS direction for the
+  current relation, but does not prove that `hAlpha` is the polynomial constructed in paper
+  Eq. (22). There is also no forward/honest-completeness theorem `relLiftE → relBatchedE`.
 - **Constructivity.** `buildWitnessE` (and the generic `treeExtractor`) select per-branch
   witnesses with classical choice. A constructive extractor would need witness-bearing trees or a
   decidable enumeration interface.
