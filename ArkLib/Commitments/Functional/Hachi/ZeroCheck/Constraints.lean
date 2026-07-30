@@ -46,9 +46,11 @@ import ArkLib.ToCompPoly.Multivariate.Multilinear
   polynomial on `{0,1}^m`. This matches Eqs. (22)–(23) directly and makes multilinearity
   structural rather than a separate degree theorem.
 
-  `hZeroML`/`hAlphaML` are derived Mathlib `restrictDegree` views of the same tables, used only by
-  the point-check relation and Kronecker root-counting proof. The full identities in `relBatched`
-  use `hZero`/`hAlpha` directly, so `H = 0` is simply equality of Boolean-evaluation vectors.
+  `hZeroML`/`hAlphaML` are derived Mathlib `restrictDegree` views of the same tables, used by the
+  Kronecker root-counting proof and the still-sorried sumcheck identity specifications. Both the
+  point checks in `relZeroCheck` and the full identities in `relBatched` use `hZero`/`hAlpha`
+  directly; the evaluation bridges `hZero_eval_eq` and `hAlpha_eval_eq` isolate the conversion
+  needed by root counting.
 
   ## The sumcheck summands
 
@@ -257,6 +259,28 @@ noncomputable def hZeroML (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ
 noncomputable def hAlphaML (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) : MvPolynomial.restrictDegree (Fin m₁) F 1 :=
   ⟨MLE (hAlphaEvals Φ m₁ φF b s α w), MLE_mem_restrictDegree _⟩
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- Direct evaluation of the primary `CMlPolynomialEval` `H₀` agrees with its Mathlib proof
+view. The protocol relation uses the left side; only root counting crosses this bridge. -/
+theorem hZero_eval_eq (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
+    (a : Fin m₀ → F) :
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b w) (Vector.ofFn a) =
+      MvPolynomial.eval a (hZeroML Φ m₀ φF b w).val := by
+  rw [hZero, hZeroML]
+  exact CMlPolynomialEval.eval_eq_MvPolynomial_MLE
+    (R := F) (n := m₀) (fun x => rangeProduct b (wTable Φ m₀ φF b w x)) a
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- Direct evaluation of the primary `CMlPolynomialEval` `H_α` agrees with its Mathlib proof
+view. -/
+theorem hAlpha_eval_eq (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (w : LiftedWitness Φ μ n) (a : Fin m₁ → F) :
+    CMlPolynomialEval.eval (hAlpha Φ m₁ φF b s α w) (Vector.ofFn a) =
+      MvPolynomial.eval a (hAlphaML Φ m₁ φF b s α w).val := by
+  rw [hAlpha, hAlphaML]
+  exact CMlPolynomialEval.eval_eq_MvPolynomial_MLE
+    (R := F) (n := m₁) (hAlphaEvals Φ m₁ φF b s α w) a
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/

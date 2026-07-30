@@ -42,7 +42,7 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | --- | --- | --- | --- |
 | Batched range identity, Eq. (23) | `ZeroCheck.hZero : CMlPolynomialEval F m₀` | represented, **concrete, computable, load-bearing** | The stored vector is exactly the Boolean table of range factors; multilinearity is structural. Entry content `wTable` reads the committed `z`/`r` coefficients directly, and `H₀ ≡ 0 ⇒ liftShort` is proven by `hZero_eq_zero_imp_liftShort`. |
 | Batched row identity, Eq. (22) | `ZeroCheck.hAlpha : CMlPolynomialEval F m₁` | represented, **concrete, computable** | The stored vector is the per-row defect table `hAlphaEvals`; multilinearity is structural and `hAlphaEvals_rowPoint` recovers each lift equation. |
-| Figure-5 point checks | `ZeroCheck.relZeroCheck` / `relZeroCheckE` | deliberately repaired | Points are derived from scalar Kronecker seeds, not sampled uniformly as vectors; evaluation uses the equivalent `hZeroML`/`hAlphaML` Mathlib views; escape-threaded (`Set.withEscape K.esc`). |
+| Figure-5 point checks | `ZeroCheck.relZeroCheck` / `relZeroCheckE` | deliberately repaired | Points are derived from scalar Kronecker seeds, not sampled uniformly as vectors; evaluation uses `CMlPolynomialEval.eval` directly; escape-threaded (`Set.withEscape K.esc`). |
 | Axis-cross counterexample | `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross` | proven | Formally refutes the identity-testing step used by the uniform-vector argument. |
 | Kronecker root-counting kernel | `LinearMvExtension.multilinear_eq_zero_of_kronecker_roots`, `ZeroCheck.arm_eq_zero_of_family` | proven, **axiom-clean** | `D ≥ 2^m` univariate roots + Kronecker injectivity; no `sorryAx`. |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.buildWitnessE`, `buildWitnessE_mem_relBatchedE` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
@@ -81,8 +81,10 @@ Consequences worth recording:
   `hZero … = 0 ∧ hAlpha … = 0`; both sides are fixed-length CompPoly vectors, not sparse
   `Finsupp` polynomials.
 - **The Mathlib views are proof-only.** `hZeroML`/`hAlphaML` are noncomputable derived definitions
-  used by the point checks and Kronecker root counting. Their zero identities are equivalent to
-  the primary vector identities.
+  used by Kronecker root counting and the current sumcheck identity specifications. `relZeroCheck`
+  evaluates the primary vectors directly; `hZero_eval_eq`/`hAlpha_eval_eq` cross to the Mathlib
+  views inside the extraction proof, while their zero identities remain equivalent to the primary
+  vector identities.
 - **Still stubs, hence not computable in substance.** The sumcheck summands
   `sumcheckPolyZero`, `sumcheckPolyAlpha`, the public target `zcTargetAlpha` and the prover fold
   `hypercubeSum` have CompPoly *types* (`CMvPolynomial m₀ F`, `F`) but `sorry` bodies, as do

@@ -76,9 +76,9 @@ Ring-switching layer:
   identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
   At the point-check and sumcheck seams, `relZeroCheck`/`roundRel` temporarily assume `liftShort`
   because a point or partial-sum claim does not imply the norm condition needed by weak binding.
-  The identities themselves are represented as `CMlPolynomialEval` Boolean-value vectors,
-  matching the paper's multilinear `H₀` and `Hα`; Mathlib `restrictDegree` views are derived only
-  for the existing Kronecker proof.
+  The identities themselves are represented and point-evaluated as `CMlPolynomialEval`
+  Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib
+  `restrictDegree` views are derived only for the existing Kronecker proof.
   See
   [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
 

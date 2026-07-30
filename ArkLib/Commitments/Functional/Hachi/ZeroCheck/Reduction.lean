@@ -118,8 +118,8 @@ def zeroCheckProver {TCom : Type} :
 seeds — `H₀` at `κ_{m₀}(ρ₀)` and `H_α` at `κ_{m₁}(ρ_α)`.
 
 The primary polynomials `hZero`/`hAlpha` are `CMlPolynomialEval` Boolean-value vectors.
-`hZeroML`/`hAlphaML` are their propositionally equivalent Mathlib multilinear views, used here
-because the existing Kronecker root-counting kernel is stated over `MvPolynomial.restrictDegree`.
+The relation evaluates them directly with `CMlPolynomialEval.eval`; the derived Mathlib views
+`hZeroML`/`hAlphaML` are used only inside the Kronecker root-counting proof.
 
 The shortness conjunct is a temporary semantic admissibility condition needed by the
 norm-conditioned weak-binding escape `K.collision_mem`: a single point evaluation of `H₀` does
@@ -132,9 +132,10 @@ def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBou
   {p |
     K.com p.2 = p.1.t ∧
     liftShort Φ bound rBound p.2 ∧
-    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZeroML Φ m₀ φF b p.2).val = 0 ∧
-    MvPolynomial.eval (kroneckerPoint m₁ p.1.seedα)
-      (hAlphaML Φ m₁ φF b p.1.rlin p.1.α p.2).val = 0 ∧
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2)
+      (Vector.ofFn (kroneckerPoint m₀ p.1.seed₀)) = 0 ∧
+    CMlPolynomialEval.eval (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2)
+      (Vector.ofFn (kroneckerPoint m₁ p.1.seedα)) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
 /-- `relZeroCheck` extended with the escape branch (`.inr e` requires `e ∈ K.esc`); the input
@@ -263,18 +264,20 @@ theorem buildWitnessE_mem_relBatchedE
         exact this.2.2.2.2
       simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq]
       refine ⟨hc0, ?_, ?_, hbound⟩
-      · -- H₀ ≡ 0. Root counting uses the derived Mathlib multilinear view.
+      · -- H₀ ≡ 0. Root counting crosses to the derived Mathlib multilinear view.
         rw [← hZeroML_eq_zero_iff]
         refine arm_eq_zero_of_family hm₀ fam hfam 0 (hZeroML Φ m₀ φF b w0) (fun j => ?_)
         have hj := hrel j; rw [(hall j).trans hr0, relZeroCheckE, Set.mem_withEscape_inl] at hj
         simp only [relZeroCheck, Set.mem_setOf_eq] at hj
+        rw [← hZero_eval_eq]
         exact hj.2.2.1
-      · -- H_α ≡ 0, using the corresponding derived Mathlib view.
+      · -- H_α ≡ 0, crossing through the corresponding evaluation bridge.
         rw [← hAlphaML_eq_zero_iff]
         refine arm_eq_zero_of_family hm₁ fam hfam 1
           (hAlphaML Φ m₁ φF b stmt.1 stmt.2.2 w0) (fun j => ?_)
         have hj := hrel j; rw [(hall j).trans hr0, relZeroCheckE, Set.mem_withEscape_inl] at hj
         simp only [relZeroCheck, Set.mem_setOf_eq] at hj
+        rw [← hAlpha_eval_eq]
         exact hj.2.2.2.1
     · -- common escape
       simp only [relBatchedE, Set.mem_withEscape_inr]
