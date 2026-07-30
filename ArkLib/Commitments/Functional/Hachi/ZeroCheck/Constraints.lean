@@ -298,22 +298,23 @@ theorem hAlphaML_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
 /-- The computable multilinear extension of the table `w̃` itself, the committed object the
 final-evaluation step opens. -/
 def cWTableMle (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
-    CMvPolynomial m₀ F :=
-  CMvPolynomial.MLE (wTable Φ m₀ φF b w)
+    CMlPolynomialEval F m₀ :=
+  Vector.ofFn fun i => wTable Φ m₀ φF b w (finFunctionFinEquiv.symm i)
 
 /-- Evaluation of the multilinear extension of the table `w̃` at a point `a ∈ F^{m₀}`:
 `mle[w̃](a) = ∑ᵢ w̃(i)·eq̃(i, a)`. This is the evaluation claim carried into the final-evaluation
 step (`Sumcheck/FinalEval.lean`). Computed on the computable representation. -/
 def wTableMleEval (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
     (a : Fin m₀ → F) : F :=
-  (cWTableMle Φ m₀ φF b w).eval a
+  CMlPolynomialEval.eval (cWTableMle Φ m₀ φF b w) (Vector.ofFn a)
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- `wTableMleEval` agrees with evaluating Mathlib's multilinear extension of `w̃`. -/
 theorem wTableMleEval_eq (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
     (a : Fin m₀ → F) :
     wTableMleEval Φ m₀ φF b w a = MvPolynomial.eval a (MLE (wTable Φ m₀ φF b w)) := by
-  rw [wTableMleEval, cWTableMle, CPoly.eval_equiv, CMvPolynomial.fromCMvPolynomial_MLE]
+  rw [wTableMleEval, cWTableMle]
+  exact CMlPolynomialEval.eval_eq_MvPolynomial_MLE (wTable Φ m₀ φF b w) a
 
 /-! ## Range-side soundness: `H₀ ≡ 0 ⇒ liftShort`
 
