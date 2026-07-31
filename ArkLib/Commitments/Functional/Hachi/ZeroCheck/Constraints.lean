@@ -6,7 +6,8 @@ Authors: Tobias Rothmann, Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ToCompPoly.Multivariate.Multilinear
+import ArkLib.ToCompPoly.Multilinear.Basic
+import CompPoly.Multivariate.Operations
 
 /-!
   # Constraint encoding — Hachi Eqs. (21)–(23)
@@ -97,7 +98,37 @@ The zero-check derives its evaluation points along this curve (see the module do
 `D := max(2, 2^{m₀}, 2^{m₁})`. `2^{m₀}` and `2^{m₁}` are the degrees of the univariate Kronecker
 restrictions of `H₀` and `H_α`, so that many roots determine each polynomial; the floor of `2`
 meets the `2 ≤ k` requirement of the coordinate-wise special soundness structure. The paper's
-Lemma 10 uses `max(2d, 2b−1)`. -/
+Lemma 10 uses `max(2d, 2b−1)`.
+
+### What the repair costs
+
+Since the arity pin `hμn` gives `2^{m₀} ≥ (μ + n)·deg φ`, this raises the branching arity of the
+extraction tree from the paper's `O(d + b)` to `O(μ·d)`. That is the obvious objection to the
+Kronecker repair, and the answer is favourable. By [NOZ26] Lemma 4 the knowledge error of a
+coordinate-wise special-sound family is `ℓ·k/|S|^ℓ`, so at `(ℓ, k) = (2, D)` over `S = F_{q^k}` it
+becomes `2·D/|F_{q^k}|²`, i.e. roughly `2(μ + n)d/|F_{q^k}|²` in place of the paper's
+`2·max(2d, 2b−1)/|F_{q^k}|²`. At Hachi's field size that is still negligible, and since `D` is
+polynomial in the witness dimensions the transcript tree stays polynomial. The repair therefore
+buys a *deterministic* identity equivalence (`multilinear_eq_zero_of_kronecker_roots`, strictly
+stronger than a Schwartz–Zippel bound) at the price of a constant-factor-in-the-exponent-free
+arity increase.
+
+### A second defect in the printed Lemma 10
+
+Independently of the axis-cross gap (see `exists_nonzero_vanishing_on_axis_cross`), the printed
+lemma is internally inconsistent about its own arity, which is worth recording because this file's
+choices look like divergences otherwise.
+
+* Lemma 10 asks for "`D` valid transcripts … `∈ SS(F_{q^k}, 2, D)`", but `SS(S, ℓ, k)` is defined
+  with `ℓ(k−1)+1` elements, so at `(ℓ, k) = (2, D)` the family has **`2D − 1`** transcripts, not
+  `D`. `2D − 1` is what `zeroCheckStructure` actually uses, via `chalStructure`'s
+  `arity = ℓ·(k−1)+1`.
+* The prose immediately above Lemma 10 says to treat `(τ₀, τ₁)` as `log μ + log d + log n`
+  coordinates, which contradicts the lemma's own `ℓ = 2`. This file follows `ℓ = 2`: the two
+  coordinates are the two scalar seeds `(ρ₀, ρ_α)`.
+* Relatedly, `τ₀` is drawn from `F^{log μ + log d}` on p. 20 although `w̃`'s domain is
+  `[μ + n] × [d]`, so the paper's own arity there should read `log(μ + n) + log d`. The `m₀` of
+  this file is pinned to the latter by `hμn`. -/
 def zeroCheckD (m₀ m₁ : ℕ) : ℕ := max 2 (max (2 ^ m₀) (2 ^ m₁))
 
 theorem two_le_zeroCheckD (m₀ m₁ : ℕ) : 2 ≤ zeroCheckD m₀ m₁ := le_max_left _ _
@@ -459,7 +490,22 @@ computable representation — this is the fold the prover actually runs. -/
 def hypercubeSum (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) : F :=
   sorry
 
-/-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`. -/
+/-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`.
+
+### Deliberate divergence: no `1_{≤μ}` indicator
+
+The paper's `F_{0,τ₀}` (p. 22) carries a trailing indicator factor `1_{≤μ}(x,y)` that restricts the
+range check to the `z` rows, whereas Eq. (23)'s `H₀` carries **no** such factor, sums over all
+`(u, ℓ)`, and the bullet above it imposes the constraint "for each `u ∈ [μ + n]` and `ℓ ∈ [d]`" —
+i.e. on the `r` rows as well, consistent with the earlier requirement `‖z‖∞, ‖r‖∞ ≤ b − 1`. The two
+readings are not equivalent, so the paper's own `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as
+printed**: the two sides differ exactly by the indicator.
+
+This file follows the Eq. (23) reading — no indicator, and the range constraint applied to both the
+`z` and the `r` rows. That is the self-consistent choice, and it is visible downstream:
+`wTable` fills both row blocks (`wTable_zRow`, `wTable_rRow`), and
+`hZero_eq_zero_imp_liftShort` discharges a `z`-side *and* an `r`-side bound. Anyone comparing this
+statement against Figure 5 should read the absent indicator as intentional rather than as a bug. -/
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
