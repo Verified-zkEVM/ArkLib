@@ -79,7 +79,7 @@ theorem IsSpecialSoundFamily.exists_coord_finset {S : Type*} {ℓ k : ℕ}
     · obtain ⟨j, _, hje⟩ := Finset.mem_image.mp h1
       exact ⟨j, hje⟩
 
-namespace ChallengeRound
+namespace ChallengeRoundTree
 
 /-- The one-round, challenge-only protocol (instantiated by the repaired Hachi zero-check,
 Lemma 10 / Figure 5): the verifier sends a challenge vector `Fin ℓ → C` (round 0, `V_to_P`).
@@ -322,6 +322,6 @@ instance : ∀ i, SampleableType ((pSpec C ℓ).Challenge i)
 
 end Instances
 
-end ChallengeRound
+end ChallengeRoundTree
 
 end CoordinateWise

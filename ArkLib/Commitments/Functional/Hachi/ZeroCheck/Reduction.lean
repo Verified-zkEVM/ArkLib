@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ChallengeRound
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ChallengeRoundTree
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
@@ -31,7 +31,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   injective on multilinear polynomials (`LinearMvExtension.powAlgHom_eq_zero_iff`), so
   `D = zeroCheckD m₀ m₁ = max(2, 2^{m₀}, 2^{m₁})` distinct seeds per coordinate determine `H`. The
   algebraic core is in `ArkLib/Data/MvPolynomial/LinearMvExtension.lean`, and the generic one-round
-  soundness engine is `OracleReduction/…/CoordinateWiseSpecialSoundness/ChallengeRound.lean`.
+  soundness engine is `OracleReduction/…/CoordinateWiseSpecialSoundness/ChallengeRoundTree.lean`.
 
   ## Coordinate-wise special soundness
 
@@ -56,14 +56,14 @@ namespace ArkLib.Lattices.Ajtai.InnerOuter
 
 open CompPoly CPoly ArkLib.Lattices.CyclotomicModulus
 open OracleComp OracleSpec ProtocolSpec
-open CoordinateWise CoordinateWise.ChallengeRound
+open CoordinateWise CoordinateWise.ChallengeRoundTree
 
 /-! ## Wire format and CWSS structure -/
 
 /-- The zero-check's wire format: one verifier challenge carrying the seed pair `(ρ₀, ρ_α)` as a
-`Fin 2 → F`, matching the generic one-round challenge engine `ChallengeRound`. -/
+`Fin 2 → F`, matching the generic one-round challenge engine `ChallengeRoundTree`. -/
 @[reducible] def pSpecZeroCheck (F : Type) : ProtocolSpec 1 :=
-  ChallengeRound.pSpec F 2
+  ChallengeRoundTree.pSpec F 2
 
 instance instSampleableTypeChallengePSpecZeroCheck {F : Type} [SampleableType F] :
     ∀ i, SampleableType ((pSpecZeroCheck F).Challenge i) := inferInstance
@@ -192,7 +192,7 @@ def collideOrPass (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBo
 
 open Classical in
 /-- The zero-check witness assembler, passed as the `mkWitness` argument of the generic
-`ChallengeRound` extractor:
+`ChallengeRoundTree` extractor:
 
 * if all `2D − 1` branch responses equal branch 0's, return that response (a common opening, or a
   passed-through escape if branch 0 is one);
@@ -299,7 +299,7 @@ omit [NeZero q] in
 /-- Coordinate-wise special soundness of the zero-check (Hachi Figure 5 / Lemma 10). The one-round
 seed-pair verifier is coordinate-wise special sound for `zeroCheckStructure`
 (`(ℓ, k) = (2, D)`, `D = zeroCheckD m₀ m₁`), reducing `relBatchedE` to `relZeroCheckE`. Assembled
-by `ChallengeRound.coordinateWiseSpecialSound_of_mkWitness` from the extraction step
+by `ChallengeRoundTree.coordinateWiseSpecialSound_of_mkWitness` from the extraction step
 `buildWitnessE_mem_relBatchedE`. -/
 theorem zeroCheck_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
