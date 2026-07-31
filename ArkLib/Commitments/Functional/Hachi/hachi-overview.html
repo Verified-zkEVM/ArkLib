@@ -9,6 +9,7 @@
     --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
     --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
     --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --rep:#2D6FA8; --rep-ghost:rgba(45,111,168,.12);
     --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
     --font-sans:"SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
     --font-mono:"SF Mono","JetBrains Mono","Berkeley Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
@@ -24,6 +25,7 @@
       --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
       --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
       --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+      --rep:#68B0E3; --rep-ghost:rgba(104,176,227,.14);
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
     }
   }
@@ -36,6 +38,7 @@
     --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
     --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
     --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --rep:#2D6FA8; --rep-ghost:rgba(45,111,168,.12);
     --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
   }
   :root[data-theme="dark"] {
@@ -47,6 +50,7 @@
     --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
     --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
     --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+    --rep:#68B0E3; --rep-ghost:rgba(104,176,227,.14);
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
   }
 
@@ -115,7 +119,7 @@
   .rule { height:1px; background:var(--line); border:0; margin:0; }
 
   /* ---------- summary tiles ---------- */
-  .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:14px; }
   .tile {
     background:var(--surface); border:1px solid var(--line); border-radius:14px;
     padding:18px 18px 16px; position:relative; box-shadow:var(--shadow);
@@ -129,6 +133,7 @@
   .tile.warn .n{color:var(--warn);} .tile.warn .dot{background:var(--warn);}
   .tile.bad .n{color:var(--bad);} .tile.bad .dot{background:var(--bad);}
   .tile.plan .n{color:var(--plan);} .tile.plan .dot{background:var(--plan);}
+  .tile.rep .n{color:var(--rep);} .tile.rep .dot{background:var(--rep);}
 
   .barwrap { margin-top:20px; }
   .bar { display:flex; height:12px; border-radius:999px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
@@ -163,6 +168,8 @@
   .pill.wip { color:var(--warn); background:var(--warn-ghost); border-color:color-mix(in srgb,var(--warn) 30%,transparent); }
   .pill.gap { color:var(--bad); background:var(--bad-ghost); border-color:color-mix(in srgb,var(--bad) 30%,transparent); }
   .pill.plan { color:var(--plan); background:var(--plan-ghost); border-color:color-mix(in srgb,var(--plan) 32%,transparent); }
+  /* sorry-free, but a deliberate repair of the paper's claim — deliberately not `proven` */
+  .pill.repaired { color:var(--rep); background:var(--rep-ghost); border-color:color-mix(in srgb,var(--rep) 32%,transparent); }
 
   /* badge (bridge / guarded / subfolder / core) */
   .badge {
@@ -357,7 +364,7 @@
       <strong>single line of nine reductions</strong> — starting at the quadratic-form evaluation
       (<strong>QuadEval</strong>) and ending at a bare multilinear-evaluation claim on the committed table.
       This map places every protocol-bearing file on that line, marks the bridges and
-      subfolders, and shows exactly what is proven or in progress.
+      subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
       <span class="chip">28 files</span>
@@ -387,6 +394,7 @@
       <div class="bar" id="statusBar" role="img" aria-label="Proportion of files by status"></div>
       <div class="bar-legend">
         <span class="k"><span class="sw" style="background:var(--ok)"></span>Proven — sorry-free &amp; complete</span>
+        <span class="k"><span class="sw" style="background:var(--rep)"></span>Repaired — sorry-free, but a corrected variant of the paper</span>
         <span class="k"><span class="sw" style="background:var(--warn)"></span>WIP — theorems stated, proofs skeletal</span>
       </div>
     </div>
@@ -424,11 +432,15 @@
         <h3>Proof status</h3>
         <div class="legend-row">
           <span class="key"><span class="pill proven">proven</span></span>
-          <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) is even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
+          <span class="txt">Sorry-free <b>and</b> a complete formalization of the paper item — no residual assumption the paper does not itself make. The QuadEval subprotocol (Lemma&nbsp;8) is even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="pill repaired">repaired</span></span>
+          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by Kronecker-curve root counting, at the cost of a temporary <span class="mono">liftShort</span> assumption. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
-          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>.</span>
+          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>. One exception carries <span class="mono">sorry&nbsp;0</span> — link&nbsp;5's pull-back is proved, but the link is still WIP as a formalization of Eqs.&nbsp;(22)–(23) (the paper's <span class="mono">M̃_α</span>/<span class="mono">w̃</span>/<span class="mono">α̃</span> contraction is not built, and there is no honest-completeness direction).</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill plan">planned</span></span>
@@ -483,6 +495,7 @@
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
       <button data-f="all" aria-pressed="true">all · 28</button>
       <button data-f="proven" aria-pressed="false">proven</button>
+      <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
       <button data-f="umbrella" aria-pressed="false">umbrella</button>
     </div>
@@ -571,7 +584,7 @@
         desc:"The <b>un-batching pull-back <code>mem_relLiftE_of_relBatchedE</code> is proof-sorry-free and axiom-clean relative to the current encoding</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, so shortness is derived rather than assumed. The Eq.&nbsp;(22) half is not yet a faithful paper-to-Lean bridge: <code>hAlphaEvals</code> is defined directly as the desired per-row α-defect, rather than as the paper's <code>M̃_α</code>/<code>w̃</code>/<code>α̃</code> contraction followed by a proved equivalence. The zero-round package also has no forward/honest-completeness theorem <code>relLiftE → relBatchedE</code>. Thus the CWSS pull-back is proved, but link&nbsp;5 remains WIP as a full formalization of Eqs.&nbsp;(22)–(23)." },
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
         files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"(ρ₀, ρ_α) ∈ F²", cwss:"ℓ = 2, k = D",
-        relIn:"relBatchedE", relOut:"relZeroChkE", status:"proven", sorry:0, badges:["repair"],
+        relIn:"relBatchedE", relOut:"relZeroChkE", status:"repaired", sorry:0, badges:["repair"],
         desc:"One challenge round carrying the scalar Kronecker seed pair (ρ₀, ρ_α), reducing the two identities to point evaluations on the curves κ. <b>Corrected Lemma 10</b> — the paper’s uniform-vector star extraction is refuted by <code>exists_nonzero_vanishing_on_axis_cross</code>. CWSS is sorry-free and axiom-clean at (ℓ,k)=(2,D). <b>Temporary shortness assumption</b>: <code>relZeroCheck</code> carries a <code>liftShort</code> conjunct so differing openings meet the norm precondition of <code>K.collision_mem</code>. It does not carry <code>cHZero = 0</code>; the common-opening branch derives that identity by Kronecker root counting." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
@@ -647,7 +660,7 @@
     ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
     ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",6],
-    ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","proven",0],
+    ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",1],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
@@ -655,17 +668,29 @@
   ];
 
   /* ---------------- HELPERS ---------------- */
-  var STATUS_LABEL = { proven:"proven", wip:"wip", gap:"gap", plan:"planned", umbrella:"umbrella" };
+  var STATUS_LABEL = { proven:"proven", repaired:"repaired", wip:"wip", gap:"gap", plan:"planned", umbrella:"umbrella" };
   function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
-  function pill(status){ var s = status==="umbrella" ? "plan" : status; return '<span class="pill '+(s==="proven"?"proven":s==="wip"?"wip":s==="gap"?"gap":"plan")+'">'+(STATUS_LABEL[status]||status)+'</span>'; }
+  var PILL_CLASS = { proven:"proven", repaired:"repaired", wip:"wip", gap:"gap", plan:"plan", umbrella:"plan" };
+  function pill(status){ return '<span class="pill '+(PILL_CLASS[status]||"plan")+'">'+(STATUS_LABEL[status]||status)+'</span>'; }
   function pathHTML(sub, fn){ return (sub?('<span class="sub">'+sub+'/</span>'):'')+'<span class="fn">'+fn+'</span>'; }
 
   /* ---------------- TILES ---------------- */
-  var counts = { proven:0, wip:0 };
-  INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
+  /* Every status appearing in INDEX must have a key here, or it is invisible in the tiles and the
+     bar and `total` stops matching the file count. Unrepresented statuses are reported loudly
+     rather than dropped silently. */
+  var counts = { proven:0, repaired:0, wip:0 };
+  var uncounted = [];
+  INDEX.forEach(function(r){
+    if(r[2]==="umbrella") return;
+    if(counts[r[5]]!=null) counts[r[5]]++; else uncounted.push(r[1]+' ("'+r[5]+'")');
+  });
+  if(uncounted.length && typeof console!=="undefined" && console.warn){
+    console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
+  }
   var tiles = [
     { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–9, escape threading, the shared encoding, composition and the scheme." },
+    { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–5 and 7–9, escape threading, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];
   var tilesEl = document.getElementById("tiles");
@@ -676,9 +701,9 @@
     tilesEl.appendChild(d);
   });
   /* status bar (files, excluding umbrellas) */
-  var total = counts.proven+counts.wip;
+  var total = counts.proven+counts.repaired+counts.wip;
   var bar = document.getElementById("statusBar");
-  [["var(--ok)",counts.proven],["var(--warn)",counts.wip]].forEach(function(seg){
+  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip]].forEach(function(seg){
     var s=el("span"); s.style.background=seg[0]; s.style.width=(100*seg[1]/total)+"%"; bar.appendChild(s);
   });
 
