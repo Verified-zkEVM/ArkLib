@@ -92,6 +92,16 @@ Ring-switching layer:
   `restrictDegree` views are derived only for the existing Kronecker proof.
   See
   [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
+- Separately from the axis-cross repair, ArkLib's zero-check diverges from the printed §4.3 in three
+  further places, each deliberate and each because the paper is internally inconsistent there. The
+  range summand carries **no `1_{≤μ}` indicator**: `F_{0,τ₀}` on p. 22 has one but Eq. (23)'s `H₀`
+  does not, and the bullet above Eq. (23) constrains `u ∈ [μ + n]`, so the paper's own
+  `∑_{u,ℓ} F_{0,τ₀} = H₀(τ₀)` is false as printed; ArkLib follows Eq. (23) and range-checks the `r`
+  rows as well as the `z` rows. Lemma 10 asks for `D` transcripts from `SS(F_{q^k}, 2, D)` although
+  that family has `ℓ(k−1)+1 = 2D − 1` elements, and ArkLib uses `2D − 1`. The prose above Lemma 10
+  treats `(τ₀, τ₁)` as `log μ + log d + log n` coordinates, contradicting the lemma's own `ℓ = 2`,
+  and `τ₀`'s stated domain `F^{log μ + log d}` on p. 20 disagrees with `w̃`'s domain
+  `[μ + n] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n) + log d`.
 
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
@@ -109,7 +119,6 @@ Ring-switching layer:
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.
-- Resolve the documented `m₀`/`m₁` arity choice for `sumcheckPolyAlpha` before filling its body.
 - Resolve the flagged `Z`-packing/partial-evaluation knowledge-soundness gap in the recursion chain.
 
 Detailed Lemma 5–6 correspondence and proof status:

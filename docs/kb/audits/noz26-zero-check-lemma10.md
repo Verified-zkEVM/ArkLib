@@ -100,11 +100,19 @@ Consequences worth recording:
   `F_{α,τ₁} = eq̃(τ₁, ·) · (mle[rowSum(α)] − φ(α)·mle[r(α)])` (per-variable degree
   `2 = roundDegAlpha`), with `zcTargetAlpha = ∑ᵢ eq̃(τ₁, i)·yᵢ(α)` accounting for the public
   right-hand side.
-- **Arity mismatch to resolve before F7.** `sumcheckPolyAlpha` returns `CMvPolynomial m₀ F` while
-  its batching point is `τ₁ : Fin m₁ → F`, so the `m₀`-cube sum in `sum_sumcheckPolyAlpha` and
-  `roundRel` over-counts the `m₁`-cube by `2 ^ (m₀ − m₁)` unless the extra coordinates are killed
-  (e.g. by a `∏_{j ≥ m₁} (1 − Xⱼ)` factor) or the signature is changed to `CMvPolynomial m₁ F`.
-  Either choice needs a pin relating `m₀` and `m₁`, which the current signatures do not carry.
+- **The `m₀`-cube signature of `sumcheckPolyAlpha` is correct — there is no arity mismatch here.**
+  Worth stating positively, because the pairing of the return type `CMvPolynomial m₀ F` with the
+  batching point `τ₁ : Fin m₁ → F` invites the worry that the `m₀`-cube sum over-counts the
+  `m₁`-cube. It does not. In the paper,
+  `F_{α,τ₁}(x,y) := w̃(x,y) · α̃(y) · ∑ᵢ eq̃(τ₁, i) · M̃_α(i,x)` is summed over the `w̃` coordinates
+  `(u,ℓ)` — the `m₀`-cube — while the row index `i ∈ [n]` (the `m₁` side) is summed *internally*,
+  inside the `∑ᵢ eq̃(τ₁, i)·M̃_α(i,x)` factor. `i` is not a cube coordinate, so there is nothing to
+  over-count, and the two "fixes" the worry suggests would each break something correct: inserting a
+  `∏_{j ≥ m₁} (1 − Xⱼ)` masking factor moves the sum away from `H_α(τ₁) + a` and so falsifies
+  `sum_sumcheckPolyAlpha`, whose statement is faithful to p. 22; re-typing to `CMvPolynomial m₁ F`
+  makes the `w̃(x,y)` factor untypable, since `w̃` lives on the `m₀`-cube. F7 therefore needs no
+  extra `m₀`/`m₁` pin — the pins `n ≤ 2^{m₁}` and `(μ+n)·deg φ ≤ 2^{m₀}` already carried by link 5
+  are about the row-indexing and range-table embeddings, not about this sum.
 
 ## Uniform-vector challenge gap (why the repair is needed)
 
@@ -117,6 +125,45 @@ ArkLib's repair samples scalar seeds `ρ₀, ρα` and evaluates on Kronecker cu
 `κ_m(ρ) = (ρ, ρ², ρ⁴, ...)`. A multilinear polynomial pulls back injectively to a univariate
 polynomial of degree below `2^m`; `2^m` distinct seeds then determine the identity. This changes
 the challenge distribution and raises the soundness parameter to `D = max(2, 2^{m₀}, 2^{mα})`.
+
+### What the repair costs
+
+Because `hμn` pins `2^{m₀} ≥ (μ + n)·deg φ`, the branching arity of the extraction tree grows from
+the paper's `O(d + b)` to `O(μ·d)`. This is the obvious objection to the repair and the answer is
+favourable. By [NOZ26] Lemma 4 the knowledge error of a coordinate-wise special-sound family is
+`ℓ·k/|S|^ℓ`, so at `(ℓ, k) = (2, D)` over `S = F_{q^k}` it is `2·D/|F_{q^k}|²`, i.e. roughly
+`2(μ + n)d/|F_{q^k}|²` in place of `2·max(2d, 2b−1)/|F_{q^k}|²`. That is still negligible at Hachi's
+field size, and `D` is polynomial in the witness dimensions so the transcript tree stays polynomial.
+What the repair buys in exchange is a *deterministic* identity equivalence
+(`multilinear_eq_zero_of_kronecker_roots`), strictly stronger than the Schwartz–Zippel bound Lemma 10
+actually needed. Recorded in the `zeroCheckD` docstring.
+
+## Other divergences from the printed Figure 5 / Lemma 10
+
+These are deliberate and correct, but they are not the axis-cross repair and a reader comparing this
+formalization against the printed paper will otherwise read them as bugs.
+
+- **No `1_{≤μ}` indicator in the range summand.** The paper's `F_{0,τ₀}` (p. 22) carries a trailing
+  indicator factor `1_{≤μ}(x,y)` restricting the range check to the `z` rows. Eq. (23)'s `H₀`
+  carries no such factor, sums over all `(u, ℓ)`, and the bullet above it imposes the constraint
+  "for each `u ∈ [μ + n]` and `ℓ ∈ [d]`" — i.e. on the `r` rows too, consistent with the earlier
+  `‖z‖∞, ‖r‖∞ ≤ b − 1`. The two readings differ exactly by the indicator, so the paper's own
+  `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as printed**. ArkLib follows the Eq. (23) reading: no
+  indicator, range constraint on both row blocks. Visible in `wTable_zRow`/`wTable_rRow` and in
+  `hZero_eq_zero_imp_liftShort` discharging a `z`-side *and* an `r`-side bound. Recorded in the
+  `sum_sumcheckPolyZero` docstring.
+- **`D` vs `2D − 1` transcripts.** Lemma 10 asks for "`D` valid transcripts … `∈ SS(F_{q^k}, 2, D)`",
+  but `SS(S, ℓ, k)` is defined with `ℓ(k−1)+1` elements, so at `(ℓ, k) = (2, D)` the family has
+  `2D − 1` transcripts. `2D − 1` is what `zeroCheckStructure` uses, through `chalStructure`'s
+  `arity = ℓ·(k−1)+1`.
+- **`ℓ = 2`, not `log μ + log d + log n`.** The prose immediately above Lemma 10 says to treat
+  `(τ₀, τ₁)` as `log μ + log d + log n` coordinates, contradicting the lemma's own `ℓ = 2`. ArkLib
+  follows `ℓ = 2`, the two coordinates being the scalar seeds `(ρ₀, ρ_α)`.
+- **`τ₀` arity on p. 20.** `τ₀` is drawn from `F^{log μ + log d}` although `w̃`'s domain is
+  `[μ + n] × [d]`, so the paper's arity there should read `log(μ + n) + log d`. ArkLib's `m₀` is
+  pinned to the latter by `hμn`.
+
+The last three are recorded in the `zeroCheckD` docstring.
 
 ## Shortness: derived where possible (option 1), assumed only where unavoidable (option 2)
 

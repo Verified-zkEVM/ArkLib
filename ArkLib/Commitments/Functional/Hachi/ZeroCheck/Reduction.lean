@@ -125,7 +125,19 @@ The shortness conjunct is a temporary semantic admissibility condition needed by
 norm-conditioned weak-binding escape `K.collision_mem`: a single point evaluation of `H₀` does
 not imply that the corresponding opening is short. In particular, this relation deliberately
 does not assume the global identity `H₀ ≡ 0`; that identity remains the conclusion extracted by
-the zero-check into `relBatchedE`. -/
+the zero-check into `relBatchedE`.
+
+That the conjunct cannot simply be dropped is not a gap in the present proof but a provable
+obstruction, and `LinearMvExtension.exists_nonzero_multilinear_vanishing_on_kronecker_seeds`
+is what makes it precise. The extractor's collision branch contributes at most one seed per
+divergent opening, hence at most `2^m − 1` seeds for any single opening; that lemma exhibits, for
+*every* seed set of cardinality `≤ 2^m − 1`, a nonzero multilinear polynomial vanishing along the
+Kronecker curve at all of them. So the collision branch can never reach `H₀ ≡ 0` by root counting,
+and shortness has to enter as a hypothesis there. Only the common-opening branch, which sees the
+full `2^m` seeds, derives the identity — via `multilinear_eq_zero_of_kronecker_roots` and
+`arm_eq_zero_of_family`. Discharging the conjunct for real would mean restricting `relZeroCheck` to
+verifier-checkable predicates or adding a third extractor branch for the not-both-short case; see
+`docs/kb/audits/noz26-zero-check-lemma10.md`. -/
 def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
