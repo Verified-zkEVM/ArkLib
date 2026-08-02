@@ -48,6 +48,11 @@ home_page/            site assets and assembled website root
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
   `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.
+  **Nothing there may import ArkLib outside `ToVCVio` itself** — that invariant is what makes a file
+  movable to VCVio unchanged. Content that is generic in spirit but depends on an ArkLib layer
+  belongs beside its consumers in core instead; generalise first, then move. Files whose contents
+  have gone upstream are kept as import-only compatibility shells rather than deleted. See
+  [`ArkLib/ToVCVio/README.md`](../../ArkLib/ToVCVio/README.md) for the upstream-then-delete rule.
 - `ArkLib/Commitments/` splits into two families by *what an opening proves*:
   - `Ordinary/` — standard commitments that only **commit and open** (reveal the committed
     message). These reuse the VCV-io `CommitmentScheme` definition rather than redefining it;
