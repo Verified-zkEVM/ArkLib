@@ -115,10 +115,31 @@ that collapses the anchor).
   completeness). The Binius codeword-consistency predicate is re-expressed in `commitsTo`
   orientation (`Binius.FRIBinius.biniusCommitsTo`, definitionally equal to the legacy hook).
 
+- [`HachiCarrier.lean`](../../../ArkLib/ProofSystem/RingSwitching/Generic/HachiCarrier.lean) —
+  the **third carrier**, and the first with a *non-domain* `P`: Hachi's §3 packing head
+  ([NOZ26] Theorem 2) as `hachiPackingCarrier`, with `B = E = R_q^H` (the fixed subfield, where
+  the subfield-valued evaluation claims live) and `P = R_q`. `packBasis` is Hachi's `ψ` bundled
+  out of the proven `psi_bijective` via `Basis.ofEquivFun` (`psiLin`/`psiEquiv`; `psi_add` was
+  already shipped, only the scalar law was new). Four `example`s apply the generic results
+  (`recombine_bijective`, `openingDecomposition_injective`, `bridge_eqTilde`, `packedMLE_eval`)
+  to it verbatim — none needs `[IsDomain P]`. `ιE = Unit`, because Hachi engineers the evaluation
+  point to be subfield-valued; that singleton opening basis is the structural reason [NOZ26] §3's
+  relocation is *deterministic* where DP24's is interactive (data layer only — the
+  reduction-level collapse is not claimed).
+
+**Coverage**: the generic carrier now instantiates at all four established *packing-family* ring
+switches — DP24/Binius (`towerCarrier`), the [RSG] decoupled note and Flock App. B
+(`decoupledFieldCarrier`), and Hachi §3 (`hachiPackingCarrier`). The HMZ25 `Lift` switch
+(quotient ring → field, via a committed quotient witness) is a structurally different
+construction and is *not* covered: its transport map is not a ring map, so the packing-`Basis`
+vocabulary does not reach it.
+
 **The honest fork**: field-like instances get the (future) generic Schwartz–Zippel soundness
 theorem under `[IsDomain P]`; non-domain rings (Hachi `R_q`) can still *state* a carrier, a
 `BatchingStrategy`, and a `DenseMLPCS` but are forced into a sibling theorem with their own
-proven gap — the fork lives at the theorem, not the vocabulary.
+proven gap — the fork lives at the theorem, not the vocabulary. As of `HachiCarrier.lean` this is
+**demonstrated, not just asserted**: a non-domain carrier is built and the domain-free results
+are exercised on it.
 
 **Not yet built**: the assembled `ringSwitch` reduction and its soundness statement (gated on
 the upstream composition/sumcheck sorries), the Binius migration (the `biniusCommitsTo`
