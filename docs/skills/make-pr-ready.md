@@ -16,12 +16,21 @@ Work through these in order. Do not stop until every item is complete.
 
 ### 0. Establish the real PR base
 
-- Run `git fetch origin main` first, then compute scope and `_generated/` drift against
-  **`origin/main`**, not local `main`. The local `main` ref can be many commits stale (e.g. you
-  branched, then `origin/main` advanced via merges you never pulled). Diffing `main...HEAD` against
-  a stale local `main` inflates the file list and can report phantom `_generated/` drift that
-  actually matches the remote. Use `git diff --stat origin/main...HEAD` for scope and
-  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view.
+- Verify that `origin` is the repository that owns the PR base before trusting `origin/main`.
+  Contributor checkouts often use a personal fork as `origin`, whose `main` may lag the canonical
+  repository even after `git fetch origin main`. Inspect the PR with
+  `gh pr view <number> -R <canonical-owner>/<repo> --json baseRefName,headRefName`, compare the
+  configured remote URL, and fetch the canonical base into a separate tracking ref when needed
+  (for example `canonical/main`). Use that canonical ref for all scope and `_generated/`
+  comparisons below.
+- Fetch the selected canonical base first (`git fetch origin main` when `origin` is canonical),
+  then compute scope and `_generated/` drift against its remote-tracking ref, not local `main`.
+  The local `main` ref can be many commits stale (e.g. you branched, then the canonical `main`
+  advanced via merges you never pulled). Diffing `main...HEAD` against a stale local `main`
+  inflates the file list and can report phantom `_generated/` drift that actually matches the
+  remote. With a canonical `origin`, use `git diff --stat origin/main...HEAD` for scope and
+  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view;
+  otherwise substitute the canonical tracking ref selected above.
 - **Also account for uncommitted work.** `origin/main...HEAD` (three-dot) only shows *committed*
   changes; a make-pr-ready pass often runs with staged/working-tree edits still in flight (e.g. a
   half-finished file). Those appear only in `git diff HEAD` (or `git diff origin/main`, two-dot).
