@@ -55,10 +55,12 @@ transfer. Its source-shaped `ExtractionCondition` is a *different* notion from A
 query log to the extractor.
 
 Beyond the three lemmas above, this file also carries the `OptionT` challenge-first master
-bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`) and two `loggingOracle` lemmas,
-documented in their own section headers below. Those serve the *plain* (non-rbr)
+bounds (`ProtocolSpec.probEvent_optionT_simulateQ_addLift_*`). Those serve the *plain* (non-rbr)
 knowledge-soundness game, whose computation is `Option`-valued and draws its challenge first;
-see the section header preceding them for why the rbr master bound does not apply there.
+see the section header preceding them for why the rbr master bound does not apply there. The two
+generic `loggingOracle` lemmas used by later reductions live separately in
+`ArkLib/ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean`, from where they can move upstream
+without importing ArkLib core.
 -/
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory

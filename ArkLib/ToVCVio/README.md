@@ -1,9 +1,9 @@
 # ArkLib additions to VCV-io
 
 This directory mirrors VCV-io's module structure (`OracleComp/`, `EvalDist/`, `ToMathlib/`, ...) and
-holds exactly one kind of thing: **additions the pinned VCVio predates** — `simulateQ` /
-`OracleComp` / distribution lemmas ArkLib needs before they exist upstream, each destined to move
-up and be deleted here.
+holds **additions the pinned VCVio predates** — `simulateQ` / `OracleComp` / distribution lemmas
+ArkLib needs before they exist upstream, each destined to move up and be deleted here — together
+with compatibility shells that preserve old ArkLib import paths after such additions move upstream.
 
 **Invariant: nothing in this directory imports ArkLib outside `ToVCVio` itself.** That is what makes
 a file here upstreamable by construction — it can be moved to VCVio unchanged. A lemma that needs
@@ -19,8 +19,8 @@ would let them move up. Upstream them by generalising first, then moving; not by
 ## Working rule
 
 Prefer landing general statements **upstream in VCV-io**, under the same name and the mirrored path.
-At the next VCVio bump, delete the local copy and let references resolve upstream. Anything in
-category 1 is temporary by construction; anything in category 2 stays.
+At the next VCVio bump, delete the local declaration and let references resolve upstream. Keep an
+import-only compatibility shell only while downstream modules still use the old ArkLib path.
 
 Two things to know when doing that cleanup:
 

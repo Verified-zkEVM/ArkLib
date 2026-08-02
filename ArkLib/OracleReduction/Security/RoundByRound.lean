@@ -447,7 +447,7 @@ constants (safe direction: averaged ≤ worst-case). The definitions below are t
 worst-case forms, and the two implication theorems discharge the averaged forms from them
 via the master mixture bound
 `ProtocolSpec.probEvent_simulateQ_addLift_getChallenge_bind_le`
-(`ArkLib/ToVCVio/OracleComp/RbrGame.lean`).
+(`ArkLib/OracleReduction/Security/RbrGame.lean`).
 
 Practical consequence: a protocol proven in the worst-case form gets the averaged form for
 free, so prefer proving the worst-case variant. It is also the easier obligation to discharge
