@@ -436,7 +436,7 @@
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill repaired">repaired</span></span>
-          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by Kronecker-curve root counting, at the cost of a temporary <span class="mono">liftShort</span> assumption. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
+          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by per-coordinate scalar rounds with a nested binary-evaluation-tree zero test, at the cost of a temporary <span class="mono">liftShort</span> assumption. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
@@ -583,24 +583,24 @@
         relIn:"relLiftE", relOut:"relBatchedE", status:"wip", sorry:0, badges:["bridge"],
         desc:"The <b>un-batching pull-back <code>mem_relLiftE_of_relBatchedE</code> is proof-sorry-free and axiom-clean</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, so shortness is derived rather than assumed. The <b>Eq.&nbsp;(22) half is now a faithful paper-to-Lean bridge</b>: the public <code>M̃_α</code>/<code>α̃</code> contraction against the committed table is constructed (<code>mAlphaTilde</code>, <code>alphaTilde</code>, <code>alphaContract</code>) and <b>proved</b> equal to the per-row α-defect that <code>hAlphaEvals</code> stores (<code>alphaDefect_wTable</code>, axiom-clean), with the relation-level form <code>hAlpha_eq_zero_iff_alphaDefect</code>. Link&nbsp;5 remains WIP for one reason only: there is still no forward/honest-completeness theorem <code>relLiftE → relBatchedE</code>." },
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
-        files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"(ρ₀, ρ_α) ∈ F²", cwss:"ℓ = 2, k = D",
-        relIn:"relBatchedE", relOut:"relZeroChkE", status:"repaired", sorry:0, badges:["repair"],
-        desc:"One challenge round carrying the scalar Kronecker seed pair (ρ₀, ρ_α), reducing the two identities to point evaluations on the curves κ. <b>Corrected Lemma 10</b> — the paper’s uniform-vector star extraction is refuted by <code>exists_nonzero_vanishing_on_axis_cross</code>. CWSS is sorry-free and axiom-clean at (ℓ,k)=(2,D). <b>Temporary shortness assumption</b>: <code>relZeroCheck</code> carries a <code>liftShort</code> conjunct so differing openings meet the norm precondition of <code>K.collision_mem</code>. It does not carry <code>cHZero = 0</code>; the common-opening branch derives that identity by Kronecker root counting." },
+        files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"m₀+m₁ scalar rounds", cwss:"k = 2 per round",
+        relIn:"relBatchedE", relOut:"relNestedZCE", status:"repaired", sorry:0, badges:["repair"],
+        desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — the paper’s uniform-vector star extraction is refuted by <code>exists_nonzero_vanishing_on_axis_cross</code>; the common-opening branch derives both identities via the nested-tree zero test <code>BinaryEvaluationTree.eq_zero_of_polynomialVanishes</code> (<code>ToCompPoly/Multilinear/NestedEvaluationTree.lean</code>). CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSound</code>) is sorry-free and axiom-clean. <b>Temporary shortness assumption</b>: <code>relNestedZeroCheck</code> carries a <code>liftShort</code> conjunct so differing openings meet the norm precondition of <code>K.collision_mem</code>. It does not carry <code>cHZero = 0</code>; that identity is extracted only in the common-opening branch." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
       znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
       rows:[
       { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
         files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
-        relIn:"relZeroChkE", relOut:"roundRelE 0", status:"wip", sorry:1, badges:["bridge"],
-        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier)." },
+        relIn:"relNestedZCE", relOut:"nestedRoundRelE 0", status:"wip", sorry:0, badges:["bridge"],
+        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheckE_of_nestedRoundRelE</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
-        relIn:"roundRelE 0", relOut:"roundRelE m₀", status:"wip", sorry:1, badges:["guarded"],
+        relIn:"nestedRoundRelE 0", relOut:"nestedRoundRelE m₀", status:"wip", sorry:1, badges:["guarded"],
         desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded append <code>▷ᵍ</code> into <code>roundsChain</code>." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
-        relIn:"roundRelE m₀", relOut:"relWEvalE", status:"wip", sorry:2, badges:["guarded"],
+        relIn:"nestedRoundRelE m₀", relOut:"relWEvalE", status:"wip", sorry:2, badges:["guarded"],
         desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Output is the evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
     ]},
   ];
@@ -616,8 +616,8 @@
   var SUB_CROSS = [
     { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"wip", sorry:1,
       desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChainE</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
-    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:6,
-      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). Remaining explicit sorries are in the sumcheck summands (<code>sumcheckPoly*</code>/<code>hypercubeSum</code>/<code>sum_*</code>)." },
+    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:2,
+      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands (<code>sumcheckPoly*</code>, <code>zcTargetAlpha</code>, <code>hypercubeSum</code>) now have concrete computable bodies; the only remaining sorries are the two sum identities <code>sum_sumcheckPolyZero</code>/<code>sum_sumcheckPolyAlpha</code>." },
     { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
       desc:"Imports every subprotocol's package and chains them: <code>evalChain</code> (the proven core, sorry-free) · <code>openCore</code> (rows 1–7, pure) · <code>openingChain</code> (rows 1–9, guarded tail). Its <code>isCWSS</code> fields are the certificates; the file itself has no sorries — its soundness rests on the imported packages." },
     { name:"Scheme interface", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
@@ -659,10 +659,10 @@
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","wip",1],
     ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
-    ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",6],
+    ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",2],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
-    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",1],
+    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
     ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
   ];

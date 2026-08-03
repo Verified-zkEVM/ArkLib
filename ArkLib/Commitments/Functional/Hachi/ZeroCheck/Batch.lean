@@ -16,8 +16,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
     zero (Eqs. (22)–(23), `ZeroCheck/Constraints.lean`).
 
   The statement and witness are unchanged (`ReduceClaim` at `mapStmt := id`); only the reading of
-  the claims changes, which separates the batching algebra from the Kronecker root counting of the
-  zero-check. Shortness is **not** a conjunct of `relBatchedE`: the range identity `H₀^{w̃} ≡ 0`
+  the claims changes, which separates the batching algebra from the transcript-tree zero test.
+  Shortness is **not** a conjunct of `relBatchedE`: the range identity `H₀^{w̃} ≡ 0`
   already forces every committed coefficient into `[−(b−1), b−1]`, so `liftShort` is *derived*, not
   assumed — the range machinery is load-bearing (review PR #656, resolution option 1).
 

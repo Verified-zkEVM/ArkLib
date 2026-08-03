@@ -431,12 +431,10 @@ curve at every seed of `s`. Take the univariate `p = ∏_{ρ ∈ s} (X − ρ)`,
 push it up with `linearMvExtension`; `powAlgHom` inverts that, so `H ≠ 0`, while
 `eval_powAlgHom_eq_eval_kronecker` turns each root of `p` into a curve evaluation of `H`.
 
-This is the exact companion of `multilinear_eq_zero_of_kronecker_roots`, and it is why the Hachi
-zero-check's seam relations must carry the range *identity* rather than deriving it from their point
-evaluation: the extractor's collision branch shares an opening across only `2^m − 1` seeds — one
-short of the root count — so it could never conclude `H₀ ≡ 0` for a single colliding opening. See
-`ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean` (`relZeroCheck`) and
-`docs/kb/audits/noz26-zero-check-lemma10.md`. -/
+This is the exact companion of `multilinear_eq_zero_of_kronecker_roots`. It also records why a
+previous Kronecker-seed repair of Hachi's zero-check was insufficient: a collision branch shares
+an opening across only `2^m − 1` seeds, one short of the root count. The active formalization now
+uses nested binary evaluation trees instead; see the Lemma-10 audit in `docs/kb/audits/`. -/
 theorem exists_nonzero_multilinear_vanishing_on_kronecker_seeds [Nontrivial F] (s : Finset F)
     (hcard : s.card ≤ 2 ^ m - 1) :
     ∃ H : MvPolynomial.restrictDegree (Fin m) F 1,

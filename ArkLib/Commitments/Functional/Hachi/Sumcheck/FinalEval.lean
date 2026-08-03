@@ -26,7 +26,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 
   Extraction (sorried): from a `relWEvalClaimE`-witness (an opening `w̃` of `t` with
   `mle[w̃](a) = y′`, or an escape) and the **guard facts** (available from acceptance on a
-  guarded verifier), the two final-round point-evaluation claims of `roundRel m₀` follow by
+  guarded verifier), the two final-round point-evaluation claims of `nestedRoundRel m₀` follow by
   computing `F_{0,τ₀}(a)` and `F_{α,τ_α}(a)` through `mle[w̃](a) = y′` — the evaluation
   factorizations of the (sorried F5) sumcheck polynomials.
 
@@ -82,13 +82,14 @@ dynamic programming). Its Boolean coefficients are available: `mAlphaTilde` is E
 Constructing and evaluating the associated multilinear public factor at the arbitrary sumcheck
 point remains part of this F8 implementation. -/
 def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
-    (stmt : RoundStatement Φ TCom F n μ m₀) (y' : F) : Bool :=
+    (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) (y' : F) : Bool :=
   sorry
 
 /-- The final-evaluation verifier: **guarded** on `finalCheck`, outputting the evaluation claim
 `⟨t, a, y′⟩`. -/
 def finalEvalVerifier {TCom : Type} (φF : ZMod q →+* F) :
-    Verifier oSpec (RoundStatement Φ TCom F n μ m₀) (WEvalStatement TCom F m₀)
+    Verifier oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀)
+      (WEvalStatement TCom F m₀)
       (pSpecFinalEval F) where
   verify := fun stmt tr =>
     if finalCheck Φ m₀ m₁ bound b φF stmt (tr 0) then
@@ -107,12 +108,13 @@ theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
 /-- The honest final-evaluation prover skeleton: sends `y′ := mle[w̃](a)` (the parameter
 `computeY`, honestly `wTableMleEval`) and carries `w̃` forward as the output witness. -/
 def finalEvalProver {TCom : Type}
-    (computeY : RoundStatement Φ TCom F n μ m₀ → LiftedWitness Φ μ n → F) :
-    Prover oSpec (RoundStatement Φ TCom F n μ m₀) (LiftedWitness Φ μ n)
+    (computeY : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ →
+      LiftedWitness Φ μ n → F) :
+    Prover oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
       (WEvalStatement TCom F m₀) (LiftedWitness Φ μ n) (pSpecFinalEval F) where
   PrvState
-    | 0 => RoundStatement Φ TCom F n μ m₀ × LiftedWitness Φ μ n
-    | 1 => RoundStatement Φ TCom F n μ m₀ × LiftedWitness Φ μ n
+    | 0 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × LiftedWitness Φ μ n
+    | 1 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × LiftedWitness Φ μ n
   input := id
   sendMessage
     | ⟨0, _⟩ => fun st => pure (computeY st.1 st.2, st)
@@ -146,7 +148,7 @@ probability-phrased no-challenge bridge, which already tolerates rejecting verif
 transcript-level extraction: acceptance forces `finalCheck = true` (the guarded rejection
 lemma, B4.1) and yields a `relWEvalClaimE`-witness; on the real branch, evaluate the two
 sumcheck polynomials at the point through `mle[w̃](a) = y′` and the guard's target equations to
-recover `roundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is the plain evaluation);
+recover `nestedRoundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is the plain evaluation);
 the bound-sanity conjunct is re-supplied by the guard; escapes pass through. -/
 theorem finalEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -155,7 +157,7 @@ theorem finalEval_coordinateWiseSpecialSound
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom)
         φF).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (roundRelE Φ m₀ m₁ bound rBound K φF b m₀)
+      (nestedRoundRelE Φ m₀ m₁ bound rBound K φF b m₀)
       (relWEvalClaimE Φ m₀ bound rBound b K φF) := by
   sorry
 
@@ -166,12 +168,12 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
     (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) :
     GCWSSPackage init impl
-      (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n ⊕ E)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n ⊕ E)
       (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n ⊕ E)
       (pSpecFinalEval F) where
   verifier := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := roundRelE Φ m₀ m₁ bound rBound K φF b m₀
+  relIn := nestedRoundRelE Φ m₀ m₁ bound rBound K φF b m₀
   relOut := relWEvalClaimE Φ m₀ bound rBound b K φF
   isGuarded := finalEvalVerifier_isGuarded Φ m₀ m₁ bound b φF
   isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound rBound b init impl K φF

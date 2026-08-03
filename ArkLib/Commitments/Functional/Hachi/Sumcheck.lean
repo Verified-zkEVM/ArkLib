@@ -13,7 +13,8 @@ reduces the zero-check's point-evaluation claims `H₀(τ₀) = 0 ∧ H_α(τ_α
 claims, runs `m₀` sumcheck rounds down to a single evaluation of the committed table `w̃`, and
 closes with the final-evaluation tail that hands the resulting evaluation claim to the §4.5
 recursion (`Recursion/`). It operates on the shared batched-constraint encoding of
-`ZeroCheck/Constraints.lean` (the sumcheck polynomials `F_{0,τ₀}`/`F_{α,τ₁}` and `roundRel`).
+`ZeroCheck/Constraints.lean` (the sumcheck polynomials `F_{0,τ₀}`/`F_{α,τ₁}` and
+`nestedRoundRel`).
 
 ## TODO — reuse the existing structured sum-check
 

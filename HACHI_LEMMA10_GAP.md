@@ -8,6 +8,19 @@ gap is witnessed by an explicit, protocol-level counterexample against the paper
 range-check polynomial. This file states the gap precisely, shows which repairs work and which
 do not, and records the rendering adopted by the formalization plan.
 
+> **Status update (3 August 2026).** The formalization no longer uses the one-round
+> Kronecker-curve rendering that §3.K and §4 record as "adopted". It now implements the
+> **fully sequential scalar rounds** of §3.2 (there judged sound but dominated): each of the
+> `m₀ + m₁` coordinates of `(τ₀, τ_α)` is its own `k = 2` challenge round, and extraction runs
+> the path-dependent binary-evaluation-tree zero test of
+> `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`
+> (`BinaryEvaluationTree.eq_zero_of_polynomialVanishes`). The active theorem is
+> `nestedZeroCheck_coordinateWiseSpecialSound` (`Hachi/ZeroCheck/Reduction.lean`), sorry-free and
+> axiom-clean. The analysis below — in particular §2's counterexample and the comparison of
+> repairs — remains the reference for *why* a repair is needed; only the "adopted" markers in
+> §3.K and §4 are historical. Current status lives in
+> `docs/kb/audits/noz26-zero-check-lemma10.md`.
+
 **TL;DR.** A star-shaped family of accepting transcripts certifies that a batched
 constraint polynomial vanishes on the *axis cross* through the star's center — and for a
 multilinear polynomial in at least two challenge variables, cross-vanishing does **not** imply

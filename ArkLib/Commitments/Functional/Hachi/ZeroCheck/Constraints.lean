@@ -14,7 +14,7 @@ import CompPoly.Multivariate.Operations
 
   The constraint-encoding layer of the Hachi §4.3 sumcheck: the table `w̃` (Eq. (21)), the two
   batched constraint polynomials `H₀` and `H_α` (Eqs. (23) and (22)), the sumcheck summands
-  `F_{0,τ₀}` and `F_{α,τ₁}`, and the Kronecker challenge curve. These definitions are consumed by
+  `F_{0,τ₀}` and `F_{α,τ₁}`. These definitions are consumed by
   the batching bridge (`ZeroCheck/Batch.lean`), the zero-check round (`ZeroCheck/Reduction.lean`),
   the sumcheck rounds, and the final-evaluation step. Everything is stated over the lifted witness
   `LiftedWitness Φ μ n` and the weak-binding commitment `LiftCom` of `RingSwitch/Reduction.lean`.
@@ -50,26 +50,16 @@ import CompPoly.Multivariate.Operations
   polynomial on `{0,1}^m`. This matches Eqs. (22)–(23) directly and makes multilinearity
   structural rather than a separate degree theorem.
 
-  `hZeroML`/`hAlphaML` are derived Mathlib `restrictDegree` views of the same tables, used by the
-  Kronecker root-counting proof and the still-sorried sumcheck identity specifications. Both the
-  point checks in `relZeroCheck` and the full identities in `relBatched` use `hZero`/`hAlpha`
-  directly; the evaluation bridges `hZero_eval_eq` and `hAlpha_eval_eq` isolate the conversion
-  needed by root counting.
+  `hZeroML`/`hAlphaML` are derived Mathlib `restrictDegree` views of the same tables, used only to
+  prove the sumcheck identities. The protocol relations and full identities use the computable
+  `hZero`/`hAlpha` representation directly; `hZero_eval_eq` and `hAlpha_eval_eq` isolate the
+  conversion used by those proofs.
 
   ## The sumcheck summands
 
   `F_{0,τ₀}` (`sumcheckPolyZero`) sums over the cube to `H₀(τ₀)` and has per-variable degree `2b`;
   `F_{α,τ₁}` (`sumcheckPolyAlpha`) sums to `H_α(τ₁) + zcTargetAlpha` and has per-variable degree
   `≤ 2`. These are the polynomials the sumcheck rounds operate on.
-
-  ## The Kronecker curve (Fig. 5)
-
-  `kroneckerPoint m ρ = (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})`. A multilinear polynomial in `m` variables,
-  restricted to this curve, is univariate of degree `< 2^m`, and the restriction is injective on
-  multilinear polynomials, so such a polynomial is determined by its values along the curve. The
-  paper's Figure 5 samples the evaluation points `τ₀, τ₁` uniformly over `F^{m₀}` and `F^{m₁}`;
-  this formalization instead derives them from two scalar seeds `(ρ₀, ρ_α)` along this curve, so
-  the zero-check reduces `H₀ ≡ 0` and `H_α ≡ 0` to univariate root counting.
 
   ## References
 
@@ -88,60 +78,6 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ)
-
-/-! ## The Kronecker curve and the soundness parameter -/
-
-/-- The Kronecker curve `κ_m(ρ) = (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})`, along which a multilinear
-polynomial in `m` variables restricts to a univariate polynomial of degree `< 2^m`. A re-export
-of `LinearMvExtension.kroneckerPoint` under the name used by the zero-check and sumcheck files.
-The zero-check derives its evaluation points along this curve (see the module docstring). -/
-@[reducible] def kroneckerPoint (m : ℕ) (ρ : F) : Fin m → F :=
-  LinearMvExtension.kroneckerPoint (m := m) ρ
-
-/-- The number of distinct challenge seeds the zero-check needs per coordinate,
-`D := max(2, 2^{m₀}, 2^{m₁})`. `2^{m₀}` and `2^{m₁}` are the degrees of the univariate Kronecker
-restrictions of `H₀` and `H_α`, so that many roots determine each polynomial; the floor of `2`
-meets the `2 ≤ k` requirement of the coordinate-wise special soundness structure. The paper's
-Lemma 10 uses `max(2d, 2b−1)`.
-
-### What the repair costs
-
-Since the arity pin `hμn` gives `2^{m₀} ≥ (μ + n)·deg φ`, this raises the branching arity of the
-extraction tree from the paper's `O(d + b)` to `O(μ·d)`. That is the obvious objection to the
-Kronecker repair, and the answer is favourable. By [NOZ26] Lemma 4 the knowledge error of a
-coordinate-wise special-sound family is `ℓ·k/|S|^ℓ`, so at `(ℓ, k) = (2, D)` over `S = F_{q^k}` it
-becomes `2·D/|F_{q^k}|²`, i.e. roughly `2(μ + n)d/|F_{q^k}|²` in place of the paper's
-`2·max(2d, 2b−1)/|F_{q^k}|²`. At Hachi's field size that is still negligible, and since `D` is
-polynomial in the witness dimensions the transcript tree stays polynomial. The repair therefore
-buys a *deterministic* identity equivalence (`multilinear_eq_zero_of_kronecker_roots`, strictly
-stronger than a Schwartz–Zippel bound) at the price of a constant-factor-in-the-exponent-free
-arity increase.
-
-### A second defect in the printed Lemma 10
-
-Independently of the axis-cross gap (see `exists_nonzero_vanishing_on_axis_cross`), the printed
-lemma is internally inconsistent about its own arity, which is worth recording because this file's
-choices look like divergences otherwise.
-
-* Lemma 10 asks for "`D` valid transcripts … `∈ SS(F_{q^k}, 2, D)`", but `SS(S, ℓ, k)` is defined
-  with `ℓ(k−1)+1` elements, so at `(ℓ, k) = (2, D)` the family has **`2D − 1`** transcripts, not
-  `D`. `2D − 1` is what `zeroCheckStructure` actually uses, via `chalStructure`'s
-  `arity = ℓ·(k−1)+1`.
-* The prose immediately above Lemma 10 says to treat `(τ₀, τ₁)` as `log μ + log d + log n`
-  coordinates, which contradicts the lemma's own `ℓ = 2`. This file follows `ℓ = 2`: the two
-  coordinates are the two scalar seeds `(ρ₀, ρ_α)`.
-* Relatedly, `τ₀` is drawn from `F^{log μ + log d}` on p. 20 although `w̃`'s domain is
-  `[μ + n] × [d]`, so the paper's own arity there should read `log(μ + n) + log d`. The `m₀` of
-  this file is pinned to the latter by `hμn`. -/
-def zeroCheckD (m₀ m₁ : ℕ) : ℕ := max 2 (max (2 ^ m₀) (2 ^ m₁))
-
-theorem two_le_zeroCheckD (m₀ m₁ : ℕ) : 2 ≤ zeroCheckD m₀ m₁ := le_max_left _ _
-
-theorem two_pow_m₀_le_zeroCheckD (m₀ m₁ : ℕ) : 2 ^ m₀ ≤ zeroCheckD m₀ m₁ :=
-  (le_max_left _ _).trans (le_max_right _ _)
-
-theorem two_pow_m₁_le_zeroCheckD (m₀ m₁ : ℕ) : 2 ^ m₁ ≤ zeroCheckD m₀ m₁ :=
-  (le_max_right _ _).trans (le_max_right _ _)
 
 /-- Per-round univariate degree of the range sumcheck summand `F_{0,τ₀}`, namely `2b`. -/
 def roundDegZero (b : ℕ) : ℕ := 2 * b
@@ -290,20 +226,20 @@ theorem hAlpha_eq_zero_iff (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
     intro i hi
     simpa [hAlpha] using h (finFunctionFinEquiv.symm ⟨i, hi⟩)
 
-/-- Mathlib multilinear view of `H₀`, used only by Kronecker root counting. -/
+/-- Mathlib multilinear view of `H₀`, used only in algebraic proofs. -/
 noncomputable def hZeroML (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n) :
     MvPolynomial.restrictDegree (Fin m₀) F 1 :=
   ⟨MLE fun x => rangeProduct b (wTable Φ m₀ φF b w x),
     MLE_mem_restrictDegree _⟩
 
-/-- Mathlib multilinear view of `H_α`, used only by Kronecker root counting. -/
+/-- Mathlib multilinear view of `H_α`, used only in algebraic proofs. -/
 noncomputable def hAlphaML (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n) : MvPolynomial.restrictDegree (Fin m₁) F 1 :=
   ⟨MLE (hAlphaEvals Φ m₁ φF b s α w), MLE_mem_restrictDegree _⟩
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- Direct evaluation of the primary `CMlPolynomialEval` `H₀` agrees with its Mathlib proof
-view. The protocol relation uses the left side; only root counting crosses this bridge. -/
+view. The protocol relation uses the left side; algebraic proofs cross this bridge. -/
 theorem hZero_eval_eq (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
     (a : Fin m₀ → F) :
     CMlPolynomialEval.eval (hZero Φ m₀ φF b w) (Vector.ofFn a) =
@@ -737,6 +673,45 @@ theorem hAlpha_eq_zero_iff_alphaDefect (φF : ZMod q →+* F) (b : ℕ) (s : Rli
 
 /-! ## The sumcheck summands -/
 
+/-- The computable Lagrange basis polynomial associated with a Boolean cube point. -/
+def cBooleanEqPolynomial (x : Fin m₀ → Fin 2) : CMvPolynomial m₀ F :=
+  ∏ i : Fin m₀,
+    if x i = 1 then CMvPolynomial.X i else 1 - CMvPolynomial.X i
+
+/-- A Boolean evaluation table reconstructed as a computable multivariate polynomial. -/
+def cMultilinearExtension (evals : (Fin m₀ → Fin 2) → F) : CMvPolynomial m₀ F :=
+  ∑ x : Fin m₀ → Fin 2,
+    CMvPolynomial.C (evals x) * cBooleanEqPolynomial m₀ x
+
+/-- The computable polynomial whose value at a Boolean point `x` is `eq̃(τ, x)`. -/
+def cEqualityPolynomial (τ : Fin m₀ → F) : CMvPolynomial m₀ F :=
+  cMultilinearExtension m₀ fun x =>
+    ∏ i : Fin m₀, if x i = 1 then τ i else 1 - τ i
+
+/-- Apply Hachi's symmetric range polynomial to a computable polynomial. -/
+def cRangeProduct (b : ℕ) (p : CMvPolynomial m₀ F) : CMvPolynomial m₀ F :=
+  p * ∏ j ∈ Finset.Icc 1 (b - 1),
+    ((p - CMvPolynomial.C (j : F)) * (p + CMvPolynomial.C (j : F)))
+
+/-- The public Boolean table multiplying `mle[w̃]` in the linear-constraint sumcheck.
+
+At the flat cube index for `(u, ℓ)`, it is
+`α^ℓ · ∑ᵢ eq̃(τ₁, i) M̃_α(i,u)`. Indices outside the encoded table are harmless padding. -/
+def alphaPublicEvals (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
+    (τ₁ : Fin m₁ → F) (x : Fin m₀ → Fin 2) : F :=
+  let idx : ℕ := (finFunctionFinEquiv x : Fin (2 ^ m₀))
+  let d := Φ.φ.natDegree
+  alphaTilde α (idx % d) * ∑ i : Fin n,
+    (if hi : (i : ℕ) < 2 ^ m₁ then
+      (∏ j : Fin m₁,
+        if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
+          mAlphaTilde Φ φF s α i (idx / d)
+    else 0)
+
+/-- Assemble a point from a fixed prefix and a Boolean suffix. -/
+def hypercubePoint (i : ℕ) (cs : Fin i → F) (x : Fin (m₀ - i) → Fin 2) : Fin m₀ → F :=
+  fun j => if h : j.val < i then cs ⟨j, h⟩ else (x ⟨j.val - i, by omega⟩ : F)
+
 /-- The range sumcheck summand `F_{0,τ₀}`, characterized by `∑_{x} F_{0,τ₀}(x) = H₀(τ₀)`
 (`sum_sumcheckPolyZero`) with per-variable degree `roundDegZero b = 2b`.
 
@@ -744,26 +719,32 @@ Unlike `H₀`/`H_α` this one is genuinely evaluated by the prover in every sumc
 multilinear, so it remains a general `CMvPolynomial`. -/
 def sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) : CMvPolynomial m₀ F :=
-  sorry
+  cEqualityPolynomial m₀ τ₀ *
+    cRangeProduct m₀ b (cMultilinearExtension m₀ (wTable Φ m₀ φF b w))
 
 /-- The linear sumcheck summand `F_{α,τ₁}`, characterized by
 `∑_{x} F_{α,τ₁}(x) = H_α(τ₁) + zcTargetAlpha` (`sum_sumcheckPolyAlpha`) with per-variable degree
 `roundDegAlpha = 2`. Also prover-evaluated, hence computable. -/
 def sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) : CMvPolynomial m₀ F :=
-  sorry
+  cMultilinearExtension m₀ (wTable Φ m₀ φF b w) *
+    cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF s α τ₁)
 
 /-- The public initial target of the linear sumcheck, `∑ᵢ eq̃(τ₁, i)·yᵢ(α)`, which the verifier
 computes from the statement alone. -/
 def zcTargetAlpha (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
     (τ₁ : Fin m₁ → F) : F :=
-  sorry
+  ∑ i : Fin n, (if hi : (i : ℕ) < 2 ^ m₁ then
+    (∏ j : Fin m₁,
+      if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
+        cEvalAt φF α (s.yvec i).1
+    else 0)
 
 /-- Partial sum of `H` over the trailing cube coordinates: `hypercubeSum H i cs =
 ∑_{x ∈ {0,1}^{m₀ − i}} H(cs, x)`, where `cs` fixes the first `i` coordinates. Operates on the
 computable representation — this is the fold the prover actually runs. -/
 def hypercubeSum (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) : F :=
-  sorry
+  ∑ x : Fin (m₀ - i) → Fin 2, H.eval (hypercubePoint m₀ i cs x)
 
 /-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`.
 
@@ -814,28 +795,10 @@ theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
 
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
-/-- The zero-check's output statement: the lift statement extended by the two challenge seeds
-`(ρ₀, ρ_α)`. The batching points are derived from them along the Kronecker curve,
-`τ₀ = κ_{m₀}(ρ₀)` and `τ_α = κ_{m₁}(ρ_α)`. -/
-structure ZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) where
-  /-- The `R^lin` statement, carrying the public `M`, `yvec`, and `bound`. -/
-  rlin : RlinStatement Φ n μ
-  /-- The commitment to `w̃` from the lift stage. -/
-  t : TCom
-  /-- The ring-switching evaluation challenge `α` from the lift stage ([HMZ25], Fig. 4). -/
-  α : F
-  /-- The seed `ρ₀` from which the range check's evaluation point is derived. -/
-  seed₀ : F
-  /-- The seed `ρ_α` from which the linear check's evaluation point is derived. -/
-  seedα : F
+/-- Statement produced by the scalar-round interpretation of Hachi Figure 5.
 
-/-- Replacement statement for the corrected scalar-round interpretation of Hachi Figure 5.
-
-Unlike `ZeroCheckStatement`, which belongs to the currently active Kronecker-seed repair, this
-statement stores the verifier's two evaluation points directly.  The first `m₀` scalar rounds
-assemble `τ₀`; the following `m₁` scalar rounds assemble `τα`.  It is introduced alongside
-the legacy statement so the new transcript-tree extractor can be built without leaving the
-active opening chain in a non-compiling intermediate state. -/
+The first `m₀` scalar rounds assemble `τ₀`; the following `m₁` scalar rounds assemble `τα`.
+The direct points are retained for the paired sumcheck. -/
 structure NestedZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
     (n μ m₀ m₁ : ℕ) where
   /-- The `R^lin` statement, carrying the public `M`, `yvec`, and `bound`. -/
@@ -849,12 +812,10 @@ structure NestedZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : T
   /-- The direct linear-polynomial evaluation point, assembled from the following `m₁` rounds. -/
   τα : Fin m₁ → F
 
-/-- Statement after `i` paired-sumcheck rounds for the corrected scalar-round zero-check.
-
-It retains the direct points `τ₀` and `τα` through `zc`, instead of retaining Kronecker seeds. -/
+/-- Statement after `i` paired-sumcheck rounds, retaining the direct points `τ₀` and `τα`. -/
 structure NestedRoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
     (n μ m₀ m₁ i : ℕ) where
-  /-- The corrected zero-check statement containing the direct evaluation points. -/
+  /-- The zero-check statement containing the direct evaluation points. -/
   zc : NestedZeroCheckStatement Φ TCom F n μ m₀ m₁
   /-- The paired-sumcheck challenges drawn so far. -/
   challenges : Fin i → F
@@ -863,53 +824,11 @@ structure NestedRoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
   /-- The current target of the linear sumcheck. -/
   targetα : F
 
-/-- The statement after `i` sumcheck rounds: the zero-check statement, the `i` challenges drawn so
-far, and the current range and linear sumcheck targets. -/
-structure RoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ)
-    (i : ℕ) where
-  /-- The zero-check statement (public data, commitment, `α`, and the two seeds). -/
-  zc : ZeroCheckStatement Φ TCom F n μ
-  /-- The sumcheck challenges drawn so far. -/
-  challenges : Fin i → F
-  /-- The current target of the range sumcheck. -/
-  target₀ : F
-  /-- The current target of the linear sumcheck. -/
-  targetα : F
-
 variable (bound rBound : ℕ)
 
-/-- The per-round relation of the paired sumcheck ([NOZ26] Lemma 11): `w̃` opens `t`, is short,
-and both partial-hypercube-sum claims at the current challenge prefix equal the current targets.
-The final conjunct `bound ≤ rlin.bound` ties the global norm parameter to the statement's declared
-bound.
+/-- Paired-sumcheck relation over direct zero-check points.
 
-The shortness conjunct is a temporary semantic admissibility condition needed when differing
-round witnesses are routed through the norm-conditioned weak-binding escape `K.collision_mem`.
-The global identity `H₀ ≡ 0` is intentionally not carried through the sumcheck seams. -/
-def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
-    Set (RoundStatement Φ K.TCom F n μ i × LiftedWitness Φ μ n) :=
-  {p |
-    K.com p.2 = p.1.zc.t ∧
-    liftShort Φ bound rBound p.2 ∧
-    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b (kroneckerPoint m₀ p.1.zc.seed₀) p.2) i
-        p.1.challenges = p.1.target₀ ∧
-    hypercubeSum m₀
-        (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α (kroneckerPoint m₁ p.1.zc.seedα)
-          p.2) i p.1.challenges = p.1.targetα ∧
-    bound ≤ p.1.zc.rlin.bound}
-
-/-- `roundRel` extended with the escape branch: on `.inl w` it is `roundRel`, and on `.inr e` it
-requires `e ∈ K.esc`. -/
-def roundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
-    Set (RoundStatement Φ K.TCom F n μ i × (LiftedWitness Φ μ n ⊕ E)) :=
-  (roundRel Φ m₀ m₁ bound rBound K φF b i).withEscape K.esc
-
-/-- Corrected paired-sumcheck relation over direct zero-check points.
-
-This has the same sumcheck content as `roundRel`, but its statement retains `τ₀` and `τα`
-directly.  No Kronecker map or seed appears in either summand. -/
+No Kronecker map or seed appears in either summand. -/
 def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × LiftedWitness Φ μ n) :=
@@ -923,7 +842,7 @@ def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rB
         p.1.challenges = p.1.targetα ∧
     bound ≤ p.1.zc.rlin.bound}
 
-/-- Escape-threaded corrected paired-sumcheck relation. -/
+/-- Escape-threaded paired-sumcheck relation. -/
 def nestedRoundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i ×
