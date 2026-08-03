@@ -6,7 +6,7 @@ Authors: Tobias Rothmann, Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
-import ArkLib.ToCompPoly.Multilinear.Basic
+import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import CompPoly.Multivariate.Operations
 
 /-!
@@ -322,6 +322,30 @@ theorem hAlpha_eval_eq (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n 
   rw [hAlpha, hAlphaML]
   exact CMlPolynomialEval.eval_eq_MvPolynomial_MLE
     (R := F) (n := m₁) (hAlphaEvals Φ m₁ φF b s α w) a
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- A complete binary tree of direct CompPoly evaluations determines `H₀`.
+
+This is the Hachi range-polynomial specialization of
+`BinaryEvaluationTree.eq_zero_of_polynomialVanishes`.  It stays on the computable
+`CMlPolynomialEval` representation; the generic theorem alone crosses to Mathlib internally. -/
+theorem hZero_eq_zero_of_binaryEvaluationTree (φF : ZMod q →+* F) (b : ℕ)
+    (w : LiftedWitness Φ μ n) (tree : CMlPolynomialEval.BinaryEvaluationTree F m₀)
+    (hDistinct : tree.IsDistinct) (hVanishes : tree.PolynomialVanishes (hZero Φ m₀ φF b w)) :
+    hZero Φ m₀ φF b w = 0 :=
+  tree.eq_zero_of_polynomialVanishes (hZero Φ m₀ φF b w) hDistinct hVanishes
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- A complete binary tree of direct CompPoly evaluations determines `H_α`.
+
+This is the Hachi linear-constraint specialization of the nested-tree zero test, again stated
+entirely with the computable `CMlPolynomialEval` polynomial. -/
+theorem hAlpha_eq_zero_of_binaryEvaluationTree (φF : ZMod q →+* F) (b : ℕ)
+    (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n)
+    (tree : CMlPolynomialEval.BinaryEvaluationTree F m₁) (hDistinct : tree.IsDistinct)
+    (hVanishes : tree.PolynomialVanishes (hAlpha Φ m₁ φF b s α w)) :
+    hAlpha Φ m₁ φF b s α w = 0 :=
+  tree.eq_zero_of_polynomialVanishes (hAlpha Φ m₁ φF b s α w) hDistinct hVanishes
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/
