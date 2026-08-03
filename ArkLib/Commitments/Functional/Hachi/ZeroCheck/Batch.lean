@@ -51,7 +51,14 @@ zero, and `bound ≤ rlin.bound`. This is the zero-check's input relation.
 Shortness is **not** a conjunct here: `H₀ ≡ 0` already forces `w̃` short (every committed
 coefficient is a root of the range factor `P_b`), so `liftShort` is *derived* — not assumed — by
 the pull-back `mem_relLiftE_of_relBatchedE` (via `hZero_eq_zero_imp_liftShort`). This is the
-range machinery being load-bearing rather than inert. -/
+range machinery being load-bearing rather than inert.
+
+Both conjuncts are the paper's polynomials, not stand-ins. `hAlpha`'s Boolean table is *written*
+as the per-row `α`-defect in the ring representation, but `hAlpha_eq_zero_iff_alphaDefect` proves
+`hAlpha … = 0` equivalent to the vanishing of every row's Eq. (22) contraction
+`∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ) − yᵢ(α)` of the public `M̃_α`/`α̃` against the committed table
+(arity pins `hd`, `(μ + n)·deg φ ≤ 2^{m₀}`). So this relation may be read as Eqs. (22)–(23)
+themselves rather than as an abstract direct-defect variant of them. -/
 def relBatched (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=

@@ -77,7 +77,10 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 factors evaluated at the point, with the claimed `y′` in place of `w̃(a)`, plus the bound-sanity
 conjunct `bound ≤ rlin.bound`. All parameters the future implementation reads are pinned
 explicitly. **Sorried (F8)** — the verifier's expensive public-evaluation step (`M̃_α` via
-dynamic programming). -/
+dynamic programming). Its Boolean coefficients are available: `mAlphaTilde` is Eq. (22)'s
+`M̃_α(i, u)`, and `alphaContract` formalizes its Boolean-cube contraction against the witness table.
+Constructing and evaluating the associated multilinear public factor at the arbitrary sumcheck
+point remains part of this F8 implementation. -/
 def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
     (stmt : RoundStatement Φ TCom F n μ m₀) (y' : F) : Bool :=
   sorry

@@ -89,7 +89,11 @@ Ring-switching layer:
   because a point or partial-sum claim does not imply the norm condition needed by weak binding.
   The identities themselves are represented and point-evaluated as `CMlPolynomialEval`
   Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib
-  `restrictDegree` views are derived only for the existing Kronecker proof.
+  `restrictDegree` views are derived only for the existing Kronecker proof. Eq. (22)'s public
+  contraction `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ)` is built (`mAlphaTilde`, `alphaTilde`,
+  `alphaContract`) and **proved** equal to the per-row `α`-defect that `H_α`'s table stores
+  (`alphaDefect_wTable`, `hAlpha_eq_zero_iff_alphaDefect`), so §4.3's "represent the constraints by
+  polynomials" step is derived rather than assumed.
   See
   [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
 - Separately from the axis-cross repair, ArkLib's zero-check diverges from the printed §4.3 in three
