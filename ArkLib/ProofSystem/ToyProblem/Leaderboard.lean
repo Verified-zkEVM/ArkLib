@@ -370,6 +370,92 @@ theorem winningSetSoundness_le_one {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι 
     winningSetSoundness enc δ ≤ 1 :=
   ciSup_le' (fun x ↦ winningSetRatio_le_one x)
 
+/-! ### The soundness error is never the degenerate `0`
+
+`winningSetSoundness` is a supremum over a **type**, and in `ℝ≥0` a supremum
+over an empty type is `sSup ∅ = ⊥ = 0`. Were `ViolatingInstance enc δ` ever
+empty, the scalar would read `0` — not because the protocol is sound, but
+because no cheating instance was shown to exist — and `bestProvableError` would
+collapse to its spot-check term, making every `SecurityLowerBound` inhabitable
+up to `(1 - δ_min)^t` by pure arithmetic.
+
+Note the polarity: the C1 remedy for `bestProvableError` (move to `ℝ≥0∞`, where
+the *empty infimum* is the conservative `⊤`) gives no protection here, because
+for a *supremum* the dangerous direction is the bottom, and `ℝ≥0` already sits
+there. The bound below is therefore stated, not assumed. -/
+
+/-- A violating instance exists for **any** linear encoding and any radius.
+
+Zero the constraint vector: every codeword's constraint value `∑ⱼ Mᵢⱼ · vⱼ` is
+then forced to `0`, whatever the codeword. Demanding `μ₂ = 1` makes row 2
+unsatisfiable, so the instance genuinely violates `R̃²`. -/
+def zeroViolating {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    ViolatingInstance enc δ where
+  v := 0
+  μ₁ := 0
+  μ₂ := 1
+  f₁ := 0
+  f₂ := 0
+  violates := by
+    rintro ⟨Wstar, ⟨M, -, hc⟩, -⟩
+    have h := hc 1
+    simp at h
+
+/-- The index type of the `⨆` defining `winningSetSoundness` is inhabited. -/
+instance instNonemptyViolatingInstance {k : ℕ}
+    (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    Nonempty (ViolatingInstance enc δ) :=
+  ⟨zeroViolating enc δ⟩
+
+omit [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
+/-- `γ = 0` is a winning challenge for `zeroViolating`.
+
+The verifier folds the rows using its challenge, checking `μ₁ + γ · μ₂`. At
+`γ = 0` the row-2 lie is multiplied away and the check reduces to row 1,
+`0 = 0`, witnessed by the zero codeword — which agrees with the zero word on
+*every* coordinate, so any agreement threshold is met. -/
+theorem zero_mem_winningSet {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    (0 : F) ∈ winningSetFor enc δ (0 : Fin k → F) 0 1 (0 : ι → A) 0 := by
+  refine ⟨fun _ => 0, ⟨fun _ => 0, fun i => ?_, fun i => ?_⟩,
+          Finset.univ, ?_, fun i j _ => ?_⟩
+  · simp
+  · simp
+  · have hδ : (1 : ℝ) - (δ : ℝ) ≤ 1 := by have := δ.coe_nonneg; linarith
+    have hn : (0 : ℝ) ≤ (Fintype.card ι : ℝ) := by positivity
+    simpa using mul_le_of_le_one_left hn hδ
+  · simp
+
+/-- **The soundness error is bounded below by `1/|F|`**, for every linear
+encoding and every radius — so the supremum defining it is never taken over an
+empty type and can never degenerate to `0`.
+
+`winningSetSoundness` is `|Ω|/|F|` for an integer `|Ω|` and the index type is
+finite, so its value is always a multiple of `1/|F|`: this is the *tightest*
+expression of "nonzero" for this quantity, not a weak one. Any materially
+stronger lower bound is attack-side research content — see
+`epsCA_le_winningSetSoundness` (needs a CA lower bound) and
+`listDecoding_le_winningSetSoundness` (needs a list-size lower bound). -/
+theorem winningSetSoundness_pos {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    1 / (Fintype.card F : ℝ≥0) ≤ winningSetSoundness enc δ := by
+  refine le_trans ?_ (winningSetRatio_le_winningSetSoundness (zeroViolating enc δ))
+  rw [winningSetRatio]
+  have hne : (winningSetFor enc δ (0 : Fin k → F) 0 1 (0 : ι → A) 0).Nonempty :=
+    ⟨0, zero_mem_winningSet enc δ⟩
+  have hpos : 0 < (winningSetFor enc δ (0 : Fin k → F) 0 1 (0 : ι → A) 0).ncard :=
+    (Set.ncard_pos (Set.toFinite _)).mpr hne
+  have h1 : (1 : ℝ≥0)
+      ≤ ((winningSetFor enc δ (0 : Fin k → F) 0 1 (0 : ι → A) 0).ncard : ℝ≥0) := by
+    exact_mod_cast hpos
+  gcongr
+  exact h1
+
+/-- Strict positivity, the ergonomic form of `winningSetSoundness_pos`. -/
+theorem winningSetSoundness_pos' {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    0 < winningSetSoundness enc δ := by
+  haveI : Nonempty F := ⟨0⟩
+  have hF : (0 : ℝ≥0) < (Fintype.card F : ℝ≥0) := by exact_mod_cast Fintype.card_pos
+  exact lt_of_lt_of_le (div_pos one_pos hF) (winningSetSoundness_pos enc δ)
+
 /-- **The simplified-IOR soundness is below the full-protocol RBR bound**
 (corollary of the L6.10 bridge `winningSetSoundness_le_epsMCA_add` of [ABF26];
 the bridge's `ε_mca + |Λ|/|F|` term is the combination-randomness slot of the
