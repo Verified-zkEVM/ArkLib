@@ -829,6 +829,40 @@ structure ZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (
   /-- The seed `ρ_α` from which the linear check's evaluation point is derived. -/
   seedα : F
 
+/-- Replacement statement for the corrected scalar-round interpretation of Hachi Figure 5.
+
+Unlike `ZeroCheckStatement`, which belongs to the currently active Kronecker-seed repair, this
+statement stores the verifier's two evaluation points directly.  The first `m₀` scalar rounds
+assemble `τ₀`; the following `m₁` scalar rounds assemble `τα`.  It is introduced alongside
+the legacy statement so the new transcript-tree extractor can be built without leaving the
+active opening chain in a non-compiling intermediate state. -/
+structure NestedZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
+    (n μ m₀ m₁ : ℕ) where
+  /-- The `R^lin` statement, carrying the public `M`, `yvec`, and `bound`. -/
+  rlin : RlinStatement Φ n μ
+  /-- The commitment to `w̃` from the lift stage. -/
+  t : TCom
+  /-- The ring-switching evaluation challenge `α` from the lift stage. -/
+  α : F
+  /-- The direct range-polynomial evaluation point, assembled from the first `m₀` rounds. -/
+  τ₀ : Fin m₀ → F
+  /-- The direct linear-polynomial evaluation point, assembled from the following `m₁` rounds. -/
+  τα : Fin m₁ → F
+
+/-- Statement after `i` paired-sumcheck rounds for the corrected scalar-round zero-check.
+
+It retains the direct points `τ₀` and `τα` through `zc`, instead of retaining Kronecker seeds. -/
+structure NestedRoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
+    (n μ m₀ m₁ i : ℕ) where
+  /-- The corrected zero-check statement containing the direct evaluation points. -/
+  zc : NestedZeroCheckStatement Φ TCom F n μ m₀ m₁
+  /-- The paired-sumcheck challenges drawn so far. -/
+  challenges : Fin i → F
+  /-- The current target of the range sumcheck. -/
+  target₀ : F
+  /-- The current target of the linear sumcheck. -/
+  targetα : F
+
 /-- The statement after `i` sumcheck rounds: the zero-check statement, the `i` challenges drawn so
 far, and the current range and linear sumcheck targets. -/
 structure RoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ)
@@ -871,5 +905,29 @@ def roundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound)
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (RoundStatement Φ K.TCom F n μ i × (LiftedWitness Φ μ n ⊕ E)) :=
   (roundRel Φ m₀ m₁ bound rBound K φF b i).withEscape K.esc
+
+/-- Corrected paired-sumcheck relation over direct zero-check points.
+
+This has the same sumcheck content as `roundRel`, but its statement retains `τ₀` and `τα`
+directly.  No Kronecker map or seed appears in either summand. -/
+def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
+    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × LiftedWitness Φ μ n) :=
+  {p |
+    K.com p.2 = p.1.zc.t ∧
+    liftShort Φ bound rBound p.2 ∧
+    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b p.1.zc.τ₀ p.2) i
+        p.1.challenges = p.1.target₀ ∧
+    hypercubeSum m₀
+        (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α p.1.zc.τα p.2) i
+        p.1.challenges = p.1.targetα ∧
+    bound ≤ p.1.zc.rlin.bound}
+
+/-- Escape-threaded corrected paired-sumcheck relation. -/
+def nestedRoundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
+    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i ×
+      (LiftedWitness Φ μ n ⊕ E)) :=
+  (nestedRoundRel Φ m₀ m₁ bound rBound K φF b i).withEscape K.esc
 
 end ArkLib.Lattices.Ajtai.InnerOuter

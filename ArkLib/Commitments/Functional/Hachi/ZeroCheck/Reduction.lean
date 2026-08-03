@@ -60,6 +60,44 @@ open CoordinateWise CoordinateWise.ChallengeRoundTree
 
 /-! ## Wire format and CWSS structure -/
 
+/-! ### Corrected nested scalar-round wire format
+
+These definitions are the replacement API for the corrected proof.  The currently active
+`zeroCheckPackage` below remains on the legacy Kronecker-seed wire until the new nested-tree
+extractor is assembled; keeping the two APIs side by side makes each migration checkpoint compile
+without adding a temporary `sorry`.
+-/
+
+/-- One scalar verifier challenge for each coordinate of `τ₀`, followed by one for each
+coordinate of `τα`.  There are no prover-message rounds between challenges: ArkLib's
+transcript-tree syntax supports consecutive verifier rounds directly. -/
+@[reducible] def pSpecNestedZeroCheck (F : Type) (m₀ m₁ : ℕ) : ProtocolSpec (m₀ + m₁) :=
+  ⟨fun _ => .V_to_P, fun _ => F⟩
+
+instance instSampleableTypeChallengePSpecNestedZeroCheck
+    {F : Type} [SampleableType F] {m₀ m₁ : ℕ} :
+    ∀ i, SampleableType ((pSpecNestedZeroCheck F m₀ m₁).Challenge i) := by
+  intro i
+  change SampleableType F
+  infer_instance
+
+variable {F : Type} {m₀ m₁ : ℕ}
+
+/-- Read all scalar challenges from a completed corrected zero-check transcript. -/
+def nestedZeroCheckChallenges
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin (m₀ + m₁) → F :=
+  fun i => tr.challenges ⟨i, by simp⟩
+
+/-- The first `m₀` transcript challenges, assembled as the direct point `τ₀`. -/
+def nestedZeroCheckTauZero
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin m₀ → F :=
+  fun i => nestedZeroCheckChallenges tr (Fin.castAdd m₁ i)
+
+/-- The final `m₁` transcript challenges, assembled as the direct point `τα`. -/
+def nestedZeroCheckTauAlpha
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin m₁ → F :=
+  fun i => nestedZeroCheckChallenges tr (Fin.natAdd m₀ i)
+
 /-- The zero-check's wire format: one verifier challenge carrying the seed pair `(ρ₀, ρ_α)` as a
 `Fin 2 → F`, matching the generic one-round challenge engine `ChallengeRoundTree`. -/
 @[reducible] def pSpecZeroCheck (F : Type) : ProtocolSpec 1 :=
@@ -83,6 +121,60 @@ variable (m₀ m₁ : ℕ) (bound rBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 open MvPolynomial
+
+/-! ### Corrected scalar-round protocol (migration target) -/
+
+/-- Extend the lift statement by the direct evaluation points assembled from the corrected
+scalar-round transcript. -/
+def nestedZcMapStmt {TCom : Type} (stmt : LiftStatement Φ TCom F n μ)
+    (τ₀ : Fin m₀ → F) (τα : Fin m₁ → F) :
+    NestedZeroCheckStatement Φ TCom F n μ m₀ m₁ :=
+  ⟨stmt.1, stmt.2.1, stmt.2.2, τ₀, τα⟩
+
+/-- Corrected Figure-5 verifier: read `m₀ + m₁` consecutive scalar challenges, split them into
+the direct points `τ₀` and `τα`, and append those points to the statement. -/
+def nestedZeroCheckVerifier {TCom : Type} :
+    Verifier oSpec (LiftStatement Φ TCom F n μ)
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) (pSpecNestedZeroCheck F m₀ m₁) where
+  verify := fun stmt tr => pure (nestedZcMapStmt Φ m₀ m₁ stmt
+    (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr))
+
+/-- Corrected Figure-5 honest prover.  Since all rounds are verifier challenges, its state is the
+input statement/witness together with the scalar prefix received so far. -/
+def nestedZeroCheckProver {TCom : Type} :
+    Prover oSpec (LiftStatement Φ TCom F n μ) (LiftedWitness Φ μ n)
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
+      (pSpecNestedZeroCheck F m₀ m₁) where
+  PrvState i := (LiftStatement Φ TCom F n μ × LiftedWitness Φ μ n) × (Fin i → F)
+  input := fun stmtWit => ⟨stmtWit, fun i => i.elim0⟩
+  sendMessage := fun ⟨_, h⟩ => nomatch h
+  receiveChallenge := fun _ st => pure fun c => ⟨st.1, Fin.snoc st.2 c⟩
+  output := fun ⟨⟨stmt, wit⟩, challenges⟩ => pure
+    (nestedZcMapStmt Φ m₀ m₁ stmt
+      (fun i => challenges (Fin.castAdd m₁ i))
+      (fun i => challenges (Fin.natAdd m₀ i)), wit)
+
+/-- Corrected Figure-5 point relation.  The commitment opening is short and the two computable
+batching polynomials vanish at the direct points carried by the statement. -/
+def relNestedZeroCheck
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    Set (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁ × LiftedWitness Φ μ n) :=
+  {p |
+    K.com p.2 = p.1.t ∧
+    liftShort Φ bound rBound p.2 ∧
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2) (Vector.ofFn p.1.τ₀) = 0 ∧
+    CMlPolynomialEval.eval
+        (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) (Vector.ofFn p.1.τα) = 0 ∧
+    bound ≤ p.1.rlin.bound}
+
+/-- Escape-threaded corrected Figure-5 point relation. -/
+def relNestedZeroCheckE
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    Set (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁ ×
+      (LiftedWitness Φ μ n ⊕ E)) :=
+  (relNestedZeroCheck Φ m₀ m₁ bound rBound K φF b).withEscape K.esc
 
 /-- The zero-check's statement map: extend the lift statement by the two Kronecker seeds
 `(seeds 0, seeds 1)`. -/
