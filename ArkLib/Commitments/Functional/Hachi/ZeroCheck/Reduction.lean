@@ -81,6 +81,12 @@ instance instSampleableTypeChallengePSpecNestedZeroCheck
   change SampleableType F
   infer_instance
 
+/-- Binary special-soundness shape for the corrected zero-check: every scalar verifier round has
+one coordinate and soundness parameter two, hence exactly two pairwise-distinct children. -/
+@[reducible] def nestedZeroCheckStructure (F : Type) (m₀ m₁ : ℕ) :
+    CWSSStructure (pSpecNestedZeroCheck F m₀ m₁) :=
+  CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)
+
 variable {F : Type} {m₀ m₁ : ℕ}
 
 /-- Read all scalar challenges from a completed corrected zero-check transcript. -/
@@ -299,6 +305,21 @@ noncomputable def buildWitnessE
   if h : ∃ j, resp j ≠ resp 0 then collideOrPass Φ bound rBound K (resp h.choose) (resp 0)
   else resp 0
 
+open Classical in
+/-- Witness assembler for the corrected nested scalar-round extractor.
+
+The complete binary transcript tree has `2 ^ (m₀ + m₁)` leaves.  If two selected leaf
+responses differ, return the usual weak-binding escape; otherwise retain their common response.
+Unlike `buildWitnessE`, this definition has no challenge family or Kronecker parameter. -/
+noncomputable def buildNestedWitnessE
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (_stmt : LiftStatement Φ K.TCom F n μ)
+    (resp : Fin (2 ^ (m₀ + m₁)) → (LiftedWitness Φ μ n ⊕ E)) :
+    LiftedWitness Φ μ n ⊕ E :=
+  if h : ∃ j, resp j ≠ resp 0 then
+    collideOrPass Φ bound rBound K (resp h.choose) (resp 0)
+  else resp 0
+
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- `collideOrPass a c` lands in `relBatchedE` (always as an escape) provided `a ≠ c` and each of
@@ -321,6 +342,55 @@ theorem collideOrPass_mem_relBatchedE
   · exact hesc_c ec rfl
   · exact hesc_a ea rfl
   · exact hesc_a ea rfl
+
+-- The batching polynomials carried by the projected trees require the cyclotomic instances;
+-- Lean's unused-section-variable analysis does not see those instance-synthesis dependencies.
+set_option linter.unusedSectionVars false in
+/-- Correctness core of the corrected nested-tree witness assembler.
+
+The transcript-tree adapter supplies one binary evaluation tree for the first `m₀` challenge
+levels and one for the final `m₁` levels below a fixed first-stage path.  In the common-opening
+case, their leaf evaluations vanish and the point-1 nested zero tests make both computable
+batching polynomials identically zero.  A differing leaf response instead yields the existing
+weak-binding escape. -/
+theorem buildNestedWitnessE_mem_relBatchedE
+    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
+    (resp : Fin (2 ^ (m₀ + m₁)) → (LiftedWitness Φ μ n ⊕ E))
+    (tree₀ : CMlPolynomialEval.BinaryEvaluationTree F m₀)
+    (treeα : CMlPolynomialEval.BinaryEvaluationTree F m₁)
+    (hDistinct₀ : tree₀.IsDistinct) (hDistinctα : treeα.IsDistinct)
+    (hesc : ∀ j e, resp j = Sum.inr e → e ∈ K.esc)
+    (hopen : ∀ j w, resp j = Sum.inl w →
+      K.com w = stmt.2.1 ∧ liftShort Φ bound rBound w)
+    (hVanishes₀ : ∀ w, (∀ j, resp j = Sum.inl w) →
+      tree₀.PolynomialVanishes (hZero Φ m₀ φF b w))
+    (hVanishesα : ∀ w, (∀ j, resp j = Sum.inl w) →
+      treeα.PolynomialVanishes (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 w))
+    (hBound : bound ≤ stmt.1.bound) :
+    (stmt, buildNestedWitnessE Φ m₀ m₁ bound rBound K stmt resp) ∈
+      relBatchedE Φ m₀ m₁ bound rBound K φF b := by
+  classical
+  unfold buildNestedWitnessE
+  by_cases h : ∃ j, resp j ≠ resp 0
+  · rw [dif_pos h]
+    exact collideOrPass_mem_relBatchedE Φ m₀ m₁ bound rBound K φF b stmt
+      (resp h.choose) (resp 0) h.choose_spec
+      (hesc h.choose) (hopen h.choose) (hesc 0) (hopen 0)
+  · rw [dif_neg h]
+    have hall : ∀ j, resp j = resp 0 := fun j => not_ne_iff.mp (fun hne => h ⟨j, hne⟩)
+    rcases hr0 : resp 0 with w0 | e0
+    · have hallOpening : ∀ j, resp j = Sum.inl w0 := fun j => (hall j).trans hr0
+      have hCom := (hopen 0 w0 hr0).1
+      simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq]
+      exact ⟨hCom,
+        hZero_eq_zero_of_binaryEvaluationTree Φ m₀ φF b w0 tree₀ hDistinct₀
+          (hVanishes₀ w0 hallOpening),
+        hAlpha_eq_zero_of_binaryEvaluationTree Φ m₁ φF b stmt.1 stmt.2.2 w0 treeα
+          hDistinctα (hVanishesα w0 hallOpening),
+        hBound⟩
+    · simp only [relBatchedE, Set.mem_withEscape_inr]
+      exact hesc 0 e0 hr0
 
 -- `[IsCyclotomic Φ]`/`[NeZero q]` are needed to synthesize the `wTable`/`Rq` instances inside
 -- `hZeroML`/`hAlphaML`, but the linter's usage analysis misses instance-synth-only section vars.
