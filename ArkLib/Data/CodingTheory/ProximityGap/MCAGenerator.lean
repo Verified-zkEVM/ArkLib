@@ -52,10 +52,10 @@ def matrixMulCodewords (A : Matrix ℓ ℓ' F) (U : ℓ' → (ι → F)) : ℓ �
   fun i k => ∑ j : ℓ', A i j * U j k
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `A` a matrix
-with a left  pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
+with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
 is an MCA generator with the same error `ε_mca` as `G`.
 Lemma 4.1 [BCGM25]. -/
-lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → I)
+lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
   (LC : LinearCode ι F) (hGMCA : IsMCAGenerator G ε_mca LC)
   (A : Matrix ℓ ℓ' F) (hA : HasLeftPseudoInverse A) :
     IsMCAGenerator (generatorByRightMul G A) ε_mca LC := by
@@ -70,13 +70,11 @@ IsMCA (generatorByRightMul G A) LC x U γ → IsMCA G LC x (matrixMulCodewords A
       simp only [generatorByRightMul, Matrix.vecMul_vecMul]
       congr! 2
     · contrapose! hj
+      simp only [LinearCode.mem_projectedCodeSubmod_iff] at hj ⊢
       convert LinearCode.projectedCode_linearCombination LC T (fun i => matrixMulCodewords A U i)
         (fun i => B j i) (fun i => hj i) using 1
-      · rfl
-      · apply congrArg (fun f : ι → F => f|[T])
-        funext k
-        change U j k = B.mulVec (A.mulVec (fun j_2 => U j_2 k)) j
-        rw [Matrix.mulVec_mulVec (fun j_2 => U j_2 k) B A, hB, Matrix.one_mulVec]
+      ext k
+      simp [matrixMulCodewords, ← Matrix.mul_apply, ← Matrix.mul_assoc, hB]
   exact le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ fun x h => isMCA_generatorByRightMul_of_isMCA x h)
     (hGMCA (matrixMulCodewords A U) γ)
 
@@ -109,7 +107,7 @@ lemma isMCA_projectedGenerator_of_isMCA (LC : LinearCode ι F) [Nonempty S] (G :
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
 subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
 Corollary 4.2 [BCGM25]. -/
-lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → I) (LC : LinearCode ι F)
+lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (LC : LinearCode ι F)
 (hGMCA : IsMCAGenerator G ε_mca LC) (κ : Set ℓ) [Fintype κ] :
   IsMCAGenerator (projectedGenerator G κ) ε_mca LC := by
   intro U γ

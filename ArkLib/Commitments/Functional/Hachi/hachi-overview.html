@@ -363,8 +363,8 @@
       <span class="chip">28 files</span>
       <span class="chip">22 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–2 sorry-free</span>
-      <span class="chip">≈24 open sorries</span>
+      <span class="chip">rows 1–4 sorry-free</span>
+      <span class="chip">≈20 open sorries</span>
     </div>
   </div>
 </header>
@@ -424,7 +424,7 @@
         <h3>Proof status</h3>
         <div class="legend-row">
           <span class="key"><span class="pill proven">proven</span></span>
-          <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) is even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
+          <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) and the HMZ25 lift (Lemma&nbsp;9) are even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
@@ -521,12 +521,12 @@
       <div><span class="tag">[LS18]</span> Lyubashevsky &amp; Seiler — <em>Short, Invertible Elements in Partially Splitting Cyclotomic Rings</em></div>
     </div>
     <p class="foot-note">
-      Design notes live beside the tree as <code>HACHI_*.md</code> — the corrected Lemma&nbsp;10 (<code>HACHI_LEMMA10_GAP.md</code>)
-      and the ring-switching / packing plans. The composition
-      home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
-      directly from the current working tree on the <code>hachi-skeleton</code> branch; “≈24 open sorries” counts genuine proof
-      terms inside <code>Hachi/</code> and excludes the generic guarded-append (B4) machinery, which lives under
-      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code>.
+      Design notes, the composition home, and its certificate provenance are documented in the
+      <code>Composition.lean</code> module header. Status was read
+      directly from the current working tree on the <code>tr/ring-switching-subprotocol</code> branch; “≈20 open sorries” counts
+      genuine proof terms in the files listed here (the §4.2–§4.3 chain; the §4.5 recursion adapters under
+      <code>Recursion/</code> are inventoried in <code>Composition.lean</code>) and excludes the generic guarded-append (B4)
+      machinery under <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code>.
     </p>
   </div>
 </footer>
@@ -551,16 +551,16 @@
         desc:"The two-round fold with the subtract-and-divide extractor (<code>buildWitness</code>): a star of 2ʳ+1 accepting branches yields a valid weak opening or a Module-SIS solution for B or D. <b>Lemma&nbsp;8 CWSS is genuinely sorry-free and axiom-clean.</b>" },
     ]},
     { zt:"Ring-Switching Lift", zref:"§4.3 · Figure 4 · Lemma 9 · [HMZ25]",
-      znote:"Switches the Rq-statement into an extension field F ⊇ Zq where the sumcheck runs, following the Huang–Mao–Zhang ring-switching lift.",
+      znote:"Switches the Rq-statement into an extension field F ⊇ Zq where the sumcheck runs, following the Huang–Mao–Zhang ring-switching lift. <code>RingSwitch/Reduction.lean</code> is the cyclotomic instance of the generic quotient-evaluation switch <code>ProofSystem/RingSwitching/Lift/</code> (presentation data + laws, checkAt, and the 2d-point interpolation engine — generic over any monic modulus), whose protocol shell is the committed-scalar seam <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean</code>; the cyclotomic law-discharge lemmas live in <code>Data/Lattices/CyclotomicRing/QuotientLift.lean</code>. (The sibling <code>ProofSystem/RingSwitching/Packing/</code> is the different DP24 packing construction.)",
       rows:[
       { n:3, kind:"bridge", name:"Rˡⁱⁿ adapter", sub:"RingSwitch", fn:"Rlin.lean",
         files:[["RingSwitch","Rlin.lean"]], ref:"§4.3 · reads Eq. 20", rounds:"0 rounds", cwss:"any",
-        relIn:"relOutE", relOut:"relRlinE", status:"wip", sorry:3, badges:["bridge"],
-        desc:"Zero-round adapter reading QuadEval's Eq.&nbsp;(20) output as an unstructured linear relation <code>Rˡⁱⁿ</code> — stacks the response ζ against the five verification rows as one block matrix. Sorried: the block-matrix assembly / unstacking and the block-row pull-back." },
+        relIn:"relOutE", relOut:"relRlinE", status:"proven", sorry:0, badges:["bridge"],
+        desc:"Zero-round adapter reading QuadEval's Eq.&nbsp;(20) output as an unstructured linear relation <code>Rˡⁱⁿ</code> — stacks the response ζ against the five verification rows as one block matrix. <b>Sorry-free &amp; axiom-clean:</b> the block matrix <code>M</code>/rhs <code>y</code> are assembled and the block-row equivalence <code>rlin_iff_relOut</code> is proven; <code>stack</code>/<code>unstack</code> are mutually inverse, so both the CWSS pull-back and the completeness direction hold." },
       { n:4, kind:"step", name:"HMZ25 lift", sub:"RingSwitch", fn:"Reduction.lean",
         files:[["RingSwitch","Reduction.lean"]], ref:"§4.3 · Fig 4 · Lemma 9", rounds:"msg t ; α ∈ F", cwss:"ℓ = 1, k = 2d",
-        relIn:"relRlinE", relOut:"relLiftE", status:"wip", sorry:1, badges:[],
-        desc:"Commit <code>t := Com(w̃)</code>, sample <code>α ← F</code>, evaluate the lifted rows at α. Introduces the abstract weak-binding commitment <code>LiftCom</code>. Sorried: Lemma&nbsp;9's interpolation extraction." },
+        relIn:"relRlinE", relOut:"relLiftE", status:"proven", sorry:0, badges:["core"],
+        desc:"Commit <code>t := Com(w̃)</code>, sample <code>α ← F</code>, evaluate the lifted rows at α, with the abstract weak-binding commitment <code>LiftCom</code>. <b>Lemma&nbsp;9's CWSS is genuinely sorry-free and axiom-clean</b>: the explicit extractor <code>liftBuildWitness</code> passes escapes through, turns two distinct short openings of the shared <code>t</code> into the weak-binding escape ([NOZ26] Remark&nbsp;2), and interpolates the shared opening's row defects (degree &lt; 2d) at the 2d pairwise-distinct challenges, descending to <code>M z = y</code> over Rq via the quotient bridge." },
     ]},
     { zt:"Zero-Check", zref:"§4.3 · Figure 5 · corrected Lemma 10",
       znote:"Reduces the two batched polynomial identities H₀ ≡ 0 ∧ H_α ≡ 0 to point evaluations. This is the one place the formalization deliberately changes the paper's protocol — see the gap note.",
@@ -642,8 +642,8 @@
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["","RingSwitch.lean","umbrella","§4.3","—","umbrella",0],
-    ["RingSwitch","Rlin.lean","bridge","§4.3","3","wip",3],
-    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","wip",1],
+    ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
+    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
     ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",1],
     ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",12],
@@ -664,8 +664,8 @@
   var counts = { proven:0, wip:0 };
   INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–9, escape threading, the shared encoding, composition and the scheme." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations, the entire QuadEval subprotocol (rows 1–2), the Rˡⁱⁿ adapter (row 3), and the HMZ25 lift (row 4, Lemma&nbsp;9)." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 5–9, escape threading, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];
   var tilesEl = document.getElementById("tiles");

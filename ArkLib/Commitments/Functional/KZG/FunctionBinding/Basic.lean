@@ -241,7 +241,7 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
           = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map_comm, ← simulateQ_map]
+            rw [← StateT.run'_map', ← simulateQ_map]
             rfl
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
@@ -251,7 +251,7 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
   simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
   congr 1
   funext τ
-  rw [← map_eq_bind_pure_comp, ← StateT.run'_map_comm, ← simulateQ_map]
+  rw [← map_eq_bind_pure_comp, ← StateT.run'_map', ← simulateQ_map]
   simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
   congr 1
   funext x
