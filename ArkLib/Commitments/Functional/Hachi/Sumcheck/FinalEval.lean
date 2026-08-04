@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 
 /-!
-  # Final evaluation — Hachi Figure 7 tail — skeleton (milestone F8)
+  # Final evaluation — Hachi Figure 7 tail — skeleton
 
   The step closing the sumcheck loop ([NOZ26] Figure 7, "Open `t` to evaluate
   `w̃(a₁, …, a_ℓ)`; evaluate `M̃_α(a₁, …, a_ℓ)`; check the correctness of the sumcheck"):
@@ -17,7 +17,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
     `eq̃(τ₀, a)`, the range product at `y′`, `α̃`, and `∑ᵢ eq̃(τ_α, i)·M̃_α(i, a)` (the paper's
     expensive `Õ(√(2^ℓ)·λ)` step) — and checks both final sumcheck targets:
     `eq̃(τ₀,a)·P_b(y′)·… = target₀` and `y′·α̃(a)·(∑ᵢ eq̃(τ_α,i)M̃_α(i,a)) = target_α`, plus the
-    bound-sanity conjunct. The verifier must be **guarded** (design D6): the check reads the
+    bound-sanity conjunct. The verifier must be **guarded**: the check reads the
     final targets, which the output statement drops — it can live neither downstream nor in a
     pull-back.
   * **output** — the *evaluation claim* `WEvalStatement`: the commitment `t`, the sumcheck point
@@ -28,7 +28,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
   `mle[w̃](a) = y′`, or an escape) and the **guard facts** (available from acceptance on a
   guarded verifier), the two final-round point-evaluation claims of `roundRel m₀` follow by
   computing `F_{0,τ₀}(a)` and `F_{α,τ_α}(a)` through `mle[w̃](a) = y′` — the evaluation
-  factorizations of the (sorried F5) sumcheck polynomials.
+  factorizations of the (sorried) sumcheck polynomials.
 
   ## References
 
@@ -46,9 +46,11 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 @[reducible] def pSpecFinalEval (F : Type) : ProtocolSpec 1 :=
   ⟨!v[.P_to_V], !v[F]⟩
 
+/-- The final-evaluation step has no challenge round: its `ChallengeIdx` is empty. -/
 instance {F : Type} : IsEmpty (pSpecFinalEval F).ChallengeIdx :=
   ⟨fun ⟨0, h⟩ => nomatch h⟩
 
+/-- Each challenge of `pSpecFinalEval` is (vacuously) sampleable — there are none. -/
 instance {F : Type} [SampleableType F] :
     ∀ i, SampleableType ((pSpecFinalEval F).Challenge i) :=
   fun i => isEmptyElim i
@@ -76,7 +78,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 /-- The final check ([NOZ26] Figure 7 tail): both final sumcheck targets against the public
 factors evaluated at the point, with the claimed `y′` in place of `w̃(a)`, plus the bound-sanity
 conjunct `bound ≤ rlin.bound`. All parameters the future implementation reads are pinned
-explicitly. **Sorried (F8)** — the verifier's expensive public-evaluation step (`M̃_α` via
+explicitly. **Sorried** — the verifier's expensive public-evaluation step (`M̃_α` via
 dynamic programming). -/
 def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
     (stmt : RoundStatement Φ TCom F n μ m₀) (y' : F) : Bool :=
@@ -136,12 +138,12 @@ def relWEvalClaimE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρ
 
 variable [SampleableType F]
 
-/-- **CWSS of the final-evaluation step (skeleton, F8).**
+/-- **CWSS of the final-evaluation step (skeleton).**
 
 **Sorried.** Proof plan: the protocol has no challenge round, so CWSS collapses (via the
 probability-phrased no-challenge bridge, which already tolerates rejecting verifiers) to a
 transcript-level extraction: acceptance forces `finalCheck = true` (the guarded rejection
-lemma, B4.1) and yields a `relWEvalClaimE`-witness; on the real branch, evaluate the two
+lemma) and yields a `relWEvalClaimE`-witness; on the real branch, evaluate the two
 sumcheck polynomials at the point through `mle[w̃](a) = y′` and the guard's target equations to
 recover `roundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is the plain evaluation);
 the bound-sanity conjunct is re-supplied by the guard; escapes pass through. -/

@@ -8,9 +8,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`, `▷ᵍ`)
 
-  **Skeleton of milestone B4** of the Hachi sumcheck track (see
-  `HACHI_SUMCHECK_TRACK_PLAN.md` §2): coordinate-wise special soundness (CWSS) composition
-  where the *left* factor may **reject at runtime**.
+  **Skeleton** for coordinate-wise special soundness (CWSS) composition where the *left* factor
+  may **reject at runtime**, as needed by the Hachi sumcheck ([NOZ26]).
 
   ## Why guarded verifiers
 
@@ -35,21 +34,21 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   ## Contents
 
-  * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check,
-    design decision G3); purity is the `check := fun _ _ => true` special case
+  * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
+    purity is the `check := fun _ _ => true` special case
     (`IsGuarded.of_isPure`).
   * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append` (**sorried**;
-    B4.4: composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
+    composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
     `Verifier.IsPure.append`).
   * `Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` — the guarded binary CWSS append
-    (**sorried**; B4.3: transplant of the pure proof with two deltas — (i) rewrite the composed
+    (**sorried**; transplant of the pure proof with two deltas — (i) rewrite the composed
     run via a guarded `append_run` lemma and dismiss the `check = false` branch against
     acceptance-probability `1` vs `failure`'s probability `0`; (ii) certify left-leaf outputs in
     `rel₂.language` via a guarded `accepting_of_mem`).
   * `GCWSSPackage` — the guarded analogue of `CWSSPackage` (`isPure` ↝ `isGuarded`), with
     `CWSSPackage.toGuarded` and the composition `GCWSSPackage.append` = infix `▷ᵍ`.
 
-  A guarded n-ary `seqCompose` variant (B4.4) is deliberately not skeletonized here: the Hachi
+  A guarded n-ary `seqCompose` variant is deliberately not skeletonized here: the Hachi
   composition builds its guarded loop by *recursion over binary `▷ᵍ`*
   (`ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean`), which only needs the binary
   theorem.
@@ -71,8 +70,8 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
 
 /-- A verifier is **guarded with** a `Bool`-valued `check` and a deterministic output map `out` if
 its verdict is `pure (out stmt tr)` when the check passes and `failure` otherwise. This is the
-faithful model of a verifier that rejects at runtime (design decision G3 of the sumcheck-track
-plan: `Bool`-valued checks; decidable-`Prop` consumers use `decide`). -/
+faithful model of a verifier that rejects at runtime (the check is `Bool`-valued; decidable-`Prop`
+consumers use `decide`). -/
 def IsGuardedWith (V : Verifier oSpec StmtIn StmtOut pSpec)
     (check : StmtIn → FullTranscript pSpec → Bool)
     (out : StmtIn → FullTranscript pSpec → StmtOut) : Prop :=
@@ -89,6 +88,7 @@ theorem IsGuarded.of_isPure (V : Verifier oSpec StmtIn StmtOut pSpec) (h : V.IsP
   obtain ⟨f, hf⟩ := h.is_pure
   exact ⟨fun _ _ => true, f, fun stmt tr => by simp [hf stmt tr]⟩
 
+/-- Every pure verifier is guarded automatically: the instance form of `IsGuarded.of_isPure`. -/
 instance (V : Verifier oSpec StmtIn StmtOut pSpec) [h : V.IsPure] : V.IsGuarded :=
   IsGuarded.of_isPure V h
 
@@ -103,7 +103,7 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
 /-- Guardedness is closed under `Verifier.append`: the composite check runs the left check on the
 transcript prefix and, if it passes, the right check on the suffix from the left output.
 
-**Sorried (B4.4).** Proof plan: mirror `Verifier.IsPure.append`
+**Sorried.** Proof plan: mirror `Verifier.IsPure.append`
 (`OracleReduction/Composition/Sequential/IsPure.lean`) — destructure both guard witnesses, take
 `check := fun s tr => check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd` and
 `out := fun s tr => out₂ (out₁ s tr.fst) tr.snd`, and normalize
@@ -113,7 +113,7 @@ theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₁.append V₂).IsGuarded := by
   sorry
 
-/-- **Guarded binary CWSS append (skeleton of B4.3, the core of milestone B4).** Coordinate-wise
+/-- **Guarded binary CWSS append (skeleton).** Coordinate-wise
 special soundness is preserved by `Verifier.append` when the left factor is merely *guarded*
 (rather than pure).
 
@@ -122,8 +122,8 @@ special soundness is preserved by `Verifier.append` when the left factor is mere
 1. A guarded left-run lemma `append_run_guardedLeft`:
    `(V₁.append V₂).run stmt (tr₁ ++ₜ tr₂) = if check₁ stmt tr₁ then V₂.run (out₁ stmt tr₁) tr₂
    else failure` (mirror of `append_run_pure_left`, plus `failure_bind`). On an accepting leaf
-   (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`
-   (rejection lemma B4.1), so every surviving leaf has `check₁ = true` and the proof is literally
+   (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`,
+   so every surviving leaf has `check₁ = true` and the proof is literally
    the pure proof from there.
 2. Where the pure proof certifies each left-leaf output in `rel₂.language` via
    `pure_accepting_of_mem`, use its guarded analogue fed by the `check₁ = true` fact from delta 1.
@@ -191,7 +191,7 @@ def _root_.CoordinateWise.CWSSPackage.toGuarded
 guarded analogue of `CWSSPackage.append`/`▷`. The composed verdict is guarded by the conjunction
 of both checks (`Verifier.IsGuarded.append`), and the composed certificate is the guarded binary
 append theorem `Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (both currently
-sorried B4 milestones — this definition is the *interface* the Hachi chain composes through).
+sorried — this definition is the *interface* the Hachi chain composes through).
 Written infix as `L₁ ▷ᵍ L₂`. -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
