@@ -824,29 +824,28 @@ structure NestedRoundStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type)
   /-- The current target of the linear sumcheck. -/
   targetα : F
 
-variable (bound rBound : ℕ)
+variable (bound : ℕ)
 
-/-- Paired-sumcheck relation over direct zero-check points.
+/-- Paired-sumcheck relation over direct zero-check points: an opening of `t` whose partial
+hypercube sums match the current targets.
 
-No Kronecker map or seed appears in either summand. -/
-def nestedRoundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
-    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × LiftedWitness Φ μ n) :=
+No Kronecker map or seed appears in either summand, and **no norm conjunct appears at all** — the
+partial sums do not determine one, and the admissibility that conditions weak binding travels
+inside `K.Opening` (see `LiftCom`). -/
+def nestedRoundRel (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
+    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × K.Opening) :=
   {p |
     K.com p.2 = p.1.zc.t ∧
-    liftShort Φ bound rBound p.2 ∧
-    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b p.1.zc.τ₀ p.2) i
+    hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b p.1.zc.τ₀ (K.table p.2)) i
         p.1.challenges = p.1.target₀ ∧
     hypercubeSum m₀
-        (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α p.1.zc.τα p.2) i
+        (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α p.1.zc.τα (K.table p.2)) i
         p.1.challenges = p.1.targetα ∧
     bound ≤ p.1.zc.rlin.bound}
 
 /-- Escape-threaded paired-sumcheck relation. -/
-def nestedRoundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
-    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i ×
-      (LiftedWitness Φ μ n ⊕ E)) :=
-  (nestedRoundRel Φ m₀ m₁ bound rBound K φF b i).withEscape K.esc
+def nestedRoundRelE (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
+    Set (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i × (K.Opening ⊕ E)) :=
+  (nestedRoundRel Φ m₀ m₁ bound K φF b i).withEscape K.esc
 
 end ArkLib.Lattices.Ajtai.InnerOuter

@@ -41,10 +41,11 @@ counterexample to the uniform-challenge argument is
   identification of `H_α` with paper Eq. (22) is `hAlpha_eq_zero_iff_alphaDefect`) and
   **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
   `(μ + n)·deg φ ≤ 2 ^ m₀` and range-base fits `b − 1 ≤ γ, ρBound`) — so shortness is proved,
-  not assumed (`relBatched` no longer carries a `liftShort` conjunct). At the point-check and
-  sumcheck seams, however, `relNestedZeroCheck`/`nestedRoundRel` carry `liftShort` as a semantic
-  admissibility condition: their point and partial-sum claims do not suffice to derive the norm
-  precondition required by `K.collision_mem`.
+  not assumed (`relBatched` carries no `liftShort` conjunct). **No relation in this folder
+  does**: the admissibility that conditions `K.collision_mem` is [NOZ26] Lemma 7's
+  slack-relative weak-opening data, a different notion from the range claim `liftShort`, and it
+  is carried by the commitment's own opening type `LiftCom.Opening` rather than by the
+  reductions above it. Figure 5's point relation is therefore as norm-free as the paper's.
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: `m₀ + m₁` scalar challenge rounds
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
   `nestedZeroCheck_coordinateWiseSpecialSound` reduces `relBatchedE` to

@@ -68,7 +68,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound rBound : ℕ)
+variable (mLow κ : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -131,19 +131,19 @@ theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
 /-- The honest trace-handoff prover skeleton: sends `p` (the parameter `computeP`, honestly
 Eq. (27)'s `eᵀ(σ₋₁(ψ(f))ᵀ ⊗ I)ψ(ŵ)`), and carries the witness forward as the next iteration's
 opening data (the parameter `computeWit` — the ψ-packed re-reading of `w̃`). -/
-def handoffProver {TCom WitOut : Type} (φF : ZMod q →+* F)
+def handoffProver {TCom Wit WitOut : Type} (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
     (reinterpretCom : TCom → Commitment Φ' outerRows')
-    (computeP : HatEvalStatement TCom F mLow → LiftedWitness Φ μ n → Rq Φ')
-    (computeWit : LiftedWitness Φ μ n → WitOut) :
-    Prover oSpec (HatEvalStatement TCom F mLow) (LiftedWitness Φ μ n)
+    (computeP : HatEvalStatement TCom F mLow → Wit → Rq Φ')
+    (computeWit : Wit → WitOut) :
+    Prover oSpec (HatEvalStatement TCom F mLow) Wit
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')
       WitOut (pSpecHandoff Φ') where
   PrvState
-    | 0 => HatEvalStatement TCom F mLow × LiftedWitness Φ μ n
-    | 1 => HatEvalStatement TCom F mLow × LiftedWitness Φ μ n
+    | 0 => HatEvalStatement TCom F mLow × Wit
+    | 1 => HatEvalStatement TCom F mLow × Wit
   input := id
   sendMessage
     | ⟨0, _⟩ => fun st => pure (computeP st.1 st.2, st)
@@ -171,7 +171,7 @@ instantiation obligation. -/
 theorem handoff_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
@@ -180,7 +180,7 @@ theorem handoff_coordinateWiseSpecialSound
     (handoffVerifier (oSpec := oSpec) Φ' mLow φF pp'
         reinterpretCom).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (relHatEvalE Φ mLow κ bound rBound zpow K φF)
+      (relHatEvalE Φ mLow κ zpow K φF)
       (relInE Φ' base' βSq' γ' κ' K.esc) := by
   sorry
 
@@ -192,24 +192,24 @@ claim `relHatEvalE` to the **next iteration's** escape-threaded `QuadEval` input
 packings, not monomial bases of a point). -/
 def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F)
     (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     GCWSSPackage init impl
-      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n ⊕ E)
+      (HatEvalStatement K.TCom F mLow) (K.Opening ⊕ E)
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')
       (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits' ⊕ E)
       (pSpecHandoff Φ') where
   verifier := handoffVerifier (oSpec := oSpec) Φ' mLow φF pp' reinterpretCom
   struct := CWSSStructure.ofIsEmpty
-  relIn := relHatEvalE Φ mLow κ bound rBound zpow K φF
+  relIn := relHatEvalE Φ mLow κ zpow K φF
   relOut := relInE Φ' base' βSq' γ' κ' K.esc
   isGuarded := handoffVerifier_isGuarded Φ' mLow φF pp' reinterpretCom
-  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ bound rBound init impl zpow K φF pp'
+  isCWSS := handoff_coordinateWiseSpecialSound Φ Φ' mLow κ init impl zpow K φF pp'
     reinterpretCom base' βSq' γ' κ'
 
 end Protocol

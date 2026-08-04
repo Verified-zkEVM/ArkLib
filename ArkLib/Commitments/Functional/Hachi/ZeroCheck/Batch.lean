@@ -59,21 +59,19 @@ as the per-row `α`-defect in the ring representation, but `hAlpha_eq_zero_iff_a
 `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ) − yᵢ(α)` of the public `M̃_α`/`α̃` against the committed table
 (arity pins `hd`, `(μ + n)·deg φ ≤ 2^{m₀}`). So this relation may be read as Eqs. (22)–(23)
 themselves rather than as an abstract direct-defect variant of them. -/
-def relBatched (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
+def relBatched (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) :
+    Set (LiftStatement Φ K.TCom F n μ × K.Opening) :=
   {p |
     K.com p.2 = p.1.2.1 ∧
-    hZero Φ m₀ φF b p.2 = 0 ∧
-    hAlpha Φ m₁ φF b p.1.1 p.1.2.2 p.2 = 0 ∧
+    hZero Φ m₀ φF b (K.table p.2) = 0 ∧
+    hAlpha Φ m₁ φF b p.1.1 p.1.2.2 (K.table p.2) = 0 ∧
     bound ≤ p.1.1.bound}
 
 /-- `relBatched` extended with the escape branch (`.inr e` requires `e ∈ K.esc`); the zero-check's
 input relation. -/
-def relBatchedE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relBatched Φ m₀ m₁ bound rBound K φF b).withEscape K.esc
+def relBatchedE (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) :
+    Set (LiftStatement Φ K.TCom F n μ × (K.Opening ⊕ E)) :=
+  (relBatched Φ m₀ m₁ bound K φF b).withEscape K.esc
 
 -- `[IsCyclotomic Φ]` is needed to synthesize the `Rq`/`wTable` instances inside the `hZero` term
 -- carried by `relBatchedE` and by `hZero_eq_zero_imp_liftShort`, but the linter's usage analysis
@@ -92,20 +90,19 @@ under `hbound : b − 1 ≤ bound` and `hrBound : b − 1 ≤ rBound`. The `K.co
 shared between the two relations. The hypotheses are the row-encoding bound `hn : n ≤ 2 ^ m₁`, the
 column-encoding bound `hμn : (μ + n)·deg φ ≤ 2 ^ m₀`, and `hd : 0 < deg φ`. No anti-wraparound
 condition on `q` is needed — see `valMinAbs_natAbs_le_of_rangeProduct_eq_zero`. -/
-theorem mem_relLiftE_of_relBatchedE
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+theorem mem_relLiftE_of_relBatchedE (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
     (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hbound : b - 1 ≤ bound) (hrBound : b - 1 ≤ rBound)
-    (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (X, w) ∈ relBatchedE Φ m₀ m₁ bound rBound K φF b) :
+    (X : LiftStatement Φ K.TCom F n μ) (w : K.Opening ⊕ E)
+    (h : (X, w) ∈ relBatchedE Φ m₀ m₁ bound K φF b) :
     (X, w) ∈ relLiftE Φ bound rBound K φF := by
   rcases w with w | e
   · -- real witness: recover the per-row equation and derive shortness from `H₀ ≡ 0`
     simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq] at h
     obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
-    have hshort : liftShort Φ bound rBound w :=
-      hZero_eq_zero_imp_liftShort Φ m₀ φF b bound rBound hd hμn hbound hrBound w hZeroZ
+    have hshort : liftShort Φ bound rBound (K.table w) :=
+      hZero_eq_zero_imp_liftShort Φ m₀ φF b bound rBound hd hμn hbound hrBound (K.table w) hZeroZ
     simp only [relLiftE, Set.mem_withEscape_inl, relLift, Set.mem_setOf_eq]
     refine ⟨hcom, fun i => ?_, hshort, hbound'⟩
     rw [hAlpha_eq_zero_iff] at hAlphaZ
@@ -119,22 +116,22 @@ theorem mem_relLiftE_of_relBatchedE
 reducing `relLiftE` to `relBatchedE` with no soundness error, its correctness supplied by
 `mem_relLiftE_of_relBatchedE`. -/
 def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
     (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (hbound : b - 1 ≤ bound) (hrBound : b - 1 ≤ rBound) :
     CWSSPackage init impl
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+      (LiftStatement Φ K.TCom F n μ) (K.Opening ⊕ E)
+      (LiftStatement Φ K.TCom F n μ) (K.Opening ⊕ E)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec id
   struct := CWSSStructure.ofIsEmpty
   relIn := relLiftE Φ bound rBound K φF
-  relOut := relBatchedE Φ m₀ m₁ bound rBound K φF b
+  relOut := relBatchedE Φ m₀ m₁ bound K φF b
   isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
     (relIn := relLiftE Φ bound rBound K φF)
-    (relOut := relBatchedE Φ m₀ m₁ bound rBound K φF b)
+    (relOut := relBatchedE Φ m₀ m₁ bound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
     (fun stmtIn witOut h =>
       mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound rBound K φF b hn hd hμn hbound hrBound

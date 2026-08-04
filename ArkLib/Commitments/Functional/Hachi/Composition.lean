@@ -240,7 +240,7 @@ round-`0` sumcheck seam `nestedRoundRelE 0`. -/
 noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
+    (K : LiftCom 𝓜(q, α) μ₀ n₀ E)
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
     (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
@@ -249,7 +249,7 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits ⊕ E)
       (NestedRoundStatement 𝓜(q, α) K.TCom F n₀ μ₀ m₀ m₁ 0)
-      (LiftedWitness 𝓜(q, α) μ₀ n₀ ⊕ E)
+      (K.Opening ⊕ E)
       (openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
         ω m₀ m₁ K.TCom F) :=
   haveI : ∀ i, SampleableType
@@ -262,8 +262,8 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl (b : ZMod q) ω γ K.esc ▷
     liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
     batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hμn hbγ hbρ ▷
-    nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
-    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+    nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ init impl K φF b ▷
+    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ init impl K φF b
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
 `openCore` composed — through the guarded append `▷ᵍ` — with the guarded tail: the `m₀` paired
@@ -281,7 +281,7 @@ variables. -/
 noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
+    (K : LiftCom 𝓜(q, α) μ₀ n₀ E)
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
     (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
@@ -319,14 +319,14 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hn hμn hbγ
         hbρ).toGuarded.append
-      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
-      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
+      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ b init impl K φF (mLow + κ))
+      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ b init impl K φF
         (mLow + κ)).symm).append
-    (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF)
-    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))) ▷ᵍ
-  (partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF).toGuarded ▷ᵍ
-  (zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF).toGuarded ▷ᵍ
-  handoffPackage 𝓜(q, α) Φ' mLow κ γ ρBound init impl zpow K φF pp' reinterpretCom base' βSq'
+    (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ b init impl K φF)
+    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ b init impl K φF (mLow + κ))) ▷ᵍ
+  (partialEvalPackage 𝓜(q, α) mLow κ b init impl K φF).toGuarded ▷ᵍ
+  (zBatchPackage 𝓜(q, α) mLow κ init impl zpow K φF).toGuarded ▷ᵍ
+  handoffPackage 𝓜(q, α) Φ' mLow κ init impl zpow K φF pp' reinterpretCom base' βSq'
     γ' κ'
 
 /-- **Hachi one-iteration opening — coordinate-wise special soundness (skeleton certificate).**
@@ -338,7 +338,7 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
+    (K : LiftCom 𝓜(q, α) μ₀ n₀ E)
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hn : n₀ ≤ 2 ^ m₁)
     (hμn : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))

@@ -33,7 +33,7 @@ import CompPoly.Univariate.ToPoly.Impl
   Output relation `relLift`: an opening `w̃` of `t` whose lifted rows vanish at `α` and which is
   short. **CWSS at `k = 2d`** (`scalarStructure`, plain special soundness): each row's defect
   polynomial `∑ⱼ Mᵢⱼ·zⱼ − yᵢ − (X^d+1)·rᵢ` has degree `≤ 2d − 1`, so `2d` accepting branches at
-  pairwise-distinct `α` either exhibit two distinct short openings of `t` — the weak-binding
+  pairwise-distinct `α` either exhibit two openings of `t` with distinct tables — the weak-binding
   escape (`LiftCom.collision_mem`; [NOZ26] Remark 2 / Lemma 7), threaded through `K.esc` — or
   share one opening whose row defects have `2d` roots, hence vanish identically: `M z = y` over
   `Rq` plus the range bound, i.e. `relRlinE` membership.
@@ -41,16 +41,28 @@ import CompPoly.Univariate.ToPoly.Impl
   ## The abstract commitment `LiftCom` and the norm bookkeeping
 
   The commitment is abstract (design G2: the key is a *parameter*, not a statement field; Lemma 9
-  needs only binding). Weak binding is **norm-conditioned**, so `LiftCom` is parameterized by a
-  shortness predicate `Short` and its collision axiom requires both openings short; this chain
-  instantiates `Short := liftShort bound rBound` at the *global* norm parameters. `relLift`
-  therefore carries (i) `liftShort bound rBound w̃` — feeding both the collision axiom and, (ii)
-  via the public sanity conjunct `bound ≤ s.bound`, the statement-level `R^lin` bound of the
+  needs only binding). The delicate point is that [NOZ26] carries **two unrelated** shortness
+  notions, and they must not be identified:
+
+  * the admissibility built into a *weak opening* (Lemma 7) — slack-relative
+    (`‖cᵢ·sᵢ‖ ≤ β̄`, `‖cᵢ‖₁ ≤ ω̄`, `cᵢ ∈ Rq^×`), part of what "opening" *means* for an
+    Ajtai-style scheme, and the precondition of its binding property (Remark 2);
+  * `liftShort` — the *range* claim `‖z‖∞ ≤ bound`, `‖r‖∞ ≤ rBound` that Figure 4 checks and
+    that the range identity `H₀ ≡ 0` proves.
+
+  `LiftCom` therefore carries its own `Opening` type, with `table` reading off the Eq. (21)
+  table; binding (`collision_mem`) is stated unconditionally on openings, so **no reduction
+  above the commitment carries a norm hypothesis** — matching Lemmas 9–11, which say only "or
+  break binding of the commitment scheme Com". `relLift` keeps `liftShort bound rBound` as
+  Figure 4's own norm *claim* about the committed table, which the batching bridge then
+  **derives** from `H₀ ≡ 0` (`ZeroCheck/Batch.lean`) rather than assuming; together with the
+  public sanity conjunct `bound ≤ s.bound` it supplies the statement-level `R^lin` bound of the
   extraction target (assembled statements have `s.bound = γ = bound`, so completeness is
   unaffected). The concrete instantiation — the inner-outer commitment *without initial
-  decomposition* ([NOZ26] §4.5), collision discharged by `outputToModuleSIS_valid_of_verified` —
-  and the commitment reinterpretation at the next ring dimension used by the recursion handoff
-  (`Recursion/TraceHandoff.lean`) are Phase-G deliverables.
+  decomposition* ([NOZ26] §4.5), `Opening` the weak openings, collision discharged by
+  `outputToModuleSIS_valid_of_verified` — and the commitment reinterpretation at the next ring
+  dimension used by the recursion handoff (`Recursion/TraceHandoff.lean`) are Phase-G
+  deliverables.
 
   **Sorried**: the CWSS theorem `lift_coordinateWiseSpecialSound` (Lemma 9's interpolation
   extraction; consumes the F3 quotient-lift algebra and the F4.1 scalar-round assembly).
@@ -92,30 +104,64 @@ claims; the exact constant is pinned by the F5 digit decomposition). -/
 def rShort (rBound : ℕ) (r : Fin n → CPolynomial (ZMod q)) : Prop :=
   ∀ i k, ((r i).coeff k).valMinAbs.natAbs ≤ rBound
 
-/-- The combined shortness predicate of the lifted witness — the norm side of `relLift`, and the
-`Short` parameter of the abstract commitment `LiftCom` (weak binding is norm-conditioned,
-[NOZ26] Lemma 7). -/
+/-- The **range** predicate of the lifted witness — Figure 4's norm check
+`z ∈ Zq^{<d}[X] ∧ ‖z‖∞, ‖r‖∞ ≤ b − 1`, carried as the norm side of `relLift` and *derived* from
+the range identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`).
+
+This is **not** the admissibility notion that conditions the commitment's binding property: that
+one is the slack-relative weak-opening data of [NOZ26] Lemma 7 and lives inside
+`LiftCom.Opening`. Conflating the two would turn this derived claim into an assumption at every
+seam above the commitment (see `LiftCom`). -/
 def liftShort (bound rBound : ℕ) (w : LiftedWitness Φ μ n) : Prop :=
   vecLInftyNorm Φ w.z ≤ bound ∧ rShort rBound w.r
 
 /-- **Abstract binding commitment** for the lifted witness (design G2: abstract in F4;
 instantiated by the §4.5 inner-outer commitment without initial decomposition in Phase G).
-`collision_mem` is the weak-binding axiom: two distinct *short* openings of the same commitment
-yield a valid escape (concretely, a Module-SIS solution via [NOZ26] Lemma 7 /
-`outputToModuleSIS_valid_of_verified`). The shortness conditioning is load-bearing: Ajtai-style
-commitments are only binding on short openings. -/
-structure LiftCom (W E : Type) (Short : W → Prop) where
+
+`Opening` is the scheme's *opening type* — the object a knowledge extractor hands back — and
+`table` reads off the Eq. (21) coefficient table `w̃ = (z, r)` that an opening determines. Keeping
+the two apart is what keeps the norm bookkeeping straight, because [NOZ26] has **two unrelated**
+shortness notions:
+
+* the admissibility built into a *weak opening* (Lemma 7: `‖cᵢ·sᵢ‖ ≤ β̄`, `‖cᵢ‖₁ ≤ ω̄`,
+  `cᵢ ∈ Rq^×`) — slack-relative, part of what "opening" *means* for an Ajtai-style scheme, and
+  the precondition of its binding property (Remark 2);
+* `liftShort` — the *range* claim `‖z‖∞ ≤ bound`, `‖r‖∞ ≤ rBound` that Figure 4 checks and that
+  the range identity `H₀ ≡ 0` proves.
+
+Identifying the two — as a shortness *parameter* on this structure would — forces every reduction
+above the commitment to carry `liftShort` as a hypothesis, that is, to assume at the point seams
+of Figure 5 exactly what the range check exists to prove (one evaluation `H₀(τ₀) = 0` cannot
+recover it). Here the first notion is absorbed into `Opening`, so `collision_mem` is
+unconditional and **no reduction above the commitment mentions a norm** — matching Lemmas 9–11,
+which say only "or break binding of the commitment scheme `Com`" — while the second stays a
+derived conclusion (`ZeroCheck/Batch.lean`).
+
+`collision_mem` is binding in the paper's weak sense (Remark 2): two openings of one commitment
+whose *tables* differ (Lemma 7's `sⱼ ≠ s'ⱼ`) are a valid escape — concretely a Module-SIS
+solution via `outputToModuleSIS_valid_of_verified`, which is where the weak-opening admissibility
+carried by `Opening` is consumed. -/
+structure LiftCom (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) (E : Type) where
+  /-- The scheme's opening type ([NOZ26] Lemma 7's weak openings). -/
+  Opening : Type
+  /-- Openings exist — e.g. the honest opening of the zero witness. -/
+  nonempty : Nonempty Opening
+  /-- The Eq. (21) coefficient table `w̃ = (z, r)` an opening determines. -/
+  table : Opening → LiftedWitness Φ μ n
   /-- The commitment space (the wire type of Figure 4's first message). -/
   TCom : Type
   /-- The (deterministic) commitment function. -/
-  com : W → TCom
+  com : Opening → TCom
   /-- The escape set: valid cryptographic break artifacts (statement-independent, design G1). -/
   esc : Set E
   /-- The escape produced from a commitment collision. -/
-  escOfCollision : W → W → E
-  /-- Weak binding: a collision of two distinct short openings is a valid escape. -/
-  collision_mem : ∀ w w', w ≠ w' → com w = com w' → Short w → Short w' →
-    escOfCollision w w' ∈ esc
+  escOfCollision : Opening → Opening → E
+  /-- Weak binding: two openings of one commitment with distinct tables are a valid escape. -/
+  collision_mem : ∀ o o', table o ≠ table o' → com o = com o' → escOfCollision o o' ∈ esc
+
+/-- Openings form a nonempty type — needed wherever an extractor must return a fallback value
+outside the accepting case. -/
+instance instNonemptyOpening (K : LiftCom Φ μ n E) : Nonempty K.Opening := K.nonempty
 
 variable {F : Type} [Field F] (bound rBound : ℕ)
 
@@ -167,34 +213,31 @@ theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
 
 /-- **The lift's output relation** (Hachi Figure 4 / Lemma 9 residual claims, at the fixed
 challenge `α` of the transcript): `w̃ = (z, r)` opens `t`; every lifted row vanishes at `α`,
-i.e. `∑ⱼ Mᵢⱼ(α)·zⱼ(α) = yᵢ(α) + (α^d + 1)·rᵢ(α)`; and `w̃` is short. The range claims are
-*witness-level* — proven downstream by the zero-check/sumcheck stages and consumed upstream by
-Lemma 9's extraction. The final conjunct `bound ≤ s.bound` is the public sanity condition tying
-the global norm parameter to the statement's declared `R^lin` bound (see the module
-docstring). -/
-def relLift (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) :
-    Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
+i.e. `∑ⱼ Mᵢⱼ(α)·zⱼ(α) = yᵢ(α) + (α^d + 1)·rᵢ(α)`; and the opened table is short. The range claims
+are *witness-level* — proven downstream by the zero-check/sumcheck stages (`liftShort` is
+**derived** from `H₀ ≡ 0` at the batching bridge, never assumed) and consumed upstream by Lemma
+9's extraction. The final conjunct `bound ≤ s.bound` is the public sanity condition tying the
+global norm parameter to the statement's declared `R^lin` bound (see the module docstring). -/
+def relLift (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) :
+    Set (LiftStatement Φ K.TCom F n μ × K.Opening) :=
   {p |
     K.com p.2 = p.1.2.1 ∧
-    (∀ i, cEvalAt φF p.1.2.2 (cRowSum Φ p.1.1 p.2.z i) =
+    (∀ i, cEvalAt φF p.1.2.2 (cRowSum Φ p.1.1 (K.table p.2).z i) =
           cEvalAt φF p.1.2.2 (p.1.1.yvec i).1 +
-            cEvalAt φF p.1.2.2 Φ.φ * cEvalAt φF p.1.2.2 (p.2.r i)) ∧
-    liftShort Φ bound rBound p.2 ∧
+            cEvalAt φF p.1.2.2 Φ.φ * cEvalAt φF p.1.2.2 ((K.table p.2).r i)) ∧
+    liftShort Φ bound rBound (K.table p.2) ∧
     bound ≤ p.1.1.bound}
 
 /-- Escape-threaded lift relation — the seam consumed by the batching bridge
 (`ZeroCheck/Batch.lean`). -/
-def relLiftE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-    (φF : ZMod q →+* F) :
-    Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
+def relLiftE (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) :
+    Set (LiftStatement Φ K.TCom F n μ × (K.Opening ⊕ E)) :=
   (relLift Φ bound rBound K φF).withEscape K.esc
 
 section Protocol
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
-  (φF : ZMod q →+* F)
+variable (K : LiftCom Φ μ n E) (φF : ZMod q →+* F)
 
 /-- The lift's verifier (Hachi Figure 4): a **pure pass-through** extending the statement by the
 round-0 commitment `t` and the round-1 challenge `α`. All checks constrain the never-sent
@@ -210,10 +253,10 @@ witness is `w̃` itself. The honest computations (quotient extraction `rᵢ := (
 and the commitment) are the parameters `computeW`/`computeT`, to be instantiated by the
 completeness layer from the F3 quotient-lift algebra. -/
 def liftProver (WitIn : Type)
-    (computeW : RlinStatement Φ n μ → WitIn → LiftedWitness Φ μ n)
+    (computeW : RlinStatement Φ n μ → WitIn → K.Opening)
     (computeT : RlinStatement Φ n μ → WitIn → K.TCom) :
     Prover oSpec (RlinStatement Φ n μ) WitIn (LiftStatement Φ K.TCom F n μ)
-      (LiftedWitness Φ μ n) (pSpecScalar K.TCom F) where
+      K.Opening (pSpecScalar K.TCom F) where
   PrvState
     | 0 => RlinStatement Φ n μ × WitIn
     | 1 => RlinStatement Φ n μ × WitIn
@@ -234,8 +277,9 @@ variable [SampleableType F]
 
 **Sorried (F4.4).** Extraction plan, case-faithful to the paper:
 * if some branch's `relLiftE`-witness is an escape `.inr e`, pass it through;
-* if two branches carry distinct openings `w ≠ w'` of the shared `t`, both are short
-  (`relLift`'s `liftShort` conjunct), so `K.collision_mem` yields the weak-binding escape;
+* if two branches carry openings of the shared `t` with distinct tables, `K.collision_mem`
+  yields the weak-binding escape — no norm hypothesis is needed, the admissibility that
+  conditions binding is carried by `K.Opening` itself;
 * otherwise all `2d` branches share one `w̃`; for each row `i` the defect polynomial
   `rowSum − yᵢ.rep − φ·rᵢ` (degree `≤ 2d − 2 < 2d` by `w̃.hr` and representative degree bounds)
   vanishes at the `2d` pairwise-distinct challenges (`scalarStructure`'s injective family), hence
@@ -249,7 +293,7 @@ is the tree's obligation; only knowledge-error accounting, out of scope, needs `
 theorem lift_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
-    (liftVerifier (oSpec := oSpec) Φ bound rBound K).coordinateWiseSpecialSound init impl
+    (liftVerifier (oSpec := oSpec) Φ K).coordinateWiseSpecialSound init impl
       (scalarStructure (2 * Φ.φ.natDegree) (by omega))
       (relRlinE Φ (n := n) (μ := μ) K.esc)
       (relLiftE Φ bound rBound K φF) := by
@@ -262,9 +306,9 @@ def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp
     (hd : 0 < Φ.φ.natDegree) :
     CWSSPackage init impl
       (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ ⊕ E)
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+      (LiftStatement Φ K.TCom F n μ) (K.Opening ⊕ E)
       (pSpecScalar K.TCom F) where
-  verifier := liftVerifier (oSpec := oSpec) Φ bound rBound K
+  verifier := liftVerifier (oSpec := oSpec) Φ K
   struct := scalarStructure (2 * Φ.φ.natDegree) (by omega)
   relIn := relRlinE Φ (n := n) (μ := μ) K.esc
   relOut := relLiftE Φ bound rBound K φF

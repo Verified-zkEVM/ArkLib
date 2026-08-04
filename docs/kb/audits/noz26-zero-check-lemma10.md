@@ -26,13 +26,16 @@ Last revalidated against the formalization: **3 August 2026**.
 > identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`, resolution *option 1*),
 > not carried as a free conjunct of `relBatched`.
 >
-> **Temporary point-seam assumption.** `relNestedZeroCheck` and `nestedRoundRel` carry `liftShort` as a
-> semantic admissibility conjunct. This is needed by the norm-conditioned weak-binding escape
-> `K.collision_mem`: a single point evaluation or partial-sum claim cannot establish that an
-> individual colliding opening is short. These relations do not carry the global identity
-> `H₀ ≡ 0`; the zero-check extracts that identity from a distinct binary evaluation tree in the
-> common-opening branch. At the batching bridge, shortness remains derived from `H₀ ≡ 0`, not
-> assumed.
+> **The point seams are norm-free.** `relNestedZeroCheck` and `nestedRoundRel` carry **no**
+> shortness conjunct, matching Figure 5's verifier and Lemma 10's "or break binding of the
+> commitment scheme `Com`". What made a conjunct look unavoidable was conflating two distinct
+> notions: the *slack-relative weak-opening admissibility* of Lemma 7, which conditions binding,
+> and the *range claim* `liftShort`, which `H₀ ≡ 0` proves. `LiftCom` now carries its own
+> `Opening` type (the weak openings) together with a `table` view onto the Eq. (21) table, and
+> `collision_mem` is unconditional with premise `table o ≠ table o'`. The admissibility
+> obligation therefore sits at the Phase-G instantiation — where Lemma 7 lives — instead of
+> travelling through relations that cannot establish it. See "Shortness: two different notions"
+> below.
 >
 > All declarations live in the chain's namespace
 > `ArkLib.Lattices.Ajtai.InnerOuter` (`Hachi/ZeroCheck/{Constraints,Batch,Reduction}.lean`); the
@@ -58,7 +61,7 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Axis-cross counterexample | `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross` | proven | Formally refutes the identity-testing step used by the uniform-vector argument. |
 | Nested zero-test kernel | `CMlPolynomialEval.BinaryEvaluationTree.eq_zero_of_polynomialVanishes` (Hachi wrappers `hZero_eq_zero_of_binaryEvaluationTree`, `hAlpha_eq_zero_of_binaryEvaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete binary tree with vanishing leaves forces the computable multilinear polynomial to be zero (`ToCompPoly/Multilinear/NestedEvaluationTree.lean`). |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.buildNestedWitnessE`, `buildNestedWitnessE_mem_relBatchedE` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
-| Lemma-10 binding alternative | `LiftCom.escOfCollision` via `K.collision_mem` | integrated | Distinct short openings of the shared `t` become an escape `e ∈ K.esc` (Hachi weak binding). |
+| Lemma-10 binding alternative | `LiftCom.escOfCollision` via `K.collision_mem` | integrated | Two openings of the shared `t` with distinct tables become an escape `e ∈ K.esc` (Hachi weak binding, Lemma 7's `sⱼ ≠ s'ⱼ`); no norm hypothesis, the admissibility rides in `LiftCom.Opening`. |
 | Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSound` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to CompPoly binary evaluation trees; `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
 | Link-5 un-batching pull-back | `ZeroCheck.mem_relLiftE_of_relBatchedE` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatchedE → relLiftE`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
 | Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLiftE` witness satisfies `relBatchedE`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
@@ -199,10 +202,24 @@ formalization against the printed paper will otherwise read them as bugs.
 The last three are paper-reading notes recorded here; the protocol-level deviation itself is
 recorded in the module docstrings of `ZeroCheck.lean` and `ZeroCheck/Reduction.lean`.
 
-## Shortness: derived where possible (option 1), assumed only where unavoidable (option 2)
+## Shortness: two different notions, neither of them assumed
 
-Shortness (`liftShort`) enters the chain in two structurally different places, and the two are
-handled differently.
+[NOZ26] carries **two unrelated** shortness notions, and the whole difficulty here came from
+identifying them:
+
+* **weak-opening admissibility** (Lemma 7: `‖cᵢ·sᵢ‖ ≤ β̄`, `‖cᵢ‖₁ ≤ ω̄`, `cᵢ ∈ Rq^×`) —
+  *slack-relative*, part of what "opening" means for an Ajtai-style scheme, and the precondition
+  of its binding property (Remark 2). Note an extracted weak opening `sⱼ = (z⁽ʲ⁾−z⁽⁰⁾)/c̄ⱼ` is
+  **not** range-short: only `c̄ⱼ·sⱼ` is bounded;
+* **`liftShort`** — the *range* claim `‖z‖∞, ‖r‖∞ ≤ b − 1` that Figure 4 checks and that
+  `H₀ ≡ 0` proves.
+
+An earlier revision instantiated `LiftCom`'s shortness parameter with `liftShort` at the global
+norm parameters, fusing the two. That forced every seam above the commitment to carry
+`liftShort` as a hypothesis — assuming at the Figure-5 point seam precisely what the range check
+exists to prove. The fix separates them: `LiftCom` now has its own `Opening` type (the weak
+openings) with a `table` view onto the Eq. (21) table, and `collision_mem` is stated
+unconditionally on openings. Consequently:
 
 **At the batching bridge — derived (option 1).** `relBatched` carries the *full* identity
 `H₀ ≡ 0`. Since every committed coefficient is a table entry of `wTable`, `H₀ ≡ 0` forces each
@@ -212,16 +229,14 @@ therefore **no longer carries `liftShort` as a conjunct**; the pull-back
 the fix requested in review PR #656: the range machinery is load-bearing, and knowledge soundness
 *proves* the committed witness short rather than assuming it.
 
-**At the point-check seams — temporarily assumed (option 2).** The differing-witness branch of
-Lemma 10 gives two tables with the same commitment. `LiftCom.collision_mem` (Hachi Remark 2 /
-Lemma 7) is **norm-conditioned**: a collision becomes an escape only when *both* openings are
-short. But `relNestedZeroCheck` (and the sumcheck round relation `nestedRoundRel`) only pin
-*point* evaluations `H₀(τ₀) = 0` — one assembled point per accepting branch. A single point does
-**not** recover `H₀ ≡ 0` for that opening (that needs the whole binary evaluation tree to share
-one opening, which is exactly the *non*-collision case). So the two colliding openings'
-shortness cannot be derived from the checks, and `relNestedZeroCheck`/`nestedRoundRel` carry the
-`liftShort` conjunct for now. This is completeness-preserving (the honest `w̃` is short) and is
-*resolution option 2*.
+**At the point-check seams — no norm conjunct at all.** The differing-witness branch of Lemma 10
+gives two openings of the same commitment; `K.collision_mem` now applies to them directly, its
+premise being only that their **tables** differ ([NOZ26] Lemma 7's `sⱼ ≠ s'ⱼ`). So
+`relNestedZeroCheck` and `nestedRoundRel` state exactly what Figure 5's verifier checks —
+`t = Com(w̃)`, `H₀(τ₀) = 0`, `H_α(τ_α) = 0` — and nothing about norms, matching Lemma 10's own
+"or break binding of the commitment scheme `Com`". The extractor's case split is on tables
+rather than openings, which is both faithful to Lemma 7 and what the tree zero test consumes.
+`nestedZeroCheck_coordinateWiseSpecialSound` remains axiom-clean under this statement.
 
 **Why the point evaluation is insufficient.** A single accepting branch pins only
 `H₀^{w̃}(τ₀) = 0` at one point, and shortness is *not* derivable from that: a nonzero multilinear
@@ -233,11 +248,13 @@ it can never run the zero test for a *single* colliding opening. (The superseded
 variant hit the same wall in sharp form: see
 `exists_nonzero_multilinear_vanishing_on_kronecker_seeds` above.)
 
-Consequently the temporary fix is to state shortness explicitly at these seams. The range
-identity of `relBatched` is still discharged over the family by the binary-evaluation-tree zero
-test (`hZero_eq_zero_of_binaryEvaluationTree`), so the zero-check retains its intended content.
-Removing the temporary shortness assumption requires either unconditional binding or an
-extraction interface that supplies admissibility evidence before the collision branch.
+Note this is **not** a weakening of the binding assumption to unconditional binding, which would
+be false for Ajtai commitments. The admissibility is still required and still consumed — by the
+Phase-G instantiation, where `Opening` is instantiated with the weak openings and
+`collision_mem` is discharged by `outputToModuleSIS_valid_of_verified`. It simply no longer
+travels through relations that cannot establish it. The range identity of `relBatched` is
+discharged over the family by the binary-evaluation-tree zero test
+(`hZero_eq_zero_of_binaryEvaluationTree`), so the zero-check retains its intended content.
 
 ## Residual gaps (out of Lemma-10 scope)
 
@@ -284,7 +301,7 @@ extraction interface that supplies admissibility evidence before the collision b
 - **Constructivity.** `buildNestedWitnessE` (and the leaf selection `nestedPathResponse`, like
   the generic `treeExtractor`) select per-branch witnesses with classical choice. A constructive
   extractor would need witness-bearing trees or a decidable enumeration interface.
-- **Sumcheck seam.** `nestedRoundRel` carries the `liftShort` conjunct, and the sumcheck
+- **Sumcheck seam.** `nestedRoundRel` carries no norm conjunct (see above), and the sumcheck
   bridge's pull-back `mem_relNestedZeroCheckE_of_nestedRoundRelE` is now **proved** — but
   `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
   bridge is only as discharged as F5. Further down the chain (out of Lemma-10 scope), the
@@ -296,10 +313,15 @@ extraction interface that supplies admissibility evidence before the collision b
 
 1. **[adopted at the batching bridge]** derive shortness from the range identity `H₀ ≡ 0`
    (`hZero_eq_zero_imp_liftShort`), so `relBatched` does not carry a shortness conjunct;
-2. **[temporary at point/sumcheck seams]** keep `liftShort` as a relation conjunct so differing
-   openings are known short before invoking weak binding;
-3. redesign the composed extraction interface so the collision seam consumes downstream
-   witness/extractor evidence constructively, or strengthen the binding interface. Directly
-   deriving shortness from a point claim is unavailable (a nonzero multilinear polynomial
-   vanishing at any single point always exists — see "Why the point evaluation is insufficient"
-   above), and weakening `collision_mem` is unsound.
+2. **[adopted at the point/sumcheck seams]** separate the two shortness notions: give `LiftCom`
+   its own `Opening` type carrying [NOZ26] Lemma 7's weak-opening admissibility, plus a `table`
+   view onto the Eq. (21) table, and state `collision_mem` unconditionally on openings with the
+   premise `table o ≠ table o'`. No relation above the commitment then mentions a norm. The
+   admissibility obligation moves to the Phase-G instantiation, which is where Lemma 7 lives;
+3. ~~keep `liftShort` as a relation conjunct at the point seams~~ — superseded by 2, which is
+   both faithful to the paper (Lemmas 9–11 speak only of breaking binding) and free of the
+   circularity of assuming at a point seam what `H₀ ≡ 0` proves;
+4. weakening `collision_mem` to *unconditional* binding on raw tables would also erase the
+   conjunct, but is **unsound** — two long openings of one Ajtai commitment are easy to find and
+   yield no Module-SIS solution. Option 2 differs precisely in keeping the admissibility, inside
+   the opening type.

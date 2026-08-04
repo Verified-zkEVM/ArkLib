@@ -68,7 +68,7 @@ section Bridge
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound rBound : ℕ)
+variable (mLow κ : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `Z`-packed table evaluation (Hachi Eqs. (25)–(26) left-hand side):
@@ -83,19 +83,19 @@ def hatEval (φF : ZMod q →+* F) (zpow : Fin (2 ^ κ) → F) (w : LiftedWitnes
 evaluates to the packed public value at the low point half. This is the claim the trace handoff
 (`Recursion/TraceHandoff.lean`) converts into the next iteration's `Rq`-statement. -/
 def relHatEval (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
-    Set (HatEvalStatement K.TCom F mLow × LiftedWitness Φ μ n) :=
+    Set (HatEvalStatement K.TCom F mLow × K.Opening) :=
   {p |
     K.com p.2 = p.1.t ∧
-    hatEval Φ mLow κ φF zpow p.2 p.1.pointLow = p.1.value}
+    hatEval Φ mLow κ φF zpow (K.table p.2) p.1.pointLow = p.1.value}
 
 /-- Escape-threaded `Z`-packed claim relation. -/
 def relHatEvalE (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
-    Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relHatEval Φ mLow κ bound rBound zpow K φF).withEscape K.esc
+    Set (HatEvalStatement K.TCom F mLow × (K.Opening ⊕ E)) :=
+  (relHatEval Φ mLow κ zpow K φF).withEscape K.esc
 
 /-- The bridge's statement map: forget the peeled point half and pack the partial evaluations
 into the public right-hand side `∑ᵢ yᵢ·zpow i` of Eq. (26). -/
@@ -111,11 +111,11 @@ the module docstring for the explicit `κ = 1` cheat). The sorry is kept — del
 in this zero-round seam — until a repair (batching challenge / generic §3.1 packing) is adopted;
 any repair changes this bridge's *protocol content*, not the surrounding seams. -/
 theorem mem_relPartialEvalE_of_relHatEvalE (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F)
-    (s : PartialEvalStatement K.TCom F mLow κ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEvalE Φ mLow κ bound rBound zpow K φF) :
-    (s, w) ∈ relPartialEvalE Φ mLow κ bound rBound K φF := by
+    (s : PartialEvalStatement K.TCom F mLow κ) (w : K.Opening ⊕ E)
+    (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEvalE Φ mLow κ zpow K φF) :
+    (s, w) ∈ relPartialEvalE Φ mLow κ K φF := by
   sorry
 
 /-- **The `Z`-packing bridge as a `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
@@ -124,22 +124,22 @@ theorem mem_relPartialEvalE_of_relHatEvalE (zpow : Fin (2 ^ κ) → F)
 pull-back; see the module docstring. -/
 def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
     CWSSPackage init impl
-      (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n ⊕ E)
-      (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n ⊕ E)
+      (PartialEvalStatement K.TCom F mLow κ) (K.Opening ⊕ E)
+      (HatEvalStatement K.TCom F mLow) (K.Opening ⊕ E)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (toHatEvalStatement mLow κ zpow)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relPartialEvalE Φ mLow κ bound rBound K φF
-  relOut := relHatEvalE Φ mLow κ bound rBound zpow K φF
+  relIn := relPartialEvalE Φ mLow κ K φF
+  relOut := relHatEvalE Φ mLow κ zpow K φF
   isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relPartialEvalE Φ mLow κ bound rBound K φF)
-    (relOut := relHatEvalE Φ mLow κ bound rBound zpow K φF)
+    (relIn := relPartialEvalE Φ mLow κ K φF)
+    (relOut := relHatEvalE Φ mLow κ zpow K φF)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relPartialEvalE_of_relHatEvalE Φ mLow κ bound rBound zpow K φF)
+    (mem_relPartialEvalE_of_relHatEvalE Φ mLow κ zpow K φF)
 
 end Bridge
 

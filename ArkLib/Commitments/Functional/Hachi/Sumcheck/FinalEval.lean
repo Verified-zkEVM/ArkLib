@@ -70,7 +70,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound rBound : ℕ) (b : ℕ)
+variable (m₀ m₁ : ℕ) (bound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The final check ([NOZ26] Figure 7 tail): both final sumcheck targets against the public
@@ -107,14 +107,14 @@ theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
 
 /-- The honest final-evaluation prover skeleton: sends `y′ := mle[w̃](a)` (the parameter
 `computeY`, honestly `wTableMleEval`) and carries `w̃` forward as the output witness. -/
-def finalEvalProver {TCom : Type}
+def finalEvalProver {TCom Wit : Type}
     (computeY : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ →
-      LiftedWitness Φ μ n → F) :
-    Prover oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
-      (WEvalStatement TCom F m₀) (LiftedWitness Φ μ n) (pSpecFinalEval F) where
+      Wit → F) :
+    Prover oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) Wit
+      (WEvalStatement TCom F m₀) Wit (pSpecFinalEval F) where
   PrvState
-    | 0 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × LiftedWitness Φ μ n
-    | 1 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × LiftedWitness Φ μ n
+    | 0 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × Wit
+    | 1 => NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ × Wit
   input := id
   sendMessage
     | ⟨0, _⟩ => fun st => pure (computeY st.1 st.2, st)
@@ -126,18 +126,18 @@ def finalEvalProver {TCom : Type}
 /-- **The evaluation-claim relation** — the §4.3 chain's final seam and the recursion's input:
 `w̃` opens `t` and its table's multilinear extension evaluates to the claimed value at the
 point. -/
-def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+def relWEvalClaim (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
-    Set (WEvalStatement K.TCom F m₀ × LiftedWitness Φ μ n) :=
+    Set (WEvalStatement K.TCom F m₀ × K.Opening) :=
   {p |
     K.com p.2 = p.1.t ∧
-    wTableMleEval Φ m₀ φF b p.2 p.1.point = p.1.value}
+    wTableMleEval Φ m₀ φF b (K.table p.2) p.1.point = p.1.value}
 
 /-- Escape-threaded evaluation-claim relation. -/
-def relWEvalClaimE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+def relWEvalClaimE (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
-    Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relWEvalClaim Φ m₀ bound rBound b K φF).withEscape K.esc
+    Set (WEvalStatement K.TCom F m₀ × (K.Opening ⊕ E)) :=
+  (relWEvalClaim Φ m₀ b K φF).withEscape K.esc
 
 variable [SampleableType F]
 
@@ -152,31 +152,31 @@ recover `nestedRoundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is
 the bound-sanity conjunct is re-supplied by the guard; escapes pass through. -/
 theorem finalEval_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom)
         φF).coordinateWiseSpecialSound init impl
       CWSSStructure.ofIsEmpty
-      (nestedRoundRelE Φ m₀ m₁ bound rBound K φF b m₀)
-      (relWEvalClaimE Φ m₀ bound rBound b K φF) := by
+      (nestedRoundRelE Φ m₀ m₁ bound K φF b m₀)
+      (relWEvalClaimE Φ m₀ b K φF) := by
   sorry
 
 /-- **The final-evaluation step as a guarded package** (`GCWSSPackage`): the guarded one-message
 verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation
 claim `relWEvalClaimE`. Certificate: the sorried `finalEval_coordinateWiseSpecialSound`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound rBound))
+    (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) :
     GCWSSPackage init impl
-      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n ⊕ E)
-      (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n ⊕ E)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (K.Opening ⊕ E)
+      (WEvalStatement K.TCom F m₀) (K.Opening ⊕ E)
       (pSpecFinalEval F) where
   verifier := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := nestedRoundRelE Φ m₀ m₁ bound rBound K φF b m₀
-  relOut := relWEvalClaimE Φ m₀ bound rBound b K φF
+  relIn := nestedRoundRelE Φ m₀ m₁ bound K φF b m₀
+  relOut := relWEvalClaimE Φ m₀ b K φF
   isGuarded := finalEvalVerifier_isGuarded Φ m₀ m₁ bound b φF
-  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound rBound b init impl K φF
+  isCWSS := finalEval_coordinateWiseSpecialSound Φ m₀ m₁ bound b init impl K φF
 
 end Protocol
 
