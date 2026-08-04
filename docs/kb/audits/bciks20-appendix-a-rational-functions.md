@@ -38,8 +38,9 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Regular ring `𝒪` and function field `𝕃` | infrastructure | `𝒪`, `𝕃`, `functionFieldT`, `embeddingOf𝒪Into𝕃`, `embeddingOf𝒪Into𝕃_injective` | Gives the quotient rings, the function-field `T` variable, and the embedding used by Appendix A. |
 | Canonical representatives in `𝒪` | infrastructure | `canonicalRepOf𝒪`, `mk_canonicalRepOf𝒪`, `canonicalRepOf𝒪_degree_lt`, `canonicalRepOf𝒪_natDegree_le` | The representative API is now explicit about positive `Y`-degree. |
 | `Λ`-weight on regular elements | infrastructure | `weight`, `regularWeight`, `RegularWeightLe` (`.mono/.mul/.add/.neg/.pow/.sum/.prod`) | Full calculus, including the `𝕃`-side `RegularWeightLe` certificates used by Claim A.2. |
-| Lemma A.1 | present-but-incomplete | `lemmaA1_embedding_eq_zero_of_many_rational_roots` | Main regular-function vanishing criterion remains open; the statement is now in a standalone field section, matching the reference proof setting. |
+| Lemma A.1 | present | `lemmaA1_embedding_eq_zero_of_many_rational_roots` | Proved and axiom-clean, via the resultant/Sylvester route of the paper (`natDegree_resultant_le_weight_bound`, `rationalVanishingSet_subset_resultant_roots`). |
 | Claim A.2 Hensel lift exists (`α₀ = T/W`, `R(X, γ, Z) = 0`) | present | `exists_hensel_alpha_sequence`, `formalHenselAlphaSequence` | Axiom-clean. |
+| A.4 uniqueness of the lift | present | `hensel_alpha_sequence_unique`, `IsHenselNumeratorSequence.unique`, `IsHenselNumeratorSequence.eq_betaSeq` | Axiom-clean. Needed by [BCIKS20] Claim 5.9; also makes `betaSeq` canonical rather than an arbitrary choice. |
 | Claim A.2 regularity of `ξ` | present | `xi_regular`, `embeddingOf𝒪Into𝕃_xi` | The total Lean form of `ξ` has a concrete quotient representative `xiPre`. |
 | Claim A.2 bound for `ξ` | present | `xi_weight_le` | Assumes `2 ≤ natDegreeY R`, which is the paper's standing assumption in A.4 (see below). |
 | Claim A.2 regular numerators `βₜ` exist | present | `exists_hensel_numerator_sequence`, `IsHenselNumeratorSequence`, `exists_regular_numerator_shape`, `henselCoeffResidual_regular_after_clearing` | Axiom-clean, and deliberately *free of the weight conjunct* so that `betaSeq`/`α`/`γ` do not depend on the open quantitative step. |
@@ -95,8 +96,12 @@ which the base case is true (and is proved here). See the in-proof comment at th
 
 ## Near-Term Work
 
-1. Extend `Λ` from `𝒪` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)`, which closes the boundary summand
-   and hence the whole of Claim A.2 (finding 2 above).
-2. Lemma A.1 (`lemmaA1_embedding_eq_zero_of_many_rational_roots`) — the remaining Appendix A
-   theorem, needed by Claim 5.10.
+1. Extend `π_z` from `𝒪` to the elements `β / C(Z)` of `𝕃` (A.3). §5 applies substitutions to
+   such quotients.
+2. Weaken the per-summand budget of `henselClearedTerm_weight` and recover the total, or extend `Λ`
+   to `𝕃` (finding 2 above), to close the last `sorry`.
 3. Add `2 ≤ natDegreeY R` to Claim 5.7's conclusion (finding 1 above).
+4. Smaller gaps vs A.2: `Λ` is only proved sub-additive (`weight_mul_le'`), whereas A.2 states full
+   additivity on `F[Z][T]`; `regularWeight` is only bounded by (not proved minimal over)
+   representative weights; `Λ(H̃) = d(D+1-d)` is available only as `≤`. Also the paper's sharper
+   `Λ(ξ) ≤ (D-1) + (d-2)Λ(W)` is not formalized, only the weaker `(d-1)(D-dH+1)`.

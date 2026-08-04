@@ -12,17 +12,21 @@ import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 /-!
-# Hensel Numerator Weight Bounds
+# Claim A.2 Weight Bounds
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.4 of [BCIKS20], the quantitative half of Claim A.2: the `RegularWeightLe`
+certificate calculus on `𝕃 H`, the sharp per-step budget
+`numeratorShapeSharp = 1 + (t+1)Λ(W) + eₜΛ(ξ)`, its weakening to the paper's `(2t+1)·d·D`, and the
+induction transporting them along the cleared Hensel residual.
+
+One summand of `henselClearedTerm_weight` is still open; the in-proof comment there explains why the
+paper's `(A.1)`-recursion route cannot close it.
 
 ## References
 

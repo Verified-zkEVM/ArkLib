@@ -10,18 +10,18 @@ import Mathlib.FieldTheory.RatFunc.Defs
 import Mathlib.RingTheory.Ideal.Quotient.Defs
 import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
 /-!
-# Weight Bounds for Bivariate Polynomials
+# Algebraic Weights
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.2 of [BCIKS20]: the weight function `Λ` on `F[Z][T]`, given by `Λ(Z) = 1` and
+`Λ(T) = D + 1 - deg_Y H` extended additively (`weight`), its transport to `𝒪 H` via canonical
+representatives (`regularWeight`), sub-additivity, and the key fact that reduction modulo `H̃`
+never increases `Λ` (`weight_modByMonic_monicize_le`).
 
 ## References
 

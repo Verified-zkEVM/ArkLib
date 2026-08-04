@@ -10,7 +10,6 @@ import Mathlib.FieldTheory.RatFunc.Defs
 import Mathlib.RingTheory.Ideal.Quotient.Defs
 import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
 
 import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
@@ -19,9 +18,11 @@ import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 /-!
-# Rational-Root Vanishing
+# Lemma A.1: Vanishing of Regular Elements
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.3 of [BCIKS20], Lemma A.1: a regular `β ∈ 𝒪 H` that vanishes under more than
+`deg_Y H · Λ(β)` rational substitutions `π_z` is zero in `𝕃 H`. Proved along the paper's route,
+via the resultant `res_T(β, H̃)` and a Sylvester-matrix degree bound.
 
 ## References
 

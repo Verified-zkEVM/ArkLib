@@ -6,21 +6,15 @@ Authors: Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov
 
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.Prelims
-import Mathlib.FieldTheory.RatFunc.Defs
-import Mathlib.RingTheory.Ideal.Quotient.Defs
-import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
-import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.Polynomial.Roots
 /-!
-# Function Fields and Rings of Regular Functions
+# The Algebraic Extension and its Regular Elements
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.1 of [BCIKS20]: the monicization `H̃` of an irreducible `H ∈ F[Z][Y]`, the function
+field `𝕃 H = F(Z)[T]/(H̃)`, its ring of regular elements `𝒪 H = F[Z][T]/(H̃)`, the embedding
+`𝒪 H ↪ 𝕃 H`, canonical representatives of degree `< deg_Y H`, and the rational substitutions
+`π_z : 𝒪 H →+* F` of Appendix A.3.
 
 ## References
 
@@ -439,10 +433,6 @@ that in fact lie in `𝒪 H`. -/
 def regularElementsSet (H : F[X][Y]) : Set (𝕃 H) :=
   {a : 𝕃 H | ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
 
-/-- The regular elements inside `𝕃 H`, i.e. the elements of `𝕃 H` that in fact lie in `𝒪 H`
-as Type. -/
-def regularElements (H : F[X][Y]) : Type :=
-  {a : 𝕃 H // ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 _ b}
 
 /-- Zero is regular. -/
 @[simp]
@@ -555,12 +545,6 @@ lemma canonicalRepOf𝒪_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree) (β : �
   rw [canonicalRepOf𝒪]
   exact Polynomial.degree_modByMonic_lt _ (monicize_monic H hH)
 
-omit [IsDomain F] in
-/-- The canonical representative has natural degree bounded by the defining relation. -/
-lemma canonicalRepOf𝒪_natDegree_le {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-    (canonicalRepOf𝒪 hH β).natDegree ≤ (monicize H).natDegree := by
-  rw [canonicalRepOf𝒪]
-  exact Polynomial.natDegree_modByMonic_le _ (monicize_monic H hH)
 
 omit [IsDomain F] in
 /-- The canonical representative maps back to the original quotient element of `𝒪`. -/

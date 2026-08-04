@@ -12,16 +12,20 @@ import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
 /-!
-# Hensel Numerator Sequences
+# Claim A.2: the Hensel Numerator Sequence
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.4 of [BCIKS20]: assembly of Claim A.2. Existence of a sequence of regular numerators
+`βₜ` with `αₜ = βₜ / (W^{t+1} ξ^{eₜ})` (`exists_hensel_numerator_sequence`), its uniqueness
+(`IsHenselNumeratorSequence.unique`), the chosen sequence `betaSeq` with the induced `alpha` and
+`gamma`, the weight bounds, and the paper's bundled statement.
+
+Existence is deliberately separate from the weight bounds, so that `betaSeq`, `alpha` and `gamma` —
+and hence the list-decoding consumers — do not depend on the one open quantitative step.
 
 ## References
 
@@ -199,6 +203,53 @@ lemma betaSeq_spec (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     IsHenselNumeratorSequence x₀ R H hHyp (betaSeq x₀ R H hHyp) :=
   (exists_hensel_numerator_sequence x₀ R H hHyp).choose_spec
 
+/-- **The Hensel numerator sequence is unique** — the counterpart of `IsHenselNumeratorSequence`'s
+existence, and the numerator-level form of [BCIKS20] A.4's uniqueness of the lift.
+
+Consequently `betaSeq` is not merely *a* choice: it is *the* sequence of Claim A.2, and any
+`βseq` satisfying the specification equals it (`eq_betaSeq`). -/
+theorem IsHenselNumeratorSequence.unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) {βseq βseq' : ℕ → 𝒪 H}
+    (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq)
+    (hβ' : IsHenselNumeratorSequence x₀ R H hHyp βseq') :
+    βseq = βseq' := by
+  have hzeta := zeta_ne_zero_of_hypotheses x₀ R H hHyp
+  -- the induced coefficient sequences agree, by uniqueness of the lift
+  have hroot : evalRAtPowerSeries x₀ H R
+      (gammaFromAlpha H (alphaOfNumerators x₀ R H hHyp βseq)) = 0 := by
+    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp _ βseq (fun _ => rfl)]
+    exact hβ.2
+  have hroot' : evalRAtPowerSeries x₀ H R
+      (gammaFromAlpha H (alphaOfNumerators x₀ R H hHyp βseq')) = 0 := by
+    rw [← gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp _ βseq' (fun _ => rfl)]
+    exact hβ'.2
+  have hα : alphaOfNumerators x₀ R H hHyp βseq = alphaOfNumerators x₀ R H hHyp βseq' :=
+    hensel_alpha_sequence_unique x₀ R H hzeta hβ.1 hβ'.1 hroot hroot'
+  -- the common denominator `W^{t+1} ξ^{eₜ}` is nonzero, so the numerators agree in `𝕃`,
+  -- and `embeddingOf𝒪Into𝕃` is injective
+  funext t
+  have hW : liftToFunctionField (H := H) H.leadingCoeff ≠ 0 :=
+    liftToFunctionField_leadingCoeff_ne_zero (H := H)
+  have heta : embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ≠ 0 := by
+    rw [embeddingOf𝒪Into𝕃_xi x₀ R H hHyp]
+    exact mul_ne_zero (pow_ne_zero (R.natDegree - 2) hW) hzeta
+  have hD : liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1) *
+      embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ^ henselDenominatorExponent t ≠ 0 :=
+    mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
+  have hdiv := congrFun hα t
+  simp only [alphaOfNumerators] at hdiv
+  rw [div_eq_div_iff hD hD] at hdiv
+  exact embeddingOf𝒪Into𝕃_injective _H_natDegree_pos.out (mul_right_cancel₀ hD hdiv)
+
+/-- Any sequence satisfying the Claim A.2 specification is the chosen one. -/
+theorem IsHenselNumeratorSequence.eq_betaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) {βseq : ℕ → 𝒪 H}
+    (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq) :
+    βseq = betaSeq x₀ R H hHyp :=
+  IsHenselNumeratorSequence.unique x₀ R H hHyp hβ (betaSeq_spec x₀ R H hHyp)
+
 /-- The sharp Claim A.2 weight bound for the chosen numerator sequence, at an arbitrary degree
 bound `D` dominating `H` and the coefficients of `R`. -/
 lemma betaSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -223,6 +274,32 @@ lemma betaSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       regularWeight hH ((betaSeq x₀ R H hHyp) t) D ≤
         (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
   hensel_numerator_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
+
+/-- The sharp Claim A.2 weight bound at the canonical degree bound `defaultDegreeBound R H`,
+for callers that have no `D` of their own (e.g. the list-decoding files, which get `R` and `H` from
+Claim 5.7 and no degree bound).  `defaultDegreeBound` dominates both `H` and the coefficients of
+`R`, as [BCIKS20] A.4 requires of `D`. -/
+lemma betaSeq_weight_sharp_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
+    ∀ t : ℕ,
+      regularWeight hH ((betaSeq x₀ R H hHyp) t) (defaultDegreeBound R H) ≤
+        (WithBot.some (numeratorShapeSharp R H (defaultDegreeBound R H) t) : WithBot ℕ) :=
+  betaSeq_weight_sharp_le x₀ R H hHyp hH (defaultDegreeBound_ge_H R H)
+    (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi) hRdeg
+
+/-- The loose Claim A.2 weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` at the canonical degree bound. -/
+lemma betaSeq_weight_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
+    ∀ t : ℕ,
+      regularWeight hH ((betaSeq x₀ R H hHyp) t) (defaultDegreeBound R H) ≤
+        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * defaultDegreeBound R H) :
+          WithBot ℕ) :=
+  betaSeq_weight_le x₀ R H hHyp hH (defaultDegreeBound_ge_H R H)
+    (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi) hRdeg
 
 /-- **Claim A.2** of Appendix A.4 of [BCIKS20], as a single statement: there is a sequence of
 regular numerators `βₜ ∈ 𝒪` realizing the Hensel lift `αₜ = βₜ / (W^{t+1} ξ^{eₜ})`, with
@@ -250,11 +327,6 @@ theorem claimA2_exists_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y])
     betaSeq_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg,
     betaSeq_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg⟩
 
-/-- The regular element `βₜ` giving the numerator of the `t`-th chosen Hensel coefficient. -/
-noncomputable def beta (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
-    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (t : ℕ) : 𝒪 H :=
-  betaSeq x₀ R H hHyp t
 
 /-- The chosen Hensel-lift coefficients induced by the regular numerator sequence. -/
 def alpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]

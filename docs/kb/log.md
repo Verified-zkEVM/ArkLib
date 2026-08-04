@@ -165,3 +165,19 @@ Declaration names were also brought in line with the Mathlib style guide: `H_til
 `monicizeRatFunc`/`monicize`, `weight_Λ`/`weight_Λ_over_𝒪` → `weight`/`regularWeight`, `RWL_*` →
 `regularWeightLe_*`, `S_β` → `rationalVanishingSet`, and Greek declaration names → `zeta`, `xi`,
 `alpha`, `gamma`, `beta`, `piZ` (Greek is kept for variables and in prose).
+
+## [2026-08-05] prove | BCIKS20 A.4 uniqueness of the Hensel lift
+
+Added the uniqueness half of Appendix A.4, which [BCIKS20] §5 invokes by name in the proof of
+Claim 5.9: `hensel_alpha_sequence_unique` (two coefficient sequences agreeing at `t = 0` and both
+making `γ` a root are equal, by the `ζ`-linearity of `coeff_evalR_split`), plus its numerator-level
+forms `IsHenselNumeratorSequence.unique` and `.eq_betaSeq`. All axiom-clean; `betaSeq` is therefore
+canonical, not an arbitrary choice.
+
+Also from the Appendix A review: restored the `defaultDegreeBound` specializations of the weight
+bounds for callers with no `D` of their own, removed nine declarations subsumed by general results
+(the `xi_regular` special-case tower, the `regularElements` subtype, `beta`, and three superseded
+stepping stones), gave each of the eight files a module docstring describing its own paper section
+instead of a shared one-liner, and trimmed the duplicated mathlib import preamble (which still
+carried `PowerSeries.Substitution`, a fossil of the pre-coordinate-fix `PowerSeries.subst`
+formulation).

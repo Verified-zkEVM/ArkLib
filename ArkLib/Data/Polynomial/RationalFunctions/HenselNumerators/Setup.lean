@@ -12,17 +12,17 @@ import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 /-!
-# Hensel Numerator Setup
+# Claim A.2 Setup: `ζ`, `ξ` and their Weights
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.4 of [BCIKS20]: the hypotheses of the Hensel lift (`Hypotheses`: `H ∣ R(x₀,·,Z)`
+and `R(x₀,·,Z)` separable in `Y`), the derivative value `ζ = ∂R/∂Y(x₀, T/W, Z) ∈ 𝕃 H`, its cleared
+form `ξ = W^{d-2}ζ ∈ 𝒪 H`, and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` of Claim A.2.
 
 ## References
 
@@ -161,15 +161,6 @@ def zeta (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irredu
   Polynomial.eval₂ liftToFunctionField (T / W)
     (Bivariate.evalX (Polynomial.C x₀) R.derivative)
 
-/-- If the derivative specialization is constant in the function-field variable, then `ζ` is
-regular. -/
-lemma zeta_regular_of_derivative_evalX_eq_C (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
-    [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)] {p : F[X]}
-    (hp : Bivariate.evalX (Polynomial.C x₀) R.derivative = Polynomial.C p) :
-    zeta R x₀ H ∈ regularElementsSet H := by
-  rw [zeta, hp]
-  simp only [Polynomial.eval₂_C]
-  exact regularElementsSet_liftToFunctionField H p
 
 /-- If `R` has `Y`-degree at most one, then the specialized derivative is constant. -/
 lemma derivative_evalX_eq_C_of_natDegree_le_one
@@ -185,57 +176,6 @@ lemma derivative_evalX_eq_C_of_natDegree_le_one
     (evalX_natDegree_le (Polynomial.C x₀) R.derivative).trans hderiv
   exact Polynomial.eq_C_of_natDegree_le_zero hP
 
-/-- In the constant-derivative, low-`Y`-degree case, the `ξ` regularity witness is explicit. -/
-lemma xi_regular_of_derivative_evalX_eq_C_of_natDegree_le_one
-    (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-    [H_natDegree_pos : Fact (0 < H.natDegree)]
-    {p : F[X]} (hp : Bivariate.evalX (Polynomial.C x₀) R.derivative = Polynomial.C p)
-    (hR : R.natDegree ≤ 1) :
-    ∃ pre : 𝒪 H,
-    let d := R.natDegree
-    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
-  rcases zeta_regular_of_derivative_evalX_eq_C x₀ R H hp with ⟨pre, hpre⟩
-  refine ⟨pre, ?_⟩
-  have hd : R.natDegree - 2 = 0 := by omega
-  simpa [hd] using hpre.symm
-
-/-- If `R` has `Y`-degree at most one, the regularity statement for `ξ` follows from the
-constant-derivative case. -/
-lemma xi_regular_of_natDegree_le_one
-    (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-    [H_natDegree_pos : Fact (0 < H.natDegree)] (hR : R.natDegree ≤ 1) :
-    ∃ pre : 𝒪 H,
-    let d := R.natDegree
-    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
-  rcases derivative_evalX_eq_C_of_natDegree_le_one x₀ R hR with ⟨p, hp⟩
-  exact xi_regular_of_derivative_evalX_eq_C_of_natDegree_le_one x₀ R H hp hR
-
-/-- In the quadratic case, `ξ = ζ` is regular by clearing the single denominator with the
-divisibility of the top derivative coefficient. -/
-lemma xi_regular_of_natDegree_eq_two
-    (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
-    [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H)
-    (hR : R.natDegree = 2) :
-    ∃ pre : 𝒪 H,
-    let d := R.natDegree
-    let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
-  let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R.derivative
-  have hP : P.natDegree ≤ 1 := by
-    calc
-      P.natDegree ≤ R.derivative.natDegree := evalX_natDegree_le (Polynomial.C x₀) R.derivative
-      _ ≤ R.natDegree - 1 := Polynomial.natDegree_derivative_le R
-      _ = 1 := by omega
-  have hdiv : H.leadingCoeff ∣ P.coeff 1 := by
-    simpa [P, hR] using leadingCoeff_dvd_evalX_derivative_coeff_pred hHyp
-  have hreg : zeta R x₀ H ∈ regularElementsSet H := by
-    simpa [zeta, P] using regularElementsSet_eval₂_linear_of_coeff_one_dvd (H := H) hP hdiv
-  rcases hreg with ⟨pre, hpre⟩
-  refine ⟨pre, ?_⟩
-  have hd : R.natDegree - 2 = 0 := by omega
-  simpa [hd] using hpre.symm
 
 /-- Explicit polynomial representative for the regular element `ξ = W^(d-2) · ζ` of Claim A.2.
 For `2 ≤ R.natDegree`, this is the polynomial obtained by clearing the single denominator that
@@ -839,31 +779,6 @@ theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
       exact hsub
     exact hbound
 
-omit H_irreducible H_natDegree_pos in
-theorem xiPreTop_topCoeff_mul_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
-    (hHyp : Hypotheses x₀ R H)
-    (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
-    (_hD_H : Bivariate.totalDegree H ≤ D)
-    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
-    (H.leadingCoeff *
-      ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
-        H.leadingCoeff)).natDegree ≤ D - R.natDegree := by
-  let P := Bivariate.evalX (Polynomial.C x₀) R.derivative
-  let W := H.leadingCoeff
-  have hWne : W ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr (Polynomial.ne_zero_of_natDegree_gt hH)
-  have hdiv : W ∣ P.coeff (R.natDegree - 1) := by
-    simpa [P, W] using leadingCoeff_dvd_evalX_derivative_coeff_pred hHyp
-  have hmul : W * (P.coeff (R.natDegree - 1) / W) = P.coeff (R.natDegree - 1) := by
-    exact EuclideanDomain.mul_div_cancel' hWne hdiv
-  rw
-      [show H.leadingCoeff *
-          ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
-          H.leadingCoeff) = P.coeff (R.natDegree - 1) by simpa [P, W] using hmul]
-  have hdeg := natDegree_derivative_evalX_coeff_le x₀ R hD_Rx0 (i := R.natDegree - 1)
-  have hRpos : 1 ≤ R.natDegree := by omega
-  have hpred : R.natDegree - 1 + 1 = R.natDegree := Nat.sub_add_cancel hRpos
-  rw [hpred] at hdeg
-  simpa [P] using hdeg
 
 omit H_irreducible H_natDegree_pos in
 theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)

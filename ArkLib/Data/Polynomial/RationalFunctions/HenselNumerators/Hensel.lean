@@ -12,16 +12,19 @@ import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
 /-!
-# Hensel Coefficients and Residuals
+# The Hensel Lift
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.4 of [BCIKS20]: the formal Hensel/Newton iteration producing coefficients `αₜ` with
+`α₀ = T/W` and `R(x₀ + S, γ, Z) = 0` for `γ = ∑ₜ αₜ Sᵗ`, its uniqueness, and the regularity half of
+Claim A.2 — that the cleared residual `βₜ₊₁ = -(residual · W^{t+2} ξ^{eₜ₊₁-1} W^{d-2})` is regular.
+
+Everything is expressed in the local coordinate `S = X - x₀`: the shift lives on `R`
+(`liftCoeffToPowerSeries` sends `X ↦ x₀ + S`), not on `γ`, matching `γ ∈ L[[X - x₀]]`.
 
 ## References
 
@@ -518,6 +521,57 @@ theorem formalHenselAlphaSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     have hstable := coeff_evalR_stable x₀ R (m+1) m (by omega) Γ δ hδlow
     rw [hsum, hstable]
     exact root_bSeq x₀ R hinit hzeta m m (le_refl m)
+
+/-- **Uniqueness of the Hensel lift** ([BCIKS20] A.4: "at each step the lifting is unique, and
+determined by an algebraic equation in which the new `αₜ` appears linearly with the same
+coefficient `ζ`").
+
+Two coefficient sequences that agree at `t = 0` and both make `γ = ∑ₜ αₜ Sᵗ` a root of
+`R(x₀ + S, ·, Z)` are equal.  The induction is exactly the paper's: by `coeff_evalR_split`, the
+`n`-th coefficient of `R(x₀ + S, γ, Z)` is `ζ · αₙ` plus a term depending only on `αᵢ` with `i < n`,
+and `ζ` is invertible, so `αₙ` is forced.
+
+[BCIKS20] §5 relies on this in the proof of Claim 5.9, to identify the lift of `w(x, Z)`
+with `γ`. -/
+theorem hensel_alpha_sequence_unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hzeta : zeta R x₀ H ≠ 0) {αseq αseq' : ℕ → 𝕃 H}
+    (hα0 : αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
+    (hα0' : αseq' 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
+    (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
+    (hroot' : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq') = 0) :
+    αseq = αseq' := by
+  funext n
+  induction n using Nat.strong_induction_on with
+  | _ n ih =>
+    rcases Nat.eq_zero_or_pos n with rfl | hn
+    · rw [hα0, hα0']
+    · -- `n ≥ 1`: write `γ' = γ + δ` with `δ` of order `≥ n`, then compare `n`-th coefficients.
+      set Γ : PowerSeries (𝕃 H) := gammaFromAlpha H αseq with hΓdef
+      set δ : PowerSeries (𝕃 H) := gammaFromAlpha H αseq' - Γ with hδdef
+      have hδlow : ∀ i < n, PowerSeries.coeff i δ = 0 := by
+        intro i hi
+        rw [hδdef, map_sub, hΓdef, gammaFromAlpha, gammaFromAlpha, PowerSeries.coeff_mk,
+          PowerSeries.coeff_mk, ih i hi, sub_self]
+      have hΓ0 : PowerSeries.constantCoeff Γ =
+          functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff := by
+        rw [hΓdef, gammaFromAlpha, ← PowerSeries.coeff_zero_eq_constantCoeff_apply,
+          PowerSeries.coeff_mk]
+        exact hα0
+      have hsum : gammaFromAlpha H αseq' = Γ + δ := by rw [hδdef]; ring
+      have hkey := coeff_evalR_split x₀ R n hn Γ δ hδlow hΓ0
+      rw [← hsum] at hkey
+      have hzero' :
+          PowerSeries.coeff n (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq')) = 0 := by
+        rw [hroot']; simp
+      have hzero : PowerSeries.coeff n (evalRAtPowerSeries x₀ H R Γ) = 0 := by
+        rw [hΓdef, hroot]; simp
+      rw [hzero', hzero, zero_add] at hkey
+      have hδn : PowerSeries.coeff n δ = 0 :=
+        (mul_eq_zero.mp hkey.symm).resolve_left hzeta
+      rw [hδdef, map_sub, hΓdef, gammaFromAlpha, gammaFromAlpha, PowerSeries.coeff_mk,
+        PowerSeries.coeff_mk, sub_eq_zero] at hδn
+      exact hδn.symm
 
 theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]

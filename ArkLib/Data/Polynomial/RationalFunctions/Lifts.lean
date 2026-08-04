@@ -12,16 +12,17 @@ import Mathlib.RingTheory.Ideal.Span
 import Mathlib.RingTheory.Polynomial.GaussLemma
 import Mathlib.RingTheory.PowerSeries.Substitution
 
-import Mathlib.RingTheory.Polynomial.Resultant.Basic
 import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
 /-!
 # Regular Lifts into Function Fields
 
-We define the notions of Appendix A of [BCIKS20].
+Appendix A.1 of [BCIKS20]: the coefficient and bivariate lifts `F[Z] → 𝕃 H` and
+`F[Z][Y] → 𝕃 H`, the image `T` of the polynomial variable, and the denominator-clearing lemmas
+that exhibit `W^k · P(T/W)` as a regular element — the tool A.4 uses to keep the Hensel-lift
+coefficients inside `𝒪`.
 
 ## References
 
@@ -75,10 +76,6 @@ lemma regularElementsSet_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :
   rcases regular_liftBivariate H p with ⟨pre, hpre⟩
   exact ⟨pre, hpre.symm⟩
 
-/-- Coefficients embedded into `𝕃` are regular elements. -/
-lemma regular_liftToFunctionField (H : F[X][Y]) (p : F[X]) :
-    ∃ pre : 𝒪 H, embeddingOf𝒪Into𝕃 H pre = liftToFunctionField (H := H) p :=
-  regular_liftBivariate H (Polynomial.C p)
 
 /-- Coefficient-polynomial images are regular elements of the function field. -/
 lemma regularElementsSet_liftToFunctionField (H : F[X][Y]) (p : F[X]) :
