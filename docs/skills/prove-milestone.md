@@ -62,8 +62,9 @@ Maintain these invariants throughout the task:
    exactly `{propext, Classical.choice, Quot.sound}` (Mathlib's foundational axioms);
    `Classical.choice` arriving through Mathlib or through an unmodified generic combinator (e.g.
    `ReduceClaim.verifier_coordinateWiseSpecialSound`, which every CWSS milestone reuses) is
-   acceptable and need not be eliminated — attempting to would be impossible without rewriting
-   Mathlib. Confirm each target declaration's `#print axioms` is a subset of that baseline with no
+   acceptable and need not be eliminated; eliminating it from an individual theorem is sometimes
+   possible by reproving constructively or routing around a choice-using combinator, but it is not
+   required. Confirm each target declaration's `#print axioms` is a subset of that baseline with no
    `sorryAx` and no project axiom; call such a result "axiom-clean against the baseline", not
    "axiom-free".
 7. Use a fresh independent reviewer when subagents are available. Give reviewers the raw paper

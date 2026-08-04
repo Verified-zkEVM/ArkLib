@@ -15,9 +15,11 @@ Umbrella for `ProofSystem/RingSwitching/`. "Ring switching" names several reduct
 move an evaluation or linear claim between a small ring and a large ring — so that each part
 of a proof system can run where it is cheap or sound: commit over the small ring, evaluate
 and open over a large extension; or state a relation over a structured quotient ring, check
-it inside a field. The constructions share *algebra*, not *protocol*; no single generic
-ring-switching reduction exists in this library, and none is planned. The two construction
-families, one folder each:
+it inside a field. The constructions share *algebra*, not *protocol*; no single *protocol* in
+this library unifies Lift and Packing. Generic work on the Packing side is in progress and is
+intended to subsume the shared packing abstraction, but it does not subsume `Lift`, which is the
+[HMZ25] quotient-evaluation lift rather than a packing. The two construction families, one folder
+each:
 
 1. **Packing** (`Packing/`) — small ring `B` → large ring `L`, `L` free of rank
    `2^κ` over `B`. A basis identifies each `2^κ`-block of a `B`-multilinear's coefficients

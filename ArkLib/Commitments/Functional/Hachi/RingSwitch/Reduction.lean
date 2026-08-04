@@ -99,7 +99,12 @@ tighter `d − 2`) — the generic lifted witness at the cyclotomic degree. -/
 abbrev LiftedWitness (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) :=
   Lift.LiftedWitness (ZMod q) (Rq Φ) Φ.φ.natDegree μ n
 
-/-- Coefficient-range predicate on the quotient polynomials. -/
+/-- Coefficient-range predicate on the quotient polynomials.
+
+Not consumed by any proof in this file: `liftPackage` discharges the generic `short_zOk` obligation
+through `vecLInftyNorm_le_of_liftShort`, which needs only the `z`-side conjunct of `liftShort`.
+`RhoShort` is a forward-compatibility hook modelling Figure 4's `‖r‖∞ ≤ b − 1` check, carried
+through `relOut` for the digit layer (Lemma 10) that re-derives it. -/
 def RhoShort (ρBound : ℕ) (ρ : Fin n → Polynomial (ZMod q)) : Prop :=
   ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound
 
@@ -168,7 +173,18 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 /-- Hachi's `Lift` instance as a composable CWSS package, reusing the generic ring-switching
 `Lift.package` at the cyclotomic presentation. Hachi supplies only the presentation data
 (`cyclotomicPresentation`/`isPresentation_cyclotomic`) and the norm implication
-(`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`. -/
+(`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
+
+**Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
+`CWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
+theorem — that the chain composition operator `▷` consumes: every link in the Hachi opening chain
+(`Escape.lean`, `QuadEval/Bridge.lean`, `Sumcheck/Rounds.lean`, `ZeroCheck/Reduction.lean`,
+`Recursion/PartialEval.lean`, …) exposes its certificate the same way, and `openingChain.isCWSS` is
+assembled from them in `Composition.lean`. Because this package is built wholesale from generic
+`Lift.package`, its certificate already arrives in that shape, stated in the generic `Lift`
+vocabulary. Restating it as a standalone theorem over Hachi's own `relLin`/`relOutE` at `Rq Φ`
+would duplicate the proposition without adding content and would sit outside the composition
+interface, so nothing would consume it. -/
 noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
     CWSSPackage init impl

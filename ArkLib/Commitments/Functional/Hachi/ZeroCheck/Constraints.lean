@@ -94,12 +94,30 @@ def rangeProduct (b : ℕ) (v : F) : F :=
   v * ∏ j ∈ Finset.Icc 1 (b - 1), ((v - (j : F)) * (v + (j : F)))
 
 /-- Over a field, `P_b(v) = 0` iff `v` is the image of an integer in the symmetric range
-`{−(b−1), …, b−1}`. The engine of the `H₀ ⇒ liftShort` bridge (the corrected [NOZ26, Lemma 10]
-reads the field roots back as centered representatives under `2b − 1 < q`). **Sorried**
-(skeleton). -/
+`{−(b−1), …, b−1}`. The engine of the `H₀ ⇒ liftShort` bridge.
+
+Scope: this yields `v = ±(j : F)` for some `j ≤ b − 1`, *not* a centered `ZMod q` representative.
+Getting from here to a norm bound additionally needs injectivity of `ℕ → F` on `[0, b − 1]`, i.e.
+the `2b − 1 < q` condition under which the corrected [NOZ26, Lemma 10] reads the field roots back
+as centered representatives. -/
 theorem rangeProduct_eq_zero_iff {b : ℕ} {v : F} :
     rangeProduct b v = 0 ↔ ∃ j : ℕ, j ≤ b - 1 ∧ (v = (j : F) ∨ v = -(j : F)) := by
-  sorry
+  classical
+  rw [rangeProduct, mul_eq_zero, Finset.prod_eq_zero_iff]
+  constructor
+  · rintro (hv | ⟨j, hjmem, hfac⟩)
+    · exact ⟨0, Nat.zero_le _, Or.inl (by simpa using hv)⟩
+    · have hjle : j ≤ b - 1 := (Finset.mem_Icc.mp hjmem).2
+      rcases mul_eq_zero.mp hfac with h | h
+      · exact ⟨j, hjle, Or.inl (sub_eq_zero.mp h)⟩
+      · exact ⟨j, hjle, Or.inr (by linear_combination h)⟩
+  · rintro ⟨j, hjle, hv | hv⟩
+    · rcases Nat.eq_zero_or_pos j with rfl | hjpos
+      · exact Or.inl (by simpa using hv)
+      · exact Or.inr ⟨j, Finset.mem_Icc.mpr ⟨hjpos, hjle⟩, by rw [hv]; simp⟩
+    · rcases Nat.eq_zero_or_pos j with rfl | hjpos
+      · exact Or.inl (by simpa using hv)
+      · exact Or.inr ⟨j, Finset.mem_Icc.mpr ⟨hjpos, hjle⟩, by rw [hv]; ring_nf⟩
 
 /-! ## The table (Eq. (21)) -/
 

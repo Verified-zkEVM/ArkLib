@@ -282,7 +282,20 @@ pairwise-distinct points of a field `F`, the row equation holds over `S`
 ([NOZ26] Lemma 9). The defect
 polynomial has degree `< 2d`, so the `2d` roots kill it; the resulting `R[X]` identity
 descends along the coset laws. The degree `d` is an explicit parameter tied to the modulus by
-`hd`, so instances can state witnesses against their own degree expression. -/
+`hd`, so instances can state witnesses against their own degree expression.
+
+The `2d` is **tight**, and it is the load-bearing constant of the whole lift: `P.rowSum M z i`
+multiplies two degree-`< d` representatives, so `natDegree ≤ 2d − 2`, while
+`P.rep (y i) + P.modulus * ρ` has `natDegree ≤ max (d − 1) (d + (d − 1)) = 2d − 1`. Both are
+`< 2d`, so `2d` pairwise-distinct points force equality — matching [NOZ26] Lemma 9's "degree at
+most `2d − 1`".
+
+Note that `hA : Function.Injective A` with `A : Fin (2 * d) → F` implicitly requires
+`2d ≤ ‖F‖`: over a carrier smaller than `2d` the hypothesis is unsatisfiable, so while the lemma
+itself is proved unconditionally, no *application* to such an `F` can exist. This is benign in
+context (the CWSS challenge tree could not exist either, and the paper's `(2d − 1)/|F_{q^k}|`
+soundness error is only meaningful for `|F_{q^k}| > 2d`), but it is worth stating so that nobody
+instantiates at a small carrier and believes something has been proved. -/
 theorem mulVec_eq_of_evalAt_rowSum {F : Type*} [Field F] {φF : R →+* F}
     (hφF : Function.Injective φF) {d : ℕ} (hd : P.modulus.natDegree = d)
     {M : PolyMatrix S n μ} {z : PolyVec S μ} {y : PolyVec S n} {i : Fin n}
