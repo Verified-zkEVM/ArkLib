@@ -227,7 +227,7 @@ theorem do_two_uniform_sampling_eq_uniform_prod {α β : Type} [Fintype α] [Fin
 `ENNReal.ofReal`-of-a-real-number form of `prob_uniform_eq_card_filter_div_card`, useful when the
 surrounding goal is stated over `ℝ` rather than `ℝ≥0`. -/
 theorem prob_uniform_eq_ofReal {F : Type} [Fintype F] [Nonempty F]
-   (P : F → Prop) [DecidablePred P] :
+    (P : F → Prop) [DecidablePred P] :
     Pr_{let r ←$ᵖ F}[P r] = ENNReal.ofReal
                     (((Finset.filter (α := F) P Finset.univ).card : ℝ) / (Fintype.card F : ℝ)) := by
   convert prob_uniform_eq_card_filter_div_card P using 1
@@ -479,7 +479,7 @@ theorem Pr_or_le {α : Type} (D : PMF α) (f g : α → Prop) :
   apply ENNReal.tsum_le_tsum
   intro r
   rw [← mul_add]
-  refine mul_le_mul_of_nonneg_left ?_ zero_le'
+  refine mul_le_mul_of_nonneg_left ?_ zero_le
   by_cases hf : f r <;> by_cases hg : g r <;> simp [hf, hg]
 
 /--
@@ -537,7 +537,7 @@ theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : �
     _ ≤ ∑' b, Db b * c := by
         apply ENNReal.tsum_le_tsum
         intro b
-        exact mul_le_mul_of_nonneg_left (h b) zero_le'
+        exact mul_le_mul_of_nonneg_left (h b) zero_le
     _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- **Schwartz-Zippel Lemma** (Probability Form):

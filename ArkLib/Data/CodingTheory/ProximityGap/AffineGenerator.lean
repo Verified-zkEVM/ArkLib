@@ -9,13 +9,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.Probability.Notation
 import ArkLib.Data.Probability.Instances
 import ArkLib.Data.CodingTheory.Prelims
-import Mathlib.Algebra.Azumaya.Basic
-import Mathlib.Algebra.Ring.IsFormallyReal
-import Mathlib.AlgebraicTopology.SimplexCategory.Basic
-import Mathlib.Data.Int.Star
 import Mathlib.FieldTheory.Finiteness
-import Mathlib.RingTheory.Flat.TorsionFree
-
 
 /-!
 ## Main Results
@@ -262,7 +256,13 @@ variable {ι : Type} [Fintype ι]
 /-- Lemma 7.1. [BCGM25].
 The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `LC` implies that
 the affine space generator `Fˡ → Fˡ⁺¹`, `x ↦ (1, x)`, has MCA for `LC` with error
-`(1 - 1/|F|)⁻¹ • ε_mca`. -/
+`(1 - 1/|F|)⁻¹ • ε_mca`.
+
+Note: [BCGM25] states this for `ℓ ≥ 2`; we only need `ℓ ≥ 1`. At `ℓ = 1` the affine space
+generator is the affine line generator, so the conclusion is immediate, and the proof below
+covers that case uniformly.
+
+Note: the error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
 theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I → ℝ≥0) (LC : LinearCode ι F)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca LC) :
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
