@@ -609,7 +609,12 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       -- elsewhere in the induction — `x = D - dH` (forced by the base case, since
       -- `Λ(β₀) = Λ(T) = D - dH + 1` by the very definition of the `Λ`-grading) and
       -- `Z = (d-1)(D - dH + 1)` (forced by `xi_weight_le`) — this demands `c.natDegree ≤ 0`,
-      -- which is false in general (`c = leadingCoeff (R(x₀,·,Z)) / W` is an arbitrary polynomial).
+      -- which is false in general: `R(x₀,·,Z) = H · q` gives `c = leadingCoeff q`, an arbitrary
+      -- polynomial.  So this *per-summand* budget is very likely not merely hard but too strong;
+      -- `numerator_shape_weight_sharp` can still hold, since `Λ` of the sum over `j` only has to
+      -- bound the max after the cancellations that the recursion (A.1) produces.  Closing the gap
+      -- therefore means weakening this lemma and recovering the total elsewhere, not grinding this
+      -- case.
       --
       -- Raising `Z` by `D - d - W.natDegree` (the true bound on `c.natDegree`) closes this branch
       -- and keeps the non-boundary branch, but then breaks `numeratorShapeSharp_le_loose`: e.g.

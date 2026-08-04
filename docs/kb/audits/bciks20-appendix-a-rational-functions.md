@@ -79,10 +79,19 @@ route is *exactly tight* and does not close:
   exactly `c.natDegree`. Raising the `ξ`-charge to cover it breaks the loose bound the paper
   quotes: `d = 2, dH = 1, D = 100, Λ(W) = 0, t = 5` gives `2377 > 2200 = (2t+1)dD`.
 
+Note also that the per-summand budget of `henselClearedTerm_weight` is very likely *too strong*,
+not merely hard: `R(x₀,·,Z) = H · q` makes the deficit `Λ(leadingCoeff q)`, which is unbounded.
+`numerator_shape_weight_sharp` can still hold, because `Λ` of the sum over `j` only has to bound
+the max after the cancellations (A.1) produces. So the fix is to weaken that lemma and recover the
+total elsewhere, not to grind the boundary case.
+
 The paper's second route needs `Λ(αₜ) = Λ(Y) = 1`, i.e. a weight function on the function field
 `𝕃` (not just on `𝒪`) plus the fact that the Hensel coefficients lie in the same graded piece as
-`Y`. Formalizing that is the natural way to close the gap; see the in-proof comment at the
-boundary `sorry`.
+`Y`. Note that route needs care too: with the paper's *exact* `Λ(W)`, `Λ(α₀) = Λ(T/W) = (D-dH+1) -
+Λ(W)` exceeds `1` unless `Λ(W) = D - dH`, so the claim's `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` already
+fails at `t = 0` when `Λ(W) < D - dH`. The Lean statement substitutes the paper's own bounds
+`Λ(W) ≤ D - dH` and `Λ(ξ) ≤ (d-1)(D-dH+1)` into the right-hand side, which is the reading under
+which the base case is true (and is proved here). See the in-proof comment at the boundary `sorry`.
 
 ## Near-Term Work
 
