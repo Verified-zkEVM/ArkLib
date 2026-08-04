@@ -83,6 +83,7 @@ import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+import ArkLib.Data.CodingTheory.ProximityGap.AffineGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
@@ -228,6 +229,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRoun
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.Implications
+import ArkLib.OracleReduction.Security.RbrGame
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.SpecialSoundness
@@ -308,6 +310,6 @@ import ArkLib.ToVCVio.EvalDist.Defs.Support
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 import ArkLib.ToVCVio.OracleComp.EvalDist
+import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-import ArkLib.ToVCVio.ToMathlib.Control.StateT
 import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic
