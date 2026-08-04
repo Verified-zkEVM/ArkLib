@@ -117,17 +117,24 @@ home_page/            site assets and assembled website root
     home for the `w̃`-commitment's binding break. Front glue, not a §4.3 subprotocol; sits at the
     Hachi root beside `EvalSplit`/`Composition`.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
-    `R^lin` to a claim about the committed lifted witness evaluated at a random `α`. `RingSwitch/Rlin`
-    is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction` is the two-round lift
-    (`k = 2d`, the abstract `w̃`-commitment `LiftCom`). `RingSwitch.lean` re-exports the folder.
-    (Distinct from the §3 packing reduction under `ProofSystem/RingSwitching/`, also a ring-switch.)
+    `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
+    `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (F2); `RingSwitch/Reduction`
+    is the **cyclotomic instance** of the generic `Lift` switch
+    (`ProofSystem/RingSwitching/Lift/`): `cyclotomicPresentation` + `IsPresentation`
+    laws (discharged from `Data/Lattices/CyclotomicRing/QuotientLift.lean`), the generic
+    `checkAt`, and the generic interpolation/descent engine, assembled through the
+    committed-scalar shell (`k = 2d`, abstract `w̃`-commitment `LiftCom`; **proven** Lemma 9
+    CWSS). `RingSwitch.lean` re-exports the folder. (The §3 packing reduction is a distinct
+    algebraic construction — `ProofSystem/RingSwitching/Packing/` — which does not use
+    the committed-scalar seam; the two constructions share the ring-switching folder's
+    top-level verifier skeletons and transport algebra.)
   - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
     `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
     encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
     the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
     zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
     bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
-    see `HACHI_LEMMA10_GAP.md`). `ZeroCheck.lean` re-exports the folder.
+    corrects [NOZ26] Lemma 10). `ZeroCheck.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
     sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
@@ -135,7 +142,7 @@ home_page/            site assets and assembled website root
     recursion's evaluation claim. `Sumcheck.lean` re-exports the folder.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
-    partial-evaluation soundness gap, `HACHI_RECURSION_GAP.md`), `TraceHandoff` (Eqs. (27)–(28)
+    partial-evaluation soundness gap; see `Recursion/ZBatchBridge`), `TraceHandoff` (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
   - `Composition.lean` — the **CWSS composition home**: `evalChain` is the `bridgePackage ▷
     quadEvalPackage` chain and `eval_coordinateWiseSpecialSound` is its composed CWSS certificate
@@ -186,9 +193,15 @@ home_page/            site assets and assembled website root
   (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
   layer (tree shape recovery `tree_shape`, the star-center machinery, the tree extractor
   `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
-  evaluation reduction `QuadEval` (Lemma 8). `ScalarRound` is its skeletonized `(ℓ = 1, k)`
-  scalar-challenge twin (`pSpecScalar`, `scalarStructure`; assembly sorried) for Hachi's
-  Lemmas 9/11-shaped rounds. `Escape` provides `Set.withEscape`, the escape-threading of
+  evaluation reduction `QuadEval` (Lemma 8). `ScalarRound` is its **proven** `(ℓ = 1, k)`
+  scalar-challenge twin (`pSpecScalar`, `scalarStructure`, the arity-`k` tree kit, and the
+  assembly `coordinateWiseSpecialSound_of_mkWitness_scalar`) for Hachi's Lemmas 9/11-shaped
+  rounds and the DP24 batching wire format. `CommittedScalar` is the **proven** commit-then-
+  scalar-challenge shell on top of `ScalarRound`: `BindingCommitment` (binding restricted to
+  `Short` openings, escape budget for weak binding), the anchored relation/verifier/prover, the
+  three-way extractor `buildWitness` (escape pass-through / collision escape / common-opening
+  recovery), and its generic CWSS theorem + `CWSSPackage`; instantiated by Hachi's HMZ
+  ring-switching lift (`ProofSystem/RingSwitching/Lift/`). `Escape` provides `Set.withEscape`, the escape-threading of
   relations (`W ⊕ E` witnesses) used by composed extraction chains that can emit binding-break
   escapes mid-chain. `Guarded` is the **B4 skeleton**: `Verifier.IsGuardedWith`/`IsGuarded`
   (runtime-rejecting verifiers), the guarded package `GCWSSPackage` with its append `▷ᵍ`, and
@@ -196,11 +209,27 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
-- Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
-  Binius-only protocol: `Profile.lean` holds the `RingSwitchingProfile` abstraction (packing data +
-  reconstruction laws), `Prelude.lean` the shared defs + the Binius instance `binaryTowerProfile`,
-  and `General.lean` the full reduction and generic security theorems. Binius instantiates it in
-  `ProofSystem/Binius/FRIBinius/` (`biniusProfile`); Hachi (`NOZ26`) is the intended next instance.
+- Ring switching is a **family of constructions, not one protocol** — the umbrella
+  `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
+  `Packing/` is the small→large packing family: `Profile.lean` holds the shared
+  packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
+  remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the Binius
+  instance `binaryTowerProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
+  soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
+  (`biniusProfile`), and Hachi's §3 packing head is the intended next `Profile` instance.
+  `Lift/` is the **generic HMZ lift** (large quotient ring →
+  field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
+  `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific
+  — with the full lift algebra and interpolation engine proven over the laws), and
+  `Reduction.lean` is the protocol layer over the committed-scalar shell
+  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
+  recovery obligation proven generically. Hachi's `Commitments/Functional/Hachi/RingSwitch/`
+  is its cyclotomic instance, with law-discharge lemmas in
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. What the two families share lives at the
+  folder top level — the check-then-update round-shape verifiers (`RoundVerifiers.lean`,
+  over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
+  embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) — plus the
+  committed-scalar seam under `OracleReduction/`.
   Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.

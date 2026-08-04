@@ -8,7 +8,7 @@ import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 
 /-!
-  # Escape-threaded Hachi front (`evalChainE`) — skeleton (sumcheck-track milestone F2.0)
+  # Escape-threaded Hachi front (`evalChainE`) — skeleton
 
   The §4.3 opening chain (`RingSwitch/`, `ZeroCheck/`, `Sumcheck/`) introduces a **new
   commitment** — Figure 4's
@@ -19,7 +19,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   whose relations (`relPolyEval`, `relIn`, `relOut`) have no home for it.
 
   This file threads a single abstract escape budget `E` (with escape set `esc : Set E`,
-  statement-independent — design decision G1) through the finished front via `Set.withEscape`:
+  statement-independent) through the finished front via `Set.withEscape`:
 
   * `relPolyEvalE`, `relInE`, `relOutE` — the widened relations (witnesses `· ⊕ E`);
   * `bridgePackageE` — the widened polynomial-level bridge, **sorry-free** (the escape branch of
@@ -127,7 +127,7 @@ def bridgePackageE (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
 /-- **Escape-threaded Hachi Lemma 8 (skeleton).** The `QuadEval` fold verifier is CWSS for the
 *widened* relations `relInE`/`relOutE`.
 
-**Sorried (F2.0).** Proof plan: `coordinateWiseSpecialSound_of_mkWitness` with the widened
+**Sorried.** Proof plan: `coordinateWiseSpecialSound_of_mkWitness` with the widened
 assembler `buildWitnessE` — if some branch response is `.inr e` (pick the least such branch),
 output `.inr e` (its `relOutE`-membership is exactly `e ∈ esc`, which is `relInE`'s `.inr`
 case); otherwise all responses are `.inl`, strip them and apply the finished

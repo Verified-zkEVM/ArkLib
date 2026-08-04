@@ -4,8 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Prelude
-import ArkLib.ProofSystem.RingSwitching.Spec
+import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.Spec
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Security.RoundByRound
@@ -16,32 +16,52 @@ open scoped NNReal
 open Sumcheck.Structured
 
 /-!
-# Ring-Switching Core Interaction Phase
+# Relocation sumcheck and the final consistency step
 
-This module implements the core interactive sumcheck phase of the ring-switching protocol.
+Second phase of the interactive packing reduction. After batching, the target `s₀` is (for
+an honest prover) the Boolean-cube sum of `h = A · t'` — the packed polynomial times the
+public multiplier built from the basis decomposition of eq̃ — so its correctness is exactly a
+degree-2 sumcheck claim. Running that sumcheck *relocates* the claim: after `ℓ'` rounds, the
+statement about `t'` is anchored at the fresh random point `r'` assembled from the round
+challenges, which is what the downstream opening can consume.
 
-### Iterated Sumcheck Steps
+* **Iterated rounds** — the `ℓ'`-fold loop of the structured single sumcheck round
+  (re-exported from `Sumcheck/Structured/SingleRound` at degree 2): each round, the prover
+  sends the round polynomial, the verifier checks it against the running target and folds in
+  a fresh challenge. This loop is the main source of the reduction's knowledge error
+  (`2/|L|` per round).
+* **Final step** — the prover sends the residual value `s' = t'(r')`; the verifier checks
+  the last running target against `(eq̃-consistency value) · s'` — where the consistency
+  value reconstructs, from the row coordinates of the final eq̃-tensor, what the multiplier
+  contributes at `r'` — and outputs the evaluation claim `t'(r') = s'`. The verifier is the
+  family-shared one-message check-then-update verifier
+  (`RingSwitching.messageRoundOracleVerifier`).
+
+## Protocol steps ([DP24] Construction 3.1, steps 6–9)
+
 6. P and V execute the following loop:
    for `i ∈ {0, ..., ℓ'-1}` do
      P sends V the polynomial `hᵢ(X) := Σ_{w ∈ {0,1}^{ℓ'-i-1}} h(r'₀, ..., r'_{i-1}, X, w₀, ...,
      w_{ℓ'-i-2})`.
      V requires `sᵢ ?= hᵢ(0) + hᵢ(1)`. V samples `r'ᵢ ← L`, sets `s_{i+1} := hᵢ(r'ᵢ)`,
      and sends P `r'ᵢ`.
-
-Each iteration of the loop constitutes a single round:
-- Round i (for i = 1, ..., ℓ'):
-  1. Prover sends sumcheck polynomial h_i(X) over large field L
-  2. Verifier samples challenge α_i ∈ L
-    - Prover & verifier updates state based on challenge
-
-This is the core computational phase with ℓ' rounds, each with 2 messages, and is the main
-source of RBR knowledge soundness error.
-
-### Final Sumcheck Step
 7. `P` computes `s' := t'(r'_0, ..., r'_{ℓ'-1})` and sends `V` `s'`.
 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-    decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`.
-9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
+    decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u` (row coordinates on the left tensor
+    factor).
+9. `V` requires
+   `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
+
+## Security scaffolding
+
+Per-round and final-step extractors, knowledge-state functions, knowledge errors (`2/|L|`
+per round, `1/|L|` at the final step), and the composed statements for the whole
+loop-plus-final-step interaction. Leaf proofs are open (`sorry`).
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
 -/
 
 namespace RingSwitching.SumcheckPhase
@@ -325,7 +345,15 @@ noncomputable def finalSumcheckProver :
     }
     pure (⟨stmtOut, oStmtIn⟩, witOut)
 
-/-- The verifier for the final sumcheck step -/
+/-- The verifier for the final sumcheck step, as an instance of the family-shared
+check-then-update one-message verifier (`RingSwitching.messageRoundOracleVerifier`,
+`RoundVerifiers.lean`): query the final constant `s'` (step 7), then
+
+8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
+   decomposes `e =: Σ_{u ∈ {0,1}^κ} e_u ⊗ β_u`;
+9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1}, r''_0, ..., r''_{κ-1})`
+   `⋅ e_u) ⋅ s'` (reject to a dummy statement on failure), and hands the accepted claim
+   to the downstream opening. -/
 noncomputable def finalSumcheckVerifier :
   OracleVerifier
     (oSpec := []ₒ)
@@ -333,36 +361,16 @@ noncomputable def finalSumcheckVerifier :
     (OStmtIn := aOStmtIn.OStmtIn)
     (StmtOut := MLPEvalStatement L ℓ')
     (OStmtOut := aOStmtIn.OStmtIn)
-    (pSpec := pSpecFinalSumcheck L) where
-  verify := fun stmtIn _ => do
-    -- Get the final constant `c` from the prover's message
-    let s' : L ← query (spec := [(pSpecFinalSumcheck L).Message]ₒ) ⟨⟨0, rfl⟩, ()⟩
-
-    -- 8. `V` sets `e := eq̃(φ₀(r_κ), ..., φ₀(r_{ℓ-1}), φ₁(r'_0), ..., φ₁(r'_{ℓ'-1}))` and
-    -- decomposes `e =: Σ_{u ∈ {0,1}^κ} β_u ⊗ e_u`.
-    -- Then `V` computes the final eq value: `(Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1},`
-      -- `r''_0, ..., r''_{κ-1}) ⋅ e_u)`
-
-    let eq_tilde_eval : L := compute_final_eq_value κ L K P ℓ ℓ' h_l
-      stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching
-
-    -- 9. `V` requires `s_{ℓ'} ?= (Σ_{u ∈ {0,1}^κ} eq̃(u_0, ..., u_{κ-1},`
-      -- `r''_0, ..., r''_{κ-1}) ⋅ e_u) ⋅ s'`.
-    unless stmtIn.sumcheck_target = eq_tilde_eval * s' do
-      return { -- dummy stmtOut
-        t_eval_point := 0,
-        original_claim := 0,
-      }
-
-    -- Return the final sumcheck statement with the constant
-    let stmtOut : MLPEvalStatement L ℓ' := {
-      t_eval_point := stmtIn.challenges
-      original_claim := eq_tilde_eval * s'
-    }
-    pure stmtOut
-
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun _ => rfl
+    (pSpec := pSpecFinalSumcheck L) :=
+  messageRoundOracleVerifier
+    (check := fun stmtIn (s' : L) =>
+      stmtIn.sumcheck_target = compute_final_eq_value κ L K P ℓ ℓ' h_l
+        stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching * s')
+    (accept := fun stmtIn s' =>
+      { t_eval_point := stmtIn.challenges,
+        original_claim := compute_final_eq_value κ L K P ℓ ℓ' h_l
+          stmtIn.ctx.t_eval_point stmtIn.challenges stmtIn.ctx.r_batching * s' })
+    (reject := fun _ _ => { t_eval_point := 0, original_claim := 0 })
 
 /-- The oracle reduction for the final sumcheck step -/
 noncomputable def finalSumcheckOracleReduction :

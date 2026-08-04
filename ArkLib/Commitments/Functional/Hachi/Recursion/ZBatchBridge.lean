@@ -23,7 +23,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
   **open soundness question**, deliberately isolated in this one zero-round seam (mirroring how
   the Lemma 10 gap is isolated in the zero-check).
 
-  ## ⚠ The gap (see `HACHI_RECURSION_GAP.md` for the full analysis)
+  ## ⚠ The gap
 
   The packed claim pins only the single `F`-linear combination `∑ᵢ Z^{⟨i⟩}·(pᵢ − yᵢ) = 0` of
   the per-`i` defects `pᵢ − yᵢ := partialEvalAt w̃ a₀ i − yᵢ ∈ F`. Since the defects are
@@ -33,7 +33,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
   the packed right-hand side invariant while shifting the reconstructed evaluation
   `y₀ + a·y₁ = mle[w̃](a₀, a) + δ(Z − a)` — for `a ≠ Z` every target value is reachable, so the
   §4.5 recursion step (and §3.2's generic form) is not knowledge-sound as stated. Candidate
-  repairs (recorded in the gap note; all deviate from the paper): a batching challenge round
+  repairs (all deviate from the paper): a batching challenge round
   over the peeled index (Kronecker-seeded, DP24-relocation style), or replacing the peeling with
   the generic §3.1 packing (`F_{q^k}`-coefficient reading, paper Fig. 2 row 1, at the cost of
   `κ` extra variables and a sparser commitment reinterpretation).
@@ -74,7 +74,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 /-- The `Z`-packed table evaluation (Hachi Eqs. (25)–(26) left-hand side):
 `hatEval w̃ a₀ = ∑_{j ∈ {0,1}^{mLow}} ŵⱼ·eq(j, a₀)` with `ŵⱼ := ∑ᵢ w̃_{j‖i}·zpow i` — the
 reading of the committed table as an `F`-entried table along the `Z`-power basis `zpow`
-(honestly `zpow i = Z^{⟨i⟩}`, the power basis of `F/F_q`). **Sorried (G3-adjacent)**. -/
+(honestly `zpow i = Z^{⟨i⟩}`, the power basis of `F/F_q`). **Sorried**. -/
 def hatEval (φF : ZMod q →+* F) (zpow : Fin (2 ^ κ) → F) (w : LiftedWitness Φ μ n)
     (a₀ : Fin mLow → F) : F :=
   sorry
@@ -103,7 +103,7 @@ def toHatEvalStatement {TCom : Type} (zpow : Fin (2 ^ κ) → F)
     (s : PartialEvalStatement TCom F mLow κ) : HatEvalStatement TCom F mLow :=
   ⟨s.t, s.pointLow, ∑ i, s.partials i * zpow i⟩
 
-/-- ⚠ **The un-packing pull-back — open soundness question (`HACHI_RECURSION_GAP.md`).** As the
+/-- ⚠ **The un-packing pull-back — open soundness question.** As the
 paper's step below Eq. (26) implicitly requires, the packed claim should imply the per-`i`
 claims. **This statement is expected to be unprovable**: the packed claim constrains only one
 `F`-linear combination of the per-`i` defects, which have a nontrivial kernel for `κ ≥ 1` (see
