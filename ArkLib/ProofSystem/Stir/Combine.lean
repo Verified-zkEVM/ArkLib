@@ -6,7 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Mirco Richter, Poulami Das (Least Au
 
 import Mathlib.Tactic.FieldSimp
 import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombination'
+import Mathlib.Tactic.LinearCombinationPrime
 
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
@@ -282,6 +282,7 @@ private lemma combine_eq_flat
               specialize hx₁ ha
               specialize hx₂ ha
               simp_all
+              omega
           · simp only [union_singleton, union_sdiff_self_eq_union, insert_union, mem_union,
             mem_filter, mem_univ, lt_self_iff_false, and_false, and_self, or_true, insert_eq_of_mem,
             right_eq_union, *]
@@ -414,8 +415,9 @@ lemma degreeCor_eq {F : Type u_1} [Field F] [DecidableEq F] {ι : Type u_2} (φ 
     then f x * (1 - q^(dstar - degree + 1)) / (1 - q)
     else f x * (dstar - degree + 1) := by
   convert congr_arg _ (geom_sum_cases (φ x * r) (dstar - degree)) using 1
-  rw [Nat.cast_add, Nat.cast_sub hd, Nat.cast_one]
-  split_ifs <;> ring
+  · rfl
+  · rw [Nat.cast_add, Nat.cast_sub hd, Nat.cast_one]
+    split_ifs <;> ring
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {ι : Type} [Fintype ι]

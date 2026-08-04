@@ -1,0 +1,799 @@
+<title>Hachi — the evaluation opening, seam by seam</title>
+<style>
+  :root {
+    --paper:#F2F3F8; --surface:#FFFFFF; --surface-2:#EBEDF4; --surface-3:#E3E6F0;
+    --ink:#171A24; --ink-soft:#3E4356; --muted:#6A7089;
+    --line:#DBDEEA; --line-soft:#E7E9F3;
+    --accent:#4B57C9; --accent-2:#6470E0; --accent-ghost:rgba(75,87,201,.10); --on-accent:#FFFFFF;
+    --ok:#0E9F86; --ok-ghost:rgba(14,159,134,.12);
+    --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
+    --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
+    --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
+    --font-sans:"SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
+    --font-mono:"SF Mono","JetBrains Mono","Berkeley Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
+    --maxw:1080px;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root {
+      --paper:#0E1017; --surface:#171A24; --surface-2:#1E2230; --surface-3:#252A3B;
+      --ink:#E7E9F2; --ink-soft:#B7BCCF; --muted:#818799;
+      --line:#282D3D; --line-soft:#20242F;
+      --accent:#8A96F2; --accent-2:#A0AAFB; --accent-ghost:rgba(138,150,242,.13); --on-accent:#0E1017;
+      --ok:#34D9BC; --ok-ghost:rgba(52,217,188,.13);
+      --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
+      --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
+      --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+      --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+    }
+  }
+  :root[data-theme="light"] {
+    --paper:#F2F3F8; --surface:#FFFFFF; --surface-2:#EBEDF4; --surface-3:#E3E6F0;
+    --ink:#171A24; --ink-soft:#3E4356; --muted:#6A7089;
+    --line:#DBDEEA; --line-soft:#E7E9F3;
+    --accent:#4B57C9; --accent-2:#6470E0; --accent-ghost:rgba(75,87,201,.10); --on-accent:#FFFFFF;
+    --ok:#0E9F86; --ok-ghost:rgba(14,159,134,.12);
+    --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
+    --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
+    --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
+  }
+  :root[data-theme="dark"] {
+    --paper:#0E1017; --surface:#171A24; --surface-2:#1E2230; --surface-3:#252A3B;
+    --ink:#E7E9F2; --ink-soft:#B7BCCF; --muted:#818799;
+    --line:#282D3D; --line-soft:#20242F;
+    --accent:#8A96F2; --accent-2:#A0AAFB; --accent-ghost:rgba(138,150,242,.13); --on-accent:#0E1017;
+    --ok:#34D9BC; --ok-ghost:rgba(52,217,188,.13);
+    --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
+    --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
+    --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+    --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
+  }
+
+  * { box-sizing:border-box; }
+  html { -webkit-text-size-adjust:100%; }
+  body {
+    margin:0; background:var(--paper); color:var(--ink);
+    font-family:var(--font-sans); font-size:16px; line-height:1.6;
+    -webkit-font-smoothing:antialiased; text-rendering:optimizeLegibility;
+    overflow-x:hidden;
+  }
+  .wrap { max-width:var(--maxw); margin:0 auto; padding:0 24px; }
+  a { color:var(--accent); text-decoration:none; }
+  a:hover { text-decoration:underline; }
+  :focus-visible { outline:2px solid var(--accent); outline-offset:2px; border-radius:4px; }
+
+  code, .mono { font-family:var(--font-mono); font-variant-ligatures:none; }
+  .num { font-variant-numeric:tabular-nums; }
+
+  /* ---------- eyebrow / labels ---------- */
+  .eyebrow {
+    font-family:var(--font-mono); font-size:11.5px; letter-spacing:.16em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+  }
+
+  /* ---------- hero ---------- */
+  header.hero { position:relative; padding:76px 0 40px; overflow:hidden; }
+  .hero-mark {
+    position:absolute; right:-4%; top:-8%; font-size:min(46vw,440px); line-height:1;
+    font-weight:800; color:var(--accent); opacity:.06; user-select:none; pointer-events:none;
+    font-family:"Hiragino Sans","Yu Gothic",var(--font-sans);
+  }
+  .hero-kicker { display:flex; align-items:center; gap:12px; margin-bottom:26px; }
+  .hero-kicker .glyph {
+    font-family:"Hiragino Sans","Yu Gothic",var(--font-sans); font-weight:700;
+    font-size:22px; color:var(--accent); line-height:1;
+    width:38px; height:38px; display:grid; place-items:center;
+    border:1.5px solid var(--accent); border-radius:9px; background:var(--accent-ghost);
+  }
+  h1 {
+    font-size:clamp(38px,6.4vw,66px); line-height:1.02; letter-spacing:-.028em;
+    font-weight:800; margin:0 0 8px; text-wrap:balance; max-width:16ch;
+  }
+  .hero-sub {
+    font-size:clamp(16px,2.1vw,20px); color:var(--ink-soft); max-width:60ch;
+    margin:14px 0 0; line-height:1.5; font-weight:400;
+  }
+  .hero-sub strong { color:var(--ink); font-weight:600; }
+  .hero-meta {
+    margin-top:26px; display:flex; flex-wrap:wrap; gap:8px 10px; align-items:center;
+    font-family:var(--font-mono); font-size:12.5px; color:var(--muted);
+  }
+  .hero-meta .chip {
+    border:1px solid var(--line); background:var(--surface); border-radius:999px;
+    padding:4px 11px; color:var(--ink-soft);
+  }
+
+  /* ---------- section scaffolding ---------- */
+  section { padding:44px 0; }
+  .sec-head { margin-bottom:26px; }
+  .sec-head h2 {
+    font-size:clamp(22px,3vw,29px); letter-spacing:-.02em; font-weight:750;
+    margin:8px 0 0; text-wrap:balance;
+  }
+  .sec-head p { color:var(--ink-soft); margin:10px 0 0; max-width:70ch; }
+  .rule { height:1px; background:var(--line); border:0; margin:0; }
+
+  /* ---------- summary tiles ---------- */
+  .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .tile {
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:18px 18px 16px; position:relative; box-shadow:var(--shadow);
+  }
+  .tile .cap { display:flex; align-items:center; gap:8px; }
+  .tile .dot { width:9px; height:9px; border-radius:50%; flex:none; }
+  .tile .n { font-size:38px; font-weight:800; letter-spacing:-.03em; margin:6px 0 0; line-height:1; }
+  .tile .lbl { font-family:var(--font-mono); font-size:11px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; }
+  .tile .sub { color:var(--ink-soft); font-size:13px; margin-top:9px; line-height:1.4; }
+  .tile.ok .n{color:var(--ok);} .tile.ok .dot{background:var(--ok);}
+  .tile.warn .n{color:var(--warn);} .tile.warn .dot{background:var(--warn);}
+  .tile.bad .n{color:var(--bad);} .tile.bad .dot{background:var(--bad);}
+  .tile.plan .n{color:var(--plan);} .tile.plan .dot{background:var(--plan);}
+
+  .barwrap { margin-top:20px; }
+  .bar { display:flex; height:12px; border-radius:999px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
+  .bar > span { display:block; height:100%; }
+  .bar-legend { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:12px; font-size:12.5px; color:var(--ink-soft); }
+  .bar-legend .k { display:inline-flex; align-items:center; gap:7px; }
+  .bar-legend .sw { width:11px; height:11px; border-radius:3px; }
+
+  /* ---------- legend / how-to-read ---------- */
+  .howto {
+    display:grid; grid-template-columns:1.15fr 1fr; gap:24px; align-items:start;
+  }
+  .legend-card {
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:20px 22px;
+    box-shadow:var(--shadow);
+  }
+  .legend-card h3 { font-size:13px; font-family:var(--font-mono); letter-spacing:.1em; text-transform:uppercase; color:var(--muted); margin:0 0 14px; font-weight:600; }
+  .legend-row { display:flex; align-items:flex-start; gap:12px; padding:9px 0; border-top:1px solid var(--line-soft); }
+  .legend-row:first-of-type { border-top:0; }
+  .legend-row .key { flex:none; margin-top:2px; }
+  .legend-row .txt { font-size:13.5px; color:var(--ink-soft); line-height:1.45; }
+  .legend-row .txt b { color:var(--ink); font-weight:600; }
+
+  /* status pill */
+  .pill {
+    display:inline-flex; align-items:center; gap:6px; font-family:var(--font-mono);
+    font-size:11px; font-weight:600; letter-spacing:.04em; text-transform:uppercase;
+    padding:3px 9px; border-radius:999px; white-space:nowrap; border:1px solid transparent;
+  }
+  .pill::before{ content:""; width:7px; height:7px; border-radius:50%; background:currentColor; }
+  .pill.proven { color:var(--ok); background:var(--ok-ghost); border-color:color-mix(in srgb,var(--ok) 30%,transparent); }
+  .pill.wip { color:var(--warn); background:var(--warn-ghost); border-color:color-mix(in srgb,var(--warn) 30%,transparent); }
+  .pill.gap { color:var(--bad); background:var(--bad-ghost); border-color:color-mix(in srgb,var(--bad) 30%,transparent); }
+  .pill.plan { color:var(--plan); background:var(--plan-ghost); border-color:color-mix(in srgb,var(--plan) 32%,transparent); }
+
+  /* badge (bridge / guarded / subfolder / core) */
+  .badge {
+    display:inline-flex; align-items:center; gap:5px; font-family:var(--font-mono);
+    font-size:10.5px; font-weight:600; letter-spacing:.05em; text-transform:uppercase;
+    padding:2px 8px; border-radius:6px; border:1px solid var(--line); color:var(--muted);
+    background:var(--surface-2); white-space:nowrap;
+  }
+  .badge.bridge { color:var(--accent); border-color:color-mix(in srgb,var(--accent) 34%,transparent); background:var(--accent-ghost); }
+  .badge.guarded { color:var(--warn); border-color:color-mix(in srgb,var(--warn) 30%,transparent); background:var(--warn-ghost); }
+  .badge.core { color:var(--ok); border-color:color-mix(in srgb,var(--ok) 30%,transparent); background:var(--ok-ghost); }
+
+  /* ---------- the spine ---------- */
+  .zone { margin-bottom:8px; }
+  .zone-head {
+    display:flex; align-items:baseline; flex-wrap:wrap; gap:6px 14px;
+    padding:16px 0 10px; margin-left:64px;
+  }
+  .zone-head .zt { font-size:18px; font-weight:700; letter-spacing:-.01em; }
+  .zone-head .zref { font-family:var(--font-mono); font-size:12px; color:var(--muted); }
+  .zone-head .znote { flex-basis:100%; color:var(--ink-soft); font-size:13.5px; margin-left:0; }
+
+  .station { position:relative; padding:9px 0 9px 64px; }
+  /* the vertical rail */
+  .station::before {
+    content:""; position:absolute; left:23px; top:0; bottom:0; width:2px; background:var(--line);
+  }
+  .station.first::before { top:22px; }
+  .station.last::before { bottom:auto; height:22px; }
+  /* the node marker */
+  .node {
+    position:absolute; left:9px; top:14px; z-index:2;
+    width:30px; height:30px; border-radius:50%;
+    display:grid; place-items:center; font-family:var(--font-mono); font-weight:700; font-size:13px;
+    background:var(--surface); border:2px solid var(--accent); color:var(--accent);
+    box-shadow:0 0 0 4px var(--paper);
+  }
+  .station.bridge .node {
+    width:20px; height:20px; left:14px; top:19px; border-radius:5px; transform:rotate(45deg);
+    border-width:2px; border-color:var(--accent-2); background:var(--paper);
+  }
+  .station.bridge .node span{ transform:rotate(-45deg); font-size:0; }
+  .station.gap .node { border-color:var(--bad); color:var(--bad); }
+
+  .card {
+    background:var(--surface); border:1px solid var(--line); border-radius:14px;
+    padding:16px 18px; box-shadow:var(--shadow);
+    transition:transform .15s ease, box-shadow .15s ease, border-color .15s ease;
+  }
+  .card:hover { transform:translateY(-2px); box-shadow:0 4px 12px rgba(20,26,45,.10),0 18px 36px -18px rgba(20,26,45,.4); border-color:color-mix(in srgb,var(--accent) 30%,var(--line)); }
+  .station.gap .card { border-color:color-mix(in srgb,var(--bad) 40%,var(--line)); }
+  .station.bridge .card { background:linear-gradient(0deg,var(--surface),var(--surface)); border-style:dashed; }
+
+  .card-top { display:flex; align-items:flex-start; justify-content:space-between; gap:14px; flex-wrap:wrap; }
+  .card-title { font-size:16.5px; font-weight:700; letter-spacing:-.01em; line-height:1.25; }
+  .card-badges { display:flex; gap:6px; flex-wrap:wrap; align-items:center; }
+
+  .files { margin:9px 0 2px; display:flex; flex-direction:column; gap:2px; }
+  .fpath { font-family:var(--font-mono); font-size:12.5px; color:var(--ink-soft); word-break:break-all; }
+  .fpath .sub { color:var(--accent); }
+  .fpath .fn { color:var(--ink); font-weight:600; }
+
+  .metaline { display:flex; flex-wrap:wrap; gap:6px 18px; margin-top:11px; font-size:12.5px; color:var(--muted); font-family:var(--font-mono); }
+  .metaline b { color:var(--ink-soft); font-weight:600; }
+  .flow {
+    margin-top:11px; font-family:var(--font-mono); font-size:12.5px;
+    background:var(--surface-2); border:1px solid var(--line-soft); border-radius:8px;
+    padding:7px 11px; display:flex; align-items:center; gap:8px; flex-wrap:wrap; overflow-x:auto;
+  }
+  .flow .rel { color:var(--ink); font-weight:600; }
+  .flow .arrow { color:var(--accent); }
+  .desc { margin-top:11px; font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
+  .desc b { color:var(--ink); font-weight:600; }
+
+  .iterband {
+    margin:0 0 2px 64px; font-family:var(--font-mono); font-size:11.5px; letter-spacing:.1em;
+    text-transform:uppercase; color:var(--muted); font-weight:600;
+  }
+
+  /* ---------- substrate grid ---------- */
+  .grid { display:grid; grid-template-columns:repeat(2,1fr); gap:14px; }
+  .sub-card {
+    background:var(--surface); border:1px solid var(--line); border-radius:14px; padding:17px 18px;
+    box-shadow:var(--shadow); display:flex; flex-direction:column; gap:9px;
+  }
+  .sub-card .sc-top { display:flex; align-items:flex-start; justify-content:space-between; gap:12px; }
+  .sub-card .sc-name { font-weight:700; font-size:15.5px; letter-spacing:-.01em; }
+  .sub-card .sc-ref { font-family:var(--font-mono); font-size:11.5px; color:var(--muted); margin-top:2px; }
+  .sub-card .sc-files { font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); word-break:break-all; }
+  .sub-card .sc-files .sub { color:var(--accent); }
+  .sub-card .sc-desc { font-size:13px; color:var(--ink-soft); line-height:1.5; }
+  .sub-card .sc-desc b{ color:var(--ink); font-weight:600; }
+  .groupcap { font-family:var(--font-mono); font-size:11.5px; letter-spacing:.12em; text-transform:uppercase; color:var(--muted); font-weight:600; margin:26px 0 12px; }
+  .groupcap:first-child{ margin-top:0; }
+
+  /* ---------- index table ---------- */
+  .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); background:var(--surface); }
+  table { border-collapse:collapse; width:100%; min-width:720px; font-size:13.5px; }
+  thead th {
+    text-align:left; font-family:var(--font-mono); font-size:10.5px; letter-spacing:.1em; text-transform:uppercase;
+    color:var(--muted); font-weight:600; padding:13px 14px; border-bottom:1px solid var(--line); white-space:nowrap;
+    background:var(--surface-2); position:sticky; top:0;
+  }
+  tbody td { padding:11px 14px; border-bottom:1px solid var(--line-soft); vertical-align:middle; }
+  tbody tr:last-child td { border-bottom:0; }
+  tbody tr:hover { background:var(--surface-2); }
+  td.path { font-family:var(--font-mono); font-size:12.5px; color:var(--ink); white-space:nowrap; }
+  td.path .sub { color:var(--accent); }
+  td.path .fn { font-weight:600; }
+  td.rolecell { font-family:var(--font-mono); font-size:12px; color:var(--muted); white-space:nowrap; }
+  td.refcell { font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); white-space:nowrap; }
+  td.rowcell { font-family:var(--font-mono); font-weight:700; color:var(--ink-soft); text-align:center; }
+  td.sorrycell { font-family:var(--font-mono); text-align:right; color:var(--ink-soft); }
+  td.sorrycell.zero { color:var(--ok); }
+  td.sorrycell.hi { color:var(--warn); font-weight:700; }
+  .tfilter { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:14px; }
+  .tfilter button {
+    font-family:var(--font-mono); font-size:12px; font-weight:600; letter-spacing:.03em;
+    padding:6px 13px; border-radius:999px; border:1px solid var(--line); background:var(--surface);
+    color:var(--ink-soft); cursor:pointer; transition:all .12s ease;
+  }
+  .tfilter button:hover { border-color:var(--accent); color:var(--accent); }
+  .tfilter button[aria-pressed="true"] { background:var(--accent); border-color:var(--accent); color:var(--on-accent); }
+
+  /* ---------- roadmap ---------- */
+  .roadmap { display:flex; flex-direction:column; gap:12px; }
+  .road-item {
+    display:flex; gap:14px; align-items:flex-start; background:var(--surface);
+    border:1px solid var(--line); border-left:3px solid var(--plan); border-radius:12px; padding:15px 18px; box-shadow:var(--shadow);
+  }
+  .road-item .ri-body h4 { margin:0 0 4px; font-size:15px; font-weight:700; letter-spacing:-.01em; }
+  .road-item .ri-body p { margin:0; font-size:13.5px; color:var(--ink-soft); line-height:1.5; }
+  .road-item .ri-body p code { color:var(--accent); font-size:12.5px; }
+  .road-item .ri-tag { flex:none; margin-top:2px; }
+
+  /* ---------- footer ---------- */
+  footer { border-top:1px solid var(--line); padding:36px 0 60px; margin-top:24px; color:var(--muted); font-size:13px; }
+  footer .refs { display:grid; grid-template-columns:repeat(2,1fr); gap:8px 28px; margin:16px 0 22px; }
+  footer .refs div { color:var(--ink-soft); font-size:13px; }
+  footer .refs .tag { font-family:var(--font-mono); color:var(--accent); font-weight:600; }
+  footer .foot-note { line-height:1.6; max-width:80ch; }
+  footer code { font-family:var(--font-mono); font-size:12px; color:var(--ink-soft); }
+
+  /* theme toggle */
+  .toggle {
+    position:fixed; top:16px; right:16px; z-index:20;
+    width:38px; height:38px; border-radius:10px; border:1px solid var(--line);
+    background:var(--surface); color:var(--ink-soft); cursor:pointer; box-shadow:var(--shadow);
+    display:grid; place-items:center; font-size:16px;
+  }
+  .toggle:hover { border-color:var(--accent); color:var(--accent); }
+
+  /* reveal animation */
+  .reveal { opacity:0; transform:translateY(10px); }
+  .reveal.in { opacity:1; transform:none; transition:opacity .5s ease, transform .5s cubic-bezier(.2,.7,.3,1); }
+  @media (prefers-reduced-motion:reduce) {
+    .reveal, .reveal.in { opacity:1; transform:none; transition:none; }
+    .card { transition:none; }
+  }
+
+  @media (max-width:860px){
+    .tiles{ grid-template-columns:repeat(2,1fr); }
+    .howto{ grid-template-columns:1fr; }
+    .grid{ grid-template-columns:1fr; }
+    footer .refs{ grid-template-columns:1fr; }
+  }
+  @media (max-width:560px){
+    .wrap{ padding:0 16px; }
+    .zone-head, .station{ margin-left:0; }
+    .station{ padding-left:52px; }
+    .station::before{ left:19px; }
+    .node{ left:5px; }
+    .station.bridge .node{ left:10px; }
+    .iterband{ margin-left:0; }
+    h1{ max-width:none; }
+  }
+</style>
+
+<button class="toggle" id="themeToggle" aria-label="Toggle light / dark theme" title="Toggle theme">◐</button>
+
+<header class="hero">
+  <div class="hero-mark" aria-hidden="true">八</div>
+  <div class="wrap">
+    <div class="hero-kicker">
+      <span class="glyph" aria-hidden="true">八</span>
+      <span class="eyebrow">ArkLib · Commitments / Functional / Hachi · Lean&nbsp;4</span>
+    </div>
+    <h1>The Hachi evaluation opening, seam by seam</h1>
+    <p class="hero-sub">
+      Hachi <span class="mono">[NOZ26]</span> is a lattice-based multilinear polynomial commitment over the
+      power-of-two cyclotomic ring <span class="mono">Z_q[X]/(X^{2^α}+1)</span>. The opening is a
+      <strong>single line of nine reductions</strong> — starting at the quadratic-form evaluation
+      (<strong>QuadEval</strong>) and ending at a bare multilinear-evaluation claim on the committed table.
+      This map places every protocol-bearing file on that line, marks the bridges and
+      subfolders, and shows exactly what is proven or in progress.
+    </p>
+    <div class="hero-meta">
+      <span class="chip">28 files</span>
+      <span class="chip">22 with protocol content</span>
+      <span class="chip">9-link opening chain</span>
+      <span class="chip">rows 1–4 sorry-free</span>
+      <span class="chip">≈20 open sorries</span>
+    </div>
+  </div>
+</header>
+
+<hr class="rule"/>
+
+<div class="wrap">
+
+  <!-- ===================== STATUS SUMMARY ===================== -->
+  <section id="status">
+    <div class="sec-head">
+      <span class="eyebrow">At a glance</span>
+      <h2>Where the formalization stands</h2>
+      <p>Counts are over the 22 files carrying definitions or theorems (the six folder <span class="mono">umbrella</span>
+        re-export files are excluded). Status reflects real <span class="mono">sorry</span> proof terms, not the word
+        appearing in a docstring.</p>
+    </div>
+    <div class="tiles" id="tiles"></div>
+    <div class="barwrap">
+      <div class="bar" id="statusBar" role="img" aria-label="Proportion of files by status"></div>
+      <div class="bar-legend">
+        <span class="k"><span class="sw" style="background:var(--ok)"></span>Proven — sorry-free &amp; complete</span>
+        <span class="k"><span class="sw" style="background:var(--warn)"></span>WIP — theorems stated, proofs skeletal</span>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== HOW TO READ ===================== -->
+  <section id="legend">
+    <div class="sec-head">
+      <span class="eyebrow">Reading the line</span>
+      <h2>Node types &amp; status keys</h2>
+    </div>
+    <div class="howto">
+      <div class="legend-card">
+        <h3>On the reduction line</h3>
+        <div class="legend-row">
+          <span class="key"><span class="node" style="position:static;box-shadow:none;width:26px;height:26px;font-size:12px;">2</span></span>
+          <span class="txt"><b>Subprotocol step</b> — a numbered link that runs a real interactive round (a message and/or a challenge) and carries a coordinate-wise-special-soundness (CWSS) extractor.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="node" style="position:static;box-shadow:none;width:18px;height:18px;border-radius:4px;transform:rotate(45deg);border-color:var(--accent-2);"></span></span>
+          <span class="txt"><b>Bridge / adapter</b> <span class="badge bridge">bridge</span> — a zero-round link that only <b>reshapes the statement</b> to glue one subprotocol's output relation to the next one's input. Sound for any structure.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="badge guarded">guarded</span></span>
+          <span class="txt"><b>Guarded verifier</b> — its runtime check reads data the next statement type drops (a sumcheck target, a packed value); it may <span class="mono">failure</span> at runtime and composes via <span class="mono">▷ᵍ</span>.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="badge">A / B</span></span>
+          <span class="txt"><b>Subfolder</b> — the accented segment of each file path is its <span class="mono">Hachi/</span> subfolder; every subfolder is one paper subprotocol.</span>
+        </div>
+      </div>
+      <div class="legend-card">
+        <h3>Proof status</h3>
+        <div class="legend-row">
+          <span class="key"><span class="pill proven">proven</span></span>
+          <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) and the HMZ25 lift (Lemma&nbsp;9) are even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="pill wip">wip</span></span>
+          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>.</span>
+        </div>
+        <div class="legend-row">
+          <span class="key"><span class="pill plan">planned</span></span>
+          <span class="txt">Named in the composition roadmap but not yet a file — future heads, tails, and the completeness layer.</span>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== THE SPINE ===================== -->
+  <section id="chain">
+    <div class="sec-head">
+      <span class="eyebrow">The composed opening</span>
+      <h2>The reduction line — QuadEval → evaluation claim</h2>
+      <p>Top to bottom is one opening of an <span class="mono">Rq</span>-committed multilinear polynomial, exactly as
+        composed in <span class="mono">Composition.lean</span> (<span class="mono">openingChain</span>). Each link reduces
+        one relation to the next; witnesses everywhere carry the escape budget <span class="mono">· ⊕ E</span>
+        (threaded by <span class="mono">Escape.lean</span>). The final link outputs a bare multilinear-evaluation
+        claim <span class="mono">mle[w̃](a) = y′</span> on the committed table.</p>
+    </div>
+    <div id="spine"></div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== SUBSTRATE ===================== -->
+  <section id="substrate">
+    <div class="sec-head">
+      <span class="eyebrow">Off the line</span>
+      <h2>The substrate &amp; the cross-cutting machinery</h2>
+      <p>These files are not links in the chain, but the chain cannot stand without them: the proven mathematical
+        base the line opens against, and the wiring that composes and threads it.</p>
+    </div>
+    <div class="groupcap">Proven substrate — the commitment &amp; algebra the line opens against</div>
+    <div class="grid" id="substrateProven"></div>
+    <div class="groupcap">Cross-cutting — threading, shared encoding, composition &amp; the scheme interface</div>
+    <div class="grid" id="substrateCross"></div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== FILE INDEX ===================== -->
+  <section id="index">
+    <div class="sec-head">
+      <span class="eyebrow">Complete accounting</span>
+      <h2>Every file in <span class="mono">Hachi/</span></h2>
+      <p>All 28 files, including the six folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+        position on the reduction line above.</p>
+    </div>
+    <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
+      <button data-f="all" aria-pressed="true">all · 28</button>
+      <button data-f="proven" aria-pressed="false">proven</button>
+      <button data-f="wip" aria-pressed="false">wip</button>
+      <button data-f="umbrella" aria-pressed="false">umbrella</button>
+    </div>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>File</th><th>Role</th><th>Paper</th><th style="text-align:center">Row</th><th>Status</th><th style="text-align:right">sorry</th>
+        </tr></thead>
+        <tbody id="indexBody"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== ROADMAP ===================== -->
+  <section id="roadmap">
+    <div class="sec-head">
+      <span class="eyebrow">Still to do</span>
+      <h2>Beyond the current line</h2>
+      <p>Work named in the <span class="mono">Composition.lean</span> roadmap that has no file yet — the outer interface,
+        the completeness layer, and the one piece of <em>generic</em> machinery the guarded seams wait on.</p>
+    </div>
+    <div class="roadmap" id="roadmap"></div>
+  </section>
+
+</div>
+
+<footer>
+  <div class="wrap">
+    <span class="eyebrow">References &amp; provenance</span>
+    <div class="refs">
+      <div><span class="tag">[NOZ26]</span> Nguyen, O'Rourke &amp; Zhang — <em>Hachi: Efficient Lattice-Based Multilinear Polynomial Commitments over Extension Fields</em></div>
+      <div><span class="tag">[NS24]</span> Nguyen &amp; Seiler — <em>Greyhound: Fast Polynomial Commitments from Lattices</em></div>
+      <div><span class="tag">[HMZ25]</span> Huang, Mao &amp; Zhang — <em>Sublinear Proofs over Polynomial Rings</em></div>
+      <div><span class="tag">[LS18]</span> Lyubashevsky &amp; Seiler — <em>Short, Invertible Elements in Partially Splitting Cyclotomic Rings</em></div>
+    </div>
+    <p class="foot-note">
+      Design notes, the composition home, and its certificate provenance are documented in the
+      <code>Composition.lean</code> module header. Status was read
+      directly from the current working tree on the <code>tr/ring-switching-subprotocol</code> branch; “≈20 open sorries” counts
+      genuine proof terms in the files listed here (the §4.2–§4.3 chain; the §4.5 recursion adapters under
+      <code>Recursion/</code> are inventoried in <code>Composition.lean</code>) and excludes the generic guarded-append (B4)
+      machinery under <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code>.
+    </p>
+  </div>
+</footer>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ---------------- DATA ---------------- */
+  var SPINE = [
+    { zt:"Polynomial Evaluation as a Quadratic Equation", zref:"§4.2 · Figure 3 · Lemma 8",
+      znote:"The finished core — sorry-free and axiom-clean. In the composed chain these two links run as their escape-threaded widenings (evalChainE, in Escape.lean).",
+      rows:[
+      { n:1, kind:"bridge", name:"Polynomial-level bridge", sub:"QuadEval", fn:"Bridge.lean",
+        files:[["QuadEval","Bridge.lean"]], ref:"§4.2 · Eq. 12", rounds:"0 rounds", cwss:"any (0 challenges)",
+        relIn:"relPolyEvalE", relOut:"relInE", status:"proven", sorry:0, badges:["bridge"],
+        desc:"Zero-round head: reinterprets a <code>CMlPolynomial</code> evaluation claim as a QuadEval statement, taking the Eq.&nbsp;(12) bases to be the monomial tensor bases of the split point. <b>Sorry-free.</b>" },
+      { n:2, kind:"step", name:"QuadEval — the quadratic-form fold", sub:"QuadEval", fn:"Reduction · Gadgets · Soundness",
+        files:[["QuadEval","Reduction.lean"],["QuadEval","Gadgets.lean"],["QuadEval","Soundness.lean"]],
+        ref:"§4.2 · Fig 3 · Lemma 8", rounds:"msg v ; c ∈ C^{2ʳ}", cwss:"ℓ = 2ʳ, k = 2",
+        relIn:"relInE", relOut:"relOutE (Eq. 20)", status:"proven", sorry:0, badges:["core"],
+        desc:"The two-round fold with the subtract-and-divide extractor (<code>buildWitness</code>): a star of 2ʳ+1 accepting branches yields a valid weak opening or a Module-SIS solution for B or D. <b>Lemma&nbsp;8 CWSS is genuinely sorry-free and axiom-clean.</b>" },
+    ]},
+    { zt:"Ring-Switching Lift", zref:"§4.3 · Figure 4 · Lemma 9 · [HMZ25]",
+      znote:"Switches the Rq-statement into an extension field F ⊇ Zq where the sumcheck runs, following the Huang–Mao–Zhang ring-switching lift. <code>RingSwitch/Reduction.lean</code> is the cyclotomic instance of the generic quotient-evaluation switch <code>ProofSystem/RingSwitching/Lift/</code> (presentation data + laws, checkAt, and the 2d-point interpolation engine — generic over any monic modulus), whose protocol shell is the committed-scalar seam <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean</code>; the cyclotomic law-discharge lemmas live in <code>Data/Lattices/CyclotomicRing/QuotientLift.lean</code>. (The sibling <code>ProofSystem/RingSwitching/Packing/</code> is the different DP24 packing construction.)",
+      rows:[
+      { n:3, kind:"bridge", name:"Rˡⁱⁿ adapter", sub:"RingSwitch", fn:"Rlin.lean",
+        files:[["RingSwitch","Rlin.lean"]], ref:"§4.3 · reads Eq. 20", rounds:"0 rounds", cwss:"any",
+        relIn:"relOutE", relOut:"relRlinE", status:"proven", sorry:0, badges:["bridge"],
+        desc:"Zero-round adapter reading QuadEval's Eq.&nbsp;(20) output as an unstructured linear relation <code>Rˡⁱⁿ</code> — stacks the response ζ against the five verification rows as one block matrix. <b>Sorry-free &amp; axiom-clean:</b> the block matrix <code>M</code>/rhs <code>y</code> are assembled and the block-row equivalence <code>rlin_iff_relOut</code> is proven; <code>stack</code>/<code>unstack</code> are mutually inverse, so both the CWSS pull-back and the completeness direction hold." },
+      { n:4, kind:"step", name:"HMZ25 lift", sub:"RingSwitch", fn:"Reduction.lean",
+        files:[["RingSwitch","Reduction.lean"]], ref:"§4.3 · Fig 4 · Lemma 9", rounds:"msg t ; α ∈ F", cwss:"ℓ = 1, k = 2d",
+        relIn:"relRlinE", relOut:"relLiftE", status:"proven", sorry:0, badges:["core"],
+        desc:"Commit <code>t := Com(w̃)</code>, sample <code>α ← F</code>, evaluate the lifted rows at α, with the abstract weak-binding commitment <code>LiftCom</code>. <b>Lemma&nbsp;9's CWSS is genuinely sorry-free and axiom-clean</b>: the explicit extractor <code>liftBuildWitness</code> passes escapes through, turns two distinct short openings of the shared <code>t</code> into the weak-binding escape ([NOZ26] Remark&nbsp;2), and interpolates the shared opening's row defects (degree &lt; 2d) at the 2d pairwise-distinct challenges, descending to <code>M z = y</code> over Rq via the quotient bridge." },
+    ]},
+    { zt:"Zero-Check", zref:"§4.3 · Figure 5 · corrected Lemma 10",
+      znote:"Reduces the two batched polynomial identities H₀ ≡ 0 ∧ H_α ≡ 0 to point evaluations. This is the one place the formalization deliberately changes the paper's protocol — see the gap note.",
+      rows:[
+      { n:5, kind:"bridge", name:"Batching bridge", sub:"ZeroCheck", fn:"Batch.lean",
+        files:[["ZeroCheck","Batch.lean"]], ref:"§4.3 · Eqs. 22–23", rounds:"0 rounds", cwss:"any",
+        relIn:"relLiftE", relOut:"relBatchedE", status:"wip", sorry:1, badges:["bridge"],
+        desc:"Reads the lift's per-row/per-entry residual claims as the two <code>MvPolynomial</code> identities the zero-check tests. Statement reshaping only; the sole content is the sorried un-batching direction." },
+      { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
+        files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"(ρ₀, ρ_α) ∈ F²", cwss:"ℓ = 2, k = D",
+        relIn:"relBatchedE", relOut:"relZeroChkE", status:"wip", sorry:1, badges:["repair"],
+        desc:"One challenge round carrying a pair of scalar <b>Kronecker seeds</b>, with batching points derived on the curves κ_m(ρ) = (ρ, ρ², ρ⁴, …). Deliberately repairs the paper's unprovable uniform-vector Lemma&nbsp;10 (an axis-cross counterexample) to recover genuine (ℓ,k) = (2, D) CWSS." },
+    ]},
+    { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
+      znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
+      rows:[
+      { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
+        files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
+        relIn:"relZeroChkE", relOut:"roundRelE 0", status:"wip", sorry:1, badges:["bridge"],
+        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier)." },
+      { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
+        files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
+        relIn:"roundRelE 0", relOut:"roundRelE m₀", status:"wip", sorry:1, badges:["guarded"],
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded append <code>▷ᵍ</code> into <code>roundsChain</code>." },
+      { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
+        files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
+        relIn:"roundRelE m₀", relOut:"relWEvalE", status:"wip", sorry:2, badges:["guarded"],
+        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Output is the evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
+    ]},
+  ];
+
+  var SUB_PROVEN = [
+    { name:"Ajtai gadget", ref:"§2.1 · [NS24]/[NOZ26]", files:[["Gadget","Basic.lean"],["Gadget","Norms.lean"]], status:"proven", sorry:0,
+      desc:"The base-b gadget matrix <code>G = I ⊗ [1,b,…,b^{δ−1}]</code> and its shortening inverse <code>G⁻¹</code>, with centered ℓ∞ / ℓ₂² norm bounds for both directions. The shortness workhorse feeding both correctness and Lemma&nbsp;8." },
+    { name:"Evaluation split", ref:"§4 · Eq. 12", files:[["","EvalSplit.lean"]], status:"proven", sorry:0,
+      desc:"Multilinear evaluation as the vector–matrix–vector product <code>mb(xl) ⬝ᵥ (M ·ᵥ mb(xh))</code>, proved equal to <code>eval</code>. The bridge lemma the row-1 head consumes." },
+    { name:"Inner-outer Ajtai commitment", ref:"§4.1 · [NS24]/[NOZ26]", files:[["InnerOuter","Scheme.lean"],["InnerOuter","Correctness.lean"],["InnerOuter","Security.lean"],["InnerOuter","Arithmetic.lean"]], status:"proven", sorry:0,
+      desc:"The two-layer commitment the whole line opens against: the scheme with its weak openings, <b>perfect correctness</b>, and the <b>weak-binding reduction to Module-SIS</b> — plus the pinned power-of-two ring. All sorry-free, down to the [LS18] short-element invertibility the soundness rests on." },
+  ];
+  var SUB_CROSS = [
+    { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"wip", sorry:1,
+      desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChainE</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
+    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:12,
+      desc:"The table w̃, the eq̃-batched constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). Definitions-only for now — the most sorried file in the tree." },
+    { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
+      desc:"Imports every subprotocol's package and chains them: <code>evalChain</code> (the proven core, sorry-free) · <code>openCore</code> (rows 1–7, pure) · <code>openingChain</code> (rows 1–9, guarded tail). Its <code>isCWSS</code> fields are the certificates; the file itself has no sorries — its soundness rests on the imported packages." },
+    { name:"Scheme interface", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
+      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof — the one documented placeholder, pending the completeness layer." },
+  ];
+
+  var ROADMAP = [
+    { title:"§3 packing head — external extension-field claims", tag:"planned",
+      body:"Wrap an <code>F_{q^k}</code> evaluation claim in front of <code>relPolyEvalE</code>, as an instance of the generalized <code>RingSwitching</code> packing phase — a separate track, not a Hachi-local head." },
+    { title:"Honest-prover completeness layer", tag:"planned",
+      body:"Materialize <code>hachi.opening</code> by instantiating QuadEval's <code>computeV</code> / <code>computeResp</code> from the carrier/decomposition defs, discharging <code>Commitment.perfectCorrectness</code>." },
+    { title:"Generic guarded-append machinery (B4)", tag:"planned",
+      body:"The one sorried piece of <em>generic</em> infrastructure the guarded seams (rows 8, 9) compose through — <code>Verifier.IsGuarded.append</code> and its CWSS composition theorem, under <code>OracleReduction/…/Guarded.lean</code>." },
+    { title:"Knowledge-error accounting · extractability · Fiat–Shamir", tag:"planned",
+      body:"FMN24 Lemma 4 knowledge-error, <code>Commitment.extractability</code>, and the Fiat–Shamir transform remain out of scope by design (D12 / R6)." },
+  ];
+
+  /* full index: [subfolder, filename, role, ref, row, status, sorry] */
+  var INDEX = [
+    ["","Commitment.lean","commitment-interface","§2.1/§4.1","—","wip",1],
+    ["","Composition.lean","composition","§4.2–4.3","—","wip",0],
+    ["","Escape.lean","infrastructure","F2.0","—","wip",1],
+    ["","EvalSplit.lean","infrastructure","§4 · Eq.12","—","proven",0],
+    ["","Gadget.lean","umbrella","§2.1","—","umbrella",0],
+    ["Gadget","Basic.lean","infrastructure","§2.1","—","proven",0],
+    ["Gadget","Norms.lean","infrastructure","§2.1","—","proven",0],
+    ["","InnerOuter.lean","umbrella","§4.1","—","umbrella",0],
+    ["InnerOuter","Arithmetic.lean","infrastructure","§4.1","—","proven",0],
+    ["InnerOuter","Correctness.lean","infrastructure","§4.1","—","proven",0],
+    ["InnerOuter","Scheme.lean","infrastructure","§4.1","—","proven",0],
+    ["InnerOuter","Security.lean","infrastructure","§4.1","—","proven",0],
+    ["","QuadEval.lean","umbrella","§4.2","—","umbrella",0],
+    ["QuadEval","Bridge.lean","bridge","§4.2 · Eq.12","1","proven",0],
+    ["QuadEval","Gadgets.lean","subprotocol","§4.2 · L8","2","proven",0],
+    ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
+    ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
+    ["","RingSwitch.lean","umbrella","§4.3","—","umbrella",0],
+    ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
+    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
+    ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
+    ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",1],
+    ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",12],
+    ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","wip",1],
+    ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
+    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",1],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
+    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
+  ];
+
+  /* ---------------- HELPERS ---------------- */
+  var STATUS_LABEL = { proven:"proven", wip:"wip", gap:"gap", plan:"planned", umbrella:"umbrella" };
+  function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
+  function pill(status){ var s = status==="umbrella" ? "plan" : status; return '<span class="pill '+(s==="proven"?"proven":s==="wip"?"wip":s==="gap"?"gap":"plan")+'">'+(STATUS_LABEL[status]||status)+'</span>'; }
+  function pathHTML(sub, fn){ return (sub?('<span class="sub">'+sub+'/</span>'):'')+'<span class="fn">'+fn+'</span>'; }
+
+  /* ---------------- TILES ---------------- */
+  var counts = { proven:0, wip:0 };
+  INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
+  var tiles = [
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations, the entire QuadEval subprotocol (rows 1–2), the Rˡⁱⁿ adapter (row 3), and the HMZ25 lift (row 4, Lemma&nbsp;9)." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 5–9, escape threading, the shared encoding, composition and the scheme." },
+    { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
+  ];
+  var tilesEl = document.getElementById("tiles");
+  tiles.forEach(function(t){
+    var d = el("div","tile "+t.cls+" reveal");
+    d.innerHTML = '<div class="cap"><span class="dot"></span><span class="lbl">'+t.lbl+'</span></div>'+
+                  '<div class="n num">'+t.n+'</div><div class="sub">'+t.sub+'</div>';
+    tilesEl.appendChild(d);
+  });
+  /* status bar (files, excluding umbrellas) */
+  var total = counts.proven+counts.wip;
+  var bar = document.getElementById("statusBar");
+  [["var(--ok)",counts.proven],["var(--warn)",counts.wip]].forEach(function(seg){
+    var s=el("span"); s.style.background=seg[0]; s.style.width=(100*seg[1]/total)+"%"; bar.appendChild(s);
+  });
+
+  /* ---------------- SPINE ---------------- */
+  var spine = document.getElementById("spine");
+  spine.appendChild(el("div","iterband reveal","▸ one opening — QuadEval to evaluation claim"));
+  var flatCount = 0, totalStations = SPINE.reduce(function(a,z){return a+z.rows.length;},0);
+  SPINE.forEach(function(zone, zi){
+    var z = el("div","zone reveal");
+    var zh = el("div","zone-head");
+    zh.innerHTML = '<span class="zt">'+zone.zt+'</span><span class="zref">'+zone.zref+'</span>'+
+                   '<span class="znote">'+zone.znote+'</span>';
+    z.appendChild(zh);
+    zone.rows.forEach(function(row){
+      flatCount++;
+      var st = el("div","station "+(row.kind==="bridge"?"bridge ":"")+(row.status==="gap"?"gap ":"")+(flatCount===1?"first ":"")+(flatCount===totalStations?"last ":"")+"reveal");
+      var node = '<div class="node" aria-hidden="true"><span>'+(row.kind==="bridge"?"":row.n)+'</span></div>';
+      var badges = (row.badges||[]).map(function(b){
+        if(b==="bridge") return '<span class="badge bridge">bridge</span>';
+        if(b==="guarded") return '<span class="badge guarded">guarded</span>';
+        if(b==="core") return '<span class="badge core">proven core</span>';
+        if(b==="repair") return '<span class="badge guarded">Lemma&nbsp;10 repair</span>';
+        if(b==="gap") return '<span class="badge" style="color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:var(--bad-ghost)">open gap</span>';
+        return '<span class="badge">'+b+'</span>';
+      }).join("");
+      var filesHTML = row.files.map(function(f){ return '<div class="fpath">'+pathHTML(f[0],f[1])+'</div>'; }).join("");
+      var card =
+        '<div class="card">'+
+          '<div class="card-top">'+
+            '<div><span class="eyebrow">Link '+row.n+' · '+(row.kind==="bridge"?"bridge":"subprotocol")+'</span>'+
+              '<div class="card-title">'+row.name+'</div></div>'+
+            '<div class="card-badges">'+badges+' '+pill(row.status)+'</div>'+
+          '</div>'+
+          '<div class="files">'+filesHTML+'</div>'+
+          '<div class="metaline"><span><b>'+row.ref+'</b></span><span>'+row.rounds+'</span><span>CWSS: '+row.cwss+'</span>'+
+            (row.sorry>0?'<span>'+row.sorry+' sorry</span>':'<span style="color:var(--ok)">0 sorry</span>')+'</div>'+
+          '<div class="flow"><span class="rel">'+row.relIn+'</span><span class="arrow">──▶</span><span class="rel">'+row.relOut+'</span></div>'+
+          '<div class="desc">'+row.desc+'</div>'+
+        '</div>';
+      st.innerHTML = node + card;
+      z.appendChild(st);
+    });
+    spine.appendChild(z);
+  });
+  /* ---------------- SUBSTRATE ---------------- */
+  function subCard(c){
+    var d = el("div","sub-card reveal");
+    var files = c.files.map(function(f){ return '<div class="sc-files">'+pathHTML(f[0],f[1])+'</div>'; }).join("");
+    d.innerHTML =
+      '<div class="sc-top"><div><div class="sc-name">'+c.name+'</div><div class="sc-ref">'+c.ref+'</div></div>'+pill(c.status)+'</div>'+
+      files +
+      '<div class="sc-desc">'+c.desc+'</div>'+
+      (c.sorry>0?'<div class="sc-ref">'+c.sorry+' open sorry'+(c.sorry>1?"s":"")+'</div>':'<div class="sc-ref" style="color:var(--ok)">sorry-free</div>');
+    return d;
+  }
+  var sp = document.getElementById("substrateProven"); SUB_PROVEN.forEach(function(c){ sp.appendChild(subCard(c)); });
+  var sc = document.getElementById("substrateCross"); SUB_CROSS.forEach(function(c){ sc.appendChild(subCard(c)); });
+
+  /* ---------------- INDEX TABLE ---------------- */
+  var tbody = document.getElementById("indexBody");
+  function renderIndex(filter){
+    tbody.innerHTML = "";
+    INDEX.forEach(function(r){
+      var status = r[5];
+      if(filter!=="all" && status!==filter) return;
+      var tr = el("tr"); tr.setAttribute("data-status", status);
+      var sorryCls = r[6]===0 ? "zero" : (r[6]>=5 ? "hi" : "");
+      tr.innerHTML =
+        '<td class="path">'+pathHTML(r[0], r[1])+'</td>'+
+        '<td class="rolecell">'+r[2]+'</td>'+
+        '<td class="refcell">'+r[3]+'</td>'+
+        '<td class="rowcell">'+r[4]+'</td>'+
+        '<td>'+pill(status)+'</td>'+
+        '<td class="sorrycell '+sorryCls+'">'+(r[6]===0?'0':r[6])+'</td>';
+      tbody.appendChild(tr);
+    });
+  }
+  renderIndex("all");
+  var tf = document.getElementById("tfilter");
+  tf.addEventListener("click", function(e){
+    var b = e.target.closest("button"); if(!b) return;
+    Array.prototype.forEach.call(tf.querySelectorAll("button"), function(x){ x.setAttribute("aria-pressed", x===b ? "true":"false"); });
+    renderIndex(b.getAttribute("data-f"));
+  });
+
+  /* ---------------- ROADMAP ---------------- */
+  var rm = document.getElementById("roadmap");
+  ROADMAP.forEach(function(r){
+    var d = el("div","road-item reveal");
+    if(r.tag==="gap"){ d.style.borderLeftColor="var(--bad)"; }
+    d.innerHTML = '<span class="ri-tag">'+(r.tag==="gap"?pill("gap"):pill("plan"))+'</span>'+
+      '<div class="ri-body"><h4>'+r.title+'</h4><p>'+r.body+'</p></div>';
+    rm.appendChild(d);
+  });
+
+  /* ---------------- THEME TOGGLE ---------------- */
+  var root = document.documentElement, tgl = document.getElementById("themeToggle");
+  function apply(t){ if(t) root.setAttribute("data-theme",t); tgl.textContent = (t==="dark"||(!t&&matchMedia("(prefers-color-scheme:dark)").matches))?"☀":"☾"; }
+  var stored=null; try{ stored=localStorage.getItem("hachi-theme"); }catch(e){}
+  apply(stored);
+  tgl.addEventListener("click", function(){
+    var cur = root.getAttribute("data-theme");
+    var next = cur==="dark" ? "light" : cur==="light" ? "dark" : (matchMedia("(prefers-color-scheme:dark)").matches?"light":"dark");
+    root.setAttribute("data-theme", next); apply(next);
+    try{ localStorage.setItem("hachi-theme", next); }catch(e){}
+  });
+
+  /* ---------------- REVEAL ON SCROLL ---------------- */
+  var reduce = matchMedia("(prefers-reduced-motion:reduce)").matches;
+  if(reduce){ Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function(x){ x.classList.add("in"); }); }
+  else {
+    var io = new IntersectionObserver(function(entries){
+      entries.forEach(function(en){ if(en.isIntersecting){ en.target.classList.add("in"); io.unobserve(en.target); } });
+    }, { rootMargin:"0px 0px -8% 0px", threshold:0.06 });
+    Array.prototype.forEach.call(document.querySelectorAll(".reveal"), function(x){ io.observe(x); });
+  }
+})();
+</script>

@@ -83,7 +83,8 @@ lemma regular_liftToFunctionField (H : F[X][Y]) (p : F[X]) :
 /-- Coefficient-polynomial images are regular elements of the function field. -/
 lemma regularElementsSet_liftToFunctionField (H : F[X][Y]) (p : F[X]) :
     liftToFunctionField (H := H) p ∈ regularElementsSet H := by
-  simpa using regularElementsSet_liftBivariate H (Polynomial.C p)
+  change liftBivariate (H := H) (Polynomial.C p) ∈ regularElementsSet H
+  exact regularElementsSet_liftBivariate H (Polynomial.C p)
 
 /-- Nonzero coefficient polynomials remain nonzero after embedding into the function field. -/
 lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}

@@ -52,10 +52,10 @@ lemma guruswami_sudan_for_proximity_gap_property {k m : ℕ} {ωs : Fin n ↪ F}
     (hk : k + 2 ≤ n) (hm : 1 ≤ m)
     (cond : Conditions (k + 1) m (_root_.proximity_gap_degree_bound (k + 1) n m) ωs w Q)
     {p : ReedSolomon.code ωs (k + 1)}
-    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.codewordToPoly p)) : ℝ) / ↑n <
+    (h : (↑Δ₀(w, fun i ↦ Polynomial.eval (ωs i) (ReedSolomon.toPolynomial p)) : ℝ) / ↑n <
          _root_.proximity_gap_johnson (k + 1) n m)
     :
-    (Polynomial.X - Polynomial.C (ReedSolomon.codewordToPoly p)) ∣ Q :=
+    (Polynomial.X - Polynomial.C (ReedSolomon.toPolynomial p)) ∣ Q :=
   GuruswamiSudan.proximity_gap_divisibility hk hm p cond h
 
 /-- The Guruswami-Sudan condition as it is stated in [BCIKS20]. -/
@@ -115,7 +115,8 @@ lemma exists_Pz_of_coeffs_of_close_proximity
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
       simpa using hS
     obtain ⟨p, hS⟩ : ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w := by
-      simpa using hS
+      change ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w at hS
+      exact hS
     exact ⟨p, ⟨
       by if h : p = 0
          then simp [h]

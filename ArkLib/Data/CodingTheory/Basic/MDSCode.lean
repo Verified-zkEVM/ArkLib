@@ -106,8 +106,7 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
       refine le_trans (h_dist_ge (u - v) ?_ ?_) ?_
       · exact Submodule.sub_mem _ hu hv
       · exact sub_ne_zero_of_ne huv
-      · convert hd using 1
-        exact congr_arg Finset.card (Finset.filter_congr fun x _ => by simp [sub_eq_zero])
+      · simpa only [hammingNorm, hammingDist, Pi.sub_apply, sub_ne_zero] using hd
   have h_dist_le : Code.dist (fromRowGenMat G).carrier ≤ n - k + 1 := by
     contrapose! h_singleton_bound
     rw [tsub_add_eq_add_tsub ]

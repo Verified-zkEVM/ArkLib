@@ -20,5 +20,10 @@ Edit the source of truth, not the output.
 
 - `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files and now fails fast if
   untracked Lean files would be skipped.
+- Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
+  generated-files PRs opened from `.github/workflows/kb-generated.yml`.
+- Missing cited-paper stubs under `docs/kb/papers/` and `docs/kb/sources/` are also scaffolded by
+  that workflow. Commit paper pages in feature PRs only when they contain real ArkLib-specific
+  content.
 - Generated site and blueprint output are for review and deployment, not authoring.
 - If a path looks derived, confirm its source of truth before editing it.

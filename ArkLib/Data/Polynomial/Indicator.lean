@@ -8,7 +8,7 @@ import ArkLib.Data.Polynomial.Bivariate
 import Mathlib.Algebra.Polynomial.Basic
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.Tactic.Cases
-import Mathlib.Tactic.LinearCombination'
+import Mathlib.Tactic.LinearCombinationPrime
 
 /-! This module is mostly needed from proving lemma 4.9
   from [ACFY24] but we thought it might be useful for
@@ -68,7 +68,7 @@ lemma indicator_eq_1_of_neg_empty_empty_of_pos_nonempty
           Lagrange.basisDivisor,
           Finset.prod_eq_one])
       (add safe [(by rw
-        [Polynomial.eval_finset_sum,
+        [Polynomial.eval_finsetSum,
         Finset.sum_eq_single x])])
 
 /-- If `pos` is non-empty then the indicator polynomial is the constant
@@ -82,7 +82,7 @@ lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
   have := congr_arg (Polynomial.eval x) contra
   simp only [Lagrange.interpolate_apply, MonoidWithZeroHom.map_ite_one_zero, ite_mul, one_mul,
     zero_mul, Finset.sum_ite_mem, Finset.union_inter_cancel_left, eval_zero] at this
-  rw [Polynomial.eval_finset_sum, Finset.sum_eq_single x] at this
+  rw [Polynomial.eval_finsetSum, Finset.sum_eq_single x] at this
     <;> aesop
     (add simp
       [Lagrange.basis,
@@ -106,7 +106,7 @@ lemma indicator_eq_1_on_pos {pos neg : Finset F} {x : F}
   aesop
       (add simp
         [Polynomial.eval_prod,
-          Polynomial.eval₂_finset_sum,
+          Polynomial.eval₂_finsetSum,
           Lagrange.basis,
           Finset.prod_eq_zero_iff,
           Lagrange.basis,
@@ -122,7 +122,7 @@ lemma indicator_eq_0_on_neg_sub_pos {pos neg : Finset F} {x : F}
     aesop
       (add simp [Finset.mem_sdiff, Lagrange.basis, id_eq, eval_prod])
       (add safe [(by rw [Finset.prod_eq_zero])])
-  aesop (add simp [indicator, Polynomial.eval_finset_sum, Finset.sum_eq_zero])
+  aesop (add simp [indicator, Polynomial.eval_finsetSum, Finset.sum_eq_zero])
 
 /-- The degree of the indicator polynomial
   is less than `#(pos ∪ neg)`. -/

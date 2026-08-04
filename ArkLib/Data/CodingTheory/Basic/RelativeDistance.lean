@@ -61,7 +61,7 @@ lemma relDistFromCode_le_relDist_to_mem (u : ι → F) {C : Set (ι → F)} (v :
     intro d hd
     simp only [Set.mem_setOf_eq] at hd
     rcases hd with ⟨w, _, h_dist⟩
-    exact (zero_le _).trans h_dist
+    exact (zero_le).trans h_dist
   · -- Show relHammingDist u v is in the set
     simp only [Set.mem_setOf_eq]
     exact ⟨v, hv, le_refl _⟩
@@ -120,7 +120,7 @@ lemma exists_relClosest_codeword_of_Nonempty_Code {ι : Type*} [Fintype ι] {F :
         intro d hd
         simp only [Set.mem_setOf_eq] at hd
         rcases hd with ⟨v, _, hfv_le_d⟩
-        exact (zero_le _).trans hfv_le_d
+        exact (zero_le).trans hfv_le_d
       · exact hS_nonempty
       · -- S_dists ⊆ S
         intro d' hd'
@@ -139,7 +139,7 @@ lemma exists_relClosest_codeword_of_Nonempty_Code {ι : Type*} [Fintype ι] {F :
         rcases hd' with ⟨v, hv_mem, hfv_le_d'⟩
         -- `sInf S_dists` is a lower bound for `S_dists`, so `sInf S_dists ≤ f v`.
         have h_sInf_le_fv := csInf_le (by
-          use 0; intro; (expose_names; exact fun a_1 ↦ zero_le a)) (Set.mem_image_of_mem f hv_mem)
+          use 0; intro; (expose_names; exact fun a_1 ↦ zero_le)) (Set.mem_image_of_mem f hv_mem)
         -- By transitivity, `sInf S_dists ≤ f v ≤ d'`, so `sInf S_dists ≤ d'`.
         exact h_sInf_le_fv.trans hfv_le_d'
   -- 6. The `sInf` of a finite, non-empty set is *in* the set.
@@ -287,7 +287,6 @@ lemma relCloseToCode_iff_relCloseToCodeword_of_minDist [Nonempty ι] [DecidableE
       use v; constructor
       · simp only [Subtype.coe_prop]
       · rw [relDistFromPickRelClosestCodeword_of_Nonempty_Code] at h_dist_le_e
-        simp only at h_dist_le_e
         rw [←ENNReal.coe_le_coe]
         exact h_dist_le_e
   · -- Direction 2: (←)
@@ -363,14 +362,11 @@ theorem relDistFromCode_le_iff_distFromCode_toENNReal_le {C : Set (ι → F)} (u
     δᵣ(u, C) ≤ δ ↔ (Δ₀(u, C) : ENNReal) ≤ δ * (Fintype.card ι : ℝ≥0) := by
   rw [relDistFromCode_le_iff_distFromCode_le]
   constructor <;> intro h
-  · simp_all only [ENNReal.coe_natCast]
-    convert ENNReal.ofReal_le_ofReal
-      (Nat.floor_le (show 0 ≤ δ * (Fintype.card ι : ℝ≥0) by positivity)) |>
-        le_trans (ENNReal.ofReal_le_ofReal <| ?_) using 1
-    any_goals exact Nat.cast (distFromCode u C |> ENat.toNat)
-    · cases h : distFromCode u C <;> aesop
-    · simp [ENNReal.ofReal_mul]
-    · cases h' : distFromCode u C <;> aesop
+  · refine (ENat.toENNReal_le.mpr h).trans ?_
+    change ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) : ENNReal) ≤
+      (δ * (Fintype.card ι : ℝ≥0) : ℝ≥0)
+    exact ENNReal.coe_le_coe.mpr
+      (Nat.floor_le (show 0 ≤ δ * (Fintype.card ι : ℝ≥0) by positivity))
   · contrapose! h
     cases h' : distFromCode u C
     · simp_all only [ENat.coe_lt_top, ENNReal.coe_natCast, ENat.toENNReal_top]
@@ -420,7 +416,7 @@ lemma relDist_floor_bound_iff_complement_bound (n upperBound : ℕ) (δ : ℝ≥
   let k := upperBound
   set r : ℝ≥0 := δ * n
   set m : ℕ := Nat.floor r
-  have h_m_le_r_NNReal : (m : NNReal) ≤ r := Nat.floor_le (a := r) (ha := zero_le r)
+  have h_m_le_r_NNReal : (m : NNReal) ≤ r := Nat.floor_le (a := r) (ha := zero_le)
   have h_m_le_r_ENNReal : (m : ENNReal) ≤ (r : ENNReal) := by
     change ( (m : NNReal) : ENNReal) ≤ (r : ENNReal)
     rw [ENNReal.coe_le_coe]

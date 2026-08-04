@@ -131,14 +131,25 @@ theorem embedSum_splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) :
     embedSum (splitSum k).1 (splitSum k).2 = k := by
   induction m with
   | zero => exact Fin.elim0 k
-  | succ m ih => sorry
+  | succ m ih =>
+    induction k using Fin.addCases with
+    | left k₀ => rw [splitSum_succ]; erw [dappend_left]; rfl
+    | right k₁ =>
+      rw [splitSum_succ]; erw [dappend_right]
+      simp only [embedSum_succ_succ, ih]
+      rfl
 
 @[simp]
 theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
     splitSum (embedSum i j) = ⟨i, j⟩ := by
   induction m with
   | zero => exact Fin.elim0 i
-  | succ m ih => sorry
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero => rw [embedSum_succ_zero, splitSum_succ]; erw [dappend_left]
+    | succ i' =>
+      rw [embedSum_succ_succ, splitSum_succ]; erw [dappend_right]
+      rw [ih]
 
 def finSum'FinEquiv' {m : ℕ} {n : Fin m → ℕ} : (i : Fin m) × Fin (n i) ≃ Fin (vsum n) where
   toFun := fun ij => embedSum ij.1 ij.2
@@ -200,15 +211,6 @@ theorem dflatten_two_eq_append {n : Fin 2 → ℕ} {motive : (k : Fin (vsum n)) 
 --   | succ m ih => sorry
 
 @[simp]
-theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
-    (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
-    dflatten (motive := motive) (fun i j => v (embedSum i j)) k = v k := by
-  induction m with
-  | zero => exact Fin.elim0 k
-  | succ m ih =>
-    sorry
-
-@[simp]
 theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (i : Fin m) (j : Fin (n i)) :
     dflatten (motive := motive) v (embedSum i j) = v i j := by
@@ -221,6 +223,13 @@ theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
       simp only [embedSum_succ_succ, dflatten_succ]
       erw [dappend_right]
       exact ih (motive := fun i => motive (natAdd (n 0) i)) (fun i => v i.succ) i j
+
+@[simp]
+theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
+    dflatten (motive := motive) (fun i j => v (embedSum i j)) k = v k := by
+  rw [← embedSum_splitSum k]
+  exact dflatten_embedSum (fun i j => v (embedSum i j)) (splitSum k).1 (splitSum k).2
 
 /-- Homogeneous flatten: flattens a nested homogeneous vector
 `(i : Fin m) → (j : Fin (n i)) → α` into a single homogeneous vector `Fin (vsum n) → α`
@@ -312,7 +321,18 @@ theorem fflatten_embedSum {A : Sort u} {F : A → Sort v} {m : ℕ} {n : Fin m �
     {α : (i : Fin m) → (j : Fin (n i)) → A}
     (v : (i : Fin m) → (j : Fin (n i)) → F (α i j)) (i : Fin m) (j : Fin (n i)) :
     fflatten v (embedSum i j) = cast (by simp) (v i j) := by
-  sorry
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero =>
+      simp only [embedSum_succ_zero, fflatten_succ]
+      erw [fappend_left]
+      rfl
+    | succ i =>
+      simp only [embedSum_succ_succ, fflatten_succ]
+      erw [fappend_right, ih (fun i => v i.succ) i j, _root_.cast_cast]
+      rfl
 
 /-- Functorial flatten with two arguments: flattens two nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → F (α i j)` into a single heterogeneous tuple with type
@@ -369,7 +389,18 @@ theorem fflatten₂_embedSum {A : Sort u} {B : Sort v} {F : A → B → Sort w} 
     {β : (i : Fin m) → (j : Fin (n i)) → B}
     (v : (i : Fin m) → (j : Fin (n i)) → F (α i j) (β i j)) (i : Fin m) (j : Fin (n i)) :
     fflatten₂ v (embedSum i j) = cast (by simp) (v i j) := by
-  sorry
+  induction m with
+  | zero => exact Fin.elim0 i
+  | succ m ih =>
+    induction i using Fin.cases with
+    | zero =>
+      simp only [embedSum_succ_zero, fflatten₂_succ]
+      erw [fappend₂_left]
+      rfl
+    | succ i =>
+      simp only [embedSum_succ_succ, fflatten₂_succ]
+      erw [fappend₂_right, ih (fun i => v i.succ) i j, _root_.cast_cast]
+      rfl
 
 /-- Heterogeneous flatten: flattens a nested heterogeneous tuple
 `(i : Fin m) → (j : Fin (n i)) → α i j` into a single heterogeneous tuple with type

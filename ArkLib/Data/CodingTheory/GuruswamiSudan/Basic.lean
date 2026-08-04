@@ -5,7 +5,7 @@ Authors: Stefano Rocca
 -/
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
@@ -136,6 +136,8 @@ lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
 lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
     numVars k D = let L := D / (k - 1); (L + 1) * (2 * D + 2 - (k - 1) * L) / 2 := by
       convert card_weigthBoundIndices_eq_sum D hk using 1
+      · rfl
+      next =>
       have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
           (D / (k - 1) + 1) * D - (k - 1) * ((D / (k - 1)) * (D / (k - 1) + 1)) / 2 := by
         have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
@@ -150,7 +152,9 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
           rw [← sum_mul _ _ _]
           exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
             norm_num [range_add_one] at *; linarith)
-      simp_all only [sum_add_distrib, sum_const, card_range, smul_eq_mul, mul_one]
+      rw [sum_add_distrib]
+      simp only [sum_const, card_range, smul_eq_mul, mul_one]
+      rw [h_simp]
       rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
       rw [tsub_eq_of_eq_add (c := k - 1)]
       · rw [tsub_add_eq_add_tsub]
@@ -275,8 +279,9 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
         exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
       convert h_div using 1
       convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-      rw [← Nat.mul_div_assoc] <;> ring_nf
-      exact even_iff_two_dvd.mp (by simp [parity_simps])
+      · rfl
+      · rw [← Nat.mul_div_assoc] <;> ring_nf
+        exact even_iff_two_dvd.mp (by simp [parity_simps])
 
 lemma numVars_gt_numConstraints (k n m : ℕ) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
@@ -420,7 +425,7 @@ section neZero
     of the combination. -/
 lemma coeff_linearCombination_monomial (c : ℕ × ℕ →₀ F) (i j : ℕ) :
     ((linearCombination F (fun p ↦ monomial (F := F) p.1 p.2) c).coeff j).coeff i = c (i, j) := by
-    simp only [linearCombination_apply, Finsupp.sum, finset_sum_coeff, coeff_smul, smul_eq_mul]
+    simp only [linearCombination_apply, Finsupp.sum, finsetSum_coeff, coeff_smul, smul_eq_mul]
     rw [Finset.sum_eq_single (i, j)] <;> simp +contextual only [Finsupp.mem_support_iff, ne_eq,
       mul_eq_zero, false_or, Prod.forall, Prod.mk.injEq, not_and]
     · erw [coeff_monomial, if_pos rfl]; aesop
@@ -435,9 +440,9 @@ lemma linearIndependent_monomials :
     apply _root_.linearIndependent_iff.mpr
     intro l hl
     ext ⟨i, j⟩
-    simp only [Finsupp.coe_zero, Pi.zero_apply]
-    convert congr_arg (fun f ↦ (f.coeff j).coeff i) hl using 1
-    convert (coeff_linearCombination_monomial l i j).symm using 1
+    have hc := congr_arg (fun f ↦ (f.coeff j).coeff i) hl
+    rw [coeff_linearCombination_monomial] at hc
+    simpa using hc
 
 /-- The solved polynomial is non-zero. -/
 lemma polySol_ne_zero :
@@ -450,7 +455,7 @@ lemma polySol_ne_zero :
           monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
       exact this.comp (LinearEquiv.injective _)
-    exact fun h ↦ this.1 <| h_inj <| by simpa using h
+    exact fun h ↦ this.1 <| h_inj <| by simpa [polySol] using h
 
 end neZero
 
@@ -461,14 +466,7 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
     natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
     classical
     simp only [natWeightedDegree, monomial]
-    refine le_antisymm ?_ ?_ <;> norm_num
-    · intros b hb
-      simp [coeff_monomial] at hb
-      simp [← hb]
-    · refine le_trans ?_ (Finset.le_sup
-        (f := fun m ↦ u * (Polynomial.monomial j (Polynomial.monomial i 1)|>.coeff m|>.natDegree)
-          + v * m) (b := j) ?_)
-      all_goals norm_num [coeff_monomial]
+    refine le_antisymm ?_ ?_ <;> norm_num [coeff_monomial]
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
@@ -712,9 +710,12 @@ lemma rootMultiplicity_ge_of_shift_zero [DecidableEq F] {f : F[X][Y]} {x y : F}
       contrapose! hne
       simp only [Bivariate.coeff, Polynomial.coeff_map, Polynomial.coe_compRingHom]
       aesop
-    exact absurd (h_min_ge_m _
-      (List.min?_mem (by simpa [Bivariate.rootMultiplicity, rootMultiplicity₀,
-        weightedDegree, shift, hdeg] using h)))
+    have hmem := h
+    simp only [Bivariate.rootMultiplicity, rootMultiplicity₀] at hmem
+    have hdeg' : weightedDegree (shift f x y) 1 1 = some deg := by
+      simpa [weightedDegree, shift] using hdeg
+    rw [hdeg'] at hmem
+    exact absurd (h_min_ge_m _ (List.min?_mem hmem))
       (by push Not; exact h_contra)
 
 lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
@@ -845,19 +846,20 @@ lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :
     · simp +contextual only [mem_image, mem_univ, true_and, Lagrange.interpolate_apply,
         forall_exists_index, forall_apply_eq_imp_iff]
       intro i
-      rw [eval_finset_sum, Finset.sum_eq_single i]
+      rw [eval_finsetSum, Finset.sum_eq_single i]
       · rw [eval_mul, Lagrange.eval_basis_self (by exact ωs.injective.injOn) (mem_univ i)]
         norm_num
       all_goals aesop
 
 /-- The polynomial corresponding to a codeword has degree at most k-1. -/
-lemma codewordToPoly_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
-    (codewordToPoly p).natDegree ≤ k - 1 := by
-    rw [codewordToPoly]
+lemma toPolynomial_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
+    (toPolynomial p).natDegree ≤ k - 1 := by
+    rw [toPolynomial_def]
     obtain ⟨q, hq, hp⟩ := p.2
     have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
-      convert interpolate_eq_of_degree_lt q _
-      exact lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk
+      simpa [evalOnPoints, Function.Embedding.toFun_eq_coe] using
+        interpolate_eq_of_degree_lt q
+          (lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk)
     rcases k <;> simp_all only [Function.Embedding.toFun_eq_coe, Lagrange.interpolate_apply,
       zero_add, degreeLT, ge_iff_le, zero_le, iInf_pos, Submodule.coe_iInf, Set.mem_iInter,
       SetLike.mem_coe, LinearMap.mem_ker, lcoeff_apply, zero_tsub, nonpos_iff_eq_zero]
@@ -885,19 +887,19 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
     {Q : F[X][Y]}
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ proximity_gap_degree_bound k n m)
   (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
-  (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+  (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     proximity_gap_johnson k n m) :
-  X - C (codewordToPoly p) ∣ Q := by
+  X - C (toPolynomial p) ∣ Q := by
     contrapose! h_dist with h_distots
-    have hR_nonzero : (Q.eval (codewordToPoly p)) ≠ 0 := by
+    have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
       contrapose! h_distots
       exact dvd_iff_isRoot.mpr h_distots
-    have hR_roots : (Q.eval (codewordToPoly p)).natDegree ≥
-        m * (n - hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i))) := by
-      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (codewordToPoly p).eval (ωs i)), m ≤
-          (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+    have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
+        m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by
+      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i)), m ≤
+          (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
         intro i hi
-        have h_root : m ≤ (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+        have h_root : m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
           have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
             intro i s t hst
             contrapose! hQ_mult
@@ -910,14 +912,14 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
               · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
                 exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
           have := hQ_mult i;
-          have := orderAt_eval_ge Q (codewordToPoly p) (ωs i) m (by aesop); aesop;
+          have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;
         exact h_root;
       have hR_roots_card : (Finset.univ.filter (fun i ↦
-          f i = (codewordToPoly p).eval (ωs i))).card * m ≤
-            (Q.eval (codewordToPoly p)).natDegree := by
+          f i = (toPolynomial p).eval (ωs i))).card * m ≤
+            (Q.eval (toPolynomial p)).natDegree := by
         have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
-            f i = (codewordToPoly p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
-              (Q.eval (codewordToPoly p)) := by
+            f i = (toPolynomial p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
+              (Q.eval (toPolynomial p)) := by
           refine Finset.prod_dvd_of_coprime ?_ ?_
           · intros i hi j hj hij
             exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
@@ -934,10 +936,10 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
       rw [Finset.filter_not, Finset.card_sdiff]
       norm_num
       exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
-    have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ proximity_gap_degree_bound k n m := by
-      have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
+    have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ proximity_gap_degree_bound k n m := by
+      have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
         apply degree_eval_le_weightedDegree
-        exact codewordToPoly_degree_le hk p
+        exact toPolynomial_degree_le hk p
       refine le_trans hR_deg ?_
       convert hQ_deg using 1
       rw [weightedDegree_eq_natWeightedDegree]
@@ -946,7 +948,7 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
     refine lt_of_le_of_lt hR_deg ?_
     convert sufficient_multiplicity_bound hk hm hR_roots using 1
     rw [← @Nat.cast_lt ℝ]
-    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) ≤ n
+    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
       from le_trans (Finset.card_le_univ _) (by norm_num))]
 
 end divisibility
@@ -997,8 +999,9 @@ lemma gs_numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1
     exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
   convert h_div using 1
   convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-  rw [← Nat.mul_div_assoc] <;> ring_nf
-  exact even_iff_two_dvd.mp (by simp [parity_simps])
+  · rfl
+  · rw [← Nat.mul_div_assoc] <;> ring_nf
+    exact even_iff_two_dvd.mp (by simp [parity_simps])
 
 /-- The degree bound with ρ = k/n is strictly less than m times the number of
     agreement points, provided the distance is within the rate-corrected Johnson
@@ -1021,19 +1024,19 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
     {Q : F[X][Y]}
   (hQ_deg : weightedDegree Q 1 (k - 1) ≤ gs_degree_bound k n m)
   (hQ_mult : ∀ i, m ≤ rootMultiplicity Q (ωs i) (f i))
-  (h_dist : (hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) : ℝ) / n <
+  (h_dist : (hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) : ℝ) / n <
     gs_johnson k n m) :
-  X - C (codewordToPoly p) ∣ Q := by
+  X - C (toPolynomial p) ∣ Q := by
     contrapose! h_dist with h_distots
-    have hR_nonzero : (Q.eval (codewordToPoly p)) ≠ 0 := by
+    have hR_nonzero : (Q.eval (toPolynomial p)) ≠ 0 := by
       contrapose! h_distots
       exact dvd_iff_isRoot.mpr h_distots
-    have hR_roots : (Q.eval (codewordToPoly p)).natDegree ≥
-        m * (n - hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i))) := by
-      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (codewordToPoly p).eval (ωs i)), m ≤
-          (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+    have hR_roots : (Q.eval (toPolynomial p)).natDegree ≥
+        m * (n - hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i))) := by
+      have hR_roots : ∀ i ∈ Finset.univ.filter (fun i ↦ f i = (toPolynomial p).eval (ωs i)), m ≤
+          (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
         intro i hi
-        have h_root : m ≤ (Q.eval (codewordToPoly p)).rootMultiplicity (ωs i) := by
+        have h_root : m ≤ (Q.eval (toPolynomial p)).rootMultiplicity (ωs i) := by
           have hQ_mult : ∀ i, HasOrderAt Q (ωs i) (f i) m := by
             intro i s t hst
             contrapose! hQ_mult
@@ -1046,14 +1049,14 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
               · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
                 exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
           have := hQ_mult i;
-          have := orderAt_eval_ge Q (codewordToPoly p) (ωs i) m (by aesop); aesop;
+          have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;
         exact h_root;
       have hR_roots_card : (Finset.univ.filter (fun i ↦
-          f i = (codewordToPoly p).eval (ωs i))).card * m ≤
-            (Q.eval (codewordToPoly p)).natDegree := by
+          f i = (toPolynomial p).eval (ωs i))).card * m ≤
+            (Q.eval (toPolynomial p)).natDegree := by
         have hR_roots_card : (∏ i ∈ Finset.univ.filter (fun i ↦
-            f i = (codewordToPoly p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
-              (Q.eval (codewordToPoly p)) := by
+            f i = (toPolynomial p).eval (ωs i)), (X - C (ωs i)) ^ m) ∣
+              (Q.eval (toPolynomial p)) := by
           refine Finset.prod_dvd_of_coprime ?_ ?_
           · intros i hi j hj hij
             exact IsCoprime.pow (irreducible_X_sub_C (ωs i) |> fun hi ↦
@@ -1070,10 +1073,10 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
       rw [Finset.filter_not, Finset.card_sdiff]
       norm_num
       exact Or.inl (Nat.sub_sub_self (le_trans (Finset.card_le_univ _) (by norm_num)))
-    have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ gs_degree_bound k n m := by
-      have hR_deg : (Q.eval (codewordToPoly p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
+    have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ gs_degree_bound k n m := by
+      have hR_deg : (Q.eval (toPolynomial p)).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
         apply degree_eval_le_weightedDegree
-        exact codewordToPoly_degree_le hk p
+        exact toPolynomial_degree_le hk p
       refine le_trans hR_deg ?_
       convert hQ_deg using 1
       rw [weightedDegree_eq_natWeightedDegree]
@@ -1082,8 +1085,9 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
     refine lt_of_le_of_lt hR_deg ?_
     convert gs_sufficient_multiplicity_bound hk hm hR_roots using 1
     rw [← @Nat.cast_lt ℝ]
-    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (codewordToPoly p).eval (ωs i)) ≤ n
+    norm_num [Nat.cast_sub (show hammingDist f (fun i ↦ (toPolynomial p).eval (ωs i)) ≤ n
       from le_trans (Finset.card_le_univ _) (by norm_num))]
+
 
 end gs_rate
 

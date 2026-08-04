@@ -468,7 +468,6 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
   simp at h'
   have hR := h' (stmtLens.proj outerStmtIn) default innerP
-  simp at hR
   simp [Reduction.runWithLog, Verifier.liftContext, Verifier.run] at hR ⊢
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn

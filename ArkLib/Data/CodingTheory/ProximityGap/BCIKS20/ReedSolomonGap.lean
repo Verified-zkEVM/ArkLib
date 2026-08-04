@@ -8,14 +8,13 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.Probability.Notation
-/-! # BCIKS20 Reed-Solomon Proximity Gaps -/
 
+/-! # BCIKS20 Reed-Solomon Proximity Gaps -/
 
 namespace ProximityGap
 
-open NNReal Finset Function ProbabilityTheory
+open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode ProbabilityTheory
-open Code
 
 section CoreResults
 
@@ -27,9 +26,9 @@ Let `C` be a collection of affine spaces. Then `C` displays a `(δ, ε)`-proximi
 a Reed-Solomon code, where `(δ, ε)` are the proximity and error parameters defined up to the
 Johnson bound.
 
-The `hε : errorBound δ deg domain < 1` hypothesis is required for the `Xor'` exclusivity in
+The `hε : errorBound δ deg domain < 1` hypothesis is required for the `Xor` exclusivity in
 `δ_ε_proximityGap`: without `ε < 1`, the two branches `Pr = 1` and `Pr ≤ ε` could both hold
-when `ε = 1`, violating `Xor'`.
+when `ε = 1`, violating `Xor`.
 
 This proof depends on `correlatedAgreement_affine_spaces` (Theorem 1.7) in `AffineSpaces.lean`. -/
 theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {domain : ι ↪ F}
@@ -53,7 +52,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
   by_cases hcase :
       Pr_{let x ← $ᵖ S}[δᵣ(x.val, (ReedSolomon.toFinset domain deg)) ≤ δ] ≤
         (errorBound δ deg domain : ℝ≥0)
-  · -- Right Xor' branch: `Pr ≤ ε ∧ ¬(Pr = 1)`.
+  · -- Right Xor branch: `Pr ≤ ε ∧ ¬(Pr = 1)`.
     refine Or.inr ⟨hcase, ?_⟩
     intro hPeq1
     rw [hPeq1] at hcase
@@ -61,7 +60,7 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
     have hε_lt_one_ENN : (errorBound δ deg domain : ENNReal) < (1 : ENNReal) := by
       exact_mod_cast hε
     exact (not_lt_of_ge hcase) hε_lt_one_ENN
-  · -- Left Xor' branch: `Pr = 1 ∧ ¬(Pr ≤ ε)`.
+  · -- Left Xor branch: `Pr = 1 ∧ ¬(Pr ≤ ε)`.
     push Not at hcase
     refine Or.inl ⟨?_, not_le.mpr hcase⟩
     -- Goal: `Pr = 1`. Suffices every point of `S` is δ-close to the RS code.
@@ -131,12 +130,15 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
               ((Affine.AffSpanSet.instFinite (u := C i)).mem_toFinset.mp hx)
             subst hx_eq
             intro hclose
-            exact absurd (by convert hclose using 2; simp [ReedSolomon.toFinset])
-              (not_le.mpr hnotclose)
+            have hcoe : (↑(ReedSolomon.toFinset domain deg) : Set (ι → F)) =
+                ReedSolomon.code domain deg := by
+              exact Set.coe_toFinset _
+            rw [hcoe] at hclose
+            exact absurd hclose (not_le.mpr hnotclose)
           rw [this, Finset.card_empty, Nat.cast_zero]
-          simp
+          exact ENNReal.zero_div
         rw [hPr_eq] at hcase
-        exact absurd hcase (not_lt.mpr (zero_le _))
+        exact absurd hcase (not_lt.mpr (zero_le))
       -- Construct jointAgreement from the close codeword witness.
       obtain ⟨v₀, hv₀_mem, hv₀_dist⟩ :=
         (Code.relCloseToCode_iff_relCloseToCodeword_of_minDist (C i 0) δ).mp hCi0_close
@@ -219,9 +221,18 @@ theorem proximity_gap_RSCodes {k t : ℕ} [NeZero k] [NeZero t] {deg : ℕ} {dom
           (Finset.univ.filter (fun (x : ↥S) =>
             δᵣ(x.val, (ReedSolomon.code domain deg : Set (ι → F))) ≤ δ)).card :=
           Finset.card_bij (fun a _ => e a)
-            (fun a ha => by simpa using ha)
+            (fun a ha => by
+              simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha ⊢
+              simpa only [e, Equiv.setCongr_apply] using ha)
             (fun a₁ _ a₂ _ h => e.injective h)
-            (fun b hb => ⟨e.symm b, by simpa using hb, e.apply_symm_apply b⟩)
+            (fun b hb => ⟨e.symm b, by
+              simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb ⊢
+              have hval : (e.symm b).1 = b.1 := by
+                have h := congrArg Subtype.val (e.apply_symm_apply b)
+                simpa only [e, Equiv.setCongr_apply] using h
+              rw [hval]
+              exact hb,
+              e.apply_symm_apply b⟩)
         rw [hcard, hfilt]; exact hcase_code
       -- Apply Thm 1.7 at k := m + 1 to get jointAgreement (W := u').
       have hja_u' : jointAgreement (C := (ReedSolomon.code domain deg : Set (ι → F)))

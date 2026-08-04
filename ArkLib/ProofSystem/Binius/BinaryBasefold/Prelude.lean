@@ -8,8 +8,10 @@ import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.ReedSolomon
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.RestrictDegree
 import CompPoly.Data.Vector.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 
 namespace Binius.BinaryBasefold
 
@@ -34,7 +36,7 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
   suffices (Finset.filter (fun i₁ => x (g i₁) ≠ y (g i₁)) Finset.univ).card ≤ D₂.card by
     unfold hammingDist; simp only [this, D₂]
   -- The cardinality of a preimage is at most the cardinalit
-    --  of the original set for an injective function.
+    -- of the original set for an injective function.
   -- ⊢ #{i₁ | x (g i₁) ≠ y (g i₁)} ≤ #D₂
    -- First, we state that the set on the left is the `preimage` of D₂ under g.
   have h_preimage : Finset.filter (fun i₁ => x (g i₁) ≠ y (g i₁)) Finset.univ
@@ -56,7 +58,7 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
       have res := Set.mapsTo_image (f := g) (s := D₁)
       convert res
       simp only [coe_image]
-      --  (D₁.image g : Set ι₂)
+      -- (D₁.image g : Set ι₂)
     · -- Goal 2 : Prove that `g` is injective on the set `D₁`.
       -- This is true because our main hypothesis `hg` states that `g` is injective everywhere.
       exact Function.Injective.injOn hg
@@ -66,155 +68,26 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
     simp [D₁, Finset.image_preimage]
 
   -- Step 3 : By combining these two facts, we get our result.
-  -- |D₁| ≤ |image g(D₁)|  (from Step 1)
+  -- |D₁| ≤ |image g(D₁)| (from Step 1)
   -- and |image g(D₁)| ≤ |D₂| (since it's a subset)
   exact h_card_le_image.trans (Finset.card_le_card h_image_subset)
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
-variable (𝓑 : Fin 2 ↪ L)
 
-/-- Fixes the first `v` variables of a `ℓ`-variate multivariate polynomial.
-`t` -> `H_i` derivation
--/
-noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
-  (H : MvPolynomial (Fin ℓ) L) (challenges : Fin v → L) : MvPolynomial (Fin (ℓ - v)) L :=
-  have h_l_eq : ℓ = (ℓ - v) + v := by rw [Nat.add_comm]; exact (Nat.add_sub_of_le v.is_le).symm
-  -- Step 1 : Rename L[X Fin ℓ] to L[X (Fin (ℓ - v) ⊕ Fin v)]
-  let finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
-  let H_sum : L[X (Fin (ℓ - v) ⊕ Fin v)] := by
-    apply MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) H
-  -- Step 2 : Convert to (L[X Fin v])[X Fin (ℓ - v)] via sumAlgEquiv
-  let H_forward : L[X Fin v][X Fin (ℓ - v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
-  -- Step 3 : Evaluate the poly at the point challenges to get a final L[X Fin (ℓ - v)]
-  let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
-  MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
-
-private lemma sumToIter_monomial_aux {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (m : (S₁ ⊕ S₂) →₀ ℕ) (c : R) :
-    MvPolynomial.sumToIter R S₁ S₂ (MvPolynomial.monomial m c) =
-      MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
-        (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
-  simp +decide only [MvPolynomial.sumToIter, MvPolynomial.eval₂Hom_monomial]
-  simp +decide [Finsupp.prod, Finsupp.comapDomain]
-  convert congr_arg₂ (· * ·) rfl ?_ using 1
-  rotate_left
-  exact ∏ x ∈ m.support,
-    Sum.rec (fun a => MvPolynomial.X a)
-      (fun b => MvPolynomial.C (MvPolynomial.X b)) x ^ m x
-  · rfl
-  · simp +decide [MvPolynomial.monomial_eq, Finset.prod_ite]
-    simp +decide [mul_assoc, Finsupp.prod]
-    rw [← Finset.prod_filter_mul_prod_filter_not m.support (fun x => x.isRight)]
-    congr! 2
-    · exact Finset.prod_bij (fun x hx => Sum.inr x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-    · exact Finset.prod_bij (fun x hx => Sum.inl x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-
-private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (p : MvPolynomial (S₁ ⊕ S₂) R) (n : ℕ)
-    (hp : p ∈ MvPolynomial.restrictDegree (S₁ ⊕ S₂) R n) :
-    (MvPolynomial.sumAlgEquiv R S₁ S₂) p ∈
-      MvPolynomial.restrictDegree S₁ (MvPolynomial S₂ R) n := by
-  intro s hs
-  obtain ⟨m, hm⟩ : ∃ m : (S₁ ⊕ S₂) →₀ ℕ,
-      m ∈ p.support ∧ s = m.comapDomain Sum.inl Sum.inl_injective.injOn := by
-    have h_sum : (MvPolynomial.sumAlgEquiv R S₁ S₂) p =
-        ∑ m ∈ p.support,
-          (MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn))
-            (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn)
-              (p.coeff m)) := by
-      conv_lhs => rw [p.as_sum]
-      rw [map_sum]
-      exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
-    contrapose! hs
-    simp +decide [h_sum]
-    erw [Finsupp.finset_sum_apply]
-    refine Finset.sum_eq_zero fun x hx => ?_
-    erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
-  aesop
-
-private lemma rename_equiv_mem_restrictDegree {R : Type*} [CommSemiring R]
-    {σ τ : Type*}
-    (e : σ ≃ τ) (p : MvPolynomial σ R) (n : ℕ)
-    (hp : p ∈ MvPolynomial.restrictDegree σ R n) :
-    (MvPolynomial.rename e p) ∈ MvPolynomial.restrictDegree τ R n := by
-  intro m hm
-  obtain ⟨n', hn', hm_eq⟩ : ∃ n' ∈ p.support, m = n'.mapDomain e := by
-    simp +zetaDelta at *
-    rw [MvPolynomial.rename_eq] at hm
-    contrapose! hm
-    rw [Finsupp.mapDomain]
-    rw [Finsupp.sum, Finsupp.finset_sum_apply]
-    exact Finset.sum_eq_zero fun x hx =>
-      Finsupp.single_eq_of_ne (hm x (by aesop))
-  aesop
-
-omit [NeZero ℓ] in
-/-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
-`deg` -/
-theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challenges : Fin v → L}
-    {poly : L[X Fin ℓ]} (hp : poly ∈ L⦃≤ deg⦄[X Fin ℓ]) :
-    fixFirstVariablesOfMQP ℓ v poly challenges ∈ L⦃≤ deg⦄[X Fin (ℓ - v)] := by
-  -- The goal is to prove the totalDegree of the result is ≤ deg.
-  rw [MvPolynomial.mem_restrictDegree]
-  unfold fixFirstVariablesOfMQP
-  dsimp only
-  intro term h_term_in_support i
-  -- ⊢ term i ≤ deg
-  have h_l_eq : ℓ = (ℓ - v) + v := (Nat.sub_add_cancel v.is_le).symm
-  set finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
-  set H_sum := MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) poly
-  set H_grouped : L[X Fin ↑v][X Fin (ℓ - ↑v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
-  set eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
-  have h_Hgrouped_degreeLE : H_grouped ∈ (L[X Fin ↑v])⦃≤ deg⦄[X Fin (ℓ - ↑v)] := by
-    exact Binius.BinaryBasefold.sumAlgEquiv_mem_restrictDegree H_sum deg
-      (Binius.BinaryBasefold.rename_equiv_mem_restrictDegree
-        ((finCongr h_l_eq).trans finEquiv) poly deg hp)
-  have h_mem_support_max_deg_LE := MvPolynomial.mem_restrictDegree (R := L[X Fin ↑v]) (n := deg)
-    (σ := Fin (ℓ - ↑v)) (p := H_grouped).mp (h_Hgrouped_degreeLE)
-  have h_term_in_Hgrouped_support : term ∈ H_grouped.support := by
-    have h_support_map_subset : ((MvPolynomial.map eval_map) H_grouped).support
-      ⊆ H_grouped.support := by apply MvPolynomial.support_map_subset
-    exact (h_support_map_subset) h_term_in_support
-  -- h_Hgrouped_degreeLE
-  let res : term i ≤ deg := h_mem_support_max_deg_LE term h_term_in_Hgrouped_support i
-  exact res
-
-/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation -/
-noncomputable def getSumcheckRoundPoly (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)])
-    : L⦃≤ 2⦄[X] := by
-  have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
-    have hi := i.2
-    exact Nat.zero_lt_sub_of_lt hi
-  have h_count_eq : ℓ - ↑i.castSucc - 1 + 1 = ℓ - ↑i.castSucc := by
-    omega
-  let challenges : Fin 0 → L := fun (j : Fin 0) => j.elim0
-  let curH_cast : L[X Fin ((ℓ - ↑i.castSucc - 1) + 1)] := by
-    convert h.val
-  let g := ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1), curH_cast ⸨X ⦃0⦄, challenges, x⸩' (by omega)
-  exact ⟨g, by
-    have h_deg_le_2 : g ∈ L⦃≤ 2⦄[X] := by
-      simp only [g]
-      let hDegIn := Sumcheck.Spec.SingleRound.sumcheck_roundPoly_degreeLE
-        (R := L) (D := 𝓑) (n := ℓ - ↑i.castSucc - 1) (deg := 2) (i := ⟨0, by omega⟩)
-        (challenges := fun j => j.elim0) (poly := curH_cast)
-      have h_in_degLE : curH_cast ∈ L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
-        rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.coe_castSucc, eq_mpr_eq_cast, curH_cast]
-        rw [eqRec_eq_cast, cast_cast, cast_eq]
-        exact h.property
-      let res := hDegIn h_in_degLE
-      exact res
-    rw [mem_degreeLE] at h_deg_le_2 ⊢
-    exact h_deg_le_2
-  ⟩
+-- `fixFirstVariablesOfMQP` and `fixFirstVariablesOfMQP_degreeLE` (plus three private
+-- helper lemmas) were lifted to `ArkLib.Data.MvPolynomial.RestrictDegree`, and
+-- `getSumcheckRoundPoly` was lifted to `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound`,
+-- so the structured sumcheck (`ArkLib.ProofSystem.Sumcheck.Structured`) and any future
+-- ring-switching protocol can use them without depending on `Binius.BinaryBasefold`.
+-- They are accessible here unqualified via `open MvPolynomial` / `open Sumcheck.Structured`
+-- above; we also export them under the `Binius.BinaryBasefold` namespace for any
+-- fully-qualified callers.
+export MvPolynomial (fixFirstVariablesOfMQP fixFirstVariablesOfMQP_degreeLE)
+export Sumcheck.Structured (getSumcheckRoundPoly)
 
 end Preliminaries
 
-noncomputable section       -- expands with 𝔽q in front
+noncomputable section -- expands with 𝔽q in front
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
@@ -224,7 +97,6 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-variable {𝓑 : Fin 2 ↪ L}
 
 section Essentials
 -- In this section, we ue notation `ϑ` for the folding steps, along with `(hdiv : ϑ ∣ ℓ)`
@@ -327,7 +199,7 @@ noncomputable def qMap_total_fiber
             rw [←Nat.sub_sub]; apply Nat.sub_lt_sub_right;
             · exact Nat.le_of_not_lt hj_lt_steps
             · exact j.isLt
-          ⟩  -- Shift indices to match y's basis
+          ⟩ -- Shift indices to match y's basis
       exact basis_x.repr.symm ((Finsupp.equivFunOnFinite).symm x_coeffs)
 
 /- TODO : state that the fiber of y is the set of all 2 ^ steps points in the
@@ -417,7 +289,7 @@ lemma qMap_total_fiber_one_level_eq (i : Fin ℓ) (h_i_add_1 : i.val + 1 ≤ ℓ
       simp only [basis_repr_of_sDomain_lift, add_tsub_cancel_left, zero_lt_one, ↓reduceDIte]
   · have hj_ne_zero : j ≠ ⟨0, by omega⟩ := by omega
     have hj_val_ne_zero : j.val ≠ 0 := by
-      change j.val ≠ ((⟨0, by omega⟩ :  Fin (ℓ + 𝓡 - ↑i)).val)
+      change j.val ≠ ((⟨0, by omega⟩ : Fin (ℓ + 𝓡 - ↑i)).val)
       apply Fin.val_ne_of_ne
       exact hj_ne_zero
     simp only [hj_val_ne_zero, ↓reduceDIte, Finsupp.single, Fin.isValue, ite_eq_left_iff,
@@ -854,7 +726,7 @@ def challengeTensorProduct (steps : ℕ) (r_challenges : Fin steps → L) : Vect
     -- Recursive case : compute tensor product iteratively
     Nat.rec
       (motive := fun k => k ≤ steps → Vector L (2^k))
-      (fun _ => ⟨#[1], rfl⟩)  -- Base : empty tensor product = [1]
+      (fun _ => ⟨#[1], rfl⟩) -- Base : empty tensor product = [1]
       (fun k ih h_k_le =>
         -- Inductive step : extend tensor product by one more challenge
         let prev_vec := ih (Nat.le_trans (Nat.le_succ k) h_k_le)
@@ -1135,10 +1007,9 @@ def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
 
-/-- The equality polynomial eq̃(r, r') that evaluates to 1 when r = r' and 0 otherwise.
-This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/
-def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
-  MvPolynomial.eval r' (MvPolynomial.eqPolynomial r)
+-- `eqTilde` is now defined generically in `ArkLib.Data.MvPolynomial.Multilinear` as
+-- `MvPolynomial.eqTilde r r' := eval r' (eqPolynomial r)`, accessible here unqualified via the
+-- file-level `open MvPolynomial`.
 
 end Essentials
 
@@ -1235,7 +1106,7 @@ def uniqueClosestCodeword
     simp only [h_dist_eq_top, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, ENat.mul_top]
       at h_within_radius
     exact not_top_lt h_within_radius
-  let k : ℕ := 2^(ℓ - i.val)  -- degree bound from BBF_Code definition
+  let k : ℕ := 2^(ℓ - i.val) -- degree bound from BBF_Code definition
   -- Convert domain to Fin format for Berlekamp-Welch
   let domain_to_fin : (sDomain 𝔽q β h_ℓ_add_R_rate)
     ⟨i, by omega⟩ ≃ Fin domain_size := by
@@ -1475,7 +1346,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
       let y_of_x := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i steps h_i_add_steps x
       apply Finset.mem_biUnion.mpr; use y_of_x
       -- ⊢ y_of_x ∈ Y_bad.toFinset ∧ x ∈ qMap_total_fiber(y_of_x)
-      have h_elemenet_Y_bad :  y_of_x ∈ Y_bad.toFinset := by
+      have h_elemenet_Y_bad : y_of_x ∈ Y_bad.toFinset := by
         -- ⊢ y ∈ Y_bad.toFinset
         simp only [fiberwiseDisagreementSet, iteratedQuotientMap, ne_eq, Subtype.exists,
           Set.toFinset_setOf, mem_filter, mem_univ, true_and, Y_bad]

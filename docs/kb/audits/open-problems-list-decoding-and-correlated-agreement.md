@@ -75,16 +75,14 @@ ArkLib, missing, or present in a materially different form.
 | --- | --- | --- | --- |
 | Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present-but-different | `δ_ε_correlatedAgreementAffineLines`, `δ_ε_correlatedAgreementCurves`, `δ_ε_correlatedAgreementAffineSpaces` in [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean) | ArkLib uses predicate-style CA notions, not the paper's maximized error-function interface. |
 | Remark 4.2 discretization of proximity loss | missing | related distance granularity in [ArkLib/Data/CodingTheory/Basic/Distance.lean](../../../ArkLib/Data/CodingTheory/Basic/Distance.lean) | The exact `εca`-specific remark is absent because `εca` is absent. |
-| Definition 4.3 mutual correlated agreement error `εmca(C,δ)` | missing | related WHIR-specific `hasMutualCorrAgreement` in [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean) | ArkLib does not currently expose the paper's general code-level MCA error function. |
 | Remark 4.4 MCA with proximity loss | missing | none | No matching notion was found. |
 | Fact 4.5 `εpg ≤ εca ≤ εmca` | missing | related CA/proximity-gap predicates in [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean) | Not expressible in current ArkLib interfaces because `εca` and `εmca` are not defined as numeric errors. |
 | Lemma 4.6 MCA equals CA below unique decoding radius | missing | none | No general theorem of this form was found. |
-| Lemma 4.7 interleaving degrades MCA by at most `t` | missing | none | No general interleaving-vs-MCA theorem was found. |
+| Lemma 4.7 interleaving degrades MCA by at most `t` | missing | none; see [`Jo26`](../papers/Jo26.md) | No general interleaving-vs-MCA theorem was found. Jo26 gives a sharper interleaving-stability target for generator MCA: no linear interleaving-width loss, exact transfer when the seed-set size is at most the field size, and a field-size weighted factor otherwise. |
 | Theorem 4.8 AHIV17 general-code unique-decoding bound | missing | related but different [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) | AHIV22 is present, but not this general `εmca/εca` statement. |
 | Theorem 4.9 RS unique-decoding results | present-but-different | `RS_correlatedAgreement_affineLines_uniqueDecodingRegime` and `RS_correlatedAgreement_affineLines` in [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean) and [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean) | Item 1 is represented via predicate-style CA for RS. Item 2, the BCHKS25 proximity-loss refinement, is missing. The main file still has a `sorry` in the non-unique-decoding branch. |
 | Remark 4.10 small proximity-loss simplification | missing | none | Depends on missing `εca` error-function interface. |
 | Theorem 4.11 1.5-Johnson regime for general linear codes | missing | none | No matching theorem was found. |
-| Theorem 4.12 Johnson-range RS MCA bound | missing | related conjectural WHIR-facing statements in [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean) | ArkLib does not yet contain the BCHKS25 theorem itself. |
 | Theorem 4.13 MCA from subspace-design codes | missing | none | Depends on missing subspace-design code infrastructure. |
 | Theorem 4.14 folded RS MCA up to capacity | missing | none | Depends on missing folded RS and subspace-design infrastructure. |
 | Theorem 4.15 random RS MCA up to capacity | missing | none | No random-domain RS MCA result was found. |
@@ -99,7 +97,6 @@ ArkLib, missing, or present in a materially different form.
 
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
-| Theorem 5.1 list decoding implies MCA | missing | only related WHIR-specific `mca_list_decoding` in [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean) | ArkLib does not contain the general GCXK25 theorem; the WHIR lemma is at a different abstraction layer and is still incomplete. |
 | Theorem 5.2 small CA error implies list size `< |F|` | missing | none | No matching result was found. |
 | Theorem 5.3 CA implies list decoding for a related RS code | missing | none | No matching result was found. |
 | Theorem 5.4 separation between list decoding and CA | missing | none | No matching result was found. |
@@ -128,7 +125,7 @@ ArkLib, missing, or present in a materially different form.
 | Definition A.1 completeness for IORs | present-but-different | `Reduction.completeness`, `Reduction.perfectCompleteness` in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Present in ArkLib's more general oracle-reduction framework rather than the paper's `(x,y,w)` relation presentation. |
 | Remark A.2 IOP as IOR to trivial relation | present-but-different | same framework in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Conceptually supported by the framework, but not isolated as this exact remark. |
 | Definition A.3 knowledge soundness for IORs | present-but-different | `Verifier.knowledgeSoundness` in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | Present with a richer execution/log model. |
-| Definition A.5 round-by-round knowledge soundness | present-but-different | `Verifier.rbrKnowledgeSoundnessOneShot`, `Verifier.rbrKnowledgeSoundness` in [ArkLib/OracleReduction/Security/RoundByRound.lean](../../../ArkLib/OracleReduction/Security/RoundByRound.lean) | Present in a more abstract transcript/state-function framework. |
+| Definition A.5 round-by-round knowledge soundness | present-but-different | `Verifier.rbrKnowledgeSoundnessWorstCase` in [ArkLib/OracleReduction/Security/RoundByRound.lean](../../../ArkLib/OracleReduction/Security/RoundByRound.lean) | Matches the paper's probability and quantifier shape: the bad-transition probability is bounded at every *fixed* transcript prefix, quantified before the challenge draw. It remains materially different because ArkLib's current extensional security interface does not track the paper's extractor running-time bounds and permits noncomputable extractors. The averaged variants `Verifier.rbrKnowledgeSoundness` / `rbrKnowledgeSoundnessOneShot` in the same file instead bound the mixture over prover-sampled prefixes; `rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness` derives the averaged form from the paper-shaped probability bound with the same error constants. |
 | Definition A.6 formal derivative | present-but-different | uses Mathlib polynomial derivative machinery; see [ArkLib/Data/CodingTheory/ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean) for nearby polynomial infrastructure | ArkLib relies on the underlying polynomial derivative API rather than introducing the paper's local definition. |
 | Definition A.7 univariate multiplicity code | missing | none | No multiplicity-code formalization was found. |
 
@@ -150,10 +147,7 @@ The largest mismatches between the paper and ArkLib are structural rather than m
 2. General MCA is not yet a first-class coding-theory notion in ArkLib.
    The TODO at the top of
    [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean)
-   still lists mutual correlated agreement as missing. The existing
-   [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
-   file is WHIR/proximity-generator specific and is not a drop-in formalization of Section 4.
-
+   still lists mutual correlated agreement as missing. 
 3. Some core BCIKS20 interfaces are present, but the list-decoding regime branch is incomplete.
    In particular,
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean)
@@ -165,7 +159,6 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    multiple files under
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20),
    and
-   [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean).
 
 5. Several code families used centrally by the paper are absent.
    Folded Reed-Solomon, univariate multiplicity codes, subspace-design codes, and extension-field
@@ -180,9 +173,6 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    These should coexist with the current predicate-style APIs rather than replace them.
 
 2. Add a general code-level MCA definition there as well.
-   The WHIR-specific notion in
-   [ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
-   should then be re-expressed as a specialization of the general MCA layer.
 
 3. Add a general line-decoding definition next to CA/MCA.
    Section 4 and Section 5 are much cleaner to formalize once this interface exists.
@@ -235,7 +225,9 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    missing Johnson corollaries.
 
 2. Add the general CA/MCA theorems in the unique-decoding regime first.
-   This includes the paper's Fact 4.5, Lemma 4.6, Lemma 4.7, and the AHIV17/BCHKS25 style results.
+   This includes the paper's Fact 4.5 and Lemma 4.6, and the AHIV17/BCHKS25 style results.
+   Treat Lemma 4.7's interleaving-loss statement as a baseline target sharpened by the newer
+   generator-MCA interleaving-stability results in [`Jo26`](../papers/Jo26.md).
 
 3. Add line-decoding and its implication to MCA before attempting the most recent capacity-level
    theorems.
