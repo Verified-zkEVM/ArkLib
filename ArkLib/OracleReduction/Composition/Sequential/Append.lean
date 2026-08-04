@@ -331,8 +331,8 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 -- theorem append_runToRound
 
-instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
-instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
+-- The challenge-oracle inclusions used below are now provided (proved) by
+-- `ProtocolSpec.subSpec_challenge_append_left` / `..._right` in `ProtocolSpec/SeqCompose.lean`.
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and

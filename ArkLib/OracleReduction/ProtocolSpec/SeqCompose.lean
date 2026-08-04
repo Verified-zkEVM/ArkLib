@@ -430,45 +430,66 @@ instance [O₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
 
 instance : ∀ i, OracleInterface ((pSpec₁ ++ₚ pSpec₂).Challenge i) := challengeOracleInterface
 
--- @[simp]
--- lemma challengeOracleInterface_append_domain_inl (j : pSpec₁.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inl j) = Unit := by
---   simp [OracleSpec.domain, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The challenge type of an appended protocol at a left-injected challenge index agrees with the
+challenge type of the left component. This is the transport fact needed to move challenge data
+across `++ₚ`. -/
+theorem challenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl i) = pSpec₁.Challenge i := by
+  simp [ProtocolSpec.Challenge, ChallengeIdx.inl, ProtocolSpec.append,
+    Fin.vappend_eq_append, Fin.append_left]
 
--- @[simp]
--- lemma challengeOracleInterface_append_range_inl (j : pSpec₁.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inl j) = pSpec₁.Challenge j := by
---   simp [OracleSpec.range, ChallengeIdx.inl, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- The challenge type of an appended protocol at a right-injected challenge index agrees with the
+challenge type of the right component. -/
+theorem challenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr i) = pSpec₂.Challenge i := by
+  simp [ProtocolSpec.Challenge, ChallengeIdx.inr, ProtocolSpec.append,
+    Fin.vappend_eq_append, Fin.append_right]
 
--- @[simp]
--- lemma challengeOracleInterface_append_domain_inr (j : pSpec₂.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.domain (.inr j) = Unit := by
---   simp [OracleSpec.domain, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- Forward map on challenge queries: inject a left-component challenge index. -/
+@[reducible] def challengeInlOnQuery (t : [pSpec₁.Challenge]ₒ.Domain) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.Domain :=
+  ⟨ChallengeIdx.inl t.1, t.2⟩
 
--- @[simp]
--- lemma challengeOracleInterface_append_range_inr (j : pSpec₂.ChallengeIdx) :
---     [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.range (.inr j) = pSpec₂.Challenge j := by
---   simp [OracleSpec.range, ChallengeIdx.inr, ProtocolSpec.append, OracleInterface.toOracleSpec,
---     instOracleInterfaceChallengeAppend, challengeOracleInterface]
+/-- Backward map on challenge responses for the left injection, transporting along
+`challenge_append_inl`. -/
+@[reducible] def challengeInlOnResponse (t : [pSpec₁.Challenge]ₒ.Domain)
+    (r : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.Range (challengeInlOnQuery (pSpec₂ := pSpec₂) t)) :
+    [pSpec₁.Challenge]ₒ.Range t :=
+  show pSpec₁.Challenge t.1 from
+    (challenge_append_inl (pSpec₂ := pSpec₂) t.1) ▸
+      (show (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inl t.1) from r)
+
+/-- The challenge oracles of the left component embed into those of the appended protocol. -/
+instance subSpec_challenge_append_left :
+    [pSpec₁.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
+  monadLift q := ⟨challengeInlOnQuery (pSpec₂ := pSpec₂) q.input,
+    q.cont ∘ challengeInlOnResponse (pSpec₂ := pSpec₂) q.input⟩
+  onQuery := challengeInlOnQuery (pSpec₂ := pSpec₂)
+  onResponse := challengeInlOnResponse (pSpec₂ := pSpec₂)
+
+/-- Forward map on challenge queries: inject a right-component challenge index. -/
+@[reducible] def challengeInrOnQuery (t : [pSpec₂.Challenge]ₒ.Domain) :
+    [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.Domain :=
+  ⟨ChallengeIdx.inr t.1, t.2⟩
+
+/-- Backward map on challenge responses for the right injection, transporting along
+`challenge_append_inr`. -/
+@[reducible] def challengeInrOnResponse (t : [pSpec₂.Challenge]ₒ.Domain)
+    (r : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.Range (challengeInrOnQuery (pSpec₁ := pSpec₁) t)) :
+    [pSpec₂.Challenge]ₒ.Range t :=
+  show pSpec₂.Challenge t.1 from
+    (challenge_append_inr (pSpec₁ := pSpec₁) t.1) ▸
+      (show (pSpec₁ ++ₚ pSpec₂).Challenge (ChallengeIdx.inr t.1) from r)
+
+/-- The challenge oracles of the right component embed into those of the appended protocol. -/
+instance subSpec_challenge_append_right :
+    [pSpec₂.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
+  monadLift q := ⟨challengeInrOnQuery (pSpec₁ := pSpec₁) q.input,
+    q.cont ∘ challengeInrOnResponse (pSpec₁ := pSpec₁) q.input⟩
+  onQuery := challengeInrOnQuery (pSpec₁ := pSpec₁)
+  onResponse := challengeInrOnResponse (pSpec₁ := pSpec₁)
 
 variable [∀ i, SampleableType (pSpec₁.Challenge i)] [∀ i, SampleableType (pSpec₂.Challenge i)]
-
--- instance instSubSpecOfProtocolSpecAppendChallenge :
---     SubSpec ([pSpec₁.Challenge]ₒ + [pSpec₂.Challenge]ₒ) ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | q => match q.1 with
---     | Sum.inl j => by
---       simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) ⟨j.2, ()⟩
---     | Sum.inr j => by
---       simpa using query (spec := [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) j.inr ()
-
--- instance : SubSpec [pSpec₁.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inl i) t)
-
--- instance : SubSpec [pSpec₂.Challenge]ₒ ([(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) where
---   monadLift | query i t => instSubSpecOfProtocolSpecAppendChallenge.monadLift (query (Sum.inr i) t)
 
 end Append
 
