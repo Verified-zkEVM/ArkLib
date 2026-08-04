@@ -211,15 +211,6 @@ theorem dflatten_two_eq_append {n : Fin 2 → ℕ} {motive : (k : Fin (vsum n)) 
 --   | succ m ih => sorry
 
 @[simp]
-theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
-    (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
-    dflatten (motive := motive) (fun i j => v (embedSum i j)) k = v k := by
-  induction m with
-  | zero => exact Fin.elim0 k
-  | succ m ih =>
-    sorry
-
-@[simp]
 theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (i : Fin m) (j : Fin (n i)) :
     dflatten (motive := motive) v (embedSum i j) = v i j := by
@@ -232,6 +223,13 @@ theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
       simp only [embedSum_succ_succ, dflatten_succ]
       erw [dappend_right]
       exact ih (motive := fun i => motive (natAdd (n 0) i)) (fun i => v i.succ) i j
+
+@[simp]
+theorem dflatten_splitSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
+    (v : (k : Fin (vsum n)) → motive k) (k : Fin (vsum n)) :
+    dflatten (motive := motive) (fun i j => v (embedSum i j)) k = v k := by
+  rw [← embedSum_splitSum k]
+  exact dflatten_embedSum (fun i j => v (embedSum i j)) (splitSum k).1 (splitSum k).2
 
 /-- Homogeneous flatten: flattens a nested homogeneous vector
 `(i : Fin m) → (j : Fin (n i)) → α` into a single homogeneous vector `Fin (vsum n) → α`
