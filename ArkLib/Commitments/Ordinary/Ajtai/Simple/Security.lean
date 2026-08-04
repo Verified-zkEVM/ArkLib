@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Ordinary.Ajtai.Simple.Correctness
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
+import VCVio.EvalDist.Monad.Basic
 
 /-!
 # Binding Security of the Simple Ajtai Commitment
@@ -30,11 +31,6 @@ open OracleComp CommitmentScheme CompPoly ArkLib.Lattices ArkLib.Lattices.Cyclot
 namespace ArkLib.Lattices.Ajtai.Simple
 
 variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
-
-/-- Boolean monotonicity of `pure` outcome probability. -/
-private theorem probOutput_pure_bool_le (b₁ b₂ : Bool) (h : b₁ = true → b₂ = true) :
-    Pr[= true | (pure b₁ : ProbComp Bool)] ≤ Pr[= true | (pure b₂ : ProbComp Bool)] := by
-  cases b₁ <;> cases b₂ <;> simp_all
 
 /-- A binding adversary against the simple Ajtai commitment yields a Module-SIS
 adversary: the extracted witness is the difference of the two opened messages. -/

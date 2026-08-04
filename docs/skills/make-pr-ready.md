@@ -16,18 +16,34 @@ Work through these in order. Do not stop until every item is complete.
 
 ### 0. Establish the real PR base
 
-- Run `git fetch origin main` first, then compute scope and `_generated/` drift against
-  **`origin/main`**, not local `main`. The local `main` ref can be many commits stale (e.g. you
-  branched, then `origin/main` advanced via merges you never pulled). Diffing `main...HEAD` against
-  a stale local `main` inflates the file list and can report phantom `_generated/` drift that
-  actually matches the remote. Use `git diff --stat origin/main...HEAD` for scope and
-  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view.
+- Verify that `origin` is the repository that owns the PR base before trusting `origin/main`.
+  Contributor checkouts often use a personal fork as `origin`, whose `main` may lag the canonical
+  repository even after `git fetch origin main`. Inspect the PR with
+  `gh pr view <number> -R <canonical-owner>/<repo> --json baseRefName,headRefName`, compare the
+  configured remote URL, and fetch the canonical base into a separate tracking ref when needed
+  (for example `canonical/main`). Use that canonical ref for all scope and `_generated/`
+  comparisons below.
+- Fetch the selected canonical base first (`git fetch origin main` when `origin` is canonical),
+  then compute scope and `_generated/` drift against its remote-tracking ref, not local `main`.
+  The local `main` ref can be many commits stale (e.g. you branched, then the canonical `main`
+  advanced via merges you never pulled). Diffing `main...HEAD` against a stale local `main`
+  inflates the file list and can report phantom `_generated/` drift that actually matches the
+  remote. With a canonical `origin`, use `git diff --stat origin/main...HEAD` for scope and
+  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view;
+  otherwise substitute the canonical tracking ref selected above.
 - **Also account for uncommitted work.** `origin/main...HEAD` (three-dot) only shows *committed*
   changes; a make-pr-ready pass often runs with staged/working-tree edits still in flight (e.g. a
   half-finished file). Those appear only in `git diff HEAD` (or `git diff origin/main`, two-dot).
   Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
   and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
   committed ones. The whole-tree view is `git diff --stat origin/main`.
+- **Separate your own work from a merged-in sibling branch.** If this branch has merged another
+  in-flight feature branch (e.g. `foo-infra`), the `origin/main...HEAD` scope will include files
+  that are **byte-identical** to that sibling branch's PR. Detect them with
+  `git diff --quiet origin/<sibling-branch> HEAD -- <file>` (clean = owned by the sibling PR). Do
+  **not** audit or "fix" those files here: it is redundant with the sibling PR and any edit invites
+  a merge conflict. Scope the audit/lint/warning-fix work to files this branch actually authored or
+  extended (differs from both `origin/main` and the sibling branch).
 - **If `_generated/` drift is already committed** (the branch committed regenerated outputs, not
   just dirtied the working tree), `git checkout origin/main -- docs/kb/_generated/` stages a
   *revert*, and you must **commit it** for the guard to pass — the guard compares the committed
@@ -71,7 +87,11 @@ Work through these in order. Do not stop until every item is complete.
   - `--lint` (`lint-style.sh`) reports **repo-wide pre-existing** style debt — hundreds of
     `ERR_*` lines in files you did not touch. Do **not** try to clear all of it; scope style
     fixes to your changed files (lint them individually with
-    `python3 scripts/lint-style.py <your-files>`), and treat the **default** `validate.sh`
+    `python3 scripts/lint-style.py <your-files>`). **Line length is codepoints, not bytes**: these
+    files are dense with multi-byte Unicode math (`ℓ₂²`, `∑`, `·ᵥ`, `c̄ⱼ`), so `awk length` / naive
+    byte counts over-report by 2–3× and can invent dozens of phantom "over-100" lines. Trust
+    `lint-style.py` and the Lean `linter.style.longLine` (both count codepoints); if in doubt verify
+    with Python `len(line)`, never `awk`/`wc -c`. Otherwise treat the **default** `validate.sh`
     (build + Data warning budget + `check-imports` + `check-docs-integrity` + `kb/lint`) as the
     real gate. Capture its true exit with `rc=$?` on its own line — a trailing
     `… ; echo "EXIT $?"` reports the `echo`'s exit (always 0) and masks a failing validate.
@@ -124,6 +144,14 @@ Work through these in order. Do not stop until every item is complete.
   keys yourself: grep each `[KEY]` used in docstrings against `blueprint/src/references.bib` and
   add any missing entry (then regenerate). A key can be "present-looking" but actually a different
   paper — confirm the entry's title/authors match the citation, not just that the key exists.
+- Also check for **duplicate BibTeX keys**: `grep -oE '^@[a-z]+\{[^,]+' blueprint/src/references.bib
+  | sort | uniq -d`. Neither `kb/lint` nor the sync script flags a key defined twice (the JSON dict
+  silently collapses it), but it is real bib cruft a reviewer will hit. Keep the better-formatted
+  entry and delete the other.
+- Docstrings must cite **papers, not internal planning documents**. Phrases like "per §1.2 of the
+  X plan" pointing at an out-of-repo design doc are dead references the day the PR merges — restate
+  the design rationale directly in the docstring and cite the underlying paper with a `[KEY]`
+  (e.g. `[NOZ26, Lemma 8]` for a specific result).
 - Also check the **reverse direction — orphan entries**: a BibTeX key (and/or a scaffolded
   `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/` page) that **no** `[KEY]` in any `.lean`
   docstring or blueprint `.tex` actually cites. `kb/lint` passes on these (they are internally

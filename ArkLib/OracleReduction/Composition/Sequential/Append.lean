@@ -284,17 +284,28 @@ def StateFunction.append
     -- If the round index falls in the second protocol, then we returns the conjunction of
     -- the first state fn on the first protocol's transcript, and the second state fn on the
     -- remaining transcript.
-      S₁ ⟨m, by omega⟩ stmt₁ (by simp at h; simpa [min_eq_right_of_lt h] using transcript.fst) ∧
-      S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁
-        (by simp at h; simpa [min_eq_right_of_lt h] using transcript.fst))
+      have hm : min roundIdx.val m = m := min_eq_right_of_lt (by omega)
+      let transcript₁ : pSpec₁.FullTranscript := fun i => transcript.fst ⟨i, by simpa [hm]⟩
+      S₁ ⟨m, by omega⟩ stmt₁ transcript₁ ∧
+      S₂ ⟨roundIdx - m, by omega⟩ (verify stmt₁ transcript₁)
         (by simpa [h] using transcript.snd)
   toFun_empty := by
     intro stmt
     split
     · constructor <;> intro h
       · have h' := (S₁.toFun_empty stmt).mp h
-        convert h' using 2; exact funext fun i => i.elim0
-      · exact (S₁.toFun_empty stmt).mpr (by convert h using 2; exact funext fun i => i.elim0)
+        convert h' using 2
+        · rfl
+        · apply heq_of_eq
+          funext i
+          exact Fin.elim0 i
+      · exact (S₁.toFun_empty stmt).mpr
+          (by
+            convert h using 2
+            · rfl
+            · apply heq_of_eq
+              funext i
+              exact Fin.elim0 i)
     · exact absurd (Nat.zero_le m) ‹_›
   toFun_next := sorry
   toFun_full := sorry
@@ -566,9 +577,8 @@ theorem append_perfectCompleteness
     (h₁ : R₁.perfectCompleteness init impl rel₁ rel₂)
     (h₂ : R₂.perfectCompleteness init impl rel₂ rel₃) :
       (R₁.append R₂).perfectCompleteness init impl rel₁ rel₃ := by
-  unfold perfectCompleteness Reduction.perfectCompleteness
-  convert OracleReduction.append_completeness R₁ R₂ h₁ h₂
-  simp
+  change (R₁.append R₂).completeness init impl rel₁ rel₃ 0
+  simpa only [zero_add] using OracleReduction.append_completeness R₁ R₂ h₁ h₂
 
 end OracleReduction
 

@@ -57,7 +57,9 @@ theorem RS_exists_Pz_of_mem_goodCoeffs {deg : ℕ} {domain : ι ↪ F} {δ : ℝ
   rcases hvC with ⟨Pz, hPz, rfl⟩
   refine ⟨Pz, ?_, ?_⟩
   · exact ReedSolomon.natDegree_lt_of_mem_degreeLT (deg := deg) hPz
-  · simpa [e] using hvdist
+  · change Δ₀(u 0 + z • u 1, (fun x => Pz.eval (domain x))) ≤ e at hvdist
+    change Δ₀(u 0 + z • u 1, (fun x => Pz.eval (domain x))) ≤ ⌊δ * Fintype.card ι⌋₊
+    simpa [e] using hvdist
 
 open scoped BigOperators in
 open Polynomial in
@@ -555,8 +557,13 @@ theorem RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt
         Matrix.det ((L.submatrix rA id) - (R.submatrix rA id) * ⅟D * A21) = 0 := by
       exact (IsUnit.mul_right_eq_zero (a := Matrix.det D)
         (b := Matrix.det ((L.submatrix rA id) - (R.submatrix rA id) * ⅟D * A21)) hdetD).1 hmul
-    simpa [K0, Matrix.submatrix_sub, Matrix.submatrix_mul, Matrix.submatrix_submatrix,
-      Matrix.mul_assoc, Function.comp, L, R] using hdetSchur
+    change ((L - R * (⅟D * A21)).submatrix rA id).det = 0
+    have hmatrix : (L - R * (⅟D * A21)).submatrix rA id =
+        L.submatrix rA id - R.submatrix rA id * (⅟D * A21) := by
+      ext i j
+      simp [Matrix.mul_apply]
+    rw [hmatrix]
+    simpa only [Matrix.mul_assoc] using hdetSchur
   have hdegL : ∀ i j, (L i j).natDegree ≤ 1 := by
     intro i j
     simpa [L, cL, M] using

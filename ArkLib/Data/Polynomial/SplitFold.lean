@@ -43,46 +43,34 @@ coefficients are extracted from positions `j ≡ i (mod n)`, reindexed by `j / n
 Formally: `splitNth f n i = ∑_{j ≡ i (mod n)} aⱼ X^(j/n)`.
 -/
 def splitNth (f : 𝔽[X]) (n : ℕ) [inst : NeZero n] : Fin n → 𝔽[X] :=
-  fun i =>
+  fun i ↦
     let sup :=
-      Finset.filterMap (fun x => if x % n = i.1 then .some (x / n) else .none)
+      Finset.filterMap (fun x ↦ if x % n = i.1 then .some (x / n) else .none)
       f.support
-      (by
-        intros a a' b
-        simp only [Option.mem_def, Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
-        intros h g h' g'
-        rw [Eq.symm (Nat.div_add_mod' a n), Eq.symm (Nat.div_add_mod' a' n)]
-        rw [h, g, h', g'])
+      (fun a a' b ↦ by
+        have := Nat.div_add_mod' a n
+        have := Nat.div_add_mod' a' n
+        aesop)
     Polynomial.ofFinsupp
       ⟨
         sup,
-        fun e => f.coeff (e * n + i.1),
-        by
-          intros a
-          dsimp [sup]
+        fun e ↦ f.coeff (e * n + i.1),
+        fun a ↦ by
           simp only [Finset.mem_filterMap, mem_support_iff, ne_eq, Option.ite_none_right_eq_some,
-            Option.some.injEq]
-          apply Iff.intro
+            Option.some.injEq, sup]
+          constructor
           · rintro ⟨a', g⟩
             have : a' = a * n + i.1 := by
-              rw [Eq.symm (Nat.div_add_mod' a' n)]
-              rw [g.2.1, g.2.2]
-            rw [this.symm]
-            exact g.1
+              have := Nat.div_add_mod' a' n
+              aesop
+            aesop
           · intros h
             exists (a * n + i.1)
-            apply And.intro h
-            rw [Nat.mul_add_mod_self_right, Nat.mod_eq_of_lt i.2]
-            apply And.intro rfl
             have {a b : ℕ} : (a * n + b) / n = a + (b / n) := by
-              have := inst.out
-              have ne_zero : 0 < n := by omega
-              rw [Nat.add_div ne_zero, Nat.mul_mod_left, zero_add, Nat.mul_div_cancel a ne_zero]
-              have : ¬ (n ≤ b % n) := by
-                simp only [not_le]
-                exact Nat.mod_lt b ne_zero
-              simp [this]
-            simp [this]
+              have := Nat.zero_lt_of_ne_zero inst.out
+              have := Nat.mod_lt b this
+              aesop (add simp [Nat.add_div])
+            aesop (add simp [Nat.mul_add_mod_self_right, Nat.mod_eq_of_lt])
       ⟩
 
 /- Proof of key identity `splitNth` has to satisfy. -/
@@ -234,23 +222,20 @@ lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
 
 /- Lemma bounding degree of each `n`-split polynomial. -/
 omit [NoZeroDivisors 𝔽] in
-lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
-    ∀ {i}, (splitNth f n i).natDegree ≤ f.natDegree / n := by
-    intros i
-    unfold splitNth Polynomial.natDegree Polynomial.degree
-    simp only [support_ofFinsupp]
-    rw [WithBot.unbotD_le_iff (by simp)]
-    simp only [Finset.max_le_iff, Finset.mem_filterMap, mem_support_iff, ne_eq,
-      Option.ite_none_right_eq_some, Option.some.injEq, WithBot.coe_le_coe, forall_exists_index,
-      and_imp]
-    intros _ _ h _ h'
-    rw [←h']
-    refine Nat.div_le_div ?_ (Nat.le_refl n) inst.out
-    exact le_natDegree_of_ne_zero h
+lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
+  (splitNth f n i).natDegree ≤ f.natDegree / n := by
+  have hn := inst.out
+  rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+  intro j hj
+  have hjn : j * n - 1 < j * n := Nat.sub_one_lt (by aesop)
+  rw [Nat.div_lt_iff_lt_mul (by omega),
+      Nat.lt_iff_le_pred (by omega),
+      Polynomial.natDegree_le_iff_coeff_eq_zero] at hj
+  exact hj _ (by omega)
 
 /-- `foldingPolynomial` in terms of `splitNth`
     when `q = X ^ n`. -/
-@[simp]
+@[simp low]
 lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
   {f : Polynomial 𝔽} {n : ℕ}
   [inst : NeZero n] :
@@ -297,20 +282,68 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
     omega
 
 /-- `polyFold` in terms of `splitNth`. -/
-@[simp]
+@[simp low]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
   {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
   [inst : NeZero n] :
   FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
-  simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
-  rw [Polynomial.eval_finsetSum]
-  simp only [eval_mul, eval_C, eval_pow, eval_X]
-  conv =>
-    lhs
-    rhs
-    ext x
-    rw [mul_comm]
+  aesop
+    (add simp [FoldingPolynomial.polyFold, Polynomial.eval_finsetSum])
+    (add safe (by grind))
+
+omit [NoZeroDivisors 𝔽] in
+/-- Coefficient formula for `splitNth`: the `e`-th coefficient of the `i`-th component
+  is the coefficient of `f` at position `e * n + i`. -/
+@[simp]
+lemma splitNth_coeff {n : ℕ} [NeZero n] {g : 𝔽[X]} {i : Fin n} {e : ℕ} :
+  (splitNth g n i).coeff e = g.coeff (e * n + i.1) := by simp [splitNth]
+
+omit [NoZeroDivisors 𝔽] in
+/-- `splitNth` is the left inverse of the `n`-way recombination: splitting the polynomial
+  `∑ j, X^j * (u j)(X^n)` recovers `u i` for each component `i`. -/
+@[simp]
+lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (i : Fin n) :
+    splitNth (∑ j : Fin n, X ^ (j : ℕ) * (u j).comp (X ^ n)) n i = u i := by
+  have hn : 0 < n := Nat.pos_of_ne_zero inst.out
+  ext e
+  rw [splitNth_coeff, finsetSum_coeff, Finset.sum_eq_single i]
+  · aesop (add unsafe (by rw [←expand_eq_comp_X_pow]))
+  · intro j _ hj
+    rw [coeff_X_pow_mul']
+    by_cases hle : (j : ℕ) ≤ e * n + i
+    · rw [if_pos hle, ←expand_eq_comp_X_pow, coeff_expand hn, if_neg]
+      intro hdvd
+      have hmod := (Nat.modEq_iff_dvd' hle).mpr hdvd
+      aesop
+        (add safe cases Fin)
+        (add simp [Nat.ModEq, Nat.mod_eq_of_lt])
+    · simp_all
+  · aesop
+
+/-- `foldingPolynomial` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
+    bivariate polynomial `∑ i, X^i * C (u i)`, i.e. its `Y`-coefficients are exactly the
+    components `u i`. -/
+@[simp high]
+theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
+  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+  FoldingPolynomial.foldingPolynomial (X ^ n)
+    (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
+      ∑ i, Polynomial.X ^ i.val * C (u i) := by simp_all
+
+/-- `polyFold` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
+    polynomial `∑ i, r^i * u i`. -/
+@[simp high]
+theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
+  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+  FoldingPolynomial.polyFold
+    (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
+      ∑ i, r ^ i.val • (u i) := by
+  aesop
+    (add simp [FoldingPolynomial.polyFold,
+               Polynomial.eval_finsetSum,
+               Polynomial.smul_eq_C_mul])
+    (add safe (by grind))
 
 omit [NoZeroDivisors 𝔽] in
 /--
@@ -322,9 +355,6 @@ lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : 
   rw [eval₂_eq_sum]
   unfold Polynomial.eval
   rw [Polynomial.eval₂_sum, eval₂_eq_sum]
-  congr
-  ext e a
-  rw [← eval]
-  simp
+  simp_all
 
 end Polynomial
