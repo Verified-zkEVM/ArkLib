@@ -40,7 +40,7 @@ efficiently. Hachi ([NOZ26]) adopts this lift as the entry of its §4.3 sumcheck
   `S ≅ R[X]/(φ)` (`Presentation`/`IsPresentation`), on the committed-scalar shell
   `ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`;
   Hachi's presentation instance, norms, local predicate,
-  interpolation recovery, `liftPackage`, and `lift_coordinateWiseSpecialSound` are in
+  interpolation recovery, and `liftPackage` (whose CWSS certificate is its `isCWSS` field) are in
   `ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean`.
 
 ## Main ArkLib Touchpoints
