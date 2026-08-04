@@ -40,75 +40,83 @@ section RationalRootVanishing
 
 variable {F : Type} [Field F]
 
-theorem H_tilde_prime_coeff_natDegree_le_of_totalDegree {H : F[X][Y]} {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+theorem natDegree_coeff_monicize_le_of_totalDegree_le {H : F[X][Y]} {D : ℕ}
+    (hD : Bivariate.totalDegree H ≤ D)
     (hH : 0 < H.natDegree) {j : ℕ}
-    (hj : j ∈ (H_tilde' H).support) :
+    (hj : j ∈ (monicize H).support) :
   j * (D + 1 - Bivariate.natDegreeY H) +
-    ((H_tilde' H).coeff j).natDegree ≤
+    ((monicize H).coeff j).natDegree ≤
       H.natDegree * (D + 1 - Bivariate.natDegreeY H) := by
-  exact (weight_Λ_le_iff.mp (weight_Λ_H_tilde'_le hD hH)) j hj
+  exact (weight_le_iff.mp (weight_monicize_le hD hH)) j hj
 
-theorem canonicalRep_coeff_natDegree_le_of_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : ℕ} (β : 𝒪 H)
-    (hβw : weight_Λ_over_𝒪 hH β D ≤ (WithBot.some B : WithBot ℕ))
+theorem canonicalRep_coeff_natDegree_le_of_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
+    {D B : ℕ} (β : 𝒪 H)
+    (hβw : regularWeight hH β D ≤ (WithBot.some B : WithBot ℕ))
     {i : ℕ} (hi : i ∈ (canonicalRepOf𝒪 hH β).support) :
   i * (D + 1 - Bivariate.natDegreeY H) +
     ((canonicalRepOf𝒪 hH β).coeff i).natDegree ≤ B := by
-  unfold weight_Λ_over_𝒪 at hβw
-  exact (weight_Λ_le_iff.mp hβw) i hi
+  unfold regularWeight at hβw
+  exact (weight_le_iff.mp hβw) i hi
 
-theorem embedding_eq_zero_of_resultant_zero {H : F[X][Y]} [Fact (Irreducible H)] (hH : 0 < H.natDegree) (β : 𝒪 H)
-    (hres : Polynomial.resultant (canonicalRepOf𝒪 hH β) (H_tilde' H) = 0) :
+theorem embedding_eq_zero_of_resultant_zero {H : F[X][Y]} [Fact (Irreducible H)]
+    (hH : 0 < H.natDegree) (β : 𝒪 H)
+    (hres : Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H) = 0) :
   embeddingOf𝒪Into𝕃 H β = 0 := by
   classical
   let p : F[X][Y] := canonicalRepOf𝒪 hH β
-  have hres_map : Polynomial.resultant (p.map (univPolyHom (F := F))) (H_tilde H) = 0 := by
+  have hres_map : Polynomial.resultant (p.map (univPolyHom (F := F))) (monicizeRatFunc H) = 0 := by
     have h := congrArg (univPolyHom (F := F)) hres
-    rw [← Polynomial.resultant_map_map (p) (H_tilde' H) p.natDegree (H_tilde' H).natDegree (univPolyHom (F := F))] at h
-    rw [map_H_tilde'_eq_H_tilde H] at h
-    have hn : (H_tilde H).natDegree = (H_tilde' H).natDegree := by
-      rw [← map_H_tilde'_eq_H_tilde H]
-      exact Polynomial.natDegree_map_eq_of_injective (univPolyHom_injective (F := F)) (H_tilde' H)
-    simpa only [p, Polynomial.natDegree_map_eq_of_injective (univPolyHom_injective (F := F)), map_zero, hn] using h
-  have hnot_coprime : ¬ IsCoprime (p.map (univPolyHom (F := F))) (H_tilde H) := by
+    rw [← Polynomial.resultant_map_map (p) (monicize H) p.natDegree (monicize H).natDegree
+          (univPolyHom (F := F))] at h
+    rw [map_monicize_eq_monicizeRatFunc H] at h
+    have hn : (monicizeRatFunc H).natDegree = (monicize H).natDegree := by
+      rw [← map_monicize_eq_monicizeRatFunc H]
+      exact Polynomial.natDegree_map_eq_of_injective (univPolyHom_injective (F := F)) (monicize H)
+    simpa only
+        [p, Polynomial.natDegree_map_eq_of_injective (univPolyHom_injective (F := F)), map_zero, hn]
+            using h
+  have hnot_coprime : ¬ IsCoprime (p.map (univPolyHom (F := F))) (monicizeRatFunc H) := by
     exact (Polynomial.resultant_eq_zero_iff.mp hres_map).2
-  have hHT_irred : Irreducible (H_tilde H) :=
-    irreducibleHTildeOfIrreducible_of_natDegree_pos hH (Fact.out)
-  have hdvd_map : H_tilde H ∣ p.map (univPolyHom (F := F)) := by
+  have hHT_irred : Irreducible (monicizeRatFunc H) :=
+    irreducible_monicizeRatFunc_of_natDegree_pos hH (Fact.out)
+  have hdvd_map : monicizeRatFunc H ∣ p.map (univPolyHom (F := F)) := by
     exact (Irreducible.dvd_iff_not_isCoprime hHT_irred).2 (by
       intro hc
       exact hnot_coprime hc.symm)
-  have hdvd : H_tilde' H ∣ p := H_tilde'_dvd_of_map_dvd_H_tilde hH hdvd_map
+  have hdvd : monicize H ∣ p := monicize_dvd_of_map_dvd_monicizeRatFunc hH hdvd_map
   have hp_zero : p = 0 := by
     by_contra hp_ne
-    have hdegp : p.natDegree < (H_tilde' H).natDegree := by
-      simpa only [p, natDegree_H_tilde' hH] using canonicalRepOf𝒪_natDegree_lt_H hH β
-    exact (Polynomial.not_dvd_of_natDegree_lt (p := H_tilde' H) (q := p) hp_ne hdegp) hdvd
+    have hdegp : p.natDegree < (monicize H).natDegree := by
+      simpa only [p, natDegree_monicize hH] using canonicalRepOf𝒪_natDegree_lt_H hH β
+    exact (Polynomial.not_dvd_of_natDegree_lt (p := monicize H) (q := p) hp_ne hdegp) hdvd
   rw [← mk_canonicalRepOf𝒪 hH β]
-  change embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) = 0
+  change embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = 0
   rw [hp_zero]
   simp
 
-theorem natDegree_det_le_of_perm_products_le {ι : Type} [Fintype ι] [DecidableEq ι] (M : Matrix ι ι F[X]) {N : ℕ}
+theorem natDegree_det_le_of_perm_products_le {ι : Type} [Fintype ι] [DecidableEq ι]
+    (M : Matrix ι ι F[X]) {N : ℕ}
     (h : ∀ σ : Equiv.Perm ι, (∏ i : ι, M (σ i) i).natDegree ≤ N) :
   M.det.natDegree ≤ N := by
   classical
   rw [Matrix.det_apply']
   apply Polynomial.natDegree_sum_le_of_forall_le
   intro σ hσ
-  exact le_trans (Polynomial.natDegree_C_mul_le ((Equiv.Perm.sign σ : ℤ) : F) (∏ i : ι, M (σ i) i)) (h σ)
+  exact le_trans (Polynomial.natDegree_C_mul_le ((Equiv.Perm.sign σ : ℤ) : F) (∏ i : ι, M (σ i) i))
+      (h σ)
 
 theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : ℕ}
     (hD : Bivariate.totalDegree H ≤ D) (β : 𝒪 H)
-    (hβw : weight_Λ_over_𝒪 hH β D ≤ (WithBot.some B : WithBot ℕ)) :
-  (Polynomial.resultant (canonicalRepOf𝒪 hH β) (H_tilde' H)).natDegree ≤ B * H.natDegree := by
+    (hβw : regularWeight hH β D ≤ (WithBot.some B : WithBot ℕ)) :
+  (Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H)).natDegree ≤ B * H.natDegree := by
   classical
   set p : F[X][Y] := canonicalRepOf𝒪 hH β
-  set q : F[X][Y] := H_tilde' H
+  set q : F[X][Y] := monicize H
   set e : ℕ := p.natDegree
   set d : ℕ := H.natDegree
   set lam : ℕ := D + 1 - Bivariate.natDegreeY H
   have hqdeg : q.natDegree = d := by
-    simpa [q, d] using natDegree_H_tilde' (H := H) hH
+    simpa [q, d] using natDegree_monicize (H := H) hH
   let M : Matrix (Fin (e + d)) (Fin (e + d)) F[X] := Polynomial.sylvester p q e d
   rw [Polynomial.resultant]
   rw [hqdeg]
@@ -138,7 +146,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         simp [M, Polynomial.sylvester]
       by_contra hc
       have hentry_zero : M (σ (Fin.castAdd d j)) (Fin.castAdd d j) = 0 := by
-        simpa [hentry, hc]
+        simp [hentry, hc]
       exact hne (Fin.castAdd d j) hentry_zero
     have hright_Icc (j : Fin d) :
         ((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) ∈ Set.Icc (j : ℕ) ((j : ℕ) + e) := by
@@ -149,7 +157,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         simp [M, Polynomial.sylvester]
       by_contra hc
       have hentry_zero : M (σ (Fin.natAdd e j)) (Fin.natAdd e j) = 0 := by
-        simpa [hentry, hc]
+        simp [hentry, hc]
       exact hne (Fin.natAdd e j) hentry_zero
     have hleft (j : Fin e) : lidx j * lam + ldeg j ≤ d * lam := by
       dsimp [lidx, ldeg]
@@ -164,7 +172,8 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         rwa [hentry, if_pos hc] at hne'
       have hsup : (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ q.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
-      have hbound := H_tilde_prime_coeff_natDegree_le_of_totalDegree (F := F) (H := H) (D := D) hD hH (j := (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ))) (by simpa [q] using hsup)
+      have hbound := natDegree_coeff_monicize_le_of_totalDegree_le (F := F) (H := H) (D := D) hD
+          hH (j := (((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ) - (j : ℕ))) (by simpa [q] using hsup)
       simpa [q, d, lam, hentry, hc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hbound
     have hright (j : Fin d) : ridx j * lam + rdeg j ≤ B := by
       dsimp [ridx, rdeg]
@@ -179,7 +188,8 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         rwa [hentry, if_pos hc] at hne'
       have hsup : (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ)) ∈ p.support :=
         Polynomial.mem_support_iff.mpr hcoeff_ne
-      have hbound := canonicalRep_coeff_natDegree_le_of_weight_bound (F := F) (H := H) hH β hβw (i := (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ))) (by simpa [p] using hsup)
+      have hbound := canonicalRep_coeff_natDegree_le_of_weight_bound (F := F) (H := H) hH β hβw
+          (i := (((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ) - (j : ℕ))) (by simpa [p] using hsup)
       simpa [p, lam, hentry, hc, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc] using hbound
     have hleft_sum : (∑ j : Fin e, (lidx j * lam + ldeg j)) ≤ e * (d * lam) := by
       calc
@@ -224,7 +234,8 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
                 exact hright_row j
           _ = (∑ j : Fin d, (j : ℕ)) + (∑ j : Fin d, ridx j) := by
                 rw [Finset.sum_add_distrib]
-      have hperm_sum : (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) = ∑ i : Fin (e + d), (i : ℕ) := by
+      have hperm_sum : (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) = ∑ i : Fin (e + d), (i : ℕ)
+          := by
         simpa using (Equiv.sum_comp σ (fun i : Fin (e + d) => (i : ℕ)))
       have hrows_split : (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) =
           (∑ j : Fin e, ((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ)) +
@@ -234,7 +245,7 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
           (∑ j : Fin e, (j : ℕ)) + (∑ j : Fin d, (e + (j : ℕ))) := by
         simpa using (Fin.sum_univ_add (fun i : Fin (e + d) => (i : ℕ)))
       have hright_cols : (∑ j : Fin d, (e + (j : ℕ))) = d * e + ∑ j : Fin d, (j : ℕ) := by
-        simp [Finset.sum_add_distrib, Finset.sum_const, Nat.mul_comm, Nat.mul_left_comm, Nat.mul_assoc]
+        simp [Finset.sum_add_distrib, Finset.sum_const]
       have hmain :
           (∑ j : Fin e, ((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ)) +
           (∑ j : Fin d, ((σ (Fin.natAdd e j) : Fin (e + d)) : ℕ)) =
@@ -245,10 +256,12 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         ((∑ j : Fin e, lidx j) + (∑ j : Fin d, ridx j)) * lam +
           ((∑ j : Fin e, ldeg j) + (∑ j : Fin d, rdeg j)) ≤ e * (d * lam) + d * B := by
       have h := Nat.add_le_add hleft_sum hright_sum
-      have hleft_expand : (∑ j : Fin e, (lidx j * lam + ldeg j)) = (∑ j : Fin e, lidx j) * lam + ∑ j : Fin e, ldeg j := by
+      have hleft_expand : (∑ j : Fin e, (lidx j * lam + ldeg j)) = (∑ j : Fin e, lidx j) * lam + ∑ j
+          : Fin e, ldeg j := by
         rw [Finset.sum_add_distrib]
         rw [← Finset.sum_mul]
-      have hright_expand : (∑ j : Fin d, (ridx j * lam + rdeg j)) = (∑ j : Fin d, ridx j) * lam + ∑ j : Fin d, rdeg j := by
+      have hright_expand : (∑ j : Fin d, (ridx j * lam + rdeg j)) = (∑ j : Fin d, ridx j) * lam + ∑
+          j : Fin d, rdeg j := by
         rw [Finset.sum_add_distrib]
         rw [← Finset.sum_mul]
       rw [hleft_expand, hright_expand] at h
@@ -261,11 +274,14 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
     have hsum_deg_split :
         (∑ i : Fin (e + d), (M (σ i) i).natDegree) =
           (∑ j : Fin e, ldeg j) + (∑ j : Fin d, rdeg j) := by
-      simpa only [ldeg, rdeg] using (Fin.sum_univ_add (fun i : Fin (e + d) => (M (σ i) i).natDegree))
+      simpa only [ldeg, rdeg] using
+          (Fin.sum_univ_add (fun i : Fin (e + d) => (M (σ i) i).natDegree))
     calc
       (∏ i : Fin (e + d), M (σ i) i).natDegree ≤
           ∑ i : Fin (e + d), (M (σ i) i).natDegree := by
-            simpa using (Polynomial.natDegree_prod_le (s := Finset.univ) (f := fun i : Fin (e + d) => M (σ i) i))
+            simpa using
+                (Polynomial.natDegree_prod_le (s := Finset.univ)
+                    (f := fun i : Fin (e + d) => M (σ i) i))
       _ = (∑ j : Fin e, ldeg j) + (∑ j : Fin d, rdeg j) := hsum_deg_split
       _ ≤ B * d := by simpa [Nat.mul_comm] using hdeg_parts
 
@@ -309,13 +325,13 @@ theorem resultant_fixed_degree_eq_zero_of_common_root_of_monic_right {p q : F[X]
   · simp [hres0]
   · exact le_rfl
 
-theorem Sbeta_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-  S_β β ⊆
-    {z | (Polynomial.resultant (canonicalRepOf𝒪 hH β) (H_tilde' H)).eval z = 0} := by
+theorem rationalVanishingSet_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
+  rationalVanishingSet β ⊆
+    {z | (Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H)).eval z = 0} := by
   intro z hz
   rcases hz with ⟨root, hβ⟩
   let p : F[X][Y] := canonicalRepOf𝒪 hH β
-  let q : F[X][Y] := H_tilde' H
+  let q : F[X][Y] := monicize H
   have hp : (p.map (Polynomial.evalRingHom z)).eval root.1 = 0 := by
     have h := π_z_eq_eval_canonicalRepOf𝒪 hH z root β
     rw [h] at hβ
@@ -325,18 +341,19 @@ theorem Sbeta_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 
     rw [Polynomial.map_evalRingHom_eval]
     exact root.2
   have hqmonic : (q.map (Polynomial.evalRingHom z)).Monic := by
-    exact (H_tilde'_monic H hH).map (Polynomial.evalRingHom z)
+    exact (monicize_monic H hH).map (Polynomial.evalRingHom z)
   have hn : (q.map (Polynomial.evalRingHom z)).natDegree = q.natDegree := by
-    exact (H_tilde'_monic H hH).natDegree_map (Polynomial.evalRingHom z)
-  have hres : Polynomial.resultant (p.map (Polynomial.evalRingHom z)) (q.map (Polynomial.evalRingHom z)) p.natDegree q.natDegree = 0 := by
+    exact (monicize_monic H hH).natDegree_map (Polynomial.evalRingHom z)
+  have hres : Polynomial.resultant (p.map (Polynomial.evalRingHom z))
+      (q.map (Polynomial.evalRingHom z)) p.natDegree q.natDegree = 0 := by
     exact resultant_fixed_degree_eq_zero_of_common_root_of_monic_right
       (Polynomial.natDegree_map_le (f := Polynomial.evalRingHom z) (p := p)) hqmonic hn hp hq
   change (Polynomial.resultant p q).eval z = 0
   rw [resultant_eval_eq_resultant_map_eval_fixed_degrees]
   exact hres
 
-theorem weight_bot_embedding_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
-    (hw : weight_Λ_over_𝒪 hH β D = ⊥) :
+theorem embedding_eq_zero_of_weight_eq_bot {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
+    (hw : regularWeight hH β D = ⊥) :
   embeddingOf𝒪Into𝕃 H β = 0 := by
   classical
   let p : F[X][Y] := canonicalRepOf𝒪 hH β
@@ -347,13 +364,17 @@ theorem weight_bot_embedding_zero {H : F[X][Y]} (hH : 0 < H.natDegree) (β : �
       intro h_empty
       exact hp_ne (Polynomial.support_eq_empty.mp h_empty)
     rcases hsup with ⟨n, hn⟩
-    have hle : (WithBot.some (n * (D + 1 - Bivariate.natDegreeY H) + (p.coeff n).natDegree) : WithBot ℕ) ≤ weight_Λ p H D :=
-      le_weight_Λ_of_mem_support hn
-    have hle_bot : (WithBot.some (n * (D + 1 - Bivariate.natDegreeY H) + (p.coeff n).natDegree) : WithBot ℕ) ≤ (⊥ : WithBot ℕ) := by
-      exact hle.trans (by simpa [p, weight_Λ_over_𝒪] using le_of_eq hw)
+    have hle :
+        (WithBot.some (n * (D + 1 - Bivariate.natDegreeY H) + (p.coeff n).natDegree) : WithBot ℕ) ≤
+            weight p H D :=
+      le_weight_of_mem_support hn
+    have hle_bot :
+        (WithBot.some (n * (D + 1 - Bivariate.natDegreeY H) + (p.coeff n).natDegree) : WithBot ℕ) ≤
+            (⊥ : WithBot ℕ) := by
+      exact hle.trans (by simpa [p, regularWeight] using le_of_eq hw)
     exact (not_le_of_gt (WithBot.bot_lt_coe _)) hle_bot
   rw [← mk_canonicalRepOf𝒪 hH β]
-  change embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) = 0
+  change embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = 0
   rw [hp]
   simp
 
@@ -363,27 +384,28 @@ lemma lemmaA1_embedding_eq_zero_of_many_rational_roots {H : F[X][Y]}
     [hHirreducible : Fact (Irreducible H)]
     (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
     (hD : D ≥ Bivariate.totalDegree H)
-    (S_β_card : Set.ncard (S_β β) > (weight_Λ_over_𝒪 hH β D) * H.natDegree) :
+    (hncard : Set.ncard (rationalVanishingSet β) > (regularWeight hH β D) * H.natDegree) :
   embeddingOf𝒪Into𝕃 _ β = 0 := by
   classical
-  set R : F[X] := Polynomial.resultant (canonicalRepOf𝒪 hH β) (H_tilde' H)
-  cases hweight : weight_Λ_over_𝒪 hH β D with
+  set R : F[X] := Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H)
+  cases hweight : regularWeight hH β D with
   | bot =>
-      exact weight_bot_embedding_zero hH β D hweight
+      exact embedding_eq_zero_of_weight_eq_bot hH β D hweight
   | coe B =>
-      have hβw : weight_Λ_over_𝒪 hH β D ≤ (WithBot.some B : WithBot ℕ) := by
+      have hβw : regularWeight hH β D ≤ (WithBot.some B : WithBot ℕ) := by
         rw [hweight]
       have hdeg : R.natDegree ≤ B * H.natDegree := by
         dsimp [R]
         exact natDegree_resultant_le_weight_bound hH hD β hβw
-      have hcard : Set.ncard (S_β β) > B * H.natDegree := by
-        rw [hweight] at S_β_card
-        change ((B * H.natDegree : ℕ) : WithBot ℕ) < ((Set.ncard (S_β β) : ℕ) : WithBot ℕ) at S_β_card
-        exact WithBot.coe_lt_coe.mp S_β_card
+      have hcard : Set.ncard (rationalVanishingSet β) > B * H.natDegree := by
+        rw [hweight] at hncard
+        change ((B * H.natDegree : ℕ) : WithBot ℕ) <
+            ((Set.ncard (rationalVanishingSet β) : ℕ) : WithBot ℕ) at hncard
+        exact WithBot.coe_lt_coe.mp hncard
       have hRzero : R = 0 := by
         apply poly_eq_zero_of_ncard_gt_bound_of_subset_roots
         · dsimp [R]
-          exact Sbeta_subset_resultant_roots hH β
+          exact rationalVanishingSet_subset_resultant_roots hH β
         · exact hdeg
         · exact hcard
       apply embedding_eq_zero_of_resultant_zero hH β

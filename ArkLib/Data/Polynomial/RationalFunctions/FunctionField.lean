@@ -40,10 +40,10 @@ section
 
 variable {F : Type} [CommRing F] [IsDomain F]
 
-/-- Construction of the monicized polynomial `H_tilde` in Appendix A.1 of [BCIKS20].
-Note: Here `H ∈ F[X][Y]` translates to `H ∈ F[Z][Y]` in [BCIKS20], and `H_tilde` in
-`Polynomial (RatFunc F)` translates to `H_tilde ∈ F(Z)[T]` in [BCIKS20]. -/
-noncomputable def H_tilde (H : F[X][Y]) : Polynomial (RatFunc F) :=
+/-- Construction of the monicized polynomial `monicizeRatFunc` in Appendix A.1 of [BCIKS20].
+Note: Here `H ∈ F[X][Y]` translates to `H ∈ F[Z][Y]` in [BCIKS20], and `monicizeRatFunc` in
+`Polynomial (RatFunc F)` translates to `monicizeRatFunc ∈ F(Z)[T]` in [BCIKS20]. -/
+noncomputable def monicizeRatFunc (H : F[X][Y]) : Polynomial (RatFunc F) :=
   let hᵢ (i : ℕ) := H.coeff i
   let d := H.natDegree
   let W := (RingHom.comp Polynomial.C univPolyHom) (hᵢ d)
@@ -78,12 +78,12 @@ private lemma irreducible_map_univPolyHom_of_irreducible
     (Polynomial.IsPrimitive.irreducible_iff_irreducible_map_fraction_map
       (K := RatFunc F) hprim).mp hH
 
-/-- Corrected irreducibility statement for `H_tilde`: the paper assumes positive `Y`-degree.
+/-- Corrected irreducibility statement for `monicizeRatFunc`: the paper assumes positive `Y`-degree.
 Without this hypothesis, a constant irreducible in `F[Z][Y]` can become a unit in `F(Z)[T]`. -/
-lemma irreducibleHTildeOfIrreducible_of_natDegree_pos
+lemma irreducible_monicizeRatFunc_of_natDegree_pos
     {H : Polynomial (Polynomial F)} (hdeg : 0 < H.natDegree)
     (hH : Irreducible H) :
-    Irreducible (H_tilde H) := by
+    Irreducible (monicizeRatFunc H) := by
   classical
   let d : ℕ := H.natDegree
   let a : RatFunc F := univPolyHom (F := F) H.leadingCoeff
@@ -124,7 +124,7 @@ lemma irreducibleHTildeOfIrreducible_of_natDegree_pos
     exact (isUnit_C.mpr (Ne.isUnit ha_ne)).pow (d - 1)
   rcases hunitW with ⟨u, hu⟩
   have htilde :
-      H_tilde H =
+      monicizeRatFunc H =
         W ^ (d - 1) *
           Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F))) (Polynomial.X / W)
             H := by
@@ -134,23 +134,24 @@ lemma irreducibleHTildeOfIrreducible_of_natDegree_pos
 
 end FieldIrreducibility
 
-/-- The monicized version `H_tilde` is irreducible if the original polynomial `H` is irreducible
+/-- The monicized version `monicizeRatFunc` is irreducible if the original polynomial `H`
+is irreducible
 and has positive degree in `Y`, as assumed in Appendix A.1 of [BCIKS20]. -/
-lemma irreducibleHTildeOfIrreducible {F : Type} [Field F] {H : Polynomial (Polynomial F)}
+lemma irreducible_monicizeRatFunc {F : Type} [Field F] {H : Polynomial (Polynomial F)}
     (hHdeg : 0 < H.natDegree) :
-    Irreducible H → Irreducible (H_tilde H) :=
-  irreducibleHTildeOfIrreducible_of_natDegree_pos hHdeg
+    Irreducible H → Irreducible (monicizeRatFunc H) :=
+  irreducible_monicizeRatFunc_of_natDegree_pos hHdeg
 
 /-- The function field `𝕃` from Appendix A.1 of [BCIKS20]. -/
 abbrev 𝕃 (H : F[X][Y]) : Type :=
-  (Polynomial (RatFunc F)) ⧸ (Ideal.span {H_tilde H})
+  (Polynomial (RatFunc F)) ⧸ (Ideal.span {monicizeRatFunc H})
 
 /-- The function field `𝕃` is a field when `H` is irreducible and has positive `Y`-degree. -/
 lemma isField_of_irreducible_of_natDegree_pos {F : Type} [Field F] {H : F[X][Y]}
     (hHdeg : 0 < H.natDegree) (hH : Irreducible H) : IsField (𝕃 H) := by
   unfold 𝕃
   erw [← Ideal.Quotient.maximal_ideal_iff_isField_quotient, principal_is_maximal_iff_irred]
-  exact irreducibleHTildeOfIrreducible_of_natDegree_pos hHdeg hH
+  exact irreducible_monicizeRatFunc_of_natDegree_pos hHdeg hH
 
 /-- The function field `𝕃` is a field under the standard Appendix A irreducibility hypothesis. -/
 lemma isField_of_irreducible {F : Type} [Field F] {H : F[X][Y]} (hHdeg : 0 < H.natDegree) :
@@ -158,15 +159,16 @@ lemma isField_of_irreducible {F : Type} [Field F] {H : F[X][Y]} (hHdeg : 0 < H.n
   intro h
   unfold 𝕃
   erw [← Ideal.Quotient.maximal_ideal_iff_isField_quotient, principal_is_maximal_iff_irred]
-  exact irreducibleHTildeOfIrreducible hHdeg h
+  exact irreducible_monicizeRatFunc hHdeg h
 
 /-- The function field `𝕃` is a field under positive-degree irreducibility assumptions. -/
 noncomputable instance {F : Type} [Field F] {H : F[X][Y]} [hHdeg : Fact (0 < H.natDegree)]
     [inst : Fact (Irreducible H)] : Field (𝕃 H) :=
   IsField.toField (isField_of_irreducible hHdeg.out inst.out)
 
-/-- The integral monicized polynomial corresponding to `H_tilde`, with coefficients in `F[X]`. -/
-noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
+/-- The integral monicized polynomial corresponding to `monicizeRatFunc`, with coefficients
+in `F[X]`. -/
+noncomputable def monicize (H : F[X][Y]) : F[X][Y] :=
   if H.natDegree = 0 then
     Polynomial.C (H.coeff 0)
   else
@@ -178,12 +180,12 @@ noncomputable def H_tilde' (H : F[X][Y]) : F[X][Y] :=
         Polynomial.C (hᵢ i * W ^ (d - 1 - i)) * Polynomial.X ^ i
 
 omit [IsDomain F] in
-/-- If `H` has positive degree in `Y`, then `H_tilde' H` is monic. -/
-lemma H_tilde'_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
-    (H_tilde' H).Monic := by
+/-- If `H` has positive degree in `Y`, then `monicize H` is monic. -/
+lemma monicize_monic (H : F[X][Y]) (hH : 0 < H.natDegree) :
+    (monicize H).Monic := by
   classical
   have hdeg : H.natDegree ≠ 0 := Nat.ne_of_gt hH
-  rw [H_tilde', if_neg hdeg]
+  rw [monicize, if_neg hdeg]
   exact Polynomial.monic_X_pow_add <| (Polynomial.degree_sum_le _ _).trans_lt <| by
     exact (Finset.sup_lt_iff (WithBot.bot_lt_coe H.natDegree)).2 <| by
       intro i hi
@@ -251,14 +253,15 @@ private lemma monicize_leading_term {K : Type} [Field K] (a : K) (d : ℕ)
     _ = Polynomial.X ^ d * Polynomial.C (1 : K) := by rw [hscalar']
     _ = Polynomial.X ^ d := by simp
 
-/-- The polynomial `H_tilde'` agrees with the monicization `H_tilde` after embedding into
+/-- The polynomial `monicize` agrees with the monicization `monicizeRatFunc` after embedding into
 `Polynomial (RatFunc F)`. -/
-lemma map_H_tilde'_eq_H_tilde (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_tilde H := by
+lemma map_monicize_eq_monicizeRatFunc (H : F[X][Y]) : (monicize H).map univPolyHom = monicizeRatFunc
+    H := by
   classical
   by_cases hdeg : H.natDegree = 0
-  · simp only [H_tilde', hdeg, ↓reduceIte, map_C]
+  · simp only [monicize, hdeg, ↓reduceIte, map_C]
     have hconst : H = Polynomial.C (H.coeff 0) := Polynomial.eq_C_of_natDegree_le_zero (by omega)
-    rw [hconst, H_tilde]
+    rw [hconst, monicizeRatFunc]
     simp
   · have hH_ne : H ≠ 0 := by
       intro hzero
@@ -282,9 +285,9 @@ lemma map_H_tilde'_eq_H_tilde (H : F[X][Y]) : (H_tilde' H).map univPolyHom = H_t
           (p := H) (f := RingHom.comp Polynomial.C univPolyHom)
           (x := Polynomial.X /
             (RingHom.comp Polynomial.C univPolyHom) ((fun i => H.coeff i) H.natDegree)))
-    simp only [H_tilde', hdeg, ↓reduceIte, coeff_natDegree, map_mul, map_pow,
+    simp only [monicize, hdeg, ↓reduceIte, coeff_natDegree, map_mul, map_pow,
       Polynomial.map_add, Polynomial.map_pow, map_X]
-    rw [H_tilde, hEval, Finset.sum_range_succ, mul_add, Finset.mul_sum, Polynomial.map_sum]
+    rw [monicizeRatFunc, hEval, Finset.sum_range_succ, mul_add, Finset.mul_sum, Polynomial.map_sum]
     have hsum :
         ∑ i ∈ Finset.range H.natDegree,
           ((RingHom.comp Polynomial.C univPolyHom) ((fun i => H.coeff i) H.natDegree) ^
@@ -342,54 +345,54 @@ section IntegralIrreducibility
 
 variable {F : Type} [Field F]
 
-/-- The integral monicized polynomial `H_tilde'` is irreducible whenever `H` is irreducible and has
+/-- The integral monicized polynomial `monicize` is irreducible whenever `H` is irreducible and has
 positive degree in `Y`. -/
-lemma irreducibleHTilde'OfIrreducible {H : F[X][Y]} (hHdeg : 0 < H.natDegree)
+lemma irreducible_monicize {H : F[X][Y]} (hHdeg : 0 < H.natDegree)
     (hH : Irreducible H) :
-    Irreducible (H_tilde' H) := by
-  have hmap : Irreducible ((H_tilde' H).map (univPolyHom (F := F))) := by
-    simpa [map_H_tilde'_eq_H_tilde] using
-      irreducibleHTildeOfIrreducible_of_natDegree_pos hHdeg hH
-  exact (H_tilde'_monic H hHdeg).isPrimitive.irreducible_of_irreducible_map_of_injective
+    Irreducible (monicize H) := by
+  have hmap : Irreducible ((monicize H).map (univPolyHom (F := F))) := by
+    simpa [map_monicize_eq_monicizeRatFunc] using
+      irreducible_monicizeRatFunc_of_natDegree_pos hHdeg hH
+  exact (monicize_monic H hHdeg).isPrimitive.irreducible_of_irreducible_map_of_injective
     (univPolyHom_injective (F := F)) hmap
 
 end IntegralIrreducibility
 
 /-- The ring of regular elements `𝒪` from Appendix A.1 of [BCIKS20]. -/
 abbrev 𝒪 (H : F[X][Y]) : Type :=
-  (Polynomial (Polynomial F)) ⧸ (Ideal.span {H_tilde' H})
+  (Polynomial (Polynomial F)) ⧸ (Ideal.span {monicize H})
 
 /-- The ring of regular elements `𝒪` is a ring. -/
 noncomputable instance {H : F[X][Y]} : Ring (𝒪 H) :=
-  Ideal.Quotient.ring (Ideal.span {H_tilde' H})
+  Ideal.Quotient.ring (Ideal.span {monicize H})
 
 /-- The ring homomorphism defining the embedding of `𝒪` into `𝕃`. -/
 noncomputable def embeddingOf𝒪Into𝕃 (H : F[X][Y]) : 𝒪 H →+* 𝕃 H :=
   Ideal.quotientMap
-    (I := Ideal.span {H_tilde' H}) (Ideal.span {H_tilde H})
+    (I := Ideal.span {monicize H}) (Ideal.span {monicizeRatFunc H})
     bivPolyHom (by
       rw [Ideal.span_le]
       intro x hx
       rw [Set.mem_singleton_iff] at hx
       subst hx
-      change bivPolyHom (H_tilde' H) ∈ span {H_tilde H}
-      rw [show bivPolyHom (H_tilde' H) = (H_tilde' H).map univPolyHom from rfl,
-        map_H_tilde'_eq_H_tilde]
+      change bivPolyHom (monicize H) ∈ span {monicizeRatFunc H}
+      rw [show bivPolyHom (monicize H) = (monicize H).map univPolyHom from rfl,
+        map_monicize_eq_monicizeRatFunc]
       exact Ideal.subset_span rfl)
 
 section FieldEmbedding
 
 variable {F : Type} [Field F]
 
-lemma H_tilde'_dvd_of_map_dvd_H_tilde {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
-    (hp : H_tilde H ∣ p.map (univPolyHom (F := F))) :
-    H_tilde' H ∣ p := by
-  let q : F[X][Y] := H_tilde' H
-  have hqmonic : q.Monic := H_tilde'_monic H hHdeg
+lemma monicize_dvd_of_map_dvd_monicizeRatFunc {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
+    (hp : monicizeRatFunc H ∣ p.map (univPolyHom (F := F))) :
+    monicize H ∣ p := by
+  let q : F[X][Y] := monicize H
+  have hqmonic : q.Monic := monicize_monic H hHdeg
   rw [← Polynomial.modByMonic_eq_zero_iff_dvd hqmonic]
   rw [← Polynomial.map_eq_zero_iff (univPolyHom_injective (F := F))]
   have hqmap_dvd_p : q.map (univPolyHom (F := F)) ∣ p.map (univPolyHom (F := F)) := by
-    simpa [q, map_H_tilde'_eq_H_tilde] using hp
+    simpa [q, map_monicize_eq_monicizeRatFunc] using hp
   have hqmap_dvd_rem :
       q.map (univPolyHom (F := F)) ∣
         (p %ₘ q).map (univPolyHom (F := F)) := by
@@ -412,12 +415,12 @@ lemma H_tilde'_dvd_of_map_dvd_H_tilde {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
     exact Polynomial.degree_modByMonic_lt p hqmonic
   exact Polynomial.eq_zero_of_dvd_of_degree_lt hqmap_dvd_rem hdegree
 
-private lemma mem_span_H_tilde'_of_bivPolyHom_mem_span_H_tilde {H p : F[X][Y]}
+private lemma mem_span_monicize_of_bivPolyHom_mem_span_monicizeRatFunc {H p : F[X][Y]}
     (hHdeg : 0 < H.natDegree)
-    (hp : bivPolyHom p ∈ Ideal.span {H_tilde H}) :
-    p ∈ Ideal.span {H_tilde' H} := by
+    (hp : bivPolyHom p ∈ Ideal.span {monicizeRatFunc H}) :
+    p ∈ Ideal.span {monicize H} := by
   rw [Ideal.mem_span_singleton] at hp ⊢
-  exact H_tilde'_dvd_of_map_dvd_H_tilde hHdeg (by
+  exact monicize_dvd_of_map_dvd_monicizeRatFunc hHdeg (by
     simpa [show bivPolyHom p = p.map (univPolyHom (F := F)) from rfl] using hp)
 
 /-- The regular quotient embeds injectively into the function-field quotient when `H` has positive
@@ -427,7 +430,7 @@ lemma embeddingOf𝒪Into𝕃_injective {H : F[X][Y]} (hHdeg : 0 < H.natDegree) 
   unfold embeddingOf𝒪Into𝕃
   apply Ideal.quotientMap_injective'
   intro p hp
-  exact mem_span_H_tilde'_of_bivPolyHom_mem_span_H_tilde hHdeg hp
+  exact mem_span_monicize_of_bivPolyHom_mem_span_monicizeRatFunc hHdeg hp
 
 end FieldEmbedding
 
@@ -510,7 +513,7 @@ lemma regularElementsSet_prod {ι : Type} {H : F[X][Y]} (s : Finset ι) {f : ι 
   revert hf
   refine Finset.induction_on s ?_ ?_
   · intro _hf
-    simpa using regularElementsSet_one H
+    simp
   · intro a s ha ih hf
     rw [Finset.prod_insert ha]
     exact regularElementsSet_mul
@@ -524,54 +527,54 @@ def rationalRoot (H : F[X][Y]) (z : F) : Type :=
 
 /-- The rational substitution `π_z` from Appendix A.3 defined on the whole ring of
 bivariate polynomials. -/
-noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :
+noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     F[X][Y] →+* F :=
   Polynomial.evalEvalRingHom z root.1
 
 /-- The rational substitution `π_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the
 quotient ring `𝒪`. -/
-noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (H_tilde' H) z) :
+noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     𝒪 H →+* F :=
-  Ideal.Quotient.lift (Ideal.span {H_tilde' H}) (π_z_lift z root) (by
+  Ideal.Quotient.lift (Ideal.span {monicize H}) (π_z_lift z root) (by
     intro a ha
     rw [Ideal.mem_span_singleton] at ha
     obtain ⟨c, rfl⟩ := ha
     simp only [π_z_lift, map_mul]
-    rw [show (Polynomial.evalEvalRingHom z root.1) (H_tilde' H) = 0 from root.2]
+    rw [show (Polynomial.evalEvalRingHom z root.1) (monicize H) = 0 from root.2]
     ring)
 
 /-- The canonical representative of an element of `F[X][Y]` inside the ring of regular elements
 `𝒪`, defined when `H` has positive degree in `Y`. -/
 noncomputable def canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) : F[X][Y] :=
-  let _hHt := H_tilde'_monic H hH
-  Polynomial.modByMonic β.out (H_tilde' H)
+  let _hHt := monicize_monic H hH
+  Polynomial.modByMonic β.out (monicize H)
 
 /-- The canonical representative has degree strictly smaller than the defining relation. -/
 lemma canonicalRepOf𝒪_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-    (canonicalRepOf𝒪 hH β).degree < (H_tilde' H).degree := by
+    (canonicalRepOf𝒪 hH β).degree < (monicize H).degree := by
   rw [canonicalRepOf𝒪]
-  exact Polynomial.degree_modByMonic_lt _ (H_tilde'_monic H hH)
+  exact Polynomial.degree_modByMonic_lt _ (monicize_monic H hH)
 
 omit [IsDomain F] in
 /-- The canonical representative has natural degree bounded by the defining relation. -/
 lemma canonicalRepOf𝒪_natDegree_le {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-    (canonicalRepOf𝒪 hH β).natDegree ≤ (H_tilde' H).natDegree := by
+    (canonicalRepOf𝒪 hH β).natDegree ≤ (monicize H).natDegree := by
   rw [canonicalRepOf𝒪]
-  exact Polynomial.natDegree_modByMonic_le _ (H_tilde'_monic H hH)
+  exact Polynomial.natDegree_modByMonic_le _ (monicize_monic H hH)
 
 omit [IsDomain F] in
 /-- The canonical representative maps back to the original quotient element of `𝒪`. -/
 @[simp]
 lemma mk_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-    Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (canonicalRepOf𝒪 hH β) = β := by
-  let I : Ideal F[X][Y] := Ideal.span {H_tilde' H}
-  let q : F[X][Y] := H_tilde' H
+    Ideal.Quotient.mk (Ideal.span {monicize H}) (canonicalRepOf𝒪 hH β) = β := by
+  let I : Ideal F[X][Y] := Ideal.span {monicize H}
+  let q : F[X][Y] := monicize H
   let p : F[X][Y] := β.out
   have hq_zero : Ideal.Quotient.mk I (q * (p /ₘ q)) = 0 := by
     rw [Ideal.Quotient.eq_zero_iff_mem]
     exact Ideal.mul_mem_right _ _ (Ideal.subset_span rfl)
   calc
-    Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (canonicalRepOf𝒪 hH β)
+    Ideal.Quotient.mk (Ideal.span {monicize H}) (canonicalRepOf𝒪 hH β)
         = Ideal.Quotient.mk I (p %ₘ q) := by
             simp [canonicalRepOf𝒪, I, q, p]
     _ = Ideal.Quotient.mk I (p %ₘ q) + Ideal.Quotient.mk I (q * (p /ₘ q)) := by
@@ -586,16 +589,16 @@ lemma mk_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
 omit [IsDomain F] in
 /-- Canonical representatives of quotient constructors are computed by `modByMonic`. -/
 lemma canonicalRepOf𝒪_mk {H : F[X][Y]} (hH : 0 < H.natDegree) (p : F[X][Y]) :
-    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) =
-      p %ₘ H_tilde' H := by
-  apply Polynomial.modByMonic_eq_of_dvd_sub (H_tilde'_monic H hH)
+    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) =
+      p %ₘ monicize H := by
+  apply Polynomial.modByMonic_eq_of_dvd_sub (monicize_monic H hH)
   rw [← Ideal.mem_span_singleton]
   rw [← Ideal.Quotient.mk_eq_mk_iff_sub_mem]
   calc
-    Ideal.Quotient.mk (Ideal.span {H_tilde' H})
-        ((Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H).out)
-        = (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) := by simp
-    _ = Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p := rfl
+    Ideal.Quotient.mk (Ideal.span {monicize H})
+        ((Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H).out)
+        = (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) := by simp
+    _ = Ideal.Quotient.mk (Ideal.span {monicize H}) p := rfl
 
 omit [IsDomain F] in
 /-- The canonical representative of zero is zero. -/
@@ -606,10 +609,10 @@ lemma canonicalRepOf𝒪_zero {H : F[X][Y]} (hH : 0 < H.natDegree) :
 
 /-- A polynomial whose degree is already below the relation is its own canonical representative. -/
 lemma canonicalRepOf𝒪_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
-    {p : F[X][Y]} (hp : p.degree < (H_tilde' H).degree) :
-    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) = p := by
+    {p : F[X][Y]} (hp : p.degree < (monicize H).degree) :
+    canonicalRepOf𝒪 hH (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = p := by
   rw [canonicalRepOf𝒪_mk]
-  exact (Polynomial.modByMonic_eq_self_iff (H_tilde'_monic H hH)).2 hp
+  exact (Polynomial.modByMonic_eq_self_iff (monicize_monic H hH)).2 hp
 
 
 end

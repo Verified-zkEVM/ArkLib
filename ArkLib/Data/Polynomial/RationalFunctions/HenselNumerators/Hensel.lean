@@ -182,15 +182,15 @@ def HasNumeratorShape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
-    (hD_H : Bivariate.totalDegree H ≤ D)
-    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (_hD_H : Bivariate.totalDegree H ≤ D)
+    (_hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
+    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
     βseq 0 =
-      (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (Polynomial.X : F[X][Y]) : 𝒪 H) := by
+      (Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.X : F[X][Y]) : 𝒪 H) := by
   classical
   apply embeddingOf𝒪Into𝕃_injective hH
   have h0 := hshape 0
@@ -280,6 +280,7 @@ theorem remainder_low_order {A B : Type} [CommRing A] [CommRing B] (n : ℕ)
 
 
 
+omit H_irreducible H_natDegree_pos in
 theorem constantCoeff_liftCoeffToPowerSeries (x₀ : F) (p : F[X][X]) :
     PowerSeries.constantCoeff (liftCoeffToPowerSeries x₀ H p) =
       liftToFunctionField (H := H) (p.eval (Polynomial.C x₀)) := by
@@ -298,6 +299,7 @@ theorem constantCoeff_liftCoeffToPowerSeries (x₀ : F) (p : F[X][X]) :
   have : fieldTo𝕃 (H := H) x₀ = liftToFunctionField (H := H) (Polynomial.C x₀) := rfl
   rw [this, Polynomial.eval₂_hom]
 
+omit H_irreducible H_natDegree_pos in
 theorem constantCoeff_eval₂_liftCoeff (x₀ : F) (q : F[X][X][Y]) (Γ : PowerSeries (𝕃 H)) :
     PowerSeries.constantCoeff (Polynomial.eval₂ (liftCoeffToPowerSeries x₀ H) Γ q) =
       Polynomial.eval₂ (liftToFunctionField (H := H))
@@ -306,7 +308,7 @@ theorem constantCoeff_eval₂_liftCoeff (x₀ : F) (q : F[X][X][Y]) (Γ : PowerS
   rw [Bivariate.evalX_eq_map, Polynomial.eval₂_map]
   congr 1
   refine RingHom.ext fun p => ?_
-  show PowerSeries.constantCoeff (liftCoeffToPowerSeries x₀ H p) = _
+  change PowerSeries.constantCoeff (liftCoeffToPowerSeries x₀ H p) = _
   rw [constantCoeff_liftCoeffToPowerSeries]
   rfl
 
@@ -337,6 +339,7 @@ theorem coeff_evalR_split (x₀ : F) (R : F[X][X][Y]) (n : ℕ) (hn : 1 ≤ n)
     constantCoeff_eval₂_derivative_eq_zeta x₀ R Γ hΓ0, add_comm]
 
 -- base case n=0
+omit H_irreducible H_natDegree_pos in
 theorem coeff_zero_evalR (x₀ : F) (R : F[X][X][Y]) (Γ : PowerSeries (𝕃 H)) :
     PowerSeries.coeff 0 (evalRAtPowerSeries x₀ H R Γ) =
       Polynomial.eval₂ (liftToFunctionField (H := H)) (PowerSeries.constantCoeff Γ)
@@ -346,6 +349,7 @@ theorem coeff_zero_evalR (x₀ : F) (R : F[X][X][Y]) (Γ : PowerSeries (𝕃 H))
 
 
 
+omit H_irreducible H_natDegree_pos in
 theorem coeff_evalR_stable (x₀ : F) (R : F[X][X][Y]) (n m : ℕ) (hm : m < n)
     (Γ δ : PowerSeries (𝕃 H)) (hδ : ∀ i < n, PowerSeries.coeff i δ = 0) :
     PowerSeries.coeff m (evalRAtPowerSeries x₀ H R (Γ + δ)) =
@@ -499,7 +503,7 @@ theorem formalHenselAlphaSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   -- `ζ` a unit, solve `α n = -c n / ζ`, so every coefficient of `evalR` vanishes; conclude
   -- with `PowerSeries.ext`. (`𝕃 H⟦S⟧` is also Henselian, but `R` need not be monic in `Y`.)
   refine ⟨alphaSeq x₀ R H, ?_, ?_⟩
-  · show bSeq x₀ R H 0 0 = _
+  · change bSeq x₀ R H 0 0 = _
     simp [bSeq]
   · unfold gammaFromAlpha
     ext m
@@ -546,22 +550,28 @@ theorem hensel_numerator_sequence_of_alpha_shape (x₀ : F) (R : F[X][X][Y]) (H 
   · rw [gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp αseq βseq hshape]
     exact hroot
 
-theorem mk_H_tilde_eq_W_pow_mul_eval2 (H : F[X][Y])
+theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)] :
-    (Ideal.Quotient.mk (Ideal.span ({H_tilde H} : Set (Polynomial (RatFunc F)))) (H_tilde H) : 𝕃 H) =
+    (Ideal.Quotient.mk (Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))))
+        (monicizeRatFunc H) : 𝕃 H)
+        =
       liftToFunctionField (H := H) H.leadingCoeff ^ (H.natDegree - 1) *
         Polynomial.eval₂ (liftToFunctionField (H := H))
           (functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff) H := by
   unfold liftToFunctionField functionFieldT coeffAsRatFunc
-  unfold H_tilde
+  unfold monicizeRatFunc
   simp only [Polynomial.coeff_natDegree, ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom,
     Polynomial.map_C, RingHom.comp_apply]
   let Wp : Polynomial (RatFunc F) := Polynomial.C (univPolyHom (F := F) H.leadingCoeff)
-  let I : Ideal (Polynomial (RatFunc F)) := Ideal.span ({Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F))) (Polynomial.X / Wp) H} : Set (Polynomial (RatFunc F)))
+  let I : Ideal (Polynomial (RatFunc F)) := Ideal.span
+      ({Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
+          (Polynomial.X / Wp) H} : Set (Polynomial (RatFunc F)))
   let q : Polynomial (RatFunc F) →+* 𝕃 H := Ideal.Quotient.mk I
   have hW_ne : univPolyHom (F := F) H.leadingCoeff ≠ 0 := by
     intro h
-    exact (Polynomial.leadingCoeff_ne_zero.mpr (Polynomial.ne_zero_of_natDegree_gt _H_natDegree_pos.out))
+    exact
+        (Polynomial.leadingCoeff_ne_zero.mpr
+            (Polynomial.ne_zero_of_natDegree_gt _H_natDegree_pos.out))
       (univPolyHom_injective (F := F) (by simpa using h))
   have hdiv : q (Polynomial.X / Wp) = q Polynomial.X / q Wp := by
     dsimp [Wp]
@@ -575,11 +585,16 @@ theorem mk_H_tilde_eq_W_pow_mul_eval2 (H : F[X][Y])
       rw [mul_inv_cancel₀ hW_ne]
       exact map_one q
     exact (inv_eq_of_mul_eq_one_right hmul).symm
-  change q (Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F))) (Polynomial.X / Wp) H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (q.comp ((Polynomial.mapRingHom (univPolyHom (F := F))).comp Polynomial.C)) (q Polynomial.X / q Wp) H
+  change q
+      (Wp ^ (H.natDegree - 1) * Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
+          (Polynomial.X / Wp) H) = q Wp ^ (H.natDegree - 1) * Polynomial.eval₂
+          (q.comp ((Polynomial.mapRingHom (univPolyHom (F := F))).comp Polynomial.C))
+          (q Polynomial.X / q Wp) H
   rw [map_mul, map_pow]
   rw [← hdiv]
   rw [Polynomial.hom_eval₂]
-  have hhom : q.comp (RingHom.comp Polynomial.C (univPolyHom (F := F)) : F[X] →+* Polynomial (RatFunc F)) =
+  have hhom : q.comp
+      (RingHom.comp Polynomial.C (univPolyHom (F := F)) : F[X] →+* Polynomial (RatFunc F)) =
       q.comp ((Polynomial.mapRingHom (univPolyHom (F := F))).comp Polynomial.C) := by
     ext p <;> simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.map_C]
   rw [hhom]
@@ -588,10 +603,13 @@ theorem H_eval2_T_div_W_eq_zero (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)] :
     Polynomial.eval₂ (liftToFunctionField (H := H))
       (functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff) H = 0 := by
-  have hzero : (Ideal.Quotient.mk (Ideal.span ({H_tilde H} : Set (Polynomial (RatFunc F)))) (H_tilde H) : 𝕃 H) = 0 := by
+  have hzero :
+      (Ideal.Quotient.mk (Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))))
+          (monicizeRatFunc H) : 𝕃
+          H) = 0 := by
     rw [Ideal.Quotient.eq_zero_iff_mem]
     exact Ideal.subset_span rfl
-  rw [mk_H_tilde_eq_W_pow_mul_eval2] at hzero
+  rw [mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂] at hzero
   have hW : liftToFunctionField (H := H) H.leadingCoeff ^ (H.natDegree - 1) ≠ 0 := by
     exact pow_ne_zero _ (liftToFunctionField_leadingCoeff_ne_zero (H := H))
   exact (mul_eq_zero.mp hzero).resolve_left hW
@@ -607,7 +625,7 @@ theorem initial_root_at_x0 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rw [hQ, Polynomial.eval₂_mul]
   rw [H_eval2_T_div_W_eq_zero H, zero_mul]
 
-theorem zeta_ne_zero_of_Hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+theorem zeta_ne_zero_of_hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
     ζ R x₀ H ≠ 0 := by
@@ -628,7 +646,8 @@ theorem exists_hensel_alpha_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     ∃ αseq : ℕ → 𝕃 H,
       αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff ∧
       evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0 := by
-  exact formalHenselAlphaSequence x₀ R H (initial_root_at_x0 x₀ R H hHyp) (zeta_ne_zero_of_Hypotheses x₀ R H hHyp)
+  exact formalHenselAlphaSequence x₀ R H (initial_root_at_x0 x₀ R H hHyp)
+      (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
 
 /-- Predicate: all coefficients of a power series over `𝕃 H` are regular (lie in the image of
 `𝒪 H`). This abstracts the "regular power series" used throughout the Hensel clearing argument. -/
@@ -677,7 +696,7 @@ theorem AllCoeffRegular.zero {H : F[X][Y]} :
 /-- The image of a field constant `x₀ : F` in `𝕃 H` is a regular element. -/
 theorem fieldTo𝕃_regular (x₀ : F) (H : F[X][Y]) :
     fieldTo𝕃 (H := H) x₀ ∈ regularElementsSet H := by
-  show RingHom.comp liftToFunctionField Polynomial.C x₀ ∈ regularElementsSet H
+  change RingHom.comp liftToFunctionField Polynomial.C x₀ ∈ regularElementsSet H
   rw [RingHom.comp_apply]
   exact regularElementsSet_liftToFunctionField H _
 
@@ -776,7 +795,7 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hWne : W ≠ 0 := liftToFunctionField_leadingCoeff_ne_zero (H := H)
   have hetane : eta ≠ 0 := by
     rw [hetadef, embeddingOf𝒪Into𝕃_ξ]
-    exact mul_ne_zero (pow_ne_zero _ hWne) (zeta_ne_zero_of_Hypotheses x₀ R H hHyp)
+    exact mul_ne_zero (pow_ne_zero _ hWne) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
   have hjle : j ≤ R.natDegree := by
     rw [Finset.mem_range] at hj; omega
   -- regularity of cleared numerators (clearing the denominator of each `αtrunc i`, `i ≤ t`)
@@ -809,9 +828,9 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     have hz : (∏ i ∈ Finset.range j, αtrunc (l i)) = 0 :=
       Finset.prod_eq_zero hi₀ (hαzero _ hi₀t)
     rw [hz]
-    simpa using regularElementsSet_zero H
+    simp
   · -- Case B: all parts `≤ t`.
-    push_neg at hbig
+    push Not at hbig
     have hle : ∀ i ∈ Finset.range j, l i ≤ t := hbig
     -- product-clearing: `(∏ αtrunc) · W^{∑(lᵢ+1)} · eta^{∑e} ∈ regular`
     have hprodReg : (∏ i ∈ Finset.range j, αtrunc (l i)) *
@@ -843,7 +862,7 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       · omega
       · have hS1ge : 2 ≤ S1 := by
           by_contra h
-          push_neg at h
+          push Not at h
           interval_cases S1 <;> omega
         omega
     -- `Pw = ∑(lᵢ + 1) = p.2 + j`
@@ -945,8 +964,8 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (hzeta : ζ R x₀ H ≠ 0)
+    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
+    (_hzeta : ζ R x₀ H ≠ 0)
     (t : ℕ) (βprev : Fin (t + 1) → 𝒪 H)
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
@@ -982,7 +1001,7 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
       simpa using this.symm
     · have hval : αtrunc i = 0 := by rw [hαtrunc]; simp only [if_neg h]
       rw [hval, dif_neg h]
-  show PowerSeries.coeff (t + 1)
+  change PowerSeries.coeff (t + 1)
       (evalRAtPowerSeries x₀ H R (PowerSeries.mk αtrunc)) * Ddiv ∈ regularElementsSet H
   unfold evalRAtPowerSeries
   rw [Polynomial.eval₂_eq_sum_range, map_sum, Finset.sum_mul]

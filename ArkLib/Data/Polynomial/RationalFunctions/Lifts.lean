@@ -47,27 +47,27 @@ noncomputable def coeffAsRatFunc : F[X] →+* Polynomial (RatFunc F) :=
 
 /-- The embedding of coefficient polynomials into the function field `𝕃`. -/
 noncomputable def liftToFunctionField {H : F[X][Y]} : F[X] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) coeffAsRatFunc
+  RingHom.comp (Ideal.Quotient.mk (Ideal.span {monicizeRatFunc H})) coeffAsRatFunc
 
 /-- The embedding of bivariate polynomials into the function field `𝕃`. -/
 noncomputable def liftBivariate {H : F[X][Y]} : F[X][Y] →+* 𝕃 H :=
-  RingHom.comp (Ideal.Quotient.mk (Ideal.span {H_tilde H})) bivPolyHom
+  RingHom.comp (Ideal.Quotient.mk (Ideal.span {monicizeRatFunc H})) bivPolyHom
 
 /-- The image of the polynomial variable `T` in the function field `𝕃 H`. -/
 noncomputable def functionFieldT {H : F[X][Y]} : 𝕃 H :=
-  Ideal.Quotient.mk (Ideal.span {H_tilde H}) Polynomial.X
+  Ideal.Quotient.mk (Ideal.span {monicizeRatFunc H}) Polynomial.X
 
 /-- Quotient constructors in `𝒪` embed by applying the bivariate lift. -/
 @[simp]
 lemma embeddingOf𝒪Into𝕃_mk (H : F[X][Y]) (p : F[X][Y]) :
-    embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p : 𝒪 H) =
+    embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) =
       liftBivariate (H := H) p := by
   rfl
 
 /-- Every bivariate polynomial representative gives a regular element of the function field. -/
 lemma regular_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :
     ∃ pre : 𝒪 H, embeddingOf𝒪Into𝕃 H pre = liftBivariate (H := H) p :=
-  ⟨Ideal.Quotient.mk (Ideal.span {H_tilde' H}) p, by simp⟩
+  ⟨Ideal.Quotient.mk (Ideal.span {monicize H}) p, by simp⟩
 
 /-- Bivariate-polynomial images are regular elements of the function field. -/
 lemma regularElementsSet_liftBivariate (H : F[X][Y]) (p : F[X][Y]) :
@@ -92,7 +92,8 @@ lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}
     {p : F[X]} (hp : p ≠ 0) :
     liftToFunctionField (H := H) p ≠ 0 := by
   intro hzero
-  have hmem : coeffAsRatFunc p ∈ Ideal.span ({H_tilde H} : Set (Polynomial (RatFunc F))) := by
+  have hmem : coeffAsRatFunc p ∈ Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))) :=
+      by
     simpa [liftToFunctionField] using (Ideal.Quotient.eq_zero_iff_mem.mp hzero)
   rw [Ideal.mem_span_singleton] at hmem
   have hp_map : univPolyHom (F := F) p ≠ 0 := by
@@ -104,7 +105,7 @@ lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}
       Polynomial.isUnit_C.mpr (Ne.isUnit hp_map)
     simpa only [coeffAsRatFunc, RingHom.comp_apply, ToRatFunc.bivPolyHom,
       Polynomial.coe_mapRingHom, Polynomial.map_C] using hunitC
-  exact (irreducibleHTildeOfIrreducible_of_natDegree_pos H_natDegree_pos.out
+  exact (irreducible_monicizeRatFunc_of_natDegree_pos H_natDegree_pos.out
     H_irreducible.out).not_dvd_isUnit hunit hmem
 
 /-- The leading coefficient `W` of a positive-`Y`-degree `H` is nonzero in the function field. -/
@@ -165,7 +166,7 @@ private lemma mul_pow_mul_div_pow_succ_eq_top {K : Type} [Field K] {W T a : K}
 `W^k * eval₂ lift (T/W) P` decomposes into a low-degree polynomial sum plus a single
 `(P.coeff(k+1)/W) · T^(k+1)` term. The divisibility `W ∣ P.coeff(k+1)` is not needed here -
 the formula holds in `𝕃 H` directly via field division. -/
-lemma W_pow_mul_eval₂_div_eq_sum {F : Type} [Field F] {H : F[X][Y]}
+lemma leadingCoeff_pow_mul_eval₂_div_eq_sum {F : Type} [Field F] {H : F[X][Y]}
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     {P : F[X][Y]} {k : ℕ} (hP : P.natDegree ≤ k + 1) :
     liftToFunctionField (H := H) H.leadingCoeff ^ k *

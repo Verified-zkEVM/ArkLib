@@ -43,19 +43,19 @@ variable {F : Type} [CommRing F] [IsDomain F]
 
 omit [IsDomain F] in
 /-- `Λ` is subadditive under multiplication of bivariate polynomials (bound form). -/
-lemma weight_Λ_mul_le' {f g H : F[X][Y]} {D bf bg : ℕ}
-    (hf : weight_Λ f H D ≤ (WithBot.some bf : WithBot ℕ))
-    (hg : weight_Λ g H D ≤ (WithBot.some bg : WithBot ℕ)) :
-    weight_Λ (f * g) H D ≤ (WithBot.some (bf + bg) : WithBot ℕ) := by
+lemma weight_mul_le' {f g H : F[X][Y]} {D bf bg : ℕ}
+    (hf : weight f H D ≤ (WithBot.some bf : WithBot ℕ))
+    (hg : weight g H D ≤ (WithBot.some bg : WithBot ℕ)) :
+    weight (f * g) H D ≤ (WithBot.some (bf + bg) : WithBot ℕ) := by
   classical
-  rw [weight_Λ_le_iff]
-  rw [weight_Λ_le_iff] at hf hg
+  rw [weight_le_iff]
+  rw [weight_le_iff] at hf hg
   intro n hn
   set m := D + 1 - Bivariate.natDegreeY H with hm
   have hcoeff_ne : (f * g).coeff n ≠ 0 := Polynomial.mem_support_iff.mp hn
   have hexists : ∃ x ∈ Finset.antidiagonal n, f.coeff x.1 * g.coeff x.2 ≠ 0 := by
     by_contra h
-    push_neg at h
+    push Not at h
     exact hcoeff_ne (by rw [Polynomial.coeff_mul]; exact Finset.sum_eq_zero h)
   obtain ⟨x0, hx0mem, hx0ne⟩ := hexists
   have hx0sum : x0.1 + x0.2 = n := Finset.mem_antidiagonal.mp hx0mem
@@ -85,51 +85,56 @@ namespace HenselNumerators
 variable {F : Type} [Field F] {R : F[X][X][X]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
 
+omit H_irreducible H_natDegree_pos in
 /-- The `𝒪`-weight is invariant under negation. -/
-lemma weight_Λ_over_𝒪_neg {hH : 0 < H.natDegree} (a : 𝒪 H) (D : ℕ) :
-    weight_Λ_over_𝒪 hH (-a) D = weight_Λ_over_𝒪 hH a D := by
+lemma regularWeight_neg {hH : 0 < H.natDegree} (a : 𝒪 H) (D : ℕ) :
+    regularWeight hH (-a) D = regularWeight hH a D := by
   classical
-  have hrep : (-a) = (Ideal.Quotient.mk (Ideal.span {H_tilde' H})
+  have hrep : (-a) = (Ideal.Quotient.mk (Ideal.span {monicize H})
       (-(canonicalRepOf𝒪 hH a)) : 𝒪 H) := by
     rw [map_neg, mk_canonicalRepOf𝒪]
-  have hdeg : (-(canonicalRepOf𝒪 hH a)).degree < (H_tilde' H).degree := by
+  have hdeg : (-(canonicalRepOf𝒪 hH a)).degree < (monicize H).degree := by
     rw [Polynomial.degree_neg]; exact canonicalRepOf𝒪_degree_lt hH a
-  rw [hrep, weight_Λ_over_𝒪_mk_eq_self_of_degree_lt hH hdeg, weight_Λ_neg]
+  rw [hrep, regularWeight_mk_eq_self_of_degree_lt hH hdeg, weight_neg]
   rfl
 
+omit H_irreducible H_natDegree_pos in
 /-- `𝒪`-weight is subadditive under multiplication (bound form). -/
-lemma weight_Λ_over_𝒪_mul_le' {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+lemma regularWeight_mul_le' {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
     (hH : 0 < H.natDegree) {a b : 𝒪 H} {ba bb : ℕ}
-    (ha : weight_Λ_over_𝒪 hH a D ≤ (WithBot.some ba : WithBot ℕ))
-    (hb : weight_Λ_over_𝒪 hH b D ≤ (WithBot.some bb : WithBot ℕ)) :
-    weight_Λ_over_𝒪 hH (a * b) D ≤ (WithBot.some (ba + bb) : WithBot ℕ) := by
+    (ha : regularWeight hH a D ≤ (WithBot.some ba : WithBot ℕ))
+    (hb : regularWeight hH b D ≤ (WithBot.some bb : WithBot ℕ)) :
+    regularWeight hH (a * b) D ≤ (WithBot.some (ba + bb) : WithBot ℕ) := by
   classical
-  have hab : a * b = (Ideal.Quotient.mk (Ideal.span {H_tilde' H})
+  have hab : a * b = (Ideal.Quotient.mk (Ideal.span {monicize H})
       (canonicalRepOf𝒪 hH a * canonicalRepOf𝒪 hH b) : 𝒪 H) := by
     rw [map_mul, mk_canonicalRepOf𝒪, mk_canonicalRepOf𝒪]
   rw [hab]
-  exact (weight_Λ_over_𝒪_mk_le hD hH _).trans (weight_Λ_mul_le' ha hb)
+  exact (regularWeight_mk_le hD hH _).trans (weight_mul_le' ha hb)
 
 /-- `RegularWeightLe hH a D B`: the element `a : 𝕃 H` is regular (in the image of `𝒪 H`) with a
 witness whose `Λ`-weight is at most `B`. Bundles regularity together with a weight certificate so
 that the Hensel-clearing expansion can be carried out with `Λ`-bookkeeping. -/
 def RegularWeightLe {H : F[X][Y]} (hH : 0 < H.natDegree) (a : 𝕃 H) (D B : ℕ) : Prop :=
   ∃ b : 𝒪 H, a = embeddingOf𝒪Into𝕃 H b ∧
-    weight_Λ_over_𝒪 hH b D ≤ (WithBot.some B : WithBot ℕ)
+    regularWeight hH b D ≤ (WithBot.some B : WithBot ℕ)
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.mono {hH : 0 < H.natDegree} {a : 𝕃 H} {D B B' : ℕ}
     (h : RegularWeightLe hH a D B) (hBB : B ≤ B') : RegularWeightLe hH a D B' := by
   obtain ⟨b, hb, hw⟩ := h
   exact ⟨b, hb, hw.trans (by exact_mod_cast hBB)⟩
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.mul {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a b : 𝕃 H} {Ba Bb : ℕ}
     (ha : RegularWeightLe hH a D Ba) (hb : RegularWeightLe hH b D Bb) :
     RegularWeightLe hH (a * b) D (Ba + Bb) := by
   obtain ⟨a', ha', hwa⟩ := ha
   obtain ⟨b', hb', hwb⟩ := hb
-  exact ⟨a' * b', by rw [ha', hb', map_mul], weight_Λ_over_𝒪_mul_le' hD hH hwa hwb⟩
+  exact ⟨a' * b', by rw [ha', hb', map_mul], regularWeight_mul_le' hD hH hwa hwb⟩
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.add {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a b : 𝕃 H} {B : ℕ}
     (ha : RegularWeightLe hH a D B) (hb : RegularWeightLe hH b D B) :
@@ -137,13 +142,15 @@ lemma RegularWeightLe.add {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0
   obtain ⟨a', ha', hwa⟩ := ha
   obtain ⟨b', hb', hwb⟩ := hb
   exact ⟨a' + b', by rw [ha', hb', map_add],
-    (weight_Λ_over_𝒪_add_le hD hH a' b').trans (max_le hwa hwb)⟩
+    (regularWeight_add_le hD hH a' b').trans (max_le hwa hwb)⟩
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.neg {hH : 0 < H.natDegree} {a : 𝕃 H} {D B : ℕ}
     (ha : RegularWeightLe hH a D B) : RegularWeightLe hH (-a) D B := by
   obtain ⟨a', ha', hwa⟩ := ha
-  exact ⟨-a', by rw [ha', map_neg], by rwa [weight_Λ_over_𝒪_neg]⟩
+  exact ⟨-a', by rw [ha', map_neg], by rwa [regularWeight_neg]⟩
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.pow {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a : 𝕃 H} {Ba : ℕ} (ha : RegularWeightLe hH a D Ba) (k : ℕ) :
     RegularWeightLe hH (a ^ k) D (k * Ba) := by
@@ -151,15 +158,18 @@ lemma RegularWeightLe.pow {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0
   | zero =>
       simp only [pow_zero, Nat.zero_mul]
       refine ⟨1, by rw [map_one], ?_⟩
-      rw [show (1 : 𝒪 H) = (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (1 : F[X][Y]) : 𝒪 H) by simp]
-      refine (weight_Λ_over_𝒪_mk_le hD hH _).trans ?_
+      rw
+          [show (1 : 𝒪 H) = (Ideal.Quotient.mk (Ideal.span {monicize H}) (1 : F[X][Y]) : 𝒪 H) by
+              simp]
+      refine (regularWeight_mk_le hD hH _).trans ?_
       rw [show (1 : F[X][Y]) = Polynomial.C 1 by simp]
-      exact (weight_Λ_C_le H D 1).trans (by simp)
+      exact (weight_C_le H D 1).trans (by simp)
   | succ k ih =>
       rw [pow_succ]
       refine (RegularWeightLe.mul hD ih ha).mono ?_
       ring_nf; omega
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.sum {ι : Type} (s : Finset ι) (f : ι → 𝕃 H)
     {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree} {B : ℕ}
     (hf : ∀ i ∈ s, RegularWeightLe hH (f i) D B) :
@@ -168,12 +178,13 @@ lemma RegularWeightLe.sum {ι : Type} (s : Finset ι) (f : ι → 𝕃 H)
   induction s using Finset.induction_on with
   | empty =>
       refine ⟨0, by rw [map_zero, Finset.sum_empty], ?_⟩
-      rw [weight_Λ_over_𝒪_zero]; exact bot_le
+      rw [regularWeight_zero]; exact bot_le
   | insert a s ha ih =>
       rw [Finset.sum_insert ha]
       exact RegularWeightLe.add hD (hf a (Finset.mem_insert_self a s))
         (ih (fun i hi => hf i (Finset.mem_insert_of_mem hi)))
 
+omit H_irreducible H_natDegree_pos in
 lemma RegularWeightLe.prod {ι : Type} (s : Finset ι) (f : ι → 𝕃 H) (B : ι → ℕ)
     {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     (hf : ∀ i ∈ s, RegularWeightLe hH (f i) D (B i)) :
@@ -183,26 +194,32 @@ lemma RegularWeightLe.prod {ι : Type} (s : Finset ι) (f : ι → 𝕃 H) (B : 
   | empty =>
       rw [Finset.prod_empty, Finset.sum_empty]
       refine ⟨1, by rw [map_one], ?_⟩
-      rw [show (1 : 𝒪 H) = (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (1 : F[X][Y]) : 𝒪 H) by simp]
-      refine (weight_Λ_over_𝒪_mk_le hD hH _).trans ?_
+      rw
+          [show (1 : 𝒪 H) = (Ideal.Quotient.mk (Ideal.span {monicize H}) (1 : F[X][Y]) : 𝒪 H) by
+              simp]
+      refine (regularWeight_mk_le hD hH _).trans ?_
       rw [show (1 : F[X][Y]) = Polynomial.C 1 by simp]
-      exact (weight_Λ_C_le H D 1).trans (by simp)
+      exact (weight_C_le H D 1).trans (by simp)
   | insert a s ha ih =>
       rw [Finset.prod_insert ha, Finset.sum_insert ha]
       exact RegularWeightLe.mul hD (hf a (Finset.mem_insert_self a s))
         (ih (fun i hi => hf i (Finset.mem_insert_of_mem hi)))
 
+omit H_irreducible H_natDegree_pos in
 /-- Coefficient embeddings are regular with `Λ`-weight at most their `X`-degree. -/
-lemma RWL_lift {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
+lemma regularWeightLe_liftToFunctionField {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree)
     (c : F[X]) : RegularWeightLe hH (liftToFunctionField (H := H) c) D c.natDegree := by
-  refine ⟨(Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (Polynomial.C c) : 𝒪 H), ?_, ?_⟩
+  refine ⟨(Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.C c) : 𝒪 H), ?_, ?_⟩
   · rw [embeddingOf𝒪Into𝕃_mk]; rfl
-  · exact (weight_Λ_over_𝒪_mk_le hD hH _).trans (weight_Λ_C_le H D c)
+  · exact (regularWeight_mk_le hD hH _).trans (weight_C_le H D c)
 
+omit H_irreducible H_natDegree_pos in
 /-- The leading coefficient lift `W` is regular with `Λ`-weight at most `D`. -/
-lemma RWL_W {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) :
+lemma regularWeightLe_leadingCoeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
+    :
     RegularWeightLe hH (liftToFunctionField (H := H) H.leadingCoeff) D D := by
-  refine (RWL_lift hD hH H.leadingCoeff).mono ?_
+  refine (regularWeightLe_liftToFunctionField hD hH H.leadingCoeff).mono ?_
   by_cases hHz : H = 0
   · simp [hHz]
   · have hH_in : H.natDegree ∈ H.support :=
@@ -211,24 +228,29 @@ lemma RWL_W {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree
       Bivariate.coeff_totalDegree_le H hH_in
     rw [Polynomial.leadingCoeff]; omega
 
+omit H_irreducible H_natDegree_pos in
 /-- The power-series variable's coefficients are regular with weight `0`. -/
-lemma RWL_X {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) (n : ℕ) :
+lemma regularWeightLe_functionFieldT_pow {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree) (n : ℕ) :
     RegularWeightLe hH (PowerSeries.coeff n (PowerSeries.X : PowerSeries (𝕃 H))) D 0 := by
   rw [PowerSeries.coeff_X]
   split
   · rw [show (1 : 𝕃 H) = liftToFunctionField (H := H) 1 by simp]
-    exact (RWL_lift hD hH 1).mono (by simp)
+    exact (regularWeightLe_liftToFunctionField hD hH 1).mono (by simp)
   · rw [show (0 : 𝕃 H) = liftToFunctionField (H := H) 0 by simp]
-    exact (RWL_lift hD hH 0).mono (by simp)
+    exact (regularWeightLe_liftToFunctionField hD hH 0).mono (by simp)
 
+omit H_irreducible H_natDegree_pos in
 /-- The field constant embedding has weight `0`. -/
-lemma RWL_fieldTo {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
+lemma regularWeightLe_fieldTo𝕃 {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
     (x₀ : F) : RegularWeightLe hH (fieldTo𝕃 (H := H) x₀) D 0 := by
   rw [show fieldTo𝕃 (H := H) x₀ = liftToFunctionField (H := H) (Polynomial.C x₀) from rfl]
-  exact (RWL_lift hD hH _).mono (by simp [Polynomial.natDegree_C])
+  exact (regularWeightLe_liftToFunctionField hD hH _).mono (by simp [Polynomial.natDegree_C])
 
+omit H_irreducible H_natDegree_pos in
 /-- Coefficients of the local-coordinate binomial `(x₀ + S)^s` are weight-`0` regular. -/
-lemma RWL_binom_coeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
+lemma regularWeightLe_natCast_choose {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree)
     (x₀ : F) (s : ℕ) : ∀ n,
     RegularWeightLe hH (PowerSeries.coeff n
       ((PowerSeries.C (fieldTo𝕃 (H := H) x₀) + PowerSeries.X) ^ s)) D 0 := by
@@ -238,9 +260,9 @@ lemma RWL_binom_coeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H
       rw [pow_zero, PowerSeries.coeff_one]
       split
       · rw [show (1 : 𝕃 H) = liftToFunctionField (H := H) 1 by simp]
-        exact (RWL_lift hD hH 1).mono (by simp)
+        exact (regularWeightLe_liftToFunctionField hD hH 1).mono (by simp)
       · rw [show (0 : 𝕃 H) = liftToFunctionField (H := H) 0 by simp]
-        exact (RWL_lift hD hH 0).mono (by simp)
+        exact (regularWeightLe_liftToFunctionField hD hH 0).mono (by simp)
   | succ s ih =>
       intro n
       rw [pow_succ, PowerSeries.coeff_mul]
@@ -249,17 +271,19 @@ lemma RWL_binom_coeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H
       have h2 : RegularWeightLe hH
           (PowerSeries.coeff pr.2 (PowerSeries.C (fieldTo𝕃 (H := H) x₀) + PowerSeries.X)) D 0 := by
         rw [map_add]
-        refine RegularWeightLe.add hD ?_ (RWL_X hD hH pr.2)
+        refine RegularWeightLe.add hD ?_ (regularWeightLe_functionFieldT_pow hD hH pr.2)
         rw [PowerSeries.coeff_C]
         split
-        · exact RWL_fieldTo hD hH x₀
+        · exact regularWeightLe_fieldTo𝕃 hD hH x₀
         · rw [show (0 : 𝕃 H) = liftToFunctionField (H := H) 0 by simp]
-          exact (RWL_lift hD hH 0).mono (by simp)
+          exact (regularWeightLe_liftToFunctionField hD hH 0).mono (by simp)
       exact (RegularWeightLe.mul hD (ih pr.1) h2).mono (by simp)
 
+omit H_irreducible H_natDegree_pos in
 /-- Each coefficient of `liftCoeffToPowerSeries x₀ H p` is regular with weight at most the
 total degree of `p`. -/
-lemma RWL_coeff_liftCoeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
+lemma regularWeightLe_coeff_liftCoeffToPowerSeries {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree)
     (x₀ : F) (p : F[X][X]) (n : ℕ) :
     RegularWeightLe hH (PowerSeries.coeff n (liftCoeffToPowerSeries x₀ H p)) D
       (Bivariate.totalDegree p) := by
@@ -269,20 +293,23 @@ lemma RWL_coeff_liftCoeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0
   refine RegularWeightLe.sum _ _ hD ?_
   intro s _
   rw [RingHom.comp_apply, PowerSeries.coeff_C_mul]
-  refine (RegularWeightLe.mul hD (RWL_lift hD hH (p.coeff s))
-    (RWL_binom_coeff hD hH x₀ s n)).mono ?_
+  refine (RegularWeightLe.mul hD (regularWeightLe_liftToFunctionField hD hH (p.coeff s))
+    (regularWeightLe_natCast_choose hD hH x₀ s n)).mono ?_
   rw [Nat.add_zero]
   rcases Bivariate.coeff_totalDegree_le' p s with h | h0
   · omega
   · rw [h0]; simp
 
+omit H_irreducible H_natDegree_pos in
 /-- Sharp `Λ`-weight bound on the leading-coefficient lift `W`: `Λ(W) ≤ D - dH`.
 This is the per-`W`-factor budget used in the sharp telescoping of [BCIKS20] A.4 (pp. 52–53);
-the looser `Λ(W) ≤ D` of `RWL_W` is not enough for the constant term to telescope. -/
-lemma RWL_W_sharp {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) :
+the looser `Λ(W) ≤ D` of `regularWeightLe_leadingCoeff` is not enough for the constant term to
+telescope. -/
+lemma regularWeightLe_leadingCoeff_sharp {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree) :
     RegularWeightLe hH (liftToFunctionField (H := H) H.leadingCoeff) D
       (D - H.natDegree) := by
-  refine (RWL_lift hD hH H.leadingCoeff).mono ?_
+  refine (regularWeightLe_liftToFunctionField hD hH H.leadingCoeff).mono ?_
   by_cases hHz : H = 0
   · simp [hHz]
   · have hH_in : H.natDegree ∈ H.support :=
@@ -311,7 +338,7 @@ lemma numeratorShapeSharp_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     numeratorShapeSharp R H D t ≤ (2 * t + 1) * Bivariate.natDegreeY R * D := by
   -- Translate the degree facts into the bare numeric hypotheses needed by the arithmetic.
   have hdH_dY : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
-    H_natDegree_le_R_natDegree_of_Hypotheses hHyp
+    natDegree_H_le_natDegree_R_of_hypotheses hHyp
   have hdH_pos : 1 ≤ Bivariate.natDegreeY H := hH
   have hdH_D : Bivariate.natDegreeY H ≤ D := by
     have hH_in : H.natDegree ∈ H.support :=
@@ -342,12 +369,13 @@ lemma numeratorShapeSharp_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     · omega
   nlinarith [hA, hRHS]
 
+omit H_irreducible H_natDegree_pos in
 /-- `RegularWeightLe`-version of the bridge from the embedded `𝒪`-witness back to the `𝒪`-weight:
 if `embeddingOf𝒪Into𝕃 H b` is regular with `Λ`-witness of weight `≤ B`, then so is the canonical
 witness `b` itself (by injectivity of the embedding). -/
-lemma weight_Λ_over_𝒪_of_RegularWeightLe_embedding {hH : 0 < H.natDegree} {D B : ℕ} (b : 𝒪 H)
+lemma regularWeight_le_of_regularWeightLe {hH : 0 < H.natDegree} {D B : ℕ} (b : 𝒪 H)
     (h : RegularWeightLe hH (embeddingOf𝒪Into𝕃 H b) D B) :
-    weight_Λ_over_𝒪 hH b D ≤ (WithBot.some B : WithBot ℕ) := by
+    regularWeight hH b D ≤ (WithBot.some B : WithBot ℕ) := by
   obtain ⟨b', heq, hw⟩ := h
   rwa [embeddingOf𝒪Into𝕃_injective hH heq]
 
@@ -373,7 +401,7 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   set E : ℕ := henselDenominatorExponent (t + 1) with hEdef
   set Ddiv : 𝕃 H := W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2) with hDdivdef
   set Dfull : 𝕃 H := W ^ (t + 1 + 1) * eta ^ E with hDfulldef
-  have hzeta : ζ R x₀ H ≠ 0 := zeta_ne_zero_of_Hypotheses x₀ R H hHyp
+  have hzeta : ζ R x₀ H ≠ 0 := zeta_ne_zero_of_hypotheses x₀ R H hHyp
   have hW : W ≠ 0 := liftToFunctionField_leadingCoeff_ne_zero (H := H)
   have heta : eta ≠ 0 := by
     rw [hetadef, embeddingOf𝒪Into𝕃_ξ]
@@ -404,6 +432,10 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rw [hres, hDfull_eq]; ring
 
 set_option maxHeartbeats 2000000 in
+-- The `Finset.finsuppAntidiag` case split below expands one `PowerSeries.coeff` of a
+-- `d`-fold product into a sum over compositions, and each summand carries a `RegularWeightLe`
+-- certificate assembled from seven `.mul`/`.pow`/`.sum` steps; the default heartbeat budget is
+-- exhausted by the resulting `ring`/`omega` normalisations.
 /-- Weight-tracking per-degree clearing lemma: the `Λ`-graded analogue of
 `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is
 regular with sharp `Λ`-weight at most `numeratorShapeSharp R H D (t+1)`.  The non-boundary
@@ -438,7 +470,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   set ΛW : ℕ := D - Bivariate.natDegreeY H with hΛWdef
   set Λξ : ℕ := (Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1) with hΛξdef
   -- base RegularWeightLe certificates for W and ξ at the SHARP weights
-  have hRWLW : RegularWeightLe hH W D ΛW := by rw [hWdef, hΛWdef]; exact RWL_W_sharp hD_H hH
+  have hRWLW : RegularWeightLe hH W D ΛW := by
+    rw [hWdef, hΛWdef]
+    exact regularWeightLe_leadingCoeff_sharp hD_H hH
   have hRWLeta : RegularWeightLe hH eta D Λξ := by
     rw [hetadef, hΛξdef]
     -- ξ as an 𝒪-element
@@ -447,7 +481,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     exact ξ_weight_le x₀ hH hHyp hRdeg hD_H hD_Rx0
   have hjle : j ≤ R.natDegree := by rw [Finset.mem_range] at hj; omega
   have hdH_le_R : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
-    H_natDegree_le_R_natDegree_of_Hypotheses hHyp
+    natDegree_H_le_natDegree_R_of_hypotheses hHyp
   have hdY : Bivariate.natDegreeY R = R.natDegree := rfl
   have hdH : Bivariate.natDegreeY H = H.natDegree := rfl
   -- distribute coeff_mul and coeff_pow into a sum over (p, l)
@@ -469,9 +503,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       Finset.prod_eq_zero hi₀ (hαzero _ hi₀t)
     rw [hz]
     refine ⟨0, by simp, ?_⟩
-    rw [weight_Λ_over_𝒪_zero]; exact bot_le
+    rw [regularWeight_zero]; exact bot_le
   · -- Case B: all parts ≤ t.
-    push_neg at hbig
+    push Not at hbig
     have hle : ∀ i ∈ Finset.range j, l i ≤ t := hbig
     -- product-clearing weight: ∏ αtrunc(l i) · W^Pw · eta^Pe  has weight ≤ ∑ sharp(l i)
     set Pw : ℕ := (∑ i ∈ Finset.range j, (l i + 1)) with hPwdef
@@ -512,7 +546,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       rcases Nat.lt_or_ge p.2 (t + 1) with hbt | hbt
       · omega
       · have hS1ge : 2 ≤ S1 := by
-          by_contra h; push_neg at h; interval_cases S1 <;> omega
+          by_contra h; push Not at h; interval_cases S1 <;> omega
         omega
     -- sharp-sum identity: ∑ sharp(l i) = j + Pw*ΛW + Pe*Λξ
     have hsharpSum : (∑ i ∈ Finset.range j, numeratorShapeSharp R H D (l i)) =
@@ -529,7 +563,8 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     -- coefficient weight ≤ totalDegree (R.coeff j) ≤ D - j
     have hcoeffW : RegularWeightLe hH
         (PowerSeries.coeff p.1 (liftCoeffToPowerSeries x₀ H (R.coeff j))) D
-        (Bivariate.totalDegree (R.coeff j)) := RWL_coeff_liftCoeff hD_H hH x₀ (R.coeff j) p.1
+        (Bivariate.totalDegree (R.coeff j)) := regularWeightLe_coeff_liftCoeffToPowerSeries hD_H hH
+            x₀ (R.coeff j) p.1
     have htd_le : Bivariate.totalDegree (R.coeff j) ≤ D - j := by
       by_cases hjs : j ∈ R.support
       · have := hD_R j hjs; omega
@@ -553,20 +588,49 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     -- boundary detection
     by_cases hbdry : p.2 = t + 1 ∧ j = R.natDegree ∧ 2 ≤ R.natDegree
     · -- BOUNDARY CASE: `p.1 = 0`, `j = d = R.natDegree ≥ 2`, `p.2 = t+1`.
-      -- Here `Pw = p.2 + j = t+1+d`, exceeding the non-boundary `W`-budget `(t+2)+(d-2) = t+d`
-      -- by 1; the extra `W` is supplied by the leading-coefficient divisibility
-      -- `W ∣ coeff 0 (liftCoeff (R.coeff d))` (cf. `henselClearedTerm_regular`'s boundary branch,
-      -- and `leadingCoeff_dvd_evalX_coeff_natDegree`).  The naive uniform weight accounting that
-      -- closes the non-boundary case OVER-COUNTS this boundary summand by exactly `D - d`:
-      -- treating each of the `d` composition parts uniformly via `numeratorShapeSharp (l i)`
-      -- charges `d` constant `1`'s and a full `W`-power for every zero-part, whereas the paper's
-      -- sharp accounting (pp. 52–53) folds the `α₀ = T/W` zero-parts into the `W`/`ξ` exponents
-      -- and uses the EXACT natDegree additivity `Λ(coeff) = Λ(W) + Λ(q)` (over the domain `F`,
-      -- with `coeff = W·q`) so that the factored-out `W` is paid for without inflating the
-      -- coefficient weight.  Reproducing this refined multiplicity/zero-part bookkeeping
-      -- (the genuinely hard quantitative kernel of Claim A.2) is the single remaining gap; the
-      -- non-boundary branch below, the full clearing/expansion, and the residual assembly are
-      -- all proven.
+      --
+      -- This is the one summand the (A.1)-recursion route of [BCIKS20] A.4 does not reach, and the
+      -- obstruction is *tightness*, not bookkeeping.  Accounting, with `x` the `W`-charge and `Z`
+      -- the `ξ`-charge of `numeratorShapeSharp`:
+      --
+      --   available `W`-power  : `wb = (t+2) + (d-2) = t+d`
+      --   consumed by the `d` part-certificates : `Pw = p.2 + j = t+d+1`   (one more than `wb`)
+      --
+      -- The missing `W` is supplied by the leading-coefficient divisibility
+      -- `W ∣ coeff 0 (liftCoeff (R.coeff d))` (`leadingCoeff_dvd_evalX_coeff_natDegree`, as in
+      -- `henselClearedTerm_regular`'s boundary branch): writing that coefficient as `W * c`
+      -- pays the deficit and charges `Λ(c) = c.natDegree` instead of `D - d`.  Summing,
+      --
+      --   total  = c.natDegree + d + (t+d+1)·x + 2t·Z
+      --   target = 1 + (t+2)·x + (2t+1)·Z
+      --   target - total = Z - (d-1)·x - (d-1) - c.natDegree,
+      --
+      -- so the branch closes iff `Z ≥ (d-1)(x+1) + c.natDegree`.  With the charges forced
+      -- elsewhere in the induction — `x = D - dH` (forced by the base case, since
+      -- `Λ(β₀) = Λ(T) = D - dH + 1` by the very definition of the `Λ`-grading) and
+      -- `Z = (d-1)(D - dH + 1)` (forced by `ξ_weight_le`) — this demands `c.natDegree ≤ 0`,
+      -- which is false in general (`c = leadingCoeff (R(x₀,·,Z)) / W` is an arbitrary polynomial).
+      --
+      -- Raising `Z` by `D - d - W.natDegree` (the true bound on `c.natDegree`) closes this branch
+      -- and keeps the non-boundary branch, but then breaks `numeratorShapeSharp_le_loose`: e.g.
+      -- `d = 2, dH = 1, D = 100, W.natDegree = 0, t = 5` gives `sharp 5 = 2377 > 2200 = (2t+1)dD`,
+      -- and `(2t+1)dD` is the bound [BCIKS20] itself quotes and Claim 5.10 consumes.  The same
+      -- tightness is visible in the paper's own quantities: expanding (A.1) for the `i₁ = 0` terms
+      -- gives `Λ(βₜ) ≤ D + (t+d-1)Λ(W) + (2t-2)Λ(ξ)`, which meets the claimed
+      -- `1 + (t+1)Λ(W) + eₜΛ(ξ)` only when `Λ(ξ) = (D-1) + (d-2)Λ(W)`, i.e. only when `Λ(ξ)`
+      -- attains its upper bound.
+      --
+      -- Consistently, [BCIKS20] does not carry out this induction: it says the bound "can be shown
+      -- by induction using the recursion (A.1), but an easier way ... is by considering the weight
+      -- of `αₜ`", and then argues `Λ(αₜ) = Λ(Y) = 1` because `γ` solves `R(X,Y,Z) = 0`.  That
+      -- second argument is a different (and informal) route: it needs a weight function on the
+      -- function field `𝕃`, not just on `𝒪`, together with the fact that the Hensel coefficients
+      -- lie in the same graded piece as `Y`.  Formalizing it is the natural way to close this gap.
+      --
+      -- Everything else in Claim A.2 is proven: existence and uniqueness of the lift, regularity
+      -- of every `βₜ` and of `ξ`, the bound on `Λ(ξ)`, the clearing/expansion, the residual
+      -- assembly, and the non-boundary branch below.  Nothing that this `sorry` reaches is used to
+      -- *define* anything: see `exists_hensel_numerator_sequence`.
       sorry
     · -- NON-BOUNDARY: budget Pw ≤ (t+2)+(d-2) covers everything.
       have hbudget : Pw ≤ (t + 1 + 1) + (R.natDegree - 2) := by
@@ -669,7 +733,7 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
-    (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
+    (_hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq)
     (t : ℕ)
     (ihAll : ∀ s ≤ t,
@@ -710,7 +774,7 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       liftToFunctionField_leadingCoeff_ne_zero (H := H)
     have hetane : embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp) ≠ 0 := by
       rw [embeddingOf𝒪Into𝕃_ξ]
-      exact mul_ne_zero (pow_ne_zero _ hW) (zeta_ne_zero_of_Hypotheses x₀ R H hHyp)
+      exact mul_ne_zero (pow_ne_zero _ hW) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
     rw [hshapeT i, dif_pos hi,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ hetane))]
     exact ihAll i hi
@@ -726,12 +790,21 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 /-- Sharp `Λ`-weight bound on every Hensel numerator: `Λ(βₜ) ≤ numeratorShapeSharp R H D t`,
 i.e. `1 + (t+1)(D-dH) + eₜ(dY-1)(D-dH+1)` ([BCIKS20] A.4, pp. 52–53).  Proved by strong induction,
 the successor step being `henselClearedResidual_weight` together with the identity
-`embeddingOf𝒪Into𝕃 (βₜ₊₁) = -(henselCoeffResidual · Ddiv)`. -/
+`embeddingOf𝒪Into𝕃 (βₜ₊₁) = -(henselCoeffResidual · Ddiv)`.
+
+The hypothesis `2 ≤ dY` is [BCIKS20]'s own standing assumption in A.4, where `ξ = W^{d-2}·ζ` is
+asserted to lie in `𝒪`: for `d < 2` that expression carries a negative power of `W` and the
+claim's `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)` degenerates to `Λ(ξ) ≤ 0`, which fails unless
+`Λ(W) = D - dH` exactly.  In Lean the truncated subtraction silently reads `W^{d-2}` as `1` for
+`d ≤ 2`, so without this hypothesis the statement would be *stronger* than the paper's and false:
+with `dY = dH = 1` one has `ξ = ζ` of weight up to `D - 1 > 0`, while `(dY-1) = 0` erases the
+`ξ`-contribution from `numeratorShapeSharp`.  Accordingly `ξ_weight_le` also assumes `2 ≤ dY`. -/
 theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
@@ -747,10 +820,10 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         have hβ0 := beta_zero_eq_X_of_shape x₀ R H hHyp hH hD_H hD_R αseq βseq hα0 hroot hshape
         refine ⟨βseq 0, rfl, ?_⟩
         rw [hβ0]
-        refine (weight_Λ_over_𝒪_mk_le (H := H) (D := D) hD_H hH (Polynomial.X : F[X][Y])).trans ?_
-        have hX : weight_Λ (Polynomial.X : F[X][Y]) H D ≤
+        refine (regularWeight_mk_le (H := H) (D := D) hD_H hH (Polynomial.X : F[X][Y])).trans ?_
+        have hX : weight (Polynomial.X : F[X][Y]) H D ≤
             (WithBot.some (D + 1 - Bivariate.natDegreeY H) : WithBot ℕ) := by
-          simpa only [pow_one, one_mul] using (weight_Λ_X_pow_le (H := H) (D := D) (k := 1))
+          simpa only [pow_one, one_mul] using (weight_X_pow_le (H := H) (D := D) (k := 1))
         refine hX.trans ?_
         rw [WithBot.coe_le_coe]
         unfold numeratorShapeSharp
@@ -768,31 +841,79 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           exact betaSucc_eq_neg_clearedResidual x₀ R H hHyp αseq βseq hroot hshape t
         rw [hbridge]
         refine RegularWeightLe.neg ?_
-        by_cases hRdeg : 2 ≤ Bivariate.natDegreeY R
-        · exact henselClearedResidual_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg αseq βseq hα0
-            hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
-        · -- Degenerate case `natDegreeY R = 1` (forced: `1 ≤ H.natDegree ≤ R.natDegree`, and the
-          -- `ξ`-weight bound `ξ_weight_le` is only available for `2 ≤ natDegreeY R`).  Here the
-          -- `ξ`-power exponent `(dY-1) = 0` collapses the sharp `ξ`-contribution, so the bound
-          -- `numeratorShapeSharp` degenerates to `1 + (t+1)(D-dH)`; this short-degree case has a
-          -- separate (degenerate) accounting not covered by the `2 ≤ dY` machinery above.
-          sorry
+        exact henselClearedResidual_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg αseq βseq hα0
+          hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
 
 theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
     (hα0 : αseq 0 = functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
     ∀ t : ℕ,
-      weight_Λ_over_𝒪 hH (βseq t) D ≤
+      regularWeight hH (βseq t) D ≤
         (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) := by
   intro t
-  have hsharp := numerator_shape_weight_sharp x₀ R H hHyp hH hD_H hD_R αseq βseq hα0 hroot hshape t
-  refine (weight_Λ_over_𝒪_of_RegularWeightLe_embedding (βseq t) hsharp).trans ?_
+  have hsharp :=
+    numerator_shape_weight_sharp x₀ R H hHyp hH hD_H hD_R hRdeg αseq βseq hα0 hroot hshape t
+  refine (regularWeight_le_of_regularWeightLe (βseq t) hsharp).trans ?_
+  rw [WithBot.coe_le_coe]
+  exact numeratorShapeSharp_le_loose x₀ R H hHyp hH hD_H t
+
+/-- A sequence with the Hensel-lift semantics of Claim A.2 has the numerator shape witnessed by
+its own induced coefficients: `αₜ := βₜ / (W^{t+1} ξ^{eₜ})` is the tautological choice, so
+`HasNumeratorShape` holds by `rfl` and `IsHenselNumeratorSequence` supplies `hα0`/`hroot`.
+
+This is the bridge that lets the weight bounds be stated about *any* Hensel numerator sequence,
+rather than being bundled into the existential that defines one. -/
+lemma hasNumeratorShape_alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (βseq : ℕ → 𝒪 H) :
+    HasNumeratorShape x₀ R H hHyp (alphaOfNumerators x₀ R H hHyp βseq) βseq :=
+  fun _ => rfl
+
+/-- The **sharp** Claim A.2 weight bound of [BCIKS20] A.4, for an arbitrary Hensel numerator
+sequence: `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` (with the paper's bounds `Λ(W) ≤ D - dH` and
+`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted).
+
+This is the form consumed by [BCIKS20] Claim 5.10, which needs the bound to telescope across
+`t = 0, …, k`:
+`max_t (Λ(βₜ) + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = 1 + (k+1)Λ(W) + e_kΛ(ξ) ≤ (2k+1)dD`.
+The loose bound `numerator_shape_weight_bound` does *not* suffice there. -/
+theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R)
+    {βseq : ℕ → 𝒪 H} (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq) :
+    ∀ t : ℕ,
+      regularWeight hH (βseq t) D ≤
+        (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ) := by
+  intro t
+  exact regularWeight_le_of_regularWeightLe (βseq t)
+    (numerator_shape_weight_sharp x₀ R H hHyp hH hD_H hD_R hRdeg
+      (alphaOfNumerators x₀ R H hHyp βseq) βseq hβ.1 hβ.2
+      (hasNumeratorShape_alphaOfNumerators x₀ R H hHyp βseq) t)
+
+/-- The loose Claim A.2 weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` of [BCIKS20] A.4, for an arbitrary
+Hensel numerator sequence.  Weakening of `hensel_numerator_weight_sharp_le`. -/
+theorem hensel_numerator_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R)
+    {βseq : ℕ → 𝒪 H} (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq) :
+    ∀ t : ℕ,
+      regularWeight hH (βseq t) D ≤
+        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) := by
+  intro t
+  refine (hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg hβ t).trans ?_
   rw [WithBot.coe_le_coe]
   exact numeratorShapeSharp_le_loose x₀ R H hHyp hH hD_H t
 

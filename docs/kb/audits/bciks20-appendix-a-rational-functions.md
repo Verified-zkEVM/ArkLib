@@ -7,7 +7,16 @@ Reed-Solomon proximity-gap formalization.
 ## Scope
 
 The relevant Lean surface is
-[`ArkLib/Data/Polynomial/RationalFunctions.lean`](../../../ArkLib/Data/Polynomial/RationalFunctions.lean).
+[`ArkLib/Data/Polynomial/RationalFunctions/`](../../../ArkLib/Data/Polynomial/RationalFunctions),
+re-exported by
+[`ArkLib/Data/Polynomial/RationalFunctions.lean`](../../../ArkLib/Data/Polynomial/RationalFunctions.lean):
+
+- `FunctionField.lean` — monicization, `𝕃`, `𝒪`, canonical representatives;
+- `Lifts.lean` — coefficient/bivariate lifts and denominator clearing;
+- `Weight.lean` — the `Λ`-weight calculus;
+- `RationalRootVanishing.lean` — Lemma A.1;
+- `HenselNumerators/{Setup,Hensel,Weight,Sequence}.lean` — Claim A.2.
+
 Downstream users include the BCIKS20 list-decoding agreement files under
 [`ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding/`](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ListDecoding).
 
@@ -22,28 +31,63 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
-| Monicization `H_tilde` over `F(Z)[T]` | present | `H_tilde` | Defines the function-field-side monicization. |
-| Polynomial representative `H_tilde'` over `F[Z][T]` | present | `H_tilde'` | The coefficient indexing and zero-degree branch were corrected in #470. |
-| Agreement between `H_tilde'` and `H_tilde` | present | `map_H_tilde'_eq_H_tilde` | Proved after the corrected definition. |
-| Positive-degree monicity of `H_tilde'` | present | `H_tilde'_monic` | Explicitly requires `0 < H.natDegree`, matching the `modByMonic` API. |
-| Regular ring `𝒪` and function field `𝕃` | infrastructure | `𝒪`, `𝕃`, `functionFieldT`, `embeddingOf𝒪Into𝕃` | Gives the quotient rings, the function-field `T` variable, and the embedding used by Appendix A. |
+| Monicization `monicizeRatFunc` over `F(Z)[T]` | present | `monicizeRatFunc` | Defines the function-field-side monicization. |
+| Polynomial representative `monicize` over `F[Z][T]` | present | `monicize` | The coefficient indexing and zero-degree branch were corrected in #470. |
+| Agreement between `monicize` and `monicizeRatFunc` | present | `map_monicize_eq_monicizeRatFunc` | Proved after the corrected definition. |
+| Positive-degree monicity of `monicize` | present | `monicize_monic` | Explicitly requires `0 < H.natDegree`, matching the `modByMonic` API. |
+| Regular ring `𝒪` and function field `𝕃` | infrastructure | `𝒪`, `𝕃`, `functionFieldT`, `embeddingOf𝒪Into𝕃`, `embeddingOf𝒪Into𝕃_injective` | Gives the quotient rings, the function-field `T` variable, and the embedding used by Appendix A. |
 | Canonical representatives in `𝒪` | infrastructure | `canonicalRepOf𝒪`, `mk_canonicalRepOf𝒪`, `canonicalRepOf𝒪_degree_lt`, `canonicalRepOf𝒪_natDegree_le` | The representative API is now explicit about positive `Y`-degree. |
-| `Λ`-weight on regular elements | infrastructure | `weight_Λ`, `weight_Λ_over_𝒪` | Basic zero and constructor/reduced-representative lemmas exist; more algebraic weight lemmas are still useful. |
+| `Λ`-weight on regular elements | infrastructure | `weight`, `regularWeight`, `RegularWeightLe` (`.mono/.mul/.add/.neg/.pow/.sum/.prod`) | Full calculus, including the `𝕃`-side `RegularWeightLe` certificates used by Claim A.2. |
 | Lemma A.1 | present-but-incomplete | `lemmaA1_embedding_eq_zero_of_many_rational_roots` | Main regular-function vanishing criterion remains open; the statement is now in a standalone field section, matching the reference proof setting. |
-| Claim A.2 regularity of `ξ` | present | `RationalFunctions.HenselNumerators.ξ_regular`, `RationalFunctions.HenselNumerators.embeddingOf𝒪Into𝕃_ξ` | The total Lean form of `ξ` has a concrete quotient representative `ξ_pre`; the paper weight theorem separately assumes `2 ≤ R.natDegree`. |
-| Claim A.2 bound for `ξ` | present-but-incomplete | `RationalFunctions.HenselNumerators.ξ_weight_le` | Now has the needed low-degree guard; depends on the canonical quotient-weight argument and the divisibility `H ∣ R(x₀,Y,Z)`. |
-| Claim A.2 regular numerator elements `β` | present-but-incomplete | `RationalFunctions.HenselNumerators.exists_hensel_numerator_sequence`, `RationalFunctions.HenselNumerators.IsHenselNumeratorSequence` | No longer vacuous: the open theorem now asserts Hensel semantics plus the numerator weight bound. |
-| Hensel-lift coefficients `α`, `γ` | present-but-incomplete | `RationalFunctions.HenselNumerators.α`, `RationalFunctions.HenselNumerators.α'`, `RationalFunctions.HenselNumerators.γ`, `RationalFunctions.HenselNumerators.γ'`, `RationalFunctions.HenselNumerators.βSeq_spec` | Definitions are stable, but their semantic content is supplied by the open `exists_hensel_numerator_sequence`. |
+| Claim A.2 Hensel lift exists (`α₀ = T/W`, `R(X, γ, Z) = 0`) | present | `exists_hensel_alpha_sequence`, `formalHenselAlphaSequence` | Axiom-clean. |
+| Claim A.2 regularity of `ξ` | present | `ξ_regular`, `embeddingOf𝒪Into𝕃_ξ` | The total Lean form of `ξ` has a concrete quotient representative `xiPre`. |
+| Claim A.2 bound for `ξ` | present | `ξ_weight_le` | Assumes `2 ≤ natDegreeY R`, which is the paper's standing assumption in A.4 (see below). |
+| Claim A.2 regular numerators `βₜ` exist | present | `exists_hensel_numerator_sequence`, `IsHenselNumeratorSequence`, `exists_regular_numerator_shape`, `henselCoeffResidual_regular_after_clearing` | Axiom-clean, and deliberately *free of the weight conjunct* so that `βSeq`/`α`/`γ` do not depend on the open quantitative step. |
+| Claim A.2 sharp weight bound `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` | present-but-incomplete | `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `βSeq_weight_sharp_le` | One open summand (`henselClearedTerm_weight`, boundary case). This is the form Claim 5.10 needs. |
+| Claim A.2 loose weight bound `Λ(βₜ) ≤ (2t+1)dD` | present-but-incomplete | `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `βSeq_weight_le` | Weakening of the sharp bound (`numeratorShapeSharp_le_loose` is proved); inherits the same open summand. |
+| Claim A.2 as stated in the paper | present-but-incomplete | `claimA2` | Bundles existence with both weight bounds. |
+| Hensel-lift coefficients `α`, `γ` | present | `α`, `α'`, `γ`, `γ'`, `βSeq`, `βSeq_spec` | Now defined from the qualitative existence theorem alone, hence axiom-clean. |
+
+## Two findings on Appendix A.4
+
+### 1. Claim A.2 presupposes `2 ≤ d = degY R`
+
+The claim sets `ξ = W(Z)^{d-2}·ζ ∈ 𝒪`, which carries a negative power of `W` when `d < 2`, and
+its bound `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)` degenerates to `Λ(ξ) ≤ 0`. In Lean the
+truncated subtraction silently reads `W^{d-2}` as `1` for `d ≤ 2`, so a `d`-unrestricted statement
+would be *stronger* than the paper's and false: with `d = dH = 1` one gets `ξ = ζ` of weight up to
+`D - 1`, while the `(d-1)` factor erases the `ξ` contribution from the bound. `ξ_weight_le`,
+`numerator_shape_weight_sharp` and everything above therefore carry `2 ≤ natDegreeY R`.
+
+Consumers must supply this. Claim 5.7
+(`exists_factors_with_large_common_root_set`) does not currently expose it, so whoever closes
+Claim 5.7 should add the conjunct.
+
+### 2. The `(A.1)` recursion route cannot prove the weight bound
+
+`Λ(βₜ)`'s bound is stated by the paper and then justified twice: "can be shown by induction using
+the recursion (A.1), but an easier way ... is by considering the weight of `αₜ`". The induction
+route is *exactly tight* and does not close:
+
+- Expanding (A.1) for the `i₁ = 0` terms gives `Λ(βₜ) ≤ D + (t+d-1)Λ(W) + (2t-2)Λ(ξ)`, which
+  meets the claimed `1 + (t+1)Λ(W) + eₜΛ(ξ)` only if `Λ(ξ) = (D-1) + (d-2)Λ(W)`, i.e. only if
+  `Λ(ξ)` attains its own upper bound.
+- In the formalization the same tightness appears as a single unreachable summand of
+  `henselClearedTerm_weight` (`p.1 = 0`, `j = d`, `p.2 = t+1`), where the `W`-budget is short by
+  one. The leading-coefficient divisibility `W ∣ leadingCoeff R(x₀,·,Z)` supplies the missing `W`
+  but then charges `c.natDegree` with `c = leadingCoeff R(x₀,·,Z) / W`, leaving a deficit of
+  exactly `c.natDegree`. Raising the `ξ`-charge to cover it breaks the loose bound the paper
+  quotes: `d = 2, dH = 1, D = 100, Λ(W) = 0, t = 5` gives `2377 > 2200 = (2t+1)dD`.
+
+The paper's second route needs `Λ(αₜ) = Λ(Y) = 1`, i.e. a weight function on the function field
+`𝕃` (not just on `𝒪`) plus the fact that the Hensel coefficients lie in the same graded piece as
+`Y`. Formalizing that is the natural way to close the gap; see the in-proof comment at the
+boundary `sorry`.
 
 ## Near-Term Work
 
-The next useful proof work is not to restate all of Appendix A at once. It is to add small reusable
-facts around regular elements, canonical representatives, and `Λ`-weights:
-
-- denominator-clearing lemmas for evaluating polynomials at `functionFieldT / W`;
-- weight bounds for constants and monomials;
-- weight behavior under addition and multiplication by powers of `X`;
-- reduced-representative rewrites that avoid unfolding quotient representatives manually.
-
-These lemmas should make `RationalFunctions.HenselNumerators.ξ_weight_le` and `exists_hensel_numerator_sequence` more approachable while keeping
-each PR reviewable.
+1. Extend `Λ` from `𝒪` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)`, which closes the boundary summand
+   and hence the whole of Claim A.2 (finding 2 above).
+2. Lemma A.1 (`lemmaA1_embedding_eq_zero_of_many_rational_roots`) — the remaining Appendix A
+   theorem, needed by Claim 5.10.
+3. Add `2 ≤ natDegreeY R` to Claim 5.7's conclusion (finding 1 above).

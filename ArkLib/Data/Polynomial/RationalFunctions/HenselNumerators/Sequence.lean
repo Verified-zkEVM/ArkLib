@@ -77,7 +77,8 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hD : D ≠ 0 := by
     simp only [D]
     exact mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
-  have hcoeff : PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) = 0 := by
+  have hcoeff : PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) = 0 :=
+      by
     simpa using congrArg (fun p : PowerSeries (𝕃 H) => PowerSeries.coeff (t + 1) p) hroot
   have hS : S = - ζ R x₀ H * αseq (t + 1) := by
     simp only [S, hcoeff, zero_sub]
@@ -126,11 +127,12 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   let Xi : 𝕃 H := embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)
   let shapeAt : ℕ → 𝒪 H → Prop := fun t β =>
     embeddingOf𝒪Into𝕃 H β / (W ^ (t + 1) * Xi ^ henselDenominatorExponent t) = αseq t
-  have hprefix : ∀ n : ℕ, ∃ βpref : Fin (n + 1) → 𝒪 H, ∀ i : Fin (n + 1), shapeAt i.val (βpref i) := by
+  have hprefix : ∀ n : ℕ, ∃ βpref : Fin (n + 1) → 𝒪 H, ∀ i : Fin (n + 1), shapeAt i.val (βpref i) :=
+      by
     intro n
     induction n with
     | zero =>
-        let β0 : 𝒪 H := (Ideal.Quotient.mk (Ideal.span {H_tilde' H}) (Polynomial.X : F[X][Y]) : 𝒪 H)
+        let β0 : 𝒪 H := (Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.X : F[X][Y]) : 𝒪 H)
         refine ⟨fun _ => β0, ?_⟩
         intro i
         have hi : i.val = 0 := by omega
@@ -143,70 +145,110 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         have hnext : ∃ βnext : 𝒪 H, shapeAt (n + 1) βnext := by
           unfold shapeAt
           exact regular_numerator_shape_succ x₀ R H hHyp αseq hα0 hroot
-            (zeta_ne_zero_of_Hypotheses x₀ R H hHyp) n βpref (by
+            (zeta_ne_zero_of_hypotheses x₀ R H hHyp) n βpref (by
               intro i
               exact hβpref i)
         rcases hnext with ⟨βnext, hβnext⟩
         refine ⟨fun i => if hlt : i.val < n + 1 then βpref ⟨i.val, hlt⟩ else βnext, ?_⟩
         intro i
         by_cases hlt : i.val < n + 1
-        · simp [hlt]
+        · simp only [dif_pos hlt]
           exact hβpref ⟨i.val, hlt⟩
         · have hval : i.val = n + 1 := by
             have hi_lt : i.val < n + 1 + 1 := i.isLt
             omega
-          simp [hlt, hval]
+          simp only [dif_neg hlt]
+          rw [hval]
           exact hβnext
   let βseq : ℕ → 𝒪 H := fun t => (Classical.choose (hprefix t)) ⟨t, Nat.lt_succ_self t⟩
   refine ⟨βseq, ?_⟩
   intro t
-  unfold HasNumeratorShape at *
   unfold alphaOfNumerators
   change shapeAt t (βseq t)
   unfold βseq
   exact (Classical.choose_spec (hprefix t)) ⟨t, Nat.lt_succ_self t⟩
 
-/-- There is a sequence of regular numerators `β_t` with the Hensel-lift semantics and the
-weight bound stated in Claim A.2 of Appendix A.4 of [BCIKS20]. -/
+/-- There is a sequence of regular numerators `βₜ` with the Hensel-lift semantics of Claim A.2 of
+Appendix A.4 of [BCIKS20]: `αₜ = βₜ / (W^{t+1} ξ^{eₜ})` starts at `α₀ = T / W` and the induced
+`γ = ∑ₜ αₜ (X - x₀)ᵗ` is a root of `R(X, ·, Z)`.
+
+This is the *qualitative* half of Claim A.2, stated without the weight bound on purpose: the
+chosen sequence `βSeq` — and hence `α`, `γ` and every downstream consumer such as
+[BCIKS20] Claims 5.8/5.9 — is defined from this existence proof alone, so it does not depend on
+the quantitative weight accounting.  The weight bounds are supplied separately by
+`hensel_numerator_weight_sharp_le` / `hensel_numerator_weight_le`, and the paper's single
+statement is recombined in `claimA2`. -/
 lemma exists_hensel_numerator_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
-    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
-    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D) :
-    ∃ βseq : ℕ → 𝒪 H,
-      IsHenselNumeratorSequence x₀ R H hHyp βseq ∧
-      ∀ t : ℕ,
-        weight_Λ_over_𝒪 hH (βseq t) D ≤
-          (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) := by
+    (hHyp : Hypotheses x₀ R H) :
+    ∃ βseq : ℕ → 𝒪 H, IsHenselNumeratorSequence x₀ R H hHyp βseq := by
   rcases exists_hensel_alpha_sequence x₀ R H hHyp with ⟨αseq, hα0, hroot⟩
   rcases exists_regular_numerator_shape x₀ R H hHyp αseq hα0 hroot with ⟨βseq, hshape⟩
-  refine ⟨βseq, ?_, ?_⟩
-  · exact hensel_numerator_sequence_of_alpha_shape x₀ R H hHyp αseq βseq hα0 hroot hshape
-  · exact numerator_shape_weight_bound x₀ R H hHyp hH hD_H hD_R αseq βseq hα0 hroot hshape
+  exact ⟨βseq, hensel_numerator_sequence_of_alpha_shape x₀ R H hHyp αseq βseq hα0 hroot hshape⟩
 
 /-- The chosen regular numerator sequence supplied by `exists_hensel_numerator_sequence`. -/
 noncomputable def βSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) : ℕ → 𝒪 H :=
-  if hH : 0 < H.natDegree then
-    (exists_hensel_numerator_sequence x₀ R H hHyp hH
-      (defaultDegreeBound_ge_H R H) (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi)).choose
-  else
-    fun _ => 0
+  (exists_hensel_numerator_sequence x₀ R H hHyp).choose
 
-/-- The specification satisfied by the chosen numerator sequence. -/
+/-- The Hensel-lift specification satisfied by the chosen numerator sequence. -/
 lemma βSeq_spec (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
-    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) :
-    IsHenselNumeratorSequence x₀ R H hHyp (βSeq x₀ R H hHyp) ∧
-      ∀ t : ℕ,
-        weight_Λ_over_𝒪 hH ((βSeq x₀ R H hHyp) t) (defaultDegreeBound R H) ≤
-          (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * defaultDegreeBound R H) :
-            WithBot ℕ) := by
-  unfold βSeq
-  rw [dif_pos hH]
-  exact (exists_hensel_numerator_sequence x₀ R H hHyp hH
-    (defaultDegreeBound_ge_H R H) (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi)).choose_spec
+    (hHyp : Hypotheses x₀ R H) :
+    IsHenselNumeratorSequence x₀ R H hHyp (βSeq x₀ R H hHyp) :=
+  (exists_hensel_numerator_sequence x₀ R H hHyp).choose_spec
+
+/-- The sharp Claim A.2 weight bound for the chosen numerator sequence, at an arbitrary degree
+bound `D` dominating `H` and the coefficients of `R`. -/
+lemma βSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
+    ∀ t : ℕ,
+      regularWeight hH ((βSeq x₀ R H hHyp) t) D ≤
+        (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ) :=
+  hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg (βSeq_spec x₀ R H hHyp)
+
+/-- The loose Claim A.2 weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for the chosen numerator sequence. -/
+lemma βSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
+    ∀ t : ℕ,
+      regularWeight hH ((βSeq x₀ R H hHyp) t) D ≤
+        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
+  hensel_numerator_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg (βSeq_spec x₀ R H hHyp)
+
+/-- **Claim A.2** of Appendix A.4 of [BCIKS20], as a single statement: there is a sequence of
+regular numerators `βₜ ∈ 𝒪` realizing the Hensel lift `αₜ = βₜ / (W^{t+1} ξ^{eₜ})`, with
+`eₜ = max(0, 2t-1)` and
+
+* `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` (the sharp bound, used by Claim 5.10), and
+* `Λ(βₜ) ≤ (2t+1)·d·D` (the loose bound quoted at the end of the claim).
+
+The regularity of `ξ` and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` are `ξ_regular` and `ξ_weight_le`.
+Use `exists_hensel_numerator_sequence` (existence only) when defining data: this bundled form
+carries the weight conjuncts and hence their proof dependencies. -/
+theorem claimA2 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
+    {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
+    (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
+    (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
+    ∃ βseq : ℕ → 𝒪 H,
+      IsHenselNumeratorSequence x₀ R H hHyp βseq ∧
+      (∀ t : ℕ, regularWeight hH (βseq t) D ≤
+        (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ)) ∧
+      ∀ t : ℕ, regularWeight hH (βseq t) D ≤
+        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
+  ⟨βSeq x₀ R H hHyp, βSeq_spec x₀ R H hHyp,
+    βSeq_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg,
+    βSeq_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg⟩
 
 /-- The regular element `β_t` giving the numerator of the `t`-th chosen Hensel coefficient. -/
 noncomputable def β (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
