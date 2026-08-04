@@ -107,15 +107,27 @@ Lemma 10 uses `max(2d, 2b−1)`.
 ### What the repair costs
 
 Since the arity pin `hμn` gives `2^{m₀} ≥ (μ + n)·deg φ`, this raises the branching arity of the
-extraction tree from the paper's `O(d + b)` to `O(μ·d)`. That is the obvious objection to the
-Kronecker repair, and the answer is favourable. By [NOZ26] Lemma 4 the knowledge error of a
-coordinate-wise special-sound family is `ℓ·k/|S|^ℓ`, so at `(ℓ, k) = (2, D)` over `S = F_{q^k}` it
-becomes `2·D/|F_{q^k}|²`, i.e. roughly `2(μ + n)d/|F_{q^k}|²` in place of the paper's
-`2·max(2d, 2b−1)/|F_{q^k}|²`. At Hachi's field size that is still negligible, and since `D` is
-polynomial in the witness dimensions the transcript tree stays polynomial. The repair therefore
-buys a *deterministic* identity equivalence (`multilinear_eq_zero_of_kronecker_roots`, strictly
-stronger than a Schwartz–Zippel bound) at the price of a constant-factor-in-the-exponent-free
-arity increase.
+extraction tree from the paper's `O(d + b)` to `O(μ·d)` — and, more importantly, it degrades the
+soundness error. For a nonzero `H₀` the univariate pullback `powAlgHom H₀` has degree
+`≤ 2^{m₀} − 1`, so a seed lands on a root with probability up to `2^{m₀}/|F_{q^k}|`. At the paper's
+Figure 9 parameters (`m₀ ≈ 26`, `k = 4`, `|F_{q^k}| ≈ 2^128`) that is `≈ 2^-102`, against
+`≈ 2^-123` for Figure 5's uniform `τ₀` by Schwartz–Zippel. Buying the ~21 bits back is not cheap:
+`k` must divide `d/2 = 512`, so `k` is a power of two and `k = 4 → 8`, doubling the sumcheck proof
+(`≈ 7.3 KB → ≈ 14.6 KB`).
+
+[NOZ26] Lemma 4's `ℓ·k/|S|^ℓ` must **not** be read as `2·D/|F_{q^k}|²` here: `H₀` depends only on
+`ρ₀` and `H_α` only on `ρ_α`, so a cheating prover needs one seed bad, not both, and the `|S|^ℓ`
+denominator would price in an independence the protocol does not have.
+
+No bound better than `2^{m₀}/|F_{q^k}|` is currently proved for this reparametrisation. Whether a
+*realisable* table attains it is open: `exists_nonzero_multilinear_vanishing_on_kronecker_seeds`
+gives tightness for arbitrary multilinears, but a protocol adversary must exhibit an `H₀` of the
+form `∑ᵢ eq̃(t,i)·P_b(w̃(i))`, which that lemma does not construct.
+
+What the repair buys in exchange is a *deterministic* identity equivalence
+(`multilinear_eq_zero_of_kronecker_roots`), which is what the printed Lemma 10's root-counting step
+needed and did not have. Whether that trade is the right one is a protocol question for the paper's
+authors and is not settled here; see `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
 ### A second defect in the printed Lemma 10
 
