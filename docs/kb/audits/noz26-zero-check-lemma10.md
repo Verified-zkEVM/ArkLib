@@ -131,14 +131,68 @@ the challenge distribution and raises the soundness parameter to `D = max(2, 2^{
 ### What the repair costs
 
 Because `hμn` pins `2^{m₀} ≥ (μ + n)·deg φ`, the branching arity of the extraction tree grows from
-the paper's `O(d + b)` to `O(μ·d)`. This is the obvious objection to the repair and the answer is
-favourable. By [NOZ26] Lemma 4 the knowledge error of a coordinate-wise special-sound family is
-`ℓ·k/|S|^ℓ`, so at `(ℓ, k) = (2, D)` over `S = F_{q^k}` it is `2·D/|F_{q^k}|²`, i.e. roughly
-`2(μ + n)d/|F_{q^k}|²` in place of `2·max(2d, 2b−1)/|F_{q^k}|²`. That is still negligible at Hachi's
-field size, and `D` is polynomial in the witness dimensions so the transcript tree stays polynomial.
+the paper's `O(d + b)` to `O(μ·d)` — and, more importantly, the soundness error degrades. For a
+nonzero `H₀` the univariate pullback `powAlgHom H₀` has degree `≤ 2^{m₀} − 1`, so a seed lands on a
+root with probability up to `2^{m₀}/|F_{q^k}|`. At the paper's Figure 9 parameters (`q ≈ 2^32`,
+`k = 4` so `|F_{q^k}| ≈ 2^128`; `deg φ = 2^10` and `w̃` length `≤ 2^26`, hence `m₀ ≈ 26`, which is
+also what `hμn` pins) that is `≈ 2^-102`, against `≈ 2^-123` for Figure 5's uniform `τ₀` by
+Schwartz–Zippel — a **~21-bit regression** on a `λ = 128` target.
+
+Buying those bits back is not cheap. `k` must divide `d/2 = 512` ([NOZ26] Lemma 1 / Theorem 1), so
+`k` is a power of two: `k = 5` would suffice numerically but is illegal, and the next legal value is
+`k = 8`. The paper's sumcheck cost `26·k·32·(16+2)` bits `≈ 7.3 KB` at `k = 4` then becomes
+`≈ 14.6 KB`, i.e. **double**, plus `F_{q^8}` arithmetic throughout.
+
+Two accounting notes, since both are easy to get wrong:
+
+- [NOZ26] Lemma 4's `ℓ·k/|S|^ℓ` must **not** be read as `2·D/|F_{q^k}|²` here. `H₀` depends only on
+  `ρ₀` and `H_α` only on `ρ_α`, so a cheating prover needs one seed bad, not both; the `|S|^ℓ`
+  denominator would price in an independence the protocol does not have. A knowledge error below the
+  direct `2^{m₀}/|F_{q^k}|` bound is in any case impossible, since knowledge error dominates the
+  success probability of a witness-less prover.
+- The comparison baseline is Figure 5's Schwartz–Zippel error `m₀/|F_{q^k}|`, not
+  `2·max(2d, 2b−1)/|F_{q^k}|²`; the latter mixes the paper's `D` with a denominator that does not
+  apply.
+
+No bound better than `2^{m₀}/|F_{q^k}|` is currently proved for this reparametrisation, and whether
+a *realisable* table attains it is open: `exists_nonzero_multilinear_vanishing_on_kronecker_seeds`
+gives tightness for arbitrary multilinears, but a protocol adversary must exhibit an `H₀` of the
+form `∑ᵢ eq̃(t,i)·P_b(w̃(i))`, which that lemma does not construct.
+
 What the repair buys in exchange is a *deterministic* identity equivalence
-(`multilinear_eq_zero_of_kronecker_roots`), strictly stronger than the Schwartz–Zippel bound Lemma 10
-actually needed. Recorded in the `zeroCheckD` docstring.
+(`multilinear_eq_zero_of_kronecker_roots`), which is what the printed Lemma 10's root-counting step
+needed and did not have. Whether that trade is the right one is a protocol question for the paper's
+authors rather than a formalization question, and it is **not settled here**.
+
+### Alternative repair routes under discussion (not yet claims)
+
+The axis-cross gap was raised with the [NOZ26] authors directly, and this subsection records the
+state of that correspondence. It is **not** a set of established results: nothing below is
+formalized in ArkLib, and the statements are the authors' and our suggestions, not theorems.
+
+In a reply of 2026-07-31, George O'Rourke confirmed the diagnosis — that Schwartz–Zippel cannot be
+invoked under CWSS, because the CWSS tree constrains only the coordinate-wise structure of the
+challenges and says nothing about their distribution — and also noted that the printed analysis
+takes `(τ₀, τ₁)` as a two-coordinate vector even though the two coordinates are drawn from
+`F_{q^k}^{log μ + log d}` and `F_{q^k}^{log n}`, neither of which is `F_{q^k}`. Two alternatives
+were proposed there, both of which leave Figure 5's protocol unchanged:
+
+1. drop CWSS for this step and argue knowledge soundness directly by Schwartz–Zippel, at the cost
+   of no longer being able to compose the chain through a single generic CWSS-to-knowledge-soundness
+   step;
+2. treat each coordinate of `(τ₀, τ₁)` as a separate challenge round and prove plain
+   `(k, …, k)`-special soundness by root counting with induction on the number of variables.
+
+Route 2 looks the more promising one for this formalization, since it would keep the error at
+Figure 5's order (`≈ 2^-122` by [NOZ26] Lemma 4 at `ℓᵢ = 1`, `kᵢ = 2`, summed over the
+`log(μ + n) + log d + log n` coordinates) while still landing on a CWSS-shaped notion. Two caveats
+before anyone relies on that: the required multivariate root-counting lemma is **not** in the tree,
+and the relevant per-coordinate degree is `1` (both `H₀` and `H_α` are multilinear *in the
+challenge*; the `2b − 1` and `2` appearing in the paper are witness-side sumcheck degrees), so the
+per-coordinate parameter would be `k = 2` rather than the larger values a first reading suggests.
+
+Until the authors settle the route, treat the Kronecker reparametrisation in this file as
+provisional. Also recorded in the `zeroCheckD` docstring.
 
 ## Other divergences from the printed Figure 5 / Lemma 10
 
