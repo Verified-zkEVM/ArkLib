@@ -525,21 +525,21 @@ lemma regularElementsSet_prod {ι : Type} {H : F[X][Y]} (s : Finset ι) {f : ι 
 def rationalRoot (H : F[X][Y]) (z : F) : Type :=
   {t_z : F // evalEval z t_z H = 0}
 
-/-- The rational substitution `π_z` from Appendix A.3 defined on the whole ring of
+/-- The rational substitution `piZ` from Appendix A.3 defined on the whole ring of
 bivariate polynomials. -/
-noncomputable def π_z_lift {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
+noncomputable def piZLift {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     F[X][Y] →+* F :=
   Polynomial.evalEvalRingHom z root.1
 
-/-- The rational substitution `π_z` from Appendix A.3 of [BCIKS20] is a well-defined map on the
+/-- The rational substitution `piZ` from Appendix A.3 of [BCIKS20] is a well-defined map on the
 quotient ring `𝒪`. -/
-noncomputable def π_z {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
+noncomputable def piZ {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     𝒪 H →+* F :=
-  Ideal.Quotient.lift (Ideal.span {monicize H}) (π_z_lift z root) (by
+  Ideal.Quotient.lift (Ideal.span {monicize H}) (piZLift z root) (by
     intro a ha
     rw [Ideal.mem_span_singleton] at ha
     obtain ⟨c, rfl⟩ := ha
-    simp only [π_z_lift, map_mul]
+    simp only [piZLift, map_mul]
     rw [show (Polynomial.evalEvalRingHom z root.1) (monicize H) = 0 from root.2]
     ring)
 

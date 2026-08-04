@@ -234,8 +234,8 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
                 exact hright_row j
           _ = (∑ j : Fin d, (j : ℕ)) + (∑ j : Fin d, ridx j) := by
                 rw [Finset.sum_add_distrib]
-      have hperm_sum : (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) = ∑ i : Fin (e + d), (i : ℕ)
-          := by
+      have hperm_sum :
+          (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) = ∑ i : Fin (e + d), (i : ℕ) := by
         simpa using (Equiv.sum_comp σ (fun i : Fin (e + d) => (i : ℕ)))
       have hrows_split : (∑ i : Fin (e + d), ((σ i : Fin (e + d)) : ℕ)) =
           (∑ j : Fin e, ((σ (Fin.castAdd d j) : Fin (e + d)) : ℕ)) +
@@ -256,8 +256,9 @@ theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree)
         ((∑ j : Fin e, lidx j) + (∑ j : Fin d, ridx j)) * lam +
           ((∑ j : Fin e, ldeg j) + (∑ j : Fin d, rdeg j)) ≤ e * (d * lam) + d * B := by
       have h := Nat.add_le_add hleft_sum hright_sum
-      have hleft_expand : (∑ j : Fin e, (lidx j * lam + ldeg j)) = (∑ j : Fin e, lidx j) * lam + ∑ j
-          : Fin e, ldeg j := by
+      have hleft_expand :
+          (∑ j : Fin e, (lidx j * lam + ldeg j)) =
+            (∑ j : Fin e, lidx j) * lam + ∑ j : Fin e, ldeg j := by
         rw [Finset.sum_add_distrib]
         rw [← Finset.sum_mul]
       have hright_expand : (∑ j : Fin d, (ridx j * lam + rdeg j)) = (∑ j : Fin d, ridx j) * lam + ∑
@@ -301,9 +302,9 @@ theorem poly_eq_zero_of_ncard_gt_bound_of_subset_roots {p : F[X]} {S : Set F} {N
   omega
 
 theorem resultant_eval_eq_resultant_map_eval_fixed_degrees (p q : F[X][Y]) (z : F) :
-  (Polynomial.resultant p q).eval z =
-    Polynomial.resultant (p.map (Polynomial.evalRingHom z))
-      (q.map (Polynomial.evalRingHom z)) p.natDegree q.natDegree := by
+    (Polynomial.resultant p q).eval z =
+      Polynomial.resultant (p.map (Polynomial.evalRingHom z))
+        (q.map (Polynomial.evalRingHom z)) p.natDegree q.natDegree := by
   exact (Polynomial.resultant_map_map p q p.natDegree q.natDegree (Polynomial.evalRingHom z)).symm
 
 theorem resultant_fixed_degree_eq_zero_of_common_root_of_monic_right {p q : F[X]} {m n : ℕ} {t : F}
@@ -325,15 +326,16 @@ theorem resultant_fixed_degree_eq_zero_of_common_root_of_monic_right {p q : F[X]
   · simp [hres0]
   · exact le_rfl
 
-theorem rationalVanishingSet_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) :
-  rationalVanishingSet β ⊆
-    {z | (Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H)).eval z = 0} := by
+theorem rationalVanishingSet_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.natDegree)
+    (β : 𝒪 H) :
+    rationalVanishingSet β ⊆
+      {z | (Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H)).eval z = 0} := by
   intro z hz
   rcases hz with ⟨root, hβ⟩
   let p : F[X][Y] := canonicalRepOf𝒪 hH β
   let q : F[X][Y] := monicize H
   have hp : (p.map (Polynomial.evalRingHom z)).eval root.1 = 0 := by
-    have h := π_z_eq_eval_canonicalRepOf𝒪 hH z root β
+    have h := piZ_eq_eval_canonicalRepOf𝒪 hH z root β
     rw [h] at hβ
     rw [Polynomial.map_evalRingHom_eval]
     simpa [p, Polynomial.coe_evalEvalRingHom] using hβ

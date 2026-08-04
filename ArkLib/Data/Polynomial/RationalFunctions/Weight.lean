@@ -505,13 +505,13 @@ lemma regularWeight_mk_le {H : F[X][Y]} {D : ℕ}
 /-- The set `rationalVanishingSet` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
 noncomputable def rationalVanishingSet {H : F[X][Y]} (β : 𝒪 H) : Set F :=
-  {z : F | ∃ root : rationalRoot (monicize H) z, (π_z z root) β = 0}
+  {z : F | ∃ root : rationalRoot (monicize H) z, (piZ z root) β = 0}
 
 omit [IsDomain F] in
-/-- The rational substitution `π_z` can be computed on the canonical representative. -/
-lemma π_z_eq_eval_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree)
+/-- The rational substitution `piZ` can be computed on the canonical representative. -/
+lemma piZ_eq_eval_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree)
     (z : F) (root : rationalRoot (monicize H) z) (β : 𝒪 H) :
-    (π_z z root) β = Polynomial.evalEvalRingHom z root.1 (canonicalRepOf𝒪 hH β) := by
+    (piZ z root) β = Polynomial.evalEvalRingHom z root.1 (canonicalRepOf𝒪 hH β) := by
   conv_lhs => rw [← mk_canonicalRepOf𝒪 hH β]
   rfl
 

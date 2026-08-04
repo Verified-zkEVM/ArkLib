@@ -154,7 +154,7 @@ lemma leadingCoeff_dvd_evalX_derivative_coeff_pred {x₀ : F} {R : F[X][X][Y]} {
     ring
 
 /-- The element `ζ` from Appendix A.4 of [BCIKS20]. -/
-def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+def zeta (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] : 𝕃 H :=
   let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
   let T : 𝕃 H := functionFieldT (H := H)
@@ -163,11 +163,11 @@ def ζ (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreduci
 
 /-- If the derivative specialization is constant in the function-field variable, then `ζ` is
 regular. -/
-lemma ζ_regular_of_derivative_evalX_eq_C (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma zeta_regular_of_derivative_evalX_eq_C (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)] {p : F[X]}
     (hp : Bivariate.evalX (Polynomial.C x₀) R.derivative = Polynomial.C p) :
-    ζ R x₀ H ∈ regularElementsSet H := by
-  rw [ζ, hp]
+    zeta R x₀ H ∈ regularElementsSet H := by
+  rw [zeta, hp]
   simp only [Polynomial.eval₂_C]
   exact regularElementsSet_liftToFunctionField H p
 
@@ -186,7 +186,7 @@ lemma derivative_evalX_eq_C_of_natDegree_le_one
   exact Polynomial.eq_C_of_natDegree_le_zero hP
 
 /-- In the constant-derivative, low-`Y`-degree case, the `ξ` regularity witness is explicit. -/
-lemma ξ_regular_of_derivative_evalX_eq_C_of_natDegree_le_one
+lemma xi_regular_of_derivative_evalX_eq_C_of_natDegree_le_one
     (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)]
     {p : F[X]} (hp : Bivariate.evalX (Polynomial.C x₀) R.derivative = Polynomial.C p)
@@ -194,34 +194,34 @@ lemma ξ_regular_of_derivative_evalX_eq_C_of_natDegree_le_one
     ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
-  rcases ζ_regular_of_derivative_evalX_eq_C x₀ R H hp with ⟨pre, hpre⟩
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
+  rcases zeta_regular_of_derivative_evalX_eq_C x₀ R H hp with ⟨pre, hpre⟩
   refine ⟨pre, ?_⟩
   have hd : R.natDegree - 2 = 0 := by omega
   simpa [hd] using hpre.symm
 
 /-- If `R` has `Y`-degree at most one, the regularity statement for `ξ` follows from the
 constant-derivative case. -/
-lemma ξ_regular_of_natDegree_le_one
+lemma xi_regular_of_natDegree_le_one
     (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hR : R.natDegree ≤ 1) :
     ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
   rcases derivative_evalX_eq_C_of_natDegree_le_one x₀ R hR with ⟨p, hp⟩
-  exact ξ_regular_of_derivative_evalX_eq_C_of_natDegree_le_one x₀ R H hp hR
+  exact xi_regular_of_derivative_evalX_eq_C_of_natDegree_le_one x₀ R H hp hR
 
 /-- In the quadratic case, `ξ = ζ` is regular by clearing the single denominator with the
 divisibility of the top derivative coefficient. -/
-lemma ξ_regular_of_natDegree_eq_two
+lemma xi_regular_of_natDegree_eq_two
     (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H)
     (hR : R.natDegree = 2) :
     ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H := by
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H := by
   let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R.derivative
   have hP : P.natDegree ≤ 1 := by
     calc
@@ -230,8 +230,8 @@ lemma ξ_regular_of_natDegree_eq_two
       _ = 1 := by omega
   have hdiv : H.leadingCoeff ∣ P.coeff 1 := by
     simpa [P, hR] using leadingCoeff_dvd_evalX_derivative_coeff_pred hHyp
-  have hreg : ζ R x₀ H ∈ regularElementsSet H := by
-    simpa [ζ, P] using regularElementsSet_eval₂_linear_of_coeff_one_dvd (H := H) hP hdiv
+  have hreg : zeta R x₀ H ∈ regularElementsSet H := by
+    simpa [zeta, P] using regularElementsSet_eval₂_linear_of_coeff_one_dvd (H := H) hP hdiv
   rcases hreg with ⟨pre, hpre⟩
   refine ⟨pre, ?_⟩
   have hd : R.natDegree - 2 = 0 := by omega
@@ -259,7 +259,7 @@ lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
     embeddingOf𝒪Into𝕃 H (Ideal.Quotient.mk _ (xiPre x₀ R H) : 𝒪 H) =
-      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * ζ R x₀ H := by
+      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H := by
   rw [embeddingOf𝒪Into𝕃_mk]
   by_cases hRle : R.natDegree ≤ 1
   · -- d ≤ 1: xiPre = R'(x₀, Z), constant in Y; ζ is the lift of that constant.
@@ -297,7 +297,7 @@ lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
             Polynomial.X ^ (R.natDegree - 2 + 1) := by
       simp only [xiPre, hd2, ↓reduceIte, ← hP_def, ← hW_poly_def, hkk]
     rw [hxiPre_eq]
-    rw [show (ζ R x₀ H : 𝕃 H) =
+    rw [show (zeta R x₀ H : 𝕃 H) =
       Polynomial.eval₂ liftToFunctionField
         (functionFieldT (H := H) / liftToFunctionField (H := H) W_poly) P from rfl]
     rw [leadingCoeff_pow_mul_eval₂_div_eq_sum (H := H) (P := P) (k := R.natDegree - 2) hP_le]
@@ -317,30 +317,30 @@ form of Claim A.2 of Appendix A.4 of [BCIKS20].
 
 For `R.natDegree < 2`, the natural-number exponent truncates to zero. The paper's weight
 bound is therefore stated separately with the explicit hypothesis `2 ≤ R.natDegree`. -/
-lemma ξ_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
+lemma xi_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) :
     ∃ pre : 𝒪 H,
     let d := R.natDegree
     let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
-    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * ζ R x₀ H :=
+    embeddingOf𝒪Into𝕃 _ pre = W ^ (d - 2) * zeta R x₀ H :=
   ⟨Ideal.Quotient.mk _ (xiPre x₀ R H),
     by simpa using embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp⟩
 
 /-- The regular element `ξ = W(Z)^(d-2) * ζ` used in the Lean version of Claim A.2.
 
 The `Fact` and `Hypotheses` arguments are kept for API compatibility with downstream callers
-(`α`, `γ`); they are needed for the embedding equation in `embeddingOf𝒪Into𝕃_ξ`. -/
-noncomputable def ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [_φ : Fact (Irreducible H)]
+(`α`, `γ`); they are needed for the embedding equation in `embeddingOf𝒪Into𝕃_xi`. -/
+noncomputable def xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [_φ : Fact (Irreducible H)]
     [_H_natDegree_pos : Fact (0 < H.natDegree)] (_hHyp : Hypotheses x₀ R H) : 𝒪 H :=
   Ideal.Quotient.mk _ (xiPre x₀ R H)
 
 /-- The defining equation `embedding ξ = W^(d-2) · ζ`, the specialization of
 `embeddingOf𝒪Into𝕃_mk_xiPre` to `ξ`. -/
-lemma embeddingOf𝒪Into𝕃_ξ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma embeddingOf𝒪Into𝕃_xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
-    embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp) =
-      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * ζ R x₀ H :=
+    embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) =
+      liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2) * zeta R x₀ H :=
   embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp
 
 omit H_irreducible H_natDegree_pos in
@@ -386,8 +386,8 @@ theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q
       omega
     have hm_le_D : m ≤ D := le_trans hm_le_T hD_H
     have hTQ : Bivariate.totalDegree Q ≤ D - Bivariate.totalDegree H := by
-      have hmul : Bivariate.totalDegree (H * Q) = Bivariate.totalDegree H + Bivariate.totalDegree Q
-          := by
+      have hmul :
+          Bivariate.totalDegree (H * Q) = Bivariate.totalDegree H + Bivariate.totalDegree Q := by
         simpa using Bivariate.totalDegree_mul (F := F) hH_ne hQzero
       omega
     have hQcoeff0 : (Q.coeff s).natDegree ≤ D - Bivariate.totalDegree H := by
@@ -407,8 +407,8 @@ theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q
       dsimp [lower, W, m]
       rw [monicize, if_neg (Nat.ne_of_gt hH)]
       rw [← Polynomial.coeff_natDegree (p := H)]
-    have hmod : p %ₘ monicize H = (-(Polynomial.C c * Polynomial.X ^ (s - 1) * lower)) %ₘ monicize H
-        := by
+    have hmod :
+        p %ₘ monicize H = (-(Polynomial.C c * Polynomial.X ^ (s - 1) * lower)) %ₘ monicize H := by
       apply Polynomial.modByMonic_eq_of_dvd_sub (monicize_monic H hH)
       refine ⟨Polynomial.C c * Polynomial.X ^ (s - 1), ?_⟩
       rw [htilde]
@@ -964,17 +964,17 @@ of [BCIKS20].
 
 The explicit hypothesis `2 ≤ R.natDegree` is needed because the paper uses `W^(d-2)`, while
 Lean's natural-number exponent would otherwise totalize the low-degree cases by truncation. -/
-lemma ξ_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R)
     {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
     (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
-    regularWeight hH (ξ x₀ R H hHyp) D ≤
+    regularWeight hH (xi x₀ R H hHyp) D ≤
     WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
   have hRdeg' : 2 ≤ R.natDegree := by
     simpa [Bivariate.natDegreeY] using hRdeg
   have hD_H' : Bivariate.totalDegree H ≤ D := hD_H
   have hD_Rx0' : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D := hD_Rx0
-  unfold ξ
+  unfold xi
   rw [xiPre_eq_lower_add_top x₀ hRdeg']
   refine (regularWeight_add_le hD_H' hH
     (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreLower x₀ R H) : 𝒪 H)

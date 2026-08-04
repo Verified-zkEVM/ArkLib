@@ -146,3 +146,22 @@ interleaved-code reference lineage.
 Updated the list-decoding and correlated-agreement audit to record `Jo26` as the sharper follow-up
 target for the missing interleaving-vs-MCA theorem once ArkLib has a general MCA error-function
 interface.
+
+## [2026-08-04] prove | BCIKS20 Claim A.2 restructure and Lean 4.31 migration
+
+Merged `main` (Lean 4.31) into the rational-functions branch and reorganized Appendix A.4:
+`exists_hensel_numerator_sequence` now states existence only, so `betaSeq`, `alpha`, `gamma` and the
+list-decoding consumers in `BCIKS20/ListDecoding/Agreement.lean` are axiom-clean; the weight bounds
+moved to `hensel_numerator_weight_sharp_le` / `hensel_numerator_weight_le`, with the paper's bundled
+form kept as `claimA2_exists_numerators_with_weight_bounds`. The sharp bound
+`Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` is now exposed alongside the loose `(2t+1)dD`, because Claim 5.10
+needs the sharp form to telescope over `t`.
+
+Two findings recorded in the Appendix A audit: Claim A.2 presupposes `2 ≤ degY R` (now a hypothesis;
+the unrestricted Lean statement was false), and the `(A.1)`-recursion route cannot prove the weight
+bound because it is exactly tight — the remaining `sorry` is that single boundary summand.
+
+Declaration names were also brought in line with the Mathlib style guide: `H_tilde`/`H_tilde'` →
+`monicizeRatFunc`/`monicize`, `weight_Λ`/`weight_Λ_over_𝒪` → `weight`/`regularWeight`, `RWL_*` →
+`regularWeightLe_*`, `S_β` → `rationalVanishingSet`, and Greek declaration names → `zeta`, `xi`,
+`alpha`, `gamma`, `beta`, `piZ` (Greek is kept for variables and in prose).

@@ -46,41 +46,41 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hα0 : αseq 0 = functionFieldT (H := H) /
       liftToFunctionField (H := H) H.leadingCoeff)
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
-    (hzeta : ζ R x₀ H ≠ 0)
+    (hzeta : zeta R x₀ H ≠ 0)
     (t : ℕ) (βprev : Fin (t + 1) → 𝒪 H)
     (hprev : ∀ i : Fin (t + 1),
       embeddingOf𝒪Into𝕃 H (βprev i) /
         (liftToFunctionField (H := H) H.leadingCoeff ^ (i.val + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ henselDenominatorExponent i.val) =
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i.val) =
         αseq i.val) :
     ∃ βnext : 𝒪 H,
       embeddingOf𝒪Into𝕃 H βnext /
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ henselDenominatorExponent (t + 1)) =
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent (t + 1)) =
         αseq (t + 1) := by
   classical
   let W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff
-  let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)
+  let eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)
   let E : ℕ := henselDenominatorExponent (t + 1)
   let D : 𝕃 H := W ^ (t + 1 + 1) * eta ^ E
   let Ddiv : 𝕃 H := W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2)
   let S : 𝕃 H :=
     PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) -
-      ζ R x₀ H * αseq (t + 1)
+      zeta R x₀ H * αseq (t + 1)
   have hSreg : S * Ddiv ∈ regularElementsSet H := by
     exact henselCoeffResidual_regular_after_clearing x₀ R H hHyp αseq hα0 hroot hzeta t βprev hprev
   have hW : W ≠ 0 := by
     simpa [W] using (liftToFunctionField_leadingCoeff_ne_zero (H := H))
   have heta : eta ≠ 0 := by
-    have hξeq := embeddingOf𝒪Into𝕃_ξ x₀ R H hHyp
+    have hξeq := embeddingOf𝒪Into𝕃_xi x₀ R H hHyp
     simpa [eta, W, hξeq] using mul_ne_zero (pow_ne_zero (R.natDegree - 2) hW) hzeta
   have hD : D ≠ 0 := by
     simp only [D]
     exact mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
-  have hcoeff : PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) = 0 :=
-      by
+  have hcoeff :
+      PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) = 0 := by
     simpa using congrArg (fun p : PowerSeries (𝕃 H) => PowerSeries.coeff (t + 1) p) hroot
-  have hS : S = - ζ R x₀ H * αseq (t + 1) := by
+  have hS : S = - zeta R x₀ H * αseq (t + 1) := by
     simp only [S, hcoeff, zero_sub]
     ring
   have hEpos : 0 < E := by
@@ -90,18 +90,18 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hE : E = (E - 1) + 1 := by omega
   have hpeta : eta ^ E = eta ^ (E - 1) * eta := by
     conv_lhs => rw [hE, pow_succ]
-  have hD_eq : D = ζ R x₀ H * Ddiv := by
-    have heta_eq : eta = W ^ (R.natDegree - 2) * ζ R x₀ H := by
-      simpa [eta, W] using embeddingOf𝒪Into𝕃_ξ x₀ R H hHyp
+  have hD_eq : D = zeta R x₀ H * Ddiv := by
+    have heta_eq : eta = W ^ (R.natDegree - 2) * zeta R x₀ H := by
+      simpa [eta, W] using embeddingOf𝒪Into𝕃_xi x₀ R H hHyp
     calc
       D = W ^ (t + 1 + 1) * eta ^ E := rfl
       _ = W ^ (t + 1 + 1) * (eta ^ (E - 1) * eta) := by
         rw [hpeta]
-      _ = W ^ (t + 1 + 1) * (eta ^ (E - 1) * (W ^ (R.natDegree - 2) * ζ R x₀ H)) := by
+      _ = W ^ (t + 1 + 1) * (eta ^ (E - 1) * (W ^ (R.natDegree - 2) * zeta R x₀ H)) := by
         exact congrArg (fun x => W ^ (t + 1 + 1) * (eta ^ (E - 1) * x)) heta_eq
-      _ = ζ R x₀ H * (W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2)) := by
+      _ = zeta R x₀ H * (W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2)) := by
         ring
-      _ = ζ R x₀ H * Ddiv := rfl
+      _ = zeta R x₀ H * Ddiv := rfl
   have hprod_eq : αseq (t + 1) * D = -(S * Ddiv) := by
     rw [hD_eq, hS]
     ring
@@ -124,11 +124,11 @@ theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       HasNumeratorShape x₀ R H hHyp αseq βseq := by
   classical
   let W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff
-  let Xi : 𝕃 H := embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)
+  let Xi : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)
   let shapeAt : ℕ → 𝒪 H → Prop := fun t β =>
     embeddingOf𝒪Into𝕃 H β / (W ^ (t + 1) * Xi ^ henselDenominatorExponent t) = αseq t
-  have hprefix : ∀ n : ℕ, ∃ βpref : Fin (n + 1) → 𝒪 H, ∀ i : Fin (n + 1), shapeAt i.val (βpref i) :=
-      by
+  have hprefix :
+      ∀ n : ℕ, ∃ βpref : Fin (n + 1) → 𝒪 H, ∀ i : Fin (n + 1), shapeAt i.val (βpref i) := by
     intro n
     induction n with
     | zero =>
@@ -173,11 +173,11 @@ Appendix A.4 of [BCIKS20]: `αₜ = βₜ / (W^{t+1} ξ^{eₜ})` starts at `α�
 `γ = ∑ₜ αₜ (X - x₀)ᵗ` is a root of `R(X, ·, Z)`.
 
 This is the *qualitative* half of Claim A.2, stated without the weight bound on purpose: the
-chosen sequence `βSeq` — and hence `α`, `γ` and every downstream consumer such as
+chosen sequence `betaSeq` — and hence `α`, `γ` and every downstream consumer such as
 [BCIKS20] Claims 5.8/5.9 — is defined from this existence proof alone, so it does not depend on
 the quantitative weight accounting.  The weight bounds are supplied separately by
 `hensel_numerator_weight_sharp_le` / `hensel_numerator_weight_le`, and the paper's single
-statement is recombined in `claimA2`. -/
+statement is recombined in `claimA2_exists_numerators_with_weight_bounds`. -/
 lemma exists_hensel_numerator_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
@@ -187,42 +187,42 @@ lemma exists_hensel_numerator_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   exact ⟨βseq, hensel_numerator_sequence_of_alpha_shape x₀ R H hHyp αseq βseq hα0 hroot hshape⟩
 
 /-- The chosen regular numerator sequence supplied by `exists_hensel_numerator_sequence`. -/
-noncomputable def βSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+noncomputable def betaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) : ℕ → 𝒪 H :=
   (exists_hensel_numerator_sequence x₀ R H hHyp).choose
 
 /-- The Hensel-lift specification satisfied by the chosen numerator sequence. -/
-lemma βSeq_spec (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma betaSeq_spec (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
-    IsHenselNumeratorSequence x₀ R H hHyp (βSeq x₀ R H hHyp) :=
+    IsHenselNumeratorSequence x₀ R H hHyp (betaSeq x₀ R H hHyp) :=
   (exists_hensel_numerator_sequence x₀ R H hHyp).choose_spec
 
 /-- The sharp Claim A.2 weight bound for the chosen numerator sequence, at an arbitrary degree
 bound `D` dominating `H` and the coefficients of `R`. -/
-lemma βSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma betaSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
-      regularWeight hH ((βSeq x₀ R H hHyp) t) D ≤
+      regularWeight hH ((betaSeq x₀ R H hHyp) t) D ≤
         (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ) :=
-  hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg (βSeq_spec x₀ R H hHyp)
+  hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
 
 /-- The loose Claim A.2 weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for the chosen numerator sequence. -/
-lemma βSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+lemma betaSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D)
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
-      regularWeight hH ((βSeq x₀ R H hHyp) t) D ≤
+      regularWeight hH ((betaSeq x₀ R H hHyp) t) D ≤
         (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
-  hensel_numerator_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg (βSeq_spec x₀ R H hHyp)
+  hensel_numerator_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
 
 /-- **Claim A.2** of Appendix A.4 of [BCIKS20], as a single statement: there is a sequence of
 regular numerators `βₜ ∈ 𝒪` realizing the Hensel lift `αₜ = βₜ / (W^{t+1} ξ^{eₜ})`, with
@@ -231,10 +231,10 @@ regular numerators `βₜ ∈ 𝒪` realizing the Hensel lift `αₜ = βₜ / (
 * `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` (the sharp bound, used by Claim 5.10), and
 * `Λ(βₜ) ≤ (2t+1)·d·D` (the loose bound quoted at the end of the claim).
 
-The regularity of `ξ` and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` are `ξ_regular` and `ξ_weight_le`.
+The regularity of `ξ` and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` are `xi_regular` and `xi_weight_le`.
 Use `exists_hensel_numerator_sequence` (existence only) when defining data: this bundled form
 carries the weight conjuncts and hence their proof dependencies. -/
-theorem claimA2 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+theorem claimA2_exists_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -246,37 +246,37 @@ theorem claimA2 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ)) ∧
       ∀ t : ℕ, regularWeight hH (βseq t) D ≤
         (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
-  ⟨βSeq x₀ R H hHyp, βSeq_spec x₀ R H hHyp,
-    βSeq_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg,
-    βSeq_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg⟩
+  ⟨betaSeq x₀ R H hHyp, betaSeq_spec x₀ R H hHyp,
+    betaSeq_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg,
+    betaSeq_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg⟩
 
-/-- The regular element `β_t` giving the numerator of the `t`-th chosen Hensel coefficient. -/
-noncomputable def β (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+/-- The regular element `βₜ` giving the numerator of the `t`-th chosen Hensel coefficient. -/
+noncomputable def beta (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (t : ℕ) : 𝒪 H :=
-  βSeq x₀ R H hHyp t
+  betaSeq x₀ R H hHyp t
 
 /-- The chosen Hensel-lift coefficients induced by the regular numerator sequence. -/
-def α (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
+def alpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) (t : ℕ) : 𝕃 H :=
-  alphaOfNumerators x₀ R H hHyp (βSeq x₀ R H hHyp) t
+  alphaOfNumerators x₀ R H hHyp (betaSeq x₀ R H hHyp) t
 
 /-- Variant of `α` taking explicit irreducibility and positive-degree hypotheses. -/
-def α' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
+def alpha' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
     (hHdeg : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H) (t : ℕ) : 𝕃 H :=
-  α x₀ R _ (φ := ⟨H_irreducible⟩) (H_natDegree_pos := ⟨hHdeg⟩) hHyp t
+  alpha x₀ R _ (φ := ⟨H_irreducible⟩) (H_natDegree_pos := ⟨hHdeg⟩) hHyp t
 
 /-- The chosen power series `γ = ∑ α_t (X - x₀)^t`, induced by the selected regular numerator
 sequence from `exists_hensel_numerator_sequence`. -/
-def γ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
+def gamma (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [φ : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) :
     PowerSeries (𝕃 H) :=
-  gammaOfNumerators x₀ R H hHyp (βSeq x₀ R H hHyp)
+  gammaOfNumerators x₀ R H hHyp (betaSeq x₀ R H hHyp)
 
 /-- Variant of `γ` taking explicit irreducibility and positive-degree hypotheses. -/
-def γ' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
+def gamma' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
     (hHdeg : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H) : PowerSeries (𝕃 H) :=
-  γ x₀ R H (φ := ⟨H_irreducible⟩) (H_natDegree_pos := ⟨hHdeg⟩) hHyp
+  gamma x₀ R H (φ := ⟨H_irreducible⟩) (H_natDegree_pos := ⟨hHdeg⟩) hHyp
 
 
 end HenselNumerators

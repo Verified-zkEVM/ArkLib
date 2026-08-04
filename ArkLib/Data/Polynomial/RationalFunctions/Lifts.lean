@@ -92,8 +92,8 @@ lemma liftToFunctionField_ne_zero {F : Type} [Field F] {H : F[X][Y]}
     {p : F[X]} (hp : p ≠ 0) :
     liftToFunctionField (H := H) p ≠ 0 := by
   intro hzero
-  have hmem : coeffAsRatFunc p ∈ Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))) :=
-      by
+  have hmem :
+      coeffAsRatFunc p ∈ Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))) := by
     simpa [liftToFunctionField] using (Ideal.Quotient.eq_zero_iff_mem.mp hzero)
   rw [Ideal.mem_span_singleton] at hmem
   have hp_map : univPolyHom (F := F) p ≠ 0 := by

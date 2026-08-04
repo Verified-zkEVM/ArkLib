@@ -216,8 +216,8 @@ lemma regularWeightLe_liftToFunctionField {D : ℕ} (hD : Bivariate.totalDegree 
 
 omit H_irreducible H_natDegree_pos in
 /-- The leading coefficient lift `W` is regular with `Λ`-weight at most `D`. -/
-lemma regularWeightLe_leadingCoeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree)
-    :
+lemma regularWeightLe_leadingCoeff {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
+    (hH : 0 < H.natDegree) :
     RegularWeightLe hH (liftToFunctionField (H := H) H.leadingCoeff) D D := by
   refine (regularWeightLe_liftToFunctionField hD hH H.leadingCoeff).mono ?_
   by_cases hHz : H = 0
@@ -393,18 +393,18 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     embeddingOf𝒪Into𝕃 H (βseq (t + 1)) =
       -(henselCoeffResidual x₀ R H αseq t *
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
           liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2))) := by
   classical
   set W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff with hWdef
-  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp) with hetadef
+  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) with hetadef
   set E : ℕ := henselDenominatorExponent (t + 1) with hEdef
   set Ddiv : 𝕃 H := W ^ (t + 1 + 1) * eta ^ (E - 1) * W ^ (R.natDegree - 2) with hDdivdef
   set Dfull : 𝕃 H := W ^ (t + 1 + 1) * eta ^ E with hDfulldef
-  have hzeta : ζ R x₀ H ≠ 0 := zeta_ne_zero_of_hypotheses x₀ R H hHyp
+  have hzeta : zeta R x₀ H ≠ 0 := zeta_ne_zero_of_hypotheses x₀ R H hHyp
   have hW : W ≠ 0 := liftToFunctionField_leadingCoeff_ne_zero (H := H)
   have heta : eta ≠ 0 := by
-    rw [hetadef, embeddingOf𝒪Into𝕃_ξ]
+    rw [hetadef, embeddingOf𝒪Into𝕃_xi]
     exact mul_ne_zero (pow_ne_zero _ hW) hzeta
   have hDfull : Dfull ≠ 0 := mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ heta)
   have hsh := hshape (t + 1)
@@ -417,16 +417,16 @@ lemma betaSucc_eq_neg_clearedResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) = 0 := by
     simpa using congrArg (fun p : PowerSeries (𝕃 H) =>
       PowerSeries.coeff (t + 1) p) hroot
-  have hres : henselCoeffResidual x₀ R H αseq t = - ζ R x₀ H * αseq (t + 1) := by
+  have hres : henselCoeffResidual x₀ R H αseq t = - zeta R x₀ H * αseq (t + 1) := by
     unfold henselCoeffResidual; rw [hcoeff]; ring
   have hEpos : 0 < E := by rw [hEdef, henselDenominatorExponent_succ]; omega
   have hpeta : eta ^ E = eta ^ (E - 1) * eta := by
     conv_lhs => rw [show E = (E - 1) + 1 by omega, pow_succ]
-  have heta_eq : eta = W ^ (R.natDegree - 2) * ζ R x₀ H := by
-    rw [hetadef, hWdef]; exact embeddingOf𝒪Into𝕃_ξ x₀ R H hHyp
-  have hDfull_eq : Dfull = ζ R x₀ H * Ddiv := by
+  have heta_eq : eta = W ^ (R.natDegree - 2) * zeta R x₀ H := by
+    rw [hetadef, hWdef]; exact embeddingOf𝒪Into𝕃_xi x₀ R H hHyp
+  have hDfull_eq : Dfull = zeta R x₀ H * Ddiv := by
     rw [hDfulldef, hpeta, hDdivdef]
-    rw [show eta ^ (E - 1) * eta = eta ^ (E - 1) * (W ^ (R.natDegree - 2) * ζ R x₀ H) by
+    rw [show eta ^ (E - 1) * eta = eta ^ (E - 1) * (W ^ (R.natDegree - 2) * zeta R x₀ H) by
       rw [← heta_eq]]
     ring
   rw [hres, hDfull_eq]; ring
@@ -452,7 +452,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (ihNum : ∀ i, i ≤ t →
       RegularWeightLe hH
         (αtrunc i * (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ henselDenominatorExponent i))
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i))
         D (numeratorShapeSharp R H D i))
     (hαzero : ∀ i, t < i → αtrunc i = 0)
     (j : ℕ) (hj : j ∈ Finset.range (R.natDegree + 1)) :
@@ -460,12 +460,12 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       (PowerSeries.coeff (t + 1)
         (liftCoeffToPowerSeries x₀ H (R.coeff j) * (PowerSeries.mk αtrunc) ^ j) *
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
           liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)))
       D (numeratorShapeSharp R H D (t + 1)) := by
   classical
   set W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff with hWdef
-  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp) with hetadef
+  set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) with hetadef
   -- abbreviations for the sharp weight atoms
   set ΛW : ℕ := D - Bivariate.natDegreeY H with hΛWdef
   set Λξ : ℕ := (Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1) with hΛξdef
@@ -476,9 +476,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hRWLeta : RegularWeightLe hH eta D Λξ := by
     rw [hetadef, hΛξdef]
     -- ξ as an 𝒪-element
-    obtain ⟨b, hb⟩ : ∃ b : 𝒪 H, embeddingOf𝒪Into𝕃 H b = eta := ⟨ξ x₀ R H hHyp, rfl⟩
-    refine ⟨ξ x₀ R H hHyp, rfl, ?_⟩
-    exact ξ_weight_le x₀ hH hHyp hRdeg hD_H hD_Rx0
+    obtain ⟨b, hb⟩ : ∃ b : 𝒪 H, embeddingOf𝒪Into𝕃 H b = eta := ⟨xi x₀ R H hHyp, rfl⟩
+    refine ⟨xi x₀ R H hHyp, rfl, ?_⟩
+    exact xi_weight_le x₀ hH hHyp hRdeg hD_H hD_Rx0
   have hjle : j ≤ R.natDegree := by rw [Finset.mem_range] at hj; omega
   have hdH_le_R : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
     natDegree_H_le_natDegree_R_of_hypotheses hHyp
@@ -608,7 +608,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       -- so the branch closes iff `Z ≥ (d-1)(x+1) + c.natDegree`.  With the charges forced
       -- elsewhere in the induction — `x = D - dH` (forced by the base case, since
       -- `Λ(β₀) = Λ(T) = D - dH + 1` by the very definition of the `Λ`-grading) and
-      -- `Z = (d-1)(D - dH + 1)` (forced by `ξ_weight_le`) — this demands `c.natDegree ≤ 0`,
+      -- `Z = (d-1)(D - dH + 1)` (forced by `xi_weight_le`) — this demands `c.natDegree ≤ 0`,
       -- which is false in general (`c = leadingCoeff (R(x₀,·,Z)) / W` is an arbitrary polynomial).
       --
       -- Raising `Z` by `D - d - W.natDegree` (the true bound on `c.natDegree`) closes this branch
@@ -741,7 +741,7 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     RegularWeightLe hH
       (henselCoeffResidual x₀ R H αseq t *
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
           liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)))
       D (numeratorShapeSharp R H D (t + 1)) := by
   classical
@@ -752,7 +752,7 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       if h : i ≤ t then
         embeddingOf𝒪Into𝕃 H (βseq i) /
           (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
-            (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ henselDenominatorExponent i)
+            (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i)
       else 0 := by
     intro i
     by_cases h : i ≤ t
@@ -767,13 +767,13 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have ihNum : ∀ i, i ≤ t →
       RegularWeightLe hH
         (αtrunc i * (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
-          (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ henselDenominatorExponent i))
+          (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i))
         D (numeratorShapeSharp R H D i) := by
     intro i hi
     have hW : liftToFunctionField (H := H) H.leadingCoeff ≠ 0 :=
       liftToFunctionField_leadingCoeff_ne_zero (H := H)
-    have hetane : embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp) ≠ 0 := by
-      rw [embeddingOf𝒪Into𝕃_ξ]
+    have hetane : embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) ≠ 0 := by
+      rw [embeddingOf𝒪Into𝕃_xi]
       exact mul_ne_zero (pow_ne_zero _ hW) (zeta_ne_zero_of_hypotheses x₀ R H hHyp)
     rw [hshapeT i, dif_pos hi,
       div_mul_cancel₀ _ (mul_ne_zero (pow_ne_zero _ hW) (pow_ne_zero _ hetane))]
@@ -798,7 +798,7 @@ claim's `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)` degenerates to `Λ(ξ)
 `Λ(W) = D - dH` exactly.  In Lean the truncated subtraction silently reads `W^{d-2}` as `1` for
 `d ≤ 2`, so without this hypothesis the statement would be *stronger* than the paper's and false:
 with `dY = dH = 1` one has `ξ = ζ` of weight up to `D - 1 > 0`, while `(dY-1) = 0` erases the
-`ξ`-contribution from `numeratorShapeSharp`.  Accordingly `ξ_weight_le` also assumes `2 ≤ dY`. -/
+`ξ`-contribution from `numeratorShapeSharp`.  Accordingly `xi_weight_le` also assumes `2 ≤ dY`. -/
 theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -836,7 +836,7 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         have hbridge : embeddingOf𝒪Into𝕃 H (βseq (t + 1)) =
             -(henselCoeffResidual x₀ R H αseq t *
               (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
-                (embeddingOf𝒪Into𝕃 H (ξ x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
+                (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
                 liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2))) := by
           exact betaSucc_eq_neg_clearedResidual x₀ R H hHyp αseq βseq hroot hshape t
         rw [hbridge]
