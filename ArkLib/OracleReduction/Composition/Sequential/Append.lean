@@ -331,8 +331,10 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 -- theorem append_runToRound
 
--- The challenge-oracle inclusions used below are now provided (proved) by
--- `ProtocolSpec.subSpec_challenge_append_left` / `..._right` in `ProtocolSpec/SeqCompose.lean`.
+-- The challenge-oracle inclusions that `append_run`'s statement lifts along are provided (proved)
+-- by `ProtocolSpec.subSpec_challenge_append_left` / `..._right` in `ProtocolSpec/SeqCompose.lean`,
+-- together with their `LawfulSubSpec` instances — the latter are what make the lifts distribution-
+-- and support-preserving, hence usable by the security proofs below.
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and

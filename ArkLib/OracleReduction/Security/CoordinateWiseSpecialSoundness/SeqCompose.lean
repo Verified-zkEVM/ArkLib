@@ -165,7 +165,7 @@ theorem append_nodeOk_inl (S₁ : ChallengeTreeShape p₁) (S₂ : ChallengeTree
     (challenges : Fin ((S₁.append S₂).arity (ChallengeIdx.inl i₁)) →
         (p₁ ++ₚ p₂).Challenge (ChallengeIdx.inl i₁)) :
     (S₁.append S₂).nodeOk (ChallengeIdx.inl i₁) challenges
-      = S₁.nodeOk i₁ (fun j => cast (by simp [ProtocolSpec.append, ChallengeIdx.inl])
+      = S₁.nodeOk i₁ (fun j => cast (ProtocolSpec.challenge_append_inl i₁)
           (challenges (Fin.cast (by
             change S₁.arity i₁ = ChallengeTree.appendArity S₁.arity S₂.arity (ChallengeIdx.inl i₁)
             simp only [ChallengeTree.appendArity, Function.comp_apply,
@@ -186,7 +186,7 @@ theorem append_nodeOk_inr (S₁ : ChallengeTreeShape p₁) (S₂ : ChallengeTree
     (challenges : Fin ((S₁.append S₂).arity (ChallengeIdx.inr i₂)) →
         (p₁ ++ₚ p₂).Challenge (ChallengeIdx.inr i₂)) :
     (S₁.append S₂).nodeOk (ChallengeIdx.inr i₂) challenges
-      = S₂.nodeOk i₂ (fun j => cast (by simp [ProtocolSpec.append, ChallengeIdx.inr])
+      = S₂.nodeOk i₂ (fun j => cast (ProtocolSpec.challenge_append_inr i₂)
           (challenges (Fin.cast (by
             change S₂.arity i₂ = ChallengeTree.appendArity S₁.arity S₂.arity (ChallengeIdx.inr i₂)
             simp only [ChallengeTree.appendArity, Function.comp_apply,
