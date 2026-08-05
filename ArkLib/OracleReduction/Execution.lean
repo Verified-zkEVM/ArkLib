@@ -1,5 +1,6 @@
 import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
+import ArkLib.ToMathlib.Control.MonadLift
 import ArkLib.ToVCVio.OracleComp.EvalDist
 
 /-!
@@ -11,7 +12,7 @@ import ArkLib.ToVCVio.OracleComp.EvalDist
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 
-universe u v v'
+universe u v
 
 -- namespace loggingOracle
 
@@ -404,19 +405,15 @@ def Reduction.runWithLog (stmt : StmtIn) (wit : WitIn)
     liftM (simulateQ loggingOracle (reduction.verifier.run stmt proverResult.1)).run
   return ⟨⟨proverResult, ← stmtOut.getM⟩, proveQueryLog, verifyQueryLog⟩
 
-/-- Lifting a pair-valued computation and then projecting its first component in the continuation
-is the same as lifting the already-projected computation.
+/-- Logging the queries made by both parties do not change the output of the reduction.
 
-This is the `monadLift`-generic form of `bind_map_left`, obtained from it and `monadLift_map`
-(both Lean core). Instantiated below at `OracleComp _ → OptionT (OracleComp _)` to strip the
-prover's query log before the verifier runs. -/
-private lemma monadLift_bind_fst {m : Type u → Type v} {n : Type u → Type v'}
-    [Monad m] [LawfulMonad m] [Monad n] [LawfulMonad n]
-    [MonadLiftT m n] [LawfulMonadLiftT m n] {α β γ : Type u} (x : m (α × β)) (f : α → n γ) :
-    ((monadLift x : n (α × β)) >>= fun p => f p.1) = (monadLift (Prod.fst <$> x) : n α) >>= f := by
-  rw [monadLift_map, bind_map_left]
-
-/-- Logging the queries made by both parties do not change the output of the reduction -/
+Both logs are discarded the same way: `monadLift_bind_fst` pulls the `Prod.fst` projection inside
+the lift, which exposes the party's logged run to the lemma that strips its log —
+`Prover.runWithLog_discard_log_eq_run` for the prover and VCV-io's
+`loggingOracle.fst_map_run_simulateQ` for the verifier. The `▸`/`exact` spelling is forced rather
+than stylistic: after `simp only` the goal is not type-correct at `instances` transparency (ArkLib's
+`Verifier.run` is an `OptionT`, which `kabstract` sees as `OracleComp _ (Option _)`), so `rw`
+cannot operate on it. -/
 @[simp]
 theorem Reduction.runWithLog_discard_logs_eq_run
     {stmt : StmtIn} {wit : WitIn}
@@ -424,8 +421,6 @@ theorem Reduction.runWithLog_discard_logs_eq_run
       Prod.fst <$>
         reduction.runWithLog stmt wit = reduction.run stmt wit := by
   simp only [Reduction.runWithLog, Reduction.run, map_bind, map_pure]
-  -- Discard the prover's log: pull the `Prod.fst` projection inside the lift, so that
-  -- `Prover.runWithLog_discard_log_eq_run` applies to the lifted computation.
   have hProver := monadLift_bind_fst (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
     (n := OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)))
     (Prover.runWithLog stmt wit reduction.prover)
@@ -435,20 +430,11 @@ theorem Reduction.runWithLog_discard_logs_eq_run
   exact hProver ▸ by
     rw [Prover.runWithLog_discard_log_eq_run]
     congr 1; ext proverResult
-    -- Discard the verifier's log. VCV-io's `loggingOracle.fst_map_run_simulateQ` and ArkLib's
-    -- `loggingOracle.map_fst_run_simulateQ` (`ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean`)
-    -- are this fact for a bare `OracleComp`, but neither matches here: the verifier's run sits
-    -- under `liftM` inside `OptionT`, so its log is consumed by an `OptionT` bind rather than by a
-    -- `Prod.fst` map. Hence the explicit induction.
-    generalize Verifier.run stmt proverResult.1 reduction.verifier = vc
-    induction vc using OracleComp.induction with
-    | pure a => simp [simulateQ_pure, WriterT.run_pure]; rfl
-    | query_bind t oa ih =>
-      simp only [run_simulateQ_loggingOracle_query_bind]
-      simp [bind_map_left, ih, OptionT.run_bind, Option.elimM, bind_assoc, OptionT.run_map]
-      -- Closes `OptionT.run (liftM (query t) >>= oa) = query t >>= fun u => OptionT.run (oa u)`,
-      -- which holds definitionally for the `OptionT` lift of a sub-spec query.
-      rfl
+    have hVerif := monadLift_bind_fst (m := OracleComp oSpec)
+      (n := OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)))
+      (simulateQ loggingOracle (Verifier.run stmt proverResult.1 reduction.verifier)).run
+      (fun stmtOut => (fun a_2 => (proverResult, a_2)) <$> stmtOut.getM)
+    exact hVerif ▸ by rw [loggingOracle.fst_map_run_simulateQ]; rfl
 
 /-- Run an interactive oracle reduction. Returns the full transcript, the output statement and
   witness, the log of all prover's oracle queries, and the log of all verifier's oracle queries to
