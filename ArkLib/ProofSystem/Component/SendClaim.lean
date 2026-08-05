@@ -26,18 +26,17 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   ## Security
 
   The verifier is pure and has no challenge rounds, hence **coordinate-wise special sound**
-  (`oracleVerifier_coordinateWiseSpecialSoundWith`) for any `CWSSStructure`, via the no-challenge bridge
-  `OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The extractor is trivial
-  (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P` refines
-  the input relation by the claim predicate `P`, so accepting into its language forces the input
-  into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the special
-  case `Message := Witness`) on the verifier side.
+  (`oracleVerifier_coordinateWiseSpecialSoundWith`) for any `CWSSStructure`, via the no-challenge
+  bridge `OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The extractor is
+  trivial (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P`
+  refines the input relation by the claim predicate `P`, so accepting into its language forces the
+  input into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the
+  special case `Message := Witness`) on the verifier side.
 
   Perfect completeness — that an honest prover's claim `f stmt oStmt` lands in `toORelOut` whenever
   the input is in `relIn` and `f` respects `P` — is deferred: it needs the same all-pure
   oracle-reduction completeness reasoning as `SendSingleWitness.oracleReduction_completeness`, and
-  is orthogonal to the CWSS target here. This design supersedes the previous effectful-verifier one
-  (whose completeness proof no longer applies).
+  is orthogonal to the CWSS target here.
 
   ## References
 

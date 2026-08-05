@@ -10,26 +10,47 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 import Mathlib.Data.Fintype.Pi
 
 /-!
-# Ring-Switching Profile
+# The packing profile — data layer of `Packing`
 
-The `RingSwitchingProfile` abstraction captures the packing-layer data that every ring-switching
-reduction needs, so that the protocol skeleton can be written once and instantiated by Binius
-(DP24), Hachi (NOZ26 / ePrint 2026/156), and future small-ring/large-ring PCS work.
+`RingSwitchingProfile` is the data a `Packing` ring switch needs before any protocol is
+spoken, and nothing more:
 
-It is a `structure` passed **explicitly** (not a `class`): distinct profiles may share the same
-carriers `(B, L, κ)` (e.g. with different bases), so instance resolution would be ambiguous.
+* a **basis** exhibiting the large ring `L` as free of rank `2^κ` over the small ring `B` —
+  what makes packing possible in the first place: blocks of `2^κ` small-ring coefficients
+  become single `L`-elements, and back;
+* a **carrier** `A` — the ring in which the relocation checks are computed. The carrier must
+  hold the packed polynomial's values and the evaluation point *simultaneously and
+  independently*, which is why it comes with
+* **two embeddings** `φ₀, φ₁ : L →+* A` — one transports evaluation-point data, the other
+  polynomial data, so that products `φ₀(x) · φ₁(y)` keep the two roles apart inside `A`
+  (when the roles need no separation, the carrier may be `L` itself and the embeddings
+  cheap maps like `id` or an automorphism);
+* **coordinate maps** `decomposeRows`/`decomposeColumns : A → (Fin κ → Fin 2) → L` — the
+  `2^κ` `L`-coordinates of a carrier element, one per basis index, with two
+  **reconstruction laws** stating that every carrier element is recovered from its
+  coordinates as a `φ₀`/`φ₁`-weighted sum over the embedded basis.
 
-It is stated over `CommRing` (not `Field`): Hachi's carrier `L = R_q` is not a field. The
-`Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites in the
-ring-switching files, not here.
+The reconstruction laws make the coordinates faithful (they rule out law-free profiles such
+as `decomposeRows ≡ 0`), but they are the data-layer boundary, not a soundness theorem: the
+protocol proofs still connect the coordinates to `packMLE`, the honest folded element, and
+the instance's own identities, each instance from its own algebra.
 
-This file holds only the abstract structure (no Binius dependency), so `Prelude.lean` can import it
-and parameterize the protocol over it; the Binius instance `binaryTowerProfile` lives in
-`Prelude.lean`, after the tensor-algebra definitions it is built from.
+## Design notes
 
-## Fields and their two instantiations
+* It is a `structure` passed **explicitly** (not a `class`): distinct profiles may share the
+  same carriers `(B, L, κ)` (e.g. with different bases), so instance resolution would be
+  ambiguous.
+* It is stated over `CommRing` (not `Field`): carriers of interest include non-field rings.
+  The `Field`-only steps (Schwartz–Zippel over `|L|`) stay at the soundness use-sites, not
+  here.
+* This file holds only the abstract structure, so the sibling `Prelude.lean` can import it
+  and parameterize the interactive protocol over it; the binary-tower instance
+  `binaryTowerProfile` lives in `Prelude.lean`, after the tensor-algebra definitions it is
+  built from.
 
-| field | Binius (DP24) | Hachi (ePrint 2026/156) |
+## Instantiations
+
+| field | Binius ([DP24]) | Hachi §3 head ([NOZ26], planned) |
 |---|---|---|
 | `B`, `L` | small field `K`, tower field `L` | `R_q^H ≅ F_{q^k}`, `R_q` |
 | `basis` | binary `K`-basis of `L`, rank `2^κ` | `ψ`; ArkLib `κ = log₂(d/k)` |
@@ -37,19 +58,23 @@ and parameterize the protocol over it; the Binius instance `binaryTowerProfile` 
 | `φ₀`, `φ₁` | `α ↦ α ⊗ 1`, `α ↦ 1 ⊗ α` | `id`, the automorphism `σ₋₁` |
 | `decomposeRows`/`Columns` | `L`-coords of `ŝ` in `L ⊗_K L` | coords of `Y ∈ R_q` via `ψ` |
 
-The only structural difference — Hachi has no separate tensor object (`A = L`, `φ₀ = id`,
-`φ₁ = σ₋₁`) while Binius has `A = L ⊗_K L` — is absorbed by making `A`, `φ₀`,
-and `φ₁` explicit fields.
-The two `Prop`-valued fields `decomposeRows_spec` / `decomposeColumns_spec` are the base
-coordinate-reconstruction laws tying `decomposeRows`/`decomposeColumns` to `φ₀`/`φ₁`/`basis`.
-They rule out law-free coordinate maps, but they are not a standalone generic soundness theorem:
-the batching and sumcheck proofs still have to connect these coordinates to `packMLE`,
-`embedded_MLP_eval`, `compute_A_func`, and the instance-specific eq̃/trace identities. Each
-instance discharges those protocol-level obligations from its own algebra (Binius: tensor
-`Basis.sum_repr`; Hachi: Theorem 2 plus its CWSS soundness argument).
+The only structural difference between the two — a genuine tensor carrier versus `A = L`
+with an automorphism — is absorbed by making `A`, `φ₀`, and `φ₁` explicit fields. Binius
+discharges the reconstruction laws by `Basis.sum_repr` for the base-changed bases; the Hachi
+head will discharge them from its trace identity. The `Lift` construction
+(`../Lift/`) does not instantiate this profile at all — see the family umbrella
+`ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy.
 
 See also: the KB concept page `docs/kb/concepts/ring-switching.md` and the blueprint section
-`blueprint/src/proof_systems/ring_switching.tex` for the protocol, phases, and security statements.
+`blueprint/src/proof_systems/ring_switching.tex` for the protocol, phases, and security
+statements.
+
+## References
+
+* [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
+* [NOZ26] Nguyen, N. K., O'Rourke, G., and Zhang, J. "Hachi: Efficient Lattice-Based Multilinear
+  Polynomial Commitments over Extension Fields."
 -/
 
 namespace RingSwitching

@@ -17,10 +17,10 @@ inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^
 Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
 which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
 and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge. Still to come: the remaining §4.3+/§4.5
-subprotocols and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`) is the one documented `sorry` in the tree; see the `TODO` blocks in
-`Composition.lean` and `Commitment.lean`.
+(§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
+tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
+proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
+`Commitment.lean`). See the `TODO` blocks in `Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 

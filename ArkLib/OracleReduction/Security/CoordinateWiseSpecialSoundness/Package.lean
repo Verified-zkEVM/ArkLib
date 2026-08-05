@@ -12,8 +12,8 @@ import ArkLib.OracleReduction.Composition.Sequential.IsPure
 
 A `CWSSPackage` bundles a verifier with everything needed to state and reuse its coordinate-wise
 special soundness (CWSS): the challenge structure `struct`, the input/output relations
-`relIn`/`relOut`, a purity witness `isPure`, and the CWSS certificate `isCWSS`, all with respect to
-a fixed sampling `(init, impl)`.
+`relIn`/`relOut`, a purity witness `isPure`, the named extraction algorithm `extractor`, and the
+CWSS certificate `isCWSS`, all with respect to a fixed sampling `(init, impl)`.
 
 The point is composition. `CWSSPackage.append` — written with the infix `▷` — chains two packages
 along a matching seam (`L₁.relOut = L₂.relIn`, discharged by `rfl`): it appends the verifiers
@@ -56,7 +56,7 @@ to a fixed sampling `(init, impl)`. Compose packages with `CWSSPackage.append` /
 
 Carrying the extractor as a *field* (rather than existentially inside the certificate) means a
 composed chain exposes an actual end-to-end extractor — `chain.extractor` — which is what a
-later knowledge-error accounting must run, and what keeps escape-widened certificates honest
+later knowledge-error accounting must run, and what makes the certificate content-bearing
 (see `Verifier.treeSpecialSoundWith`). The existential form remains available as
 `L.isCWSS.toCWSS`. -/
 structure CWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

@@ -74,7 +74,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 /-- The `Z`-packed table evaluation (Hachi Eqs. (25)–(26) left-hand side):
 `hatEval w̃ a₀ = ∑_{j ∈ {0,1}^{mLow}} ŵⱼ·eq(j, a₀)` with `ŵⱼ := ∑ᵢ w̃_{j‖i}·zpow i` — the
 reading of the committed table as an `F`-entried table along the `Z`-power basis `zpow`
-(honestly `zpow i = Z^{⟨i⟩}`, the power basis of `F/F_q`). **Sorried (G3-adjacent)**. -/
+(honestly `zpow i = Z^{⟨i⟩}`, the power basis of `F/F_q`). **Sorried**. -/
 def hatEval (φF : ZMod q →+* F) (zpow : Fin (2 ^ κ) → F) (w : LiftedWitness Φ μ n)
     (a₀ : Fin mLow → F) : F :=
   sorry

@@ -26,7 +26,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
     a no-challenge tree lists exactly one transcript.
   * `ProtocolSpec.ChallengeTree.onlyTranscript` (+ `onlyTranscript_mem`) — that unique transcript.
   * `Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx` — the bridge.
-  * `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` and its `OracleVerifier` analogue.
+  * `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` and its `OracleVerifier`
+    analogue.
 -/
 
 noncomputable section

@@ -32,7 +32,7 @@ residue is minimal among all its integer representatives, so wraparound of the `
 the extractor's `VerifiedBlock.scaled_short` obligation consumes in Lemma 8
 (`QuadEval.Soundness`).
 
-This file bridges the gadget algebra (`Hachi.Gadget.Basic`) and the centered norms
+This file bridges the gadget algebra (`Hachi.Gadget.Core`) and the centered norms
 (`Data.Lattices.CyclotomicRing.NormBounds`). The Hachi-reduction-specific norm constants
 `B_z` / `βSq` that these bounds feed live with Lemma 8 in `QuadEval.Soundness`, not here.
 

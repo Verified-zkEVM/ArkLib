@@ -32,9 +32,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
     (`Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx`).
 
   **Composition is deliberately binary**: multi-step chains are built by recursion over the binary
-  append (the `CoordinateWise` packages' `▷`, in `CoordinateWiseSpecialSoundness/Escape.lean`), which
-  keeps the composed extractor a nameable function instead of a transport across an `n`-ary shape
-  identity. The protocol-level `ProtocolSpec.seqCompose` is unaffected.
+  append (the `CoordinateWise` packages' `▷`, in `CoordinateWiseSpecialSoundness/Escape.lean`),
+  which keeps the composed extractor a nameable function instead of a transport across an `n`-ary
+  shape identity. The protocol-level `ProtocolSpec.seqCompose` is unaffected.
 
   Plain `(k)`-special soundness is the `ℓᵢ = 1` instance (`CWSSStructure.ofSpecialSound`); see also
   `Security.SpecialSoundness`.

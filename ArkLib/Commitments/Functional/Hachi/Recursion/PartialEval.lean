@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 
 /-!
-  # Partial evaluations — Hachi §4.5, Eq. (24) — skeleton (milestone G2)
+  # Partial evaluations — Hachi §4.5, Eq. (24) — skeleton
 
   First recursion adapter: peel the top `κ` variables of the evaluation claim
   `mle[w̃](a) = y′` produced by the §4.3 chain, in preparation for the `Z`-packing that closes
@@ -18,7 +18,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
   `y′ = ∑_{i ∈ {0,1}^κ} eq(i, a₁) · yᵢ`, where `yᵢ := ∑_{j ∈ {0,1}^{mLow}} w̃_{j‖i}·eq(j, a₀)`.
 
   * **message (P→V)** — the partial evaluations `(yᵢ)_{i ≠ 0}` (all but one);
-  * **derive-`y₀`** (design D7, paper footnote 10) — the verifier *derives*
+  * **derive-`y₀`** (paper footnote 10) — the verifier *derives*
     `y₀ := (y′ − ∑_{i ≠ 0} eq(i, a₁)·yᵢ) / eq(0, a₁)`-style instead of checking the display
     equation, keeping this head **pure** (total, no guard) and the Eq. (24) consistency true by
     construction;
@@ -46,13 +46,17 @@ open CompPoly ArkLib.Lattices.CyclotomicModulus
 open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 /-- The partial-evaluation wire format: one prover message carrying the `2^κ − 1` partial
-evaluations `(yᵢ)_{i ≠ 0}` (the remaining `y₀` is derived, design D7). -/
+evaluations `(yᵢ)_{i ≠ 0}` (the remaining `y₀` is derived). -/
 @[reducible] def pSpecPartialEval (F : Type) (κ : ℕ) : ProtocolSpec 1 :=
   ⟨!v[.P_to_V], !v[{i : Fin (2 ^ κ) // i ≠ 0} → F]⟩
 
+/-- The partial-evaluation protocol has no challenge round: its single message is a `P→V`, so
+the challenge index type is empty. -/
 instance {F : Type} {κ : ℕ} : IsEmpty (pSpecPartialEval F κ).ChallengeIdx :=
   ⟨fun ⟨0, h⟩ => nomatch h⟩
 
+/-- Sampleability of the challenges of `pSpecPartialEval`: vacuous, as there is no challenge
+round (the challenge index type is empty). -/
 instance {F : Type} {κ : ℕ} [SampleableType F] :
     ∀ i, SampleableType ((pSpecPartialEval F κ).Challenge i) :=
   fun i => isEmptyElim i
@@ -79,20 +83,20 @@ variable (mLow κ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `i`-th true partial evaluation of the table (Eq. (24)):
-`partialEvalAt w a₀ i = ∑_{j ∈ {0,1}^{mLow}} w̃_{j‖i}·eq(j, a₀)`. **Sorried (G2)** — index
+`partialEvalAt w a₀ i = ∑_{j ∈ {0,1}^{mLow}} w̃_{j‖i}·eq(j, a₀)`. **Sorried** — index
 bookkeeping over the `wTable` encoding. -/
 def partialEvalAt (φF : ZMod q →+* F) (w : LiftedWitness Φ μ n)
     (a₀ : Fin mLow → F) (i : Fin (2 ^ κ)) : F :=
   sorry
 
 /-- The Lagrange/equality weight `eq(i, a₁)` of the Boolean index `i ∈ {0,1}^κ` at the point
-`a₁ ∈ F^κ` (little-endian bits of `i`, matching the `wTable` convention). **Sorried (G2)** —
+`a₁ ∈ F^κ` (little-endian bits of `i`, matching the `wTable` convention). **Sorried** —
 `MvPolynomial.eqTilde` at the bit vector of `i`. -/
 def eqWeight (a₁ : Fin κ → F) (i : Fin (2 ^ κ)) : F :=
   sorry
 
 /-- The mle splitting identity behind Eq. (24):
-`mle[w̃](a₀ ++ a₁) = ∑ᵢ eq(i, a₁)·partialEvalAt w̃ a₀ i`. **Sorried (G2)** — the `eq`
+`mle[w̃](a₀ ++ a₁) = ∑ᵢ eq(i, a₁)·partialEvalAt w̃ a₀ i`. **Sorried** — the `eq`
 factorization `eq(j‖i, a₀‖a₁) = eq(j, a₀)·eq(i, a₁)`. -/
 theorem wTableMleEval_split (φF : ZMod q →+* F) (w : LiftedWitness Φ μ n)
     (a : Fin (mLow + κ) → F) :
@@ -102,9 +106,9 @@ theorem wTableMleEval_split (φF : ZMod q →+* F) (w : LiftedWitness Φ μ n)
           partialEvalAt Φ mLow κ φF w (fun j => a (Fin.castAdd κ j)) i := by
   sorry
 
-/-- Derive the full partial-evaluation family from the message (design D7, paper footnote 10):
+/-- Derive the full partial-evaluation family from the message (paper footnote 10):
 install the sent `(yᵢ)_{i≠0}` and *derive* `y₀` so that Eq. (24)'s display equation holds by
-construction. **Sorried (G2)** — needs `eq(0, a₁)`'s invertibility handling (the honest
+construction. **Sorried** — needs `eq(0, a₁)`'s invertibility handling (the honest
 derivation divides by `∏ⱼ (1 − a₁ⱼ)`; the degenerate case is absorbed into the derivation's
 convention and the CWSS proof). -/
 def deriveFamily (value : F) (pointHigh : Fin κ → F)
@@ -112,7 +116,7 @@ def deriveFamily (value : F) (pointHigh : Fin κ → F)
   sorry
 
 /-- The partial-evaluation verifier (Hachi §4.5, Eq. (24)): a **pure** head — it splits the
-point, installs the sent partials, and derives `y₀`. No runtime check (design D7). -/
+point, installs the sent partials, and derives `y₀`. No runtime check. -/
 def partialEvalVerifier {TCom : Type} :
     Verifier oSpec (WEvalStatement TCom F (mLow + κ)) (PartialEvalStatement TCom F mLow κ)
       (pSpecPartialEval F κ) where
@@ -154,10 +158,10 @@ def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBo
 
 variable [SampleableType F]
 
-/-- **The partial-evaluation extraction algorithm (skeleton, G2).**
+/-- **The partial-evaluation extraction algorithm.**
 
-**Sorried** — this def is the milestone's *algorithm* (the transcript-level pull-back of the proof
-plan on `partialEval_coordinateWiseSpecialSoundWith`). -/
+**Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
+proof plan on `partialEval_coordinateWiseSpecialSoundWith`). -/
 noncomputable def partialEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
@@ -167,10 +171,10 @@ noncomputable def partialEvalExtractor
         (pSpec := pSpecPartialEval F κ))).arity :=
   sorry
 
-/-- **CWSS of the partial-evaluation head (skeleton, G2) — a sound, zero-error seam, at the
+/-- **CWSS of the partial-evaluation head — a sound, zero-error seam, at the
 named `partialEvalExtractor`** (the named form is deliberate — see
-`Verifier.treeSpecialSoundWith`; filling G2 means filling the extractor and this specification
-about it).
+`Verifier.treeSpecialSoundWith`; closing this gap means filling the extractor and this
+specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
 (the no-challenge bridge; the verifier is pure): from a `relPartialEval` witness at the derived

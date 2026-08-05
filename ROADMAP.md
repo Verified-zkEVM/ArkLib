@@ -41,7 +41,7 @@ It would be nice to use the theories in ArkLib to prove foundational results suc
 
 ## Supporting Operations
 
-The below are content for an older version of the roadmap. Some of these contents are being actively worked on (especially computable polynomials).
+The below are lower-priority supporting items. Some of these are being actively worked on (especially computable polynomials).
 
   - [ ] Computable Univariate Polynomials — now developed upstream in the `CompPoly` project; local
     additions live in [`ArkLib/ToCompPoly/Univariate/`](ArkLib/ToCompPoly/Univariate)
@@ -64,9 +64,11 @@ The below are content for an older version of the roadmap. Some of these content
     - [ ] Define and develop basic results on linear codes.
     - [ ] Define basic codes such as Reed-Solomon.
     - [ ] Prove proximity gap and interleaved distance results (up to one-third of the unique decoding distance).
-  - [ ] Binary Tower Fields — not yet formalized
+  - [ ] Binary Tower Fields — now developed upstream in the `CompPoly` project
+    (`CompPoly/Fields/Binary/Tower/`)
     - [ ] Define iterated quadratic extensions of the binary field (Wiedermann construction), and prove that the resulting ring is a field.
     - [ ] Define efficient representation of elements in a binary tower field (using `BitVec`), efficient operations on them (see Binius paper), and prove that the resulting structure is a field isomorphic to the definition above.
-  - [ ] Large Scalar Fields used in Curves — not yet formalized
+  - [ ] Large Scalar Fields used in Curves — prime fields now developed upstream in the `CompPoly`
+    project (`CompPoly/Fields/`)
     - [ ] Low-priority for now.
     - [ ] Development on this should be done over at [`FFaCiL`](https://github.com/argumentcomputer/FFaCiL.lean/tree/main).

@@ -391,8 +391,8 @@ the two-round `pSpec` is coordinate-wise special sound for `foldStructure` **at 
 extractor** `treeExtractor relOut mkWitness`, provided a witness assembler `mkWitness` that turns
 per-branch `relOut`-witnesses at star-shaped challenge families into a `relIn`-witness. This
 discharges all tree/extractor plumbing once; the protocol-specific work (Hachi Lemma 8's case
-split and subtract-divide) lives entirely in `hmk`. Naming the extractor is what makes the
-resulting certificate content-bearing over escape-widened relations (see
+split and subtract-divide) lives entirely in `hmk`. Naming the extractor keeps the extraction
+*algorithm* inside the statement, which the existential closure loses (see
 `Verifier.treeSpecialSoundWith`). -/
 theorem coordinateWiseSpecialSoundWith_of_mkWitness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

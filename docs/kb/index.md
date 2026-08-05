@@ -26,6 +26,8 @@ This is the main catalog for ArkLib's knowledge base.
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
   development.
+- [`papers/HMZ25.md`](papers/HMZ25.md) - sublinear proofs over polynomial rings and the generic
+  `Lift` quotient-evaluation switch.
 - [`papers/Jo26.md`](papers/Jo26.md) - interleaving stability for generator MCA and curve
   decodability.
 

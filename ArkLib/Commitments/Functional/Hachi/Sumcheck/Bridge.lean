@@ -22,7 +22,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   `(0, zcTargetAlpha)`. The bridge is pure reshaping — the two directions are the algebraic
   identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`
   (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`) — so the
-  only sorried piece is the pull-back through those (themselves sorried F5) identities.
+  only sorried piece is the pull-back through those (themselves sorried) identities.
 
   ## References
 
@@ -52,7 +52,7 @@ installed targets imply the zero-check's point-evaluation claims, through the ba
 identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The bound-sanity
 conjunct is shared verbatim.
 
-**Sorried** (a corollary of the sorried F5 identities `sum_sumcheckPolyZero` /
+**Sorried** (a corollary of the sorried batching identities `sum_sumcheckPolyZero` /
 `sum_sumcheckPolyAlpha`, plus `challenges`-uniqueness `Fin 0 → F`). -/
 theorem mem_relZeroCheck_of_roundRel
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))

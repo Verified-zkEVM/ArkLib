@@ -16,18 +16,44 @@ Work through these in order. Do not stop until every item is complete.
 
 ### 0. Establish the real PR base
 
-- Run `git fetch origin main` first, then compute scope and `_generated/` drift against
-  **`origin/main`**, not local `main`. The local `main` ref can be many commits stale (e.g. you
-  branched, then `origin/main` advanced via merges you never pulled). Diffing `main...HEAD` against
-  a stale local `main` inflates the file list and can report phantom `_generated/` drift that
-  actually matches the remote. Use `git diff --stat origin/main...HEAD` for scope and
-  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view.
+- Verify that `origin` is the repository that owns the PR base before trusting `origin/main`.
+  Contributor checkouts often use a personal fork as `origin`, whose `main` may lag the canonical
+  repository even after `git fetch origin main`. Inspect the PR with
+  `gh pr view <number> -R <canonical-owner>/<repo> --json baseRefName,headRefName`, compare the
+  configured remote URL, and fetch the canonical base into a separate tracking ref when needed
+  (for example `canonical/main`). Use that canonical ref for all scope and `_generated/`
+  comparisons below.
+- Fetch the selected canonical base first (`git fetch origin main` when `origin` is canonical),
+  then compute scope and `_generated/` drift against its remote-tracking ref, not local `main`.
+  The local `main` ref can be many commits stale (e.g. you branched, then the canonical `main`
+  advanced via merges you never pulled). Diffing `main...HEAD` against a stale local `main`
+  inflates the file list and can report phantom `_generated/` drift that actually matches the
+  remote. With a canonical `origin`, use `git diff --stat origin/main...HEAD` for scope and
+  `git diff --quiet origin/main...HEAD -- docs/kb/_generated/` for the CI guard's real view;
+  otherwise substitute the canonical tracking ref selected above.
 - **Also account for uncommitted work.** `origin/main...HEAD` (three-dot) only shows *committed*
   changes; a make-pr-ready pass often runs with staged/working-tree edits still in flight (e.g. a
   half-finished file). Those appear only in `git diff HEAD` (or `git diff origin/main`, two-dot).
   Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
   and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
   committed ones. The whole-tree view is `git diff --stat origin/main`.
+- **Check for an in-progress merge before trusting any of the above.** Run
+  `cat .git/MERGE_HEAD 2>/dev/null`. If it exists, the author is mid-merge with the resolution
+  staged, and the union formula **over-reports badly**: every file the base changed since the
+  merge-base shows up as if this branch authored it. On a real run this attributed an entire
+  directory reorganization, a new README, and several doc pages — about 50 files, all of them
+  `origin/main`'s own work — to the branch, and produced a deleted-path list containing renames the
+  branch never made. When `MERGE_HEAD` is present, confirm it is the canonical base
+  (`git merge-base --is-ancestor $(cat .git/MERGE_HEAD) origin/main`, and
+  `git log --oneline $(cat .git/MERGE_HEAD)..origin/main` should be empty), then use the **two-dot**
+  `git diff origin/main` as the single authoritative PR surface — worktree versus base is exactly
+  what the PR will contribute once the merge is committed. Derive the deleted/renamed list the same
+  way: `git diff --name-status -M origin/main | awk '/^[DR]/ {print $2}'`. Sanity-check the
+  conclusion on one file: if `git ls-tree origin/main <dir>` and `git ls-files <dir>` agree but
+  `git ls-tree HEAD <dir>` differs, that directory is the base's work, not the branch's.
+  More generally, whenever the worktree is the thing being shipped, two-dot `git diff origin/main`
+  is the formula that cannot over- or under-report; reach for the union only when you specifically
+  need to separate committed from uncommitted work.
 - **Separate your own work from a merged-in sibling branch.** If this branch has merged another
   in-flight feature branch (e.g. `foo-infra`), the `origin/main...HEAD` scope will include files
   that are **byte-identical** to that sibling branch's PR. Detect them with
@@ -285,6 +311,63 @@ Then check the places a path grep structurally cannot reach:
   disappears rather than failing.
 - Non-Lean assets living under `ArkLib/` (generated overview HTML, diagrams) — they escape both the
   Lean build and the Markdown link check.
+
+**Dead *declaration* names outlive dead paths, and nothing catches them at all.** A refactor that
+renames or splits a theorem leaves every prose mention of the old name behind: `lake build` only
+checks names in *code*, so a backticked `` `foo_bar` `` in a docstring, a kb page, or `repo-map.md`
+can name something that has not existed for months. On a real run this was the single largest
+finding class — a chain certificate advertised under a name that lost its `Escape` suffix, an escape
+event under a name that was never defined, a commitment field cited as a lemma, an upstream instance
+that does not exist in the pinned dependency, and a composed-event helper under an entirely wrong
+namespace. Sweep it: extract the backticked lower/UpperCamelCase identifiers from every docstring
+the branch touched, and for each one check it resolves as a declaration —
+
+```bash
+DECL='(def|theorem|lemma|abbrev|structure|instance)'
+MOD='(noncomputable |protected |private )*'
+git grep -nE "^[[:space:]]*${MOD}${DECL}[[:space:]]+<name>([[:space:]]|\(|\{|:|$)" -- 'ArkLib/**'
+```
+
+Note `git grep -E` is POSIX ERE: `\b` and `\s` are unreliable, so anchor with `[[:space:]]` and an
+explicit trailing class as above, or the sweep silently reports everything as missing. For a
+namespaced name (`A.B.c`), grep finds only the leaf, so confirm the full path really resolves with a
+throwaway probe instead of trusting the grep:
+
+```bash
+printf 'import ArkLib.<Module>\n#check @<Full.Declaration.Name>\n' > /tmp/probe.lean
+lake env lean /tmp/probe.lean
+```
+
+**Bare internal planning codes are as dead as the plan file that defined them.** Step 0 strips plan
+*files* and step 3 forbids citing them, but the *codes* survive every automated check and every path
+grep, because they are not paths: `milestone F2.0`, `design D5`, `Phase-G`, `(B4)`, `(D12 / R6)`,
+`sorried F5`, `filling F7`, `**(S1)**`, `**(C-1)**`. Once the plan is gone they are unresolvable
+noise. Sweep and delete them, keeping the substance (`(σ₋₁-twisted, design D5)` → `(σ₋₁-twisted)`)
+and re-anchoring the disclosure to a paper locator (`[NOZ26] §4.5`) or plain prose
+("closing this gap") rather than the internal process:
+
+```bash
+C='(B|C|D|F|G|R|S)-?[0-9]+(\.[0-9]+)?'
+CODE="\(${C}( ?/ ?${C})?( [a-z]+)?\)"
+git grep -nE "milestone|design [DG][0-9]|Phase-[A-Z]|${CODE}" -- 'ArkLib/**' 'blueprint/src/**'
+```
+
+**Hand-maintained dashboards drift silently and loudly.** A status page under `ArkLib/` (this repo
+has `Hachi/hachi-overview.html`) hard-codes file counts, per-file `sorry` counts, row spans, and a
+status legend; none of it is generated, so all of it rots. Recompute every number from ground truth
+before believing it — `sorry` counts from the build log
+(`grep -c 'declaration uses .sorry.'` per file, which agrees with a comment-stripped source scan)
+and file/umbrella counts from `git ls-files` — then check the page against itself: the totals it
+prints must equal the sum of its own data table, every `status` value used in the data must appear
+in the legend, and any "rows N–M" claim must match the rows actually carrying that status (a single
+row with a different status in the middle makes a range wrong — enumerate rather than assume). On a
+real run this page was understating open `sorry`s by 40%, was three files and one umbrella behind,
+and used a status with no legend entry.
+
+**Re-derive any number or span a subagent reports.** Counts and row ranges are exactly where
+parallel reviewers disagree with each other and with the source; two reviewers of the same page
+returned different totals, and one asserted a chain spanned rows 1–9 when its own definition's
+docstring said rows 1–12. Settle each from the declaration, not from the report.
 
 **Do not "fix" `docs/kb/_generated/`.** `declarations.json` and `lean-citations.json` still index
 the deleted path; that is expected. Regenerating and committing them trips the CI guard described in

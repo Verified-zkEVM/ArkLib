@@ -19,9 +19,9 @@ related_modules:
 
 ## At A Glance
 
-`ACFY24` is the ePrint reference for WHIR. The WHIR protocol files were removed from
-`ArkLib/ProofSystem/`; what the paper still drives lives in the coding-theory layer — Reed-Solomon
-definitions, list-decodability notions, and the folding/proximity-gap development.
+`ACFY24` is the ePrint reference for WHIR. What the paper drives in ArkLib sits entirely in the
+coding-theory layer — Reed-Solomon definitions, list-decodability notions, and the
+folding/proximity-gap development; there is no WHIR protocol folder under `ArkLib/ProofSystem/`.
 
 ## What ArkLib Uses From This Paper
 
@@ -50,8 +50,8 @@ definitions, list-decodability notions, and the folding/proximity-gap developmen
 
 - ArkLib frequently lifts paper notions into more reusable abstractions than the paper's original
   presentation.
-- The WHIR-related interfaces that used to live at the protocol layer have been folded into the
-  more general coding-theory abstractions under `ArkLib/Data/CodingTheory/`.
+- ArkLib carries the WHIR-related interfaces as general coding-theory abstractions under
+  `ArkLib/Data/CodingTheory/`, not as a dedicated protocol layer.
 
 ## Open Formalization Gaps
 

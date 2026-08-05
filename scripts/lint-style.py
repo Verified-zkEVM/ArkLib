@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """
-Lint a file or files from mathlib for style.
+Lint a file or files from ArkLib for style.
 
 Sample usage:
 
-    $ ./scripts/lint-style.py $(find Mathlib -name '*.lean')
+    $ ./scripts/lint-style.py $(find ArkLib -name '*.lean')
 
 which will lint all of the Lean files in the specified directories.
 

@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 
 /-!
-  # Trace handoff — Hachi §4.5, Eqs. (27)–(28) — skeleton (milestone G3)
+  # Trace handoff — Hachi §4.5, Eqs. (27)–(28) — skeleton
 
   The recursion-closing adapter: convert the `Z`-packed `F`-claim of Eq. (26) into the **next
   iteration's `Rq`-quadratic statement**, re-entering the chain at the `QuadEval` seam
@@ -18,11 +18,11 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
     `d′`), Eq. (27): `p := eᵀ(σ₋₁(ψ(f))ᵀ ⊗ I)ψ(ŵ)`, where `e`/`f` are the `eq`-tensor halves
     of the low point and `ψ` is the packing bijection of Theorem 2
     (`ArkLib/Data/Lattices/CyclotomicRing/Subfield/Packing.lean`, `psi`);
-  * **check (guarded, design D6)** — the trace equation `Tr_H(p·…) = (d′/k)·value` (Theorem 2 /
+  * **check (guarded)** — the trace equation `Tr_H(p·…) = (d′/k)·value` (Theorem 2 /
     `traceH_psi_mul_conj`): it reads the packed claim `value`, which the pinned next-iteration
     statement type drops, so it must be a runtime guard — the same argument as the §3.1 head;
   * **output** — the next iteration's `QuadEvalStatement` over `Φ'`: bases `avec`/`bvec` are the
-    `eq`-tensor packings of the low point (σ₋₁-twisted per design D5), the evaluation is `p`,
+    `eq`-tensor packings of the low point (σ₋₁-twisted), the evaluation is `p`,
     and the outer commitment is the **reinterpretation** of `t` at ring dimension `d′`.
 
   ## No new commitment — reinterpretation of `t`
@@ -30,10 +30,10 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
   §4.5 sends only `(yᵢ)ᵢ` and `p` (Eq. (28)): the next iteration's commitment **is** the lift
   commitment `t` from Figure 4, *re-read* at ring dimension `d′` — the `Z`-packing (Eq. (25))
   composed with `ψ` is a fixed `Zq`-linear bijection on coefficient tables, and the lift
-  commitment's message-packing convention is chosen (Phase G, `LiftCom` instantiation) to make
+  commitment's message-packing convention is chosen (`LiftCom` instantiation) to make
   `Com_{d}(w̃) = Com'_{d′}(ψ(ŵ))` a definitional re-indexing. This is what ties the next
   iteration's extracted openings back to `t` (`reinterpretCom` below abstracts the re-reading);
-  norm growth under `ψ` is Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`, the `cInfNorm_psi_le` sorry, gate G1).
+  norm growth under `ψ` is Lemma 6 (`‖ψ(a)‖∞ ≤ 2β`, the `cInfNorm_psi_le` sorry).
 
   ## Soundness shape
 
@@ -82,7 +82,7 @@ instance : IsEmpty (pSpecHandoff Φ').ChallengeIdx := ⟨fun ⟨0, h⟩ => nomat
 instance : ∀ i, SampleableType ((pSpecHandoff Φ').Challenge i) := fun i => isEmptyElim i
 
 /-- The trace check (Eq. (26)/(27) right-hand side, Theorem 2): `Tr_H` of `p` against the
-`σ₋₁`-twisted packed `eq`-tail equals `(d′/k)·value`. **Sorried (G3)** — `traceHComp` at the
+`σ₋₁`-twisted packed `eq`-tail equals `(d′/k)·value`. **Sorried** — `traceHComp` at the
 `fixedSubring` instantiation of `F` (decidable via the computable trace). -/
 def traceCheck {TCom : Type} (φF : ZMod q →+* F)
     (stmt : HatEvalStatement TCom F mLow) (p : Rq Φ') : Bool :=
@@ -90,8 +90,8 @@ def traceCheck {TCom : Type} (φF : ZMod q →+* F)
 
 /-- The next-iteration statement (Eq. (27) as a `QuadEval` claim over `Φ'`): the
 **reinterpreted** commitment `reinterpretCom stmt.t`, the `eq`-tensor bases derived
-from the low point (σ₋₁-twisted, design D5), and the evaluation `p`. (The next iteration's key
-`pp'` is not statement data; it enters only the next iteration's relations.) **Sorried (G3)** —
+from the low point (σ₋₁-twisted), and the evaluation `p`. (The next iteration's key
+`pp'` is not statement data; it enters only the next iteration's relations.) **Sorried** —
 the `e`/`f` packing (`psi` on the `eq`-tensor halves) and the split bookkeeping
 `mLow = m' + r' + (α' − κ)`. -/
 def toNextQuadEvalStatement {TCom : Type} (φF : ZMod q →+* F)
@@ -150,10 +150,10 @@ def handoffProver {TCom WitOut : Type} (φF : ZMod q →+* F)
 
 variable [SampleableType F]
 
-/-- **The trace-handoff extraction algorithm (skeleton, G3).**
+/-- **The trace-handoff extraction algorithm.**
 
-**Sorried** — this def is the milestone's *algorithm* (the transcript-level pull-back of the proof
-plan on `handoff_coordinateWiseSpecialSoundWith`). -/
+**Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
+proof plan on `handoff_coordinateWiseSpecialSoundWith`). -/
 noncomputable def handoffExtractor
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -165,9 +165,9 @@ noncomputable def handoffExtractor
         (pSpec := pSpecHandoff Φ'))).arity :=
   sorry
 
-/-- **CWSS of the trace handoff (skeleton, G3) — closing the recursion loop, at the named
+/-- **CWSS of the trace handoff — closing the recursion loop, at the named
 `handoffExtractor`** (the named form is deliberate — see `Verifier.treeSpecialSoundWith`;
-filling G3 means filling the extractor and this specification about it).
+closing this gap means filling the extractor and this specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
 (the probability-phrased no-challenge bridge tolerates the guard): acceptance forces
@@ -176,9 +176,9 @@ of `reinterpretCom t` that is eval-consistent for the `eq`-tensor bases with val
 opening back through the commitment reinterpretation and the `ψ`/`Z`-packing
 bijection (`psi_bijective`) to an opening `w̃` of `t`; Theorem 2 (`traceH_psi_mul_conj`) turns
 eval-consistency plus the guard's trace equation into `hatEval w̃ a₀ = value` — `relHatEval`
-membership. Norm bookkeeping through `ψ` is Lemma 6 (`cInfNorm_psi_le`, gate G1); the
-reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is the Phase-G `LiftCom`
-instantiation obligation. -/
+membership. Norm bookkeeping through `ψ` is Lemma 6 (`cInfNorm_psi_le`); the
+reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is an obligation of the concrete
+`LiftCom` instantiation ([NOZ26] §4.5). -/
 theorem handoff_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)

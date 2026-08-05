@@ -8,9 +8,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
 
-  **Skeleton of milestone B4** of the Hachi sumcheck track (inventoried as *generic machinery* in
-  `Commitments/Functional/Hachi/Composition.lean`): coordinate-wise special soundness (CWSS)
-  composition where the *left* factor may **reject at runtime**.
+  **Skeleton** of coordinate-wise special soundness (CWSS) composition where the *left* factor may
+  **reject at runtime**, as needed by the Hachi sumcheck ([NOZ26]); inventoried as *generic
+  machinery* in `Commitments/Functional/Hachi/Composition.lean`.
 
   ## Why guarded verifiers
 
@@ -35,14 +35,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   ## Contents
 
-  * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check,
-    design decision G3); purity is the `check := fun _ _ => true` special case
+  * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
+    purity is the `check := fun _ _ => true` special case
     (`IsGuarded.of_isPure`).
   * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append` (**sorried**;
-    B4.4: composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
+    composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
     `Verifier.IsPure.append`).
   * `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` — the escape-threaded
-    guarded binary CWSS append, and the *fundamental* B4.3 obligation (**sorried**; stated at
+    guarded binary CWSS append, the *fundamental* obligation here (**sorried**; stated at
     explicit guard data, since the composed escape event must name the left verdict map).
   * `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` — the plain guarded append,
     **proven** as a corollary of the escape-threaded one at the never-firing events.
@@ -72,8 +72,8 @@ variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut : Type}
 
 /-- A verifier is **guarded with** a `Bool`-valued `check` and a deterministic output map `out` if
 its verdict is `pure (out stmt tr)` when the check passes and `failure` otherwise. This is the
-faithful model of a verifier that rejects at runtime (design decision G3 of the sumcheck-track
-plan: `Bool`-valued checks; decidable-`Prop` consumers use `decide`). -/
+faithful model of a verifier that rejects at runtime (the check is `Bool`-valued; decidable-`Prop`
+consumers use `decide`). -/
 def IsGuardedWith (V : Verifier oSpec StmtIn StmtOut pSpec)
     (check : StmtIn → FullTranscript pSpec → Bool)
     (out : StmtIn → FullTranscript pSpec → StmtOut) : Prop :=
@@ -90,6 +90,7 @@ theorem IsGuarded.of_isPure (V : Verifier oSpec StmtIn StmtOut pSpec) (h : V.IsP
   obtain ⟨f, hf⟩ := h.is_pure
   exact ⟨fun _ _ => true, f, fun stmt tr => by simp [hf stmt tr]⟩
 
+/-- Every pure verifier is guarded automatically: the instance form of `IsGuarded.of_isPure`. -/
 instance (V : Verifier oSpec StmtIn StmtOut pSpec) [h : V.IsPure] : V.IsGuarded :=
   IsGuarded.of_isPure V h
 
@@ -104,7 +105,7 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
 /-- Guardedness is closed under `Verifier.append`: the composite check runs the left check on the
 transcript prefix and, if it passes, the right check on the suffix from the left output.
 
-**Sorried (B4.4).** Proof plan: mirror `Verifier.IsPure.append`
+**Sorried.** Proof plan: mirror `Verifier.IsPure.append`
 (`OracleReduction/Composition/Sequential/IsPure.lean`) — destructure both guard witnesses, take
 `check := fun s tr => check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd` and
 `out := fun s tr => out₂ (out₁ s tr.fst) tr.snd`, and normalize
@@ -114,9 +115,9 @@ theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₁.append V₂).IsGuarded := by
   sorry
 
-/-- **Guarded binary CWSS append, escape-threaded named form (skeleton of B4.3, the core of
-milestone B4).** Escape-threaded CWSS is preserved by `Verifier.append` when the left factor is
-merely *guarded* rather than pure, at the same composed extractor and event as the pure append.
+/-- **Guarded binary CWSS append, escape-threaded named form (skeleton).** Escape-threaded CWSS is
+preserved by `Verifier.append` when the left factor is merely *guarded* rather than pure, at the
+same composed extractor and event as the pure append.
 
 Stated at **explicit guard data** `(check₁, out₁, hV₁)` rather than at the bare `V₁.IsGuarded`,
 because the composed event has to *name* the left verdict map `out₁`. On rejected prefixes `out₁` is
@@ -128,8 +129,8 @@ statements — harmless, since escape events must be honest breaks at *all* `(st
 1. A guarded left-run lemma `append_run_guardedLeft`:
    `(V₁.append V₂).run stmt (tr₁ ++ₜ tr₂) = if check₁ stmt tr₁ then V₂.run (out₁ stmt tr₁) tr₂
    else failure` (mirror of `append_run_pure_left`, plus `failure_bind`). On an accepting leaf
-   (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`
-   (rejection lemma B4.1), so every surviving leaf has `check₁ = true` and the proof is literally
+   (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`,
+   so every surviving leaf has `check₁ = true` and the proof is literally
    the pure proof from there.
 2. Where the pure proof certifies each left-leaf output in `rel₂.language` via
    `pure_accepting_of_mem`, use its guarded analogue fed by the `check₁ = true` fact from delta 1.
@@ -156,7 +157,7 @@ theorem append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft
 /-- **Guarded binary CWSS append, plain named form** — a *proven corollary* of the escape-threaded
 obligation above at `esc₁ = esc₂ = fun _ _ => False`, where the composed event is propositionally
 never-firing and so eliminable. This is why the escape-threaded theorem, not this one, is the
-fundamental B4.3 obligation. -/
+fundamental obligation. -/
 theorem append_coordinateWiseSpecialSoundWith_of_guardedLeft
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
@@ -234,8 +235,8 @@ def _root_.CoordinateWise.CWSSPackage.toGuarded
 guarded analogue of `CWSSPackage.append`/`▷`. The composed verdict is guarded by the conjunction
 of both checks (`Verifier.IsGuarded.append`), the composed extractor is the left extractor on
 the prefix tree, and the composed certificate is the guarded binary append theorem
-`Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` (both currently sorried B4
-milestones — this definition is the *interface* the Hachi chain composes through). Written infix
+`Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` — this definition is the
+*interface* the Hachi chain composes through. Written infix
 as `L₁ ▷ L₂` (explicit synonym `▷ᵍ`). -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}

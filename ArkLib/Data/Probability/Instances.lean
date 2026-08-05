@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Quang Dao, Chung Thai Nguyen
+Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova
 -/
 
 import Mathlib.Probability.ProbabilityMassFunction.Monad
@@ -9,13 +9,13 @@ import ArkLib.Data.Probability.Notation
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
+
 /-! # Probability Instances -/
 
 
-open ProbabilityTheory Filter
-open NNReal Finset Function
+open ProbabilityTheory Filter NNReal Finset Function Real
 open scoped BigOperators ProbabilityTheory
-open Real
+
 
 -- TODO(dtumad): Move most of the stuff in this file to VCV and generalize as possible
 
@@ -41,6 +41,7 @@ instance [IsEmpty α] : IsEmpty (PMF α) := by
 end
 
 section ProbabilityTools
+
 /-- Unrolls `Pr_{ let x ← D }[P x]` into a sum of the form
 `∑' x, Pr[x] * (if P x then 1 else 0)`. -/
 theorem prob_tsum_form_singleton {α : Type} (D : PMF α) (P : α → Prop) [DecidablePred P] :
@@ -220,6 +221,19 @@ theorem do_two_uniform_sampling_eq_uniform_prod {α β : Type} [Fintype α] [Fin
     intro i h_ne
     simp only [ite_eq_right_iff, one_ne_zero, imp_false]
     exact id (Ne.symm h_ne)
+
+/-- The probability that a property `P` holds for a uniformly random `r : F` equals
+`ENNReal.ofReal` of the real-valued density `|{x : F // P x}| / |F|`. This is the
+`ENNReal.ofReal`-of-a-real-number form of `prob_uniform_eq_card_filter_div_card`, useful when the
+surrounding goal is stated over `ℝ` rather than `ℝ≥0`. -/
+theorem prob_uniform_eq_ofReal {F : Type} [Fintype F] [Nonempty F]
+    (P : F → Prop) [DecidablePred P] :
+    Pr_{let r ←$ᵖ F}[P r] = ENNReal.ofReal
+                    (((Finset.filter (α := F) P Finset.univ).card : ℝ) / (Fintype.card F : ℝ)) := by
+  convert prob_uniform_eq_card_filter_div_card P using 1
+  rw [ENNReal.ofReal_div_of_pos] <;> norm_num
+  exact Fintype.card_pos
+
 
 /--
 **Generic Probability Splitting Lemma (via Equivalence)**
@@ -450,6 +464,81 @@ lemma Pr_congr {α : Type} {D : PMF α} {P Q : α → Prop}
     (h : ∀ x, P x ↔ Q x) : Pr_{ let x ← D }[ P x ] = Pr_{ let x ← D }[ Q x ] := by
   congr 2; funext x;
   congr 1; exact propext (h x)
+
+/--
+**Union Bound (binary form)**
+
+The probability of a disjunction of two events is at most the sum of their individual
+probabilities.
+-/
+theorem Pr_or_le {α : Type} (D : PMF α) (f g : α → Prop) :
+    Pr_{ let r ← D }[ f r ∨ g r ] ≤ Pr_{ let r ← D }[ f r ] + Pr_{ let r ← D }[ g r ] := by
+  classical
+  rw [prob_tsum_form_singleton, prob_tsum_form_singleton, prob_tsum_form_singleton,
+    ← ENNReal.tsum_add]
+  apply ENNReal.tsum_le_tsum
+  intro r
+  rw [← mul_add]
+  refine mul_le_mul_of_nonneg_left ?_ zero_le
+  by_cases hf : f r <;> by_cases hg : g r <;> simp [hf, hg]
+
+/--
+**Union Bound (over a finite index set)**
+
+The probability that `∃ i, f i r` holds is at most the sum, over `i`, of the probabilities that
+`f i r` holds.
+-/
+theorem Pr_exists_le {α ι : Type} [Fintype ι] (D : PMF α) (f : ι → α → Prop) :
+    Pr_{ let r ← D }[ ∃ i, f i r ] ≤ ∑ i, Pr_{ let r ← D }[ f i r ] := by
+  classical
+  have key : ∀ (s : Finset ι),
+      Pr_{ let r ← D }[ ∃ i ∈ s, f i r ] ≤ ∑ i ∈ s, Pr_{ let r ← D }[ f i r ] := by
+    intro s
+    induction s using Finset.induction with
+    | empty =>
+      have h0 : Pr_{ let r ← D }[ ∃ i ∈ (∅ : Finset ι), f i r ]
+          = Pr_{ let r ← D }[ (False : Prop) ] :=
+        Pr_congr (fun r => by simp)
+      rw [Finset.sum_empty, h0, prob_tsum_form_singleton]
+      simp
+    | insert a s ha ih =>
+      have hcongr : Pr_{ let r ← D }[ ∃ i ∈ insert a s, f i r ] =
+          Pr_{ let r ← D }[ f a r ∨ ∃ i ∈ s, f i r ] :=
+        Pr_congr (fun r => by
+          constructor
+          · rintro ⟨i, hi, hfi⟩
+            rcases Finset.mem_insert.mp hi with rfl | hi
+            · exact Or.inl hfi
+            · exact Or.inr ⟨i, hi, hfi⟩
+          · rintro (hfa | ⟨i, hi, hfi⟩)
+            · exact ⟨a, Finset.mem_insert_self a s, hfa⟩
+            · exact ⟨i, Finset.mem_insert_of_mem hi, hfi⟩)
+      rw [hcongr]
+      calc Pr_{ let r ← D }[ f a r ∨ ∃ i ∈ s, f i r ]
+          ≤ Pr_{ let r ← D }[ f a r ] + Pr_{ let r ← D }[ ∃ i ∈ s, f i r ] := Pr_or_le D _ _
+        _ ≤ Pr_{ let r ← D }[ f a r ] + ∑ i ∈ s, Pr_{ let r ← D }[ f i r ] := by gcongr
+        _ = ∑ i ∈ insert a s, Pr_{ let r ← D }[ f i r ] := by rw [Finset.sum_insert ha]
+  simpa using key Finset.univ
+
+/--
+**Marginal Bound for Sequential Sampling**
+
+If, for every fixed outcome `b` of the second sample, the probability over the first sample is
+bounded by a constant `c` (not depending on `b`), then the same bound holds for the probability
+over the full sequential sample.
+-/
+theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : α → β → Prop)
+    {c : ENNReal} (h : ∀ b, Pr_{ let a ← Da}[Q a b] ≤ c) :
+    Pr_{ let b ← Db; let a ← Da }[ Q a b ] ≤ c := by
+  classical
+  let D_rest : β → PMF Prop := fun b => (do let a ← Da; return (Q a b))
+  calc Pr_{ let b ← Db; let a ← Da }[ Q a b ]
+      = ∑' b, Db b * (D_rest b) True := prob_tsum_form_split_first Db D_rest
+    _ ≤ ∑' b, Db b * c := by
+        apply ENNReal.tsum_le_tsum
+        intro b
+        exact mul_le_mul_of_nonneg_left (h b) zero_le
+    _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- **Schwartz-Zippel Lemma** (Probability Form):
 For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite field `L`,

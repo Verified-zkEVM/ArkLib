@@ -8,42 +8,39 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
 /-!
   # Scalar single-challenge-round CWSS assembly (generic building block)
 
-  **Skeleton of milestone F4.1** of the Hachi sumcheck track: the `(ℓ = 1, k)` twin of
-  `CoordinateWise.SingleRound` (which stays pinned to the vector-challenge `(ℓ, k) = (2^r, 2)`
-  fold shape of `QuadEval`).
+  The `(ℓ = 1, k)` twin of `CoordinateWise.SingleRound` (which stays pinned to the vector-challenge
+  `(ℓ, k) = (2^r, 2)` fold shape of `QuadEval`).
 
-  Several Hachi subprotocols are two-round reductions "one prover message, then one **scalar**
-  challenge" whose special soundness is plain `k`-special soundness (`ℓ = 1`) at various `k`:
+  Several two-round reductions are of the shape "one prover message, then one **scalar**
+  challenge", with plain `k`-special soundness (`ℓ = 1`) at various `k`:
 
-  * the HMZ25 lift (Figure 4 / Lemma 9): message `t = Com(w̃)`, challenge `α ← F`, `k = 2d`;
-  * each paired sumcheck round (Figure 6 / Lemma 11): message = round-polynomial pair,
+  * the DP24/Binius ring-switching batching round (`RingSwitching.pSpecBatching` is this wire
+    format at `Msg := P.A`, `C := Fin κ → L`);
+  * Hachi's HMZ25 quotient-evaluation ring switch ([NOZ26] Figure 4 / Lemma 9):
+    message `t = Com(w̃)`, challenge `α ← F`, `k = 2d`;
+  * each paired sumcheck round (Hachi Figure 6 / Lemma 11): message = round-polynomial pair,
     challenge `aᵢ ← F`, `k = max-degree + 1`.
 
-  ## What is finished here
+  ## Contents
 
   The shared wire format `pSpecScalar`; the CWSS structure `scalarStructure k`
   (= `CWSSStructure.ofSpecialSound`, arity `1·(k−1)+1 = k`, with the bridge
   `scalarStructure_arity`); the per-round instances; the **tree readers and shape recovery**
   (`readPre`, `readChallenges`, `tree2`, `tree_shape` — the `(ℓ = 1, k)` transplant of
-  `SingleRound.lean`'s, index-generic in the same way); the named extractor
-  `treeExtractorScalar`; and the escape event `escEventScalar` induced by a local per-family
-  event.
+  `SingleRound.lean`'s, index-generic in the same way); the per-branch transcript machinery
+  (`branchPath`, `branchTr`, `branch_pre`, `branch_challenge`, `branch_mem`) and the
+  pure-acceptance bridge `branch_relOut_language`; the named extractor `treeExtractorScalar`; and
+  the escape event `escEventScalar` induced by a local per-family event.
 
-  ## What is still sorried (F4.1)
-
-  The two generic assemblies — `coordinateWiseSpecialSoundWith_of_mkWitness_scalar` and its
-  escape-threaded twin `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`: any pure
-  statement-extending verifier of this shape is CWSS for `scalarStructure k`, given only a witness
-  assembler `mkWitness` that turns `k` per-branch `relOut`-witnesses at *pairwise-distinct*
-  challenges into a `relIn`-witness (escape variant: or into a local escape event).
-
-  Remaining proof plan: transplant `SingleRound.lean`'s per-branch transcript machinery
-  (`branchPath`/`branchTr`/`branch_pre`/`branch_challenge`/`branch_mem`/`branch_relOut_language`)
-  at arity `k`, then copy `SingleRound.coordinateWiseSpecialSoundWith_of_mkWitness` /
-  `…WithEscape_of_mkWitness` verbatim: at `ℓ = 1` the star machinery collapses to injectivity of
-  the challenge family (`isSpecialSoundFamily_one_iff_injective` composed with the
-  `Equiv.funUnique` decomposition of `scalarStructure`), so `hmk` receives plain
-  `Function.Injective fam` instead of `StarAt`.
+  Both generic assemblies are **proven**:
+  `coordinateWiseSpecialSoundWith_of_mkWitness_scalar` and its escape-threaded twin
+  `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`. Any pure statement-extending verifier
+  of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness` that
+  turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a `relIn`-witness
+  (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of `SingleRound`
+  collapses to injectivity of the challenge family (`injective_of_nodeOk`, via
+  `isSpecialSoundFamily_one_iff_injective` composed with the `Equiv.funUnique` decomposition of
+  `scalarStructure`), so `hmk` receives plain `Function.Injective fam` instead of `StarAt`.
 
   ## References
 
@@ -85,6 +82,8 @@ instance : ∀ i, SampleableType ((pSpecScalar Msg C).Challenge i)
   | ⟨0, h⟩ => nomatch h
   | ⟨1, _⟩ => (inferInstance : SampleableType C)
 
+/-- `OracleInterface` for each message index: round 0 carries the prover message `Msg`;
+round 1 is a challenge, so it has no message. -/
 instance : ∀ i, OracleInterface ((pSpecScalar Msg C).Message i)
   | ⟨0, _⟩ => (inferInstance : OracleInterface Msg)
   | ⟨1, h⟩ => nomatch h
@@ -213,6 +212,106 @@ theorem tree_shape (tree : ChallengeTree (pSpecScalar Msg C) arity 0) :
   obtain ⟨v, challenges, h⟩ := tree_shape_aux tree rfl
   exact ⟨v, challenges, eq_of_heq h⟩
 
+/-! ## Per-branch transcripts -/
+
+/-- The root-to-leaf path through `tree2` selecting branch `j` of the challenge node. -/
+def branchPath (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) : LeafPath (tree2 v challenges) :=
+  .msg (.chal j .leaf)
+
+/-- The full transcript of branch `j` of the star tree: message `v`, challenge
+`challenges j`. -/
+def branchTr (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) : (pSpecScalar Msg C).FullTranscript :=
+  (branchPath v challenges j).fullTranscript
+
+/-- Branch `j`'s transcript carries challenge `challenges j` at round 1. -/
+theorem branch_challenge (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchTr v challenges j).challenges ⟨1, rfl⟩ = challenges j := by
+  simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
+    FullTranscript.challenges, Transcript.concat]
+  simp [Fin.snoc]
+
+/-- Branch `j`'s transcript carries the shared message `v` at round 0. -/
+theorem branch_pre (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchTr v challenges j).messages ⟨0, rfl⟩ = v := by
+  simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
+    FullTranscript.messages, Transcript.concat]
+  simp [Fin.snoc]
+
+/-- Branch `j`'s transcript is one of the star tree's leaf transcripts. -/
+theorem branch_mem (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    branchTr v challenges j ∈ (tree2 v challenges).fullTranscripts :=
+  LeafPath.mem_fullTranscripts _
+
+/-! ## The scalar structure's node predicate -/
+
+/-- At `ℓ = 1` the coordinate-wise node predicate collapses to **injectivity** of the sibling
+challenges (`isSpecialSoundFamily_one_iff_injective`): the `SS(C, 1, k)` condition is exactly
+`k` pairwise-distinct challenge values — the shape of Hachi Lemmas 9 and 11. -/
+theorem injective_of_nodeOk {k : ℕ} {hk : 2 ≤ k}
+    {challenges : Fin ((scalarStructure (Msg := Msg) (C := C) k hk).arity ⟨1, rfl⟩) →
+      (pSpecScalar Msg C).Challenge ⟨1, rfl⟩}
+    (hOk : (scalarStructure (Msg := Msg) (C := C) k hk).nodeOk ⟨1, rfl⟩ challenges) :
+    Function.Injective fun j : Fin k =>
+      challenges (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j) := by
+  have hfam : Function.Injective fun j : Fin (1 * (k - 1) + 1) =>
+      (Equiv.funUnique (Fin 1) ((pSpecScalar Msg C).Challenge ⟨1, rfl⟩)).symm
+        (challenges (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm j)) :=
+    (isSpecialSoundFamily_one_iff_injective _).mp hOk
+  have h₃ : k = 1 * (k - 1) + 1 := by omega
+  intro a b hab
+  have hstep : Fin.cast h₃ a = Fin.cast h₃ b := by
+    apply hfam
+    change (Equiv.funUnique (Fin 1) _).symm (challenges _)
+        = (Equiv.funUnique (Fin 1) _).symm (challenges _)
+    exact congrArg _ (by
+      have ha : (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm
+            (Fin.cast h₃ a))
+          = Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm a := rfl
+      have hb : (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm
+            (Fin.cast h₃ b))
+          = Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm b := rfl
+      rw [ha, hb]
+      exact hab)
+  exact Fin.cast_injective h₃ hstep
+
+/-! ## Pure-acceptance bridge -/
+
+section Bridge
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitOut : Type} {σ : Type}
+
+/-- Acceptance of the star tree specializes, per branch `j`, to membership of the branch's
+verifier output `(stmtIn, v, challenges j)` in `relOut.language` — for any pure verifier that
+outputs the statement extended by the transcript's message and challenge. -/
+theorem branch_relOut_language (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
+    (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+    (relOut : Set ((StmtIn × Msg × C) × WitOut))
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (hAcc : (tree2 v challenges).IsAccepting init impl V stmtIn relOut.language)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (stmtIn, v, challenges j) ∈ relOut.language :=
+  Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j) relOut.language
+    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge]; rfl)
+    (hAcc _ (branch_mem v challenges j))
+
+end Bridge
+
 /-! ## The extractor and the escape event -/
 
 section Extractor
@@ -279,21 +378,18 @@ end Extractor
 section Assembly
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} [Nonempty WitOut]
-  {σ : Type} [SampleableType C]
+  {σ : Type}
 
-/-- **Generic scalar-round CWSS assembly, named form (skeleton, F4.1).** Any pure
-statement-extending verifier of the two-round scalar `pSpecScalar` is coordinate-wise special
-sound for `scalarStructure k` **at the named extractor** `treeExtractorScalar`, provided a
-witness assembler `mkWitness` that turns `k` per-branch `relOut`-witnesses at pairwise-distinct
-challenges into a `relIn`-witness.
+/-- **Generic scalar-round CWSS assembly, named form.** Any pure statement-extending verifier of
+the two-round scalar `pSpecScalar` is coordinate-wise special sound for `scalarStructure k` **at
+the named extractor** `treeExtractorScalar`, provided a witness assembler `mkWitness` that turns
+`k` per-branch `relOut`-witnesses at pairwise-distinct challenges into a `relIn`-witness.
 
-**Sorried.** Proof plan: transplant `SingleRound.coordinateWiseSpecialSoundWith_of_mkWitness` —
-the readers and `tree_shape` above already put an arbitrary structured accepting tree into star
-form; what remains is the per-branch transcript machinery (`branchTr` and its `branch_pre` /
-`branch_challenge` / `branch_mem` lemmas, then `branch_relOut_language` via
-`Verifier.mem_of_pure_accepting`) and the `SS(C, 1, k)` node predicate unfolding, which at `ℓ = 1`
-is injectivity of the challenge family (`isSpecialSoundFamily_one_iff_injective` composed with the
-`Equiv.funUnique` decomposition of `scalarStructure`). -/
+This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation) and Lemma 11
+(`k = deg + 1`, per sumcheck round): all tree/extractor plumbing is discharged here once, and the
+protocol-specific work lives entirely in `hmk`. The `ℓ = 1` node predicate unfolds to injectivity
+of the challenge family (`injective_of_nodeOk`), and `tree_shape` puts an arbitrary structured
+accepting tree into star form so that `branch_relOut_language` can certify each branch. -/
 theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
@@ -308,17 +404,35 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
       (s, mkWitness s v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWith init impl (scalarStructure k hk) relIn relOut V
       (treeExtractorScalar hk relOut mkWitness) := by
-  sorry
+  classical
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
+  have hmem : ∀ j : Fin k,
+      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
+    intro j
+    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
+      (Fin.cast harity j)
+    exact (Set.mem_language_iff relOut _).1 h
+  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
+  have hbranch : ∀ j : Fin k,
+      ((stmtIn, v, challenges (Fin.cast harity j)),
+        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
+          then h.choose else Classical.ofNonempty) ∈ relOut := by
+    intro j
+    rw [dif_pos (hmem j)]
+    exact (hmem j).choose_spec
+  exact hmk stmtIn v _ _ hbranch hinj
 
-/-- **Generic scalar-round escape-threaded CWSS assembly, named form (skeleton, F4.1).** The
-escape twin of `coordinateWiseSpecialSoundWith_of_mkWitness_scalar`: `hmk` may conclude a local
-escape event `escLocal` instead of a `relIn`-witness, and the certificate carries the induced
-tree-level event `escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9
-(`k = 2d`, interpolation, weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
+/-- **Generic scalar-round escape-threaded CWSS assembly, named form.** The escape twin of
+`coordinateWiseSpecialSoundWith_of_mkWitness_scalar`: `hmk` may conclude a local escape event
+`escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level event
+`escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation,
+weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
 
-**Sorried.** Same proof plan as the plain assembly; the disjunction is threaded exactly as in
-`SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness` (the extractor's own chosen
-per-branch responses witness `escEventScalar`'s existential). -/
+Same proof as the plain assembly up to the last step, where the disjunction is threaded: the
+extractor's own chosen per-branch responses — certified `relOut`-valid by `hbranch` — witness
+`escEventScalar`'s existential. -/
 theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
@@ -335,7 +449,27 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
       (escEventScalar hk relOut escLocal) relIn relOut V
       (treeExtractorScalar hk relOut mkWitness) := by
-  sorry
+  classical
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
+  have hmem : ∀ j : Fin k,
+      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
+    intro j
+    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
+      (Fin.cast harity j)
+    exact (Set.mem_language_iff relOut _).1 h
+  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
+  have hbranch : ∀ j : Fin k,
+      ((stmtIn, v, challenges (Fin.cast harity j)),
+        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
+          then h.choose else Classical.ofNonempty) ∈ relOut := by
+    intro j
+    rw [dif_pos (hmem j)]
+    exact (hmem j).choose_spec
+  rcases hmk stmtIn v _ _ hbranch hinj with hbad | hgood
+  · exact Or.inl ⟨_, hbranch, hbad⟩
+  · exact Or.inr hgood
 
 end Assembly
 

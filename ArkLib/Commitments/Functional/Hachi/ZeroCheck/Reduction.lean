@@ -6,7 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 
 /-!
-  # Zero-check — Hachi Figure 5 / **corrected** Lemma 10 — skeleton (milestone F6)
+  # Zero-check — Hachi Figure 5 / **corrected** Lemma 10 — skeleton
 
   One challenge round reducing the batched polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` to their
   evaluations at random points: the verifier samples the points, and the (never-sent) committed
@@ -74,6 +74,8 @@ section Instances
 
 variable {F : Type} [SampleableType F]
 
+/-- The zero-check's lone challenge (the Kronecker seed pair `F × F`) is sampleable
+whenever `F` is. -/
 instance : ∀ i, SampleableType ((pSpecZeroCheck F).Challenge i)
   | ⟨0, _⟩ => (inferInstance : SampleableType (F × F))
 
@@ -170,6 +172,8 @@ def zeroCheckProver {TCom : Type} :
     pure (⟨stmt.1, stmt.2.1, stmt.2.2, c.1, c.2⟩, wit)
 
 /-- **The zero-check's output relation** (corrected Figure 5 residual claims): `w̃` opens `t`,
+is short (`liftShort`, the shortness regime of the commitment's short-collision set
+`LiftCom.Collision`, the hardness target of the escape event `zeroCheckEsc` below),
 and both batched constraint polynomials vanish **at the derived Kronecker points**
 `τ₀ = κ_{m₀}(ρ₀)`, `τ_α = κ_{m₁}(ρ_α)`. -/
 def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -177,9 +181,11 @@ def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBoun
     Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
-    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZero Φ m₀ φF b p.2) = 0 ∧
-    MvPolynomial.eval (kroneckerPoint m₁ p.1.seedα)
-      (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) = 0 ∧
+    liftShort Φ bound ρBound p.2 ∧
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2)
+        (Vector.ofFn (kroneckerPoint m₀ p.1.seed₀)) = 0 ∧
+    CMlPolynomialEval.eval (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2)
+        (Vector.ofFn (kroneckerPoint m₁ p.1.seedα)) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
 /-- **The zero-check's escape event** (corrected Lemma 10's weak-binding case): the tree's own seed
@@ -208,7 +214,7 @@ variable [SampleableType F]
 
 /-- **The corrected Lemma 10 extraction algorithm (skeleton).**
 
-**Sorried** — this def is the milestone's *algorithm* (the case split of the extraction plan on
+**Sorried** — this def is the extraction *algorithm* itself (the case split of the proof plan on
 `zeroCheck_coordinateWiseSpecialSoundWithEscape`). -/
 noncomputable def zeroCheckExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -227,8 +233,9 @@ pairwise-distinct `ρ₀`-values on its first arm (the second coordinate held at
 pairwise-distinct `ρ_α`-values on its second arm. If two branch witnesses are distinct openings of
 `t`, they are short (by `relZeroCheck`'s downstream range content, the same weak-binding route as
 Lemma 9's) and `zeroCheckEsc` fires — take the left disjunct. Otherwise all branches share one `w̃`:
-the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` has degree `< 2^{m₀} ≤ D` (multilinearity
-`hZero_degreeOf_le` + `LinearMvExtension.powAlgHom` degree bound) and `D` distinct roots on the
+the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` has degree `< 2^{m₀} ≤ D` (multilinearity of
+`hZero` is structural — its `CMlPolynomialEval` representation is a length-`2 ^ m₀` coefficient
+vector — plus the `LinearMvExtension.powAlgHom` degree bound) and `D` distinct roots on the
 first arm, hence `K₀ = 0`; **Kronecker injectivity** of the pullback on multilinear polynomials (the
 still-missing `powAlgHom_injective_on_multilinear`) gives `H₀^{w̃} ≡ 0`. The second arm gives
 `H_α^{w̃} ≡ 0` identically. The axis-cross counterexample of the module docstring cannot survive:
