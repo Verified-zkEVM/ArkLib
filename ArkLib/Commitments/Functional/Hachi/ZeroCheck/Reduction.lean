@@ -18,18 +18,42 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
   ## Deviation from the paper's Lemma 10
 
-  The paper's Figure 5 draws uniform vector challenges `(τ₀, τ_α) ∈ F^{m₀} × F^{m₁}`. A
-  coordinate-wise family of accepting transcripts then only certifies that a multilinear `H`
-  vanishes on the axis cross through the family's center, which for two or more variables does not
-  imply `H ≡ 0` — e.g. `(t₁ - a)(t₂ - b)` vanishes on the cross through `(a, b)` without being
-  zero (`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`). So the argument for Lemma 10
-  as stated does not go through.
+  What fails in [NOZ26] is not Figure 5 but its proof: the attempt to certify the polynomial
+  identity `H₀ ≡ 0` *deterministically*, from a coordinate-wise star of accepting transcripts. Two
+  things go wrong at once (full analysis in `docs/kb/audits/noz26-zero-check-lemma10.md`):
 
-  This formalization instead draws the coordinates of `τ₀` and `τα` in sequence. Every scalar
-  round has two distinct accepting children, producing a path-dependent complete binary
-  evaluation tree. A multilinear polynomial of individual degree at most one that vanishes at
-  every leaf of such a tree is zero. The public zero-test is stated for CompPoly's computable
-  polynomials; Mathlib polynomials occur only inside its algebraic proof.
+  * *Shape.* `SS(S, ℓ, k)` is star-shaped by definition, so a coordinate-wise family only certifies
+    that a multilinear `H` vanishes on the axis cross through the family's center — which for two
+    or more variables does not imply `H ≡ 0`
+    (`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`), and putting more points on the
+    same arms does not help. Under the lemma's own `ℓ = 2` reading the arms carry arbitrary distinct
+    challenge *vectors* rather than collinear points, so the axis cross does not apply directly;
+    there the objection is a dimension count — `D` points cannot pin down the `2 ^ m₀`-dimensional
+    space of multilinears — which is *not* formalized here.
+  * *Degree.* Lemma 10's `D = max (2 * d) (2 * b - 1)` is a degree in `α` (Lemma 9) and in the
+    witness value `w̃(u, ℓ)` respectively; neither is a degree in a coordinate of `τ`. In `τ` both
+    batching polynomials are multilinear, so two distinct labels per coordinate suffice. The
+    printed lemma thus over-asks in `D` and under-asks in tree shape.
+
+  Since `w̃` is committed before `τ` is drawn, the *protocol* is fine: Schwartz–Zippel gives
+  knowledge error `≈ (m₀ + m₁) / |F|` for Figure 5 exactly as printed. That argument is
+  probabilistic, so it does not fit the coordinate-wise special-soundness framework this chain
+  composes in ([FMN24], `CWSSPackage`), which is why the repair below is stated instead.
+
+  ## What the repair changes, and what it does not
+
+  This formalization draws the coordinates of `τ₀` and `τα` as `m₀ + m₁` consecutive scalar
+  rounds. Since **no prover message separates them** (`pSpecNestedScalar` has no `P_to_V` round),
+  the *interactive* protocol is unchanged: the verifier map, the prover, and the uniform
+  distribution on `F^{m₀ + m₁}` are the same as Figure 5's. What changes is the shape of transcript
+  tree the extractor is handed — a path-dependent complete binary tree instead of a star — plus,
+  under Fiat–Shamir, the requirement that the challenge coordinates be hashed *sequentially* rather
+  than drawn from one atomic hash call.
+
+  Path dependence is more than is needed here (a product grid of challenge vectors in the single
+  original round would do, and is obtainable by rewinding a one-round prover). Round splitting is
+  what lets `SS(S, ℓ, k)` and [FMN24] Lemma 4 be reused verbatim; expressing a product-shaped
+  family instead would need a new soundness notion and new composition theorems.
 
   ## Coordinate-wise special soundness
 
@@ -38,9 +62,19 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   1. Some branch carries an escape `.inr e`: pass it through.
   2. Two branches carry openings of the shared `t` with **distinct tables**: return the
      weak-binding escape `K.escOfCollision` (`K.collision_mem`, Hachi Remark 2 / Lemma 7).
-  3. All branches carry openings of one table `w̃`: the first `m₀` levels and an `m₁`-level suffix
-     give distinct CompPoly evaluation trees for `H₀` and `Hα`; the nested-tree zero-test yields
-     both polynomial identities, hence membership in `relBatchedE` via `.inl`.
+  3. All branches carry openings of one table `w̃`: `H₀` is read through the first `m₀` levels of
+     the *one* evaluation tree and `Hα` through its last `m₁` levels
+     (`EvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
+     membership in `relBatchedE` via `.inl`.
+
+  **This is weaker than Lemma 10, which claims an efficient deterministic algorithm.**
+  `nestedPathResponse` does not read a witness off the transcript — there is none to read, since
+  `w̃` is the witness of the output relation rather than a protocol message. It selects, by
+  classical choice, *some* witness satisfying `relNestedZeroCheckE` at each leaf. Two consequences:
+  "all leaves carry one table" constrains the selected witnesses, not a prover's replies; and the
+  collision branch fires when choice happens to select different tables, so the binding horn is
+  discharged by `K.collision_mem`'s existence statement rather than by a reduction that produces the
+  Module-SIS solution from an adversary. Tree size: `nestedZeroCheck_numLeaves`/`_lt`.
 
   ## No norm hypothesis
 
@@ -91,8 +125,56 @@ one coordinate and soundness parameter two, hence exactly two pairwise-distinct 
     CWSSStructure (pSpecNestedZeroCheck F m₀ m₁) :=
   CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)
 
+/-! ### Size of the transcript tree
+
+`CWSSStructure` carries no size bound, so `coordinateWiseSpecialSound` alone cannot tell a usable
+repair from one whose family is exponential in the witness length. The two facts below record the
+size, but note what they do and do not establish.
+
+* `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `EvaluationTree`. The quantity
+  the extractor actually consumes is the number of `ChallengeTree.LeafPath`s of the structured
+  transcript tree; that the two agree is evident from the adapter but is **not formalized**.
+* `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals. Minimality of `m₀`, `m₁` enters as its
+  hypotheses and is **not enforced** anywhere in this development: `hμn` and `hn` bound the arities
+  from below only, so an instantiation with oversized `m₀` satisfies every theorem here while
+  blowing up the tree.
+
+Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n) * deg φ ≈ 2 ^ 26`
+entries, so `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts, against
+the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
+`D = max (2 * d) (2 * b - 1) = 2048`. Polynomial in the witness dimensions, but roughly `2 ^ 17`
+times the paper's family — and since CWSS leaf counts multiply across rounds, that factor is what
+the composed §4.3 chain (`Composition.lean`) inherits; no aggregate bound is stated there.
+
+Only `2 ^ m₀ + 2 ^ m₁ - 1` leaves are *used* (`H₀` needs one accepting continuation per
+`τ₀`-prefix, `H_α` one complete `m₁`-subtree), while `ChallengeTree.IsStructured` demands the
+complete tree. For [FMN24] Lemma 4 to convert coordinate-wise special soundness into knowledge
+soundness one needs `K = poly(λ)`; that lemma is not formalized in ArkLib, so nothing below is
+connected to a knowledge-error statement. -/
+
+/-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
+rounds, two pairwise-distinct children each. -/
+theorem nestedZeroCheck_numLeaves {F : Type} {m₀ m₁ : ℕ}
+    (tree : EvaluationTree F 2 (m₀ + m₁)) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
+  tree.numLeaves_eq_pow
+
+/-- With the two arities chosen *minimally* for their pins — `2 ^ m₀ < 2 * A` for
+`A := (μ + n) * deg φ` (the `H₀` table size, cf. `hμn`) and `2 ^ m₁ < 2 * B` for `B := n` (the row
+count, cf. `hn`) — the leaf count is below `4 * A * B`, hence polynomial in the witness dimensions.
+Both hypotheses are assumptions on the instantiation; see the caveats above. -/
+theorem nestedZeroCheck_numLeaves_lt {m₀ m₁ A B : ℕ}
+    (hm₀ : 2 ^ m₀ < 2 * A) (hm₁ : 2 ^ m₁ < 2 * B) : 2 ^ (m₀ + m₁) < 4 * A * B := by
+  calc 2 ^ (m₀ + m₁) = 2 ^ m₀ * 2 ^ m₁ := pow_add 2 m₀ m₁
+    _ < 2 * A * (2 * B) := Nat.mul_lt_mul_of_lt_of_lt hm₀ hm₁
+    _ = 4 * A * B := by ring
+
 /-- Forget transcript-tree bookkeeping and retain its path-dependent scalar challenge labels as a
-CompPoly binary evaluation tree. -/
+binary evaluation tree.
+
+The two depth equations below are the only arithmetic in this file: ArkLib's `ChallengeTree` is
+indexed by the *current round*, so an adapter must convert "rounds remaining" into a depth. The
+zero test itself needs no depth arithmetic — `EvaluationTree.eq_zero_of_vanishes_comp` reads each
+polynomial through a window of levels instead of projecting the tree. -/
 theorem nestedRemainingDepth_last (r : ℕ) : r - (Fin.last r).val = 0 := by
   simp only [Fin.val_last, Nat.sub_self]
 
@@ -105,10 +187,8 @@ def nestedTreeToEvaluationTree (F : Type) (r : ℕ) :
     {i : Fin (r + 1)} →
       ChallengeTree (pSpecNestedScalar F r)
         (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i →
-        CMlPolynomialEval.BinaryEvaluationTree F (r - i.val)
-  | _, .leaf => (nestedRemainingDepth_last r).symm ▸
-      (CMlPolynomialEval.BinaryEvaluationTree.leaf :
-        CMlPolynomialEval.BinaryEvaluationTree F 0)
+        EvaluationTree F 2 (r - i.val)
+  | _, .leaf => (nestedRemainingDepth_last r).symm ▸ (EvaluationTree.leaf : EvaluationTree F 2 0)
   | _, .msgNode _ h _ _ => nomatch h
   | _, .chalNode m _ challenges children =>
       (nestedRemainingDepth_succ m).symm ▸
@@ -139,8 +219,8 @@ theorem nestedLeafPath_transcript_prefix {F : Type} {r : ℕ} {i : Fin (r + 1)}
       let j' : Fin m.succ.val := ⟨j.val, by
         simp only [Fin.val_castSucc, Fin.val_succ] at j ⊢
         omega⟩
-      convert ih (pre.concat (challenges challenge)) j' using 1 ;
-        simp [j', Transcript.concat, Fin.snoc]
+      convert ih (pre.concat (challenges challenge)) j' using 1
+      simp [j', Transcript.concat, Fin.snoc]
       rfl
 
 /-- If an evaluation function vanishes on every transcript below a scalar challenge tree, it
@@ -155,18 +235,16 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
         evalAt (nestedTranscriptSuffix i (path.transcript pre)) = 0) →
       (nestedTreeToEvaluationTree F r tree).Vanishes evalAt
   | _, .leaf, pre, evalAt, h => by
-      simp only [nestedTreeToEvaluationTree,
-        CMlPolynomialEval.BinaryEvaluationTree.vanishes_cast,
-        CMlPolynomialEval.BinaryEvaluationTree.Vanishes]
+      simp only [nestedTreeToEvaluationTree, EvaluationTree.vanishes_cast,
+        EvaluationTree.Vanishes]
       convert h .leaf using 1
       congr 1
       funext i
       exact (Fin.cast (nestedRemainingDepth_last r) i).elim0
   | _, .msgNode _ h _ _, _, _, _ => nomatch h
   | _, .chalNode m hm challenges children, pre, evalAt, h => by
-      simp only [nestedTreeToEvaluationTree,
-        CMlPolynomialEval.BinaryEvaluationTree.vanishes_cast,
-        CMlPolynomialEval.BinaryEvaluationTree.Vanishes]
+      simp only [nestedTreeToEvaluationTree, EvaluationTree.vanishes_cast,
+        EvaluationTree.Vanishes]
       intro j
       apply nestedTreeToEvaluationTree_vanishes (children j) (pre.concat (challenges j))
       intro path
@@ -210,7 +288,6 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
         simp only [nestedTranscriptSuffix, ChallengeTree.LeafPath.transcript]
         congr 1
         apply Fin.ext
-        simp only [Fin.val_mk]
         have hcast : i'.val = i.val := rfl
         have hval : i.val = k.val + 1 := by
           have := congrArg Fin.val hi'
@@ -218,36 +295,6 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
           omega
         simp only [Fin.val_castSucc, Fin.val_succ]
         omega
-
-/-- Convert a structured transcript tree to a binary evaluation tree together with its sibling
-distinctness certificate. Keeping the certificate in a subtype makes the round-index casts
-proof-irrelevant to downstream extraction. -/
-def nestedStructuredTreeToEvaluationTree (F : Type) (r : ℕ) :
-    {i : Fin (r + 1)} →
-      (tree : ChallengeTree (pSpecNestedScalar F r)
-        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i) →
-      tree.IsStructured
-        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).toShape →
-      {tree : CMlPolynomialEval.BinaryEvaluationTree F (r - i.val) // tree.IsDistinct}
-  | _, .leaf, _ => by
-      exact (show 0 = r - r by omega) ▸
-        ⟨(CMlPolynomialEval.BinaryEvaluationTree.leaf :
-          CMlPolynomialEval.BinaryEvaluationTree F 0), trivial⟩
-  | _, .msgNode _ h _ _, _ => nomatch h
-  | _, .chalNode m _ challenges children, h => by
-      have hFamily : IsSpecialSoundFamily 1 2
-          (fun j => (Equiv.funUnique (Fin 1) F).symm (challenges j)) := h.1
-      have hVectors := (isSpecialSoundFamily_one_iff_injective _).mp hFamily
-      have hChallenges : Function.Injective challenges := by
-        intro a b hab
-        apply hVectors
-        exact congrArg (Equiv.funUnique (Fin 1) F).symm hab
-      let childTrees := fun j =>
-        nestedStructuredTreeToEvaluationTree F r (children j) (h.2 j)
-      exact (show r - m.val = (r - m.succ.val) + 1 by
-        simp only [Fin.val_succ]
-        omega) ▸ ⟨.node challenges (fun j => (childTrees j).1),
-          hChallenges, fun j => (childTrees j).2⟩
 
 /-- Structured scalar challenge trees convert to sibling-distinct CompPoly evaluation trees. -/
 theorem nestedTreeToEvaluationTree_isDistinct (F : Type) (r : ℕ) :
@@ -258,14 +305,12 @@ theorem nestedTreeToEvaluationTree_isDistinct (F : Type) (r : ℕ) :
         (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).toShape →
       (nestedTreeToEvaluationTree F r tree).IsDistinct
   | _, .leaf, _ => by
-      simp only [nestedTreeToEvaluationTree,
-        CMlPolynomialEval.BinaryEvaluationTree.isDistinct_cast]
+      simp only [nestedTreeToEvaluationTree, EvaluationTree.isDistinct_cast]
       trivial
   | _, .msgNode _ h _ _, _ => nomatch h
   | _, .chalNode _ _ challenges children, h => by
-      simp only [nestedTreeToEvaluationTree,
-        CMlPolynomialEval.BinaryEvaluationTree.isDistinct_cast,
-        CMlPolynomialEval.BinaryEvaluationTree.IsDistinct]
+      simp only [nestedTreeToEvaluationTree, EvaluationTree.isDistinct_cast,
+        EvaluationTree.IsDistinct]
       have hFamily : IsSpecialSoundFamily 1 2
           (fun j => (Equiv.funUnique (Fin 1) F).symm (challenges j)) := h.1
       have hVectors := (isSpecialSoundFamily_one_iff_injective _).mp hFamily
@@ -318,7 +363,13 @@ def nestedZeroCheckVerifier {TCom : Type} :
 
 /-- Figure-5 honest prover. Since all rounds are verifier challenges, its state is the
 input statement/witness together with the scalar prefix received so far. The stage is generic in
-the witness type — it only transports whatever the commitment's openings are. -/
+the witness type — it only transports whatever the commitment's openings are.
+
+Nothing in this development references it: `CWSSPackage` bundles only the verifier, so the honest
+provers of every link (`liftProver`, `roundProver`, …) are likewise unconsumed. It is kept for the
+completeness direction, which for this link is `eval 0 = 0` plus the agreement of this prover's
+`castAdd`/`natAdd` split with `nestedZeroCheckVerifier`'s, and is still missing (see the audit
+page). -/
 def nestedZeroCheckProver {TCom Wit : Type} :
     Prover oSpec (LiftStatement Φ TCom F n μ) Wit
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
@@ -416,29 +467,28 @@ theorem collideOrPass_mem_relBatchedE (K : LiftCom Φ μ n E) (φF : ZMod q →+
   · exact hesc_a ea rfl
   · exact hesc_a ea rfl
 
--- The batching polynomials carried by the projected trees require the cyclotomic instances;
+-- The batching polynomials carried by the tree windows require the cyclotomic instances;
 -- Lean's unused-section-variable analysis does not see those instance-synthesis dependencies.
 set_option linter.unusedSectionVars false in
 /-- Correctness core of the nested-tree witness assembler.
 
-The transcript-tree adapter supplies one binary evaluation tree for the first `m₀` challenge
-levels and one for the final `m₁` levels below a fixed first-stage path.  In the common-table
-case, their leaf evaluations vanish and the point-1 nested zero tests make both computable
-batching polynomials identically zero.  A leaf response with a differing table instead yields the
-weak-binding escape — which needs no norm hypothesis, since the admissibility conditioning
-`K.collision_mem` is carried by `K.Opening`. -/
+The transcript-tree adapter supplies a **single** evaluation tree of depth `m₀ + m₁`. In the
+common-table case, `H₀` is read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its
+last `m₁` levels (`Fin.natAdd`); each window's leaf evaluations vanish, so the nested zero test
+makes both computable batching polynomials identically zero. A leaf response with a differing table
+instead yields the weak-binding escape — which needs no norm hypothesis, since the admissibility
+conditioning `K.collision_mem` is carried by `K.Opening`. -/
 theorem buildNestedWitnessE_mem_relBatchedE (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
     {I : Type} (base : I) (resp : I → (K.Opening ⊕ E))
-    (tree₀ : CMlPolynomialEval.BinaryEvaluationTree F m₀)
-    (treeα : CMlPolynomialEval.BinaryEvaluationTree F m₁)
-    (hDistinct₀ : tree₀.IsDistinct) (hDistinctα : treeα.IsDistinct)
+    (tree : EvaluationTree F 2 (m₀ + m₁)) (hDistinct : tree.IsDistinct)
     (hesc : ∀ j e, resp j = Sum.inr e → e ∈ K.esc)
     (hopen : ∀ j o, resp j = Sum.inl o → K.com o = stmt.2.1)
     (hVanishes₀ : ∀ w, (∀ j, ∃ o, resp j = Sum.inl o ∧ K.table o = w) →
-      tree₀.PolynomialVanishes (hZero Φ m₀ φF b w))
+      CMlPolynomialEval.PolynomialVanishes tree (hZero Φ m₀ φF b w) (Fin.castAdd m₁))
     (hVanishesα : ∀ w, (∀ j, ∃ o, resp j = Sum.inl o ∧ K.table o = w) →
-      treeα.PolynomialVanishes (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 w))
+      CMlPolynomialEval.PolynomialVanishes tree (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 w)
+        (Fin.natAdd m₀))
     (hBound : ∀ o, resp base = Sum.inl o → bound ≤ stmt.1.bound) :
     (stmt, buildNestedWitnessE Φ K stmt base resp) ∈
       relBatchedE Φ m₀ m₁ bound K φF b := by
@@ -466,10 +516,10 @@ theorem buildNestedWitnessE_mem_relBatchedE (K : LiftCom Φ μ n E)
           exact absurd trivial hj
       simp only [relBatchedE, Set.mem_withEscape_inl, relBatched, Set.mem_setOf_eq]
       exact ⟨hopen base o0 hr0,
-        hZero_eq_zero_of_binaryEvaluationTree Φ m₀ φF b (K.table o0) tree₀ hDistinct₀
+        hZero_eq_zero_of_evaluationTree Φ m₀ (le_refl 2) φF b (K.table o0) tree hDistinct
           (hVanishes₀ (K.table o0) hallTable),
-        hAlpha_eq_zero_of_binaryEvaluationTree Φ m₁ φF b stmt.1 stmt.2.2 (K.table o0) treeα
-          hDistinctα (hVanishesα (K.table o0) hallTable),
+        hAlpha_eq_zero_of_evaluationTree Φ m₁ (le_refl 2) φF b stmt.1 stmt.2.2 (K.table o0) tree
+          hDistinct (hVanishesα (K.table o0) hallTable),
         hBound o0 hr0⟩
     · simp only [relBatchedE, Set.mem_withEscape_inr]
       exact hesc base e0 hr0
@@ -549,19 +599,12 @@ theorem nestedZeroCheck_coordinateWiseSpecialSound
     simp only [resp, nestedPathResponse]
     rw [dif_pos (hmem path)]
     exact (hmem path).choose_spec
-  let fullTree : CMlPolynomialEval.BinaryEvaluationTree F (m₀ + m₁) := by
+  let fullTree : EvaluationTree F 2 (m₀ + m₁) := by
     simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
   have hFullDistinct : fullTree.IsDistinct := by
     simpa [fullTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
-  let tree₀ := fullTree.take m₀ (by omega)
-  have hDepthα : m₀ + m₁ - m₀ = m₁ := by omega
-  let treeα : CMlPolynomialEval.BinaryEvaluationTree F m₁ :=
-    hDepthα ▸ fullTree.dropLeft m₀ (by omega)
   apply buildNestedWitnessE_mem_relBatchedE Φ m₀ m₁ bound K φF b stmt
-    (nestedLeftPath tree) resp tree₀ treeα
-  · exact fullTree.take_isDistinct m₀ (by omega) hFullDistinct
-  · simp only [treeα, CMlPolynomialEval.BinaryEvaluationTree.isDistinct_cast]
-    exact fullTree.dropLeft_isDistinct m₀ (by omega) hFullDistinct
+    (nestedLeftPath tree) resp fullTree hFullDistinct
   · intro path e hpe
     have hp := hrel path
     rw [hpe, relNestedZeroCheckE, Set.mem_withEscape_inr] at hp
@@ -571,8 +614,9 @@ theorem nestedZeroCheck_coordinateWiseSpecialSound
     rw [hpo, relNestedZeroCheckE, Set.mem_withEscape_inl] at hp
     simp only [relNestedZeroCheck, Set.mem_setOf_eq] at hp
     exact hp.1
-  · intro w hall
-    apply fullTree.take_vanishes m₀ (by omega)
+  · -- `H₀` reads the first `m₀` levels of the one tree.
+    intro w hall
+    simp only [fullTree, CMlPolynomialEval.PolynomialVanishes]
     apply nestedTreeToEvaluationTree_vanishes tree default
     intro path
     obtain ⟨o, hpo, hto⟩ := hall path
@@ -583,15 +627,14 @@ theorem nestedZeroCheck_coordinateWiseSpecialSound
     convert hp.2.1 using 1
     congr 2
     funext i
-    unfold CMlPolynomialEval.BinaryEvaluationTree.pointPrefix nestedTranscriptSuffix
-      nestedZeroCheckTauZero nestedZeroCheckChallenges ChallengeTree.LeafPath.fullTranscript
+    simp only [Function.comp_apply, nestedTranscriptSuffix,
+      ChallengeTree.LeafPath.fullTranscript]
     congr 1
     apply Fin.ext
-    simp only [Fin.val_zero, Nat.zero_add, Fin.val_mk, Fin.val_castLE, Fin.val_castAdd]
-  · intro w hall
-    simp only [treeα, CMlPolynomialEval.BinaryEvaluationTree.PolynomialVanishes,
-      CMlPolynomialEval.BinaryEvaluationTree.vanishes_cast]
-    apply fullTree.dropLeft_vanishes m₀ (by omega)
+    simp only [Fin.val_zero, Nat.zero_add, Fin.val_castAdd]
+  · -- `H_α` reads the last `m₁` levels of the same tree.
+    intro w hall
+    simp only [fullTree, CMlPolynomialEval.PolynomialVanishes]
     apply nestedTreeToEvaluationTree_vanishes tree default
     intro path
     obtain ⟨o, hpo, hto⟩ := hall path
@@ -602,11 +645,11 @@ theorem nestedZeroCheck_coordinateWiseSpecialSound
     convert hp.2.2.1 using 1
     congr 2
     funext i
-    unfold CMlPolynomialEval.BinaryEvaluationTree.pointSuffix nestedTranscriptSuffix
-      nestedZeroCheckTauAlpha nestedZeroCheckChallenges ChallengeTree.LeafPath.fullTranscript
+    simp only [Function.comp_apply, nestedTranscriptSuffix,
+      ChallengeTree.LeafPath.fullTranscript]
     congr 1
     apply Fin.ext
-    simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd, Fin.val_mk, Fin.val_cast]
+    simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd]
   · intro o ho
     have hp := hrel (nestedLeftPath tree)
     rw [ho, relNestedZeroCheckE, Set.mem_withEscape_inl] at hp

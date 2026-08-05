@@ -15,13 +15,17 @@ points assembled from scalar challenges.
 
 ## Deviation from the paper's Lemma 10
 
-The paper's Lemma 10 argues extraction from uniform vector challenges, but a coordinate-wise
-family of accepting transcripts only certifies that `H` vanishes on an axis cross, which for
-`m ≥ 2` does not imply `H ≡ 0`. `ZeroCheck/Reduction.lean` instead draws each coordinate in its
-own scalar round. Two distinct accepting children at every round form a complete, path-dependent
-binary evaluation tree, on which vanishing determines a multilinear polynomial. The
-counterexample to the uniform-challenge argument is
-`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`, and the deviation is recorded in
+Figure 5 is sound as printed; Lemma 10's *deterministic* route to `H₀ ≡ 0` is what fails, since a
+coordinate-wise star only certifies vanishing on an axis cross
+(`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`). Because this chain composes through
+coordinate-wise special soundness rather than a probabilistic bound,
+`ZeroCheck/Reduction.lean` draws each coordinate in its own scalar round, turning the accepting
+family into a path-dependent complete binary evaluation tree on which vanishing does determine a
+multilinear polynomial. No prover message separates those rounds, so the interactive protocol is
+unchanged.
+
+That file's header states the deviation, its costs, and the two ways this is weaker than the printed
+lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full analysis is
 `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
 ## Folder structure
@@ -50,7 +54,13 @@ counterexample to the uniform-challenge argument is
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
   `nestedZeroCheck_coordinateWiseSpecialSound` reduces `relBatchedE` to
   `relNestedZeroCheckE`; its extraction handles escapes, weak-binding collisions, and the common
-  opening by the CompPoly binary-evaluation-tree zero test.
+  opening by the evaluation-tree zero test — `H₀` through the first `m₀` levels of a single tree,
+  `H_α` through its last `m₁`. Tree size is machine-checked by
+  `nestedZeroCheck_numLeaves`/`_lt`.
+
+The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
+`k`-ary trees and individual degree `< k`) with the computable view in
+`ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`.
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
 Its output relation `relNestedZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`, and

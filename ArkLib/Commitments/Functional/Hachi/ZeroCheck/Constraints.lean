@@ -260,28 +260,43 @@ theorem hAlpha_eval_eq (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n 
     (R := F) (n := m₁) (hAlphaEvals Φ m₁ φF b s α w) a
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- A complete binary tree of direct CompPoly evaluations determines `H₀`.
+/-- **One transcript tree determines `H₀`.** `H₀` reads the *first* `m₀` levels of a
+sibling-distinct complete `k`-ary evaluation tree, so vanishing at every leaf makes it identically
+zero.
 
 This is the Hachi range-polynomial specialization of
-`BinaryEvaluationTree.eq_zero_of_polynomialVanishes`.  It stays on the computable
-`CMlPolynomialEval` representation; the generic theorem alone crosses to Mathlib internally. -/
-theorem hZero_eq_zero_of_binaryEvaluationTree (φF : ZMod q →+* F) (b : ℕ)
-    (w : LiftedWitness Φ μ n) (tree : CMlPolynomialEval.BinaryEvaluationTree F m₀)
-    (hDistinct : tree.IsDistinct) (hVanishes : tree.PolynomialVanishes (hZero Φ m₀ φF b w)) :
+`CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd`. It stays on the computable
+`CMlPolynomialEval` representation; the generic theorem alone crosses to Mathlib internally. The
+extra `s` levels below the window are the challenge rounds that `H_α` consumes
+(`hAlpha_eq_zero_of_evaluationTree`), which is why the same tree serves both identities. -/
+theorem hZero_eq_zero_of_evaluationTree {k s : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
+    (w : LiftedWitness Φ μ n) (tree : EvaluationTree F k (m₀ + s))
+    (hDistinct : tree.IsDistinct)
+    (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hZero Φ m₀ φF b w)
+      (Fin.castAdd s)) :
     hZero Φ m₀ φF b w = 0 :=
-  tree.eq_zero_of_polynomialVanishes (hZero Φ m₀ φF b w) hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_castAdd hk tree (hZero Φ m₀ φF b w)
+    hDistinct hVanishes
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- A complete binary tree of direct CompPoly evaluations determines `H_α`.
+/-- **The same transcript tree determines `H_α`.** `H_α` reads the *last* `m₁` levels of the tree,
+below the first `m` levels that `H₀` consumes (`m = m₀` at the call site), so vanishing at every
+leaf makes it identically zero.
 
-This is the Hachi linear-constraint specialization of the nested-tree zero test, again stated
-entirely with the computable `CMlPolynomialEval` polynomial. -/
-theorem hAlpha_eq_zero_of_binaryEvaluationTree (φF : ZMod q →+* F) (b : ℕ)
+The Hachi linear-constraint specialization of the nested-tree zero test, again stated entirely
+with the computable `CMlPolynomialEval` polynomial. The window is disjoint from `H₀`'s, so the two
+identities are certified by disjoint variable blocks of one tree. That single tree is what the
+protocol supplies — `pSpecNestedZeroCheck` is one run of `m₀ + m₁` challenge rounds, so
+`ChallengeTree.IsStructured` demands all `k ^ (m + m₁)` leaves; two independent trees would need
+only `k ^ m + k ^ m₁` of them, but there is no second run to draw them from. -/
+theorem hAlpha_eq_zero_of_evaluationTree {k m : ℕ} (hk : 2 ≤ k) (φF : ZMod q →+* F) (b : ℕ)
     (s : RlinStatement Φ n μ) (α : F) (w : LiftedWitness Φ μ n)
-    (tree : CMlPolynomialEval.BinaryEvaluationTree F m₁) (hDistinct : tree.IsDistinct)
-    (hVanishes : tree.PolynomialVanishes (hAlpha Φ m₁ φF b s α w)) :
+    (tree : EvaluationTree F k (m + m₁)) (hDistinct : tree.IsDistinct)
+    (hVanishes : CMlPolynomialEval.PolynomialVanishes tree (hAlpha Φ m₁ φF b s α w)
+      (Fin.natAdd m)) :
     hAlpha Φ m₁ φF b s α w = 0 :=
-  tree.eq_zero_of_polynomialVanishes (hAlpha Φ m₁ φF b s α w) hDistinct hVanishes
+  CMlPolynomialEval.eq_zero_of_polynomialVanishes_natAdd hk tree (hAlpha Φ m₁ φF b s α w)
+    hDistinct hVanishes
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The Mathlib view vanishes exactly when the primary `CMlPolynomialEval` `H₀` vanishes. -/

@@ -122,7 +122,8 @@ home_page/            site assets and assembled website root
     per-round seam `nestedRoundRel`), consumed by both this zero-check and `Sumcheck/`;
     `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge; `ZeroCheck/Reduction`
     is the corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted
-    through the nested binary evaluation trees of
+    through the nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`
+    — Mathlib-level, `k`-ary, individual degree `< k` — with the computable view in
     `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; see `HACHI_LEMMA10_GAP.md` and
     `docs/kb/audits/noz26-zero-check-lemma10.md`). `ZeroCheck.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the

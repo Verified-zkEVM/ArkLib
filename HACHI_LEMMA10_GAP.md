@@ -14,10 +14,17 @@ do not, and records the rendering adopted by the formalization plan.
 > `m₀ + m₁` coordinates of `(τ₀, τ_α)` is its own `k = 2` challenge round, and extraction runs
 > the path-dependent binary-evaluation-tree zero test of
 > `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`
-> (`BinaryEvaluationTree.eq_zero_of_polynomialVanishes`). The active theorem is
+> (`EvaluationTree.eq_zero_of_vanishes_comp`, since 4 August 2026 stated Mathlib-level in
+> `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` for `k`-ary trees and individual degree
+> `< k`, with the computable view in `ToCompPoly/`). The active theorem is
 > `nestedZeroCheck_coordinateWiseSpecialSound` (`Hachi/ZeroCheck/Reduction.lean`), sorry-free and
 > axiom-clean. The analysis below — in particular §2's counterexample and the comparison of
-> repairs — remains the reference for *why* a repair is needed; only the "adopted" markers in
+> repairs — remains the reference for *why* a repair is needed, with one correction recorded in
+> the audit page: Figure 5 itself is sound as printed — Schwartz–Zippel gives it knowledge error
+> `≈ (m₀+m₁)/|F|` — so what is being repaired is the CWSS *proof strategy*, not the protocol.
+> The formal counterexample covers the prose reading (a star of scalar coordinates); the lemma's
+> own `ℓ = 2` reading is objected to on dimension-counting grounds only, which is not formalized.
+> Only the "adopted" markers in
 > §3.K and §4 are historical. Current status lives in
 > `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
