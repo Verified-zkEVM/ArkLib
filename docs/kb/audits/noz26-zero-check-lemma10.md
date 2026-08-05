@@ -250,7 +250,64 @@ motivates the whole repair survives as `MvPolynomial.exists_nonzero_vanishing_on
 to `ArkLib/Data/MvPolynomial/Multilinear.lean` alongside the rest of the multilinear API — it never
 depended on the univariate pullback.
 The paragraphs above are therefore a record of a rejected design, not a description of live Lean
-code; the section below on the Kronecker sharpness bound is likewise historical.
+code.
+
+**Why it was rejected, quantitatively.** Beyond the arity objection, the seed route *degraded the
+soundness error*. For a nonzero `H₀` the univariate pullback `powAlgHom H₀` has degree
+`≤ 2^{m₀} − 1`, so a seed lands on a root with probability up to `2^{m₀}/|F_{q^k}|`. At the paper's
+Figure 9 parameters (`q ≈ 2^32`, `k = 4` so `|F_{q^k}| ≈ 2^128`; `deg φ = 2^10` and `w̃` length
+`≤ 2^26`, hence `m₀ ≈ 26`, which is also what `hμn` pins) that is `≈ 2^-102`, against `≈ 2^-123`
+for Figure 5's uniform `τ₀` by Schwartz–Zippel — a **~21-bit regression** on a `λ = 128` target.
+Buying those bits back was not cheap: `k` must divide `d/2 = 512` ([NOZ26] Lemma 1 / Theorem 1), so
+`k` is a power of two — `k = 5` would suffice numerically but is illegal, and the next legal value
+is `k = 8`, taking the sumcheck cost `26·k·32·(16+2)` bits from `≈ 7.3 KB` to `≈ 14.6 KB`, i.e.
+**double**, plus `F_{q^8}` arithmetic throughout. The adopted scalar-round design has no such
+regression: its error is `2(m₀ + m₁)/|F_{q^k}|`, a factor two off the unmodified protocol's
+Schwartz–Zippel bound (see "What the repair costs" above).
+
+Two accounting notes on that comparison, since both are easy to get wrong:
+
+- [NOZ26] Lemma 4's `ℓ·k/|S|^ℓ` must **not** be read as `2·D/|F_{q^k}|²` for the seed route. `H₀`
+  depends only on `ρ₀` and `H_α` only on `ρ_α`, so a cheating prover needs one seed bad, not both;
+  the `|S|^ℓ` denominator would price in an independence the protocol does not have. A knowledge
+  error below the direct `2^{m₀}/|F_{q^k}|` bound is in any case impossible, since knowledge error
+  dominates the success probability of a witness-less prover.
+- The comparison baseline is Figure 5's Schwartz–Zippel error `m₀/|F_{q^k}|`, not
+  `2·max(2d, 2b−1)/|F_{q^k}|²`; the latter mixes the paper's `D` with a denominator that does not
+  apply.
+
+No bound better than `2^{m₀}/|F_{q^k}|` was ever proved for that reparametrisation, and whether a
+*realisable* table attains it stayed open: the sharpness theorem gave tightness for arbitrary
+multilinears, but a protocol adversary must exhibit an `H₀` of the form `∑ᵢ eq̃(t,i)·P_b(w̃(i))`,
+which that lemma did not construct.
+
+### How the adopted route was chosen (correspondence with the authors)
+
+The axis-cross gap was raised with the [NOZ26] authors directly, and this subsection records that
+correspondence, which is the provenance of the design now formalized.
+
+In a reply of 2026-07-31, George O'Rourke confirmed the diagnosis — that Schwartz–Zippel cannot be
+invoked under CWSS, because the CWSS tree constrains only the coordinate-wise structure of the
+challenges and says nothing about their distribution — and also noted that the printed analysis
+takes `(τ₀, τ₁)` as a two-coordinate vector even though the two coordinates are drawn from
+`F_{q^k}^{log μ + log d}` and `F_{q^k}^{log n}`, neither of which is `F_{q^k}`. Two alternatives
+were proposed there, both of which leave Figure 5's protocol unchanged:
+
+1. drop CWSS for this step and argue knowledge soundness directly by Schwartz–Zippel, at the cost
+   of no longer being able to compose the chain through a single generic CWSS-to-knowledge-soundness
+   step;
+2. treat each coordinate of `(τ₀, τ₁)` as a separate challenge round and prove plain
+   `(k, …, k)`-special soundness by root counting with induction on the number of variables.
+
+**Route 2 is what this formalization now implements.** Both caveats attached to it at the time have
+been discharged: the required multivariate root-counting lemma *is* now in the tree —
+`EvaluationTree.eq_zero_of_vanishes_comp`, an induction on a path-dependent `k`-ary tree rather
+than on a Cartesian grid — and the relevant per-coordinate degree is indeed `1`, so the
+per-coordinate parameter is `k = 2` (both `H₀` and `H_α` are multilinear *in the challenge*; the
+`2b − 1` and `2` appearing in the paper are witness-side sumcheck degrees). The error stays at
+Figure 5's order, `2(m₀ + m₁)/|F_{q^k}|` by [FMN24] Lemma 4 at `ℓᵢ = 1`, `kᵢ = 2` — that lemma
+itself is still not formalized in ArkLib, so the arithmetic remains prose. Route 1 was not taken:
+it would forfeit the generic CWSS-to-knowledge-soundness composition the rest of the chain uses.
 
 ## Other divergences from the printed Figure 5 / Lemma 10
 
