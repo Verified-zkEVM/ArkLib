@@ -688,7 +688,7 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
     constructor
     · exact lt_of_lt_of_le
         (indicated_polynomial_comp_x_k_natDegree h_s'_non_empty)
-        (by aesop)
+        (FoldingContext.pow_2_k_mul_le_pow_2_d_of (by simp_all))
     · simp only [hammingDist, ne_eq, hammingDistBound, Fintype.card_fin]
       rw [←Finset.compl_filter, Finset.card_compl, Fintype.card_fin]
       apply Nat.sub_le_sub_left
@@ -736,7 +736,7 @@ private lemma dist_from_code_bound_of_correlated_agreement
   exact sInf_le_of_le
     (b := ↑(hammingDistBound k domain s))
     (h := by
-      aesop 
+      aesop
         (add safe (by rw [contradictory_hamming_dist_formula]))) <| by
     obtain ⟨f', h_f'_deg, hdist⟩ :=
       correlated_agreement_implies_contradictory_hamm_dist h_s h_u (by {
@@ -746,57 +746,28 @@ private lemma dist_from_code_bound_of_correlated_agreement
     simp only [Set.mem_setOf_eq, Nat.cast_le]
     aesop (add safe [evalOnPoints_mem_code_of_natDegree_lt])
 
-private lemma folded_rate_div_eq_helper {d : ℕ}
-  (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
-  (↑(d / 2 ^ k) : ℚ≥0) / 2 ^ (n - k) = (↑d : ℚ≥0) / 2 ^ n := by
-  obtain ⟨m, rfl⟩ := hkd
-  simp +zetaDelta only [ne_eq, Nat.pow_eq_zero, OfNat.ofNat_ne_zero, false_and, not_false_eq_true,
-    mul_div_cancel_left₀, Nat.cast_mul, Nat.cast_pow, Nat.cast_ofNat] at *
-  rw [←Nat.add_sub_cancel' hkn,
-      pow_add,
-      mul_div_mul_left _ _ (by positivity)]
-  norm_num
-
 omit [DecidableEq F] in
 /-- The rate of the folded RS-code is the same. -/
-lemma folded_rate_eq {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
+lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
   LinearCode.rate
-      (ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (d / (2 ^ k))) =
-    LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d) := by
+      (ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k))) =
+    LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) := by
   simp only [rateOfLinearCode_eq_min_div, Fintype.card_fin, min_def, Nat.cast_ite, Nat.cast_pow,
     Nat.cast_ofNat]
-  by_cases hif : d ≤ 2 ^ n
-  · simp only [hif, ↓reduceIte]
-    have hif : d / 2 ^ k ≤ 2 ^ (n - k) := by
-      rw [Nat.div_le_iff_le_mul (by simp)]
-      exact le_trans hif <| by
-        rw [←pow_add, Nat.sub_add_cancel hkn]
-        grind
-    aesop (add safe forward [folded_rate_div_eq_helper])
-  · simp only [hif, ↓reduceIte, ne_eq, pow_eq_zero_iff', OfNat.ofNat_ne_zero, false_and,
-    not_false_eq_true, div_self]
-    have hif := Nat.div_le_div_right (c := 2 ^ k) (Nat.le_of_lt (not_le.mp hif))
-    rw [show 2 ^ n / 2 ^ k = 2 ^ (n - k) by
-      aesop (add safe
-        [(by rw [Nat.div_eq_iff]),
-          (by rw [←pow_add]),
-          (by grind)])
-    ] at hif
-    rcases (Nat.lt_or_eq_of_le hif) with hif | hif
-    · aesop (add safe (by omega))
-    · aesop
-        (add safe forward [div_eq_one_iff_eq])
-        (add safe [(by norm_cast)])
+  have hif : 2 ^ (d - k) ≤ 2 ^ (n - k) := by simp
+  simp [hif]
+  field_simp
+  rw [←pow_add, ←pow_add]
+  grind
 
 omit [DecidableEq F] in
 /-- The square root of the rate of the folded RS-code is the same. -/
-lemma folded_sqrtRate_eq {d : ℕ} (hkn : k ≤ n) (hkd : 2 ^ k ∣ d) :
+lemma folded_sqrtRate_eq {d : ℕ} [FoldingContext k d n] :
   ReedSolomon.sqrtRate
-     (d / (2 ^ k))
+     (2 ^ (d - k))
      (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) =
-    ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F) := by
-  aesop (add simp [ReedSolomon.sqrtRate, folded_rate_eq])
-
+    ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F) := by
+  simp [ReedSolomon.sqrtRate, folded_rate_eq]
 
 set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
                                            -- which is a result of it missing
@@ -819,33 +790,26 @@ the corresponding Reed–Solomon code except with probability controlled by
 theorem folding_preserves_distance
   [Fintype F]
   {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))} {d k : ℕ}
+  [FoldingContext k d n]
   {δ : ℝ≥0}
-  (k_div_d : 2 ^ k ∣ d)
-  (hd0 : 0 < d)
-  (h_d_n : d ≤ 2 ^ n)
   (δ_gt_0 : 0 < δ) -- this one is not used but should be.
-  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) d))
-    (1 - (ReedSolomon.sqrtRate d (domain : Fin (2 ^ n) ↪ F)))) :
+  (δ_lt : δ < min (δᵣ(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)))
+    (1 - (ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F)))) :
     Pr_{ let r ←$ᵖ F}[δᵣ(foldWord domain f k r,
       ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F)
-      (d / (2 ^ k))) ≤ δ] ≤
-        ((2 ^ k) - 1) * ProximityGap.errorBound δ (d / (2 ^ k))
+      (2 ^ (d - k))) ≤ δ] ≤
+        ((2 ^ k) - 1) * ProximityGap.errorBound δ (2 ^ (d - k))
         (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) := by
-    have h_k_d : 2 ^ k ≤ d := by exact Nat.le_of_dvd (by omega) k_div_d
-    have h_k_le_n : k ≤ n := by
-      rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
-      omega
     have bound_tighter :
-      (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k))
+      (↑δ) ≤ 1 - ReedSolomon.sqrtRate (2 ^ (d - k))
         (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) :=
       le_of_lt <| by
         aesop
           (add safe [(by rw [folded_sqrtRate_eq])])
-          (add safe [(by grind)])
           (add safe (by norm_cast at *))
     have correlated_agreement :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
-        (2 ^ k - 1) (d / (2 ^ k))
+        (2 ^ k - 1) ((2 ^ (d - k)))
         (domain := domain.subdomain k) (δ := δ)
         (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
@@ -856,9 +820,9 @@ theorem folding_preserves_distance
       comp_apply, PMF.pure_apply, eq_iff_iff, true_iff,
       mul_ite, mul_one, mul_zero, tsum_fintype] at contra correlated_agreement
     let cast (x : Fin (2 ^ k - 1 + 1)) : Fin (2 ^ k) :=
-      Fin.cast (by rw [Nat.sub_add_cancel (by omega)]) x
+      Fin.cast (by rw [Nat.sub_add_cancel (by grind)]) x
     let cast' (x : Fin (2 ^ k)) : Fin (2 ^ k - 1 + 1) :=
-      Fin.cast (by rw [Nat.sub_add_cancel (by omega)]) x
+      Fin.cast (by rw [Nat.sub_add_cancel (by grind)]) x
     have bijective_cast : Bijective cast := by
       rw [bijective_iff_has_inverse]
       exists cast'
@@ -895,7 +859,7 @@ theorem folding_preserves_distance
     rw [forall_and] at h'
     rcases h' with ⟨h_rs, h'⟩
     have h_rs := fun x ↦ (mem_code_iff_exists_polynomial_of_ne_zero
-        (ne := ⟨by rw [Nat.div_ne_zero_iff]; omega⟩)).mp (h_rs x)
+        (ne := ⟨by simp⟩)).mp (h_rs x)
     let u : Fin (2 ^ k - 1 + 1) → Polynomial F :=
       fun i => Classical.choose (h_rs i)
     have contradiction := dist_from_code_bound_of_correlated_agreement (domain := domain) (f := f)
@@ -917,12 +881,10 @@ theorem folding_preserves_distance
         aesop (add norm evalOnPoints)
       )
       (d := d)
-      h_k_d
-      h_d_n
       (fun i ↦
         And.left <| Classical.choose_spec (h_rs (cast' i)))
     rw [Finset.card_image_of_injective _ (by simp)] at contradiction
-    have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) d) : ENNReal)
+    have contradiction : (Δ₀(f, code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) : ENNReal)
       ≤ (↑(2 ^ n) : ℚ≥0) * δ :=
       le_trans (ENat.toENNReal_le.mpr contradiction) <| by
         apply le_trans
@@ -933,9 +895,9 @@ theorem folding_preserves_distance
                 (h := swap (le_trans (b := 2 ^ n * 1)) (by simp) <| by
                   rw [mul_comm,
                       ←mul_assoc,
-                      ←pow_add,
-                      Nat.sub_add_cancel h_k_le_n,
-                      ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
+                      ←pow_add]
+                  simp only [FoldingContext.k_le_n, Nat.sub_add_cancel]
+                  rw [ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
                   simp
           )]
           apply le_trans (b := 2 ^ k * ↑↑(#S))
@@ -946,8 +908,8 @@ theorem folding_preserves_distance
           · norm_cast
         · rw [mul_comm,
               ←mul_assoc,
-              ←pow_add,
-              Nat.sub_add_cancel h_k_le_n]
+              ←pow_add]
+          simp only [FoldingContext.k_le_n, Nat.sub_add_cancel]
           conv_lhs =>
             lhs
             rw [←mul_one (2 ^ n)]
@@ -958,7 +920,7 @@ theorem folding_preserves_distance
                   exact le_trans (le_of_lt δ_lt.2) (by simp)
                 })]
           norm_cast
-    have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) d) ≤ (δ : NNReal) := by
+    have contradiction : δᵣ(f, code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) ≤ (δ : NNReal) := by
       rw [relDistFromCode_le_iff_distFromCode_toENNReal_le]
       exact le_trans contradiction <| by
         simp only [Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat]
