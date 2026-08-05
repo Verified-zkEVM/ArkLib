@@ -19,7 +19,7 @@ Hachi's Lemma 10 (uniform-vector-challenge extraction) is **not provable as stat
 coordinate-wise star certifies only axis-cross vanishing, and for `m ≥ 2` that does not imply
 `H ≡ 0`. `ZeroCheck/Reduction.lean` implements the adopted repair — two scalar **Kronecker seeds**
 `(ρ₀, ρ_α)`, with the evaluation points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, where
-univariate root counting is information-complete. Full analysis: `HACHI_LEMMA10_GAP.md`.
+univariate root counting is information-complete.
 
 ## Folder structure
 
@@ -30,7 +30,7 @@ univariate root counting is information-complete. Full analysis: `HACHI_LEMMA10_
   base of the batched-sumcheck machinery. Definitions only (**sorried**), with characterizing
   lemmas stated alongside.
 * `ZeroCheck/Batch.lean` — the zero-round **batching bridge** (entry head): reinterprets the lift's
-  per-row/per-entry residual claims as the two `MvPolynomial` identities `H₀ ≡ 0 ∧ H_α ≡ 0`
+  per-row/per-entry residual claims as the two `CMlPolynomialEval` identities `H₀ ≡ 0 ∧ H_α ≡ 0`
   (`relBatched`, Eqs. (22)–(23)). Statement reshaping only.
 * `ZeroCheck/Reduction.lean` — **Hachi Figure 5 / corrected Lemma 10**: one challenge round
   carrying the seed pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the
