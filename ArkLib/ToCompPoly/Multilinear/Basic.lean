@@ -24,8 +24,8 @@ import CompPoly.Multilinear.Basic
   `Fin n → Fin 2`, and the two are matched by `finFunctionFinEquiv`.
 
   This is the boundary the Hachi zero-check crosses (`ZeroCheck/Constraints.lean`): the protocol
-  relations are stated with the computable `CMlPolynomialEval.eval`, while the Kronecker
-  root-counting argument behind the corrected Lemma 10 reasons in `MvPolynomial`.
+  relations are stated with the computable `CMlPolynomialEval.eval`, while the nested-tree zero
+  test behind the corrected Lemma 10 reasons in `MvPolynomial`.
 -/
 
 namespace CompPoly.CMlPolynomialEval

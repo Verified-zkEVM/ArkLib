@@ -49,7 +49,8 @@ def nestedToRoundStatement {TCom : Type} (φF : ZMod q →+* F)
 
 omit [NeZero q] in
 /-- Pull the initial sumcheck claims back to the direct computable point claims.
-No Kronecker seed or curve occurs in this bridge. -/
+The points are the scalar-round challenges themselves; no derived evaluation-point encoding is
+involved. -/
 theorem mem_relNestedZeroCheckE_of_nestedRoundRelE (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) (b : ℕ)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)

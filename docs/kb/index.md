@@ -52,8 +52,8 @@ used in `ArkLib/**/*.lean`, including:
   - Hachi §3 Lemmas 5–6 paper-to-Lean audit, including the remaining Lemma 5 factor-swap gap
     and the completed Lemma 6 norm proof.
 - [`audits/noz26-zero-check-lemma10.md`](audits/noz26-zero-check-lemma10.md)
-  - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the Kronecker repair and the weak-binding seam
-    as integrated into the escape-threaded opening chain.
+  - Hachi Figure 5 / Lemma 10 paper-to-Lean audit; the nested-tree repair and the weak-binding
+    seam as integrated into the escape-threaded opening chain.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)

@@ -79,17 +79,23 @@ Ring-switching layer:
   with a different error and is out of scope for the current ring-switching module.
 - Hachi Lemma 10's uniform-vector CWSS argument is invalid for multivariate multilinear
   polynomials: a coordinate-wise star supplies only an axis cross, which does not determine the
-  polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) restricts the two evaluation points
-  to Kronecker curves and uses univariate interpolation with `D = max(2, 2^{m₀}, 2^{mα})`. The
+  polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) draws each of the `m₀ + m₁`
+  coordinates in its own two-child scalar round and extracts with the nested-tree zero test
+  (`EvaluationTree.eq_zero_of_vanishes_comp`), whose leaves form a genuine `2^(m₀+m₁)`-point grid
+  rather than a star. (An earlier rendering restricted the two evaluation points to Kronecker
+  curves at `D = max(2, 2^{m₀}, 2^{mα})`; it was superseded — its branching factor is exponential —
+  and is no longer formalized.) The
   corrected CWSS theorem is proof-`sorry`-free and is composed into the escape-threaded opening
   chain (`Composition.lean`); the weak-binding disjunct is discharged through `LiftCom`'s
   norm-conditioned collision. At the batching bridge, shortness is **derived** from the range
   identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
-  At the point-check and sumcheck seams, `relZeroCheck`/`roundRel` temporarily assume `liftShort`
-  because a point or partial-sum claim does not imply the norm condition needed by weak binding.
+  At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` carry **no**
+  shortness conjunct at all: a point or partial-sum claim cannot establish the norm condition, so
+  the admissibility that conditions weak binding rides inside `LiftCom.Opening` instead.
   The identities themselves are represented and point-evaluated as `CMlPolynomialEval`
-  Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib
-  `restrictDegree` views are derived only for the existing Kronecker proof. Eq. (22)'s public
+  Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib `MvPolynomial`
+  appears only inside the zero test's proof, reached through
+  `CMlPolynomialEval.eval_eq_MvPolynomial_MLE`. Eq. (22)'s public
   contraction `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ)` is built (`mAlphaTilde`, `alphaTilde`,
   `alphaContract`) and **proved** equal to the per-row `α`-defect that `H_α`'s table stores
   (`alphaDefect_wTable`, `hAlpha_eq_zero_iff_alphaDefect`), so §4.3's "represent the constraints by

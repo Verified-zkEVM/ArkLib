@@ -186,13 +186,11 @@ home_page/            site assets and assembled website root
   `E`, and the assembly `coordinateWiseSpecialSound_of_mkWitness`) used by Hachi's polynomial-
   evaluation reduction `QuadEval` (Lemma 8). `ScalarRound` is its skeletonized `(ℓ = 1, k)`
   scalar-challenge twin (`pSpecScalar`, `scalarStructure`; assembly sorried) for Hachi's
-  Lemmas 9/11-shaped rounds. `ChallengeRoundTree` is the challenge-only, parametric-`k` sibling of
-  `SingleRound`: one round of `Fin ℓ → C` challenges with no prover message, arity `ℓ·(k−1)+1`,
-  exporting `chalStructure`, `IsSpecialSoundFamily.exists_coord_finset` (the per-coordinate root
-  supply) and its own `coordinateWiseSpecialSound_of_mkWitness`; it is used by Hachi's repaired
-  zero-check (Lemma 10) at `(ℓ, k) = (2, D)`. The `Tree` suffix is deliberate — the module navigates
-  challenge trees, and the bare name `ChallengeRound` is reserved for round-by-round probability
-  factoring elsewhere under `Security/`. `Escape` provides `Set.withEscape`, the escape-threading of
+  Lemmas 9/11-shaped rounds. (A `ChallengeRoundTree` module once held the challenge-only,
+  parametric-`k` sibling of `SingleRound`, written for a one-round rendering of Hachi's repaired
+  zero-check at `(ℓ, k) = (2, D)`; that rendering was superseded by `m₀ + m₁` two-child scalar
+  rounds, leaving the module without consumers, and it has been removed.)
+  `Escape` provides `Set.withEscape`, the escape-threading of
   relations (`W ⊕ E` witnesses) used by composed extraction chains that can emit binding-break
   escapes mid-chain. `Guarded` is the **B4 skeleton**: `Verifier.IsGuardedWith`/`IsGuarded`
   (runtime-rejecting verifiers), the guarded package `GCWSSPackage` with its append `▷ᵍ`, and

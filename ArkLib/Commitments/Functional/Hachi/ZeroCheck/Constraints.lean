@@ -843,7 +843,8 @@ variable (bound : ℕ)
 /-- Paired-sumcheck relation over direct zero-check points: an opening of `t` whose partial
 hypercube sums match the current targets.
 
-No Kronecker map or seed appears in either summand, and **no norm conjunct appears at all** — the
+Both summands read the scalar-round challenges directly, with no derived evaluation-point encoding
+(no curve, no seed expansion), and **no norm conjunct appears at all** — the
 partial sums do not determine one, and the admissibility that conditions weak binding travels
 inside `K.Opening` (see `LiftCom`). -/
 def nestedRoundRel (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
