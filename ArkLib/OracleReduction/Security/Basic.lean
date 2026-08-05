@@ -572,10 +572,12 @@ theorem Verifier.id_soundness {lang : Set StmtIn} :
   rw [hliftM, simulateQ_map, StateT.run_map] at ha
   simp only [support_map, Set.mem_image, Prod.exists] at ha
   obtain ⟨pr, s'', ⟨b, _, _, heq⟩⟩ := ha
-  have := (Prod.mk.inj heq).1
-  have := Option.some.inj this
-  have := (Prod.mk.inj this).2
-  rw [← this] at hev
+  -- `heq` identifies the sampled output with `(some (pr, stmtIn), _)`; peel it apart to read off
+  -- that the output statement is literally `stmtIn`, contradicting `stmtIn ∉ lang` via `hev`.
+  have hOption := (Prod.mk.inj heq).1
+  have hPair := Option.some.inj hOption
+  have hStmtOut := (Prod.mk.inj hPair).2
+  rw [← hStmtOut] at hev
   exact hev
 
 /-- The straightline extractor for the identity / trivial reduction, which just returns the input

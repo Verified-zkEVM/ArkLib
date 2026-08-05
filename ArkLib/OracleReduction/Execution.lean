@@ -11,7 +11,7 @@ import ArkLib.ToVCVio.OracleComp.EvalDist
 
 open OracleComp OracleSpec SubSpec ProtocolSpec
 
-universe u v
+universe u v v'
 
 -- namespace loggingOracle
 
@@ -404,23 +404,17 @@ def Reduction.runWithLog (stmt : StmtIn) (wit : WitIn)
     liftM (simulateQ loggingOracle (reduction.verifier.run stmt proverResult.1)).run
   return ⟨⟨proverResult, ← stmtOut.getM⟩, proveQueryLog, verifyQueryLog⟩
 
-/-- TODO: figure out a better name for this -/
-private lemma Monad.map_of_prod_fst_eq_prod_fst {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {α β γ : Type u} (ma : m (α × β)) (c : γ) :
-    (fun a => (c, a.1)) <$> ma = Prod.mk c <$> Prod.fst <$> ma := by
-  simp only [Functor.map_map]
+/-- Lifting a pair-valued computation and then projecting its first component in the continuation
+is the same as lifting the already-projected computation.
 
-/-- In OptionT, lifting a pair-valued computation and projecting the first component
-in the continuation equals lifting the map and binding directly. -/
-private lemma OptionT_liftM_bind_fst {m : Type → Type} [Monad m] [LawfulMonad m]
-    {α β γ : Type} (x : m (α × β)) (f : α → OptionT m γ) :
-    ((liftM x : OptionT m _) >>= fun p => f p.1) =
-    (liftM (Prod.fst <$> x) : OptionT m _) >>= f := by
-  rw [← bind_map_left]
-  show (Prod.fst <$> monadLift x) >>= f = monadLift (Prod.fst <$> x) >>= f
-  congr 1
-  simp [liftM, MonadLift.monadLift, OptionT.lift, OptionT.mk,
-    Functor.map_map, Function.comp]
+This is the `monadLift`-generic form of `bind_map_left`, obtained from it and `monadLift_map`
+(both Lean core). Instantiated below at `OracleComp _ → OptionT (OracleComp _)` to strip the
+prover's query log before the verifier runs. -/
+private lemma monadLift_bind_fst {m : Type u → Type v} {n : Type u → Type v'}
+    [Monad m] [LawfulMonad m] [Monad n] [LawfulMonad n]
+    [MonadLiftT m n] [LawfulMonadLiftT m n] {α β γ : Type u} (x : m (α × β)) (f : α → n γ) :
+    ((monadLift x : n (α × β)) >>= fun p => f p.1) = (monadLift (Prod.fst <$> x) : n α) >>= f := by
+  rw [monadLift_map, bind_map_left]
 
 /-- Logging the queries made by both parties do not change the output of the reduction -/
 @[simp]
@@ -429,44 +423,32 @@ theorem Reduction.runWithLog_discard_logs_eq_run
     {reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec} :
       Prod.fst <$>
         reduction.runWithLog stmt wit = reduction.run stmt wit := by
-  simp only [Reduction.runWithLog, Reduction.run, map_bind, map_pure, Functor.map_map,
-    Function.comp]
-  have h1 := OptionT_liftM_bind_fst (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
+  simp only [Reduction.runWithLog, Reduction.run, map_bind, map_pure]
+  -- Discard the prover's log: pull the `Prod.fst` projection inside the lift, so that
+  -- `Prover.runWithLog_discard_log_eq_run` applies to the lifted computation.
+  have hProver := monadLift_bind_fst (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
+    (n := OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)))
     (Prover.runWithLog stmt wit reduction.prover)
     (fun proverResult =>
       liftM (simulateQ loggingOracle (Verifier.run stmt proverResult.1 reduction.verifier)).run
         >>= fun a_1 => (fun a_2 => (proverResult, a_2)) <$> a_1.1.getM)
-  -- Prover logging elimination: use OptionT_liftM_bind_fst + Prover.runWithLog_discard_log_eq_run
-  exact h1 ▸ by
+  exact hProver ▸ by
     rw [Prover.runWithLog_discard_log_eq_run]
     congr 1; ext proverResult
-    -- Verifier logging elimination by induction on the verifier computation
+    -- Discard the verifier's log. VCV-io's `loggingOracle.fst_map_run_simulateQ` and ArkLib's
+    -- `loggingOracle.map_fst_run_simulateQ` (`ToVCVio/OracleComp/QueryTracking/LoggingOracle.lean`)
+    -- are this fact for a bare `OracleComp`, but neither matches here: the verifier's run sits
+    -- under `liftM` inside `OptionT`, so its log is consumed by an `OptionT` bind rather than by a
+    -- `Prod.fst` map. Hence the explicit induction.
     generalize Verifier.run stmt proverResult.1 reduction.verifier = vc
     induction vc using OracleComp.induction with
     | pure a => simp [simulateQ_pure, WriterT.run_pure]; rfl
     | query_bind t oa ih =>
       simp only [run_simulateQ_loggingOracle_query_bind]
       simp [bind_map_left, ih, OptionT.run_bind, Option.elimM, bind_assoc, OptionT.run_map]
-      -- Remaining: OptionT.run distributing through liftM + bind on RHS
-      -- The RHS has OptionT.run (liftM (query t) >>= oa) which should equal
-      -- query t >>= fun u => OptionT.run (oa u). This is monadLift_bind for OptionT SubSpec.
+      -- Closes `OptionT.run (liftM (query t) >>= oa) = query t >>= fun u => OptionT.run (oa u)`,
+      -- which holds definitionally for the `OptionT` lift of a sub-spec query.
       rfl
-  -- calc
-  -- _ = (do
-  --   let a ← (simulateQ loggingOracle proverRun).run
-  --   (fun aFst : (pSpec.FullTranscript × StmtOut × WitOut) => (fun b => (aFst, Prod.fst b)) <$>
-  --       (simulateQ loggingOracle (Verifier.run stmt aFst.1 reduction.verifier)).run.liftComp
-  --         (oSpec + [pSpec.Challenge]ₒ)) a.1) := rfl
-  -- _ = _ := by
-    -- rw [loggingOracle.simulateQ_bind_fst_comp proverRun
-    --   (fun a => (fun b => (a, Prod.fst b)) <$>
-    --     (simulateQ loggingOracle (Verifier.run stmt a.1 reduction.verifier)).run.liftComp
-    --       (oSpec + [pSpec.Challenge]ₒ))]
-    -- congr
-    -- ext proverResult
-    -- rw [← Functor.map_map]
-    -- simp
-
 
 /-- Run an interactive oracle reduction. Returns the full transcript, the output statement and
   witness, the log of all prover's oracle queries, and the log of all verifier's oracle queries to
