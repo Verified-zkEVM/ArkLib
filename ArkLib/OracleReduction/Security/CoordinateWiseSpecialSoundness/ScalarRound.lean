@@ -8,28 +8,36 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
 /-!
   # Scalar single-challenge-round CWSS assembly (generic building block)
 
-  **Skeleton of milestone F4.1** of the Hachi sumcheck track (`HACHI_SUMCHECK_TRACK_PLAN.md`
-  §5): the `(ℓ = 1, k)` twin of `CoordinateWise.SingleRound` (which stays pinned to the
+  The `(ℓ = 1, k)` twin of `CoordinateWise.SingleRound` (which stays pinned to the
   vector-challenge `(ℓ, k) = (2^r, 2)` fold shape of `QuadEval`).
 
-  Several Hachi subprotocols are two-round reductions "one prover message, then one **scalar**
-  challenge" whose special soundness is plain `k`-special soundness (`ℓ = 1`) at various `k`:
+  Several two-round reductions are of the shape "one prover message, then one **scalar**
+  challenge", with plain `k`-special soundness (`ℓ = 1`) at various `k`:
 
-  * the HMZ25 lift (Figure 4 / Lemma 9): message `t = Com(w̃)`, challenge `α ← F`, `k = 2d`;
-  * each paired sumcheck round (Figure 6 / Lemma 11): message = round-polynomial pair,
+  * the DP24/Binius ring-switching batching round (`RingSwitching.pSpecBatching` is this wire
+    format at `Msg := P.A`, `C := Fin κ → L`);
+  * Hachi's HMZ25 quotient-evaluation ring switch ([NOZ26] Figure 4 / Lemma 9):
+    message `t = Com(w̃)`, challenge `α ← F`, `k = 2d`;
+  * each paired sumcheck round (Hachi Figure 6 / Lemma 11): message = round-polynomial pair,
     challenge `aᵢ ← F`, `k = max-degree + 1`.
 
   This file provides their shared wire format `pSpecScalar`, the CWSS structure
   `scalarStructure k` (= `CWSSStructure.ofSpecialSound`, arity `k`), the per-round instances,
-  and the **sorried** generic assembly `coordinateWiseSpecialSound_of_mkWitness_scalar`: any pure
-  statement-extending verifier of this shape is CWSS for `scalarStructure k`, given only a witness
-  assembler `mkWitness` that turns `k` per-branch `relOut`-witnesses at *pairwise-distinct*
-  challenges into a `relIn`-witness.
+  the scalar-round tree navigation (readers, shape recovery, per-branch transcripts — the
+  arity-`k` transplant of `SingleRound`'s star machinery, where the `SS(C, 1, k)` node predicate
+  collapses to **injectivity** of the sibling challenges,
+  `isSpecialSoundFamily_one_iff_injective`), and the generic assembly
+  `coordinateWiseSpecialSound_of_mkWitness_scalar`: any pure statement-extending verifier of
+  this shape is CWSS for `scalarStructure k`, given only a witness assembler `mkWitness` that
+  turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a
+  `relIn`-witness.
 
-  Proof plan (F4.1): transplant `SingleRound.lean`'s tree readers/shape recovery at arity `k`
-  (`Fin.cast` along `1*(k−1)+1 = k`); at `ℓ = 1` the star machinery collapses to injectivity of
-  the challenge family (`isSpecialSoundFamily_one_iff_injective`), so `hmk` receives plain
-  `Function.Injective fam` instead of `StarAt`.
+  TODO(dedup): the tree-navigation kit below (`topMsgAux` … `branch_relOut_language`,
+  `treeExtractor`) is the fully `Msg`/`C`-generic two-round kit; `SingleRound`'s copy is its
+  instantiation at `C := Fin (2^r) → C'` (the two `pSpec`s are definitionally equal). Once the
+  `QuadEval` chain can absorb a refactor, re-derive `SingleRound`'s readers from this kit and
+  delete the duplicate — two copies of the dependent-matching workaround will diverge on the
+  next `ChallengeTree` change.
 
   ## References
 
@@ -37,7 +45,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-open OracleComp OracleSpec ProtocolSpec CoordinateWise
+open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
 namespace CoordinateWise.ScalarRound
 
@@ -64,29 +72,276 @@ instance : ∀ i, SampleableType ((pSpecScalar Msg C).Challenge i)
   | ⟨0, h⟩ => nomatch h
   | ⟨1, _⟩ => (inferInstance : SampleableType C)
 
+/-- `OracleInterface` for each message index: round 0 carries the prover message `Msg`;
+round 1 is a challenge, so it has no message. -/
 instance : ∀ i, OracleInterface ((pSpecScalar Msg C).Message i)
   | ⟨0, _⟩ => (inferInstance : OracleInterface Msg)
   | ⟨1, h⟩ => nomatch h
 
 end Instances
 
+variable {arity : (pSpecScalar Msg C).ChallengeIdx → ℕ}
+
+/-! ## Round readers
+
+As in `SingleRound`: naive `match tree` on a `ChallengeTree … 0` fails ("dependent elimination
+failed"), so each reader is index-generic — it matches at an arbitrary round index `a` and
+carries the proof `a = 0` (resp. `a = 1`), discharged per constructor via `congrArg Fin.val` +
+`Direction.noConfusion`. -/
+
+/-- Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a`
+together with a proof `a = 0`. -/
+def topMsgAux : {a : Fin 3} → ChallengeTree (pSpecScalar Msg C) arity a → a = (0 : Fin 3) →
+    (pSpecScalar Msg C).Message ⟨0, rfl⟩
+  | _, .leaf, ha => by simp [Fin.ext_iff] at ha
+  | _, .msgNode m _ msg _, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact msg
+  | _, .chalNode m h _ _, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+
+/-- Read the round-0 message (the pre-challenge commitment) off a full tree. -/
+def readPre (tree : ChallengeTree (pSpecScalar Msg C) arity 0) :
+    (pSpecScalar Msg C).Message ⟨0, rfl⟩ :=
+  topMsgAux tree rfl
+
+/-- Index-generic round-1 reader: peel the sibling-challenge family off a `chalNode` at any
+index `a` together with a proof `a = 1`. -/
+def chalsAux : {a : Fin 3} → ChallengeTree (pSpecScalar Msg C) arity a → a = (1 : Fin 3) →
+    (Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+  | _, .leaf, ha => by simp [Fin.ext_iff] at ha
+  | _, .msgNode m h _ _, ha => by
+      obtain rfl : m = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+  | _, .chalNode m h chals _, ha => by
+      obtain rfl : m = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact chals
+
+/-- Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0
+helper strips the top `msgNode` and hands its child (which sits at round 1) to `chalsAux`. -/
+def readChallenges (tree : ChallengeTree (pSpecScalar Msg C) arity 0) :
+    Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩ :=
+  aux tree rfl
+where
+  /-- Round-0 helper for `readChallenges`: strip the top `msgNode`, delegate to `chalsAux`. -/
+  aux : {a : Fin 3} → ChallengeTree (pSpecScalar Msg C) arity a → a = (0 : Fin 3) →
+      (Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    | _, .leaf, ha => by simp [Fin.ext_iff] at ha
+    | _, .msgNode m _ _ child, ha => by
+        obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact chalsAux child rfl
+    | _, .chalNode m h _ _, ha => by
+        obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact absurd h Direction.noConfusion
+
+/-! ## The star tree and shape recovery -/
+
+/-- The star tree: one message node carrying `v`, one challenge node carrying the sibling
+family, leaves below. Every tree of this `pSpec` has this shape (`tree_shape`). -/
+def tree2 (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩) :
+    ChallengeTree (pSpecScalar Msg C) arity 0 :=
+  .msgNode 0 rfl v (.chalNode 1 rfl challenges (fun _ => .leaf))
+
+/-- The round-0 reader computes on the star tree. -/
+@[simp] theorem readPre_tree2 (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩) :
+    readPre (tree2 v challenges) = v := rfl
+
+/-- The round-1 reader computes on the star tree. -/
+@[simp] theorem readChallenges_tree2 (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩) :
+    readChallenges (tree2 v challenges) = challenges := rfl
+
+/-- Shape recovery, level 2: every subtree at the last round is a leaf. -/
+theorem eq_leaf : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) →
+    (ha : a = Fin.last 2) →
+      HEq t (ChallengeTree.leaf : ChallengeTree (pSpecScalar Msg C) arity (Fin.last 2))
+  | _, .leaf, _ => HEq.rfl
+  | _, .msgNode m _ _ _, ha => by
+      exact absurd (congrArg Fin.val ha) (by simpa using m.isLt.ne)
+  | _, .chalNode m _ _ _, ha => by
+      exact absurd (congrArg Fin.val ha) (by simpa using m.isLt.ne)
+
+/-- Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves. -/
+theorem chal_shape : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) →
+    (ha : a = 1) →
+    ∃ challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩,
+      HEq t (ChallengeTree.chalNode (pSpec := pSpecScalar Msg C) (arity := arity)
+        1 rfl challenges (fun _ => .leaf))
+  | _, .leaf, ha => by simp [Fin.ext_iff] at ha
+  | _, .msgNode m h _ _, ha => by
+      obtain rfl : m = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+  | _, .chalNode m h chals children, ha => by
+      obtain rfl : m = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      refine ⟨chals, ?_⟩
+      have hch : children = fun _ => .leaf := by
+        funext j
+        exact eq_of_heq (eq_leaf (children j) rfl)
+      rw [hch]
+
+/-- Shape recovery, level 0: every tree at round 0 is a `tree2`. -/
+theorem tree_shape_aux : {a : Fin 3} → (t : ChallengeTree (pSpecScalar Msg C) arity a) →
+    (ha : a = 0) →
+    ∃ v challenges, HEq t (tree2 (arity := arity) v challenges)
+  | _, .leaf, ha => by simp [Fin.ext_iff] at ha
+  | _, .msgNode m h msg child, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      obtain ⟨challenges, hchild⟩ := chal_shape child rfl
+      refine ⟨msg, challenges, ?_⟩
+      rw [eq_of_heq hchild]
+      exact HEq.rfl
+  | _, .chalNode m h _ _, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+
+/-- **Shape recovery.** Every full tree of the two-round scalar `pSpec` is a star tree. -/
+theorem tree_shape (tree : ChallengeTree (pSpecScalar Msg C) arity 0) :
+    ∃ v challenges, tree = tree2 (arity := arity) v challenges := by
+  obtain ⟨v, challenges, h⟩ := tree_shape_aux tree rfl
+  exact ⟨v, challenges, eq_of_heq h⟩
+
+/-! ## Per-branch transcripts -/
+
+/-- The root-to-leaf path through `tree2` selecting branch `j` of the challenge node. -/
+def branchPath (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) : LeafPath (tree2 v challenges) :=
+  .msg (.chal j .leaf)
+
+/-- The full transcript of branch `j` of the star tree: message `v`, challenge
+`challenges j`. -/
+def branchTr (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) : (pSpecScalar Msg C).FullTranscript :=
+  (branchPath v challenges j).fullTranscript
+
+/-- Branch `j`'s transcript carries challenge `challenges j` at round 1. -/
+theorem branch_challenge (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchTr v challenges j).challenges ⟨1, rfl⟩ = challenges j := by
+  simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
+    FullTranscript.challenges, Transcript.concat]
+  simp [Fin.snoc]
+
+/-- Branch `j`'s transcript carries the shared message `v` at round 0. -/
+theorem branch_pre (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchTr v challenges j).messages ⟨0, rfl⟩ = v := by
+  simp only [branchTr, branchPath, LeafPath.fullTranscript, LeafPath.transcript,
+    FullTranscript.messages, Transcript.concat]
+  simp [Fin.snoc]
+
+/-- Branch `j`'s transcript is one of the star tree's leaf transcripts. -/
+theorem branch_mem (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    branchTr v challenges j ∈ (tree2 v challenges).fullTranscripts :=
+  LeafPath.mem_fullTranscripts _
+
+/-! ## The scalar structure's arity and node predicate -/
+
+/-- The scalar-round arity is `k` (propositionally — `1 * (k − 1) + 1` is not `rfl`-equal to
+`k`; this is the bridge the extractor's `Fin.cast` uses). Needs `1 ≤ k`, supplied by `hk`. -/
+theorem scalarStructure_arity {k : ℕ} (hk : 2 ≤ k) :
+    (scalarStructure (Msg := Msg) (C := C) k hk).arity ⟨1, rfl⟩ = k := by
+  change 1 * (k - 1) + 1 = k
+  omega
+
+/-- At `ℓ = 1` the coordinate-wise node predicate collapses to **injectivity** of the sibling
+challenges (`isSpecialSoundFamily_one_iff_injective`): the `SS(C, 1, k)` condition is exactly
+`k` pairwise-distinct challenge values — the shape of Hachi Lemmas 9 and 11. -/
+theorem injective_of_nodeOk {k : ℕ} {hk : 2 ≤ k}
+    {challenges : Fin ((scalarStructure (Msg := Msg) (C := C) k hk).arity ⟨1, rfl⟩) →
+      (pSpecScalar Msg C).Challenge ⟨1, rfl⟩}
+    (hOk : (scalarStructure (Msg := Msg) (C := C) k hk).nodeOk ⟨1, rfl⟩ challenges) :
+    Function.Injective fun j : Fin k =>
+      challenges (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j) := by
+  have hfam : Function.Injective fun j : Fin (1 * (k - 1) + 1) =>
+      (Equiv.funUnique (Fin 1) ((pSpecScalar Msg C).Challenge ⟨1, rfl⟩)).symm
+        (challenges (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm j)) :=
+    (isSpecialSoundFamily_one_iff_injective _).mp hOk
+  have h₃ : k = 1 * (k - 1) + 1 := by omega
+  intro a b hab
+  have hstep : Fin.cast h₃ a = Fin.cast h₃ b := by
+    apply hfam
+    change (Equiv.funUnique (Fin 1) _).symm (challenges _)
+        = (Equiv.funUnique (Fin 1) _).symm (challenges _)
+    exact congrArg _ (by
+      have ha : (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm
+            (Fin.cast h₃ a))
+          = Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm a := rfl
+      have hb : (Fin.cast
+          (congrFun (scalarStructure (Msg := Msg) (C := C) k hk).arity_eq ⟨1, rfl⟩).symm
+            (Fin.cast h₃ b))
+          = Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm b := rfl
+      rw [ha, hb]
+      exact hab)
+  exact Fin.cast_injective h₃ hstep
+
+/-! ## Pure-acceptance bridge and extractor -/
+
+section Bridge
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitOut : Type} {σ : Type}
+
+/-- Acceptance of the star tree specializes, per branch `j`, to membership of the branch's
+verifier output `(stmtIn, v, challenges j)` in `relOut.language` — for any pure verifier that
+outputs the statement extended by the transcript's message and challenge. -/
+theorem branch_relOut_language (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
+    (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+    (relOut : Set ((StmtIn × Msg × C) × WitOut))
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (hAcc : (tree2 v challenges).IsAccepting init impl V stmtIn relOut.language)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (stmtIn, v, challenges j) ∈ relOut.language :=
+  Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j) relOut.language
+    (stmtIn, v, challenges j) (by rw [hpure]; rw [branch_pre, branch_challenge]; rfl)
+    (hAcc _ (branch_mem v challenges j))
+
+end Bridge
+
+open Classical in
+/-- The scalar tree extractor, generic over separate witness types: `relOut` relates the
+extended statement to a per-branch response `WitOut`; `mkWitness` assembles the extracted input
+witness `WitIn` from the shared message, the `k` sibling challenges, and one classically chosen
+`WitOut` per branch (`Classical.ofNonempty` where none exists — on structured accepting trees
+`branch_relOut_language` fires every guard). Hypothesis-free: all correctness is proven
+downstream. -/
+noncomputable def treeExtractor {StmtIn WitOut WitIn : Type} [Nonempty WitOut] {k : ℕ}
+    (hk : 2 ≤ k)
+    (relOut : Set ((StmtIn × Msg × C) × WitOut))
+    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
+    Extractor.TreeBased StmtIn WitIn (pSpecScalar Msg C)
+      ((scalarStructure (Msg := Msg) (C := C) k hk).arity) :=
+  fun stmtIn tree =>
+    let v := readPre tree
+    let fam : Fin k → C := fun j =>
+      readChallenges tree (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)
+    let resp : Fin k → WitOut := fun j =>
+      if h : ∃ w, ((stmtIn, v, fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
+    mkWitness stmtIn v fam resp
+
 section Assembly
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} [Nonempty WitOut]
-  {σ : Type} [SampleableType C]
+  {σ : Type}
 
-/-- **Generic scalar-round CWSS assembly (skeleton, F4.1).** Any pure statement-extending
-verifier of the two-round scalar `pSpecScalar` is coordinate-wise special sound for
-`scalarStructure k`, provided a witness assembler `mkWitness` that turns `k` per-branch
-`relOut`-witnesses at pairwise-distinct challenges into a `relIn`-witness. This is the engine
-behind Hachi Lemma 9 (`k = 2d`, interpolation) and Lemma 11 (`k = deg + 1`, per sumcheck round).
-
-**Sorried.** Proof plan: transplant `SingleRound.coordinateWiseSpecialSound_of_mkWitness` — the
-tree at arity `k` is one message node over one challenge node over leaves (`tree_shape` at
-arity `k`); the `SS(C, 1, k)` node predicate is injectivity of the challenge family
-(`isSpecialSoundFamily_one_iff_injective` composed with the `Equiv.funUnique` decomposition of
-`scalarStructure`); branch acceptance yields per-branch `relOut`-membership via
-`mem_of_pure_accepting`. -/
+/-- **Generic scalar-round CWSS assembly.** Any pure statement-extending verifier of the
+two-round scalar `pSpecScalar` is coordinate-wise special sound for `scalarStructure k`,
+provided a witness assembler `mkWitness` that turns `k` per-branch `relOut`-witnesses at
+pairwise-distinct challenges into a `relIn`-witness. This is the engine behind Hachi Lemma 9
+(`k = 2d`, interpolation) and Lemma 11 (`k = deg + 1`, per sumcheck round): all tree/extractor
+plumbing is discharged here once; the protocol-specific work lives entirely in `hmk`. -/
 theorem coordinateWiseSpecialSound_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
@@ -99,7 +354,26 @@ theorem coordinateWiseSpecialSound_of_mkWitness_scalar
       (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
       (s, mkWitness s v fam resp) ∈ relIn) :
     V.coordinateWiseSpecialSound init impl (scalarStructure k hk) relIn relOut := by
-  sorry
+  classical
+  refine ⟨treeExtractor hk relOut mkWitness, ?_⟩
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
+  have hmem : ∀ j : Fin k,
+      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
+    intro j
+    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
+      (Fin.cast harity j)
+    exact (Set.mem_language_iff relOut _).1 h
+  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
+  have hbranch : ∀ j : Fin k,
+      ((stmtIn, v, challenges (Fin.cast harity j)),
+        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
+          then h.choose else Classical.ofNonempty) ∈ relOut := by
+    intro j
+    rw [dif_pos (hmem j)]
+    exact (hmem j).choose_spec
+  exact hmk stmtIn v _ _ hbranch hinj
 
 end Assembly
 

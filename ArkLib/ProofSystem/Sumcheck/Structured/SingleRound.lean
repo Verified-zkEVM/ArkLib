@@ -26,11 +26,11 @@ This file collects single-round primitives for the structured (witness-mode) sum
   polynomial degree bound `d`.
 
 These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Spec`, and `RingSwitching.SumcheckPhase`. They are fully
+`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
 generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that future ring-switching protocols (Hachi, Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the ring-switching types.
+that other protocols (Hachi's §4.3 sumcheck, Galois-ring PCS) can reuse them without
+depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
+wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
 -/
 
 namespace Sumcheck.Structured

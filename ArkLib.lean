@@ -83,6 +83,7 @@ import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
+import ArkLib.Data.CodingTheory.ProximityGap.AffineGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
@@ -150,6 +151,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LyubashevskySeiler
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.MicciancioYoung
 import ArkLib.Data.Lattices.CyclotomicRing.Norms
 import ArkLib.Data.Lattices.CyclotomicRing.PowTwo
+import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
 import ArkLib.Data.Lattices.CyclotomicRing.Rq
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield
 import ArkLib.Data.Lattices.CyclotomicRing.Subfield.Basis
@@ -217,6 +219,7 @@ import ArkLib.OracleReduction.Salt
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedScalar
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
@@ -226,6 +229,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRoun
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.Implications
+import ArkLib.OracleReduction.Security.RbrGame
 import ArkLib.OracleReduction.Security.Rewinding
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Security.SpecialSoundness
@@ -263,12 +267,21 @@ import ArkLib.ProofSystem.Fri.RoundConsistency
 import ArkLib.ProofSystem.Fri.Spec.General
 import ArkLib.ProofSystem.Fri.Spec.SingleRound
 import ArkLib.ProofSystem.Plonk.Basic
-import ArkLib.ProofSystem.RingSwitching.BatchingPhase
-import ArkLib.ProofSystem.RingSwitching.General
-import ArkLib.ProofSystem.RingSwitching.Prelude
-import ArkLib.ProofSystem.RingSwitching.Profile
-import ArkLib.ProofSystem.RingSwitching.Spec
-import ArkLib.ProofSystem.RingSwitching.SumcheckPhase
+import ArkLib.ProofSystem.RingSwitching.Basic
+import ArkLib.ProofSystem.RingSwitching.Lift
+import ArkLib.ProofSystem.RingSwitching.Lift.Presentation
+import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
+import ArkLib.ProofSystem.RingSwitching.Packing
+import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+import ArkLib.ProofSystem.RingSwitching.Packing.General
+import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.Profile
+import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
+import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
+import ArkLib.ProofSystem.RingSwitching.Transport
+import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
+import ArkLib.ProofSystem.RingSwitching.Transport.Eval
 import ArkLib.ProofSystem.Spartan.Basic
 import ArkLib.ProofSystem.Stir.Combine
 import ArkLib.ProofSystem.Stir.MainThm
@@ -297,6 +310,6 @@ import ArkLib.ToVCVio.EvalDist.Defs.Support
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
 import ArkLib.ToVCVio.OracleComp.Coercions.SubSpec
 import ArkLib.ToVCVio.OracleComp.EvalDist
+import ArkLib.ToVCVio.OracleComp.QueryTracking.LoggingOracle
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
-import ArkLib.ToVCVio.ToMathlib.Control.StateT
 import ArkLib.ToVCVio.ToMathlib.Data.Vector.Basic

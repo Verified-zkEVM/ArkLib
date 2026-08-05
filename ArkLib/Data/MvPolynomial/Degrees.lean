@@ -186,6 +186,20 @@ theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial σ R) (n : ℕ) :
   apply Iff.trans (mem_restrictDegree_iff_sup σ p n)
   simp only [degreeOf]
 
+/-- A polynomial in finitely many variables whose individual degrees are all at most `n` has
+total degree at most `(number of variables) * n`. -/
+theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolynomial σ R) (n : ℕ)
+    (hp : p ∈ restrictDegree σ R n) : p.totalDegree ≤ Fintype.card σ * n := by
+  classical
+  rw [mem_restrictDegree] at hp
+  rw [MvPolynomial.totalDegree]
+  apply Finset.sup_le
+  intro s hs
+  calc (s.sum fun _ e => e) = ∑ i : σ, s i := by
+        rw [Finsupp.sum_fintype]; intro i; rfl
+    _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
+    _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
+
 end DegreeOf
 
 section Equiv

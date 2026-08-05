@@ -3,14 +3,27 @@ Copyright (c) 2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
-import ArkLib.ProofSystem.RingSwitching.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
+import ArkLib.ProofSystem.RingSwitching.RoundVerifiers
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 
 namespace RingSwitching
 
-/-! ## Protocol Specs for Ring-Switching
-This module contains the protocol specs, oracle index bounds,
-instances of OracleInterface and SampleableType for the Ring Switching protocol.
+/-!
+# Wire formats of the interactive packing reduction
+
+The transcript shape of the interactive `Packing` reduction, phase by phase, together
+with the `OracleInterface`/`SampleableType` instances the oracle-reduction framework needs:
+
+* `pSpecBatching` — the batching round: one carrier message, one batching-vector challenge
+  (the family-shared message-then-scalar-challenge wire at `Msg := P.A`, `C := Fin κ → L`);
+* `pSpecSumcheckLoop` — `ℓ'` copies of the structured single sumcheck round (degree-generic
+  in `WithDegree` form; the reduction pins degree 2);
+* `pSpecFinalSumcheck` — the closing round: one constant from the prover, no challenge (the
+  family-shared one-message wire `pSpecMessage` at `Msg := L`);
+* their sequential compositions, up to `fullPspec` — the whole reduction followed by the
+  downstream opening protocol's own wire.
 -/
 
 noncomputable section
@@ -30,10 +43,17 @@ variable (mlIOPCS : MLIOPCS L ℓ')
 
 section Pspec
 
+/-- The batching-phase wire format: the prover sends the carrier element `ŝ ∈ P.A`, the
+verifier replies with the batching scalars `r'' ∈ L^κ`. This is the generic
+message-then-scalar-challenge round `CoordinateWise.ScalarRound.pSpecScalar` at
+`Msg := P.A`, `C := Fin κ → L` — the same wire format the committed-scalar seam
+(`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`) and the
+Hachi `Lift` instance use at `Msg := TCom`, `C := F`. The verifier of this
+round is an instance of the family-shared check-then-update shape on this wire
+(`RingSwitching.scalarRoundOracleVerifier`, `../RoundVerifiers.lean`). -/
 @[reducible]
 def pSpecBatching : ProtocolSpec 2 :=
-  ⟨![Direction.P_to_V, Direction.V_to_P],
-   ![P.A, Fin κ → L]⟩
+  CoordinateWise.ScalarRound.pSpecScalar P.A (Fin κ → L)
 
 -- `pSpecSumcheckRound` was lifted to `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound` as a
 -- degree-neutral spec. The `WithDegree` names expose the reusable protocol shape; the historical
@@ -51,7 +71,10 @@ def pSpecSumcheckLoopWithDegree (d : ℕ) :=
 @[reducible]
 def pSpecSumcheckLoop := pSpecSumcheckLoopWithDegree L ℓ' 2
 
-def pSpecFinalSumcheck : ProtocolSpec 1 := ⟨![Direction.P_to_V], ![L]⟩
+/-- Final-step wire: one constant `c ∈ L` from the prover, no challenge — the family-shared
+one-message wire `RingSwitching.pSpecMessage` at `Msg := L` (`RoundVerifiers.lean`). -/
+@[reducible]
+def pSpecFinalSumcheck : ProtocolSpec 1 := pSpecMessage L
 
 @[reducible]
 def pSpecCoreInteractionWithDegree (d : ℕ) :=
@@ -72,9 +95,10 @@ def fullPspec := (pSpecLargeFieldReduction κ (L:=L) (K:=K) P (ℓ':=ℓ')) ++�
 instance : OracleInterface P.A := OracleInterface.instDefault
 instance : OracleInterface (Fin κ → L) := OracleInterface.instDefault
 
-instance : ∀ j, OracleInterface ((pSpecBatching κ L K P).Message j)
-  | ⟨0, _⟩ => OracleInterface.instDefault -- ŝ ∈ A
-  | ⟨1, _⟩ => OracleInterface.instDefault -- r'' ∈ L^κ
+-- The message interface of `pSpecBatching` is the generic `pSpecScalar` instance from
+-- `CoordinateWise.ScalarRound`, fed by `OracleInterface P.A` above. Keeping the generic
+-- instance (rather than a hand-written per-index one) lets the batching verifier be stated
+-- through the family-shared `scalarRoundOracleVerifier` without instance mismatches.
 
 -- The `OracleInterface` instance for `pSpecSumcheckRound.Message` was lifted to
 -- `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound` along with the spec itself.
@@ -86,8 +110,8 @@ instance {d : ℕ} : ∀ j, OracleInterface ((pSpecSumcheckLoopWithDegree (L:=L)
 instance : ∀ j, OracleInterface ((pSpecSumcheckLoop (L:=L) ℓ').Message j)
   := instOracleInterfaceMessageSeqCompose
 
-instance : ∀ i, OracleInterface ((pSpecFinalSumcheck (L:=L)).Message i)
-  | ⟨0, _⟩ => OracleInterface.instDefault -- final constant c
+-- The message interface of `pSpecFinalSumcheck` is the canonical in-the-clear instance of
+-- the one-message wire `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).
 
 instance {d : ℕ} : ∀ i,
     OracleInterface ((pSpecCoreInteractionWithDegree (L:=L) (ℓ':=ℓ') d).Message i) :=
@@ -107,11 +131,8 @@ instance : ∀ i, OracleInterface ((fullPspec κ (L:=L) (K:=K) P (ℓ':=ℓ') ml
 
 /-! ## SampleableType instances -/
 
-instance : ∀ j, SampleableType ((pSpecBatching κ L K P).Challenge j)
-  | ⟨0, h0⟩ => by nomatch h0
-  | ⟨1, _⟩ => by
-    simp only [Challenge, Fin.isValue, Matrix.cons_val_one, Matrix.cons_val_fin_one]
-    exact instSampleableTypeFinFunc (α := L)
+-- The challenge sampler of `pSpecBatching` is the generic `pSpecScalar` instance from
+-- `CoordinateWise.ScalarRound`, fed by `SampleableType (Fin κ → L)` (`instSampleableTypeFinFunc`).
 
 -- The `SampleableType` instance for `pSpecSumcheckRound.Challenge` was lifted to
 -- `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound`. Anonymous instances are looked up
@@ -124,8 +145,8 @@ instance {d : ℕ} : ∀ j,
 instance : ∀ j, SampleableType ((pSpecSumcheckLoop (L:=L) ℓ').Challenge j)
   := instSampleableTypeChallengeSeqCompose
 
-instance : ∀ i, SampleableType ((pSpecFinalSumcheck (L:=L)).Challenge i)
-  | ⟨0, h0⟩ => by nomatch h0 -- P->V message has no challenge
+-- `pSpecFinalSumcheck` has no challenges; the empty `SampleableType` instance comes with
+-- `pSpecMessage` (`RingSwitching/RoundVerifiers.lean`).
 
 instance {d : ℕ} : ∀ i,
     SampleableType ((pSpecCoreInteractionWithDegree (L:=L) (ℓ':=ℓ') d).Challenge i) :=
