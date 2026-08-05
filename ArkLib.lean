@@ -182,6 +182,14 @@ import ArkLib.Data.Polynomial.Indicator
 import ArkLib.Data.Polynomial.Interface
 import ArkLib.Data.Polynomial.Prelims
 import ArkLib.Data.Polynomial.RationalFunctions
+import ArkLib.Data.Polynomial.RationalFunctions.FunctionField
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Sequence
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
+import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Weight
+import ArkLib.Data.Polynomial.RationalFunctions.Lifts
+import ArkLib.Data.Polynomial.RationalFunctions.RationalRootVanishing
+import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.SplitFold
 import ArkLib.Data.Polynomial.Trivariate
 import ArkLib.Data.Probability.Instances
