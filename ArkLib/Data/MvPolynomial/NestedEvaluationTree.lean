@@ -33,6 +33,18 @@ import Mathlib.Algebra.Polynomial.Roots
   `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`. The complete tree supplies `k ^ n`
   points (`EvaluationTree.numLeaves_eq_pow`) and, unlike a star, supports the interpolation
   induction below.
+
+  ## Relation to the Cartesian-grid zero test
+
+  `MvPolynomial.eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`
+  (`ArkLib/Data/MvPolynomial/Interpolation.lean`) is the same statement for a product set
+  `∏ᵢ S i`. Neither theorem subsumes the other: the tree here allows path-dependent labels, which a
+  product set cannot express, while the grid version allows a *different* root count `#(S i)` per
+  variable, which a tree of uniform arity `k` cannot — picking `k` from the largest `degreeOf`
+  can exceed some `#(S j)`. So the two are siblings, and what they share — the head-variable root
+  count — is factored out as
+  `MvPolynomial.eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero` and called by both.
+  Making the grid version an actual corollary would need per-level arity here.
 -/
 
 /-- A complete `k`-ary evaluation tree of depth `n` over `F`.
@@ -127,9 +139,10 @@ the first `r` levels) and `f = Fin.natAdd` (it reads the last `r` levels).
 
 The proof is a single induction on the tree.  At a level inside the window, fixing the first
 variable preserves the degree bound for every remaining variable, so the induction hypothesis makes
-all `k` restricted polynomials zero; the original polynomial, regarded as univariate in that
-variable over the ring of polynomials in the remaining ones, then has `k` distinct roots and degree
-`< k`, hence is zero.  At a level outside the window the proof simply descends into one child. -/
+all `k` restricted polynomials zero; the `k` distinct sibling labels are then `k` roots against
+degree `< k` in that variable, which is
+`MvPolynomial.eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero` (shared with the Cartesian-grid
+zero test).  At a level outside the window the proof simply descends into one child. -/
 theorem eq_zero_of_vanishes_comp (hk : 0 < k) {n : ℕ} (tree : EvaluationTree F k n)
     {m r : ℕ} (p : MvPolynomial (Fin r) F) (f : Fin r → Fin n)
     (hf : ∀ i, (f i).val = m + i.val) (hDegree : ∀ i, p.degreeOf i < k)
@@ -207,23 +220,15 @@ theorem eq_zero_of_vanishes_comp (hk : 0 < k) {n : ℕ} (tree : EvaluationTree F
               (fun i => lt_of_le_of_lt
                 (MvPolynomial.degreeOf_eval_C_finSuccEquiv p i (challenges j)) (hDegree i.succ))
               (hChildren j) h1
-          -- `k` distinct roots against degree `< k` in the head variable.
-          let Cc : Fin k → MvPolynomial (Fin r') F := fun j => MvPolynomial.C (challenges j)
-          have hinj : Function.Injective Cc :=
-            fun _ _ h => hChallenges (MvPolynomial.C_injective (Fin r') F h)
-          have hRootsCard : (Finset.univ.image Cc).card = k := by
-            rw [Finset.card_image_of_injective _ hinj, Finset.card_univ, Fintype.card_fin]
-          have hDegreeQ : (MvPolynomial.finSuccEquiv F r' p).natDegree
-              < (Finset.univ.image Cc).card := by
-            rw [hRootsCard, MvPolynomial.natDegree_finSuccEquiv]
-            exact hDegree 0
-          have hRoots : ∀ x ∈ Finset.univ.image Cc,
-              Polynomial.eval x (MvPolynomial.finSuccEquiv F r' p) = 0 := by
-            intro x hx
-            obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp hx
-            exact hRestrictedZero j
-          exact EmbeddingLike.map_eq_zero_iff.mp
-            (Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _ _ hRoots hDegreeQ)
+          -- `k` distinct roots against degree `< k` in the head variable — the step shared with
+          -- the Cartesian-grid zero test `eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`.
+          have hCard : (Finset.univ.image challenges).card = k := by
+            rw [Finset.card_image_of_injective _ hChallenges, Finset.card_univ, Fintype.card_fin]
+          refine MvPolynomial.eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero
+            (Finset.univ.image challenges) (by rw [hCard]; exact hDegree 0) ?_
+          intro x hx
+          obtain ⟨j, -, rfl⟩ := Finset.mem_image.mp hx
+          exact hRestrictedZero j
 
 /-- The zero test in the common case where the polynomial reads the *first* `r` levels of the
 tree. -/
