@@ -98,7 +98,6 @@ lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :
       aesop (add unsafe (by apply CosetFftDomain.injective (ω := domain)))
     ext u
     simp only [mem_filter, mem_univ, true_and, ←hpre, ←h, Nat.sub_zero, mem_preimage]
-    have := @mem_subdomain_0_iff_mem (ω := domain)
     aesop
   rw [blockIdx, h]
   have hcard : Finset.card {j, j'} = 2 := by
@@ -112,13 +111,11 @@ lemma foldWordAux_of_k_2 [NeZero n] {i : Fin (2 ^ (n - 1))} :
       (fun a _ ↦ domain a)
       (fun a ha ↦ by
         simp only [Nat.sub_zero, mem_block, pow_one]
-        rw [mem_subdomain_0_iff_mem]
         simpa using ha)
       (fun _ _ _ _ h ↦ CosetFftDomain.injective h)
       (fun b hb ↦ by
         obtain ⟨⟨j, hb⟩, hb'⟩ :
           b ∈ domain ∧ b ^ 2 = (CosetFftDomain.subdomain domain 1) i := by
-          have := @mem_subdomain_0_iff_mem (ω := domain)
           aesop
         exact ⟨j, by simp [hb, hb'], by simp [hb]⟩)
   apply Polynomial.eq_of_eval_eq_degree (n := 2) (s := {y.1, -y.1})

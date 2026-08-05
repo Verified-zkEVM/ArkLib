@@ -4,25 +4,40 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Spec
-import ArkLib.ProofSystem.RingSwitching.BatchingPhase
-import ArkLib.ProofSystem.RingSwitching.SumcheckPhase
+import ArkLib.ProofSystem.RingSwitching.Packing.Spec
+import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
+import ArkLib.ProofSystem.RingSwitching.Packing.SumcheckPhase
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
-# Full Ring-Switching Protocol
+# The composed interactive packing reduction
 
-This module contains specifications and security properties for the full
-ring-switching protocol. The protocol is a sequential composition of:
-1. **Batching Phase** (polynomial packing and batching via tensor algebra operations)
-2. **Sumcheck Phase** (ℓ' rounds of sumcheck, and the final sumcheck step)
-3. **Large Field Invocation** (invocation to underlying large-field IOPCS)
+The whole interactive `Packing` reduction, assembled by sequential composition, with
+its security statements. Input: an evaluation claim over the small ring against a committed
+multilinear. Output: accept/reject. The composition is
+
+1. **batching phase** — relocate the claim into the carrier and batch the coordinate claims
+   into one sumcheck target (`BatchingPhase.lean`);
+2. **relocation sumcheck** — `ℓ'` rounds plus the final consistency step, anchoring the
+   claim at a fresh random point (`SumcheckPhase.lean`);
+3. **downstream opening** — the residual large-ring evaluation claim is discharged by the
+   `MLIOPCS` parameter, an arbitrary multilinear opening protocol bundled with its own
+   completeness and round-by-round soundness.
+
+Perfect completeness composes from the phases. Round-by-round knowledge soundness composes
+with total error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+ 1/|L|` (final step)
+`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`. Leaf
+proofs are open (`sorry`).
+
+This is one construction of the ring-switching family, not the family itself — see the
+folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
+instantiated by `ProofSystem/Binius/FRIBinius/`.
 
 ## References
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
-  Towers." Cryptology ePrint Archive (2024).
+- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
+  Binary Towers." Cryptology ePrint Archive (2024).
 -/
 
 namespace RingSwitching.FullRingSwitching
@@ -46,7 +61,7 @@ def batchingCoreVerifier :=
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The oracle verifier for the full Binary Basefold protocol -/
+/-- The oracle verifier for the full DP24 ring-switching protocol -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
@@ -63,7 +78,7 @@ def batchingCoreReduction :=
        mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The reduction for the full Binary Basefold protocol -/
+/-- The reduction for the full DP24 ring-switching protocol -/
 @[reducible]
 def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
@@ -75,7 +90,7 @@ def fullOracleReduction :
     :=
   (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).append mlIOPCS.oracleReduction
 
-/-- The full Binary Basefold protocol as a Proof -/
+/-- The full DP24 ring-switching protocol as a Proof -/
 @[reducible]
 def fullOracleProof :
   OracleProof []ₒ
