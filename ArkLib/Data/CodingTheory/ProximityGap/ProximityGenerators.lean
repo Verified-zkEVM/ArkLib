@@ -23,7 +23,10 @@ probability of obtaining a zero output from a non-zero vector is bounded above b
 - `MDS generator`: A generator is MDS if the matrix whose rows are the outputs of the generator
 function is a generator matrix for an MDS code
 - `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the
-probability that the generator satisfies the MCA condition is bounded above by `ε_mca`.
+probability that the generator satisfies the MCA condition is bounded above by `ε_mca`. Stated
+over module codes `ModuleCode ι F A`, matching [BCGM25]'s alphabet generality (Definition 3.2);
+`mcaError` is the corresponding worst-case error value, with
+`isMCAGenerator_iff_mcaError_le` tying the two together.
 - `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
 respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
 - `affine line generator`: A generator of the form `G : F → F²` such that `x ↦ (1,x)`.
