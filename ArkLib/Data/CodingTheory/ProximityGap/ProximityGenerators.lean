@@ -87,21 +87,35 @@ Definition 3.12 [BCGM25]. -/
 def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
   Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
-/-- The condition for MCA generator. -/
-def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : LinearCode ι F)
-  (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
-  let v := Matrix.vecMul (G x) (U)
-  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-  projectedWord v T ∈ projectedCodeSubmod LC T ∧
-  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T
+/-- The condition for MCA generator.
+
+Stated over a module code `MC : ModuleCode ι F A`, matching [BCGM25]'s alphabet generality
+(Definition 3.2 takes `Σ` to be an arbitrary `F`-vector space): the combination
+`∑ j, G x j • U j` replaces `Matrix.vecMul (G x) U`, which requires a ring structure on the
+alphabet. At `A := F` the two agree — see `vecMul_eq_smul_sum`. -/
+def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+  (G : Generator S ℓ F) (MC : ModuleCode ι F A)
+  (x : S) (U : ℓ → (ι → A)) (δ : I) : Prop :=
+  let v : ι → A := fun k => ∑ j, G x j • U j k
+  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
+  projectedWord v T ∈ projectedCodeSubmod MC T ∧
+  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod MC T
+
+omit [Fintype ι] in
+/-- Over the alphabet `A := F`, the linear combination in `IsMCA` is the matrix-vector
+product used by the original `F`-alphabet definition. -/
+lemma vecMul_eq_smul_sum {S : Type} (G : Generator S ℓ F) (x : S) (U : ℓ → (ι → F)) :
+    Matrix.vecMul (G x) (Matrix.of U) = fun k => ∑ j, G x j • U j k := by
+  funext k
+  simp [Matrix.vecMul, dotProduct, smul_eq_mul]
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
-  (LC : LinearCode ι F) : Prop :=
-  ∀ U : ℓ → (ι → F), ∀ γ : I,
-    Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+  (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
+  ∀ U : ℓ → (ι → A), ∀ δ : I,
+    Pr_{let x ←$ᵖ S}[(IsMCA G MC x U δ)] ≤ ENNReal.ofReal (ε_mca δ)
 
 /-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.
