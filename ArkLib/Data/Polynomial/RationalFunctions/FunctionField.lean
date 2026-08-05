@@ -30,7 +30,7 @@ open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
 
-section
+section Monicization
 
 variable {F : Type} [CommRing F] [IsDomain F]
 
@@ -49,6 +49,7 @@ section FieldIrreducibility
 
 variable {F : Type} [Field F]
 
+/-- The embedding `F[Z] → F(Z)` of a domain into its fraction field is injective. -/
 lemma univPolyHom_injective :
     Function.Injective (univPolyHom (F := F)) := by
   simpa [ToRatFunc.univPolyHom] using (RatFunc.algebraMap_injective (K := F))
@@ -378,6 +379,9 @@ section FieldEmbedding
 
 variable {F : Type} [Field F]
 
+/-- Divisibility by the monicization descends from `F(Z)[T]` to `F[Z][T]`: if `monicizeRatFunc H`
+divides the image of `p`, then `monicize H` already divides `p`.  This is what makes
+`embeddingOf𝒪Into𝕃` injective. -/
 lemma monicize_dvd_of_map_dvd_monicizeRatFunc {H p : F[X][Y]} (hHdeg : 0 < H.natDegree)
     (hp : monicizeRatFunc H ∣ p.map (univPolyHom (F := F))) :
     monicize H ∣ p := by
@@ -599,5 +603,5 @@ lemma canonicalRepOf𝒪_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDe
   exact (Polynomial.modByMonic_eq_self_iff (monicize_monic H hH)).2 hp
 
 
-end
+end Monicization
 end RationalFunctions

@@ -37,7 +37,7 @@ open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
 
-section
+section AlgebraicWeights
 
 variable {F : Type} [CommRing F] [IsDomain F]
 /-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
@@ -699,6 +699,6 @@ lemma piZ_eq_eval_canonicalRepOf𝒪 {H : F[X][Y]} (hH : 0 < H.natDegree)
   conv_lhs => rw [← mk_canonicalRepOf𝒪 hH β]
   rfl
 
-end
+end AlgebraicWeights
 
 end RationalFunctions

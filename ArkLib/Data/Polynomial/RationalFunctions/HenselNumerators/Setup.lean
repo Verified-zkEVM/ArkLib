@@ -37,10 +37,10 @@ form `ξ = W^{d-2}ζ ∈ 𝒪 H`, and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` o
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
-noncomputable section
+noncomputable section HenselSetup
 namespace HenselNumerators
 
-variable {F : Type} [Field F] {R : F[X][X][X]} {H : F[X][Y]}
+variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
 
 /-! ### Claim A.2 hypotheses and derivative setup -/
@@ -58,17 +58,22 @@ private lemma evalX_natDegree_le {K : Type} [CommSemiring K] (x : K) (P : K[X][Y
   have hcoeff : P.coeff n = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt hn
   simp [Bivariate.evalX_eq_map, Polynomial.coeff_map, hcoeff]
 
+/-- `R(x₀,·,Z)` is nonzero, since it is separable by hypothesis. -/
 lemma evalX_ne_zero_of_hypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
     (hHyp : Hypotheses x₀ R H) :
     Bivariate.evalX (Polynomial.C x₀) R ≠ 0 :=
   hHyp.separable_evalX.ne_zero
 
+/-- `dH ≤ d`: the factor `H` cannot have larger `Y`-degree than `R`, since it divides
+`R(x₀,·,Z)`. -/
 lemma natDegree_H_le_natDegree_R_of_hypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
     (hHyp : Hypotheses x₀ R H) :
     H.natDegree ≤ R.natDegree :=
   (Polynomial.natDegree_le_of_dvd hHyp.dvd_evalX (evalX_ne_zero_of_hypotheses hHyp)).trans
     (evalX_natDegree_le (Polynomial.C x₀) R)
 
+/-- Coefficients of the specialized `Y`-derivative: `∂R/∂Y(x₀,·,Z)` has `i`-th coefficient
+`(i+1) · R(x₀,·,Z)ᵢ₊₁`.  Differentiation in `Y` commutes with specializing `X`. -/
 lemma derivative_evalX_coeff (x₀ : F) (R : F[X][X][Y]) (i : ℕ) :
     (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff i =
       (Bivariate.evalX (Polynomial.C x₀) R).coeff (i + 1) * ((i + 1 : ℕ) : F[X]) := by
@@ -83,6 +88,8 @@ lemma derivative_evalX_coeff (x₀ : F) (R : F[X][X][Y]) (i : ℕ) :
     _ = (Bivariate.evalX (Polynomial.C x₀) R).coeff (i + 1) * ((i + 1 : ℕ) : F[X]) := by
       simp [Bivariate.evalX_eq_map, Polynomial.coeff_map]
 
+/-- Degree bound inherited by the derivative: its `i`-th coefficient has `Z`-degree at most
+`D - (i+1)`, one better than the naive `D - i` because differentiating shifts the index. -/
 lemma natDegree_derivative_evalX_coeff_le (x₀ : F) (R : F[X][X][Y]) {D i : ℕ}
     (hD : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
     ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff i).natDegree ≤ D - (i + 1) := by
@@ -284,10 +291,14 @@ lemma embeddingOf𝒪Into𝕃_xi (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp
 
 omit H_irreducible H_natDegree_pos in
+/-- `deg_Z W ≤ D - dH` for `W = H.leadingCoeff`, the paper's bound on `Λ(W)` in A.4. -/
 theorem leadingCoeff_natDegree_le_of_totalDegree_le {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D) :
     H.leadingCoeff.natDegree ≤ D - H.natDegree := by
   exact natDegree_coeff_le_of_totalDegree_le H hD_H H.natDegree
 
+/-- Weight of the reduction of a top-degree cofactor term: for `H · Q` of total degree at most
+`D`, the monomial `C (d · Q_a) · T^{d-1}` reduces modulo `H̃` to something of weight at most
+`(d-1)·(D - dH + 1)`.  This drives the `ξ`-weight bound in the case `dH < d`. -/
 theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q : F[X][Y]}
     {d D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
@@ -442,6 +453,8 @@ theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q
         weight_modByMonic_monicize_le hD_H hH _
       _ ≤ (WithBot.some ((d - 1) * (D - H.natDegree + 1)) : WithBot ℕ) := hraw
 
+/-- `Λ` on `𝒪` is bounded by the max under addition, transported from `weight_add_le` through
+canonical representatives. -/
 theorem regularWeight_add_le {H : F[X][Y]} {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hH : 0 < H.natDegree) (a b : 𝒪 H) :
     regularWeight hH (a + b) D ≤
@@ -458,6 +471,8 @@ theorem regularWeight_add_le {H : F[X][Y]} {D : ℕ} (hD_H : Bivariate.totalDegr
   rw [hpa, hpb]
   exact le_trans (regularWeight_mk_le hD_H hH (pa + pb)) (weight_add_le pa pb H D)
 
+/-- The low-degree part of the explicit representative of `ξ`: `∑_{i<d-1} (Pᵢ · W^{d-2-i}) Tⁱ`
+with `P = ∂R/∂Y(x₀,·,Z)`.  These are the terms of `W^{d-2}·ζ` whose `W`-power is non-negative. -/
 noncomputable def xiPreLower (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :=
   let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R.derivative
   let d : ℕ := R.natDegree
@@ -466,6 +481,8 @@ noncomputable def xiPreLower (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y]
     Polynomial.C (P.coeff i * W ^ (d - 2 - i)) * Polynomial.X ^ i
 
 omit H_irreducible H_natDegree_pos in
+/-- Degree of a single low-part coefficient `Pᵢ · W^{d-2-i}`, from the degree bounds on `P` and
+on `W`. -/
 theorem xiPreLower_coeff_natDegree_le (x₀ : F) {D i : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
@@ -485,6 +502,8 @@ theorem xiPreLower_coeff_natDegree_le (x₀ : F) {D i : ℕ}
       (Nat.add_le_add hcoeff (le_trans hpow (Nat.mul_le_mul_left (R.natDegree - 2 - i) hlc)))
 
 omit H_irreducible H_natDegree_pos in
+/-- Each monomial of `xiPreLower` has `Λ`-weight at most `(d-1)·(D - dH + 1)`, the bound Claim A.2
+claims for `ξ`. -/
 theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D i : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -571,6 +590,8 @@ theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 
         exact Nat.add_le_add hmul hi_le_n1
 
 omit H_irreducible H_natDegree_pos in
+/-- The low-degree part of `ξ` obeys the Claim A.2 bound `Λ ≤ (d-1)·(D - dH + 1)`, by taking the
+max over its monomials. -/
 theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -587,6 +608,9 @@ theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H
   intro i hi
   exact xiPreLower_term_weight_le x₀ hHyp hH hRdeg hD_H hD_Rx0 (Finset.mem_range.mp hi)
 
+/-- The top term of the explicit representative of `ξ`: `(P_{d-1} / W) · T^{d-1}`.  Its `W`-power
+would be negative, so the division is exact by `leadingCoeff_dvd_evalX_derivative_coeff_pred` —
+this is the paper's "we can save a little" step. -/
 noncomputable def xiPreTop (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :=
   let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R.derivative
   let d : ℕ := R.natDegree
@@ -594,6 +618,8 @@ noncomputable def xiPreTop (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :
   Polynomial.C (P.coeff (d - 1) / W) * Polynomial.X ^ (d - 1)
 
 omit H_irreducible H_natDegree_pos in
+/-- When `dH = d` the top coefficient `P_{d-1} / W` is a constant, so the top term contributes no
+`Z`-degree. -/
 theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)
     (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) (heq : H.natDegree = R.natDegree) :
@@ -672,6 +698,8 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
   omega
 
 omit H_irreducible H_natDegree_pos in
+/-- When `dH < d` the top term must be reduced modulo `H̃` before weighing, and the reduction obeys
+the Claim A.2 bound via `cofactor_top_reduction_weight_le`. -/
 theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
@@ -735,6 +763,7 @@ theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : 
           hlt hQdeg)
 
 omit H_irreducible H_natDegree_pos in
+/-- Degree of the top coefficient after the exact division by `W`. -/
 theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
     (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
@@ -781,6 +810,7 @@ theorem xiPreTop_modByMonic_coeff_natDegree_le (x₀ : F) (hH : 0 < H.natDegree)
 
 
 omit H_irreducible H_natDegree_pos in
+/-- The `𝒪`-weight of the top term when `dH < d`. -/
 theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)
     (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
@@ -832,6 +862,7 @@ theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (h
           rw [hsum]
 
 omit H_irreducible H_natDegree_pos in
+/-- The `𝒪`-weight of the top term, covering both `dH = d` and `dH < d`. -/
 theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -869,6 +900,8 @@ theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : H
     omega
 
 omit H_irreducible H_natDegree_pos in
+/-- The explicit representative of `ξ` splits as low part plus top term; this is how its weight
+bound is assembled. -/
 theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
     xiPre x₀ R H = xiPreLower x₀ R H + xiPreTop x₀ R H := by
   simp only [xiPre, xiPreLower, xiPreTop, hRdeg, if_pos]
@@ -902,5 +935,5 @@ lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H
 
 
 end HenselNumerators
-end
+end HenselSetup
 end RationalFunctions

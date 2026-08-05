@@ -37,7 +37,7 @@ coefficients inside `𝒪`.
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
-section
+section RegularLifts
 
 variable {F : Type} [CommRing F] [IsDomain F]
 
@@ -359,6 +359,6 @@ lemma piZOfDiv_eq_zero_iff (z : F) (root : rationalRoot (monicize H) z) (β : �
 
 end RationalSubstitutionOfQuotients
 
-end
+end RegularLifts
 
 end RationalFunctions

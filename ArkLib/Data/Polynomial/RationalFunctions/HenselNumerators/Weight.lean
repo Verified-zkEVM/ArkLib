@@ -51,7 +51,7 @@ omit [IsDomain F] in
 end
 
 namespace HenselNumerators
-variable {F : Type} [Field F] {R : F[X][X][X]} {H : F[X][Y]}
+variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
 
 omit H_irreducible H_natDegree_pos in
@@ -89,12 +89,15 @@ def RegularWeightLe {H : F[X][Y]} (hH : 0 < H.natDegree) (a : 𝕃 H) (D B : ℕ
     regularWeight hH b D ≤ (WithBot.some B : WithBot ℕ)
 
 omit H_irreducible H_natDegree_pos in
+/-- A `RegularWeightLe` certificate can always be relaxed to a larger budget. -/
 lemma RegularWeightLe.mono {hH : 0 < H.natDegree} {a : 𝕃 H} {D B B' : ℕ}
     (h : RegularWeightLe hH a D B) (hBB : B ≤ B') : RegularWeightLe hH a D B' := by
   obtain ⟨b, hb, hw⟩ := h
   exact ⟨b, hb, hw.trans (by exact_mod_cast hBB)⟩
 
 omit H_irreducible H_natDegree_pos in
+/-- Certificates multiply: budgets add.  This is the `𝕃`-side form of the sub-additivity of `Λ`
+(`regularWeight_mul_le'`). -/
 lemma RegularWeightLe.mul {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a b : 𝕃 H} {Ba Bb : ℕ}
     (ha : RegularWeightLe hH a D Ba) (hb : RegularWeightLe hH b D Bb) :
@@ -104,6 +107,7 @@ lemma RegularWeightLe.mul {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0
   exact ⟨a' * b', by rw [ha', hb', map_mul], regularWeight_mul_le' hD hH hwa hwb⟩
 
 omit H_irreducible H_natDegree_pos in
+/-- Certificates add at a common budget, since `Λ` of a sum is at most the max. -/
 lemma RegularWeightLe.add {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a b : 𝕃 H} {B : ℕ}
     (ha : RegularWeightLe hH a D B) (hb : RegularWeightLe hH b D B) :
@@ -114,12 +118,14 @@ lemma RegularWeightLe.add {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0
     (regularWeight_add_le hD hH a' b').trans (max_le hwa hwb)⟩
 
 omit H_irreducible H_natDegree_pos in
+/-- Negation preserves a certificate, since `Λ` is invariant under negation. -/
 lemma RegularWeightLe.neg {hH : 0 < H.natDegree} {a : 𝕃 H} {D B : ℕ}
     (ha : RegularWeightLe hH a D B) : RegularWeightLe hH (-a) D B := by
   obtain ⟨a', ha', hwa⟩ := ha
   exact ⟨-a', by rw [ha', map_neg], by rwa [regularWeight_neg]⟩
 
 omit H_irreducible H_natDegree_pos in
+/-- Iterating `RegularWeightLe.mul`: a `k`-th power costs `k` times the budget. -/
 lemma RegularWeightLe.pow {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     {a : 𝕃 H} {Ba : ℕ} (ha : RegularWeightLe hH a D Ba) (k : ℕ) :
     RegularWeightLe hH (a ^ k) D (k * Ba) := by
@@ -139,6 +145,7 @@ lemma RegularWeightLe.pow {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0
       ring_nf; omega
 
 omit H_irreducible H_natDegree_pos in
+/-- A finite sum of elements sharing a budget keeps that budget. -/
 lemma RegularWeightLe.sum {ι : Type} (s : Finset ι) (f : ι → 𝕃 H)
     {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree} {B : ℕ}
     (hf : ∀ i ∈ s, RegularWeightLe hH (f i) D B) :
@@ -154,6 +161,7 @@ lemma RegularWeightLe.sum {ι : Type} (s : Finset ι) (f : ι → 𝕃 H)
         (ih (fun i hi => hf i (Finset.mem_insert_of_mem hi)))
 
 omit H_irreducible H_natDegree_pos in
+/-- A finite product costs the sum of the individual budgets. -/
 lemma RegularWeightLe.prod {ι : Type} (s : Finset ι) (f : ι → 𝕃 H) (B : ι → ℕ)
     {D : ℕ} (hD : Bivariate.totalDegree H ≤ D) {hH : 0 < H.natDegree}
     (hf : ∀ i ∈ s, RegularWeightLe hH (f i) D (B i)) :
@@ -969,6 +977,9 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         exact henselClearedResidual_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg αseq βseq hα0
           hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
 
+/-- The loose Claim A.2 bound `Λ(βₜ) ≤ (2t+1)·dY·D` for a numerator sequence presented through its
+coefficients, obtained from `numerator_shape_weight_sharp` by `numeratorShapeSharp_le_loose`.  This
+is the form [BCIKS20] quotes at the end of the claim and the one Claim 5.10 consumes. -/
 theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)

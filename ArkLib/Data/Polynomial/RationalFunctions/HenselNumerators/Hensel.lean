@@ -39,11 +39,11 @@ Everything is expressed in the local coordinate `S = X - x₀`: the shift lives 
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
-noncomputable section
+noncomputable section HenselLift
 
 namespace HenselNumerators
 
-variable {F : Type} [Field F] {R : F[X][X][X]} {H : F[X][Y]}
+variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
 /-- The exponent of `ξ` in the denominator of the `t`-th Hensel coefficient.
 
@@ -52,10 +52,12 @@ The paper separates `t = 0`, where no `ξ` factor appears, from `t ≥ 1`, where
 def henselDenominatorExponent (t : ℕ) : ℕ :=
   if t = 0 then 0 else 2 * t - 1
 
+/-- `e₀ = 0`. -/
 @[simp]
 lemma henselDenominatorExponent_zero : henselDenominatorExponent 0 = 0 := by
   simp [henselDenominatorExponent]
 
+/-- `eₜ₊₁ = 2(t+1) - 1`, i.e. the exponent is `2t-1` from `t = 1` on. -/
 @[simp]
 lemma henselDenominatorExponent_succ (t : ℕ) :
     henselDenominatorExponent (t + 1) = 2 * (t + 1) - 1 := by
@@ -78,10 +80,12 @@ lemma coeff_totalDegree_add_index_le_trivariateTotalDegree (R : F[X][X][Y]) {i :
 def defaultDegreeBound (R : F[X][X][Y]) (H : F[X][Y]) : ℕ :=
   max (Bivariate.totalDegree H) (trivariateTotalDegree R)
 
+/-- `defaultDegreeBound` dominates the total degree of `H`, as A.4 requires of `D`. -/
 lemma defaultDegreeBound_ge_H (R : F[X][X][Y]) (H : F[X][Y]) :
     Bivariate.totalDegree H ≤ defaultDegreeBound R H :=
   le_max_left _ _
 
+/-- `defaultDegreeBound` dominates `R` trivariately, as A.4 requires of `D`. -/
 lemma defaultDegreeBound_ge_R_coeff (R : F[X][X][Y]) (H : F[X][Y]) {i : ℕ}
     (hi : i ∈ R.support) :
     Bivariate.totalDegree (R.coeff i) + i ≤ defaultDegreeBound R H :=
@@ -130,6 +134,8 @@ def IsHenselNumeratorSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff ∧
     evalRAtPowerSeries x₀ H R (gammaOfNumerators x₀ R H hHyp βseq) = 0
 
+/-- Specializing `X = x₀` cannot raise the total degree: a trivariate bound on `R` gives the same
+bound on `R(x₀,·,Z)`. -/
 theorem evalX_totalDegree_le_of_coeff_bound (x₀ : F) (R : F[X][X][Y]) {D : ℕ}
     (hD_R : ∀ i ∈ R.support, Bivariate.totalDegree (R.coeff i) + i ≤ D) :
     Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D := by
@@ -177,11 +183,15 @@ noncomputable def gammaFromAlpha (H : F[X][Y]) (αseq : ℕ → 𝕃 H) :
     PowerSeries (𝕃 H) :=
   PowerSeries.mk αseq
 
+/-- `βseq` presents `αseq`: every `αₜ` is `βₜ / (W^{t+1} ξ^{eₜ})`.  This is the shape Claim A.2
+asserts, separated from the semantic content in `IsHenselNumeratorSequence`. -/
 def HasNumeratorShape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H) : Prop :=
   ∀ t : ℕ, alphaOfNumerators x₀ R H hHyp βseq t = αseq t
 
+/-- The base case of Claim A.2: `β₀ = T`.  From `α₀ = T/W` and the shape `α₀ = β₀/W`, the
+numerator is forced to be the image of the polynomial variable. -/
 theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
@@ -206,6 +216,7 @@ theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rw [embeddingOf𝒪Into𝕃_mk, liftBivariate_X]
   exact h0
 
+/-- A product of power series vanishes in degrees below the sum of the two orders. -/
 theorem coeff_mul_eq_zero_of_orders {A : Type} [CommRing A] {m : ℕ}
     (u v : PowerSeries A) (a b : ℕ)
     (hab : m < a + b) (hu : ∀ i < a, PowerSeries.coeff i u = 0)
@@ -220,6 +231,8 @@ theorem coeff_mul_eq_zero_of_orders {A : Type} [CommRing A] {m : ℕ}
   · have : p.2 < b := by omega
     rw [hv p.2 this, mul_zero]
 
+/-- If `δ` has order at least `n`, then the `n`-th coefficient of `P · δ` sees only the constant
+term of `P`. -/
 theorem coeff_mul_of_low_order {A : Type} [CommRing A] (n : ℕ) (P δ : PowerSeries A)
     (hδ : ∀ i < n, PowerSeries.coeff i δ = 0) :
     PowerSeries.coeff n (P * δ) = PowerSeries.constantCoeff P * PowerSeries.coeff n δ := by
@@ -237,6 +250,9 @@ theorem coeff_mul_of_low_order {A : Type} [CommRing A] (n : ℕ) (P δ : PowerSe
     rw [hδ b.2 hb2, mul_zero]
   · intro h; exact absurd (Finset.mem_antidiagonal.mpr (by simp)) h
 
+/-- Taylor's theorem to first order for `eval₂` at a power-series argument: perturbing `Γ` by a `δ`
+of order `≥ n` changes `p(Γ)` by `p'(Γ)·δ` up to terms of order `≥ 2n`.  This is what makes the
+Hensel step linear in the new coefficient. -/
 theorem remainder_low_order {A B : Type} [CommRing A] [CommRing B] (n : ℕ)
     (φ : A →+* PowerSeries B)
     (Γ δ : PowerSeries B) (hδ : ∀ i < n, PowerSeries.coeff i δ = 0) (p : A[X]) :
@@ -284,6 +300,7 @@ theorem remainder_low_order {A B : Type} [CommRing A] [CommRing B] (n : ℕ)
 
 
 omit H_irreducible H_natDegree_pos in
+/-- The constant term of a lifted coefficient is its specialization at `X = x₀`. -/
 theorem constantCoeff_liftCoeffToPowerSeries (x₀ : F) (p : F[X][X]) :
     PowerSeries.constantCoeff (liftCoeffToPowerSeries x₀ H p) =
       liftToFunctionField (H := H) (p.eval (Polynomial.C x₀)) := by
@@ -303,6 +320,8 @@ theorem constantCoeff_liftCoeffToPowerSeries (x₀ : F) (p : F[X][X]) :
   rw [this, Polynomial.eval₂_hom]
 
 omit H_irreducible H_natDegree_pos in
+/-- Constant terms commute with `eval₂`: evaluating `R` at a power series and taking the constant
+term is evaluating `R(x₀,·,Z)` at the constant term. -/
 theorem constantCoeff_eval₂_liftCoeff (x₀ : F) (q : F[X][X][Y]) (Γ : PowerSeries (𝕃 H)) :
     PowerSeries.constantCoeff (Polynomial.eval₂ (liftCoeffToPowerSeries x₀ H) Γ q) =
       Polynomial.eval₂ (liftToFunctionField (H := H))
@@ -316,6 +335,8 @@ theorem constantCoeff_eval₂_liftCoeff (x₀ : F) (q : F[X][X][Y]) (Γ : PowerS
   rfl
 
 -- constantCoeff of derivative eval = ζ when constantCoeff Γ = T/W
+/-- The constant term of `∂R/∂Y` evaluated at any `Γ` starting from `T/W` is exactly `ζ`.  This is
+why `ζ` is the coefficient of the new unknown at every Hensel step. -/
 theorem constantCoeff_eval₂_derivative_eq_zeta (x₀ : F) (R : F[X][X][Y])
     (Γ : PowerSeries (𝕃 H))
     (hΓ0 : PowerSeries.constantCoeff Γ =
@@ -328,6 +349,11 @@ theorem constantCoeff_eval₂_derivative_eq_zeta (x₀ : F) (R : F[X][X][Y])
 
 
 
+/-- **The linearity at the heart of the Hensel step.**  For `δ` of order at least `n ≥ 1`,
+`coeff n (R(x₀+S, Γ+δ, Z)) = coeff n (R(x₀+S, Γ, Z)) + ζ · coeff n δ`.
+Since `ζ` is invertible, the `n`-th coefficient of the lift is uniquely determined by the earlier
+ones — this gives both existence (`formalHenselAlphaSequence`) and uniqueness
+(`hensel_alpha_sequence_unique`). -/
 theorem coeff_evalR_split (x₀ : F) (R : F[X][X][Y]) (n : ℕ) (hn : 1 ≤ n)
     (Γ δ : PowerSeries (𝕃 H)) (hδ : ∀ i < n, PowerSeries.coeff i δ = 0)
     (hΓ0 : PowerSeries.constantCoeff Γ =
@@ -343,6 +369,7 @@ theorem coeff_evalR_split (x₀ : F) (R : F[X][X][Y]) (n : ℕ) (hn : 1 ≤ n)
 
 -- base case n=0
 omit H_irreducible H_natDegree_pos in
+/-- The constant term of `R(x₀+S, Γ, Z)` is `R(x₀,·,Z)` evaluated at the constant term of `Γ`. -/
 theorem coeff_zero_evalR (x₀ : F) (R : F[X][X][Y]) (Γ : PowerSeries (𝕃 H)) :
     PowerSeries.coeff 0 (evalRAtPowerSeries x₀ H R Γ) =
       Polynomial.eval₂ (liftToFunctionField (H := H)) (PowerSeries.constantCoeff Γ)
@@ -353,6 +380,8 @@ theorem coeff_zero_evalR (x₀ : F) (R : F[X][X][Y]) (Γ : PowerSeries (𝕃 H))
 
 
 omit H_irreducible H_natDegree_pos in
+/-- Coefficients below the order of the perturbation are unchanged, so the Hensel iteration never
+disturbs the coefficients it has already fixed. -/
 theorem coeff_evalR_stable (x₀ : F) (R : F[X][X][Y]) (n m : ℕ) (hm : m < n)
     (Γ δ : PowerSeries (𝕃 H)) (hδ : ∀ i < n, PowerSeries.coeff i δ = 0) :
     PowerSeries.coeff m (evalRAtPowerSeries x₀ H R (Γ + δ)) =
@@ -370,6 +399,8 @@ theorem coeff_evalR_stable (x₀ : F) (R : F[X][X][Y]) (n m : ℕ) (hm : m < n)
 
 
 -- The recursive construction.
+/-- The Hensel iteration as a sequence of finite approximations: `bSeq N` agrees with the lift up
+to index `N` and is zero beyond.  Each step solves `ζ · α_{N+1} + (earlier terms) = 0`. -/
 noncomputable def bSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)] : ℕ → (ℕ → 𝕃 H)
   | 0 => fun i => if i = 0 then
@@ -378,22 +409,26 @@ noncomputable def bSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       (- PowerSeries.coeff (N+1)
           (evalRAtPowerSeries x₀ H R (PowerSeries.mk (bSeq x₀ R H N))) / zeta R x₀ H)
 
+/-- The diagonal of `bSeq`: the coefficient sequence of the Hensel lift. -/
 noncomputable def alphaSeq (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)] : ℕ → 𝕃 H :=
   fun n => bSeq x₀ R H n n
 
 -- bSeq N agrees with bSeq (N+1) below N+1
+/-- Unfolding of one iteration step. -/
 theorem bSeq_succ_def (x₀ : F) (R : F[X][X][Y]) (N : ℕ) :
     bSeq x₀ R H (N+1) = Function.update (bSeq x₀ R H N) (N+1)
       (- PowerSeries.coeff (N+1)
           (evalRAtPowerSeries x₀ H R (PowerSeries.mk (bSeq x₀ R H N))) / zeta R x₀ H) := by
   rfl
 
+/-- A step does not disturb the coefficients already computed. -/
 theorem bSeq_succ_eq_below (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i < N + 1) :
     bSeq x₀ R H (N+1) i = bSeq x₀ R H N i := by
   rw [bSeq_succ_def, Function.update_apply, if_neg (by omega)]
 
 -- value 0 is T/W for all N
+/-- Every approximation starts at `α₀ = T/W`. -/
 theorem bSeq_zero (x₀ : F) (R : F[X][X][Y]) (N : ℕ) :
     bSeq x₀ R H N 0 =
       functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff := by
@@ -403,6 +438,7 @@ theorem bSeq_zero (x₀ : F) (R : F[X][X][Y]) (N : ℕ) :
 
 
 
+/-- Below its index, `bSeq N` agrees with the limit sequence `alphaSeq`. -/
 theorem bSeq_stable (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i ≤ N) :
     bSeq x₀ R H N i = alphaSeq x₀ R H i := by
   induction N with
@@ -418,6 +454,7 @@ theorem bSeq_stable (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i ≤ N) :
         rfl
 
 -- mk (bSeq N) agrees with mk (alphaSeq) at indices ≤ N
+/-- Power-series form of `bSeq_stable`: the approximations agree with the limit in low degrees. -/
 theorem mk_bSeq_coeff_eq (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i ≤ N) :
     PowerSeries.coeff i (PowerSeries.mk (bSeq x₀ R H N)) =
       PowerSeries.coeff i (PowerSeries.mk (alphaSeq x₀ R H)) := by
@@ -425,6 +462,7 @@ theorem mk_bSeq_coeff_eq (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i ≤ N) 
 
 
 
+/-- Approximations vanish beyond their index. -/
 theorem bSeq_eq_zero_of_gt (x₀ : F) (R : F[X][X][Y]) (N j : ℕ) (hj : N < j) :
     bSeq x₀ R H N j = 0 := by
   induction N generalizing j with
@@ -436,12 +474,15 @@ theorem bSeq_eq_zero_of_gt (x₀ : F) (R : F[X][X][Y]) (N j : ℕ) (hj : N < j) 
       exact ih j (by omega)
 
 -- δ helper: mk (bSeq (N+1)) = mk (bSeq N) + δ with δ low order N+1
+/-- Consecutive approximations differ only from degree `N+1` on, so their difference is a legal
+perturbation for `coeff_evalR_split`. -/
 theorem coeff_delta_below (x₀ : F) (R : F[X][X][Y]) (N i : ℕ) (hi : i < N + 1) :
     PowerSeries.coeff i
       (PowerSeries.mk (bSeq x₀ R H (N+1)) - PowerSeries.mk (bSeq x₀ R H N)) = 0 := by
   rw [map_sub, PowerSeries.coeff_mk, PowerSeries.coeff_mk, bSeq_succ_eq_below x₀ R N i hi,
     sub_self]
 
+/-- The invariant of the iteration: `R(x₀+S, bSeq N, Z)` vanishes in all degrees up to `N`. -/
 theorem root_bSeq (x₀ : F) (R : F[X][X][Y])
     (hinit : Polynomial.eval₂ (liftToFunctionField (H := H))
       (functionFieldT (H := H) / liftToFunctionField (H := H) H.leadingCoeff)
@@ -488,6 +529,9 @@ theorem root_bSeq (x₀ : F) (R : F[X][X][Y])
         field_simp
         ring
 
+/-- **Existence of the Hensel lift** ([BCIKS20] A.4): a coefficient sequence with `α₀ = T/W` whose
+generating series is a root of `R(x₀ + S, ·, Z)`.  Built by the Newton iteration `bSeq`, whose
+limit is a root in every degree.  Uniqueness is `hensel_alpha_sequence_unique`. -/
 theorem formalHenselAlphaSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hinit : Polynomial.eval₂ (liftToFunctionField (H := H))
@@ -573,6 +617,8 @@ theorem hensel_alpha_sequence_unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         PowerSeries.coeff_mk, sub_eq_zero] at hδn
       exact hδn.symm
 
+/-- The two ways of forming `γ` — from numerators or from coefficients — agree once the numerators
+present the coefficients. -/
 theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
@@ -584,12 +630,17 @@ theorem gammaOfNumerators_eq_gammaFromAlpha (x₀ : F) (R : F[X][X][Y]) (H : F[X
   rw [PowerSeries.coeff_mk, PowerSeries.coeff_mk]
   exact hshape n
 
+/-- The residual at step `t`: the `(t+1)`-st coefficient of `R(x₀+S, γ, Z)` with the `ζ·α_{t+1}`
+term removed.  It vanishes exactly when `α_{t+1}` solves the Hensel equation, and after clearing
+denominators it becomes the next numerator. -/
 noncomputable def henselCoeffResidual (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [Fact (Irreducible H)] [Fact (0 < H.natDegree)]
     (αseq : ℕ → 𝕃 H) (t : ℕ) : 𝕃 H :=
   PowerSeries.coeff (t + 1) (evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq)) -
     zeta R x₀ H * αseq (t + 1)
 
+/-- Packaging: numerators presenting a genuine Hensel coefficient sequence form a
+`IsHenselNumeratorSequence`. -/
 theorem hensel_numerator_sequence_of_alpha_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H)
@@ -604,6 +655,8 @@ theorem hensel_numerator_sequence_of_alpha_shape (x₀ : F) (R : F[X][X][Y]) (H 
   · rw [gammaOfNumerators_eq_gammaFromAlpha x₀ R H hHyp αseq βseq hshape]
     exact hroot
 
+/-- The defining relation of `𝕃`, in evaluated form: the class of `H̃` equals
+`W^{dH-1} · H(T/W)`. -/
 theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)] :
     (Ideal.Quotient.mk (Ideal.span ({monicizeRatFunc H} : Set (Polynomial (RatFunc F))))
@@ -653,6 +706,7 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
     ext p <;> simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.map_C]
   rw [hhom]
 
+/-- `Y = T/W` is a root of `H` in `𝕃` ([BCIKS20] A.1). -/
 theorem H_eval2_T_div_W_eq_zero (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)] :
     Polynomial.eval₂ (liftToFunctionField (H := H))
@@ -668,6 +722,7 @@ theorem H_eval2_T_div_W_eq_zero (H : F[X][Y])
     exact pow_ne_zero _ (liftToFunctionField_leadingCoeff_ne_zero (H := H))
   exact (mul_eq_zero.mp hzero).resolve_left hW
 
+/-- `α₀ = T/W` is a root of `R(x₀,·,Z)`, since `H` divides it.  This is the base of the lift. -/
 theorem initial_root_at_x0 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
@@ -679,6 +734,8 @@ theorem initial_root_at_x0 (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rw [hQ, Polynomial.eval₂_mul]
   rw [H_eval2_T_div_W_eq_zero H, zero_mul]
 
+/-- `ζ ≠ 0`, i.e. `α₀` is a *simple* root — this is exactly where separability of `R(x₀,·,Z)` is
+used, and it is what makes the Hensel step solvable. -/
 theorem zeta_ne_zero_of_hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
@@ -694,6 +751,7 @@ theorem zeta_ne_zero_of_hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     exact hHyp.separable_evalX.eval₂_derivative_ne_zero (liftToFunctionField (H := H)) hroot
   simpa [zeta, P, t, hderiv_evalX] using hne
 
+/-- `formalHenselAlphaSequence` with its two hypotheses discharged from `Hypotheses`. -/
 theorem exists_hensel_alpha_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
@@ -708,11 +766,13 @@ theorem exists_hensel_alpha_sequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 def AllCoeffRegular (H : F[X][Y]) (φ : PowerSeries (𝕃 H)) : Prop :=
   ∀ n, PowerSeries.coeff n φ ∈ regularElementsSet H
 
+/-- Coefficientwise regularity is closed under addition. -/
 theorem AllCoeffRegular.add {H : F[X][Y]} {φ ψ : PowerSeries (𝕃 H)}
     (hφ : AllCoeffRegular H φ) (hψ : AllCoeffRegular H ψ) :
     AllCoeffRegular H (φ + ψ) := by
   intro n; rw [map_add]; exact regularElementsSet_add (hφ n) (hψ n)
 
+/-- Coefficientwise regularity is closed under multiplication (Cauchy product). -/
 theorem AllCoeffRegular.mul {H : F[X][Y]} {φ ψ : PowerSeries (𝕃 H)}
     (hφ : AllCoeffRegular H φ) (hψ : AllCoeffRegular H ψ) :
     AllCoeffRegular H (φ * ψ) := by
@@ -722,6 +782,7 @@ theorem AllCoeffRegular.mul {H : F[X][Y]} {φ ψ : PowerSeries (𝕃 H)}
   intro p _
   exact regularElementsSet_mul (hφ p.1) (hψ p.2)
 
+/-- Coefficientwise regularity is closed under powers. -/
 theorem AllCoeffRegular.pow {H : F[X][Y]} {φ : PowerSeries (𝕃 H)}
     (hφ : AllCoeffRegular H φ) (m : ℕ) :
     AllCoeffRegular H (φ ^ m) := by
@@ -732,17 +793,20 @@ theorem AllCoeffRegular.pow {H : F[X][Y]} {φ : PowerSeries (𝕃 H)}
       · exact regularElementsSet_zero H
   | succ m ih => rw [pow_succ]; exact ih.mul hφ
 
+/-- A constant series with regular value has regular coefficients. -/
 theorem AllCoeffRegular.const {H : F[X][Y]} {c : 𝕃 H} (hc : c ∈ regularElementsSet H) :
     AllCoeffRegular H (PowerSeries.C c) := by
   intro n; rw [PowerSeries.coeff_C]; split
   · exact hc
   · exact regularElementsSet_zero H
 
+/-- The power-series variable has regular coefficients (`0` and `1`). -/
 theorem AllCoeffRegular.X {H : F[X][Y]} : AllCoeffRegular H (PowerSeries.X) := by
   intro n; rw [PowerSeries.coeff_X]; split
   · exact regularElementsSet_one H
   · exact regularElementsSet_zero H
 
+/-- The zero series has regular coefficients. -/
 theorem AllCoeffRegular.zero {H : F[X][Y]} :
     AllCoeffRegular H (0 : PowerSeries (𝕃 H)) := by
   intro n; rw [map_zero]; exact regularElementsSet_zero H
@@ -1013,6 +1077,10 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       rw [hreassoc]
       exact finish_with _ _ hcoeffReg hbudget
 
+/-- **The regularity half of Claim A.2.**  Multiplying the residual by the clearing denominator
+`W^{t+2}·η^{eₜ₊₁-1}·W^{d-2}` lands in `𝒪`, so the next numerator `βₜ₊₁` is regular.  Proved
+degree-by-degree through `henselClearedTerm_regular`, using `W ∣ leadingCoeff R(x₀,·,Z)` for the
+top term. -/
 theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
@@ -1065,5 +1133,5 @@ theorem henselCoeffResidual_regular_after_clearing (x₀ : F) (R : F[X][X][Y]) (
 
 
 end HenselNumerators
-end
+end HenselLift
 end RationalFunctions

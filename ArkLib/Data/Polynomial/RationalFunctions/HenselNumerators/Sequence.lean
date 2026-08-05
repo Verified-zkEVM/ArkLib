@@ -40,10 +40,13 @@ and hence the list-decoding consumers — do not depend on the one open quantita
 open Polynomial Polynomial.Bivariate ToRatFunc Ideal
 
 namespace RationalFunctions
-noncomputable section
+noncomputable section HenselNumeratorSequence
 namespace HenselNumerators
-variable {F : Type} [Field F] {R : F[X][X][X]} {H : F[X][Y]}
+variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+/-- One step of the numerator recursion: given regular numerators `βprev` realizing `αseq i` for
+all `i ≤ t`, the next coefficient `αseq (t+1)` also has a regular numerator.  The witness is the
+cleared residual, regular by `henselCoeffResidual_regular_after_clearing`. -/
 theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
@@ -119,6 +122,9 @@ theorem regular_numerator_shape_succ (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   change (αseq (t + 1) * D) / D = αseq (t + 1)
   exact mul_div_cancel_right₀ (αseq (t + 1)) hD
 
+/-- Iterating `regular_numerator_shape_succ`: every coefficient sequence solving the Hensel
+equation admits regular numerators, i.e. some `βseq` with `HasNumeratorShape`.  The sequence is
+assembled from compatible finite prefixes. -/
 theorem exists_regular_numerator_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H)
@@ -352,5 +358,5 @@ def gamma' (x₀ : F) (R : F[X][X][Y]) (H_irreducible : Irreducible H)
 
 
 end HenselNumerators
-end
+end HenselNumeratorSequence
 end RationalFunctions
