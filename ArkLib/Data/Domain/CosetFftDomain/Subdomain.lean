@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
+Authors: František Silváši, Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Tactic.CancelDenoms.Core
@@ -141,19 +141,20 @@ lemma mem_subdomain_of_eq_vals
 lemma subdomain_generator_pow_generator (i : ℕ) :
   (subdomain ω i).cosetGenerator = ω 0 ^ 2 ^ i := rfl
 
+set_option warning.simp.varHead false in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
 @[simp]
 lemma mem_subdomain_0_iff_mem :
-  x ∈ subdomain ω 0 ↔ x ∈ ω := by
-  by_cases hn : n = 0
-    <;> aesop
-          (add simp
-            [subdomain,
-             CosetFftDomainClass.subdomain_embed,
-             mkSubgroupUnit,
-             mem_def,
-             CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by
+  aesop
+    (add safe cases Nat)
+    (add simp
+      [subdomain,
+       CosetFftDomainClass.subdomain_embed,
+       mkSubgroupUnit,
+       mem_def,
+       CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
@@ -463,7 +464,7 @@ lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ} (hk : k ≤ n) (hx 
   conv_rhs =>
     rw [←h]
   apply congrArg
-  aesop (add safe (by rw [mem_subdomain_0_iff_mem]))
+  aesop
 
 private lemma subdomain_eval (ω : D) (j : ℕ)
     (b : Fin (2 ^ (n - j))) :

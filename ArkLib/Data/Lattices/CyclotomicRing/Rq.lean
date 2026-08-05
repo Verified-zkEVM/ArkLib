@@ -293,16 +293,22 @@ theorem mk_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
   · intro a s ha ih
     rw [Finset.sum_insert ha, Finset.sum_insert ha, mk_add, ih]
 
-/-- A reduced representative of the power-of-two cyclotomic ring has `natDegree` below the ring
-dimension `2^α`. -/
-theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
-    a.1.toPoly.natDegree < (powTwoCyclotomic (R := R) α).φ.natDegree := by
+/-- A reduced representative has `natDegree` below `d = deg φ`, for **any** modulus of positive
+degree (the dimension positivity `0 < d` is an explicit hypothesis). The `powTwoCyclotomic`-pinned
+`Rq.natDegree_val_toPoly_lt` below is derived from this general version. -/
+theorem natDegree_val_toPoly_lt' (hd : 0 < Φ.φ.natDegree) (a : Rq Φ) :
+    a.1.toPoly.natDegree < Φ.φ.natDegree := by
   rcases eq_or_ne a.1.toPoly 0 with h0 | hne
-  · rw [h0, Polynomial.natDegree_zero, powTwoCyclotomic_natDegree]
-    exact pow_pos (by norm_num) α
+  · rw [h0, Polynomial.natDegree_zero]; exact hd
   · rw [CompPoly.CPolynomial.natDegree_toPoly]
-    exact Polynomial.natDegree_lt_natDegree hne
-      ((powTwoCyclotomic (R := R) α).degree_toPoly_lt_of_reduced a.2)
+    exact Polynomial.natDegree_lt_natDegree hne (Φ.degree_toPoly_lt_of_reduced a.2)
+
+/-- A reduced representative of the power-of-two cyclotomic ring has `natDegree` below the ring
+dimension `2^α` — the special case of `Rq.natDegree_val_toPoly_lt'` for `φ = X^{2^α} + 1`. -/
+theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
+    a.1.toPoly.natDegree < (powTwoCyclotomic (R := R) α).φ.natDegree :=
+  natDegree_val_toPoly_lt' (powTwoCyclotomic (R := R) α)
+    (by rw [powTwoCyclotomic_natDegree]; exact pow_pos (by norm_num) α) a
 
 /-! ## Constant embedding and coefficient-vanishing facts
 

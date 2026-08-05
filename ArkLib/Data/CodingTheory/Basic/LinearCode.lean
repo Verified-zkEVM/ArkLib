@@ -255,22 +255,29 @@ scoped macro_rules
 
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
-We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
 def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
-notation:60 c "|[" T "]" => projectedWord c T
-
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
-`C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
+as the set of projected codewords.
 Definition 3.7 [BCGM25]. -/
 def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
-  {w | ∃ c ∈ C, w = c|[T]}
+  {w | ∃ c ∈ C, w = projectedWord c T}
 
-notation:60 C "|[" T "]" => projectedCode C T
+open Submodule
 
-/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code
-`C|[T]`, then so do all `F`-linear combinations of these. -/
+/-- The projected code of a linear code, as a submodule of `T → F`.
+Definition 3.7 [BCGM25]. -/
+def projectedCodeSubmod [Field F] (LC : LinearCode ι F) (T : Finset ι) :
+    Submodule F (T → F) := LC.map (LinearMap.funLeft F F (Subtype.val : T → ι))
+
+/-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
+lemma mem_projectedCodeSubmod_iff [Field F] (LC : LinearCode ι F) (T : Finset ι)
+    (w : T → F) : w ∈ projectedCodeSubmod LC T ↔ w ∈ projectedCode LC.carrier T :=
+  Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
+
+/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
+then so do all `F`-linear combinations of these. -/
 lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
     [Fintype α] (U : α → (ι → F)) (c : α → F)
     (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :

@@ -21,7 +21,7 @@ file and exported as a `CWSSPackage` (pure verifier) or `GCWSSPackage` (guarded 
 (CWSS), the knowledge-soundness notion under which a witness is extracted from a suitably
 structured tree of accepting transcripts. This file only **imports those packages and chains
 them**: pure links with `▷` (`CWSSPackage.append`, seams discharged by `rfl`), guarded links with
-`▷ᵍ` (`GCWSSPackage.append`, the B4 skeleton in
+`▷ᵍ` (`GCWSSPackage.append`, the skeleton in
 `OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean`). The composed chain's
 `isCWSS` field is the CWSS certificate for the whole reduction. (Hachi as a `Commitment.Scheme` —
 the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the
@@ -31,10 +31,10 @@ sibling `Commitment.lean`.)
 
 1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
    (§4.2 / Figure 3 / Lemma 8).
-2. **`openCore`** (skeleton, pure links): the escape-threaded front `evalChainE` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
-   ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
-   sumcheck bridge.
+2. **`openCore`** (pure links; rows 3–4 proven, rows 5–7 skeleton): the escape-threaded front
+   `evalChainE` extended by the §4.3 stages up to the sumcheck bridge — R^lin adapter (proven)
+   ▷ HMZ25 lift (Figure 4 / Lemma 9, **proven & axiom-clean**) ▷ batching bridge
+   (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷ sumcheck bridge.
 3. **`openingChain`** (skeleton, guarded tail): `openCore` ▷ᵍ the paired sumcheck loop
    (Figure 6 / Lemma 11, `m₀` guarded rounds) ▷ᵍ final evaluation (Figure 7 tail) ▷ᵍ the §4.5
    recursion adapters (partial evaluations ▷ᵍ `Z`-packing bridge ▷ᵍ trace handoff), landing on
@@ -46,10 +46,10 @@ sibling `Commitment.lean`.)
 Top-to-bottom is one opening iteration of the ArkLib Hachi commitment, whose committed data is an
 `Rq`-valued multilinear polynomial. The opening starts with the Figure 3 path, not with §3: the §3
 packing head (extension-field claims into `Rq`-claims, via the generalized `RingSwitching` packing
-phase — see `HACHI_RING_SWITCHING_PLAN.md`, Phases B–E) is a separate track that wraps *external*
+phase) is a separate track that wraps *external*
 extension-field claims in front of `relPolyEval(E)`; the §4.5 adapters below close the recursion
 *internally*. Witnesses in rows 3–11 are `· ⊕ E`: escape threading (`Set.withEscape`) gives every
-seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstract, escape set
+seam a home for the `w̃`-commitment's weak-binding break (`E` abstract, escape set
 `K.esc`).
 
 ```text
@@ -73,20 +73,20 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 
 - Rows 1–7 have **pure** verifiers: every check constrains either retained statement data or the
   never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8, 9,
-  12 are **guarded** (design D6): their runtime check reads data the next statement type drops
+  12 are **guarded**: their runtime check reads data the next statement type drops
   (the previous sumcheck target; the final targets; the packed claim value) — exactly the paper's
-  runtime checks — and compose via `▷ᵍ`, whose composition theorem (B4) is the one sorried piece
+  runtime checks — and compose via `▷ᵍ`, whose composition theorem is the one sorried piece
   of *generic* machinery.
 - Row 6 implements the **corrected Lemma 10**: the paper's uniform-vector star extraction is not
   provable (axis-cross counterexample); the challenge is a pair of scalar **Kronecker seeds**
   with the batching points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, giving genuine
-  `(ℓ, k) = (2, D)` CWSS at `D = max 2^{m₀} 2^{m₁}`. See `HACHI_LEMMA10_GAP.md`. This is the one
+  `(ℓ, k) = (2, D)` CWSS at `D = max 2^{m₀} 2^{m₁}`. This is the one
   place the formalization deliberately changes the paper's protocol.
 - Row 11 isolates the **§4.5/§3.2 partial-evaluation gap** found while auditing this skeleton:
   the packed claim of Eq. (26) pins only one `F`-linear functional of the per-slice values, so
   the paper's step is (apparently) not knowledge-sound as stated; the bridge's pull-back sorry is
   expected to be unprovable until a repair (batching challenge / generic §3.1 packing) is
-  adopted. See `HACHI_RECURSION_GAP.md`. All other sorries in the chain are honest skeleton work.
+  adopted. All other sorries in the chain are honest skeleton work.
 - Row 12 lands on `relInE Φ'` — the escape-threaded `QuadEval` input relation at the **next**
   ring: iteration `i+1` re-enters at `quadEvalPackageE Φ'` directly (its bases are `eq`-tensor
   packings, not monomial bases, so the polynomial-level bridge of row 1 is head-only).
@@ -95,18 +95,21 @@ seam a home for the `w̃`-commitment's weak-binding break (design G1; `E` abstra
 
 ## Sorry inventory of the composed chain (provenance of the certificate)
 
-*Generic machinery* (B4): `Verifier.IsGuarded.append`,
-`Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`);
-`coordinateWiseSpecialSound_of_mkWitness_scalar` (`ScalarRound.lean`, consumed only by future
-proofs). *Escape threading* (F2.0): `quadEval_coordinateWiseSpecialSound_withEscape`.
-*Per-link math*: the F2 index bookkeeping (`rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE`),
-Lemma 9 (`lift_coordinateWiseSpecialSound`), the F5 encodings (`Constraints.lean`), the
+*Generic machinery*: `Verifier.IsGuarded.append`,
+`Verifier.append_coordinateWiseSpecialSound_of_guardedLeft` (`Guarded.lean`).
+*Escape threading*: `quadEval_coordinateWiseSpecialSound_withEscape`.
+*Per-link math* (the `R^lin` adapter — `rlinStmt`/`unstack`/`mem_relOutE_of_relRlinE` — and
+the HMZ25 lift — Lemma 9, `liftPackage.isCWSS` (generic `Lift.coordinateWiseSpecialSound`) on the
+proven scalar-round engine `coordinateWiseSpecialSound_of_mkWitness_scalar` and the `QuotientLift`
+algebra — are now proven, sorry-free and axiom-clean; rows 1–4 of the table carry no sorries):
+the encodings (`Constraints.lean`), the
 un-batching (`mem_relLiftE_of_relBatchedE`), corrected Lemma 10
 (`zeroCheck_coordinateWiseSpecialSound`), the sum-to-point bridge, Lemma 11
-(`round_coordinateWiseSpecialSound`), F8 (`finalEval_coordinateWiseSpecialSound` + the
-`finalCheck` encoding), G2 (`partialEval_coordinateWiseSpecialSound` + its encoding defs), G3
+(`round_coordinateWiseSpecialSound`), final evaluation (`finalEval_coordinateWiseSpecialSound` +
+the `finalCheck` encoding), partial evaluation (`partialEval_coordinateWiseSpecialSound` + its
+encoding defs), and trace handoff
 (`handoff_coordinateWiseSpecialSound` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
-Every sorried encoding def carries an in-situ `**Sorried**` docstring naming its milestone.
+Every sorried encoding def carries an in-situ `**Sorried**` docstring.
 *Flagged as an open gap (not merely unproven)*: `mem_relPartialEvalE_of_relHatEvalE` (row 11).
 
 ## References
@@ -234,7 +237,9 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ) :
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
+    (hn : n₀ ≤ 2 ^ m₁) :
     CWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits ⊕ E)
@@ -250,7 +255,7 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
   evalChainE (b := b) (γ := γ) init impl hq5 hκ hτ K.esc ▷
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl (b : ZMod q) ω γ K.esc ▷
     liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
-    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb ▷
+    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb hρ hcov hn ▷
     zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
     sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
 
@@ -258,7 +263,7 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
 `openCore` composed — through the guarded append `▷ᵍ` — with the guarded tail: the `m₀` paired
 sumcheck rounds (Lemma 11, guarded on the round checks), the final-evaluation step (guarded on
 the target checks), and the §4.5 recursion adapters (the pure partial-evaluation head, the ⚠
-`Z`-packing bridge of `HACHI_RECURSION_GAP.md`, and the guarded trace handoff). The chain lands
+`Z`-packing bridge, and the guarded trace handoff). The chain lands
 on `relInE Φ'` — the escape-threaded `QuadEval` input relation at the next ring `Φ'` — closing
 the recursion loop: iteration `i+1` is this chain re-instantiated at `Φ'` (entering at
 `quadEvalPackageE`, without row 1).
@@ -273,6 +278,8 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
+    (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -300,7 +307,8 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
           roundsSpec F b (mLow + κ)) ++ₚ pSpecFinalEval F).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
-  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hq2 hb).toGuarded.append
+  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K φF hd hq2 hb hρ hcov
+        hn).toGuarded.append
       (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
       (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
         (mLow + κ)).symm).append
@@ -315,7 +323,7 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
 The composed verifier of rows 1–12 is CWSS, reducing the polynomial-level `relPolyEvalE` (over
 the current ring `𝓜(q, α)`) to the next iteration's `relInE` (over `Φ'`). The proof term is
 just `openingChain.isCWSS`; its assumptions are exactly the sorried links inventoried in the
-module header (in particular the ⚠ row-11 gap and the B4 guarded-append machinery). -/
+module header (in particular the ⚠ row-11 gap and the guarded-append machinery). -/
 theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
@@ -323,6 +331,8 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) E (liftShort 𝓜(q, α) γ ρBound))
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
+    (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
     (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
     {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
@@ -331,15 +341,15 @@ theorem hachi_iteration_coordinateWiseSpecialSound (init : ProbComp σ)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     ((openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ
-        hτ K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq'
+        hτ K φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq'
         γ' κ')).verifier.coordinateWiseSpecialSound init impl
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-        K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
+        K φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
       (relPolyEvalE 𝓜(q, α) (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) K.esc)
       (relInE Φ' base' βSq' γ' κ' K.esc) :=
   (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-    K φF hd hq2 hb zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
+    K φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
 
 end OpeningChain
 
@@ -348,16 +358,16 @@ end OpeningChain
 * **§3 packing head (external extension-field claims).** The paper's headline
   multilinear-over-`F_{q^k}` interface (§3.1/§3.2) wraps an extension-field evaluation claim in
   front of `relPolyEvalE`; it is planned as an instance of the generalized `RingSwitching`
-  packing phase (`HACHI_RING_SWITCHING_PLAN.md`, Phases B–E), not as a Hachi-local head.
+  packing phase, not as a Hachi-local head.
 * **Recursion termination.** At the row-12 seam: the §4.4 asymptotic base case (reveal the final
   small polynomial — a `SendWitness`-style tail) and the §4.5 concrete cutoff (switch to
   Greyhound/LaBRADOR, i.e. the JL projection route) are future zero-round/one-message tails.
-* **Discharging the skeleton.** The sorry inventory in the module header, in dependency order:
-  B4 (`Guarded.lean`) → F2.0/F2 → F3/F4 → F5 → F6 → F7 → F8 → G2/G3 — plus a repair decision for
-  the row-11 gap (`HACHI_RECURSION_GAP.md`) and the Phase-G `LiftCom` instantiation (the
+* **Discharging the skeleton.** Work through the sorry inventory in the module header in
+  dependency order, starting from the guarded-append machinery (`Guarded.lean`) — plus a repair
+  decision for the row-11 gap and the `LiftCom` instantiation (the
   inner-outer commitment without re-decomposition, its collision escape via
   `outputToModuleSIS_valid_of_verified`, and the ring-dimension reinterpretation used by row 12).
 * **Knowledge-error accounting** (FMN24 Lemma 4), `Commitment.extractability`, and Fiat–Shamir
-  remain out of scope (design D12/R6). -/
+  remain out of scope. -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter
