@@ -222,6 +222,31 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
   simp [foldWord, foldValue_k_1]
 
+/-- The "even" part of the folding function. -/
+def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomain 1 i, by simp⟩
+  let i := domain.log x
+  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+  (f i + f i') / 2
+
+/-- The "odd" part of the folding function. -/
+def foldWordOdd [NeZero n] (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomain 1 i, by simp⟩
+  let i := domain.log x
+  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+  (f i - f i') / (2 * x)
+
+/-- `foldWord` equals the natural linear combination
+  of its even and odd parts. -/
+lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
+  foldWord domain f 1 α =
+    foldWordEven domain f + α • foldWordOdd domain f := by
+  aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
+
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation and avoids using `log`. -/
 theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
