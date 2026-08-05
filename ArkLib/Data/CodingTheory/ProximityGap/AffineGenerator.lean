@@ -32,11 +32,17 @@ open scoped ProbabilityTheory NNReal ENNReal BigOperators
 variable {ι : Type}
          {F : Type} [Field F]
 
-/-- The affine line combination `vecMul (1, t) W = W 0 + t • W 1`. -/
-lemma line_vecMul (W : Fin 2 → (ι → F)) (t : F) :
-    Matrix.vecMul (AffineLineGenerator F t) W = W 0 + t • W 1 := by
+/-- The affine line combination `∑ j, (1, t) j • W j = W 0 + t • W 1`. -/
+lemma line_smulSum (W : Fin 2 → (ι → F)) (t : F) :
+    (fun k => ∑ j, AffineLineGenerator F t j • W j k) = W 0 + t • W 1 := by
   ext k
-  simp [AffineLineGenerator, Matrix.vecMul, dotProduct, Fin.sum_univ_two]
+  simp [AffineLineGenerator, Fin.sum_univ_two]
+
+/-- The affine space combination `∑ j, (1, x) j • U j` is `affineComb U x`. -/
+lemma affineSpace_smulSum {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) :
+    (fun k => ∑ j, AffineSpaceGenerator F s x j • U j k) = affineComb U x := by
+  ext k
+  simp [affineComb, Matrix.vecMul, dotProduct, smul_eq_mul]
 
 /-- If the affine combination restricted to `T` is in a linear code, but
 some `U j` restricted to `T` does not lie in the code, then there is a codeword `U (i + 1)` which is
@@ -67,7 +73,7 @@ lemma exists_succ_not_mem [Fintype ι] {s : ℕ} (LC : LinearCode ι F) (T : Fin
 /-- The quotient of the projected word space `T → F` by the projected code on `T`, used in the
 kernel/rank-nullity argument of Step 2. -/
 abbrev projectedQuotient [Fintype ι] (LC : LinearCode ι F) (T : Finset ι) : Type :=
-  (T → F) ⧸ LC.projectedCodeSubmod T
+  (T → F) ⧸ projectedCodeSubmod LC T
 
 open Classical in
 /-- If some direction codeword `w i` does not project into the code on `T`, then the set of
@@ -80,7 +86,7 @@ lemma proj_lincomb_ker_card_le [Fintype F] [Fintype ι] {s : ℕ}
         projectedWord (fun k => ∑ i, l i * w i k) T ∈ projectedCodeSubmod LC T)).card
       ≤ (Fintype.card F) ^ (s - 1) := by
   set g : (Fin s → F) →ₗ[F] projectedQuotient LC T :=
-    Submodule.mkQ (LC.projectedCodeSubmod T) ∘ₗ
+    Submodule.mkQ (projectedCodeSubmod LC T) ∘ₗ
       LinearMap.funLeft F F (Subtype.val : T → ι) ∘ₗ Fintype.linearCombination F w with hg_def
   have hker : Module.finrank F (LinearMap.ker g) ≤ s - 1 := by
     obtain ⟨i, hi⟩ := hne
@@ -181,7 +187,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
       projectedWord (affineComb U x) (T x) ∈ projectedCodeSubmod LC (T x) ∧
       ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod LC (T x) := by
     choose! T hT using fun x (hx : isB x) => hx
-    use T
+    exact ⟨T, fun x hx => by rw [← affineSpace_smulSum]; exact hT x hx⟩
   obtain ⟨lam, hlam⟩ : ∃ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x)
                        ∈ projectedCodeSubmod LC (T x))).card ≤ m / (Fintype.card F : ℝ) := by
     have h_per_seed_le : ∀ x ∈ Bset, ∑ lam : Fin s → F, (if projectedWord (linComb U lam) (T x) ∈
@@ -200,7 +206,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
         aesop
       · simp +zetaDelta
     have havg := exists_avg_le hs (fun lam => (Bset.filter (fun x => projectedWord (linComb U lam)
-          (T x) ∈ LC.projectedCodeSubmod (T x) ) |> Finset.card)) m ?_
+          (T x) ∈ projectedCodeSubmod LC (T x) ) |> Finset.card)) m ?_
     · exact havg.imp fun x hx => by rwa [le_div_iff₀' (Nat.cast_pos.mpr <| Fintype.card_pos)]
     · linarith
   obtain ⟨v, hv⟩ : ∃ v : Fin s → F, ((Bset.filter (fun x => ¬projectedWord (linComb U lam) (T x) ∈
@@ -209,13 +215,13 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
            ¬projectedWord (linComb U lam) (T (v + t • lam)) ∈
            projectedCodeSubmod LC (T (v + t • lam)))).card : ℝ) / (Fintype.card F) := by
     have hdir := exists_dir_line_ge lam (Bset.filter fun x => ¬projectedWord (linComb U lam) (T x) ∈
-            LC.projectedCodeSubmod (T x))
+            projectedCodeSubmod LC (T x))
     aesop
   refine ⟨![affineComb U v, linComb U lam], le_trans ?_ (hv.trans ?_ )⟩
   · convert mul_le_mul_of_nonneg_right
         (show (1 - 1 / (Fintype.card F : ℝ)) * m ≤ (
           Finset.filter (fun x => ¬projectedWord (linComb U lam ) ( T x ) ∈
-          LC.projectedCodeSubmod (T x)) Bset |> Finset.card : ℝ) from ?_)
+          projectedCodeSubmod LC (T x)) Bset |> Finset.card : ℝ) from ?_)
           (by positivity : 0 ≤ (Fintype.card F : ℝ) ⁻¹ ^ s) using 1
     · ring
     · ring
@@ -236,7 +242,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
   · gcongr
     intro h
     use T (v + ‹_› • lam)
-    simp_all only [ge_iff_le, Finset.mem_univ, line_vecMul, Fin.isValue, Matrix.cons_val_zero,
+    simp_all only [ge_iff_le, Finset.mem_univ, line_smulSum, Fin.isValue, Matrix.cons_val_zero,
       Matrix.cons_val_one, Matrix.cons_val_fin_one, Fin.exists_fin_two, not_false_eq_true, or_true,
       and_true]
     exact ⟨hT _ (Finset.mem_filter.mp h.1 |>.2 ) |>.1,

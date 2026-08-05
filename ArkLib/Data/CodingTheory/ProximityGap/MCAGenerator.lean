@@ -67,8 +67,9 @@ IsMCA (generatorByRightMul G A) LC x U γ → IsMCA G LC x (matrixMulCodewords A
     refine ⟨T, hT_card, ?_, ?_⟩
     · convert hT_proj using 1
       ext i
-      simp only [generatorByRightMul, Matrix.vecMul_vecMul]
-      congr! 2
+      simp only [generatorByRightMul, matrixMulCodewords, smul_eq_mul, Matrix.vecMul,
+        dotProduct, Finset.mul_sum, Finset.sum_mul, mul_assoc]
+      exact Finset.sum_comm
     · contrapose! hj
       simp only [LinearCode.mem_projectedCodeSubmod_iff] at hj ⊢
       convert LinearCode.projectedCode_linearCombination LC T (fun i => matrixMulCodewords A U i)
@@ -89,10 +90,9 @@ original generator `G` with the zero-extension defined above. -/
 lemma isMCA_projectedGenerator_of_isMCA (LC : LinearCode ι F) [Nonempty S] (G : Generator S ℓ F)
     (κ : Set ℓ) [Fintype κ] (U : κ → (ι → F)) (γ : I) (x : S) :
     IsMCA (projectedGenerator G κ) LC x U γ → IsMCA G LC x (zeroExtend κ U) γ := by
-  have vecMul_projectedGenerator :
-    Matrix.vecMul (projectedGenerator G κ x) U = Matrix.vecMul (G x) (zeroExtend κ U) := by
-    ext i
-    simp only [Matrix.vecMul, dotProduct]
+  have smulSum_projectedGenerator (i : ι) :
+    ∑ j, projectedGenerator G κ x j • U j i = ∑ j, G x j • zeroExtend κ U j i := by
+    simp only [smul_eq_mul]
     rw [← Finset.sum_subset (Finset.subset_univ (Set.toFinset κ))]
     · refine Finset.sum_bij (fun j _ => j) ?_ ?_ ?_ ?_ <;>
         simp [projectedGenerator, zeroExtend]
@@ -101,7 +101,7 @@ lemma isMCA_projectedGenerator_of_isMCA (LC : LinearCode ι F) [Nonempty S] (G :
     simp [zeroExtend, j.property]
   rintro ⟨T, hT₁, hT₂, j, hT₃⟩
   exact ⟨T, hT₁,
-    by convert hT₂ using 1; exact funext fun _ => by simp [vecMul_projectedGenerator],
+    by convert hT₂ using 1; exact funext fun i => (smulSum_projectedGenerator i.val).symm,
     ⟨j, by rw [zeroExtend_val] ; assumption⟩⟩
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
