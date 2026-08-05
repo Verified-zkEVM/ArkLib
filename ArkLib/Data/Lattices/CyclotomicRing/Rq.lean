@@ -10,7 +10,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
 # `Rq Φ` — the Cyclotomic Ring as a Computable `CommRing`
 
-`ArkLib/Data/Lattices/CyclotomicRing/Basic.lean` gives a *semantic* cyclotomic ring
+`ArkLib/Data/Lattices/CyclotomicRing/Core/Basic.lean` gives a *semantic* cyclotomic ring
 (`Φ.CyclotomicRing`, noncomputable) and a computable reduction `Φ.reduce`/`Φ.mul` on
 raw `CPolynomial R`. Raw `CPolynomial` is not the right element type for a commitment
 scheme: two raw polynomials can be unequal yet congruent mod `φ`, which would make the

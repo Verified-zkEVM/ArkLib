@@ -43,8 +43,10 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
   one iteration at the next ring's plain `QuadEval.relIn` relation.
 * `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
-  quadEvalPackage`, followed by the opening subprotocols. Packages expose one plain `relIn` /
-  `relOut` flow while a parallel escape set grows backwards at Figure 4 and `QuadEval`.
+  quadEvalPackage`, followed by the opening subprotocols. Every package exposes the ordinary
+  `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
+  break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,
+  entering each certificate as a disjunct of its conclusion.
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
   the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
   remaining subprotocols).

@@ -23,10 +23,10 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   (`ShortChallenge`, shortness carried by the subtype), the relations (`derivedMsgMatrix`,
   `evalConsistency` = Eq. (15), `relOut` = Eq. (20) + the `S_b` range checks, `relIn` = weak
   opening, `dShort`). The commitment key `(A, B, D)` is the *parameter* `pp` of the relations and
-  of the parallel Module-SIS escape channel (`QuadEvalSISBreak` / `quadEvalSISSet`), never
-  statement data — escapes are checkable against the fixed key alone, which both keeps them
-  statement-independent (threading through earlier protocol relations) and ties them to the
-  actual key rather than an adversary-chosen matrix. The file closes with the protocol (the
+  of the Module-SIS **break vocabulary** (`QuadEvalSISBreak` / `quadEvalSISSet`), never statement
+  data — breaks are checkable against the fixed key alone, which ties them to the actual key rather
+  than an adversary-chosen matrix. The reduction's escape *event* over that vocabulary,
+  `quadEvalEscLocal`, lives in `QuadEval/Soundness.lean`. The file closes with the protocol (the
   two-round
   `pSpec ⟨!v[.P_to_V, .V_to_P], !v[CarrierCom, Fin 2ʳ → C]⟩` of `CoordinateWise.SingleRound`,
   the pure pass-through `verifier`, and the honest `prover` skeleton). Round 0 (P→V) sends the
@@ -74,8 +74,8 @@ commitment `u`, the two evaluation basis vectors `a ∈ Rq^{2^m}` (`avec`) and `
 The public parameters `(A, B, D)` are **not** statement data: the commitment key is fixed once
 for the whole reduction (honestly, sampled by `keygen`) and enters the relations as the
 parameter `pp`. Keeping the key out of the adversary-chosen statement is what ties the parallel
-Module-SIS escape channel (`quadEvalSISSet`) to the *actual* key — a statement-carried key would
-let escapes be validated against an adversary-chosen matrix.
+Module-SIS break vocabulary (`quadEvalSISSet`) to the *actual* key — a statement-carried key would
+let breaks be validated against an adversary-chosen matrix.
 
 The dimension parameters (`messageRows`, `blocks`, …) are left generic on the structure (the
 full profile of the reduction instance, shared with the key's `PublicParamsD` type); the
@@ -111,9 +111,9 @@ instance : Nonempty
 
 /-- The input-side witness of `QuadEval`: a genuine weak opening for `u`.
 
-Module-SIS breakages found by Hachi Lemma 8 are deliberately not constructors of this type.
-They live in the parallel `QuadEvalSISBreak` escape channel below, so the main relation seam from
-the polynomial bridge into `QuadEval` remains an ordinary opening relation. -/
+Module-SIS breakages found by Hachi Lemma 8 are deliberately not constructors of this type: they are
+reported by the escape event `quadEvalEscLocal` (`QuadEval/Soundness.lean`), a predicate on the
+observable `(statement, transcript tree)`. -/
 abbrev QuadEvalWitness (Φ : CyclotomicModulus R)
     (innerRows messageRows messageDigits blocks innerDigits : Nat) :=
   Opening Φ innerRows messageRows messageDigits blocks innerDigits
@@ -123,13 +123,12 @@ the instance is used only as the total fallback of generic extractors outside ac
 instance : Nonempty (QuadEvalWitness Φ innerRows messageRows messageDigits blocks innerDigits) :=
   ⟨{ message := fun _ _ => 0, innerDecomp := fun _ _ => 0, challenge := fun _ => 0 }⟩
 
-/-- A concrete local escape produced by the three-case extractor of Hachi Lemma 8: a candidate
-kernel vector for the outer commitment matrix `B` or the carrier commitment matrix `D`. The
-escape carries only the solution; validity (`quadEvalSISSet`) is checked against the *fixed*
-commitment key `pp` — a parameter of the reduction, not statement data — so escapes remain
-statement-independent and thread backwards through earlier protocol relations without attaching
-the originating `QuadEvalStatement`. (Carrying the matrix inside the escape instead would let it
-be validated against an arbitrary — e.g. zero — matrix, making the escape set free.) -/
+/-- A concrete Module-SIS break produced by the three-case extractor of Hachi Lemma 8: a candidate
+kernel vector for the outer commitment matrix `B` or the carrier commitment matrix `D`. The break
+carries only the solution; validity (`quadEvalSISSet`) is checked against the *fixed* commitment key
+`pp` — a parameter of the reduction, not statement data — so it is a break of the actual key.
+(Carrying the matrix inside the break instead would let it be validated against an arbitrary — e.g.
+zero — matrix, making the set free.) -/
 inductive QuadEvalSISBreak (Φ : CyclotomicModulus R)
     (innerRows messageDigits outerRows blocks innerDigits dRows : Nat) where
   /-- A short nonzero kernel vector for the outer commitment matrix `B`. -/
@@ -206,12 +205,15 @@ def evalConsistency (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m)) (b : PolyVec (
 def dShort (γ : ℕ) : ModuleSIS.Solution Φ (blocks * messageDigits) → Bool :=
   fun z => decide (vecLInftyNorm Φ z ≤ subLInftyNormBound γ)
 
-/-- The statement-independent set of valid Module-SIS escapes that `QuadEval` may add while
-extracting, **relative to the fixed commitment key `pp`**: solutions are checked against `pp`'s
-`B` matrix (a divergent inner decomposition) or its `D` matrix (a divergent carrier
-decomposition). Checkability against the key alone — never against statement data — is what
-makes the set a genuine hardness target: an element is a Module-SIS break of the *actual* key
-([NOZ26] Remark 2 / Lemma 7), and for kernel-free keys the set is empty. -/
+/-- The set of **valid** Module-SIS breaks that `QuadEval`'s extraction may exhibit, **relative to
+the fixed commitment key `pp`**: solutions are checked against `pp`'s `B` matrix (a divergent inner
+decomposition) or its `D` matrix (a divergent carrier decomposition). Checkability against the key
+alone — never against statement data — is what makes this a genuine hardness target: an element is a
+Module-SIS break of the *actual* key ([NOZ26] Remark 2 / Lemma 7).
+
+This set is the target of the reduction's escape event `quadEvalEscLocal`
+(`QuadEval/Soundness.lean`), which fires on `(stmt, tree)` exactly when the tree's own
+`relOut`-responses make `buildWitness` return one of its elements. -/
 def quadEvalSISSet
     (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
       dRows) (γ : ℕ) :
@@ -221,38 +223,6 @@ def quadEvalSISSet
         ModuleSIS.relation Φ (outerShort Φ γ) pp.outerMatrix solution = true
     | .msisD solution =>
         ModuleSIS.relation Φ (dShort Φ γ) pp.dMatrix solution = true }
-
-/-- A capability for embedding the local, concrete `QuadEval` SIS escapes (valid for the fixed
-key `pp`) into a common ambient escape type. `localEsc` is the part of the ambient escape budget
-introduced by `QuadEval`, and `mapsTo` certifies that every locally valid break maps into it.
-Other protocols can add their own escape subsets to the same `E`, while the ordinary
-`relIn`/`relOut` chain remains unchanged. -/
-structure QuadEvalEscapeMap
-    (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
-      dRows) (γ : ℕ) (E : Type) where
-  /-- Ambient encodings of valid escapes introduced by this `QuadEval` invocation. -/
-  localEsc : Set E
-  /-- Embed a concrete `QuadEval` SIS break into the common escape type. -/
-  toEscape :
-    QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows → E
-  /-- Valid local breaks land in `localEsc`. -/
-  mapsTo : Set.MapsTo toEscape (quadEvalSISSet Φ pp γ) localEsc
-
-namespace QuadEvalEscapeMap
-
-/-- The canonical embedding when the ambient escape type is exactly the concrete `QuadEval` SIS
-break type. This is useful for running `QuadEval` by itself; composed Hachi chains instead provide
-an embedding into their shared escape type. -/
-def self
-    (pp : Hachi.PublicParamsD Φ innerRows messageRows messageDigits outerRows blocks innerDigits
-      dRows) (γ : ℕ) :
-    QuadEvalEscapeMap Φ pp γ
-      (QuadEvalSISBreak Φ innerRows messageDigits outerRows blocks innerDigits dRows) where
-  localEsc := quadEvalSISSet Φ pp γ
-  toEscape := id
-  mapsTo := fun _ he => he
-
-end QuadEvalEscapeMap
 
 /-- **`relOut` — Hachi Eq. (20) (rows c1–c5 verbatim) plus a symmetric-`ℓ∞`-ball model of the
 `S_b` range checks (c6)** on `((stmt, v, c), (ŵ, t̂, ẑ))`, with `z := J ẑ`:
@@ -376,7 +346,8 @@ relOut`). Every transcript the Figure 3 verifier accepts (Eq. (20), `(ŵ, t̂, �
 by ArkLib's generalized `relOut` at any range `γ ≥ ⌊b/2⌋`: rows c1–c5 pass through verbatim, and
 each `S_b` box check (`vecInSb b`) implies the ball check `vecLInftyNorm ≤ γ` via
 `vecLInftyNorm_le_of_vecInSb`. In particular at the paper's own `γ := b` (`b ≥ ⌊b/2⌋`) this shows
-the Lemma 8 CWSS theorem (`quadEval_coordinateWiseSpecialSound`) covers the paper's verifier. -/
+the Lemma 8 CWSS theorem (`quadEval_coordinateWiseSpecialSoundWithEscape`) covers the paper's
+verifier. -/
 theorem paperRelOut_subset_relOut
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω : ℕ) {b γ : ℕ} (hγ : b / 2 ≤ γ) :
@@ -388,10 +359,10 @@ theorem paperRelOut_subset_relOut
     vecLInftyNorm_le_of_vecInSb Φ hγ hb2,
     vecLInftyNorm_le_of_vecInSb Φ hγ hb3⟩
 
-/-- **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u`
-under the fixed key `pp` that is also eval-consistent (Eq. 15). Module-SIS outcomes are not
-witnesses of this relation; they are accumulated in parallel through `quadEvalSISSet` and
-`QuadEvalEscapeMap`. -/
+/-- **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u` under
+the fixed key `pp` that is also eval-consistent (Eq. 15). Module-SIS outcomes are not witnesses of
+this relation; they are reported by the escape event `quadEvalEscLocal`
+(`QuadEval/Soundness.lean`). -/
 def relIn
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ : ℕ) :

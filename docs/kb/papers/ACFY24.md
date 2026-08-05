@@ -11,28 +11,33 @@ related_concepts:
   - reed-solomon-proximity
 related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon.lean
-  - ArkLib/ProofSystem/Whir
+  - ArkLib/Data/CodingTheory/ListDecodability.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Folding.lean
 ---
 
 # ACFY24
 
 ## At A Glance
 
-`ACFY24` is the ePrint reference for WHIR and is the main paper currently cited by ArkLib's WHIR
-development.
-It influences both coding-theory definitions in `ReedSolomon.lean` and protocol-level files under
-`ProofSystem/Whir/`.
+`ACFY24` is the ePrint reference for WHIR. The WHIR protocol files were removed from
+`ArkLib/ProofSystem/`; what the paper still drives lives in the coding-theory layer — Reed-Solomon
+definitions, list-decodability notions, and the folding/proximity-gap development.
 
 ## What ArkLib Uses From This Paper
 
-- WHIR-specific Reed-Solomon definitions currently introduced in
+- WHIR-specific Reed-Solomon definitions in
   [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean).
-- Protocol-level soundness and folding interfaces for the current WHIR formalization.
+- The list-decoding notion `Λ (C, y, r)` in
+  [`ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
+- Folding and mutual-correlated-agreement material under
+  [`ArkLib/Data/CodingTheory/ProximityGap/`](../../../ArkLib/Data/CodingTheory/ProximityGap/).
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
   cites the paper directly for WHIR-specific definitions.
+- [`ProximityGap/Folding.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Folding.lean)
+  carries the folding lemmas the WHIR analysis needs.
 
 ## Version Notes
 
@@ -45,8 +50,8 @@ It influences both coding-theory definitions in `ReedSolomon.lean` and protocol-
 
 - ArkLib frequently lifts paper notions into more reusable abstractions than the paper's original
   presentation.
-- Some WHIR-related interfaces currently live at the protocol layer and may later move downward
-  into more general coding-theory abstractions.
+- The WHIR-related interfaces that used to live at the protocol layer have been folded into the
+  more general coding-theory abstractions under `ArkLib/Data/CodingTheory/`.
 
 ## Open Formalization Gaps
 

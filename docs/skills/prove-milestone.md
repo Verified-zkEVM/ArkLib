@@ -25,7 +25,7 @@ from all of these sources:
   figure, equations, lemma, bounds, and surrounding qualifications;
 - the target Lean files and their imports, docstrings, exported package, and consumers;
 - the seam table and sorry provenance in `Hachi/Composition.lean`;
-- `docs/kb/papers/NOZ26.md`, relevant `docs/kb/audits/`, and applicable `HACHI_*.md` design notes;
+- `docs/kb/papers/NOZ26.md` and relevant `docs/kb/audits/`;
 - the generic ArkLib definitions of the claimed security notion and composition operator.
 
 The paper is primary. Repository notes explain intent and known deviations but cannot establish

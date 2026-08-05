@@ -26,4 +26,5 @@ After using a skill, review whether it should be updated:
 - [`fix-lean-warnings.md`](fix-lean-warnings.md) - workflow for cleaning Lean 4 linter and style
   warnings safely and incrementally.
 - [`make-pr-ready.md`](make-pr-ready.md) - checklist to get a branch PR-ready: follow the
-  contribution guidelines, fix Lean warnings, regenerate citations, and suggest skill improvements.
+  contribution guidelines, fix Lean warnings, regenerate citations, clean up references to files
+  the branch deleted, and suggest skill improvements.

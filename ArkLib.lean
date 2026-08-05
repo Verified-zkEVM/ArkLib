@@ -223,7 +223,6 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
 import ArkLib.OracleReduction.Security.Implications
 import ArkLib.OracleReduction.Security.Rewinding

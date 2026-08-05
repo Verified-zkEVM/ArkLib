@@ -14,7 +14,7 @@ are the ring automorphisms `σ_i` induced by `X ↦ X^i` for `i` a unit modulo t
 `2d = 2^{α+1}` (equivalently, `i` odd). These are the maps used throughout Hachi [NOZ26, §3]
 to identify the finite-field extensions inside `R_q`.
 
-Following the project's two-layer discipline (cf. `CyclotomicRing/Basic.lean`):
+Following the project's two-layer discipline (cf. `CyclotomicRing/Core/Basic.lean`):
 
 * **Computable layer** (`galoisAut`): on a reduced representative `a = Σ_{k<d} a_k X^k`, the
   automorphism remaps each monomial `X^k ↦ X^{ki}` and reduces modulo `X^d + 1`. Since

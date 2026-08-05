@@ -21,13 +21,15 @@ reduction — also a ring-switching idea — lives under `ArkLib/ProofSystem/Rin
 
 * `RingSwitch/Rlin.lean` — the zero-round **entry adapter**: reinterprets `QuadEval`'s Eq. (20)
   output (`relOut`) as the unstructured linear relation `R^lin` (`relRlin`), the input the lift
-  addresses. The package carries the parallel escape set unchanged. Statement reshaping only
-  (`ReduceClaim`), so it is CWSS for any structure; the sorried pieces are the block-matrix
-  assembly/unstacking and the block-row equivalence pull-back.
+  addresses. Statement reshaping only (`ReduceClaim`), so it is CWSS for any structure and needs no
+  escape event — a plain `CWSSPackage`; the sorried pieces are the block-matrix assembly/unstacking
+  and the block-row equivalence pull-back.
 * `RingSwitch/Reduction.lean` — **Hachi Figure 4 / Lemma 9**: the two-round lift (commit
   `t := Com(w̃)`; sample `α ← F`; evaluate the lifted rows at `α`), the abstract weak-binding
-  commitment `LiftCom`, the output relation `relLift`, and the plain-special-sound CWSS theorem
-  `lift_coordinateWiseSpecialSound` at `k = 2d` (**sorried**: Lemma 9's interpolation extraction).
+  commitment `LiftCom` with its short-collision set `LiftCom.Collision`, the output relation
+  `relLift`, the weak-binding escape event `liftEscLocal`, and the plain-special-sound
+  escape-threaded CWSS theorem `lift_coordinateWiseSpecialSoundWithEscape` at `k = 2d`
+  (**sorried**: Lemma 9's interpolation extraction).
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Rlin`). The plain
 `relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is composed in

@@ -447,9 +447,13 @@
       <h2>The reduction line — QuadEval → evaluation claim</h2>
       <p>Top to bottom is one opening of an <span class="mono">Rq</span>-committed multilinear polynomial, exactly as
         composed in <span class="mono">Composition.lean</span> (<span class="mono">openingChain</span>). Each link reduces
-        one relation to the next; witnesses everywhere carry the escape budget <span class="mono">· ⊕ E</span>
-        (a parallel escape seam carried per-package via <span class="mono">EscapeCWSSPackage</span>). The final link outputs a bare multilinear-evaluation
-        claim <span class="mono">mle[w̃](a) = y′</span> on the committed table.</p>
+        one relation to the next, and every relation is the ordinary protocol relation. Where extraction can fail
+        cryptographically instead of producing a witness (QuadEval's Module-SIS break, the weak-binding collisions
+        of Figures 4–6), the link carries an <strong>escape event</strong> on the transcript tree
+        (<span class="mono">EscapeCWSSPackage.esc</span>): a predicate on
+        <span class="mono">(statement, tree)</span> entering the certificate as a disjunct of its conclusion, so no
+        extractor can fabricate it. The final link outputs a bare multilinear-evaluation claim
+        <span class="mono">mle[w̃](a) = y′</span> on the committed table.</p>
     </div>
     <div id="spine"></div>
   </section>
@@ -521,8 +525,8 @@
       <div><span class="tag">[LS18]</span> Lyubashevsky &amp; Seiler — <em>Short, Invertible Elements in Partially Splitting Cyclotomic Rings</em></div>
     </div>
     <p class="foot-note">
-      Design notes live beside the tree as <code>HACHI_*.md</code> — the corrected Lemma&nbsp;10 (<code>HACHI_LEMMA10_GAP.md</code>)
-      and the ring-switching / packing plans. The composition
+      Design notes live in the module docstrings themselves — the corrected Lemma&nbsp;10 in
+      <code>ZeroCheck/Reduction.lean</code> and the open row-11 gap in <code>Recursion/ZBatchBridge.lean</code>. The composition
       home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
       directly from the current working tree on the <code>hachi-skeleton</code> branch; “≈24 open sorries” counts genuine proof
       terms inside <code>Hachi/</code> and excludes the generic guarded-append (B4) machinery, which lives under
@@ -538,7 +542,7 @@
   /* ---------------- DATA ---------------- */
   var SPINE = [
     { zt:"Polynomial Evaluation as a Quadratic Equation", zref:"§4.2 · Figure 3 · Lemma 8",
-      znote:"The finished core — sorry-free and axiom-clean. The composed <code>evalChain</code> keeps its ordinary relation seam while the ambient and QuadEval SIS escape sets grow in parallel.",
+      znote:"The finished core — sorry-free and axiom-clean. The composed <code>evalChain</code> states its certificate at the ordinary relations, with QuadEval's Module-SIS break appearing as the certificate's escape-event disjunct.",
       rows:[
       { n:1, kind:"bridge", name:"Polynomial-level bridge", sub:"QuadEval", fn:"Bridge.lean",
         files:[["QuadEval","Bridge.lean"]], ref:"§4.2 · Eq. 12", rounds:"0 rounds", cwss:"any (0 challenges)",
@@ -584,7 +588,7 @@
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
         relIn:"roundRel 0", relOut:"roundRel m₀", status:"wip", sorry:1, badges:["guarded"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append <code>▷ₑᵍ</code> into <code>roundsChain</code>." },
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append <code>▷ₑᵍ</code> into <code>roundsChain</code>, whose recursion pins the relation seams." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"roundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:2, badges:["guarded"],
@@ -601,8 +605,8 @@
       desc:"The two-layer commitment the whole line opens against: the scheme with its weak openings, <b>perfect correctness</b>, and the <b>weak-binding reduction to Module-SIS</b> — plus the pinned power-of-two ring. All sorry-free, down to the [LS18] short-element invertibility the soundness rests on." },
   ];
   var SUB_CROSS = [
-    { name:"Escape threading", ref:"milestone F2.0", files:[["CWSS","Escape.lean"]], status:"proven", sorry:0,
-      desc:"Runs a parallel escape seam alongside the ordinary relation seam. It carries the Figure-4 <code>LiftCom</code> binding break and adds the QuadEval B/D Module-SIS breaks at the front without changing any public relation's witness type." },
+    { name:"Escape events", ref:"milestone F2.0", files:[["CWSS","Escape.lean"]], status:"proven", sorry:0,
+      desc:"Cryptographic escapes are <em>events on the transcript tree</em>: a package's <code>esc</code> field is a predicate on (statement, tree), and its certificate concludes <code>esc ∨ extraction succeeds</code>. Relations and extractors stay ordinary, so no choice of extractor can trivialize a certificate. The 2×2 package lattice (escape? × guarded?) composes through the universal <code>▷</code> with lossless lifts, matching only relation seams." },
     { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:12,
       desc:"The table w̃, the eq̃-batched constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). Definitions-only for now — the most sorried file in the tree." },
     { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
@@ -668,7 +672,7 @@
   INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
   var tiles = [
     { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–9, escape threading, the shared encoding, composition and the scheme." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–9, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];
   var tilesEl = document.getElementById("tiles");

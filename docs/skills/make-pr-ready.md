@@ -42,24 +42,32 @@ Work through these in order. Do not stop until every item is complete.
   revert, `git diff --cached --stat` shows huge index-vs-HEAD numbers for `_generated/` — that is
   the size of the revert, **not** new drift; do not panic. Confirm the post-commit guard view with
   `git diff --cached --quiet origin/main -- docs/kb/_generated/` (must be clean).
-- **Strip stray planning/scratch `.md` files.** A Markdown plan, design note, or working-notes
-  file that is **not already committed in the repo** (newly added by this branch, or still
-  untracked — e.g. `PLAN.md`, `NOTES.md`, `scratch/*.md`, an agent handoff/TODO dump) must
-  **never** make it into the PR. These are working artifacts, not repo documentation. Detect them
-  by listing the PR's added and untracked Markdown, then subtracting the curated docs a PR may
-  legitimately add (`docs/kb/papers/`, `docs/kb/sources/`, `docs/wiki/`, `docs/skills/`,
-  `blueprint/`, and top-level pages like `README`/`ROADMAP`/`CONTRIBUTING`):
+- **Report stray planning/scratch `.md` files — do not stage them, and do not delete them.** A
+  Markdown plan, design note, or working-notes file (`PLAN.md`, `NOTES.md`, `scratch/*.md`, an
+  agent handoff/TODO dump) is a working artifact, not repo documentation, and should not land in
+  the PR. It is also the author's live working state, so this step is **detect-and-report only**:
+  never `git add`, `git commit`, `git stash`, `git rm`, or delete one. Stashing hides work the
+  author may still be using; deleting destroys it; and either way the call is theirs. List the
+  candidates:
 
   ```bash
   git diff --name-only --diff-filter=A origin/main...HEAD -- '*.md'   # newly-added, committed
   git status --short -- '*.md'                                        # staged / untracked
   ```
 
-  For any file that is a working plan rather than curated documentation, **warn the user** and
-  remove it from the stage/commit state — `git restore --staged <file>` to unstage, and
-  `git rm --cached <file>` (or delete the file / drop it from the commit) if the branch already
-  committed it. Never silently ship an agent's scratch plan; a legitimately-authored docs page
-  (a real `docs/kb/papers/<KEY>.md`, a `docs/wiki/` page) is fine and stays.
+  Subtract the curated docs a PR may legitimately add (`docs/kb/papers/`, `docs/kb/sources/`,
+  `docs/wiki/`, `docs/skills/`, `blueprint/`, and top-level pages like
+  `README`/`ROADMAP`/`CONTRIBUTING`) — a real `docs/kb/papers/<KEY>.md` or `docs/wiki/` page stays.
+  For anything left that reads as a working plan, **warn the user**, naming each file and whether
+  it is untracked, staged, or already committed, and let them decide. Leave untracked plans
+  untracked and staged ones staged; just do not carry them into a commit you make on the author's
+  behalf. Prevention lives upstream of this step: [`prove-milestone.md`](prove-milestone.md)
+  requires scratch manifests and experiments to be written under `/tmp` rather than as root-level
+  planning files, so a plan surfacing here means that rule was bypassed — worth saying out loud.
+
+  **Stripping the plan file is only half the job.** Lean docstrings written alongside it almost
+  always cite it (`see \`PLAN.md\` §3.K`), and those citations become dead the moment the file is
+  dropped. Step 4 below sweeps for them; do not consider the strip done until that sweep is clean.
 
 ### 1. Follow the contribution guidelines
 
@@ -183,13 +191,111 @@ Work through these in order. Do not stop until every item is complete.
   `papers/<KEY>.md` + `sources/<KEY>/` pages. After removing, grep tracked files for any markdown
   link to the deleted page (`check-docs-integrity.py` fails on a broken link).
 - If you **moved or renamed** any `.lean` file, regeneration does **not** fix hand-maintained
-  `docs/kb/papers/*.md` pages (they are scaffolded once, then curated). Grep `docs/**/*.md` for the
-  old path and update curated links + `related_modules` frontmatter — the default `validate.sh`
-  `check-docs-integrity.py` step fails on broken links. Running `kb/regenerate.py` after adding a
-  new cited key also **scaffolds** a new `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`;
-  stage those too.
+  `docs/kb/papers/*.md` pages (they are scaffolded once, then curated) — their curated links and
+  `related_modules` frontmatter still point at the old path. Step 4 sweeps for these; run it rather
+  than relying on `check-docs-integrity.py`, which only sees Markdown *links* and never inspects
+  frontmatter. Running `kb/regenerate.py` after adding a new cited key also **scaffolds** a new
+  `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`; stage those too.
 
-### 4. Suggest skill improvements
+### 4. Clean up references to deleted files
+
+If this branch deletes, moves, or renames **any** file, sweep the whole library for references to
+the old path and fix them. Do this near the end of the pass — step 0's plan-file strip and step 1's
+refactors both create deletions.
+
+**Assume nothing catches this for you.** Coverage is much thinner than it looks:
+
+- `lake build` catches stale `import` lines — and *only* those. A path named in a docstring, a
+  comment, or a Markdown file is invisible to it.
+- `check-imports.sh` regenerates `ArkLib.lean` from `git ls-files`, so the deletion must be
+  **staged** (`git rm <path>`, or `git add -A -- <path>` after an `rm`). A file deleted in the
+  working tree but still in the index keeps its `import` line and fails the build instead.
+- `check-docs-integrity.py` checks **only** inline Markdown links (bracketed text followed by a
+  parenthesised path), and **only** in `AGENTS.md`, `scripts/README.md`, and `docs/**/*.md` (minus
+  `_generated/`). Note it resolves links inside backticks too, so do not write a literal
+  link-shaped example in prose — it will be chased and reported broken. It does **not** see:
+  bare or backticked paths anywhere, `.lean` docstrings, `blueprint/**`, `.github/**`, or the
+  top-level `README.md` / `CONTRIBUTING.md` / `ROADMAP.md` / `BACKGROUND.md`.
+- `kb/lint.py` does **not** validate the `related_modules:` paths in `docs/kb/papers/*.md`
+  frontmatter. A module listed there can be long gone and lint still passes.
+
+Net effect: **a branch can carry dozens of dead path references with a fully green
+`./scripts/validate.sh`.** Only the sweep finds them.
+
+Enumerate every path the branch removes — committed, uncommitted, and rename sources:
+
+```bash
+{ git diff --name-status -M origin/main...HEAD; git diff --name-status -M HEAD; } \
+  | awk '/^[DR]/ {print $2}' | sort -u > /tmp/deleted-paths.txt
+```
+
+Then sweep the tracked tree for each one. Match the path, the dotted module name, and the bare
+basename (relative Markdown links and prose usually mention only the basename):
+
+```bash
+while read -r p; do
+  [ -e "$p" ] && continue                      # skip paths a later commit restored
+  pats=(-e "$p" -e "$(basename "$p")")
+  case "$p" in *.lean)
+    mod="$(printf '%s' "${p%.lean}" | tr '/' '.')"
+    pats+=(-e "${mod//./\\.}($|[^.A-Za-z0-9_])")   # boundary-anchored: see trap 1
+  esac
+  hits="$(git grep -nE "${pats[@]}" -- . ':!docs/kb/_generated' ':!ArkLib.lean')"
+  [ -n "$hits" ] && { echo "### stale refs to $p"; printf '%s\n' "$hits"; echo; }
+done < /tmp/deleted-paths.txt
+```
+
+Three false-positive traps, the first two of which fire routinely on this repo's refactors:
+
+1. **File promoted to a same-named directory** (`Hachi/Gadget.lean` → `Hachi/Gadget/`). A plain
+   `git grep -F ArkLib.Commitments.Functional.Hachi.Gadget` prefix-matches every live
+   `import ...Hachi.Gadget.Core` and reports the whole new folder as stale. That is why the module
+   pattern above is anchored with `($|[^.A-Za-z0-9_])`. Never sweep module names with bare `-F`.
+2. **Basename collision with a surviving file.** Deleting `Hachi/Escape.lean` while
+   `CoordinateWiseSpecialSoundness/Escape.lean` still exists makes every bare `` `Escape.lean` ``
+   mention ambiguous. Before touching a basename-only hit, run `git ls-files | grep <basename>`:
+   if a namesake survives, the prose may be correctly pointing at it — read the surrounding
+   sentence and decide, do not bulk-delete.
+3. **This file matches its own examples.** Hits in `docs/skills/make-pr-ready.md` are the sample
+   paths quoted above, not stale references. Same for any changelog or migration note that
+   deliberately records an old path.
+
+For each **confirmed** stale reference, pick a disposition — never just delete the line and move on:
+
+1. **Moved or renamed** → repoint to the new path (and fix the link text, which usually still
+   spells the old name).
+2. **Content absorbed into a sibling** → repoint to the sibling and reword the sentence so it
+   describes what is actually there now.
+3. **Genuinely gone** → remove the reference, including the clause that introduced it. A stranded
+   "see also" with its target excised reads worse than no cross-reference.
+4. **Pointing at a scratch plan stripped in step 0** → **never** repoint it; that file never
+   existed on `main`, so the reference was born dead. Restate the reasoning inline in the docstring
+   and cite the underlying paper with a `[KEY]`. This is the same rule as the "cite papers, not
+   internal planning documents" bullet in step 3 — the strip is what makes it urgent.
+
+Then check the places a path grep structurally cannot reach:
+
+- `docs/kb/papers/*.md` — `related_modules:` frontmatter (unlinted; also verify the entries still
+  make sense after a move, not just that they resolve).
+- `blueprint/src/**/*.tex` — `\texttt{ArkLib/...}` path mentions, plus `\lean{Decl.Name}` refs to
+  declarations that died with the file. Only `./scripts/validate.sh --site` checks the latter.
+- [`../wiki/repo-map.md`](../wiki/repo-map.md) — the structure map goes stale on *every* move,
+  rename, and delete, and nothing verifies it.
+- `.github/workflows/*.yml` — path config such as `upstream_path:` silently no-ops when its target
+  disappears rather than failing.
+- Non-Lean assets living under `ArkLib/` (generated overview HTML, diagrams) — they escape both the
+  Lean build and the Markdown link check.
+
+**Do not "fix" `docs/kb/_generated/`.** `declarations.json` and `lean-citations.json` still index
+the deleted path; that is expected. Regenerating and committing them trips the CI guard described in
+step 3. Leave them at `main`'s state;
+[`kb-generated.yml`](../../.github/workflows/kb-generated.yml) refreshes them after merge.
+
+Finish by re-running `./scripts/update-lib.sh` (then `git add ArkLib.lean`) and
+`./scripts/validate.sh`, and re-run the sweep itself — repointing one reference can introduce
+another stale path.
+
+### 5. Suggest skill improvements
 
 - After completing the pass, tell the user whether this skill could be improved: any new recurring
   guideline gap, a missing or stale step, a better ordering, or a check worth adding. Follow the
@@ -203,4 +309,6 @@ Only consider the PR ready when:
 1. `./scripts/validate.sh` (with `--lint` / `--docs` as appropriate) succeeds.
 2. `ReadLints` is clean for every changed `.lean` file.
 3. Citation metadata is regenerated and consistent.
-4. You have reported any suggested improvements to this skill.
+4. The deleted-file sweep in step 4 comes back clean — no reference anywhere in the tree points at
+   a path this branch removed. A green `validate.sh` does **not** imply this.
+5. You have reported any suggested improvements to this skill.

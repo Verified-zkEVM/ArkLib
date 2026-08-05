@@ -6,53 +6,41 @@ Authors: Tobias Rothmann
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
-  # Escape-threaded coordinate-wise special soundness
+  # Escape-aware CWSS packages and the package lattice
 
-  Protocol-agnostic plumbing for **escape threading** in composed special-soundness chains
+  Some reductions cannot always extract a witness: instead their extraction exhibits a
+  cryptographic **escape**, e.g. a binding break of a commitment introduced mid-chain (Hachi's
+  `w̃`-commitment of Figure 4, whose collision is a Module-SIS solution by weak binding,
+  [NOZ26] Remark 2 / Lemma 7). An escape is an **event on the observable data** `(stmtIn, tree)`
+  (`ChallengeTree.EscapeEvent`) entering the certificate as a disjunct of its conclusion:
 
-  In a composed reduction chain, a downstream extractor may fail to produce a "real" witness and
-  instead produce a cryptographic **escape** — e.g. a binding break of a commitment introduced in
-  the middle of the chain (Hachi's `w̃`-commitment of Figure 4, whose collision is a Module-SIS
-  solution via weak binding, [NOZ26] Remark 2 / Lemma 7). Composed extraction feeds each
-  extractor's output into the *previous* seam relation, so every relation upstream of the escape's
-  origin must have a home for it. `Set.withEscape` widens a relation `Set (S × W)` to
-  `Set (S × (W ⊕ E))` by adjoining an escape set `esc : Set E` on the right summand.
+  ```
+  ∀ stmt tree, IsStructured → IsAccepting → esc stmt tree ∨ (stmt, Ext stmt tree) ∈ relIn
+  ```
 
-  `EscapeCWSSPackage` keeps this widening internal to its special-soundness certificate. Its public
-  `relIn` and `relOut` fields are the ordinary protocol relations, while `escIn` and `escOut` track
-  the parallel escape seam. Packages compose with `EscapeCWSSPackage.append` (infix `▷`, explicit
-  synonym `▷ₑ`) when both their ordinary relation seam and their escape seam agree.
+  Relations, witness types and extractors therefore stay plain; `esc` is the only escape-specific
+  field a package carries. Since `esc` never mentions the extractor, no choice of extractor can
+  discharge a certificate vacuously — the certificate is exactly as strong as its event is honest.
+  `esc` is a **trusted specification**, on the same footing as `relIn`/`relOut`; its contract is
+  stated once, on `ProtocolSpec.ChallengeTree.EscapeEvent`. Read it before writing an event.
 
-  Crucially, `esc` is **statement-independent**: an MSIS/collision solution is checkable against
-  the (parametric) commitment key alone, so escapes pass through statement maps trivially, and the
-  escape branch of every seam extractor is the identity `Sum.inr`.
+  Packages carry their extraction algorithm as an explicit `extractor` field, so a composed chain
+  exposes an actual end-to-end extractor `chain.extractor` — the algorithm a later knowledge-error
+  accounting must run against the escape probability.
 
-  ## The escape-set contract
+  ## The package lattice
 
-  Escape sets must be **hardness-tied**: membership is checked against protocol parameters fixed
-  outside the escape and the statement, so exhibiting an element breaks the underlying
-  assumption. A set that validates escapes against data they themselves carry is provably
-  nonempty — and a provably nonempty escape set trivializes every widened certificate, since
-  `treeSpecialSound` is existential in the extractor and the constant escape extractor
-  (`treeSpecialSound.withEscape`) discharges it.
+  `CWSSPackage`, `EscapeCWSSPackage`, `GCWSSPackage`, `EscapeGCWSSPackage` form the 2×2 lattice
+  escape? × guarded?, ordered by two **lossless** lifts: `toEscape` (at the never-firing event
+  `fun _ _ => False`, so extractor and certificate are unchanged) and `toGuarded` (at the
+  trivially-true check). A package is declared in the weakest corner it honestly lives in, and
+  every ordered pair composes at the join through the universal `▷` — one scoped elaborator
+  dispatching on the factors' package kinds (`▷ᵍ`, `▷ₑ`, `▷ₑᵍ` remain as explicit synonyms).
 
-  ## Lifting escape-free packages and the package lattice
-
-  Escape packages need only be *defined* for the subprotocols that genuinely produce escapes.
-  An escape-free `CWSSPackage` (or guarded `GCWSSPackage`) enters an escape chain automatically:
-  `Verifier.coordinateWiseSpecialSound.withEscape` widens its certificate to any escape set, and
-  `CWSSPackage.withEscape` / `GCWSSPackage.withEscape` package the lift with a constant escape
-  budget (`escIn = escOut` — an escape-free extractor passes downstream escapes through
-  unchanged).
-
-  Together with the (lossless) purity-to-guardedness lift `toGuarded`, the four package kinds
-  form the 2×2 lattice escape? × guarded?, and every ordered pair composes at its join: the
-  mixed appends insert the required lifts on the fly, and all sixteen compositions are reached
-  through the universal `▷` — a single scoped elaborator that dispatches on the factors' package
-  kinds (the kind-marked `▷ᵍ`, `▷ₑ`, `▷ₑᵍ` remain as explicit synonyms). Composing two
-  escape-free packages stays escape-free, two pure packages stay pure (on the proven pure append
-  theorem); a single escape-aware or guarded factor lifts the rest of the chain. Repo code
-  composes with the universal `▷` throughout.
+  Composition identifies only the relation seam `hRel`: escape events are combined by
+  `ChallengeTree.EscapeEvent.append`, so factors tracking breaks of entirely different assumptions
+  compose freely. Two pure packages compose on the *proven* pure append theorem; a genuinely
+  guarded factor moves the composite — visibly in its type — onto the (sorried, B4) guarded one.
 
   ## References
 
@@ -60,483 +48,299 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-namespace Set
-
-variable {S W E : Type*}
-
-/-- Widen a relation by an escape disjunct: a witness is either a real witness `w : W` related to
-the statement by `rel`, or an escape `e : E` in the statement-independent escape set `esc`. -/
-def withEscape (rel : Set (S × W)) (esc : Set E) : Set (S × (W ⊕ E)) :=
-  {p | match p with
-       | (s, .inl w) => (s, w) ∈ rel
-       | (_, .inr e) => e ∈ esc}
-
-/-- A real witness `Sum.inl w` is in the widened relation iff `(s, w)` is in the original one. -/
-@[simp]
-theorem mem_withEscape_inl (rel : Set (S × W)) (esc : Set E) (s : S) (w : W) :
-    (s, Sum.inl w) ∈ rel.withEscape esc ↔ (s, w) ∈ rel := Iff.rfl
-
-/-- An escape `Sum.inr e` is in the widened relation iff `e` is in the escape set, regardless of
-the statement. -/
-@[simp]
-theorem mem_withEscape_inr (rel : Set (S × W)) (esc : Set E) (s : S) (e : E) :
-    (s, Sum.inr e) ∈ rel.withEscape esc ↔ e ∈ esc := Iff.rfl
-
-/-- The language of an escape-widened relation: a statement is in the language iff it is in the
-original language, or *any* escape exists (escapes are statement-independent, so a single escape
-puts every statement in the widened language). This is the formal price of escape threading: the
-widened acceptance condition is meaningful *relative to the extractor structure*, exactly as the
-MSIS disjuncts of Hachi's `relIn` already are. -/
-theorem mem_withEscape_language_iff (rel : Set (S × W)) (esc : Set E) (s : S) :
-    s ∈ (rel.withEscape esc).language ↔ s ∈ rel.language ∨ esc.Nonempty := by
-  simp only [Set.mem_language_iff]
-  constructor
-  · rintro ⟨w | e, hw⟩
-    · exact Or.inl ⟨w, hw⟩
-    · exact Or.inr ⟨e, hw⟩
-  · rintro (⟨w, hw⟩ | ⟨e, he⟩)
-    · exact ⟨Sum.inl w, hw⟩
-    · exact ⟨Sum.inr e, he⟩
-
-/-- Degeneration: widening by the empty escape set over an empty escape type loses nothing —
-membership is exactly membership of the underlying relation through `Sum.inl`. Together with
-`Empty`'s emptiness this witnesses that the escape-threaded chain generalizes the un-threaded
-one. -/
-theorem withEscape_empty_iff (rel : Set (S × W)) (s : S) (w : W ⊕ Empty) :
-    (s, w) ∈ rel.withEscape (∅ : Set Empty) ↔ ∃ w', w = Sum.inl w' ∧ (s, w') ∈ rel := by
-  rcases w with w' | e
-  · simp
-  · exact e.elim
-
-end Set
-
 noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
-
-/-- The escape-widened witness type remains inhabited whenever its ordinary witness type is. -/
-instance {W E : Type} [Nonempty W] : Nonempty (W ⊕ E) :=
-  ⟨.inl Classical.ofNonempty⟩
-
-namespace Verifier
-
-open ProtocolSpec
-
-variable {ι : Type} {oSpec : OracleSpec ι}
-  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-  {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-
-/-- **Escape-widening transport for tree special soundness.** A tree-special-sound verifier stays
-tree special sound after widening both relations by the same escape set `esc`.
-
-If `esc = ∅`, the widened output language coincides with the original one
-(`Set.mem_withEscape_language_iff`) and the original extractor lifts through `Sum.inl`. If `esc`
-is nonempty, the widened acceptance hypothesis is vacuous, so the extractor returns a fixed
-escape via `Sum.inr` — the same degenerate branch a *hand-written* certificate for an escape-free
-protocol in an escape chain must take on trees accepted only through the escape disjunct. The
-lift therefore loses nothing relative to hand-threading escapes through an escape-free protocol.
-
-This branch is also why the escape-set contract (module docstring) matters: it discharges every
-certificate over an escape set whose nonemptiness is provable, so such certificates assert
-nothing. -/
-theorem treeSpecialSound.withEscape {E : Type} (esc : Set E)
-    {S : ChallengeTreeShape pSpec}
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    (h : verifier.treeSpecialSound init impl S relIn relOut) :
-    verifier.treeSpecialSound init impl S (relIn.withEscape esc) (relOut.withEscape esc) := by
-  rcases esc.eq_empty_or_nonempty with rfl | ⟨e, he⟩
-  · obtain ⟨Ext, hExt⟩ := h
-    refine ⟨fun stmt tree => Sum.inl (Ext stmt tree), fun stmtIn tree hstr hacc => ?_⟩
-    rw [Set.mem_withEscape_inl]
-    refine hExt stmtIn tree hstr ?_
-    rwa [show (relOut.withEscape (∅ : Set E)).language = relOut.language from
-      Set.ext fun _ => by simp] at hacc
-  · exact ⟨fun _ _ => Sum.inr e, fun _ _ _ _ => (Set.mem_withEscape_inr relIn esc _ e).mpr he⟩
-
-/-- **Escape-widening transport for coordinate-wise special soundness**
-(`Verifier.treeSpecialSound.withEscape` at the CWSS shape): a CWSS certificate for
-`relIn ⇒ relOut` widens to one for `relIn.withEscape esc ⇒ relOut.withEscape esc`. This is what
-lets an escape-free package enter an escape-threaded chain (`CWSSPackage.withEscape`,
-`GCWSSPackage.withEscape`). -/
-theorem coordinateWiseSpecialSound.withEscape {E : Type} (esc : Set E)
-    {D : CWSSStructure pSpec}
-    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
-    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    (h : verifier.coordinateWiseSpecialSound init impl D relIn relOut) :
-    verifier.coordinateWiseSpecialSound init impl D
-      (relIn.withEscape esc) (relOut.withEscape esc) :=
-  treeSpecialSound.withEscape esc h
-
-end Verifier
 
 namespace CoordinateWise
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A **bundled escape-aware coordinate-wise-special-sound reduction**.
+/-- A **bundled escape-aware coordinate-wise-special-sound reduction**: `CWSSPackage` with one
+extra field, the **escape event** `esc`. Its certificate `isCWSS` concludes
+`esc stmt tree ∨ extraction succeeds` on every structured accepting tree, so `relIn`/`relOut` and
+`extractor` stay ordinary.
 
-The public `relIn` and `relOut` fields describe the ordinary witness flow between protocols.
-Separately, `escIn` and `escOut` describe the escape budget before and after extraction through
-this package. Only `isCWSS` combines these two flows, widening the ordinary relations with
-`Set.withEscape`.
-
-This separation keeps composed protocol statements readable while permitting each extractor to
-add its own cryptographic failure artifacts to the escape flow. Compose packages with
-`EscapeCWSSPackage.append` / the infix `▷` (explicit synonym `▷ₑ`).
-
-Escape sets must satisfy the escape-set contract (module docstring): a provably nonempty
-`escIn` collapses `isCWSS` to the constant escape extractor. -/
+`esc` is a trusted specification — reading its definition is the reader's obligation, just as for
+`relIn`/`relOut` (contract: `ChallengeTree.EscapeEvent`). Compose with `EscapeCWSSPackage.append` /
+the universal infix `▷` (explicit synonym `▷ₑ`). -/
 structure EscapeCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (E StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier. -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
   /-- The coordinate-wise structure the verifier is special sound for. -/
   struct : CWSSStructure pSpec
-  /-- The ordinary input relation. -/
+  /-- The input relation. -/
   relIn : Set (StmtIn × WitIn)
-  /-- The ordinary output relation. -/
+  /-- The output relation. -/
   relOut : Set (StmtOut × WitOut)
-  /-- Escapes that may be returned when extracting an input witness. -/
-  escIn : Set E
-  /-- Escapes accepted from the next extractor in the chain. -/
-  escOut : Set E
-  /-- Extraction may preserve or grow the escape set, but never discard an accepted escape. -/
-  escape_mono : escOut ⊆ escIn
+  /-- The **escape event**: the cryptographic failure this package's extraction may exhibit
+  instead of a witness. A trusted spec — see `ChallengeTree.EscapeEvent`. -/
+  esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape struct).arity
   /-- The verifier is pure: its verdict is a deterministic function of statement and transcript.
   Needed to place this package as the left factor of an `append`. -/
   isPure : verifier.IsPure
-  /-- The certificate over the parallel ordinary and escape flows. -/
-  isCWSS : verifier.coordinateWiseSpecialSound init impl struct
-    (relIn.withEscape escIn) (relOut.withEscape escOut)
+  /-- The package's named extraction algorithm. -/
+  extractor : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
+  /-- The certificate: on every structured accepting tree, either the tree exhibits the escape
+  event `esc`, or `extractor` produces a `relIn`-witness. -/
+  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscape init impl struct esc
+    relIn relOut verifier extractor
 
 namespace EscapeCWSSPackage
 
-/-- **Compose two escape-aware packages along matching ordinary and escape seams.**
-
-`hRel` identifies the ordinary relation seam and `hEsc` identifies the parallel escape seam; both
-are discharged by `rfl` when a chain uses named seam relations and escape budgets. The resulting
-package exposes the left package's input relation and escape set and the right package's output
-relation and escape set. Written infix as `L₁ ▷ L₂` (explicit synonym `▷ₑ`). -/
+/-- **Compose two escape-aware packages along a matching relation seam** `hRel` (discharged by
+`rfl` when a chain uses named seam relations). The composed event is
+`ChallengeTree.EscapeEvent.append`: the left event on the prefix tree, or the right event on the
+suffix tree below some prefix leaf, at the verdict `L₁.isPure` computes there. Written infix as
+`L₁ ▷ L₂` (explicit synonym `▷ₑ`). -/
 def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-    {E StmtA WitA StmtB WitB StmtC WitC : Type}
+    {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl)
-    (hEsc : L₁.escOut = L₂.escIn := by rfl) :
-    EscapeCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
   verifier := L₁.verifier.append L₂.verifier
   struct := L₁.struct.append L₂.struct
   relIn := L₁.relIn
   relOut := L₂.relOut
-  escIn := L₁.escIn
-  escOut := L₂.escOut
-  escape_mono := by
-    intro e he
-    apply L₁.escape_mono
-    rw [hEsc]
-    exact L₂.escape_mono he
+  esc := L₁.esc.append L₂.esc L₁.isPure.is_pure.choose
   isPure := Verifier.IsPure.append L₁.verifier L₂.verifier L₁.isPure L₂.isPure
+  extractor := fun stmt tree => L₁.extractor stmt tree.appendSplit.fst
   isCWSS := by
-    obtain ⟨verify₁, hV₁⟩ := L₁.isPure.is_pure
-    have h₂ := L₂.isCWSS
-    rw [← hRel, ← hEsc] at h₂
-    exact Verifier.append_coordinateWiseSpecialSound init impl
-      L₁.verifier L₂.verifier L₁.struct L₂.struct verify₁ hV₁ L₁.isCWSS h₂
+    have h₂ := L₂.isCWSS.toEscape
+    rw [← hRel] at h₂
+    exact Verifier.append_coordinateWiseSpecialSoundWithEscape init impl
+      L₁.verifier L₂.verifier L₁.struct L₂.struct L₁.esc L₂.esc
+      L₁.isPure.is_pure.choose L₁.isPure.is_pure.choose_spec L₁.extractor L₁.isCWSS h₂
 
 end EscapeCWSSPackage
 
 @[inherit_doc EscapeCWSSPackage.append]
 scoped infixr:65 " ▷ₑ " => EscapeCWSSPackage.append
 
-/-! ### Lifting escape-free packages into an escape chain
-
-An escape-free `CWSSPackage` enters the escape world for free: `CWSSPackage.withEscape` widens
-its certificate with `Verifier.coordinateWiseSpecialSound.withEscape`, using the *same* escape
-set on both seams — an escape-free extractor passes downstream escapes through unchanged, so its
-escape budget neither grows nor shrinks. The mixed appends `CWSSPackage.appendEscape` and
-`EscapeCWSSPackage.appendPure` insert this lift automatically, choosing the escape budget that
-makes the escape seam hold definitionally.
-
-All escape-world compositions are reachable through the universal `▷` (the elaborator at the end
-of this file), so a chain may mix escape-free and escape-aware packages freely: two escape-free
-packages compose to an escape-free package (`CWSSPackage.append`), and one escape-aware factor
-lifts the rest of the chain. Escape packages thus need only be *defined* for the subprotocols
-that genuinely produce escapes. -/
-
-section Lift
-
-variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-
-/-- Lift an escape-free package into the escape world with a constant escape budget `esc`:
-verifier, structure, relations, and purity carry over, `escIn = escOut = esc`, and the CWSS
-certificate is widened by `Verifier.coordinateWiseSpecialSound.withEscape`. -/
-def CWSSPackage.withEscape {E StmtIn WitIn StmtOut WitOut : Type}
-    {n : ℕ} {pSpec : ProtocolSpec n}
-    (L : CWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) (esc : Set E) :
-    EscapeCWSSPackage init impl E StmtIn WitIn StmtOut WitOut pSpec where
-  verifier := L.verifier
-  struct := L.struct
-  relIn := L.relIn
-  relOut := L.relOut
-  escIn := esc
-  escOut := esc
-  escape_mono := subset_rfl
-  isPure := L.isPure
-  isCWSS := L.isCWSS.withEscape esc
-
-/-- **Compose an escape-free left factor with an escape-aware right factor.** The left package is
-lifted with the right package's *input* escape budget (`CWSSPackage.withEscape`), so the escape
-seam holds definitionally and only the ordinary relation seam `hRel` remains (discharged by
-`rfl`). The composed package accepts escapes exactly as `L₂` does and passes them through
-unchanged. Dispatched by the universal `▷`. -/
-def CWSSPackage.appendEscape {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  (L₁.withEscape L₂.escIn).append L₂ hRel rfl
-
-/-- **Compose an escape-aware left factor with an escape-free right factor.** The right package
-is lifted with the left package's *output* escape budget (`CWSSPackage.withEscape`), so the
-escape seam holds definitionally and only the ordinary relation seam `hRel` remains (discharged
-by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeCWSSPackage.appendPure {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append (L₂.withEscape L₁.escOut) hRel rfl
-
-end Lift
-
-/-- A guarded escape-aware CWSS package. Its public relations and escape sets remain separate;
-only the CWSS certificate widens the relations with their corresponding escape budgets. -/
+/-- A **guarded escape-aware CWSS package**: `EscapeCWSSPackage` with the purity witness relaxed
+to a guardedness witness (the verifier may `failure` at runtime). -/
 structure EscapeGCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (E StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier (which may reject at runtime). -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
   /-- The coordinate-wise structure the verifier is special sound for. -/
   struct : CWSSStructure pSpec
-  /-- The ordinary input relation. -/
+  /-- The input relation. -/
   relIn : Set (StmtIn × WitIn)
-  /-- The ordinary output relation. -/
+  /-- The output relation. -/
   relOut : Set (StmtOut × WitOut)
-  /-- Escapes that may be returned when extracting an input witness. -/
-  escIn : Set E
-  /-- Escapes accepted from the next extractor in the chain. -/
-  escOut : Set E
-  /-- Extraction may preserve or grow the escape set, but never discard an accepted escape. -/
-  escape_mono : escOut ⊆ escIn
+  /-- The **escape event**: a trusted spec (see `ChallengeTree.EscapeEvent`). -/
+  esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape struct).arity
   /-- The verifier is guarded by a deterministic Boolean check. -/
   isGuarded : verifier.IsGuarded
-  /-- The certificate over the parallel ordinary and escape flows. -/
-  isCWSS : verifier.coordinateWiseSpecialSound init impl struct
-    (relIn.withEscape escIn) (relOut.withEscape escOut)
+  /-- The package's named extraction algorithm. -/
+  extractor : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
+  /-- The certificate: on every structured accepting tree, either the tree exhibits the escape
+  event `esc`, or `extractor` produces a `relIn`-witness. -/
+  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscape init impl struct esc
+    relIn relOut verifier extractor
 
 namespace EscapeGCWSSPackage
 
 variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-/-- Regard a pure escape-aware package as guarded. -/
+/-- Regard a pure escape-aware package as guarded, at the trivially-true check; every other field
+carries over unchanged. Lossless. -/
 def _root_.CoordinateWise.EscapeCWSSPackage.toGuarded
-    {E StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (L : EscapeCWSSPackage init impl E StmtIn WitIn StmtOut WitOut pSpec) :
-    EscapeGCWSSPackage init impl E StmtIn WitIn StmtOut WitOut pSpec where
+    {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+    (L : EscapeCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeGCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
   verifier := L.verifier
   struct := L.struct
   relIn := L.relIn
   relOut := L.relOut
-  escIn := L.escIn
-  escOut := L.escOut
-  escape_mono := L.escape_mono
+  esc := L.esc
   isGuarded := Verifier.IsGuarded.of_isPure L.verifier L.isPure
+  extractor := L.extractor
   isCWSS := L.isCWSS
 
-/-- Compose two guarded escape-aware packages along matching ordinary and escape seams. -/
-def append {E StmtA WitA StmtB WitB StmtC WitC : Type}
+/-- **Compose two guarded escape-aware packages along a matching relation seam.** As in
+`EscapeCWSSPackage.append`, but the composed event is taken at the guard's output map `out₁`, which
+`IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape events must be
+honest at *all* `(stmt, tree)` pairs. Certificate:
+`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (sorried, B4). Written infix
+as `L₁ ▷ L₂` (explicit synonym `▷ₑᵍ`). -/
+def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeGCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl)
-    (hEsc : L₁.escOut = L₂.escIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
   verifier := L₁.verifier.append L₂.verifier
   struct := L₁.struct.append L₂.struct
   relIn := L₁.relIn
   relOut := L₂.relOut
-  escIn := L₁.escIn
-  escOut := L₂.escOut
-  escape_mono := by
-    intro e he
-    apply L₁.escape_mono
-    rw [hEsc]
-    exact L₂.escape_mono he
+  esc := L₁.esc.append L₂.esc L₁.isGuarded.is_guarded.choose_spec.choose
   isGuarded := Verifier.IsGuarded.append L₁.verifier L₂.verifier L₁.isGuarded L₂.isGuarded
+  extractor := fun stmt tree => L₁.extractor stmt tree.appendSplit.fst
   isCWSS := by
-    have h₂ := L₂.isCWSS
-    rw [← hRel, ← hEsc] at h₂
-    exact Verifier.append_coordinateWiseSpecialSound_of_guardedLeft init impl
-      L₁.verifier L₂.verifier L₁.struct L₂.struct L₁.isGuarded L₁.isCWSS h₂
+    have h₂ := L₂.isCWSS.toEscape
+    rw [← hRel] at h₂
+    exact Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft init impl
+      L₁.verifier L₂.verifier L₁.struct L₂.struct
+      L₁.isGuarded.is_guarded.choose L₁.isGuarded.is_guarded.choose_spec.choose
+      L₁.isGuarded.is_guarded.choose_spec.choose_spec
+      L₁.esc L₂.esc L₁.extractor L₁.isCWSS h₂
 
 end EscapeGCWSSPackage
 
 @[inherit_doc EscapeGCWSSPackage.append]
 scoped infixr:65 " ▷ₑᵍ " => EscapeGCWSSPackage.append
 
-/-! ### Lifting into the escape-guarded corner: the full package lattice
+/-! ### Lifting escape-free packages into an escape chain
 
-The four package kinds form the 2×2 grid escape? × guarded? (`CWSSPackage`,
-`EscapeCWSSPackage`, `GCWSSPackage`, `EscapeGCWSSPackage`), ordered by the two one-way,
-lossless lifts `withEscape` (constant escape budget) and `toGuarded` (trivially-true guard).
-This section provides `GCWSSPackage.withEscape` and every mixed append whose join is the
-escape-guarded corner; each lifts its factors to the join automatically, so a package is
-declared in the *weakest* world it honestly lives in and composition computes the join.
+An escape-free package enters the escape world at the never-firing event `fun _ _ => False`, where
+`Verifier.coordinateWiseSpecialSoundWith.withEscape` is the trivial `Or.inr`: extractor and
+certificate are unchanged, and `coordinateWiseSpecialSoundWithEscape_false_iff` recovers the plain
+notion exactly. Escape packages are therefore only *defined* for the subprotocols that genuinely
+produce escapes; the mixed appends below (and the universal `▷`) insert the lifts on the fly. -/
 
-All sixteen ordered pairs are dispatched by the universal `▷` elaborator at the end of this file
-(the escape-free appends live in `Package.lean`/`Guarded.lean`, the pure escape-world ones in the
-`Lift` section above, the rest here); each pair of factor kinds determines its append uniquely.
-The kind-marked infixes `▷ᵍ`, `▷ₑ`, `▷ₑᵍ` remain as explicit synonyms, but repo code composes
-with the universal `▷` throughout.
-
-Note the proof-status consequence: composing two pure packages stays on the *proven* pure append
-theorem, while any factor that is genuinely guarded moves the composite — visibly in its type —
-onto the (currently sorried, B4) guarded append theorem. The automatic lifts fire only in chains
-that already contain a guarded factor, so no chain silently loses proof strength. -/
-
-section GuardedLift
+section Lift
 
 variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
 
-/-- Lift an escape-free guarded package into the escape world with a constant escape budget
-`esc`: verifier, structure, relations, and guardedness carry over, `escIn = escOut = esc`, and
-the CWSS certificate is widened by `Verifier.coordinateWiseSpecialSound.withEscape`. -/
-def GCWSSPackage.withEscape {E StmtIn WitIn StmtOut WitOut : Type}
-    {n : ℕ} {pSpec : ProtocolSpec n}
-    (L : GCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) (esc : Set E) :
-    EscapeGCWSSPackage init impl E StmtIn WitIn StmtOut WitOut pSpec where
+/-- Lift a pure escape-free package to the never-firing event; every other field carries over
+unchanged. Lossless. -/
+def CWSSPackage.toEscape
+    (L : CWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
   verifier := L.verifier
   struct := L.struct
   relIn := L.relIn
   relOut := L.relOut
-  escIn := esc
-  escOut := esc
-  escape_mono := subset_rfl
+  esc := fun _ _ => False
+  isPure := L.isPure
+  extractor := L.extractor
+  isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _ L.isCWSS
+
+/-- Lift a guarded escape-free package to the never-firing event; every other field carries over
+unchanged. Lossless. -/
+def GCWSSPackage.toEscape
+    (L : GCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeGCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+  verifier := L.verifier
+  struct := L.struct
+  relIn := L.relIn
+  relOut := L.relOut
+  esc := fun _ _ => False
   isGuarded := L.isGuarded
-  isCWSS := L.isCWSS.withEscape esc
+  extractor := L.extractor
+  isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _ L.isCWSS
 
-/-- **Compose an escape-free guarded left factor with an escape-aware guarded right factor.** The
-left package is lifted with the right package's *input* escape budget (`GCWSSPackage.withEscape`),
-so the escape seam holds definitionally and only the ordinary relation seam `hRel` remains
-(discharged by `rfl`). Dispatched by the universal `▷`. -/
-def GCWSSPackage.appendEscapeGuarded {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  (L₁.withEscape L₂.escIn).append L₂ hRel rfl
+end Lift
 
-/-- **Compose an escape-aware guarded left factor with an escape-free guarded right factor.** The
-right package is lifted with the left package's *output* escape budget
-(`GCWSSPackage.withEscape`), so the escape seam holds definitionally and only the ordinary
-relation seam `hRel` remains (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeGCWSSPackage.appendGuarded {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeGCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append (L₂.withEscape L₁.escOut) hRel rfl
+/-! ### The mixed appends
 
-/-- **Compose a pure escape-free left factor with an escape-aware guarded right factor.** The
-left package is lifted with the right package's *input* escape budget and the trivially-true
-guard, so the escape seam holds definitionally and only the ordinary relation seam `hRel`
-remains (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def CWSSPackage.appendEscapeGuarded {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
+Every ordered pair of package kinds whose join is escape-aware (pure or guarded). Each lifts its
+factors to the join and delegates, leaving only the relation seam `hRel` (discharged by `rfl`). All
+are reached through the universal `▷` below; the escape-free appends live in `Package.lean`
+(`CWSSPackage.append`) and `Guarded.lean` (`GCWSSPackage.append`, `CWSSPackage.appendGuarded`,
+`GCWSSPackage.appendPure`). -/
+
+section MixedAppend
+
+variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+  {StmtA WitA StmtB WitB StmtC WitC : Type}
+  {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+  [∀ i, SampleableType (pSpec₁.Challenge i)]
+
+/-- **Pure escape-free ▷ pure escape-aware.** Lifts the left factor. -/
+def CWSSPackage.appendEscape
     (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
+    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  (L₁.withEscape L₂.escIn).toGuarded.append L₂ hRel rfl
+    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscape.append L₂ hRel
 
-/-- **Compose an escape-aware guarded left factor with a pure escape-free right factor.** The
-right package is lifted with the left package's *output* escape budget and the trivially-true
-guard, so the escape seam holds definitionally and only the ordinary relation seam `hRel`
-remains (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeGCWSSPackage.appendPure {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeGCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
+/-- **Pure escape-aware ▷ pure escape-free.** Lifts the right factor, so the composed event is
+the left event on the prefix (its right disjunct never fires). -/
+def EscapeCWSSPackage.appendPure
+    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append (L₂.withEscape L₁.escOut).toGuarded hRel rfl
+    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscape hRel
 
-/-- **Compose an escape-aware pure left factor with an escape-free guarded right factor.** The
-left package gains the trivially-true guard and the right package is lifted with the left
-package's *output* escape budget, so the escape seam holds definitionally and only the ordinary
-relation seam `hRel` remains (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeCWSSPackage.appendGuarded {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
+/-- **Pure escape-free ▷ guarded escape-aware.** Lifts the left factor twice. -/
+def CWSSPackage.appendEscapeGuarded
+    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscape.toGuarded.append L₂ hRel
+
+/-- **Guarded escape-aware ▷ pure escape-free.** Lifts the right factor twice. -/
+def EscapeGCWSSPackage.appendPure
+    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscape.toGuarded hRel
+
+/-- **Guarded escape-free ▷ pure escape-aware.** Lifts the left factor to the never-event and the
+right factor to the trivially-true guard. -/
+def GCWSSPackage.appendEscape
+    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscape.append L₂.toGuarded hRel
+
+/-- **Guarded escape-free ▷ guarded escape-aware.** Lifts the left factor to the never-event. -/
+def GCWSSPackage.appendEscapeGuarded
+    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscape.append L₂ hRel
+
+/-- **Pure escape-aware ▷ guarded escape-free.** Lifts the left factor to the trivially-true guard
+and the right factor to the never-event. -/
+def EscapeCWSSPackage.appendGuarded
+    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
     (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toGuarded.append (L₂.withEscape L₁.escOut) hRel rfl
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuarded.append L₂.toEscape hRel
 
-/-- **Compose an escape-free guarded left factor with an escape-aware pure right factor.** The
-left package is lifted with the right package's *input* escape budget and the right package
-gains the trivially-true guard, so the escape seam holds definitionally and only the ordinary
-relation seam `hRel` remains (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def GCWSSPackage.appendEscape {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
+/-- **Pure escape-aware ▷ guarded escape-aware.** Lifts the left factor to the trivially-true
+guard; both factors keep their own events. -/
+def EscapeCWSSPackage.appendEscapeGuarded
+    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  (L₁.withEscape L₂.escIn).append L₂.toGuarded hRel rfl
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuarded.append L₂ hRel
 
-/-- **Compose an escape-aware pure left factor with an escape-aware guarded right factor.** The
-left package gains the trivially-true guard; both the ordinary relation seam `hRel` and the
-escape seam `hEsc` remain (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeCWSSPackage.appendEscapeGuarded {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl)
-    (hEsc : L₁.escOut = L₂.escIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toGuarded.append L₂ hRel hEsc
+/-- **Guarded escape-aware ▷ guarded escape-free.** Lifts the right factor to the never-event. -/
+def EscapeGCWSSPackage.appendGuarded
+    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscape hRel
 
-/-- **Compose an escape-aware guarded left factor with an escape-aware pure right factor.** The
-right package gains the trivially-true guard; both the ordinary relation seam `hRel` and the
-escape seam `hEsc` remain (discharged by `rfl`). Dispatched by the universal `▷`. -/
-def EscapeGCWSSPackage.appendEscape {E StmtA WitA StmtB WitB StmtC WitC : Type}
-    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-    [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeGCWSSPackage init impl E StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl E StmtB WitB StmtC WitC pSpec₂)
-    (hRel : L₁.relOut = L₂.relIn := by rfl)
-    (hEsc : L₁.escOut = L₂.escIn := by rfl) :
-    EscapeGCWSSPackage init impl E StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append L₂.toGuarded hRel hEsc
+/-- **Guarded escape-aware ▷ pure escape-aware.** Lifts the right factor to the trivially-true
+guard; both factors keep their own events. -/
+def EscapeGCWSSPackage.appendEscape
+    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toGuarded hRel
 
-end GuardedLift
+end MixedAppend
 
 /-! ### The universal append `▷`
 
@@ -551,9 +355,8 @@ section UniversalAppend
 
 open Lean Elab Term Meta
 
-/-- The dispatch table of the universal append `▷`: the package kinds of the left and right
-factor determine the append that composes them at their join (inserting the `withEscape` /
-`toGuarded` lifts as needed). -/
+/-- The dispatch table of the universal append `▷`: the two factors' package kinds determine the
+append that composes them at their join. -/
 private def univAppendFn : Name → Name → Option Name
   | ``CWSSPackage,        ``CWSSPackage        => some ``CWSSPackage.append
   | ``CWSSPackage,        ``EscapeCWSSPackage  => some ``CWSSPackage.appendEscape
@@ -582,11 +385,9 @@ private def packageKindOf (e : Expr) : TermElabM Name := do
     throwError "▷: cannot determine the package kind of{indentExpr e}\nof type{indentExpr t}"
 
 /-- **The universal package append.** `L₁ ▷ L₂` composes any two CWSS packages — pure, guarded,
-escape-aware, or both — at the join of their kinds, lifting each factor as needed
-(`withEscape` with the escape partner's budget, `toGuarded` with the trivially-true check). The
-remaining relation seam (and, between two escape-aware factors, the escape seam) is discharged
-by `rfl`; for non-definitional seams call the dispatched append (see `univAppendFn`) explicitly
-with the seam proofs. -/
+escape-aware, or both — at the join of their kinds, lifting each factor as needed. The relation
+seam is discharged by `rfl`; for a non-definitional seam call the dispatched append (see
+`univAppendFn`) explicitly with the seam proof. -/
 scoped elab:65 l:term:66 " ▷ " r:term:65 : term => do
   let lE ← elabTerm l none
   let rE ← elabTerm r none

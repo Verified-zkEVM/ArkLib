@@ -6,7 +6,6 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Eq. (20) → `R^lin` adapter — skeleton (Hachi §4.3 entry; sumcheck-track milestone F2)
@@ -36,9 +35,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   (milestone F2.1/F2.2: `stackRows`/`pasteCols`/`finAppend` helpers plus the
   `tensorG`/`tensorG1`-as-matrix-rows rewriting lemmas over `QuadEval/Gadgets.lean`).
 
-  Seam discipline (design decision G6): the package's public `relIn` **is** the plain Eq. (20)
-  `relOut`, and its public `relOut` is the next link's plain `relRlin`. The escape set is
-  transported independently.
+  Seam discipline (design decision G6): the package's public `relIn` **is** the Eq. (20) `relOut`,
+  and its public `relOut` is the next link's `relRlin`.
 
   ## References
 
@@ -55,7 +53,7 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type} {E : Type}
+variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- Column count `μ` of the Eq. (20) block system: the stacked witness
 `ζ = ŵ ++ (flatten t̂ ++ ẑ)`. Associativity fixed once, here (F2.2 convention pin). -/
@@ -81,11 +79,6 @@ structure RlinStatement (Φ : CyclotomicModulus (ZMod q)) (n μ : ℕ) where
 /-- **The `R^lin` relation** ([NOZ26] §4.3): `M ζ = y` and `‖ζ‖∞ ≤ bound`. -/
 def relRlin {n μ : ℕ} : Set (RlinStatement Φ n μ × PolyVec (Rq Φ) μ) :=
   {p | p.1.M *ᵥ p.2 = p.1.yvec ∧ vecLInftyNorm Φ p.2 ≤ p.1.bound}
-
-/-- Escape-threaded `R^lin` relation — the §4.3 chain's second seam. -/
-def relRlinE {n μ : ℕ} (esc : Set E) :
-    Set (RlinStatement Φ n μ × (PolyVec (Rq Φ) μ ⊕ E)) :=
-  (relRlin Φ).withEscape esc
 
 /-- **Statement assembly** (the bridge's `mapStmt`): build the Eq. (20) block matrix and
 right-hand side from the fixed key `pp` and `QuadEval`'s output statement `(stmt, v, c)` — rows
@@ -118,7 +111,7 @@ def unstack
 /-- **Block-row equivalence pull-back** (the bridge's `hRel`; the substance of F2): an `R^lin`
 witness at the assembled statement `rlinStmt base ω γ X` un-stacks to an Eq. (20)-valid
 `QuadEvalResponse` at `X` — c1–c5 are the five block rows of `M ζ = y`, c6 is the norm conjunct
-split along the stacking. Escapes pass through.
+split along the stacking.
 
 **Sorried (F2.2)**: `matVecMul`-over-`stackRows`/`pasteCols` splits `M ζ = yvec` into the five
 component equations; c3/c4 via `dot`-associativity and a `tensorG1`-as-row lemma; c5 via a
@@ -135,15 +128,15 @@ theorem mem_relOut_of_relRlin
     (X, unstack Φ w) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
   sorry
 
-/-- **The `R^lin` adapter as an `EscapeCWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
-`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing plain `relOut` to
-plain `relRlin` while carrying `esc` unchanged. Assembled from
-`ReduceClaim.verifier_coordinateWiseSpecialSound`; all remaining work lives in the sorried
+/-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
+`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to `relRlin`.
+Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
+`ReduceClaim.verifier_coordinateWiseSpecialSoundWith`; all remaining work lives in the sorried
 `rlinStmt`/`unstack`/`mem_relOut_of_relRlin`. -/
-def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows) (base : ZMod q) (ω γ : ℕ) (esc : Set E) :
-    EscapeCWSSPackage init impl E
+      dRows) (base : ZMod q) (ω γ : ℕ) :
+    CWSSPackage init impl
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
@@ -156,17 +149,14 @@ def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp
   struct := CWSSStructure.ofIsEmpty
   relIn := relOut (zDigits := zDigits) Φ pp base ω γ
   relOut := relRlin Φ
-  escIn := esc
-  escOut := esc
-  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ pp base ω γ stmt, fun _ _ => rfl⟩
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := (relOut (zDigits := zDigits) Φ pp base ω γ).withEscape esc)
-    (relOut := relRlinE Φ esc)
-    (mapWitInv := fun _ w => w.map (unstack Φ) id) (D := CWSSStructure.ofIsEmpty)
-    (fun X w h => by
-      cases w with
-      | inl w => exact mem_relOut_of_relRlin Φ pp base ω γ X w h
-      | inr e => exact h)
+  extractor := ReduceClaim.treeExtractor
+    (mapStmt := rlinStmt (zDigits := zDigits) Φ pp base ω γ)
+    (relRlin Φ) (fun _ w => unstack Φ w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+    (relIn := relOut (zDigits := zDigits) Φ pp base ω γ)
+    (relOut := relRlin Φ)
+    (mapWitInv := fun _ w => unstack Φ w) (D := CWSSStructure.ofIsEmpty)
+    (fun X w h => mem_relOut_of_relRlin Φ pp base ω γ X w h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

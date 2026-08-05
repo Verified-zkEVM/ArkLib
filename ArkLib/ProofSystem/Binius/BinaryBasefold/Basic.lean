@@ -369,7 +369,6 @@ end OracleStatementIndex
 -- `ArkLib.ProofSystem.Sumcheck.Structured`.
 -- We re-export them under the `Binius.BinaryBasefold` namespace so that existing
 -- references — qualified or unqualified — continue to resolve.
--- See `GENERIC_RING_SWITCHING_PLAN.md` §1.5 for the rationale.
 export Sumcheck.Structured (MultilinearPoly MultiquadraticPoly
   SumcheckMultiplierParam computeInitialSumcheckPoly
   projectToMidSumcheckPoly projectToMidSumcheckPolyWithParam

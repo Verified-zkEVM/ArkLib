@@ -68,7 +68,7 @@ and soundness requires `[IsDomain L]` (Schwartz–Zippel).
 ## Notes
 
 - The protocol skeleton and security *statements* are generic and final; the leaf
-  completeness/soundness *proofs* are tracked as follow-up (see `M5_BOOTSTRAP.md` at repo root).
+  completeness/soundness *proofs* remain `sorry`ed follow-up work in the files listed above.
 - Soundness reuse across instances is weaker than data-layer reuse: the `[IsDomain L]` theorems fit
   field instances (Binius) but not non-domain rings (Hachi `R_q`), whose soundness is a sibling
   theorem with a different error.

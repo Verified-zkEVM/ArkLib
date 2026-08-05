@@ -26,12 +26,14 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
 * `QuadEval/Reduction.lean` — the two-round protocol data: the statement/response/witness types,
   the challenge space `ShortChallenge`, the ordinary relations `relIn` (an eval-consistent weak
   opening) and `relOut` (Eq. (20) + the range checks) over the fixed commitment key `pp`, the
-  parallel `QuadEvalSISBreak` escape set for Module-SIS(B/D) extraction outcomes (validated by
-  `quadEvalSISSet` against the same fixed `pp` — the key is a parameter, never statement data),
+  `QuadEvalSISBreak`/`quadEvalSISSet` break vocabulary for the Module-SIS(B/D) extraction outcomes
+  (validated against the same fixed `pp` — the key is a parameter, never statement data),
   and the pure pass-through `verifier` with the honest `prover` skeleton.
-* `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extractor
-  (`buildWitness`) and the coordinate-wise special soundness
-  `quadEval_coordinateWiseSpecialSound`, bundled as the composable `quadEvalPackage`; also the
+* `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extraction
+  (`buildWitness`, split into the plain assembler `quadEvalMkWitness` and the escape event
+  `quadEvalEscLocal`) and the escape-threaded coordinate-wise special soundness
+  `quadEval_coordinateWiseSpecialSoundWithEscape` at the **plain** relations, bundled as the
+  composable `quadEvalPackage`; also the
   reduction's derived norm constants `B_z` / `βSq`. The soundness is genuinely `sorry`-free —
   axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
   one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself

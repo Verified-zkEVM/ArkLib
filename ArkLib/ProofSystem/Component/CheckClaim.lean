@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Check if a predicate / claim on a statement is satisfied
@@ -37,7 +38,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
   Consequently, the oracle output relation is no longer trivial: it is `oracleRelOut P relIn`, which
   refines `relIn` by `P`. Completeness therefore holds under the explicit hypothesis that every
   `relIn` input already satisfies `P` (`oracleReduction_completeness`), and soundness is captured by
-  `oracleVerifier_coordinateWiseSpecialSound`.
+  `oracleVerifier_coordinateWiseSpecialSoundWith`.
 
   Note: with the pure pass-through oracle verifier (and the refactor to disallow failure in
   `OracleComp`), this oracle reduction is a special case of `ReduceClaim` (identity maps).
@@ -302,23 +303,26 @@ theorem oracleReduction_completeness
     cases hx
     exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
-/-- **Coordinate-wise special soundness of `CheckClaim`.** The verifier is a pure pass-through with
-no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
-`coordinateWiseSpecialSound_of_isEmpty_challengeIdx`) to a transcript-level obligation. The
-extractor is trivial (`e := fun _ _ => ()`, there is no witness); since the pass-through output
-equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language` forces
-the input into `relIn`. Holds for any coordinate-wise structure `D`. -/
-theorem oracleVerifier_coordinateWiseSpecialSound (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSound init impl D relIn
-      (oracleRelOut P relIn) := by
-  refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (oracleVerifier oSpec Statement OStatement) relIn (oracleRelOut P relIn) (fun _ _ => ()) ?_
-  rintro ⟨stmt, oStmt⟩ tr hAcc
-  have hmem := Verifier.mem_of_pure_accepting init impl
-    (oracleVerifier oSpec Statement OStatement).toVerifier ⟨stmt, oStmt⟩ tr
-    (oracleRelOut P relIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
-  exact hu.1
+/-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure
+pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level obligation. The
+named extractor is trivial (`fun _ _ => ()`, there is no witness); since the pass-through output
+equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language`
+forces the input into `relIn`. Holds for any coordinate-wise structure `D`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith
+    (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
+    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSoundWith init impl D relIn
+      (oracleRelOut P relIn)
+      (fun _ _ => ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (oracleVerifier oSpec Statement OStatement) relIn (oracleRelOut P relIn) (fun _ _ => ())
+    (fun s tr hAcc => by
+      have hmem := Verifier.mem_of_pure_accepting init impl
+        (oracleVerifier oSpec Statement OStatement).toVerifier s tr
+        (oracleRelOut P relIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu.1)
+  exact h
 
 end OracleReduction
 

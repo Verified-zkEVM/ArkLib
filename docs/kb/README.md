@@ -35,7 +35,8 @@ Useful commands:
 python3 ./scripts/kb/sync_from_bib.py
 python3 ./scripts/kb/extract_lean_citations.py
 python3 ./scripts/kb/lint.py
-python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Whir/ProximityGen.lean --format review
+python3 ./scripts/kb/review_context.py \
+  --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean --format review
 ```
 
 ## When To Touch The KB
@@ -192,11 +193,11 @@ will run `python3 ./scripts/kb/regenerate.py` after merge and open a generated-f
 
 ### Example: use the KB during review
 
-If a PR changes `ArkLib/ProofSystem/Whir/ProximityGen.lean`, run:
+If a PR changes `ArkLib/Data/CodingTheory/ProximityGap/Basic.lean`, run:
 
 ```bash
 python3 ./scripts/kb/review_context.py \
-  --files ArkLib/ProofSystem/Whir/ProximityGen.lean \
+  --files ArkLib/Data/CodingTheory/ProximityGap/Basic.lean \
   --format review
 ```
 

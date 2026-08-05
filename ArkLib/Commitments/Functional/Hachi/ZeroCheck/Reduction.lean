@@ -20,9 +20,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
   *axis cross* through the star's center, and for `m ≥ 2` cross-vanishing does not imply
   `H ≡ 0` — `H(t₁,t₂) = (t₁−a)(t₂−b)` vanishes on every axis line through `(a,b)` yet is
   nonzero, and an adversary can realize exactly this shape against the paper's own range check
-  with a single out-of-range entry. No choice of the paper's parameter `D` helps. Full analysis,
-  protocol-level counterexample, and the repair space: [`HACHI_LEMMA10_GAP.md`](../../../../../
-  HACHI_LEMMA10_GAP.md) (plan risk R7).
+  with a single out-of-range entry. No choice of the paper's parameter `D` helps: uniform vector
+  challenges cannot certify more than axis-cross vanishing, so [NOZ26, Lemma 10] is unprovable
+  without changing the challenge *distribution* — which is what the repair below does.
 
   **Adopted repair (one round, Kronecker curve):** sample two independent scalar **seeds**
   `(ρ₀, ρ_α) ← F²` and derive the evaluation points on the Kronecker curves
@@ -50,8 +50,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
   node (one flat three-coordinate star over `(α, ρ₀, ρ_α)` would recreate the missing-corners
   problem for the mixed `(α, ρ_α)`-dependence of `H_α`).
 
-  **Sorried**: the CWSS theorem `zeroCheck_coordinateWiseSpecialSound` (the corrected Lemma 10;
-  Kronecker injectivity + univariate root counting + the weak-binding escape).
+  **Sorried**: the extraction algorithm `zeroCheckExtractor` and the CWSS theorem
+  `zeroCheck_coordinateWiseSpecialSoundWithEscape` (the corrected Lemma 10; Kronecker injectivity
+  + univariate root counting + the weak-binding escape event `zeroCheckEsc`).
 
   ## References
 
@@ -92,11 +93,53 @@ def zeroCheckStructure (F : Type) (m₀ m₁ : ℕ) : CWSSStructure (pSpecZeroCh
   arity := fun _ => 2 * (max 2 (max (2 ^ m₀) (2 ^ m₁)) - 1) + 1
   arity_eq := rfl
 
+/-! ### Reading the seed family off a tree
+
+The zero-check has a *single* challenge round and no prover message, so every full challenge tree is
+one `chalNode` over leaves. The reader below is index-generic in the same way as
+`CoordinateWise.SingleRound`'s (a naive `match` on a `ChallengeTree … 0` fails with "dependent
+elimination failed"), but needs no `Fin.cast` bridge: `zeroCheckStructure`'s arity is already
+`2D − 1` by `rfl`. The reader is what makes the escape event below
+`(statement, tree)`-determined. -/
+
+section SeedReader
+
+variable {F : Type} {arity : (pSpecZeroCheck F).ChallengeIdx → ℕ}
+
+/-- Index-generic reader: peel the round-0 `chalNode`'s sibling-seed family off a tree at any
+index `a`, together with a proof `a = 0`. -/
+def seedsAux : {a : Fin 2} → ChallengeTree (pSpecZeroCheck F) arity a → a = (0 : Fin 2) →
+    (Fin (arity ⟨0, rfl⟩) → (pSpecZeroCheck F).Challenge ⟨0, rfl⟩)
+  | _, .leaf, ha => by simp at ha
+  | _, .msgNode m h _ _, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simp at this ⊢)
+      exact absurd h Direction.noConfusion
+  | _, .chalNode m _ chals _, ha => by
+      obtain rfl : m = 0 := Fin.ext (by have := congrArg Fin.val ha; simp at this ⊢)
+      exact chals
+
+/-- Read the sibling family of Kronecker seed pairs off a full tree. -/
+def readSeeds (tree : ChallengeTree (pSpecZeroCheck F) arity 0) :
+    Fin (arity ⟨0, rfl⟩) → (pSpecZeroCheck F).Challenge ⟨0, rfl⟩ :=
+  seedsAux tree rfl
+
+/-- The star tree of the zero-check: one challenge node carrying the seed family, leaves below. -/
+def tree1 (seeds : Fin (arity ⟨0, rfl⟩) → (pSpecZeroCheck F).Challenge ⟨0, rfl⟩) :
+    ChallengeTree (pSpecZeroCheck F) arity 0 :=
+  .chalNode 0 rfl seeds (fun _ => .leaf)
+
+/-- The reader computes on the star tree. -/
+@[simp] theorem readSeeds_tree1
+    (seeds : Fin (arity ⟨0, rfl⟩) → (pSpecZeroCheck F).Challenge ⟨0, rfl⟩) :
+    readSeeds (tree1 seeds) = seeds := rfl
+
+end SeedReader
+
 section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -129,7 +172,7 @@ def zeroCheckProver {TCom : Type} :
 /-- **The zero-check's output relation** (corrected Figure 5 residual claims): `w̃` opens `t`,
 and both batched constraint polynomials vanish **at the derived Kronecker points**
 `τ₀ = κ_{m₀}(ρ₀)`, `τ_α = κ_{m₁}(ρ_α)`. -/
-def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
@@ -139,46 +182,77 @@ def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBo
       (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
-/-- Escape-threaded zero-check relation — the sumcheck bridge's seam. -/
-def relZeroCheckE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
-    Set (ZeroCheckStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relZeroCheck Φ m₀ m₁ bound ρBound K φF b).withEscape esc
+/-- **The zero-check's escape event** (corrected Lemma 10's weak-binding case): the tree's own seed
+family admits per-branch `relZeroCheck`-responses among which two are **distinct short openings of
+the statement's commitment `t`** — a member of `LiftCom.Collision`, hence a Module-SIS break of the
+fixed key by [NOZ26] Lemma 7. (Both openings automatically open `t`: `relZeroCheck`'s first conjunct
+pins `K.com w = t` and every branch's output statement carries the same `t`.)
+
+Against the escape-event contract (`ChallengeTree.EscapeEvent`): the collision conjunct is an
+unconditional break at *every* `(statement, tree)`, and the event is determined by the statement and
+the tree's seeds (read by `readSeeds`) together with responses pinned to the **output** relation.
+That pinning is what keeps it tight — it cannot fire on trees where all branches share one opening,
+which is exactly where extraction succeeds. -/
+def zeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    ChallengeTree.EscapeEvent (LiftStatement Φ K.TCom F n μ) (pSpecZeroCheck F)
+      (CWSSStructure.toShape (zeroCheckStructure F m₀ m₁)).arity :=
+  fun stmt tree =>
+    ∃ resp : Fin ((zeroCheckStructure F m₀ m₁).arity ⟨0, rfl⟩) → LiftedWitness Φ μ n,
+      (∀ j, (⟨stmt.1, stmt.2.1, stmt.2.2,
+            (readSeeds tree j).1, (readSeeds tree j).2⟩, resp j) ∈
+          relZeroCheck Φ m₀ m₁ bound ρBound K φF b) ∧
+      ∃ j j', (resp j, resp j') ∈ K.Collision
 
 variable [SampleableType F]
 
-/-- **Corrected Hachi Lemma 10 (skeleton): one-round Kronecker-seed CWSS of the zero-check.**
+/-- **The corrected Lemma 10 extraction algorithm (skeleton).**
 
-**Sorried (F6).** Extraction plan (`HACHI_LEMMA10_GAP.md` §3.K.3): an `SS(F, 2, D)` star of
-`2D − 1` accepting branches has `D` pairwise-distinct `ρ₀`-values on its first arm (the second
-coordinate held at the center) and `D` pairwise-distinct `ρ_α`-values on its second arm. If two
-branch witnesses are escapes or distinct openings of `t`, pass through resp. invoke
-`K.collision_mem` (all openings are... short by the downstream range extraction — precisely, the
-collision escape here reuses the same weak-binding route as Lemma 9's). Otherwise all branches
-share one `w̃`: the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` has degree `< 2^{m₀} ≤ D`
-(multilinearity `hZero_degreeOf_le` + `LinearMvExtension.powAlgHom` degree bound) and `D`
-distinct roots on the first arm, hence `K₀ = 0`; **Kronecker injectivity** of the pullback on
-multilinear polynomials (the still-missing `powAlgHom_injective_on_multilinear`) gives
-`H₀^{w̃} ≡ 0`. The second arm gives `H_α^{w̃} ≡ 0` identically. The axis-cross counterexample
-of the gap file cannot survive: its pullback is a nonzero univariate of degree `< 2^{m₀}`. -/
-theorem zeroCheck_coordinateWiseSpecialSound
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
-    (zeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
-        (TCom := K.TCom)).coordinateWiseSpecialSound init impl
-      (zeroCheckStructure F m₀ m₁)
-      (relBatchedE Φ m₀ m₁ bound ρBound K φF b esc)
-      (relZeroCheckE Φ m₀ m₁ bound ρBound K φF b esc) := by
+**Sorried** — this def is the milestone's *algorithm* (the case split of the extraction plan on
+`zeroCheck_coordinateWiseSpecialSoundWithEscape`). -/
+noncomputable def zeroCheckExtractor
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    Extractor.TreeBased (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (pSpecZeroCheck F)
+      (CWSSStructure.toShape (zeroCheckStructure F m₀ m₁)).arity :=
   sorry
 
-/-- **The zero-check as an `EscapeCWSSPackage`** (corrected Hachi Figure 5 / Lemma 10):
-the one-round seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing plain
-`relBatched` to `relZeroCheck` and carrying `esc` unchanged. -/
-def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (esc : Set E) :
-    EscapeCWSSPackage init impl E
+/-- **Corrected Hachi Lemma 10 (skeleton): one-round Kronecker-seed escape-threaded CWSS of the
+zero-check, at the named `zeroCheckExtractor`.** The relations are `relBatched` / `relZeroCheck`;
+the weak-binding failure mode is the escape disjunct `zeroCheckEsc`.
+
+**Sorried.** Extraction plan: an `SS(F, 2, D)` star of `2D − 1` accepting branches has `D`
+pairwise-distinct `ρ₀`-values on its first arm (the second coordinate held at the center) and `D`
+pairwise-distinct `ρ_α`-values on its second arm. If two branch witnesses are distinct openings of
+`t`, they are short (by `relZeroCheck`'s downstream range content, the same weak-binding route as
+Lemma 9's) and `zeroCheckEsc` fires — take the left disjunct. Otherwise all branches share one `w̃`:
+the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` has degree `< 2^{m₀} ≤ D` (multilinearity
+`hZero_degreeOf_le` + `LinearMvExtension.powAlgHom` degree bound) and `D` distinct roots on the
+first arm, hence `K₀ = 0`; **Kronecker injectivity** of the pullback on multilinear polynomials (the
+still-missing `powAlgHom_injective_on_multilinear`) gives `H₀^{w̃} ≡ 0`. The second arm gives
+`H_α^{w̃} ≡ 0` identically. The axis-cross counterexample of the module docstring cannot survive:
+its pullback is a nonzero univariate of degree `< 2^{m₀}`. -/
+theorem zeroCheck_coordinateWiseSpecialSoundWithEscape
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (zeroCheckStructure F m₀ m₁)
+      (zeroCheckEsc Φ m₀ m₁ bound ρBound K φF b)
+      (relBatched Φ m₀ m₁ bound ρBound K φF b)
+      (relZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+      (zeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F) (TCom := K.TCom))
+      (zeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b) := by
+  sorry
+
+/-- **The zero-check as an `EscapeCWSSPackage`** (corrected Hachi Figure 5 / Lemma 10): the
+one-round seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing `relBatched`
+to `relZeroCheck`, with the weak-binding event `zeroCheckEsc` as its one escape-specific field. -/
+noncomputable def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    EscapeCWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecZeroCheck F) where
@@ -186,13 +260,12 @@ def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
   struct := zeroCheckStructure F m₀ m₁
   relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
   relOut := relZeroCheck Φ m₀ m₁ bound ρBound K φF b
-  escIn := esc
-  escOut := esc
-  escape_mono := fun _ h => h
+  esc := zeroCheckEsc Φ m₀ m₁ bound ρBound K φF b
   isPure := ⟨fun stmt tr =>
     ⟨stmt.1, stmt.2.1, stmt.2.2, (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩,
     fun _ _ => rfl⟩
-  isCWSS := zeroCheck_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound init impl K φF b esc
+  extractor := zeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b
+  isCWSS := zeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound init impl K φF b
 
 end Protocol
 

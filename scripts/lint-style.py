@@ -23,11 +23,8 @@ that contain the relative path, whilst linting absolute paths (like
 absolute path.
 
 This script can also be used to regenerate the list of allowed / ignored style
-exceptions by redirecting the output to ``style-exceptions.txt``. Use:
-
-    $ ./scripts/update-style-exceptions.sh
-
-to perform this update.
+exceptions by redirecting its output to ``scripts/style-exceptions.txt``
+(ArkLib has no wrapper script for that step).
 """
 
 # TODO: This is copied from mathlib currently. eventually that could be avoided with some better scripting

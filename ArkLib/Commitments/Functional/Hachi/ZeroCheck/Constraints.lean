@@ -42,7 +42,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
   off against the printed product — everything downstream is degree-parametric
   (`roundDegZero`/`roundDegAlpha`), so the pin is a one-line change if a convention shifts.
 
-  ## The Kronecker point (Lemma 10 repair, `HACHI_LEMMA10_GAP.md`)
+  ## The Kronecker point ([NOZ26, Lemma 10] repair)
 
   `kroneckerPoint m ρ = (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})`: the pullback of an `m`-variate multilinear
   polynomial along this curve is univariate of degree `< 2^m` and the pullback is **injective**
@@ -66,13 +66,13 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F]
 variable (m₀ m₁ : ℕ)
 
 /-! ## The Kronecker curve (real definitions) -/
 
 /-- **The Kronecker point** `κ_m(ρ) := (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})` — the corrected Lemma 10's
-challenge-derivation curve (`HACHI_LEMMA10_GAP.md` §3.K). Computable by repeated squaring. -/
+challenge-derivation curve. Computable by repeated squaring. -/
 def kroneckerPoint (m : ℕ) (ρ : F) : Fin m → F :=
   fun j => ρ ^ (2 ^ (j : ℕ))
 
@@ -185,9 +185,8 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
 /-- The zero-check's output statement: the lift statement extended by the two **Kronecker
-seeds** `(ρ₀, ρ_α)` of the corrected Lemma 10 (`HACHI_LEMMA10_GAP.md` §3.K.2: the challenge is
-the seed pair; the batching points `τ₀ := κ_{m₀}(ρ₀)`, `τ_α := κ_{m₁}(ρ_α)` are derived
-deterministically). -/
+seeds** `(ρ₀, ρ_α)` of the corrected Lemma 10 (the challenge is the seed pair; the batching
+points `τ₀ := κ_{m₀}(ρ₀)`, `τ_α := κ_{m₁}(ρ_α)` are derived deterministically). -/
 structure ZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) where
   /-- The `R^lin` statement (carrying the public `M`, `yvec`, `bound`). -/
   rlin : RlinStatement Φ n μ
@@ -223,7 +222,7 @@ equal the current targets. Round `0` (full sums) is produced by the sumcheck bri
 `bound ≤ rlin.bound` threads the global norm parameter back to the `R^lin` statement bound (it
 originates in `relLift`, is preserved by every intermediate extraction since the statement
 components are shared, and is re-supplied at the final-evaluation step by its runtime guard). -/
-def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def roundRel (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (RoundStatement Φ K.TCom F n μ i × LiftedWitness Φ μ n) :=
   {p |
@@ -234,11 +233,5 @@ def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound)
         (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α (kroneckerPoint m₁ p.1.zc.seedα)
           p.2) i p.1.challenges = p.1.targetα ∧
     bound ≤ p.1.zc.rlin.bound}
-
-/-- Escape-threaded per-round seam relation. -/
-def roundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) (esc : Set E) :
-    Set (RoundStatement Φ K.TCom F n μ i × (LiftedWitness Φ μ n ⊕ E)) :=
-  (roundRel Φ m₀ m₁ bound ρBound K φF b i).withEscape esc
 
 end ArkLib.Lattices.Ajtai.InnerOuter

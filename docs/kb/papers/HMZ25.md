@@ -52,7 +52,7 @@ full Ring-R1CS proof system.
 
 ## Open Formalization Gaps
 
-The interpolation-based extraction for Hachi's Lemma 9 (`lift_coordinateWiseSpecialSound`) is
+The interpolation-based extraction for Hachi's Lemma 9 (`lift_coordinateWiseSpecialSoundWith`) is
 currently a `sorry`-level skeleton; see the module docstrings under
 `ArkLib/Commitments/Functional/Hachi/RingSwitch/`.
 

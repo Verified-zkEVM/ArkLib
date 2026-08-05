@@ -10,8 +10,8 @@ import ArkLib.OracleReduction.Composition.Sequential.General
 
   A verifier is `Verifier.IsPure` when its `verify` is a deterministic (`pure`) function of the
   statement and transcript. This is exactly the deterministic-left hypothesis `hV₁` of the
-  CWSS / tree-soundness binary append (`Verifier.append_treeSpecialSound`,
-  `Verifier.append_coordinateWiseSpecialSound`), so propagating `IsPure` through composition lets
+  CWSS / tree-soundness binary append (`Verifier.append_treeSpecialSoundWith`,
+  `Verifier.append_coordinateWiseSpecialSoundWith`), so propagating `IsPure` through composition lets
   an `n`-ary CWSS composition discharge that hypothesis from per-factor purity.
 
   We show that the identity verifier is pure (`instIsPureId`), and that purity is preserved by

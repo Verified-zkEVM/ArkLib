@@ -7,7 +7,6 @@ import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.ProofSystem.Component.ReduceClaim
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Polynomial-level bridge into Hachi's `QuadEval` reduction
@@ -24,15 +23,15 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   Eq. (12) bases to be the monomial tensor bases `mb(xl)` / `mb(xh)` of the low/high halves of the
   evaluation point (`toQuadEvalStatement`), realized as the `ReduceClaim` reduction. Because
   `ReduceClaim`'s verifier is pure with no challenge rounds, its coordinate-wise special soundness
-  (CWSS; `ReduceClaim.verifier_coordinateWiseSpecialSound`) collapses to the transcript-level
+  (CWSS; `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`) collapses to the transcript-level
   pull-back `mem_relPolyEval_of_relIn`, so the bridge is CWSS for **any** `D`
-  (`bridge_coordinateWiseSpecialSound`).
+  (`bridge_coordinateWiseSpecialSoundWith`).
 
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
   *extracted polynomial* evaluates to `y` at `xl ++ xh`) that
   `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Composition.lean` chains the bridge
   before `QuadEval` (`evalChain = bridgePackage ▷ quadEvalPackage`), yielding the sorry-free
-  `eval_coordinateWiseSpecialSound`.
+  `eval_coordinateWiseSpecialSoundWith`.
 
   ## Main definitions
 
@@ -44,13 +43,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   * `extractedPoly`: the polynomial read back from a weak opening's Eq. (15) derived-message
     matrix via `Hachi.toPolynomial` (round-trip: `toMatrix_extractedPoly`).
   * `relPolyEval`: the polynomial-level input relation described above.
-  * `bridgePackage`: the bridge as a composable `EscapeCWSSPackage` with a passive escape set.
+  * `bridgePackage`: the bridge as a composable, escape-free `CWSSPackage`.
 
   ## Main results
 
   * `mem_relPolyEval_of_relIn`: `QuadEval`'s `relIn` at `toQuadEvalStatement Φ s` pulls back to
     `relPolyEval` at `s`, via `splitForm_monomialBasis_eq_eval`.
-  * `bridge_coordinateWiseSpecialSound`: the bridge is CWSS for any `D`. All proofs in this file
+  * `bridge_coordinateWiseSpecialSoundWith`: the bridge is CWSS for any `D`, at the named
+    `ReduceClaim.treeExtractor`. All proofs in this file
     are sorry-free.
 
   ## Faithfulness note (Eq. (12) convention)
@@ -90,7 +90,7 @@ section Defs
 
 variable {R : Type} [Field R] [BEq R] [LawfulBEq R] (Φ : CyclotomicModulus R) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι} {E : Type}
+variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- Input statement of the composed Hachi evaluation protocol at the polynomial level (Hachi
 §4.2/Figure 3, `Rq`-level): the outer commitment `u`, the evaluation point *split as a pair*
@@ -124,7 +124,7 @@ def toQuadEvalStatement
 
 /-- The zero-round **bridge verifier**: a `ReduceClaim` head that reinterprets the polynomial-level
 statement as a `QuadEvalStatement` via `toQuadEvalStatement`. Pure with no challenge rounds, so its
-CWSS holds for any `D` (`bridge_coordinateWiseSpecialSound`). -/
+CWSS holds for any `D` (`bridge_coordinateWiseSpecialSoundWith`). -/
 def bridgeVerifier :
     Verifier oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
@@ -141,7 +141,7 @@ section ZModDefs
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι} {E : Type}
+variable {ι : Type} {oSpec : OracleSpec ι}
 
 /-- The polynomial extracted from a weak opening: the inverse reshape (`Hachi.toPolynomial`) of the
 Eq. (15) derived-message matrix `M`. A bijection, so
@@ -195,35 +195,42 @@ theorem mem_relPolyEval_of_relIn
   exact hec
 
 omit [NeZero q] in
-/-- **CWSS of the bridge.** The zero-round `ReduceClaim` head is coordinate-wise special sound for
-any `D`: with no challenge rounds, CWSS collapses (via the no-challenge bridge) to the
-transcript-level pull-back `mem_relPolyEval_of_relIn`, reducing `QuadEval`'s `relIn` to the
-polynomial-level `relPolyEval`. The witness type is unchanged (`QuadEvalWitness`), so the witness
-pull-back is the identity. -/
-theorem bridge_coordinateWiseSpecialSound {σ : Type}
+/-- **CWSS of the bridge, named form.** The zero-round `ReduceClaim` head is coordinate-wise
+special sound for any `D`, at the named `ReduceClaim.treeExtractor`: with no challenge rounds,
+CWSS collapses (via the no-challenge bridge) to the transcript-level pull-back
+`mem_relPolyEval_of_relIn`, reducing `QuadEval`'s `relIn` to the polynomial-level `relPolyEval`.
+The witness type is unchanged (`QuadEvalWitness`), so the witness pull-back is the identity. -/
+theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ : ℕ) :
-    (bridgeVerifier (oSpec := oSpec) Φ (innerRows := innerRows) (messageDigits := messageDigits)
-        (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m)
-        (r := r)).coordinateWiseSpecialSound init impl D
-      (relPolyEval Φ pp base βSq γ κ) (relIn Φ pp base βSq γ κ) :=
-  ReduceClaim.verifier_coordinateWiseSpecialSound
+    Verifier.coordinateWiseSpecialSoundWith init impl D
+      (relPolyEval Φ pp base βSq γ κ) (relIn Φ pp base βSq γ κ)
+      (bridgeVerifier (oSpec := oSpec) Φ (innerRows := innerRows)
+        (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
+      (ReduceClaim.treeExtractor (mapStmt := toQuadEvalStatement Φ)
+        (relIn Φ pp base βSq γ κ) (fun _ w => w) D) :=
+  ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relPolyEval Φ pp base βSq γ κ) (relOut := relIn Φ pp base βSq γ κ)
     (mapWitInv := fun _ w => w) (D := D)
     (mem_relPolyEval_of_relIn Φ pp base βSq γ κ)
 
-/-- **The polynomial-level bridge as an `EscapeCWSSPackage`** (Hachi [NOZ26, §4.2]): the zero-round
-`ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure (`ofIsEmpty`) and
-the escape-widened lift (`Verifier.coordinateWiseSpecialSound.withEscape`) of its CWSS certificate
-`bridge_coordinateWiseSpecialSound`, ready to be `▷`-composed before `QuadEval`. Its public
-`relOut` is `QuadEval`'s ordinary input relation `relIn`, and it carries the escape set through
-unchanged. -/
-def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+/-- **The polynomial-level bridge as a (plain) `CWSSPackage`** (Hachi [NOZ26, §4.2]): the
+zero-round `ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure
+(`ofIsEmpty`) and its named CWSS certificate `bridge_coordinateWiseSpecialSoundWith`, ready to be
+`▷`-composed before `QuadEval`. Its public `relOut` is `QuadEval`'s ordinary input relation
+`relIn`.
+
+The bridge is a statement *reinterpretation* with no cryptographic content, so it carries no escape
+event; composing it before the escape-aware `quadEvalPackage` costs nothing, the universal `▷`
+lifting it at the never-firing event. -/
+noncomputable def bridgePackage {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows) (base : ZMod q) (βSq γ κ : ℕ) (esc : Set E) :
-    EscapeCWSSPackage init impl E
+      dRows) (base : ZMod q) (βSq γ κ : ℕ) :
+    CWSSPackage init impl
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
@@ -233,13 +240,11 @@ def bridgePackage {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
   struct := CWSSStructure.ofIsEmpty
   relIn := relPolyEval Φ pp base βSq γ κ
   relOut := relIn Φ pp base βSq γ κ
-  escIn := esc
-  escOut := esc
-  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => toQuadEvalStatement Φ stmt, fun _ _ => rfl⟩
-  isCWSS :=
-    (bridge_coordinateWiseSpecialSound Φ init impl CWSSStructure.ofIsEmpty pp base
-      βSq γ κ).withEscape esc
+  extractor := ReduceClaim.treeExtractor (mapStmt := toQuadEvalStatement Φ)
+    (relIn Φ pp base βSq γ κ) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isCWSS := bridge_coordinateWiseSpecialSoundWith Φ init impl CWSSStructure.ofIsEmpty pp base
+    βSq γ κ
 
 end ZModDefs
 

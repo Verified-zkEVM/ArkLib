@@ -12,7 +12,7 @@ This is the main catalog for ArkLib's knowledge base.
 ## Paper Pages
 
 - [`papers/ACFY24.md`](papers/ACFY24.md) - WHIR ePrint paper and its ArkLib touchpoints in
-  `ReedSolomon` and `ProofSystem/Whir`.
+  `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main

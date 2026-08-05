@@ -23,7 +23,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
   **open soundness question**, deliberately isolated in this one zero-round seam (mirroring how
   the Lemma 10 gap is isolated in the zero-check).
 
-  ## ⚠ The gap (see `HACHI_RECURSION_GAP.md` for the full analysis)
+  ## ⚠ The gap
 
   The packed claim pins only the single `F`-linear combination `∑ᵢ Z^{⟨i⟩}·(pᵢ − yᵢ) = 0` of
   the per-`i` defects `pᵢ − yᵢ := partialEvalAt w̃ a₀ i − yᵢ ∈ F`. Since the defects are
@@ -33,10 +33,10 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
   the packed right-hand side invariant while shifting the reconstructed evaluation
   `y₀ + a·y₁ = mle[w̃](a₀, a) + δ(Z − a)` — for `a ≠ Z` every target value is reachable, so the
   §4.5 recursion step (and §3.2's generic form) is not knowledge-sound as stated. Candidate
-  repairs (recorded in the gap note; all deviate from the paper): a batching challenge round
-  over the peeled index (Kronecker-seeded, DP24-relocation style), or replacing the peeling with
-  the generic §3.1 packing (`F_{q^k}`-coefficient reading, paper Fig. 2 row 1, at the cost of
-  `κ` extra variables and a sparser commitment reinterpretation).
+  repairs (all deviate from the paper): a batching challenge round over the peeled index
+  (Kronecker-seeded, DP24-relocation style), or replacing the peeling with the generic §3.1
+  packing (`F_{q^k}`-coefficient reading, paper Fig. 2 row 1, at the cost of `κ` extra variables
+  and a sparser commitment reinterpretation).
 
   Until a repair is adopted, this bridge is the faithful rendering of the paper's step, and its
   sorry is expected to be **unprovable as stated** — kept so the composed chain records exactly
@@ -67,7 +67,7 @@ section Bridge
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F]
 variable (mLow κ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -83,19 +83,12 @@ def hatEval (φF : ZMod q →+* F) (zpow : Fin (2 ^ κ) → F) (w : LiftedWitnes
 evaluates to the packed public value at the low point half. This is the claim the trace handoff
 (`Recursion/TraceHandoff.lean`) converts into the next iteration's `Rq`-statement. -/
 def relHatEval (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (HatEvalStatement K.TCom F mLow × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
     hatEval Φ mLow κ φF zpow p.2 p.1.pointLow = p.1.value}
-
-/-- Escape-threaded `Z`-packed claim relation. -/
-def relHatEvalE (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (esc : Set E) :
-    Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relHatEval Φ mLow κ bound ρBound zpow K φF).withEscape esc
 
 /-- The bridge's statement map: forget the peeled point half and pack the partial evaluations
 into the public right-hand side `∑ᵢ yᵢ·zpow i` of Eq. (26). -/
@@ -103,31 +96,31 @@ def toHatEvalStatement {TCom : Type} (zpow : Fin (2 ^ κ) → F)
     (s : PartialEvalStatement TCom F mLow κ) : HatEvalStatement TCom F mLow :=
   ⟨s.t, s.pointLow, ∑ i, s.partials i * zpow i⟩
 
-/-- ⚠ **The un-packing pull-back — open soundness question (`HACHI_RECURSION_GAP.md`).** As the
-paper's step below Eq. (26) implicitly requires, the packed claim should imply the per-`i`
-claims. **This statement is expected to be unprovable**: the packed claim constrains only one
-`F`-linear combination of the per-`i` defects, which have a nontrivial kernel for `κ ≥ 1` (see
+/-- ⚠ **The un-packing pull-back — open soundness question.** As the paper's step below Eq. (26)
+implicitly requires, the packed claim should imply the per-`i` claims. **This statement is
+expected to be unprovable**: the packed claim constrains only one `F`-linear combination of the
+per-`i` defects, which have a nontrivial kernel for `κ ≥ 1` (see
 the module docstring for the explicit `κ = 1` cheat). The sorry is kept — deliberately isolated
 in this zero-round seam — until a repair (batching challenge / generic §3.1 packing) is adopted;
 any repair changes this bridge's *protocol content*, not the surrounding seams. -/
 theorem mem_relPartialEval_of_relHatEval (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
     (s : PartialEvalStatement K.TCom F mLow κ) (w : LiftedWitness Φ μ n)
     (h : (toHatEvalStatement mLow κ zpow s, w) ∈ relHatEval Φ mLow κ bound ρBound zpow K φF) :
     (s, w) ∈ relPartialEval Φ mLow κ bound ρBound K φF := by
   sorry
 
-/-- **The `Z`-packing bridge as an `EscapeCWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)):
-zero-round `ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing plain `relPartialEval` to
-`relHatEval` and carrying `esc` unchanged.
+/-- **The `Z`-packing bridge as a (plain) `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
+`ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing `relPartialEval` to `relHatEval`. A pure
+statement repacking, hence escape-free.
 ⚠ Its certificate rests on the sorried — and expectedly unprovable as stated — un-packing
 pull-back; see the module docstring. -/
-def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (esc : Set E) :
-    EscapeCWSSPackage init impl E
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) :
+    CWSSPackage init impl
       (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
       (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
@@ -135,18 +128,14 @@ def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCo
   struct := CWSSStructure.ofIsEmpty
   relIn := relPartialEval Φ mLow κ bound ρBound K φF
   relOut := relHatEval Φ mLow κ bound ρBound zpow K φF
-  escIn := esc
-  escOut := esc
-  escape_mono := fun _ h => h
   isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relPartialEvalE Φ mLow κ bound ρBound K φF esc)
-    (relOut := relHatEvalE Φ mLow κ bound ρBound zpow K φF esc)
+  extractor := ReduceClaim.treeExtractor (mapStmt := toHatEvalStatement mLow κ zpow)
+    (relHatEval Φ mLow κ bound ρBound zpow K φF) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+    (relIn := relPartialEval Φ mLow κ bound ρBound K φF)
+    (relOut := relHatEval Φ mLow κ bound ρBound zpow K φF)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (fun s w h => by
-      cases w with
-      | inl w => exact mem_relPartialEval_of_relHatEval Φ mLow κ bound ρBound zpow K φF s w h
-      | inr e => exact h)
+    (fun s w h => mem_relPartialEval_of_relHatEval Φ mLow κ bound ρBound zpow K φF s w h)
 
 end Bridge
 
