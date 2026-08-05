@@ -117,6 +117,24 @@ def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid
   ∀ U : ℓ → (ι → A), ∀ δ : I,
     Pr_{let x ←$ᵖ S}[(IsMCA G MC x U δ)] ≤ ENNReal.ofReal (ε_mca δ)
 
+/-- The mutual correlated agreement error of a generator for a module code: the worst-case,
+over families `U`, probability of the MCA event. This is the value form of the predicate
+`IsMCAGenerator` — see `isMCAGenerator_iff_mcaError_le`. -/
+noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : I → ENNReal :=
+  fun δ => ⨆ U : ℓ → (ι → A), Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]
+
+/-- A generator has mutual correlated agreement with error `ε_mca` iff its MCA error value
+is pointwise bounded by `ε_mca`. -/
+lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
+    [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+    (MC : ModuleCode ι F A) :
+    IsMCAGenerator G ε_mca MC ↔ ∀ δ, mcaError G MC δ ≤ ENNReal.ofReal (ε_mca δ) := by
+  constructor
+  · exact fun h δ => iSup_le fun U => h U δ
+  · exact fun h U δ =>
+      le_trans (le_iSup (fun U => Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]) U) (h δ)
+
 /-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.
 Definition 4.3 [BCGM25]. -/
