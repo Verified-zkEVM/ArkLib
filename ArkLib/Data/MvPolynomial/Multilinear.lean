@@ -12,6 +12,15 @@ import ArkLib.Data.MvPolynomial.Interpolation
 
   This is the special case of polynomial interpolation, when we consider multilinear polynomials and
   evaluation on the hypercube `σ → Fin 2`.
+
+  Besides the multilinear extension `MLE` and its characterizations, the file records the negative
+  companion `exists_nonzero_vanishing_on_axis_cross`: vanishing on a coordinate-wise star does
+  *not* determine a multilinear polynomial, in contrast with `MLE_eq_zero_iff` on the hypercube.
+
+  ## References
+
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 noncomputable section

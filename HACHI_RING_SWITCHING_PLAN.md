@@ -582,7 +582,20 @@ arities here**: the paper's `τ₀ ← F^{log μ + log d}` is in tension with `w
 `1_{≤μ}` indicator restricts the *range check*, not the index space). Pin these as `m₀,m_α` and
 set F6's interpolation parameter to `D := max(2^m₀,2^m_α)`; require `D ≤ |F|`.
 
-**F6. One-round Kronecker zero-check (3–4 d).** Keep Fig. 5 as one challenge round, but sample
+**F6. One-round Kronecker zero-check (3–4 d).**
+
+> **Superseded (5 August 2026).** This milestone is **not** what was built, and the Lean lemmas it
+> plans below no longer exist. The formalization draws each of the `m₀ + m₁` coordinates in its own
+> two-child scalar round and extracts with the nested-tree zero test
+> (`EvaluationTree.eq_zero_of_vanishes_comp`); the one-round Kronecker rendering was rejected
+> because `k = D = 2^{m₀}` makes the branching factor exponential. `powAlgHom` and its degree bound
+> survive in `LinearMvExtension.lean` (they predate this plan and serve Reed–Solomon), but the
+> Kronecker-specific lemmas — injectivity on the multilinear subtype, curve-evaluation
+> compatibility, root counting — have been removed. Current status:
+> [`docs/kb/audits/noz26-zero-check-lemma10.md`](docs/kb/audits/noz26-zero-check-lemma10.md).
+> The text below is retained as the record of the rejected design.
+
+Keep Fig. 5 as one challenge round, but sample
 two independent scalar seeds `(ρ₀,ρ_α) ∈ F²` and derive
 
 ```
