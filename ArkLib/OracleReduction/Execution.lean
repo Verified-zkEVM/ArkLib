@@ -502,6 +502,15 @@ theorem Prover.runToRound_zero_of_prover_first
       prover.runToRound 0 stmt wit = (pure (default, prover.input (stmt, wit))) := by
   simp [Prover.runToRound]
 
+/-- One-step unfolding of `runToRound`: running to round `i.succ` is running to round
+`i.castSucc` and then processing round `i`. The workhorse for collapsing concrete
+protocol executions round by round (e.g. in component completeness proofs). -/
+theorem Prover.runToRound_succ (i : Fin n)
+    (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      prover.runToRound i.succ stmt wit =
+        prover.processRound i (prover.runToRound i.castSucc stmt wit) :=
+  Fin.induction_succ _ _ _
+
 /-- **Per-direction unfold of `processRound` (verifier-to-prover round).** When round `j` is a
 challenge round (`pSpec.dir j = .V_to_P`), processing it reads the previous result, draws the
 challenge, feeds it to `receiveChallenge`, and appends it to the transcript. This resolves the
