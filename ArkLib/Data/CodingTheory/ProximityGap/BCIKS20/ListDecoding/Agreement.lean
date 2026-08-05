@@ -87,9 +87,8 @@ condition cannot be obtained from Claim 5.7:
 
 So §5 has to case-split on `deg_Y R`.  In the `= 1` branch the Hensel machinery is not needed at
 all: `R = R₁·Y + R₀` has the single rational root `γ = -R₀/R₁`, and Claim 5.9's conclusion should
-be reached directly.  The `≥ 2` branch is the one that consumes Claim A.2's weight bounds.  See
-`docs/kb/audits/bciks20-appendix-a-rational-functions.md`, finding 1. -/
-lemma claimA2_hypotheses (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+be reached directly.  The `≥ 2` branch is the one that consumes the weight bounds. -/
+lemma hensel_lift_hypotheses (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     Hypotheses x₀ (R k δ x₀ h_gs) (H k δ x₀ h_gs) :=
   ⟨H_dvd_evalX_R k h_gs, evalX_R_separable k h_gs⟩
 
@@ -105,7 +104,7 @@ lemma approximate_solution_is_exact_solution_coeffs
       (R k δ x₀ h_gs)
       (irreducible_H k h_gs)
       (natDegree_H_pos k h_gs)
-      (claimA2_hypotheses k h_gs)
+      (hensel_lift_hypotheses k h_gs)
       t
     =
     (0 : RationalFunctions.𝕃 (H k δ x₀ h_gs))
@@ -120,7 +119,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     :
     gamma' x₀ (R k δ x₀ h_gs) (irreducible_H k h_gs) (natDegree_H_pos k h_gs)
-        (claimA2_hypotheses k h_gs) =
+        (hensel_lift_hypotheses k h_gs) =
         PowerSeries.mk (fun t =>
           if t > k
           then (0 : RationalFunctions.𝕃 (H k δ x₀ h_gs))
@@ -130,7 +129,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
               (R k (x₀ := x₀) (δ := δ) h_gs)
               (irreducible_H k h_gs)
               (natDegree_H_pos k h_gs)
-              (claimA2_hypotheses k h_gs))) := by
+              (hensel_lift_hypotheses k h_gs))) := by
    sorry
 
 open RationalFunctions.HenselNumerators in
@@ -142,7 +141,7 @@ lemma solution_gamma_is_linear_in_Z
   ∃ (v₀ v₁ : F[X]),
     gamma' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs)
       (natDegree_H_pos k (x₀ := x₀) (δ := δ) h_gs)
-      (claimA2_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
+      (hensel_lift_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
         RationalFunctions.polyToPowerSeries𝕃 _
           (
             (Polynomial.map Polynomial.C v₀) +
@@ -164,7 +163,7 @@ open RationalFunctions.HenselNumerators in
 lemma gamma_eq_P (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   gamma' x₀ (R k δ x₀ h_gs) (irreducible_H k (x₀ := x₀) (δ := δ) h_gs)
     (natDegree_H_pos k (x₀ := x₀) (δ := δ) h_gs)
-    (claimA2_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
+    (hensel_lift_hypotheses k (x₀ := x₀) (δ := δ) h_gs) =
   RationalFunctions.polyToPowerSeries𝕃 _
     (P k δ x₀ h_gs) :=
   Classical.choose_spec

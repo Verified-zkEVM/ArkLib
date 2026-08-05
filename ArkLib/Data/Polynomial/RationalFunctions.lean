@@ -50,14 +50,14 @@ the specialization `R(x₀, Y, Z)`.
 
 ## Main results
 
-* `lemmaA1_embedding_eq_zero_of_many_rational_roots` — Lemma A.1.
+* `embedding_eq_zero_of_many_rational_roots` — Lemma A.1.
 * `HenselNumerators.exists_hensel_numerator_sequence` — the qualitative half of Claim A.2. The data
   `betaSeq`, `alpha`, `gamma` is defined from this rather than from the bundled statement, so that
   downstream definitions do not depend on the quantitative argument.
 * `HenselNumerators.IsHenselNumeratorSequence.unique` — uniqueness of the lift, which A.4 asserts
   and [BCIKS20] §5 invokes in Claim 5.9. It makes `betaSeq` canonical rather than an arbitrary
   choice.
-* `HenselNumerators.claimA2_exists_numerators_with_weight_bounds` — Claim A.2 as the paper states
+* `HenselNumerators.exists_hensel_numerators_with_weight_bounds` — Claim A.2 as the paper states
   it: existence together with both weight bounds.
 
 Everything in this package is proved: no `sorry`, and no axioms beyond `propext`,
@@ -65,16 +65,15 @@ Everything in this package is proved: no `sorry`, and no axioms beyond `propext`
 
 ## Deviations from the paper
 
-Two, both recorded in `docs/kb/audits/bciks20-appendix-a-rational-functions.md`.
-
 1. The weight bounds assume `2 ≤ deg_Y R`, which is A.4's own standing assumption — it writes
    `ξ = W^{d-2}·ζ ∈ 𝒪`, meaningless for `d < 2`. The hypothesis is load-bearing rather than
-   cosmetic: at `deg_Y R = 1` the conclusion of `xi_weight_le` is false. Consumers must case-split;
-   see the docstring of `claimA2_hypotheses` in `BCIKS20/ListDecoding/Agreement.lean`.
+   cosmetic: at `deg_Y R = 1` the conclusion of `xi_weight_le` is false, witnessed by
+   `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1`, where `D = 2` and `ξ = ζ = 1+Z` has
+   `Λ(ξ) = 1` against a claimed bound of `0`. Consumers must case-split on `deg_Y R`.
 2. `numeratorShapeSharp` carries a correction term relative to the inequality A.4 states, because
    a factor of `W` that the recursion *saves* is worth only `deg W` while one it *charges* costs
-   the bound `D - dH`. The loose bound `(2t+1)·d·D` that Claim 5.10 consumes is unaffected. See
-   that definition's docstring.
+   the bound `D - dH`. The loose bound `(2t+1)·d·D` is unaffected, so consumers of that bound see
+   no difference. See `numeratorShapeSharp`'s docstring for the full accounting.
 
 ## References
 

@@ -18,7 +18,7 @@ import Mathlib.Algebra.Polynomial.BigOperators
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 /-!
-# Lemma A.1: Vanishing of Regular Elements
+# Vanishing of Regular Elements
 
 Appendix A.3 of [BCIKS20], Lemma A.1: a regular `β ∈ 𝒪 H` that vanishes under more than
 `deg_Y H · Λ(β)` rational substitutions `π_z` is zero in `𝕃 H`. Proved along the paper's route,
@@ -65,7 +65,7 @@ theorem canonicalRep_coeff_natDegree_le_of_weight_bound {H : F[X][Y]} (hH : 0 < 
 
 /-- If the resultant `res_T(β, H̃)` vanishes then `β` is zero in `𝕃`.  A vanishing resultant makes
 the canonical representative and `H̃` non-coprime; irreducibility of `H̃` and the degree bound
-`deg_T β < deg_T H̃` then force `β = 0`.  This is the last step of Lemma A.1. -/
+`deg_T β < deg_T H̃` then force `β = 0`.  This is the last step of the vanishing criterion. -/
 theorem embedding_eq_zero_of_resultant_zero {H : F[X][Y]} [Fact (Irreducible H)]
     (hH : 0 < H.natDegree) (β : 𝒪 H)
     (hres : Polynomial.resultant (canonicalRepOf𝒪 hH β) (monicize H) = 0) :
@@ -115,9 +115,9 @@ theorem natDegree_det_le_of_perm_products_le {ι : Type} [Fintype ι] [Decidable
   exact le_trans (Polynomial.natDegree_C_mul_le ((Equiv.Perm.sign σ : ℤ) : F) (∏ i : ι, M (σ i) i))
       (h σ)
 
-/-- The paper's degree count for Lemma A.1: `deg_Z res_T(β, H̃) ≤ Λ(β)·dH`.  Proved from the
-Sylvester matrix, bounding each permutation product by summing the weight budgets of the `β`-rows
-and the `H̃`-rows. -/
+/-- The degree count behind the vanishing criterion: `deg_Z res_T(β, H̃) ≤ Λ(β)·dH`.  Proved from
+the Sylvester matrix, bounding each permutation product by summing the weight budgets of the
+`β`-rows and the `H̃`-rows. -/
 theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : ℕ}
     (hD : Bivariate.totalDegree H ≤ D) (β : 𝒪 H)
     (hβw : regularWeight hH β D ≤ (WithBot.some B : WithBot ℕ)) :
@@ -375,7 +375,7 @@ theorem rationalVanishingSet_subset_resultant_roots {H : F[X][Y]} (hH : 0 < H.na
   exact hres
 
 /-- Weight `⊥` means the canonical representative is the zero polynomial, hence `β = 0` in `𝕃`.
-This is the degenerate branch of Lemma A.1. -/
+This is the degenerate branch of the vanishing criterion. -/
 theorem embedding_eq_zero_of_weight_eq_bot {H : F[X][Y]} (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
     (hw : regularWeight hH β D = ⊥) :
   embeddingOf𝒪Into𝕃 H β = 0 := by
@@ -403,8 +403,14 @@ theorem embedding_eq_zero_of_weight_eq_bot {H : F[X][Y]} (hH : 0 < H.natDegree) 
   simp
 
 
-/-- The statement of Lemma A.1 in Appendix A.3 of [BCIKS20]. -/
-lemma lemmaA1_embedding_eq_zero_of_many_rational_roots {H : F[X][Y]}
+/-- **A regular element with too many vanishing substitutions is zero.**  If `β ∈ 𝒪 H` satisfies
+`π_z β = 0` for more than `Λ(β) · deg_Y H` values of `z`, then `β = 0` in `𝕃 H`.
+
+This is the analogue for `𝒪 H` of "a polynomial of degree `≤ n` with more than `n` roots is zero",
+and the reason `Λ` is worth tracking at all: every weight bound on a regular element converts into
+a bound on the number of substitutions that can kill it.  Proved via the resultant `res_T(β, H̃)`,
+whose `Z`-degree is at most `Λ(β) · deg_Y H` and which vanishes at every such `z`. -/
+lemma embedding_eq_zero_of_many_rational_roots {H : F[X][Y]}
     [hHirreducible : Fact (Irreducible H)]
     (hH : 0 < H.natDegree) (β : 𝒪 H) (D : ℕ)
     (hD : D ≥ Bivariate.totalDegree H)

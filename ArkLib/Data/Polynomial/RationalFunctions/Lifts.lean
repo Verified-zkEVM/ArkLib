@@ -293,13 +293,13 @@ variable {F : Type} [Field F] {H : F[X][Y]}
 
 
 /-- The extension of the rational substitution `π_z` from `𝒪` to those elements of `𝕃` for which
-`z` is not a pole ([BCIKS20] A.3: "`π_z` can be extended naturally to any element of `L` for which
-`z` is not a pole, i.e. elements of the form `β / C(Z)` with `β ∈ 𝒪` and `z` not a root of `C`, by
-`π_z (β / C(Z)) = π_z(β) / C(z)`").
+`z` is not a pole: elements of the form `β / C(Z)` with `β ∈ 𝒪 H` and `C(z) ≠ 0`, sent to
+`π_z(β) / C(z)`.
 
 The value is given on the *presentation* `(β, C)`; `piZOfDiv_congr` shows it depends only on the
-quotient `β / C` in `𝕃`, so this really is a function on that subring of `𝕃`.  [BCIKS20] §5 needs
-this: the elements it substitutes into are of the form `β(x) / (W^{k+1} ξ^{e_k})`. -/
+quotient `β / C` in `𝕃`, so this really is a function on that subring of `𝕃`.  Hensel-lift
+coefficients have exactly this shape — their denominators are powers of `W` and `ξ` — which is why
+the extension is needed. -/
 noncomputable def piZOfDiv {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z)
     (β : 𝒪 H) (C : F[X]) : F :=
   piZ z root β / C.eval z
@@ -346,10 +346,9 @@ lemma piZOfDiv_congr (z : F) (root : rationalRoot (monicize H) z) {β β' : 𝒪
   exact hsub
 
 omit H_irreducible H_natDegree_pos in
-/-- The vanishing criterion in the form [BCIKS20] §5 uses it: a quotient with a nonvanishing
-denominator vanishes under `π_z` exactly when its numerator does.  Combined with `Lemma A.1`
-(`lemmaA1_embedding_eq_zero_of_many_rational_roots`) this is how a bound on the number of
-substitutions killing `β / C` becomes a bound on `Λ(β)`. -/
+/-- A quotient with a nonvanishing denominator vanishes under `π_z` exactly when its numerator
+does.  Combined with `embedding_eq_zero_of_many_rational_roots`, this is how a bound on the number
+of substitutions killing `β / C` becomes a bound on `Λ(β)`. -/
 @[simp]
 lemma piZOfDiv_eq_zero_iff (z : F) (root : rationalRoot (monicize H) z) (β : 𝒪 H) {C : F[X]}
     (hCz : C.eval z ≠ 0) :

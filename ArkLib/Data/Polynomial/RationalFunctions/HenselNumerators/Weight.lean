@@ -18,7 +18,7 @@ import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 /-!
-# Claim A.2 Weight Bounds
+# Weight Bounds for the Hensel Numerators
 
 Appendix A.4 of [BCIKS20], the quantitative half of Claim A.2: the `RegularWeightLe`
 certificate calculus on `𝕃 H`, the sharp per-step budget
@@ -279,7 +279,7 @@ lemma regularWeightLe_coeff_liftCoeffToPowerSeries {D : ℕ} (hD : Bivariate.tot
 
 omit H_irreducible H_natDegree_pos in
 /-- Sharp `Λ`-weight bound on the leading-coefficient lift `W`: `Λ(W) ≤ D - dH`.
-This is the per-`W`-factor budget used in the sharp telescoping of [BCIKS20] A.4 (pp. 52–53);
+This is the per-`W`-factor budget used in the sharp telescoping;
 the looser `Λ(W) ≤ D` of `regularWeightLe_leadingCoeff` is not enough for the constant term to
 telescope. -/
 lemma regularWeightLe_leadingCoeff_sharp {D : ℕ} (hD : Bivariate.totalDegree H ≤ D)
@@ -295,19 +295,17 @@ lemma regularWeightLe_leadingCoeff_sharp {D : ℕ} (hD : Bivariate.totalDegree H
       Bivariate.coeff_totalDegree_le H hH_in
     rw [Polynomial.leadingCoeff]; omega
 
-/-- The sharp per-step `Λ`-weight budget for `Λ(βₜ)` in [BCIKS20] A.4, in the form that is actually
-provable by the claim's own `(A.1)` recursion:
+/-- The sharp per-step `Λ`-weight budget for the numerators `βₜ`:
 ```
 sharp t = 1 + (t+1)·(D - dH) + eₜ·((dY-1)·(D - dH + 1)) + (t-1)·(D - dY)
 ```
 with `dH = natDegreeY H`, `dY = natDegreeY R`, `eₜ = henselDenominatorExponent t`, and truncated
 subtraction throughout (so the last summand vanishes for `t ≤ 1`).
 
-## Relation to the paper, and why the last summand is here
+## Why the last summand is there
 
-[BCIKS20] states `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` — this bound *without* the final
-`(t-1)·(D - dY)`.  That form is **not provable by the recursion `(A.1)` that the claim offers**, for
-a reason worth recording, since it is easy to lose:
+The uncorrected bound `1 + (t+1)Λ(W) + eₜΛ(ξ)` — this one without the final `(t-1)·(D - dY)` — is
+**not provable by the recursion the numerators satisfy**, for a reason easy to lose:
 
 * In a bound-based accounting every factor of `W` that the recursion *charges* costs the bound
   `Λ(W) ≤ D - dH`, and the base case forces exactly that charge: `Λ(β₀) = Λ(T) = D - dH + 1` is
@@ -316,9 +314,9 @@ a reason worth recording, since it is easy to lose:
   (`leadingCoeff_dvd_evalX_coeff_natDegree`).  A saved `W` is only worth its **exact** degree
   `deg W`, not the bound `D - dH`; writing the coefficient as `W · c` leaves `Λ(c) = Λ(coeff) -
   deg W`, and `deg W` has no lower bound.
-* The paper's derivation writes `Λ(B₀,λ) = (D - Σλ) + (d - 1 - Σλ)Λ(W)`, i.e. it credits the saved
-  `W` at `Λ(W)` while using `D` as an upper bound elsewhere — subtracting an upper bound.  The
-  resulting deficit is exactly `Λ(c) ≤ D - dY`.
+* Crediting the saved `W` at `Λ(W)` while using `D` as an upper bound elsewhere would amount to
+  subtracting an upper bound.  Doing the accounting honestly leaves a deficit of exactly
+  `Λ(c) ≤ D - dY`.
 
 The correction `(t-1)·(D - dY)` pays for precisely that deficit, and it is *superadditive on the
 only configuration where the deficit occurs*: the boundary summand needs `p.2 = t+1` split into `d`
@@ -326,18 +324,16 @@ parts each `≤ t`, hence at least two nonzero parts `S ≥ 2`, and then
 `t·(D - dY) - ∑ᵢ (lᵢ-1)·(D - dY) = (S-1)·(D - dY) ≥ D - dY`.
 Every other summand satisfies `∑ᵢ (lᵢ-1) ≤ t`, so the correction never costs anything there.
 
-## Why this loses nothing downstream
+## Why the correction costs nothing
 
-`numeratorShapeSharp_le_loose` still gives the loose bound `(2t+1)·dY·D` that [BCIKS20] quotes, and
-that is the only form Claim 5.10 consumes: the telescoping there maximizes at `t = k`,
+`numeratorShapeSharp_le_loose` still gives the loose bound `(2t+1)·dY·D`, and that is the form
+consumers want, since the correction is invisible to the telescoping they perform:
 `max_t (sharp t + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = sharp k ≤ (2k+1)·dY·D`.
-So the corrected shape and the paper's stated shape have the same usable consequence.
 
-The paper's literal form would follow from its *other* route — `Λ(αₜ) = Λ(Y)`, i.e. a weight
-function on `𝕃` rather than on `𝒪` — which yields `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)` with no
-correction term.  That route is open: it needs a **lower** bound on `Λ(ζ)` in order to bound the
-quotient `αₜ = -cₜ/ζ`, and the paper establishes none.  See the module docstring of
-`HenselNumerators/Weight.lean`. -/
+The uncorrected bound would follow instead from `Λ(αₜ) ≤ Λ(T) - Λ(W)`, i.e. from a weight function
+on `𝕃` rather than on `𝒪`, giving `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)`.  That route is not taken
+here: bounding the quotient `αₜ = -cₜ/ζ` needs a *lower* bound on `Λ(ζ)`, and only upper bounds are
+available. -/
 def numeratorShapeSharp (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) : ℕ :=
   1 + (t + 1) * (D - Bivariate.natDegreeY H) +
     henselDenominatorExponent t *
@@ -853,7 +849,7 @@ clearing denominator `W^{t+2}·η^{E-1}·W^{d-2}`) is regular with sharp `Λ`-we
 `numeratorShapeSharp R H D (t+1)`, given that every previous numerator `βseq s` (`s ≤ t`) has
 sharp weight `≤ numeratorShapeSharp R H D s`.
 
-This is the quantitative (weight-tracking) heart of [BCIKS20] A.4 (pp. 52–53): it is the `Λ`-graded
+This is the quantitative (weight-tracking) heart of the argument: it is the `Λ`-graded
 analogue of `henselCoeffResidual_regular_after_clearing`, refining mere regularity to the sharp
 per-step weight budget that telescopes linearly in `t`. -/
 lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -921,17 +917,17 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   exact henselClearedTerm_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg t αtrunc ihNum hαzero j hj
 
 /-- Sharp `Λ`-weight bound on every Hensel numerator: `Λ(βₜ) ≤ numeratorShapeSharp R H D t`,
-i.e. `1 + (t+1)(D-dH) + eₜ(dY-1)(D-dH+1)` ([BCIKS20] A.4, pp. 52–53).  Proved by strong induction,
+i.e. `1 + (t+1)(D-dH) + eₜ(dY-1)(D-dH+1)` plus the correction term.  Proved by strong induction,
 the successor step being `henselClearedResidual_weight` together with the identity
 `embeddingOf𝒪Into𝕃 (βₜ₊₁) = -(henselCoeffResidual · Ddiv)`.
 
-The hypothesis `2 ≤ dY` is [BCIKS20]'s own standing assumption in A.4, where `ξ = W^{d-2}·ζ` is
-asserted to lie in `𝒪`: for `d < 2` that expression carries a negative power of `W` and the
-claim's `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)` degenerates to `Λ(ξ) ≤ 0`, which fails unless
-`Λ(W) = D - dH` exactly.  In Lean the truncated subtraction silently reads `W^{d-2}` as `1` for
-`d ≤ 2`, so without this hypothesis the statement would be *stronger* than the paper's and false:
-with `dY = dH = 1` one has `ξ = ζ` of weight up to `D - 1 > 0`, while `(dY-1) = 0` erases the
-`ξ`-contribution from `numeratorShapeSharp`.  Accordingly `xi_weight_le` also assumes `2 ≤ dY`. -/
+The hypothesis `2 ≤ dY` is the standing assumption under which `ξ = W^{dY-2}·ζ` lies in `𝒪` at all:
+for `dY < 2` that expression carries a negative power of `W`.  It is load-bearing rather than
+cosmetic.  Truncated subtraction silently reads `W^{dY-2}` as `1` for `dY ≤ 2`, so dropping the
+hypothesis would make this statement *false*: with `dY = dH = 1` one has `ξ = ζ`, of weight up to
+`D - 1 > 0`, while the factor `(dY-1) = 0` erases the `ξ`-contribution from `numeratorShapeSharp`.
+A witness is `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1`, where `D = 2` and `Λ(ξ) = 1` against
+a bound of `0`.  Accordingly `xi_weight_le` assumes `2 ≤ dY` as well. -/
 theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -977,9 +973,9 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         exact henselClearedResidual_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg αseq βseq hα0
           hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
 
-/-- The loose Claim A.2 bound `Λ(βₜ) ≤ (2t+1)·dY·D` for a numerator sequence presented through its
+/-- The loose bound `Λ(βₜ) ≤ (2t+1)·dY·D` for a numerator sequence presented through its
 coefficients, obtained from `numerator_shape_weight_sharp` by `numeratorShapeSharp_le_loose`.  This
-is the form [BCIKS20] quotes at the end of the claim and the one Claim 5.10 consumes. -/
+is the form consumers usually want. -/
 theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -1000,7 +996,7 @@ theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   rw [WithBot.coe_le_coe]
   exact numeratorShapeSharp_le_loose x₀ R H hHyp hH hD_H t
 
-/-- A sequence with the Hensel-lift semantics of Claim A.2 has the numerator shape witnessed by
+/-- A sequence with the Hensel-lift semantics has the numerator shape witnessed by
 its own induced coefficients: `αₜ := βₜ / (W^{t+1} ξ^{eₜ})` is the tautological choice, so
 `HasNumeratorShape` holds by `rfl` and `IsHenselNumeratorSequence` supplies `hα0`/`hroot`.
 
@@ -1012,12 +1008,11 @@ lemma hasNumeratorShape_alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][
     HasNumeratorShape x₀ R H hHyp (alphaOfNumerators x₀ R H hHyp βseq) βseq :=
   fun _ => rfl
 
-/-- The **sharp** Claim A.2 weight bound of [BCIKS20] A.4, for an arbitrary Hensel numerator
-sequence: `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` (with the paper's bounds `Λ(W) ≤ D - dH` and
-`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted).
+/-- The **sharp** weight bound for an arbitrary Hensel numerator sequence:
+`Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)`, with the bounds `Λ(W) ≤ D - dH` and
+`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted, plus the correction term of `numeratorShapeSharp`.
 
-This is the form consumed by [BCIKS20] Claim 5.10, which needs the bound to telescope across
-`t = 0, …, k`:
+This is the form to use when the bound has to telescope across `t = 0, …, k`:
 `max_t (Λ(βₜ) + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = 1 + (k+1)Λ(W) + e_kΛ(ξ) ≤ (2k+1)dD`.
 The loose bound `numerator_shape_weight_bound` does *not* suffice there. -/
 theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -1036,8 +1031,8 @@ theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y
       (alphaOfNumerators x₀ R H hHyp βseq) βseq hβ.1 hβ.2
       (hasNumeratorShape_alphaOfNumerators x₀ R H hHyp βseq) t)
 
-/-- The loose Claim A.2 weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` of [BCIKS20] A.4, for an arbitrary
-Hensel numerator sequence.  Weakening of `hensel_numerator_weight_sharp_le`. -/
+/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for an arbitrary Hensel numerator sequence.
+Weakening of `hensel_numerator_weight_sharp_le`. -/
 theorem hensel_numerator_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)

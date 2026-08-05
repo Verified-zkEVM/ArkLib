@@ -18,7 +18,7 @@ import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.Polynomial.RationalFunctions.Weight
 import ArkLib.Data.Polynomial.RationalFunctions.Lifts
 /-!
-# Claim A.2 Setup: `ζ`, `ξ` and their Weights
+# The Derivative Value `ζ`, its Cleared Form `ξ`, and their Weights
 
 Appendix A.4 of [BCIKS20]: the hypotheses of the Hensel lift (`Hypotheses`: `H ∣ R(x₀,·,Z)`
 and `R(x₀,·,Z)` separable in `Y`), the derivative value `ζ = ∂R/∂Y(x₀, T/W, Z) ∈ 𝕃 H`, its cleared
@@ -43,9 +43,9 @@ namespace HenselNumerators
 variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
   [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
 
-/-! ### Claim A.2 hypotheses and derivative setup -/
+/-! ### Hypotheses and derivative setup -/
 
-/-- The algebraic hypotheses for Claim A.2 from Appendix A.4 of [BCIKS20], after specializing
+/-- The algebraic hypotheses for the Hensel lift, after specializing
 `R` at `X = x₀`. -/
 structure Hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : Prop where
   dvd_evalX : H ∣ Bivariate.evalX (Polynomial.C x₀) R
@@ -160,7 +160,9 @@ lemma leadingCoeff_dvd_evalX_derivative_coeff_pred {x₀ : F} {R : F[X][X][Y]} {
     rw [hcoeff, hq]
     ring
 
-/-- The element `ζ` from Appendix A.4 of [BCIKS20]. -/
+/-- The derivative value `ζ = ∂R/∂Y(x₀, T/W, Z) ∈ 𝕃 H`.  It is nonzero exactly when `T/W` is a
+*simple* root of `R(x₀,·,Z)` (`zeta_ne_zero_of_hypotheses`), which is what makes each Hensel step
+uniquely solvable. -/
 def zeta (R : F[X][X][Y]) (x₀ : F) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] : 𝕃 H :=
   let W : 𝕃 H := liftToFunctionField (H.leadingCoeff)
@@ -184,7 +186,7 @@ lemma derivative_evalX_eq_C_of_natDegree_le_one
   exact Polynomial.eq_C_of_natDegree_le_zero hP
 
 
-/-- Explicit polynomial representative for the regular element `ξ = W^(d-2) · ζ` of Claim A.2.
+/-- Explicit polynomial representative for the regular element `ξ = W^(d-2) · ζ`.
 For `2 ≤ R.natDegree`, this is the polynomial obtained by clearing the single denominator that
 appears in `W^(d-2) · ζ`; the divisibility `W ∣ R'(x₀, Z)_{d-1}` is captured implicitly by
 Euclidean division in `F[X]`. For `R.natDegree ≤ 1`, the derivative specialization is constant
@@ -200,8 +202,8 @@ noncomputable def xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :=
   else
     P
 
-/-- The image of `⟦xiPre⟧` in the function field equals `W^(d-2) · ζ`, matching Claim A.2's
-algebraic identity. -/
+/-- The image of `⟦xiPre⟧` in the function field equals `W^(d-2) · ζ`, i.e. `xiPre` really does
+represent `ξ`. -/
 lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) :
@@ -259,11 +261,11 @@ lemma embeddingOf𝒪Into𝕃_mk_xiPre (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     refine Finset.sum_congr rfl (fun i _ => ?_)
     ring
 
-/-- The regular element `ξ = W(Z)^(d-2) * ζ` has a quotient representative in the total Lean
-form of Claim A.2 of Appendix A.4 of [BCIKS20].
+/-- The element `ξ = W(Z)^(d-2) · ζ` is regular, i.e. has a representative in `𝒪 H`.
 
-For `R.natDegree < 2`, the natural-number exponent truncates to zero. The paper's weight
-bound is therefore stated separately with the explicit hypothesis `2 ≤ R.natDegree`. -/
+For `d < 2` the natural-number exponent truncates to zero, so this statement remains true but says
+something weaker than intended; the weight bound is therefore stated separately, with the explicit
+hypothesis `2 ≤ d`. -/
 lemma xi_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact (Irreducible H)]
     [H_natDegree_pos : Fact (0 < H.natDegree)] (hHyp : Hypotheses x₀ R H) :
     ∃ pre : 𝒪 H,
@@ -273,7 +275,7 @@ lemma xi_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) [H_irreducible : Fact
   ⟨Ideal.Quotient.mk _ (xiPre x₀ R H),
     by simpa using embeddingOf𝒪Into𝕃_mk_xiPre x₀ R H hHyp⟩
 
-/-- The regular element `ξ = W(Z)^(d-2) * ζ` used in the Lean version of Claim A.2.
+/-- The regular element `ξ = W(Z)^(d-2) · ζ`.
 
 The `Fact` and `Hypotheses` arguments are kept for API compatibility with downstream callers
 (`α`, `γ`); they are needed for the embedding equation in `embeddingOf𝒪Into𝕃_xi`. -/
@@ -502,8 +504,8 @@ theorem xiPreLower_coeff_natDegree_le (x₀ : F) {D i : ℕ}
       (Nat.add_le_add hcoeff (le_trans hpow (Nat.mul_le_mul_left (R.natDegree - 2 - i) hlc)))
 
 omit H_irreducible H_natDegree_pos in
-/-- Each monomial of `xiPreLower` has `Λ`-weight at most `(d-1)·(D - dH + 1)`, the bound Claim A.2
-claims for `ξ`. -/
+/-- Each monomial of `xiPreLower` has `Λ`-weight at most `(d-1)·(D - dH + 1)`, the bound claimed
+for `ξ`. -/
 theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D i : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -590,8 +592,8 @@ theorem xiPreLower_term_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 
         exact Nat.add_le_add hmul hi_le_n1
 
 omit H_irreducible H_natDegree_pos in
-/-- The low-degree part of `ξ` obeys the Claim A.2 bound `Λ ≤ (d-1)·(D - dH + 1)`, by taking the
-max over its monomials. -/
+/-- The low-degree part of `ξ` obeys `Λ ≤ (d-1)·(D - dH + 1)`, by taking the max over its
+monomials. -/
 theorem xiPreLower_weight_le (x₀ : F) (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
@@ -699,7 +701,7 @@ theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (
 
 omit H_irreducible H_natDegree_pos in
 /-- When `dH < d` the top term must be reduced modulo `H̃` before weighing, and the reduction obeys
-the Claim A.2 bound via `cofactor_top_reduction_weight_le`. -/
+the bound via `cofactor_top_reduction_weight_le`. -/
 theorem xiPreTop_modByMonic_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
@@ -907,8 +909,7 @@ theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
   simp only [xiPre, xiPreLower, xiPreTop, hRdeg, if_pos]
 
 
-/-- The bound of the weight `Λ` of the elements `ξ` as stated in Claim A.2 of Appendix A.4
-of [BCIKS20].
+/-- The weight bound `Λ(ξ) ≤ (dY - 1)·(D - dH + 1)`.
 
 The explicit hypothesis `2 ≤ R.natDegree` is needed because the paper uses `W^(d-2)`, while
 Lean's natural-number exponent would otherwise totalize the low-degree cases by truncation. -/

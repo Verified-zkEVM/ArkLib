@@ -43,7 +43,8 @@ variable {F : Type} [CommRing F] [IsDomain F]
 /-- `Λ` is a weight function on the ring of bivariate polynomials `F[X][Y]`. The weight of
 a polynomial is the maximal weight of all monomials appearing in it with non-zero coefficients.
 The weight of the zero polynomial is `−∞`.
-Requires `D ≥ Bivariate.totalDegree H` to match definition in [BCIKS20]. -/
+The grading unit `D + 1 - deg_Y H` is intended to be used with `D ≥ Bivariate.totalDegree H`;
+below that the truncated subtraction distorts it. -/
 noncomputable def weight (f H : F[X][Y]) (D : ℕ) : WithBot ℕ :=
   Finset.sup
     f.support
@@ -87,7 +88,7 @@ lemma regularWeight_mk_eq_self_of_degree_lt {H : F[X][Y]} (hH : 0 < H.natDegree)
 
 /-! ### Λ-weight calculus
 
-Algebraic identities for the bivariate `Λ`-weight from Appendix A.2 of [BCIKS20]. The weight
+Algebraic identities for the bivariate `Λ`-weight. The weight
 `m := D + 1 − natDegreeY H` is the per-Y-power contribution; constants in `F[X]` contribute their
 `natDegree`. -/
 
@@ -312,8 +313,7 @@ private lemma exists_top_weight_index {f : F[X][Y]} (H : F[X][Y]) (D : ℕ) (hf 
     · exact h
     · exact absurd (S.le_max' m (Finset.mem_filter.mpr ⟨hmem, by omega⟩)) (by omega)
 
-/-- **`Λ` is fully additive** on `F[Z][T]`: `Λ(f · g) = Λ(f) + Λ(g)` ([BCIKS20] A.2, "Note that `Λ`
-is fully additive on `F_q[T, Z]`, i.e. for any `A, B`, `Λ(AB) = Λ(A) + Λ(B)`").
+/-- **`Λ` is fully additive**: `Λ(f · g) = Λ(f) + Λ(g)`.
 
 Sub-additivity is `weight_mul_le'`.  The reverse inequality holds because the weight assignment
 grades `F[Z][T]` — each `Λ`-homogeneous piece is spanned by monomials of that weight — so the
@@ -658,8 +658,8 @@ lemma regularWeight_mk_le {H : F[X][Y]} {D : ℕ}
   rw [regularWeight_mk]
   exact weight_modByMonic_monicize_le hD hH p
 
-/-- The **exact** weight of the monicization: `Λ(H̃) = d·(D + 1 - d)` ([BCIKS20] A.2, "with the
-leading monomial being of this exact weight and every other monomial bounded by it").  The upper
+/-- The **exact** weight of the monicization: `Λ(H̃) = d·(D + 1 - d)`, the weight of its leading
+monomial `Tᵈ`, every other monomial being bounded by it.  The upper
 bound is `weight_monicize_le`; the lower bound is the leading monomial `Tᵈ`, whose coefficient is
 `1` because `H̃` is monic. -/
 lemma weight_monicize {H : F[X][Y]} {D : ℕ}
@@ -676,9 +676,8 @@ lemma weight_monicize {H : F[X][Y]} {D : ℕ}
   have h := le_weight_of_mem_support (f := monicize H) (H := H) (D := D) hmem
   rwa [hlead, Polynomial.natDegree_one, Nat.add_zero] at h
 
-/-- `regularWeight` is the **minimum** of `weight` over all representatives ([BCIKS20] A.2: the
-weight of the canonical representative "is also the minimal value of `Λ` over all representatives").
-The minimum is attained, by definition, at `canonicalRepOf𝒪`. -/
+/-- `regularWeight` is the **minimum** of `weight` over all representatives of a class, attained by
+definition at `canonicalRepOf𝒪`. -/
 lemma regularWeight_le_of_mk_eq {H : F[X][Y]} {D : ℕ}
     (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) {α : 𝒪 H} {p : F[X][Y]}
     (hp : (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = α) :
@@ -686,8 +685,9 @@ lemma regularWeight_le_of_mk_eq {H : F[X][Y]} {D : ℕ}
   subst hp
   exact regularWeight_mk_le hD hH p
 
-/-- The set `rationalVanishingSet` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
-Note: Here `F[X][Y]` is `F[Z][T]`. -/
+/-- The set of substitution points at which a regular element vanishes: those `z` admitting a
+rational root `t_z` of `H̃(·, z)` with `π_z β = 0`.  Bounding its size bounds `Λ(β)` from below; see
+`embedding_eq_zero_of_many_rational_roots`. -/
 noncomputable def rationalVanishingSet {H : F[X][Y]} (β : 𝒪 H) : Set F :=
   {z : F | ∃ root : rationalRoot (monicize H) z, (piZ z root) β = 0}
 

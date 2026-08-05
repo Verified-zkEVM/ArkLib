@@ -21,7 +21,7 @@ import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Setup
 
 Appendix A.4 of [BCIKS20]: the formal Hensel/Newton iteration producing coefficients `αₜ` with
 `α₀ = T/W` and `R(x₀ + S, γ, Z) = 0` for `γ = ∑ₜ αₜ Sᵗ`, its uniqueness, and the regularity half of
-Claim A.2 — that the cleared residual `βₜ₊₁ = -(residual · W^{t+2} ξ^{eₜ₊₁-1} W^{d-2})` is regular.
+that the cleared residual `βₜ₊₁ = -(residual · W^{t+2} ξ^{eₜ₊₁-1} W^{d-2})` is regular.
 
 Everything is expressed in the local coordinate `S = X - x₀`: the shift lives on `R`
 (`liftCoeffToPowerSeries` sends `X ↦ x₀ + S`), not on `γ`, matching `γ ∈ L[[X - x₀]]`.
@@ -93,7 +93,7 @@ lemma defaultDegreeBound_ge_R_coeff (R : F[X][X][Y]) (H : F[X][Y]) {i : ℕ}
 
 /-- Coefficients in `F[Z][X]` evaluated as power series over the function field: `Z` is sent to
 the function-field coefficient embedding, and the `X` variable is sent to `x₀ + S`, where `S` is
-the power-series variable. This realizes the local coordinate `S = X - x₀` of [BCIKS20] A.4, so
+the power-series variable. This realizes the local coordinate `S = X - x₀`, so
 that a root condition becomes an identity in `𝕃 H⟦S⟧ = L[[X - x₀]]`. -/
 noncomputable def liftCoeffToPowerSeries (x₀ : F) (H : F[X][Y]) :
     F[X][X] →+* PowerSeries (𝕃 H) :=
@@ -117,7 +117,7 @@ noncomputable def alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       henselDenominatorExponent t)
 
 /-- The local power series `γ = ∑ αₜ Sᵗ` induced by a candidate sequence of regular numerators,
-where `S = X - x₀` is the local coordinate of [BCIKS20] A.4. The `x₀`-shift is carried by
+where `S = X - x₀` is the local coordinate. The `x₀`-shift is carried by
 `evalRAtPowerSeries` (`X ↦ x₀ + S`), not by `γ`, matching the paper's `γ ∈ L[[X - x₀]]`. -/
 noncomputable def gammaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
@@ -125,7 +125,7 @@ noncomputable def gammaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     PowerSeries (𝕃 H) :=
   PowerSeries.mk (alphaOfNumerators x₀ R H hHyp βseq)
 
-/-- A numerator sequence has the semantic content required by Claim A.2: it gives the Hensel
+/-- A numerator sequence has the semantic content required of a Hensel lift: it gives the Hensel
 lift starting at `T / W`, and the induced power series is a root of `R(x₀ + S, ·, Z)`. -/
 def IsHenselNumeratorSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
@@ -177,20 +177,20 @@ theorem evalX_totalDegree_le_of_coeff_bound (x₀ : F) (R : F[X][X][Y]) {D : ℕ
   omega
 
 /-- The local power series `γ = ∑ αₜ Sᵗ ∈ 𝕃 H⟦S⟧`, where `S = X - x₀` is the local coordinate
-of [BCIKS20] Appendix A.4. The `x₀`-shift lives in `evalRAtPowerSeries` (`X ↦ x₀ + S`), not in
+in the local coordinate. The `x₀`-shift lives in `evalRAtPowerSeries` (`X ↦ x₀ + S`), not in
 `γ` itself, matching the paper's `γ ∈ L[[X - x₀]]`. -/
 noncomputable def gammaFromAlpha (H : F[X][Y]) (αseq : ℕ → 𝕃 H) :
     PowerSeries (𝕃 H) :=
   PowerSeries.mk αseq
 
-/-- `βseq` presents `αseq`: every `αₜ` is `βₜ / (W^{t+1} ξ^{eₜ})`.  This is the shape Claim A.2
-asserts, separated from the semantic content in `IsHenselNumeratorSequence`. -/
+/-- `βseq` presents `αseq`: every `αₜ` is `βₜ / (W^{t+1} ξ^{eₜ})`.  This is the *shape* of the
+coefficients, separated from the semantic content in `IsHenselNumeratorSequence`. -/
 def HasNumeratorShape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (αseq : ℕ → 𝕃 H) (βseq : ℕ → 𝒪 H) : Prop :=
   ∀ t : ℕ, alphaOfNumerators x₀ R H hHyp βseq t = αseq t
 
-/-- The base case of Claim A.2: `β₀ = T`.  From `α₀ = T/W` and the shape `α₀ = β₀/W`, the
+/-- The base case: `β₀ = T`.  From `α₀ = T/W` and the shape `α₀ = β₀/W`, the
 numerator is forced to be the image of the polynomial variable. -/
 theorem beta_zero_eq_X_of_shape (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
@@ -529,7 +529,7 @@ theorem root_bSeq (x₀ : F) (R : F[X][X][Y])
         field_simp
         ring
 
-/-- **Existence of the Hensel lift** ([BCIKS20] A.4): a coefficient sequence with `α₀ = T/W` whose
+/-- **Existence of the Hensel lift**: a coefficient sequence with `α₀ = T/W` whose
 generating series is a root of `R(x₀ + S, ·, Z)`.  Built by the Newton iteration `bSeq`, whose
 limit is a root in every degree.  Uniqueness is `hensel_alpha_sequence_unique`. -/
 theorem formalHenselAlphaSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -566,17 +566,15 @@ theorem formalHenselAlphaSequence (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     rw [hsum, hstable]
     exact root_bSeq x₀ R hinit hzeta m m (le_refl m)
 
-/-- **Uniqueness of the Hensel lift** ([BCIKS20] A.4: "at each step the lifting is unique, and
-determined by an algebraic equation in which the new `αₜ` appears linearly with the same
-coefficient `ζ`").
+/-- **Uniqueness of the Hensel lift.**  Two coefficient sequences that agree at `t = 0` and both
+make `γ = ∑ₜ αₜ Sᵗ` a root of `R(x₀ + S, ·, Z)` are equal.
 
-Two coefficient sequences that agree at `t = 0` and both make `γ = ∑ₜ αₜ Sᵗ` a root of
-`R(x₀ + S, ·, Z)` are equal.  The induction is exactly the paper's: by `coeff_evalR_split`, the
-`n`-th coefficient of `R(x₀ + S, γ, Z)` is `ζ · αₙ` plus a term depending only on `αᵢ` with `i < n`,
-and `ζ` is invertible, so `αₙ` is forced.
+At each step the new coefficient is determined: by `coeff_evalR_split` the `n`-th coefficient of
+`R(x₀ + S, γ, Z)` is `ζ · αₙ` plus a term depending only on `αᵢ` with `i < n`, and `ζ` is
+invertible, so `αₙ` is forced.
 
-[BCIKS20] §5 relies on this in the proof of Claim 5.9, to identify the lift of `w(x, Z)`
-with `γ`. -/
+Uniqueness is what lets a lift be identified with any other solution of the same equation, which is
+how one recognizes a lift as coming from a known function. -/
 theorem hensel_alpha_sequence_unique (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hzeta : zeta R x₀ H ≠ 0) {αseq αseq' : ℕ → 𝕃 H}
@@ -706,7 +704,7 @@ theorem mk_monicizeRatFunc_eq_leadingCoeff_pow_mul_eval₂ (H : F[X][Y])
     ext p <;> simp only [RingHom.comp_apply, Polynomial.coe_mapRingHom, Polynomial.map_C]
   rw [hhom]
 
-/-- `Y = T/W` is a root of `H` in `𝕃` ([BCIKS20] A.1). -/
+/-- `Y = T/W` is a root of `H` in `𝕃`. -/
 theorem H_eval2_T_div_W_eq_zero (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)] :
     Polynomial.eval₂ (liftToFunctionField (H := H))
@@ -882,7 +880,7 @@ regular and `e_i = henselDenominatorExponent i`, each degree-`j` summand of the 
 `coeff (t+1) (eval₂ liftCoeff g R)`, after multiplication by the global clearing denominator
 `Ddiv = W^{t+2} · eta^{E-1} · W^{d-2}`, is a regular element.
 
-This is the combinatorial heart of [BCIKS20] Appendix A.4 (pp. 52–53). The denominator of a
+This is the combinatorial heart of the regularity argument. The denominator of a
 partition term with `∑ iₗ = b ≤ t+1` over `j` parts is `W^{b+j} · eta^{∑ e_{iₗ}}`; the
 exponent bounds `∑ e_{iₗ} ≤ E-1 = 2t` and (for `b ≤ t`) `b+j ≤ t+d` make the leftover `W`/`eta`
 powers nonnegative. The single boundary case `a = 0, b = t+1, j = R.natDegree` has a one-`W`
@@ -1077,7 +1075,7 @@ theorem henselClearedTerm_regular (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       rw [hreassoc]
       exact finish_with _ _ hcoeffReg hbudget
 
-/-- **The regularity half of Claim A.2.**  Multiplying the residual by the clearing denominator
+/-- **Regularity of the numerators.**  Multiplying the residual by the clearing denominator
 `W^{t+2}·η^{eₜ₊₁-1}·W^{d-2}` lands in `𝒪`, so the next numerator `βₜ₊₁` is regular.  Proved
 degree-by-degree through `henselClearedTerm_regular`, using `W ∣ leadingCoeff R(x₀,·,Z)` for the
 top term. -/

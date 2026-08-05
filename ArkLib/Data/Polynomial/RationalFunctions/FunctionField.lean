@@ -34,9 +34,10 @@ section Monicization
 
 variable {F : Type} [CommRing F] [IsDomain F]
 
-/-- Construction of the monicized polynomial `monicizeRatFunc` in Appendix A.1 of [BCIKS20].
-Note: Here `H ∈ F[X][Y]` translates to `H ∈ F[Z][Y]` in [BCIKS20], and `monicizeRatFunc` in
-`Polynomial (RatFunc F)` translates to `monicizeRatFunc ∈ F(Z)[T]` in [BCIKS20]. -/
+/-- The monicization of `H` over the fraction field: `H̃ = W^{d-1} · H(T/W)` where `d = deg_Y H`
+and `W` is its leading coefficient.  Substituting `T/W` for `Y` makes the result monic, and the
+factor `W^{d-1}` clears the denominators this introduces, so `H̃ ∈ F(Z)[T]` is monic of degree `d`
+and generates the same extension of `F(Z)` as `H`. -/
 noncomputable def monicizeRatFunc (H : F[X][Y]) : Polynomial (RatFunc F) :=
   let hᵢ (i : ℕ) := H.coeff i
   let d := H.natDegree
@@ -129,15 +130,14 @@ lemma irreducible_monicizeRatFunc_of_natDegree_pos
 
 end FieldIrreducibility
 
-/-- The monicized version `monicizeRatFunc` is irreducible if the original polynomial `H`
-is irreducible
-and has positive degree in `Y`, as assumed in Appendix A.1 of [BCIKS20]. -/
+/-- Monicization preserves irreducibility, for `H` of positive `Y`-degree. -/
 lemma irreducible_monicizeRatFunc {F : Type} [Field F] {H : Polynomial (Polynomial F)}
     (hHdeg : 0 < H.natDegree) :
     Irreducible H → Irreducible (monicizeRatFunc H) :=
   irreducible_monicizeRatFunc_of_natDegree_pos hHdeg
 
-/-- The function field `𝕃` from Appendix A.1 of [BCIKS20]. -/
+/-- The function field `𝕃 H = F(Z)[T]/(H̃)`, obtained by adjoining a root of `H` to `F(Z)`.  The
+root is `Y = T/W`; see `H_eval2_T_div_W_eq_zero`. -/
 abbrev 𝕃 (H : F[X][Y]) : Type :=
   (Polynomial (RatFunc F)) ⧸ (Ideal.span {monicizeRatFunc H})
 
@@ -148,7 +148,7 @@ lemma isField_of_irreducible_of_natDegree_pos {F : Type} [Field F] {H : F[X][Y]}
   erw [← Ideal.Quotient.maximal_ideal_iff_isField_quotient, principal_is_maximal_iff_irred]
   exact irreducible_monicizeRatFunc_of_natDegree_pos hHdeg hH
 
-/-- The function field `𝕃` is a field under the standard Appendix A irreducibility hypothesis. -/
+/-- `𝕃 H` is a field when `H` is irreducible of positive `Y`-degree. -/
 lemma isField_of_irreducible {F : Type} [Field F] {H : F[X][Y]} (hHdeg : 0 < H.natDegree) :
     Irreducible H → IsField (𝕃 H) := by
   intro h
@@ -353,7 +353,8 @@ lemma irreducible_monicize {H : F[X][Y]} (hHdeg : 0 < H.natDegree)
 
 end IntegralIrreducibility
 
-/-- The ring of regular elements `𝒪` from Appendix A.1 of [BCIKS20]. -/
+/-- The ring of regular elements `𝒪 H = F[Z][T]/(H̃)`: the elements of `𝕃 H` expressible as
+polynomials in `T` with coefficients in `F[Z]` rather than in `F(Z)`. -/
 abbrev 𝒪 (H : F[X][Y]) : Type :=
   (Polynomial (Polynomial F)) ⧸ (Ideal.span {monicize H})
 
@@ -519,14 +520,15 @@ lemma regularElementsSet_prod {ι : Type} {H : F[X][Y]} (s : Finset ι) {f : ι 
 def rationalRoot (H : F[X][Y]) (z : F) : Type :=
   {t_z : F // evalEval z t_z H = 0}
 
-/-- The rational substitution `piZ` from Appendix A.3 defined on the whole ring of
-bivariate polynomials. -/
+/-- The substitution `Z ↦ z`, `T ↦ t_z` on the whole polynomial ring, before descending to the
+quotient. -/
 noncomputable def piZLift {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     F[X][Y] →+* F :=
   Polynomial.evalEvalRingHom z root.1
 
-/-- The rational substitution `piZ` from Appendix A.3 of [BCIKS20] is a well-defined map on the
-quotient ring `𝒪`. -/
+/-- The substitution `Z ↦ z`, `T ↦ t_z` as a ring homomorphism `𝒪 H →+* F`.  It descends to the
+quotient because `(t_z, z)` is a root of `H̃`, so `H̃` lies in the kernel.  This is the analogue for
+`𝒪 H` of evaluating a rational function at `Z = z`. -/
 noncomputable def piZ {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) :
     𝒪 H →+* F :=
   Ideal.Quotient.lift (Ideal.span {monicize H}) (piZLift z root) (by
