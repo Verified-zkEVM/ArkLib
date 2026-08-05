@@ -49,9 +49,9 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Claim A.2 regularity of `ξ` | present | `xi_regular`, `embeddingOf𝒪Into𝕃_xi` | The total Lean form of `ξ` has a concrete quotient representative `xiPre`. |
 | Claim A.2 bound for `ξ` | present | `xi_weight_le` | Assumes `2 ≤ natDegreeY R`, which is the paper's standing assumption in A.4 (see below). |
 | Claim A.2 regular numerators `βₜ` exist | present | `exists_hensel_numerator_sequence`, `IsHenselNumeratorSequence`, `exists_regular_numerator_shape`, `henselCoeffResidual_regular_after_clearing` | Axiom-clean, and deliberately *free of the weight conjunct* so that `betaSeq`/`α`/`γ` do not depend on the open quantitative step. |
-| Claim A.2 sharp weight bound `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` | present-but-incomplete | `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `betaSeq_weight_sharp_le` | One open summand (`henselClearedTerm_weight`, boundary case). This is the form Claim 5.10 needs. |
-| Claim A.2 loose weight bound `Λ(βₜ) ≤ (2t+1)dD` | present-but-incomplete | `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `betaSeq_weight_le` | Weakening of the sharp bound (`numeratorShapeSharp_le_loose` is proved); inherits the same open summand. |
-| Claim A.2 as stated in the paper | present-but-incomplete | `claimA2_exists_numerators_with_weight_bounds` | Bundles existence with both weight bounds. |
+| Claim A.2 sharp weight bound | present | `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `betaSeq_weight_sharp_le` | Proved, with a correction term relative to the paper's stated inequality — see finding 2. This is the form Claim 5.10 needs. |
+| Claim A.2 loose weight bound `Λ(βₜ) ≤ (2t+1)dD` | present | `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `betaSeq_weight_le` | Weakening of the sharp bound via `numeratorShapeSharp_le_loose`; unaffected by the correction, so Claim 5.10 gets exactly what the paper gives it. |
+| Claim A.2 as stated in the paper | present | `claimA2_exists_numerators_with_weight_bounds` | Bundles existence with both weight bounds. Axiom-clean. |
 | Hensel-lift coefficients `α`, `γ` | present | `alpha`, `alpha'`, `gamma`, `gamma'`, `betaSeq`, `betaSeq_spec` | Now defined from the qualitative existence theorem alone, hence axiom-clean. |
 
 ## Three findings on Appendix A.4
@@ -74,35 +74,49 @@ split inside §5: in the `deg_Y R = 1` branch `R` already has the desired shape 
 weight machinery is not needed (there `ζ = ∂R/∂Y` is constant in `Y` and the lift is exact); the
 `≥ 2` branch is the one that consumes Claim A.2.
 
-### 2. The `(A.1)` recursion route cannot prove the weight bound
+### 2. The paper's stated sharp bound needs a correction term
 
-`Λ(βₜ)`'s bound is stated by the paper and then justified twice: "can be shown by induction using
-the recursion (A.1), but an easier way ... is by considering the weight of `αₜ`". The induction
-route is *exactly tight* and does not close:
+Claim A.2 states `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)`. That inequality is **not provable by the
+recursion `(A.1)` the claim itself offers**, and `numeratorShapeSharp` therefore proves
 
-- Expanding (A.1) for the `i₁ = 0` terms gives `Λ(βₜ) ≤ D + (t+d-1)Λ(W) + (2t-2)Λ(ξ)`, which
-  meets the claimed `1 + (t+1)Λ(W) + eₜΛ(ξ)` only if `Λ(ξ) = (D-1) + (d-2)Λ(W)`, i.e. only if
-  `Λ(ξ)` attains its own upper bound.
-- In the formalization the same tightness appears as a single unreachable summand of
-  `henselClearedTerm_weight` (`p.1 = 0`, `j = d`, `p.2 = t+1`), where the `W`-budget is short by
-  one. The leading-coefficient divisibility `W ∣ leadingCoeff R(x₀,·,Z)` supplies the missing `W`
-  but then charges `c.natDegree` with `c = leadingCoeff R(x₀,·,Z) / W`, leaving a deficit of
-  exactly `c.natDegree`. Raising the `ξ`-charge to cover it breaks the loose bound the paper
-  quotes: `d = 2, dH = 1, D = 100, Λ(W) = 0, t = 5` gives `2377 > 2200 = (2t+1)dD`.
+```
+Λ(βₜ) ≤ 1 + (t+1)(D - dH) + eₜ·(dY-1)(D - dH + 1) + (t-1)·(D - dY)
+```
 
-Note also that the per-summand budget of `henselClearedTerm_weight` is very likely *too strong*,
-not merely hard: `R(x₀,·,Z) = H · q` makes the deficit `Λ(leadingCoeff q)`, which is unbounded.
-`numerator_shape_weight_sharp` can still hold, because `Λ` of the sum over `j` only has to bound
-the max after the cancellations (A.1) produces. So the fix is to weaken that lemma and recover the
-total elsewhere, not to grind the boundary case.
+with the final term as the correction. The reason is an asymmetry between charging and saving a
+factor of `W`:
 
-The paper's second route needs `Λ(αₜ) = Λ(Y) = 1`, i.e. a weight function on the function field
-`𝕃` (not just on `𝒪`) plus the fact that the Hensel coefficients lie in the same graded piece as
-`Y`. Note that route needs care too: with the paper's *exact* `Λ(W)`, `Λ(α₀) = Λ(T/W) = (D-dH+1) -
-Λ(W)` exceeds `1` unless `Λ(W) = D - dH`, so the claim's `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` already
-fails at `t = 0` when `Λ(W) < D - dH`. The Lean statement substitutes the paper's own bounds
-`Λ(W) ≤ D - dH` and `Λ(ξ) ≤ (d-1)(D-dH+1)` into the right-hand side, which is the reading under
-which the base case is true (and is proved here). See the in-proof comment at the boundary `sorry`.
+- Every `W` the recursion *charges* costs the bound `Λ(W) ≤ D - dH`, and the base case forces
+  exactly that charge: `Λ(β₀) = Λ(T) = D - dH + 1` is fixed by the definition of the `Λ`-grading,
+  so no smaller `W`-charge survives `t = 0`.
+- The recursion also *saves* one `W`, from `W ∣ leadingCoeff R(x₀,·,Z)`. A saved `W` is worth only
+  its **exact** degree `deg W`, which has no lower bound: writing the coefficient as `W · c` leaves
+  `Λ(c) = Λ(coeff) - deg W ≤ D - dY`.
+- The paper's derivation writes `Λ(B₀,λ) = (D - Σλ) + (d - 1 - Σλ)Λ(W)`, crediting the saved `W` at
+  `Λ(W)` while using `D` as an upper bound elsewhere — i.e. subtracting an upper bound. The
+  resulting deficit is exactly `Λ(c)`.
+
+The correction pays that deficit and is superadditive on precisely the configuration where the
+deficit occurs. The boundary summand needs `p.2 = t+1` split into `d` parts each `≤ t`, hence at
+least two nonzero parts `S₁ ≥ 2`, and then
+`t·(D - dY) - ∑ᵢ (lᵢ-1)·(D - dY) = (S₁-1)·(D - dY) ≥ D - dY ≥ Λ(c)`.
+Every other summand has `∑ᵢ (lᵢ-1) ≤ t`, so the correction is free there. Simply raising the
+`ξ`-charge instead would *not* work: it breaks the loose bound the paper quotes
+(`d = 2, dH = 1, D = 100, Λ(W) = 0, t = 5` gives `2377 > 2200 = (2t+1)dD`).
+
+**Nothing downstream is weakened.** `numeratorShapeSharp_le_loose` still yields `(2t+1)·dY·D`, and
+that is the only form Claim 5.10 consumes: its telescoping maximizes at `t = k`, giving
+`max_t (sharp t + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = sharp k ≤ (2k+1)·dY·D`.
+
+The paper's *literal* inequality would follow from its other route — `Λ(αₜ) = Λ(Y)`, i.e. a weight
+function on `𝕃` rather than on `𝒪`, which gives `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)` with no
+correction. Defining such a `Λ_𝕃(b/c) := Λ(b) - deg c` is now possible (well-definedness follows
+from `weight_mul`, since multiplying by an `F[Z]`-element never triggers reduction modulo `H̃`), but
+the crux is open: bounding `αₜ = -cₜ/ζ` requires a **lower** bound on `Λ(ζ)`, and only upper bounds
+are available. Newton-polygon reasoning has the same shape — bounding root degrees needs a lower
+bound on the leading coefficient. That is what the paper's one-line "γ has the same weight as Y,
+since X and x₀ have weight 0" conceals. Since both routes deliver the same usable consequence, this
+is a fidelity question only.
 
 ### 3. The paper's sharper `Λ(ξ)` bound also assumes `Λ(W) = D - dH`
 
@@ -116,7 +130,10 @@ up to `d - dH`; in general only the weaker one holds, and it is the one used her
 
 ## Near-Term Work
 
-1. Weaken the per-summand budget of `henselClearedTerm_weight` and recover the total, or extend `Λ`
-   to `𝕃` (finding 2 above), to close the last `sorry`.
-2. Case-split on `deg_Y R` in §5 to discharge `2 ≤ natDegreeY R` (finding 1 above).
-Nothing else from A.1–A.3 is outstanding; A.2's full additivity is now `weight_mul`.
+1. Case-split on `deg_Y R` in §5 to discharge `2 ≤ natDegreeY R` (finding 1 above).
+2. Optional, fidelity only: extend `Λ` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)` to obtain the
+   paper's uncorrected sharp inequality (finding 2 above). No downstream consequence.
+
+**Appendix A is otherwise complete**: every declaration in
+`ArkLib/Data/Polynomial/RationalFunctions/` is axiom-clean (266 declarations, zero `sorryAx`, zero
+non-standard axioms), including Lemma A.1 and all of Claim A.2.

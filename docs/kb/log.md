@@ -240,3 +240,29 @@ now-unused section instance was dropped as well.
 
 BCIKS20 sorry count 22 → 20, and all 20 are now genuine proof obligations rather than statement
 placeholders.
+
+## [2026-08-05] prove | BCIKS20 Claim A.2 weight bound closed — Appendix A is axiom-clean
+
+Closed the last `sorry` in the rational-functions package: the boundary summand of
+`henselClearedTerm_weight`. Appendix A now has 266 axiom-clean declarations, zero `sorryAx`, zero
+non-standard axioms.
+
+The fix was to correct the *bound*, not to grind the case. Earlier analysis had concluded the
+`(A.1)`-recursion route "cannot close"; that was wrong. It closes once the shape carries a
+`+ (t-1)·(D - dY)` correction, because a factor of `W` that the recursion *saves* (via
+`W ∣ leadingCoeff R(x₀,·,Z)`) is only worth `deg W`, whereas one it *charges* costs the bound
+`D - dH`, and the base case `Λ(β₀) = Λ(T) = D - dH + 1` forces the larger charge. The paper credits
+the saved `W` at `Λ(W)` while using `D` as an upper bound elsewhere — subtracting an upper bound —
+and the deficit is exactly `Λ(leadingCoeff R(x₀,·,Z) / W) ≤ D - dY`.
+
+The correction is superadditive on exactly the configuration that produces the deficit: the boundary
+summand forces `p.2 = t+1` split into parts each `≤ t`, hence `S₁ ≥ 2` nonzero parts, leaving
+`(S₁-1)·(D - dY) ≥ D - dY` of unspent correction. Every other summand has `∑(lᵢ-1) ≤ t`, so it costs
+nothing there. Raising the `ξ`-charge instead would break the loose bound the paper quotes.
+
+Nothing downstream is weakened: `numeratorShapeSharp_le_loose` still gives `(2t+1)·dY·D`, the only
+form Claim 5.10 consumes.
+
+Option B — extend `Λ` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)`, which would give the paper's
+uncorrected inequality — remains open and is recorded as fidelity-only: its crux needs a *lower*
+bound on `Λ(ζ)` to bound the quotient `αₜ = -cₜ/ζ`, and only upper bounds exist.

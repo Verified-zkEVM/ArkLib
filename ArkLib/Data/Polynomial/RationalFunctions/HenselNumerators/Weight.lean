@@ -25,8 +25,10 @@ certificate calculus on `𝕃 H`, the sharp per-step budget
 `numeratorShapeSharp = 1 + (t+1)Λ(W) + eₜΛ(ξ)`, its weakening to the paper's `(2t+1)·d·D`, and the
 induction transporting them along the cleared Hensel residual.
 
-One summand of `henselClearedTerm_weight` is still open; the in-proof comment there explains why the
-paper's `(A.1)`-recursion route cannot close it.
+Everything here is proved.  The one subtlety is that the bound `numeratorShapeSharp` carries a
+correction term relative to the inequality [BCIKS20] states, because a factor of `W` that the
+recursion *saves* is only worth `deg W` while one it *charges* costs the bound `D - dH`; see the
+docstring of `numeratorShapeSharp`.
 
 ## References
 
@@ -285,16 +287,54 @@ lemma regularWeightLe_leadingCoeff_sharp {D : ℕ} (hD : Bivariate.totalDegree H
       Bivariate.coeff_totalDegree_le H hH_in
     rw [Polynomial.leadingCoeff]; omega
 
-/-- The sharp per-step `Λ`-weight budget of [BCIKS20] A.4 (the bound on `Λ(βₜ)`):
-`sharp t = 1 + (t+1)·(D - dH) + eₜ·((dY-1)·(D - dH + 1))`, where `dH = natDegreeY H`,
-`dY = natDegreeY R`, and `eₜ = henselDenominatorExponent t`.  The `1` is the constant from the
-leading-coefficient divisibility, `(t+1)·(D-dH)` is the `W`-power contribution, and the last term
-is the `ξ`-power contribution.  This bound telescopes linearly in `t`, unlike the loose
-multiplicative `(2t+1)·dY·D`. -/
+/-- The sharp per-step `Λ`-weight budget for `Λ(βₜ)` in [BCIKS20] A.4, in the form that is actually
+provable by the claim's own `(A.1)` recursion:
+```
+sharp t = 1 + (t+1)·(D - dH) + eₜ·((dY-1)·(D - dH + 1)) + (t-1)·(D - dY)
+```
+with `dH = natDegreeY H`, `dY = natDegreeY R`, `eₜ = henselDenominatorExponent t`, and truncated
+subtraction throughout (so the last summand vanishes for `t ≤ 1`).
+
+## Relation to the paper, and why the last summand is here
+
+[BCIKS20] states `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` — this bound *without* the final
+`(t-1)·(D - dY)`.  That form is **not provable by the recursion `(A.1)` that the claim offers**, for
+a reason worth recording, since it is easy to lose:
+
+* In a bound-based accounting every factor of `W` that the recursion *charges* costs the bound
+  `Λ(W) ≤ D - dH`, and the base case forces exactly that charge: `Λ(β₀) = Λ(T) = D - dH + 1` is
+  fixed by the definition of the `Λ`-grading, so no smaller `W`-charge survives `t = 0`.
+* But the recursion also *saves* one factor of `W`, via `W ∣ leadingCoeff R(x₀,·,Z)`
+  (`leadingCoeff_dvd_evalX_coeff_natDegree`).  A saved `W` is only worth its **exact** degree
+  `deg W`, not the bound `D - dH`; writing the coefficient as `W · c` leaves `Λ(c) = Λ(coeff) -
+  deg W`, and `deg W` has no lower bound.
+* The paper's derivation writes `Λ(B₀,λ) = (D - Σλ) + (d - 1 - Σλ)Λ(W)`, i.e. it credits the saved
+  `W` at `Λ(W)` while using `D` as an upper bound elsewhere — subtracting an upper bound.  The
+  resulting deficit is exactly `Λ(c) ≤ D - dY`.
+
+The correction `(t-1)·(D - dY)` pays for precisely that deficit, and it is *superadditive on the
+only configuration where the deficit occurs*: the boundary summand needs `p.2 = t+1` split into `d`
+parts each `≤ t`, hence at least two nonzero parts `S ≥ 2`, and then
+`t·(D - dY) - ∑ᵢ (lᵢ-1)·(D - dY) = (S-1)·(D - dY) ≥ D - dY`.
+Every other summand satisfies `∑ᵢ (lᵢ-1) ≤ t`, so the correction never costs anything there.
+
+## Why this loses nothing downstream
+
+`numeratorShapeSharp_le_loose` still gives the loose bound `(2t+1)·dY·D` that [BCIKS20] quotes, and
+that is the only form Claim 5.10 consumes: the telescoping there maximizes at `t = k`,
+`max_t (sharp t + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = sharp k ≤ (2k+1)·dY·D`.
+So the corrected shape and the paper's stated shape have the same usable consequence.
+
+The paper's literal form would follow from its *other* route — `Λ(αₜ) = Λ(Y)`, i.e. a weight
+function on `𝕃` rather than on `𝒪` — which yields `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)` with no
+correction term.  That route is open: it needs a **lower** bound on `Λ(ζ)` in order to bound the
+quotient `αₜ = -cₜ/ζ`, and the paper establishes none.  See the module docstring of
+`HenselNumerators/Weight.lean`. -/
 def numeratorShapeSharp (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) : ℕ :=
   1 + (t + 1) * (D - Bivariate.natDegreeY H) +
     henselDenominatorExponent t *
-      ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1))
+      ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) +
+    (t - 1) * (D - Bivariate.natDegreeY R)
 
 /-- The sharp bound weakens to the loose paper bound consumed by the final assembly:
 `sharp t ≤ (2t+1)·dY·D`.  Pure arithmetic, using `dH ≥ 1`, `dH ≤ dY`, `dH ≤ D`, and
@@ -326,15 +366,25 @@ lemma numeratorShapeSharp_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   obtain ⟨b, rfl⟩ : ∃ b, dY = dH + b := ⟨dY - dH, by omega⟩
   obtain ⟨c, rfl⟩ : ∃ c, dH = c + 1 := ⟨dH - 1, by omega⟩
   simp only [Nat.add_sub_cancel_left] at *
-  rw [show c + 1 + b - 1 = c + b by omega]
-  have hA : et * ((c + b) * (a + 1)) ≤ 2 * t * ((c + b) * (a + 1)) :=
-    Nat.mul_le_mul_right _ (by omega)
-  have hRHS : (2 * t + 1) * ((c + b) + 1) * (a + 1) ≤
-      (2 * t + 1) * (c + 1 + b) * (c + 1 + a) := by
-    apply Nat.mul_le_mul
-    · rw [show c + 1 + b = (c + b) + 1 by ring]
-    · omega
-  nlinarith [hA, hRHS]
+  rw [show c + 1 + b - 1 = c + b by omega, show c + 1 + a - (c + 1 + b) = a - b by omega]
+  -- `P` is the `ξ`-charge; the correction contributes at most `t * a`
+  set P := (c + b) * (a + 1) with hPdef
+  have hA : et * P ≤ 2 * t * P := Nat.mul_le_mul_right _ (by omega)
+  have hCorr : (t - 1) * (a - b) ≤ t * a := Nat.mul_le_mul (by omega) (by omega)
+  -- the right-hand side dominates `(2t+1)·(P + a + 1)`
+  have hRHSexp : P + a + 1 + ((c + b) * c + c) = (c + 1 + b) * (c + 1 + a) := by
+    rw [hPdef]; ring
+  have hRHS : (2 * t + 1) * (P + a + 1) ≤ (2 * t + 1) * ((c + 1 + b) * (c + 1 + a)) :=
+    Nat.mul_le_mul_left _ (by omega)
+  have hPle : 2 * t * P ≤ (2 * t + 1) * P := Nat.mul_le_mul_right _ (by omega)
+  calc 1 + (t + 1) * a + et * P + (t - 1) * (a - b)
+      ≤ 1 + (t + 1) * a + 2 * t * P + t * a :=
+        Nat.add_le_add (Nat.add_le_add_left hA _) hCorr
+    _ = 1 + (2 * t + 1) * a + 2 * t * P := by ring
+    _ ≤ (2 * t + 1) * P + (2 * t + 1) * a + (2 * t + 1) := by omega
+    _ = (2 * t + 1) * (P + a + 1) := by ring
+    _ ≤ (2 * t + 1) * ((c + 1 + b) * (c + 1 + a)) := hRHS
+    _ = (2 * t + 1) * (c + 1 + b) * (c + 1 + a) := by ring
 
 omit H_irreducible H_natDegree_pos in
 /-- `RegularWeightLe`-version of the bridge from the embedded `𝒪`-witness back to the `𝒪`-weight:
@@ -405,9 +455,14 @@ set_option maxHeartbeats 2000000 in
 -- exhausted by the resulting `ring`/`omega` normalisations.
 /-- Weight-tracking per-degree clearing lemma: the `Λ`-graded analogue of
 `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is
-regular with sharp `Λ`-weight at most `numeratorShapeSharp R H D (t+1)`.  The non-boundary
-branch is fully proven; the single boundary summand (`p.1 = 0`, `j = d ≥ 2`, `p.2 = t+1`) is
-the remaining gap (see the in-proof comment). -/
+regular with sharp `Λ`-weight at most `numeratorShapeSharp R H D (t+1)`.
+
+The proof splits on the *boundary* summand `p.1 = 0`, `j = d ≥ 2`, `p.2 = t+1`, which is the one
+place where the `d` part-certificates want one more factor of `W` than the goal supplies.  There the
+leading-coefficient divisibility `W ∣ leadingCoeff R(x₀,·,Z)` frees that factor, at the cost of a
+`Λ(c) ≤ D - dY` coefficient charge, and the correction term of `numeratorShapeSharp` pays for it —
+see that definition's docstring for why the correction is needed and why the paper's uncorrected
+form is not provable on this route. -/
 lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
@@ -492,39 +547,63 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           αtrunc (l i) * (W ^ (l i + 1) * eta ^ henselDenominatorExponent (l i)) := rfl
       rw [hWdef, hetadef] at this ⊢
       exact this
+    -- `S1` counts the nonzero parts; `Pc` is the correction budget the parts consume
+    set S1 : ℕ := (∑ i ∈ Finset.range j, (if l i = 0 then 0 else 1)) with hS1def
+    set Pc : ℕ := (∑ i ∈ Finset.range j, (l i - 1)) with hPcdef
+    set G : ℕ := D - Bivariate.natDegreeY R with hGdef
+    have h2b : 2 * p.2 = Pe + S1 := by
+      rw [hPedef, hS1def, ← hbsum, Finset.mul_sum, ← Finset.sum_add_distrib]
+      exact Finset.sum_congr rfl fun i _ => by
+        unfold henselDenominatorExponent; split <;> omega
+    have hbS1 : p.2 ≤ t * S1 := by
+      rw [← hbsum, hS1def, Finset.mul_sum]
+      refine Finset.sum_le_sum fun i hi => ?_
+      split
+      · next h => rw [h]; simp
+      · next h => rw [Nat.mul_one]; exact hle i hi
+    -- each part spends `lᵢ - 1` of the correction and `1` of the nonzero count, out of `lᵢ`
+    have hPcS1 : Pc + S1 ≤ p.2 := by
+      rw [hPcdef, hS1def, ← hbsum, ← Finset.sum_add_distrib]
+      refine Finset.sum_le_sum fun i _ => ?_
+      split
+      · next h => omega
+      · next h => omega
+    -- no nonzero parts means no correction is consumed at all
+    have hS1zero : S1 = 0 → Pc = 0 := by
+      intro h0
+      have hsum0 : (∑ i ∈ Finset.range j, (if l i = 0 then 0 else 1)) = 0 := by
+        rw [← hS1def]; exact h0
+      rw [hPcdef]
+      refine Finset.sum_eq_zero fun i hi => ?_
+      have hi0 := Finset.sum_eq_zero_iff.mp hsum0 i hi
+      by_cases hli : l i = 0
+      · omega
+      · rw [if_neg hli] at hi0; omega
+    -- so the parts never consume more correction than the `t` available at `t+1`
+    have hPc_le : Pc ≤ t := by
+      rcases Nat.eq_zero_or_pos S1 with hS0 | hS1pos
+      · have := hS1zero hS0; omega
+      · omega
     -- the eta exponent bound Pe ≤ E1 = 2t
     have hPe_le : Pe ≤ E1 := by
-      rw [hE1def, hPedef]
-      set Pe' := (∑ i ∈ Finset.range j, henselDenominatorExponent (l i)) with hPe'def
-      set S1 := (∑ i ∈ Finset.range j, (if l i = 0 then 0 else 1)) with hS1def
-      have h2b : 2 * p.2 = Pe' + S1 := by
-        rw [hPe'def, hS1def, ← hbsum, Finset.mul_sum, ← Finset.sum_add_distrib]
-        exact Finset.sum_congr rfl fun i _ => by
-          unfold henselDenominatorExponent; split <;> omega
-      have hbS1 : p.2 ≤ t * S1 := by
-        rw [← hbsum, hS1def, Finset.mul_sum]
-        refine Finset.sum_le_sum fun i hi => ?_
-        split
-        · next h => rw [h]; simp
-        · next h => rw [Nat.mul_one]; exact hle i hi
-      have hE1' : henselDenominatorExponent (t + 1) - 1 = 2 * t := by
-        rw [henselDenominatorExponent_succ]; omega
+      have hE1' : E1 = 2 * t := by
+        rw [hE1def, henselDenominatorExponent_succ]; omega
       rw [hE1']
       rcases Nat.lt_or_ge p.2 (t + 1) with hbt | hbt
       · omega
       · have hS1ge : 2 ≤ S1 := by
           by_contra h; push Not at h; interval_cases S1 <;> omega
         omega
-    -- sharp-sum identity: ∑ sharp(l i) = j + Pw*ΛW + Pe*Λξ
+    -- sharp-sum identity: ∑ sharp(l i) = j + Pw*ΛW + Pe*Λξ + Pc*G
     have hsharpSum : (∑ i ∈ Finset.range j, numeratorShapeSharp R H D (l i)) =
-        j + Pw * ΛW + Pe * Λξ := by
+        j + Pw * ΛW + Pe * Λξ + Pc * G := by
       have hexpand : ∀ i, numeratorShapeSharp R H D (l i) =
-          1 + (l i + 1) * ΛW + henselDenominatorExponent (l i) * Λξ := by
-        intro i; rw [numeratorShapeSharp, hΛWdef, hΛξdef]
+          1 + (l i + 1) * ΛW + henselDenominatorExponent (l i) * Λξ + (l i - 1) * G := by
+        intro i; rw [numeratorShapeSharp, hΛWdef, hΛξdef, hGdef]
       simp only [hexpand]
-      rw [Finset.sum_add_distrib, Finset.sum_add_distrib]
+      rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib]
       rw [Finset.sum_const, Finset.card_range, smul_eq_mul, Nat.mul_one]
-      rw [← Finset.sum_mul, ← Finset.sum_mul, ← hPwdef, ← hPedef]
+      rw [← Finset.sum_mul, ← Finset.sum_mul, ← Finset.sum_mul, ← hPwdef, ← hPedef, ← hPcdef]
     -- W exponent budget (NON-boundary): wb = (t+2)+(d-2).
     -- E1 leftover: eta^(E1 - Pe).
     -- coefficient weight ≤ totalDegree (R.coeff j) ≤ D - j
@@ -556,54 +635,120 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     by_cases hbdry : p.2 = t + 1 ∧ j = R.natDegree ∧ 2 ≤ R.natDegree
     · -- BOUNDARY CASE: `p.1 = 0`, `j = d = R.natDegree ≥ 2`, `p.2 = t+1`.
       --
-      -- This is the one summand the (A.1)-recursion route of [BCIKS20] A.4 does not reach, and the
-      -- obstruction is *tightness*, not bookkeeping.  Accounting, with `x` the `W`-charge and `Z`
-      -- the `ξ`-charge of `numeratorShapeSharp`:
+      -- The `d` part-certificates consume `Pw = p.2 + j = t+d+1` factors of `W`, one more than the
+      -- `wb = (t+2) + (d-2) = t+d` the goal supplies.  The missing factor comes from the
+      -- leading-coefficient divisibility `W ∣ leadingCoeff R(x₀,·,Z)`
+      -- (`leadingCoeff_dvd_evalX_coeff_natDegree`): writing that coefficient as `W * c` turns the
+      -- coefficient charge from `D - d` into `Λ(c) = c.natDegree ≤ D - d`, and frees the `W`.
       --
-      --   available `W`-power  : `wb = (t+2) + (d-2) = t+d`
-      --   consumed by the `d` part-certificates : `Pw = p.2 + j = t+d+1`   (one more than `wb`)
-      --
-      -- The missing `W` is supplied by the leading-coefficient divisibility
-      -- `W ∣ coeff 0 (liftCoeff (R.coeff d))` (`leadingCoeff_dvd_evalX_coeff_natDegree`, as in
-      -- `henselClearedTerm_regular`'s boundary branch): writing that coefficient as `W * c`
-      -- pays the deficit and charges `Λ(c) = c.natDegree` instead of `D - d`.  Summing,
-      --
-      --   total  = c.natDegree + d + (t+d+1)·x + 2t·Z
-      --   target = 1 + (t+2)·x + (2t+1)·Z
-      --   target - total = Z - (d-1)·x - (d-1) - c.natDegree,
-      --
-      -- so the branch closes iff `Z ≥ (d-1)(x+1) + c.natDegree`.  With the charges forced
-      -- elsewhere in the induction — `x = D - dH` (forced by the base case, since
-      -- `Λ(β₀) = Λ(T) = D - dH + 1` by the very definition of the `Λ`-grading) and
-      -- `Z = (d-1)(D - dH + 1)` (forced by `xi_weight_le`) — this demands `c.natDegree ≤ 0`,
-      -- which is false in general: `R(x₀,·,Z) = H · q` gives `c = leadingCoeff q`, an arbitrary
-      -- polynomial.  So this *per-summand* budget is very likely not merely hard but too strong;
-      -- `numerator_shape_weight_sharp` can still hold, since `Λ` of the sum over `j` only has to
-      -- bound the max after the cancellations that the recursion (A.1) produces.  Closing the gap
-      -- therefore means weakening this lemma and recovering the total elsewhere, not grinding this
-      -- case.
-      --
-      -- Raising `Z` by `D - d - W.natDegree` (the true bound on `c.natDegree`) closes this branch
-      -- and keeps the non-boundary branch, but then breaks `numeratorShapeSharp_le_loose`: e.g.
-      -- `d = 2, dH = 1, D = 100, W.natDegree = 0, t = 5` gives `sharp 5 = 2377 > 2200 = (2t+1)dD`,
-      -- and `(2t+1)dD` is the bound [BCIKS20] itself quotes and Claim 5.10 consumes.  The same
-      -- tightness is visible in the paper's own quantities: expanding (A.1) for the `i₁ = 0` terms
-      -- gives `Λ(βₜ) ≤ D + (t+d-1)Λ(W) + (2t-2)Λ(ξ)`, which meets the claimed
-      -- `1 + (t+1)Λ(W) + eₜΛ(ξ)` only when `Λ(ξ) = (D-1) + (d-2)Λ(W)`, i.e. only when `Λ(ξ)`
-      -- attains its upper bound.
-      --
-      -- Consistently, [BCIKS20] does not carry out this induction: it says the bound "can be shown
-      -- by induction using the recursion (A.1), but an easier way ... is by considering the weight
-      -- of `αₜ`", and then argues `Λ(αₜ) = Λ(Y) = 1` because `γ` solves `R(X,Y,Z) = 0`.  That
-      -- second argument is a different (and informal) route: it needs a weight function on the
-      -- function field `𝕃`, not just on `𝒪`, together with the fact that the Hensel coefficients
-      -- lie in the same graded piece as `Y`.  Formalizing it is the natural way to close this gap.
-      --
-      -- Everything else in Claim A.2 is proven: existence and uniqueness of the lift, regularity
-      -- of every `βₜ` and of `ξ`, the bound on `Λ(ξ)`, the clearing/expansion, the residual
-      -- assembly, and the non-boundary branch below.  Nothing that this `sorry` reaches is used to
-      -- *define* anything: see `exists_hensel_numerator_sequence`.
-      sorry
+      -- The resulting deficit is exactly `c.natDegree`, and it is paid by the correction term of
+      -- `numeratorShapeSharp`: this branch forces `p.2 = t+1` split into parts each `≤ t`, hence at
+      -- least two nonzero parts, so the parts consume at most `Pc ≤ t-1` of the correction while
+      -- the target provides `t`, leaving `(S₁-1)·G ≥ G = D - dY ≥ c.natDegree`.  See the
+      -- docstring of `numeratorShapeSharp` for why the paper's uncorrected form is not provable
+      -- here.
+      obtain ⟨hb2, hjd', hd2⟩ := hbdry
+      have hp1 : p.1 = 0 := by omega
+      -- at least two nonzero parts, since each part is `≤ t` but they sum to `t+1`
+      have hS1ge : 2 ≤ S1 := by
+        by_contra h
+        push Not at h
+        interval_cases S1 <;> omega
+      have hPc_lt : Pc + 1 ≤ t := by omega
+      -- the boundary coefficient is `W * c`
+      have hdvd : H.leadingCoeff ∣ (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree :=
+        leadingCoeff_dvd_evalX_coeff_natDegree hHyp
+      obtain ⟨c, hc⟩ := hdvd
+      have hcoeff_eq : (R.coeff R.natDegree).eval (Polynomial.C x₀) =
+          (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree := by
+        simp [Bivariate.evalX_eq_map, Polynomial.coeff_map]
+      have hW_ne : H.leadingCoeff ≠ 0 :=
+        Polynomial.leadingCoeff_ne_zero.mpr (Polynomial.ne_zero_of_natDegree_gt hH)
+      -- `c.natDegree ≤ G = D - dY`, since `W * c` is a coefficient of `R(x₀,·,Z)`
+      have hc_deg : c.natDegree ≤ G := by
+        rw [hGdef]
+        by_cases hc0 : c = 0
+        · rw [hc0]; simp
+        · have hne : (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree ≠ 0 := by
+            rw [hc]; exact mul_ne_zero hW_ne hc0
+          have hle' : c.natDegree ≤
+              ((Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree).natDegree := by
+            refine Polynomial.natDegree_le_of_dvd ?_ hne
+            exact hc ▸ Dvd.intro_left _ rfl
+          have hbound : ((Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree).natDegree ≤
+              D - R.natDegree :=
+            natDegree_coeff_le_of_totalDegree_le _ hD_Rx0 R.natDegree
+          rw [hdY]; omega
+      -- rewrite the coefficient factor as `W * lift c`
+      have hcoeff_split :
+          PowerSeries.coeff p.1 (liftCoeffToPowerSeries x₀ H (R.coeff j)) =
+            W * liftToFunctionField (H := H) c := by
+        rw [hp1, hjd', PowerSeries.coeff_zero_eq_constantCoeff_apply,
+          constantCoeff_liftCoeffToPowerSeries, hcoeff_eq, hc, map_mul, hWdef]
+      -- the freed `W` completes `W^Pw`, so the parts certificate applies verbatim
+      have hPweq' : Pw = t + 1 + R.natDegree := by rw [hPweq, hb2, hjd']
+      have hreassoc :
+          PowerSeries.coeff p.1 (liftCoeffToPowerSeries x₀ H (R.coeff j)) *
+              (∏ i ∈ Finset.range j, αtrunc (l i)) *
+                (W ^ (t + 1 + 1) * eta ^ E1 * W ^ (R.natDegree - 2)) =
+          liftToFunctionField (H := H) c *
+            ((∏ i ∈ Finset.range j, αtrunc (l i)) * (W ^ Pw * eta ^ Pe)) *
+            eta ^ (E1 - Pe) := by
+        rw [hcoeff_split, hPweq']
+        have hWpow : W * (W ^ (t + 1 + 1) * W ^ (R.natDegree - 2)) = W ^ (t + 1 + R.natDegree) := by
+          rw [← pow_add, ← pow_succ']
+          congr 1
+          omega
+        have hEpow : eta ^ E1 = eta ^ Pe * eta ^ (E1 - Pe) := by
+          rw [← pow_add]
+          congr 1
+          omega
+        calc W * liftToFunctionField (H := H) c *
+              (∏ i ∈ Finset.range j, αtrunc (l i)) *
+                (W ^ (t + 1 + 1) * eta ^ E1 * W ^ (R.natDegree - 2))
+            = liftToFunctionField (H := H) c * (∏ i ∈ Finset.range j, αtrunc (l i)) *
+                ((W * (W ^ (t + 1 + 1) * W ^ (R.natDegree - 2))) * eta ^ E1) := by ring
+          _ = liftToFunctionField (H := H) c * (∏ i ∈ Finset.range j, αtrunc (l i)) *
+                (W ^ (t + 1 + R.natDegree) * (eta ^ Pe * eta ^ (E1 - Pe))) := by
+                rw [hWpow, hEpow]
+          _ = liftToFunctionField (H := H) c *
+                ((∏ i ∈ Finset.range j, αtrunc (l i)) *
+                  (W ^ (t + 1 + R.natDegree) * eta ^ Pe)) * eta ^ (E1 - Pe) := by ring
+      rw [hreassoc]
+      refine (RegularWeightLe.mul hD_H
+        (RegularWeightLe.mul hD_H
+          ((regularWeightLe_liftToFunctionField hD_H hH c).mono hc_deg) hprodW)
+        (hRWLeta.pow hD_H _)).mono ?_
+      rw [hsharpSum]
+      have hsharpSucc : numeratorShapeSharp R H D (t + 1) =
+          1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
+        rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
+          show t + 1 - 1 = t by omega]
+      rw [hsharpSucc]
+      -- `Λξ = (dY-1)·(ΛW+1)` and `G = D - dY`, so the whole thing is linear arithmetic
+      have hΛξval : Λξ = (R.natDegree - 1) * (ΛW + 1) := by rw [hΛξdef, hΛWdef, hdY]
+      have hGval : G = D - R.natDegree := by rw [hGdef, hdY]
+      have hE1val : E1 = 2 * t := by rw [hE1def, henselDenominatorExponent_succ]; omega
+      -- expand the two products so that only `ΛW`-linear atoms remain
+      obtain ⟨dm, hdmeq⟩ : ∃ dm, R.natDegree = dm + 2 := ⟨R.natDegree - 2, by omega⟩
+      have hΛξexp : Λξ = dm * ΛW + dm + ΛW + 1 := by
+        rw [hΛξval, hdmeq, show dm + 2 - 1 = dm + 1 by omega]; ring
+      have hPwexp : Pw * ΛW = (t + 1) * ΛW + dm * ΛW + 2 * ΛW := by
+        rw [hPweq', hdmeq]; ring
+      have hPeval : Pe * Λξ + (E1 - Pe) * Λξ = 2 * t * Λξ := by
+        rw [← Nat.add_mul, hE1val]; congr 1; omega
+      have hPcG : G + Pc * G ≤ t * G := by
+        calc G + Pc * G = (Pc + 1) * G := by ring
+          _ ≤ t * G := Nat.mul_le_mul_right _ hPc_lt
+      -- everything but `G + Pc·G ≤ t·G` is a ring identity: the `W`- and `ξ`-charges match exactly
+      calc G + (j + Pw * ΛW + Pe * Λξ + Pc * G) + (E1 - Pe) * Λξ
+          = (j + Pw * ΛW + (Pe * Λξ + (E1 - Pe) * Λξ)) + (G + Pc * G) := by ring
+        _ = (j + Pw * ΛW + E1 * Λξ) + (G + Pc * G) := by
+              rw [← Nat.add_mul, Nat.add_sub_cancel' hPe_le]
+        _ ≤ (j + Pw * ΛW + E1 * Λξ) + t * G := Nat.add_le_add_left hPcG _
+        _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+              rw [hjd', hPweq', hE1val, hΛξexp, hdmeq]; ring
     · -- NON-BOUNDARY: budget Pw ≤ (t+2)+(d-2) covers everything.
       have hbudget : Pw ≤ (t + 1 + 1) + (R.natDegree - 2) := by
         rw [hPweq, Finset.mem_range] at *
@@ -641,9 +786,10 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       rw [hsharpSum]
       -- sharp(t+1) expansion
       have hsharpSucc : numeratorShapeSharp R H D (t + 1) =
-          1 + (t + 2) * ΛW + (2 * t + 1) * Λξ := by
-        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, henselDenominatorExponent_succ]
-        rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega]
+          1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
+        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
+        rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
+          show t + 1 - 1 = t by omega]
       rw [hsharpSucc]
       -- now pure arithmetic (verified separately)
       set wb := (t + 1 + 1) + (R.natDegree - 2) with hwbdef
@@ -663,7 +809,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       have hΛξval : Λξ = (R.natDegree - 1) * (ΛW + 1) := by
         rw [hΛξdef, hΛWdef, hdY]
       -- prove ≤
-      have hfin : (D - j) + (j + Pw * ΛW + Pe * Λξ) +
+      have hfin0 : (D - j) + (j + Pw * ΛW + Pe * Λξ) +
           ((wb - Pw) * ΛW + (E1 - Pe) * Λξ) ≤ 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ := by
         have e1 : (D - j) + (j + Pw * ΛW + Pe * Λξ) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)
             = D + wb * ΛW + E1 * Λξ := by
@@ -683,7 +829,14 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         rw [hdmeq] at hkey ⊢
         rw [show dm + 1 - 1 = dm by omega]
         nlinarith [hkey, hwb_le, hgap, Nat.mul_le_mul_right ΛW hwb_le]
-      exact hfin
+      -- the correction the parts consume is at most the `t·G` the target provides
+      calc (D - j) + (j + Pw * ΛW + Pe * Λξ + Pc * G) +
+            ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)
+          = ((D - j) + (j + Pw * ΛW + Pe * Λξ) + ((wb - Pw) * ΛW + (E1 - Pe) * Λξ)) + Pc * G := by
+            ring
+        _ ≤ (1 + (t + 2) * ΛW + (2 * t + 1) * Λξ) + t * G :=
+            Nat.add_le_add hfin0 (Nat.mul_le_mul_right _ hPc_le)
+        _ = 1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by ring
 
 
 
