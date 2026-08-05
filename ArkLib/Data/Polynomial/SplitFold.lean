@@ -17,9 +17,9 @@ This file defines n-way splitting and folding operations on polynomials.
 * `Polynomial.splitNth f n i`: Splits polynomial `f` into `n` component polynomials,
   where `splitNth f n i` extracts coefficients at positions `j ≡ i (mod n)`.
 
-* `Polynomial.foldNth n f α`: Recombines the n-way split of `f` using powers of `α`,
-  computing `∑ i : Fin n, α^i * splitNth f n i`. This is the core operation in
-  FRI-style polynomial commitment schemes.
+* `FoldingPolynomial.polyFold f n r`: Recombines the n-way split of `f` using powers of `r`,
+  computing `∑ i : Fin n, r^i * splitNth f n i` (see `polyFold_eq_sum_of_splitNth`). This is
+  the core operation in FRI-style polynomial commitment schemes.
 
 ## Implementation notes
 
@@ -43,7 +43,7 @@ coefficients are extracted from positions `j ≡ i (mod n)`, reindexed by `j / n
 Formally: `splitNth f n i = ∑_{j ≡ i (mod n)} aⱼ X^(j/n)`.
 -/
 def splitNth (f : 𝔽[X]) (n : ℕ) (i : Fin n) : 𝔽[X] :=
-  if hn : n = 0 then f else -- contradictory case
+  if hn : n = 0 then f else -- unreachable: `Fin 0` is uninhabited
   Polynomial.ofFinsupp
     ⟨
       Finset.filterMap (fun x ↦ if x % n = i.1 then .some (x / n) else .none)
@@ -78,7 +78,7 @@ private noncomputable def splitNthNoncomputable (f : 𝔽[X]) (n : ℕ) (i : Fin
     if k % n = i.1 then Polynomial.C (f.coeff k) * Polynomial.X ^ (k / n) else 0
 
 @[simp]
-lemma splitNthNoncomputable_of_nz {f : 𝔽[X]} {n : ℕ} [inst : NeZero n] {i : Fin n} :
+private lemma splitNthNoncomputable_of_neZero {f : 𝔽[X]} {n : ℕ} [inst : NeZero n] {i : Fin n} :
   splitNthNoncomputable f n i =
     ∑ k ∈ f.support,
       if k % n = i.1 then Polynomial.C (f.coeff k) * Polynomial.X ^ (k / n) else 0 := by
@@ -121,19 +121,19 @@ private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m
                        Polynomial.mem_support_iff])
   · aesop (add safe [cases Fin, (by omega)])
 
-private lemma splitNthNoncomputable_eq_splitNth {n : ℕ} {f : 𝔽[X]} :
+private lemma splitNth_eq_splitNthNoncomputable {n : ℕ} {f : 𝔽[X]} :
   splitNth f n = splitNthNoncomputable f n := by aesop
 
-/- Proof of key identity `splitNth` has to satisfy. -/
+/-- The key identity `splitNth` satisfies: `f` is recovered from its `n` components. -/
 lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
     f =
       ∑ i : Fin n,
         (Polynomial.X ^ i.1) *
           Polynomial.eval₂ Polynomial.C (Polynomial.X ^ n) (splitNth f n i) := by
-  rw [splitNthNoncomputable_eq_splitNth]
+  rw [splitNth_eq_splitNthNoncomputable]
   have hn : 0 < n := Nat.pos_of_ne_zero inst.out
   conv_lhs => rw [Polynomial.as_sum_support_C_mul_X_pow f]
-  simp only [splitNthNoncomputable_of_nz, eval₂_finsetSum, Finset.mul_sum]
+  simp only [splitNthNoncomputable_of_neZero, eval₂_finsetSum, Finset.mul_sum]
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
   intro k hk
@@ -150,8 +150,7 @@ lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
   rw [Finset.sum_congr rfl (fun i _ => hstep i),
       Finset.sum_eq_single (⟨k % n, Nat.mod_lt k hn⟩ : Fin n)] <;> aesop
 
-/- Lemma bounding degree of each `n`-split polynomial. -/
-@[simp]
+/-- Lemma bounding degree of each `n`-split polynomial. -/
 lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
   (splitNth f n i).natDegree ≤ f.natDegree / n := by
   have hn := inst.out
@@ -179,7 +178,7 @@ lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynom
       (add simp [comp])
       (add safe (by ac_nf))
   · aesop
-      (add simp [Bivariate.degreeX])
+      (add simp [Bivariate.degreeX, splitNth_degree_le])
       (add safe natDegree_sum_le_of_forall_le)
   · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
     exact Nat.lt_of_le_pred (by aesop (add unsafe Nat.zero_lt_of_ne_zero)) <| by
@@ -242,8 +241,8 @@ theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
     (add safe (by grind))
 
 /--
-Lemma bridges the coefficient-level identity `splitNth_def` and
-evaluation-level reasoning about `splitNth` and `foldNth`.
+Lemma bridges the coefficient-level identity `eq_sum_splitNth` and
+evaluation-level reasoning about `splitNth` and `polyFold`.
 -/
 lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
     (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
