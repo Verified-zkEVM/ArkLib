@@ -228,17 +228,27 @@ Three caveats worth keeping in view:
 An earlier repair kept Figure 5's single challenge round but replaced the vector challenges by
 two scalar seeds `(ρ₀, ρ_α)` evaluated on Kronecker curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, with
 soundness parameter `D = max(2, 2^{m₀}, 2^{m₁})` and identity recovery by univariate root
-counting (`multilinear_eq_zero_of_kronecker_roots`). It was superseded by the scalar-round
-design; the sharpness theorem `exists_nonzero_multilinear_vanishing_on_kronecker_seeds` records
-the limit of the seed-based route (for **any** `2^m − 1` seeds there is a nonzero multilinear
-polynomial vanishing at all of them, and a collision branch of that extractor shares an opening
-across only `2^m − 1` seeds — one short of the root count). Note also that the Kronecker rendering
-satisfies the Lean *definition* of CWSS just as well as the adopted one — what disqualified it (`D = 2^{m₀}`
-children in a single round, hence an exponential branching factor) is invisible to
-`CWSSStructure`, which is why the leaf-count lemmas above are now stated explicitly. Its Hachi-specific declarations
+counting on the pullback `LinearMvExtension.powAlgHom`. It was superseded by the scalar-round
+design. Two facts recorded the limit of the seed-based route: for **any** `2^m − 1` seeds there
+is a nonzero multilinear polynomial vanishing at all of them, and a collision branch of that
+extractor shares an opening across only `2^m − 1` seeds — one short of the root count. Note also
+that the Kronecker rendering satisfies the Lean *definition* of CWSS just as well as the adopted
+one — what disqualified it (`D = 2^{m₀}` children in a single round, hence an exponential
+branching factor) is invisible to `CWSSStructure`, which is why the leaf-count lemmas above are
+now stated explicitly.
+
+**Nothing of this route is formalized any more.** Both its Hachi-specific declarations
 (`zeroCheckD`, `relZeroCheck`, `kroneckerPoint`-based points, `buildWitnessE`,
-`arm_eq_zero_of_family`, …) have been removed; the generic Kronecker lemmas remain available in
-`LinearMvExtension.lean` independently of this protocol.
+`arm_eq_zero_of_family`, …) and the generic Kronecker lemmas that supported it
+(`kroneckerPoint`, `kroneckerExp`, `powAlgHom_eq_zero_iff`,
+`powAlgHom_injective_on_multilinear`, `multilinear_eq_zero_of_kronecker_roots`,
+`exists_nonzero_multilinear_vanishing_on_kronecker_seeds`) have been removed. What survives in
+`LinearMvExtension.lean` is the univariate/multilinear conversion itself — `powAlgHom`,
+`linearMvExtension`, and their degree bounds, all of which predate this audit and are used by
+`ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean` — together with the axis-cross
+counterexample `exists_nonzero_vanishing_on_axis_cross` that motivates the whole repair.
+The paragraphs above are therefore a record of a rejected design, not a description of live Lean
+code; the section below on the Kronecker sharpness bound is likewise historical.
 
 ## Other divergences from the printed Figure 5 / Lemma 10
 
@@ -322,8 +332,8 @@ one opening needs the *complete* sibling-distinct depth-`m₀` tree — all `2^{
 share that opening (`eq_zero_of_vanishes_comp`). The collision branch of
 `buildNestedWitnessE` is by definition the case where the leaves do *not* share one opening, so
 it can never run the zero test for a *single* colliding opening. (The superseded Kronecker-seed
-variant hit the same wall in sharp form: see
-`exists_nonzero_multilinear_vanishing_on_kronecker_seeds` above.)
+variant hit the same wall in sharp form — `2^m − 1` seeds never suffice — as recorded in the
+historical section above.)
 
 Note this is **not** a weakening of the binding assumption to unconditional binding, which would
 be false for Ajtai commitments. The admissibility is still required and still consumed — by the
