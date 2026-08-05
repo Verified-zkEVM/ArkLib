@@ -502,6 +502,34 @@ lemma regularWeight_mk_le {H : F[X][Y]} {D : ℕ}
   rw [regularWeight_mk]
   exact weight_modByMonic_monicize_le hD hH p
 
+/-- The **exact** weight of the monicization: `Λ(H̃) = d·(D + 1 - d)` ([BCIKS20] A.2, "with the
+leading monomial being of this exact weight and every other monomial bounded by it").  The upper
+bound is `weight_monicize_le`; the lower bound is the leading monomial `Tᵈ`, whose coefficient is
+`1` because `H̃` is monic. -/
+lemma weight_monicize {H : F[X][Y]} {D : ℕ}
+    (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) :
+    weight (monicize H) H D =
+      (WithBot.some (H.natDegree * (D + 1 - Bivariate.natDegreeY H)) : WithBot ℕ) := by
+  refine le_antisymm (weight_monicize_le hD hH) ?_
+  have hmonic : (monicize H).Monic := monicize_monic H hH
+  have hdeg : (monicize H).natDegree = H.natDegree := natDegree_monicize hH
+  have hlead : (monicize H).coeff H.natDegree = 1 := by
+    rw [← hdeg]; exact hmonic.coeff_natDegree
+  have hmem : H.natDegree ∈ (monicize H).support :=
+    Polynomial.mem_support_iff.mpr (by rw [hlead]; exact one_ne_zero)
+  have h := le_weight_of_mem_support (f := monicize H) (H := H) (D := D) hmem
+  rwa [hlead, Polynomial.natDegree_one, Nat.add_zero] at h
+
+/-- `regularWeight` is the **minimum** of `weight` over all representatives ([BCIKS20] A.2: the
+weight of the canonical representative "is also the minimal value of `Λ` over all representatives").
+The minimum is attained, by definition, at `canonicalRepOf𝒪`. -/
+lemma regularWeight_le_of_mk_eq {H : F[X][Y]} {D : ℕ}
+    (hD : Bivariate.totalDegree H ≤ D) (hH : 0 < H.natDegree) {α : 𝒪 H} {p : F[X][Y]}
+    (hp : (Ideal.Quotient.mk (Ideal.span {monicize H}) p : 𝒪 H) = α) :
+    regularWeight hH α D ≤ weight p H D := by
+  subst hp
+  exact regularWeight_mk_le hD hH p
+
 /-- The set `rationalVanishingSet` from the statement of Lemma A.1 in Appendix A of [BCIKS20].
 Note: Here `F[X][Y]` is `F[Z][T]`. -/
 noncomputable def rationalVanishingSet {H : F[X][Y]} (β : 𝒪 H) : Set F :=

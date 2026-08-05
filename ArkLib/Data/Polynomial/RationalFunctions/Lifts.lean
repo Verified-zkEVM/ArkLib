@@ -287,6 +287,77 @@ noncomputable def fieldTo𝕃 {H : F[X][Y]} : F →+* 𝕃 H :=
 noncomputable def polyToPowerSeries𝕃 (H : F[X][Y]) (P : F[X][Y]) : PowerSeries (𝕃 H) :=
   PowerSeries.mk <| fun n => liftToFunctionField (P.coeff n)
 
+section RationalSubstitutionOfQuotients
+
+variable {F : Type} [Field F] {H : F[X][Y]}
+
+
+/-- The extension of the rational substitution `π_z` from `𝒪` to those elements of `𝕃` for which
+`z` is not a pole ([BCIKS20] A.3: "`π_z` can be extended naturally to any element of `L` for which
+`z` is not a pole, i.e. elements of the form `β / C(Z)` with `β ∈ 𝒪` and `z` not a root of `C`, by
+`π_z (β / C(Z)) = π_z(β) / C(z)`").
+
+The value is given on the *presentation* `(β, C)`; `piZOfDiv_congr` shows it depends only on the
+quotient `β / C` in `𝕃`, so this really is a function on that subring of `𝕃`.  [BCIKS20] §5 needs
+this: the elements it substitutes into are of the form `β(x) / (W^{k+1} ξ^{e_k})`. -/
+noncomputable def piZOfDiv {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z)
+    (β : 𝒪 H) (C : F[X]) : F :=
+  piZ z root β / C.eval z
+
+/-- `piZOfDiv` extends `piZ`: denominator `1` gives the original substitution. -/
+@[simp]
+lemma piZOfDiv_one {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) (β : 𝒪 H) :
+    piZOfDiv z root β 1 = piZ z root β := by
+  simp [piZOfDiv]
+
+/-- The substitution of a coefficient polynomial is its evaluation. -/
+lemma piZ_mk_C {H : F[X][Y]} (z : F) (root : rationalRoot (monicize H) z) (C : F[X]) :
+    piZ z root (Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.C C) : 𝒪 H) =
+      C.eval z := by
+  simp [piZ, piZLift, Polynomial.evalEval]
+
+variable [H_irreducible : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
+
+/-- `piZOfDiv` is well defined on `𝕃`: it depends only on the quotient `β / C`, not on the chosen
+presentation.  This is what makes the extension of A.3 legitimate. -/
+lemma piZOfDiv_congr (z : F) (root : rationalRoot (monicize H) z) {β β' : 𝒪 H} {C C' : F[X]}
+    (hC : C ≠ 0) (hC' : C' ≠ 0) (hCz : C.eval z ≠ 0) (hC'z : C'.eval z ≠ 0)
+    (heq : embeddingOf𝒪Into𝕃 H β / liftToFunctionField (H := H) C =
+      embeddingOf𝒪Into𝕃 H β' / liftToFunctionField (H := H) C') :
+    piZOfDiv z root β C = piZOfDiv z root β' C' := by
+  -- clear denominators in `𝕃`
+  have hCl : liftToFunctionField (H := H) C ≠ 0 := liftToFunctionField_ne_zero hC
+  have hC'l : liftToFunctionField (H := H) C' ≠ 0 := liftToFunctionField_ne_zero hC'
+  rw [div_eq_div_iff hCl hC'l] at heq
+  -- rewrite the two coefficient lifts as embedded `𝒪`-elements, then use injectivity
+  set bC : 𝒪 H := Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.C C) with hbC
+  set bC' : 𝒪 H := Ideal.Quotient.mk (Ideal.span {monicize H}) (Polynomial.C C') with hbC'
+  have hbCe : embeddingOf𝒪Into𝕃 H bC = liftToFunctionField (H := H) C := by
+    rw [hbC, embeddingOf𝒪Into𝕃_mk, liftBivariate_C]
+  have hbC'e : embeddingOf𝒪Into𝕃 H bC' = liftToFunctionField (H := H) C' := by
+    rw [hbC', embeddingOf𝒪Into𝕃_mk, liftBivariate_C]
+  rw [← hbC'e, ← hbCe, ← map_mul, ← map_mul] at heq
+  have hmul : β * bC' = β' * bC :=
+    embeddingOf𝒪Into𝕃_injective H_natDegree_pos.out heq
+  -- apply the substitution and divide
+  have hsub := congrArg (piZ z root) hmul
+  rw [map_mul, map_mul, hbC, hbC', piZ_mk_C, piZ_mk_C] at hsub
+  rw [piZOfDiv, piZOfDiv, div_eq_div_iff hCz hC'z]
+  exact hsub
+
+omit H_irreducible H_natDegree_pos in
+/-- The vanishing criterion in the form [BCIKS20] §5 uses it: a quotient with a nonvanishing
+denominator vanishes under `π_z` exactly when its numerator does.  Combined with `Lemma A.1`
+(`lemmaA1_embedding_eq_zero_of_many_rational_roots`) this is how a bound on the number of
+substitutions killing `β / C` becomes a bound on `Λ(β)`. -/
+@[simp]
+lemma piZOfDiv_eq_zero_iff (z : F) (root : rationalRoot (monicize H) z) (β : 𝒪 H) {C : F[X]}
+    (hCz : C.eval z ≠ 0) :
+    piZOfDiv z root β C = 0 ↔ piZ z root β = 0 := by
+  rw [piZOfDiv, div_eq_zero_iff]
+  simp [hCz]
+
+end RationalSubstitutionOfQuotients
 
 end
 

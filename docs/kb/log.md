@@ -181,3 +181,26 @@ stepping stones), gave each of the eight files a module docstring describing its
 instead of a shared one-liner, and trimmed the duplicated mathlib import preamble (which still
 carried `PowerSeries.Substitution`, a fossil of the pre-coordinate-fix `PowerSeries.subst`
 formulation).
+
+## [2026-08-05] prove | BCIKS20 A.3 substitutions on quotients + exact A.2 weights
+
+Closed the remaining tractable Appendix A gaps found in the review:
+
+- A.3's extension of `π_z` beyond `𝒪`: `piZOfDiv z root β C = π_z β / C(z)`, with `piZOfDiv_congr`
+  showing it depends only on the quotient `β / C` in `𝕃` (clear denominators, then injectivity of
+  the embedding and `π_z (⟦C c⟧) = c(z)`), plus `piZOfDiv_one` and `piZOfDiv_eq_zero_iff`. §5 needs
+  this: it substitutes into `β(x) / (W^{k+1} ξ^{e_k})`.
+- A.2's exact `Λ(H̃) = d(D+1-d)` (`weight_monicize`) — the upper bound plus the leading monomial.
+- A.2's minimality of `Λ` over representatives, in the paper's phrasing
+  (`regularWeight_le_of_mk_eq`).
+
+Two earlier recommendations on this page were wrong and are corrected. (i) `2 ≤ deg_Y R` cannot be
+added to Claim 5.7's conclusion: `R` is an arbitrary irreducible factor there and `deg_Y R = 1` is
+the *goal* of §5 ("in fact `R` is this factor"), so the hypothesis must be discharged by a case
+split inside §5. (ii) The paper's sharper `Λ(ξ) ≤ (D-1) + (d-2)Λ(W)` is not provable as stated —
+term-by-term it reduces to `D - dH ≤ Λ(W)`, whereas `Λ(W) ≤ D - dH` always; this is the same hidden
+`Λ(W) = D - dH` assumption as in the weight-bound finding, and only the weaker
+`(d-1)(D-dH+1)` form holds in general.
+
+Remaining: the one open boundary summand, the §5 case split, and A.2's full additivity of `Λ` on
+`F[Z][T]` (true, but needs a leading-form development and has no consumer).
