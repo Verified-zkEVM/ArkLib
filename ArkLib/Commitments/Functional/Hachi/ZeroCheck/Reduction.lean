@@ -25,7 +25,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * *Shape.* `SS(S, ℓ, k)` is star-shaped by definition, so a coordinate-wise family only certifies
     that a multilinear `H` vanishes on the axis cross through the family's center — which for two
     or more variables does not imply `H ≡ 0`
-    (`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`), and putting more points on the
+    (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`), and putting more points on the
     same arms does not help. Under the lemma's own `ℓ = 2` reading the arms carry arbitrary distinct
     challenge *vectors* rather than collinear points, so the axis cross does not apply directly;
     there the objection is a dimension count — `D` points cannot pin down the `2 ^ m₀`-dimensional
@@ -389,7 +389,7 @@ vanish at the direct points carried by the statement.
 There is **no norm conjunct**, exactly as in Figure 5 (whose verifier checks only
 `t = Com(w̃)`, `H₀(τ₀) = 0`, `H_α(τ_α) = 0`) and in Lemma 10. Nor could one be recovered here: a
 single evaluation `H₀(τ₀) = 0` never implies the range identity `H₀ ≡ 0`
-(`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`). The admissibility that conditions
+(`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`). The admissibility that conditions
 weak binding is carried by `K.Opening` instead (see `LiftCom`), which is what lets this seam stay
 norm-free while the extractor below can still invoke `K.collision_mem`. -/
 def relNestedZeroCheck (K : LiftCom Φ μ n E) (φF : ZMod q →+* F) (b : ℕ) :

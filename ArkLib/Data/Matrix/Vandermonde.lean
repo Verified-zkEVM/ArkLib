@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland
 -/
 
-import ArkLib.Data.MvPolynomial.LinearMvExtension
+import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.Polynomial.Interface
 import CompPoly.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.Lagrange

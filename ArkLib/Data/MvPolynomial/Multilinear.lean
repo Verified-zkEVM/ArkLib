@@ -226,6 +226,27 @@ theorem MLE_eq_zero_iff (evals : (σ → Fin 2) → R) : MLE evals = 0 ↔ ∀ x
 
 -- TODO: add lemmas about the uniqueness of multilinear polynomials up to evaluations on hypercube
 
+/-! ### Axis-cross vanishing does not determine a multilinear polynomial
+
+Evaluations on a coordinate-wise *star* — a center point plus, for each coordinate, further points
+differing from it in that coordinate alone — do not pin down a multilinear polynomial, however many
+points each arm carries, in contrast with `MLE_eq_zero_iff` above. Identity testing therefore needs
+a genuine grid of points, such as the leaves of a nested evaluation tree
+(`EvaluationTree.eq_zero_of_vanishes_comp` in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`).
+-/
+
+/-- A checked counterexample to the uniform-vector argument in Hachi [NOZ26, Lemma 10]. For any
+axis-cross center `(a, b)`, the nonzero multilinear polynomial
+`(X₀ - a) * (X₁ - b)` vanishes whenever either coordinate is fixed at the center. Thus arbitrarily
+many evaluations along the two arms of a coordinate-wise star do not imply a polynomial identity. -/
+theorem exists_nonzero_vanishing_on_axis_cross [Nontrivial R] (a b : R) :
+    ∃ H : MvPolynomial (Fin 2) R,
+      H ≠ 0 ∧ (∀ y, eval ![a, y] H = 0) ∧ ∀ x, eval ![x, b] H = 0 := by
+  refine ⟨(X 0 - C a) * (X 1 - C b), ?_, fun y => by simp, fun x => by simp⟩
+  intro h
+  have he := congrArg (eval ![a + 1, b + 1]) h
+  simp at he
+
 variable [DecidableEq R] [IsDomain R]
 
 omit [Fintype σ] [DecidableEq σ] [DecidableEq R] in

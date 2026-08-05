@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
-import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import CompPoly.Multivariate.Operations

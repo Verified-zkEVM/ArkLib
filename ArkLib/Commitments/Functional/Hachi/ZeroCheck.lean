@@ -17,7 +17,7 @@ points assembled from scalar challenges.
 
 Figure 5 is sound as printed; Lemma 10's *deterministic* route to `H₀ ≡ 0` is what fails, since a
 coordinate-wise star only certifies vanishing on an axis cross
-(`LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`). Because this chain composes through
+(`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`). Because this chain composes through
 coordinate-wise special soundness rather than a probabilistic bound,
 `ZeroCheck/Reduction.lean` draws each coordinate in its own scalar round, turning the accepting
 family into a path-dependent complete binary evaluation tree on which vanishing does determine a

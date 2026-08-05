@@ -4,10 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Mirco Richter (Least Authority), Aristotle (Harmonic)
 -/
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.MvPolynomial.Multilinear
 import Mathlib.Algebra.MvPolynomial.Eval
 import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -247,26 +243,5 @@ lemma powAlgHom_is_right_inverse_to_linearMvExtension
   rfl
 
 end
-
-/-! ## Axis-cross vanishing does not determine a multilinear polynomial -/
-
-open MvPolynomial
-
-variable {F : Type*} [CommRing F]
-
-/-- A checked counterexample to the uniform-vector argument in Hachi [NOZ26, Lemma 10]. For any
-axis-cross center `(a, b)`, the nonzero multilinear polynomial
-`(X₀ - a) * (X₁ - b)` vanishes whenever either coordinate is fixed at the center. Thus arbitrarily
-many evaluations along the two arms of a coordinate-wise star do not imply a polynomial identity.
-The adopted repair avoids this obstruction with nested evaluation trees, whose leaves supply a
-genuine `k ^ n`-point grid rather than a star; see `EvaluationTree.eq_zero_of_vanishes_comp` in
-`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`. -/
-theorem exists_nonzero_vanishing_on_axis_cross [Nontrivial F] (a b : F) :
-    ∃ H : MvPolynomial (Fin 2) F,
-      H ≠ 0 ∧ (∀ y, eval ![a, y] H = 0) ∧ ∀ x, eval ![x, b] H = 0 := by
-  refine ⟨(X 0 - C a) * (X 1 - C b), ?_, fun y => by simp, fun x => by simp⟩
-  intro h
-  have he := congrArg (eval ![a + 1, b + 1]) h
-  simp at he
 
 end LinearMvExtension

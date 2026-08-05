@@ -30,7 +30,7 @@ import Mathlib.Algebra.Polynomial.Roots
   Vanishing on a coordinate-wise *star* — a center point plus, for each coordinate, further points
   differing from it in that coordinate alone — does **not** force a multilinear polynomial to
   vanish, however many points each arm carries: see
-  `LinearMvExtension.exists_nonzero_vanishing_on_axis_cross`. The complete tree supplies `k ^ n`
+  `MvPolynomial.exists_nonzero_vanishing_on_axis_cross`. The complete tree supplies `k ^ n`
   points (`EvaluationTree.numLeaves_eq_pow`) and, unlike a star, supports the interpolation
   induction below.
 
