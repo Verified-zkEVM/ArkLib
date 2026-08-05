@@ -18,7 +18,7 @@ universe u v w k l
 
 section BCIKS20ProximityGapSection5
 
-variable {F : Type} [Field F] [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F]
+variable {F : Type} [Field F] [DecidableEq F] [Finite F]
 variable {n : ℕ}
 variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q : F[Z][X][Y]} {ωs : Fin n ↪ F}
 
@@ -33,7 +33,7 @@ lemma exists_factors_with_large_common_root_set (δ : ℚ) (x₀ : F)
     #(@Set.toFinset _ { z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁ |
         letI Pz := Pz z.2
         (Trivariate.eval_on_Z R z.1).eval Pz = 0 ∧
-        (Bivariate.evalX z.1 H).eval (Pz.eval x₀) = 0} sorry)
+        (Bivariate.evalX z.1 H).eval (Pz.eval x₀) = 0} (Fintype.ofFinite _))
     ≥ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q)
     ∧ #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (Bivariate.natDegreeY Q) >
       2 * D_Y Q ^ 2 * (D_X ((k + 1 : ℚ) / n) n m) * D_YZ Q := by sorry
@@ -80,7 +80,7 @@ States that the approximate solution is actually a solution. This version of the
 terms of coefficients. -/
 lemma approximate_solution_is_exact_solution_coeffs
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
-    : ∀ t ≥ k,
+    : ∀ t > k,
     alpha'
       x₀
       (R k δ x₀ h_gs)
@@ -103,7 +103,7 @@ lemma approximate_solution_is_exact_solution_coeffs'
     gamma' x₀ (R k δ x₀ h_gs) (irreducible_H k h_gs) (natDegree_H_pos k h_gs)
         (claimA2_hypotheses k h_gs) =
         PowerSeries.mk (fun t =>
-          if t ≥ k
+          if t > k
           then (0 : RationalFunctions.𝕃 (H k δ x₀ h_gs))
           else PowerSeries.coeff t
             (gamma'
@@ -159,7 +159,8 @@ noncomputable def matching_set_at_x
     (x : Fin n)
     : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs,
     u₀ x + z * u₁ x =
-      (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)} sorry
+      (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)}
+    (Fintype.ofFinite _)
 
 /-- Claim 5.10 of [BCIKS20].
 Needed to prove Claim 5.9. This claim states that `γ(x) = w(x,Z)` if the cardinality `|S'_x|` is big

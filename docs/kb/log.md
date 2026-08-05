@@ -220,3 +220,23 @@ exactly what makes the statement true.
 
 Appendix A.1–A.3 now has no outstanding items; the only gap left in Appendix A is the one open
 boundary summand of the Claim A.2 weight induction.
+
+## [2026-08-05] fix | BCIKS20 Claim 5.8 off-by-one and two in-statement sorries
+
+Found while surveying the unproven §5 material.
+
+`approximate_solution_is_exact_solution_coeffs` (and its power-series form) said `∀ t ≥ k, αₜ = 0`.
+The paper's Claim 5.8 is "for all `t > k`, `αₜ = 0`. Equivalently, `γ = γ_k = ∑_{t=0}^{k} αₜ
+(X - x₀)ᵗ`" — the sum *includes* `t = k`. As stated the Lean claim also forced `α_k = 0`, i.e.
+`deg γ < k`, which is false whenever the interpolating polynomial has degree exactly `k` (the
+generic case). Both forms corrected to `t > k`. Nothing consumed them, so nothing else moves.
+
+Claim 5.7's cardinality condition and `matching_set_at_x` both built their `Finset` with
+`@Set.toFinset _ _ sorry` — a *sorried `Fintype` instance inside a statement*. Since `Fintype` is a
+subsingleton these were provably equal to the real instance, so the statements were not wrong, but
+they injected `sorryAx` into statements and blocked honest `#print axioms` checks. Replaced with
+`Fintype.ofFinite _`. That removed the last use of `[DecidableEq (RatFunc F)]` in the file, so the
+now-unused section instance was dropped as well.
+
+BCIKS20 sorry count 22 → 20, and all 20 are now genuine proof obligations rather than statement
+placeholders.
