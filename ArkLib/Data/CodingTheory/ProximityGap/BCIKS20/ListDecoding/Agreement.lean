@@ -69,7 +69,26 @@ lemma evalX_R_separable (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.2.1
 
 open RationalFunctions.HenselNumerators in
-/-- The Claim A.2 hypotheses satisfied by the `R,H` pair extracted from Claim 5.7. -/
+/-- The Claim A.2 hypotheses satisfied by the `R,H` pair extracted from Claim 5.7.
+
+Note for Claims 5.8/5.10: this supplies the *qualitative* half of Claim A.2 (existence and
+uniqueness of the Hensel lift, regularity of the numerators), which is all that
+`RationalFunctions.HenselNumerators.exists_hensel_numerator_sequence` and hence `alpha`/`gamma`
+need.  The **weight** bounds additionally require `2 ≤ Bivariate.natDegreeY R`, and that side
+condition cannot be obtained from Claim 5.7:
+
+* `R` is an arbitrary irreducible factor of `Q` at that point, and `deg_Y R = 1` is precisely what
+  §5 sets out to prove ("our goal will be to show that `Q` has a factor of the form `Y - P(X, Z)`
+  … and in fact `R` is this factor", [BCIKS20] Appendix A preamble).
+* The hypothesis is load-bearing, not an artefact of the formalization: for `deg_Y R = 1` the
+  bound `Λ(ξ) ≤ (d-1)(D - dH + 1) = 0` of `xi_weight_le` is false.  Take
+  `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1`; then `D = 2` and
+  `ξ = W^{d-2}ζ = ζ = 1 + Z` has `Λ(ξ) = 1 > 0`.
+
+So §5 has to case-split on `deg_Y R`.  In the `= 1` branch the Hensel machinery is not needed at
+all: `R = R₁·Y + R₀` has the single rational root `γ = -R₀/R₁`, and Claim 5.9's conclusion should
+be reached directly.  The `≥ 2` branch is the one that consumes Claim A.2's weight bounds.  See
+`docs/kb/audits/bciks20-appendix-a-rational-functions.md`, finding 1. -/
 lemma claimA2_hypotheses (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     Hypotheses x₀ (R k δ x₀ h_gs) (H k δ x₀ h_gs) :=
   ⟨H_dvd_evalX_R k h_gs, evalX_R_separable k h_gs⟩

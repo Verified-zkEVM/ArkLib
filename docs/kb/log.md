@@ -266,3 +266,15 @@ form Claim 5.10 consumes.
 Option B — extend `Λ` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)`, which would give the paper's
 uncorrected inequality — remains open and is recorded as fidelity-only: its crux needs a *lower*
 bound on `Λ(ζ)` to bound the quotient `αₜ = -cₜ/ζ`, and only upper bounds exist.
+
+## [2026-08-05] docs | record the `2 ≤ degY R` obligation where §5 will meet it
+
+Appendix A's weight bounds carry `2 ≤ Bivariate.natDegreeY R`, and that side condition cannot come
+from Claim 5.7: `R` is an arbitrary irreducible factor of `Q` there, and `deg_Y R = 1` is precisely
+what §5 sets out to prove. The hypothesis is load-bearing rather than an artefact — for `dY = 1`
+the conclusion of `xi_weight_le` is false, witnessed by `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`,
+`H = (1+Z)Y + 1`, where `D = 2` and `ξ = ζ = 1+Z` has `Λ(ξ) = 1` against a claimed bound of `0`.
+
+So §5 must case-split on `deg_Y R`, and the `= 1` branch needs no Hensel machinery at all: there
+`R = R₁Y + R₀` has the single rational root `-R₀/R₁`. Recorded in the docstring of
+`claimA2_hypotheses`, where the next person will hit it, and in finding 1 of the Appendix A audit.

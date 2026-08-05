@@ -65,6 +65,12 @@ would be *stronger* than the paper's and false: with `d = dH = 1` one gets `ξ =
 `D - 1`, while the `(d-1)` factor erases the `ξ` contribution from the bound. `xi_weight_le`,
 `numerator_shape_weight_sharp` and everything above therefore carry `2 ≤ natDegreeY R`.
 
+The hypothesis is load-bearing, not an artefact. A concrete `dY = 1` instance falsifies the
+conclusion of `xi_weight_le`: take `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1` (irreducible,
+degree 1, coprime coefficients). Then `dY = dH = 1`, `W = 1+Z`, `D = 2`, and
+`ξ = W^{dY-2}·ζ = ζ = 1+Z`, whose canonical representative mod `H̃ = Y+1` is itself, so
+`Λ(ξ) = 1`. The claimed bound at `dY = 1` is `(dY-1)(D-dH+1) = 0`.
+
 Consumers must supply this — but **not from Claim 5.7**. An earlier version of this page said the
 conjunct should be added to Claim 5.7's conclusion; that is wrong, and would be unprovable. `R` is
 an arbitrary irreducible factor of `Q` at that point, and `deg_Y R = 1` is precisely the *target* of
@@ -72,7 +78,8 @@ the whole §5 argument: "our goal will be to show that `Q` has a factor of the f
 and in fact `R` is this factor" (start of Appendix A). So `2 ≤ deg_Y R` must be discharged by a case
 split inside §5: in the `deg_Y R = 1` branch `R` already has the desired shape and the Claim A.2
 weight machinery is not needed (there `ζ = ∂R/∂Y` is constant in `Y` and the lift is exact); the
-`≥ 2` branch is the one that consumes Claim A.2.
+`≥ 2` branch is the one that consumes Claim A.2. The obligation is recorded in the docstring of
+`claimA2_hypotheses` in `BCIKS20/ListDecoding/Agreement.lean`, where §5 will meet it.
 
 ### 2. The paper's stated sharp bound needs a correction term
 
