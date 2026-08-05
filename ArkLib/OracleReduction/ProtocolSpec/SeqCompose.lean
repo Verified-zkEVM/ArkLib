@@ -476,18 +476,20 @@ instance lawfulSubSpec_challenge_append_right :
 
 /-- The two inclusions occupy disjoint parts of the appended challenge interface: a left-injected
 round index is `< m` and a right-injected one is `≥ m`. This is what rules out the two components'
-challenge queries aliasing each other after composition. -/
+challenge queries aliasing each other after composition.
+
+Currently unconsumed: recorded because `Verifier.append_soundness` will need it, and because VCV-io
+ships the analogue for `spec₁ + spec₂`. -/
 instance disjointSubSpec_challenge_append_left_right :
     OracleSpec.DisjointSubSpec
-      [pSpec₁.Challenge]ₒ [pSpec₂.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
-  disjoint_onQuery t₁ t₂ h := by
-    have hv := congrArg
-      (fun (d : [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ.Domain) => (d.1.1 : ℕ))
-      (show challengeReindexQuery ChallengeIdx.inl t₁
-          = challengeReindexQuery ChallengeIdx.inr t₂ from h)
-    simp only [ChallengeIdx.inl, ChallengeIdx.inr, Fin.val_castAdd, Fin.val_natAdd] at hv
-    have := t₁.1.1.isLt
-    omega
+      [pSpec₁.Challenge]ₒ [pSpec₂.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+  disjointSubSpecOfChallengeReindex _ (challenge_append_inl (pSpec₂ := pSpec₂))
+    _ (challenge_append_inr (pSpec₁ := pSpec₁)) <| by
+      intro i i' h
+      have hv := congrArg (fun (j : ChallengeIdx (pSpec₁ ++ₚ pSpec₂)) => (j.1 : ℕ)) h
+      simp only [ChallengeIdx.inl, ChallengeIdx.inr, Fin.val_castAdd, Fin.val_natAdd] at hv
+      have := i.1.isLt
+      omega
 
 /-- `disjointSubSpec_challenge_append_left_right` with the two components swapped, matching
 VCV-io's pairing of `disjointSubSpec_add_left_right` / `disjointSubSpec_add_right_left`. -/
@@ -496,6 +498,43 @@ instance disjointSubSpec_challenge_append_right_left :
       [pSpec₂.Challenge]ₒ [pSpec₁.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
   disjoint_onQuery t₂ t₁ h :=
     (disjointSubSpec_challenge_append_left_right.disjoint_onQuery t₁ t₂ h.symm)
+
+/-! The two lemmas below are the regression anchors for the inclusions above. Nothing in the
+`SubSpec` / `LawfulSubSpec` / `DisjointSubSpec` interface pins down the response transport — any
+fibrewise automorphism composed with the cast satisfies all three — so these `rfl`-level
+computations are what actually fix the semantics, and what would break if `ChallengeIdx.inl` /
+`ChallengeIdx.inr`, `ProtocolSpec.append` or the transport lemmas were changed underneath.
+They also give downstream proofs (notably `Prover.append_run`) a rewrite target, in the same spirit
+as VCV-io's `liftM_add_left_query` / `liftM_add_right_query`. -/
+
+/-- Lifting a left-component challenge query queries the appended protocol at the left-injected
+index and transports the response back along `challenge_append_inl`. -/
+@[simp] theorem liftM_challenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (liftM (OracleSpec.query (spec := [pSpec₁.Challenge]ₒ) ⟨i, ()⟩) :
+        OracleQuery [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₁.Challenge i))
+      = ⟨⟨ChallengeIdx.inl i, ()⟩, cast (challenge_append_inl (pSpec₂ := pSpec₂) i)⟩ := rfl
+
+/-- Lifting a right-component challenge query queries the appended protocol at the right-injected
+index and transports the response back along `challenge_append_inr`. -/
+@[simp] theorem liftM_challenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (liftM (OracleSpec.query (spec := [pSpec₂.Challenge]ₒ) ⟨i, ()⟩) :
+        OracleQuery [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))
+      = ⟨⟨ChallengeIdx.inr i, ()⟩, cast (challenge_append_inr (pSpec₁ := pSpec₁) i)⟩ := rfl
+
+/-- `getChallenge`-level form of `liftM_challenge_append_inl`: the shape that appears when a
+left-component prover's run is lifted into the appended protocol. -/
+@[simp] theorem liftM_getChallenge_append_inl (i : ChallengeIdx pSpec₁) :
+    (liftM (pSpec₁.getChallenge i) :
+        OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₁.Challenge i))
+      = cast (challenge_append_inl (pSpec₂ := pSpec₂) i) <$>
+          (pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inl i) := rfl
+
+/-- `getChallenge`-level form of `liftM_challenge_append_inr`. -/
+@[simp] theorem liftM_getChallenge_append_inr (i : ChallengeIdx pSpec₂) :
+    (liftM (pSpec₂.getChallenge i) :
+        OracleComp [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ (pSpec₂.Challenge i))
+      = cast (challenge_append_inr (pSpec₁ := pSpec₁) i) <$>
+          (pSpec₁ ++ₚ pSpec₂).getChallenge (ChallengeIdx.inr i) := rfl
 
 end Append
 
