@@ -70,7 +70,6 @@ If a paper is cited in Lean as `[KEY]`, the preferred landing page for it is:
 ## Content Types
 
 - [`index.md`](index.md) - content-oriented KB index.
-- [`log.md`](log.md) - append-only chronology of KB changes and ingests.
 - [`papers/`](papers/README.md) - canonical paper pages for cited or active BibTeX keys.
 - [`concepts/`](concepts/README.md) - cross-paper topic pages.
 - [`audits/`](audits/README.md) - source-to-ArkLib comparison artifacts.
@@ -134,7 +133,6 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 
 1. Update the paper page if ArkLib's interpretation, scope, or touchpoints changed.
 2. If the change is theorem-by-theorem or gap-analysis heavy, add or update an audit page.
-3. Append a short entry to [`log.md`](log.md) if the KB changed in a durable way.
 
 ### I want review context for a PR
 
@@ -149,8 +147,7 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 2. Add or update `docs/kb/papers/KEY.md` only if the PR carries real ArkLib-specific context.
 3. Leave stub-only paper pages, source metadata, and `_generated` index changes to the
    main-branch KB workflow's generated-files PR.
-4. Update [`index.md`](index.md) and append to [`log.md`](log.md) when the KB content itself
-   changes.
+4. Update [`index.md`](index.md) when the KB content itself changes.
 
 ### Minimal update checklist
 
@@ -162,7 +159,6 @@ Better, when practical:
 
 - add a non-stub paper page to [`papers/`](papers/)
 - add the new page to [`index.md`](index.md)
-- append a short entry to [`log.md`](log.md)
 - replace any stub text with an ArkLib-specific summary before merge
 
 ### Investigate a paper-driven PR
