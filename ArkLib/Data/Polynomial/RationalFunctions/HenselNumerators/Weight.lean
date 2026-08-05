@@ -46,43 +46,6 @@ section
 variable {F : Type} [CommRing F] [IsDomain F]
 
 omit [IsDomain F] in
-/-- `Λ` is subadditive under multiplication of bivariate polynomials (bound form). -/
-lemma weight_mul_le' {f g H : F[X][Y]} {D bf bg : ℕ}
-    (hf : weight f H D ≤ (WithBot.some bf : WithBot ℕ))
-    (hg : weight g H D ≤ (WithBot.some bg : WithBot ℕ)) :
-    weight (f * g) H D ≤ (WithBot.some (bf + bg) : WithBot ℕ) := by
-  classical
-  rw [weight_le_iff]
-  rw [weight_le_iff] at hf hg
-  intro n hn
-  set m := D + 1 - Bivariate.natDegreeY H with hm
-  have hcoeff_ne : (f * g).coeff n ≠ 0 := Polynomial.mem_support_iff.mp hn
-  have hexists : ∃ x ∈ Finset.antidiagonal n, f.coeff x.1 * g.coeff x.2 ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact hcoeff_ne (by rw [Polynomial.coeff_mul]; exact Finset.sum_eq_zero h)
-  obtain ⟨x0, hx0mem, hx0ne⟩ := hexists
-  have hx0sum : x0.1 + x0.2 = n := Finset.mem_antidiagonal.mp hx0mem
-  have hfb0 := hf x0.1 (Polynomial.mem_support_iff.mpr (left_ne_zero_of_mul hx0ne))
-  have hgb0 := hg x0.2 (Polynomial.mem_support_iff.mpr (right_ne_zero_of_mul hx0ne))
-  have hnm_le : n * m ≤ bf + bg := by
-    have : n * m = x0.1 * m + x0.2 * m := by rw [← hx0sum, Nat.add_mul]
-    omega
-  have hdeg : ((f * g).coeff n).natDegree ≤ bf + bg - n * m := by
-    rw [Polynomial.coeff_mul]
-    refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
-    intro x hx
-    have hxsum : x.1 + x.2 = n := Finset.mem_antidiagonal.mp hx
-    by_cases hxz : f.coeff x.1 * g.coeff x.2 = 0
-    · simp [hxz]
-    · have hfb := hf x.1 (Polynomial.mem_support_iff.mpr (left_ne_zero_of_mul hxz))
-      have hgb := hg x.2 (Polynomial.mem_support_iff.mpr (right_ne_zero_of_mul hxz))
-      have hprod : (f.coeff x.1 * g.coeff x.2).natDegree ≤
-          (f.coeff x.1).natDegree + (g.coeff x.2).natDegree := Polynomial.natDegree_mul_le
-      have hnm : n * m = x.1 * m + x.2 * m := by rw [← hxsum, Nat.add_mul]
-      omega
-  omega
-
 end
 
 namespace HenselNumerators

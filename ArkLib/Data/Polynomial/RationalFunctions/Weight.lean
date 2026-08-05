@@ -245,6 +245,162 @@ lemma weight_sum_le {ι : Type} (s : Finset ι) (f : ι → F[X][Y]) (H : F[X][Y
       exact (weight_add_le _ _ _ _).trans (max_le_max le_rfl ih)
 
 omit [IsDomain F] in
+/-- `Λ` is subadditive under multiplication of bivariate polynomials (bound form). -/
+lemma weight_mul_le' {f g H : F[X][Y]} {D bf bg : ℕ}
+    (hf : weight f H D ≤ (WithBot.some bf : WithBot ℕ))
+    (hg : weight g H D ≤ (WithBot.some bg : WithBot ℕ)) :
+    weight (f * g) H D ≤ (WithBot.some (bf + bg) : WithBot ℕ) := by
+  classical
+  rw [weight_le_iff]
+  rw [weight_le_iff] at hf hg
+  intro n hn
+  set m := D + 1 - Bivariate.natDegreeY H with hm
+  have hcoeff_ne : (f * g).coeff n ≠ 0 := Polynomial.mem_support_iff.mp hn
+  have hexists : ∃ x ∈ Finset.antidiagonal n, f.coeff x.1 * g.coeff x.2 ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hcoeff_ne (by rw [Polynomial.coeff_mul]; exact Finset.sum_eq_zero h)
+  obtain ⟨x0, hx0mem, hx0ne⟩ := hexists
+  have hx0sum : x0.1 + x0.2 = n := Finset.mem_antidiagonal.mp hx0mem
+  have hfb0 := hf x0.1 (Polynomial.mem_support_iff.mpr (left_ne_zero_of_mul hx0ne))
+  have hgb0 := hg x0.2 (Polynomial.mem_support_iff.mpr (right_ne_zero_of_mul hx0ne))
+  have hnm_le : n * m ≤ bf + bg := by
+    have : n * m = x0.1 * m + x0.2 * m := by rw [← hx0sum, Nat.add_mul]
+    omega
+  have hdeg : ((f * g).coeff n).natDegree ≤ bf + bg - n * m := by
+    rw [Polynomial.coeff_mul]
+    refine Polynomial.natDegree_sum_le_of_forall_le _ _ ?_
+    intro x hx
+    have hxsum : x.1 + x.2 = n := Finset.mem_antidiagonal.mp hx
+    by_cases hxz : f.coeff x.1 * g.coeff x.2 = 0
+    · simp [hxz]
+    · have hfb := hf x.1 (Polynomial.mem_support_iff.mpr (left_ne_zero_of_mul hxz))
+      have hgb := hg x.2 (Polynomial.mem_support_iff.mpr (right_ne_zero_of_mul hxz))
+      have hprod : (f.coeff x.1 * g.coeff x.2).natDegree ≤
+          (f.coeff x.1).natDegree + (g.coeff x.2).natDegree := Polynomial.natDegree_mul_le
+      have hnm : n * m = x.1 * m + x.2 * m := by rw [← hxsum, Nat.add_mul]
+      omega
+  omega
+
+omit [IsDomain F] in
+/-- The largest index attaining the maximal weight of a nonzero `f`, together with that maximum.
+Used to prove full additivity: the *largest* maximizer is what prevents the top-weight parts of two
+factors from cancelling. -/
+private lemma exists_top_weight_index {f : F[X][Y]} (H : F[X][Y]) (D : ℕ) (hf : f ≠ 0) :
+    ∃ N b : ℕ, weight f H D = (WithBot.some b : WithBot ℕ) ∧ f.coeff N ≠ 0 ∧
+      N * (D + 1 - Bivariate.natDegreeY H) + (f.coeff N).natDegree = b ∧
+      ∀ m, f.coeff m ≠ 0 → N < m →
+        m * (D + 1 - Bivariate.natDegreeY H) + (f.coeff m).natDegree < b := by
+  classical
+  set u := D + 1 - Bivariate.natDegreeY H with hu
+  have hne : f.support.Nonempty := Polynomial.support_nonempty.mpr hf
+  obtain ⟨n₀, hn₀mem, hn₀⟩ := Finset.exists_mem_eq_sup f.support hne
+    (fun d => (WithBot.some (d * u + (f.coeff d).natDegree) : WithBot ℕ))
+  set b := n₀ * u + (f.coeff n₀).natDegree with hb
+  have hw : weight f H D = (WithBot.some b : WithBot ℕ) := hn₀
+  have hall : ∀ m ∈ f.support, m * u + (f.coeff m).natDegree ≤ b :=
+    weight_le_iff.mp (le_of_eq hw)
+  set S := f.support.filter (fun m => m * u + (f.coeff m).natDegree = b) with hS
+  have hSne : S.Nonempty := ⟨n₀, Finset.mem_filter.mpr ⟨hn₀mem, rfl⟩⟩
+  refine ⟨S.max' hSne, b, hw, ?_, ?_, ?_⟩
+  · exact Polynomial.mem_support_iff.mp (Finset.mem_filter.mp (S.max'_mem hSne)).1
+  · exact (Finset.mem_filter.mp (S.max'_mem hSne)).2
+  · intro m hm hlt
+    have hmem : m ∈ f.support := Polynomial.mem_support_iff.mpr hm
+    have hle := hall m hmem
+    rcases Nat.lt_or_ge (m * u + (f.coeff m).natDegree) b with h | h
+    · exact h
+    · exact absurd (S.le_max' m (Finset.mem_filter.mpr ⟨hmem, by omega⟩)) (by omega)
+
+/-- **`Λ` is fully additive** on `F[Z][T]`: `Λ(f · g) = Λ(f) + Λ(g)` ([BCIKS20] A.2, "Note that `Λ`
+is fully additive on `F_q[T, Z]`, i.e. for any `A, B`, `Λ(AB) = Λ(A) + Λ(B)`").
+
+Sub-additivity is `weight_mul_le'`.  The reverse inequality holds because the weight assignment
+grades `F[Z][T]` — each `Λ`-homogeneous piece is spanned by monomials of that weight — so the
+associated graded ring is again a polynomial ring, hence a domain, and the top-weight parts of `f`
+and `g` cannot cancel.  Concretely: at the *largest* maximizing index `N_f` of `f` and `N_g` of `g`,
+the coefficient of `T^{N_f + N_g}` in `f · g` is `f_{N_f} · g_{N_g}` plus terms of strictly smaller
+`Z`-degree, because any other `(i, j)` with `i + j = N_f + N_g` has `i > N_f` or `j > N_g` and
+maximality then costs at least one degree.  So that coefficient has `Z`-degree exactly
+`deg f_{N_f} + deg g_{N_g}`, witnessing `Λ(f) + Λ(g) ≤ Λ(f · g)`. -/
+theorem weight_mul (f g H : F[X][Y]) (D : ℕ) :
+    weight (f * g) H D = weight f H D + weight g H D := by
+  classical
+  rcases eq_or_ne f 0 with rfl | hf
+  · simp
+  rcases eq_or_ne g 0 with rfl | hg
+  · simp
+  obtain ⟨Nf, bf, hwf, hfNe, hfEq, hfMax⟩ := exists_top_weight_index H D hf
+  obtain ⟨Ng, bg, hwg, hgNe, hgEq, hgMax⟩ := exists_top_weight_index H D hg
+  obtain ⟨u, hu⟩ : ∃ u : ℕ, u = D + 1 - Bivariate.natDegreeY H := ⟨_, rfl⟩
+  simp only [← hu] at hfEq hfMax hgEq hgMax
+  rw [hwf, hwg, ← WithBot.coe_add]
+  refine le_antisymm (weight_mul_le' (le_of_eq hwf) (le_of_eq hwg)) ?_
+  have hallf : ∀ m ∈ f.support, m * u + (f.coeff m).natDegree ≤ bf := by
+    simpa only [← hu] using weight_le_iff.mp (le_of_eq hwf)
+  have hallg : ∀ m ∈ g.support, m * u + (g.coeff m).natDegree ≤ bg := by
+    simpa only [← hu] using weight_le_iff.mp (le_of_eq hwg)
+  set df := (f.coeff Nf).natDegree with hdf
+  set dg := (g.coeff Ng).natDegree with hdg
+  have hAne : f.coeff Nf * g.coeff Ng ≠ 0 := mul_ne_zero hfNe hgNe
+  have hAdeg : (f.coeff Nf * g.coeff Ng).degree = ((df + dg : ℕ) : WithBot ℕ) := by
+    rw [Polynomial.degree_eq_natDegree hAne, Polynomial.natDegree_mul hfNe hgNe]
+  -- every other contribution to the `(N_f + N_g)`-th coefficient is of strictly smaller degree
+  have hrest : ∀ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng),
+      (f.coeff x.1 * g.coeff x.2).degree < ((df + dg : ℕ) : WithBot ℕ) := by
+    intro x hx
+    obtain ⟨hxne, hxmem⟩ := Finset.mem_erase.mp hx
+    have hxsum : x.1 + x.2 = Nf + Ng := Finset.mem_antidiagonal.mp hxmem
+    by_cases hz : f.coeff x.1 * g.coeff x.2 = 0
+    · rw [hz, Polynomial.degree_zero]
+      exact WithBot.bot_lt_coe _
+    · have hfx : f.coeff x.1 ≠ 0 := left_ne_zero_of_mul hz
+      have hgx : g.coeff x.2 ≠ 0 := right_ne_zero_of_mul hz
+      have hmul : x.1 * u + x.2 * u = Nf * u + Ng * u := by
+        rw [← Nat.add_mul, ← Nat.add_mul, hxsum]
+      have hstrict : (f.coeff x.1).natDegree + (g.coeff x.2).natDegree < df + dg := by
+        rcases Nat.lt_trichotomy x.1 Nf with h1 | h1 | h1
+        · have h2 : Ng < x.2 := by omega
+          have hgs := hgMax x.2 hgx h2
+          have hfl := hallf x.1 (Polynomial.mem_support_iff.mpr hfx)
+          omega
+        · exact absurd (Prod.ext h1 (by omega)) hxne
+        · have hfs := hfMax x.1 hfx h1
+          have hgl := hallg x.2 (Polynomial.mem_support_iff.mpr hgx)
+          omega
+      rw [Polynomial.degree_eq_natDegree hz, Polynomial.natDegree_mul hfx hgx]
+      exact_mod_cast hstrict
+  have hsplit : (f * g).coeff (Nf + Ng) =
+      f.coeff Nf * g.coeff Ng +
+        ∑ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng), f.coeff x.1 * g.coeff x.2 := by
+    rw [Polynomial.coeff_mul]
+    exact (Finset.add_sum_erase (Finset.antidiagonal (Nf + Ng))
+      (fun x => f.coeff x.1 * g.coeff x.2)
+      (Finset.mem_antidiagonal.mpr (rfl : Nf + Ng = Nf + Ng))).symm
+  have hBdeg : (∑ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng),
+      f.coeff x.1 * g.coeff x.2).degree < ((df + dg : ℕ) : WithBot ℕ) :=
+    lt_of_le_of_lt (Polynomial.degree_sum_le _ _)
+      ((Finset.sup_lt_iff (WithBot.bot_lt_coe _)).mpr hrest)
+  have hlt : (∑ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng),
+      f.coeff x.1 * g.coeff x.2).degree < (f.coeff Nf * g.coeff Ng).degree := by
+    rw [hAdeg]; exact hBdeg
+  have hcoeff_deg : ((f * g).coeff (Nf + Ng)).degree = ((df + dg : ℕ) : WithBot ℕ) := by
+    rw [hsplit, Polynomial.degree_add_eq_left_of_degree_lt hlt, hAdeg]
+  have hcoeff_ne : (f * g).coeff (Nf + Ng) ≠ 0 := by
+    intro h0
+    rw [h0, Polynomial.degree_zero] at hcoeff_deg
+    exact WithBot.bot_ne_coe hcoeff_deg
+  have hnd : ((f * g).coeff (Nf + Ng)).natDegree = df + dg :=
+    Polynomial.natDegree_eq_of_degree_eq_some hcoeff_deg
+  have hbound := le_weight_of_mem_support (f := f * g) (H := H) (D := D)
+    (Polynomial.mem_support_iff.mpr hcoeff_ne)
+  simp only [hnd, ← hu] at hbound
+  have harith : (Nf + Ng) * u + (df + dg) = bf + bg := by
+    have hd : (Nf + Ng) * u = Nf * u + Ng * u := Nat.add_mul _ _ _
+    omega
+  rwa [harith] at hbound
+
+omit [IsDomain F] in
 /-- Bound on the `X`-degree of a coefficient of `H` from a `totalDegree` bound. -/
 lemma natDegree_coeff_le_of_totalDegree_le (f : F[X][Y]) {D : ℕ}
     (hD : Bivariate.totalDegree f ≤ D) (i : ℕ) :

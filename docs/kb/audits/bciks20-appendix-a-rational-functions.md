@@ -37,6 +37,7 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Positive-degree monicity of `monicize` | present | `monicize_monic` | Explicitly requires `0 < H.natDegree`, matching the `modByMonic` API. |
 | Regular ring `𝒪` and function field `𝕃` | infrastructure | `𝒪`, `𝕃`, `functionFieldT`, `embeddingOf𝒪Into𝕃`, `embeddingOf𝒪Into𝕃_injective` | Gives the quotient rings, the function-field `T` variable, and the embedding used by Appendix A. |
 | Canonical representatives in `𝒪` | infrastructure | `canonicalRepOf𝒪`, `mk_canonicalRepOf𝒪`, `canonicalRepOf𝒪_degree_lt`, `canonicalRepOf𝒪_natDegree_lt_H` | The representative API is now explicit about positive `Y`-degree. |
+| A.2 full additivity `Λ(AB) = Λ(A) + Λ(B)` on `F[Z][T]` | present | `weight_mul` (sub-additive form: `weight_mul_le'`) | Needs `IsDomain F`, which is exactly what makes it true. |
 | `Λ`-weight on regular elements | infrastructure | `weight`, `regularWeight`, `RegularWeightLe` (`.mono/.mul/.add/.neg/.pow/.sum/.prod`) | Full calculus, including the `𝕃`-side `RegularWeightLe` certificates used by Claim A.2. |
 | A.2 exact weight of `H̃`: `Λ(H̃) = d(D+1-d)` | present | `weight_monicize` | Upper bound plus the leading monomial `Tᵈ`. |
 | A.2 `Λ(α)` minimal over representatives | present | `regularWeight_le_of_mk_eq`, `regularWeight_mk_le` | Attained at `canonicalRepOf𝒪` by definition. |
@@ -118,7 +119,4 @@ up to `d - dH`; in general only the weaker one holds, and it is the one used her
 1. Weaken the per-summand budget of `henselClearedTerm_weight` and recover the total, or extend `Λ`
    to `𝕃` (finding 2 above), to close the last `sorry`.
 2. Case-split on `deg_Y R` in §5 to discharge `2 ≤ natDegreeY R` (finding 1 above).
-3. `Λ` is proved sub-additive (`weight_mul_le'`); A.2 also states *full* additivity on `F[Z][T]`.
-   That is true — the associated graded ring of the weight filtration is a polynomial ring, hence a
-   domain, so leading forms multiply — but it needs a leading-form development (~150 lines) and has
-   no consumer here, so only the `≤` direction is formalized.
+Nothing else from A.1–A.3 is outstanding; A.2's full additivity is now `weight_mul`.

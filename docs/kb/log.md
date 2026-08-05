@@ -204,3 +204,19 @@ term-by-term it reduces to `D - dH ≤ Λ(W)`, whereas `Λ(W) ≤ D - dH` always
 
 Remaining: the one open boundary summand, the §5 case split, and A.2's full additivity of `Λ` on
 `F[Z][T]` (true, but needs a leading-form development and has no consumer).
+
+## [2026-08-05] prove | Λ is fully additive on F[Z][T] (BCIKS20 A.2)
+
+`weight_mul : weight (f * g) H D = weight f H D + weight g H D`, the equality A.2 asserts ("Note
+that `Λ` is fully additive on `F_q[T, Z]`"). Only sub-additivity (`weight_mul_le'`, now moved from
+the Hensel-specific file into the `Λ`-calculus file where it belongs) had been formalized.
+
+The reverse inequality is the graded-domain argument, made concrete: at the *largest* index `N_f`
+attaining `Λ(f)` and likewise `N_g`, every other `(i, j)` with `i + j = N_f + N_g` has `i > N_f` or
+`j > N_g`, and maximality then costs at least one degree — so in `(f·g)`'s coefficient at
+`N_f + N_g` the product of the two top coefficients survives with `Z`-degree exactly
+`deg f_{N_f} + deg g_{N_g}`, which witnesses `Λ(f) + Λ(g) ≤ Λ(f·g)`. `IsDomain F` is needed and is
+exactly what makes the statement true.
+
+Appendix A.1–A.3 now has no outstanding items; the only gap left in Appendix A is the one open
+boundary summand of the Claim A.2 weight induction.
