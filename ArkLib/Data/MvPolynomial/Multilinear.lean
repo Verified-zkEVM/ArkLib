@@ -241,7 +241,8 @@ Evaluations on a coordinate-wise *star* — a center point plus, for each coordi
 differing from it in that coordinate alone — do not pin down a multilinear polynomial, however many
 points each arm carries, in contrast with `MLE_eq_zero_iff` above. Identity testing therefore needs
 a genuine grid of points, such as the leaves of a nested evaluation tree
-(`EvaluationTree.eq_zero_of_vanishes_comp` in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`).
+(`NestedEvaluationTree.eq_zero_of_vanishes_comp` in
+`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`).
 -/
 
 /-- A checked counterexample to the uniform-vector argument in Hachi [NOZ26, Lemma 10]. For any

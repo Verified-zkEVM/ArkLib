@@ -9,15 +9,16 @@ import Mathlib.Algebra.Polynomial.Roots
 /-!
   # Nested evaluation trees and their polynomial zero test
 
-  A `EvaluationTree F k n` is a complete `k`-ary tree of depth `n` whose nodes carry `k` scalar
-  labels from `F`.  Labels below a node may depend on the path taken to that node, so these are
-  genuine *nested* trees rather than Cartesian grids or coordinate-wise stars.  They are the shape
-  of a transcript tree for `n` consecutive verifier rounds each drawing one scalar challenge with
-  soundness parameter `k`.
+  A `NestedEvaluationTree F k n` is a complete `k`-ary tree of depth `n` whose nodes carry `k`
+  scalar labels from `F`.  Labels below a node may depend on the path taken to that node, so these
+  are genuine *nested* trees rather than Cartesian grids or coordinate-wise stars.  They are the
+  shape of a transcript tree for `n` consecutive verifier rounds each drawing one scalar challenge
+  with soundness parameter `k`.
 
-  The main result is `EvaluationTree.eq_zero_of_vanishes_comp`: if a polynomial whose individual
-  degrees are all `< k` vanishes at every leaf of such a tree — read through *any* window of `r`
-  consecutive tree levels — then the polynomial is zero.  The window formulation is what lets one
+  The main result is `NestedEvaluationTree.eq_zero_of_vanishes_comp`: if a polynomial whose
+  individual degrees are all `< k` vanishes at every leaf of such a tree — read through *any* window
+  of `r` consecutive tree levels — then the polynomial is zero.  The window formulation is what lets
+  one
   tree certify several polynomials in disjoint variable blocks: the first `r` levels certify one,
   the last `r` levels certify another, and no tree projection or depth arithmetic is needed at the
   call site.
@@ -31,7 +32,7 @@ import Mathlib.Algebra.Polynomial.Roots
   differing from it in that coordinate alone — does **not** force a multilinear polynomial to
   vanish, however many points each arm carries: see
   `MvPolynomial.exists_nonzero_vanishing_on_axis_cross`. The complete tree supplies `k ^ n`
-  points (`EvaluationTree.numLeaves_eq_pow`) and, unlike a star, supports the interpolation
+  points (`NestedEvaluationTree.numLeaves_eq_pow`) and, unlike a star, supports the interpolation
   induction below.
 
   ## Relation to the Cartesian-grid zero test
@@ -51,19 +52,19 @@ import Mathlib.Algebra.Polynomial.Roots
 
 Each node stores its `k` scalar challenge labels and the corresponding subtrees.  Since every child
 stores its own later labels, challenges at later levels may depend on the earlier path. -/
-inductive EvaluationTree (F : Type*) (k : ℕ) : (n : ℕ) → Type _ where
+inductive NestedEvaluationTree (F : Type*) (k : ℕ) : (n : ℕ) → Type _ where
   /-- The unique shape at depth zero. -/
-  | leaf : EvaluationTree F k 0
+  | leaf : NestedEvaluationTree F k 0
   /-- A `k`-ary challenge node followed by one subtree for each challenge. -/
   | node {n : ℕ} (challenges : Fin k → F)
-      (children : Fin k → EvaluationTree F k n) : EvaluationTree F k (n + 1)
+      (children : Fin k → NestedEvaluationTree F k n) : NestedEvaluationTree F k (n + 1)
 
-namespace EvaluationTree
+namespace NestedEvaluationTree
 
 variable {F : Type*} {k m n r : ℕ}
 
 /-- The sibling challenge labels at every node of the tree are pairwise distinct. -/
-def IsDistinct : {n : ℕ} → EvaluationTree F k n → Prop
+def IsDistinct : {n : ℕ} → NestedEvaluationTree F k n → Prop
   | 0, .leaf => True
   | _ + 1, .node challenges children =>
       Function.Injective challenges ∧ ∀ j, IsDistinct (children j)
@@ -73,7 +74,7 @@ def IsDistinct : {n : ℕ} → EvaluationTree F k n → Prop
 At a node, the selected challenge is prepended to the point assembled by the child.  This
 recursive formulation keeps the path dependence explicit and avoids replacing the tree by a
 Cartesian product. -/
-def Vanishes [Zero F] : {n : ℕ} → EvaluationTree F k n → ((Fin n → F) → F) → Prop
+def Vanishes [Zero F] : {n : ℕ} → NestedEvaluationTree F k n → ((Fin n → F) → F) → Prop
   | 0, .leaf, evalAt => evalAt (fun i => i.elim0) = 0
   | _ + 1, .node challenges children, evalAt =>
       ∀ j, Vanishes (children j) (fun x => evalAt (Fin.cons (challenges j) x))
@@ -87,13 +88,13 @@ the window formulation of `eq_zero_of_vanishes_comp` is what removes the depth a
 would otherwise arise from projecting a tree onto a prefix or a suffix. -/
 
 @[simp]
-theorem isDistinct_cast {m : ℕ} (h : n = m) (tree : EvaluationTree F k n) :
+theorem isDistinct_cast {m : ℕ} (h : n = m) (tree : NestedEvaluationTree F k n) :
     (h ▸ tree).IsDistinct ↔ tree.IsDistinct := by
   subst h
   rfl
 
 @[simp]
-theorem vanishes_cast [Zero F] {m : ℕ} (h : n = m) (tree : EvaluationTree F k n)
+theorem vanishes_cast [Zero F] {m : ℕ} (h : n = m) (tree : NestedEvaluationTree F k n)
     (evalAt : (Fin m → F) → F) :
     (h ▸ tree).Vanishes evalAt ↔
       tree.Vanishes (fun x => evalAt fun i => x (Fin.cast h.symm i)) := by
@@ -102,14 +103,14 @@ theorem vanishes_cast [Zero F] {m : ℕ} (h : n = m) (tree : EvaluationTree F k 
 
 /-- The number of leaves of an evaluation tree, i.e. the number of transcripts an extractor
 consuming it must be handed. -/
-def numLeaves : {n : ℕ} → EvaluationTree F k n → ℕ
+def numLeaves : {n : ℕ} → NestedEvaluationTree F k n → ℕ
   | 0, .leaf => 1
   | _ + 1, .node _ children => ∑ j, numLeaves (children j)
 
 /-- A complete `k`-ary tree of depth `n` has exactly `k ^ n` leaves.  Together with the arity pins
 of a concrete protocol this is what bounds the size of the transcript tree its extractor
 consumes. -/
-theorem numLeaves_eq_pow (tree : EvaluationTree F k n) : tree.numLeaves = k ^ n := by
+theorem numLeaves_eq_pow (tree : NestedEvaluationTree F k n) : tree.numLeaves = k ^ n := by
   induction tree with
   | leaf => simp [numLeaves]
   | node challenges children ih =>
@@ -143,7 +144,7 @@ all `k` restricted polynomials zero; the `k` distinct sibling labels are then `k
 degree `< k` in that variable, which is
 `MvPolynomial.eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero` (shared with the Cartesian-grid
 zero test).  At a level outside the window the proof simply descends into one child. -/
-theorem eq_zero_of_vanishes_comp (hk : 0 < k) {n : ℕ} (tree : EvaluationTree F k n)
+theorem eq_zero_of_vanishes_comp (hk : 0 < k) {n : ℕ} (tree : NestedEvaluationTree F k n)
     {m r : ℕ} (p : MvPolynomial (Fin r) F) (f : Fin r → Fin n)
     (hf : ∀ i, (f i).val = m + i.val) (hDegree : ∀ i, p.degreeOf i < k)
     (hDistinct : tree.IsDistinct)
@@ -233,7 +234,7 @@ theorem eq_zero_of_vanishes_comp (hk : 0 < k) {n : ℕ} (tree : EvaluationTree F
 /-- The zero test in the common case where the polynomial reads the *first* `r` levels of the
 tree. -/
 theorem eq_zero_of_vanishes_castAdd (hk : 0 < k) {r s : ℕ}
-    (tree : EvaluationTree F k (r + s)) (p : MvPolynomial (Fin r) F)
+    (tree : NestedEvaluationTree F k (r + s)) (p : MvPolynomial (Fin r) F)
     (hDegree : ∀ i, p.degreeOf i < k) (hDistinct : tree.IsDistinct)
     (hVanishes : tree.Vanishes fun x => MvPolynomial.eval (x ∘ Fin.castAdd s) p) : p = 0 :=
   eq_zero_of_vanishes_comp hk tree p (Fin.castAdd s) (fun i => (Nat.zero_add i.val).symm)
@@ -242,11 +243,11 @@ theorem eq_zero_of_vanishes_castAdd (hk : 0 < k) {r s : ℕ}
 /-- The zero test in the common case where the polynomial reads the *last* `r` levels of the
 tree. -/
 theorem eq_zero_of_vanishes_natAdd (hk : 0 < k) {m r : ℕ}
-    (tree : EvaluationTree F k (m + r)) (p : MvPolynomial (Fin r) F)
+    (tree : NestedEvaluationTree F k (m + r)) (p : MvPolynomial (Fin r) F)
     (hDegree : ∀ i, p.degreeOf i < k) (hDistinct : tree.IsDistinct)
     (hVanishes : tree.Vanishes fun x => MvPolynomial.eval (x ∘ Fin.natAdd m) p) : p = 0 :=
   eq_zero_of_vanishes_comp hk tree p (Fin.natAdd m) (fun _ => rfl) hDegree hDistinct hVanishes
 
 end ZeroTest
 
-end EvaluationTree
+end NestedEvaluationTree

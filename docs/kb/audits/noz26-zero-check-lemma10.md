@@ -59,8 +59,8 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Eq. (22) contraction ↔ row defect | `ZeroCheck.alphaDefect_wTable`, `hAlphaEvals_eq_alphaDefect`, `hAlpha_eq_zero_iff_alphaDefect` | proven, **axiom-clean** | §4.3's "represent the constraints by polynomials" step: the only place the table encoding of the witness (commitment/sumcheck side) meets the ring encoding (`relLift` side). Arity pins `hd : 0 < deg φ` and `(μ+n)·deg φ ≤ 2^{m₀}`; the `Rq` column bound is `CyclotomicModulus.natDegree_lt_of_reduced`. |
 | Figure-5 point checks | `ZeroCheck.relNestedZeroCheck` / `relNestedZeroCheckE` | deliberately repaired | Points are assembled directly from `m₀ + m₁` scalar challenge rounds; evaluation uses `CMlPolynomialEval.eval` directly; escape-threaded (`Set.withEscape K.esc`). |
 | Axis-cross counterexample | `MvPolynomial.exists_nonzero_vanishing_on_axis_cross` | proven | Refutes the identity-testing step for the *prose* reading of Lemma 10 (a star of scalar coordinates). |
-| Nested zero-test kernel | `EvaluationTree.eq_zero_of_vanishes_comp` (computable view `CMlPolynomialEval.eq_zero_of_polynomialVanishes_comp`/`_castAdd`/`_natAdd`; Hachi wrappers `hZero_eq_zero_of_evaluationTree`, `hAlpha_eq_zero_of_evaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete `k`-ary tree with vanishing leaves forces a polynomial of individual degree `< k` to be zero, *read through a window of consecutive levels*. Mathlib-level statement in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`, computable view in `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`. Stated for general `k` (not just the multilinear `k = 2`), but with **one arity for every level**: a uniformly wider tree can certify a multilinear polynomial, whereas mixing a `k = 2` round with Lemma 9's `2d` or Lemma 11's `deg H + 1` would need per-level arity. |
-| Transcript-tree size | `EvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family repair (e.g. the superseded Kronecker one at `D = 2 ^ m₀`) satisfies `coordinateWiseSpecialSound` just as well. But (i) these count the *adapter's* `EvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
+| Nested zero-test kernel | `NestedEvaluationTree.eq_zero_of_vanishes_comp` (computable view `CMlPolynomialEval.eq_zero_of_polynomialVanishes_comp`/`_castAdd`/`_natAdd`; Hachi wrappers `hZero_eq_zero_of_evaluationTree`, `hAlpha_eq_zero_of_evaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete `k`-ary tree with vanishing leaves forces a polynomial of individual degree `< k` to be zero, *read through a window of consecutive levels*. Mathlib-level statement in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`, computable view in `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`. Stated for general `k` (not just the multilinear `k = 2`), but with **one arity for every level**: a uniformly wider tree can certify a multilinear polynomial, whereas mixing a `k = 2` round with Lemma 9's `2d` or Lemma 11's `deg H + 1` would need per-level arity. |
+| Transcript-tree size | `NestedEvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family repair (e.g. the superseded Kronecker one at `D = 2 ^ m₀`) satisfies `coordinateWiseSpecialSound` just as well. But (i) these count the *adapter's* `NestedEvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.buildNestedWitnessE`, `buildNestedWitnessE_mem_relBatchedE` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
 | Lemma-10 binding alternative | `LiftCom.escOfCollision` via `K.collision_mem` | integrated | Two openings of the shared `t` with distinct tables become an escape `e ∈ K.esc` (Hachi weak binding, Lemma 7's `sⱼ ≠ s'ⱼ`); no norm hypothesis, the admissibility rides in `LiftCom.Opening`. |
 | Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSound` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
@@ -166,7 +166,7 @@ ArkLib's repair samples each coordinate of `τ₀` and `τα` in its own scalar 
 (`m₀ + m₁` consecutive verifier rounds, soundness parameter `k = 2` per round). A coordinate-wise
 family of accepting transcripts is then a complete, path-dependent binary evaluation tree with
 sibling-distinct labels, and a multilinear polynomial vanishing at every leaf of such a tree is
-identically zero (`EvaluationTree.eq_zero_of_vanishes_comp`,
+identically zero (`NestedEvaluationTree.eq_zero_of_vanishes_comp`,
 `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`). Per coordinate the challenge distribution
 stays uniform.
 
@@ -193,7 +193,7 @@ mathematical necessity, is why the pSpec has `m₀ + m₁` rounds.
 ### What the repair costs
 
 The branching arity per round is only `2`, but there are `m₀ + m₁` challenge rounds instead of
-one, so the transcript tree has `2 ^ (m₀ + m₁)` leaves — `EvaluationTree.numLeaves_eq_pow` /
+one, so the transcript tree has `2 ^ (m₀ + m₁)` leaves — `NestedEvaluationTree.numLeaves_eq_pow` /
 `nestedZeroCheck_numLeaves`. Since `hμn` pins `2^{m₀} ≥ (μ + n)·deg φ` and `hn` pins
 `2^{m₁} ≥ n`, with `m₀`, `m₁` chosen minimally that is `< 4·(μ + n)·d·n` transcripts
 (`nestedZeroCheck_numLeaves_lt`) — polynomial in the witness dimensions, so extraction stays
@@ -301,7 +301,7 @@ were proposed there, both of which leave Figure 5's protocol unchanged:
 
 **Route 2 is what this formalization now implements.** Both caveats attached to it at the time have
 been discharged: the required multivariate root-counting lemma *is* now in the tree —
-`EvaluationTree.eq_zero_of_vanishes_comp`, an induction on a path-dependent `k`-ary tree rather
+`NestedEvaluationTree.eq_zero_of_vanishes_comp`, an induction on a path-dependent `k`-ary tree rather
 than on a Cartesian grid — and the relevant per-coordinate degree is indeed `1`, so the
 per-coordinate parameter is `k = 2` (both `H₀` and `H_α` are multilinear *in the challenge*; the
 `2b − 1` and `2` appearing in the paper are witness-side sumcheck degrees). The error stays at
@@ -422,7 +422,7 @@ discharged over the family by the binary-evaluation-tree zero test
   Consequently `nestedZeroCheck_coordinateWiseSpecialSound` is **axiom-clean**: `#print axioms`
   reports no `sorryAx` (only ambient `propext`/`Classical.choice`/`Quot.sound`; the
   `Classical.choice` is the constructivity caveat below, from `buildNestedWitnessE`'s branch
-  selection). The standalone kernel `EvaluationTree.eq_zero_of_vanishes_comp` is likewise
+  selection). The standalone kernel `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise
   axiom-clean.
   **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is now proven** (`hZero_eq_zero_imp_liftShort`,
   see Link 5) — no longer an F5 gap. **Still F5 (out of Lemma-10 scope):** the two sum identities

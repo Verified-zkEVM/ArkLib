@@ -234,10 +234,10 @@ variable [CommRing R]
 `p = 0`.
 
 This is the inductive step shared by the two multivariate zero tests over a domain: the
-Cartesian-grid one (`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`, taking `T = S 0`) and the
-path-dependent nested-tree one (`EvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to be the
-sibling labels of the head node). They differ only in how `hT` is produced — from a product set in
-the first case, from `k` subtrees in the second. -/
+Cartesian-grid one (`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`, taking `T = S 0`) and
+the path-dependent nested-tree one (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to
+be the sibling labels of the head node). They differ only in how `hT` is produced — from a product
+set in the first case, from `k` subtrees in the second. -/
 theorem eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero [IsDomain R] {n : ℕ}
     {p : MvPolynomial (Fin (n + 1)) R} (T : Finset R) (hDegree : p.degreeOf 0 < T.card)
     (hT : ∀ x ∈ T, Polynomial.eval (C x) (finSuccEquiv R n p) = 0) : p = 0 := by

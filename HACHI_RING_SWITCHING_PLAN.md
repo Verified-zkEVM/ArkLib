@@ -587,7 +587,7 @@ set F6's interpolation parameter to `D := max(2^m₀,2^m_α)`; require `D ≤ |F
 > **Superseded (5 August 2026).** This milestone is **not** what was built, and the Lean lemmas it
 > plans below no longer exist. The formalization draws each of the `m₀ + m₁` coordinates in its own
 > two-child scalar round and extracts with the nested-tree zero test
-> (`EvaluationTree.eq_zero_of_vanishes_comp`); the one-round Kronecker rendering was rejected
+> (`NestedEvaluationTree.eq_zero_of_vanishes_comp`); the one-round Kronecker rendering was rejected
 > because `k = D = 2^{m₀}` makes the branching factor exponential. `powAlgHom` and its degree bound
 > survive in `LinearMvExtension.lean` (they predate this plan and serve Reed–Solomon), but the
 > Kronecker-specific lemmas — injectivity on the multilinear subtype, curve-evaluation

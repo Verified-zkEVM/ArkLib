@@ -81,7 +81,7 @@ Ring-switching layer:
   polynomials: a coordinate-wise star supplies only an axis cross, which does not determine the
   polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) draws each of the `m₀ + m₁`
   coordinates in its own two-child scalar round and extracts with the nested-tree zero test
-  (`EvaluationTree.eq_zero_of_vanishes_comp`), whose leaves form a genuine `2^(m₀+m₁)`-point grid
+  (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), whose leaves form a genuine `2^(m₀+m₁)`-point grid
   rather than a star. (An earlier rendering restricted the two evaluation points to Kronecker
   curves at `D = max(2, 2^{m₀}, 2^{mα})`; it was superseded — its branching factor is exponential —
   and is no longer formalized.) The

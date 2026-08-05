@@ -64,7 +64,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
      weak-binding escape `K.escOfCollision` (`K.collision_mem`, Hachi Remark 2 / Lemma 7).
   3. All branches carry openings of one table `w̃`: `H₀` is read through the first `m₀` levels of
      the *one* evaluation tree and `Hα` through its last `m₁` levels
-     (`EvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
+     (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
      membership in `relBatchedE` via `.inl`.
 
   **This is weaker than Lemma 10, which claims an efficient deterministic algorithm.**
@@ -131,9 +131,10 @@ one coordinate and soundness parameter two, hence exactly two pairwise-distinct 
 repair from one whose family is exponential in the witness length. The two facts below record the
 size, but note what they do and do not establish.
 
-* `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `EvaluationTree`. The quantity
-  the extractor actually consumes is the number of `ChallengeTree.LeafPath`s of the structured
-  transcript tree; that the two agree is evident from the adapter but is **not formalized**.
+* `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `NestedEvaluationTree`. The
+quantity the extractor actually consumes is the number of `ChallengeTree.LeafPath`s of the
+structured transcript tree; that the two agree is evident from the adapter but is **not
+formalized**.
 * `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals. Minimality of `m₀`, `m₁` enters as its
   hypotheses and is **not enforced** anywhere in this development: `hμn` and `hn` bound the arities
   from below only, so an instantiation with oversized `m₀` satisfies every theorem here while
@@ -155,7 +156,7 @@ connected to a knowledge-error statement. -/
 /-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
 rounds, two pairwise-distinct children each. -/
 theorem nestedZeroCheck_numLeaves {F : Type} {m₀ m₁ : ℕ}
-    (tree : EvaluationTree F 2 (m₀ + m₁)) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
+    (tree : NestedEvaluationTree F 2 (m₀ + m₁)) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
   tree.numLeaves_eq_pow
 
 /-- With the two arities chosen *minimally* for their pins — `2 ^ m₀ < 2 * A` for
@@ -173,8 +174,8 @@ binary evaluation tree.
 
 The two depth equations below are the only arithmetic in this file: ArkLib's `ChallengeTree` is
 indexed by the *current round*, so an adapter must convert "rounds remaining" into a depth. The
-zero test itself needs no depth arithmetic — `EvaluationTree.eq_zero_of_vanishes_comp` reads each
-polynomial through a window of levels instead of projecting the tree. -/
+zero test itself needs no depth arithmetic — `NestedEvaluationTree.eq_zero_of_vanishes_comp` reads
+each polynomial through a window of levels instead of projecting the tree. -/
 theorem nestedRemainingDepth_last (r : ℕ) : r - (Fin.last r).val = 0 := by
   simp only [Fin.val_last, Nat.sub_self]
 
@@ -187,8 +188,9 @@ def nestedTreeToEvaluationTree (F : Type) (r : ℕ) :
     {i : Fin (r + 1)} →
       ChallengeTree (pSpecNestedScalar F r)
         (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i →
-        EvaluationTree F 2 (r - i.val)
-  | _, .leaf => (nestedRemainingDepth_last r).symm ▸ (EvaluationTree.leaf : EvaluationTree F 2 0)
+        NestedEvaluationTree F 2 (r - i.val)
+  | _, .leaf =>
+      (nestedRemainingDepth_last r).symm ▸ (NestedEvaluationTree.leaf : NestedEvaluationTree F 2 0)
   | _, .msgNode _ h _ _ => nomatch h
   | _, .chalNode m _ challenges children =>
       (nestedRemainingDepth_succ m).symm ▸
@@ -235,16 +237,16 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
         evalAt (nestedTranscriptSuffix i (path.transcript pre)) = 0) →
       (nestedTreeToEvaluationTree F r tree).Vanishes evalAt
   | _, .leaf, pre, evalAt, h => by
-      simp only [nestedTreeToEvaluationTree, EvaluationTree.vanishes_cast,
-        EvaluationTree.Vanishes]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast,
+        NestedEvaluationTree.Vanishes]
       convert h .leaf using 1
       congr 1
       funext i
       exact (Fin.cast (nestedRemainingDepth_last r) i).elim0
   | _, .msgNode _ h _ _, _, _, _ => nomatch h
   | _, .chalNode m hm challenges children, pre, evalAt, h => by
-      simp only [nestedTreeToEvaluationTree, EvaluationTree.vanishes_cast,
-        EvaluationTree.Vanishes]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast,
+        NestedEvaluationTree.Vanishes]
       intro j
       apply nestedTreeToEvaluationTree_vanishes (children j) (pre.concat (challenges j))
       intro path
@@ -305,12 +307,12 @@ theorem nestedTreeToEvaluationTree_isDistinct (F : Type) (r : ℕ) :
         (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).toShape →
       (nestedTreeToEvaluationTree F r tree).IsDistinct
   | _, .leaf, _ => by
-      simp only [nestedTreeToEvaluationTree, EvaluationTree.isDistinct_cast]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast]
       trivial
   | _, .msgNode _ h _ _, _ => nomatch h
   | _, .chalNode _ _ challenges children, h => by
-      simp only [nestedTreeToEvaluationTree, EvaluationTree.isDistinct_cast,
-        EvaluationTree.IsDistinct]
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast,
+        NestedEvaluationTree.IsDistinct]
       have hFamily : IsSpecialSoundFamily 1 2
           (fun j => (Equiv.funUnique (Fin 1) F).symm (challenges j)) := h.1
       have hVectors := (isSpecialSoundFamily_one_iff_injective _).mp hFamily
@@ -467,9 +469,7 @@ theorem collideOrPass_mem_relBatchedE (K : LiftCom Φ μ n E) (φF : ZMod q →+
   · exact hesc_a ea rfl
   · exact hesc_a ea rfl
 
--- The batching polynomials carried by the tree windows require the cyclotomic instances;
--- Lean's unused-section-variable analysis does not see those instance-synthesis dependencies.
-set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- Correctness core of the nested-tree witness assembler.
 
 The transcript-tree adapter supplies a **single** evaluation tree of depth `m₀ + m₁`. In the
@@ -481,7 +481,7 @@ conditioning `K.collision_mem` is carried by `K.Opening`. -/
 theorem buildNestedWitnessE_mem_relBatchedE (K : LiftCom Φ μ n E)
     (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
     {I : Type} (base : I) (resp : I → (K.Opening ⊕ E))
-    (tree : EvaluationTree F 2 (m₀ + m₁)) (hDistinct : tree.IsDistinct)
+    (tree : NestedEvaluationTree F 2 (m₀ + m₁)) (hDistinct : tree.IsDistinct)
     (hesc : ∀ j e, resp j = Sum.inr e → e ∈ K.esc)
     (hopen : ∀ j o, resp j = Sum.inl o → K.com o = stmt.2.1)
     (hVanishes₀ : ∀ w, (∀ j, ∃ o, resp j = Sum.inl o ∧ K.table o = w) →
@@ -559,7 +559,7 @@ noncomputable def nestedZeroCheckExtractor (K : LiftCom Φ μ n E)
   fun stmt tree => buildNestedWitnessE Φ K stmt (nestedLeftPath tree)
     (nestedPathResponse Φ m₀ m₁ bound K φF b stmt tree)
 
-omit [NeZero q] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- Coordinate-wise special soundness of the nested scalar-round zero-check. -/
 theorem nestedZeroCheck_coordinateWiseSpecialSound
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -599,7 +599,7 @@ theorem nestedZeroCheck_coordinateWiseSpecialSound
     simp only [resp, nestedPathResponse]
     rw [dif_pos (hmem path)]
     exact (hmem path).choose_spec
-  let fullTree : EvaluationTree F 2 (m₀ + m₁) := by
+  let fullTree : NestedEvaluationTree F 2 (m₀ + m₁) := by
     simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
   have hFullDistinct : fullTree.IsDistinct := by
     simpa [fullTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct

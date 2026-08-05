@@ -14,7 +14,7 @@ do not, and records the rendering adopted by the formalization plan.
 > `m₀ + m₁` coordinates of `(τ₀, τ_α)` is its own `k = 2` challenge round, and extraction runs
 > the path-dependent binary-evaluation-tree zero test of
 > `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`
-> (`EvaluationTree.eq_zero_of_vanishes_comp`, since 4 August 2026 stated Mathlib-level in
+> (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, since 4 August 2026 stated Mathlib-level in
 > `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` for `k`-ary trees and individual degree
 > `< k`, with the computable view in `ToCompPoly/`). The active theorem is
 > `nestedZeroCheck_coordinateWiseSpecialSound` (`Hachi/ZeroCheck/Reduction.lean`), sorry-free and
