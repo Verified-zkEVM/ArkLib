@@ -271,11 +271,13 @@ Definition 3.7 [BCGM25]. -/
 def projectedCodeSubmod [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι) :
     Submodule F (T → A) := MC.map (LinearMap.funLeft F A (Subtype.val : T → ι))
 
+omit [Fintype ι] in
 /-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
 lemma mem_projectedCodeSubmod_iff [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι)
     (w : T → A) : w ∈ projectedCodeSubmod MC T ↔ w ∈ projectedCode MC.carrier T :=
   Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
 
+omit [Fintype ι] in
 /-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
 then so do all `F`-linear combinations of these. -/
 lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode ι F A)
