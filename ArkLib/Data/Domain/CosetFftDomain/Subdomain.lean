@@ -159,15 +159,7 @@ set_option warning.simp.varHead false in
   the same as membership to the original coset FFT domain. -/
 @[simp]
 lemma mem_subdomain_0_iff_mem :
-  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by
-  aesop
-    (add safe cases Nat)
-    (add simp
-      [subdomain,
-       CosetFftDomainClass.subdomain_embed,
-       mkSubgroupUnit,
-       mem_def,
-       CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by simp [mem_def]
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
