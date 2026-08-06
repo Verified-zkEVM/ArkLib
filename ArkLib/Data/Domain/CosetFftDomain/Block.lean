@@ -98,6 +98,11 @@ lemma card_block_le :
 theorem disjoint_block {x y : F} (hxy : x ≠ y) :
   Disjoint (block ω k x) (block ω k y) := by aesop (add simp [disjoint_iff])
 
+@[simp]
+theorem pairwise_disjoint_block {s : Set F} :
+  s.PairwiseDisjoint (block ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_block])
+
 /-- The set of indices of a block of `ω` at `x` of the degree `k`. -/
 def blockIdx (ω : D) (k : ℕ) (x : F) : Finset ι :=
   {i | ω i ^ 2 ^ k = x}
@@ -149,6 +154,11 @@ lemma card_blockIdx :
 theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :
   Disjoint (blockIdx ω k x) (blockIdx ω k y) := by
   aesop (add simp [disjoint_iff_ne, mem_blockIdx_iff_mem_block])
+
+@[simp]
+theorem pairwise_disjoint_blockIdx {s : Set F} :
+  s.PairwiseDisjoint (blockIdx ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_blockIdx])
 
 end CosetFftDomainClass
 

@@ -17,6 +17,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
 import ArkLib.Data.Domain.CosetFftDomain.Block
 import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 import ArkLib.Data.Domain.CosetFftDomain.Log
+import ArkLib.Data.Domain.CosetFftDomain.Pullback
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.ToMathlib.Polynomial.EvalExt
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
@@ -615,11 +616,7 @@ private lemma eval_comp_x_pow_map_eq {f : Polynomial (Polynomial F)} {x : F}
 
 private noncomputable def hammingDistComplementBound
   {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ :=
-  Finset.card { i ∈
-    Finset.product
-      Finset.univ
-      (Finset.preimage s (domain.subdomain k) (by simp)) |
-    (domain i.1) ^ (2 ^ k) = domain.subdomain k i.2 }
+  Finset.card (Pullback.pullback domain 0 k s)
 
 private noncomputable def hammingDistBound
   {n : ℕ} (k : ℕ) (domain : SmoothCosetFftDomain n F) (s : Finset F) : ℕ :=
@@ -635,62 +632,11 @@ private lemma contradictory_hamming_dist_formula {s : Finset F}
   {d : ℕ} [FoldingContext k d n]
   (h_s : s ⊆ (domain.subdomain k).toFinset) :
   hammingDistBound k domain s =
-    2 ^ n - 2 ^ k * (Finset.card s) := by
-    unfold hammingDistBound hammingDistComplementBound
-    simp only [Fintype.card_fin, product_eq_sprod]
-    congr
-    rw [show @filter _ _ _ _ =
-        (Finset.preimage s (domain.subdomain k) (by simp)).biUnion
-          (fun i ↦ {j | domain j.1 ^ 2 ^ k = domain.subdomain k i ∧ j.2 = i} ) by aesop,
-        Finset.card_biUnion (fun x hx y hy hxy a ha₁ ha₂ ↦ by
-          by_contra contra
-          obtain ⟨c, hc⟩ : ∃ c, c ∈ a := by
-            aesop
-              (add simp [le_eq_subset])
-              (add safe (by grind))
-          specialize (ha₁ hc)
-          specialize (ha₂ hc)
-          aesop
-        )]
-    conv =>
-      lhs
-      congr
-      rfl
-      ext u
-      rw [show (Finset.card _) = #{j | domain j ^ 2 ^ k =
-        (CosetFftDomain.subdomain domain k) u} by
-        aesop (add safe (by apply Finset.card_bij (fun a _ ↦ a.1)))
-      ]
-    rw [Finset.sum_bij (t := s)
-      (g := fun x ↦ Finset.card {j | domain j ^ 2 ^ k = x})
-      (i := fun i _ ↦ domain.subdomain k i)
-      (by aesop)
-      CosetFftDomain.injOn
-      (by {
-        intro b hb
-        obtain ⟨a, ha⟩ : ∃ i, (CosetFftDomain.subdomain domain k) i = b := by
-          rw [←CosetFftDomainClass.mem_def,
-            ←CosetFftDomainClass.mem_toFinset_iff_mem]
-          exact h_s hb
-        exists a
-        aesop
-      })
-      (by simp)]
-    rw [Finset.sum_bij (t := s)
-      (g := fun i ↦ 2 ^ k) (fun i _ ↦ i)
-      (by aesop)
-      (by aesop)
-      (by aesop)
-      (fun a ha ↦ by
-        rw [
-          show ({j | domain j ^ 2 ^ k = a} : Finset _) = blockIdx domain k a by rfl,
-          card_blockIdx,
-          card_block_of_mem_subdomain' (by simp) (by {
-            rw [←CosetFftDomainClass.mem_toFinset_iff_mem]
-            exact h_s ha
-          })]
-      )]
-    aesop (add safe (by grind))
+    2 ^ n - 2 ^ k * Finset.card s := by
+  aesop
+    (add simp [hammingDistBound, hammingDistComplementBound])
+    (add safe (by rw [Pullback.card_pullback_eq_mul_card_pullback₂,
+                      Pullback.card_pullback₂_eq]))
 
 private lemma correlated_agreement_implies_contradictory_hamm_dist
   [Fintype F]
@@ -725,25 +671,21 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
     · simp only [hammingDist, ne_eq, hammingDistBound, Fintype.card_fin]
       rw [←Finset.compl_filter, Finset.card_compl, Fintype.card_fin]
       apply Nat.sub_le_sub_left
-      apply Finset.card_le_card_of_injOn Prod.fst
-        (f_inj := fun _ _ _ _ h ↦ by
-          aesop
-            (add unsafe [(by apply CosetFftDomain.injective (ω := domain.subdomain k))])
-)
-      rintro ⟨a₁, a₂⟩ ha
-      simp_all only [product_eq_sprod, coe_filter, mem_product, mem_univ, mem_preimage, true_and,
-        Set.mem_setOf_eq]
-      rcases ha with ⟨h_a_s, h_eq⟩
-      rw [eval_comp_x_pow_map_eq, h_eq]
+      rw [hammingDistComplementBound, Pullback.card_pullback_eq_card_pullback₁]
+      apply Finset.card_le_card
+      intro x hx
+      have hx := Pullback.mem_s_of_mem_pullback₁ hx
+      rw [subdomain_0_apply] at hx
+      simp only [tsub_zero, Nat.sub_zero, mem_filter, mem_univ, true_and] at hx ⊢
+      rw [eval_comp_x_pow_map_eq]
       by_cases h_s'_s : s' = s
       · rw [h_s'_s,
             ←eval_comm,
-            indicated_polynomial_eq_foldAux (by simp [h_a_s]),
-            ←h_eq,
+            indicated_polynomial_eq_foldAux (by simp [hx]),
             ←foldValue_def,
             foldValue_pow_x_k]
       · rw [indicated_polynomial_eq_foldAux' (u := u) (by aesop)] <;> try assumption
-        · rw [←foldValue_def, ←h_eq, foldValue_pow_x_k]
+        · rw [←foldValue_def, foldValue_pow_x_k]
         · intro i x hx
           have hx := (pick_subset_subset : s' ⊆ s) hx
           rw [h_u _ _ hx]
@@ -752,9 +694,8 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
             (h_u_deg i)
             (by rw [pick_subset_card_eq_of_ne h_s'_s])
 
-set_option linter.unusedFintypeInType false in -- false alert
 private lemma dist_from_code_bound_of_correlated_agreement
-  [Fintype F]
+  [Finite F]
   {s : Finset F}
   (h_s : s ⊆ (domain.subdomain k).toFinset)
   {u : Fin (2 ^ k) → Polynomial F}
@@ -764,7 +705,8 @@ private lemma dist_from_code_bound_of_correlated_agreement
   (h_u_deg : ∀ i, (u i).natDegree < (2 ^ (d - k))) :
   Δ₀(f, ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d))
         ≤ 2 ^ n -
-          2 ^ k * (Finset.card s) := by
+          2 ^ k * Finset.card s := by
+  have := Fintype.ofFinite
   simp only [distFromCode, SetLike.mem_coe]
   exact sInf_le_of_le
     (b := ↑(hammingDistBound k domain s))

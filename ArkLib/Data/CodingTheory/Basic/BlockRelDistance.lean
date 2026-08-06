@@ -208,12 +208,8 @@ lemma card_agreementBlockUnion
   (agreementBlockUnion k φ f g).card =
     2 ^ k * (complDisagreementSet k φ f g).card := by
   unfold agreementBlockUnion
-  rw [Finset.card_biUnion (by
-    aesop
-      (add simp [Set.PairwiseDisjoint, Set.Pairwise])
-      (add safe disjoint_blockIdx)
-  )]
-  rw [Finset.sum_equiv
+  rw [Finset.card_biUnion (by simp),
+      Finset.sum_equiv
         (Equiv.refl _)
         (g := fun _ ↦ 2 ^ k)
         (t := complDisagreementSet k φ f g)
