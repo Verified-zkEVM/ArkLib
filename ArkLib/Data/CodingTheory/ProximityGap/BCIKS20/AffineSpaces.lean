@@ -1082,7 +1082,7 @@ theorem bucket_exists_common_codeword
       exact (Submodule.mem_bot F).mp this
     set j₀ : Fin k := ⟨0, NeZero.pos k⟩
     refine ⟨v_pair j₀ 0, S_j j₀, (hv_pair j₀ 0).1, hS_j j₀, ?_, ?_⟩
-    · convert (hv_pair j₀ 0).2 using 2
+    · simpa [finMapTwoWords, h_dirs_zero j₀] using (hv_pair j₀ 0).2
     · intro j
       refine ⟨0, V.zero_mem, ?_⟩
       intro c _
@@ -1488,7 +1488,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         rw [Real.coe_sqrt]
         congr 1
         haveI : NeZero deg := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]
         simp [LinearCode.length]
@@ -1523,7 +1523,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
         haveI : NeZero deg := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
       have hs_pos : 0 < s := by
@@ -1646,7 +1646,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have hs_eq : s = Real.sqrt ((1 : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]; rw [Real.coe_sqrt]; congr 1
         haveI : NeZero (1 : ℕ) := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := 1)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := 1)
           (by omega : 1 ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
       have hgs_eq : gs_johnson 1 (Fintype.card ι) m = 1 - s - s / (2 * m) := by
@@ -1975,10 +1975,10 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       have hrelUDR : Code.relativeUniqueDecodingRadius (ι := ι) (F := F)
           (C := (ReedSolomon.code domain deg : Set (ι → F))) =
           ((1 : ℝ≥0) - ↑deg / ↑(Fintype.card ι)) / 2 :=
-        ReedSolomon.relativeUniqueDecodingRadius_RS_eq' (by omega)
+        ReedSolomon.relativeUniqueDecodingRadius_RS_eq (by omega)
       have hrate_eq : (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) =
           (↑deg : ℝ≥0) / ↑(Fintype.card ι) := by
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg) (by omega)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg) (by omega)
         simp [LinearCode.rate, hdim, LinearCode.length]
       rw [hrate_eq] at hJ
       rw [← hrelUDR] at hJ

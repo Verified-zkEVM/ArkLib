@@ -48,6 +48,11 @@ home_page/            site assets and assembled website root
 - `ArkLib.lean` is a generated umbrella import file, not a hand-maintained module index.
 - `ArkLib/ToVCVio/` mirrors VCV-io module structure under the importable Lean prefix
   `ArkLib.ToVCVio`; use it for reusable `VCVio` helper lemmas before they are upstreamed.
+  **Nothing there may import ArkLib outside `ToVCVio` itself** — that invariant is what makes a file
+  movable to VCVio unchanged. Content that is generic in spirit but depends on an ArkLib layer
+  belongs beside its consumers in core instead; generalise first, then move. Files whose contents
+  have gone upstream are kept as import-only compatibility shells rather than deleted. See
+  [`ArkLib/ToVCVio/README.md`](../../ArkLib/ToVCVio/README.md) for the upstream-then-delete rule.
 - `ArkLib/Commitments/` splits into two families by *what an opening proves*:
   - `Ordinary/` — standard commitments that only **commit and open** (reveal the committed
     message). These reuse the VCV-io `CommitmentScheme` definition rather than redefining it;
@@ -66,22 +71,105 @@ home_page/            site assets and assembled website root
   CPolynomial/Polynomial division bridge lemmas live under `ArkLib/ToCompPoly/`.
 - Hachi commitment-scheme modules live under `ArkLib/Commitments/Functional/Hachi/` and formalize
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
-  ring `Rq Φ`. **This development is in progress.** Layout:
-  - `Gadget.lean` / `GadgetNorms.lean` — the base-`b` gadget matrix `G`, its norm-reducing digit
-    decomposition `G⁻¹`, and the centered `ℓ₂²`/`ℓ∞` shortness bounds the honest case needs.
-  - `InnerOuter/` — the scheme itself: `Scheme` (the inner/outer commit composition and its
+  ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section;
+  every subfolder carries its umbrella as `Basic.lean` inside that subfolder.
+  `ArkLib/Commitments/Functional/Hachi.lean` is the folder-level landing page, with the full
+  folder map in its module docstring. Layout:
+  - `Gadget/` (§2.1) — `Gadget/Core` is the base-`b` gadget matrix `G` and its norm-reducing digit
+    decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both
+    directions the honest case and Lemma 8 need. `Gadget/Basic.lean` re-exports both.
+  - `EvalSplit.lean` (§4, Eq. (12)) — the matrix split underlying the evaluation argument:
+    multilinear evaluation `eval p (xl ++ xh)` factors as the vector–matrix–vector product
+    `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))` (`evalSplit_eq_eval`), with the inverse reshape
+    `toPolynomial` and the bridge lemma `splitForm_monomialBasis_eq_eval` consumed by
+    `QuadEval/Bridge`. Kept top-level because the future §3 packing head reuses it over the subfield.
+  - `InnerOuter/` (§4.1) — the scheme itself: `Scheme` (the inner/outer commit composition and its
     *weak opening*, following [NOZ26, §4.1]), `Correctness` (perfect correctness for lawful
     gadget decompositions), `Security` (the weak-binding reduction to Module-SIS via
     `verify_weak`), and `Arithmetic` (pins the modulus to the power-of-two cyclotomic
-    `X^{2^α}+1`, which the security proofs genuinely require).
-  - `InnerOuter.lean` — top-level re-export of the scheme, its correctness, and its
-    weak-binding reduction.
-- The Merkle tree implementations now live upstream in `VCVio`, so use
-  `VCVio.CryptoFoundations.MerkleTree` or `VCVio.CryptoFoundations.InductiveMerkleTree`
-  instead of the old ArkLib-local modules.
+    `X^{2^α}+1`, which the security proofs genuinely require). `InnerOuter/Basic.lean`
+    re-exports the scheme, its correctness, and its weak-binding reduction.
+  - `QuadEval/` (§4.2, "Polynomial Evaluation as Quadratic Equation", Figure 3) — Hachi's
+    polynomial-evaluation reduction, which proves `f(x) = y` by expressing the evaluation as the
+    quadratic form `bᵀ M a` and folding the `2ʳ` carrier blocks under the challenge vector (hence
+    the name `QuadEval`); it is Hachi's multilinear/inner-outer lift of Greyhound's [NS24, §3.1]
+    folding protocol. `QuadEval/Gadgets` holds the gadget algebra (`PublicParamsD`, the
+    honest-prover carrier/short commitment `v = D ŵ`, the `J`-decomposition of `z`, and the
+    `tensorG`/`tensorG1` challenge combinations). `QuadEval/Reduction` is the 2-round protocol with
+    its types, plain `relOut` (Eq. (20) + range balls), plain `relIn` (eval-consistent weak
+    opening), and the `QuadEvalSISBreak`/`quadEvalSISSet` **break vocabulary** for MSIS(B/D)
+    outcomes — key-tied: breaks are validated against the fixed key parameter `pp`, which (like
+    the relations' key) is never statement data.
+    `QuadEval/Soundness` is the subtract-and-divide extraction `buildWitness`, split into the plain
+    assembler `quadEvalMkWitness` and the **escape event** `quadEvalEscLocal`, and **Lemma 8**
+    (coordinate-wise special soundness) as the single
+    `quadEval_coordinateWiseSpecialSoundWithEscape` (named-extractor, *plain* input and output
+    relations, escape as a disjunct of the conclusion; `sorryAx`-free) feeding the package,
+    the composable `quadEvalPackage`, and the reduction's derived norm constants
+    `quadEvalZL2SqBound` = `B_z` / `quadEvalBetaSq` = `4·B_z` (the generic tree plumbing lives in
+    `Security/CoordinateWiseSpecialSoundness/SingleRound`; the supporting norm growth is in
+    `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `Gadget/Norms`). `QuadEval/Bridge` is the
+    **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
+    `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
+    (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
+    `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Basic.lean` re-exports the reduction, its
+    soundness, and the bridge.
+  - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is a **skeleton** split into one flat
+    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
+    in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
+    and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
+    escape *event*) for the links whose extraction can break an assumption.
+  - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
+    `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
+    `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
+    statement reshaping, **proven**); `RingSwitch/Reduction` is the **cyclotomic instance** of the
+    generic `Lift` switch (`ProofSystem/RingSwitching/Lift/`): `cyclotomicPresentation` +
+    `IsPresentation` laws (discharged from `Data/Lattices/CyclotomicRing/QuotientLift.lean`), the
+    generic `checkAt`, and the generic interpolation/descent engine, assembled through the
+    committed-scalar shell (`k = 2d`, abstract `w̃`-commitment `LiftCom` with its short-collision
+    set `LiftCom.Collision`; the weak-binding escape event is `CommittedScalar.escEvent`, so this
+    link is an `EscapeCWSSPackage`; **proven** Lemma 9 CWSS). `RingSwitch/Basic.lean` re-exports
+    the folder. (The §3 packing reduction is a distinct algebraic construction —
+    `ProofSystem/RingSwitching/Packing/` — which does not use the committed-scalar seam; the two
+    constructions share the ring-switching folder's top-level verifier skeletons and transport
+    algebra.)
+  - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
+    `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
+    encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
+    the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
+    zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
+    bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
+    its module docstring carries the counterexample and the repair). `ZeroCheck/Basic.lean`
+    re-exports the folder.
+  - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
+    opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
+    sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
+    `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
+    recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports the folder.
+  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+    derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
+    partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
+    (Eqs. (27)–(28)
+    — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
+    `Recursion/Basic.lean` re-exports the folder.
+  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the
+    `bridgePackage ▷ quadEvalPackage` chain and `eval_coordinateWiseSpecialSoundWithEscape` is its
+    composed named-extractor CWSS certificate (`sorryAx`-free). `openCore` chains the pure §4.3 links
+    (rows 1–7 of the header's seam table), and `openingChain` /
+    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` compose the guarded tail (sumcheck loop,
+    final eval, recursion adapters) into the full one-iteration certificate — a skeleton whose sorry
+    provenance is inventoried in the module header. Escape events compose along the chain by
+    `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
+  - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
+    `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the remaining §4.3+
+    subprotocols and the completeness layer).
+- Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
+  commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
+  (namespace `InductiveMerkleTree`).
 - Reed-Solomon code definitions live under the `ReedSolomon` namespace in
-  `ArkLib/Data/CodingTheory/ReedSolomon.lean`. The older `ReedSolomonCode` namespace has been
-  merged into `ReedSolomon`; use the consolidated name at new call sites.
+  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, with the multilinear representation in
+  `ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean`.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
@@ -92,9 +180,15 @@ home_page/            site assets and assembled website root
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,
   `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound` (a
-  tree-based extractor recovering a witness from every `S`-structured accepting tree); `Composition`
-  defines shape append, `appendSplit`, and the generic structure-preservation/recombination lemmas
-  for sequential protocol append. The umbrella `Security/TranscriptTree.lean` re-exports both files.
+  tree-based extractor recovering a witness from every `S`-structured accepting tree). `Basic` also
+  defines the **escape layer**: `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full
+  challenge trees, with the trusted-spec contract in its docstring) and
+  `Verifier.treeSpecialSoundWithEscape`, whose conclusion is `esc stmt tree ∨ extraction succeeds`;
+  the plain notion is the never-firing event (`treeSpecialSoundWithEscape_false_iff`) and every plain
+  certificate lifts losslessly (`treeSpecialSoundWith.withEscape`). `Composition`
+  defines shape append, `appendSplit`, the generic structure-preservation/recombination lemmas
+  for sequential protocol append, and `ChallengeTree.EscapeEvent.append` (composition of escape
+  events along that split). The umbrella `Security/TranscriptTree.lean` re-exports both files.
   Both plain and coordinate-wise special soundness are instances of `Verifier.treeSpecialSound` for
   different shapes; neither special-soundness file imports the other.
 - Plain `(k)`-special soundness lives in `Security/SpecialSoundness.lean`. It is the instance of
@@ -103,19 +197,80 @@ home_page/            site assets and assembled website root
   specialization of coordinate-wise special soundness. The bridge
   `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` lives in
   `Security/Implications.lean`.
+- Round-by-round security lives in `Security/RoundByRound.lean` (state functions,
+  `Extractor.RoundByRound`, the one-shot variants and their bridges, plus the **worst-case** layer
+  `rbrSoundnessWorstCase` / `rbrKnowledgeSoundnessWorstCase` and the implications back to the
+  averaged notions), on top of the probability glue in `Security/RbrGame.lean` (the challenge-first
+  master bounds over `simulateQ`/`OptionT` that discharge those implications). This is a **separate
+  axis** from the transcript-tree notions below: its extractor type is `Extractor.RoundByRound` on
+  transcripts, not `Extractor.TreeBased`, and it carries no escape-event layer.
 - Coordinate-wise special soundness ([FMN24]/[NOZ26]) lives in
   `Security/CoordinateWiseSpecialSoundness/`: `Basic` defines the `SS(S, ℓ, k)` combinatorics
-  (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and
-  `Verifier.coordinateWiseSpecialSound`; `Composition` transports CWSS structures across
-  sequential composition and proves binary append preservation via the generic transcript-tree
-  split. The umbrella `CoordinateWiseSpecialSoundness.lean` re-exports both files.
+  (`CoordEq`, `IsSpecialSoundFamily`), `CWSSStructure`, `CWSSStructure.toShape`, and both forms
+  of the soundness notion — the **named-extractor form**
+  `Verifier.coordinateWiseSpecialSoundWith` (the content-bearing statement; the extractor is an
+  explicit parameter) and its existential closure `Verifier.coordinateWiseSpecialSound` (plumbing;
+  it loses the algorithm, so advertised protocol statements use the named form) — plus their
+  escape-threaded twins `…WithEscape` / `…Escape` and the lossless lift
+  `coordinateWiseSpecialSoundWith.withEscape`; `Composition`
+  transports CWSS structures across protocol append and proves binary append preservation
+  via the generic transcript-tree split, in all forms (the composed extractor is the left
+  factor's on the prefix tree, the composed event is `ChallengeTree.EscapeEvent.append`), and hosts
+  the two directions of the pure-verifier acceptance bridge (`pure_accepting_of_mem` /
+  `mem_of_pure_accepting`); `NoChallenge` supplies the empty-challenge base case. **Composition is
+  binary only** — there is no n-ary CWSS `seqCompose`; chains are built by recursion over the binary
+  append (`▷`), which keeps the composed extractor a nameable function. All CWSS packages
+  (`CWSSPackage` and its guarded / escape-aware variants) carry their extraction algorithm as an
+  explicit `extractor` field, with the `isCWSS` certificate stated at it — so a composed chain
+  exposes an actual end-to-end extractor (`chain.extractor`). `NoChallenge` also provides
+  `CWSSStructure.ofIsEmpty`, the concrete
+  challenge-free structure used as the left factor when appending a zero-round `ReduceClaim` head
+  (e.g. Hachi's `bridgeVerifier`). `SingleRound` is the generic single-challenge-round navigation
+  layer (tree shape recovery `tree_shape`, the star-center machinery, the tree extractor
+  `treeExtractor`, and the assemblies `coordinateWiseSpecialSoundWith_of_mkWitness` and its escape
+  twin at the induced event `escEvent`) used by Hachi's polynomial-evaluation reduction `QuadEval`
+  (Lemma 8). `ScalarRound` is its **proven** `(ℓ = 1, k)` scalar-challenge twin (`pSpecScalar`,
+  `scalarStructure`, readers/shape recovery, the per-branch transcript kit,
+  `treeExtractorScalar`, `escEventScalar(OfValid)`, and both assemblies
+  `coordinateWiseSpecialSoundWith(Escape)_of_mkWitness_scalar`) for Hachi's Lemmas 9/11-shaped
+  rounds and the DP24 batching wire format. `CommittedScalar` is the **proven** commit-then-
+  scalar-challenge shell on top of `ScalarRound`: `BindingCommitment` (a commitment indexed by the
+  shortness regime its binding is restricted to, with its short-collision set `Collision`), the
+  anchored relation/verifier/prover, the plain assembler `mkWitness`, the binding-break escape
+  event `escEvent`, the named `treeExtractor`, and its generic certificate + `EscapeCWSSPackage`;
+  instantiated by the generic HMZ25 lift (`ProofSystem/RingSwitching/Lift/`) and through it by
+  Hachi's ring switch. `Escape` is the **package lattice**: the escape-aware packages
+  `EscapeCWSSPackage`/`EscapeGCWSSPackage` (ordinary relations and extractor, plus one `esc`
+  **event** field), the lossless kind lifts `toEscape`/`toGuarded`, all mixed appends, and the
+  universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
+  events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
+  runtime-rejection skeleton: `Verifier.IsGuardedWith`/`IsGuarded`, the guarded package
+  `GCWSSPackage` with its append `▷ᵍ`, the (sorried) escape-threaded guarded binary CWSS append
+  theorem, and the plain guarded append proven from it at the never-firing events. The umbrella
+  `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
-- Ring switching is a **generic, instantiable compiler** under `ProofSystem/RingSwitching/`, not a
-  Binius-only protocol: `Profile.lean` holds the `RingSwitchingProfile` abstraction (packing data +
-  reconstruction laws), `Prelude.lean` the shared defs + the Binius instance `binaryTowerProfile`,
-  and `General.lean` the full reduction and generic security theorems. Binius instantiates it in
-  `ProofSystem/Binius/FRIBinius/` (`biniusProfile`); Hachi (`NOZ26`) is the intended next instance.
+- Ring switching is a **family of constructions, not one protocol** — the umbrella
+  `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
+  `Packing/` is the small→large packing family: `Profile.lean` holds the shared
+  packing data layer `RingSwitchingProfile` (packing data + reconstruction laws) and the
+  remaining files are the DP24/Binius construction (`Prelude` with `packMLE` + the Binius
+  instance `binaryTowerProfile`, `Spec`, `BatchingPhase`, `SumcheckPhase`, `General`; RBR
+  soundness, `[IsDomain L]`); Binius instantiates it in `ProofSystem/Binius/FRIBinius/`
+  (`biniusProfile`), and Hachi's §3 packing head is the intended next `Profile` instance.
+  `Lift/` is the **generic HMZ25 lift** (large quotient ring →
+  field, CWSS at `k = 2d`): `Presentation.lean` is its data layer (proof-free
+  `Presentation R S` + `IsPresentation` laws over any monic modulus — not cyclotomic-specific
+  — with the full lift algebra and interpolation engine proven over the laws), and
+  `Reduction.lean` is the protocol layer over the committed-scalar shell
+  (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
+  recovery obligation proven generically. Hachi's `Commitments/Functional/Hachi/RingSwitch/`
+  is its cyclotomic instance, with law-discharge lemmas in
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. What the two families share lives at the
+  folder top level — the check-then-update round-shape verifiers (`RoundVerifiers.lean`,
+  over the `pSpecScalar` wire shape and the one-message `pSpecMessage` wire) and the
+  embed-and-evaluate transport algebra (`Transport/Eval.lean`, `Transport/Coeffs.lean`) — plus the
+  committed-scalar seam under `OracleReduction/`.
   Background: KB concept page `docs/kb/concepts/ring-switching.md`; blueprint section
   `proof_systems/ring_switching.tex`. Structured sum-check support lives in
   `ProofSystem/Sumcheck/Structured*` and `ProofSystem/Sumcheck/Domain.lean`.

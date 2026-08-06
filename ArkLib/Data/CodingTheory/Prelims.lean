@@ -10,6 +10,7 @@ import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 import Mathlib.LinearAlgebra.AffineSpace.Combination
 import Mathlib.RingTheory.Henselian
 
+
 /-! # Coding-Theory Preliminaries -/
 
 section TensorCombination
@@ -34,6 +35,7 @@ def multilinearCombine {ϑ : ℕ} {ι : Type*}
     (u : (Fin (2 ^ ϑ)) → ι → A) (r : Fin ϑ → F) : (ι → A) :=
   fun colIdx => ∑ rowIdx : Fin (2^ϑ), ((multilinearWeight r rowIdx) : F) • ((u rowIdx colIdx) : A)
 notation:20 r " |⨂| " u => multilinearCombine (u := u) (r := r)
+
 end TensorCombination
 noncomputable section
 
@@ -119,6 +121,7 @@ lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
            _ ≤ U.cRank := by exact Matrix.cRank_submatrix_le U id (Fin.castLE h)
    simp [h_cRank]
 
+omit [Nontrivial F] in
 /-- A square matrix over an integral domain has full rank if its determinant is nonzero. -/
 lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
     Matrix.det U ≠ 0 → U.rank = n  := by
@@ -272,8 +275,6 @@ lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
   unfold AffSpanSet
   exact Set.toFinite _
 
-attribute [instance] AffSpanSet.instFinite
-
 /-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
 noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
   (AffSpanSet.instFinite U).toFinset
@@ -297,6 +298,29 @@ noncomputable instance instFintypeAffineSubspace {V : Type*} [AddCommGroup V]
 instance instNonemptyAffineSubspace_mk' {V : Type*} [AddCommGroup V] [Module F V]
     (p : V) (direction : Submodule F V) : Nonempty (AffineSubspace.mk' p direction) :=
   nonempty_subtype.mpr ⟨p, AffineSubspace.self_mem_mk' p direction⟩
+
+/-- The affine-space combination of codewords `U` at seed `x`:
+`U 0 + ∑ i, x i • U (i+1)`, i.e. `vecMul (1, x) U`. -/
+abbrev affineComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) : ι → F :=
+  Matrix.vecMul (Fin.cons 1 x) U
+
+/-- The linear combination `∑ i, l i • U (i+1)` of the "direction" codewords. -/
+abbrev linComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (l : Fin s → F) : ι → F :=
+  fun k => ∑ i, l i * U i.succ k
+
+omit [Fintype ι] [DecidableEq F] [Fintype F] in
+/-- The affine combination along the line `x ↦ v + t • lam` in seed space. -/
+lemma affineComb_line {s : ℕ} (U : Fin (s + 1) → (ι → F)) (v lam : Fin s → F) (t : F) :
+    affineComb U (v + t • lam) = affineComb U v + t • (linComb U lam) := by
+  have hsplit : (Fin.cons 1 (v + t • lam) : Fin (s + 1) → F) =
+      Fin.cons 1 v + t • (Fin.cons (0 : F) lam : Fin (s + 1) → F) := by
+    ext i
+    refine Fin.cases ?_ ?_ i <;> simp
+  have hlin : Matrix.vecMul (Fin.cons (0 : F) lam : Fin (s + 1) → F) U = linComb U lam := by
+    ext k
+    simp [Matrix.vecMul, dotProduct, Fin.sum_univ_succ, linComb]
+  change Matrix.vecMul (Fin.cons 1 (v + t • lam) : Fin (s + 1) → F) U = _
+  rw [hsplit, Matrix.add_vecMul, Matrix.smul_vecMul, hlin]
 
 end
 end Affine
@@ -416,7 +440,7 @@ theorem card_univ_filter_eq {e : α} :
     #{x : α | x ≠ e} = #(Finset.univ (α := α)) - 1 := by
   rw [
     Finset.filter_congr (q := (· ∉ ({e} : Finset _))) (by simp),
-    ←Finset.sdiff_eq_filter, Finset.card_univ_diff
+    ←Finset.sdiff_eq_filter, Finset.card_univ_sdiff
   ]
   simp
 

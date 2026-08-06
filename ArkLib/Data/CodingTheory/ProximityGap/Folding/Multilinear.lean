@@ -49,18 +49,12 @@ lemma foldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : F}
       (domain.subdomain 1)
       (powAlgHom (g.1.aeval (fun i ↦
           if h : i = 0 then C α else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - 1))))) := by
-  have hchar := CosetFftDomainClass.domain_implies_char_ne_2 domain
-  have h2ne0 : (2 : F) ≠ 0 := fun contra ↦ hchar <|
-    ringChar.of_eq (CharP.ringChar_of_prime_eq_zero Nat.prime_two contra)
   subst hf
+  have hchar := CosetFftDomainClass.domain_implies_char_ne_2 domain
+  have h2ne0 : (2 : F) ≠ 0 := CosetFftDomainClass.domain_implies_2_ne_0 domain
   conv_lhs =>
     rw [powAlgHom_eq_even_add_odd_powAlgHom hchar]
   rw [even_and_odd_eval hchar, foldWord_k_1']
-  ext u
-  extract_lets x j j'
-  have : x.val ≠ 0 := fun contra ↦ by
-    have := x.2
-    simp_all
   aesop
     (add safe (by field_simp))
     (add simp
@@ -177,6 +171,6 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
     rw [hfold]
     simp only [evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk]
     rw [aeval_substFun_comp (k := k) (γ := α) g.1,
-        subdomain_one_comp (ω := domain) (by omega) ⟨i.val, hi2⟩ i rfl]
+        subdomain_comp (ω := domain) (by omega) (i := ⟨i.val, hi2⟩) rfl]
 
 end ProximityGap

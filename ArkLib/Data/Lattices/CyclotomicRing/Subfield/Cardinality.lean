@@ -101,6 +101,42 @@ theorem card_fixedSubring_eq (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2
   have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
   exact le_antisymm (card_fixedSubring_le α κ h2 hk) (card_fixedSubring_ge q α κ h2 hκ)
 
+/-- **Support of a fixed element (Eq. 7).** Every `x ∈ R_q^H` has its nonzero coefficients on
+multiples of `d/2k = 2^{α-κ-1}`: for `p < d` with `2^{α-κ-1} ∤ p`, `x.1.coeff p = 0`. This comes
+from the symmetric `vElt` basis (`fixedBasisMap` is surjective by `card_fixedSubring_eq`), each of
+whose elements is supported — by `vElt_coeff_full` — on the two multiples `(d/2k)·s` and
+`d − (d/2k)·s` of `2^{α-κ-1}`. -/
+theorem fixedSubring_coeff_eq_zero (α κ : ℕ) (h2 : (2 : ZMod q) ≠ 0) (hk : 2 * 2 ^ κ ∣ 2 ^ α)
+    (x : fixedSubring (R := ZMod q) α (2 ^ κ)) {p : ℕ} (hp : p < 2 ^ α)
+    (hdvd : ¬ (2 ^ (α - κ - 1) ∣ p)) :
+    (x : Rq (powTwoCyclotomic (R := ZMod q) α)).1.coeff p = 0 := by
+  have hκ : κ + 1 ≤ α := succ_le_of_two_mul_two_pow_dvd hk
+  have hbij : Function.Bijective (fixedBasisMap q α κ hκ) := by
+    rw [Fintype.bijective_iff_injective_and_card]
+    exact ⟨fixedBasisMap_injective q α κ h2 hκ, by
+      rw [Fintype.card_fun, Fintype.card_fin, card_fixedSubring_eq q α κ h2 hk]⟩
+  obtain ⟨c, hc⟩ := hbij.surjective x
+  set D : fixedSubring (R := ZMod q) α (2 ^ κ) →+ ZMod q :=
+    (Rq.coeffHom (powTwoCyclotomic (R := ZMod q) α) p).comp
+      (fixedSubring (R := ZMod q) α (2 ^ κ)).subtype.toAddMonoidHom with hD
+  change D x = 0
+  rw [← hc, fixedBasisMap, map_sum]
+  refine Finset.sum_eq_zero (fun s _ => ?_)
+  rw [map_nsmul]
+  change (c s).val • (vElt α κ hκ s).val.1.coeff p = _
+  rw [vElt_coeff_full α κ hκ s hp]
+  have hdvd2 : 2 ^ (α - κ - 1) ∣ 2 ^ α := pow_dvd_pow 2 (by omega)
+  have hz : (if (s : ℕ) = 0 then (if p = 0 then (2 : ZMod q) else 0)
+      else if p = 2 ^ (α - κ - 1) * (s : ℕ) then 1
+           else if p = 2 ^ α - 2 ^ (α - κ - 1) * (s : ℕ) then -1 else 0) = 0 := by
+    split_ifs with h1 h2 h3 h4
+    · exact absurd (h2 ▸ dvd_zero _) hdvd
+    · rfl
+    · exact absurd ⟨_, h3⟩ hdvd
+    · exact absurd (h4 ▸ Nat.dvd_sub hdvd2 ⟨_, rfl⟩) hdvd
+    · rfl
+  rw [hz, smul_zero]
+
 end ZModLowerBound
 
 end ArkLib.Lattices.CyclotomicModulus

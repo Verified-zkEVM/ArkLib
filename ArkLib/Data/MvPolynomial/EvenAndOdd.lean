@@ -7,6 +7,7 @@ Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 import Mathlib.Algebra.MvPolynomial.Monad
 import Mathlib.Tactic.IntervalCases
 import Mathlib.Algebra.CharP.Basic
+import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
 
 import CompPoly.Data.MvPolynomial.Notation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
@@ -71,7 +72,7 @@ private lemma substMinus_mem_restrictDegree
       apply le_trans (MvPolynomial.degreeOf_mul_le _ _ _) _
       simp_all only [degreeOf_C, zero_add]
       apply le_trans (MvPolynomial.degreeOf_prod_le _ _ _) _
-      rw [Finset.sum_eq_add_sum_diff_singleton i _ (by aesop)]
+      rw [Finset.sum_eq_add_sum_sdiff_singleton i _ (by aesop)]
       rw [Finset.sum_equiv
             (t := m.support \ {i})
             (Equiv.refl _)

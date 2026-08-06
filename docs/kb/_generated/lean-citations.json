@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 75,
-    "keys_cited": 25,
-    "total_citation_edges": 106
+    "files_with_citations": 149,
+    "keys_cited": 30,
+    "total_citation_edges": 217
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -12,20 +12,42 @@
     "ArkLib/Commitments/Functional/Basic.lean": [
       "CGKY25"
     ],
-    "ArkLib/Commitments/Functional/Hachi/Gadget.lean": [
+    "ArkLib/Commitments/Functional/Hachi.lean": [
       "NOZ26",
       "NS24"
     ],
-    "ArkLib/Commitments/Functional/Hachi/GadgetNorms.lean": [
+    "ArkLib/Commitments/Functional/Hachi/Commitment.lean": [
       "NOZ26",
       "NS24"
     ],
-    "ArkLib/Commitments/Functional/Hachi/InnerOuter.lean": [
+    "ArkLib/Commitments/Functional/Hachi/Composition.lean": [
+      "HMZ25",
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Gadget/Basic.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Gadget/Norms.lean": [
       "NOZ26",
       "NS24"
     ],
     "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean": [
       "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/InnerOuter/Basic.lean": [
       "NOZ26",
       "NS24"
     ],
@@ -42,6 +64,72 @@
       "LS18",
       "NOZ26",
       "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Bridge.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean": [
+      "LNP22",
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Recursion/ZBatchBridge.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Sumcheck/FinalEval.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Basic.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Batch.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean": [
+      "NOZ26"
     ],
     "ArkLib/Commitments/Functional/KZG/Basic.lean": [
       "KZG10"
@@ -76,6 +164,12 @@
     "ArkLib/Commitments/Ordinary/Ajtai/Simple/Security.lean": [
       "Ajt96"
     ],
+    "ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean": [
+      "ACFY24"
+    ],
+    "ArkLib/Data/CodingTheory/Basic/LinearCode.lean": [
+      "BCGM25"
+    ],
     "ArkLib/Data/CodingTheory/DivergenceOfSets.lean": [
       "BCIKS20"
     ],
@@ -87,7 +181,8 @@
     ],
     "ArkLib/Data/CodingTheory/InterleavedCode.lean": [
       "AHIV22",
-      "BCIKS20"
+      "BCIKS20",
+      "DG25"
     ],
     "ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean": [
       "codingtheory",
@@ -121,6 +216,9 @@
     "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean": [
       "AHIV22"
     ],
+    "ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean": [
+      "BCGM25"
+    ],
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean": [
       "BCIKS20"
     ],
@@ -146,10 +244,20 @@
       "BCIKS20"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean": [
-      "BCIKS20"
+      "BCIKS20",
+      "DG25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/DG25/Basic.lean": [
+      "DG25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean": [
       "ACFY24"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean": [
+      "BCGM25"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
@@ -157,10 +265,38 @@
     "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/Domain/CosetFftDomain/Block.lean": [
+      "ACFY24"
+    ],
     "ArkLib/Data/Hash/Poseidon2.lean": [
       "Poseidon2"
     ],
-    "ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean": [
+    "ArkLib/Data/Lattices/CyclotomicRing/Core.lean": [
+      "LNP22",
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean": [
+      "LNP22",
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois/FixedSubring.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois/Group.lean": [
+      "LS18",
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois/Order.lean": [
+      "LS18",
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Galois/Trace.lean": [
       "NOZ26"
     ],
     "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean": [
@@ -187,10 +323,52 @@
       "NOZ26",
       "NS24"
     ],
+    "ArkLib/Data/Lattices/CyclotomicRing/PowTwo.lean": [
+      "LS18",
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Basis.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Bijectivity.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Cardinality.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Factorization.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Field.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/NormBound.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Packing.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/TraceInnerProduct.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Lattices/CyclotomicRing/Subfield/TraceVanishing.lean": [
+      "NOZ26"
+    ],
     "ArkLib/Data/Lattices/ModuleSIS.lean": [
       "Ajt96",
       "NOZ26",
       "NS24"
+    ],
+    "ArkLib/Data/Lattices/Vectors.lean": [
+      "NOZ26"
     ],
     "ArkLib/Data/Polynomial/FoldingPolynomial.lean": [
       "ACFY24"
@@ -201,11 +379,63 @@
     "ArkLib/Data/Polynomial/RationalFunctions.lean": [
       "BCIKS20"
     ],
+    "ArkLib/Data/Polynomial/RationalFunctions/FunctionField.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Hensel.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Sequence.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Setup.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Weight.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/Lifts.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/RationalRootVanishing.lean": [
+      "BCIKS20"
+    ],
+    "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean": [
+      "BCIKS20"
+    ],
     "ArkLib/Data/Polynomial/Trivariate.lean": [
       "BCIKS20"
     ],
     "ArkLib/OracleReduction/Basic.lean": [
       "BCS16"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean": [
+      "FMN24",
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean": [
+      "FMN24",
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean": [
+      "NOZ26",
+      "NS24"
     ],
     "ArkLib/OracleReduction/VectorIOR.lean": [
       "BCS16"
@@ -219,14 +449,59 @@
     "ArkLib/ProofSystem/Binius/FRIBinius/General.lean": [
       "DP24"
     ],
-    "ArkLib/ProofSystem/Binius/RingSwitching/General.lean": [
-      "DP24"
+    "ArkLib/ProofSystem/Component/SendChallenge.lean": [
+      "NOZ26",
+      "NS24"
+    ],
+    "ArkLib/ProofSystem/Component/SendClaim.lean": [
+      "NOZ26",
+      "NS24"
     ],
     "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean": [
       "FRI1216"
     ],
     "ArkLib/ProofSystem/Plonk/Basic.lean": [
       "GWZC19"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Basic.lean": [
+      "DP24",
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Lift.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean": [
+      "HMZ25",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing.lean": [
+      "DP24",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/General.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean": [
+      "DP24",
+      "NOZ26"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean": [
+      "DP24"
+    ],
+    "ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean": [
+      "NOZ26"
     ],
     "ArkLib/ProofSystem/Stir/Combine.lean": [
       "ACFY24stir"
@@ -244,37 +519,18 @@
     "ArkLib/ProofSystem/Sumcheck/Spec/General.lean": [
       "BBS24",
       "LFKN92"
-    ],
-    "ArkLib/ProofSystem/Whir/BlockRelDistance.lean": [
-      "ACFY24"
-    ],
-    "ArkLib/ProofSystem/Whir/Folding.lean": [
-      "ACFY24"
-    ],
-    "ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean": [
-      "ACFY24"
-    ],
-    "ArkLib/ProofSystem/Whir/ProximityGen.lean": [
-      "ACFY24",
-      "BCIKS20"
-    ],
-    "ArkLib/ProofSystem/Whir/RBRSoundness.lean": [
-      "ACFY24"
     ]
   },
   "keys": {
     "ACFY24": [
+      "ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean",
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
+      "ArkLib/Data/Domain/CosetFftDomain/Block.lean",
       "ArkLib/Data/Polynomial/FoldingPolynomial.lean",
-      "ArkLib/Data/Polynomial/Indicator.lean",
-      "ArkLib/ProofSystem/Whir/BlockRelDistance.lean",
-      "ArkLib/ProofSystem/Whir/Folding.lean",
-      "ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean",
-      "ArkLib/ProofSystem/Whir/ProximityGen.lean",
-      "ArkLib/ProofSystem/Whir/RBRSoundness.lean"
+      "ArkLib/Data/Polynomial/Indicator.lean"
     ],
     "ACFY24stir": [
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
@@ -298,6 +554,12 @@
     "BBS24": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"
     ],
+    "BCGM25": [
+      "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean"
+    ],
     "BCIKS20": [
       "ArkLib/Data/CodingTheory/DivergenceOfSets.lean",
       "ArkLib/Data/CodingTheory/GuruswamiSudan/Basic.lean",
@@ -317,11 +579,18 @@
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/ReedSolomonGap.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/WeightedAgreement.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/FunctionField.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Hensel.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Sequence.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Setup.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/HenselNumerators/Weight.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/Lifts.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/RationalRootVanishing.lean",
+      "ArkLib/Data/Polynomial/RationalFunctions/Weight.lean",
       "ArkLib/Data/Polynomial/RationalFunctions.lean",
       "ArkLib/Data/Polynomial/Trivariate.lean",
       "ArkLib/ProofSystem/BatchedFri/Security.lean",
-      "ArkLib/ProofSystem/Stir/ProximityGap.lean",
-      "ArkLib/ProofSystem/Whir/ProximityGen.lean"
+      "ArkLib/ProofSystem/Stir/ProximityGap.lean"
     ],
     "BCS16": [
       "ArkLib/OracleReduction/Basic.lean",
@@ -336,16 +605,42 @@
       "ArkLib/Commitments/Functional/KZG/FunctionBinding/TauInQueries.lean",
       "ArkLib/Commitments/Functional/KZG/HardnessAssumptions.lean"
     ],
+    "DG25": [
+      "ArkLib/Data/CodingTheory/InterleavedCode.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/Basic.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/DG25/Basic.lean"
+    ],
     "DP24": [
       "ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean",
       "ArkLib/ProofSystem/Binius/FRIBinius/General.lean",
-      "ArkLib/ProofSystem/Binius/RingSwitching/General.lean"
+      "ArkLib/ProofSystem/RingSwitching/Basic.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/General.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing.lean"
+    ],
+    "FMN24": [
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
     ],
     "FRI1216": [
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
     ],
     "GWZC19": [
       "ArkLib/ProofSystem/Plonk/Basic.lean"
+    ],
+    "HMZ25": [
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean",
+      "ArkLib/ProofSystem/RingSwitching/Basic.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift.lean"
     ],
     "JM24": [
       "ArkLib/AGM/Basic.lean"
@@ -359,50 +654,135 @@
     "LFKN92": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"
     ],
+    "LNP22": [
+      "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Core.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean"
+    ],
     "LPS24": [
       "ArkLib/AGM/Basic.lean"
     ],
     "LS18": [
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Group.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Order.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
-      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
+      "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/PowTwo.lean"
     ],
     "Mic07": [
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean"
     ],
     "NOZ26": [
-      "ArkLib/Commitments/Functional/Hachi/Gadget.lean",
-      "ArkLib/Commitments/Functional/Hachi/GadgetNorms.lean",
+      "ArkLib/Commitments/Functional/Hachi/Commitment.lean",
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
+      "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Norms.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean",
+      "ArkLib/Commitments/Functional/Hachi/InnerOuter/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Correctness.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean",
-      "ArkLib/Commitments/Functional/Hachi/InnerOuter.lean",
-      "ArkLib/Data/Lattices/CyclotomicRing/Modulus.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Bridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
+      "ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean",
+      "ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean",
+      "ArkLib/Commitments/Functional/Hachi/Recursion/ZBatchBridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/FinalEval.lean",
+      "ArkLib/Commitments/Functional/Hachi/Sumcheck/Rounds.lean",
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Batch.lean",
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean",
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Core.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Automorphism.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/FixedSubring.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Group.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Order.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois/Trace.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Galois.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LsCore.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
-      "ArkLib/Data/Lattices/ModuleSIS.lean"
+      "ArkLib/Data/Lattices/CyclotomicRing/PowTwo.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Basis.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Bijectivity.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Cardinality.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Factorization.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Field.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/NormBound.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/Packing.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/TraceInnerProduct.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield/TraceVanishing.lean",
+      "ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean",
+      "ArkLib/Data/Lattices/ModuleSIS.lean",
+      "ArkLib/Data/Lattices/Vectors.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean",
+      "ArkLib/ProofSystem/Component/SendChallenge.lean",
+      "ArkLib/ProofSystem/Component/SendClaim.lean",
+      "ArkLib/ProofSystem/RingSwitching/Basic.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean",
+      "ArkLib/ProofSystem/RingSwitching/Lift.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean",
+      "ArkLib/ProofSystem/RingSwitching/Packing.lean",
+      "ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean"
     ],
     "NS24": [
-      "ArkLib/Commitments/Functional/Hachi/Gadget.lean",
-      "ArkLib/Commitments/Functional/Hachi/GadgetNorms.lean",
+      "ArkLib/Commitments/Functional/Hachi/Commitment.lean",
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
+      "ArkLib/Commitments/Functional/Hachi/EvalSplit.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean",
+      "ArkLib/Commitments/Functional/Hachi/Gadget/Norms.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Arithmetic.lean",
+      "ArkLib/Commitments/Functional/Hachi/InnerOuter/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Correctness.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean",
       "ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean",
-      "ArkLib/Commitments/Functional/Hachi/InnerOuter.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Bridge.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Gadgets.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi/QuadEval/Soundness.lean",
+      "ArkLib/Commitments/Functional/Hachi.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/LyubashevskySeiler.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds/MicciancioYoung.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/NormBounds.lean",
-      "ArkLib/Data/Lattices/ModuleSIS.lean"
+      "ArkLib/Data/Lattices/CyclotomicRing/PowTwo.lean",
+      "ArkLib/Data/Lattices/ModuleSIS.lean",
+      "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean",
+      "ArkLib/ProofSystem/Component/SendChallenge.lean",
+      "ArkLib/ProofSystem/Component/SendClaim.lean"
     ],
     "PS94": [
       "ArkLib/Data/CodingTheory/PolishchukSpielman/PolishchukSpielman.lean"

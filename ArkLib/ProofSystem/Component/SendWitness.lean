@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.OracleReduction.Security.RoundByRound
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 import Mathlib.Data.FinEnum
 
 /-!
@@ -15,10 +17,23 @@ sends the (entire) witness to the verifier. There are two variants:
 1. For oracle reduction: the witness is an indexed family of types, and sent in a single oracle
   message to the verifier (using the derived indexed product instance for oracle interface).
 
-  We also define a simpler variant where one sends a single witness (converted to be indexed by
-  `Fin 1`).
+  We also define a simpler variant, `SendSingleWitness`, where one sends a single witness (converted
+  to be indexed by `Fin 1`).
 
-2. For reduction: the witness is a type, and sent as a statement to the verifier.
+2. For reduction (`SendWitness`, no oracle statements): the witness is a type, and sent as a
+  statement to the verifier.
+
+## Security
+
+The verifier of each variant is **pure** (`Verifier.IsPure` / `OracleVerifier.toVerifier.IsPure`)
+and has no challenge rounds, so it is **coordinate-wise special sound** for any `CWSSStructure`
+(`verifier_coordinateWiseSpecialSoundWith` and, for the oracle variant,
+`SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith`), via the no-challenge bridge
+`Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The named extractor reads the
+witness off the tree's unique transcript (`fun _ tree => tree.onlyTranscript 0`) — the canonical
+"open in the clear" base case.
+These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
+deferred; see the note there.
 -/
 
 open OracleSpec OracleComp OracleQuery ProtocolSpec Function Equiv
@@ -39,6 +54,10 @@ variable (Witness : Type)
 def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
 instance : ∀ i, VCVCompatible ((pSpec Witness).Challenge i) | ⟨0, h⟩ => nomatch h
+
+/-- The `SendWitness` protocol is a single `P_to_V` message, so it has no challenge rounds. This is
+what makes its (coordinate-wise) special soundness reduce to the no-challenge bridge. -/
+instance instIsEmptyChallengeIdx : IsEmpty (pSpec Witness).ChallengeIdx := ⟨fun ⟨0, h⟩ => nomatch h⟩
 
 @[inline, specialize]
 def prover : Prover oSpec Statement Witness (Statement × Witness) Unit (pSpec Witness) where
@@ -67,21 +86,103 @@ variable {Statement} {Witness}
 def toRelOut : Set ((Statement × Witness) × Unit) :=
   Prod.fst ⁻¹' relIn
 
+/-- The `SendWitness` verifier is pure: it deterministically returns `⟨stmt, transcript 0⟩`. This
+discharges the deterministic-left hypothesis of the CWSS/tree-soundness binary append, so the
+component can appear as a left factor in a sequential composition. -/
+instance instIsPure : (verifier oSpec Statement Witness).IsPure :=
+  ⟨fun stmt tr => ⟨stmt, tr 0⟩, fun _ _ => rfl⟩
+
 open Classical in
 /-- The `SendWitness` reduction satisfies perfect completeness. -/
 @[simp]
 theorem reduction_completeness :
     (reduction oSpec Statement Witness).perfectCompleteness init impl relIn (toRelOut relIn) := by
-  unfold Reduction.perfectCompleteness Reduction.completeness
+  simp only [Reduction.perfectCompleteness, Reduction.completeness,
+    ENNReal.coe_zero, tsub_zero]
   intro stmtIn witIn hIn
-  sorry
+  -- the run collapses definitionally: one pure message round, pure verifier
+  have hrun : (reduction oSpec Statement Witness).run stmtIn witIn =
+      pure ((ProtocolSpec.Transcript.concat (m := 0) witIn
+          (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
+        (stmtIn, witIn)) := rfl
+  simp only [hrun]
+  rw [ge_iff_le, one_le_probEvent_iff, probEvent_eq_one_iff]
+  refine ⟨?_, ?_⟩
+  · rw [OptionT.probFailure_eq, OptionT.run_mk]
+    simp only [probFailure_eq_zero, zero_add]
+    apply probOutput_eq_zero_of_not_mem_support
+    simp only [support_bind, Set.mem_iUnion, not_exists]
+    intro s _
+    change none ∈ _root_.support (StateT.run' (simulateQ _
+      (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
+          (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
+        (stmtIn, witIn))) : OracleComp _ _)) s) → False
+    rw [simulateQ_pure]
+    change none ∈ _root_.support (Prod.fst <$>
+      (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
+          (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
+        (stmtIn, witIn))) : StateT _ ProbComp _).run s) → False
+    rw [StateT.run_pure]
+    simp only [map_pure, support_pure]
+    exact fun h => Option.some_ne_none _ (Set.mem_singleton_iff.mp h).symm
+  · intro x hx
+    rw [OptionT.mem_support_iff] at hx
+    simp only [OptionT.run_mk, support_bind, Set.mem_iUnion] at hx
+    obtain ⟨s, _, hx⟩ := hx
+    change some x ∈ _root_.support (StateT.run' (simulateQ _
+      (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
+          (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
+        (stmtIn, witIn))) : OracleComp _ _)) s) at hx
+    rw [simulateQ_pure] at hx
+    change some x ∈ _root_.support (Prod.fst <$>
+      (pure (some ((ProtocolSpec.Transcript.concat (m := 0) witIn
+          (default : (pSpec Witness).Transcript 0), (stmtIn, witIn), ()),
+        (stmtIn, witIn))) : StateT _ ProbComp _).run s) at hx
+    rw [StateT.run_pure] at hx
+    simp [map_pure, support_pure] at hx
+    cases hx
+    exact ⟨hIn, rfl⟩
 
-theorem reduction_rbr_knowledge_soundness : True := trivial
+/-- **Coordinate-wise special soundness of `SendWitness`, named form.** The verifier has no
+challenge rounds, so CWSS collapses (via the no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level extraction
+obligation. The named extractor reads the witness off the tree's unique transcript — the witness
+*is* the (single) prover message. Since the verifier is pure with output `⟨stmt, tr 0⟩` and
+`relOut = Prod.fst ⁻¹' relIn`, acceptance into `relOut.language` forces `⟨stmt, tr 0⟩ ∈ relIn`,
+which is exactly the extracted witness. This is the canonical "open in the clear" CWSS base case,
+and holds for *any* coordinate-wise structure `D`. -/
+theorem verifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Witness)) :
+    Verifier.coordinateWiseSpecialSoundWith init impl D relIn (toRelOut relIn)
+      (verifier oSpec Statement Witness)
+      (fun _ tree => tree.onlyTranscript 0) := by
+  have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (verifier oSpec Statement Witness) relIn (toRelOut relIn) (fun _ tr => tr 0)
+    (fun stmtIn tr hAcc => by
+      have hmem : (⟨stmtIn, tr 0⟩ : Statement × Witness) ∈ (toRelOut relIn).language :=
+        Verifier.mem_of_pure_accepting init impl (verifier oSpec Statement Witness) stmtIn tr
+          (toRelOut relIn).language ⟨stmtIn, tr 0⟩ rfl hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu)
+  exact h
 
 end Reduction
 
 /-!
-  Now, the oracle reduction version
+  Now, the oracle reduction version.
+
+  **Status: deferred.** This indexed-family variant is currently only a prover skeleton (the oracle
+  verifier and reduction below are left commented out). Finishing it *as sketched* is blocked by the
+  current `OracleVerifier` interface: the prover sends the whole family as a **single** product
+  message `∀ i, Witness i` (`oraclePSpec` has one round), yet the intended output oracle statements
+  `OStatement ⊕ᵥ Witness` and the commented `embed` (via `FinEnum.equiv`) expect **per-index**
+  oracles. Under `embed`/`hEq` an output oracle can only *select* an existing source oracle, not
+  decompose a product; this is exactly the `simOStmt` refactor noted in `OracleReduction/Basic`.
+  Two coherent designs resolve it — (a) keep the single product message and output it as one product
+  oracle (which is `SendSingleWitness` at `Witness := ∀ i, Witness i`), or (b) rewrite `oraclePSpec`
+  as a `FinEnum.card ιw`-round protocol so each witness is its own message (per-index oracles then
+  come from per-message sources). Both are out of scope for the CWSS work; the pure-verifier ⟹ CWSS
+  pattern is already validated end-to-end by the reduction version above and by `SendSingleWitness`
+  below (each with `IsPure` + `coordinateWiseSpecialSound`, all `sorryAx`-free).
 -/
 
 section OracleReduction
@@ -188,6 +289,11 @@ variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (O
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
+/-- The `SendSingleWitness` protocol is a single `P_to_V` message, so it has no challenge rounds.
+This is what makes its coordinate-wise special soundness reduce to the no-challenge bridge. -/
+instance instIsEmptyChallengeIdx : IsEmpty (oraclePSpec Witness).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
 /-- The oracle prover for the `SendSingleWitness` oracle reduction.
 
 The prover sends the witness `wit` to the verifier as the only oracle message.
@@ -244,11 +350,28 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     {tr : (oraclePSpec Witness).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
-  simp [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  sorry
-  -- stop
-  -- ext i; rcases i <;> simp
-  -- split; simp
+  -- The oracle verifier's `verify` is `pure stmt`, so after `simulateQ_pure` reduces the simulated
+  -- pure and `pure_bind` collapses the bind, `toVerifier.run` is `pure` of the pair
+  -- `⟨stmt, oStmtOut⟩`, where `oStmtOut` reads the output oracle statements off `embed`. It remains
+  -- to identify `oStmtOut` with the explicit `Sum.rec` form, which we do coordinate-by-coordinate.
+  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
+  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
+        (pure stmt : OptionT (OracleComp _) Statement)
+      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
+  congr 1
+  congr 1
+  funext idx
+  rcases idx with j | j
+  · rfl
+  · fin_cases j; rfl
+
+/-- The `SendSingleWitness` oracle verifier is pure: its underlying (non-oracle) verifier
+deterministically returns the statement together with the output oracle statements read off the
+transcript. This discharges the deterministic-left hypothesis of the CWSS binary append. -/
+instance instIsPure :
+    (oracleVerifier oSpec Statement OStatement Witness).toVerifier.IsPure :=
+  ⟨fun p tr => ⟨p.1, Sum.rec p.2 (fun i => match i with | 0 => tr 0)⟩,
+   fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   (oRelIn : Set ((Statement × (∀ i, OStatement i)) × Witness))
@@ -268,10 +391,10 @@ theorem oracleReduction_completeness (h : NeverFail init) :
   -- TODO: clean up this proof
   -- simp only [OracleReduction.perfectCompleteness, oraclePSpec, toORelOut, Fin.isValue,
   --   OracleReduction.toReduction, MessageIdx, Reduction.perfectCompleteness_eq_prob_one,
-  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff, probFailure_eq_zero_iff,
-  --   neverFails_bind_iff, neverFails_map_iff, support_bind, support_map, Set.mem_iUnion,
-  --   Set.mem_image, Prod.exists, exists_and_right, exists_eq_right, exists_prop, forall_exists_index,
-  --   and_imp, Prod.forall, Prod.mk.injEq]
+  --   ChallengeIdx, StateT.run'_eq, Set.mem_setOf_eq, probEvent_eq_one_iff,
+  --   probFailure_eq_zero_iff, neverFails_bind_iff, neverFails_map_iff, support_bind,
+  --   support_map, Set.mem_iUnion, Set.mem_image, Prod.exists, exists_and_right,
+  --   exists_eq_right, exists_prop, forall_exists_index, and_imp, Prod.forall, Prod.mk.injEq]
   -- simp_rw [h, Reduction.run, oracleReduction, oracleVerifier_toVerifier_run, oracleProver_run]
   -- simp only [ChallengeIdx, oraclePSpec, id_eq, liftM_eq_liftComp,
   --   liftComp_pure, bind_pure_comp, map_pure, simulateQ_pure, StateT.run_pure,
@@ -279,6 +402,29 @@ theorem oracleReduction_completeness (h : NeverFail init) :
   --   and_true, Fin.isValue, and_imp, forall_const, true_and]
   -- aesop
 
-theorem oracleReduction_rbr_knowledge_soundness : True := trivial
+/-- **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier
+has no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level extraction
+obligation on the combined statement `Statement × (∀ i, OStatement i)`. The named extractor reads
+the witness off the tree's unique transcript — the extracted witness *is* the single oracle
+message. Since the verifier is pure with output `⟨stmt, oStmtOut⟩` (where `oStmtOut` exposes the
+old oracle statements together with the message), acceptance into `(toORelOut oRelIn).language`
+unfolds to exactly `⟨⟨stmt, oStmt⟩, tr 0⟩ ∈ oRelIn`. Holds for *any* coordinate-wise structure
+`D`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith
+    (D : CWSSStructure (oraclePSpec Witness)) :
+    (oracleVerifier oSpec Statement OStatement Witness).coordinateWiseSpecialSoundWith init impl
+      D oRelIn (toORelOut oRelIn)
+      (fun _ tree => tree.onlyTranscript 0) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (oracleVerifier oSpec Statement OStatement Witness) oRelIn (toORelOut oRelIn)
+    (fun _ tr => tr 0)
+    (fun s tr hAcc => by
+      have hmem := Verifier.mem_of_pure_accepting init impl
+        (oracleVerifier oSpec Statement OStatement Witness).toVerifier s tr
+        (toORelOut oRelIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu)
+  exact h
 
 end SendSingleWitness

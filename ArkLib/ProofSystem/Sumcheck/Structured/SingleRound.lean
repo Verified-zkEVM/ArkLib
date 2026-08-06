@@ -26,11 +26,11 @@ This file collects single-round primitives for the structured (witness-mode) sum
   polynomial degree bound `d`.
 
 These were originally housed in `Binius.BinaryBasefold.Prelude`,
-`RingSwitching.Spec`, and `RingSwitching.SumcheckPhase`. They are fully
+`RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
 generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that future ring-switching protocols (Hachi, Galois-ring PCS) can reuse them without
-depending on `Binius.*`. `RingSwitching.SumcheckPhase` retains thin `@[reducible]`
-wrappers that specialize `Context` and `OStmtIn` back to the ring-switching types.
+that other protocols (Hachi's §4.3 sumcheck, Galois-ring PCS) can reuse them without
+depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
+wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
 -/
 
 namespace Sumcheck.Structured
@@ -178,15 +178,20 @@ def getRoundProverFinalOutput (i : Fin ℓ)
   }
   let challenges : Fin 1 → L := fun _ => r_i'
   let witOut : SumcheckWitness L ℓ i.succ d := by
-    let projectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
+    let hvars : ℓ - i - 1 = ℓ - i.succ := by
+      have hi : i.succ.val = i.val + 1 := rfl
+      omega
+    let rawProjectedH := fixFirstVariablesOfMQP (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
       (H := witIn.H.val) (challenges := challenges)
+    let projectedH : L[X Fin (ℓ - i.succ)] := cast (by rw [hvars]) rawProjectedH
     exact {
       t' := witIn.t',
       H := ⟨projectedH, by
         have hp := witIn.H.property
-        simpa using
-          (fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
-            (poly := witIn.H.val) (challenges := challenges) (deg := d) hp)
+        dsimp only [projectedH]
+        cases hvars
+        exact fixFirstVariablesOfMQP_degreeLE (L := L) (ℓ := ℓ - i) (v := ⟨1, by omega⟩)
+          (poly := witIn.H.val) (challenges := challenges) (deg := d) hp
       ⟩
     }
   exact ⟨⟨stmtOut, oStmtIn⟩, witOut⟩

@@ -183,6 +183,27 @@ lemma domain_implies_char_ne_2 [NeZero n] (ω : D) :
   · exact h_ne_one h
   · exact h_ne_one (by rwa [h_neg_eq_pos] at h)
 
+lemma domain_implies_2_ne_0 [NeZero n] (ω : D) :
+  (2 : F) ≠ 0 := fun contra ↦ domain_implies_char_ne_2 ω <|
+    ringChar.of_eq (CharP.ringChar_of_prime_eq_zero Nat.prime_two contra)
+
+lemma domain_implies_x_ne_neg_x [NeZero n] (ω : D) {x : F} (hx : x ≠ 0) :
+  x ≠ -x := fun contra ↦ by
+  have := domain_implies_2_ne_0 ω
+  grind
+
+@[simp]
+lemma domain_implies_x_ne_neg_x_dep [DecidableEq F] [NeZero n] (ω : D) {x : ω} :
+  x.val ≠ -x.val := by
+  rcases x with ⟨x, hx⟩
+  exact domain_implies_x_ne_neg_x ω (by aesop)
+
+@[simp]
+lemma domain_implies_neg_x_ne_x_dep [DecidableEq F] [NeZero n] (ω : D) {x : ω} :
+  -x.val ≠ x.val := by
+  symm
+  simp
+
 end Smooth
 
 end FftDomainClass

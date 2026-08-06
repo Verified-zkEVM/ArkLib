@@ -5,7 +5,7 @@ Authors: Stefano Rocca
 -/
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
@@ -136,6 +136,8 @@ lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
 lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
     numVars k D = let L := D / (k - 1); (L + 1) * (2 * D + 2 - (k - 1) * L) / 2 := by
       convert card_weigthBoundIndices_eq_sum D hk using 1
+      · rfl
+      next =>
       have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
           (D / (k - 1) + 1) * D - (k - 1) * ((D / (k - 1)) * (D / (k - 1) + 1)) / 2 := by
         have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
@@ -150,7 +152,9 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
           rw [← sum_mul _ _ _]
           exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
             norm_num [range_add_one] at *; linarith)
-      simp_all only [sum_add_distrib, sum_const, card_range, smul_eq_mul, mul_one]
+      rw [sum_add_distrib]
+      simp only [sum_const, card_range, smul_eq_mul, mul_one]
+      rw [h_simp]
       rw [Nat.div_eq_of_eq_mul_left zero_lt_two]
       rw [tsub_eq_of_eq_add (c := k - 1)]
       · rw [tsub_add_eq_add_tsub]
@@ -275,8 +279,9 @@ lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 �
         exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
       convert h_div using 1
       convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-      rw [← Nat.mul_div_assoc] <;> ring_nf
-      exact even_iff_two_dvd.mp (by simp [parity_simps])
+      · rfl
+      · rw [← Nat.mul_div_assoc] <;> ring_nf
+        exact even_iff_two_dvd.mp (by simp [parity_simps])
 
 lemma numVars_gt_numConstraints (k n m : ℕ) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
@@ -435,9 +440,9 @@ lemma linearIndependent_monomials :
     apply _root_.linearIndependent_iff.mpr
     intro l hl
     ext ⟨i, j⟩
-    simp only [Finsupp.coe_zero, Pi.zero_apply]
-    convert congr_arg (fun f ↦ (f.coeff j).coeff i) hl using 1
-    convert (coeff_linearCombination_monomial l i j).symm using 1
+    have hc := congr_arg (fun f ↦ (f.coeff j).coeff i) hl
+    rw [coeff_linearCombination_monomial] at hc
+    simpa using hc
 
 /-- The solved polynomial is non-zero. -/
 lemma polySol_ne_zero :
@@ -450,7 +455,7 @@ lemma polySol_ne_zero :
           monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
       exact this.comp (LinearEquiv.injective _)
-    exact fun h ↦ this.1 <| h_inj <| by simpa using h
+    exact fun h ↦ this.1 <| h_inj <| by simpa [polySol] using h
 
 end neZero
 
@@ -461,14 +466,7 @@ lemma natWeightedDegree_monomial (i j u v : ℕ) :
     natWeightedDegree (monomial (F := F) i j) u v = u * i + v * j := by
     classical
     simp only [natWeightedDegree, monomial]
-    refine le_antisymm ?_ ?_ <;> norm_num
-    · intros b hb
-      simp [coeff_monomial] at hb
-      simp [← hb]
-    · refine le_trans ?_ (Finset.le_sup
-        (f := fun m ↦ u * (Polynomial.monomial j (Polynomial.monomial i 1)|>.coeff m|>.natDegree)
-          + v * m) (b := j) ?_)
-      all_goals norm_num [coeff_monomial]
+    refine le_antisymm ?_ ?_ <;> norm_num [coeff_monomial]
 
 /-- The weighted degree of a monomial X^i Y^j is u*i + v*j. -/
 lemma natWeightedDegree_monomial_eq (i j u v : ℕ) :
@@ -712,9 +710,12 @@ lemma rootMultiplicity_ge_of_shift_zero [DecidableEq F] {f : F[X][Y]} {x y : F}
       contrapose! hne
       simp only [Bivariate.coeff, Polynomial.coeff_map, Polynomial.coe_compRingHom]
       aesop
-    exact absurd (h_min_ge_m _
-      (List.min?_mem (by simpa [Bivariate.rootMultiplicity, rootMultiplicity₀,
-        weightedDegree, shift, hdeg] using h)))
+    have hmem := h
+    simp only [Bivariate.rootMultiplicity, rootMultiplicity₀] at hmem
+    have hdeg' : weightedDegree (shift f x y) 1 1 = some deg := by
+      simpa [weightedDegree, shift] using hdeg
+    rw [hdeg'] at hmem
+    exact absurd (h_min_ge_m _ (List.min?_mem hmem))
       (by push Not; exact h_contra)
 
 lemma polySol_multiplicity [DecidableEq F] (i : Fin n) :
@@ -856,8 +857,9 @@ lemma toPolynomial_degree_le (hk : k + 1 ≤ n) (p : code ωs k) :
     rw [toPolynomial_def]
     obtain ⟨q, hq, hp⟩ := p.2
     have h_interpolate : (Lagrange.interpolate Finset.univ ωs.toFun) (evalOnPoints ωs q) = q := by
-      convert interpolate_eq_of_degree_lt q _
-      exact lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk
+      simpa [evalOnPoints, Function.Embedding.toFun_eq_coe] using
+        interpolate_eq_of_degree_lt q
+          (lt_of_le_of_lt (natDegree_le_of_degree_le <| mem_degreeLT.mp hq |> le_of_lt) hk)
     rcases k <;> simp_all only [Function.Embedding.toFun_eq_coe, Lagrange.interpolate_apply,
       zero_add, degreeLT, ge_iff_le, zero_le, iInf_pos, Submodule.coe_iInf, Set.mem_iInter,
       SetLike.mem_coe, LinearMap.mem_ker, lcoeff_apply, zero_tsub, nonpos_iff_eq_zero]
@@ -997,8 +999,9 @@ lemma gs_numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1
     exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
   convert h_div using 1
   convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-  rw [← Nat.mul_div_assoc] <;> ring_nf
-  exact even_iff_two_dvd.mp (by simp [parity_simps])
+  · rfl
+  · rw [← Nat.mul_div_assoc] <;> ring_nf
+    exact even_iff_two_dvd.mp (by simp [parity_simps])
 
 /-- The degree bound with ρ = k/n is strictly less than m times the number of
     agreement points, provided the distance is within the rate-corrected Johnson

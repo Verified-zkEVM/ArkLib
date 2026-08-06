@@ -241,7 +241,7 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
           = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map_comm, ← simulateQ_map]
+            rw [← StateT.run'_map', ← simulateQ_map]
             rfl
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
@@ -251,7 +251,7 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
   simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
   congr 1
   funext τ
-  rw [← map_eq_bind_pure_comp, ← StateT.run'_map_comm, ← simulateQ_map]
+  rw [← map_eq_bind_pure_comp, ← StateT.run'_map', ← simulateQ_map]
   simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
   congr 1
   funext x
@@ -296,7 +296,7 @@ lemma function_binding_game_ext_support_srs {n L : ℕ} {AuxState : Type} [Sampl
             (τ', Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ', cm', queryOf',
               (fun i => responseOf' i), accepts, proofs))
           (Option.map (fun resultOf i => (resultOf i).2) resultPairs)) := by
-    simpa [mem_support_pure_iff] using hx
+    exact (mem_support_pure_iff _ _).mp hx
   cases hres : resultPairs with
   | none => simp [hres] at hx'
   | some resultOf =>
@@ -343,10 +343,10 @@ lemma function_binding_game_ext_support_verify_all {n L : ℕ} {AuxState : Type}
         ((Option.map (fun resultOf i => (resultOf i).1) opts_v).bind fun accepts =>
           Option.map
             (fun proofs =>
-              (τ_v, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ_v, cm_v, queryOf_v,
-                (fun i => responseOf_v i), accepts, proofs))
+              (τ_v, Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n τ_v, claim_v.1,
+                claim_v.2.fst, (fun i => claim_v.2.2.1 i), accepts, proofs))
             (Option.map (fun resultOf i => (resultOf i).2) opts_v)) := by
-      simpa [mem_support_pure_iff] using hx
+      exact (mem_support_pure_iff _ _).mp hx
     cases hres : opts_v with
     | none => simp [hres] at hx'
     | some resultOf =>
@@ -611,7 +611,7 @@ lemma arsdh_game_eq {n L : ℕ} {AuxState : Type} [SampleableType G₁]
       (hBody := by
         intro τ
         dsimp only
-        refine StateT.map_run'_eq_of_map_eq _ _ _ _ (∅ : unifSpec.QueryCache) ?_
+        refine StateT.map_run'_eq_of_map_eq (∅ : unifSpec.QueryCache) ?_
         simp only [simulateQ_bind, simulateQ_pure, map_eq_bind_pure_comp, bind_assoc]
         congr 1
         funext claimResult
@@ -648,7 +648,9 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
   letI game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
   letI game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
-  convert (
+  change Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
+    ≤ arsdhError
+  exact
     calc Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
     _ = Pr[functionBindingCondExt n L | game_ext] :=
       function_binding_game_ext_eq_function_binding_game (pairing := pairing) adversary
@@ -660,7 +662,7 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
       (reduction (g₁ := g₁) (g₂ := g₂) (pairing := pairing) L hn AuxState adversary) :=
       arsdh_game_eq (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn adversary
     _ ≤ arsdhError := arsdh_error_bound (g₁ := g₁) (g₂ := g₂) (pairing := pairing) hn
-      arsdhError hArsdh adversary)
+      arsdhError hArsdh adversary
 
 
 end FunctionBinding

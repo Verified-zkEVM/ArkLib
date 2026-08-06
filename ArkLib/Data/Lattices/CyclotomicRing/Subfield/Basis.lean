@@ -309,6 +309,29 @@ theorem conjAut_Xpow (α e : ℕ) :
       = Xpow (powTwoCyclotomic (R := R) α) (e * conjExp α) := by
   rw [conjAut, galoisRingHom_apply, galoisAut_Xpow' α (conjExp α) e (conjExp_odd α)]
 
+/-- **`σ_{-1}(X^e) = -X^{d-e}`** for `0 < e < d`: the conjugate of a sub-`d/2` monomial is minus
+the complementary monomial. The only nonzero coefficient of `σ_{-1}(X^e)` sits at `d - e`, with
+sign `-1`: from `e·conjExp ≡ 2^{α+1} - e (mod 2^{α+1})` we get
+`σ_{-1}(X^e) = X^{d + (d-e)} = -X^{d-e}`. -/
+theorem conjAut_Xpow_eq_neg (α : ℕ) {e : ℕ} (he0 : 0 < e) (heα : e < 2 ^ α) :
+    conjAut α (Xpow (powTwoCyclotomic (R := R) α) e)
+      = - Xpow (powTwoCyclotomic (R := R) α) (2 ^ α - e) := by
+  have hc : conjExp α + 1 = 2 ^ (α + 1) := Nat.sub_add_cancel Nat.one_le_two_pow
+  have h2 : (2 : ℕ) ^ (α + 1) = 2 * 2 ^ α := by rw [pow_succ]; ring
+  rw [conjAut_Xpow]
+  have hper : (e * conjExp α) % 2 ^ (α + 1) = (2 ^ α + (2 ^ α - e)) % 2 ^ (α + 1) := by
+    have harith : 2 ^ α + (2 ^ α - e) = 2 ^ (α + 1) - e := by omega
+    rw [harith]
+    have hmod : e * conjExp α ≡ 2 ^ (α + 1) - e [MOD 2 ^ (α + 1)] := by
+      apply Nat.ModEq.add_right_cancel' e
+      rw [Nat.sub_add_cancel (by omega : e ≤ 2 ^ (α + 1))]
+      have hsum : e * conjExp α + e = e * 2 ^ (α + 1) := by rw [← hc]; ring
+      rw [hsum]
+      exact (Nat.modEq_zero_iff_dvd.mpr ⟨e, by ring⟩).trans
+        (Nat.modEq_zero_iff_dvd.mpr (dvd_refl _)).symm
+    exact hmod
+  rw [Xpow_congr_mod α hper, Xpow_add, Xpow_natDegree, neg_one_mul]
+
 /-- **`X^e + σ_{-1}(X^e) ∈ R_q^H`** when `d/2k ∣ e`: `X^e` is then `σ_{4k+1}`-fixed (its exponent
 is a multiple of `d/2k`), and the sum is symmetric under `σ_{-1}` (which has order `2`). -/
 theorem mem_fixed_symm (α κ : ℕ) (hκ : κ + 1 ≤ α) {e : ℕ} (hdvd : 2 ^ (α - κ - 1) ∣ e) :
@@ -369,6 +392,21 @@ theorem mk_monomial_coeff_lt (α : ℕ) {i : ℕ} (hi : i < 2 ^ α) (c : R) (j :
   change ((powTwoCyclotomic (R := R) α).reduce (CompPoly.CPolynomial.monomial i c)).coeff j = _
   rw [hself, CPolynomial.coeff_monomial]
 
+/-- **Full coefficient of a (possibly high-degree) scaled monomial.** For `p < d`, the `p`-th
+coefficient of the reduced `c·X^m` is `(-1)^{m/d}·c` at the folded position `p = m mod d`, and `0`
+elsewhere — the sign records how many times the exponent wrapped past `X^d = -1`. -/
+theorem mk_monomial_coeff_full (α m : ℕ) (c : R) (p : ℕ) :
+    (Rq.mk (powTwoCyclotomic (R := R) α) (CompPoly.CPolynomial.monomial m c)).1.coeff p
+      = if p = m % 2 ^ α then (-1 : R) ^ (m / 2 ^ α) * c else 0 := by
+  have hmod : m % 2 ^ α < 2 ^ α := Nat.mod_lt _ (by positivity)
+  rw [mk_monomial_fold]
+  rcases Nat.even_or_odd (m / 2 ^ α) with he | ho
+  · rw [he.neg_one_pow, _root_.one_mul, mk_monomial_coeff_lt α hmod]
+    simp [he.neg_one_pow]
+  · rw [ho.neg_one_pow, neg_one_mul, Rq.neg_val, CPolynomial.coeff_neg,
+      mk_monomial_coeff_lt α hmod, ho.neg_one_pow]
+    split_ifs <;> ring
+
 /-- **`X^f` has no coefficient off its folded position**: `(X^f).coeff p = 0` for `p < d` with
 `p ≠ f mod d`. Proved by folding `X^f = (-1)^{f/d}·X^{f mod d}` and casing on the parity of `f/d`
 (so the sign is literally `±1`), avoiding any product-coefficient evaluation. -/
@@ -380,6 +418,54 @@ theorem Xpow_coeff_eq_zero_of_ne (α f p : ℕ) (hne : p ≠ f % 2 ^ α) :
   · rw [he.neg_one_pow, _root_.one_mul, mk_monomial_coeff_lt α hmod, if_neg hne]
   · rw [ho.neg_one_pow, neg_one_mul, Rq.neg_val, CPolynomial.coeff_neg,
       mk_monomial_coeff_lt α hmod, if_neg hne, neg_zero]
+
+/-- Right-multiplying a (folded or unfolded) monomial by `X^e` adds `e` to the exponent:
+`(c·X^k)·X^e = c·X^{k+e}` in `R_q`. -/
+theorem mk_monomial_mul_Xpow (α k e : ℕ) (c : R) :
+    Rq.mk (powTwoCyclotomic (R := R) α) (CompPoly.CPolynomial.monomial k c)
+        * Xpow (powTwoCyclotomic α) e
+      = Rq.mk (powTwoCyclotomic α) (CompPoly.CPolynomial.monomial (k + e) c) := by
+  rw [mk_monomial_eq, mk_monomial_eq, Xpow_add]; ring
+
+/-- **Coefficient of an `X^e`-shift of a reduced element.** For `e < d`, `p < d` and any `x : R_q`,
+the `p`-th coefficient of `x·X^e` is the `(p-e)`-th coefficient of `x` (no wrap, `e ≤ p`), or minus
+the `(p+d-e)`-th coefficient (one wrap past `X^d = -1`, `p < e`). This is the only place the proof
+needs the ring's multiplication; everything downstream is coefficient bookkeeping. -/
+theorem Xpow_mul_coeff (α e : ℕ) (he : e < 2 ^ α) (x : Rq (powTwoCyclotomic (R := R) α))
+    {p : ℕ} (hp : p < 2 ^ α) :
+    (x * Xpow (powTwoCyclotomic α) e).1.coeff p
+      = if e ≤ p then x.1.coeff (p - e) else - x.1.coeff (p + 2 ^ α - e) := by
+  have hexp : x = ∑ k ∈ Finset.range (2 ^ α),
+      Rq.mk (powTwoCyclotomic α) (CompPoly.CPolynomial.monomial k (x.1.coeff k)) := by
+    conv_lhs => rw [← galoisAut_one_eq α x]
+    rw [galoisAut_eq_sum]
+    simp only [_root_.mul_one, powTwoCyclotomic_natDegree]
+  conv_lhs => rw [hexp, Finset.sum_mul, ← Rq.coeffHom_apply, map_sum]
+  simp only [Rq.coeffHom_apply, mk_monomial_mul_Xpow, mk_monomial_coeff_full]
+  by_cases hep : e ≤ p
+  · rw [if_pos hep, Finset.sum_eq_single (p - e)]
+    · have h1 : p - e + e = p := by omega
+      rw [h1, Nat.mod_eq_of_lt hp, Nat.div_eq_of_lt hp, pow_zero, _root_.one_mul, if_pos rfl]
+    · intro k hk hkne
+      rw [Finset.mem_range] at hk
+      rw [if_neg]
+      intro hpk
+      rcases lt_or_ge (k + e) (2 ^ α) with hlt | hge
+      · rw [Nat.mod_eq_of_lt hlt] at hpk; exact hkne (by omega)
+      · rw [Nat.mod_eq_sub_mod hge, Nat.mod_eq_of_lt (by omega)] at hpk; omega
+    · intro h; exact absurd (Finset.mem_range.mpr (by omega : p - e < 2 ^ α)) h
+  · rw [if_neg hep, Finset.sum_eq_single (p + 2 ^ α - e)]
+    · have h1 : p + 2 ^ α - e + e = p + 2 ^ α := by omega
+      rw [h1, Nat.add_mod_right, Nat.mod_eq_of_lt hp, Nat.add_div_right _ (by positivity),
+        Nat.div_eq_of_lt hp, _root_.zero_add, pow_one, neg_one_mul, if_pos rfl]
+    · intro k hk hkne
+      rw [Finset.mem_range] at hk
+      rw [if_neg]
+      intro hpk
+      rcases lt_or_ge (k + e) (2 ^ α) with hlt | hge
+      · rw [Nat.mod_eq_of_lt hlt] at hpk; omega
+      · rw [Nat.mod_eq_sub_mod hge, Nat.mod_eq_of_lt (by omega)] at hpk; exact hkne (by omega)
+    · intro h; exact absurd (Finset.mem_range.mpr (by omega : p + 2 ^ α - e < 2 ^ α)) h
 
 /-- The conjugate `σ_{-1}(X^e)` lands at position `d - e` (mod `d`), for `0 < e < d`. -/
 theorem mul_conjExp_mod (α : ℕ) {e : ℕ} (he0 : 0 < e) (he : e < 2 ^ α) :
@@ -462,5 +548,34 @@ theorem vElt_coeff (α κ : ℕ) (hκ : κ + 1 ≤ α) (j s : Fin (2 ^ κ)) :
       rw [if_neg hs0, _root_.add_zero]
     · rw [conjAut_Xpow_coeff_low α hα
           (Nat.mul_pos hpos (Nat.pos_of_ne_zero hj0)) hej hes, _root_.add_zero]
+
+/-- **Full coefficient formula for the basis element `v_j`.** For every position `p < d`, the
+`p`-th coefficient of `v_j = X^{(d/2k)·j} + σ_{-1}(X^{(d/2k)·j})` is: `2` at `p = 0` when `j = 0`;
+otherwise `+1` at `p = (d/2k)·j`, `-1` at the complementary position `p = d - (d/2k)·j`, and `0`
+elsewhere. This extends `vElt_coeff` (which only covers the positions `(d/2k)·s`) to all positions,
+pinning down the *support* of `v_j` — at most two nonzero coefficients. -/
+theorem vElt_coeff_full (α κ : ℕ) (hκ : κ + 1 ≤ α) (j : Fin (2 ^ κ)) {p : ℕ} (hp : p < 2 ^ α) :
+    (vElt α κ hκ j).val.1.coeff p
+      = if (j : ℕ) = 0 then (if p = 0 then (2 : R) else 0)
+        else if p = 2 ^ (α - κ - 1) * (j : ℕ) then 1
+             else if p = 2 ^ α - 2 ^ (α - κ - 1) * (j : ℕ) then -1 else 0 := by
+  have hα : 1 ≤ α := by omega
+  have hhalf : (2 : ℕ) ^ (α - 1) = 2 ^ (α - κ - 1) * 2 ^ κ := by rw [← pow_add]; congr 1; omega
+  have hd2 : (2 : ℕ) ^ α = 2 * 2 ^ (α - 1) := by rw [← pow_succ']; congr 1; omega
+  rw [vElt_coe, Rq.add_val, CPolynomial.coeff_add]
+  set e := 2 ^ (α - κ - 1) * (j : ℕ) with he_def
+  have hej : e < 2 ^ (α - 1) := by
+    rw [he_def, hhalf]; exact mul_lt_mul_of_pos_left j.isLt (by positivity)
+  have hejα : e < 2 ^ α := by omega
+  rw [Xpow_coeff_of_lt α hejα p]
+  by_cases hj0 : (j : ℕ) = 0
+  · have he0 : e = 0 := by rw [he_def, hj0, Nat.mul_zero]
+    rw [if_pos hj0, he0, conjAut_Xpow, Nat.zero_mul, Xpow_coeff_of_lt α (by positivity) p]
+    split_ifs with h <;> norm_num
+  · have hepos : 0 < e := by
+      rw [he_def]; exact Nat.mul_pos (by positivity) (Nat.pos_of_ne_zero hj0)
+    rw [if_neg hj0, conjAut_Xpow_eq_neg α hepos hejα, Rq.neg_val, CPolynomial.coeff_neg,
+      Xpow_coeff_of_lt α (by omega : 2 ^ α - e < 2 ^ α) p]
+    split_ifs with h1 h2 <;> first | (exfalso; omega) | ring
 
 end ArkLib.Lattices.CyclotomicModulus

@@ -403,7 +403,7 @@ instance {d : ℕ} : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=
   instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
-instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
+def instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
     SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i
   haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i

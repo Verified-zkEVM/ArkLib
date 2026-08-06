@@ -1,5 +1,9 @@
 name: 'PR Summary'
 
+# Summary runs on every PR update (open + each new commit). It is SAFE under
+# pull_request_target — the OpenRouter secret and write token are in scope even
+# for fork PRs — because it never builds or executes PR code: it reads the diff
+# and committed source as data, and reads its policy file from the BASE ref (S4).
 on:
   pull_request_target:
     types: [opened, synchronize, reopened]
@@ -9,25 +13,22 @@ concurrency:
   cancel-in-progress: true
 
 permissions:
-  contents: read        # required: the action checks out the PR head to read the diff
-  pull-requests: write  # required: post/update the summary comment
-  issues: read          # optional: link affected sorries to `proof wanted` issues
+  contents: read
+  pull-requests: write
+  issues: read
 
 jobs:
   summarize:
     runs-on: ubuntu-latest
-    timeout-minutes: 20
     steps:
       - name: Generate PR Summary
-        uses: alexanderlhicks/lean-summary-workflow@main
+        uses: alexanderlhicks/lean4repo-utils/summary@0.3
         with:
           github_token: ${{ secrets.GITHUB_TOKEN }}
           api_key: ${{ secrets.OPENROUTER_KEY }}
-          # model: inherits the action default (deepseek/deepseek-v4-flash).
-          #        Set `model: <openrouter-slug>` here to override for this repo only.
           github_repository: ${{ github.repository }}
           pr_number: ${{ github.event.pull_request.number }}
-          additional_instructions_path: 'CONTRIBUTING.md'
           validate_title: 'true'
           upstream_path: 'ArkLib/ToMathlib/'
-          # Other optional knobs (reasoning_effort, max_*_diff_chars): see the action README.
+          # Default model (deepseek/deepseek-v4-flash). additional_instructions_path
+          # defaults to CONTRIBUTING.md (read from the base ref) when unset.

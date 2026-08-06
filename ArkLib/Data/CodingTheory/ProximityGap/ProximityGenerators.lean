@@ -26,6 +26,9 @@ function is a generator matrix for an MDS code
 probability that the generator satisfies the MCA condition is bounded above by `ε_mca`.
 - `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
 respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
+- `affine line generator`: A generator of the form `G : F → F²` such that `x ↦ (1,x)`.
+- `affine space generator`: A generator of the form `G : F^ℓ → F^(ℓ + 1)` such that
+ `x ↦ (1,x)`.
 
 ## References
 
@@ -54,7 +57,7 @@ abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 a zero output from a non-zero vector is bounded above by `ε_ze`.
 Definition 3.11 [BCGM25]. -/
 def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_ze : I) :
-  Prop :=
+    Prop :=
   (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
 
@@ -89,13 +92,13 @@ def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : Line
   (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
   let v := Matrix.vecMul (G x) (U)
   ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-  projectedWord v T ∈ projectedCode LC T ∧
-  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
+  projectedWord v T ∈ projectedCodeSubmod LC T ∧
+  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → I)
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
   (LC : LinearCode ι F) : Prop :=
   ∀ U : ℓ → (ι → F), ∀ γ : I,
     Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
@@ -136,6 +139,17 @@ theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ']
   simp only [Module.Basis.tensorProduct_repr_tmul_apply, Pi.basisFun_repr, smul_eq_mul]
   ring
 
+/-- Let `F` be a field.
+The affine line generator is a generator of the form `G : F → F²` such that `x ↦ (1,x)`. -/
+abbrev AffineLineGenerator (F : Type) [Field F] : Generator F (Fin 2) F :=
+  fun x => ![1, x]
+
+/-- Let `F` be a field.
+The affine space generator is a generator of the form `G : F^ℓ → F^(ℓ + 1) ` such that
+`x ↦ (1,x)`. -/
+abbrev AffineSpaceGenerator (F : Type) [Field F] (ℓ : ℕ) : Generator (Fin ℓ → F) (Fin (ℓ + 1)) F :=
+  fun x => Fin.cons 1 x
+
 end CoreDefinitions
 
 namespace PolynomialGenerator
@@ -143,6 +157,7 @@ namespace PolynomialGenerator
 open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
+/-- Auxiliary lemma to prove that an error is in the unit interval. -/
 lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
   constructor
   · exact div_nonneg (Nat.cast_nonneg d) (le_of_lt (Nat.cast_pos.mpr hm_pos))
@@ -150,8 +165,8 @@ lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m
     have hm_pos' : (0 : ℝ) < m := by exact_mod_cast hm_pos
     exact (div_le_one hm_pos').mpr hdm'
 
-/-- The minimum of the cardinality of a family of sets nonempty sets, indexed by a possibly empty
-set. Returns 1 if the indexing set is empty. -/
+/-- The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set.
+Returns `1` if the indexing set is empty. -/
 def minSeedCard {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] : ℕ :=
   if h : 0 < s then
     Finset.inf' Finset.univ (Finset.univ_nonempty_iff.mpr (Fin.pos_iff_nonempty.mp h))
@@ -170,6 +185,7 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
     intro i _
     exact Fintype.card_pos_iff.mpr (Set.nonempty_coe_sort.2 (hne i))
   · norm_num
+
 
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
@@ -205,17 +221,20 @@ theorem poly_gen_is_zero_evading
     and_imp]
   intros b x hx hb
   rw [hb]
-  convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1
-  any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
-  any_goals assumption
-  · convert rfl
-    ext; simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
-  · rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
-    exact minSeedCard_pos S
-  · exact LinearCombination.linearCombination_ne_zero hG.1 hx
-  · exact MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
-                Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j)
-  · exact minSeedCard_pos S
+  change ((fun a => G a ⬝ᵥ x = 0) <$> $ᵖ ((i : Fin s) → ↥(S i))) True ≤ _
+  rw [show (fun a => G a ⬝ᵥ x = 0) = fun a =>
+      MvPolynomial.eval (fun i => (a i : F)) (∑ j, x j • P j) = 0 by
+    funext a
+    simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]]
+  refine (prob_eval_zero_le_div (∑ j, x j • P j)
+    (LinearCombination.linearCombination_ne_zero hG.1 hx)
+    (maxTotalDegree P) (minSeedCard S)
+    (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
+      Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
+    (minSeedCard_pos S)
+    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+  rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
+  exact minSeedCard_pos S
 
 end PolynomialGenerator
 
