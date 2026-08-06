@@ -142,19 +142,24 @@ lemma subdomain_generator_pow_generator (i : ℕ) :
   (subdomain ω i).cosetGenerator = ω 0 ^ 2 ^ i := rfl
 
 set_option warning.simp.varHead false in
-/-- Membership to the `0`th subdomain is
-  the same as membership to the original coset FFT domain. -/
 @[simp]
-lemma mem_subdomain_0_iff_mem :
-  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by
+lemma subdomain_0_apply (i : Fin (2 ^ n)) :
+  no_index (subdomain ω 0 i) = ω i := by
   aesop
-    (add safe cases Nat)
+    (add unsafe [cases Fin, cases Nat])
+    (add safe (by grind))
     (add simp
       [subdomain,
        CosetFftDomainClass.subdomain_embed,
        mkSubgroupUnit,
-       mem_def,
        CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+
+set_option warning.simp.varHead false in
+/-- Membership to the `0`th subdomain is
+  the same as membership to the original coset FFT domain. -/
+@[simp]
+lemma mem_subdomain_0_iff_mem :
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by simp [mem_def]
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
