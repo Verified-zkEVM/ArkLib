@@ -192,7 +192,7 @@ lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
   the original size by the block size. -/
 @[simp, grind =]
 lemma pow_2_n_sub_k_eq_n_sub_k
-  {A : Type*} [Group A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+  {A : Type*} [Group A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] :
   (2 : A) ^ n / (2 : A) ^ k = (2 : A) ^ (n - k) := by
   calc
@@ -206,7 +206,7 @@ lemma pow_2_n_sub_k_eq_n_sub_k
   `2 ^ (n - 1) / 2 ^ (k - 1) = 2 ^ (n - k)`. -/
 @[simp, grind =]
 lemma pow_2_n_sub_1_sub_k_sub_1_eq_n_sub_k
-  {A : Type*} [Group A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+  {A : Type*} [Group A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] :
   (2 : A) ^ (n - 1) / (2 : A) ^ ((k - 1)) = (2 : A) ^ (n - k) := by
   calc
@@ -243,40 +243,35 @@ lemma n_sub_k_add_d {k d n : ℕ} [FoldingContext k d n] :
 /-- The folded degree bound times the block size recovers the original degree bound:
   `2 ^ (d - k) * 2 ^ k = 2 ^ d`. -/
 @[simp, grind _=_]
-lemma pow_2_d_sub_k_mul_pow_2_k
-  {A : Type*} [Monoid A] [OfNat A 2]
+lemma pow_2_d_sub_k_mul_pow_2_k {A : Type*} [Monoid A] [OfNat A 2]
   {k d : ℕ} [FoldingContextLeft k d] :
   (2 : A) ^ (d - k) * (2 : A) ^ k = (2 : A) ^ d := by
   simp [←pow_add]
 
 /-- Commuted form of `pow_2_d_sub_k_mul_pow_2_k`: `2 ^ k * 2 ^ (d - k) = 2 ^ d`. -/
 @[simp, grind _=_]
-lemma pow_2_k_mul_pow_2_d_sub_k
-  {A : Type*} [Monoid A] [OfNat A 2]
+lemma pow_2_k_mul_pow_2_d_sub_k {A : Type*} [Monoid A] [OfNat A 2]
   {k d : ℕ} [FoldingContextLeft k d] :
   (2 : A) ^ k * (2 : A) ^ (d - k) = (2 : A) ^ d := by simp [←pow_add]
 
 /-- Since `d ≤ n`, the minimum of the message-space and domain sizes is `2 ^ d`. This is
   the shape in which the rate of a Reed–Solomon code is computed. -/
 @[simp, grind =]
-lemma min_pow_2_d_pow_2_n
-  {d n : ℕ} [FoldingContextRight d n] :
+lemma min_pow_2_d_pow_2_n {d n : ℕ} [FoldingContextRight d n] :
   min ((2 : ℕ) ^ d) ((2 : ℕ) ^ n) = 2 ^ d := by simp
 
 /-- Forward direction of `pow_2_k_mul_le_pow_2_d_iff`, stated with the minimal typeclass
   assumptions: bounding `x` by the folded degree bound bounds `2 ^ k * x` by `2 ^ d`. -/
 @[grind! →]
-lemma pow_2_k_mul_le_pow_2_d_of
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
-  [OfNat A 2] {k d : ℕ} [FoldingContextLeft k d] {x : A}
+lemma pow_2_k_mul_le_pow_2_d_of {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A] [OfNat A 2]
+  {k d : ℕ} [FoldingContextLeft k d] {x : A}
   (h : x ≤ (2 : A) ^ (d - k)) :
     (2 : A) ^ k * x ≤ (2 : A) ^ d := by grind [mul_le_mul_right]
 
 /-- `2 ^ k * x ≤ 2 ^ d` exactly when `x ≤ 2 ^ (d - k)`. Used to transfer degree bounds
   between a polynomial and its `2 ^ k`-fold. -/
 @[simp, grind .]
-lemma pow_2_k_mul_le_pow_2_d_iff
-  {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
+lemma pow_2_k_mul_le_pow_2_d_iff {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
   [MulLeftStrictMono A]
   [OfNat A 2] {k d : ℕ} [FoldingContextLeft k d] {x : A} :
   (2 : A) ^ k * x ≤ (2 : A) ^ d ↔
