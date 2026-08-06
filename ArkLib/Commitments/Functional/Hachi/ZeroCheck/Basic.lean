@@ -8,7 +8,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 /-!
 # Hachi Zero-Check (Figure 5 / corrected Lemma 10)
 
-Umbrella for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [NOZ26] Eqs. (21)–(23))
+Umbrella module for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [NOZ26]
+Eqs. (21)–(23))
 and the zero-check subprotocol that reduces the two polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` — the
 range constraints and the `α`-evaluated linear constraints, both `eq̃`-batched — to their
 evaluations at random points.
@@ -19,7 +20,8 @@ Hachi's Lemma 10 (uniform-vector-challenge extraction) is **not provable as stat
 coordinate-wise star certifies only axis-cross vanishing, and for `m ≥ 2` that does not imply
 `H ≡ 0`. `ZeroCheck/Reduction.lean` implements the adopted repair — two scalar **Kronecker seeds**
 `(ρ₀, ρ_α)`, with the evaluation points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, where
-univariate root counting is information-complete.
+univariate root counting is information-complete. The counterexample and the repair are spelled
+out in that file's module docstring.
 
 ## Folder structure
 
@@ -34,12 +36,13 @@ univariate root counting is information-complete.
   (`relBatched`, Eqs. (22)–(23)). Statement reshaping only.
 * `ZeroCheck/Reduction.lean` — **Hachi Figure 5 / corrected Lemma 10**: one challenge round
   carrying the seed pair `(ρ₀, ρ_α) ∈ F²`, reducing the identities to point evaluations at the
-  derived Kronecker points, with the CWSS theorem `zeroCheck_coordinateWiseSpecialSound` at
+  derived Kronecker points, with the CWSS theorem
+  `zeroCheck_coordinateWiseSpecialSoundWithEscape` at
   `k = D` (**sorried**).
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
-Its output relation `relZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`; the chain
-is composed in `Composition.lean`.
+Its plain output relation `relZeroCheck` is the input of the sumcheck bridge in `Sumcheck/`;
+the chain is composed in `Composition.lean`.
 
 ## References
 

@@ -9,7 +9,7 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
 /-!
 # Inner-Outer Ajtai Commitment
 
-Umbrella for `Hachi/InnerOuter/`: the Greyhound [NS24] / Hachi [NOZ26] two-layer Ajtai
+Umbrella module for `Hachi/InnerOuter/`: the Greyhound [NS24] / Hachi [NOZ26] two-layer Ajtai
 commitment over the cyclotomic ring `Rq Φ` (Hachi [NOZ26, §4.1]). Each message block is
 gadget-decomposed and inner-committed under the matrix `A`; the inner commitments are
 gadget-decomposed again, flattened, and outer-committed under `B`. The scheme's opening notion

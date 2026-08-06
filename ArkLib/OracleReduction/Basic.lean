@@ -15,7 +15,7 @@ format:
 
   - The protocol proceeds over a number of steps. In each step, either the prover or the verifier
     sends a message to the other. We assume that this sequence of interactions is fixed in advance,
-    and is described by a protocol specification (see `ProtocolSpec.lean`).
+    and is described by a protocol specification (see `ProtocolSpec/Basic.lean`).
 
     Note that we do _not_ require interleaving prover's messages with verifier's challenges, for
     maximum flexibility in defining reductions.

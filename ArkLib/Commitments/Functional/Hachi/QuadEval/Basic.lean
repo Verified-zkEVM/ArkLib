@@ -9,7 +9,7 @@ import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 /-!
 # Hachi Polynomial-Evaluation Reduction `QuadEval`
 
-Umbrella for `Hachi/QuadEval/`: Hachi's [NOZ26, §4.2] polynomial-evaluation reduction
+Umbrella module for `Hachi/QuadEval/`: Hachi's [NOZ26, §4.2] polynomial-evaluation reduction
 (Figure 3, "Polynomial Evaluation as Quadratic Equation" — hence the name `QuadEval`). The
 reduction proves an evaluation claim `f(x) = y` on an inner-outer-committed multilinear
 polynomial by rewriting the evaluation as the quadratic form `bᵀ M a` (Eq. (12)) and folding the
@@ -24,12 +24,16 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   `z`, and the `tensorG` / `tensorG1` challenge combinations with the coordinate-isolation
   lemmas at the heart of the Lemma 8 extraction.
 * `QuadEval/Reduction.lean` — the two-round protocol data: the statement/response/witness types,
-  the challenge space `ShortChallenge`, the relations `relIn` (weak opening ∨ Module-SIS(B) ∨
-  Module-SIS(D)) and `relOut` (Eq. (20) + the range checks), and the pure pass-through
-  `verifier` with the honest `prover` skeleton.
-* `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extractor
-  (`buildWitness`) and the coordinate-wise special soundness
-  `quadEval_coordinateWiseSpecialSound`, bundled as the composable `quadEvalPackage`; also the
+  the challenge space `ShortChallenge`, the ordinary relations `relIn` (an eval-consistent weak
+  opening) and `relOut` (Eq. (20) + the range checks) over the fixed commitment key `pp`, the
+  `QuadEvalSISBreak`/`quadEvalSISSet` break vocabulary for the Module-SIS(B/D) extraction outcomes
+  (validated against the same fixed `pp` — the key is a parameter, never statement data),
+  and the pure pass-through `verifier` with the honest `prover` skeleton.
+* `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extraction
+  (`buildWitness`, split into the plain assembler `quadEvalMkWitness` and the escape event
+  `quadEvalEscLocal`) and the escape-threaded coordinate-wise special soundness
+  `quadEval_coordinateWiseSpecialSoundWithEscape` at the **plain** relations, bundled as the
+  composable `quadEvalPackage`; also the
   reduction's derived norm constants `B_z` / `βSq`. The soundness is genuinely `sorry`-free —
   axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
   one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself

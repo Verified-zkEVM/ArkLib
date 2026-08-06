@@ -11,9 +11,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   Zero-round bridge between the lift's per-row/per-entry residual claims and the **batched
   polynomial-identity** form the zero-check tests:
 
-  * `relIn = relLiftE` — opening `w̃` of `t`, per-row `α`-evaluated constraints, entrywise
+  * `relIn = relLift` — opening `w̃` of `t`, per-row `α`-evaluated constraints, entrywise
     ranges (`RingSwitch/Reduction.lean`);
-  * `relOut = relBatchedE` — opening `w̃` of `t`, `H₀^{w̃} ≡ 0` and `H_α^{w̃} ≡ 0` as
+  * `relOut = relBatched` — opening `w̃` of `t`, `H₀^{w̃} ≡ 0` and `H_α^{w̃} ≡ 0` as
     `CMlPolynomialEval` identities (Eqs. (22)–(23), `ZeroCheck/Constraints.lean`).
 
   The statement is **unchanged** (`ReduceClaim` at `mapStmt := id`, witness maps `id`): only the
@@ -22,7 +22,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 
   * **completeness direction** (not needed for CWSS): per-row + ranges ⇒ every `eq̃`-basis
     coefficient of `H_α`/`H₀` vanishes ⇒ both identities;
-  * **extraction direction** (the sorried pull-back `mem_relLiftE_of_relBatchedE`):
+  * **extraction direction** (the sorried pull-back `mem_relLift_of_relBatched`):
     `H_α ≡ 0` ⇒ per-row constraints, by non-degeneracy of the `eq̃` basis (evaluation at the
     Boolean points is the identity matrix); `H₀ ≡ 0` ⇒ per-entry range membership, since each
     entry is a root of the `2b − 1`-factor range product over the *field* `F` (needs
@@ -42,14 +42,14 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- **The batched relation** (Hachi Eqs. (22)–(23) as polynomial identities): `w̃` opens `t`,
 the range polynomial `H₀^{w̃}` and the linear-constraint polynomial `H_α^{w̃}` are identically
 zero, and the public bound-sanity conjunct is retained. This is the zero-check's `relIn`. -/
-def relBatched (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   {p |
@@ -58,14 +58,8 @@ def relBatched (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBoun
     hAlpha Φ m₁ φF b p.1.1 p.1.2.2 p.2 = 0 ∧
     bound ≤ p.1.1.bound}
 
-/-- Escape-threaded batched relation — the zero-check's seam. -/
-def relBatchedE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relBatched Φ m₀ m₁ bound ρBound K φF b).withEscape K.esc
-
 /-- **Un-batching pull-back** (the bridge's `hRel`): the batched identities imply the lift's
-per-row claims *and* shortness. Escapes pass through.
+per-row claims *and* shortness.
 
 Because `relBatched` deliberately omits the `liftShort` conjunct (unlike `relLift`), `H₀` is
 load-bearing here rather than decorative: shortness must be *derived* from the range identity.
@@ -84,36 +78,39 @@ load-bearing here rather than decorative: shortness must be *derived* from the r
 The bound-sanity conjunct is shared verbatim. The `hρ` hypothesis is load-bearing (at
 `ρBound = 0`, `b ≥ 2`, an honest `ρ ≠ 0` witness satisfies `relBatched` yet violates
 `RhoShort`), which is exactly why `relBatched` omits `liftShort` and this bridge re-derives it. -/
-theorem mem_relLiftE_of_relBatchedE
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+theorem mem_relLift_of_relBatched
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (hn : n ≤ 2 ^ m₁)
-    (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n ⊕ E)
-    (h : (X, w) ∈ relBatchedE Φ m₀ m₁ bound ρBound K φF b) :
-    (X, w) ∈ relLiftE Φ bound ρBound K φF := by
+    (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
+    (h : (X, w) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b) :
+    (X, w) ∈ relLift Φ bound ρBound K φF := by
   sorry
 
-/-- **The batching bridge as a `CWSSPackage`**: zero-round `ReduceClaim` at `mapStmt := id`,
-reducing `relLiftE` to `relBatchedE` with no soundness error (the whole content is the sorried
+/-- **The batching bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+`mapStmt := id`,
+reducing `relLift` to `relBatched` with no soundness error (the whole content is the sorried
 un-batching pull-back). -/
-def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (hn : n ≤ 2 ^ m₁) :
     CWSSPackage init impl
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec id
   struct := CWSSStructure.ofIsEmpty
-  relIn := relLiftE Φ bound ρBound K φF
-  relOut := relBatchedE Φ m₀ m₁ bound ρBound K φF b
+  relIn := relLift Φ bound ρBound K φF
+  relOut := relBatched Φ m₀ m₁ bound ρBound K φF b
   isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relLiftE Φ bound ρBound K φF)
-    (relOut := relBatchedE Φ m₀ m₁ bound ρBound K φF b)
+  extractor := ReduceClaim.treeExtractor (mapStmt := id)
+    (relBatched Φ m₀ m₁ bound ρBound K φF b) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+    (relIn := relLift Φ bound ρBound K φF)
+    (relOut := relBatched Φ m₀ m₁ bound ρBound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
     (fun stmtIn witOut h =>
-      mem_relLiftE_of_relBatchedE Φ m₀ m₁ bound ρBound K φF b hq hb hρ hcov hn stmtIn witOut h)
+      mem_relLift_of_relBatched Φ m₀ m₁ bound ρBound K φF b hq hb hρ hcov hn stmtIn witOut h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter
