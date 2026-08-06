@@ -5272,7 +5272,7 @@
         {
           "doc": "The block relative distance simplifies to the standard relative Hamming distance when `k=0`.",
           "kind": "lemma",
-          "line": 131,
+          "line": 132,
           "name": "BlockRelDistance.blockRelDistance_eq_relHammingDist_k_0",
           "namespace": "BlockRelDistance",
           "short_name": "blockRelDistance_eq_relHammingDist_k_0",
@@ -5281,7 +5281,7 @@
         {
           "doc": "Definition 4.18 For a smooth ReedSolomon code C = RS[F, \u03b9^(2\u2071), \u03c6', m], proximity parameter \u03b4 \u2208 [0,1] function f : \u03b9^(2\u2071) \u2192 F, we define the following as the list of codewords of C \u03b4-close to f, i.e., u \u2208 C such that \u0394\u1d63(k, \u03c6', f, u) \u2264 \u03b4.",
           "kind": "def",
-          "line": 138,
+          "line": 139,
           "name": "BlockRelDistance.blockRelDistanceBall",
           "namespace": "BlockRelDistance",
           "short_name": "blockRelDistanceBall",
@@ -5290,7 +5290,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 149,
+          "line": 150,
           "name": "BlockRelDistance.complDisagreementSet",
           "namespace": "BlockRelDistance",
           "short_name": "complDisagreementSet",
@@ -5300,6 +5300,15 @@
           "doc": "",
           "kind": "lemma",
           "line": 154,
+          "name": "BlockRelDistance.complDisagreementSet_def'",
+          "namespace": "BlockRelDistance",
+          "short_name": "complDisagreementSet_def'",
+          "signature": "lemma complDisagreementSet_def' :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 160,
           "name": "BlockRelDistance.card_complDisagreementSet_le",
           "namespace": "BlockRelDistance",
           "short_name": "card_complDisagreementSet_le",
@@ -5308,7 +5317,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 159,
+          "line": 165,
           "name": "BlockRelDistance.complDisagreementSet_sub_subdomain",
           "namespace": "BlockRelDistance",
           "short_name": "complDisagreementSet_sub_subdomain",
@@ -5317,7 +5326,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 162,
+          "line": 168,
           "name": "BlockRelDistance.blockRelDistance_eq_one_sub'",
           "namespace": "BlockRelDistance",
           "short_name": "blockRelDistance_eq_one_sub'",
@@ -5326,7 +5335,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 169,
+          "line": 175,
           "name": "BlockRelDistance.blockRelDistance_eq_one_sub",
           "namespace": "BlockRelDistance",
           "short_name": "blockRelDistance_eq_one_sub",
@@ -5334,8 +5343,26 @@
         },
         {
           "doc": "",
+          "kind": "lemma",
+          "line": 182,
+          "name": "BlockRelDistance.card_complDisagreementSet",
+          "namespace": "BlockRelDistance",
+          "short_name": "card_complDisagreementSet",
+          "signature": "lemma card_complDisagreementSet :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 187,
+          "name": "BlockRelDistance.card_disagreementSet'",
+          "namespace": "BlockRelDistance",
+          "short_name": "card_disagreementSet'",
+          "signature": "lemma card_disagreementSet' :"
+        },
+        {
+          "doc": "",
           "kind": "def",
-          "line": 176,
+          "line": 194,
           "name": "BlockRelDistance.agreementBlockUnion",
           "namespace": "BlockRelDistance",
           "short_name": "agreementBlockUnion",
@@ -5344,7 +5371,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 182,
+          "line": 200,
           "name": "BlockRelDistance.card_agreementBlockUnion_le",
           "namespace": "BlockRelDistance",
           "short_name": "card_agreementBlockUnion_le",
@@ -5353,7 +5380,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 188,
+          "line": 206,
           "name": "BlockRelDistance.card_agreementBlockUnion",
           "namespace": "BlockRelDistance",
           "short_name": "card_agreementBlockUnion",
@@ -5362,7 +5389,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 209,
+          "line": 223,
           "name": "BlockRelDistance.agreement_sub_agreementBlockUnion",
           "namespace": "BlockRelDistance",
           "short_name": "agreement_sub_agreementBlockUnion",
@@ -5371,7 +5398,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 213,
+          "line": 227,
           "name": "BlockRelDistance.card_disagreement_le",
           "namespace": "BlockRelDistance",
           "short_name": "card_disagreement_le",
@@ -5380,7 +5407,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 225,
+          "line": 239,
           "name": "BlockRelDistance.relHammingDist_le_sub_agreementBlockUnion'",
           "namespace": "BlockRelDistance",
           "short_name": "relHammingDist_le_sub_agreementBlockUnion'",
@@ -5389,7 +5416,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 240,
+          "line": 254,
           "name": "BlockRelDistance.relHammingDist_le_sub_agreementBlockUnion",
           "namespace": "BlockRelDistance",
           "short_name": "relHammingDist_le_sub_agreementBlockUnion",
@@ -5398,7 +5425,7 @@
         {
           "doc": "Claim 4.19 from [ACFY24], Part 1 For a smooth Reed-Solomon code, the standard relative Hamming distance `\u03b4\u1d63(f,g)` is a lower bound for the k-wise block relative distance `\u03b4\u1d63(k, \u03c6, f, g)`.",
           "kind": "lemma",
-          "line": 253,
+          "line": 267,
           "name": "BlockRelDistance.relHammingDist_le_blockRelDistance",
           "namespace": "BlockRelDistance",
           "short_name": "relHammingDist_le_blockRelDistance",
@@ -5407,11 +5434,11 @@
         {
           "doc": "Claim 4.19 from [ACFY24], Part 2 As a consequence of `relHammingDist_le_blockRelDistance`, the list of codewords within a certain block relative distance `\u03b4` is a subset of the list of codewords within the same relative Hamming distance `\u03b4`.",
           "kind": "lemma",
-          "line": 282,
+          "line": 296,
           "name": "BlockRelDistance.listBlock_subset_listHamming",
           "namespace": "BlockRelDistance",
           "short_name": "listBlock_subset_listHamming",
-          "signature": "lemma listBlock_subset_listHamming"
+          "signature": "lemma listBlock_subset_listHamming (hkn : k \u2264 n) (\u03b4 : \u211d\u22650) (C : Set (Fin (2 ^ n) \u2192 F)) :"
         }
       ]
     },
@@ -14407,7 +14434,7 @@
         {
           "doc": "Given a word `f`, `foldWordAux` is a polynomial `p\u2093` of degree < '2 ^ k' such that `p\u2093(domain i) = f i` for each `i` such that `domain i ^ 2 ^ k = x`.",
           "kind": "def",
-          "line": 63,
+          "line": 64,
           "name": "ProximityGap.foldWordAux",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux",
@@ -14416,7 +14443,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 73,
+          "line": 74,
           "name": "ProximityGap.even_add_odd_eq_of_2_ne_0",
           "namespace": "ProximityGap",
           "short_name": "even_add_odd_eq_of_2_ne_0",
@@ -14425,7 +14452,7 @@
         {
           "doc": "An explicit formula to compute `foldWordAux` when `k = 2` not involving Lagrange interpolation.",
           "kind": "lemma",
-          "line": 79,
+          "line": 80,
           "name": "ProximityGap.foldWordAux_of_k_2",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_of_k_2",
@@ -14434,7 +14461,7 @@
         {
           "doc": "The degree of the auxiliary polynomial `foldWordAux` is less than 2^k.",
           "kind": "lemma",
-          "line": 154,
+          "line": 155,
           "name": "ProximityGap.foldWordAux_degree",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_degree",
@@ -14443,7 +14470,7 @@
         {
           "doc": "The natDegree of the auxiliary polynomial `foldWordAux` is less than 2^k.",
           "kind": "lemma",
-          "line": 163,
+          "line": 164,
           "name": "ProximityGap.foldWordAux_natDegree",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_natDegree",
@@ -14452,7 +14479,7 @@
         {
           "doc": "Compute value of the folded word. Takes the auxiliary polynomial `foldWordAux` and evaluates it on `a`, the folding randomness.",
           "kind": "def",
-          "line": 171,
+          "line": 172,
           "name": "ProximityGap.foldValue",
           "namespace": "ProximityGap",
           "short_name": "foldValue",
@@ -14461,7 +14488,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 176,
+          "line": 177,
           "name": "ProximityGap.foldValue_def",
           "namespace": "ProximityGap",
           "short_name": "foldValue_def",
@@ -14470,7 +14497,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 179,
+          "line": 180,
           "name": "ProximityGap.foldValue_def'",
           "namespace": "ProximityGap",
           "short_name": "foldValue_def'",
@@ -14479,7 +14506,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 183,
+          "line": 184,
           "name": "ProximityGap.foldValue_pow_x_k",
           "namespace": "ProximityGap",
           "short_name": "foldValue_pow_x_k",
@@ -14488,7 +14515,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 188,
+          "line": 189,
           "name": "ProximityGap.foldValue_zero",
           "namespace": "ProximityGap",
           "short_name": "foldValue_zero",
@@ -14497,7 +14524,7 @@
         {
           "doc": "An explicit formula for `foldValue` when `k = 1`.",
           "kind": "lemma",
-          "line": 192,
+          "line": 193,
           "name": "ProximityGap.foldValue_k_1",
           "namespace": "ProximityGap",
           "short_name": "foldValue_k_1",
@@ -14506,7 +14533,7 @@
         {
           "doc": "Fold a word. Takes a word `f` over `Fin (2 ^ n)` and randomness `a`, and returns a word over `Fin (2 ^ (n - k))`.",
           "kind": "def",
-          "line": 205,
+          "line": 206,
           "name": "ProximityGap.foldWord",
           "namespace": "ProximityGap",
           "short_name": "foldWord",
@@ -14515,7 +14542,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 211,
+          "line": 212,
           "name": "ProximityGap.foldWord_zero",
           "namespace": "ProximityGap",
           "short_name": "foldWord_zero",
@@ -14524,7 +14551,7 @@
         {
           "doc": "An explicit formula for `foldWord` when `k = 1` that does not use Lagrange interpolation.",
           "kind": "theorem",
-          "line": 216,
+          "line": 217,
           "name": "ProximityGap.foldWord_k_1",
           "namespace": "ProximityGap",
           "short_name": "foldWord_k_1",
@@ -14533,7 +14560,7 @@
         {
           "doc": "The \"even\" part of the folding function.",
           "kind": "def",
-          "line": 226,
+          "line": 227,
           "name": "ProximityGap.foldWordEven",
           "namespace": "ProximityGap",
           "short_name": "foldWordEven",
@@ -14542,7 +14569,7 @@
         {
           "doc": "The \"odd\" part of the folding function.",
           "kind": "def",
-          "line": 235,
+          "line": 236,
           "name": "ProximityGap.foldWordOdd",
           "namespace": "ProximityGap",
           "short_name": "foldWordOdd",
@@ -14551,16 +14578,25 @@
         {
           "doc": "`foldWord` equals the natural linear combination of its even and odd parts.",
           "kind": "lemma",
-          "line": 245,
+          "line": 246,
           "name": "ProximityGap.foldWord_k_1_eq_foldWordEven_add_foldWordOdd",
           "namespace": "ProximityGap",
           "short_name": "foldWord_k_1_eq_foldWordEven_add_foldWordOdd",
           "signature": "lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {\u03b1 : F} :"
         },
         {
+          "doc": "An explicit formula for `foldWord` when `k = 1` that does not use Lagrange interpolation. Functional version.",
+          "kind": "theorem",
+          "line": 253,
+          "name": "ProximityGap.foldWord_k_1'",
+          "namespace": "ProximityGap",
+          "short_name": "foldWord_k_1'",
+          "signature": "theorem foldWord_k_1' [NeZero n] {\u03b1 : F} :"
+        },
+        {
           "doc": "An explicit formula for `foldWord` when `k = 1` that does not use Lagrange interpolation and avoids using `log`.",
           "kind": "theorem",
-          "line": 252,
+          "line": 264,
           "name": "ProximityGap.foldWord_k_1_of_sq_roots",
           "namespace": "ProximityGap",
           "short_name": "foldWord_k_1_of_sq_roots",
@@ -14569,7 +14605,7 @@
         {
           "doc": "TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203 is merged.",
           "kind": "lemma",
-          "line": 282,
+          "line": 294,
           "name": "ProximityGap.eval_comm",
           "namespace": "ProximityGap",
           "short_name": "eval_comm",
@@ -14578,7 +14614,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 291,
+          "line": 303,
           "name": "ProximityGap.interpolate_eq_folding_poly_eval",
           "namespace": "ProximityGap",
           "short_name": "interpolate_eq_folding_poly_eval",
@@ -14587,7 +14623,7 @@
         {
           "doc": "Perfect completeness of folding: folding a codeword is the same as applying `polyFold` and then encoding.",
           "kind": "theorem",
-          "line": 333,
+          "line": 345,
           "name": "ProximityGap.foldWord_codeword",
           "namespace": "ProximityGap",
           "short_name": "foldWord_codeword",
@@ -14596,7 +14632,7 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 347,
+          "line": 359,
           "name": "ProximityGap.foldWord_evalOnPoints",
           "namespace": "ProximityGap",
           "short_name": "foldWord_evalOnPoints",
@@ -14605,7 +14641,7 @@
         {
           "doc": "Perfect completeness of folding: if a word belongs to an RS-code then its `foldWord` belongs to a folded RS-code.",
           "kind": "theorem",
-          "line": 360,
+          "line": 372,
           "name": "ProximityGap.foldWord_mem_code_of_mem_code",
           "namespace": "ProximityGap",
           "short_name": "foldWord_mem_code_of_mem_code",
@@ -14614,7 +14650,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 415,
+          "line": 427,
           "name": "ProximityGap.foldWordAuxCoeff",
           "namespace": "ProximityGap",
           "short_name": "foldWordAuxCoeff",
@@ -14623,7 +14659,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 419,
+          "line": 431,
           "name": "ProximityGap.foldWordAux_coeff_eq_foldWordAuxCoeff_fin",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_coeff_eq_foldWordAuxCoeff_fin",
@@ -14632,7 +14668,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 423,
+          "line": 435,
           "name": "ProximityGap.foldWordAux_coeff_eq_foldWordAuxCoeff_nat",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_coeff_eq_foldWordAuxCoeff_nat",
@@ -14641,7 +14677,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 433,
+          "line": 445,
           "name": "ProximityGap.foldWordAux_eq_sum_of_foldWordAuxCoeff",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_eq_sum_of_foldWordAuxCoeff",
@@ -14650,7 +14686,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 446,
+          "line": 458,
           "name": "ProximityGap.foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha",
           "namespace": "ProximityGap",
           "short_name": "foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha",
@@ -14659,7 +14695,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 456,
+          "line": 468,
           "name": "ProximityGap.indicatedPolynomial",
           "namespace": "ProximityGap",
           "short_name": "indicatedPolynomial",
@@ -14668,7 +14704,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 466,
+          "line": 478,
           "name": "ProximityGap.card_ne_zero",
           "namespace": "ProximityGap",
           "short_name": "card_ne_zero",
@@ -14677,7 +14713,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 469,
+          "line": 481,
           "name": "ProximityGap.indicated_polynomial_degree_x_lt",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_degree_x_lt",
@@ -14686,7 +14722,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 479,
+          "line": 491,
           "name": "ProximityGap.indicated_polynomial_degree_y_lt",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_degree_y_lt",
@@ -14695,7 +14731,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 488,
+          "line": 500,
           "name": "ProximityGap.indicated_polynomial_eq_foldAux",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_eq_foldAux",
@@ -14704,7 +14740,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 497,
+          "line": 509,
           "name": "ProximityGap.indicated_polynomial_eval_eq_combination_of_correlated",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_eval_eq_combination_of_correlated",
@@ -14713,7 +14749,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 510,
+          "line": 522,
           "name": "ProximityGap.indicated_polynomial_eq_combination_of_correlated",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_eq_combination_of_correlated",
@@ -14722,7 +14758,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 533,
+          "line": 545,
           "name": "ProximityGap.indicated_polynomial_eq_foldAux'",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_eq_foldAux'",
@@ -14731,7 +14767,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 565,
+          "line": 577,
           "name": "ProximityGap.foldWordAux_poly_sum",
           "namespace": "ProximityGap",
           "short_name": "foldWordAux_poly_sum",
@@ -14740,7 +14776,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 572,
+          "line": 584,
           "name": "ProximityGap.indicated_polynomial_comp_x_k_natDegree",
           "namespace": "ProximityGap",
           "short_name": "indicated_polynomial_comp_x_k_natDegree",
@@ -14749,7 +14785,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 604,
+          "line": 616,
           "name": "ProximityGap.eval_comp_x_pow_map_eq",
           "namespace": "ProximityGap",
           "short_name": "eval_comp_x_pow_map_eq",
@@ -14758,7 +14794,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 617,
+          "line": 629,
           "name": "ProximityGap.hammingDistComplementBound",
           "namespace": "ProximityGap",
           "short_name": "hammingDistComplementBound",
@@ -14767,7 +14803,7 @@
         {
           "doc": "",
           "kind": "def",
-          "line": 625,
+          "line": 633,
           "name": "ProximityGap.hammingDistBound",
           "namespace": "ProximityGap",
           "short_name": "hammingDistBound",
@@ -14776,7 +14812,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 630,
+          "line": 638,
           "name": "ProximityGap.contradictory_hamming_dist_zero",
           "namespace": "ProximityGap",
           "short_name": "contradictory_hamming_dist_zero",
@@ -14785,7 +14821,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 635,
+          "line": 643,
           "name": "ProximityGap.contradictory_hamming_dist_formula",
           "namespace": "ProximityGap",
           "short_name": "contradictory_hamming_dist_formula",
@@ -14794,7 +14830,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 701,
+          "line": 658,
           "name": "ProximityGap.correlated_agreement_implies_contradictory_hamm_dist",
           "namespace": "ProximityGap",
           "short_name": "correlated_agreement_implies_contradictory_hamm_dist",
@@ -14803,7 +14839,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 768,
+          "line": 720,
           "name": "ProximityGap.dist_from_code_bound_of_correlated_agreement",
           "namespace": "ProximityGap",
           "short_name": "dist_from_code_bound_of_correlated_agreement",
@@ -14812,7 +14848,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 800,
+          "line": 753,
           "name": "ProximityGap.folded_rate_div_eq_helper",
           "namespace": "ProximityGap",
           "short_name": "folded_rate_div_eq_helper",
@@ -14821,7 +14857,7 @@
         {
           "doc": "The rate of the folded RS-code is the same.",
           "kind": "lemma",
-          "line": 813,
+          "line": 766,
           "name": "ProximityGap.folded_rate_eq",
           "namespace": "ProximityGap",
           "short_name": "folded_rate_eq",
@@ -14830,7 +14866,7 @@
         {
           "doc": "The square root of the rate of the folded RS-code is the same.",
           "kind": "lemma",
-          "line": 844,
+          "line": 797,
           "name": "ProximityGap.folded_sqrtRate_eq",
           "namespace": "ProximityGap",
           "short_name": "folded_sqrtRate_eq",
@@ -14839,11 +14875,51 @@
         {
           "doc": "Folding preserves distance from Reed\u2013Solomon codes. For any word `f` over the smooth coset FFT domain, degree parameter `d`, folding parameter `k`, and distance threshold `\u03b4` satisfying `0 < \u03b4 < min (\u03b4\u1d63(f, RS[d])) (1 - sqrtRate(d))`, the probability over a uniformly random folding challenge `r : F` that the folded word is within relative distance `\u03b4` of the Reed\u2013Solomon code of reduced degree `d / 2^k` on the folded subdomain is bounded by the proximity-gap error term. This is Lemma 4.9 from [ACFY24]: a random `2^k`-folding step preserves distance from the corresponding Reed\u2013Solomon code excep",
           "kind": "theorem",
-          "line": 870,
+          "line": 823,
           "name": "ProximityGap.folding_preserves_distance",
           "namespace": "ProximityGap",
           "short_name": "folding_preserves_distance",
           "signature": "theorem folding_preserves_distance"
+        }
+      ]
+    },
+    "ArkLib/Data/CodingTheory/ProximityGap/Folding/ListDecodability.lean": {
+      "declarations": [
+        {
+          "doc": "The block distance of foldings of two words does not exceed the block distance of the original words. This is a part of the proof of the claim 4.22 of [ACFY24].",
+          "kind": "lemma",
+          "line": 38,
+          "name": "ProximityGap.folding_contracts_block_distance",
+          "namespace": "ProximityGap",
+          "short_name": "folding_contracts_block_distance",
+          "signature": "lemma folding_contracts_block_distance"
+        },
+        {
+          "doc": "The block relative distance of foldings of two words does not exceed the block relative distance of the original words. This is a part of the proof of the claim 4.22 of [ACFY24].",
+          "kind": "lemma",
+          "line": 68,
+          "name": "ProximityGap.folding_contracts_block_rel_distance",
+          "namespace": "ProximityGap",
+          "short_name": "folding_contracts_block_rel_distance",
+          "signature": "lemma folding_contracts_block_rel_distance"
+        },
+        {
+          "doc": "If a word `u` belongs to a block relative distance ball then its folding belongs to a \"folded\" block relative distance ball too. This is the claim 4.22 from [ACFY24] with unfolded definition `\u2286`.",
+          "kind": "lemma",
+          "line": 84,
+          "name": "ProximityGap.folding_block_rel_ball",
+          "namespace": "ProximityGap",
+          "short_name": "folding_block_rel_ball",
+          "signature": "lemma folding_block_rel_ball {d : \u2115}"
+        },
+        {
+          "doc": "The image of a block relative distance ball under the folding map is contained in the \"folded\" block relative distance ball. This is the claim 4.22 from [ACFY24].",
+          "kind": "theorem",
+          "line": 107,
+          "name": "ProximityGap.folding_preserves_block_balls",
+          "namespace": "ProximityGap",
+          "short_name": "folding_preserves_block_balls",
+          "signature": "theorem folding_preserves_block_balls {d : \u2115}"
         }
       ]
     },
@@ -15793,9 +15869,27 @@
           "signature": "lemma block_k_0 :"
         },
         {
+          "doc": "",
+          "kind": "lemma",
+          "line": 67,
+          "name": "Domain.CosetFftDomainClass.neg_mem_block_of_mem",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "neg_mem_block_of_mem",
+          "signature": "lemma neg_mem_block_of_mem [NeZero k] (hy : y \u2208 block \u03c9 k x) (hk : k \u2264 n) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 73,
+          "name": "Domain.CosetFftDomainClass.neg_mem_block_iff_mem",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "neg_mem_block_iff_mem",
+          "signature": "lemma neg_mem_block_iff_mem [NeZero k] (hk : k \u2264 n) :"
+        },
+        {
           "doc": "An alternative definition of `block` in terms of `Polynomial.nthRootsFinset`.",
           "kind": "lemma",
-          "line": 63,
+          "line": 83,
           "name": "Domain.CosetFftDomainClass.block_eq_nthRootsFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "block_eq_nthRootsFinset",
@@ -15804,7 +15898,7 @@
         {
           "doc": "The cardinality of a block does not exceed its degree.",
           "kind": "lemma",
-          "line": 68,
+          "line": 88,
           "name": "Domain.CosetFftDomainClass.card_block_le",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_block_le",
@@ -15813,16 +15907,25 @@
         {
           "doc": "Blocks corresponding to different points are disjoint.",
           "kind": "theorem",
-          "line": 78,
+          "line": 98,
           "name": "Domain.CosetFftDomainClass.disjoint_block",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "disjoint_block",
           "signature": "theorem disjoint_block {x y : F} (hxy : x \u2260 y) :"
         },
         {
+          "doc": "",
+          "kind": "theorem",
+          "line": 102,
+          "name": "Domain.CosetFftDomainClass.pairwise_disjoint_block",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "pairwise_disjoint_block",
+          "signature": "theorem pairwise_disjoint_block {s : Set F} :"
+        },
+        {
           "doc": "The set of indices of a block of `\u03c9` at `x` of the degree `k`.",
           "kind": "def",
-          "line": 82,
+          "line": 107,
           "name": "Domain.CosetFftDomainClass.blockIdx",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "blockIdx",
@@ -15831,7 +15934,7 @@
         {
           "doc": "The definition of membership to a `blockIdx`.",
           "kind": "lemma",
-          "line": 87,
+          "line": 112,
           "name": "Domain.CosetFftDomainClass.mem_blockIdx",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_blockIdx",
@@ -15840,7 +15943,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 92,
+          "line": 117,
           "name": "Domain.CosetFftDomainClass.mem_blockIdx_self",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_blockIdx_self",
@@ -15849,7 +15952,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 95,
+          "line": 120,
           "name": "Domain.CosetFftDomainClass.mem_blockIdx_iff_mem_block",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_blockIdx_iff_mem_block",
@@ -15858,7 +15961,7 @@
         {
           "doc": "There are no roots of `0` in any domain.",
           "kind": "lemma",
-          "line": 100,
+          "line": 125,
           "name": "Domain.CosetFftDomainClass.blockIdx_x_0",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "blockIdx_x_0",
@@ -15867,7 +15970,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 103,
+          "line": 128,
           "name": "Domain.CosetFftDomainClass.blockIdx_k_0_of_eq",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "blockIdx_k_0_of_eq",
@@ -15876,7 +15979,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 109,
+          "line": 134,
           "name": "Domain.CosetFftDomainClass.blockIdx_k_0_of_ne_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "blockIdx_k_0_of_ne_mem",
@@ -15885,7 +15988,7 @@
         {
           "doc": "`blockIdx` is the preimage of `block`.",
           "kind": "lemma",
-          "line": 113,
+          "line": 138,
           "name": "Domain.CosetFftDomainClass.blockIdx_eq_preimage_block",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "blockIdx_eq_preimage_block",
@@ -15894,7 +15997,7 @@
         {
           "doc": "The cardinality of `blockIdx` is that of `block`.",
           "kind": "lemma",
-          "line": 122,
+          "line": 147,
           "name": "Domain.CosetFftDomainClass.card_blockIdx",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_blockIdx",
@@ -15903,11 +16006,20 @@
         {
           "doc": "The sets of indices of blocks corresponding to different points are disjoint.",
           "kind": "theorem",
-          "line": 129,
+          "line": 154,
           "name": "Domain.CosetFftDomainClass.disjoint_blockIdx",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "disjoint_blockIdx",
           "signature": "theorem disjoint_blockIdx {x y : F} (hxy : x \u2260 y) :"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 159,
+          "name": "Domain.CosetFftDomainClass.pairwise_disjoint_blockIdx",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "pairwise_disjoint_blockIdx",
+          "signature": "theorem pairwise_disjoint_blockIdx {s : Set F} :"
         }
       ]
     },
@@ -16458,6 +16570,172 @@
         }
       ]
     },
+    "ArkLib/Data/Domain/CosetFftDomain/Pullback.lean": {
+      "declarations": [
+        {
+          "doc": "The pullback set is the pullback of the following maps: pullback \u03c9 l r s \u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7\u00b7> (subdomain \u03c9 r)\u207b\u00b9 s \u00b7__|                                                         | \u00b7                                                            | \u00b7                                                            | \u00b7 \u00b7                                                       subdomain \u03c9 r \u00b7 \u00b7                                                            | \u00b7                                                            | \u00b7                                                            | V             ",
+          "kind": "def",
+          "line": 69,
+          "name": "Domain.CosetFftDomainClass.Pullback.pullback",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "pullback",
+          "signature": "def pullback (\u03c9 : D) (l r : \u2115) (s : Finset F) : Finset (Fin (2 ^ (n - l)) \u00d7 Fin (2 ^ (n - r))) :="
+        },
+        {
+          "doc": "The pullback set is empty when `s` is empty.",
+          "kind": "lemma",
+          "line": 74,
+          "name": "Domain.CosetFftDomainClass.Pullback.pullback_empty",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "pullback_empty",
+          "signature": "lemma pullback_empty : pullback \u03c9 l r \u2205 = \u2205 := by simp [pullback]"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 77,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback",
+          "signature": "lemma mem_pullback {i : Fin (2 ^ (n - l)) \u00d7 Fin (2 ^ (n - r))} :"
+        },
+        {
+          "doc": "`Prod.fst` is injective on the pullback set.",
+          "kind": "lemma",
+          "line": 84,
+          "name": "Domain.CosetFftDomainClass.Pullback.proj\u2081_injOn",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "proj\u2081_injOn",
+          "signature": "lemma proj\u2081_injOn :"
+        },
+        {
+          "doc": "The projection of the pullback set onto the first component.",
+          "kind": "def",
+          "line": 91,
+          "name": "Domain.CosetFftDomainClass.Pullback.pullback\u2081",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "pullback\u2081",
+          "signature": "def pullback\u2081 (\u03c9 : D) (l r : \u2115) (s : Finset F) : Finset (Fin (2 ^ (n - l))) :="
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 94,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_s_of_mem_pullback\u2081",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_s_of_mem_pullback\u2081",
+          "signature": "lemma mem_s_of_mem_pullback\u2081 {i : Fin (2 ^ (n - l))} (h : i \u2208 pullback\u2081 \u03c9 l r s) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 97,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback\u2081",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback\u2081",
+          "signature": "lemma mem_pullback\u2081 {i : Fin (2 ^ (n - l))} (hl : l \u2264 r) (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 110,
+          "name": "Domain.CosetFftDomainClass.Pullback.proj\u2081_mapsTo",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "proj\u2081_mapsTo",
+          "signature": "lemma proj\u2081_mapsTo :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 117,
+          "name": "Domain.CosetFftDomainClass.Pullback.proj\u2081_surjOn",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "proj\u2081_surjOn",
+          "signature": "lemma proj\u2081_surjOn :"
+        },
+        {
+          "doc": "The cardinality of the pullback set is equal to the cardinality of its first projection.",
+          "kind": "lemma",
+          "line": 125,
+          "name": "Domain.CosetFftDomainClass.Pullback.card_pullback_eq_card_pullback\u2081",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "card_pullback_eq_card_pullback\u2081",
+          "signature": "lemma card_pullback_eq_card_pullback\u2081 :"
+        },
+        {
+          "doc": "The projection of the pullback set onto the second component.",
+          "kind": "def",
+          "line": 130,
+          "name": "Domain.CosetFftDomainClass.Pullback.pullback\u2082",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "pullback\u2082",
+          "signature": "def pullback\u2082 (\u03c9 : D) (l r : \u2115) (s : Finset F) : Finset (Fin (2 ^ (n - r))) :="
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 133,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback\u2082",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback\u2082",
+          "signature": "lemma mem_pullback\u2082 {i : Fin (2 ^ (n - r))} (hl : l \u2264 r) (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "The connection between components of the pullback set.",
+          "kind": "lemma",
+          "line": 145,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback\u2081_iff_mem_pullback\u2082",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback\u2081_iff_mem_pullback\u2082",
+          "signature": "lemma mem_pullback\u2081_iff_mem_pullback\u2082 {i : Fin (2 ^ n)} (hl : l \u2264 r) (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "The connection between components of the pullback set when `l = 0`.",
+          "kind": "lemma",
+          "line": 165,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback\u2081_iff_mem_pullback\u2082_l_0",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback\u2081_iff_mem_pullback\u2082_l_0",
+          "signature": "lemma mem_pullback\u2081_iff_mem_pullback\u2082_l_0 {i : Fin (2 ^ n)} (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "The connection between components of the pullback set when `l = 1`.",
+          "kind": "lemma",
+          "line": 171,
+          "name": "Domain.CosetFftDomainClass.Pullback.mem_pullback\u2081_iff_mem_pullback\u2082_l_1",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "mem_pullback\u2081_iff_mem_pullback\u2082_l_1",
+          "signature": "lemma mem_pullback\u2081_iff_mem_pullback\u2082_l_1 {i : Fin (2 ^ n)} (h1r : 1 \u2264 r) (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "If `s` is a subset of the subdomain `subdomain \u03c9 r` then the cardinality of `pullback\u2082 \u03c9 l r s` is exactly the cardinality of `s`.",
+          "kind": "lemma",
+          "line": 179,
+          "name": "Domain.CosetFftDomainClass.Pullback.card_pullback\u2082_eq",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "card_pullback\u2082_eq",
+          "signature": "lemma card_pullback\u2082_eq (hl : l \u2264 r) (hr : r \u2264 n) (hs : s \u2286 (subdomain \u03c9 r).toFinset) :"
+        },
+        {
+          "doc": "`pullback\u2081 \u03c9 l r s` is a union of blocks indexed by `pullback\u2082 \u03c9 l r s`.",
+          "kind": "lemma",
+          "line": 194,
+          "name": "Domain.CosetFftDomainClass.Pullback.pullback\u2081_eq_biUnion_pullback\u2082",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "pullback\u2081_eq_biUnion_pullback\u2082",
+          "signature": "lemma pullback\u2081_eq_biUnion_pullback\u2082 (hl : l \u2264 r) (hr : r \u2264 n) :"
+        },
+        {
+          "doc": "The expression of the cardinality of `pullback \u03c9 l r s` in terms of `pullback\u2082 \u03c9 l r s`.",
+          "kind": "lemma",
+          "line": 211,
+          "name": "Domain.CosetFftDomainClass.Pullback.card_pullback_eq_mul_card_pullback\u2082",
+          "namespace": "Domain.CosetFftDomainClass.Pullback",
+          "short_name": "card_pullback_eq_mul_card_pullback\u2082",
+          "signature": "lemma card_pullback_eq_mul_card_pullback\u2082 (hl : l \u2264 r) (hr : r \u2264 n) :"
+        }
+      ]
+    },
     "ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean": {
       "declarations": [
         {
@@ -16524,9 +16802,18 @@
           "signature": "lemma subdomain_generator_pow_generator (i : \u2115) :"
         },
         {
+          "doc": "",
+          "kind": "lemma",
+          "line": 146,
+          "name": "Domain.CosetFftDomainClass.subdomain_0_apply",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "subdomain_0_apply",
+          "signature": "lemma subdomain_0_apply (i : Fin (2 ^ n)) :"
+        },
+        {
           "doc": "Membership to the `0`th subdomain is the same as membership to the original coset FFT domain.",
           "kind": "lemma",
-          "line": 148,
+          "line": 161,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_0_iff_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_0_iff_mem",
@@ -16535,7 +16822,7 @@
         {
           "doc": "The `n`th subdomain consists exactly of the single element `\u03c9 0 ^ 2 ^ n`.",
           "kind": "lemma",
-          "line": 160,
+          "line": 165,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_n_iff_eq_pow_generator",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_n_iff_eq_pow_generator",
@@ -16544,7 +16831,7 @@
         {
           "doc": "Powers of normalized subgroup units correspond to additive multiples of their indices.",
           "kind": "lemma",
-          "line": 170,
+          "line": 175,
           "name": "Domain.CosetFftDomainClass.mkSubgroupUnit_pow",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mkSubgroupUnit_pow",
@@ -16553,7 +16840,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 186,
+          "line": 191,
           "name": "Domain.CosetFftDomainClass.nat_mul_pow_mod",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "nat_mul_pow_mod",
@@ -16562,7 +16849,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 192,
+          "line": 197,
           "name": "Domain.CosetFftDomainClass.fin_nsmul_val",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "fin_nsmul_val",
@@ -16571,7 +16858,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 197,
+          "line": 202,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_val",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_val",
@@ -16580,7 +16867,7 @@
         {
           "doc": "If `x` lies in the `j`th subdomain, then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain, provided `j + i \u2264 n`.",
           "kind": "theorem",
-          "line": 202,
+          "line": 207,
           "name": "Domain.CosetFftDomainClass.pow_mem_of_mem",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_of_mem",
@@ -16589,7 +16876,7 @@
         {
           "doc": "If `x` lies in the original domain, then `x ^ 2 ^ i` lies in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 269,
+          "line": 274,
           "name": "Domain.CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_subdomain_of_mem_subdomain_0",
@@ -16598,7 +16885,7 @@
         {
           "doc": "`toFinset`-version of `pow_mem_subdomain_of_mem_subdomain_0`.",
           "kind": "lemma",
-          "line": 277,
+          "line": 282,
           "name": "Domain.CosetFftDomainClass.pow_mem_subdomain_of_mem_subdomain_0_toFinset",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "pow_mem_subdomain_of_mem_subdomain_0_toFinset",
@@ -16607,7 +16894,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 283,
+          "line": 288,
           "name": "Domain.CosetFftDomainClass.subdomain_embed_of_le",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_embed_of_le",
@@ -16616,7 +16903,7 @@
         {
           "doc": "If `j \u2264 i`, then we do not have `x \u2208 subdomain \u03c9 i \u2192 x \u2208 subdomain \u03c9 j` in the general case but rescaling `x` as `\u03c9 0 ^ 2 ^ j * (\u03c9 0)\u207b\u00b9 ^ 2 ^ i * x` gives us a member of `subdomain \u03c9 j`.",
           "kind": "lemma",
-          "line": 301,
+          "line": 306,
           "name": "Domain.CosetFftDomainClass.mem_subdomain_of_le_of_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "mem_subdomain_of_le_of_mem_subdomain",
@@ -16625,7 +16912,7 @@
         {
           "doc": "Evaluation in the `i`th subdomain, raised to `2 ^ j`, is evaluation in the `(i + j)`th subdomain at the reduced index.",
           "kind": "lemma",
-          "line": 314,
+          "line": 319,
           "name": "Domain.CosetFftDomainClass.subdomain_eval_pow'",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "subdomain_eval_pow'",
@@ -16634,7 +16921,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 355,
+          "line": 360,
           "name": "Domain.CosetFftDomainClass.card_fin_filter_mod_eq",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_fin_filter_mod_eq",
@@ -16643,25 +16930,25 @@
         {
           "doc": "If `x` lies in the `(i + j)`th subdomain, then it has exactly `2 ^ j` preimages under `y \u21a6 y ^ 2 ^ j` from the `i`th subdomain.",
           "kind": "lemma",
-          "line": 386,
+          "line": 391,
           "name": "Domain.CosetFftDomainClass.card_block_of_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_block_of_mem_subdomain",
-          "signature": "lemma card_block_of_mem_subdomain [DecidableEq F]"
+          "signature": "lemma card_block_of_mem_subdomain [DecidableEq F] {i j : \u2115} (hij : i + j \u2264 n)"
         },
         {
           "doc": "Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 422,
+          "line": 427,
           "name": "Domain.CosetFftDomainClass.root_exists",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "root_exists",
-          "signature": "lemma root_exists [DecidableEq F]"
+          "signature": "lemma root_exists [DecidableEq F] {i j : \u2115} (hij : i + j \u2264 n) (h : x \u2208 subdomain \u03c9 (i + j)) :"
         },
         {
           "doc": "Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain.",
           "kind": "lemma",
-          "line": 434,
+          "line": 438,
           "name": "Domain.CosetFftDomainClass.sq_root_mem_subdomain",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "sq_root_mem_subdomain",
@@ -16670,7 +16957,7 @@
         {
           "doc": "The square roots of `x` inside the `i`th subdomain are exactly `y` and `-y`, for any square root `y` of `x`.",
           "kind": "lemma",
-          "line": 448,
+          "line": 452,
           "name": "Domain.CosetFftDomainClass.square_roots_explicit",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "square_roots_explicit",
@@ -16679,16 +16966,43 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 459,
+          "line": 463,
           "name": "Domain.CosetFftDomainClass.card_block_of_mem_subdomain'",
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "card_block_of_mem_subdomain'",
-          "signature": "lemma card_block_of_mem_subdomain' [DecidableEq F] {k : \u2115}"
+          "signature": "lemma card_block_of_mem_subdomain' [DecidableEq F] {k : \u2115} (hk : k \u2264 n) (hx : x \u2208 subdomain \u03c9 k) :"
+        },
+        {
+          "doc": "",
+          "kind": "lemma",
+          "line": 474,
+          "name": "Domain.CosetFftDomainClass.subdomain_eval",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "subdomain_eval",
+          "signature": "lemma subdomain_eval (\u03c9 : D) (j : \u2115)"
+        },
+        {
+          "doc": "Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain (pointwise, under the index identification `n - k - 1 = n - (k + 1)`).",
+          "kind": "lemma",
+          "line": 481,
+          "name": "Domain.CosetFftDomainClass.subdomain_comp",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "subdomain_comp",
+          "signature": "lemma subdomain_comp"
+        },
+        {
+          "doc": "",
+          "kind": "theorem",
+          "line": 499,
+          "name": "Domain.CosetFftDomainClass.mem_subdomain_comp_iff_mem",
+          "namespace": "Domain.CosetFftDomainClass",
+          "short_name": "mem_subdomain_comp_iff_mem",
+          "signature": "theorem mem_subdomain_comp_iff_mem"
         },
         {
           "doc": "Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.",
           "kind": "abbrev",
-          "line": 479,
+          "line": 515,
           "name": "Domain.CosetFftDomain.subdomain",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "subdomain",
@@ -16697,7 +17011,7 @@
         {
           "doc": "Search through a smooth coset FFT domain for an element whose `2 ^ i`th power is `x`, using `fuel` as the remaining search bound.",
           "kind": "def",
-          "line": 484,
+          "line": 520,
           "name": "Domain.CosetFftDomain.twoNthRootAux",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRootAux",
@@ -16706,7 +17020,7 @@
         {
           "doc": "Finds a `2 ^ n`th root of `x`.",
           "kind": "def",
-          "line": 493,
+          "line": 529,
           "name": "Domain.CosetFftDomain.twoNthRoot",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot",
@@ -16715,7 +17029,7 @@
         {
           "doc": "",
           "kind": "lemma",
-          "line": 496,
+          "line": 532,
           "name": "Domain.CosetFftDomain.twoNthRootAux_correct",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRootAux_correct",
@@ -16724,7 +17038,7 @@
         {
           "doc": "The value returned by `twoNthRoot` is a `2 ^ i`th root of its input.",
           "kind": "lemma",
-          "line": 511,
+          "line": 547,
           "name": "Domain.CosetFftDomain.twoNthRoot_correct",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot_correct",
@@ -16733,7 +17047,7 @@
         {
           "doc": "Specialized correctness statement for square roots from the first subdomain.",
           "kind": "lemma",
-          "line": 527,
+          "line": 563,
           "name": "Domain.CosetFftDomain.twoNthRoot_correct_one",
           "namespace": "Domain.CosetFftDomain",
           "short_name": "twoNthRoot_correct_one",
@@ -50567,8 +50881,8 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 5478,
-      "files": 322
+      "declarations": 5512,
+      "files": 324
     }
   }
 }
