@@ -33,10 +33,19 @@ validate_spaces () {
 fix_spaces_inplace() {
     for file in $(find ArkLib -type f -name "*.lean")
     do 
-        # Remove trailing `\t` and ` `.
-        sed -i 's/[ \t]*$//' "$file"
-        # Add trailing '\n' to the file
-        sed -i -e '$a\' "$file"
+        if [[ "$OSTYPE" == "linux-gnu"* ]]; then
+            # Linux
+
+            # Remove trailing `\t` and ` `.
+            sed -i 's/[ \t]*$//' "$file"
+            # Add trailing '\n' to the file
+            sed -i -e '$a\' "$file"
+        elif [[ "$OSTYPE" == "darwin"* ]]; then
+            # Mac OSX
+
+            sed -i '' -e's/[[:space:]]*$//' "$file"
+            sed -i '' '$a\' "$file"
+        fi
     done
 }
 

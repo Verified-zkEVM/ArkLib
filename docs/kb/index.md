@@ -12,7 +12,7 @@ This is the main catalog for ArkLib's knowledge base.
 ## Paper Pages
 
 - [`papers/ACFY24.md`](papers/ACFY24.md) - WHIR ePrint paper and its ArkLib touchpoints in
-  `ReedSolomon` and `ProofSystem/Whir`.
+  `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
@@ -26,6 +26,8 @@ This is the main catalog for ArkLib's knowledge base.
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
   development.
+- [`papers/HMZ25.md`](papers/HMZ25.md) - sublinear proofs over polynomial rings and the generic
+  `Lift` quotient-evaluation switch.
 - [`papers/Jo26.md`](papers/Jo26.md) - interleaving stability for generator MCA and curve
   decodability.
 

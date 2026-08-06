@@ -9,9 +9,9 @@ source_metadata: ../sources/NOZ26/metadata.yml
 status: active-audit
 related_modules:
   - ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean
-  - ArkLib/ProofSystem/RingSwitching/Profile.lean
+  - ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
-  - ArkLib/Commitments/Functional/Hachi/Gadget.lean
+  - ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
   - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
@@ -45,6 +45,35 @@ Ring-switching layer:
 - The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
   to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
   shape ArkLib factors out as `RingSwitchingProfile`.
+- The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
+  `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
+  ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
+- The **cyclotomic-ring → extension-field lift** (§4.3, Figure 4 / **Lemma 9**, following
+  [`HMZ25`](HMZ25.md)): the *simplified* Figure 4 extraction kernel is **formalized and proven** as
+  `liftPackage` in Hachi's
+  `Commitments/Functional/Hachi/RingSwitch/Reduction.lean` — the CWSS certificate is the
+  `liftPackage.isCWSS` field, and the generic theorem underneath it is
+  `RingSwitching.Lift.coordinateWiseSpecialSoundWithEscape` — the cyclotomic instance of the
+  generic `Lift` construction `ProofSystem/RingSwitching/Lift/` (over the
+  committed-scalar shell in
+  `OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`), with the
+  presentation law-discharge lemmas in
+  `Data/Lattices/CyclotomicRing/QuotientLift.lean`. It is consumed at row 4 of the Hachi opening
+  chain (composed in `Hachi/Composition.lean`).
+  Design decisions recorded there: the never-sent `(z, r)` is the output-relation witness;
+  the `w̃`-commitment is the abstract, norm-conditioned weak-binding `LiftCom`
+  (Remark 2 / Lemma 7), and its binding break is carried by an **escape event** on the transcript
+  tree (`CommittedScalar.escEvent`, whose hardness target is the short-collision set
+  `LiftCom.Collision`) rather than by widened relations — so relations and extractor stay ordinary,
+  and events compose along the chain without a seam; the witness type carries `deg ρᵢ ≤ d − 1`
+  (the paper's `Z_q^{<d}`); the extraction target is `R^lin` over `R_q`, equivalent to the
+  paper's `Z_q[X]` identity by the quotient-witness correspondence.
+  **Scope** (matching the "Paper-model boundary" note in `Hachi/RingSwitch/Reduction.lean`): what is
+  formalized is the simplified raw-`(z, r)` Figure 4 / Lemma 9 kernel. The paper's p. 18 honest
+  protocol commits `(z, r₁, …, r_log_b(q))` with per-digit norm bounds — "there is a hidden gadget
+  decomposition of `r`" — and that encoding, its reconstruction identity, and an honest-prover
+  completeness bound are **not** formalized; `RhoShort` records the resulting admissibility
+  requirement abstractly.
 - The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
   automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
   laws for the Hachi instance.
@@ -56,10 +85,10 @@ Ring-switching layer:
 
 - [`ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean)
   — umbrella for Lemma 5, Theorem 2, and Lemma 6.
-- [`../../../ArkLib/ProofSystem/RingSwitching/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Profile.lean)
+- [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean)
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
-- [`ArkLib/Commitments/Functional/Hachi/Gadget.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget.lean)
+- [`ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean`](../../../ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean)
   — the gadget matrix and `gadgetDecompose`.
 - [`ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean`](../../../ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean)
   — weak binding.

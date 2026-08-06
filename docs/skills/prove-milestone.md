@@ -25,12 +25,17 @@ from all of these sources:
   figure, equations, lemma, bounds, and surrounding qualifications;
 - the target Lean files and their imports, docstrings, exported package, and consumers;
 - the seam table and sorry provenance in `Hachi/Composition.lean`;
-- `docs/kb/papers/NOZ26.md`, relevant `docs/kb/audits/`, and applicable `HACHI_*.md` design notes;
+- `docs/kb/papers/NOZ26.md` and relevant `docs/kb/audits/`;
 - the generic ArkLib definitions of the claimed security notion and composition operator.
 
 The paper is primary. Repository notes explain intent and known deviations but cannot establish
 paper faithfulness by themselves. Record the paper version and page/figure/equation references. If
 the primary source is unavailable, do not declare Stage 1 complete.
+
+If the user's requested approach contradicts the repo's verified design notes (e.g. a directed
+reuse or restructuring that a KB analysis argues against), surface the conflict as an
+explicit scope question with a recommendation *before* Stage 1 design work, and record the user's
+decision in the scope manifest; do not silently follow either side.
 
 ## Global invariants
 
@@ -50,11 +55,18 @@ Maintain these invariants throughout the task:
    verifier check into an assumption.
 5. Make the remaining `sorry` count in the target closure monotonically decrease after the Stage 2
    freeze. Do not move, rename, hide, or replace a gap with another trust mechanism.
-6. Do not use `native_decide`, `classical`, any `Classical.*` declaration, `axiom`, `admit`,
-   `Lean.ofReduceBool`, an unsafe/opaque proof surrogate, or a theorem whose transitive axiom set
-   contains `sorryAx`. Do not introduce project axioms. Treat `Classical.choice` as forbidden even
-   when it enters indirectly through a reused theorem. Record unavoidable foundational use of
-   `propext` or `Quot.sound`; do not call a result “axiom-free” if either appears.
+6. Do not use `native_decide`, a new `classical`/`Classical.*` shortcut in the milestone's own
+   proofs, `axiom`, `admit`, `Lean.ofReduceBool`, an unsafe/opaque proof surrogate, or a theorem
+   whose transitive axiom set contains `sorryAx`. Do not introduce project axioms. ArkLib's
+   accepted **axiom-clean** baseline — the standard the proven QuadEval milestone meets — is
+   exactly `{propext, Classical.choice, Quot.sound}` (Mathlib's foundational axioms);
+   `Classical.choice` arriving through Mathlib or through an unmodified generic combinator (e.g.
+   `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`, which every CWSS milestone reuses) is
+   acceptable and need not be eliminated; eliminating it from an individual theorem is sometimes
+   possible by reproving constructively or routing around a choice-using combinator, but it is not
+   required. Confirm each target declaration's `#print axioms` is a subset of that baseline with no
+   `sorryAx` and no project axiom; call such a result "axiom-clean against the baseline", not
+   "axiom-free".
 7. Use a fresh independent reviewer when subagents are available. Give reviewers the raw paper
    section, Lean files, and current artifacts, not the intended verdict or a proposed fix.
 
@@ -142,7 +154,7 @@ Apply these Hachi-specific attacks whenever the target can reach the relevant se
 - For every `Bool` guard such as a round, final, or trace check, establish `check = true ↔` the
   advertised paper equations and an honest-acceptance lemma before proving soundness. An
   always-false sorried check makes accepting-tree obligations vacuous.
-- When extraction uses `LiftCom.collision_mem`, trace the required shortness proof for both
+- When an escape event points at `LiftCom.Collision`, trace the required shortness proof for both
   colliding openings back through every relation. A point-evaluation check does not by itself imply
   coefficient/range shortness.
 - For table and polynomial encodings, require explicit capacity inequalities, index equivalences,
@@ -158,6 +170,16 @@ Apply these Hachi-specific attacks whenever the target can reach the relevant se
   an authorized repair replaces it.
 - Re-audit a “proven” dependency when its documented relation or bound is only a containment or a
   modeling generalization of the paper and becomes load-bearing for the target.
+- For escape-threaded links, audit the **escape event**, not the relations: the certificate keeps
+  ordinary `relIn`/`relOut` and concludes `esc stmt tree ∨ extraction succeeds`. Two things carry
+  the content. First, the event must be *honest* — never mentioning the extractor or acceptance
+  (`ChallengeTree.EscapeEvent` documents why such an event trivializes any certificate) — and
+  *tight*, firing only where extraction genuinely fails; a statement-only event like "some
+  collision of this commitment exists" is honest yet worthless because it fires almost everywhere.
+  Second, use the **named** form (`…SoundWith`, not its `∃`-closure), so the extraction algorithm
+  stays in the statement. Require the constructive anchor — the explicit witness assembler and its
+  membership theorem (the `mkWitness`/`mkWitness_mem` pattern) — to be public, named, and cited by
+  the module docstring as the auditable content.
 
 Produce a concrete non-vacuity certificate: at least one honest symbolic instance/transcript or
 small Lean example, plus a trace showing which verifier checks constrain which output-relation
@@ -239,6 +261,19 @@ intermediate lemma now, in its natural module, with its final statement and a `s
 small reusable mathematical facts over protocol-specific duplication, but do not generalize beyond
 a clear use.
 
+When a scratch spike file `import`s the target module (the efficient way to develop proofs against
+the real definitions), run `lake build <module>` first: `lake env lean` type-checks a file but does
+not refresh the imported `.olean`, so definitions you just added to the target read as unknown
+identifiers until you rebuild it. Two other pervasive Hachi mechanics: `lake build` (not `lake env
+lean`) runs the style linters, so check long lines with `lake env lean -Dlinter.style.longLine=true`;
+and pure index/algebra helpers over the cyclotomic-ring variable block trigger `unusedSectionVars`
+for `[NeZero q]`/`[IsCyclotomic Φ]` — silence it with `omit [NeZero q] [IsCyclotomic Φ] in` placed
+*before* the docstring (between docstring and declaration it is a parse error). Beware: this lint
+does **not** fire on `sorry`-bodied declarations, so a clean sorried skeleton can still hide
+unused section variables that surface only when the real proof lands; audit each frozen
+statement's section-variable usage before the freeze, or expect lint-forced `omit` signature
+narrowings afterwards and record them as explicit freeze amendments.
+
 Split a hard hole until each resulting obligation is independently below 6. Splitting is legitimate
 only when the helpers express real intermediate facts and do not merely restate the original goal,
 assume its difficult premise, or form a dependency cycle. If an obligation cannot be brought below
@@ -275,7 +310,9 @@ re-run their exit gates, and create a new freeze.
 
 ## Stage 3 — discharge the frozen proof obligations
 
-Work through the proof DAG from leaves to public certificates. For one `sorry` at a time:
+Work through the proof DAG from leaves to public certificates. Bodies that were already verified
+*verbatim* (same statement, same context) in a Stage 2 spike file may be transcribed one file at a
+time, with steps 3–7 run after each file; everything else proceeds one `sorry` at a time:
 
 1. Re-open its exact goal and follow the reviewed plan.
 2. Replace only that proof body. Proof-local `have` statements are allowed; new top-level helpers,
@@ -286,7 +323,8 @@ Work through the proof DAG from leaves to public certificates. For one `sorry` a
 5. Diff against the Stage 2 baseline. Reject every change outside allowlisted proof bodies, including
    “harmless” binder, hypothesis, relation, verifier, package, or import edits.
 6. Run the forbidden-construct scan over the changed proof and run `#print axioms` for the proved
-   declaration. It must not contain `sorryAx`, `Classical.choice`, or a project-defined axiom.
+   declaration. It must not contain `sorryAx` or a project-defined axiom, and its axiom set must
+   stay within the baseline of invariant 6 (`{propext, Classical.choice, Quot.sound}`).
 7. Mark the DAG entry proved only after the local build, freeze check, and axiom check pass.
 
 Prefer explicit, maintainable kernel-checked arguments and existing library lemmas. Automation is
@@ -319,8 +357,8 @@ reviewer who is not shown the implementation rationale. Re-check:
 - that the public theorem is installed in the advertised package and the package is the one used by
   composition;
 - that no stronger assumption or weaker conclusion entered after the contract was written;
-- that the final theorem and all target-specific dependencies are free of `sorryAx`, classical
-  choice, forbidden constructs, and new axioms.
+- that the final theorem and all target-specific dependencies are free of `sorryAx`, new classical
+  shortcuts, forbidden constructs, and new axioms, and stay within invariant 6's axiom baseline.
 
 Compare the final `#check` and frozen-definition `#print` outputs with the Stage 2 captures; require
 exact matches. Source review remains necessary because elaborator output is a backstop, not a
@@ -344,7 +382,11 @@ Once the clean-room review is clean:
    count, milestone description, and “proven” claim. Do not erase a known paper deviation or open
    gap. Re-run documentation integrity checks after documentation changes.
 4. Update `Composition.lean` provenance, Hachi module docstrings, and `docs/kb/` when their factual
-   account changed. Never hand-edit generated `ArkLib.lean` or derived site output.
+   account changed. If the milestone introduces or extends use of a citation key, complete the
+   citation workflow (`blueprint/src/references.bib` entry + `docs/kb/papers/` page, per
+   `docs/wiki/blueprint-and-citations.md`) — the KB linter in `validate.sh` enforces both. Never
+   hand-edit generated `ArkLib.lean` or derived site output (regenerate via
+   `./scripts/update-lib.sh` after `git add`-ing new files).
 5. Run the self-improvement pass below before writing the final report.
 
 ## Self-improvement pass

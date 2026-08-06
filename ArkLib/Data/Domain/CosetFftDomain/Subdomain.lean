@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
+Authors: František Silváši, Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Tactic.CancelDenoms.Core
@@ -141,19 +141,25 @@ lemma mem_subdomain_of_eq_vals
 lemma subdomain_generator_pow_generator (i : ℕ) :
   (subdomain ω i).cosetGenerator = ω 0 ^ 2 ^ i := rfl
 
+set_option warning.simp.varHead false in
+@[simp]
+lemma subdomain_0_apply (i : Fin (2 ^ n)) :
+  no_index (subdomain ω 0 i) = ω i := by
+  aesop
+    (add unsafe [cases Fin, cases Nat])
+    (add safe (by grind))
+    (add simp
+      [subdomain,
+       CosetFftDomainClass.subdomain_embed,
+       mkSubgroupUnit,
+       CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+
+set_option warning.simp.varHead false in
 /-- Membership to the `0`th subdomain is
   the same as membership to the original coset FFT domain. -/
 @[simp]
 lemma mem_subdomain_0_iff_mem :
-  x ∈ subdomain ω 0 ↔ x ∈ ω := by
-  by_cases hn : n = 0
-    <;> aesop
-          (add simp
-            [subdomain,
-             CosetFftDomainClass.subdomain_embed,
-             mkSubgroupUnit,
-             mem_def,
-             CosetFftDomain.eval_coset_fft_domain_eq_eval_generator_mul_domain])
+  no_index (x ∈ subdomain ω 0) ↔ x ∈ ω := by simp [mem_def]
 
 /-- The `n`th subdomain consists exactly of the single element `ω 0 ^ 2 ^ n`. -/
 lemma mem_subdomain_n_iff_eq_pow_generator :
@@ -382,8 +388,8 @@ private lemma card_fin_filter_mod_eq {a j : ℕ} (hj : j ≤ a) (c : ℕ) (hc : 
 
 /-- If `x` lies in the `(i + j)`th subdomain,
   then it has exactly `2 ^ j` preimages under `y ↦ y ^ 2 ^ j` from the `i`th subdomain. -/
-lemma card_block_of_mem_subdomain [DecidableEq F]
-  {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma card_block_of_mem_subdomain [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n)
+  (h : x ∈ subdomain ω (i + j)) :
   Finset.card (block (subdomain ω i) j x) = 2 ^ j := by
   have hinj : Function.Injective (subdomain ω i) := CosetFftDomainClass.injective _
   unfold block
@@ -418,8 +424,7 @@ lemma card_block_of_mem_subdomain [DecidableEq F]
 
 set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists [DecidableEq F]
-  {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
   ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
     have := card_block_of_mem_subdomain hij h
@@ -455,9 +460,7 @@ lemma square_roots_explicit [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
   · have hy_mem : y ∈ subdomain ω i := sq_root_mem_subdomain hi hx hy
     simp_all [Finset.subset_iff]
 
-lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ}
-  (hk : k ≤ n)
-  (hx : x ∈ subdomain ω k) :
+lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ} (hk : k ≤ n) (hx : x ∈ subdomain ω k) :
   Finset.card (block ω k x) = 2 ^ k := by
   have h := card_block_of_mem_subdomain (ω := ω)
           (j := k) (i := 0) (x := x)
@@ -466,7 +469,41 @@ lemma card_block_of_mem_subdomain' [DecidableEq F] {k : ℕ}
   conv_rhs =>
     rw [←h]
   apply congrArg
-  aesop (add safe (by rw [mem_subdomain_0_iff_mem]))
+  aesop
+
+private lemma subdomain_eval (ω : D) (j : ℕ)
+    (b : Fin (2 ^ (n - j))) :
+    (subdomain ω j) b =
+      ω 0 ^ 2 ^ j * ((ω 0)⁻¹ * ω (CosetFftDomainClass.subdomain_embed j b)) := rfl
+
+/-- Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain
+  (pointwise, under the index identification `n - k - 1 = n - (k + 1)`). -/
+lemma subdomain_comp
+  {k j : ℕ} (hk : k + j ≤ n)
+  {a : Fin (2 ^ (n - k - j))} {i : Fin (2 ^ (n - (k + j)))}
+  (hai : a.val = i.val) :
+  subdomain (subdomain ω k) j a = subdomain ω (k + j) i := by
+  by_cases h : n ≤ k <;> by_cases h' : n - k ≤ j
+  · have hk : k = n := by omega
+    have hj : j = 0 := by omega
+    simp_all [subdomain_eval, CosetFftDomainClass.subdomain_embed]
+  · simp_all
+  · have : n = k + j := by omega
+    simp_all [subdomain_eval, CosetFftDomainClass.subdomain_embed, pow_add, pow_mul]
+  · aesop
+      (add simp [subdomain_eval, CosetFftDomainClass.subdomain_embed])
+      (add unsafe (by ring_nf))
+      (add safe [(by omega), (by grind)])
+
+@[simp]
+theorem mem_subdomain_comp_iff_mem
+  {k j : ℕ} (hk : k + j ≤ n) {x : F} :
+  x ∈ subdomain (subdomain ω k) j ↔ x ∈ subdomain ω (k + j) := by
+  constructor <;> rintro ⟨i, hi⟩
+  · have := subdomain_comp (ω := ω) (a := i) (i := ⟨i.val, by grind⟩)
+    aesop (add simp [mem_def])
+  · have := subdomain_comp (ω := ω) (a := ⟨i.val, by grind⟩) (i := i)
+    aesop (add simp [mem_def])
 
 end CosetFftDomainClass
 

@@ -11,8 +11,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   Zero-round bridge from the zero-check's *point-evaluation* claims to the *initial sumcheck*
   claims consumed by the round loop ([NOZ26] §4.3, "finish the proof using sumcheck protocols"):
 
-  * `relIn = relNestedZeroCheckE` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τα) = 0` at the direct points;
-  * `relOut = nestedRoundRelE 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
+  * `relIn = relNestedZeroCheck` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τα) = 0` at the direct points;
+  * `relOut = nestedRoundRel 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
     `∑_{x ∈ {0,1}^{m₀}} F_{α,τ_α}(x) = a`, where the initial linear target
     `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the statement
     alone.
@@ -36,8 +36,8 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound : ℕ)
+variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
+variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The bridge's statement map. It retains the independently sampled scalar-round
@@ -48,58 +48,59 @@ def nestedToRoundStatement {TCom : Type} (φF : ZMod q →+* F)
   ⟨s, fun j => j.elim0, 0, zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα⟩
 
 omit [NeZero q] in
-/-- Pull the initial sumcheck claims back to the direct computable point claims.
-The points are the scalar-round challenges themselves; no derived evaluation-point encoding is
-involved. -/
-theorem mem_relNestedZeroCheckE_of_nestedRoundRelE (K : LiftCom Φ μ n E)
+/-- **Sum-to-point pull-back**: the initial hypercube-sum claims at the installed targets imply
+the zero-check's direct point-evaluation claims, through the batching identities
+`∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The points are the
+scalar-round challenges themselves; no derived evaluation-point encoding is involved. The
+commitment, shortness and bound-sanity conjuncts are shared verbatim. -/
+theorem mem_relNestedZeroCheck_of_nestedRoundRel
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
-    (w : K.Opening ⊕ E)
+    (w : LiftedWitness Φ μ n)
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
-      nestedRoundRelE Φ m₀ m₁ bound K φF b 0) :
-    (s, w) ∈ relNestedZeroCheckE Φ m₀ m₁ bound K φF b := by
-  rcases w with w | e
-  · rw [nestedRoundRelE, Set.mem_withEscape_inl, nestedRoundRel,
-      Set.mem_setOf_eq] at h
-    rw [relNestedZeroCheckE, Set.mem_withEscape_inl, relNestedZeroCheck,
-      Set.mem_setOf_eq]
-    rcases h with ⟨hCom, hZero, hAlpha, hBound⟩
-    change K.com w = s.t at hCom
-    change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b s.τ₀ (K.table w)) 0
-      (fun j => j.elim0) = 0 at hZero
-    change hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s.rlin s.α s.τα (K.table w)) 0
-      (fun j => j.elim0) = zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα at hAlpha
-    change bound ≤ s.rlin.bound at hBound
-    refine ⟨hCom, ?_, ?_, hBound⟩
-    · rw [hZero_eval_eq]
-      rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ (K.table w)] at hZero
-      exact hZero
-    · rw [hAlpha_eval_eq]
-      rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα (K.table w)] at hAlpha
-      exact add_eq_right.mp hAlpha
-  · rw [nestedRoundRelE, Set.mem_withEscape_inr] at h
-    rw [relNestedZeroCheckE, Set.mem_withEscape_inr]
-    exact h
+      nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :
+    (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+  rw [nestedRoundRel, Set.mem_setOf_eq] at h
+  rw [relNestedZeroCheck, Set.mem_setOf_eq]
+  rcases h with ⟨hCom, hShort, hZero, hAlpha, hBound⟩
+  change K.com w = s.t at hCom
+  change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b s.τ₀ w) 0
+    (fun j => j.elim0) = 0 at hZero
+  change hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s.rlin s.α s.τα w) 0
+    (fun j => j.elim0) = zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα at hAlpha
+  change bound ≤ s.rlin.bound at hBound
+  refine ⟨hCom, hShort, ?_, ?_, hBound⟩
+  · rw [hZero_eval_eq]
+    rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w] at hZero
+    exact hZero
+  · rw [hAlpha_eval_eq]
+    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w] at hAlpha
+    exact add_eq_right.mp hAlpha
 
-/-- Zero-round sumcheck bridge for the scalar-round zero-check. -/
-def nestedSumcheckBridgePackage (init : ProbComp σ)
+/-- **The sumcheck bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+`mapStmt := nestedToRoundStatement`, reducing `relNestedZeroCheck` to the round-`0`
+`nestedRoundRel` with no soundness error, hence escape-free. -/
+noncomputable def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom Φ μ n E)
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
     CWSSPackage init impl
-      (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (K.Opening ⊕ E)
-      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (K.Opening ⊕ E)
+      (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (nestedToRoundStatement Φ m₀ m₁ φF)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relNestedZeroCheckE Φ m₀ m₁ bound K φF b
-  relOut := nestedRoundRelE Φ m₀ m₁ bound K φF b 0
+  relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
+  relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
   isPure :=
     ⟨fun stmt _ => nestedToRoundStatement Φ m₀ m₁ φF stmt, fun _ _ => rfl⟩
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relNestedZeroCheckE Φ m₀ m₁ bound K φF b)
-    (relOut := nestedRoundRelE Φ m₀ m₁ bound K φF b 0)
+  extractor := ReduceClaim.treeExtractor (mapStmt := nestedToRoundStatement Φ m₀ m₁ φF)
+    (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+    (relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+    (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relNestedZeroCheckE_of_nestedRoundRelE Φ m₀ m₁ bound K φF b)
+    (mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

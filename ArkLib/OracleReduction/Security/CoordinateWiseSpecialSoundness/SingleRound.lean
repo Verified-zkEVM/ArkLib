@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 
 /-!
   # Single-challenge-round tree navigation (generic CWSS building block)
@@ -23,11 +23,15 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
     a special-sound sibling family has a center and, per coordinate `i`, a sibling differing
     from the center exactly at `i`;
   - the tree extractor `treeExtractor` and the **generic assembly**
-    `coordinateWiseSpecialSound_of_mkWitness`: any pure statement-extending verifier of this
+    `coordinateWiseSpecialSoundWith_of_mkWitness`: any pure statement-extending verifier of this
     `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
     `mkWitness` turning per-branch `relOut`-witnesses at star-shaped challenge families into a
     `relIn`-witness — all tree navigation, shape recovery, and guard-firing is discharged here
-    once.
+    once;
+  - the **escape-threaded** twin `escEvent` / `coordinateWiseSpecialSoundWithEscape_of_mkWitness`,
+    for reductions whose extraction may instead exhibit a cryptographic break: `hmk` concludes
+    `escLocal … ∨ (stmtIn, mkWitness …) ∈ relIn` and the certificate carries the induced tree-level
+    event `escEvent relOut escLocal` (contract for `escLocal`: `ChallengeTree.EscapeEvent`).
 
   ## References
 
@@ -356,18 +360,41 @@ noncomputable def treeExtractor {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
       if h : ∃ w, ((stmtIn, v, fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
     mkWitness stmtIn v fam resp
 
+/-! ## The single-round escape event -/
+
+/-- The tree-level escape event induced by a **local** (per-star) event `escLocal`: the tree's own
+message and challenge family admit per-branch `relOut`-responses on which `escLocal` fires. The
+responses are existentially quantified but pinned to the tree's actual data through the round
+readers (`readPre` / `readChallenges`), so the event is `(stmtIn, tree)`-determined and tight, as
+`ChallengeTree.EscapeEvent`'s contract asks. Its honesty is exactly the honesty of `escLocal` —
+the protocol's obligation. -/
+def escEvent {StmtIn WitOut : Type}
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (escLocal : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → Prop) :
+    ChallengeTree.EscapeEvent StmtIn (pSpec CarrierCom C r)
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity :=
+  fun stmtIn tree =>
+    ∃ resp : Fin (2 ^ r + 1) → WitOut,
+      (∀ j, ((stmtIn, readPre tree,
+          readChallenges tree (Fin.cast foldStructure_arity.symm j)), resp j) ∈ relOut) ∧
+      escLocal stmtIn (readPre tree)
+        (fun j => readChallenges tree (Fin.cast foldStructure_arity.symm j)) resp
+
 section Assembly
 
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
   {σ : Type}
 
-/-- **Generic single-round CWSS assembly.** Any pure statement-extending verifier of the
-two-round `pSpec` is coordinate-wise special sound for `foldStructure`, provided a witness
-assembler `mkWitness` that turns per-branch `relOut`-witnesses at star-shaped challenge
-families into a `relIn`-witness. This discharges all tree/extractor plumbing once; the
-protocol-specific work (Hachi Lemma 8's case split and subtract-divide) lives entirely in
-`hmk`. -/
-theorem coordinateWiseSpecialSound_of_mkWitness
+/-- **Generic single-round CWSS assembly, named form.** Any pure statement-extending verifier of
+the two-round `pSpec` is coordinate-wise special sound for `foldStructure` **at the named
+extractor** `treeExtractor relOut mkWitness`, provided a witness assembler `mkWitness` that turns
+per-branch `relOut`-witnesses at star-shaped challenge families into a `relIn`-witness. This
+discharges all tree/extractor plumbing once; the protocol-specific work (Hachi Lemma 8's case
+split and subtract-divide) lives entirely in `hmk`. Naming the extractor keeps the extraction
+*algorithm* inside the statement, which the existential closure loses (see
+`Verifier.treeSpecialSoundWith`). -/
+theorem coordinateWiseSpecialSoundWith_of_mkWitness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
     (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
@@ -379,10 +406,10 @@ theorem coordinateWiseSpecialSound_of_mkWitness
       (∀ j, ((stmtIn, v, fam j), resp j) ∈ relOut) →
       (∃ e, StarAt fam e) →
       (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
-    V.coordinateWiseSpecialSound init impl
-      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut := by
+    Verifier.coordinateWiseSpecialSoundWith init impl
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut V
+      (treeExtractor relOut mkWitness) := by
   classical
-  refine ⟨treeExtractor relOut mkWitness, ?_⟩
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
   have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
@@ -408,6 +435,62 @@ theorem coordinateWiseSpecialSound_of_mkWitness
     exact (hmem j).choose_spec
   -- the extractor computes definitionally on the recovered star tree; `exact` closes by defeq
   exact hmk stmtIn v _ _ hbranch hstar
+
+/-- **Generic single-round escape-threaded CWSS assembly, named form.**
+`coordinateWiseSpecialSoundWith_of_mkWitness` where the protocol-specific obligation `hmk` may
+conclude a **local escape event** `escLocal` instead of a `relIn`-witness; the certificate then
+carries the induced tree-level event `escEvent relOut escLocal`. This is the assembly for reductions
+whose extraction can fail into a cryptographic break (e.g. Hachi Lemma 8's Module-SIS cases).
+
+The proof is the escape-free one verbatim up to its last step: the recovered star tree makes the
+readers compute definitionally, so the extractor's own chosen per-branch responses (the ones
+`hbranch` certifies) witness `escEvent`'s existential. -/
+theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
+    (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+    (relIn : Set (StmtIn × WitIn))
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn)
+    (escLocal : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → Prop)
+    (hmk : ∀ stmtIn v (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) (resp : Fin (2 ^ r + 1) → WitOut),
+      (∀ j, ((stmtIn, v, fam j), resp j) ∈ relOut) →
+      (∃ e, StarAt fam e) →
+      escLocal stmtIn v fam resp ∨ (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r))
+      (escEvent relOut escLocal) relIn relOut V
+      (treeExtractor relOut mkWitness) := by
+  classical
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
+  -- each branch's guard fires: per-branch membership in `relOut.language`
+  have hmem : ∀ j : Fin (2 ^ r + 1),
+      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
+    intro j
+    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
+      (Fin.cast harity j)
+    exact (Set.mem_language_iff relOut _).1 h
+  -- the sibling family is special sound, hence has a star center
+  have hfam := (nodeOk_iff_family challenges).1 hStruct.1
+  have hstar : ∃ e, StarAt
+      (fun j : Fin (2 ^ r + 1) => challenges (Fin.cast harity j)) e :=
+    exists_starAt (le_refl 2) (by omega) _ hfam
+  -- each chosen response satisfies the relation (the extractor's guards fire)
+  have hbranch : ∀ j : Fin (2 ^ r + 1),
+      ((stmtIn, v, challenges (Fin.cast harity j)),
+        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
+          then h.choose else Classical.ofNonempty) ∈ relOut := by
+    intro j
+    rw [dif_pos (hmem j)]
+    exact (hmem j).choose_spec
+  -- either the local event fires on the extractor's own responses, or extraction succeeds
+  rcases hmk stmtIn v _ _ hbranch hstar with hbad | hgood
+  · exact Or.inl ⟨_, hbranch, hbad⟩
+  · exact Or.inr hgood
 
 end Assembly
 

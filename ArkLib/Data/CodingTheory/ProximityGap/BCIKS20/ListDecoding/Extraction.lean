@@ -71,6 +71,53 @@ noncomputable def pg_candidatePairs
         (Bivariate.evalX (Polynomial.C x₀) R)).toFinset.image (fun H => (R, H)))
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
+theorem pg_natDegree_pos_of_mem_normalizedFactors_of_separable (p : F[Z][X])
+    (hp : p.Separable) {H : F[Z][X]}
+    (hH : H ∈ UniqueFactorizationMonoid.normalizedFactors p) :
+    0 < H.natDegree := by
+  have hH_irred : Irreducible H :=
+    UniqueFactorizationMonoid.irreducible_of_normalized_factor H hH
+  have hH_dvd : H ∣ p :=
+    UniqueFactorizationMonoid.dvd_of_mem_normalizedFactors hH
+  have hH_sep : H.Separable :=
+    Polynomial.Separable.of_dvd hp hH_dvd
+  by_contra hHdeg
+  have hHdeg0 : H.natDegree = 0 := Nat.eq_zero_of_not_pos hHdeg
+  have hconst : H = Polynomial.C (H.coeff 0) :=
+    Polynomial.eq_C_of_natDegree_eq_zero hHdeg0
+  have hsepC : (Polynomial.C (H.coeff 0) : F[Z][X]).Separable := by
+    exact hconst ▸ hH_sep
+  have hunitCoeff : IsUnit (H.coeff 0) :=
+    (Polynomial.separable_C (H.coeff 0)).1 hsepC
+  have hunitC : IsUnit (Polynomial.C (H.coeff 0) : F[Z][X]) :=
+    (Polynomial.isUnit_C).2 hunitCoeff
+  have hunit : IsUnit H := by
+    exact hconst.symm ▸ hunitC
+  exact hH_irred.not_isUnit hunit
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
+theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hsep : ∀ R : F[Z][X][Y],
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs →
+        (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+    {R : F[Z][X][Y]} {H : F[Z][X]}
+    (hmem : (R, H) ∈ pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs)
+      (Q := Q) (u₀ := u₀) (u₁ := u₁) x₀ h_gs) :
+    0 < H.natDegree := by
+  classical
+  have h' :
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs ∧
+        H ∈
+          UniqueFactorizationMonoid.normalizedFactors
+            (Bivariate.evalX (Polynomial.C x₀) R) := by
+    simpa [pg_candidatePairs] using hmem
+  exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable
+    (Bivariate.evalX (Polynomial.C x₀) R) (hsep R h'.1) h'.2
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Separable) :
     #((UniqueFactorizationMonoid.normalizedFactors p).toFinset) ≤ p.natDegree := by
   classical
@@ -82,28 +129,7 @@ theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Se
     intro q hq
     have hq' : q ∈ UniqueFactorizationMonoid.normalizedFactors p := by
       simpa [s] using hq
-    have hq_irred : Irreducible q :=
-      UniqueFactorizationMonoid.irreducible_of_normalized_factor q hq'
-    have hq_dvd : q ∣ p :=
-      UniqueFactorizationMonoid.dvd_of_mem_normalizedFactors hq'
-    have hq_sep : q.Separable :=
-      Polynomial.Separable.of_dvd hp hq_dvd
-    have hq_natDegree_ne_zero : q.natDegree ≠ 0 := by
-      intro hdeg0
-      have hconst : q = Polynomial.C (q.coeff 0) :=
-        Polynomial.eq_C_of_natDegree_eq_zero hdeg0
-      have hsepC : (Polynomial.C (q.coeff 0) : F[Z][X]).Separable := by
-        -- rewrite `hq_sep` using `hconst`
-        exact hconst ▸ hq_sep
-      have hunitCoeff : IsUnit (q.coeff 0) :=
-        (Polynomial.separable_C (q.coeff 0)).1 hsepC
-      have hunitC : IsUnit (Polynomial.C (q.coeff 0) : F[Z][X]) :=
-        (Polynomial.isUnit_C).2 hunitCoeff
-      have hunit : IsUnit q := by
-        -- rewrite back using `hconst`
-        exact hconst.symm ▸ hunitC
-      exact hq_irred.not_isUnit hunit
-    exact Nat.one_le_iff_ne_zero.2 hq_natDegree_ne_zero
+    exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable p hp hq'
   have hcard_le_sum : s.card ≤ (s.map Polynomial.natDegree).sum := by
     -- prove a general statement by induction
     have : (∀ q ∈ s, 1 ≤ q.natDegree) → s.card ≤ (s.map Polynomial.natDegree).sum := by
