@@ -248,6 +248,17 @@ lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
   aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
 
 /-- An explicit formula for `foldWord` when `k = 1` that
+  does not use Lagrange interpolation. Functional version. -/
+theorem foldWord_k_1' [NeZero n] {α : F} :
+  foldWord domain f 1 α = fun i ↦
+    let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomain 1 i, by simp⟩
+    let i := domain.log x
+    let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+    ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
+  aesop (add simp [foldWord_k_1])
+
+/-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation and avoids using `log`. -/
 theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
   {j j' : Fin (2 ^ n)} (hjj' : j ≠ j')
