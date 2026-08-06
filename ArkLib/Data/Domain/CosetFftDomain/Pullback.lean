@@ -4,20 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
-import Mathlib.Tactic.CancelDenoms.Core
-import Mathlib.Data.Set.Finite.Basic
-import Mathlib.GroupTheory.SpecificGroups.Cyclic
-import Mathlib.Algebra.Group.Fin.Basic
-import Mathlib.Algebra.Group.TypeTags.Basic
-import Mathlib.Algebra.Group.Defs
-import Mathlib.Data.Fintype.Card
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.Tactic.Cases
-import Mathlib.Tactic.Linarith
-import Mathlib.Tactic.LinearCombination
-import Mathlib.Tactic.Field
-
-import ArkLib.Data.Domain.CosetFftDomain.Block
 import ArkLib.Data.Domain.CosetFftDomain.Subdomain
 
 /-! Claim 4.23 from [ACFY24] and lemma 4.9 from [ACFY24stir] share
