@@ -147,24 +147,31 @@ noncomputable def blockRelDistanceBall
 scoped notation "Λ𞁒("C", "k", "φ'", "f", "δ")" =>
   blockRelDistanceBall k φ' f δ C
 
-private def complDisagreementSet
+/-- The complement of `disagreementSet` inside the `k`th subdomain: the points `z` of
+  `φ.subdomain k` on which `f` and `g` agree across the whole block indexed by `z`. -/
+def complDisagreementSet
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
 
-lemma complDisagreementSet_def' :
+/-- `complDisagreementSet` as a filter: the subdomain points `z` such that `f` and `g` agree at
+  every index of the block indexed by `z`. -/
+lemma complDisagreementSet_def :
   complDisagreementSet k φ f g =
     { z ∈ (φ.subdomain k).toFinset | ∀ i ∈ blockIdx φ k z, f i = g i  } := by
   aesop (add simp [complDisagreementSet, disagreementSet])
 
+/-- The agreement set sits inside the `k`th subdomain, so has at most `2 ^ (n - k)` points. -/
 @[simp]
 lemma card_complDisagreementSet_le :
   (complDisagreementSet k φ f g).card ≤ 2 ^ (n - k) := by
   simp [complDisagreementSet, Finset.card_sdiff]
 
+/-- The agreement set is a subset of the `k`th subdomain. -/
 @[simp]
-lemma complDisagreementSet_sub_subdomain :
+lemma complDisagreementSet_subset_subdomain :
   complDisagreementSet k φ f g ⊆ (φ.subdomain k).toFinset := by simp [complDisagreementSet]
 
+/-- Block relative distance as one minus the agreement fraction, over `ℚ`. -/
 lemma blockRelDistance_eq_one_sub' :
   δ𞁒(k, φ, f, g) =
     1 - ((complDisagreementSet k φ f g).card : ℚ) / (φ.subdomain k).toFinset.card := by
@@ -172,6 +179,7 @@ lemma blockRelDistance_eq_one_sub' :
     (add simp [complDisagreementSet, Finset.card_sdiff, blockRelDistance, blockDistance])
     (add unsafe (by ring_nf))
 
+/-- Block relative distance as one minus the agreement fraction, over `ℚ≥0`. -/
 lemma blockRelDistance_eq_one_sub :
   δ𞁒(k, φ, f, g) =
     1 - ((complDisagreementSet k φ f g).card : ℚ≥0) / (φ.subdomain k).toFinset.card := by
@@ -179,23 +187,29 @@ lemma blockRelDistance_eq_one_sub :
       NNRat.coe_sub (by aesop (add safe [(by field_simp), (by norm_cast)]))]
   rfl
 
+/-- The agreement and disagreement sets partition the `k`th subdomain, so the size of one is the
+  size of the subdomain minus the size of the other. -/
 lemma card_complDisagreementSet :
   (complDisagreementSet k φ f g).card =
     (φ.subdomain k).toFinset.card - (disagreementSet k φ f g).card := by
   simp [complDisagreementSet, Finset.card_sdiff]
 
-lemma card_disagreementSet' :
+/-- `card_complDisagreementSet` solved for the disagreement count. -/
+lemma card_disagreementSet :
   (disagreementSet k φ f g).card =
     (φ.subdomain k).toFinset.card - (complDisagreementSet k φ f g).card := by
   aesop
     (add simp [card_complDisagreementSet])
     (add unsafe (by rw [Nat.sub_sub_self (by simp)]))
 
-private def agreementBlockUnion
+/-- The union of the blocks indexed by `complDisagreementSet`, i.e. the set of indices lying in
+  some `k`-block on which `f` and `g` agree everywhere. -/
+def agreementBlockUnion
   (k : ℕ) (φ : SmoothCosetFftDomain n F)
   (f g : Fin (2 ^ n) → F) : Finset (Fin (2 ^ n)) :=
   Finset.biUnion (complDisagreementSet k φ f g) (blockIdx φ k)
 
+/-- The union of agreeing blocks sits inside the index type, so has at most `2 ^ n` points. -/
 @[simp]
 lemma card_agreementBlockUnion_le :
   (agreementBlockUnion k φ f g).card ≤ 2 ^ n := by
@@ -203,6 +217,8 @@ lemma card_agreementBlockUnion_le :
     rw [show 2 ^ n = (Finset.univ (α := Fin (2 ^ n))).card by simp]
   exact Finset.card_le_card (by simp)
 
+/-- The `complDisagreementSet` blocks each have `2 ^ k` indices and are pairwise disjoint, so
+  their union has `2 ^ k` times as many indices as there are blocks. -/
 lemma card_agreementBlockUnion
   (hkn : k ≤ n) :
   (agreementBlockUnion k φ f g).card =
@@ -219,15 +235,18 @@ lemma card_agreementBlockUnion
         (t := complDisagreementSet k φ f g)
         (by simp)
         (fun i hi ↦ by
-          have := complDisagreementSet_sub_subdomain hi
+          have := complDisagreementSet_subset_subdomain hi
           aesop (add simp [card_block_of_mem_subdomain'])
         )]
   aesop (add safe (by ac_nf))
 
-lemma agreement_sub_agreementBlockUnion :
+/-- `f` and `g` agree at every index of every agreeing block. -/
+lemma agreementBlockUnion_subset_agreement :
   agreementBlockUnion k φ f g ⊆ ({ i | f i = g i } : Finset _) := fun x hx ↦ by
   aesop (add simp [agreementBlockUnion, complDisagreementSet, disagreementSet])
 
+/-- Indices where `f` and `g` differ lie outside every agreeing block, which bounds their number
+  by `2 ^ n` minus the size of the union of those blocks. -/
 lemma card_disagreement_le :
   Finset.card { i | f i ≠ g i } ≤ 2 ^ n - (agreementBlockUnion k φ f g).card := by
   conv_rhs =>
@@ -237,9 +256,10 @@ lemma card_disagreement_le :
   exact Finset.card_le_card <| fun x hx ↦ by
     simp only [Finset.mem_compl]
     intro contra
-    have := agreement_sub_agreementBlockUnion contra
+    have := agreementBlockUnion_subset_agreement contra
     simp_all
 
+/-- Relative Hamming distance is at most one minus the agreeing-block fraction, over `ℚ`. -/
 lemma relHammingDist_le_sub_agreementBlockUnion' :
   δᵣ(f, g) ≤ 1 - ((agreementBlockUnion k φ f g).card : ℚ) / (2 ^ n) := by
   unfold Code.relHammingDist
@@ -255,6 +275,7 @@ lemma relHammingDist_le_sub_agreementBlockUnion' :
   · field_simp
     aesop
 
+/-- Relative Hamming distance is at most one minus the agreeing-block fraction, over `ℚ≥0`. -/
 lemma relHammingDist_le_sub_agreementBlockUnion :
   δᵣ(f, g) ≤ 1 - ((agreementBlockUnion k φ f g).card : ℚ≥0) / (2 ^ n) := by
   have := relHammingDist_le_sub_agreementBlockUnion' (f := f) (g := g) (φ := φ)

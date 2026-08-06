@@ -471,8 +471,8 @@ private lemma subdomain_eval (ω : D) (j : ℕ)
     (subdomain ω j) b =
       ω 0 ^ 2 ^ j * ((ω 0)⁻¹ * ω (CosetFftDomainClass.subdomain_embed j b)) := rfl
 
-/-- Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain
-  (pointwise, under the index identification `n - k - 1 = n - (k + 1)`). -/
+/-- Taking the `j`th subdomain of the `k`th subdomain gives the `(k + j)`th subdomain
+  (pointwise, under the index identification `n - k - j = n - (k + j)`). -/
 lemma subdomain_comp
   {k j : ℕ} (hk : k + j ≤ n)
   {a : Fin (2 ^ (n - k - j))} {i : Fin (2 ^ (n - (k + j)))}

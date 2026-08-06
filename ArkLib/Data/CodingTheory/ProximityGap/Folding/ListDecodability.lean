@@ -7,6 +7,27 @@ Authors: František Silváši, Ilia Vlasov
 import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
 import ArkLib.Data.CodingTheory.ProximityGap.Folding
 
+/-!
+# Folding preserves block relative distance balls
+
+This file proves Claim 4.22 of [ACFY24]: for every folding randomness `α`, the image under
+`foldWord … 1 α` of the block relative distance ball around `f` is contained in the corresponding
+ball around `foldWord … 1 α f` for the folded code.
+
+This is one step towards Theorem 4.20 of [ACFY24], which is not yet formalised.
+
+## Main results
+
+* `folding_contracts_block_distance` / `folding_contracts_block_rel_distance`:
+  folding does not increase block (relative) distance.
+* `folding_preserves_block_balls`: Claim 4.22 itself.
+
+## References
+
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+    with Super-Fast Verification*][ACFY24]
+-/
+
 namespace ProximityGap
 
 open NNReal Finset Function
@@ -22,15 +43,6 @@ variable {n k : ℕ}
 variable {ω : SmoothCosetFftDomain n F}
 variable {f : Word F (Fin (2 ^ n))}
 
-/-!
-  This file contains a proof of Theorem 4.20 from [ACFY24] (WIP for now).
-
-## References
-
-* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
-    with Super-Fast Verification*][ACFY24]
--/
-
 /-- The block distance of foldings of two words does not exceed
   the block distance of the original words.
 
@@ -41,11 +53,11 @@ lemma folding_contracts_block_distance
   Δ𞁒(k - 1, ω.subdomain 1, foldWord ω u 1 α, foldWord ω f 1 α) ≤
     Δ𞁒(k , ω, u, f) := by
   have : NeZero n := ⟨by omega⟩
-  simp only [blockDistance, card_disagreementSet', card_toFinset, Fintype.card_fin]
+  simp only [blockDistance, card_disagreementSet, card_toFinset, Fintype.card_fin]
   rw [show n - 1 - (k - 1) = n - k by omega,
       Nat.sub_le_sub_iff_left (by simp)]
   exact Finset.card_le_card <| fun x hx ↦ by
-    simp_all only [complDisagreementSet_def', mem_filter]
+    simp_all only [complDisagreementSet_def, mem_filter]
     exact And.intro
       (by aesop (add unsafe (by rw [Nat.add_sub_cancel']))) <| fun i hi ↦ by
       rw [foldWord_k_1, foldWord_k_1]
@@ -82,7 +94,7 @@ lemma folding_contracts_block_rel_distance
   This is the claim 4.22 from [ACFY24] with unfolded definition `⊆`.
 -/
 lemma folding_block_rel_ball {d : ℕ}
-  {α : F} {δ : ℝ≥0} (hk : 1 ≤ k) (hd : k ≤ d)
+  {α : F} {δ : ℝ≥0} (hk : 1 ≤ k) (hd : 1 ≤ d)
   (hkn : k ≤ n) {u : Word F (Fin (2 ^ n))}
   (hu : u ∈ Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) :
   foldWord ω u 1 α ∈
@@ -105,7 +117,7 @@ lemma folding_block_rel_ball {d : ℕ}
   This is the claim 4.22 from [ACFY24].
 -/
 theorem folding_preserves_block_balls {d : ℕ}
-  {α : F} {δ : ℝ≥0} (hk : 1 ≤ k) (hd : k ≤ d) (hkn : k ≤ n) :
+  {α : F} {δ : ℝ≥0} (hk : 1 ≤ k) (hd : 1 ≤ d) (hkn : k ≤ n) :
   Set.image
     (fun u ↦ foldWord ω u 1 α)
     (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ⊆
