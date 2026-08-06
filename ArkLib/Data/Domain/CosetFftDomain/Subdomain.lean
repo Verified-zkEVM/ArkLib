@@ -574,8 +574,6 @@ lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply
       intro h_eq
       have := (‹CosetFftDomainClass D (Fin (2 ^ n)) F›.injective ω) h_eq
       simp_all only [ne_eq, Fin.ext_iff]
-      -- Since $2^i * j \equiv 2^i * j' \pmod{2^n}$,
-      -- we can divide both sides by $2^i$ (which is valid since $2^i$ is coprime to $2^n$).
       have h_div : j.val % 2 ^ (n - i) = j'.val % 2 ^ (n - i) := by
         by_cases hi : i ≤ n;
         · have h_div : 2 ^ i * (j.val - j'.val) ≡ 0 [ZMOD 2 ^ n] := by
