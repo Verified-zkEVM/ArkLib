@@ -4,8 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
-import Mathlib.Data.Nat.Basic
-import ArkLib.Data.Fin.Basic
+import Mathlib.Algebra.Order.Group.Nat
+import Mathlib.Algebra.Order.Monoid.Unbundled.Pow
+import Mathlib.Data.Nat.Cast.Order.Basic
+import Mathlib.Order.Lattice.Nat
 
 /-! # The folding context
 
