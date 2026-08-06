@@ -50,11 +50,11 @@ lemma foldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : F}
       (powAlgHom (g.1.aeval (fun i ↦
           if h : i = 0 then C α else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - 1))))) := by
   subst hf
-  have hchar := CosetFftDomainClass.domain_implies_char_ne_2 domain
-  have h2ne0 : (2 : F) ≠ 0 := CosetFftDomainClass.domain_implies_2_ne_0 domain
+  have hchar := domain_implies_char_ne_2 domain
   conv_lhs =>
     rw [powAlgHom_eq_even_add_odd_powAlgHom hchar]
   rw [even_and_odd_eval hchar, foldWord_k_1']
+  have : (2 : F) ≠ 0 := domain_implies_2_ne_0 domain
   aesop
     (add safe (by field_simp))
     (add simp
