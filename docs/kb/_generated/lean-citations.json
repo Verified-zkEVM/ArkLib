@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 149,
+    "files_with_citations": 150,
     "keys_cited": 30,
-    "total_citation_edges": 217
+    "total_citation_edges": 218
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -251,6 +251,9 @@
       "DG25"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean": [
+      "ACFY24"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGap/Folding/ListDecodability.lean": [
       "ACFY24"
     ],
     "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean": [
@@ -525,6 +528,7 @@
     "ACFY24": [
       "ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean",
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
+      "ArkLib/Data/CodingTheory/ProximityGap/Folding/ListDecodability.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Folding.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean",
       "ArkLib/Data/CodingTheory/ReedSolomon.lean",
