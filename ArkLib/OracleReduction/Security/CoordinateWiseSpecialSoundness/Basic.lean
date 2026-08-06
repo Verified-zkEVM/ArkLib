@@ -48,8 +48,6 @@ import ArkLib.OracleReduction.Security.TranscriptTree
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-noncomputable section
-
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
@@ -67,6 +65,12 @@ variable {S : Type*}
   `i`-th, where they differ. For `ℓ = 1` this is just `x 0 ≠ y 0`. -/
 def CoordEq {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) : Prop :=
   x i ≠ y i ∧ ∀ j, j ≠ i → x j = y j
+
+/-- `≡ᵢ` is decidable over a decidable alphabet: finitely many coordinates, each compared by
+`DecidableEq`. This is what lets the star-center search (`CoordinateWise.SingleRound.central` /
+`sib`) run rather than choose classically, hence what keeps tree extractors executable. -/
+instance instDecidableCoordEq [DecidableEq S] {ℓ : ℕ} (i : Fin ℓ) (x y : Fin ℓ → S) :
+    Decidable (CoordEq i x y) := by unfold CoordEq; infer_instance
 
 /-- A family of `ℓ·(k-1)+1` coordinate-vectors `c` is **coordinate-wise special sound**, i.e. lies
   in `SS(S, ℓ, k)`, if
@@ -125,6 +129,10 @@ theorem isSpecialSoundFamily_one_iff_injective {k : ℕ}
       (hinj (funext fun x => by obtain rfl : x = 0 := Subsingleton.elim x 0; exact h0)).symm
 
 end CoordinateWise
+
+-- The `SS(S, ℓ, k)` block above is deliberately *outside* this section: `CoordEq`'s `Decidable`
+-- instance is the search step of the star-center machinery, so it must stay computable.
+noncomputable section
 
 /-! ## Coordinate-wise structure on a protocol -/
 

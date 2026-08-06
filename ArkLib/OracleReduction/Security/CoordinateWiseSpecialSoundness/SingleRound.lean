@@ -21,7 +21,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
     one message `v`, one node of `arity` sibling challenge vectors, leaves below;
   - the **star-center machinery** (`StarAt`, `central`, `sib`, `exists_starAt`, `sib_coordEq`):
     a special-sound sibling family has a center and, per coordinate `i`, a sibling differing
-    from the center exactly at `i`;
+    from the center exactly at `i`. Over a decidable alphabet both are found by bounded search
+    (`Fin.find`), so they are computable and downstream extraction algorithms stay executable;
   - the tree extractor `treeExtractor` and the **generic assembly**
     `coordinateWiseSpecialSoundWith_of_mkWitness`: any pure statement-extending verifier of this
     `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
@@ -42,10 +43,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
--- NB: `central`/`sib`/`treeExtractor` need classical choice; the `linter.style.openClassical`
--- linter (active
--- via `mathlibStandardSet`) forbids a file-level `open Classical`, so we use `open Classical in`
--- per definition instead.
+-- NB: `treeExtractor` needs classical choice — it recovers the per-branch `WitOut` by inverting
+-- `relOut`, since the transcript tree does not carry the responses. The
+-- `linter.style.openClassical` linter (active via `mathlibStandardSet`) forbids a file-level
+-- `open Classical`, so we use `open Classical in` on that definition. `central`/`sib` need no
+-- such thing: they search.
 
 namespace CoordinateWise.SingleRound
 
@@ -267,19 +269,24 @@ theorem nodeOk_iff_family
 def StarAt {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) (e : Fin K) : Prop :=
   ∀ i, ∃ j, CoordEq i (challenges e) (challenges j)
 
-open Classical in
-/-- A star center of the family, chosen classically (arbitrary if none exists). No
-`IsSpecialSoundFamily` hypothesis at the definition — `exists_starAt` supplies existence. -/
-noncomputable def central {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Nonempty (Fin K)] :
-    Fin K :=
-  if h : ∃ e, StarAt challenges e then h.choose else Classical.arbitrary _
+/-- Being a star center is decidable over a decidable alphabet: two bounded quantifiers over
+`CoordEq`, itself decidable (`instDecidableCoordEq`). -/
+instance instDecidableStarAt [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C))
+    (e : Fin K) : Decidable (StarAt challenges e) := by unfold StarAt; infer_instance
 
-open Classical in
-/-- The coordinate-`i` sibling of the star center, chosen classically. -/
-noncomputable def sib {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Nonempty (Fin K)]
+/-- The star center of the family: the least index that is one, found by search (junk `default`
+if none exists). No `IsSpecialSoundFamily` hypothesis at the definition — `exists_starAt`
+supplies existence. Computable: `Fin.find` is a bounded search over the decidable `StarAt`,
+which is what keeps the extractors built on it executable. -/
+def central [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Inhabited (Fin K)] :
+    Fin K :=
+  if h : ∃ e, StarAt challenges e then Fin.find _ h else default
+
+/-- The coordinate-`i` sibling of the star center, found by the same bounded search. -/
+def sib [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Inhabited (Fin K)]
     (i : Fin ℓ) : Fin K :=
-  if h : ∃ j, CoordEq i (challenges (central challenges)) (challenges j) then h.choose
-  else Classical.arbitrary _
+  if h : ∃ j, CoordEq i (challenges (central challenges)) (challenges j) then Fin.find _ h
+  else default
 
 /-- A special-sound family has a star center (promotes the family's central index; needs
 `2 ≤ k` so each coordinate's sibling set is nonempty). -/
@@ -292,13 +299,13 @@ theorem exists_starAt {ℓ k K : ℕ} (hk : 2 ≤ k) (hK : K = ℓ * (k - 1) + 1
   obtain ⟨j, hj⟩ : J.Nonempty := by rw [← Finset.card_pos, hJcard]; omega
   exact ⟨Fin.cast hK.symm j, hJ j hj⟩
 
-/-- The chosen sibling differs from the chosen center exactly at coordinate `i`. -/
-theorem sib_coordEq {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Nonempty (Fin K)]
-    (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
+/-- The found sibling differs from the found center exactly at coordinate `i`. -/
+theorem sib_coordEq [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C))
+    [Inhabited (Fin K)] (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
     CoordEq i (challenges (central challenges)) (challenges (sib challenges i)) := by
   have hc : StarAt challenges (central challenges) := by
-    unfold central; rw [dif_pos hstar]; exact hstar.choose_spec
-  unfold sib; rw [dif_pos (hc i)]; exact (hc i).choose_spec
+    unfold central; rw [dif_pos hstar]; exact Fin.find_spec hstar
+  unfold sib; rw [dif_pos (hc i)]; exact Fin.find_spec (hc i)
 
 /-- `CoordEq` is symmetric (orientation bridge: `sib_coordEq` is oriented center-first, the
 extraction's difference challenge `c̄ᵢ := c_{sib,i} − c_{central,i}` is oriented sibling-first). -/
@@ -309,8 +316,8 @@ theorem coordEq_symm {S : Type*} {ℓ : ℕ} {i : Fin ℓ} {x y : Fin ℓ → S}
 /-- Sibling-first pointwise disagreement at coordinate `i`: with a ring-valued alphabet,
 `sub_ne_zero_of_ne` turns this into `challenges (sib …) i - challenges (central …) i ≠ 0` —
 the nonzeroness of the extracted difference challenge `c̄ᵢ`. -/
-theorem sib_coordEq_ne {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C)) [Nonempty (Fin K)]
-    (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
+theorem sib_coordEq_ne [DecidableEq C] {ℓ K : ℕ} (challenges : Fin K → (Fin ℓ → C))
+    [Inhabited (Fin K)] (hstar : ∃ e, StarAt challenges e) (i : Fin ℓ) :
     challenges (sib challenges i) i ≠ challenges (central challenges) i :=
   (coordEq_symm (sib_coordEq challenges hstar i)).1
 

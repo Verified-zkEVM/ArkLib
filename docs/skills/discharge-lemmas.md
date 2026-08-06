@@ -134,3 +134,6 @@ Only consider the task complete when:
   size, not reflexively.
 - Re-rate honestly: if a "sub-6" proof balloons, stop, mark it deferred with the new rating, and
   say so in the summary rather than forcing a brittle proof.
+- A sorried definition is also `noncomputable` (because `sorryAx` is). That marker is a symptom of
+  the gap you are filling here, not separate work — see [`make-computable.md`](make-computable.md)
+  if the task is actually about executability.

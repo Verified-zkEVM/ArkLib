@@ -108,7 +108,8 @@ home_page/            site assets and assembled website root
     the composable `quadEvalPackage`, and the reduction's derived norm constants
     `quadEvalZL2SqBound` = `B_z` / `quadEvalBetaSq` = `4·B_z` (the generic tree plumbing lives in
     `Security/CoordinateWiseSpecialSoundness/SingleRound`; the supporting norm growth is in
-    `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `Gadget/Norms`). `QuadEval/Bridge` is the
+    `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `Gadget/Norms`; the executable division
+    the extraction divides by is `Data/Lattices/CyclotomicRing/Inverse`). `QuadEval/Bridge` is the
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS

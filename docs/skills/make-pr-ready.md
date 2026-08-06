@@ -37,6 +37,11 @@ Work through these in order. Do not stop until every item is complete.
   Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
   and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
   committed ones. The whole-tree view is `git diff --stat origin/main`.
+  - **An empty three-dot diff does not mean there is nothing to review.** A branch can sit exactly
+    at the base (`git rev-parse HEAD origin/main` prints the same SHA) with the entire PR staged
+    but not yet committed — the normal state when the work was just finished. Then
+    `origin/main...HEAD` is empty and `git diff origin/main` (two-dot) *is* the whole PR. Confirm
+    which case you are in with that `rev-parse` before concluding the scope is empty.
 - **Check for an in-progress merge before trusting any of the above.** Run
   `cat .git/MERGE_HEAD 2>/dev/null`. If it exists, the author is mid-merge with the resolution
   staged, and the union formula **over-reports badly**: every file the base changed since the
@@ -182,6 +187,12 @@ Work through these in order. Do not stop until every item is complete.
   If your branch has already diverged in `docs/kb/_generated/` (drift, an accidental delete, or a
   regenerate that got committed), restore it the same way: `git fetch origin main` then
   `git checkout origin/main -- docs/kb/_generated/`, and commit so the guard passes.
+
+  **Expect the local regenerate to surface drift that is not yours.** `main`'s `_generated/` is
+  refreshed only after merge, so it routinely lags `main`'s own sources: the regenerated diff will
+  mix your new citations with citation edges from recently-merged PRs whose refresh has not landed.
+  Read the diff to confirm *your* keys resolve, attribute the rest, and revert the whole directory
+  regardless — a bigger-than-expected diff is not evidence your revert failed.
 - Confirm the regenerated files are consistent (no dangling keys, no missing entries), but stage
   **only** your source changes plus any scaffolded `docs/kb/papers/` / `docs/kb/sources/` pages
   (those are *not* under `_generated/` and are allowed in feature PRs) — never the `_generated/`
@@ -337,6 +348,14 @@ throwaway probe instead of trusting the grep:
 printf 'import ArkLib.<Module>\n#check @<Full.Declaration.Name>\n' > /tmp/probe.lean
 lake env lean /tmp/probe.lean
 ```
+
+**The probe's own `unknown identifier` is ambiguous** — it fires both for a genuinely dead
+declaration and for *your* wrong guess at the namespace, and the two look identical. A docstring is
+read in its file's `open` context, so a backticked `` `Foo.bar` `` may be correct there while
+unresolvable from the root. Before reporting a name as dead, find where it is actually declared
+(`git grep -nE '^[[:space:]]*(structure|def|theorem) <leaf>' -- 'ArkLib/**'`, then read the
+enclosing `namespace`) and re-probe with the full path. On a real run this made a live structure
+field look like a dead reference.
 
 **Bare internal planning codes are as dead as the plan file that defined them.** Step 0 strips plan
 *files* and step 3 forbids citing them, but the *codes* survive every automated check and every path

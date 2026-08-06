@@ -151,6 +151,13 @@ which never checks the challenge); extraction recovers `‖cᵢ‖₁ ≤ ω` fr
 def ShortChallenge (Φ : CyclotomicModulus (ZMod q)) (ω : ℕ) : Type :=
   {c : Rq Φ // Rq.l1Norm Φ c ≤ ω}
 
+/-- The challenge space has decidable equality (inherited from `Rq Φ`, whose representatives are
+canonical). This is the alphabet-side hypothesis of the star-center search
+(`CoordinateWise.SingleRound.central`/`sib`), so it is what keeps extraction executable; `Type` is
+opaque to instance search through a plain `def`, hence the explicit instance. -/
+instance (Φ : CyclotomicModulus (ZMod q)) (ω : ℕ) : DecidableEq (ShortChallenge Φ ω) :=
+  Subtype.instDecidableEq
+
 variable {Φ : CyclotomicModulus (ZMod q)} [IsCyclotomic Φ] {ω : ℕ}
 
 namespace ShortChallenge

@@ -117,4 +117,8 @@ semantic ring. -/
 
 @[simp] theorem quotientHom_one : Φ.quotientHom 1 = 1 := map_one _
 
+/-- The modulus itself vanishes in the quotient — the defining relation of `R[X] / (φ)`. -/
+@[simp] theorem quotientHom_phi : Φ.quotientHom Φ.φ = 0 :=
+  Ideal.Quotient.eq_zero_iff_mem.mpr (Ideal.mem_span_singleton_self _)
+
 end ArkLib.Lattices.CyclotomicModulus

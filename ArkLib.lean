@@ -145,6 +145,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.Galois.FixedSubring
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Group
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Trace
+import ArkLib.Data.Lattices.CyclotomicRing.Inverse
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore
