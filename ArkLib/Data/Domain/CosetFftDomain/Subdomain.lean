@@ -490,6 +490,7 @@ lemma subdomain_comp
       (add unsafe (by ring_nf))
       (add safe [(by omega), (by grind)])
 
+set_option warning.simp.varHead false in
 @[simp]
 theorem mem_subdomain_comp_iff_mem
   {k j : ℕ} (hk : k + j ≤ n) {x : F} :

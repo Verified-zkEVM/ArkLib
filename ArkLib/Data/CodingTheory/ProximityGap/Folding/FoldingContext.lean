@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Ilia Vlasov, Aristotle (Harmonic)
+Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.Data.Nat.Basic
@@ -58,7 +58,7 @@ class FoldingContextMiddle (k n : outParam ℕ) where
   `2 ^ d` bounds the degree of messages, and `2 ^ n` is the size of the evaluation
   domain. -/
 class FoldingContext (k d n : outParam ℕ) extends
-  FoldingContextLeft k d, FoldingContextRight d n
+  FoldingContextLeft k d, FoldingContextRight d n where
 
 /-- A full context yields the middle one by transitivity: `k ≤ d ≤ n`. -/
 instance {k d n : ℕ} [FoldingContext k d n] : FoldingContextMiddle k n where
@@ -79,6 +79,13 @@ instance {k d : ℕ} [FoldingContextLeft k d] : NeZero d where
     have := FoldingContextLeft.k_le_d
     omega
 
+/-- `n` is nonzero, since `1 ≤ k ≤ n`, in a `FoldingContextMiddle k d n`. -/
+instance {k n : ℕ} [FoldingContextMiddle k n] : NeZero n where
+  out := by
+    have := FoldingContextMiddle.k_ge_1
+    have := FoldingContextMiddle.k_le_n
+    omega
+
 /-- `n` is nonzero, since `1 ≤ k ≤ n`, in a `FoldingContext k d n`. -/
 instance {k d n : ℕ} [FoldingContext k d n] : NeZero n where
   out := by
@@ -87,7 +94,6 @@ instance {k d n : ℕ} [FoldingContext k d n] : NeZero n where
     omega
 
 namespace FoldingContext
-
 
 /-- Build a `FoldingContext` from the three inequalities `1 ≤ k`, `k ≤ d` and `d ≤ n`. -/
 @[reducible]
@@ -106,6 +112,16 @@ def ofMiddle {k n : ℕ} [FoldingContextMiddle k n] : FoldingContext k n n where
   k_ge_1 := FoldingContextMiddle.k_ge_1
   k_le_d := FoldingContextMiddle.k_le_n
   d_le_n := le_refl _
+
+/-- If `k` folding steps are allowed then so is just one step. -/
+@[reducible]
+def oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
+  k_ge_1 := by rfl
+  k_le_d := by
+    have := FoldingContextLeft.k_ge_1
+    have := FoldingContextLeft.k_le_d
+    omega
+  d_le_n := FoldingContextRight.d_le_n
 
 attribute [simp, grind →] FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d
                           FoldingContextRight.d_le_n FoldingContextMiddle.k_le_n
@@ -156,10 +172,17 @@ lemma one_add_sub_one {k d : ℕ} [FoldingContextLeft k d] :
   1 + (k - 1) = k := by
   rw [Nat.add_sub_cancel' (by simp)]
 
+/-- Truncated subtraction cancels on the left of `k`, since `1 ≤ k`. -/
+@[simp, grind =]
+lemma one_add_sub_one' {k n : ℕ} [FoldingContextMiddle k n] :
+  1 + (k - 1) = k := by
+  have := FoldingContextMiddle.k_ge_1
+  rw [Nat.add_sub_cancel' (by omega)]
+
 /-- Shifting both sides of `n - k` down by one is harmless: `n - 1 - (k - 1) = n - k`.
   This is the index-arithmetic counterpart of folding one step at a time. -/
 @[simp, grind =]
-lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k d n : ℕ} [FoldingContext k d n] :
+lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
   n - 1 - (k - 1) = n - k := by
   have := FoldingContextMiddle.k_ge_1
   have := FoldingContextMiddle.k_le_n
