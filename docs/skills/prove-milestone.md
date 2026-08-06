@@ -61,7 +61,7 @@ Maintain these invariants throughout the task:
    accepted **axiom-clean** baseline — the standard the proven QuadEval milestone meets — is
    exactly `{propext, Classical.choice, Quot.sound}` (Mathlib's foundational axioms);
    `Classical.choice` arriving through Mathlib or through an unmodified generic combinator (e.g.
-   `ReduceClaim.verifier_coordinateWiseSpecialSound`, which every CWSS milestone reuses) is
+   `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`, which every CWSS milestone reuses) is
    acceptable and need not be eliminated; eliminating it from an individual theorem is sometimes
    possible by reproving constructively or routing around a choice-using combinator, but it is not
    required. Confirm each target declaration's `#print axioms` is a subset of that baseline with no
@@ -154,7 +154,7 @@ Apply these Hachi-specific attacks whenever the target can reach the relevant se
 - For every `Bool` guard such as a round, final, or trace check, establish `check = true ↔` the
   advertised paper equations and an honest-acceptance lemma before proving soundness. An
   always-false sorried check makes accepting-tree obligations vacuous.
-- When extraction uses `LiftCom.collision_mem`, trace the required shortness proof for both
+- When an escape event points at `LiftCom.Collision`, trace the required shortness proof for both
   colliding openings back through every relation. A point-evaluation check does not by itself imply
   coefficient/range shortness.
 - For table and polynomial encodings, require explicit capacity inequalities, index equivalences,
@@ -170,11 +170,16 @@ Apply these Hachi-specific attacks whenever the target can reach the relevant se
   an authorized repair replaces it.
 - Re-audit a “proven” dependency when its documented relation or bound is only a containment or a
   modeling generalization of the paper and becomes load-bearing for the target.
-- For escape-threaded links, remember `treeSpecialSound` is an `∃`-extractor statement: a
-  (mathematically) nonempty concrete escape set makes the instantiated `isCWSS` near-vacuous as a
-  proposition. Require the constructive anchor — the explicit witness assembler and its
-  membership theorem (the `buildWitness`/`liftBuildWitness` pattern) — to be public, named, and
-  cited by the module docstring as the auditable content.
+- For escape-threaded links, audit the **escape event**, not the relations: the certificate keeps
+  ordinary `relIn`/`relOut` and concludes `esc stmt tree ∨ extraction succeeds`. Two things carry
+  the content. First, the event must be *honest* — never mentioning the extractor or acceptance
+  (`ChallengeTree.EscapeEvent` documents why such an event trivializes any certificate) — and
+  *tight*, firing only where extraction genuinely fails; a statement-only event like "some
+  collision of this commitment exists" is honest yet worthless because it fires almost everywhere.
+  Second, use the **named** form (`…SoundWith`, not its `∃`-closure), so the extraction algorithm
+  stays in the statement. Require the constructive anchor — the explicit witness assembler and its
+  membership theorem (the `mkWitness`/`mkWitness_mem` pattern) — to be public, named, and cited by
+  the module docstring as the auditable content.
 
 Produce a concrete non-vacuity certificate: at least one honest symbolic instance/transcript or
 small Lean example, plus a trace showing which verifier checks constrain which output-relation

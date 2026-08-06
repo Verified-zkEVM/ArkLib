@@ -28,7 +28,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
   polynomial identity of degree `< 2d`, so openings passing `checkAt` at `2d`
   pairwise-distinct challenges determine it exactly, and the identity descends to `S`.
   Coordinate-wise special soundness therefore holds at plain `k = 2d` special soundness: the
-  generic extractor is the committed-scalar three-way assembler, and the single
+  extractor is the committed-scalar assembler `CommittedScalar.treeExtractor`, and the single
   construction-specific obligation — one short opening passing `checkAt` at `2d`
   pairwise-distinct challenges recovers the input relation — is discharged **generically**
   by the presentation's interpolation engine (`recover`). An instance therefore supplies
@@ -40,7 +40,16 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
   * how to read the linear statement off its statement type (`getM`, `getY`);
   * its admissibility predicates (`zOk` on input witnesses, `wShort` on lifted openings,
     `sideCond` on statements) and the one implication tying them together;
-  * a `BindingCommitment` for the lifted witness (weak binding via the escape budget).
+  * a `BindingCommitment` for the lifted witness.
+
+  ## Where weak binding lives
+
+  The commitment is only binding on short openings, so the certificate is the **escape-threaded**
+  one: `package` is an `EscapeCWSSPackage` whose event is `CommittedScalar.escEvent`, i.e. "the
+  tree's branch openings exhibit a short collision of the committed value". Relations and the
+  extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a
+  plain `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on
+  `(statement, tree)` rather than an extractor output.
 
   ## Statement-type genericity
 
@@ -78,7 +87,7 @@ instance {R : Type} [Semiring R] {S : Type} [Zero S] {d μ n : ℕ} :
   ⟨⟨fun _ => 0, fun _ => 0, fun _ => by simp⟩⟩
 
 variable {R S : Type} [CommRing R] [CommRing S]
-variable {n μ d : ℕ} {E : Type} {F : Type} {Stmt : Type}
+variable {n μ d : ℕ} {F : Type} {Stmt : Type}
 
 /-- The input relation of the switch: the linear relation `M z = y` read off the statement,
 together with the instance's admissibility predicate on witnesses. -/
@@ -109,17 +118,12 @@ variable (P : Presentation R S) (φF : R →+* F)
 variable (getM : Stmt → PolyMatrix S n μ) (getY : Stmt → PolyVec S n)
 variable (zOk : Stmt → PolyVec S μ → Prop) (sideCond : Stmt → Prop)
 variable {wShort : LiftedWitness R S d μ n → Prop}
-variable (K : BindingCommitment (LiftedWitness R S d μ n) E wShort)
+variable (K : BindingCommitment (LiftedWitness R S d μ n) wShort)
 
 /-- The anchored output relation of the switch, from the committed-scalar shell:
 commitment consistency, `checkAt`, and admissibility of the opening. -/
 def relOut : Set (CommittedScalar.Statement Stmt K.TCom F × LiftedWitness R S d μ n) :=
   CommittedScalar.rel K (checkAt P φF getM getY sideCond)
-
-/-- Escape-threaded output relation. -/
-def relOutE :
-    Set (CommittedScalar.Statement Stmt K.TCom F × (LiftedWitness R S d μ n ⊕ E)) :=
-  (relOut P φF getM getY sideCond K).withEscape K.esc
 
 section Protocol
 
@@ -155,66 +159,65 @@ theorem recover [IsPresentation P] (hφF : Function.Injective φF)
   funext i
   exact P.mulVec_eq_of_evalAt_rowSum hφF hd (w.hρ i) hinj (fun j => (hcheck j).1 i)
 
-/-- The switch's extractor: the committed-scalar three-way assembler, projecting the common
-opening to its `z`-component. -/
-noncomputable def buildWitness [IsPresentation P] (hd : P.modulus.natDegree = d)
-    (s : Stmt) (t : K.TCom) (fam : Fin (2 * d) → F)
-    (resp : Fin (2 * d) → (LiftedWitness R S d μ n ⊕ E)) :
-    (Fin μ → S) ⊕ E :=
-  CommittedScalar.buildWitness
-    (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z) s t fam resp
+/-- The switch's **escape event**: the committed-scalar collision event at this switch's output
+relation — the tree's branch openings exhibit a short collision of the committed lifted witness.
+This is the only place weak binding enters the certificate. -/
+def escEvent [IsPresentation P] (hd : P.modulus.natDegree = d) :
+    ChallengeTree.EscapeEvent Stmt (pSpecScalar K.TCom F)
+      (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
+        (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
+  CommittedScalar.escEvent
+    (by have := hd ▸ P.natDegree_modulus_pos; omega) K (checkAt P φF getM getY sideCond)
 
-/-- Correctness of the extractor against the input relation. -/
-theorem buildWitness_mem [IsPresentation P] (hφF : Function.Injective φF)
-    (hd : P.modulus.natDegree = d)
-    (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
-    (s : Stmt) (t : K.TCom) (fam : Fin (2 * d) → F)
-    (resp : Fin (2 * d) → (LiftedWitness R S d μ n ⊕ E))
-    (hresp : ∀ j, ((s, t, fam j), resp j) ∈ relOutE P φF getM getY sideCond K)
-    (hinj : Function.Injective fam) :
-    (s, buildWitness P K hd s t fam resp)
-      ∈ (relLin getM getY zOk).withEscape K.esc := by
-  simpa only [buildWitness, relOutE, relOut] using
-    CommittedScalar.buildWitness_mem
-      (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
-      (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
-      (fun s' w fam' hinj' hcheck hshort =>
-        recover P φF getM getY zOk sideCond hφF hd short_zOk s' w fam' hinj' hcheck hshort)
-      s t fam resp hresp hinj
+/-- The switch's named extractor: the committed-scalar assembler, projecting the common opening to
+its `z`-component. -/
+noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.natDegree = d) :
+    Extractor.TreeBased Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
+      (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
+        (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
+  CommittedScalar.treeExtractor
+    (by have := hd ▸ P.natDegree_modulus_pos; omega) K
+    (checkAt P φF getM getY sideCond) (fun w => w.z)
 
-/-- **CWSS of `Lift`**, at plain `k = 2d` special soundness, from the
-generic committed-scalar theorem. -/
-theorem coordinateWiseSpecialSound [IsPresentation P] (hφF : Function.Injective φF)
+/-- **CWSS of `Lift`**, escape-threaded, at plain `k = 2d` special soundness: on every structured
+accepting tree, either the tree exhibits a short collision of the commitment (`escEvent`) or
+`treeExtractor` produces a witness of the input linear relation. Straight from the generic
+committed-scalar certificate at `recover`. -/
+theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function.Injective φF)
     (hd : P.modulus.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    (verifier (oSpec := oSpec) (F := F) K).coordinateWiseSpecialSound init impl
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (scalarStructure (2 * d) (by have := hd ▸ P.natDegree_modulus_pos; omega))
-      ((relLin getM getY zOk).withEscape K.esc)
-      (relOutE P φF getM getY sideCond K) := by
-  simpa only [verifier, relOutE, relOut] using
-    CommittedScalar.coordinateWiseSpecialSound
-      (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
-      (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
-      (fun s w fam hinj hcheck hshort =>
-        recover P φF getM getY zOk sideCond hφF hd short_zOk s w fam hinj hcheck hshort)
-      init impl
+      (escEvent P φF getM getY sideCond K hd)
+      (relLin getM getY zOk) (relOut P φF getM getY sideCond K)
+      (verifier (oSpec := oSpec) (F := F) K)
+      (treeExtractor P φF getM getY sideCond K hd) :=
+  CommittedScalar.coordinateWiseSpecialSoundWithEscape
+    (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
+    (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
+    (fun s w fam hinj hcheck hshort =>
+      recover P φF getM getY zOk sideCond hφF hd short_zOk s w fam hinj hcheck hshort)
+    init impl
 
-/-- `Lift` as a composable CWSS package. -/
-def package [IsPresentation P] (hφF : Function.Injective φF)
+/-- `Lift` as a composable escape-aware CWSS package. -/
+noncomputable def package [IsPresentation P] (hφF : Function.Injective φF)
     (hd : P.modulus.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    CWSSPackage init impl Stmt ((Fin μ → S) ⊕ E)
-      (CommittedScalar.Statement Stmt K.TCom F) (LiftedWitness R S d μ n ⊕ E)
+    EscapeCWSSPackage init impl Stmt (PolyVec S μ)
+      (CommittedScalar.Statement Stmt K.TCom F) (LiftedWitness R S d μ n)
       (pSpecScalar K.TCom F) where
   verifier := verifier K
   struct := scalarStructure (2 * d) (by have := hd ▸ P.natDegree_modulus_pos; omega)
-  relIn := (relLin getM getY zOk).withEscape K.esc
-  relOut := relOutE P φF getM getY sideCond K
+  relIn := relLin getM getY zOk
+  relOut := relOut P φF getM getY sideCond K
+  esc := escEvent P φF getM getY sideCond K hd
   isPure := ⟨fun stmt tr =>
     (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  isCWSS := coordinateWiseSpecialSound P φF getM getY zOk sideCond K hφF hd short_zOk init impl
+  extractor := treeExtractor P φF getM getY sideCond K hd
+  isCWSS := coordinateWiseSpecialSoundWithEscape P φF getM getY zOk sideCond K hφF hd
+    short_zOk init impl
 
 end Protocol
 

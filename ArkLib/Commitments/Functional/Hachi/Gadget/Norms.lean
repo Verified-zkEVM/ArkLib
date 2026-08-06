@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
+import ArkLib.Commitments.Functional.Hachi.Gadget.Core
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 
 /-!
@@ -32,7 +32,7 @@ residue is minimal among all its integer representatives, so wraparound of the `
 the extractor's `VerifiedBlock.scaled_short` obligation consumes in Lemma 8
 (`QuadEval.Soundness`).
 
-This file bridges the gadget algebra (`Hachi.Gadget.Basic`) and the centered norms
+This file bridges the gadget algebra (`Hachi.Gadget.Core`) and the centered norms
 (`Data.Lattices.CyclotomicRing.NormBounds`). The Hachi-reduction-specific norm constants
 `B_z` / `βSq` that these bounds feed live with Lemma 8 in `QuadEval.Soundness`, not here.
 

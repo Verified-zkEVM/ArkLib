@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Basic
 
 /-!
@@ -20,7 +20,7 @@ the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`, Hachi §2.1/§4.1), and t
 The eval-oracle interface and the honest committer operations are real; the opening `Proof` is
 deferred (`sorry`, see the `TODO`). The coordinate-wise-special-sound (CWSS) composition the
 finished opening will run over lives in the sibling `Composition.lean`
-(`evalChain` / `eval_coordinateWiseSpecialSound`).
+(`evalChain` / `eval_coordinateWiseSpecialSoundWithEscape`).
 
 ## Main definitions
 

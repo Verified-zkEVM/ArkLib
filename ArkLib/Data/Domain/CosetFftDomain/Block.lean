@@ -58,6 +58,26 @@ lemma mem_block :
 lemma block_k_0 :
   block ω 0 x = if x ∈ ω then {x} else ∅ := by aesop
 
+section Smooth
+
+variable {n : ℕ}
+variable {D : Type} [FunLike D (Fin (2 ^ n)) F] [CosetFftDomainClass D (Fin (2 ^ n)) F]
+variable {ω : D} {k : ℕ} {x y : F}
+
+lemma neg_mem_block_of_mem [NeZero k] (hy : y ∈ block ω k x) (hk : k ≤ n) :
+  -y ∈ block ω k x := by
+  aesop
+    (add unsafe cases Nat)
+    (add simp [Nat.even_pow])
+
+lemma neg_mem_block_iff_mem [NeZero k] (hk : k ≤ n) :
+  -y ∈ block ω k x ↔ y ∈ block ω k x := by
+  aesop
+    (add unsafe cases Nat)
+    (add simp [Nat.even_pow])
+
+end Smooth
+
 /-- An alternative definition of `block` in terms of
   `Polynomial.nthRootsFinset`. -/
 lemma block_eq_nthRootsFinset :

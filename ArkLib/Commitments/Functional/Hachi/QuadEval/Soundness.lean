@@ -5,8 +5,8 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
   # Hachi polynomial-evaluation reduction (`QuadEval`) — coordinate-wise special soundness
@@ -17,8 +17,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   transcripts whose challenge vectors form a star in `SS(C, 2ʳ, 2)` — a central branch plus, for
   each coordinate `j`, a sibling branch differing from it exactly at `j` — the tree extractor
   either reconstructs a valid weak `InnerOuter.Opening` by subtract-and-divide (subtract the
-  sibling's response from the central one, then divide by the invertible challenge difference),
-  or outputs a Module-SIS solution for `B` or `D`. The file is `sorry`-free.
+  central branch's response from the sibling's, then divide by the invertible challenge
+  difference), or outputs a Module-SIS solution for `B` or `D`. The file is `sorry`-free.
 
   ## Main definitions
 
@@ -28,11 +28,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
     `VerifiedBlock.scaled_short`.
   * `extractedOpening` — the subtract-and-divide weak opening assembled from a star of accepting
     branches (total, no `IsUnit`/star hypotheses; correctness lives in the lemmas below).
-  * `buildWitness` — Lemma 8's three-case witness assembler: a divergent inner decomposition `t̂`
-    gives a `B`-kernel MSIS solution, a divergent carrier decomposition `ŵ` a `D`-kernel one,
-    and otherwise the star yields `extractedOpening`.
-  * `quadEvalPackage` — the reduction's `verifier` bundled with its CWSS certificate as a
-    composable `CWSSPackage`, ready to be `▷`-composed after the polynomial-level bridge.
+  * `buildWitness` — Lemma 8's three-case extraction result: divergent inner/carrier
+    decompositions give `B`/`D`-kernel Module-SIS breaks; otherwise the star yields
+    `extractedOpening`. Its sum is protocol-local data, split into:
+  * `quadEvalMkWitness` — the plain (`WitIn`-valued) witness assembler fed to the generic
+    single-round assembly, and
+  * `quadEvalEscLocal` — the reduction's **escape event** in local per-star form: "the tree's own
+    responses make extraction land in a Module-SIS break valid for the fixed key `pp`".
+  * `quadEvalPackage` — the reduction as an `EscapeCWSSPackage`.
 
   ## Main results
 
@@ -43,11 +46,12 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
     invertibility of short elements.
   * `verifiedOpening_of_star`, `evalConsistency_of_relOut_star` — case (C): the extracted
     opening is a `VerifiedOpening` at `βSq`/`γ`/`2ω` and satisfies Eq. (15) eval-consistency.
-  * `buildWitness_mem_relIn` — every case of `buildWitness` lands in `relIn`; the single math
-    lemma to which the whole of Lemma 8 reduces.
-  * `quadEval_coordinateWiseSpecialSound` — **Hachi Lemma 8**: assembled from
-    `buildWitness_mem_relIn` by the generic `coordinateWiseSpecialSound_of_mkWitness`
-    (`SingleRound.lean`), which discharges every tree/extractor/guard obligation.
+  * `buildWitness_break_or_mem_relIn` — every local result is either a concrete break in the
+    key-tied `quadEvalSISSet` of the fixed `pp`, or an opening in the plain `relIn`.
+  * `quadEval_coordinateWiseSpecialSoundWithEscape` — **the advertised Lemma 8 statement**, and the
+    one the composed chain consumes: a *named-extractor*, escape-threaded CWSS certificate at
+    `relIn`/`relOut`, whose escape disjunct is the tight, key-tied event
+    `SingleRound.escEvent relOut quadEvalEscLocal`. Feeds `quadEvalPackage`'s certificate.
 
   Mirroring `InnerOuter/Security.lean`, the extraction lemmas carry the Lyubashevsky–Seiler
   [LS18] hypotheses `q ≡ 5 (mod 8)`, `(2ω)² < q` (only there does challenge invertibility
@@ -121,7 +125,7 @@ theorem evalConsistency_of_star (base : ZMod q) (a : PolyVec (Rq Φ) (2 ^ m))
 /-- **Hachi Lemma 8, cases (A)/(B), two-transcript step**: two `γ`-short openings of the same
 commitment under `M` differ by an `ℓ∞`-short kernel vector — a Module-SIS solution for `M` at
 the bound `subLInftyNormBound γ = 2·γ`. Instantiated at `M = B` with `outerShort` (case (A))
-and at `M = D` with `dShort` (case (B)) in `buildWitness_mem_relIn`. -/
+and at `M = D` with `dShort` (case (B)) in `buildWitness_break_or_mem_relIn`. -/
 theorem msis_of_commit_eq {rows cols γ : ℕ}
     (M : Simple.PublicParams Φ rows cols) {u : Simple.Commitment Φ rows}
     {x₁ x₂ : PolyVec (Rq Φ) cols}
@@ -195,24 +199,82 @@ argument of the generic extractor `E`:
   opening `extractedOpening`.
 
 ("Two branches differ" is equivalent to "some branch differs from the central one": if two
-branches disagree, at least one of them disagrees with the central branch.) Fully defined;
-that each case lands in `relIn` is `buildWitness_mem_relIn`. -/
+branches disagree, at least one of them disagrees with the central branch.) The sum is
+**protocol-local data**: the left summand is the ordinary opening witness and the right summand a
+concrete Module-SIS break of the fixed key `pp` (`quadEvalSISSet Φ pp γ`). The two summands are
+separated below into the plain extractor `quadEvalMkWitness` and the escape event
+`quadEvalEscLocal`; correctness is `buildWitness_break_or_mem_relIn`. -/
 noncomputable def buildWitness (base : ZMod q)
-    (_stmt :
-      QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)
+    (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge Φ ω))
+    (resp : Fin (2 ^ r + 1) →
+      QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :
+    QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits ⊕
+      QuadEvalSISBreak Φ innerRows messageDigits outerRows (2 ^ r) innerDigits dRows :=
+  if hB : ∃ j, PolyVec.flattenBlocks (resp j).innerDec
+      ≠ PolyVec.flattenBlocks (resp (central fam)).innerDec then
+    .inr (.msisB
+      (PolyVec.flattenBlocks (resp hB.choose).innerDec -
+        PolyVec.flattenBlocks (resp (central fam)).innerDec))
+  else if hD : ∃ j, (resp j).carrierDec ≠ (resp (central fam)).carrierDec then
+    .inr (.msisD
+      ((resp hD.choose).carrierDec - (resp (central fam)).carrierDec))
+  else
+    .inl (extractedOpening Φ base fam resp)
+
+/-- **The reduction's escape event, in local (per-star) form** — the `escLocal` argument of
+`SingleRound.escEvent`: at a shared message `v` and a star-shaped challenge family with per-branch
+responses, the three-case extraction lands in its Module-SIS branch with a break that is **valid for
+the fixed key `pp`**.
+
+Against the escape-event contract (`ChallengeTree.EscapeEvent`): the conjunct
+`br ∈ quadEvalSISSet Φ pp γ` alone says `br` is a short nonzero kernel vector of `pp`'s `B` or `D`
+matrix — a Module-SIS solution for the *actual, statement-independent* key ([NOZ26] Remark 2 /
+Lemma 7) — and it says so at every `(stmt, v, fam, resp)`, including ones no honest execution
+produces. The event reads only the message, the challenge family and the responses, which the
+ambient `SingleRound.escEvent` pins to the tree's own data. The `buildWitness … = Sum.inr br` is
+what makes it *tight*: it fires only where extraction genuinely cannot return an opening. -/
+def quadEvalEscLocal (base : ZMod q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (γ : ℕ) :
+    QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows →
+    CarrierCom Φ dRows →
+    (Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge Φ ω)) →
+    (Fin (2 ^ r + 1) →
+      QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) → Prop :=
+  fun _ _ fam resp =>
+    ∃ br ∈ quadEvalSISSet Φ pp γ, buildWitness Φ base fam resp = Sum.inr br
+
+/-- **The reduction's plain witness assembler** — the `mkWitness` argument of
+`SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`: `buildWitness`'s opening branch,
+with the (total) `extractedOpening` as the fallback on its Module-SIS branch. The fallback is
+irrelevant to soundness: on exactly those inputs `quadEvalEscLocal` fires, so the certificate's left
+disjunct carries the conclusion. -/
+noncomputable def quadEvalMkWitness (base : ZMod q)
+    (_stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
     (_v : CarrierCom Φ dRows)
     (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge Φ ω))
     (resp : Fin (2 ^ r + 1) →
       QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits) :
     QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits :=
-  if hB : ∃ j, PolyVec.flattenBlocks (resp j).innerDec
-      ≠ PolyVec.flattenBlocks (resp (central fam)).innerDec then
-    .msisB (PolyVec.flattenBlocks (resp hB.choose).innerDec -
-      PolyVec.flattenBlocks (resp (central fam)).innerDec)
-  else if hD : ∃ j, (resp j).carrierDec ≠ (resp (central fam)).carrierDec then
-    .msisD ((resp hD.choose).carrierDec - (resp (central fam)).carrierDec)
-  else
-    .opening (extractedOpening Φ base fam resp)
+  (buildWitness (outerRows := outerRows) (dRows := dRows) Φ base fam resp).elim id
+    (fun _ => extractedOpening Φ base fam resp)
+
+omit [NeZero q] in
+/-- On `buildWitness`'s opening branch, `quadEvalMkWitness` *is* that opening. -/
+theorem quadEvalMkWitness_of_inl (base : ZMod q)
+    (stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (v : CarrierCom Φ dRows)
+    (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge Φ ω))
+    (resp : Fin (2 ^ r + 1) →
+      QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
+    {w : QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits}
+    (hw : buildWitness (outerRows := outerRows) (dRows := dRows) Φ base fam resp = Sum.inl w) :
+    quadEvalMkWitness Φ base stmt v fam resp = w := by
+  unfold quadEvalMkWitness
+  rw [hw]
+  rfl
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- Coordinate difference transfers from the `ShortChallenge` subtype to the underlying ring
@@ -262,19 +324,21 @@ At a star-shaped family of `2^r + 1` `relOut`-accepting branches sharing the car
   subtype challenges (`ShortChallenge.l1Norm_val_sub_le`). -/
 theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q)
     (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows)
     (stmt : QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (v : CarrierCom 𝓜(q, α) dRows)
     (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge 𝓜(q, α) ω))
     (resp : Fin (2 ^ r + 1) →
       QuadEvalResponse 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
-    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) (b : ZMod q) ω γ)
+    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) pp (b : ZMod q) ω γ)
     (hstar : ∃ e, StarAt fam e)
     (ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec)
     (_hw : ∀ j, (resp j).carrierDec = (resp (central fam)).carrierDec) :
     VerifiedOpening 𝓜(q, α) (b : ZMod q)
       (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
-      stmt.pp.toPublicParams stmt.u
+      pp.toPublicParams stmt.u
       (extractedOpening 𝓜(q, α) (b : ZMod q) fam resp) := by
   -- `outer_eq` / `outer_short` are c2 / c6t of the central branch (the extracted `innerDecomp`
   -- IS the central `t̂`, so the `γ` bound applies verbatim — no `2γ` slack).
@@ -312,7 +376,7 @@ theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω
     have hchain : ((fam (sib fam i) i).val - (fam (central fam) i).val) •ᵥ
         (gadgetMatrix 𝓜(q, α) (b : ZMod q) innerRows innerDigits *ᵥ
           (resp (central fam)).innerDec i)
-        = stmt.pp.innerMatrix *ᵥ
+        = pp.innerMatrix *ᵥ
           (Hachi.jMatrix 𝓜(q, α) (b : ZMod q) ((2 ^ m) * messageDigits) zDigits *ᵥ
               (resp (sib fam i)).zDec
            - Hachi.jMatrix 𝓜(q, α) (b : ZMod q) ((2 ^ m) * messageDigits) zDigits *ᵥ
@@ -320,7 +384,7 @@ theorem verifiedOpening_of_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω
       rw [matVecMul_sub, ← hc5s, ← hc5e, ← Hachi.tensorG_sub_challenge,
         Hachi.tensorG_coord_diff 𝓜(q, α) (b : ZMod q) innerRows innerDigits hcoord]
     simp only [extractedOpening]
-    exact inner_eq_of_chain 𝓜(q, α) stmt.pp.innerMatrix
+    exact inner_eq_of_chain 𝓜(q, α) pp.innerMatrix
       ((resp (central fam)).innerDec i) _
       ((fam (sib fam i) i).val - (fam (central fam) i).val) hunit hchain
 
@@ -329,13 +393,15 @@ the shared-`ŵ` c3 row plus the coordinate-isolated, unit-divided c4 rows discha
 `w`/`c3`/`c4` hypotheses of `evalConsistency_of_star` at the shared recomposed carrier
 `w := G_{2^r} *ᵥ ŵ`. -/
 theorem evalConsistency_of_relOut_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows)
     (stmt : QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (v : CarrierCom 𝓜(q, α) dRows)
     (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge 𝓜(q, α) ω))
     (resp : Fin (2 ^ r + 1) →
       QuadEvalResponse 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
-    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) (b : ZMod q) ω γ)
+    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) pp (b : ZMod q) ω γ)
     (hstar : ∃ e, StarAt fam e)
     (hw : ∀ j, (resp j).carrierDec = (resp (central fam)).carrierDec) :
     evalConsistency 𝓜(q, α) (b : ZMod q) stmt.avec stmt.bvec stmt.y
@@ -379,53 +445,73 @@ theorem evalConsistency_of_relOut_star (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : 
     rw [matVecMul_scalarVecMul, dot_scalarVecMul, hchain, ← mul_assoc,
       Ring.inverse_mul_cancel _ hunit, one_mul]
 
-/-- **The witness assembler is correct** — the `hmk` input to the generic assembly
-`coordinateWiseSpecialSound_of_mkWitness` (`SingleRound.lean`), and the mathematical content of
-Hachi Lemma 8's three-case split: at every star-shaped family of `relOut`-accepting branches,
-`buildWitness` lands in `relIn`. -/
-theorem buildWitness_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q)
+/-- **The local extractor is correct** — the mathematical content of Hachi Lemma 8's three-case
+split. At every star-shaped family of `relOut`-accepting branches, `buildWitness` either returns a
+concrete break of the fixed key `pp` (an element of `quadEvalSISSet`) or an opening lying in
+`relIn`.
+
+The first disjunct is exactly the escape event `quadEvalEscLocal`; the second gives the plain
+assembler `quadEvalMkWitness` its `relIn`-membership (via `quadEvalMkWitness_of_inl`). Together they
+feed `SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`. -/
+theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
+    (hκ : (2 * ω) ^ 2 < q)
     (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows)
     (stmt : QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (v : CarrierCom 𝓜(q, α) dRows)
     (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → ShortChallenge 𝓜(q, α) ω))
     (resp : Fin (2 ^ r + 1) →
       QuadEvalResponse 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
-    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) (b : ZMod q) ω γ)
+    (hrel : ∀ j, ((stmt, v, fam j), resp j) ∈ relOut 𝓜(q, α) pp (b : ZMod q) ω γ)
     (hstar : ∃ e, StarAt fam e) :
-    (stmt, buildWitness 𝓜(q, α) (b : ZMod q) stmt v fam resp) ∈
-      relIn 𝓜(q, α) (b : ZMod q)
-        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) := by
-  unfold buildWitness
+    (∃ br ∈ quadEvalSISSet 𝓜(q, α) pp γ,
+        buildWitness (outerRows := outerRows) (dRows := dRows) 𝓜(q, α) (b : ZMod q) fam resp
+          = Sum.inr br) ∨
+      ∃ w, buildWitness (outerRows := outerRows) (dRows := dRows) 𝓜(q, α) (b : ZMod q) fam resp
+          = Sum.inl w ∧
+        (stmt, w) ∈ relIn 𝓜(q, α) pp (b : ZMod q)
+          (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) := by
   by_cases hB : ∃ j, PolyVec.flattenBlocks (resp j).innerDec
       ≠ PolyVec.flattenBlocks (resp (central fam)).innerDec
   · -- Case (A): some branch's inner decomposition differs → `B`-kernel MSIS solution
     -- (both branches' c2 commit to the shared `stmt.u`).
-    rw [dif_pos hB]
-    obtain ⟨-, hu₁, -, -, -, -, hγ₁, -⟩ := hrel hB.choose
-    obtain ⟨-, hu₂, -, -, -, -, hγ₂, -⟩ := hrel (central fam)
-    exact msis_of_commit_eq 𝓜(q, α) stmt.pp.outerMatrix hu₁ hu₂ hγ₁ hγ₂ hB.choose_spec
+    refine Or.inl ⟨.msisB (PolyVec.flattenBlocks (resp hB.choose).innerDec -
+      PolyVec.flattenBlocks (resp (central fam)).innerDec), ?_, ?_⟩
+    · obtain ⟨-, hu₁, -, -, -, -, hγ₁, -⟩ := hrel hB.choose
+      obtain ⟨-, hu₂, -, -, -, -, hγ₂, -⟩ := hrel (central fam)
+      exact msis_of_commit_eq 𝓜(q, α) pp.outerMatrix hu₁ hu₂ hγ₁ hγ₂ hB.choose_spec
+    · unfold buildWitness
+      rw [dif_pos hB]
   · by_cases hD : ∃ j, (resp j).carrierDec ≠ (resp (central fam)).carrierDec
     · -- Case (B): shared `t̂` but some carrier decomposition differs → `D`-kernel MSIS solution
       -- (the shared round-0 message `v` is what makes both branches commit to the same `v`).
-      rw [dif_neg hB, dif_pos hD]
-      obtain ⟨hv₁, -, -, -, -, hγ₁, -, -⟩ := hrel hD.choose
-      obtain ⟨hv₂, -, -, -, -, hγ₂, -, -⟩ := hrel (central fam)
-      exact msis_of_commit_eq 𝓜(q, α) stmt.pp.dMatrix hv₁ hv₂ hγ₁ hγ₂ hD.choose_spec
+      refine Or.inl ⟨.msisD ((resp hD.choose).carrierDec -
+        (resp (central fam)).carrierDec), ?_, ?_⟩
+      · obtain ⟨hv₁, -, -, -, -, hγ₁, -, -⟩ := hrel hD.choose
+        obtain ⟨hv₂, -, -, -, -, hγ₂, -, -⟩ := hrel (central fam)
+        exact msis_of_commit_eq 𝓜(q, α) pp.dMatrix hv₁ hv₂ hγ₁ hγ₂ hD.choose_spec
+      · unfold buildWitness
+        rw [dif_neg hB, dif_pos hD]
     · -- Case (C): shared `t̂` and `ŵ` → the subtract-and-divide weak opening.
-      rw [dif_neg hB, dif_neg hD]
-      push Not at hB hD
-      have ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec :=
-        fun j => funext fun i => PolyVec.block_eq_of_flattenBlocks_eq (hB j) i
-      exact ⟨verifiedOpening_of_star hq5 hκ hτ stmt v fam resp hrel hstar ht hD,
-        evalConsistency_of_relOut_star hq5 hκ stmt v fam resp hrel hstar hD⟩
+      refine Or.inr ⟨extractedOpening 𝓜(q, α) (b : ZMod q) fam resp, ?_, ?_⟩
+      · unfold buildWitness
+        rw [dif_neg hB, dif_neg hD]
+      · push Not at hB hD
+        have ht : ∀ j, (resp j).innerDec = (resp (central fam)).innerDec :=
+          fun j => funext fun i => PolyVec.block_eq_of_flattenBlocks_eq (hB j) i
+        exact ⟨verifiedOpening_of_star hq5 hκ hτ pp stmt v fam resp hrel hstar ht hD,
+          evalConsistency_of_relOut_star hq5 hκ pp stmt v fam resp hrel hstar hD⟩
 
 /-- **Hachi Lemma 8 (CWSS of Hachi's polynomial-evaluation reduction, Figure 3; originally
-Greyhound's [NS24, §3.1] folding protocol).** The reduction's verifier is coordinate-wise
-special sound for the `(ℓ, k) = (2^r, 2)` structure, with `relOut` = Eq. (20) rows + the
-symmetric-ball `S_b` model (`QuadEval/Reduction.lean`) and `relIn` = weak opening (eval-consistent)
-∨ MSIS(B) ∨ MSIS(D), at the derived constants `βSq = quadEvalBetaSq γ b zDigits (deg φ) m
-messageDigits` and `κ = 2ω`.
+Greyhound's [NS24, §3.1] folding protocol), escape-threaded.** `relIn` contains only an
+eval-consistent weak opening, `relOut` Eq. (20) plus its range checks, and the extractor is a plain
+tree-based extractor. The Module-SIS(B/D) outcomes of the three-case extraction appear as the
+certificate's *escape disjunct*: the event `SingleRound.escEvent relOut quadEvalEscLocal`, which
+fires on a `(statement, tree)` pair exactly when that tree's own `relOut`-responses make the
+extraction land in a genuine Module-SIS break of the fixed key `pp` (honesty argument:
+`quadEvalEscLocal`).
 
 **Paper parameter mapping (an intentional generalization).** The theorem is stated over ArkLib's
 generalized relation and exposes `(βSq, γ, κ)` as free parameters: `βSq = quadEvalBetaSq γ b …` is
@@ -434,66 +520,85 @@ symmetric-ball range bound of c6, and `κ = 2ω`. Hachi Lemma 8 fixes the specif
 `(β̄, ω̄, γ̄) = (2·bᵗ, 2ω, b)`. Instantiating `γ := b` matches `γ̄ = b` and `ω̄ = 2ω` exactly, but
 **not** `β̄`: ArkLib's `VerifiedOpening` records a squared-`ℓ₂` bound `βSq` on the scaled blocks
 (not the paper's `ℓ₂`/`ℓ∞` value `2·bᵗ`), a deliberate modeling choice (see `quadEvalZL2SqBound`).
-That `γ := b` instantiation is the named corollary `quadEval_coordinateWiseSpecialSound_paperParams`
-below. The paper's exact `S_b`-box output relation is `QuadEval/Reduction.paperRelOut`, with the
-`paperRelOut ⊆ relOut` containment proved as `QuadEval/Reduction.paperRelOut_subset_relOut`.
+That `γ := b` instantiation is the named corollary
+`quadEval_coordinateWiseSpecialSoundWithEscape_paperParams` below. The paper's exact `S_b`-box
+output relation is `QuadEval/Reduction.paperRelOut`, with the `paperRelOut ⊆ relOut` containment
+proved as `QuadEval/Reduction.paperRelOut_subset_relOut`.
 
-Assembled by `coordinateWiseSpecialSound_of_mkWitness` (`SingleRound.lean`), which discharges
-every tree/extractor/guard obligation generically; the whole of Hachi Lemma 8 thereby reduces
-to the single math lemma `buildWitness_mem_relIn`. -/
-theorem quadEval_coordinateWiseSpecialSound {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+Assembled by `SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`, which discharges
+every tree/extractor/guard obligation generically; the protocol-specific content is
+`buildWitness_break_or_mem_relIn`. -/
+theorem quadEval_coordinateWiseSpecialSoundWithEscape
+    {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
-    (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
-        (messageDigits := messageDigits) (outerRows := outerRows)
-        (innerDigits := innerDigits) (dRows := dRows) (m := m)
-        (r := r)).coordinateWiseSpecialSound init impl
+    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
         (C := ShortChallenge 𝓜(q, α) ω) (r := r))
-      (relIn 𝓜(q, α) (b : ZMod q)
+      (escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+        (quadEvalEscLocal (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) pp γ))
+      (relIn 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
-      (relOut (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) ω γ) :=
-  coordinateWiseSpecialSound_of_mkWitness init impl _ (fun _ _ => rfl) _ _
-    (buildWitness 𝓜(q, α) (b : ZMod q))
-    (fun stmtIn v fam resp hbranch hstar =>
-      buildWitness_mem_relIn hq5 hκ hτ stmtIn v fam resp hbranch hstar)
+      (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+      (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
+        (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
+      (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+        (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) := by
+  refine coordinateWiseSpecialSoundWithEscape_of_mkWitness init impl _ (fun _ _ => rfl) _ _ _ _
+    (fun stmtIn v fam resp hbranch hstar => ?_)
+  rcases buildWitness_break_or_mem_relIn hq5 hκ hτ pp stmtIn v fam resp hbranch hstar with
+    hbad | ⟨w, hw, hmem⟩
+  · exact Or.inl hbad
+  · refine Or.inr ?_
+    rw [quadEvalMkWitness_of_inl 𝓜(q, α) (b : ZMod q) stmtIn v fam resp hw]
+    exact hmem
 
 /-- **Paper-parameter instantiation of Hachi Lemma 8** — the named bridge to the paper's
-weak-opening contract. This is `quadEval_coordinateWiseSpecialSound` specialized to the paper's
-range `γ := b`. Two of the paper's three Lemma 8 bounds match **exactly**: `γ̄ = b` and `ω̄ = 2ω`.
-The third does **not**: the paper's `β̄ = 2·bᵗ` (an `ℓ₂`/`ℓ∞` bound on `‖c̄ᵢsᵢ‖`) is replaced by
-ArkLib's `βSq = quadEvalBetaSq b b zDigits (deg φ) m messageDigits`, a *squared-`ℓ₂`* bound on the
-scaled blocks carrying extra `2ᵐ·δ·(deg φ)` dimensional factors — a deliberate `VerifiedOpening`
-modeling choice, not a paper-faithful value (see `quadEvalZL2SqBound`). Later binding code should
-cite this entry point; the general-`γ` theorem above is the intentional ArkLib generalization, and
-`QuadEval/Reduction.paperRelOut_subset_relOut` proves the `paper ⊆ code` containment on the output
-relation (for `b / 2 ≤ γ`, in particular `γ := b`). -/
-theorem quadEval_coordinateWiseSpecialSound_paperParams {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+weak-opening contract. This is `quadEval_coordinateWiseSpecialSoundWithEscape` specialized to the
+paper's range `γ := b`. Two of the paper's three Lemma 8 bounds match **exactly**: `γ̄ = b` and
+`ω̄ = 2ω`. The third does **not**: the paper's `β̄ = 2·bᵗ` (an `ℓ₂`/`ℓ∞` bound on `‖c̄ᵢsᵢ‖`) is
+replaced by ArkLib's `βSq = quadEvalBetaSq b b zDigits (deg φ) m messageDigits`, a
+*squared-`ℓ₂`* bound on the scaled blocks carrying extra `2ᵐ·δ·(deg φ)` dimensional factors — a
+deliberate `VerifiedOpening` modeling choice, not a paper-faithful value (see
+`quadEvalZL2SqBound`). Later binding code should cite this entry point; the general-`γ` theorem
+above is the intentional ArkLib generalization, and
+`QuadEval/Reduction.paperRelOut_subset_relOut` proves the `paper ⊆ code` containment on the
+output relation (for `b / 2 ≤ γ`, in particular `γ := b`). -/
+theorem quadEval_coordinateWiseSpecialSoundWithEscape_paperParams
+    {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
-    (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
-        (messageDigits := messageDigits) (outerRows := outerRows)
-        (innerDigits := innerDigits) (dRows := dRows) (m := m)
-        (r := r)).coordinateWiseSpecialSound init impl
+    (hq5 : q % 8 = 5) {b ω : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
         (C := ShortChallenge 𝓜(q, α) ω) (r := r))
-      (relIn 𝓜(q, α) (b : ZMod q)
+      (escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
+        (quadEvalEscLocal (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) pp b))
+      (relIn 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq b b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) b (2 * ω))
-      (relOut (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) ω b) :=
-  quadEval_coordinateWiseSpecialSound (γ := b) init impl hq5 hκ hτ
+      (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
+      (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
+        (messageDigits := messageDigits) (outerRows := outerRows)
+        (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
+      (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
+        (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) :=
+  quadEval_coordinateWiseSpecialSoundWithEscape (γ := b) init impl hq5 hκ hτ pp
 
--- An `OracleVerifier` wrapper is deliberately not included: it needs an `OracleInterface`
--- instance for `Simple.Commitment` (a query-model design decision that does not exist in the
--- repo yet) and the still-sorried oracle-level append theorem. The plain-`Verifier` statement
--- above is the right interface for Lemma 8; the oracle wrapper belongs to the composition step.
-
-/-- **`QuadEval` as a `CWSSPackage`** (Hachi [NOZ26, §4.2, Figure 3]; Lemma 8): the two-round fold
-`verifier` bundled with its `foldStructure` CWSS certificate `quadEval_coordinateWiseSpecialSound`,
-ready to be `▷`-composed after the polynomial-level bridge. -/
-def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+/-- **The escape-aware `QuadEval` package.** `relIn` is the ordinary opening relation, `relOut` the
+Eq.-(20) response relation, and `extractor` the actual Lemma 8 extraction algorithm
+(`quadEvalMkWitness`), exposed by composed chains via `.extractor`. Its one escape-specific field is
+the `esc` event, firing exactly on trees whose responses yield a genuine break of the fixed key
+`pp`. -/
+noncomputable def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits) :
-    CWSSPackage init impl
+    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows) :
+    EscapeCWSSPackage init impl
       (QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
         dRows)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
@@ -504,12 +609,22 @@ def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
       (pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r) where
   verifier := verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α)
   struct :=
-    foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows) (C := ShortChallenge 𝓜(q, α) ω) (r := r)
-  relIn := relIn 𝓜(q, α) (b : ZMod q)
+    foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
+      (C := ShortChallenge 𝓜(q, α) ω) (r := r)
+  relIn := relIn 𝓜(q, α) pp (b : ZMod q)
     (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
-  relOut := relOut (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) ω γ
+  relOut := relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ
+  esc := escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+    (quadEvalEscLocal (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) pp γ)
   isPure := ⟨fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  isCWSS := quadEval_coordinateWiseSpecialSound init impl hq5 hκ hτ
+  extractor := treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+    (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))
+  isCWSS := quadEval_coordinateWiseSpecialSoundWithEscape init impl hq5 hκ hτ pp
+
+-- An `OracleVerifier` wrapper is deliberately not included: it needs an `OracleInterface`
+-- instance for `Simple.Commitment` (a query-model design decision that does not exist in the
+-- repo yet) and the still-sorried oracle-level append theorem. The plain-`Verifier` statement
+-- above is the right interface for Lemma 8; the oracle wrapper belongs to the composition step.
 
 end Pinned
 

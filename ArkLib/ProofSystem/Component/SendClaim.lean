@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple Oracle Reduction - SendClaim
@@ -25,18 +26,17 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
   ## Security
 
   The verifier is pure and has no challenge rounds, hence **coordinate-wise special sound**
-  (`oracleVerifier_coordinateWiseSpecialSound`) for any `CWSSStructure`, via the no-challenge bridge
-  `OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx`. The extractor is trivial
-  (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P` refines
-  the input relation by the claim predicate `P`, so accepting into its language forces the input
-  into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the special
-  case `Message := Witness`) on the verifier side.
+  (`oracleVerifier_coordinateWiseSpecialSoundWith`) for any `CWSSStructure`, via the no-challenge
+  bridge `OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The extractor is
+  trivial (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P`
+  refines the input relation by the claim predicate `P`, so accepting into its language forces the
+  input into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the
+  special case `Message := Witness`) on the verifier side.
 
   Perfect completeness — that an honest prover's claim `f stmt oStmt` lands in `toORelOut` whenever
   the input is in `relIn` and `f` respects `P` — is deferred: it needs the same all-pure
   oracle-reduction completeness reasoning as `SendSingleWitness.oracleReduction_completeness`, and
-  is orthogonal to the CWSS target here. This design supersedes the previous effectful-verifier one
-  (whose completeness proof no longer applies).
+  is orthogonal to the CWSS target here.
 
   ## References
 
@@ -143,22 +143,25 @@ def toORelOut :
     (⟨⟨stmt, fun i => oStmtAndMsg (Sum.inl i)⟩, ()⟩ ∈ relIn) ∧
       P stmt (fun i => oStmtAndMsg (Sum.inl i)) (oStmtAndMsg (Sum.inr 0)))
 
-/-- **Coordinate-wise special soundness of `SendClaim`.** The verifier is a pure pass-through with
-no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge) to a transcript-level
-obligation. The extractor is trivial (`e := fun _ _ => ()`, there is no witness); since the output
-oracle statements at `inl` are the input oracles unchanged and `toORelOut relIn P` refines `relIn`,
-accepting into `toORelOut.language` forces the input into `relIn`. Holds for any `D`. -/
-theorem oracleVerifier_coordinateWiseSpecialSound (D : CWSSStructure (pSpec Message)) :
-    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSound init impl D
-      relIn (toORelOut relIn P) := by
-  refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
+/-- **Coordinate-wise special soundness of `SendClaim`, named form.** The verifier is a pure
+pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge) to
+a transcript-level obligation. The named extractor is trivial (`fun _ _ => ()`, there is no
+witness); since the output oracle statements at `inl` are the input oracles unchanged and
+`toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language` forces the input into
+`relIn`. Holds for any `D`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Message)) :
+    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init impl
+      D relIn (toORelOut relIn P)
+      (fun _ _ => ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec Statement OStatement Message) relIn (toORelOut relIn P)
-    (fun _ _ => ()) ?_
-  rintro ⟨stmt, oStmt⟩ tr hAcc
-  have hmem := Verifier.mem_of_pure_accepting init impl
-    (oracleVerifier oSpec Statement OStatement Message).toVerifier ⟨stmt, oStmt⟩ tr
-    (toORelOut relIn P).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
-  exact hu.1
+    (fun _ _ => ())
+    (fun s tr hAcc => by
+      have hmem := Verifier.mem_of_pure_accepting init impl
+        (oracleVerifier oSpec Statement OStatement Message).toVerifier s tr
+        (toORelOut relIn P).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu.1)
+  exact h
 
 end SendClaim

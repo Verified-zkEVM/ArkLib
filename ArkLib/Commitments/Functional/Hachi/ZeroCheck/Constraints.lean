@@ -43,7 +43,7 @@ import Mathlib.Algebra.MvPolynomial.Basic
   off against the printed product — everything downstream is degree-parametric
   (`roundDegZero`/`roundDegAlpha`), so the pin is a one-line change if a convention shifts.
 
-  ## The Kronecker point (Lemma 10 repair)
+  ## The Kronecker point ([NOZ26, Lemma 10] repair)
 
   `kroneckerPoint m ρ = (ρ, ρ², ρ⁴, …, ρ^{2^{m−1}})`: the pullback of an `m`-variate multilinear
   polynomial along this curve is univariate of degree `< 2^m` and the pullback is **injective**
@@ -67,7 +67,7 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F]
 variable (m₀ m₁ : ℕ)
 
 /-! ## The Kronecker curve (real definitions) -/
@@ -203,7 +203,7 @@ noncomputable def hAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ 
 combinator (degree 2), `F_{0,τ₀}` via the range combinator `∏ⱼ (X − j)` of degree `2b` (the
 `SumcheckMultiplierParam` docstring anticipates this Hachi case) — and the round consistency
 (`hypercubeSum` / `roundRel`) via `Sumcheck.Structured.sumcheckConsistencyProp` over
-`SumcheckDomain.boolDomain`. See the `Sumcheck.lean` umbrella. -/
+`SumcheckDomain.boolDomain`. See the `Sumcheck/Basic.lean` umbrella. -/
 
 /-- **`F_{0,τ₀}`** (the range sumcheck summand, [NOZ26] §4.3 "finish the proof using sumcheck"):
 `F_{0,τ₀}(x) := eq̃(τ₀, x)·w̃(x)·∏_{j=1}^{b−1}(w̃(x) − j)(w̃(x) + j)·1_{table}(x)`, where `w̃` is
@@ -253,9 +253,8 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
 /-- The zero-check's output statement: the lift statement extended by the two **Kronecker
-seeds** `(ρ₀, ρ_α)` of the corrected Lemma 10 (the challenge is
-the seed pair; the batching points `τ₀ := κ_{m₀}(ρ₀)`, `τ_α := κ_{m₁}(ρ_α)` are derived
-deterministically). -/
+seeds** `(ρ₀, ρ_α)` of the corrected Lemma 10 (the challenge is the seed pair; the batching
+points `τ₀ := κ_{m₀}(ρ₀)`, `τ_α := κ_{m₁}(ρ_α)` are derived deterministically). -/
 structure ZeroCheckStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) where
   /-- The `R^lin` statement (carrying the public `M`, `yvec`, `bound`). -/
   rlin : RlinStatement Φ n μ
@@ -286,14 +285,15 @@ variable (bound ρBound : ℕ)
 
 /-- **The per-round seam relation** of the paired sumcheck (the CWSS currency of [NOZ26]
 Lemma 11): `w̃` opens `t`, is short (`liftShort`, the shortness precondition of the commitment's
-weak binding `LiftCom.collision_mem` used by each round's collision extractor), and both
+weak binding, whose hardness target is `LiftCom.Collision` — the set each round's escape
+event points at), and both
 partial-hypercube-sum claims at the current challenge prefix equal the current targets. Round `0`
 (full sums) is produced by the sumcheck bridge; round `m₀` (point evaluations) is consumed by the
 final-evaluation step. The public sanity conjunct `bound ≤ rlin.bound` threads the global norm
 parameter back to the `R^lin` statement bound (it originates in `relLift`, is preserved by every
 intermediate extraction since the statement components are shared, and is re-supplied at the
 final-evaluation step by its runtime guard). -/
-def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def roundRel (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
     Set (RoundStatement Φ K.TCom F n μ i × LiftedWitness Φ μ n) :=
   {p |
@@ -305,11 +305,5 @@ def roundRel (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound)
         (sumcheckPolyAlpha Φ m₀ m₁ φF b p.1.zc.rlin p.1.zc.α (kroneckerPoint m₁ p.1.zc.seedα)
           p.2) i p.1.challenges = p.1.targetα ∧
     bound ≤ p.1.zc.rlin.bound}
-
-/-- Escape-threaded per-round seam relation. -/
-def roundRelE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (i : ℕ) :
-    Set (RoundStatement Φ K.TCom F n μ i × (LiftedWitness Φ μ n ⊕ E)) :=
-  (roundRel Φ m₀ m₁ bound ρBound K φF b i).withEscape K.esc
 
 end ArkLib.Lattices.Ajtai.InnerOuter
