@@ -10,7 +10,7 @@ import ArkLib.Data.Fin.Basic
 /-! # The folding context
 
 Folding arguments (as in FRI/STIR/WHIR) are parameterized by three natural numbers:
-
+z`
 * `k` — the folding arity exponent: each folding step collapses blocks of `2 ^ k` points;
 * `d` — the degree exponent: messages are polynomials of degree `< 2 ^ d`;
 * `n` — the domain exponent: the evaluation domain has `2 ^ n` points.
@@ -107,34 +107,17 @@ def ofMiddle {k n : ℕ} [FoldingContextMiddle k n] : FoldingContext k n n where
   k_le_d := FoldingContextMiddle.k_le_n
   d_le_n := le_refl _
 
-/-- `simp`/`grind`-facing restatement of `FoldingContextLeft.k_ge_1`. -/
-@[simp, grind →]
-lemma k_ge_1' {k d : ℕ} [FoldingContextLeft k d] :
-  1 ≤ k := FoldingContextLeft.k_ge_1
+attribute [simp, grind →] FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d
+                          FoldingContextRight.d_le_n FoldingContextMiddle.k_le_n
 
-/-- `simp`/`grind`-facing restatement of `FoldingContextLeft.k_le_d`. -/
-@[simp, grind! →]
-lemma k_le_d' {k d : ℕ} [FoldingContextLeft k d] :
-  k ≤ d := FoldingContextLeft.k_le_d
-
-/-- `simp`/`grind`-facing restatement of `FoldingContextRight.d_le_n`. -/
-@[simp, grind! →]
-lemma d_le_n' {d n : ℕ} [FoldingContextRight d n] :
-  d ≤ n := FoldingContextRight.d_le_n
-
-/-- `simp`/`grind`-facing restatement of `FoldingContextMiddle.k_le_n`. -/
-@[simp, grind! →]
-lemma k_le_n {k n : ℕ} [FoldingContextMiddle k n] :
-  k ≤ n := FoldingContextMiddle.k_le_n
+attribute [grind cases] FoldingContext
 
 /-- Monotonicity of truncated subtraction on the context bounds: `k - 1 ≤ n - 1`.
   Appears when comparing block indices after a single halving step. -/
 @[simp high, grind! →]
 lemma k_sub_one_le_n_sub_one {k d n : ℕ} [FoldingContext k d n] :
   k - 1 ≤ n - 1 := by
-  have := k_ge_1'
-  have := k_le_n
-  omega
+  grind
 
 /-- `2 ^ k ≤ 2 ^ n` in any ordered monoid where `1 ≤ 2`: the block size never exceeds
   the domain size. -/
@@ -178,8 +161,8 @@ lemma one_add_sub_one {k d : ℕ} [FoldingContextLeft k d] :
 @[simp, grind =]
 lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k d n : ℕ} [FoldingContext k d n] :
   n - 1 - (k - 1) = n - k := by
-  have := k_ge_1'
-  have := k_le_n
+  have := FoldingContextMiddle.k_ge_1
+  have := FoldingContextMiddle.k_le_n
   omega
 
 /-- In a group, `2 ^ n / 2 ^ k = 2 ^ (n - k)`: the folded domain size is the quotient of
@@ -214,35 +197,29 @@ lemma pow_2_n_sub_1_sub_k_sub_1_eq_n_sub_k
 @[simp, grind =]
 lemma n_sub_k_add_k {k n : ℕ} [FoldingContextMiddle k n] :
   n - k + k = n := by
-  have := k_le_n
-  omega
+  grind
 
 /-- `d - k + k` cancels, since `k ≤ d`. -/
 @[simp, grind =]
 lemma d_sub_k_add_k {k d : ℕ} [FoldingContextLeft k d] :
   d - k + k = d := by
-  have := k_le_d'
-  omega
+  grind
 
 /-- Reassociation of subtraction for `grind`: `(d - k) + n = (n + d) - k`. -/
-@[grind =]
+@[grind _=_]
 lemma d_sub_k_add_n {k d n : ℕ} [FoldingContext k d n] :
   d - k + n = n + d - k := by
-  have := k_le_d'
-  have := d_le_n'
-  omega
+  grind
 
 /-- Reassociation of subtraction for `grind`: `(n - k) + d = (n + d) - k`. -/
-@[grind =]
+@[grind _=_]
 lemma n_sub_k_add_d {k d n : ℕ} [FoldingContext k d n] :
   n - k + d = n + d - k := by
-  have := k_le_d'
-  have := d_le_n'
-  omega
+  grind
 
 /-- The folded degree bound times the block size recovers the original degree bound:
   `2 ^ (d - k) * 2 ^ k = 2 ^ d`. -/
-@[simp, grind =]
+@[simp, grind _=_]
 lemma pow_2_d_sub_k_mul_pow_2_k
   {A : Type*} [Monoid A] [OfNat A 2]
   {k d : ℕ} [FoldingContextLeft k d] :
@@ -250,7 +227,7 @@ lemma pow_2_d_sub_k_mul_pow_2_k
   simp [←pow_add]
 
 /-- Commuted form of `pow_2_d_sub_k_mul_pow_2_k`: `2 ^ k * 2 ^ (d - k) = 2 ^ d`. -/
-@[simp, grind =]
+@[simp, grind _=_]
 lemma pow_2_k_mul_pow_2_d_sub_k
   {A : Type*} [Monoid A] [OfNat A 2]
   {k d : ℕ} [FoldingContextLeft k d] :
@@ -270,15 +247,11 @@ lemma pow_2_k_mul_le_pow_2_d_of
   {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
   [OfNat A 2] {k d : ℕ} [FoldingContextLeft k d] {x : A}
   (h : x ≤ (2 : A) ^ (d - k)) :
-    (2 : A) ^ k * x ≤ (2 : A) ^ d := by
-  calc
-    (2 : A) ^ k * x ≤ (2 : A) ^ k * (2 : A) ^ (d - k) :=
-      mul_le_mul_right h _
-    _ = (2 : A) ^ d := by grind
+    (2 : A) ^ k * x ≤ (2 : A) ^ d := by grind [mul_le_mul_right]
 
 /-- `2 ^ k * x ≤ 2 ^ d` exactly when `x ≤ 2 ^ (d - k)`. Used to transfer degree bounds
   between a polynomial and its `2 ^ k`-fold. -/
-@[simp]
+@[simp, grind .]
 lemma pow_2_k_mul_le_pow_2_d_iff
   {A : Type*} [Monoid A] [LinearOrder A] [MulLeftMono A]
   [MulLeftStrictMono A]
@@ -288,10 +261,8 @@ lemma pow_2_k_mul_le_pow_2_d_iff
   mp h := by
     by_contra! contra
     have : 2 ^ d < 2 ^ k * x := by
-      rw [←pow_2_k_mul_pow_2_d_sub_k]
-      exact mul_lt_mul_right contra _
-    have : 2 ^ d < 2 ^ d := by grind
-    simp_all
+      grind [mul_lt_mul_right]
+    grind
   mpr h := by grind
 
 end FoldingContext

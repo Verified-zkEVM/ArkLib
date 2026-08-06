@@ -893,7 +893,7 @@ theorem folding_preserves_distance
                   rw [mul_comm,
                       ←mul_assoc,
                       ←pow_add]
-                  simp only [FoldingContext.k_le_n, Nat.sub_add_cancel]
+                  simp only [FoldingContextMiddle.k_le_n, Nat.sub_add_cancel]
                   rw [ENNReal.mul_le_mul_iff_right (by simp) (by simp)]
                   simp
           )]
@@ -906,7 +906,7 @@ theorem folding_preserves_distance
         · rw [mul_comm,
               ←mul_assoc,
               ←pow_add]
-          simp only [FoldingContext.k_le_n, Nat.sub_add_cancel]
+          simp only [FoldingContextMiddle.k_le_n, Nat.sub_add_cancel]
           conv_lhs =>
             lhs
             rw [←mul_one (2 ^ n)]
