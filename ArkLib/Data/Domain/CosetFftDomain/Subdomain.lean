@@ -472,13 +472,45 @@ sending `u` to `u % 2^(n-i)`. Can be used to compute indices of powers of subdom
 def sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) : Fin (2 ^ (n - i)) :=
   ⟨u.val % 2 ^ (n - i), Nat.mod_lt _ (Nat.two_pow_pos _)⟩
 
+private lemma two_pow_mul_mod_two_pow (i n v : ℕ) (h : i ≤ n) :
+  2 ^ i * v % 2 ^ n = 2 ^ i * (v % 2 ^ (n - i)) := by
+  conv_lhs => rw [show (2 : ℕ) ^ n = 2 ^ i * 2 ^ (n - i) by
+    rw [←pow_add, Nat.add_sub_of_le h]]
+  exact Nat.mul_mod_mul_left _ _ _
+
+/-- Multiplying an index of the ambient domain by `2 ^ i` is the same as embedding
+  its `sqFoldMapGen`-reduction back from the `i`th subdomain. -/
+private lemma nsmul_eq_subdomain_embed_sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) :
+  2 ^ i • u = CosetFftDomainClass.subdomain_embed i (sqFoldMapGen (i := i) u) := by
+  rw [←Fin.val_inj, fin_nsmul_val]
+  by_cases hi : n ≤ i
+  · obtain ⟨c, hc⟩ : (2 : ℕ) ^ n ∣ 2 ^ i := pow_dvd_pow 2 hi
+    aesop
+      (add simp [CosetFftDomainClass.subdomain_embed, mul_assoc, Nat.mul_mod_right])
+  · rw [subdomain_embed_val (by omega)]
+    exact two_pow_mul_mod_two_pow i n u.val (by omega)
+
+/-- The `2 ^ i`th power of a point of the domain is the point of the `i`th subdomain
+  indexed by the `sqFoldMapGen`-reduction of its index. -/
+lemma pow_eq_subdomain_sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) :
+  (ω u) ^ 2 ^ i = (subdomain ω i) (sqFoldMapGen (i := i) u) := by
+  have h0 : (ω 0 : F) ≠ 0 := CosetFftDomainClass.ne_zero ω 0
+  have hu : (ω u : F) = ω 0 * (mkSubgroupUnit ω u : F) := by
+    rw [show (ω u : F) = ω 0 * ((ω 0)⁻¹ * ω u) by field_simp]
+    rfl
+  rw [hu, mul_pow, mkSubgroupUnit_pow, nsmul_eq_subdomain_embed_sqFoldMapGen]
+  rfl
+
 /-- `ReedSolomon.evalOnPoints` related on the domain and a subdomain. -/
 lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
   [NeZero n] {p : Polynomial F} {i : ℕ} :
   ReedSolomon.evalOnPoints (ω : Fin (2 ^ n) ↪ F) (p.comp (Polynomial.X ^ (2 ^ i))) =
     (ReedSolomon.evalOnPoints (subdomain ω i : Fin (2 ^ (n - i)) ↪ F) p) ∘
       sqFoldMapGen := by
-  sorry
+  funext u
+  simp only [ReedSolomon.evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply,
+    Polynomial.eval_comp, Polynomial.eval_pow, Polynomial.eval_X]
+  exact congrArg (fun z => Polynomial.eval z p) (pow_eq_subdomain_sqFoldMapGen (ω := ω) u)
 
 /-- A particularly useful special case of `evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain`
   when `i = 1`. -/
