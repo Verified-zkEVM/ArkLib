@@ -148,7 +148,7 @@ private lemma formula_for_monomial
       have hsup : 0 ∈ m.support := by simp [h0]
       have : (X 0 : R[X (Fin n)]) = X 0 ^ (m 0) := by simp [show m 0 = 1 by grind]
       rw [this,
-          ←Finset.prod_eq_mul_prod_diff_singleton (s := m.support) 0
+          ←Finset.prod_eq_mul_prod_sdiff_singleton (s := m.support) 0
             (f := fun i ↦ X i ^ m i) (by aesop)]
       aesop
     aesop
