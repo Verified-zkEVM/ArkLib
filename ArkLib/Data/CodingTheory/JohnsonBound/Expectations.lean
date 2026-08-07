@@ -58,7 +58,7 @@ lemma lin_shift_d [Field F] [Fintype F] (h_B : 2 ≤ B.card) :
   apply sum_bij (fun x _ => (x.1 - v, x.2 - v)) <;> try aesop
 
 @[simp]
-lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
+lemma e_ball_le_radius [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
     (h_B : (B ∩ ({ x | Δ₀(x, v) ≤ r } : Finset _)).card > 0) :
     e (B ∩ ({ x | Δ₀(x, v) ≤ r } : Finset _)) v ≤ r := by
   unfold e
@@ -81,7 +81,7 @@ lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin
     by exact_mod_cast h_B
   exact_mod_cast h3
 
-lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)} (h_B : B.card > 1) :
+lemma min_dist_le_d {B : Finset (Fin n → F)} (h_B : B.card > 1) :
     sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } ≤ d B := by
   unfold d
   let d_weak := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
@@ -132,5 +132,75 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)} (h_B : B.card > 1) :
   simp at h_bound
   gcongr
   grind only
+
+/-! ## Coordinatewise transport (Field-free recentering)
+
+The classical Johnson bound recenters a code at a chosen word `v` via `x ↦ x - v`, which needs
+`[Field F]` (the `lin_shift_*` lemmas above). Over an arbitrary alphabet we instead transport the
+code through a per-coordinate family of equivalences `σ : Fin n → (F ≃ G)`, applied
+coordinatewise by `remap σ x := fun i => σ i (x i)`. This preserves Hamming distance (each `σ i`
+is injective), hence preserves `e`, `d`, and cardinalities. Choosing `σ i` to send the centre's
+`i`-th coordinate to a fixed symbol recenters at that symbol, no field structure required. -/
+
+/-- Coordinatewise application of a per-coordinate family of equivalences. -/
+def remap {G : Type*} (σ : Fin n → (F ≃ G)) (x : Fin n → F) : Fin n → G :=
+  fun i => σ i (x i)
+
+omit [DecidableEq F] in
+lemma remap_injective {G : Type*} (σ : Fin n → (F ≃ G)) :
+    Function.Injective (remap σ) := by
+  intro x y h
+  funext i
+  have : σ i (x i) = σ i (y i) := congrFun h i
+  exact (σ i).injective this
+
+@[simp]
+lemma remap_hammingDist {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (x y : Fin n → F) :
+    Δ₀(remap σ x, remap σ y) = Δ₀(x, y) := by
+  simp only [hammingDist, remap]
+  congr 1
+  apply Finset.filter_congr
+  intro i _
+  simp
+
+omit [DecidableEq F] in
+lemma remap_image_card {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) :
+    (B.image (remap σ)).card = B.card :=
+  Finset.card_image_of_injective B (remap_injective σ)
+
+lemma remap_e {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) (v : Fin n → F) :
+    e (B.image (remap σ)) (remap σ v) = e B v := by
+  simp only [e, remap_image_card]
+  congr 1
+  rw [Finset.sum_image (fun x _ y _ h => remap_injective σ h)]
+  norm_cast
+  apply Finset.sum_congr rfl
+  intro x _
+  rw [remap_hammingDist]
+
+lemma remap_d {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) :
+    d (B.image (remap σ)) = d B := by
+  simp only [d, remap_image_card]
+  congr 1
+  have hprod : (B.image (remap σ)) ×ˢ (B.image (remap σ))
+      = (B ×ˢ B).image (Prod.map (remap σ) (remap σ)) := by
+    rw [Finset.prodMap_image_product]
+  rw [hprod, Finset.sum_filter, Finset.sum_image (fun x _ y _ h => by
+    have h1 : remap σ x.1 = remap σ y.1 := congrArg Prod.fst h
+    have h2 : remap σ x.2 = remap σ y.2 := congrArg Prod.snd h
+    exact Prod.ext (remap_injective σ h1) (remap_injective σ h2))]
+  rw [Finset.sum_filter]
+  norm_cast
+  apply Finset.sum_congr rfl
+  intro x _
+  simp only [Prod.map_fst, Prod.map_snd]
+  by_cases h : x.1 = x.2
+  · simp [h]
+  · rw [if_pos (show ¬remap σ x.1 = remap σ x.2 from fun hc => h (remap_injective σ hc)),
+      if_pos h, remap_hammingDist]
 
 end JohnsonBound

@@ -98,7 +98,7 @@ def JohnsonConditionWeak (B : Finset (Fin n → F)) (e : ℕ) : Prop :=
   (e : ℚ) / n < J q (d / n)
 
 /-- The weak Johnson condition implies the strong one on the ball intersection. -/
-lemma johnson_condition_weak_implies_strong [Field F]
+lemma johnson_condition_weak_implies_strong
     {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ}
     (h_J_cond_weak : JohnsonConditionWeak B e)
     (h_B2_not_one : 1 < (B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card)
@@ -120,14 +120,9 @@ lemma johnson_condition_weak_implies_strong [Field F]
   · have h_B2_nonempty : (0 : ℚ) < ((B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)).card : ℚ) :=
       by norm_cast; omega
     have h_frac_pos : frac > 0 := by
+      have hq2 : (2 : ℚ) ≤ q := by unfold q; exact_mod_cast h_F_nontriv
       unfold frac
-      have : 1 < card F := by
-        simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b)
-      field_simp
-      unfold q
-      simp only [Nat.cast_pos, Fintype.zero_lt_card, div_pos_iff_of_pos_left, sub_pos,
-        Nat.one_lt_cast]
-      exact h_F_nontriv
+      exact div_pos (by linarith) (by linarith)
     have j_fun_bound : (↑e / ↑n : ℝ) < (1 / ↑frac * (1 - √(1 - ↑frac * ↑d / ↑n))) := by
       unfold JohnsonConditionWeak J at h_J_cond_weak
       simp_all only [Rat.cast_natCast, Rat.cast_div, Rat.cast_sub, Rat.cast_one, one_div, inv_div,
@@ -205,17 +200,14 @@ lemma johnson_condition_weak_implies_strong [Field F]
         calc ↑frac * ↑e_1 / ↑n
             = ↑frac * (↑e_1 / ↑n) := by ring
           _ < ↑frac * (1 / ↑frac * (1 - √(1 - ↑frac * ↑d / ↑n))) := by
-            simp_all only [Rat.cast_div, Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg,
-              Nat.cast_pos, Finset.card_pos, gt_iff_lt, zero_lt_card, div_pos_iff_of_pos_left,
-              sub_pos, Nat.one_lt_cast, one_div, inv_div, mul_lt_mul_iff_right₀, frac, q, d, e_1]
+            have hfr : (0 : ℝ) < (frac : ℝ) := by exact_mod_cast h_frac_pos
+            rw [mul_lt_mul_iff_of_pos_left hfr]
+            exact j_fun_bound_e1
           _ = 1 - √(1 - ↑frac * ↑d / ↑n) := by
             grind only [= division_by_conjugate, = sqrt_one]
       grind only
     have h_esqrtpos : (0 : ℝ) ≤ 1 - frac * e_1 / ↑n := by
-      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := by
-        simp_all only [Rat.cast_div, Rat.cast_natCast, Rat.cast_sub, Rat.cast_one, sub_nonneg,
-          Nat.cast_pos, Finset.card_pos, gt_iff_lt, zero_lt_card, div_pos_iff_of_pos_left,
-          sub_pos, Nat.one_lt_cast, one_div, inv_div, sqrt_nonneg, frac, q, d, e_1]
+      have : (0 : ℝ) ≤ √(1 - ↑frac * ↑d / ↑n) := Real.sqrt_nonneg _
       grind only
     suffices recast_main_goal : (1 - frac * d / ↑n : ℝ) < (1 - frac * e_1 / ↑n) ^ 2 by
       exact_mod_cast recast_main_goal
@@ -268,7 +260,7 @@ lemma johnson_condition_strong_iff_johnson_denom_pos {B : Finset (Fin n → F)} 
   simp [JohnsonDenominator, JohnsonConditionStrong]
 
 /-- Theorem 3.1: the Johnson bound on list size. -/
-theorem johnson_bound [Field F]
+theorem johnson_bound
     (h_condition : JohnsonConditionStrong B v) :
     let d := d B
     let q : ℚ := card F
@@ -285,7 +277,7 @@ theorem johnson_bound [Field F]
     (johnson_condition_strong_implies_2_le_F_card h_condition)
 
 /-- Alphabet-free Johnson bound from [codingtheory]. -/
-theorem johnson_bound_alphabet_free [Field F]
+theorem johnson_bound_alphabet_free
     {B : Finset (Fin n → F)} {v : Fin n → F} {e : ℕ} (hB : 1 < B.card) :
     let d := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
     let q : ℚ := card F
@@ -295,10 +287,12 @@ theorem johnson_bound_alphabet_free [Field F]
   intro d q frac h
   let B' := B ∩ ({ x | Δ₀(x, v) ≤ e } : Finset _)
   -- Parameter bounds.
+  have hF2 : 2 ≤ card F := by
+    obtain ⟨u, _, w, _, huw⟩ := one_lt_card.mp hB
+    obtain ⟨i, hi⟩ := Function.ne_iff.mp huw
+    exact Fintype.one_lt_card_iff.mpr ⟨u i, w i, hi⟩
   have q_not_small : q ≥ (2 : ℚ) := by
-    simpa [q] using show (2 : ℚ) ≤ (card F : ℚ) from by
-      exact_mod_cast Nat.succ_le_of_lt (by
-        simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b))
+    simpa [q] using show (2 : ℚ) ≤ (card F : ℚ) from by exact_mod_cast hF2
   have d_not_small : d ≥ 1 := by
     let S : Set ℕ := { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
     simpa [S] using sInf.le_sInf_of_LB (S := S) (i := 1)
@@ -409,10 +403,7 @@ theorem johnson_bound_alphabet_free [Field F]
           (lt_of_le_of_ne (by linarith) (johnson_e_div_ne_J hn_pos_nat
             (Nat.succ_le_iff.1 d_not_small) (by linarith) h_muln h_J_bound
             (le_of_not_gt h_d_close_n)))
-          (show 1 < B'.card by omega) (by
-            have : 1 < card F := by
-              simpa [Fintype.one_lt_card_iff] using (⟨(0 : F), (1 : F), by simp⟩ : ∃ a b : F, a ≠ b)
-            omega)
+          (show 1 < B'.card by omega) hF2
       -- Core inequality from the hypothesis.
       have h_div'_q : (1 - (d / n : ℚ)) ≤ (1 - (e / n : ℚ)) ^ 2 := by
         have : ((1 - (d / n : ℚ)) : ℝ) ≤ ((1 - (e / n : ℚ)) ^ 2 : ℝ) := by

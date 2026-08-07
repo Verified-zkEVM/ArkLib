@@ -416,14 +416,34 @@ lemma johnson_bound₀ [Zero F]
   rw [← johnson_denom h_card, ← mul_assoc]
   exact johnson_unrefined_by_M' h_n h_B h_card
 
-/-- Johnson bound generalised to an arbitrary centre `v` via linear shift. -/
-protected lemma johnson_bound_lemma [Field F] {v : Fin n → F}
+/-- Johnson bound generalised to an arbitrary centre `v`.
+
+Recentering at `v` is done by a coordinatewise transport (`remap`) rather than the
+field subtraction `x ↦ x - v`, so no field structure is needed: each coordinate
+`σ i` sends `v i` to the fixed symbol `0` of `Fin (card F)`, hence `remap σ v = 0`,
+and `remap` preserves Hamming distance (so `e`, `d`, and cardinalities are unchanged). -/
+protected lemma johnson_bound_lemma {v : Fin n → F}
     (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  rw [lin_shift_e (by omega), lin_shift_d h_B, lin_shift_card (v := v)]
-  exact johnson_bound₀ h_n (lin_shift_card (B := B) ▸ h_B) h_card
+  haveI : NeZero (card F) := ⟨by omega⟩
+  set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
+  set σ : Fin n → (F ≃ Fin (card F)) :=
+    fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ
+  set B' : Finset (Fin n → Fin (card F)) := B.image (remap σ) with hB'
+  have hv0 : remap σ v = 0 := by
+    funext i
+    simp only [remap, hσ, Equiv.trans_apply, Equiv.swap_apply_left]
+    rfl
+  have hcardF' : card (Fin (card F)) = card F := Fintype.card_fin _
+  have hcardB' : B'.card = B.card := remap_image_card σ B
+  have h_e : e B' (remap σ v) = e B v := remap_e σ B v
+  have h_d : d B' = d B := remap_d σ B
+  rw [← h_e, ← h_d, hv0, ← hcardB']
+  -- rewrite `card F` to `card (Fin (card F))` in the numeric factors
+  rw [show (card F : ℚ) = (card (Fin (card F)) : ℚ) by rw [hcardF']]
+  exact johnson_bound₀ h_n (hcardB' ▸ h_B) (by rw [hcardF']; exact h_card)
 
 /-- The normalised Hamming distance scaled by `q/(q-1)` stays in `[-1, 1]`. -/
 protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
