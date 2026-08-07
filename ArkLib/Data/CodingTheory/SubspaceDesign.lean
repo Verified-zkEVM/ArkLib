@@ -433,7 +433,7 @@ The pinned tex (`thm:folded-rs-are-subspace-design`) states `|F| > n` as a share
 precondition for both the FRS and the multiplicity cases; the FRS case additionally
 requires `(L, s)`-admissibility of `ω` (with `ω ≠ 0`), while the multiplicity case
 additionally requires `char(F) > m`. We state only the FRS half here (hypotheses
-`_hFn : |F| > n`, `_hω : Admissible …`, `_hω0 : ω ≠ 0`); the multiplicity half is gated
+`hFn : |F| > n`, `hω_adm : Admissible …`, `hω0 : ω ≠ 0`); the multiplicity half is gated
 on `D2.19 / DA.7` (univariate-multiplicity definition), tracked separately.
 
 **Proof** (GK16's Theorem 14 argument, formalised 2026-08-07; formerly an external admit).
@@ -442,13 +442,13 @@ Outside the main regime the bound is bookkeeping: every block dimension is at mo
 (in particular `r ∉ [s]`, where `τ(r) = 1`). In the remaining regime `r ∈ [s]` and
 `k < n(s − r + 1)`, so `k < n·s ≤ |F| − 1` — the `n·s` folded evaluation points are
 distinct (`admissible_foldedPoints_injective`) and nonzero (for `s ≥ 2`; for `s = 1` this
-is `_hFn`). The encoder is then injective on `degreeLT F k`
+is `hFn`). The encoder is then injective on `degreeLT F k`
 (`frsEvalOnPoints_domRestrict_injective`), so `A` and each `A ⊓ ker(proj i)` lift to
 message-side subspaces `B` and `Nᵢ ≤ B` of the same dimension, with `Nᵢ` consisting of
 polynomials vanishing on the whole `i`-th orbit `{domain i · ω^j : j < s}`. Fix a basis
 `P₁, …, P_σ` of `B` and let `W` be its `ω`-folded Wronskian [GK16 Definition 11]. Then
 `W ≠ 0` (`Polynomial.foldedWronskian_ne_zero_of_linearIndependent`, GK16 Lemma 12 — this
-is where `_hω_gen` is used) and `deg W ≤ σ(k − 1)`
+is where `hω_gen` is used) and `deg W ≤ σ(k − 1)`
 (`Polynomial.natDegree_foldedWronskian_le`), while for every block `i` and every
 `0 ≤ m ≤ s − σ` the point `domain i · ω^m` is a root of `W` of multiplicity at least
 `dim Nᵢ` (base-change to a basis of `B` adapted to `Nᵢ`, then
@@ -468,7 +468,7 @@ is [GK16 Lemma 12]'s folded-Wronskian criterion, stated for **`γ` a generator o
 (`thm:folded-rs-are-subspace-design`, L1263–1277) omits any order condition, and GG25's
 own restatement (Def 2.18 / Thm 2.19, `q > sn` only) is falsified by the same
 counterexample; the omission has been reported to the paper's authors (2026-07-21, see
-the audit's T2.18 row). We carry GK16's own generator hypothesis `_hω_gen` — not a
+the audit's T2.18 row). We carry GK16's own generator hypothesis `hω_gen` — not a
 weaker `ord(ω) ≥ k` guard: that would block the known counterexample but is not
 licensed by the cited source, and a transcription must state exactly what its source
 proves, never an unlicensed hybrid strengthening. (The hypothesis is used exactly once,
@@ -483,10 +483,10 @@ theorem frs_is_subspaceDesign_gk16
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (L : Finset F) (_hL_dom : ∀ i : ι, domain i ∈ L)
-    (_hFn : Fintype.card ι < Fintype.card F)
-    (_hω : ReedSolomon.Folded.Admissible L s ω) (_hω0 : ω ≠ 0)
-    (_hω_gen : orderOf ω = Fintype.card F - 1) :
+    (L : Finset F) (hL_dom : ∀ i : ι, domain i ∈ L)
+    (hFn : Fintype.card ι < Fintype.card F)
+    (hω_adm : ReedSolomon.Folded.Admissible L s ω) (hω0 : ω ≠ 0)
+    (hω_gen : orderOf ω = Fintype.card F - 1) :
     let τ : ℕ → ℝ := fun r ↦
       if r ∈ Finset.Icc 1 s then
         (k : ℝ) / Fintype.card ι / (s - r + 1)
@@ -548,14 +548,14 @@ theorem frs_is_subspaceDesign_gk16
     rw [Nat.mul_comm] at hk_ns; omega
   -- Admissibility transported from `L` to the image of `domain`.
   have hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω := by
-    obtain ⟨h1, h2⟩ := _hω
+    obtain ⟨h1, h2⟩ := hω_adm
     refine ⟨fun α hα β hβ hαβ i hi => ?_, fun α hα i hi his => ?_⟩
     · obtain ⟨a, -, rfl⟩ := Finset.mem_map.mp hα
       obtain ⟨b, -, rfl⟩ := Finset.mem_map.mp hβ
-      exact h1 _ (_hL_dom a) _ (_hL_dom b) hαβ i hi
+      exact h1 _ (hL_dom a) _ (hL_dom b) hαβ i hi
     · obtain ⟨a, -, rfl⟩ := Finset.mem_map.mp hα
-      exact h2 _ (_hL_dom a) i hi his
-  have hpt_inj := ReedSolomon.Folded.admissible_foldedPoints_injective domain ω hadm _hω0
+      exact h2 _ (hL_dom a) i hi his
+  have hpt_inj := ReedSolomon.Folded.admissible_foldedPoints_injective domain ω hadm hω0
   -- `k ≥ 1` (otherwise `frsCode = ⊥` and `σ = 0`).
   have hk1 : 1 ≤ k := by
     by_contra h
@@ -574,7 +574,7 @@ theorem frs_is_subspaceDesign_gk16
     exact finrank_bot F _
   haveI : NeZero k := ⟨by omega⟩
   -- `k ≤ q − 1`: the `n·s` folded points are distinct and nonzero (for `s ≥ 2`);
-  -- for `s = 1` this is `_hFn` directly.
+  -- for `s = 1` this is `hFn` directly.
   have hns_q : Fintype.card ι * s ≤ Fintype.card F - 1 := by
     rcases Nat.lt_or_ge s 2 with hs2 | hs2
     · have hs1 : s = 1 := by omega
@@ -582,12 +582,12 @@ theorem frs_is_subspaceDesign_gk16
       omega
     · have hzero : ∀ x : ι, domain x ≠ 0 := by
         intro x hx
-        exact _hω.2 (domain x) (_hL_dom x) 1 one_pos (by omega) (by rw [hx]; ring)
+        exact hω_adm.2 (domain x) (hL_dom x) 1 one_pos (by omega) (by rw [hx]; ring)
       have himg : (Finset.univ : Finset (ι × Fin s)).image
           (fun xi => domain xi.1 * ω ^ (xi.2 : ℕ)) ⊆ Finset.univ.erase 0 := by
         intro y hy
         obtain ⟨xi, -, rfl⟩ := Finset.mem_image.mp hy
-        exact Finset.mem_erase.mpr ⟨mul_ne_zero (hzero _) (pow_ne_zero _ _hω0),
+        exact Finset.mem_erase.mpr ⟨mul_ne_zero (hzero _) (pow_ne_zero _ hω0),
           Finset.mem_univ _⟩
       have hcard := Finset.card_le_card himg
       rw [Finset.card_image_of_injective _ hpt_inj, Finset.card_univ, Fintype.card_prod,
@@ -598,7 +598,7 @@ theorem frs_is_subspaceDesign_gk16
   -- The FRS encoder and its injectivity on `degreeLT F k`.
   set enc := ReedSolomon.Folded.frsEvalOnPoints domain s ω with henc
   have hencinj := ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective
-    (k := k) (s := s) domain ω hadm _hω0 hk_le
+    (k := k) (s := s) domain ω hadm hω0 hk_le
   have hker : ∀ p ∈ Polynomial.degreeLT F k, enc p = 0 → p = 0 := by
     intro p hp hp0
     have h : (⟨p, hp⟩ : ↥(Polynomial.degreeLT F k)) = 0 := by
@@ -640,7 +640,7 @@ theorem frs_is_subspaceDesign_gk16
   -- The folded Wronskian of that basis.
   set W := Polynomial.foldedWronskian σ ω P with hWdef
   have hWne : W ≠ 0 :=
-    Polynomial.foldedWronskian_ne_zero_of_linearIndependent _hω_gen hkq P hPdeg hPind
+    Polynomial.foldedWronskian_ne_zero_of_linearIndependent hω_gen hkq P hPdeg hPind
   have hWdegle : W.natDegree ≤ σ * (k - 1) :=
     Polynomial.natDegree_foldedWronskian_le σ ω P (k - 1) (fun j => by
       have := ReedSolomon.natDegree_lt_of_mem_degreeLT (hPdeg j)
