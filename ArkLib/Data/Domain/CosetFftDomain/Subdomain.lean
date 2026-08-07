@@ -676,9 +676,15 @@ lemma subdomain_zero_eq_self {n : ℕ} {ω : SmoothCosetFftDomain n F} :
        CosetFftDomainClass.subdomain,
        CosetFftDomainClass.mkSubgroupUnit,
        CosetFftDomainClass.subdomain_embed])
-    (add safe cases Fin)
-    (add safe (by grind))
+    (add safe [cases Fin, (by grind)])
     (add unsafe (by rw [eval_coset_fft_domain_eq_eval_generator_mul_domain]))
+
+omit [DecidableEq F] in
+lemma subdomain_subdomain_one {n k : ℕ} (hkn : k < n)
+  {ω : SmoothCosetFftDomain n F} :
+    (ω.subdomain k).subdomain 1 = ω.subdomain (k + 1) := by
+  ext ⟨i, hi⟩
+  rw [CosetFftDomainClass.subdomain_comp (i := ⟨i, by omega⟩)] <;> grind
 
 /-- Search through a smooth coset FFT domain for an element whose `2 ^ i`th power is `x`,
   using `fuel` as the remaining search bound. -/

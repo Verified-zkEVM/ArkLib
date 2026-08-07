@@ -306,6 +306,11 @@ noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
 lemma iteratedFoldWord_zero {α : Fin 0 → F} :
   iteratedFoldWord domain f 0 α = f := rfl
 
+lemma iteratedFoldWord_succ {α : Fin (k + 1) → F} :
+  iteratedFoldWord domain f (k + 1) α =
+    foldWord (domain.subdomain k)
+      (iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)) 1 (α ⟨k, by omega⟩) := by aesop
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
@@ -429,19 +434,35 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
       rw [ReedSolomon.toPolynomial_eval_at_domain]
       simp [evalOnPoints]
 
+/-- Perfect completeness of iterated folding, with the context inequalities as explicit
+  hypotheses (so that the statement can be used inductively). -/
+private lemma iteratedFoldWord_mem_code_of_mem_code_aux {d : ℕ}
+    {α : Fin k → F} {f : Word F (Fin (2 ^ n))}
+    (hkd : k ≤ d) (hdn : d ≤ n)
+    (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) :
+    iteratedFoldWord domain f k α ∈
+      ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) := by
+  induction k with
+  | zero => simpa using hf
+  | succ k ih =>
+    have hprev := ih (α := fun i ↦ α ⟨i.val, by omega⟩) (by omega)
+    haveI : FoldingContext 1 (d - k) (n - k) := FoldingContext.mk' le_rfl (by omega) (by omega)
+    have hstep := foldWord_mem_code_of_mem_code (domain := domain.subdomain k) (k := 1)
+      (α := α ⟨k, by omega⟩) hprev
+    rw [subdomain_subdomain_one (by omega)] at hstep
+    rw [iteratedFoldWord_succ]
+    exact hstep
+
 /-- Perfect completeness of iterated folding: if a word belongs to an RS-code
   then its `iteratedFoldWord` belongs to a folded RS-code.
 -/
 theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
-  {α : Fin k → F}
-  {f : Word F (Fin (2 ^ n))}
+  {α : Fin k → F} {f : Word F (Fin (2 ^ n))}
   (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) :
   iteratedFoldWord domain f k α ∈
-    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) := by
-  induction k with
-  | zero => simp [hf]
-  | succ k ih =>
-    sorry
+    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) :=
+  iteratedFoldWord_mem_code_of_mem_code_aux FoldingContextLeft.k_le_d
+    FoldingContextRight.d_le_n hf
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin (2 ^ k)) (x : F) : F :=
@@ -810,7 +831,7 @@ theorem folding_preserves_distance
       (↑δ) < 1 - ReedSolomon.sqrtRate (2 ^ (d - k))
         (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) := by
         aesop
-          (add safe 
+          (add safe
             [(by rw [folded_sqrtRate_eq]), (by norm_cast at *)])
     have correlated_agreement :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
