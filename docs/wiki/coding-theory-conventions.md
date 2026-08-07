@@ -93,7 +93,7 @@ purposes but the notation itself is global).
   `scoped syntax &"ρ" term`, so `ρ` can still be used as a local variable
   name in other scopes).
 - (Next split.) `CodingTheory.restrictedRelHammingDist T f g` with its scoped notation
-  `Δ[T](f, g)` (paper-style `Δ_T(f, g)`) ships with the proximity-gap split, next to its
+  `Δ[T]` applied as `Δ[T] (f, g)` (paper-style `Δ_T(f, g)`) ships with the proximity-gap split, next to its
   first consumers; this layer keeps only the full-domain distance notions.
 
 ### Conspicuously absent (only in docstring comments, not actual notation)
