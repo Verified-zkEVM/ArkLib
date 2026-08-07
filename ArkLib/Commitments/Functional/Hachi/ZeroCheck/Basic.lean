@@ -46,11 +46,12 @@ lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full an
   identification of `H_α` with paper Eq. (22) is `hAlpha_eq_zero_iff_alphaDefect`) and
   **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
   `(μ + n)·deg φ ≤ 2 ^ m₀` and range-base fits `b − 1 ≤ γ, ρBound`) — so shortness is proved,
-  not assumed (`relBatched` carries no `liftShort` conjunct). **No relation in this folder
-  does**: the admissibility that conditions `K.collision_mem` is [NOZ26] Lemma 7's
-  slack-relative weak-opening data, a different notion from the range claim `liftShort`, and it
-  is carried by the commitment's own opening type `LiftCom.Opening` rather than by the
-  reductions above it. Figure 5's point relation is therefore as norm-free as the paper's.
+  not assumed (`relBatched` carries no `liftShort` conjunct). The point relations below it
+  *do* carry one, but as the commitment's **shortness index**, not as a range assumption:
+  `LiftCom.Collision` is defined on pairs of distinct *short* openings, so the conjunct is what
+  makes the weak-binding branch a Module-SIS break. Since `relBatched` — the relation whose
+  `H₀ ≡ 0` proves shortness — is itself norm-free, the derivation is not circular. See the
+  "Where the norm sits" section of `ZeroCheck/Reduction.lean`.
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: `m₀ + m₁` scalar challenge rounds
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
   `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reduces `relBatched` to

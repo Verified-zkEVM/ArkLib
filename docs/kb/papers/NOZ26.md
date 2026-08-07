@@ -118,9 +118,11 @@ Ring-switching layer:
   chain (`Composition.lean`); the weak-binding disjunct is discharged through `LiftCom`'s
   norm-conditioned collision. At the batching bridge, shortness is **derived** from the range
   identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
-  At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` carry **no**
-  shortness conjunct at all: a point or partial-sum claim cannot establish the norm condition, so
-  the admissibility that conditions weak binding rides inside `LiftCom.Opening` instead.
+  At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` **do** carry a
+  `liftShort` conjunct, but as the commitment's shortness index rather than as a range assumption:
+  `LiftCom.Collision` is defined on pairs of distinct *short* openings, so it is what makes the
+  weak-binding branch a Module-SIS break. Since `relBatched` is norm-free, shortness is never
+  derived from an assumption of shortness.
   The identities themselves are represented and point-evaluated as `CMlPolynomialEval`
   Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib `MvPolynomial`
   appears only inside the zero test's proof, reached through
