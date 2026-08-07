@@ -414,7 +414,7 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     have := list_agreement_on_curve_implies_correlated_agreement_bound
       (u := u) (v := v) (μ := μ) (α := βnn) hS'_card
       (fun z hz => hβ_le z hz)
-    simpa [βnn] using this
+    aesop
   by_contra hnot
   have hmu_lt_alpha :
       mu_set μ {x : ι | ∀ i, u i x = v i x} < (α : ℝ) := by
@@ -436,7 +436,7 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     field_simp
   have agree_grid (a b : ι → F) :
       ∃ n : ℤ, agree μ a b = (n : ℝ) / ((M * Fintype.card ι : ℕ) : ℝ) := by
-    simpa only [agree] using measure_grid {i | a i = b i}
+    aesop
   rcases measure_grid {x : ι | ∀ i, u i x = v i x} with ⟨a, ha⟩
   rcases agree_grid (w · zβ) (wtilde · zβ) with ⟨b, hb⟩
   have hM_pos : 0 < M := by
