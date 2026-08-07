@@ -4,7 +4,7 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 322 files, 5478 declarations
+- `ArkLib` — 326 files, 5565 declarations
 
 ## Same short-name across multiple files (161 groups)
 
@@ -531,8 +531,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `subdomain` (4 declarations, 2 files)
 
-- `def Domain.CosetFftDomainClass.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:113](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L113) — Given a smooth coset FFT domain `ω` of log-order `n`, return its subdomain of log-order `n - i`. The
-- `abbrev Domain.CosetFftDomain.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:479](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L479) — Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.
+- `def Domain.CosetFftDomainClass.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:114](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L114) — Given a smooth coset FFT domain `ω` of log-order `n`, return its subdomain of log-order `n - i`. The
+- `abbrev Domain.CosetFftDomain.subdomain` [ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean:663](../../../ArkLib/Data/Domain/CosetFftDomain/Subdomain.lean#L663) — Concrete notation for taking the `i`th subdomain of a smooth coset FFT domain.
 - `def Domain.FftDomainClass.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:60](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L60) — The `i`th subdomain of a smooth FFT domain, obtained by taking the corresponding coset subdomain and
 - `abbrev Domain.FftDomain.subdomain` [ArkLib/Data/Domain/FftDomain/Subdomain.lean:164](../../../ArkLib/Data/Domain/FftDomain/Subdomain.lean#L164) — Concrete notation for the `i`th subdomain of a smooth FFT domain.
 
