@@ -5,9 +5,13 @@ Authors: Alexander Hicks
 -/
 
 import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.Algebra.Polynomial.Eval.Degree
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.RingTheory.Polynomial.Basic
+import Mathlib.RingTheory.AdjoinRoot
+import Mathlib.FieldTheory.Finite.Basic
+import Mathlib.FieldTheory.Finiteness
 
 /-!
 # The folded Wronskian [GK16, Definition 11]
@@ -33,8 +37,11 @@ high-multiplicity roots — counting roots against the degree yields the design 
   each of `t` distinct columns of a square matrix is divisible by `d`, then `d^t ∣ det`.
   (Replaces GK16's Hasse-derivative expansion of `det` — see the module docstring of
   `SubspaceDesign.lean` once T2.18 is proved.)
-- `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` — GK16 Lemma 12 (the criterion;
-  currently in progress).
+- `Polynomial.X_pow_card_sub_one_sub_C_irreducible` — `X^{q−1} − ω` is irreducible for `ω` a
+  generator of `Fˣ`; this is the Kummer polynomial cutting out the field `F[X]/(E)` in which
+  the criterion is proved. (Mathlib's Kummer criterion does not cover the even exponent
+  `q − 1`, so this is proved here from the order of `ω`.)
+- `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` — GK16 Lemma 12 (the criterion).
 
 ## References
 
@@ -121,22 +128,279 @@ lemma pow_dvd_det_of_forall_mem_col_dvd {R : Type*} [CommRing R] {n : Type*}
     rw [pow_succ']
     exact mul_dvd_mul_left d hrec
 
+section Frobenius
+
+variable [Fintype F]
+
+/-- Iterating `FiniteField.expand_card`: over `F = 𝔽_q`, the operator `expand F (q ^ i)` is the
+`q ^ i`-th power map on `F[X]`. -/
+private lemma expand_card_pow (i : ℕ) (f : F[X]) :
+    expand F (Fintype.card F ^ i) f = f ^ (Fintype.card F ^ i) := by
+  induction i with
+  | zero => simp
+  | succ i ih =>
+    rw [pow_succ, expand_mul, FiniteField.expand_card, map_pow, ih, ← pow_mul]
+
+/-- **Frobenius transport.** Over `F = 𝔽_q`, evaluating an `F`-polynomial at a `q ^ i`-th power
+is the `q ^ i`-th power of the evaluation: the coefficient-wise Frobenius is the identity on
+`𝔽_q`. -/
+private lemma aeval_pow_card_pow {K : Type*} [CommSemiring K] [Algebra F K] (y : K) (f : F[X])
+    (i : ℕ) :
+    aeval (y ^ (Fintype.card F ^ i)) f = (aeval y f) ^ (Fintype.card F ^ i) := by
+  rw [← expand_aeval, expand_card_pow, map_pow]
+
+/-- If `x ^ (q − 1) = ω` in an `F`-algebra, then `x ^ (q ^ i) = ω ^ i · x`: the relation
+`x ^ q = ω x` iterated, using `ω ^ q = ω` in `𝔽_q`. -/
+private lemma pow_card_pow_eq {K : Type*} [CommRing K] [Algebra F K] {ω : F} {x : K}
+    (hx : x ^ (Fintype.card F - 1) = algebraMap F K ω) (i : ℕ) :
+    x ^ (Fintype.card F ^ i) = algebraMap F K (ω ^ i) * x := by
+  have hcard : Fintype.card F = (Fintype.card F - 1) + 1 :=
+    (Nat.succ_pred_eq_of_pos Fintype.card_pos).symm
+  have hxq : x ^ Fintype.card F = algebraMap F K ω * x := by
+    conv_lhs => rw [hcard]
+    rw [pow_succ, hx]
+  induction i with
+  | zero => simp
+  | succ i ih =>
+    calc x ^ (Fintype.card F ^ (i + 1))
+        = (x ^ (Fintype.card F ^ i)) ^ Fintype.card F := by rw [← pow_mul, ← pow_succ]
+      _ = algebraMap F K ((ω ^ i) ^ Fintype.card F) * x ^ Fintype.card F := by
+          rw [ih, mul_pow, ← map_pow]
+      _ = algebraMap F K (ω ^ i) * (algebraMap F K ω * x) := by rw [FiniteField.pow_card, hxq]
+      _ = algebraMap F K (ω ^ (i + 1)) * x := by rw [← mul_assoc, ← map_mul, ← pow_succ]
+
+/-- **The Kummer polynomial of a generator is irreducible.** For `ω` a generator of `Fˣ` over a
+finite field `F` with `q` elements, `X ^ (q − 1) − ω` is irreducible; the field `F[X]/(E)` is the
+arena of GK16 Lemma 12.
+
+Mathlib's Kummer criterion (`X_pow_sub_C_irreducible_of_odd`) does not apply here, since `q − 1`
+is even whenever `q` is odd. We argue directly instead: let `g` be an irreducible factor of `E`
+of degree `d`, and `x` the root of `g` in the field `K := F[X]/(g)`, which has `q ^ d` elements.
+Then `x ^ (q − 1) = ω`, hence `x ^ (q ^ i) = ω ^ i · x`; at `i = d` the identity `x ^ (q ^ d) = x`
+gives `ω ^ d = 1`, so `q − 1 = orderOf ω` divides `d ≤ q − 1`, forcing `d = q − 1`. -/
+theorem X_pow_card_sub_one_sub_C_irreducible {ω : F} (hω : orderOf ω = Fintype.card F - 1) :
+    Irreducible ((X : F[X]) ^ (Fintype.card F - 1) - C ω) := by
+  classical
+  have hq2 : 1 < Fintype.card F := Fintype.one_lt_card
+  have hq1 : Fintype.card F - 1 ≠ 0 := by omega
+  have hEmonic : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).Monic := monic_X_pow_sub_C ω hq1
+  have hE0 : ((X : F[X]) ^ (Fintype.card F - 1) - C ω) ≠ 0 := hEmonic.ne_zero
+  have hEdeg : ((X : F[X]) ^ (Fintype.card F - 1) - C ω).natDegree = Fintype.card F - 1 :=
+    natDegree_X_pow_sub_C
+  have hEnu : ¬ IsUnit ((X : F[X]) ^ (Fintype.card F - 1) - C ω) :=
+    not_isUnit_of_natDegree_pos _ (by omega)
+  obtain ⟨g, hg, hgd⟩ := WfDvdMonoid.exists_irreducible_factor hEnu hE0
+  haveI : Fact (Irreducible g) := ⟨hg⟩
+  have hd0 : 0 < g.natDegree := hg.natDegree_pos
+  have hdle : g.natDegree ≤ Fintype.card F - 1 := hEdeg ▸ natDegree_le_of_dvd hgd hE0
+  -- `K := F[X]/(g)` is a finite field with `q ^ d` elements.
+  haveI : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
+  haveI : Finite (AdjoinRoot g) := Module.finite_of_finite F
+  haveI : Fintype (AdjoinRoot g) := Fintype.ofFinite _
+  have hcardK : Fintype.card (AdjoinRoot g) = Fintype.card F ^ g.natDegree := by
+    rw [Module.card_eq_pow_finrank (K := F)]
+    congr 1
+    exact ((AdjoinRoot.powerBasis hg.ne_zero).finrank).trans (AdjoinRoot.powerBasis_dim _)
+  -- the root of `g` is a root of `E`, i.e. `x ^ (q − 1) = ω`
+  have hx : (AdjoinRoot.root g) ^ (Fintype.card F - 1) = algebraMap F (AdjoinRoot g) ω := by
+    have h0 : aeval (AdjoinRoot.root g) ((X : F[X]) ^ (Fintype.card F - 1) - C ω) = 0 := by
+      rw [AdjoinRoot.aeval_eq]; exact AdjoinRoot.mk_eq_zero.mpr hgd
+    simpa [sub_eq_zero] using h0
+  have hω0 : ω ≠ 0 := by
+    intro h
+    have h1 := pow_orderOf_eq_one ω
+    rw [hω, h, zero_pow hq1] at h1
+    exact zero_ne_one h1
+  have hx0 : (AdjoinRoot.root g) ≠ 0 := by
+    intro h
+    rw [h, zero_pow hq1] at hx
+    exact hω0 ((map_eq_zero (algebraMap F (AdjoinRoot g))).mp hx.symm)
+  -- `x ^ (q ^ d) = x` (as `|K| = q ^ d`) forces `ω ^ d = 1`
+  have hfix : (AdjoinRoot.root g) ^ (Fintype.card F ^ g.natDegree) = AdjoinRoot.root g := by
+    rw [← hcardK]; exact FiniteField.pow_card _
+  have hωd : ω ^ g.natDegree = 1 := by
+    have h1 : algebraMap F (AdjoinRoot g) (ω ^ g.natDegree) * AdjoinRoot.root g
+        = algebraMap F (AdjoinRoot g) 1 * AdjoinRoot.root g := by
+      rw [map_one, one_mul, ← pow_card_pow_eq hx g.natDegree]
+      exact hfix
+    exact (algebraMap F (AdjoinRoot g)).injective (mul_right_cancel₀ hx0 h1)
+  have hdvd : Fintype.card F - 1 ∣ g.natDegree := hω ▸ orderOf_dvd_of_pow_eq_one hωd
+  have hdeq : g.natDegree = Fintype.card F - 1 := le_antisymm hdle (Nat.le_of_dvd hd0 hdvd)
+  -- `g` has the full degree of `E`, so the cofactor is a unit and `E` is irreducible
+  obtain ⟨h, hh⟩ := hgd
+  have hh0 : h ≠ 0 := by rintro rfl; rw [mul_zero] at hh; exact hE0 hh
+  have hhdeg : h.natDegree = 0 := by
+    have := natDegree_mul hg.ne_zero hh0
+    rw [← hh, hEdeg, hdeq] at this
+    omega
+  have hhu : IsUnit h :=
+    isUnit_iff_degree_eq_zero.mpr (by rw [degree_eq_natDegree hh0, hhdeg]; rfl)
+  exact (Associated.irreducible ⟨hhu.unit, by rw [IsUnit.unit_spec]; exact hh.symm⟩ hg)
+
+/-- **The engine of GK16 Lemma 12.** Let `K` be a field extension of `F = 𝔽_q` containing an
+element `x` with `x ^ (q − 1) = ω`, such that evaluation at `x` is injective on polynomials of
+degree `< k`. Then the folded Wronskian matrix of linearly independent `P j ∈ degreeLT F k` has
+nonzero determinant.
+
+Proof: pushing the matrix through `p ↦ p(x)` turns the `(i, j)` entry `P j (ω^i X)` into
+`(P j (x)) ^ (q ^ i)` (Frobenius, since `x ^ (q ^ i) = ω ^ i · x`), i.e. into a Moore matrix. If
+its determinant vanished, a nonzero row-dependency `α` would make the linearized polynomial
+`Q(Y) = ∑ αᵢ Y ^ (q ^ i)`, of degree `≤ q ^ (σ − 1)`, vanish on the whole image of the `F`-span
+of the `P j` — which has `q ^ σ` elements by independence and injectivity. -/
+private lemma foldedWronskian_matrix_det_ne_zero {K : Type*} [Field K] [Algebra F K]
+    {σ k : ℕ} {ω : F} {x : K} (hσ : 0 < σ)
+    (hx : x ^ (Fintype.card F - 1) = algebraMap F K ω)
+    (hxinj : ∀ p ∈ degreeLT F k, aeval x p = 0 → p = 0)
+    (P : Fin σ → F[X]) (hdeg : ∀ j, P j ∈ degreeLT F k)
+    (hind : LinearIndependent F P) :
+    (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det ≠ 0 := by
+  classical
+  have hq2 : 1 < Fintype.card F := Fintype.one_lt_card
+  intro hdet
+  -- Frobenius: evaluation at `x` sends the `(i, j)` entry to `(P j)(x) ^ (q ^ i)`.
+  have hentry : ∀ (i : ℕ) (p : F[X]),
+      aeval x (p.comp (C (ω ^ i) * X)) = (aeval x p) ^ (Fintype.card F ^ i) := by
+    intro i p
+    rw [aeval_comp]
+    simp only [map_mul, aeval_C, aeval_X]
+    rw [← pow_card_pow_eq hx i, aeval_pow_card_pow]
+  -- the folded Wronskian matrix becomes the Moore matrix of `β j := (P j)(x)`
+  have hdet' : (Matrix.of fun i j : Fin σ =>
+      (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ))).det = 0 := by
+    have hmap : (Matrix.of fun i j : Fin σ => (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ)))
+        = ((aeval x : F[X] →ₐ[F] K).toRingHom).mapMatrix
+            (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)) := by
+      ext i j
+      simp only [RingHom.mapMatrix_apply, Matrix.map_apply, Matrix.of_apply,
+        AlgHom.toRingHom_eq_coe, RingHom.coe_coe]
+      rw [hentry]
+    rw [hmap, ← RingHom.map_det, hdet, map_zero]
+  obtain ⟨α, hα0, hαv⟩ := Matrix.exists_vecMul_eq_zero_iff.mpr hdet'
+  have hdep : ∀ j : Fin σ,
+      ∑ i : Fin σ, α i * (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ)) = 0 := by
+    intro j
+    have h := congrFun hαv j
+    simpa [Matrix.vecMul, dotProduct] using h
+  -- the dependency extends from the basis to the whole `F`-span
+  have hspan : ∀ c : Fin σ → F,
+      ∑ i : Fin σ, α i * (aeval x (∑ j, c j • P j)) ^ (Fintype.card F ^ (i : ℕ)) = 0 := by
+    intro c
+    have step : ∀ i : Fin σ, (aeval x (∑ j, c j • P j)) ^ (Fintype.card F ^ (i : ℕ))
+        = ∑ j, c j • ((aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ))) := by
+      intro i
+      rw [← aeval_pow_card_pow, map_sum]
+      exact Finset.sum_congr rfl fun j _ => by rw [map_smul, aeval_pow_card_pow]
+    calc ∑ i : Fin σ, α i * (aeval x (∑ j, c j • P j)) ^ (Fintype.card F ^ (i : ℕ))
+        = ∑ i : Fin σ, ∑ j : Fin σ,
+            c j • (α i * (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ))) := by
+          refine Finset.sum_congr rfl fun i _ => ?_
+          rw [step i, Finset.mul_sum]
+          exact Finset.sum_congr rfl fun j _ => mul_smul_comm _ _ _
+      _ = ∑ j : Fin σ, ∑ i : Fin σ,
+            c j • (α i * (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ))) := Finset.sum_comm
+      _ = 0 := by
+          refine Finset.sum_eq_zero fun j _ => ?_
+          rw [← Finset.smul_sum, hdep j, smul_zero]
+  -- the linearized polynomial `Q`
+  obtain ⟨i₀, hi₀⟩ : ∃ i, α i ≠ 0 := Function.ne_iff.mp hα0
+  set Q : K[X] := ∑ i : Fin σ, C (α i) * X ^ (Fintype.card F ^ (i : ℕ)) with hQ
+  have hQ0 : Q ≠ 0 := by
+    intro hzero
+    have hcoeff : Q.coeff (Fintype.card F ^ (i₀ : ℕ)) = α i₀ := by
+      simp only [hQ, finsetSum_coeff, coeff_C_mul, coeff_X_pow]
+      rw [Finset.sum_eq_single i₀]
+      · simp
+      · intro b _ hb
+        have hne : ¬ (Fintype.card F ^ (i₀ : ℕ) = Fintype.card F ^ (b : ℕ)) := fun hc =>
+          hb (Fin.val_injective (Nat.pow_right_injective (by omega) hc)).symm
+        simp [hne]
+      · simp
+    rw [hzero, coeff_zero] at hcoeff
+    exact hi₀ hcoeff.symm
+  have hQdeg : Q.natDegree ≤ Fintype.card F ^ (σ - 1) := by
+    rw [hQ]
+    refine natDegree_sum_le_of_forall_le _ _ fun i _ => ?_
+    refine (natDegree_C_mul_le _ _).trans ?_
+    rw [natDegree_X_pow]
+    have := i.isLt
+    exact Nat.pow_le_pow_right (by omega) (by omega)
+  have hQeval : ∀ c : Fin σ → F, Q.eval (aeval x (∑ j, c j • P j)) = 0 := by
+    intro c
+    rw [hQ]
+    simp only [eval_finsetSum, eval_mul, eval_C, eval_pow, eval_X]
+    exact hspan c
+  -- the `q ^ σ` elements of the span inject into the roots of `Q`
+  have hinj : ∀ c d : Fin σ → F,
+      aeval x (∑ j, c j • P j) = aeval x (∑ j, d j • P j) → c = d := by
+    intro c d hcd
+    have hsub : (∑ j, (c j - d j) • P j) = (∑ j, c j • P j) - (∑ j, d j • P j) := by
+      rw [← Finset.sum_sub_distrib]
+      exact Finset.sum_congr rfl fun j _ => sub_smul _ _ _
+    have h0 : aeval x (∑ j, (c j - d j) • P j) = 0 := by
+      rw [hsub, map_sub, sub_eq_zero]; exact hcd
+    have hmem : (∑ j, (c j - d j) • P j) ∈ degreeLT F k :=
+      Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hdeg j)
+    have hzero := Fintype.linearIndependent_iff.mp hind (fun j => c j - d j) (hxinj _ hmem h0)
+    funext j
+    exact sub_eq_zero.mp (hzero j)
+  have hcount : (Finset.univ : Finset (Fin σ → F)).card ≤ Q.roots.toFinset.card := by
+    refine Finset.card_le_card_of_injOn (fun c => aeval x (∑ j, c j • P j))
+      (fun c _ => ?_) (fun c _ d _ h => hinj c d h)
+    simp only [Finset.mem_coe, Multiset.mem_toFinset, mem_roots hQ0, IsRoot.def]
+    exact hQeval c
+  have hfinal : Fintype.card F ^ σ ≤ Fintype.card F ^ (σ - 1) :=
+    calc Fintype.card F ^ σ = (Finset.univ : Finset (Fin σ → F)).card := by simp
+      _ ≤ Q.roots.toFinset.card := hcount
+      _ ≤ Multiset.card Q.roots := Multiset.toFinset_card_le _
+      _ ≤ Q.natDegree := card_roots' Q
+      _ ≤ Fintype.card F ^ (σ - 1) := hQdeg
+  have hlt : Fintype.card F ^ (σ - 1) < Fintype.card F ^ σ :=
+    Nat.pow_lt_pow_right hq2 (by omega)
+  omega
+
+end Frobenius
+
 /-- **[GK16, Lemma 12] — folded Wronskian criterion for linear independence** (the direction
 needed by T2.18). Over a finite field `F` with `ω` a generator of `Fˣ` and `k ≤ |F| − 1`:
 linearly independent polynomials of degree `< k` have a nonzero folded Wronskian.
 
-Proof route (GK16 Appendix A): if the Wronskian vanishes, its rows admit a polynomial
-dependency `∑ᵢ Aᵢ(X) · P(ωⁱX) = 0` with the `Aᵢ` not all divisible by the irreducible
-`E := X^{q−1} − ω`. Modulo `E` one has `X^q ≡ ωX`, so `P(ωⁱX) ≡ P(X)^{qⁱ}` (Frobenius),
-and the dependency becomes a nonzero linearized polynomial `Q(Y) = ∑ αᵢ Y^{qⁱ}` of degree
-`≤ q^{σ−1}` vanishing on the (injective) image of the whole span in the field `F[X]/(E)` —
-forcing `|span| ≤ q^{σ−1} < q^σ`, contradicting independence. -/
+Proof route (a streamlining of GK16 Appendix A): work modulo the irreducible
+`E := X^{q−1} − ω` (`X_pow_card_sub_one_sub_C_irreducible`) in the field `K := F[X]/(E)`,
+where `X^q ≡ ωX` and hence `P(ωⁱX) ≡ P(X)^{qⁱ}` (Frobenius). The folded Wronskian matrix
+therefore maps to the Moore matrix of the `βⱼ := Pⱼ(x)`, so a vanishing Wronskian yields a
+*nonzero* row dependency `α` over `K` directly — GK16's clearing of denominators over
+`F(X)` and stripping of common `E`-factors are not needed. The dependency is the linearized
+polynomial `Q(Y) = ∑ αᵢ Y^{qⁱ}` of degree `≤ q^{σ−1}`, which vanishes on the (injective,
+as `k ≤ deg E`) image of the whole span — forcing `q^σ = |span| ≤ q^{σ−1}`, absurd. -/
 theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F] [DecidableEq F]
     {σ k : ℕ} {ω : F} (hω : orderOf ω = Fintype.card F - 1)
     (hk : k ≤ Fintype.card F - 1)
     (P : Fin σ → F[X]) (hdeg : ∀ j, P j ∈ degreeLT F k)
     (hind : LinearIndependent F P) :
     foldedWronskian σ ω P ≠ 0 := by
-  sorry -- W2 of the GK16 T2.18 plan (docs/kb/queries/gk16-t218-folded-wronskian-bootstrap.md)
+  classical
+  rcases Nat.eq_zero_or_pos σ with rfl | hσ
+  · simp [foldedWronskian]
+  have hq2 : 1 < Fintype.card F := Fintype.one_lt_card
+  -- the arena: the field `K = F[X]/(E)` for the irreducible `E = X ^ (q − 1) − ω`
+  set E : F[X] := X ^ (Fintype.card F - 1) - C ω with hE
+  have hEirr : Irreducible E := by rw [hE]; exact X_pow_card_sub_one_sub_C_irreducible hω
+  haveI : Fact (Irreducible E) := ⟨hEirr⟩
+  -- the root of `E` satisfies `x ^ (q − 1) = ω`
+  have h0 : aeval (AdjoinRoot.root E) ((X : F[X]) ^ (Fintype.card F - 1) - C ω) = 0 := by
+    rw [← hE, AdjoinRoot.aeval_eq]; exact AdjoinRoot.mk_self
+  have hx : (AdjoinRoot.root E) ^ (Fintype.card F - 1) = algebraMap F (AdjoinRoot E) ω := by
+    simpa [sub_eq_zero] using h0
+  -- evaluation at the root is injective on `degreeLT F k`, as `k ≤ q − 1 = deg E`
+  have hxinj : ∀ p ∈ degreeLT F k, aeval (AdjoinRoot.root E) p = 0 → p = 0 := by
+    intro p hp hp0
+    by_contra hpne
+    have hdvd : E ∣ p := AdjoinRoot.mk_eq_zero.mp (by rwa [← AdjoinRoot.aeval_eq])
+    have hEd : E.degree = ((Fintype.card F - 1 : ℕ) : WithBot ℕ) := by
+      rw [hE]; exact degree_X_pow_sub_C (by omega) ω
+    exact hpne (eq_zero_of_dvd_of_degree_lt hdvd
+      (hEd ▸ lt_of_lt_of_le (mem_degreeLT.mp hp) (Nat.cast_le.mpr hk)))
+  change (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det ≠ 0
+  exact foldedWronskian_matrix_det_ne_zero hσ hx hxinj P hdeg hind
 
 end Polynomial
