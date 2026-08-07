@@ -631,6 +631,66 @@ def moduleCodeDist' {F A} {ι} [Fintype ι] [Semiring F] [Fintype A] [DecidableE
 
 end Computable
 
+/-- **Bridge: `IsMDS` ↔ rate-distance form.** The `IsMDS` predicate (defined upstream in
+this file as the additive Nat form `Code.dist LC.carrier = length LC - dim LC + 1`) is
+equivalent to the rate-distance form `δ_min(LC) / n = 1 - ρ + 1/n` where `ρ = k/n` is
+the rate. The latter is the form ABF26 uses throughout §2-§3 (Lemma 2.6, Corollary 3.3).
+
+Requires `[Nonempty ι]` so `(Fintype.card ι : ℝ) ≠ 0`. -/
+lemma IsMDS_iff_rate_distance
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
+    (LC : LinearCode ι F) :
+    IsMDS LC ↔
+      (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
+        1 - (Module.finrank F LC : ℝ) / Fintype.card ι + 1 / Fintype.card ι := by
+  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
+  have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+  have hk_le : Module.finrank F LC ≤ Fintype.card ι := by
+    have := Submodule.finrank_le (R := F) (M := ι → F) LC
+    simpa [Module.finrank_fintype_fun_eq_card] using this
+  unfold IsMDS
+  rw [Code.dist_eq_minDist]
+  constructor
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have h1 : (length LC - dim LC + 1 : ℕ) = (Fintype.card ι - Module.finrank F LC + 1 : ℕ) :=
+        rfl
+      rw [h1] at h
+      have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+          ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by exact_mod_cast h
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one] at this
+      linarith
+    field_simp
+    linarith
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have := (div_eq_iff hn_ne).mp h
+      field_simp at this; linarith
+    have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+        ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one]
+      exact h'
+    exact_mod_cast this
+
+/-- `IsMDS_iff_rate_distance`, restated through the library's `LinearCode.rate` (`ρ`)
+idiom: the real-valued rate appearing there is exactly `(ρ LC : ℝ)`. -/
+lemma IsMDS_iff_rate_distance'
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [DecidableEq F]
+    (LC : LinearCode ι F) :
+    IsMDS LC ↔
+      (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
+        1 - ((rate LC : ℚ≥0) : ℝ) + 1 / Fintype.card ι := by
+  rw [IsMDS_iff_rate_distance]
+  have hrate : ((rate LC : ℚ≥0) : ℝ) = (Module.finrank F LC : ℝ) / Fintype.card ι := by
+    simp only [rate, dim, length]
+    push_cast
+    ring
+  rw [hrate]
+
 end LinearCode
 
 lemma poly_eq_zero_of_dist_lt {n k : ℕ} {F : Type*} [DecidableEq F] [CommRing F] [IsDomain F]

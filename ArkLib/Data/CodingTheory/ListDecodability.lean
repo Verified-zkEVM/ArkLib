@@ -61,4 +61,93 @@ def uniqueDecodable (C : Code ι F) (r : ℝ) : Prop :=
 
 end
 
+/-! ## ABF26 Definition 2.8 — list around a word `Λ(C, δ, f)` and `|Λ(C, δ)|`
+
+The paper writes `Λ(C, δ, f)` for the set of codewords of `C` whose relative Hamming distance
+from `f` is at most `δ`, and `|Λ(C, δ)| = max_f |Λ(C, δ, f)|` for the maximised list size.
+The point list `Λ(C, δ, f)` is already provided by `closeCodewordsRel C f δ` (see above); we
+do *not* introduce a paper-named alias for it. The new content here is `Lambda`, the maximised
+form used by Section 4's `ε_mca` (ABF26 Definition 4.3) and Section 3's list-decoding bounds.
+
+The basic algebra here (monotonicity, codeword-set bound) covers what is needed to state
+`ε_mca` (ABF26 Definition 4.3) in the forthcoming proximity-gap layer. The full theory of
+`Lambda` — Johnson bound restatement, the interleaved-code list-size bound (ABF26
+Lemma 2.10), generalized Singleton, volume-based lower bounds — is the subject of ABF26 §3;
+the Johnson family bounds land in `JohnsonBound/Family.lean` in this layer, the rest with
+the proximity-gap development.
+-/
+
+section Lambda
+
+variable {ι : Type*} [Fintype ι] {F : Type*}
+
+/-- **ABF26 Definition 2.8 (maximised list size).** The maximum over words `f` of
+`|Λ(C, δ, f)| = |closeCodewordsRel C f δ|`. Named to match the paper's `|Λ(C, δ)|`.
+
+Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative Hamming distance is
+`1/n`-quantised (`n := |ι|`, `relHammingDistRange`), so `Λ(C, ·)` is a step function of `δ`,
+constant on each cell `[k/n, (k+1)/n)`. Read `δ`-indexed list-decoding statements modulo
+this — cf. the boundary framing in `ProximityGap.GrandChallenges` (the list challenge is
+likewise pinned by an integer boundary index, not a real `δ*`). -/
+noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
+  ⨆ f : ι → F, ((closeCodewordsRel C f δ).ncard : ℕ∞)
+
+/-- **Bridge to `listDecodable`.** `Lambda` is the sup-form of the same notion as the
+∀-form `listDecodable` above (consumed by the STIR development): for a natural list-size
+bound `ℓ`, the maximised list size `Λ(C, δ)` is at most `ℓ` iff `C` is
+`(δ, ℓ)`-list-decodable. List-size bounds proved for `Lambda` (e.g. the Johnson family
+bounds in `JohnsonBound/Family.lean`) transfer to `listDecodable` consumers through this
+equivalence, and conversely. -/
+lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} :
+    Lambda C δ ≤ (ℓ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) := by
+  simp only [Lambda, iSup_le_iff, Nat.cast_le, listDecodable]
+
+/-- The point list `Λ(C, δ, f) = closeCodewordsRel C f δ` is monotone in the radius. -/
+lemma closeCodewordsRel_subset_of_le {C : Code ι F} {δ₁ δ₂ : ℝ}
+    (h : δ₁ ≤ δ₂) (f : ι → F) :
+    closeCodewordsRel C f δ₁ ⊆ closeCodewordsRel C f δ₂ := by
+  intro c hc
+  exact ⟨hc.1, le_trans hc.2 h⟩
+
+/-- `Lambda` is monotone in the radius. -/
+lemma Lambda_mono {C : Code ι F} {δ₁ δ₂ : ℝ} [Finite F] (h : δ₁ ≤ δ₂) :
+    Lambda C δ₁ ≤ Lambda C δ₂ := by
+  refine iSup_mono fun f => ?_
+  have hfin : (closeCodewordsRel C f δ₂).Finite := Set.toFinite _
+  exact_mod_cast Set.ncard_le_ncard (closeCodewordsRel_subset_of_le h f) hfin
+
+/-- Any element of `Λ(C, δ, f) = closeCodewordsRel C f δ` is a codeword of `C`. -/
+lemma closeCodewordsRel_subset_code {C : Code ι F} (δ : ℝ) (f : ι → F) :
+    closeCodewordsRel C f δ ⊆ C := fun _ hc => hc.1
+
+/-- `|Λ(C, δ, f)| ≤ |C|` for finite `C`. -/
+lemma ncard_closeCodewordsRel_le_ncard {C : Code ι F} (δ : ℝ) (f : ι → F) (hC : C.Finite) :
+    (closeCodewordsRel C f δ).ncard ≤ C.ncard :=
+  Set.ncard_le_ncard (closeCodewordsRel_subset_code δ f) hC
+
+/-- `|Λ(C, δ)| ≤ |C|` for finite `C`. -/
+lemma Lambda_le_ncard {C : Code ι F} (δ : ℝ) (hC : C.Finite) :
+    Lambda C δ ≤ (C.ncard : ℕ∞) := by
+  refine iSup_le fun f => ?_
+  exact_mod_cast ncard_closeCodewordsRel_le_ncard δ f hC
+
+/-- `|Λ(C, δ)| ≤ |F^ι|`: each point list is a set of words, so the maximised
+list size is bounded by the total number of words. Stated with `Nat.card`
+under `[Finite F]` (no `Fintype (ι → F)` instance needed). -/
+lemma Lambda_le_card {C : Code ι F} [Finite F] (δ : ℝ) :
+    Lambda C δ ≤ (Nat.card (ι → F) : ℕ∞) := by
+  refine iSup_le fun f => ?_
+  exact_mod_cast (Set.ncard_le_ncard (Set.subset_univ _) Set.finite_univ).trans_eq
+    (Set.ncard_univ _)
+
+/-- `|Λ(C, δ)|` is **finite** over a finite alphabet. This is what makes the
+downstream `(Lambda C δ).toNat` occurrences (e.g. in the ABF26 §6 soundness
+error terms) faithful: `ENat.toNat` only collapses at `⊤` (`⊤.toNat = 0`),
+which this lemma rules out. -/
+lemma Lambda_ne_top {C : Code ι F} [Finite F] (δ : ℝ) :
+    Lambda C δ ≠ ⊤ :=
+  ne_top_of_le_ne_top (by simp) (Lambda_le_card δ)
+
+end Lambda
+
 end ListDecodable
