@@ -224,31 +224,6 @@ theorem foldWord_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
   simp [foldWord, foldValue_k_1]
 
-/-- The "even" part of the folding function. -/
-def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
-  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
-  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
-        ⟨domain.subdomain 1 i, by simp⟩
-  let i := domain.log x
-  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
-  (f i + f i') / 2
-
-/-- The "odd" part of the folding function. -/
-def foldWordOdd [NeZero n] (domain : SmoothCosetFftDomain n F)
-  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
-  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
-        ⟨domain.subdomain 1 i, by simp⟩
-  let i := domain.log x
-  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
-  (f i - f i') / (2 * x)
-
-/-- `foldWord` equals the natural linear combination
-  of its even and odd parts. -/
-lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
-  foldWord domain f 1 α =
-    foldWordEven domain f + α • foldWordOdd domain f := by
-  aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
-
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation. Functional version. -/
 theorem foldWord_k_1' [NeZero n] {α : F} :
@@ -257,8 +232,7 @@ theorem foldWord_k_1' [NeZero n] {α : F} :
         ⟨domain.subdomain 1 i, by simp⟩
     let i := domain.log x
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
-    ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
-  aesop (add simp [foldWord_k_1])
+    ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by aesop (add simp foldWord_k_1)
 
 /-- An explicit formula for `foldWord` when `k = 1` that
   does not use Lagrange interpolation and avoids using `log`. -/
@@ -288,6 +262,49 @@ theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
     rw [hb]
     field_simp
     ring
+
+/-- The "even" part of the folding function. -/
+def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomain 1 i, by simp⟩
+  let i := domain.log x
+  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+  (f i + f i') / 2
+
+/-- The "odd" part of the folding function. -/
+def foldWordOdd [NeZero n] (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=
+  let x : domain := CosetFftDomain.twoNthRoot (i := 1)
+        ⟨domain.subdomain 1 i, by simp⟩
+  let i := domain.log x
+  let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
+  (f i - f i') / (2 * x)
+
+/-- `foldWord` equals the natural linear combination
+  of its even and odd parts. -/
+lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
+  foldWord domain f 1 α =
+    foldWordEven domain f + α • foldWordOdd domain f := by
+  aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
+
+/-- The version of a folding where
+  k steps are achieved via iterated application
+  of k=1 folding. -/
+noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
+  (f : Word F (Fin (2 ^ n))) (k : ℕ) (α : Fin k → F) :
+  Word F (Fin (2 ^ (n - k))) :=
+  match k with
+  | 0 => f
+  | Nat.succ k =>
+    let prev := iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)
+    let foldedPrev :=
+      foldWord (domain.subdomain k) prev 1 (α ⟨k, by omega⟩)
+    fun i ↦ foldedPrev ⟨i.val, by aesop (add safe cases Fin)⟩
+
+@[simp]
+lemma iteratedFoldWord_zero {α : Fin 0 → F} :
+  iteratedFoldWord domain f 0 α = f := rfl
 
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
@@ -411,6 +428,20 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
         rw [show domain i = (domain : (Fin (2 ^ n)) ↪ F) i by rfl]
       rw [ReedSolomon.toPolynomial_eval_at_domain]
       simp [evalOnPoints]
+
+/-- Perfect completeness of iterated folding: if a word belongs to an RS-code
+  then its `iteratedFoldWord` belongs to a folded RS-code.
+-/
+theorem iteratedFoldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
+  {α : Fin k → F}
+  {f : Word F (Fin (2 ^ n))}
+  (hf : f ∈ ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) :
+  iteratedFoldWord domain f k α ∈
+    ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k)) := by
+  induction k with
+  | zero => simp [hf]
+  | succ k ih =>
+    sorry
 
 private noncomputable def foldWordAuxCoeff (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (k : ℕ) (i : Fin (2 ^ k)) (x : F) : F :=
@@ -776,17 +807,16 @@ theorem folding_preserves_distance
         ((2 ^ k) - 1) * ProximityGap.errorBound δ (2 ^ (d - k))
         (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) := by
     have bound_tighter :
-      (↑δ) ≤ 1 - ReedSolomon.sqrtRate (2 ^ (d - k))
-        (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) :=
-      le_of_lt <| by
+      (↑δ) < 1 - ReedSolomon.sqrtRate (2 ^ (d - k))
+        (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) := by
         aesop
-          (add safe [(by rw [folded_sqrtRate_eq])])
-          (add safe (by norm_cast at *))
+          (add safe 
+            [(by rw [folded_sqrtRate_eq]), (by norm_cast at *)])
     have correlated_agreement :=
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
         (2 ^ k - 1) ((2 ^ (d - k)))
         (domain := domain.subdomain k) (δ := δ)
-        (hδ := bound_tighter)
+        (hδ_pos := δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map,
