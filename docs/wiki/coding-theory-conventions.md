@@ -47,8 +47,8 @@ disambiguates the same quantity bounded under different regimes (e.g.
 | Kind | Convention | Examples |
 |---|---|---|
 | Paper-named function | Lean-id close to paper notation | `qEntropy`, `Jqℓ`, `Jcap`, `epsCA`, `epsMCA`, `Lambda` (the point list `Λ(C,δ,f)` is the descriptive `closeCodewordsRel`) |
-| Descriptive function | snake_case describing the math | `restrictedRelHammingDist`, `hammingBallVolume`, `frsEvalOnPoints` |
-| Predicate / property | `IsX` style | `IsMDS`, `IsSubspaceDesign`, `IsFAdditive`, `LineDecodable`, `Admissible` |
+| Descriptive function | snake_case describing the math | `hammingBallVolume`, `frsEvalOnPoints`, `restrictedRelHammingDist` (next split) |
+| Predicate / property | `IsX` style | `IsMDS`, `IsSubspaceDesign`, `Admissible`; `IsFAdditive`/`LineDecodable` (next split) |
 | Structure | PascalCase | `ExtensionFieldPresentation`, `WordStack`, `InterleavedWord` |
 | Code family | namespaced + `Code` suffix | `ReedSolomon.code`, `ReedSolomon.Folded.frsCode`, `ReedSolomon.Interleaved.irsCode` |
 
@@ -92,9 +92,9 @@ purposes but the notation itself is global).
 - `LinearCode.ρ C` — `LinearCode.rate C` (`ℚ≥0`-valued rate; declared as
   `scoped syntax &"ρ" term`, so `ρ` can still be used as a local variable
   name in other scopes).
-- `CodingTheory.restrictedRelHammingDist T f g` is also available as the scoped
-  notation `Δ[T]` with explicit `(f, g)` arguments (declared in
-  `Basic/RelativeDistance.lean`; the paper-style is `Δ_T(f, g)`).
+- (Next split.) `CodingTheory.restrictedRelHammingDist T f g` with its scoped notation
+  `Δ[T](f, g)` (paper-style `Δ_T(f, g)`) ships with the proximity-gap split, next to its
+  first consumers; this layer keeps only the full-domain distance notions.
 
 ### Conspicuously absent (only in docstring comments, not actual notation)
 
@@ -123,7 +123,7 @@ downstream proof becomes hard to read because of this choice.
 | Relative Hamming distance | `ℚ≥0` | `relHammingDist`, `δᵣ(u, v)` |
 | Relative distance to a code | `ENNReal` | `relDistFromCode`, `δᵣ(u, C)` |
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
-| Restricted relative Hamming distance | `ℝ≥0` | `restrictedRelHammingDist` (paper `Δ_T(f,g)`) |
+| Restricted relative Hamming distance | `ℝ≥0` | `restrictedRelHammingDist` (paper `Δ_T(f,g)`; next split) |
 | Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` |
 | Proximity radius `δ` argument | `ℝ≥0` (preferred) or `ℝ` | `epsCA`, `epsMCA`, `Lambda` |
 | Paper-style real-valued bounds | `ℝ` (then wrapped) | RHS of capacity-bound theorems |

@@ -390,7 +390,11 @@ the list-size-`ℓ` claim is **false** (e.g. a high-distance code can have more 
 codewords within relative distance `1 - 1/q`). The hypothesis
 `q/(q-1) · (ℓ-1)/ℓ · δ_min ≤ 1` is exactly nonnegativity of the radicand, i.e. the
 regime where `J_{q,ℓ}` is a real (untruncated) Johnson radius. (With the corrected
-`(ℓ-1)/ℓ` factor — see `Jqℓ` — the guard is weaker than the printed one.) -/
+`(ℓ-1)/ℓ` factor — see `Jqℓ` — the guard is weaker than the printed one.)
+
+**`ℓ ≥ 2`.** The paper states the theorem for all `ℓ ∈ ℕ`; the case `ℓ = 1` is true but
+excluded here for convenience (`J_{q,1}(δ) = 0` and a radius-0 list has at most one
+word — a separate trivial argument the proof below does not need to carry). -/
 theorem johnson_bound_lambda_le_ell
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {α : Type} [Fintype α] [DecidableEq α]
@@ -578,7 +582,14 @@ binary repetition codes or `[4,2,3]` over `𝔽₃` (`ρ = 1/2`, `δ_min = 3/4`,
 `η`) — is closed by the q-ary Plotkin bound `plotkin_card_le_ell`: the failed guard means
 `δ_min` exceeds the Plotkin radius `1 - 1/q` by the factor `ℓ/(ℓ-1)`, so the *whole code*
 has fewer than `ℓ` words and `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` — no radius analysis needed.
-The statement here is exactly the paper's `cor:Jonhson-for-mds`.
+
+**Scope vs the paper.** The paper's `cor:Jonhson-for-mds` quantifies over all MDS codes
+under its general-alphabet definition (rate `log_{|Σ|}|C| / n`), explicitly including
+interleaved Reed–Solomon codes over the non-field alphabet `F^m`. This statement is the
+F-linear field-alphabet instance (`LinearCode ι F`, rate `finrank/n`); the
+alphabet-general form (over `ModuleCode`/general `Σ`) is deferred to the split that
+brings its interleaved-code consumers — `johnson_bound_lambda_le_ell` above is already
+alphabet-generic, so only the rate-distance bridge needs generalizing then.
 
 **Rate derivation.** `ρ` is bound inline as `(Module.finrank F C : ℝ) / Fintype.card ι`
 rather than passed as a separate parameter — this matches the upstream `IsMDS`

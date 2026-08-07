@@ -45,9 +45,7 @@ not an FRS code in this file's sense.
 - [GR08] Guruswami-Rudra. (Original FRS paper.)
 -/
 
-set_option linter.unusedFintypeInType false
 set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
 
 namespace ReedSolomon
 namespace Folded

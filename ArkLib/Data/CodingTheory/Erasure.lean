@@ -56,7 +56,13 @@ makes the predicate non-vacuous: without it,
 
 The paper additionally tracks the corrector's running time (`ecor`); ArkLib's
 extractors are uniformly cost-free (unclocked), so no cost parameter is
-carried here — see `additive_code_supports_erasure_correction_grs12`. -/
+carried here — see `additive_code_supports_erasure_correction_grs12`.
+
+Degenerate boundary: for `|C| ≤ 1` the minimum distance over distinct pairs is
+`sInf ∅ = 0`, so the recovery guard `#erasures < Code.minDist C` is unsatisfiable and
+clause (ii) forces `E f = none` even at zero erasures — the predicate is then satisfied
+only by the trivial corrector. Consumers wanting actual recovery need a nontrivial
+code. -/
 def SupportsErasureCorrection [DecidableEq F]
     (C : Set (ι → F)) : Prop :=
   ∃ E : (ι → Option F) → Option (ι → F),

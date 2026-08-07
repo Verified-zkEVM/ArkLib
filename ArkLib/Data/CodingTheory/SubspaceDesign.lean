@@ -25,7 +25,8 @@ admits.
   code of rate `ρ` has `min_r τ(r) ≥ ρ - 1/n` (external admit).
 - `CodingTheory.frs_is_subspaceDesign_gk16` — ABF26 Theorem 2.18 [GK16]: folded RS codes
   are τ-subspace-design for explicit τ (external admit; carries GK16's `ω`-generator
-  hypothesis that the tex omits, see PAPER_REVS #13).
+  hypothesis that the tex omits; the omission has been reported to the paper's authors —
+  see the audit's T2.18 row for the 2026-07-21 correction record).
 
 ## Deferred
 
@@ -159,10 +160,17 @@ is [GK16 Lemma 12]'s folded-Wronskian criterion, stated for **`γ` a generator o
 (`W_γ(1, X^d) = X^d(γ^d − 1)` vanishes when `γ^d = 1`, `d < k`). The pinned tex
 (`thm:folded-rs-are-subspace-design`, L1263–1277) omits any order condition, and GG25's
 own restatement (Def 2.18 / Thm 2.19, `q > sn` only) is falsified by the same
-counterexample — recorded upstream as `PAPER_REVS.md` finding #13. We carry GK16's own
-generator hypothesis `_hω_gen` (not a weaker `ord(ω) ≥ k` guard, which blocks the known
-counterexample but is not licensed by the cited source — cf. the PAPER_REVS #12 lesson
-on unlicensed hybrid strengthenings). -/
+counterexample; the omission has been reported to the paper's authors (2026-07-21, see
+the audit's T2.18 row). We carry GK16's own generator hypothesis `_hω_gen` — not a
+weaker `ord(ω) ≥ k` guard: that would block the known counterexample but is not
+licensed by the cited source, and an admit must state exactly what its source proves,
+never an unlicensed hybrid strengthening.
+
+Boundary note: for `k ≥ s·|ι|` (rate ≥ 1) the profile satisfies `τ(r) ≥ 1` on all of
+`[1, s]` and `IsSubspaceDesign s τ C` holds for *every* code, so in that regime this
+admit is contentless; its content lives in the intended `k < s·|ι|` regime (where the
+hypotheses are jointly satisfiable — e.g. `F = ZMod 5`, `ι = Fin 2`, `s = 2`, `k = 1`,
+`ω = 2`). -/
 theorem frs_is_subspaceDesign_gk16
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]

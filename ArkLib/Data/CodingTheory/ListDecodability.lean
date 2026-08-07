@@ -87,8 +87,9 @@ variable {ι : Type*} [Fintype ι] {F : Type*}
 Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative Hamming distance is
 `1/n`-quantised (`n := |ι|`, `relHammingDistRange`), so `Λ(C, ·)` is a step function of `δ`,
 constant on each cell `[k/n, (k+1)/n)`. Read `δ`-indexed list-decoding statements modulo
-this — cf. the boundary framing in `ProximityGap.GrandChallenges` (the list challenge is
-likewise pinned by an integer boundary index, not a real `δ*`). -/
+this quantisation: an extremal "largest `δ*`" is only meaningful as an integer boundary
+index `k*/n`, not as a real number (the ABF26 grand-challenge layer, arriving in a later
+split, pins its list challenge that way). -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, ((closeCodewordsRel C f δ).ncard : ℕ∞)
 

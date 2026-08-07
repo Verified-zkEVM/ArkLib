@@ -44,7 +44,10 @@ Counts the number of words in `Σ^n` (with `|Σ| = q`) within absolute Hamming d
 Used in `ABF26-L3.7` (Elias lower bound) and `ABF26-C3.8` (volume-based lower bound).
 
 Noncomputable because the floor `⌊δ · n⌋₊` over `ℝ` is noncomputable (Mathlib's
-`Nat.floor` on `ℝ` depends on a `noncomputable` `linearOrder` instance). -/
+`Nat.floor` on `ℝ` depends on a `noncomputable` `linearOrder` instance). For `δ ≤ 0`
+the floor clamps to `0` and the value is `1` (the ball is just the center) — the paper's
+domain is `δ ∈ (0, 1)`, `q ≥ 2`; outside it the formula is a total extension, not a
+claim. -/
 noncomputable def hammingBallVolume (q : ℕ) (δ : ℝ) (n : ℕ) : ℕ :=
   ∑ i ∈ Finset.range (⌊δ * n⌋₊ + 1), Nat.choose n i * (q - 1) ^ i
 

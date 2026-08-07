@@ -114,5 +114,15 @@ lemma dim_irsCode {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   -- `finrank F ↥RS = k / s` via `dim_eq_deg_of_le`.
   exact ReedSolomon.dim_eq_deg_of_le (n := k / s) (α := domain) h_rs_full
 
+/-- Paper-shaped dimension formula in the divisible case: when `s ∣ k` (the implicit
+convention of ABF26 Definition 2.13, satisfied by every instantiation in the paper),
+`dim(IRS[F, L, k, s]) = k` on the nose. -/
+lemma dim_irsCode_of_dvd {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [DecidableEq F]
+    (domain : ι ↪ F) (k s : ℕ) (hdvd : s ∣ k)
+    (h_rs_full : k / s ≤ Fintype.card ι) :
+    Module.finrank F (irsCode domain k s) = k := by
+  rw [dim_irsCode domain k s h_rs_full, Nat.mul_div_cancel' hdvd]
+
 end Interleaved
 end ReedSolomon
