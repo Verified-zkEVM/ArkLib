@@ -901,9 +901,9 @@ theorem folding_preserves_distance
       rw [←Nat.pow_le_pow_iff_right (a := 2) (by simp)]
       omega
     have bound_tighter :
-      (↑δ) ≤ 1 - ReedSolomon.sqrtRate (d / (2 ^ k))
+      (↑δ) < 1 - ReedSolomon.sqrtRate (d / (2 ^ k))
         (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) :=
-      le_of_lt <| by
+      by
         aesop
           (add safe [(by rw [folded_sqrtRate_eq])])
           (add safe [(by grind)])
@@ -912,7 +912,7 @@ theorem folding_preserves_distance
       @correlatedAgreement_affine_curves (Fin (2 ^ (n - k))) _ _ F _ _ _
         (2 ^ k - 1) (d / (2 ^ k))
         (domain := domain.subdomain k) (δ := δ)
-        (hδ := bound_tighter)
+        (hδ_pos := δ_gt_0) (hδ := bound_tighter)
     unfold foldWord δ_ε_correlatedAgreementCurves at *
     by_contra contra
     simp only [not_le, foldValue_eq_sum_of_foldAuxCoeff_mul_pow_alpha, bind_pure_comp, Functor.map,
