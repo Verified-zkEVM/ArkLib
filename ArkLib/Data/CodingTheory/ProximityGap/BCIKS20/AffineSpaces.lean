@@ -19,6 +19,7 @@ namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory ReedSolomon Code
 open scoped BigOperators LinearCode ProbabilityTheory
+open Probability
 
 section BCIKS20ProximityGapSection6
 
