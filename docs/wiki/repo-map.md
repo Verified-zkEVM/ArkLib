@@ -167,9 +167,10 @@ home_page/            site assets and assembled website root
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).
-- Reed-Solomon code definitions live under the `ReedSolomon` namespace in
-  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, with the multilinear representation in
-  `ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean`.
+- Reed-Solomon code definitions live under the `ReedSolomon` namespace: the base RS code in
+  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
+  variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
+  [coding-theory-conventions.md](coding-theory-conventions.md)).
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs

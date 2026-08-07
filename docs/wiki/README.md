@@ -15,6 +15,11 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   references, and citation keys.
 - [`knowledge-base.md`](knowledge-base.md) - when to use `docs/kb/` and how it relates to the
   agent wiki and bibliography.
+- [`coding-theory-conventions.md`](coding-theory-conventions.md) - theorem-naming pattern,
+  notation, type conventions, and tagged-sorry style used in
+  `ArkLib/Data/CodingTheory/`.
+- [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
+  for reusable helpers in `ArkLib/Data/Probability/`.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
   - paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*, with
     status labels, Lean references, and a follow-up roadmap.
@@ -28,6 +33,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `generated-files.md` for derived outputs and source-of-truth rules.
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
+  - `coding-theory-conventions.md` for naming/notation/type conventions in `CodingTheory/`.
+  - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
   update the matching page in the same PR, or add a new page when that is the cleaner split.
