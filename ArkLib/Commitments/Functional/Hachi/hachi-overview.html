@@ -602,7 +602,7 @@
       { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
         files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
         relIn:"relNestedZeroCheck", relOut:"nestedRoundRel 0", status:"wip", sorry:0, badges:["bridge"],
-        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheckE_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
+        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheck_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
         relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:3, badges:["guarded"],
@@ -624,7 +624,7 @@
   ];
   var SUB_CROSS = [
     { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"wip", sorry:1,
-      desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChainE</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
+      desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChain</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
     { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:2,
       desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands (<code>sumcheckPoly*</code>, <code>zcTargetAlpha</code>, <code>hypercubeSum</code>) now have concrete computable bodies; the only remaining sorries are the two sum identities <code>sum_sumcheckPolyZero</code>/<code>sum_sumcheckPolyAlpha</code>." },
     { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,

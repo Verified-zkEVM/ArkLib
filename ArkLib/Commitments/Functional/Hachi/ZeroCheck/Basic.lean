@@ -37,11 +37,11 @@ lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full an
   `M̃_α`/`α̃` contraction and its proved equality with `H_α`'s row-defect table
   (`alphaDefect_wTable`, `hAlpha_eq_zero_iff_alphaDefect`), the sumcheck summands
   `F_{0,τ₀}`/`F_{α,τ₁}` with their per-variable degrees, `hypercubeSum`, and the direct-point
-  relation `nestedRoundRel`/`nestedRoundRelE`. Shared between this zero-check and the sumcheck
+  relation `nestedRoundRel`. Shared between this zero-check and the sumcheck
   rounds (`Sumcheck/`).
 * `ZeroCheck/Batch.lean` — the zero-round batching bridge: reinterprets the lift's per-row claims
-  as the two identities `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`/`relBatchedE`, Eqs. (22)–(23)). The
-  pull-back `mem_relLiftE_of_relBatchedE` (`relBatchedE → relLiftE`) recovers the per-row equation
+  as the two identities `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`, Eqs. (22)–(23)). The
+  pull-back `mem_relLift_of_relBatched` (`relBatched → relLift`) recovers the per-row equation
   from `H_α ≡ 0` (via `hAlpha_eq_zero_iff` and `hAlphaEvals_rowPoint`, arity `n ≤ 2 ^ m₁`; the
   identification of `H_α` with paper Eq. (22) is `hAlpha_eq_zero_iff_alphaDefect`) and
   **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
@@ -53,8 +53,8 @@ lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full an
   reductions above it. Figure 5's point relation is therefore as norm-free as the paper's.
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: `m₀ + m₁` scalar challenge rounds
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
-  `nestedZeroCheck_coordinateWiseSpecialSound` reduces `relBatchedE` to
-  `relNestedZeroCheckE`; its extraction handles escapes, weak-binding collisions, and the common
+  `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reduces `relBatched` to
+  `relNestedZeroCheck`; its extraction handles escapes, weak-binding collisions, and the common
   opening by the evaluation-tree zero test — `H₀` through the first `m₀` levels of a single tree,
   `H_α` through its last `m₁`. Tree size is machine-checked by
   `nestedZeroCheck_numLeaves`/`_lt`.
@@ -64,7 +64,7 @@ The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.le
 `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`.
 
 This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
-Its output relation `relNestedZeroCheckE` is the input of the sumcheck bridge in `Sumcheck/`, and
+Its output relation `relNestedZeroCheck` is the input of the sumcheck bridge in `Sumcheck/`, and
 the chain is composed in `Composition.lean`.
 
 ## References

@@ -56,7 +56,7 @@ zero, and `bound ≤ rlin.bound`. This is the zero-check's input relation.
 
 Shortness is **not** a conjunct here: `H₀ ≡ 0` already forces `w̃` short (every committed
 coefficient is a root of the range factor `P_b`), so `liftShort` is *derived* — not assumed — by
-the pull-back `mem_relLiftE_of_relBatchedE` (via `hZero_eq_zero_imp_liftShort`). This is the
+the pull-back `mem_relLift_of_relBatched` (via `hZero_eq_zero_imp_liftShort`). This is the
 range machinery being load-bearing rather than inert.
 
 Both conjuncts are the paper's polynomials, not stand-ins. `hAlpha`'s Boolean table is *written*

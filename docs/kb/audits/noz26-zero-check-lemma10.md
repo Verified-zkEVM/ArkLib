@@ -9,17 +9,18 @@ Last revalidated against the formalization: **3 August 2026**.
 
 > **Status (integrated; link-5 completeness direction still open).** The corrected Lemma 10 is
 > formalized *inside* the escape-threaded opening chain: `nestedZeroCheckPackage` reduces
-> `relBatchedE → relNestedZeroCheckE` and is composed as
+> `relBatched → relNestedZeroCheck` and is composed as
 > `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` in `Composition.lean`
-> (`openCore`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSound` is **`sorry`-free and
-> axiom-clean** (the `H_α`/`H₀` values used by the theorem are concrete), and the link-5 batching bridge's
-> un-batching pull-back `mem_relLiftE_of_relBatchedE` is likewise **proven and axiom-clean relative
+> (`openCore`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is
+> **`sorry`-free and axiom-clean** (the `H_α`/`H₀` values used by the theorem are concrete), and
+> the link-5 batching bridge's
+> un-batching pull-back `mem_relLift_of_relBatched` is likewise **proven and axiom-clean relative
 > to those definitions**. **Paper Eq. (22) is now formalized**: `mAlphaTilde` (`M̃_α`),
 > `alphaTilde` (`α̃`) and `alphaContract` build the paper's public contraction against the committed
 > table, and `alphaDefect_wTable` / `hAlpha_eq_zero_iff_alphaDefect` prove it equal to the per-row
 > defect that `hAlphaEvals` writes down directly (axiom-clean). The residual link-5 obligation is
-> the forward/honest-completeness theorem `relLiftE → relBatchedE`, which is still absent.
-> Downstream, the link-7 sumcheck-bridge pull-back `mem_relNestedZeroCheckE_of_nestedRoundRelE`
+> the forward/honest-completeness theorem `relLift → relBatched`, which is still absent.
+> Downstream, the link-7 sumcheck-bridge pull-back `mem_relNestedZeroCheck_of_nestedRoundRel`
 > is now **proved**, but `#print axioms` shows it inherits `sorryAx` from the two still-`sorry`
 > sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (F5).
 > **The range half is now load-bearing:** shortness (`liftShort`) is *derived* from the range
@@ -57,17 +58,17 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Batched range identity, Eq. (23) | `ZeroCheck.hZero : CMlPolynomialEval F m₀` | represented, **concrete, computable, load-bearing** | The stored vector is exactly the Boolean table of range factors; multilinearity is structural. Entry content `wTable` reads the committed `z`/`r` coefficients directly, and `H₀ ≡ 0 ⇒ liftShort` is proven by `hZero_eq_zero_imp_liftShort`. |
 | Batched row identity, Eq. (22) | `ZeroCheck.hAlpha : CMlPolynomialEval F m₁` | represented, **concrete, computable, paper-faithful** | The stored vector is the per-row defect table `hAlphaEvals`, so multilinearity and the pull-back are structural. The paper's route through the `M̃_α`/`w̃`/`α̃` contraction is built separately (`mAlphaTilde`, `alphaTilde`, `alphaContract`, `alphaDefect`) and proved equal to that table by `alphaDefect_wTable`, with the relation-level form `hAlpha_eq_zero_iff_alphaDefect`. |
 | Eq. (22) contraction ↔ row defect | `ZeroCheck.alphaDefect_wTable`, `hAlphaEvals_eq_alphaDefect`, `hAlpha_eq_zero_iff_alphaDefect` | proven, **axiom-clean** | §4.3's "represent the constraints by polynomials" step: the only place the table encoding of the witness (commitment/sumcheck side) meets the ring encoding (`relLift` side). Arity pins `hd : 0 < deg φ` and `(μ+n)·deg φ ≤ 2^{m₀}`; the `Rq` column bound is `CyclotomicModulus.natDegree_lt_of_reduced`. |
-| Figure-5 point checks | `ZeroCheck.relNestedZeroCheck` / `relNestedZeroCheckE` | deliberately repaired | Points are assembled directly from `m₀ + m₁` scalar challenge rounds; evaluation uses `CMlPolynomialEval.eval` directly; escape-threaded (`Set.withEscape K.esc`). |
+| Figure-5 point checks | `ZeroCheck.relNestedZeroCheck` | deliberately repaired | Points are assembled directly from `m₀ + m₁` scalar challenge rounds; evaluation uses `CMlPolynomialEval.eval` directly; escape-threaded (`Set.withEscape K.esc`). |
 | Axis-cross counterexample | `MvPolynomial.exists_nonzero_vanishing_on_axis_cross` | proven | Refutes the identity-testing step for the *prose* reading of Lemma 10 (a star of scalar coordinates). |
 | Nested zero-test kernel | `NestedEvaluationTree.eq_zero_of_vanishes_comp` (computable view `CMlPolynomialEval.eq_zero_of_polynomialVanishes_comp`/`_castAdd`/`_natAdd`; Hachi wrappers `hZero_eq_zero_of_evaluationTree`, `hAlpha_eq_zero_of_evaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete `k`-ary tree with vanishing leaves forces a polynomial of individual degree `< k` to be zero, *read through a window of consecutive levels*. Mathlib-level statement in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`, computable view in `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`. Stated for general `k` (not just the multilinear `k = 2`), but with **one arity for every level**: a uniformly wider tree can certify a multilinear polynomial, whereas mixing a `k = 2` round with Lemma 9's `2d` or Lemma 11's `deg H + 1` would need per-level arity. |
 | Transcript-tree size | `NestedEvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family repair (e.g. the superseded Kronecker one at `D = 2 ^ m₀`) satisfies `coordinateWiseSpecialSound` just as well. But (i) these count the *adapter's* `NestedEvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
-| Lemma-10 extraction (escape-threaded) | `ZeroCheck.buildNestedWitnessE`, `buildNestedWitnessE_mem_relBatchedE` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
+| Lemma-10 extraction (escape-threaded) | `ZeroCheck.nestedZeroCheckExtractor`, `nestedAssembly_escape_or_mem_relBatched` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
 | Lemma-10 binding alternative | `LiftCom.escOfCollision` via `K.collision_mem` | integrated | Two openings of the shared `t` with distinct tables become an escape `e ∈ K.esc` (Hachi weak binding, Lemma 7's `sⱼ ≠ s'ⱼ`); no norm hypothesis, the admissibility rides in `LiftCom.Opening`. |
-| Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSound` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
+| Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
 | Knowledge error (`∑ᵢ ℓᵢkᵢ/|Sᵢ|^{ℓᵢ}`, [FMN24] Lemma 4) | no declaration | **missing (repo-wide)** | ArkLib has no CWSS-to-knowledge-soundness theorem, so the *quantitative* content of both the paper's claim and this repair — `2(m₀+m₁)/|F_{q^k}|`, negligible — exists only in prose. This is the layer in which the repair's cost over the Schwartz–Zippel bound for unmodified Figure 5 would become visible. |
 | Honest completeness of this link | no declaration | **missing** | The forward direction is `eval 0 = 0` (a few lines) and is the only statement tying `nestedZeroCheckProver`'s `castAdd`/`natAdd` split to the verifier's. `nestedZeroCheckProver` is currently referenced nowhere. |
-| Link-5 un-batching pull-back | `ZeroCheck.mem_relLiftE_of_relBatchedE` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatchedE → relLiftE`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
-| Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLiftE` witness satisfies `relBatchedE`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
+| Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
+| Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLift` witness satisfies `relBatched`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
 | Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (`openCore`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
 
 ## Polynomial representation: multilinear value vectors and proof views
@@ -371,7 +372,7 @@ unconditionally on openings. Consequently:
 `H₀ ≡ 0`. Since every committed coefficient is a table entry of `wTable`, `H₀ ≡ 0` forces each
 into the symmetric range `[−(b−1), b−1]`, so `liftShort` is a *consequence*. `relBatched`
 therefore **no longer carries `liftShort` as a conjunct**; the pull-back
-`mem_relLiftE_of_relBatchedE` derives it via `hZero_eq_zero_imp_liftShort` (see Link 5). This is
+`mem_relLift_of_relBatched` derives it via `hZero_eq_zero_imp_liftShort` (see Link 5). This is
 the fix requested in review PR #656: the range machinery is load-bearing, and knowledge soundness
 *proves* the committed witness short rather than assuming it.
 
@@ -382,15 +383,15 @@ premise being only that their **tables** differ ([NOZ26] Lemma 7's `sⱼ ≠ s'�
 `t = Com(w̃)`, `H₀(τ₀) = 0`, `H_α(τ_α) = 0` — and nothing about norms, matching Lemma 10's own
 "or break binding of the commitment scheme `Com`". The extractor's case split is on tables
 rather than openings, which is both faithful to Lemma 7 and what the tree zero test consumes.
-`nestedZeroCheck_coordinateWiseSpecialSound` remains axiom-clean under this statement.
+`nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` remains axiom-clean under this statement.
 
 **Why the point evaluation is insufficient.** A single accepting branch pins only
 `H₀^{w̃}(τ₀) = 0` at one point, and shortness is *not* derivable from that: a nonzero multilinear
 polynomial vanishing at any single prescribed point always exists, and recovering `H₀ ≡ 0` for
 one opening needs the *complete* sibling-distinct depth-`m₀` tree — all `2^{m₀}` leaves — to
 share that opening (`eq_zero_of_vanishes_comp`). The collision branch of
-`buildNestedWitnessE` is by definition the case where the leaves do *not* share one opening, so
-it can never run the zero test for a *single* colliding opening. (The superseded Kronecker-seed
+`nestedAssembly_escape_or_mem_relBatched` is by definition the case where the leaves do *not*
+share one opening, so it can never run the zero test for a *single* colliding opening. (The superseded Kronecker-seed
 variant hit the same wall in sharp form — `2^m − 1` seeds never suffice — as recorded in the
 historical section above.)
 
@@ -419,16 +420,16 @@ discharged over the family by the binary-evaluation-tree zero test
     in range by construction; the paper's gadget decomposition is the honest prover's pre-commit
     step, not part of the range test.)
 
-  Consequently `nestedZeroCheck_coordinateWiseSpecialSound` is **axiom-clean**: `#print axioms`
-  reports no `sorryAx` (only ambient `propext`/`Classical.choice`/`Quot.sound`; the
-  `Classical.choice` is the constructivity caveat below, from `buildNestedWitnessE`'s branch
+  Consequently `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is **axiom-clean**:
+  `#print axioms` reports no `sorryAx` (only ambient `propext`/`Classical.choice`/`Quot.sound`; the
+  `Classical.choice` is the constructivity caveat below, from `nestedPathResponse`'s witness
   selection). The standalone kernel `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise
   axiom-clean.
   **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is now proven** (`hZero_eq_zero_imp_liftShort`,
   see Link 5) — no longer an F5 gap. **Still F5 (out of Lemma-10 scope):** the two sum identities
   `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (the summand *definitions* are now concrete).
-- **Link 5 (batching bridge).** The un-batching pull-back `mem_relLiftE_of_relBatchedE`
-  (`relBatchedE → relLiftE`, `ZeroCheck/Batch.lean`) is **proof-`sorry`-free and axiom-clean**
+- **Link 5 (batching bridge).** The un-batching pull-back `mem_relLift_of_relBatched`
+  (`relBatched → relLift`, `ZeroCheck/Batch.lean`) is **proof-`sorry`-free and axiom-clean**
   (`#print axioms` = `propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`). It establishes both
   residual claims of `relLift`:
   - the per-row `α`-equation from `H_α ≡ 0` (`hAlpha_eq_zero_iff` +
@@ -444,12 +445,12 @@ discharged over the family by the binary-evaluation-tree zero test
   `K.com` and the bound conjunct are carried verbatim. That `hAlpha` is the polynomial constructed
   in paper Eq. (22) is proved separately by `alphaDefect_wTable` /
   `hAlpha_eq_zero_iff_alphaDefect`. **Still missing:** the forward/honest-completeness theorem
-  `relLiftE → relBatchedE`.
+  `relLift → relBatched`.
 - **Constructivity — this is where the repair falls short of Lemma 10.** Lemma 10 claims an
   *efficient deterministic algorithm*; `nestedZeroCheckExtractor` is neither. `nestedPathResponse`
   does not read a witness off the transcript (there is none to read: `w̃` is the output relation's
   witness, not a protocol message) — it selects, by classical choice, *some* witness satisfying
-  `relNestedZeroCheckE` at each leaf, as does `buildNestedWitnessE`'s branch selection and the
+  `relNestedZeroCheck` at each leaf, as does `nestedZeroCheckExtractor`'s branch selection and the
   generic `treeExtractor`. Hence "all leaves carry one table" constrains selected witnesses rather
   than a prover's replies, and the collision branch fires when choice happens to select different
   tables, so the binding horn is discharged by `LiftCom.collision_mem`'s existence statement rather
@@ -457,11 +458,11 @@ discharged over the family by the binary-evaluation-tree zero test
   would need witness-bearing trees or a decidable enumeration interface; without one, [FMN24]
   Lemma 4's poly-time hypothesis cannot be met even in principle.
 - **Sumcheck seam.** `nestedRoundRel` carries no norm conjunct (see above), and the sumcheck
-  bridge's pull-back `mem_relNestedZeroCheckE_of_nestedRoundRelE` is now **proved** — but
+  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved** — but
   `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
   bridge is only as discharged as F5. Further down the chain (out of Lemma-10 scope), the
-  per-round CWSS `round_coordinateWiseSpecialSound` (Lemma 11, milestone F7) and the
-  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSound`, milestone F8)
+  per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11, milestone F7) and the
+  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`, milestone F8)
   remain `sorry`.
 
 ## Resolution options (for the record)
