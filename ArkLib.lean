@@ -27,6 +27,7 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
@@ -310,6 +311,7 @@ import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin

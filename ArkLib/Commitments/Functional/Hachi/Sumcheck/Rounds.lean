@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 import CompPoly.Univariate.Linear
 
@@ -220,6 +221,16 @@ distinct points, hence identically; evaluating at `0, 1`, summing, and using the
 claims. Assembled via a guarded variant of the scalar-round machinery (using
 `check_eq_true_of_guarded_accepting`).
 
+**The `i < m₀` hypothesis is necessary, not bookkeeping.** The final step above splits the
+round-`i` cube sum as `hypercubeSum H i cs = hypercubeSum H (i+1) (snoc cs 0) +
+hypercubeSum H (i+1) (snoc cs 1)`, which needs a free coordinate to split on. For `m₀ ≤ i` there
+is none: `hypercubeSum` has saturated (`hypercubeSum_of_le`, `ZeroCheck/Constraints.lean`), both
+sides of the defect are constant in the challenge, and the guard delivers
+`2·hypercubeSum H i cs = target` where the round-`i` claim asks for `hypercubeSum H i cs = target`.
+So the statement is *false* without the hypothesis, over any `F` of characteristic `≠ 2` and with
+a nonzero target. The loop only ever instantiates rounds `0, …, m₀ − 1`, so nothing is lost;
+`roundsChainAux` threads the corresponding `count ≤ m₀`.
+
 **TODO (reuse `Sumcheck/Structured`):** this round should be the existing structured sum-check
 round (`ArkLib/ProofSystem/Sumcheck/Structured`) rather than the bespoke `roundVerifier` above —
 its CWSS discharged by the (to-be-built, wire-format-generic / guarded) analog of the scalar-round
@@ -229,7 +240,7 @@ now pending that reconciliation (see the `Sumcheck/Basic.lean` umbrella). -/
 theorem round_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (i : ℕ) :
+    (φF : ZMod q →+* F) (i : ℕ) (hi : i < m₀) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))
       (roundEsc Φ m₀ m₁ bound ρBound b K φF i)
@@ -242,10 +253,11 @@ theorem round_coordinateWiseSpecialSoundWithEscape
 /-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackage`: the guarded round verifier
 with the `k = max (2b) 2 + 1` plain-special-soundness structure, reducing the round-`i` seam to the
 round-`(i+1)` seam, with the weak-binding event `roundEsc` as its one escape-specific field.
-Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11). -/
+Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11), whence the
+`i < m₀` hypothesis — a round only reduces a claim while a free cube coordinate remains. -/
 noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (i : ℕ) :
+    (φF : ZMod q →+* F) (i : ℕ) (hi : i < m₀) :
     EscapeGCWSSPackage init impl
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ (i + 1)) (LiftedWitness Φ μ n)
@@ -257,7 +269,8 @@ noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
   esc := roundEsc Φ m₀ m₁ bound ρBound b K φF i
   isGuarded := roundVerifier_isGuarded Φ m₀ m₁ b i
   extractor := roundExtractor Φ m₀ m₁ bound ρBound b K φF i
-  isCWSS := round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound b init impl K φF i
+  isCWSS :=
+    round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound b init impl K φF i hi
 
 /-- The empty round loop has no challenges. -/
 instance : IsEmpty (roundsSpec F b 0).ChallengeIdx := ⟨fun i => Fin.elim0 i.1⟩
@@ -274,14 +287,14 @@ noncomputable def roundsChainAux (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    (count : ℕ) →
+    (count : ℕ) → count ≤ m₀ →
       { P : EscapeGCWSSPackage init impl
           (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
           (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
           (roundsSpec F b count) //
         P.relIn = nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 ∧
         P.relOut = nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count }
-  | 0 =>
+  | 0, _ =>
     ⟨EscapeCWSSPackage.toGuarded
       { verifier := ReduceClaim.verifier oSpec id
         struct := CWSSStructure.ofIsEmpty
@@ -299,40 +312,41 @@ noncomputable def roundsChainAux (init : ProbComp σ)
             (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
             (fun _ _ h => h)) },
      rfl, rfl⟩
-  | count + 1 =>
-    let prev := roundsChainAux init impl K φF count
-    ⟨prev.1.append (roundPackage Φ m₀ m₁ bound ρBound b init impl K φF count) prev.2.2,
+  | count + 1, hcount =>
+    let prev := roundsChainAux init impl K φF count (by omega)
+    ⟨prev.1.append
+      (roundPackage Φ m₀ m₁ bound ρBound b init impl K φF count (by omega)) prev.2.2,
      prev.2.1, rfl⟩
 
 /-- **The composed sumcheck loop** (Hachi Figure 7's round phase), from the round-`0` seam
 (installed by the sumcheck bridge) to the round-`count` seam (consumed by the final-evaluation
-step). Instantiated at `count := m₀` in the composition. -/
+step). Instantiated at `count := m₀` in the composition, where `hcount` is `le_rfl`. -/
 noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (count : ℕ) :
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
     EscapeGCWSSPackage init impl
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
       (roundsSpec F b count) :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).1
+  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count hcount).1
 
 /-- The loop's input seam is the round-`0` relation (the seam pin for composing after the
 sumcheck bridge). -/
 theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (count : ℕ) :
-    (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relIn =
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
+    (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count hcount).relIn =
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.1
+  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count hcount).2.1
 
 /-- The loop's output seam is the round-`count` relation (the seam pin for composing with the
 final-evaluation step). -/
 theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (count : ℕ) :
-    (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relOut =
+    (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ m₀) :
+    (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count hcount).relOut =
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.2
+  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count hcount).2.2
 
 end Protocol
 
