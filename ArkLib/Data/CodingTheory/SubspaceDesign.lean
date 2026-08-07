@@ -10,8 +10,9 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 # Subspace-design codes (ABF26 §2.5)
 
 ABF26 Definition 2.16 [GX13]: the τ-subspace-design property for an F-additive code
-`C : F^k → (F^s)^n`. Lemmas 2.17 [GG25] and Theorem 2.18 [GK16] are stated as external
-admits.
+`C : F^k → (F^s)^n`. Lemma 2.17 [GG25] is **proved in-tree** (via the module-alphabet
+Singleton bound `LinearCode.singleton_bound_module`); Theorem 2.18 [GK16] is stated as
+an external admit.
 
 ## Main definitions
 
@@ -22,7 +23,7 @@ admits.
 - `CodingTheory.ker_proj_eq_vanish_at` — bridge between `ker(proj i)` and `{a | a i = 0}`
   (proved in-tree).
 - `CodingTheory.subspaceDesign_tau_lower` — ABF26 Lemma 2.17 [GG25]: τ-subspace-design
-  code of rate `ρ` has `min_r τ(r) ≥ ρ - 1/n` (external admit).
+  code of rate `ρ` has `min_r τ(r) ≥ ρ - 1/n` (**proved**, sorry-free).
 - `CodingTheory.frs_is_subspaceDesign_gk16` — ABF26 Theorem 2.18 [GK16]: folded RS codes
   are τ-subspace-design for explicit τ (external admit; carries GK16's `ω`-generator
   hypothesis that the tex omits; the omission has been reported to the paper's authors —
@@ -94,9 +95,10 @@ profile `τ` is lower-bounded by `ρ - 1/n` on the range `r ∈ [s] = {1, …, s
 
 **Range narrowed vs the sources (2026-07-21 note).** Both the tex
 (`lemma:subspace-design-limitation`, `min_{r ∈ ℕ} τ(r)`) and GG25 Lemma 2.16 state the
-bound for **all** `r ∈ ℕ`; the restriction to `[s]` here is ours, in the safe (weaker-admit)
-direction. `r = 0` is genuinely excluded (see below); `r > s` is dropped only because no
-in-tree consumer needs it.
+bound for **all** `r ∈ ℕ`; the restriction to `[s]` here is ours. `r = 0` is genuinely
+excluded (see below); `r > s` is dropped only because no in-tree consumer needs it (the
+proof below works verbatim for any `r ≥ 1` once `s ≥ 1` is known — the membership
+`r ∈ Icc 1 s` supplies both facts here).
 
 **Rate convention.** Per ABF26 Definition 2.5, the rate of a code over alphabet `Σ` is
 `log_{|Σ|}|C| / n`; for an `F`-additive code `C ⊆ (F^s)^n` this is
@@ -110,7 +112,7 @@ constraint on `τ`, so the bound there is unprovable (`A ≤ C` with
 `finrank A ≤ 0` forces `A = ⊥`, making the design inequality `0 ≤ 0 · τ(0)`
 trivially satisfied by any `τ(0)` including ones violating the lower bound).
 
-**Non-negative profile (`_hτ_nonneg`, 2026-06-10 re-review).** A design profile
+**Non-negative profile (`hτ_nonneg`, 2026-06-10 re-review).** A design profile
 is a fraction of a dimension, so `τ ≥ 0` is implicit in the paper. It is
 load-bearing here: for the trivial code `C = ⊥` the `IsSubspaceDesign`
 inequalities are all `0 ≤ 0`, placing no constraint on `τ`, and a *negative*
@@ -118,16 +120,152 @@ profile (e.g. `τ ≡ -1` at `n = 2`) falsified the unguarded bound
 (`-1 ≥ 0 - 1/2`). With `τ ≥ 0` the degenerate case is consistent
 (`τ r ≥ 0 ≥ 0 - 1/n`).
 
-Admitted as an external result. -/
+**Proof** (GG25's argument, uniform in `r`): pick a distance-attaining pair
+`u ≠ v ∈ C` and set `a := u − v`, a nonzero codeword with at least `n − d` zero
+blocks (`d = Code.dist`). The design inequality at the 1-dimensional subspace
+`span {a}` (valid for every `r ≥ 1`) gives `τ(r) ≥ #zero-blocks / n ≥ (n − d)/n`,
+and the module-alphabet Singleton bound `LinearCode.singleton_bound_module`
+(`k ≤ s(n − d + 1)`) turns this into `τ(r) ≥ ρ − 1/n`. Formerly an external
+admit; proved in-tree 2026-08-07. -/
 theorem subspaceDesign_tau_lower
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
-    (_h : IsSubspaceDesign s τ C)
-    (_hτ_nonneg : ∀ r, 0 ≤ τ r) :
+    (h_design : IsSubspaceDesign s τ C)
+    (hτ_nonneg : ∀ r, 0 ≤ τ r) :
     ∀ r ∈ Finset.Icc 1 s,
       τ r ≥ (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι := by
-  sorry -- ABF26-L2.17; external admit [GG25].
+  classical
+  intro r hr
+  obtain ⟨hr1, hrs⟩ := Finset.mem_Icc.mp hr
+  have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hs1 : 1 ≤ s := hr1.trans hrs
+  have hs_pos : (0 : ℝ) < s := by exact_mod_cast hs1
+  by_cases hC0 : Module.finrank F C = 0
+  · -- Degenerate code: the bound is `-1/n ≤ 0 ≤ τ r`.
+    rw [hC0]
+    have hb : ((0 : ℕ) : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι ≤ 0 := by
+      simp only [Nat.cast_zero, zero_div, zero_sub]
+      exact neg_nonpos.mpr (by positivity)
+    exact le_trans hb (hτ_nonneg r)
+  · -- Nontrivial code: run the GG25 argument at the span of a distance-attaining word.
+    -- Step 1: a distance-attaining pair, hence a nonzero codeword `a` of block-weight ≤ d.
+    have hCbot : C ≠ ⊥ := fun h => hC0 (by rw [h]; exact finrank_bot F _)
+    obtain ⟨x, hxC, hx0⟩ := Submodule.exists_mem_ne_zero_of_ne_bot hCbot
+    set d := Code.dist (C : Set (ι → Fin s → F)) with hd
+    have hS_ne : {m | ∃ u ∈ (C : Set (ι → Fin s → F)), ∃ v ∈ (C : Set (ι → Fin s → F)),
+        u ≠ v ∧ hammingDist u v ≤ m}.Nonempty :=
+      ⟨hammingDist x 0, x, hxC, 0, C.zero_mem, hx0, le_rfl⟩
+    obtain ⟨u, huC, v, hvC, huv, hΔ⟩ : ∃ u ∈ (C : Set (ι → Fin s → F)),
+        ∃ v ∈ (C : Set (ι → Fin s → F)), u ≠ v ∧ hammingDist u v ≤ d :=
+      Nat.sInf_mem hS_ne
+    set a := u - v with ha_def
+    have haC : a ∈ C := C.sub_mem huC hvC
+    have ha0 : a ≠ 0 := sub_ne_zero.mpr huv
+    -- Block-weight of `a` equals `hammingDist u v` (which is `≤ d`).
+    have hwt : (Finset.univ.filter (fun i => a i ≠ 0)).card = hammingDist u v := by
+      unfold hammingDist
+      congr 1
+      ext i
+      simp [ha_def, sub_eq_zero]
+    -- Step 2: the design inequality at `A := span {a}` (1-dimensional, and `1 ≤ r`).
+    set A : Submodule F (ι → Fin s → F) := Submodule.span F {a} with hA
+    have hAC : A ≤ C := (Submodule.span_singleton_le_iff_mem a C).mpr haC
+    have hA1 : Module.finrank F A = 1 := finrank_span_singleton ha0
+    have hdesign := h_design r A hAC (by rw [hA1]; exact hr1)
+    -- Step 3: per-position dimension of `A ⊓ ker (proj i)` is the zero-block indicator.
+    have hper : ∀ i : ι,
+        Module.finrank F (↥(A ⊓
+            (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)) :
+            Submodule F (ι → Fin s → F))) = if a i = 0 then 1 else 0 := by
+      intro i
+      by_cases hai : a i = 0
+      · rw [if_pos hai]
+        have hle : A ≤ LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i) := by
+          rw [hA, Submodule.span_le, Set.singleton_subset_iff]
+          simpa [LinearMap.mem_ker] using hai
+        rw [inf_eq_left.mpr hle]
+        exact hA1
+      · rw [if_neg hai]
+        have hbot : A ⊓ LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)
+            = ⊥ := by
+          rw [eq_bot_iff]
+          rintro y ⟨hyA, hyk⟩
+          obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hyA
+          have hc0 : c • a i = 0 := by simpa [LinearMap.mem_ker] using hyk
+          rcases smul_eq_zero.mp hc0 with hc | hzero
+          · simp [hc]
+          · exact absurd hzero hai
+        rw [hbot]
+        exact finrank_bot F _
+    -- Step 4: the design sum counts the zero blocks of `a`.
+    have hsum : (∑ i : ι,
+        (Module.finrank F (↥(A ⊓
+            (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i)) :
+            Submodule F (ι → Fin s → F))) : ℝ)) =
+        ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) := by
+      rw [← Finset.sum_boole]
+      exact Finset.sum_congr rfl fun i _ => by
+        rw [hper i]; by_cases hai : a i = 0 <;> simp [hai]
+    -- Step 5: Singleton bound at the block alphabet: `k ≤ s · (n − (d − 1))`.
+    have hsingleton := LinearCode.singleton_bound_module (F := F) (C := C)
+    rw [Module.finrank_fintype_fun_eq_card, Fintype.card_fin] at hsingleton
+    -- Numeric bookkeeping over ℕ.
+    have hwt_le_d : (Finset.univ.filter (fun i => a i ≠ 0)).card ≤ d := hwt ▸ hΔ
+    have hwt_le_n : (Finset.univ.filter (fun i => a i ≠ 0)).card ≤ Fintype.card ι :=
+      Finset.card_filter_le _ _
+    have hd1 : 1 ≤ d := by
+      rcases Nat.eq_zero_or_pos d with h0 | h
+      · exact absurd (hammingDist_eq_zero.mp (Nat.le_zero.mp (h0 ▸ hΔ))) huv
+      · exact h
+    have hd_le_n : d ≤ Fintype.card ι := by
+      have hmem : hammingDist u v ∈ {m | ∃ u ∈ (C : Set (ι → Fin s → F)),
+          ∃ v ∈ (C : Set (ι → Fin s → F)), u ≠ v ∧ hammingDist u v ≤ m} :=
+        ⟨u, huC, v, hvC, huv, le_rfl⟩
+      exact le_trans (Nat.sInf_le hmem) (hwt ▸ hwt_le_n)
+    have hcards : (Finset.univ.filter (fun i => a i = 0)).card
+        = Fintype.card ι - (Finset.univ.filter (fun i => a i ≠ 0)).card := by
+      have h := Finset.card_filter_add_card_filter_not
+        (s := (Finset.univ : Finset ι)) (p := fun i => a i = 0)
+      simp only [Finset.card_univ, ne_eq] at h ⊢
+      omega
+    -- Step 6: cast the Singleton bound to ℝ: `k ≤ s (n − d + 1)`.
+    have hcast : (Module.finrank F C : ℝ) ≤ s * ((Fintype.card ι : ℝ) - d + 1) := by
+      have h1 : d - 1 ≤ Fintype.card ι := le_trans (Nat.sub_le d 1) hd_le_n
+      calc (Module.finrank F C : ℝ)
+          ≤ ((s * (Fintype.card ι - (d - 1)) : ℕ) : ℝ) := by exact_mod_cast hsingleton
+        _ = s * ((Fintype.card ι : ℝ) - d + 1) := by
+            rw [Nat.cast_mul, Nat.cast_sub h1, Nat.cast_sub hd1]
+            push_cast
+            ring
+    -- Step 7: chain everything over ℝ.
+    have hτ_ge : ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) / Fintype.card ι ≤ τ r := by
+      calc ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) / Fintype.card ι
+          ≤ Module.finrank F A * τ r := by rw [← hsum]; exact hdesign
+        _ = τ r := by rw [hA1]; push_cast; ring
+    have hzeros : ((Fintype.card ι : ℝ) - d) ≤
+        ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) := by
+      rw [hcards, Nat.cast_sub hwt_le_n]
+      have : ((Finset.univ.filter (fun i => a i ≠ 0)).card : ℝ) ≤ d := by exact_mod_cast hwt_le_d
+      linarith
+    have hkey : (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι ≤
+        ((Fintype.card ι : ℝ) - d) / Fintype.card ι := by
+      have hdiv : (Module.finrank F C : ℝ) / (s * Fintype.card ι) ≤
+          ((Fintype.card ι : ℝ) - d + 1) / Fintype.card ι := by
+        rw [div_le_div_iff₀ (by positivity) hn_pos]
+        calc (Module.finrank F C : ℝ) * Fintype.card ι
+            ≤ (s * ((Fintype.card ι : ℝ) - d + 1)) * Fintype.card ι :=
+              mul_le_mul_of_nonneg_right hcast hn_pos.le
+          _ = ((Fintype.card ι : ℝ) - d + 1) * (s * Fintype.card ι) := by ring
+      have hsplit : ((Fintype.card ι : ℝ) - d + 1) / Fintype.card ι - 1 / Fintype.card ι =
+          ((Fintype.card ι : ℝ) - d) / Fintype.card ι := by
+        rw [div_sub_div_same]
+        ring_nf
+      linarith
+    calc (Module.finrank F C : ℝ) / (s * Fintype.card ι) - 1 / Fintype.card ι
+        ≤ ((Fintype.card ι : ℝ) - d) / Fintype.card ι := hkey
+      _ ≤ ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) / Fintype.card ι := by gcongr
+      _ ≤ τ r := hτ_ge
 
 /-- **ABF26 Theorem 2.18 [GK16].** Both folded Reed-Solomon codes and univariate
 multiplicity codes are τ-subspace-design for an explicit τ:

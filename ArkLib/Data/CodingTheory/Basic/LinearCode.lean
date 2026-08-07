@@ -8,6 +8,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.Basic.Distance
+import Mathlib.FieldTheory.Finiteness
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.RingTheory.PicardGroup
 import Mathlib.RingTheory.RegularLocalRing.Defs
@@ -618,6 +619,32 @@ theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]
     simpa [Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using
       (Nat.add_le_add_right (Nat.sub_le_sub_left hdist_le_min _) 1)
   exact h1.trans hmono'
+
+/-- **Singleton bound, module-alphabet finrank form.** For an `F`-linear code over a finite
+module alphabet `A` (a code `C ⊆ A^n` presented as an `F`-submodule of `ι → A`), the
+`F`-dimension is bounded by `finrank F A · (n − (d − 1))` where `d = Code.dist`.
+
+Specialises to (the `dist` form of) `singleton_bound_linear` at `A = F`, and covers the
+block alphabets `A = Fin s → F` of interleaved/folded codes, where `finrank F A = s`.
+Proof: compare `|C| = |F|^{dim C}` with the alphabet-general cardinality
+`singleton_bound`. -/
+theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F] [Finite F]
+    {A : Type*} [AddCommGroup A] [Module F A] [Finite A] [DecidableEq A]
+    (C : Submodule F (ι → A)) :
+    Module.finrank F C ≤
+      Module.finrank F A * (card ι - (Code.dist (C : Set (ι → A)) - 1)) := by
+  classical
+  cases nonempty_fintype F
+  cases nonempty_fintype A
+  have hcardC : Nat.card C = Fintype.card F ^ Module.finrank F C := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hcardA : Nat.card A = Fintype.card F ^ Module.finrank F A := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hsb := singleton_bound (C : Set (ι → A))
+  rw [@Fintype.card_eq_nat_card _ (ofFinite _), @Fintype.card_eq_nat_card _ (ofFinite A)] at hsb
+  have hCC : Nat.card (C : Set (ι → A)) = Nat.card C := rfl
+  rw [hCC, hcardC, hcardA, ← pow_mul] at hsb
+  exact (Nat.pow_le_pow_iff_right Fintype.one_lt_card).mp hsb
 
 end
 
