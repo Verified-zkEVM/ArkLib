@@ -35,8 +35,8 @@ high-multiplicity roots — counting roots against the degree yields the design 
 - `Polynomial.natDegree_foldedWronskian_le` — degree bound `σ · k` for entries of degree `≤ k`.
 - `Polynomial.pow_dvd_det_of_forall_mem_col_dvd` — the multiplicity engine: if every entry of
   each of `t` distinct columns of a square matrix is divisible by `d`, then `d^t ∣ det`.
-  (Replaces GK16's Hasse-derivative expansion of `det` — see the module docstring of
-  `SubspaceDesign.lean` once T2.18 is proved.)
+  (Replaces GK16's Hasse-derivative expansion of `det`; consumed by
+  `CodingTheory.frs_is_subspaceDesign_gk16` in `SubspaceDesign.lean`.)
 - `Polynomial.X_pow_card_sub_one_sub_C_irreducible` — `X^{q−1} − ω` is irreducible for `ω` a
   generator of `Fˣ`; this is the Kummer polynomial cutting out the field `F[X]/(E)` in which
   the criterion is proved. (Mathlib's Kummer criterion does not cover the even exponent
@@ -372,7 +372,7 @@ therefore maps to the Moore matrix of the `βⱼ := Pⱼ(x)`, so a vanishing Wro
 `F(X)` and stripping of common `E`-factors are not needed. The dependency is the linearized
 polynomial `Q(Y) = ∑ αᵢ Y^{qⁱ}` of degree `≤ q^{σ−1}`, which vanishes on the (injective,
 as `k ≤ deg E`) image of the whole span — forcing `q^σ = |span| ≤ q^{σ−1}`, absurd. -/
-theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F] [DecidableEq F]
+theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
     {σ k : ℕ} {ω : F} (hω : orderOf ω = Fintype.card F - 1)
     (hk : k ≤ Fintype.card F - 1)
     (P : Fin σ → F[X]) (hdeg : ∀ j, P j ∈ degreeLT F k)
