@@ -90,11 +90,14 @@ ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound
 [`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
 naive check report success on something that should fail:
 
-- **`#print axioms` / `Lean.collectAxioms` do not traverse a declaration's *type*.** A theorem
-  whose *statement* failed to elaborate gets a `sorry`-typed header and reports **no axioms at
-  all** — it looks *cleaner* than a genuine theorem. Always also assert
-  `(← getConstInfo n).type.hasSorry = false`, or check the declaration compiles with zero errors
-  first. A silent `#print axioms` result is not by itself evidence of anything.
+- **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
+  (`Lean.collectAxioms` does traverse both the type and the value, so a `sorry`-patched
+  statement *does* report `sorryAx` — but a declaration that failed to elaborate outright may
+  not exist to probe at all, and probing a *different*, successfully-elaborated declaration
+  proves nothing about the broken one.) Check the file compiles with zero errors first; a
+  belt-and-braces `(← getConstInfo n).type.hasSorry = false` assertion is cheap in sweep
+  metaprograms. A silent `#print axioms` result on its own is not evidence the intended
+  statement was proved.
 - **A metaprogram sweep over the environment silently skips private declarations**, whose internal
   names are mangled. De-mangle with `Lean.privateToUserName?` before filtering by module, or the
   sweep will quietly under-report.

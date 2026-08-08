@@ -61,10 +61,12 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Known Divergences From ArkLib
 
-- **The `δ ∈ (0,1)` window is not enforced, and need not be.** The headline theorem
-  carries `_hδ_pos`/`_hδ_lt` as unused hypotheses; the statement is true at `δ = 0` and `δ ≥ 1`
-  too (verified by re-proving it verbatim without them). Six instance binders on the theorem are
-  likewise unused, kept quiet by two file-scope linter suppressions.
+- **The `δ ∈ (0,1)` window is not enforced, and need not be.** The statement is true at
+  `δ = 0` and `δ ≥ 1` too (verified by re-proving it verbatim without the window). The 2026-08-07
+  review found the headline theorem carrying `_hδ_pos`/`_hδ_lt` as unused hypotheses plus six
+  unused instance binders behind two file-scope linter suppressions; all were removed in the
+  same review's fix sweep — the current theorem carries no window hypotheses and no
+  suppressions.
 - **The systematic-presentation consequence is not expressible.** `BCFW25` §D.2 (and `ABF26`
   Definition 2.20) rely on `C_F(ψ(v)) = ψ(C_B(v))` for a systematic presentation — a statement
   about the **encoder** `F^k → F^n`. ArkLib models only the code *image* (`Set (ι → F)`), so this

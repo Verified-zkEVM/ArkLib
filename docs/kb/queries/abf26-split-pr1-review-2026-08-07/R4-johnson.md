@@ -7,13 +7,13 @@ Probes (all compiled with `lake env lean` from the repo root, unmodified tree):
 
 | probe | result |
 |---|---|
-| `probes/r4-dup.lean` | ✅ clean — `remap`/`piCongrRight`, `remap_hammingDist`/`hammingDist_comp`, `Jqℓ = J q (lFac·δ)` |
-| `probes/r4-guardfree.lean` | ✅ clean — T3.2 proved **without** `_h_radicand` |
-| `probes/r4-c33-content.lean` | ✅ clean — C3.3 instantiated: `Λ(C, 7/16) ≤ 32` at n=16,k=4,η=1/16 |
-| `probes/r4-rs-witness2.lean` | ✅ clean — those hypotheses are satisfiable (RS[F,16 pts,deg<4] MDS, `finrank=4`, `minDist=13`, domain exists over `ZMod 17`) |
-| `probes/r4-t32-content.lean` | ✅ clean — T3.2 instantiated `Λ(C,1/2) ≤ 2` (tight); `plotkin_card_le_ell` instantiated |
-| `probes/r4-edge.lean` | ✅ clean — `Jqℓ q 0 δ = 0`; `Λ(C,0) ≥ 1`; `Jqℓ 2 2 ≠ J 2` |
-| `probes/r4-linter.lean` | ✅ clean — **refutes** a suspected finding (see §Refuted) |
+| `(session-local) r4-dup.lean` | ✅ clean — `remap`/`piCongrRight`, `remap_hammingDist`/`hammingDist_comp`, `Jqℓ = J q (lFac·δ)` |
+| `(session-local) r4-guardfree.lean` | ✅ clean — T3.2 proved **without** `_h_radicand` |
+| `(session-local) r4-c33-content.lean` | ✅ clean — C3.3 instantiated: `Λ(C, 7/16) ≤ 32` at n=16,k=4,η=1/16 |
+| `(session-local) r4-rs-witness2.lean` | ✅ clean — those hypotheses are satisfiable (RS[F,16 pts,deg<4] MDS, `finrank=4`, `minDist=13`, domain exists over `ZMod 17`) |
+| `(session-local) r4-t32-content.lean` | ✅ clean — T3.2 instantiated `Λ(C,1/2) ≤ 2` (tight); `plotkin_card_le_ell` instantiated |
+| `(session-local) r4-edge.lean` | ✅ clean — `Jqℓ q 0 δ = 0`; `Λ(C,0) ≥ 1`; `Jqℓ 2 2 ≠ J 2` |
+| `(session-local) r4-linter.lean` | ✅ clean — **refutes** a suspected finding (see §Refuted) |
 
 ---
 
@@ -71,7 +71,7 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
   *whole code* has `≤ ℓ` words, hence `Λ(C, anything) ≤ |C| ≤ ℓ`. No such counterexample code
   exists. Sanity check: for `q=2, ℓ=3` the guard fails only when `δ_min > 3/4`, where classical
   Plotkin already gives `|C| ≤ δ/(δ−1/2) ≤ 3 = ℓ`.
-- **Evidence**: `probes/r4-guardfree.lean` compiles clean; it proves
+- **Evidence**: `(session-local) r4-guardfree.lean` compiles clean; it proves
   `johnson_bound_lambda_le_ell_guardfree` — the paper's exact statement with **only** `2 ≤ ℓ` —
   by `rcases` on the guard and dispatching the failing branch through
   `Lambda_le_ncard` + `plotkin_card_le_ell`. ~45 lines, all ingredients already in-tree.
@@ -99,7 +99,7 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
   Per `docs/kb/…/feedback-no-duplication` and `CONTRIBUTING.md`, these should reuse Mathlib.
   (`remap_e`, `remap_d`, `remap_image_card` are genuine new content about `JohnsonBound.e`/`d` —
   those are fine, but they should be phrased over `Equiv.piCongrRight`.)
-- **Evidence**: `probes/r4-dup.lean` — all three replacement proofs are `rfl` /
+- **Evidence**: `(session-local) r4-dup.lean` — all three replacement proofs are `rfl` /
   `(Equiv.piCongrRight σ).injective` / `hammingDist_comp …` and compile clean.
 - **Refutation attempt**: checked whether the `Fin n`-indexed, non-dependent shape blocks reuse —
   it does not (`piCongrRight` and `hammingDist_comp` are both dependent-family general). Checked
@@ -160,7 +160,7 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
   exactly the LHS of the pre-existing `JohnsonBound.sqrt_le_J`, but no `Jcap_le_J` bridge is stated;
   `Jcap` has zero consumers and its only two lemmas (`Jcap_zero`, `Jcap_one`) evaluate it at `0`
   and `1`, both **outside** the paper's declared domain `(0,1)`.
-- **Evidence**: `probes/r4-dup.lean` (last example) compiles the `Jqℓ = J q (lFac·δ)` identity;
+- **Evidence**: `(session-local) r4-dup.lean` (last example) compiles the `Jqℓ = J q (lFac·δ)` identity;
   usage counts: `Jcap` → def + its 2 lemmas only.
 - **Refutation attempt**: considered that a paper-shaped standalone definition is the documented
   convention (`docs/wiki/coding-theory-conventions.md:49` lists `Jqℓ`, `Jcap` as sanctioned
@@ -180,7 +180,7 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
      `Jqℓ q 0 δ = 0`, and `Λ(C, 0) ≥ 1` for any nonempty `C` — i.e. the `ℓ = 0` instance is
      **false**, not merely inconvenient. (The paper's `J_{q,0}` is undefined, so this is a Lean-side
      encoding artifact, but the docstring as written implies `ℓ = 0` is fine.)
-- **Evidence**: `probes/r4-edge.lean` compiles `Jqℓ 2 2 (1/2) = ½(1-√(1/2))`,
+- **Evidence**: `(session-local) r4-edge.lean` compiles `Jqℓ 2 2 (1/2) = ½(1-√(1/2))`,
   `J 2 (1/2) = ½(1-√0)`, `Jqℓ q 0 δ = 0`, and `1 ≤ Lambda C 0` for `c ∈ C`.
 - **Suggested fix**: replace (1) with "for `ℓ = 2` this is the list-size-2 Johnson radius"; in (2)
   say "`ℓ = 0` is excluded because `Jqℓ q 0 δ = 0` by `ℚ`-division convention and `Λ(C,0) ≥ 1`;
@@ -251,7 +251,7 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
 * **Consumer breakage from the generalizations** — impossible: `grep` shows the entire
   `JohnsonBound/` directory had **zero** consumers outside itself before this PR, and still does.
 * **The `set_option linter.unusedFintypeInType/unusedDecidableInType false` at `Family.lean:54-55`
-  hides unused instance arguments in the headline theorems** — refuted. `probes/r4-linter.lean`
+  hides unused instance arguments in the headline theorems** — refuted. `(session-local) r4-linter.lean`
   restates both signatures verbatim *without* the suppression and neither linter fires. (The
   file-wide suppression is also an established pattern: `SubspaceDesign.lean`, `ExtensionCodes.lean`,
   `HammingBallVolume.lean`, `ReedSolomon/{Folded,Interleaved}.lean` all do it.)
@@ -289,14 +289,14 @@ The `Jqℓ` docstring documents this explicitly and correctly, including that th
   `Λ(C, J_{q,ℓ}(δ_min(C))) ≤ ℓ` over an **arbitrary finite alphabet `α`** and an arbitrary finite
   index `ι` — faithful to the paper's "any `C ⊆ Σ^n` with `|Σ| = q`". Not narrowed to
   linear/field codes. `Lambda` matches the paper's maximised `|Λ(C,δ)|` (sup over words).
-* **Non-vacuity of T3.2**: `probes/r4-t32-content.lean` instantiates it at `q=2, n=4, δ_min=1, ℓ=2`
+* **Non-vacuity of T3.2**: `(session-local) r4-t32-content.lean` instantiates it at `q=2, n=4, δ_min=1, ℓ=2`
   giving `Λ(C, 1/2) ≤ 2`, which is **tight** (length-4 repetition code, `f = 0011`). The radicand
   guard is satisfiable across the whole interesting regime (it only bites past Plotkin).
-* **Non-vacuity of `plotkin_card_le_ell`**: `probes/r4-t32-content.lean` instantiates it at
+* **Non-vacuity of `plotkin_card_le_ell`**: `(session-local) r4-t32-content.lean` instantiates it at
   `q=2, n=3, mDist=3, ℓ=3` (ambient 8 words).
 * **`mds_johnson_lambda_le`** is ABF26 Cor 3.3 verbatim (`Λ(C, 1-√ρ-η) ≤ 1/(2ηρ)`, `η > 0`, ρ
-  the `finrank/n` rate), and is genuinely non-vacuous: `probes/r4-c33-content.lean` derives
-  `Λ(C, 7/16) ≤ 32` for a `[16,4]` MDS code, `probes/r4-rs-witness2.lean` shows such codes exist
+  the `finrank/n` rate), and is genuinely non-vacuous: `(session-local) r4-c33-content.lean` derives
+  `Λ(C, 7/16) ≤ 32` for a `[16,4]` MDS code, `(session-local) r4-rs-witness2.lean` shows such codes exist
   (`ReedSolomon.code dom 4`, `IsMDS`, `finrank = 4`, `minDist = 13`, domain exists over `ZMod 17`).
   The radius `7/16 = 0.4375` strictly exceeds the unique-decoding radius `13/32 = 0.40625`, and
   `32 ≪ |C| = |F|^4 ≥ 83521`, so the bound has real content in the list-decoding regime.

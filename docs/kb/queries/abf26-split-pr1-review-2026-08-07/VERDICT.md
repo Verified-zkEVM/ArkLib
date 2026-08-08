@@ -6,7 +6,9 @@
 **Date**: 2026-08-07
 **Method**: 11 independent adversarial reviewers (R1–R11) + a lead pass, every finding
 required to carry a compiled probe, an exact source quote, or an exact `path:line`
-pointer to the declaration it duplicates. ~40 compiled probes under `probes/`.
+pointer to the declaration it duplicates. ~40 compiled probes, run session-locally (not
+committed; per-report tables record what each probe established — the safety-critical ones
+were independently re-derived and confirmed during the 2026-08-08 validation pass).
 Reports: `findings/R{1..11}-*.md`.
 
 ---

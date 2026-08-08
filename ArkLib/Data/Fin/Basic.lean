@@ -96,6 +96,20 @@ theorem induction_two' {motive : Fin 3 → Sort*} {zero : motive 0}
     {succ : ∀ i : Fin 2, motive i.castSucc → motive i.succ} :
       induction (motive := motive) zero succ (2 : Fin 3) = succ 1 (succ 0 zero) := by rfl
 
+/-- Three-step unfolding of `Fin.induction`, matching the `induction_two` pair. Consumed by
+`simp only` lists in the ABF26 toy-problem layer (a later split); keep even though this layer
+has no by-name use. -/
+@[simp]
+theorem induction_three {motive : Fin 4 → Sort*} {zero : motive 0}
+    {succ : ∀ i : Fin 3, motive i.castSucc → motive i.succ} :
+      induction (motive := motive) zero succ (last 3) = succ 2 (succ 1 (succ 0 zero)) := rfl
+
+/-- Alternate version of `Fin.induction_three` that uses `3 : Fin 4` instead of `last 3`. -/
+@[simp]
+theorem induction_three' {motive : Fin 4 → Sort*} {zero : motive 0}
+    {succ : ∀ i : Fin 3, motive i.castSucc → motive i.succ} :
+      induction (motive := motive) zero succ (3 : Fin 4) = succ 2 (succ 1 (succ 0 zero)) := rfl
+
 /-- Heterogeneous equality on `Fin.induction` -/
 theorem induction_heq {n n' : ℕ} {motive : Fin (n + 1) → Sort u} {motive' : Fin (n' + 1) → Sort u}
     {zero : motive 0} {zero' : motive' 0}

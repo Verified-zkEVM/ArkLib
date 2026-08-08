@@ -159,8 +159,10 @@ Directions in which ArkLib is *weaker* than the paper (all deliberate, none unso
 - `mds_johnson_lambda_le` (C3.3) is stated for field-alphabet linear codes only, so it does not
   cover interleaved Reed–Solomon — the class the paper's C3.3 preamble singles out.
 - D2.19/D2.20 are modelled at the level of the *code image* (`Set (ι → F)`), not the encoder
-  `F^k → F^n`. The paper's only consequence of a *systematic* presentation,
-  `C_F(ψ(v)) = ψ(C_B(v))`, is therefore not expressible; `IsSystematic` is defined but unused.
+  `F^k → F^n`, so the paper's encoder-level systematic-presentation identity
+  `C_F(ψ(v)) = ψ(C_B(v))` is not expressible as stated. Since the 2026-08-07 fix sweep,
+  `IsSystematic` is consumed by the coordinate-level statements in `ExtensionCodes.lean`
+  (`hP : P.IsSystematic` hypotheses), which capture the image-level content of that identity.
 - `SupportsErasureCorrection` drops the corrector's running time, which is the whole content of
   D6.4/L6.5. What remains is an existence statement provable for every code with no hypotheses.
 
