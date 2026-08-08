@@ -702,22 +702,6 @@ lemma IsMDS_iff_rate_distance
       exact h'
     exact_mod_cast this
 
-/-- `IsMDS_iff_rate_distance`, restated through the library's `LinearCode.rate` (`ρ`)
-idiom: the real-valued rate appearing there is exactly `(ρ LC : ℝ)`. -/
-lemma IsMDS_iff_rate_distance'
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [DecidableEq F]
-    (LC : LinearCode ι F) :
-    IsMDS LC ↔
-      (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
-        1 - ((rate LC : ℚ≥0) : ℝ) + 1 / Fintype.card ι := by
-  rw [IsMDS_iff_rate_distance]
-  have hrate : ((rate LC : ℚ≥0) : ℝ) = (Module.finrank F LC : ℝ) / Fintype.card ι := by
-    simp only [rate, dim, length]
-    push_cast
-    ring
-  rw [hrate]
-
 end LinearCode
 
 lemma poly_eq_zero_of_dist_lt {n k : ℕ} {F : Type*} [DecidableEq F] [CommRing F] [IsDomain F]

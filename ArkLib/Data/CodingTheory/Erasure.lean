@@ -14,23 +14,48 @@ asserting that a deterministic algorithm exists that recovers any codeword
 `u ∈ C` from a partial observation `f : ι → Option F` with strictly fewer
 than `δ_min(C) · |ι|` erasures, and returns `⊥` otherwise.
 
-`additive_code_supports_erasure_correction_grs12` (**existence half of Lemma 6.5
-of [ABF26]**, citing [GuruswamiRS12]) proves that *every* code satisfies the
-predicate: with fewer than `minDist C` erasures the consistent codeword is unique
-(`eq_of_consistent_with_erased`, a Hamming-distance pigeonhole), so a
-classical corrector exists.
+**What this file delivers, and what it does not.** `SupportsErasureCorrection` is a
+*tautology*: `exists_erasure_corrector` proves it for an arbitrary code, with no hypotheses
+whatsoever (including at `∅` and at `Set.univ`). The reason is that ABF26 Definition 6.4's
+content lives entirely in the corrector's *correction time* `ecor_C` — Lemma 6.5's claim is
+`ecor_C = O((s · n)³)` — and ArkLib's extractors are uniformly cost-free, so no cost parameter
+is carried and `∃ E` ranges over arbitrary mathematical functions. The predicate must
+therefore **not** be used as a hypothesis in the expectation that it constrains `C`.
+
+The substantive, reusable content of this file is the uniqueness lemma
+`eq_of_consistent_with_erased`: below `minDist C` erasures at most one codeword is consistent
+with the partial observation (a Hamming-distance pigeonhole). That is what makes the classical
+corrector exist. See the Definition 6.4 and Lemma 6.5 rows, and Roadmap Phase 6.2, of
+`docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md` for the full ledger
+entry.
 
 Lives in `Data/CodingTheory/` rather than at the protocol layer (where the
 ABF26 toy problem originally introduced it) because the predicate is generic
 across proof systems — any reduction whose extractor erasure-decodes its
 oracles consumes the same shape.
 
+## Main definitions
+
+* `CodingTheory.SupportsErasureCorrection` — ABF26 Definition 6.4 with the correction-time
+  parameter dropped (and hence, as explained above, a tautology).
+
+## Main statements
+
+* `CodingTheory.eq_of_consistent_with_erased` — uniqueness of the codeword consistent with a
+  lightly-erased word.
+* `CodingTheory.exists_erasure_corrector` — a corrector exists, for every code.
+
 ## References
 
-The predicate is paper-tagged to ABF26 D6.4 (Arnon-Boneh-Fenzi 2026, §6.2);
-the "every additive code can be erasure decoded in polynomial time" lemma is
-L6.5 in the same paper (citing GRS12 = Guruswami-Rudra-Sudan, *Essential
-Coding Theory*).
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§6.2: Definition 6.4, Lemma 6.5)
+* [Guruswami, V., Rudra, A., and Sudan, M., *Essential Coding Theory*][codingtheory]
+    (Proposition 1.4.2(4): a code of minimum distance `d` corrects exactly `d − 1` erasures;
+    Exercise 5.3 for the Gaussian-elimination running time, which is out of scope here)
+* [Bordage, S., Chiesa, A., Guan, Z., and Manzur, I., *All Polynomial Generators Preserve
+    Distance with Mutual Correlated Agreement*][BCGM25] (Definition 3.7,
+    `LinearCode.projectedWord` — see the generalization note on
+    `eq_of_consistent_with_erased`)
 -/
 
 namespace CodingTheory
@@ -49,20 +74,27 @@ deterministic algorithm `E_C` that, on any input `f : ι → Option F`:
        with `f` off the erasures, then `E_C(f) = some u`;
   (ii) otherwise `E_C(f) = none`.
 
-Clause (ii) — easy to miss in a quick port from the paper — is what
-makes the predicate non-vacuous: without it,
-`E := fun _ ↦ some <arbitrary>` satisfies the recovery clause for any
-`f` whose preconditions fail, hollowing the definition out.
+Clause (ii) — easy to miss in a quick port from the paper — pins down the *witness*: without
+it, `E := fun _ ↦ some <arbitrary>` satisfies the recovery clause for any `f` whose
+preconditions fail. With it, the corrector is essentially unique.
 
-The paper additionally tracks the corrector's running time (`ecor`); ArkLib's
-extractors are uniformly cost-free (unclocked), so no cost parameter is
-carried here — see `additive_code_supports_erasure_correction_grs12`.
+**Warning: this predicate is a tautology; it says nothing about `C`.** Clause (ii) constrains
+`E`, not `C`, so it does not make the predicate informative. The paper additionally tracks the
+corrector's running time (`ecor_C`), and that cost bound is the entire content of ABF26 D6.4
+and L6.5 (`ecor_C = O((s · n)³)`). ArkLib's extractors are uniformly cost-free (unclocked), so
+no cost parameter is carried here, and `∃ E` consequently ranges over arbitrary mathematical
+functions: `exists_erasure_corrector` discharges `SupportsErasureCorrection C` for *every*
+`C : Set (ι → F)` with no hypotheses. Do **not** use `SupportsErasureCorrection` as a
+hypothesis expecting it to constrain `C`; a statement that needs the erasure-decoding fact
+should use the uniqueness lemma `eq_of_consistent_with_erased` instead, which is the
+substantive reusable content here. (Ledger: the Definition 6.4 / Lemma 6.5 rows and Roadmap
+Phase 6.2 of `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`.)
 
-Degenerate boundary: for `|C| ≤ 1` the minimum distance over distinct pairs is
-`sInf ∅ = 0`, so the recovery guard `#erasures < Code.minDist C` is unsatisfiable and
-clause (ii) forces `E f = none` even at zero erasures — the predicate is then satisfied
-only by the trivial corrector. Consumers wanting actual recovery need a nontrivial
-code. -/
+Degenerate boundary, as a consequence of the same reading: for `|C| ≤ 1` there are no distinct
+pairs of codewords, so `Code.minDist C = sInf ∅ = 0`. The recovery guard
+`#erasures < Code.minDist C` is then unsatisfiable, and clause (ii) forces `E f = none` even on
+a fully unerased exact codeword — so the predicate is satisfied only by the trivial corrector
+`fun _ ↦ none`. Consumers wanting actual recovery need a nontrivial code. -/
 def SupportsErasureCorrection [DecidableEq F]
     (C : Set (ι → F)) : Prop :=
   ∃ E : (ι → Option F) → Option (ι → F),
@@ -79,7 +111,18 @@ def SupportsErasureCorrection [DecidableEq F]
 /-- **Uniqueness pigeonhole for erasure decoding (ABF26 L6.5 core).** Two
 codewords consistent with the same partially-erased word `f`, with strictly
 fewer than `minDist C` erasures, are equal: they can disagree only on erased
-coordinates, so their Hamming distance is below the code's minimum distance. -/
+coordinates, so their Hamming distance is below the code's minimum distance.
+
+**Generalization note (for whoever needs this next).** This is the `Option`-clothed special
+case of the injectivity of `LinearCode.projectedWord`
+(`ArkLib/Data/CodingTheory/Basic/LinearCode.lean`, Definition 3.7 of [BCGM25]): the general
+statement is that two codewords of `C` which agree outside a set `T` with
+`T.card < Code.minDist C` are equal, i.e. `projectedWord · Tᶜ` is injective on `C`. Here `T`
+is the erasure set `{i | f i = none}`. That general form belongs next to `projectedWord`, and a
+future author should put it there and derive this lemma from it rather than re-deriving the
+pigeonhole. It is stated here only because `Basic/Distance.lean` (this file's sole ArkLib
+import) sits *below* `Basic/LinearCode.lean`, and no `projectedWord` injectivity lemma exists
+yet to route through. -/
 theorem eq_of_consistent_with_erased [DecidableEq F] {C : Set (ι → F)}
     {f : ι → Option F} {u v : ι → F} (hu : u ∈ C) (hv : v ∈ C)
     (hfu : ∀ i, f i = some (u i) ∨ f i = none)
@@ -106,23 +149,25 @@ theorem eq_of_consistent_with_erased [DecidableEq F] {C : Set (ι → F)}
     Nat.sInf_le ⟨u, hu, v, hv, hne, rfl⟩
   omega
 
-/-- **Existence half of ABF26 Lemma 6.5** (`lemma:efficient-erasure-correction`,
-[GuruswamiRS12]): a corrector witnessing `CodingTheory.SupportsErasureCorrection C`
-*exists*. We formalize only this existence claim; it holds for an arbitrary code
-`C` (additivity of `C : F^k → (F^s)^n` is not needed for existence).
+/-- **An erasure corrector exists, for every code.** A witness for
+`CodingTheory.SupportsErasureCorrection C` exists for an arbitrary `C : Set (ι → F)`, with no
+hypotheses at all.
 
 The corrector is defined classically: if a codeword of `C` consistent with the
 non-erased positions exists (necessarily unique below `minDist C` erasures, by
 `eq_of_consistent_with_erased`), return it; otherwise return `none`.
 
-**Scope caveat — this theorem does NOT capture the cited [GRS12] content.** The
-substance of the paper's citation is the *algorithmic* claim that an `F`-additive
-code is erasure-corrected in `O((s · n)^3)` field operations (Gaussian elimination
-on the parity-check matrix). That polynomial-time bound is out of ArkLib's
-cost-free model — extractors are uniformly unclocked across the library — so it is
-deliberately not formalized here, and the existence statement below requires
-nothing from [GRS12]. -/
-theorem additive_code_supports_erasure_correction_grs12 [DecidableEq F]
+This is the *existence half* of ABF26 Lemma 6.5 (`lemma:efficient-erasure-correction`), and
+the reason `SupportsErasureCorrection` is a tautology — see that definition's docstring.
+
+**Scope caveat — this theorem captures nothing from the paper's cited source.** The substance
+of ABF26 L6.5 and of its [codingtheory] citation is the *algorithmic* claim that an
+`F`-additive code is erasure-corrected in `O((s · n)^3)` field operations (Gaussian elimination
+on the parity-check matrix). That polynomial-time bound is out of ArkLib's cost-free model —
+extractors are uniformly unclocked across the library — so it is deliberately not formalized.
+Accordingly this theorem has **no additivity hypothesis** and uses nothing from
+[codingtheory]; the name deliberately no longer claims otherwise. -/
+theorem exists_erasure_corrector [DecidableEq F]
     (C : Set (ι → F)) : SupportsErasureCorrection C := by
   classical
   refine ⟨fun f ↦

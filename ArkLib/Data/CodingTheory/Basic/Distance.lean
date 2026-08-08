@@ -43,12 +43,17 @@ import CompPoly.Data.Nat.Bitwise
   Distance quantities span several numeric types depending on the use case:
 
   - Hamming distance (absolute, pairwise): `ℕ` — `hammingDist`, `Δ₀(u, v)`.
-  - Min distance of a code (absolute): `ℕ` — `Code.minDist`, `‖C‖₀`.
+  - Min distance of a code (absolute): `ℕ` — `Code.minDist`, `Code.dist` (`‖C‖₀`).
   - Distance to a code (absolute, may be `⊤`): `ℕ∞` — `distFromCode`, `Δ₀(u, C)`.
-  - Relative Hamming distance (pairwise): `ℚ≥0` — `relHammingDist`, `δᵣ(u, v)`.
-  - Relative distance to a code: `ENNReal` — `relDistFromCode`, `δᵣ(u, C)`.
-  - Code rate: `ℚ≥0` — `LinearCode.rate`, `ρ C`.
-  - Computable variants: `ℚ≥0` — `δᵣ'`, `Δ₀'`, …
+  - Relative Hamming distance (pairwise): `ℚ≥0` — `relHammingDist`, `δᵣ(u, v)`
+    (in `Basic/RelativeDistance.lean`).
+  - Relative distance to a code: `ENNReal` — `relDistFromCode`, `δᵣ(u, C)`
+    (in `Basic/RelativeDistance.lean`).
+  - Code rate: `ℚ≥0` — `LinearCode.rate`, `ρ C` (in `Basic/LinearCode.lean`).
+  - Computable variants do **not** share a single type: `dist'` (`‖C‖₀'`) and
+    `distFromCode'` (`Δ₀'(u, C)`) are `ℕ∞`, matching their generic counterparts,
+    whereas `relDistFromCode'` (`δᵣ'(u, C)`) is `ℚ≥0` — it requires `[Nonempty C]`
+    instead of using a `⊤` element, because there is no `ℚ≥0∞` yet (see the TODO below).
 
   See `docs/wiki/coding-theory-conventions.md` for the broader set of
   conventions (theorem naming, notation, ε-error types).
@@ -133,14 +138,25 @@ Returns a `Finset ι` (requires `[Fintype ι]` and `[DecidableEq R]`).
 The cardinality is the standard Hamming distance — see
 `hammingDist_eq_disagreementCols_card`.
 
-This is the canonical primitive for "coordinates where two words
-disagree", used throughout the coding-theory development. Several
-protocol-specific files (`Binius/BinaryBasefold/Prelude.lean`,
-`Stir/Quotienting.lean`, `Whir/BlockRelDistance.lean`,
-`DG25/MainResults.lean`) ship their own paper-shape `disagreementSet`
-with additional structure (interleaved pairs, polynomial-evaluation
-comparisons, block-fibers, etc.); those are intentional specialisations
-on top of this base. Pure pointwise disagreement should use this
+This is intended as the canonical primitive for "coordinates where two
+words disagree". It is currently consumed by `ArkLib/Data/CodingTheory/Erasure.lean`
+and by `closeToWord_iff_exists_possibleDisagreeCols` below; most other
+pointwise-disagreement sites in the tree still inline the underlying filter,
+and migrating them is future work.
+
+`Matrix.neqCols` (`ArkLib/Data/CodingTheory/Prelims.lean`) is the *same*
+notion in matrix clothing: it collects the columns on which two matrices
+differ, which is exactly this disagreement set applied to the transposes.
+See `Matrix.neqCols_eq_disagreementCols_transpose` for the bridge.
+
+By contrast, the paper-shape `disagreementSet`s in
+`ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean`,
+`ArkLib/ProofSystem/Stir/Quotienting.lean`,
+`ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean` and
+`ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean` each carry
+additional structure (interleaved 4-tuples, `Ans`-table comparisons,
+block-fibers, iterated folds); those are intentional specialisations rather
+than instances of this base. Pure pointwise disagreement should use this
 primitive directly.
 
 Named `disagreementCols` rather than `disagreementSet` so that paper-
@@ -158,6 +174,18 @@ lemma mem_disagreementCols {u v : n → R} {i : n} :
 lemma hammingDist_eq_disagreementCols_card (u v : n → R) :
     hammingDist u v = (disagreementCols u v).card := by
   simp only [hammingDist, disagreementCols, ne_eq]
+
+/-- `Matrix.neqCols` is `Code.disagreementCols` on the transposes: the columns on which
+two matrices differ are precisely the coordinates on which their transposes — read as
+words over the alphabet `ι → F` of columns — disagree.
+
+This identifies the matrix-shaped primitive in `ArkLib/Data/CodingTheory/Prelims.lean`
+with the base disagreement set, so results about one transport to the other. -/
+lemma _root_.Matrix.neqCols_eq_disagreementCols_transpose
+    {ι ι' F : Type*} [Fintype ι] [Fintype ι'] [DecidableEq F] (U V : Matrix ι ι' F) :
+    Matrix.neqCols U V = disagreementCols U.transpose V.transpose := by
+  ext j
+  simp [Matrix.neqCols, mem_disagreementCols, Function.ne_iff, ne_comm]
 
 /-- The Hamming distance of a code `C` is the minimum Hamming distance between any two distinct
   elements of the code.

@@ -60,6 +60,11 @@ Interleaved codes for generic codes over a semiring, with **unified global APIs*
 - **`ModuleCode.codewordStackSubmodule`** - codeword stack as
   `Submodule F (WordStack A κ ι)` (preserves submodule for horizontal interleaving)
 
+### Structure of the interleaved module code
+- **`moduleInterleavedCodeEquiv`** - the column-tuple linear equivalence
+  `(κ → MC) ≃ₗ[F] (MC ^⋈ κ)`
+- **`finrank_moduleInterleavedCode`** - `finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`
+
 ### Joint Proximity & Agreement (Consequent of Proximity Gap)
 - **`jointProximity u δ`** - interleaved `u` within relative distance `δ` of `C^⋈κ`
 - **`jointProximityNat u e`** - interleaved `u` within concrete distance `e` of `C^⋈κ`
@@ -361,6 +366,47 @@ lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι :
     [AddCommMonoid A] [Module F A] {MC : ModuleCode ι F A} :
     ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
     := by rfl
+
+section Finrank
+
+/-! ### Structure and dimension of an interleaved module code
+
+The interleave `MC ^⋈ κ` is the image of the *column-tuple* map sending a `κ`-indexed family
+of codewords of `MC` to the interleaved word whose `k`-th row is the `k`-th family member.
+That map is a linear equivalence onto `MC ^⋈ κ`, from which the dimension formula follows.
+-/
+
+/-- **Column-tuple equivalence.** A `κ`-tuple of codewords of a `ModuleCode` `MC` is the same
+data as a codeword of the interleave `MC ^⋈ κ`: the tuple `g` corresponds to the interleaved
+word whose `k`-th row is `g k` (equivalently, whose `i`-th symbol is `fun k => (g k) i`).
+
+This is the structural fact underlying every "the interleave is `κ` independent copies of the
+base code" argument (dimension, freeness, cardinality). No finiteness of `κ` or `ι` is
+required. -/
+def moduleInterleavedCodeEquiv {F : Type*} [Semiring F] {A : Type*} [AddCommMonoid A]
+    [Module F A] {ι : Type*} (MC : ModuleCode ι F A) (κ : Type*) :
+    (κ → MC) ≃ₗ[F] (MC ^⋈ κ) where
+  toFun g := ⟨fun i k => (g k : ι → A) i, fun k => (g k).2⟩
+  invFun V := fun k => ⟨fun i => V.val i k, V.2 k⟩
+  left_inv g := by funext k; exact Subtype.ext rfl
+  right_inv V := by apply Subtype.ext; funext i k; rfl
+  map_add' g g' := by apply Subtype.ext; funext i k; rfl
+  map_smul' a g := by apply Subtype.ext; funext i k; rfl
+
+/-- **Dimension of an interleaved module code.** Interleaving multiplies the dimension by the
+interleaving factor: `finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`.
+
+Immediate from `moduleInterleavedCodeEquiv` and `Module.finrank_pi_fintype`. The `Module.Free`
+and `Module.Finite` hypotheses are exactly those of `Module.finrank_pi_fintype`; both are
+automatic whenever `F` is a field and the ambient `ι → A` is finite-dimensional. -/
+lemma finrank_moduleInterleavedCode {F : Type*} [Semiring F] [StrongRankCondition F]
+    {A : Type*} [AddCommMonoid A] [Module F A] {ι : Type*} (MC : ModuleCode ι F A)
+    [Module.Free F MC] [Module.Finite F MC] (κ : Type*) [Fintype κ] :
+    Module.finrank F (MC ^⋈ κ) = Fintype.card κ * Module.finrank F MC := by
+  rw [← (moduleInterleavedCodeEquiv MC κ).finrank_eq, Module.finrank_pi_fintype,
+    Finset.sum_const, Finset.card_univ, smul_eq_mul]
+
+end Finrank
 
 @[simp]
 instance {κ₁ κ₂ : Type*} :

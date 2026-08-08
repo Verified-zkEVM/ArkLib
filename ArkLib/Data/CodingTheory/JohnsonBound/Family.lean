@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.Data.CodingTheory.JohnsonBound.Basic
 import ArkLib.Data.CodingTheory.ListDecodability
+import ArkLib.Data.CodingTheory.ReedSolomon
 
 /-!
 # ABF26 §3.1 — Johnson family `J_{q,ℓ}, J_q, J` and Theorem 3.2 / Corollary 3.3
@@ -14,11 +15,16 @@ Extensions to `JohnsonBound/Basic.lean` matching the paper-shaped statements fro
 ABF26 §3.1 (Arnon-Boneh-Fenzi, *Open Problems in List Decoding and Correlated
 Agreement*, 2026).
 
-The existing `JohnsonBound.J q δ : ℝ` matches the paper's `J_q(δ)`. This file adds:
+Two of ABF26 Definition 3.1's three Johnson functions already live in
+[`JohnsonBound/Basic.lean`](Basic.lean): `JohnsonBound.J q δ` is the paper's `J_q(δ)`, and
+`JohnsonBound.Jcap δ = 1 - √(1 - δ)` (stated there, next to `J`, as the conclusion of
+`sqrt_le_J`) is the paper's asymptotic `J(δ)`. This file adds the remaining member:
 
 - `JohnsonBound.Jqℓ q ℓ δ` — paper's `J_{q,ℓ}(δ)`, with the `(ℓ-1)/ℓ` factor inside
-  the square root (matching the `.tex`, ~line 1347).
-- `JohnsonBound.Jcap δ` — paper's asymptotic Johnson bound `J(δ) := 1 - √(1 - δ)`.
+  the square root (matching the `.tex`, ~line 1347). Since `1 - 1/q = 1/(q/(q-1))`, the
+  list parameter is a pure *rescaling of the radius*, so `Jqℓ` is **defined** as
+  `J q (((ℓ-1)/ℓ) · δ)` rather than re-spelled; `Jqℓ_eq_J` is the (definitional) bridge to
+  the existing `J` API and `Jqℓ_paper_form` recovers the paper's printed shape.
 
 The three are related by `J_{q,ℓ}(δ) →_{ℓ → ∞} J_q(δ) →_{q → ∞} J(δ)`; we state the
 limit relationships in docstrings but do not formalise the limits (the paper does
@@ -27,9 +33,13 @@ not prove them either).
 The file also states the paper-shaped versions of:
 
 - `johnson_bound_lambda_le_ell` — ABF26 Theorem 3.2 [Joh62]:
-  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`.
+  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`, with no side condition (as in the paper).
 - `mds_johnson_lambda_le` — ABF26 Corollary 3.3:
   for any MDS code `C` of rate `ρ` and `η > 0`, `|Λ(C, 1 - √ρ - η)| ≤ 1/(2·η·ρ)`.
+- `rs_lambda_le_johnson_mds` — C3.3 at Reed–Solomon, via the pre-existing
+  `ReedSolomon.isMDS_code`.
+- `johnson_listDecodable` — T3.2 in the `ListDecodable.listDecodable` shape consumed by the
+  STIR/WHIR development.
 
 `johnson_bound_lambda_le_ell` (T3.2) is **fully proven**: the in-tree absolute-distance
 Johnson bound (`johnson_bound` in `JohnsonBound/Basic.lean`, now field-free) is ported to
@@ -51,9 +61,6 @@ radius the *whole code* has fewer than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ �
 - [Joh62] Johnson. (Original Johnson bound paper.)
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-
 namespace JohnsonBound
 
 open Real
@@ -62,36 +69,46 @@ open Real
 
   `J_{q,ℓ}(δ) := (1 - 1/q) · (1 - √(1 - q/(q-1) · (ℓ-1)/ℓ · δ))`
 
+Because `1 - 1/q = 1/(q/(q-1))`, the list parameter only *rescales the radius*: the displayed
+expression is exactly the pre-existing `J q` evaluated at `((ℓ-1)/ℓ) · δ`. That is how `Jqℓ` is
+defined here, so the existing `J` API (`sqrt_le_J`, `johnson_e_div_ne_J`, …) applies to it
+directly. `Jqℓ_eq_J` is the bridge (definitional) and `Jqℓ_paper_form` recovers the printed
+shape above.
+
 The `(ℓ-1)/ℓ` list factor matches the canonical `.tex` (~line 1347). It is the
-classical list-`ℓ` Johnson factor (= `1 - 1/ℓ`, cf. [GRS12]), increasing in `ℓ`,
+classical list-`ℓ` Johnson factor (= `1 - 1/ℓ`, cf. [codingtheory]), increasing in `ℓ`,
 so a *smaller* list budget `ℓ` gives a *smaller* radius. Both `(ℓ-1)/ℓ` and the
 limiting factor `1` agree as `ℓ → ∞`, so the paper's `J_q = lim_{ℓ→∞} J_{q,ℓ}`
 is unaffected.
 
-For `ℓ = 2` this is the binary Johnson radius; as `ℓ → ∞`, `Jqℓ q ℓ δ → J q δ`
-(the existing `JohnsonBound.J`). The `ℓ` parameter is the target list size. -/
-noncomputable def Jqℓ (q ℓ : ℚ) (δ : ℚ) : ℝ :=
-  let frac : ℚ := q / (q - 1)
-  let lFac : ℚ := (ℓ - 1) / ℓ
-  ((1 - 1 / q) : ℚ) * (1 - √(1 - frac * lFac * δ))
+For `ℓ = 2` this is the *list-size-two* Johnson radius. (It is unrelated to the *binary*
+Johnson radius, which is `J 2 δ` — the alphabet size `q` and the list budget `ℓ` are
+independent parameters.) As `ℓ → ∞`, `Jqℓ q ℓ δ → J q δ` (the existing `JohnsonBound.J`).
+The `ℓ` parameter is the target list size. -/
+noncomputable def Jqℓ (q ℓ : ℚ) (δ : ℚ) : ℝ := J q (((ℓ - 1) / ℓ) * δ)
 
-/-- **ABF26 Definition 3.1, `J`.** Paper's asymptotic Johnson bound:
+/-- **The list parameter is a radius rescaling.** `J_{q,ℓ}(δ) = J_q(((ℓ-1)/ℓ)·δ)`, so every
+fact about the pre-existing `JohnsonBound.J` transfers to `Jqℓ` through this bridge. Holds by
+definition; stated so that consumers need not unfold `Jqℓ`. -/
+lemma Jqℓ_eq_J (q ℓ δ : ℚ) : Jqℓ q ℓ δ = J q (((ℓ - 1) / ℓ) * δ) := rfl
 
-  `J(δ) := 1 - √(1 - δ)`
-
-Equals the `q → ∞` limit of `J_q(δ)` and the `q, ℓ → ∞` limit of `J_{q,ℓ}(δ)`.
-(It is *not* the binary Johnson bound: `J_2(δ) = ½(1 - √(1 - 2δ)) ≠ 1 - √(1 - δ)`.)
-
-Distinct from the existing `JohnsonBound.J q δ`, which is the paper's `J_q(δ)`
-(the q-ary limit, parametrised by `q`). To avoid renaming the existing `J`, we
-name this `Jcap` (Johnson — *cap*acity). -/
-noncomputable def Jcap (δ : ℝ) : ℝ := 1 - √(1 - δ)
-
-@[simp]
-lemma Jcap_zero : Jcap 0 = 0 := by simp [Jcap]
-
-@[simp]
-lemma Jcap_one : Jcap 1 = 1 := by simp [Jcap]
+/-- **ABF26 Definition 3.1, printed shape.** `Jqℓ` agrees with the paper's displayed formula
+`(1 - 1/q) · (1 - √(1 - q/(q-1) · (ℓ-1)/ℓ · δ))`. The hypothesis `q ≠ 0` is what makes the
+outer factors agree (`1 - 1/q = 1/(q/(q-1))` fails at `q = 0` under `ℚ`-division), and every
+coding-theory instance has `q = |Σ| ≥ 2`. -/
+lemma Jqℓ_paper_form {q : ℚ} (hq : q ≠ 0) (ℓ δ : ℚ) :
+    Jqℓ q ℓ δ =
+      ((1 - 1 / q : ℚ) : ℝ) * (1 - √((1 - q / (q - 1) * ((ℓ - 1) / ℓ) * δ : ℚ))) := by
+  have h1 : (1 / (q / (q - 1)) : ℚ) = 1 - 1 / q := by
+    rcases eq_or_ne q 1 with rfl | hq1
+    · norm_num
+    · field_simp
+  have hcast : ((1 - 1 / q : ℚ) : ℝ) = 1 / ((q / (q - 1) : ℚ) : ℝ) := by
+    rw [← h1]; push_cast; ring
+  rw [Jqℓ_eq_J, J, hcast]
+  congr 2
+  push_cast
+  ring_nf
 
 end JohnsonBound
 
@@ -104,7 +121,7 @@ open Real Finset Fintype
 /-- Reindexing the coordinate index by an equivalence `e : ι ≃ Fin (card ι)` (precomposition
 by `e.symm`) preserves Hamming distance. Used to transport a code over an arbitrary finite
 index type `ι` to the `Fin n → α` form required by the in-tree Johnson machinery. -/
-lemma reidx_hammingDist {ι : Type} [Fintype ι] [DecidableEq ι] {α : Type} [DecidableEq α]
+lemma reidx_hammingDist {ι : Type*} [Fintype ι] {α : Type*} [DecidableEq α]
     (e : ι ≃ Fin (Fintype.card ι)) (x y : ι → α) :
     hammingDist (x ∘ e.symm) (y ∘ e.symm) = hammingDist x y := by
   unfold hammingDist
@@ -120,8 +137,7 @@ set_option maxHeartbeats 1000000 in
 /-- Numeric core of the Johnson list-size bound (T3.2), stated over an abstract `B`. -/
 lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (v : Fin n → α) (ℓ : ℕ) (mDist : ℕ)
-    (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α)
-    (hB2 : 2 ≤ B.card) (hmDist1 : 1 ≤ mDist)
+    (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hmDist1 : 1 ≤ mDist)
     (e_fact : (JohnsonBound.e B v : ℝ) ≤ Jqℓ (Fintype.card α) ℓ (mDist / n) * n)
     (d_fact : (mDist : ℚ) ≤ JohnsonBound.d B)
     (hradicand : ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
@@ -130,7 +146,6 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
   set q : ℚ := (Fintype.card α : ℚ) with hq_def
   set δ_min : ℚ := (mDist : ℚ) / n with hδ_def0
   set radius : ℝ := Jqℓ q ℓ δ_min with hradius
-  have _hℓ_ge := hℓ2
   -- Numeric setup
   have hq2 : (2 : ℚ) ≤ q := by rw [hq_def]; exact_mod_cast hα2
   have hfrac : (q / (q - 1) : ℚ) = q / (q - 1) := rfl
@@ -148,7 +163,7 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
   set lFac : ℚ := ((ℓ : ℚ) - 1) / (ℓ : ℚ) with hlFac_def
   have hℓpos : (0 : ℚ) < (ℓ : ℚ) := by exact_mod_cast (by omega : 0 < ℓ)
   have hℓ1_pos : (0 : ℚ) < (ℓ : ℚ) - 1 := by
-    have : (2 : ℚ) ≤ (ℓ : ℚ) := by exact_mod_cast _hℓ_ge
+    have : (2 : ℚ) ≤ (ℓ : ℚ) := by exact_mod_cast hℓ2
     linarith
   have hlFac_pos : (0 : ℚ) < lFac := div_pos hℓ1_pos hℓpos
   have hlFac_lt1 : lFac < 1 := by
@@ -159,14 +174,12 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
     rw [hx_def, hfrac_def, hlFac_def, show δ_min = (mDist:ℚ) / n from rfl]
     convert hradicand using 2
   -- radius expression
+  -- `Jqℓ` is the existing `J` at the rescaled radius `x = frac * lFac * δ_min` (`Jqℓ_eq_J`).
   have hradius_eq : radius = (1 / (frac:ℝ)) * (1 - √(1 - (x:ℝ))) := by
-    rw [hradius, Jqℓ]
-    have h1 : ((1 - 1 / q : ℚ) : ℝ) = 1 / (frac : ℝ) := by
-      rw [hfrac_def]; push_cast; field_simp
-    have h2 : ((q / (q-1) : ℚ) : ℝ) * (((((ℓ:ℚ) - 1) / ℓ) : ℚ) : ℝ) * ((δ_min : ℚ) : ℝ)
-        = (x : ℝ) := by
-      rw [hx_def, hfrac_def, hlFac_def]; push_cast; ring
-    rw [h1, h2]
+    rw [hradius, Jqℓ_eq_J, JohnsonBound.J, hx_def, hlFac_def, hfrac_def]
+    push_cast
+    congr 2
+    ring_nf
   -- 0 ≤ 1 - x
   have h1x_nonneg : (0 : ℝ) ≤ 1 - (x : ℝ) := by
     have : (x : ℝ) ≤ 1 := by exact_mod_cast hx_le1
@@ -359,47 +372,29 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
   have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by nlinarith [hmain, hDgt, hD1]
   exact_mod_cast hfinal.le
 
-set_option maxHeartbeats 1000000 in
--- The reindexing setup plus the `johnson_card_le_ell` application need more than the default
--- heartbeat budget.
-/-- **ABF26 Theorem 3.2 [Joh62].** Johnson bound on list size. For any code
-`C ⊆ Σ^n` with `|Σ| = q`,
+/-- **Radicand-regime core of ABF26 Theorem 3.2** (see `johnson_bound_lambda_le_ell` for the
+paper's unconditional statement, which this lemma and `plotkin_card_le_ell` together prove).
 
-  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`
+`Jqℓ` contains `√(1 - q/(q-1) · (ℓ-1)/ℓ · δ_min)`. Lean's `Real.sqrt` truncates negative inputs
+to `0`, so where the radicand is negative the radius silently inflates to
+`(1 - 1/q) · (1 - 0) = 1 - 1/q`. The conclusion is still *true* there — past that point the
+whole code has at most `ℓ` words, by `plotkin_card_le_ell` — but the radius analysis below does
+not apply, so `h_radicand` confines this lemma to the regime where `J_{q,ℓ}` is a genuine
+(untruncated) Johnson radius.
 
-where `δ_min(C) = minDist(C) / n` is the relative minimum distance and `J_{q,ℓ}`
-is the paper's q-ary ℓ-radius Johnson function. **Fully proven** by porting the
-in-tree absolute-distance Johnson bound (`johnson_bound` in
+**Fully proven** by porting the in-tree absolute-distance Johnson bound (`johnson_bound` in
 [`JohnsonBound/Basic.lean`](Basic.lean), now field-free) to this `Lambda`/`Jqℓ` form.
 With the corrected `(ℓ-1)/ℓ` list factor (see `Jqℓ`, matching the `.tex`), the existing
 bound's `JohnsonConditionStrong` precondition *does* hold at the `Jqℓ` boundary: the
 denominator simplifies to `frac · δ_min · (1 - (ℓ-1)/ℓ) = frac · δ_min / ℓ > 0`
 (the printed `ℓ/(ℓ-1)` factor would have made it negative). The proof reindexes the
 arbitrary finite index `ι` to `Fin n` (via `reidx_hammingDist`) and delegates the numeric
-core to `johnson_card_le_ell`.
-
-**Alphabet generality.** Stated over an arbitrary alphabet `α` (not necessarily a
-field), matching the paper's `Σ`. The Johnson bound is a purely combinatorial fact
-about Hamming distance — it does not need field structure.
-
-**Radicand guard (`_h_radicand`).** `Jqℓ` contains
-`√(1 - q/(q-1) · (ℓ-1)/ℓ · δ_min)`. Lean's `Real.sqrt` silently truncates negative
-inputs to `0`, so without a guard the radius would silently inflate to
-`(1 - 1/q) · (1 - 0) = 1 - 1/q` whenever the radicand is negative — at which radius
-the list-size-`ℓ` claim is **false** (e.g. a high-distance code can have more than `ℓ`
-codewords within relative distance `1 - 1/q`). The hypothesis
-`q/(q-1) · (ℓ-1)/ℓ · δ_min ≤ 1` is exactly nonnegativity of the radicand, i.e. the
-regime where `J_{q,ℓ}` is a real (untruncated) Johnson radius. (With the corrected
-`(ℓ-1)/ℓ` factor — see `Jqℓ` — the guard is weaker than the printed one.)
-
-**`ℓ ≥ 2`.** The paper states the theorem for all `ℓ ∈ ℕ`; the case `ℓ = 1` is true but
-excluded here for convenience (`J_{q,1}(δ) = 0` and a radius-0 list has at most one
-word — a separate trivial argument the proof below does not need to carry). -/
-theorem johnson_bound_lambda_le_ell
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+core to `johnson_card_le_ell`. -/
+private lemma johnson_lambda_le_ell_of_radicand
+    {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type} [Fintype α] [DecidableEq α]
-    (C : Set (ι → α)) (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ)
-    (_h_radicand :
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ)
+    (h_radicand :
         ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
             * (((ℓ : ℚ) - 1) / (ℓ : ℚ))
             * ((Code.minDist C : ℚ) / Fintype.card ι) ≤ 1) :
@@ -507,26 +502,101 @@ theorem johnson_bound_lambda_le_ell
       · exact ⟨hammingDist u w, u, (hmem u hu).1, w, (hmem w hw).1, huw, rfl⟩
       · rintro m ⟨a, _, b, _, hab, rfl⟩
         exact hammingDist_pos.mpr hab
-    -- radicand for helper (matches _h_radicand; q = card α, δ_min = minDist/n)
+    -- radicand for helper (matches `h_radicand`; q = card α, δ_min = minDist/n)
     have hrad : ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
         * (((ℓ : ℚ) - 1) / (ℓ : ℚ)) * ((Code.minDist C : ℚ) / n) ≤ 1 := by
-      rw [hn_def]; exact _h_radicand
+      rw [hn_def]; exact h_radicand
     have hcard_le : B.card ≤ ℓ :=
-      johnson_card_le_ell B v ℓ (Code.minDist C) _hℓ_ge hn_pos hα2 hB2 hminDist1
+      johnson_card_le_ell B v ℓ (Code.minDist C) hℓ_ge hn_pos hα2 hminDist1
         e_fact d_fact hrad
     rw [← hBcard]; exact_mod_cast hcard_le
 
+/-- **ABF26 Theorem 3.2 [Joh62].** Johnson bound on list size. For any code
+`C ⊆ Σ^n` with `|Σ| = q`,
 
+  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`
 
+where `δ_min(C) = minDist(C) / n` is the relative minimum distance and `J_{q,ℓ}`
+is the paper's q-ary ℓ-radius Johnson function. **Fully proven**, and with **no side
+condition**, exactly as in the paper.
 
+Two regimes, split on the sign of the `Jqℓ` radicand `1 - q/(q-1) · (ℓ-1)/ℓ · δ_min`:
 
+* radicand nonnegative — `J_{q,ℓ}` is a genuine Johnson radius and
+  `johnson_lambda_le_ell_of_radicand` ports the in-tree absolute-distance Johnson bound;
+* radicand negative — `Real.sqrt` truncates and the radius inflates to `1 - 1/q`, but the
+  bound still holds *a fortiori*: the failed guard says `δ_min` exceeds the Plotkin radius
+  `1 - 1/q` by the list factor `ℓ/(ℓ-1)`, so by `plotkin_card_le_ell` the **whole code** has
+  at most `ℓ` words and `Λ(C, r) ≤ |C| ≤ ℓ` for *every* radius `r`.
 
+**Alphabet generality.** Stated over an arbitrary alphabet `α` (not necessarily a
+field), matching the paper's `Σ`. The Johnson bound is a purely combinatorial fact
+about Hamming distance — it does not need field structure.
 
-
-
+**`ℓ ≥ 2`.** The paper states the theorem for all `ℓ ≥ 1`. `ℓ = 1` is true but excluded here
+for convenience (`J_{q,1}(δ) = 0` and a radius-0 list has at most one word — a separate trivial
+argument the proof does not need to carry). `ℓ = 0` is **false** as encoded, not merely
+inconvenient: `ℚ`-division gives `Jqℓ q 0 δ = J q 0 = 0`, and `Λ(C, 0) ≥ 1` for every nonempty
+`C`, so the hypothesis `2 ≤ ℓ` is not removable in that direction. (The paper's `J_{q,0}` is
+undefined, so this is a Lean-side encoding artefact.) -/
+theorem johnson_bound_lambda_le_ell
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {α : Type} [Fintype α] [DecidableEq α]
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) :
+    let q : ℚ := Fintype.card α
+    let δ_min : ℚ := Code.minDist C / Fintype.card ι
+    Lambda C (Jqℓ q ℓ δ_min) ≤ (ℓ : ℕ∞) := by
+  intro q δ_min
+  classical
+  set n : ℕ := Fintype.card ι with hn_def
+  have hn_pos : 0 < n := Fintype.card_pos
+  rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_min) 1 with hrad | hguard
+  · exact johnson_lambda_le_ell_of_radicand C ℓ hℓ_ge hrad
+  · -- Plotkin corner: the *whole code* has at most `ℓ` words, so any radius is covered.
+    have hCfin : C.Finite := Set.toFinite _
+    refine le_trans (Lambda_le_ncard _ hCfin) ?_
+    rcases le_or_gt C.ncard 1 with hle1 | hgt1
+    · exact_mod_cast le_trans hle1 (by omega : 1 ≤ ℓ)
+    · set eqv : ι ≃ Fin n := Fintype.equivFin ι with heqv
+      set reIdx : (ι → α) → (Fin n → α) := fun x => x ∘ eqv.symm with hreIdx
+      have hreIdx_inj : Function.Injective reIdx := by
+        intro x y h; funext i; simpa [hreIdx] using congrFun h (eqv i)
+      set B : Finset (Fin n → α) := hCfin.toFinset.image reIdx with hB
+      have hBcard : B.card = C.ncard := by
+        rw [hB, Finset.card_image_of_injective _ hreIdx_inj, Set.ncard_eq_toFinset_card _ hCfin]
+      have hB2 : 2 ≤ B.card := by omega
+      have hα2 : 2 ≤ Fintype.card α := by
+        obtain ⟨u, hu, w, hw, huw⟩ := Finset.one_lt_card.mp hB2
+        obtain ⟨i, hi⟩ := Function.ne_iff.mp huw
+        exact Fintype.one_lt_card_iff.mpr ⟨u i, w i, hi⟩
+      have d_fact : (Code.minDist C : ℚ) ≤ JohnsonBound.d B := by
+        have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
+            ≤ JohnsonBound.d B := min_dist_le_d hB2
+        have hminDist_lb : Code.minDist C ≤
+            sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
+          apply le_csInf
+          · obtain ⟨u, hu, w, hw, huw⟩ := Finset.one_lt_card.mp hB2
+            exact ⟨hammingDist u w, u, hu, w, hw, huw, rfl⟩
+          · rintro m ⟨u, hu, w, hw, huw, rfl⟩
+            rw [hB, Finset.mem_image] at hu hw
+            obtain ⟨c1, hc1, rfl⟩ := hu
+            obtain ⟨c2, hc2, rfl⟩ := hw
+            have hc12 : c1 ≠ c2 := fun h => huw (by rw [h])
+            rw [show hammingDist (reIdx c1) (reIdx c2) = hammingDist c1 c2 from
+              reidx_hammingDist eqv c1 c2]
+            exact Nat.sInf_le ⟨c1, hCfin.mem_toFinset.mp hc1, c2, hCfin.mem_toFinset.mp hc2,
+              hc12, rfl⟩
+        calc (Code.minDist C : ℚ)
+            ≤ ((sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } : ℕ) : ℚ) := by
+              exact_mod_cast hminDist_lb
+          _ ≤ JohnsonBound.d B := hmin_le
+      have hcard_le : B.card ≤ ℓ :=
+        plotkin_card_le_ell B ℓ (Code.minDist C) hℓ_ge hn_pos hα2 hB2 d_fact (by
+          simpa [q, δ_min, hn_def] using hguard)
+      rw [← hBcard]; exact_mod_cast hcard_le
 
 private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
-    (hs0 : 0 < s) (_hs1 : s ≤ 1) (hη : 0 < η)
+    (hs0 : 0 < s) (hη : 0 < η)
     (hℓ2 : 2 ≤ ℓ) (hn1 : 1 ≤ n)
     (hρ : (s ^ 2 : ℝ) ≤ 1)
     (h2ηρ : 2 * η * s ^ 2 ≤ 1 / 2)
@@ -563,8 +633,6 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
       _ ≤ 2 * η * s + η^2 := by nlinarith [sq_nonneg η]
   linarith [hLHS, hbound]
 
-set_option maxHeartbeats 1600000 in
--- The corner analysis + domination chain carry several heavy `nlinarith`/`field_simp` steps.
 /-- **ABF26 Corollary 3.3.** MDS coarse Johnson corollary. For every MDS code `C` with
 rate `ρ := dim C / n` and `η > 0`:
 
@@ -596,14 +664,17 @@ rather than passed as a separate parameter — this matches the upstream `IsMDS`
 signature (additive Nat form, no rate parameter) and lets call sites use
 `IsMDS_iff_rate_distance` to extract the rate-distance equation when needed. -/
 theorem mds_johnson_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    (C : LinearCode ι F) (η : ℝ) (_hη_pos : 0 < η)
-    (_h_mds : LinearCode.IsMDS C) :
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F] [DecidableEq F]
+    (C : LinearCode ι F) (η : ℝ) (hη_pos : 0 < η)
+    (h_mds : LinearCode.IsMDS C) :
     let ρ : ℝ := (Module.finrank F C : ℝ) / Fintype.card ι
     (Lambda ((C : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
   intro ρ
+  -- The alphabet cardinality `q = |F|` is used only inside the proof (via the Johnson and
+  -- Plotkin cores), so the statement needs only `Finite F`.
+  letI : Fintype F := Fintype.ofFinite F
   set n : ℕ := Fintype.card ι with hn_def
   set k : ℕ := Module.finrank F C with hk_def
   have hn_pos : 0 < n := Fintype.card_pos
@@ -612,7 +683,7 @@ theorem mds_johnson_lambda_le
     have := Submodule.finrank_le (R := F) (M := ι → F) C
     simpa [Module.finrank_fintype_fun_eq_card] using this
   -- Singleton / rate-distance bridge
-  have hbridge := (LinearCode.IsMDS_iff_rate_distance C).mp _h_mds
+  have hbridge := (LinearCode.IsMDS_iff_rate_distance C).mp h_mds
   -- hbridge : (minDist C : ℝ)/n = 1 - k/n + 1/n
   rw [← hn_def, ← hk_def] at hbridge
   -- k ≥ 1 (else MDS forces dist = n+1 > n)
@@ -722,17 +793,10 @@ theorem mds_johnson_lambda_le
     -- radicand guard
     rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ) 1 with hradicand | hguard
     · -- radicand holds: main line
-      have hT32 := johnson_bound_lambda_le_ell (C : Set (ι → F)) ℓ hℓ2 hradicand
+      have hT32 := johnson_bound_lambda_le_ell (C : Set (ι → F)) ℓ hℓ2
       have hdom : 1 - √ρ - η ≤ Jqℓ q ℓ δ_minQ := by
-        -- Jqℓ q ℓ δ = J q (lFac·δ)
-        have hJqℓ_eq : Jqℓ q ℓ δ_minQ = JohnsonBound.J q (((ℓ:ℚ)-1)/ℓ * δ_minQ) := by
-          unfold Jqℓ JohnsonBound.J
-          simp only
-          have hqe : (1 - 1/q : ℚ) = 1 / (q/(q-1)) := by
-            field_simp
-          rw [hqe]; push_cast; ring_nf
-        rw [hJqℓ_eq]
-        -- sqrt_le_J : 1 - √(1-δ) ≤ J q δ  at δ := lFac·δ_minQ
+        -- `Jqℓ q ℓ δ = J q (lFac·δ)` by definition (`Jqℓ_eq_J`).
+        rw [Jqℓ_eq_J]
         set δJ : ℚ := (((ℓ:ℚ)-1)/ℓ) * δ_minQ with hδJ_def
         have hδJ_nonneg : (0:ℚ) ≤ δJ := by
           rw [hδJ_def]; apply mul_nonneg
@@ -750,12 +814,14 @@ theorem mds_johnson_lambda_le
           calc q/(q-1) * ((((ℓ:ℚ)-1)/ℓ) * δ_minQ)
               = (q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ := by ring
             _ ≤ 1 := hradicand
-        have hsj := JohnsonBound.sqrt_le_J (q := q) (δ := δJ)
-          (by exact_mod_cast (by linarith [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
+        -- `sqrt_le_J : Jcap δ ≤ J q δ`, i.e. `1 - √(1 - δ) ≤ J q δ` (`Jcap` is that expression).
+        have hsj : 1 - √(1 - (δJ : ℝ)) ≤ JohnsonBound.J q δJ :=
+          JohnsonBound.sqrt_le_J (q := q) (δ := δJ)
+            (by exact_mod_cast (by linarith [hqR2] : (1:ℚ) < q)) hδJ_nonneg hδJ_le1 hguardJ
         -- suffices 1-√ρ-η ≤ 1-√(1-δJ)
         refine le_trans ?_ hsj
         -- √(1-δJ) ≤ √ρ + η
-        have hrhs_nn : (0:ℝ) ≤ s + η := by linarith [hs_pos, _hη_pos]
+        have hrhs_nn : (0:ℝ) ≤ s + η := by linarith [hs_pos, hη_pos]
         have hδJR : (δJ:ℝ) = (((ℓ:ℝ)-1)/ℓ) * (δ_minQ:ℝ) := by rw [hδJ_def]; push_cast; ring
         -- 1 - δJ ≤ (s+η)^2
         have hsq_le : 1 - (δJ:ℝ) ≤ (s + η)^2 := by
@@ -772,7 +838,7 @@ theorem mds_johnson_lambda_le
           have h2ηρs : 2 * η * s^2 ≤ 1/2 := by rw [hs_sq]; exact h2ηρ_le
           have hρle1 : (s^2:ℝ) ≤ 1 := by rw [hs_sq]; exact hρ_le1
           have hn1R : (1:ℕ) ≤ n := hn1
-          exact domination_core s η ℓ n hs_pos hs_le1 _hη_pos hℓ2 hn1R hρle1 h2ηρs hℓ_ge
+          exact domination_core s η ℓ n hs_pos hη_pos hℓ2 hn1R hρle1 h2ηρs hℓ_ge
         -- √(1-δJ) ≤ s + η
         have hsuff : √(1 - (δJ:ℝ)) ≤ s + η := by
           rw [show s + η = √((s+η)^2) from by rw [Real.sqrt_sq hrhs_nn]]
@@ -852,8 +918,60 @@ theorem mds_johnson_lambda_le
             exact_mod_cast hcard_le
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
 
+/-! ## Consumers
 
+The two crossings into the existing developments: ABF26 Corollary 3.3 instantiated at
+Reed–Solomon (through the pre-existing, proven `ReedSolomon.isMDS_code`), and Theorem 3.2
+delivered in the `ListDecodable.listDecodable` shape that the STIR/WHIR development consumes.
+-/
 
+/-- **ABF26 Corollary 3.3 at Reed–Solomon.** For a Reed–Solomon code of rate
+`ρ = dim / n` and any `η > 0`,
+
+  `|Λ(RS[F, dom, n], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
+
+Immediate from `mds_johnson_lambda_le` and the pre-existing `ReedSolomon.isMDS_code`: RS codes
+are MDS, which is exactly the hypothesis C3.3 needs. This is the list-size bound the paper
+motivates C3.3 with ("MDS codes, which include the important class of interleaved Reed–Solomon
+codes"); the *interleaved* case needs the module-alphabet form of the rate-distance bridge and
+lands with its consumers in a later split. -/
+theorem rs_lambda_le_johnson_mds
+    {ι : Type} [Fintype ι] [Nonempty ι] [Inhabited ι]
+    {F : Type} [Field F] [Finite F]
+    {n : ℕ} [NeZero n] (dom : ι ↪ F) (η : ℝ) (hη_pos : 0 < η) :
+    let ρ : ℝ := (Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι
+    (Lambda ((ReedSolomon.code dom n : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
+      ENNReal.ofReal (1 / (2 * η * ρ)) := by
+  -- `DecidableEq F` is needed only to *state* `IsMDS` inside the proof, not in the conclusion.
+  classical
+  exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
+
+/-- **ABF26 Theorem 3.2 in `listDecodable` shape.** The Johnson bound, transferred through
+`Lambda_le_iff_listDecodable` to the `∀`-form list-size predicate that the STIR/WHIR
+development consumes (`ArkLib/ProofSystem/Stir/MainThm.lean`'s `CodeParams.h_listDecode`,
+`Stir/OutOfDomSmpl.lean`'s `h_decodable`), at any radius `δ` below the Johnson radius. -/
+theorem johnson_listDecodable
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {α : Type} [Fintype α] [DecidableEq α]
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) {δ : ℝ}
+    (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
+    listDecodable C δ (ℓ : ℝ) :=
+  Lambda_le_iff_listDecodable.mp
+    ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
+
+/-- `johnson_listDecodable` at an arbitrary real list budget `r ≥ ℓ`.
+
+This is the shape the in-tree `listDecodable` consumers take: their list size is `ℝ≥0`-valued
+(`Stir/OutOfDomSmpl.lean`, `Stir/MainThm.lean`), so they instantiate `r := (l : ℝ)` and discharge
+`(ℓ : ℝ) ≤ l` numerically — no further cast bridge needed. -/
+theorem johnson_listDecodable_of_le
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {α : Type} [Fintype α] [DecidableEq α]
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) {δ : ℝ}
+    (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
+    {r : ℝ} (hr : (ℓ : ℝ) ≤ r) :
+    listDecodable C δ r :=
+  fun y => (johnson_listDecodable C ℓ hℓ_ge hδ y).trans hr
 
 
 end CodingTheory

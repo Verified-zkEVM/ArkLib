@@ -14,18 +14,32 @@ and the `(L, s)`-admissibility condition on the folding element `ω`.
 
 ## Main definitions
 
-- `ReedSolomon.Folded.Admissible` — ABF26 Definition 2.14.
+- `ReedSolomon.Folded.Admissible` — ABF26 Definition 2.14 (strengthened; see below).
 - `ReedSolomon.Folded.frsEvalOnPoints` — F-linear FRS evaluation map.
 - `ReedSolomon.Folded.frsCode` — ABF26 Definition 2.15 [GR08].
+- `ReedSolomon.Folded.foldedDomain` — the `s · |ι|` folded evaluation points packaged as an
+  embedding `ι × Fin s ↪ F`.
 
 ## Main lemmas
 
+- `ReedSolomon.Folded.admissible_foldedPoints_injective` — admissibility (plus `ω ≠ 0`) is
+  exactly injectivity of `(x, j) ↦ domain x · ω^j`; the workhorse of the file.
 - `ReedSolomon.Folded.mem_frsCode_iff` / `mem_frsCode_iff_flipped` — paper-style
   membership characterisation.
-- `ReedSolomon.Folded.dim_frsCode` — `Module.finrank F (frsCode …) = k` under FRS
-  encoder injectivity.
+- `ReedSolomon.Folded.frsCode_eq_map_rsCode` — **GR08 Definition 2.1's own framing**:
+  the FRS code is the *plain* Reed-Solomon code on the folded domain, transported along
+  the currying equivalence `(ι × Fin s → F) ≃ₗ[F] (ι → Fin s → F)`.
+- `ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective` — the FRS encoder is
+  injective on `degreeLT F k` when `ω` is admissible, `ω ≠ 0` and `k ≤ s · |ι|`.
+- `ReedSolomon.Folded.dim_frsCode` — `Module.finrank F (frsCode …) = k` under
+  admissibility of `ω`, `ω ≠ 0` and `k ≤ s · |ι|` (a 4-line transport of
+  `ReedSolomon.dim_eq_deg_of_le` along `frsCode_eq_map_rsCode`).
+- `ReedSolomon.Folded.minDist_frsCode` — the file's headline theorem: the minimum
+  *block* (per-fold) distance is `|ι| − ⌊(k−1)/s⌋`. This one genuinely cannot be
+  transported from `ReedSolomon.minDist_of_le`: the block metric is not the symbol metric.
 - `ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode` /
-  `frsCode_one_map_eq_rsCode` — sanity checks for `s = 1` collapse to plain RS.
+  `frsCode_one_map_eq_rsCode` — sanity checks for `s = 1` collapse to plain RS,
+  both instances of the encoder-generic `ReedSolomon.mem_map_degreeLT_one_iff_mem_code`.
 
 ## Not the FRI fold
 
@@ -42,12 +56,11 @@ not an FRS code in this file's sense.
 
 - [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
   2026. §2.4 Definitions 2.14, 2.15.
-- [GR08] Guruswami-Rudra. (Original FRS paper.)
+- [GR08] Guruswami-Rudra. (Original FRS paper.) Definition 2.1.
 -/
 
-set_option linter.unusedDecidableInType false
-
 namespace ReedSolomon
+
 namespace Folded
 
 /-- **ABF26 Definition 2.14 (strengthened).** An element `ω : F` is `(L, s)`-admissible
@@ -57,9 +70,13 @@ if **every evaluation point appears only once across all folds**, i.e. the map
 Split into two conjuncts to keep the predicate `simp`-friendly:
 
   - **inter-orbit:** for distinct `α ≠ β ∈ L`, `α · ω^i ≠ β` for every `i < s`.
-  - **intra-orbit:** for every `α ∈ L`, `α · ω^i ≠ α` for every `0 < i < s` —
+  - **intra-orbit:** for every `α ∈ L`, `α · ω^i ≠ α` for every `i < s` with `0 < i` —
     equivalently, `ω` has multiplicative order at least `s` on the non-zero
     orbit of `α`.
+
+Both conjuncts lead with the bounded quantifier `∀ i, i < s → …` (rather than `0 < i` first)
+so that `Nat.decidableBallLT` fires and concrete admissibility claims are closed by
+`by decide`.
 
 **Deviation from the paper's literal text.** Definition 2.14 of ABF26 states only the
 *inter-orbit* clause (it quantifies over unordered pairs `{α, β} ∈ (L choose 2)`, hence
@@ -68,21 +85,44 @@ distinct `α ≠ β`). Its literal reading therefore does *not* forbid `ω^j = 1
 silently weaken the FRS distance argument downstream (T2.18, T4.14). We add the
 *intra-orbit* conjunct so that `Admissible` is exactly the GR08 injectivity condition
 the paper's results actually rely on. This is a deliberate strengthening, not a verbatim
-transcription.
+transcription. It is not merely defensible but *necessary*: with `ω = 1` — which the
+paper's literal Def 2.14 permits for every `L` and every `s` — the FRS distance claim is
+already false (`F = ZMod 11`, `L` the order-5 subgroup, `s = 2`, `k = 2`: the true minimum
+block distance is `4`, whereas `minDist_frsCode`'s formula gives `5`).
 
 **Boundary cases to be aware of.** The predicate does not require `ω ≠ 0` (downstream
 lemmas take it as a separate hypothesis), and it excludes `0 ∈ L` only *implicitly* and
 only for `s ≥ 2` (the intra-orbit clause fails at `α = 0`); for `s ≤ 1` the intra-orbit
-range is empty and `0 ∈ L` is admissible, so consumers needing `0 ∉ L` must state it. -/
-def Admissible {F : Type} [Field F] [DecidableEq F]
+range is empty and `0 ∈ L` is admissible, so consumers needing `0 ∉ L` must state it.
+
+**The exclusion of `0 ∈ L` is load-bearing for ABF26 Theorem 2.18**, not merely for the
+distance argument: T2.18 (FRS codes are `(s, τ)`-subspace designs) is *false* when
+`0 ∈ L`, even in the presence of its own hypothesis that `ω` has large multiplicative
+order. Counterexample: `F = ZMod 5`, `domain = (0, 1)` so `L = {0, 1}` and `n = 2`,
+`s = 3`, `k = 2`, `ω = 2` (a generator of `F*`, so `orderOf ω = 4 = |F| − 1` and T2.18's
+`hω_gen` hypothesis holds). Taking the one-dimensional `A` spanned by the encoding of `X`,
+the whole `s`-orbit of the point `0` degenerates to `0`, so that block contributes
+dimension `1` and `Σ / n = 1/2`, while T2.18's bound is
+`dim A · τ(1) = (k/n)/(s − 1 + 1) = 1/3`. The intra-orbit conjunct (equivalently, `0 ∉ L`
+for `s ≥ 2`) is exactly the missing hypothesis; a consumer working at `s ≤ 1` must add
+`0 ∉ L` by hand. -/
+def Admissible {F : Type*} [Field F]
     (L : Finset F) (s : ℕ) (ω : F) : Prop :=
   (∀ α ∈ L, ∀ β ∈ L, α ≠ β → ∀ i : ℕ, i < s → α * ω ^ i ≠ β) ∧
-  (∀ α ∈ L, ∀ i : ℕ, 0 < i → i < s → α * ω ^ i ≠ α)
+  (∀ α ∈ L, ∀ i : ℕ, i < s → 0 < i → α * ω ^ i ≠ α)
+
+/-- `Admissible` is decidable on concrete parameters: both conjuncts are bounded `∀`s over a
+`Finset` (`Finset.decidableDforallFinset`) and over `i < s` (`Nat.decidableBallLT`), which is
+why the bounded quantifiers are ordered `∀ i, i < s → …` rather than `∀ i, 0 < i → i < s → …`.
+Providing the instance means concrete admissibility claims are closed by plain `by decide`,
+with no `unfold` needed. -/
+instance decidableAdmissible {F : Type*} [Field F] [DecidableEq F]
+    (L : Finset F) (s : ℕ) (ω : F) : Decidable (Admissible L s ω) :=
+  inferInstanceAs (Decidable (_ ∧ _))
 
 /-- The FRS evaluation map as an `F`-linear map from polynomials to `ι → Fin s → F`,
 mirroring `ReedSolomon.evalOnPoints` (which is the `s = 1` special case). -/
-def frsEvalOnPoints {ι : Type} [Fintype ι]
-    {F : Type} [CommSemiring F]
+def frsEvalOnPoints {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (s : ℕ) (ω : F) : Polynomial F →ₗ[F] (ι → Fin s → F) where
   toFun p := fun x j ↦ p.eval (domain x * ω ^ (j : ℕ))
   map_add' p q := by ext; simp
@@ -102,9 +142,11 @@ for any `ω`.
 **Submodule structure.** Defined as `(Polynomial.degreeLT F k).map (frsEvalOnPoints …)`,
 exactly mirroring `ReedSolomon.code`. This makes `frsCode` a `Submodule F (ι → Fin s → F)`
 directly — `F`-linear by construction — so downstream theorems (e.g. T2.18, T4.14)
-consume it as a `ModuleCode ι F (Fin s → F)` without an existential wrap. -/
-noncomputable def frsCode {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
+consume it as a `ModuleCode ι F (Fin s → F)` without an existential wrap.
+
+**Typeclass assumptions.** As with the sibling `ReedSolomon.code`, only the ambient algebra
+is needed: no `Fintype`/`DecidableEq` on `ι` and no `DecidableEq` on `F`. -/
+noncomputable def frsCode {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) : Submodule F (ι → Fin s → F) :=
   (Polynomial.degreeLT F k).map (frsEvalOnPoints domain s ω)
 
@@ -112,8 +154,7 @@ noncomputable def frsCode {ι : Type} [Fintype ι] [DecidableEq ι]
 in `frsCode domain k s ω` iff there is a polynomial of degree `< k` whose folded
 evaluations match `f`. This is the original paper-shaped membership predicate, kept
 as a `simp`-able iff lemma. -/
-lemma mem_frsCode_iff {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
+lemma mem_frsCode_iff {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) (f : ι → Fin s → F) :
     f ∈ frsCode domain k s ω ↔
       ∃ p ∈ Polynomial.degreeLT F k,
@@ -136,8 +177,8 @@ appears only once across all folds"): given `(L, s)`-admissibility of `ω` on
 `ι × Fin s` is injective. The two `Admissible` conjuncts (inter-orbit + intra-orbit)
 together with cancellation by the unit `ω^m` are exactly what rules out the two ways a
 collision could occur (across distinct base points, or within one orbit). -/
-lemma admissible_foldedPoints_injective {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F] {s : ℕ}
+lemma admissible_foldedPoints_injective {ι : Type*} [Fintype ι]
+    {F : Type*} [Field F] {s : ℕ}
     (domain : ι ↪ F) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0) :
     Function.Injective (fun xi : ι × Fin s => domain xi.1 * ω ^ (xi.2 : ℕ)) := by
@@ -157,8 +198,8 @@ lemma admissible_foldedPoints_injective {ι : Type} [Fintype ι] [DecidableEq ι
       rcases Nat.eq_zero_or_pos (n - m) with h0 | hpos
       · exact ⟨rfl, by omega⟩
       · exact absurd heq'.symm
-          (hintra (domain a) (Finset.mem_map_of_mem _ (Finset.mem_univ _)) (n - m) hpos
-            (by omega))
+          (hintra (domain a) (Finset.mem_map_of_mem _ (Finset.mem_univ _)) (n - m)
+            (by omega) hpos)
     · have hdab : domain a ≠ domain b := fun h => hab (domain.injective h)
       exact absurd heq'.symm
         (hinter (domain b) (Finset.mem_map_of_mem _ (Finset.mem_univ _)) (domain a)
@@ -171,15 +212,76 @@ lemma admissible_foldedPoints_injective {ι : Type} [Fintype ι] [DecidableEq ι
   · obtain ⟨hyx, hjiv⟩ := key y x j i hji i.isLt heq.symm
     exact Prod.ext hyx.symm (Fin.ext hjiv.symm)
 
+/-- **The folded evaluation domain as an embedding.** Packages the `s · |ι|` folded
+evaluation points `(x, j) ↦ domain x · ω^j` into an embedding `ι × Fin s ↪ F`; the
+injectivity certificate is `admissible_foldedPoints_injective`. This is GR08 Definition
+2.1's evaluation domain, and it is what makes `frsCode` a *plain* Reed-Solomon code
+(see `frsCode_eq_map_rsCode`). -/
+def foldedDomain {ι : Type*} [Fintype ι] {F : Type*} [Field F] {s : ℕ}
+    (domain : ι ↪ F) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0) : ι × Fin s ↪ F :=
+  ⟨fun xi => domain xi.1 * ω ^ (xi.2 : ℕ), admissible_foldedPoints_injective domain ω hadm hω⟩
+
+@[simp]
+lemma foldedDomain_apply {ι : Type*} [Fintype ι] {F : Type*} [Field F] {s : ℕ}
+    (domain : ι ↪ F) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0) (xi : ι × Fin s) :
+    foldedDomain domain ω hadm hω xi = domain xi.1 * ω ^ (xi.2 : ℕ) := rfl
+
+/-- **An FRS code is a plain Reed-Solomon code on the folded domain** — GR08 Definition
+2.1's own framing of the construction:
+
+> "the codewords of `FRS_{F,γ,m,k}` are in one-one correspondence with those of the RS code
+> `C` and are obtained by bundling together consecutive `m`-tuples of symbols in codewords
+> of `C`."
+
+Formally: `frsCode domain k s ω` is the image of `ReedSolomon.code (foldedDomain …) k`
+under the currying equivalence `(ι × Fin s → F) ≃ₗ[F] (ι → Fin s → F)`. The "bundling"
+of GR08 is exactly `LinearEquiv.curry`, and the RS code on the right is taken over the
+enlarged domain of all `s · |ι|` folded points — which is a legitimate RS evaluation
+domain precisely because `ω` is `(L, s)`-admissible.
+
+This is the structural reason the FRS *dimension* formula needs no new argument:
+`dim_frsCode` is a transport of `ReedSolomon.dim_eq_deg_of_le` along this equality.
+
+**What this does *not* give.** The minimum distance does *not* transport: `minDist_frsCode`
+is stated in the *block* (per-fold) Hamming metric on `ι → Fin s → F`, whereas
+`ReedSolomon.minDist_of_le` is the *symbol* metric on `ι × Fin s → F`. Currying is not an
+isometry between those two metrics, so `minDist_frsCode` needs its own argument. -/
+theorem frsCode_eq_map_rsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F] {s : ℕ}
+    (domain : ι ↪ F) (k : ℕ) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0) :
+    frsCode domain k s ω
+      = (ReedSolomon.code (foldedDomain domain ω hadm hω) k).map
+          (LinearEquiv.curry F F ι (Fin s)).toLinearMap := by
+  ext f
+  rw [mem_frsCode_iff]
+  simp only [Submodule.mem_map, ReedSolomon.code, ReedSolomon.evalOnPoints,
+    LinearEquiv.coe_toLinearMap, LinearEquiv.coe_curry, LinearMap.coe_mk, AddHom.coe_mk,
+    foldedDomain_apply]
+  constructor
+  · rintro ⟨p, hp, hf⟩
+    refine ⟨fun xi => p.eval (domain xi.1 * ω ^ (xi.2 : ℕ)), ⟨p, hp, rfl⟩, ?_⟩
+    ext x j
+    exact (hf x j).symm
+  · rintro ⟨g, ⟨p, hp, rfl⟩, rfl⟩
+    exact ⟨p, hp, fun x j => rfl⟩
+
 /-- **Injectivity of folded RS evaluation on low-degree polynomials** (the folded
 analogue of the kernel-triviality argument behind `ReedSolomon.dim_eq_deg_of_le`). When `ω` is
 `(L, s)`-admissible (`L = image domain`), `ω ≠ 0`, and there are at least `k` folded
 evaluation points (`k ≤ s · |ι|`), the FRS evaluation map restricted to `degreeLT F k`
 is injective: a nonzero polynomial of degree `< k ≤ s · |ι|` cannot vanish at all
-`s · |ι|` distinct folded points (`admissible_foldedPoints_injective`). This is the
-kernel-triviality fact underlying the FRS dimension formula `dim_frsCode` below. -/
-lemma frsEvalOnPoints_domRestrict_injective {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F] {k s : ℕ} [NeZero k]
+`s · |ι|` distinct folded points (`admissible_foldedPoints_injective`).
+
+Kept as a standalone lemma because downstream consumers (e.g. the FRS half of ABF26 T2.18)
+need the *encoder-level* injectivity, not just the dimension count; `dim_frsCode` itself is
+now obtained by transport along `frsCode_eq_map_rsCode` and does not use this lemma.
+
+No `[NeZero k]` is required: at `k = 0` the domain `degreeLT F 0` is the zero submodule,
+so injectivity is automatic. -/
+lemma frsEvalOnPoints_domRestrict_injective {ι : Type*} [Fintype ι]
+    {F : Type*} [Field F] {k s : ℕ}
     (domain : ι ↪ F) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
@@ -191,45 +293,57 @@ lemma frsEvalOnPoints_domRestrict_injective {ι : Type} [Fintype ι] [DecidableE
   constructor
   · intro hfp
     apply Subtype.ext
-    refine Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero (p := p.val)
-      (f := fun xi : ι × Fin s => domain xi.1 * ω ^ (xi.2 : ℕ))
-      (admissible_foldedPoints_injective domain ω hadm hω) ?_ ?_
-    · rintro ⟨x, j⟩
-      exact congrFun (congrFun hfp x) j
-    · rw [Fintype.card_prod, Fintype.card_fin]
-      calc p.val.natDegree < k := natDegree_lt_of_mem_degreeLT p.2
-        _ ≤ s * Fintype.card ι := hk
-        _ = Fintype.card ι * s := Nat.mul_comm _ _
+    rcases Nat.eq_zero_or_pos k with rfl | hkpos
+    · -- `degreeLT F 0 = ⊥`: the only member is the zero polynomial.
+      have hdeg := Polynomial.mem_degreeLT.mp p.2
+      rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, Polynomial.degree_eq_bot] at hdeg
+      exact hdeg
+    · haveI : NeZero k := ⟨by omega⟩
+      refine Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero (p := p.val)
+        (f := fun xi : ι × Fin s => domain xi.1 * ω ^ (xi.2 : ℕ))
+        (admissible_foldedPoints_injective domain ω hadm hω) ?_ ?_
+      · rintro ⟨x, j⟩
+        exact congrFun (congrFun hfp x) j
+      · rw [Fintype.card_prod, Fintype.card_fin]
+        calc p.val.natDegree < k := natDegree_lt_of_mem_degreeLT p.2
+          _ ≤ s * Fintype.card ι := hk
+          _ = Fintype.card ι * s := Nat.mul_comm _ _
   · intro hp
     simp [hp]
 
 /-- **Dimension of `frsCode`.** Under `(L, s)`-admissibility of `ω` (`L = image domain`),
-`ω ≠ 0`, and enough folded evaluation points (`k ≤ s · |ι|`), the FRS encoder is injective
-on `degreeLT F k` (`frsEvalOnPoints_domRestrict_injective`), so the folded code has
-dimension exactly `k`. This is the rate fact `ρ = k / (s · n)` for FRS codes, the folded
-analogue of `ReedSolomon.dim_eq_deg_of_le`. -/
-lemma dim_frsCode {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
-    (domain : ι ↪ F) (k s : ℕ) (ω : F) [NeZero k]
+`ω ≠ 0`, and enough folded evaluation points (`k ≤ s · |ι|`), the folded code has dimension
+exactly `k`. This is the rate fact `ρ = k / (s · n)` for FRS codes.
+
+The proof is a *transport*, not a re-derivation: by `frsCode_eq_map_rsCode` the FRS code is
+the plain RS code on the folded domain, currying is an `F`-linear isomorphism (so it
+preserves `finrank`), and the RS dimension formula is the pre-existing
+`ReedSolomon.dim_eq_deg_of_le`. -/
+lemma dim_frsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
     Module.finrank F (frsCode domain k s ω) = k := by
-  have h_range : (Polynomial.degreeLT F k).map (frsEvalOnPoints domain s ω) =
-      LinearMap.range ((frsEvalOnPoints domain s ω).domRestrict
-        (Polynomial.degreeLT F k)) := by
-    ext
-    simp [Submodule.mem_map]
-  rw [frsCode, h_range,
-    LinearMap.finrank_range_of_inj
-      (frsEvalOnPoints_domRestrict_injective domain ω hadm hω hk),
-    Polynomial.finrank_degreeLT_n]
+  rw [frsCode_eq_map_rsCode domain k ω hadm hω]
+  rw [← (Submodule.equivMapOfInjective (LinearEquiv.curry F F ι (Fin s)).toLinearMap
+    (LinearEquiv.curry F F ι (Fin s)).injective _).finrank_eq]
+  exact ReedSolomon.dim_eq_deg_of_le
+    (by rw [Fintype.card_prod, Fintype.card_fin, Nat.mul_comm]; exact hk)
 
 /-- **Folded-RS minimum (block) distance** — the folded analogue of
 `ReedSolomon.minDist_of_le`. Under `(L, s)`-admissibility of `ω` (`L = image domain`),
-`ω ≠ 0`, `0 < s`, and `k ≤ s · |ι|`, the folded code is MDS in the block (per-fold)
-Hamming metric: a nonzero codeword has at most `⌊(k-1)/s⌋` zero folded symbols, so
+`ω ≠ 0`, `0 < s`, and `k ≤ s · |ι|`, a nonzero codeword has at most `⌊(k-1)/s⌋` zero folded
+symbols, so
 
   `Code.minDist (frsCode domain k s ω) = |ι| − ⌊(k-1)/s⌋`.
+
+**How tight is this?** For `k ≥ 1` the right-hand side equals `n − ⌈k/s⌉ + 1` with
+`n = |ι|`, so the code meets the *integer* Singleton bound `d ≤ n − ⌈log_{|Σ|}|C|⌉ + 1`
+with equality. It is **not** unconditionally MDS in ABF26's sense: ABF26 Lemma 2.6 defines
+MDS by `ρ(C) = 1 − δ_min(C) + 1/n` with the real rate `ρ = log_{|Σ|}|C| / n = k/(s·n)`
+(Definition 2.5), which would force `d = n − k/s + 1`. That agrees with the truth
+`n − ⌈k/s⌉ + 1` exactly when `s ∣ k`; for `s ∤ k` the folded code falls short of the real
+Singleton bound by the rounding term `⌈k/s⌉ − k/s`.
 
 **Lower bound** (`≥`, mirrors `ReedSolomon.minDist_of_le`'s weight argument): a nonzero
 codeword comes from `p ≠ 0` of degree `< k`; each zero fold packs `s` distinct roots of `p`
@@ -240,8 +354,8 @@ deg p < k`, giving `#zero folds ≤ ⌊(k-1)/s⌋` and weight `≥ |ι| − ⌊(
 `p = ∏_{x ∈ T, j} (X − domain x · ω^j)` for any `T ⊆ ι` with `|T| = ⌊(k-1)/s⌋` vanishes on
 exactly the `T`-folds (the `s·|T|` chosen points are roots; no others are, by full
 point-distinctness), so it has weight exactly `|ι| − ⌊(k-1)/s⌋`. -/
-theorem minDist_frsCode {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F] {k s : ℕ} [NeZero k] (hs : 0 < s)
+theorem minDist_frsCode {ι : Type*} [Fintype ι]
+    {F : Type*} [Field F] [DecidableEq F] {k s : ℕ} [NeZero k] (hs : 0 < s)
     (domain : ι ↪ F) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
@@ -436,8 +550,7 @@ theorem minDist_frsCode {ι : Type} [Fintype ι] [DecidableEq ι]
 
 /-- Mirror of `mem_frsCode_iff` with the equation oriented `encoder = f` rather than
 `f = encoder` — useful for `rw` / `simp` from the encoder side. -/
-lemma mem_frsCode_iff_flipped {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
+lemma mem_frsCode_iff_flipped {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) (f : ι → Fin s → F) :
     f ∈ frsCode domain k s ω ↔
       ∃ p ∈ Polynomial.degreeLT F k,
@@ -449,33 +562,23 @@ lemma mem_frsCode_iff_flipped {ι : Type} [Fintype ι] [DecidableEq ι]
 /-- **Sanity check: `FRS[F, L, k, 1, ω] ≃ RS[F, L, k]`.** With `s = 1` there is exactly
 one fold and `Fin 1 → F ≃ F`, so the folded RS code collapses to the standard
 Reed-Solomon code. Stated as an iff between memberships to avoid the cross-type
-equality issue (the LHS lives in `ι → Fin 1 → F`, the RHS in `ι → F`). -/
-lemma mem_frsCode_one_iff_mem_rsCode {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
+equality issue (the LHS lives in `ι → Fin 1 → F`, the RHS in `ι → F`).
+
+A one-line corollary of the encoder-generic `ReedSolomon.mem_map_degreeLT_one_iff_mem_code`,
+which it shares with `ReedSolomon.Multiplicity.mem_umCode_one_iff_mem_rsCode`. -/
+lemma mem_frsCode_one_iff_mem_rsCode {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k : ℕ) (ω : F) (f : ι → Fin 1 → F) :
     f ∈ frsCode domain k 1 ω ↔
-      (fun i ↦ f i 0) ∈ ReedSolomon.code domain k := by
-  simp only [mem_frsCode_iff, ReedSolomon.code, Submodule.mem_map, ReedSolomon.evalOnPoints]
-  constructor
-  · rintro ⟨p, hp, hf⟩
-    refine ⟨p, hp, ?_⟩
-    ext i
-    simpa using (hf i 0).symm
-  · rintro ⟨p, hp, hp_eval⟩
-    refine ⟨p, hp, ?_⟩
-    intro i j
-    have hj : j = 0 := Subsingleton.elim _ _
-    subst hj
-    have := congrFun hp_eval i
-    simpa using this.symm
+      (fun i ↦ f i 0) ∈ ReedSolomon.code domain k :=
+  ReedSolomon.mem_map_degreeLT_one_iff_mem_code domain k (frsEvalOnPoints domain 1 ω)
+    (fun p x => by simp [frsEvalOnPoints]) f
 
 /-- **Submodule-level form of the `s = 1` collapse.** Under the natural F-linear
 isomorphism `flat : (ι → Fin 1 → F) ≃ₗ[F] (ι → F)` (componentwise via
 `LinearEquiv.funUnique`), the image of `frsCode domain k 1 ω` is exactly
 `ReedSolomon.code domain k`. This is the structural form of `mem_frsCode_one_iff_mem_rsCode`:
 the two codes correspond under the canonical "drop the trivial fold" isomorphism. -/
-lemma frsCode_one_map_eq_rsCode {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [DecidableEq F]
+lemma frsCode_one_map_eq_rsCode {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k : ℕ) (ω : F) :
     (frsCode domain k 1 ω).map
         (LinearEquiv.piCongrRight (fun _ : ι ↦ LinearEquiv.funUnique (Fin 1) F F) :

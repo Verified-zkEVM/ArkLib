@@ -546,7 +546,26 @@ theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : �
 For a non-zero `n`-variate polynomial `P` with `P.totalDegree ≤ d` over a finite domain `R`,
 the probability that `P(r)` evaluates to `0` for `r ←$ R^n` uniformly is at most `d / |R|`.
 
-The legacy specialisation (`d := n`) is `prob_schwartz_zippel_mv_polynomial`. -/
+The legacy specialisation (`d := n`) is `prob_schwartz_zippel_mv_polynomial`.
+
+## Relation to `prob_eval_zero_le_div`
+
+**ArkLib already carries a strictly more general probabilistic Schwartz-Zippel:**
+`prob_eval_zero_le_div` in `ArkLib.Data.MvPolynomial.SchwartzZippelCounting`. It samples
+each coordinate from an arbitrary set `S i ⊆ F` with `m ≤ |S i|` and bounds the probability
+by `d / m`; this lemma is its `S i = Set.univ`, `m = |R|` special case. The typeclass
+difference is *not* real generality either: a finite `CommRing` with `IsDomain` is a field
+(`Fintype.fieldOfDomain`), so `[CommRing R] [IsDomain R] [Fintype R]` here and `[Field F]`
+there describe the same carriers.
+
+The two statements are kept separate only because the sampling *types* differ
+(`Fin n → R` here versus `∀ i, ↥(S i)` there), so neither is a literal instance of the
+other; bridging them needs a `Set.univ` transport of the uniform distribution. Anyone
+adding to either API should look at the other one first, and a follow-up should collapse
+them into a single statement (tracked as finding A1 of the 2026-08-07 review of PR #701).
+Note also that Mathlib's `MvPolynomial.schwartz_zippel_sum_degreeOf` gives the tighter
+`∑ i, degreeOf i / #(S i)`, which beats routing an individual-degree hypothesis through
+`totalDegree` as `prob_polynomial_identity_le` below does. -/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {n d : ℕ}
@@ -599,9 +618,14 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
 /-- **Helper for the individual-degree-bounded Schwartz-Zippel.**
 If every variable's degree in `P` is `< d`, then `P.totalDegree ≤ m * (d - 1)`.
 
-(Mathlib-extension candidate; lives here while `prob_polynomial_identity_le` is the
-only consumer. Would belong in `Mathlib/Algebra/MvPolynomial/Degrees.lean` alongside
-`degreeOf_le_totalDegree`, which is the converse direction.) -/
+**Placement.** This is a Mathlib-generic `MvPolynomial` fact with no probabilistic content
+and does not belong in this file. Concrete intended target: a Mathlib PR adding it to
+`Mathlib/Algebra/MvPolynomial/Degrees.lean` next to `degreeOf_le_totalDegree`, which is the
+converse direction. Until that PR lands, its in-repo home is
+`ArkLib/Data/MvPolynomial/Degrees.lean`; it sits here only because
+`prob_polynomial_identity_le` below is its sole consumer, and moving it is deferred to the
+follow-up that also relocates the other Mathlib-generic strays flagged by the 2026-08-07
+review of PR #701 (finding A8). -/
 lemma _root_.MvPolynomial.totalDegree_le_of_degreeOf_lt
     {R : Type*} [CommSemiring R] {m d : ℕ}
     (P : MvPolynomial (Fin m) R)
@@ -630,9 +654,15 @@ For a non-zero `m`-variate polynomial `P` of *individual* degree `< d` in each v
   `Pr_{r ←$ᵖ F^m} [P(r) = 0] ≤ m · (d - 1) / |F|`.
 
 Wrapper around `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` via the
-`totalDegree_le_of_degreeOf_lt` helper above. The `d = 0` case is vacuous —
-`h_indiv_deg : ∀ i, P.degreeOf i < 0` is unsatisfiable in `ℕ`; if `m = 0`,
-the bound `m * (d - 1) = 0` and `Pr` is also `0`. -/
+`totalDegree_le_of_degreeOf_lt` helper above.
+
+The `d = 0` corner splits on `m`: for `m ≥ 1` the hypothesis
+`h_indiv_deg : ∀ i, P.degreeOf i < 0` is unsatisfiable in `ℕ`, so there is nothing to
+prove; for `m = 0` it is vacuously satisfiable, and then both sides are `0` (the bound is
+`m * (d - 1) = 0`, and `Pr` is `0` because a nonzero constant never vanishes).
+The `ℝ≥0`-valued right-hand side is inherited from
+`prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`, unlike the plain-`ENNReal` bounds
+of the collision lemmas further down this file. -/
 lemma prob_polynomial_identity_le {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {m d : ℕ} (P : MvPolynomial (Fin m) R)
     (h_nonzero : P ≠ 0) (h_indiv_deg : ∀ i, P.degreeOf i < d) :
@@ -702,20 +732,28 @@ theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     rw [h_empty, Finset.card_empty]
     simp
 
-/-! ## Linear-form collision bounds (ABF26 §6.4.1 / Claim B.1 inputs)
+/-! ## Linear-form collision bounds (ABF26 §6.4.1 counting inputs)
 
-The two collision-probability bounds feeding the two applications of Claim B.1
-(`Probability.exists_large_image_of_pairwise_collision_bound`) in the proof of
-ABF26 Lemma 6.12, the toy-protocol list-decoding lower-bound attack (formalised in
-a later split of the ABF26 development):
+Collision-probability bounds feeding the two counting steps of the proof of ABF26
+Lemma 6.12, the toy-protocol list-decoding lower-bound attack (formalised in a later split
+of the ABF26 development).
+
+The proof of Lemma 6.12 applies Claim B.1
+(`Probability.exists_large_image_of_pairwise_collision_bound`) **once**, not twice: the
+second counting step — choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is injective —
+is a plain pigeonhole and needs a different argument, because it requires *full*
+injectivity, which Claim B.1 cannot supply (B.1 only ever yields
+`|φ(S)| ≥ |S| / (1 + (|S| − 1) · ε)`).
 
 * `Pr_map_eq` — a pushforward probability identity (change of variables for a
   `PMF.map`), used to reduce `Pr` over the distribution of collision maps `φ_v`
   to `Pr` over the uniform sampling of `v`.
 * `prob_dotProduct_eq_zero_le` — a nonzero `F`-linear form vanishes with
-  probability `≤ 1/|F|` (the first B.1's pairwise bound).
+  probability `≤ 1/|F|`: the pairwise-collision hypothesis of the single Claim-B.1
+  application.
 * `prob_uniform_le_inv_of_card_le_one` — a predicate with at most one satisfying
-  value has uniform-sampling probability `≤ 1/|F|` (the second B.1's affine bound).
+  value has uniform-sampling probability `≤ 1/|F|`: the uniqueness input to the
+  pigeonhole choice of `µ₁`, *not* a second Claim-B.1 application.
 -/
 
 /-- **Pushforward probability (change of variables).** The probability of an event
@@ -738,14 +776,17 @@ theorem Pr_map_eq {α β : Type} (p : PMF α) (g : α → β) (Q : β → Prop) 
   · intro b hb
     simp [hb]
 
-/-- **A nonzero `F`-linear form vanishes with probability `≤ 1/|F|`.**
+/-- **A nonzero `F`-linear form vanishes with probability exactly `1/|F|`.**
 For `d : Fin k → F` nonzero, the linear form `v ↦ ∑ⱼ dⱼ · vⱼ` evaluates to `0`
-with probability at most `1/|F|` over a uniformly random `v ←$ F^k`: its kernel
-is a hyperplane of `|F|^{k-1}` points out of `|F|^k`. -/
-theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
+with probability exactly `1/|F|` over a uniformly random `v ←$ F^k`: its kernel
+is a hyperplane of `|F|^{k-1}` points out of `|F|^k`.
+
+The `≤`-form actually consumed by the ABF26 §6.4.1 counting argument is
+`prob_dotProduct_eq_zero_le` below. -/
+theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
     Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
-      ≤ (Fintype.card F : ENNReal)⁻¹ := by
+      = (Fintype.card F : ENNReal)⁻¹ := by
   classical
   -- The `F`-linear form `v ↦ ∑ⱼ dⱼ · vⱼ`.
   set L : (Fin k → F) →ₗ[F] F := ∑ j, d j • LinearMap.proj j with hL
@@ -787,15 +828,26 @@ theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
   have hF : (Fintype.card F : ENNReal) ≠ 0 := by
     have : Nonempty F := ⟨0⟩
     simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true]
-  refine le_of_eq ?_
   rw [eq_comm, ← one_div,
     ENNReal.div_eq_div_iff (mul_ne_zero hkne hF)
       (ENNReal.mul_ne_top (by simp) (by simp)) hF (by simp)]
   ring
 
+/-- `≤`-corollary of `prob_dotProduct_eq_zero_eq_inv_card`, in the shape consumed by the
+ABF26 §6.4.1 collision counting (and matching the `≤ 1/|F|` form printed in the paper):
+a nonzero `F`-linear form `v ↦ ∑ⱼ dⱼ · vⱼ` vanishes with probability at most `1/|F|`
+over a uniformly random `v ←$ F^k`. -/
+theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
+    (d : Fin k → F) (hd : d ≠ 0) :
+    Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
+      ≤ (Fintype.card F : ENNReal)⁻¹ :=
+  le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
+
 /-- **A predicate with `≤ 1` satisfying value has uniform probability `≤ 1/|F|`.**
-Used for the second Claim-B.1 application in ABF26 Lemma 6.12, where the affine
-collision equation in `μ₁` has at most one solution. -/
+This is the uniqueness input to the *pigeonhole* choice of `µ₁` in ABF26 Lemma 6.12, where
+the affine collision equation in `µ₁` has at most one solution — it is not a second
+application of Claim B.1 (see the section docstring above: the paper applies Claim B.1
+once, and the `µ₁` step needs full injectivity, which B.1 cannot give). -/
 theorem prob_uniform_le_inv_of_card_le_one {F : Type} [Fintype F] [Nonempty F]
     (P : F → Prop) [DecidablePred P] (h : (Finset.univ.filter P).card ≤ 1) :
     Pr_{ let r ←$ᵖ F }[ P r ] ≤ (Fintype.card F : ENNReal)⁻¹ := by

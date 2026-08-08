@@ -78,9 +78,16 @@ scoped macro_rules (kind := prStx)
                                      return $t:term) True) : ENNReal))
 
 /-- Unfold `Pr_{ let a ← p }[(decide (P a) : Prop)]` as the standard
-indicator-weighted PMF tsum. Specialisation of
-`Probability.prob_tsum_form_singleton` (in `ArkLib.Data.Probability.Instances`)
-that also peels off the `Bool ↪ Prop` coercion via `decide_eq_true_iff`. -/
+indicator-weighted PMF tsum.
+
+`Probability.prob_tsum_form_singleton` (in `ArkLib.Data.Probability.Instances`) is the
+same unfolding for a plain `Prop`-valued event, and this lemma *could* be derived from it
+in two lines; it is not, because the import runs the other way — `Instances.lean` imports
+this file, so nothing here may refer to it. It is re-proved from scratch so that
+`ArkLib.Data.Probability.Combinatorial`, which imports only this module, can use it
+without pulling in `Instances.lean`. The extra step over
+`prob_tsum_form_singleton` is peeling off the `Bool ↪ Prop` coercion via
+`decide_eq_true_iff`. -/
 lemma Pr_decide_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
     [DecidablePred P] :
     Pr_{ let a ← p }[(decide (P a) : Prop)] =

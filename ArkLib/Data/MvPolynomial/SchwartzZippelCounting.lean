@@ -122,7 +122,18 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
 
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
-of each factor. This bridges `schwartz_zippel_counting` with the probability formulation. -/
+of each factor. This bridges `schwartz_zippel_counting` with the probability formulation.
+
+**This is the most general probabilistic Schwartz-Zippel statement in the tree.**
+`Probability.prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`
+(`ArkLib/Data/Probability/Instances.lean`) is its `S i = Set.univ`, `m = Fintype.card R` case,
+and `Probability.prob_schwartz_zippel_mv_polynomial` in turn specialises that to `d := n`. The
+apparent generality gap (`[CommRing]`+`[IsDomain]`+`[Fintype]` there versus `[Field]` here) is
+not real — a finite `CommRing` that is a domain is a field (`Fintype.fieldOfDomain`). The two
+developments are currently proved independently; collapsing the `Instances.lean` ones onto this
+lemma is tracked as finding A1 of the review in
+`docs/kb/queries/abf26-split-pr1-review-2026-08-07/`. Add new sampling-set-generic bounds here
+rather than starting a third copy. -/
 lemma prob_eval_zero_le_div
   {F : Type} [Field F]
   {s : ℕ}

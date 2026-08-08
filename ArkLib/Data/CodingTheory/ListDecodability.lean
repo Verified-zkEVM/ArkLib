@@ -10,10 +10,51 @@ import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
-/-! # List Decodability -/
+/-!
+# List Decodability
+
+Hamming balls, the list of close codewords around a word, and the two shapes of list-size
+bound used in ArkLib: the `∀`-form `listDecodable` (consumed by the STIR development) and
+the `sup`-form `Lambda` (ABF26 Definition 2.8's `|Λ(C, δ)|`).
+
+## Main definitions
+
+* `ListDecodable.hammingBall` / `ListDecodable.relHammingBall` — Hamming balls for the
+  absolute and relative Hamming distance.
+* `ListDecodable.closeCodewords` / `ListDecodable.closeCodewordsRel` — the codewords of `C`
+  inside such a ball; `closeCodewordsRel` is the paper's point list `Λ(C, δ, f)`.
+* `ListDecodable.listDecodable` / `ListDecodable.uniqueDecodable` — `(r, ℓ)`-list
+  decodability with a *real* list size `ℓ`, and its `ℓ = 1` special case.
+* `ListDecodable.Lambda` — ABF26 Definition 2.8's maximised list size `|Λ(C, δ)| : ℕ∞`.
+
+## Main statements
+
+* `ListDecodable.Lambda_le_iff_listDecodable` — the two shapes agree, at a *natural* list
+  size.
+* `ListDecodable.Lambda_le_floor_iff_listDecodable`,
+  `ListDecodable.Lambda_le_floor_iff_listDecodable_nnreal`,
+  `ListDecodable.listDecodable_of_toENNReal_le_ofReal` — the same bridge at the *real* and
+  `ℝ≥0` list sizes that the in-tree consumers and the Johnson-family bounds actually use.
+* `ListDecodable.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
+  algebra of `Lambda`.
+* `ListDecodable.Lambda_eq_iSup_encard` — over a finite alphabet `Lambda` agrees with the
+  `Set.encard` formulation, which is the guard against the `Set.ncard`-on-infinite-sets trap
+  documented on `Lambda`.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26]
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+    with Super-Fast Verification*][ACFY24]
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *STIR: Reed–Solomon Proximity Testing
+    with Fewer Queries*][ACFY24stir]
+-/
 
 
 namespace ListDecodable
+
+open scoped NNReal
 
 section
 
@@ -89,19 +130,103 @@ Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative 
 constant on each cell `[k/n, (k+1)/n)`. Read `δ`-indexed list-decoding statements modulo
 this quantisation: an extremal "largest `δ*`" is only meaningful as an integer boundary
 index `k*/n`, not as a real number (the ABF26 grand-challenge layer, arriving in a later
-split, pins its list challenge that way). -/
+split, pins its list challenge that way).
+
+**Warning — an infinite list collapses to `0`, not to `⊤`.** `Lambda` is built from
+`Set.ncard`, which is `Nat.card` of the coercion and hence `0` on an infinite set. The
+codomain `ℕ∞` therefore does *not* mean "`⊤` when the list is infinite": over an infinite
+alphabet the value can be `0` while the true list is infinite. Concretely
+`Lambda (Set.univ : Code (Fin 1) ℚ) 1 = 0`, so `listDecodable Set.univ 1 0` holds even
+though every one of the infinitely many words of `ℚ^1` lies in the list. This is inherited
+from `Set.ncard` and from the pre-existing `listDecodable`, and the definition is
+deliberately left as-is so that `Lambda_le_iff_listDecodable` remains an honest `↔`.
+Consequence: read `Lambda` as a list size only under `[Finite F]`, where
+`Lambda_eq_iSup_encard` shows it agrees with the `Set.encard` (`⊤`-on-infinite)
+formulation. Every list-size bound shipped in this layer carries `[Finite F]`/`[Fintype F]`;
+new ones should too. -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, ((closeCodewordsRel C f δ).ncard : ℕ∞)
 
-/-- **Bridge to `listDecodable`.** `Lambda` is the sup-form of the same notion as the
-∀-form `listDecodable` above (consumed by the STIR development): for a natural list-size
-bound `ℓ`, the maximised list size `Λ(C, δ)` is at most `ℓ` iff `C` is
-`(δ, ℓ)`-list-decodable. List-size bounds proved for `Lambda` (e.g. the Johnson family
-bounds in `JohnsonBound/Family.lean`) transfer to `listDecodable` consumers through this
-equivalence, and conversely. -/
+/-- **Bridge to `listDecodable`, at a natural list size.** `Lambda` is the sup-form of the
+same notion as the ∀-form `listDecodable` above (consumed by the STIR development): for a
+*natural* list-size bound `ℓ`, the maximised list size `Λ(C, δ)` is at most `ℓ` iff `C` is
+`(δ, ℓ)`-list-decodable.
+
+`listDecodable`'s list size is a *real* number, and every in-tree consumer instantiates it at
+`ℝ≥0` (`ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean`, `ArkLib/ProofSystem/Stir/MainThm.lean`),
+while the Johnson-family bounds of `JohnsonBound/Family.lean` produce an `ENNReal.ofReal`
+bound. This `ℕ`-shaped equivalence alone therefore does **not** carry those bounds across; the
+real-, `ℝ≥0`- and `ENNReal`-shaped transfers are `Lambda_le_floor_iff_listDecodable`,
+`Lambda_le_floor_iff_listDecodable_nnreal` and `listDecodable_of_toENNReal_le_ofReal`
+below. -/
 lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} :
     Lambda C δ ≤ (ℓ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) := by
   simp only [Lambda, iSup_le_iff, Nat.cast_le, listDecodable]
+
+/-- Each point list `Λ(C, δ, f)` is bounded by the maximised list size — the defining
+`le_iSup` of `Lambda`, exposed for the real-valued bridges below. -/
+lemma ncard_closeCodewordsRel_le_Lambda {C : Code ι F} {δ : ℝ} (f : ι → F) :
+    ((closeCodewordsRel C f δ).ncard : ℕ∞) ≤ Lambda C δ :=
+  le_iSup (fun g : ι → F => (((closeCodewordsRel C g δ).ncard : ℕ) : ℕ∞)) f
+
+/-- **Bridge to `listDecodable` at a real list size.** For `0 ≤ ℓ` the maximised list size is
+at most `⌊ℓ⌋₊` iff `C` is `(δ, ℓ)`-list-decodable.
+
+The **floor** is the correct rounding in both directions, and this is what makes the statement
+an `↔` rather than a pair of one-way implications: `Lambda` is integer-valued, so
+`(|Λ| : ℝ) ≤ ℓ` is equivalent to `|Λ| ≤ ⌊ℓ⌋₊` (`Nat.le_floor` / `Nat.floor_le`). A ceiling
+would give only the `←` direction. The hypothesis `0 ≤ ℓ` is needed for `→` only (at `ℓ < 0`,
+`⌊ℓ⌋₊ = 0` and the conclusion `(0 : ℝ) ≤ ℓ` fails); the `←` direction is hypothesis-free and
+is available separately as `Lambda_le_floor_of_listDecodable`. -/
+lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ) :
+    Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) ↔ listDecodable C δ ℓ := by
+  rw [Lambda_le_iff_listDecodable]
+  refine ⟨fun h y => (h y).trans (Nat.floor_le hℓ), fun h y => ?_⟩
+  exact_mod_cast Nat.le_floor (h y)
+
+/-- The hypothesis-free direction of `Lambda_le_floor_iff_listDecodable`: a real-valued
+list-decodability bound always floors down to a `Lambda` bound. -/
+lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
+    (h : listDecodable C δ ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) :=
+  Lambda_le_iff_listDecodable.2 fun y => by exact_mod_cast Nat.le_floor (h y)
+
+/-- **Bridge to `listDecodable` at an `ℝ≥0` list size** — the shape the in-tree consumers use
+(`ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean`, `ArkLib/ProofSystem/Stir/MainThm.lean` both take
+`ℓ : ℝ≥0`). No side condition, since `ℝ≥0` is nonnegative by construction. -/
+lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} :
+    Lambda C δ ≤ (⌊(ℓ : ℝ)⌋₊ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) :=
+  Lambda_le_floor_iff_listDecodable ℓ.coe_nonneg
+
+/-- **Monotone cast corollary.** A natural-number `Lambda` bound gives `(δ, r)`-list
+decodability for every real `r` above it. This is the form in which a `ℕ`-valued bound such as
+`JohnsonBound.johnson_bound_lambda_le_ell` reaches a real- or `ℝ≥0`-valued consumer. -/
+lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} {r : ℝ}
+    (h : Lambda C δ ≤ (ℓ : ℕ∞)) (hr : (ℓ : ℝ) ≤ r) : listDecodable C δ r :=
+  fun y => (Lambda_le_iff_listDecodable.1 h y).trans hr
+
+/-- **Bridge from an `ENNReal` bound on `Lambda`** — the shape produced by the Johnson-family
+bounds (e.g. `JohnsonBound.mds_johnson_lambda_le`, which concludes
+`(Lambda C δ : ENNReal) ≤ ENNReal.ofReal b`). Floors the real bound down to a `Lambda` bound.
+
+`0 ≤ ℓ` is required: `ENNReal.ofReal` clamps negative reals to `0`. -/
+lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ)
+    (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) := by
+  refine iSup_le fun f => ?_
+  have h1 : ((((closeCodewordsRel C f δ).ncard : ℕ) : ℕ∞) : ENNReal) ≤ ENNReal.ofReal ℓ :=
+    le_trans (by exact_mod_cast ncard_closeCodewordsRel_le_Lambda (C := C) (δ := δ) f) h
+  have h2 : (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) ≤ ℓ := by
+    rw [show ((((closeCodewordsRel C f δ).ncard : ℕ) : ℕ∞) : ENNReal)
+        = ENNReal.ofReal (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) by simp] at h1
+    exact (ENNReal.ofReal_le_ofReal_iff hℓ).mp h1
+  exact_mod_cast Nat.le_floor h2
+
+/-- **The `ENNReal`-to-`listDecodable` transfer.** Composes
+`Lambda_le_floor_of_toENNReal_le_ofReal` with `Lambda_le_floor_iff_listDecodable`, so an
+`ENNReal.ofReal` Johnson-style bound on `Lambda` directly yields `listDecodable` at the same
+real radius and list size. -/
+lemma listDecodable_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ)
+    (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : listDecodable C δ ℓ :=
+  (Lambda_le_floor_iff_listDecodable hℓ).1 (Lambda_le_floor_of_toENNReal_le_ofReal hℓ h)
 
 /-- The point list `Λ(C, δ, f) = closeCodewordsRel C f δ` is monotone in the radius. -/
 lemma closeCodewordsRel_subset_of_le {C : Code ι F} {δ₁ δ₂ : ℝ}
@@ -141,13 +266,21 @@ lemma Lambda_le_card {C : Code ι F} [Finite F] (δ : ℝ) :
   exact_mod_cast (Set.ncard_le_ncard (Set.subset_univ _) Set.finite_univ).trans_eq
     (Set.ncard_univ _)
 
-/-- `|Λ(C, δ)|` is **finite** over a finite alphabet. This is what makes the
-downstream `(Lambda C δ).toNat` occurrences (e.g. in the ABF26 §6 soundness
-error terms) faithful: `ENat.toNat` only collapses at `⊤` (`⊤.toNat = 0`),
-which this lemma rules out. -/
+/-- `|Λ(C, δ)|` is **finite** over a finite alphabet: it is bounded by `|F^ι|`, so it never
+reaches `⊤`. Intended for consumers that need to move `Lambda` into `ℕ` via `ENat.toNat`,
+which collapses `⊤` to `0`; there are no such consumers in the tree yet. -/
 lemma Lambda_ne_top {C : Code ι F} [Finite F] (δ : ℝ) :
     Lambda C δ ≠ ⊤ :=
   ne_top_of_le_ne_top (by simp) (Lambda_le_card δ)
+
+/-- **Guard against the `Set.ncard`-on-infinite-sets trap documented on `Lambda`.** Over a
+finite alphabet every point list is finite, so `Lambda` — defined with `Set.ncard`, which is
+`0` on infinite sets — agrees with the `Set.encard` formulation, which is `⊤` on infinite
+sets. In other words the trap is inert exactly under `[Finite F]`, which is why every
+list-size bound in this layer carries that instance. -/
+lemma Lambda_eq_iSup_encard {C : Code ι F} [Finite F] (δ : ℝ) :
+    Lambda C δ = ⨆ f : ι → F, (closeCodewordsRel C f δ).encard :=
+  iSup_congr fun _ => (Set.toFinite _).cast_ncard_eq
 
 end Lambda
 

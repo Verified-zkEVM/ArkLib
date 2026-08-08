@@ -33,15 +33,30 @@ high-multiplicity roots — counting roots against the degree yields the design 
 ## Main statements
 
 - `Polynomial.natDegree_foldedWronskian_le` — degree bound `σ · k` for entries of degree `≤ k`.
-- `Polynomial.pow_dvd_det_of_forall_mem_col_dvd` — the multiplicity engine: if every entry of
-  each of `t` distinct columns of a square matrix is divisible by `d`, then `d^t ∣ det`.
-  (Replaces GK16's Hasse-derivative expansion of `det`; consumed by
-  `CodingTheory.frs_is_subspaceDesign_gk16` in `SubspaceDesign.lean`.)
-- `Polynomial.X_pow_card_sub_one_sub_C_irreducible` — `X^{q−1} − ω` is irreducible for `ω` a
-  generator of `Fˣ`; this is the Kummer polynomial cutting out the field `F[X]/(E)` in which
-  the criterion is proved. (Mathlib's Kummer criterion does not cover the even exponent
-  `q − 1`, so this is proved here from the order of `ω`.)
-- `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` — GK16 Lemma 12 (the criterion).
+- `Polynomial.foldedWronskian_ne_zero_iff_linearIndependent` — GK16 Lemma 12 in full. The two
+  directions are also available separately:
+  `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` (the direction consumed by T2.18,
+  and the only hard one) and `Polynomial.foldedWronskian_eq_zero_of_not_linearIndependent`
+  (which needs neither finiteness of `F` nor any hypothesis on `ω` and `k`).
+
+## Contents beyond the folded Wronskian
+
+The file is not homogeneous: besides the folded Wronskian proper it contains two auxiliary
+results with no Wronskian content, kept here only because this is currently their sole
+consumer. Both are `ArkLib/ToMathlib/` candidates (a move across directories is deliberately
+left as a separate change):
+
+- `Matrix.pow_dvd_det_of_forall_mem_col_dvd` — the multiplicity engine, a lemma about
+  determinants over an arbitrary `CommRing`: if every entry of each of `t` distinct columns of
+  a square matrix is divisible by `d`, then `d ^ t.card ∣ det`. (Replaces GK16's
+  Hasse-derivative expansion of `det`; consumed by `CodingTheory.frs_is_subspaceDesign_gk16`
+  in `SubspaceDesign.lean`.) Intended home: `ArkLib/ToMathlib/LinearAlgebra/Matrix/`.
+- `Polynomial.X_pow_card_sub_one_sub_C_irreducible` — a Kummer-type irreducibility result over
+  a finite field: `X^{q−1} − ω` is irreducible for `ω` a generator of `Fˣ`. This is the
+  polynomial cutting out the field `F[X]/(E)` in which the criterion is proved, which is the
+  only reason it appears here. (Mathlib's Kummer criterion does not cover the even exponent
+  `q − 1`, so this is proved from the order of `ω`.) Intended home:
+  `ArkLib/ToMathlib/FieldTheory/`.
 
 ## References
 
@@ -49,57 +64,19 @@ high-multiplicity roots — counting roots against the degree yields the design 
   Theorem 14 and Appendix A.
 -/
 
-namespace Polynomial
-
-open Matrix
-
-variable {F : Type*} [Field F]
-
-/-- **[GK16, Definition 11].** The `ω`-folded Wronskian of `σ` polynomials: the determinant
-of the `σ × σ` matrix with `(i, j)` entry `P j (ω^i X)`. -/
-noncomputable def foldedWronskian (σ : ℕ) (ω : F) (P : Fin σ → F[X]) : F[X] :=
-  (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det
-
-/-- Entries of the folded Wronskian matrix have the degree of the folded polynomial:
-composition with the degree-one polynomial `ω^i X` preserves `natDegree` (for `ω ≠ 0`), and
-in general never increases it. -/
-lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :
-    (p.comp (C a * X)).natDegree ≤ p.natDegree := by
-  rw [natDegree_comp]
-  calc p.natDegree * (C a * X).natDegree
-      ≤ p.natDegree * 1 := by
-        refine Nat.mul_le_mul_left _ ?_
-        rcases eq_or_ne a 0 with rfl | ha
-        · simp
-        · rw [natDegree_C_mul ha, natDegree_X]
-    _ = p.natDegree := mul_one _
-
-/-- **Degree bound**: if every `P j` has `natDegree ≤ k`, then the folded Wronskian has
-`natDegree ≤ σ * k` (Leibniz expansion: each summand is a product of `σ` entries). -/
-lemma natDegree_foldedWronskian_le (σ : ℕ) (ω : F) (P : Fin σ → F[X]) (k : ℕ)
-    (hP : ∀ j, (P j).natDegree ≤ k) :
-    (foldedWronskian σ ω P).natDegree ≤ σ * k := by
-  classical
-  unfold foldedWronskian
-  rw [Matrix.det_apply]
-  refine (natDegree_sum_le _ _).trans ?_
-  simp only [Finset.fold_max_le]
-  refine ⟨Nat.zero_le _, fun g _ => ?_⟩
-  refine (natDegree_smul_le _ _).trans ?_
-  refine (natDegree_prod_le _ _).trans ?_
-  calc ∑ i : Fin σ, ((Matrix.of fun i j : Fin σ =>
-          (P j).comp (C (ω ^ (i : ℕ)) * X)) (g i) i).natDegree
-      ≤ ∑ _i : Fin σ, k := by
-        refine Finset.sum_le_sum fun i _ => ?_
-        exact (natDegree_comp_C_mul_X_le _ _).trans (hP i)
-    _ = σ * k := by simp [Finset.sum_const]
+namespace Matrix
 
 /-- **The multiplicity engine.** If every entry of each of the columns indexed by `t` is
-divisible by `d`, then `d ^ t.card` divides the determinant. This gives root multiplicities
-of the folded Wronskian without Hasse-derivative calculus: a block-adapted basis makes `t`
-whole columns vanish at an evaluation point `p`, i.e. every entry is divisible by `X − C p`.
+divisible by `d`, then `d ^ t.card` divides the determinant.
 
-Generic in the ring (used at `R := F[X]`). -/
+Nothing here is specific to polynomials; the lemma is stated over an arbitrary `CommRing`
+(and used at `R := F[X]`, where it gives root multiplicities of the folded Wronskian without
+Hasse-derivative calculus: a block-adapted basis makes `t` whole columns vanish at an
+evaluation point `p`, i.e. every entry is divisible by `X − C p`).
+
+TODO: this belongs in `ArkLib/ToMathlib/LinearAlgebra/Matrix/`, and is a clean Mathlib
+upstreaming candidate — Mathlib has no divisibility lemma for `Matrix.det` of this shape. It
+lives here only because `ArkLib.Data.CodingTheory.SubspaceDesign` is its sole consumer. -/
 lemma pow_dvd_det_of_forall_mem_col_dvd {R : Type*} [CommRing R] {n : Type*}
     [DecidableEq n] [Fintype n] (M : Matrix n n R) (d : R) (t : Finset n)
     (h : ∀ j ∈ t, ∀ i, d ∣ M i j) :
@@ -127,6 +104,47 @@ lemma pow_dvd_det_of_forall_mem_col_dvd {R : Type*} [CommRing R] {n : Type*}
       exact h j (Finset.mem_insert_of_mem hj) i
     rw [pow_succ']
     exact mul_dvd_mul_left d hrec
+
+end Matrix
+
+namespace Polynomial
+
+open Matrix
+
+variable {F : Type*} [Field F]
+
+/-- **[GK16, Definition 11].** The `ω`-folded Wronskian of `σ` polynomials: the determinant
+of the `σ × σ` matrix with `(i, j)` entry `P j (ω^i X)`. -/
+noncomputable def foldedWronskian (σ : ℕ) (ω : F) (P : Fin σ → F[X]) : F[X] :=
+  (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det
+
+/-- Composing with the scaling `X ↦ a • X` never increases `natDegree`: immediate from
+Mathlib's `Polynomial.comp_C_mul_X_coeff`, since the `n`-th coefficient is only rescaled.
+(For `a ≠ 0` this is in fact an equality, but only the bound is needed here.) -/
+lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :
+    (p.comp (C a * X)).natDegree ≤ p.natDegree :=
+  natDegree_le_iff_coeff_eq_zero.mpr fun _ hm => by
+    simp [comp_C_mul_X_coeff, coeff_eq_zero_of_natDegree_lt hm]
+
+/-- **Degree bound**: if every `P j` has `natDegree ≤ k`, then the folded Wronskian has
+`natDegree ≤ σ * k` (Leibniz expansion: each summand is a product of `σ` entries). -/
+lemma natDegree_foldedWronskian_le (σ : ℕ) (ω : F) (P : Fin σ → F[X]) (k : ℕ)
+    (hP : ∀ j, (P j).natDegree ≤ k) :
+    (foldedWronskian σ ω P).natDegree ≤ σ * k := by
+  classical
+  unfold foldedWronskian
+  rw [Matrix.det_apply]
+  refine (natDegree_sum_le _ _).trans ?_
+  simp only [Finset.fold_max_le]
+  refine ⟨Nat.zero_le _, fun g _ => ?_⟩
+  refine (natDegree_smul_le _ _).trans ?_
+  refine (natDegree_prod_le _ _).trans ?_
+  calc ∑ i : Fin σ, ((Matrix.of fun i j : Fin σ =>
+          (P j).comp (C (ω ^ (i : ℕ)) * X)) (g i) i).natDegree
+      ≤ ∑ _i : Fin σ, k := by
+        refine Finset.sum_le_sum fun i _ => ?_
+        exact (natDegree_comp_C_mul_X_le _ _).trans (hP i)
+    _ = σ * k := by simp [Finset.sum_const]
 
 section Frobenius
 
@@ -360,9 +378,10 @@ private lemma foldedWronskian_matrix_det_ne_zero {K : Type*} [Field K] [Algebra 
 
 end Frobenius
 
-/-- **[GK16, Lemma 12] — folded Wronskian criterion for linear independence** (the direction
-needed by T2.18). Over a finite field `F` with `ω` a generator of `Fˣ` and `k ≤ |F| − 1`:
-linearly independent polynomials of degree `< k` have a nonzero folded Wronskian.
+/-- **[GK16, Lemma 12] — folded Wronskian criterion for linear independence** (the substantial
+direction, and the one needed by T2.18). Over a finite field `F` with `ω` a generator of `Fˣ`
+and `k ≤ |F| − 1`: linearly independent polynomials of degree `< k` have a nonzero folded
+Wronskian. See `foldedWronskian_ne_zero_iff_linearIndependent` for the full biconditional.
 
 Proof route (a streamlining of GK16 Appendix A): work modulo the irreducible
 `E := X^{q−1} − ω` (`X_pow_card_sub_one_sub_C_irreducible`) in the field `K := F[X]/(E)`,
@@ -402,5 +421,47 @@ theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
       (hEd ▸ lt_of_lt_of_le (mem_degreeLT.mp hp) (Nat.cast_le.mpr hk)))
   change (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det ≠ 0
   exact foldedWronskian_matrix_det_ne_zero hσ hx hxinj P hdeg hind
+
+/-- **[GK16, Lemma 12] — the easy direction.** Linearly *dependent* polynomials have a vanishing
+folded Wronskian.
+
+This is GK16 Appendix A's opening remark: if `∑ⱼ aⱼ Pⱼ(X) = 0` with `a ≠ 0`, then
+`∑ⱼ aⱼ Pⱼ(ωⁱX) = 0` for every `i`, i.e. the constant vector `(C a₀, …, C a_{σ−1})` is a nonzero
+element of the kernel of the folded Wronskian matrix over the domain `F[X]`, so its determinant
+vanishes.
+
+Unlike the forward direction this needs no finiteness of `F`, no primitivity of `ω`, and no
+degree bound on the `P j`. -/
+theorem foldedWronskian_eq_zero_of_not_linearIndependent (σ : ℕ) (ω : F) (P : Fin σ → F[X])
+    (hind : ¬ LinearIndependent F P) :
+    foldedWronskian σ ω P = 0 := by
+  classical
+  obtain ⟨a, ha, i₀, hi₀⟩ := Fintype.not_linearIndependent_iff.mp hind
+  refine Matrix.exists_mulVec_eq_zero_iff.mp ⟨fun j => C (a j), ?_, ?_⟩
+  · intro h
+    exact hi₀ (by simpa using congrFun h i₀)
+  · funext i
+    have : ∑ j : Fin σ, (P j).comp (C (ω ^ (i : ℕ)) * X) * C (a j)
+        = (∑ j : Fin σ, a j • P j).comp (C (ω ^ (i : ℕ)) * X) := by
+      rw [sum_comp]
+      exact Finset.sum_congr rfl fun j _ => by
+        rw [smul_eq_C_mul, mul_comp, C_comp, mul_comm]
+    simpa [Matrix.mulVec, dotProduct, ha] using this
+
+/-- **[GK16, Lemma 12] in full.** Over a finite field `F` with `ω` a generator of `Fˣ` and
+`k ≤ |F| − 1`, polynomials of degree `< k` are linearly independent over `F` **iff** their
+`ω`-folded Wronskian is nonzero.
+
+The forward direction is `foldedWronskian_ne_zero_of_linearIndependent` (the substantial one,
+GK16 Appendix A); the converse is `foldedWronskian_eq_zero_of_not_linearIndependent`, which
+needs none of `hω`, `hk`, `hdeg` or finiteness of `F`. -/
+theorem foldedWronskian_ne_zero_iff_linearIndependent [Fintype F]
+    {σ k : ℕ} {ω : F} (hω : orderOf ω = Fintype.card F - 1)
+    (hk : k ≤ Fintype.card F - 1)
+    (P : Fin σ → F[X]) (hdeg : ∀ j, P j ∈ degreeLT F k) :
+    foldedWronskian σ ω P ≠ 0 ↔ LinearIndependent F P := by
+  refine ⟨fun h => ?_, foldedWronskian_ne_zero_of_linearIndependent hω hk P hdeg⟩
+  by_contra hind
+  exact h (foldedWronskian_eq_zero_of_not_linearIndependent σ ω P hind)
 
 end Polynomial

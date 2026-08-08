@@ -62,6 +62,32 @@ lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
 
+/-- **Degenerate-parameter collapse, encoder-generic.** If a linear encoder
+`enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation on its single fold
+(`enc p x 0 = p.eval (domain x)`), then the code it cuts out of `degreeLT F k` is the plain
+Reed-Solomon code, up to erasing the trivial `Fin 1` index.
+
+This is the shared content of the `s = 1` (resp. `m = 1`) collapse lemmas for the RS variants:
+`ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode` and
+`ReedSolomon.Multiplicity.mem_umCode_one_iff_mem_rsCode` are both one-line corollaries. It lives
+here, next to `code`, because it mentions neither folding nor multiplicities. -/
+lemma mem_map_degreeLT_one_iff_mem_code [Field F] (k : ℕ)
+    (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
+    (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))
+    (f : ι → Fin 1 → F) :
+    f ∈ (Polynomial.degreeLT F k).map enc ↔ (fun x ↦ f x 0) ∈ code domain k := by
+  simp only [Submodule.mem_map, code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact ⟨p, hp, funext fun x ↦ (henc p x).symm⟩
+  · rintro ⟨p, hp, hp_eval⟩
+    refine ⟨p, hp, ?_⟩
+    funext x j
+    have hj : j = 0 := Subsingleton.elim _ _
+    subst hj
+    rw [henc p x]
+    exact congrFun hp_eval x
+
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) [Semiring F] : Matrix (Fin deg) ι F :=
   .of fun i j => domain j ^ (i : ℕ)

@@ -11,64 +11,96 @@ import Mathlib.LinearAlgebra.Basis.Defs
 /-!
 # Extension fields and extension codes (ABF26 §2.6)
 
-Definitions and one lemma (proved in-tree) from ABF26 §2.6 (Arnon-Boneh-Fenzi,
+Definitions and lemmas (all proved in-tree) from ABF26 §2.6 (Arnon-Boneh-Fenzi,
 *Open Problems in List Decoding and Correlated Agreement*, 2026, page 11):
-extension-field presentations, extension codes obtained by base-change, and the
+extension-field presentations, extension codes obtained by base change, and the
 relation `|Λ(C_F, δ)| = |Λ(C_B^e, δ)|` between the list size of an extension code
 and the list size of the corresponding interleaved base code.
 
 ## Main definitions
 
 - `ExtensionFieldPresentation` (D2.19): a thin wrapper around Mathlib's
-  `[Algebra B F]` + a finite `B`-basis `basis : Basis (Fin e) B F` of `F`.
-  All the paper's structure (`ψ : B ↪ F`, `φ : F ≃ B^e`, the coordinate maps,
-  and the systematic property) is derived from these two ingredients —
-  no parallel implementation.
-- `CodingTheory.extensionCode` (D2.20): the extension code `C_F : F^k → F^n`
-  obtained from a `B`-linear code `C_B : B^k → B^n` via an `ExtensionFieldPresentation`.
+  `[Algebra B F]` plus a finite `B`-basis `basis : Basis (Fin e) B F` of `F`.
+  The paper's named maps are *not* redefined here: its embedding `ψ : B ↪ F` is
+  Mathlib's `algebraMap B F`, its coordinate isomorphism `φ : F ≃ B^e` is
+  `basis.equivFun`, and its coordinate functionals `φ_j` are `basis.coord j`
+  (exposed as the abbreviation `ExtensionFieldPresentation.coord`, which is
+  `rfl`-equal to `basis.coord` — see `coord_eq_basis_coord`).
+- `ExtensionFieldPresentation.IsSystematic`: the paper's systematic condition
+  `φ(ψ x) = (x, 0, …, 0)`.
+- `CodingTheory.extensionCode` (D2.20): the extension code of a base code
+  `C_B ⊆ B^ι`, **as a set of words** `Set (ι → F)`.
+- `CodingTheory.extensionCodeSubmodule`: the same object packaged as an
+  `F`-`Submodule` when `C_B` is a `B`-`Submodule`.
+
+**Encoder-level content is out of scope here.** ABF26 D2.20 defines `C_F` as an
+*encoder* `F^k → F^n`, whereas ArkLib (like its D2.9 sibling `interleavedCodeSet`)
+models a code by its *image*. Consequently the paper's only stated consequence of
+systematicity — `C_F(ψ(v)) = ψ(C_B(v))` for `v ∈ B^k`, used for soundness in
+[BCFW25, §D.2] — has no counterpart here: it talks about the encoder applied to a
+specific message. What *is* expressible at the image level is recorded as
+`mem_extensionCode_comp_algebraMap_iff_of_isSystematic` (the base code is exactly
+the `ψ`-rational part of the extension code). A future author who needs the
+encoder identity has to add an `extensionEncode : (Fin k → F) → (ι → F)` built
+from a base encoder first.
 
 ## Main statements
 
-- `extensionCode_add_mem`, `extensionCode_smul_mem` — closure of
-  `extensionCode P C_B` under addition and `F`-scalar multiplication (when
-  `C_B` is `B`-linear). Together they package `extensionCode P C_B` as a
-  full `F`-`Submodule` (B-linear closure was always present; the F-scalar
-  closure is what the structural refactor delivers).
-- `lambda_extensionCode_eq_lambda_interleaved` (L2.21, [BuenzCFW25 Lem D.3]):
-  `|Λ(C_F, δ)| = |Λ(C_B^≡e, δ)|`. Proved in-tree via the coordinate Hamming isometry.
+- `extensionCode_eq_span`: the basis-free characterisation
+  `extensionCode P C_B = Submodule.span F (algebraMap '' C_B)` for a `B`-submodule
+  `C_B`. This is the mathematically informative fact about D2.20, and it is the
+  engine for the closure and independence results below.
+- `extensionCode_presentation_independent`,
+  `extensionCodeSubmodule_presentation_independent`: for a `B`-submodule `C_B`, the
+  extension code is the **same set for every presentation** of `F` over `B`. So the
+  `ExtensionFieldPresentation` argument of `extensionCode` is bookkeeping that keeps
+  the definition in the paper's shape (`e` coordinate projections), not data that
+  the resulting code depends on: only the pair `(B, F)` together with its
+  `Algebra` structure matters. (The presentation *is* genuine data for
+  `IsSystematic` and for the coordinate-level statements, and the raw `Set` form of
+  `extensionCode` at a non-submodule `C_B` is *not* presentation-independent — the
+  statement is scoped to submodules on purpose.)
+- `extensionCode_add_mem`, `extensionCode_psi_smul_mem`, `extensionCode_smul_mem` —
+  closure of `extensionCode P C_B` under addition, under the `ψ`-induced `B`-action,
+  and under `F`-scalar multiplication (when `C_B` is `B`-linear). Together they
+  package `extensionCode P C_B` as a full `F`-`Submodule`
+  (`extensionCodeSubmodule`), which is the D2.20 linearity claim.
+- `mem_extensionCode_comp_algebraMap_iff_of_isSystematic`: the strongest
+  image-level consequence of systematicity, `ψ ∘ c ∈ C_F ↔ c ∈ C_B`.
+- `lambda_extensionCode_eq_lambda_interleaved` (L2.21, [BCFW25, Lemma D.3]):
+  `|Λ(C_F, δ)| = |Λ(C_B^≡e, δ)|`. Proved in-tree via the coordinate Hamming
+  isometry. ABF26 states L2.21 for `δ ∈ (0, 1)`; the Lean statement is proved
+  **unconditionally in `δ`** (the isometry argument never uses the restriction), so
+  the absence of `0 < δ` and `δ < 1` hypotheses is a deliberate strengthening and
+  not a transcription slip.
 
 ## References
 
-- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
-  2026.
-- [BuenzCFW25] Bünz-Chiesa-Fenzi-Wang. Lemma D.3.
-
-(The distance equality `δ_min(C_F) = δ_min(C_B)`, referenced in the L2.21 paragraph
-context, is from Diamond-Posen [DiamondP23, Theorem 3.2].)
+- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated
+  Agreement*. 2026. §2.6 (D2.19, D2.20, L2.21).
+- [BCFW25] Bünz-Chiesa-Fenzi-Wang. Definition D.2 and Lemma D.3.
+- [DP25] Diamond-Posen, Theorem 3.2, for the distance equality
+  `δ_min(C_F) = δ_min(C_B)` quoted in the L2.21 paragraph context — **not**
+  formalised here.
 -/
-
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
 
 namespace CodingTheory
 
-open scoped NNReal
 open ListDecodable Module
 
 /-- **ABF26 Definition 2.19.** An *extension field presentation* is the data of
 a finite `B`-basis of `F`, in the presence of a `B`-algebra structure on `F`:
 
 - `B` and `F` are fields,
-- `[Algebra B F]` provides the embedding `ψ := algebraMap B F : B →+* F` and the
-  `B`-module structure on `F`,
+- `[Algebra B F]` provides the paper's embedding `ψ := algebraMap B F` (injective
+  by `FaithfulSMul.algebraMap_injective`) and the `B`-module structure on `F`,
 - `e : ℕ` is the dimension of `F` as a `B`-vector space,
-- `basis : Basis (Fin e) B F` witnesses the `B`-linear isomorphism
-  `F ≃ₗ[B] (Fin e → B)` (via `basis.equivFun`).
+- `basis : Basis (Fin e) B F` witnesses the paper's `B`-linear isomorphism
+  `φ : F ≃ₗ[B] (Fin e → B)`, namely `basis.equivFun`.
 
-This is a thin structure on top of Mathlib's existing `Algebra` / `Basis`
-machinery. The paper's named maps `ψ` and `φ` are derived (not duplicated):
-`ψ := algebraMap B F` and `φ := basis.equivFun`. -/
-structure ExtensionFieldPresentation (B F : Type) [Field B] [Field F] [Algebra B F] where
+Nothing is redefined: the paper's `ψ`, `φ` and `φ_j` are Mathlib's `algebraMap`,
+`Basis.equivFun` and `Basis.coord` respectively. -/
+structure ExtensionFieldPresentation (B F : Type*) [Field B] [Field F] [Algebra B F] where
   /-- The dimension `e := dim_B F`. -/
   e : ℕ
   /-- The `B`-basis of `F` indexed by `Fin e`. -/
@@ -76,187 +108,187 @@ structure ExtensionFieldPresentation (B F : Type) [Field B] [Field F] [Algebra B
 
 namespace ExtensionFieldPresentation
 
-variable {B F : Type} [Field B] [Field F] [Algebra B F]
+variable {B F : Type*} [Field B] [Field F] [Algebra B F]
 
-/-- The base-field embedding `ψ : B ↪ F`, derived from `[Algebra B F]`. -/
-@[reducible]
-def ψ (_P : ExtensionFieldPresentation B F) : B →+* F := algebraMap B F
+/-- The degree of an extension field presentation is positive: `F` is a field, hence
+nontrivial, so its basis index type `Fin e` is nonempty. -/
+lemma e_pos (P : ExtensionFieldPresentation B F) : 0 < P.e :=
+  Fin.pos_iff_nonempty.2 P.basis.index_nonempty
 
-/-- Injectivity of `ψ` — automatic since the algebra map between fields is
-always injective. -/
-lemma ψ_injective (P : ExtensionFieldPresentation B F) : Function.Injective P.ψ :=
-  FaithfulSMul.algebraMap_injective B F
-
-/-- The `B`-linear coordinate isomorphism `φ : F ≃ₗ[B] (Fin e → B)`, derived
-from the basis. -/
-noncomputable def φ (P : ExtensionFieldPresentation B F) : F ≃ₗ[B] (Fin P.e → B) :=
-  P.basis.equivFun
-
-/-- The `j`-th coordinate `φᵢ : F →ₗ[B] B` of an extension-field presentation,
-as a `B`-linear map. -/
+/-- The paper's `j`-th coordinate functional `φ_j : F →ₗ[B] B`. This is *literally*
+Mathlib's `Module.Basis.coord`; the abbreviation exists only to keep the D2.20
+statement in the paper's shape. See `coord_eq_basis_coord`. -/
 noncomputable def coord (P : ExtensionFieldPresentation B F) (j : Fin P.e) : F →ₗ[B] B :=
-  LinearMap.proj (R := B) (φ := fun _ : Fin P.e ↦ B) j ∘ₗ (P.φ : F →ₗ[B] (Fin P.e → B))
+  P.basis.coord j
+
+@[simp] lemma coord_eq_basis_coord (P : ExtensionFieldPresentation B F) (j : Fin P.e) :
+    P.coord j = P.basis.coord j := rfl
+
+/-- `P.coord j` and the paper's `φ` agree: the `j`-th entry of `φ x` is `φ_j x`. -/
+lemma coord_eq_equivFun_apply (P : ExtensionFieldPresentation B F) (j : Fin P.e) (x : F) :
+    P.coord j x = P.basis.equivFun x j := rfl
 
 /-- A presentation is *systematic* if `φ(ψ(x)) = (x, 0, …, 0)` for every `x : B`.
-This makes the base-field copy of `B` inside `F` align with the first coordinate. -/
+This makes the base-field copy of `B` inside `F` align with the first coordinate.
+(`ψ = algebraMap B F` and `φ = P.basis.equivFun`, cf. the structure docstring.) -/
 def IsSystematic (P : ExtensionFieldPresentation B F) : Prop :=
-  ∀ x : B, P.φ (P.ψ x) = fun i ↦ if i.val = 0 then x else 0
+  ∀ x : B, P.basis.equivFun (algebraMap B F x) = fun i ↦ if i.val = 0 then x else 0
 
-/-- Each coordinate `P.coord j` is additive — direct consequence of being a
-`LinearMap`. -/
-lemma coord_add (P : ExtensionFieldPresentation B F) (j : Fin P.e) (x y : F) :
-    P.coord j (x + y) = P.coord j x + P.coord j y :=
-  (P.coord j).map_add x y
-
-/-- Each coordinate `P.coord j` respects the `B`-action — direct consequence of
-being a `B`-linear map. The `algebraMap`-based smul (`ψ b * x = b • x`) folds
-into ordinary `B`-scalar multiplication via `Algebra.smul_def`. -/
-lemma coord_psi_smul (P : ExtensionFieldPresentation B F)
-    (j : Fin P.e) (b : B) (x : F) :
-    P.coord j (P.ψ b * x) = b * P.coord j x := by
-  change P.coord j ((algebraMap B F) b * x) = b * P.coord j x
-  rw [← Algebra.smul_def, (P.coord j).map_smul, smul_eq_mul]
+/-- Coordinate form of `IsSystematic`: the `j`-th coordinate of `ψ x` is `x` for
+`j = 0` and `0` otherwise. -/
+lemma coord_algebraMap_of_isSystematic {P : ExtensionFieldPresentation B F}
+    (hP : P.IsSystematic) (j : Fin P.e) (x : B) :
+    P.coord j (algebraMap B F x) = if j.val = 0 then x else 0 :=
+  congrFun (hP x) j
 
 end ExtensionFieldPresentation
 
-/-- **ABF26 Definition 2.20.** The *extension code* `C_F : F^k → F^n` associated
-to a linear code `C_B : B^k → B^n` via an extension-field presentation. Defined
-on a vector `v : ι → F` by
+/-- **ABF26 Definition 2.20.** The *extension code* of a base code `C_B ⊆ B^ι`
+along an extension-field presentation `P`, as a **set of words** over `F` (the
+image of the paper's encoder `C_F`, in line with how ArkLib models codes; the
+encoder itself is not formalised, see the module docstring). It is defined on a
+vector `v : ι → F` by
 
   `v ∈ C_F ↔ ∀ j : Fin e, (fun i ↦ P.coord j (v i)) ∈ C_B`
 
-i.e. each of the `e` coordinate-projections of `v` lies in `C_B`.
+i.e. each of the `e` coordinate projections of `v` lies in `C_B`.
 
-**Closure properties.** With `[Algebra B F]` + `Basis (Fin e) B F` from the
-refactored `ExtensionFieldPresentation`, `extensionCode P C_B` is closed under
-**both** addition (when `C_B` is) and `F`-scalar multiplication (when `C_B` is
-`B`-linear). See `extensionCode_add_mem` and `extensionCode_smul_mem` below. -/
-def extensionCode {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+**Closure properties.** `extensionCode P C_B` is closed under addition (when `C_B`
+is) and under `F`-scalar multiplication (when `C_B` is `B`-linear); see
+`extensionCode_add_mem`, `extensionCode_smul_mem` and the packaged
+`extensionCodeSubmodule`. For a `B`-submodule `C_B` the code is in fact the
+`F`-span of `ψ '' C_B` (`extensionCode_eq_span`) and hence does not depend on `P`
+(`extensionCode_presentation_independent`). -/
+def extensionCode {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (C_B : Set (ι → B)) : Set (ι → F) :=
   { v : ι → F | ∀ j : Fin P.e, (fun i ↦ P.coord j (v i)) ∈ C_B }
 
-/-- **Bridge to paper's encoder-image view.** A vector `v : ι → F` is in
-`extensionCode P C_B` iff each of its `e` coordinate-projections lies in `C_B`. -/
+/-- Unfolding lemma for `extensionCode`: membership is exactly "every coordinate
+projection lies in the base code". -/
 lemma extensionCode_iff_coord_in_base
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+    {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (C_B : Set (ι → B)) (v : ι → F) :
     v ∈ extensionCode P C_B ↔
       ∀ j : Fin P.e, (fun i ↦ P.coord j (v i)) ∈ C_B := by
   rfl
 
-/-- **`extensionCode` is closed under addition** when `C_B` is. Uses
-`LinearMap.map_add` of the coordinate maps. -/
+/-- **`extensionCode` is closed under addition** when `C_B` is. Immediate from
+additivity of the (linear) coordinate maps. -/
 lemma extensionCode_add_mem
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+    {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     {C_B : Set (ι → B)}
     (hadd : ∀ {a b : ι → B}, a ∈ C_B → b ∈ C_B → a + b ∈ C_B)
     {u v : ι → F} (hu : u ∈ extensionCode P C_B) (hv : v ∈ extensionCode P C_B) :
     u + v ∈ extensionCode P C_B := by
   intro j
-  have h := hadd (hu j) (hv j)
   have hpt : (fun i ↦ P.coord j ((u + v) i)) =
       (fun i ↦ P.coord j (u i)) + fun i ↦ P.coord j (v i) := by
     ext i
-    exact P.coord_add j (u i) (v i)
+    exact map_add (P.coord j) (u i) (v i)
   rw [hpt]
-  exact h
+  exact hadd (hu j) (hv j)
 
-/-- **`extensionCode` is closed under the `ψ`-induced `B`-scalar action** when
-`C_B` is `B`-scalar closed. Uses `LinearMap.map_smul` of the coordinate maps. -/
+/-- **`extensionCode` is closed under the `ψ`-induced `B`-scalar action** when `C_B`
+is `B`-scalar closed, where `ψ = algebraMap B F` is the paper's embedding.
+Immediate from `LinearMap.map_smul` of the coordinate maps. Note that this needs
+strictly less than `extensionCode_smul_mem` (no additive closure of `C_B`). -/
 lemma extensionCode_psi_smul_mem
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+    {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     {C_B : Set (ι → B)}
     (hsmul : ∀ (b : B) {a : ι → B}, a ∈ C_B → b • a ∈ C_B)
     (b : B) {v : ι → F} (hv : v ∈ extensionCode P C_B) :
-    (fun i ↦ P.ψ b * v i) ∈ extensionCode P C_B := by
+    (fun i ↦ algebraMap B F b * v i) ∈ extensionCode P C_B := by
   intro j
-  have h := hsmul b (hv j)
-  have hpt : (fun i ↦ P.coord j (P.ψ b * v i)) = b • fun i ↦ P.coord j (v i) := by
+  have hpt : (fun i ↦ P.coord j (algebraMap B F b * v i)) = b • fun i ↦ P.coord j (v i) := by
     ext i
-    simpa [Pi.smul_apply, smul_eq_mul] using P.coord_psi_smul j b (v i)
+    rw [← Algebra.smul_def, map_smul]
+    simp [Pi.smul_apply, smul_eq_mul]
   rw [hpt]
-  exact h
+  exact hsmul b (hv j)
 
-/-- **F-scalar closure of `extensionCode`** — the paper's D2.20 F-linearity
-claim, closed via the basis-expansion argument.
+/-- **Basis-free characterisation of `extensionCode`.** For a `B`-submodule `C_B`,
+the extension code is the `F`-span of the image of `C_B` under the paper's
+embedding `ψ = algebraMap B F`:
 
-**Proof outline.** For `α : F` and `v ∈ extensionCode P C_B`:
+  `extensionCode P C_B = Submodule.span F (ψ '' C_B)`.
 
-  1. Write `α` in the basis: `α = ∑ k, (P.basis.repr α k) • (P.basis k)`
-     via `Basis.sum_repr`. The coefficients `c_k := P.basis.repr α k` live in `B`.
-  2. Distribute: `α * v i = ∑ k, c_k • (P.basis k * v i)`.
-  3. Coordinate-by-coordinate, `P.coord j (α * v i) = ∑ k, c_k * P.coord j (P.basis k * v i)`.
-  4. Each `(fun i ↦ P.coord j (P.basis k * v i))` is itself a `B`-linear
-     combination of `(fun i ↦ P.coord m (v i))`s (since multiplication by `P.basis k`
-     is `B`-linear `F →ₗ[B] F`, and then `P.coord j` is `B`-linear). These
-     row-functions live in `C_B` by hypothesis (`v ∈ extensionCode P C_B`).
-  5. Closure of `C_B` under (finite) `B`-linear combinations gives the result. -/
+The right-hand side mentions neither `e`, nor the basis, nor the coordinate maps.
+Both inclusions are elementary: `⊆` expands each entry of `v` in the basis
+(`Basis.sum_equivFun`), and `⊇` computes the coordinates of a finite `F`-linear
+combination `∑ t, f t • (ψ ∘ a t)` as `∑ t, φ_j(f t) • a t`, which lies in `C_B`
+because `C_B` is a `B`-submodule. -/
+theorem extensionCode_eq_span {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
+    extensionCode P (C_B : Set (ι → B)) =
+      (Submodule.span F ((fun c : ι → B ↦ (algebraMap B F) ∘ c) '' (C_B : Set (ι → B))) :
+        Set (ι → F)) := by
+  apply Set.eq_of_subset_of_subset
+  · -- `⊆`: expand each entry of `v` in the basis.
+    intro v hv
+    have hrepr : v = ∑ j : Fin P.e,
+        P.basis j • ((algebraMap B F) ∘ (fun i ↦ P.coord j (v i))) := by
+      funext i
+      rw [Finset.sum_apply]
+      simp only [Pi.smul_apply, Function.comp_apply, smul_eq_mul]
+      have h := P.basis.sum_equivFun (v i)
+      simp only [Basis.equivFun_apply] at h
+      refine (Eq.trans (Finset.sum_congr rfl fun j _ ↦ ?_) h).symm
+      simp [Algebra.smul_def, mul_comm]
+    rw [SetLike.mem_coe, hrepr]
+    exact Submodule.sum_mem _ fun j _ ↦
+      Submodule.smul_mem _ _ (Submodule.subset_span ⟨_, hv j, rfl⟩)
+  · -- `⊇`: a finite `F`-combination of `ψ`-images has all coordinates in `C_B`.
+    intro v hv
+    obtain ⟨n, f, g, hsum⟩ := Submodule.mem_span_set'.1 hv
+    have hg : ∀ t, ∃ c ∈ (C_B : Set (ι → B)), (algebraMap B F) ∘ c = (g t : ι → F) :=
+      fun t ↦ (g t).2
+    choose a ha hga using hg
+    intro j
+    have hcoord : (fun i ↦ P.coord j (v i)) = ∑ t : Fin n, (P.coord j (f t)) • a t := by
+      funext i
+      rw [← hsum]
+      simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+      rw [map_sum]
+      refine Finset.sum_congr rfl fun t _ ↦ ?_
+      have hgt : (g t : ι → F) i = algebraMap B F (a t i) := by rw [← hga t]; rfl
+      rw [hgt, mul_comm, ← Algebra.smul_def, map_smul, smul_eq_mul, mul_comm]
+    rw [hcoord]
+    exact Submodule.sum_mem _ fun t _ ↦ C_B.smul_mem _ (ha t)
+
+/-- **F-scalar closure of `extensionCode`** — the paper's D2.20 `F`-linearity claim.
+The hypotheses `hadd`/`hsmul` make `C_B` a `B`-submodule (its `0` is `(0 : B) • c`
+for any row `c` of `C_B`, and `P.e > 0` supplies such a row), after which
+`extensionCode_eq_span` exhibits the code as an `F`-span, which is `F`-scalar
+closed by construction. -/
 lemma extensionCode_smul_mem
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+    {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     {C_B : Set (ι → B)}
     (hadd : ∀ {a b : ι → B}, a ∈ C_B → b ∈ C_B → a + b ∈ C_B)
     (hsmul : ∀ (b : B) {a : ι → B}, a ∈ C_B → b • a ∈ C_B)
     (α : F) {v : ι → F} (hv : v ∈ extensionCode P C_B) :
     (fun i ↦ α * v i) ∈ extensionCode P C_B := by
-  intro j
-  -- Pointwise identity:
-  --   coord j (α * v i) = ∑ m, coord m (v i) * coord j (α * basis m)
-  have h_pt : ∀ i,
-      P.coord j (α * v i) =
-        ∑ m : Fin P.e, P.coord m (v i) * P.coord j (α * P.basis m) := by
-    intro i
-    have h_vi : v i = ∑ m : Fin P.e, P.coord m (v i) • P.basis m :=
-      (P.basis.sum_equivFun (v i)).symm
-    calc P.coord j (α * v i)
-        = P.coord j (α * ∑ m : Fin P.e, P.coord m (v i) • P.basis m) := by
-            rw [← h_vi]
-      _ = P.coord j (∑ m : Fin P.e, α * (P.coord m (v i) • P.basis m)) := by
-            rw [Finset.mul_sum]
-      _ = P.coord j (∑ m : Fin P.e, P.coord m (v i) • (α * P.basis m)) := by
-            congr 1
-            exact Finset.sum_congr rfl fun m _ ↦ mul_smul_comm _ _ _
-      _ = ∑ m : Fin P.e, P.coord m (v i) * P.coord j (α * P.basis m) := by
-            rw [map_sum]
-            exact Finset.sum_congr rfl fun m _ ↦ by
-              rw [map_smul, smul_eq_mul]
-  -- Pointwise function equality:
-  --   (fun i ↦ coord j (α * v i)) =
-  --     ∑ m, (coord j (α * basis m)) • (fun i ↦ coord m (v i))
-  have h_fun : (fun i ↦ P.coord j (α * v i)) =
-      ∑ m : Fin P.e,
-        (P.coord j (α * P.basis m)) • (fun i ↦ P.coord m (v i)) := by
-    funext i
-    rw [h_pt i, Finset.sum_apply]
-    exact Finset.sum_congr rfl fun m _ ↦ by
-      simp [Pi.smul_apply, smul_eq_mul, mul_comm]
-  rw [h_fun]
-  -- Show the B-linear combination of (fun i ↦ coord m (v i)) ∈ C_B lies in C_B.
-  -- Each summand is in C_B by `hsmul`; iterate via `Finset.sum_induction`.
-  -- The empty-sum (e = 0) base needs `0 ∈ C_B`; we get it from `hsmul 0 (hv m₀)`
-  -- if `e ≥ 1`, and vacuously otherwise (the goal `∀ j : Fin 0, …` is empty).
-  by_cases h_e_zero : P.e = 0
-  · -- e = 0 case: the goal is vacuous since `j : Fin 0` doesn't exist.
-    exact Fin.elim0 (h_e_zero ▸ j)
-  · -- e ≥ 1 case: derive `0 ∈ C_B`, then iterate.
-    have h_pos : 0 < P.e := Nat.pos_of_ne_zero h_e_zero
-    let m₀ : Fin P.e := ⟨0, h_pos⟩
-    have h_zero_mem : (0 : ι → B) ∈ C_B := by
-      have h := hsmul 0 (hv m₀)
-      simpa using h
-    refine Finset.sum_induction _ (· ∈ C_B) (fun a b ha hb ↦ hadd ha hb)
-      h_zero_mem ?_
-    intros m _
-    exact hsmul _ (hv m)
+  have h0 : (0 : ι → B) ∈ C_B := by simpa using hsmul 0 (hv ⟨0, P.e_pos⟩)
+  let M : Submodule B (ι → B) :=
+    { carrier := C_B
+      add_mem' := fun ha hb ↦ hadd ha hb
+      zero_mem' := h0
+      smul_mem' := fun b _ ha ↦ hsmul b ha }
+  have hv' : v ∈ extensionCode P (M : Set (ι → B)) := hv
+  have key : (fun i ↦ α * v i) ∈ extensionCode P (M : Set (ι → B)) := by
+    rw [extensionCode_eq_span P M] at hv' ⊢
+    exact Submodule.smul_mem _ α hv'
+  exact key
 
 /-- **Submodule-packaging of `extensionCode`** when `C_B` is a `B`-submodule.
 
@@ -264,13 +296,11 @@ Bundles the three closure laws (`add_mem`, `zero_mem`, `smul_mem`) into a
 single `Submodule F (ι → F)`, mirroring the `ReedSolomon.code` pattern
 (which returns a `Submodule F (ι → F)` directly). Downstream code that
 wants to consume an extension code as a linear code should use this
-form rather than the raw `Set`-based `extensionCode`.
-
-Built directly from the existing closure lemmas — no parallel
-implementation. The `Set`-form `extensionCode` is the carrier. -/
-noncomputable def extensionCodeSubmodule
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+form rather than the raw `Set`-based `extensionCode`. The `Set`-form
+`extensionCode` is the carrier, so the two agree by `rfl`
+(`coe_extensionCodeSubmodule`). -/
+noncomputable def extensionCodeSubmodule {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (C_B : Submodule B (ι → B)) : Submodule F (ι → F) where
   carrier := extensionCode P (C_B : Set (ι → B))
@@ -278,8 +308,7 @@ noncomputable def extensionCodeSubmodule
   zero_mem' := by
     intro j
     change (fun i ↦ P.coord j ((0 : ι → F) i)) ∈ (C_B : Set (ι → B))
-    -- (fun i ↦ P.coord j 0) = (fun i ↦ 0) = 0, which is in C_B by Submodule.zero_mem
-    simp only [Pi.zero_apply, (P.coord j).map_zero]
+    simp only [Pi.zero_apply, map_zero]
     exact C_B.zero_mem
   smul_mem' c v hv :=
     extensionCode_smul_mem P
@@ -289,43 +318,115 @@ noncomputable def extensionCodeSubmodule
 
 /-- The carrier of `extensionCodeSubmodule P C_B` coincides with the `Set`-form
 `extensionCode P (C_B : Set _)` — by construction. -/
-@[simp] lemma coe_extensionCodeSubmodule
-    {ι : Type} [Fintype ι]
-    {B F : Type} [Field B] [Field F] [Algebra B F]
+@[simp] lemma coe_extensionCodeSubmodule {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
     (C_B : Submodule B (ι → B)) :
     (extensionCodeSubmodule P C_B : Set (ι → F)) =
       extensionCode P (C_B : Set (ι → B)) := rfl
 
-/-- **ABF26 Lemma 2.21 [BCFW25 Lemma D.3].** List size of an extension code equals the
-list size of the corresponding interleaved base code. Let `C_B : B^k → B^n` be a
-linear code and `P` be an extension-field presentation. For every `δ ∈ (0, 1)`:
+/-- `extensionCodeSubmodule` is the `F`-span of `ψ '' C_B` — the `Submodule` form of
+`extensionCode_eq_span`. -/
+theorem extensionCodeSubmodule_eq_span {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
+    extensionCodeSubmodule P C_B =
+      Submodule.span F ((fun c : ι → B ↦ (algebraMap B F) ∘ c) '' (C_B : Set (ι → B))) :=
+  SetLike.coe_injective (extensionCode_eq_span P C_B)
+
+/-- **The extension code of a `B`-submodule does not depend on the presentation.**
+Any two extension-field presentations `P`, `P'` of the same pair `(B, F)` — of
+possibly different shape, and in particular with different bases — give the same
+set of words. Both sides equal `Submodule.span F (ψ '' C_B)`, which mentions no
+presentation data at all.
+
+So the `ExtensionFieldPresentation` argument of `extensionCode` is bookkeeping that
+keeps D2.20 in the paper's coordinate shape, not data the code depends on. This is
+scoped to `B`-submodules `C_B` on purpose: for a general `Set` `C_B` the
+coordinate-wise definition really does see the basis. -/
+theorem extensionCode_presentation_independent {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P P' : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
+    extensionCode P (C_B : Set (ι → B)) = extensionCode P' (C_B : Set (ι → B)) := by
+  rw [extensionCode_eq_span P C_B, extensionCode_eq_span P' C_B]
+
+/-- `Submodule` form of `extensionCode_presentation_independent`. -/
+theorem extensionCodeSubmodule_presentation_independent {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P P' : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
+    extensionCodeSubmodule P C_B = extensionCodeSubmodule P' C_B :=
+  SetLike.coe_injective (extensionCode_presentation_independent P P' C_B)
+
+/-- **Image-level consequence of systematicity.** If `P` is systematic then the base
+code is exactly the `ψ`-rational part of the extension code:
+
+  `ψ ∘ c ∈ C_F ↔ c ∈ C_B`   for `c : ι → B`.
+
+This is as close as the image-level modelling gets to [ABF26, D2.20] /
+[BCFW25, §D.2]'s `C_F(ψ(v)) = ψ(C_B(v))`, which is a statement about *encoders* and
+is therefore not expressible here (see the module docstring). Note the `←`
+direction is where systematicity does real work for the coordinates `j ≠ 0`: it
+pins them to `0`, so no assumption beyond `0 ∈ C_B` is needed. -/
+theorem mem_extensionCode_comp_algebraMap_iff_of_isSystematic {ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    {P : ExtensionFieldPresentation B F} (hP : P.IsSystematic)
+    (C_B : Submodule B (ι → B)) (c : ι → B) :
+    (algebraMap B F) ∘ c ∈ extensionCode P (C_B : Set (ι → B)) ↔ c ∈ C_B := by
+  constructor
+  · intro h
+    have h0 := h ⟨0, P.e_pos⟩
+    have hfun : (fun i ↦ P.coord ⟨0, P.e_pos⟩ (((algebraMap B F) ∘ c) i)) = c := by
+      funext i
+      simpa using P.coord_algebraMap_of_isSystematic hP ⟨0, P.e_pos⟩ (c i)
+    rw [hfun] at h0
+    exact h0
+  · intro hc j
+    by_cases hj : j.val = 0
+    · have hfun : (fun i ↦ P.coord j (((algebraMap B F) ∘ c) i)) = c := by
+        funext i
+        simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (c i)
+      rw [hfun]
+      exact hc
+    · have hfun : (fun i ↦ P.coord j (((algebraMap B F) ∘ c) i)) = 0 := by
+        funext i
+        simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (c i)
+      rw [hfun]
+      exact C_B.zero_mem
+
+/-- **ABF26 Lemma 2.21 [BCFW25, Lemma D.3].** The list size of an extension code equals
+the list size of the corresponding interleaved base code. For a base code
+`C_B ⊆ B^ι`, an extension-field presentation `P`, and any `δ : ℝ`:
 
   `|Λ(C_F, δ)| = |Λ(C_B^≡e, δ)|`
 
 where `C_F` is the extension code (D2.20) and `C_B^≡e` is the `e`-fold interleaved
-base code (D2.9). Proved in-tree: the coordinate isomorphism `Ψ := φ` (applied
-componentwise) is a Hamming isometry `(ι → F) ≃ (ι → Fin e → B)` carrying `extensionCode`
-onto `interleavedCodeSet`, so it matches the `δ`-close-codeword sets bijectively and the
-supremum defining `Λ` is preserved. -/
+base code (D2.9).
+
+Proved in-tree: the coordinate isomorphism `φ = P.basis.equivFun`, applied
+componentwise, is a Hamming isometry `(ι → F) ≃ (ι → Fin e → B)` carrying
+`extensionCode` onto `interleavedCodeSet`, so it matches the `δ`-close-codeword sets
+bijectively and the supremum defining `Λ` is preserved.
+
+ABF26 states the lemma for `δ ∈ (0, 1)`. The isometry argument never uses that
+restriction, so the statement here is **unconditional in `δ`** (a strengthening, not
+a transcription slip); in particular it holds at `δ = 0` and at `δ ≥ 1`. -/
 theorem lambda_extensionCode_eq_lambda_interleaved
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {B F : Type} [Field B] [Fintype B] [DecidableEq B]
-    [Field F] [Fintype F] [DecidableEq F] [Algebra B F]
+    {ι : Type*} [Fintype ι]
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
-    (C_B : Set (ι → B)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    (C_B : Set (ι → B)) (δ : ℝ) :
     Lambda (extensionCode P C_B) δ =
-      Lambda (Code.interleavedCodeSet (κ := Fin P.e) C_B)
-        δ := by
+      Lambda (Code.interleavedCodeSet (κ := Fin P.e) C_B) δ := by
   letI : DecidableEq F := Classical.decEq F
   letI : DecidableEq (Fin P.e → B) := Classical.decEq _
   set Ψ : (ι → F) ≃ (ι → Fin P.e → B) :=
-    Equiv.piCongrRight (fun _ => P.φ.toEquiv) with hΨ
-  have hΨ_apply : ∀ (v : ι → F) (i : ι), Ψ v i = P.φ (v i) := fun v i => rfl
-  have hφinj : Function.Injective (P.φ : F → (Fin P.e → B)) := P.φ.injective
+    Equiv.piCongrRight (fun _ => P.basis.equivFun.toEquiv) with hΨ
+  have hΨ_apply : ∀ (v : ι → F) (i : ι), Ψ v i = P.basis.equivFun (v i) := fun v i => rfl
+  have hφinj : Function.Injective (P.basis.equivFun : F → (Fin P.e → B)) :=
+    P.basis.equivFun.injective
   have hham : ∀ x y : ι → F, hammingDist (Ψ x) (Ψ y) = hammingDist x y := by
     intro x y
-    have := hammingDist_comp (fun (_ : ι) => (P.φ : F → (Fin P.e → B)))
+    have := hammingDist_comp (fun (_ : ι) => (P.basis.equivFun : F → (Fin P.e → B)))
       (x := x) (y := y) (fun _ => hφinj)
     exact this
   have hrelQ : ∀ x y : ι → F,

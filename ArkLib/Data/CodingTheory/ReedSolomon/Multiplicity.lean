@@ -18,9 +18,29 @@ introduced in [GW13] and analysed in detail in [KSY14]; ABF26 §A.2
 records the definition in the context of the toy-problem
 parametrisations.
 
+## Which derivative? — ordinary, *not* Hasse
+
+**ABF26 Definition A.6 defines `f̂^{(j)}` by iterating the ORDINARY formal derivative**
+`f̂'(X) = ∑_{i=1}^{k-1} (a_i · i) · X^{i-1}`, i.e. `Polynomial.derivative^[j]`, and pairs
+that with the global side condition `char(F) ≥ k` (see "Characteristic condition" below).
+It does **not** use the Hasse (divided) derivative `f̂^{(j)}/j!`. So
+`Polynomial.derivative^[j.val]` in `umEvalOnPoints` is a faithful transcription, and
+`Mathlib.Polynomial.hasseDeriv` is deliberately **not** used here.
+
+This is worth stating explicitly because in small characteristic the two differ and the
+ordinary iterate is the *wrong* choice: over `char(F) = p ≤ k` one has
+`derivative^[p] (X^p) = 0`, the encoder loses information, and the multiplicity-code
+dimension claim collapses — which is exactly why ABF26 imposes `char(F) ≥ k` rather than
+switching derivatives. A future small-characteristic variant of these codes therefore
+needs `Polynomial.hasseDeriv j` (whose coefficients are the binomial `C(i, j)`, integral
+and generically nonzero mod `p`) as a **separate definition**, not as a "fix" to this one:
+replacing `derivative^[j]` by `hasseDeriv j` here would silently change which paper
+statement is being formalised (the codes agree only up to the units `j!`, which are units
+precisely when `char(F) > s − 1`).
+
 ## Notation
 
-For `f̂ ∈ F^{<k}[X]`, write `f̂^(j)` for the `j`-th formal derivative.
+For `f̂ ∈ F^{<k}[X]`, write `f̂^(j)` for the `j`-th ordinary formal derivative.
 Then
 
   `UM[F, L, k, s] := { f : L → F^s | ∃ f̂ ∈ F^{<k}[X],`
@@ -34,7 +54,7 @@ For `s = 1`, this degenerates to the plain Reed-Solomon code
 `(a_i · i)` do not vanish below degree `k` (without this, multiple
 distinct polynomials of degree `< k` can fold to the same multiplicity
 codeword, and the dimension claim collapses). The bare encoder
-`umEvalOnPoints` is well-typed in any `CommRing F` — we keep the
+`umEvalOnPoints` is well-typed in any `CommSemiring F` — we keep the
 hypothesis as a downstream caller's responsibility rather than baking
 it into the definition, since the `s = 1` collapse lemma below works
 unconditionally.
@@ -48,7 +68,10 @@ unconditionally.
 Sanity lemmas:
 
 * `mem_umCode_one_iff_mem_rsCode` — `UM[F, L, k, 1]` collapses to
-  `RS[F, L, k]` (modulo the `Fin 1 → F` ≃ `F` reshaping).
+  `RS[F, L, k]` (modulo the `Fin 1 → F` ≃ `F` reshaping). This is a
+  one-line corollary of the encoder-generic
+  `ReedSolomon.mem_map_degreeLT_one_iff_mem_code` (in `ReedSolomon.lean`),
+  which this file shares with `ReedSolomon.Folded`.
 
 ## References
 
@@ -64,8 +87,8 @@ namespace ReedSolomon
 
 namespace Multiplicity
 
-variable {ι : Type*} [Fintype ι]
-variable {F : Type*} [CommRing F]
+variable {ι : Type*}
+variable {F : Type*} [CommSemiring F]
 
 /-- The univariate multiplicity-code evaluation map: send a polynomial
 `p` to the matrix `(p^{(j)}(domain x))_{x ∈ ι, j ∈ Fin s}` packaging the
@@ -107,30 +130,22 @@ codeword. Stated as an iff between memberships (the LHS lives in
 `ι → Fin 1 → F`, the RHS in `ι → F`, avoiding the cross-type equality
 issue).
 
-Stated outside the `Multiplicity` namespace's `[CommRing F]` section to
-sidestep the `Polynomial`-Semiring instance clash between `CommRing.to…`
-and `Field.to…`: when both are in scope, the `umCode`-side polynomial
-type is incommensurate with the `ReedSolomon.code`-side one. -/
+Stated outside the `Multiplicity` namespace's `[CommSemiring F]` section
+to sidestep the `Polynomial`-Semiring instance clash between
+`CommSemiring.to…` and `Field.to…`: when both are in scope, the
+`umCode`-side polynomial type is incommensurate with the
+`ReedSolomon.code`-side one.
+
+Proved as a corollary of the encoder-generic
+`ReedSolomon.mem_map_degreeLT_one_iff_mem_code`, shared with
+`ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode`. -/
 lemma Multiplicity.mem_umCode_one_iff_mem_rsCode
     {ι : Type*} {F : Type*} [Field F]
     (domain : ι ↪ F) (k : ℕ) (f : ι → Fin 1 → F) :
     f ∈ Multiplicity.umCode domain k 1 ↔
-      (fun i ↦ f i 0) ∈ ReedSolomon.code domain k := by
-  simp only [Multiplicity.umCode, Multiplicity.umEvalOnPoints,
-    ReedSolomon.code, ReedSolomon.evalOnPoints,
-    Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk]
-  constructor
-  · rintro ⟨p, hp, hf⟩
-    refine ⟨p, hp, ?_⟩
-    funext i
-    have := congrFun (congrFun hf i) (0 : Fin 1)
-    simpa using this
-  · rintro ⟨p, hp, hp_eval⟩
-    refine ⟨p, hp, ?_⟩
-    funext i j
-    have hj : j = 0 := Subsingleton.elim _ _
-    subst hj
-    have := congrFun hp_eval i
-    simpa using this
+      (fun i ↦ f i 0) ∈ ReedSolomon.code domain k :=
+  ReedSolomon.mem_map_degreeLT_one_iff_mem_code domain k
+    (Multiplicity.umEvalOnPoints domain 1)
+    (fun p x => by simp [Multiplicity.umEvalOnPoints]) f
 
 end ReedSolomon

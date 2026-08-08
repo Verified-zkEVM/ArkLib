@@ -11,9 +11,23 @@ import ArkLib.Data.Probability.Notation
 /-!
 # Probabilistic combinatorics
 
-Stand-alone probabilistic-combinatorics statements used elsewhere in ArkLib.
-Currently this module hosts `exists_large_image_of_pairwise_collision_bound`,
-which is Claim B.1 of [ABF26].
+Stand-alone probabilistic-combinatorics statements. Currently this module hosts
+`exists_large_image_of_pairwise_collision_bound`, which is Claim B.1 of [ABF26].
+
+Nothing in the repository consumes this module yet: its intended consumer is the
+ABF26 §6.4.1 development (Lemma 6.12, the toy-protocol list-decoding lower-bound
+attack), which lands in a later split of the ABF26 series. The collision-probability
+inputs it will be combined with live in `ArkLib.Data.Probability.Instances`
+(`Probability.prob_dotProduct_eq_zero_le`,
+`Probability.prob_uniform_le_inv_of_card_le_one`).
+
+## Main definitions
+
+* `Probability.numCollsOrdered` — the number of *ordered* colliding pairs of a map.
+
+## Main statements
+
+* `Probability.exists_large_image_of_pairwise_collision_bound` — Claim B.1 of [ABF26].
 
 ## References
 
@@ -32,7 +46,7 @@ by `exists_large_image_of_pairwise_collision_bound` (Claim B.1). -/
 
 section CollidingPairs
 
-variable {S T : Type} [Fintype S] [DecidableEq S] [DecidableEq T]
+variable {S T : Type*} [Fintype S] [DecidableEq S] [DecidableEq T]
 
 /-- Number of *ordered* pairs `(x, y) : S × S` with `x ≠ y` and `φ x = φ y`.
 
@@ -115,10 +129,10 @@ lemma sum_fiber_sq_eq (φ : S → T) :
 
 /-- Cauchy-Schwarz applied to fiber cardinalities.
 
-Equivalent to `Finset.sq_sum_le_card_mul_sum_sq` over the image of `φ`,
-combined with `sum_fiber_sq_eq` to rewrite the squared-sum side and
-with `Finset.card_eq_sum_card_image` to identify
-`Σ μ ∈ image, |fiber μ| = |S|`. -/
+Equivalent to Mathlib's Chebyshev-style bound `sq_sum_le_card_mul_sum_sq` (which lives in
+the *root* namespace, not in `Finset`) applied over the image of `φ`, combined with
+`sum_fiber_sq_eq` to rewrite the squared-sum side and with
+`Finset.card_eq_sum_card_image` to identify `Σ μ ∈ image, |fiber μ| = |S|`. -/
 lemma cauchy_schwarz_fiber (φ : S → T) :
     (Fintype.card S)^2 ≤
       (Finset.univ.image φ).card * (Fintype.card S + numCollsOrdered φ) := by
@@ -167,6 +181,16 @@ such that for any distinct `x, y ∈ S`, the probability that a sample
 Then there exists some `φ` in the support of `Φ` whose image has cardinality
 at least `|S| / (1 + (|S| − 1) · ε)`.
 
+## Use in ABF26 Lemma 6.12
+
+ABF26's proof of Lemma 6.12 applies this claim **exactly once**, to obtain a `v ∈ F^k`
+with `|S_v| ≥ |S| / (1 + (|S| − 1)/|F|)`. The *second* counting step of that proof —
+choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is injective — is a plain pigeonhole
+and needs a different argument: it requires **full** injectivity (hence `|Γ| ≥ |S_v|`),
+which this claim cannot deliver, since its conclusion is only
+`|φ(S)| ≥ |S| / (1 + (|S| − 1) · ε)`. Substituting a second application of Claim B.1 for
+that pigeonhole would prove a bound strictly weaker than Lemma 6.12 as printed.
+
 ## Proof sketch (contradiction-form, avoids Jensen)
 
 Let `N := |S|`, `δ := 1 + (N − 1) · ε`, `K := N / δ`. The proof tracks three
@@ -197,8 +221,9 @@ theorem exists_large_image_of_pairwise_collision_bound
     (Φ : PMF (S → T)) (ε : ENNReal)
     (hΦ : ∀ x y : S, x ≠ y →
         Pr_{ let φ ← Φ }[(decide (φ x = φ y) : Prop)] ≤ ε) :
-    ∃ φ ∈ Φ.support, ((Finset.univ.image φ).card : ENNReal) ≥
-      (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) := by
+    ∃ φ ∈ Φ.support,
+      (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
+        ((Finset.univ.image φ).card : ENNReal) := by
   classical
   set N : ℕ := Fintype.card S with hN_def
   -- Pairs of distinct elements.

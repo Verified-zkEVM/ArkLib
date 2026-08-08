@@ -48,10 +48,26 @@ def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :
   let frac := q / (q - 1)
   (1 - frac * d / n) < (1 - frac * e / n) ^ 2
 
-/-- The function used for the `q`-ary Johnson Bound. -/
+/-- The function used for the `q`-ary Johnson Bound. This is ABF26 Definition 3.1's `J_q`. -/
 noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
+
+/-- **ABF26 Definition 3.1, `J`.** The asymptotic ("capacity") Johnson bound
+
+  `J(δ) := 1 - √(1 - δ)`
+
+which is the `q → ∞` limit of `J q δ` above. It is named `Jcap` (Johnson — *cap*acity) so
+that the pre-existing `J`, which is the paper's `q`-parametrised `J_q`, need not be renamed.
+
+It is *not* the binary Johnson bound: `J_2(δ) = ½(1 - √(1 - 2δ)) ≠ 1 - √(1 - δ)`. -/
+noncomputable def Jcap (δ : ℝ) : ℝ := 1 - √(1 - δ)
+
+@[simp]
+lemma Jcap_zero : Jcap 0 = 0 := by simp [Jcap]
+
+@[simp]
+lemma Jcap_one : Jcap 1 = 1 := by simp [Jcap]
 
 /-- Rationalization of `a - √b` via conjugate multiplication. -/
 lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b ≠ 0) :
@@ -60,11 +76,15 @@ lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b �
   ring_nf
   simp_all
 
-/-- The binary Johnson bound `1 - √(1-δ)` is at most the `q`-ary bound `J q δ`. -/
+/-- **ABF26 Definition 3.1, `J(δ) ≤ J_q(δ)`.** The asymptotic Johnson bound
+`Jcap δ = 1 - √(1 - δ)` is at most the `q`-ary bound `J q δ`.
+
+(The bound `1 - √(1-δ)` is the `q → ∞` *capacity* bound, not the binary Johnson bound —
+the latter is `J 2 δ = ½(1 - √(1 - 2δ))`.) -/
 lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1)
     (hqx : q / (q - 1) * δ ≤ 1) :
-    1 - √(1 - δ) ≤ J q δ := by
-  unfold J
+    Jcap δ ≤ J q δ := by
+  unfold Jcap J
   set frac := q / (q - 1) with hfrac
   have hfrac_ge : frac ≥ 1 := by
     rw [hfrac, ge_iff_le, one_le_div] <;> grind
@@ -392,7 +412,7 @@ theorem johnson_bound_alphabet_free
                           symm; exact sqrt_div' ((n : ℝ) * (n - d)) (sq_nonneg _)
                     _ = ((1 - (d : ℝ) / n) : ℝ).sqrt := by congr 1; field_simp [hn']
         have h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J q (d / n) := by
-          simpa using sqrt_le_J (by linarith : q > 1)
+          simpa [Jcap] using sqrt_le_J (by linarith : q > 1)
             (div_nonneg (by exact_mod_cast Nat.cast_nonneg d) (by exact_mod_cast Nat.cast_nonneg n))
             (by rcases eq_or_ne n 0 with rfl | hn
                 · simp

@@ -418,10 +418,11 @@ lemma johnson_bound₀ [Zero F]
 
 /-- Johnson bound generalised to an arbitrary centre `v`.
 
-Recentering at `v` is done by a coordinatewise transport (`remap`) rather than the
-field subtraction `x ↦ x - v`, so no field structure is needed: each coordinate
-`σ i` sends `v i` to the fixed symbol `0` of `Fin (card F)`, hence `remap σ v = 0`,
-and `remap` preserves Hamming distance (so `e`, `d`, and cardinalities are unchanged). -/
+Recentering at `v` is done by a coordinatewise transport (Mathlib's `Equiv.piCongrRight`)
+rather than the field subtraction `x ↦ x - v`, so no field structure is needed: each
+coordinate `σ i` sends `v i` to the fixed symbol `0` of `Fin (card F)`, hence
+`Equiv.piCongrRight σ v = 0`, and the transport preserves Hamming distance
+(`hammingDist_comp`), so `e`, `d`, and cardinalities are unchanged. -/
 protected lemma johnson_bound_lemma {v : Fin n → F}
     (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
@@ -431,15 +432,15 @@ protected lemma johnson_bound_lemma {v : Fin n → F}
   set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
   set σ : Fin n → (F ≃ Fin (card F)) :=
     fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ
-  set B' : Finset (Fin n → Fin (card F)) := B.image (remap σ) with hB'
-  have hv0 : remap σ v = 0 := by
+  set B' : Finset (Fin n → Fin (card F)) := B.image (Equiv.piCongrRight σ) with hB'
+  have hv0 : Equiv.piCongrRight σ v = 0 := by
     funext i
-    simp only [remap, hσ, Equiv.trans_apply, Equiv.swap_apply_left]
-    rfl
+    change (σ i) (v i) = 0
+    simp only [hσ, Equiv.trans_apply, Equiv.swap_apply_left]
   have hcardF' : card (Fin (card F)) = card F := Fintype.card_fin _
-  have hcardB' : B'.card = B.card := remap_image_card σ B
-  have h_e : e B' (remap σ v) = e B v := remap_e σ B v
-  have h_d : d B' = d B := remap_d σ B
+  have hcardB' : B'.card = B.card := card_image_piCongrRight σ B
+  have h_e : e B' (Equiv.piCongrRight σ v) = e B v := e_image_piCongrRight σ B v
+  have h_d : d B' = d B := d_image_piCongrRight σ B
   rw [← h_e, ← h_d, hv0, ← hcardB']
   -- rewrite `card F` to `card (Fin (card F))` in the numeric factors
   rw [show (card F : ℚ) = (card (Fin (card F)) : ℚ) by rw [hcardF']]
