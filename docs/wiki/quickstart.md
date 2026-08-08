@@ -78,6 +78,30 @@ python3 -m pip install leanblueprint
 - `scripts/README.md` is still useful as an inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
+- `--lint` currently fails on `main` as well as on feature branches: `scripts/lint-style.sh`
+  reports a large pre-existing style backlog and `validate.sh` runs under `set -euo pipefail`, so
+  `--lint` **aborts the script before `--docs`**. To exercise the docgen gate, run
+  `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
+  compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
+
+## Checking axiom hygiene correctly
+
+ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}` (see
+[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
+naive check report success on something that should fail:
+
+- **`#print axioms` / `Lean.collectAxioms` do not traverse a declaration's *type*.** A theorem
+  whose *statement* failed to elaborate gets a `sorry`-typed header and reports **no axioms at
+  all** — it looks *cleaner* than a genuine theorem. Always also assert
+  `(← getConstInfo n).type.hasSorry = false`, or check the declaration compiles with zero errors
+  first. A silent `#print axioms` result is not by itself evidence of anything.
+- **A metaprogram sweep over the environment silently skips private declarations**, whose internal
+  names are mangled. De-mangle with `Lean.privateToUserName?` before filtering by module, or the
+  sweep will quietly under-report.
+
+When reporting results, prefer "axiom-clean against the baseline" over "axiom-free", and state the
+counting basis (public / source-level / all-non-internal) — declaration totals are not comparable
+across differently-written probes, whereas the set of `sorryAx` carriers is.
 
 ## Optional Direct Commands
 

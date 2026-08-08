@@ -171,6 +171,28 @@ home_page/            site assets and assembled website root
   `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
   variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
   [coding-theory-conventions.md](coding-theory-conventions.md)).
+- **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
+  a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
+  code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
+  FRI/STIR-style *split-and-fold*, where a challenge contracts the polynomial and the evaluation
+  domain shrinks, is `ProximityGap/Folding.lean`, `Data/Polynomial/SplitFold.lean`, and
+  `Data/Polynomial/FoldingPolynomial.lean`; the "folded RS code" there is a plain RS code on a
+  subdomain, not an FRS code.
+- The ABF26 generic coding-theory layer sits in `ArkLib/Data/CodingTheory/` under the
+  `CodingTheory` namespace: `SubspaceDesign.lean` (`IsSubspaceDesign` and the folded-RS
+  subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
+  codes), `Erasure.lean` (`SupportsErasureCorrection`), `HammingBallVolume.lean`,
+  `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
+  `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
+  consumes.
+- The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
+  `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`. That file also
+  currently carries a generic `Matrix` determinant-divisibility lemma and a Kummer-type
+  irreducibility result; both are flagged there as `ToMathlib` candidates.
+- Finite-probability helpers live under the `Probability` namespace in
+  `ArkLib/Data/Probability/Instances.lean` (see
+  [probability-conventions.md](probability-conventions.md)); the collision bound for random
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs

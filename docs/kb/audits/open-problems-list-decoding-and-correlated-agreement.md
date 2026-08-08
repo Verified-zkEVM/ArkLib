@@ -28,7 +28,7 @@ ArkLib, missing, or present in a materially different form.
 | ABF26 ID | Paper item | Status | Lean refs | Lean target | Notes |
 | --- | --- | --- | --- | --- | --- |
 | `L2.1` | Polynomial identity lemma | present | `prob_polynomial_identity_le`, `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`, `MvPolynomial.totalDegree_le_of_degreeOf_lt` in [Instances.lean](../../../ArkLib/Data/Probability/Instances.lean); `schwartz_zippel_of_fintype` in [Interpolation.lean](../../../ArkLib/Data/MvPolynomial/Interpolation.lean) | `prob_polynomial_identity_le` | Paper bound `m·(d-1)/|F|` for individual-degree-`<d` polynomials, realised as `prob_polynomial_identity_le`. Derived from the generalised Schwartz-Zippel wrapper `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` (which takes any `d ≥ totalDegree P`) via the `MvPolynomial.totalDegree_le_of_degreeOf_lt` helper. The legacy specialisation `prob_schwartz_zippel_mv_polynomial` (bound `≤ n / \|F\|` when `totalDegree ≤ n`) is preserved as a one-line wrapper. |
-| `D2.2` | q-entropy function `H_q` | present | `CodingTheory.qEntropy` in [Entropy.lean](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean) | existing | `noncomputable def`; uses Mathlib's `Real.logb`. Boundary case `qEntropy q 0 = 0` is a `@[simp]` lemma. |
+| `D2.2` | q-entropy function `H_q` | present | `CodingTheory.qEntropy` in [Entropy.lean](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean) | existing | `noncomputable def`, **defined through Mathlib** as `Real.qaryEntropy q x / Real.log q` (the base-`q` rescaling of Mathlib's natural-log `q`-ary entropy), with the paper's three-`logb`-term formula available as `qEntropy_eq_logb_form`. Domain is `[0,1]` per D2.2. Boundary cases `qEntropy q 0 = 0` and `qEntropy q 1 = logb q (q-1)` are `@[simp]`. Because the definition is definitional rather than a proved bridge, Mathlib's `qaryEntropy` API transports: monotonicity/antitonicity either side of `1 - 1/q`, `qEntropy_one_sub_inv` (the normalisation `H_q(1-1/q) = 1`), `qEntropy_le_one`, nonnegativity, continuity and concavity. Degenerate `q ≤ 1` gives `0` (`qEntropy_of_le_one`). |
 | `D2.3` | Restricted Hamming distance `Δ_T` | present-but-different | existing full-domain `Δ₀`/`δᵣ` in [Distance.lean](../../../ArkLib/Data/CodingTheory/Basic/Distance.lean) and [RelativeDistance.lean](../../../ArkLib/Data/CodingTheory/Basic/RelativeDistance.lean) | `restrictedRelHammingDist` | The explicit `Δ_T` (`ℝ≥0`-valued restricted fractional distance) ships with the proximity-gap split, next to its first consumers (`ε_mca`/`ε_ca` statements); this layer keeps only the full-domain notions. |
 | `D2.4` | Hamming-ball volume `Vol_q(δ,n)` | present | `CodingTheory.hammingBallVolume` in [HammingBallVolume.lean](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean); supporting `hammingBall`/`relHammingBall` sets in [ListDecodability.lean](../../../ArkLib/Data/CodingTheory/ListDecodability.lean) | existing | `noncomputable def` (depends on `Nat.floor` over `ℝ`). Boundary case `Vol_q(0, n) = 1` is a `@[simp]` lemma. |
 | `D2.5` | ECC, `δ_min`, rate | present-but-different | `Code.dist`, `Code.minDist` in [Distance.lean](../../../ArkLib/Data/CodingTheory/Basic/Distance.lean); `LinearCode.rate` in [LinearCode.lean](../../../ArkLib/Data/CodingTheory/Basic/LinearCode.lean); bridge `minDist_div_card_eq_minRelHammingDistCode` and supporting `minRelHammingDistCode` in [RelativeDistance.lean](../../../ArkLib/Data/CodingTheory/Basic/RelativeDistance.lean) linking the raw `Code.minDist C / n` form to `δᵣ C` (proved, via `Set.Finite.toFinset` refactor of `minRelHammingDistCode`) | existing | Paper uses `C ⊆ Σ^n`; ArkLib uses function spaces. Mathematically equivalent. Paper-style `δ_min` / `ρ` scoped-notation file was once planned but never materialised — call sites use `Code.minDist C / Fintype.card ι` and `LinearCode.rate` directly. |
@@ -40,13 +40,13 @@ ArkLib, missing, or present in a materially different form.
 | `D2.11` | Reed-Solomon code `RS[F,L,k]` | present-but-different | `ReedSolomon.code` in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean) | existing + `scoped notation "RS[" F ", " L ", " k "]"` | Parameterised by injection `ι ↪ F` rather than `L ⊆ F`. Strictly more general. |
 | `D2.12` | Smooth domain | present | `ReedSolomon.Smooth` in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean) | existing | Verified: typeclass requires multiplicative coset of a subgroup with order a power of two. The companion directory [FftDomain/](../../../ArkLib/Data/Domain/FftDomain) (5 modules) provides FFT-domain machinery; not a paper-item match but noted here for completeness. |
 | `D2.13` | s-interleaved RS `IRS[F,L,k,s]` | present | [ReedSolomon/Interleaved.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean) | `ReedSolomon.Interleaved.irsCode`, plus `dim_irsCode` (proved) | Defined as `interleavedCodeSet (RS[F, L, ⌊k/s⌋])`. Dimension formula `dim(IRS) = s · (k/s)` proved via injective F-linear `(Fin s → ↥RS) → (ι → Fin s → F)` + `finrank_pi_fintype`. |
-| `D2.14` | `(L,s)`-admissible field element | present | [ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean) | `ReedSolomon.Folded.Admissible` | Required by D2.15. |
+| `D2.14` | `(L,s)`-admissible field element | present | [ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean) | `ReedSolomon.Folded.Admissible` | Required by D2.15. **Deliberately STRONGER than the paper's D2.14** — see Existing Inconsistencies #6. The paper quantifies only over distinct pairs `\{\alpha,\beta\} \in \binom{L}{2}`, so its literal reading admits `\omega = 1` and permits `0 \in L`; ArkLib adds an intra-orbit clause (`\alpha\cdot\omega^i \neq \alpha` for `0 < i < s`) making `Admissible` exactly the GR08 injectivity condition. Both exclusions are load-bearing: `\omega = 1` breaks `minDist_frsCode`, and `0 \in L` falsifies T2.18 even given T2.18's `\omega`-order hypothesis. Consequence: every theorem here assuming `Admissible` is **weaker** than ABF26's printed claim. |
 | `D2.15` | Folded RS `FRS[F,L,k,s,ω]` | present | [ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean) | `ReedSolomon.Folded.frsCode` | Used pervasively in §3, §4, §6.3.2. **Track B bridges (2026-06-23), all `sorry`-free + axiom-clean (`[propext, Classical.choice, Quot.sound]`):** `admissible_foldedPoints_injective` (`Admissible ∧ ω≠0 ⇒` the `s·\|ι\|` folded points pairwise distinct), `frsEvalOnPoints_domRestrict_injective` (`Admissible ∧ ω≠0 ∧ k ≤ s·\|ι\| ⇒` encoder injective — the `Admissible → injective` bridge `dim_frsCode`'s `h_encoder_inj` awaited), and `minDist_frsCode` (block-metric MDS distance `Code.minDist (frsCode …) = \|ι\| − ⌊(k-1)/s⌋`, both directions: root-counting + explicit minimal-weight product-polynomial codeword). These are the shared structural witnesses the §6 toy-problem instantiations consume (next splits). |
 | `D2.16` | τ-subspace-design code | present | [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | `CodingTheory.IsSubspaceDesign` | GX13 definition; uses `LinearMap.proj` for `A_i`. |
-| `L2.17` | `min τ(r) ≥ ρ − 1/n` | present (**PROVEN**) | [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | `CodingTheory.subspaceDesign_tau_lower` | GG25 lemma, **proved in-tree 2026-08-07** (sorry-free, axiom-clean): design inequality at the span of a distance-attaining codeword + the new module-alphabet Singleton bound `LinearCode.singleton_bound_module` (`k ≤ s(n−d+1)`). Statement corrected 2026-06-10: rate is `finrank/(s·n)` (D2.5 alphabet `F^s`), not `finrank/n` — previous form was false (C = ⊤ counterexample). **Re-review fix (2026-06-10b):** added `∀ r, 0 ≤ τ r` (negative profiles falsified the bound at `C = ⊥`; still required — it carries the degenerate `C = ⊥` branch). |
+| `L2.17` | `min τ(r) ≥ ρ − 1/n` | present (**PROVEN**) | [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | `CodingTheory.subspaceDesign_tau_lower` | GG25 lemma, **proved in-tree** (sorry-free, axiom-clean): design inequality at the span of a distance-attaining codeword + the module-alphabet Singleton bound `LinearCode.singleton_bound_module` (`k ≤ s(n−d+1)`). Rate is `finrank/(s·n)` (D2.5 alphabet `F^s`), **not** `finrank/n` — the latter form is false (`C = ⊤` counterexample). Concluded for **all `r ≥ 1`** (given `1 ≤ s`); `r = 0` is genuinely excluded, since `dim A ≤ 0` forces `A = ⊥` and leaves `τ 0` unconstrained — so the sources' `∀ r ∈ ℕ` form is literally false. Two forms ship: `subspaceDesign_tau_lower_of_ne_bot` (GG25's own argument under the source-shaped `C ≠ ⊥`) and `subspaceDesign_tau_lower` (total wrapper assuming `0 ≤ τ` so it also covers `C = ⊥`; negative profiles such as `τ ≡ -1` at `n = 2` falsify the unguarded form). Neither hypothesis is derivable from the other. |
 | `T2.18` | FRS and UM are subspace-design | present (**PROVEN**; FRS half only) | [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | `CodingTheory.frs_is_subspaceDesign_gk16` | GK16 theorem, **proved in-tree 2026-08-07** (sorry-free, axiom-clean `[propext, Classical.choice, Quot.sound]`): GK16 Theorem 14 via the new folded-Wronskian toolkit [Polynomial/FoldedWronskian.lean](../../../ArkLib/Data/Polynomial/FoldedWronskian.lean) (`foldedWronskian` = GK16 Def 11, `foldedWronskian_ne_zero_of_linearIndependent` = GK16 Lemma 12 — the only consumer of the ω-generator hypothesis, `natDegree_foldedWronskian_le`, `pow_dvd_det_of_forall_mem_col_dvd` replacing GK16's Hasse-derivative expansion). Assembly: message-side lift of `A` and of each `A ⊓ ker projᵢ` through the injective encoder (`frsEvalOnPoints_domRestrict_injective`), block-adapted bases giving `(X − domain i·ω^m)^{dim} ∣ W` for the `n(s−σ+1)` distinct points, then root-count vs `deg W ≤ σ(k−1)` and the real chain via `σ ≤ r`. UM half deferred pending D2.19. Statement corrected 2026-06-10: with `ρ = k/(s·n)` the profile is `τ(r) = s·ρ/(s−r+1) = (k/n)/(s−r+1)`; previous spelling was `s`-fold too large. Statement corrected 2026-07-21: restored GK16's ω-generator hypothesis `orderOf ω = \|F\|−1` (unguarded form false, counterexample ω=−1 over 𝔽₁₀₁; PAPER_REVS #13). |
 | `D2.19` | Extension field presentation `(B,F,e,ψ,φ)` | present | [ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean) | `CodingTheory.ExtensionFieldPresentation` (structure wrapping `[Algebra B F]` + `Basis (Fin e) B F`), plus `IsSystematic` for the systematic variant. | Refactored to wrap Mathlib's `Algebra B F` + `Basis (Fin e) B F` directly (no parallel implementation of the field embedding / coordinate iso). `ψ := algebraMap B F`, `φ := basis.equivFun`, `coord j := proj j ∘ φ`. Univariate-multiplicity code (paper's namesake `DA.7`) is a *different* item, despite sharing a number. |
-| `D2.20` | Extension code `C_F` | present | [ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean) | `CodingTheory.extensionCode` (Set form) + `CodingTheory.extensionCodeSubmodule` (Submodule form, mirroring `ReedSolomon.code`'s shape in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)) | Set-level definition; uses coordinate-projections `P.coord j` of D2.19. **All closure laws proven**: `extensionCode_add_mem` (addition), `extensionCode_psi_smul_mem` (B-side scalar via `ψ`), and `extensionCode_smul_mem` (F-scalar closure, paper's D2.20 F-linearity claim, closed via basis-expansion through `Basis.sum_equivFun` + `Finset.sum_induction`). The Submodule packaging `extensionCodeSubmodule` bundles all three into a `Submodule F (ι → F)` (consumed by downstream code that wants a linear-code type; `coe_extensionCodeSubmodule` is the carrier bridge). Distance equality `δ_min(C_F) = δ_min(C_B)` from DP25 not formalised — separate paper item. |
+| `D2.20` | Extension code `C_F` | present | [ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean) | `CodingTheory.extensionCode` (Set form) + `CodingTheory.extensionCodeSubmodule` (Submodule form, mirroring `ReedSolomon.code`'s shape in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)) | Set-level definition; uses coordinate-projections `P.coord j` of D2.19. **All closure laws proven**: `extensionCode_add_mem` (addition), `extensionCode_psi_smul_mem` (B-side scalar via `ψ`), and `extensionCode_smul_mem` (F-scalar closure, paper's D2.20 F-linearity claim, closed via basis-expansion through `Basis.sum_equivFun` + `Finset.sum_induction`). The Submodule packaging `extensionCodeSubmodule` bundles all three into a `Submodule F (ι → F)` (consumed by downstream code that wants a linear-code type; `coe_extensionCodeSubmodule` is the carrier bridge). Distance equality `δ_min(C_F) = δ_min(C_B)` from DP25 not formalised — separate paper item. **Encoder gap (documented in the module docstring):** ABF26 D2.20 is *encoder-level* (`C_F(v) := φ⁻¹(C_B(φ₁ v), …, C_B(φ_e v))`), while ArkLib models the code **image**. So the paper's systematic consequence `C_F(ψ v) = ψ(C_B v)` is not expressible here; the strongest image-level shadow is `mem_extensionCode_comp_algebraMap_iff_of_isSystematic` (`ψ ∘ c ∈ C_F ↔ c ∈ C_B`). Reaching the paper's form needs an `extensionEncode` abstraction that does not yet exist. Also proved: `extensionCode_eq_span` (basis-free characterisation) and `extensionCode_presentation_independent` — for `B`-**submodule** inputs the extension code does not depend on the chosen presentation at all (for a raw `Set` input the coordinate-wise definition does see the basis). |
 | `L2.21` | `\|Λ(C_F,δ)\| = \|Λ(C_B^e,δ)\|` | present | [ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean) | `CodingTheory.lambda_extensionCode_eq_lambda_interleaved` | BCFW25 Lemma D.3; PROVEN in-tree (coordinate Hamming isometry), sorry-free. |
 
 
@@ -54,14 +54,14 @@ ArkLib, missing, or present in a materially different form.
 
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
-| Definition 3.1 Johnson functions `J_{q,\ell}`, `J_q`, `J` | present-but-different | `J` in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | ArkLib has the usual `q`-ary Johnson function, but not the paper's full three-function family. |
-| Theorem 3.2 Johnson bound | present-but-different | `johnson_bound`, `johnson_bound_alphabet_free` in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | Present as a condition-based list-size theorem rather than the exact paper packaging. |
-| Corollary 3.3 MDS coarse Johnson corollary | missing | related ingredients in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) and [ArkLib/Data/CodingTheory/Basic/LinearCode.lean](../../../ArkLib/Data/CodingTheory/Basic/LinearCode.lean) | Likely derivable, but not present as a named result. |
-| Theorem 3.4 list decoding for subspace-design codes | missing | none | Depends on missing subspace-design infrastructure. |
-| Corollary 3.5 folded RS up to capacity | missing | none | Depends on missing folded RS and subspace-design code infrastructure. |
+| Definition 3.1 Johnson functions `J_{q,\ell}`, `J_q`, `J` | present | `Jqℓ` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); `J` (= the paper's `J_q`) and `Jcap` (= the paper's `J`) in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | Full three-function family. **Divergence from the printed PDF:** the PDF's list factor `\ell/(\ell-1)` is a typo (it makes `J_{q,\ell} > J_q`, inverts monotonicity in `\ell`, and diverges at `\ell = 1`); Lean uses the correct `(\ell-1)/\ell`, matching [codingtheory] and the authors' current tex (fixed upstream 2026-06-13). `Jqℓ` is now **defined** as `J q (((ℓ-1)/ℓ) * δ)`, with `Jqℓ_eq_J` the (`rfl`) bridge and `Jqℓ_paper_form` recovering the printed shape; and `sqrt_le_J` is stated as `Jcap δ ≤ J q δ`, which is the paper's `J(δ) ≤ J_q(δ)`. So the three functions are one family, not three spellings of the radius. |
+| Theorem 3.2 Johnson bound | present | `johnson_bound_lambda_le_ell` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean); numeric core `johnson_card_le_ell`; underlying condition-based form `johnson_bound`, `johnson_bound_alphabet_free` in [ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean) | Proved, in the paper's `Lambda`/`Jqℓ` packaging. Carries a radicand-positivity guard; the very-low-rate "Plotkin corner" where that guard fails is covered separately by `plotkin_card_le_ell`. |
+| Corollary 3.3 MDS coarse Johnson corollary | present | `mds_johnson_lambda_le` in [ArkLib/Data/CodingTheory/JohnsonBound/Family.lean](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean) | Proved, from Theorem 3.2 plus the rate-distance bridge `LinearCode.IsMDS_iff_rate_distance` in [ArkLib/Data/CodingTheory/Basic/LinearCode.lean](../../../ArkLib/Data/CodingTheory/Basic/LinearCode.lean). Stated for general MDS codes; the interleaved-RS specialisation the paper highlights is not yet instantiated. |
+| Theorem 3.4 list decoding for subspace-design codes | missing | prerequisite `IsSubspaceDesign` now present in [ArkLib/Data/CodingTheory/SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | The [CZ25] Theorem B.5 bound itself is not formalized; the subspace-design infrastructure it needs is. |
+| Corollary 3.5 folded RS up to capacity | missing | prerequisites `frsCode` and `frs_is_subspaceDesign_gk16` now present in [ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean) and [ArkLib/Data/CodingTheory/SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | Blocked only on Theorem 3.4, not on the code families any more. |
 | Theorem 3.6 random Reed-Solomon domains near capacity | missing | none | No random-domain RS list-decoding result was found. |
-| Lemma 3.7 Elias lower bound | missing | none | No formalization of this lower bound was found. |
-| Corollary 3.8 volume-based lower bound | missing | none | Depends on missing Elias/Hamming-volume formalization. |
+| Lemma 3.7 Elias lower bound | missing | prerequisite `hammingBallVolume` now present in [ArkLib/Data/CodingTheory/HammingBallVolume.lean](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean) | The lower bound itself is not formalized; the ball-volume function it is stated in terms of is (with the bridge to `hammingBall`). |
+| Corollary 3.8 volume-based lower bound | missing | prerequisites `hammingBallVolume` and `qEntropy` now present in [ArkLib/Data/CodingTheory/HammingBallVolume.lean](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean) and [ArkLib/Data/CodingTheory/Basic/Entropy.lean](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean) | Blocked on Lemma 3.7; the volume and entropy inputs are in place. |
 | Theorem 3.9 generalized Singleton bound for list decoding | missing | related classical Singleton bounds in [ArkLib/Data/CodingTheory/Basic/LinearCode.lean](../../../ArkLib/Data/CodingTheory/Basic/LinearCode.lean) | ArkLib has only the classical Singleton bound. |
 | Theorem 3.10 large-alphabet lower bound near generalized Singleton | missing | none | No matching result was found. |
 | Theorem 3.11 random linear-code lower bound | missing | none | No matching result was found. |
@@ -108,8 +108,8 @@ ArkLib, missing, or present in a materially different form.
 | --- | --- | --- | --- |
 | Definition 6.1 toy problem relation `R_C^ℓ` | missing | none | No matching relation was found. |
 | Definition 6.3 relaxed toy relation `R̃_C,δ^ℓ` | missing | none | No matching relation was found. |
-| Definition 6.4 erasure correction | present | `CodingTheory.SupportsErasureCorrection`, `eq_of_consistent_with_erased` in [ArkLib/Data/CodingTheory/Erasure.lean](../../../ArkLib/Data/CodingTheory/Erasure.lean) | Generic code-level predicate (lives under `CodingTheory/`, not a `ToyProblem` alias). Both clauses encoded: (i) recovery when erasures `< δ_min·n` with a matching codeword, (ii) `E f = none` otherwise. The paper's correction-time parameter `ecor` is not carried — ArkLib's extractors are uniformly cost-free. |
-| Lemma 6.5 every additive code supports erasure correction | present | `CodingTheory.additive_code_supports_erasure_correction_grs12` in [ArkLib/Data/CodingTheory/Erasure.lean](../../../ArkLib/Data/CodingTheory/Erasure.lean) | Proven sorry-free and axiom-clean. Corrector built classically: below `minDist C` erasures the consistent codeword is unique (`eq_of_consistent_with_erased`), so classical choice yields the decoder. The paper's `O((s·n)³)` operation bound is outside ArkLib's cost-free model; only existence is formalized. |
+| Definition 6.4 erasure correction | present | `CodingTheory.SupportsErasureCorrection`, `eq_of_consistent_with_erased` in [ArkLib/Data/CodingTheory/Erasure.lean](../../../ArkLib/Data/CodingTheory/Erasure.lean) | Generic code-level predicate (lives under `CodingTheory/`, not a `ToyProblem` alias). Both clauses encoded: (i) recovery when erasures `< δ_min·n` with a matching codeword, (ii) `E f = none` otherwise. The paper's correction-time parameter `ecor` is not carried — ArkLib's extractors are uniformly cost-free. **Consequence: the predicate is a tautology.** Because `ecor` is dropped and `∃ E` ranges over arbitrary mathematical functions, `SupportsErasureCorrection C` is provable for *every* `C` (see the Lemma 6.5 row), so it carries no information as a hypothesis. Do not use it as a precondition expecting it to constrain `C`; the whole content of ABF26 D6.4 is the cost bound. |
+| Lemma 6.5 every additive code supports erasure correction | present | `CodingTheory.exists_erasure_corrector` in [ArkLib/Data/CodingTheory/Erasure.lean](../../../ArkLib/Data/CodingTheory/Erasure.lean) | Proven sorry-free and axiom-clean, but **the statement is weaker than the paper's**: it needs no additivity hypothesis and nothing from [codingtheory], and it holds for every code (`∅`, `univ`, arbitrary sets), because the corrector is built by classical choice from the uniqueness lemma `eq_of_consistent_with_erased`. The entire content of ABF26 Lemma 6.5 is the `O((s·n)³)` operation bound, which is outside ArkLib's cost-free model and is *not* formalized. The mathematically substantive part that is formalized is the uniqueness pigeonhole `eq_of_consistent_with_erased`. Renamed from `additive_code_supports_erasure_correction_grs12` so the name no longer claims an additivity hypothesis it lacks or an attribution it does not earn. |
 | Lemma 6.6 knowledge soundness of Construction 6.2 | missing | related general security framework in [ArkLib/OracleReduction/Security/Basic.lean](../../../ArkLib/OracleReduction/Security/Basic.lean) | The framework exists, but this protocol and its theorem are not formalized. |
 | Remark 6.7 CA is insufficient for the proof of Lemma 6.6 | missing | none | No matching analysis was found. |
 | Lemma 6.8 round-by-round knowledge soundness of Construction 6.2 | missing | related framework in [ArkLib/OracleReduction/Security/RoundByRound.lean](../../../ArkLib/OracleReduction/Security/RoundByRound.lean) | The framework exists, but this protocol and its theorem are not formalized. |
@@ -161,9 +161,25 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20),
    and
 
-5. Several code families used centrally by the paper are absent.
-   Folded Reed-Solomon, univariate multiplicity codes, subspace-design codes, and extension-field
-   codes are not yet represented directly in ArkLib.
+5. ~~Several code families used centrally by the paper are absent.~~ **Resolved.**
+   Folded Reed-Solomon ([ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean)),
+   univariate multiplicity codes ([ReedSolomon/Multiplicity.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean)),
+   subspace-design codes ([SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean)),
+   and extension-field codes ([ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean))
+   are all now represented directly. What remains missing is the *results about* them
+   (Theorem 3.4, Corollary 3.5, the §4 MCA bounds), not the families themselves.
+
+6. The code families deviate from the paper where the paper is defective.
+   `ReedSolomon.Folded.Admissible` is **strictly stronger** than ABF26 Definition 2.14: the
+   paper quantifies only over distinct pairs `\{\alpha,\beta\} \in \binom{L}{2}`, so its literal
+   reading admits `\omega = 1` and permits `0 \in L`. Both are genuine defects — with
+   `\omega = 1` the folded-RS distance formula fails (brute-forced), and with `0 \in L`
+   Theorem 2.18 is false even given the `\omega`-order hypothesis (compiled counterexample over
+   `ZMod 5`). The added intra-orbit clause rules both out, and is therefore **load-bearing for
+   Theorem 2.18**, not a stylistic strengthening. Consequence for readers: every downstream
+   theorem here is *weaker* than ABF26's printed claim, because it assumes more of `\omega` and
+   `L`. See `docs/kb/papers/GR08.md` and the review at
+   [`../queries/abf26-split-pr1-review-2026-08-07/`](../queries/abf26-split-pr1-review-2026-08-07/).
 
 ## Roadmap
 
@@ -178,9 +194,13 @@ The largest mismatches between the paper and ArkLib are structural rather than m
 3. Add a general line-decoding definition next to CA/MCA.
    Section 4 and Section 5 are much cleaner to formalize once this interface exists.
 
-4. Add a maximized list-size function `listSize` or `Lambda` on top of the current
-   `closeCodewordsRel` and `listDecodable` interfaces in
-   [ArkLib/Data/CodingTheory/ListDecodability.lean](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
+4. ✅ **DONE.** The maximized list-size function is `ListDecodable.Lambda`, built on the
+   existing `closeCodewordsRel` in
+   [ArkLib/Data/CodingTheory/ListDecodability.lean](../../../ArkLib/Data/CodingTheory/ListDecodability.lean),
+   with `Lambda_le_iff_listDecodable` bridging it to the pre-existing `listDecodable` used by
+   the STIR development. Caveat for consumers: `Lambda` is built from `Set.ncard`, so it is
+   `0` (not `⊤`) on infinite lists — see `Lambda_ne_top` and the finiteness note in
+   [../../wiki/coding-theory-conventions.md](../../wiki/coding-theory-conventions.md).
 
 ### Phase 2: Close Existing Gaps in the Current Theory
 
@@ -205,19 +225,34 @@ The largest mismatches between the paper and ArkLib are structural rather than m
    [ArkLib/OracleReduction/Security/RoundByRound.lean](../../../ArkLib/OracleReduction/Security/RoundByRound.lean),
    because Section 6 depends heavily on these abstractions.
 
-### Phase 3: Add the Missing Code Families
+### Phase 3: Add the Missing Code Families — **DONE**
 
-1. Add a dedicated interleaved Reed-Solomon alias/API in
-   [ArkLib/Data/CodingTheory/ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
-   or a sibling file, built on top of the existing interleaving machinery.
+All five items landed with the coding-theory foundations split.
 
-2. Add folded Reed-Solomon codes, including admissibility conditions.
+1. ✅ Interleaved Reed-Solomon: `ReedSolomon.Interleaved.irsCode` in
+   [ReedSolomon/Interleaved.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean),
+   defined as `ReedSolomon.code ^⋈ Fin s` on top of the existing interleaving machinery.
 
-3. Add univariate multiplicity codes and their formal-derivative packaging.
+2. ✅ Folded Reed-Solomon with admissibility: `ReedSolomon.Folded.frsCode` and
+   `ReedSolomon.Folded.Admissible` in
+   [ReedSolomon/Folded.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean)
+   (see Existing Inconsistencies #6 for the deliberate strengthening of admissibility).
 
-4. Add extension-field presentations and extension codes.
+3. ✅ Univariate multiplicity codes: `ReedSolomon.Multiplicity.umCode` in
+   [ReedSolomon/Multiplicity.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean),
+   using ordinary iterated derivatives per ABF26 Definition A.6 (`char F ≥ k`).
 
-5. Add subspace-design codes as a reusable abstraction layer.
+4. ✅ Extension-field presentations and extension codes: `ExtensionFieldPresentation`,
+   `extensionCode` in
+   [ExtensionCodes.lean](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean), plus
+   Lemma 2.21 (`lambda_extensionCode_eq_lambda_interleaved`).
+
+5. ✅ Subspace-design codes: `CodingTheory.IsSubspaceDesign` in
+   [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean), with both
+   Lemma 2.17 and the folded-RS half of Theorem 2.18 proved in-tree (the latter via the
+   folded-Wronskian toolkit in
+   [Data/Polynomial/FoldedWronskian.lean](../../../ArkLib/Data/Polynomial/FoldedWronskian.lean)).
+   The univariate-multiplicity half of Theorem 2.18 remains open.
 
 ### Phase 4: Rebuild Section 3 and Section 4 on the New Interfaces
 
@@ -250,8 +285,13 @@ The largest mismatches between the paper and ArkLib are structural rather than m
 1. Add the toy relation and relaxed toy relation as a small standalone module, likely under
    `ArkLib/ProofSystem/` rather than under `OracleReduction/`.
 
-2. Add an erasure-correction abstraction at the coding-theory layer, with the generic additive-code
-   existence theorem.
+2. ✅ **DONE** (with a caveat). `CodingTheory.SupportsErasureCorrection` and the generic existence
+   theorem are in
+   [ArkLib/Data/CodingTheory/Erasure.lean](../../../ArkLib/Data/CodingTheory/Erasure.lean).
+   Caveat: without a cost model the predicate is a tautology and the existence theorem is a
+   classical-choice triviality — see the Definition 6.4 and Lemma 6.5 rows in Section 6. The
+   substantive content available for reuse is the uniqueness lemma
+   `eq_of_consistent_with_erased`. Revisit if and when ArkLib gains a cost model.
 
 3. Formalize Construction 6.2 and Construction 6.9 as oracle reductions using the existing
    security framework.

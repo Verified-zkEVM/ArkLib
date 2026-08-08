@@ -1,0 +1,4 @@
+bibkey: GX13
+source_kind: article
+committed_artifacts: []
+notes: "Guruswami-Xing, STOC '13 pages 843-852; the original subspace-design definition, cited by ABF26 Definition 2.16. No GX13 theorem is formalized. The bib entry's title field currently names a different paper (Shangguan-Tamo, STOC 2020); the author, venue and page fields identify List decoding Reed-Solomon, Algebraic-Geometric, and Gabidulin subcodes up to the Singleton bound, which matches the reference PDF (not committed) at ~/abf26-refs/GuruswamiX13.pdf."
