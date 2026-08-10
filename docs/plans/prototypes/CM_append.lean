@@ -439,22 +439,15 @@ theorem append_treeSpecialSoundWithEscape
 
 end CM
 
-/-! ## Part E — the guarded seam -/
+/-! ## Part E — the guarded seam
 
-namespace ProtocolSpec.ChallengeTree
-
-variable {n : ℕ} {pSpec : ProtocolSpec n} {arity : pSpec.ChallengeIdx → ℕ}
-
-/-- A computable leaf path of any tree with positive branching (a guarded left factor learns
-`check₁ = true` only from *some* suffix leaf). -/
-def somePath (harity : ∀ i, 0 < arity i) :
-    {m : Fin (n + 1)} → (t : ChallengeTree pSpec arity m) → LeafPath t
-  | _, .leaf => .leaf
-  | _, .msgNode _ _ _ child => .msg (somePath harity child)
-  | _, .chalNode k h _ children =>
-      .chal ⟨0, harity ⟨k, h⟩⟩ (somePath harity (children ⟨0, harity ⟨k, h⟩⟩))
-
-end ProtocolSpec.ChallengeTree
+`ProtocolSpec.ChallengeTree.somePath` — a computable leaf path of any tree with positive branching
+(a guarded left factor learns `check₁ = true` only from *some* suffix leaf) — **landed in the
+library** by milestone M4 step 4a, in
+`ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean` beside `onlyPath`, so the copy that used
+to sit here was deleted to avoid `has already been declared`. The transcription was verbatim; the
+two guarded theorems below still apply it, and the IR gate at the end of this file still reports on
+it — now against the library declaration. -/
 
 namespace CM
 

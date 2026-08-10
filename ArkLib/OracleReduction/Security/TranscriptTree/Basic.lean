@@ -48,13 +48,15 @@ import ArkLib.OracleReduction.Security.Basic
     root-to-leaf paths, the transcript each selects, the list of all leaf transcripts, and their
     membership correspondence (`mem_fullTranscripts`, `exists_of_mem_fullTranscripts`).
   - `ChallengeTree.onlyPath` — the unique root-to-leaf path of a challenge-free tree, read off the
-    tree by structural recursion.
+    tree by structural recursion — and `ChallengeTree.somePath`, its positive-arity analogue: *some*
+    leaf path of any tree that branches at all.
   - `ChallengeTree.IsAccepting` — the verifier accepts every root-to-leaf transcript into the output
     language with probability one.
   - `Verifier.Outputs` — the statements the verifier *can* output on a transcript under the fixed
     sampling, with the acceptance bridges (`mem_language_of_mem_outputs`,
     `outputs_nonempty_of_isAccepting`) and the pure-verifier pin-down (`outputs_pure_subsingleton`,
-    `pure_verdict_mem_outputs`).
+    `pure_verdict_mem_outputs`). `support_init_nonempty_of_prob_one` and
+    `not_accepting_of_failure` read the same acceptance fact off a single transcript.
   - `ChallengeTree.LeafWitnesses` / `LeafWitnesses.IsValid` — one candidate *output* witness per
     leaf, and what makes such a witnessing honest: every answer certifies, in `relOut`, some
     statement the verifier can output at that leaf. At a pure verifier this collapses to per-verdict
@@ -209,6 +211,21 @@ def onlyPath [IsEmpty pSpec.ChallengeIdx] :
   | _, .leaf => .leaf
   | _, .msgNode _ _ _ child => .msg (onlyPath child)
   | _, .chalNode m h _ _ => isEmptyElim (⟨m, h⟩ : pSpec.ChallengeIdx)
+
+/-- **Some** root-to-leaf path of a tree whose branching is everywhere positive: take the first
+branch at each challenge node.
+
+Where `onlyPath` needs the tree to be challenge-free, this needs only `0 < arity i` — enough to
+know a challenge node *has* a child. It is the probe of the guarded composition theorems: a guarded
+left factor learns that its check passes on a prefix transcript only by exhibiting *some* suffix
+leaf beneath it, and a witness of "the suffix tree is inhabited" is exactly this path. Like
+`onlyPath` it is plain structural recursion, hence computable. -/
+def somePath (harity : ∀ i, 0 < arity i) :
+    {m : Fin (n + 1)} → (tree : ChallengeTree pSpec arity m) → LeafPath tree
+  | _, .leaf => .leaf
+  | _, .msgNode _ _ _ child => .msg (somePath harity child)
+  | _, .chalNode k h _ children =>
+      .chal ⟨0, harity ⟨k, h⟩⟩ (somePath harity (children ⟨0, harity ⟨k, h⟩⟩))
 
 /-- Collect all root-to-leaf transcripts of a tree, given the partial transcript `pre` accumulated
   on the path from the root to the current node.
@@ -464,6 +481,52 @@ theorem pure_verdict_mem_outputs (init : ProbComp σ)
     congr 1
   rw [heq]
   exact (mem_support_bind_iff init _ _).2 ⟨s, hs, (mem_support_pure_iff _ _).2 rfl⟩
+
+/-- Acceptance of a *single* transcript with probability one already forces the sampling's support
+  to be nonempty: a sampling that produces no seed makes the whole computation fail.
+
+  The transcript-level form of `support_init_nonempty_of_accepting`, used where the acceptance fact
+  in hand is about one leaf rather than a tree. -/
+theorem support_init_nonempty_of_prob_one {init : ProbComp σ}
+    {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {stmt : StmtIn} {tr : pSpec.FullTranscript} {lang : Set StmtOut}
+    (h : Pr[ (· ∈ lang) |
+      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) :
+    (support init).Nonempty := by
+  by_contra hempty
+  rw [Set.not_nonempty_iff_eq_empty] at hempty
+  rw [probEvent_eq_one_iff] at h
+  obtain ⟨hFail, -⟩ := h
+  rw [OptionT.probFailure_eq, OptionT.run_mk] at hFail
+  have hsupp : support (do (simulateQ impl (V.run stmt tr)).run' (← init) :
+      ProbComp (Option StmtOut)) = ∅ := by
+    simp [support_bind, hempty]
+  rw [probFailure_eq_one hsupp] at hFail
+  simp at hFail
+
+/-- A verifier that **rejects outright** on a transcript cannot accept it with probability one: on
+  the `failure` branch the run fails certainly.
+
+  This is what makes a guarded verifier's check *learnable* from acceptance — see
+  `Verifier.append_run_guardedLeft`, whose rejecting branch this lemma refutes. -/
+theorem not_accepting_of_failure {init : ProbComp σ}
+    {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
+    {stmt : StmtIn} {tr : pSpec.FullTranscript} (hV : V.verify stmt tr = failure)
+    {lang : Set StmtOut}
+    (h : Pr[ (· ∈ lang) |
+      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) : False := by
+  have hne : (support init).Nonempty := support_init_nonempty_of_prob_one h
+  rw [probEvent_eq_one_iff] at h
+  obtain ⟨hFail, -⟩ := h
+  rw [OptionT.probFailure_eq, OptionT.run_mk] at hFail
+  simp only [Verifier.run, hV] at hFail
+  have hc : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :
+      ProbComp (Option StmtOut)) = (init >>= fun _ => pure none) := by congr 1
+  rw [hc] at hFail
+  have h0 : Pr[= (none : Option StmtOut) | (init >>= fun _ => pure none : ProbComp _)] = 0 :=
+    (add_eq_zero.mp hFail).2
+  rw [probOutput_eq_zero_iff] at h0
+  exact h0 (by simp [hne])
 
 end Verifier
 

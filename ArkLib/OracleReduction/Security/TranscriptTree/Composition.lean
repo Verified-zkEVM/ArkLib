@@ -32,6 +32,9 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   - `ChallengeTree.EscapeEvent.append` — composition of two escape events
     (`ChallengeTree.EscapeEvent`) along the same split: the left event on the prefix tree, or the
     right event on some suffix tree at the left verifier's verdict on that prefix leaf.
+  - `Extractor.TreeBased.append` — the composed extraction algorithm itself: the left extractor on
+    the prefix tree, fed per prefix leaf with the right extractor's output on the suffix tree below
+    it, at the intermediate statement the left verifier's verdict function names.
 
   ## Main theorems
 
@@ -1102,3 +1105,36 @@ end AppendSplit
 end ChallengeTree
 
 end ProtocolSpec
+
+/-! ## Sequential composition of tree-based extractors -/
+
+namespace Extractor
+
+open ProtocolSpec ProtocolSpec.ChallengeTree
+
+variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
+  {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+  {arity₁ : pSpec₁.ChallengeIdx → ℕ} {arity₂ : pSpec₂.ChallengeIdx → ℕ}
+
+/-- **Sequential composition of witness-only tree extractors.** Split the appended tree
+(`ChallengeTree.appendSplit`) and run the left extractor on the prefix tree, feeding it — per prefix
+leaf — the right extractor's output on the suffix tree hanging below that leaf. The intermediate
+statement the right extractor runs at is computed by `verify₁`, the **left verifier's verdict
+function**, passed as data; a package reads it off its `Verifier.PureForm` / `Verifier.GuardedForm`
+field, which is exactly why those fields carry the verdict as data rather than as an existential.
+
+The right extractor's own witnessing input is the top-level witnessing read at the glued path
+(`ChallengeTree.AppendSplit.gluePath`), and that glue is the *only* path machinery a composed
+extraction runs: extractors attribute no output statements, so nothing ever un-glues a path.
+Declining propagates — if the top witnessing declines at some glued leaf the right extractor may
+decline, hence so may the left. -/
+def TreeBased.append (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (E₁ : TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ arity₁)
+    (E₂ : TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ arity₂) :
+    TreeBased Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂) (ChallengeTree.appendArity arity₁ arity₂) :=
+  fun stmt tree o =>
+    E₁ stmt tree.appendSplit.fst fun p₁ =>
+      E₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+        fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)
+
+end Extractor
