@@ -221,7 +221,7 @@ noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) :=
   haveI := isPresentation_cyclotomic Φ hd
-  Lift.package (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
+  Lift.packageClassical (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s z => vecLInftyNorm Φ z ≤ s.bound) (fun s => bound ≤ s.bound) K
     φF.injective (cyclotomicPresentation_modulus_natDegree Φ)
     (fun s w hshort hside => vecLInftyNorm_le_of_liftShort Φ bound ρBound s w hshort hside)

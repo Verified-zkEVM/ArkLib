@@ -55,7 +55,7 @@ collision of the committed value"), and relations and extractor stay ordinary.
 * `Reduction.lean` — the protocol layer over the committed-scalar shell: the lifted witness
   `LiftedWitness`, the input relation `relLin`, the challenge-local predicate `checkAt`, the
   generic recovery theorem `recover`, and the escape-threaded CWSS theorem +
-  `EscapeCWSSPackageClassical` assembly.
+  `EscapeCWSSPackage` assembly.
 
 ## Instances
 
