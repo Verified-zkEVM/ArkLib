@@ -1,5 +1,10 @@
 # PR #701 — fix-session bootstrap
 
+> **STATUS 2026-08-10: groups A–D and the ToMathlib duplicate re-check are CLOSED** — see
+> [`FIX-SESSION-2026-08-10.md`](FIX-SESSION-2026-08-10.md) for per-finding dispositions and
+> validation. Only §2's group E (push + owner PR-body refresh) and §3's separate-PR items
+> remain.
+
 **Purpose.** This is the single entry point for a fresh session whose job is to close the
 remaining review findings on `feat/abf26-split-ct-data`. It is self-contained: read this file
 and the four rows of §2 you are working on, and you should not need to re-derive anything.

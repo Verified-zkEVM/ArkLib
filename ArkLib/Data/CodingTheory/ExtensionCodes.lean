@@ -76,12 +76,13 @@ from a base encoder first.
 
 ## References
 
-- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated
-  Agreement*. 2026. §2.6 (D2.19, D2.20, L2.21).
-- [BCFW25] Bünz-Chiesa-Fenzi-Wang. Definition D.2 and Lemma D.3.
-- [DP25] Diamond-Posen, Theorem 3.2, for the distance equality
-  `δ_min(C_F) = δ_min(C_B)` quoted in the L2.21 paragraph context — **not**
-  formalised here.
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§2.6: D2.19, D2.20, L2.21)
+* [Bünz, B., Chiesa, A., Fenzi, G., and Wang, W., *Linear time accumulation
+    schemes*][BCFW25] (Definition D.2 and Lemma D.3)
+* [Diamond, B. E., and Posen, J., *Succinct Arguments over Towers of Binary
+    Fields*][DP25] (Theorem 3.2, for the distance equality `δ_min(C_F) = δ_min(C_B)`
+    quoted in the L2.21 paragraph context — **not** formalised here)
 -/
 
 namespace CodingTheory
@@ -118,7 +119,7 @@ lemma e_pos (P : ExtensionFieldPresentation B F) : 0 < P.e :=
 /-- The paper's `j`-th coordinate functional `φ_j : F →ₗ[B] B`. This is *literally*
 Mathlib's `Module.Basis.coord`; the abbreviation exists only to keep the D2.20
 statement in the paper's shape. See `coord_eq_basis_coord`. -/
-noncomputable def coord (P : ExtensionFieldPresentation B F) (j : Fin P.e) : F →ₗ[B] B :=
+noncomputable abbrev coord (P : ExtensionFieldPresentation B F) (j : Fin P.e) : F →ₗ[B] B :=
   P.basis.coord j
 
 @[simp] lemma coord_eq_basis_coord (P : ExtensionFieldPresentation B F) (j : Fin P.e) :

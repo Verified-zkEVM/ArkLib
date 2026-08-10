@@ -75,12 +75,12 @@ Sanity lemmas:
 
 ## References
 
-* [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
-  Correlated Agreement*][ABF26] (§A.2, Definitions A.6, A.7).
-* [GW13] Guruswami-Wang. *Linear-algebraic list decoding for
-  variants of Reed-Solomon codes.*
-* [KSY14] Kopparty-Saraf-Yekhanin. *High-rate codes with sublinear-time
-  decoding.*
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§A.2: Definitions A.6, A.7)
+* [Guruswami, V., and Wang, C., *Linear-Algebraic List Decoding for Variants of
+    Reed-Solomon Codes*][GW13]
+* [Kopparty, S., Saraf, S., and Yekhanin, S., *High-rate codes with sublinear-time
+    decoding*][KSY14]
 -/
 
 namespace ReedSolomon
@@ -130,17 +130,12 @@ codeword. Stated as an iff between memberships (the LHS lives in
 `ι → Fin 1 → F`, the RHS in `ι → F`, avoiding the cross-type equality
 issue).
 
-Stated outside the `Multiplicity` namespace's `[CommSemiring F]` section
-to sidestep the `Polynomial`-Semiring instance clash between
-`CommSemiring.to…` and `Field.to…`: when both are in scope, the
-`umCode`-side polynomial type is incommensurate with the
-`ReedSolomon.code`-side one.
-
 Proved as a corollary of the encoder-generic
 `ReedSolomon.mem_map_degreeLT_one_iff_mem_code`, shared with
-`ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode`. -/
+`ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode`, at that lemma's own
+`[CommSemiring F]` generality. -/
 lemma Multiplicity.mem_umCode_one_iff_mem_rsCode
-    {ι : Type*} {F : Type*} [Field F]
+    {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k : ℕ) (f : ι → Fin 1 → F) :
     f ∈ Multiplicity.umCode domain k 1 ↔
       (fun i ↦ f i 0) ∈ ReedSolomon.code domain k :=

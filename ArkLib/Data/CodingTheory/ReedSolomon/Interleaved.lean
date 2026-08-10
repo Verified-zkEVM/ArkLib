@@ -28,8 +28,8 @@ codewords, arranged column-wise.
 
 ## References
 
-- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
-  2026. §2.4 Definition 2.13.
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§2.4: Definition 2.13)
 -/
 
 namespace ReedSolomon

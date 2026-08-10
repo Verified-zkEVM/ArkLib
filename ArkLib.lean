@@ -324,6 +324,7 @@ import ArkLib.ToMathlib.BigOperators.Fin
 import ArkLib.ToMathlib.FieldTheory.Kummer
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.Finset.ToListWithProof
+import ArkLib.ToMathlib.InformationTheory.Hamming
 import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.List.Basic

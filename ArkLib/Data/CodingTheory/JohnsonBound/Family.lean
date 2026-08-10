@@ -7,6 +7,7 @@ Authors: Alexander Hicks
 import ArkLib.Data.CodingTheory.JohnsonBound.Basic
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
 # ABF26 §3.1 — Johnson family `J_{q,ℓ}, J_q, J` and Theorem 3.2 / Corollary 3.3
@@ -33,8 +34,11 @@ not prove them either).
 The file also states the paper-shaped versions of:
 
 - `johnson_bound_lambda_le_ell` — ABF26 Theorem 3.2 [Joh62]:
-  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`, with no side condition (as in the paper).
-- `mds_johnson_lambda_le` — ABF26 Corollary 3.3:
+  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ` for every `ℓ ≥ 1`, the paper's full range (`ℓ = 0` is
+  genuinely false as encoded — a Lean-side artefact of `ℚ`-division, see the docstring).
+- `mds_johnson_lambda_le` — ABF26 Corollary 3.3, at its *field-linear specialization*
+  (`LinearCode ι F`; the paper's statement also covers module alphabets such as
+  interleaved RS — see the docstring's scope note):
   for any MDS code `C` of rate `ρ` and `η > 0`, `|Λ(C, 1 - √ρ - η)| ≤ 1/(2·η·ρ)`.
 - `rs_lambda_le_johnson_mds` — C3.3 at Reed–Solomon, via the pre-existing
   `ReedSolomon.isMDS_code`.
@@ -45,9 +49,11 @@ The file also states the paper-shaped versions of:
 Johnson bound (`johnson_bound` in `JohnsonBound/Basic.lean`, now field-free) is ported to
 ABF26's `Lambda`/`Jqℓ` form. The numeric core is factored into `johnson_card_le_ell`
 (stated over an abstract `Finset (Fin n → α)`), and the theorem reindexes an arbitrary
-finite index type `ι` to `Fin n` via `reidx_hammingDist`.
+finite index type `ι` to `Fin n` via `hammingDist_comp_equiv`
+(`ArkLib/ToMathlib/InformationTheory/Hamming.lean`).
 
-`mds_johnson_lambda_le` (C3.3) is **fully proven**, derived from T3.2 + the
+`mds_johnson_lambda_le` (C3.3's field-linear specialization) is **fully proven**,
+derived from T3.2 + the
 Singleton/rate-distance bridge (`IsMDS_iff_rate_distance`) and the domination
 `domination_core`. The very-low-rate MDS "Plotkin corner" (where the `Jqℓ` radicand guard
 fails — genuinely reachable, e.g. `[4,2,3]` over `𝔽₃`) is closed by `plotkin_card_le_ell`,
@@ -56,9 +62,9 @@ radius the *whole code* has fewer than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ �
 
 ## References
 
-- [ABF26] Arnon, Boneh, Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
-  2026.
-- [Joh62] Johnson. (Original Johnson bound paper.)
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26]
+* [Johnson, S. M., *A new upper bound for error-correcting codes*][Joh62]
 -/
 
 namespace JohnsonBound
@@ -117,19 +123,6 @@ namespace CodingTheory
 open scoped NNReal
 open ListDecodable JohnsonBound
 open Real Finset Fintype
-
-/-- Reindexing the coordinate index by an equivalence `e : ι ≃ Fin (card ι)` (precomposition
-by `e.symm`) preserves Hamming distance. Used to transport a code over an arbitrary finite
-index type `ι` to the `Fin n → α` form required by the in-tree Johnson machinery. -/
-lemma reidx_hammingDist {ι : Type*} [Fintype ι] {α : Type*} [DecidableEq α]
-    (e : ι ≃ Fin (Fintype.card ι)) (x y : ι → α) :
-    hammingDist (x ∘ e.symm) (y ∘ e.symm) = hammingDist x y := by
-  unfold hammingDist
-  apply Finset.card_nbij' (fun j => e.symm j) (fun i => e i)
-  · intro j hj; simpa using hj
-  · intro i hi; simpa using hi
-  · intro j hj; simp
-  · intro i hi; simp
 
 set_option maxHeartbeats 1000000 in
 -- The numeric core carries several `nlinarith`/`field_simp`/cast steps over ℚ and ℝ; the
@@ -388,7 +381,7 @@ With the corrected `(ℓ-1)/ℓ` list factor (see `Jqℓ`, matching the `.tex`),
 bound's `JohnsonConditionStrong` precondition *does* hold at the `Jqℓ` boundary: the
 denominator simplifies to `frac · δ_min · (1 - (ℓ-1)/ℓ) = frac · δ_min / ℓ > 0`
 (the printed `ℓ/(ℓ-1)` factor would have made it negative). The proof reindexes the
-arbitrary finite index `ι` to `Fin n` (via `reidx_hammingDist`) and delegates the numeric
+arbitrary finite index `ι` to `Fin n` (via `hammingDist_comp_equiv`) and delegates the numeric
 core to `johnson_card_le_ell`. -/
 private lemma johnson_lambda_le_ell_of_radicand
     {ι : Type*} [Fintype ι] [Nonempty ι]
@@ -456,7 +449,7 @@ private lemma johnson_lambda_le_ell_of_radicand
       obtain ⟨c, hc, rfl⟩ := hx
       have hdist : hammingDist v (reIdx c) = hammingDist f c := by
         rw [hv, hreIdx]
-        exact reidx_hammingDist e f c
+        exact hammingDist_comp_equiv e.symm f c
       have hle := (hmem c hc).2
       rw [div_le_iff₀ (by exact_mod_cast hn_pos)] at hle
       calc (Δ₀(v, reIdx c) : ℝ) = (hammingDist f c : ℝ) := by rw [hdist]
@@ -485,7 +478,7 @@ private lemma johnson_lambda_le_ell_of_radicand
           obtain ⟨c2, hc2, rfl⟩ := hw
           have hc12 : c1 ≠ c2 := fun h => huw (by rw [h])
           have hd : hammingDist (reIdx c1) (reIdx c2) = hammingDist c1 c2 := by
-            rw [hreIdx]; exact reidx_hammingDist e c1 c2
+            rw [hreIdx]; exact hammingDist_comp_equiv e.symm c1 c2
           rw [hd]
           -- c1, c2 ∈ C distinct ⟹ minDist C ≤ hammingDist c1 c2
           apply Nat.sInf_le
@@ -517,32 +510,33 @@ private lemma johnson_lambda_le_ell_of_radicand
   `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`
 
 where `δ_min(C) = minDist(C) / n` is the relative minimum distance and `J_{q,ℓ}`
-is the paper's q-ary ℓ-radius Johnson function. **Fully proven**, and with **no side
-condition**, exactly as in the paper.
+is the paper's q-ary ℓ-radius Johnson function. **Fully proven**, for every `ℓ ≥ 1` —
+the paper's full range.
 
-Two regimes, split on the sign of the `Jqℓ` radicand `1 - q/(q-1) · (ℓ-1)/ℓ · δ_min`:
+Three regimes:
 
-* radicand nonnegative — `J_{q,ℓ}` is a genuine Johnson radius and
-  `johnson_lambda_le_ell_of_radicand` ports the in-tree absolute-distance Johnson bound;
-* radicand negative — `Real.sqrt` truncates and the radius inflates to `1 - 1/q`, but the
-  bound still holds *a fortiori*: the failed guard says `δ_min` exceeds the Plotkin radius
-  `1 - 1/q` by the list factor `ℓ/(ℓ-1)`, so by `plotkin_card_le_ell` the **whole code** has
-  at most `ℓ` words and `Λ(C, r) ≤ |C| ≤ ℓ` for *every* radius `r`.
+* `ℓ = 1` — the radius degenerates (`J_{q,1}(δ) = J_q(0) = 0`), and a radius-0 list
+  contains at most the centre itself;
+* `ℓ ≥ 2`, `Jqℓ` radicand `1 - q/(q-1) · (ℓ-1)/ℓ · δ_min` nonnegative — `J_{q,ℓ}` is a
+  genuine Johnson radius and `johnson_lambda_le_ell_of_radicand` ports the in-tree
+  absolute-distance Johnson bound;
+* `ℓ ≥ 2`, radicand negative — `Real.sqrt` truncates and the radius inflates to `1 - 1/q`,
+  but the bound still holds *a fortiori*: the failed guard says `δ_min` exceeds the Plotkin
+  radius `1 - 1/q` by the list factor `ℓ/(ℓ-1)`, so by `plotkin_card_le_ell` the **whole
+  code** has at most `ℓ` words and `Λ(C, r) ≤ |C| ≤ ℓ` for *every* radius `r`.
 
 **Alphabet generality.** Stated over an arbitrary alphabet `α` (not necessarily a
 field), matching the paper's `Σ`. The Johnson bound is a purely combinatorial fact
 about Hamming distance — it does not need field structure.
 
-**`ℓ ≥ 2`.** The paper states the theorem for all `ℓ ≥ 1`. `ℓ = 1` is true but excluded here
-for convenience (`J_{q,1}(δ) = 0` and a radius-0 list has at most one word — a separate trivial
-argument the proof does not need to carry). `ℓ = 0` is **false** as encoded, not merely
-inconvenient: `ℚ`-division gives `Jqℓ q 0 δ = J q 0 = 0`, and `Λ(C, 0) ≥ 1` for every nonempty
-`C`, so the hypothesis `2 ≤ ℓ` is not removable in that direction. (The paper's `J_{q,0}` is
-undefined, so this is a Lean-side encoding artefact.) -/
+**`ℓ = 0` is excluded, and is the one divergence from the paper's printed form.** It is
+**false** as encoded, not merely inconvenient: `ℚ`-division gives `Jqℓ q 0 δ = J q 0 = 0`,
+and `Λ(C, 0) ≥ 1` for every nonempty `C`, so the hypothesis `1 ≤ ℓ` is not removable. (The
+paper's `J_{q,0}` is undefined, so this is a Lean-side encoding artefact.) -/
 theorem johnson_bound_lambda_le_ell
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type} [Fintype α] [DecidableEq α]
-    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) :
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) :
     let q : ℚ := Fintype.card α
     let δ_min : ℚ := Code.minDist C / Fintype.card ι
     Lambda C (Jqℓ q ℓ δ_min) ≤ (ℓ : ℕ∞) := by
@@ -550,8 +544,34 @@ theorem johnson_bound_lambda_le_ell
   classical
   set n : ℕ := Fintype.card ι with hn_def
   have hn_pos : 0 < n := Fintype.card_pos
+  rcases (show ℓ = 1 ∨ 2 ≤ ℓ by omega) with rfl | hℓ2
+  · -- `ℓ = 1`: the radius degenerates to `J_q(0) = 0`, and a radius-0 list contains at
+    -- most the centre itself.
+    have h0 : Jqℓ q 1 δ_min = 0 := by
+      norm_num [Jqℓ, JohnsonBound.J]
+    refine iSup_le fun f => ?_
+    have hsub : closeCodewordsRel C f (Jqℓ q ((1 : ℕ) : ℚ) δ_min) ⊆ {f} := by
+      intro c hc
+      have h2 := hc.2
+      simp only [relHammingBall, Set.mem_setOf_eq] at h2
+      rw [show Jqℓ q ((1 : ℕ) : ℚ) δ_min = 0 by exact_mod_cast h0] at h2
+      -- `closeCodewordsRel` bakes in a classical `DecidableEq α`, distinct from the section
+      -- instance; every step below is instance-agnostic (the instance flows out of `h2`).
+      have h3 := le_antisymm h2 (by positivity)
+      have h3' := NNRat.cast_eq_zero.mp h3
+      unfold Code.relHammingDist at h3'
+      rw [div_eq_zero_iff] at h3'
+      rcases h3' with h | h
+      · refine Set.mem_singleton_iff.mpr (hammingDist_eq_zero.mp ?_).symm
+        have h' := Nat.cast_eq_zero.mp h
+        convert h' using 2
+      · exact absurd h (by exact_mod_cast (Fintype.card_pos (α := ι)).ne')
+    calc (closeCodewordsRel C f (Jqℓ q ((1 : ℕ) : ℚ) δ_min)).encard
+        ≤ ({f} : Set (ι → α)).encard := Set.encard_mono hsub
+      _ = 1 := Set.encard_singleton f
+      _ ≤ (((1 : ℕ) : ℕ∞)) := by simp
   rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_min) 1 with hrad | hguard
-  · exact johnson_lambda_le_ell_of_radicand C ℓ hℓ_ge hrad
+  · exact johnson_lambda_le_ell_of_radicand C ℓ hℓ2 hrad
   · -- Plotkin corner: the *whole code* has at most `ℓ` words, so any radius is covered.
     have hCfin : C.Finite := Set.toFinite _
     refine le_trans (Lambda_le_ncard _ hCfin) ?_
@@ -583,7 +603,7 @@ theorem johnson_bound_lambda_le_ell
             obtain ⟨c2, hc2, rfl⟩ := hw
             have hc12 : c1 ≠ c2 := fun h => huw (by rw [h])
             rw [show hammingDist (reIdx c1) (reIdx c2) = hammingDist c1 c2 from
-              reidx_hammingDist eqv c1 c2]
+              hammingDist_comp_equiv eqv.symm c1 c2]
             exact Nat.sInf_le ⟨c1, hCfin.mem_toFinset.mp hc1, c2, hCfin.mem_toFinset.mp hc2,
               hc12, rfl⟩
         calc (Code.minDist C : ℚ)
@@ -591,7 +611,7 @@ theorem johnson_bound_lambda_le_ell
               exact_mod_cast hminDist_lb
           _ ≤ JohnsonBound.d B := hmin_le
       have hcard_le : B.card ≤ ℓ :=
-        plotkin_card_le_ell B ℓ (Code.minDist C) hℓ_ge hn_pos hα2 hB2 d_fact (by
+        plotkin_card_le_ell B ℓ (Code.minDist C) hℓ2 hn_pos hα2 hB2 d_fact (by
           simpa [q, δ_min, hn_def] using hguard)
       rw [← hBcard]; exact_mod_cast hcard_le
 
@@ -633,12 +653,15 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
       _ ≤ 2 * η * s + η^2 := by nlinarith [sq_nonneg η]
   linarith [hLHS, hbound]
 
-/-- **ABF26 Corollary 3.3.** MDS coarse Johnson corollary. For every MDS code `C` with
-rate `ρ := dim C / n` and `η > 0`:
+/-- **ABF26 Corollary 3.3, field-linear specialization.** MDS coarse Johnson corollary.
+For every MDS code `C` with rate `ρ := dim C / n` and `η > 0`:
 
   `|Λ(C, 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`
 
-**Status: FULLY PROVEN.** Derived in-tree from T3.2
+**Status: the field-linear case is FULLY PROVEN; the paper's full C3.3 is broader** (see
+the scope note below — this statement quantifies over `LinearCode ι F`, so it cannot
+express the module-alphabet MDS codes, e.g. interleaved RS, that the paper's C3.3
+preamble singles out). Derived in-tree from T3.2
 (`johnson_bound_lambda_le_ell`) + the Singleton/rate-distance bridge `IsMDS_iff_rate_distance`
 (MDS `⟹ δ_min = 1 - ρ + 1/n`). The optimise-over-`ℓ` step is realised concretely with
 `ℓ := ⌊1/(2ηρ)⌋₊`, and the radius domination `1 - √ρ - η ≤ Jqℓ q ℓ δ_min` is `domination_core`.
@@ -792,7 +815,7 @@ theorem mds_johnson_lambda_le
     -- radicand guard
     rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ) 1 with hradicand | hguard
     · -- radicand holds: main line
-      have hT32 := johnson_bound_lambda_le_ell (C : Set (ι → F)) ℓ hℓ2
+      have hT32 := johnson_bound_lambda_le_ell (C : Set (ι → F)) ℓ hℓ2.le
       have hdom : 1 - √ρ - η ≤ Jqℓ q ℓ δ_minQ := by
         -- `Jqℓ q ℓ δ = J q (lFac·δ)` by definition (`Jqℓ_eq_J`).
         rw [Jqℓ_eq_J]
@@ -896,7 +919,7 @@ theorem mds_johnson_lambda_le
             obtain ⟨c2, hc2, rfl⟩ := hw
             have hc12 : c1 ≠ c2 := fun h => huw (by rw [h])
             rw [show hammingDist (reIdx c1) (reIdx c2) = hammingDist c1 c2 from
-              reidx_hammingDist eqv c1 c2]
+              hammingDist_comp_equiv eqv.symm c1 c2]
             apply Nat.sInf_le
             exact ⟨c1, hCfin.mem_toFinset.mp hc1, c2, hCfin.mem_toFinset.mp hc2, hc12, rfl⟩
         calc (Code.minDist (C : Set (ι → F)) : ℚ)
@@ -952,7 +975,7 @@ development consumes (`ArkLib/ProofSystem/Stir/MainThm.lean`'s `CodeParams.h_lis
 theorem johnson_listDecodable
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type} [Fintype α] [DecidableEq α]
-    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) {δ : ℝ}
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
     listDecodable C δ (ℓ : ℝ) :=
   Lambda_le_iff_listDecodable.mp
@@ -966,7 +989,7 @@ This is the shape the in-tree `listDecodable` consumers take: their list size is
 theorem johnson_listDecodable_of_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type} [Fintype α] [DecidableEq α]
-    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) {δ : ℝ}
+    (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
     {r : ℝ} (hr : (ℓ : ℝ) ≤ r) :
     listDecodable C δ r :=

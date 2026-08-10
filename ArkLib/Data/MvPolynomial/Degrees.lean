@@ -119,28 +119,6 @@ theorem totalDegree_linearCombination_le
   intro j _
   exact le_trans (MvPolynomial.totalDegree_smul_le _ _) (hd j)
 
-/-- If every variable's degree in `P` is strictly less than `d`, then the total degree is at
-most the number of variables times `d - 1`. -/
-theorem totalDegree_le_of_degreeOf_lt
-    {R : Type*} [CommSemiring R] {m d : ℕ}
-    (P : MvPolynomial (Fin m) R)
-    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
-    P.totalDegree ≤ m * (d - 1) := by
-  classical
-  unfold MvPolynomial.totalDegree
-  refine Finset.sup_le fun s hs ↦ ?_
-  rw [Finsupp.sum]
-  calc s.support.sum (fun i ↦ s i)
-      ≤ ∑ i : Fin m, s i :=
-        Finset.sum_le_sum_of_subset_of_nonneg
-          (Finset.subset_univ _) (fun _ _ _ ↦ Nat.zero_le _)
-    _ ≤ ∑ _ : Fin m, (d - 1) := by
-        refine Finset.sum_le_sum fun i _ ↦ ?_
-        have h_le : s i ≤ P.degreeOf i := MvPolynomial.monomial_le_degreeOf i hs
-        exact h_le.trans (Nat.le_sub_one_of_lt (h_indiv_deg i))
-    _ = m * (d - 1) := by
-        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
-
 /-- The dot product `G(x) • v` equals the evaluation of the linear combination `∑ v_j P_j`
 when `G` is defined by polynomial evaluation. -/
 theorem dotProduct_eq_eval_linearCombination
@@ -221,6 +199,23 @@ theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolyno
         rw [Finsupp.sum_fintype]; intro i; rfl
     _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
     _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
+
+/-- If every variable's degree in `P` is strictly less than `d`, then the total degree is at
+most the number of variables times `d - 1`. Strict-inequality corollary of
+`totalDegree_le_card_mul_of_mem_restrictDegree` above.
+
+Upstream target: `Mathlib.Algebra.MvPolynomial.Degrees`, next to `degreeOf_le_totalDegree`
+(its converse-direction companion); kept here with this file's other degree helpers until
+then. -/
+theorem totalDegree_le_of_degreeOf_lt
+    {R : Type*} [CommSemiring R] {m d : ℕ}
+    (P : MvPolynomial (Fin m) R)
+    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
+    P.totalDegree ≤ m * (d - 1) := by
+  have h := totalDegree_le_card_mul_of_mem_restrictDegree P (d - 1)
+    ((mem_restrictDegree_iff_degreeOf_le P (d - 1)).mpr
+      fun i => Nat.le_sub_one_of_lt (h_indiv_deg i))
+  simpa using h
 
 end DegreeOf
 

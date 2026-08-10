@@ -88,14 +88,6 @@ lemma Pr_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
   simp only [Bind.bind, Pure.pure, PMF.bind, PMF.pure, DFunLike.coe,
     eq_iff_iff, true_iff]
 
-/-- Compatibility form of `Pr_eq_tsum_indicator` for an event explicitly wrapped in
-`decide`. Prefer the plain-`Prop` theorem in new statements. -/
-lemma Pr_decide_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
-    [DecidablePred P] :
-    Pr_{ let a ← p }[(decide (P a) : Prop)] =
-      ∑' a, p a * (if P a then (1 : ENNReal) else 0) := by
-  simpa only [decide_eq_true_eq] using Pr_eq_tsum_indicator p P
-
 /-- Uniform probability is invariant under an equivalence of finite sample spaces. -/
 lemma Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α]
     [Fintype β] [Nonempty β] (e : α ≃ β) (P : β → Prop) :

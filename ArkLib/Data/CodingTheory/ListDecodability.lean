@@ -37,8 +37,6 @@ the `sup`-form `Lambda` (ABF26 Definition 2.8's `|Λ(C, δ)|`).
   `ℝ≥0` list sizes that the in-tree consumers and the Johnson-family bounds actually use.
 * `ListDecodable.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
   algebra of `Lambda`.
-* `ListDecodable.Lambda_eq_iSup_encard` — `Lambda` unfolds to the supremum of the extended
-  cardinalities of the point lists.
 
 ## References
 
@@ -85,11 +83,12 @@ def closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) 
 /-- A code `C` is `(r,ℓ)`-list decodable.
 
 - Remark:
-   Note that the number of codewords `ℓ` in the Hamming ball of radius `r`
-   centred around `y` is a real number. The reasoning for this is to accommodate the statement of
-   the Johnson Bound Theorem. For simplicity and ease of proving statements, `ℓ` can be considered a
-   a natural number by taking the floor of the real value. This will not lead to information loss
-   since the cardinality of the set of close codewords is a natural number anyway. -/
+   The list-size bound `ℓ` is a real number, to accommodate the statement of the Johnson
+   Bound Theorem; over a finite alphabet no information is lost by flooring it, since each
+   set of close codewords is then finite. Beware that the list size is measured with
+   `Set.ncard`, which collapses an *infinite* set of close codewords to `0`, so over an
+   infinite alphabet the predicate can hold vacuously; the `sup`-form `Lambda` below uses
+   `Set.encard` and does not have this defect. -/
 def listDecodable (C : Code ι F) (r : ℝ) (ℓ : ℝ) : Prop :=
   ∀ y : ι → F, (closeCodewordsRel C y r).ncard ≤ ℓ
 
@@ -132,9 +131,11 @@ index `k*/n`, not as a real number (the ABF26 grand-challenge layer, arriving in
 split, pins its list challenge that way).
 
 `Set.encard` is used rather than `Set.ncard`, so an infinite point list contributes `⊤`
-rather than silently collapsing to `0`. The bridges to the older real-valued
-`listDecodable` predicate require `[Finite F]`, exactly where `encard` agrees with the
-natural cardinality used by that predicate. -/
+rather than silently collapsing to `0`. Of the bridges to the older real-valued
+`listDecodable` predicate, only the *`listDecodable` → `Lambda`-bound* direction requires
+`[Finite F]` (over an infinite alphabet an infinite point list has `ncard = 0`, so
+`listDecodable` can hold while `encard = ⊤`); the *`Lambda`-bound → `listDecodable`*
+direction is instance-free, since the bound itself forces every point list finite. -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, (closeCodewordsRel C f δ).encard
 
@@ -161,13 +162,6 @@ lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} [Finite
     have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
     rw [← hfin.cast_ncard_eq]
     exact_mod_cast h f
-
-/-- Each point list `Λ(C, δ, f)` is bounded by the maximised list size — the defining
-`le_iSup` of `Lambda`, exposed for the real-valued bridges below. -/
-lemma ncard_closeCodewordsRel_le_Lambda {C : Code ι F} {δ : ℝ} [Finite F] (f : ι → F) :
-    ((closeCodewordsRel C f δ).ncard : ℕ∞) ≤ Lambda C δ :=
-  (Set.toFinite (closeCodewordsRel C f δ)).cast_ncard_eq ▸
-    le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) f
 
 /-- **Bridge to `listDecodable` at a real list size.** For `0 ≤ ℓ` the maximised list size is
 at most `⌊ℓ⌋₊` iff `C` is `(δ, ℓ)`-list-decodable.
@@ -200,17 +194,27 @@ lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ :
 
 /-- **Monotone cast corollary.** A natural-number `Lambda` bound gives `(δ, r)`-list
 decodability for every real `r` above it. This is the form in which a `ℕ`-valued bound such as
-`JohnsonBound.johnson_bound_lambda_le_ell` reaches a real- or `ℝ≥0`-valued consumer. -/
-lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} {r : ℝ} [Finite F]
-    (h : Lambda C δ ≤ (ℓ : ℕ∞)) (hr : (ℓ : ℝ) ≤ r) : listDecodable C δ r :=
-  fun y => (Lambda_le_iff_listDecodable.1 h y).trans hr
+`JohnsonBound.johnson_bound_lambda_le_ell` reaches a real- or `ℝ≥0`-valued consumer.
+
+No `[Finite F]`: the `Lambda` bound itself forces every point list finite
+(`Set.finite_of_encard_le_coe`), which is all this direction of the bridge needs. -/
+lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} {r : ℝ}
+    (h : Lambda C δ ≤ (ℓ : ℕ∞)) (hr : (ℓ : ℝ) ≤ r) : listDecodable C δ r := by
+  intro y
+  have hy : (closeCodewordsRel C y δ).encard ≤ (ℓ : ℕ∞) :=
+    (le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) y).trans h
+  have hfin : (closeCodewordsRel C y δ).Finite := Set.finite_of_encard_le_coe hy
+  have hn : (closeCodewordsRel C y δ).ncard ≤ ℓ := by
+    exact_mod_cast hfin.cast_ncard_eq ▸ hy
+  exact le_trans (by exact_mod_cast hn) hr
 
 /-- **Bridge from an `ENNReal` bound on `Lambda`** — the shape produced by the Johnson-family
 bounds (e.g. `JohnsonBound.mds_johnson_lambda_le`, which concludes
 `(Lambda C δ : ENNReal) ≤ ENNReal.ofReal b`). Floors the real bound down to a `Lambda` bound.
 
-`0 ≤ ℓ` is required: `ENNReal.ofReal` clamps negative reals to `0`. -/
-lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+`0 ≤ ℓ` is required: `ENNReal.ofReal` clamps negative reals to `0`. No `[Finite F]`: the
+hypothesis bounds every point list by `ENNReal.ofReal ℓ ≠ ⊤`, which forces it finite. -/
+lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
     (hℓ : 0 ≤ ℓ)
     (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) := by
   refine iSup_le fun f => ?_
@@ -218,7 +222,11 @@ lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : �
     le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) f
   have hpoint' : ((closeCodewordsRel C f δ).encard : ENNReal) ≤ (Lambda C δ : ENNReal) := by
     exact_mod_cast hpoint
-  have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
+  have hfin : (closeCodewordsRel C f δ).Finite := by
+    refine Set.encard_ne_top_iff.mp fun htop => ?_
+    have hle := hpoint'.trans h
+    rw [htop] at hle
+    simp at hle
   have hnatcast (n : ℕ) : ((n : ℕ∞) : ENNReal) = ENNReal.ofReal (n : ℝ) := by
     rw [ENNReal.ofReal_natCast]
     rfl
@@ -242,13 +250,15 @@ lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : �
     _ ≤ (⌊ℓ⌋₊ : ℕ∞) := by exact_mod_cast Nat.le_floor h2
 
 /-- **The `ENNReal`-to-`listDecodable` transfer.** Composes
-`Lambda_le_floor_of_toENNReal_le_ofReal` with `Lambda_le_floor_iff_listDecodable`, so an
+`Lambda_le_floor_of_toENNReal_le_ofReal` with `listDecodable_of_Lambda_le_natCast`, so an
 `ENNReal.ofReal` Johnson-style bound on `Lambda` directly yields `listDecodable` at the same
-real radius and list size. -/
-lemma listDecodable_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+real radius and list size. Like both ingredients, instance-free: this is the
+*`Lambda`-bound → `listDecodable`* direction, where the bound forces finiteness. -/
+lemma listDecodable_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
     (hℓ : 0 ≤ ℓ)
     (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : listDecodable C δ ℓ :=
-  (Lambda_le_floor_iff_listDecodable hℓ).1 (Lambda_le_floor_of_toENNReal_le_ofReal hℓ h)
+  listDecodable_of_Lambda_le_natCast (Lambda_le_floor_of_toENNReal_le_ofReal hℓ h)
+    (Nat.floor_le hℓ)
 
 /-- The point list `Λ(C, δ, f) = closeCodewordsRel C f δ` is monotone in the radius. -/
 lemma closeCodewordsRel_subset_of_le {C : Code ι F} {δ₁ δ₂ : ℝ}
@@ -299,11 +309,6 @@ which collapses `⊤` to `0`; there are no such consumers in the tree yet. -/
 lemma Lambda_ne_top {C : Code ι F} [Finite F] (δ : ℝ) :
     Lambda C δ ≠ ⊤ :=
   ne_top_of_le_ne_top (by simp) (Lambda_le_card δ)
-
-/-- Unfold `Lambda` as the supremum of the extended cardinalities of its point lists. -/
-lemma Lambda_eq_iSup_encard {C : Code ι F} (δ : ℝ) :
-    Lambda C δ = ⨆ f : ι → F, (closeCodewordsRel C f δ).encard :=
-  rfl
 
 end Lambda
 

@@ -33,10 +33,6 @@ introduce such a predicate or claim to formalize the algorithmic result.
 * [Guruswami, V., Rudra, A., and Sudan, M., *Essential Coding Theory*][codingtheory]
     (Proposition 1.4.2(4): a code of minimum distance `d` corrects exactly `d − 1` erasures;
     Exercise 5.3 for the Gaussian-elimination running time, which is out of scope here)
-* [Bordage, S., Chiesa, A., Guan, Z., and Manzur, I., *All Polynomial Generators Preserve
-    Distance with Mutual Correlated Agreement*][BCGM25] (Definition 3.7,
-    `LinearCode.projectedWord` — see the generalization note on
-    `eq_of_consistent_with_erased`)
 -/
 
 namespace CodingTheory

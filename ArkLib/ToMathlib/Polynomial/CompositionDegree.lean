@@ -15,7 +15,7 @@ Generic polynomial facts intended as candidates for upstreaming to Mathlib.
 
 namespace Polynomial
 
-variable {F : Type*} [Field F]
+variable {F : Type*} [Semiring F]
 
 /-- Composing with the scaling `X ↦ aX` never increases natural degree. -/
 lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :

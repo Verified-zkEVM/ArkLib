@@ -238,7 +238,16 @@ def length [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
   Fintype.card ι
 
 /--
-The rate of a linear code.
+The **base-field-dimension rate** of a code: `dim MC / |ι|`, the `F`-dimension of the
+code divided by the *block length* alone.
+
+For a code over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`.
+For a module alphabet `A = F^s` (folded, interleaved, …) it is **not** the
+alphabet-normalized rate `log_{|A|} |C| / n = dim/(s·n)` of ABF26 Definition 2.5 — this
+definition never divides by the alphabet dimension `s`. Consumers that need the paper's
+normalization spell it out at the call site: see `CodingTheory.subspaceDesign_tau_lower`
+and `CodingTheory.frs_is_subspaceDesign_gk16`, which use `finrank/(s·n)` explicitly
+(the `finrank/n` form of those statements is false — `C = ⊤` is a counterexample).
 -/
 noncomputable def rate [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℚ≥0 :=

@@ -54,9 +54,10 @@ not an FRS code in this file's sense.
 
 ## References
 
-- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
-  2026. §2.4 Definitions 2.14, 2.15.
-- [GR08] Guruswami-Rudra. (Original FRS paper.) Definition 2.1.
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§2.4: Definitions 2.14, 2.15)
+* [Guruswami, V., and Rudra, A., *Explicit Codes Achieving List Decoding Capacity:
+    Error-Correction With Optimal Redundancy*][GR08] (the original FRS paper; Definition 2.1)
 -/
 
 namespace ReedSolomon
@@ -146,7 +147,7 @@ consume it as a `ModuleCode ι F (Fin s → F)` without an existential wrap.
 
 **Typeclass assumptions.** As with the sibling `ReedSolomon.code`, only the ambient algebra
 is needed: no `Fintype`/`DecidableEq` on `ι` and no `DecidableEq` on `F`. -/
-noncomputable def frsCode {ι : Type*} {F : Type*} [Field F]
+noncomputable def frsCode {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) : Submodule F (ι → Fin s → F) :=
   (Polynomial.degreeLT F k).map (frsEvalOnPoints domain s ω)
 
@@ -154,7 +155,7 @@ noncomputable def frsCode {ι : Type*} {F : Type*} [Field F]
 in `frsCode domain k s ω` iff there is a polynomial of degree `< k` whose folded
 evaluations match `f`. This is the original paper-shaped membership predicate, kept
 as a `simp`-able iff lemma. -/
-lemma mem_frsCode_iff {ι : Type*} {F : Type*} [Field F]
+lemma mem_frsCode_iff {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) (f : ι → Fin s → F) :
     f ∈ frsCode domain k s ω ↔
       ∃ p ∈ Polynomial.degreeLT F k,
@@ -550,7 +551,7 @@ theorem minDist_frsCode {ι : Type*} [Fintype ι]
 
 /-- Mirror of `mem_frsCode_iff` with the equation oriented `encoder = f` rather than
 `f = encoder` — useful for `rw` / `simp` from the encoder side. -/
-lemma mem_frsCode_iff_flipped {ι : Type*} {F : Type*} [Field F]
+lemma mem_frsCode_iff_flipped {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F) (f : ι → Fin s → F) :
     f ∈ frsCode domain k s ω ↔
       ∃ p ∈ Polynomial.degreeLT F k,
@@ -566,7 +567,7 @@ equality issue (the LHS lives in `ι → Fin 1 → F`, the RHS in `ι → F`).
 
 A one-line corollary of the encoder-generic `ReedSolomon.mem_map_degreeLT_one_iff_mem_code`,
 which it shares with `ReedSolomon.Multiplicity.mem_umCode_one_iff_mem_rsCode`. -/
-lemma mem_frsCode_one_iff_mem_rsCode {ι : Type*} {F : Type*} [Field F]
+lemma mem_frsCode_one_iff_mem_rsCode {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k : ℕ) (ω : F) (f : ι → Fin 1 → F) :
     f ∈ frsCode domain k 1 ω ↔
       (fun i ↦ f i 0) ∈ ReedSolomon.code domain k :=
@@ -578,7 +579,7 @@ isomorphism `flat : (ι → Fin 1 → F) ≃ₗ[F] (ι → F)` (componentwise vi
 `LinearEquiv.funUnique`), the image of `frsCode domain k 1 ω` is exactly
 `ReedSolomon.code domain k`. This is the structural form of `mem_frsCode_one_iff_mem_rsCode`:
 the two codes correspond under the canonical "drop the trivial fold" isomorphism. -/
-lemma frsCode_one_map_eq_rsCode {ι : Type*} {F : Type*} [Field F]
+lemma frsCode_one_map_eq_rsCode {ι : Type*} {F : Type*} [CommSemiring F]
     (domain : ι ↪ F) (k : ℕ) (ω : F) :
     (frsCode domain k 1 ω).map
         (LinearEquiv.piCongrRight (fun _ : ι ↦ LinearEquiv.funUnique (Fin 1) F F) :

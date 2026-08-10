@@ -53,13 +53,18 @@ Wronskian-specific bridge lemmas.
 
 ## References
 
-- [ABF26] Arnon-Boneh-Fenzi. *Open Problems in List Decoding and Correlated Agreement*.
-  2026. §2.5 Definition 2.16, Lemma 2.17, Theorem 2.18.
-- [GX13] Guruswami-Xing. (Original subspace-design definition.)
-- [GG25] Goyal-Guruswami. (Cited for L2.17; Definition 2.15, Lemma 2.16.)
-- [GK16] Guruswami-Kopparty. (Cited for T2.18; Definition 11, Lemma 12, Theorem 14.)
-- [GR08] Guruswami-Rudra. (Folded RS evaluation-point injectivity condition, the source
-  shape of `ReedSolomon.Folded.Admissible`.)
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26] (§2.5: Definition 2.16, Lemma 2.17, Theorem 2.18)
+* [Guruswami, V., and Xing, C., *List decoding Reed-Solomon, Algebraic-Geometric, and
+    Gabidulin subcodes up to the Singleton bound*][GX13] (the original subspace-design
+    definition)
+* [Goyal, R., and Guruswami, V., *Optimal Proximity Gaps for Subspace-Design Codes and
+    (Random) Reed-Solomon Codes*][GG25] (cited for L2.17; Definition 2.15, Lemma 2.16)
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (cited for T2.18;
+    Definition 11, Lemma 12, Theorem 14)
+* [Guruswami, V., and Rudra, A., *Explicit Codes Achieving List Decoding Capacity:
+    Error-Correction With Optimal Redundancy*][GR08] (folded RS evaluation-point
+    injectivity condition, the source shape of `ReedSolomon.Folded.Admissible`)
 -/
 
 namespace CodingTheory

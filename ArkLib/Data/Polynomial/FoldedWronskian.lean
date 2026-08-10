@@ -49,8 +49,8 @@ folded-Wronskian construction and its GK16-specific argument.
 
 ## References
 
-- [GK16] Guruswami-Kopparty. *Explicit Subspace Designs.* Definition 11, Lemma 12,
-  Theorem 14 and Appendix A.
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (Definition 11,
+    Lemma 12, Theorem 14 and Appendix A)
 -/
 
 namespace Polynomial

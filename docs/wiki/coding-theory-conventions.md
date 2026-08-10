@@ -149,7 +149,7 @@ downstream proof becomes hard to read because of this choice.
 | Relative distance to a code, computable | `ℚ≥0` | `relDistFromCode'`, `δᵣ'(w, C)` |
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
 | Restricted relative Hamming distance | `ℝ≥0` | `restrictedRelHammingDist` (paper `Δ_T(f,g)`; **next split**) |
-| Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` |
+| Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` — base-field dimension over block length, `dim/n`; over a module alphabet `F^s` this is **not** ABF26 D2.5's alphabet-normalized `dim/(s·n)`, which call sites needing it spell out explicitly (`subspaceDesign_tau_lower`, `frs_is_subspaceDesign_gk16`) |
 | Proximity radius `δ` argument | `ℝ` today (`ℝ≥0` preferred for new API) | `Lambda`; (next split) `epsCA`, `epsMCA` |
 | Paper-style real-valued bounds | `ℝ` (then wrapped) | RHS of capacity-bound theorems, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | (**next split**) `epsCA`, `epsMCA`, `epsPG` |

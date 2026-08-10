@@ -71,7 +71,7 @@ This is the shared content of the `s = 1` (resp. `m = 1`) collapse lemmas for th
 `ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode` and
 `ReedSolomon.Multiplicity.mem_umCode_one_iff_mem_rsCode` are both one-line corollaries. It lives
 here, next to `code`, because it mentions neither folding nor multiplicities. -/
-lemma mem_map_degreeLT_one_iff_mem_code [Field F] (k : ℕ)
+lemma mem_map_degreeLT_one_iff_mem_code [CommSemiring F] (k : ℕ)
     (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
     (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))
     (f : ι → Fin 1 → F) :
