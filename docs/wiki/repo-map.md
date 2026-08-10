@@ -180,8 +180,14 @@ home_page/            site assets and assembled website root
 - Transcript-tree infrastructure for special-soundness-style notions lives in
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,
-  `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound` (a
-  tree-based extractor recovering a witness from every `S`-structured accepting tree). `Basic` also
+  `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound`. The
+  extractor is **witness-only**: it consumes the tree *and* one candidate output witness per leaf
+  (`ChallengeTree.LeafWitnesses`, honest when each answer certifies in `relOut` some statement the
+  verifier can actually output there — `LeafWitnesses.IsValid`), and returns `Option WitIn`. The
+  notion says extraction succeeds on every `S`-structured accepting tree at every valid witnessing;
+  the classical unconditioned reading is recovered by closing the extractor at
+  `ChallengeTree.canonWitnesses` (`treeSpecialSoundWith.old_of_new`), and `TranscriptTree/NonVacuity`
+  is the permanent regression gate pinning the notion's typing decisions. `Basic` also
   defines the **escape layer**: `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full
   challenge trees, with the trusted-spec contract in its docstring) and
   `Verifier.treeSpecialSoundWithEscape`, whose conclusion is `esc stmt tree ∨ extraction succeeds`;
@@ -245,9 +251,11 @@ home_page/            site assets and assembled website root
   **event** field), the lossless kind lifts `toEscape`/`toGuarded`, all mixed appends, and the
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
-  runtime-rejection skeleton: `Verifier.IsGuardedWith`/`IsGuarded`, the guarded package
-  `GCWSSPackage` with its append `▷ᵍ`, the (sorried) escape-threaded guarded binary CWSS append
-  theorem, and the plain guarded append proven from it at the never-firing events. The umbrella
+  runtime-rejection skeleton: `Verifier.IsGuardedWith`/`IsGuarded` and their data form
+  `Verifier.GuardedForm`, the guarded package `GCWSSPackage` with its append `▷ᵍ`, the guarded seam
+  lemmas, and both guarded binary CWSS append theorems (plain and escape-threaded), **proved**. The
+  file's one `sorry` is `Verifier.GuardedForm.append`'s `verify_eq`, from which
+  `Verifier.IsGuarded.append` is the forgetful corollary. The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.

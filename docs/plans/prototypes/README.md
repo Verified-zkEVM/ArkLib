@@ -29,8 +29,13 @@ reproduces today's `liftPackage` failure and is *supposed* to have no IR.
 | `CM_presentation.lean` (514 ln) | E30–E33 | **The computable presentation layer** (§5): `Presentation`/`IsPresentation` with `CPolynomial` data and `toPoly`-stated laws; the ENTIRE `Lift/Presentation.lean` proof engine transcribed verbatim under the mechanical `toPoly` rename; the retyped `LiftedWitness` + `checkAt` + `recover`; the computable `cyclotomicPresentation` with its laws discharged from the QuotientLift lemmas verbatim; the package-shaped IR gate with the Mathlib-typed **negative control** (today's `liftPackage` failure, reproduced); and the runtime demo constructing the previously-unconstructible values (concrete modulus, `Rq` element, `LiftedWitness` — `#eval`s end-to-end through a package-shaped extraction). M1's source. |
 | `CM_m5demo.lean` (258 ln) | M5's exit-gate demo (constraint 2) | **The milestone-5 runtime demo, entirely against the library.** A real `CWSSPackage` whose `extractor` is `SingleRound.treeExtractor` and whose `isCWSS` is `coordinateWiseSpecialSoundWith_of_mkWitness`, composed through the canonical `▷` with a synthetic zero-round **closing** package certified by the witnessing-agnostic `coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. `chain.extractor 3 T (fun _ => none)` `#eval`s to `some 17` at the **constant-`none`** top-level witnessing — §4.6's "a chain closed by a terminal link runs as a function of `(stmtIn, tree)` alone", exhibited — and `(3, 17) ∈ chain.relIn` holds by `rfl` against a concrete relation. Also: the open engine declines (`none`) rather than inventing junk; the composed seam verdict `chain.isPure.verify` reads the transcript at runtime; and IR gates over both M5 engines, their readers, both delegates, `CommittedScalar.package` and the three demo packages. Everything kernel-`rfl`-checked. |
 
-Maintenance: the first four are vendored evidence, not living code. If a repo refactor breaks one,
-record the breakage in the plan rather than patching the prototype — the plan's regression gates
-(`TranscriptTree/NonVacuity.lean`, landed by step 2b) are the living copies. `CM_m5demo.lean` is
-different: it imports the library directly, so it is a live end-to-end check and *should* be
-repaired if a later milestone changes what it exercises.
+Maintenance: the first four are vendored evidence, not living code, and the plan has **landed**, so
+they are now a historical record. The living copy of the gates is
+`ArkLib/OracleReduction/Security/TranscriptTree/NonVacuity.lean` — a permanent regression gate in
+the library build, carrying G0–G5 against the library's own `Verifier.treeSpecialSoundWith`. Run
+*that* before weakening the notion; if a repo refactor breaks a prototype instead, record the
+breakage here rather than reworking the prototype. Two shims the prototypes reference no longer
+exist in the library, deleted with the rest of the migration layer in M9: `CM_gates.lean` therefore
+carries its own `CM.TreeBasedClassical` (the total-extractor shape E8' is stated at) and its own
+`CM.pureFormOfIsPure`. `CM_m5demo.lean` is different again: it imports the library directly, so it
+is a live end-to-end check and *should* be repaired if a later change breaks what it exercises.

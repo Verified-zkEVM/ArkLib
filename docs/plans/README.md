@@ -27,8 +27,9 @@ The operational split:
 - [`computable-cwss-extractors.md`](computable-cwss-extractors.md) - making the CWSS extractor
   engines computable by giving the extractor **leaf witnessings** (the witness-only
   reduction-of-knowledge extractor interface; statement attribution stays with the verifier as
-  `PureForm` data). **Ready to execute** — the notion, its non-vacuity gates, path glue, and
-  **all four composition theorems** (including the escape × guarded case behind today's
-  `Guarded.lean:141` `sorry`) are machine-checked in the vendored prototypes under
-  [`prototypes/`](prototypes/README.md); execution is ten 5–13 h milestones, mostly
-  transcription.
+  `PureForm` data). **Landed** (2026-08-10, `tr/computable-extractors`) across ten milestones: the
+  CWSS surface now has **0** noncomputable definitions, against the baseline's 20; the escape ×
+  guarded composition theorem that was a `sorry` is proved; and the migration shim is deleted, so
+  there is one layer again, under the original names. The design record stays; the living
+  regression gate for the notion's shape is
+  `ArkLib/OracleReduction/Security/TranscriptTree/NonVacuity.lean`.

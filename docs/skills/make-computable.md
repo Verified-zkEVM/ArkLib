@@ -40,6 +40,10 @@ The architectural kind is the one people misjudge. A `Classical.choice` inside a
 automatically a syntactic accident: check whether the function's *input type* even contains enough
 information to compute the answer. If it does not, no local edit will help.
 
+But "no local edit" is not "no edit". Architectural means the **interface** is wrong, and an
+interface is something you can change — see [Widening an interface](#widening-an-interface) below,
+which is the playbook when the missing information is real and you own the type.
+
 ## TODO List
 
 Work through these in order. Do not skip triage because a marker looks mechanical.
@@ -164,6 +168,42 @@ Report:
 - any rating you revised mid-flight, and any blast-radius estimate that turned out wrong,
 - the runtime evidence,
 - and per the Maintenance Rule in [`README.md`](README.md), how this skill should change.
+
+## Widening an interface
+
+When triage says **architectural** and you own the type, the fix is not a cleverer body — it is to
+put the missing information into the input. Three shapes recur, all of them from the CWSS extractor
+refactor ([`../plans/computable-cwss-extractors.md`](../plans/computable-cwss-extractors.md)):
+
+- **A missing argument.** `Extractor.TreeBased` inverted an output relation with `Exists.choose`
+  because a challenge tree carries messages and challenges but never an output witness. No body
+  could compute it: for a cryptographic relation a total function of `(stmtIn, tree)` alone landing
+  in it would break the ambient commitments. The fix added the argument the literature already
+  names — one candidate output witness per leaf — and let the extractor decline (`Option`). Check
+  first that the argument is *producible*: here each link's witnessing is what the downstream link
+  extracts, and the chain closes on a terminal link whose witness the tree does contain.
+- **A `Prop`-valued field a consumer must read as data.** A class asserting `∃ f, …` costs
+  `Classical.choice` at every read, so any definition that must *run* `f` is noncomputable through
+  the field alone. Bundle the data (`Verifier.PureForm` beside `Verifier.IsPure`, exactly as `Equiv`
+  sits beside `Function.Bijective`), keep the class and its instances, and add the forgetful map
+  back. Consumers that only *state* things keep the class.
+- **A kept `Type`-valued binder carrying noncomputable data.** Lean never erases a `Type`-valued
+  binder, so a parameter whose type has no computable values denies IR to every definition
+  downstream — even when the body only consumes it through `Prop`s. The fix is to carry the
+  computable representation in the data field and state the laws as its semantics (here:
+  `CPolynomial` data with the Mathlib-`Polynomial` laws stated via `toPoly`), so the proof engine
+  never leaves the classical side.
+
+Two facts that shape the whole job:
+
+- **A chain is only as computable as its weakest factor.** One factor whose purity field goes
+  through choice denies IR to every composite built from it, so partial migration buys nothing
+  measurable — plan for the sweep to finish.
+- **Land it always-green with a time-boxed shim.** Rename the outgoing layer with a uniform suffix,
+  introduce the new one additively under the canonical names, migrate consumers file by file, then
+  **delete the suffixed layer**, gating the deletion on a suffix grep. Write the deletion milestone
+  into the plan before starting, and never state a new result against a suffixed name — anything
+  left there is something the deletion has to unpick.
 
 ## Persistence Rule
 
