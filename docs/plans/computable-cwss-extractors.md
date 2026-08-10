@@ -32,7 +32,7 @@ Read this first; it is the contract for how the rest of the document is consumed
    the regression gates that catch a re-weakening.
 2. **Navigate by declaration name, never by line number.** Line citations will drift;
    `rg -n "def treeExtractor" ArkLib/` is the ground truth. When M0 lands the baseline commit,
-   record its SHA here: `BASELINE = <fill in at M0>`.
+   record its SHA here: `BASELINE = 329ff98d554bb459892ff5dea99e8c0c6363cea0`.
 3. **The prototypes are the design, vendored.** The four `CM_*` files in
    [`prototypes/`](prototypes/README.md) hold every machine-checked result in §6 and are the
    transcription source for M1–M6. Check one with
@@ -1343,7 +1343,7 @@ prints) or cite the commit whose message carries them. Statuses:
 
 | Milestone | Status | Commits | Gate evidence / deviations |
 | --- | --- | --- | --- |
-| M0 | pending | | |
+| M0 | green | `329ff98d554bb459892ff5dea99e8c0c6363cea0` (steps 1–2, the baseline); `2b22cbe0733689c46f48d5905e2aa092b5e64289` (step 3, `onlyPath`) | **Step 2 inventory probe** (§9 note 2) logged exactly **20** noncomputable definitions and **6** narrowly extractor-typed, matching §2: roots `CoordinateWise.SingleRound.treeExtractor`, `CoordinateWise.ScalarRound.treeExtractorScalar`, `ReduceClaim.treeExtractor`, `ReduceClaim.oracleTreeExtractor`; delegates `CoordinateWise.CommittedScalar.treeExtractor`, `RingSwitching.Lift.treeExtractor`; packages/chains `CommittedScalar.package`, `RingSwitching.Lift.package` + M8's 12 under `ArkLib.Lattices.Ajtai.InnerOuter` (`batchPackage`, `zBatchPackage`, `sumcheckBridgePackage`, `bridgePackage`, `quadEvalPackage`, `liftPackage`, `rlinPackage`, `roundsChainAux`, `roundsChain`, `evalChain`, `openCore`, `openingChain`) — M8's named list confirmed against the baseline. **`./scripts/validate.sh`**: `Build completed successfully (4148 jobs)`; `No ArkLib/Data non-sorry warnings found.`; `✓ All imports are up to date!` over `324 imports`; `All documentation integrity checks passed.`; `Knowledge base lint passed.` **IR gate:** `IR PRESENT: ProtocolSpec.ChallengeTree.onlyPath` and `'ProtocolSpec.ChallengeTree.onlyPath' does not depend on any axioms` (strictly better than the `Exists.choose`-backed `onlyTranscript` it replaces); the §9 note 1 decisive probe `def probe := @ProtocolSpec.ChallengeTree.onlyPath` compiles outside any `noncomputable section`. **Root removed:** `rg -w onlyTranscript ArkLib/` returns nothing. **Runtime:** on a concrete one-message `SendWitness` tree, `#eval tree.onlyPath.fullTranscript 0` prints `42`, kernel-`rfl`-checked (`onlyPath_reads_message`, axioms `[propext, Quot.sound]`) — the `msgNode` branch, not just the `leaf` one, is on the executable path. **Deviations:** (a) `onlyPath` is homed in `TranscriptTree/Basic.lean` beside `LeafPath` (the structure it constructs) rather than in `NoChallenge.lean` where `onlyTranscript` lived, per `make-computable.md` step 4's rule that a new executable algorithm belongs next to its structure, never in the consumer file; `NoChallenge.lean` keeps `transcripts_eq_singleton`/`fullTranscripts_eq_singleton` and loses its `noncomputable section`. (b) Only the two `SendWitness` statements needed touching, as predicted: the other four bridge consumers (`CheckClaim`, `SendClaim`, `ReduceClaim` ×2) pass an `e` that ignores its transcript argument, so their applications stay defeq across the `onlyTranscript → onlyPath.fullTranscript` swap. (c) `docs/kb/_generated/declarations.json` still lists `onlyTranscript`; per `docs/wiki/generated-files.md` that file is refreshed by `.github/workflows/kb-generated.yml`, not by feature PRs — deliberately left alone. |
 | M1 | pending | | |
 | M2 | pending | | |
 | M3 | pending | | |
@@ -1358,3 +1358,9 @@ Session-global facts worth one line each as they are learned (record here, not i
 the `BASELINE` SHA (also goes in §1 rule 2), the 2a prototype-reproduction choice (§1 rule 3:
 re-run at `BASELINE` vs. rename inside `docs/plans/prototypes/`), and any `pureFormOfIsPure`
 organic uses found by M9's grep.
+
+- `BASELINE = 329ff98d554bb459892ff5dea99e8c0c6363cea0` (M0 step 1; also recorded in §1 rule 2).
+- `ChallengeTree.onlyPath` lives in `TranscriptTree/Basic.lean`, not `NoChallenge.lean` (M0 step 3).
+- Committing is disabled in this environment's agent settings, so each session must hand the
+  repository owner its commit commands rather than running them; the milestone's steps are staged
+  in order so the split survives (M0).
