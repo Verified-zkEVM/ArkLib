@@ -30,8 +30,8 @@ and has no challenge rounds, so it is **coordinate-wise special sound** for any 
 (`verifier_coordinateWiseSpecialSoundWith` and, for the oracle variant,
 `SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith`), via the no-challenge bridge
 `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The named extractor reads the
-witness off the tree's unique transcript (`fun _ tree => tree.onlyTranscript 0`) — the canonical
-"open in the clear" base case.
+witness off the tree's unique transcript (`fun _ tree => tree.onlyPath.fullTranscript 0`) — the
+canonical "open in the clear" base case.
 These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
 deferred; see the note there.
 -/
@@ -154,7 +154,7 @@ and holds for *any* coordinate-wise structure `D`. -/
 theorem verifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Witness)) :
     Verifier.coordinateWiseSpecialSoundWith init impl D relIn (toRelOut relIn)
       (verifier oSpec Statement Witness)
-      (fun _ tree => tree.onlyTranscript 0) := by
+      (fun _ tree => tree.onlyPath.fullTranscript 0) := by
   have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
     (verifier oSpec Statement Witness) relIn (toRelOut relIn) (fun _ tr => tr 0)
     (fun stmtIn tr hAcc => by
@@ -415,7 +415,7 @@ theorem oracleVerifier_coordinateWiseSpecialSoundWith
     (D : CWSSStructure (oraclePSpec Witness)) :
     (oracleVerifier oSpec Statement OStatement Witness).coordinateWiseSpecialSoundWith init impl
       D oRelIn (toORelOut oRelIn)
-      (fun _ tree => tree.onlyTranscript 0) := by
+      (fun _ tree => tree.onlyPath.fullTranscript 0) := by
   have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec Statement OStatement Witness) oRelIn (toORelOut oRelIn)
     (fun _ tr => tr 0)

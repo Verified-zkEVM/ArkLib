@@ -47,6 +47,8 @@ import ArkLib.OracleReduction.Security.Basic
   - `LeafPath`, `LeafPath.transcript` / `fullTranscript`, `transcripts` / `fullTranscripts` — the
     root-to-leaf paths, the transcript each selects, the list of all leaf transcripts, and their
     membership correspondence (`mem_fullTranscripts`, `exists_of_mem_fullTranscripts`).
+  - `ChallengeTree.onlyPath` — the unique root-to-leaf path of a challenge-free tree, read off the
+    tree by structural recursion.
   - `ChallengeTree.IsAccepting` — the verifier accepts every root-to-leaf transcript into the output
     language with probability one.
   - `Extractor.TreeBased` — the deterministic tree-consuming extractor shared by all tree-based
@@ -173,6 +175,20 @@ def fullTranscript {T : ChallengeTree pSpec arity 0} (path : LeafPath T) :
 end LeafPath
 
 end LeafPath
+
+/-- The **unique root-to-leaf path** of a challenge-free tree (`IsEmpty pSpec.ChallengeIdx`).
+
+With no challenge rounds a tree cannot contain a `chalNode`, so it is a single chain of message
+nodes ending in a leaf: there is no branch to choose, and the path is read off the tree by plain
+structural recursion. In particular it is **computable**, which is what the zero-challenge
+special-soundness bridges in `Security.CoordinateWiseSpecialSoundness.NoChallenge` build their
+extractors on. The transcript it selects, `tree.onlyPath.fullTranscript`, is the tree's unique full
+transcript and lies in `tree.fullTranscripts` by `LeafPath.mem_fullTranscripts`. -/
+def onlyPath [IsEmpty pSpec.ChallengeIdx] :
+    {m : Fin (n + 1)} → (tree : ChallengeTree pSpec arity m) → LeafPath tree
+  | _, .leaf => .leaf
+  | _, .msgNode _ _ _ child => .msg (onlyPath child)
+  | _, .chalNode m h _ _ => isEmptyElim (⟨m, h⟩ : pSpec.ChallengeIdx)
 
 /-- Collect all root-to-leaf transcripts of a tree, given the partial transcript `pre` accumulated
   on the path from the root to the current node.
