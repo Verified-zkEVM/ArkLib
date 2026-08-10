@@ -1,20 +1,32 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: ArkLib Contributors
+Authors: Alexander Hicks
 -/
 import Lean
 
 /-!
-# Axiom sweep: kernel-level axiom and `sorry` accounting
+# Axiom sweep: whole-library kernel-level axiom and `sorry` accounting
 
 Walks the compiled environment (the same data the kernel checked) and computes, for every
 declaration in `ArkLib.*` modules, the set of axioms its statement and proof ultimately
 depend on — the same information as `#print axioms`, for the whole library at once.
 
 Because this reads elaborated `.olean` data rather than source text, it sees exactly what
-the kernel accepted: private declarations, macro-generated declarations, and instances are
-all included, and no source-level heuristics are involved.
+the kernel accepted: private declarations and instances are reported, compiler-generated
+auxiliaries are traversed (their taint surfaces on the parent declaration), and no
+source-level heuristics are involved. The sweep covers what the root modules transitively
+import — pair it with the repo's import-completeness gate so every
+source file is actually in scope; an unimported file is invisible to any kernel-level
+census.
+
+Known blind spots, shared with `#print axioms` (all environment-walking tools):
+* structure-field **default values** and autoparams (`:= by sorry`) are re-elaborated at
+  each use site and attach to no swept constant of the defining module;
+* `example`s never enter the environment;
+* files not transitively imported by the swept roots are invisible (pair with the repo's
+  import-completeness gate).
+A source-level `sorry` grep is the complementary check for the first two.
 
 Modes (run after `lake build`):
 
@@ -27,51 +39,88 @@ lake exe axiomsweep --update-baseline   # rewrite the baseline from the current 
 
 The committed baseline (`scripts/axiom_baseline.json`) records the currently-known
 `sorryAx`-tainted declarations and any declarations depending on non-standard axioms
-(anything beyond `propext`, `Classical.choice`, `Quot.sound`). `--check` fails exactly
-when a declaration is tainted that the baseline does not cover, so it distinguishes
-pre-existing gaps from new regressions. When gaps are closed, `--check` reports them and
-stays green; run `--update-baseline` to shrink the file in the same PR.
+(anything beyond `propext`, `Classical.choice`, `Quot.sound` — so native trust axioms
+surface here too: `native_decide`-style tactics mint per-declaration
+`…._native.<tactic>.ax_*` axioms, recorded under their owning declaration). `--check`
+fails exactly when a declaration is tainted that the baseline does not cover. When gaps
+are closed, `--check` reports them and stays green; run `--update-baseline` to shrink the
+file in the same PR.
 -/
 
 open Lean
 
 namespace AxiomSweep
 
+/-- Root modules swept when no `--root` is given. -/
+def defaultRoots : Array Name := #[`ArkLib]
+
 /-- Axioms that carry no extra trust assumptions beyond Lean's standard foundation. -/
 def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
-/-- Compute, for every constant reachable from the work list, the set of axioms it
-transitively depends on, memoised across roots via `memo` (so sweeping thousands of
-declarations shares one traversal of the environment).
+/-- Axioms that may never be baselined: bare native-compiler trust. A baseline edit
+cannot green these — remove the dependency instead. (Zero hits today; this floor keeps
+the baseline from ever becoming a second, laxer policy.) -/
+def neverAllowlistable (a : String) : Bool :=
+  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler"
 
-`gray` marks constants whose dependencies are still being expanded. Cycles — which the
-kernel only permits inside mutual inductive families, where no axioms hide — are broken by
-treating back-edges as axiom-free. -/
+/-- Phase 1: DFS. Compute, for every constant reachable from the work list, an
+under-approximation of the set of axioms it transitively depends on, memoised across
+roots via `memo`. Also records the finalisation order — a topological order of the
+dependency graph except inside mutual-inductive cycles.
+
+`gray` marks constants whose dependencies are still being expanded. Back-edges (cycles,
+which the kernel only permits inside mutual inductive families) contribute nothing in
+this phase; `repair` below propagates to the true fixpoint. An axiom contributes itself
+plus anything reachable through its *type* (matching Lean's own `CollectAxioms`). -/
 partial def collect (env : Environment) (stack : List Name) (gray : Std.HashSet Name)
-    (memo : Std.HashMap Name (Array Name)) : Std.HashMap Name (Array Name) :=
+    (memo : Std.HashMap Name (Array Name)) (order : Array Name) :
+    Std.HashMap Name (Array Name) × Array Name :=
   match stack with
-  | [] => memo
+  | [] => (memo, order)
   | n :: rest =>
     if memo.contains n then
-      collect env rest gray memo
+      collect env rest gray memo order
     else match env.find? n with
-      | none => collect env rest gray (memo.insert n #[])
+      | none => collect env rest gray (memo.insert n #[]) order
       | some ci =>
-        if ci matches .axiomInfo _ then
-          collect env rest gray (memo.insert n #[n])
+        let deps := ci.getUsedConstantsAsSet.toList
+        if gray.contains n then
+          let seed : Array Name := if ci matches .axiomInfo _ then #[n] else #[]
+          let axs := deps.foldl (init := seed) fun acc d =>
+            match memo[d]? with
+            | some as => as.foldl (init := acc) fun acc a =>
+                if acc.contains a then acc else acc.push a
+            | none => acc
+          collect env rest gray (memo.insert n axs) (order.push n)
         else
-          let deps := ci.getUsedConstantsAsSet.toList
-          if gray.contains n then
-            -- All children are memoised (or lie on a cycle): finalise this constant.
-            let axs := deps.foldl (init := #[]) fun acc d =>
-              match memo[d]? with
-              | some as => as.foldl (init := acc) fun acc a =>
-                  if acc.contains a then acc else acc.push a
-              | none => acc
-            collect env rest gray (memo.insert n axs)
-          else
-            let pending := deps.filter fun d => !memo.contains d && !gray.contains d
-            collect env (pending ++ stack) (gray.insert n) memo
+          let pending := deps.filter fun d => !memo.contains d && !gray.contains d
+          collect env (pending ++ stack) (gray.insert n) memo order
+
+/-- Phase 2: propagate to fixpoint. The DFS under-approximates inside mutual-inductive
+cycles (a member's taint may not reach its siblings), and — because `memo` persists
+across roots — anything finalised after reading such a member inherits the error.
+Re-deriving every set in finalisation order until nothing changes computes the least
+fixpoint of the closure equations: the true kernel-level axiom dependency set. This is
+strictly more accurate than `#print axioms`, whose `CollectAxioms` has the same
+mutual-family blind spot this phase repairs. Sets grow monotonically and are bounded,
+so termination is immediate; in practice one or two passes suffice. -/
+partial def repair (env : Environment) (order : Array Name)
+    (memo : Std.HashMap Name (Array Name)) : Std.HashMap Name (Array Name) :=
+  let (memo', changed) := order.foldl (init := (memo, false)) fun (memo, changed) n =>
+    match env.find? n with
+    | none => (memo, changed)
+    | some ci =>
+      let deps := ci.getUsedConstantsAsSet.toList
+      let seed : Array Name := if ci matches .axiomInfo _ then #[n] else #[]
+      let axs := deps.foldl (init := seed) fun acc d =>
+        match memo[d]? with
+        | some as => as.foldl (init := acc) fun acc a =>
+            if acc.contains a then acc else acc.push a
+        | none => acc
+      let old := (memo[n]?.getD #[]).size
+      if axs.size == old then (memo, changed)
+      else (memo.insert n axs, true)
+  if changed then repair env order memo' else memo'
 
 /-- One row of the per-declaration report. -/
 structure Entry where
@@ -95,6 +144,22 @@ structure Baseline where
   nonstandard : Array NonstandardEntry
   deriving FromJson, ToJson
 
+/-- Collapse the volatile counter suffix of native trust axioms
+(`Foo._native.native_decide.ax_1_1` → `Foo._native.native_decide`), so baselines key by
+owning declaration rather than a rebuild-volatile counter. -/
+def normalizeAxiomName (s : String) : String :=
+  match s.splitOn "._native." with
+  | [owner, tail] =>
+    match tail.splitOn "." with
+    | tactic :: _ => owner ++ "._native." ++ tactic
+    | _ => s
+  | _ => s
+
+/-- Sort and deduplicate (normalisation can identify adjacent names). -/
+def dedupSort (a : Array String) : Array String :=
+  (a.qsort (· < ·)).foldl (init := #[]) fun acc x =>
+    if acc.back? == some x then acc else acc.push x
+
 def kindOf : ConstantInfo → String
   | .axiomInfo _ => "axiom"
   | .defnInfo _ => "def"
@@ -106,26 +171,33 @@ def kindOf : ConstantInfo → String
   | .recInfo _ => "recursor"
 
 /-- Whether to report a constant: skip compiler-internal auxiliaries (`_proof_*`,
-`match_*`, equation lemmas, …), whose axiom footprint is inherited by their parent
-declaration anyway, but keep `private` declarations (checked under their user-facing
-name, since the `_private` mangling would otherwise look internal). -/
+`match_*`, numbered equation lemmas, …), whose axiom footprint is inherited by their
+parent declaration, but keep `private` declarations (checked under their user-facing
+name, since the `_private` mangling would otherwise look internal). On-demand aux
+lemmas with symbolic names (`.eq_def`, `.congr_simp`) are reported. -/
 def isReportable (n : Name) : Bool :=
   !n.hasMacroScopes && !((privateToUserName? n).getD n).isInternalDetail
 
-/-- Enumerate the reportable declarations of every module under `rootMod` and compute
-their axiom closures. -/
-def buildEntries (rootMod : Name) : CoreM (Array Entry × Nat) := do
+/-- Enumerate the reportable declarations of every module under one of `roots` and
+compute their axiom closures. -/
+def buildEntries (roots : Array Name) : CoreM (Array Entry × Nat) := do
   let env ← getEnv
   let mut targets : Array (Name × Name) := #[]
+  let mut seen : Std.HashSet Name := {}
   let mut moduleCount := 0
   for (mname, mdata) in env.header.moduleNames.zip env.header.moduleData do
-    if rootMod.isPrefixOf mname then
+    if roots.any (·.isPrefixOf mname) then
       moduleCount := moduleCount + 1
       for c in mdata.constNames do
-        if isReportable c then
+        -- A realised constant (e.g. `.congr_simp`) can appear in several modules'
+        -- `constNames`; report it once, under the first module that carries it.
+        if isReportable c && !seen.contains c then
+          seen := seen.insert c
           targets := targets.push (c, mname)
-  let memo := targets.foldl (init := ({} : Std.HashMap Name (Array Name)))
-    fun memo (c, _) => collect env [c] {} memo
+  let (memo0, order) :=
+    targets.foldl (init := (({} : Std.HashMap Name (Array Name)), (#[] : Array Name)))
+      fun (memo, order) (c, _) => collect env [c] {} memo order
+  let memo := repair env order memo0
   let mut entries : Array Entry := #[]
   for (c, mname) in targets do
     let some ci := env.find? c | continue
@@ -135,7 +207,7 @@ def buildEntries (rootMod : Name) : CoreM (Array Entry × Nat) := do
       module := mname.toString
       kind := kindOf ci
       line := line
-      axioms := ((memo[c]?.getD #[]).map toString).qsort (· < ·) }
+      axioms := dedupSort ((memo[c]?.getD #[]).map (normalizeAxiomName ·.toString)) }
   return (entries.qsort (fun a b => a.name < b.name), moduleCount)
 
 def isStandard (a : String) : Bool :=
@@ -175,8 +247,16 @@ def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
     | none => true
     | some b => e.axioms.any (!b.axioms.contains ·)
   let fixedNonstd := base.nonstandard.filter fun b =>
-    (cur.nonstandard.find? (·.name == b.name)).isNone
+    match cur.nonstandard.find? (·.name == b.name) with
+    | none => true
+    | some c => b.axioms.any (!c.axioms.contains ·)
   let mut failed := false
+  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
+  if !floor.isEmpty then
+    failed := true
+    IO.eprintln s!"axiomsweep: {floor.size} declaration(s) depend on never-allowlistable \
+      axioms (bare native-compiler trust) — the baseline cannot green these:"
+    for e in floor do IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
   if !newSorry.isEmpty then
     failed := true
     IO.eprintln s!"axiomsweep: {newSorry.size} declaration(s) newly depend on sorryAx \
@@ -201,7 +281,7 @@ def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
   return 0
 
 structure Config where
-  root : Name := `ArkLib
+  roots : Array Name := #[]
   out? : Option String := none
   check : Bool := false
   update : Bool := false
@@ -214,10 +294,10 @@ def parseArgs : List String → Config → Except String Config
   | "--out" :: path :: rest, cfg => parseArgs rest { cfg with out? := some path }
   | "--baseline" :: path :: rest, cfg => parseArgs rest { cfg with baseline := path }
   | "--root" :: mod :: rest, cfg =>
-    parseArgs rest { cfg with root := mod.toName }
+    parseArgs rest { cfg with roots := cfg.roots.push mod.toName }
   | arg :: _, _ => .error s!"axiomsweep: unknown or incomplete argument: {arg}\n\
       usage: lake exe axiomsweep [--out FILE] [--check] [--update-baseline] \
-      [--baseline FILE] [--root MOD]"
+      [--baseline FILE] [--root MOD]*\n      (--check and --update-baseline are mutually exclusive)"
 
 end AxiomSweep
 
@@ -226,22 +306,33 @@ unsafe def main (args : List String) : IO UInt32 := do
   let cfg ← match parseArgs args {} with
     | .ok cfg => pure cfg
     | .error e => IO.eprintln e; return 2
+  if cfg.check && cfg.update then
+    IO.eprintln "axiomsweep: --check and --update-baseline are mutually exclusive"
+    return 2
+  let roots := if cfg.roots.isEmpty then defaultRoots else cfg.roots
   initSearchPath (← findSysroot)
   enableInitializersExecution
-  let env ← importModules #[{module := cfg.root}] {} (trustLevel := 1024) (loadExts := true)
-  let ((entries, moduleCount), _) ← (buildEntries cfg.root).toIO
+  let env ← try
+      importModules (roots.map ({ module := · })) {} (trustLevel := 1024)
+        (loadExts := true)
+    catch e =>
+      IO.eprintln s!"axiomsweep: cannot import root modules {roots}: {e.toString}\n\
+        (roots must be importable modules — glob-based libs without an umbrella \
+        module cannot be swept by library name)"
+      return (2 : UInt32)
+  let ((entries, moduleCount), _) ← (buildEntries roots).toIO
     { fileName := "<axiomsweep>", fileMap := default } { env }
   let cur := currentBaseline entries
   let distinctNonstd := cur.nonstandard.foldl (init := (#[] : Array String)) fun acc e =>
     e.axioms.foldl (init := acc) fun acc a => if acc.contains a then acc else acc.push a
   IO.println s!"axiomsweep: {entries.size} declarations across {moduleCount} modules \
-    under {cfg.root}"
+    under {roots}"
   IO.println s!"  sorryAx-tainted: {cur.«sorry».size}"
   IO.println s!"  non-standard-axiom-tainted: {cur.nonstandard.size} \
     (axioms: {distinctNonstd})"
   if let some out := cfg.out? then
     let report := Json.mkObj [
-      ("root", toJson cfg.root.toString),
+      ("roots", toJson (roots.map (·.toString))),
       ("declarationCount", toJson entries.size),
       ("declarations", toJson entries)]
     IO.FS.writeFile out (report.pretty ++ "\n")

@@ -112,15 +112,24 @@ jobs:
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
-      # Report-only during the initial soak; flip to enforcing by dropping the
-      # trailing `|| echo ...` once the baseline has survived a few PRs.
+      # Taint findings are report-only during the initial soak (flip to enforcing by
+      # failing on exit 1 too); infrastructure failures (exit != 1: missing baseline,
+      # tool build breakage) always fail so the soak cannot silently rot.
       - name: Axiom sweep (report-only)
         run: |
           # VCVio's FFI C sources live in git submodules that Lake does not
           # fetch, and every root-package executable links them.
-          git -C .lake/packages/VCVio submodule update --init --recursive
-          lake exe axiomsweep --check || \
+          if [ -e .lake/packages/VCVio/.git ]; then
+            git -C .lake/packages/VCVio submodule update --init --recursive
+          fi
+          status=0
+          lake exe axiomsweep --check || status=$?
+          if [ "$status" -eq 1 ]; then
             echo "::warning::axiomsweep found new axiom/sorry taint (report-only during soak)"
+          elif [ "$status" -ne 0 ]; then
+            echo "::error::axiomsweep infrastructure failure (exit $status) — not a taint verdict"
+            exit "$status"
+          fi
 
       - name: Time validation wrapper
         run: |
