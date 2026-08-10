@@ -29,9 +29,15 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
 
   * `ProtocolSpec.ChallengeTree.transcripts_eq_singleton` / `fullTranscripts_eq_singleton` —
     a no-challenge tree lists exactly one transcript.
-  * `Verifier.treeSpecialSoundWithClassical_of_isEmpty_challengeIdx` — the bridge.
-  * `Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` and its
-    `OracleVerifier` analogue.
+  * `Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx` — the bridge.
+  * `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` and its `OracleVerifier`
+    analogue.
+  * the outgoing `*Classical` twins of all three, kept while the zero-round components migrate.
+
+  The extractors these bridges produce **ignore their leaf witnessing** — they read the unique
+  transcript instead — so the bridges carry no purity hypothesis and the notion's validity premise
+  is unused. This is the *closing* shape: such a factor placed on the right of a chain is what lets
+  the whole composed extractor run as a function of `(stmtIn, tree)` alone.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -91,9 +97,50 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   the tree is a single message-chain, so tree special soundness reduces to a transcript-level
   extractor: any `e` such that "the verifier accepts the (unique) transcript into
   `relOut.language`" implies the extracted witness lies in `relIn`, witnesses tree special
-  soundness at the tree extractor `fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript`. The
-  shape `S` is irrelevant (`IsStructured` is vacuous), and the extractor is computable, since
-  `onlyPath` reads the path off the tree structurally. -/
+  soundness at the tree extractor
+  `fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)`. The shape `S` is irrelevant
+  (`IsStructured` is vacuous), and the extractor is computable, since `onlyPath` reads the path off
+  the tree structurally.
+
+  The extractor is **witnessing-agnostic**: it reads the transcript and never consults its leaf
+  witnessing, so the notion's validity premise is simply unused and no purity hypothesis is needed.
+  That is exactly the shape of a *closing* factor — the terminal link of a chain, whose witness the
+  tree itself contains, and which therefore lets an otherwise open composed extractor run on
+  `(stmtIn, tree)` alone. -/
+theorem treeSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
+    (S : ChallengeTreeShape pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (e : StmtIn → FullTranscript pSpec → WitIn)
+    (h : ∀ stmtIn tr,
+      Pr[ (· ∈ relOut.language) |
+        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
+      (stmtIn, e stmtIn tr) ∈ relIn) :
+    treeSpecialSoundWith init impl S relIn relOut V
+      (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
+  fun stmtIn tree _ hAcc _ _ =>
+    ⟨_, rfl, h stmtIn _ (hAcc _ tree.onlyPath.mem_fullTranscripts)⟩
+
+/-- CWSS of a challenge-free protocol, **named form**: the transcript-level extractor `e` on the
+  tree's unique transcript witnesses CWSS. Any coordinate-wise structure `D` works, since
+  `IsStructured` is vacuous with no challenge rounds. -/
+theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
+    (D : CWSSStructure pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (e : StmtIn → FullTranscript pSpec → WitIn)
+    (h : ∀ stmtIn tr,
+      Pr[ (· ∈ relOut.language) |
+        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
+      (stmtIn, e stmtIn tr) ∈ relIn) :
+    coordinateWiseSpecialSoundWith init impl D relIn relOut V
+      (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
+  treeSpecialSoundWith_of_isEmpty_challengeIdx init impl D.toShape V relIn relOut e h
+
+/-! ## The outgoing bridges
+
+Deleted with the rest of the `*Classical` layer once the zero-round components migrate. -/
+
+/-- **Outgoing** degenerate tree special soundness at the total extractor
+  `fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript`. -/
 theorem treeSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
     (S : ChallengeTreeShape pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -106,9 +153,7 @@ theorem treeSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.Cha
       (fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript) :=
   fun stmtIn tree _ hAcc => h stmtIn _ (hAcc _ tree.onlyPath.mem_fullTranscripts)
 
-/-- CWSS of a challenge-free protocol, **named form**: the transcript-level extractor `e` on the
-  tree's unique transcript witnesses CWSS. Any coordinate-wise structure `D` works, since
-  `IsStructured` is vacuous with no challenge rounds. -/
+/-- **Outgoing** CWSS of a challenge-free protocol at the total transcript-level extractor. -/
 theorem coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
     (D : CWSSStructure pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -135,9 +180,25 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- Oracle-reduction analogue of `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`,
+/-- Oracle-reduction analogue of `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`,
   on the combined `(StmtIn × ∀ i, OStmtIn i)` statement: the transcript-level extractor `e` on the
-  tree's unique transcript witnesses CWSS. -/
+  tree's unique transcript witnesses CWSS, witnessing-agnostically. -/
+theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
+    (D : CWSSStructure pSpec)
+    (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (e : (StmtIn × ∀ i, OStmtIn i) → FullTranscript pSpec → WitIn)
+    (h : ∀ stmtIn tr,
+      Pr[ (· ∈ relOut.language) |
+        OptionT.mk do (simulateQ impl (V.toVerifier.run stmtIn tr)).run' (← init)] = 1 →
+      (stmtIn, e stmtIn tr) ∈ relIn) :
+    V.coordinateWiseSpecialSoundWith init impl D relIn relOut
+      (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
+  Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D V.toVerifier
+    relIn relOut e h
+
+/-- **Outgoing** oracle-reduction bridge at the total transcript-level extractor. -/
 theorem coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
     (D : CWSSStructure pSpec)
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)

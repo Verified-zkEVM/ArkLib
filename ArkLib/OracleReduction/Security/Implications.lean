@@ -19,8 +19,6 @@ For now, we only state the theorems. It's likely that we will split this file in
 a single `Implication` folder in the future, each file for the proof of a single implication.
 -/
 
-noncomputable section
-
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
@@ -200,10 +198,10 @@ end Verifier
 
 /-! ## Coordinate-wise special soundness generalizes special soundness
 
-Both `Verifier.specialSoundClassical` (`Security.SpecialSoundness`) and
-`Verifier.coordinateWiseSpecialSoundClassical` (`Security.CoordinateWiseSpecialSoundness`) are
-*defined* as instances of the shape-generic `Verifier.treeSpecialSoundClassical`, differing only in
-the challenge-tree shape they fix:
+Both `Verifier.specialSound` (`Security.SpecialSoundness`) and
+`Verifier.coordinateWiseSpecialSound` (`Security.CoordinateWiseSpecialSoundness`) are *defined* as
+instances of the shape-generic `Verifier.treeSpecialSound`, differing only in the challenge-tree
+shape they fix:
 
 * plain special soundness fixes `distinctShape k` — arity `kᵢ`, node predicate `Function.Injective`
   (the `kᵢ` sibling challenges are pairwise distinct);
@@ -248,13 +246,25 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- **Coordinate-wise special soundness generalizes special soundness.** Coordinate-wise special
 soundness for the canonical `ℓᵢ = 1` structure `CWSSStructure.ofSpecialSound k` is *equivalent* to
 plain `(k)`-special soundness for the same input and output relations. Both unfold to
-`Verifier.treeSpecialSoundClassical` of a shape, and the two shapes are equal
+`Verifier.treeSpecialSound` of a shape, and the two shapes are equal
 (`toShape_ofSpecialSound_eq_distinctShape`), so the bridge is immediate. This is the
-`coordinateWiseSpecialSoundClassical (ofSpecialSound k) ↔ specialSoundClassical k` bridge promised
-in
+`coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k` bridge promised in
 `Security.SpecialSoundness`: CWSS recovers `k`-special soundness in the single-coordinate case. -/
 theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx → ℕ)
     (hk : ∀ i, 2 ≤ k i)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
+    verifier.coordinateWiseSpecialSound (WitOut := WitOut) init impl
+      (CWSSStructure.ofSpecialSound k hk) relIn relOut
+      ↔ verifier.specialSound init impl k relIn relOut := by
+  unfold Verifier.coordinateWiseSpecialSound Verifier.specialSound
+  rw [toShape_ofSpecialSound_eq_distinctShape]
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **Outgoing** (deleted with the `*Classical` layer): the same bridge between the total-extractor
+forms of the two notions. -/
+theorem coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff
+    (k : pSpec.ChallengeIdx → ℕ) (hk : ∀ i, 2 ≤ k i)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
     verifier.coordinateWiseSpecialSoundClassical init impl (CWSSStructure.ofSpecialSound k hk) relIn
@@ -282,10 +292,24 @@ theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx �
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
+    verifier.coordinateWiseSpecialSound (WitOut := WitOut) init impl
+      (CWSSStructure.ofSpecialSound k hk) relIn relOut
+      ↔ verifier.specialSound init impl k relIn relOut :=
+  Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff init impl k hk relIn relOut
+    verifier.toVerifier
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **Outgoing** (deleted with the `*Classical` layer): the oracle-form bridge between the
+total-extractor notions. -/
+theorem coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff
+    (k : pSpec.ChallengeIdx → ℕ) (hk : ∀ i, 2 ≤ k i)
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     verifier.coordinateWiseSpecialSoundClassical init impl (CWSSStructure.ofSpecialSound k hk) relIn
       relOut
       ↔ verifier.specialSoundClassical init impl k relIn relOut :=
-  Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff init impl k hk relIn relOut
-    verifier.toVerifier
+  Verifier.coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff init impl k hk relIn
+    relOut verifier.toVerifier
 
 end OracleVerifier
