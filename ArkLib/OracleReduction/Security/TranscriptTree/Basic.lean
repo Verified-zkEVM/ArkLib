@@ -1103,4 +1103,19 @@ theorem treeSpecialSoundWith.new_of_old {S : ChallengeTreeShape pSpec}
       (Extractor.TreeBased.ofClassical (WitOut := WitOut) E) :=
   fun stmtIn tree hstr hacc _ _ => ⟨E stmtIn tree, rfl, h stmtIn tree hstr hacc⟩
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **Migration shim, escape-threaded** (removed with the `*Classical` layer): the escape
+  disjunction is already decided before any witnessing is seen, so it carries over untouched. -/
+theorem treeSpecialSoundWithEscape.new_of_old {S : ChallengeTreeShape pSpec}
+    {esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {E : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    (h : treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier E) :
+    treeSpecialSoundWithEscape init impl S esc relIn relOut verifier
+      (Extractor.TreeBased.ofClassical (WitOut := WitOut) E) :=
+  fun stmtIn tree hstr hacc =>
+    (h stmtIn tree hstr hacc).imp id
+      fun hrel _ _ => ⟨E stmtIn tree, rfl, hrel⟩
+
 end Verifier

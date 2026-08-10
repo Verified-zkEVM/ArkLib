@@ -60,6 +60,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * `GCWSSPackageClassical` — the guarded analogue of `CWSSPackageClassical`
     (`isPure` ↝ `isGuarded`), with `CWSSPackageClassical.toGuardedClassical` and the composition
     `GCWSSPackageClassical.append` = infix `▷` (explicit synonym `▷ᵍ`).
+  * `GCWSSPackage` — the same at the witness-only extractor, with `isGuarded` at the data form, and
+    with `CWSSPackage.toGuarded` / `GCWSSPackage.append` / the two mixed appends. `▷` dispatches to
+    it; `GCWSSPackage.ofClassical` lifts a legacy guarded package while consumers migrate.
 
   As everywhere in the CWSS development, composition here is **binary only**: the Hachi composition
   builds its guarded loop by *recursion over the binary guarded append*
@@ -123,6 +126,17 @@ structure GuardedForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
 theorem GuardedForm.isGuarded {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm) :
     V.IsGuarded :=
   ⟨G.check, G.out, G.verify_eq⟩
+
+/-- The classical converse of `Verifier.GuardedForm.isGuarded`, mirroring
+`Verifier.pureFormOfIsPure`: recovering the check and verdict *data* from the `IsGuarded` class is a
+choice, so this is `noncomputable`.
+
+**Migration shim**, removed with the `*Classical` layer: it exists only to lift a legacy package
+whose guardedness field is `Prop`-valued. A definition that wants to stay computable carries a
+`Verifier.GuardedForm` from the start. -/
+noncomputable def guardedFormOfIsGuarded (V : Verifier oSpec StmtIn StmtOut pSpec)
+    [h : V.IsGuarded] : V.GuardedForm :=
+  ⟨h.is_guarded.choose, h.is_guarded.choose_spec.choose, h.is_guarded.choose_spec.choose_spec⟩
 
 /-- Every pure form is a guarded form, at the trivially-true check: the data form of
 `Verifier.IsGuarded.of_isPure`. Lossless, and computable — the verdict function carries over. -/
@@ -745,6 +759,122 @@ def GCWSSPackageClassical.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
   L₁.append L₂.toGuardedClassical hRel
 
 end GuardedLift
+
+/-! ## The guarded package at the witness-only extractor
+
+`GCWSSPackage` is `CWSSPackage` with the purity field relaxed to guardedness — and, like it, at the
+*data* form: `isGuarded : verifier.GuardedForm`. The composed extractor and escape event both name
+the left verdict map, which is read off that field as `L₁.isGuarded.out`. -/
+
+section CanonicalPackage
+
+variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+
+/-- A **bundled guarded coordinate-wise-special-sound reduction**: `CWSSPackage` with the purity
+witness relaxed to a guardedness witness carrying its check and verdict map as data
+(`Verifier.GuardedForm`). Compose with `GCWSSPackage.append` / the universal `▷`; a pure package
+enters the guarded world via `CWSSPackage.toGuarded`. -/
+structure GCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+  /-- The package's verifier (may reject at runtime). -/
+  verifier : Verifier oSpec StmtIn StmtOut pSpec
+  /-- The coordinate-wise structure the verifier is special sound for. -/
+  struct : CWSSStructure pSpec
+  /-- The input relation. -/
+  relIn : Set (StmtIn × WitIn)
+  /-- The output relation. -/
+  relOut : Set (StmtOut × WitOut)
+  /-- The verifier is guarded, **with its check and verdict map as data**: composition reads the
+  verdict map here, both for the composed extractor and for the composed escape event. -/
+  isGuarded : verifier.GuardedForm
+  /-- The package's named extraction algorithm. -/
+  extractor : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape struct).arity
+  /-- The certificate: `extractor` witnesses that `verifier` is coordinate-wise special sound
+  for `struct`, reducing `relIn` to `relOut`. -/
+  isCWSS : Verifier.coordinateWiseSpecialSoundWith init impl struct relIn relOut verifier
+    extractor
+
+namespace GCWSSPackage
+
+/-- Forget purity: every pure `CWSSPackage` is a `GCWSSPackage` at the trivially-true check, via
+`Verifier.PureForm.toGuardedForm` — which carries the verdict function over as data, so the lift is
+lossless *and* computable. -/
+def _root_.CoordinateWise.CWSSPackage.toGuarded
+    {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+    (L : CWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    GCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+  verifier := L.verifier
+  struct := L.struct
+  relIn := L.relIn
+  relOut := L.relOut
+  isGuarded := L.isPure.toGuardedForm
+  extractor := L.extractor
+  isCWSS := L.isCWSS
+
+/-- **Compose two guarded packages along a matching seam** — the guarded canonical `▷`. The seam
+verdict is `L₁.isGuarded.out`, the guard data composes by `Verifier.GuardedForm.append`, and the
+certificate is `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft`, whose positivity
+hypothesis (D5) is discharged by `CWSSStructure.toShape_arity_pos` — every CWSS shape branches. -/
+def append {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hseam : L₁.relOut = L₂.relIn := by rfl) :
+    GCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+  verifier := L₁.verifier.append L₂.verifier
+  struct := L₁.struct.append L₂.struct
+  relIn := L₁.relIn
+  relOut := L₂.relOut
+  isGuarded := L₁.isGuarded.append L₂.isGuarded
+  extractor := L₁.extractor.append L₁.isGuarded.out L₂.extractor
+  isCWSS := by
+    have h₂ := L₂.isCWSS
+    rw [← hseam] at h₂
+    exact Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft init impl
+      L₁.verifier L₂.verifier L₁.struct L₂.struct
+      L₁.isGuarded.check L₁.isGuarded.out L₁.isGuarded.verify_eq
+      (CWSSStructure.toShape_arity_pos L₂.struct) L₁.extractor L₂.extractor L₁.isCWSS h₂
+
+/-- **Migration shim** (removed with the `*Classical` layer): read a legacy guarded package as a
+canonical one. As for `CWSSPackage.ofClassical`, the guardedness field goes through
+`Verifier.guardedFormOfIsGuarded` (`Classical.choice`), so a lifted package is `noncomputable`
+regardless of its extractor. -/
+noncomputable def ofClassical {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ}
+    {pSpec : ProtocolSpec n}
+    (L : GCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    GCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+  verifier := L.verifier
+  struct := L.struct
+  relIn := L.relIn
+  relOut := L.relOut
+  isGuarded := haveI := L.isGuarded; Verifier.guardedFormOfIsGuarded L.verifier
+  extractor := Extractor.TreeBased.ofClassical L.extractor
+  isCWSS := Verifier.treeSpecialSoundWith.new_of_old init impl L.isCWSS
+
+end GCWSSPackage
+
+/-- **Pure ▷ guarded** (canonical): lift the left factor with `CWSSPackage.toGuarded`. -/
+def CWSSPackage.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    GCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuarded.append L₂ hRel
+
+/-- **Guarded ▷ pure** (canonical): lift the right factor with `CWSSPackage.toGuarded`. -/
+def GCWSSPackage.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hRel : L₁.relOut = L₂.relIn := by rfl) :
+    GCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toGuarded hRel
+
+end CanonicalPackage
 
 end CoordinateWise
 

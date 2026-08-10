@@ -33,6 +33,15 @@ imports and chains them. The universal `▷` is a single elaborator defined in `
 dispatches over all four package kinds — pure, guarded, escape-aware, or both); it is `scoped` in
 `CoordinateWise`, so `open scoped CoordinateWise` (or `open CoordinateWise`) activates it.
 
+## At the witness-only extractor
+
+`CoordinateWise.CWSSPackage` is the canonical package: `CWSSPackageClassical` with `extractor` at
+`Extractor.TreeBased` (leaf witnessing in, `Option` out) and `isPure` at `Verifier.PureForm`, i.e.
+purity **as data**. That one field change is what keeps the composed extractor computable — the seam
+statement is `L₁.isPure.verify`, read off the field rather than chosen out of the `IsPure`
+existential. `CWSSPackage.ofClassical` lifts a legacy package while consumers migrate; it is
+`noncomputable` by construction (it fills the purity field via `Verifier.pureFormOfIsPure`).
+
 ## References
 
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
@@ -113,6 +122,86 @@ def append {StmtA WitA StmtB WitB StmtC WitC : Type}
       L₁.isPure.is_pure.choose L₁.isPure.is_pure.choose_spec L₁.extractor L₁.isCWSS h₂
 
 end CWSSPackageClassical
+
+/-! ## The package at the witness-only extractor
+
+`CWSSPackage` is the canonical form of `CWSSPackageClassical`: same field *names*, two retyped.
+
+- `extractor : Extractor.TreeBased StmtIn WitIn WitOut …` — it now consumes a leaf witnessing and
+  may decline, so the package gains no new field but its extractor gains an argument;
+- `isPure : verifier.PureForm` — purity **as data**. This is the one field whose kind changes
+  (`Prop` ↝ data), and it is what keeps the composed `extractor` computable: `append` must run the
+  right factor at the statement the left verifier outputs at the seam, and reading that verdict off
+  the `IsPure` *class* would cost `Classical.choice`. `Verifier.PureForm.isPure` forgets back
+  whenever the class is what a caller wants. -/
+
+structure CWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
+  /-- The package's verifier. -/
+  verifier : Verifier oSpec StmtIn StmtOut pSpec
+  /-- The coordinate-wise structure the verifier is special sound for. -/
+  struct : CWSSStructure pSpec
+  /-- The input relation. -/
+  relIn : Set (StmtIn × WitIn)
+  /-- The output relation. -/
+  relOut : Set (StmtOut × WitOut)
+  /-- The verifier is pure, **with its verdict function as data**: the statement it outputs is a
+  deterministic function of statement and transcript, and composition reads that function here. -/
+  isPure : verifier.PureForm
+  /-- The package's named extraction algorithm. -/
+  extractor : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape struct).arity
+  /-- The certificate: `extractor` witnesses that `verifier` is coordinate-wise special sound
+  for `struct`, reducing `relIn` to `relOut`. -/
+  isCWSS : Verifier.coordinateWiseSpecialSoundWith init impl struct relIn relOut verifier
+    extractor
+
+namespace CWSSPackage
+
+variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
+
+/-- **Compose two packages along a matching seam** — the canonical `▷`. As in
+`CWSSPackageClassical.append`, but every composed field is now *data* of both factors: the
+extractors compose by `Extractor.TreeBased.append` at the seam verdict `L₁.isPure.verify`, and the
+purity witnesses by `Verifier.PureForm.append`. The right factor's certificate is passed **named**
+(`L₂.isCWSS` directly, not its existential closure), since the composed extractor contains `E₂`. -/
+def append {StmtA WitA StmtB WitB StmtC WitC : Type}
+    {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+    [∀ i, SampleableType (pSpec₁.Challenge i)]
+    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (hseam : L₁.relOut = L₂.relIn := by rfl) :
+    CWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+  verifier := L₁.verifier.append L₂.verifier
+  struct := L₁.struct.append L₂.struct
+  relIn := L₁.relIn
+  relOut := L₂.relOut
+  isPure := L₁.isPure.append L₂.isPure
+  extractor := L₁.extractor.append L₁.isPure.verify L₂.extractor
+  isCWSS := by
+    have h₂ := L₂.isCWSS
+    rw [← hseam] at h₂
+    exact Verifier.append_coordinateWiseSpecialSoundWith init impl
+      L₁.verifier L₂.verifier L₁.struct L₂.struct
+      L₁.isPure.verify L₁.isPure.verify_eq L₁.extractor L₂.extractor L₁.isCWSS h₂
+
+/-- **Migration shim** (removed with the `*Classical` layer): read a legacy package as a canonical
+one. The extractor lift `Extractor.TreeBased.ofClassical` preserves computability, but the purity
+field does not — it goes through `Verifier.pureFormOfIsPure`, i.e. `Classical.choice` — so a lifted
+package is `noncomputable` even where the classical extractor it wraps is not. That is the price of
+the shim, and the reason every consumer is migrated rather than lifted. -/
+noncomputable def ofClassical
+    (L : CWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    CWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+  verifier := L.verifier
+  struct := L.struct
+  relIn := L.relIn
+  relOut := L.relOut
+  isPure := haveI := L.isPure; Verifier.pureFormOfIsPure L.verifier
+  extractor := Extractor.TreeBased.ofClassical L.extractor
+  isCWSS := Verifier.treeSpecialSoundWith.new_of_old init impl L.isCWSS
+
+end CWSSPackage
 
 end CoordinateWise
 
