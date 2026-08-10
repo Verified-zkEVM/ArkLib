@@ -58,7 +58,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   **computable**: it divides by the executable `Rq.inv` rather than `Ring.inverse`, decides its
   three-case split on `Rq Φ`'s decidable equality, and locates both the star center and the
   diverging branch by bounded search. `quadEvalPackage` is still `noncomputable`, but only through
-  the generic `SingleRound.treeExtractor`, which recovers per-branch responses by inverting
+  the generic `SingleRound.treeExtractorClassical`, which recovers per-branch responses by inverting
   `relOut` — the transcript tree does not carry them.
 
   Mirroring `InnerOuter/Security.lean`, the extraction lemmas carry the Lyubashevsky–Seiler
@@ -560,7 +560,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape
       (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
         (messageDigits := messageDigits) (outerRows := outerRows)
         (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
-      (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+      (treeExtractorClassical (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
         (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) := by
   refine coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness init impl _ (fun _ _ => rfl) _ _
     _ _
@@ -600,7 +600,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape_paperParams
       (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α) (innerRows := innerRows)
         (messageDigits := messageDigits) (outerRows := outerRows)
         (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
-      (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
+      (treeExtractorClassical (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
         (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) :=
   quadEval_coordinateWiseSpecialSoundWithEscape (γ := b) init impl hq5 hκ hτ pp
 
@@ -633,7 +633,8 @@ noncomputable def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type
   esc := escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
     (quadEvalEscLocal (zDigits := zDigits) 𝓜(q, α) (b : ZMod q) pp γ)
   isPure := ⟨fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  extractor := treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+  extractor := treeExtractorClassical
+    (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
     (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))
   isCWSS := quadEval_coordinateWiseSpecialSoundWithEscape init impl hq5 hκ hτ pp
 

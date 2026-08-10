@@ -23,16 +23,20 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
     a special-sound sibling family has a center and, per coordinate `i`, a sibling differing
     from the center exactly at `i`. Over a decidable alphabet both are found by bounded search
     (`Fin.find`), so they are computable and downstream extraction algorithms stay executable;
+  - the **per-branch paths** (`branchPathOf`) and the `Option`-traverse `collect`, which together
+    read the leaf witnessing at exactly the `2 ^ r + 1` branch leaves;
   - the tree extractor `treeExtractor` and the **generic assembly**
-    `coordinateWiseSpecialSoundWithClassical_of_mkWitness`: any pure statement-extending verifier of
+    `coordinateWiseSpecialSoundWith_of_mkWitness`: any pure statement-extending verifier of
     this `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
     `mkWitness` turning per-branch `relOut`-witnesses at star-shaped challenge families into a
     `relIn`-witness — all tree navigation, shape recovery, and guard-firing is discharged here once;
   - the **escape-threaded** twin `escEvent` /
-    `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`, for reductions whose extraction
+    `coordinateWiseSpecialSoundWithEscape_of_mkWitness`, for reductions whose extraction
     may instead exhibit a cryptographic break: `hmk` concludes `escLocal … ∨ (stmtIn, mkWitness …) ∈
     relIn` and the certificate carries the induced tree-level event `escEvent relOut escLocal`
-    (contract for `escLocal`: `ChallengeTree.EscapeEvent`).
+    (contract for `escLocal`: `ChallengeTree.EscapeEvent`);
+  - the **outgoing** `treeExtractorClassical` and its two `*Classical_of_mkWitness` certificates,
+    kept only while `QuadEval` migrates off them.
 
   ## References
 
@@ -43,11 +47,12 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree CoordinateWise
 
--- NB: `treeExtractor` needs classical choice — it recovers the per-branch `WitOut` by inverting
--- `relOut`, since the transcript tree does not carry the responses. The
--- `linter.style.openClassical` linter (active via `mathlibStandardSet`) forbids a file-level
--- `open Classical`, so we use `open Classical in` on that definition. `central`/`sib` need no
--- such thing: they search.
+-- NB: only the *outgoing* `treeExtractorClassical` needs classical choice — it recovers the
+-- per-branch `WitOut` by inverting `relOut`, since the transcript tree does not carry the
+-- responses. The witness-only `treeExtractor` reads them off its leaf witnessing instead and is
+-- computable. The `linter.style.openClassical` linter (active via `mathlibStandardSet`) forbids a
+-- file-level `open Classical`, so we use `open Classical in` on that one definition.
+-- `central`/`sib` need no such thing: they search.
 
 namespace CoordinateWise.SingleRound
 
@@ -227,6 +232,56 @@ theorem branch_mem (v : CarrierCom)
     branchTr v challenges j ∈ (tree2 v challenges).fullTranscripts :=
   LeafPath.mem_fullTranscripts _
 
+/-! ## Per-branch paths
+
+`branchPath` above is pinned to the synthetic `tree2`; extraction has to index the *given* tree's
+leaf witnessing, so it needs the same path at an arbitrary tree. `branchPathOf` builds it by the
+same index-generic peeling the round readers use, and `fullTranscript_branchPathOf` says the two
+agree on a star tree — by `rfl`, since both sides compute on `tree2`'s constructors. Those are the
+only two facts extraction needs about paths: the witnessing is read at `branchPathOf`-paths only,
+so no inverse reader and no path classification is ever required. -/
+
+/-- Index-generic: at the last round every tree is a leaf, so its only path is the empty one. -/
+def lastPathAux : {a : Fin 3} → (t : ChallengeTree (pSpec CarrierCom C r) arity a) →
+    a = Fin.last 2 → LeafPath t
+  | _, .leaf, _ => .leaf
+  | _, .msgNode k _ _ _, ha => absurd (congrArg Fin.val ha) (by simpa using k.isLt.ne)
+  | _, .chalNode k _ _ _, ha => absurd (congrArg Fin.val ha) (by simpa using k.isLt.ne)
+
+/-- Index-generic round-1 branch path: descend into sibling `j` of the challenge node. -/
+def chalPathAux : {a : Fin 3} → (t : ChallengeTree (pSpec CarrierCom C r) arity a) →
+    a = (1 : Fin 3) → Fin (arity ⟨1, rfl⟩) → LeafPath t
+  | _, .leaf, ha, _ => by simp [Fin.ext_iff] at ha
+  | _, .msgNode k h _ _, ha, _ => by
+      obtain rfl : k = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact absurd h Direction.noConfusion
+  | _, .chalNode k h _ children, ha, j => by
+      obtain rfl : k = 1 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+      exact .chal j (lastPathAux (children j) rfl)
+
+/-- The root-to-leaf path of branch `j` of an **arbitrary** full single-round tree — the
+index at which the extractor reads its leaf witnessing. -/
+def branchPathOf (tree : ChallengeTree (pSpec CarrierCom C r) arity 0)
+    (j : Fin (arity ⟨1, rfl⟩)) : LeafPath tree := aux tree rfl j
+where
+  /-- Round-0 helper for `branchPathOf`: strip the top `msgNode`, delegate to `chalPathAux`. -/
+  aux : {a : Fin 3} → (t : ChallengeTree (pSpec CarrierCom C r) arity a) → a = (0 : Fin 3) →
+      Fin (arity ⟨1, rfl⟩) → LeafPath t
+    | _, .leaf, ha, _ => by simp [Fin.ext_iff] at ha
+    | _, .msgNode k _ _ child, ha, j => by
+        obtain rfl : k = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact .msg (chalPathAux child rfl j)
+    | _, .chalNode k h _ _, ha, _ => by
+        obtain rfl : k = 0 := Fin.ext (by have := congrArg Fin.val ha; simpa using this)
+        exact absurd h Direction.noConfusion
+
+/-- The branch path's transcript **is** the branch transcript — definitional on the star tree, since
+the path builder and the readers both compute on `tree2`'s concrete constructors. -/
+theorem fullTranscript_branchPathOf (v : CarrierCom)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpec CarrierCom C r).Challenge ⟨1, rfl⟩)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    (branchPathOf (tree2 v challenges) j).fullTranscript = branchTr v challenges j := rfl
+
 /-! ## The CWSS structure -/
 
 /-- The single-round CWSS structure (Hachi's `QuadEval` reduction, Hachi Lemma 8): the single
@@ -346,14 +401,46 @@ theorem branch_relOut_language (init : ProbComp σ)
 
 end Bridge
 
+/-- `Option`-valued sequencing of a finite family: `some` of the pointwise values when every one of
+them is present, `none` otherwise. No search, no choice, no `Fintype` — the guard is a bounded
+decidable `∀` over `Fin K`. This is how the extractor consumes a leaf witnessing. -/
+def collect {K : ℕ} {W : Type} (f : Fin K → Option W) : Option (Fin K → W) :=
+  if h : ∀ j, (f j).isSome then some (fun j => (f j).get (h j)) else none
+
+/-- A witnessing that answers at every branch feeds `collect`. -/
+theorem collect_eq_some {K : ℕ} {W : Type} {f : Fin K → Option W} {w : Fin K → W}
+    (h : ∀ j, f j = some (w j)) : collect f = some w := by
+  have hs : ∀ j, (f j).isSome := fun j => by rw [h j]; rfl
+  unfold collect
+  rw [dif_pos hs]
+  exact congrArg some (funext fun j =>
+    Option.some.inj ((Option.some_get (hs j)).trans (h j)))
+
+/-- **The single-round tree extractor**, generic over separate witness types: read the shared
+message and the `2 ^ r + 1` sibling challenge vectors off the tree, `collect` the per-branch
+responses off the leaf witnessing at the branch paths, and assemble via `mkWitness`. Declines
+(`none`) exactly when the witnessing declines at some branch.
+
+A bare function — no relation argument, no `[Nonempty WitOut]`, no choice: the responses are
+*given*, not inverted out of `relOut`. The engine attributes no output statements either; that is
+the verifier's business, and it enters the certificates below only through the notion's validity
+premise. Hypothesis-free: all correctness is proven downstream. -/
+def treeExtractor {StmtIn WitOut WitIn : Type}
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn) :
+    Extractor.TreeBased StmtIn WitIn WitOut (pSpec CarrierCom C r)
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)).arity :=
+  fun stmtIn tree o =>
+    (collect (fun j => o (branchPathOf tree (Fin.cast foldStructure_arity.symm j)))).map
+      (mkWitness stmtIn (readPre tree)
+        (fun j => readChallenges tree (Fin.cast foldStructure_arity.symm j)))
+
 open Classical in
-/-- The tree extractor, generic over separate witness types: `relOut` relates the extended
-statement to a per-branch response `WitOut`; `mkWitness` assembles the extracted input witness
-`WitIn` from the shared message, the `2 ^ r + 1` sibling challenge vectors, and one classically
-chosen `WitOut` per branch (`Classical.ofNonempty` where none exists — on structured accepting
-trees `branch_relOut_language` fires every guard). Hypothesis-free: all correctness is proven
-downstream. -/
-noncomputable def treeExtractor {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
+/-- **Outgoing** (deleted with the `*Classical` layer): the total tree extractor, which recovers
+each per-branch response by classically inverting `relOut` (`Classical.ofNonempty` where none
+exists — on structured accepting trees `branch_relOut_language` fires every guard). Kept only while
+`QuadEval` migrates to `treeExtractor` above. -/
+noncomputable def treeExtractorClassical {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
     (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
     (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
       (Fin (2 ^ r + 1) → WitOut) → WitIn) :
@@ -390,17 +477,181 @@ def escEvent {StmtIn WitOut : Type}
 
 section Assembly
 
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitOut WitIn : Type} {σ : Type}
+
+/-- **Extraction core.** A leaf witnessing that is valid *at the verifier's verdicts* yields the
+per-branch response family: each branch's witness is present (so `collect`'s guard fires) and
+satisfies `relOut` at that branch's extended statement.
+
+Choice-free — the family is read off `o` by `Option.get`. Validity is consumed at
+`branchPathOf`-paths only, so no classification of the tree's other paths is ever needed. -/
+theorem collect_branch_data
+    {relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut)}
+    (harity : 2 ^ r + 1 = arity ⟨1, rfl⟩)
+    (stmtIn : StmtIn) (v : CarrierCom)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpec CarrierCom C r).Challenge ⟨1, rfl⟩)
+    (o : ChallengeTree.LeafWitnesses (tree2 v challenges) WitOut)
+    (hvalid : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+        ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+          ∈ relOut) :
+    ∃ resp : Fin (2 ^ r + 1) → WitOut,
+      (∀ j, o (branchPathOf (tree2 v challenges) (Fin.cast harity j)) = some (resp j)) ∧
+      (∀ j, ((stmtIn, v, challenges (Fin.cast harity j)), resp j) ∈ relOut) := by
+  have hsome : ∀ j : Fin (2 ^ r + 1),
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).isSome := by
+    intro j
+    obtain ⟨w, hw, -⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+    rw [hw]; rfl
+  refine ⟨fun j => (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j),
+    fun j => (Option.some_get (hsome j)).symm, fun j => ?_⟩
+  obtain ⟨w, hw, hrel⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+  rw [fullTranscript_branchPathOf, branch_pre, branch_challenge] at hrel
+  have hget : (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j) = w :=
+    Option.some.inj ((Option.some_get (hsome j)).trans hw)
+  change ((stmtIn, v, challenges (Fin.cast harity j)),
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j)) ∈ relOut
+  rw [hget]
+  exact hrel
+
+/-- **Generic single-round CWSS assembly, named form.** Any pure statement-extending verifier of
+the two-round `pSpec` is coordinate-wise special sound for `foldStructure` **at the named engine**
+`treeExtractor mkWitness`, provided a witness assembler `mkWitness` that turns per-branch
+`relOut`-witnesses at star-shaped challenge families into a `relIn`-witness. This discharges all
+tree/extractor plumbing once; the protocol-specific work (Hachi Lemma 8's case split and
+subtract-divide) lives entirely in `hmk`, whose hypotheses are unchanged.
+
+Naming the extractor keeps the extraction *algorithm* inside the statement, which the existential
+closure loses (see `Verifier.treeSpecialSoundWith`). The notion's validity premise costs `hmk`
+nothing: the verifier is pure, so validity collapses to per-verdict witnessing
+(`LeafWitnesses.isValid_iff_pure` at `hpure`) and hands over exactly the per-branch responses the
+classical form used to invert out of `relOut`. -/
+theorem coordinateWiseSpecialSoundWith_of_mkWitness
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
+    (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+    (relIn : Set (StmtIn × WitIn))
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn)
+    (hmk : ∀ stmtIn v (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) (resp : Fin (2 ^ r + 1) → WitOut),
+      (∀ j, ((stmtIn, v, fam j), resp j) ∈ relOut) →
+      (∃ e, StarAt fam e) →
+      (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
+    Verifier.coordinateWiseSpecialSoundWith init impl
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut V
+      (treeExtractor mkWitness) := by
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
+  intro o hvalid
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc
+      (branchPathOf (tree2 v challenges) (Fin.cast harity 0))
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+        ∈ relOut :=
+    (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+      (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+      hpure hne relOut stmtIn o).mp hvalid
+  obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
+  have hfam := (nodeOk_iff_family challenges).1 hStruct.1
+  have hstar : ∃ e, StarAt
+      (fun j : Fin (2 ^ r + 1) => challenges (Fin.cast harity j)) e :=
+    exists_starAt (le_refl 2) (by omega) _ hfam
+  have hcol : collect (fun j : Fin (2 ^ r + 1) =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    collect_eq_some hro
+  refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_,
+    hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp hbranch hstar⟩
+  change (collect (fun j : Fin (2 ^ r + 1) =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+      (mkWitness stmtIn (readPre (tree2 v challenges))
+        (fun j => readChallenges (tree2 v challenges) (Fin.cast harity j)))
+    = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+  rw [hcol]
+  rfl
+
+/-- **Generic single-round escape-threaded CWSS assembly, named form.**
+`coordinateWiseSpecialSoundWith_of_mkWitness` where the protocol-specific obligation `hmk` may
+conclude a **local escape event** `escLocal` instead of a `relIn`-witness; the certificate then
+carries the induced tree-level event `escEvent relOut escLocal`, unchanged. This is the assembly
+for reductions whose extraction can fail into a cryptographic break (e.g. Hachi Lemma 8's
+Module-SIS cases).
+
+The disjunction is decided **before any witnessing is seen**, by a classical case split on the
+event itself; in the no-escape branch `hmk`'s escape conclusion is refuted, because the collected
+response family is itself a witness of `escEvent`'s existential. -/
+theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
+    (hpure : ∀ s tr, V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+    (relIn : Set (StmtIn × WitIn))
+    (relOut : Set ((StmtIn × CarrierCom × (Fin (2 ^ r) → C)) × WitOut))
+    (mkWitness : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → WitIn)
+    (escLocal : StmtIn → CarrierCom → (Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) →
+      (Fin (2 ^ r + 1) → WitOut) → Prop)
+    (hmk : ∀ stmtIn v (fam : Fin (2 ^ r + 1) → (Fin (2 ^ r) → C)) (resp : Fin (2 ^ r + 1) → WitOut),
+      (∀ j, ((stmtIn, v, fam j), resp j) ∈ relOut) →
+      (∃ e, StarAt fam e) →
+      escLocal stmtIn v fam resp ∨ (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r))
+      (escEvent relOut escLocal) relIn relOut V
+      (treeExtractor mkWitness) := by
+  classical
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (foldStructure_arity (CarrierCom := CarrierCom) (C := C) (r := r)).symm
+  by_cases hesc : escEvent relOut escLocal stmtIn (tree2 v challenges)
+  · exact Or.inl hesc
+  refine Or.inr fun o hvalid => ?_
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc
+      (branchPathOf (tree2 v challenges) (Fin.cast harity 0))
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      ((stmtIn, p.fullTranscript.messages ⟨0, rfl⟩, p.fullTranscript.challenges ⟨1, rfl⟩), w)
+        ∈ relOut :=
+    (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+      (fun s tr => (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
+      hpure hne relOut stmtIn o).mp hvalid
+  obtain ⟨resp, hro, hbranch⟩ := collect_branch_data harity stmtIn v challenges o hvalid'
+  have hfam := (nodeOk_iff_family challenges).1 hStruct.1
+  have hstar : ∃ e, StarAt
+      (fun j : Fin (2 ^ r + 1) => challenges (Fin.cast harity j)) e :=
+    exists_starAt (le_refl 2) (by omega) _ hfam
+  have hcol : collect (fun j : Fin (2 ^ r + 1) =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    collect_eq_some hro
+  rcases hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp hbranch hstar with
+    hbad | hgood
+  · -- the collected responses witness the tree-level event: contradiction with `hesc`
+    exact absurd
+      (show escEvent relOut escLocal stmtIn (tree2 v challenges) from ⟨resp, hbranch, hbad⟩)
+      hesc
+  · refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_, hgood⟩
+    change (collect (fun j : Fin (2 ^ r + 1) =>
+        o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+        (mkWitness stmtIn (readPre (tree2 v challenges))
+          (fun j => readChallenges (tree2 v challenges) (Fin.cast harity j)))
+      = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+    rw [hcol]
+    rfl
+
+end Assembly
+
+/-! ## The outgoing assembly layer
+
+`treeExtractorClassical` and its two certificates, deleted with the rest of the `*Classical` layer
+once `QuadEval` migrates to the witness-only engine above. Do not state new results against them. -/
+
+section AssemblyClassical
+
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitOut WitIn : Type} [Nonempty WitOut]
   {σ : Type}
 
-/-- **Generic single-round CWSS assembly, named form.** Any pure statement-extending verifier of
-the two-round `pSpec` is coordinate-wise special sound for `foldStructure` **at the named
-extractor** `treeExtractor relOut mkWitness`, provided a witness assembler `mkWitness` that turns
-per-branch `relOut`-witnesses at star-shaped challenge families into a `relIn`-witness. This
-discharges all tree/extractor plumbing once; the protocol-specific work (Hachi Lemma 8's case
-split and subtract-divide) lives entirely in `hmk`. Naming the extractor keeps the extraction
-*algorithm* inside the statement, which the existential closure loses (see
-`Verifier.treeSpecialSoundWithClassical`). -/
+/-- **Outgoing** single-round CWSS assembly at `treeExtractorClassical`: the classical-inversion
+form of `coordinateWiseSpecialSoundWith_of_mkWitness`, with identical `hpure`/`hmk` hypotheses. -/
 theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))
@@ -415,7 +666,7 @@ theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness
       (stmtIn, mkWitness stmtIn v fam resp) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWithClassical init impl
       (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r)) relIn relOut V
-      (treeExtractor relOut mkWitness) := by
+      (treeExtractorClassical relOut mkWitness) := by
   classical
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
@@ -469,7 +720,7 @@ theorem coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness
     Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (foldStructure (CarrierCom := CarrierCom) (C := C) (r := r))
       (escEvent relOut escLocal) relIn relOut V
-      (treeExtractor relOut mkWitness) := by
+      (treeExtractorClassical relOut mkWitness) := by
   classical
   intro stmtIn tree hStruct hAcc
   obtain ⟨v, challenges, rfl⟩ := tree_shape tree
@@ -499,7 +750,7 @@ theorem coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness
   · exact Or.inl ⟨_, hbranch, hbad⟩
   · exact Or.inr hgood
 
-end Assembly
+end AssemblyClassical
 
 /-! ## The 2-round protocol instances (NOT auto-derived for `ProtocolSpec 2`) -/
 
