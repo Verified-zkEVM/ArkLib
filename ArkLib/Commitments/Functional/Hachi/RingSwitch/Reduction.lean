@@ -86,7 +86,7 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
 open ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
-open RingSwitching RingSwitching.Lift
+open RingSwitching RingSwitching.Lift CompPoly
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.ScalarRound
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
@@ -97,15 +97,20 @@ variable {n μ : ℕ}
 
 /-- `Rq Φ` presented by the cyclotomic modulus with canonical (reduced) representatives —
 Hachi's instance of the generic `Lift.Presentation` data.  Proof-free, like
-`CyclotomicModulus` itself; the laws are `isPresentation_cyclotomic`. -/
-noncomputable def cyclotomicPresentation : Lift.Presentation (ZMod q) (Rq Φ) where
-  modulus := Φ.φ.toPoly
-  rep a := a.1.toPoly
+`CyclotomicModulus` itself; the laws are `isPresentation_cyclotomic`.
+
+Two projections, hence a plain (computable) `def`: the cyclotomic data was computable all
+along — the noncomputability was purely the `toPoly` bridge the Mathlib-typed structure used
+to force. -/
+def cyclotomicPresentation : Lift.Presentation (ZMod q) (Rq Φ) where
+  modulus := Φ.φ
+  rep a := a.1
 
 omit [NeZero q] in
-/-- The presentation degree is the ring dimension. -/
+/-- The presentation degree is the ring dimension (the same proposition as before the carrier
+change: the modulus is read through `toPoly`, and it used to *be* `Φ.φ.toPoly`). -/
 theorem cyclotomicPresentation_modulus_natDegree :
-    (cyclotomicPresentation Φ).modulus.natDegree = Φ.φ.natDegree :=
+    (cyclotomicPresentation Φ).modulus.toPoly.natDegree = Φ.φ.natDegree :=
   (CompPoly.CPolynomial.natDegree_toPoly Φ.φ).symm
 
 omit [NeZero q] in
@@ -125,7 +130,7 @@ theorem isPresentation_cyclotomic (hd : 0 < Φ.φ.natDegree) :
 /-! ## Hachi witness and relation instance -/
 
 /-- Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient
-polynomial per row in `ZMod q[X]` of degree at most `d − 1` (honest quotients satisfy the
+polynomial per row over `ZMod q` of degree at most `d − 1` (honest quotients satisfy the
 tighter `d − 2`) — the generic lifted witness at the cyclotomic degree. -/
 abbrev LiftedWitness (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) :=
   Lift.LiftedWitness (ZMod q) (Rq Φ) Φ.φ.natDegree μ n
@@ -136,7 +141,7 @@ Not consumed by any proof in this file: `liftPackage` discharges the generic `sh
 through `vecLInftyNorm_le_of_liftShort`, which needs only the `z`-side conjunct of `liftShort`.
 `RhoShort` is a forward-compatibility hook modelling Figure 4's `‖r‖∞ ≤ b − 1` check, carried
 through `relOut` for the digit layer (Lemma 10) that re-derives it. -/
-def RhoShort (ρBound : ℕ) (ρ : Fin n → Polynomial (ZMod q)) : Prop :=
+def RhoShort (ρBound : ℕ) (ρ : Fin n → CPolynomial (ZMod q)) : Prop :=
   ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound
 
 /-- Hachi's norm-conditioned admissibility predicate for a lifted opening. -/

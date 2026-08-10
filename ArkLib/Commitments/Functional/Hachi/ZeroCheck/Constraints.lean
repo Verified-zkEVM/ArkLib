@@ -170,9 +170,9 @@ theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
     (w : LiftedWitness Φ μ n) (hn : n ≤ 2 ^ m₁) (i : Fin n) :
     hAlphaEvals Φ m₁ φF b s α w (rowPoint m₁ hn i) =
       RingSwitching.evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z i)
-        - RingSwitching.evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i))
-        - RingSwitching.evalAt φF α (cyclotomicPresentation Φ).modulus
-            * RingSwitching.evalAt φF α (w.ρ i) := by
+        - RingSwitching.evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i)).toPoly
+        - RingSwitching.evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+            * RingSwitching.evalAt φF α (w.ρ i).toPoly := by
   sorry
 
 /-! ## The batched constraint polynomials (Eqs. (22)–(23)) -/
