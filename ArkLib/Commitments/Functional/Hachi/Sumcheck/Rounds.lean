@@ -287,11 +287,11 @@ noncomputable def roundsChainAux (init : ProbComp σ)
         relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0
         esc := fun _ _ => False
         isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-        extractor := ReduceClaim.treeExtractor (mapStmt := id)
+        extractor := ReduceClaim.treeExtractorClassical (mapStmt := id)
           (roundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w)
           CWSSStructure.ofIsEmpty
         isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _
-          (ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+          (ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
             (relIn := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
             (relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
             (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)

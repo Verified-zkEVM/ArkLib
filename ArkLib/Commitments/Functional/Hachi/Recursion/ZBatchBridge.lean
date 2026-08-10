@@ -130,9 +130,9 @@ noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (St
   relIn := relPartialEval Φ mLow κ bound ρBound K φF
   relOut := relHatEval Φ mLow κ bound ρBound zpow K φF
   isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := toHatEvalStatement mLow κ zpow)
+  extractor := ReduceClaim.treeExtractorClassical (mapStmt := toHatEvalStatement mLow κ zpow)
     (relHatEval Φ mLow κ bound ρBound zpow K φF) (fun _ w => w) CWSSStructure.ofIsEmpty
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
     (relIn := relPartialEval Φ mLow κ bound ρBound K φF)
     (relOut := relHatEval Φ mLow κ bound ρBound zpow K φF)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)

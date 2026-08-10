@@ -35,7 +35,8 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   `S_b` range checks, becomes the single `‖ζ‖∞ ≤ bound` conjunct, equivalent by
   `vecLInftyNorm_append`.) This file is the zero-round `ReduceClaim` bridge realizing that
   reading — **statement reshaping only**: no soundness error, CWSS for any structure, pure
-  verifier — assembled sorry-free from `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
+  verifier — assembled sorry-free from
+  `ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical`.
 
   The substance is the block-row equivalence `rlin_iff_relOut` (`M ζ = y ∧ ‖ζ‖∞ ≤ γ`, at the
   assembled statement, ⟺ the Eq. (20) relation `relOut` at the un-stacked response), proved via
@@ -464,7 +465,7 @@ theorem mem_relRlin_of_relOut
 /-- **The `R^lin` adapter as a (plain) `CWSSPackageClassical`** (Hachi [NOZ26] §4.3 entry): the
 zero-round `ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to
 `relRlin`. Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
-`ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the proven block-row pull-back
+`ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical` at the proven block-row pull-back
 `mem_relOut_of_relRlin` — sorry-free. -/
 noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
@@ -483,10 +484,10 @@ noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
   relIn := relOut (zDigits := zDigits) Φ pp base ω γ
   relOut := relRlin Φ
   isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ pp base ω γ stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor
+  extractor := ReduceClaim.treeExtractorClassical
     (mapStmt := rlinStmt (zDigits := zDigits) Φ pp base ω γ)
     (relRlin Φ) (fun _ w => unstack Φ w) CWSSStructure.ofIsEmpty
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
     (relIn := relOut (zDigits := zDigits) Φ pp base ω γ)
     (relOut := relRlin Φ)
     (mapWitInv := fun _ w => unstack Φ w) (D := CWSSStructure.ofIsEmpty)

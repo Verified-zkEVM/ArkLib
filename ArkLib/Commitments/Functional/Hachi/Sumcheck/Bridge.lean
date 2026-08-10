@@ -78,9 +78,9 @@ noncomputable def sumcheckBridgePackage (init : ProbComp σ)
   relIn := relZeroCheck Φ m₀ m₁ bound ρBound K φF b
   relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0
   isPure := ⟨fun stmt _ => toRoundStatement Φ m₁ φF stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := toRoundStatement Φ m₁ φF)
+  extractor := ReduceClaim.treeExtractorClassical (mapStmt := toRoundStatement Φ m₁ φF)
     (roundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w) CWSSStructure.ofIsEmpty
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
     (relIn := relZeroCheck Φ m₀ m₁ bound ρBound K φF b)
     (relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)

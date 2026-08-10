@@ -23,8 +23,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   Eq. (12) bases to be the monomial tensor bases `mb(xl)` / `mb(xh)` of the low/high halves of the
   evaluation point (`toQuadEvalStatement`), realized as the `ReduceClaim` reduction. Because
   `ReduceClaim`'s verifier is pure with no challenge rounds, its coordinate-wise special soundness
-  (CWSS; `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`) collapses to the transcript-level
-  pull-back `mem_relPolyEval_of_relIn`, so the bridge is CWSS for **any** `D`
+  (CWSS; `ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical`) collapses to the
+  transcript-level pull-back `mem_relPolyEval_of_relIn`, so the bridge is CWSS for **any** `D`
   (`bridge_coordinateWiseSpecialSoundWith`).
 
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
@@ -50,7 +50,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `mem_relPolyEval_of_relIn`: `QuadEval`'s `relIn` at `toQuadEvalStatement Φ s` pulls back to
     `relPolyEval` at `s`, via `splitForm_monomialBasis_eq_eval`.
   * `bridge_coordinateWiseSpecialSoundWith`: the bridge is CWSS for any `D`, at the named
-    `ReduceClaim.treeExtractor`. All proofs in this file
+    `ReduceClaim.treeExtractorClassical`. All proofs in this file
     are sorry-free.
 
   ## Faithfulness note (Eq. (12) convention)
@@ -196,8 +196,8 @@ theorem mem_relPolyEval_of_relIn
 
 omit [NeZero q] in
 /-- **CWSS of the bridge, named form.** The zero-round `ReduceClaim` head is coordinate-wise
-special sound for any `D`, at the named `ReduceClaim.treeExtractor`: with no challenge rounds,
-CWSS collapses (via the no-challenge bridge) to the transcript-level pull-back
+special sound for any `D`, at the named `ReduceClaim.treeExtractorClassical`: with no challenge
+rounds, CWSS collapses (via the no-challenge bridge) to the transcript-level pull-back
 `mem_relPolyEval_of_relIn`, reducing `QuadEval`'s `relIn` to the polynomial-level `relPolyEval`.
 The witness type is unchanged (`QuadEvalWitness`), so the witness pull-back is the identity. -/
 theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
@@ -210,9 +210,9 @@ theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
       (bridgeVerifier (oSpec := oSpec) Φ (innerRows := innerRows)
         (messageDigits := messageDigits) (outerRows := outerRows)
         (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
-      (ReduceClaim.treeExtractor (mapStmt := toQuadEvalStatement Φ)
+      (ReduceClaim.treeExtractorClassical (mapStmt := toQuadEvalStatement Φ)
         (relIn Φ pp base βSq γ κ) (fun _ w => w) D) :=
-  ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+  ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
     (relIn := relPolyEval Φ pp base βSq γ κ) (relOut := relIn Φ pp base βSq γ κ)
     (mapWitInv := fun _ w => w) (D := D)
     (mem_relPolyEval_of_relIn Φ pp base βSq γ κ)
@@ -241,7 +241,7 @@ noncomputable def bridgePackage {σ : Type}
   relIn := relPolyEval Φ pp base βSq γ κ
   relOut := relIn Φ pp base βSq γ κ
   isPure := ⟨fun stmt _ => toQuadEvalStatement Φ stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := toQuadEvalStatement Φ)
+  extractor := ReduceClaim.treeExtractorClassical (mapStmt := toQuadEvalStatement Φ)
     (relIn Φ pp base βSq γ κ) (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := bridge_coordinateWiseSpecialSoundWith Φ init impl CWSSStructure.ofIsEmpty pp base
     βSq γ κ

@@ -104,9 +104,9 @@ noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
   relIn := relLift Φ bound ρBound K φF
   relOut := relBatched Φ m₀ m₁ bound ρBound K φF b
   isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := id)
+  extractor := ReduceClaim.treeExtractorClassical (mapStmt := id)
     (relBatched Φ m₀ m₁ bound ρBound K φF b) (fun _ w => w) CWSSStructure.ofIsEmpty
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
     (relIn := relLift Φ bound ρBound K φF)
     (relOut := relBatched Φ m₀ m₁ bound ρBound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
