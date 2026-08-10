@@ -24,13 +24,15 @@ sweeps, counterexample re-derivation for kept hypotheses, full `lake build`, axi
 
 ## Group B — labelling and honesty
 
-- **B1 CLOSED (documentation only, definition unchanged).** `LinearCode.rate` docstring now
+- **B1 CLOSED (initially documentation-only; API follow-up added).** `LinearCode.rate` docstring now
   defines it as the base-field-dimension rate `dim/n`, correct for ABF26 D2.5 only at
   alphabet `F` and explicitly *not* D2.5's `dim/(s·n)` over `F^s`; points at
   `subspaceDesign_tau_lower` / `frs_is_subspaceDesign_gk16` which spell the paper form out.
-  Audit D2.5 row and the conventions type table carry the same caveat. The optional
-  module-alphabet normalized rate was **not** added (out-of-scope list, module-alphabet
-  bridge is a later split).
+  Audit D2.5 row and the conventions type table carry the same distinction. Follow-up commit
+  `8c9e3ccb` added `LinearCode.alphabetRate = dim/(s*n)` for codes over `Fin s → F`, with
+  the base-rate, `s = 1`, and real-cast bridges. Its documentation records that this is the
+  linear finite-field interpretation of D2.5 when `s ≥ 1`, algebraically extended to the
+  degenerate cases rather than pretending that `log_1` is defined.
 - **B2 CLOSED.** `mds_johnson_lambda_le` relabelled "ABF26 Corollary 3.3, field-linear
   specialization" in both the theorem docstring and the module header; audit C3.3 row now
   says **partial** with the `LinearCode ι F` scope limitation spelled out.
@@ -131,5 +133,54 @@ Frobenius-power lemmas have no upstream counterpart.
 
 - **I1**: push + PR-body refresh (owner edits the body; the body still advertises the
   deleted erasure API and stale sorry counts).
-- Everything in FIX-BOOTSTRAP §3 (out of scope) remains untouched, including the optional
-  module-alphabet rate/Johnson generalizations (B1/B2's deferred halves).
+- Everything in FIX-BOOTSTRAP §3 (out of scope) remains untouched, except that B1's optional
+  module-alphabet rate has now landed. B2's module-alphabet Johnson generalization remains
+  deferred.
+
+## Follow-up review of the PR-1.5 planning claim
+
+The proposed `PR-1.5-SCOPE-2026-08-10.md` is not in this branch. At review time it existed only
+as an untracked file in the separate `~/ArkLib` worktree. Its initial §3 source table was not safe
+to execute: it misattributed T3.4, T3.10, and T3.12–T3.14, and treated background citations for
+T3.6 as its theorem source. The ABF26 reference PDF gives the following exact map:
+
+| Row | Printed source |
+|---|---|
+| T3.4 / C3.5 | CZ25, Theorem B.5 / Corollary 2.21 |
+| T3.6 | AGL24, Theorem 1.1 (BGM23, GZ23, AGGLZ25 are preceding context) |
+| L3.7 / C3.8 | Eli57; the corollary additionally uses the MS77 volume estimate |
+| T3.9 | ST20, Theorem 1.2 |
+| T3.10 | BDG24 and AGL23 |
+| T3.11 | GLMRSW22, Theorem 4.1 |
+| T3.12 | BKR06, Corollary 2.2 |
+| T3.13 | GHSZ02, Corollary 20 |
+| T3.14 | JH01, Theorem 2 |
+| T3.15 | CW07 |
+
+Consequently the planning file's bibliography worklist must use these keys (plus DG25 where
+C3.8's refinement note is retained), rather than the initially proposed CZ25/BCDZ26 and
+KumarR26/KKH26 clusters for T3.12–T3.14. The separate untracked planning file was corrected in
+place during this review; this table is also kept in the tracked record so the correction survives
+if that file is lost. Its blanket claim that every PDF was already cached was removed as well.
+
+The scope also incorrectly said this §3 content was absent from #505 and planned to recreate or
+admit results that already exist on `feat/abf26-plan`. In fact that branch's
+`ListDecoding/Bounds.lean` contains corrected T3.4/C3.5 and T3.10–T3.14 statements, an in-tree L3.7
+proof (`45b4605c`), and an in-tree T3.9 proof (`ffaa62ab`). The planning file now makes PR-1.5 an
+extraction and hardening of those assets, with only the module half of C3.3 and T3.6 genuinely
+additive. The companion PR-2 scope was corrected to stop claiming `Bounds.lean` and the §3 audit
+rows, and the final stack is now explicitly PR-1 → PR-1.5 → PR-2. Parallel implementation remains
+possible, but the final PRs are not disjoint because the former plan shared `Bounds.lean`, the audit,
+and `references.bib`.
+
+## Final validation after the alphabet-rate and scope follow-up
+
+- Compiled probes give alphabet-normalized rate `1` for the full length-one code over alphabet
+  `(ZMod 2)^2`, and `0` for the deliberately total `s = 0` extension.
+- `#print axioms` on `alphabetRate` and all three bridges reports exactly
+  `[propext, Classical.choice, Quot.sound]`.
+- `./scripts/validate.sh --docs` passes at the final tracked tip: 4203 project jobs, clean
+  `ArkLib/Data` non-sorry warning gate, umbrella imports, documentation integrity, strict
+  knowledge-base lint, and 8639 API-documentation jobs.
+- `git diff --check` passes. The corrected PR-1.5/PR-2 planning files remain untracked in their
+  separate `~/ArkLib` planning worktree and are therefore not part of this PR's validation result.

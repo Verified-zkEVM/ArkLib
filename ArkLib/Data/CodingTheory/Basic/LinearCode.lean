@@ -265,9 +265,13 @@ scoped macro_rules
 
 /--
 The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`
-(ABF26 Definition 2.5): for alphabet `Σ = F^s` the paper's rate is
-`log_{|Σ|} |C| / n = dim/(s·n)`. This is the normalization `rate` does **not** provide —
-`rate` divides by the block length alone — and the two agree exactly at `s = 1`
+(the linear-code specialization of ABF26 Definition 2.5): when `F` is a finite nontrivial
+field and `s ≥ 1`, the paper's rate for `Σ = F^s` is
+`log_{|Σ|} |C| / n = dim/(s·n)`. The formula below is its algebraic extension to all `s`,
+all finite coordinate types, and the same `Semiring` generality as `rate`; in particular it
+assigns `0` when `s = 0` or the block length is zero.
+This is the normalization `rate` does **not** provide — `rate` divides by the block length
+alone — and the two agree when `s = 1`
 (`alphabetRate_one_eq_rate`). It is the rate appearing (inline, in its `ℝ`-cast form
 `alphabetRate_cast_eq`) in `CodingTheory.subspaceDesign_tau_lower` and
 `CodingTheory.frs_is_subspaceDesign_gk16`.
@@ -284,7 +288,7 @@ lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
   rw [alphabetRate, rate, div_div, mul_comm]
 
 /-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
-rate: ABF26 D2.5 and `rate` agree exactly there. -/
+rate: ABF26 D2.5 and `rate` agree there. -/
 lemma alphabetRate_one_eq_rate [Semiring F]
     (MC : ModuleCode ι F (Fin 1 → F)) :
     alphabetRate MC = rate MC := by
