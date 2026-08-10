@@ -5,8 +5,6 @@ Use `AGENTS.md` for the one-screen overview and this wiki for details that are t
 too changeable to keep at the repo root.
 For reusable cross-cutting workflows that are not tied to one repo area, see
 [`../skills/README.md`](../skills/README.md).
-For implementation plans for refactors that are proposed or in flight, see
-[`../plans/README.md`](../plans/README.md).
 
 ## Start Here
 

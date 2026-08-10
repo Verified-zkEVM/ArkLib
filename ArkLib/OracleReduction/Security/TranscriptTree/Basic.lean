@@ -74,9 +74,9 @@ import ArkLib.OracleReduction.Security.Basic
     event (`treeSpecialSoundWithEscape_false_iff`), and every plain certificate lifts losslessly
     (`Verifier.treeSpecialSoundWith.withEscape`).
   - `ChallengeTree.canonWitnesses` / `canonWitnesses_isValid` and
-    `Verifier.treeSpecialSoundWith.old_of_new` — the classical closer: acceptance alone supplies a
-    valid witnessing, which recovers the unconditioned reading of a certificate. The premise is
-    never an obstruction, and never vacuous either — see `TranscriptTree.NonVacuity`.
+    `Verifier.treeSpecialSoundWith.mem_relIn_of_isAccepting` — the closer: acceptance alone supplies
+    a valid witnessing, so the validity premise is never an obstruction and a certificate can still
+    be read unconditionally.
 
   ## Caveat
 
@@ -556,8 +556,7 @@ namespace LeafWitnesses
   witness at a statement the verifier cannot output is unrepresentable, so a witnessing citing only
   unreachable statements is not a witnessing of the tree at all. The quantifier over reachable
   outputs is `∃`, not `∀`: demanding one witness serve *every* reachable statement is unsatisfiable
-  at a randomized verifier with two separated outputs, which would make the notion vacuous. Both
-  facts are gated in `Security.TranscriptTree.NonVacuity`.
+  at a randomized verifier with two separated outputs, which would make the notion vacuous.
 
   At a pure verifier validity collapses to per-verdict witnessing (`isValid_iff_pure`), which is why
   engine certificates need no hypothesis beyond the purity they already carry. -/
@@ -601,9 +600,9 @@ open scoped Classical in
   chosen `relOut`-witness at a chosen reachable statement where one exists, and `none` elsewhere.
 
   Classical by construction, and that is its whole point: it lives in proofs and in the top-level
-  closer that recovers the unconditioned classical reading of a certificate
-  (`Verifier.treeSpecialSoundWith.old_of_new`), and is erased at codegen. Extraction *algorithms*
-  never call it — they consume the witnessing their caller supplies. -/
+  closer that reads a certificate unconditionally
+  (`Verifier.treeSpecialSoundWith.mem_relIn_of_isAccepting`), and is erased at codegen. Extraction
+  *algorithms* never call it — they consume the witnessing their caller supplies. -/
 noncomputable def canonWitnesses (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp)) (V : Verifier oSpec StmtIn StmtOut pSpec)
     (relOut : Set (StmtOut × WitOut)) (stmtIn : StmtIn)
@@ -613,8 +612,8 @@ noncomputable def canonWitnesses (init : ProbComp σ)
     then some h.choose else none
 
 /-- The canonical witnessing is **valid on every accepting tree**: the validity premise of the
-  soundness notion is never an obstruction, which is what makes the notion's classical reading
-  recoverable (`Verifier.treeSpecialSoundWith.old_of_new`). -/
+  soundness notion is never an obstruction, which is what lets a certificate be read
+  unconditionally (`Verifier.treeSpecialSoundWith.mem_relIn_of_isAccepting`). -/
 theorem canonWitnesses_isValid {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relOut : Set (StmtOut × WitOut)} {stmtIn : StmtIn} {tree : ChallengeTree pSpec arity 0}
@@ -677,10 +676,8 @@ conjunct, and there is no claim map for a certificate to be honest about, becaus
 attributes no statements.
 
 The premise is never an obstruction: the canonical witnessing is valid on every accepting tree
-(`ChallengeTree.canonWitnesses_isValid`), which recovers the unconditioned classical reading
-(`treeSpecialSoundWith.old_of_new`). It is also never vacuous: the notion is refutable at
-`relIn = ∅` for *every* extractor, and the rejected quantifier variants are refuted on fixtures, in
-`Security.TranscriptTree.NonVacuity`. -/
+(`ChallengeTree.canonWitnesses_isValid`), so a certificate can still be read unconditionally
+(`treeSpecialSoundWith.mem_relIn_of_isAccepting`). -/
 
 /-- A named tree-based extractor `Ext` **witnesses tree special soundness** of a verifier with
   respect to a generic challenge-tree shape `S`, an input relation `relIn` and an output relation
@@ -856,14 +853,14 @@ theorem treeSpecialSoundWithEscape_congr {S S' : ChallengeTreeShape pSpec} (hS :
   exact h
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
-/-- **The classical reading, recovered.** Closing a named certificate's extractor with the canonical
-  witnessing (`ChallengeTree.canonWitnesses`) yields the unconditioned statement the library
-  asserted before witnessings existed: on every structured accepting tree the recovered witness is
-  in `relIn`.
+/-- **The unconditioned reading of a certificate.** Closing a named certificate's extractor with the
+  canonical witnessing (`ChallengeTree.canonWitnesses`) drops the validity premise entirely: on
+  every structured accepting tree the recovered witness is in `relIn`.
 
   Needs `[Inhabited WitIn]` (to read the `Option` off) and *nothing else* — no purity hypothesis:
   validity of the canonical witnessing follows from acceptance alone. -/
-theorem treeSpecialSoundWith.old_of_new [Inhabited WitIn] {S : ChallengeTreeShape pSpec}
+theorem treeSpecialSoundWith.mem_relIn_of_isAccepting [Inhabited WitIn]
+    {S : ChallengeTreeShape pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
     {Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec S.arity}

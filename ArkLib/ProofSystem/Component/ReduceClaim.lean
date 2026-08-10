@@ -183,9 +183,9 @@ instance instIsPure : (verifier oSpec mapStmt).IsPure :=
 root-to-leaf path (`onlyPath`) and carries no information of its own, so extraction is exactly the
 pull-back of that leaf's output witness along `mapWitInv`.
 
-Computable and `Classical.choice`-free. The output witness that the classical version had to
-*invent* — by inverting `relOut` at the mapped statement — now arrives as data, on the leaf
-witnessing the downstream reduction supplies. `ReduceClaim` is therefore an **open** link: it
+Computable and `Classical.choice`-free: the output witness arrives as data, on the leaf witnessing
+the downstream reduction supplies, rather than being *invented* by inverting `relOut` at the mapped
+statement. `ReduceClaim` is therefore an **open** link: it
 declines (`none`) exactly when its witnessing declines, rather than fabricating junk. -/
 def treeExtractor (mapWitInv : StmtIn → WitOut → WitIn)
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
@@ -405,7 +405,7 @@ instance instIsPureOracle :
 single leaf's output witness back along `mapWitInv`. Computable and `Classical.choice`-free.
 
 As for the non-oracle engine, the tree carries no information of its own, so the output witness
-the classical version had to invent arrives on the leaf witnessing instead. -/
+arrives on the leaf witnessing rather than being invented by inverting `relOut`. -/
 def oracleTreeExtractor (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
     Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut !p[]

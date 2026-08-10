@@ -234,8 +234,8 @@ left disjunct); otherwise the shared `w̃` makes both defect polynomials
 `T ↦ hypercubeSum H (i+1) (snoc prefix T) − g(T)` (degrees `≤ 2b` resp. `≤ 2`) vanish at `k`
 distinct points, hence identically; evaluating at `0, 1`, summing, and using the **guard fact**
 `roundCheck = true` (available from acceptance on a guarded verifier) recovers the round-`i`
-claims. Assembled via a guarded variant of the scalar-round machinery (using
-`check_eq_true_of_guarded_accepting`).
+claims. Assembled via a guarded variant of the scalar-round machinery, whose guard fact comes from
+`Verifier.not_accepting_of_failure` refuting the rejecting branch.
 
 **TODO (reuse `Sumcheck/Structured`):** this round should be the existing structured sum-check
 round (`ArkLib/ProofSystem/Sumcheck/Structured`) rather than the bespoke `roundVerifier` above —

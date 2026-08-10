@@ -6,7 +6,6 @@ Authors: Tobias Rothmann
 
 import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 import ArkLib.OracleReduction.Security.TranscriptTree.Composition
-import ArkLib.OracleReduction.Security.TranscriptTree.NonVacuity
 
 /-!
   # Trees of transcripts
@@ -74,9 +73,6 @@ import ArkLib.OracleReduction.Security.TranscriptTree.NonVacuity
   - `TranscriptTree.Composition` — the sequential-composition API (`appendArity`,
     `ChallengeTreeShape.append`, `appendSplit`) and the structure-preservation and recombination
     theorems above.
-  - `TranscriptTree.NonVacuity` — the permanent regression gates for the notion: it is refutable at
-    `relIn = ∅` for every extractor, its validity premise is satisfiable, and the two rejected
-    typings of validity (∀-over-outputs, and reachability-free) are each killed on concrete data.
 
   ## Design notes and limitations
 

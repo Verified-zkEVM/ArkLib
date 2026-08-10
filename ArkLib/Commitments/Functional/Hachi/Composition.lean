@@ -118,7 +118,8 @@ remaining generic obligation, and the only `sorry` left on the composition path 
 guarded append theorems are proved. The two scalar-round assemblies
 `coordinateWiseSpecialSoundWith(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) are
 proven, as are their readers, shape recovery, extractor and escape event. The escape layer
-(`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lean`) with its append
+(`TranscriptTree/Basic.lean`, `CoordinateWiseSpecialSoundness/{Basic,Composition,Escape}.lean`)
+with its append
 theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
 sorried `Extractor.TreeBased`. *Per-link math*: the zero-check encodings

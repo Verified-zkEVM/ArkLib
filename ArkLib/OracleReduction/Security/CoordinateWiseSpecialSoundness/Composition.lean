@@ -346,8 +346,8 @@ theorem mem_of_pure_accepting
 /-! ## Composition of tree-based certificates
 
 The composed extractor is `Extractor.TreeBased.append`, a named function of **both** factors'
-extractors: the right extractor now enters the composed algorithm — it produces the leaf witnessing
-the left extractor consumes — so it can no longer stay existential. Its seam argument is `verify₁`,
+extractors: the right extractor enters the composed algorithm — it produces the leaf witnessing
+the left extractor consumes — so it cannot stay existential. Its seam argument is `verify₁`,
 the left verifier's verdict function *as data*; a package reads it off its `Verifier.PureForm`
 field.
 
@@ -366,8 +366,8 @@ omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
 extractor and a pure left factor. Both factors' extractors are named, and the composed one is
 `Extractor.TreeBased.append verify₁ E₁ E₂`.
 
-The right factor's extractor is no longer existential: it *is* how the composed extraction obtains
-the left factor's leaf witnessing, at the intermediate statement `verify₁` names. -/
+The right factor's extractor is named rather than existential: it *is* how the composed extraction
+obtains the left factor's leaf witnessing, at the intermediate statement `verify₁` names. -/
 theorem append_treeSpecialSoundWith
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)

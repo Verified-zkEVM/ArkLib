@@ -172,8 +172,9 @@ Report:
 ## Widening an interface
 
 When triage says **architectural** and you own the type, the fix is not a cleverer body — it is to
-put the missing information into the input. Three shapes recur, all of them from the CWSS extractor
-refactor ([`../plans/computable-cwss-extractors.md`](../plans/computable-cwss-extractors.md)):
+put the missing information into the input. Three shapes recur, all of them from the refactor that
+made the coordinate-wise special soundness extractors computable
+(`ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/`):
 
 - **A missing argument.** `Extractor.TreeBased` inverted an output relation with `Exists.choose`
   because a challenge tree carries messages and challenges but never an output witness. No body

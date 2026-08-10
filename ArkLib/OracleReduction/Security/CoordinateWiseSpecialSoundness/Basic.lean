@@ -137,7 +137,7 @@ end CoordinateWise
 
 -- No `noncomputable section` here: everything below is `Prop`-valued or computable data, and
 -- `CoordEq`'s `Decidable` instance above is the search step of the star-center machinery, so it
--- must stay computable. A section here would silently swallow a codegen failure (§10 R3).
+-- must stay computable. A section here would silently swallow a codegen failure.
 
 /-! ## Coordinate-wise structure on a protocol -/
 

@@ -29,10 +29,9 @@ The verifier of each variant is **pure** (`Verifier.IsPure` / `OracleVerifier.to
 and has no challenge rounds, so it is **coordinate-wise special sound** for any `CWSSStructure`
 (`verifier_coordinateWiseSpecialSoundWith` and, for the oracle variant,
 `SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith`), via the no-challenge bridge
-`Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`. The named extractor
-reads the
-witness off the tree's unique transcript (`fun _ tree => tree.onlyPath.fullTranscript 0`) — the
-canonical "open in the clear" base case.
+`Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The named extractor reads the
+witness off the tree's unique transcript (`fun _ tree _ => some (tree.onlyPath.fullTranscript 0)`)
+— the canonical "open in the clear" base case.
 These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
 deferred; see the note there.
 -/

@@ -23,7 +23,7 @@ import ArkLib.OracleReduction.Security.TranscriptTree
 
   The extractor takes the tree together with a **leaf witnessing**, and may decline; the
   unconditioned textbook statement — a total extractor of `(stmtIn, tree)` correct on every
-  structured accepting tree — is recovered as a theorem, `Verifier.specialSound.old_of_new`.
+  structured accepting tree — follows as a theorem, `Verifier.specialSound.exists_total_extractor`.
 
   This is standalone — independent of the coordinate-wise generalization in
   `Security.CoordinateWiseSpecialSoundness`. Both notions are *sibling* instances of
@@ -71,22 +71,22 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   The leaf witnessing is the "output witnesses" input of a reduction-of-knowledge extractor
   (`Extractor.TreeBased`); the premise is never an obstruction, since acceptance alone supplies one
   (`ChallengeTree.canonWitnesses`), which is what makes the unconditioned textbook reading
-  recoverable — `Verifier.specialSound.old_of_new` below. -/
+  available — `Verifier.specialSound.exists_total_extractor` below. -/
 def specialSound (k : pSpec.ChallengeIdx → ℕ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
   verifier.treeSpecialSound init impl (distinctShape k) relIn relOut
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
-/-- **The textbook reading of `(k)`-special soundness, recovered.** A special-sound verifier admits
-  a total extractor of `(stmtIn, tree)` alone that is correct on *every* structured accepting tree
-  — no witnessing premise anywhere in the statement.
+/-- **The textbook reading of `(k)`-special soundness.** A special-sound verifier admits a total
+  extractor of `(stmtIn, tree)` alone that is correct on *every* structured accepting tree — no
+  witnessing premise anywhere in the statement.
 
   The extractor is the notion's own, closed at the canonical witnessing acceptance already provides
-  (`ChallengeTree.canonWitnesses`), and the recovery costs only `[Inhabited WitIn]` — no purity, no
+  (`ChallengeTree.canonWitnesses`), and this costs only `[Inhabited WitIn]` — no purity, no
   finiteness. So the leaf-witnessing input weakens nothing: it buys computable extraction while the
-  classical statement survives verbatim as a theorem. -/
-theorem specialSound.old_of_new [Inhabited WitIn] (k : pSpec.ChallengeIdx → ℕ)
+  textbook statement remains available verbatim as a theorem. -/
+theorem specialSound.exists_total_extractor [Inhabited WitIn] (k : pSpec.ChallengeIdx → ℕ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
     (h : verifier.specialSound (WitOut := WitOut) init impl k relIn relOut) :
@@ -99,7 +99,7 @@ theorem specialSound.old_of_new [Inhabited WitIn] (k : pSpec.ChallengeIdx → �
     (Ext stmtIn tree
       (ProtocolSpec.ChallengeTree.canonWitnesses init impl verifier relOut stmtIn)).getD default,
     fun stmtIn tree hstr hacc => ?_⟩
-  exact Verifier.treeSpecialSoundWith.old_of_new init impl hExt stmtIn tree hstr hacc
+  exact Verifier.treeSpecialSoundWith.mem_relIn_of_isAccepting init impl hExt stmtIn tree hstr hacc
 
 end Verifier
 

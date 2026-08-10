@@ -206,8 +206,8 @@ def EscapeCWSSPackage.append
 /-- **Compose two guarded escape-aware packages along a matching relation seam.** As in
 `EscapeCWSSPackage.append`, but the event and the extractor are taken at the guard's output map
 `L₁.isGuarded.out`, which `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless,
-since escape events must be honest at *all* `(stmt, tree)` pairs. The certificate is now **proved**
-(`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft`), its positivity hypothesis
+since escape events must be honest at *all* `(stmt, tree)` pairs. The certificate is
+`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft`, its positivity hypothesis
 discharged by `CWSSStructure.toShape_arity_pos`. -/
 def EscapeGCWSSPackage.append
     (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)

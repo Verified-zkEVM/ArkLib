@@ -495,8 +495,8 @@ subtract-divide) lives entirely in `hmk`, whose hypotheses are unchanged.
 Naming the extractor keeps the extraction *algorithm* inside the statement, which the existential
 closure loses (see `Verifier.treeSpecialSoundWith`). The notion's validity premise costs `hmk`
 nothing: the verifier is pure, so validity collapses to per-verdict witnessing
-(`LeafWitnesses.isValid_iff_pure` at `hpure`) and hands over exactly the per-branch responses the
-classical form used to invert out of `relOut`. -/
+(`LeafWitnesses.isValid_iff_pure` at `hpure`) and hands over exactly the per-branch responses,
+with no inversion out of `relOut`. -/
 theorem coordinateWiseSpecialSoundWith_of_mkWitness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (V : Verifier oSpec StmtIn (StmtIn × CarrierCom × (Fin (2 ^ r) → C)) (pSpec CarrierCom C r))

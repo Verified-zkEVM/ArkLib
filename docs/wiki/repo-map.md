@@ -185,11 +185,10 @@ home_page/            site assets and assembled website root
   (`ChallengeTree.LeafWitnesses`, honest when each answer certifies in `relOut` some statement the
   verifier can actually output there — `LeafWitnesses.IsValid`), and returns `Option WitIn`. The
   notion says extraction succeeds on every `S`-structured accepting tree at every valid witnessing;
-  the classical unconditioned reading is recovered by closing the extractor at
-  `ChallengeTree.canonWitnesses` (`treeSpecialSoundWith.old_of_new`), and `TranscriptTree/NonVacuity`
-  is the permanent regression gate pinning the notion's typing decisions. `Basic` also
-  defines the **escape layer**: `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full
-  challenge trees, with the trusted-spec contract in its docstring) and
+  the unconditioned reading follows by closing the extractor at `ChallengeTree.canonWitnesses`
+  (`treeSpecialSoundWith.mem_relIn_of_isAccepting`). `Basic` also defines the **escape layer**:
+  `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full challenge trees, with the
+  trusted-spec contract in its docstring) and
   `Verifier.treeSpecialSoundWithEscape`, whose conclusion is `esc stmt tree ∨ extraction succeeds`;
   the plain notion is the never-firing event (`treeSpecialSoundWithEscape_false_iff`) and every plain
   certificate lifts losslessly (`treeSpecialSoundWith.withEscape`). `Composition`

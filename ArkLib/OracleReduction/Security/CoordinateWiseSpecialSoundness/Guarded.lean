@@ -45,7 +45,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * `Verifier.GuardedForm.append` — closure of guardedness **data** under `Verifier.append`:
     composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
     `Verifier.PureForm.append`. Its `verify_eq` is the file's one remaining **sorry**;
-    `Verifier.IsGuarded.append` is now the forgetful corollary.
+    `Verifier.IsGuarded.append` is the forgetful corollary.
   * `Verifier.append_treeSpecialSoundWith_guardedLeft` / `…WithEscape_guardedLeft` and their CWSS
     wrappers `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` / `…WithEscape…` — the
     guarded binary appends at the witness-only extractor, **proved**. The guarded seam lemmas they
@@ -141,9 +141,9 @@ with no challenge-tree path machinery.
 The data half is what a guarded package needs: its composed escape event and extractor must *name*
 the left verdict map, and reading one off the `IsGuarded` class would cost `Classical.choice`.
 
-**`verify_eq` is sorried**, and it is the *only* remaining obligation of the guarded seam: it is
-literally the statement that used to sit behind `Verifier.IsGuarded.append`'s `sorry` (which is now
-proved from this). Proof plan: normalize `Verifier.append`'s bind with `failure_bind`/`pure_bind`
+**`verify_eq` is sorried**, and it is the *only* remaining obligation of the guarded seam:
+`Verifier.IsGuarded.append` is proved from it by forgetting the data.
+Proof plan: normalize `Verifier.append`'s bind with `failure_bind`/`pure_bind`
 under the two `if`-splits, mirroring `Verifier.PureForm.append`. -/
 def GuardedForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂} (G₁ : V₁.GuardedForm) (G₂ : V₂.GuardedForm) :
@@ -179,7 +179,7 @@ statement at all), and `guarded_accepting_of_mem` is `pure_accepting_of_mem` whe
 
 With those, the guarded composition theorems are the pure skeleton with **one move in front**: on an
 accepting composed tree every prefix guard must already pass (`hcheck`), learned by exhibiting one
-suffix leaf — which is what `ChallengeTree.somePath` supplies and what the `harity₂` hypothesis (D5)
+suffix leaf — which is what `ChallengeTree.somePath` supplies and what the `harity₂` hypothesis
 buys. `Verifier.not_accepting_of_failure` then refutes the rejecting branch. -/
 
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
@@ -289,7 +289,7 @@ left factor may reject at runtime; its guard data `(check₁, out₁)` is explic
 extractor `Extractor.TreeBased.append out₁ E₁ E₂` names the verdict map.
 
 `hcheck` — every prefix guard passes on an accepting composed tree — comes first, learned from one
-`ChallengeTree.somePath` suffix leaf (whence `harity₂`, D5); the rest is
+`ChallengeTree.somePath` suffix leaf (whence `harity₂`); the rest is
 `append_treeSpecialSoundWith`'s skeleton with the pure seam lemmas replaced by their guarded
 analogues. -/
 theorem append_treeSpecialSoundWith_guardedLeft
@@ -386,7 +386,7 @@ extractor and the UNCHANGED `ChallengeTree.EscapeEvent.append` (taken at the gua
 `out₁`, which `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape
 events must be honest at *all* `(stmt, tree)` pairs).
 
-This is the statement that used to be the development's fundamental sorried obligation. On an
+This is the development's fundamental composition obligation for guarded left factors. On an
 accepting composed tree `hcheck` forces every prefix guard to pass, after which the escape routing
 is `append_treeSpecialSoundWithEscape`'s, at the guarded seam lemmas. -/
 theorem append_treeSpecialSoundWithEscape_guardedLeft
@@ -612,7 +612,7 @@ def _root_.CoordinateWise.CWSSPackage.toGuarded
 /-- **Compose two guarded packages along a matching seam** — the guarded canonical `▷`. The seam
 verdict is `L₁.isGuarded.out`, the guard data composes by `Verifier.GuardedForm.append`, and the
 certificate is `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft`, whose positivity
-hypothesis (D5) is discharged by `CWSSStructure.toShape_arity_pos` — every CWSS shape branches. -/
+hypothesis is discharged by `CWSSStructure.toShape_arity_pos` — every CWSS shape branches. -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]

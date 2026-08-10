@@ -602,8 +602,8 @@ section Structure
 variable {S₁ : ChallengeTreeShape pSpec₁} {S₂ : ChallengeTreeShape pSpec₂}
 
 /-- If a `pSpec₂`-tree embeds into a structured appended tree then it is itself structured.
-Replaces the old `RightProj.tree_isStructured`; the message case is now a direct `exact`, since
-`embedRight`'s constructor indices are definitionally the ones `IsStructured` expects. -/
+The message case is a direct `exact`, since `embedRight`'s constructor indices are definitionally
+the ones `IsStructured` expects. -/
 theorem embedRight_isStructured :
     {r : Fin (n + 1)} → (t : ChallengeTree pSpec₂ S₂.arity r) →
     (embedRight (arity₁ := S₁.arity) t).IsStructured (S₁.append S₂) → t.IsStructured S₂
@@ -855,8 +855,8 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
            | (exact (heq_cast_iff_heq _ _ _).mpr HEq.rfl))
 
 /-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the embedded
-appended tree. Induction is on the `pSpec₂`-tree itself — with `RightProj` gone there is no
-certificate to induct over, and no `LeafPath` peeling is involved. -/
+appended tree. Induction is on the `pSpec₂`-tree itself — the right-hand side of the split carries
+no certificate, so no `LeafPath` peeling is involved. -/
 theorem embedRight_mem_transcripts_append :
     {r : Fin (n + 1)} → (t : ChallengeTree pSpec₂ arity₂ r) → (tr₁ : FullTranscript pSpec₁) →
     (pre₂ : Transcript r pSpec₂) → {tr₂ : FullTranscript pSpec₂} →

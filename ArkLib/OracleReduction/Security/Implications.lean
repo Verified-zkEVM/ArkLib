@@ -33,9 +33,9 @@ section Implications
 
 /- TODO: add the following results
 - `knowledgeSoundness` implies `soundness`
-- `roundByRoundSoundness` implies `soundness`
-- `roundByRoundKnowledgeSoundness` implies `roundByRoundSoundness`
-- `roundByRoundKnowledgeSoundness` implies `knowledgeSoundness`
+- `rbrSoundness` implies `soundness`
+- `rbrKnowledgeSoundness` implies `rbrSoundness`
+- `rbrKnowledgeSoundness` implies `knowledgeSoundness`
 
 In other words, we have a lattice of security notions, with `knowledge` and `roundByRound` being
 two strengthenings of soundness.

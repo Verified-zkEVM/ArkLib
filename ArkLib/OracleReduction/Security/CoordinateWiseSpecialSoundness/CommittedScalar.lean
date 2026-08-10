@@ -197,7 +197,7 @@ def escEvent {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
 the tree through the same `readPre` / `readFam` the escape event uses, and the `k` branch openings
 off the leaf witnessing.
 
-Computable, and no longer parameterized by `checkAt`: the openings are supplied by the witnessing
+Computable, and not parameterized by `checkAt`: the openings are supplied by the witnessing
 rather than recovered by inverting `rel K checkAt`. -/
 def treeExtractor {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (project : W → WitIn) :
     Extractor.TreeBased Stmt WitIn W (pSpecScalar K.TCom Challenge)

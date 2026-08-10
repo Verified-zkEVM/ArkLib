@@ -99,16 +99,13 @@ variable {n μ : ℕ}
 Hachi's instance of the generic `Lift.Presentation` data.  Proof-free, like
 `CyclotomicModulus` itself; the laws are `isPresentation_cyclotomic`.
 
-Two projections, hence a plain (computable) `def`: the cyclotomic data was computable all
-along — the noncomputability was purely the `toPoly` bridge the Mathlib-typed structure used
-to force. -/
+Two projections, hence a plain (computable) `def` — `CPolynomial` data all the way down. -/
 def cyclotomicPresentation : Lift.Presentation (ZMod q) (Rq Φ) where
   modulus := Φ.φ
   rep a := a.1
 
 omit [NeZero q] in
-/-- The presentation degree is the ring dimension (the same proposition as before the carrier
-change: the modulus is read through `toPoly`, and it used to *be* `Φ.φ.toPoly`). -/
+/-- The presentation degree is the ring dimension: `modulus` is `Φ.φ`, read through `toPoly`. -/
 theorem cyclotomicPresentation_modulus_natDegree :
     (cyclotomicPresentation Φ).modulus.toPoly.natDegree = Φ.φ.natDegree :=
   (CompPoly.CPolynomial.natDegree_toPoly Φ.φ).symm
@@ -204,7 +201,8 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`EscapeCWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not
+`EscapeCWSSPackage` field (`.../CoordinateWiseSpecialSoundness/Escape.lean`), and it is the field —
+not
 any named theorem — that the chain composition operator `▷` consumes: every link in the Hachi
 opening chain (`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
 `ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,

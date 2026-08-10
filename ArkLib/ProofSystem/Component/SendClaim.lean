@@ -27,8 +27,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
 
   The verifier is pure and has no challenge rounds, hence **coordinate-wise special sound**
   (`oracleVerifier_coordinateWiseSpecialSoundWith`) for any `CWSSStructure`, via the no-challenge
-  bridge `OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`. The
-  extractor is
+  bridge `OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The extractor is
   trivial (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P`
   refines the input relation by the claim predicate `P`, so accepting into its language forces the
   input into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the
