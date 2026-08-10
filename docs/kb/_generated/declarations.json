@@ -311,15 +311,6 @@
     "ArkLib/Commitments/Functional/Hachi/Commitment.lean": {
       "declarations": [
         {
-          "doc": "",
-          "kind": "def",
-          "line": 21,
-          "name": "_anon_def_21",
-          "namespace": "",
-          "short_name": "_anon_def_21",
-          "signature": "def deferred (`sorry`, see the `TODO`). The coordinate-wise-special-sound (CWSS) composition the"
-        },
-        {
           "doc": "The **multilinear evaluation oracle** on a committed `n`-variable multilinear polynomial: a query is an evaluation point `x : Vector (Rq \ud835\udcdc(q,\u03b1)) n` and the answer is `f x`. This is the `OracleInterface` that makes `CMlPolynomial (Rq \ud835\udcdc(q,\u03b1)) n` the `Data` of a functional commitment (`Commitment.Scheme`); `toOC` follows `OracleContext.ofFunction`.",
           "kind": "instance",
           "line": 61,
@@ -1369,15 +1360,6 @@
     },
     "ArkLib/Commitments/Functional/Hachi/QuadEval/Basic.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "lemma",
-          "line": 25,
-          "name": "_anon_lemma_25",
-          "namespace": "",
-          "short_name": "_anon_lemma_25",
-          "signature": "lemma lemmas at the heart of the Lemma 8 extraction."
-        },
         {
           "doc": "",
           "kind": "axiom",
@@ -2720,26 +2702,7 @@
       ]
     },
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Basic.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "instance",
-          "line": 23,
-          "name": "_anon_instance_23",
-          "namespace": "",
-          "short_name": "_anon_instance_23",
-          "signature": "instance instances of `Sumcheck.Structured.computeRoundPoly` via `SumcheckMultiplierParam` (identity"
-        },
-        {
-          "doc": "",
-          "kind": "structure",
-          "line": 29,
-          "name": "_anon_structure_29",
-          "namespace": "",
-          "short_name": "_anon_structure_29",
-          "signature": "structure structured round into the CWSS chain first needs the wire format (`!v[...]`) and the"
-        }
-      ]
+      "declarations": []
     },
     "ArkLib/Commitments/Functional/Hachi/Sumcheck/Bridge.lean": {
       "declarations": [
@@ -3042,17 +3005,7 @@
       ]
     },
     "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Basic.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "lemma",
-          "line": 33,
-          "name": "_anon_lemma_33",
-          "namespace": "",
-          "short_name": "_anon_lemma_33",
-          "signature": "lemma lemmas stated alongside."
-        }
-      ]
+      "declarations": []
     },
     "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Batch.lean": {
       "declarations": [
@@ -3131,15 +3084,6 @@
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "rangeProduct_eq_zero_iff",
           "signature": "theorem rangeProduct_eq_zero_iff {b : \u2115} {v : F} :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 105,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter._anon_class_105",
-          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "_anon_class_105",
-          "signature": "class classical"
         },
         {
           "doc": "**The Eq. (21) table** `w\u0303`: the committed pair `(z, \u03c1)` re-read as an `F`-valued function on the `m\u2080`-cube, indexed by the little-endian flat index `idx : Fin (2 ^ m\u2080)`. Splitting `row := idx / d` and `column := idx % d` (`d = deg \u03a6.\u03c6`): rows `< \u03bc` return the `Zq`-coefficients of the witness entries `z\u2c7c \u2208 Rq`, rows `\u03bc \u2264 \u00b7 < \u03bc + n` return the coefficients of the quotients `\u03c1\u1d62`, both mapped through `\u03c6F`, and all remaining indices return zero. The coefficients are read **directly** (the \u03c1-direct model), so `H\u2080` constrains the committed data itself: `H\u2080 \u2261 0` says every committed coefficient lies ",
@@ -5041,15 +4985,6 @@
     "ArkLib/Data/Classes/Slice.lean": {
       "declarations": [
         {
-          "doc": "",
-          "kind": "instance",
-          "line": 34,
-          "name": "_anon_instance_34",
-          "namespace": "",
-          "short_name": "_anon_instance_34",
-          "signature": "instance instances for:"
-        },
-        {
           "doc": "Type class for \"take first n elements\" operations: `v\u27e6:m\u27e7` We allow for the final subcollection type `subcoll` to depend on all prior parameters: the collection type `coll`, the stop index type `stop`, the validity predicate `valid`.",
           "kind": "class",
           "line": 48,
@@ -5710,15 +5645,6 @@
           "signature": "theorem closeToWord_iff_exists_agreementCols"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 431,
-          "name": "Code._anon_class_431",
-          "namespace": "Code",
-          "short_name": "_anon_class_431",
-          "signature": "class classical"
-        },
-        {
           "doc": "If `u` and `v` are two codewords of `C` with distance less than `dist C`, then they are the same.",
           "kind": "theorem",
           "line": 513,
@@ -6236,24 +6162,6 @@
           "signature": "theorem singletonBound [CommRing F] [StrongRankCondition F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 484,
-          "name": "LinearCode._anon_class_484",
-          "namespace": "LinearCode",
-          "short_name": "_anon_class_484",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 510,
-          "name": "LinearCode._anon_class_510",
-          "namespace": "LinearCode",
-          "short_name": "_anon_class_510",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Singleton bound** for linear codes",
           "kind": "theorem",
           "line": 588,
@@ -6261,24 +6169,6 @@
           "namespace": "LinearCode",
           "short_name": "singleton_bound_linear",
           "signature": "theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 591,
-          "name": "LinearCode._anon_class_591",
-          "namespace": "LinearCode",
-          "short_name": "_anon_class_591",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 597,
-          "name": "LinearCode._anon_class_597",
-          "namespace": "LinearCode",
-          "short_name": "_anon_class_597",
-          "signature": "class classical"
         },
         {
           "doc": "A computable version of the Hamming distance of a module code `MC`.",
@@ -6665,15 +6555,6 @@
           "namespace": "Code",
           "short_name": "relDistFromCode'_eq_relDistFromCode",
           "signature": "lemma relDistFromCode'_eq_relDistFromCode {\u03b9 : Type*} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 633,
-          "name": "Code._anon_class_633",
-          "namespace": "Code",
-          "short_name": "_anon_class_633",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7132,15 +7013,6 @@
           "namespace": "BerlekampWelch",
           "short_name": "E_and_Q_unique",
           "signature": "lemma E_and_Q_unique"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 474,
-          "name": "BerlekampWelch._anon_class_474",
-          "namespace": "BerlekampWelch",
-          "short_name": "_anon_class_474",
-          "signature": "class classical"
         }
       ]
     },
@@ -7452,15 +7324,6 @@
           "signature": "def linsolve (A : Matrix (Fin n) (Fin m) F) (b : Fin n \u2192 F) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 48,
-          "name": "_anon_class_48",
-          "namespace": "",
-          "short_name": "_anon_class_48",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Solution correctness theorem** for the linear system solver. ### Theorem Statement: If `linsolve` returns `some x`, then `x` is indeed a solution to the linear system. ### Parameters: - `A : Matrix (Fin n) (Fin m) F` - Coefficient matrix - `b : Fin n \u2192 F` - Right-hand side vector - `x : Fin m \u2192 F` - Candidate solution vector - `h : linsolve A b = some x` - Proof that the solver returned this solution",
           "kind": "theorem",
           "line": 63,
@@ -7529,30 +7392,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 85,
-          "name": "DivergenceOfSets._anon_class_85",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_85",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 107,
           "name": "DivergenceOfSets.Pr_uniform_equiv",
           "namespace": "DivergenceOfSets",
           "short_name": "Pr_uniform_equiv",
           "signature": "theorem Pr_uniform_equiv {\u03b1 \u03b2 : Type} [Fintype \u03b1] [Nonempty \u03b1] [Fintype \u03b2] [Nonempty \u03b2]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 110,
-          "name": "DivergenceOfSets._anon_class_110",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_110",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7565,30 +7410,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 167,
-          "name": "DivergenceOfSets._anon_class_167",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_167",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 184,
           "name": "DivergenceOfSets.proximity_gap_affineSubspace",
           "namespace": "DivergenceOfSets",
           "short_name": "proximity_gap_affineSubspace",
           "signature": "theorem proximity_gap_affineSubspace {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9] [DecidableEq \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 197,
-          "name": "DivergenceOfSets._anon_class_197",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_197",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7619,15 +7446,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 339,
-          "name": "DivergenceOfSets._anon_class_339",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_339",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 352,
           "name": "DivergenceOfSets.reedSolomon_rate_le_one",
@@ -7637,30 +7455,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 356,
-          "name": "DivergenceOfSets._anon_class_356",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_356",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 371,
           "name": "DivergenceOfSets.reedSolomon_rate_mul_card_eq_dim",
           "namespace": "DivergenceOfSets",
           "short_name": "reedSolomon_rate_mul_card_eq_dim",
           "signature": "theorem reedSolomon_rate_mul_card_eq_dim {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 376,
-          "name": "DivergenceOfSets._anon_class_376",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_376",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7682,30 +7482,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 407,
-          "name": "DivergenceOfSets._anon_class_407",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_407",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 436,
           "name": "DivergenceOfSets.errorBound_ge_const",
           "namespace": "DivergenceOfSets",
           "short_name": "errorBound_ge_const",
           "signature": "theorem errorBound_ge_const {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 443,
-          "name": "DivergenceOfSets._anon_class_443",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_443",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7718,30 +7500,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 590,
-          "name": "DivergenceOfSets._anon_class_590",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_590",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 681,
           "name": "DivergenceOfSets.errorBound_mono",
           "namespace": "DivergenceOfSets",
           "short_name": "errorBound_mono",
           "signature": "theorem errorBound_mono {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 689,
-          "name": "DivergenceOfSets._anon_class_689",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_689",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -7754,15 +7518,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 722,
-          "name": "DivergenceOfSets._anon_class_722",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_722",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 734,
           "name": "DivergenceOfSets.divergence_pred_spec",
@@ -7772,30 +7527,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 740,
-          "name": "DivergenceOfSets._anon_class_740",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_740",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 800,
           "name": "DivergenceOfSets.concentration_bounds",
           "namespace": "DivergenceOfSets",
           "short_name": "concentration_bounds",
           "signature": "theorem concentration_bounds {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9] [DecidableEq \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 816,
-          "name": "DivergenceOfSets._anon_class_816",
-          "namespace": "DivergenceOfSets",
-          "short_name": "_anon_class_816",
-          "signature": "class classical"
         }
       ]
     },
@@ -8066,15 +7803,6 @@
           "signature": "lemma natWeightedDegree_monomial (i j u v : \u2115) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 467,
-          "name": "GuruswamiSudan._anon_class_467",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_467",
-          "signature": "class classical"
-        },
-        {
           "doc": "The weighted degree of a monomial X^i Y^j is u*i + v*j.",
           "kind": "lemma",
           "line": 472,
@@ -8100,15 +7828,6 @@
           "namespace": "GuruswamiSudan",
           "short_name": "natWeightedDegree_sum_le",
           "signature": "lemma natWeightedDegree_sum_le {\u03b9 : Type*} (s : Finset \u03b9) (f : \u03b9 \u2192 F[X][Y]) (u v : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 503,
-          "name": "GuruswamiSudan._anon_class_503",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_503",
-          "signature": "class classical"
         },
         {
           "doc": "The weighted degree of a scalar multiple is at most the weighted degree of the polynomial.",
@@ -8228,15 +7947,6 @@
           "signature": "lemma dvd_eval_of_rootMultiplicity_zero (Q : F[X][Y]) (P : F[X]) (m : \u2115)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 773,
-          "name": "GuruswamiSudan._anon_class_773",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_773",
-          "signature": "class classical"
-        },
-        {
           "doc": "Evaluating the shifted bivariate polynomial at the shifted univariate polynomial is equivalent to shifting the result of the evaluation.",
           "kind": "lemma",
           "line": 780,
@@ -8264,15 +7974,6 @@
           "signature": "lemma orderAt_eval_ge (Q : F[X][Y]) (P : F[X]) (x : F) (m : \u2115)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 796,
-          "name": "GuruswamiSudan._anon_class_796",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_796",
-          "signature": "class classical"
-        },
-        {
           "doc": "If a polynomial R has roots at points indexed by A with multiplicity at least m, and its degree is strictly less than m * |A|, then R must be the zero polynomial.",
           "kind": "lemma",
           "line": 813,
@@ -8282,15 +7983,6 @@
           "signature": "lemma roots_le_degree_of_deg_lt_roots (R : F[X]) (m : \u2115) (A : Finset (Fin n))"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 816,
-          "name": "GuruswamiSudan._anon_class_816",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_816",
-          "signature": "class classical"
-        },
-        {
           "doc": "If a polynomial `q` has degree less than `n`, then interpolating its values at `n` points recovers `q`.",
           "kind": "lemma",
           "line": 835,
@@ -8298,15 +7990,6 @@
           "namespace": "GuruswamiSudan",
           "short_name": "interpolate_eq_of_degree_lt",
           "signature": "lemma interpolate_eq_of_degree_lt (q : F[X]) (hq : q.natDegree < n) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 837,
-          "name": "GuruswamiSudan._anon_class_837",
-          "namespace": "GuruswamiSudan",
-          "short_name": "_anon_class_837",
-          "signature": "class classical"
         },
         {
           "doc": "The polynomial corresponding to a codeword has degree at most k-1.",
@@ -9577,15 +9260,6 @@
           "signature": "theorem jointAgreement_iff_jointProximity"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 682,
-          "name": "Code._anon_class_682",
-          "namespace": "Code",
-          "short_name": "_anon_class_682",
-          "signature": "class classical"
-        },
-        {
           "doc": "The list of `\u03ba`-fold codeword stacks whose interleaved codeword forms are (less-than)-`\u03b4`-close to `\u22c8|u`.",
           "kind": "def",
           "line": 793,
@@ -10442,30 +10116,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 94,
-          "name": "_anon_class_94",
-          "namespace": "",
-          "short_name": "_anon_class_94",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 97,
           "name": "ps_coeff_mul_sum_monomial",
           "namespace": "",
           "short_name": "ps_coeff_mul_sum_monomial",
           "signature": "lemma ps_coeff_mul_sum_monomial {R : Type} [CommRing R]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 104,
-          "name": "_anon_class_104",
-          "namespace": "",
-          "short_name": "_anon_class_104",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -10532,15 +10188,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 190,
-          "name": "_anon_class_190",
-          "namespace": "",
-          "short_name": "_anon_class_190",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 193,
           "name": "ps_eval_y_eq_eval_x_swap",
@@ -10595,15 +10242,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 314,
-          "name": "_anon_class_314",
-          "namespace": "",
-          "short_name": "_anon_class_314",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 329,
           "name": "ps_degY_bound",
@@ -10613,30 +10251,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 337,
-          "name": "_anon_class_337",
-          "namespace": "",
-          "short_name": "_anon_class_337",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 351,
           "name": "ps_degree_bounds_of_mul",
           "namespace": "",
           "short_name": "ps_degree_bounds_of_mul",
           "signature": "lemma ps_degree_bounds_of_mul {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 363,
-          "name": "_anon_class_363",
-          "namespace": "",
-          "short_name": "_anon_class_363",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -10655,15 +10275,6 @@
           "namespace": "",
           "short_name": "ps_is_rel_prime_swap",
           "signature": "lemma ps_is_rel_prime_swap {F : Type} [CommRing F] {A B : F[X][Y]}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 400,
-          "name": "_anon_class_400",
-          "namespace": "",
-          "short_name": "_anon_class_400",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -10688,15 +10299,6 @@
           "signature": "lemma ps_exists_p_of_degree_x_eq_zero_nat_degree_y_eq_zero {F : Type} [Field F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 37,
-          "name": "_anon_class_37",
-          "namespace": "",
-          "short_name": "_anon_class_37",
-          "signature": "class classical"
-        },
-        {
           "doc": "After cancellation in X, a large subset of evaluation points witnesses `P = quot_y`.",
           "kind": "lemma",
           "line": 45,
@@ -10704,15 +10306,6 @@
           "namespace": "",
           "short_name": "ps_exists_qx_of_cancel",
           "signature": "lemma ps_exists_qx_of_cancel {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 52,
-          "name": "_anon_class_52",
-          "namespace": "",
-          "short_name": "_anon_class_52",
-          "signature": "class classical"
         },
         {
           "doc": "After cancellation in Y, a large subset of evaluation points witnesses `P = quot_x`.",
@@ -10724,15 +10317,6 @@
           "signature": "lemma ps_exists_qy_of_cancel {F : Type} [Field F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 70,
-          "name": "_anon_class_70",
-          "namespace": "",
-          "short_name": "_anon_class_70",
-          "signature": "class classical"
-        },
-        {
           "doc": "If `A` and `B` are coprime and agree on sufficiently many lines, then `A` is constant.",
           "kind": "lemma",
           "line": 82,
@@ -10740,15 +10324,6 @@
           "namespace": "",
           "short_name": "ps_coprime_case_constant",
           "signature": "lemma ps_coprime_case_constant {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 97,
-          "name": "_anon_class_97",
-          "namespace": "",
-          "short_name": "_anon_class_97",
-          "signature": "class classical"
         },
         {
           "doc": "Existence of `P` with `B = P * A` when both `A` and `B` are nonzero.",
@@ -10760,15 +10335,6 @@
           "signature": "lemma ps_exists_p_nonzero {F : Type} [Field F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 185,
-          "name": "_anon_class_185",
-          "namespace": "",
-          "short_name": "_anon_class_185",
-          "signature": "class classical"
-        },
-        {
           "doc": "Main existence: if `B/A` agrees with low-degree quotients on enough lines, then `A \u2223 B`.",
           "kind": "lemma",
           "line": 275,
@@ -10776,15 +10342,6 @@
           "namespace": "",
           "short_name": "ps_exists_p",
           "signature": "lemma ps_exists_p {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 290,
-          "name": "_anon_class_290",
-          "namespace": "",
-          "short_name": "_anon_class_290",
-          "signature": "class classical"
         }
       ]
     },
@@ -10798,15 +10355,6 @@
           "namespace": "",
           "short_name": "polishchuk_spielman",
           "signature": "theorem polishchuk_spielman {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 70,
-          "name": "_anon_class_70",
-          "namespace": "",
-          "short_name": "_anon_class_70",
-          "signature": "class classical"
         }
       ]
     },
@@ -10822,15 +10370,6 @@
           "signature": "lemma ps_nat_degree_mul_x_pow_le {F : Type} [Semiring F] [Nontrivial F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 38,
-          "name": "_anon_class_38",
-          "namespace": "",
-          "short_name": "_anon_class_38",
-          "signature": "class classical"
-        },
-        {
           "doc": "The degree of `resultant(B, A, n, m)` is at most `m \u00b7 degX(B) + n \u00b7 degX(A)`.",
           "kind": "lemma",
           "line": 43,
@@ -10840,15 +10379,6 @@
           "signature": "lemma ps_nat_degree_resultant_le {F : Type} [Field F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 47,
-          "name": "_anon_class_47",
-          "namespace": "",
-          "short_name": "_anon_class_47",
-          "signature": "class classical"
-        },
-        {
           "doc": "The resultant commutes with ring homomorphisms.",
           "kind": "lemma",
           "line": 93,
@@ -10856,15 +10386,6 @@
           "namespace": "",
           "short_name": "ps_resultant_map",
           "signature": "lemma ps_resultant_map {R S : Type} [CommRing R] [CommRing S]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 96,
-          "name": "_anon_class_96",
-          "namespace": "",
-          "short_name": "_anon_class_96",
-          "signature": "class classical"
         },
         {
           "doc": "The resultant evaluated at `x` equals the resultant of the evaluated polynomials.",
@@ -10894,15 +10415,6 @@
           "signature": "lemma ps_sylvester_mul_vec_eq_coeff_add {R : Type} [CommRing R]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 134,
-          "name": "_anon_class_134",
-          "namespace": "",
-          "short_name": "_anon_class_134",
-          "signature": "class classical"
-        },
-        {
           "doc": "If `B(x, Y) = Q \u00b7 A(x, Y)`, then `(X - x)^(natDegreeY A)` divides `resultant(B, A)`.",
           "kind": "lemma",
           "line": 141,
@@ -10910,33 +10422,6 @@
           "namespace": "",
           "short_name": "ps_resultant_dvd_pow_eval_x",
           "signature": "lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 147,
-          "name": "_anon_class_147",
-          "namespace": "",
-          "short_name": "_anon_class_147",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 199,
-          "name": "_anon_class_199",
-          "namespace": "",
-          "short_name": "_anon_class_199",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 213,
-          "name": "_anon_class_213",
-          "namespace": "",
-          "short_name": "_anon_class_213",
-          "signature": "class classical"
         },
         {
           "doc": "If `B(X, y) = Q \u00b7 A(X, y)`, then `(X - y)^(degreeX A)` divides the swapped resultant.",
@@ -10948,15 +10433,6 @@
           "signature": "lemma ps_resultant_dvd_pow_eval_y {F : Type} [Field F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 240,
-          "name": "_anon_class_240",
-          "namespace": "",
-          "short_name": "_anon_class_240",
-          "signature": "class classical"
-        },
-        {
           "doc": "The resultant of relatively prime polynomials is nonzero.",
           "kind": "lemma",
           "line": 249,
@@ -10964,15 +10440,6 @@
           "namespace": "",
           "short_name": "ps_resultant_ne_zero_of_is_rel_prime",
           "signature": "lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 253,
-          "name": "_anon_class_253",
-          "namespace": "",
-          "short_name": "_anon_class_253",
-          "signature": "class classical"
         }
       ]
     },
@@ -11433,33 +10900,6 @@
           "signature": "lemma e_le_dist_over_3_strong"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 49,
-          "name": "ProximityToRS._anon_class_49",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_49",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 114,
-          "name": "ProximityToRS._anon_class_114",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_114",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 408,
-          "name": "ProximityToRS._anon_class_408",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_408",
-          "signature": "class classical"
-        },
-        {
           "doc": "If an affine line has too many `e`-close points to the Reed\u2013Solomon code, then its direction is itself `e`-close to the code.",
           "kind": "lemma",
           "line": 506,
@@ -11467,114 +10907,6 @@
           "namespace": "ProximityToRS",
           "short_name": "dir_close_of_many_close_pts",
           "signature": "lemma dir_close_of_many_close_pts"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 512,
-          "name": "ProximityToRS._anon_class_512",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_512",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 570,
-          "name": "ProximityToRS._anon_class_570",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_570",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 785,
-          "name": "ProximityToRS._anon_class_785",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_785",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 815,
-          "name": "ProximityToRS._anon_class_815",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_815",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 823,
-          "name": "ProximityToRS._anon_class_823",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_823",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 835,
-          "name": "ProximityToRS._anon_class_835",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_835",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 864,
-          "name": "ProximityToRS._anon_class_864",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_864",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 870,
-          "name": "ProximityToRS._anon_class_870",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_870",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 881,
-          "name": "ProximityToRS._anon_class_881",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_881",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 912,
-          "name": "ProximityToRS._anon_class_912",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_912",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 917,
-          "name": "ProximityToRS._anon_class_917",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_917",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 942,
-          "name": "ProximityToRS._anon_class_942",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_942",
-          "signature": "class classical"
         },
         {
           "doc": "If every point on a nondegenerate affine line is close and the field is larger than the Reed-Solomon minimum distance, then the line cannot have only few close points.",
@@ -11595,15 +10927,6 @@
           "signature": "lemma e_le_dist_over_3"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 1079,
-          "name": "ProximityToRS._anon_class_1079",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1079",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Lemma 4.5, [AHIV22].** If the interleaved word `U\u22c6` is far from the interleaved Reed\u2013Solomon code, then a uniformly random word in the row-span is `e`-close to the code with probability at most `\u2016RS\u2016\u2080 / |F|`.",
           "kind": "lemma",
           "line": 1098,
@@ -11611,69 +10934,6 @@
           "namespace": "ProximityToRS",
           "short_name": "prob_of_bad_pts",
           "signature": "lemma prob_of_bad_pts"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1107,
-          "name": "ProximityToRS._anon_class_1107",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1107",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1188,
-          "name": "ProximityToRS._anon_class_1188",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1188",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1191,
-          "name": "ProximityToRS._anon_class_1191",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1191",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1241,
-          "name": "ProximityToRS._anon_class_1241",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1241",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1259,
-          "name": "ProximityToRS._anon_class_1259",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1259",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1422,
-          "name": "ProximityToRS._anon_class_1422",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1422",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1445,
-          "name": "ProximityToRS._anon_class_1445",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_1445",
-          "signature": "class classical"
         }
       ]
     },
@@ -11725,15 +10985,6 @@
           "signature": "lemma hamming_dist_le_of_subset_disagree"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 66,
-          "name": "_anon_class_66",
-          "namespace": "",
-          "short_name": "_anon_class_66",
-          "signature": "class classical"
-        },
-        {
           "doc": "A finite-dimensional submodule whose vectors all have support size at most `e` over a field with more than `e` elements has a common support of size at most `e`.",
           "kind": "lemma",
           "line": 76,
@@ -11743,15 +10994,6 @@
           "signature": "lemma exists_common_support_of_wt_le"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 81,
-          "name": "_anon_class_81",
-          "namespace": "",
-          "short_name": "_anon_class_81",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Lemma 4.3, [AHIV22]** (row-span lower bound). If the interleaved word `U\u22c6` is more than `e` far from the interleaved code `L^\u22c8\u03ba`, then the row-span of `U\u22c6` contains a word more than `e` far from `L`. The additional field-size assumption `|F| > e` is needed: for small fields one can have a linear subspace of `F^\u03b9` consisting entirely of `e`-sparse vectors whose supports are not aligned, making `\u22c8|U\u22c6` column-wise far while every row-span vector stays `e`-close.",
           "kind": "lemma",
           "line": 222,
@@ -11759,15 +11001,6 @@
           "namespace": "",
           "short_name": "dist_interleaved_code_to_code_lb",
           "signature": "lemma dist_interleaved_code_to_code_lb"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 229,
-          "name": "_anon_class_229",
-          "namespace": "",
-          "short_name": "_anon_class_229",
-          "signature": "class classical"
         },
         {
           "doc": "The set of points on an affine line, which are within distance `e` from a Reed-Solomon code.",
@@ -11788,15 +11021,6 @@
           "signature": "def numberOfClosePts (u v : \u03b9 \u2192 F) (deg : \u2115) (\u03b1 : \u03b9 \u21aa F) (e : \u2115) : \u2115 := by"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 392,
-          "name": "ProximityToRS._anon_class_392",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_392",
-          "signature": "class classical"
-        },
-        {
           "doc": "The explicit finite-cardinality definition of `numberOfClosePts` agrees with `Nat.card` of the corresponding close-point subtype.",
           "kind": "lemma",
           "line": 403,
@@ -11804,15 +11028,6 @@
           "namespace": "ProximityToRS",
           "short_name": "number_of_close_pts_eq_nat_card",
           "signature": "lemma number_of_close_pts_eq_nat_card (u v : \u03b9 \u2192 F) (deg : \u2115) (\u03b1 : \u03b9 \u21aa F) (e : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 407,
-          "name": "ProximityToRS._anon_class_407",
-          "namespace": "ProximityToRS",
-          "short_name": "_anon_class_407",
-          "signature": "class classical"
         }
       ]
     },
@@ -11889,15 +11104,6 @@
           "namespace": "AffineMCAMain",
           "short_name": "AffineLine_MCA_AffineSpaceMCA",
           "signature": "theorem AffineLine_MCA_AffineSpaceMCA {\u2113 : \u2115} (h\u2113 : \u2113 \u2265 1) (\u03b5_mca : I \u2192 \u211d\u22650) (LC : LinearCode \u03b9 F)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 271,
-          "name": "AffineMCAMain._anon_class_271",
-          "namespace": "AffineMCAMain",
-          "short_name": "_anon_class_271",
-          "signature": "class classical"
         }
       ]
     },
@@ -11923,15 +11129,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 37,
-          "name": "ProximityGap._anon_class_37",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_37",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 46,
           "name": "ProximityGap.BW_homMatrix_entry_natDegree_eq_zero_of_ge_comm",
@@ -11947,15 +11144,6 @@
           "namespace": "ProximityGap",
           "short_name": "BW_homMatrix_entry_natDegree_le_one",
           "signature": "theorem BW_homMatrix_entry_natDegree_le_one {F : Type} [Field F] {\u03b9 : Type} [Fintype \u03b9] (e k : \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 68,
-          "name": "ProximityGap._anon_class_68",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_68",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -11977,30 +11165,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 126,
-          "name": "ProximityGap._anon_class_126",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_126",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 187,
           "name": "ProximityGap.Fin_sum_ite_lt_e_add_one",
           "namespace": "ProximityGap",
           "short_name": "Fin_sum_ite_lt_e_add_one",
           "signature": "theorem Fin_sum_ite_lt_e_add_one (e k : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 189,
-          "name": "ProximityGap._anon_class_189",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_189",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12013,48 +11183,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 210,
-          "name": "ProximityGap._anon_class_210",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_210",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 297,
           "name": "ProximityGap.BW_homMatrix_det_updateCol_natDegree_le_of_ge",
           "namespace": "ProximityGap",
           "short_name": "BW_homMatrix_det_updateCol_natDegree_le_of_ge",
           "signature": "theorem BW_homMatrix_det_updateCol_natDegree_le_of_ge {F : Type} [Field F] {\u03b9 : Type} [Fintype \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 310,
-          "name": "ProximityGap._anon_class_310",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_310",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 351,
-          "name": "ProximityGap._anon_class_351",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_351",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 403,
-          "name": "ProximityGap._anon_class_403",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_403",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12067,15 +11201,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 426,
-          "name": "ProximityGap._anon_class_426",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_426",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 451,
           "name": "ProximityGap.BW_homMatrix_det_updateCol_natDegree_le_of_lt",
@@ -12085,48 +11210,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 464,
-          "name": "ProximityGap._anon_class_464",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_464",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 537,
-          "name": "ProximityGap._anon_class_537",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_537",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 546,
-          "name": "ProximityGap._anon_class_546",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_546",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 559,
           "name": "ProximityGap.RS_BW_bound_of_le_relUDR",
           "namespace": "ProximityGap",
           "short_name": "RS_BW_bound_of_le_relUDR",
           "signature": "theorem RS_BW_bound_of_le_relUDR {deg : \u2115} {domain : \u03b9 \u21aa F} {\u03b4 : \u211d\u22650} [NeZero deg]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 563,
-          "name": "ProximityGap._anon_class_563",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_563",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12157,30 +11246,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 629,
-          "name": "ProximityGap._anon_class_629",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_629",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 657,
           "name": "ProximityGap.RS_exists_nonzero_kernelVec_of_det_eq_zero",
           "namespace": "ProximityGap",
           "short_name": "RS_exists_nonzero_kernelVec_of_det_eq_zero",
           "signature": "theorem RS_exists_nonzero_kernelVec_of_det_eq_zero {F : Type} [Field F] (e : \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 661,
-          "name": "ProximityGap._anon_class_661",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_661",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12202,30 +11273,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 681,
-          "name": "ProximityGap._anon_class_681",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_681",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 705,
           "name": "ProximityGap.RS_isUnit_det_vandermonde_C_of_injective",
           "namespace": "ProximityGap",
           "short_name": "RS_isUnit_det_vandermonde_C_of_injective",
           "signature": "theorem RS_isUnit_det_vandermonde_C_of_injective (n : \u2115) (v : Fin n \u2192 F)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 708,
-          "name": "ProximityGap._anon_class_708",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_708",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12238,30 +11291,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 740,
-          "name": "ProximityGap._anon_class_740",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_740",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 754,
           "name": "ProximityGap.RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero",
           "namespace": "ProximityGap",
           "short_name": "RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero",
           "signature": "theorem RS_mulVec_adjugate_col_eq_zero_of_det_eq_zero (n : \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 757,
-          "name": "ProximityGap._anon_class_757",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_757",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12274,30 +11309,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 774,
-          "name": "ProximityGap._anon_class_774",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_774",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 783,
           "name": "ProximityGap.RS_natDegree_det_le_of_entry_natDegree_le_one",
           "namespace": "ProximityGap",
           "short_name": "RS_natDegree_det_le_of_entry_natDegree_le_one",
           "signature": "theorem RS_natDegree_det_le_of_entry_natDegree_le_one (n : \u2115) (A : Matrix (Fin n) (Fin n) F[X])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 786,
-          "name": "ProximityGap._anon_class_786",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_786",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12310,30 +11327,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 832,
-          "name": "ProximityGap._anon_class_832",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_832",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 862,
           "name": "ProximityGap.RS_vandermonde_coeffs_eq_zero",
           "namespace": "ProximityGap",
           "short_name": "RS_vandermonde_coeffs_eq_zero",
           "signature": "theorem RS_vandermonde_coeffs_eq_zero (m : \u2115) {domain : \u03b9 \u21aa F} (hm : m \u2264 Fintype.card \u03b9)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 867,
-          "name": "ProximityGap._anon_class_867",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_867",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12364,15 +11363,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 942,
-          "name": "ProximityGap._anon_class_942",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_942",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 952,
           "name": "ProximityGap.RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one",
@@ -12382,39 +11372,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 958,
-          "name": "ProximityGap._anon_class_958",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_958",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1099,
-          "name": "ProximityGap._anon_class_1099",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_1099",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 1168,
           "name": "ProximityGap.RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one",
           "namespace": "ProximityGap",
           "short_name": "RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one",
           "signature": "theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e : \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1175,
-          "name": "ProximityGap._anon_class_1175",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_1175",
-          "signature": "class classical"
         }
       ]
     },
@@ -12440,30 +11403,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 33,
-          "name": "ProximityGap._anon_class_33",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_33",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 66,
           "name": "ProximityGap.RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs",
           "namespace": "ProximityGap",
           "short_name": "RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs",
           "signature": "theorem RS_exists_kernelVec_BW_homMatrix_eval_of_mem_goodCoeffs"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 78,
-          "name": "ProximityGap._anon_class_78",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_78",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12476,30 +11421,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 222,
-          "name": "ProximityGap._anon_class_222",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_222",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 317,
           "name": "ProximityGap.RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun",
           "namespace": "ProximityGap",
           "short_name": "RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun",
           "signature": "theorem RS_BW_homMatrix_det_submatrix_eq_zero_of_goodCoeffs_card_gt_fun"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 333,
-          "name": "ProximityGap._anon_class_333",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_333",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12512,24 +11439,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 382,
-          "name": "ProximityGap._anon_class_382",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_382",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 390,
-          "name": "ProximityGap._anon_class_390",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_390",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 458,
           "name": "ProximityGap.RS_exists_nonzero_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt",
@@ -12539,66 +11448,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 475,
-          "name": "ProximityGap._anon_class_475",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_475",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 495,
-          "name": "ProximityGap._anon_class_495",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_495",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 591,
-          "name": "ProximityGap._anon_class_591",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_591",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 609,
-          "name": "ProximityGap._anon_class_609",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_609",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 653,
-          "name": "ProximityGap._anon_class_653",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_653",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 709,
           "name": "ProximityGap.RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt",
           "namespace": "ProximityGap",
           "short_name": "RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt",
           "signature": "theorem RS_exists_kernelVec_BW_homMatrix_of_goodCoeffs_card_gt"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 726,
-          "name": "ProximityGap._anon_class_726",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_726",
-          "signature": "class classical"
         }
       ]
     },
@@ -12615,102 +11470,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 46,
-          "name": "ProximityGap._anon_class_46",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_46",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 69,
-          "name": "ProximityGap._anon_class_69",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_69",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 77,
-          "name": "ProximityGap._anon_class_77",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_77",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 85,
-          "name": "ProximityGap._anon_class_85",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_85",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 94,
-          "name": "ProximityGap._anon_class_94",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_94",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 136,
-          "name": "ProximityGap._anon_class_136",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_136",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 163,
-          "name": "ProximityGap._anon_class_163",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_163",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 205,
-          "name": "ProximityGap._anon_class_205",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_205",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 210,
-          "name": "ProximityGap._anon_class_210",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_210",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 235,
           "name": "ProximityGap.RS_jointAgreement_of_goodCoeffs_card_gt",
           "namespace": "ProximityGap",
           "short_name": "RS_jointAgreement_of_goodCoeffs_card_gt",
           "signature": "theorem RS_jointAgreement_of_goodCoeffs_card_gt {deg : \u2115} {domain : \u03b9 \u21aa F} {\u03b4 : \u211d\u22650}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 241,
-          "name": "ProximityGap._anon_class_241",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_241",
-          "signature": "class classical"
         }
       ]
     },
@@ -12737,15 +11502,6 @@
           "namespace": "ProximityGap",
           "short_name": "RS_correlatedAgreement_affineLines_uniqueDecodingRegime",
           "signature": "theorem RS_correlatedAgreement_affineLines_uniqueDecodingRegime {deg : \u2115} {domain : \u03b9 \u21aa F} {\u03b4 : \u211d\u22650}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 28,
-          "name": "ProximityGap._anon_class_28",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_28",
-          "signature": "class classical"
         }
       ]
     },
@@ -12789,39 +11545,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 135,
-          "name": "ProximityGap._anon_class_135",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_135",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 140,
-          "name": "ProximityGap._anon_class_140",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_140",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 156,
           "name": "ProximityGap.prob_uniform_shift_invariant",
           "namespace": "ProximityGap",
           "short_name": "prob_uniform_shift_invariant",
           "signature": "theorem prob_uniform_shift_invariant {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 166,
-          "name": "ProximityGap._anon_class_166",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_166",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12834,48 +11563,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 193,
-          "name": "ProximityGap._anon_class_193",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_193",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 258,
           "name": "ProximityGap.exists_basepoint_with_large_line_prob",
           "namespace": "ProximityGap",
           "short_name": "exists_basepoint_with_large_line_prob",
           "signature": "theorem exists_basepoint_with_large_line_prob {\u03b9 : Type} [Fintype \u03b9] [Nonempty \u03b9]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 265,
-          "name": "ProximityGap._anon_class_265",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_265",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 275,
-          "name": "ProximityGap._anon_class_275",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_275",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 279,
-          "name": "ProximityGap._anon_class_279",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_279",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12887,24 +11580,6 @@
           "signature": "theorem average_proximity_implies_proximity_of_linear_subspace"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 313,
-          "name": "ProximityGap._anon_class_313",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_313",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 324,
-          "name": "ProximityGap._anon_class_324",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_324",
-          "signature": "class classical"
-        },
-        {
           "doc": "The AffineSubspace and Finset.image representations of an affine subspace have the same membership.",
           "kind": "theorem",
           "line": 372,
@@ -12912,15 +11587,6 @@
           "namespace": "ProximityGap",
           "short_name": "affine_mem_iff_finset_mem",
           "signature": "theorem affine_mem_iff_finset_mem {k : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 377,
-          "name": "ProximityGap._anon_class_377",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_377",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -12960,30 +11626,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 415,
-          "name": "ProximityGap._anon_class_415",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_415",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 514,
           "name": "ProximityGap.affine_prob_eq_finset_prob",
           "namespace": "ProximityGap",
           "short_name": "affine_prob_eq_finset_prob",
           "signature": "theorem affine_prob_eq_finset_prob {k : \u2115} [NeZero k]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 520,
-          "name": "ProximityGap._anon_class_520",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_520",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -13059,30 +11707,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 672,
-          "name": "ProximityGap._anon_class_672",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_672",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 917,
           "name": "ProximityGap.exists_large_of_finset_cover'",
           "namespace": "ProximityGap",
           "short_name": "exists_large_of_finset_cover'",
           "signature": "theorem exists_large_of_finset_cover' {\u03b1 : Type}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 922,
-          "name": "ProximityGap._anon_class_922",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_922",
-          "signature": "class classical"
         },
         {
           "doc": "BCIKS20 \u00a76.3 bucketing: given an affine subspace U whose elements are all \u03b4-close to a linear code V, there exist a codeword v\u2080 and agreement set D' of size \u2265 (1-\u03b4)|\u03b9| such that the basepoint agrees with v\u2080 on D' and every generator direction agrees with some codeword on D'.",
@@ -13094,15 +11724,6 @@
           "signature": "theorem bucket_exists_common_codeword"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 967,
-          "name": "ProximityGap._anon_class_967",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_967",
-          "signature": "class classical"
-        },
-        {
           "doc": "Pigeonhole for finite covers: if `U` is covered by `L` indexed subsets and `L * B < |U|`, then some subset has more than `B` elements.",
           "kind": "theorem",
           "line": 1349,
@@ -13112,15 +11733,6 @@
           "signature": "theorem exists_large_of_finset_cover {\u03b1 : Type}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 1354,
-          "name": "ProximityGap._anon_class_1354",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_1354",
-          "signature": "class classical"
-        },
-        {
           "doc": "If `S` is a finite set of elements that are all roots of a nonzero polynomial `Q`, then `|S| \u2264 deg(Q)`. Wrapper around Mathlib's `card_le_degree_of_subset_roots`.",
           "kind": "theorem",
           "line": 1372,
@@ -13128,15 +11740,6 @@
           "namespace": "ProximityGap",
           "short_name": "card_roots_finset_le_natDegree",
           "signature": "theorem card_roots_finset_le_natDegree {R : Type} [CommRing R] [IsDomain R]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1376,
-          "name": "ProximityGap._anon_class_1376",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_1376",
-          "signature": "class classical"
         },
         {
           "doc": "The Guruswami-Sudan list-decoding bound: given a nonzero polynomial `Q` over `F[X]` whose `Y`-degree is less than `|F|`, the number of distinct polynomials `P` such that `(Y - P(X)) | Q(X, Y)` is strictly less than `|F|`. This is the structural core of the list-decoding argument (BCIKS20 \u00a75).",
@@ -13175,15 +11778,6 @@
           "signature": "theorem rs_listDecoding_card_lt_field {deg : \u2115} {domain : \u03b9 \u21aa F} {\u03b4 : \u211d\u22650}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 1693,
-          "name": "ProximityGap._anon_class_1693",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_1693",
-          "signature": "class classical"
-        },
-        {
           "doc": "Theorem 1.7 (Correlated agreement over affine spaces) in [BCIKS20]. Take a Reed-Solomon code of length `\u03b9` and degree `deg`, a proximity-error parameter pair `(\u03b4, \u03b5)` and an affine space with origin `u\u2080` and affine generating set `u\u2081, ..., u\u03ba` such that the probability a random point in the affine space is `\u03b4`-close to the Reed-Solomon code is greater than `\u03b5`. Then the words `u\u2080, ..., u\u03ba` have correlated agreement. Note that we have `k + 2` vectors to form the affine space. This an intricacy needed us to be able to isolate the affine origin from the affine span and to form a generating set of",
           "kind": "theorem",
           "line": 2096,
@@ -13191,15 +11785,6 @@
           "namespace": "ProximityGap",
           "short_name": "correlatedAgreement_affine_spaces",
           "signature": "theorem correlatedAgreement_affine_spaces {k : \u2115} [NeZero k]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 2106,
-          "name": "ProximityGap._anon_class_2106",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_2106",
-          "signature": "class classical"
         }
       ]
     },
@@ -13231,15 +11816,6 @@
           "namespace": "ProximityGap",
           "short_name": "large_agreement_set_on_line_implies_correlated_agreement",
           "signature": "theorem large_agreement_set_on_line_implies_correlated_agreement {deg : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 79,
-          "name": "ProximityGap._anon_class_79",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_79",
-          "signature": "class classical"
         },
         {
           "doc": "Theorem 6.1 of [BCIKS20], in the unique-decoding regime. For `l + 1` words, if more than `n * l` parameters give a curve point `\u03b4`-close to the fixed Reed-Solomon code, then every parameter is close. Moreover, the curve is close to a curve whose coefficients are Reed-Solomon codewords, and the two coefficient stacks differ on at most `\u03b4 * n` coordinates. The Reed-Solomon code and its actual relative unique-decoding radius are explicit here. They are load-bearing assumptions: replacing the code by an arbitrary finite set and leaving the rate unconstrained makes the statement false.",
@@ -13289,15 +11865,6 @@
           "namespace": "ProximityGap",
           "short_name": "errorBound_eq_n_div_q_of_le_relUDR",
           "signature": "theorem errorBound_eq_n_div_q_of_le_relUDR {deg : \u2115} {domain : \u03b9 \u21aa F} {\u03b4 : \u211d\u22650}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 41,
-          "name": "ProximityGap._anon_class_41",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_41",
-          "signature": "class classical"
         }
       ]
     },
@@ -13489,15 +12056,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 56,
-          "name": "ProximityGap._anon_class_56",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_56",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "def",
           "line": 64,
           "name": "ProximityGap.pg_candidatePairs",
@@ -13525,15 +12083,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 109,
-          "name": "ProximityGap._anon_class_109",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_109",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 121,
           "name": "ProximityGap.pg_card_normalizedFactors_toFinset_le_natDegree",
@@ -13543,30 +12092,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 123,
-          "name": "ProximityGap._anon_class_123",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_123",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 166,
           "name": "ProximityGap.pg_evalX_eq_map_evalRingHom",
           "namespace": "ProximityGap",
           "short_name": "pg_evalX_eq_map_evalRingHom",
           "signature": "theorem pg_evalX_eq_map_evalRingHom (x\u2080 : F) (R : F[Z][X][Y]) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 168,
-          "name": "ProximityGap._anon_class_168",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_168",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -13588,30 +12119,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 188,
-          "name": "ProximityGap._anon_class_188",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_188",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 289,
           "name": "ProximityGap.pg_exists_R_of_Q_eval_zero",
           "namespace": "ProximityGap",
           "short_name": "pg_exists_R_of_Q_eval_zero",
           "signature": "theorem pg_exists_R_of_Q_eval_zero (\u03b4 : \u211a)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 297,
-          "name": "ProximityGap._anon_class_297",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_297",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -13624,30 +12137,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 356,
-          "name": "ProximityGap._anon_class_356",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_356",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 411,
           "name": "ProximityGap.pg_natDegree_evalX_le_natDegreeY",
           "namespace": "ProximityGap",
           "short_name": "pg_natDegree_evalX_le_natDegreeY",
           "signature": "theorem pg_natDegree_evalX_le_natDegreeY (x\u2080 : F) (R : F[Z][X][Y]) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 413,
-          "name": "ProximityGap._anon_class_413",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_413",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -13660,30 +12155,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 428,
-          "name": "ProximityGap._anon_class_428",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_428",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 477,
           "name": "ProximityGap.pg_card_candidatePairs_le_natDegreeY",
           "namespace": "ProximityGap",
           "short_name": "pg_card_candidatePairs_le_natDegreeY",
           "signature": "theorem pg_card_candidatePairs_le_natDegreeY (x\u2080 : F) (h_gs : ModifiedGuruswami m n k \u03c9s Q u\u2080 u\u2081)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 484,
-          "name": "ProximityGap._anon_class_484",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_484",
-          "signature": "class classical"
         }
       ]
     },
@@ -13812,15 +12289,6 @@
           "namespace": "ProximityGap",
           "short_name": "proximity_gap_RSCodes",
           "signature": "theorem proximity_gap_RSCodes {k t : \u2115} [NeZero k] [NeZero t] {deg : \u2115} {domain : \u03b9 \u21aa F}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 46,
-          "name": "ProximityGap._anon_class_46",
-          "namespace": "ProximityGap",
-          "short_name": "_anon_class_46",
-          "signature": "class classical"
         }
       ]
     },
@@ -13881,15 +12349,6 @@
           "signature": "lemma list_agreement_on_curve_implies_correlated_agreement_bound"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 192,
-          "name": "ProximityGap.WeightedAgreement._anon_class_192",
-          "namespace": "ProximityGap.WeightedAgreement",
-          "short_name": "_anon_class_192",
-          "signature": "class classical"
-        },
-        {
           "doc": "Lemma 7.6 in [BCIKS20]. This is the \"integral-weight\" strengthening of the list-agreement-on-a-curve => correlated-agreement bound. We have two lists of functions `u, v : Fin (l + 2) \u2192 \u03b9 \u2192 F`. From these lists we form the bivariate curve evaluations. As in Lemma 7.5, code membership is not needed for this combinatorial strengthening. * `w x z = Curve.polynomialCurveEval u z x`, * `wtilde x z = Curve.polynomialCurveEval v z x`. The domain `\u03b9` is finite and is equipped with a weighted measure `\u03bc`, where each weight `\u03bc i` is a rational with common denominator `M`. Let `S' \u2286 F` be a set of field p",
           "kind": "lemma",
           "line": 379,
@@ -13897,15 +12356,6 @@
           "namespace": "ProximityGap.WeightedAgreement",
           "short_name": "sufficiently_large_list_agreement_on_curve_implies_correlated_agreement",
           "signature": "lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 394,
-          "name": "ProximityGap.WeightedAgreement._anon_class_394",
-          "namespace": "ProximityGap.WeightedAgreement",
-          "short_name": "_anon_class_394",
-          "signature": "class classical"
         }
       ]
     },
@@ -14191,15 +12641,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 265,
-          "name": "_anon_class_265",
-          "namespace": "",
-          "short_name": "_anon_class_265",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "def",
           "line": 376,
           "name": "R_star_star_filter_columns_in_D",
@@ -14253,15 +12694,6 @@
           "signature": "lemma card_agreeing_cells_notin_D {U\u2080 U\u2081 : InterleavedWord A (Fin m) \u03b9} {V\u2080 V\u2081 : MC^\u22c8(Fin m)}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 504,
-          "name": "_anon_class_504",
-          "namespace": "",
-          "short_name": "_anon_class_504",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Lemma 3.3 (Part 2): Bound on agreeing cells inside D** For any column `j` that *is* in the disagreement set `D`, there is at most one parameter `r` in `R*` such that the columns `U\u1d63 j` and `V\u1d63 j` agree. Therefore, the total number of agreeing cells `(r, j)` with `j \u2208 D` is at most `|D|`.",
           "kind": "lemma",
           "line": 546,
@@ -14269,15 +12701,6 @@
           "namespace": "",
           "short_name": "card_agreeing_cells_in_D_le",
           "signature": "lemma card_agreeing_cells_in_D_le"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 552,
-          "name": "_anon_class_552",
-          "namespace": "",
-          "short_name": "_anon_class_552",
-          "signature": "class classical"
         },
         {
           "doc": "**Lemma 3.3 (DG25): Upper Bound on R** Cardinality** Context: - `U\u2080, U\u2081` are columnWise words; `V\u2080, V\u2081` are columnWise codewords - `R_star` is the set where affine combinations `U\u1d63` are close to `C^m`. - `D` is the set of columns where `U\u2080` differs from `V\u2080` OR `U\u2081` differs from `V\u2081`. - `R_star_star` is the set of pairs `(r, j)` where `r \u2208 R_star` and column `j` of `U\u1d63` equals column `j` of `V\u1d63` (set of `agreeing linearComb columns`) Statement: The number of agreeing column pairs `(r, j)` is bounded by the number of parameters in `R_star` times the number of columns *outside* `D`, plus the num",
@@ -14289,15 +12712,6 @@
           "signature": "lemma R_star_star_upper_bound"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 689,
-          "name": "_anon_class_689",
-          "namespace": "",
-          "short_name": "_anon_class_689",
-          "signature": "class classical -- Use classical logic for decidable predicates on filters"
-        },
-        {
           "doc": "**Lemma 3.4 (DG25): Lower Bound on R** Cardinality** Context: - Same as Lemma 3.2, including hypotheses on `C`, `e`, `V\u2080`, `V\u2081`, `R_star`. - `R_star_star` is the set of pairs `(r, j)` where `r \u2208 R_star` and column `j` of `U\u1d63` equals column `j` of `V\u1d63`. Statement: The number of agreeing column pairs `(r, j)` is at least the number of parameters in `R_star` times the number of columns guaranteed to agree (`n - e`) for each `r` (using Lemma 3.2), i.e. `|R**| \u2265 (n - e) * |R*|`",
           "kind": "lemma",
           "line": 732,
@@ -14305,15 +12719,6 @@
           "namespace": "",
           "short_name": "R_star_star_lower_bound",
           "signature": "lemma R_star_star_lower_bound"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 743,
-          "name": "_anon_class_743",
-          "namespace": "",
-          "short_name": "_anon_class_743",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -14398,30 +12803,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 1215,
-          "name": "_anon_class_1215",
-          "namespace": "",
-          "short_name": "_anon_class_1215",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 1387,
           "name": "jointProximity\u2082_affineShift_implies_jointProximity\u2082",
           "namespace": "",
           "short_name": "jointProximity\u2082_affineShift_implies_jointProximity\u2082",
           "signature": "lemma jointProximity\u2082_affineShift_implies_jointProximity\u2082 (u\u2080 u\u2081 : Word A \u03b9) (\u03b4 : \u211d\u22650) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1390,
-          "name": "_anon_class_1390",
-          "namespace": "",
-          "short_name": "_anon_class_1390",
-          "signature": "class classical"
         }
       ]
     },
@@ -14453,15 +12840,6 @@
           "namespace": "",
           "short_name": "reedSolomon_multilinearCorrelatedAgreement",
           "signature": "theorem reedSolomon_multilinearCorrelatedAgreement [Nontrivial (ReedSolomon.code \u03b1 k)]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 183,
-          "name": "_anon_class_183",
-          "namespace": "",
-          "short_name": "_anon_class_183",
-          "signature": "class classical"
         }
       ]
     },
@@ -15292,15 +13670,6 @@
           "namespace": "PolynomialGenerator",
           "short_name": "poly_gen_is_zero_evading",
           "signature": "theorem poly_gen_is_zero_evading"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 218,
-          "name": "PolynomialGenerator._anon_class_218",
-          "namespace": "PolynomialGenerator",
-          "short_name": "_anon_class_218",
-          "signature": "class classical"
         }
       ]
     },
@@ -15461,15 +13830,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 140,
-          "name": "ReedSolomon._anon_class_140",
-          "namespace": "ReedSolomon",
-          "short_name": "_anon_class_140",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 159,
           "name": "ReedSolomon.mem_code_of_polynomial_of_degree_lt_of_eval",
@@ -15623,15 +13983,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 360,
-          "name": "ReedSolomon._anon_class_360",
-          "namespace": "ReedSolomon",
-          "short_name": "_anon_class_360",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "def",
           "line": 372,
           "name": "ReedSolomon.constantCode",
@@ -15686,15 +14037,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 401,
-          "name": "ReedSolomon._anon_class_401",
-          "namespace": "ReedSolomon",
-          "short_name": "_anon_class_401",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 434,
           "name": "ReedSolomon.code_Nontrivial",
@@ -15719,15 +14061,6 @@
           "namespace": "ReedSolomon",
           "short_name": "minDist_eq_card_sub_min_add_1",
           "signature": "theorem minDist_eq_card_sub_min_add_1 [Fintype \u03b9] [Inhabited \u03b9] [Field F] [DecidableEq F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 456,
-          "name": "ReedSolomon._anon_class_456",
-          "namespace": "ReedSolomon",
-          "short_name": "_anon_class_456",
-          "signature": "class classical"
         },
         {
           "doc": "Reed-Solomon codes are maximum distance separable (MDS).",
@@ -15845,15 +14178,6 @@
           "namespace": "ReedSolomon",
           "short_name": "toPolynomial_evalWord_of_degree_lt",
           "signature": "lemma toPolynomial_evalWord_of_degree_lt"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 645,
-          "name": "ReedSolomon._anon_class_645",
-          "namespace": "ReedSolomon",
-          "short_name": "_anon_class_645",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -16155,15 +14479,6 @@
     },
     "ArkLib/Data/Domain/CosetFftDomain/Defs.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "axiom",
-          "line": 22,
-          "name": "_anon_axiom_22",
-          "namespace": "",
-          "short_name": "_anon_axiom_22",
-          "signature": "axiom axiomatization of such domains, while `CosetFftDomain` gives a concrete"
-        },
         {
           "doc": "A coset FFT domain is a domain of the form `x \u00b7 G` for an FFT domain `G`.",
           "kind": "structure",
@@ -16524,15 +14839,6 @@
           "signature": "instance instance [Fintype \u03b9] [DecidableEq F] {\u03c9 : CosetFftDomain \u03b9 F} : Inhabited \u03c9.toFinset where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 113,
-          "name": "Domain.CosetFftDomainClass._anon_def_113",
-          "namespace": "Domain.CosetFftDomainClass",
-          "short_name": "_anon_def_113",
-          "signature": "def default := \u27e8\u03c9 0, by simp [CosetFftDomainClass.toFinset]\u27e9"
-        },
-        {
           "doc": "A concrete coset FFT domain coerced to `Type` is inhabited.",
           "kind": "instance",
           "line": 116,
@@ -16540,15 +14846,6 @@
           "namespace": "Domain.CosetFftDomainClass",
           "short_name": "_anon_instance_116",
           "signature": "instance instance [Fintype \u03b9] [DecidableEq F] {\u03c9 : CosetFftDomain \u03b9 F} : Inhabited \u03c9 where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 117,
-          "name": "Domain.CosetFftDomainClass._anon_def_117",
-          "namespace": "Domain.CosetFftDomainClass",
-          "short_name": "_anon_def_117",
-          "signature": "def default := \u27e8\u03c9 0, by simp [CosetFftDomainClass.toFinset]\u27e9"
         },
         {
           "doc": "Membership in a coset FFT domain is decidable via membership in its finset of elements.",
@@ -19288,15 +17585,6 @@
     "ArkLib/Data/Fin/Tuple/Defs.lean": {
       "declarations": [
         {
-          "doc": "",
-          "kind": "def",
-          "line": 37,
-          "name": "_anon_def_37",
-          "namespace": "",
-          "short_name": "_anon_def_37",
-          "signature": "def define versions for both the unary and binary versions of `F` (arbitrary arity version?)"
-        },
-        {
           "doc": "Take the last `m` elements of a finite vector",
           "kind": "def",
           "line": 55,
@@ -20982,15 +19270,6 @@
           "namespace": "Fin",
           "short_name": "_anon_instance_1194",
           "signature": "instance instance {\u03b1 : Fin 0 \u2192 Sort u} : Unique ((i : Fin 0) \u2192 \u03b1 i) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 1195,
-          "name": "Fin._anon_def_1195",
-          "namespace": "Fin",
-          "short_name": "_anon_def_1195",
-          "signature": "def default := fun i => elim0 i"
         },
         {
           "doc": "",
@@ -24343,15 +22622,6 @@
           "signature": "theorem mk_sum {\u03b9 : Type*} (s : Finset \u03b9) (f : \u03b9 \u2192 CPolynomial R) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 289,
-          "name": "ArkLib.Lattices.CyclotomicModulus.Rq._anon_class_289",
-          "namespace": "ArkLib.Lattices.CyclotomicModulus.Rq",
-          "short_name": "_anon_class_289",
-          "signature": "class classical"
-        },
-        {
           "doc": "A reduced representative has `natDegree` below `d = deg \u03c6`, for **any** modulus of positive degree (the dimension positivity `0 < d` is an explicit hypothesis). The `powTwoCyclotomic`-pinned `Rq.natDegree_val_toPoly_lt` below is derived from this general version.",
           "kind": "theorem",
           "line": 298,
@@ -24916,15 +23186,6 @@
           "signature": "theorem exists_irreducible_factorization (hq5 : q % 8 = 5) {\u03b1 : \u2115} (h\u03b1 : 1 \u2264 \u03b1) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 99,
-          "name": "ArkLib.Lattices.CyclotomicModulus._anon_class_99",
-          "namespace": "ArkLib.Lattices.CyclotomicModulus",
-          "short_name": "_anon_class_99",
-          "signature": "class classical"
-        },
-        {
           "doc": "**(Phase 4, blueprint Lemma 4.5, `lem:no_selfReciprocal` in `blueprint/src/lattices/hachi_subfield.tex`)** For `q \u2261 5 (mod 8)`, reversal *swaps* the two irreducible factors of `X^{2^\u03b1}+1`: if `X^{2^\u03b1}+1 = p\u2081 \u00b7 p\u2082` with `p\u2081, p\u2082` irreducible, then `p\u2081.reverse` is associated to `p\u2082` (and hence not to `p\u2081`). **Status: `sorry` \u2014 open for contribution** (blueprint difficulty rating 8/10). This is the *only* remaining gap in the `R_q^H \u2243+* F_{q^k}` chain (Hachi [NOZ26, \u00a73], Lemma 5): everything downstream (`galoisAut\u209b_fixed_isUnit`, `conjFixedSubring_isField`, `fixedSubring_isField`, `fixedSubringEqu",
           "kind": "theorem",
           "line": 207,
@@ -24941,15 +23202,6 @@
           "namespace": "ArkLib.Lattices.CyclotomicModulus",
           "short_name": "galoisAut\u209b_fixed_isUnit",
           "signature": "theorem galoisAut\u209b_fixed_isUnit (hq5 : q % 8 = 5) {\u03b1 : \u2115} (h\u03b1 : 1 \u2264 \u03b1)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 222,
-          "name": "ArkLib.Lattices.CyclotomicModulus._anon_class_222",
-          "namespace": "ArkLib.Lattices.CyclotomicModulus",
-          "short_name": "_anon_class_222",
-          "signature": "class classical"
         },
         {
           "doc": "**`R_q^{\u03c3_{-1}}` is a field** (blueprint Theorem, Phase 5). For `q \u2261 5 (mod 8)`, every nonzero `\u03c3_{-1}`-fixed element is a unit: if `p\u2081 \u2223 g` then the reverse identity plus the swap `p\u2081.reverse ~ p\u2082` force `p\u2082 \u2223 g` too, so `X^{2^\u03b1}+1 \u2223 g` and the element vanishes. Proven (modulo `no_selfReciprocal_factor`): transport to `S = Z_q[X]/(X^{2^\u03b1}+1)` via `Rq.equivQuotient`, where `conjAut` becomes `galoisAut\u209b` (`galoisAut_toQuotient`), and apply the core unit lemma `galoisAut\u209b_fixed_isUnit`. The inverse of a `\u03c3_{-1}`-fixed unit is again fixed (apply `\u03c3_{-1}` to `a\u00b7a\u207b\u00b9 = 1` and cancel the unit).",
@@ -25115,15 +23367,6 @@
           "namespace": "ArkLib.Lattices.CyclotomicModulus",
           "short_name": "traceH_sum",
           "signature": "theorem traceH_sum (\u03b1 k : \u2115) {\u03b9 : Type*} (s : Finset \u03b9)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 216,
-          "name": "ArkLib.Lattices.CyclotomicModulus._anon_class_216",
-          "namespace": "ArkLib.Lattices.CyclotomicModulus",
-          "short_name": "_anon_class_216",
-          "signature": "class classical"
         },
         {
           "doc": "**Hachi [NOZ26, \u00a73, Theorem 2]**: `Tr_H(\u03c8(a)\u00b7\u03c3_{-1}(\u03c8(b))) = (d/k)\u00b7\u27e8a,b\u27e9`, where `\u27e8a,b\u27e9 = \u03a3_i a_i b_i` is the inner product over `R_q^H`. Expand the product as a double sum, pull the `R_q^H`-coefficients out of `Tr_H` (`traceH_smul_fixed`), evaluate the monomial kernel (`traceH_kernel`, which is `(d/k)\u00b7[p=q]`), and collapse the diagonal.",
@@ -25870,15 +24113,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 47,
-          "name": "MvPolynomial._anon_class_47",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_47",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 54,
           "name": "MvPolynomial.support_mul_C_le",
@@ -25894,15 +24128,6 @@
           "namespace": "MvPolynomial",
           "short_name": "support_eval",
           "signature": "theorem support_eval [DecidableEq \u03c3] {\u03c4 : Type*} {f : \u03c4 \u2192 R} {p : R[X \u03c3][X \u03c4]} :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 60,
-          "name": "MvPolynomial._anon_class_60",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_60",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -25950,15 +24175,6 @@
           "signature": "theorem degrees_eval [DecidableEq \u03c3] {\u03c4 : Type*} {f : \u03c4 \u2192 R} {p : R[X \u03c3][X \u03c4]} :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 98,
-          "name": "MvPolynomial._anon_class_98",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_98",
-          "signature": "class classical"
-        },
-        {
           "doc": "The max total degree of a family of multivariate polynomials.",
           "kind": "def",
           "line": 109,
@@ -25996,15 +24212,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 155,
-          "name": "MvPolynomial._anon_class_155",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_155",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 160,
           "name": "MvPolynomial.degreeOf_linear_le",
@@ -26022,15 +24229,6 @@
           "signature": "theorem mem_restrictDegree_iff_degreeOf_le (p : MvPolynomial \u03c3 R) (n : \u2115) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 185,
-          "name": "MvPolynomial._anon_class_185",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_185",
-          "signature": "class classical"
-        },
-        {
           "doc": "A polynomial in finitely many variables whose individual degrees are all at most `n` has total degree at most `(number of variables) * n`.",
           "kind": "theorem",
           "line": 191,
@@ -26038,15 +24236,6 @@
           "namespace": "MvPolynomial",
           "short_name": "totalDegree_le_card_mul_of_mem_restrictDegree",
           "signature": "theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype \u03c3] (p : MvPolynomial \u03c3 R) (n : \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 193,
-          "name": "MvPolynomial._anon_class_193",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_193",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -26777,15 +24966,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 176,
-          "name": "MvPolynomial._anon_class_176",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_176",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 188,
           "name": "MvPolynomial.eqPolynomial_degreeOf",
@@ -26801,15 +24981,6 @@
           "namespace": "MvPolynomial",
           "short_name": "MLE_mem_restrictDegree",
           "signature": "theorem MLE_mem_restrictDegree (evals : (\u03c3 \u2192 Fin 2) \u2192 R) : (MLE evals) \u2208 R\u2983\u2264 1\u2984[X \u03c3] := by"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 193,
-          "name": "MvPolynomial._anon_class_193",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_193",
-          "signature": "class classical"
         },
         {
           "doc": "",
@@ -26831,30 +25002,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 224,
-          "name": "MvPolynomial._anon_class_224",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_224",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 253,
           "name": "MvPolynomial.is_multilinear_iff_eq_evals_zeroOne",
           "namespace": "MvPolynomial",
           "short_name": "is_multilinear_iff_eq_evals_zeroOne",
           "signature": "theorem is_multilinear_iff_eq_evals_zeroOne {p : MvPolynomial \u03c3 R} :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 255,
-          "name": "MvPolynomial._anon_class_255",
-          "namespace": "MvPolynomial",
-          "short_name": "_anon_class_255",
-          "signature": "class classical"
         },
         {
           "doc": "Equivalence between multilinear polynomials and their evaluations on the Boolean hypercube",
@@ -27076,15 +25229,6 @@
           "signature": "lemma prob_eval_zero_le_div"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 135,
-          "name": "_anon_class_135",
-          "namespace": "",
-          "short_name": "_anon_class_135",
-          "signature": "class classical"
-        },
-        {
           "doc": "Counting Schwartz-Zippel over all of a finite field: a nonzero polynomial in `s` variables of total degree at most `D` has at most `D * |F| ^ (s - 1)` zeros in `Fin s \u2192 F`.",
           "kind": "theorem",
           "line": 151,
@@ -27094,15 +25238,6 @@
           "signature": "theorem MvPolynomial.card_zeros_le_of_totalDegree_le_fin"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 155,
-          "name": "_anon_class_155",
-          "namespace": "",
-          "short_name": "_anon_class_155",
-          "signature": "class classical"
-        },
-        {
           "doc": "Counting Schwartz-Zippel over all of a finite field, for an arbitrary finite index type of variables: a nonzero polynomial in the variables `\u03b9` of total degree at most `D` has at most `D * |F| ^ (|\u03b9| - 1)` zeros in `\u03b9 \u2192 F`.",
           "kind": "theorem",
           "line": 169,
@@ -27110,15 +25245,6 @@
           "namespace": "",
           "short_name": "MvPolynomial.card_zeros_le_of_totalDegree_le",
           "signature": "theorem MvPolynomial.card_zeros_le_of_totalDegree_le"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 173,
-          "name": "_anon_class_173",
-          "namespace": "",
-          "short_name": "_anon_class_173",
-          "signature": "class classical"
         }
       ]
     },
@@ -27168,33 +25294,6 @@
           "namespace": "Polynomial.Bivariate",
           "short_name": "natDeg_sum_eq_of_unique",
           "signature": "theorem natDeg_sum_eq_of_unique {\u03b1 : Type} {s : Finset \u03b1} {f : \u03b1 \u2192 F[X]} {deg : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 75,
-          "name": "Polynomial.Bivariate._anon_class_75",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_75",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 85,
-          "name": "Polynomial.Bivariate._anon_class_85",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_85",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 107,
-          "name": "Polynomial.Bivariate._anon_class_107",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_107",
-          "signature": "class classical"
         },
         {
           "doc": "If some element `x \u2208 s` maps to `y` under `f`, and every element of `s` maps to a value less than or equal to `y`, then the supremum of `f` over `s` is exactly `y`.",
@@ -27279,15 +25378,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 175,
-          "name": "Polynomial.Bivariate._anon_class_175",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_175",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 179,
           "name": "Polynomial.Bivariate.coeff_totalDegree_le'",
@@ -27306,30 +25396,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 191,
-          "name": "Polynomial.Bivariate._anon_class_191",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_191",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 217,
           "name": "Polynomial.Bivariate.totalDegree_mul_le",
           "namespace": "Polynomial.Bivariate",
           "short_name": "totalDegree_mul_le",
           "signature": "theorem totalDegree_mul_le (f g : F[X][Y]) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 219,
-          "name": "Polynomial.Bivariate._anon_class_219",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_219",
-          "signature": "class classical"
         },
         {
           "doc": "The total degree of the product of two bivariate polynomials is the sum of their total degrees.",
@@ -27339,15 +25411,6 @@
           "namespace": "Polynomial.Bivariate",
           "short_name": "totalDegree_mul",
           "signature": "theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f \u2260 0) (hg : g \u2260 0) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 270,
-          "name": "Polynomial.Bivariate._anon_class_270",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_270",
-          "signature": "class classical"
         },
         {
           "doc": "Definition of a monomial when the bivariate polynomial is considered as a univariate polynomial in `Y`.",
@@ -27440,15 +25503,6 @@
           "signature": "lemma totalDegree_monomialXY {n m : \u2115} {a : F} (ha : a \u2260 0) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 442,
-          "name": "Polynomial.Bivariate._anon_class_442",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_442",
-          "signature": "class classical"
-        },
-        {
           "doc": "The `X`-degree of the monomial `a * X^n * Y^m` is `n`.",
           "kind": "lemma",
           "line": 450,
@@ -27458,15 +25512,6 @@
           "signature": "lemma degreeX_monomialXY {n m : \u2115} {a : F} (ha : a \u2260 0) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 452,
-          "name": "Polynomial.Bivariate._anon_class_452",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_452",
-          "signature": "class classical"
-        },
-        {
           "doc": "The `Y`-degree of the monomial `a * X^n * Y^m` is `m`.",
           "kind": "lemma",
           "line": 460,
@@ -27474,15 +25519,6 @@
           "namespace": "Polynomial.Bivariate",
           "short_name": "degreeY_monomialXY",
           "signature": "lemma degreeY_monomialXY {n m : \u2115} {a : F} (ha : a \u2260 0) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 462,
-          "name": "Polynomial.Bivariate._anon_class_462",
-          "namespace": "Polynomial.Bivariate",
-          "short_name": "_anon_class_462",
-          "signature": "class classical"
         },
         {
           "doc": "`(a,b)`-weighted degree of a monomial `X^i * Y^j`",
@@ -28221,15 +26257,6 @@
     "ArkLib/Data/Polynomial/Prelims.lean": {
       "declarations": [
         {
-          "doc": "",
-          "kind": "def",
-          "line": 35,
-          "name": "_anon_def_35",
-          "namespace": "",
-          "short_name": "_anon_def_35",
-          "signature": "def definitions are distinct)"
-        },
-        {
           "doc": "Discriminant of a univariate polynomial.",
           "kind": "def",
           "line": 46,
@@ -28246,15 +26273,6 @@
           "namespace": "Univariate",
           "short_name": "resultant_is_divisible_by_leadingCoeff",
           "signature": "theorem resultant_is_divisible_by_leadingCoeff {F : Type} [CommRing F] [Inhabited F]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 54,
-          "name": "Univariate._anon_class_54",
-          "namespace": "Univariate",
-          "short_name": "_anon_class_54",
-          "signature": "class classical"
         },
         {
           "doc": "A polynomial is separable if and only if its discriminant is non-zero.",
@@ -28354,15 +26372,6 @@
           "signature": "lemma irreducible_monicizeRatFunc_of_natDegree_pos"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 83,
-          "name": "RationalFunctions._anon_class_83",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_83",
-          "signature": "class classical"
-        },
-        {
           "doc": "Monicization preserves irreducibility, for `H` of positive `Y`-degree.",
           "kind": "lemma",
           "line": 134,
@@ -28427,15 +26436,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 181,
-          "name": "RationalFunctions._anon_class_181",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_181",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 190,
           "name": "RationalFunctions.monicize_term",
@@ -28460,15 +26460,6 @@
           "namespace": "RationalFunctions",
           "short_name": "map_monicize_eq_monicizeRatFunc",
           "signature": "lemma map_monicize_eq_monicizeRatFunc (H : F[X][Y]) : (monicize H).map univPolyHom = monicizeRatFunc"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 255,
-          "name": "RationalFunctions._anon_class_255",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_255",
-          "signature": "class classical"
         },
         {
           "doc": "The integral monicized polynomial `monicize` is irreducible whenever `H` is irreducible and has positive degree in `Y`.",
@@ -28615,15 +26606,6 @@
           "signature": "lemma regularElementsSet_sum {\u03b9 : Type} {H : F[X][Y]} (s : Finset \u03b9) {f : \u03b9 \u2192 \ud835\udd43 H}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 492,
-          "name": "RationalFunctions._anon_class_492",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_492",
-          "signature": "class classical"
-        },
-        {
           "doc": "Finite products of regular elements are regular.",
           "kind": "lemma",
           "line": 504,
@@ -28631,15 +26613,6 @@
           "namespace": "RationalFunctions",
           "short_name": "regularElementsSet_prod",
           "signature": "lemma regularElementsSet_prod {\u03b9 : Type} {H : F[X][Y]} (s : Finset \u03b9) {f : \u03b9 \u2192 \ud835\udd43 H}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 507,
-          "name": "RationalFunctions._anon_class_507",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_507",
-          "signature": "class classical"
         },
         {
           "doc": "Given an element `z \u2208 F`, `t_z \u2208 F` is a rational root of a bivariate polynomial if the pair `(z, t_z)` is a root of the bivariate polynomial.",
@@ -28772,15 +26745,6 @@
           "signature": "lemma coeff_totalDegree_add_index_le_trivariateTotalDegree (R : F[X][X][Y]) {i : \u2115}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 75,
-          "name": "RationalFunctions.HenselNumerators._anon_class_75",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_75",
-          "signature": "class classical"
-        },
-        {
           "doc": "A canonical degree bound large enough for both `H` and all coefficients of `R`.",
           "kind": "def",
           "line": 80,
@@ -28862,15 +26826,6 @@
           "signature": "theorem evalX_totalDegree_le_of_coeff_bound (x\u2080 : F) (R : F[X][X][Y]) {D : \u2115}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 142,
-          "name": "RationalFunctions.HenselNumerators._anon_class_142",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_142",
-          "signature": "class classical"
-        },
-        {
           "doc": "The local power series `\u03b3 = \u2211 \u03b1\u209c S\u1d57 \u2208 \ud835\udd43 H\u27e6S\u27e7`, where `S = X - x\u2080` is the local coordinate in the local coordinate. The `x\u2080`-shift lives in `evalRAtPowerSeries` (`X \u21a6 x\u2080 + S`), not in `\u03b3` itself, matching the paper's `\u03b3 \u2208 L[[X - x\u2080]]`.",
           "kind": "def",
           "line": 182,
@@ -28896,15 +26851,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "beta_zero_eq_X_of_shape",
           "signature": "theorem beta_zero_eq_X_of_shape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 207,
-          "name": "RationalFunctions.HenselNumerators._anon_class_207",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_207",
-          "signature": "class classical"
         },
         {
           "doc": "A product of power series vanishes in degrees below the sum of the two orders.",
@@ -29150,15 +27096,6 @@
           "signature": "theorem initial_root_at_x0 (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 730,
-          "name": "RationalFunctions.HenselNumerators._anon_class_730",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_730",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\u03b6 \u2260 0`, i.e. `\u03b1\u2080` is a *simple* root \u2014 this is exactly where separability of `R(x\u2080,\u00b7,Z)` is used, and it is what makes the Hensel step solvable.",
           "kind": "theorem",
           "line": 737,
@@ -29258,15 +27195,6 @@
           "signature": "theorem coeff_liftCoeff_regular (x\u2080 : F) (H : F[X][Y]) (p : F[X][X]) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 824,
-          "name": "RationalFunctions.HenselNumerators._anon_class_824",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_824",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Residual simplification** (paper A.4): replacing `\u03b1seq` by its truncation `\u03b1trunc i = if i \u2264 t then \u03b1seq i else 0` cancels the linear term `\u03b6 \u00b7 \u03b1seq (t+1)` exactly. Hence the Hensel residual at step `t` equals the `(t+1)`-st coefficient of `R` evaluated at the *truncated* power series. This uses only the splitting lemma `coeff_evalR_split`; `hroot` is not needed.",
           "kind": "theorem",
           "line": 842,
@@ -29274,15 +27202,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "henselCoeffResidual_eq_trunc",
           "signature": "theorem henselCoeffResidual_eq_trunc (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 852,
-          "name": "RationalFunctions.HenselNumerators._anon_class_852",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_852",
-          "signature": "class classical"
         },
         {
           "doc": "**Per-degree clearing lemma** (paper A.4 core combinatorial bound). For the truncated power series `g = mk \u03b1trunc` whose nonzero coefficients (`i \u2264 t`) have the Hensel shape `\u03b1trunc i = embeddingOf\ud835\udcaaInto\ud835\udd43 (\u03b2prev \u27e8i\u27e9) / (W^{i+1} \u00b7 eta^{e_i})` with `\u03b2prev` regular and `e_i = henselDenominatorExponent i`, each degree-`j` summand of the expansion of `coeff (t+1) (eval\u2082 liftCoeff g R)`, after multiplication by the global clearing denominator `Ddiv = W^{t+2} \u00b7 eta^{E-1} \u00b7 W^{d-2}`, is a regular element. This is the combinatorial heart of the regularity argument. The denominator of a partition term wi",
@@ -29294,15 +27213,6 @@
           "signature": "theorem henselClearedTerm_regular (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 908,
-          "name": "RationalFunctions.HenselNumerators._anon_class_908",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_908",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Regularity of the numerators.**  Multiplying the residual by the clearing denominator `W^{t+2}\u00b7\u03b7^{e\u209c\u208a\u2081-1}\u00b7W^{d-2}` lands in `\ud835\udcaa`, so the next numerator `\u03b2\u209c\u208a\u2081` is regular.  Proved degree-by-degree through `henselClearedTerm_regular`, using `W \u2223 leadingCoeff R(x\u2080,\u00b7,Z)` for the top term.",
           "kind": "theorem",
           "line": 1082,
@@ -29310,15 +27220,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "henselCoeffResidual_regular_after_clearing",
           "signature": "theorem henselCoeffResidual_regular_after_clearing (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 1105,
-          "name": "RationalFunctions.HenselNumerators._anon_class_1105",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_1105",
-          "signature": "class classical"
         }
       ]
     },
@@ -29334,15 +27235,6 @@
           "signature": "theorem regular_numerator_shape_succ (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 68,
-          "name": "RationalFunctions.HenselNumerators._anon_class_68",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_68",
-          "signature": "class classical"
-        },
-        {
           "doc": "Iterating `regular_numerator_shape_succ`: every coefficient sequence solving the Hensel equation admits regular numerators, i.e. some `\u03b2seq` with `HasNumeratorShape`.  The sequence is assembled from compatible finite prefixes.",
           "kind": "theorem",
           "line": 128,
@@ -29350,15 +27242,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "exists_regular_numerator_shape",
           "signature": "theorem exists_regular_numerator_shape (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 135,
-          "name": "RationalFunctions.HenselNumerators._anon_class_135",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_135",
-          "signature": "class classical"
         },
         {
           "doc": "**Existence of a regular numerator sequence.**  There are regular `\u03b2\u209c \u2208 \ud835\udcaa H` with `\u03b1\u209c = \u03b2\u209c / (W^{t+1} \u03be^{e\u209c})` such that `\u03b1\u2080 = T / W` and the induced `\u03b3 = \u2211\u209c \u03b1\u209c (X - x\u2080)\u1d57` is a root of `R(X, \u00b7, Z)`. Deliberately stated *without* the weight bounds: the chosen sequence `betaSeq` \u2014 and hence `alpha`, `gamma` and every downstream consumer \u2014 is defined from this existence proof alone, so those definitions do not depend on the quantitative weight accounting.  The bounds are supplied separately by `hensel_numerator_weight_sharp_le` / `hensel_numerator_weight_le`, and the two halves are recombined in ",
@@ -29653,15 +27536,6 @@
           "signature": "theorem cofactor_top_reduction_weight_le {H : F[X][Y]} (hH : 0 < H.natDegree) {Q : F[X][Y]}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 314,
-          "name": "RationalFunctions.HenselNumerators._anon_class_314",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_314",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\u039b` on `\ud835\udcaa` is bounded by the max under addition, transported from `weight_add_le` through canonical representatives.",
           "kind": "theorem",
           "line": 460,
@@ -29725,15 +27599,6 @@
           "signature": "theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x\u2080 : F) (hH : 0 < H.natDegree)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 630,
-          "name": "RationalFunctions.HenselNumerators._anon_class_630",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_630",
-          "signature": "class classical"
-        },
-        {
           "doc": "When `dH < d` the top term must be reduced modulo `H\u0303` before weighing, and the reduction obeys the bound via `cofactor_top_reduction_weight_le`.",
           "kind": "theorem",
           "line": 705,
@@ -29743,15 +27608,6 @@
           "signature": "theorem xiPreTop_modByMonic_weight_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 712,
-          "name": "RationalFunctions.HenselNumerators._anon_class_712",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_712",
-          "signature": "class classical"
-        },
-        {
           "doc": "Degree of the top coefficient after the exact division by `W`.",
           "kind": "theorem",
           "line": 769,
@@ -29759,15 +27615,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "xiPreTop_modByMonic_coeff_natDegree_le",
           "signature": "theorem xiPreTop_modByMonic_coeff_natDegree_le (x\u2080 : F) (hH : 0 < H.natDegree)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 777,
-          "name": "RationalFunctions.HenselNumerators._anon_class_777",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_777",
-          "signature": "class classical"
         },
         {
           "doc": "The `\ud835\udcaa`-weight of the top term when `dH < d`.",
@@ -29786,15 +27633,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "xiPreTop_weight_over_\ud835\udcaa_le",
           "signature": "theorem xiPreTop_weight_over_\ud835\udcaa_le (x\u2080 : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x\u2080 R H)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 875,
-          "name": "RationalFunctions.HenselNumerators._anon_class_875",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_875",
-          "signature": "class classical"
         },
         {
           "doc": "The explicit representative of `\u03be` splits as low part plus top term; this is how its weight bound is assembled.",
@@ -29828,15 +27666,6 @@
           "signature": "lemma regularWeight_neg {hH : 0 < H.natDegree} (a : \ud835\udcaa H) (D : \u2115) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 61,
-          "name": "RationalFunctions.HenselNumerators._anon_class_61",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_61",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\ud835\udcaa`-weight is subadditive under multiplication (bound form).",
           "kind": "lemma",
           "line": 72,
@@ -29844,15 +27673,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "regularWeight_mul_le'",
           "signature": "lemma regularWeight_mul_le' {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 77,
-          "name": "RationalFunctions.HenselNumerators._anon_class_77",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_77",
-          "signature": "class classical"
         },
         {
           "doc": "`RegularWeightLe hH a D B`: the element `a : \ud835\udd43 H` is regular (in the image of `\ud835\udcaa H`) with a witness whose `\u039b`-weight is at most `B`. Bundles regularity together with a weight certificate so that the Hensel-clearing expansion can be carried out with `\u039b`-bookkeeping.",
@@ -29918,15 +27738,6 @@
           "signature": "lemma RegularWeightLe.sum {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 \ud835\udd43 H)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 153,
-          "name": "RationalFunctions.HenselNumerators._anon_class_153",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_153",
-          "signature": "class classical"
-        },
-        {
           "doc": "A finite product costs the sum of the individual budgets.",
           "kind": "lemma",
           "line": 165,
@@ -29934,15 +27745,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "RegularWeightLe.prod",
           "signature": "lemma RegularWeightLe.prod {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 \ud835\udd43 H) (B : \u03b9 \u2192 \u2115)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 169,
-          "name": "RationalFunctions.HenselNumerators._anon_class_169",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_169",
-          "signature": "class classical"
         },
         {
           "doc": "Coefficient embeddings are regular with `\u039b`-weight at most their `X`-degree.",
@@ -29999,15 +27801,6 @@
           "signature": "lemma regularWeightLe_coeff_liftCoeffToPowerSeries {D : \u2115} (hD : Bivariate.totalDegree H \u2264 D)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 267,
-          "name": "RationalFunctions.HenselNumerators._anon_class_267",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_267",
-          "signature": "class classical"
-        },
-        {
           "doc": "Sharp `\u039b`-weight bound on the leading-coefficient lift `W`: `\u039b(W) \u2264 D - dH`. This is the per-`W`-factor budget used in the sharp telescoping; the looser `\u039b(W) \u2264 D` of `regularWeightLe_leadingCoeff` is not enough for the constant term to telescope.",
           "kind": "lemma",
           "line": 285,
@@ -30053,15 +27846,6 @@
           "signature": "lemma betaSucc_eq_neg_clearedResidual (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 419,
-          "name": "RationalFunctions.HenselNumerators._anon_class_419",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_419",
-          "signature": "class classical"
-        },
-        {
           "doc": "Weight-tracking per-degree clearing lemma: the `\u039b`-graded analogue of `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is regular with sharp `\u039b`-weight at most `numeratorShapeSharp R H D (t+1)`. The proof splits on the *boundary* summand `p.1 = 0`, `j = d \u2265 2`, `p.2 = t+1`, which is the one place where the `d` part-certificates want one more factor of `W` than the goal supplies.  There the leading-coefficient divisibility `W \u2223 leadingCoeff R(x\u2080,\u00b7,Z)` frees that factor, at the cost of a `\u039b(c) \u2264 D - dY` coefficient charge, and the correction term of `numer",
           "kind": "lemma",
           "line": 470,
@@ -30071,15 +27855,6 @@
           "signature": "lemma henselClearedTerm_weight (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 492,
-          "name": "RationalFunctions.HenselNumerators._anon_class_492",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_492",
-          "signature": "class classical"
-        },
-        {
           "doc": "The cleared `(t+1)`-st Hensel residual `henselCoeffResidual \u00b7 Ddiv` (with `Ddiv` the global clearing denominator `W^{t+2}\u00b7\u03b7^{E-1}\u00b7W^{d-2}`) is regular with sharp `\u039b`-weight at most `numeratorShapeSharp R H D (t+1)`, given that every previous numerator `\u03b2seq s` (`s \u2264 t`) has sharp weight `\u2264 numeratorShapeSharp R H D s`. This is the quantitative (weight-tracking) heart of the argument: it is the `\u039b`-graded analogue of `henselCoeffResidual_regular_after_clearing`, refining mere regularity to the sharp per-step weight budget that telescopes linearly in `t`.",
           "kind": "lemma",
           "line": 855,
@@ -30087,15 +27862,6 @@
           "namespace": "RationalFunctions.HenselNumerators",
           "short_name": "henselClearedResidual_weight",
           "signature": "lemma henselClearedResidual_weight (x\u2080 : F) (R : F[X][X][Y]) (H : F[X][Y])"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 876,
-          "name": "RationalFunctions.HenselNumerators._anon_class_876",
-          "namespace": "RationalFunctions.HenselNumerators",
-          "short_name": "_anon_class_876",
-          "signature": "class classical"
         },
         {
           "doc": "Sharp `\u039b`-weight bound on every Hensel numerator: `\u039b(\u03b2\u209c) \u2264 numeratorShapeSharp R H D t`, i.e. `1 + (t+1)(D-dH) + e\u209c(dY-1)(D-dH+1)` plus the correction term.  Proved by strong induction, the successor step being `henselClearedResidual_weight` together with the identity `embeddingOf\ud835\udcaaInto\ud835\udd43 (\u03b2\u209c\u208a\u2081) = -(henselCoeffResidual \u00b7 Ddiv)`. The hypothesis `2 \u2264 dY` is the standing assumption under which `\u03be = W^{dY-2}\u00b7\u03b6` lies in `\ud835\udcaa` at all: for `dY < 2` that expression carries a negative power of `W`.  It is load-bearing rather than cosmetic.  Truncated subtraction silently reads `W^{dY-2}` as `1` for `dY \u2264 2",
@@ -30421,15 +28187,6 @@
           "signature": "theorem embedding_eq_zero_of_resultant_zero {H : F[X][Y]} [Fact (Irreducible H)]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 73,
-          "name": "RationalFunctions._anon_class_73",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_73",
-          "signature": "class classical"
-        },
-        {
           "doc": "A determinant has degree at most `N` as soon as every permutation product does, since the Leibniz expansion is a sum of such products.",
           "kind": "theorem",
           "line": 107,
@@ -30439,15 +28196,6 @@
           "signature": "theorem natDegree_det_le_of_perm_products_le {\u03b9 : Type} [Fintype \u03b9] [DecidableEq \u03b9]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 111,
-          "name": "RationalFunctions._anon_class_111",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_111",
-          "signature": "class classical"
-        },
-        {
           "doc": "The degree count behind the vanishing criterion: `deg_Z res_T(\u03b2, H\u0303) \u2264 \u039b(\u03b2)\u00b7dH`.  Proved from the Sylvester matrix, bounding each permutation product by summing the weight budgets of the `\u03b2`-rows and the `H\u0303`-rows.",
           "kind": "theorem",
           "line": 121,
@@ -30455,15 +28203,6 @@
           "namespace": "RationalFunctions",
           "short_name": "natDegree_resultant_le_weight_bound",
           "signature": "theorem natDegree_resultant_le_weight_bound {H : F[X][Y]} (hH : 0 < H.natDegree) {D B : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 125,
-          "name": "RationalFunctions._anon_class_125",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_125",
-          "signature": "class classical"
         },
         {
           "doc": "A univariate polynomial of degree at most `N` with more than `N` roots is zero.",
@@ -30511,15 +28250,6 @@
           "signature": "theorem embedding_eq_zero_of_weight_eq_bot {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) (D : \u2115)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 382,
-          "name": "RationalFunctions._anon_class_382",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_382",
-          "signature": "class classical"
-        },
-        {
           "doc": "**A regular element with too many vanishing substitutions is zero.**  If `\u03b2 \u2208 \ud835\udcaa H` satisfies `\u03c0_z \u03b2 = 0` for more than `\u039b(\u03b2) \u00b7 deg_Y H` values of `z`, then `\u03b2 = 0` in `\ud835\udd43 H`. This is the analogue for `\ud835\udcaa H` of \"a polynomial of degree `\u2264 n` with more than `n` roots is zero\", and the reason `\u039b` is worth tracking at all: every weight bound on a regular element converts into a bound on the number of substitutions that can kill it.  Proved via the resultant `res_T(\u03b2, H\u0303)`, whose `Z`-degree is at most `\u039b(\u03b2) \u00b7 deg_Y H` and which vanishes at every such `z`.",
           "kind": "lemma",
           "line": 413,
@@ -30527,15 +28257,6 @@
           "namespace": "RationalFunctions",
           "short_name": "embedding_eq_zero_of_many_rational_roots",
           "signature": "lemma embedding_eq_zero_of_many_rational_roots {H : F[X][Y]}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 419,
-          "name": "RationalFunctions._anon_class_419",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_419",
-          "signature": "class classical"
         }
       ]
     },
@@ -30605,15 +28326,6 @@
           "signature": "lemma le_weight_of_mem_support {f H : F[X][Y]} {D : \u2115} {n : \u2115} (hn : n \u2208 f.support) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 100,
-          "name": "RationalFunctions._anon_class_100",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_100",
-          "signature": "class classical"
-        },
-        {
           "doc": "Characterization: `\u039b(f) \u2264 b` iff every monomial in `f`'s support contributes at most `b`.",
           "kind": "lemma",
           "line": 107,
@@ -30621,15 +28333,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_le_iff",
           "signature": "lemma weight_le_iff {f H : F[X][Y]} {D b : \u2115} :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 111,
-          "name": "RationalFunctions._anon_class_111",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_111",
-          "signature": "class classical"
         },
         {
           "doc": "`\u039b(C c) \u2264 c.natDegree`.",
@@ -30641,15 +28344,6 @@
           "signature": "lemma weight_C_le (H : F[X][Y]) (D : \u2115) (c : F[X]) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 122,
-          "name": "RationalFunctions._anon_class_122",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_122",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\u039b(Y^k) \u2264 k \u00b7 m`.",
           "kind": "lemma",
           "line": 134,
@@ -30657,15 +28351,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_X_pow_le",
           "signature": "lemma weight_X_pow_le (H : F[X][Y]) (D k : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 137,
-          "name": "RationalFunctions._anon_class_137",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_137",
-          "signature": "class classical"
         },
         {
           "doc": "`\u039b(C c \u00b7 Y^k) \u2264 k \u00b7 m + c.natDegree`.",
@@ -30677,15 +28362,6 @@
           "signature": "lemma weight_C_mul_X_pow_le (H : F[X][Y]) (D : \u2115) (c : F[X]) (k : \u2115) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 152,
-          "name": "RationalFunctions._anon_class_152",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_152",
-          "signature": "class classical"
-        },
-        {
           "doc": "The `\u039b`-weight is invariant under negation.",
           "kind": "lemma",
           "line": 166,
@@ -30695,15 +28371,6 @@
           "signature": "lemma weight_neg (f H : F[X][Y]) (D : \u2115) : weight (-f) H D = weight f H D := by"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 167,
-          "name": "RationalFunctions._anon_class_167",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_167",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\u039b(f + g) \u2264 max(\u039b(f), \u039b(g))`.",
           "kind": "lemma",
           "line": 175,
@@ -30711,15 +28378,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_add_le",
           "signature": "lemma weight_add_le (f g H : F[X][Y]) (D : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 177,
-          "name": "RationalFunctions._anon_class_177",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_177",
-          "signature": "class classical"
         },
         {
           "doc": "`\u039b(f \u2212 g) \u2264 max(\u039b(f), \u039b(g))`.",
@@ -30740,15 +28398,6 @@
           "signature": "lemma weight_sum_le {\u03b9 : Type} (s : Finset \u03b9) (f : \u03b9 \u2192 F[X][Y]) (H : F[X][Y]) (D : \u2115) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 241,
-          "name": "RationalFunctions._anon_class_241",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_241",
-          "signature": "class classical"
-        },
-        {
           "doc": "`\u039b` is subadditive under multiplication of bivariate polynomials (bound form).",
           "kind": "lemma",
           "line": 250,
@@ -30756,15 +28405,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_mul_le'",
           "signature": "lemma weight_mul_le' {f g H : F[X][Y]} {D bf bg : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 254,
-          "name": "RationalFunctions._anon_class_254",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_254",
-          "signature": "class classical"
         },
         {
           "doc": "The largest index attaining the maximal weight of a nonzero `f`, together with that maximum. Used to prove full additivity: the *largest* maximizer is what prevents the top-weight parts of two factors from cancelling.",
@@ -30776,15 +28416,6 @@
           "signature": "lemma exists_top_weight_index {f : F[X][Y]} (H : F[X][Y]) (D : \u2115) (hf : f \u2260 0) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 295,
-          "name": "RationalFunctions._anon_class_295",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_295",
-          "signature": "class classical"
-        },
-        {
           "doc": "**`\u039b` is fully additive**: `\u039b(f \u00b7 g) = \u039b(f) + \u039b(g)`. Sub-additivity is `weight_mul_le'`.  The reverse inequality holds because the weight assignment grades `F[Z][T]` \u2014 each `\u039b`-homogeneous piece is spanned by monomials of that weight \u2014 so the associated graded ring is again a polynomial ring, hence a domain, and the top-weight parts of `f` and `g` cannot cancel.  Concretely: at the *largest* maximizing index `N_f` of `f` and `N_g` of `g`, the coefficient of `T^{N_f + N_g}` in `f \u00b7 g` is `f_{N_f} \u00b7 g_{N_g}` plus terms of strictly smaller `Z`-degree, because any other `(i, j)` with `i + j = N_f ",
           "kind": "theorem",
           "line": 326,
@@ -30792,15 +28423,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_mul",
           "signature": "theorem weight_mul (f g H : F[X][Y]) (D : \u2115) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 328,
-          "name": "RationalFunctions._anon_class_328",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_328",
-          "signature": "class classical"
         },
         {
           "doc": "Bound on the `X`-degree of a coefficient of `H` from a `totalDegree` bound.",
@@ -30812,15 +28434,6 @@
           "signature": "lemma natDegree_coeff_le_of_totalDegree_le (f : F[X][Y]) {D : \u2115}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 408,
-          "name": "RationalFunctions._anon_class_408",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_408",
-          "signature": "class classical"
-        },
-        {
           "doc": "Sub-additivity for `C c \u00b7 Y^k \u00b7 f`: given `\u039b(f) \u2264 b`, multiplying by `C c \u00b7 Y^k` adds `k \u00b7 m + c.natDegree` to the weight.",
           "kind": "lemma",
           "line": 419,
@@ -30828,15 +28441,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_C_mul_X_pow_mul_le",
           "signature": "lemma weight_C_mul_X_pow_mul_le {c : F[X]} {k : \u2115} {f H : F[X][Y]} {D b : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 424,
-          "name": "RationalFunctions._anon_class_424",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_424",
-          "signature": "class classical"
         },
         {
           "doc": "The `natDegree` of `monicize H` matches that of `H` when `0 < H.natDegree`.",
@@ -30848,15 +28452,6 @@
           "signature": "lemma natDegree_monicize {H : F[X][Y]} (hH : 0 < H.natDegree) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 476,
-          "name": "RationalFunctions._anon_class_476",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_476",
-          "signature": "class classical"
-        },
-        {
           "doc": "The canonical representative has `Y`-degree strictly smaller than `H`.",
           "kind": "lemma",
           "line": 500,
@@ -30864,15 +28459,6 @@
           "namespace": "RationalFunctions",
           "short_name": "canonicalRepOf\ud835\udcaa_natDegree_lt_H",
           "signature": "lemma canonicalRepOf\ud835\udcaa_natDegree_lt_H {H : F[X][Y]} (hH : 0 < H.natDegree) (\u03b2 : \ud835\udcaa H) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 502,
-          "name": "RationalFunctions._anon_class_502",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_502",
-          "signature": "class classical"
         },
         {
           "doc": "The `\u039b`-weight of `monicize H` is bounded by `d_H \u00b7 m`, where `d_H = H.natDegree`.",
@@ -30884,15 +28470,6 @@
           "signature": "lemma weight_monicize_le {H : F[X][Y]} {D : \u2115}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 516,
-          "name": "RationalFunctions._anon_class_516",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_516",
-          "signature": "class classical"
-        },
-        {
           "doc": "One reduction step in `modByMonic` does not increase `\u039b`-weight: subtracting `C(p.leadingCoeff) \u00b7 Y^(p.natDegree - d_H) \u00b7 monicize H` from `p` keeps the weight bounded by `\u039b(p)`.",
           "kind": "lemma",
           "line": 585,
@@ -30902,15 +28479,6 @@
           "signature": "lemma weight_sub_leadingCoeff_mul_monicize_le {p H : F[X][Y]} {D : \u2115}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 591,
-          "name": "RationalFunctions._anon_class_591",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_591",
-          "signature": "class classical"
-        },
-        {
           "doc": "Reduction modulo `monicize H` does not increase `\u039b`-weight.",
           "kind": "lemma",
           "line": 615,
@@ -30918,15 +28486,6 @@
           "namespace": "RationalFunctions",
           "short_name": "weight_modByMonic_monicize_le",
           "signature": "lemma weight_modByMonic_monicize_le {H : F[X][Y]} {D : \u2115}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 619,
-          "name": "RationalFunctions._anon_class_619",
-          "namespace": "RationalFunctions",
-          "short_name": "_anon_class_619",
-          "signature": "class classical"
         },
         {
           "doc": "The `\ud835\udcaa`-weight of a quotient constructor is bounded by any representative's `\u039b`-weight.",
@@ -31203,15 +28762,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 91,
-          "name": "_anon_class_91",
-          "namespace": "",
-          "short_name": "_anon_class_91",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 121,
           "name": "Fintype.card_fun_fin_one_eq",
@@ -31230,30 +28780,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 130,
-          "name": "_anon_class_130",
-          "namespace": "",
-          "short_name": "_anon_class_130",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 156,
           "name": "prob_split_uniform_sampling_of_prod",
           "namespace": "",
           "short_name": "prob_split_uniform_sampling_of_prod",
           "signature": "theorem prob_split_uniform_sampling_of_prod {\u03b3 \u03b4 : Type}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 166,
-          "name": "_anon_class_166",
-          "namespace": "",
-          "short_name": "_anon_class_166",
-          "signature": "class classical"
         },
         {
           "doc": "Proves that a `do` block sampling two independent uniform distributions is equal to the single uniform distribution over the product type.",
@@ -31283,15 +28815,6 @@
           "signature": "theorem prob_split_uniform_sampling_of_equiv_prod {\u03b1 \u03b3 \u03b4 : Type}"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 263,
-          "name": "_anon_class_263",
-          "namespace": "",
-          "short_name": "_anon_class_263",
-          "signature": "class classical"
-        },
-        {
           "doc": "Rewrites the probability over the large `r` space as a sequential probability, sampling `r_last` *first*, then `r_init`.",
           "kind": "theorem",
           "line": 313,
@@ -31301,15 +28824,6 @@
           "signature": "theorem prob_split_last_uniform_sampling_of_finFun {\u03d1 : \u2115} {F : Type} [Fintype F] [Nonempty F]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 318,
-          "name": "_anon_class_318",
-          "namespace": "",
-          "short_name": "_anon_class_318",
-          "signature": "class classical"
-        },
-        {
           "doc": "Helper lemma for probability marginalization. `Pr_{ (x, y) \u2190 D\u2081 \u00d7 D\u2082 }[ P x ] = Pr_{ x \u2190 D\u2081 }[ P x ]`",
           "kind": "theorem",
           "line": 338,
@@ -31317,15 +28831,6 @@
           "namespace": "",
           "short_name": "prob_marginalization_first_of_prod",
           "signature": "theorem prob_marginalization_first_of_prod {\u03b1 \u03b2 : Type} [Fintype \u03b1] [Fintype \u03b2]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 341,
-          "name": "_anon_class_341",
-          "namespace": "",
-          "short_name": "_anon_class_341",
-          "signature": "class classical"
         },
         {
           "doc": "**Monotonicity of Probability** If event `A` (defined by predicate `f`) implies event `B` (defined by predicate `g`) for all outcomes `r`, then the probability of `A` is less than or equal to the probability of `B`.",
@@ -31338,30 +28843,12 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 367,
-          "name": "_anon_class_367",
-          "namespace": "",
-          "short_name": "_anon_class_367",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "theorem",
           "line": 387,
           "name": "Pr_multi_let_equiv_single_let",
           "namespace": "",
           "short_name": "Pr_multi_let_equiv_single_let",
           "signature": "theorem Pr_multi_let_equiv_single_let {\u03b1 \u03b2 : Type}"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 396,
-          "name": "_anon_class_396",
-          "namespace": "",
-          "short_name": "_anon_class_396",
-          "signature": "class classical"
         },
         {
           "doc": "**Law of Total Probability (Partitioning an Event)** The probability of an event `f r` occurring can be calculated by summing the probabilities of two disjoint cases: 1. `f r` occurs AND `g r` occurs. 2. `f r` occurs AND `g r` does NOT occur. Good to be used with `Pr_multi_let_equiv_single_let`",
@@ -31373,15 +28860,6 @@
           "signature": "theorem Pr_add_split_by_complement {\u03b1 : Type} (D : PMF \u03b1)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 412,
-          "name": "_anon_class_412",
-          "namespace": "",
-          "short_name": "_anon_class_412",
-          "signature": "class classical"
-        },
-        {
           "doc": "`Pr_{r \u2190 D}[ P_out \u2227 P(r) ] = (if P_out then Pr_{r \u2190 D}[ P(r) ] else 0)`",
           "kind": "theorem",
           "line": 449,
@@ -31389,15 +28867,6 @@
           "namespace": "",
           "short_name": "prob_const_and_prop_eq_ite",
           "signature": "theorem prob_const_and_prop_eq_ite {\u03b1 : Type} (D : PMF \u03b1)"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 453,
-          "name": "_anon_class_453",
-          "namespace": "",
-          "short_name": "_anon_class_453",
-          "signature": "class classical"
         },
         {
           "doc": "Congruence lemma for Probability: If P(x) \u2194 Q(x) for all x, then Pr[P] = Pr[Q].",
@@ -31418,15 +28887,6 @@
           "signature": "theorem Pr_or_le {\u03b1 : Type} (D : PMF \u03b1) (f g : \u03b1 \u2192 Prop) :"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 476,
-          "name": "_anon_class_476",
-          "namespace": "",
-          "short_name": "_anon_class_476",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Union Bound (over a finite index set)** The probability that `\u2203 i, f i r` holds is at most the sum, over `i`, of the probabilities that `f i r` holds.",
           "kind": "theorem",
           "line": 491,
@@ -31434,15 +28894,6 @@
           "namespace": "",
           "short_name": "Pr_exists_le",
           "signature": "theorem Pr_exists_le {\u03b1 \u03b9 : Type} [Fintype \u03b9] (D : PMF \u03b1) (f : \u03b9 \u2192 \u03b1 \u2192 Prop) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 493,
-          "name": "_anon_class_493",
-          "namespace": "",
-          "short_name": "_anon_class_493",
-          "signature": "class classical"
         },
         {
           "doc": "**Marginal Bound for Sequential Sampling** If, for every fixed outcome `b` of the second sample, the probability over the first sample is bounded by a constant `c` (not depending on `b`), then the same bound holds for the probability over the full sequential sample.",
@@ -31454,15 +28905,6 @@
           "signature": "theorem Pr_seq_le_of_forall_le {\u03b1 \u03b2 : Type} (Da : PMF \u03b1) (Db : PMF \u03b2) (Q : \u03b1 \u2192 \u03b2 \u2192 Prop)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 533,
-          "name": "_anon_class_533",
-          "namespace": "",
-          "short_name": "_anon_class_533",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Schwartz-Zippel Lemma** (Probability Form): For a non-zero multivariate polynomial `P` of total degree at most `d` over a finite field `L`, the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most `d / |L|`.",
           "kind": "lemma",
           "line": 546,
@@ -31472,15 +28914,6 @@
           "signature": "lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [Fintype R]"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 551,
-          "name": "_anon_class_551",
-          "namespace": "",
-          "short_name": "_anon_class_551",
-          "signature": "class classical"
-        },
-        {
           "doc": "Pushforward of `PMF.uniformOfFintype \u03b1` under a map `f : \u03b1 \u2192 \u03b2` whose fibers over the image all have the same cardinality `k > 0` is the uniform distribution on the image of `f`. Useful when `f` is an affine-linear surjection: every fiber is a translate of the kernel and hence has constant cardinality. The proximity-gap proofs use this to bridge the coefficient-parameterised sampling of an affine span to the uniform sampling of the affine-span finset.",
           "kind": "theorem",
           "line": 591,
@@ -31488,30 +28921,11 @@
           "namespace": "",
           "short_name": "PMF.map_uniformOfFintype_of_fiber_const",
           "signature": "theorem PMF.map_uniformOfFintype_of_fiber_const"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 599,
-          "name": "_anon_class_599",
-          "namespace": "",
-          "short_name": "_anon_class_599",
-          "signature": "class classical"
         }
       ]
     },
     "ArkLib/Data/Probability/Notation.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 99,
-          "name": "_anon_class_99",
-          "namespace": "",
-          "short_name": "_anon_class_99",
-          "signature": "class classical"
-        }
-      ]
+      "declarations": []
     },
     "ArkLib/OracleReduction/BCS/Basic.lean": {
       "declarations": [
@@ -31536,15 +28950,6 @@
           "namespace": "",
           "short_name": "of",
           "signature": "class of oracles. See the blueprint for more details about our modeling choices."
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 50,
-          "name": "_anon_def_50",
-          "namespace": "",
-          "short_name": "_anon_def_50",
-          "signature": "def defined in downstream files. Note that vector IOPs is the original definition of IOPs [BCS16],"
         },
         {
           "doc": "",
@@ -32061,30 +29466,12 @@
         },
         {
           "doc": "",
-          "kind": "def",
-          "line": 641,
-          "name": "ProtocolSpec._anon_def_641",
-          "namespace": "ProtocolSpec",
-          "short_name": "_anon_def_641",
-          "signature": "def default := \u27e80, by simp\u27e9"
-        },
-        {
-          "doc": "",
           "kind": "instance",
           "line": 644,
           "name": "ProtocolSpec._anon_instance_644",
           "namespace": "ProtocolSpec",
           "short_name": "_anon_instance_644",
           "signature": "instance instance [VerifierFirst pSpec] : Unique (pSpec.ChallengeIdx) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 645,
-          "name": "ProtocolSpec._anon_def_645",
-          "namespace": "ProtocolSpec",
-          "short_name": "_anon_def_645",
-          "signature": "def default := \u27e80, by simp\u27e9"
         },
         {
           "doc": "",
@@ -32186,15 +29573,6 @@
           "signature": "instance instance [IsSingleRound pSpec] : Unique (pSpec.MessageIdx) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 690,
-          "name": "ProtocolSpec.IsSingleRound._anon_def_690",
-          "namespace": "ProtocolSpec.IsSingleRound",
-          "short_name": "_anon_def_690",
-          "signature": "def default := \u27e80, by simp\u27e9"
-        },
-        {
           "doc": "The second message is the only challenge from the verifier to the prover",
           "kind": "instance",
           "line": 699,
@@ -32202,15 +29580,6 @@
           "namespace": "ProtocolSpec.IsSingleRound",
           "short_name": "_anon_instance_699",
           "signature": "instance instance [IsSingleRound pSpec] : Unique (pSpec.ChallengeIdx) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 700,
-          "name": "ProtocolSpec.IsSingleRound._anon_def_700",
-          "namespace": "ProtocolSpec.IsSingleRound",
-          "short_name": "_anon_def_700",
-          "signature": "def default := \u27e81, by simp\u27e9"
         },
         {
           "doc": "",
@@ -36423,15 +33792,6 @@
         },
         {
           "doc": "",
-          "kind": "def",
-          "line": 273,
-          "name": "ProtocolSpec._anon_def_273",
-          "namespace": "ProtocolSpec",
-          "short_name": "_anon_def_273",
-          "signature": "def default := empty"
-        },
-        {
-          "doc": "",
           "kind": "instance",
           "line": 279,
           "name": "ProtocolSpec._anon_instance_279",
@@ -36504,15 +33864,6 @@
         },
         {
           "doc": "",
-          "kind": "def",
-          "line": 298,
-          "name": "ProtocolSpec._anon_def_298",
-          "namespace": "ProtocolSpec",
-          "short_name": "_anon_def_298",
-          "signature": "def default := \u27e80, by simp\u27e9"
-        },
-        {
-          "doc": "",
           "kind": "instance",
           "line": 300,
           "name": "ProtocolSpec._anon_instance_300",
@@ -36555,15 +33906,6 @@
           "namespace": "ProtocolSpec",
           "short_name": "_anon_instance_309",
           "signature": "instance instance : Unique (ChallengeIdx \u27e8!v[.V_to_P], !v[Chal]\u27e9) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 310,
-          "name": "ProtocolSpec._anon_def_310",
-          "namespace": "ProtocolSpec",
-          "short_name": "_anon_def_310",
-          "signature": "def default := \u27e80, by simp\u27e9"
         },
         {
           "doc": "",
@@ -36674,15 +34016,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (MessagesUpTo k (default : ProtocolSpec 0)) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 375,
-          "name": "ProtocolSpec.MessagesUpTo._anon_def_375",
-          "namespace": "ProtocolSpec.MessagesUpTo",
-          "short_name": "_anon_def_375",
-          "signature": "def default := fun i => ()"
-        },
-        {
           "doc": "There is only one transcript for the empty protocol, represented as `![]`",
           "kind": "instance",
           "line": 379,
@@ -36692,15 +34025,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (MessagesUpTo k !p[]) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 380,
-          "name": "ProtocolSpec.MessagesUpTo._anon_def_380",
-          "namespace": "ProtocolSpec.MessagesUpTo",
-          "short_name": "_anon_def_380",
-          "signature": "def default := fun \u27e8\u27e8i, h\u27e9, _\u27e9 => by"
-        },
-        {
           "doc": "There is only one transcript for any protocol specification with cutoff index 0",
           "kind": "instance",
           "line": 389,
@@ -36708,15 +34032,6 @@
           "namespace": "ProtocolSpec.MessagesUpTo",
           "short_name": "_anon_instance_389",
           "signature": "instance instance : Unique (MessagesUpTo 0 pSpec) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 390,
-          "name": "ProtocolSpec.MessagesUpTo._anon_def_390",
-          "namespace": "ProtocolSpec.MessagesUpTo",
-          "short_name": "_anon_def_390",
-          "signature": "def default := fun \u27e8i, _\u27e9 => Fin.elim0 i"
         },
         {
           "doc": "",
@@ -36764,15 +34079,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (ChallengesUpTo k (default : ProtocolSpec 0)) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 434,
-          "name": "ProtocolSpec.ChallengesUpTo._anon_def_434",
-          "namespace": "ProtocolSpec.ChallengesUpTo",
-          "short_name": "_anon_def_434",
-          "signature": "def default := fun i => ()"
-        },
-        {
           "doc": "There is only one transcript for the empty protocol, represented as `![]`",
           "kind": "instance",
           "line": 438,
@@ -36782,15 +34088,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (ChallengesUpTo k !p[]) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 439,
-          "name": "ProtocolSpec.ChallengesUpTo._anon_def_439",
-          "namespace": "ProtocolSpec.ChallengesUpTo",
-          "short_name": "_anon_def_439",
-          "signature": "def default := fun \u27e8\u27e8i, h\u27e9, _\u27e9 => by"
-        },
-        {
           "doc": "There is only one transcript for any protocol specification with cutoff index 0",
           "kind": "instance",
           "line": 448,
@@ -36798,15 +34095,6 @@
           "namespace": "ProtocolSpec.ChallengesUpTo",
           "short_name": "_anon_instance_448",
           "signature": "instance instance : Unique (ChallengesUpTo 0 pSpec) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 449,
-          "name": "ProtocolSpec.ChallengesUpTo._anon_def_449",
-          "namespace": "ProtocolSpec.ChallengesUpTo",
-          "short_name": "_anon_def_449",
-          "signature": "def default := fun \u27e8i, _\u27e9 => Fin.elim0 i"
         },
         {
           "doc": "",
@@ -36845,15 +34133,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (Transcript k (default : ProtocolSpec 0)) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 486,
-          "name": "ProtocolSpec.Transcript._anon_def_486",
-          "namespace": "ProtocolSpec.Transcript",
-          "short_name": "_anon_def_486",
-          "signature": "def default := fun i => ()"
-        },
-        {
           "doc": "There is only one transcript for the empty protocol, represented as `![]`",
           "kind": "instance",
           "line": 490,
@@ -36863,15 +34142,6 @@
           "signature": "instance instance {k : Fin 1} : Unique (Transcript k !p[]) where"
         },
         {
-          "doc": "",
-          "kind": "def",
-          "line": 491,
-          "name": "ProtocolSpec.Transcript._anon_def_491",
-          "namespace": "ProtocolSpec.Transcript",
-          "short_name": "_anon_def_491",
-          "signature": "def default := fun \u27e8i, h\u27e9 => by"
-        },
-        {
           "doc": "There is only one transcript for any protocol with cutoff index 0",
           "kind": "instance",
           "line": 500,
@@ -36879,15 +34149,6 @@
           "namespace": "ProtocolSpec.Transcript",
           "short_name": "_anon_instance_500",
           "signature": "instance instance : Unique (Transcript 0 pSpec) where"
-        },
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 501,
-          "name": "ProtocolSpec.Transcript._anon_def_501",
-          "namespace": "ProtocolSpec.Transcript",
-          "short_name": "_anon_def_501",
-          "signature": "def default := fun i => Fin.elim0 i"
         },
         {
           "doc": "Concatenate a message to the end of a partial transcript. This is definitionally equivalent to `Fin.snoc`.",
@@ -38924,15 +36185,6 @@
           "signature": "theorem mkWitness_mem {k : \u2115} (hk : 2 \u2264 k) (K : BindingCommitment W Short) (project : W \u2192 WitIn)"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 222,
-          "name": "CoordinateWise.CommittedScalar._anon_class_222",
-          "namespace": "CoordinateWise.CommittedScalar",
-          "short_name": "_anon_class_222",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Generic escape-threaded CWSS certificate for committed scalar phases.** All protocol-independent extraction and tree reasoning is reused from `ScalarRound`; `recover` is the instance's substantive algebra.",
           "kind": "theorem",
           "line": 238,
@@ -39830,15 +37082,6 @@
           "signature": "theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 407,
-          "name": "CoordinateWise.ScalarRound._anon_class_407",
-          "namespace": "CoordinateWise.ScalarRound",
-          "short_name": "_anon_class_407",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Generic scalar-round escape-threaded CWSS assembly, named form.** The escape twin of `coordinateWiseSpecialSoundWith_of_mkWitness_scalar`: `hmk` may conclude a local escape event `escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level event `escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation, weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round). Same proof as the plain assembly up to the last step, where the disjunction is threaded: the extractor's own chosen per-branch responses \u2014 certified `",
           "kind": "theorem",
           "line": 436,
@@ -39846,15 +37089,6 @@
           "namespace": "CoordinateWise.ScalarRound",
           "short_name": "coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar",
           "signature": "theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 452,
-          "name": "CoordinateWise.ScalarRound._anon_class_452",
-          "namespace": "CoordinateWise.ScalarRound",
-          "short_name": "_anon_class_452",
-          "signature": "class classical"
         }
       ]
     },
@@ -40140,15 +37374,6 @@
           "signature": "theorem coordinateWiseSpecialSoundWith_of_mkWitness"
         },
         {
-          "doc": "",
-          "kind": "class",
-          "line": 412,
-          "name": "CoordinateWise.SingleRound._anon_class_412",
-          "namespace": "CoordinateWise.SingleRound",
-          "short_name": "_anon_class_412",
-          "signature": "class classical"
-        },
-        {
           "doc": "**Generic single-round escape-threaded CWSS assembly, named form.** `coordinateWiseSpecialSoundWith_of_mkWitness` where the protocol-specific obligation `hmk` may conclude a **local escape event** `escLocal` instead of a `relIn`-witness; the certificate then carries the induced tree-level event `escEvent relOut escLocal`. This is the assembly for reductions whose extraction can fail into a cryptographic break (e.g. Hachi Lemma 8's Module-SIS cases). The proof is the escape-free one verbatim up to its last step: the recovered star tree makes the readers compute definitionally, so the extractor'",
           "kind": "theorem",
           "line": 448,
@@ -40156,15 +37381,6 @@
           "namespace": "CoordinateWise.SingleRound",
           "short_name": "coordinateWiseSpecialSoundWithEscape_of_mkWitness",
           "signature": "theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 466,
-          "name": "CoordinateWise.SingleRound._anon_class_466",
-          "namespace": "CoordinateWise.SingleRound",
-          "short_name": "_anon_class_466",
-          "signature": "class classical"
         },
         {
           "doc": "Hand-written 2-round instances (not auto-derived for `ProtocolSpec 2`), generic in `C`.",
@@ -40261,15 +37477,6 @@
           "signature": "theorem srKnowledgeSoundness_implies_knowledgeSoundness"
         },
         {
-          "doc": "",
-          "kind": "instance",
-          "line": 205,
-          "name": "_anon_instance_205",
-          "namespace": "",
-          "short_name": "_anon_instance_205",
-          "signature": "instance instances of the shape-generic `Verifier.treeSpecialSound`, differing only in the challenge-tree"
-        },
-        {
           "doc": "Heterogeneous congruence for `Function.Injective`: injectivity transports across an equality of the domain type together with a heterogeneous equality of the functions.",
           "kind": "theorem",
           "line": 220,
@@ -40335,15 +37542,6 @@
           "namespace": "",
           "short_name": "probEvent_uniformSample_eq_prob_uniformOfFintype",
           "signature": "lemma probEvent_uniformSample_eq_prob_uniformOfFintype {\u03b1 : Type} [SampleableType \u03b1]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 144,
-          "name": "_anon_class_144",
-          "namespace": "",
-          "short_name": "_anon_class_144",
-          "signature": "class classical"
         },
         {
           "doc": "**Master mixture bound for the challenge-first knowledge-soundness game shape.** If the game's `Option`-valued computation `oa` is a fresh challenge draw followed by an arbitrary (adversarial) tail whose final value is `some (f c t)`, then the whole game probability \u2014 initial state sampled from `init`, simulation under `impl.addLift challengeQueryImpl`, `OptionT`-wrapped \u2014 is bounded by the challenge-only probability of `\u2203 t, E (f c t)` over a uniform challenge. `oa` is taken as an argument together with the equation `hoa` (rather than inlined in the conclusion) so that applying the lemma to a",
@@ -40868,17 +38066,7 @@
       ]
     },
     "ArkLib/OracleReduction/Security/TranscriptTree.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "theorem",
-          "line": 72,
-          "name": "_anon_theorem_72",
-          "namespace": "",
-          "short_name": "_anon_theorem_72",
-          "signature": "theorem theorems above."
-        }
-      ]
+      "declarations": []
     },
     "ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean": {
       "declarations": [
@@ -41129,15 +38317,6 @@
     },
     "ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "structure",
-          "line": 35,
-          "name": "_anon_structure_35",
-          "namespace": "",
-          "short_name": "_anon_structure_35",
-          "signature": "structure structured (for `S\u2081`)."
-        },
         {
           "doc": "Canonical arity for a challenge tree over an appended protocol.",
           "kind": "def",
@@ -43619,15 +40798,6 @@
       "declarations": [
         {
           "doc": "",
-          "kind": "instance",
-          "line": 12,
-          "name": "Binius.BinaryBasefold._anon_instance_12",
-          "namespace": "Binius.BinaryBasefold",
-          "short_name": "_anon_instance_12",
-          "signature": "instance instances of OracleInterface and SampleableType for the Binary Basefold protocol."
-        },
-        {
-          "doc": "",
           "kind": "lemma",
           "line": 34,
           "name": "Binius.BinaryBasefold.lastBlockIdx_mul_\u03d1_add_x_lt_\u2113_succ",
@@ -44232,15 +41402,6 @@
           "namespace": "Binius.BinaryBasefold.CoreInteraction",
           "short_name": "commitOracleVerifier",
           "signature": "def commitOracleVerifier (i : Fin \u2113) (hCR : isCommitmentRound \u2113 \u03d1 i) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 491,
-          "name": "Binius.BinaryBasefold.CoreInteraction._anon_class_491",
-          "namespace": "Binius.BinaryBasefold.CoreInteraction",
-          "short_name": "_anon_class_491",
-          "signature": "class classical"
         },
         {
           "doc": "The oracle reduction that is the `i`-th round of Binary commitmentfold.",
@@ -45364,15 +42525,6 @@
     "ArkLib/ProofSystem/Component/ReduceClaim.lean": {
       "declarations": [
         {
-          "doc": "",
-          "kind": "def",
-          "line": 29,
-          "name": "_anon_def_29",
-          "namespace": "",
-          "short_name": "_anon_def_29",
-          "signature": "def defined as an oracle simulation / embedding."
-        },
-        {
           "doc": "The prover for the `ReduceClaim` reduction.",
           "kind": "def",
           "line": 46,
@@ -45482,15 +42634,6 @@
         },
         {
           "doc": "",
-          "kind": "class",
-          "line": 205,
-          "name": "ReduceClaim._anon_class_205",
-          "namespace": "ReduceClaim",
-          "short_name": "_anon_class_205",
-          "signature": "class classical"
-        },
-        {
-          "doc": "",
           "kind": "def",
           "line": 229,
           "name": "ReduceClaim.mapOStmt",
@@ -45587,15 +42730,6 @@
           "namespace": "ReduceClaim",
           "short_name": "oracleVerifier_coordinateWiseSpecialSoundWith",
           "signature": "theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 430,
-          "name": "ReduceClaim._anon_class_430",
-          "namespace": "ReduceClaim",
-          "short_name": "_anon_class_430",
-          "signature": "class classical"
         }
       ]
     },
@@ -45762,15 +42896,6 @@
     },
     "ArkLib/ProofSystem/Component/SendWitness.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 36,
-          "name": "_anon_def_36",
-          "namespace": "",
-          "short_name": "_anon_def_36",
-          "signature": "def deferred; see the note there."
-        },
         {
           "doc": "",
           "kind": "def",
@@ -46134,15 +43259,6 @@
     },
     "ArkLib/ProofSystem/ConstraintSystem/Plonk.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 11,
-          "name": "_anon_def_11",
-          "namespace": "",
-          "short_name": "_anon_def_11",
-          "signature": "def define what it means for the constraint system to be satisfied. This forms the core relation of"
-        },
         {
           "doc": "A wire assignment for a single gate of the Plonk constraint system, parametrized by `numWires : \u2115`, consists of three indices `a, b, c` that specifies the location of the left, right and output wires for that gate.",
           "kind": "structure",
@@ -46970,29 +44086,10 @@
       ]
     },
     "ArkLib/ProofSystem/RingSwitching/Lift.lean": {
-      "declarations": [
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 72,
-          "name": "_anon_def_72",
-          "namespace": "",
-          "short_name": "_anon_def_72",
-          "signature": "def define their `checkAt` through `Lift.checkAt`, prove their recovery from the"
-        }
-      ]
+      "declarations": []
     },
     "ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean": {
       "declarations": [
-        {
-          "doc": "",
-          "kind": "def",
-          "line": 17,
-          "name": "_anon_def_17",
-          "namespace": "",
-          "short_name": "_anon_def_17",
-          "signature": "def definition. This file abstracts exactly that data, mirroring the"
-        },
         {
           "doc": "Proof-free presentation data for a ring `S` as a quotient `R[X]/(\u03c6)`: the modulus and a canonical representative map. The laws live in `IsPresentation`, mirroring the `CyclotomicModulus`/`IsCyclotomic` split, so that instances (e.g. Hachi's `Rq \u03a6`) can be constructed without positivity or well-formedness side conditions.",
           "kind": "structure",
@@ -47037,15 +44134,6 @@
           "namespace": "RingSwitching.Lift.Presentation",
           "short_name": "modulus_dvd_rep_sum",
           "signature": "theorem modulus_dvd_rep_sum {\u03b9 : Type*} (t : Finset \u03b9) (f : \u03b9 \u2192 S) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 124,
-          "name": "RingSwitching.Lift.Presentation._anon_class_124",
-          "namespace": "RingSwitching.Lift.Presentation",
-          "short_name": "_anon_class_124",
-          "signature": "class classical"
         },
         {
           "doc": "Two elements whose representatives differ by a multiple of the modulus are equal: the difference has degree below the monic modulus, so divisibility forces it to vanish.",
@@ -47100,15 +44188,6 @@
           "namespace": "RingSwitching.Lift.Presentation",
           "short_name": "rep_sum",
           "signature": "theorem rep_sum {\u03b9 : Type*} (t : Finset \u03b9) (f : \u03b9 \u2192 S) :"
-        },
-        {
-          "doc": "",
-          "kind": "class",
-          "line": 202,
-          "name": "RingSwitching.Lift.Presentation._anon_class_202",
-          "namespace": "RingSwitching.Lift.Presentation",
-          "short_name": "_anon_class_202",
-          "signature": "class classical"
         },
         {
           "doc": "The `i`-th lifted row's left-hand side `\u2211\u2c7c rep(M\u1d62\u2c7c)\u00b7rep(z\u2c7c) \u2208 R[X]`, on canonical representatives (each factor has degree `< d`, so the row sum has degree `\u2264 2d \u2212 2`).",
@@ -51366,7 +48445,7 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 5565,
+      "declarations": 5241,
       "files": 326
     }
   }
