@@ -68,8 +68,6 @@ import ArkLib.OracleReduction.Security.Basic
   supported. This matches the source notions and could be relaxed later.
 -/
 
-noncomputable section
-
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 

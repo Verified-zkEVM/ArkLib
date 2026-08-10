@@ -43,7 +43,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The bridge's statement map: install the empty challenge prefix and the initial target pair
 `(0, zcTargetAlpha)` on the zero-check statement. -/
-noncomputable def toRoundStatement {TCom : Type} (φF : ZMod q →+* F)
+def toRoundStatement {TCom : Type} (φF : ZMod q →+* F)
     (s : ZeroCheckStatement Φ TCom F n μ) : RoundStatement Φ TCom F n μ 0 :=
   ⟨s, fun j => j.elim0, 0, zcTargetAlpha Φ m₁ φF s.rlin s.α (kroneckerPoint m₁ s.seedα)⟩
 

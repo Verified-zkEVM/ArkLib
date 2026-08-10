@@ -91,7 +91,7 @@ chained by `Verifier.append`, the structures by `CWSSStructure.append`, the puri
 `Verifier.IsPure.append`, the extractors by running the left extractor on the prefix tree, and
 the certificates by `Verifier.append_coordinateWiseSpecialSoundWith` (the left package's `isPure`
 discharges its purity hypothesis). Written infix as `L₁ ▷ L₂`. -/
-noncomputable def append {StmtA WitA StmtB WitB StmtC WitC : Type}
+def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)

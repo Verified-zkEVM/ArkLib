@@ -153,8 +153,12 @@ variable [SampleableType F]
 /-- **The trace-handoff extraction algorithm.**
 
 **Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `handoff_coordinateWiseSpecialSoundWith`). -/
-noncomputable def handoffExtractor
+proof plan on `handoff_coordinateWiseSpecialSoundWith`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def handoffExtractor
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
@@ -204,7 +208,7 @@ bridge: the bases are `eq`-tensor packings, not monomial bases of a point).
 
 The handoff *re-reads* the existing commitment through `ψ` rather than introducing a new one, hence
 carries no escape event. -/
-noncomputable def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)

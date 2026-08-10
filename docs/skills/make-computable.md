@@ -31,8 +31,9 @@ have wildly different costs.
 
 | Kind | Signature | What to do |
 | --- | --- | --- |
-| **Sorried** | body is `sorry`; `noncomputable` is forced because `sorryAx` is noncomputable | **Skip.** Making it computable *is* writing the missing algorithm. That is formalization work under [`discharge-lemmas.md`](discharge-lemmas.md), not a computability task. Record it and move on. |
+| **Sorried** | body is `sorry` | **Skip the algorithm, but drop the marker.** Making it compute *is* writing the missing algorithm — formalization work under [`discharge-lemmas.md`](discharge-lemmas.md), not a computability task. A `sorry` body does not force `noncomputable` (see the pitfall below), so **the convention here is to leave sorried definitions unmarked** and say in the docstring that the generated code panics until the `sorry` is filled. That keeps the `noncomputable` set a record of genuine computability debt instead of mixing in proof debt. |
 | **Leaf** | a real implementation that names `Ring.inverse`, `Exists.choose`, `Classical.arbitrary`, `Classical.ofNonempty`, `open Classical in`, or a `Decidable` instance that is missing | **Fix.** Usually 1–5. This is the bulk of real work. |
+| **Recursor** | the error is `code generator does not support recursor X.rec`; the body applies a recursor explicitly, usually to invert a dependent index | **Fix, and rate it low.** Usually 2–4, not the 8–10 it looks like. Two moves, in this order: if the minor premises never use the induction hypothesis it is `casesOn` in disguise, and `rec` → `casesOn` is a mechanical, code-generating swap; if the recursion is real, use a `match` skeleton and keep every `subst` out of recursive-call position (see the pitfall below). |
 | **Architectural** | the definition has no data to compute *from* — it inverts an arbitrary `Set`, chooses a witness for an `∃` over a non-`Fintype`, or the input type genuinely lacks the information | **Defer.** Almost always 8–10. Name the missing information and what API change would supply it. |
 
 The architectural kind is the one people misjudge. A `Classical.choice` inside a definition is not
@@ -49,6 +50,14 @@ Work through these in order. Do not skip triage because a marker looks mechanica
   `grep -rn "open Classical\|Classical\.\|\.choose" path/to/scope` — a definition can be
   noncomputable-in-effect without carrying the keyword, and a file-wide `noncomputable section`
   hides markers from the first grep.
+- **Neither the keyword nor `Lean.isNoncomputable` is a sound inventory.** Both under-report. A
+  definition inside a `noncomputable section` whose codegen failed can end up with
+  `isNoncomputable = false` *and no IR at all*: it looks computable and every use fails with
+  `Failed to find LCNF signature for X`. The authoritative test is to write `def probe := @X` in a
+  scratch file **outside** any `noncomputable section` — it either compiles or names the first
+  blocker — or to query `Lean.IR.findEnvDecl env name |>.isSome` in a `run_cmd`. Build the inventory
+  from IR presence, then classify. (Real case: `ChallengeTree.SplitData.sndAt` was invisible to both
+  greps and to the flag.)
 - **Check for a file-wide `noncomputable section`.** In Lean 4 it needs no matching `end`, so it
   silently covers the rest of the file. Any `Decidable` instance you add inside one is born
   noncomputable and useless. Look at the section boundaries before you edit.
@@ -171,10 +180,32 @@ Only consider the task complete when:
 
 ## Known Pitfalls
 
-- **A `sorry` body makes a definition noncomputable.** Do not read those markers as computability
-  debt; they are proof debt wearing a disguise.
-- **`noncomputable section` has no matching `end`.** It covers the rest of the file. Instances
-  added inside are silently poisoned.
+- **A `sorry` body does *not* make a definition noncomputable.** `def f : Nat := sorry` compiles and
+  gets IR (`sorryAx` codegens to a panic). So a sorried definition that reports as noncomputable does
+  so only because someone wrote the keyword. Drop it, per the **Sorried** row above, and note the
+  panic in the docstring — but do not mistake that deletion for having made anything runnable. It
+  buys one thing: the remaining markers all mean something. Watch for the knock-on effect, since a
+  marker deleted here can unblock a *consumer* whose own marker is then gratuitous too — chase the
+  cascade with the probe until it reports no gratuitous markers left.
+- **`noncomputable section` is a fallback, not a blanket.** A `def foo : Nat := 3` inside one is
+  still compiled and still `#eval`s. What the section does is *silently swallow* codegen failures:
+  a definition that fails to compile is quietly demoted instead of erroring. That is how a file rots
+  without anyone noticing. When you finish fixing a file, **delete its `noncomputable section`** —
+  it costs nothing when everything compiles and turns the next regression into a build error. It also
+  has no matching `end`, so it covers the rest of the file, and instances added inside are silently
+  poisoned.
+- **`subst` in recursive-call position breaks structural recursion.** Inverting a dependent index
+  usually wants `obtain rfl`/`subst` on the index, but `subst` reverts and reintroduces every
+  hypothesis depending on it — including the child you recurse on — so the recursive call lands on a
+  bound variable under an `Eq.ndrec` motive and you get `failed to eliminate recursive application`
+  or `Could not find a decreasing measure`. Three fixes, cheapest first: hoist the recursive call
+  into a `have ih := …` *before* the `subst`; push each branch's `subst` into a non-recursive
+  per-constructor helper that takes the sub-result as a parameter; or avoid the `subst` altogether by
+  carrying the index as a raw `ℕ` plus its bound instead of a `Fin`, since `Fin.mk` is a constructor
+  and proofs are definitionally irrelevant, so the constructor index equations then hold by `rfl`.
+  The last one is the real fix when you own the definitions — it also replaces
+  dependent-motive `Fin.lastCases` with a plain `dite`, which matters at runtime because
+  `Fin.lastCases` is well-founded `Fin.reverseInduction` and costs O(n − r) per call.
 - **`Exists.choose` is always noncomputable, even over a `Fintype` with decidable predicates.**
   Use `Fin.find (p) (h : ∃ k, p k)`, whose `Fin.find_spec h : p (Fin.find p h)` has the same shape
   as `Exists.choose_spec`, so the consuming proofs usually survive verbatim. Pass `h` explicitly —

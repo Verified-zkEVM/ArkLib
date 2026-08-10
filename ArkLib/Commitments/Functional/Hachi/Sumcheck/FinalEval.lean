@@ -135,8 +135,12 @@ variable [SampleableType F]
 /-- **The final-evaluation extraction algorithm.**
 
 **Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `finalEval_coordinateWiseSpecialSoundWith`). -/
-noncomputable def finalEvalExtractor
+proof plan on `finalEval_coordinateWiseSpecialSoundWith`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Extractor.TreeBased (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
@@ -172,7 +176,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
 the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim `relWEvalClaim`.
 A guarded *re-reading* of the final targets, hence escape-free. Certificate: the sorried
 `finalEval_coordinateWiseSpecialSoundWith`. -/
-noncomputable def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     GCWSSPackage init impl

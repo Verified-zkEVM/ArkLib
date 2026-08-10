@@ -161,8 +161,12 @@ variable [SampleableType F]
 /-- **The partial-evaluation extraction algorithm.**
 
 **Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `partialEval_coordinateWiseSpecialSoundWith`). -/
-noncomputable def partialEvalExtractor
+proof plan on `partialEval_coordinateWiseSpecialSoundWith`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def partialEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Extractor.TreeBased (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
@@ -198,7 +202,7 @@ theorem partialEval_coordinateWiseSpecialSoundWith
 one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaim` to the per-`i` claims `relPartialEval`. A sound, zero-error reshaping, hence
 escape-free. -/
-noncomputable def partialEvalPackage (init : ProbComp σ)
+def partialEvalPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :

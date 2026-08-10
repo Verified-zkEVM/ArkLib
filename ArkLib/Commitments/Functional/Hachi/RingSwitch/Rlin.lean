@@ -270,7 +270,7 @@ omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Statement assembly** (the bridge's `mapStmt`): build the Eq. (20) block matrix and
 right-hand side from `QuadEval`'s output statement `(stmt, v, c)` — rows c1–c5 as in the module
 docstring, right-hand side `(v, u, y, 0, 0)`, `bound := γ`. -/
-noncomputable def rlinStmt
+def rlinStmt
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits

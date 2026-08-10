@@ -189,8 +189,12 @@ def roundEsc
 
 **Sorried** — this def is the extraction *algorithm* itself (the case split of the proof plan on
 `round_coordinateWiseSpecialSoundWithEscape`, ultimately the guarded scalar-round engine's
-`ScalarRound.treeExtractorScalar`). -/
-noncomputable def roundExtractor
+`ScalarRound.treeExtractorScalar`).
+
+No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
+so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
+generated code panics when run. -/
+def roundExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
     Extractor.TreeBased (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
@@ -237,7 +241,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
 with the `k = max (2b) 2 + 1` plain-special-soundness structure, reducing the round-`i` seam to the
 round-`(i+1)` seam, with the weak-binding event `roundEsc` as its one escape-specific field.
 Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11). -/
-noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
     EscapeGCWSSPackage init impl
