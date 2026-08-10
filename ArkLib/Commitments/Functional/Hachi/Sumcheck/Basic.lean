@@ -25,10 +25,11 @@ instances of `Sumcheck.Structured.computeRoundPoly` via `SumcheckMultiplierParam
 combinator for the degree-2 linear check `F_α`; the range combinator `∏ⱼ (X − j)` of degree `2b`
 for `F₀` — the multiplier docstring in `Structured.lean` already anticipates exactly this Hachi
 case); the round consistency is `Sumcheck.Structured.sumcheckConsistencyProp` over
-`SumcheckDomain.boolDomain`; the per-round data is `Structured.Statement`/`SumcheckWitness`. The
-**exact CWSS round verifier is left `sorry` for now** (`Sumcheck/Rounds.lean`): wiring the
-structured round into the CWSS chain first needs the wire format (`!v[...]`) and the
-record-then-bridge convention reconciled with the structured round's `![...]` RBR verifier
+`SumcheckDomain.boolDomain`; the per-round data is `Structured.Statement`/`SumcheckWitness`.
+
+This is a **refactor, not a gap**: `Sumcheck/Rounds.lean` carries its own `roundVerifier` and its
+Lemma 11 certificate is proven against it. Rebasing would first need the wire format (`!v[...]`)
+and the record-then-bridge convention reconciled with the structured round's `![...]` RBR verifier
 (`Structured/SingleRound.lean`'s `roundOracleVerifier`), which is deferred.
 
 ## Folder structure
@@ -40,10 +41,14 @@ record-then-bridge convention reconciled with the structured round's `![...]` RB
 * `Sumcheck/Rounds.lean` — **Hachi Figure 6 / Lemma 11**: the `m₀`-round paired sumcheck loop
   (each round sends the univariate pair `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under a shared challenge `aᵢ`), with
   **guarded** round verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`), composed by recursion over the binary
-  guarded append. CWSS theorem `round_coordinateWiseSpecialSoundWithEscape` (**sorried**).
+  guarded append. CWSS theorem `round_coordinateWiseSpecialSoundWithEscape` (**proven**, and
+  axiom-clean), with its named extractor `roundExtractor`; it carries the two load-bearing side
+  conditions `i < m₀` and `0 < b`.
 * `Sumcheck/FinalEval.lean` — **Hachi Figure 7 tail**: the closing step — the prover sends the
   claimed evaluation `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and
-  the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters.
+  the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters. CWSS
+  theorem `finalEval_coordinateWiseSpecialSoundWith` (**proven**, and axiom-clean) with its named
+  extractor `finalEvalExtractor`; no challenge round, hence no escape event.
 
 This umbrella re-exports the folder (`FinalEval` transitively imports `Rounds` and `Bridge`).
 The plain output relation `relWEvalClaim` is the input of the §4.5 recursion; the full chain,

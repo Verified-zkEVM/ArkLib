@@ -371,8 +371,8 @@
       <span class="chip">31 files</span>
       <span class="chip">24 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–4 sorry-free</span>
-      <span class="chip">34 open sorries</span>
+      <span class="chip">rows 1–8 sorry-free</span>
+      <span class="chip">16 open sorries</span>
     </div>
   </div>
 </header>
@@ -597,7 +597,7 @@
         desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; the tree has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters, vs 2D−1=4095 for the printed lemma), and the extractor is non-constructive, so this is weaker than Lemma 10's <em>efficient deterministic</em> algorithm. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
-      znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
+      znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix — the round loop itself (Lemma&nbsp;11) is finished; only the closing reveal is still a skeleton.",
       rows:[
       { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
         files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
@@ -605,8 +605,8 @@
         desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheck_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
-        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:3, badges:["guarded"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. The weak-binding failure mode is the escape event <code>roundEsc</code>; the three sorries are Lemma&nbsp;11 itself, its named <code>roundExtractor</code>, and the round encoding." },
+        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"proven", sorry:0, badges:["guarded","core"],
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. <b>Lemma&nbsp;11 is proven and axiom-clean</b> (<code>round_coordinateWiseSpecialSoundWithEscape</code>, at the named <code>roundExtractor</code>), and so is the whole <code>roundsChain</code>: the <em>k</em> branches of a node share the message pair, so either two branch openings of <code>stmt.zc.t</code> differ — the weak-binding escape <code>roundEsc</code>, a <code>LiftCom.Collision</code> — or one shared <code>w̃</code> makes each partial cube sum an honest univariate (<code>roundPoly</code>, degrees ≤ 2b resp. ≤ 2) agreeing with the prover's <code>g</code> at k &gt; deg distinct points, hence equal to it; evaluating at 0 and 1, the cube split <code>hypercubeSum_succ</code> plus the <b>guard fact</b> recovers the round-<em>i</em> claim. All tree plumbing is the generic guarded scalar-round engine. Two side conditions ride along and are load-bearing, not bookkeeping: <code>i &lt; m₀</code> (a round needs a free cube coordinate) and <code>0 &lt; b</code> (the range summand's 2b degree pin degenerates at b = 0)." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:3, badges:["guarded"],
@@ -671,7 +671,7 @@
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
-    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
     ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
   ];
 
@@ -696,9 +696,9 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations, the entire QuadEval subprotocol (rows 1–2) and the sumcheck round loop (row 8, Lemma&nbsp;11)." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–5 and 7–9, escape threading, the shared encoding, composition and the scheme." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–5, 7 and 9, escape threading, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];
   var tilesEl = document.getElementById("tiles");

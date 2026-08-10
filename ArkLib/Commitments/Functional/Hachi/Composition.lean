@@ -126,7 +126,7 @@ theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSou
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
 sorried `Extractor.TreeBased`.
 
-**Rows 1–7 carry no sorried certificate.** The `R^lin` adapter
+**Rows 1–9 carry no sorried certificate.** The `R^lin` adapter
 (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`,
 via the generic `Lift` layer on the proven scalar-round engine and the `QuotientLift` algebra)
 are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
@@ -137,16 +137,28 @@ are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
 * row 6, the **corrected Lemma 10**: `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` with
   its named extractor and the weak-binding event `nestedZeroCheckEsc`, on the concrete
   `CMlPolynomialEval` encodings `hZero`/`hAlpha` and the evaluation-tree zero test;
-* row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`.
+* row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`;
+* row 8, **Lemma 11**: `round_coordinateWiseSpecialSoundWithEscape` with its named
+  `roundExtractor` and the weak-binding event `roundEsc`, on the generic *guarded* scalar-round
+  engine plus the round-polynomial layer `Sumcheck/RoundPoly.lean`. It carries two load-bearing
+  side conditions, `i < m₀` (a round needs a free cube coordinate) and `0 < b` (the range
+  summand's `2b` degree pin degenerates at `b = 0`); the latter is `openingChain`'s `hbpos`.
+* row 9, the **final evaluation**: `finalEval_coordinateWiseSpecialSoundWith` with its named
+  `finalEvalExtractor` and the `finalCheck` encoding, on the no-challenge CWSS bridge and the
+  evaluation factorizations `eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`. No challenge round,
+  hence no escape event: the step is a guarded *re-reading* of the final targets.
 
-*Per-link math still sorried*: two F5 sumcheck identities in `Constraints.lean`
-(`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
-Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), the final evaluation
-(`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck` encoding),
-the partial-evaluation head (`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs),
-and the trace handoff (`handoff_coordinateWiseSpecialSoundWith` +
-`traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
+*Per-link math still sorried*: rows 10–12 only — the partial-evaluation head
+(`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs) and the trace handoff
+(`handoff_coordinateWiseSpecialSoundWith` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
 Every sorried encoding def carries an in-situ `**Sorried**` docstring.
+
+*Where the norm sits after row 8.* `relBatched` is deliberately norm-free (row 5 *derives*
+`liftShort` from `H₀ ≡ 0`), but from `nestedRoundRel` onwards every seam carries `liftShort` as the
+commitment's shortness index — including `relWEvalClaim`, `relPartialEval` and `relHatEval`.
+It has to: shortness is a property of the witness, so no guard can re-supply it downstream the way
+the bound-sanity conjunct is re-supplied, and the §4.5 handoff needs a norm to push through `ψ`
+into the next iteration's `Short`.
 
 *Flagged as open gaps (not merely unproven)*: `mem_relPartialEval_of_relHatEval` (row 11), and
 the `Short` obligation on `handoff_coordinateWiseSpecialSoundWith` (row 12), which is **false as
@@ -338,7 +350,7 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ) (hbpos : 0 < b)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
     (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
@@ -373,11 +385,11 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K pp φF hd hq2 hb hρ hcov
       hn).appendEscapeGuarded
-      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ) le_rfl)
-      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
+      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF hbpos (mLow + κ) le_rfl)
+      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF hbpos
         (mLow + κ) le_rfl).symm).appendGuarded
     (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF)
-    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
+    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF hbpos
       (mLow + κ) le_rfl)) ▷
   partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF ▷
   zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF ▷
@@ -400,7 +412,7 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ) (hbpos : 0 < b)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
     (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
@@ -412,19 +424,20 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-        K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
+        K pp φF hd hq2 hb hbpos hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
       (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').esc
+        hq5 hκ hτ K pp φF hd hq2 hb hbpos hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
+        κ').esc
       (relPolyEval 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
       (relIn Φ' pp' base' βSq' γ' κ')
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ
-        hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').verifier
+        hτ K pp φF hd hq2 hb hbpos hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').verifier
       (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
+        hq5 hκ hτ K pp φF hd hq2 hb hbpos hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
         κ').extractor :=
   (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-    K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
+    K pp φF hd hq2 hb hbpos hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
 
 end OpeningChain
 

@@ -1237,6 +1237,40 @@ theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
         zcTargetAlpha Φ m₁ φF s α τ₁ :=
   sum_sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w hd hμn
 
+/-! ### Evaluation at a point: the final-evaluation factorizations
+
+The sum identities above are what the *bridge* needs (row 7): the full-cube sums of the summands
+are the zero-check's point claims. The final-evaluation step (row 9, [NOZ26] Figure 7 tail) needs
+the opposite reading of the same two polynomials: once the sumcheck has consumed every cube
+coordinate, each summand is a plain evaluation at the challenge point, and it **factors into a
+public factor times a function of `mle[w̃]` alone**. That is what lets the verifier check the last
+two targets against the single claimed value `y′` — the formal content of "the verifier does not
+need to perform any multiplication over `R_q`" (§4.4): neither factor below mentions the
+witness except through `wTableMleEval`. -/
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Evaluation factorization of the range summand**:
+`F_{0,τ₀}(a) = eq̃(τ₀, a) · P_b(mle[w̃](a))`. The left factor is public; the right depends on the
+witness only through the claimed evaluation. -/
+theorem eval_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
+    (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
+    (sumcheckPolyZero Φ m₀ φF b τ₀ w).eval a =
+      (cEqualityPolynomial m₀ τ₀).eval a * rangeProduct b (wTableMleEval Φ m₀ φF b w a) := by
+  rw [sumcheckPolyZero, CPoly.eval_mul, cRangeProduct_eval, cMultilinearExtension_eval,
+    wTableMleEval_eq]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Evaluation factorization of the linear summand**:
+`F_{α,τ₁}(a) = mle[w̃](a) · Ã(a)`, where `Ã` is the multilinear extension of the public table
+`alphaPublicEvals` — the paper's `∑ᵢ eq̃(τ₁,i)·M̃_α(i,·)·α̃`, whose evaluation at the sumcheck
+point is the verifier's one expensive step (`Õ(√(2^ℓ)·λ)` by dynamic programming, §4.4). -/
+theorem eval_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
+    (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w).eval a =
+      wTableMleEval Φ m₀ φF b w a *
+        (cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF s α τ₁)).eval a := by
+  rw [sumcheckPolyAlpha, CPoly.eval_mul, wTableMleEval_eq, cMultilinearExtension_eval]
+
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
 /-- Statement produced by the scalar-round interpretation of Hachi Figure 5.
