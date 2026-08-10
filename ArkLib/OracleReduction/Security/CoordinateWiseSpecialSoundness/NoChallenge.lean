@@ -32,7 +32,6 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   * `Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx` — the bridge.
   * `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` and its `OracleVerifier`
     analogue.
-  * the outgoing `*Classical` twins of all three, kept while the zero-round components migrate.
 
   The extractors these bridges produce **ignore their leaf witnessing** — they read the unique
   transcript instead — so the bridges carry no purity hypothesis and the notion's validity premise
@@ -47,10 +46,9 @@ namespace CWSSStructure
 
 /-- The canonical coordinate-wise structure on a **challenge-free** protocol
   (`IsEmpty pSpec.ChallengeIdx`): every field is the empty eliminator, since there are no challenge
-  rounds to describe. `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` proves CWSS
-  for *any* `D` on such a protocol, but the binary-append composition theorem
-  (`Verifier.append_coordinateWiseSpecialSoundWithClassical`) needs a *concrete* structure for the
-  zero-round
+  rounds to describe. `coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` proves CWSS for
+  *any* `D` on such a protocol, but the binary-append composition theorem
+  (`Verifier.append_coordinateWiseSpecialSoundWith`) needs a *concrete* structure for the zero-round
   left factor (a `ReduceClaim`/`CheckClaim` head); this is that structure. -/
 def ofIsEmpty {n : ℕ} {pSpec : ProtocolSpec n} [IsEmpty pSpec.ChallengeIdx] :
     CWSSStructure pSpec where
@@ -135,37 +133,6 @@ theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.Ch
       (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
   treeSpecialSoundWith_of_isEmpty_challengeIdx init impl D.toShape V relIn relOut e h
 
-/-! ## The outgoing bridges
-
-Deleted with the rest of the `*Classical` layer once the zero-round components migrate. -/
-
-/-- **Outgoing** degenerate tree special soundness at the total extractor
-  `fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript`. -/
-theorem treeSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
-    (S : ChallengeTreeShape pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (e : StmtIn → FullTranscript pSpec → WitIn)
-    (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
-      (stmtIn, e stmtIn tr) ∈ relIn) :
-    treeSpecialSoundWithClassical init impl S relIn relOut V
-      (fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript) :=
-  fun stmtIn tree _ hAcc => h stmtIn _ (hAcc _ tree.onlyPath.mem_fullTranscripts)
-
-/-- **Outgoing** CWSS of a challenge-free protocol at the total transcript-level extractor. -/
-theorem coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
-    (D : CWSSStructure pSpec) (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (e : StmtIn → FullTranscript pSpec → WitIn)
-    (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.run stmtIn tr)).run' (← init)] = 1 →
-      (stmtIn, e stmtIn tr) ∈ relIn) :
-    coordinateWiseSpecialSoundWithClassical init impl D relIn relOut V
-      (fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript) :=
-  treeSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D.toShape V relIn relOut e h
-
 end Verifier
 
 namespace OracleVerifier
@@ -196,22 +163,6 @@ theorem coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx [IsEmpty pSpec.Ch
     V.coordinateWiseSpecialSoundWith init impl D relIn relOut
       (fun stmtIn tree _ => some (e stmtIn tree.onlyPath.fullTranscript)) :=
   Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D V.toVerifier
-    relIn relOut e h
-
-/-- **Outgoing** oracle-reduction bridge at the total transcript-level extractor. -/
-theorem coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
-    (D : CWSSStructure pSpec)
-    (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
-    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
-    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
-    (e : (StmtIn × ∀ i, OStmtIn i) → FullTranscript pSpec → WitIn)
-    (h : ∀ stmtIn tr,
-      Pr[ (· ∈ relOut.language) |
-        OptionT.mk do (simulateQ impl (V.toVerifier.run stmtIn tr)).run' (← init)] = 1 →
-      (stmtIn, e stmtIn tr) ∈ relIn) :
-    V.coordinateWiseSpecialSoundWithClassical init impl D relIn relOut
-      (fun stmtIn tree => e stmtIn tree.onlyPath.fullTranscript) :=
-  Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D V.toVerifier
     relIn relOut e h
 
 end OracleVerifier

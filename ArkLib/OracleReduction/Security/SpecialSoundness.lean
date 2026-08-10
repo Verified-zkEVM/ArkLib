@@ -31,9 +31,6 @@ import ArkLib.OracleReduction.Security.TranscriptTree
   imports the other. The bridge `coordinateWiseSpecialSound (ofSpecialSound k) ↔ specialSound k`
   (the `ℓᵢ = 1` case) is `Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff` in
   `Security.Implications`.
-
-  The outgoing `Verifier.specialSoundClassical` / `OracleVerifier.specialSoundClassical` are the
-  total-extractor forms, deleted with the rest of the `*Classical` layer.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -88,8 +85,7 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
   The extractor is the notion's own, closed at the canonical witnessing acceptance already provides
   (`ChallengeTree.canonWitnesses`), and the recovery costs only `[Inhabited WitIn]` — no purity, no
   finiteness. So the leaf-witnessing input weakens nothing: it buys computable extraction while the
-  classical statement survives verbatim as a theorem. The conclusion is written out rather than
-  routed through the outgoing `specialSoundClassical`, so it outlives that layer. -/
+  classical statement survives verbatim as a theorem. -/
 theorem specialSound.old_of_new [Inhabited WitIn] (k : pSpec.ChallengeIdx → ℕ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -104,13 +100,6 @@ theorem specialSound.old_of_new [Inhabited WitIn] (k : pSpec.ChallengeIdx → �
       (ProtocolSpec.ChallengeTree.canonWitnesses init impl verifier relOut stmtIn)).getD default,
     fun stmtIn tree hstr hacc => ?_⟩
   exact Verifier.treeSpecialSoundWith.old_of_new init impl hExt stmtIn tree hstr hacc
-
-/-- **Outgoing** (deleted with the `*Classical` layer): special soundness at the total extractor,
-  i.e. `Verifier.treeSpecialSoundClassical` for `distinctShape k`. -/
-def specialSoundClassical (k : pSpec.ChallengeIdx → ℕ)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  verifier.treeSpecialSoundClassical init impl (distinctShape k) relIn relOut
 
 end Verifier
 
@@ -133,13 +122,5 @@ def specialSound (k : pSpec.ChallengeIdx → ℕ)
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
   verifier.toVerifier.specialSound init impl k relIn relOut
-
-/-- **Outgoing** (deleted with the `*Classical` layer): special soundness of an oracle reduction at
-  the total extractor. -/
-def specialSoundClassical (k : pSpec.ChallengeIdx → ℕ)
-    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
-    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
-    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
-  verifier.toVerifier.specialSoundClassical init impl k relIn relOut
 
 end OracleVerifier

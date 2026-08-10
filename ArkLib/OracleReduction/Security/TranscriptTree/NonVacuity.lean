@@ -36,8 +36,8 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 
   The rejected variants (`LeafWitnesses.IsValidUnclaimed`, `treeSpecialSoundWithUnclaimed`,
   `LeafWitnesses.IsValidFree`, `treeSpecialSoundWithFree`) and the classical statement shape
-  (`oldStatement`) are declared **`private`** here: they exist only so the kills can be *stated*,
-  and are no part of the public notion.
+  (`TotalExtractor`, `oldStatement`) are declared **`private`** here: they exist only so the kills
+  can be *stated*, and are no part of the public notion.
 
   The companion positive fact — that the premise is never an obstruction — is in the notion's own
   file: `ChallengeTree.canonWitnesses_isValid` (valid on *every* accepting tree) with
@@ -109,11 +109,17 @@ private def treeSpecialSoundWithFree (init : ProbComp σ)
       ∀ o : tree.LeafWitnesses WitOut, LeafWitnesses.IsValidFree relOut o →
         ∃ w, Ext stmtIn tree o = some w ∧ (stmtIn, w) ∈ relIn
 
+/-- The classical extractor shape: a *total* function of the input statement and the tree, with no
+  witnessing input and no way to decline. Only `oldStatement` uses it. -/
+private def TotalExtractor (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+    (arity : pSpec.ChallengeIdx → ℕ) : Type :=
+  StmtIn → ChallengeTree pSpec arity 0 → WitIn
+
 /-- The classical statement shape (total extractor, no witnessing input). -/
 private def oldStatement (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (S : ChallengeTreeShape pSpec) (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut)) (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity) : Prop :=
+    (Ext : TotalExtractor StmtIn WitIn pSpec S.arity) : Prop :=
   ∀ stmtIn tree, ChallengeTree.IsStructured S tree →
     tree.IsAccepting init impl V stmtIn relOut.language → (stmtIn, Ext stmtIn tree) ∈ relIn
 
@@ -266,7 +272,7 @@ theorem unclaimed_vacuous (S : ChallengeTreeShape (!p[] : ProtocolSpec 0)) :
 
 /-- The classical notion is refutable on that same data, for every extractor. -/
 theorem classical_refutable (S : ChallengeTreeShape (!p[] : ProtocolSpec 0))
-    (Ext : Extractor.TreeBasedClassical Unit ℕ (!p[] : ProtocolSpec 0) S.arity) :
+    (Ext : TotalExtractor Unit ℕ (!p[] : ProtocolSpec 0) S.arity) :
     ¬ oldStatement (pure ()) cimpl S (∅ : Set (Unit × ℕ)) relOutBad coinVerifier Ext := by
   intro h
   exact (h () ChallengeTree.leaf trivial (coinAccepting _) : (_, _) ∈ (∅ : Set (Unit × ℕ)))

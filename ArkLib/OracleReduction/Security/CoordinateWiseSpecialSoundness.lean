@@ -21,8 +21,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
     `Verifier.coordinateWiseSpecialSoundWith` / `Verifier.coordinateWiseSpecialSound` obtained by
     instantiating the shape-generic core `Verifier.treeSpecialSoundWith`
     (`Security.TranscriptTree`) at `D.toShape`, and its escape-threaded twin
-    `Verifier.coordinateWiseSpecialSoundWithEscape`. The outgoing `*Classical` notions live here
-    too, until their consumers migrate.
+    `Verifier.coordinateWiseSpecialSoundWithEscape`.
   * `Composition` — transport of CWSS structures across protocol append (`CWSSStructure.append`),
     its agreement with the generic appended shape (`toShape_append`), the pure-verifier acceptance
     bridge (`Verifier.pure_accepting_of_mem` / `mem_of_pure_accepting`), the seam lemma
@@ -30,11 +29,10 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
     (`Verifier.append_coordinateWiseSpecialSoundWith` and `…WithEscape`) as thin wrappers over the
     generic `Verifier.append_treeSpecialSoundWith` / `append_treeSpecialSoundWithEscape`. The
     composed extractor is `Extractor.TreeBased.append`, seamed by the left verifier's verdict
-    function passed as data; the outgoing `*Classical` twins live here too, until their consumers
-    migrate.
+    function passed as data.
   * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
     (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor
-    (`Verifier.treeSpecialSoundWithClassical_of_isEmpty_challengeIdx`).
+    (`Verifier.treeSpecialSoundWith_of_isEmpty_challengeIdx`).
 
   **Composition is deliberately binary**: multi-step chains are built by recursion over the binary
   append (the `CoordinateWise` packages' `▷`, in `CoordinateWiseSpecialSoundness/Escape.lean`),

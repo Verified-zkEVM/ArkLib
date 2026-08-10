@@ -31,9 +31,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   (`branchPath`, `branchTr`, `branch_pre`, `branch_challenge`, `branch_mem`), the per-branch paths
   (`branchPathOf`) at which extraction reads its leaf witnessing, and the pure-acceptance bridge
   `branch_relOut_language`; the named extractor `treeExtractorScalar`; and the escape event
-  `escEventScalar` induced by a local per-family event. The outgoing `treeExtractorScalarClassical`
-  and its two `*Classical` certificates are kept only while `CommittedScalar`'s outgoing package
-  migrates.
+  `escEventScalar` induced by a local per-family event.
 
   Both generic assemblies are **proven**:
   `coordinateWiseSpecialSoundWith_of_mkWitness_scalar` and its escape-threaded twin
@@ -393,23 +391,6 @@ def treeExtractorScalar {k : ℕ} (hk : 2 ≤ k)
         (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)))).map
       (mkWitness stmtIn (readPre tree) (readFam hk tree))
 
-open Classical in
-/-- **Outgoing** (deleted with the `*Classical` layer): the total scalar-round extractor, which
-chooses each per-branch response by classically inverting `relOut` (`Classical.ofNonempty` where
-none exists; on structured accepting trees every guard fires). Kept only while `CommittedScalar`'s
-outgoing package migrates to `treeExtractorScalar` above. -/
-noncomputable def treeExtractorScalarClassical [Nonempty WitOut] {k : ℕ} (hk : 2 ≤ k)
-    (relOut : Set ((StmtIn × Msg × C) × WitOut))
-    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
-    Extractor.TreeBasedClassical StmtIn WitIn (pSpecScalar Msg C)
-      (CWSSStructure.toShape (scalarStructure (Msg := Msg) (C := C) k hk)).arity :=
-  fun stmtIn tree =>
-    let v := readPre tree
-    let fam : Fin k → C := readFam hk tree
-    let resp : Fin k → WitOut := fun j =>
-      if h : ∃ w, ((stmtIn, v, fam j), w) ∈ relOut then h.choose else Classical.ofNonempty
-    mkWitness stmtIn v fam resp
-
 /-- The scalar-round tree-level escape event induced by a **local** (per-family) event `escLocal`
 and a per-branch validity predicate `valid`: the tree's own message and challenge family admit
 per-branch responses that are `valid` and on which `escLocal` fires.
@@ -592,96 +573,5 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     rfl
 
 end Assembly
-
-/-! ## The outgoing assembly layer
-
-`treeExtractorScalarClassical` and its two certificates, deleted with the rest of the `*Classical`
-layer once `CommittedScalar`'s outgoing package migrates. Do not state new results against them. -/
-
-section AssemblyClassical
-
-variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn WitIn WitOut : Type} [Nonempty WitOut]
-  {σ : Type}
-
-/-- **Outgoing** scalar-round CWSS assembly at `treeExtractorScalarClassical`: the
-classical-inversion form of `coordinateWiseSpecialSoundWith_of_mkWitness_scalar`, with identical
-`hpure`/`hmk` hypotheses. -/
-theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    {k : ℕ} (hk : 2 ≤ k)
-    (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
-    (hpure : ∀ s tr,
-      V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-    (relIn : Set (StmtIn × WitIn))
-    (relOut : Set ((StmtIn × Msg × C) × WitOut))
-    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn)
-    (hmk : ∀ s v (fam : Fin k → C) (resp : Fin k → WitOut),
-      (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
-      (s, mkWitness s v fam resp) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWithClassical init impl (scalarStructure k hk) relIn relOut V
-      (treeExtractorScalarClassical hk relOut mkWitness) := by
-  classical
-  intro stmtIn tree hStruct hAcc
-  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
-  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
-  have hmem : ∀ j : Fin k,
-      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
-    intro j
-    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
-      (Fin.cast harity j)
-    exact (Set.mem_language_iff relOut _).1 h
-  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
-  have hbranch : ∀ j : Fin k,
-      ((stmtIn, v, challenges (Fin.cast harity j)),
-        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
-          then h.choose else Classical.ofNonempty) ∈ relOut := by
-    intro j
-    rw [dif_pos (hmem j)]
-    exact (hmem j).choose_spec
-  exact hmk stmtIn v _ _ hbranch hinj
-
-/-- **Outgoing** escape-threaded scalar-round assembly at `treeExtractorScalarClassical`: the
-classical-inversion form of `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`, at the same
-unchanged `escEventScalar`. Here the extractor's own chosen per-branch responses — certified
-`relOut`-valid by `hbranch` — witness the event's existential. -/
-theorem coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    {k : ℕ} (hk : 2 ≤ k)
-    (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
-    (hpure : ∀ s tr,
-      V.verify s tr = pure (s, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩))
-    (relIn : Set (StmtIn × WitIn))
-    (relOut : Set ((StmtIn × Msg × C) × WitOut))
-    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn)
-    (escLocal : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → Prop)
-    (hmk : ∀ s v (fam : Fin k → C) (resp : Fin k → WitOut),
-      (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
-      escLocal s v fam resp ∨ (s, mkWitness s v fam resp) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl (scalarStructure k hk)
-      (escEventScalar hk relOut escLocal) relIn relOut V
-      (treeExtractorScalarClassical hk relOut mkWitness) := by
-  classical
-  intro stmtIn tree hStruct hAcc
-  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
-  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
-  have hmem : ∀ j : Fin k,
-      ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut := by
-    intro j
-    have h := branch_relOut_language init impl V hpure relOut stmtIn v challenges hAcc
-      (Fin.cast harity j)
-    exact (Set.mem_language_iff relOut _).1 h
-  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
-  have hbranch : ∀ j : Fin k,
-      ((stmtIn, v, challenges (Fin.cast harity j)),
-        if h : ∃ w, ((stmtIn, v, challenges (Fin.cast harity j)), w) ∈ relOut
-          then h.choose else Classical.ofNonempty) ∈ relOut := by
-    intro j
-    rw [dif_pos (hmem j)]
-    exact (hmem j).choose_spec
-  rcases hmk stmtIn v _ _ hbranch hinj with hbad | hgood
-  · exact Or.inl ⟨_, hbranch, hbad⟩
-  · exact Or.inr hgood
-
-end AssemblyClassical
 
 end CoordinateWise.ScalarRound

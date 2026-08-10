@@ -22,20 +22,15 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   * `Verifier.pure_accepting_of_mem` / `Verifier.mem_of_pure_accepting` — the two directions of
     the pure-verifier acceptance bridge, used to certify prefix leaves' verdicts (and reused by
     the zero-round `ProofSystem/Component` reductions).
-  * `Verifier.append_treeSpecialSoundWithClassical` is the generic structured-tree preservation
-    statement,
-    and `Verifier.append_treeSpecialSoundWithEscapeClassical` its escape-threaded twin, whose
-      composed escape
-    event is `ChallengeTree.EscapeEvent.append`.
-  * `Verifier.append_coordinateWiseSpecialSoundWithClassical` / `…WithEscape` are the CWSS-specific
+  * `Verifier.append_treeSpecialSoundWith` is the generic structured-tree preservation statement,
+    and `Verifier.append_treeSpecialSoundWithEscape` its escape-threaded twin, whose composed
+    escape event is `ChallengeTree.EscapeEvent.append`.
+  * `Verifier.append_coordinateWiseSpecialSoundWith` / `…WithEscape` are the CWSS-specific
     wrappers, with `OracleVerifier` versions for oracle reductions.
 
-  ## Composition at the witness-only extractor
+  ## The composed extractor
 
-  The same four statements at `Extractor.TreeBased` — `Verifier.append_treeSpecialSoundWith`,
-  `Verifier.append_treeSpecialSoundWithEscape` and their CWSS wrappers
-  `Verifier.append_coordinateWiseSpecialSoundWith` / `…WithEscape` (plus the `OracleVerifier`
-  mirrors) — compose the *named* extractors of both factors into
+  All four statements compose the *named* extractors of both factors into
   `Extractor.TreeBased.append verify₁ E₁ E₂`, seamed by the left verifier's verdict function as
   data. `Verifier.append_run_outputs` is the seam lemma they share: it identifies the appended
   verifier's reachable outputs with the right verifier's, which is what transfers leaf-witnessing
@@ -348,162 +343,7 @@ theorem mem_of_pure_accepting
   rw [OptionT.mem_support_iff, OptionT.run_mk, hrun, support_bind_const, support_pure]
   exact ⟨Set.mem_singleton _, hne⟩
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Named-extractor preservation of tree-special soundness under binary verifier append.** The
-composed extractor is a named function of the *left* factor's extractor alone: it runs `Ext₁` on
-the prefix tree. The right factor's extractor enters only through `rel₂.language` (certifying the
-left leaves' outputs), so it may stay existential. -/
-theorem append_treeSpecialSoundWithClassical
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
-    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical Stmt₁ Wit₁ pSpec₁ S₁.arity)
-    (h₁ : treeSpecialSoundWithClassical init impl S₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : V₂.treeSpecialSoundClassical init impl S₂ rel₂ rel₃) :
-      treeSpecialSoundWithClassical init impl (S₁.append S₂) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  rcases h₂ with ⟨E₂, hE₂⟩
-  intro stmt tree hStructured hAccept
-  apply h₁ stmt tree.appendSplit.fst
-  · exact ChallengeTree.appendSplit_fst_isStructured tree hStructured
-  · intro tr₁ htr₁
-    obtain ⟨path, rfl⟩ :=
-      ChallengeTree.LeafPath.exists_of_mem_fullTranscripts (T := tree.appendSplit.fst) htr₁
-    have hSuffixStructured :
-        (tree.appendSplit.sndAt path).IsStructured S₂ :=
-      ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
-    have hSuffixAccept :
-        (tree.appendSplit.sndAt path).IsAccepting init impl V₂
-          (verify₁ stmt path.fullTranscript) rel₃.language := by
-      intro tr₂ htr₂
-      have hmem :
-          path.fullTranscript ++ₜ tr₂ ∈ tree.fullTranscripts :=
-        ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
-      have hfull := hAccept (path.fullTranscript ++ₜ tr₂) hmem
-      simpa [append_run_pure_left V₁ V₂ verify₁ hV₁
-          stmt path.fullTranscript tr₂] using hfull
-    have hRel₂ :
-        (verify₁ stmt path.fullTranscript,
-          E₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)) ∈ rel₂ :=
-      hE₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
-        hSuffixStructured hSuffixAccept
-    have hLang₂ : verify₁ stmt path.fullTranscript ∈ rel₂.language :=
-      (Set.mem_language_iff rel₂ (verify₁ stmt path.fullTranscript)).2
-        ⟨E₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path), hRel₂⟩
-    exact pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
-      (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) hLang₂
-
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Escape-threaded preservation of tree special soundness under binary verifier append.** As in
-the escape-free `append_treeSpecialSoundWithClassical`, the composed extractor is the left extractor
-  on the
-prefix tree and the right factor's extractor stays existential; the composed escape event is
-`ChallengeTree.EscapeEvent.append`.
-
-The proof is the escape-free one with one extra case split up front: if some prefix leaf's suffix
-tree exhibits `esc₂`, the right disjunct of the composed event fires directly; otherwise every
-prefix leaf's verdict is certified into `rel₂.language` by the right factor's extraction (its escape
-branch being excluded by that case assumption), and the left certificate applies. -/
-theorem append_treeSpecialSoundWithEscapeClassical
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
-    (esc₁ : ChallengeTree.EscapeEvent Stmt₁ pSpec₁ S₁.arity)
-    (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ S₂.arity)
-    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical Stmt₁ Wit₁ pSpec₁ S₁.arity)
-    (h₁ : treeSpecialSoundWithEscapeClassical init impl S₁ esc₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : treeSpecialSoundEscapeClassical init impl S₂ esc₂ rel₂ rel₃ V₂) :
-      treeSpecialSoundWithEscapeClassical init impl (S₁.append S₂) (esc₁.append esc₂ verify₁)
-        rel₁ rel₃ (V₁.append V₂) (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  rcases h₂ with ⟨E₂, hE₂⟩
-  intro stmt tree hStructured hAccept
-  by_cases hesc : ∃ path : LeafPath tree.appendSplit.fst,
-      esc₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
-  · exact Or.inl (Or.inr hesc)
-  · push Not at hesc
-    have hLang : ∀ path : LeafPath tree.appendSplit.fst,
-        verify₁ stmt path.fullTranscript ∈ rel₂.language := by
-      intro path
-      have hSuffixStructured : (tree.appendSplit.sndAt path).IsStructured S₂ :=
-        ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
-      have hSuffixAccept :
-          (tree.appendSplit.sndAt path).IsAccepting init impl V₂
-            (verify₁ stmt path.fullTranscript) rel₃.language := by
-        intro tr₂ htr₂
-        have hmem :=
-          ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
-        have hfull := hAccept _ hmem
-        simpa [append_run_pure_left V₁ V₂ verify₁ hV₁ stmt path.fullTranscript tr₂]
-          using hfull
-      rcases hE₂ _ _ hSuffixStructured hSuffixAccept with hbad | hwit
-      · exact absurd hbad (hesc path)
-      · exact (Set.mem_language_iff rel₂ _).2 ⟨_, hwit⟩
-    have hPrefixAccept :
-        tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
-      intro tr₁ htr₁
-      obtain ⟨path, rfl⟩ := ChallengeTree.LeafPath.exists_of_mem_fullTranscripts htr₁
-      exact pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
-        (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) (hLang path)
-    rcases h₁ stmt tree.appendSplit.fst
-        (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hPrefixAccept with
-      hbad | hwit
-    · exact Or.inl (Or.inl hbad)
-    · exact Or.inr hwit
-
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Named-extractor preservation of CWSS under binary verifier append**: the composed extractor
-is the left factor's extractor on the prefix tree, exactly as at the tree level
-(`append_treeSpecialSoundWithClassical`); the right factor's extractor stays existential. The shape
-transport across `CWSSStructure.toShape_append` is `treeSpecialSoundWithClassical_congr` — the
-  arities of
-the two shapes are definitionally equal, so the extractor crosses by `HEq.rfl`. -/
-theorem append_coordinateWiseSpecialSoundWithClassical
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
-    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
-    (h₁ : coordinateWiseSpecialSoundWithClassical init impl D₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSoundClassical init impl D₂ rel₂ rel₃) :
-      coordinateWiseSpecialSoundWithClassical init impl
-        (CWSSStructure.append D₁ D₂) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
-  treeSpecialSoundWithClassical_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm HEq.rfl
-    (append_treeSpecialSoundWithClassical init impl V₁ V₂
-      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ Ext₁ h₁ h₂)
-
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- **Escape-threaded preservation of CWSS under binary verifier append**: the CWSS-shape wrapper of
-`append_treeSpecialSoundWithEscapeClassical`. Both the extractor and the event cross the shape
-  equality
-`CWSSStructure.toShape_append` by `HEq.rfl`, the two shapes' arities being definitionally equal. -/
-theorem append_coordinateWiseSpecialSoundWithEscapeClassical
-    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
-    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
-    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
-    (esc₁ : ChallengeTree.EscapeEvent Stmt₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
-    (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ (CWSSStructure.toShape D₂).arity)
-    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
-    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
-    (h₁ : coordinateWiseSpecialSoundWithEscapeClassical init impl D₁ esc₁ rel₁ rel₂ V₁ Ext₁)
-    (h₂ : coordinateWiseSpecialSoundEscapeClassical init impl D₂ esc₂ rel₂ rel₃ V₂) :
-      coordinateWiseSpecialSoundWithEscapeClassical init impl (CWSSStructure.append D₁ D₂)
-        (esc₁.append esc₂ verify₁) rel₁ rel₃ (V₁.append V₂)
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
-  treeSpecialSoundWithEscapeClassical_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm
-    HEq.rfl HEq.rfl
-    (append_treeSpecialSoundWithEscapeClassical init impl V₁ V₂
-      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂)
-
-/-! ## Composition at the witness-only extractor
-
-The canonical layer. Two things change from the `*Classical` theorems above.
+/-! ## Composition of tree-based certificates
 
 The composed extractor is `Extractor.TreeBased.append`, a named function of **both** factors'
 extractors: the right extractor now enters the composed algorithm — it produces the leaf witnessing
@@ -755,60 +595,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₂ : Set ((Stmt₂ × ∀ i, OStmt₂ i) × Wit₂)}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Oracle-verifier wrapper for the named binary CWSS append: the composed extractor is the left
-factor's extractor on the prefix tree. -/
-theorem append_coordinateWiseSpecialSoundWithClassical
-    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
-    (verify₁ :
-      (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
-    (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
-      (CWSSStructure.toShape D₁).arity)
-    (h₁ : V₁.coordinateWiseSpecialSoundWithClassical init impl D₁ rel₁ rel₂ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSoundClassical init impl D₂ rel₂ rel₃) :
-      (V₁.append V₂).coordinateWiseSpecialSoundWithClassical init impl
-        (CWSSStructure.append D₁ D₂) rel₁ rel₃
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  unfold OracleVerifier.coordinateWiseSpecialSoundWithClassical at h₁ ⊢
-  unfold OracleVerifier.coordinateWiseSpecialSoundClassical at h₂
-  rw [append_toVerifier]
-  exact Verifier.append_coordinateWiseSpecialSoundWithClassical init impl V₁.toVerifier
-    V₂.toVerifier
-    D₁ D₂ verify₁ hV₁ Ext₁ h₁ h₂
-
-omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Oracle-verifier wrapper for the escape-threaded binary CWSS append: the composed extractor is
-the left factor's extractor on the prefix tree and the composed event is
-`ChallengeTree.EscapeEvent.append` at the left factor's verdict map. -/
-theorem append_coordinateWiseSpecialSoundWithEscapeClassical
-    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
-    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
-    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
-    (esc₁ : ChallengeTree.EscapeEvent (Stmt₁ × ∀ i, OStmt₁ i) pSpec₁
-      (CWSSStructure.toShape D₁).arity)
-    (esc₂ : ChallengeTree.EscapeEvent (Stmt₂ × ∀ i, OStmt₂ i) pSpec₂
-      (CWSSStructure.toShape D₂).arity)
-    (verify₁ :
-      (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
-    (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
-    (Ext₁ : Extractor.TreeBasedClassical (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
-      (CWSSStructure.toShape D₁).arity)
-    (h₁ : V₁.coordinateWiseSpecialSoundWithEscapeClassical init impl D₁ esc₁ rel₁ rel₂ Ext₁)
-    (h₂ : V₂.coordinateWiseSpecialSoundEscapeClassical init impl D₂ esc₂ rel₂ rel₃) :
-      (V₁.append V₂).coordinateWiseSpecialSoundWithEscapeClassical init impl
-        (CWSSStructure.append D₁ D₂) (esc₁.append esc₂ verify₁) rel₁ rel₃
-        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  unfold OracleVerifier.coordinateWiseSpecialSoundWithEscapeClassical at h₁ ⊢
-  unfold OracleVerifier.coordinateWiseSpecialSoundEscapeClassical at h₂
-  rw [append_toVerifier]
-  exact Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical init impl V₁.toVerifier
-    V₂.toVerifier
-    D₁ D₂ esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂
-
-/-! ## Composition at the witness-only extractor (oracle level)
+/-! ## The oracle-level mirrors
 
 Each notion is the underlying verifier's on the combined (oracle + non-oracle) statements, so both
 mirrors are `append_toVerifier` followed by the non-oracle theorem. -/

@@ -260,19 +260,6 @@ theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx �
   unfold Verifier.coordinateWiseSpecialSound Verifier.specialSound
   rw [toShape_ofSpecialSound_eq_distinctShape]
 
-omit [∀ i, SampleableType (pSpec.Challenge i)] in
-/-- **Outgoing** (deleted with the `*Classical` layer): the same bridge between the total-extractor
-forms of the two notions. -/
-theorem coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff
-    (k : pSpec.ChallengeIdx → ℕ) (hk : ∀ i, 2 ≤ k i)
-    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
-    (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
-    verifier.coordinateWiseSpecialSoundClassical init impl (CWSSStructure.ofSpecialSound k hk) relIn
-      relOut
-      ↔ verifier.specialSoundClassical init impl k relIn relOut := by
-  unfold Verifier.coordinateWiseSpecialSoundClassical Verifier.specialSoundClassical
-  rw [toShape_ofSpecialSound_eq_distinctShape]
-
 end Verifier
 
 namespace OracleVerifier
@@ -297,19 +284,5 @@ theorem coordinateWiseSpecialSound_ofSpecialSound_iff (k : pSpec.ChallengeIdx �
       ↔ verifier.specialSound init impl k relIn relOut :=
   Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff init impl k hk relIn relOut
     verifier.toVerifier
-
-omit [∀ i, SampleableType (pSpec.Challenge i)] in
-/-- **Outgoing** (deleted with the `*Classical` layer): the oracle-form bridge between the
-total-extractor notions. -/
-theorem coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff
-    (k : pSpec.ChallengeIdx → ℕ) (hk : ∀ i, 2 ≤ k i)
-    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
-    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
-    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-    verifier.coordinateWiseSpecialSoundClassical init impl (CWSSStructure.ofSpecialSound k hk) relIn
-      relOut
-      ↔ verifier.specialSoundClassical init impl k relIn relOut :=
-  Verifier.coordinateWiseSpecialSoundClassical_ofSpecialSoundClassical_iff init impl k hk relIn
-    relOut verifier.toVerifier
 
 end OracleVerifier

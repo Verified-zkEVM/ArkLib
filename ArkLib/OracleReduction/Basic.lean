@@ -757,9 +757,9 @@ class Reduction.IsPure (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) w
   `Verifier.IsPure`, playing the role `Equiv` plays for `Function.Bijective`.
 
   `IsPure` only asserts that *some* deterministic verdict function exists, so reading that
-  function off an `IsPure` instance costs `Classical.choice` (`pureFormOfIsPure`). Consumers that
-  need the verdict as *data* — sequential composition, which must run the right factor at the
-  statement the left verifier outputs at the seam — carry a `PureForm` instead. Purity data
+  function off an `IsPure` instance costs `Classical.choice`. Consumers that need the verdict as
+  *data* — sequential composition, which must run the right factor at the statement the left
+  verifier outputs at the seam — carry a `PureForm` instead. Purity data
   composes computably (`Verifier.PureForm.append`), and `Verifier.PureForm.isPure` forgets back to
   the class, so the class and all of its instances stay untouched. -/
 structure Verifier.PureForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
@@ -772,16 +772,6 @@ structure Verifier.PureForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
 theorem Verifier.PureForm.isPure {V : Verifier oSpec StmtIn StmtOut pSpec} (P : V.PureForm) :
     V.IsPure :=
   ⟨P.verify, P.verify_eq⟩
-
-/-- The classical converse of `Verifier.PureForm.isPure`: recovering the verdict *data* from the
-  `IsPure` class is a choice, so this is `noncomputable`.
-
-  Definitions that want to stay computable must carry a `Verifier.PureForm` from the start; this
-  direction exists for statements that only have the class at hand (and for lifting legacy
-  packages, whose purity field is `Prop`-valued). -/
-noncomputable def Verifier.pureFormOfIsPure (V : Verifier oSpec StmtIn StmtOut pSpec)
-    [h : V.IsPure] : V.PureForm :=
-  ⟨h.is_pure.choose, h.is_pure.choose_spec⟩
 
 end IsPure
 

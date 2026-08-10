@@ -61,9 +61,6 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `CommittedScalar.coordinateWiseSpecialSoundWithEscape` / `CommittedScalar.package` — the
     generic certificate at `scalarStructure k` and its `EscapeCWSSPackage` bundle, ready for `▷`
     composition against packages of any of the four kinds.
-  * `CommittedScalar.treeExtractorClassical` / `…WithEscapeClassical` / `packageClassical` — the
-    outgoing twins, kept only while `RingSwitching.Lift` migrates, and the file's only
-    `noncomputable` declarations.
 
   ## Consumers
 
@@ -208,16 +205,6 @@ def treeExtractor {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (proj
         (scalarStructure (Msg := K.TCom) (C := Challenge) k hk)).arity :=
   ScalarRound.treeExtractorScalar hk (mkWitness hk K project)
 
-/-- **Outgoing** (deleted with the `*Classical` layer): the classical-inversion delegate, kept
-while `RingSwitching.Lift` migrates to `treeExtractor` above. -/
-noncomputable def treeExtractorClassical [Nonempty W] {k : ℕ} (hk : 2 ≤ k)
-    (K : BindingCommitment W Short)
-    (checkAt : Stmt → Challenge → W → Prop) (project : W → WitIn) :
-    Extractor.TreeBasedClassical Stmt WitIn (pSpecScalar K.TCom Challenge)
-      (CWSSStructure.toShape
-        (scalarStructure (Msg := K.TCom) (C := Challenge) k hk)).arity :=
-  ScalarRound.treeExtractorScalarClassical hk (rel K checkAt) (mkWitness hk K project)
-
 /-- **Correctness of the committed-scalar assembly**, parameterized by the only
 construction-specific fact `recover`: one common short opening satisfying `checkAt` at `k` distinct
 challenges recovers `relIn`.
@@ -301,53 +288,6 @@ def package {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   isPure := verifierPureForm K
   extractor := treeExtractor hk K project
   isCWSS := coordinateWiseSpecialSoundWithEscape hk K project checkAt relIn recover init impl
-
-/-! ## The outgoing layer
-
-`treeExtractorClassical` above and the two declarations below, deleted with the rest of the
-`*Classical` layer once `RingSwitching.Lift` migrates to `package`. They are the only
-`noncomputable` definitions left in this file, and they carry per-declaration markers so a
-computability sweep can see them (the file's `noncomputable section` is gone). -/
-
-/-- **Outgoing** committed-scalar certificate at `treeExtractorClassical`. -/
-theorem coordinateWiseSpecialSoundWithEscapeClassical [Nonempty W] {ι : Type} {oSpec : OracleSpec ι}
-    {σ : Type} {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
-    (project : W → WitIn) (checkAt : Stmt → Challenge → W → Prop)
-    (relIn : Set (Stmt × WitIn))
-    (recover : ∀ (s : Stmt) (w : W) (fam : Fin k → Challenge),
-      Function.Injective fam → (∀ j, checkAt s (fam j) w) → Short w →
-        (s, project w) ∈ relIn)
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl (scalarStructure k hk)
-      (escEvent hk K checkAt) relIn (rel K checkAt)
-      (verifier (oSpec := oSpec) K) (treeExtractorClassical hk K checkAt project) :=
-  ScalarRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar init impl hk
-    (verifier K)
-    (fun _ _ => rfl) relIn (rel K checkAt) (mkWitness hk K project) (escLocal K)
-    (fun s t fam resp hbranch hinj =>
-      mkWitness_mem hk K project checkAt relIn recover s t fam resp hbranch hinj)
-
-/-- **Outgoing** bundled committed scalar phase, at the classical extractor and the `IsPure`
-class. -/
-noncomputable def packageClassical [Nonempty W] {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-    {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
-    (project : W → WitIn) (checkAt : Stmt → Challenge → W → Prop)
-    (relIn : Set (Stmt × WitIn))
-    (recover : ∀ (s : Stmt) (w : W) (fam : Fin k → Challenge),
-      Function.Injective fam → (∀ j, checkAt s (fam j) w) → Short w →
-        (s, project w) ∈ relIn)
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    EscapeCWSSPackageClassical init impl Stmt WitIn (Statement Stmt K.TCom Challenge) W
-      (pSpecScalar K.TCom Challenge) where
-  verifier := verifier K
-  struct := scalarStructure k hk
-  relIn := relIn
-  relOut := rel K checkAt
-  esc := escEvent hk K checkAt
-  isPure := (verifierPureForm K).isPure
-  extractor := treeExtractorClassical hk K checkAt project
-  isCWSS := coordinateWiseSpecialSoundWithEscapeClassical hk K project checkAt relIn recover init
-    impl
 
 end CommittedScalar
 
