@@ -124,16 +124,10 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
 of each factor. This bridges `schwartz_zippel_counting` with the probability formulation.
 
-**This is the most general probabilistic Schwartz-Zippel statement in the tree.**
-`Probability.prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`
-(`ArkLib/Data/Probability/Instances.lean`) is its `S i = Set.univ`, `m = Fintype.card R` case,
-and `Probability.prob_schwartz_zippel_mv_polynomial` in turn specialises that to `d := n`. The
-apparent generality gap (`[CommRing]`+`[IsDomain]`+`[Fintype]` there versus `[Field]` here) is
-not real — a finite `CommRing` that is a domain is a field (`Fintype.fieldOfDomain`). The two
-developments are currently proved independently; collapsing the `Instances.lean` ones onto this
-lemma is tracked as finding A1 of the review in
-`docs/kb/queries/abf26-split-pr1-review-2026-08-07/`. Add new sampling-set-generic bounds here
-rather than starting a third copy. -/
+This is the most general probabilistic Schwartz-Zippel statement in the tree.
+`prob_eval_zero_univ_le_div` below specializes it to full finite carriers, and the
+paper-shaped declarations in `ArkLib.Data.Probability.Instances` are wrappers around that
+specialization. Add new sampling-set-generic bounds here rather than starting another proof. -/
 lemma prob_eval_zero_le_div
   {F : Type} [Field F]
   {s : ℕ}
@@ -152,6 +146,33 @@ lemma prob_eval_zero_le_div
     · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl
     · rw [Fintype.card_pi]
       aesop
+
+/-- Full-carrier specialization of `prob_eval_zero_le_div`. The explicit equivalence
+between a product of `Set.univ` subtypes and the ordinary function type keeps the
+uniform-sampling transport out of downstream coding-theory statements. -/
+lemma prob_eval_zero_univ_le_div
+    {F : Type} [Field F] [Fintype F] {s d : ℕ}
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
+    Pr_{let x ←$ᵖ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card F := by
+  classical
+  let S : Fin s → Set F := fun _ => Set.univ
+  let e : (∀ i, ↑(S i)) ≃ (Fin s → F) :=
+    Equiv.piCongrRight fun _ => Equiv.Set.univ F
+  have h := prob_eval_zero_le_div (S := S) f hf d (Fintype.card F) hd
+    Fintype.card_pos (fun i => by simp [S])
+  have heval :
+      (fun x : ∀ i, ↑(S i) => MvPolynomial.eval (e x) f = 0) =
+        (fun x : ∀ i, ↑(S i) =>
+          MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0) := by
+    funext x
+    congr 2
+  rw [← ProbabilityTheory.Pr_uniform_equiv e
+    (fun x => MvPolynomial.eval x f = 0)]
+  change ((PMF.uniformOfFintype (∀ i, ↑(S i))).map
+    (fun x => MvPolynomial.eval (e x) f = 0)) True ≤ _
+  rw [heval]
+  exact h
 
 section ZeroCount
 

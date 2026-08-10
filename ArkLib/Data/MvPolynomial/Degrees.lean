@@ -119,6 +119,28 @@ theorem totalDegree_linearCombination_le
   intro j _
   exact le_trans (MvPolynomial.totalDegree_smul_le _ _) (hd j)
 
+/-- If every variable's degree in `P` is strictly less than `d`, then the total degree is at
+most the number of variables times `d - 1`. -/
+theorem totalDegree_le_of_degreeOf_lt
+    {R : Type*} [CommSemiring R] {m d : ℕ}
+    (P : MvPolynomial (Fin m) R)
+    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
+    P.totalDegree ≤ m * (d - 1) := by
+  classical
+  unfold MvPolynomial.totalDegree
+  refine Finset.sup_le fun s hs ↦ ?_
+  rw [Finsupp.sum]
+  calc s.support.sum (fun i ↦ s i)
+      ≤ ∑ i : Fin m, s i :=
+        Finset.sum_le_sum_of_subset_of_nonneg
+          (Finset.subset_univ _) (fun _ _ _ ↦ Nat.zero_le _)
+    _ ≤ ∑ _ : Fin m, (d - 1) := by
+        refine Finset.sum_le_sum fun i _ ↦ ?_
+        have h_le : s i ≤ P.degreeOf i := MvPolynomial.monomial_le_degreeOf i hs
+        exact h_le.trans (Nat.le_sub_one_of_lt (h_indiv_deg i))
+    _ = m * (d - 1) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+
 /-- The dot product `G(x) • v` equals the evaluation of the linear combination `∑ v_j P_j`
 when `G` is defined by polynomial evaluation. -/
 theorem dotProduct_eq_eval_linearCombination

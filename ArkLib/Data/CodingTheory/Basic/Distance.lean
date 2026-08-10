@@ -245,6 +245,25 @@ lemma pairDist_ge_code_mindist_of_ne {C : Set (n → R)} {u v : n → R}
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
+/-- Two codewords are equal if all coordinates on which they disagree lie in a set smaller
+than the code's minimum distance.
+
+This is the metric core of erasure-decoding uniqueness: if `T` is the set of erased
+coordinates, consistency with the received word implies `disagreementCols u v ⊆ T`. The
+statement is deliberately about an arbitrary code and an arbitrary exceptional-coordinate
+set, rather than being tied to `Option`-valued erased words or to linear codes. -/
+theorem eq_of_disagreementCols_subset_of_card_lt_minDist
+    {C : Set (n → R)} {u v : n → R} (hu : u ∈ C) (hv : v ∈ C) (T : Finset n)
+    (hsub : disagreementCols u v ⊆ T) (hcard : T.card < minDist C) :
+    u = v := by
+  by_contra hne
+  have hdist : hammingDist u v ≤ T.card := by
+    rw [hammingDist_eq_disagreementCols_card]
+    exact Finset.card_le_card hsub
+  have hmin : minDist C ≤ hammingDist u v :=
+    Nat.sInf_le ⟨u, hu, v, hv, hne, rfl⟩
+  omega
+
 @[simp]
 theorem dist_empty : ‖ (∅ : Set (n → R) ) ‖₀ = 0 := by simp [dist]
 

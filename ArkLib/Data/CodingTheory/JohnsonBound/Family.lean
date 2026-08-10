@@ -408,7 +408,7 @@ private lemma johnson_lambda_le_ell_of_radicand
   refine iSup_le fun f => ?_
   set S : Set (ι → α) := closeCodewordsRel C f radius with hS
   have hSfin : S.Finite := Set.toFinite _
-  rw [Set.ncard_eq_toFinset_card S hSfin]
+  rw [← hSfin.cast_ncard_eq, Set.ncard_eq_toFinset_card S hSfin]
   set B0 : Finset (ι → α) := hSfin.toFinset with hB0
   -- membership fact
   classical
@@ -747,9 +747,8 @@ theorem mds_johnson_lambda_le
     -- Lambda C (negative) = 0
     have hLambda0 : Lambda (C : Set (ι → F)) (1 - s - η) = 0 := by
       rw [Lambda]
-      have hall : ∀ f : ι → F,
-          ((closeCodewordsRel (C : Set (ι → F)) f (1 - s - η)).ncard : ℕ∞) = 0 := by
-        intro f
+      apply le_antisymm
+      · refine iSup_le fun f => ?_
         have hempty : closeCodewordsRel (C : Set (ι → F)) f (1 - s - η) = ∅ := by
           rw [Set.eq_empty_iff_forall_notMem]
           intro c hc
@@ -759,7 +758,7 @@ theorem mds_johnson_lambda_le
           have hcombine : (0:ℝ) ≤ 1 - s - η := le_trans (by positivity) hmem
           linarith [hcombine, hradius_neg]
         rw [hempty]; simp
-      simp [hall]
+      · exact bot_le
     have : Lambda (C : Set (ι → F)) (1 - √ρ - η) = 0 := by rw [← hs_def]; exact hLambda0
     rw [this]; simp
   · -- main case ℓ ≥ 2

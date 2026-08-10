@@ -21,10 +21,6 @@ inputs it will be combined with live in `ArkLib.Data.Probability.Instances`
 (`Probability.prob_dotProduct_eq_zero_le`,
 `Probability.prob_uniform_le_inv_of_card_le_one`).
 
-## Main definitions
-
-* `Probability.numCollsOrdered` — the number of *ordered* colliding pairs of a map.
-
 ## Main statements
 
 * `Probability.exists_large_image_of_pairwise_collision_bound` — Claim B.1 of [ABF26].
@@ -53,7 +49,7 @@ variable {S T : Type*} [Fintype S] [DecidableEq S] [DecidableEq T]
 This equals twice the number of distinct (unordered) colliding pairs;
 working ordered avoids needing a `LinearOrder S` to canonicalise unordered
 pairs. Paper's `|C_φ|` is `numCollsOrdered φ / 2`. -/
-def numCollsOrdered (φ : S → T) : ℕ :=
+private def numCollsOrdered (φ : S → T) : ℕ :=
   (Finset.univ.filter (fun p : S × S ↦ p.1 ≠ p.2 ∧ φ p.1 = φ p.2)).card
 
 /-- Sum of squared fiber-cardinalities = `|S| + numCollsOrdered`.
@@ -61,7 +57,7 @@ def numCollsOrdered (φ : S → T) : ℕ :=
 Each ordered pair `(x, y)` with `φ x = φ y` is counted once on the LHS
 (via its common image μ); the `|S|` diagonal pairs `(x, x)` and the
 `numCollsOrdered` off-diagonal pairs partition them. -/
-lemma sum_fiber_sq_eq (φ : S → T) :
+private lemma sum_fiber_sq_eq (φ : S → T) :
     ∑ μ ∈ Finset.univ.image φ,
         ((Finset.univ.filter (fun x : S ↦ φ x = μ)).card)^2 =
       Fintype.card S + numCollsOrdered φ := by
@@ -133,7 +129,7 @@ Equivalent to Mathlib's Chebyshev-style bound `sq_sum_le_card_mul_sum_sq` (which
 the *root* namespace, not in `Finset`) applied over the image of `φ`, combined with
 `sum_fiber_sq_eq` to rewrite the squared-sum side and with
 `Finset.card_eq_sum_card_image` to identify `Σ μ ∈ image, |fiber μ| = |S|`. -/
-lemma cauchy_schwarz_fiber (φ : S → T) :
+private lemma cauchy_schwarz_fiber (φ : S → T) :
     (Fintype.card S)^2 ≤
       (Finset.univ.image φ).card * (Fintype.card S + numCollsOrdered φ) := by
   classical
@@ -206,7 +202,7 @@ with `sq_sum_le_card_mul_sum_sq` (Chebyshev for `f = g`) and
 `(φ p.1 = φ p.2)`-indicators over ordered off-diagonal pairs `P`. Swapping
 the outer PMF `tsum` with the inner `Finset.sum` via
 `Summable.tsum_finsetSum` and using the hypothesis `Pr_{φ ← Φ}[φ x = φ y] ≤ ε`
-(unfolded via [`Pr_decide_eq_tsum_indicator`]) gives
+(unfolded via [`Pr_eq_tsum_indicator`]) gives
 `∑' φ, Φ φ · (numCollsOrdered φ : ENNReal) ≤ N · (N − 1) · ε`.
 
 **Step C (contradiction by strict averaging).** Assume for contradiction
@@ -220,7 +216,7 @@ theorem exists_large_image_of_pairwise_collision_bound
     {S T : Type} [Fintype S] [DecidableEq T]
     (Φ : PMF (S → T)) (ε : ENNReal)
     (hΦ : ∀ x y : S, x ≠ y →
-        Pr_{ let φ ← Φ }[(decide (φ x = φ y) : Prop)] ≤ ε) :
+        Pr_{ let φ ← Φ }[φ x = φ y] ≤ ε) :
     ∃ φ ∈ Φ.support,
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
         ((Finset.univ.image φ).card : ENNReal) := by
@@ -276,7 +272,7 @@ theorem exists_large_image_of_pairwise_collision_bound
       intro p hp
       simp only [hP_def, Finset.mem_filter, Finset.mem_univ, true_and] at hp
       have h := hΦ p.1 p.2 hp
-      rwa [Pr_decide_eq_tsum_indicator] at h
+      rwa [Pr_eq_tsum_indicator] at h
     -- Step B.4: bound termwise.
     calc ∑ p ∈ P, ∑' φ : S → T, Φ φ * (if φ p.1 = φ p.2 then (1 : ENNReal) else 0)
         ≤ ∑ _p ∈ P, ε := Finset.sum_le_sum h_inner

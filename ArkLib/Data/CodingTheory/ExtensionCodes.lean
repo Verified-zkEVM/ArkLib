@@ -460,13 +460,13 @@ theorem lambda_extensionCode_eq_lambda_interleaved
           = (Code.relHammingDist f v : ℝ) := by exact_mod_cast hrelQ f v
         _ ≤ δ := hv_ball
   have hcard : ∀ f : ι → F,
-      (closeCodewordsRel (Code.interleavedCodeSet (κ := Fin P.e) C_B) (Ψ f) δ).ncard
-        = (closeCodewordsRel (extensionCode P C_B) f δ).ncard := by
+      (closeCodewordsRel (Code.interleavedCodeSet (κ := Fin P.e) C_B) (Ψ f) δ).encard
+        = (closeCodewordsRel (extensionCode P C_B) f δ).encard := by
     intro f
-    rw [hset f, Set.ncard_image_of_injective _ Ψ.injective]
+    rw [hset f, Ψ.injective.encard_image]
   unfold Lambda
-  rw [← Equiv.iSup_comp (g := fun g => ((closeCodewordsRel
-        (Code.interleavedCodeSet (κ := Fin P.e) C_B) g δ).ncard : ℕ∞)) Ψ]
+  rw [← Equiv.iSup_comp (g := fun g => (closeCodewordsRel
+        (Code.interleavedCodeSet (κ := Fin P.e) C_B) g δ).encard) Ψ]
   apply iSup_congr
   intro f
   rw [hcard f]

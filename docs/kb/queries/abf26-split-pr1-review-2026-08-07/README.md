@@ -8,6 +8,11 @@ Start with **[`VERDICT.md`](VERDICT.md)** — the consolidated verdict, the pape
 and the prioritised fix list. The `R*.md` files are the eleven independent cluster reports it
 consolidates.
 
+For the fresh review of the current 2026-08-09 candidate and the published-PR/local-worktree
+distinction, read **[`INDEPENDENT-REVIEW-2026-08-09.md`](INDEPENDENT-REVIEW-2026-08-09.md)**.
+It is self-contained and records the new findings, compiled probes, source coverage, current-main
+merge simulation, validation results, and the re-review bar.
+
 | Report | Cluster |
 |---|---|
 | [`R1-probability.md`](R1-probability.md) | `Data/Probability/Instances.lean` namespace migration, `Notation.lean`, `Fin/Basic.lean`, the six `open Probability` consumers |
@@ -45,6 +50,7 @@ longer resolve. Notably `additive_code_supports_erasure_correction_grs12` was re
 `exists_erasure_corrector`, `Polynomial.pow_dvd_det_of_forall_mem_col_dvd` moved to
 `Matrix.pow_dvd_det_of_forall_mem_col_dvd`, and `Fin.induction_three`/`'` were deleted.
 For the current state of the tree, read
+[`VALIDATION-2026-08-09.md`](VALIDATION-2026-08-09.md),
 [`../../audits/open-problems-list-decoding-and-correlated-agreement.md`](../../audits/open-problems-list-decoding-and-correlated-agreement.md)
 and the module docstrings, not these reports.
 

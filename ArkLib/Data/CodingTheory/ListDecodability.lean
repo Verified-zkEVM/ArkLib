@@ -37,9 +37,8 @@ the `sup`-form `Lambda` (ABF26 Definition 2.8's `|Λ(C, δ)|`).
   `ℝ≥0` list sizes that the in-tree consumers and the Johnson-family bounds actually use.
 * `ListDecodable.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
   algebra of `Lambda`.
-* `ListDecodable.Lambda_eq_iSup_encard` — over a finite alphabet `Lambda` agrees with the
-  `Set.encard` formulation, which is the guard against the `Set.ncard`-on-infinite-sets trap
-  documented on `Lambda`.
+* `ListDecodable.Lambda_eq_iSup_encard` — `Lambda` unfolds to the supremum of the extended
+  cardinalities of the point lists.
 
 ## References
 
@@ -132,20 +131,12 @@ this quantisation: an extremal "largest `δ*`" is only meaningful as an integer 
 index `k*/n`, not as a real number (the ABF26 grand-challenge layer, arriving in a later
 split, pins its list challenge that way).
 
-**Warning — an infinite list collapses to `0`, not to `⊤`.** `Lambda` is built from
-`Set.ncard`, which is `Nat.card` of the coercion and hence `0` on an infinite set. The
-codomain `ℕ∞` therefore does *not* mean "`⊤` when the list is infinite": over an infinite
-alphabet the value can be `0` while the true list is infinite. Concretely
-`Lambda (Set.univ : Code (Fin 1) ℚ) 1 = 0`, so `listDecodable Set.univ 1 0` holds even
-though every one of the infinitely many words of `ℚ^1` lies in the list. This is inherited
-from `Set.ncard` and from the pre-existing `listDecodable`, and the definition is
-deliberately left as-is so that `Lambda_le_iff_listDecodable` remains an honest `↔`.
-Consequence: read `Lambda` as a list size only under `[Finite F]`, where
-`Lambda_eq_iSup_encard` shows it agrees with the `Set.encard` (`⊤`-on-infinite)
-formulation. Every list-size bound shipped in this layer carries `[Finite F]`/`[Fintype F]`;
-new ones should too. -/
+`Set.encard` is used rather than `Set.ncard`, so an infinite point list contributes `⊤`
+rather than silently collapsing to `0`. The bridges to the older real-valued
+`listDecodable` predicate require `[Finite F]`, exactly where `encard` agrees with the
+natural cardinality used by that predicate. -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
-  ⨆ f : ι → F, ((closeCodewordsRel C f δ).ncard : ℕ∞)
+  ⨆ f : ι → F, (closeCodewordsRel C f δ).encard
 
 /-- **Bridge to `listDecodable`, at a natural list size.** `Lambda` is the sup-form of the
 same notion as the ∀-form `listDecodable` above (consumed by the STIR development): for a
@@ -159,15 +150,24 @@ bound. This `ℕ`-shaped equivalence alone therefore does **not** carry those bo
 real-, `ℝ≥0`- and `ENNReal`-shaped transfers are `Lambda_le_floor_iff_listDecodable`,
 `Lambda_le_floor_iff_listDecodable_nnreal` and `listDecodable_of_toENNReal_le_ofReal`
 below. -/
-lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} :
+lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} [Finite F] :
     Lambda C δ ≤ (ℓ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) := by
-  simp only [Lambda, iSup_le_iff, Nat.cast_le, listDecodable]
+  simp only [Lambda, iSup_le_iff, listDecodable]
+  constructor
+  · intro h f
+    have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
+    exact_mod_cast (hfin.cast_ncard_eq ▸ h f)
+  · intro h f
+    have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
+    rw [← hfin.cast_ncard_eq]
+    exact_mod_cast h f
 
 /-- Each point list `Λ(C, δ, f)` is bounded by the maximised list size — the defining
 `le_iSup` of `Lambda`, exposed for the real-valued bridges below. -/
-lemma ncard_closeCodewordsRel_le_Lambda {C : Code ι F} {δ : ℝ} (f : ι → F) :
+lemma ncard_closeCodewordsRel_le_Lambda {C : Code ι F} {δ : ℝ} [Finite F] (f : ι → F) :
     ((closeCodewordsRel C f δ).ncard : ℕ∞) ≤ Lambda C δ :=
-  le_iSup (fun g : ι → F => (((closeCodewordsRel C g δ).ncard : ℕ) : ℕ∞)) f
+  (Set.toFinite (closeCodewordsRel C f δ)).cast_ncard_eq ▸
+    le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) f
 
 /-- **Bridge to `listDecodable` at a real list size.** For `0 ≤ ℓ` the maximised list size is
 at most `⌊ℓ⌋₊` iff `C` is `(δ, ℓ)`-list-decodable.
@@ -178,7 +178,8 @@ an `↔` rather than a pair of one-way implications: `Lambda` is integer-valued,
 would give only the `←` direction. The hypothesis `0 ≤ ℓ` is needed for `→` only (at `ℓ < 0`,
 `⌊ℓ⌋₊ = 0` and the conclusion `(0 : ℝ) ≤ ℓ` fails); the `←` direction is hypothesis-free and
 is available separately as `Lambda_le_floor_of_listDecodable`. -/
-lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ) :
+lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+    (hℓ : 0 ≤ ℓ) :
     Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) ↔ listDecodable C δ ℓ := by
   rw [Lambda_le_iff_listDecodable]
   refine ⟨fun h y => (h y).trans (Nat.floor_le hℓ), fun h y => ?_⟩
@@ -186,21 +187,21 @@ lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (
 
 /-- The hypothesis-free direction of `Lambda_le_floor_iff_listDecodable`: a real-valued
 list-decodability bound always floors down to a `Lambda` bound. -/
-lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
+lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
     (h : listDecodable C δ ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) :=
   Lambda_le_iff_listDecodable.2 fun y => by exact_mod_cast Nat.le_floor (h y)
 
 /-- **Bridge to `listDecodable` at an `ℝ≥0` list size** — the shape the in-tree consumers use
 (`ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean`, `ArkLib/ProofSystem/Stir/MainThm.lean` both take
 `ℓ : ℝ≥0`). No side condition, since `ℝ≥0` is nonnegative by construction. -/
-lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} :
+lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} [Finite F] :
     Lambda C δ ≤ (⌊(ℓ : ℝ)⌋₊ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) :=
   Lambda_le_floor_iff_listDecodable ℓ.coe_nonneg
 
 /-- **Monotone cast corollary.** A natural-number `Lambda` bound gives `(δ, r)`-list
 decodability for every real `r` above it. This is the form in which a `ℕ`-valued bound such as
 `JohnsonBound.johnson_bound_lambda_le_ell` reaches a real- or `ℝ≥0`-valued consumer. -/
-lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} {r : ℝ}
+lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} {r : ℝ} [Finite F]
     (h : Lambda C δ ≤ (ℓ : ℕ∞)) (hr : (ℓ : ℝ) ≤ r) : listDecodable C δ r :=
   fun y => (Lambda_le_iff_listDecodable.1 h y).trans hr
 
@@ -209,22 +210,43 @@ bounds (e.g. `JohnsonBound.mds_johnson_lambda_le`, which concludes
 `(Lambda C δ : ENNReal) ≤ ENNReal.ofReal b`). Floors the real bound down to a `Lambda` bound.
 
 `0 ≤ ℓ` is required: `ENNReal.ofReal` clamps negative reals to `0`. -/
-lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ)
+lemma Lambda_le_floor_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+    (hℓ : 0 ≤ ℓ)
     (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) := by
   refine iSup_le fun f => ?_
-  have h1 : ((((closeCodewordsRel C f δ).ncard : ℕ) : ℕ∞) : ENNReal) ≤ ENNReal.ofReal ℓ :=
-    le_trans (by exact_mod_cast ncard_closeCodewordsRel_le_Lambda (C := C) (δ := δ) f) h
+  have hpoint : (closeCodewordsRel C f δ).encard ≤ Lambda C δ :=
+    le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) f
+  have hpoint' : ((closeCodewordsRel C f δ).encard : ENNReal) ≤ (Lambda C δ : ENNReal) := by
+    exact_mod_cast hpoint
+  have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
+  have hnatcast (n : ℕ) : ((n : ℕ∞) : ENNReal) = ENNReal.ofReal (n : ℝ) := by
+    rw [ENNReal.ofReal_natCast]
+    rfl
+  have hcast : ((closeCodewordsRel C f δ).encard : ENNReal) =
+      ENNReal.ofReal (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) := by
+    calc
+      ((closeCodewordsRel C f δ).encard : ENNReal) =
+          ((((closeCodewordsRel C f δ).ncard : ℕ) : ℕ∞) : ENNReal) :=
+        congrArg (fun x : ℕ∞ => (x : ENNReal)) hfin.cast_ncard_eq.symm
+      _ = ENNReal.ofReal (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) :=
+        hnatcast (closeCodewordsRel C f δ).ncard
+  have h1 : ENNReal.ofReal (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) ≤
+      ENNReal.ofReal ℓ := by
+    rw [← hcast]
+    exact hpoint'.trans h
   have h2 : (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) ≤ ℓ := by
-    rw [show ((((closeCodewordsRel C f δ).ncard : ℕ) : ℕ∞) : ENNReal)
-        = ENNReal.ofReal (((closeCodewordsRel C f δ).ncard : ℕ) : ℝ) by simp] at h1
     exact (ENNReal.ofReal_le_ofReal_iff hℓ).mp h1
-  exact_mod_cast Nat.le_floor h2
+  calc
+    (closeCodewordsRel C f δ).encard =
+        ((closeCodewordsRel C f δ).ncard : ℕ∞) := hfin.cast_ncard_eq.symm
+    _ ≤ (⌊ℓ⌋₊ : ℕ∞) := by exact_mod_cast Nat.le_floor h2
 
 /-- **The `ENNReal`-to-`listDecodable` transfer.** Composes
 `Lambda_le_floor_of_toENNReal_le_ofReal` with `Lambda_le_floor_iff_listDecodable`, so an
 `ENNReal.ofReal` Johnson-style bound on `Lambda` directly yields `listDecodable` at the same
 real radius and list size. -/
-lemma listDecodable_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} (hℓ : 0 ≤ ℓ)
+lemma listDecodable_of_toENNReal_le_ofReal {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+    (hℓ : 0 ≤ ℓ)
     (h : (Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ) : listDecodable C δ ℓ :=
   (Lambda_le_floor_iff_listDecodable hℓ).1 (Lambda_le_floor_of_toENNReal_le_ofReal hℓ h)
 
@@ -236,11 +258,10 @@ lemma closeCodewordsRel_subset_of_le {C : Code ι F} {δ₁ δ₂ : ℝ}
   exact ⟨hc.1, le_trans hc.2 h⟩
 
 /-- `Lambda` is monotone in the radius. -/
-lemma Lambda_mono {C : Code ι F} {δ₁ δ₂ : ℝ} [Finite F] (h : δ₁ ≤ δ₂) :
+lemma Lambda_mono {C : Code ι F} {δ₁ δ₂ : ℝ} (h : δ₁ ≤ δ₂) :
     Lambda C δ₁ ≤ Lambda C δ₂ := by
   refine iSup_mono fun f => ?_
-  have hfin : (closeCodewordsRel C f δ₂).Finite := Set.toFinite _
-  exact_mod_cast Set.ncard_le_ncard (closeCodewordsRel_subset_of_le h f) hfin
+  exact Set.encard_mono (closeCodewordsRel_subset_of_le h f)
 
 /-- Any element of `Λ(C, δ, f) = closeCodewordsRel C f δ` is a codeword of `C`. -/
 lemma closeCodewordsRel_subset_code {C : Code ι F} (δ : ℝ) (f : ι → F) :
@@ -255,7 +276,10 @@ lemma ncard_closeCodewordsRel_le_ncard {C : Code ι F} (δ : ℝ) (f : ι → F)
 lemma Lambda_le_ncard {C : Code ι F} (δ : ℝ) (hC : C.Finite) :
     Lambda C δ ≤ (C.ncard : ℕ∞) := by
   refine iSup_le fun f => ?_
-  exact_mod_cast ncard_closeCodewordsRel_le_ncard δ f hC
+  calc
+    (closeCodewordsRel C f δ).encard ≤ C.encard :=
+      Set.encard_mono (closeCodewordsRel_subset_code δ f)
+    _ = (C.ncard : ℕ∞) := hC.cast_ncard_eq.symm
 
 /-- `|Λ(C, δ)| ≤ |F^ι|`: each point list is a set of words, so the maximised
 list size is bounded by the total number of words. Stated with `Nat.card`
@@ -263,8 +287,11 @@ under `[Finite F]` (no `Fintype (ι → F)` instance needed). -/
 lemma Lambda_le_card {C : Code ι F} [Finite F] (δ : ℝ) :
     Lambda C δ ≤ (Nat.card (ι → F) : ℕ∞) := by
   refine iSup_le fun f => ?_
-  exact_mod_cast (Set.ncard_le_ncard (Set.subset_univ _) Set.finite_univ).trans_eq
-    (Set.ncard_univ _)
+  calc
+    (closeCodewordsRel C f δ).encard ≤ (Set.univ : Set (ι → F)).encard :=
+      Set.encard_mono (Set.subset_univ _)
+    _ = ((Set.univ : Set (ι → F)).ncard : ℕ∞) := Set.finite_univ.cast_ncard_eq.symm
+    _ = (Nat.card (ι → F) : ℕ∞) := by rw [Set.ncard_univ]
 
 /-- `|Λ(C, δ)|` is **finite** over a finite alphabet: it is bounded by `|F^ι|`, so it never
 reaches `⊤`. Intended for consumers that need to move `Lambda` into `ℕ` via `ENat.toNat`,
@@ -273,14 +300,10 @@ lemma Lambda_ne_top {C : Code ι F} [Finite F] (δ : ℝ) :
     Lambda C δ ≠ ⊤ :=
   ne_top_of_le_ne_top (by simp) (Lambda_le_card δ)
 
-/-- **Guard against the `Set.ncard`-on-infinite-sets trap documented on `Lambda`.** Over a
-finite alphabet every point list is finite, so `Lambda` — defined with `Set.ncard`, which is
-`0` on infinite sets — agrees with the `Set.encard` formulation, which is `⊤` on infinite
-sets. In other words the trap is inert exactly under `[Finite F]`, which is why every
-list-size bound in this layer carries that instance. -/
-lemma Lambda_eq_iSup_encard {C : Code ι F} [Finite F] (δ : ℝ) :
+/-- Unfold `Lambda` as the supremum of the extended cardinalities of its point lists. -/
+lemma Lambda_eq_iSup_encard {C : Code ι F} (δ : ℝ) :
     Lambda C δ = ⨆ f : ι → F, (closeCodewordsRel C f δ).encard :=
-  iSup_congr fun _ => (Set.toFinite _).cast_ncard_eq
+  rfl
 
 end Lambda
 

@@ -6,6 +6,8 @@ Authors: Quang Dao, Chung Thai Nguyen, Katerina Hristova
 
 import Mathlib.Probability.ProbabilityMassFunction.Monad
 import ArkLib.Data.Probability.Notation
+import ArkLib.Data.MvPolynomial.Degrees
+import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
@@ -47,16 +49,8 @@ section ProbabilityTools
 /-- Unrolls `Pr_{ let x ← D }[P x]` into a sum of the form
 `∑' x, Pr[x] * (if P x then 1 else 0)`. -/
 theorem prob_tsum_form_singleton {α : Type} (D : PMF α) (P : α → Prop) [DecidablePred P] :
-    Pr_{ let x ← D }[P x] = ∑' x, (D x) * (if P x then 1 else 0) := by
-  -- Expand Pr_ using the same approach as Notation.lean
-  simp only [Bind.bind, PMF.bind, pure, PMF.pure_apply, eq_iff_iff, mul_ite, mul_one, mul_zero]
-  simp only [DFunLike.coe]
-  have h: ∀ a: α, (True = P a) = (P a) := fun a => by
-    if h_P_a: P a then
-      simp only [h_P_a]
-    else
-      simp only [h_P_a, eq_iff_iff, iff_false, not_true_eq_false]
-  simp_rw [h]
+    Pr_{ let x ← D }[P x] = ∑' x, (D x) * (if P x then 1 else 0) :=
+  ProbabilityTheory.Pr_eq_tsum_indicator D P
 
 theorem prob_tsum_form_split_first {α : Type} (D : PMF α) (D_rest : α → PMF Prop) :
     (do let x ← D; D_rest x) True = ∑' x, (D x) * (D_rest x True) := by
@@ -548,24 +542,11 @@ the probability that `P(r)` evaluates to `0` for `r ←$ R^n` uniformly is at mo
 
 The legacy specialisation (`d := n`) is `prob_schwartz_zippel_mv_polynomial`.
 
-## Relation to `prob_eval_zero_le_div`
-
-**ArkLib already carries a strictly more general probabilistic Schwartz-Zippel:**
-`prob_eval_zero_le_div` in `ArkLib.Data.MvPolynomial.SchwartzZippelCounting`. It samples
-each coordinate from an arbitrary set `S i ⊆ F` with `m ≤ |S i|` and bounds the probability
-by `d / m`; this lemma is its `S i = Set.univ`, `m = |R|` special case. The typeclass
-difference is *not* real generality either: a finite `CommRing` with `IsDomain` is a field
-(`Fintype.fieldOfDomain`), so `[CommRing R] [IsDomain R] [Fintype R]` here and `[Field F]`
-there describe the same carriers.
-
-The two statements are kept separate only because the sampling *types* differ
-(`Fin n → R` here versus `∀ i, ↥(S i)` there), so neither is a literal instance of the
-other; bridging them needs a `Set.univ` transport of the uniform distribution. Anyone
-adding to either API should look at the other one first, and a follow-up should collapse
-them into a single statement (tracked as finding A1 of the 2026-08-07 review of PR #701).
-Note also that Mathlib's `MvPolynomial.schwartz_zippel_sum_degreeOf` gives the tighter
-`∑ i, degreeOf i / #(S i)`, which beats routing an individual-degree hypothesis through
-`totalDegree` as `prob_polynomial_identity_le` below does. -/
+This is the full-carrier wrapper around the sampling-set-generic
+`prob_eval_zero_univ_le_div` in `ArkLib.Data.MvPolynomial.SchwartzZippelCounting`.
+The finite-domain typeclasses are converted to a field by `Fintype.fieldOfDomain`.
+Mathlib's `MvPolynomial.schwartz_zippel_sum_degreeOf` can give a tighter coordinatewise
+bound when that statement shape is needed. -/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {n d : ℕ}
@@ -573,35 +554,8 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
       (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
   classical
-  rw [prob_uniform_eq_card_filter_div_card]
-  push_cast
-  have sz_bound := MvPolynomial.schwartz_zippel_totalDegree (R := R) (n := n)
-    (p := P) (hp := h_nonzero) (S := Finset.univ)
-  simp only [Fintype.piFinset_univ, card_univ] at sz_bound
-  have sz_bound_le_d_div_card_R : ((#{f | (MvPolynomial.eval f) P = 0}) : ℚ≥0)
-    / ((Fintype.card R ^ n)) ≤ (d : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := by
-    calc
-      _ ≤ (P.totalDegree : ℚ≥0) / ((#(Finset.univ : Finset R)) : ℚ≥0) := sz_bound
-      _ ≤ _ := by
-        simp only [card_univ]
-        apply div_le_of_le_mul₀ (hb := by simp only [zero_le]) (hc := by simp only [zero_le])
-        rw [div_mul_cancel₀ (h := by simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero,
-          not_false_eq_true])]
-        exact Nat.cast_le.mpr h_deg
-  have sz_bound_ENNReal : ((#{f | (MvPolynomial.eval f) P = 0}) : ENNReal)
-    / ((Fintype.card R ^ n) : ℕ) ≤ (d : ENNReal) / (Fintype.card R : ENNReal) := by
-    simp_rw [ENNReal.coe_Nat_coe_NNRat]
-    conv_lhs => rw [ENNReal.coe_div_of_NNRat (hb := by
-      simp only [Nat.cast_pow, ne_eq, pow_eq_zero_iff', Nat.cast_eq_zero, Fintype.card_ne_zero,
-        false_and, not_false_eq_true])]
-    conv_rhs => rw [ENNReal.coe_div_of_NNRat (hb := by simp only [ne_eq, Nat.cast_eq_zero,
-      Fintype.card_ne_zero, not_false_eq_true])]
-    rw [ENNReal.coe_le_of_NNRat]
-    simp only [Nat.cast_pow]
-    exact sz_bound_le_d_div_card_R
-  simp only [Fintype.card_pi, prod_const, card_univ, Fintype.card_fin, Nat.cast_pow, ge_iff_le]
-  rw [Nat.cast_pow] at sz_bound_ENNReal
-  exact sz_bound_ENNReal
+  letI : Field R := Fintype.fieldOfDomain R
+  exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
 /-- **Schwartz-Zippel Lemma** (Probability Form):
 For a non-zero multivariate polynomial `P` of total degree at most `n` over a finite field `R`,
@@ -615,37 +569,6 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
       (n : ℝ≥0) / (Fintype.card R : ℝ≥0) :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
-/-- **Helper for the individual-degree-bounded Schwartz-Zippel.**
-If every variable's degree in `P` is `< d`, then `P.totalDegree ≤ m * (d - 1)`.
-
-**Placement.** This is a Mathlib-generic `MvPolynomial` fact with no probabilistic content
-and does not belong in this file. Concrete intended target: a Mathlib PR adding it to
-`Mathlib/Algebra/MvPolynomial/Degrees.lean` next to `degreeOf_le_totalDegree`, which is the
-converse direction. Until that PR lands, its in-repo home is
-`ArkLib/Data/MvPolynomial/Degrees.lean`; it sits here only because
-`prob_polynomial_identity_le` below is its sole consumer, and moving it is deferred to the
-follow-up that also relocates the other Mathlib-generic strays flagged by the 2026-08-07
-review of PR #701 (finding A8). -/
-lemma _root_.MvPolynomial.totalDegree_le_of_degreeOf_lt
-    {R : Type*} [CommSemiring R] {m d : ℕ}
-    (P : MvPolynomial (Fin m) R)
-    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
-    P.totalDegree ≤ m * (d - 1) := by
-  classical
-  unfold MvPolynomial.totalDegree
-  refine Finset.sup_le fun s hs ↦ ?_
-  rw [Finsupp.sum]
-  calc s.support.sum (fun i ↦ s i)
-      ≤ ∑ i : Fin m, s i :=
-        Finset.sum_le_sum_of_subset_of_nonneg
-          (Finset.subset_univ _) (fun _ _ _ ↦ Nat.zero_le _)
-    _ ≤ ∑ _ : Fin m, (d - 1) := by
-        refine Finset.sum_le_sum fun i _ ↦ ?_
-        have h_le : s i ≤ P.degreeOf i := MvPolynomial.monomial_le_degreeOf i hs
-        exact h_le.trans (Nat.le_sub_one_of_lt (h_indiv_deg i))
-    _ = m * (d - 1) := by
-        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
-
 /-- **Polynomial identity lemma in paper-individual-degree shape** (ABF26 L2.1).
 
 For a non-zero `m`-variate polynomial `P` of *individual* degree `< d` in each variable
@@ -654,7 +577,7 @@ For a non-zero `m`-variate polynomial `P` of *individual* degree `< d` in each v
   `Pr_{r ←$ᵖ F^m} [P(r) = 0] ≤ m · (d - 1) / |F|`.
 
 Wrapper around `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` via the
-`totalDegree_le_of_degreeOf_lt` helper above.
+`MvPolynomial.totalDegree_le_of_degreeOf_lt` from `ArkLib.Data.MvPolynomial.Degrees`.
 
 The `d = 0` corner splits on `m`: for `m ≥ 1` the hypothesis
 `h_indiv_deg : ∀ i, P.degreeOf i < 0` is unsatisfiable in `ℕ`, so there is nothing to

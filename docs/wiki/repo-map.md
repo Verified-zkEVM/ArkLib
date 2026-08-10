@@ -181,14 +181,16 @@ home_page/            site assets and assembled website root
 - The ABF26 generic coding-theory layer sits in `ArkLib/Data/CodingTheory/` under the
   `CodingTheory` namespace: `SubspaceDesign.lean` (`IsSubspaceDesign` and the folded-RS
   subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
-  codes), `Erasure.lean` (`SupportsErasureCorrection`), `HammingBallVolume.lean`,
+  codes), `Erasure.lean` (erasure-consistency uniqueness below minimum distance),
+  `HammingBallVolume.lean`,
   `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
-  `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`. That file also
-  currently carries a generic `Matrix` determinant-divisibility lemma and a Kummer-type
-  irreducibility result; both are flagged there as `ToMathlib` candidates.
+  `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`. Its generic
+  determinant-divisibility and finite-field Kummer dependencies live in
+  `ArkLib/ToMathlib/LinearAlgebra/Matrix/Determinant.lean` and
+  `ArkLib/ToMathlib/FieldTheory/Kummer.lean`.
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random

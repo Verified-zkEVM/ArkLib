@@ -154,15 +154,14 @@ downstream proof becomes hard to read because of this choice.
 | Paper-style real-valued bounds | `ℝ` (then wrapped) | RHS of capacity-bound theorems, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | (**next split**) `epsCA`, `epsMCA`, `epsPG` |
 | Probabilities | `ENNReal` | `Pr_{...}[...]` notation |
-| List sizes | `ℕ∞` (then cast to `ENNReal` for bounds) | `Lambda`, `closeCodewordsRel`'s `.ncard` |
-
-Note on `Lambda`: it is built from `Set.ncard`, which sends infinite sets to `0`
-rather than `⊤`. Every list-size bound shipped here therefore carries a finiteness
-instance on the alphabet; `Lambda_ne_top` states the consequence. Do not read
-`Lambda C δ = 0` as "no close codewords" without a finiteness hypothesis in scope.
+| List sizes | `ℕ∞` (then cast to `ENNReal` for bounds) | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | Polynomial degree-bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
 | Linear code carrier | `Submodule F (ι → A) = ModuleCode ι F A` | `ReedSolomon.code`, `Interleaved.irsCode`, `Folded.frsCode`, `extensionCodeSubmodule` |
 | Non-linear code carrier | `Set (ι → A) = Code ι A` | `extensionCode` (the `Set` form; `extensionCodeSubmodule` is its `Submodule` counterpart), theorems over arbitrary alphabets |
+
+Note on `Lambda`: it is built from `Set.encard`, so an infinite point list contributes `⊤`.
+Bridges to the older `Set.ncard`-based `listDecodable` predicate and finite numeric bounds carry
+the necessary finiteness hypotheses; `Lambda_ne_top` records the finite-alphabet consequence.
 
 ### Coercion conventions
 
@@ -207,7 +206,9 @@ The ABF26 material follows this namespace layout:
 
 - `CodingTheory.*` for non-RS-specific definitions and predicates
   (`qEntropy`, `IsSubspaceDesign`, `ExtensionFieldPresentation`, `extensionCode`,
-  `SupportsErasureCorrection`, `hammingBallVolume`; next split `LineDecodable`).
+  `hammingBallVolume`; next split `LineDecodable`). The substantive erasure result is the
+  metric uniqueness theorem `CodingTheory.eq_of_consistent_with_erased`; ArkLib does not expose
+  a cost-free “supports erasure correction” predicate because it would be vacuous.
   **Note the pre-existing exceptions**: MDS-ness is `LinearCode.IsMDS`
   (in `Basic/LinearCode.lean`), the distance and list primitives live in
   `Code.*` / `ListDecodable.*`, and the Johnson functions live in

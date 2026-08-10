@@ -6,6 +6,8 @@ Authors: Alexander Hicks
 
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.Polynomial.FoldedWronskian
+import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 
 /-!
 # Subspace-design codes (ABF26 §2.5)
@@ -36,10 +38,9 @@ statement is false; the counterexamples are recorded in the declaration docstrin
 cross-referenced to `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`
 and `docs/kb/queries/abf26-split-pr1-review-2026-08-07/`.
 
-Three auxiliary results here are generic linear algebra / polynomial facts with no
-coding-theory content — `sum_rootMultiplicity_le_natDegree`, `finrank_eq_of_map_eq`,
-`exists_adapted_basis`. They are stated publicly rather than `private` because they are
-reusable, and are intended to move to `ArkLib/ToMathlib/` once a home is chosen.
+The generic determinant, root-multiplicity, and finite-dimensional helpers used by the proof
+live in `ArkLib/ToMathlib/`; this module contains only the coding-theory construction and its
+Wronskian-specific bridge lemmas.
 
 ## Deferred
 
@@ -306,80 +307,6 @@ theorem subspaceDesign_tau_lower
     exact le_trans hb (hτ_nonneg r)
   · exact subspaceDesign_tau_lower_of_ne_bot s τ C h_design hs hCne r hr1
 
-/-- **Root multiplicities at finitely many points are bounded by the degree.** Packing, for
-each `a ∈ S`, `rootMultiplicity a W` copies of `a` into a multiset gives a sub-multiset of
-`W.roots` (the points of `S` are distinct), whose cardinality is at most `natDegree W`.
-
-Generic (no coding theory); intended home is `ArkLib/ToMathlib/Polynomial/`. Verified absent
-from Mathlib. -/
-lemma sum_rootMultiplicity_le_natDegree {F : Type*} [Field F]
-    {W : Polynomial F} (S : Finset F) :
-    ∑ a ∈ S, W.rootMultiplicity a ≤ W.natDegree := by
-  classical
-  have hle : (∑ a ∈ S, Multiset.replicate (W.rootMultiplicity a) a) ≤ W.roots := by
-    rw [Multiset.le_iff_count]
-    intro b
-    rw [Multiset.count_sum', Polynomial.count_roots]
-    calc ∑ a ∈ S, Multiset.count b (Multiset.replicate (W.rootMultiplicity a) a)
-        = ∑ a ∈ S, (if a = b then W.rootMultiplicity a else 0) :=
-          Finset.sum_congr rfl fun a _ => by rw [Multiset.count_replicate]
-      _ ≤ W.rootMultiplicity b := by
-          rw [Finset.sum_ite_eq' S b]
-          split <;> simp
-  have hcard := Multiset.card_le_card hle
-  rw [Multiset.card_sum] at hcard
-  simp only [Multiset.card_replicate] at hcard
-  exact hcard.trans (Polynomial.card_roots' W)
-
-/-- **Dimension transfer along an injective-on-`B` linear map.** If `f` is injective on the
-submodule `B` and maps it onto `A`, then `B` and `A` have the same dimension. This is the
-bookkeeping behind the message-side lift of a subspace of an FRS code.
-
-Generic (no coding theory); intended home is `ArkLib/ToMathlib/`. For the special case
-`f = p.subtype` use Mathlib's `Submodule.finrank_map_subtype_eq` instead; this lemma is for
-maps that are injective only on `B`, such as an encoder restricted to low-degree
-polynomials. -/
-lemma finrank_eq_of_map_eq {F M N : Type*} [Field F] [AddCommGroup M] [Module F M]
-    [AddCommGroup N] [Module F N] (f : M →ₗ[F] N) (B : Submodule F M) (A : Submodule F N)
-    (hinj : ∀ p ∈ B, f p = 0 → p = 0) (hmap : B.map f = A) :
-    Module.finrank F B = Module.finrank F A := by
-  have hg : Function.Injective (f.domRestrict B) := by
-    rw [← LinearMap.ker_eq_bot]
-    ext p
-    simp only [LinearMap.mem_ker, LinearMap.domRestrict_apply, Submodule.mem_bot]
-    exact ⟨fun h => Subtype.ext (hinj p.1 p.2 h), fun h => by rw [h]; simp⟩
-  rw [← LinearMap.finrank_range_of_inj hg, LinearMap.range_domRestrict, hmap]
-
-/-- **A basis adapted to a subspace.** Any finite-dimensional space `M` of dimension `σ` has a
-basis indexed by `Fin σ` whose first `dim N` vectors lie in a prescribed subspace `N`; obtained
-by splitting `M` along a complement of `N`.
-
-Generic (no coding theory); intended home is `ArkLib/ToMathlib/`. Verified absent from
-Mathlib, which has the ingredients (`Submodule.exists_isCompl`, `Module.Basis.prod`,
-`Submodule.prodEquivOfIsCompl`) but not the packaged statement. -/
-lemma exists_adapted_basis {F M : Type*} [Field F] [AddCommGroup M] [Module F M]
-    [FiniteDimensional F M] (N : Submodule F M) {σ : ℕ} (hσ : Module.finrank F M = σ) :
-    ∃ b : Module.Basis (Fin σ) F M,
-      ∀ j : Fin σ, (j : ℕ) < Module.finrank F N → b j ∈ N := by
-  classical
-  obtain ⟨K, hK⟩ := N.exists_isCompl
-  set t := Module.finrank F N with ht
-  set u := Module.finrank F K with hu
-  have htu : t + u = σ := by rw [ht, hu, Submodule.finrank_add_eq_of_isCompl hK, hσ]
-  set b0 : Module.Basis (Fin t ⊕ Fin u) F M :=
-    ((Module.finBasis F N).prod (Module.finBasis F K)).map (N.prodEquivOfIsCompl K hK) with hb0
-  set e : Fin t ⊕ Fin u ≃ Fin σ := finSumFinEquiv.trans (finCongr htu) with he
-  refine ⟨b0.reindex e, fun j hj => ?_⟩
-  have hsymm : e.symm j = Sum.inl ⟨(j : ℕ), hj⟩ := by
-    rw [Equiv.symm_apply_eq, he]
-    simp [finSumFinEquiv_apply_left]
-  rw [Module.Basis.reindex_apply, hsymm, hb0]
-  simp only [Module.Basis.map_apply]
-  rw [Submodule.coe_prodEquivOfIsCompl', Module.Basis.prod_apply_inl_snd]
-  simp only [ZeroMemClass.coe_zero, add_zero]
-  rw [Module.Basis.prod_apply_inl_fst]
-  exact ((Module.finBasis F N) ⟨(j : ℕ), hj⟩).2
-
 /-- **Base change for the folded Wronskian.** Replacing the polynomials by `F`-linear
 combinations multiplies the folded Wronskian by the (constant) determinant of the coefficient
 matrix: the folded Wronskian matrix gets right-multiplied by the constant matrix `C U`. -/
@@ -426,7 +353,7 @@ private lemma pow_dvd_foldedWronskian {F : Type*} [Field F] {σ : ℕ} {ω : F}
     exact ⟨by rintro ⟨y, hy, hyx, rfl⟩; exact hyx, fun hx => ⟨x, hN hx, hx, rfl⟩⟩
   have hrkN' : Module.finrank F N' = Module.finrank F N := by
     rw [← hmap, Submodule.finrank_map_subtype_eq]
-  obtain ⟨cb, hcb⟩ := exists_adapted_basis N' hrkB
+  obtain ⟨cb, hcb⟩ := N'.exists_adapted_basis hrkB
   set t := Module.finrank F N with htdef
   have hts : t ≤ σ := by
     rw [← hrkN', ← hrkB]
@@ -701,7 +628,8 @@ theorem frs_is_subspaceDesign_gk16
       exact ⟨p, (hBmem p).mpr ⟨hp, by rw [hpa]; exact ha⟩, hpa⟩
   have hrkB : Module.finrank F ↥B = σ := by
     rw [hσdef]
-    exact finrank_eq_of_map_eq enc B A (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
+    exact LinearMap.finrank_eq_of_map_eq enc B A
+      (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
   haveI : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
     FiniteDimensional.of_injective (Polynomial.degreeLTEquiv F k).toLinearMap
       (Polynomial.degreeLTEquiv F k).injective
@@ -752,7 +680,7 @@ theorem frs_is_subspaceDesign_gk16
       exact ⟨p, Submodule.mem_inf.mpr ⟨hpB, Submodule.mem_comap.mpr (by rw [hpa]; exact hak)⟩, hpa⟩
   have hNrk : ∀ i : ι, Module.finrank F ↥(N i) = Module.finrank F ↥(A ⊓
       (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i))) :=
-    fun i => finrank_eq_of_map_eq enc (N i) _
+    fun i => LinearMap.finrank_eq_of_map_eq enc (N i) _
       (fun p hp h0 => hker p ((hBmem p).mp ((hNmem i p).mp hp).1).1 h0) (hNmap i)
   -- Each block contributes a root of multiplicity `≥ dim` at each of `s − σ + 1` points.
   have hmult : ∀ (i : ι) (m : ℕ), m < s - σ + 1 →
@@ -795,7 +723,7 @@ theorem frs_is_subspaceDesign_gk16
       _ = ∑ a ∈ T.image (fun x : ι × ℕ => domain x.1 * ω ^ x.2), W.rootMultiplicity a :=
           (Finset.sum_image (f := fun a : F => W.rootMultiplicity a)
             (g := fun x : ι × ℕ => domain x.1 * ω ^ x.2) (s := T) hfinj).symm
-      _ ≤ W.natDegree := sum_rootMultiplicity_le_natDegree _
+      _ ≤ W.natDegree := Polynomial.sum_rootMultiplicity_le_natDegree _
   have hprod : ∑ x ∈ T, Module.finrank F ↥(A ⊓
       (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) x.1))) =
       (s - σ + 1) * ∑ i : ι, Module.finrank F ↥(A ⊓

@@ -77,23 +77,54 @@ scoped macro_rules (kind := prStx)
   | `(Pr_{$items*}[$t]) => `((((do $items:doSeqItem*
                                      return $t:term) True) : ENNReal))
 
-/-- Unfold `Pr_{ let a ← p }[(decide (P a) : Prop)]` as the standard
-indicator-weighted PMF tsum.
+/-- Unfold a single-sample event as the standard indicator-weighted PMF `tsum`.
 
-`Probability.prob_tsum_form_singleton` (in `ArkLib.Data.Probability.Instances`) is the
-same unfolding for a plain `Prop`-valued event, and this lemma *could* be derived from it
-in two lines; it is not, because the import runs the other way — `Instances.lean` imports
-this file, so nothing here may refer to it. It is re-proved from scratch so that
-`ArkLib.Data.Probability.Combinatorial`, which imports only this module, can use it
-without pulling in `Instances.lean`. The extra step over
-`prob_tsum_form_singleton` is peeling off the `Bool ↪ Prop` coercion via
-`decide_eq_true_iff`. -/
+This primitive lives with the notation so that light-weight probability modules do not
+need to import the larger `Instances` module merely to unfold `Pr`. -/
+lemma Pr_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
+    [DecidablePred P] :
+    Pr_{ let a ← p }[P a] =
+      ∑' a, p a * (if P a then (1 : ENNReal) else 0) := by
+  simp only [Bind.bind, Pure.pure, PMF.bind, PMF.pure, DFunLike.coe,
+    eq_iff_iff, true_iff]
+
+/-- Compatibility form of `Pr_eq_tsum_indicator` for an event explicitly wrapped in
+`decide`. Prefer the plain-`Prop` theorem in new statements. -/
 lemma Pr_decide_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
     [DecidablePred P] :
     Pr_{ let a ← p }[(decide (P a) : Prop)] =
       ∑' a, p a * (if P a then (1 : ENNReal) else 0) := by
-  simp only [Bind.bind, Pure.pure, PMF.bind, PMF.pure, DFunLike.coe,
-    eq_iff_iff, true_iff, decide_eq_true_iff]
+  simpa only [decide_eq_true_eq] using Pr_eq_tsum_indicator p P
+
+/-- Uniform probability is invariant under an equivalence of finite sample spaces. -/
+lemma Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α]
+    [Fintype β] [Nonempty β] (e : α ≃ β) (P : β → Prop) :
+    Pr_{let a ← $ᵖ α}[P (e a)] = Pr_{let b ← $ᵖ β}[P b] := by
+  classical
+  have hmap : (PMF.uniformOfFintype α).map e = PMF.uniformOfFintype β := by
+    ext b
+    simp only [PMF.map_apply, PMF.uniformOfFintype_apply,
+      Fintype.card_congr e, tsum_fintype]
+    have hs :
+        Finset.univ.sum (fun a : α =>
+            if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0) =
+          Finset.univ.sum (fun b' : β =>
+            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) := by
+      simpa using
+        (Fintype.sum_equiv e
+          (fun a : α => if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
+          (fun b' : β => if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0)
+          (by intro a; rfl))
+    exact hs.trans (by simp)
+  change
+    (PMF.uniformOfFintype α).map (P ∘ e) True =
+      (PMF.uniformOfFintype β).map P True
+  have hcomp :
+      (PMF.uniformOfFintype α).map (P ∘ e) =
+        ((PMF.uniformOfFintype α).map e).map P := by
+    simpa [Function.comp] using
+      (PMF.map_comp (p := PMF.uniformOfFintype α) (f := e) (g := P)).symm
+  exact congrArg (fun q : PMF Prop => q True) (hcomp.trans (by rw [hmap]))
 
 end ProbabilityTheory
 

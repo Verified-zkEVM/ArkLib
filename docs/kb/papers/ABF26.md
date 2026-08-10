@@ -63,9 +63,10 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size corollary) →
   `CodingTheory.mds_johnson_lambda_le`; the Plotkin regime →
   `CodingTheory.plotkin_card_le_ell`.
-- **§6 erasure correction.** Definition 6.4 / Lemma 6.5 →
-  `CodingTheory.SupportsErasureCorrection` and
-  `CodingTheory.exists_erasure_corrector` (existence half only; the cost bound is not formalized).
+- **§6 erasure correction.** The metric uniqueness core used by Definition 6.4 / Lemma 6.5 →
+  `CodingTheory.eq_of_consistent_with_erased`. The paper's algorithm and operation bound are not
+  formalized; ArkLib deliberately does not replace them with an unrestricted existential over
+  functions, which would be tautological.
 - **Appendix A.2 multiplicity codes.** Definitions A.6 / A.7 (after `GW13`, `KSY14`) →
   `ReedSolomon.Multiplicity.umEvalOnPoints` / `umCode`.
 - **Appendix B counting.** Claim B.1 →
@@ -154,8 +155,6 @@ Directions in which ArkLib is *weaker* than the paper (all deliberate, none unso
   since `dim A ≤ 0` forces `A = ⊥` and the design inequality degenerates, leaving `τ 0`
   unconstrained. It also adds `hτ_nonneg`, needed only to carry the `C = ⊥` branch; the
   source-shaped `C ≠ ⊥` form is `subspaceDesign_tau_lower_of_ne_bot`.
-- `johnson_bound_lambda_le_ell` carries an extra radicand guard that ABF26 T3.2 does not; see
-  [`Joh62.md`](Joh62.md).
 - `mds_johnson_lambda_le` (C3.3) is stated for field-alphabet linear codes only, so it does not
   cover interleaved Reed–Solomon — the class the paper's C3.3 preamble singles out.
 - D2.19/D2.20 are modelled at the level of the *code image* (`Set (ι → F)`), not the encoder
@@ -163,23 +162,20 @@ Directions in which ArkLib is *weaker* than the paper (all deliberate, none unso
   `C_F(ψ(v)) = ψ(C_B(v))` is not expressible as stated. Since the 2026-08-07 fix sweep,
   `IsSystematic` is consumed by the coordinate-level statements in `ExtensionCodes.lean`
   (`hP : P.IsSystematic` hypotheses), which capture the image-level content of that identity.
-- `SupportsErasureCorrection` drops the corrector's running time, which is the whole content of
-  D6.4/L6.5. What remains is an existence statement provable for every code with no hypotheses.
+- D6.4/L6.5's algorithm and running-time claim are absent. Only their reusable metric uniqueness
+  ingredient is present; no vacuous cost-free existence predicate is advertised.
 
 ## Open Formalization Gaps
 
 - **T2.18, multiplicity half.** `frs_is_subspaceDesign_gk16` covers only folded RS; the
   univariate multiplicity codes exist (`ReedSolomon.Multiplicity.umCode`), but the GK16
-  multiplicity-Wronskian argument is not formalized. (`SubspaceDesign.lean`'s "Deferred" note
-  still says the `D_ux` derivative operation is missing — it is not; the same split ships it.)
-- **L2.17 at full strength** (`∀ r ≥ 1`) and **T3.2 without the radicand guard** — both proof
-  bodies already compile at the stronger statement.
+  multiplicity-Wronskian argument is not formalized.
 - **§3 remainder.** Theorem 3.4 (subspace-design list bound), Lemma 3.7 / Corollary 3.8 (Elias
   and volume-based lower bounds — `hammingBallVolume` and `qEntropy` are the support layer that
   is present), Theorem 3.11 (random-linear-code lower bound).
-- **§2.6.** An encoder-level extension code plus the `IsSystematic` consequence; the
-  presentation-independence bridge (`extensionCodeSubmodule = Submodule.span F (ψ '' C_B)`);
-  `δ_min(C_F) = δ_min(C_B)` (which ABF26 attributes to Diamond–Posen, key `DP25`).
+- **§2.6.** An encoder-level extension code plus its encoder equality, and
+  `δ_min(C_F) = δ_min(C_B)` (which ABF26 attributes to Diamond–Posen, key `DP25`). The
+  image-level systematic and presentation-independence statements are proved.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Note the docstring framing that
   Lemma 6.12 applies Claim B.1 *twice* is wrong — it applies it once, and the second counting

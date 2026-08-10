@@ -69,32 +69,20 @@ Do not add a fourth key for the same fact. `Joh62` has no `url`/DOI in the bibli
 local artifact in `~/abf26-refs/`; it is a 1962 IRE Transactions article, reachable through IEEE
 Xplore.
 
-## Known Divergences From ArkLib
+## Validated ArkLib Status
 
-- **`Jqℓ` is a rescaling of the pre-existing radius, not a new function.**
-  `Jqℓ q ℓ δ = J q (((ℓ−1)/ℓ) · δ)` for `q ∉ {0,1}` (verified by a compiled probe). The identity
-  is proved *inside* the `mds_johnson_lambda_le` proof but not exported, so downstream consumers
-  cannot reuse it. Similarly `Jcap δ = 1 − √(1−δ)` is exactly the left-hand side of the
-  pre-existing `JohnsonBound.sqrt_le_J`, whose statement now literally is `Jcap δ ≤ J q δ`, and no
-  bridge is stated. `main` already carries a second sibling copy of the radius (`J'` in
-  `JohnsonBound/Lemmas.lean`), making three.
-- **`johnson_bound_lambda_le_ell` is strictly weaker than `ABF26` Theorem 3.2**, which has no side
-  condition. The Lean adds
-  `_h_radicand : q/(q−1) · (ℓ−1)/ℓ · (minDist C / n) ≤ 1`. The guard is removable: when it fails,
-  `δ_min` exceeds the Plotkin radius, so `plotkin_card_le_ell` (80 lines above, in the same file)
-  already gives `|C| ≤ ℓ` and hence `Λ(C, anything) ≤ ℓ`. The guard-free paper statement compiles
-  from in-tree ingredients. The docstring's justification — that the list-size-`ℓ` claim is *false*
-  at that radius — is itself false; no such counterexample code exists.
-- **Two docstring inaccuracies worth knowing.** `Jqℓ 2 2` is the *list-size-two* radius
-  `½(1−√(1−δ))`, **not** the binary Johnson radius `J₂(δ) = ½(1−√(1−2δ))`. And `ℓ = 0` is not
-  merely "inconvenient": under Lean's `ℚ` division convention `Jqℓ q 0 δ = 0` while
-  `Λ(C, 0) ≥ 1` for nonempty `C`, so the `ℓ = 0` instance is false.
+- `Jqℓ` is defined through the pre-existing `J`, and `Jcap` lives beside `J`; the exported
+  bridges recover the paper forms without a parallel radius hierarchy.
+- `johnson_bound_lambda_le_ell` matches ABF26 Theorem 3.2 without a public radicand guard. Its
+  proof splits internally between the Johnson and Plotkin regimes.
+- The `ℓ = 0` false corner is excluded by the theorem's `2 ≤ ℓ` hypothesis, and the
+  list-size-two specialization is documented as distinct from the binary Johnson radius.
 - **The MDS corollary does not cover the paper's motivating class.** `ABF26` Corollary 3.3's
   preamble singles out interleaved Reed–Solomon codes; `mds_johnson_lambda_le` is stated for
   `LinearCode ι F` (field alphabet) only, and interleaved RS lives over the module alphabet `F^m`.
-- `Lambda` inherits `Set.ncard`'s "infinite ↦ 0" convention, so a Johnson bound proved for
-  `Lambda` says nothing about infinite codes. Every shipped bound carries a finiteness instance,
-  so this is not exploitable today, and it is inherited from the pre-existing `listDecodable`.
+- `Lambda` uses `Set.encard`, so infinite lists contribute `⊤` rather than silently collapsing
+  to zero. Finiteness assumptions remain exactly on bridges to the pre-existing
+  `Set.ncard`-based `listDecodable` API and on finite numeric bounds.
 
 ## Open Formalization Gaps
 
