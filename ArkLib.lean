@@ -246,6 +246,7 @@ import ArkLib.OracleReduction.Security.StateRestoration
 import ArkLib.OracleReduction.Security.TranscriptTree
 import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+import ArkLib.OracleReduction.Security.TranscriptTree.NonVacuity
 import ArkLib.OracleReduction.VectorIOR
 import ArkLib.ProofSystem.BatchedFri.Security
 import ArkLib.ProofSystem.BatchedFri.Spec.General

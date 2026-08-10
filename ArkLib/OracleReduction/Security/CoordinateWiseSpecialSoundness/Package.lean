@@ -10,18 +10,18 @@ import ArkLib.OracleReduction.Composition.Sequential.IsPure
 /-!
 # Composable coordinate-wise-special-sound reductions (`CWSSPackageClassical`)
 
-A `CWSSPackageClassical` bundles a verifier with everything needed to state and reuse its coordinate-wise
-special soundness (CWSS): the challenge structure `struct`, the input/output relations
-`relIn`/`relOut`, a purity witness `isPure`, the named extraction algorithm `extractor`, and the
-CWSS certificate `isCWSS`, all with respect to a fixed sampling `(init, impl)`.
+A `CWSSPackageClassical` bundles a verifier with everything needed to state and reuse its
+coordinate-wise special soundness (CWSS): the challenge structure `struct`, the input/output
+relations `relIn`/`relOut`, a purity witness `isPure`, the named extraction algorithm `extractor`,
+and the CWSS certificate `isCWSS`, all with respect to a fixed sampling `(init, impl)`.
 
-The point is composition. `CWSSPackageClassical.append` — written with the infix `▷` — chains two packages
-along a matching seam (`L₁.relOut = L₂.relIn`, discharged by `rfl`): it appends the verifiers
-(`Verifier.append`), appends the structures (`CWSSStructure.append`), composes the purity witnesses
-(`Verifier.IsPure.append`), and threads the two certificates through
-`Verifier.append_coordinateWiseSpecialSoundWithClassical`. Because purity is a package field, the composed
-package is itself pure and can be a left factor again, so a multi-step reduction reads as a single
-pleasant chain:
+The point is composition. `CWSSPackageClassical.append` — written with the infix `▷` — chains two
+packages along a matching seam (`L₁.relOut = L₂.relIn`, discharged by `rfl`): it appends the
+verifiers (`Verifier.append`), appends the structures (`CWSSStructure.append`), composes the purity
+witnesses (`Verifier.IsPure.append`), and threads the two certificates through
+`Verifier.append_coordinateWiseSpecialSoundWithClassical`. Because purity is a package field, the
+composed package is itself pure and can be a left factor again, so a multi-step reduction reads as a
+single pleasant chain:
 
 ```
 def chain := head ▷ middle ▷ tail
@@ -50,9 +50,9 @@ namespace CoordinateWise
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- A **bundled coordinate-wise-special-sound reduction**: a verifier together with its CWSS
-structure, input/output relations, a purity witness, the **named extraction algorithm**
-`extractor`, and the certificate `isCWSS` that this extractor witnesses CWSS, all with respect
-to a fixed sampling `(init, impl)`. Compose packages with `CWSSPackageClassical.append` / the infix `▷`.
+structure, input/output relations, a purity witness, the **named extraction algorithm** `extractor`,
+and the certificate `isCWSS` that this extractor witnesses CWSS, all with respect to a fixed
+sampling `(init, impl)`. Compose packages with `CWSSPackageClassical.append` / the infix `▷`.
 
 Carrying the extractor as a *field* (rather than existentially inside the certificate) means a
 composed chain exposes an actual end-to-end extractor — `chain.extractor` — which is what a
@@ -88,8 +88,9 @@ variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 package `L₂ : mid ⇒ relOut` whose seam agrees (`hseam : L₁.relOut = L₂.relIn`, discharged by `rfl`),
 this produces the composed package `relIn ⇒ relOut` over `pSpec₁ ++ₚ pSpec₂`: the verifiers are
 chained by `Verifier.append`, the structures by `CWSSStructure.append`, the purity witnesses by
-`Verifier.IsPure.append`, the extractors by running the left extractor on the prefix tree, and
-the certificates by `Verifier.append_coordinateWiseSpecialSoundWithClassical` (the left package's `isPure`
+`Verifier.IsPure.append`, the extractors by running the left extractor on the prefix tree, and the
+certificates by `Verifier.append_coordinateWiseSpecialSoundWithClassical` (the left package's
+`isPure`
 discharges its purity hypothesis). Written infix as `L₁ ▷ L₂`. -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}

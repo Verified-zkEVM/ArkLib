@@ -56,9 +56,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `CommittedScalar.mkWitness_mem` — the disjunctive correctness theorem, parameterized by the
     single instance-specific `recover` hypothesis (one common short opening satisfying `checkAt` at
     `k` pairwise-distinct challenges recovers the input relation).
-  * `CommittedScalar.coordinateWiseSpecialSoundWithEscapeClassical` / `CommittedScalar.package` — the
-    generic certificate at `scalarStructure k` and its `EscapeCWSSPackageClassical` bundle, ready for `▷`
-    composition against packages of any of the four kinds.
+  * `CommittedScalar.coordinateWiseSpecialSoundWithEscapeClassical` / `CommittedScalar.package` —
+    the generic certificate at `scalarStructure k` and its `EscapeCWSSPackageClassical` bundle,
+    ready for `▷` composition against packages of any of the four kinds.
 
   ## Consumers
 
@@ -246,7 +246,8 @@ theorem coordinateWiseSpecialSoundWithEscapeClassical [Nonempty W] {ι : Type} {
     Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl (scalarStructure k hk)
       (escEvent hk K checkAt) relIn (rel K checkAt)
       (verifier (oSpec := oSpec) K) (treeExtractor hk K checkAt project) :=
-  ScalarRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar init impl hk (verifier K)
+  ScalarRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar init impl hk
+    (verifier K)
     (fun _ _ => rfl) relIn (rel K checkAt) (mkWitness hk K project) (escLocal K)
     (fun s t fam resp hbranch hinj =>
       mkWitness_mem hk K project checkAt relIn recover s t fam resp hbranch hinj)
@@ -256,7 +257,8 @@ theorem coordinateWiseSpecialSoundWithEscapeClassical [Nonempty W] {ι : Type} {
 This lands in the **pure, escape-aware** corner of the package lattice: the verifier is `pure (…)`
 and never `failure`, so it is a valid left factor, while the commitment's escape event needs the
 `esc` field. Escape-free neighbours compose against it for free through the universal `▷`
-(`CWSSPackageClassical.toEscapeClassical`), so no separate plain-`CWSSPackageClassical` variant is needed — at an injective
+(`CWSSPackageClassical.toEscapeClassical`), so no separate plain-`CWSSPackageClassical` variant is
+needed — at an injective
 `com` the event simply never fires. -/
 def package [Nonempty W] {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
     {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
@@ -276,7 +278,8 @@ def package [Nonempty W] {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   isPure := ⟨fun stmt tr =>
     (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
   extractor := treeExtractor hk K checkAt project
-  isCWSS := coordinateWiseSpecialSoundWithEscapeClassical hk K project checkAt relIn recover init impl
+  isCWSS := coordinateWiseSpecialSoundWithEscapeClassical hk K project checkAt relIn recover init
+    impl
 
 end
 

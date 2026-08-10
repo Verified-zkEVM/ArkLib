@@ -17,16 +17,16 @@ import ArkLib.OracleReduction.Security.TranscriptTree
   round `i`, the `kᵢ` sibling challenges are **pairwise distinct**, into a valid input witness.
 
   Rather than re-deriving the tree machinery, special soundness is defined as the instance of the
-  shape-generic `Verifier.treeSpecialSoundClassical` (`Security.TranscriptTree`) for the **distinct shape**
-  `distinctShape k`: the `ChallengeTreeShape` with branching arity `kᵢ` whose node predicate
+  shape-generic `Verifier.treeSpecialSoundClassical` (`Security.TranscriptTree`) for the **distinct
+  shape** `distinctShape k`: the `ChallengeTreeShape` with branching arity `kᵢ` whose node predicate
   requires the `kᵢ` sibling challenges at each round to be pairwise distinct (`Function.Injective`).
 
   This is standalone — independent of the coordinate-wise generalization in
   `Security.CoordinateWiseSpecialSoundness`. Both notions are *sibling* instances of
-  `Verifier.treeSpecialSoundClassical` over the shared `Security.TranscriptTree` machinery; neither file
-  imports the other. The bridge `coordinateWiseSpecialSoundClassical (ofSpecialSound k) ↔ specialSoundClassical k`
-  (the `ℓᵢ = 1` case) is `Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff` in
-  `Security.Implications`.
+  `Verifier.treeSpecialSoundClassical` over the shared `Security.TranscriptTree` machinery; neither
+  file imports the other. The bridge `coordinateWiseSpecialSoundClassical (ofSpecialSound k) ↔
+  specialSoundClassical k` (the `ℓᵢ = 1` case) is
+  `Verifier.coordinateWiseSpecialSound_ofSpecialSound_iff` in `Security.Implications`.
 -/
 
 noncomputable section
@@ -39,7 +39,8 @@ variable {n : ℕ} {pSpec : ProtocolSpec n}
   arity `kᵢ` whose node predicate requires the `kᵢ` sibling challenges at each challenge round to be
   pairwise distinct (`Function.Injective`). It is the `ℓ = 1` special case of
   `CWSSStructure.toShape` (`Security.CoordinateWiseSpecialSoundness`), and supplying it to
-  `Verifier.treeSpecialSoundClassical` yields plain special soundness (`Verifier.specialSoundClassical`). -/
+  `Verifier.treeSpecialSoundClassical` yields plain special soundness
+    (`Verifier.specialSoundClassical`). -/
 def distinctShape (k : pSpec.ChallengeIdx → ℕ) : ChallengeTreeShape pSpec where
   arity := k
   nodeOk := fun _ challenges => Function.Injective challenges
@@ -56,9 +57,9 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- A verifier is `(k₁, …, k_μ)`-**special sound** for an input relation `relIn` and output relation
-  `relOut` if it is `Verifier.treeSpecialSoundClassical` for the distinct shape `distinctShape k`: there is a
-  tree-based extractor `E` such that, for every input statement `stmtIn` and every tree of
-  transcripts that is
+  `relOut` if it is `Verifier.treeSpecialSoundClassical` for the distinct shape `distinctShape k`:
+  there is a tree-based extractor `E` such that, for every input statement `stmtIn` and every tree
+  of transcripts that is
 
   - structured by `distinctShape k` (the `kᵢ` sibling challenges at each round are pairwise
     distinct), and

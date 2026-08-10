@@ -237,10 +237,10 @@ theorem round_coordinateWiseSpecialSoundWithEscape
       (roundExtractor Φ bound ρBound b K φF i) := by
   sorry
 
-/-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackageClassical`: the guarded round verifier
-with the `k = max (2b) 2 + 1` plain-special-soundness structure, reducing the round-`i` seam to the
-round-`(i+1)` seam, with the weak-binding event `roundEsc` as its one escape-specific field.
-Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11). -/
+/-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackageClassical`: the guarded round
+verifier with the `k = max (2b) 2 + 1` plain-special-soundness structure, reducing the round-`i`
+seam to the round-`(i+1)` seam, with the weak-binding event `roundEsc` as its one escape-specific
+field. Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11). -/
 def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :

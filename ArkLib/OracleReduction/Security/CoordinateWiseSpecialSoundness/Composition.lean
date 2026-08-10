@@ -22,8 +22,10 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   * `Verifier.pure_accepting_of_mem` / `Verifier.mem_of_pure_accepting` — the two directions of
     the pure-verifier acceptance bridge, used to certify prefix leaves' verdicts (and reused by
     the zero-round `ProofSystem/Component` reductions).
-  * `Verifier.append_treeSpecialSoundWithClassical` is the generic structured-tree preservation statement,
-    and `Verifier.append_treeSpecialSoundWithEscapeClassical` its escape-threaded twin, whose composed escape
+  * `Verifier.append_treeSpecialSoundWithClassical` is the generic structured-tree preservation
+    statement,
+    and `Verifier.append_treeSpecialSoundWithEscapeClassical` its escape-threaded twin, whose
+      composed escape
     event is `ChallengeTree.EscapeEvent.append`.
   * `Verifier.append_coordinateWiseSpecialSoundWithClassical` / `…WithEscape` are the CWSS-specific
     wrappers, with `OracleVerifier` versions for oracle reductions.
@@ -368,7 +370,8 @@ theorem append_treeSpecialSoundWithClassical
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
 /-- **Escape-threaded preservation of tree special soundness under binary verifier append.** As in
-the escape-free `append_treeSpecialSoundWithClassical`, the composed extractor is the left extractor on the
+the escape-free `append_treeSpecialSoundWithClassical`, the composed extractor is the left extractor
+  on the
 prefix tree and the right factor's extractor stays existential; the composed escape event is
 `ChallengeTree.EscapeEvent.append`.
 
@@ -428,7 +431,8 @@ omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
 /-- **Named-extractor preservation of CWSS under binary verifier append**: the composed extractor
 is the left factor's extractor on the prefix tree, exactly as at the tree level
 (`append_treeSpecialSoundWithClassical`); the right factor's extractor stays existential. The shape
-transport across `CWSSStructure.toShape_append` is `treeSpecialSoundWithClassical_congr` — the arities of
+transport across `CWSSStructure.toShape_append` is `treeSpecialSoundWithClassical_congr` — the
+  arities of
 the two shapes are definitionally equal, so the extractor crosses by `HEq.rfl`. -/
 theorem append_coordinateWiseSpecialSoundWithClassical
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
@@ -448,7 +452,8 @@ theorem append_coordinateWiseSpecialSoundWithClassical
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
 /-- **Escape-threaded preservation of CWSS under binary verifier append**: the CWSS-shape wrapper of
-`append_treeSpecialSoundWithEscapeClassical`. Both the extractor and the event cross the shape equality
+`append_treeSpecialSoundWithEscapeClassical`. Both the extractor and the event cross the shape
+  equality
 `CWSSStructure.toShape_append` by `HEq.rfl`, the two shapes' arities being definitionally equal. -/
 theorem append_coordinateWiseSpecialSoundWithEscapeClassical
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
@@ -508,7 +513,8 @@ theorem append_coordinateWiseSpecialSoundWithClassical
   unfold OracleVerifier.coordinateWiseSpecialSoundWithClassical at h₁ ⊢
   unfold OracleVerifier.coordinateWiseSpecialSoundClassical at h₂
   rw [append_toVerifier]
-  exact Verifier.append_coordinateWiseSpecialSoundWithClassical init impl V₁.toVerifier V₂.toVerifier
+  exact Verifier.append_coordinateWiseSpecialSoundWithClassical init impl V₁.toVerifier
+    V₂.toVerifier
     D₁ D₂ verify₁ hV₁ Ext₁ h₁ h₂
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
@@ -536,7 +542,8 @@ theorem append_coordinateWiseSpecialSoundWithEscapeClassical
   unfold OracleVerifier.coordinateWiseSpecialSoundWithEscapeClassical at h₁ ⊢
   unfold OracleVerifier.coordinateWiseSpecialSoundEscapeClassical at h₂
   rw [append_toVerifier]
-  exact Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical init impl V₁.toVerifier V₂.toVerifier
+  exact Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical init impl V₁.toVerifier
+    V₂.toVerifier
     D₁ D₂ esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂
 
 end OracleVerifier

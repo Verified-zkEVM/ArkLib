@@ -172,10 +172,10 @@ theorem finalEval_coordinateWiseSpecialSoundWith
       (finalEvalExtractor Φ m₀ bound ρBound K φF) := by
   sorry
 
-/-- **The final-evaluation step as a guarded `GCWSSPackageClassical`**: the guarded one-message verifier with
-the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim `relWEvalClaim`.
-A guarded *re-reading* of the final targets, hence escape-free. Certificate: the sorried
-`finalEval_coordinateWiseSpecialSoundWith`. -/
+/-- **The final-evaluation step as a guarded `GCWSSPackageClassical`**: the guarded one-message
+verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim
+`relWEvalClaim`. A guarded *re-reading* of the final targets, hence escape-free. Certificate: the
+sorried `finalEval_coordinateWiseSpecialSoundWith`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :

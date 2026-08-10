@@ -428,7 +428,8 @@ theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
       (oracleTreeExtractor (mapStmt := mapStmt) (embedIdx := embedIdx) (hEq := hEq)
         relOut mapWitInv D) := by
   classical
-  have h := OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D
+  have h := OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl
+    D
     (oracleVerifier oSpec mapStmt embedIdx hEq) relIn relOut
     (fun s _ =>
       if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut

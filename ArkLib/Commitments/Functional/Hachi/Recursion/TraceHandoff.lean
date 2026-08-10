@@ -200,11 +200,11 @@ theorem handoff_coordinateWiseSpecialSoundWith
       (handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom) := by
   sorry
 
-/-- **The trace handoff as a guarded `GCWSSPackageClassical`** (Hachi §4.5, Eqs. (27)–(28)): the guarded
-one-message verifier with the empty challenge structure, reducing the `Z`-packed claim `relHatEval`
-to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion loop's
-closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the polynomial-level
-bridge: the bases are `eq`-tensor packings, not monomial bases of a point).
+/-- **The trace handoff as a guarded `GCWSSPackageClassical`** (Hachi §4.5, Eqs. (27)–(28)): the
+guarded one-message verifier with the empty challenge structure, reducing the `Z`-packed claim
+`relHatEval` to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion
+loop's closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the
+polynomial-level bridge: the bases are `eq`-tensor packings, not monomial bases of a point).
 
 The handoff *re-reads* the existing commitment through `ψ` rather than introducing a new one, hence
 carries no escape event. -/

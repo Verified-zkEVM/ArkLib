@@ -111,7 +111,8 @@ theorem mem_relPartialEval_of_relHatEval (zpow : Fin (2 ^ κ) → F)
     (s, w) ∈ relPartialEval Φ mLow κ bound ρBound K φF := by
   sorry
 
-/-- **The `Z`-packing bridge as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
+/-- **The `Z`-packing bridge as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eqs. (25)–(26)):
+    zero-round
 `ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing `relPartialEval` to `relHatEval`. A pure
 statement repacking, hence escape-free.
 ⚠ Its certificate rests on the sorried — and expectedly unprovable as stated — un-packing

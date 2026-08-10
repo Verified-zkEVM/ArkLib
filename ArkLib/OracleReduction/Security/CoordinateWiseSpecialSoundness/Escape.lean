@@ -30,8 +30,10 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
   ## The package lattice
 
-  `CWSSPackageClassical`, `EscapeCWSSPackageClassical`, `GCWSSPackageClassical`, `EscapeGCWSSPackageClassical` form the 2×2 lattice
-  escape? × guarded?, ordered by two **lossless** lifts: `toEscapeClassical` (at the never-firing event
+  `CWSSPackageClassical`, `EscapeCWSSPackageClassical`, `GCWSSPackageClassical`,
+    `EscapeGCWSSPackageClassical` form the 2×2 lattice
+  escape? × guarded?, ordered by two **lossless** lifts: `toEscapeClassical` (at the never-firing
+    event
   `fun _ _ => False`, so extractor and certificate are unchanged) and `toGuardedClassical` (at the
   trivially-true check). A package is declared in the weakest corner it honestly lives in, and
   every ordered pair composes at the join through the universal `▷` — one scoped elaborator
@@ -56,15 +58,18 @@ namespace CoordinateWise
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A **bundled escape-aware coordinate-wise-special-sound reduction**: `CWSSPackageClassical` with one
+/-- A **bundled escape-aware coordinate-wise-special-sound reduction**: `CWSSPackageClassical` with
+  one
 extra field, the **escape event** `esc`. Its certificate `isCWSS` concludes
 `esc stmt tree ∨ extraction succeeds` on every structured accepting tree, so `relIn`/`relOut` and
 `extractor` stay ordinary.
 
 `esc` is a trusted specification — reading its definition is the reader's obligation, just as for
-`relIn`/`relOut` (contract: `ChallengeTree.EscapeEvent`). Compose with `EscapeCWSSPackageClassical.append` /
+`relIn`/`relOut` (contract: `ChallengeTree.EscapeEvent`). Compose with
+  `EscapeCWSSPackageClassical.append` /
 the universal infix `▷` (explicit synonym `▷ₑ`). -/
-structure EscapeCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+structure EscapeCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
+  ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier. -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
@@ -121,9 +126,11 @@ end EscapeCWSSPackageClassical
 @[inherit_doc EscapeCWSSPackageClassical.append]
 scoped infixr:65 " ▷ₑ " => EscapeCWSSPackageClassical.append
 
-/-- A **guarded escape-aware CWSS package**: `EscapeCWSSPackageClassical` with the purity witness relaxed
+/-- A **guarded escape-aware CWSS package**: `EscapeCWSSPackageClassical` with the purity witness
+  relaxed
 to a guardedness witness (the verifier may `failure` at runtime). -/
-structure EscapeGCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+structure EscapeGCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
+  ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier (which may reject at runtime). -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
@@ -164,10 +171,12 @@ def _root_.CoordinateWise.EscapeCWSSPackageClassical.toGuardedClassical
   isCWSS := L.isCWSS
 
 /-- **Compose two guarded escape-aware packages along a matching relation seam.** As in
-`EscapeCWSSPackageClassical.append`, but the composed event is taken at the guard's output map `out₁`, which
+`EscapeCWSSPackageClassical.append`, but the composed event is taken at the guard's output map
+  `out₁`, which
 `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape events must be
 honest at *all* `(stmt, tree)` pairs. Certificate:
-`Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` (sorried). Written infix
+`Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` (sorried). Written
+  infix
 as `L₁ ▷ L₂` (explicit synonym `▷ₑᵍ`). -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
@@ -200,8 +209,10 @@ scoped infixr:65 " ▷ₑᵍ " => EscapeGCWSSPackageClassical.append
 /-! ### Lifting escape-free packages into an escape chain
 
 An escape-free package enters the escape world at the never-firing event `fun _ _ => False`, where
-`Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical` is the trivial `Or.inr`: extractor and
-certificate are unchanged, and `coordinateWiseSpecialSoundWithEscapeClassical_false_iff` recovers the plain
+`Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical` is the trivial `Or.inr`:
+  extractor and
+certificate are unchanged, and `coordinateWiseSpecialSoundWithEscapeClassical_false_iff` recovers
+  the plain
 notion exactly. Escape packages are therefore only *defined* for the subprotocols that genuinely
 produce escapes; the mixed appends below (and the universal `▷`) insert the lifts on the fly. -/
 
@@ -222,7 +233,8 @@ def CWSSPackageClassical.toEscapeClassical
   esc := fun _ _ => False
   isPure := L.isPure
   extractor := L.extractor
-  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ L.isCWSS
+  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _
+    L.isCWSS
 
 /-- Lift a guarded escape-free package to the never-firing event; every other field carries over
 unchanged. Lossless. -/
@@ -236,7 +248,8 @@ def GCWSSPackageClassical.toEscapeClassical
   esc := fun _ _ => False
   isGuarded := L.isGuarded
   extractor := L.extractor
-  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ L.isCWSS
+  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _
+    L.isCWSS
 
 end Lift
 
@@ -245,7 +258,8 @@ end Lift
 Every ordered pair of package kinds whose join is escape-aware (pure or guarded). Each lifts its
 factors to the join and delegates, leaving only the relation seam `hRel` (discharged by `rfl`). All
 are reached through the universal `▷` below; the escape-free appends live in `Package.lean`
-(`CWSSPackageClassical.append`) and `Guarded.lean` (`GCWSSPackageClassical.append`, `CWSSPackageClassical.appendGuarded`,
+(`CWSSPackageClassical.append`) and `Guarded.lean` (`GCWSSPackageClassical.append`,
+  `CWSSPackageClassical.appendGuarded`,
 `GCWSSPackageClassical.appendPure`). -/
 
 section MixedAppend
@@ -358,22 +372,38 @@ open Lean Elab Term Meta
 /-- The dispatch table of the universal append `▷`: the two factors' package kinds determine the
 append that composes them at their join. -/
 private def univAppendFn : Name → Name → Option Name
-  | ``CWSSPackageClassical,        ``CWSSPackageClassical        => some ``CWSSPackageClassical.append
-  | ``CWSSPackageClassical,        ``EscapeCWSSPackageClassical  => some ``CWSSPackageClassical.appendEscape
-  | ``CWSSPackageClassical,        ``GCWSSPackageClassical       => some ``CWSSPackageClassical.appendGuarded
-  | ``CWSSPackageClassical,        ``EscapeGCWSSPackageClassical => some ``CWSSPackageClassical.appendEscapeGuarded
-  | ``EscapeCWSSPackageClassical,  ``CWSSPackageClassical        => some ``EscapeCWSSPackageClassical.appendPure
-  | ``EscapeCWSSPackageClassical,  ``EscapeCWSSPackageClassical  => some ``EscapeCWSSPackageClassical.append
-  | ``EscapeCWSSPackageClassical,  ``GCWSSPackageClassical       => some ``EscapeCWSSPackageClassical.appendGuarded
-  | ``EscapeCWSSPackageClassical,  ``EscapeGCWSSPackageClassical => some ``EscapeCWSSPackageClassical.appendEscapeGuarded
-  | ``GCWSSPackageClassical,       ``CWSSPackageClassical        => some ``GCWSSPackageClassical.appendPure
-  | ``GCWSSPackageClassical,       ``EscapeCWSSPackageClassical  => some ``GCWSSPackageClassical.appendEscape
-  | ``GCWSSPackageClassical,       ``GCWSSPackageClassical       => some ``GCWSSPackageClassical.append
-  | ``GCWSSPackageClassical,       ``EscapeGCWSSPackageClassical => some ``GCWSSPackageClassical.appendEscapeGuarded
-  | ``EscapeGCWSSPackageClassical, ``CWSSPackageClassical        => some ``EscapeGCWSSPackageClassical.appendPure
-  | ``EscapeGCWSSPackageClassical, ``EscapeCWSSPackageClassical  => some ``EscapeGCWSSPackageClassical.appendEscape
-  | ``EscapeGCWSSPackageClassical, ``GCWSSPackageClassical       => some ``EscapeGCWSSPackageClassical.appendGuarded
-  | ``EscapeGCWSSPackageClassical, ``EscapeGCWSSPackageClassical => some ``EscapeGCWSSPackageClassical.append
+  | ``CWSSPackageClassical,        ``CWSSPackageClassical        => some
+    ``CWSSPackageClassical.append
+  | ``CWSSPackageClassical,        ``EscapeCWSSPackageClassical  => some
+    ``CWSSPackageClassical.appendEscape
+  | ``CWSSPackageClassical,        ``GCWSSPackageClassical       => some
+    ``CWSSPackageClassical.appendGuarded
+  | ``CWSSPackageClassical,        ``EscapeGCWSSPackageClassical => some
+    ``CWSSPackageClassical.appendEscapeGuarded
+  | ``EscapeCWSSPackageClassical,  ``CWSSPackageClassical        => some
+    ``EscapeCWSSPackageClassical.appendPure
+  | ``EscapeCWSSPackageClassical,  ``EscapeCWSSPackageClassical  => some
+    ``EscapeCWSSPackageClassical.append
+  | ``EscapeCWSSPackageClassical,  ``GCWSSPackageClassical       => some
+    ``EscapeCWSSPackageClassical.appendGuarded
+  | ``EscapeCWSSPackageClassical,  ``EscapeGCWSSPackageClassical => some
+    ``EscapeCWSSPackageClassical.appendEscapeGuarded
+  | ``GCWSSPackageClassical,       ``CWSSPackageClassical        => some
+    ``GCWSSPackageClassical.appendPure
+  | ``GCWSSPackageClassical,       ``EscapeCWSSPackageClassical  => some
+    ``GCWSSPackageClassical.appendEscape
+  | ``GCWSSPackageClassical,       ``GCWSSPackageClassical       => some
+    ``GCWSSPackageClassical.append
+  | ``GCWSSPackageClassical,       ``EscapeGCWSSPackageClassical => some
+    ``GCWSSPackageClassical.appendEscapeGuarded
+  | ``EscapeGCWSSPackageClassical, ``CWSSPackageClassical        => some
+    ``EscapeGCWSSPackageClassical.appendPure
+  | ``EscapeGCWSSPackageClassical, ``EscapeCWSSPackageClassical  => some
+    ``EscapeGCWSSPackageClassical.appendEscape
+  | ``EscapeGCWSSPackageClassical, ``GCWSSPackageClassical       => some
+    ``EscapeGCWSSPackageClassical.appendGuarded
+  | ``EscapeGCWSSPackageClassical, ``EscapeGCWSSPackageClassical => some
+    ``EscapeGCWSSPackageClassical.append
   | _,                    _                    => none
 
 /-- The package kind — the head constant of the type — of an elaborated `▷` factor. -/

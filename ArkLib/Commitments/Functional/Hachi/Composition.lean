@@ -14,21 +14,21 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 /-!
 # Hachi — the CWSS composition home
 
-This is the designated home of the growing n-ary composition of the subprotocols of Hachi [NOZ26],
-a lattice-based multilinear polynomial commitment scheme. Each subprotocol is formalized in its own
+This is the designated home of the growing n-ary composition of the subprotocols of Hachi [NOZ26], a
+lattice-based multilinear polynomial commitment scheme. Each subprotocol is formalized in its own
 file and exported as a CWSS *package* in the weakest of the four kinds it honestly lives in —
-`CWSSPackageClassical`, `GCWSSPackageClassical` (guarded verifier: may `failure` at runtime), `EscapeCWSSPackageClassical`
-(extraction may exhibit a cryptographic escape), `EscapeGCWSSPackageClassical` (both) — bundling the verifier
-with its proof of coordinate-wise special soundness (CWSS), the knowledge-soundness notion under
-which a witness is extracted from a suitably structured tree of accepting transcripts. This file
-only **imports those packages and chains them** with the universal append `▷`, which dispatches on
-the factors' package kinds and lifts each to the join automatically (both lifts are lossless). Only
-the ordinary relation seam has to match — escape events compose without a seam. The guarded
-composition theorem lives in
+`CWSSPackageClassical`, `GCWSSPackageClassical` (guarded verifier: may `failure` at runtime),
+`EscapeCWSSPackageClassical` (extraction may exhibit a cryptographic escape),
+`EscapeGCWSSPackageClassical` (both) — bundling the verifier with its proof of coordinate-wise
+special soundness (CWSS), the knowledge-soundness notion under which a witness is extracted from a
+suitably structured tree of accepting transcripts. This file only **imports those packages and
+chains them** with the universal append `▷`, which dispatches on the factors' package kinds and
+lifts each to the join automatically (both lifts are lossless). Only the ordinary relation seam has
+to match — escape events compose without a seam. The guarded composition theorem lives in
 `OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean`. The composed chain's
 `isCWSS` field is the CWSS certificate for the whole reduction. (Hachi as a `Commitment.Scheme` —
-the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the
-sibling `Commitment.lean`.)
+the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the sibling
+`Commitment.lean`.)
 
 ## The three layers of this file
 
@@ -84,8 +84,8 @@ match their relation seam.
 key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of the `w̃`-commitment
 (`LiftCom.Collision`, via `Lift.escEvent` / `zeroCheckEsc` / `roundEsc`). Those four are
 `EscapeCWSSPackageClassical`/`EscapeGCWSSPackageClassical`s; every other row is escape-free
-(`CWSSPackageClassical`/`GCWSSPackageClassical`) and enters the chain at the never-firing event through the universal
-`▷`'s lossless lift.
+(`CWSSPackageClassical`/`GCWSSPackageClassical`) and enters the chain at the never-firing event
+through the universal `▷`'s lossless lift.
 
 - Rows 1–7 have **pure** verifiers: every check constrains either retained statement data or the
   never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8, 9,
@@ -114,27 +114,26 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
 ## Sorry inventory of the composed chain (provenance of the certificate)
 
 *Generic machinery*: `Verifier.IsGuarded.append` and
-`Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` (`Guarded.lean`; the latter is
-the fundamental obligation, stated escape-threaded at explicit guard data — the plain guarded
-append is *proven* from it at the never-firing events). The two scalar-round assemblies
-`coordinateWiseSpecialSoundWithClassical(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) are proven, as
-are their readers, shape recovery, extractor and escape event. The escape
-layer (`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lean`) with its append
+`Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` (`Guarded.lean`; the
+latter is the fundamental obligation, stated escape-threaded at explicit guard data — the plain
+guarded append is *proven* from it at the never-firing events). The two scalar-round assemblies
+`coordinateWiseSpecialSoundWithClassical(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) are
+proven, as are their readers, shape recovery, extractor and escape event. The escape layer
+(`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lean`) with its append
 theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
-sorried `Extractor.TreeBasedClassical`.
-*Per-link math*: the zero-check encodings (`Constraints.lean`), the un-batching
-(`mem_relLift_of_relBatched`), corrected Lemma 10
+sorried `Extractor.TreeBasedClassical`. *Per-link math*: the zero-check encodings
+(`Constraints.lean`), the un-batching (`mem_relLift_of_relBatched`), corrected Lemma 10
 (`zeroCheck_coordinateWiseSpecialSoundWithEscape`), the sum-to-point bridge, Lemma 11
 (`round_coordinateWiseSpecialSoundWithEscape`), the final evaluation
 (`finalEval_coordinateWiseSpecialSoundWith` + the `finalCheck` encoding), the partial-evaluation
 head (`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs), and the trace handoff
-(`handoff_coordinateWiseSpecialSoundWith` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
-Rows 1–4 carry no sorries: the `R^lin` adapter (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and
-the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`, via the generic `Lift` layer on the proven
-scalar-round engine and the `QuotientLift` algebra) are proven and sorry-free.
-Every sorried encoding def carries an in-situ `**Sorried**` docstring.
-*Flagged as an open gap (not merely unproven)*: `mem_relPartialEval_of_relHatEval` (row 11).
+(`handoff_coordinateWiseSpecialSoundWith` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`). Rows
+1–4 carry no sorries: the `R^lin` adapter (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the
+HMZ25 lift (Lemma 9, `liftPackage.isCWSS`, via the generic `Lift` layer on the proven scalar-round
+engine and the `QuotientLift` algebra) are proven and sorry-free. Every sorried encoding def carries
+an in-situ `**Sorried**` docstring. *Flagged as an open gap (not merely unproven)*:
+`mem_relPartialEval_of_relHatEval` (row 11).
 
 ## References
 
@@ -296,17 +295,17 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
-`openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on
-the round checks), the final-evaluation step (guarded on the target checks), and the §4.5
-recursion adapters (the pure partial-evaluation head, the ⚠ `Z`-packing bridge with the open
-row-11 soundness question, and the guarded trace handoff). Pure factors (`openCore`,
-`partialEvalPackage`, `zBatchPackage`) stay pure escape packages and are lifted into the
-escape-guarded world by the mixed appends behind the universal `▷` (the two head seams, whose
-relation identifications are the named `roundsChain_relIn`/`roundsChain_relOut` lemmas rather than
-`rfl`, use `EscapeCWSSPackageClassical.appendEscapeGuarded` / `EscapeGCWSSPackageClassical.appendGuarded`
+`openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on the
+round checks), the final-evaluation step (guarded on the target checks), and the §4.5 recursion
+adapters (the pure partial-evaluation head, the ⚠ `Z`-packing bridge with the open row-11 soundness
+question, and the guarded trace handoff). Pure factors (`openCore`, `partialEvalPackage`,
+`zBatchPackage`) stay pure escape packages and are lifted into the escape-guarded world by the mixed
+appends behind the universal `▷` (the two head seams, whose relation identifications are the named
+`roundsChain_relIn`/`roundsChain_relOut` lemmas rather than `rfl`, use
+`EscapeCWSSPackageClassical.appendEscapeGuarded` / `EscapeGCWSSPackageClassical.appendGuarded`
 explicitly). The chain lands on the plain `relIn Φ'` relation — closing the recursion loop:
-iteration `i+1` is this chain re-instantiated at `Φ'` (entering at `quadEvalPackage`, without
-row 1).
+iteration `i+1` is this chain re-instantiated at `Φ'` (entering at `quadEvalPackage`, without row
+1).
 
 The certificate `openingChain.isCWSS` is the one-iteration CWSS statement; its provenance (which
 links are finished, skeleton-sorried, or gap-flagged) is inventoried in the module header. The

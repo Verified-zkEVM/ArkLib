@@ -24,15 +24,15 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Compositio
     from the center exactly at `i`. Over a decidable alphabet both are found by bounded search
     (`Fin.find`), so they are computable and downstream extraction algorithms stay executable;
   - the tree extractor `treeExtractor` and the **generic assembly**
-    `coordinateWiseSpecialSoundWithClassical_of_mkWitness`: any pure statement-extending verifier of this
-    `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
+    `coordinateWiseSpecialSoundWithClassical_of_mkWitness`: any pure statement-extending verifier of
+    this `pSpec` is CWSS for `foldStructure`, given only a protocol-specific witness assembler
     `mkWitness` turning per-branch `relOut`-witnesses at star-shaped challenge families into a
-    `relIn`-witness — all tree navigation, shape recovery, and guard-firing is discharged here
-    once;
-  - the **escape-threaded** twin `escEvent` / `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`,
-    for reductions whose extraction may instead exhibit a cryptographic break: `hmk` concludes
-    `escLocal … ∨ (stmtIn, mkWitness …) ∈ relIn` and the certificate carries the induced tree-level
-    event `escEvent relOut escLocal` (contract for `escLocal`: `ChallengeTree.EscapeEvent`).
+    `relIn`-witness — all tree navigation, shape recovery, and guard-firing is discharged here once;
+  - the **escape-threaded** twin `escEvent` /
+    `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`, for reductions whose extraction
+    may instead exhibit a cryptographic break: `hmk` concludes `escLocal … ∨ (stmtIn, mkWitness …) ∈
+    relIn` and the certificate carries the induced tree-level event `escEvent relOut escLocal`
+    (contract for `escLocal`: `ChallengeTree.EscapeEvent`).
 
   ## References
 
@@ -444,8 +444,8 @@ theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness
   exact hmk stmtIn v _ _ hbranch hstar
 
 /-- **Generic single-round escape-threaded CWSS assembly, named form.**
-`coordinateWiseSpecialSoundWithClassical_of_mkWitness` where the protocol-specific obligation `hmk` may
-conclude a **local escape event** `escLocal` instead of a `relIn`-witness; the certificate then
+`coordinateWiseSpecialSoundWithClassical_of_mkWitness` where the protocol-specific obligation `hmk`
+may conclude a **local escape event** `escLocal` instead of a `relIn`-witness; the certificate then
 carries the induced tree-level event `escEvent relOut escLocal`. This is the assembly for reductions
 whose extraction can fail into a cryptographic break (e.g. Hachi Lemma 8's Module-SIS cases).
 

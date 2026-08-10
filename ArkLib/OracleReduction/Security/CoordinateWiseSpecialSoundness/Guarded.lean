@@ -38,17 +38,21 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
     purity is the `check := fun _ _ => true` special case
     (`IsGuarded.of_isPure`).
+  * `Verifier.GuardedForm` — guardedness with its check and verdict map as **data** (the guarded
+    mirror of `Verifier.PureForm`), with `GuardedForm.isGuarded` forgetting back to the class and
+    `PureForm.toGuardedForm` the data form of `IsGuarded.of_isPure`. A guarded package carries this,
+    since its composed escape event must *name* the left verdict map.
   * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append` (**sorried**;
     composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
     `Verifier.IsPure.append`).
-  * `Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` — the escape-threaded
-    guarded binary CWSS append, the *fundamental* obligation here (**sorried**; stated at
-    explicit guard data, since the composed escape event must name the left verdict map).
-  * `Verifier.append_coordinateWiseSpecialSoundWithClassical_of_guardedLeft` — the plain guarded append,
-    **proven** as a corollary of the escape-threaded one at the never-firing events.
-  * `GCWSSPackageClassical` — the guarded analogue of `CWSSPackageClassical` (`isPure` ↝ `isGuarded`), with
-    `CWSSPackageClassical.toGuardedClassical` and the composition `GCWSSPackageClassical.append` = infix `▷`
-    (explicit synonym `▷ᵍ`).
+  * `Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` — the
+    escape-threaded guarded binary CWSS append, the *fundamental* obligation here (**sorried**;
+    stated at explicit guard data, since the composed escape event must name the left verdict map).
+  * `Verifier.append_coordinateWiseSpecialSoundWithClassical_of_guardedLeft` — the plain guarded
+    append, **proven** as a corollary of the escape-threaded one at the never-firing events.
+  * `GCWSSPackageClassical` — the guarded analogue of `CWSSPackageClassical`
+    (`isPure` ↝ `isGuarded`), with `CWSSPackageClassical.toGuardedClassical` and the composition
+    `GCWSSPackageClassical.append` = infix `▷` (explicit synonym `▷ᵍ`).
 
   As everywhere in the CWSS development, composition here is **binary only**: the Hachi composition
   builds its guarded loop by *recursion over the binary guarded append*
@@ -93,6 +97,33 @@ theorem IsGuarded.of_isPure (V : Verifier oSpec StmtIn StmtOut pSpec) (h : V.IsP
 /-- Every pure verifier is guarded automatically: the instance form of `IsGuarded.of_isPure`. -/
 instance (V : Verifier oSpec StmtIn StmtOut pSpec) [h : V.IsPure] : V.IsGuarded :=
   IsGuarded.of_isPure V h
+
+/-- A **guardedness witness carrying check and output map as data**: the bundled form of
+`Verifier.IsGuardedWith`, and the guarded mirror of `Verifier.PureForm`.
+
+As for purity, the `IsGuarded` *class* only asserts that some `(check, out)` pair exists, so
+reading `out` off it costs `Classical.choice`. A guarded package carries this data instead, since
+its composed escape event and extractor must *name* the left verdict map `out`. -/
+structure GuardedForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
+  /-- The runtime guard. -/
+  check : StmtIn → FullTranscript pSpec → Bool
+  /-- The verdict where the guard passes. -/
+  out : StmtIn → FullTranscript pSpec → StmtOut
+  /-- The verifier is guarded with exactly these. -/
+  verify_eq : V.IsGuardedWith check out
+
+/-- Forget the data: a `Verifier.GuardedForm` yields the `Verifier.IsGuarded` class. -/
+theorem GuardedForm.isGuarded {V : Verifier oSpec StmtIn StmtOut pSpec} (G : V.GuardedForm) :
+    V.IsGuarded :=
+  ⟨G.check, G.out, G.verify_eq⟩
+
+/-- Every pure form is a guarded form, at the trivially-true check: the data form of
+`Verifier.IsGuarded.of_isPure`. Lossless, and computable — the verdict function carries over. -/
+def PureForm.toGuardedForm {V : Verifier oSpec StmtIn StmtOut pSpec} (P : V.PureForm) :
+    V.GuardedForm where
+  check := fun _ _ => true
+  out := P.verify
+  verify_eq := fun stmt tr => by rw [P.verify_eq stmt tr]; simp
 
 section Append
 
@@ -169,11 +200,13 @@ theorem append_coordinateWiseSpecialSoundWithClassical_of_guardedLeft
       (CWSSStructure.append D₁ D₂) rel₁ rel₃ (V₁.append V₂)
       (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
   obtain ⟨E₂, hE₂⟩ := h₂
-  have hesc := append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft init impl V₁ V₂ D₁ D₂
+  have hesc := append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft init impl V₁ V₂
+    D₁ D₂
     hV₁.is_guarded.choose hV₁.is_guarded.choose_spec.choose
     hV₁.is_guarded.choose_spec.choose_spec (fun _ _ => False) (fun _ _ => False) Ext₁
     (Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ h₁)
-    (Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ hE₂).toEscapeClassical
+    (Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _
+      hE₂).toEscapeClassical
   intro stmt tree hStructured hAccept
   rcases hesc stmt tree hStructured hAccept with (hf | ⟨_, hf⟩) | hwit
   · exact hf.elim
@@ -188,10 +221,13 @@ namespace CoordinateWise
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A **bundled guarded coordinate-wise-special-sound reduction**: `CWSSPackageClassical` with the purity
-witness relaxed to a guardedness witness. Guarded packages compose with `GCWSSPackageClassical.append`
+/-- A **bundled guarded coordinate-wise-special-sound reduction**: `CWSSPackageClassical` with the
+  purity
+witness relaxed to a guardedness witness. Guarded packages compose with
+  `GCWSSPackageClassical.append`
 (infix `▷`, explicit synonym `▷ᵍ`); a pure package enters the guarded world via
-`CWSSPackageClassical.toGuardedClassical`, or automatically through the mixed `▷` overloads below. -/
+`CWSSPackageClassical.toGuardedClassical`, or automatically through the mixed `▷` overloads
+  below. -/
 structure GCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier (may reject at runtime). -/
@@ -217,7 +253,8 @@ namespace GCWSSPackageClassical
 
 variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
-/-- Forget purity: every (pure) `CWSSPackageClassical` is a `GCWSSPackageClassical` with the trivially-true
+/-- Forget purity: every (pure) `CWSSPackageClassical` is a `GCWSSPackageClassical` with the
+  trivially-true
 check; extractor and certificate carry over unchanged. -/
 def _root_.CoordinateWise.CWSSPackageClassical.toGuardedClassical
     {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
@@ -232,7 +269,8 @@ def _root_.CoordinateWise.CWSSPackageClassical.toGuardedClassical
   isCWSS := L.isCWSS
 
 /-- **Compose two guarded packages along a matching seam** (`hseam` discharged by `rfl`): the
-guarded analogue of `CWSSPackageClassical.append`/`▷`. The composed verdict is guarded by the conjunction
+guarded analogue of `CWSSPackageClassical.append`/`▷`. The composed verdict is guarded by the
+  conjunction
 of both checks (`Verifier.IsGuarded.append`), the composed extractor is the left extractor on
 the prefix tree, and the composed certificate is the guarded binary append theorem
 `Verifier.append_coordinateWiseSpecialSoundWithClassical_of_guardedLeft` — this definition is the
@@ -264,7 +302,8 @@ scoped infixr:65 " ▷ᵍ " => GCWSSPackageClassical.append
 
 /-! ### Lifting pure packages into a guarded chain
 
-A pure `CWSSPackageClassical` enters the guarded world losslessly (`CWSSPackageClassical.toGuardedClassical`: the guard is
+A pure `CWSSPackageClassical` enters the guarded world losslessly
+  (`CWSSPackageClassical.toGuardedClassical`: the guard is
 the trivially-true check and the certificate is unchanged). The mixed appends below insert this
 lift automatically, so guarded packages need only be *defined* for the subprotocols whose checks
 genuinely reject at runtime. Together with the escape-lifting appends in `Escape.lean`, every
@@ -278,7 +317,8 @@ section GuardedLift
 variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- **Compose a pure left factor with a guarded right factor.** The left package is lifted with
-`CWSSPackageClassical.toGuardedClassical`; only the relation seam `hRel` remains (discharged by `rfl`).
+`CWSSPackageClassical.toGuardedClassical`; only the relation seam `hRel` remains (discharged by
+  `rfl`).
 Dispatched by the universal `▷`. -/
 def CWSSPackageClassical.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
@@ -290,7 +330,8 @@ def CWSSPackageClassical.appendGuarded {StmtA WitA StmtB WitB StmtC WitC : Type}
   L₁.toGuardedClassical.append L₂ hRel
 
 /-- **Compose a guarded left factor with a pure right factor.** The right package is lifted with
-`CWSSPackageClassical.toGuardedClassical`; only the relation seam `hRel` remains (discharged by `rfl`).
+`CWSSPackageClassical.toGuardedClassical`; only the relation seam `hRel` remains (discharged by
+  `rfl`).
 Dispatched by the universal `▷`. -/
 def GCWSSPackageClassical.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}

@@ -17,16 +17,16 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
 
   * `Basic` — the notion: the `SS(S, ℓ, k)` combinatorics (`CoordEq`, `IsSpecialSoundFamily`), the
     intrinsic `CWSSStructure` (per-round challenge decomposition with built-in valid soundness
-    parameters) and its induced `ChallengeTreeShape` (`CWSSStructure.toShape`), the CWSS
-    predicate `Verifier.coordinateWiseSpecialSoundClassical` obtained by instantiating the shape-generic core
-    `Verifier.treeSpecialSoundClassical` (`Security.TranscriptTree`) at `D.toShape`, and its escape-threaded
-    twin `Verifier.coordinateWiseSpecialSoundWithEscapeClassical`.
+    parameters) and its induced `ChallengeTreeShape` (`CWSSStructure.toShape`), the CWSS predicate
+    `Verifier.coordinateWiseSpecialSoundClassical` obtained by instantiating the shape-generic core
+    `Verifier.treeSpecialSoundClassical` (`Security.TranscriptTree`) at `D.toShape`, and its
+    escape-threaded twin `Verifier.coordinateWiseSpecialSoundWithEscapeClassical`.
   * `Composition` — transport of CWSS structures across protocol append (`CWSSStructure.append`),
     its agreement with the generic appended shape (`toShape_append`), the pure-verifier acceptance
     bridge (`Verifier.pure_accepting_of_mem` / `mem_of_pure_accepting`), and preservation of CWSS
     under binary verifier append (`Verifier.append_coordinateWiseSpecialSoundWithClassical` and
-    `…WithEscape`) as thin wrappers over the generic `Verifier.append_treeSpecialSoundWithClassical` /
-    `append_treeSpecialSoundWithEscapeClassical`.
+    `…WithEscape`) as thin wrappers over the generic `Verifier.append_treeSpecialSoundWithClassical`
+    / `append_treeSpecialSoundWithEscapeClassical`.
   * `NoChallenge` — the degenerate bridge for protocols with no challenge rounds
     (`IsEmpty pSpec.ChallengeIdx`): tree special soundness collapses to a transcript-level extractor
     (`Verifier.treeSpecialSoundWithClassical_of_isEmpty_challengeIdx`).

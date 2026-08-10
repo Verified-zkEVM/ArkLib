@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 
 import ArkLib.OracleReduction.Security.TranscriptTree.Basic
 import ArkLib.OracleReduction.Security.TranscriptTree.Composition
+import ArkLib.OracleReduction.Security.TranscriptTree.NonVacuity
 
 /-!
   # Trees of transcripts
@@ -29,7 +30,7 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
   Reading the labels along a root-to-leaf path reconstructs one full protocol transcript, and any
   two paths automatically agree on everything before the round where their challenges first diverge.
   That shared prefix is exactly what rewinding the prover produces, which is why the tree is the
-  natural object for the extractor to consume (`Extractor.TreeBasedClassical`) and for the rewinding
+  natural object for the extractor to consume (`Extractor.TreeBased`) and for the rewinding
   reduction to produce.
 
   ## How special-soundness notions use it
@@ -65,11 +66,17 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
 
   - `TranscriptTree.Basic` — the core definitions: `ChallengeTree`, the shape abstraction
     (`ChallengeTreeShape`, `IsStructured`), root-to-leaf paths and the transcripts they read
-    (`LeafPath`, `transcripts` / `fullTranscripts`), the accept condition (`IsAccepting`), and the
-    shared `Extractor.TreeBasedClassical` extractor type.
+    (`LeafPath`, `transcripts` / `fullTranscripts`), the accept condition (`IsAccepting`), the
+    verifier's reachable outputs (`Verifier.Outputs`) and leaf witnessings
+    (`ChallengeTree.LeafWitnesses`, `LeafWitnesses.IsValid`), the shared `Extractor.TreeBased`
+    extractor type, and the shape-generic notions `Verifier.treeSpecialSoundWith` and its
+    escape-threaded twin.
   - `TranscriptTree.Composition` — the sequential-composition API (`appendArity`,
     `ChallengeTreeShape.append`, `appendSplit`) and the structure-preservation and recombination
     theorems above.
+  - `TranscriptTree.NonVacuity` — the permanent regression gates for the notion: it is refutable at
+    `relIn = ∅` for every extractor, its validity premise is satisfiable, and the two rejected
+    typings of validity (∀-over-outputs, and reachability-free) are each killed on concrete data.
 
   ## Design notes and limitations
 

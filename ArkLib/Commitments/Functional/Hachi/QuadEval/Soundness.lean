@@ -259,9 +259,10 @@ def quadEvalEscLocal (base : ZMod q)
     ∃ br ∈ quadEvalSISSet Φ pp γ, buildWitness Φ base fam resp = Sum.inr br
 
 /-- **The reduction's plain witness assembler** — the `mkWitness` argument of
-`SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`: `buildWitness`'s opening branch,
-with the (total) `extractedOpening` as the fallback on its Module-SIS branch. The fallback is
-irrelevant to soundness: on exactly those inputs `quadEvalEscLocal` fires, so the certificate's left
+`SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`: `buildWitness`'s opening
+branch, with the (total) `extractedOpening` as the fallback on its Module-SIS branch. The fallback
+is irrelevant to soundness: on exactly those inputs `quadEvalEscLocal` fires, so the certificate's
+left
 disjunct carries the conclusion. -/
 def quadEvalMkWitness (base : ZMod q)
     (_stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
@@ -538,8 +539,8 @@ That `γ := b` instantiation is the named corollary
 `quadEval_coordinateWiseSpecialSoundWithEscape_paperParams` below. The paper's exact `S_b`-box
 output relation is `QuadEval/Reduction.paperRelOut`, with the `paperRelOut ⊆ relOut` containment
 proved as `QuadEval/Reduction.paperRelOut_subset_relOut`.
-
-Assembled by `SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`, which discharges
+Assembled by `SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`, which
+discharges every tree/extractor/guard obligation generically; the protocol-specific content is
 every tree/extractor/guard obligation generically; the protocol-specific content is
 `buildWitness_break_or_mem_relIn`. -/
 theorem quadEval_coordinateWiseSpecialSoundWithEscape
@@ -561,7 +562,8 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape
         (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
       (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
         (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) := by
-  refine coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness init impl _ (fun _ _ => rfl) _ _ _ _
+  refine coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness init impl _ (fun _ _ => rfl) _ _
+    _ _
     (fun stmtIn v fam resp hbranch hstar => ?_)
   rcases buildWitness_break_or_mem_relIn hq5 hκ hτ pp stmtIn v fam resp hbranch hstar with
     hbad | ⟨w, hw, hmem⟩

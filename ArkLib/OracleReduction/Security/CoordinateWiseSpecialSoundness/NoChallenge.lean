@@ -30,8 +30,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   * `ProtocolSpec.ChallengeTree.transcripts_eq_singleton` / `fullTranscripts_eq_singleton` —
     a no-challenge tree lists exactly one transcript.
   * `Verifier.treeSpecialSoundWithClassical_of_isEmpty_challengeIdx` — the bridge.
-  * `Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` and its `OracleVerifier`
-    analogue.
+  * `Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` and its
+    `OracleVerifier` analogue.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -41,9 +41,10 @@ namespace CWSSStructure
 
 /-- The canonical coordinate-wise structure on a **challenge-free** protocol
   (`IsEmpty pSpec.ChallengeIdx`): every field is the empty eliminator, since there are no challenge
-  rounds to describe. `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` proves CWSS for *any*
-  `D` on such a protocol, but the binary-append composition theorem
-  (`Verifier.append_coordinateWiseSpecialSoundWithClassical`) needs a *concrete* structure for the zero-round
+  rounds to describe. `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx` proves CWSS
+  for *any* `D` on such a protocol, but the binary-append composition theorem
+  (`Verifier.append_coordinateWiseSpecialSoundWithClassical`) needs a *concrete* structure for the
+  zero-round
   left factor (a `ReduceClaim`/`CheckClaim` head); this is that structure. -/
 def ofIsEmpty {n : ℕ} {pSpec : ProtocolSpec n} [IsEmpty pSpec.ChallengeIdx] :
     CWSSStructure pSpec where
@@ -134,8 +135,8 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
-/-- Oracle-reduction analogue of `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`, on the
-  combined `(StmtIn × ∀ i, OStmtIn i)` statement: the transcript-level extractor `e` on the
+/-- Oracle-reduction analogue of `coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`,
+  on the combined `(StmtIn × ∀ i, OStmtIn i)` statement: the transcript-level extractor `e` on the
   tree's unique transcript witnesses CWSS. -/
 theorem coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx [IsEmpty pSpec.ChallengeIdx]
     (D : CWSSStructure pSpec)

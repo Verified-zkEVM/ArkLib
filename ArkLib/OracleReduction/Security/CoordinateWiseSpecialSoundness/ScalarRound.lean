@@ -34,11 +34,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
 
   Both generic assemblies are **proven**:
   `coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar` and its escape-threaded twin
-  `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar`. Any pure statement-extending verifier
-  of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness` that
-  turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a `relIn`-witness
-  (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of `SingleRound`
-  collapses to injectivity of the challenge family (`injective_of_nodeOk`, via
+  `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar`. Any pure statement-extending
+  verifier of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness`
+  that turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a
+  `relIn`-witness (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of
+  `SingleRound` collapses to injectivity of the challenge family (`injective_of_nodeOk`, via
   `isSpecialSoundFamily_one_iff_injective` composed with the `Equiv.funUnique` decomposition of
   `scalarStructure`), so `hmk` receives plain `Function.Injective fam` instead of `StarAt`.
 
@@ -425,10 +425,10 @@ theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar
   exact hmk stmtIn v _ _ hbranch hinj
 
 /-- **Generic scalar-round escape-threaded CWSS assembly, named form.** The escape twin of
-`coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar`: `hmk` may conclude a local escape event
-`escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level event
-`escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation,
-weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
+`coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar`: `hmk` may conclude a local escape
+event `escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level
+event `escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`,
+interpolation, weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
 
 Same proof as the plain assembly up to the last step, where the disjunction is threaded: the
 extractor's own chosen per-branch responses — certified `relOut`-valid by `hbranch` — witness

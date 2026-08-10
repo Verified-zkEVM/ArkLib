@@ -45,11 +45,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
   ## Where weak binding lives
 
   The commitment is only binding on short openings, so the certificate is the **escape-threaded**
-  one: `package` is an `EscapeCWSSPackageClassical` whose event is `CommittedScalar.escEvent`, i.e. "the
-  tree's branch openings exhibit a short collision of the committed value". Relations and the
-  extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a
-  plain `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on
-  `(statement, tree)` rather than an extractor output.
+  one: `package` is an `EscapeCWSSPackageClassical` whose event is `CommittedScalar.escEvent`, i.e.
+  "the tree's branch openings exhibit a short collision of the committed value". Relations and the
+  extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a plain
+  `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on `(statement,
+  tree)` rather than an extractor output.
 
   ## Statement-type genericity
 
@@ -188,7 +188,8 @@ noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDeg
 accepting tree, either the tree exhibits a short collision of the commitment (`escEvent`) or
 `treeExtractor` produces a witness of the input linear relation. Straight from the generic
 committed-scalar certificate at `recover`. -/
-theorem coordinateWiseSpecialSoundWithEscapeClassical [IsPresentation P] (hφF : Function.Injective φF)
+theorem coordinateWiseSpecialSoundWithEscapeClassical [IsPresentation P] (hφF : Function.Injective
+  φF)
     (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :

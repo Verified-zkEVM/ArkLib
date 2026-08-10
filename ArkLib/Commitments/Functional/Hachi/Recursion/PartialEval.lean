@@ -198,8 +198,8 @@ theorem partialEval_coordinateWiseSpecialSoundWith
       (partialEvalExtractor Φ mLow κ bound ρBound K φF) := by
   sorry
 
-/-- **The partial-evaluation head as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eq. (24)): the pure
-one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
+/-- **The partial-evaluation head as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eq. (24)): the
+pure one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaim` to the per-`i` claims `relPartialEval`. A sound, zero-error reshaping, hence
 escape-free. -/
 def partialEvalPackage (init : ProbComp σ)

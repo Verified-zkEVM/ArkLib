@@ -204,15 +204,15 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`EscapeCWSSPackageClassical` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
-theorem — that the chain composition operator `▷` consumes: every link in the Hachi opening chain
-(`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
+`EscapeCWSSPackageClassical` field (`OracleReduction/.../Package.lean`), and it is the field — not
+any named theorem — that the chain composition operator `▷` consumes: every link in the Hachi
+opening chain (`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
 `ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,
 and `openingChain.isCWSS` is assembled from them in `Composition.lean`. Because this package is
 built wholesale from generic `Lift.package`, its certificate already arrives in that shape, stated
 in the generic `Lift` vocabulary. Restating it as a standalone theorem over Hachi's own
-`relRlin`/`relLift` at `Rq Φ`
-would duplicate the proposition without adding content and would sit outside the composition
+`relRlin`/`relLift` at `Rq Φ` would duplicate the proposition without adding content and would sit
+outside the composition
 interface, so nothing would consume it. -/
 noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
