@@ -247,14 +247,14 @@ theorem finalEval_coordinateWiseSpecialSoundWith
     rw [hwit]; exact hcom'
   · show liftShort Φ bound ρBound _
     rw [hwit]; exact hshort'
-  · show hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ _) m₀ stmt.challenges = _
+  · change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ _) m₀ stmt.challenges = _
     rw [hwit]
     refine (hypercubeSum_of_le m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ hex.choose) le_rfl
       stmt.challenges).trans ?_
     simp only [Fin.eta]
     rw [eval_sumcheckPolyZero, hval']
     exact hg0
-  · show hypercubeSum m₀
+  · change hypercubeSum m₀
       (sumcheckPolyAlpha Φ m₀ m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα _) m₀
       stmt.challenges = _
     rw [hwit]

@@ -43,17 +43,20 @@ import CompPoly.Univariate.Linear
 
   The loop is composed by **recursion over the binary guarded append**
   (`roundsChain count = roundsChain (count−1) ▷ roundPackage (count−1)`, base = the identity
-  package), so the only composition machinery it consumes is `Guarded.lean`'s skeleton.
-
-The loop's recursion pins the relation seams (`roundsChain_relIn` / `roundsChain_relOut`); the
+  package), so the only composition machinery it consumes is `Guarded.lean`'s guarded append —
+  itself proven, including the escape-threaded form this loop instantiates.
+  The loop's recursion pins the relation seams (`roundsChain_relIn` / `roundsChain_relOut`); the
   composed escape event is assembled by `ChallengeTree.EscapeEvent.append`.
 
   **Status**: Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape`) and its named extractor
-  `roundExtractor` are **proven**, on top of the generic guarded scalar-round engine
+  `roundExtractor` are **proven and axiom-clean** (as is the whole `roundsChain`), on top of the
+  generic guarded scalar-round engine
   `ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded` and the
   round-polynomial layer of `Sumcheck/RoundPoly.lean`. Two side conditions ride along and are
   genuinely load-bearing, both discussed at the theorem: `i < m₀` (a round needs a free cube
   coordinate to split on) and `0 < b` (the range summand's `2b` degree pin degenerates at `b = 0`).
+  The honest prover `roundProver` is a skeleton: its round message is the parameter `computeG`,
+  which the (not yet written) completeness layer has to supply — see `Sumcheck/Basic.lean`.
 
   ## References
 
@@ -102,17 +105,19 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
+variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The round check ([NOZ26] Figure 6): both round polynomials sum to the current targets over
-`{0, 1}`. `Bool`-valued (design G3) so the guarded-verifier witness is definitional. -/
+`{0, 1}`. `Bool`-valued (design G3) so the guarded-verifier witness is definitional, and phrased
+with `==` — the same `[BEq F] [LawfulBEq F]` idiom as `finalCheck` (`Sumcheck/FinalEval.lean`), so
+that unpacking a guard fact is `beq_iff_eq` at every guarded seam of the folder. -/
 def roundCheck {TCom : Type} {i : ℕ}
     (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ i)
     (g : RoundMsg F b) : Bool :=
-  decide (g.1.1.eval 0 + g.1.1.eval 1 = stmt.target₀) &&
-    decide (g.2.1.eval 0 + g.2.1.eval 1 = stmt.targetα)
+  (g.1.1.eval 0 + g.1.1.eval 1 == stmt.target₀) &&
+    (g.2.1.eval 0 + g.2.1.eval 1 == stmt.targetα)
 
 /-- The `i`-th round's **output map** ([NOZ26] Figure 6): extend the challenge prefix by `a_i` and
 replace the two targets by the round polynomials' values there. Named once, so that the verifier,
@@ -135,7 +140,7 @@ def roundVerifier {TCom : Type} (i : ℕ) :
       pure (roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The round verifier is guarded **with** the round check and `roundOut` — definitionally. This is
 the form the guarded scalar-round engine consumes. -/
 theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
@@ -146,7 +151,7 @@ theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
         roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩)) :=
   fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The round verifier is guarded — definitionally, by `roundCheck`. -/
 theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
     (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
@@ -230,7 +235,7 @@ noncomputable def roundExtractor
     (fun _ _ _ resp => resp ⟨0, Nat.succ_pos _⟩)
 
 omit [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [IsCyclotomic Φ]
-  [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F] in
+  [BEq F] [LawfulBEq F] [SampleableType F] in
 /-- **The interpolation kernel of Lemma 11.** Two univariate polynomials of degree `≤ D` that agree
 at `k > D` pairwise-distinct points are equal. This is what upgrades "the partial cube sum agrees
 with the prover's round polynomial at the `k` sibling challenges" into "it agrees with it
@@ -278,13 +283,7 @@ a nonzero target. The loop only ever instantiates rounds `0, …, m₀ − 1`, s
 component is pinned to degree `≤ roundDegZero b = 2b`, and at `b = 0` the range factor
 `P_0(v) = v` is degree `1 > 0`, so the summand would overflow its own pin
 (`degreeOf_sumcheckPolyZero` carries the same hypothesis). Every instantiation has `b ≥ 2` (the
-decomposition base; `b = 16` at the paper's parameters).
-
-**TODO (reuse `Sumcheck/Structured`):** this round could instead be the existing structured
-sum-check round (`ArkLib/ProofSystem/Sumcheck/Structured`) rather than the bespoke `roundVerifier`
-above, with the round relations read off `Structured.sumcheckConsistencyProp` /
-`computeRoundPoly`; that reconciliation is orthogonal to this certificate (see the
-`Sumcheck/Basic.lean` umbrella). -/
+decomposition base; `b = 16` at the paper's parameters). -/
 theorem round_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -317,7 +316,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
   case pos =>
   -- The guard fact, unpacked once: both round polynomials sum to the round-`i` targets on `{0,1}`.
   have hguard := hcheck z
-  simp only [roundCheck, Bool.and_eq_true, decide_eq_true_eq] at hguard
+  simp only [roundCheck, Bool.and_eq_true, beq_iff_eq] at hguard
   refine Or.inr ⟨(hresp z).1, (hresp z).2.1, ?_, ?_, (hresp z).2.2.2.2⟩
   · -- The range sumcheck claim.
     have hdefect : roundPoly (sumcheckPolyZero Φ (M + 1) φF b s.zc.τ₀ (resp z))
