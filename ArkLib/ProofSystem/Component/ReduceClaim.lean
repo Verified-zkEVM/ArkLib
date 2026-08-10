@@ -218,48 +218,6 @@ theorem verifier_coordinateWiseSpecialSoundWith
   change (o tree.onlyPath).map (mapWitInv stmtIn) = some (mapWitInv stmtIn w)
   rw [hw]; rfl
 
-/-! ## The outgoing layer
-
-The classical-inversion extractor and its certificate, kept only while the `Hachi` packages that
-name them are still `*Classical`-typed; deleted with the rest of the `*Classical` layer. They are
-the only `noncomputable` declarations in this file, and carry per-declaration markers so a
-computability sweep can see them (the file has no `noncomputable section`). -/
-
-open Classical in
-/-- **Outgoing** `ReduceClaim` tree extractor: pick (classically) any output witness that makes the
-mapped statement accepted and pull it back along `mapWitInv`; junk if none exists. -/
-noncomputable def treeExtractorClassical [Nonempty WitIn]
-    (mapWitInv : StmtIn → WitOut → WitIn) (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    Extractor.TreeBasedClassical StmtIn WitIn !p[] (CWSSStructure.toShape D).arity :=
-  fun stmtIn _ =>
-    if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
-    else Classical.ofNonempty
-
-/-- **Outgoing** coordinate-wise special soundness of `ReduceClaim`, at the classical extractor:
-the verifier is pure with no challenge rounds, so CWSS collapses (via the outgoing no-challenge
-bridge) to a transcript-level obligation. -/
-theorem verifier_coordinateWiseSpecialSoundWithClassical [Nonempty WitIn]
-    (D : CWSSStructure (!p[] : ProtocolSpec 0))
-    (hRel : ∀ stmtIn witOut,
-      (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWithClassical init impl D relIn relOut
-      (verifier oSpec mapStmt)
-      (treeExtractorClassical (mapStmt := mapStmt) relOut mapWitInv D) := by
-  classical
-  have h := Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D
-    (verifier oSpec mapStmt) relIn relOut
-    (fun stmtIn _ =>
-      if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
-      else Classical.ofNonempty)
-    (fun stmtIn tr hAcc => by
-      have hlang : mapStmt stmtIn ∈ relOut.language :=
-        Verifier.mem_of_pure_accepting init impl (verifier oSpec mapStmt) stmtIn tr
-          relOut.language (mapStmt stmtIn) rfl hAcc
-      have hex := (Set.mem_language_iff _ _).1 hlang
-      rw [dif_pos hex]
-      exact hRel stmtIn _ hex.choose_spec)
-  exact h
-
 end Reduction
 
 section OracleReduction
@@ -446,7 +404,8 @@ instance instIsPureOracle :
 /-- **The `ReduceClaim` oracle tree extractor**, witness-only: as in the non-oracle case, pull the
 single leaf's output witness back along `mapWitInv`. Computable and `Classical.choice`-free.
 
-It has no outgoing twin: unlike the non-oracle pair, nothing outside this file names it. -/
+As for the non-oracle engine, the tree carries no information of its own, so the output witness
+the classical version had to invent arrives on the leaf witnessing instead. -/
 def oracleTreeExtractor (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
     Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut !p[]

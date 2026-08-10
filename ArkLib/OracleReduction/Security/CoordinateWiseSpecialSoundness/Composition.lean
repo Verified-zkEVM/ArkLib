@@ -42,8 +42,6 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   validity. Guarded left factors are handled in `Guarded.lean` at the same skeleton.
 -/
 
-noncomputable section
-
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
 
@@ -869,5 +867,3 @@ theorem append_coordinateWiseSpecialSoundWithEscape
     D₁ D₂ esc₁ esc₂ verify₁ hV₁ E₁ E₂ h₁ h₂
 
 end OracleVerifier
-
-end

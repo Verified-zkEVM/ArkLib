@@ -63,7 +63,6 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -796,5 +795,3 @@ scoped elab:65 l:term:66 " ▷ " r:term:65 : term => do
 end UniversalAppend
 
 end CoordinateWise
-
-end

@@ -178,8 +178,8 @@ def escEvent [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
 its `z`-component.
 
 **Computable.** The `k = 2d` branch openings arrive on the leaf witnessing rather than being
-recovered by inverting the output relation, so — unlike its outgoing twin — this takes no `checkAt`
-argument and pulls in no `Classical.choice`. -/
+recovered by inverting the output relation, so this takes no `checkAt` argument and pulls in no
+`Classical.choice`. -/
 def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
     Extractor.TreeBased Stmt (PolyVec S μ) (LiftedWitness R S d μ n) (pSpecScalar K.TCom F)
       (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
@@ -227,60 +227,6 @@ def package [IsPresentation P] (hφF : Function.Injective φF)
   isPure := CommittedScalar.verifierPureForm K
   extractor := treeExtractor P K hd
   isCWSS := coordinateWiseSpecialSoundWithEscape P φF getM getY zOk sideCond K hφF hd
-    short_zOk init impl
-
-/-! ## The outgoing layer
-
-The classical-inversion delegate, its certificate and its package, kept only while Hachi's
-`liftPackage` is still `*Classical`-typed; deleted with the rest of the `*Classical` layer. They
-are the only `noncomputable` declarations in this file (which has no `noncomputable section`), so
-a computability sweep can see them. -/
-
-/-- **Outgoing** switch extractor, at the classical committed-scalar delegate. -/
-noncomputable def treeExtractorClassical [IsPresentation P]
-    (hd : P.modulus.toPoly.natDegree = d) :
-    Extractor.TreeBasedClassical Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
-      (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
-        (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
-  CommittedScalar.treeExtractorClassical
-    (by have := hd ▸ P.natDegree_modulus_pos; omega) K
-    (checkAt P φF getM getY sideCond) (fun w => w.z)
-
-/-- **Outgoing** CWSS of `Lift`, at `treeExtractorClassical`. -/
-theorem coordinateWiseSpecialSoundWithEscapeClassical [IsPresentation P] (hφF : Function.Injective
-  φF)
-    (hd : P.modulus.toPoly.natDegree = d)
-    (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
-      (scalarStructure (2 * d) (by have := hd ▸ P.natDegree_modulus_pos; omega))
-      (escEvent P φF getM getY sideCond K hd)
-      (relLin getM getY zOk) (relOut P φF getM getY sideCond K)
-      (verifier (oSpec := oSpec) (F := F) K)
-      (treeExtractorClassical P φF getM getY sideCond K hd) :=
-  CommittedScalar.coordinateWiseSpecialSoundWithEscapeClassical
-    (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
-    (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
-    (fun s w fam hinj hcheck hshort =>
-      recover P φF getM getY zOk sideCond hφF hd short_zOk s w fam hinj hcheck hshort)
-    init impl
-
-/-- **Outgoing** `Lift` package, at the classical extractor and the `IsPure` class. -/
-noncomputable def packageClassical [IsPresentation P] (hφF : Function.Injective φF)
-    (hd : P.modulus.toPoly.natDegree = d)
-    (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    EscapeCWSSPackageClassical init impl Stmt (PolyVec S μ)
-      (CommittedScalar.Statement Stmt K.TCom F) (LiftedWitness R S d μ n)
-      (pSpecScalar K.TCom F) where
-  verifier := verifier K
-  struct := scalarStructure (2 * d) (by have := hd ▸ P.natDegree_modulus_pos; omega)
-  relIn := relLin getM getY zOk
-  relOut := relOut P φF getM getY sideCond K
-  esc := escEvent P φF getM getY sideCond K hd
-  isPure := (CommittedScalar.verifierPureForm K).isPure
-  extractor := treeExtractorClassical P φF getM getY sideCond K hd
-  isCWSS := coordinateWiseSpecialSoundWithEscapeClassical P φF getM getY zOk sideCond K hφF hd
     short_zOk init impl
 
 end Protocol

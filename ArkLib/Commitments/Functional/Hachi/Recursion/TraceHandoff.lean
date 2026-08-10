@@ -115,6 +115,24 @@ def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
     else failure
 
 omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
+/-- **The trace-handoff verifier's guardedness as data** (`Verifier.GuardedForm`): the guard is
+`traceCheck` and the verdict is `toNextQuadEvalStatement`, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsGuarded` instance, because a composed chain must
+*run* the left verdict at the seam to know which statement to extract the right factor at (and the
+composed escape event must name it too); reading either off the `IsGuarded` existential would cost
+`Classical.choice`. This is the chain's closing seam, so its verdict is the next iteration's
+`QuadEvalStatement` over `Φ'`. -/
+def handoffVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F)
+    (reinterpretCom : TCom → Commitment Φ' outerRows') :
+    (handoffVerifier (oSpec := oSpec) Φ' mLow
+      (innerRows' := innerRows') (messageDigits' := messageDigits') (innerDigits' := innerDigits')
+      (dRows' := dRows') (m' := m') (r' := r') φF reinterpretCom).GuardedForm where
+  check := fun stmt tr => traceCheck Φ' mLow φF stmt (tr 0)
+  out := fun stmt tr => toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0)
+  verify_eq := fun _ _ => rfl
+
+omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
 /-- The trace-handoff verifier is guarded — definitionally, by `traceCheck`. -/
 theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
     (reinterpretCom : TCom → Commitment Φ' outerRows') :
@@ -163,14 +181,15 @@ def handoffExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows') :
-    Extractor.TreeBasedClassical (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
+    Extractor.TreeBased (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
+      (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
       (pSpecHandoff Φ')
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecHandoff Φ'))).arity :=
   sorry
 
 /-- **CWSS of the trace handoff — closing the recursion loop, at the named
-`handoffExtractor`** (the named form is deliberate — see `Verifier.treeSpecialSoundWithClassical`;
+`handoffExtractor`** (the named form is deliberate — see `Verifier.treeSpecialSoundWith`;
 closing this gap means filling the extractor and this specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
@@ -192,7 +211,7 @@ theorem handoff_coordinateWiseSpecialSoundWith
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWithClassical init impl
+    Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
       (relHatEval Φ mLow κ bound ρBound zpow K φF)
       (relIn Φ' pp' base' βSq' γ' κ')
@@ -200,7 +219,7 @@ theorem handoff_coordinateWiseSpecialSoundWith
       (handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom) := by
   sorry
 
-/-- **The trace handoff as a guarded `GCWSSPackageClassical`** (Hachi §4.5, Eqs. (27)–(28)): the
+/-- **The trace handoff as a guarded `GCWSSPackage`** (Hachi §4.5, Eqs. (27)–(28)): the
 guarded one-message verifier with the empty challenge structure, reducing the `Z`-packed claim
 `relHatEval` to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion
 loop's closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the
@@ -216,7 +235,7 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    GCWSSPackageClassical init impl
+    GCWSSPackage init impl
       (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')
@@ -226,7 +245,7 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
   struct := CWSSStructure.ofIsEmpty
   relIn := relHatEval Φ mLow κ bound ρBound zpow K φF
   relOut := relIn Φ' pp' base' βSq' γ' κ'
-  isGuarded := handoffVerifier_isGuarded Φ' mLow φF reinterpretCom
+  isGuarded := handoffVerifierGuardedForm Φ' mLow φF reinterpretCom
   extractor := handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom
   isCWSS := handoff_coordinateWiseSpecialSoundWith Φ Φ' mLow κ bound ρBound init impl zpow K
     φF pp' reinterpretCom base' βSq' γ' κ'

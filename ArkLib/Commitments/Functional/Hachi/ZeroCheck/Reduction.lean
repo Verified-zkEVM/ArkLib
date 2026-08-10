@@ -155,6 +155,19 @@ def zeroCheckVerifier {TCom : Type} :
     pure ⟨stmt.1, stmt.2.1, stmt.2.2,
       (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩
 
+/-- **The zero-check verifier's purity as data** (`Verifier.PureForm`): the verdict is the
+pass-through statement extended by the round's two Kronecker seeds, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def zeroCheckVerifierPureForm {TCom : Type} :
+    (zeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
+      (TCom := TCom)).PureForm where
+  verify := fun stmt tr =>
+    ⟨stmt.1, stmt.2.1, stmt.2.2, (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩
+  verify_eq := fun _ _ => rfl
+
 /-- The zero-check prover (trivial: the round is challenge-only; the honest prover just absorbs
 the seeds and carries its lifted witness forward as the output witness). -/
 def zeroCheckProver {TCom : Type} :
@@ -223,8 +236,8 @@ generated code panics when run. -/
 def zeroCheckExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Extractor.TreeBasedClassical (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
-      (pSpecZeroCheck F)
+    Extractor.TreeBased (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (LiftedWitness Φ μ n) (pSpecZeroCheck F)
       (CWSSStructure.toShape (zeroCheckStructure F m₀ m₁)).arity :=
   sorry
 
@@ -248,7 +261,7 @@ theorem zeroCheck_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (zeroCheckStructure F m₀ m₁)
       (zeroCheckEsc Φ m₀ m₁ bound ρBound K φF b)
       (relBatched Φ m₀ m₁ bound ρBound K φF b)
@@ -257,13 +270,13 @@ theorem zeroCheck_coordinateWiseSpecialSoundWithEscape
       (zeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b) := by
   sorry
 
-/-- **The zero-check as an `EscapeCWSSPackageClassical`** (corrected Hachi Figure 5 / Lemma 10): the
+/-- **The zero-check as an `EscapeCWSSPackage`** (corrected Hachi Figure 5 / Lemma 10): the
 one-round seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing `relBatched`
 to `relZeroCheck`, with the weak-binding event `zeroCheckEsc` as its one escape-specific field. -/
 def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    EscapeCWSSPackageClassical init impl
+    EscapeCWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecZeroCheck F) where
@@ -272,9 +285,7 @@ def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
   relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
   relOut := relZeroCheck Φ m₀ m₁ bound ρBound K φF b
   esc := zeroCheckEsc Φ m₀ m₁ bound ρBound K φF b
-  isPure := ⟨fun stmt tr =>
-    ⟨stmt.1, stmt.2.1, stmt.2.2, (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩,
-    fun _ _ => rfl⟩
+  isPure := zeroCheckVerifierPureForm Φ
   extractor := zeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b
   isCWSS := zeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound init impl K φF b
 

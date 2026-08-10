@@ -87,15 +87,28 @@ theorem mem_relLift_of_relBatched
     (X, w) ∈ relLift Φ bound ρBound K φF := by
   sorry
 
-/-- **The batching bridge as a (plain) `CWSSPackageClassical`**: zero-round `ReduceClaim` at
+/-- **The batching bridge verifier's purity as data** (`Verifier.PureForm`): the statement map is
+`id`, so the verdict is the input statement itself and `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def batchVerifierPureForm
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
+    (ReduceClaim.verifier oSpec
+      (id : LiftStatement Φ K.TCom F n μ → LiftStatement Φ K.TCom F n μ)).PureForm where
+  verify := fun stmt _ => stmt
+  verify_eq := fun _ _ => rfl
+
+/-- **The batching bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
 `mapStmt := id`,
 reducing `relLift` to `relBatched` with no soundness error (the whole content is the sorried
 un-batching pull-back). -/
-noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (hn : n ≤ 2 ^ m₁) :
-    CWSSPackageClassical init impl
+    CWSSPackage init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
@@ -103,10 +116,9 @@ noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
   struct := CWSSStructure.ofIsEmpty
   relIn := relLift Φ bound ρBound K φF
   relOut := relBatched Φ m₀ m₁ bound ρBound K φF b
-  isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractorClassical (mapStmt := id)
-    (relBatched Φ m₀ m₁ bound ρBound K φF b) (fun _ w => w) CWSSStructure.ofIsEmpty
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWithClassical
+  isPure := batchVerifierPureForm Φ bound ρBound K
+  extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relLift Φ bound ρBound K φF)
     (relOut := relBatched Φ m₀ m₁ bound ρBound K φF b)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)

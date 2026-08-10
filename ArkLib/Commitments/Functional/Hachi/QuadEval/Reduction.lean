@@ -396,6 +396,18 @@ def verifier :
       (pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r) where
   verify := fun stmt tr => pure (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
 
+/-- **The pass-through verifier's purity as data** (`Verifier.PureForm`): the verdict is the
+pass-through triple itself, so `verify_eq` is `rfl`.
+
+The `QuadEval` package carries this instead of a `Verifier.IsPure` instance, because a composed
+chain must *run* the left verdict at the seam to know which statement to extract the right factor
+at, and reading that function off the `IsPure` existential would cost `Classical.choice`. -/
+def verifierPureForm : (verifier (oSpec := oSpec) (ω := ω) Φ
+    (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
+    (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)).PureForm where
+  verify := fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
+  verify_eq := fun _ _ => rfl
+
 /-- The honest prover (Hachi §4.2, Figure 3; completeness is out of scope for Lemma 8): round 0
 sends the carrier commitment `v`, round 1 receives the challenge vector, and the output witness
 is the `QuadEvalResponse` `(ŵ, t̂, ẑ)` of Eq. (20). The honest computations (`v = D ŵ` with

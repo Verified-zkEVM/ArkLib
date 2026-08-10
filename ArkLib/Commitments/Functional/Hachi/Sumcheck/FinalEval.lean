@@ -95,6 +95,21 @@ def finalEvalVerifier {TCom : Type} (φF : ZMod q →+* F) :
     else failure
 
 omit [NeZero q] [IsCyclotomic Φ] in
+/-- **The final-evaluation verifier's guardedness as data** (`Verifier.GuardedForm`): the guard is
+`finalCheck` and the verdict is the evaluation claim `⟨t, a, y′⟩`, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsGuarded` instance, because a composed chain must
+*run* the left verdict at the seam to know which statement to extract the right factor at (and the
+composed escape event must name it too); reading either off the `IsGuarded` existential would cost
+`Classical.choice`. -/
+def finalEvalVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F) :
+    (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)
+      φF).GuardedForm where
+  check := fun stmt tr => finalCheck Φ m₀ m₁ bound b φF stmt (tr 0)
+  out := fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩
+  verify_eq := fun _ _ => rfl
+
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
 theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)
@@ -143,14 +158,14 @@ generated code panics when run. -/
 def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Extractor.TreeBasedClassical (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
-      (pSpecFinalEval F)
+    Extractor.TreeBased (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
+      (LiftedWitness Φ μ n) (pSpecFinalEval F)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecFinalEval F))).arity :=
   sorry
 
 /-- **CWSS of the final-evaluation step, at the named `finalEvalExtractor`**
-(the named form is deliberate — see `Verifier.treeSpecialSoundWithClassical`; closing this gap means
+(the named form is deliberate — see `Verifier.treeSpecialSoundWith`; closing this gap means
 filling the extractor and this specification about it).
 
 **Sorried.** Proof plan: the protocol has no challenge round, so CWSS collapses (via the
@@ -164,7 +179,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Verifier.coordinateWiseSpecialSoundWithClassical init impl
+    Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
       (roundRel Φ m₀ m₁ bound ρBound K φF b m₀)
       (relWEvalClaim Φ m₀ bound ρBound b K φF)
@@ -172,14 +187,14 @@ theorem finalEval_coordinateWiseSpecialSoundWith
       (finalEvalExtractor Φ m₀ bound ρBound K φF) := by
   sorry
 
-/-- **The final-evaluation step as a guarded `GCWSSPackageClassical`**: the guarded one-message
+/-- **The final-evaluation step as a guarded `GCWSSPackage`**: the guarded one-message
 verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim
 `relWEvalClaim`. A guarded *re-reading* of the final targets, hence escape-free. Certificate: the
 sorried `finalEval_coordinateWiseSpecialSoundWith`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    GCWSSPackageClassical init impl
+    GCWSSPackage init impl
       (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
       (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n)
       (pSpecFinalEval F) where
@@ -187,7 +202,7 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
   struct := CWSSStructure.ofIsEmpty
   relIn := roundRel Φ m₀ m₁ bound ρBound K φF b m₀
   relOut := relWEvalClaim Φ m₀ bound ρBound b K φF
-  isGuarded := finalEvalVerifier_isGuarded Φ m₀ m₁ bound b φF
+  isGuarded := finalEvalVerifierGuardedForm Φ m₀ m₁ bound b φF
   extractor := finalEvalExtractor Φ m₀ bound ρBound K φF
   isCWSS := finalEval_coordinateWiseSpecialSoundWith Φ m₀ m₁ bound ρBound b init impl K φF
 

@@ -124,6 +124,19 @@ def partialEvalVerifier {TCom : Type} :
     pure ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
       deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩
 
+/-- **The partial-evaluation verifier's purity as data** (`Verifier.PureForm`): the verdict is the
+split point with the sent partials installed and `y₀` derived, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def partialEvalVerifierPureForm {TCom : Type} :
+    (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := TCom) (F := F)).PureForm where
+  verify := fun stmt tr =>
+    ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
+      deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩
+  verify_eq := fun _ _ => rfl
+
 /-- The honest partial-evaluation prover skeleton: sends the true partials at the nonzero
 indices (the parameter `computeY`, honestly `partialEvalAt`). -/
 def partialEvalProver {TCom : Type}
@@ -169,15 +182,15 @@ generated code panics when run. -/
 def partialEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Extractor.TreeBasedClassical (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
-      (pSpecPartialEval F κ)
+    Extractor.TreeBased (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
+      (LiftedWitness Φ μ n) (pSpecPartialEval F κ)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecPartialEval F κ))).arity :=
   sorry
 
 /-- **CWSS of the partial-evaluation head — a sound, zero-error seam, at the
 named `partialEvalExtractor`** (the named form is deliberate — see
-`Verifier.treeSpecialSoundWithClassical`; closing this gap means filling the extractor and this
+`Verifier.treeSpecialSoundWith`; closing this gap means filling the extractor and this
 specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
@@ -190,7 +203,7 @@ theorem partialEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Verifier.coordinateWiseSpecialSoundWithClassical init impl
+    Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
       (relWEvalClaim Φ (mLow + κ) bound ρBound b K φF)
       (relPartialEval Φ mLow κ bound ρBound K φF)
@@ -198,7 +211,7 @@ theorem partialEval_coordinateWiseSpecialSoundWith
       (partialEvalExtractor Φ mLow κ bound ρBound K φF) := by
   sorry
 
-/-- **The partial-evaluation head as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eq. (24)): the
+/-- **The partial-evaluation head as a (plain) `CWSSPackage`** (Hachi §4.5, Eq. (24)): the
 pure one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaim` to the per-`i` claims `relPartialEval`. A sound, zero-error reshaping, hence
 escape-free. -/
@@ -206,7 +219,7 @@ def partialEvalPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    CWSSPackageClassical init impl
+    CWSSPackage init impl
       (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
       (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
       (pSpecPartialEval F κ) where
@@ -214,10 +227,7 @@ def partialEvalPackage (init : ProbComp σ)
   struct := CWSSStructure.ofIsEmpty
   relIn := relWEvalClaim Φ (mLow + κ) bound ρBound b K φF
   relOut := relPartialEval Φ mLow κ bound ρBound K φF
-  isPure := ⟨fun stmt tr =>
-    ⟨stmt.t, fun j => stmt.point (Fin.castAdd κ j), fun j => stmt.point (Fin.natAdd mLow j),
-      deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j)) (tr 0)⟩,
-    fun _ _ => rfl⟩
+  isPure := partialEvalVerifierPureForm mLow κ
   extractor := partialEvalExtractor Φ mLow κ bound ρBound K φF
   isCWSS := partialEval_coordinateWiseSpecialSoundWith Φ mLow κ bound ρBound b init impl K φF
 

@@ -75,7 +75,6 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
       Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -877,5 +876,3 @@ def GCWSSPackage.appendPure {StmtA WitA StmtB WitB StmtC WitC : Type}
 end CanonicalPackage
 
 end CoordinateWise
-
-end

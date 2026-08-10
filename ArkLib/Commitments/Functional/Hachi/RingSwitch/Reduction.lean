@@ -204,7 +204,7 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`EscapeCWSSPackageClassical` field (`OracleReduction/.../Package.lean`), and it is the field — not
+`EscapeCWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not
 any named theorem — that the chain composition operator `▷` consumes: every link in the Hachi
 opening chain (`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
 `ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,
@@ -214,14 +214,14 @@ in the generic `Lift` vocabulary. Restating it as a standalone theorem over Hach
 `relRlin`/`relLift` at `Rq Φ` would duplicate the proposition without adding content and would sit
 outside the composition
 interface, so nothing would consume it. -/
-noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
-    EscapeCWSSPackageClassical init impl
+    EscapeCWSSPackage init impl
       (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) :=
   haveI := isPresentation_cyclotomic Φ hd
-  Lift.packageClassical (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
+  Lift.package (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s z => vecLInftyNorm Φ z ≤ s.bound) (fun s => bound ≤ s.bound) K
     φF.injective (cyclotomicPresentation_modulus_natDegree Φ)
     (fun s w hshort hside => vecLInftyNorm_le_of_liftShort Φ bound ρBound s w hshort hside)

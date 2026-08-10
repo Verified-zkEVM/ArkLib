@@ -48,7 +48,6 @@ existential. `CWSSPackage.ofClassical` lifts a legacy package while consumers mi
     Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
-noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
 
@@ -204,5 +203,3 @@ noncomputable def ofClassical
 end CWSSPackage
 
 end CoordinateWise
-
-end
