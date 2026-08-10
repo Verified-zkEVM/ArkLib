@@ -244,9 +244,9 @@ code divided by the *block length* alone.
 For a code over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`.
 For a module alphabet `A = F^s` (folded, interleaved, …) it is **not** the
 alphabet-normalized rate `log_{|A|} |C| / n = dim/(s·n)` of ABF26 Definition 2.5 — this
-definition never divides by the alphabet dimension `s`. Consumers that need the paper's
-normalization spell it out at the call site: see `CodingTheory.subspaceDesign_tau_lower`
-and `CodingTheory.frs_is_subspaceDesign_gk16`, which use `finrank/(s·n)` explicitly
+definition never divides by the alphabet dimension `s`. The paper's normalization is
+`alphabetRate` below; `CodingTheory.subspaceDesign_tau_lower` and
+`CodingTheory.frs_is_subspaceDesign_gk16` use its `ℝ`-cast form `finrank/(s·n)` inline
 (the `finrank/n` form of those statements is false — `C = ⊤` is a counterexample).
 -/
 noncomputable def rate [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
@@ -262,6 +262,42 @@ scoped syntax &"ρ" term : term
 
 scoped macro_rules
   | `(ρ $t:term) => `(LinearCode.rate $t)
+
+/--
+The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`
+(ABF26 Definition 2.5): for alphabet `Σ = F^s` the paper's rate is
+`log_{|Σ|} |C| / n = dim/(s·n)`. This is the normalization `rate` does **not** provide —
+`rate` divides by the block length alone — and the two agree exactly at `s = 1`
+(`alphabetRate_one_eq_rate`). It is the rate appearing (inline, in its `ℝ`-cast form
+`alphabetRate_cast_eq`) in `CodingTheory.subspaceDesign_tau_lower` and
+`CodingTheory.frs_is_subspaceDesign_gk16`.
+-/
+noncomputable def alphabetRate [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=
+  (dim MC : ℚ≥0) / (s * length MC)
+
+/-- `alphabetRate` is `rate` corrected by the alphabet dimension `s`. (`ℚ≥0`-division by
+zero makes both sides `0` at `s = 0`, so no side condition is needed.) -/
+lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    alphabetRate MC = rate MC / s := by
+  rw [alphabetRate, rate, div_div, mul_comm]
+
+/-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
+rate: ABF26 D2.5 and `rate` agree exactly there. -/
+lemma alphabetRate_one_eq_rate [Semiring F]
+    (MC : ModuleCode ι F (Fin 1 → F)) :
+    alphabetRate MC = rate MC := by
+  rw [alphabetRate_eq_rate_div, Nat.cast_one, div_one]
+
+/-- `alphabetRate` in the `ℝ`-cast shape used by the subspace-design statements
+(`subspaceDesign_tau_lower`, `frs_is_subspaceDesign_gk16`): `finrank/(s·n)`. -/
+lemma alphabetRate_cast_eq [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    (alphabetRate MC : ℝ) = (Module.finrank F MC : ℝ) / (s * Fintype.card ι) := by
+  rw [alphabetRate, dim, length]
+  push_cast
+  rfl
 
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
