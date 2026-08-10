@@ -7,7 +7,7 @@ extractor's output on the suffix tree below that leaf — at the intermediate st
 by `verify₁`, the LEFT VERIFIER's verdict function, passed as data (in packages: read off the
 `PureForm`/`GuardedForm` field). The extractors attribute no statements, so composition needs
 no path splitting: the only path machinery on the runtime path is `AppendSplit.gluePath`
-(Part A).
+(landed in the library by M3 step 3b — see Part A's note).
 
 Proved here:
   - `append_treeSpecialSoundWith` (pure left factor). The load-bearing moves: prefix acceptance
@@ -32,113 +32,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 open OracleComp OracleSpec ProtocolSpec ProtocolSpec.ChallengeTree
 
-/-! ## Part A — leaf-path glue for `appendSplit` -/
+/-! ## Part A — leaf-path glue for `appendSplit`
 
-namespace ProtocolSpec.ChallengeTree
-
-variable {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
-  {arity₁ : pSpec₁.ChallengeIdx → ℕ} {arity₂ : pSpec₂.ChallengeIdx → ℕ}
-
-/-- Embed a leaf path of a `pSpec₂`-tree into the `embedRight`-embedded appended tree. -/
-def LeafPath.embedRight : {r : Fin (n + 1)} → {t : ChallengeTree pSpec₂ arity₂ r} →
-    LeafPath t → LeafPath (ChallengeTree.embedRight (arity₁ := arity₁) t)
-  | _, _, .leaf => .leaf
-  | _, _, .msg p => .msg p.embedRight
-  | _, .chalNode i h _ _, .chal j p =>
-      .chal (Fin.cast (appendArity_right (arity₁ := arity₁) (h := h)
-        ((appendDir_right i).trans h)).symm j) p.embedRight
-
-/-- Glue a first-stage leaf path with a suffix leaf path into a leaf path of the source tree. -/
-def SplitData.gluePath : {r : Fin (m + 1)} → (S : SplitData arity₁ arity₂ r) →
-    (p₁ : LeafPath S.fst) → LeafPath (S.sndAt p₁) → LeafPath S.src
-  | _, .boundary _, _, p₂ => p₂.embedRight
-  | _, .msg _ _ _ child, p₁, p₂ => .msg (child.gluePath (peelMsg p₁) p₂)
-  | _, .chal i h _ children, p₁, p₂ =>
-      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
-        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
-      have hAr : appendArity arity₁ arity₂ ⟨Fin.castAdd n i, hApp⟩ = arity₁ ⟨i, h⟩ := by
-        rw [show (⟨Fin.castAdd n i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-            = ChallengeIdx.inl ⟨i, h⟩ from by ext; rfl]
-        simpa [appendArity] using
-          congrArg (Sum.elim arity₁ arity₂)
-            (ChallengeIdx.sumEquiv_symm_inl (pSpec₂ := pSpec₂) ⟨i, h⟩)
-      .chal (Fin.cast hAr.symm (chalPeel p₁).1)
-        ((children (chalPeel p₁).1).gluePath (chalPeel p₁).2 p₂)
-
-/-- Transcript spec, boundary half. -/
-theorem LeafPath.transcript_embedRight :
-    {r : Fin (n + 1)} → {t : ChallengeTree pSpec₂ arity₂ r} → (p₂ : LeafPath t) →
-    (tr₁ : FullTranscript pSpec₁) → (pre₂ : Transcript r pSpec₂) →
-    (p₂.embedRight (arity₁ := arity₁)).transcript (rightPrefix tr₁ pre₂)
-      = tr₁ ++ₜ p₂.transcript pre₂
-  | _, _, .leaf, tr₁, pre₂ => by
-      simp only [LeafPath.embedRight, LeafPath.transcript]
-      exact rightPrefix_leaf_eq_append _ _
-  | _, _, @LeafPath.msg _ _ _ _ _ message _ path, tr₁, pre₂ => by
-      simp only [LeafPath.embedRight, LeafPath.transcript]
-      rw [← rightPrefix_concat]
-      exact LeafPath.transcript_embedRight path tr₁ (pre₂.concat message)
-  | _, _, @LeafPath.chal _ _ _ i h chals children j path, tr₁, pre₂ => by
-      have ih := LeafPath.transcript_embedRight path tr₁ (pre₂.concat (chals j))
-      rw [rightPrefix_concat] at ih
-      simp only [LeafPath.embedRight, LeafPath.transcript]
-      exact ih
-
-/-- Transcript spec of the glue. -/
-theorem SplitData.transcript_gluePath :
-    {r : Fin (m + 1)} → (S : SplitData arity₁ arity₂ r) → (pre₁ : Transcript r pSpec₁) →
-    (p₁ : LeafPath S.fst) → (p₂ : LeafPath (S.sndAt p₁)) →
-    (S.gluePath p₁ p₂).transcript (leftPrefix pre₁)
-      = (p₁.transcript pre₁) ++ₜ p₂.fullTranscript
-  | _, .boundary t₂, pre₁, p₁, p₂ => by
-      rw [leafPeel_spec p₁, leftPrefix_last_eq_rightPrefix_default]
-      exact LeafPath.transcript_embedRight p₂ pre₁ default
-  | _, .msg i h m₁ child, pre₁, p₁, p₂ => by
-      have ih := SplitData.transcript_gluePath child (pre₁.concat m₁) (peelMsg p₁) p₂
-      rw [show p₁.transcript pre₁ = (peelMsg p₁).transcript (pre₁.concat m₁)
-        from transcript_msg p₁ pre₁]
-      simp only [SplitData.gluePath, LeafPath.transcript]
-      rw [← leftPrefix_concat]
-      exact ih
-  | _, .chal i h chals children, pre₁, p₁, p₂ => by
-      have ih := SplitData.transcript_gluePath (children (chalPeel p₁).1)
-        (pre₁.concat (chals (chalPeel p₁).1)) (chalPeel p₁).2 p₂
-      rw [show p₁.transcript pre₁
-          = (chalPeel p₁).2.transcript (pre₁.concat (chals (chalPeel p₁).1))
-        from transcript_chal p₁ pre₁]
-      simp only [SplitData.gluePath, LeafPath.transcript]
-      rw [← leftPrefix_concat]
-      exact ih
-
-/-- Transport a leaf path along an equality of trees. -/
-def LeafPath.transport {r : Fin (m + 1)} {T T' : ChallengeTree pSpec₁ arity₁ r}
-    (h : T = T') (p : LeafPath T) : LeafPath T' := h ▸ p
-
-theorem LeafPath.fullTranscript_transport {T T' : ChallengeTree pSpec₁ arity₁ 0}
-    (h : T = T') (p : LeafPath T) :
-    (p.transport h).fullTranscript = p.fullTranscript := by subst h; rfl
-
-/-- Path-level recombination for `appendSplit`. -/
-def AppendSplit.gluePath
-    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0)
-    (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) : LeafPath T :=
-  ((splitDataOfTree (r := 0) T).gluePath p₁ p₂).transport
-    (splitDataOfTree_src (r := 0) (arity₁ := arity₁) (arity₂ := arity₂) T)
-
-theorem AppendSplit.fullTranscript_gluePath
-    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0)
-    (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) :
-    (AppendSplit.gluePath T p₁ p₂).fullTranscript
-      = p₁.fullTranscript ++ₜ p₂.fullTranscript := by
-  rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
-  have key := SplitData.transcript_gluePath (splitDataOfTree (r := 0) T) default p₁ p₂
-  have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
-      = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by
-    funext idx; exact idx.elim0
-  rw [hpre] at key
-  exact key
-
-end ProtocolSpec.ChallengeTree
+**Landed in the library** by milestone M3 step 3b: `LeafPath.embedRight`, `SplitData.gluePath`,
+the transcript specs, `LeafPath.transport` and `AppendSplit.gluePath` +
+`fullTranscript_gluePath` now live in
+`ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean`, imported above, so the copy
+that used to sit here was deleted to avoid `has already been declared`. The transcription was
+verbatim; Parts B–F below still exercise the glue, so E10's evidence is unchanged. -/
 
 /-! ## Part B — the witness-only core (as in `CM_gates.lean`) -/
 
