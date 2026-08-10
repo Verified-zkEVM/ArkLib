@@ -497,11 +497,12 @@ private lemma nsmul_eq_subdomain_embed_sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) 
 
 /-- The `2 ^ i`th power of a point of the domain is the point of the `i`th subdomain
   indexed by the `sqFoldMapGen`-reduction of its index. -/
+@[simp]
 lemma pow_eq_subdomain_sqFoldMapGen {i : ℕ} (u : Fin (2 ^ n)) :
-  (ω u) ^ 2 ^ i = (subdomain ω i) (sqFoldMapGen (i := i) u) := by
-  have h0 : (ω 0 : F) ≠ 0 := CosetFftDomainClass.ne_zero ω 0
-  have hu : (ω u : F) = ω 0 * (mkSubgroupUnit ω u : F) := by
-    rw [show (ω u : F) = ω 0 * ((ω 0)⁻¹ * ω u) by field_simp]
+  subdomain ω i (sqFoldMapGen (i := i) u) = ω u ^ 2 ^ i := by
+  have h0 : ω 0 ≠ 0 := CosetFftDomainClass.ne_zero ω 0
+  have hu : ω u = ω 0 * (mkSubgroupUnit ω u : F) := by
+    rw [show ω u = ω 0 * ((ω 0)⁻¹ * ω u) by field_simp]
     rfl
   rw [hu, mul_pow, mkSubgroupUnit_pow, nsmul_eq_subdomain_embed_sqFoldMapGen]
   rfl
@@ -515,7 +516,7 @@ lemma evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain
   funext u
   simp only [ReedSolomon.evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Function.comp_apply,
     Polynomial.eval_comp, Polynomial.eval_pow, Polynomial.eval_X]
-  exact congrArg (fun z => Polynomial.eval z p) (pow_eq_subdomain_sqFoldMapGen (ω := ω) u)
+  exact congrArg (fun z => Polynomial.eval z p) (pow_eq_subdomain_sqFoldMapGen (ω := ω) u).symm
 
 /-- A particularly useful special case of `evalOnPoints_pow_of_two_eq_evalOnPoints_subdomain`
   when `i = 1`. -/
@@ -535,70 +536,10 @@ lemma subdomain_sqFoldMapGen_eq_pow_domain [NeZero n] {i : ℕ} {j : Fin (2 ^ n)
 
 /-- `sqFoldMapGen j` equals `sqFoldMapGen j'`
   if `ω j ^ 2 ^ j` equals `ω j ^ 2 ^ j'`. -/
-lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply
-  [NeZero n] {i : ℕ} {j j' : Fin (2 ^ n)}
+lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply [NeZero n] {i : ℕ} {j j' : Fin (2 ^ n)}
   (h : ω j ^ 2 ^ i = ω j' ^ 2 ^ i) :
-  sqFoldMapGen (i := i) j = sqFoldMapGen j' := by
-    contrapose! h with h_contra
-    have h_key_id :
-      ∀ i u, ω u ^ 2 ^ i =
-          ω 0 ^ (2 ^ i - 1) *
-            ω (Fin.mk (2 ^ i * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-      intro i u
-      induction i generalizing u with
-      | zero =>
-        simp_all only [ne_eq, pow_zero, pow_one, tsub_self, one_mul]
-        norm_num [Nat.mod_eq_of_lt]
-      | succ i ih =>
-        simp_all only [ne_eq, pow_succ, pow_mul, pow_zero, one_mul]
-        have h_sq :
-          ∀ u : Fin (2 ^ n), ω u ^ 2 =
-            ω 0 * ω (Fin.mk (2 * u.val % 2 ^ n) (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-          intro u
-          have := ‹CosetFftDomainClass D (Fin ( 2 ^ n )) F›.map_add ω u u
-          simp_all only [mul_assoc, sq]
-          simp_all only [Fin.add_def, two_mul, ne_eq, ne_zero, not_false_eq_true,
-            mul_inv_cancel_left₀]
-        convert congr_arg (· ^ 2) (ih u) using 1 <;> ring_nf
-        · convert congr_arg (· ^ 2) (ih u) |> Eq.symm using 1
-          · ring_nf
-          · norm_num [pow_mul]
-        · rw [h_sq]
-          ring_nf
-          rw [show (2 ^ i * 2 - 1 : ℕ) = (2 ^ i - 1) * 2 + 1
-                by zify; norm_num; ring]
-          ring_nf
-          norm_num [mul_assoc, Nat.mul_mod_mul_right]
-    have h_cancel :
-      ω (Fin.mk
-          (2 ^ i * j.val % 2 ^ n)
-          (Nat.mod_lt _ (Nat.two_pow_pos _))) ≠
-            ω (Fin.mk
-                (2 ^ i * j'.val % 2 ^ n)
-                (Nat.mod_lt _ (Nat.two_pow_pos _))) := by
-      intro h_eq
-      have := (‹CosetFftDomainClass D (Fin (2 ^ n)) F›.injective ω) h_eq
-      simp_all only [ne_eq, Fin.ext_iff]
-      have h_div : j.val % 2 ^ (n - i) = j'.val % 2 ^ (n - i) := by
-        by_cases hi : i ≤ n;
-        · have h_div : 2 ^ i * (j.val - j'.val) ≡ 0 [ZMOD 2 ^ n] := by
-            exact Int.modEq_zero_iff_dvd.mpr
-              ⟨2 ^ i * j / 2 ^ n - 2 ^ i * j' / 2 ^ n,
-                by linarith
-                      [Int.emod_add_mul_ediv (2 ^ i * j) (2 ^ n),
-                       Int.emod_add_mul_ediv (2 ^ i * j') (2 ^ n)]⟩
-          have h_div : (j.val - j'.val : ℤ) ≡ 0 [ZMOD 2 ^ (n - i)] := by
-            rw [Int.modEq_zero_iff_dvd] at *
-            exact Exists.elim h_div fun k hk ↦
-              ⟨k, by
-                    rw [show ( 2 ^ n : ℤ ) = 2 ^ i * 2 ^ (n - i) by
-                      rw [←pow_add, Nat.add_sub_of_le hi]] at hk;
-                      nlinarith [pow_pos (zero_lt_two' ℤ) i]⟩
-          exact Nat.ModEq.symm
-            (Nat.modEq_of_dvd <| by simpa [←Int.natCast_dvd_natCast] using h_div.symm.dvd)
-        · grind
-      exact h_contra h_div
-    simp_all [mul_comm]
+  sqFoldMapGen (i := i) j = sqFoldMapGen j' :=
+  CosetFftDomainClass.injective (subdomain ω i) <| by simp_all
 
 private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
     (a : Fin (2 ^ (n - k - 1)))
