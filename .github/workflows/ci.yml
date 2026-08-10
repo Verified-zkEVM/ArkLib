@@ -112,6 +112,16 @@ jobs:
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
+      # Report-only during the initial soak; flip to enforcing by dropping the
+      # trailing `|| echo ...` once the baseline has survived a few PRs.
+      - name: Axiom sweep (report-only)
+        run: |
+          # VCVio's FFI C sources live in git submodules that Lake does not
+          # fetch, and every root-package executable links them.
+          git -C .lake/packages/VCVio submodule update --init --recursive
+          lake exe axiomsweep --check || \
+            echo "::warning::axiomsweep found new axiom/sorry taint (report-only during soak)"
+
       - name: Time validation wrapper
         run: |
           bash scripts/build_timing_report.sh run test_path "$BUILD_TIMING_RESULTS" -- \
