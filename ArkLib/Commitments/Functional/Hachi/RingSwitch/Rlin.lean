@@ -461,7 +461,7 @@ theorem mem_relRlin_of_relOut
 
 /-! ## The package -/
 
-/-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
+/-- **The `R^lin` adapter as a (plain) `CWSSPackageClassical`** (Hachi [NOZ26] §4.3 entry): the zero-round
 `ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to `relRlin`.
 Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
 `ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the proven block-row pull-back
@@ -469,7 +469,7 @@ Pure statement reshaping with no cryptographic content, hence escape-free. Assem
 noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ) :
-    CWSSPackage init impl
+    CWSSPackageClassical init impl
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))

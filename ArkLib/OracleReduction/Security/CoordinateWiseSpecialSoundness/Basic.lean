@@ -28,16 +28,16 @@ import ArkLib.OracleReduction.Security.TranscriptTree
      `Challenge i ≃ Sᵢ^{ℓᵢ}` and soundness parameters `kᵢ`.
   3. `CWSSStructure.toShape`: the generic challenge-tree shape whose node predicate is the CWSS
      `SS(Sᵢ, ℓᵢ, kᵢ)` condition.
-  4. `Verifier.coordinateWiseSpecialSound`: existence of a (deterministic) tree-based extractor that
+  4. `Verifier.coordinateWiseSpecialSoundClassical`: existence of a (deterministic) tree-based extractor that
      turns any structured tree accepting into an output relation into a valid input witness — the
      IOR form of [NOZ26] Def. 3.
-  5. `Verifier.coordinateWiseSpecialSoundWithEscape`: the escape-threaded variant, for reductions
+  5. `Verifier.coordinateWiseSpecialSoundWithEscapeClassical`: the escape-threaded variant, for reductions
      whose extraction may instead break a cryptographic assumption. The escape is an event on
      `(stmtIn, tree)` (`ChallengeTree.EscapeEvent`) entering as a disjunct of the conclusion, so
      relations and extractors stay plain and plain certificates lift losslessly
-     (`coordinateWiseSpecialSoundWith.withEscape`).
+     (`coordinateWiseSpecialSoundWithClassical.withEscapeClassical`).
 
-  Plain `(k)`-special soundness is the `ℓᵢ = 1` case (`Verifier.specialSound` in
+  Plain `(k)`-special soundness is the `ℓᵢ = 1` case (`Verifier.specialSoundClassical` in
   `Security.SpecialSoundness`).
 
   ## References
@@ -215,17 +215,17 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- A named tree-based extractor `Ext` **witnesses coordinate-wise special soundness** of a
-  verifier: `Verifier.treeSpecialSoundWith` at the CWSS shape `D.toShape`.
+  verifier: `Verifier.treeSpecialSoundWithClassical` at the CWSS shape `D.toShape`.
 
-  This named form is the content-bearing statement (see `Verifier.treeSpecialSoundWith`); its
-  existential closure is `Verifier.coordinateWiseSpecialSound`. Advertised protocol theorems
+  This named form is the content-bearing statement (see `Verifier.treeSpecialSoundWithClassical`); its
+  existential closure is `Verifier.coordinateWiseSpecialSoundClassical`. Advertised protocol theorems
   should state this form at the protocol's actual extractor; the `CoordinateWise` packages carry
   the extractor as a field and their `isCWSS` certificate is this form at it. -/
-def coordinateWiseSpecialSoundWith (D : CWSSStructure pSpec)
+def coordinateWiseSpecialSoundWithClassical (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) : Prop :=
-  treeSpecialSoundWith init impl (CWSSStructure.toShape D) relIn relOut verifier Ext
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) : Prop :=
+  treeSpecialSoundWithClassical init impl (CWSSStructure.toShape D) relIn relOut verifier Ext
 
 /-- A verifier is **coordinate-wise special sound** with respect to a coordinate-wise structure `D`,
   an input relation `relIn` and an output relation `relOut` if it is tree-special-sound for the
@@ -234,102 +234,102 @@ def coordinateWiseSpecialSoundWith (D : CWSSStructure pSpec)
   This is the multi-round coordinate-wise special soundness of [NOZ26] Def. 3 / [FMN24] Def. 2.10,
   phrased over ArkLib's IOR machinery. The papers' accept/reject condition is represented by the
   language of the output relation. Specializing `D` to `CWSSStructure.ofSpecialSound k`
-  corresponds to the standard notion of `k`-special soundness (`Verifier.specialSound`).
+  corresponds to the standard notion of `k`-special soundness (`Verifier.specialSoundClassical`).
 
-  The extractor is existential (inherited from `Verifier.treeSpecialSound`), which loses the
-  extraction *algorithm*; prefer `coordinateWiseSpecialSoundWith` at a named extractor for
+  The extractor is existential (inherited from `Verifier.treeSpecialSoundClassical`), which loses the
+  extraction *algorithm*; prefer `coordinateWiseSpecialSoundWithClassical` at a named extractor for
   advertised protocol statements and keep this form for plumbing (the right factor of an append).
   Reductions whose extraction may instead break a cryptographic assumption use
-  `coordinateWiseSpecialSoundWithEscape` / `…Escape` below. -/
-def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
+  `coordinateWiseSpecialSoundWithEscapeClassical` / `…Escape` below. -/
+def coordinateWiseSpecialSoundClassical (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  verifier.treeSpecialSound init impl (CWSSStructure.toShape D) relIn relOut
+  verifier.treeSpecialSoundClassical init impl (CWSSStructure.toShape D) relIn relOut
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- The existential notion is definitionally the existential closure of the named one. -/
-theorem coordinateWiseSpecialSound_iff_exists (D : CWSSStructure pSpec)
+theorem coordinateWiseSpecialSoundClassical_iff_exists (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
-    verifier.coordinateWiseSpecialSound init impl D relIn relOut ↔
-      ∃ Ext, coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext := Iff.rfl
+    verifier.coordinateWiseSpecialSoundClassical init impl D relIn relOut ↔
+      ∃ Ext, coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier Ext := Iff.rfl
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor. -/
-theorem coordinateWiseSpecialSoundWith.toCWSS {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithClassical.toCWSSClassical {D : CWSSStructure pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext) :
-    verifier.coordinateWiseSpecialSound init impl D relIn relOut := ⟨Ext, h⟩
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier Ext) :
+    verifier.coordinateWiseSpecialSoundClassical init impl D relIn relOut := ⟨Ext, h⟩
 
 /-! ### Escape-threaded CWSS
 
-The CWSS-shaped instances of `Verifier.treeSpecialSoundWithEscape`: the conclusion is
+The CWSS-shaped instances of `Verifier.treeSpecialSoundWithEscapeClassical`: the conclusion is
 `esc stmtIn tree ∨ extraction succeeds`, where `esc` is a trusted escape event on `(stmtIn, tree)`
 (contract: `ChallengeTree.EscapeEvent`). -/
 
-/-- **Escape-threaded CWSS, named form**: `Verifier.treeSpecialSoundWithEscape` at the CWSS shape
+/-- **Escape-threaded CWSS, named form**: `Verifier.treeSpecialSoundWithEscapeClassical` at the CWSS shape
   `D.toShape`, i.e. on every structured accepting tree either the tree exhibits the escape event
   `esc` (a trusted spec — `ChallengeTree.EscapeEvent`) or `Ext` produces a `relIn`-witness. -/
-def coordinateWiseSpecialSoundWithEscape (D : CWSSStructure pSpec)
+def coordinateWiseSpecialSoundWithEscapeClassical (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) : Prop :=
-  treeSpecialSoundWithEscape init impl (CWSSStructure.toShape D) esc relIn relOut verifier Ext
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) : Prop :=
+  treeSpecialSoundWithEscapeClassical init impl (CWSSStructure.toShape D) esc relIn relOut verifier Ext
 
-/-- Existential closure of `coordinateWiseSpecialSoundWithEscape`, the form used for the *right*
+/-- Existential closure of `coordinateWiseSpecialSoundWithEscapeClassical`, the form used for the *right*
   factor of a composed append. -/
-def coordinateWiseSpecialSoundEscape (D : CWSSStructure pSpec)
+def coordinateWiseSpecialSoundEscapeClassical (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  treeSpecialSoundEscape init impl (CWSSStructure.toShape D) esc relIn relOut verifier
+  treeSpecialSoundEscapeClassical init impl (CWSSStructure.toShape D) esc relIn relOut verifier
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor (escape-threaded). -/
-theorem coordinateWiseSpecialSoundWithEscape.toEscape {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithEscapeClassical.toEscapeClassical {D : CWSSStructure pSpec}
     {esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext) :
-    coordinateWiseSpecialSoundEscape init impl D esc relIn relOut verifier := ⟨Ext, h⟩
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWithEscapeClassical init impl D esc relIn relOut verifier Ext) :
+    coordinateWiseSpecialSoundEscapeClassical init impl D esc relIn relOut verifier := ⟨Ext, h⟩
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- **Lossless escape lift at the CWSS shape** (the entry point for the packages' kind lifts): a
   plain CWSS certificate holds at any escape event, via the right disjunct. -/
-theorem coordinateWiseSpecialSoundWith.withEscape {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithClassical.withEscapeClassical {D : CWSSStructure pSpec}
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext) :
-    coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext :=
-  treeSpecialSoundWith.withEscape init impl esc h
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier Ext) :
+    coordinateWiseSpecialSoundWithEscapeClassical init impl D esc relIn relOut verifier Ext :=
+  treeSpecialSoundWithClassical.withEscapeClassical init impl esc h
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- At the never-firing event escape-threaded CWSS is plain CWSS. -/
-theorem coordinateWiseSpecialSoundWithEscape_false_iff (D : CWSSStructure pSpec)
+theorem coordinateWiseSpecialSoundWithEscapeClassical_false_iff (D : CWSSStructure pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) :
-    coordinateWiseSpecialSoundWithEscape init impl D (fun _ _ => False) relIn relOut verifier Ext ↔
-      coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext :=
-  treeSpecialSoundWithEscape_false_iff init impl _ relIn relOut verifier Ext
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity) :
+    coordinateWiseSpecialSoundWithEscapeClassical init impl D (fun _ _ => False) relIn relOut verifier Ext ↔
+      coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier Ext :=
+  treeSpecialSoundWithEscapeClassical_false_iff init impl _ relIn relOut verifier Ext
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Escape events are monotone at the CWSS shape. -/
-theorem coordinateWiseSpecialSoundWithEscape.mono {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithEscapeClassical.monoClassical {D : CWSSStructure pSpec}
     {esc esc' : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity}
     (hmono : ∀ s t, esc s t → esc' s t)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext) :
-    coordinateWiseSpecialSoundWithEscape init impl D esc' relIn relOut verifier Ext :=
-  treeSpecialSoundWithEscape.mono init impl hmono h
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWithEscapeClassical init impl D esc relIn relOut verifier Ext) :
+    coordinateWiseSpecialSoundWithEscapeClassical init impl D esc' relIn relOut verifier Ext :=
+  treeSpecialSoundWithEscapeClassical.monoClassical init impl hmono h
 
 end Verifier
 
@@ -346,74 +346,74 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
 
 /-- A named tree-based extractor witnesses coordinate-wise special soundness of an oracle
-  reduction: `Verifier.coordinateWiseSpecialSoundWith` of the underlying non-oracle verifier on
+  reduction: `Verifier.coordinateWiseSpecialSoundWithClassical` of the underlying non-oracle verifier on
   the combined (oracle + non-oracle) statements. The named form is the content-bearing statement
-  (see `Verifier.treeSpecialSoundWith`). -/
-def coordinateWiseSpecialSoundWith (D : CWSSStructure pSpec)
+  (see `Verifier.treeSpecialSoundWithClassical`). -/
+def coordinateWiseSpecialSoundWithClassical (D : CWSSStructure pSpec)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
-    (Ext : Extractor.TreeBased (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
+    (Ext : Extractor.TreeBasedClassical (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
       (CWSSStructure.toShape D).arity) : Prop :=
-  Verifier.coordinateWiseSpecialSoundWith init impl D relIn relOut verifier.toVerifier Ext
+  Verifier.coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier.toVerifier Ext
 
 /-- Coordinate-wise special soundness of an oracle reduction, defined (as for round-by-round
   notions) via the underlying non-oracle verifier on the combined (oracle + non-oracle) statements.
   The challenge structure `D` is unchanged, since the verifier's challenges are the same.
 
   As at the non-oracle level, the extractor is existential, so prefer
-  `coordinateWiseSpecialSoundWith` at a named extractor for advertised statements. -/
-def coordinateWiseSpecialSound (D : CWSSStructure pSpec)
+  `coordinateWiseSpecialSoundWithClassical` at a named extractor for advertised statements. -/
+def coordinateWiseSpecialSoundClassical (D : CWSSStructure pSpec)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
-  verifier.toVerifier.coordinateWiseSpecialSound init impl D relIn relOut
+  verifier.toVerifier.coordinateWiseSpecialSoundClassical init impl D relIn relOut
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor (oracle level). -/
-theorem coordinateWiseSpecialSoundWith.toCWSS {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithClassical.toCWSSClassical {D : CWSSStructure pSpec}
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
     {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
-    {Ext : Extractor.TreeBased (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
+    {Ext : Extractor.TreeBasedClassical (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
       (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext) :
-    verifier.coordinateWiseSpecialSound init impl D relIn relOut := ⟨Ext, h⟩
+    (h : coordinateWiseSpecialSoundWithClassical init impl D relIn relOut verifier Ext) :
+    verifier.coordinateWiseSpecialSoundClassical init impl D relIn relOut := ⟨Ext, h⟩
 
 /-- Escape-threaded CWSS of an oracle reduction, **named form**: the non-oracle escape notion of
   the underlying verifier on the combined (oracle + non-oracle) statements. The escape event is
   indexed by the combined input statement, so it may read the oracle statements. -/
-def coordinateWiseSpecialSoundWithEscape (D : CWSSStructure pSpec)
+def coordinateWiseSpecialSoundWithEscapeClassical (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent (StmtIn × ∀ i, OStmtIn i) pSpec
       (CWSSStructure.toShape D).arity)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
-    (Ext : Extractor.TreeBased (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
+    (Ext : Extractor.TreeBasedClassical (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
       (CWSSStructure.toShape D).arity) : Prop :=
-  Verifier.coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut
+  Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl D esc relIn relOut
     verifier.toVerifier Ext
 
 /-- Existential closure of the oracle-level escape-threaded CWSS. -/
-def coordinateWiseSpecialSoundEscape (D : CWSSStructure pSpec)
+def coordinateWiseSpecialSoundEscapeClassical (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent (StmtIn × ∀ i, OStmtIn i) pSpec
       (CWSSStructure.toShape D).arity)
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) : Prop :=
-  Verifier.coordinateWiseSpecialSoundEscape init impl D esc relIn relOut verifier.toVerifier
+  Verifier.coordinateWiseSpecialSoundEscapeClassical init impl D esc relIn relOut verifier.toVerifier
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor (oracle level, escape-threaded). -/
-theorem coordinateWiseSpecialSoundWithEscape.toEscape {D : CWSSStructure pSpec}
+theorem coordinateWiseSpecialSoundWithEscapeClassical.toEscapeClassical {D : CWSSStructure pSpec}
     {esc : ChallengeTree.EscapeEvent (StmtIn × ∀ i, OStmtIn i) pSpec
       (CWSSStructure.toShape D).arity}
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
     {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
-    {Ext : Extractor.TreeBased (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
+    {Ext : Extractor.TreeBasedClassical (StmtIn × ∀ i, OStmtIn i) WitIn pSpec
       (CWSSStructure.toShape D).arity}
-    (h : coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext) :
-    coordinateWiseSpecialSoundEscape init impl D esc relIn relOut verifier := ⟨Ext, h⟩
+    (h : coordinateWiseSpecialSoundWithEscapeClassical init impl D esc relIn relOut verifier Ext) :
+    coordinateWiseSpecialSoundEscapeClassical init impl D esc relIn relOut verifier := ⟨Ext, h⟩
 
 end OracleVerifier

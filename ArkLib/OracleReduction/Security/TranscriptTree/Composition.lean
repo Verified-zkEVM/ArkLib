@@ -56,7 +56,7 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   index with no transport, boundary detection is a plain `dite` on `rv < m` rather than a
   dependent-motive `Fin.lastCases`, and each builder is an ordinary structurally recursive
   definition — hence *computable*, which the extraction algorithms downstream depend on
-  (`CoordinateWise.CWSSPackage.append` and friends run `appendSplit` on the prefix tree).
+  (`CoordinateWise.CWSSPackageClassical.append` and friends run `appendSplit` on the prefix tree).
 
   Two consequences worth knowing when editing this file. Only `SplitData` remains as a certificate
   type, recording the left-hand prefix with the suffix tree stored at each boundary leaf; the

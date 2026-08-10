@@ -43,7 +43,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `extractedPoly`: the polynomial read back from a weak opening's Eq. (15) derived-message
     matrix via `Hachi.toPolynomial` (round-trip: `toMatrix_extractedPoly`).
   * `relPolyEval`: the polynomial-level input relation described above.
-  * `bridgePackage`: the bridge as a composable, escape-free `CWSSPackage`.
+  * `bridgePackage`: the bridge as a composable, escape-free `CWSSPackageClassical`.
 
   ## Main results
 
@@ -205,7 +205,7 @@ theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWith init impl D
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl D
       (relPolyEval Φ pp base βSq γ κ) (relIn Φ pp base βSq γ κ)
       (bridgeVerifier (oSpec := oSpec) Φ (innerRows := innerRows)
         (messageDigits := messageDigits) (outerRows := outerRows)
@@ -217,7 +217,7 @@ theorem bridge_coordinateWiseSpecialSoundWith {σ : Type}
     (mapWitInv := fun _ w => w) (D := D)
     (mem_relPolyEval_of_relIn Φ pp base βSq γ κ)
 
-/-- **The polynomial-level bridge as a (plain) `CWSSPackage`** (Hachi [NOZ26, §4.2]): the
+/-- **The polynomial-level bridge as a (plain) `CWSSPackageClassical`** (Hachi [NOZ26, §4.2]): the
 zero-round `ReduceClaim` head `bridgeVerifier` bundled with the empty challenge structure
 (`ofIsEmpty`) and its named CWSS certificate `bridge_coordinateWiseSpecialSoundWith`, ready to be
 `▷`-composed before `QuadEval`. Its public `relOut` is `QuadEval`'s ordinary input relation
@@ -230,7 +230,7 @@ noncomputable def bridgePackage {σ : Type}
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (βSq γ κ : ℕ) :
-    CWSSPackage init impl
+    CWSSPackageClassical init impl
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits dRows)

@@ -36,7 +36,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
     single-round assembly, and
   * `quadEvalEscLocal` — the reduction's **escape event** in local per-star form: "the tree's own
     responses make extraction land in a Module-SIS break valid for the fixed key `pp`".
-  * `quadEvalPackage` — the reduction as an `EscapeCWSSPackage`.
+  * `quadEvalPackage` — the reduction as an `EscapeCWSSPackageClassical`.
 
   ## Main results
 
@@ -259,7 +259,7 @@ def quadEvalEscLocal (base : ZMod q)
     ∃ br ∈ quadEvalSISSet Φ pp γ, buildWitness Φ base fam resp = Sum.inr br
 
 /-- **The reduction's plain witness assembler** — the `mkWitness` argument of
-`SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`: `buildWitness`'s opening branch,
+`SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`: `buildWitness`'s opening branch,
 with the (total) `extractedOpening` as the fallback on its Module-SIS branch. The fallback is
 irrelevant to soundness: on exactly those inputs `quadEvalEscLocal` fires, so the certificate's left
 disjunct carries the conclusion. -/
@@ -466,7 +466,7 @@ concrete break of the fixed key `pp` (an element of `quadEvalSISSet`) or an open
 
 The first disjunct is exactly the escape event `quadEvalEscLocal`; the second gives the plain
 assembler `quadEvalMkWitness` its `relIn`-membership (via `quadEvalMkWitness_of_inl`). Together they
-feed `SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`. -/
+feed `SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`. -/
 theorem buildWitness_break_or_mem_relIn (hq5 : q % 8 = 5) {b ω γ : ℕ}
     (hκ : (2 * ω) ^ 2 < q)
     (hτ : 0 < zDigits)
@@ -539,7 +539,7 @@ That `γ := b` instantiation is the named corollary
 output relation is `QuadEval/Reduction.paperRelOut`, with the `paperRelOut ⊆ relOut` containment
 proved as `QuadEval/Reduction.paperRelOut_subset_relOut`.
 
-Assembled by `SingleRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness`, which discharges
+Assembled by `SingleRound.coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness`, which discharges
 every tree/extractor/guard obligation generically; the protocol-specific content is
 `buildWitness_break_or_mem_relIn`. -/
 theorem quadEval_coordinateWiseSpecialSoundWithEscape
@@ -548,7 +548,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
         (C := ShortChallenge 𝓜(q, α) ω) (r := r))
       (escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
@@ -561,7 +561,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape
         (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r))
       (treeExtractor (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
         (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))) := by
-  refine coordinateWiseSpecialSoundWithEscape_of_mkWitness init impl _ (fun _ _ => rfl) _ _ _ _
+  refine coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness init impl _ (fun _ _ => rfl) _ _ _ _
     (fun stmtIn v fam resp hbranch hstar => ?_)
   rcases buildWitness_break_or_mem_relIn hq5 hκ hτ pp stmtIn v fam resp hbranch hstar with
     hbad | ⟨w, hw, hmem⟩
@@ -587,7 +587,7 @@ theorem quadEval_coordinateWiseSpecialSoundWithEscape_paperParams
     (hq5 : q % 8 = 5) {b ω : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
         (C := ShortChallenge 𝓜(q, α) ω) (r := r))
       (escEvent (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω b)
@@ -612,7 +612,7 @@ noncomputable def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type
     (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows) :
-    EscapeCWSSPackage init impl
+    EscapeCWSSPackageClassical init impl
       (QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
         dRows)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)

@@ -143,14 +143,14 @@ generated code panics when run. -/
 def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Extractor.TreeBased (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
+    Extractor.TreeBasedClassical (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
       (pSpecFinalEval F)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecFinalEval F))).arity :=
   sorry
 
 /-- **CWSS of the final-evaluation step, at the named `finalEvalExtractor`**
-(the named form is deliberate — see `Verifier.treeSpecialSoundWith`; closing this gap means
+(the named form is deliberate — see `Verifier.treeSpecialSoundWithClassical`; closing this gap means
 filling the extractor and this specification about it).
 
 **Sorried.** Proof plan: the protocol has no challenge round, so CWSS collapses (via the
@@ -164,7 +164,7 @@ theorem finalEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Verifier.coordinateWiseSpecialSoundWith init impl
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl
       CWSSStructure.ofIsEmpty
       (roundRel Φ m₀ m₁ bound ρBound K φF b m₀)
       (relWEvalClaim Φ m₀ bound ρBound b K φF)
@@ -172,14 +172,14 @@ theorem finalEval_coordinateWiseSpecialSoundWith
       (finalEvalExtractor Φ m₀ bound ρBound K φF) := by
   sorry
 
-/-- **The final-evaluation step as a guarded `GCWSSPackage`**: the guarded one-message verifier with
+/-- **The final-evaluation step as a guarded `GCWSSPackageClassical`**: the guarded one-message verifier with
 the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim `relWEvalClaim`.
 A guarded *re-reading* of the final targets, hence escape-free. Certificate: the sorried
 `finalEval_coordinateWiseSpecialSoundWith`. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    GCWSSPackage init impl
+    GCWSSPackageClassical init impl
       (RoundStatement Φ K.TCom F n μ m₀) (LiftedWitness Φ μ n)
       (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n)
       (pSpecFinalEval F) where

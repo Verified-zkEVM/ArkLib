@@ -163,14 +163,14 @@ def handoffExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
     (reinterpretCom : K.TCom → Commitment Φ' outerRows') :
-    Extractor.TreeBased (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
+    Extractor.TreeBasedClassical (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (pSpecHandoff Φ')
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecHandoff Φ'))).arity :=
   sorry
 
 /-- **CWSS of the trace handoff — closing the recursion loop, at the named
-`handoffExtractor`** (the named form is deliberate — see `Verifier.treeSpecialSoundWith`;
+`handoffExtractor`** (the named form is deliberate — see `Verifier.treeSpecialSoundWithClassical`;
 closing this gap means filling the extractor and this specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
@@ -192,7 +192,7 @@ theorem handoff_coordinateWiseSpecialSoundWith
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWith init impl
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl
       CWSSStructure.ofIsEmpty
       (relHatEval Φ mLow κ bound ρBound zpow K φF)
       (relIn Φ' pp' base' βSq' γ' κ')
@@ -200,7 +200,7 @@ theorem handoff_coordinateWiseSpecialSoundWith
       (handoffExtractor Φ Φ' mLow κ bound ρBound zpow K φF reinterpretCom) := by
   sorry
 
-/-- **The trace handoff as a guarded `GCWSSPackage`** (Hachi §4.5, Eqs. (27)–(28)): the guarded
+/-- **The trace handoff as a guarded `GCWSSPackageClassical`** (Hachi §4.5, Eqs. (27)–(28)): the guarded
 one-message verifier with the empty challenge structure, reducing the `Z`-packed claim `relHatEval`
 to the **next iteration's** `QuadEval` input relation `relIn` over `Φ'` — the recursion loop's
 closing seam (the next iteration re-enters at `quadEvalPackage Φ'`, bypassing the polynomial-level
@@ -216,7 +216,7 @@ def handoffPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbC
       innerDigits' dRows')
     (reinterpretCom : K.TCom → Commitment Φ' outerRows')
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    GCWSSPackage init impl
+    GCWSSPackageClassical init impl
       (HatEvalStatement K.TCom F mLow) (LiftedWitness Φ μ n)
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')

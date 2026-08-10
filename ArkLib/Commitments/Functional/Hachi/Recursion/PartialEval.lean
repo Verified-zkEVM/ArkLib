@@ -169,7 +169,7 @@ generated code panics when run. -/
 def partialEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Extractor.TreeBased (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
+    Extractor.TreeBasedClassical (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
       (pSpecPartialEval F κ)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecPartialEval F κ))).arity :=
@@ -177,7 +177,7 @@ def partialEvalExtractor
 
 /-- **CWSS of the partial-evaluation head — a sound, zero-error seam, at the
 named `partialEvalExtractor`** (the named form is deliberate — see
-`Verifier.treeSpecialSoundWith`; closing this gap means filling the extractor and this
+`Verifier.treeSpecialSoundWithClassical`; closing this gap means filling the extractor and this
 specification about it).
 
 **Sorried.** Proof plan: no challenge round, so CWSS collapses to a transcript-level pull-back
@@ -190,7 +190,7 @@ theorem partialEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Verifier.coordinateWiseSpecialSoundWith init impl
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl
       CWSSStructure.ofIsEmpty
       (relWEvalClaim Φ (mLow + κ) bound ρBound b K φF)
       (relPartialEval Φ mLow κ bound ρBound K φF)
@@ -198,7 +198,7 @@ theorem partialEval_coordinateWiseSpecialSoundWith
       (partialEvalExtractor Φ mLow κ bound ρBound K φF) := by
   sorry
 
-/-- **The partial-evaluation head as a (plain) `CWSSPackage`** (Hachi §4.5, Eq. (24)): the pure
+/-- **The partial-evaluation head as a (plain) `CWSSPackageClassical`** (Hachi §4.5, Eq. (24)): the pure
 one-message derive-`y₀` head with the empty challenge structure, reducing the evaluation claim
 `relWEvalClaim` to the per-`i` claims `relPartialEval`. A sound, zero-error reshaping, hence
 escape-free. -/
@@ -206,7 +206,7 @@ def partialEvalPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    CWSSPackage init impl
+    CWSSPackageClassical init impl
       (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
       (PartialEvalStatement K.TCom F mLow κ) (LiftedWitness Φ μ n)
       (pSpecPartialEval F κ) where

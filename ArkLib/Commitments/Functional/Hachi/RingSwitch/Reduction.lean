@@ -204,7 +204,7 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`EscapeCWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
+`EscapeCWSSPackageClassical` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
 theorem — that the chain composition operator `▷` consumes: every link in the Hachi opening chain
 (`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
 `ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,
@@ -216,7 +216,7 @@ would duplicate the proposition without adding content and would sit outside the
 interface, so nothing would consume it. -/
 noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
-    EscapeCWSSPackage init impl
+    EscapeCWSSPackageClassical init impl
       (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) :=

@@ -87,7 +87,7 @@ theorem mem_relLift_of_relBatched
     (X, w) ∈ relLift Φ bound ρBound K φF := by
   sorry
 
-/-- **The batching bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+/-- **The batching bridge as a (plain) `CWSSPackageClassical`**: zero-round `ReduceClaim` at
 `mapStmt := id`,
 reducing `relLift` to `relBatched` with no soundness error (the whole content is the sorried
 un-batching pull-back). -/
@@ -95,7 +95,7 @@ noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hq : 2 * b ≤ q + 1) (hb : b - 1 ≤ bound)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (hn : n ≤ 2 ^ m₁) :
-    CWSSPackage init impl
+    CWSSPackageClassical init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where

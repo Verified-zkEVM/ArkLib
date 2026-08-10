@@ -201,17 +201,8 @@ theorem isValid_iff_pure (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ
 
 end CM
 
-namespace ProtocolSpec.ChallengeTree
-
-/-- The unique leaf path of a challenge-free tree. -/
-def onlyPath {n : ℕ} {pSpec : ProtocolSpec n} {arity : pSpec.ChallengeIdx → ℕ}
-    [IsEmpty pSpec.ChallengeIdx] :
-    {m : Fin (n + 1)} → (t : ChallengeTree pSpec arity m) → LeafPath t
-  | _, .leaf => .leaf
-  | _, .msgNode _ _ _ child => .msg (onlyPath child)
-  | _, .chalNode m h _ _ => isEmptyElim (⟨m, h⟩ : pSpec.ChallengeIdx)
-
-end ProtocolSpec.ChallengeTree
+-- `ProtocolSpec.ChallengeTree.onlyPath` (inlined here when this prototype was written) now lives
+-- in the library, in `Security/TranscriptTree/Basic.lean`; the IR gate at the end still checks it.
 
 instance : IsEmpty ((!p[] : ProtocolSpec 0).ChallengeIdx) :=
   ⟨fun i => Fin.elim0 i.1⟩

@@ -85,7 +85,7 @@ def TreeBased (StmtIn WitIn WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (arity : pSpec.ChallengeIdx → ℕ) : Type :=
   StmtIn → (tree : ChallengeTree pSpec arity 0) → LeafWitnesses tree WitOut → Option WitIn
 
-/-- The replacement for `Verifier.treeSpecialSoundWith`: on every structured accepting tree,
+/-- The replacement for `Verifier.treeSpecialSoundWithClassical`: on every structured accepting tree,
 extraction succeeds on every valid witnessing. One clause — honesty is the validity premise's
 reachability condition, not a separate conjunct. -/
 def treeSpecialSoundWith (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -418,7 +418,7 @@ asserts today and what the migration shim lifts. -/
 def oldStatement (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (S : ChallengeTreeShape pSpec) (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut)) (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity) : Prop :=
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity) : Prop :=
   ∀ stmtIn tree, ChallengeTree.IsStructured S tree →
     tree.IsAccepting init impl V stmtIn relOut.language → (stmtIn, Ext stmtIn tree) ∈ relIn
 
@@ -440,7 +440,7 @@ theorem old_of_new [Inhabited WitIn] (init : ProbComp σ)
 
 /-- The shim's classical lift — a computability-preserving wrapper: ignore the witnessing.
 Instance-free (no `[Nonempty StmtOut]`), no `init/impl/V` argument, and IR whenever the wrapped extractor has IR. -/
-def ofClassical (E : Extractor.TreeBased StmtIn WitIn pSpec arity) :
+def ofClassical (E : Extractor.TreeBasedClassical StmtIn WitIn pSpec arity) :
     TreeBased StmtIn WitIn WitOut pSpec arity :=
   fun stmtIn tree _ => some (E stmtIn tree)
 
@@ -449,7 +449,7 @@ witnessing. -/
 theorem new_of_old (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (S : ChallengeTreeShape pSpec) (relIn : Set (StmtIn × WitIn))
     (relOut : Set (StmtOut × WitOut)) (V : Verifier oSpec StmtIn StmtOut pSpec)
-    {E : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
+    {E : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
     (h : oldStatement init impl S relIn relOut V E) :
     treeSpecialSoundWith init impl S relIn relOut V (ofClassical (WitOut := WitOut) E) :=
   fun stmtIn tree hstr hacc _ _ => ⟨E stmtIn tree, rfl, h stmtIn tree hstr hacc⟩
@@ -589,13 +589,14 @@ theorem coinAccepting {arity : (!p[] : ProtocolSpec 0).ChallengeIdx → ℕ}
   rw [OptionT.probFailure_eq, OptionT.run_mk]
   simp
 
+instance : IsEmpty ((!p[] : ProtocolSpec 0).ChallengeIdx) :=
+  ⟨fun i => Fin.elim0 i.1⟩
+
 /-- Every no-challenge tree has a leaf path (from its unique transcript). -/
 theorem nonempty_leafPath {arity : (!p[] : ProtocolSpec 0).ChallengeIdx → ℕ}
     (tree : ChallengeTree (!p[] : ProtocolSpec 0) arity 0) :
-    Nonempty (ChallengeTree.LeafPath tree) := by
-  obtain ⟨path, _⟩ :=
-    ChallengeTree.LeafPath.exists_of_mem_fullTranscripts (ChallengeTree.onlyTranscript_mem tree)
-  exact ⟨path⟩
+    Nonempty (ChallengeTree.LeafPath tree) :=
+  ⟨ProtocolSpec.ChallengeTree.onlyPath tree⟩
 
 /-- A pure verifier over the same protocol, constant verdict `true`. -/
 def pureVerifier : Verifier coinSpec Unit Bool (!p[] : ProtocolSpec 0) where
@@ -666,7 +667,7 @@ theorem unclaimed_vacuous (S : ChallengeTreeShape (!p[] : ProtocolSpec 0)) :
 /-- ... while the CLASSICAL notion is refutable at that same data, for every extractor — so the
 ∀-variant is strictly weaker than what it would replace. -/
 theorem classical_refutable (S : ChallengeTreeShape (!p[] : ProtocolSpec 0))
-    (Ext : Extractor.TreeBased Unit ℕ (!p[] : ProtocolSpec 0) S.arity) :
+    (Ext : Extractor.TreeBasedClassical Unit ℕ (!p[] : ProtocolSpec 0) S.arity) :
     ¬ oldStatement (pure ()) cimpl S (∅ : Set (Unit × ℕ)) relOutBad coinVerifier Ext := by
   intro h
   exact (h () ChallengeTree.leaf trivial (coinAccepting _) : (_, _) ∈ (∅ : Set (Unit × ℕ)))
@@ -676,9 +677,6 @@ theorem classical_refutable (S : ChallengeTreeShape (!p[] : ProtocolSpec 0))
 The pair `reachable_sound` / `free_refuted`: the SAME forwarding extractor on the SAME sound
 data satisfies the adopted notion and is refuted by the reachability-free variant — junk
 witnesses at unreachable statements are exactly what the relocated honesty condition excludes. -/
-
-instance : IsEmpty ((!p[] : ProtocolSpec 0).ChallengeIdx) :=
-  ⟨fun i => Fin.elim0 i.1⟩
 
 /-- The unique leaf path of a challenge-free tree (the plan's M0 `onlyPath`, inlined). -/
 def onlyPath {n : ℕ} {pSpec : ProtocolSpec n} {arity : pSpec.ChallengeIdx → ℕ}

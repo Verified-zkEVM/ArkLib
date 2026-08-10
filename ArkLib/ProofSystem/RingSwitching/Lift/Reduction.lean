@@ -45,7 +45,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
   ## Where weak binding lives
 
   The commitment is only binding on short openings, so the certificate is the **escape-threaded**
-  one: `package` is an `EscapeCWSSPackage` whose event is `CommittedScalar.escEvent`, i.e. "the
+  one: `package` is an `EscapeCWSSPackageClassical` whose event is `CommittedScalar.escEvent`, i.e. "the
   tree's branch openings exhibit a short collision of the committed value". Relations and the
   extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a
   plain `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on
@@ -177,7 +177,7 @@ def escEvent [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
 /-- The switch's named extractor: the committed-scalar assembler, projecting the common opening to
 its `z`-component. -/
 noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
-    Extractor.TreeBased Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
+    Extractor.TreeBasedClassical Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
       (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
         (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
   CommittedScalar.treeExtractor
@@ -188,17 +188,17 @@ noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDeg
 accepting tree, either the tree exhibits a short collision of the commitment (`escEvent`) or
 `treeExtractor` produces a witness of the input linear relation. Straight from the generic
 committed-scalar certificate at `recover`. -/
-theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function.Injective φF)
+theorem coordinateWiseSpecialSoundWithEscapeClassical [IsPresentation P] (hφF : Function.Injective φF)
     (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (scalarStructure (2 * d) (by have := hd ▸ P.natDegree_modulus_pos; omega))
       (escEvent P φF getM getY sideCond K hd)
       (relLin getM getY zOk) (relOut P φF getM getY sideCond K)
       (verifier (oSpec := oSpec) (F := F) K)
       (treeExtractor P φF getM getY sideCond K hd) :=
-  CommittedScalar.coordinateWiseSpecialSoundWithEscape
+  CommittedScalar.coordinateWiseSpecialSoundWithEscapeClassical
     (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
     (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
     (fun s w fam hinj hcheck hshort =>
@@ -210,7 +210,7 @@ noncomputable def package [IsPresentation P] (hφF : Function.Injective φF)
     (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
-    EscapeCWSSPackage init impl Stmt (PolyVec S μ)
+    EscapeCWSSPackageClassical init impl Stmt (PolyVec S μ)
       (CommittedScalar.Statement Stmt K.TCom F) (LiftedWitness R S d μ n)
       (pSpecScalar K.TCom F) where
   verifier := verifier K
@@ -221,7 +221,7 @@ noncomputable def package [IsPresentation P] (hφF : Function.Injective φF)
   isPure := ⟨fun stmt tr =>
     (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
   extractor := treeExtractor P φF getM getY sideCond K hd
-  isCWSS := coordinateWiseSpecialSoundWithEscape P φF getM getY zOk sideCond K hφF hd
+  isCWSS := coordinateWiseSpecialSoundWithEscapeClassical P φF getM getY zOk sideCond K hφF hd
     short_zOk init impl
 
 end Protocol

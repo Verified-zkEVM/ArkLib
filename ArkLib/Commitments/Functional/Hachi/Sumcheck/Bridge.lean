@@ -62,14 +62,14 @@ theorem mem_relZeroCheck_of_roundRel
     (s, w) ∈ relZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
   sorry
 
-/-- **The sumcheck bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+/-- **The sumcheck bridge as a (plain) `CWSSPackageClassical`**: zero-round `ReduceClaim` at
 `mapStmt := toRoundStatement`, reducing `relZeroCheck` to the round-`0` `roundRel` with no soundness
 error, hence escape-free. -/
 noncomputable def sumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    CWSSPackage init impl
+    CWSSPackageClassical init impl
       (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where

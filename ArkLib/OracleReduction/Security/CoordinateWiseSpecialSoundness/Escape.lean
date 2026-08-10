@@ -30,9 +30,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
   ## The package lattice
 
-  `CWSSPackage`, `EscapeCWSSPackage`, `GCWSSPackage`, `EscapeGCWSSPackage` form the 2×2 lattice
-  escape? × guarded?, ordered by two **lossless** lifts: `toEscape` (at the never-firing event
-  `fun _ _ => False`, so extractor and certificate are unchanged) and `toGuarded` (at the
+  `CWSSPackageClassical`, `EscapeCWSSPackageClassical`, `GCWSSPackageClassical`, `EscapeGCWSSPackageClassical` form the 2×2 lattice
+  escape? × guarded?, ordered by two **lossless** lifts: `toEscapeClassical` (at the never-firing event
+  `fun _ _ => False`, so extractor and certificate are unchanged) and `toGuardedClassical` (at the
   trivially-true check). A package is declared in the weakest corner it honestly lives in, and
   every ordered pair composes at the join through the universal `▷` — one scoped elaborator
   dispatching on the factors' package kinds (`▷ᵍ`, `▷ₑ`, `▷ₑᵍ` remain as explicit synonyms).
@@ -56,15 +56,15 @@ namespace CoordinateWise
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- A **bundled escape-aware coordinate-wise-special-sound reduction**: `CWSSPackage` with one
+/-- A **bundled escape-aware coordinate-wise-special-sound reduction**: `CWSSPackageClassical` with one
 extra field, the **escape event** `esc`. Its certificate `isCWSS` concludes
 `esc stmt tree ∨ extraction succeeds` on every structured accepting tree, so `relIn`/`relOut` and
 `extractor` stay ordinary.
 
 `esc` is a trusted specification — reading its definition is the reader's obligation, just as for
-`relIn`/`relOut` (contract: `ChallengeTree.EscapeEvent`). Compose with `EscapeCWSSPackage.append` /
+`relIn`/`relOut` (contract: `ChallengeTree.EscapeEvent`). Compose with `EscapeCWSSPackageClassical.append` /
 the universal infix `▷` (explicit synonym `▷ₑ`). -/
-structure EscapeCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+structure EscapeCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier. -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
@@ -81,13 +81,13 @@ structure EscapeCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT
   Needed to place this package as the left factor of an `append`. -/
   isPure : verifier.IsPure
   /-- The package's named extraction algorithm. -/
-  extractor : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
+  extractor : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
   /-- The certificate: on every structured accepting tree, either the tree exhibits the escape
   event `esc`, or `extractor` produces a `relIn`-witness. -/
-  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscape init impl struct esc
+  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl struct esc
     relIn relOut verifier extractor
 
-namespace EscapeCWSSPackage
+namespace EscapeCWSSPackageClassical
 
 /-- **Compose two escape-aware packages along a matching relation seam** `hRel` (discharged by
 `rfl` when a chain uses named seam relations). The composed event is
@@ -98,10 +98,10 @@ def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
     {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (L₁ : EscapeCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+    EscapeCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
   verifier := L₁.verifier.append L₂.verifier
   struct := L₁.struct.append L₂.struct
   relIn := L₁.relIn
@@ -110,20 +110,20 @@ def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   isPure := Verifier.IsPure.append L₁.verifier L₂.verifier L₁.isPure L₂.isPure
   extractor := fun stmt tree => L₁.extractor stmt tree.appendSplit.fst
   isCWSS := by
-    have h₂ := L₂.isCWSS.toEscape
+    have h₂ := L₂.isCWSS.toEscapeClassical
     rw [← hRel] at h₂
-    exact Verifier.append_coordinateWiseSpecialSoundWithEscape init impl
+    exact Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical init impl
       L₁.verifier L₂.verifier L₁.struct L₂.struct L₁.esc L₂.esc
       L₁.isPure.is_pure.choose L₁.isPure.is_pure.choose_spec L₁.extractor L₁.isCWSS h₂
 
-end EscapeCWSSPackage
+end EscapeCWSSPackageClassical
 
-@[inherit_doc EscapeCWSSPackage.append]
-scoped infixr:65 " ▷ₑ " => EscapeCWSSPackage.append
+@[inherit_doc EscapeCWSSPackageClassical.append]
+scoped infixr:65 " ▷ₑ " => EscapeCWSSPackageClassical.append
 
-/-- A **guarded escape-aware CWSS package**: `EscapeCWSSPackage` with the purity witness relaxed
+/-- A **guarded escape-aware CWSS package**: `EscapeCWSSPackageClassical` with the purity witness relaxed
 to a guardedness witness (the verifier may `failure` at runtime). -/
-structure EscapeGCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+structure EscapeGCWSSPackageClassical (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier (which may reject at runtime). -/
   verifier : Verifier oSpec StmtIn StmtOut pSpec
@@ -138,22 +138,22 @@ structure EscapeGCWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (State
   /-- The verifier is guarded by a deterministic Boolean check. -/
   isGuarded : verifier.IsGuarded
   /-- The package's named extraction algorithm. -/
-  extractor : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
+  extractor : Extractor.TreeBasedClassical StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
   /-- The certificate: on every structured accepting tree, either the tree exhibits the escape
   event `esc`, or `extractor` produces a `relIn`-witness. -/
-  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscape init impl struct esc
+  isCWSS : Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl struct esc
     relIn relOut verifier extractor
 
-namespace EscapeGCWSSPackage
+namespace EscapeGCWSSPackageClassical
 
 variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- Regard a pure escape-aware package as guarded, at the trivially-true check; every other field
 carries over unchanged. Lossless. -/
-def _root_.CoordinateWise.EscapeCWSSPackage.toGuarded
+def _root_.CoordinateWise.EscapeCWSSPackageClassical.toGuardedClassical
     {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
-    (L : EscapeCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
-    EscapeGCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+    (L : EscapeCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeGCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec where
   verifier := L.verifier
   struct := L.struct
   relIn := L.relIn
@@ -164,18 +164,18 @@ def _root_.CoordinateWise.EscapeCWSSPackage.toGuarded
   isCWSS := L.isCWSS
 
 /-- **Compose two guarded escape-aware packages along a matching relation seam.** As in
-`EscapeCWSSPackage.append`, but the composed event is taken at the guard's output map `out₁`, which
+`EscapeCWSSPackageClassical.append`, but the composed event is taken at the guard's output map `out₁`, which
 `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape events must be
 honest at *all* `(stmt, tree)` pairs. Certificate:
-`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (sorried). Written infix
+`Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft` (sorried). Written infix
 as `L₁ ▷ L₂` (explicit synonym `▷ₑᵍ`). -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
-    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+    (L₁ : EscapeGCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) where
   verifier := L₁.verifier.append L₂.verifier
   struct := L₁.struct.append L₂.struct
   relIn := L₁.relIn
@@ -184,24 +184,24 @@ def append {StmtA WitA StmtB WitB StmtC WitC : Type}
   isGuarded := Verifier.IsGuarded.append L₁.verifier L₂.verifier L₁.isGuarded L₂.isGuarded
   extractor := fun stmt tree => L₁.extractor stmt tree.appendSplit.fst
   isCWSS := by
-    have h₂ := L₂.isCWSS.toEscape
+    have h₂ := L₂.isCWSS.toEscapeClassical
     rw [← hRel] at h₂
-    exact Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft init impl
+    exact Verifier.append_coordinateWiseSpecialSoundWithEscapeClassical_of_guardedLeft init impl
       L₁.verifier L₂.verifier L₁.struct L₂.struct
       L₁.isGuarded.is_guarded.choose L₁.isGuarded.is_guarded.choose_spec.choose
       L₁.isGuarded.is_guarded.choose_spec.choose_spec
       L₁.esc L₂.esc L₁.extractor L₁.isCWSS h₂
 
-end EscapeGCWSSPackage
+end EscapeGCWSSPackageClassical
 
-@[inherit_doc EscapeGCWSSPackage.append]
-scoped infixr:65 " ▷ₑᵍ " => EscapeGCWSSPackage.append
+@[inherit_doc EscapeGCWSSPackageClassical.append]
+scoped infixr:65 " ▷ₑᵍ " => EscapeGCWSSPackageClassical.append
 
 /-! ### Lifting escape-free packages into an escape chain
 
 An escape-free package enters the escape world at the never-firing event `fun _ _ => False`, where
-`Verifier.coordinateWiseSpecialSoundWith.withEscape` is the trivial `Or.inr`: extractor and
-certificate are unchanged, and `coordinateWiseSpecialSoundWithEscape_false_iff` recovers the plain
+`Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical` is the trivial `Or.inr`: extractor and
+certificate are unchanged, and `coordinateWiseSpecialSoundWithEscapeClassical_false_iff` recovers the plain
 notion exactly. Escape packages are therefore only *defined* for the subprotocols that genuinely
 produce escapes; the mixed appends below (and the universal `▷`) insert the lifts on the fly. -/
 
@@ -212,9 +212,9 @@ variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
 /-- Lift a pure escape-free package to the never-firing event; every other field carries over
 unchanged. Lossless. -/
-def CWSSPackage.toEscape
-    (L : CWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
-    EscapeCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+def CWSSPackageClassical.toEscapeClassical
+    (L : CWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec where
   verifier := L.verifier
   struct := L.struct
   relIn := L.relIn
@@ -222,13 +222,13 @@ def CWSSPackage.toEscape
   esc := fun _ _ => False
   isPure := L.isPure
   extractor := L.extractor
-  isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _ L.isCWSS
+  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ L.isCWSS
 
 /-- Lift a guarded escape-free package to the never-firing event; every other field carries over
 unchanged. Lossless. -/
-def GCWSSPackage.toEscape
-    (L : GCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec) :
-    EscapeGCWSSPackage init impl StmtIn WitIn StmtOut WitOut pSpec where
+def GCWSSPackageClassical.toEscapeClassical
+    (L : GCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec) :
+    EscapeGCWSSPackageClassical init impl StmtIn WitIn StmtOut WitOut pSpec where
   verifier := L.verifier
   struct := L.struct
   relIn := L.relIn
@@ -236,7 +236,7 @@ def GCWSSPackage.toEscape
   esc := fun _ _ => False
   isGuarded := L.isGuarded
   extractor := L.extractor
-  isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _ L.isCWSS
+  isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _ L.isCWSS
 
 end Lift
 
@@ -245,8 +245,8 @@ end Lift
 Every ordered pair of package kinds whose join is escape-aware (pure or guarded). Each lifts its
 factors to the join and delegates, leaving only the relation seam `hRel` (discharged by `rfl`). All
 are reached through the universal `▷` below; the escape-free appends live in `Package.lean`
-(`CWSSPackage.append`) and `Guarded.lean` (`GCWSSPackage.append`, `CWSSPackage.appendGuarded`,
-`GCWSSPackage.appendPure`). -/
+(`CWSSPackageClassical.append`) and `Guarded.lean` (`GCWSSPackageClassical.append`, `CWSSPackageClassical.appendGuarded`,
+`GCWSSPackageClassical.appendPure`). -/
 
 section MixedAppend
 
@@ -256,89 +256,89 @@ variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   [∀ i, SampleableType (pSpec₁.Challenge i)]
 
 /-- **Pure escape-free ▷ pure escape-aware.** Lifts the left factor. -/
-def CWSSPackage.appendEscape
-    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def CWSSPackageClassical.appendEscape
+    (L₁ : CWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toEscape.append L₂ hRel
+    EscapeCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscapeClassical.append L₂ hRel
 
 /-- **Pure escape-aware ▷ pure escape-free.** Lifts the right factor, so the composed event is
 the left event on the prefix (its right disjunct never fires). -/
-def EscapeCWSSPackage.appendPure
-    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeCWSSPackageClassical.appendPure
+    (L₁ : EscapeCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append L₂.toEscape hRel
+    EscapeCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscapeClassical hRel
 
 /-- **Pure escape-free ▷ guarded escape-aware.** Lifts the left factor twice. -/
-def CWSSPackage.appendEscapeGuarded
-    (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def CWSSPackageClassical.appendEscapeGuarded
+    (L₁ : CWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toEscape.toGuarded.append L₂ hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscapeClassical.toGuardedClassical.append L₂ hRel
 
 /-- **Guarded escape-aware ▷ pure escape-free.** Lifts the right factor twice. -/
-def EscapeGCWSSPackage.appendPure
-    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : CWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeGCWSSPackageClassical.appendPure
+    (L₁ : EscapeGCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : CWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append L₂.toEscape.toGuarded hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscapeClassical.toGuardedClassical hRel
 
 /-- **Guarded escape-free ▷ pure escape-aware.** Lifts the left factor to the never-event and the
 right factor to the trivially-true guard. -/
-def GCWSSPackage.appendEscape
-    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def GCWSSPackageClassical.appendEscape
+    (L₁ : GCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toEscape.append L₂.toGuarded hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscapeClassical.append L₂.toGuardedClassical hRel
 
 /-- **Guarded escape-free ▷ guarded escape-aware.** Lifts the left factor to the never-event. -/
-def GCWSSPackage.appendEscapeGuarded
-    (L₁ : GCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def GCWSSPackageClassical.appendEscapeGuarded
+    (L₁ : GCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toEscape.append L₂ hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toEscapeClassical.append L₂ hRel
 
 /-- **Pure escape-aware ▷ guarded escape-free.** Lifts the left factor to the trivially-true guard
 and the right factor to the never-event. -/
-def EscapeCWSSPackage.appendGuarded
-    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeCWSSPackageClassical.appendGuarded
+    (L₁ : EscapeCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toGuarded.append L₂.toEscape hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuardedClassical.append L₂.toEscapeClassical hRel
 
 /-- **Pure escape-aware ▷ guarded escape-aware.** Lifts the left factor to the trivially-true
 guard; both factors keep their own events. -/
-def EscapeCWSSPackage.appendEscapeGuarded
-    (L₁ : EscapeCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeGCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeCWSSPackageClassical.appendEscapeGuarded
+    (L₁ : EscapeCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeGCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.toGuarded.append L₂ hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.toGuardedClassical.append L₂ hRel
 
 /-- **Guarded escape-aware ▷ guarded escape-free.** Lifts the right factor to the never-event. -/
-def EscapeGCWSSPackage.appendGuarded
-    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : GCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeGCWSSPackageClassical.appendGuarded
+    (L₁ : EscapeGCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : GCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append L₂.toEscape hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toEscapeClassical hRel
 
 /-- **Guarded escape-aware ▷ pure escape-aware.** Lifts the right factor to the trivially-true
 guard; both factors keep their own events. -/
-def EscapeGCWSSPackage.appendEscape
-    (L₁ : EscapeGCWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
-    (L₂ : EscapeCWSSPackage init impl StmtB WitB StmtC WitC pSpec₂)
+def EscapeGCWSSPackageClassical.appendEscape
+    (L₁ : EscapeGCWSSPackageClassical init impl StmtA WitA StmtB WitB pSpec₁)
+    (L₂ : EscapeCWSSPackageClassical init impl StmtB WitB StmtC WitC pSpec₂)
     (hRel : L₁.relOut = L₂.relIn := by rfl) :
-    EscapeGCWSSPackage init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
-  L₁.append L₂.toGuarded hRel
+    EscapeGCWSSPackageClassical init impl StmtA WitA StmtC WitC (pSpec₁ ++ₚ pSpec₂) :=
+  L₁.append L₂.toGuardedClassical hRel
 
 end MixedAppend
 
@@ -358,22 +358,22 @@ open Lean Elab Term Meta
 /-- The dispatch table of the universal append `▷`: the two factors' package kinds determine the
 append that composes them at their join. -/
 private def univAppendFn : Name → Name → Option Name
-  | ``CWSSPackage,        ``CWSSPackage        => some ``CWSSPackage.append
-  | ``CWSSPackage,        ``EscapeCWSSPackage  => some ``CWSSPackage.appendEscape
-  | ``CWSSPackage,        ``GCWSSPackage       => some ``CWSSPackage.appendGuarded
-  | ``CWSSPackage,        ``EscapeGCWSSPackage => some ``CWSSPackage.appendEscapeGuarded
-  | ``EscapeCWSSPackage,  ``CWSSPackage        => some ``EscapeCWSSPackage.appendPure
-  | ``EscapeCWSSPackage,  ``EscapeCWSSPackage  => some ``EscapeCWSSPackage.append
-  | ``EscapeCWSSPackage,  ``GCWSSPackage       => some ``EscapeCWSSPackage.appendGuarded
-  | ``EscapeCWSSPackage,  ``EscapeGCWSSPackage => some ``EscapeCWSSPackage.appendEscapeGuarded
-  | ``GCWSSPackage,       ``CWSSPackage        => some ``GCWSSPackage.appendPure
-  | ``GCWSSPackage,       ``EscapeCWSSPackage  => some ``GCWSSPackage.appendEscape
-  | ``GCWSSPackage,       ``GCWSSPackage       => some ``GCWSSPackage.append
-  | ``GCWSSPackage,       ``EscapeGCWSSPackage => some ``GCWSSPackage.appendEscapeGuarded
-  | ``EscapeGCWSSPackage, ``CWSSPackage        => some ``EscapeGCWSSPackage.appendPure
-  | ``EscapeGCWSSPackage, ``EscapeCWSSPackage  => some ``EscapeGCWSSPackage.appendEscape
-  | ``EscapeGCWSSPackage, ``GCWSSPackage       => some ``EscapeGCWSSPackage.appendGuarded
-  | ``EscapeGCWSSPackage, ``EscapeGCWSSPackage => some ``EscapeGCWSSPackage.append
+  | ``CWSSPackageClassical,        ``CWSSPackageClassical        => some ``CWSSPackageClassical.append
+  | ``CWSSPackageClassical,        ``EscapeCWSSPackageClassical  => some ``CWSSPackageClassical.appendEscape
+  | ``CWSSPackageClassical,        ``GCWSSPackageClassical       => some ``CWSSPackageClassical.appendGuarded
+  | ``CWSSPackageClassical,        ``EscapeGCWSSPackageClassical => some ``CWSSPackageClassical.appendEscapeGuarded
+  | ``EscapeCWSSPackageClassical,  ``CWSSPackageClassical        => some ``EscapeCWSSPackageClassical.appendPure
+  | ``EscapeCWSSPackageClassical,  ``EscapeCWSSPackageClassical  => some ``EscapeCWSSPackageClassical.append
+  | ``EscapeCWSSPackageClassical,  ``GCWSSPackageClassical       => some ``EscapeCWSSPackageClassical.appendGuarded
+  | ``EscapeCWSSPackageClassical,  ``EscapeGCWSSPackageClassical => some ``EscapeCWSSPackageClassical.appendEscapeGuarded
+  | ``GCWSSPackageClassical,       ``CWSSPackageClassical        => some ``GCWSSPackageClassical.appendPure
+  | ``GCWSSPackageClassical,       ``EscapeCWSSPackageClassical  => some ``GCWSSPackageClassical.appendEscape
+  | ``GCWSSPackageClassical,       ``GCWSSPackageClassical       => some ``GCWSSPackageClassical.append
+  | ``GCWSSPackageClassical,       ``EscapeGCWSSPackageClassical => some ``GCWSSPackageClassical.appendEscapeGuarded
+  | ``EscapeGCWSSPackageClassical, ``CWSSPackageClassical        => some ``EscapeGCWSSPackageClassical.appendPure
+  | ``EscapeGCWSSPackageClassical, ``EscapeCWSSPackageClassical  => some ``EscapeGCWSSPackageClassical.appendEscape
+  | ``EscapeGCWSSPackageClassical, ``GCWSSPackageClassical       => some ``EscapeGCWSSPackageClassical.appendGuarded
+  | ``EscapeGCWSSPackageClassical, ``EscapeGCWSSPackageClassical => some ``EscapeGCWSSPackageClassical.append
   | _,                    _                    => none
 
 /-- The package kind — the head constant of the type — of an elaborated `▷` factor. -/

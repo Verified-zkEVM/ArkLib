@@ -51,18 +51,18 @@ import ArkLib.OracleReduction.Security.Basic
     tree by structural recursion.
   - `ChallengeTree.IsAccepting` — the verifier accepts every root-to-leaf transcript into the output
     language with probability one.
-  - `Extractor.TreeBased` — the deterministic tree-consuming extractor shared by all tree-based
+  - `Extractor.TreeBasedClassical` — the deterministic tree-consuming extractor shared by all tree-based
     notions.
-  - `Verifier.treeSpecialSound` — the shape-generic tree-soundness predicate: a tree-based extractor
+  - `Verifier.treeSpecialSoundClassical` — the shape-generic tree-soundness predicate: a tree-based extractor
     that, on every `S`-structured accepting tree, recovers a witness. Plain special soundness
     (`Security.SpecialSoundness`) and coordinate-wise special soundness
     (`Security.CoordinateWiseSpecialSoundness`) are both instances, for different shapes.
-  - `ChallengeTree.EscapeEvent` / `Verifier.treeSpecialSoundWithEscape` — the escape-threaded
+  - `ChallengeTree.EscapeEvent` / `Verifier.treeSpecialSoundWithEscapeClassical` — the escape-threaded
     variant, for reductions whose extraction may instead break a cryptographic assumption: the
     conclusion is `esc stmtIn tree ∨ extraction succeeds`, with the extractor still a plain
-    `Extractor.TreeBased`. The plain notion is the never-firing event
-    (`treeSpecialSoundWithEscape_false_iff`), and every plain certificate lifts losslessly
-    (`Verifier.treeSpecialSoundWith.withEscape`).
+    `Extractor.TreeBasedClassical`. The plain notion is the never-firing event
+    (`treeSpecialSoundWithEscapeClassical_false_iff`), and every plain certificate lifts losslessly
+    (`Verifier.treeSpecialSoundWithClassical.withEscapeClassical`).
 
   ## Caveat
 
@@ -307,7 +307,7 @@ section EscapeEvent
   `CoordinateWise.SingleRound.escEvent` does) is the standard way to get tightness.
 
   The trivial event `fun _ _ => False` is the escape-free degeneration (lossless: see
-  `Verifier.treeSpecialSoundWith.withEscape`). -/
+  `Verifier.treeSpecialSoundWithClassical.withEscapeClassical`). -/
 def EscapeEvent (Stmt : Type) (pSpec : ProtocolSpec n)
     (arity : pSpec.ChallengeIdx → ℕ) : Type :=
   Stmt → ChallengeTree pSpec arity 0 → Prop
@@ -330,7 +330,7 @@ open ProtocolSpec
   so the extractor is a plain function; it is the rewinding/forking extractor of the
   knowledge-soundness reduction that actually *produces* the tree. Both notions share it, so it
   lives here on the shared `ChallengeTree` rather than in either notion's file. -/
-def TreeBased (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
+def TreeBasedClassical (StmtIn WitIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (arity : pSpec.ChallengeIdx → ℕ) : Type :=
   StmtIn → ProtocolSpec.ChallengeTree pSpec arity 0 → WitIn
 
@@ -356,15 +356,15 @@ variable {ι : Type} {oSpec : OracleSpec ι}
 
   This named form is the **content-bearing** statement of special soundness: it pins the
   extraction *algorithm*, so it asserts something about the actual output of `Ext` on every
-  accepting tree. Its existential closure is `Verifier.treeSpecialSound` — prefer the named form
+  accepting tree. Its existential closure is `Verifier.treeSpecialSoundClassical` — prefer the named form
   in advertised protocol statements, since a chain of named certificates exposes a runnable
   end-to-end extractor (`chain.extractor`), which is what a later knowledge-error accounting has
   to run. Reductions whose extraction may instead break a cryptographic assumption use
-  `Verifier.treeSpecialSoundWithEscape` below. -/
-def treeSpecialSoundWith (S : ChallengeTreeShape pSpec)
+  `Verifier.treeSpecialSoundWithEscapeClassical` below. -/
+def treeSpecialSoundWithClassical (S : ChallengeTreeShape pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity) : Prop :=
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity) : Prop :=
   ∀ stmtIn : StmtIn,
   ∀ tree : ChallengeTree pSpec S.arity 0,
     tree.IsStructured S →
@@ -373,41 +373,41 @@ def treeSpecialSoundWith (S : ChallengeTreeShape pSpec)
 
 /-- A verifier is **tree special sound** with respect to a generic challenge-tree shape `S`, an
   input relation `relIn` and an output relation `relOut` if *some* tree-based extractor witnesses
-  it (`Verifier.treeSpecialSoundWith`).
+  it (`Verifier.treeSpecialSoundWithClassical`).
 
   This is the shape-generic core of tree-based knowledge extraction: every concrete special-
   soundness-style notion is an instance obtained by supplying a shape. Plain `k`-special soundness
-  (`Verifier.specialSound`, `Security.SpecialSoundness`) supplies the pairwise-distinct shape;
-  coordinate-wise special soundness (`Verifier.coordinateWiseSpecialSound`,
+  (`Verifier.specialSoundClassical`, `Security.SpecialSoundness`) supplies the pairwise-distinct shape;
+  coordinate-wise special soundness (`Verifier.coordinateWiseSpecialSoundClassical`,
   `Security.CoordinateWiseSpecialSoundness`) supplies the CWSS shape `D.toShape`. Phrasing the
   notion over an arbitrary `ChallengeTreeShape` is what lets the composition theory be proved once
-  generically (see `Verifier.append_treeSpecialSoundWith`) and reused by each concrete notion.
+  generically (see `Verifier.append_treeSpecialSoundWithClassical`) and reused by each concrete notion.
 
   The extractor is existential here, which loses the *algorithm*: advertised protocol statements
-  should use the named form `treeSpecialSoundWith` at an explicit extractor and keep this form for
-  plumbing, e.g. the right factor of an append (`Verifier.append_treeSpecialSoundWith`). -/
-def treeSpecialSound (S : ChallengeTreeShape pSpec)
+  should use the named form `treeSpecialSoundWithClassical` at an explicit extractor and keep this form for
+  plumbing, e.g. the right factor of an append (`Verifier.append_treeSpecialSoundWithClassical`). -/
+def treeSpecialSoundClassical (S : ChallengeTreeShape pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  ∃ E : Extractor.TreeBased StmtIn WitIn pSpec S.arity,
-    treeSpecialSoundWith init impl S relIn relOut verifier E
+  ∃ E : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity,
+    treeSpecialSoundWithClassical init impl S relIn relOut verifier E
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- The existential notion is definitionally the existential closure of the named one. -/
-theorem treeSpecialSound_iff_exists (S : ChallengeTreeShape pSpec)
+theorem treeSpecialSoundClassical_iff_exists (S : ChallengeTreeShape pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) :
-    verifier.treeSpecialSound init impl S relIn relOut ↔
-      ∃ Ext, treeSpecialSoundWith init impl S relIn relOut verifier Ext := Iff.rfl
+    verifier.treeSpecialSoundClassical init impl S relIn relOut ↔
+      ∃ Ext, treeSpecialSoundWithClassical init impl S relIn relOut verifier Ext := Iff.rfl
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor. -/
-theorem treeSpecialSoundWith.toTreeSpecialSound {S : ChallengeTreeShape pSpec}
+theorem treeSpecialSoundWithClassical.toTreeSpecialSoundClassical {S : ChallengeTreeShape pSpec}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    (h : treeSpecialSoundWith init impl S relIn relOut verifier Ext) :
-    verifier.treeSpecialSound init impl S relIn relOut := ⟨Ext, h⟩
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    (h : treeSpecialSoundWithClassical init impl S relIn relOut verifier Ext) :
+    verifier.treeSpecialSoundClassical init impl S relIn relOut := ⟨Ext, h⟩
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- **Shape-congruence transport for named tree special soundness.** The named notion transports
@@ -415,13 +415,13 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
   type mentions `S.arity`, so a plain `rw` at the shape is motive-incorrect; this lemma does the
   transport once and for all (in practice `hExt := HEq.rfl`, since the relevant shape equalities
   — e.g. `CWSSStructure.toShape_append` — have definitionally equal arities). -/
-theorem treeSpecialSoundWith_congr {S S' : ChallengeTreeShape pSpec} (hS : S = S')
+theorem treeSpecialSoundWithClassical_congr {S S' : ChallengeTreeShape pSpec} (hS : S = S')
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    {Ext' : Extractor.TreeBased StmtIn WitIn pSpec S'.arity} (hExt : HEq Ext Ext')
-    (h : treeSpecialSoundWith init impl S relIn relOut verifier Ext) :
-    treeSpecialSoundWith init impl S' relIn relOut verifier Ext' := by
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    {Ext' : Extractor.TreeBasedClassical StmtIn WitIn pSpec S'.arity} (hExt : HEq Ext Ext')
+    (h : treeSpecialSoundWithClassical init impl S relIn relOut verifier Ext) :
+    treeSpecialSoundWithClassical init impl S' relIn relOut verifier Ext' := by
   subst hS
   obtain rfl := eq_of_heq hExt
   exact h
@@ -433,50 +433,50 @@ a disjunction against an escape event (`ChallengeTree.EscapeEvent`). Relations a
 unchanged, and since the event never mentions the extractor, no choice of extractor can trivialize
 the statement — a certificate is exactly as strong as its event is honest. -/
 
-/-- **Escape-threaded tree special soundness, named form.** `Verifier.treeSpecialSoundWith` with
+/-- **Escape-threaded tree special soundness, named form.** `Verifier.treeSpecialSoundWithClassical` with
   an escape-event disjunct: on every structured accepting tree, either the tree exhibits the escape
   event `esc` (a trusted spec — see `ChallengeTree.EscapeEvent`) or the named extractor produces a
   `relIn`-witness. -/
-def treeSpecialSoundWithEscape (S : ChallengeTreeShape pSpec)
+def treeSpecialSoundWithEscapeClassical (S : ChallengeTreeShape pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity) : Prop :=
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity) : Prop :=
   ∀ stmtIn : StmtIn,
   ∀ tree : ChallengeTree pSpec S.arity 0,
     tree.IsStructured S →
     tree.IsAccepting init impl verifier stmtIn relOut.language →
       esc stmtIn tree ∨ (stmtIn, Ext stmtIn tree) ∈ relIn
 
-/-- Existential closure of `treeSpecialSoundWithEscape`, for use as the *right* factor of an
+/-- Existential closure of `treeSpecialSoundWithEscapeClassical`, for use as the *right* factor of an
   append. The named form is preferred in advertised statements, since a composed chain then exposes
   a runnable end-to-end extractor. -/
-def treeSpecialSoundEscape (S : ChallengeTreeShape pSpec)
+def treeSpecialSoundEscapeClassical (S : ChallengeTreeShape pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) : Prop :=
-  ∃ Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity,
-    treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext
+  ∃ Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity,
+    treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier Ext
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Forget the name of the extractor. -/
-theorem treeSpecialSoundWithEscape.toEscape {S : ChallengeTreeShape pSpec}
+theorem treeSpecialSoundWithEscapeClassical.toEscapeClassical {S : ChallengeTreeShape pSpec}
     {esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity}
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    (h : treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext) :
-    treeSpecialSoundEscape init impl S esc relIn relOut verifier := ⟨Ext, h⟩
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    (h : treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier Ext) :
+    treeSpecialSoundEscapeClassical init impl S esc relIn relOut verifier := ⟨Ext, h⟩
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- At the never-firing event the escape notion is the plain notion: the escape layer is a
   conservative extension. -/
-theorem treeSpecialSoundWithEscape_false_iff (S : ChallengeTreeShape pSpec)
+theorem treeSpecialSoundWithEscapeClassical_false_iff (S : ChallengeTreeShape pSpec)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
-    (Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity) :
-    treeSpecialSoundWithEscape init impl S (fun _ _ => False) relIn relOut verifier Ext ↔
-      treeSpecialSoundWith init impl S relIn relOut verifier Ext := by
+    (Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity) :
+    treeSpecialSoundWithEscapeClassical init impl S (fun _ _ => False) relIn relOut verifier Ext ↔
+      treeSpecialSoundWithClassical init impl S relIn relOut verifier Ext := by
   constructor <;> intro h stmtIn tree hstr hacc
   · exact (h stmtIn tree hstr hacc).resolve_left id
   · exact Or.inr (h stmtIn tree hstr hacc)
@@ -484,25 +484,25 @@ theorem treeSpecialSoundWithEscape_false_iff (S : ChallengeTreeShape pSpec)
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- **Lossless escape lift**: a plain certificate holds at *any* escape event, via the right
   disjunct — so an escape-free protocol enters an escape-threaded chain for free. -/
-theorem treeSpecialSoundWith.withEscape {S : ChallengeTreeShape pSpec}
+theorem treeSpecialSoundWithClassical.withEscapeClassical {S : ChallengeTreeShape pSpec}
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    (h : treeSpecialSoundWith init impl S relIn relOut verifier Ext) :
-    treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext :=
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    (h : treeSpecialSoundWithClassical init impl S relIn relOut verifier Ext) :
+    treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier Ext :=
   fun stmtIn tree hstr hacc => Or.inr (h stmtIn tree hstr hacc)
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- Escape events are monotone: a certificate at `esc` holds at any weaker (larger) event. -/
-theorem treeSpecialSoundWithEscape.mono {S : ChallengeTreeShape pSpec}
+theorem treeSpecialSoundWithEscapeClassical.monoClassical {S : ChallengeTreeShape pSpec}
     {esc esc' : ChallengeTree.EscapeEvent StmtIn pSpec S.arity}
     (hmono : ∀ s t, esc s t → esc' s t)
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    (h : treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext) :
-    treeSpecialSoundWithEscape init impl S esc' relIn relOut verifier Ext :=
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    (h : treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier Ext) :
+    treeSpecialSoundWithEscapeClassical init impl S esc' relIn relOut verifier Ext :=
   fun stmtIn tree hstr hacc => (h stmtIn tree hstr hacc).imp (hmono _ _) id
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
@@ -510,15 +510,15 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
   extractor and the escape event have types mentioning `S.arity`, so a plain `rw` at the shape is
   motive-incorrect; this lemma carries them across heterogeneously (in practice both `HEq`s are
   `HEq.rfl`, the relevant shape equalities having definitionally equal arities). -/
-theorem treeSpecialSoundWithEscape_congr {S S' : ChallengeTreeShape pSpec} (hS : S = S')
+theorem treeSpecialSoundWithEscapeClassical_congr {S S' : ChallengeTreeShape pSpec} (hS : S = S')
     {esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity}
     {esc' : ChallengeTree.EscapeEvent StmtIn pSpec S'.arity} (hEsc : HEq esc esc')
     {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
     {verifier : Verifier oSpec StmtIn StmtOut pSpec}
-    {Ext : Extractor.TreeBased StmtIn WitIn pSpec S.arity}
-    {Ext' : Extractor.TreeBased StmtIn WitIn pSpec S'.arity} (hExt : HEq Ext Ext')
-    (h : treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext) :
-    treeSpecialSoundWithEscape init impl S' esc' relIn relOut verifier Ext' := by
+    {Ext : Extractor.TreeBasedClassical StmtIn WitIn pSpec S.arity}
+    {Ext' : Extractor.TreeBasedClassical StmtIn WitIn pSpec S'.arity} (hExt : HEq Ext Ext')
+    (h : treeSpecialSoundWithEscapeClassical init impl S esc relIn relOut verifier Ext) :
+    treeSpecialSoundWithEscapeClassical init impl S' esc' relIn relOut verifier Ext' := by
   subst hS
   obtain rfl := eq_of_heq hEsc
   obtain rfl := eq_of_heq hExt

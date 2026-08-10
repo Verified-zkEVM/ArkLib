@@ -33,8 +33,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   the escape event `escEventScalar` induced by a local per-family event.
 
   Both generic assemblies are **proven**:
-  `coordinateWiseSpecialSoundWith_of_mkWitness_scalar` and its escape-threaded twin
-  `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`. Any pure statement-extending verifier
+  `coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar` and its escape-threaded twin
+  `coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar`. Any pure statement-extending verifier
   of this shape is CWSS for `scalarStructure k` given only a witness assembler `mkWitness` that
   turns `k` per-branch `relOut`-witnesses at *pairwise-distinct* challenges into a `relIn`-witness
   (escape variant: or into a local escape event). At `ℓ = 1` the star machinery of `SingleRound`
@@ -336,7 +336,7 @@ the assembly below. -/
 noncomputable def treeExtractorScalar {k : ℕ} (hk : 2 ≤ k)
     (relOut : Set ((StmtIn × Msg × C) × WitOut))
     (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
-    Extractor.TreeBased StmtIn WitIn (pSpecScalar Msg C)
+    Extractor.TreeBasedClassical StmtIn WitIn (pSpecScalar Msg C)
       (CWSSStructure.toShape (scalarStructure (Msg := Msg) (C := C) k hk)).arity :=
   fun stmtIn tree =>
     let v := readPre tree
@@ -390,7 +390,7 @@ This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation) and Lemma 11
 protocol-specific work lives entirely in `hmk`. The `ℓ = 1` node predicate unfolds to injectivity
 of the challenge family (`injective_of_nodeOk`), and `tree_shape` puts an arbitrary structured
 accepting tree into star form so that `branch_relOut_language` can certify each branch. -/
-theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
+theorem coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
     (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
@@ -402,7 +402,7 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
     (hmk : ∀ s v (fam : Fin k → C) (resp : Fin k → WitOut),
       (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
       (s, mkWitness s v fam resp) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWith init impl (scalarStructure k hk) relIn relOut V
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl (scalarStructure k hk) relIn relOut V
       (treeExtractorScalar hk relOut mkWitness) := by
   classical
   intro stmtIn tree hStruct hAcc
@@ -425,7 +425,7 @@ theorem coordinateWiseSpecialSoundWith_of_mkWitness_scalar
   exact hmk stmtIn v _ _ hbranch hinj
 
 /-- **Generic scalar-round escape-threaded CWSS assembly, named form.** The escape twin of
-`coordinateWiseSpecialSoundWith_of_mkWitness_scalar`: `hmk` may conclude a local escape event
+`coordinateWiseSpecialSoundWithClassical_of_mkWitness_scalar`: `hmk` may conclude a local escape event
 `escLocal` instead of a `relIn`-witness, and the certificate carries the induced tree-level event
 `escEventScalar relOut escLocal`. This is the engine behind Hachi Lemma 9 (`k = 2d`, interpolation,
 weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
@@ -433,7 +433,7 @@ weak-binding escape) and Lemma 11 (`k = deg + 1`, per sumcheck round).
 Same proof as the plain assembly up to the last step, where the disjunction is threaded: the
 extractor's own chosen per-branch responses — certified `relOut`-valid by `hbranch` — witness
 `escEventScalar`'s existential. -/
-theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
+theorem coordinateWiseSpecialSoundWithEscapeClassical_of_mkWitness_scalar
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     {k : ℕ} (hk : 2 ≤ k)
     (V : Verifier oSpec StmtIn (StmtIn × Msg × C) (pSpecScalar Msg C))
@@ -446,7 +446,7 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     (hmk : ∀ s v (fam : Fin k → C) (resp : Fin k → WitOut),
       (∀ j, ((s, v, fam j), resp j) ∈ relOut) → Function.Injective fam →
       escLocal s v fam resp ∨ (s, mkWitness s v fam resp) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl (scalarStructure k hk)
       (escEventScalar hk relOut escLocal) relIn relOut V
       (treeExtractorScalar hk relOut mkWitness) := by
   classical

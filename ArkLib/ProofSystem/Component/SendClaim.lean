@@ -27,7 +27,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
 
   The verifier is pure and has no challenge rounds, hence **coordinate-wise special sound**
   (`oracleVerifier_coordinateWiseSpecialSoundWith`) for any `CWSSStructure`, via the no-challenge
-  bridge `OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The extractor is
+  bridge `OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx`. The extractor is
   trivial (`e := fun _ _ => ()`, there is no witness) and the output relation `toORelOut relIn P`
   refines the input relation by the claim predicate `P`, so accepting into its language forces the
   input into `relIn`. These results are `sorryAx`-free. This mirrors `SendSingleWitness` (the
@@ -150,10 +150,10 @@ witness); since the output oracle statements at `inl` are the input oracles unch
 `toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language` forces the input into
 `relIn`. Holds for any `D`. -/
 theorem oracleVerifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Message)) :
-    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init impl
+    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWithClassical init impl
       D relIn (toORelOut relIn P)
       (fun _ _ => ()) := by
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+  have h := OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec Statement OStatement Message) relIn (toORelOut relIn P)
     (fun _ _ => ())
     (fun s tr hAcc => by

@@ -29,7 +29,7 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
   Reading the labels along a root-to-leaf path reconstructs one full protocol transcript, and any
   two paths automatically agree on everything before the round where their challenges first diverge.
   That shared prefix is exactly what rewinding the prover produces, which is why the tree is the
-  natural object for the extractor to consume (`Extractor.TreeBased`) and for the rewinding
+  natural object for the extractor to consume (`Extractor.TreeBasedClassical`) and for the rewinding
   reduction to produce.
 
   ## How special-soundness notions use it
@@ -66,7 +66,7 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Composition
   - `TranscriptTree.Basic` — the core definitions: `ChallengeTree`, the shape abstraction
     (`ChallengeTreeShape`, `IsStructured`), root-to-leaf paths and the transcripts they read
     (`LeafPath`, `transcripts` / `fullTranscripts`), the accept condition (`IsAccepting`), and the
-    shared `Extractor.TreeBased` extractor type.
+    shared `Extractor.TreeBasedClassical` extractor type.
   - `TranscriptTree.Composition` — the sequential-composition API (`appendArity`,
     `ChallengeTreeShape.append`, `appendSplit`) and the structure-preservation and recombination
     theorems above.

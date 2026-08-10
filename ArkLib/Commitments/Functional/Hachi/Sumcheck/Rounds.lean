@@ -197,7 +197,7 @@ generated code panics when run. -/
 def roundExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    Extractor.TreeBased (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
+    Extractor.TreeBasedClassical (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
       (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
         (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))).arity :=
@@ -205,7 +205,7 @@ def roundExtractor
 
 /-- **Hachi Lemma 11 (skeleton): per-round CWSS of the paired sumcheck round at
 `k = max (2b) 2 + 1`, at the named `roundExtractor`** (the named form is deliberate — see
-`Verifier.treeSpecialSoundWith`; closing this gap means filling the extractor and this
+`Verifier.treeSpecialSoundWithClassical`; closing this gap means filling the extractor and this
 specification about it).
 
 **Sorried.** Extraction plan (Lemma 11, case-faithful): the `k` accepting branches of a
@@ -228,7 +228,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))
       (roundEsc Φ m₀ m₁ bound ρBound b K φF i)
       (roundRel Φ m₀ m₁ bound ρBound K φF b i)
@@ -237,14 +237,14 @@ theorem round_coordinateWiseSpecialSoundWithEscape
       (roundExtractor Φ bound ρBound b K φF i) := by
   sorry
 
-/-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackage`: the guarded round verifier
+/-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackageClassical`: the guarded round verifier
 with the `k = max (2b) 2 + 1` plain-special-soundness structure, reducing the round-`i` seam to the
 round-`(i+1)` seam, with the weak-binding event `roundEsc` as its one escape-specific field.
 Certificate: the sorried `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11). -/
 def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    EscapeGCWSSPackage init impl
+    EscapeGCWSSPackageClassical init impl
       (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
       (RoundStatement Φ K.TCom F n μ (i + 1)) (LiftedWitness Φ μ n)
       (pSpecScalar (RoundMsg F b) F) where
@@ -273,14 +273,14 @@ noncomputable def roundsChainAux (init : ProbComp σ)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     (count : ℕ) →
-      { P : EscapeGCWSSPackage init impl
+      { P : EscapeGCWSSPackageClassical init impl
           (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
           (RoundStatement Φ K.TCom F n μ count) (LiftedWitness Φ μ n)
           (roundsSpec F b count) //
         P.relIn = roundRel Φ m₀ m₁ bound ρBound K φF b 0 ∧
         P.relOut = roundRel Φ m₀ m₁ bound ρBound K φF b count }
   | 0 =>
-    ⟨EscapeCWSSPackage.toGuarded
+    ⟨EscapeCWSSPackageClassical.toGuardedClassical
       { verifier := ReduceClaim.verifier oSpec id
         struct := CWSSStructure.ofIsEmpty
         relIn := roundRel Φ m₀ m₁ bound ρBound K φF b 0
@@ -290,7 +290,7 @@ noncomputable def roundsChainAux (init : ProbComp σ)
         extractor := ReduceClaim.treeExtractor (mapStmt := id)
           (roundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w)
           CWSSStructure.ofIsEmpty
-        isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _
+        isCWSS := Verifier.coordinateWiseSpecialSoundWithClassical.withEscapeClassical init impl _
           (ReduceClaim.verifier_coordinateWiseSpecialSoundWith
             (relIn := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
             (relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
@@ -308,7 +308,7 @@ step). Instantiated at `count := m₀` in the composition. -/
 noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
-    EscapeGCWSSPackage init impl
+    EscapeGCWSSPackageClassical init impl
       (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
       (RoundStatement Φ K.TCom F n μ count) (LiftedWitness Φ μ n)
       (roundsSpec F b count) :=

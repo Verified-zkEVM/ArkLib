@@ -186,7 +186,7 @@ inherent to `ReduceClaim` — it is relation-level bookkeeping with no transcrip
 (the tree of the zero-round protocol carries no information). -/
 noncomputable def treeExtractor [Nonempty WitIn]
     (mapWitInv : StmtIn → WitOut → WitIn) (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    Extractor.TreeBased StmtIn WitIn !p[] (CWSSStructure.toShape D).arity :=
+    Extractor.TreeBasedClassical StmtIn WitIn !p[] (CWSSStructure.toShape D).arity :=
   fun stmtIn _ =>
     if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
     else Classical.ofNonempty
@@ -200,10 +200,10 @@ theorem verifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (hRel : ∀ stmtIn witOut,
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
-    Verifier.coordinateWiseSpecialSoundWith init impl D relIn relOut
+    Verifier.coordinateWiseSpecialSoundWithClassical init impl D relIn relOut
       (verifier oSpec mapStmt) (treeExtractor (mapStmt := mapStmt) relOut mapWitInv D) := by
   classical
-  have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+  have h := Verifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D
     (verifier oSpec mapStmt) relIn relOut
     (fun stmtIn _ =>
       if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
@@ -407,7 +407,7 @@ any output witness that makes the mapped combined statement accepted and pull it
 noncomputable def oracleTreeExtractor [Nonempty WitIn]
     (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn !p[]
+    Extractor.TreeBasedClassical (StmtIn × (∀ i, OStmtIn i)) WitIn !p[]
       (CWSSStructure.toShape D).arity :=
   fun s _ =>
     if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
@@ -423,12 +423,12 @@ theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
     (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).coordinateWiseSpecialSoundWith init impl D
+    (oracleVerifier oSpec mapStmt embedIdx hEq).coordinateWiseSpecialSoundWithClassical init impl D
       relIn relOut
       (oracleTreeExtractor (mapStmt := mapStmt) (embedIdx := embedIdx) (hEq := hEq)
         relOut mapWitInv D) := by
   classical
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+  have h := OracleVerifier.coordinateWiseSpecialSoundWithClassical_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec mapStmt embedIdx hEq) relIn relOut
     (fun s _ =>
       if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut

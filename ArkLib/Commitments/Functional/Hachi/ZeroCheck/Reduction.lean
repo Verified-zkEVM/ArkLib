@@ -223,7 +223,7 @@ generated code panics when run. -/
 def zeroCheckExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Extractor.TreeBased (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+    Extractor.TreeBasedClassical (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecZeroCheck F)
       (CWSSStructure.toShape (zeroCheckStructure F m₀ m₁)).arity :=
   sorry
@@ -248,7 +248,7 @@ theorem zeroCheck_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+    Verifier.coordinateWiseSpecialSoundWithEscapeClassical init impl
       (zeroCheckStructure F m₀ m₁)
       (zeroCheckEsc Φ m₀ m₁ bound ρBound K φF b)
       (relBatched Φ m₀ m₁ bound ρBound K φF b)
@@ -257,13 +257,13 @@ theorem zeroCheck_coordinateWiseSpecialSoundWithEscape
       (zeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b) := by
   sorry
 
-/-- **The zero-check as an `EscapeCWSSPackage`** (corrected Hachi Figure 5 / Lemma 10): the
+/-- **The zero-check as an `EscapeCWSSPackageClassical`** (corrected Hachi Figure 5 / Lemma 10): the
 one-round seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing `relBatched`
 to `relZeroCheck`, with the weak-binding event `zeroCheckEsc` as its one escape-specific field. -/
 def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    EscapeCWSSPackage init impl
+    EscapeCWSSPackageClassical init impl
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecZeroCheck F) where
