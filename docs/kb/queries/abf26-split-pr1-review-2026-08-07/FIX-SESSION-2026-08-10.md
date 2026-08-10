@@ -10,11 +10,11 @@ sweeps, counterexample re-derivation for kept hypotheses, full `lake build`, axi
 - **A1 CLOSED.** `[Finite F]` dropped from `listDecodable_of_Lambda_le_natCast`,
   `Lambda_le_floor_of_toENNReal_le_ofReal`, `listDecodable_of_toENNReal_le_ofReal` — in each,
   the `Lambda`-bound hypothesis itself forces the point list finite
-  (`Set.finite_of_encard_le_coe` / `Set.encard_ne_top_iff`). The instance **stays** on the
-  four `←`-direction bridges: re-derived the refutation (infinite `F` ⇒ an infinite point
-  list has `ncard = 0`, so `listDecodable` holds while `encard = ⊤`). `Lambda`'s docstring
-  now states the split precisely. (`ncard_closeCodewordsRel_le_Lambda`, the fourth A1 lemma,
-  was deleted under A2 instead.)
+  (`Set.finite_of_encard_le_coe` / `Set.encard_ne_top_iff`). In the follow-up B3 semantic
+  correction, `listDecodable` itself began recording point-list finiteness; this also made
+  `Lambda_le_iff_listDecodable`, `Lambda_le_floor_iff_listDecodable`, its `ℝ≥0` variant, and
+  `Lambda_le_floor_of_listDecodable` instance-free. (`ncard_closeCodewordsRel_le_Lambda`, the
+  fourth original A1 lemma, was deleted under A2 instead.)
 - **A2 CLOSED (all three deleted).** `Lambda_eq_iSup_encard` (literally `rfl`, zero
   consumers, was still advertised in `## Main statements`), `ncard_closeCodewordsRel_le_Lambda`
   (sole consumer had inlined `le_iSup`; its "exposed for the bridges below" docstring was
@@ -34,10 +34,13 @@ sweeps, counterexample re-derivation for kept hypotheses, full `lake build`, axi
 - **B2 CLOSED.** `mds_johnson_lambda_le` relabelled "ABF26 Corollary 3.3, field-linear
   specialization" in both the theorem docstring and the module header; audit C3.3 row now
   says **partial** with the `LinearCode ι F` scope limitation spelled out.
-- **B3 CLOSED (docstring only).** `listDecodable`'s false "is a natural number anyway"
-  remark replaced by an accurate warning that `Set.ncard` collapses infinite lists to `0`
-  (vacuous over infinite alphabets), pointing at `Lambda`'s `encard` as the non-defective
-  form. Definition unchanged (STIR consumers; separate PR per bootstrap).
+- **B3 CLOSED (semantic follow-up).** `listDecodable C r ℓ` now requires every point list to
+  be finite *and* its `Set.ncard` to be at most the real bound `ℓ`. This preserves the existing
+  STIR-facing real-valued API while preventing `Set.ncard`'s infinite-set-to-zero behavior from
+  making `listDecodable` or `uniqueDecodable` vacuous over infinite alphabets. The old compiled
+  examples on `Code (Fin 1) ℚ` at radius `1` and bounds `0`/`1` are therefore no longer
+  provable. The explicit finiteness witness also removes all remaining `[Finite F]` assumptions
+  from the `Lambda`/`listDecodable` bridges.
 - **B4 CLOSED (boundary case proved).** `johnson_bound_lambda_le_ell` now assumes `1 ≤ ℓ` —
   the paper's full range. New `ℓ = 1` branch: `Jqℓ q 1 δ = J q 0 = 0` and a radius-0 list
   contains at most the centre (the predicted `DecidableEq` instance clash between
@@ -110,6 +113,19 @@ Frobenius-power lemmas have no upstream counterpart.
   `scripts/check-docs-integrity.py`: pass.
 - Zero added lines exceed the 100-codepoint style limit; per-file compiles with the
   project's full linter options produce zero warnings on every touched file.
+
+## Follow-up validation after the B3 semantic correction
+
+- Regression probes now prove
+  `¬ listDecodable (Set.univ : Code (Fin 1) ℚ) 1 0` and
+  `¬ uniqueDecodable (Set.univ : Code (Fin 1) ℚ) 1`; these are the exact infinite-alphabet
+  examples that held under the defective definition.
+- Sequential focused builds of `ListDecodability` and `JohnsonBound.Family` pass; the latter
+  was run only after rebuilding the former to avoid checking against a stale `.olean`.
+- `./scripts/validate.sh --docs` passes: full 4203-job project build, clean `ArkLib/Data`
+  non-sorry warning gate, umbrella-import check, docs integrity, strict knowledge-base lint,
+  and 8570-job API-doc build.
+- `git diff --check` passes, and no generated knowledge-base files were changed.
 
 ## Still open (owner action / separate PRs)
 

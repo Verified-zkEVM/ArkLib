@@ -80,17 +80,16 @@ Note that this is exactly `Λ (C, y, r)` from [ACFY24] and ` List (C, y, r)` fro
 def closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) :=
   {c | c ∈ C ∧ c ∈ relHammingBall y r}
 
-/-- A code `C` is `(r,ℓ)`-list decodable.
+/-- A code `C` is `(r,ℓ)`-list decodable: every relative-radius-`r` point list is finite and
+has cardinality at most the real bound `ℓ`.
 
-- Remark:
-   The list-size bound `ℓ` is a real number, to accommodate the statement of the Johnson
-   Bound Theorem; over a finite alphabet no information is lost by flooring it, since each
-   set of close codewords is then finite. Beware that the list size is measured with
-   `Set.ncard`, which collapses an *infinite* set of close codewords to `0`, so over an
-   infinite alphabet the predicate can hold vacuously; the `sup`-form `Lambda` below uses
-   `Set.encard` and does not have this defect. -/
+The explicit finiteness conjunct is necessary because `Set.ncard` alone assigns cardinality
+zero to infinite sets. Keeping the bound real-valued accommodates Johnson-bound consumers,
+while recording finiteness makes the predicate meaningful over arbitrary alphabets and allows
+lossless flooring to a natural list bound. -/
 def listDecodable (C : Code ι F) (r : ℝ) (ℓ : ℝ) : Prop :=
-  ∀ y : ι → F, (closeCodewordsRel C y r).ncard ≤ ℓ
+  ∀ y : ι → F,
+    (closeCodewordsRel C y r).Finite ∧ (closeCodewordsRel C y r).ncard ≤ ℓ
 
 /-- A code `C` is uniquely decodable up to a relative distance `r` if for any word `y : ι → F`,
 there is at most one codeword in `C` within a relative Hamming distance of `r`.
@@ -131,11 +130,9 @@ index `k*/n`, not as a real number (the ABF26 grand-challenge layer, arriving in
 split, pins its list challenge that way).
 
 `Set.encard` is used rather than `Set.ncard`, so an infinite point list contributes `⊤`
-rather than silently collapsing to `0`. Of the bridges to the older real-valued
-`listDecodable` predicate, only the *`listDecodable` → `Lambda`-bound* direction requires
-`[Finite F]` (over an infinite alphabet an infinite point list has `ncard = 0`, so
-`listDecodable` can hold while `encard = ⊤`); the *`Lambda`-bound → `listDecodable`*
-direction is instance-free, since the bound itself forces every point list finite. -/
+rather than silently collapsing to `0`. The real-valued `listDecodable` predicate records
+point-list finiteness explicitly, so its bridges with finite `Lambda` bounds are instance-free
+in both directions, even over an infinite alphabet. -/
 noncomputable def Lambda (C : Code ι F) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, (closeCodewordsRel C f δ).encard
 
@@ -151,17 +148,16 @@ bound. This `ℕ`-shaped equivalence alone therefore does **not** carry those bo
 real-, `ℝ≥0`- and `ENNReal`-shaped transfers are `Lambda_le_floor_iff_listDecodable`,
 `Lambda_le_floor_iff_listDecodable_nnreal` and `listDecodable_of_toENNReal_le_ofReal`
 below. -/
-lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} [Finite F] :
+lemma Lambda_le_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℕ} :
     Lambda C δ ≤ (ℓ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) := by
   simp only [Lambda, iSup_le_iff, listDecodable]
   constructor
   · intro h f
-    have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
-    exact_mod_cast (hfin.cast_ncard_eq ▸ h f)
+    have hfin : (closeCodewordsRel C f δ).Finite := Set.finite_of_encard_le_coe (h f)
+    exact ⟨hfin, by exact_mod_cast (hfin.cast_ncard_eq ▸ h f)⟩
   · intro h f
-    have hfin : (closeCodewordsRel C f δ).Finite := Set.toFinite _
-    rw [← hfin.cast_ncard_eq]
-    exact_mod_cast h f
+    rw [← (h f).1.cast_ncard_eq]
+    exact_mod_cast (h f).2
 
 /-- **Bridge to `listDecodable` at a real list size.** For `0 ≤ ℓ` the maximised list size is
 at most `⌊ℓ⌋₊` iff `C` is `(δ, ℓ)`-list-decodable.
@@ -172,23 +168,27 @@ an `↔` rather than a pair of one-way implications: `Lambda` is integer-valued,
 would give only the `←` direction. The hypothesis `0 ≤ ℓ` is needed for `→` only (at `ℓ < 0`,
 `⌊ℓ⌋₊ = 0` and the conclusion `(0 : ℝ) ≤ ℓ` fails); the `←` direction is hypothesis-free and
 is available separately as `Lambda_le_floor_of_listDecodable`. -/
-lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+lemma Lambda_le_floor_iff_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
     (hℓ : 0 ≤ ℓ) :
     Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) ↔ listDecodable C δ ℓ := by
   rw [Lambda_le_iff_listDecodable]
-  refine ⟨fun h y => (h y).trans (Nat.floor_le hℓ), fun h y => ?_⟩
-  exact_mod_cast Nat.le_floor (h y)
+  constructor
+  · intro h y
+    exact ⟨(h y).1, (h y).2.trans (Nat.floor_le hℓ)⟩
+  · intro h y
+    exact ⟨(h y).1, by exact_mod_cast Nat.le_floor (h y).2⟩
 
 /-- The hypothesis-free direction of `Lambda_le_floor_iff_listDecodable`: a real-valued
 list-decodability bound always floors down to a `Lambda` bound. -/
-lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ} [Finite F]
+lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
     (h : listDecodable C δ ℓ) : Lambda C δ ≤ (⌊ℓ⌋₊ : ℕ∞) :=
-  Lambda_le_iff_listDecodable.2 fun y => by exact_mod_cast Nat.le_floor (h y)
+  Lambda_le_iff_listDecodable.2 fun y =>
+    ⟨(h y).1, by exact_mod_cast Nat.le_floor (h y).2⟩
 
 /-- **Bridge to `listDecodable` at an `ℝ≥0` list size** — the shape the in-tree consumers use
 (`ArkLib/ProofSystem/Stir/OutOfDomSmpl.lean`, `ArkLib/ProofSystem/Stir/MainThm.lean` both take
 `ℓ : ℝ≥0`). No side condition, since `ℝ≥0` is nonnegative by construction. -/
-lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} [Finite F] :
+lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} :
     Lambda C δ ≤ (⌊(ℓ : ℝ)⌋₊ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) :=
   Lambda_le_floor_iff_listDecodable ℓ.coe_nonneg
 
@@ -206,7 +206,7 @@ lemma listDecodable_of_Lambda_le_natCast {C : Code ι F} {δ : ℝ} {ℓ : ℕ} 
   have hfin : (closeCodewordsRel C y δ).Finite := Set.finite_of_encard_le_coe hy
   have hn : (closeCodewordsRel C y δ).ncard ≤ ℓ := by
     exact_mod_cast hfin.cast_ncard_eq ▸ hy
-  exact le_trans (by exact_mod_cast hn) hr
+  exact ⟨hfin, le_trans (by exact_mod_cast hn) hr⟩
 
 /-- **Bridge from an `ENNReal` bound on `Lambda`** — the shape produced by the Johnson-family
 bounds (e.g. `JohnsonBound.mds_johnson_lambda_le`, which concludes

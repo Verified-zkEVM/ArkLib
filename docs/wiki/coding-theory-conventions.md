@@ -160,8 +160,9 @@ downstream proof becomes hard to read because of this choice.
 | Non-linear code carrier | `Set (ι → A) = Code ι A` | `extensionCode` (the `Set` form; `extensionCodeSubmodule` is its `Submodule` counterpart), theorems over arbitrary alphabets |
 
 Note on `Lambda`: it is built from `Set.encard`, so an infinite point list contributes `⊤`.
-Bridges to the older `Set.ncard`-based `listDecodable` predicate and finite numeric bounds carry
-the necessary finiteness hypotheses; `Lambda_ne_top` records the finite-alphabet consequence.
+The real-valued `listDecodable` predicate records point-list finiteness alongside its `Set.ncard`
+bound, so all bridges between it and finite `Lambda` bounds are instance-free;
+`Lambda_ne_top` records the separate finite-alphabet consequence.
 
 ### Coercion conventions
 

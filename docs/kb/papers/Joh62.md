@@ -75,14 +75,15 @@ Xplore.
   bridges recover the paper forms without a parallel radius hierarchy.
 - `johnson_bound_lambda_le_ell` matches ABF26 Theorem 3.2 without a public radicand guard. Its
   proof splits internally between the Johnson and Plotkin regimes.
-- The `ℓ = 0` false corner is excluded by the theorem's `2 ≤ ℓ` hypothesis, and the
-  list-size-two specialization is documented as distinct from the binary Johnson radius.
+- The `ℓ = 0` false corner is excluded by the theorem's `1 ≤ ℓ` hypothesis; the elementary
+  `ℓ = 1` radius-zero boundary is proved separately inside the theorem, and the list-size-two
+  specialization is documented as distinct from the binary Johnson radius.
 - **The MDS corollary does not cover the paper's motivating class.** `ABF26` Corollary 3.3's
   preamble singles out interleaved Reed–Solomon codes; `mds_johnson_lambda_le` is stated for
   `LinearCode ι F` (field alphabet) only, and interleaved RS lives over the module alphabet `F^m`.
 - `Lambda` uses `Set.encard`, so infinite lists contribute `⊤` rather than silently collapsing
-  to zero. Finiteness assumptions remain exactly on bridges to the pre-existing
-  `Set.ncard`-based `listDecodable` API and on finite numeric bounds.
+  to zero. The real-valued `listDecodable` API explicitly records point-list finiteness beside
+  its `Set.ncard` bound, making every finite-bound bridge instance-free.
 
 ## Open Formalization Gaps
 
@@ -93,9 +94,10 @@ Xplore.
   now stated as `Jcap δ ≤ J q δ` — i.e. it *is* the `Jcap` bridge, so no separate
   `Jcap_le_J` is needed.
 - ~~State `ABF26` Theorem 3.2 without the radicand guard.~~ **Done.**
-  `johnson_bound_lambda_le_ell` now carries only `2 ≤ ℓ`, matching the paper exactly; the
-  guarded form survives as the private `johnson_lambda_le_ell_of_radicand`, and the
-  low-rate branch where the radicand guard fails is `plotkin_card_le_ell`.
+  `johnson_bound_lambda_le_ell` now covers the paper's full `1 ≤ ℓ` range; the `ℓ = 1`
+  radius-zero case is elementary, the guarded `ℓ ≥ 2` form survives as the private
+  `johnson_lambda_le_ell_of_radicand`, and the low-rate branch where the radicand guard fails
+  is `plotkin_card_le_ell`.
 - A module-alphabet version of the MDS corollary, so interleaved Reed–Solomon is covered.
 - ~~**Wire the bounds to a consumer.**~~ **Done.** `rs_lambda_le_johnson_mds`
   (`mds_johnson_lambda_le` + the proven `ReedSolomon.isMDS_code`) is ArkLib's first Reed–Solomon

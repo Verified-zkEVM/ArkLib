@@ -993,7 +993,8 @@ theorem johnson_listDecodable_of_le
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
     {r : ℝ} (hr : (ℓ : ℝ) ≤ r) :
     listDecodable C δ r :=
-  fun y => (johnson_listDecodable C ℓ hℓ_ge hδ y).trans hr
+  fun y => ⟨(johnson_listDecodable C ℓ hℓ_ge hδ y).1,
+    (johnson_listDecodable C ℓ hℓ_ge hδ y).2.trans hr⟩
 
 
 end CodingTheory
