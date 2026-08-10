@@ -180,7 +180,7 @@ noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDeg
     Extractor.TreeBasedClassical Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
       (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
         (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
-  CommittedScalar.treeExtractor
+  CommittedScalar.treeExtractorClassical
     (by have := hd ▸ P.natDegree_modulus_pos; omega) K
     (checkAt P φF getM getY sideCond) (fun w => w.z)
 
