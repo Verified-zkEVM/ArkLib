@@ -11,6 +11,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
+- **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
+  committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -47,6 +49,9 @@ This directory contains various utility scripts for the ArkLib project.
 
 # Build site / blueprint output too
 ./scripts/validate.sh --site
+
+# Check the axiom/sorry regression baseline too
+./scripts/validate.sh --axioms
 ```
 
 ### Generate Dependency Graphs
@@ -88,6 +93,41 @@ python3 ./scripts/kb/check_generated.py
 python3 ./scripts/kb/lint.py
 python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
+
+### Axiom Sweep
+
+Kernel-level accounting of what every `ArkLib.*` declaration ultimately depends on — the
+same information as `#print axioms`, computed for the whole library at once from the built
+`.olean` data (so private and macro-generated declarations are included and no source
+heuristics are involved). Requires a completed `lake build`.
+
+Building the executable links VCVio's FFI static libraries, whose C sources live in git
+submodules that Lake does not fetch; `./scripts/validate.sh --axioms` and CI initialize
+them automatically, but on a direct first `lake exe axiomsweep` you may need:
+
+```bash
+git -C .lake/packages/VCVio submodule update --init --recursive
+```
+
+```bash
+# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
+lake exe axiomsweep
+
+# Full per-declaration report (name, module, kind, line, axioms)
+lake exe axiomsweep --out /tmp/axiom-report.json
+
+# Regression gate: fail iff a declaration is tainted that
+# scripts/axiom_baseline.json does not already list
+lake exe axiomsweep --check
+
+# Refresh the baseline (after intentionally adding a tagged sorry, or after
+# closing gaps); commit the resulting diff in the same PR
+lake exe axiomsweep --update-baseline
+```
+
+The committed baseline makes the distinction the repo cares about mechanical:
+pre-existing `sorry` gaps are allowed, *new* ones fail `--check`. CI runs the check
+report-only; `./scripts/validate.sh --axioms` runs it enforcing.
 
 ### `build_timing_report.sh`
 
