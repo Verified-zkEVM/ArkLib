@@ -13,6 +13,12 @@ The long-term goal is for deep paper audits to live here rather than in ad hoc b
 
 Current audit pages:
 
+- [`noz26-subfield-lemmas5-6.md`](noz26-subfield-lemmas5-6.md)
+  - Hachi §3 Lemmas 5–6 correspondence, assumptions, dependency split, and exact proof status.
+- [`noz26-zero-check-lemma10.md`](noz26-zero-check-lemma10.md)
+  - Figure 5 / Lemma 10 correspondence, the nested-tree repair, and the weak-binding seam as
+    integrated into the escape-threaded opening chain.
+
 - [`bciks20-appendix-a-rational-functions.md`](bciks20-appendix-a-rational-functions.md)
   - Appendix A rational-function and Hensel-lifting status for `BCIKS20`.
 - [`open-problems-list-decoding-and-correlated-agreement.md`](open-problems-list-decoding-and-correlated-agreement.md)
