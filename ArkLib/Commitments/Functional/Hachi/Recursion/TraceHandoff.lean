@@ -67,7 +67,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
   (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
-variable {n μ : ℕ} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (mLow κ : ℕ) (bound ρBound : ℕ)
 variable {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
@@ -114,7 +114,7 @@ def handoffVerifier {TCom : Type} (φF : ZMod q →+* F)
       pure (toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0))
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
+omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] [BEq F] [LawfulBEq F] in
 /-- **The trace-handoff verifier's guardedness as data** (`Verifier.GuardedForm`): the guard is
 `traceCheck` and the verdict is `toNextQuadEvalStatement`, so `verify_eq` is `rfl`.
 
@@ -132,7 +132,7 @@ def handoffVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F)
   out := fun stmt tr => toNextQuadEvalStatement Φ' mLow φF reinterpretCom stmt (tr 0)
   verify_eq := fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] in
+omit [NeZero q] [IsCyclotomic Φ] [IsCyclotomic Φ'] [BEq F] [LawfulBEq F] in
 /-- The trace-handoff verifier is guarded — definitionally, by `traceCheck`. -/
 theorem handoffVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F)
     (reinterpretCom : TCom → Commitment Φ' outerRows') :
@@ -201,7 +201,25 @@ bijection (`psi_bijective`) to an opening `w̃` of `t`; Theorem 2 (`traceH_psi_m
 eval-consistency plus the guard's trace equation into `hatEval w̃ a₀ = value` — `relHatEval`
 membership. Norm bookkeeping through `ψ` is Lemma 6 (`cInfNorm_psi_le`); the
 reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is an obligation of the concrete
-`LiftCom` instantiation ([NOZ26] §4.5). -/
+`LiftCom` instantiation ([NOZ26] §4.5).
+
+## The `Short` obligation this seam does not discharge — do not paper over it
+
+Since `LiftCom` is indexed by `liftShort Φ bound ρBound`, every relation on this side of the
+chain carries that predicate, and the pull-back above must **produce** it for the witness it
+returns. **As `openingChain` is currently parameterized, that is not merely unproven but false**:
+`base' βSq' γ' κ'` are unconstrained, so nothing ties the next iteration's norm regime to this
+one's. Two things are missing, and neither is a proof-engineering detail:
+
+1. a hypothesis linking `γ'` to `γ`/`ρBound` through the `ψ`-packing, so the two regimes are
+   comparable at all;
+2. an **inverse**-`ψ` norm lemma. `cInfNorm_psi_le` bounds `‖ψ(a)‖∞` from `‖a‖∞` — the wrong
+   direction for pulling an opening back — and `psi_bijective` gives no norm bound whatsoever.
+
+Do **not** cite `QuadEval/Reduction.lean`'s `relOut` norm conjuncts as discharging this: those sit
+at the leftmost seam, upstream of `liftPackage`, and say nothing about the reinterpreted
+commitment. This `sorry` is therefore load-bearing in a way the neighbouring ones are not — it
+stands for a gap in the *design*, not just in the formalization. -/
 theorem handoff_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)

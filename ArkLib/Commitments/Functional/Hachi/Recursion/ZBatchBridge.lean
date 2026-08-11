@@ -67,7 +67,7 @@ section Bridge
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (mLow κ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -85,7 +85,7 @@ evaluates to the packed public value at the low point half. This is the claim th
 def relHatEval (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Set (HatEvalStatement K.TCom F mLow × LiftedWitness Φ μ n) :=
+    Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
     hatEval Φ mLow κ φF zpow p.2 p.1.pointLow = p.1.value}
