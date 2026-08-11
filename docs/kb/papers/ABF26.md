@@ -19,6 +19,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean
+  - ArkLib/Data/Polynomial/ClassicalWronskian.lean
   - ArkLib/Data/Polynomial/FoldedWronskian.lean
   - ArkLib/Data/Probability/Combinatorial.lean
 ---
@@ -42,6 +43,7 @@ manuscript, not to the original sources it cites — those get their own keys (`
 ## What ArkLib Uses From This Paper
 
 - **§2 preliminaries.** Definition 2.2 (`q`-ary entropy) → `CodingTheory.qEntropy`;
+  Definition 2.3 (restricted Hamming distance) is deferred and missing from this PR;
   Definition 2.4 (Hamming-ball volume) → `CodingTheory.hammingBallVolume`;
   Definition 2.5 (the rate convention `ρ(C) = log_{|Σ|}|C| / n`, which fixes `ρ = k/(s·n)` for
   folded codes); Definition 2.8 (`Λ(C, δ, f)` and the maximised `|Λ(C, δ)|`) →
@@ -50,23 +52,30 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `Code.interleavedCodeSet` / `^⋈`); Definition 2.13 (interleaved Reed–Solomon) →
   `ReedSolomon.Interleaved.irsCode`; Definition 2.14 (`(L,s)`-admissible `ω`) →
   `ReedSolomon.Folded.Admissible`; Definition 2.15 (folded Reed–Solomon, after `GR08`) →
-  `ReedSolomon.Folded.frsCode`.
+  `ReedSolomon.Folded.frsCode`, with folded-point and encoder injectivity and the exact
+  saturation formula `dim_frsCode_eq_min`.
 - **§2.5 subspace designs.** Definition 2.16 (after `GX13`) → `CodingTheory.IsSubspaceDesign`;
   Lemma 2.17 (after `GG25`) → `CodingTheory.subspaceDesign_tau_lower`; Theorem 2.18 (after
-  `GK16`) → `CodingTheory.frs_is_subspaceDesign_gk16` (folded-RS half).
+  `GK16`) → `CodingTheory.frs_is_subspaceDesign_gk16` (folded-RS half) and
+  `CodingTheory.um_is_subspaceDesign_gk16` (univariate-multiplicity half).
 - **§2.6 extension codes.** Definition 2.19 (extension-field presentation) →
   `CodingTheory.ExtensionFieldPresentation`; Definition 2.20 (extension code) →
-  `CodingTheory.extensionCode` / `extensionCodeSubmodule`; Lemma 2.21 (after `BCFW25`
-  Lemma D.3) → `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`.
+  `CodingTheory.extensionEncode`, with injectivity preservation `extensionEncode_injective`,
+  plus the image-level `extensionCode` / `extensionCodeSubmodule`;
+  the systematic encoder identity → `extensionEncode_comp_algebraMap_of_isSystematic`; Lemma
+  2.21 (after `BCFW25` Lemma D.3) →
+  `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`; the Diamond–Posen minimum-distance
+  equality → `CodingTheory.minDist_extensionCode`.
 - **§3 list-decoding bounds.** Definition 3.1 (the `J`, `Ĵ`, `J_{q,ℓ}` radius family) →
   `CodingTheory.Jqℓ` / `CodingTheory.Jcap`; Theorem 3.2 (after `Joh62`) →
-  `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size corollary) →
-  `CodingTheory.mds_johnson_lambda_le`; the Plotkin regime →
+  `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size corollary) → the
+  arbitrary-finite-alphabet metric theorem `CodingTheory.mds_johnson_lambda_le_of_rate_distance`,
+  with field-linear wrapper `mds_johnson_lambda_le`. The Plotkin regime →
   `CodingTheory.plotkin_card_le_ell`.
-- **§6 erasure correction.** The metric uniqueness core used by Definition 6.4 / Lemma 6.5 →
-  `CodingTheory.eq_of_consistent_with_erased`. The paper's algorithm and operation bound are not
-  formalized; ArkLib deliberately does not replace them with an unrestricted existential over
-  functions, which would be tautological.
+- **§6 erasure correction (support only).** `CodingTheory.eq_of_consistent_with_erased` proves
+  the reusable metric-uniqueness ingredient. Definition 6.4 and Lemma 6.5 themselves are missing:
+  neither the recovery algorithm nor its operation bound is formalized. ArkLib deliberately does
+  not replace them with an unrestricted existential over functions, which would be tautological.
 - **Appendix A.2 multiplicity codes.** Definitions A.6 / A.7 (after `GW13`, `KSY14`) →
   `ReedSolomon.Multiplicity.umEvalOnPoints` / `umCode`.
 - **Appendix B counting.** Claim B.1 →
@@ -77,17 +86,19 @@ manuscript, not to the original sources it cites — those get their own keys (`
 - [`ArkLib/Data/CodingTheory/SubspaceDesign.lean`](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean)
   — D2.16 / L2.17 / T2.18, the largest ABF26 module.
 - [`ArkLib/Data/Polynomial/FoldedWronskian.lean`](../../../ArkLib/Data/Polynomial/FoldedWronskian.lean)
-  — the `GK16` machinery T2.18 runs on.
+  — the `GK16` machinery for T2.18's folded-RS half.
+- [`ArkLib/Data/Polynomial/ClassicalWronskian.lean`](../../../ArkLib/Data/Polynomial/ClassicalWronskian.lean)
+  — GK16 Definition 9 and Lemma 10 machinery for T2.18's univariate-multiplicity half.
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Family.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean)
-  — §3 radius family, T3.2, C3.3.
+  — §3 radius family, T3.2, alphabet-generic C3.3, and field/RS wrappers.
 - [`ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean),
   [`Interleaved.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean),
   [`Multiplicity.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean)
   — §2.4 and §A.2 code families.
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
-  — §2.6.
+  — D2.19/D2.20 at both encoder and code-image level, L2.21, and the DP25 distance equality.
 - [`ArkLib/Data/CodingTheory/Erasure.lean`](../../../ArkLib/Data/CodingTheory/Erasure.lean)
-  — §6.2.
+  — metric support for §6.2; D6.4/L6.5 remain missing.
 - [`ArkLib/Data/CodingTheory/HammingBallVolume.lean`](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean),
   [`Basic/Entropy.lean`](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean)
   — D2.4 / D2.2 support for the §3 lower bounds.
@@ -155,35 +166,25 @@ Directions in which ArkLib is *weaker* than the paper (all deliberate, none unso
   since `dim A ≤ 0` forces `A = ⊥` and the design inequality degenerates, leaving `τ 0`
   unconstrained. It also adds `hτ_nonneg`, needed only to carry the `C = ⊥` branch; the
   source-shaped `C ≠ ⊥` form is `subspaceDesign_tau_lower_of_ne_bot`.
-- `mds_johnson_lambda_le` (C3.3) is stated for field-alphabet linear codes only, so it does not
-  cover interleaved Reed–Solomon — the class the paper's C3.3 preamble singles out.
-- D2.19/D2.20 are modelled at the level of the *code image* (`Set (ι → F)`), not the encoder
-  `F^k → F^n`, so the paper's encoder-level systematic-presentation identity
-  `C_F(ψ(v)) = ψ(C_B(v))` is not expressible as stated. Since the 2026-08-07 fix sweep,
-  `IsSystematic` is consumed by the coordinate-level statements in `ExtensionCodes.lean`
-  (`hP : P.IsSystematic` hypotheses), which capture the image-level content of that identity.
 - D6.4/L6.5's algorithm and running-time claim are absent. Only their reusable metric uniqueness
   ingredient is present; no vacuous cost-free existence predicate is advertised.
 
+The UM half of T2.18 is instead slightly more general than the printed survey statement:
+`um_is_subspaceDesign_gk16` needs no separate `|F| > |ι|` assumption because the evaluation
+domain is already an injection, and it uses the mathematically sufficient endpoint-inclusive
+guard `k ≤ ringChar F` for degree-`< k` messages.
+
 ## Open Formalization Gaps
 
-- **T2.18, multiplicity half.** `frs_is_subspaceDesign_gk16` covers only folded RS; the
-  univariate multiplicity codes exist (`ReedSolomon.Multiplicity.umCode`), but the GK16
-  multiplicity-Wronskian argument is not formalized.
+- **D2.3.** Restricted Hamming distance `Δ_T` is deferred and missing from this PR; only the
+  existing full-domain Hamming and relative-distance notions are available here.
 - **§3 remainder.** Theorem 3.4 (subspace-design list bound), Lemma 3.7 / Corollary 3.8 (Elias
   and volume-based lower bounds — `hammingBallVolume` and `qEntropy` are the support layer that
   is present), Theorem 3.11 (random-linear-code lower bound).
-- **§2.6.** An encoder-level extension code plus its encoder equality, and
-  `δ_min(C_F) = δ_min(C_B)` (which ABF26 attributes to Diamond–Posen, key `DP25`). The
-  image-level systematic and presentation-independence statements are proved.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
-  §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Note the docstring framing that
-  Lemma 6.12 applies Claim B.1 *twice* is wrong — it applies it once, and the second counting
-  step is a plain pigeonhole needing full injectivity.
-- **Integration.** Most of the modules above currently have no in-repo consumers. The two
-  cheapest crossings are `mds_johnson_lambda_le` + the proven `ReedSolomon.isMDS_code` (ArkLib's
-  first RS list-size bound), and `Lambda_le_iff_listDecodable` + `johnson_bound_lambda_le_ell`,
-  which discharge a `listDecodable` hypothesis that `ProofSystem/Stir` currently assumes.
+  §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
+  lemmas are present; the paper's erasure algorithm/cost model and the Lemma 6.12 application are
+  not.
 
 ## Source Access
 

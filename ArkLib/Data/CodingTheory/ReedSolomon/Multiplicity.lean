@@ -5,7 +5,11 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.ToMathlib.Polynomial.RootMultiplicity
+import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Algebra.Polynomial.Derivative
+import Mathlib.Algebra.Polynomial.Taylor
+import Mathlib.Data.Nat.Factorial.NatCast
 
 /-!
 # Univariate multiplicity codes (ABF26 Definition A.7)
@@ -88,7 +92,11 @@ namespace ReedSolomon
 namespace Multiplicity
 
 variable {ι : Type*}
-variable {F : Type*} [CommSemiring F]
+variable {F : Type*}
+
+section CommSemiring
+
+variable [CommSemiring F]
 
 /-- The univariate multiplicity-code evaluation map: send a polynomial
 `p` to the matrix `(p^{(j)}(domain x))_{x ∈ ι, j ∈ Fin s}` packaging the
@@ -120,6 +128,138 @@ and `ReedSolomon.Folded.frsCode`. This makes `umCode` an
 noncomputable def umCode (domain : ι ↪ F) (k s : ℕ) :
     Submodule F (ι → Fin s → F) :=
   (Polynomial.degreeLT F k).map (umEvalOnPoints domain s)
+
+end CommSemiring
+
+section Field
+
+variable [Field F]
+
+/-- If the first `s` ordinary derivatives of a degree-`< k` polynomial vanish at `a`,
+then `a` is a root of multiplicity at least `s`, provided `k ≤ ringChar F`.
+
+Mathlib states the root-multiplicity criterion using Hasse derivatives. Ordinary and Hasse
+derivatives differ by the unit `j!` throughout the degree range in question, which is
+exactly where the characteristic hypothesis is used. -/
+lemma pow_dvd_of_eval_iterate_derivative_eq_zero
+    {p : Polynomial F} {a : F} {s k : ℕ}
+    (hp : p ∈ Polynomial.degreeLT F k) (hchar : k ≤ ringChar F)
+    (hzero : ∀ j : Fin s, (Polynomial.derivative^[j.val] p).eval a = 0) :
+    (Polynomial.X - Polynomial.C a) ^ s ∣ p := by
+  rw [Polynomial.X_sub_C_pow_dvd_iff, Polynomial.X_pow_dvd_iff]
+  intro d hd
+  change (Polynomial.taylor a p).coeff d = 0
+  rw [Polynomial.taylor_coeff]
+  by_cases hdk : d < k
+  · letI : NeZero (ringChar F) :=
+      ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hchar))⟩
+    letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
+    have hfac : IsUnit (d.factorial : F) :=
+      (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hchar)
+    have hder := hzero ⟨d, hd⟩
+    change (Polynomial.derivative^[d] p).eval a = 0 at hder
+    have hscale := congrFun (Polynomial.factorial_smul_hasseDeriv (R := F) d) p
+    rw [← hscale] at hder
+    simp only [LinearMap.smul_apply, Polynomial.eval_smul] at hder
+    rw [nsmul_eq_mul] at hder
+    exact (mul_eq_zero.mp hder).resolve_left hfac.ne_zero
+  · by_cases hp0 : p = 0
+    · simp [hp0]
+    · have hpdeg : p.degree < (k : WithBot ℕ) := Polynomial.mem_degreeLT.mp hp
+      have hdeg : p.natDegree < k :=
+        (Polynomial.natDegree_lt_iff_degree_lt hp0).mpr hpdeg
+      rw [Polynomial.hasseDeriv_eq_zero_of_lt_natDegree p d (hdeg.trans_le (not_lt.mp hdk))]
+      simp
+
+/-- The univariate-multiplicity encoder is injective on degree-`< k` polynomials whenever
+the message dimension does not exceed the `s · n` scalar coordinates and the characteristic
+is at least `k`. -/
+lemma umEvalOnPoints_domRestrict_injective
+    {ι : Type*} [Fintype ι] {k s : ℕ}
+    (domain : ι ↪ F) (hchar : k ≤ ringChar F)
+    (hk : k ≤ s * Fintype.card ι) :
+    Function.Injective
+      ((umEvalOnPoints domain s).domRestrict (Polynomial.degreeLT F k)) := by
+  classical
+  rw [← LinearMap.ker_eq_bot]
+  ext p
+  simp only [LinearMap.mem_ker, LinearMap.domRestrict_apply, Submodule.mem_bot]
+  constructor
+  · intro hfp
+    apply Subtype.ext
+    rcases Nat.eq_zero_or_pos k with rfl | hkpos
+    · have hdeg := Polynomial.mem_degreeLT.mp p.2
+      rw [Nat.cast_zero, Nat.WithBot.lt_zero_iff, Polynomial.degree_eq_bot] at hdeg
+      exact hdeg
+    · haveI : NeZero k := ⟨by omega⟩
+      by_contra hp0
+      have hpow : ∀ i : ι,
+          (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ p.val := by
+        intro i
+        apply pow_dvd_of_eval_iterate_derivative_eq_zero p.2 hchar
+        intro j
+        exact congrFun (congrFun hfp i) j
+      have hmult : ∀ i : ι, s ≤ p.val.rootMultiplicity (domain i) := by
+        intro i
+        exact (Polynomial.le_rootMultiplicity_iff hp0).mpr (hpow i)
+      have hsumlow : Fintype.card ι * s ≤
+          ∑ a ∈ Finset.univ.map domain, p.val.rootMultiplicity a := by
+        rw [Finset.sum_map]
+        simpa [Finset.sum_const, nsmul_eq_mul] using
+          (Finset.sum_le_sum fun i (_hi : i ∈ (Finset.univ : Finset ι)) => hmult i)
+      have hsumhigh := Polynomial.sum_rootMultiplicity_le_natDegree
+        (W := p.val) (Finset.univ.map domain)
+      have hpdeg := ReedSolomon.natDegree_lt_of_mem_degreeLT p.2
+      rw [Nat.mul_comm] at hk
+      omega
+  · intro hp
+    simp [hp]
+
+/-- Monotonicity of univariate multiplicity codes in their message-degree parameter. -/
+lemma umCode_mono {ι : Type*} {k l s : ℕ} (hkl : k ≤ l) (domain : ι ↪ F) :
+    umCode domain k s ≤ umCode domain l s :=
+  Submodule.map_mono (Polynomial.degreeLT_mono hkl)
+
+/-- In the unsaturated range `k ≤ s · n`, a univariate multiplicity code has dimension
+exactly `k`. -/
+lemma dim_umCode {ι : Type*} [Fintype ι] {k s : ℕ}
+    (domain : ι ↪ F) (hchar : k ≤ ringChar F)
+    (hk : k ≤ s * Fintype.card ι) :
+    Module.finrank F (umCode domain k s) = k := by
+  rw [umCode]
+  have hrange : (Polynomial.degreeLT F k).map (umEvalOnPoints domain s) =
+      LinearMap.range ((umEvalOnPoints domain s).domRestrict (Polynomial.degreeLT F k)) := by
+    ext x
+    simp [Submodule.mem_map]
+  rw [hrange, LinearMap.finrank_range_of_inj
+    (umEvalOnPoints_domRestrict_injective domain hchar hk), Polynomial.finrank_degreeLT_n]
+
+/-- The exact dimension of a univariate multiplicity code, including saturation at the
+ambient scalar dimension `s · n`. -/
+lemma dim_umCode_eq_min {ι : Type*} [Fintype ι]
+    (domain : ι ↪ F) (k s : ℕ) (hchar : k ≤ ringChar F) :
+    Module.finrank F (umCode domain k s) = min k (s * Fintype.card ι) := by
+  classical
+  by_cases hk : k ≤ s * Fintype.card ι
+  · rw [dim_umCode domain hchar hk, min_eq_left hk]
+  · have hnsk : s * Fintype.card ι ≤ k := by omega
+    have hchar' : s * Fintype.card ι ≤ ringChar F := hnsk.trans hchar
+    have hdimsmall : Module.finrank F
+        (umCode domain (s * Fintype.card ι) s) = s * Fintype.card ι :=
+      dim_umCode domain hchar' le_rfl
+    have hle := umCode_mono hnsk domain (s := s)
+    have hdimle := Submodule.finrank_mono hle
+    have hamb : Module.finrank F (ι → Fin s → F) = s * Fintype.card ι := by
+      simp [Module.finrank_pi_fintype, Nat.mul_comm]
+    have hdimhigh : Module.finrank F (umCode domain k s) = s * Fintype.card ι := by
+      apply le_antisymm
+      · rw [← hamb]
+        exact Submodule.finrank_le _
+      · rw [← hdimsmall]
+        exact hdimle
+    rw [hdimhigh, min_eq_right hnsk]
+
+end Field
 
 end Multiplicity
 

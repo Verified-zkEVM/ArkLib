@@ -519,7 +519,7 @@ theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [Dec
 
 
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
   {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by
   simp only [IsMDS, Submodule.carrier_eq_coe, length_eq_domain_card]
   rw [dist_eq_minDist, minDist_eq_card_sub_min_add_1, dim_eq_min_deg_card]

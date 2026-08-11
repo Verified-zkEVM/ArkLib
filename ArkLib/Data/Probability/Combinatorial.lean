@@ -166,16 +166,22 @@ private lemma cauchy_schwarz_fiber (φ : S → T) :
 
 end CollidingPairs
 
+open Classical in
 /-- **Claim B.1 of [ABF26]** ("Omitted claim for Lemma 6.12").
 
-Suppose `S, T` are finite sets and `Φ` is a distribution on functions `S → T`
+Suppose `S` is finite, `T` is any type, and `Φ` is a distribution on functions `S → T`
 such that for any distinct `x, y ∈ S`, the probability that a sample
 `φ ← Φ` sends `x` and `y` to the same image is bounded by `ε`:
 ```
-∀ x y ∈ S, x ≠ y → Pr_{φ ← Φ}[φ x = φ y] ≤ ε.
+∀ x y ∈ S, x ≠ y → ∑' φ, Φ φ · 1[φ x = φ y] ≤ ε.
 ```
 Then there exists some `φ` in the support of `Φ` whose image has cardinality
 at least `|S| / (1 + (|S| − 1) · ε)`.
+
+The raw indicator sum keeps this theorem universe-polymorphic: ArkLib's `Pr_` notation binds a
+`Prop` and is therefore universe-zero. The wrapper
+`exists_large_image_of_pairwise_collision_bound_of_Pr` below provides that notation when
+`S` and `T` live in `Type`.
 
 ## Use in ABF26 Lemma 6.12
 
@@ -213,10 +219,10 @@ with the negation `C ≤ N(N−1)ε` produces `N² < N²`). Strict averaging via
 `ENNReal.tsum_lt_tsum` at any `φ₀ ∈ Φ.support` lifts the per-φ strict bound
 to `N · (N − 1) · ε < ∑' φ, Φ φ · numCollsOrdered φ`, contradicting Step B. -/
 theorem exists_large_image_of_pairwise_collision_bound
-    {S T : Type} [Fintype S] [DecidableEq T]
+    {S T : Type*} [Fintype S]
     (Φ : PMF (S → T)) (ε : ENNReal)
     (hΦ : ∀ x y : S, x ≠ y →
-        Pr_{ let φ ← Φ }[φ x = φ y] ≤ ε) :
+        ∑' φ : S → T, Φ φ * (if φ x = φ y then (1 : ENNReal) else 0) ≤ ε) :
     ∃ φ ∈ Φ.support,
       (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
         ((Finset.univ.image φ).card : ENNReal) := by
@@ -271,8 +277,7 @@ theorem exists_large_image_of_pairwise_collision_bound
         ∑' φ : S → T, Φ φ * (if φ p.1 = φ p.2 then (1 : ENNReal) else 0) ≤ ε := by
       intro p hp
       simp only [hP_def, Finset.mem_filter, Finset.mem_univ, true_and] at hp
-      have h := hΦ p.1 p.2 hp
-      rwa [Pr_eq_tsum_indicator] at h
+      exact hΦ p.1 p.2 hp
     -- Step B.4: bound termwise.
     calc ∑ p ∈ P, ∑' φ : S → T, Φ φ * (if φ p.1 = φ p.2 then (1 : ENNReal) else 0)
         ≤ ∑ _p ∈ P, ε := Finset.sum_le_sum h_inner
@@ -369,5 +374,20 @@ theorem exists_large_image_of_pairwise_collision_bound
       exact ENNReal.mul_lt_mul_right (ne_of_gt hΦ_pos) hΦ_ne_top
         (h_pointwise φ₀ hφ₀)
   exact absurd (h_strict.trans_le h_lin) (lt_irrefl _)
+
+open Classical in
+/-- Universe-zero convenience wrapper for Claim B.1 using ArkLib's probability notation. -/
+theorem exists_large_image_of_pairwise_collision_bound_of_Pr
+    {S T : Type} [Fintype S]
+    (Φ : PMF (S → T)) (ε : ENNReal)
+    (hΦ : ∀ x y : S, x ≠ y →
+        Pr_{ let φ ← Φ }[φ x = φ y] ≤ ε) :
+    ∃ φ ∈ Φ.support,
+      (Fintype.card S : ENNReal) / (1 + (Fintype.card S - 1) * ε) ≤
+        ((Finset.univ.image φ).card : ENNReal) := by
+  apply exists_large_image_of_pairwise_collision_bound Φ ε
+  intro x y hxy
+  have h := hΦ x y hxy
+  rwa [Pr_eq_tsum_indicator] at h
 
 end Probability

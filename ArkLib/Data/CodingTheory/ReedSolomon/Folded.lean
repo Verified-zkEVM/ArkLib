@@ -84,8 +84,9 @@ so that `Nat.decidableBallLT` fires and concrete admissibility claims are closed
 distinct `α ≠ β`). Its literal reading therefore does *not* forbid `ω^j = 1` for some
 `0 < j < s`, which would collapse a fold's `s`-tuple to a repeated-entry vector and
 silently weaken the FRS distance argument downstream (T2.18, T4.14). We add the
-*intra-orbit* conjunct so that `Admissible` is exactly the GR08 injectivity condition
-the paper's results actually rely on. This is a deliberate strengthening, not a verbatim
+*intra-orbit* conjunct so that, together with the downstream hypothesis `ω ≠ 0`,
+`Admissible` is exactly the GR08 injectivity condition the paper's results actually rely on.
+This is a deliberate strengthening, not a verbatim
 transcription. It is not merely defensible but *necessary*: with `ω = 1` — which the
 paper's literal Def 2.14 permits for every `L` and every `s` — the FRS distance claim is
 already false (`F = ZMod 11`, `L` the order-5 subgroup, `s = 2`, `k = 2`: the true minimum
@@ -312,24 +313,34 @@ lemma frsEvalOnPoints_domRestrict_injective {ι : Type*} [Fintype ι]
   · intro hp
     simp [hp]
 
-/-- **Dimension of `frsCode`.** Under `(L, s)`-admissibility of `ω` (`L = image domain`),
-`ω ≠ 0`, and enough folded evaluation points (`k ≤ s · |ι|`), the folded code has dimension
-exactly `k`. This is the rate fact `ρ = k / (s · n)` for FRS codes.
+/-- **Exact dimension of `frsCode`, for every degree bound.** Under `(L, s)`-admissibility
+of `ω` (`L = image domain`) and `ω ≠ 0`, the folded code has dimension
+`min k (s · |ι|)`: the message dimension grows with `k` until the `s · |ι|` distinct
+evaluation points are saturated.
 
 The proof is a *transport*, not a re-derivation: by `frsCode_eq_map_rsCode` the FRS code is
 the plain RS code on the folded domain, currying is an `F`-linear isomorphism (so it
 preserves `finrank`), and the RS dimension formula is the pre-existing
-`ReedSolomon.dim_eq_deg_of_le`. -/
+`ReedSolomon.dim_eq_min_deg_card`. -/
+lemma dim_frsCode_eq_min {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0) :
+    Module.finrank F (frsCode domain k s ω) = min k (s * Fintype.card ι) := by
+  rw [frsCode_eq_map_rsCode domain k ω hadm hω]
+  rw [← (Submodule.equivMapOfInjective (LinearEquiv.curry F F ι (Fin s)).toLinearMap
+    (LinearEquiv.curry F F ι (Fin s)).injective _).finrank_eq]
+  simpa [LinearCode.dim, Fintype.card_prod, Fintype.card_fin, Nat.mul_comm] using
+    (ReedSolomon.dim_eq_min_deg_card (n := k) (α := foldedDomain domain ω hadm hω))
+
+/-- **Full-dimension regime for `frsCode`.** If `k ≤ s · |ι|`, the exact formula
+`dim_frsCode_eq_min` simplifies to dimension `k`. This is the rate fact
+`ρ = k / (s · n)` for non-saturated FRS codes. -/
 lemma dim_frsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) :
     Module.finrank F (frsCode domain k s ω) = k := by
-  rw [frsCode_eq_map_rsCode domain k ω hadm hω]
-  rw [← (Submodule.equivMapOfInjective (LinearEquiv.curry F F ι (Fin s)).toLinearMap
-    (LinearEquiv.curry F F ι (Fin s)).injective _).finrank_eq]
-  exact ReedSolomon.dim_eq_deg_of_le
-    (by rw [Fintype.card_prod, Fintype.card_fin, Nat.mul_comm]; exact hk)
+  rw [dim_frsCode_eq_min domain k s ω hadm hω, min_eq_left hk]
 
 /-- **Folded-RS minimum (block) distance** — the folded analogue of
 `ReedSolomon.minDist_of_le`. Under `(L, s)`-admissibility of `ω` (`L = image domain`),

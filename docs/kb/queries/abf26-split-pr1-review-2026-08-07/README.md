@@ -13,6 +13,11 @@ distinction, read **[`INDEPENDENT-REVIEW-2026-08-09.md`](INDEPENDENT-REVIEW-2026
 It is self-contained and records the new findings, compiled probes, source coverage, current-main
 merge simulation, validation results, and the re-review bar.
 
+For the final corrected candidate, read
+**[`FINAL-VALIDATION-2026-08-11.md`](FINAL-VALIDATION-2026-08-11.md)** and the deterministic
+declaration-level [`source map`](SOURCE-MAP-3c303efa.md). These supersede the older
+current-tip conclusions while retaining the earlier reports as immutable audit evidence.
+
 | Report | Cluster |
 |---|---|
 | [`R1-probability.md`](R1-probability.md) | `Data/Probability/Instances.lean` namespace migration, `Notation.lean`, `Fin/Basic.lean`, the six `open Probability` consumers |
@@ -46,11 +51,13 @@ condition on Thm 2.18) were already known and handled; the third (Thm 2.18 is fa
 Every report here describes the tree **as reviewed, at `ffa0733a`**, and is left that way on
 purpose so the findings stay checkable against the commit they were made against. Fixes were
 applied afterwards in the same PR, so declaration names and line numbers quoted below may no
-longer resolve. Notably `additive_code_supports_erasure_correction_grs12` was renamed to
-`exists_erasure_corrector`, `Polynomial.pow_dvd_det_of_forall_mem_col_dvd` moved to
-`Matrix.pow_dvd_det_of_forall_mem_col_dvd`, and `Fin.induction_three`/`'` were deleted.
+longer resolve. Notably `additive_code_supports_erasure_correction_grs12` was first renamed and
+then removed after its API was found to be tautological, while
+`Polynomial.pow_dvd_det_of_forall_mem_col_dvd` moved to
+`Matrix.pow_dvd_det_of_forall_mem_col_dvd`. The `Fin.induction_three` helpers were retained
+because a later split has a concrete tactic consumer.
 For the current state of the tree, read
-[`VALIDATION-2026-08-09.md`](VALIDATION-2026-08-09.md),
+[`FINAL-VALIDATION-2026-08-11.md`](FINAL-VALIDATION-2026-08-11.md),
 [`../../audits/open-problems-list-decoding-and-correlated-agreement.md`](../../audits/open-problems-list-decoding-and-correlated-agreement.md)
 and the module docstrings, not these reports.
 

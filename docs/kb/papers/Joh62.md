@@ -32,8 +32,9 @@ In ArkLib it is the attribution key for the paper-shaped, list-size-parameterise
   `CodingTheory.johnson_bound_lambda_le_ell` (= `ABF26` Theorem 3.2).
 - The **radius family** it induces: `CodingTheory.Jqℓ` (the `ℓ`-parameterised `q`-ary Johnson
   radius) and `JohnsonBound.Jcap` (`1 − √(1−δ)`), both from `ABF26` Definition 3.1.
-- The **MDS corollary** `CodingTheory.mds_johnson_lambda_le` (= `ABF26` Corollary 3.3,
-  `Λ(C, 1 − √ρ − η) ≤ 1/(2ηρ)`), and the complementary Plotkin regime
+- The **MDS corollary** `CodingTheory.mds_johnson_lambda_le_of_rate_distance` (= `ABF26`
+  Corollary 3.3, `Λ(C, 1 − √ρ − η) ≤ 1/(2ηρ)`) for an arbitrary finite alphabet, its
+  field-linear wrapper `mds_johnson_lambda_le`, and the complementary Plotkin regime
   `CodingTheory.plotkin_card_le_ell`.
 - ArkLib does **not** follow Johnson's own derivation. The numeric core is
   `CodingTheory.johnson_card_le_ell`, the standard average-distance double counting, built on the
@@ -42,8 +43,9 @@ In ArkLib it is the attribution key for the paper-shaped, list-size-parameterise
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Family.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean)
-  — `Jqℓ`, `Jcap`, `johnson_bound_lambda_le_ell`, `mds_johnson_lambda_le`,
-  `plotkin_card_le_ell`, `johnson_card_le_ell`.
+  — `Jqℓ`, `Jcap`, `johnson_bound_lambda_le_ell`, the alphabet-generic
+  `mds_johnson_lambda_le_of_rate_distance`, field/RS wrappers, `plotkin_card_le_ell`, and
+  `johnson_card_le_ell`.
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean)
   — the pre-existing `JohnsonBound.J`, `sqrt_le_J`, `johnson_bound`, `johnson_bound_lemma`, which
   `Family.lean` consumes rather than re-proves. That file cites `codingtheory` and `listdecoding`,
@@ -78,9 +80,12 @@ Xplore.
 - The `ℓ = 0` false corner is excluded by the theorem's `1 ≤ ℓ` hypothesis; the elementary
   `ℓ = 1` radius-zero boundary is proved separately inside the theorem, and the list-size-two
   specialization is documented as distinct from the binary Johnson radius.
-- **The MDS corollary does not cover the paper's motivating class.** `ABF26` Corollary 3.3's
-  preamble singles out interleaved Reed–Solomon codes; `mds_johnson_lambda_le` is stated for
-  `LinearCode ι F` (field alphabet) only, and interleaved RS lives over the module alphabet `F^m`.
+- **The MDS corollary's metric core is alphabet-generic.**
+  `mds_johnson_lambda_le_of_rate_distance` accepts an arbitrary finite-alphabet code, its
+  alphabet-normalized rate `ρ`, and the exact MDS rate-distance equation. The field-linear
+  `mds_johnson_lambda_le` is only a convenience wrapper. Module/interleaved consumers are covered
+  by the generic theorem, but must still supply their appropriate rate definition and
+  rate-distance bridge.
 - `Lambda` uses `Set.encard`, so infinite lists contribute `⊤` rather than silently collapsing
   to zero. The real-valued `listDecodable` API explicitly records point-list finiteness beside
   its `Set.ncard` bound, making every finite-bound bridge instance-free.
@@ -98,7 +103,10 @@ Xplore.
   radius-zero case is elementary, the guarded `ℓ ≥ 2` form survives as the private
   `johnson_lambda_le_ell_of_radicand`, and the low-rate branch where the radicand guard fails
   is `plotkin_card_le_ell`.
-- A module-alphabet version of the MDS corollary, so interleaved Reed–Solomon is covered.
+- ~~Add an alphabet-generic MDS corollary.~~ **Done.**
+  `mds_johnson_lambda_le_of_rate_distance` is metric and works over any finite alphabet; module
+  and interleaved consumers instantiate it by supplying their alphabet-normalized rate and MDS
+  rate-distance equation.
 - ~~**Wire the bounds to a consumer.**~~ **Done.** `rs_lambda_le_johnson_mds`
   (`mds_johnson_lambda_le` + the proven `ReedSolomon.isMDS_code`) is ArkLib's first Reed–Solomon
   list-size bound, and `johnson_listDecodable` / `johnson_listDecodable_of_le` deliver

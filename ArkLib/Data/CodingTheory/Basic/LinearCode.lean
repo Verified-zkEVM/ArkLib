@@ -23,6 +23,8 @@ linear codes, and basic constructions and dimension/rate facts for linear codes.
 
 ## References
 
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26] (§2.2: Definition 2.5 and Lemma 2.6)
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
 with Mutual Correlated Agreement*][BCGM25]
@@ -243,7 +245,7 @@ code divided by the *block length* alone.
 
 For a code over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`.
 For a module alphabet `A = F^s` (folded, interleaved, …) it is **not** the
-alphabet-normalized rate `log_{|A|} |C| / n = dim/(s·n)` of ABF26 Definition 2.5 — this
+alphabet-normalized rate `log_{|A|} |C| / n = dim/(s·n)` of [ABF26] Definition 2.5 — this
 definition never divides by the alphabet dimension `s`. The paper's normalization is
 `alphabetRate` below; `CodingTheory.subspaceDesign_tau_lower` and
 `CodingTheory.frs_is_subspaceDesign_gk16` use its `ℝ`-cast form `finrank/(s·n)` inline
@@ -265,7 +267,7 @@ scoped macro_rules
 
 /--
 The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`
-(the linear-code specialization of ABF26 Definition 2.5): when `F` is a finite nontrivial
+(the linear-code specialization of [ABF26] Definition 2.5): when `F` is a finite nontrivial
 field and `s ≥ 1`, the paper's rate for `Σ = F^s` is
 `log_{|Σ|} |C| / n = dim/(s·n)`. The formula below is its algebraic extension to all `s`,
 all finite coordinate types, and the same `Semiring` generality as `rate`; in particular it
@@ -288,7 +290,7 @@ lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
   rw [alphabetRate, rate, div_div, mul_comm]
 
 /-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
-rate: ABF26 D2.5 and `rate` agree there. -/
+rate: [ABF26] D2.5 and `rate` agree there. -/
 lemma alphabetRate_one_eq_rate [Semiring F]
     (MC : ModuleCode ι F (Fin 1 → F)) :
     alphabetRate MC = rate MC := by
@@ -343,7 +345,7 @@ lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Fins
     exact Eq.symm (hw.2 t t.2)⟩
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
-def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
+def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1
 
 /-- Every linear code over a field `F` is a finitely generated `F`-module. -/
@@ -710,12 +712,12 @@ end Computable
 /-- **Bridge: `IsMDS` ↔ rate-distance form.** The `IsMDS` predicate (defined upstream in
 this file as the additive Nat form `Code.dist LC.carrier = length LC - dim LC + 1`) is
 equivalent to the rate-distance form `δ_min(LC) / n = 1 - ρ + 1/n` where `ρ = k/n` is
-the rate. The latter is the form ABF26 uses throughout §2-§3 (Lemma 2.6, Corollary 3.3).
+the rate. The latter is the form [ABF26] uses throughout §2-§3 (Lemma 2.6, Corollary 3.3).
 
 Requires `[Nonempty ι]` so `(Fintype.card ι : ℝ) ≠ 0`. -/
 lemma IsMDS_iff_rate_distance
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [DecidableEq F]
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [DecidableEq F]
     (LC : LinearCode ι F) :
     IsMDS LC ↔
       (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =

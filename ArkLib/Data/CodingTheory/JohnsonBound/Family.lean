@@ -36,10 +36,11 @@ The file also states the paper-shaped versions of:
 - `johnson_bound_lambda_le_ell` — ABF26 Theorem 3.2 [Joh62]:
   `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ` for every `ℓ ≥ 1`, the paper's full range (`ℓ = 0` is
   genuinely false as encoded — a Lean-side artefact of `ℚ`-division, see the docstring).
-- `mds_johnson_lambda_le` — ABF26 Corollary 3.3, at its *field-linear specialization*
-  (`LinearCode ι F`; the paper's statement also covers module alphabets such as
-  interleaved RS — see the docstring's scope note):
+- `mds_johnson_lambda_le_of_rate_distance` — ABF26 Corollary 3.3 over an arbitrary finite
+  alphabet, parameterised by the alphabet-normalized rate and the MDS rate-distance equation:
   for any MDS code `C` of rate `ρ` and `η > 0`, `|Λ(C, 1 - √ρ - η)| ≤ 1/(2·η·ρ)`.
+- `mds_johnson_lambda_le` — the field-linear wrapper, deriving the generic theorem's rate
+  assumptions from `LinearCode.IsMDS`.
 - `rs_lambda_le_johnson_mds` — C3.3 at Reed–Solomon, via the pre-existing
   `ReedSolomon.isMDS_code`.
 - `johnson_listDecodable` — T3.2 in the `ListDecodable.listDecodable` shape consumed by the
@@ -52,13 +53,14 @@ ABF26's `Lambda`/`Jqℓ` form. The numeric core is factored into `johnson_card_l
 finite index type `ι` to `Fin n` via `hammingDist_comp_equiv`
 (`ArkLib/ToMathlib/InformationTheory/Hamming.lean`).
 
-`mds_johnson_lambda_le` (C3.3's field-linear specialization) is **fully proven**,
-derived from T3.2 + the
-Singleton/rate-distance bridge (`IsMDS_iff_rate_distance`) and the domination
-`domination_core`. The very-low-rate MDS "Plotkin corner" (where the `Jqℓ` radicand guard
-fails — genuinely reachable, e.g. `[4,2,3]` over `𝔽₃`) is closed by `plotkin_card_le_ell`,
-a q-ary Plotkin bound extracted from the in-tree Johnson counting lemma: past the Plotkin
-radius the *whole code* has fewer than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)`.
+`mds_johnson_lambda_le_of_rate_distance` (C3.3) is **fully proven** for arbitrary finite
+alphabets, derived from T3.2 and the domination `domination_core`. The very-low-rate MDS
+"Plotkin corner" (where the `Jqℓ` radicand guard fails — genuinely reachable, e.g.
+`[4,2,3]` over `𝔽₃`) is closed by `plotkin_card_le_ell`, a q-ary Plotkin bound extracted
+from the in-tree Johnson counting lemma: past the Plotkin radius the *whole code* has fewer
+than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)`. The field-linear theorem only supplies
+its rate and rate-distance equation via `IsMDS_iff_rate_distance`; module and interleaved
+codes can supply their alphabet-normalized versions to the same generic core.
 
 ## References
 
@@ -128,7 +130,7 @@ set_option maxHeartbeats 1000000 in
 -- The numeric core carries several `nlinarith`/`field_simp`/cast steps over ℚ and ℝ; the
 -- default heartbeat budget is insufficient.
 /-- Numeric core of the Johnson list-size bound (T3.2), stated over an abstract `B`. -/
-lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
+lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (v : Fin n → α) (ℓ : ℕ) (mDist : ℕ)
     (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hmDist1 : 1 ≤ mDist)
     (e_fact : (JohnsonBound.e B v : ℝ) ≤ Jqℓ (Fintype.card α) ℓ (mDist / n) * n)
@@ -323,9 +325,10 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
 Extracted from the in-tree Johnson counting lemma `JohnsonBound.johnson_bound_lemma` by
 dropping its nonnegative square term: with `D := q/(q-1) · d(B)/n` the counting lemma gives
 `|B| · (D - 1) ≤ D`, and the failed guard pins `D > ℓ/(ℓ-1) > 1`, hence `|B| < ℓ`. This is
-the numeric core for the very-low-rate "Plotkin corner" of `mds_johnson_lambda_le`; it is
+the numeric core for the very-low-rate "Plotkin corner" of
+`mds_johnson_lambda_le_of_rate_distance`; it is
 tight there (repetition codes and `[4,2,3]/𝔽₃` meet it with equality `|B| = δ/(δ-(1-1/q))`). -/
-lemma plotkin_card_le_ell {n : ℕ} {α : Type} [Fintype α] [DecidableEq α]
+lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (ℓ : ℕ) (mDist : ℕ)
     (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hB2 : 2 ≤ B.card)
     (d_fact : (mDist : ℚ) ≤ JohnsonBound.d B)
@@ -385,7 +388,7 @@ arbitrary finite index `ι` to `Fin n` (via `hammingDist_comp_equiv`) and delega
 core to `johnson_card_le_ell`. -/
 private lemma johnson_lambda_le_ell_of_radicand
     {ι : Type*} [Fintype ι] [Nonempty ι]
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ)
     (h_radicand :
         ((Fintype.card α : ℚ) / ((Fintype.card α : ℚ) - 1))
@@ -535,7 +538,7 @@ and `Λ(C, 0) ≥ 1` for every nonempty `C`, so the hypothesis `1 ≤ ℓ` is no
 paper's `J_{q,0}` is undefined, so this is a Lean-side encoding artefact.) -/
 theorem johnson_bound_lambda_le_ell
     {ι : Type*} [Fintype ι] [Nonempty ι]
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) :
     let q : ℚ := Fintype.card α
     let δ_min : ℚ := Code.minDist C / Fintype.card ι
@@ -653,90 +656,58 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
       _ ≤ 2 * η * s + η^2 := by nlinarith [sq_nonneg η]
   linarith [hLHS, hbound]
 
-/-- **ABF26 Corollary 3.3, field-linear specialization.** MDS coarse Johnson corollary.
-For every MDS code `C` with rate `ρ := dim C / n` and `η > 0`:
+/-- **ABF26 Corollary 3.3, alphabet-generic form.** For a code `C` over any finite
+alphabet, an explicit rate parameter `ρ`, and `η > 0`,
 
   `|Λ(C, 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`
 
-**Status: the field-linear case is FULLY PROVEN; the paper's full C3.3 is broader** (see
-the scope note below — this statement quantifies over `LinearCode ι F`, so it cannot
-express the module-alphabet MDS codes, e.g. interleaved RS, that the paper's C3.3
-preamble singles out). Derived in-tree from T3.2
-(`johnson_bound_lambda_le_ell`) + the Singleton/rate-distance bridge `IsMDS_iff_rate_distance`
-(MDS `⟹ δ_min = 1 - ρ + 1/n`). The optimise-over-`ℓ` step is realised concretely with
-`ℓ := ⌊1/(2ηρ)⌋₊`, and the radius domination `1 - √ρ - η ≤ Jqℓ q ℓ δ_min` is `domination_core`.
-Three branches: (a) when `ℓ ≤ 1` the radius `1 - √ρ - η` is negative, so the list is
-empty and `Lambda = 0`; (b) when `ℓ ≥ 2` and the `Jqℓ` radicand guard holds, the chain
-`Lambda C (1-√ρ-η) ≤ Lambda C (Jqℓ q ℓ δ_min) ≤ ℓ ≤ 1/(2ηρ)` closes it; (c) the
-very-low-rate "Plotkin corner" where the guard fails — genuinely *reachable*, e.g.
-binary repetition codes or `[4,2,3]` over `𝔽₃` (`ρ = 1/2`, `δ_min = 3/4`, entered at small
-`η`) — is closed by the q-ary Plotkin bound `plotkin_card_le_ell`: the failed guard means
-`δ_min` exceeds the Plotkin radius `1 - 1/q` by the factor `ℓ/(ℓ-1)`, so the *whole code*
-has fewer than `ℓ` words and `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` — no radius analysis needed.
+provided `0 < ρ ≤ 1` and the MDS rate-distance equation
+`δ_min(C) = 1 - ρ + 1/n` holds.
 
-**Scope vs the paper.** The paper's `cor:Jonhson-for-mds` quantifies over all MDS codes
-under its general-alphabet definition (rate `log_{|Σ|}|C| / n`), explicitly including
-interleaved Reed–Solomon codes over the non-field alphabet `F^m`. This statement is the
-F-linear field-alphabet instance (`LinearCode ι F`, rate `finrank/n`); the
-alphabet-general form (over `ModuleCode`/general `Σ`) is deferred to the split that
-brings its interleaved-code consumers — `johnson_bound_lambda_le_ell` above is already
-alphabet-generic, so only the rate-distance bridge needs generalizing then.
+The theorem is deliberately stated for an arbitrary code set and alphabet. It is the exact
+paper-level C3.3 once `ρ` is instantiated with ABF26's alphabet-normalized rate. Linear,
+module-alphabet, and interleaved-code APIs should provide only their appropriate rate definition
+and the displayed MDS equation, then reuse this metric core.
 
-**Rate derivation.** `ρ` is bound inline as `(Module.finrank F C : ℝ) / Fintype.card ι`
-rather than passed as a separate parameter — this matches the upstream `IsMDS`
-signature (additive Nat form, no rate parameter) and lets call sites use
-`IsMDS_iff_rate_distance` to extract the rate-distance equation when needed. -/
-theorem mds_johnson_lambda_le
-    {ι : Type} [Fintype ι] [Nonempty ι]
-    {F : Type} [Field F] [Finite F] [DecidableEq F]
-    (C : LinearCode ι F) (η : ℝ) (hη_pos : 0 < η)
-    (h_mds : LinearCode.IsMDS C) :
-    let ρ : ℝ := (Module.finrank F C : ℝ) / Fintype.card ι
-    (Lambda ((C : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
+No separate nontriviality hypothesis is required: if `C` were subsingleton, ArkLib's convention
+would give `minDist C = 0`, whereas `ρ ≤ 1` and positive block length make
+`1 - ρ + 1/n > 0`. Thus the equation itself forces two distinct codewords and, consequently,
+at least two alphabet symbols.
+
+The proof derives the bound from the alphabet-generic T3.2
+`johnson_bound_lambda_le_ell`, choosing `ℓ := ⌊1/(2ηρ)⌋₊`. The negative-radius,
+Johnson-radicand, and Plotkin-corner branches are all metric and use no algebraic structure. -/
+theorem mds_johnson_lambda_le_of_rate_distance
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {α : Type*} [Finite α] [DecidableEq α]
+    (C : Set (ι → α)) (ρ η : ℝ)
+    (hρ_pos : 0 < ρ) (hρ_le_one : ρ ≤ 1) (hη_pos : 0 < η)
+    (h_rate_distance : (Code.minDist C : ℝ) / Fintype.card ι =
+      1 - ρ + 1 / Fintype.card ι) :
+    (Lambda C (1 - Real.sqrt ρ - η) : ENNReal) ≤
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
-  intro ρ
-  -- The alphabet cardinality `q = |F|` is used only inside the proof (via the Johnson and
-  -- Plotkin cores), so the statement needs only `Finite F`.
-  letI : Fintype F := Fintype.ofFinite F
+  letI : Fintype α := Fintype.ofFinite α
   set n : ℕ := Fintype.card ι with hn_def
-  set k : ℕ := Module.finrank F C with hk_def
   have hn_pos : 0 < n := Fintype.card_pos
-  have hk_le : k ≤ n := by
-    rw [hk_def, hn_def]
-    have := Submodule.finrank_le (R := F) (M := ι → F) C
-    simpa [Module.finrank_fintype_fun_eq_card] using this
-  -- Singleton / rate-distance bridge
-  have hbridge := (LinearCode.IsMDS_iff_rate_distance C).mp h_mds
-  -- hbridge : (minDist C : ℝ)/n = 1 - k/n + 1/n
-  rw [← hn_def, ← hk_def] at hbridge
-  -- k ≥ 1 (else MDS forces dist = n+1 > n)
-  have hk1 : 1 ≤ k := by
-    rcases Nat.eq_zero_or_pos k with hk0 | hkpos
-    · exfalso
-      -- k = 0 : minDist C = n + 1, impossible
-      have hd_le : Code.minDist (C : Set (ι → F)) ≤ n := by
-        have h1 : Code.dist (C : Set (ι → F)) = Code.minDist (C : Set (ι → F)) :=
-          Code.dist_eq_minDist _
-        have h2 : Code.dist (C : Set (ι → F)) ≤ Fintype.card ι := Code.dist_le_card _
-        rw [h1] at h2; rw [hn_def]; exact h2
-      have heq : (Code.minDist (C : Set (ι → F)) : ℝ) = n + 1 := by
-        have h := hbridge
-        rw [hk0] at h; push_cast at h
-        rw [div_eq_iff (show (n:ℝ) ≠ 0 from by exact_mod_cast hn_pos.ne')] at h
-        rw [h]; field_simp; ring
-      have hcast : (Code.minDist (C : Set (ι → F)) : ℝ) ≤ n := by exact_mod_cast hd_le
-      rw [heq] at hcast; linarith
-    · exact hkpos
-  -- ρ = k/n > 0
-  have hρ_eq : ρ = (k : ℝ) / n := rfl
-  have hn_posR : (0:ℝ) < n := by exact_mod_cast hn_pos
-  have hρ_pos : 0 < ρ := by rw [hρ_eq]; positivity
-  have hρ_le1 : ρ ≤ 1 := by
-    rw [hρ_eq, div_le_one hn_posR]; exact_mod_cast hk_le
+  have hn_posR : (0 : ℝ) < n := by exact_mod_cast hn_pos
+  have hC_nontrivial : C.Nontrivial := by
+    by_contra hnot
+    have hsub : C.Subsingleton := Set.not_nontrivial_iff.mp hnot
+    letI : Subsingleton C :=
+      ⟨fun x y => Subtype.ext (hsub x.property y.property)⟩
+    have hmin0 : Code.minDist C = 0 := by
+      rw [← Code.dist_eq_minDist]
+      exact Code.dist_subsingleton
+    rw [hmin0] at h_rate_distance
+    norm_num at h_rate_distance
+    have hinv_pos : (0 : ℝ) < 1 / n := one_div_pos.mpr hn_posR
+    have hrhs_pos : (0 : ℝ) < 1 - ρ + 1 / n :=
+      add_pos_of_nonneg_of_pos (sub_nonneg.mpr hρ_le_one) hinv_pos
+    exact (ne_of_gt hrhs_pos) (by simpa [one_div] using h_rate_distance.symm)
   set s : ℝ := √ρ with hs_def
   have hs_pos : 0 < s := Real.sqrt_pos.mpr hρ_pos
   have hs_le1 : s ≤ 1 := by
-    rw [hs_def]; calc √ρ ≤ √1 := Real.sqrt_le_sqrt hρ_le1
+    rw [hs_def]; calc √ρ ≤ √1 := Real.sqrt_le_sqrt hρ_le_one
       _ = 1 := Real.sqrt_one
   have hs_sq : s^2 = ρ := by rw [hs_def, Real.sq_sqrt hρ_pos.le]
   -- choose ℓ
@@ -768,11 +739,11 @@ theorem mds_johnson_lambda_le
       rw [h4ρ] at hη_gt
       linarith
     -- Lambda C (negative) = 0
-    have hLambda0 : Lambda (C : Set (ι → F)) (1 - s - η) = 0 := by
+    have hLambda0 : Lambda C (1 - s - η) = 0 := by
       rw [Lambda]
       apply le_antisymm
       · refine iSup_le fun f => ?_
-        have hempty : closeCodewordsRel (C : Set (ι → F)) f (1 - s - η) = ∅ := by
+        have hempty : closeCodewordsRel C f (1 - s - η) = ∅ := by
           rw [Set.eq_empty_iff_forall_notMem]
           intro c hc
           have hmem := hc.2
@@ -782,24 +753,25 @@ theorem mds_johnson_lambda_le
           linarith [hcombine, hradius_neg]
         rw [hempty]; simp
       · exact bot_le
-    have : Lambda (C : Set (ι → F)) (1 - √ρ - η) = 0 := by rw [← hs_def]; exact hLambda0
+    have : Lambda C (1 - √ρ - η) = 0 := by rw [← hs_def]; exact hLambda0
     rw [this]; simp
   · -- main case ℓ ≥ 2
-    -- q = card F ≥ 2
-    have hq2 : 2 ≤ Fintype.card F := by
-      have := Fintype.one_lt_card (α := F)
-      omega
-    set q : ℚ := (Fintype.card F : ℚ) with hq_def
+    -- A nontrivial code over a nonempty coordinate type forces at least two alphabet symbols.
+    have hq2 : 2 ≤ Fintype.card α := by
+      obtain ⟨u, huC, v, hvC, huv⟩ := hC_nontrivial
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp huv
+      exact Fintype.one_lt_card_iff.mpr ⟨u i, v i, hi⟩
+    set q : ℚ := (Fintype.card α : ℚ) with hq_def
     have hqR2 : (2:ℚ) ≤ q := by rw [hq_def]; exact_mod_cast hq2
     -- δ_min as ℚ
-    set δ_minQ : ℚ := (Code.minDist (C : Set (ι → F)) : ℚ) / n with hδ_def
+    set δ_minQ : ℚ := (Code.minDist C : ℚ) / n with hδ_def
     have hℓQ2 : (2:ℚ) ≤ (ℓ:ℚ) := by exact_mod_cast hℓ2
     have hℓRpos : (0:ℝ) < (ℓ:ℝ) := by positivity
     -- lFac := (ℓ-1)/ℓ  as ℝ
     set lFacR : ℝ := ((ℓ:ℝ) - 1) / ℓ with hlFacR_def
     -- δ_min value in ℝ: (minDist:ℝ)/n = 1 - ρ + 1/n
     have hδR : (δ_minQ : ℝ) = 1 - ρ + 1/n := by
-      rw [hδ_def]; push_cast; rw [← hbridge]
+      rw [hδ_def]; push_cast; rw [← h_rate_distance]
     have hstep3 : (ℓ : ENNReal) ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := by
       rw [← ENNReal.ofReal_natCast]
       exact ENNReal.ofReal_le_ofReal hℓ_le
@@ -815,7 +787,7 @@ theorem mds_johnson_lambda_le
     -- radicand guard
     rcases le_or_gt ((q / (q - 1)) * (((ℓ:ℚ) - 1) / ℓ) * δ_minQ) 1 with hradicand | hguard
     · -- radicand holds: main line
-      have hT32 := johnson_bound_lambda_le_ell (C : Set (ι → F)) ℓ hℓ2.le
+      have hT32 := johnson_bound_lambda_le_ell C ℓ hℓ2.le
       have hdom : 1 - √ρ - η ≤ Jqℓ q ℓ δ_minQ := by
         -- `Jqℓ q ℓ δ = J q (lFac·δ)` by definition (`Jqℓ_eq_J`).
         rw [Jqℓ_eq_J]
@@ -858,7 +830,7 @@ theorem mds_johnson_lambda_le
               linarith [this]
             rw [← hℓ_def] at h1; exact h1
           have h2ηρs : 2 * η * s^2 ≤ 1/2 := by rw [hs_sq]; exact h2ηρ_le
-          have hρle1 : (s^2:ℝ) ≤ 1 := by rw [hs_sq]; exact hρ_le1
+          have hρle1 : (s^2:ℝ) ≤ 1 := by rw [hs_sq]; exact hρ_le_one
           have hn1R : (1:ℕ) ≤ n := hn1
           exact domination_core s η ℓ n hs_pos hη_pos hℓ2 hn1R hρle1 h2ηρs hℓ_ge
         -- √(1-δJ) ≤ s + η
@@ -867,10 +839,10 @@ theorem mds_johnson_lambda_le
           exact Real.sqrt_le_sqrt hsq_le
         rw [hs_def] at hsuff; linarith [hsuff]
       -- Chain: `Lambda` monotone in the radius, then T3.2, then `ℓ ≤ 1/(2ηρ)`.
-      have hstep1 : Lambda (C : Set (ι → F)) (1 - √ρ - η)
-          ≤ Lambda (C : Set (ι → F)) (Jqℓ q ℓ δ_minQ) := Lambda_mono hdom
-      calc (Lambda (C : Set (ι → F)) (1 - √ρ - η) : ENNReal)
-          ≤ (Lambda (C : Set (ι → F)) (Jqℓ q ℓ δ_minQ) : ENNReal) := by exact_mod_cast hstep1
+      have hstep1 : Lambda C (1 - √ρ - η)
+          ≤ Lambda C (Jqℓ q ℓ δ_minQ) := Lambda_mono hdom
+      calc (Lambda C (1 - √ρ - η) : ENNReal)
+          ≤ (Lambda C (Jqℓ q ℓ δ_minQ) : ENNReal) := by exact_mod_cast hstep1
         _ ≤ ((ℓ : ℕ∞) : ENNReal) := by exact_mod_cast hT32
         _ = (ℓ : ENNReal) := by simp
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
@@ -882,33 +854,30 @@ theorem mds_johnson_lambda_le
       -- This is tight on the reachable witnesses: repetition codes (`|C| = q`, corner
       -- forces `ℓ > q`) and `[4,2,3]/𝔽₃` (`|C| = 9 = δ/(δ-(1-1/q))`, corner forces `ℓ > 9`).
       classical
-      -- `|C| ≥ 2`: `k ≥ 1` gives a nonzero codeword, and `0 ∈ C`.
-      obtain ⟨v0, hv0C, hv0⟩ : ∃ v0 ∈ C, v0 ≠ 0 := by
-        rw [← Submodule.ne_bot_iff]
-        intro hbot
-        rw [hk_def, hbot] at hk1
-        simp [finrank_bot] at hk1
-      -- Reindex `ι ≃ Fin n` and view the whole code as a `Finset (Fin n → F)`.
+      -- The MDS rate-distance equation plus `ρ ≤ 1` already forced `C.Nontrivial`.
+      obtain ⟨u0, hu0C, v0, hv0C, huv0⟩ := hC_nontrivial
+      -- Reindex `ι ≃ Fin n` and view the whole code as a `Finset (Fin n → α)`.
       set eqv : ι ≃ Fin n := Fintype.equivFin ι with heqv
-      set reIdx : (ι → F) → (Fin n → F) := fun x => x ∘ eqv.symm with hreIdx
+      set reIdx : (ι → α) → (Fin n → α) := fun x => x ∘ eqv.symm with hreIdx
       have hreIdx_inj : Function.Injective reIdx := by
         intro x y h
         funext i
         simpa [hreIdx] using congrFun h (eqv i)
-      have hCfin : (C : Set (ι → F)).Finite := Set.toFinite _
-      set B : Finset (Fin n → F) := hCfin.toFinset.image reIdx with hB
-      have hBcard : B.card = (C : Set (ι → F)).ncard := by
+      have hCfin : C.Finite := Set.toFinite _
+      set B : Finset (Fin n → α) := hCfin.toFinset.image reIdx with hB
+      have hBcard : B.card = C.ncard := by
         rw [hB, Finset.card_image_of_injective _ hreIdx_inj,
           Set.ncard_eq_toFinset_card _ hCfin]
       have hB2 : 2 ≤ B.card := by
-        refine Finset.one_lt_card.mpr ⟨reIdx v0, ?_, reIdx 0, ?_, fun h => hv0 (hreIdx_inj h)⟩
+        refine Finset.one_lt_card.mpr
+          ⟨reIdx u0, ?_, reIdx v0, ?_, fun h => huv0 (hreIdx_inj h)⟩
+        · exact Finset.mem_image_of_mem _ (hCfin.mem_toFinset.mpr hu0C)
         · exact Finset.mem_image_of_mem _ (hCfin.mem_toFinset.mpr hv0C)
-        · exact Finset.mem_image_of_mem _ (hCfin.mem_toFinset.mpr (zero_mem C))
       -- The code's minimum distance lower-bounds the average pairwise distance of `B`.
-      have d_fact : (Code.minDist (C : Set (ι → F)) : ℚ) ≤ JohnsonBound.d B := by
+      have d_fact : (Code.minDist C : ℚ) ≤ JohnsonBound.d B := by
         have hmin_le : sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d }
             ≤ JohnsonBound.d B := min_dist_le_d hB2
-        have hminDist_lb : Code.minDist (C : Set (ι → F)) ≤
+        have hminDist_lb : Code.minDist C ≤
             sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } := by
           apply le_csInf
           · obtain ⟨u, hu, w, hw, huw⟩ := Finset.one_lt_card.mp hB2
@@ -922,23 +891,81 @@ theorem mds_johnson_lambda_le
               hammingDist_comp_equiv eqv.symm c1 c2]
             apply Nat.sInf_le
             exact ⟨c1, hCfin.mem_toFinset.mp hc1, c2, hCfin.mem_toFinset.mp hc2, hc12, rfl⟩
-        calc (Code.minDist (C : Set (ι → F)) : ℚ)
+        calc (Code.minDist C : ℚ)
             ≤ ((sInf { d | ∃ u ∈ B, ∃ w ∈ B, u ≠ w ∧ hammingDist u w = d } : ℕ) : ℚ) := by
               exact_mod_cast hminDist_lb
           _ ≤ JohnsonBound.d B := hmin_le
       -- Plotkin bound: the whole code has at most `ℓ` words.
       have hcard_le : B.card ≤ ℓ := by
-        refine plotkin_card_le_ell B ℓ (Code.minDist (C : Set (ι → F)))
+        refine plotkin_card_le_ell B ℓ (Code.minDist C)
           hℓ2 hn_pos hq2 hB2 d_fact ?_
         rw [hq_def, hδ_def] at hguard
         exact hguard
-      calc (Lambda (C : Set (ι → F)) (1 - √ρ - η) : ENNReal)
-          ≤ (((C : Set (ι → F)).ncard : ℕ∞) : ENNReal) := by
+      calc (Lambda C (1 - √ρ - η) : ENNReal)
+          ≤ ((C.ncard : ℕ∞) : ENNReal) := by
             exact_mod_cast Lambda_le_ncard _ hCfin
         _ ≤ (ℓ : ENNReal) := by
             rw [← hBcard]
             exact_mod_cast hcard_le
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
+
+/-- **ABF26 Corollary 3.3 for field-linear codes.** Thin wrapper around the
+alphabet-generic `mds_johnson_lambda_le_of_rate_distance`: `LinearCode.IsMDS` supplies the
+rate-distance equation via `LinearCode.IsMDS_iff_rate_distance`, while finite-dimensionality
+supplies `0 < ρ ≤ 1` for `ρ = finrank F C / n`.
+
+For module alphabets (including interleaved Reed–Solomon), use the generic theorem with the
+alphabet-normalized rate and the corresponding MDS rate-distance bridge. -/
+theorem mds_johnson_lambda_le
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F] [DecidableEq F]
+    (C : LinearCode ι F) (η : ℝ) (hη_pos : 0 < η)
+    (h_mds : LinearCode.IsMDS C) :
+    let ρ : ℝ := (Module.finrank F C : ℝ) / Fintype.card ι
+    (Lambda ((C : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
+      ENNReal.ofReal (1 / (2 * η * ρ)) := by
+  intro ρ
+  letI : Fintype F := Fintype.ofFinite F
+  set n : ℕ := Fintype.card ι with hn_def
+  set k : ℕ := Module.finrank F C with hk_def
+  have hn_pos : 0 < n := Fintype.card_pos
+  have hk_le : k ≤ n := by
+    rw [hk_def, hn_def]
+    have := Submodule.finrank_le (R := F) (M := ι → F) C
+    simpa [Module.finrank_fintype_fun_eq_card] using this
+  have hbridge := (LinearCode.IsMDS_iff_rate_distance C).mp h_mds
+  rw [← hn_def, ← hk_def] at hbridge
+  have hk1 : 1 ≤ k := by
+    rcases Nat.eq_zero_or_pos k with hk0 | hkpos
+    · exfalso
+      have hd_le : Code.minDist (C : Set (ι → F)) ≤ n := by
+        have h1 : Code.dist (C : Set (ι → F)) = Code.minDist (C : Set (ι → F)) :=
+          Code.dist_eq_minDist _
+        have h2 : Code.dist (C : Set (ι → F)) ≤ Fintype.card ι := Code.dist_le_card _
+        rw [h1] at h2
+        rw [hn_def]
+        exact h2
+      have heq : (Code.minDist (C : Set (ι → F)) : ℝ) = n + 1 := by
+        have h := hbridge
+        rw [hk0] at h
+        push_cast at h
+        rw [div_eq_iff (show (n : ℝ) ≠ 0 from by exact_mod_cast hn_pos.ne')] at h
+        rw [h]
+        field_simp
+        ring
+      have hcast : (Code.minDist (C : Set (ι → F)) : ℝ) ≤ n := by exact_mod_cast hd_le
+      rw [heq] at hcast
+      linarith
+    · exact hkpos
+  have hρ_pos : 0 < ρ := by
+    change 0 < (k : ℝ) / n
+    positivity
+  have hρ_le1 : ρ ≤ 1 := by
+    change (k : ℝ) / n ≤ 1
+    rw [div_le_one (by exact_mod_cast hn_pos : (0 : ℝ) < n)]
+    exact_mod_cast hk_le
+  exact mds_johnson_lambda_le_of_rate_distance (C : Set (ι → F)) ρ η
+    hρ_pos hρ_le1 hη_pos hbridge
 
 /-! ## Consumers
 
@@ -952,20 +979,21 @@ delivered in the `ListDecodable.listDecodable` shape that the STIR/WHIR developm
 
   `|Λ(RS[F, dom, n], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
 
-Immediate from `mds_johnson_lambda_le` and the pre-existing `ReedSolomon.isMDS_code`: RS codes
-are MDS, which is exactly the hypothesis C3.3 needs. This is the list-size bound the paper
-motivates C3.3 with ("MDS codes, which include the important class of interleaved Reed–Solomon
-codes"); the *interleaved* case needs the module-alphabet form of the rate-distance bridge and
-lands with its consumers in a later split. -/
+Immediate from the field wrapper `mds_johnson_lambda_le` and the pre-existing
+`ReedSolomon.isMDS_code`. The headline theorem
+`mds_johnson_lambda_le_of_rate_distance` is already alphabet-generic; interleaved
+Reed–Solomon consumers instantiate it with their alphabet-normalized rate and corresponding
+MDS rate-distance equation. -/
 theorem rs_lambda_le_johnson_mds
-    {ι : Type} [Fintype ι] [Nonempty ι] [Inhabited ι]
-    {F : Type} [Field F] [Finite F]
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [Finite F]
     {n : ℕ} [NeZero n] (dom : ι ↪ F) (η : ℝ) (hη_pos : 0 < η) :
     let ρ : ℝ := (Module.finrank F (ReedSolomon.code dom n) : ℝ) / Fintype.card ι
     (Lambda ((ReedSolomon.code dom n : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
   -- `DecidableEq F` is needed only to *state* `IsMDS` inside the proof, not in the conclusion.
   classical
+  letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
   exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
 
 /-- **ABF26 Theorem 3.2 in `listDecodable` shape.** The Johnson bound, transferred through
@@ -974,7 +1002,7 @@ development consumes (`ArkLib/ProofSystem/Stir/MainThm.lean`'s `CodeParams.h_lis
 `Stir/OutOfDomSmpl.lean`'s `h_decodable`), at any radius `δ` below the Johnson radius. -/
 theorem johnson_listDecodable
     {ι : Type*} [Fintype ι] [Nonempty ι]
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
     listDecodable C δ (ℓ : ℝ) :=
@@ -988,7 +1016,7 @@ This is the shape the in-tree `listDecodable` consumers take: their list size is
 `(ℓ : ℝ) ≤ l` numerically — no further cast bridge needed. -/
 theorem johnson_listDecodable_of_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
-    {α : Type} [Fintype α] [DecidableEq α]
+    {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
     {r : ℝ} (hr : (ℓ : ℝ) ≤ r) :

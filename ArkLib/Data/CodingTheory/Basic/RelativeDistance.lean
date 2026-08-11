@@ -12,6 +12,11 @@ import ArkLib.Data.CodingTheory.Basic.Distance
 
 This module contains relative Hamming distance, relative distance-to-code, and the
 finite-range/computable variants used by the coding-theory development.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26] (§2-§3 minimum-relative-distance convention)
 -/
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
@@ -644,13 +649,13 @@ lemma minRelHammingDistCode_le_one
 
 /-- **Bridge: `Code.minDist C / n = δᵣ C` (cast to `ℚ`).**
 
-The raw `Code.minDist C / Fintype.card ι` form (used in ABF26 §3 theorems
+The raw `Code.minDist C / Fintype.card ι` form (used in [ABF26] §3 theorems
 T3.2, C3.3, etc. as `δ_min`) coincides with the existing `minRelHammingDistCode C =
 δᵣ C` defined via `Finset.min'` over the rational-valued image. Both equal
 `min { hammingDist u v / n | u, v ∈ C, u ≠ v }`.
 
 **What it is for.** It lets a statement written in either idiom be discharged against the
-other: rewrite left-to-right to replace a raw `Code.minDist C / n` quotient (the form ABF26
+other: rewrite left-to-right to replace a raw `Code.minDist C / n` quotient (the form [ABF26]
 §3 uses) by `δᵣ C` and then reason with the `minRelHammingDistCode_*` lemmas above, or
 right-to-left to reduce a `δᵣ C` goal to integer `Code.minDist` arithmetic.
 

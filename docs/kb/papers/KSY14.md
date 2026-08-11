@@ -69,11 +69,10 @@ Lean transcription.
 
 ## Open Formalization Gaps
 
-- **Dimension and minimum distance of `umCode` are unproved**, and the module currently has no
-  in-repo consumers beyond its own `s = 1` collapse lemma.
-- The **multiplicity half of `ABF26` Theorem 2.18 / `GK16` Theorem 14** is deferred: the code
-  exists but the multiplicity-Wronskian argument does not, so the subspace-design theorem covers
-  folded Reed–Solomon only.
+- **Minimum distance of `umCode` is unproved.** Its exact saturated dimension is
+  `dim_umCode_eq_min`, and `CodingTheory.um_is_subspaceDesign_gk16` is now a substantive
+  in-repo consumer proving the univariate-multiplicity half of ABF26 Theorem 2.18 via GK16's
+  classical Wronskian argument.
 - KSY14's actual results — local decodability, sublinear-time decoding, the high-rate LDC
   parameters — are entirely out of scope, and there is no ArkLib abstraction for local decoding to
   hang them on.

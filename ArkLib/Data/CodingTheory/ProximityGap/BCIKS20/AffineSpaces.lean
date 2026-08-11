@@ -130,30 +130,6 @@ theorem jointAgreement_implies_linSpan_proximity {ι : Type} [Fintype ι] [Nonem
       (u := ∑ i, c i • W i) (C := (C : Set (ι → F))) (δ := δ)).2
       ⟨v', hv'_mem, hdist⟩
 
-theorem prob_uniform_congr_equiv {α : Type} [Fintype α] [Nonempty α]
-    (e : α ≃ α) (P : α → Prop) :
-    Pr_{let x ←$ᵖ α}[P (e x)] = Pr_{let x ←$ᵖ α}[P x] := by
-  classical
-  rw [prob_uniform_eq_card_filter_div_card (F := α) (P := fun x => P (e x))]
-  rw [prob_uniform_eq_card_filter_div_card (F := α) (P := P)]
-  have hcard : (Finset.filter (fun x : α => P (e x)) Finset.univ).card =
-      (Finset.filter (fun x : α => P x) Finset.univ).card := by
-    classical
-    refine Finset.card_bij (s := Finset.filter (fun x : α => P (e x)) Finset.univ)
-      (t := Finset.filter (fun x : α => P x) Finset.univ)
-      (i := fun a ha => e a) ?_ ?_ ?_
-    · intro a ha
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
-      simp [Finset.mem_filter, ha]
-    · intro a1 ha1 a2 ha2 h
-      exact e.injective h
-    · intro b hb
-      refine ⟨e.symm b, ?_, ?_⟩
-      · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb
-        simp [Finset.mem_filter, hb]
-      · simp
-  simp [hcard]
-
 theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
@@ -179,7 +155,7 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
         ext i
         simp [add_comm] }
   simpa [shiftEquiv] using
-    (prob_uniform_congr_equiv (α := (U : Type)) (e := shiftEquiv)
+    (ProbabilityTheory.Pr_uniform_equiv (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
       (P := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
 theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [Nonempty ι]

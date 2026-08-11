@@ -17,12 +17,14 @@ In what follows we reference theorems from [listdecoding] by default.
 
 * [Guruswami, V. and others, *Algorithmic results in list decoding*][listdecoding]
 * [Guruswami, V., Rudra, A., and Sudan, M., *Essential coding theory*][codingtheory]
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26] (Definition 3.1)
 -/
 
 open Fintype Finset Real
 
 variable {n : ℕ}
-         {F : Type} [Fintype F] [DecidableEq F]
+         {F : Type*} [Fintype F] [DecidableEq F]
          {B : Finset (Fin n → F)} {v : Fin n → F}
 
 /-- The denominator of the bound from Theorem 3.1. -/
@@ -48,12 +50,12 @@ def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :
   let frac := q / (q - 1)
   (1 - frac * d / n) < (1 - frac * e / n) ^ 2
 
-/-- The function used for the `q`-ary Johnson Bound. This is ABF26 Definition 3.1's `J_q`. -/
+/-- The function used for the `q`-ary Johnson Bound. This is [ABF26] Definition 3.1's `J_q`. -/
 noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
 
-/-- **ABF26 Definition 3.1, `J`.** The asymptotic ("capacity") Johnson bound
+/-- **[ABF26] Definition 3.1, `J`.** The asymptotic ("capacity") Johnson bound
 
   `J(δ) := 1 - √(1 - δ)`
 
@@ -76,7 +78,7 @@ lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b �
   ring_nf
   simp_all
 
-/-- **ABF26 Definition 3.1, `J(δ) ≤ J_q(δ)`.** The asymptotic Johnson bound
+/-- **[ABF26] Definition 3.1, `J(δ) ≤ J_q(δ)`.** The asymptotic Johnson bound
 `Jcap δ = 1 - √(1 - δ)` is at most the `q`-ary bound `J q δ`.
 
 (The bound `1 - √(1-δ)` is the `q → ∞` *capacity* bound, not the binary Johnson bound —

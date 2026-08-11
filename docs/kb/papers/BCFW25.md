@@ -39,8 +39,9 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
-  — `ExtensionFieldPresentation`, `IsSystematic`, `extensionCode`, `extensionCodeSubmodule`,
-  `lambda_extensionCode_eq_lambda_interleaved`.
+  — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its systematic identity and
+  range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation independence, DP25
+  distance preservation, and `lambda_extensionCode_eq_lambda_interleaved`.
 
 ## Version Notes
 
@@ -67,26 +68,21 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
   unused instance binders behind two file-scope linter suppressions; all were removed in the
   same review's fix sweep — the current theorem carries no window hypotheses and no
   suppressions.
-- **The systematic-presentation consequence is not expressible.** `BCFW25` §D.2 (and `ABF26`
-  Definition 2.20) rely on `C_F(ψ(v)) = ψ(C_B(v))` for a systematic presentation — a statement
-  about the **encoder** `F^k → F^n`. ArkLib models only the code *image* (`Set (ι → F)`), so this
-  cannot be written down, and `IsSystematic` is defined but has zero consumers anywhere in the
-  repository. The membership form ("`ψ ∘ c ∈ extensionCode` for `c ∈ C_B`") is *not* a faithful
-  stand-in, because it holds without systematicity.
+- **Both the encoder and image formulations are present.** `extensionEncode` states D2.20 at
+  encoder level; `extensionEncode_comp_algebraMap_of_isSystematic` proves the §D.2 systematic
+  identity, and `range_extensionEncode` connects its image to `extensionCode`. The separate
+  image-level systematic membership theorem is retained as a reusable consequence.
 - **The extension code provably does not depend on the presentation.**
   `extensionCodeSubmodule P C_B = Submodule.span F ((fun c i ↦ algebraMap B F (c i)) '' C_B)`
   (compiled), from which `extensionCode P C_B = extensionCode P' C_B` for any two presentations
   `P`, `P'`. So the `ExtensionFieldPresentation` apparatus is optional for Definition 2.20, and
   the long hand proof of `F`-scalar closure (`extensionCode_smul_mem`) is a one-liner from
-  `Submodule.span`. This is the mathematically informative fact about the construction and it is
-  currently invisible in the tree.
+  `Submodule.span`. These facts are exposed as `extensionCode_eq_span` and
+  `extensionCode_presentation_independent`.
 - **Mathlib overlaps.** `ExtensionFieldPresentation.coord` re-derives `Module.Basis.coord`;
   `φ` is `Basis.equivFun` (`rfl`); `ψ_injective` is `FaithfulSMul.algebraMap_injective`;
   `coord_add`/`coord_psi_smul` are `map_add`/`map_smul`. The module docstring's "no parallel
   implementation" claim is accurate for `ψ` and `φ` but not for `coord`.
-- **Docstring shape mismatch.** The module and Definition-2.20 docstrings describe `extensionCode`
-  as "the extension code `C_F : F^k → F^n`"; it is a `Set (ι → F)`, and `k` never appears in the
-  module. Same encoder-versus-image gap as above.
 - The statement uses `Code.interleavedCodeSet` raw rather than the equivalent `C ^⋈ κ` notation;
   the underlying object is the right one, so this is cosmetic.
 
@@ -96,15 +92,6 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
   linear-time accumulation prover, its security — have no ArkLib counterpart. Only the Appendix D
   coding-theory lemma is used, and adding accumulation would be a new development at the
   `ProofSystem`/`Commitments` layer, not an extension of this module.
-- An **encoder-level extension code** (`extensionEncode : (Fin k → F) → (ι → F)` built from a base
-  encoder) plus the systematic consequence
-  `IsSystematic → extensionEncode (ψ ∘ v) = ψ ∘ baseEncode v`.
-  Without it `IsSystematic` should arguably be dropped.
-- The presentation-independence bridge (`extensionCode_eq_span`) and the resulting simplification
-  of `extensionCodeSubmodule`'s closure proofs.
-- `δ_min(C_F) = δ_min(C_B)`, which `ABF26` §2.6 attributes to Diamond–Posen (`DP25`), is not
-  formalized and the tree does not claim it.
-- `ExtensionCodes.lean` has no in-repo consumers other than the generated import in `ArkLib.lean`.
 
 ## Source Access
 

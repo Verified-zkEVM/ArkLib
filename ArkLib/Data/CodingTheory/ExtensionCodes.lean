@@ -28,21 +28,19 @@ and the list size of the corresponding interleaved base code.
   `rfl`-equal to `basis.coord` — see `coord_eq_basis_coord`).
 - `ExtensionFieldPresentation.IsSystematic`: the paper's systematic condition
   `φ(ψ x) = (x, 0, …, 0)`.
+- `CodingTheory.extensionEncode` (D2.20): scalar extension of a `B`-linear base
+  encoder to extension-field messages and codewords.
 - `CodingTheory.extensionCode` (D2.20): the extension code of a base code
   `C_B ⊆ B^ι`, **as a set of words** `Set (ι → F)`.
 - `CodingTheory.extensionCodeSubmodule`: the same object packaged as an
   `F`-`Submodule` when `C_B` is a `B`-`Submodule`.
 
-**Encoder-level content is out of scope here.** ABF26 D2.20 defines `C_F` as an
-*encoder* `F^k → F^n`, whereas ArkLib (like its D2.9 sibling `interleavedCodeSet`)
-models a code by its *image*. Consequently the paper's only stated consequence of
-systematicity — `C_F(ψ(v)) = ψ(C_B(v))` for `v ∈ B^k`, used for soundness in
-[BCFW25, §D.2] — has no counterpart here: it talks about the encoder applied to a
-specific message. What *is* expressible at the image level is recorded as
-`mem_extensionCode_comp_algebraMap_iff_of_isSystematic` (the base code is exactly
-the `ψ`-rational part of the extension code). A future author who needs the
-encoder identity has to add an `extensionEncode : (Fin k → F) → (ι → F)` built
-from a base encoder first.
+ABF26 D2.20's encoder-level content is represented directly:
+`extensionEncode_comp_algebraMap_of_isSystematic` proves
+`C_F(ψ(v)) = ψ(C_B(v))`, and `range_extensionEncode` proves that its image is exactly
+`extensionCode P (LinearMap.range C_B)`. The existing image-level theorem
+`mem_extensionCode_comp_algebraMap_iff_of_isSystematic` remains useful when downstream
+code works only with code sets.
 
 ## Main statements
 
@@ -67,6 +65,14 @@ from a base encoder first.
   (`extensionCodeSubmodule`), which is the D2.20 linearity claim.
 - `mem_extensionCode_comp_algebraMap_iff_of_isSystematic`: the strongest
   image-level consequence of systematicity, `ψ ∘ c ∈ C_F ↔ c ∈ C_B`.
+- `extensionEncode_comp_algebraMap_of_isSystematic`: the encoder-level systematic
+  identity from D2.20 / [BCFW25, §D.2].
+- `extensionEncode_injective`: scalar extension preserves injectivity of the base encoder,
+  so an injective code map remains an injective code map as required by D2.5/D2.20.
+- `range_extensionEncode`: the scalar-extended encoder has precisely the extension
+  code of the base encoder's range.
+- `minDist_extensionCode` ([DP25, Theorem 3.2]): scalar extension preserves minimum
+  Hamming distance exactly.
 - `lambda_extensionCode_eq_lambda_interleaved` (L2.21, [BCFW25, Lemma D.3]):
   `|Λ(C_F, δ)| = |Λ(C_B^≡e, δ)|`. Proved in-tree via the coordinate Hamming
   isometry. ABF26 states L2.21 for `δ ∈ (0, 1)`; the Lean statement is proved
@@ -81,8 +87,7 @@ from a base encoder first.
 * [Bünz, B., Chiesa, A., Fenzi, G., and Wang, W., *Linear time accumulation
     schemes*][BCFW25] (Definition D.2 and Lemma D.3)
 * [Diamond, B. E., and Posen, J., *Succinct Arguments over Towers of Binary
-    Fields*][DP25] (Theorem 3.2, for the distance equality `δ_min(C_F) = δ_min(C_B)`
-    quoted in the L2.21 paragraph context — **not** formalised here)
+    Fields*][DP25] (Theorem 3.2, the distance equality `δ_min(C_F) = δ_min(C_B)`)
 -/
 
 namespace CodingTheory
@@ -144,10 +149,94 @@ lemma coord_algebraMap_of_isSystematic {P : ExtensionFieldPresentation B F}
 
 end ExtensionFieldPresentation
 
+/-- **ABF26 Definition 2.20 (encoder form).** Extend a `B`-linear encoder
+`encode : B^κ →ₗ[B] B^ι` to messages and codewords over `F` by applying `encode`
+independently to every coordinate in the presentation basis and then reconstructing the
+extension-field output:
+
+`C_F(v)_i = φ⁻¹ (fun j ↦ C_B (fun t ↦ φ_j(v_t))_i)`.
+
+The definition is universe-polymorphic in both the message and codeword index types. Its image
+and systematicity properties are `range_extensionEncode` and
+`extensionEncode_comp_algebraMap_of_isSystematic`. -/
+noncomputable def extensionEncode {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (v : κ → F) : ι → F :=
+  fun i ↦ P.basis.equivFun.symm (fun j ↦ encode (fun t ↦ P.coord j (v t)) i)
+
+/-- The `j`-th coordinate of an extension encoding is the base encoding of the
+`j`-th message-coordinate word. -/
+@[simp] lemma coord_extensionEncode {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (v : κ → F) (j : Fin P.e) (i : ι) :
+    P.coord j (extensionEncode P encode v i) =
+      encode (fun t ↦ P.coord j (v t)) i := by
+  change P.basis.equivFun (P.basis.equivFun.symm
+    (fun j ↦ encode (fun t ↦ P.coord j (v t)) i)) j = _
+  rw [P.basis.equivFun.apply_symm_apply]
+
+/-- Scalar extension preserves injectivity of the base encoder. In particular, when
+`encode` is a code in [ABF26]'s encoder convention (an injective linear map),
+`extensionEncode P encode` is again an injective encoding map.
+
+The proof is basis-coordinatewise: equality of extension codewords gives equality of every
+base encoding of a coordinate row; injectivity of `encode` then recovers all message
+coordinates. -/
+theorem extensionEncode_injective {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (hencode : Function.Injective encode) :
+    Function.Injective (extensionEncode P encode) := by
+  intro v w hvw
+  funext t
+  apply P.basis.equivFun.injective
+  funext j
+  have hout : encode (fun u ↦ P.coord j (v u)) =
+      encode (fun u ↦ P.coord j (w u)) := by
+    funext i
+    have hij := congrArg (P.coord j) (congrFun hvw i)
+    simpa only [coord_extensionEncode] using hij
+  exact congrFun (hencode hout) t
+
+/-- **ABF26 Definition 2.20 / [BCFW25, §D.2], systematic encoder identity.**
+For a systematic presentation, extending an embedded base-field message and then encoding is
+the same as base-encoding first and embedding the resulting codeword:
+
+`C_F (ψ ∘ v) = ψ ∘ C_B(v)`.
+
+Linearity of the base encoder supplies the required `encode 0 = 0` in the non-leading
+coordinates. -/
+theorem extensionEncode_comp_algebraMap_of_isSystematic {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    {P : ExtensionFieldPresentation B F} (hP : P.IsSystematic)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (v : κ → B) :
+    extensionEncode P encode ((algebraMap B F) ∘ v) =
+      (algebraMap B F) ∘ encode v := by
+  funext i
+  apply P.basis.equivFun.injective
+  funext j
+  change P.coord j (extensionEncode P encode ((algebraMap B F) ∘ v) i) =
+    P.coord j (((algebraMap B F) ∘ encode v) i)
+  rw [coord_extensionEncode]
+  simp only [Function.comp_apply]
+  by_cases hj : j.val = 0
+  · have hin : (fun t ↦ P.coord j (algebraMap B F (v t))) = v := by
+      funext t
+      simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (v t)
+    rw [hin]
+    simpa [hj] using (P.coord_algebraMap_of_isSystematic hP j (encode v i)).symm
+  · have hin : (fun t ↦ P.coord j (algebraMap B F (v t))) = 0 := by
+      funext t
+      simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (v t)
+    rw [hin, map_zero]
+    simpa [hj] using (P.coord_algebraMap_of_isSystematic hP j (encode v i)).symm
+
 /-- **ABF26 Definition 2.20.** The *extension code* of a base code `C_B ⊆ B^ι`
 along an extension-field presentation `P`, as a **set of words** over `F` (the
-image of the paper's encoder `C_F`, in line with how ArkLib models codes; the
-encoder itself is not formalised, see the module docstring). It is defined on a
+image of the paper's encoder `extensionEncode`, in line with how ArkLib models codes;
+`range_extensionEncode` identifies the two views). It is defined on a
 vector `v : ι → F` by
 
   `v ∈ C_F ↔ ∀ j : Fin e, (fun i ↦ P.coord j (v i)) ∈ C_B`
@@ -176,6 +265,39 @@ lemma extensionCode_iff_coord_in_base
     v ∈ extensionCode P C_B ↔
       ∀ j : Fin P.e, (fun i ↦ P.coord j (v i)) ∈ C_B := by
   rfl
+
+/-- The image of the scalar-extended encoder is exactly the extension code of the base
+encoder's image. This connects ABF26 D2.20's encoder presentation to ArkLib's usual
+set-of-codewords abstraction without discarding any encoder-level content. -/
+theorem range_extensionEncode {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) :
+    Set.range (extensionEncode P encode) =
+      extensionCode P (LinearMap.range encode : Set (ι → B)) := by
+  apply Set.eq_of_subset_of_subset
+  · rintro _ ⟨v, rfl⟩ j
+    refine ⟨fun t ↦ P.coord j (v t), ?_⟩
+    funext i
+    exact (coord_extensionEncode P encode v j i).symm
+  · intro w hw
+    have hrows : ∀ j : Fin P.e, ∃ vj : κ → B,
+        encode vj = fun i ↦ P.coord j (w i) := by
+      intro j
+      exact hw j
+    choose v hv using hrows
+    refine ⟨fun t ↦ P.basis.equivFun.symm (fun j ↦ v j t), ?_⟩
+    funext i
+    apply P.basis.equivFun.injective
+    funext j
+    change P.coord j (extensionEncode P encode
+      (fun t ↦ P.basis.equivFun.symm (fun j ↦ v j t)) i) = P.coord j (w i)
+    rw [coord_extensionEncode]
+    have hin : (fun t ↦ P.coord j (P.basis.equivFun.symm (fun j ↦ v j t))) = v j := by
+      funext t
+      change P.basis.equivFun (P.basis.equivFun.symm (fun j ↦ v j t)) j = v j t
+      rw [P.basis.equivFun.apply_symm_apply]
+    rw [hin, hv]
 
 /-- **`extensionCode` is closed under addition** when `C_B` is. Immediate from
 additivity of the (linear) coordinate maps. -/
@@ -363,10 +485,10 @@ code is exactly the `ψ`-rational part of the extension code:
 
   `ψ ∘ c ∈ C_F ↔ c ∈ C_B`   for `c : ι → B`.
 
-This is as close as the image-level modelling gets to [ABF26, D2.20] /
-[BCFW25, §D.2]'s `C_F(ψ(v)) = ψ(C_B(v))`, which is a statement about *encoders* and
-is therefore not expressible here (see the module docstring). Note the `←`
-direction is where systematicity does real work for the coordinates `j ≠ 0`: it
+The encoder-level identity itself is
+`extensionEncode_comp_algebraMap_of_isSystematic`; this image-level form is convenient
+for consumers that store only the code set. Note the `←` direction is where
+systematicity does real work for the coordinates `j ≠ 0`: it
 pins them to `0`, so no assumption beyond `0 ∈ C_B` is needed. -/
 theorem mem_extensionCode_comp_algebraMap_iff_of_isSystematic {ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
@@ -393,6 +515,60 @@ theorem mem_extensionCode_comp_algebraMap_iff_of_isSystematic {ι : Type*}
         simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (c i)
       rw [hfun]
       exact C_B.zero_mem
+
+/-- The presentation-coordinate equivalence is a Hamming isometry carrying an extension
+code onto the corresponding interleaved base code, so their minimum distances agree. This
+is the metric bridge shared by [DP25, Theorem 3.2] and the list-size isometry in L2.21. -/
+theorem minDist_extensionCode_eq_interleaved
+    {ι : Type*} [Fintype ι]
+    {B F : Type*} [Field B] [Field F] [Algebra B F] [DecidableEq B] [DecidableEq F]
+    (P : ExtensionFieldPresentation B F) (C_B : Set (ι → B)) :
+    Code.minDist (extensionCode P C_B) =
+      Code.minDist (Code.interleavedCodeSet (κ := Fin P.e) C_B) := by
+  let Ψ : (ι → F) ≃ (ι → Fin P.e → B) :=
+    Equiv.piCongrRight (fun _ => P.basis.equivFun.toEquiv)
+  have hφinj : Function.Injective (P.basis.equivFun : F → (Fin P.e → B)) :=
+    P.basis.equivFun.injective
+  have hham : ∀ x y : ι → F, hammingDist (Ψ x) (Ψ y) = hammingDist x y := by
+    intro x y
+    exact hammingDist_comp (fun (_ : ι) => (P.basis.equivFun : F → (Fin P.e → B)))
+      (x := x) (y := y) (fun _ => hφinj)
+  have hmem : ∀ v : ι → F,
+      (Ψ v ∈ Code.interleavedCodeSet (κ := Fin P.e) C_B) ↔ v ∈ extensionCode P C_B := by
+    intro v
+    rfl
+  unfold Code.minDist
+  congr 1
+  ext d
+  constructor
+  · rintro ⟨u, hu, v, hv, huv, hdist⟩
+    refine ⟨Ψ u, (hmem u).2 hu, Ψ v, (hmem v).2 hv, Ψ.injective.ne huv, ?_⟩
+    rw [hham]
+    exact hdist
+  · rintro ⟨u, hu, v, hv, huv, hdist⟩
+    refine ⟨Ψ.symm u, (hmem (Ψ.symm u)).1 (by simpa),
+      Ψ.symm v, (hmem (Ψ.symm v)).1 (by simpa), Ψ.symm.injective.ne huv, ?_⟩
+    have h := hham (Ψ.symm u) (Ψ.symm v)
+    have h' : hammingDist u v = hammingDist (Ψ.symm u) (Ψ.symm v) := by simpa using h
+    exact h'.symm.trans hdist
+
+/-- **[DP25, Theorem 3.2]: extension codes preserve minimum distance.** For a
+`B`-linear base code, scalar extension along any finite basis presentation has exactly the
+base code's minimum (block) Hamming distance:
+
+`minDist(C_F) = minDist(C_B)`.
+
+No systematicity hypothesis is needed. The proof factors through the coordinate Hamming
+isometry and the general theorem that nonempty interleaving preserves minimum distance. -/
+theorem minDist_extensionCode
+    {ι : Type*} [Fintype ι]
+    {B F : Type*} [Field B] [Field F] [Algebra B F] [DecidableEq B] [DecidableEq F]
+    (P : ExtensionFieldPresentation B F) (C_B : Submodule B (ι → B)) :
+    Code.minDist (extensionCode P (C_B : Set (ι → B))) =
+      Code.minDist (C_B : Set (ι → B)) := by
+  letI : Nonempty (Fin P.e) := Fin.pos_iff_nonempty.mp P.e_pos
+  rw [minDist_extensionCode_eq_interleaved]
+  exact Code.minDist_interleavedCodeSet (κ := Fin P.e) (C_B : Set (ι → B))
 
 /-- **ABF26 Lemma 2.21 [BCFW25, Lemma D.3].** The list size of an extension code equals
 the list size of the corresponding interleaved base code. For a base code

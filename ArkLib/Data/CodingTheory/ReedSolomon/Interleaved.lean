@@ -20,9 +20,10 @@ codewords, arranged column-wise.
 
 ## Main statements
 
-- `ReedSolomon.Interleaved.dim_irsCode` — `Module.finrank F (irsCode domain k s) = s * (k / s)`,
-  a two-line corollary of the general `Code.finrank_moduleInterleavedCode` together with
-  `ReedSolomon.dim_eq_deg_of_le`.
+- `ReedSolomon.Interleaved.dim_irsCode_eq_min` — the assumptionless exact dimension
+  `s * min (k / s) |L|`.
+- `ReedSolomon.Interleaved.dim_irsCode` — its full-dimension-regime specialization
+  `Module.finrank F (irsCode domain k s) = s * (k / s)`.
 - `ReedSolomon.Interleaved.dim_irsCode_of_dvd` — the paper-shaped specialisation
   `Module.finrank F (irsCode domain k s) = k` under `s ∣ k`.
 
@@ -61,10 +62,19 @@ noncomputable def irsCode {ι : Type*} {F : Type*} [Semiring F]
     (domain : ι ↪ F) (k s : ℕ) : Submodule F (ι → Fin s → F) :=
   (ReedSolomon.code domain (k / s)) ^⋈ (Fin s)
 
-/-- **Dimension of `irsCode`.** Equal to `s * (k / s)` — interleaving multiplies the underlying
-RS code's dimension by the interleaving factor (`Code.finrank_moduleInterleavedCode`), and the
-underlying `RS[F, L, k/s]` attains its full dimension `k / s` in the Singleton-tight regime
-`k / s ≤ Fintype.card ι` (`ReedSolomon.dim_eq_deg_of_le`).
+/-- **Exact dimension of `irsCode`, for every parameter choice.** Interleaving multiplies the
+underlying RS dimension by `s` (`Code.finrank_moduleInterleavedCode`), while the base code has
+dimension `min (k / s) |L|` (`ReedSolomon.dim_eq_min_deg_card`). Thus the exact answer is
+`s * min (k / s) |L|`, including the saturated regime. -/
+lemma dim_irsCode_eq_min {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    (domain : ι ↪ F) (k s : ℕ) :
+    Module.finrank F (irsCode domain k s) = s * min (k / s) (Fintype.card ι) := by
+  rw [irsCode, Code.finrank_moduleInterleavedCode, Fintype.card_fin]
+  exact congrArg (s * ·) (ReedSolomon.dim_eq_min_deg_card (n := k / s) (α := domain))
+
+/-- **Full-dimension regime for `irsCode`.** The exact formula `dim_irsCode_eq_min`
+simplifies to `s * (k / s)` when the base RS code has enough evaluation points,
+`k / s ≤ |L|`.
 
 Note the `Nat` truncation in `k / s`: the value is `k` on the nose only when `s ∣ k`, see
 `dim_irsCode_of_dvd`. -/
@@ -72,8 +82,7 @@ lemma dim_irsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ)
     (h_rs_full : k / s ≤ Fintype.card ι) :
     Module.finrank F (irsCode domain k s) = s * (k / s) := by
-  rw [irsCode, Code.finrank_moduleInterleavedCode, Fintype.card_fin]
-  exact congrArg (s * ·) (ReedSolomon.dim_eq_deg_of_le (n := k / s) (α := domain) h_rs_full)
+  rw [dim_irsCode_eq_min domain k s, min_eq_left h_rs_full]
 
 /-- Paper-shaped dimension formula in the divisible case: when `s ∣ k` (the implicit
 convention of ABF26 Definition 2.13, satisfied by every instantiation in the paper),

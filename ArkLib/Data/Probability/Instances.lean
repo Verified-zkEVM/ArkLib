@@ -12,7 +12,13 @@ import CompPoly.Data.Fin.BigOperators
 import CompPoly.Data.Nat.Bitwise
 import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
-/-! # Probability Instances -/
+/-! # Probability Instances
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26] (Lemma 2.1 and §6.4.1)
+-/
 
 
 open ProbabilityTheory Filter NNReal Finset Function Real
@@ -569,7 +575,7 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
       (n : ℝ≥0) / (Fintype.card R : ℝ≥0) :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
-/-- **Polynomial identity lemma in paper-individual-degree shape** (ABF26 L2.1).
+/-- **Polynomial identity lemma in paper-individual-degree shape** ([ABF26] L2.1).
 
 For a non-zero `m`-variate polynomial `P` of *individual* degree `< d` in each variable
 (so `P ∈ F^<d[X_1, …, X_m]`):
@@ -655,11 +661,11 @@ theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     rw [h_empty, Finset.card_empty]
     simp
 
-/-! ## Linear-form collision bounds (ABF26 §6.4.1 counting inputs)
+/-! ## Linear-form collision bounds ([ABF26] §6.4.1 counting inputs)
 
-Collision-probability bounds feeding the two counting steps of the proof of ABF26
+Collision-probability bounds feeding the two counting steps of the proof of [ABF26]
 Lemma 6.12, the toy-protocol list-decoding lower-bound attack (formalised in a later split
-of the ABF26 development).
+of the [ABF26] development).
 
 The proof of Lemma 6.12 applies Claim B.1
 (`Probability.exists_large_image_of_pairwise_collision_bound`) **once**, not twice: the
@@ -704,7 +710,7 @@ For `d : Fin k → F` nonzero, the linear form `v ↦ ∑ⱼ dⱼ · vⱼ` evalu
 with probability exactly `1/|F|` over a uniformly random `v ←$ F^k`: its kernel
 is a hyperplane of `|F|^{k-1}` points out of `|F|^k`.
 
-The `≤`-form actually consumed by the ABF26 §6.4.1 counting argument is
+The `≤`-form actually consumed by the [ABF26] §6.4.1 counting argument is
 `prob_dotProduct_eq_zero_le` below. -/
 theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
@@ -757,7 +763,7 @@ theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k 
   ring
 
 /-- `≤`-corollary of `prob_dotProduct_eq_zero_eq_inv_card`, in the shape consumed by the
-ABF26 §6.4.1 collision counting (and matching the `≤ 1/|F|` form printed in the paper):
+[ABF26] §6.4.1 collision counting (and matching the `≤ 1/|F|` form printed in the paper):
 a nonzero `F`-linear form `v ↦ ∑ⱼ dⱼ · vⱼ` vanishes with probability at most `1/|F|`
 over a uniformly random `v ←$ F^k`. -/
 theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
@@ -767,7 +773,7 @@ theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
 /-- **A predicate with `≤ 1` satisfying value has uniform probability `≤ 1/|F|`.**
-This is the uniqueness input to the *pigeonhole* choice of `µ₁` in ABF26 Lemma 6.12, where
+This is the uniqueness input to the *pigeonhole* choice of `µ₁` in [ABF26] Lemma 6.12, where
 the affine collision equation in `µ₁` has at most one solution — it is not a second
 application of Claim B.1 (see the section docstring above: the paper applies Claim B.1
 once, and the `µ₁` step needs full injectivity, which B.1 cannot give). -/
