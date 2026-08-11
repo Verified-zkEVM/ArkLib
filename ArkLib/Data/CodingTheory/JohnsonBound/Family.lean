@@ -16,10 +16,11 @@ Extensions to `JohnsonBound/Basic.lean` matching the paper-shaped statements fro
 ABF26 §3.1 (Arnon-Boneh-Fenzi, *Open Problems in List Decoding and Correlated
 Agreement*, 2026).
 
-Two of ABF26 Definition 3.1's three Johnson functions already live in
-[`JohnsonBound/Basic.lean`](Basic.lean): `JohnsonBound.J q δ` is the paper's `J_q(δ)`, and
-`JohnsonBound.Jcap δ = 1 - √(1 - δ)` (stated there, next to `J`, as the conclusion of
-`sqrt_le_J`) is the paper's asymptotic `J(δ)`. This file adds the remaining member:
+Two of ABF26 Definition 3.1's three Johnson functions already live upstream:
+`JohnsonBound.J q δ`, in [`JohnsonBound/Lemmas.lean`](Lemmas.lean), is the paper's `J_q(δ)`,
+and `JohnsonBound.Jcap δ = 1 - √(1 - δ)`, in [`JohnsonBound/Basic.lean`](Basic.lean) (the
+conclusion of `sqrt_le_J` there), is the paper's asymptotic `J(δ)`. This file adds the
+remaining member:
 
 - `JohnsonBound.Jqℓ q ℓ δ` — paper's `J_{q,ℓ}(δ)`, with the `(ℓ-1)/ℓ` factor inside
   the square root (matching the `.tex`, ~line 1347). Since `1 - 1/q = 1/(q/(q-1))`, the

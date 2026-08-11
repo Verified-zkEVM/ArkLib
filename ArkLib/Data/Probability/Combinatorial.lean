@@ -185,13 +185,22 @@ The raw indicator sum keeps this theorem universe-polymorphic: ArkLib's `Pr_` no
 
 ## Use in ABF26 Lemma 6.12
 
-ABF26's proof of Lemma 6.12 applies this claim **exactly once**, to obtain a `v ∈ F^k`
-with `|S_v| ≥ |S| / (1 + (|S| − 1)/|F|)`. The *second* counting step of that proof —
-choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is injective — is a plain pigeonhole
-and needs a different argument: it requires **full** injectivity (hence `|Γ| ≥ |S_v|`),
-which this claim cannot deliver, since its conclusion is only
-`|φ(S)| ≥ |S| / (1 + (|S| − 1) · ε)`. Substituting a second application of Claim B.1 for
-that pigeonhole would prove a bound strictly weaker than Lemma 6.12 as printed.
+The pinned tex applies this claim **twice** in the proof of Lemma 6.12, once per counting
+step. First, with `φ_v(F₁, F₂) := (⟨F₁, v⟩, ⟨F₂, v⟩)`: distinct `F₁, F₂ ∈ S` collide under a
+uniform `v` with probability `≤ 1/|F|` (`Probability.prob_dotProduct_eq_zero_le`), so there
+is a `v ∈ F^k` with `|S_v| ≥ |F| · N / (|F| + N − 1)`, where `N := |S|`. Second, with `µ₂`
+fixed outside the second coordinates of `S_v` and the map `(a₁, a₂) ↦ (µ₁ − a₁)/(a₂ − µ₂)`:
+distinct points of `S_v` have equal image for at most one `µ₁`, so a uniform `µ₁` collides
+them with probability `≤ 1/|F|` (`Probability.prob_uniform_le_inv_of_card_le_one`), and
+there is a `µ₁` whose image set has size `≥ |F| · |S_v| / (|F| + |S_v| − 1)`. Composing the
+two applications — using monotonicity of `z ↦ z / (|F| + z − 1)` and one final relaxation —
+yields the printed soundness error `|Λ| / (|F| + 2|Λ|)`.
+
+The published PDF of ABF26 runs the second step differently: a single application of this
+claim, followed by a pigeonhole choosing `µ₁` outside the set `B` of the at most
+`C(|S_v|, 2)` bad values, which makes the map **fully** injective; it prints the weaker
+`|Λ| / (|F| + |Λ| − 1)`. The pinned tex has since been revised to the two-application form
+above, and that is the form these lemmas serve.
 
 ## Proof sketch (contradiction-form, avoids Jensen)
 

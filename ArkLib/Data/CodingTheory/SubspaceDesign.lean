@@ -91,6 +91,21 @@ def IsSubspaceDesign {ι : Type*} [Fintype ι]
         Fintype.card ι ≤
       Module.finrank F A * τ r
 
+/-- **Monotonicity in the profile.** A `τ₁`-subspace design is a `τ₂`-subspace design for
+every pointwise-larger profile `τ₂`, because the design bound
+`… ≤ finrank A * τ r` is monotone in `τ r` (`finrank A ≥ 0`).
+
+This is what lets a downstream consumer use the concrete profile produced by a
+construction (for instance the ABF26 Theorem 2.18 profile of
+`um_is_subspaceDesign_gk16`) at whatever coarser profile its own statement is phrased
+with, without re-running the construction or re-opening this file. -/
+theorem IsSubspaceDesign.mono_tau {ι : Type*} [Fintype ι]
+    {F : Type*} [Field F] {s : ℕ} {τ₁ τ₂ : ℕ → ℝ}
+    {C : Submodule F (ι → Fin s → F)}
+    (h : IsSubspaceDesign s τ₁ C) (hτ : ∀ r, τ₁ r ≤ τ₂ r) :
+    IsSubspaceDesign s τ₂ C := fun r A hAC hAr =>
+  (h r A hAC hAr).trans (mul_le_mul_of_nonneg_left (hτ r) (Nat.cast_nonneg _))
+
 /-- **Bridge: kernel of the `i`-th projection equals the comprehension `{a | a i = 0}`.**
 
 The subspace `A_i := {a ∈ A : a_i = 0^s}` from the paper's `IsSubspaceDesign` definition
@@ -894,8 +909,10 @@ one; the substantive Wronskian argument runs only in the unsaturated branch.
 
 Unlike the shared hypothesis printed in ABF26, no assumption `|F| > n` is needed for this
 half. The embedding `domain : ι ↪ F` already supplies the only required property of the
-evaluation points: distinctness. The characteristic assumption is the sharp source
-condition `k ≤ ringChar F` from ABF26 A.7/T2.18.
+evaluation points: distinctness. The characteristic assumption is the source condition
+`char F ≥ k` of ABF26 A.7/T2.18, stated in the weaker form
+`ringChar F = 0 ∨ k ≤ ringChar F` so that characteristic-zero fields — for which the
+argument goes through unchanged — are not excluded by `ringChar F = 0`.
 
 **Proof.** Lift a test subspace and each of its block kernels through the injective
 multiplicity encoder. For a basis of the resulting polynomial space, its classical
@@ -911,7 +928,7 @@ which implies the stated ABF26 profile. -/
 theorem um_is_subspaceDesign_gk16
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F]
-    (domain : ι ↪ F) (k s : ℕ) (hchar : k ≤ ringChar F) :
+    (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
     let τ : ℕ → ℝ := fun r ↦
       if r ∈ Finset.Icc 1 s then
         s * (LinearCode.alphabetRate
@@ -1050,7 +1067,7 @@ theorem um_is_subspaceDesign_gk16
   have hWne : W ≠ 0 := by
     rw [hWdef, hPdef]
     exact Polynomial.classicalWronskian_ne_zero_of_basis bas
-      (fun j => hPnatDegree j) (Or.inr hchar)
+      (fun j => hPnatDegree j) hchar
   have hWdegle : W.natDegree ≤ σ * (k - 1) :=
     Polynomial.natDegree_classicalWronskian_le σ P (k - 1) (fun j => by
       have := hPnatDegree j

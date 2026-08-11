@@ -11,8 +11,8 @@ namespace JohnsonBound
 
 open Real Finset Fintype
 
-/-- The `q`-ary Johnson bound function: `J'(q, δ) = ((q-1)/q) · (1 - √(1 - (q/(q-1)) · δ))`. -/
-noncomputable def J' (q δ : ℚ) : ℝ :=
+/-- The function used for the `q`-ary Johnson Bound. This is [ABF26] Definition 3.1's `J_q`. -/
+noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
 
@@ -476,13 +476,13 @@ lemma johnson_hyp_implies_div_ineq {n d e : ℕ}
   field_simp at *
   exact_mod_cast h_mul
 
-/-- The ratio `e/n` cannot equal `J'(q, d/n)` under the Johnson hypothesis. -/
+/-- The ratio `e/n` cannot equal `J(q, d/n)` under the Johnson hypothesis. -/
 lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
     (hn_pos : 0 < n) (hd_pos : 0 < d) (hq : 1 < q)
     (h_muln : ((e : ℚ) / n : ℝ) ≤ 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt)
-    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J' q (d / n))
+    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J q (d / n))
     (hqx : q / (q - 1) * (d / n) ≤ 1) :
-    ((e : ℚ) / n : ℝ) ≠ J' q (d / n) := by
+    ((e : ℚ) / n : ℝ) ≠ J q (d / n) := by
   intro h_eq
   set δ := (d : ℚ) / n
   set frac := q / (q - 1)

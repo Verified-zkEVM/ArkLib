@@ -667,22 +667,22 @@ Collision-probability bounds feeding the two counting steps of the proof of [ABF
 Lemma 6.12, the toy-protocol list-decoding lower-bound attack (formalised in a later split
 of the [ABF26] development).
 
-The proof of Lemma 6.12 applies Claim B.1
-(`Probability.exists_large_image_of_pairwise_collision_bound`) **once**, not twice: the
-second counting step — choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is injective —
-is a plain pigeonhole and needs a different argument, because it requires *full*
-injectivity, which Claim B.1 cannot supply (B.1 only ever yields
-`|φ(S)| ≥ |S| / (1 + (|S| − 1) · ε)`).
+In the pinned tex, the proof of Lemma 6.12 applies Claim B.1
+(`Probability.exists_large_image_of_pairwise_collision_bound`) **twice**, once per counting
+step, and each application needs its own `≤ 1/|F|` pairwise-collision bound; those two
+bounds are the two theorems below. (The published PDF instead runs the second step as a
+pigeonhole, choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is *fully* injective, and
+prints the weaker `|Λ| / (|F| + |Λ| − 1)` in place of the tex's `|Λ| / (|F| + 2|Λ|)`.)
 
 * `Pr_map_eq` — a pushforward probability identity (change of variables for a
   `PMF.map`), used to reduce `Pr` over the distribution of collision maps `φ_v`
   to `Pr` over the uniform sampling of `v`.
 * `prob_dotProduct_eq_zero_le` — a nonzero `F`-linear form vanishes with
-  probability `≤ 1/|F|`: the pairwise-collision hypothesis of the single Claim-B.1
-  application.
+  probability `≤ 1/|F|`: the pairwise-collision hypothesis of the **first** Claim-B.1
+  application, the one producing a `v` with `|S_v|` large.
 * `prob_uniform_le_inv_of_card_le_one` — a predicate with at most one satisfying
-  value has uniform-sampling probability `≤ 1/|F|`: the uniqueness input to the
-  pigeonhole choice of `µ₁`, *not* a second Claim-B.1 application.
+  value has uniform-sampling probability `≤ 1/|F|`: the pairwise-collision hypothesis of
+  the **second** Claim-B.1 application, the one producing a `µ₁` with large image set.
 -/
 
 /-- **Pushforward probability (change of variables).** The probability of an event
@@ -773,10 +773,12 @@ theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
 /-- **A predicate with `≤ 1` satisfying value has uniform probability `≤ 1/|F|`.**
-This is the uniqueness input to the *pigeonhole* choice of `µ₁` in [ABF26] Lemma 6.12, where
-the affine collision equation in `µ₁` has at most one solution — it is not a second
-application of Claim B.1 (see the section docstring above: the paper applies Claim B.1
-once, and the `µ₁` step needs full injectivity, which B.1 cannot give). -/
+This is the pairwise-collision hypothesis of the **second** Claim-B.1 application in
+[ABF26] Lemma 6.12 (see the section docstring above). With `µ₂` fixed outside the second
+coordinates of `S_v`, two distinct points of `S_v` have equal image under
+`(a₁, a₂) ↦ (µ₁ − a₁)/(a₂ − µ₂)` for at most one `µ₁` — no solution when the second
+coordinates agree, an affine equation in `µ₁` otherwise — so a uniformly random `µ₁`
+collides them with probability at most `1/|F|`. -/
 theorem prob_uniform_le_inv_of_card_le_one {F : Type} [Fintype F] [Nonempty F]
     (P : F → Prop) [DecidablePred P] (h : (Finset.univ.filter P).card ≤ 1) :
     Pr_{ let r ←$ᵖ F }[ P r ] ≤ (Fintype.card F : ENNReal)⁻¹ := by

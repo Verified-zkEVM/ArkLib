@@ -38,10 +38,10 @@ and the list size of the corresponding interleaved base code.
   `F`-`Submodule` when `C_B` is a `B`-`Submodule`.
 
 ABF26 D2.20's encoder-level content is represented directly:
-`extensionEncode_comp_algebraMap_of_isSystematic` proves
+`extensionEncode_comp_algebraMap` proves
 `C_F(ψ(v)) = ψ(C_B(v))`, and `range_extensionEncode` proves that its image is exactly
-`extensionCode P (LinearMap.range C_B)`. The existing image-level theorem
-`mem_extensionCode_comp_algebraMap_iff_of_isSystematic` remains useful when downstream
+`extensionCode P (LinearMap.range C_B)`. The image-level theorem
+`mem_extensionCode_comp_algebraMap_iff` remains useful when downstream
 code works only with code sets.
 
 ## Main statements
@@ -65,10 +65,10 @@ code works only with code sets.
   and under `F`-scalar multiplication (when `C_B` is `B`-linear). Together they
   package `extensionCode P C_B` as a full `F`-`Submodule`
   (`extensionCodeSubmodule`), which is the D2.20 linearity claim.
-- `mem_extensionCode_comp_algebraMap_iff_of_isSystematic`: the strongest
-  image-level consequence of systematicity, `ψ ∘ c ∈ C_F ↔ c ∈ C_B`.
-- `extensionEncode_comp_algebraMap_of_isSystematic`: the encoder-level systematic
-  identity from D2.20 / [BCFW25, §D.2].
+- `mem_extensionCode_comp_algebraMap_iff`: the image-level identification of the base
+  code inside the extension code, `ψ ∘ c ∈ C_F ↔ c ∈ C_B`.
+- `extensionEncode_comp_algebraMap`: the encoder-level identity
+  `C_F(ψ ∘ v) = ψ ∘ C_B(v)` from D2.20 / [BCFW25, §D.2].
 - `extensionEncodeLinearMap`: the extension encoder is an `F`-linear map, not merely a
   function with a linear image.
 - `extensionEncode_injective`: scalar extension preserves injectivity of the base encoder,
@@ -83,6 +83,14 @@ code works only with code sets.
   **unconditionally in `δ`** (the isometry argument never uses the restriction), so
   the absence of `0 < δ` and `δ < 1` hypotheses is a deliberate strengthening and
   not a transcription slip.
+
+A second, similar observation about the source: the remark following ABF26 D2.20 asserts the
+identity `C_F(ψ ∘ v) = ψ ∘ C_B(v)` only for a **systematic** presentation, but that
+hypothesis is surplus. For any presentation `φ_j(ψ x) = x · φ_j(1)`, so the `j`-th
+coordinate row of `ψ ∘ v` is `φ_j(1) • v`, and `B`-linearity of the base encoder moves that
+scalar through `encode`; systematicity only makes the scalars `(1, 0, …, 0)`. Accordingly
+`extensionEncode_comp_algebraMap` and `mem_extensionCode_comp_algebraMap_iff` carry no
+systematicity hypothesis — another deliberate strengthening, not a transcription slip.
 
 ## References
 
@@ -161,8 +169,8 @@ extension-field output:
 `C_F(v)_i = φ⁻¹ (fun j ↦ C_B (fun t ↦ φ_j(v_t))_i)`.
 
 The definition is universe-polymorphic in both the message and codeword index types. Its
-`F`-linear-map packaging is `extensionEncodeLinearMap`; its image and systematicity properties
-are `range_extensionEncode` and `extensionEncode_comp_algebraMap_of_isSystematic`. -/
+`F`-linear-map packaging is `extensionEncodeLinearMap`; its image and its behaviour on embedded
+base-field messages are `range_extensionEncode` and `extensionEncode_comp_algebraMap`. -/
 noncomputable def extensionEncode {κ ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
@@ -345,38 +353,40 @@ theorem extensionEncode_injective {κ ι : Type*}
     simpa only [coord_extensionEncode] using hij
   exact congrFun (hencode hout) t
 
-/-- **ABF26 Definition 2.20 / [BCFW25, §D.2], systematic encoder identity.**
-For a systematic presentation, extending an embedded base-field message and then encoding is
-the same as base-encoding first and embedding the resulting codeword:
+/-- **ABF26 Definition 2.20 / [BCFW25, §D.2], encoder identity on embedded messages.**
+Extending an embedded base-field message and then encoding is the same as base-encoding
+first and embedding the resulting codeword:
 
 `C_F (ψ ∘ v) = ψ ∘ C_B(v)`.
 
-Linearity of the base encoder supplies the required `encode 0 = 0` in the non-leading
-coordinates. -/
-theorem extensionEncode_comp_algebraMap_of_isSystematic {κ ι : Type*}
+This holds for an **arbitrary** presentation, systematic or not: `φ_j(ψ x) = x · φ_j(1)`,
+so the `j`-th coordinate row of `ψ ∘ v` is the rescaling `φ_j(1) • v`, and `B`-linearity of
+the base encoder pulls that scalar back out of `encode`. Systematicity, which ABF26's remark
+after D2.20 assumes, only specialises the scalars `φ_j(1)` to `(1, 0, …, 0)`. -/
+theorem extensionEncode_comp_algebraMap {κ ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
-    {P : ExtensionFieldPresentation B F} (hP : P.IsSystematic)
+    (P : ExtensionFieldPresentation B F)
     (encode : (κ → B) →ₗ[B] (ι → B)) (v : κ → B) :
     extensionEncode P encode ((algebraMap B F) ∘ v) =
       (algebraMap B F) ∘ encode v := by
+  have hpsi : ∀ (j : Fin P.e) (x : B),
+      P.coord j (algebraMap B F x) = x * P.coord j (1 : F) := by
+    intro j x
+    have hx : (algebraMap B F) x = x • (1 : F) := by rw [Algebra.smul_def]; simp
+    rw [hx, map_smul, smul_eq_mul]
   funext i
   apply P.basis.equivFun.injective
   funext j
   change P.coord j (extensionEncode P encode ((algebraMap B F) ∘ v) i) =
     P.coord j (((algebraMap B F) ∘ encode v) i)
   rw [coord_extensionEncode]
-  simp only [Function.comp_apply]
-  by_cases hj : j.val = 0
-  · have hin : (fun t ↦ P.coord j (algebraMap B F (v t))) = v := by
-      funext t
-      simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (v t)
-    rw [hin]
-    simpa [hj] using (P.coord_algebraMap_of_isSystematic hP j (encode v i)).symm
-  · have hin : (fun t ↦ P.coord j (algebraMap B F (v t))) = 0 := by
-      funext t
-      simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (v t)
-    rw [hin, map_zero]
-    simpa [hj] using (P.coord_algebraMap_of_isSystematic hP j (encode v i)).symm
+  have hin : (fun t ↦ P.coord j (((algebraMap B F) ∘ v) t)) = P.coord j (1 : F) • v := by
+    funext t
+    simp only [Function.comp_apply, Pi.smul_apply, smul_eq_mul, hpsi]
+    exact mul_comm _ _
+  rw [hin, map_smul]
+  simp only [Function.comp_apply, Pi.smul_apply, smul_eq_mul, hpsi]
+  exact mul_comm _ _
 
 /-- **ABF26 Definition 2.20.** The *extension code* of a base code `C_B ⊆ B^ι`
 along an extension-field presentation `P`, as a **set of words** over `F` (the
@@ -625,41 +635,40 @@ theorem extensionCodeSubmodule_presentation_independent {ι : Type*}
     extensionCodeSubmodule P C_B = extensionCodeSubmodule P' C_B :=
   SetLike.coe_injective (extensionCode_presentation_independent P P' C_B)
 
-/-- **Image-level consequence of systematicity.** If `P` is systematic then the base
-code is exactly the `ψ`-rational part of the extension code:
+/-- **Image-level form of the embedded-message identity.** For a `B`-submodule base code,
+the base code is exactly the `ψ`-rational part of the extension code:
 
   `ψ ∘ c ∈ C_F ↔ c ∈ C_B`   for `c : ι → B`.
 
-The encoder-level identity itself is
-`extensionEncode_comp_algebraMap_of_isSystematic`; this image-level form is convenient
-for consumers that store only the code set. Note the `←` direction is where
-systematicity does real work for the coordinates `j ≠ 0`: it
-pins them to `0`, so no assumption beyond `0 ∈ C_B` is needed. -/
-theorem mem_extensionCode_comp_algebraMap_iff_of_isSystematic {ι : Type*}
+The encoder-level identity itself is `extensionEncode_comp_algebraMap`; this image-level
+form is convenient for consumers that store only the code set. Like that identity it needs
+no systematicity: every coordinate row of `ψ ∘ c` is the rescaling `φ_j(1) • c`, so the `←`
+direction is `B`-scalar closure of `C_B`, and the `→` direction rescales by `φ_j(1)⁻¹` at
+any coordinate with `φ_j(1) ≠ 0` — one exists because `1 ≠ 0` in `F`. -/
+theorem mem_extensionCode_comp_algebraMap_iff {ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
-    {P : ExtensionFieldPresentation B F} (hP : P.IsSystematic)
+    (P : ExtensionFieldPresentation B F)
     (C_B : Submodule B (ι → B)) (c : ι → B) :
     (algebraMap B F) ∘ c ∈ extensionCode P (C_B : Set (ι → B)) ↔ c ∈ C_B := by
+  have hrow : ∀ j : Fin P.e,
+      (fun i ↦ P.coord j (((algebraMap B F) ∘ c) i)) = P.coord j (1 : F) • c := by
+    intro j
+    funext i
+    have hci : (algebraMap B F) (c i) = c i • (1 : F) := by rw [Algebra.smul_def]; simp
+    simp only [Function.comp_apply, hci, map_smul, Pi.smul_apply, smul_eq_mul]
+    exact mul_comm _ _
   constructor
   · intro h
-    have h0 := h ⟨0, P.e_pos⟩
-    have hfun : (fun i ↦ P.coord ⟨0, P.e_pos⟩ (((algebraMap B F) ∘ c) i)) = c := by
-      funext i
-      simpa using P.coord_algebraMap_of_isSystematic hP ⟨0, P.e_pos⟩ (c i)
-    rw [hfun] at h0
-    exact h0
+    obtain ⟨j, hj⟩ : ∃ j : Fin P.e, P.coord j (1 : F) ≠ 0 := by
+      by_contra hc
+      push Not at hc
+      exact one_ne_zero (P.basis.forall_coord_eq_zero_iff.1 hc)
+    have hmem : P.coord j (1 : F) • c ∈ C_B := by rw [← hrow j]; exact h j
+    have hscaled := C_B.smul_mem (P.coord j (1 : F))⁻¹ hmem
+    rwa [smul_smul, inv_mul_cancel₀ hj, one_smul] at hscaled
   · intro hc j
-    by_cases hj : j.val = 0
-    · have hfun : (fun i ↦ P.coord j (((algebraMap B F) ∘ c) i)) = c := by
-        funext i
-        simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (c i)
-      rw [hfun]
-      exact hc
-    · have hfun : (fun i ↦ P.coord j (((algebraMap B F) ∘ c) i)) = 0 := by
-        funext i
-        simpa [hj] using P.coord_algebraMap_of_isSystematic hP j (c i)
-      rw [hfun]
-      exact C_B.zero_mem
+    rw [hrow j]
+    exact C_B.smul_mem _ hc
 
 /-- The presentation-coordinate equivalence is a Hamming isometry carrying an extension
 code onto the corresponding interleaved base code, so their minimum distances agree. This

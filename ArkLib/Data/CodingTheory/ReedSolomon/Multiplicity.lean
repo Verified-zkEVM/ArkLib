@@ -57,7 +57,10 @@ For `s = 1`, this degenerates to the plain Reed-Solomon code
 `char(F) ≥ k` so that the derivative-of-monomial coefficients
 `(a_i · i)` do not vanish below degree `k` (without this, multiple
 distinct polynomials of degree `< k` can fold to the same multiplicity
-codeword, and the dimension claim collapses). The bare encoder
+codeword, and the dimension claim collapses). The lemmas below take the
+weaker hypothesis `ringChar F = 0 ∨ k ≤ ringChar F`: characteristic zero
+is equally admissible, and a bare `k ≤ ringChar F` would exclude it, since
+`ringChar F = 0` there forces `k = 0`. The bare encoder
 `umEvalOnPoints` is well-typed in any `CommSemiring F` — we keep the
 hypothesis as a downstream caller's responsibility rather than baking
 it into the definition, since the `s = 1` collapse lemma below works
@@ -136,14 +139,15 @@ section Field
 variable [Field F]
 
 /-- If the first `s` ordinary derivatives of a degree-`< k` polynomial vanish at `a`,
-then `a` is a root of multiplicity at least `s`, provided `k ≤ ringChar F`.
+then `a` is a root of multiplicity at least `s`, provided `F` has characteristic zero or
+characteristic at least `k`.
 
 Mathlib states the root-multiplicity criterion using Hasse derivatives. Ordinary and Hasse
 derivatives differ by the unit `j!` throughout the degree range in question, which is
 exactly where the characteristic hypothesis is used. -/
 lemma pow_dvd_of_eval_iterate_derivative_eq_zero
     {p : Polynomial F} {a : F} {s k : ℕ}
-    (hp : p ∈ Polynomial.degreeLT F k) (hchar : k ≤ ringChar F)
+    (hp : p ∈ Polynomial.degreeLT F k) (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
     (hzero : ∀ j : Fin s, (Polynomial.derivative^[j.val] p).eval a = 0) :
     (Polynomial.X - Polynomial.C a) ^ s ∣ p := by
   rw [Polynomial.X_sub_C_pow_dvd_iff, Polynomial.X_pow_dvd_iff]
@@ -151,11 +155,14 @@ lemma pow_dvd_of_eval_iterate_derivative_eq_zero
   change (Polynomial.taylor a p).coeff d = 0
   rw [Polynomial.taylor_coeff]
   by_cases hdk : d < k
-  · letI : NeZero (ringChar F) :=
-      ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hchar))⟩
-    letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
-    have hfac : IsUnit (d.factorial : F) :=
-      (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hchar)
+  · have hfac : IsUnit (d.factorial : F) := by
+      rcases hchar with hchar0 | hcharpos
+      · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hchar0
+        exact IsUnit.natCast_factorial_of_algebra F d
+      · letI : NeZero (ringChar F) :=
+          ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hcharpos))⟩
+        letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
+        exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hcharpos)
     have hder := hzero ⟨d, hd⟩
     change (Polynomial.derivative^[d] p).eval a = 0 at hder
     have hscale := congrFun (Polynomial.factorial_smul_hasseDeriv (R := F) d) p
@@ -173,10 +180,10 @@ lemma pow_dvd_of_eval_iterate_derivative_eq_zero
 
 /-- The univariate-multiplicity encoder is injective on degree-`< k` polynomials whenever
 the message dimension does not exceed the `s · n` scalar coordinates and the characteristic
-is at least `k`. -/
+is either zero or at least `k`. -/
 lemma umEvalOnPoints_domRestrict_injective
     {ι : Type*} [Fintype ι] {k s : ℕ}
-    (domain : ι ↪ F) (hchar : k ≤ ringChar F)
+    (domain : ι ↪ F) (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
     (hk : k ≤ s * Fintype.card ι) :
     Function.Injective
       ((umEvalOnPoints domain s).domRestrict (Polynomial.degreeLT F k)) := by
@@ -223,7 +230,7 @@ lemma umCode_mono {ι : Type*} {k l s : ℕ} (hkl : k ≤ l) (domain : ι ↪ F)
 /-- In the unsaturated range `k ≤ s · n`, a univariate multiplicity code has dimension
 exactly `k`. -/
 lemma dim_umCode {ι : Type*} [Fintype ι] {k s : ℕ}
-    (domain : ι ↪ F) (hchar : k ≤ ringChar F)
+    (domain : ι ↪ F) (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
     (hk : k ≤ s * Fintype.card ι) :
     Module.finrank F (umCode domain k s) = k := by
   rw [umCode]
@@ -237,13 +244,14 @@ lemma dim_umCode {ι : Type*} [Fintype ι] {k s : ℕ}
 /-- The exact dimension of a univariate multiplicity code, including saturation at the
 ambient scalar dimension `s · n`. -/
 lemma dim_umCode_eq_min {ι : Type*} [Fintype ι]
-    (domain : ι ↪ F) (k s : ℕ) (hchar : k ≤ ringChar F) :
+    (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
     Module.finrank F (umCode domain k s) = min k (s * Fintype.card ι) := by
   classical
   by_cases hk : k ≤ s * Fintype.card ι
   · rw [dim_umCode domain hchar hk, min_eq_left hk]
   · have hnsk : s * Fintype.card ι ≤ k := by omega
-    have hchar' : s * Fintype.card ι ≤ ringChar F := hnsk.trans hchar
+    have hchar' : ringChar F = 0 ∨ s * Fintype.card ι ≤ ringChar F :=
+      hchar.imp_right hnsk.trans
     have hdimsmall : Module.finrank F
         (umCode domain (s * Fintype.card ι) s) = s * Fintype.card ι :=
       dim_umCode domain hchar' le_rfl

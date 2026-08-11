@@ -50,16 +50,11 @@ def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :
   let frac := q / (q - 1)
   (1 - frac * d / n) < (1 - frac * e / n) ^ 2
 
-/-- The function used for the `q`-ary Johnson Bound. This is [ABF26] Definition 3.1's `J_q`. -/
-noncomputable def J (q δ : ℚ) : ℝ :=
-  let frac := q / (q - 1)
-  (1 / frac) * (1 - √(1 - frac * δ))
-
 /-- **[ABF26] Definition 3.1, `J`.** The asymptotic ("capacity") Johnson bound
 
   `J(δ) := 1 - √(1 - δ)`
 
-which is the `q → ∞` limit of `J q δ` above. It is named `Jcap` (Johnson — *cap*acity) so
+which is the `q → ∞` limit of the `q`-ary `J q δ`. It is named `Jcap` (Johnson — *cap*acity) so
 that the pre-existing `J`, which is the paper's `q`-parametrised `J_q`, need not be renamed.
 
 It is *not* the binary Johnson bound: `J_2(δ) = ½(1 - √(1 - 2δ)) ≠ 1 - √(1 - δ)`. -/

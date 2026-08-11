@@ -11,10 +11,15 @@ This is the main catalog for ArkLib's knowledge base.
 
 ## Paper Pages
 
+- [`papers/ABF26.md`](papers/ABF26.md) - *Open Problems in List Decoding and Correlated Agreement*,
+  the primary source for the coding-theory foundations: §2 preliminaries, the §2.4 code families,
+  the §3.1 Johnson family, subspace designs, and extension codes.
 - [`papers/ACFY24.md`](papers/ACFY24.md) - WHIR ePrint paper and its ArkLib touchpoints in
   `ReedSolomon`, `ListDecodability`, and `ProximityGap`.
 - [`papers/ACFY24stir.md`](papers/ACFY24stir.md) - STIR paper page for the active
   `ProofSystem/Stir` development.
+- [`papers/BCFW25.md`](papers/BCFW25.md) - cited only for Lemma D.3 (extension-code list size);
+  none of the accumulation machinery is used.
 - [`papers/BCIKS20.md`](papers/BCIKS20.md) - proximity gaps for Reed-Solomon codes and the main
   coding-theory formalization it drives in ArkLib.
 - [`papers/BCGM25.md`](papers/BCGM25.md) - polynomial-generator MCA and related ArkLib
@@ -26,10 +31,25 @@ This is the main catalog for ArkLib's knowledge base.
   subtree.
 - [`papers/DP24.md`](papers/DP24.md) - binary-tower multilinear proof reference for the Binius
   development.
+- [`papers/DP25.md`](papers/DP25.md) - Theorem 3.2, the minimum-distance equality between a base
+  code and its extension code.
+- [`papers/GG25.md`](papers/GG25.md) - Lemma 2.16 (= `ABF26` Lemma 2.17), the distance lower bound
+  for subspace-design codes.
+- [`papers/GK16.md`](papers/GK16.md) - explicit subspace designs; Definition 11 and Lemma 12 supply
+  the folded-Wronskian criterion behind `ABF26` Theorem 2.18.
+- [`papers/GR08.md`](papers/GR08.md) - Definition 2.1, the definitional source for folded
+  Reed-Solomon codes.
+- [`papers/GW13.md`](papers/GW13.md) - linear-algebraic list decoding; origin of the univariate
+  multiplicity codes (ordinary derivative, large characteristic).
+- [`papers/GX13.md`](papers/GX13.md) - definitional lineage for the `τ`-subspace-design property.
 - [`papers/HMZ25.md`](papers/HMZ25.md) - sublinear proofs over polynomial rings and the generic
   `Lift` quotient-evaluation switch.
 - [`papers/Jo26.md`](papers/Jo26.md) - interleaving stability for generator MCA and curve
   decodability.
+- [`papers/Joh62.md`](papers/Joh62.md) - the original Johnson bound underlying the `JohnsonBound`
+  development.
+- [`papers/KSY14.md`](papers/KSY14.md) - high-rate codes with sublinear-time decoding; the
+  multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
 
 The paper index now also includes scaffolded landing pages for all other citation keys currently
 used in `ArkLib/**/*.lean`, including:
@@ -65,6 +85,12 @@ used in `ArkLib/**/*.lean`, including:
 ## Query Pages
 
 - [`queries/README.md`](queries/README.md) - purpose and filing rules for persistent query outputs.
+- [`queries/abf26-split-pr1-review-2026-08-07/README.md`](queries/abf26-split-pr1-review-2026-08-07/README.md)
+  - adversarial review record for the `ABF26` coding-theory foundations, including the per-area
+    `R*` reports, the remediation log, and the declaration provenance snapshot.
+- [`queries/abf26-split-pr1-deep-review-2026-08-11/README.md`](queries/abf26-split-pr1-deep-review-2026-08-11/README.md)
+  - later, broader pre-merge review of the same PR at its final head: gate results, findings, the
+    remediation applied, and the source-side defects found along the way.
 
 ## Source Metadata
 

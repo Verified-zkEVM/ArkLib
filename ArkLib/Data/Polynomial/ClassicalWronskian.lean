@@ -25,6 +25,28 @@ is [GK16, Definition 9 and Lemma 10].
 
 The large-characteristic guard is essential: in characteristic `p`, the nonconstant
 polynomial `X ^ p` has zero derivative.
+
+## Main definitions
+
+- `Polynomial.classicalWronskian` — GK16 Definition 9.
+
+## Main statements
+
+- `Polynomial.natDegree_classicalWronskian_le` — degree bound `σ · k` for entries of
+  degree `≤ k`.
+- `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective` — the echelon-form core of
+  GK16 Lemma 10: nonzero polynomials with distinct degrees, all `< k`, have nonzero
+  Wronskian under the characteristic guard `ringChar F = 0 ∨ k ≤ ringChar F`.
+- `Polynomial.classicalWronskian_of_linearComb` — changing the family by a constant
+  coefficient matrix `U` multiplies the Wronskian by `C U.det`.
+- `Polynomial.classicalWronskian_ne_zero_of_basis` — GK16 Lemma 10 in basis form, the
+  statement consumed downstream: a basis of a polynomial subspace in degrees `< k` has
+  nonzero Wronskian under the same characteristic guard.
+
+## References
+
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (Definition 9 and
+    Lemma 10)
 -/
 
 namespace Polynomial
