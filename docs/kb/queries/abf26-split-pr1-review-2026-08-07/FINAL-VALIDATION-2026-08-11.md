@@ -123,6 +123,27 @@ The repository-wide optional style lint still reports legacy errors already pres
 branch. A changed-file/baseline comparison found no new style-lint finding in the new or materially
 rewritten headline modules; the mandatory zero-warning and ordinary validation gates are clean.
 
-The last release gate is a synthetic merge and validation against the then-current `origin/main`,
-followed by the hosted PR checks. Those results belong in the final PR handoff because the target
-branch can move after this document is written.
+## Current-main merge gate
+
+Commit `907e6dc83` was synthetically merged into `origin/main` `e052dbc93` in a clean detached
+worktree. The merge had no textual conflict. `./scripts/validate.sh` then passed a clean 4,220-job
+build together with the Data warning, import, documentation, and KB gates;
+`lake exe checkdecls blueprint/lean_decls` and `git diff --check` also passed.
+
+The merged exhaustive axiom sweep covered 8,426 declarations in 348 modules and found zero
+non-standard-axiom-tainted declarations. Its committed-main baseline check reports exactly four
+new `sorryAx`-tainted Hachi declarations:
+
+- `ArkLib.Lattices.Ajtai.InnerOuter.mem_relNestedZeroCheck_of_nestedRoundRel`;
+- `ArkLib.Lattices.Ajtai.InnerOuter.nestedSumcheckBridgePackage`;
+- `ArkLib.Lattices.Ajtai.InnerOuter.sum_sumcheckPolyAlpha'`;
+- `ArkLib.Lattices.Ajtai.InnerOuter.sum_sumcheckPolyZero'`.
+
+Those files are byte-identical to `origin/main` in the synthetic merge and are not touched or
+depended on by this coding-theory PR; this is target-branch baseline drift after the axiom baseline
+was last updated, not a PR #701 regression. The native `axiomsweep` executable also asks Lake to
+compile optional VCVio C bindings whose git submodules are absent in a cold dependency checkout;
+the same sweep source was therefore run directly with `lake env lean --run scripts/AxiomSweep.lean`.
+
+Hosted PR checks remain the final external gate because the target branch can move after this
+document is written.
