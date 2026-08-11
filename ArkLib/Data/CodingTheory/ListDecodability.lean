@@ -18,29 +18,19 @@ namespace ListDecodable
 section
 
 variable {ι : Type*} [Fintype ι]
-         {F : Type*}
+         {F : Type*} [DecidableEq F]
 
 abbrev Code.{u, v} (ι : Type u) (S : Type v) : Type (max u v) := Set (ι → S)
 
-open Classical in
-/-- Hamming ball of radius `r` centred at a word `y`. -/
-def hammingBall (y : ι → F) (r : ℕ) : Set (ι → F) :=
-  {x | hammingDist y x ≤ r}
-
-open Classical in
-/-- Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance. -/
-def relHammingBall (y : ι → F) (r : ℝ) : Set (ι → F) :=
-  {x | Code.relHammingDist y x ≤ r}
-
 /-- The set of `r`-close codewords to a given word `y` with respect to the Hamming distance. -/
 def closeCodewords (C : Code ι F) (y : ι → F) (r : ℕ) : Set (ι → F) :=
-  {c | c ∈ C ∧ c ∈ hammingBall y r}
+  {c | c ∈ C ∧ c ∈ Code.hammingBall y r}
 
 /-- The set of `r`-close codewords to a given word `y` with respect to the relative Hamming
 distance.
 Note that this is exactly `Λ (C, y, r)` from [ACFY24] and ` List (C, y, r)` from [ACFY24stir]. -/
 def closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) :=
-  {c | c ∈ C ∧ c ∈ relHammingBall y r}
+  {c | c ∈ C ∧ c ∈ Code.relHammingBall y r}
 
 /-- A code `C` is `(r,ℓ)`-list decodable.
 
