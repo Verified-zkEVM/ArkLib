@@ -250,7 +250,7 @@ round (`ArkLib/ProofSystem/Sumcheck/Structured`) rather than the bespoke `roundV
 its CWSS discharged by the (to-be-built, wire-format-generic / guarded) analog of the scalar-round
 engine applied to `Structured.roundOracleVerifier`, with the round relations read off
 `Structured.sumcheckConsistencyProp` / `computeRoundPoly`. The verifier wiring is left `sorry` for
-now pending that reconciliation (see the `Sumcheck/Basic.lean` umbrella). -/
+pending that reconciliation (see the `Sumcheck/Basic.lean` umbrella). -/
 theorem round_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))

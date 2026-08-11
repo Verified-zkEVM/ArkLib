@@ -35,7 +35,7 @@ the honest committer `keygen`/`commit` and the `hachi` functional commitment —
 1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
    (§4.2 / Figure 3 / Lemma 8) — an escape-aware package whose event is `QuadEval`'s.
 2. **`openCore`** (skeleton, pure links): the escape-aware `evalChain` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
+   §4.3 stages up to the sumcheck bridge — R^lin adapter ▷ HMZ25 lift (Figure 4 / Lemma 9)
    ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
    sumcheck bridge.
 3. **`openingChain`** (skeleton, guarded tail): the pure `openCore` ▷ the paired sumcheck loop
@@ -128,15 +128,15 @@ proven, as are their readers, shape recovery, extractor and escape event. The es
 with its append
 theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
-sorried `Extractor.TreeBased`. Row 6 is no longer among those: its named
-`nestedZeroCheckExtractor` is executable and witness-fed, returning the supplied all-left leaf
-entry directly; `nestedZeroCheckEsc` remains a statement/tree escape event independent of the
-caller's leaf witnessing.
+sorried `Extractor.TreeBased`. Row 6 has a named, executable, witness-fed
+`nestedZeroCheckExtractor` that returns the supplied all-left leaf entry directly;
+`nestedZeroCheckEsc` remains a statement/tree escape event independent of the caller's leaf
+witnessing.
 
 **Rows 1–7 carry no sorried certificate.** The `R^lin` adapter
 (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`,
 via the generic `Lift` layer on the proven scalar-round engine and the `QuotientLift` algebra)
-are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
+are sorry-free and axiom-clean (rows 3–4). The following links are as well:
 
 * row 5, the batching pull-back `mem_relLift_of_relBatched` — including the range-side soundness
   `H₀ ≡ 0 ⇒ liftShort` (`hZero_eq_zero_imp_liftShort`), so shortness is **derived**, not assumed,
@@ -146,7 +146,7 @@ are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
   `CMlPolynomialEval` encodings `hZero`/`hAlpha` and the evaluation-tree zero test;
 * row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`.
 
-*Per-link math still sorried*: two F5 sumcheck identities in `Constraints.lean`
+*Per-link math still sorried*: two sumcheck identities in `Constraints.lean`
 (`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
 Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), the final evaluation
 (`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck` encoding),

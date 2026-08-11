@@ -26,7 +26,7 @@ combinator for the degree-2 linear check `F_α`; the range combinator `∏ⱼ (X
 for `F₀` — the multiplier docstring in `Structured.lean` already anticipates exactly this Hachi
 case); the round consistency is `Sumcheck.Structured.sumcheckConsistencyProp` over
 `SumcheckDomain.boolDomain`; the per-round data is `Structured.Statement`/`SumcheckWitness`. The
-**exact CWSS round verifier is left `sorry` for now** (`Sumcheck/Rounds.lean`): wiring the
+**exact CWSS round verifier remains `sorry`** (`Sumcheck/Rounds.lean`): wiring the
 structured round into the CWSS chain first needs the wire format (`!v[...]`) and the
 record-then-bridge convention reconciled with the structured round's `![...]` RBR verifier
 (`Structured/SingleRound.lean`'s `roundOracleVerifier`), which is deferred.

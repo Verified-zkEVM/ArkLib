@@ -1,6 +1,6 @@
 import ArkLib.AGM.Basic
 import ArkLib.Commitments.Functional.Basic
-import ArkLib.Commitments.Functional.Hachi
+import ArkLib.Commitments.Functional.Hachi.Basic
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
 import ArkLib.Commitments.Functional.Hachi.EvalSplit

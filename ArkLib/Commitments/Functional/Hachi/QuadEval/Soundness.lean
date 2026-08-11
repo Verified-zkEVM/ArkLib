@@ -57,8 +57,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRoun
   The extraction algorithm itself (`extractedOpening` / `buildWitness` / `quadEvalMkWitness`) is
   **computable**: it divides by the executable `Rq.inv` rather than `Ring.inverse`, decides its
   three-case split on `Rq Φ`'s decidable equality, and locates both the star center and the
-  diverging branch by bounded search. So is `quadEvalPackage` now: the per-branch responses the
-  transcript tree does not carry arrive on the leaf witnessing, which the witness-only
+  diverging branch by bounded search. `quadEvalPackage` is also computable: the per-branch
+  responses the transcript tree does not carry arrive on the leaf witnessing, which the witness-only
   `SingleRound.treeExtractor` reads at the branch paths instead of inverting `relOut`.
 
   Mirroring `InnerOuter/Security.lean`, the extraction lemmas carry the Lyubashevsky–Seiler

@@ -73,7 +73,7 @@ home_page/            site assets and assembled website root
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
   ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section;
   every subfolder carries its umbrella as `Basic.lean` inside that subfolder.
-  `ArkLib/Commitments/Functional/Hachi.lean` is the folder-level landing page, with the full
+  `ArkLib/Commitments/Functional/Hachi/Basic.lean` is the folder-level landing page, with the full
   folder map in its module docstring. Layout:
   - `Gadget/` (§2.1) — `Gadget/Core` is the base-`b` gadget matrix `G` and its norm-reducing digit
     decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both

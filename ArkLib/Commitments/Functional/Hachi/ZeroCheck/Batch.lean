@@ -19,7 +19,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   the claims changes, which separates the batching algebra from the transcript-tree zero test.
   Shortness is **not** a conjunct of `relBatched`: the range identity `H₀^{w̃} ≡ 0`
   already forces every committed coefficient into `[−(b−1), b−1]`, so `liftShort` is *derived*, not
-  assumed — the range machinery is load-bearing (review PR #656, resolution option 1).
+  assumed — the range machinery is load-bearing.
 
   The reduction's content is the pull-back `mem_relLift_of_relBatched` from `relBatched` to
   `relLift`: the per-row equation is recovered from `H_α ≡ 0` via `hAlpha_eq_zero_iff`
@@ -27,8 +27,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   hypotheses are the arity bounds `n ≤ 2 ^ m₁` and `(μ + n)·deg φ ≤ 2 ^ m₀`, positivity
   `0 < deg φ`, and the range-base fits `b − 1 ≤ bound`, `b − 1 ≤ ρBound`.
 
-  Escapes are no longer threaded through the relations as a `⊕ E` summand: weak binding enters
-  the certificate as an *event on the transcript tree* whose hardness target is the
+  Weak binding enters the certificate as an *event on the transcript tree*, rather than as a
+  `⊕ E` relation summand; its hardness target is the
   short-collision set `LiftCom.Collision`. This bridge has no challenge round, so it carries no
   escape at all and composes with escape-aware neighbours through `CWSSPackage.toEscape`.
 

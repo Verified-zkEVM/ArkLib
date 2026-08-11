@@ -111,11 +111,9 @@ Ring-switching layer:
   polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) draws each of the `m₀ + m₁`
   coordinates in its own two-child scalar round and extracts with the nested-tree zero test
   (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), whose leaves form a genuine `2^(m₀+m₁)`-point grid
-  rather than a star. (An earlier rendering restricted the two evaluation points to Kronecker
-  curves at `D = max(2, 2^{m₀}, 2^{mα})`; it was superseded — its branching factor is exponential —
-  and is no longer formalized.) The
-  corrected CWSS theorem is proof-`sorry`-free and is composed into the escape-threaded opening
-  chain (`Composition.lean`). Its named extractor is executable: `ChallengeTree.LeafWitnesses`
+  rather than a star. The corrected CWSS theorem is proof-`sorry`-free and is composed into the
+  escape-threaded opening chain (`Composition.lean`). Its named extractor is executable:
+  `ChallengeTree.LeafWitnesses`
   supplies an `Option` candidate opening for each leaf and it directly returns the all-left entry,
   while classical choice remains proof-local to the certificate. The weak-binding disjunct is
   discharged through `LiftCom`'s norm-conditioned collision. At the batching bridge, shortness is
