@@ -36,19 +36,20 @@ open CosetFftDomain CosetFftDomainClass
 open MvPolynomial LinearMvExtension
 
 variable {F : Type} [Field F] [DecidableEq F]
-variable {n : ℕ}
+variable {n d : ℕ}
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
 /-- One step of lemma 4.15 from [ACFY24]. -/
-lemma foldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : F}
-  {g : F⦃≤ 1⦄[X (Fin n)]}
+lemma foldWord_eq_evalOnPoints_powAlgHom [inst : NeZero d] {α : F}
+  {g : F⦃≤ 1⦄[X (Fin d)]} (hdn : d ≤ n)
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   foldWord domain f 1 α =
     evalOnPoints
       (domain.subdomain 1)
       (powAlgHom (g.1.aeval (fun i ↦
-          if h : i = 0 then C α else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (n - 1))))) := by
+          if h : i = 0 then C α else MvPolynomial.X (⟨i.val - 1, by omega⟩ : Fin (d - 1))))) := by
+  have : NeZero n := ⟨by have := inst.out; omega⟩
   subst hf
   have hchar := domain_implies_char_ne_2 domain
   conv_lhs =>
@@ -101,7 +102,7 @@ private lemma aeval_split_mem {n : ℕ} [NeZero n] {R : Type} [Field R]
 
 omit [DecidableEq F] in
 private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
-  {domain : SmoothCosetFftDomain n F} :
+  (hchar : ¬CharP F 2) :
   ∀ (m : ℕ), m ≤ n → ∀ (β : Fin m → F),
     MvPolynomial.aeval (substFun m β) gg.1 ∈ MvPolynomial.restrictDegree (Fin (n - m)) F 1 := by
   intro m
@@ -113,7 +114,6 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
   | succ m ih =>
     intro hm β
     haveI : NeZero (n - m) := ⟨by omega⟩
-    have hchar : ¬CharP F 2 := CosetFftDomainClass.domain_implies_char_ne_2 domain
     have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈
       MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
     have hmem :
@@ -128,49 +128,41 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
 /-- Lemma 4.15 from [ACFY24]. Provides a way to
   compute the corresponding multilinear extension
   for the interated folding of codewords. -/
-theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [NeZero n] {α : Fin k → F}
-  {g : F⦃≤ 1⦄[X (Fin n)]}
-  (hk : k ≤ n)
+theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [inst : NeZero d]
+  {α : Fin k → F} {g : F⦃≤ 1⦄[X (Fin d)]}
+  (hkd : k ≤ d) (hk : d ≤ n)
   (hf : f = evalOnPoints domain (powAlgHom g.1)) :
   iteratedFoldWord domain f k α =
       evalOnPoints
         (domain.subdomain k)
         (powAlgHom (g.1.aeval (fun i ↦
           if h : i.val < k then C (α ⟨i.val, h⟩) else MvPolynomial.X
-            (⟨i.val - k, by omega⟩ : Fin (n - k))))) := by
-  suffices H : ∀ (k : ℕ), k ≤ n → ∀ (α : Fin k → F),
+            (⟨i.val - k, by omega⟩ : Fin (d - k))))) := by
+  suffices H : ∀ (k : ℕ), k ≤ d → ∀ (α : Fin k → F),
       iteratedFoldWord domain f k α
         = evalOnPoints (domain.subdomain k) (powAlgHom (g.1.aeval (substFun k α))) by
-    exact H k hk α
+    exact H k hkd α
+  have : NeZero n := ⟨by have := inst.out; omega⟩
   intro k
   induction k with
   | zero =>
     intro _ α
-    have : (substFun (n := n) 0 α) = MvPolynomial.X := by aesop
+    have : substFun (n := d) 0 α = MvPolynomial.X := by aesop
     aesop
   | succ k ih =>
-    intro hk α
-    haveI : NeZero (n - k) := ⟨by omega⟩
-    have hprev : iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)
-        = evalOnPoints (domain.subdomain k)
-            (powAlgHom (g.1.aeval (substFun k (fun j ↦ α ⟨j.val, by omega⟩)))) :=
-      ih (by omega) _
-    have hmem := aeval_substFun_mem (domain := domain) (gg := g) k (by omega)
-      (fun j ↦ α ⟨j.val, by omega⟩)
-    have hfold := foldWord_eq_evalOnPoints_powAlgHom
-        (domain := domain.subdomain k)
-        (f := iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩))
-        (α := α ⟨k, by omega⟩)
-        (g := ⟨g.1.aeval (substFun k (fun j ↦ α ⟨j.val, by omega⟩)), hmem⟩)
-        hprev
+    intro hk' α
+    haveI : NeZero (d - k) := ⟨by omega⟩
+    have hprev := ih (by omega) (fun j ↦ α ⟨j.val, by omega⟩)
+    have hmem := aeval_substFun_mem (gg := g)
+      (domain_implies_char_ne_2 domain) k (by omega)
+      (fun j : Fin k ↦ α ⟨j.val, by omega⟩)
+    rw [iteratedFoldWord_succ,
+      foldWord_eq_evalOnPoints_powAlgHom (g := ⟨_, hmem⟩) (α := α ⟨k, by omega⟩)
+        (by omega) hprev,
+      aeval_substFun_comp]
     funext i
-    have hi2 : i.val < 2 ^ (n - k - 1) := by grind
-    change foldWord (domain.subdomain k)
-          (iteratedFoldWord domain f k (fun j ↦ α ⟨j.val, by omega⟩)) 1 (α ⟨k, by omega⟩)
-          ⟨i.val, hi2⟩ = _
-    rw [hfold]
-    simp only [evalOnPoints, Function.Embedding.coeFn_mk, LinearMap.coe_mk, AddHom.coe_mk]
-    rw [aeval_substFun_comp (k := k) (γ := α) g.1,
-        subdomain_comp (ω := domain) (by omega) (i := ⟨i.val, hi2⟩) rfl]
+    simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Function.Embedding.coeFn_mk]
+    congr 1
+    exact subdomain_comp (ω := domain) (k := k) (j := 1) (by omega) rfl
 
 end ProximityGap
