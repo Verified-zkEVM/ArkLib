@@ -4,9 +4,9 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 326 files, 5565 declarations
+- `ArkLib` — 329 files, 5314 declarations
 
-## Same short-name across multiple files (161 groups)
+## Same short-name across multiple files (162 groups)
 
 Each group lists declarations sharing a short name across ≥2 files. Most are legitimate (overloaded interface, paper-shape vs general form), but the list is the right anchor to look for duplicates.
 
@@ -619,7 +619,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `LiftedWitness` (2 declarations, 2 files)
 
-- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:130](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L130) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
+- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:131](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L131) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
 - `structure RingSwitching.Lift.LiftedWitness` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:76](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L76) — The lifted witness of `Lift`: the `S`-witness `z` of the linear relation and one quotient polynomial
 
 ### `MessageIdx` (2 declarations, 2 files)
@@ -714,12 +714,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `coeffHom` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:243](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L243) — Reading off the `k`-th coefficient of the underlying polynomial, as an additive homomorphism `Rq Φ →
+- `def ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:260](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L260) — Reading off the `k`-th coefficient of the underlying polynomial, as an additive homomorphism `Rq Φ →
 - `def CompPoly.CPolynomial.coeffHom` [ArkLib/ToCompPoly/Univariate/Basic.lean:287](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L287) — Extracting the `k`-th coefficient as an additive homomorphism.
 
 ### `coeffHom_apply` (2 declarations, 2 files)
 
-- `theorem ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom_apply` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:248](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L248) — (no docstring)
+- `theorem ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom_apply` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:265](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L265) — (no docstring)
 - `theorem CompPoly.CPolynomial.coeffHom_apply` [ArkLib/ToCompPoly/Univariate/Basic.lean:293](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L293) — (no docstring)
 
 ### `computeRoundPoly` (2 declarations, 2 files)
@@ -869,7 +869,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `ofFinCoeff` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.CyclotomicModulus.Rq.ofFinCoeff` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:252](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L252) — The reduced representative with prescribed finite coefficients `Σ_{k<N} cₖ Xᵏ`, valid when `N` does
+- `def ArkLib.Lattices.CyclotomicModulus.Rq.ofFinCoeff` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:269](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L269) — The reduced representative with prescribed finite coefficients `Σ_{k<N} cₖ Xᵏ`, valid when `N` does
 - `def CompPoly.CPolynomial.ofFinCoeff` [ArkLib/ToCompPoly/Univariate/Basic.lean:296](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L296) — The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`.
 
 ### `pSpecCoreInteraction` (2 declarations, 2 files)
@@ -946,6 +946,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `abbrev RingSwitching.SumcheckPhase.roundKnowledgeError` [ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean:173](../../../ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean#L173) — (no docstring)
 - `def Sumcheck.Structured.roundKnowledgeError` [ArkLib/ProofSystem/Sumcheck/Structured/SingleRound.lean:297](../../../ArkLib/ProofSystem/Sumcheck/Structured/SingleRound.lean#L297) — Round-by-round knowledge error for a single round of the structured sumcheck: the Schwartz–Zippel bo
+
+### `rowSum` (2 declarations, 2 files)
+
+- `def ArkLib.Lattices.Ajtai.InnerOuter.rowSum` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:185](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L185) — Mathlib view of `cRowSum`, retained for degree and root-counting proofs.
+- `def RingSwitching.Lift.Presentation.rowSum` [ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean:213](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean#L213) — The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on canonical representatives (e
 
 ### `run` (2 declarations, 2 files)
 
