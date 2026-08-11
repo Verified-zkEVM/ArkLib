@@ -2,7 +2,7 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
-         Ilia Vlasov, Chung Thai Nguyen
+         Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.Fin.Basic
@@ -106,6 +106,15 @@ notation "Δ₀(" u ", " v ")" => hammingDist u v
 
 notation "‖" u "‖₀" => hammingNorm u
 
+/-- Post-composition with an injection preserves the Hamming distance.
+  A non-dependent version of the Mathlib's hammingDist_comp. -/
+theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
+  {ι : Type*} [Fintype ι]
+  {e : A → B} (he : Function.Injective e) (u v : ι → A) :
+  hammingDist (e ∘ u) (e ∘ v) = hammingDist u v := by
+  simp only [hammingDist, Function.comp_apply]
+  exact congrArg _ (Finset.filter_congr fun i _ => by simp [he.ne_iff])
+
 /-- The Hamming distance of a code `C` is the minimum Hamming distance between any two distinct
   elements of the code.
 We formalize this as the infimum `sInf` over all `d : ℕ` such that there exist `u v : n → R` in the
@@ -134,6 +143,15 @@ noncomputable def distFromCode (u : n → R) (C : Set (n → R)) : ℕ∞ :=
   sInf {d | ∃ v ∈ C, hammingDist u v ≤ d}
 
 notation "Δ₀(" u ", " C ")" => distFromCode u C
+
+/-- Hamming ball of radius `r` centred at a word `y`. -/
+def hammingBall (y : n → R) (r : ℕ) : Set (n → R) :=
+  {x | Δ₀(y, x) ≤ r}
+
+@[simp]
+theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
+  x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
+  aesop (add simp [hammingBall, hammingDist])
 
 /-- The distance to a code is at most the distance to any specific codeword. -/
 lemma distFromCode_le_dist_to_mem (u : n → R) {C : Set (n → R)} (v : n → R) (hv : v ∈ C) :
