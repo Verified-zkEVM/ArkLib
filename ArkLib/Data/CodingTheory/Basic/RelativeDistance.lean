@@ -2,7 +2,7 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
-         Ilia Vlasov, Chung Thai Nguyen
+         Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.Basic.Distance
@@ -50,6 +50,24 @@ noncomputable def relDistFromCode (u : ι → F) (C : Set (ι → F)) : ENNReal 
 /-- `δᵣ(u,C)` denotes the relative distance from u to C. This is the main standard definition
 used in statements. The NNRat version of it is `δᵣ'(u, C)`. -/
 notation "δᵣ(" u ", " C ")" => relDistFromCode u C
+
+/-- Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance. -/
+def relHammingBall (y : ι → F) (r : ℝ) : Set (ι → F) :=
+  {x | δᵣ(y, x) ≤ r}
+
+omit [Nonempty ι] in
+/-- Membership in the relative Hamming ball, spelled out. -/
+@[simp]
+theorem mem_relHammingBall_iff {A : Type*} [DecidableEq A] (y x : ι → A) (r : ℝ) :
+  x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
+  aesop (add simp [relHammingBall, relHammingDist])
+
+omit [Nonempty ι] in
+/-- Post-composition with an injection preserves the relative Hamming distance. -/
+theorem relHammingDist_comp {A B : Type*} [DecidableEq A] [DecidableEq B] {e : A → B}
+  (he : Function.Injective e) (u v : ι → A) :
+  δᵣ(e ∘ u, e ∘ v) = δᵣ(u, v) := by
+  aesop (add simp [relHammingDist, hammingDist_comp'])
 
 omit [Nonempty ι] in
 /-- The relative distance to a code is at most the relative distance to any specific codeword. -/

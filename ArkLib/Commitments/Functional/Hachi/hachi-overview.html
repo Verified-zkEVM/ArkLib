@@ -9,6 +9,7 @@
     --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
     --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
     --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --rep:#2D6FA8; --rep-ghost:rgba(45,111,168,.12);
     --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
     --font-sans:"SF Pro Text","SF Pro Display",-apple-system,BlinkMacSystemFont,"Segoe UI","Helvetica Neue",Arial,sans-serif;
     --font-mono:"SF Mono","JetBrains Mono","Berkeley Mono",ui-monospace,"Cascadia Code",Menlo,Consolas,monospace;
@@ -24,6 +25,7 @@
       --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
       --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
       --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+      --rep:#68B0E3; --rep-ghost:rgba(104,176,227,.14);
       --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
     }
   }
@@ -36,6 +38,7 @@
     --warn:#B7790A; --warn-ghost:rgba(183,121,10,.13);
     --bad:#D0435A; --bad-ghost:rgba(208,67,90,.12);
     --plan:#7A8099; --plan-ghost:rgba(122,128,153,.12);
+    --rep:#2D6FA8; --rep-ghost:rgba(45,111,168,.12);
     --shadow:0 1px 2px rgba(20,26,45,.05), 0 6px 20px -12px rgba(20,26,45,.18);
   }
   :root[data-theme="dark"] {
@@ -47,6 +50,7 @@
     --warn:#EEB13B; --warn-ghost:rgba(238,177,59,.14);
     --bad:#F2708A; --bad-ghost:rgba(242,112,138,.14);
     --plan:#8B90A6; --plan-ghost:rgba(139,144,166,.13);
+    --rep:#68B0E3; --rep-ghost:rgba(104,176,227,.14);
     --shadow:0 1px 2px rgba(0,0,0,.3), 0 10px 30px -16px rgba(0,0,0,.6);
   }
 
@@ -115,7 +119,7 @@
   .rule { height:1px; background:var(--line); border:0; margin:0; }
 
   /* ---------- summary tiles ---------- */
-  .tiles { display:grid; grid-template-columns:repeat(3,1fr); gap:14px; }
+  .tiles { display:grid; grid-template-columns:repeat(auto-fit,minmax(212px,1fr)); gap:14px; }
   .tile {
     background:var(--surface); border:1px solid var(--line); border-radius:14px;
     padding:18px 18px 16px; position:relative; box-shadow:var(--shadow);
@@ -129,6 +133,7 @@
   .tile.warn .n{color:var(--warn);} .tile.warn .dot{background:var(--warn);}
   .tile.bad .n{color:var(--bad);} .tile.bad .dot{background:var(--bad);}
   .tile.plan .n{color:var(--plan);} .tile.plan .dot{background:var(--plan);}
+  .tile.rep .n{color:var(--rep);} .tile.rep .dot{background:var(--rep);}
 
   .barwrap { margin-top:20px; }
   .bar { display:flex; height:12px; border-radius:999px; overflow:hidden; border:1px solid var(--line); background:var(--surface-2); }
@@ -163,6 +168,8 @@
   .pill.wip { color:var(--warn); background:var(--warn-ghost); border-color:color-mix(in srgb,var(--warn) 30%,transparent); }
   .pill.gap { color:var(--bad); background:var(--bad-ghost); border-color:color-mix(in srgb,var(--bad) 30%,transparent); }
   .pill.plan { color:var(--plan); background:var(--plan-ghost); border-color:color-mix(in srgb,var(--plan) 32%,transparent); }
+  /* sorry-free, but a deliberate repair of the paper's claim — deliberately not `proven` */
+  .pill.repaired { color:var(--rep); background:var(--rep-ghost); border-color:color-mix(in srgb,var(--rep) 32%,transparent); }
 
   /* badge (bridge / guarded / subfolder / core) */
   .badge {
@@ -358,7 +365,7 @@
       evaluation (<strong>QuadEval</strong>) to a bare multilinear-evaluation claim on the committed
       table, which the §4.5 adapters (rows 10–12) hand back to the next iteration.
       This map places every protocol-bearing file on that line, marks the bridges and
-      subfolders, and shows exactly what is proven or in progress.
+      subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
       <span class="chip">31 files</span>
@@ -388,6 +395,7 @@
       <div class="bar" id="statusBar" role="img" aria-label="Proportion of files by status"></div>
       <div class="bar-legend">
         <span class="k"><span class="sw" style="background:var(--ok)"></span>Proven — sorry-free &amp; complete</span>
+        <span class="k"><span class="sw" style="background:var(--rep)"></span>Repaired — sorry-free, but a corrected variant of the paper</span>
         <span class="k"><span class="sw" style="background:var(--warn)"></span>WIP — theorems stated, proofs skeletal</span>
       </div>
     </div>
@@ -428,8 +436,12 @@
           <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) and the HMZ25 lift (Lemma&nbsp;9) are even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
         </div>
         <div class="legend-row">
+          <span class="key"><span class="pill repaired">repaired</span></span>
+          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by per-coordinate scalar rounds with a nested binary-evaluation-tree zero test, at the cost of a temporary <span class="mono">liftShort</span> assumption. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
+        </div>
+        <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
-          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>.</span>
+          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>. One exception carries <span class="mono">sorry&nbsp;0</span> — link&nbsp;5's pull-back is proved and its Eqs.&nbsp;(22)–(23) encoding is now paper-faithful, but the link is still WIP because it has no honest-completeness direction <span class="mono">relLift → relBatched</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill gap">gap</span></span>
@@ -492,6 +504,7 @@
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
       <button data-f="all" aria-pressed="true">all · 31</button>
       <button data-f="proven" aria-pressed="false">proven</button>
+      <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
       <button data-f="umbrella" aria-pressed="false">umbrella</button>
     </div>
@@ -576,27 +589,27 @@
       rows:[
       { n:5, kind:"bridge", name:"Batching bridge", sub:"ZeroCheck", fn:"Batch.lean",
         files:[["ZeroCheck","Batch.lean"]], ref:"§4.3 · Eqs. 22–23", rounds:"0 rounds", cwss:"any",
-        relIn:"relLift", relOut:"relBatched", status:"wip", sorry:1, badges:["bridge"],
-        desc:"Reads the lift's per-row/per-entry residual claims as the two <code>MvPolynomial</code> identities the zero-check tests. Statement reshaping only; the sole content is the sorried un-batching direction." },
+        relIn:"relLift", relOut:"relBatched", status:"wip", sorry:0, badges:["bridge"],
+        desc:"The <b>un-batching pull-back <code>mem_relLift_of_relBatched</code> is proof-sorry-free and axiom-clean</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, so shortness is derived rather than assumed. The <b>Eq.&nbsp;(22) half is now a faithful paper-to-Lean bridge</b>: the public <code>M̃_α</code>/<code>α̃</code> contraction against the committed table is constructed (<code>mAlphaTilde</code>, <code>alphaTilde</code>, <code>alphaContract</code>) and <b>proved</b> equal to the per-row α-defect that <code>hAlphaEvals</code> stores (<code>alphaDefect_wTable</code>, axiom-clean), with the relation-level form <code>hAlpha_eq_zero_iff_alphaDefect</code>. Link&nbsp;5 remains WIP for one reason only: there is still no forward/honest-completeness theorem <code>relLift → relBatched</code>." },
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
-        files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"(ρ₀, ρ_α) ∈ F²", cwss:"ℓ = 2, k = D",
-        relIn:"relBatched", relOut:"relZeroCheck", status:"wip", sorry:2, badges:["repair"],
-        desc:"One challenge round carrying a pair of scalar <b>Kronecker seeds</b>, with batching points derived on the curves κ_m(ρ) = (ρ, ρ², ρ⁴, …). Deliberately repairs the paper's unprovable uniform-vector Lemma&nbsp;10 (an axis-cross counterexample) to recover genuine (ℓ,k) = (2, D) CWSS." },
+        files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"m₀+m₁ scalar rounds", cwss:"k = 2 per round",
+        relIn:"relBatched", relOut:"relNestedZeroCheck", status:"repaired", sorry:0, badges:["repair"],
+        desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; the tree has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters, vs 2D−1=4095 for the printed lemma), and the extractor is non-constructive, so this is weaker than Lemma 10's <em>efficient deterministic</em> algorithm. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
       znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
       rows:[
       { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
         files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
-        relIn:"relZeroCheck", relOut:"roundRel 0", status:"wip", sorry:1, badges:["bridge"],
-        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier)." },
+        relIn:"relNestedZeroCheck", relOut:"nestedRoundRel 0", status:"wip", sorry:0, badges:["bridge"],
+        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheck_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
-        relIn:"roundRel 0", relOut:"roundRel m₀", status:"wip", sorry:2, badges:["guarded"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append <code>▷ₑᵍ</code> into <code>roundsChain</code>, whose recursion pins the relation seams." },
+        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:3, badges:["guarded"],
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. The weak-binding failure mode is the escape event <code>roundEsc</code>; the three sorries are Lemma&nbsp;11 itself, its named <code>roundExtractor</code>, and the round encoding." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
-        relIn:"roundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:3, badges:["guarded"],
+        relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:3, badges:["guarded"],
         desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Output is the evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
     ]},
   ];
@@ -610,10 +623,10 @@
       desc:"The two-layer commitment the whole line opens against: the scheme with its weak openings, <b>perfect correctness</b>, and the <b>weak-binding reduction to Module-SIS</b> — plus the pinned power-of-two ring. All sorry-free, down to the [LS18] short-element invertibility the soundness rests on." },
   ];
   var SUB_CROSS = [
-    { name:"Escape events", ref:"the package lattice", files:[["CWSS","Escape.lean"]], status:"proven", sorry:0,
-      desc:"Cryptographic escapes are <em>events on the transcript tree</em>: a package's <code>esc</code> field is a predicate on (statement, tree), and its certificate concludes <code>esc ∨ extraction succeeds</code>. Relations and extractors stay ordinary, so no choice of extractor can trivialize a certificate. The 2×2 package lattice (escape? × guarded?) composes through the universal <code>▷</code> with lossless lifts, matching only relation seams." },
-    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:12,
-      desc:"The table w̃, the eq̃-batched constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). Definitions-only for now — the most sorried file in the tree." },
+    { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"wip", sorry:1,
+      desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChain</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
+    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:2,
+      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands (<code>sumcheckPoly*</code>, <code>zcTargetAlpha</code>, <code>hypercubeSum</code>) now have concrete computable bodies; the only remaining sorries are the two sum identities <code>sum_sumcheckPolyZero</code>/<code>sum_sumcheckPolyAlpha</code>." },
     { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
       desc:"Imports every subprotocol's package and chains them: <code>evalChain</code> (the proven core, sorry-free) · <code>openCore</code> (rows 1–7, pure) · <code>openingChain</code> (rows 1–12, guarded tail and the §4.5 recursion adapters). Its <code>isCWSS</code> fields are the certificates; the file itself has no sorries — its soundness rests on the imported packages." },
     { name:"Scheme interface", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
@@ -649,35 +662,43 @@
     ["QuadEval","Gadgets.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
-    ["RingSwitch","Basic.lean","umbrella","§4.3","—","umbrella",0],
-    ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
-    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
-    ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
-    ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",1],
-    ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",12],
-    ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","wip",2],
-    ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
-    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",1],
-    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",2],
-    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",3],
-    ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
-    ["Recursion","PartialEval.lean","adapter","§4.5 · Eq24","10","wip",6],
-    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","11","gap",2],
-    ["Recursion","TraceHandoff.lean","adapter","§4.5 · Eqs27–28","12","wip",4],
+    ["","RingSwitch.lean","umbrella","§4.3","—","umbrella",0],
+    ["RingSwitch","Rlin.lean","bridge","§4.3","3","wip",3],
+    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","wip",1],
+    ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
+    ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
+    ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",2],
+    ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
+    ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
+    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
+    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
   ];
 
   /* ---------------- HELPERS ---------------- */
-  var STATUS_LABEL = { proven:"proven", wip:"wip", gap:"gap", plan:"planned", umbrella:"umbrella" };
+  var STATUS_LABEL = { proven:"proven", repaired:"repaired", wip:"wip", gap:"gap", plan:"planned", umbrella:"umbrella" };
   function el(tag, cls, html){ var e=document.createElement(tag); if(cls) e.className=cls; if(html!=null) e.innerHTML=html; return e; }
-  function pill(status){ var s = status==="umbrella" ? "plan" : status; return '<span class="pill '+(s==="proven"?"proven":s==="wip"?"wip":s==="gap"?"gap":"plan")+'">'+(STATUS_LABEL[status]||status)+'</span>'; }
+  var PILL_CLASS = { proven:"proven", repaired:"repaired", wip:"wip", gap:"gap", plan:"plan", umbrella:"plan" };
+  function pill(status){ return '<span class="pill '+(PILL_CLASS[status]||"plan")+'">'+(STATUS_LABEL[status]||status)+'</span>'; }
   function pathHTML(sub, fn){ return (sub?('<span class="sub">'+sub+'/</span>'):'')+'<span class="fn">'+fn+'</span>'; }
 
   /* ---------------- TILES ---------------- */
-  var counts = { proven:0, wip:0 };
-  INDEX.forEach(function(r){ if(r[2]==="umbrella") return; if(counts[r[5]]!=null) counts[r[5]]++; });
+  /* Every status appearing in INDEX must have a key here, or it is invisible in the tiles and the
+     bar and `total` stops matching the file count. Unrepresented statuses are reported loudly
+     rather than dropped silently. */
+  var counts = { proven:0, repaired:0, wip:0 };
+  var uncounted = [];
+  INDEX.forEach(function(r){
+    if(r[2]==="umbrella") return;
+    if(counts[r[5]]!=null) counts[r[5]]++; else uncounted.push(r[1]+' ("'+r[5]+'")');
+  });
+  if(uncounted.length && typeof console!=="undefined" && console.warn){
+    console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
+  }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations, the entire QuadEval subprotocol (rows 1–2), the Rˡⁱⁿ adapter (row 3), and the HMZ25 lift (row 4, Lemma&nbsp;9)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 5–10 and 12, the shared encoding, composition and the scheme." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
+    { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–5 and 7–9, escape threading, the shared encoding, composition and the scheme." },
     { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
   ];
   var tilesEl = document.getElementById("tiles");
@@ -688,9 +709,9 @@
     tilesEl.appendChild(d);
   });
   /* status bar (files, excluding umbrellas) */
-  var total = counts.proven+counts.wip;
+  var total = counts.proven+counts.repaired+counts.wip;
   var bar = document.getElementById("statusBar");
-  [["var(--ok)",counts.proven],["var(--warn)",counts.wip]].forEach(function(seg){
+  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip]].forEach(function(seg){
     var s=el("span"); s.style.background=seg[0]; s.style.width=(100*seg[1]/total)+"%"; bar.appendChild(s);
   });
 

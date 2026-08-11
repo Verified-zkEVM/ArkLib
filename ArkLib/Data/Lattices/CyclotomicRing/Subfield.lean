@@ -45,10 +45,11 @@ The Section 3 results:
   (`X^{(d/2k)j} + σ_{-1}(X^{(d/2k)j})`, the Eq. 7 family up to the reindexing `j ↦ k − j`),
   `vElt_coeff` in `Subfield/Basis.lean`; `fixedBasisMap`, `card_fixedSubring_eq` in
   `Subfield/Cardinality.lean`.
-* **Lemma 5** (`R_q^H` is a subfield `≅ F_{q^k}`) — `fixedSubring_isField`,
-  `fixedSubringEquivGaloisField` in `Subfield/Field.lean`; the `q ≡ 5 (mod 8)` number theory
-  (`orderOf_q_eq`, `neg_one_notMem_powers_q`, `cyclotomic_card_normalizedFactors`) in
-  `Subfield/Factorization.lean`.
+* **Lemma 5** (`R_q^H` is a subfield `≅ F_{q^k}`) — stated as `fixedSubring_isField` and
+  `fixedSubringEquivGaloisField` in `Subfield/Field.lean`. These declarations currently depend
+  on the single open lemma `no_selfReciprocal_factor`; the cardinality/Eq. 7 half is fully proved.
+  The supporting `q ≡ 5 (mod 8)` number theory (`orderOf_q_eq`, `neg_one_notMem_powers_q`,
+  `cyclotomic_card_normalizedFactors`) is proved in `Subfield/Factorization.lean`.
 * **Theorem 2, Eq. 8** (the packing map `ψ`) — `packExp`, `psi` in `Subfield/Packing.lean`.
 * **Theorem 2, Claim 1** (`⟨4k+1⟩ = {4k·α + 1 : α < d/2k}`, order `d/2k`) — `four_pow_injOn`
   in `Galois/Order.lean`, `Hexp_card` in `Galois/Group.lean`, `four_pow_i_reindex` in
@@ -62,7 +63,8 @@ The Section 3 results:
   `Subfield/TraceInnerProduct.lean`.
 * **Theorem 2, `ψ` is a bijection** — `psi_injective` in `Subfield/TraceInnerProduct.lean`,
   `psi_bijective` in `Subfield/Bijectivity.lean`.
-* **Lemma 6** (`‖ψ(a)‖∞ ≤ 2β`) — `cInfNorm_psi_le` in `Subfield/NormBound.lean`.
+* **Lemma 6** (`‖ψ(a)‖∞ ≤ 2β`) — the fully proved theorem `cInfNorm_psi_le` in
+  `Subfield/NormBound.lean`.
 
 ## Deviations from the paper
 
@@ -85,21 +87,24 @@ The Section 3 results:
   `conjExp = 2^{α+1} − 1`.
 * **Hypotheses.** The paper's "`k ≥ 1` divides `d/2`" is `2 * k ∣ 2^α`; the explicit
   "`k` is a power of two" (`hk2pow`) is recorded although automatic for divisors of
-  `2^{α-1}`. The blanket `q ≡ 5 (mod 8)` is demanded only where genuinely needed (the field
-  structure, `Subfield/Field.lean` / `Subfield/Factorization.lean`); the trace formula,
-  bijectivity, and cardinality need only `(2 : R) ≠ 0` (i.e. `q` odd) — slightly more
-  general than the paper.
+  `2^{α-1}`. The blanket `q ≡ 5 (mod 8)` is demanded only where genuinely needed by the
+  current field proof (`Subfield/Field.lean` / `Subfield/Factorization.lean`). The trace formula,
+  bijectivity, cardinality, and Lemma 6 need only `(2 : R) ≠ 0` (for Lemma 6,
+  `(2 : ZMod q) ≠ 0`), so these results are slightly more general than the paper.
 * **`ψ`-injectivity via the trace pairing.** The paper proves injectivity by the coefficient
   analysis of Eq. 9; the formal proof tests against basis vectors through the (already
   proven) trace formula and closes bijectivity by the cardinality match. Eq. 9's coefficient
-  analysis instead underlies `vElt_coeff` and the Lemma 6 proof plan.
+  analysis instead underlies `vElt_coeff` and the proved Lemma 6 coefficient bound.
 
-## Open items (`sorry`)
+## Proof status
 
 * `no_selfReciprocal_factor` (`Subfield/Field.lean`) — reversal swaps the two irreducible
-  factors of `X^d + 1`. Everything downstream of it in the Lemma 5 chain is proven.
-* `cInfNorm_psi_le` (`Subfield/NormBound.lean`) — Lemma 6; statement formalized, proof plan
-  in its docstring.
+  factors of `X^d + 1`. This is the only local `sorry` and the only reason the final Lemma 5
+  field/isomorphism declarations depend on `sorryAx`; everything downstream is proved
+  conditionally on it.
+* `cInfNorm_psi_le` (`Subfield/NormBound.lean`) — Lemma 6 is fully proved and does not depend
+  on `sorryAx`. Its support and at-most-two-contributions argument uses
+  `fixedSubring_coeff_eq_zero`, but not the open field upgrade from Lemma 5.
 
 ## File map
 

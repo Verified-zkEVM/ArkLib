@@ -177,6 +177,7 @@ import ArkLib.Data.MvPolynomial.EvenAndOdd
 import ArkLib.Data.MvPolynomial.Interpolation
 import ArkLib.Data.MvPolynomial.LinearMvExtension
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.NestedEvaluationTree
 import ArkLib.Data.MvPolynomial.RestrictDegree
 import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
@@ -307,6 +308,8 @@ import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured
 import ArkLib.ProofSystem.Sumcheck.Structured.Prismalinear
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+import ArkLib.ToCompPoly.Multilinear.Basic
+import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin
