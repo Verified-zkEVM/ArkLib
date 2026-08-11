@@ -136,11 +136,16 @@ home_page/            site assets and assembled website root
   - `ZeroCheck/` (§4.3, Figure 5 / **corrected** Lemma 10) — reduces the batched identities
     `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
     encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
-    the Kronecker curve `kroneckerPoint`, per-round seam `roundRel`), consumed by both this
-    zero-check and `Sumcheck/`; `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching
-    bridge; `ZeroCheck/Reduction` is the corrected Lemma 10 (Kronecker seed pair, `(ℓ, k) = (2, D)`;
-    its module docstring carries the counterexample and the repair). `ZeroCheck/Basic.lean`
-    re-exports the folder.
+    per-round seam `nestedRoundRel`), consumed by both this zero-check and `Sumcheck/`;
+    `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge (proven, and the place
+    `liftShort` is *derived* from `H₀ ≡ 0` rather than assumed); `ZeroCheck/Reduction` is the
+    corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
+    nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
+    `k`-ary, individual degree `< k` — with the computable view in
+    `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; the weak-binding failure mode is the
+    escape event `nestedZeroCheckEsc`, whose hardness target is `LiftCom.Collision`). Its module
+    docstring carries the counterexample and the repair; the full analysis is
+    `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
     sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over

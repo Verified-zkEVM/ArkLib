@@ -153,12 +153,12 @@ rewritten headline modules; the mandatory zero-warning and ordinary validation g
 
 ## Current-main merge gate
 
-Commit `907e6dc83` was synthetically merged into `origin/main` `e052dbc93` in a clean detached
+Commit `4d1b29530` was synthetically merged into `origin/main` `e052dbc93` in a clean detached
 worktree. The merge had no textual conflict. `./scripts/validate.sh` then passed a clean 4,220-job
 build together with the Data warning, import, documentation, and KB gates;
 `lake exe checkdecls blueprint/lean_decls` and `git diff --check` also passed.
 
-The merged exhaustive axiom sweep covered 8,426 declarations in 348 modules and found zero
+The merged exhaustive axiom sweep covered 8,432 declarations in 348 modules and found zero
 non-standard-axiom-tainted declarations. Its committed-main baseline check reports exactly four
 new `sorryAx`-tainted Hachi declarations:
 
@@ -175,3 +175,34 @@ the same sweep source was therefore run directly with `lake env lean --run scrip
 
 Hosted PR checks remain the final external gate because the target branch can move after this
 document is written.
+
+## Merge of `origin/main` `a4ac38e0e` (#712)
+
+After the synthetic gate above, `main` advanced by #712 ("Some coding theory bits"), which
+overlaps this PR's coding-theory layer, so `origin/main` was merged into the branch directly.
+One textual conflict (`Basic/Distance.lean`) was a pair of adjacent additions — upstream's
+`hammingDist_comp'` next to this PR's disagreement-coordinate API — and both were kept
+unchanged.
+
+One semantic reconciliation was required beyond the textual merge. #712 deleted the local
+`ListDecodable.hammingBall`/`relHammingBall` in favor of `Code.hammingBall` /
+`Code.relHammingBall` (in `Basic/Distance.lean` and `Basic/RelativeDistance.lean`), which carry
+`[DecidableEq]` instance arguments from their sections, and added a section-wide
+`[DecidableEq F]` to `ListDecodability.lean`. Accepting that variable would have re-introduced
+exactly the decidability over-assumptions this review removed from the `Lambda`/`listDecodable`
+bridges. Instead, the deduplication is kept but `closeCodewords`/`closeCodewordsRel` are defined
+under `open Classical in` on top of the relocated balls, so the list-decoding API stays
+instance-free and definitionally identical to the reviewed form. Consumers of the deleted names
+were ported (`HammingBallVolume.lean` statement and proof, one `simp` set each in
+`JohnsonBound/Family.lean` and `ExtensionCodes.lean`, one `rw`-vs-instance site in
+`Family.lean` restated as `simp only`), and the blueprint's "List of Close Codewords" node now
+points at `ListDecodable.closeCodewordsRel` instead of the deleted ball.
+
+Verification on the merged tree: `./scripts/validate.sh` passed (full 4,220-job build, Data
+zero-warning gate, imports, generated files, docs integrity, KB lint);
+`lake exe checkdecls blueprint/lean_decls` passes with the updated inventory; the committed
+axiom gate `./scripts/validate.sh --axioms` reports 8,440 declarations across 348 modules with
+zero non-standard-axiom taint and exactly the four pre-existing Hachi `InnerOuter` `sorryAx`
+baseline-drift declarations listed above (CI runs this gate in report-only soak mode, so it
+annotates a warning rather than failing; refreshing `scripts/axiom_baseline.json` for those four
+is a `main`-side action, not part of this PR).

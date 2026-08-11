@@ -410,8 +410,8 @@ private lemma johnson_lambda_le_ell_of_radicand
   classical
   have hmem : ∀ x ∈ B0, x ∈ C ∧ ((hammingDist f x : ℝ) / n ≤ radius) := by
     intro x hx
-    rw [hB0, Set.Finite.mem_toFinset, hS, closeCodewordsRel, relHammingBall,
-      Set.mem_setOf_eq, Set.mem_setOf_eq] at hx
+    rw [hB0, Set.Finite.mem_toFinset, hS] at hx
+    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq] at hx
     refine ⟨hx.1, ?_⟩
     have h2 := hx.2
     unfold Code.relHammingDist at h2
@@ -556,7 +556,7 @@ theorem johnson_bound_lambda_le_ell
     have hsub : closeCodewordsRel C f (Jqℓ q ((1 : ℕ) : ℚ) δ_min) ⊆ {f} := by
       intro c hc
       have h2 := hc.2
-      simp only [relHammingBall, Set.mem_setOf_eq] at h2
+      simp only [Code.relHammingBall, Set.mem_setOf_eq] at h2
       rw [show Jqℓ q ((1 : ℕ) : ℚ) δ_min = 0 by exact_mod_cast h0] at h2
       -- `closeCodewordsRel` bakes in a classical `DecidableEq α`, distinct from the section
       -- instance; every step below is instance-agnostic (the instance flows out of `h2`).
@@ -747,7 +747,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
           rw [Set.eq_empty_iff_forall_notMem]
           intro c hc
           have hmem := hc.2
-          simp only [ListDecodable.relHammingBall, Set.mem_setOf_eq] at hmem
+          simp only [Code.relHammingBall, Set.mem_setOf_eq] at hmem
           -- hmem : ↑(relHammingDist f c) ≤ 1 - s - η, LHS is a coerced ℚ≥0 (≥ 0)
           have hcombine : (0:ℝ) ≤ 1 - s - η := le_trans (by positivity) hmem
           linarith [hcombine, hradius_neg]

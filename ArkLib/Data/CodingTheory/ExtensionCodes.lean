@@ -766,7 +766,7 @@ theorem lambda_extensionCode_eq_lambda_interleaved
         = Ψ '' (closeCodewordsRel (extensionCode P C_B) f δ) := by
     intro f
     ext c
-    simp only [closeCodewordsRel, relHammingBall, Set.mem_setOf_eq, Set.mem_image]
+    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq, Set.mem_image]
     constructor
     · rintro ⟨hc_mem, hc_ball⟩
       refine ⟨Ψ.symm c, ⟨?_, ?_⟩, by simp⟩

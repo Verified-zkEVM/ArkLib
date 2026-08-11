@@ -5,12 +5,13 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
+import CompPoly.Univariate.Linear
 
 /-!
   # Paired sumcheck rounds — Hachi Figure 6 / Lemma 11 — skeleton
 
   The sumcheck loop of Hachi §4.3: `m₀` rounds, each reducing the pair of
-  partial-hypercube-sum claims (`roundRel i`, `ZeroCheck/Constraints.lean`) by one variable.
+  partial-hypercube-sum claims (`nestedRoundRel i`, `ZeroCheck/Constraints.lean`) by one variable.
 
   ## Paired rounds
 
@@ -64,10 +65,13 @@ section Wire
 
 variable (F : Type) [Field F] (b : ℕ)
 
-/-- A round message: the pair of univariate round polynomials `(g_i^{(0)}, g_i^{(α)})`, degree-
-bounded by the pins (`roundDegZero b = 2b`, `roundDegAlpha = 2`). -/
+/-- A round message: the pair of computable univariate round polynomials
+`(g_i^{(0)}, g_i^{(α)})`, degree-bounded by the R8 pins (`roundDegZero b = 2b`,
+`roundDegAlpha = 2`). `CPolynomial.degreeLE_toPoly` connects each component to Mathlib's
+`Polynomial.degreeLE` when a proof needs the Mathlib API. -/
 @[reducible] def RoundMsg : Type :=
-  ↥(Polynomial.degreeLE F (roundDegZero b : ℕ)) × ↥(Polynomial.degreeLE F (roundDegAlpha : ℕ))
+  ↥(CPolynomial.degreeLE (R := F) (roundDegZero b : ℕ)) ×
+    ↥(CPolynomial.degreeLE (R := F) (roundDegAlpha : ℕ))
 
 /-- The concatenated wire format of `count` paired sumcheck rounds (each round is
 `pSpecScalar (RoundMsg F b) F`: one message pair, one scalar challenge). -/
@@ -93,13 +97,14 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {F : Type} [Field F] [DecidableEq F]
+variable {n μ : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The round check ([NOZ26] Figure 6): both round polynomials sum to the current targets over
-`{0, 1}`. `Bool`-valued so the guarded-verifier witness is definitional. -/
-def roundCheck {TCom : Type} {i : ℕ} (stmt : RoundStatement Φ TCom F n μ i)
+`{0, 1}`. `Bool`-valued (design G3) so the guarded-verifier witness is definitional. -/
+def roundCheck {TCom : Type} {i : ℕ}
+    (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ i)
     (g : RoundMsg F b) : Bool :=
   decide (g.1.1.eval 0 + g.1.1.eval 1 = stmt.target₀) &&
     decide (g.2.1.eval 0 + g.2.1.eval 1 = stmt.targetα)
@@ -109,21 +114,22 @@ challenge prefix by `a_i` and replace the targets by `(g_i^{(0)}(a_i), g_i^{(α)
 otherwise `failure` (see the module docstring for why the check cannot live in the output
 relation). -/
 def roundVerifier {TCom : Type} (i : ℕ) :
-    Verifier oSpec (RoundStatement Φ TCom F n μ i) (RoundStatement Φ TCom F n μ (i + 1))
+    Verifier oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ i)
+      (NestedRoundStatement Φ TCom F n μ m₀ m₁ (i + 1))
       (pSpecScalar (RoundMsg F b) F) where
   verify := fun stmt tr =>
-    if roundCheck Φ b stmt (tr.messages ⟨0, rfl⟩) then
+    if roundCheck Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩) then
       pure ⟨stmt.zc, Fin.snoc stmt.challenges (tr.challenges ⟨1, rfl⟩),
         (tr.messages ⟨0, rfl⟩).1.1.eval (tr.challenges ⟨1, rfl⟩),
         (tr.messages ⟨0, rfl⟩).2.1.eval (tr.challenges ⟨1, rfl⟩)⟩
     else failure
 
-omit [NeZero q] [IsCyclotomic Φ] in
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The round verifier is guarded — definitionally, by `roundCheck`. -/
 theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
-    (roundVerifier (oSpec := oSpec) Φ b (n := n) (μ := μ) (TCom := TCom)
+    (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
       (F := F) i).IsGuarded :=
-  ⟨fun stmt tr => roundCheck Φ b stmt (tr.messages ⟨0, rfl⟩),
+  ⟨fun stmt tr => roundCheck Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩),
    fun stmt tr =>
      ⟨stmt.zc, Fin.snoc stmt.challenges (tr.challenges ⟨1, rfl⟩),
       (tr.messages ⟨0, rfl⟩).1.1.eval (tr.challenges ⟨1, rfl⟩),
@@ -133,15 +139,15 @@ theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
 /-- The `i`-th round's honest prover skeleton ([NOZ26] Figure 6; completeness out of scope): the
 round-polynomial pair is the parameter `computeG` (honestly: the partial hypercube sums of the
 two sumcheck polynomials in the free variable), and the output witness carries `w̃` forward. -/
-def roundProver {TCom : Type} (i : ℕ)
-    (computeG : RoundStatement Φ TCom F n μ i → LiftedWitness Φ μ n → RoundMsg F b) :
-    Prover oSpec (RoundStatement Φ TCom F n μ i) (LiftedWitness Φ μ n)
-      (RoundStatement Φ TCom F n μ (i + 1)) (LiftedWitness Φ μ n)
+def roundProver {TCom Wit : Type} (i : ℕ)
+    (computeG : NestedRoundStatement Φ TCom F n μ m₀ m₁ i → Wit → RoundMsg F b) :
+    Prover oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ i) Wit
+      (NestedRoundStatement Φ TCom F n μ m₀ m₁ (i + 1)) Wit
       (pSpecScalar (RoundMsg F b) F) where
   PrvState
-    | 0 => RoundStatement Φ TCom F n μ i × LiftedWitness Φ μ n
-    | 1 => RoundStatement Φ TCom F n μ i × LiftedWitness Φ μ n
-    | 2 => (RoundStatement Φ TCom F n μ i × LiftedWitness Φ μ n) × F
+    | 0 => NestedRoundStatement Φ TCom F n μ m₀ m₁ i × Wit
+    | 1 => NestedRoundStatement Φ TCom F n μ m₀ m₁ i × Wit
+    | 2 => (NestedRoundStatement Φ TCom F n μ m₀ m₁ i × Wit) × F
   input := id
   sendMessage
     | ⟨0, _⟩ => fun st => pure (computeG st.1 st.2, st)
@@ -176,13 +182,13 @@ it tight. It does mention the guard's output map, which is plain data — the sa
 def roundEsc
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    ChallengeTree.EscapeEvent (RoundStatement Φ K.TCom F n μ i) (pSpecScalar (RoundMsg F b) F)
+    ChallengeTree.EscapeEvent (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
         (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))).arity :=
   ScalarRound.escEventScalarOfValid (round_two_le_k b)
     (fun stmt g fam j w =>
       (⟨stmt.zc, Fin.snoc stmt.challenges (fam j), g.1.1.eval (fam j), g.2.1.eval (fam j)⟩, w) ∈
-        roundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
+        nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
     (fun _ _ _ resp => ∃ j j', (resp j, resp j') ∈ K.Collision)
 
 /-- **The Lemma 11 per-round extraction algorithm.**
@@ -193,7 +199,7 @@ def roundEsc
 noncomputable def roundExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    Extractor.TreeBased (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
+    Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
       (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
         (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))).arity :=
@@ -227,10 +233,10 @@ theorem round_coordinateWiseSpecialSoundWithEscape
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))
       (roundEsc Φ m₀ m₁ bound ρBound b K φF i)
-      (roundRel Φ m₀ m₁ bound ρBound K φF b i)
-      (roundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
-      (roundVerifier (oSpec := oSpec) Φ b (TCom := K.TCom) i)
-      (roundExtractor Φ bound ρBound b K φF i) := by
+      (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b i)
+      (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
+      (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (TCom := K.TCom) i)
+      (roundExtractor Φ m₀ m₁ bound ρBound b K φF i) := by
   sorry
 
 /-- The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackage`: the guarded round verifier
@@ -241,16 +247,16 @@ noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
     EscapeGCWSSPackage init impl
-      (RoundStatement Φ K.TCom F n μ i) (LiftedWitness Φ μ n)
-      (RoundStatement Φ K.TCom F n μ (i + 1)) (LiftedWitness Φ μ n)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ (i + 1)) (LiftedWitness Φ μ n)
       (pSpecScalar (RoundMsg F b) F) where
-  verifier := roundVerifier (oSpec := oSpec) Φ b (TCom := K.TCom) i
+  verifier := roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (TCom := K.TCom) i
   struct := scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b)
-  relIn := roundRel Φ m₀ m₁ bound ρBound K φF b i
-  relOut := roundRel Φ m₀ m₁ bound ρBound K φF b (i + 1)
+  relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b i
+  relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1)
   esc := roundEsc Φ m₀ m₁ bound ρBound b K φF i
-  isGuarded := roundVerifier_isGuarded Φ b i
-  extractor := roundExtractor Φ bound ρBound b K φF i
+  isGuarded := roundVerifier_isGuarded Φ m₀ m₁ b i
+  extractor := roundExtractor Φ m₀ m₁ bound ρBound b K φF i
   isCWSS := round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound b init impl K φF i
 
 /-- The empty round loop has no challenges. -/
@@ -270,26 +276,26 @@ noncomputable def roundsChainAux (init : ProbComp σ)
     (φF : ZMod q →+* F) :
     (count : ℕ) →
       { P : EscapeGCWSSPackage init impl
-          (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
-          (RoundStatement Φ K.TCom F n μ count) (LiftedWitness Φ μ n)
+          (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
+          (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
           (roundsSpec F b count) //
-        P.relIn = roundRel Φ m₀ m₁ bound ρBound K φF b 0 ∧
-        P.relOut = roundRel Φ m₀ m₁ bound ρBound K φF b count }
+        P.relIn = nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 ∧
+        P.relOut = nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count }
   | 0 =>
     ⟨EscapeCWSSPackage.toGuarded
       { verifier := ReduceClaim.verifier oSpec id
         struct := CWSSStructure.ofIsEmpty
-        relIn := roundRel Φ m₀ m₁ bound ρBound K φF b 0
-        relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0
+        relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
+        relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
         esc := fun _ _ => False
         isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
         extractor := ReduceClaim.treeExtractor (mapStmt := id)
-          (roundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w)
+          (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w)
           CWSSStructure.ofIsEmpty
         isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _
           (ReduceClaim.verifier_coordinateWiseSpecialSoundWith
-            (relIn := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
-            (relOut := roundRel Φ m₀ m₁ bound ρBound K φF b 0)
+            (relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
+            (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
             (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
             (fun _ _ h => h)) },
      rfl, rfl⟩
@@ -305,8 +311,8 @@ noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
     EscapeGCWSSPackage init impl
-      (RoundStatement Φ K.TCom F n μ 0) (LiftedWitness Φ μ n)
-      (RoundStatement Φ K.TCom F n μ count) (LiftedWitness Φ μ n)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
+      (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
       (roundsSpec F b count) :=
   (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).1
 
@@ -316,7 +322,7 @@ theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT �
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
     (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relIn =
-      roundRel Φ m₀ m₁ bound ρBound K φF b 0 :=
+      nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 :=
   (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.1
 
 /-- The loop's output seam is the round-`count` relation (the seam pin for composing with the
@@ -325,7 +331,7 @@ theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
     (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relOut =
-      roundRel Φ m₀ m₁ bound ρBound K φF b count :=
+      nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count :=
   (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.2
 
 end Protocol

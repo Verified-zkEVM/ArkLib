@@ -162,7 +162,7 @@ ReedSolomon.multiConstrainedCode
 ProximityGap.proximityMeasure
 ProximityGap.proximityGap
 ListDecodable.listDecodable
-ListDecodable.relHammingBall
+ListDecodable.closeCodewordsRel
 OracleSpec
 OracleSpec.emptySpec
 coinSpec

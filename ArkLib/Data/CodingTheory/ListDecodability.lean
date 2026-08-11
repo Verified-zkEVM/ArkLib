@@ -19,10 +19,11 @@ the `sup`-form `Lambda` (ABF26 Definition 2.8's `|Λ(C, δ)|`).
 
 ## Main definitions
 
-* `ListDecodable.hammingBall` / `ListDecodable.relHammingBall` — Hamming balls for the
-  absolute and relative Hamming distance.
 * `ListDecodable.closeCodewords` / `ListDecodable.closeCodewordsRel` — the codewords of `C`
-  inside such a ball; `closeCodewordsRel` is the paper's point list `Λ(C, δ, f)`.
+  inside a Hamming ball (`Code.hammingBall` / `Code.relHammingBall`, from
+  `Basic/Distance.lean` and `Basic/RelativeDistance.lean`); `closeCodewordsRel` is the
+  paper's point list `Λ(C, δ, f)`. Both are defined under `open Classical in`, so they
+  expose no decidability data.
 * `ListDecodable.listDecodable` / `ListDecodable.uniqueDecodable` — `(r, ℓ)`-list
   decodability with a *real* list size `ℓ`, and its `ℓ = 1` special case.
 * `ListDecodable.Lambda` — ABF26 Definition 2.8's maximised list size `|Λ(C, δ)| : ℕ∞`.
@@ -61,24 +62,16 @@ variable {ι : Type*} [Fintype ι]
 abbrev Code.{u, v} (ι : Type u) (S : Type v) : Type (max u v) := Set (ι → S)
 
 open Classical in
-/-- Hamming ball of radius `r` centred at a word `y`. -/
-def hammingBall (y : ι → F) (r : ℕ) : Set (ι → F) :=
-  {x | hammingDist y x ≤ r}
-
-open Classical in
-/-- Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance. -/
-def relHammingBall (y : ι → F) (r : ℝ) : Set (ι → F) :=
-  {x | Code.relHammingDist y x ≤ r}
-
 /-- The set of `r`-close codewords to a given word `y` with respect to the Hamming distance. -/
 def closeCodewords (C : Code ι F) (y : ι → F) (r : ℕ) : Set (ι → F) :=
-  {c | c ∈ C ∧ c ∈ hammingBall y r}
+  {c | c ∈ C ∧ c ∈ Code.hammingBall y r}
 
+open Classical in
 /-- The set of `r`-close codewords to a given word `y` with respect to the relative Hamming
 distance.
 Note that this is exactly `Λ (C, y, r)` from [ACFY24] and ` List (C, y, r)` from [ACFY24stir]. -/
 def closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) :=
-  {c | c ∈ C ∧ c ∈ relHammingBall y r}
+  {c | c ∈ C ∧ c ∈ Code.relHammingBall y r}
 
 /-- A code `C` is `(r,ℓ)`-list decodable: every relative-radius-`r` point list is finite and
 has cardinality at most the real bound `ℓ`.

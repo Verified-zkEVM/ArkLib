@@ -47,6 +47,24 @@ with lint disabled, so treat this as opt-in for now.
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
+### Filling a `sorry`, or work that must stay axiom-clean
+
+```bash
+./scripts/validate.sh --axioms
+```
+
+This adds `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
+declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
+against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
+`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
+intentionally add a tagged `sorry` (or close one), refresh and commit the baseline:
+
+```bash
+lake exe axiomsweep --update-baseline
+```
+
+CI runs the same check report-only for now (see `ci.yml`).
+
 ### Docstrings, blueprint, or website changes
 
 ```bash
@@ -115,6 +133,7 @@ lake build
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
+lake exe axiomsweep --check
 ```
 
 If you specifically need to regenerate `ArkLib.lean`, use:
@@ -133,8 +152,9 @@ python3 -m pip install leanblueprint
 
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
-  clean build, a warm rebuild, and the `./scripts/validate.sh` path, then
-  uploads timing artifacts and posts a comparison report on same-repo PRs.
+  clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
+  axiom sweep report-only, then uploads timing artifacts and posts a comparison
+  report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)

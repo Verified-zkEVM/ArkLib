@@ -37,7 +37,7 @@ This file also provides the bridge between the volume function and the existing
 * `CodingTheory.card_filter_hammingDist_eq` — the shell count
   `#{x | Δ(y, x) = i} = C(n, i) · (q − 1)^i`, proved by an explicit bijection.
 * `CodingTheory.hammingBallVolume_eq_ncard_hammingBall` — the bridge
-  `Vol_q(δ, n) = |B(y, ⌊δ·n⌋)|` to `ListDecodable.hammingBall`, for any centre `y`.
+  `Vol_q(δ, n) = |B(y, ⌊δ·n⌋)|` to `Code.hammingBall`, for any centre `y`.
 
 All three statements are fully proved: there are no `sorry`s, no tagged admits and no admitted
 sub-steps anywhere in this file, and every declaration is axiom-clean.
@@ -168,42 +168,43 @@ lemma card_filter_hammingDist_eq
   rw [Finset.sum_congr rfl h_fiber, Finset.sum_const, smul_eq_mul,
       Finset.card_powersetCard, Finset.card_univ]
 
+open Classical in
 /-- **Bridge to `hammingBall`.** The volume function counts the cardinality of the
 existing `hammingBall` (set of words within radius `⌊δ·n⌋` of any fixed center). The
 identity collapses to the standard combinatorial fact
 `#{x ∈ F^n : Δ(x, y) ≤ r} = ∑_{i ≤ r} C(n, i) · (q-1)^i` independent of `y`.
 
-This links the ArkLib `ListDecodability.hammingBall` (set-form, used elsewhere in the
+This links the ArkLib `Code.hammingBall` (set-form, used elsewhere in the
 list-decoding development) to ABF26 Definition 2.4's `Vol_q(δ, n)` (cardinality form).
 
 Proof: partition `hammingBall y r` by exact distance via `card_filter_hammingDist_eq`,
 then sum.
 
-No `DecidableEq` instances are required: `ListDecodable.hammingBall` is defined under
-`open Classical in`, so the statement mentions no decidability data, and the proof supplies its
-own via `classical`. -/
+No `DecidableEq` hypothesis is exposed: the statement discharges the decidability data
+`Code.hammingBall` carries via `open Classical in`, and the proof supplies its own via
+`classical`. -/
 theorem hammingBallVolume_eq_ncard_hammingBall
     {ι : Type*} [Fintype ι] {F : Type*} [Fintype F] (δ : ℝ) (y : ι → F) :
     hammingBallVolume (Fintype.card F) δ (Fintype.card ι)
-      = (ListDecodable.hammingBall (F := F) y (⌊δ * Fintype.card ι⌋₊)).ncard := by
+      = (Code.hammingBall y (⌊δ * Fintype.card ι⌋₊)).ncard := by
   classical
   set r : ℕ := ⌊δ * Fintype.card ι⌋₊
   -- Step 1: convert RHS ncard → Finset.card with explicit filter.
   have h_rhs :
-      (ListDecodable.hammingBall (F := F) y r).ncard
+      (Code.hammingBall y r).ncard
         = (Finset.univ.filter (fun x : ι → F ↦ hammingDist y x ≤ r)).card := by
-    have h_finite : (ListDecodable.hammingBall (F := F) y r).Finite := Set.toFinite _
+    have h_finite : (Code.hammingBall y r).Finite := Set.toFinite _
     rw [Set.ncard_eq_toFinset_card _ h_finite]
     apply Finset.card_bij (fun x _ ↦ x)
     · intro x hx
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
-      rw [Set.Finite.mem_toFinset, ListDecodable.hammingBall, Set.mem_setOf_eq] at hx
+      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_setOf_eq] at hx
       convert hx using 2
     · intros; assumption
     · intro x hx
       refine ⟨x, ?_, rfl⟩
       simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
-      rw [Set.Finite.mem_toFinset, ListDecodable.hammingBall, Set.mem_setOf_eq]
+      rw [Set.Finite.mem_toFinset, Code.hammingBall, Set.mem_setOf_eq]
       convert hx using 2
   -- Step 2: partition by exact distance.
   have h_partition :
