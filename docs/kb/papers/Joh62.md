@@ -30,7 +30,7 @@ In ArkLib it is the attribution key for the paper-shaped, list-size-parameterise
 - The **Johnson bound itself**, in its list-size form: for any `C ⊆ Σ^n` with `|Σ| = q`,
   `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`. Formalized as
   `CodingTheory.johnson_bound_lambda_le_ell` (= `ABF26` Theorem 3.2).
-- The **radius family** it induces: `CodingTheory.Jqℓ` (the `ℓ`-parameterised `q`-ary Johnson
+- The **radius family** it induces: `JohnsonBound.Jqℓ` (the `ℓ`-parameterised `q`-ary Johnson
   radius) and `JohnsonBound.Jcap` (`1 − √(1−δ)`), both from `ABF26` Definition 3.1.
 - The **MDS corollary** `CodingTheory.mds_johnson_lambda_le_of_rate_distance` (= `ABF26`
   Corollary 3.3, `Λ(C, 1 − √ρ − η) ≤ 1/(2ηρ)`) for an arbitrary finite alphabet, its
