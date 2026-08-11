@@ -185,6 +185,11 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
+theorem mem_code_iff_eval {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.degree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial])
+
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
@@ -197,6 +202,11 @@ lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : 
   aesop
     (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     (add safe (by omega))
+
+theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : ι → F} :
+  f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.natDegree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial_of_ne_zero])
 
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.degree < n`. -/
