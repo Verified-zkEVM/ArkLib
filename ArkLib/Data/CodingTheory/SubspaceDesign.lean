@@ -1050,7 +1050,7 @@ theorem um_is_subspaceDesign_gk16
   have hWne : W ≠ 0 := by
     rw [hWdef, hPdef]
     exact Polynomial.classicalWronskian_ne_zero_of_basis bas
-      (fun j => hPnatDegree j) hchar
+      (fun j => hPnatDegree j) (Or.inr hchar)
   have hWdegle : W.natDegree ≤ σ * (k - 1) :=
     Polynomial.natDegree_classicalWronskian_le σ P (k - 1) (fun j => by
       have := hPnatDegree j

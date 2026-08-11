@@ -36,9 +36,12 @@ and 21 were actual namespace relocations, leaving 154 genuinely new named declar
 The complete name-by-name mapping, including source item, file, declaration kind, namespace-move
 flag, and extractor-artifact flag, is in
 [`SOURCE-MAP-3c303efa.json`](SOURCE-MAP-3c303efa.json); its methodology and source-page audit are
-in [`SOURCE-MAP-3c303efa.md`](SOURCE-MAP-3c303efa.md). A fresh post-fix extraction found 5,423
-declarations in 344 `ArkLib` files, compared with 5,396 in 343 files at the original reviewed head;
-the new file is the reusable classical-Wronskian development.
+in [`SOURCE-MAP-3c303efa.md`](SOURCE-MAP-3c303efa.md). The repository's final regex extraction
+emitted 5,792 records in 344 `ArkLib` files; after removing its 363 known lexical false positives,
+the inventory contains 5,429 actual declarations, compared with 5,396 in 343 files at the original
+reviewed head. The new file is the reusable classical-Wronskian development. The final six-
+declaration increase after the earlier review snapshot is exactly the private support and public
+API that packages the extension encoder as an `F`-linear map.
 
 ## Final source coverage in this split
 
@@ -52,7 +55,7 @@ the new file is the reusable classical-Wronskian development.
 | D2.16, L2.17 | Subspace-design definition and the maximal valid `r >= 1` lower bound are proved with actual alphabet rate. The false printed `r = 0` case is not claimed. |
 | T2.18 | Both folded-RS and univariate-multiplicity halves are proved. The FRS theorem restores the load-bearing generator/orbit hypotheses from GK16. The UM theorem uses the classical Wronskian and the source finite-field characteristic condition. |
 | A.6-A.7 | Ordinary-derivative univariate-multiplicity evaluation/code and exact saturated dimension are present, with the ordinary/Hasse root-power bridge used by T2.18. |
-| D2.19-D2.21 | Extension-field presentation, encoder, preserved injectivity, range/image identity, systematic encoder identity, presentation independence, and list-size equality are present. |
+| D2.19-D2.21 | Extension-field presentation, `F`-linear encoder, preserved injectivity, range/image identity, systematic encoder identity, presentation independence, and list-size equality are present. |
 | DP25 Theorem 3.2 | Extension-code minimum-distance equality is proved, via the generic interleaved-code minimum-distance bridge. |
 | D3.1, T3.2 | The corrected current-TeX Johnson radius and alphabet-generic Johnson list-size theorem are present, including the Plotkin corner rather than a guard that weakens the headline. |
 | C3.3 | `mds_johnson_lambda_le_of_rate_distance` is alphabet- and code-generic with explicit normalized rate and the exact MDS rate-distance equation. Field-linear and RS results are thin wrappers. No provisional `generalRate`/`IsMDSGeneral` API remains. |
@@ -77,13 +80,38 @@ None of these repairs is hidden in a proof or replaced by a weaker conclusion.
 - `rs_lambda_le_johnson_mds` exposes only `Nonempty`; its proof constructs `Inhabited` locally.
 - Claim B.1's generic core needs neither finite `T` nor `DecidableEq T`.
 - The extension-code API is encoder-aware and proves its image representation instead of treating
-  an image-only definition as the source encoder statement.
+  an image-only definition as the source encoder statement; the source encoder is packaged with
+  its proved `F`-linearity rather than relying on linearity of its image.
+- The classical Wronskian degree bound has the definition's natural `CommRing` generality, and its
+  nonvanishing criterion supports characteristic zero as well as GK16's large-positive-
+  characteristic regime.
 - The duplicate `ProximityGap.prob_uniform_congr_equiv` was removed; its consumer uses the
   canonical pre-existing `ProbabilityTheory.Pr_uniform_equiv`.
 - Generic determinant, root-multiplicity, degree, finite-dimensional, and Wronskian facts live in
   reusable algebra/polynomial modules rather than in a paper-specific namespace.
 - Stale paper pages, coverage labels, source metadata, citations, module inventories, and the
   blueprint declaration inventory were reconciled with the code.
+
+## Low/nit follow-up disposition
+
+- The source explicitly calls the D2.20 encoder linear, so the initially deferred encoder-
+  linearity note was resolved: `extensionEncodeLinearMap` packages the existing formula as an
+  `F`-linear map and is definitionally equal to `extensionEncode` on inputs.
+- The classical-Wronskian API now supports characteristic zero and GK16's large-positive-
+  characteristic regime; its standalone degree bound was weakened from `Field` to the natural
+  `CommRing` assumption.
+- No general constructor for a systematic presentation was added. ABF26 and BCFW25 define
+  systematicity and use it conditionally; they do not assert an existence theorem. The condition
+  is non-vacuous (the degree-one self-extension with its singleton basis is systematic), so a
+  general basis-with-one-first constructor is an orthogonal convenience API.
+- `alphabetRate` intentionally remains the algebraic rate for the in-scope `F`-additive alphabet
+  `F^s`. A universal finite-code logarithmic rate would require separate conventions for empty,
+  singleton, and infinite alphabets and would collide conceptually with the existing linear-code
+  `rate`; generic C3.3 therefore accepts an explicit normalized `ρ` and exact rate-distance
+  equation. No misleading `generalRate`/`IsMDSGeneral` API is retained.
+- Generalized documentation now calls `Lambda` an `iSup`/supremum rather than claiming its value
+  is attained outside the paper's finite-alphabet setting. Degenerate `q = 0,1` entropy bounds and
+  concavity are also covered instead of carrying unnecessary lower-bound hypotheses on `q`.
 
 ## Honest remaining scope
 
@@ -112,9 +140,9 @@ All checks below were run on the final pre-commit candidate:
 - `git diff --check`: passed.
 - Focused builds of `ExtensionCodes`, `JohnsonBound.Family`, `SubspaceDesign`, folded/interleaved/
   multiplicity RS, `Probability.Combinatorial`, and the affected proximity module all passed.
-- `#print axioms` on 24 source-facing headline declarations reported exactly
+- `#print axioms` on 25 source-facing headline declarations reported exactly
   `[propext, Classical.choice, Quot.sound]`.
-- The exhaustive compiled-environment sweep covered 8,321 declarations across 345 modules:
+- The exhaustive compiled-environment sweep covered 8,327 declarations across 345 modules:
   416 declarations carry pre-existing baselined `sorryAx`, zero carry a non-standard axiom, and
   this PR introduces no new axiom or `sorryAx` taint.
 - Added-line scans found no code-level `sorry`, `admit`, `axiom`, `unsafe`, or native-trust proof.

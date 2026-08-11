@@ -119,8 +119,9 @@ section Lambda
 
 variable {ι : Type*} [Fintype ι] {F : Type*}
 
-/-- **ABF26 Definition 2.8 (maximised list size).** The maximum over words `f` of
-`|Λ(C, δ, f)| = |closeCodewordsRel C f δ|`. Named to match the paper's `|Λ(C, δ)|`.
+/-- **ABF26 Definition 2.8 (maximised list size).** The supremum over words `f` of
+`|Λ(C, δ, f)| = |closeCodewordsRel C f δ|` (a maximum in the paper's finite-alphabet setting).
+Named to match the paper's `|Λ(C, δ)|`.
 
 Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative Hamming distance is
 `1/n`-quantised (`n := |ι|`, `relHammingDistRange`), so `Λ(C, ·)` is a step function of `δ`,

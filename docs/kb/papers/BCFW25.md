@@ -39,9 +39,9 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
-  — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its systematic identity and
-  range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation independence, DP25
-  distance preservation, and `lambda_extensionCode_eq_lambda_interleaved`.
+  — `ExtensionFieldPresentation`, `IsSystematic`, `extensionEncode`, its `F`-linear-map packaging,
+  systematic identity and range bridge, `extensionCode` / `extensionCodeSubmodule`, presentation
+  independence, DP25 distance preservation, and `lambda_extensionCode_eq_lambda_interleaved`.
 
 ## Version Notes
 
@@ -69,9 +69,10 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
   same review's fix sweep — the current theorem carries no window hypotheses and no
   suppressions.
 - **Both the encoder and image formulations are present.** `extensionEncode` states D2.20 at
-  encoder level; `extensionEncode_comp_algebraMap_of_isSystematic` proves the §D.2 systematic
-  identity, and `range_extensionEncode` connects its image to `extensionCode`. The separate
-  image-level systematic membership theorem is retained as a reusable consequence.
+  encoder level and `extensionEncodeLinearMap` proves that it is the asserted `F`-linear code map;
+  `extensionEncode_comp_algebraMap_of_isSystematic` proves the §D.2 systematic identity, and
+  `range_extensionEncode` connects its image to `extensionCode`. The separate image-level
+  systematic membership theorem is retained as a reusable consequence.
 - **The extension code provably does not depend on the presentation.**
   `extensionCodeSubmodule P C_B = Submodule.span F ((fun c i ↦ algebraMap B F (c i)) '' C_B)`
   (compiled), from which `extensionCode P C_B = extensionCode P' C_B` for any two presentations

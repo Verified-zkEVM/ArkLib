@@ -60,8 +60,9 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `CodingTheory.um_is_subspaceDesign_gk16` (univariate-multiplicity half).
 - **§2.6 extension codes.** Definition 2.19 (extension-field presentation) →
   `CodingTheory.ExtensionFieldPresentation`; Definition 2.20 (extension code) →
-  `CodingTheory.extensionEncode`, with injectivity preservation `extensionEncode_injective`,
-  plus the image-level `extensionCode` / `extensionCodeSubmodule`;
+  `CodingTheory.extensionEncode`, packaged with its proved `F`-linearity as
+  `extensionEncodeLinearMap` and with injectivity preservation `extensionEncode_injective`, plus
+  the image-level `extensionCode` / `extensionCodeSubmodule`;
   the systematic encoder identity → `extensionEncode_comp_algebraMap_of_isSystematic`; Lemma
   2.21 (after `BCFW25` Lemma D.3) →
   `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`; the Diamond–Posen minimum-distance

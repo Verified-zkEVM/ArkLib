@@ -132,10 +132,13 @@ lemma qEntropy_two_inv : qEntropy 2 (2⁻¹ : ℝ) = 1 := by
   rw [qEntropy_two, Real.binEntropy_two_inv, div_self (Real.log_ne_zero_of_pos_of_ne_one
     (by norm_num) (by norm_num))]
 
-/-- `H_q` is non-negative on `[0, 1]`. Stated for `1 ≤ q` (which is all that is needed:
-`Real.log q ≥ 0`); the paper's regime `2 ≤ q` is a special case. -/
-lemma qEntropy_nonneg (hq : 1 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : 0 ≤ qEntropy q x :=
-  div_nonneg (Real.qaryEntropy_nonneg hx₀ hx₁) (Real.log_nonneg (by exact_mod_cast hq))
+/-- `H_q` is non-negative on `[0, 1]`, including the degenerate `q ≤ 1` regime where it
+is identically zero. -/
+lemma qEntropy_nonneg (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : 0 ≤ qEntropy q x := by
+  by_cases hq : q ≤ 1
+  · rw [qEntropy_of_le_one hq]
+  · exact div_nonneg (Real.qaryEntropy_nonneg hx₀ hx₁)
+      (Real.log_nonneg (by exact_mod_cast (show 1 ≤ q by omega)))
 
 /-- `H_q` is strictly positive on the open interval `(0, 1)` when `2 ≤ q`. -/
 lemma qEntropy_pos (hq : 2 ≤ q) (hx₀ : 0 < x) (hx₁ : x < 1) : 0 < qEntropy q x :=
@@ -186,9 +189,13 @@ lemma qEntropy_strictAntiOn (hq : 2 ≤ q) :
   exact Real.qaryEntropy_strictAntiOn hq ha hb hab
 
 /-- **`H_q ≤ 1` on `[0, 1]`.** The base-`q` entropy of a `q`-ary symbol never exceeds one
-`q`-ary symbol's worth of information; the bound is attained at `1 - 1/q`
-(`qEntropy_one_sub_inv`). -/
-lemma qEntropy_le_one (hq : 2 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+`q`-ary symbol's worth of information. For `q ≥ 2` the bound is attained at `1 - 1/q`
+(`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
+lemma qEntropy_le_one (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by
+  by_cases hqle : q ≤ 1
+  · rw [qEntropy_of_le_one hqle]
+    norm_num
+  have hq : 2 ≤ q := by omega
   have hq1 : (1 : ℝ) < q := by exact_mod_cast hq
   have hmax₀ : (0 : ℝ) ≤ 1 - 1 / (q : ℝ) := by
     rw [sub_nonneg, div_le_one (by linarith)]; linarith
@@ -201,11 +208,15 @@ lemma qEntropy_le_one (hq : 2 ≤ q) (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntr
   · exact (qEntropy_strictAntiOn hq).antitoneOn ⟨le_rfl, hmax₁⟩ ⟨h, hx₁⟩ h
 
 /-- `H_q` is concave on `[0, 1]`, inherited from `Real.strictConcaveOn_qaryEntropy` through
-the positive rescaling. (Strict concavity also holds, but Mathlib has no
+nonnegative rescaling. This includes `q = 0` and `q = 1`, where the rescaling and hence
+`qEntropy` are zero. (Strict concavity also holds in the nondegenerate regime, but Mathlib has no
 `StrictConcaveOn.smul`, so only the non-strict form is transported here.) -/
-lemma concaveOn_qEntropy (hq : 1 ≤ q) : ConcaveOn ℝ (Set.Icc 0 1) (qEntropy q) := by
-  have hc : (0 : ℝ) ≤ (Real.log q)⁻¹ :=
-    inv_nonneg.mpr (Real.log_nonneg (by exact_mod_cast hq))
+lemma concaveOn_qEntropy (q : ℕ) : ConcaveOn ℝ (Set.Icc 0 1) (qEntropy q) := by
+  have hc : (0 : ℝ) ≤ (Real.log q)⁻¹ := by
+    by_cases hq0 : q = 0
+    · simp [hq0]
+    · exact inv_nonneg.mpr (Real.log_nonneg (by
+        exact_mod_cast (Nat.one_le_iff_ne_zero.mpr hq0)))
   refine ((Real.strictConcaveOn_qaryEntropy (q := q)).concaveOn.smul hc).congr ?_
   intro y _
   simp [qEntropy, div_eq_inv_mul]

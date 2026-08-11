@@ -19,8 +19,9 @@ import Mathlib.LinearAlgebra.Vandermonde
 
 The classical Wronskian of `P 0, ..., P (sigma - 1)` is the determinant of the matrix
 whose `(i, j)` entry is the `i`-th ordinary formal derivative of `P j`. Over a field of
-positive characteristic at least the common strict degree bound, it is nonzero exactly when the
-polynomials are linearly independent. This is [GK16, Definition 9 and Lemma 10].
+characteristic zero, or of positive characteristic at least the common strict degree bound, it is
+nonzero exactly when the polynomials are linearly independent. The positive-characteristic case
+is [GK16, Definition 9 and Lemma 10].
 
 The large-characteristic guard is essential: in characteristic `p`, the nonconstant
 polynomial `X ^ p` has zero derivative.
@@ -38,7 +39,7 @@ noncomputable def classicalWronskian {F : Type*} [CommRing F]
   (Matrix.of fun i j : Fin sigma => derivative^[i.val] (P j)).det
 
 /-- A coarse degree bound for the classical Wronskian. -/
-lemma natDegree_classicalWronskian_le {F : Type*} [Field F]
+lemma natDegree_classicalWronskian_le {F : Type*} [CommRing F]
     (sigma : ℕ) (P : Fin sigma → F[X]) (k : ℕ)
     (hP : ∀ j, (P j).natDegree ≤ k) :
     (classicalWronskian sigma P).natDegree ≤ sigma * k := by
@@ -59,13 +60,17 @@ lemma natDegree_classicalWronskian_le {F : Type*} [Field F]
     _ = sigma * k := by simp [Finset.sum_const]
 
 private lemma isUnit_natCast_descFactorial {F : Type*} [Field F]
-    {d i k : ℕ} (hi : i ≤ d) (hd : d < k) (hk : k ≤ ringChar F) :
+    {d i k : ℕ} (hi : i ≤ d) (hd : d < k)
+    (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
     IsUnit (d.descFactorial i : F) := by
-  letI : NeZero (ringChar F) :=
-    ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hd.trans_le hk))⟩
-  letI : Fact (ringChar F).Prime := CharP.char_is_prime_of_pos F _
-  have hfac : IsUnit (d.factorial : F) :=
-    (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hd.trans_le hk)
+  have hfac : IsUnit (d.factorial : F) := by
+    rcases hk with hk0 | hkpos
+    · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
+      exact IsUnit.natCast_factorial_of_algebra F d
+    · letI : NeZero (ringChar F) :=
+        ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hd.trans_le hkpos))⟩
+      letI : Fact (ringChar F).Prime := CharP.char_is_prime_of_pos F _
+      exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hd.trans_le hkpos)
   have hmul : IsUnit (((d - i).factorial : F) * (d.descFactorial i : F)) := by
     rw [← Nat.cast_mul, Nat.factorial_mul_descFactorial hi]
     exact hfac
@@ -73,7 +78,7 @@ private lemma isUnit_natCast_descFactorial {F : Type*} [Field F]
 
 private lemma natDegree_iterate_derivative_eq {F : Type*} [Field F]
     {p : F[X]} (hp : p ≠ 0) {i k : ℕ} (hi : i ≤ p.natDegree)
-    (hdeg : p.natDegree < k) (hk : k ≤ ringChar F) :
+    (hdeg : p.natDegree < k) (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
     (derivative^[i] p).natDegree = p.natDegree - i := by
   apply le_antisymm (natDegree_iterate_derivative p i)
   apply le_of_not_gt
@@ -88,30 +93,34 @@ private lemma natDegree_iterate_derivative_eq {F : Type*} [Field F]
 
 private lemma leadingCoeff_iterate_derivative {F : Type*} [Field F]
     {p : F[X]} (hp : p ≠ 0) {i k : ℕ} (hi : i ≤ p.natDegree)
-    (hdeg : p.natDegree < k) (hk : k ≤ ringChar F) :
+    (hdeg : p.natDegree < k) (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
     (derivative^[i] p).leadingCoeff =
       (p.natDegree.descFactorial i : F) * p.leadingCoeff := by
   rw [leadingCoeff, natDegree_iterate_derivative_eq hp hi hdeg hk,
     coeff_iterate_derivative, Nat.sub_add_cancel hi, nsmul_eq_mul, coeff_natDegree]
 
-/-- The classical Wronskian of nonzero polynomials with distinct degrees below the
-characteristic is nonzero. This is the echelon-form core of [GK16, Lemma 10]. -/
+/-- The classical Wronskian of nonzero polynomials with distinct degrees is nonzero in
+characteristic zero, and remains so in positive characteristic when their strict degree bound is
+no greater than the characteristic. This is the echelon-form core of [GK16, Lemma 10]. -/
 theorem classicalWronskian_ne_zero_of_natDegree_injective
     {F : Type*} [Field F] {sigma k : ℕ}
     (P : Fin sigma → F[X]) (hP0 : ∀ j, P j ≠ 0)
     (hPdeg : ∀ j, (P j).natDegree < k)
     (hPinj : Function.Injective (fun j => (P j).natDegree))
-    (hk : k ≤ ringChar F) : classicalWronskian sigma P ≠ 0 := by
+    (hk : ringChar F = 0 ∨ k ≤ ringChar F) : classicalWronskian sigma P ≠ 0 := by
   classical
   let d : Fin sigma → ℕ := fun j => (P j).natDegree
   let D : ℕ := (∑ j, d j) - ∑ i : Fin sigma, i.val
   let A : Matrix (Fin sigma) (Fin sigma) F :=
     Matrix.of fun i j => (d j).descFactorial i.val
-  have hdlt : ∀ j, d j < ringChar F := fun j => (hPdeg j).trans_le hk
   have hcastinj : Function.Injective (fun j => (d j : F)) := by
     intro i j hij
     apply hPinj
-    exact CharP.natCast_injOn_Iio F (ringChar F) (hdlt i) (hdlt j) hij
+    rcases hk with hk0 | hkpos
+    · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hk0
+      exact Nat.cast_injective hij
+    · exact CharP.natCast_injOn_Iio F (ringChar F)
+        ((hPdeg i).trans_le hkpos) ((hPdeg j).trans_le hkpos) hij
   have hAdet : A.det ≠ 0 := by
     have hv := (Matrix.det_vandermonde_ne_zero_iff (R := F)
       (v := fun j => (d j : F))).2 hcastinj
@@ -303,8 +312,8 @@ lemma classicalWronskian_of_linearComb {F : Type*} [Field F] {sigma : ℕ}
   rw [hM, Matrix.det_mul, ← RingHom.map_det]
 
 /-- **[GK16, Lemma 10], basis form.** If a finite-dimensional polynomial subspace has
-a basis of polynomials of degree `< k`, and `k` is no greater than the characteristic, then
-the classical Wronskian of that basis is nonzero.
+a basis of polynomials of degree `< k`, then its classical Wronskian is nonzero in
+characteristic zero, or when `k` is no greater than the positive characteristic.
 
 The proof first changes to a basis in degree-echelon form. The coefficient of maximal
 degree in its Wronskian is a nonzero Vandermonde determinant; changing back multiplies
@@ -312,7 +321,7 @@ the Wronskian by a nonzero constant determinant. -/
 theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ}
     {B : Submodule F F[X]} (bas : Basis (Fin sigma) F B)
     (hdeg : ∀ j, ((bas j : B) : F[X]).natDegree < k)
-    (hk : k ≤ ringChar F) :
+    (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
     classicalWronskian sigma (fun j => ((bas j : B) : F[X])) ≠ 0 := by
   classical
   letI : Module.Finite F B := Module.Finite.of_basis bas

@@ -30,6 +30,8 @@ and the list size of the corresponding interleaved base code.
   `φ(ψ x) = (x, 0, …, 0)`.
 - `CodingTheory.extensionEncode` (D2.20): scalar extension of a `B`-linear base
   encoder to extension-field messages and codewords.
+- `CodingTheory.extensionEncodeLinearMap`: the same encoder packaged with its proved
+  `F`-linearity, as required by D2.20's linear-code convention.
 - `CodingTheory.extensionCode` (D2.20): the extension code of a base code
   `C_B ⊆ B^ι`, **as a set of words** `Set (ι → F)`.
 - `CodingTheory.extensionCodeSubmodule`: the same object packaged as an
@@ -67,6 +69,8 @@ code works only with code sets.
   image-level consequence of systematicity, `ψ ∘ c ∈ C_F ↔ c ∈ C_B`.
 - `extensionEncode_comp_algebraMap_of_isSystematic`: the encoder-level systematic
   identity from D2.20 / [BCFW25, §D.2].
+- `extensionEncodeLinearMap`: the extension encoder is an `F`-linear map, not merely a
+  function with a linear image.
 - `extensionEncode_injective`: scalar extension preserves injectivity of the base encoder,
   so an injective code map remains an injective code map as required by D2.5/D2.20.
 - `range_extensionEncode`: the scalar-extended encoder has precisely the extension
@@ -156,9 +160,9 @@ extension-field output:
 
 `C_F(v)_i = φ⁻¹ (fun j ↦ C_B (fun t ↦ φ_j(v_t))_i)`.
 
-The definition is universe-polymorphic in both the message and codeword index types. Its image
-and systematicity properties are `range_extensionEncode` and
-`extensionEncode_comp_algebraMap_of_isSystematic`. -/
+The definition is universe-polymorphic in both the message and codeword index types. Its
+`F`-linear-map packaging is `extensionEncodeLinearMap`; its image and systematicity properties
+are `range_extensionEncode` and `extensionEncode_comp_algebraMap_of_isSystematic`. -/
 noncomputable def extensionEncode {κ ι : Type*}
     {B F : Type*} [Field B] [Field F] [Algebra B F]
     (P : ExtensionFieldPresentation B F)
@@ -176,6 +180,147 @@ noncomputable def extensionEncode {κ ι : Type*}
   change P.basis.equivFun (P.basis.equivFun.symm
     (fun j ↦ encode (fun t ↦ P.coord j (v t)) i)) j = _
   rw [P.basis.equivFun.apply_symm_apply]
+
+private lemma extensionEncode_zero {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) :
+    extensionEncode P encode 0 = 0 := by
+  funext i
+  apply P.basis.equivFun.injective
+  funext j
+  change P.coord j (extensionEncode P encode 0 i) = P.coord j 0
+  rw [coord_extensionEncode]
+  simp only [Pi.zero_apply, map_zero]
+  change encode (0 : κ → B) i = 0
+  rw [map_zero]
+  rfl
+
+private lemma extensionEncode_add {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (v w : κ → F) :
+    extensionEncode P encode (v + w) =
+      extensionEncode P encode v + extensionEncode P encode w := by
+  funext i
+  apply P.basis.equivFun.injective
+  funext j
+  change P.coord j (extensionEncode P encode (v + w) i) =
+    P.coord j (extensionEncode P encode v i + extensionEncode P encode w i)
+  rw [coord_extensionEncode, map_add, coord_extensionEncode, coord_extensionEncode]
+  have hrow : (fun t => P.coord j ((v + w) t)) =
+      (fun t => P.coord j (v t)) + fun t => P.coord j (w t) := by
+    funext t
+    simp
+  rw [hrow, map_add]
+  rfl
+
+private lemma extensionEncode_smul_algebraMap {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (a : F) (v : κ → B) :
+    extensionEncode P encode (a • ((algebraMap B F) ∘ v)) =
+      a • ((algebraMap B F) ∘ encode v) := by
+  funext i
+  apply P.basis.equivFun.injective
+  funext j
+  change P.coord j (extensionEncode P encode (a • ((algebraMap B F) ∘ v)) i) =
+    P.coord j ((a • ((algebraMap B F) ∘ encode v)) i)
+  rw [coord_extensionEncode]
+  have hcoord (x : B) :
+      P.coord j (a * algebraMap B F x) = x * P.coord j a := by
+    rw [mul_comm, ← Algebra.smul_def, map_smul]
+    rfl
+  have hin : (fun t => P.coord j ((a • ((algebraMap B F) ∘ v)) t)) =
+      P.coord j a • v := by
+    funext t
+    simp only [Pi.smul_apply, Function.comp_apply, smul_eq_mul]
+    rw [hcoord]
+    exact mul_comm _ _
+  rw [hin, map_smul]
+  simp only [Pi.smul_apply, Function.comp_apply, smul_eq_mul]
+  rw [hcoord]
+  exact mul_comm _ _
+
+private lemma sum_basis_rows {κ : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F) (v : κ → F) :
+    (∑ j : Fin P.e, P.basis j •
+      ((algebraMap B F) ∘ fun t => P.coord j (v t))) = v := by
+  funext t
+  rw [Finset.sum_apply]
+  change (∑ j : Fin P.e, (P.basis j •
+      ((algebraMap B F) ∘ fun t => P.coord j (v t))) t) = v t
+  rw [show (∑ j : Fin P.e, (P.basis j •
+      ((algebraMap B F) ∘ fun t => P.coord j (v t))) t) =
+      ∑ j : Fin P.e, P.coord j (v t) • P.basis j by
+    apply Finset.sum_congr rfl
+    intro j _hj
+    simp only [Pi.smul_apply, Function.comp_apply, smul_eq_mul, Algebra.smul_def]
+    exact mul_comm _ _]
+  exact P.basis.sum_repr (v t)
+
+/-- **ABF26 Definition 2.20, linearity.** The scalar-extended encoder is an
+`F`-linear map `F^κ →ₗ[F] F^ι`.
+
+This packages the formula `extensionEncode` as the linear code map asserted by the source.
+Linearity is not inferred merely from the fact that its range is a submodule: it is proved by
+expanding every message in the finite presentation basis and commuting the `B`-linear base
+encoder with those coordinate rows. -/
+noncomputable def extensionEncodeLinearMap {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) : (κ → F) →ₗ[F] (ι → F) where
+  toFun := extensionEncode P encode
+  map_add' := extensionEncode_add P encode
+  map_smul' := by
+    intro a v
+    let E : (κ → F) →+ (ι → F) :=
+      { toFun := extensionEncode P encode
+        map_zero' := extensionEncode_zero P encode
+        map_add' := extensionEncode_add P encode }
+    let row : Fin P.e → (κ → B) := fun j t => P.coord j (v t)
+    have hv : (∑ j : Fin P.e, P.basis j •
+        ((algebraMap B F) ∘ row j)) = v :=
+      sum_basis_rows P v
+    have hEv : E v = ∑ j : Fin P.e, P.basis j •
+        ((algebraMap B F) ∘ encode (row j)) := by
+      rw [← hv, map_sum]
+      apply Finset.sum_congr rfl
+      intro j _hj
+      exact extensionEncode_smul_algebraMap P encode (P.basis j) (row j)
+    change E (a • v) = a • E v
+    calc
+      E (a • v) = E (a • (∑ j : Fin P.e, P.basis j •
+          ((algebraMap B F) ∘ row j))) := by rw [hv]
+      _ = E (∑ j : Fin P.e, (a * P.basis j) •
+          ((algebraMap B F) ∘ row j)) := by
+            congr 1
+            rw [Finset.smul_sum]
+            apply Finset.sum_congr rfl
+            intro j _hj
+            rw [smul_smul]
+      _ = ∑ j : Fin P.e, E ((a * P.basis j) •
+          ((algebraMap B F) ∘ row j)) := by rw [map_sum]
+      _ = ∑ j : Fin P.e, (a * P.basis j) •
+          ((algebraMap B F) ∘ encode (row j)) := by
+            apply Finset.sum_congr rfl
+            intro j _hj
+            exact extensionEncode_smul_algebraMap P encode
+              (a * P.basis j) (row j)
+      _ = a • (∑ j : Fin P.e, P.basis j •
+          ((algebraMap B F) ∘ encode (row j))) := by
+            rw [Finset.smul_sum]
+            apply Finset.sum_congr rfl
+            intro j _hj
+            rw [smul_smul]
+      _ = a • E v := by rw [hEv]
+
+@[simp] lemma extensionEncodeLinearMap_apply {κ ι : Type*}
+    {B F : Type*} [Field B] [Field F] [Algebra B F]
+    (P : ExtensionFieldPresentation B F)
+    (encode : (κ → B) →ₗ[B] (ι → B)) (v : κ → F) :
+    extensionEncodeLinearMap P encode v = extensionEncode P encode v := rfl
 
 /-- Scalar extension preserves injectivity of the base encoder. In particular, when
 `encode` is a code in [ABF26]'s encoder convention (an injective linear map),
