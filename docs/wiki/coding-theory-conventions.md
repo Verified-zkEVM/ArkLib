@@ -87,7 +87,8 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | — |
 | Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
-| List sizes | `ℕ∞`, cast to `ENNReal` for bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
+| List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
+| List-size *bounds* in a predicate | `ℝ≥0` | `listDecodable`'s `ℓ`; every call site in the tree already uses it |
 | Polynomial degree bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
 | Linear code carrier | `Submodule F (ι → A) = ModuleCode ι F A` | `ReedSolomon.code`, `Interleaved.irsCode`, `Folded.frsCode`, `extensionCodeSubmodule` |
 | Non-linear code carrier | `Set (ι → A) = Code ι A` | `extensionCode`, and theorems over arbitrary alphabets |
@@ -100,9 +101,34 @@ one; substituting `rate` there gives false statements. Both formulas are total a
 the zero-denominator cases.
 
 **`Lambda` is built from `Set.encard`,** so an infinite point list contributes `⊤` rather than
-collapsing to `0`. The real-valued `listDecodable` predicate pairs point-list finiteness with its
-`Set.ncard` bound, which is what makes every bridge between the two instance-free;
-`Lambda_ne_top` is the separate finite-alphabet consequence.
+collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
+(`finite_closeCodewordsRel_of_Lambda_le`) instead of asserting it. `Lambda_ne_top` is the separate
+finite-alphabet consequence.
+
+**The list size is the primitive; list-decodability is notation for a bound on it.**
+`listDecodable` is an `abbrev` for `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0`, not a second definition, so
+there is nothing to bridge and the pointwise `∀`/`ncard` readings are lemmas
+(`Lambda_le_iff_forall_ncard_le`, `listDecodable_iff_forall_ncard_le`) that cannot drift from it.
+Three consequences worth knowing before touching this layer:
+
+- **Do not add a second predicate for "the list is small."** Keeping one alongside the value is
+  how the two came to disagree once already: a `Set.ncard`-based body is satisfied by an
+  *infinite* point list, since `ncard` reports `0` there.
+- **Do not offer an ambient-finiteness escape hatch** (a `[Finite F]` lemma turning a bare `ncard`
+  bound into `listDecodable`). Such a lemma is *sound* — under a finite alphabet `ncard` cannot lie
+  — but it imports a hypothesis the statement does not need, and it lets a proof reach the
+  conclusion without ever exhibiting the finiteness that list decoding is about. Bound the *finite
+  subsets* instead: `Lambda_le_of_forall_finset_card_le` is the shape a counting argument produces
+  anyway, and it needs nothing of the alphabet.
+- **The value is needed regardless of the predicate:** a *lower* bound on a list size, or an
+  equality between two codes' list sizes, has no predicate form at all.
+
+`exact`/`refine`/`apply` unify at default transparency and so see through `listDecodable` to the
+`Lambda` inequality; `simp` and `rw` match at reducible transparency and leave it folded. Keep it a
+`def`: as an `abbrev` it is reducible, and then Mathlib's `@[simp] ge_iff_le` unifies with the whole
+`≤`-shaped body and `simp` unfolds it to `WithBot.LE`, which both mangles goals and makes
+`listDecodable.mono` unreachable via dot notation. (`omega` is no help either way — it has no `ℕ∞`
+support; a bare `by omega` on such a goal only ever succeeds through its assumption fallback.)
 
 ### Coercions
 

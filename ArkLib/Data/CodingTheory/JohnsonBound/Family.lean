@@ -933,27 +933,29 @@ theorem rs_lambda_le_johnson_mds
   exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
 
 /-- The Johnson bound in `listDecodable` form: a code is `(δ, ℓ)`-list-decodable at every
-radius `δ` below its Johnson radius. Transferred through
-`ListDecodable.Lambda_le_iff_listDecodable`. -/
+radius `δ` below its Johnson radius.
+
+No transfer lemma is involved: `listDecodable C δ ℓ` unfolds to `Lambda C δ ≤ ⌊ℓ⌋₊`, so this is
+`johnson_bound_lambda_le_ell` composed with `Lambda_mono`, modulo `⌊(ℓ : ℝ≥0)⌋₊ = ℓ` for a natural
+`ℓ` — which is exactly `listDecodable_natCast_iff`. -/
 theorem johnson_listDecodable
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
-    listDecodable C δ (ℓ : ℝ) :=
-  Lambda_le_iff_listDecodable.mp
-    ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
+    listDecodable C δ (ℓ : ℝ≥0) :=
+  listDecodable_natCast_iff.mpr ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
 
-/-- `johnson_listDecodable` weakened to an arbitrary real list budget `r ≥ ℓ`. -/
+/-- `johnson_listDecodable` weakened to an arbitrary list budget `r ≥ ℓ`, via
+`ListDecodable.listDecodable.mono`. -/
 theorem johnson_listDecodable_of_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
-    {r : ℝ} (hr : (ℓ : ℝ) ≤ r) :
+    {r : ℝ≥0} (hr : (ℓ : ℝ≥0) ≤ r) :
     listDecodable C δ r :=
-  fun y => ⟨(johnson_listDecodable C ℓ hℓ_ge hδ y).1,
-    (johnson_listDecodable C ℓ hℓ_ge hδ y).2.trans hr⟩
+  (johnson_listDecodable C ℓ hℓ_ge hδ).mono hr
 
 /-! ### Module-alphabet instances
 
