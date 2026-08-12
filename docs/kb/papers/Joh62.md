@@ -91,8 +91,8 @@ Xplore.
   `LinearCode.alphabetRate` and their own rate-distance equation.
 - `Lambda` is built from `Set.encard`, so an infinite point list contributes `⊤` rather than
   collapsing to zero, and a finite bound therefore implies point-list finiteness. `listDecodable`
-  is an `abbrev` for `Lambda C r ≤ ⌊ℓ⌋₊`, so the Johnson bounds land on the predicate directly and
-  no transfer lemma is involved.
+  is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊`, so the Johnson bounds land on the predicate
+  directly and no transfer lemma is involved.
 
 ## Open Formalization Gaps
 

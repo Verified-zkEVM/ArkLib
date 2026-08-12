@@ -106,9 +106,17 @@ collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
 finite-alphabet consequence.
 
 **The list size is the primitive; list-decodability is notation for a bound on it.**
-`listDecodable` is an `abbrev` for `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0`, not a second definition, so
-there is nothing to bridge and the pointwise `∀`/`ncard` readings are lemmas
+`listDecodable` is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0` — not a second
+definition, so there is nothing to bridge, and the pointwise `∀`/`ncard` readings are lemmas
 (`Lambda_le_iff_forall_ncard_le`, `listDecodable_iff_forall_ncard_le`) that cannot drift from it.
+
+The value has to be primitive; this was not a free choice. `[ABF26]` states, on this one quantity,
+bounds that no predicate can carry: **ceilings** (`|Λ(C⁺,δ)| ≤ ⌈|F|/(1-η)·ε_ca⌉`), **strict**
+bounds (`|Λ(C,δ)| < |F|`), **lower** bounds (Lemma 3.7 / Corollary 3.8), **inequalities and
+equalities between two codes' list sizes** (`|Λ(C,δ)| ≤ |Λ(C^⋈m,δ)| ≤ |Λ(C,δ)|^m`, and the
+extension-code equality), and **arithmetic** on them (`binom(b+r,r)·|Λ|^r`). A `∀`/`ncard`
+predicate expresses only the first two rows of that list.
+
 Three consequences worth knowing before touching this layer:
 
 - **Do not add a second predicate for "the list is small."** Keeping one alongside the value is
@@ -122,6 +130,14 @@ Three consequences worth knowing before touching this layer:
   anyway, and it needs nothing of the alphabet.
 - **The value is needed regardless of the predicate:** a *lower* bound on a list size, or an
   equality between two codes' list sizes, has no predicate form at all.
+- **Do not give a derived list its own `Lambda`.** A list contained in a point list — WHIR's
+  block-relative `Λ𞁒` reaching it through `listBlock_subset_listHamming`, say — is bounded by
+  `encard_le_Lambda_of_subset_closeCodewordsRel`. Likewise the absolute-radius point list is the
+  relative one at radius `r/n` (`closeCodewords_eq_closeCodewordsRel`), so it needs no size notion.
+  One outlier remains, in another owner's file and left for a follow-up:
+  `ProximityGap/BCIKS20/AffineSpaces.lean`'s `rs_listDecoding_card_lt_field` inlines point-list
+  membership instead of using `closeCodewordsRel`, and is really `Lambda (code domain deg) δ < |F|`
+  — the `[ABF26]` statement, whose unified form already exists on the ABF26 branch.
 
 `exact`/`refine`/`apply` unify at default transparency and so see through `listDecodable` to the
 `Lambda` inequality; `simp` and `rw` match at reducible transparency and leave it folded. Keep it a
@@ -129,6 +145,41 @@ Three consequences worth knowing before touching this layer:
 `≤`-shaped body and `simp` unfolds it to `WithBot.LE`, which both mangles goals and makes
 `listDecodable.mono` unreachable via dot notation. (`omega` is no help either way — it has no `ℕ∞`
 support; a bare `by omega` on such a goal only ever succeeds through its assumption fallback.)
+
+**Why the radius stays `ℝ` while the bound is `ℝ≥0`.** The asymmetry is forced both ways. A
+negative list-size bound is meaningless. A negative *radius* is not — it is the empty ball, and it
+genuinely occurs: `1 - √ρ - η` is negative for large `η`, and
+`CodingTheory.mds_johnson_lambda_le_of_rate_distance` closes that corner by proving
+`Lambda C (1 - √ρ - η) = 0` there. An `ℝ≥0` radius would truncate it to `0`,
+where the point list is `{f}` rather than `∅`, changing the statement. All six predicate call sites
+in the tree (three STIR, three WHIR) already pass `ℝ≥0` for *both* arguments, so the bound's
+carrier costs no call-site edits.
+
+**Whether to keep the predicate at all is an open question, deliberately answered "yes for now."**
+The maximally unified option is to delete `listDecodable` and spell its six hypotheses
+`Lambda (C i) (δ i) ≤ ⌊l i⌋₊`. It was weighed and not taken: the literature-shaped name carries
+the `(δ, ℓ)`-list-decodable reading into STIR/WHIR hypothesis lists, and it gives the Johnson
+suppliers their natural name. Since the predicate is *definitionally* the inequality, nothing
+mathematical rests on the choice and it can be revisited later; the cost of revisiting is editing
+those six hypotheses. The same applies to the names in this layer (`Lambda` for a term, lowerCamel
+`listDecodable` for a `Prop`): both are within existing local precedent — the subtree already has
+`J`, `Jqℓ`, `Jcap` for paper symbols and both `proximityGap` and `IsMDS` for predicates — so they
+are left alone rather than churned, but a later rename would break `ListDecodability/Bounds.lean`,
+STIR, WHIR and the external proximity-prize repo, so it should be a deliberate one-shot change.
+
+**Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
+aliases were left, because four of the six cannot be restated — they mention `listDecodable` at a
+real bound, which no longer type-checks — and because an audit of every local and remote branch,
+plus both proximity-prize repositories, found no consumer of any of them. Replacements:
+
+| Removed | Use instead |
+|---|---|
+| `Lambda_le_iff_listDecodable` | `listDecodable_natCast_iff` |
+| `Lambda_le_floor_iff_listDecodable` | `listDecodable_iff_Lambda_le` |
+| `Lambda_le_floor_iff_listDecodable_nnreal` | `listDecodable_iff_Lambda_le` |
+| `Lambda_le_floor_of_listDecodable` | `listDecodable_iff_Lambda_le` (`.mp`) |
+| `listDecodable_of_Lambda_le_natCast` | `listDecodable_natCast_iff` then `listDecodable.mono` |
+| `Lambda_le_floor_of_toENNReal_le_ofReal` | `listDecodable_iff_toENNReal_le_ofReal` |
 
 ### Coercions
 
