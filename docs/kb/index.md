@@ -1,6 +1,7 @@
 # Knowledge Base Index
 
-This is the main catalog for ArkLib's knowledge base.
+This is the main catalog for ArkLib's knowledge base. Every BibTeX key cited from `ArkLib/` has a
+page under [`papers/`](papers/README.md); that directory, not this list, is the authoritative set.
 
 ## Generated Registries
 
@@ -57,6 +58,49 @@ used in `ArkLib/**/*.lean`, including:
 - `AHIV22`, `BSS08`, `FRI1216`, `GWZC19`, `JM24`, `LFKN92`, `LPS24`, `PS94`, `Poseidon2`,
   `STIR2005`, `Spi95`, `codingtheory`, and `listdecoding`.
 
+- [`papers/AHIV22.md`](papers/AHIV22.md) - Ligero-family interleaved-code and affine-line proximity
+  statements, secondary to the `BCIKS20` development.
+- [`papers/Ajt96.md`](papers/Ajt96.md) - the Short Integer Solution problem underpinning ArkLib's
+  Ajtai commitments.
+- [`papers/BSS08.md`](papers/BSS08.md) - short PCPs; in the bibliography as background, currently
+  cited by nothing in the tree.
+- [`papers/CGKY25.md`](papers/CGKY25.md) - the ARSDH-style extraction argument behind the KZG
+  function-binding reduction.
+- [`papers/codingtheory.md`](papers/codingtheory.md) - *Essential Coding Theory*; classical
+  background for the Johnson-bound layer, and the authority for the list-`ℓ` Johnson radius.
+- [`papers/FMN24.md`](papers/FMN24.md) - the origin of coordinate-wise special soundness, the
+  security notion of the Hachi development.
+- [`papers/FRI1216.md`](papers/FRI1216.md) - the generalized FRI low-degree test, for the abstract
+  protocol layer in `ProofSystem/Fri`.
+- [`papers/GWZC19.md`](papers/GWZC19.md) - Plonk, for the Plonk entry-point module.
+- [`papers/JM24.md`](papers/JM24.md) - AGM/GGM transfer context for the algebraic-group-model
+  development.
+- [`papers/KZG10.md`](papers/KZG10.md) - the KZG polynomial commitment construction.
+- [`papers/KZG10TR.md`](papers/KZG10TR.md) - the extended KZG report, cited for the
+  evaluation-binding proof the conference version omits.
+- [`papers/LFKN92.md`](papers/LFKN92.md) - the classical sum-check reference for
+  `ProofSystem/Sumcheck`.
+- [`papers/listdecoding.md`](papers/listdecoding.md) - list-decoding background for the
+  alphabet-free framing of the Johnson-bound layer.
+- [`papers/LNP22.md`](papers/LNP22.md) - the lattice zero-knowledge framework whose
+  power-of-two cyclotomic ring setting `Data/Lattices/CyclotomicRing/` constructs.
+- [`papers/LPS24.md`](papers/LPS24.md) - AGM reasoning connected back to Plonk knowledge
+  soundness.
+- [`papers/LS18.md`](papers/LS18.md) - invertibility of short nonzero elements of
+  `Z_q[X]/(X^d+1)`, which is what makes the lattice relaxation factors work.
+- [`papers/Mic07.md`](papers/Mic07.md) - the ring product norm inequality behind the
+  norm-growth bound in the weak-binding argument.
+- [`papers/NOZ26.md`](papers/NOZ26.md) - Hachi, the lattice multilinear polynomial commitment
+  formalized under `Commitments/Functional/Hachi/`.
+- [`papers/NS24.md`](papers/NS24.md) - Greyhound, the inner/outer Ajtai commitment composition
+  and its weak-binding reduction to Module-SIS.
+- [`papers/Poseidon2.md`](papers/Poseidon2.md) - the Poseidon2 hash, translated over `KoalaBear`.
+- [`papers/PS94.md`](papers/PS94.md) - historical provenance for the Polishchuk-Spielman lemma.
+- [`papers/Spi95.md`](papers/Spi95.md) - the second Polishchuk-Spielman source, and why ArkLib
+  uses the corrected statement.
+- [`papers/STIR2005.md`](papers/STIR2005.md) - Reed-Solomon polynomial reconstruction; in the
+  bibliography as background, currently cited by nothing in the tree.
+
 ## Concept Pages
 
 - [`concepts/interactive-oracle-proofs.md`](concepts/interactive-oracle-proofs.md) - how ArkLib's
@@ -81,20 +125,6 @@ used in `ArkLib/**/*.lean`, including:
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
   - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
     (dated April 8, 2026).
-
-## Query Pages
-
-- [`queries/README.md`](queries/README.md) - purpose and filing rules for persistent query outputs.
-- [`queries/abf26-split-pr1-review-2026-08-07/README.md`](queries/abf26-split-pr1-review-2026-08-07/README.md)
-  - adversarial review record for the `ABF26` coding-theory foundations, including the per-area
-    `R*` reports, the remediation log, and the declaration provenance snapshot.
-- [`queries/abf26-split-pr1-deep-review-2026-08-11/README.md`](queries/abf26-split-pr1-deep-review-2026-08-11/README.md)
-  - later, broader pre-merge review of the same PR at its final head: gate results, findings, the
-    remediation applied, and the source-side defects found along the way.
-- [`queries/abf26-split-pr1-integration-review-2026-08-12/README.md`](queries/abf26-split-pr1-integration-review-2026-08-12/README.md)
-  - third review of the same PR, scoped to the commits added after the deep review, a first-hand
-    re-derivation from the paper sources, and repo integration against the live PR queue
-    (merged-tree builds against `#692` and `#717`).
 
 ## Source Metadata
 

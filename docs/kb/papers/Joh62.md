@@ -21,8 +21,8 @@ Information Theory **8**(3) (1962) 203–207 — the origin of the **Johnson bou
 double-counting argument that limits how many codewords of a distance-`d` code can lie inside a
 single Hamming ball.
 
-In ArkLib it is the attribution key for the paper-shaped, list-size-parameterised Johnson layer:
-`ABF26` Definition 3.1's radius family and Theorem 3.2 are tagged `[Joh62]`, and both live in
+In ArkLib it is the attribution key for the list-size-parameterised Johnson layer: the radius
+family of `ABF26` Definition 3.1 and its Theorem 3.2, both in
 `ArkLib/Data/CodingTheory/JohnsonBound/Family.lean`.
 
 ## What ArkLib Uses From This Paper
@@ -51,9 +51,8 @@ In ArkLib it is the attribution key for the paper-shaped, list-size-parameterise
   `Family.lean` consumes rather than re-proves. That file cites `codingtheory` and `listdecoding`,
   not `Joh62`.
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean)
-  — the single `JohnsonBound.J` (the paper's `J_q`) and `johnson_bound_lemma`. This is the
-  *upstream* definition: `Basic.lean` imports this file, and the de-duplication described below
-  kept the copy here.
+  — `JohnsonBound.J` (the paper's `J_q`) and `johnson_bound_lemma`. This is where `J` is defined;
+  `Basic.lean` and `Family.lean` both import it, and there is no second copy of the radius.
 
 ## Version Notes
 
@@ -75,59 +74,35 @@ Do not add a fourth key for the same fact. `Joh62` has no `url`/DOI in the bibli
 local artifact in `~/abf26-refs/`; it is a 1962 IRE Transactions article, reachable through IEEE
 Xplore.
 
-## Validated ArkLib Status
+## ArkLib Notes
 
-- `Jqℓ` is defined through the pre-existing `J` (which lives in `Lemmas.lean`), and `Jcap`
-  lives beside the `sqrt_le_J` bridge that consumes it (in `Basic.lean`); the exported bridges
-  recover the paper forms without a parallel radius hierarchy.
-- `johnson_bound_lambda_le_ell` matches ABF26 Theorem 3.2 without a public radicand guard. Its
-  proof splits internally between the Johnson and Plotkin regimes.
-- The `ℓ = 0` false corner is excluded by the theorem's `1 ≤ ℓ` hypothesis; the elementary
-  `ℓ = 1` radius-zero boundary is proved separately inside the theorem, and the list-size-two
-  specialization is documented as distinct from the binary Johnson radius.
-- **The MDS corollary's metric core is alphabet-generic.**
-  `mds_johnson_lambda_le_of_rate_distance` accepts an arbitrary finite-alphabet code, its
-  alphabet-normalized rate `ρ`, and the exact MDS rate-distance equation. The field-linear
-  `mds_johnson_lambda_le` is only a convenience wrapper. Module/interleaved consumers are covered
-  by the generic theorem, but must still supply their appropriate rate definition and
-  rate-distance bridge.
-- `Lambda` uses `Set.encard`, so infinite lists contribute `⊤` rather than silently collapsing
-  to zero. The real-valued `listDecodable` API explicitly records point-list finiteness beside
-  its `Set.ncard` bound, making every finite-bound bridge instance-free.
+- `Jqℓ` is *defined* through `J`, as `J q (((ℓ-1)/ℓ) * δ)`, with `Jqℓ_eq_J` the `rfl` bridge and
+  `Jqℓ_eq_mul_one_sub_sqrt` recovering the expanded form. `Jcap` sits beside `sqrt_le_J`, which
+  states `Jcap δ ≤ J q δ` and so is itself the `Jcap`-to-`J` bridge. There is one radius
+  hierarchy, not a parallel paper-shaped one.
+- `johnson_bound_lambda_le_ell` carries no public radicand guard: it holds over the full `1 ≤ ℓ`
+  range, splitting internally between the Johnson regime (`johnson_lambda_le_ell_of_radicand`,
+  private) and the low-rate Plotkin regime (`plotkin_card_le_ell`). The `ℓ = 0` corner is
+  genuinely false as encoded and is excluded by the `1 ≤ ℓ` hypothesis.
+- The MDS corollary's metric core is alphabet-generic:
+  `mds_johnson_lambda_le_of_rate_distance` takes an arbitrary finite-alphabet code, a rate `ρ`,
+  and the MDS rate-distance equation. `mds_johnson_lambda_le` is the field-linear convenience
+  wrapper; module and interleaved codes instantiate the generic form with
+  `LinearCode.alphabetRate` and their own rate-distance equation.
+- `Lambda` is built from `Set.encard`, so an infinite point list contributes `⊤` rather than
+  collapsing to zero, and `listDecodable` records point-list finiteness explicitly beside its
+  `Set.ncard` bound. Every bridge between the two is therefore instance-free.
 
 ## Open Formalization Gaps
 
-- ~~Export `Jqℓ_eq_J` and `Jcap_le_J`, and reduce the three in-tree copies of the Johnson
-  radius to one.~~ **Done.** `Jqℓ` is now *defined* as `J q (((ℓ-1)/ℓ) * δ)` with `Jqℓ_eq_J`
-  as the (`rfl`) bridge and `Jqℓ_eq_mul_one_sub_sqrt` recovering ABF26 Definition 3.1's printed shape;
-  the two identical `q`-ary definitions collapsed to the single upstream
-  `JohnsonBound.J` in `JohnsonBound/Lemmas.lean` (the downstream copy in
-  `JohnsonBound/Basic.lean` is gone), `Jcap` lives beside the `sqrt_le_J` bridge in
-  `JohnsonBound/Basic.lean`, and that pre-existing lemma is now stated as
-  `Jcap δ ≤ J q δ` — i.e. it *is* the `Jcap` bridge, so no separate `Jcap_le_J` is needed.
-- ~~State `ABF26` Theorem 3.2 without the radicand guard.~~ **Done.**
-  `johnson_bound_lambda_le_ell` now covers the paper's full `1 ≤ ℓ` range; the `ℓ = 1`
-  radius-zero case is elementary, the guarded `ℓ ≥ 2` form survives as the private
-  `johnson_lambda_le_ell_of_radicand`, and the low-rate branch where the radicand guard fails
-  is `plotkin_card_le_ell`.
-- ~~Add an alphabet-generic MDS corollary.~~ **Done.**
-  `mds_johnson_lambda_le_of_rate_distance` is metric and works over any finite alphabet; module
-  and interleaved consumers instantiate it by supplying their alphabet-normalized rate and MDS
-  rate-distance equation.
-- ~~**Wire the bounds to a consumer.**~~ **Done.** `rs_lambda_le_johnson_mds`
-  (`mds_johnson_lambda_le` + the proven `ReedSolomon.isMDS_code`) is ArkLib's first Reed–Solomon
-  list-size bound, and `johnson_listDecodable` / `johnson_listDecodable_of_le` deliver
-  `johnson_bound_lambda_le_ell` in the real-valued `listDecodable` shape.
-- ~~`Lambda_le_iff_listDecodable` is stated only at `ℓ : ℕ`, while in-tree `listDecodable`
-  consumers use `ℓ : ℝ≥0`.~~ **Done.** `ListDecodability.lean` now also ships
-  `Lambda_le_floor_iff_listDecodable` (`ℓ : ℝ`), its `ℝ≥0` variant, and the
-  `(Lambda C δ : ENNReal) ≤ ENNReal.ofReal ℓ` forms that the Johnson family actually produces,
-  so the transfer goes through. **Still open:** no `ArkLib/ProofSystem/Stir` proof has yet been
-  rewritten to *discharge* its `listDecodable` hypothesis from these — that is a separate change
-  to the STIR development, not to this layer.
+- No `ArkLib/ProofSystem/Stir` proof yet discharges its `listDecodable` hypothesis from the
+  Johnson bounds. The transfer lemmas exist (`johnson_listDecodable`,
+  `johnson_listDecodable_of_le`, and the `Lambda`-to-`listDecodable` bridges in
+  `ListDecodability.lean`); wiring them up is a change to the STIR development, not to this
+  layer.
 - The Elias and volume-based *lower* bounds (`ABF26` Lemma 3.7 / Corollary 3.8), which pair with
-  the Johnson upper bound, are not proved; only their support layer
-  (`hammingBallVolume`, `qEntropy`) exists.
+  the Johnson upper bound, are not proved. Only their support layer exists
+  (`hammingBallVolume`, `qEntropy`).
 
 ## Source Access
 

@@ -21,8 +21,7 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
-  - paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*, with
-    status labels, Lean references, and a follow-up roadmap.
+  - paper-to-ArkLib status matrix for *Open Problems in List Decoding and Correlated Agreement*.
 
 ## Maintenance Contract
 
@@ -41,6 +40,9 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - Keep these files committed so worktrees and delegated agents see the same guidance.
 - Promote recurring, repo-specific agent learnings here once they prove stable.
 - Prefer links to canonical docs over copying their contents.
+- Keep these pages present-tense and free of commit-, PR- or session-specific detail: no review
+  records, no dated plans, no "as of" snapshots. Anything that only makes sense next to one
+  branch belongs in that branch's PR description, not here.
 
 ## Canonical Project Docs
 

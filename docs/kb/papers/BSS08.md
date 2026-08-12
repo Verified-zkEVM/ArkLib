@@ -14,30 +14,21 @@ related_modules:
 
 ## At A Glance
 
-`BSS08` is a historical folding/division reference used in ArkLib's STIR folding development.
-It appears as supporting background rather than as the main protocol paper.
+`BSS08` is Ben-Sasson–Sudan, *Short PCPs with polylog query complexity* — historical background
+for the proof lineage behind the STIR-style folding constructions.
+
+**Nothing in ArkLib cites this key.** It is present in `blueprint/src/references.bib` as
+background only: no `[BSS08]` citation appears in any `.lean` docstring or blueprint `.tex`
+source. Either wire it into the file whose argument actually rests on it, adding a
+`## References` entry there, or drop the key and this page.
 
 ## What ArkLib Uses From This Paper
 
-- A source for the proposition-level polynomial identities that STIR reuses.
+- Nothing, at present.
 
 ## Main ArkLib Touchpoints
 
-
-## Version Notes
-
-- Although this is not the main STIR paper, it is part of the proof lineage for the folding layer
-  currently being formalized.
-
-## Known Divergences From ArkLib
-
-- ArkLib reaches the relevant constructions through Mathlib's multivariate polynomial and Groebner
-  tooling instead of mirroring the original exposition directly.
-
-## Open Formalization Gaps
-
-- The STIR folding file still contains substantial proof gaps, so this paper currently supports
-  partial formalization rather than a finished verified layer.
+- None.
 
 ## Source Access
 

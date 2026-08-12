@@ -210,7 +210,7 @@ home_page/            site assets and assembled website root
   consumers are `CodingTheory.irs_lambda_le_johnson_mds` and
   `CodingTheory.frs_lambda_le_johnson_mds` in `JohnsonBound/Family.lean`. Generalising the
   `IsMDS` *predicate* itself to `ModuleCode ι F A` is deliberately left out; it belongs with
-  the module-alphabet generalisation of `IsMCA` (PR #692), which touches the same file.
+  the module-alphabet generalisation of `IsMCA`, which touches the same file.
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random

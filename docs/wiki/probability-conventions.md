@@ -38,10 +38,6 @@ helpers that used to sit at the root namespace now live in `Probability`:
 immediately and cannot be missed. Note that `Probability` and Mathlib's `ProbabilityTheory` are
 different namespaces and both are usually wanted.
 
-Branches known to need this at the time of the consolidation, none of which the consolidating PR
-could pre-fix because the affected files exist only on those branches: `#692` (module-alphabet
-MCA, `ProximityGap/TensorGenerator.lean`), `#610` and `#611` (`ProximityGenerator/**`), `#615`
-(`ProofSystem/RingSwitching/Generic/**`), `#634`, `#637` (`ProofSystem/Stir/OutOfDomSmpl.lean`),
-and `#383` (`ProofSystem/Binius/BinaryBasefold/**`, `OracleReduction/Completeness.lean`). A
-merged `#692` + consolidation tree was built to confirm that this one line is the *only*
-interaction — with it, the merge is green.
+Note also that `git merge-tree` does not catch this: a branch that adds a new file using a moved
+helper merges textually clean and then fails to build. When checking whether a branch is affected,
+grep it for the names above, or build the merged tree.

@@ -45,16 +45,10 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Version Notes
 
-- **Key normalization.** PR #701 originally cited this paper in Lean as `BuenzCFW25`, a key with no
-  BibTeX entry. Since the same file's other keys (`ABF26`, and a `DiamondP23` spelling) were also
-  unknown at the time, `scripts/kb/extract_lean_citations.py` dropped
-  `ExtensionCodes.lean` from the citation map entirely. The key is now **`BCFW25`**, which is also
-  the spelling used by the ABF26 faithfulness audit. Use `BCFW25`; `BuenzCFW25` should not
-  reappear.
-- **Related key hygiene in the same file.** The docstring's `[DiamondP23, Theorem 3.2]` was a third
-  spelling of Diamond–Posen, *Succinct Arguments over Towers of Binary Fields*, which the
-  repository already keys twice (`DP23` for the 2023 ePrint, `DP25` for the EUROCRYPT '25 version)
-  and which both `ABF26` and `BCFW25` cite as `DP25`. It now reads `DP25`.
+- **Key normalization.** The key is `BCFW25`; do not spell it `BuenzCFW25`. A citation key with
+  no `references.bib` entry makes `scripts/kb/extract_lean_citations.py` drop the entire citing
+  file from the citation map, so a single bad spelling silently loses a file's whole citation
+  record. The same applies to the Diamond–Posen result cited alongside it, which is `DP25`.
 - Tracked as ePrint 2025/753. Two reference copies exist locally:
   `~/abf26-refs/bcfw25.pdf` (build date 2025-05-28) and `~/abf26-refs/BuenzCFW25.pdf` (build date
   2026-06-18). Appendix numbering (`D.2`, `D.3`) was checked against the later copy. Note the
@@ -62,12 +56,9 @@ same list size as the interleaved base code, which `ABF26` restates as its Lemma
 
 ## Known Divergences From ArkLib
 
-- **The `δ ∈ (0,1)` window is not enforced, and need not be.** The statement is true at
-  `δ = 0` and `δ ≥ 1` too (verified by re-proving it verbatim without the window). The 2026-08-07
-  review found the headline theorem carrying `_hδ_pos`/`_hδ_lt` as unused hypotheses plus six
-  unused instance binders behind two file-scope linter suppressions; all were removed in the
-  same review's fix sweep — the current theorem carries no window hypotheses and no
-  suppressions.
+- **The `δ ∈ (0,1)` window is not enforced, and need not be.** Lemma D.3 is true at `δ = 0` and
+  `δ ≥ 1` as well; the isometry argument never uses the window. Accordingly
+  `lambda_extensionCode_eq_lambda_interleaved` carries no hypothesis on `δ`.
 - **Both the encoder and image formulations are present.** `extensionEncode` states D2.20 at
   encoder level and `extensionEncodeLinearMap` proves that it is the asserted `F`-linear code map;
   `extensionEncode_comp_algebraMap` proves the §D.2 identity `C_F(ψ ∘ v) = ψ ∘ C_B(v)`, and

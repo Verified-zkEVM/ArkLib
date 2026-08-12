@@ -47,9 +47,9 @@ Slots:
 
 | Kind | Convention | Examples |
 |---|---|---|
-| Paper-named function | Lean-id close to paper notation | `qEntropy`, `Jqℓ`, `Jcap`, `Lambda` (the point list `Λ(C,δ,f)` is the descriptive `closeCodewordsRel`); next split `epsCA`, `epsMCA` |
-| Descriptive function | snake_case describing the math | `hammingBallVolume`, `frsEvalOnPoints`, `restrictedRelHammingDist` (next split) |
-| Predicate / property | `IsX` style | `LinearCode.IsMDS`, `IsSubspaceDesign`; (next split) `IsFAdditive`, `LineDecodable` |
+| Function with established notation | Lean-id close to the standard notation | `qEntropy`, `Jqℓ`, `Jcap`, `Lambda` (the point list `Λ(C,δ,f)` is the descriptive `closeCodewordsRel`) |
+| Descriptive function | lowerCamelCase describing the math | `hammingBallVolume`, `frsEvalOnPoints` |
+| Predicate / property | `IsX` style | `LinearCode.IsMDS`, `IsSubspaceDesign` |
 | Structure / `abbrev` | PascalCase | `ExtensionFieldPresentation` (a `structure`); `WordStack`, `InterleavedWord` (`abbrev`s for `Matrix`) |
 | Code family | namespaced + `Code` suffix | `ReedSolomon.code`, `ReedSolomon.Folded.frsCode`, `ReedSolomon.Interleaved.irsCode` |
 
@@ -98,26 +98,21 @@ purposes but the notation itself is global).
 - `LinearCode.ρ C` — `LinearCode.rate C` (`ℚ≥0`-valued rate; declared as
   `scoped syntax &"ρ" term`, so `ρ` can still be used as a local variable
   name in other scopes).
-- (Next split.) `CodingTheory.restrictedRelHammingDist T f g` with its scoped notation
-  `Δ[T]` applied as `Δ[T] (f, g)` (paper-style `Δ_T(f, g)`) ships with the proximity-gap split, next to its
-  first consumers; this layer keeps only the full-domain distance notions.
 
 ### Conspicuously absent (only in docstring comments, not actual notation)
 
-- `Λ(C, δ, f)` and `Λ(C, δ)` — appear in `ListDecodability.lean` docstrings as
-  paper-aliases for `closeCodewordsRel C f δ` and `Lambda C δ` respectively, but **no
-  notation declaration**. Use the function names directly. If a future PR wants
-  to add the notation, it should mirror the `Δ₀(...)` style declared at top
-  level in `ListDecodability.lean`.
-- `δ_min(C)` — appears in many docstrings (especially ABF26 statements), but
-  not as Lean notation. The raw form `Code.minDist C / Fintype.card ι` or
-  the existing `δᵣ C` (relative min distance) covers the same quantity.
+- `Λ(C, δ, f)` and `Λ(C, δ)` — used in docstrings for `closeCodewordsRel C f δ` and
+  `Lambda C δ`, but there is **no notation declaration**. Use the function names in Lean. A PR
+  adding the notation should mirror the `Δ₀(...)` style declared at top level in
+  `ListDecodability.lean`.
+- `δ_min(C)` — used in docstrings, but not Lean notation. The raw form
+  `Code.minDist C / Fintype.card ι`, or `δᵣ C` for the relative minimum distance, covers the
+  same quantity.
 
-The paper's `RS[F, L, k]`, `IRS[F, L, k, s]`, `FRS[F, L, k, s, ω]`,
-`UM[F, L, k, s]` shortcuts are *not* introduced as Lean notation. Per design
-decision (polish-plan D2): descriptive names like `ReedSolomon.code`,
-`ReedSolomon.Folded.frsCode` are preferred for navigability. Revisit if a
-downstream proof becomes hard to read because of this choice.
+The literature's `RS[F, L, k]`, `IRS[F, L, k, s]`, `FRS[F, L, k, s, ω]` and `UM[F, L, k, s]`
+shortcuts are deliberately *not* Lean notation: descriptive names like `ReedSolomon.code` and
+`ReedSolomon.Folded.frsCode` are preferred for navigability. Revisit if a proof becomes hard to
+read because of it.
 
 ## Type conventions
 
@@ -131,11 +126,10 @@ downstream proof becomes hard to read because of this choice.
 | Relative distance to a code | `ENNReal` | `relDistFromCode`, `δᵣ(u, C)` |
 | Relative distance to a code, computable | `ℚ≥0` | `relDistFromCode'`, `δᵣ'(w, C)` |
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
-| Restricted relative Hamming distance | `ℝ≥0` | `restrictedRelHammingDist` (paper `Δ_T(f,g)`; **next split**) |
 | Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` — base-field dimension over block length, `dim/n`; over a module alphabet `F^s` this is **not** the alphabet-normalized `dim/(s·n)`, which is `LinearCode.alphabetRate` (`alphabetRate_cast_eq` gives the `ℝ`-cast form the subspace-design statements use inline). For finite nontrivial `F`, positive `s`, and positive block length this is ABF26 D2.5; the Lean formula is total and assigns `0` in the zero-denominator cases. |
-| Proximity radius `δ` argument | `ℝ` today (`ℝ≥0` preferred for new API) | `Lambda`; (next split) `epsCA`, `epsMCA` |
-| Paper-style real-valued bounds | `ℝ` (then wrapped) | RHS of capacity-bound theorems, `JohnsonBound.Jqℓ`, `Jcap` |
-| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | (**next split**) `epsCA`, `epsMCA`, `epsPG` |
+| Proximity radius `δ` argument | `ℝ` in existing API; prefer `ℝ≥0` for new API | `Lambda` |
+| Real-valued bounds | `ℝ`, then wrapped | RHS of capacity-bound theorems, `JohnsonBound.Jqℓ`, `Jcap` |
+| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | — |
 | Probabilities | `ENNReal` | `Pr_{...}[...]` notation |
 | List sizes | `ℕ∞` (then cast to `ENNReal` for bounds) | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | Polynomial degree-bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
@@ -160,29 +154,26 @@ bound, so all bridges between it and finite `Lambda` bounds are instance-free;
 
 ## Tagged sorry comments
 
-**The current ABF26 coding-theory layer has no `sorry`s** — every statement in it
-is proved. This section is the convention for *future* external admits, kept here
-so the next split does not invent a second shape.
-
-External-admit theorems use the canonical comment shape:
+A `sorry` standing in for a result taken from a paper rather than proved in-tree carries a
+comment naming its source:
 
 ```
-sorry -- ABF26-X.Y; <classification> [Citation].
+sorry -- <classification> [Citation].
 ```
 
 - `<classification>` ∈ `{external admit, bridge, derived, in-tree admit}`.
-- `[Citation]` matches the paper-bibliography key (`[GG25 Cor 4.9]`,
-  `[BCHKS25 Thm 1.3]`, etc.), and that key **must** have an entry in
-  [`blueprint/src/references.bib`](../../blueprint/src/references.bib) per
-  [`CONTRIBUTING.md`](../../CONTRIBUTING.md).
-  For derived items, give the antecedent IDs instead
-  (`derived from R4.2 + T4.9.2`).
+- `[Citation]` is a bibliography key with a statement locator (`[GG25 Cor 4.9]`), and that key
+  **must** have an entry in
+  [`blueprint/src/references.bib`](../../blueprint/src/references.bib), per
+  [`CONTRIBUTING.md`](../../CONTRIBUTING.md). For a derived item, name the results it follows
+  from instead.
 
-Every tagged sorry should map 1-to-1 to a row in
-[`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md),
-and reviewers should expect the `ABF26-X.Y` tag in the comment to match an
-audit-doc row. If an admit decomposes into sub-goals, track the decomposition in
-the audit row rather than in working notes, so the ledger stays complete.
+Each such `sorry` should correspond to a row in
+[`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md).
+If an admit decomposes into sub-goals, record the decomposition in that row.
+
+The `ArkLib/Data/CodingTheory/` coding-theory layer described by this page currently contains no
+`sorry`.
 
 ## File and namespace layout
 
@@ -190,9 +181,9 @@ The ABF26 material follows this namespace layout:
 
 - `CodingTheory.*` for non-RS-specific definitions and predicates
   (`qEntropy`, `IsSubspaceDesign`, `ExtensionFieldPresentation`, `extensionCode`,
-  `hammingBallVolume`; next split `LineDecodable`). The substantive erasure result is the
-  metric uniqueness theorem `CodingTheory.eq_of_consistent_with_erased`; ArkLib does not expose
-  a cost-free “supports erasure correction” predicate because it would be vacuous.
+  `hammingBallVolume`). The erasure result is the metric uniqueness theorem
+  `CodingTheory.eq_of_consistent_with_erased`; ArkLib does not expose a cost-free "supports
+  erasure correction" predicate, because it would be vacuous.
   **Note the pre-existing exceptions**: MDS-ness is `LinearCode.IsMDS`
   (in `Basic/LinearCode.lean`), the distance and list primitives live in
   `Code.*` / `ListDecodable.*`, and the Johnson functions live in
@@ -205,6 +196,5 @@ The ABF26 material follows this namespace layout:
 - `ProximityGap.*` for ε-errors, grand challenges, and predicate-style
   proximity material.
 
-Theorems (admitted external results) stay in `CodingTheory.*` where they
-operate on general codes, `ReedSolomon.*` where RS-specific, or
-`ProximityGap.*` where they bound an `ε`-error.
+A theorem lives in `CodingTheory.*` when it is about general codes, `ReedSolomon.*` when it is
+Reed-Solomon specific, and `ProximityGap.*` when it bounds an `ε`-error.

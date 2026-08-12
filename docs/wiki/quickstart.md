@@ -33,7 +33,7 @@ git add path/to/newfile.lean
 ./scripts/validate.sh
 ```
 
-`./scripts/update-lib.sh` only considers tracked files, and now fails fast if untracked
+`./scripts/update-lib.sh` only considers tracked files, and fails fast if untracked
 `ArkLib/**/*.lean` files are present.
 
 ### Lean-heavy refactors or cleanup
@@ -42,8 +42,8 @@ git add path/to/newfile.lean
 ./scripts/validate.sh --lint
 ```
 
-This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build currently runs
-with lint disabled, so treat this as opt-in for now.
+This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build runs with
+`lint: false`, so this is opt-in.
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
@@ -63,7 +63,7 @@ intentionally add a tagged `sorry` (or close one), refresh and commit the baseli
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check report-only for now (see `ci.yml`).
+CI runs the same check report-only while the baseline soaks (see `ci.yml`).
 
 ### Docstrings, blueprint, or website changes
 
@@ -77,8 +77,8 @@ For website or blueprint output, run:
 ./scripts/validate.sh --site
 ```
 
-`./scripts/build-web.sh` is still what assembles the site, and it skips blueprint generation if
-`leanblueprint` is not installed. If blueprint output matters, install it first:
+`./scripts/build-web.sh` assembles the site, and skips blueprint generation if `leanblueprint`
+is not installed. If blueprint output matters, install it first:
 
 ```bash
 python3 -m pip install leanblueprint
@@ -92,13 +92,13 @@ python3 -m pip install leanblueprint
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
-- `scripts/build-project.sh` is now just a compile-only helper, not the convenience wrapper.
-- `scripts/README.md` is still useful as an inventory of helper scripts.
+- `scripts/build-project.sh` is a compile-only helper, not the convenience wrapper.
+- `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
-- `--lint` currently fails on `main` as well as on feature branches: `scripts/lint-style.sh`
-  reports a large pre-existing style backlog and `validate.sh` runs under `set -euo pipefail`, so
-  `--lint` **aborts the script before `--docs`**. To exercise the docgen gate, run
+- `--lint` fails on `main` as well as on feature branches: `scripts/lint-style.sh` reports a
+  large pre-existing style backlog, and `validate.sh` runs under `set -euo pipefail`, so `--lint`
+  **aborts the script before `--docs`**. To exercise the docgen gate, run
   `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
   compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
 

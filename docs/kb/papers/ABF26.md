@@ -43,7 +43,7 @@ manuscript, not to the original sources it cites — those get their own keys (`
 ## What ArkLib Uses From This Paper
 
 - **§2 preliminaries.** Definition 2.2 (`q`-ary entropy) → `CodingTheory.qEntropy`;
-  Definition 2.3 (restricted Hamming distance) is deferred and missing from this PR;
+  Definition 2.3 (restricted Hamming distance) is not formalized;
   Definition 2.4 (Hamming-ball volume) → `CodingTheory.hammingBallVolume`;
   Definition 2.5 (the rate convention `ρ(C) = log_{|Σ|}|C| / n`, which fixes `ρ = k/(s·n)` for
   folded codes); Definition 2.8 (`Λ(C, δ, f)` and the maximised `|Λ(C, δ)|`) →
@@ -132,9 +132,8 @@ manuscript, not to the original sources it cites — those get their own keys (`
 
 ## Known Divergences From ArkLib
 
-Three defects in the paper have been validated with compiled counterexamples (full evidence in
-[`../queries/abf26-split-pr1-review-2026-08-07/VERDICT.md`](../queries/abf26-split-pr1-review-2026-08-07/VERDICT.md)
-§3). All three are handled in the Lean; all three are worth reporting upstream.
+Three defects in the paper have been validated with compiled counterexamples, reproduced below.
+All three are handled in the Lean; all three are worth reporting upstream.
 
 1. **Definition 3.1's list factor is inverted** (`ℓ/(ℓ−1)` for `(ℓ−1)/ℓ`) — see Version Notes.
    Fixed in Lean; already fixed upstream.
@@ -180,15 +179,18 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 
 ## Open Formalization Gaps
 
-- **D2.3.** Restricted Hamming distance `Δ_T` is deferred and missing from this PR; only the
-  existing full-domain Hamming and relative-distance notions are available here.
+- **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
+  and relative-distance notions exist.
 - **§3 remainder.** Theorem 3.4 (subspace-design list bound), Lemma 3.7 / Corollary 3.8 (Elias
   and volume-based lower bounds — `hammingBallVolume` and `qEntropy` are the support layer that
-  is present), Theorem 3.11 (random-linear-code lower bound).
+  exists), Theorem 3.11 (random-linear-code lower bound), and Lemma 2.10 (the interleaved-code
+  list-size comparison, `[GGR11]`).
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
-  lemmas are present; the paper's erasure algorithm/cost model and the Lemma 6.12 application are
-  not.
+  lemmas exist; the erasure algorithm, its cost model, and the Lemma 6.12 application do not.
+- **§4, §5.** The correlated-agreement and mutual-correlated-agreement conjectures and the
+  list-decoding/CA connections are not formalized at this layer. See the ledger for the
+  per-statement position.
 
 ## Source Access
 
