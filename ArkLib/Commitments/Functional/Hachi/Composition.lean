@@ -35,7 +35,7 @@ sibling `Commitment.lean`.)
 1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
    (§4.2 / Figure 3 / Lemma 8) — an escape-aware package whose event is `QuadEval`'s.
 2. **`openCore`** (skeleton, pure links): the escape-aware `evalChain` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter ▷ HMZ25 lift (Figure 4 / Lemma 9)
+   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
    ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
    sumcheck bridge.
 3. **`openingChain`** (skeleton, guarded tail): the pure `openCore` ▷ the paired sumcheck loop
@@ -69,11 +69,11 @@ match their relation seam.
  3 | R^lin (RingSwitch/Rlin)    | 0                    | relOut → relRlin          | any
  4 | lift (…/Reduction)         | msg t; α ∈ F         | relRlin → relLift         | ℓ=1, k=2d (L9)
  5 | batch (ZeroCheck/Batch)    | 0                    | relLift → relBatched      | any
- 6 | zero-check (…/Reduction)   | (ρ₀,ρ_α) ∈ F²        | relBatched → relZeroCheck | ℓ=2, k=D (L10*)
- 7 | sc bridge (Sumcheck/Bridge)| 0                    | relZeroCheck → roundRel 0 | any
- 8 | rounds ×m₀ (…/Rounds)      | (g-pair; aᵢ)ᵢ        | roundRel 0 → roundRel m₀ | ℓ=1, k=2b+1
+ 6 | zero-check (…/Reduction)   | scalar coords of τ₀,τα| relBatched → relNestedZeroCheck | k=2/rnd
+ 7 | sc bridge (Sumcheck/Bridge)| 0                    | relNestedZeroCheck → nestedRoundRel 0 | any
+ 8 | rounds ×m₀ (…/Rounds)      | (g-pair; aᵢ)ᵢ        | nestedRoundRel 0 → … m₀  | ℓ=1, k=2b+1
    |  — GUARDED: gᵢ(0)+gᵢ(1)=z |                      |                           |  (L11)/round
- 9 | final eval (…/FinalEval)   | msg y′ ∈ F           | roundRel m₀ → relWEvalClaim | any — GUARDED
+ 9 | final eval (…/FinalEval)   | msg y′ ∈ F           | nestedRoundRel m₀ → relWEvalClaim | GUARDED
 10 | partials (Recursion/PartialEval)| msg (yᵢ)_{i≠0}  | relWEvalClaim → relPartialEval | any (pure)
 11 | Z-pack (…/ZBatchBridge)    | 0                    | relPartialEval → relHatEval | any — ⚠ GAP
 12 | handoff (…/TraceHandoff)   | msg p ∈ R′q          | relHatEval → relIn(Φ′) | any — GUARDED
@@ -94,11 +94,13 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
   runtime checks — and compose through the guarded append, whose composition theorem is the
   one sorried piece of *generic* machinery.
 - Row 6 implements the **corrected Lemma 10**: the paper's uniform-vector star extraction is not
-  provable (axis-cross counterexample); the challenge is a pair of scalar **Kronecker seeds**
-  with the batching points derived on the curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, giving genuine
-  `(ℓ, k) = (2, D)` CWSS at `D = max 2^{m₀} 2^{m₁}`. The counterexample and the repair are spelled
-  out in `ZeroCheck/Reduction.lean`. This is the one place the formalization deliberately changes
-  the paper's protocol.
+  provable (axis-cross counterexample). Each coordinate of `τ₀` and `τα` is instead sampled in a
+  separate scalar round, so the accepting transcript tree becomes a path-dependent complete
+  binary evaluation tree — `k = 2` at every round, and the multilinear identity test extraction
+  needs. Since no prover message separates the rounds, the *interactive* protocol is unchanged
+  from Figure 5; what changes is the tree shape the extractor is handed. The counterexample, the
+  repair and their costs are spelled out in `ZeroCheck/Reduction.lean`; the full analysis is
+  `docs/kb/audits/noz26-zero-check-lemma10.md`.
 - Row 11 isolates the **§4.5/§3.2 partial-evaluation gap** found while auditing this skeleton:
   the packed claim of Eq. (26) pins only one `F`-linear functional of the per-slice values, so
   the paper's step is (apparently) not knowledge-sound as stated; the bridge's pull-back sorry is
@@ -123,18 +125,33 @@ layer (`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lea
 theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
 sorried `Extractor.TreeBased`.
-*Per-link math*: the zero-check encodings (`Constraints.lean`), the un-batching
-(`mem_relLift_of_relBatched`), corrected Lemma 10
-(`zeroCheck_coordinateWiseSpecialSoundWithEscape`), the sum-to-point bridge, Lemma 11
-(`round_coordinateWiseSpecialSoundWithEscape`), the final evaluation
-(`finalEval_coordinateWiseSpecialSoundWith` + the `finalCheck` encoding), the partial-evaluation
-head (`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs), and the trace handoff
-(`handoff_coordinateWiseSpecialSoundWith` + `traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
-Rows 1–4 carry no sorries: the `R^lin` adapter (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and
-the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`, via the generic `Lift` layer on the proven
-scalar-round engine and the `QuotientLift` algebra) are proven and sorry-free.
+
+**Rows 1–7 carry no sorried certificate.** The `R^lin` adapter
+(`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`,
+via the generic `Lift` layer on the proven scalar-round engine and the `QuotientLift` algebra)
+are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
+
+* row 5, the batching pull-back `mem_relLift_of_relBatched` — including the range-side soundness
+  `H₀ ≡ 0 ⇒ liftShort` (`hZero_eq_zero_imp_liftShort`), so shortness is **derived**, not assumed,
+  and `relBatched` stays norm-free;
+* row 6, the **corrected Lemma 10**: `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` with
+  its named extractor and the weak-binding event `nestedZeroCheckEsc`, on the concrete
+  `CMlPolynomialEval` encodings `hZero`/`hAlpha` and the evaluation-tree zero test;
+* row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`.
+
+*Per-link math still sorried*: two F5 sumcheck identities in `Constraints.lean`
+(`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
+Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), the final evaluation
+(`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck` encoding),
+the partial-evaluation head (`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs),
+and the trace handoff (`handoff_coordinateWiseSpecialSoundWith` +
+`traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
 Every sorried encoding def carries an in-situ `**Sorried**` docstring.
-*Flagged as an open gap (not merely unproven)*: `mem_relPartialEval_of_relHatEval` (row 11).
+
+*Flagged as open gaps (not merely unproven)*: `mem_relPartialEval_of_relHatEval` (row 11), and
+the `Short` obligation on `handoff_coordinateWiseSpecialSoundWith` (row 12), which is **false as
+`openingChain` is currently parameterized** — see that theorem's docstring for the two missing
+ingredients.
 
 ## References
 
@@ -228,22 +245,24 @@ local notation "n₀" => rlinRows innerRows outerRows dRows
 /-- The wire format of the pure prefix `openCore` (rows 1–7): bridge (0) ⧺ `QuadEval` (2) ⧺
 R^lin adapter (0) ⧺ lift (2) ⧺ batching (0) ⧺ zero-check (1) ⧺ sumcheck bridge (0),
 right-associated as `▷` composes them. -/
-abbrev openCoreSpec (ω : ℕ) (TCom F : Type) :=
+abbrev openCoreSpec (ω m₀ m₁ : ℕ) (TCom F : Type) :=
   (((!p[] : ProtocolSpec 0) ++ₚ
       pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)) ++ₚ
     ((!p[] : ProtocolSpec 0) ++ₚ
       (CoordinateWise.ScalarRound.pSpecScalar TCom F ++ₚ
-        ((!p[] : ProtocolSpec 0) ++ₚ (pSpecZeroCheck F ++ₚ (!p[] : ProtocolSpec 0)))))
+        ((!p[] : ProtocolSpec 0) ++ₚ
+          (pSpecNestedZeroCheck F m₀ m₁ ++ₚ (!p[] : ProtocolSpec 0)))))
 
 /-- Sampleability of the pure prefix's challenges, assembled **by name** from the per-link
 instances (the generic append instance does not fire through the reducible `++ₚ` — its
 discrimination keys degenerate — so compound wire formats get their instances built explicitly;
 same workaround as `roundsSpecSampleable`). Requires a sampler for the fold challenges
 (`ShortChallenge`), which the repo does not yet provide as an instance. -/
-@[reducible] def openCoreSpecSampleable (ω : ℕ) (TCom F : Type) [SampleableType F]
+@[reducible] def openCoreSpecSampleable (ω m₀ m₁ : ℕ) (TCom F : Type) [SampleableType F]
     [SampleableType (ShortChallenge 𝓜(q, α) ω)] :
     ∀ i, SampleableType
-      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω TCom F).Challenge i) :=
+      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+        ω m₀ m₁ TCom F).Challenge i) :=
   ProtocolSpec.instSampleableTypeChallengeAppend
     (h₁ := ProtocolSpec.instSampleableTypeChallengeAppend
       (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
@@ -255,14 +274,14 @@ same workaround as `roundsSpecSampleable`). Requires a sampler for the fold chal
         (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
           (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
           (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
-            (h₁ := instSampleableTypeChallengePSpecZeroCheck)
+          (h₁ := instSampleableTypeChallengePSpecNestedZeroCheck)
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
 /-- **The pure prefix of one Hachi opening iteration** (rows 1–7 of the chain table): the
 escape-aware evaluation front (`evalChain` = bridge ▷ `QuadEval`) extended by the §4.3 stages
 with pure verifiers — the `R^lin` adapter, the HMZ25 lift, the batching bridge, the
 (corrected-Lemma-10) zero-check, and the sumcheck bridge. Every relation seam is definitional
-(`rfl`). The public result reduces `relPolyEval` to the round-`0` `roundRel`; the composite's escape
+(`rfl`). The public result reduces `relPolyEval` to the round-`0` `nestedRoundRel`; the composite's escape
 event is the `EscapeEvent.append`-nesting of the honest factor events (`QuadEval`'s Module-SIS break
 in row 2, the lift's weak-binding collision in row 4, the zero-check's in row 6), each on its own
 subtree. -/
@@ -279,9 +298,9 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     EscapeCWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
-      (RoundStatement 𝓜(q, α) K.TCom F n₀ μ₀ 0)
+      (NestedRoundStatement 𝓜(q, α) K.TCom F n₀ μ₀ m₀ m₁ 0)
       (LiftedWitness 𝓜(q, α) μ₀ n₀)
-      (openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω K.TCom F) :=
+      (openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F) :=
   haveI : ∀ i, SampleableType
       ((((!p[] : ProtocolSpec 0) ++ₚ
         pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)).Challenge i) :=
@@ -291,9 +310,9 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
   evalChain (b := b) (γ := γ) init impl hq5 hκ hτ pp ▷
     rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl pp (b : ZMod q) ω γ ▷
     liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
-    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hq2 hb hρ hcov hn ▷
-    zeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
-    sumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hcov hb hρ ▷
+    nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
+    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
 `openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on
@@ -335,17 +354,20 @@ noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
       (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
         dRows')
       (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
-      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω K.TCom F ++ₚ
+      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω (mLow + κ) m₁ K.TCom F ++ₚ
           roundsSpec F b (mLow + κ) ++ₚ pSpecFinalEval F) ++ₚ
         (pSpecPartialEval F κ ++ₚ ((!p[] : ProtocolSpec 0) ++ₚ pSpecHandoff Φ'))) :=
-  haveI i₀ := openCoreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r) ω K.TCom F
+  haveI i₀ := openCoreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
+    ω (mLow + κ) m₁ K.TCom F
   haveI i₁ : ∀ i, SampleableType
-      (((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω K.TCom F) ++ₚ
+      (((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+        ω (mLow + κ) m₁ K.TCom F) ++ₚ
         roundsSpec F b (mLow + κ)).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
       (h₂ := roundsSpecSampleable F b (mLow + κ))
   haveI i₂ : ∀ i, SampleableType
-      ((((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω K.TCom F) ++ₚ
+      ((((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+          ω (mLow + κ) m₁ K.TCom F) ++ₚ
           roundsSpec F b (mLow + κ)) ++ₚ pSpecFinalEval F).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)

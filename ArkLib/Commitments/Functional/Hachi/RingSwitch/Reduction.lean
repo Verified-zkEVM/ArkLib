@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
 import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -85,7 +86,7 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
+open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.ScalarRound
 
@@ -169,6 +170,45 @@ def liftCheckAt (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (a : F)
     (w : LiftedWitness Φ μ n) : Prop :=
   Lift.checkAt (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s => bound ≤ s.bound) s a w
+
+/-- The computable `i`-th lifted row
+`∑ⱼ Mᵢⱼ(X)·zⱼ(X) ∈ Zq[X]`, formed from the canonical `CPolynomial` representatives. -/
+def cRowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    CPolynomial (ZMod q) :=
+  ∑ j, (s.M i j).1 * (z j).1
+
+/-- Computable evaluation of a `Zq[X]` polynomial at `a ∈ F` through the base-field embedding. -/
+def cEvalAt (φF : ZMod q →+* F) (a : F) (p : CPolynomial (ZMod q)) : F :=
+  p.eval₂ φF a
+
+/-- Mathlib view of `cRowSum`, retained for degree and root-counting proofs. -/
+noncomputable def rowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    Polynomial (ZMod q) :=
+  (cRowSum Φ s z i).toPoly
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `rowSum` is the expected Mathlib sum of products of canonical representatives. -/
+theorem rowSum_eq_sum_toPoly (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    rowSum Φ s z i = ∑ j, (s.M i j).1.toPoly * (z j).1.toPoly := by
+  unfold rowSum cRowSum
+  rw [CPolynomial.toPoly_sum]
+  exact Finset.sum_congr rfl fun j _ => CPolynomial.toPoly_mul _ _
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable and Mathlib row-sum evaluations agree. The Mathlib side is the generic
+`RingSwitching.evalAt` that `Lift.checkAt` is stated against, so this is the bridge between the
+computable row encoding and the presentation layer. -/
+theorem cEvalAt_cRowSum_eq_evalAt (φF : ZMod q →+* F) (a : F)
+    (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    cEvalAt φF a (cRowSum Φ s z i) = evalAt φF a (rowSum Φ s z i) := by
+  exact CPolynomial.eval₂_toPoly φF a (cRowSum Φ s z i)
+
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- Evaluation of any computable polynomial agrees with evaluation of its Mathlib image. -/
+theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
+    (p : CPolynomial (ZMod q)) :
+    cEvalAt φF a p = evalAt φF a p.toPoly := by
+  exact CPolynomial.eval₂_toPoly φF a p
 
 /-- The Hachi output relation, instantiated from the generic anchored committed-scalar relation. -/
 def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))

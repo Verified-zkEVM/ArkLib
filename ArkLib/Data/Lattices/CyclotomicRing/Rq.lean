@@ -62,6 +62,23 @@ theorem degree_toPoly_lt_of_reduced {p : CPolynomial R} (hp : Φ.reduce p = p) :
   rw [reduce_toPoly]
   exact Polynomial.degree_modByMonic_lt _ (IsCyclotomic.monic (Φ := Φ))
 
+/-- A reduced representative has `CPolynomial` degree strictly below `deg φ`, provided `φ` is
+non-constant. The `natDegree` companion of `degree_toPoly_lt_of_reduced`, in the form needed
+wherever a reduced representative is read out as a length-`deg φ` coefficient vector. -/
+theorem natDegree_lt_of_reduced (hd : 0 < Φ.φ.natDegree) {p : CPolynomial R}
+    (hp : Φ.reduce p = p) : p.natDegree < Φ.φ.natDegree := by
+  have hφ : Φ.φ.toPoly ≠ 0 := by
+    intro h
+    rw [CPolynomial.natDegree_toPoly, h, Polynomial.natDegree_zero] at hd
+    exact absurd hd (lt_irrefl 0)
+  have hdeg := Φ.degree_toPoly_lt_of_reduced hp
+  rw [Polynomial.degree_eq_natDegree hφ, ← CPolynomial.natDegree_toPoly] at hdeg
+  rw [CPolynomial.natDegree_toPoly]
+  by_cases hz : p.toPoly = 0
+  · rw [hz, Polynomial.natDegree_zero]
+    exact hd
+  · exact (Polynomial.natDegree_lt_iff_degree_lt hz).mpr hdeg
+
 /-- Reduction fixes any polynomial whose degree is already below `deg φ`. -/
 theorem reduce_eq_self_of_degree_lt {p : CPolynomial R}
     (h : p.toPoly.degree < Φ.φ.toPoly.degree) : Φ.reduce p = p := by

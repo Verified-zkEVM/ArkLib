@@ -78,7 +78,7 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {F : Type} [Field F]
+variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (mLow κ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -126,15 +126,15 @@ def partialEvalVerifier {TCom : Type} :
 
 /-- The honest partial-evaluation prover skeleton: sends the true partials at the nonzero
 indices (the parameter `computeY`, honestly `partialEvalAt`). -/
-def partialEvalProver {TCom : Type}
-    (computeY : WEvalStatement TCom F (mLow + κ) → LiftedWitness Φ μ n →
+def partialEvalProver {TCom Wit : Type}
+    (computeY : WEvalStatement TCom F (mLow + κ) → Wit →
       {i : Fin (2 ^ κ) // i ≠ 0} → F) :
-    Prover oSpec (WEvalStatement TCom F (mLow + κ)) (LiftedWitness Φ μ n)
-      (PartialEvalStatement TCom F mLow κ) (LiftedWitness Φ μ n)
+    Prover oSpec (WEvalStatement TCom F (mLow + κ)) Wit
+      (PartialEvalStatement TCom F mLow κ) Wit
       (pSpecPartialEval F κ) where
   PrvState
-    | 0 => WEvalStatement TCom F (mLow + κ) × LiftedWitness Φ μ n
-    | 1 => WEvalStatement TCom F (mLow + κ) × LiftedWitness Φ μ n
+    | 0 => WEvalStatement TCom F (mLow + κ) × Wit
+    | 1 => WEvalStatement TCom F (mLow + κ) × Wit
   input := id
   sendMessage
     | ⟨0, _⟩ => fun st => pure (computeY st.1 st.2, st)
@@ -151,7 +151,7 @@ stopping point of the §4.5 peeling; collapsing it into the single `Z`-packed cl
 `Recursion/ZBatchBridge.lean` step (⚠ see there). -/
 def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
-    Set (PartialEvalStatement K.TCom F mLow κ × LiftedWitness Φ μ n) :=
+    Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
     ∀ i, partialEvalAt Φ mLow κ φF p.2 p.1.pointLow i = p.1.partials i}
