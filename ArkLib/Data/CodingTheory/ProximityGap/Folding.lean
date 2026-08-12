@@ -336,7 +336,9 @@ private lemma interpolate_eq_folding_poly_eval
   · apply eq_of_eval_eq_degree (n := 2 ^ k)
         (s := block domain k x)
     · exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ (by simp)) <| by
-        aesop (add simp [card_block_of_mem_subdomain'])
+        aesop 
+          (add simp [card_block_of_mem_subdomain'])
+          (add safe (by grind))
     · exact lt_of_le_of_lt Polynomial.degree_map_le <| by
         have h := FoldingPolynomial.folding_polynomial_deg_y_bound_x_k
           (f := (Lagrange.interpolate univ ⇑domain) f)
@@ -375,7 +377,7 @@ theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
     Embedding.coeFn_mk, toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
-  rw [eval_comm, interpolate_eq_folding_poly_eval (by simp)]
+  rw [eval_comm, interpolate_eq_folding_poly_eval (by grind)]
   aesop
 
 theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
