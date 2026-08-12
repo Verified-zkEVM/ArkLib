@@ -40,8 +40,7 @@ derivative bridge.
 
 Both L2.17 and T2.18 carry hypotheses their sources omit, and in each case the unguarded
 statement is false; the counterexamples are recorded in the declaration docstrings and
-cross-referenced to `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`
-and `docs/kb/queries/abf26-split-pr1-review-2026-08-07/`.
+cross-referenced to `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`.
 
 The generic determinant, root-multiplicity, and finite-dimensional helpers used by the proof
 live in `ArkLib/ToMathlib/`; this module contains only the coding-theory construction and its
@@ -535,8 +534,7 @@ GG25's restatement (Definition 2.18 / Theorem 2.19, which asks only `q > sn`) ar
 **false as printed**, for two independent reasons. Each is repaired below by a hypothesis
 that the ultimate source, GK16, does impose. Recorded in
 `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md` (rows `D2.14`,
-`T2.18`, and Existing Inconsistencies #6) and in
-`docs/kb/queries/abf26-split-pr1-review-2026-08-07/`.
+`T2.18`, and Existing Inconsistencies #6).
 
 *(1) No order condition on `ω` — repaired by `hω_gen`.* The statement without one is
 **false**: with `F = 𝔽₁₀₁`, `s = 2`, `ω = -1` (order 2), `k = 3`, `L = {1,…,7}` every other
@@ -567,7 +565,7 @@ injectivity of `(i, m) ↦ domain i · ω^m`, i.e. the root count over-counts.
 adds the intra-orbit clause `α · ωⁱ ≠ α` for `0 < i < s`, which forces `0 ∉ L` whenever
 `s ≥ 2` (take `i = 1`). That clause is therefore **load-bearing for this theorem**, not
 merely a hedge protecting the folded-RS distance formula; it is what makes `Admissible`
-GR08's evaluation-point injectivity condition (see `docs/kb/papers/GR08.md`), and GK16 §4.2
+GR08's evaluation-point injectivity condition, and GK16 §4.2
 excludes `α = 0` for the same reason. Consequence for readers: this theorem is *weaker* than
 ABF26's printed claim, because it assumes more of `L` and `ω`.
 

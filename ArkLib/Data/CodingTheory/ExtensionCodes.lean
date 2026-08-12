@@ -148,7 +148,14 @@ lemma coord_eq_equivFun_apply (P : ExtensionFieldPresentation B F) (j : Fin P.e)
 
 /-- A presentation is *systematic* if `φ(ψ(x)) = (x, 0, …, 0)` for every `x : B`.
 This makes the base-field copy of `B` inside `F` align with the first coordinate.
-(`ψ = algebraMap B F` and `φ = P.basis.equivFun`, cf. the structure docstring.) -/
+(`ψ = algebraMap B F` and `φ = P.basis.equivFun`, cf. the structure docstring.)
+
+Kept for fidelity to ABF26 §2.6, not because anything here needs it: **no result in ArkLib
+assumes systematicity.** The encoder identity that the paper's remark after D2.20 states for
+systematic presentations in fact holds for every presentation (see the module docstring), so
+this definition and its coordinate form `coord_algebraMap_of_isSystematic` currently have no
+consumer. They are the API a caller would use if it ever needed to exhibit a systematic
+presentation — tower constructions, for instance, are systematic by construction. -/
 def IsSystematic (P : ExtensionFieldPresentation B F) : Prop :=
   ∀ x : B, P.basis.equivFun (algebraMap B F x) = fun i ↦ if i.val = 0 then x else 0
 
