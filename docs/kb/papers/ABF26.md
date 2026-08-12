@@ -181,10 +181,23 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 
 - **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
   and relative-distance notions exist.
-- **§3 remainder.** Theorem 3.4 (subspace-design list bound), Lemma 3.7 / Corollary 3.8 (Elias
-  and volume-based lower bounds — `hammingBallVolume` and `qEntropy` are the support layer that
-  exists), Theorem 3.11 (random-linear-code lower bound), and Lemma 2.10 (the interleaved-code
-  list-size comparison, `[GGR11]`).
+- **§3 remainder.** All of §3 apart from Theorem 3.15 now has a Lean statement, in
+  `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`; what remains is *proof*, plus three
+  fidelity gaps.
+  - Proved in-tree: Lemma 3.7 (Elias volume bound, by the paper's own averaging argument) and
+    Theorem 3.9 (generalized Singleton, from the rate–radius relation).
+  - Admitted with the source statement in the docstring: Theorem 3.4, Corollary 3.8, Theorem 3.6,
+    Theorem 3.10, Theorem 3.11, Theorems 3.12–3.14. Corollary 3.5 is *derived* from Theorem 3.4's
+    admit, so it inherits it.
+  - Fidelity gaps to close, in rough priority order: (i) Theorem 3.4 is stated at the
+    **rate-derived** profile only — the arbitrary-`τ` generalisation is false, refuted by a compiled
+    counterexample recorded in its docstring; (ii) Lemma 3.7 / Corollary 3.8 / Theorem 3.10 are
+    stated for linear codes over a field, whereas the paper states them for an arbitrary code
+    `C : Σ^k → Σ^n` — for Lemma 3.7 the generalisation is nearly free, since linearity is used once;
+    (iii) Theorem 3.9 formalizes the arithmetic step but not [ST20]'s implication
+    *list-decodable ⇒ rate–radius relation*, which is where that theorem's content lies.
+  - **Theorem 3.15** stays unformalized by decision: it needs a computational-hardness framework.
+- **L2.10.** The interleaved-code list-size comparison (`[GGR11]`) is still absent.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
   lemmas exist; the erasure algorithm, its cost model, and the Lemma 6.12 application do not.
