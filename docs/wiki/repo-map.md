@@ -191,6 +191,15 @@ home_page/            site assets and assembled website root
   `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
+- List-size bounds that are *not* of Johnson type are in `ListDecodability/Bounds.lean` — the
+  subspace-design upper bound and its folded-RS corollary, the Elias volume/averaging lower bound
+  and its entropy form, the generalized Singleton bound and the large-alphabet barrier, and the
+  random-linear-code and Reed-Solomon separations. The file/directory pair
+  `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
+  `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
+  results about them. Most of these bounds are deep external results carried as tagged `sorry`
+  admits with the source statement in the docstring; `linear_lambda_ge_elias_volume` and
+  `linear_card_le_generalized_singleton` are proved in-tree and axiom-clean.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
