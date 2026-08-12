@@ -15,6 +15,7 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.Real.ENatENNReal
+import Mathlib.Algebra.Order.Chebyshev
 import CompPoly.Data.Nat.Bitwise
 
 /-!
@@ -152,6 +153,78 @@ def hammingBall (y : n → R) (r : ℕ) : Set (n → R) :=
 theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
   x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
   aesop (add simp [hammingBall, hammingDist])
+
+section Agreement
+
+variable {u v : n → R}
+
+/-- The number of positions at which the two words `u` and `v` agree. -/
+def agree (u v : n → R) : ℕ := ({i | u i = v i} : Finset _).card
+
+@[simp]
+lemma agree_add_hammingDist :
+  agree u v + Δ₀(u, v) = Fintype.card n := by
+  simpa [agree, hammingDist, Finset.card_univ] using
+    Finset.card_filter_add_card_filter_not (s := Finset.univ)
+      (p := fun i ↦ u i = v i)
+
+@[simp]
+lemma agree_self : agree u u = Fintype.card n := by simp [agree, Finset.card_univ]
+
+@[simp]
+lemma agree_le_card : agree u v ≤ Fintype.card n := by
+  simpa [agree, Finset.card_univ] using Finset.card_filter_le Finset.univ _
+
+section Counting
+
+variable {T : Finset (n → R)}
+
+/-- Double counting: summing agreements with a fixed word `u` over a finite set `T` of words is
+the same as summing, over the positions, the number of words of `T` agreeing with `u` there. -/
+private lemma sum_agree_eq :
+  ∑ c ∈ T, (agree c u : ℝ) = ∑ i : n, ({c ∈ T | c i = u i}.card : ℝ) := by
+  simp only [agree, Finset.card_filter]
+  push_cast
+  rw [Finset.sum_comm]
+
+/-- Every position contributes at least the square of the number of words agreeing with `y`
+there to the total number of agreeing (ordered) pairs. -/
+private lemma sq_le_sum_agree :
+  ∑ i : n, ({c ∈ T | c i = u i}.card : ℝ) ^ 2 ≤
+    ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+  have hRHS : ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) =
+    ∑ i : n, ∑ c ∈ T, ∑ c' ∈ T, (if c i = c' i then (1 : ℝ) else 0) := by
+    simp only [agree, Finset.card_filter]
+    push_cast
+    rw [Finset.sum_congr rfl fun c _ => Finset.sum_comm, Finset.sum_comm]
+  rw [hRHS]
+  refine Finset.sum_le_sum fun i _ => ?_
+  have hsq : ({c ∈ T | c i = u i}.card : ℝ) ^ 2 =
+    ∑ c ∈ T, ∑ c' ∈ T,
+      (if c i = u i then 1 else 0) * (if c' i = u i then 1 else 0) := by
+    rw [sq, Finset.card_filter]
+    push_cast
+    rw [Finset.sum_mul_sum]
+  rw [hsq]
+  refine Finset.sum_le_sum fun c _ => Finset.sum_le_sum fun c' _ => ?_
+  by_cases h : c i = u i <;> by_cases h' : c' i = u i <;> simp [h, h'] <;>
+    split_ifs <;> norm_num
+
+/-- Cauchy–Schwarz for the agreement counts. -/
+lemma sq_sum_agree_le :
+  (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
+    (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+  rw [sum_agree_eq]
+  calc (∑ i : n, ((T.filter fun c => c i = u i).card : ℝ)) ^ 2
+      ≤ ((Finset.univ : Finset n).card : ℝ)
+          * ∑ i : n, ((T.filter fun c => c i = u i).card : ℝ) ^ 2 := sq_sum_le_card_mul_sum_sq
+    _ ≤ (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+        rw [Finset.card_univ]
+        exact mul_le_mul_of_nonneg_left sq_le_sum_agree (by positivity)
+
+end Counting
+
+end Agreement
 
 /-- The distance to a code is at most the distance to any specific codeword. -/
 lemma distFromCode_le_dist_to_mem (u : n → R) {C : Set (n → R)} (v : n → R) (hv : v ∈ C) :

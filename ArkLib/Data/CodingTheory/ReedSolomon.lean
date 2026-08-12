@@ -2,7 +2,7 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov,
-Mirco Richter, Chung Thai Nguyen
+Mirco Richter, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.Matrix.Vandermonde
@@ -220,6 +220,43 @@ lemma evalOnPoints_mem_code_of_natDegree_lt {α : ι ↪ F} {p : F[X]} (h_deg : 
   evalOnPoints α p ∈ code α n :=
   mem_code_of_polynomial_of_natDegree_lt_of_eval p h_deg (by simp [evalOnPoints])
 
+/-- Two distinct Reed–Solomon codewords of degree `< m` agree in fewer than `m` positions. -/
+lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
+  {domain : ι ↪ F} {m : ℕ} {c c' : ι → F}
+  (hc : c ∈ ReedSolomon.code domain m) (hc' : c' ∈ ReedSolomon.code domain m) (hne : c ≠ c') :
+  Code.agree c c' < m := by
+  classical
+  obtain ⟨p, hp, hpc⟩ := ReedSolomon.mem_code_iff_exists_polynomial.mp hc
+  obtain ⟨q, hq, hqc⟩ := ReedSolomon.mem_code_iff_exists_polynomial.mp hc'
+  have hpq : p ≠ q := by
+    rintro rfl
+    exact hne (hpc.trans hqc.symm)
+  have hr0 : p - q ≠ 0 := sub_ne_zero.mpr hpq
+  have hrdeg : (p - q).degree < (m : ℕ) :=
+    lt_of_le_of_lt (Polynomial.degree_sub_le p q) (max_lt hp hq)
+  have hcval : ∀ i, c i = p.eval (domain i) := fun i ↦ congrFun hpc i
+  have hc'val : ∀ i, c' i = q.eval (domain i) := fun i ↦ congrFun hqc i
+  have hcard : (Finset.univ.filter fun i => c i = c' i).card ≤ (p - q).roots.toFinset.card := by
+    refine Finset.card_le_card_of_injOn (fun i => domain i) ?_ ?_
+    · intro i hi
+      simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq] at hi
+      simp only [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hr0]
+      have hval : p.eval (domain i) = q.eval (domain i) := by
+        rw [←hcval i, ←hc'val i]; exact hi
+      simp [Polynomial.IsRoot, hval]
+    · exact fun i _ j _ h => domain.injective h
+  have hnat : (p - q).natDegree < m := by
+    rcases Nat.eq_zero_or_pos m with rfl | hm
+    · exfalso
+      have hbot : (p - q).degree = ⊥ := Nat.WithBot.lt_zero_iff.mp (by simpa using hrdeg)
+      exact hr0 (Polynomial.degree_eq_bot.mp hbot)
+    · exact (Polynomial.natDegree_lt_iff_degree_lt hr0).mpr hrdeg
+  calc agree c c' = (Finset.univ.filter fun i => c i = c' i).card := rfl
+    _ ≤ (p - q).roots.toFinset.card := hcard
+    _ ≤ Multiset.card (p - q).roots := Multiset.toFinset_card_le _
+    _ ≤ (p - q).natDegree := Polynomial.card_roots' _
+    _ < m := hnat
+
 /-- **Monotonicity of `code` in the degree bound.** If `n ≤ m`, the degree-`n` Reed-Solomon code
 is contained in the degree-`m` code over the same domain. -/
 @[mono]
@@ -360,6 +397,48 @@ lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :
 
 noncomputable abbrev sqrtRate [Fintype ι] (deg : ℕ) (domain : ι ↪ F) : ℝ≥0 :=
   (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt
+
+@[simp]
+lemma sqrtRate_nonneg [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  0 ≤ (sqrtRate m domain : ℝ) := (sqrtRate m domain).coe_nonneg
+
+lemma sqrtRate_sq [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (sqrtRate m domain : ℝ) ^ 2 =
+    (min m (Fintype.card ι) : ℝ) / (Fintype.card ι : ℝ) := by
+  rw [sqrtRate, ←NNReal.coe_pow, NNReal.sq_sqrt,
+    ReedSolomon.rateOfLinearCode_eq_min_div]
+  push_cast
+  ring
+
+lemma sqrtRate_pos [Fintype ι] [Nonempty ι] {m : ℕ}
+  (hm : 0 < m) {domain : ι ↪ F} :
+  0 < (sqrtRate m domain : ℝ) := by
+  have hcard : 0 < Fintype.card ι := Fintype.card_pos
+  have hsq : 0 < (sqrtRate m domain : ℝ) ^ 2 := by
+    rw [sqrtRate_sq]
+    have : 0 < min m (Fintype.card ι) := lt_min hm hcard
+    positivity
+  rcases (sqrtRate_nonneg m domain).lt_or_eq with h | h
+  · exact h
+  · rw [←h] at hsq
+    simp at hsq
+
+@[simp]
+lemma sqrtRate_sq_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (sqrtRate m domain : ℝ) ^ 2 ≤ 1 := by
+  rw [sqrtRate_sq]
+  rcases Nat.eq_zero_or_pos (Fintype.card ι) with h | h
+  · simp [h]
+  · rw [div_le_one (by exact_mod_cast h)]
+    exact_mod_cast min_le_right _ _
+
+private lemma le_one_of_sq_le_one {x : ℝ} (hx : 0 ≤ x) (h : x ^ 2 ≤ 1) : x ≤ 1 := by
+  nlinarith
+
+@[simp]
+lemma sqrtRate_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (ReedSolomon.sqrtRate m domain : ℝ) ≤ 1 :=
+  le_one_of_sq_le_one (sqrtRate_nonneg m domain) (sqrtRate_sq_le_one m domain)
 
 end
 
