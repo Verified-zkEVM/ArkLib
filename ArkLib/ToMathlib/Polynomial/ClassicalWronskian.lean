@@ -16,40 +16,51 @@ import Mathlib.LinearAlgebra.Vandermonde
 import Mathlib.RingTheory.Polynomial.Wronskian
 
 /-!
-# The classical Wronskian
+# The Wronskian of a finite family of polynomials
 
 The classical Wronskian of `P 0, …, P (σ - 1)` is the determinant of the matrix whose
 `(i, j)` entry is the `i`-th ordinary formal derivative of `P j`. Over a field of
 characteristic zero, or of positive characteristic at least the common strict degree bound,
 it is nonzero exactly when the polynomials are linearly independent.
 
-The characteristic guard is essential: in characteristic `p`, the nonconstant polynomial
-`X ^ p` has zero derivative.
-
-This is the `n`-tuple Wronskian that `Mathlib/RingTheory/Polynomial/Wronskian.lean` asks
-for in its `TODO` ("Define Wronskian for n-tuple of polynomials, not necessarily two"):
-`classicalWronskian_two` identifies it at `σ = 2` with Mathlib's `Polynomial.wronskian`.
+This is the `n`-tuple Wronskian that `Mathlib/RingTheory/Polynomial/Wronskian.lean` asks for
+in its `TODO` ("Define Wronskian for n-tuple of polynomials, not necessarily two");
+`classicalWronskian_two` identifies it at `σ = 2` with `Polynomial.wronskian`.
 
 ## Main definitions
 
-* `Polynomial.classicalWronskian`
+* `Polynomial.classicalWronskian`: the determinant of the matrix of iterated derivatives.
 
 ## Main statements
 
-* `Polynomial.classicalWronskian_two` — at `σ = 2` this is Mathlib's `Polynomial.wronskian`.
-* `Polynomial.natDegree_classicalWronskian_le` — the degree bound `σ * k` for entries of
+* `Polynomial.classicalWronskian_two`: at `σ = 2` this is `Polynomial.wronskian`.
+* `Polynomial.natDegree_classicalWronskian_le`: the degree bound `σ * k` for entries of
   degree at most `k`.
-* `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective` — nonzero polynomials with
-  distinct degrees, all `< k`, have nonzero Wronskian under the guard
-  `ringChar F = 0 ∨ k ≤ ringChar F`.
-* `Polynomial.classicalWronskian_of_linearComb` — changing the family by a constant
+* `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective`: nonzero polynomials with
+  pairwise distinct degrees, all `< k`, have nonzero Wronskian.
+* `Polynomial.classicalWronskian_eq_mul_C_det_of_sum_smul`: changing the family by a constant
   coefficient matrix `U` multiplies the Wronskian by `C U.det`.
-* `Polynomial.classicalWronskian_ne_zero_of_basis` — the same nonvanishing for an arbitrary
+* `Polynomial.classicalWronskian_ne_zero_of_basis`: the same nonvanishing for an arbitrary
   basis of a polynomial subspace in degrees `< k`.
+
+## Implementation notes
+
+The nonvanishing results carry the guard `ringChar F = 0 ∨ k ≤ ringChar F` on the common
+strict degree bound `k`. It cannot be dropped: in characteristic `p` the nonconstant `X ^ p`
+has zero derivative, which collapses the matrix. Phrasing it as a disjunction keeps
+characteristic zero available, where `ringChar F = 0` would otherwise force `k = 0`.
+
+The route to `classicalWronskian_ne_zero_of_basis` is to change to a basis in degree-echelon
+form, where the top-degree coefficient of the Wronskian is a nonzero Vandermonde
+determinant, and then to change back at the cost of a nonzero constant factor.
 
 ## References
 
 * [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
+
+## Tags
+
+wronskian, polynomial, determinant, linear independence
 -/
 
 namespace Polynomial
@@ -61,8 +72,8 @@ open scoped Function BigOperators
 /-- The classical Wronskian of a finite family of polynomials: the determinant of the matrix
 whose `(i, j)` entry is the `i`-th derivative of `P j`. -/
 noncomputable def classicalWronskian {F : Type*} [CommRing F]
-    (sigma : ℕ) (P : Fin sigma → F[X]) : F[X] :=
-  (Matrix.of fun i j : Fin sigma => derivative^[i.val] (P j)).det
+    (σ : ℕ) (P : Fin σ → F[X]) : F[X] :=
+  (Matrix.of fun i j : Fin σ => derivative^[i.val] (P j)).det
 
 /-- At `σ = 2` the classical Wronskian is Mathlib's two-argument `Polynomial.wronskian`.
 
@@ -76,11 +87,13 @@ lemma classicalWronskian_two {F : Type*} [CommRing F] (a b : F[X]) :
     classicalWronskian 2 ![a, b] = wronskian a b := by
   simp [classicalWronskian, Matrix.det_fin_two, wronskian, mul_comm]
 
-/-- A coarse degree bound for the classical Wronskian. -/
+/-- If every `P j` has degree at most `k`, the classical Wronskian has degree at most `σ * k`:
+each summand of the Leibniz expansion is a product of `σ` entries, and differentiating does
+not raise the degree. -/
 lemma natDegree_classicalWronskian_le {F : Type*} [CommRing F]
-    (sigma : ℕ) (P : Fin sigma → F[X]) (k : ℕ)
+    (σ : ℕ) (P : Fin σ → F[X]) (k : ℕ)
     (hP : ∀ j, (P j).natDegree ≤ k) :
-    (classicalWronskian sigma P).natDegree ≤ sigma * k := by
+    (classicalWronskian σ P).natDegree ≤ σ * k := by
   classical
   unfold classicalWronskian
   rw [Matrix.det_apply]
@@ -89,14 +102,16 @@ lemma natDegree_classicalWronskian_le {F : Type*} [CommRing F]
   refine ⟨Nat.zero_le _, fun g _ => ?_⟩
   refine (natDegree_smul_le _ _).trans ?_
   refine (natDegree_prod_le _ _).trans ?_
-  calc ∑ i : Fin sigma, ((Matrix.of fun i j : Fin sigma =>
+  calc ∑ i : Fin σ, ((Matrix.of fun i j : Fin σ =>
           derivative^[i.val] (P j)) (g i) i).natDegree
-      ≤ ∑ _i : Fin sigma, k := by
+      ≤ ∑ _i : Fin σ, k := by
         refine Finset.sum_le_sum fun i _ => ?_
         exact (natDegree_iterate_derivative _ _).trans
           ((Nat.sub_le _ _).trans (hP i))
-    _ = sigma * k := by simp [Finset.sum_const]
+    _ = σ * k := by simp [Finset.sum_const]
 
+/-- Falling factorials `d.descFactorial i` with `i ≤ d < k` are units under the
+characteristic guard, since they divide `d !`. -/
 private lemma isUnit_natCast_descFactorial {F : Type*} [Field F]
     {d i k : ℕ} (hi : i ≤ d) (hd : d < k)
     (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
@@ -114,6 +129,8 @@ private lemma isUnit_natCast_descFactorial {F : Type*} [Field F]
     exact hfac
   exact (IsUnit.mul_iff.mp hmul).2
 
+/-- Under the characteristic guard, `natDegree_iterate_derivative` holds with equality:
+differentiating `i ≤ p.natDegree` times drops the degree by exactly `i`. -/
 private lemma natDegree_iterate_derivative_eq {F : Type*} [Field F]
     {p : F[X]} (hp : p ≠ 0) {i k : ℕ} (hi : i ≤ p.natDegree)
     (hdeg : p.natDegree < k) (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
@@ -129,6 +146,8 @@ private lemma natDegree_iterate_derivative_eq {F : Type*} [Field F]
     (isUnit_natCast_descFactorial hi hdeg hk).ne_zero
     (leadingCoeff_ne_zero.mpr hp)) hcoeff
 
+/-- The leading coefficient after `i` differentiations, again under the characteristic
+guard: it picks up the falling factorial `p.natDegree.descFactorial i`. -/
 private lemma leadingCoeff_iterate_derivative {F : Type*} [Field F]
     {p : F[X]} (hp : p ≠ 0) {i k : ℕ} (hi : i ≤ p.natDegree)
     (hdeg : p.natDegree < k) (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
@@ -141,15 +160,15 @@ private lemma leadingCoeff_iterate_derivative {F : Type*} [Field F]
 in characteristic zero, and remains so in positive characteristic when their common strict
 degree bound is no greater than the characteristic. -/
 theorem classicalWronskian_ne_zero_of_natDegree_injective
-    {F : Type*} [Field F] {sigma k : ℕ}
-    (P : Fin sigma → F[X]) (hP0 : ∀ j, P j ≠ 0)
+    {F : Type*} [Field F] {σ k : ℕ}
+    (P : Fin σ → F[X]) (hP0 : ∀ j, P j ≠ 0)
     (hPdeg : ∀ j, (P j).natDegree < k)
     (hPinj : Function.Injective (fun j => (P j).natDegree))
-    (hk : ringChar F = 0 ∨ k ≤ ringChar F) : classicalWronskian sigma P ≠ 0 := by
+    (hk : ringChar F = 0 ∨ k ≤ ringChar F) : classicalWronskian σ P ≠ 0 := by
   classical
-  let d : Fin sigma → ℕ := fun j => (P j).natDegree
-  let D : ℕ := (∑ j, d j) - ∑ i : Fin sigma, i.val
-  let A : Matrix (Fin sigma) (Fin sigma) F :=
+  let d : Fin σ → ℕ := fun j => (P j).natDegree
+  let D : ℕ := (∑ j, d j) - ∑ i : Fin σ, i.val
+  let A : Matrix (Fin σ) (Fin σ) F :=
     Matrix.of fun i j => (d j).descFactorial i.val
   have hcastinj : Function.Injective (fun j => (d j : F)) := by
     intro i j hij
@@ -163,7 +182,7 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
     have hv := (Matrix.det_vandermonde_ne_zero_iff (R := F)
       (v := fun j => (d j : F))).2 hcastinj
     have heval := Matrix.det_eval_matrixOfPolynomials_eq_det_vandermonde
-      (v := fun j => (d j : F)) (p := fun i : Fin sigma => descPochhammer F i.val)
+      (v := fun j => (d j : F)) (p := fun i : Fin σ => descPochhammer F i.val)
       (fun i => descPochhammer_natDegree F i.val)
       (fun i => monic_descPochhammer F i.val)
     have heq : (Matrix.vandermonde (fun j => (d j : F))).det = A.det := by
@@ -173,9 +192,9 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
       ext i j
       simp [A, d, descPochhammer_eval_eq_descFactorial]
     rwa [heq] at hv
-  let L : Fin sigma → F := fun j => (P j).leadingCoeff
+  let L : Fin σ → F := fun j => (P j).leadingCoeff
   have hL : ∀ j, L j ≠ 0 := fun j => leadingCoeff_ne_zero.mpr (hP0 j)
-  let B : Matrix (Fin sigma) (Fin sigma) F :=
+  let B : Matrix (Fin σ) (Fin σ) F :=
     Matrix.of fun i j => (d j).descFactorial i.val * L j
   have hBdet : B.det ≠ 0 := by
     have hBA : B = A * Matrix.diagonal L := by
@@ -184,7 +203,7 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
     rw [hBA, Matrix.det_mul, Matrix.det_diagonal]
     exact mul_ne_zero hAdet (Finset.prod_ne_zero_iff.mpr fun j _ => hL j)
   apply fun hW => hBdet ?_
-  have hcoeff : (classicalWronskian sigma P).coeff D = B.det := by
+  have hcoeff : (classicalWronskian σ P).coeff D = B.det := by
     unfold classicalWronskian
     rw [Matrix.det_apply', Polynomial.finsetSum_coeff, Matrix.det_apply']
     apply Finset.sum_congr rfl
@@ -192,8 +211,8 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
     simp only [Matrix.of_apply]
     simp only [coeff_intCast_mul, mul_eq_mul_left_iff]
     apply Or.inl
-    by_cases hall : ∀ j : Fin sigma, (g j).val ≤ d j
-    · have hder0 : ∀ j : Fin sigma, derivative^[((g j).val)] (P j) ≠ 0 := by
+    by_cases hall : ∀ j : Fin σ, (g j).val ≤ d j
+    · have hder0 : ∀ j : Fin σ, derivative^[((g j).val)] (P j) ≠ 0 := by
         intro j hzero
         have hlc := leadingCoeff_iterate_derivative (hP0 j) (hall j) (hPdeg j) hk
         rw [hzero, leadingCoeff_zero] at hlc
@@ -204,8 +223,8 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
         simp only [D]
         rw [Finset.sum_tsub_distrib Finset.univ (fun j _ => hall j)]
         congr 1
-        exact Equiv.sum_comp g (fun i : Fin sigma => i.val)
-      have hproddeg : (∏ j : Fin sigma, derivative^[((g j).val)] (P j)).natDegree = D := by
+        exact Equiv.sum_comp g (fun i : Fin σ => i.val)
+      have hproddeg : (∏ j : Fin σ, derivative^[((g j).val)] (P j)).natDegree = D := by
         rw [natDegree_prod Finset.univ _ (fun j _ => hder0 j)]
         simp_rw [natDegree_iterate_derivative_eq (hP0 _) (hall _) (hPdeg _) hk]
         exact hD
@@ -227,7 +246,11 @@ theorem classicalWronskian_ne_zero_of_natDegree_injective
   rw [hW, coeff_zero] at hcoeff
   exact hcoeff.symm
 
-private theorem exists_basis_natDegree_injective_aux
+/-- Degree-echelon normalisation: a finite-dimensional space embedded in `F[X]` in degrees
+`< k` has a basis whose images have pairwise distinct degrees.
+
+Induction on `k`, peeling off the top degree via the coefficient functional `lcoeff F k`. -/
+private theorem exists_basis_natDegree_injective
     {F M : Type*} [Field F] [AddCommGroup M] [Module F M]
     [FiniteDimensional F M] (e : M →ₗ[F] F[X]) (he : Function.Injective e)
     (k : ℕ) (hdeg : ∀ x, x ≠ 0 → (e x).natDegree < k) :
@@ -329,16 +352,17 @@ private theorem exists_basis_natDegree_injective_aux
         simp only [b'', Basis.reindex_apply]
         exact hsnoc.comp (finCongr hrank).symm.injective
 
-/-- Replacing the polynomials by constant linear combinations right-multiplies the
-Wronskian matrix by the coefficient matrix. -/
-lemma classicalWronskian_of_linearComb {F : Type*} [Field F] {sigma : ℕ}
-    (P c : Fin sigma → F[X]) (U : Matrix (Fin sigma) (Fin sigma) F)
+/-- Replacing the polynomials by the constant linear combinations `c j = ∑ i, U i j • P i`
+multiplies the Wronskian by `C U.det`, since it right-multiplies the matrix of iterated
+derivatives by `U`. -/
+lemma classicalWronskian_eq_mul_C_det_of_sum_smul {F : Type*} [Field F] {σ : ℕ}
+    (P c : Fin σ → F[X]) (U : Matrix (Fin σ) (Fin σ) F)
     (hc : ∀ j, c j = ∑ i, U i j • P i) :
-    classicalWronskian sigma c =
-      classicalWronskian sigma P * C U.det := by
+    classicalWronskian σ c =
+      classicalWronskian σ P * C U.det := by
   classical
-  have hM : (Matrix.of fun i j : Fin sigma => derivative^[i.val] (c j))
-      = (Matrix.of fun i j : Fin sigma => derivative^[i.val] (P j)) *
+  have hM : (Matrix.of fun i j : Fin σ => derivative^[i.val] (c j))
+      = (Matrix.of fun i j : Fin σ => derivative^[i.val] (P j)) *
         ((C : F →+* F[X]).mapMatrix U) := by
     refine Matrix.ext fun i j => ?_
     simp only [Matrix.of_apply, Matrix.mul_apply, RingHom.mapMatrix_apply, Matrix.map_apply]
@@ -350,20 +374,19 @@ lemma classicalWronskian_of_linearComb {F : Type*} [Field F] {sigma : ℕ}
   rw [hM, Matrix.det_mul, ← RingHom.map_det]
 
 /-- If a finite-dimensional polynomial subspace has a basis of polynomials of degree `< k`,
-its classical Wronskian is nonzero in characteristic zero, and in positive characteristic at
-least `k`.
+that basis has nonzero classical Wronskian in characteristic zero, and in positive
+characteristic at least `k`.
 
-The proof changes to a basis in degree-echelon form, where the top-degree coefficient of the
-Wronskian is a nonzero Vandermonde determinant; changing back multiplies the Wronskian by a
-nonzero constant. -/
-theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ}
-    {B : Submodule F F[X]} (bas : Basis (Fin sigma) F B)
+Unlike `classicalWronskian_ne_zero_of_natDegree_injective` this needs no assumption on the
+degrees beyond the common bound: the degree-echelon normalisation is done inside the proof. -/
+theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {σ k : ℕ}
+    {B : Submodule F F[X]} (bas : Basis (Fin σ) F B)
     (hdeg : ∀ j, ((bas j : B) : F[X]).natDegree < k)
     (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
-    classicalWronskian sigma (fun j => ((bas j : B) : F[X])) ≠ 0 := by
+    classicalWronskian σ (fun j => ((bas j : B) : F[X])) ≠ 0 := by
   classical
   letI : Module.Finite F B := Module.Finite.of_basis bas
-  have hrank : finrank F B = sigma := by
+  have hrank : finrank F B = σ := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   have hbound : ∀ x : B, x ≠ 0 → (B.subtype x).natDegree < k := by
     intro x hx
@@ -378,18 +401,18 @@ theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ
     · exact hmem
     · exact fun h => hx (B.subtype_injective (h.trans (map_zero B.subtype).symm))
   obtain ⟨cb₀, hcb₀⟩ :=
-    exists_basis_natDegree_injective_aux B.subtype B.subtype_injective k hbound
-  let cb : Basis (Fin sigma) F B := cb₀.reindex (finCongr hrank)
+    exists_basis_natDegree_injective B.subtype B.subtype_injective k hbound
+  let cb : Basis (Fin σ) F B := cb₀.reindex (finCongr hrank)
   have hcbinj : Function.Injective
       (fun j => (((cb j : B) : F[X])).natDegree) := by
     simp only [cb, Basis.reindex_apply]
     exact hcb₀.comp (finCongr hrank).symm.injective
   have hcbdeg : ∀ j, (((cb j : B) : F[X])).natDegree < k := fun j =>
     hbound (cb j) (cb.ne_zero j)
-  have hcbW : classicalWronskian sigma (fun j => ((cb j : B) : F[X])) ≠ 0 :=
+  have hcbW : classicalWronskian σ (fun j => ((cb j : B) : F[X])) ≠ 0 :=
     classicalWronskian_ne_zero_of_natDegree_injective _
       (fun j => fun h => cb.ne_zero j (Subtype.ext h)) hcbdeg hcbinj hk
-  let U : Matrix (Fin sigma) (Fin sigma) F := bas.toMatrix (⇑cb)
+  let U : Matrix (Fin σ) (Fin σ) F := bas.toMatrix (⇑cb)
   have hcomb : ∀ j, ((cb j : B) : F[X]) =
       ∑ i, U i j • ((bas i : B) : F[X]) := by
     intro j
@@ -405,7 +428,7 @@ theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ
     intro h0
     rw [h0, zero_mul] at h
     exact zero_ne_one h
-  have hW := classicalWronskian_of_linearComb
+  have hW := classicalWronskian_eq_mul_C_det_of_sum_smul
     (fun j => ((bas j : B) : F[X])) (fun j => ((cb j : B) : F[X])) U hcomb
   intro hzero
   rw [hzero, zero_mul] at hW

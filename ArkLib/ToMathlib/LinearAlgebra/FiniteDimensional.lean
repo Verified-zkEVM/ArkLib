@@ -8,34 +8,46 @@ import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
 import Mathlib.LinearAlgebra.Projection
 
 /-!
-# Additional finite-dimensional linear-algebra lemmas
+# Dimensions of images, and bases adapted to a subspace
 
 ## Main statements
 
-* `LinearMap.finrank_eq_of_map_eq` — a linear map injective on `B` and mapping `B` onto `A`
-  makes the two submodules equidimensional.
-* `Submodule.exists_adapted_basis` — a finite-dimensional space has a basis whose initial
+* `LinearMap.finrank_eq_of_map_eq`: a linear map injective on a submodule `B` and carrying it
+  onto `A` makes `B` and `A` equidimensional.
+* `Submodule.exists_adapted_basis`: a finite-dimensional space has a basis whose initial
   segment is a basis of a prescribed subspace.
 
-Generic facts intended as candidates for upstreaming to Mathlib.
+## Implementation notes
+
+`LinearMap.finrank_eq_of_map_eq` takes injectivity in the pointwise form
+`∀ x ∈ B, f x = 0 → x = 0` rather than as `Function.Injective (f.domRestrict B)`, because
+that is the shape available at the use sites; the two are interchanged in the first line of
+the proof.
+
+## Tags
+
+finite dimensional, finrank, basis, complement
 -/
 
-/-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
-have the same dimension. -/
+/-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A` have the same
+dimension. -/
 lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [DivisionRing F]
     [AddCommGroup M] [Module F M] [AddCommGroup N] [Module F N]
     (f : M →ₗ[F] N) (B : Submodule F M) (A : Submodule F N)
-    (hinj : ∀ p ∈ B, f p = 0 → p = 0) (hmap : B.map f = A) :
+    (hinj : ∀ x ∈ B, f x = 0 → x = 0) (hmap : B.map f = A) :
     Module.finrank F B = Module.finrank F A := by
   have hg : Function.Injective (f.domRestrict B) := by
     rw [← LinearMap.ker_eq_bot]
-    ext p
+    ext x
     simp only [LinearMap.mem_ker, LinearMap.domRestrict_apply, Submodule.mem_bot]
-    exact ⟨fun h => Subtype.ext (hinj p.1 p.2 h), fun h => by rw [h]; simp⟩
+    exact ⟨fun h => Subtype.ext (hinj x.1 x.2 h), fun h => by rw [h]; simp⟩
   rw [← LinearMap.finrank_range_of_inj hg, LinearMap.range_domRestrict, hmap]
 
 /-- A finite-dimensional space of dimension `n` has a basis indexed by `Fin n` whose first
-`finrank F N` vectors lie in a prescribed subspace `N`. -/
+`finrank F N` vectors lie in a prescribed subspace `N`.
+
+Such a basis is obtained by splitting off a complement of `N` and concatenating bases of the
+two summands. -/
 lemma Submodule.exists_adapted_basis {F M : Type*} [DivisionRing F] [AddCommGroup M]
     [Module F M] [FiniteDimensional F M] (N : Submodule F M) {n : ℕ}
     (hn : Module.finrank F M = n) :
@@ -48,12 +60,11 @@ lemma Submodule.exists_adapted_basis {F M : Type*} [DivisionRing F] [AddCommGrou
   have htu : t + u = n := by rw [ht, hu, Submodule.finrank_add_eq_of_isCompl hK, hn]
   set b₀ : Module.Basis (Fin t ⊕ Fin u) F M :=
     ((Module.finBasis F N).prod (Module.finBasis F K)).map (N.prodEquivOfIsCompl K hK)
-      with hb₀
+    with hb₀
   set e : Fin t ⊕ Fin u ≃ Fin n := finSumFinEquiv.trans (finCongr htu) with he
   refine ⟨b₀.reindex e, fun j hj => ?_⟩
   have hsymm : e.symm j = Sum.inl ⟨(j : ℕ), hj⟩ := by
-    rw [Equiv.symm_apply_eq]
-    rw [he]
+    rw [Equiv.symm_apply_eq, he]
     simp [finSumFinEquiv_apply_left]
   rw [Module.Basis.reindex_apply, hsymm, hb₀]
   simp only [Module.Basis.map_apply]

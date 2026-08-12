@@ -396,7 +396,7 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
     intro h0
     rw [h0, zero_mul] at h
     exact zero_ne_one h
-  have hW := Polynomial.classicalWronskian_of_linearComb
+  have hW := Polynomial.classicalWronskian_eq_mul_C_det_of_sum_smul
     (fun j => ((bas j : B) : Polynomial F)) c U hcomb
   set T : Finset (Fin σ) := Finset.image (Fin.castLE htσ) Finset.univ with hT
   have hTcard : T.card = t := by
@@ -990,7 +990,7 @@ theorem isSubspaceDesign_umCode
     rw [← hNrk i, hWdef]
     refine pow_dvd_classicalWronskian B bas (N i) (hNle i) _ hσs ?_
     intro q hq
-    apply Polynomial.pow_dvd_of_eval_iterate_derivative_eq_zero
+    apply Polynomial.X_sub_C_pow_dvd_of_isRoot_iterate_derivative
       ((hBmem q).mp ((hNmem i q).mp hq).1).1 hchar
     exact ((hNmem i q).mp hq).2
   have hcount : ∑ i : ι, (s - σ + 1) * Module.finrank F ↥(A ⊓

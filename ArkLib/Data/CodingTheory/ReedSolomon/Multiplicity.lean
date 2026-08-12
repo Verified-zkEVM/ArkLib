@@ -116,7 +116,7 @@ lemma umEvalOnPoints_domRestrict_injective
       have hpow : ∀ i : ι,
           (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ p.val := by
         intro i
-        apply Polynomial.pow_dvd_of_eval_iterate_derivative_eq_zero p.2 hchar
+        apply Polynomial.X_sub_C_pow_dvd_of_isRoot_iterate_derivative p.2 hchar
         intro j
         exact congrFun (congrFun hfp i) j
       have hmult : ∀ i : ι, s ≤ p.val.rootMultiplicity (domain i) := by
@@ -128,7 +128,7 @@ lemma umEvalOnPoints_domRestrict_injective
         simpa [Finset.sum_const, nsmul_eq_mul] using
           (Finset.sum_le_sum fun i (_hi : i ∈ (Finset.univ : Finset ι)) => hmult i)
       have hsumhigh := Polynomial.sum_rootMultiplicity_le_natDegree
-        (W := p.val) (Finset.univ.map domain)
+        (p := p.val) (Finset.univ.map domain)
       have hpdeg := ReedSolomon.natDegree_lt_of_mem_degreeLT p.2
       rw [Nat.mul_comm] at hk
       omega

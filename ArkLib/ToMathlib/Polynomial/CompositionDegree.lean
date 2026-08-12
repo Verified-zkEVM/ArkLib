@@ -4,29 +4,31 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import Mathlib.Algebra.Polynomial.Eval.Degree
 import Mathlib.Algebra.Polynomial.Degree.Lemmas
 
 /-!
-# Additional polynomial composition-degree lemmas
+# Degree of a polynomial composed with a scaling
+
+Substituting `a * X` for `X` cannot raise the degree, since the substituted polynomial has
+degree at most one. This is the corresponding specialization of `natDegree_comp_le`.
 
 ## Main statements
 
-* `Polynomial.natDegree_comp_C_mul_X_le` — composing with a scaling `X ↦ a * X` does not
-  increase the degree.
+* `Polynomial.natDegree_comp_C_mul_X_le`: `(p.comp (C a * X)).natDegree ≤ p.natDegree`.
 
-Generic facts intended as candidates for upstreaming to Mathlib.
+## Tags
+
+polynomial, degree, composition
 -/
 
 namespace Polynomial
 
-variable {F : Type*} [Semiring F]
+variable {R : Type*} [Semiring R]
 
 /-- Composing with the scaling `X ↦ a * X` does not increase the natural degree.
 
-This is the specialization of Mathlib's `Polynomial.natDegree_comp_le` to a composand of
-degree at most one, and is proved as such. -/
-lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :
+This is `natDegree_comp_le` for a composand of degree at most one. -/
+lemma natDegree_comp_C_mul_X_le (p : R[X]) (a : R) :
     (p.comp (C a * X)).natDegree ≤ p.natDegree :=
   natDegree_comp_le.trans <| by
     calc p.natDegree * (C a * X).natDegree

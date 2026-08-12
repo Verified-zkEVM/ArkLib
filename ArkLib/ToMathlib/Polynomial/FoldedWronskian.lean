@@ -18,29 +18,40 @@ import Mathlib.FieldTheory.Finiteness
 /-!
 # The folded Wronskian
 
-For polynomials `P 0, …, P (σ-1)` over a field `F` and an element `ω : F`, the *`ω`-folded
+For polynomials `P 0, …, P (σ - 1)` over a field `F` and an element `ω : F`, the *`ω`-folded
 Wronskian* is the determinant of the `σ × σ` matrix whose `(i, j)` entry is `P j (ω ^ i * X)`.
 It plays the role of the classical Wronskian as a linear-independence certificate, with the
 substitutions `X ↦ ω ^ i * X` in place of successive derivatives.
 
 ## Main definitions
 
-* `Polynomial.foldedWronskian`
+* `Polynomial.foldedWronskian`: the determinant of the matrix of `ω`-twists.
 
 ## Main statements
 
-* `Polynomial.natDegree_foldedWronskian_le` — the degree bound `σ * k` for entries of degree
+* `Polynomial.natDegree_foldedWronskian_le`: the degree bound `σ * k` for entries of degree
   at most `k`.
-* `Polynomial.foldedWronskian_ne_zero_iff_linearIndependent` — over a finite field, for `ω` a
+* `Polynomial.foldedWronskian_ne_zero_iff_linearIndependent`: over a finite field, for `ω` a
   generator of `Fˣ` and `k ≤ |F| - 1`, polynomials of degree `< k` are linearly independent
-  iff their folded Wronskian is nonzero. The two directions are also available separately as
-  `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` and
-  `Polynomial.foldedWronskian_eq_zero_of_not_linearIndependent`, the latter needing neither
-  finiteness of `F` nor any hypothesis on `ω` and `k`.
+  iff their folded Wronskian is nonzero.
+* `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` and
+  `Polynomial.foldedWronskian_eq_zero_of_not_linearIndependent`: the two directions
+  separately. The second needs neither finiteness of `F` nor any hypothesis on `ω` and `k`.
+
+## Implementation notes
+
+Unlike the classical Wronskian, this one is characteristic-free: the twists `X ↦ ω ^ i * X`
+never annihilate a nonzero polynomial, so no analogue of the guard
+`ringChar F = 0 ∨ k ≤ ringChar F` is needed. The hypotheses on `ω` and `k` are used instead to
+build the arena `F[X] / (X ^ (q - 1) - ω)`, in which folding coincides with the Frobenius.
 
 ## References
 
 * [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
+
+## Tags
+
+wronskian, polynomial, determinant, linear independence, finite field, Frobenius
 -/
 namespace Polynomial
 
