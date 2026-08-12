@@ -190,8 +190,6 @@ import ArkLib.Data.MvPolynomial.RestrictDegree
 import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 import ArkLib.Data.Polynomial.Bivariate
-import ArkLib.Data.Polynomial.ClassicalWronskian
-import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Indicator
 import ArkLib.Data.Polynomial.Interface
@@ -332,9 +330,11 @@ import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.LinearAlgebra.Matrix.Determinant
 import ArkLib.ToMathlib.List.Basic
 import ArkLib.ToMathlib.Polynomial.AevalXPow
+import ArkLib.ToMathlib.Polynomial.ClassicalWronskian
 import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT
 import ArkLib.ToMathlib.Polynomial.EvalExt
+import ArkLib.ToMathlib.Polynomial.FoldedWronskian
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 import ArkLib.ToVCVio.EvalDist.Defs.Support

@@ -6,9 +6,9 @@ Authors: Alexander Hicks
 
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.Multiplicity
-import ArkLib.Data.Polynomial.ClassicalWronskian
-import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
+import ArkLib.ToMathlib.Polynomial.ClassicalWronskian
+import ArkLib.ToMathlib.Polynomial.FoldedWronskian
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 
 /-!
@@ -990,7 +990,7 @@ theorem isSubspaceDesign_umCode
     rw [← hNrk i, hWdef]
     refine pow_dvd_classicalWronskian B bas (N i) (hNle i) _ hσs ?_
     intro q hq
-    apply ReedSolomon.Multiplicity.pow_dvd_of_eval_iterate_derivative_eq_zero
+    apply Polynomial.pow_dvd_of_eval_iterate_derivative_eq_zero
       ((hBmem q).mp ((hNmem i q).mp hq).1).1 hchar
     exact ((hNmem i q).mp hq).2
   have hcount : ∑ i : ι, (s - σ + 1) * Module.finrank F ↥(A ⊓

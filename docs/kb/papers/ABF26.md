@@ -19,8 +19,8 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean
-  - ArkLib/Data/Polynomial/ClassicalWronskian.lean
-  - ArkLib/Data/Polynomial/FoldedWronskian.lean
+  - ArkLib/ToMathlib/Polynomial/ClassicalWronskian.lean
+  - ArkLib/ToMathlib/Polynomial/FoldedWronskian.lean
   - ArkLib/Data/Probability/Combinatorial.lean
 ---
 
@@ -89,9 +89,9 @@ manuscript, not to the original sources it cites — those get their own keys (`
 
 - [`ArkLib/Data/CodingTheory/SubspaceDesign.lean`](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean)
   — D2.16 / L2.17 / T2.18, the largest ABF26 module.
-- [`ArkLib/Data/Polynomial/FoldedWronskian.lean`](../../../ArkLib/Data/Polynomial/FoldedWronskian.lean)
+- [`ArkLib/ToMathlib/Polynomial/FoldedWronskian.lean`](../../../ArkLib/ToMathlib/Polynomial/FoldedWronskian.lean)
   — the `GK16` machinery for T2.18's folded-RS half.
-- [`ArkLib/Data/Polynomial/ClassicalWronskian.lean`](../../../ArkLib/Data/Polynomial/ClassicalWronskian.lean)
+- [`ArkLib/ToMathlib/Polynomial/ClassicalWronskian.lean`](../../../ArkLib/ToMathlib/Polynomial/ClassicalWronskian.lean)
   — GK16 Definition 9 and Lemma 10 machinery for T2.18's univariate-multiplicity half.
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Family.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Family.lean)
   — §3 radius family, T3.2, alphabet-generic C3.3, and field/RS wrappers.

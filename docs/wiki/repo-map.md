@@ -192,10 +192,12 @@ home_page/            site assets and assembled website root
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
-  `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
-  `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
-  degree/derivative criterion behind the univariate-multiplicity half of ABF26 T2.18. Their
-  generic determinant-divisibility and finite-field Kummer dependencies live in
+  `ArkLib/ToMathlib/Polynomial/FoldedWronskian.lean`; its sibling
+  `ArkLib/ToMathlib/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
+  degree/derivative criterion behind the univariate-multiplicity half of ABF26 T2.18. Both are
+  generic `Polynomial` algebra with no coding-theory content, so they sit under `ToMathlib/`
+  rather than `CodingTheory/` or `Data/Polynomial/`. Their generic
+  determinant-divisibility and finite-field Kummer dependencies live in
   `ArkLib/ToMathlib/LinearAlgebra/Matrix/Determinant.lean` and
   `ArkLib/ToMathlib/FieldTheory/Kummer.lean`.
 - **MDS lives in two shapes, and only one reaches module alphabets.** `LinearCode.IsMDS`

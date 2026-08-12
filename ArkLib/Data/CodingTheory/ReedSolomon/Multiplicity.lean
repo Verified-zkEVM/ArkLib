@@ -8,8 +8,6 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 import Mathlib.Algebra.CharP.Lemmas
 import Mathlib.Algebra.Polynomial.Derivative
-import Mathlib.Algebra.Polynomial.Taylor
-import Mathlib.Data.Nat.Factorial.NatCast
 
 /-!
 # Univariate multiplicity codes
@@ -29,8 +27,6 @@ At `s = 1` it is the plain Reed-Solomon code (`mem_umCode_one_iff_mem_rsCode`).
 
 ## Main statements
 
-* `ReedSolomon.Multiplicity.pow_dvd_of_eval_iterate_derivative_eq_zero` — vanishing of the
-  first `s` derivatives at a point gives a root of multiplicity `s` there.
 * `ReedSolomon.Multiplicity.umEvalOnPoints_domRestrict_injective` — the encoder is injective
   on `Polynomial.degreeLT F k`.
 * `ReedSolomon.Multiplicity.dim_umCode_eq_min`, `ReedSolomon.Multiplicity.dim_umCode` — the
@@ -95,46 +91,6 @@ section Field
 
 variable [Field F]
 
-/-- If the first `s` ordinary derivatives of a polynomial of degree `< k` vanish at `a`,
-then `a` is a root of multiplicity at least `s`, provided `F` has characteristic zero or
-characteristic at least `k`.
-
-The characteristic hypothesis is what makes the ordinary and Hasse derivatives differ by a
-unit `j !` throughout the relevant degree range; Mathlib's root-multiplicity criterion is
-stated for the latter. -/
-lemma pow_dvd_of_eval_iterate_derivative_eq_zero
-    {p : Polynomial F} {a : F} {s k : ℕ}
-    (hp : p ∈ Polynomial.degreeLT F k) (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
-    (hzero : ∀ j : Fin s, (Polynomial.derivative^[j.val] p).eval a = 0) :
-    (Polynomial.X - Polynomial.C a) ^ s ∣ p := by
-  rw [Polynomial.X_sub_C_pow_dvd_iff, Polynomial.X_pow_dvd_iff]
-  intro d hd
-  change (Polynomial.taylor a p).coeff d = 0
-  rw [Polynomial.taylor_coeff]
-  by_cases hdk : d < k
-  · have hfac : IsUnit (d.factorial : F) := by
-      rcases hchar with hchar0 | hcharpos
-      · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hchar0
-        exact IsUnit.natCast_factorial_of_algebra F d
-      · letI : NeZero (ringChar F) :=
-          ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hcharpos))⟩
-        letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
-        exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hcharpos)
-    have hder := hzero ⟨d, hd⟩
-    change (Polynomial.derivative^[d] p).eval a = 0 at hder
-    have hscale := congrFun (Polynomial.factorial_smul_hasseDeriv (R := F) d) p
-    rw [← hscale] at hder
-    simp only [LinearMap.smul_apply, Polynomial.eval_smul] at hder
-    rw [nsmul_eq_mul] at hder
-    exact (mul_eq_zero.mp hder).resolve_left hfac.ne_zero
-  · by_cases hp0 : p = 0
-    · simp [hp0]
-    · have hpdeg : p.degree < (k : WithBot ℕ) := Polynomial.mem_degreeLT.mp hp
-      have hdeg : p.natDegree < k :=
-        (Polynomial.natDegree_lt_iff_degree_lt hp0).mpr hpdeg
-      rw [Polynomial.hasseDeriv_eq_zero_of_lt_natDegree p d (hdeg.trans_le (not_lt.mp hdk))]
-      simp
-
 /-- The univariate-multiplicity encoder is injective on degree-`< k` polynomials whenever
 the message dimension does not exceed the `s · n` scalar coordinates and the characteristic
 is either zero or at least `k`. -/
@@ -160,7 +116,7 @@ lemma umEvalOnPoints_domRestrict_injective
       have hpow : ∀ i : ι,
           (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ p.val := by
         intro i
-        apply pow_dvd_of_eval_iterate_derivative_eq_zero p.2 hchar
+        apply Polynomial.pow_dvd_of_eval_iterate_derivative_eq_zero p.2 hchar
         intro j
         exact congrFun (congrFun hfp i) j
       have hmult : ∀ i : ι, s ≤ p.val.rootMultiplicity (domain i) := by
