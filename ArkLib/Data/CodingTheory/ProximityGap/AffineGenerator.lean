@@ -248,6 +248,7 @@ namespace AffineMCAMain
 
 open unitInterval NNReal ENNReal CoreDefinitions LinearTransformations LinearCode AffineMCALemmas
 open scoped ProbabilityTheory NNReal ENNReal BigOperators
+open Probability
 
 
 variable {ι : Type} [Fintype ι]
