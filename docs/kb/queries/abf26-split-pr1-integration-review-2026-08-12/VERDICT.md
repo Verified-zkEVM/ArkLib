@@ -95,6 +95,7 @@ reproducible from the description.
 | I | The MEDIUM-1 remediation is contentful in characteristic zero, re-verified independently: `finrank ℚ (umCode domQ 3 2) = 3` and `um_is_subspaceDesign_gk16` instantiates over ℚ |
 | J | `IsSubspaceDesign.mono_tau` does what a later split needs: coarsens the T2.18 profile to a constant-in-`r` bound without reopening `SubspaceDesign.lean` |
 | K | `frs_is_subspaceDesign_gk16`'s extra `(L, hL_dom)` arguments are recoverable by instantiating `L := Finset.univ.map domain`, so they cost no strength — pure friction (F7) |
+| L | `listDecodable_of_forall_finset_card_le` discharges #717's obligation in one line **at #717's stated generality** — `[Field F] [DecidableEq F]`, no finiteness on `F` — from exactly the shape its `card_le_of_subset_closeCodewords` proves (FW1) |
 
 ## Findings
 
@@ -260,13 +261,42 @@ argument or a `[Finite F]` hypothesis.
 
 Two actions, both small and both in this PR's interest:
 
-- Ship the recovery lemma the 2026-08-11 review already recommended: `listDecodable` from an
-  `ncard` bound under `[Finite F]`. `ListDecodability.lean` currently offers
-  `Lambda_le_iff_listDecodable`, `listDecodable_of_Lambda_le_natCast` and
-  `listDecodable_of_toENNReal_le_ofReal`, but nothing that takes a bare `ncard` bound — which is
-  the shape a consumer arrives with.
+- Ship the **primitive constructor**, not a `[Finite F]` recovery lemma — see the correction
+  below, which is the more important half of this item.
 - Flag the definition change in the PR body for the #717, STIR and WHIR owners. It is a
   correctness fix, and it is the second time it has been recommended.
+
+#### Correction to this review's own first recommendation
+
+This review initially proposed shipping the lemma the 2026-08-11 review had suggested —
+`listDecodable` from a bare `ncard` bound under `[Finite F]` — and that was wrong. It is a true
+and tight lemma (over a finite alphabet the two definitions are equivalent), so it is not a
+*logical* weakening. But it is the wrong thing for the library, for four reasons:
+
+1. **It has no in-tree consumer.** Every existing `listDecodable` occurrence in the tree is in
+   *hypothesis* position (STIR's `OutOfDomSmpl.lean`, `MainThm.lean`), where the strengthening is
+   free. So the lemma serves no consumer here, against the repo's live-consumer gate.
+2. **It saves nothing.** Its proof is `fun y => ⟨Set.toFinite _, h y⟩`. A caller with
+   `[Finite F]` writes that term inline.
+3. **It would steer #717 into the worse of two fixes.** #717's theorem is true *without* any
+   finiteness on `F`. With this lemma the cheapest adaptation is to add `[Finite F]` and move on
+   — weakening a theorem that did not need weakening.
+4. **It hands back the move the strengthening exists to stop.** The `Finite` conjunct says "you
+   must exhibit finiteness of the point list"; an `[Finite F]` escape hatch answers "unless your
+   alphabet happens to be finite, in which case never mind". The finiteness that *matters* here
+   is mathematical — the list is small because agreement on `≥ k` positions pins the interpolating
+   polynomial — and that never gets proved.
+
+What is shipped instead is `ListDecodable.listDecodable_of_forall_finset_card_le`: a uniform
+bound on the **finite subsets** of a point list yields `listDecodable` outright, finiteness
+included, **over an arbitrary alphabet** (an infinite set has finite subsets of every
+cardinality, `Set.Infinite.exists_subset_card_eq`). This is the constructor the four
+`Lambda`-to-`listDecodable` bridges do not cover, and it is the shape every list-decoding
+counting argument actually produces — including #717's own
+`card_le_of_subset_closeCodewords`, whose statement is exactly this hypothesis. Verified
+(Probe L): it discharges #717's obligation in **one line at #717's stated generality**, with no
+finiteness on `F` anywhere. So the honest fix for #717 *strengthens* its theorem instead of
+qualifying it.
 
 ### FW2 — #717 also overlaps mathematically, in two places
 
@@ -348,11 +378,13 @@ reusable lemmas.
    superset direction a caller might want is available as a named lemma rather than a re-derivation
    — Probe K' exercises it. Net effect: seven fewer proof lines, one more reusable lemma, and no
    strength change in either direction.
-4. **FW1 — migration lemma shipped.** `ListDecodable.listDecodable_of_ncard_le`: over a finite
-   alphabet a bare `∀ y, ncard ≤ ℓ` bound gives `listDecodable`. Its docstring states plainly why
-   the definition changed (the old shape was satisfied by an infinite point list, since
-   `Set.ncard` returns `0` there) and that consumers whose bound comes from `Lambda` need neither
-   this lemma nor `[Finite F]`.
+4. **FW1 — the primitive constructor shipped, after a correction.** The first attempt was the
+   `[Finite F]` recovery lemma the 2026-08-11 review suggested; it was reverted for the four
+   reasons in FW1's *Correction* above (no in-tree consumer, saves nothing, steers #717 into
+   weakening its own theorem, and hands back the move the `Finite` conjunct exists to stop).
+   `ListDecodable.listDecodable_of_forall_finset_card_le` ships instead: a uniform bound on the
+   finite subsets of a point list gives `listDecodable` outright over an arbitrary alphabet. Its
+   docstring records why an `[Finite F]` escape hatch is *not* offered.
 5. **F3, F4, F5, F6, F12 — the documentation drift closed.** The renamed
    `extensionEncode_comp_algebraMap` and `mem_extensionCode_comp_algebraMap_iff` are now named
    correctly in the audit's D2.20 row, `papers/ABF26.md` and `papers/BCFW25.md`, and all three
