@@ -1038,18 +1038,21 @@ codes in `ι → F`, whereas these live in `ι → Fin s → F`.
 -/
 
 /-- **[ABF26] Corollary 3.3 at interleaved Reed-Solomon.** For `IRS[F, L, k, s]` of
-alphabet-normalized rate `ρ = ⌊k/s⌋ / n` and any `η > 0`,
+alphabet-normalized rate `ρ` and any `η > 0`,
 
   `|Λ(IRS[F, L, k, s], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
 
 The module-alphabet counterpart of `rs_lambda_le_johnson_mds`, and the instantiation the
-`mds_johnson_lambda_le_of_rate_distance` docstring anticipates. Its rate-distance input is
-`ReedSolomon.Interleaved.irs_rate_distance`, which needs **no** `s ∣ k`. -/
+`mds_johnson_lambda_le_of_rate_distance` docstring anticipates. [ABF26] appeals to it when
+deriving Corollary 3.3 ("MDS codes, which include the important class of interleaved
+Reed-Solomon codes"). Its rate-distance input is
+`ReedSolomon.Interleaved.irs_rate_distance`, which needs neither `s ∣ k` nor
+non-saturation, so neither appears here. -/
 theorem irs_lambda_le_johnson_mds
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
     (dom : ι ↪ F) (k s : ℕ) [NeZero s] [NeZero (k / s)]
-    (h_rs_full : k / s ≤ Fintype.card ι) (η : ℝ) (hη_pos : 0 < η) :
+    (η : ℝ) (hη_pos : 0 < η) :
     let ρ : ℝ := LinearCode.alphabetRate (ReedSolomon.Interleaved.irsCode dom k s)
     (Lambda ((ReedSolomon.Interleaved.irsCode dom k s : Submodule F (ι → Fin s → F)) :
         Set (ι → Fin s → F)) (1 - Real.sqrt ρ - η) : ENNReal)
@@ -1057,16 +1060,17 @@ theorem irs_lambda_le_johnson_mds
   intro ρ
   classical
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-  have hrate : ρ = ((k / s : ℕ) : ℝ) / Fintype.card ι :=
-    ReedSolomon.Interleaved.alphabetRate_irsCode dom k s h_rs_full
-  have hkpos : (0 : ℝ) < ((k / s : ℕ) : ℝ) := by
-    exact_mod_cast Nat.pos_of_ne_zero (NeZero.ne (k / s))
+  have hrate : ρ = ((min (k / s) (Fintype.card ι) : ℕ) : ℝ) / Fintype.card ι :=
+    ReedSolomon.Interleaved.alphabetRate_irsCode_eq_min dom k s
+  have hminpos : 0 < min (k / s) (Fintype.card ι) :=
+    lt_min (Nat.pos_of_ne_zero (NeZero.ne (k / s))) Fintype.card_pos
+  have hnumpos : (0 : ℝ) < ((min (k / s) (Fintype.card ι) : ℕ) : ℝ) := by exact_mod_cast hminpos
   have hρ_pos : 0 < ρ := by rw [hrate]; positivity
   have hρ_le1 : ρ ≤ 1 := by
     rw [hrate, div_le_one hn]
-    exact_mod_cast h_rs_full
+    exact_mod_cast min_le_right (k / s) (Fintype.card ι)
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hρ_le1 hη_pos
-    (ReedSolomon.Interleaved.irs_rate_distance dom k s h_rs_full)
+    (ReedSolomon.Interleaved.irs_rate_distance dom k s)
 
 /-- **[ABF26] Corollary 3.3 at folded Reed-Solomon**, in the MDS regime `s ∣ k`. For
 `FRS[F, L, k, s, ω]` of alphabet-normalized rate `ρ = k / (s · n)` and any `η > 0`,
@@ -1079,8 +1083,7 @@ Singleton bound by its rounding term and `frs_rate_distance_of_dvd` is unavailab
 theorem frs_lambda_le_johnson_mds
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
-    {k s : ℕ} [NeZero k] (hs : 0 < s) (hdvd : s ∣ k)
-    (dom : ι ↪ F) (ω : F)
+    (dom : ι ↪ F) (k s : ℕ) [NeZero k] (ω : F) (hs : 0 < s) (hdvd : s ∣ k)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map dom) s ω) (hω : ω ≠ 0)
     (hk : k ≤ s * Fintype.card ι) (η : ℝ) (hη_pos : 0 < η) :
     let ρ : ℝ := LinearCode.alphabetRate (ReedSolomon.Folded.frsCode dom k s ω)

@@ -67,12 +67,17 @@ just `Code.minDist` on `ι → (Fin s → F)`, i.e. the ordinary Hamming metric 
 alphabet `Fin s → F` — the blocks are the *fold coordinates*, and they are part of the
 codeword's type.
 
-It is **not** `BlockRelDistance` (`Basic/BlockRelDistance.lean`, [ACFY24]/WHIR), which is a
-different notion of "block" bearing the same name: there the word stays flat
-(`Fin (2^n) → F`), the blocks are cosets of a `SmoothCosetFftDomain` selected by a subdomain
-index `k`, and the distance is `disagreementSet`-based over `φ.subdomain k`. That machinery
-belongs to the split-and-fold development above and does not apply to `frsCode`; conversely
-nothing here specializes to it.
+It is **not** `BlockRelDistance` (`Basic/BlockRelDistance.lean`, [ACFY24]/WHIR), which
+encodes "block" differently: there the word stays flat (`Fin (2^n) → F`), the blocks are
+cosets of a `SmoothCosetFftDomain` selected by a subdomain index `k`, and the distance is
+`disagreementSet`-based over `φ.subdomain k`.
+
+The two are *mathematically* the same idea — a block metric on a partition of the evaluation
+domain — and on a smooth domain whose blocks are the `ω`-orbits they would agree. But they
+are **not interchangeable in Lean**: `BlockRelDistance` is hardwired to `SmoothCosetFftDomain`
+and `Fin (2^n) → F`, while `frsCode` carries its blocks in the codeword's *type* over an
+arbitrary `ι`, so neither development's lemmas apply to the other as stated. No bridge exists
+and none is claimed; a reader should not expect the WHIR lemmas to fire on `frsCode`.
 
 ## References
 
@@ -598,8 +603,12 @@ At the alphabet-normalized rate `ρ = LinearCode.alphabetRate = k / (s · n)` of
 
   `δ_min(FRS[F, L, k, s, ω]) = 1 - ρ + 1/n`  whenever `s ∣ k`.
 
-This promotes the prose clause in `minDist_frsCode`'s docstring to a statement. The
-divisibility is genuinely needed, and the mechanism is the asymmetry recorded there: the
+`minDist_frsCode`'s docstring states the *biconditional* — the folded code meets the real
+Singleton bound "exactly when `s ∣ k`". This theorem formalizes the **sufficient** direction
+only. The necessary direction is not vacuous hand-waving either: it is witnessed by a
+counterexample checked by machine at `F = ZMod 11`, `L = {1,2,3,4,5}`, `ω = -1`, `s = 2`,
+`k = 3`, where `δ_min = 4/5` while `1 - ρ + 1/n = 9/10`. So `s ∣ k` here is load-bearing, not
+a convenience hypothesis. The mechanism is the asymmetry recorded in `minDist_frsCode`: the
 dimension is `k` on the nose (`dim_frsCode`) while the distance rounds,
 `n - ⌊(k-1)/s⌋ = n - ⌈k/s⌉ + 1`. The two agree iff `⌈k/s⌉ = k/s`. Contrast
 `ReedSolomon.Interleaved.irs_rate_distance`, which needs no divisibility because interleaving

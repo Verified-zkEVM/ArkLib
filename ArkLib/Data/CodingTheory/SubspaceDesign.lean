@@ -675,7 +675,7 @@ theorem frs_is_subspaceDesign_gk16
   have hdim : Module.finrank F (ReedSolomon.Folded.frsCode domain k s ω) = k :=
     ReedSolomon.Folded.dim_frsCode domain k s ω hadm hω0 hk_le
   have hτval : τ r = (k : ℝ) / Fintype.card ι / ((s : ℝ) - r + 1) := by
-    rw [hτrate, LinearCode.alphabetRate_cast_eq, hdim]
+    rw [hτrate, ReedSolomon.Folded.alphabetRate_frsCode domain k s ω hadm hω0 hk_le]
     field_simp [ne_of_gt hs_pos]
   have hk_lt : k < Fintype.card ι * (s - r + 1) := by
     rw [hτval] at hτ1
