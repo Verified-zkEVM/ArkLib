@@ -143,7 +143,6 @@ import ArkLib.Data.Fin.Tuple.Notation
 import ArkLib.Data.Fin.Tuple.TakeDrop
 import ArkLib.Data.Finset.PickSubset
 import ArkLib.Data.GroupTheory.PrimeOrder
-import ArkLib.Data.GroupTheory.Smooth
 import ArkLib.Data.Hash.DomainSep
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.Data.Hash.Poseidon2
