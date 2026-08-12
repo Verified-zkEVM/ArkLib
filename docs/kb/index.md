@@ -52,18 +52,12 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
 - [`papers/KSY14.md`](papers/KSY14.md) - high-rate codes with sublinear-time decoding; the
   multiplicity-code analysis, whose Hasse-derivative variant differs from `ABF26` Definition A.6.
 
-The paper index now also includes scaffolded landing pages for all other citation keys currently
-used in `ArkLib/**/*.lean`, including:
-
-- `AHIV22`, `BSS08`, `FRI1216`, `GWZC19`, `JM24`, `LFKN92`, `LPS24`, `PS94`, `Poseidon2`,
-  `STIR2005`, `Spi95`, `codingtheory`, and `listdecoding`.
-
 - [`papers/AHIV22.md`](papers/AHIV22.md) - Ligero-family interleaved-code and affine-line proximity
   statements, secondary to the `BCIKS20` development.
 - [`papers/Ajt96.md`](papers/Ajt96.md) - the Short Integer Solution problem underpinning ArkLib's
   Ajtai commitments.
-- [`papers/BSS08.md`](papers/BSS08.md) - short PCPs; in the bibliography as background, currently
-  cited by nothing in the tree.
+- [`papers/BSS08.md`](papers/BSS08.md) - the Reed-Solomon PCP-of-proximity paper; its bivariate
+  division property backed the old STIR folding route, and is currently uncited.
 - [`papers/CGKY25.md`](papers/CGKY25.md) - the ARSDH-style extraction argument behind the KZG
   function-binding reduction.
 - [`papers/codingtheory.md`](papers/codingtheory.md) - *Essential Coding Theory*; classical
@@ -98,8 +92,6 @@ used in `ArkLib/**/*.lean`, including:
 - [`papers/PS94.md`](papers/PS94.md) - historical provenance for the Polishchuk-Spielman lemma.
 - [`papers/Spi95.md`](papers/Spi95.md) - the second Polishchuk-Spielman source, and why ArkLib
   uses the corrected statement.
-- [`papers/STIR2005.md`](papers/STIR2005.md) - Reed-Solomon polynomial reconstruction; in the
-  bibliography as background, currently cited by nothing in the tree.
 
 ## Concept Pages
 
