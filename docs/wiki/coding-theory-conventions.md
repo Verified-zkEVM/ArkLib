@@ -111,7 +111,8 @@ definition, so there is nothing to bridge, and the pointwise `∀`/`ncard` readi
 (`Lambda_le_iff_forall_ncard_le`, `listDecodable_iff_forall_ncard_le`) that cannot drift from it.
 
 The value has to be primitive; this was not a free choice. `[ABF26]` states, on this one quantity,
-bounds that no predicate can carry: **ceilings** (`|Λ(C⁺,δ)| ≤ ⌈|F|/(1-η)·ε_ca⌉`), **strict**
+bounds that no predicate can carry: **ceilings** (for the constrained code,
+`|Λ(C⁺,δ)| ≤ ⌈|F|/(1-η)·ε_ca⌉`), **strict**
 bounds (`|Λ(C,δ)| < |F|`), **lower** bounds (Lemma 3.7 / Corollary 3.8), **inequalities and
 equalities between two codes' list sizes** (`|Λ(C,δ)| ≤ |Λ(C^⋈m,δ)| ≤ |Λ(C,δ)|^m`, and the
 extension-code equality), and **arithmetic** on them (`binom(b+r,r)·|Λ|^r`). A `∀`/`ncard`
@@ -130,6 +131,11 @@ Three consequences worth knowing before touching this layer:
   anyway, and it needs nothing of the alphabet.
 - **The value is needed regardless of the predicate:** a *lower* bound on a list size, or an
   equality between two codes' list sizes, has no predicate form at all.
+- **Unique decoding is the `ℓ = 1` case, not a separate notion.** `Code.uniqueDecodingRadius` and
+  `Code.eq_of_le_uniqueDecodingRadius` in `Basic/DecodingRadius.lean` are what the `ProximityGap`
+  developments use; `uniqueDecodable_relativeUniqueDecodingRadius` identifies them with
+  `uniqueDecodable`. Do not grow a third account: [ABF26] introduces the list precisely as the
+  extension of unique decoding from `δ_min/2` to an arbitrary radius.
 - **Do not give a derived list its own `Lambda`.** A list contained in a point list — WHIR's
   block-relative `Λ𞁒` reaching it through `listBlock_subset_listHamming`, say — is bounded by
   `encard_le_Lambda_of_subset_closeCodewordsRel`. Likewise the absolute-radius point list is the
@@ -152,8 +158,9 @@ genuinely occurs: `1 - √ρ - η` is negative for large `η`, and
 `CodingTheory.mds_johnson_lambda_le_of_rate_distance` closes that corner by proving
 `Lambda C (1 - √ρ - η) = 0` there. An `ℝ≥0` radius would truncate it to `0`,
 where the point list is `{f}` rather than `∅`, changing the statement. All six predicate call sites
-in the tree (three STIR, three WHIR) already pass `ℝ≥0` for *both* arguments, so the bound's
-carrier costs no call-site edits.
+already pass `ℝ≥0` for *both* arguments — three in `ProofSystem/Stir` here, three in
+`ProofSystem/Whir` on the branches where that development lives — so the bound's carrier costs no
+call-site edits.
 
 **Whether to keep the predicate at all is an open question, deliberately answered "yes for now."**
 The maximally unified option is to delete `listDecodable` and spell its six hypotheses
@@ -168,9 +175,12 @@ are left alone rather than churned, but a later rename would break `ListDecodabi
 STIR, WHIR and the external proximity-prize repo, so it should be a deliberate one-shot change.
 
 **Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
-aliases were left, because four of the six cannot be restated — they mention `listDecodable` at a
-real bound, which no longer type-checks — and because an audit of every local and remote branch,
-plus both proximity-prize repositories, found no consumer of any of them. Replacements:
+aliases were left. Five of the six cannot be restated at all: they mention `listDecodable` at a real
+bound, which no longer type-checks. The sixth, `Lambda_le_floor_of_toENNReal_le_ofReal`, mentions
+only `Lambda` and so could be kept, but it has no successor to alias *to* — its replacement is a
+different statement at `ℝ≥0`. An audit of every local and remote branch, plus both
+proximity-prize repositories, found no consumer of any of them. Each replacement below is
+compile-checked against the row it replaces:
 
 | Removed | Use instead |
 |---|---|

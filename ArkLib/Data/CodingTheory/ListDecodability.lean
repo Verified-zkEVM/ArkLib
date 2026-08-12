@@ -52,10 +52,13 @@ point-list finiteness is a consequence of a finite bound rather than a conjunct 
   bound, which is what combinatorial list-size theorems produce.
 * `ListDecodable.uniqueDecodable_iff_subsingleton` — unique decodability really is "at most one
   close codeword".
+* `ListDecodable.uniqueDecodable_relativeUniqueDecodingRadius` — the `ℓ = 1` anchor, identifying
+  this layer's unique decodability with `Code.uniqueDecodingRadius` and
+  `Code.eq_of_le_uniqueDecodingRadius`, so the two accounts of unique decoding are one.
 * `ListDecodable.listDecodable_iff_toENNReal_le_ofReal` — the one boundary at which real-valued
   bounds, such as the Johnson family's `ENNReal.ofReal` shape, meet the integral `Lambda`.
-* `ListDecodable.listDecodable.mono`, `ListDecodable.listDecodable.mono_radius` — monotonicity in
-  the list-size bound and in the radius.
+* `ListDecodable.listDecodable.mono`, `ListDecodable.listDecodable.anti_radius` — monotone in the
+  list-size bound, antitone in the radius.
 * `ListDecodable.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
   algebra of `Lambda`.
 
@@ -97,21 +100,25 @@ def closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℝ) : Set (ι → F) 
 Hamming distance being `Δ₀ / n` for `n = |ι|`.
 
 So `closeCodewords` is a spelling of `closeCodewordsRel`, not a parallel notion: it needs no list
-size of its own, and a bound on it is a `Lambda` bound after rewriting with this lemma. The
-literature (`[ABF26]` Definition 2.8) states the point list only at relative radius, which is why
-`Lambda` is defined there. -/
-lemma closeCodewords_eq_closeCodewordsRel [Nonempty ι] (C : Code ι F) (y : ι → F) (r : ℕ) :
+size of its own, and a bound on it is a `Lambda` bound after rewriting with this lemma. [ABF26]
+Definition 2.8 parameterises the point list by a relative radius, which is why `Lambda` is defined
+there.
+
+No hypothesis on `ι`: when it is empty both sides are all of `C`, the radius on the right being
+`r / 0 = 0` and every distance being `0`. -/
+lemma closeCodewords_eq_closeCodewordsRel (C : Code ι F) (y : ι → F) (r : ℕ) :
     closeCodewords C y r = closeCodewordsRel C y ((r : ℝ) / Fintype.card ι) := by
   classical
-  have hn : (0 : ℝ) < Fintype.card ι := by
-    exact_mod_cast Fintype.card_pos_iff.mpr ‹Nonempty ι›
   ext c
   simp only [closeCodewords, closeCodewordsRel, Set.mem_setOf_eq, Code.mem_hammingBall_iff,
     Code.mem_relHammingBall_iff, Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast,
     and_congr_right_iff]
   intro _
-  rw [div_le_div_iff_of_pos_right hn]
-  exact Nat.cast_le.symm
+  rcases isEmpty_or_nonempty ι with _ | _
+  · simp [hammingDist]
+  · have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+    rw [div_le_div_iff_of_pos_right hn]
+    exact Nat.cast_le.symm
 
 /-! ## The maximised list size -/
 
@@ -228,12 +235,11 @@ a hypothesis list than the unfolded inequality.
 
 **Why keep a named predicate at all.** The maximally unified option is to have none: delete it and
 spell its consumers' hypotheses `Lambda (C i) (δ i) ≤ ⌊l i⌋₊` directly. That was weighed and not
-taken, on two grounds — the literature-shaped name carries the `(δ, ℓ)`-list-decodable reading
-into STIR/WHIR hypothesis lists where the bound `l` is a round-specific parameter, and it gives
-the Johnson suppliers (`johnson_listDecodable`) their natural name. The cost is one subtlety,
-recorded in the docstring below: the predicate must stay semireducible. Nothing depends on the
-choice mathematically — the predicate is definitionally the inequality — so it can be revisited
-later at the cost of touching its consumers, currently six hypotheses in STIR and WHIR.
+taken. Since the predicate is *definitionally* the inequality, nothing mathematical rests on the
+choice, so it can be reconsidered later — the cost is editing its six hypotheses, three in
+`ProofSystem/Stir` here and three in `ProofSystem/Whir` on the branches where that development
+lives. The reasons, and the same question for this layer's names, are recorded once in
+`docs/wiki/coding-theory-conventions.md` rather than restated here, so the two cannot drift.
 -/
 
 /-- A code `C` is `(r, ℓ)`-**list decodable**: every point list at relative radius `r` has at most
@@ -324,6 +330,42 @@ lemma uniqueDecodable_iff_subsingleton {C : Code ι F} {r : ℝ} :
   rw [uniqueDecodable_iff_Lambda_le, Lambda_le_iff_forall_encard_le]
   simp only [Set.encard_le_one_iff_subsingleton]
 
+/-- **Unique decoding is the `ℓ = 1` case, and this connects the two notions of it.** Every code is
+uniquely decodable at its relative unique-decoding radius — which is exactly what
+`Code.eq_of_le_uniqueDecodingRadius` says, phrased in the list-decoding layer.
+
+Without this, `Code.uniqueDecodingRadius` (used by the `ProximityGap` developments) and
+`uniqueDecodable` would be two unconnected accounts of the same notion — the situation this file
+exists to avoid. [ABF26] introduces the list explicitly as the extension of unique decoding from
+`δ_min/2` to an arbitrary radius, so the two belong to one framework.
+
+No hypothesis on `ι`: when it is empty the whole word space `ι → F` is the singleton containing the
+empty function, so every point list is a subsingleton outright. -/
+theorem uniqueDecodable_relativeUniqueDecodingRadius [DecidableEq F]
+    (C : Code ι F) : uniqueDecodable C (Code.relativeUniqueDecodingRadius C : ℝ) := by
+  refine uniqueDecodable_iff_subsingleton.mpr fun y c hc c' hc' => ?_
+  rcases isEmpty_or_nonempty ι with _ | _
+  · exact Subsingleton.elim c c'
+  · have key : ∀ z : ι → F, z ∈ closeCodewordsRel C y (Code.relativeUniqueDecodingRadius C : ℝ) →
+        Δ₀(y, z) ≤ Code.uniqueDecodingRadius C := by
+      intro z hz
+      have h2 : ((Δ₀(y, z) : ℝ≥0) / (Fintype.card ι : ℝ≥0))
+          ≤ Code.relativeUniqueDecodingRadius C := by
+        have hmem := hz.2
+        simp only [Code.mem_relHammingBall_iff, Code.relHammingDist, NNRat.cast_div,
+          NNRat.cast_natCast] at hmem
+        rw [← NNReal.coe_le_coe]
+        push_cast
+        -- `closeCodewordsRel` bakes in a classical `DecidableEq F`, distinct from the instance
+        -- above; `hammingDist` does not depend on the choice.
+        convert hmem using 2
+        congr
+      rw [Code.relativeUniqueDecodingRadius, div_le_div_iff_of_pos_right
+        (by simp [Fintype.card_pos (α := ι)])] at h2
+      rw [Code.uniqueDecodingRadius_eq_floor_div_2]
+      exact Nat.le_floor (by exact_mod_cast h2)
+    exact Code.eq_of_le_uniqueDecodingRadius C y hc.1 hc'.1 (key c hc) (key c' hc')
+
 /-- Monotone in the list-size bound, by monotonicity of `Nat.floor`. This is the lemma that ad-hoc
 `…_of_le` variants of individual list-size theorems would otherwise each re-derive. -/
 lemma listDecodable.mono {C : Code ι F} {r : ℝ} {ℓ₁ ℓ₂ : ℝ≥0}
@@ -331,8 +373,11 @@ lemma listDecodable.mono {C : Code ι F} {r : ℝ} {ℓ₁ ℓ₂ : ℝ≥0}
   h.trans (by exact_mod_cast Nat.floor_le_floor (show (ℓ₁ : ℝ) ≤ (ℓ₂ : ℝ) from hℓ))
 
 /-- Shrinking the radius preserves list decodability at the same bound, by `Lambda_mono`: the
-point lists only get smaller. The companion to `listDecodable.mono`, which weakens the bound. -/
-lemma listDecodable.mono_radius {C : Code ι F} {r₁ r₂ : ℝ} {ℓ : ℝ≥0}
+point lists only get smaller. The companion to `listDecodable.mono`, which weakens the bound.
+
+Named `anti_radius`, not `mono_radius`: `Lambda` is monotone in the radius, so the *predicate* is
+antitone in it. -/
+lemma listDecodable.anti_radius {C : Code ι F} {r₁ r₂ : ℝ} {ℓ : ℝ≥0}
     (h : listDecodable C r₂ ℓ) (hr : r₁ ≤ r₂) : listDecodable C r₁ ℓ :=
   (Lambda_mono hr).trans h
 
