@@ -505,7 +505,7 @@ open scoped NNReal
 
 /-! ### Numerical bounds: `θ★`, `CodecBias`, `η★`, per-claim bounds -/
 
-/-- CO25 §5.8 / Eq (57). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
+/-- CO25 Theorem 5.1 / Eq. (5). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
 query-bound multiplier in `η★`. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
 
@@ -515,7 +515,7 @@ carries only the per-round values `ε_{cdc,i}` used in Claims 5.22 and the `η�
 abbrev CodecBias :=
   pSpec.ChallengeIdx → ℝ≥0
 
-/-- CO25 Theorem 5.1 / Eq (57). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
+/-- CO25 Theorem 5.1 / Eq. (5). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
 ```
 η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
 ```
@@ -888,15 +888,60 @@ theorem claim_5_24
 
 /-! ### Main lemma 5.1: existential statement and salted `D2SAlgo` witness -/
 
-/-- CO25 Theorem 5.1. Per-index query-bound predicate for the malicious prover `𝒫̃`.
-`tShared` bounds queries to the ambient `oSpec`; `(t_h, t_p, t_{p⁻¹})` bound the three
-DS sub-oracles `h`, `p`, `p⁻¹`. Uses `duplexSpongeQueryBudgetWithShared` from `Defs.lean`. -/
+/-- DS hash queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1HashQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
+
+/-- DS forward-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inl _)) => True
+  | _ => False
+
+/-- DS inverse-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermInvQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inr _)) => True
+  | _ => False
+
+/-- Basic-FS challenge queries made by `D2SAlgo`; ambient queries and its private sampling
+oracles are deliberately excluded. -/
+def isD2SAlgoChallengeQuery :
+    (oSpec + D2SChallengePlusUnitOracle (U := U)
+      (fsChallengeOracle (StmtIn × Salt) pSpec)).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
+
+/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
+`t_h`, `t_p`, and `t_{p⁻¹}` are aggregate bounds for the hash, forward-permutation, and
+inverse-permutation oracle families.  The ambient `oSpec` handler is unconstrained: CO25's
+statement contains no ambient-oracle query budget. -/
 abbrev IsLemma5_1QueryBound
-    [DecidableEq ι]
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  OracleComp.IsPerIndexQueryBound maliciousProver
-    (duplexSpongeQueryBudgetWithShared (StmtIn := StmtIn) (U := U) tShared tₕ tₚ tₚᵢ)
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
+
+/-- CO25 Theorem 5.1's `θ★` query bound for the transformed prover.  This counts precisely the
+basic-FS challenge-oracle calls; `oSpec` and D2SAlgo's private sampling oracles are not adversary
+queries in the target FS security game. -/
+abbrev IsD2SAlgoChallengeQueryBound
+    (prover : AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U)
+      (fsChallengeOracle (StmtIn × Salt) pSpec)) (StmtIn × FSSaltedProof pSpec Salt))
+    (t : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP prover
+      (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+        (Salt := Salt) (pSpec := pSpec)) t
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
@@ -914,10 +959,10 @@ theorem lemma_5_1_inner
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
-      IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist
         (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
@@ -930,13 +975,61 @@ theorem lemma_5_1_inner
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
         ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ)
-      ∧ OracleComp.IsTotalQueryBound
+      ∧ IsD2SAlgoChallengeQueryBound
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
           (θStar tₕ tₚ tₚᵢ) := by
   intro maliciousProver hMaliciousBound
   let _ := hTp
   let _ := hMaliciousBound
+  sorry
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- The total-variation component of the concrete form of Lemma 5.1. -/
+theorem lemma_5_1_inner_tvBound
+    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+      tvDist
+        (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+          oSpecImpl V maliciousProver
+          (d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+        (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+          oSpecImpl V maliciousProver
+          (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ) := by
+  sorry
+
+omit [DecidableEq StmtIn] [DecidableEq U] in
+/-- D2SAlgo's basic-FS challenge-query bound (the `θ★` part of Lemma 5.1):
+`#queries_f(D2SAlgo^f(𝒫̃)) ≤ θ★(tₕ, tₚ, tₚᵢ) = tₚ.`
+Only a forward-permutation query can trigger an `f`-query: it produces at most one `gᵢ` query,
+whose codec bridge makes at most one `fᵢ` query.  Hash and inverse-permutation queries make none;
+memoization only decreases the count.  `IsD2SAlgoChallengeQueryBound` formalizes `#queries_f`. -/
+theorem lemma_5_1_inner_queryBound
+    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+      IsD2SAlgoChallengeQueryBound
+        (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
+        (θStar tₕ tₚ tₚᵢ) := by
   sorry
 
 set_option linter.unusedDecidableInType false in
@@ -949,7 +1042,7 @@ such that:
 ```
 |Pr[𝒱^{h,p}(𝕩,π)=1] − Pr[𝒱_std^f(𝕩,π)=1]| ≤ η★(t_h, t_p, t_{p⁻¹})
 ```
-and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` total queries.
+and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` basic-FS challenge queries.
 
 Sampling shape (CO25 Def. 4.2 / Eqs. 15/52/54/4): both sides draw their oracles
 from `OracleDistribution` carriers at game start; the ambient `oSpec` is answered by
@@ -965,14 +1058,14 @@ theorem lemma_5_1
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ max pSpec.totalNumPermQueriesMessage pSpec.totalNumPermQueriesChallenge) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
     ∃ (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (d2sTraceTransform : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U)  (duplexSpongeChallengeOracle StmtIn U)),
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
-      IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist -- 1/2 ∑ |p(i) - q(i)|
         -- Hyb_0  ((h, p, p⁻¹) ← 𝒟_𝔖)
         (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
@@ -984,12 +1077,12 @@ theorem lemma_5_1
           oSpecImpl V maliciousProver d2sAlgoTransform)
         ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
             (εcodec := codec.decodingBias) : ℝ)
-      ∧ OracleComp.IsTotalQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) :=
+      ∧ IsD2SAlgoChallengeQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) :=
   ⟨ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
     d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
-    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tShared tₕ tₚ tₚᵢ hTp⟩
+    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ hTp⟩
 
 end KeyLemma
 
