@@ -37,6 +37,13 @@ and the `(L, s)`-admissibility condition on the folding element `ω`.
 - `ReedSolomon.Folded.minDist_frsCode` — the file's headline theorem: the minimum
   *block* (per-fold) distance is `|ι| − ⌊(k−1)/s⌋`. This one genuinely cannot be
   transported from `ReedSolomon.minDist_of_le`: the block metric is not the symbol metric.
+- `ReedSolomon.Folded.alphabetRate_frsCode` — the [ABF26] Definition 2.5 rate
+  `ρ = k / (s · n)`.
+- `ReedSolomon.Folded.frs_rate_distance_of_dvd` — under `s ∣ k`, FRS satisfies the
+  [ABF26] Lemma 2.6 MDS rate-distance equation `δ_min = 1 - ρ + 1/n`. This is the
+  `minDist_frsCode` docstring's "agrees exactly when `s ∣ k`" clause as a theorem, and it is
+  the input `JohnsonBound.Family`'s alphabet-generic Corollary 3.3 asks a module-alphabet
+  family to supply (consumed by `CodingTheory.frs_lambda_le_johnson_mds`).
 - `ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode` /
   `frsCode_one_map_eq_rsCode` — sanity checks for `s = 1` collapse to plain RS,
   both instances of the encoder-generic `ReedSolomon.mem_map_degreeLT_one_iff_mem_code`.
@@ -51,6 +58,21 @@ evaluation domain shrinks — see `ProximityGap/Folding.lean` (`foldWord`),
 `Data/Polynomial/SplitFold.lean` (`splitNth`), and `Data/Polynomial/FoldingPolynomial.lean`
 (`polyFold`); the "folded RS code" appearing there is a plain RS code on the squared subdomain,
 not an FRS code in this file's sense.
+
+## Not the WHIR block distance either
+
+`minDist_frsCode` below is stated in the **block** (per-fold) metric: a position `x : ι`
+counts as a disagreement when the whole `s`-tuple `(f̂(x), …, f̂(xω^{s-1}))` differs. That is
+just `Code.minDist` on `ι → (Fin s → F)`, i.e. the ordinary Hamming metric over the enlarged
+alphabet `Fin s → F` — the blocks are the *fold coordinates*, and they are part of the
+codeword's type.
+
+It is **not** `BlockRelDistance` (`Basic/BlockRelDistance.lean`, [ACFY24]/WHIR), which is a
+different notion of "block" bearing the same name: there the word stays flat
+(`Fin (2^n) → F`), the blocks are cosets of a `SmoothCosetFftDomain` selected by a subdomain
+index `k`, and the distance is `disagreementSet`-based over `φ.subdomain k`. That machinery
+belongs to the split-and-fold development above and does not apply to `frsCode`; conversely
+nothing here specializes to it.
 
 ## References
 
@@ -559,6 +581,61 @@ theorem minDist_frsCode {ι : Type*} [Fintype ι]
         rw [Code.wt, hZeq, Finset.card_filter_add_card_filter_not, Finset.card_univ]
       rw [← hwt]
       omega
+
+/-- **The [ABF26] Definition 2.5 rate of `FRS[F, L, k, s, ω]` is `k / (s · n)`** in the
+non-saturated regime `k ≤ s · |ι|`. The alphabet is `F^s`, so the dimension `k`
+(`dim_frsCode`) is normalized by `s · n`, not by `n`. -/
+lemma alphabetRate_frsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
+    (hk : k ≤ s * Fintype.card ι) :
+    (LinearCode.alphabetRate (frsCode domain k s ω) : ℝ)
+      = (k : ℝ) / (s * Fintype.card ι) := by
+  rw [LinearCode.alphabetRate_cast_eq, dim_frsCode domain k s ω hadm hω hk]
+
+/-- **Folded Reed–Solomon is MDS in the sense of [ABF26] Lemma 2.6 exactly when `s ∣ k`.**
+At the alphabet-normalized rate `ρ = LinearCode.alphabetRate = k / (s · n)` of Definition 2.5,
+
+  `δ_min(FRS[F, L, k, s, ω]) = 1 - ρ + 1/n`  whenever `s ∣ k`.
+
+This promotes the prose clause in `minDist_frsCode`'s docstring to a statement. The
+divisibility is genuinely needed, and the mechanism is the asymmetry recorded there: the
+dimension is `k` on the nose (`dim_frsCode`) while the distance rounds,
+`n - ⌊(k-1)/s⌋ = n - ⌈k/s⌉ + 1`. The two agree iff `⌈k/s⌉ = k/s`. Contrast
+`ReedSolomon.Interleaved.irs_rate_distance`, which needs no divisibility because interleaving
+truncates the dimension and the distance by the same `⌊k/s⌋`.
+
+Supplies the rate-distance hypothesis of the alphabet-generic
+`CodingTheory.mds_johnson_lambda_le_of_rate_distance`; `LinearCode.IsMDS` is unavailable
+here, being stated only for codes in `ι → F`. -/
+theorem frs_rate_distance_of_dvd {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
+    [DecidableEq F] {k s : ℕ} [NeZero k] (hs : 0 < s) (hdvd : s ∣ k)
+    (domain : ι ↪ F) (ω : F)
+    (hadm : Admissible (Finset.univ.map domain) s ω) (hω : ω ≠ 0)
+    (hk : k ≤ s * Fintype.card ι) :
+    (Code.minDist ((frsCode domain k s ω : Submodule F (ι → Fin s → F)) :
+        Set (ι → Fin s → F)) : ℝ) / Fintype.card ι
+      = 1 - (LinearCode.alphabetRate (frsCode domain k s ω) : ℝ) + 1 / Fintype.card ι := by
+  have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hsR : (0 : ℝ) < s := by exact_mod_cast hs
+  obtain ⟨m, rfl⟩ := hdvd
+  have hm : 1 ≤ m := by
+    rcases Nat.eq_zero_or_pos m with rfl | h
+    · exact absurd (by simp) (NeZero.ne (s * 0))
+    · exact h
+  have hmle : m ≤ Fintype.card ι := Nat.le_of_mul_le_mul_left hk hs
+  -- With `s ∣ k` the distance's floor is exact: `⌊(s·m - 1)/s⌋ = m - 1`.
+  have hsm : s ≤ s * m := Nat.le_mul_of_pos_right s hm
+  have hlo : (m - 1) * s = s * m - s := by rw [Nat.sub_mul, one_mul, Nat.mul_comm]
+  have hhi : (m - 1 + 1) * s = s * m := by rw [Nat.sub_add_cancel hm, Nat.mul_comm]
+  have hfloor : (s * m - 1) / s = m - 1 :=
+    Nat.div_eq_of_lt_le (by omega) (by omega)
+  rw [minDist_frsCode hs domain ω hadm hω hk, hfloor,
+    alphabetRate_frsCode domain (s * m) s ω hadm hω hk,
+    Nat.cast_sub (by omega : m - 1 ≤ Fintype.card ι), Nat.cast_mul, Nat.cast_sub hm,
+    Nat.cast_one]
+  field_simp
+  ring
 
 /-- Mirror of `mem_frsCode_iff` with the equation oriented `encoder = f` rather than
 `f = encoder` — useful for `rw` / `simp` from the encoder side. -/
