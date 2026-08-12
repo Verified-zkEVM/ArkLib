@@ -13,6 +13,7 @@ import Mathlib.LinearAlgebra.Basis.Fin
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Basis
 import Mathlib.LinearAlgebra.Vandermonde
+import Mathlib.RingTheory.Polynomial.Wronskian
 
 /-!
 # The classical Wronskian
@@ -25,12 +26,17 @@ it is nonzero exactly when the polynomials are linearly independent.
 The characteristic guard is essential: in characteristic `p`, the nonconstant polynomial
 `X ^ p` has zero derivative.
 
+This is the `n`-tuple Wronskian that `Mathlib/RingTheory/Polynomial/Wronskian.lean` asks
+for in its `TODO` ("Define Wronskian for n-tuple of polynomials, not necessarily two"):
+`classicalWronskian_two` identifies it at `σ = 2` with Mathlib's `Polynomial.wronskian`.
+
 ## Main definitions
 
 * `Polynomial.classicalWronskian`
 
 ## Main statements
 
+* `Polynomial.classicalWronskian_two` — at `σ = 2` this is Mathlib's `Polynomial.wronskian`.
 * `Polynomial.natDegree_classicalWronskian_le` — the degree bound `σ * k` for entries of
   degree at most `k`.
 * `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective` — nonzero polynomials with
@@ -57,6 +63,18 @@ whose `(i, j)` entry is the `i`-th derivative of `P j`. -/
 noncomputable def classicalWronskian {F : Type*} [CommRing F]
     (sigma : ℕ) (P : Fin sigma → F[X]) : F[X] :=
   (Matrix.of fun i j : Fin sigma => derivative^[i.val] (P j)).det
+
+/-- At `σ = 2` the classical Wronskian is Mathlib's two-argument `Polynomial.wronskian`.
+
+This is the bridge to Mathlib's existing `wronskian_*` API — `wronskian_self_eq_zero`,
+`wronskian_neg_eq`, the Mason-Stothers machinery, and so on — none of which is otherwise
+reachable from `classicalWronskian`.
+
+Not a `simp` lemma: rewriting with it leaves the `classicalWronskian` API rather than
+normalising within it. -/
+lemma classicalWronskian_two {F : Type*} [CommRing F] (a b : F[X]) :
+    classicalWronskian 2 ![a, b] = wronskian a b := by
+  simp [classicalWronskian, Matrix.det_fin_two, wronskian, mul_comm]
 
 /-- A coarse degree bound for the classical Wronskian. -/
 lemma natDegree_classicalWronskian_le {F : Type*} [CommRing F]

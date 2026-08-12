@@ -196,7 +196,9 @@ home_page/            site assets and assembled website root
   `ArkLib/ToMathlib/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
   degree/derivative criterion behind the univariate-multiplicity half of ABF26 T2.18. Both are
   generic `Polynomial` algebra with no coding-theory content, so they sit under `ToMathlib/`
-  rather than `CodingTheory/` or `Data/Polynomial/`. Their generic
+  rather than `CodingTheory/` or `Data/Polynomial/`; `classicalWronskian` is the `n`-tuple
+  Wronskian Mathlib's own `TODO` asks for, tied to its two-argument `Polynomial.wronskian`
+  by `classicalWronskian_two`. Their generic
   determinant-divisibility and finite-field Kummer dependencies live in
   `ArkLib/ToMathlib/LinearAlgebra/Matrix/Determinant.lean` and
   `ArkLib/ToMathlib/FieldTheory/Kummer.lean`.
