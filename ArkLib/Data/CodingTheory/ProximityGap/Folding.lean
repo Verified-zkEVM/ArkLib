@@ -305,6 +305,11 @@ noncomputable def iteratedFoldWord (domain : SmoothCosetFftDomain n F)
 lemma iteratedFoldWord_zero {α : Fin 0 → F} :
   iteratedFoldWord domain f 0 α = f := rfl
 
+lemma iteratedFoldWord_succ {α : Fin (k + 1) → F} :
+  iteratedFoldWord domain f (k + 1) α =
+    foldWord (domain.subdomain k)
+      (iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)) 1 (α ⟨k, by omega⟩) := by aesop
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/
