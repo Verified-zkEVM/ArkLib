@@ -12,6 +12,7 @@ import Mathlib.Data.Nat.Factorial.NatCast
 import Mathlib.LinearAlgebra.Basis.Fin
 import Mathlib.LinearAlgebra.Dual.Lemmas
 import Mathlib.LinearAlgebra.Matrix.Basis
+import Mathlib.LinearAlgebra.Matrix.ToLinearEquiv
 import Mathlib.LinearAlgebra.Vandermonde
 import Mathlib.RingTheory.Polynomial.Wronskian
 
@@ -34,14 +35,17 @@ in its `TODO` ("Define Wronskian for n-tuple of polynomials, not necessarily two
 ## Main statements
 
 * `Polynomial.classicalWronskian_two`: at `σ = 2` this is `Polynomial.wronskian`.
+* `Polynomial.classicalWronskian_ne_zero_iff_linearIndependent`: polynomials of degree `< k`
+  are linearly independent iff their Wronskian is nonzero. The two directions are also
+  available separately as `Polynomial.classicalWronskian_ne_zero_of_basis` and
+  `Polynomial.classicalWronskian_eq_zero_of_not_linearIndependent`, the latter needing
+  neither a degree bound nor any hypothesis on the characteristic.
 * `Polynomial.natDegree_classicalWronskian_le`: the degree bound `σ * k` for entries of
   degree at most `k`.
 * `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective`: nonzero polynomials with
   pairwise distinct degrees, all `< k`, have nonzero Wronskian.
-* `Polynomial.classicalWronskian_eq_mul_C_det_of_sum_smul`: changing the family by a constant
-  coefficient matrix `U` multiplies the Wronskian by `C U.det`.
-* `Polynomial.classicalWronskian_ne_zero_of_basis`: the same nonvanishing for an arbitrary
-  basis of a polynomial subspace in degrees `< k`.
+* `Polynomial.classicalWronskian_sum_smul`: changing the family by a constant coefficient
+  matrix `U` multiplies the Wronskian by `C U.det`.
 
 ## Implementation notes
 
@@ -74,6 +78,18 @@ whose `(i, j)` entry is the `i`-th derivative of `P j`. -/
 noncomputable def classicalWronskian {F : Type*} [CommRing F]
     (σ : ℕ) (P : Fin σ → F[X]) : F[X] :=
   (Matrix.of fun i j : Fin σ => derivative^[i.val] (P j)).det
+
+/-- The empty Wronskian is the determinant of the empty matrix. -/
+@[simp]
+lemma classicalWronskian_zero {F : Type*} [CommRing F] (P : Fin 0 → F[X]) :
+    classicalWronskian 0 P = 1 := by
+  simp [classicalWronskian]
+
+/-- The Wronskian of a single polynomial is that polynomial. -/
+@[simp]
+lemma classicalWronskian_one {F : Type*} [CommRing F] (p : F[X]) :
+    classicalWronskian 1 ![p] = p := by
+  simp [classicalWronskian, Matrix.det_unique]
 
 /-- At `σ = 2` the classical Wronskian is Mathlib's two-argument `Polynomial.wronskian`.
 
@@ -352,26 +368,47 @@ private theorem exists_basis_natDegree_injective
         simp only [b'', Basis.reindex_apply]
         exact hsnoc.comp (finCongr hrank).symm.injective
 
-/-- Replacing the polynomials by the constant linear combinations `c j = ∑ i, U i j • P i`
-multiplies the Wronskian by `C U.det`, since it right-multiplies the matrix of iterated
-derivatives by `U`. -/
-lemma classicalWronskian_eq_mul_C_det_of_sum_smul {F : Type*} [Field F] {σ : ℕ}
-    (P c : Fin σ → F[X]) (U : Matrix (Fin σ) (Fin σ) F)
-    (hc : ∀ j, c j = ∑ i, U i j • P i) :
-    classicalWronskian σ c =
+/-- Replacing the polynomials by constant linear combinations of themselves multiplies the
+Wronskian by `C U.det`, since it right-multiplies the matrix of iterated derivatives by the
+coefficient matrix `U`. -/
+lemma classicalWronskian_sum_smul {F : Type*} [CommRing F] {σ : ℕ}
+    (P : Fin σ → F[X]) (U : Matrix (Fin σ) (Fin σ) F) :
+    classicalWronskian σ (fun j => ∑ i, U i j • P i) =
       classicalWronskian σ P * C U.det := by
   classical
-  have hM : (Matrix.of fun i j : Fin σ => derivative^[i.val] (c j))
+  have hM : (Matrix.of fun i j : Fin σ => derivative^[i.val] (∑ i', U i' j • P i'))
       = (Matrix.of fun i j : Fin σ => derivative^[i.val] (P j)) *
         ((C : F →+* F[X]).mapMatrix U) := by
     refine Matrix.ext fun i j => ?_
     simp only [Matrix.of_apply, Matrix.mul_apply, RingHom.mapMatrix_apply, Matrix.map_apply]
-    rw [hc j, iterate_derivative_sum]
+    rw [iterate_derivative_sum]
     exact Finset.sum_congr rfl fun i' _ => by
       rw [iterate_derivative_smul]
       simp [smul_eq_C_mul, mul_comm]
   unfold classicalWronskian
   rw [hM, Matrix.det_mul, ← RingHom.map_det]
+
+/-- Linearly dependent polynomials have vanishing classical Wronskian: if `∑ j, a j • P j = 0`
+with `a ≠ 0`, then differentiating shows the constant vector `fun j ↦ C (a j)` is a nonzero
+kernel element of the matrix of iterated derivatives.
+
+This direction needs no hypothesis on the degrees or the characteristic. -/
+theorem classicalWronskian_eq_zero_of_not_linearIndependent {F : Type*} [CommRing F]
+    [IsDomain F] (σ : ℕ) (P : Fin σ → F[X]) (hind : ¬ LinearIndependent F P) :
+    classicalWronskian σ P = 0 := by
+  classical
+  obtain ⟨a, ha, i₀, hi₀⟩ := Fintype.not_linearIndependent_iff.mp hind
+  refine Matrix.exists_mulVec_eq_zero_iff.mp ⟨fun j => C (a j), ?_, ?_⟩
+  · intro h
+    exact hi₀ (by simpa using congrFun h i₀)
+  · funext i
+    have hsum : ∑ j : Fin σ, derivative^[i.val] (P j) * C (a j)
+        = derivative^[i.val] (∑ j : Fin σ, a j • P j) := by
+      rw [iterate_derivative_sum]
+      exact (Finset.sum_congr rfl fun j _ => by
+        rw [iterate_derivative_smul]
+        simp [smul_eq_C_mul, mul_comm]).symm
+    simpa [Matrix.mulVec, dotProduct, ha] using hsum
 
 /-- If a finite-dimensional polynomial subspace has a basis of polynomials of degree `< k`,
 that basis has nonzero classical Wronskian in characteristic zero, and in positive
@@ -428,10 +465,26 @@ theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {σ k : ℕ}
     intro h0
     rw [h0, zero_mul] at h
     exact zero_ne_one h
-  have hW := classicalWronskian_eq_mul_C_det_of_sum_smul
-    (fun j => ((bas j : B) : F[X])) (fun j => ((cb j : B) : F[X])) U hcomb
+  have hW : classicalWronskian σ (fun j => ((cb j : B) : F[X]))
+      = classicalWronskian σ (fun j => ((bas j : B) : F[X])) * C U.det := by
+    rw [_root_.funext hcomb]
+    exact classicalWronskian_sum_smul _ _
   intro hzero
   rw [hzero, zero_mul] at hW
   exact hcbW hW
+
+/-- Over a field of characteristic zero, or of positive characteristic at least `k`,
+polynomials of degree `< k` are linearly independent iff their classical Wronskian is
+nonzero. -/
+theorem classicalWronskian_ne_zero_iff_linearIndependent {F : Type*} [Field F] {σ k : ℕ}
+    (P : Fin σ → F[X]) (hdeg : ∀ j, (P j).natDegree < k)
+    (hk : ringChar F = 0 ∨ k ≤ ringChar F) :
+    classicalWronskian σ P ≠ 0 ↔ LinearIndependent F P := by
+  refine ⟨fun h => ?_, fun hind => ?_⟩
+  · by_contra hdep
+    exact h (classicalWronskian_eq_zero_of_not_linearIndependent σ P hdep)
+  · have hb := classicalWronskian_ne_zero_of_basis (Basis.span hind)
+      (fun j => by rw [Basis.span_apply]; exact hdeg j) hk
+    simpa only [Basis.span_apply] using hb
 
 end Polynomial

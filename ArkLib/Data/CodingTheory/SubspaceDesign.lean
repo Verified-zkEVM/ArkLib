@@ -396,8 +396,11 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
     intro h0
     rw [h0, zero_mul] at h
     exact zero_ne_one h
-  have hW := Polynomial.classicalWronskian_eq_mul_C_det_of_sum_smul
-    (fun j => ((bas j : B) : Polynomial F)) c U hcomb
+  have hW : Polynomial.classicalWronskian σ c
+      = Polynomial.classicalWronskian σ (fun j => ((bas j : B) : Polynomial F))
+        * Polynomial.C U.det := by
+    rw [funext hcomb]
+    exact Polynomial.classicalWronskian_sum_smul _ _
   set T : Finset (Fin σ) := Finset.image (Fin.castLE htσ) Finset.univ with hT
   have hTcard : T.card = t := by
     rw [hT, Finset.card_image_of_injective _ (fun a b hab => Fin.ext (by
