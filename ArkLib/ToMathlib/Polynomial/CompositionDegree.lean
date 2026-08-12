@@ -22,10 +22,17 @@ namespace Polynomial
 
 variable {F : Type*} [Semiring F]
 
-/-- Composing with the scaling `X ↦ a * X` does not increase the natural degree. -/
+/-- Composing with the scaling `X ↦ a * X` does not increase the natural degree.
+
+This is the specialization of Mathlib's `Polynomial.natDegree_comp_le` to a composand of
+degree at most one, and is proved as such. -/
 lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :
     (p.comp (C a * X)).natDegree ≤ p.natDegree :=
-  natDegree_le_iff_coeff_eq_zero.mpr fun _ hm => by
-    simp [comp_C_mul_X_coeff, coeff_eq_zero_of_natDegree_lt hm]
+  natDegree_comp_le.trans <| by
+    calc p.natDegree * (C a * X).natDegree
+        ≤ p.natDegree * 1 := by
+          gcongr
+          exact (natDegree_C_mul_le a X).trans natDegree_X_le
+      _ = p.natDegree := mul_one _
 
 end Polynomial

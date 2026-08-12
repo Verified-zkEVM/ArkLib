@@ -22,7 +22,7 @@ Generic facts intended as candidates for upstreaming to Mathlib.
 
 /-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
 have the same dimension. -/
-lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [Field F]
+lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [DivisionRing F]
     [AddCommGroup M] [Module F M] [AddCommGroup N] [Module F N]
     (f : M →ₗ[F] N) (B : Submodule F M) (A : Submodule F N)
     (hinj : ∀ p ∈ B, f p = 0 → p = 0) (hmap : B.map f = A) :
@@ -36,7 +36,7 @@ lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [Field F]
 
 /-- A finite-dimensional space of dimension `n` has a basis indexed by `Fin n` whose first
 `finrank F N` vectors lie in a prescribed subspace `N`. -/
-lemma Submodule.exists_adapted_basis {F M : Type*} [Field F] [AddCommGroup M]
+lemma Submodule.exists_adapted_basis {F M : Type*} [DivisionRing F] [AddCommGroup M]
     [Module F M] [FiniteDimensional F M] (N : Submodule F M) {n : ℕ}
     (hn : Module.finrank F M = n) :
     ∃ b : Module.Basis (Fin n) F M,

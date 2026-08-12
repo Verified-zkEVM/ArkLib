@@ -31,7 +31,7 @@ namespace Polynomial
 
 /-- The sum of the root multiplicities of a polynomial over a finite set of points is at most
 its natural degree. -/
-lemma sum_rootMultiplicity_le_natDegree {F : Type*} [Field F]
+lemma sum_rootMultiplicity_le_natDegree {F : Type*} [CommRing F] [IsDomain F]
     {W : Polynomial F} (S : Finset F) :
     ∑ a ∈ S, W.rootMultiplicity a ≤ W.natDegree := by
   classical
