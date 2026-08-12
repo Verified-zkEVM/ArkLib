@@ -365,11 +365,10 @@ end OracleStatementIndex
 -- The structured-sumcheck primitives (`MultilinearPoly`, `MultiquadraticPoly`,
 -- `SumcheckMultiplierParam`, `computeInitialSumcheckPoly`, `projectToMidSumcheckPoly`,
 -- `projectToMidSumcheckPolyWithParam`, `projectToNextSumcheckPolyWithDegree`,
--- `projectToNextSumcheckPoly`) now live in
+-- `projectToNextSumcheckPoly`) live in
 -- `ArkLib.ProofSystem.Sumcheck.Structured`.
--- We re-export them under the `Binius.BinaryBasefold` namespace so that existing
--- references — qualified or unqualified — continue to resolve.
--- See `GENERIC_RING_SWITCHING_PLAN.md` §1.5 for the rationale.
+-- They are re-exported under the `Binius.BinaryBasefold` namespace so that references
+-- here — qualified or unqualified — resolve.
 export Sumcheck.Structured (MultilinearPoly MultiquadraticPoly
   SumcheckMultiplierParam computeInitialSumcheckPoly
   projectToMidSumcheckPoly projectToMidSumcheckPolyWithParam
@@ -467,8 +466,8 @@ section OracleReductionComponents
 Basic structures and definitions used throughout the Binary Basefold protocol.
 -/
 
--- `SumcheckBaseContext` and `Statement` now live in `ArkLib.ProofSystem.Sumcheck.Structured`.
--- Re-exported so existing references — qualified or unqualified — continue to resolve.
+-- `SumcheckBaseContext` and `Statement` live in `ArkLib.ProofSystem.Sumcheck.Structured`.
+-- Re-exported so that references here — qualified or unqualified — resolve.
 export Sumcheck.Structured (SumcheckBaseContext Statement)
 
 /-- Statement for the final sumcheck step - includes the final constant c -/
@@ -611,10 +610,6 @@ def dummyLastWitness :
   H := ⟨0, by apply zero_mem⟩,
   f := fun _ => 0
 }
-
--- `InitialStatement` was orphaned by the `RingSwitching/` extraction (its sole consumer,
--- `RingSwitching.MLPEvalStatement`, now defines the same 2-field shape locally).
--- Removed as part of the post-extraction cleanup.
 
 open Classical in
 def snoc_oracle {i : Fin ℓ}
@@ -826,8 +821,8 @@ def witnessStructuralInvariant {i : Fin (ℓ + 1)} (stmt : Statement (L := L) Co
     (challenges := stmt.challenges)).val ∧
   wit.f = getMidCodewords 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) wit.t stmt.challenges
 
--- `sumcheckConsistencyProp` now lives in `ArkLib.ProofSystem.Sumcheck.Structured`.
--- Re-exported so existing references — qualified or unqualified — continue to resolve.
+-- `sumcheckConsistencyProp` lives in `ArkLib.ProofSystem.Sumcheck.Structured`.
+-- Re-exported so that references here — qualified or unqualified — resolve.
 export Sumcheck.Structured (sumcheckConsistencyProp)
 
 /-- First oracle witness consistency: the witness polynomial t, when projected to level 0 and

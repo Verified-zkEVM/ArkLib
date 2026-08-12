@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
 import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -26,7 +27,8 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 
   * the coefficient/norm bounds on the lifted witness (`RhoShort`, `liftShort`);
   * how the `R^lin` statement carries its public norm bound (`zOk`/`sideCond` instantiation);
-  * the weak-binding `w̃`-commitment interface (`LiftCom`, Module-SIS escape budget).
+  * the weak-binding `w̃`-commitment interface (`LiftCom`, whose short-collision set
+    `LiftCom.Collision` is the escape event's hardness target).
 
   The name **Lift** refers to turning equality modulo `Φ.φ` into an exact polynomial
   equality with an explicit quotient witness. Its sibling is **Packing**, which instead
@@ -37,6 +39,36 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
   packing a small-field polynomial into a larger field and evaluating a quotient presentation
   are different algebraic constructions (see the taxonomy in
   `ProofSystem/RingSwitching/Basic.lean`).
+
+  Output relation `relLift`: an opening `w̃` of `t` whose lifted rows vanish at `α` and which is
+  short. **CWSS at `k = 2d`** (`scalarStructure`, plain special soundness): each row's defect
+  polynomial `∑ⱼ Mᵢⱼ·zⱼ − yᵢ − (X^d+1)·ρᵢ` has degree `≤ 2d − 1`, so `2d` accepting branches at
+  pairwise-distinct `α` either exhibit two distinct short openings of `t` — the weak-binding
+  **escape event** `CommittedScalar.escEvent` (`LiftCom.Collision`; [NOZ26] Remark 2 / Lemma 7) —
+  or share one opening whose row defects have `2d` roots, hence vanish identically: `M z = y` over
+  `Rq` plus the range bound, i.e. `relRlin` membership.
+
+  Both halves of that argument are **proven generically**, one layer up: the interpolation descent
+  is `RingSwitching.Lift.recover` over an arbitrary `Presentation`, and the collision/extraction
+  dispatch is `CommittedScalar.mkWitness_mem`. This file supplies only the cyclotomic
+  presentation (`cyclotomicPresentation`, `isPresentation_cyclotomic`), the challenge-local
+  predicate (`liftCheckAt`), the norm bookkeeping (`vecLInftyNorm_le_of_liftShort`), and the
+  resulting `liftPackage`.
+
+  ## The abstract commitment `LiftCom` and the norm bookkeeping
+
+  The commitment is abstract, so `LiftCom` carries nothing but `{TCom, com}` over its
+  shortness index.
+  Weak binding is **norm-conditioned**, hence that index: this chain instantiates
+  `Short := liftShort bound ρBound` at the *global* norm parameters, and the short-collision set
+  `LiftCom.Collision` — the target of the escape event — reads it. `relLift`
+  therefore carries (i) `liftShort bound ρBound w̃` — feeding
+  both the collision argument and, (ii) via the public sanity conjunct `bound ≤ s.bound`, the
+  statement-level `R^lin` bound of the extraction target (assembled statements have
+  `s.bound = γ = bound`, so completeness is unaffected). The concrete instantiation — the
+  inner-outer commitment *without initial decomposition* ([NOZ26] §4.5), collision discharged by
+  `outputToModuleSIS_valid_of_verified` — and the commitment reinterpretation at the next ring
+  dimension used by the recursion handoff (`Recursion/TraceHandoff.lean`) are still to come.
 
   ## Paper-model boundary
 
@@ -54,13 +86,13 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
+open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.ScalarRound
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type}
+variable {n μ : ℕ}
 
 /-! ## The cyclotomic presentation used by `Lift` -/
 
@@ -112,18 +144,18 @@ def RhoShort (ρBound : ℕ) (ρ : Fin n → Polynomial (ZMod q)) : Prop :=
 def liftShort (bound ρBound : ℕ) (w : LiftedWitness Φ μ n) : Prop :=
   vecLInftyNorm Φ w.z ≤ bound ∧ RhoShort ρBound w.ρ
 
-/-- Compatibility name for the reusable norm-conditioned binding interface. -/
-abbrev LiftCom (W E : Type) (Short : W → Prop) :=
-  CoordinateWise.BindingCommitment W E Short
+/-- Hachi's name for the reusable norm-conditioned binding interface. Weak binding is not a field:
+it enters the certificate as the escape event `CommittedScalar.escEvent`, whose hardness target is
+the short-collision set `LiftCom.Collision` ([NOZ26] Remark 2 / Lemma 7). -/
+abbrev LiftCom (W : Type) (Short : W → Prop) :=
+  CoordinateWise.BindingCommitment W Short
 
-/-- The injective commitment witnesses that the abstraction is non-vacuous. -/
+/-- The injective commitment witnesses that the abstraction is non-vacuous (its collision set is
+empty, so the escape event never fires there). -/
 example (bound ρBound : ℕ) :
-    LiftCom (LiftedWitness Φ μ n) Unit (liftShort Φ bound ρBound) :=
+    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound) :=
   { TCom := LiftedWitness Φ μ n
-    com := id
-    esc := ∅
-    escOfCollision := fun _ _ => ()
-    collision_mem := fun _ _ hne heq _ _ => absurd heq hne }
+    com := id }
 
 /-- Output statement: the input `R^lin` claim, the opening commitment, and evaluation point. -/
 abbrev LiftStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) : Type :=
@@ -139,24 +171,55 @@ def liftCheckAt (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (a : F)
   Lift.checkAt (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s => bound ≤ s.bound) s a w
 
+/-- The computable `i`-th lifted row
+`∑ⱼ Mᵢⱼ(X)·zⱼ(X) ∈ Zq[X]`, formed from the canonical `CPolynomial` representatives. -/
+def cRowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    CPolynomial (ZMod q) :=
+  ∑ j, (s.M i j).1 * (z j).1
+
+/-- Computable evaluation of a `Zq[X]` polynomial at `a ∈ F` through the base-field embedding. -/
+def cEvalAt (φF : ZMod q →+* F) (a : F) (p : CPolynomial (ZMod q)) : F :=
+  p.eval₂ φF a
+
+/-- Mathlib view of `cRowSum`, retained for degree and root-counting proofs. -/
+noncomputable def rowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    Polynomial (ZMod q) :=
+  (cRowSum Φ s z i).toPoly
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `rowSum` is the expected Mathlib sum of products of canonical representatives. -/
+theorem rowSum_eq_sum_toPoly (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    rowSum Φ s z i = ∑ j, (s.M i j).1.toPoly * (z j).1.toPoly := by
+  unfold rowSum cRowSum
+  rw [CPolynomial.toPoly_sum]
+  exact Finset.sum_congr rfl fun j _ => CPolynomial.toPoly_mul _ _
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable and Mathlib row-sum evaluations agree. The Mathlib side is the generic
+`RingSwitching.evalAt` that `Lift.checkAt` is stated against, so this is the bridge between the
+computable row encoding and the presentation layer. -/
+theorem cEvalAt_cRowSum_eq_evalAt (φF : ZMod q →+* F) (a : F)
+    (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    cEvalAt φF a (cRowSum Φ s z i) = evalAt φF a (rowSum Φ s z i) := by
+  exact CPolynomial.eval₂_toPoly φF a (cRowSum Φ s z i)
+
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- Evaluation of any computable polynomial agrees with evaluation of its Mathlib image. -/
+theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
+    (p : CPolynomial (ZMod q)) :
+    cEvalAt φF a p = evalAt φF a p.toPoly := by
+  exact CPolynomial.eval₂_toPoly φF a p
+
 /-- The Hachi output relation, instantiated from the generic anchored committed-scalar relation. -/
-def relLift (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (LiftStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
   CommittedScalar.rel K (liftCheckAt Φ bound φF)
 
-/-- Escape-threaded Hachi lift relation. -/
-def relLiftE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) :
-    Set (LiftStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relLift Φ bound ρBound K φF).withEscape K.esc
-
-/-! ## Specialization of the generic switch -/
-
 section Protocol
 
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+variable (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
   (φF : ZMod q →+* F)
 
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -176,20 +239,21 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`CWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
+`EscapeCWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
 theorem — that the chain composition operator `▷` consumes: every link in the Hachi opening chain
-(`Escape.lean`, `QuadEval/Bridge.lean`, `Sumcheck/Rounds.lean`, `ZeroCheck/Reduction.lean`,
-`Recursion/PartialEval.lean`, …) exposes its certificate the same way, and `openingChain.isCWSS` is
-assembled from them in `Composition.lean`. Because this package is built wholesale from generic
-`Lift.package`, its certificate already arrives in that shape, stated in the generic `Lift`
-vocabulary. Restating it as a standalone theorem over Hachi's own `relLin`/`relOutE` at `Rq Φ`
+(`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
+`ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,
+and `openingChain.isCWSS` is assembled from them in `Composition.lean`. Because this package is
+built wholesale from generic `Lift.package`, its certificate already arrives in that shape, stated
+in the generic `Lift` vocabulary. Restating it as a standalone theorem over Hachi's own
+`relRlin`/`relLift` at `Rq Φ`
 would duplicate the proposition without adding content and would sit outside the composition
 interface, so nothing would consume it. -/
 noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
-    CWSSPackage init impl
-      (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ ⊕ E)
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
+    EscapeCWSSPackage init impl
+      (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ)
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) :=
   haveI := isPresentation_cyclotomic Φ hd
   Lift.package (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)

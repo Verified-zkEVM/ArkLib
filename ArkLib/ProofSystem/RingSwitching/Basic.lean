@@ -64,7 +64,7 @@ each:
   Each leg currently has call sites in one construction; the *pattern* is what they share.
 * The **committed-scalar seam**
   (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`) — the
-  commit-then-scalar-challenge shell with its binding-anchored three-way CWSS extractor,
+  commit-then-scalar-challenge shell with its CWSS extractor and its binding-break escape event,
   which `Lift` builds on. It mentions no rings and is not ring-switching-specific,
   which is why it lives under `OracleReduction/`, not here.
 * The wire format `CoordinateWise.ScalarRound.pSpecScalar` — the two-round

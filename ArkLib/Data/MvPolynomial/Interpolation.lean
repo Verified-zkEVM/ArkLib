@@ -177,37 +177,26 @@ theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin {n : ℕ} {p : R[X Fi
     simp_all only [IsEmpty.forall_iff, piFinset_of_isEmpty, univ_unique, mem_singleton, eval_C,
       forall_eq, C_0]
   | succ n ih =>
-    let q : R[X Fin n][X] := finSuccEquiv R n p
-    let S' : Finset R[X Fin n] := (S 0).map CEmbedding
-    have hCard : #S' = #(S 0) := Finset.card_map CEmbedding
-    have hDegreeQ : q.natDegree < #S' := by
-      have h := hDegree 0
-      rwa [←natDegree_finSuccEquiv, ←hCard] at h
-    have hEvalQ : ∀ x ∈ (S 0), q.eval (C x) = 0 := by
-      unfold q
-      intro x hx
-      let px := q.eval (C x)
-      have hDegreePx (i : Fin n) : px.degreeOf i < (S i.succ).card :=
-        lt_of_le_of_lt (degreeOf_eval_C_finSuccEquiv p i x) (hDegree i.succ)
-      have hEvalPx : ∀ y ∈ piFinset fun (i : Fin n) ↦ S i.succ, eval y px = 0 := by
-        intro y hy
-        change eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = 0
-        rw [eval_comp_eval_C_finSuccEquiv]
-        have hy' := Fintype.mem_piFinset.mp hy
-        have : Fin.cons x y ∈ piFinset fun i ↦ S i := by
-          rw [Fintype.mem_piFinset]
-          intro a
-          induction a using Fin.inductionOn with
-          | zero => simpa using hx
-          | succ i => simpa using hy' i
-        simpa using hEval (Fin.cons x y) this
-      simpa [px] using ih (fun i => S i.succ) hDegreePx hEvalPx
-    have hEvalQ' : ∀ x ∈ S', q.eval x = 0 := fun x hx => by
-      obtain ⟨y, hy, hEq⟩ := Finset.mem_map.mp hx
-      subst hEq
-      exact hEvalQ y hy
-    have hZero : q = 0 := eq_zero_of_natDegree_lt_card_of_eval_eq_zero' q S' hEvalQ' hDegreeQ
-    exact EmbeddingLike.map_eq_zero_iff.mp hZero
+    -- The head-variable root count is shared with the nested-tree zero test; only `hEvalQ`
+    -- differs between the two (product set here, `k` subtrees there).
+    refine eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero (S 0) (hDegree 0) ?_
+    intro x hx
+    let px := Polynomial.eval (C x) (finSuccEquiv R n p)
+    have hDegreePx (i : Fin n) : px.degreeOf i < (S i.succ).card :=
+      lt_of_le_of_lt (degreeOf_eval_C_finSuccEquiv p i x) (hDegree i.succ)
+    have hEvalPx : ∀ y ∈ piFinset fun (i : Fin n) ↦ S i.succ, eval y px = 0 := by
+      intro y hy
+      change eval y (Polynomial.eval (C x) (finSuccEquiv R n p)) = 0
+      rw [eval_comp_eval_C_finSuccEquiv]
+      have hy' := Fintype.mem_piFinset.mp hy
+      have : Fin.cons x y ∈ piFinset fun i ↦ S i := by
+        rw [Fintype.mem_piFinset]
+        intro a
+        induction a using Fin.inductionOn with
+        | zero => simpa using hx
+        | succ i => simpa using hy' i
+      simpa using hEval (Fin.cons x y) this
+    simpa [px] using ih (fun i => S i.succ) hDegreePx hEvalPx
 
 theorem eq_zero_of_degreeOf_lt_card_of_eval_eq_zero {p : R[X σ]} (S : σ → Finset R)
     (hDegree : ∀ i, p.degreeOf i < #(S i))

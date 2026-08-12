@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 import Mathlib.Data.FinEnum
 
 /-!
@@ -26,10 +27,11 @@ sends the (entire) witness to the verifier. There are two variants:
 
 The verifier of each variant is **pure** (`Verifier.IsPure` / `OracleVerifier.toVerifier.IsPure`)
 and has no challenge rounds, so it is **coordinate-wise special sound** for any `CWSSStructure`
-(`verifier_coordinateWiseSpecialSound` and, for the oracle variant,
-`SendSingleWitness.oracleVerifier_coordinateWiseSpecialSound`), via the no-challenge bridge
-`Verifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx`. The extractor takes the witness to be
-the prover's single message (`e := fun _ tr => tr 0`) — the canonical "open in the clear" base case.
+(`verifier_coordinateWiseSpecialSoundWith` and, for the oracle variant,
+`SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith`), via the no-challenge bridge
+`Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`. The named extractor reads the
+witness off the tree's unique transcript (`fun _ tree => tree.onlyTranscript 0`) — the canonical
+"open in the clear" base case.
 These results are `sorryAx`-free. The indexed-family oracle variant (`section OracleReduction`) is
 deferred; see the note there.
 -/
@@ -141,24 +143,27 @@ theorem reduction_completeness :
     cases hx
     exact ⟨hIn, rfl⟩
 
-/-- **Coordinate-wise special soundness of `SendWitness`.** The verifier has no challenge rounds, so
-CWSS collapses (via the no-challenge bridge `coordinateWiseSpecialSound_of_isEmpty_challengeIdx`) to
-a transcript-level extraction obligation. The extractor is `e := fun _ tr => tr 0`: the witness *is*
-the (single) prover message. Since the verifier is pure with output `⟨stmt, tr 0⟩` and
+/-- **Coordinate-wise special soundness of `SendWitness`, named form.** The verifier has no
+challenge rounds, so CWSS collapses (via the no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level extraction
+obligation. The named extractor reads the witness off the tree's unique transcript — the witness
+*is* the (single) prover message. Since the verifier is pure with output `⟨stmt, tr 0⟩` and
 `relOut = Prod.fst ⁻¹' relIn`, acceptance into `relOut.language` forces `⟨stmt, tr 0⟩ ∈ relIn`,
 which is exactly the extracted witness. This is the canonical "open in the clear" CWSS base case,
 and holds for *any* coordinate-wise structure `D`. -/
-theorem verifier_coordinateWiseSpecialSound (D : CWSSStructure (pSpec Witness)) :
-    (verifier oSpec Statement Witness).coordinateWiseSpecialSound init impl D relIn
-      (toRelOut relIn) := by
-  refine Verifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (verifier oSpec Statement Witness) relIn (toRelOut relIn) (fun _ tr => tr 0) ?_
-  intro stmtIn tr hAcc
-  have hmem : (⟨stmtIn, tr 0⟩ : Statement × Witness) ∈ (toRelOut relIn).language :=
-    Verifier.mem_of_pure_accepting init impl (verifier oSpec Statement Witness) stmtIn tr
-      (toRelOut relIn).language ⟨stmtIn, tr 0⟩ rfl hAcc
-  obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
-  exact hu
+theorem verifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Witness)) :
+    Verifier.coordinateWiseSpecialSoundWith init impl D relIn (toRelOut relIn)
+      (verifier oSpec Statement Witness)
+      (fun _ tree => tree.onlyTranscript 0) := by
+  have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (verifier oSpec Statement Witness) relIn (toRelOut relIn) (fun _ tr => tr 0)
+    (fun stmtIn tr hAcc => by
+      have hmem : (⟨stmtIn, tr 0⟩ : Statement × Witness) ∈ (toRelOut relIn).language :=
+        Verifier.mem_of_pure_accepting init impl (verifier oSpec Statement Witness) stmtIn tr
+          (toRelOut relIn).language ⟨stmtIn, tr 0⟩ rfl hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu)
+  exact h
 
 end Reduction
 
@@ -397,25 +402,29 @@ theorem oracleReduction_completeness (h : NeverFail init) :
   --   and_true, Fin.isValue, and_imp, forall_const, true_and]
   -- aesop
 
-/-- **Coordinate-wise special soundness of `SendSingleWitness`.** The oracle verifier has no
-challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
-`coordinateWiseSpecialSound_of_isEmpty_challengeIdx`) to a transcript-level extraction obligation on
-the combined statement `Statement × (∀ i, OStatement i)`. The extractor is `e := fun _ tr => tr 0`:
-the extracted witness *is* the single oracle message. Since the verifier is pure with output
-`⟨stmt, oStmtOut⟩` (where `oStmtOut` exposes the old oracle statements together with the message),
-acceptance into `(toORelOut oRelIn).language` unfolds to exactly `⟨⟨stmt, oStmt⟩, tr 0⟩ ∈ oRelIn`.
-Holds for *any* coordinate-wise structure `D`. -/
-theorem oracleVerifier_coordinateWiseSpecialSound (D : CWSSStructure (oraclePSpec Witness)) :
-    (oracleVerifier oSpec Statement OStatement Witness).coordinateWiseSpecialSound init impl D
-      oRelIn (toORelOut oRelIn) := by
-  refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
+/-- **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier
+has no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level extraction
+obligation on the combined statement `Statement × (∀ i, OStatement i)`. The named extractor reads
+the witness off the tree's unique transcript — the extracted witness *is* the single oracle
+message. Since the verifier is pure with output `⟨stmt, oStmtOut⟩` (where `oStmtOut` exposes the
+old oracle statements together with the message), acceptance into `(toORelOut oRelIn).language`
+unfolds to exactly `⟨⟨stmt, oStmt⟩, tr 0⟩ ∈ oRelIn`. Holds for *any* coordinate-wise structure
+`D`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith
+    (D : CWSSStructure (oraclePSpec Witness)) :
+    (oracleVerifier oSpec Statement OStatement Witness).coordinateWiseSpecialSoundWith init impl
+      D oRelIn (toORelOut oRelIn)
+      (fun _ tree => tree.onlyTranscript 0) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
     (oracleVerifier oSpec Statement OStatement Witness) oRelIn (toORelOut oRelIn)
-    (fun _ tr => tr 0) ?_
-  rintro ⟨stmt, oStmt⟩ tr hAcc
-  have hmem := Verifier.mem_of_pure_accepting init impl
-    (oracleVerifier oSpec Statement OStatement Witness).toVerifier ⟨stmt, oStmt⟩ tr
-    (toORelOut oRelIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
-  exact hu
+    (fun _ tr => tr 0)
+    (fun s tr hAcc => by
+      have hmem := Verifier.mem_of_pure_accepting init impl
+        (oracleVerifier oSpec Statement OStatement Witness).toVerifier s tr
+        (toORelOut oRelIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu)
+  exact h
 
 end SendSingleWitness

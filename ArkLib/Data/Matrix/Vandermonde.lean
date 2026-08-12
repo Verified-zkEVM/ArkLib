@@ -4,13 +4,24 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova, František Silváši, Julian Sutherland
 -/
 
-import ArkLib.Data.MvPolynomial.LinearMvExtension
+import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.Polynomial.Interface
 import CompPoly.Data.Polynomial.MonomialBasis
 import Mathlib.LinearAlgebra.Lagrange
 import Mathlib.RingTheory.Henselian
 import Mathlib.Data.NNReal.Defs
 import Mathlib.Data.NNReal.Basic
+
+/-!
+  # Non-square Vandermonde matrices
+
+  Rectangular Vandermonde matrices `(αᵢ^j)` and their rank, for evaluation maps of univariate
+  polynomials over an injective point family. The main results identify the maximal square
+  submatrices as ordinary Vandermonde matrices, compute the rank as `min` of the two dimensions
+  (`rank_nonsquare_rows_eq_min`), and read `mulVecLin` off the matrix as polynomial evaluation
+  (`mulVecLin_coeff_vandermondens_eq_eval_matrixOfPolynomials`). Used by the Reed-Solomon and
+  proximity-gap developments.
+-/
 
 open Polynomial Matrix Code LinearCode
 

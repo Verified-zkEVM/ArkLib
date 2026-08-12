@@ -15,8 +15,8 @@ import ArkLib.OracleReduction.Security.RoundByRound
   statement + witness) for the first (oracle) reduction is the same as the input context for the
   second (oracle) reduction.
 
-  We have refactored the composition logic for `ProtocolSpec` and its associated structures into
-  `ProtocolSpec.lean`, and we will use the definitions from there.
+  The composition logic for `ProtocolSpec` and its associated structures lives in
+  `ProtocolSpec/SeqCompose.lean`; we use the definitions from there.
 
   We will prove that the composition of reductions preserve all completeness & soundness properties
   of the reductions being composed (with extra conditions on the extractor).

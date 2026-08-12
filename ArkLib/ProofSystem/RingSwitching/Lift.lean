@@ -32,10 +32,15 @@ Why evaluating at one point suffices: each lifted row is a polynomial identity o
 `< 2·deg φ`, so `2·deg φ` accepted challenges pin it down exactly (the interpolation kernel
 of `../Transport/Eval.lean`), and the recovered `R[X]` identity descends back to `S` along
 the presentation's coset laws. Security is therefore **coordinate-wise special soundness**
-at plain `k = 2·deg φ` (not round-by-round): the extractor is the committed-scalar three-way
-assembler (`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`),
+at plain `k = 2·deg φ` (not round-by-round): the extractor is the committed-scalar assembler
+`CommittedScalar.treeExtractor`
+(`OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`),
 and the recovery obligation is proven **once**, from the presentation laws — instances
 inherit it for free.
+
+Because the commitment binds only on short openings, the certificate is the escape-threaded one:
+its escape event is `CommittedScalar.escEvent` ("the tree's branch openings exhibit a short
+collision of the committed value"), and relations and extractor stay ordinary.
 
 ## Folder structure
 
@@ -49,7 +54,8 @@ inherit it for free.
   `../Transport/Eval.lean`.
 * `Reduction.lean` — the protocol layer over the committed-scalar shell: the lifted witness
   `LiftedWitness`, the input relation `relLin`, the challenge-local predicate `checkAt`, the
-  generic recovery theorem `recover`, and the CWSS theorem + `CWSSPackage` assembly.
+  generic recovery theorem `recover`, and the escape-threaded CWSS theorem +
+  `EscapeCWSSPackage` assembly.
 
 ## Instances
 

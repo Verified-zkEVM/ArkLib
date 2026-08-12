@@ -3,7 +3,9 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.Escape
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
+import ArkLib.ProofSystem.Component.ReduceClaim
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 
 /-!
@@ -33,18 +35,19 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   `S_b` range checks, becomes the single `‖ζ‖∞ ≤ bound` conjunct, equivalent by
   `vecLInftyNorm_append`.) This file is the zero-round `ReduceClaim` bridge realizing that
   reading — **statement reshaping only**: no soundness error, CWSS for any structure, pure
-  verifier — assembled sorry-free from `ReduceClaim.verifier_coordinateWiseSpecialSound`.
+  verifier — assembled sorry-free from `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
 
   The substance is the block-row equivalence `rlin_iff_relOut` (`M ζ = y ∧ ‖ζ‖∞ ≤ γ`, at the
   assembled statement, ⟺ the Eq. (20) relation `relOut` at the un-stacked response), proved via
   the linear part `rlin_linear_iff` (c1–c5) and the norm part `rlin_norm_iff` (c6). Both
-  directions are established: the CWSS pull-back `mem_relOutE_of_relRlinE` (the bridge's `hRel`)
+  directions are established: the CWSS pull-back `mem_relOut_of_relRlin` (the bridge's `hRel`)
   and — guarding against a vacuous encoding — the completeness direction
-  `mem_relRlinE_of_relOutE`.
+  `mem_relRlin_of_relOut`.
 
-  Seam discipline: this file's `relIn` **is** `relOutE` (the escape-threaded
-  Eq. (20) relation from `Escape.lean`), and its `relOut` `relRlinE` is definitionally the next
-  link's (`RingSwitch/Reduction.lean`) `relIn`.
+  Seam discipline: this file's `relIn` **is** `QuadEval`'s `relOut` (the Eq. (20) relation), and
+  its `relOut` `relRlin` is definitionally the next link's (`RingSwitch/Reduction.lean`) `relIn`.
+  The adapter is pure statement reshaping, so it carries no escape event of its own; the
+  weak-binding escape enters one link later, in the lift.
 
   ## References
 
@@ -131,7 +134,7 @@ section Rlin
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type} {E : Type}
+variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-! ## The `R^lin` statement and relation -/
 
@@ -171,11 +174,6 @@ structure RlinStatement (n μ : ℕ) where
 def relRlin {n μ : ℕ} :
     Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ) :=
   {p | p.1.M *ᵥ p.2 = p.1.yvec ∧ vecLInftyNorm Φ p.2 ≤ p.1.bound}
-
-/-- Escape-threaded `R^lin` relation, consumed by `Lift`. -/
-def relRlinE {n μ : ℕ} (esc : Set E) :
-    Set (RlinStatement Φ n μ × (ArkLib.Lattices.PolyVec (Rq Φ) μ ⊕ E)) :=
-  (relRlin Φ).withEscape esc
 
 /-! ## Stacking / un-stacking the response and the `c5` gadget matrix -/
 
@@ -272,7 +270,9 @@ omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Statement assembly** (the bridge's `mapStmt`): build the Eq. (20) block matrix and
 right-hand side from `QuadEval`'s output statement `(stmt, v, c)` — rows c1–c5 as in the module
 docstring, right-hand side `(v, u, y, 0, 0)`, `bound := γ`. -/
-noncomputable def rlinStmt (base : ZMod q) (ω γ : ℕ)
+noncomputable def rlinStmt
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) :
@@ -286,13 +286,13 @@ noncomputable def rlinStmt (base : ZMod q) (ω γ : ℕ)
     let J := Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits
     Fin.append
       -- c1: [ D | 0 ]
-      (fun i => Fin.append (stmt.pp.dMatrix i)
+      (fun i => Fin.append (pp.dMatrix i)
         (0 : ArkLib.Lattices.PolyVec (Rq Φ)
           (rlinCT innerRows innerDigits r + rlinCZ messageDigits zDigits m)))
       (Fin.append
         -- c2: [ 0 | B | 0 ]
         (fun i => Fin.append (0 : ArkLib.Lattices.PolyVec (Rq Φ) (rlinCW messageDigits r))
-          (Fin.append (stmt.pp.outerMatrix i)
+          (Fin.append (pp.outerMatrix i)
             (0 : ArkLib.Lattices.PolyVec (Rq Φ) (rlinCZ messageDigits zDigits m))))
         (Fin.append
           -- c3: [ (G_{2^r})ᵀ b | 0 ]
@@ -308,7 +308,7 @@ noncomputable def rlinStmt (base : ZMod q) (ω γ : ℕ)
             (fun p : Fin innerRows =>
               Fin.append (0 : ArkLib.Lattices.PolyVec (Rq Φ) (rlinCW messageDigits r))
                 (Fin.append (tensorGMatrix Φ base innerRows innerDigits (2 ^ r) c p)
-                  (-(ArkLib.Lattices.matMul stmt.pp.innerMatrix J p)))))))
+                  (-(ArkLib.Lattices.matMul pp.innerMatrix J p)))))))
   yvec :=
     Fin.append X.2.1
       (Fin.append X.1.u
@@ -323,16 +323,18 @@ omit [NeZero q] in
 `ζ` splits — via `matVecMul_append_rows` / `dot_append` / `dot_matVecMul_transpose` /
 `matVecMul_matMul` / `tensorGMatrix_mulVec` — into the five verification rows read at the
 un-stacked response `unstack ζ`. -/
-theorem rlin_linear_iff (base : ZMod q) (ω γ : ℕ)
+theorem rlin_linear_iff
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
     (ζ : ArkLib.Lattices.PolyVec (Rq Φ)
       (rlinCols innerRows messageDigits innerDigits zDigits m r)) :
-    (rlinStmt (zDigits := zDigits) Φ base ω γ X).M *ᵥ ζ
-        = (rlinStmt (zDigits := zDigits) Φ base ω γ X).yvec ↔
-      (Simple.commit Φ X.1.pp.dMatrix (unstack Φ ζ).carrierDec = X.2.1 ∧
-        Simple.commit Φ X.1.pp.outerMatrix
+    (rlinStmt (zDigits := zDigits) Φ pp base ω γ X).M *ᵥ ζ
+        = (rlinStmt (zDigits := zDigits) Φ pp base ω γ X).yvec ↔
+      (Simple.commit Φ pp.dMatrix (unstack Φ ζ).carrierDec = X.2.1 ∧
+        Simple.commit Φ pp.outerMatrix
           (ArkLib.Lattices.PolyVec.flattenBlocks (unstack Φ ζ).innerDec) = X.1.u ∧
         ArkLib.Lattices.dot X.1.bvec
           (gadgetMatrix Φ base (2 ^ r) messageDigits *ᵥ (unstack Φ ζ).carrierDec) = X.1.y ∧
@@ -340,7 +342,7 @@ theorem rlin_linear_iff (base : ZMod q) (ω γ : ℕ)
           ArkLib.Lattices.dot X.1.avec (gadgetMatrix Φ base (2 ^ m) messageDigits *ᵥ
             (Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ (unstack Φ ζ).zDec)) ∧
         Hachi.tensorG Φ base innerRows innerDigits (fun i => (X.2.2 i).val) (unstack Φ ζ).innerDec =
-          X.1.pp.innerMatrix *ᵥ
+          pp.innerMatrix *ᵥ
             (Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits *ᵥ (unstack Φ ζ).zDec)) := by
   simp only [rlinStmt]
   rw [matVecMul_append_rows, matVecMul_append_rows, matVecMul_append_rows,
@@ -366,11 +368,11 @@ theorem rlin_linear_iff (base : ZMod q) (ω γ : ℕ)
         (fun p => Fin.append (0 : ArkLib.Lattices.PolyVec (Rq Φ) (rlinCW messageDigits r))
               (Fin.append
                 (tensorGMatrix Φ base innerRows innerDigits (2 ^ r) (fun i => (X.2.2 i).val) p)
-                (-(ArkLib.Lattices.matMul X.1.pp.innerMatrix
+                (-(ArkLib.Lattices.matMul pp.innerMatrix
                     (Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits) p)))) *ᵥ ζ
           = tensorGMatrix Φ base innerRows innerDigits (2 ^ r) (fun i => (X.2.2 i).val)
               *ᵥ ArkLib.Lattices.PolyVec.flattenBlocks (unstack Φ ζ).innerDec
-            - ArkLib.Lattices.matMul X.1.pp.innerMatrix
+            - ArkLib.Lattices.matMul pp.innerMatrix
                 (Hachi.jMatrix Φ base ((2 ^ m) * messageDigits) zDigits) *ᵥ (unstack Φ ζ).zDec := by
       funext p
       simp only [matVecMul_apply, dot_append, dot_zero_left, dot_neg_left, zero_add,
@@ -390,13 +392,15 @@ theorem vecLInftyNorm_append {a b : Nat} (u : ArkLib.Lattices.PolyVec (Rq Φ) a)
 omit [NeZero q] in
 /-- **Norm part** (Eq. (20) c6 ⟺ `‖ζ‖∞ ≤ γ`): the single stacked-vector bound is equivalent to
 the three per-block bounds via `vecLInftyNorm_append` and the stack layout. -/
-theorem rlin_norm_iff (base : ZMod q) (ω γ : ℕ)
+theorem rlin_norm_iff
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
     (ζ : ArkLib.Lattices.PolyVec (Rq Φ)
       (rlinCols innerRows messageDigits innerDigits zDigits m r)) :
-    vecLInftyNorm Φ ζ ≤ (rlinStmt (zDigits := zDigits) Φ base ω γ X).bound ↔
+    vecLInftyNorm Φ ζ ≤ (rlinStmt (zDigits := zDigits) Φ pp base ω γ X).bound ↔
       (vecLInftyNorm Φ (unstack Φ ζ).carrierDec ≤ γ ∧
         vecLInftyNorm Φ (ArkLib.Lattices.PolyVec.flattenBlocks (unstack Φ ζ).innerDec) ≤ γ ∧
         vecLInftyNorm Φ (unstack Φ ζ).zDec ≤ γ) := by
@@ -408,14 +412,16 @@ omit [NeZero q] in
 /-- **The block-row equivalence** ([NOZ26] §4.3): an `R^lin` witness `ζ` at
 the assembled statement `rlinStmt X` satisfies `relRlin` iff its un-stacking is an Eq. (20)-valid
 `QuadEvalResponse` at `X`. -/
-theorem rlin_iff_relOut (base : ZMod q) (ω γ : ℕ)
+theorem rlin_iff_relOut
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
     (ζ : ArkLib.Lattices.PolyVec (Rq Φ)
       (rlinCols innerRows messageDigits innerDigits zDigits m r)) :
-    (rlinStmt (zDigits := zDigits) Φ base ω γ X, ζ) ∈ relRlin Φ ↔
-      (X, unstack Φ ζ) ∈ relOut (zDigits := zDigits) Φ base ω γ := by
+    (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, ζ) ∈ relRlin Φ ↔
+      (X, unstack Φ ζ) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
   rw [relRlin, Set.mem_setOf_eq, rlin_linear_iff, rlin_norm_iff, relOut, Set.mem_setOf_eq]
   tauto
 
@@ -423,69 +429,68 @@ theorem rlin_iff_relOut (base : ZMod q) (ω γ : ℕ)
 
 omit [NeZero q] in
 /-- **Block-row equivalence pull-back** (the bridge's `hRel`): an `R^lin` witness at
-`rlinStmt X` un-stacks to an Eq. (20)-valid `QuadEvalResponse` at `X`. Escapes pass through. -/
-theorem mem_relOutE_of_relRlinE (base : ZMod q) (ω γ : ℕ) (esc : Set E)
+`rlinStmt X` un-stacks to an Eq. (20)-valid `QuadEvalResponse` at `X`. -/
+theorem mem_relOut_of_relRlin
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
     (w : ArkLib.Lattices.PolyVec (Rq Φ)
-          (rlinCols innerRows messageDigits innerDigits zDigits m r) ⊕ E)
-    (h : (rlinStmt (zDigits := zDigits) Φ base ω γ X, w) ∈ relRlinE Φ esc) :
-    (X, w.map (unstack Φ) id) ∈ relOutE (zDigits := zDigits) Φ base ω γ esc := by
-  cases w with
-  | inl ζ =>
-      exact (rlin_iff_relOut Φ base ω γ X ζ).mp h
-  | inr e =>
-      exact h
+          (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (h : (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, w) ∈ relRlin Φ) :
+    (X, unstack Φ w) ∈ relOut (zDigits := zDigits) Φ pp base ω γ :=
+  (rlin_iff_relOut Φ pp base ω γ X w).mp h
 
 omit [NeZero q] in
 /-- **Completeness / non-vacuity**: every Eq. (20)-valid transcript's
 response stacks to an `R^lin` witness at the assembled statement. Guarantees the pull-back is not
-vacuous. Escapes pass through. -/
-theorem mem_relRlinE_of_relOutE (base : ZMod q) (ω γ : ℕ) (esc : Set E)
+vacuous. -/
+theorem mem_relRlin_of_relOut
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-    (w : QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits ⊕ E)
-    (h : (X, w) ∈ relOutE (zDigits := zDigits) Φ base ω γ esc) :
-    (rlinStmt (zDigits := zDigits) Φ base ω γ X, w.map (stack Φ) id) ∈ relRlinE Φ esc := by
-  cases w with
-  | inl resp =>
-      have : (X, unstack Φ (stack Φ resp)) ∈ relOut (zDigits := zDigits) Φ base ω γ := by
-        rw [unstack_stack]; exact h
-      exact (rlin_iff_relOut Φ base ω γ X (stack Φ resp)).mpr this
-  | inr e =>
-      exact h
+    (w : QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
+    (h : (X, w) ∈ relOut (zDigits := zDigits) Φ pp base ω γ) :
+    (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, stack Φ w) ∈ relRlin Φ := by
+  have hun : (X, unstack Φ (stack Φ w)) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
+    rw [unstack_stack]; exact h
+  exact (rlin_iff_relOut Φ pp base ω γ X (stack Φ w)).mpr hun
 
 /-! ## The package -/
 
-/-- **The `R^lin` adapter as a `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
-`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing the escape-threaded
-Eq. (20) relation `relOutE` to `relRlinE`. Assembled sorry-free from
-`ReduceClaim.verifier_coordinateWiseSpecialSound`; all remaining content lives in the block-row
-equivalence. (`noncomputable`: `rlinStmt`'s block matrix uses `Rq` negation.) -/
+/-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
+`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to `relRlin`.
+Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
+`ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the proven block-row pull-back
+`mem_relOut_of_relRlin` — sorry-free. -/
 noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (base : ZMod q) (ω γ : ℕ) (esc : Set E) :
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ) :
     CWSSPackage init impl
       (QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
           dRows ×
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
-      (QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits ⊕ E)
+      (QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits)
       (RlinStatement Φ (rlinRows innerRows outerRows dRows)
         (rlinCols innerRows messageDigits innerDigits zDigits m r))
-      (ArkLib.Lattices.PolyVec (Rq Φ)
-        (rlinCols innerRows messageDigits innerDigits zDigits m r) ⊕ E)
+      (PolyVec (Rq Φ) (rlinCols innerRows messageDigits innerDigits zDigits m r))
       (!p[] : ProtocolSpec 0) where
-  verifier := ReduceClaim.verifier oSpec (rlinStmt (zDigits := zDigits) Φ base ω γ)
+  verifier := ReduceClaim.verifier oSpec (rlinStmt (zDigits := zDigits) Φ pp base ω γ)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relOutE (zDigits := zDigits) Φ base ω γ esc
-  relOut := relRlinE Φ esc
-  isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ base ω γ stmt, fun _ _ => rfl⟩
-  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSound
-    (relIn := relOutE (zDigits := zDigits) Φ base ω γ esc)
-    (relOut := relRlinE Φ esc)
-    (mapWitInv := fun _ w => w.map (unstack Φ) id) (D := CWSSStructure.ofIsEmpty)
-    (mem_relOutE_of_relRlinE Φ base ω γ esc)
+  relIn := relOut (zDigits := zDigits) Φ pp base ω γ
+  relOut := relRlin Φ
+  isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ pp base ω γ stmt, fun _ _ => rfl⟩
+  extractor := ReduceClaim.treeExtractor
+    (mapStmt := rlinStmt (zDigits := zDigits) Φ pp base ω γ)
+    (relRlin Φ) (fun _ w => unstack Φ w) CWSSStructure.ofIsEmpty
+  isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
+    (relIn := relOut (zDigits := zDigits) Φ pp base ω γ)
+    (relOut := relRlin Φ)
+    (mapWitInv := fun _ w => unstack Φ w) (D := CWSSStructure.ofIsEmpty)
+    (fun X w h => mem_relOut_of_relRlin Φ pp base ω γ X w h)
 
 end Rlin
 
