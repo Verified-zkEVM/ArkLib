@@ -112,6 +112,24 @@ lemma vecMul_eq_smul_sum {S : Type} (G : Generator S ℓ F) (x : S) (U : ℓ →
   funext k
   simp [Matrix.vecMul, dotProduct, smul_eq_mul]
 
+/-- **Regression pin for the module-alphabet generalisation.** At `A := F` — where
+`ModuleCode ι F F` and `LinearCode ι F` are the same type — `IsMCA` is *definitionally* the
+`Matrix.vecMul`-shaped predicate that this file carried before the alphabet generalisation.
+The proof is `Iff.rfl`, so any future edit that makes the generalisation merely propositional
+at the field alphabet will break this declaration rather than silently changing the meaning of
+every existing `F`-alphabet consumer.
+
+Kept in-tree deliberately: the semantics-preservation claim is the load-bearing justification
+for generalising the definition in place instead of adding a parallel one, and a claim that
+lives only in a review note is not enforced by anything. -/
+theorem isMCA_iff_vecMul_form {S : Type} [Nonempty S] [Fintype S]
+    (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (δ : I) :
+    IsMCA G LC x U δ ↔
+      ∃ T : Finset ι, (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
+        projectedWord (Matrix.vecMul (G x) (Matrix.of U)) T ∈ projectedCodeSubmod LC T ∧
+        ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T :=
+  Iff.rfl
+
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
 generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25]. -/
@@ -122,7 +140,12 @@ def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid
 
 /-- The mutual correlated agreement error of a generator for a module code: the worst-case,
 over families `U`, probability of the MCA event. This is the value form of the predicate
-`IsMCAGenerator` — see `isMCAGenerator_iff_mcaError_le`. -/
+`IsMCAGenerator` — see `isMCAGenerator_iff_mcaError_le`.
+
+No in-tree consumer yet: the value form exists so that a code family can be assigned *its* MCA
+error rather than merely be asserted to meet some bound, which is what the ABF26 `ε_mca` layer
+needs in order to be bridged to this definition instead of duplicating it. The supremum is over
+`ℓ → (ι → A)`, which is always inhabited, so `mcaError` is never a degenerate `⨆ over ∅`. -/
 noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : I → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]

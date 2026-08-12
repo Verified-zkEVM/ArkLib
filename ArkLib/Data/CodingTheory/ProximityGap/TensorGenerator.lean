@@ -15,7 +15,12 @@ import ArkLib.Data.Probability.Instances
 for `MC` and `G'` has MCA with error `ε'_mca` for the `ℓ`-fold interleaving `MC^⋈ℓ`, then the
 tensor generator `G ⊗ G'` has MCA with error `ε_mca + ε'_mca` for `MC`.
 - `tensor_isMCAGenerator_of_base` — Lemma 4.4 [BCGM25] at its printed hypothesis (`G'` has MCA
-for `MC` itself), at the weaker error `ε_mca + ℓ • ε'_mca`: the union bound over rows is forced.
+for `MC` itself), at the weaker error `ε_mca + ℓ • ε'_mca`: a union bound over the `ℓ` rows is
+forced by this proof strategy. (That the printed error is *unreachable* from the printed
+hypothesis is not claimed and not known: no separation at equal error is exhibited anywhere,
+here or in [BCGM25]. What is established is that the paper's own argument does not reach it.)
+Note the error type is `I → ℝ≥0` rather than `I → I`, so this bound is vacuous once
+`|ℓ| · ε'_mca δ ≥ 1`; [BCGM25] types its MCA error `[0,1] → [0,1]`.
 - `isMCAGenerator_of_moduleInterleavedCode` — MCA for the interleaving implies MCA for the base
 code at the same error, so the tight form's hypothesis is a strengthening of the printed one.
 
@@ -25,10 +30,35 @@ code at the same error, so the tight form's hypothesis is a strengthening of the
 its proof bounds the second case (Equation (5)) by applying `G'`'s MCA to the `ℓ`-fold
 interleaving `C^ℓ ⊆ (Σ^ℓ)^n`: the family fed to `G'` is the stack `w_j := (u_{(1,j)}, …,
 u_{(ℓ,j)})`, whose entries are interleaved symbols. We therefore hypothesise `G'`'s MCA **at the
-interleaving**, which is what the proof actually uses. The strengthening is invisible in the
-paper's applications: for the MDS generators of Theorem 6.1 [BCGM25] the MCA error depends only
-on the relative distance, and `δ(C^ℓ) = δ(C)`, so the interleaved hypothesis is discharged by
-the same theorem.
+interleaving**, which is what the proof actually uses.
+
+**Where that strengthening is free, and where it is not.** [BCGM25] invokes Lemma 4.4 in
+exactly two places, and they behave differently.
+
+* **Theorem 8.2** (MCA for polynomial generators). Here the base MCA comes from Theorem 6.1,
+  which is stated for *every* `F`-linear code `C ⊆ Σ^n` with error depending on `C` only
+  through `n` and `δ_C`. The interleaving `C^ℓ ⊆ (Σ^ℓ)^n` is `F`-linear with the same `n` and
+  the same relative distance, so Theorem 6.1 discharges the interleaved hypothesis directly.
+  The strengthening costs nothing.
+* **Theorem 9.2** (polynomial generators for Reed–Solomon, list-decoding regime). Here the base
+  MCA comes from Lemma 9.3, which is stated **only** for `C := RS[F, D, k]` and whose proof is
+  irreducibly Reed–Solomon-specific (it constructs the Guruswami–Sudan polynomial `Q(X, Y, Z)`
+  of [BCIKS20, Theorem 5.1] and factors `disc*_Y(Q)`). The interleaving `RS^ℓ ⊆ (F^ℓ)^n` is not
+  a Reed–Solomon code, so Lemma 9.3 says nothing about it and the interleaved hypothesis is
+  **not** dischargeable. For that application the available route is the weak form
+  `tensor_isMCAGenerator_of_base` at `ε_mca + ℓ • ε'_mca`, matching what [BCGM25]'s own
+  Lemma 10.1 (plain MCA implies MCA for the `k`-interleaving at error `k · ε_mca`) provides.
+
+So the deviation is invisible at Theorem 8.2 and *material* at Theorem 9.2. Both forms are
+proved here for that reason; neither subsumes the other in practice.
+
+**A separate gap in the source, noticed while checking the above.** The proof of Theorem 9.2
+writes "By Lemma 9.3, `G_d` has mutual correlated agreement for any linear code `C` with error
+`ε_MCA,RS,d`" — but Lemma 9.3 is stated only for Reed–Solomon codes. The parallel sentence in
+the proof of Theorem 8.2 ("for any `F`-linear code `C`") *is* justified, by Theorem 6.1; the
+Theorem 9.2 one is not justified by the lemma it cites. Theorem 9.2's printed error therefore
+does not follow from its printed proof, independently of anything in this file. Were Lemma 9.3
+in fact alphabet-general, the interleaved hypothesis above would be dischargeable there too.
 
 Without the interleaved hypothesis one must pick, per outer seed `x'`, a row witnessing
 non-membership; that row depends on `x'`, so the family fed to `G'`'s MCA is not fixed and a
