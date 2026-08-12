@@ -24,6 +24,8 @@ and the `(L, s)`-admissibility condition on the folding element `ω`.
 
 - `ReedSolomon.Folded.admissible_foldedPoints_injective` — admissibility (plus `ω ≠ 0`) is
   exactly injectivity of `(x, j) ↦ domain x · ω^j`; the workhorse of the file.
+- `ReedSolomon.Folded.Admissible.subset` — admissibility restricts along `L' ⊆ L`, so every
+  statement below can hypothesise it at the canonical point set `Finset.univ.map domain`.
 - `ReedSolomon.Folded.mem_frsCode_iff` / `mem_frsCode_iff_flipped` — paper-style
   membership characterisation.
 - `ReedSolomon.Folded.frsCode_eq_map_rsCode` — **GR08 Definition 2.1's own framing**:
@@ -106,6 +108,13 @@ Both conjuncts lead with the bounded quantifier `∀ i, i < s → …` (rather t
 so that `Nat.decidableBallLT` fires and concrete admissibility claims are closed by
 `by decide`.
 
+**Ordered, not unordered, pairs.** The paper quantifies over the *unordered* pairs
+`{α, β} ∈ (L choose 2)`; the inter-orbit conjunct here quantifies over *ordered* distinct
+pairs, so it asserts both `α · ω^i ≠ β` and `β · ω^i ≠ α`. That is the reading the
+construction needs, not a hedge: `admissible_foldedPoints_injective` normalises a collision
+to `m ≤ n` by `rcases le_total`, and the two branches consume the two orders. (At `i = 0`
+the conjunct degenerates to `α ≠ β`, which the hypothesis already supplies.)
+
 **Deviation from the paper's literal text.** Definition 2.14 of ABF26 states only the
 *inter-orbit* clause (it quantifies over unordered pairs `{α, β} ∈ (L choose 2)`, hence
 distinct `α ≠ β`). Its literal reading therefore does *not* forbid `ω^j = 1` for some
@@ -148,6 +157,16 @@ with no `unfold` needed. -/
 instance decidableAdmissible {F : Type*} [Field F] [DecidableEq F]
     (L : Finset F) (s : ℕ) (ω : F) : Decidable (Admissible L s ω) :=
   inferInstanceAs (Decidable (_ ∧ _))
+
+/-- **Admissibility is monotone downwards in the point set.** Both conjuncts are universally
+quantified over `L`, so admissibility on a larger set restricts to any subset.
+
+This is what lets every downstream statement hypothesise admissibility at the canonical point
+set `Finset.univ.map domain` — the image of the evaluation embedding — while still being usable
+by a caller who only knows admissibility on some ambient `L` containing that image. -/
+lemma Admissible.subset {F : Type*} [Field F] {L L' : Finset F} {s : ℕ} {ω : F}
+    (h : Admissible L s ω) (hsub : L' ⊆ L) : Admissible L' s ω :=
+  ⟨fun α hα β hβ => h.1 α (hsub hα) β (hsub hβ), fun α hα => h.2 α (hsub hα)⟩
 
 /-- The FRS evaluation map as an `F`-linear map from polynomials to `ι → Fin s → F`,
 mirroring `ReedSolomon.evalOnPoints` (which is the `s = 1` special case). -/

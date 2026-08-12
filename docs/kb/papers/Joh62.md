@@ -47,9 +47,13 @@ In ArkLib it is the attribution key for the paper-shaped, list-size-parameterise
   `mds_johnson_lambda_le_of_rate_distance`, field/RS wrappers, `plotkin_card_le_ell`, and
   `johnson_card_le_ell`.
 - [`ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean)
-  — the pre-existing `JohnsonBound.J`, `sqrt_le_J`, `johnson_bound`, `johnson_bound_lemma`, which
+  — `Jcap` and the pre-existing `sqrt_le_J`, `johnson_bound`, `johnson_bound_alphabet_free`, which
   `Family.lean` consumes rather than re-proves. That file cites `codingtheory` and `listdecoding`,
   not `Joh62`.
+- [`ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean`](../../../ArkLib/Data/CodingTheory/JohnsonBound/Lemmas.lean)
+  — the single `JohnsonBound.J` (the paper's `J_q`) and `johnson_bound_lemma`. This is the
+  *upstream* definition: `Basic.lean` imports this file, and the de-duplication described below
+  kept the copy here.
 
 ## Version Notes
 
@@ -73,8 +77,9 @@ Xplore.
 
 ## Validated ArkLib Status
 
-- `Jqℓ` is defined through the pre-existing `J`, and `Jcap` lives beside `J`; the exported
-  bridges recover the paper forms without a parallel radius hierarchy.
+- `Jqℓ` is defined through the pre-existing `J` (which lives in `Lemmas.lean`), and `Jcap`
+  lives beside the `sqrt_le_J` bridge that consumes it (in `Basic.lean`); the exported bridges
+  recover the paper forms without a parallel radius hierarchy.
 - `johnson_bound_lambda_le_ell` matches ABF26 Theorem 3.2 without a public radicand guard. Its
   proof splits internally between the Johnson and Plotkin regimes.
 - The `ℓ = 0` false corner is excluded by the theorem's `1 ≤ ℓ` hypothesis; the elementary

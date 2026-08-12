@@ -44,6 +44,9 @@ Where current names diverge, and why:
 | `subspaceDesign_tau_lower` | no `<authors><year>` slot; the source is [GG25] |
 | `johnson_bound_lambda_le_ell` | `<codeFamily>` is absent (the bound is alphabet-generic) |
 | `mds_johnson_lambda_le` | no `<authors><year>` slot; the source is ABF26 Cor 3.3 |
+| `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds` | same: no `<authors><year>` slot, the source being ABF26 Cor 3.3 rather than a cited paper. `johnson_mds` occupies the `<regime>` slot |
+| `um_is_subspaceDesign_gk16` | as `frs_is_subspaceDesign_gk16`: states a property, not a bound |
+| `irs_rate_distance`, `frs_rate_distance_of_dvd` | `<quantity>` is an *equation* (the L2.6 MDS rate-distance identity), not a bound, so there is no `<regime>`; the `_of_dvd` suffix follows the Mathlib hypothesis-suffix convention instead |
 | `lambda_extensionCode_eq_lambda_interleaved` | descriptive equality, not a bound |
 
 Slots:

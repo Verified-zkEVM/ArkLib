@@ -508,6 +508,12 @@ requires `(L, s)`-admissibility of `ω`, while the multiplicity case additionall
 is `um_is_subspaceDesign_gk16` below. It uses GK16's classical Wronskian, not a
 “multiplicity analogue” of the folded Wronskian.
 
+Admissibility is hypothesised at the canonical point set `Finset.univ.map domain`, matching
+every other statement about `frsCode` (`ReedSolomon.Folded.minDist_frsCode`, `dim_frsCode`,
+`alphabetRate_frsCode`, `frs_rate_distance_of_dvd`, and
+`CodingTheory.frs_lambda_le_johnson_mds`). A caller holding admissibility on some ambient
+`L ⊇ image domain` restricts it with `ReedSolomon.Folded.Admissible.subset`.
+
 **Proof** (GK16's Theorem 14 argument).
 Outside the main regime the bound is bookkeeping: every block dimension is at most
 `σ := dim A`, so the design sum is at most `σ`, which settles both `σ = 0` and `τ(r) ≥ 1`
@@ -578,9 +584,8 @@ theorem frs_is_subspaceDesign_gk16
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (L : Finset F) (hL_dom : ∀ i : ι, domain i ∈ L)
     (hFn : Fintype.card ι < Fintype.card F)
-    (hω_adm : ReedSolomon.Folded.Admissible L s ω)
+    (hω_adm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
     (hω_gen : orderOf ω = Fintype.card F - 1) :
     let τ : ℕ → ℝ := fun r ↦
       if r ∈ Finset.Icc 1 s then
@@ -603,15 +608,7 @@ theorem frs_is_subspaceDesign_gk16
       have hn1 : 1 ≤ Fintype.card ι := Fintype.card_pos
       omega
     omega
-  -- Admissibility transported from `L` to the actual image of `domain`.
-  have hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω := by
-    obtain ⟨h1, h2⟩ := hω_adm
-    refine ⟨fun α hα β hβ hαβ i hi => ?_, fun α hα i hi his => ?_⟩
-    · obtain ⟨a, -, rfl⟩ := Finset.mem_map.mp hα
-      obtain ⟨b, -, rfl⟩ := Finset.mem_map.mp hβ
-      exact h1 _ (hL_dom a) _ (hL_dom b) hαβ i hi
-    · obtain ⟨a, -, rfl⟩ := Finset.mem_map.mp hα
-      exact h2 _ (hL_dom a) i hi his
+  have hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω := hω_adm
   set σ := Module.finrank F ↥A with hσdef
   -- Every block dimension is at most `σ`, hence the design sum is at most `σ`.
   have hsum_le : (∑ i : ι, (Module.finrank F ↥(A ⊓
@@ -717,7 +714,8 @@ theorem frs_is_subspaceDesign_gk16
         intro x hx
         -- The two side conditions of the intra-orbit clause are `0 < 1` and `1 < s`;
         -- both are discharged by `omega`, so this is insensitive to their order.
-        exact hω_adm.2 (domain x) (hL_dom x) 1 (by omega) (by omega) (by rw [hx]; ring)
+        exact hω_adm.2 (domain x) (Finset.mem_map_of_mem _ (Finset.mem_univ x)) 1
+          (by omega) (by omega) (by rw [hx]; ring)
       have himg : (Finset.univ : Finset (ι × Fin s)).image
           (fun xi => domain xi.1 * ω ^ (xi.2 : ℕ)) ⊆ Finset.univ.erase 0 := by
         intro y hy
@@ -905,12 +903,24 @@ The rate is the actual code rate, so the statement remains exact in the saturate
 `dim UM = min k (s·n)`. If `k > s·n`, then `ρ = 1` and the profile is already at least
 one; the substantive Wronskian argument runs only in the unsaturated branch.
 
-Unlike the shared hypothesis printed in ABF26, no assumption `|F| > n` is needed for this
-half. The embedding `domain : ι ↪ F` already supplies the only required property of the
-evaluation points: distinctness. The characteristic assumption is the source condition
-`char F ≥ k` of ABF26 A.7/T2.18, stated in the weaker form
-`ringChar F = 0 ∨ k ≤ ringChar F` so that characteristic-zero fields — for which the
-argument goes through unchanged — are not excluded by `ringChar F = 0`.
+**Three source hypotheses are absent, each deliberately.**
+
+*`|F| > n`* (printed in ABF26 as shared between the two halves) is not needed here: the
+embedding `domain : ι ↪ F` already supplies the only required property of the evaluation
+points, distinctness — and it supplies `|F| ≥ n` for free.
+
+*`char F > k`* is weakened to `char F ≥ k`, which is ABF26 A.7's own condition (the paper's
+T2.18 prints `char > ρsn = k`, inconsistently with its A.7; the `≥` form is the correct one)
+and is what GK16 Lemma 10 actually needs — `d!` must be a unit for `d < k`. It is stated as
+the disjunction `ringChar F = 0 ∨ k ≤ ringChar F` so that characteristic-zero fields, for
+which the argument goes through unchanged, are not excluded by `ringChar F = 0` forcing
+`k = 0`.
+
+*`s ≤ k`* (GK16 §5.1's `t ≤ m`, and ABF26 T2.18's `ρsn > s`) is not needed either. If
+`s > k` then every polynomial of degree `< k` with a root of multiplicity `≥ s` is zero, so
+each lifted block kernel `N i` is `⊥` and the design sum is `0`; the bound is then pure
+bookkeeping. The substantive Wronskian argument only ever uses `σ ≤ s`, which comes from
+`σ ≤ r ≤ s`.
 
 **Proof.** Lift a test subspace and each of its block kernels through the injective
 multiplicity encoder. For a basis of the resulting polynomial space, its classical

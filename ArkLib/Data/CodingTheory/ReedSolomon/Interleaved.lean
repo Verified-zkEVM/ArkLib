@@ -29,13 +29,15 @@ codewords, arranged column-wise.
 - `ReedSolomon.Interleaved.minDist_irsCode_eq_minDist_rsCode` — interleaving does not change
   the minimum block distance, so IRS inherits the RS one verbatim.
 - `ReedSolomon.Interleaved.minDist_irsCode` — the resulting closed form `|L| - k / s + 1`,
-  for every parameter choice (the saturated regime included).
+  with no divisibility and no non-saturation hypothesis (the saturated regime included); only
+  `0 < ⌊k/s⌋`, whose necessity the lemma records.
 - `ReedSolomon.Interleaved.alphabetRate_irsCode_eq_min` /
   `ReedSolomon.Interleaved.alphabetRate_irsCode` — the [ABF26] Definition 2.5 rate
   `min ⌊k/s⌋ |L| / |L|`, and its non-saturated form `⌊k/s⌋ / |L|`.
 - `ReedSolomon.Interleaved.irs_rate_distance` — IRS satisfies the [ABF26] Lemma 2.6
   MDS rate-distance equation `δ_min = 1 - ρ + 1/n` at the alphabet-normalized rate
-  `ρ = LinearCode.alphabetRate`, with **no divisibility and no non-saturation hypothesis**.
+  `ρ = LinearCode.alphabetRate`, with **no divisibility and no non-saturation hypothesis**
+  (only `0 < ⌊k/s⌋`).
   This is the input that `JohnsonBound.Family`'s alphabet-generic Corollary 3.3 asks a
   module-alphabet code family to supply; `CodingTheory.irs_lambda_le_johnson_mds` consumes it.
 - `ReedSolomon.Interleaved.interleavedCodeSet_rsCode_eq_irsCode` — the identification that
@@ -149,31 +151,41 @@ lemma alphabetRate_irsCode {ι : Type*} [Fintype ι] {F : Type*} [Field F]
       = (k / s : ℕ) / Fintype.card ι := by
   rw [alphabetRate_irsCode_eq_min domain k s, min_eq_left h_rs_full]
 
-/-- **Closed form for the IRS minimum block distance:** `|L| - ⌊k/s⌋ + 1`, for **every**
-parameter choice.
+/-- **Closed form for the IRS minimum block distance:** `|L| - ⌊k/s⌋ + 1`.
 
-No non-saturation hypothesis is needed. Composing `minDist_irsCode_eq_minDist_rsCode` with
-the pre-existing `ReedSolomon.minDist_eq_card_sub_min_add_1` covers the saturated regime too:
-once `⌊k/s⌋ ≥ |L|` the base code is all of `F^L`, the `Nat` subtraction truncates to `0`, and
-both sides are `1`. -/
+**No divisibility and no non-saturation hypothesis.** Composing
+`minDist_irsCode_eq_minDist_rsCode` with the pre-existing
+`ReedSolomon.minDist_eq_card_sub_min_add_1` covers the saturated regime too: once
+`⌊k/s⌋ ≥ |L|` the base code is all of `F^L`, the `Nat` subtraction truncates to `0`, and both
+sides are `1`.
+
+**`0 < ⌊k/s⌋` is load-bearing, not decoration.** At `k < s` the inner degree bound is `0`, so
+`Polynomial.degreeLT F 0 = ⊥` and the whole code is `⊥`; its minimum distance is `0` by
+ArkLib's subsingleton convention, whereas the right-hand side is `|L| + 1`. Machine-checked at
+`F = ZMod 11`, `|L| = 5`, `k = 1`, `s = 2`: `irsCode = ⊥` and `Code.minDist = 0 ≠ 6`. The
+hypothesis is taken explicitly rather than as `[NeZero (k / s)]` because instance resolution
+can never discharge it for symbolic `k`, `s` (unlike `[NeZero s]`, which fires on numerals), so
+an instance argument only pushes a `rw`-then-`infer_instance` dance onto every caller. -/
 theorem minDist_irsCode {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
-    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] [NeZero (k / s)] :
+    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s) :
     Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F))
       = Fintype.card ι - k / s + 1 := by
   letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
+  haveI : NeZero (k / s) := ⟨by omega⟩
   rw [minDist_irsCode_eq_minDist_rsCode, ReedSolomon.minDist_eq_card_sub_min_add_1]
   omega
 
-/-- **Interleaved Reed–Solomon is MDS in the sense of [ABF26] Lemma 2.6**, unconditionally
-in the parameters: at the alphabet-normalized rate `ρ = LinearCode.alphabetRate` of
-Definition 2.5 (`finrank / (s · n)`, *not* `finrank / n`),
+/-- **Interleaved Reed–Solomon is MDS in the sense of [ABF26] Lemma 2.6**: at the
+alphabet-normalized rate `ρ = LinearCode.alphabetRate` of Definition 2.5
+(`finrank / (s · n)`, *not* `finrank / n`),
 
   `δ_min(IRS[F, L, k, s]) = 1 - ρ + 1/n`.
 
 [ABF26] asserts exactly this in passing — "MDS codes, which include the important class of
 interleaved Reed–Solomon codes" — when deriving Corollary 3.3.
 
-**Neither `s ∣ k` nor a non-saturation hypothesis is needed**, in contrast with the folded
+**Neither `s ∣ k` nor a non-saturation hypothesis is needed** (only `0 < ⌊k/s⌋`, which
+`minDist_irsCode` needs and whose necessity that lemma records), in contrast with the folded
 code (`ReedSolomon.Folded.frs_rate_distance_of_dvd`, which does need `s ∣ k`). The reason is
 that interleaving truncates *once*: dimension `s · min ⌊k/s⌋ n` and distance
 `n - ⌊k/s⌋ + 1` degrade through the same `min`/`Nat`-subtraction, and the alphabet
@@ -187,13 +199,13 @@ provide — see `CodingTheory.irs_lambda_le_johnson_mds`. Note that `LinearCode.
 itself cannot be used here: it is stated only for `LinearCode ι F = Submodule F (ι → F)`,
 whereas an interleaved code lives in `ι → Fin s → F`. -/
 theorem irs_rate_distance {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [Field F]
-    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] [NeZero (k / s)] :
+    [DecidableEq F] (domain : ι ↪ F) (k s : ℕ) [NeZero s] (hks : 0 < k / s) :
     (Code.minDist ((irsCode domain k s : Submodule F (ι → Fin s → F)) :
         Set (ι → Fin s → F)) : ℝ) / Fintype.card ι
       = 1 - (LinearCode.alphabetRate (irsCode domain k s) : ℝ) + 1 / Fintype.card ι := by
   have hn : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hmin : min (k / s) (Fintype.card ι) ≤ Fintype.card ι := min_le_right _ _
-  rw [minDist_irsCode domain k s, alphabetRate_irsCode_eq_min domain k s]
+  rw [minDist_irsCode domain k s hks, alphabetRate_irsCode_eq_min domain k s]
   rw [show Fintype.card ι - k / s + 1 = Fintype.card ι - min (k / s) (Fintype.card ι) + 1 by
         omega,
     Nat.cast_add, Nat.cast_sub hmin, Nat.cast_one]

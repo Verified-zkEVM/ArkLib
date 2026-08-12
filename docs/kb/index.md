@@ -91,6 +91,10 @@ used in `ArkLib/**/*.lean`, including:
 - [`queries/abf26-split-pr1-deep-review-2026-08-11/README.md`](queries/abf26-split-pr1-deep-review-2026-08-11/README.md)
   - later, broader pre-merge review of the same PR at its final head: gate results, findings, the
     remediation applied, and the source-side defects found along the way.
+- [`queries/abf26-split-pr1-integration-review-2026-08-12/README.md`](queries/abf26-split-pr1-integration-review-2026-08-12/README.md)
+  - third review of the same PR, scoped to the commits added after the deep review, a first-hand
+    re-derivation from the paper sources, and repo integration against the live PR queue
+    (merged-tree builds against `#692` and `#717`).
 
 ## Source Metadata
 

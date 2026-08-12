@@ -36,6 +36,8 @@ the `sup`-form `Lambda` (ABF26 Definition 2.8's `|Λ(C, δ)|`).
   `ListDecodable.Lambda_le_floor_iff_listDecodable_nnreal`,
   `ListDecodable.listDecodable_of_toENNReal_le_ofReal` — the same bridge at the *real* and
   `ℝ≥0` list sizes that the in-tree consumers and the Johnson-family bounds actually use.
+* `ListDecodable.listDecodable_of_ncard_le` — the migration lemma for the finiteness conjunct
+  added to `listDecodable`: over a finite alphabet a bare `ncard` bound suffices.
 * `ListDecodable.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
   algebra of `Lambda`.
 
@@ -185,6 +187,22 @@ lemma Lambda_le_floor_of_listDecodable {C : Code ι F} {δ : ℝ} {ℓ : ℝ}
 lemma Lambda_le_floor_iff_listDecodable_nnreal {C : Code ι F} {δ : ℝ} {ℓ : ℝ≥0} :
     Lambda C δ ≤ (⌊(ℓ : ℝ)⌋₊ : ℕ∞) ↔ listDecodable C δ (ℓ : ℝ) :=
   Lambda_le_floor_iff_listDecodable ℓ.coe_nonneg
+
+/-- **Recovery from a bare `ncard` bound, over a finite alphabet.** `listDecodable` records
+point-list finiteness explicitly, so a consumer arriving with only the pre-existing
+`∀ y, ncard ≤ ℓ` shape has to supply it. Over a finite alphabet it is free: the point list is a
+set of words in a finite type.
+
+This is the migration lemma for the definition change. `listDecodable` used to be
+`∀ y, (closeCodewordsRel C y r).ncard ≤ ℓ`, which is satisfied by an *infinite* point list
+(`Set.ncard` returns `0` there) and so was provable for reasons that have nothing to do with
+list decoding. Adding the `Finite` conjunct closes that; adding `[Finite F]` and this lemma is
+the one-line adaptation for any proof that used to discharge the infinite case by
+`Set.Infinite.ncard`. Consumers whose bound comes from `Lambda` need neither, since a `Lambda`
+bound forces finiteness on its own — see `listDecodable_of_Lambda_le_natCast`. -/
+lemma listDecodable_of_ncard_le {C : Code ι F} [Finite F] {r ℓ : ℝ}
+    (h : ∀ y : ι → F, ((closeCodewordsRel C y r).ncard : ℝ) ≤ ℓ) : listDecodable C r ℓ :=
+  fun y => ⟨Set.toFinite _, h y⟩
 
 /-- **Monotone cast corollary.** A natural-number `Lambda` bound gives `(δ, r)`-list
 decodability for every real `r` above it. This is the form in which a `ℕ`-valued bound such as

@@ -19,3 +19,29 @@ inside the probability file instead of moving the surrounding ArkLib helpers out
 If a downstream project has a concrete compatibility break on an older root-level helper name, add
 an explicit, temporary compatibility export for that exact declaration and document the consumer.
 Do not silently revert the namespace consolidation or reintroduce broad root-level aliases.
+
+## Migrating an in-flight branch
+
+The consolidation is a **breaking change with no alias layer**, taken deliberately. Nineteen
+helpers that used to sit at the root namespace now live in `Probability`:
+
+`prob_tsum_form_singleton`, `prob_tsum_form_split_first`, `prob_tsum_form_doubleton`,
+`prob_uniform_eq_card_filter_div_card`, `prob_uniform_singleton_finFun_eq`,
+`prob_split_uniform_sampling_of_prod`, `prob_split_uniform_sampling_of_equiv_prod`,
+`prob_split_last_uniform_sampling_of_finFun`, `prob_uniform_eq_ofReal`,
+`prob_marginalization_first_of_prod`, `prob_const_and_prop_eq_ite`,
+`prob_schwartz_zippel_mv_polynomial`, `Pr_le_Pr_of_implies`, `Pr_multi_let_equiv_single_let`,
+`Pr_add_split_by_complement`, `Pr_congr`, `Pr_or_le`, `Pr_exists_le`, `Pr_seq_le_of_forall_le`.
+
+**The fix is one line per file: add `open Probability` next to the existing
+`open scoped ProbabilityTheory`.** The failure mode is `Unknown identifier`, so it surfaces
+immediately and cannot be missed. Note that `Probability` and Mathlib's `ProbabilityTheory` are
+different namespaces and both are usually wanted.
+
+Branches known to need this at the time of the consolidation, none of which the consolidating PR
+could pre-fix because the affected files exist only on those branches: `#692` (module-alphabet
+MCA, `ProximityGap/TensorGenerator.lean`), `#610` and `#611` (`ProximityGenerator/**`), `#615`
+(`ProofSystem/RingSwitching/Generic/**`), `#634`, `#637` (`ProofSystem/Stir/OutOfDomSmpl.lean`),
+and `#383` (`ProofSystem/Binius/BinaryBasefold/**`, `OracleReduction/Completeness.lean`). A
+merged `#692` + consolidation tree was built to confirm that this one line is the *only*
+interaction — with it, the merge is green.

@@ -63,16 +63,19 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `CodingTheory.extensionEncode`, packaged with its proved `F`-linearity as
   `extensionEncodeLinearMap` and with injectivity preservation `extensionEncode_injective`, plus
   the image-level `extensionCode` / `extensionCodeSubmodule`;
-  the systematic encoder identity → `extensionEncode_comp_algebraMap_of_isSystematic`; Lemma
+  the encoder identity on embedded messages → `extensionEncode_comp_algebraMap` (which needs
+  **no** systematicity, unlike the remark following D2.20 — see `BCFW25.md`); Lemma
   2.21 (after `BCFW25` Lemma D.3) →
   `CodingTheory.lambda_extensionCode_eq_lambda_interleaved`; the Diamond–Posen minimum-distance
   equality → `CodingTheory.minDist_extensionCode`.
-- **§3 list-decoding bounds.** Definition 3.1 (the `J`, `Ĵ`, `J_{q,ℓ}` radius family) →
-  `CodingTheory.Jqℓ` / `CodingTheory.Jcap`; Theorem 3.2 (after `Joh62`) →
-  `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size corollary) → the
-  arbitrary-finite-alphabet metric theorem `CodingTheory.mds_johnson_lambda_le_of_rate_distance`,
-  with field-linear wrapper `mds_johnson_lambda_le`. The Plotkin regime →
-  `CodingTheory.plotkin_card_le_ell`.
+- **§3 list-decoding bounds.** Definition 3.1 (the `J_{q,ℓ}`, `J_q`, `J` radius family) →
+  `JohnsonBound.Jqℓ`, the pre-existing `JohnsonBound.J`, and `JohnsonBound.Jcap`; Theorem 3.2
+  (after `Joh62`) → `CodingTheory.johnson_bound_lambda_le_ell`; Corollary 3.3 (MDS list-size
+  corollary) → the arbitrary-finite-alphabet metric theorem
+  `CodingTheory.mds_johnson_lambda_le_of_rate_distance`, with field-linear wrapper
+  `mds_johnson_lambda_le` and the three code-family instantiations
+  `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds`. The
+  Plotkin regime → `CodingTheory.plotkin_card_le_ell`.
 - **§6 erasure correction (support only).** `CodingTheory.eq_of_consistent_with_erased` proves
   the reusable metric-uniqueness ingredient. Definition 6.4 and Lemma 6.5 themselves are missing:
   neither the recovery algorithm nor its operation bound is formalized. ArkLib deliberately does
