@@ -30,13 +30,11 @@ def e (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
 def d (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / (2 * choose_2 B.card) * ∑ x ∈ B ×ˢ B with x.1 ≠ x.2, Δ₀(x.1, x.2)
 
-/-! ### `[Field F]` recentering by subtraction
+/-! ### Recentering by subtraction, over a field
 
-The `lin_shift_*` lemmas recenter a code by the field subtraction `x ↦ x - v`. For the Johnson
-bound they are **superseded** by the alphabet-general `Equiv.piCongrRight` transport at the end
-of this file (`card_image_piCongrRight`, `e_image_piCongrRight`, `d_image_piCongrRight`), which
-is what `johnson_bound_lemma` now uses. They are kept as the `[Field F]` specialisation and
-because they are `@[simp]` lemmas about shifted words. -/
+The `lin_shift_*` lemmas recenter a code by the field subtraction `x ↦ x - v`. The
+alphabet-general form of the same transport is `card_image_piCongrRight`,
+`e_image_piCongrRight` and `d_image_piCongrRight` at the end of this file. -/
 
 @[simp]
 lemma lin_shift_card [Field F] [Fintype F] :
@@ -141,15 +139,12 @@ lemma min_dist_le_d {B : Finset (Fin n → F)} (h_B : B.card > 1) :
   gcongr
   grind only
 
-/-! ## Coordinatewise transport (Field-free recentering)
+/-! ## Coordinatewise transport
 
-The classical Johnson bound recenters a code at a chosen word `v` via `x ↦ x - v`, which needs
-`[Field F]` (the `lin_shift_*` lemmas above). Over an arbitrary alphabet we instead transport the
-code through a per-coordinate family of equivalences `σ : Fin n → (F ≃ G)`, applied
-coordinatewise by Mathlib's `Equiv.piCongrRight σ`. This preserves Hamming distance
-(Mathlib's `hammingDist_comp`, each `σ i` being injective), hence preserves `e`, `d`, and
-cardinalities. Choosing `σ i` to send the centre's `i`-th coordinate to a fixed symbol
-recenters at that symbol, no field structure required. -/
+Recentering without field structure: transport a code through a per-coordinate family of
+equivalences `σ : Fin n → (F ≃ G)`, applied by `Equiv.piCongrRight σ`. Each `σ i` being
+injective, this preserves Hamming distance and hence `e`, `d` and cardinalities. Choosing
+`σ i` to send the centre's `i`-th coordinate to a fixed symbol recenters at that symbol. -/
 
 omit [DecidableEq F] in
 lemma card_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))

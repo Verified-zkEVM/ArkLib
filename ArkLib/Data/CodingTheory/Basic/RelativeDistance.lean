@@ -16,7 +16,7 @@ finite-range/computable variants used by the coding-theory development.
 ## References
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-Agreement*][ABF26] (§2-§3 minimum-relative-distance convention)
+Agreement*][ABF26]
 -/
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
@@ -587,14 +587,9 @@ lemma finite_possibleRelHammingDists : (possibleRelHammingDists C).Finite :=
 open Classical in
 /-- The minimum relative Hamming distance of a code.
 
-Uses `Set.Finite.toFinset` directly (via `finite_possibleRelHammingDists`) rather than
-`Set.toFinset` under a local `haveI : Fintype … := Fintype.ofFinite …`. This is a
-*syntactic* instance cleanup, not a fix for a definitional diamond: the two spellings are
-definitionally equal (they differ only in a proof argument, which proof irrelevance
-identifies). What the old spelling cost was rewriting power — the `Set.Finite.*` API
-(`Set.Finite.mem_toFinset`, `Set.Finite.toFinset_nonempty`) does not fire against the
-`Set.toFinset` form, and `assumption` fails across the two — which is what the
-`Finset.min'` manipulation in `minRelHammingDistCode_mem` / `_le` below needs.
+Spelled with `Set.Finite.toFinset` rather than `Set.toFinset` under a local `Fintype`
+instance. The two are definitionally equal, but only the former lets the `Set.Finite.*`
+rewriting API fire, which the characterisation lemmas below need.
 -/
 def minRelHammingDistCode (C : Set (ι → F)) : ℚ≥0 :=
   if h : (possibleRelHammingDists C).Nonempty
@@ -608,21 +603,15 @@ end
 -/
 notation "δᵣ" C => minRelHammingDistCode C
 
-/-! ## Characterisation lemmas for `minRelHammingDistCode`
+/-! ## Characterisation of `minRelHammingDistCode`
 
-`minRelHammingDistCode` is defined by a `dif` over a `Finset.min'`, so unfolding it at a
-call site drags in `Set.Finite.toFinset` and a nonemptiness proof term. The three lemmas
-below are the interface that makes that unnecessary: they package the *universal property*
-of the minimum — which branch is taken (`_of_empty`), that the value is attained (`_mem`),
-and that it is a lower bound (`_le`) — so downstream proofs never mention the underlying
-`Finset`. Together `_mem` and `_le` determine `minRelHammingDistCode` uniquely, which is
-exactly how `minDist_div_card_eq_minRelHammingDistCode` below identifies it with
-`Code.minDist C / n`, and `minRelHammingDistCode_le_one` shows the intended range `[0, 1]`
-(the lower end is automatic in `ℚ≥0`). -/
+`minRelHammingDistCode` is defined by a `dif` over a `Finset.min'`, so unfolding it drags in
+`Set.Finite.toFinset` and a nonemptiness proof term. The lemmas below package its universal
+property instead — which branch is taken (`_of_empty`), that the value is attained (`_mem`),
+and that it is a lower bound (`_le`) — so downstream proofs need not mention the underlying
+`Finset`. The last two determine it uniquely. -/
 
-/-- Degenerate branch: a code with no two distinct codewords (empty or a singleton) has
-`δᵣ C = 0` by the `else`-branch convention. Use this to discharge the subsingleton case of
-any statement about `minRelHammingDistCode`. -/
+/-- A code with no two distinct codewords has `δᵣ C = 0`, by convention. -/
 lemma minRelHammingDistCode_of_empty
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     (h : ¬ (possibleRelHammingDists C).Nonempty) :
@@ -630,9 +619,8 @@ lemma minRelHammingDistCode_of_empty
   unfold minRelHammingDistCode
   rw [dif_neg h]
 
-/-- The minimum is *attained*: `δᵣ C` is the relative distance between some pair of
-distinct codewords. This is the "witness" half of the universal property — use it to turn a
-bound on `δᵣ C` into a concrete pair of codewords. -/
+/-- The minimum is attained: `δᵣ C` is the relative distance between some pair of distinct
+codewords. -/
 lemma minRelHammingDistCode_mem
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     (h : (possibleRelHammingDists C).Nonempty) :
@@ -643,9 +631,8 @@ lemma minRelHammingDistCode_mem
     ((Set.Finite.toFinset_nonempty (hs := finite_possibleRelHammingDists)).mpr h)
   rwa [Set.Finite.mem_toFinset] at this
 
-/-- `δᵣ C` is a lower bound for the relative distance of every pair of distinct codewords.
-This is the "greatest lower bound" half of the universal property — use it to bound
-`δᵣ C` above by exhibiting one pair of codewords. -/
+/-- `δᵣ C` is a lower bound for the relative distance of every pair of distinct
+codewords. -/
 lemma minRelHammingDistCode_le
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
     {q : ℚ≥0} (hq : q ∈ possibleRelHammingDists C) : minRelHammingDistCode C ≤ q := by
@@ -654,9 +641,8 @@ lemma minRelHammingDistCode_le
   rw [dif_pos h_ne]
   exact Finset.min'_le _ _ ((Set.Finite.mem_toFinset (hs := finite_possibleRelHammingDists)).mpr hq)
 
-/-- `δᵣ C ≤ 1`: the minimum relative Hamming distance lands in `[0, 1]` (the lower bound is
-automatic, as the value lives in `ℚ≥0`). Completes the range characterisation, so callers
-can normalise `δᵣ C` against `1` without unfolding the definition. -/
+/-- The minimum relative Hamming distance is at most `1`; the lower bound `0 ≤ δᵣ C` is
+automatic in `ℚ≥0`. -/
 lemma minRelHammingDistCode_le_one
     {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)} :
     minRelHammingDistCode C ≤ 1 := by
@@ -665,20 +651,12 @@ lemma minRelHammingDistCode_le_one
     exact hp ▸ relHammingDist_le_one
   · simp [minRelHammingDistCode_of_empty h]
 
-/-- **Bridge: `Code.minDist C / n = δᵣ C` (cast to `ℚ`).**
+/-- The rational quotient `Code.minDist C / n` is `δᵣ C`: both compute
+`min {hammingDist u v / n | u, v ∈ C, u ≠ v}`.
 
-The raw `Code.minDist C / Fintype.card ι` form (used in [ABF26] §3 theorems
-T3.2, C3.3, etc. as `δ_min`) coincides with the existing `minRelHammingDistCode C =
-δᵣ C` defined via `Finset.min'` over the rational-valued image. Both equal
-`min { hammingDist u v / n | u, v ∈ C, u ≠ v }`.
-
-**What it is for.** It lets a statement written in either idiom be discharged against the
-other: rewrite left-to-right to replace a raw `Code.minDist C / n` quotient (the form [ABF26]
-§3 uses) by `δᵣ C` and then reason with the `minRelHammingDistCode_*` lemmas above, or
-right-to-left to reduce a `δᵣ C` goal to integer `Code.minDist` arithmetic.
-
-**Boundary case.** When `C` is a subsingleton (no distinct codewords), both sides
-are `0` by the empty-`sInf` / else-branch conventions. -/
+Rewrite left-to-right to reason with the `minRelHammingDistCode_*` lemmas above, or
+right-to-left to reduce a `δᵣ C` goal to integer `Code.minDist` arithmetic. For a
+subsingleton `C` both sides are `0`. -/
 lemma minDist_div_card_eq_minRelHammingDistCode
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [DecidableEq F]

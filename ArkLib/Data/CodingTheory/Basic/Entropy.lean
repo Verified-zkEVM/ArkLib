@@ -10,32 +10,24 @@ import Mathlib.Analysis.SpecialFunctions.BinaryEntropy
 /-!
 # `q`-ary entropy function
 
-[ABF26] Definition 2.2: the `q`-ary entropy function `H_q : [0, 1] → ℝ`,
+The `q`-ary entropy function `H_q : [0, 1] → ℝ`,
 
-  `H_q(x) := x · log_q(q-1) - x · log_q(x) - (1-x) · log_q(1-x)`.
+  `H_q(x) = x * log_q(q-1) - x * log_q x - (1-x) * log_q (1-x)` .
 
-This is Mathlib's natural-logarithm `Real.qaryEntropy` renormalised to base `q`, and that
-is how it is *defined* here: `qEntropy q x = Real.qaryEntropy q x / Real.log q`. Defining
-it this way (rather than by the three `logb` terms above, which `qEntropy_eq_logb_form`
-recovers) makes the whole `Real.qaryEntropy` / `Real.binEntropy` API — continuity,
-differentiability, sign, monotonicity, concavity — usable after a single division by the
-positive constant `Real.log q`.
-
-For `q = 2` this is the standard binary entropy measured in bits
-(`qEntropy_two`, `qEntropy_two_inv`). Used in:
-
-- [ABF26] Corollary 3.8 (volume-based lower bound for `|Λ(C, δ)|`).
-- [ABF26] Theorem 3.11 (random-linear-code lower bound).
-- [ABF26] Theorem 4.17 (capacity-regime CA breakdown).
+It is defined as Mathlib's natural-logarithm `Real.qaryEntropy` renormalised to base `q`,
+rather than by the three `logb` terms above (which `qEntropy_eq_logb_form` recovers), so that
+the whole `Real.qaryEntropy` and `Real.binEntropy` API — continuity, differentiability, sign,
+monotonicity, concavity — transfers through a single division by the positive constant
+`Real.log q`. For `q = 2` this is the standard binary entropy in bits.
 
 ## Main definitions
 
-* `CodingTheory.qEntropy`: the base-`q` `q`-ary entropy function `H_q`.
+* `CodingTheory.qEntropy`: the base-`q` entropy function `H_q`.
 
 ## Main statements
 
-* `CodingTheory.qEntropy_eq_logb_form`: the paper's three-`logb`-term formula.
-* `CodingTheory.qEntropy_eq_qaryEntropy_div_log`: the (definitional) bridge to Mathlib.
+* `CodingTheory.qEntropy_eq_logb_form`: the three-`logb`-term formula.
+* `CodingTheory.qEntropy_eq_qaryEntropy_div_log`: the bridge to Mathlib.
 * `CodingTheory.qEntropy_one_sub_inv`: `H_q(1 - 1/q) = 1`, the base-`q` normalisation;
   it is also the maximum, whence `CodingTheory.qEntropy_le_one`.
 * `CodingTheory.qEntropy_nonneg`, `CodingTheory.qEntropy_pos`: sign on `[0, 1]` / `(0, 1)`.
@@ -58,43 +50,32 @@ open Real
 
 variable {q : ℕ} {x : ℝ}
 
-/-- **[ABF26] Definition 2.2.** `q`-ary entropy function on `[0, 1]`:
+/-- The `q`-ary entropy function on `[0, 1]`,
 
-  `H_q(x) := x · log_q(q-1) - x · log_q(x) - (1-x) · log_q(1-x)`
+  `H_q(x) = x * log_q(q-1) - x * log_q x - (1-x) * log_q (1-x)`
 
-(see `qEntropy_eq_logb_form`), defined here as Mathlib's natural-log `Real.qaryEntropy`
-rescaled to base `q`. For `q = 2` this reduces to the standard binary entropy function in
-bits. Mathlib's convention `Real.log 0 = 0` makes the endpoints of `[0, 1]` well-defined:
-`qEntropy q 0 = 0` and `qEntropy q 1 = log_q (q-1)` (treating `0 · log 0 = 0` and
-`log_q 1 = 0` automatically).
+(see `qEntropy_eq_logb_form`), defined as Mathlib's natural-log `Real.qaryEntropy` rescaled
+to base `q`. For `q = 2` it is the binary entropy function in bits.
 
-**Boundary behaviour for `q ≤ 1`.** The paper assumes `q ≥ 2` (alphabet size of an
-error-correcting code). For `q ∈ {0, 1}` we have `Real.log q = 0`, so `qEntropy q x = 0`
-for every `x` (`qEntropy_of_le_one`); equivalently `Real.logb q _` is identically `0` in
-the formula above. This is mathematically uninformative but well-defined; downstream
-consumers that need a meaningful `q`-ary entropy should guard with `2 ≤ q` themselves (as
-T4.17 does with `10 ≤ Fintype.card F`, and T3.11 does via `Nat.Prime q`).
+The convention `Real.log 0 = 0` makes the endpoints well-defined, `qEntropy q 0 = 0` and
+`qEntropy q 1 = log_q (q-1)`.
 
-The paper's `H_S(x) := H_{|S|}(x)` set-entropy overload is provided as a wrapper at the
-call site (a one-line `qEntropy (Fintype.card S) x`). -/
+For `q ≤ 1` the function is identically `0` (`qEntropy_of_le_one`), since `Real.log q = 0`
+there. The intended range is `2 ≤ q`, an alphabet size; consumers needing a meaningful value
+must guard for it themselves. -/
 noncomputable def qEntropy (q : ℕ) (x : ℝ) : ℝ := Real.qaryEntropy q x / Real.log q
 
-/-- Bridge to Mathlib's `Real.qaryEntropy`: ABF26's base-`q` entropy is Mathlib's
-(natural-log) `q`-ary entropy rescaled by `Real.log q`. True by definition; kept as a named
-lemma so that call sites can `rw` in either direction without unfolding `qEntropy`.
+/-- `qEntropy` is `Real.qaryEntropy` rescaled by `Real.log q`. True by definition, and
+named so that call sites can rewrite in either direction without unfolding.
 
-Not a `simp` lemma on purpose: the `logb`-based spelling of `qEntropy` (`qEntropy_one`,
-`qEntropy_eq_logb_form`) is the intended normal form. -/
+Deliberately not `simp`: the `logb`-based spelling is the intended normal form. -/
 lemma qEntropy_eq_qaryEntropy_div_log (q : ℕ) (x : ℝ) :
     qEntropy q x = Real.qaryEntropy q x / Real.log q := rfl
 
-/-- **[ABF26] Definition 2.2, verbatim.** `qEntropy` agrees with the paper's formula
-`H_q(x) = x · log_q(q-1) - x · log_q(x) - (1-x) · log_q(1-x)`.
+/-- `qEntropy` in expanded form,
+`H_q(x) = x * log_q(q-1) - x * log_q x - (1-x) * log_q (1-x)`.
 
-Each `logb q ·` term is the corresponding `Real.log ·` divided by `Real.log q`, and
-`-x·log x - (1-x)·log(1-x) = Real.binEntropy x`. Holds unconditionally: for `q ∈ {0, 1}`
-both sides are `0` (`Real.log q = 0`, and `Real.log`/`Real.logb` send the degenerate
-arguments to `0`). -/
+Holds unconditionally: for `q ≤ 1` both sides are `0`. -/
 lemma qEntropy_eq_logb_form (q : ℕ) (x : ℝ) :
     qEntropy q x =
       x * Real.logb q (q - 1) - x * Real.logb q x - (1 - x) * Real.logb q (1 - x) := by
@@ -144,11 +125,11 @@ lemma qEntropy_nonneg (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : 0 ≤ qEntropy q x :
 lemma qEntropy_pos (hq : 2 ≤ q) (hx₀ : 0 < x) (hx₁ : x < 1) : 0 < qEntropy q x :=
   div_pos (Real.qaryEntropy_pos hx₀ hx₁) (Real.log_pos (by exact_mod_cast hq))
 
-/-- **Base-`q` normalisation: `H_q(1 - 1/q) = 1`.**
+/-- Base-`q` normalisation: `H_q(1 - 1/q) = 1`.
 
-`1 - 1/q` is the maximiser of `H_q` on `[0, 1]` (see `qEntropy_strictMonoOn` /
-`qEntropy_strictAntiOn`), and the base-`q` scaling is exactly the one making the maximum
-equal `1`. Specialises to `H_2(1/2) = 1` and `H_3(2/3) = 1`. -/
+The point `1 - 1/q` is the maximiser of `H_q` on `[0, 1]` (`qEntropy_strictMonoOn`,
+`qEntropy_strictAntiOn`), and the base-`q` scaling is the one making that maximum `1`.
+Specialises to `H_2(1/2) = 1` and `H_3(2/3) = 1`. -/
 lemma qEntropy_one_sub_inv (hq : 2 ≤ q) : qEntropy q (1 - 1 / q) = 1 := by
   have hq1 : (1 : ℝ) < q := by exact_mod_cast hq
   have hq0 : (0 : ℝ) < q := by linarith
@@ -188,7 +169,7 @@ lemma qEntropy_strictAntiOn (hq : 2 ≤ q) :
   gcongr
   exact Real.qaryEntropy_strictAntiOn hq ha hb hab
 
-/-- **`H_q ≤ 1` on `[0, 1]`.** The base-`q` entropy of a `q`-ary symbol never exceeds one
+/-- `H_q ≤ 1` on `[0, 1]`: the base-`q` entropy of a `q`-ary symbol never exceeds one
 `q`-ary symbol's worth of information. For `q ≥ 2` the bound is attained at `1 - 1/q`
 (`qEntropy_one_sub_inv`); for `q ≤ 1` the function is identically zero. -/
 lemma qEntropy_le_one (hx₀ : 0 ≤ x) (hx₁ : x ≤ 1) : qEntropy q x ≤ 1 := by

@@ -9,13 +9,18 @@ import Mathlib.Algebra.Polynomial.Roots
 /-!
 # Additional polynomial root-multiplicity lemmas
 
-Generic polynomial facts intended as candidates for upstreaming to Mathlib.
+## Main statements
+
+* `Polynomial.sum_rootMultiplicity_le_natDegree` — root multiplicities summed over a finite
+  set are bounded by the degree.
+
+Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 namespace Polynomial
 
-/-- The sum of root multiplicities over a finite set is bounded by the polynomial's
-natural degree. -/
+/-- The sum of the root multiplicities of a polynomial over a finite set of points is at most
+its natural degree. -/
 lemma sum_rootMultiplicity_le_natDegree {F : Type*} [Field F]
     {W : Polynomial F} (S : Finset F) :
     ∑ a ∈ S, W.rootMultiplicity a ≤ W.natDegree := by

@@ -56,8 +56,8 @@ manuscript, not to the original sources it cites — those get their own keys (`
   saturation formula `dim_frsCode_eq_min`.
 - **§2.5 subspace designs.** Definition 2.16 (after `GX13`) → `CodingTheory.IsSubspaceDesign`;
   Lemma 2.17 (after `GG25`) → `CodingTheory.subspaceDesign_tau_lower`; Theorem 2.18 (after
-  `GK16`) → `CodingTheory.frs_is_subspaceDesign_gk16` (folded-RS half) and
-  `CodingTheory.um_is_subspaceDesign_gk16` (univariate-multiplicity half).
+  `GK16`) → `CodingTheory.isSubspaceDesign_frsCode` (folded-RS half) and
+  `CodingTheory.isSubspaceDesign_umCode` (univariate-multiplicity half).
 - **§2.6 extension codes.** Definition 2.19 (extension-field presentation) →
   `CodingTheory.ExtensionFieldPresentation`; Definition 2.20 (extension code) →
   `CodingTheory.extensionEncode`, packaged with its proved `F`-linearity as
@@ -174,7 +174,7 @@ Directions in which ArkLib is *weaker* than the paper (all deliberate, none unso
   ingredient is present; no vacuous cost-free existence predicate is advertised.
 
 The UM half of T2.18 is instead slightly more general than the printed survey statement:
-`um_is_subspaceDesign_gk16` needs no separate `|F| > |ι|` assumption because the evaluation
+`isSubspaceDesign_umCode` needs no separate `|F| > |ι|` assumption because the evaluation
 domain is already an injection, and it uses the mathematically sufficient endpoint-inclusive
 guard `k ≤ ringChar F` for degree-`< k` messages.
 

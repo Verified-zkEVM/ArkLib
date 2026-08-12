@@ -12,77 +12,54 @@ import ArkLib.Data.CodingTheory.ListDecodability
 /-!
 # Hamming ball volume
 
-ABF26 Definition 2.4: the volume of a Hamming ball.
+The number of words of `Σ^n`, with `|Σ| = q`, within absolute Hamming distance `⌊δ * n⌋` of a
+fixed centre:
 
-  `Vol_q(δ, n) := ∑_{i=0}^{⌊δ · n⌋} (n choose i) · (q-1)^i`
-
-Counts the number of words in `Σ^n` (with `|Σ| = q`) within absolute Hamming
-distance `⌊δ · n⌋` of any fixed center. Independent of the choice of center.
-
-Used in:
-
-- ABF26 Lemma 3.7 (Elias lower bound for `|Λ(C, δ)|`).
-- ABF26 Corollary 3.8 (volume-based lower bound).
-
-This file also provides the bridge between the volume function and the existing
-`hammingBall` set in `ListDecodability.lean`.
+  `Vol_q(δ, n) = ∑ i ∈ range (⌊δ * n⌋ + 1), (n choose i) * (q-1) ^ i` .
 
 ## Main definitions
 
-* `CodingTheory.hammingBallVolume` — ABF26 Definition 2.4's `Vol_q(δ, n)`.
+* `CodingTheory.hammingBallVolume`
 
 ## Main statements
 
 * `CodingTheory.hammingBallVolume_zero_radius` — `Vol_q(0, n) = 1`.
 * `CodingTheory.card_filter_hammingDist_eq` — the shell count
-  `#{x | Δ(y, x) = i} = C(n, i) · (q − 1)^i`, proved by an explicit bijection.
-* `CodingTheory.hammingBallVolume_eq_ncard_hammingBall` — the bridge
-  `Vol_q(δ, n) = |B(y, ⌊δ·n⌋)|` to `Code.hammingBall`, for any centre `y`.
-
-All three statements are fully proved: there are no `sorry`s, no tagged admits and no admitted
-sub-steps anywhere in this file, and every declaration is axiom-clean.
+  `#{x | Δ(y, x) = i} = (n choose i) * (q - 1) ^ i`.
+* `CodingTheory.hammingBallVolume_eq_ncard_hammingBall` — the volume is the cardinality of
+  `Code.hammingBall`, for any centre.
 
 ## References
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-    Agreement*][ABF26] (Definition 2.4; used by Lemma 3.7 and Corollary 3.8)
+    Agreement*][ABF26]
 -/
 
 namespace CodingTheory
 
-/-- **ABF26 Definition 2.4.** Volume of the Hamming ball of relative radius `δ` over
-an alphabet of size `q` and block length `n`:
+/-- The volume of the Hamming ball of relative radius `δ` over an alphabet of size `q` and
+block length `n`:
 
-  `Vol_q(δ, n) := ∑_{i=0}^{⌊δ · n⌋} (n choose i) · (q-1)^i`.
+  `Vol_q(δ, n) = ∑ i ∈ range (⌊δ * n⌋ + 1), (n choose i) * (q-1) ^ i` .
 
-Counts the number of words in `Σ^n` (with `|Σ| = q`) within absolute Hamming distance
-`⌊δ · n⌋` of any fixed center. Independent of the choice of center.
+This counts the words within absolute Hamming distance `⌊δ * n⌋` of a fixed centre, and is
+independent of the centre (`hammingBallVolume_eq_ncard_hammingBall`).
 
-Used in `ABF26-L3.7` (Elias lower bound) and `ABF26-C3.8` (volume-based lower bound).
-
-Noncomputable because the floor `⌊δ · n⌋₊` over `ℝ` is noncomputable (Mathlib's
-`Nat.floor` on `ℝ` depends on a `noncomputable` `linearOrder` instance). For `δ ≤ 0`
-the floor clamps to `0` and the value is `1` (the ball is just the center) — the paper's
-domain is `δ ∈ (0, 1)`, `q ≥ 2`; outside it the formula is a total extension, not a
-claim. -/
+Noncomputable because `Nat.floor` on `ℝ` is. The intended domain is `0 < δ < 1` and `q ≥ 2`;
+outside it the formula is a total extension, with the floor clamping to `0` for `δ ≤ 0`. -/
 noncomputable def hammingBallVolume (q : ℕ) (δ : ℝ) (n : ℕ) : ℕ :=
   ∑ i ∈ Finset.range (⌊δ * n⌋₊ + 1), Nat.choose n i * (q - 1) ^ i
 
-/-- Boundary case: a Hamming ball of zero radius contains exactly one word
-(the center itself). The single summand `i = 0` contributes
-`(n choose 0) · (q-1)^0 = 1`. -/
+/-- A Hamming ball of zero radius contains exactly one word, its centre. -/
 @[simp]
 lemma hammingBallVolume_zero_radius (q n : ℕ) : hammingBallVolume q 0 n = 1 := by
   simp [hammingBallVolume]
 
-/-- **Key combinatorial identity.** The number of vectors `x : ι → F` at Hamming
-distance exactly `i` from a fixed `y` is `C(n, i) · (q-1)^i`, where `n = |ι|` and
-`q = |F|`. Independent of `y`.
+/-- The number of words at Hamming distance exactly `i` from a fixed `y` is
+`(n choose i) * (q - 1) ^ i`, where `n = |ι|` and `q = |F|`, independent of `y`.
 
-Proof via an explicit bijection: `x` corresponds to the pair `(S, f)` where
-`S := {j | x j ≠ y j}` (an `i`-element subset of `ι`) and `f : S → F` is the
-restriction of `x` to `S` (each value forced into `F \ {y j}`). Counting:
-`Σ S ∈ powersetCard i univ, ∏ j ∈ S, (|F| - 1) = C(n, i) · (q-1)^i`. -/
+The proof splits the words by their disagreement set `S = {j | x j ≠ y j}`, an `i`-element
+subset of `ι`, on which each coordinate ranges over `F \ {y j}`. -/
 lemma card_filter_hammingDist_eq
     {ι : Type*} [Fintype ι] [DecidableEq ι]
     {F : Type*} [Fintype F] [DecidableEq F] (y : ι → F) (i : ℕ) :
@@ -169,20 +146,11 @@ lemma card_filter_hammingDist_eq
       Finset.card_powersetCard, Finset.card_univ]
 
 open Classical in
-/-- **Bridge to `hammingBall`.** The volume function counts the cardinality of the
-existing `hammingBall` (set of words within radius `⌊δ·n⌋` of any fixed center). The
-identity collapses to the standard combinatorial fact
-`#{x ∈ F^n : Δ(x, y) ≤ r} = ∑_{i ≤ r} C(n, i) · (q-1)^i` independent of `y`.
+/-- The volume is the cardinality of `Code.hammingBall y ⌊δ * n⌋`, for every centre `y`:
+partition the ball by exact distance and apply `card_filter_hammingDist_eq`.
 
-This links the ArkLib `Code.hammingBall` (set-form, used elsewhere in the
-list-decoding development) to ABF26 Definition 2.4's `Vol_q(δ, n)` (cardinality form).
-
-Proof: partition `hammingBall y r` by exact distance via `card_filter_hammingDist_eq`,
-then sum.
-
-No `DecidableEq` hypothesis is exposed: the statement discharges the decidability data
-`Code.hammingBall` carries via `open Classical in`, and the proof supplies its own via
-`classical`. -/
+No `DecidableEq` hypothesis is exposed, `Code.hammingBall` carrying its decidability data
+under `open Classical in`. -/
 theorem hammingBallVolume_eq_ncard_hammingBall
     {ι : Type*} [Fintype ι] {F : Type*} [Fintype F] (δ : ℝ) (y : ι → F) :
     hammingBallVolume (Fintype.card F) δ (Fintype.card ι)

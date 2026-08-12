@@ -16,56 +16,45 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.FieldTheory.Finiteness
 
 /-!
-# The folded Wronskian [GK16, Definition 11]
+# The folded Wronskian
 
-For polynomials `P 0, …, P (σ−1)` over a field `F` and a folding element `ω : F`, the
-`ω`-folded Wronskian is the determinant of the `σ × σ` matrix whose `(i, j)` entry is
-`(P j).comp (ω^i • X)`, i.e. `P j (ω^i X)`.
-
-This is the linear-independence certificate driving the folded Reed-Solomon subspace-design
-theorem (ABF26 T2.18 / GK16 Theorem 14): for `ω` a generator of `Fˣ` and `deg < k ≤ |F| − 1`,
-the folded Wronskian of linearly independent polynomials is a *nonzero* polynomial of degree
-`≤ σ(k−1)` (GK16 Lemma 12), while each block of an FRS codeword subspace that vanishes forces
-high-multiplicity roots — counting roots against the degree yields the design property.
+For polynomials `P 0, …, P (σ-1)` over a field `F` and an element `ω : F`, the *`ω`-folded
+Wronskian* is the determinant of the `σ × σ` matrix whose `(i, j)` entry is `P j (ω ^ i * X)`.
+It plays the role of the classical Wronskian as a linear-independence certificate, with the
+substitutions `X ↦ ω ^ i * X` in place of successive derivatives.
 
 ## Main definitions
 
-- `Polynomial.foldedWronskian` — GK16 Definition 11.
+* `Polynomial.foldedWronskian`
 
 ## Main statements
 
-- `Polynomial.natDegree_foldedWronskian_le` — degree bound `σ · k` for entries of degree `≤ k`.
-- `Polynomial.foldedWronskian_ne_zero_iff_linearIndependent` — GK16 Lemma 12 in full. The two
-  directions are also available separately:
-  `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` (the direction consumed by T2.18,
-  and the only hard one) and `Polynomial.foldedWronskian_eq_zero_of_not_linearIndependent`
-  (which needs neither finiteness of `F` nor any hypothesis on `ω` and `k`).
-
-## Generic dependencies
-
-The determinant-divisibility, composition-degree, Frobenius, and finite-field Kummer
-irreducibility lemmas used here live under `ArkLib/ToMathlib/`. This file retains only the
-folded-Wronskian construction and its GK16-specific argument.
+* `Polynomial.natDegree_foldedWronskian_le` — the degree bound `σ * k` for entries of degree
+  at most `k`.
+* `Polynomial.foldedWronskian_ne_zero_iff_linearIndependent` — over a finite field, for `ω` a
+  generator of `Fˣ` and `k ≤ |F| - 1`, polynomials of degree `< k` are linearly independent
+  iff their folded Wronskian is nonzero. The two directions are also available separately as
+  `Polynomial.foldedWronskian_ne_zero_of_linearIndependent` and
+  `Polynomial.foldedWronskian_eq_zero_of_not_linearIndependent`, the latter needing neither
+  finiteness of `F` nor any hypothesis on `ω` and `k`.
 
 ## References
 
-* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (Definition 11,
-    Lemma 12, Theorem 14 and Appendix A)
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 -/
-
 namespace Polynomial
 
 open Matrix
 
 variable {F : Type*} [Field F]
 
-/-- **[GK16, Definition 11].** The `ω`-folded Wronskian of `σ` polynomials: the determinant
-of the `σ × σ` matrix with `(i, j)` entry `P j (ω^i X)`. -/
+/-- The `ω`-folded Wronskian of `σ` polynomials: the determinant of the `σ × σ` matrix with
+`(i, j)` entry `P j (ω ^ i * X)`. -/
 noncomputable def foldedWronskian (σ : ℕ) (ω : F) (P : Fin σ → F[X]) : F[X] :=
   (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det
 
-/-- **Degree bound**: if every `P j` has `natDegree ≤ k`, then the folded Wronskian has
-`natDegree ≤ σ * k` (Leibniz expansion: each summand is a product of `σ` entries). -/
+/-- If every `P j` has degree at most `k`, the folded Wronskian has degree at most `σ * k`:
+each summand of the Leibniz expansion is a product of `σ` entries. -/
 lemma natDegree_foldedWronskian_le (σ : ℕ) (ω : F) (P : Fin σ → F[X]) (k : ℕ)
     (hP : ∀ j, (P j).natDegree ≤ k) :
     (foldedWronskian σ ω P).natDegree ≤ σ * k := by
@@ -88,16 +77,15 @@ section Frobenius
 
 variable [Fintype F]
 
-/-- **The engine of GK16 Lemma 12.** Let `K` be a field extension of `F = 𝔽_q` containing an
-element `x` with `x ^ (q − 1) = ω`, such that evaluation at `x` is injective on polynomials of
-degree `< k`. Then the folded Wronskian matrix of linearly independent `P j ∈ degreeLT F k` has
-nonzero determinant.
+/-- Let `K` be a field extension of `F = 𝔽_q` containing an element `x` with
+`x ^ (q - 1) = ω`, at which evaluation is injective on polynomials of degree `< k`. Then the
+folded Wronskian matrix of linearly independent `P j ∈ degreeLT F k` has nonzero determinant.
 
-Proof: pushing the matrix through `p ↦ p(x)` turns the `(i, j)` entry `P j (ω^i X)` into
-`(P j (x)) ^ (q ^ i)` (Frobenius, since `x ^ (q ^ i) = ω ^ i · x`), i.e. into a Moore matrix. If
-its determinant vanished, a nonzero row-dependency `α` would make the linearized polynomial
-`Q(Y) = ∑ αᵢ Y ^ (q ^ i)`, of degree `≤ q ^ (σ − 1)`, vanish on the whole image of the `F`-span
-of the `P j` — which has `q ^ σ` elements by independence and injectivity. -/
+Pushing the matrix through `p ↦ p x` turns the `(i, j)` entry `P j (ω ^ i * X)` into
+`(P j x) ^ (q ^ i)`, by Frobenius and `x ^ (q ^ i) = ω ^ i * x`, so the image is a Moore
+matrix. A vanishing determinant would give a nonzero row dependency `α`, whose linearized
+polynomial `Q Y = ∑ αᵢ * Y ^ (q ^ i)` has degree at most `q ^ (σ - 1)` yet vanishes on the
+image of the whole `F`-span of the `P j`, a set of `q ^ σ` elements. -/
 private lemma foldedWronskian_matrix_det_ne_zero {K : Type*} [Field K] [Algebra F K]
     {σ k : ℕ} {ω : F} {x : K} (hσ : 0 < σ)
     (hx : x ^ (Fintype.card F - 1) = algebraMap F K ω)
@@ -114,7 +102,7 @@ private lemma foldedWronskian_matrix_det_ne_zero {K : Type*} [Field K] [Algebra 
     intro i p
     rw [aeval_comp]
     simp only [map_mul, aeval_C, aeval_X]
-    rw [← pow_card_pow_eq hx i, aeval_pow_card_pow]
+    rw [← FiniteField.pow_card_pow_eq_mul hx i, aeval_pow_card_pow]
   -- the folded Wronskian matrix becomes the Moore matrix of `β j := (P j)(x)`
   have hdet' : (Matrix.of fun i j : Fin σ =>
       (aeval x (P j)) ^ (Fintype.card F ^ (i : ℕ))).det = 0 := by
@@ -211,19 +199,13 @@ private lemma foldedWronskian_matrix_det_ne_zero {K : Type*} [Field K] [Algebra 
 
 end Frobenius
 
-/-- **[GK16, Lemma 12] — folded Wronskian criterion for linear independence** (the substantial
-direction, and the one needed by T2.18). Over a finite field `F` with `ω` a generator of `Fˣ`
-and `k ≤ |F| − 1`: linearly independent polynomials of degree `< k` have a nonzero folded
-Wronskian. See `foldedWronskian_ne_zero_iff_linearIndependent` for the full biconditional.
+/-- Over a finite field `F` with `ω` a generator of `Fˣ` and `k ≤ |F| - 1`, linearly
+independent polynomials of degree `< k` have a nonzero folded Wronskian.
 
-Proof route (a streamlining of GK16 Appendix A): work modulo the irreducible
-`E := X^{q−1} − ω` (`X_pow_card_sub_one_sub_C_irreducible`) in the field `K := F[X]/(E)`,
-where `X^q ≡ ωX` and hence `P(ωⁱX) ≡ P(X)^{qⁱ}` (Frobenius). The folded Wronskian matrix
-therefore maps to the Moore matrix of the `βⱼ := Pⱼ(x)`, so a vanishing Wronskian yields a
-*nonzero* row dependency `α` over `K` directly — GK16's clearing of denominators over
-`F(X)` and stripping of common `E`-factors are not needed. The dependency is the linearized
-polynomial `Q(Y) = ∑ αᵢ Y^{qⁱ}` of degree `≤ q^{σ−1}`, which vanishes on the (injective,
-as `k ≤ deg E`) image of the whole span — forcing `q^σ = |span| ≤ q^{σ−1}`, absurd. -/
+The proof works in the field `K = F[X]/(E)` for the irreducible `E = X ^ (q-1) - C ω`
+(`X_pow_card_sub_one_sub_C_irreducible`), where `X ^ q ≡ ω * X` and hence
+`P (ω ^ i * X) ≡ P X ^ (q ^ i)`. Evaluation at the root is injective on `degreeLT F k` since
+`k ≤ deg E`, so `foldedWronskian_matrix_det_ne_zero` applies. -/
 theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
     {σ k : ℕ} {ω : F} (hω : orderOf ω = Fintype.card F - 1)
     (hk : k ≤ Fintype.card F - 1)
@@ -255,16 +237,11 @@ theorem foldedWronskian_ne_zero_of_linearIndependent [Fintype F]
   change (Matrix.of fun i j : Fin σ => (P j).comp (C (ω ^ (i : ℕ)) * X)).det ≠ 0
   exact foldedWronskian_matrix_det_ne_zero hσ hx hxinj P hdeg hind
 
-/-- **[GK16, Lemma 12] — the easy direction.** Linearly *dependent* polynomials have a vanishing
-folded Wronskian.
+/-- Linearly dependent polynomials have a vanishing folded Wronskian: if `∑ j, a j • P j = 0`
+with `a ≠ 0`, then `∑ j, a j • P j (ω ^ i * X) = 0` for every `i`, so the constant vector
+`fun j ↦ C (a j)` is a nonzero kernel element of the folded Wronskian matrix over `F[X]`.
 
-This is GK16 Appendix A's opening remark: if `∑ⱼ aⱼ Pⱼ(X) = 0` with `a ≠ 0`, then
-`∑ⱼ aⱼ Pⱼ(ωⁱX) = 0` for every `i`, i.e. the constant vector `(C a₀, …, C a_{σ−1})` is a nonzero
-element of the kernel of the folded Wronskian matrix over the domain `F[X]`, so its determinant
-vanishes.
-
-Unlike the forward direction this needs no finiteness of `F`, no primitivity of `ω`, and no
-degree bound on the `P j`. -/
+This direction needs no finiteness of `F`, no condition on `ω`, and no degree bound. -/
 theorem foldedWronskian_eq_zero_of_not_linearIndependent (σ : ℕ) (ω : F) (P : Fin σ → F[X])
     (hind : ¬ LinearIndependent F P) :
     foldedWronskian σ ω P = 0 := by
@@ -281,13 +258,8 @@ theorem foldedWronskian_eq_zero_of_not_linearIndependent (σ : ℕ) (ω : F) (P 
         rw [smul_eq_C_mul, mul_comp, C_comp, mul_comm]
     simpa [Matrix.mulVec, dotProduct, ha] using this
 
-/-- **[GK16, Lemma 12] in full.** Over a finite field `F` with `ω` a generator of `Fˣ` and
-`k ≤ |F| − 1`, polynomials of degree `< k` are linearly independent over `F` **iff** their
-`ω`-folded Wronskian is nonzero.
-
-The forward direction is `foldedWronskian_ne_zero_of_linearIndependent` (the substantial one,
-GK16 Appendix A); the converse is `foldedWronskian_eq_zero_of_not_linearIndependent`, which
-needs none of `hω`, `hk`, `hdeg` or finiteness of `F`. -/
+/-- Over a finite field `F` with `ω` a generator of `Fˣ` and `k ≤ |F| - 1`, polynomials of
+degree `< k` are linearly independent iff their `ω`-folded Wronskian is nonzero. -/
 theorem foldedWronskian_ne_zero_iff_linearIndependent [Fintype F]
     {σ k : ℕ} {ω : F} (hω : orderOf ω = Fintype.card F - 1)
     (hk : k ≤ Fintype.card F - 1)

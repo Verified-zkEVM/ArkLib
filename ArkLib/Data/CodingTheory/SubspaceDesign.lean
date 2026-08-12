@@ -12,71 +12,56 @@ import ArkLib.ToMathlib.LinearAlgebra.FiniteDimensional
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
 
 /-!
-# Subspace-design codes (ABF26 §2.5)
+# Subspace designs
 
-ABF26 Definition 2.16 [GX13]: the τ-subspace-design property for an F-additive code
-`C : F^k → (F^s)^n`. Lemma 2.17 [GG25] is **proved in-tree** (via the module-alphabet
-Singleton bound `LinearCode.singleton_bound_module`); the folded Reed-Solomon half of
-Theorem 2.18 [GK16] is **proved in-tree** via the folded-Wronskian toolkit, and its
-univariate-multiplicity half is proved via the classical Wronskian and ordinary/Hasse
-derivative bridge.
+A code over the alphabet `F^s`, presented as an `F`-subspace `C` of `ι → Fin s → F`, is a
+*`τ`-subspace design* when every subspace `A ≤ C` of dimension at most `r` satisfies
+
+  `(∑ i, dim {a ∈ A | a i = 0}) / n ≤ dim A * τ r` ,
+
+where `n = |ι|` is the block length. Equivalently: no low-dimensional subspace of `C` can
+have many of its codewords vanish at many positions.
 
 ## Main definitions
 
-- `CodingTheory.IsSubspaceDesign` — ABF26 Definition 2.16.
+* `CodingTheory.IsSubspaceDesign` — the design property, for a profile `τ : ℕ → ℝ`.
 
 ## Main statements
 
-- `CodingTheory.ker_proj_eq_vanish_at` — bridge between `ker(proj i)` and `{a | a i = 0}`,
-  the carrier-level faithfulness witness for `IsSubspaceDesign`.
-- `CodingTheory.subspaceDesign_tau_lower_of_ne_bot` — ABF26 Lemma 2.17 [GG25] under GG25's
-  own non-triviality assumption `C ≠ ⊥`: `τ(r) ≥ ρ - 1/n` for every `r ≥ 1`.
-- `CodingTheory.subspaceDesign_tau_lower` — the same bound for an arbitrary code, under the
-  (implicit-in-the-sources) hypothesis that `τ` is non-negative.
-- `CodingTheory.frs_is_subspaceDesign_gk16` — ABF26 Theorem 2.18 [GK16], folded RS half:
-  folded RS codes are τ-subspace-design for an explicit τ.
-- `CodingTheory.um_is_subspaceDesign_gk16` — ABF26 Theorem 2.18 [GK16], univariate
-  multiplicity half, with the exact saturated alphabet-rate profile.
+* `CodingTheory.subspaceDesign_tau_lower` — every subspace-design profile obeys
+  `τ r ≥ ρ - 1/n` for `r ≥ 1`, where `ρ` is the alphabet-normalized rate.
+* `CodingTheory.isSubspaceDesign_frsCode` — folded Reed-Solomon codes are subspace designs
+  for the profile `τ r = s * ρ / (s - r + 1)` on `1 ≤ r ≤ s`.
+* `CodingTheory.isSubspaceDesign_umCode` — univariate multiplicity codes are subspace
+  designs for the same profile.
 
-Both L2.17 and T2.18 carry hypotheses their sources omit, and in each case the unguarded
-statement is false; the counterexamples are recorded in the declaration docstrings and
-cross-referenced to `docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`.
-
-The generic determinant, root-multiplicity, and finite-dimensional helpers used by the proof
-live in `ArkLib/ToMathlib/`; this module contains only the coding-theory construction and its
-Wronskian-specific bridge lemmas. The two Wronskians themselves live in
-`ArkLib/Data/Polynomial/FoldedWronskian.lean` and
-`ArkLib/Data/Polynomial/ClassicalWronskian.lean`.
+The two code-family results are proved by a Wronskian root count, using
+`Polynomial.foldedWronskian` and `Polynomial.classicalWronskian` respectively.
 
 ## References
 
-* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-    Agreement*][ABF26] (§2.5: Definition 2.16, Lemma 2.17, Theorem 2.18)
 * [Guruswami, V., and Xing, C., *List decoding Reed-Solomon, Algebraic-Geometric, and
-    Gabidulin subcodes up to the Singleton bound*][GX13] (the original subspace-design
-    definition)
+    Gabidulin subcodes up to the Singleton bound*][GX13]
 * [Goyal, R., and Guruswami, V., *Optimal Proximity Gaps for Subspace-Design Codes and
-    (Random) Reed-Solomon Codes*][GG25] (cited for L2.17; Definition 2.15, Lemma 2.16)
-* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (cited for T2.18;
-    Definition 9, Lemma 10, Theorem 14, and §5.1/Theorem 17 with Claims 18–19)
+    (Random) Reed-Solomon Codes*][GG25]
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 * [Guruswami, V., and Rudra, A., *Explicit Codes Achieving List Decoding Capacity:
-    Error-Correction With Optimal Redundancy*][GR08] (folded RS evaluation-point
-    injectivity condition, the source shape of `ReedSolomon.Folded.Admissible`)
+    Error-Correction With Optimal Redundancy*][GR08]
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26]
 -/
 
 namespace CodingTheory
 
 open scoped NNReal
 
-/-- **ABF26 Definition 2.16 [GX13].** A code `C : F^k → (F^s)^n` (here represented as a
-subspace of `(ι → Fin s → F)` over `F`) is **τ-subspace-design** if for every `r ∈ ℕ`
-and every F-linear subspace `A` of `C` with `dim A ≤ r`,
+/-- A code `C` over the alphabet `F^s`, presented as an `F`-subspace of `ι → Fin s → F`, is
+`τ`-**subspace design** if for every `r` and every subspace `A ≤ C` with `dim A ≤ r`,
 
-  `(Σ_{i ∈ [n]} dim A_i) / n ≤ dim A · τ(r)`
+  `(∑ i, dim Aᵢ) / n ≤ dim A * τ r` ,
 
-where `A_i := { a ∈ A : a_i = 0^s }` is the subspace of `A` whose codewords vanish at
-position `i`. Here `A_i` is realised as `A ⊓ ker(eval_i)`, the intersection of `A`
-with the kernel of the linear map evaluating the `i`-th coordinate. -/
+where `n = |ι|` and `Aᵢ := {a ∈ A | a i = 0}` is the subspace of `A` vanishing at position
+`i`, realised as `A ⊓ ker (LinearMap.proj i)` (see `ker_proj_eq_vanish_at`). -/
 def IsSubspaceDesign {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] (s : ℕ) (τ : ℕ → ℝ)
     (C : Submodule F (ι → Fin s → F)) : Prop :=
@@ -90,14 +75,8 @@ def IsSubspaceDesign {ι : Type*} [Fintype ι]
         Fintype.card ι ≤
       Module.finrank F A * τ r
 
-/-- **Monotonicity in the profile.** A `τ₁`-subspace design is a `τ₂`-subspace design for
-every pointwise-larger profile `τ₂`, because the design bound
-`… ≤ finrank A * τ r` is monotone in `τ r` (`finrank A ≥ 0`).
-
-This is what lets a downstream consumer use the concrete profile produced by a
-construction (for instance the ABF26 Theorem 2.18 profile of
-`um_is_subspaceDesign_gk16`) at whatever coarser profile its own statement is phrased
-with, without re-running the construction or re-opening this file. -/
+/-- A `τ₁`-subspace design is a `τ₂`-subspace design for every pointwise-larger profile
+`τ₂`: the design bound is monotone in `τ r`, since `dim A ≥ 0`. -/
 theorem IsSubspaceDesign.mono_tau {ι : Type*} [Fintype ι]
     {F : Type*} [Field F] {s : ℕ} {τ₁ τ₂ : ℕ → ℝ}
     {C : Submodule F (ι → Fin s → F)}
@@ -105,18 +84,8 @@ theorem IsSubspaceDesign.mono_tau {ι : Type*} [Fintype ι]
     IsSubspaceDesign s τ₂ C := fun r A hAC hAr =>
   (h r A hAC hAr).trans (mul_le_mul_of_nonneg_left (hτ r) (Nat.cast_nonneg _))
 
-/-- **Bridge: kernel of the `i`-th projection equals the comprehension `{a | a i = 0}`.**
-
-The subspace `A_i := {a ∈ A : a_i = 0^s}` from the paper's `IsSubspaceDesign` definition
-is `A ⊓ ker(LinearMap.proj i)`. This lemma confirms the underlying set: a word
-`a : ι → Fin s → F` lies in `ker(proj i)` iff `a i = 0`. Combined with `Submodule.inf_*`
-this lets downstream proofs rewrite freely between the technical `ker(proj i)` form (used
-in the `IsSubspaceDesign` definition for type-class reasons) and the paper's
-comprehension form.
-
-It has no consumer in this file: both `subspaceDesign_tau_lower` and
-`frs_is_subspaceDesign_gk16` work with `LinearMap.mem_ker` pointwise instead. It is
-exported as the faithfulness witness for the definition, and for downstream readability. -/
+/-- The kernel of the `i`-th projection is the set of words vanishing at `i`. This is the
+comprehension form of the subspace `Aᵢ` appearing in `IsSubspaceDesign`. -/
 lemma ker_proj_eq_vanish_at {ι : Type*} {F : Type*} [Semiring F] {s : ℕ} (i : ι) :
     (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i) :
         Set (ι → Fin s → F)) =
@@ -124,41 +93,22 @@ lemma ker_proj_eq_vanish_at {ι : Type*} {F : Type*} [Semiring F] {s : ℕ} (i :
   ext a
   simp [LinearMap.mem_ker, LinearMap.proj_apply]
 
-/-- **ABF26 Lemma 2.17 [GG25], non-trivial-code form.** For a τ-subspace-design code
-`C ≠ ⊥` of rate `ρ`, the profile `τ` is lower-bounded by `ρ - 1/n` at every `r ≥ 1`:
+/-- The profile of a nontrivial `τ`-subspace design of alphabet-normalized rate `ρ` is
+bounded below by `ρ - 1/n` at every `r ≥ 1`.
 
-  `τ(r) ≥ ρ - 1/n`  for every `r ≥ 1` .
+Here `ρ = dim_F C / (s * n)`, the rate relative to the alphabet `F^s`; the subtracted
+term `1/n` divides by the block length alone.
 
-**Rate convention.** Per ABF26 Definition 2.5, the rate of a code over alphabet `Σ` is
-`log_{|Σ|}|C| / n`; for an `F`-additive code `C ⊆ (F^s)^n` this is
-`ρ = dim_F(C) / (s·n)` — the alphabet is `F^s`, so the `finrank` is divided by `s·n`,
-**not** by `n`. The subtracted `1/n` term, by contrast, divides by the block length `n`
-only (paper: `min_r τ(r) ≥ ρ − 1/n`).
+The range `1 ≤ r` is sharp: at `r = 0` the design condition only ever compares `0 ≤ 0`,
+since `A ≤ C` and `dim A ≤ 0` force `A = ⊥`, so `τ 0` is unconstrained. Some
+non-degeneracy hypothesis is likewise unavoidable, since for `C = ⊥` every design
+inequality also reads `0 ≤ 0`: at `n = 2` the profile `τ ≡ -1` is a design profile for
+`⊥` yet violates the conclusion. Here that hypothesis is `C ≠ ⊥`; see
+`subspaceDesign_tau_lower` for the variant that guards the profile instead.
 
-**`r = 0` is excluded because the sources' `∀ r ∈ ℕ` form is literally false there.**
-Both ABF26 Lemma 2.17 (`min_{r ∈ ℕ} τ(r) ≥ ρ − 1/n`) and GG25 Lemma 2.16 (*"for all
-`r ∈ ℕ`"*) assert the bound at `r = 0` as well. But at `r = 0` the `IsSubspaceDesign`
-predicate constrains `τ 0` not at all: `A ≤ C` together with `finrank A ≤ 0` forces
-`A = ⊥`, so the design inequality reads `0 ≤ 0 · τ(0)` and is satisfied by *every* value
-of `τ 0`, including values far below `ρ − 1/n`. GG25's own proof concedes the point ("we
-just need to prove the result for `r = 1`, since we can just take `A` of dimension 1"). So
-`1 ≤ r` is the largest honest range, and for `r ≥ 1` this is exactly the sources' claim —
-there is no further narrowing (in particular no `r ≤ s` restriction; `1 ≤ s` is needed
-only because `s = 0` forces the ambient module, hence `C`, to be trivial).
-
-**Which non-degeneracy guard.** GG25's proof opens by picking a non-zero codeword, i.e. it
-tacitly assumes the code is non-trivial; `hCne : C ≠ ⊥` is that assumption, and it imposes
-nothing on `τ`. The sibling `subspaceDesign_tau_lower` trades it for `0 ≤ τ`, which also
-covers `C = ⊥`. *Some* guard is unavoidable: for `C = ⊥` every `IsSubspaceDesign`
-inequality reads `0 ≤ 0`, so the negative profile `τ ≡ −1` at `n = 2` satisfies the
-hypothesis while violating the conclusion (`−1 ≥ 0 − 1/2` is false).
-
-**Proof** (GG25's argument, uniform in `r`): pick a distance-attaining pair
-`u ≠ v ∈ C` and set `a := u − v`, a nonzero codeword with at least `n − d` zero
-blocks (`d = Code.dist`). The design inequality at the 1-dimensional subspace
-`span {a}` (valid for every `r ≥ 1`) gives `τ(r) ≥ #zero-blocks / n ≥ (n − d)/n`,
-and the module-alphabet Singleton bound `LinearCode.singleton_bound_module`
-(`k ≤ s(n − d + 1)`) turns this into `τ(r) ≥ ρ − 1/n`. -/
+The proof applies the design condition to `span {u - v}` for a distance-attaining pair
+`u ≠ v` in `C`, which has at least `n - d` vanishing blocks, and then converts `d` into
+`ρ` with the module-alphabet Singleton bound `LinearCode.singleton_bound_module`. -/
 theorem subspaceDesign_tau_lower_of_ne_bot
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
@@ -288,23 +238,14 @@ theorem subspaceDesign_tau_lower_of_ne_bot
     _ ≤ ((Finset.univ.filter (fun i => a i = 0)).card : ℝ) / Fintype.card ι := by gcongr
     _ ≤ τ r := hτ_ge
 
-/-- **ABF26 Lemma 2.17 [GG25].** For any τ-subspace-design code of rate `ρ` with a
-non-negative profile, `τ` is lower-bounded by `ρ - 1/n` at every `r ≥ 1`:
+/-- The profile of a `τ`-subspace design of alphabet-normalized rate `ρ` with `τ ≥ 0` is
+bounded below by `ρ - 1/n` at every `r ≥ 1`.
 
-  `τ(r) ≥ ρ - 1/n`  for every `r ≥ 1` .
-
-This is `subspaceDesign_tau_lower_of_ne_bot` with the non-triviality guard moved from the
-code to the profile, which makes the statement total in `C`. See that declaration for the
-rate convention, for why `r = 0` must be excluded (the sources state the bound for all
-`r ∈ ℕ`, and at `r = 0` it is false), and for why *some* guard is needed at all.
-
-**Which form to use.** `hτ_nonneg` is an ArkLib addition: neither ABF26 Definition
-2.16 / Lemma 2.17 nor GG25 Definition 2.15 / Lemma 2.16 asserts `τ ≥ 0` (GG25 constrains
-the other side, `τ : ℕ → ℝ_{≤1}`), though it is implicit — a design profile bounds a ratio
-of dimensions. It is discharged for free by every profile arising in practice, including
-the one produced by `frs_is_subspaceDesign_gk16`, so this is the more convenient form. Use
-`subspaceDesign_tau_lower_of_ne_bot` when the profile is unknown but the code is known to
-be non-trivial; that is the shape GG25's own proof assumes. -/
+This is `subspaceDesign_tau_lower_of_ne_bot` with the non-degeneracy hypothesis moved from
+the code to the profile, making the statement total in `C`. Since a design profile bounds
+a ratio of dimensions, `0 ≤ τ` holds for every profile arising from a construction; use
+the `_of_ne_bot` form when the profile is unknown but the code is known to be nontrivial.
+See that declaration for the rate convention and for why `r ≥ 1` is needed. -/
 theorem subspaceDesign_tau_lower
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
@@ -324,9 +265,8 @@ theorem subspaceDesign_tau_lower
     exact le_trans hb (hτ_nonneg r)
   · exact subspaceDesign_tau_lower_of_ne_bot s τ C h_design hs hCne r hr1
 
-/-- **Base change for the folded Wronskian.** Replacing the polynomials by `F`-linear
-combinations multiplies the folded Wronskian by the (constant) determinant of the coefficient
-matrix: the folded Wronskian matrix gets right-multiplied by the constant matrix `C U`. -/
+/-- Base change for the folded Wronskian: replacing the polynomials by the `F`-linear
+combinations with coefficient matrix `U` multiplies the folded Wronskian by `det U`. -/
 private lemma foldedWronskian_of_linearComb {F : Type*} [Field F] {σ : ℕ} {ω : F}
     (P c : Fin σ → Polynomial F) (U : Matrix (Fin σ) (Fin σ) F)
     (hc : ∀ j, c j = ∑ i, U i j • P i) :
@@ -345,12 +285,12 @@ private lemma foldedWronskian_of_linearComb {F : Type*} [Field F] {σ : ℕ} {ω
   unfold Polynomial.foldedWronskian
   rw [hM, Matrix.det_mul, ← RingHom.map_det]
 
-/-- **The multiplicity engine of [GK16, Theorem 14].** If a subspace `N` of `B` consists of
-polynomials all of whose `ω`-twists are divisible by `X − C p`, then `(X − C p) ^ dim N` divides
-the folded Wronskian of any basis of `B`: pass to a basis of `B` adapted to `N`
-(`exists_adapted_basis`), where `dim N` whole columns of the folded Wronskian matrix are
-divisible by `X − C p` (`Matrix.pow_dvd_det_of_forall_mem_col_dvd`); base change only
-multiplies the determinant by a nonzero constant (`foldedWronskian_of_linearComb`). -/
+/-- If every polynomial in a subspace `N ≤ B` has all of its `ω`-twists divisible by
+`X - C p`, then `(X - C p) ^ dim N` divides the folded Wronskian of any basis of `B`.
+
+Passing to a basis of `B` adapted to `N` makes `dim N` whole columns of the folded
+Wronskian matrix divisible by `X - C p`; base change only rescales the determinant by a
+nonzero constant. -/
 private lemma pow_dvd_foldedWronskian {F : Type*} [Field F] {σ : ℕ} {ω : F}
     (B : Submodule F (Polynomial F)) (bas : Module.Basis (Fin σ) F B)
     (N : Submodule F (Polynomial F)) (hN : N ≤ B) (p : F)
@@ -408,14 +348,13 @@ private lemma pow_dvd_foldedWronskian {F : Type*} [Field F] {σ : ℕ} {ω : F}
   rw [hW] at hdvd
   exact (IsUnit.dvd_mul_right (Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr hdetU))).mp hdvd
 
-/-- **[GK16, Claim 19].** If every polynomial in `N ≤ B` has a root of multiplicity
-at least `s` at `p`, then the classical Wronskian of a `σ`-element basis of `B` has that
-root with multiplicity at least `(s - σ + 1) · dim N`.
+/-- If every polynomial in a subspace `N ≤ B` has a root of multiplicity at least `s` at
+`p`, then the classical Wronskian of a `σ`-element basis of `B` has a root at `p` of
+multiplicity at least `(s - σ + 1) * dim N`.
 
-After changing to a basis adapted to `N`, each of its `dim N` distinguished columns has
-successive derivative entries divisible by powers `(X - p)^(s-i)`. A common
-`(X-p)^(s-σ+1)` divides each such column, and determinant divisibility plus the inverse
-basis change gives the result. -/
+After changing to a basis adapted to `N`, the entries in each of the `dim N` distinguished
+columns are iterated derivatives, hence divisible by the common factor
+`(X - C p) ^ (s - σ + 1)`; determinant divisibility and the inverse base change conclude. -/
 private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
     (B : Submodule F (Polynomial F)) (bas : Module.Basis (Fin σ) F B)
     (N : Submodule F (Polynomial F)) (hN : N ≤ B) (p : F) (hσs : σ ≤ s)
@@ -482,105 +421,47 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
   exact (IsUnit.dvd_mul_right
     (Polynomial.isUnit_C.mpr (isUnit_iff_ne_zero.mpr hdetU))).mp hdvd
 
-/-- **ABF26 Theorem 2.18 [GK16], folded Reed-Solomon half.** ABF26 Theorem 2.18 asserts
-that both folded Reed-Solomon codes and univariate multiplicity codes are τ-subspace-design
-for an explicit τ:
+/-- Folded Reed-Solomon codes are subspace designs for the profile
 
-  `τ(r) := s · ρ / (s - r + 1)` for `r ∈ [s] = {1, …, s}`, and `τ(r) := 1` otherwise.
+  `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
 
-**Rate convention.** As in L2.17, `ρ` is the alphabet-normalized rate of the FRS code,
-`LinearCode.alphabetRate (frsCode domain k s ω)`. Its exact dimension is
-`min k (s·n)` (`ReedSolomon.Folded.dim_frsCode_eq_min`), so in the intended
-non-saturated regime `k ≤ s·n` this is `ρ = k/(s·n)` and the profile simplifies to
-`τ(r) = (k/n)/(s-r+1)`. For `k > s·n`, the code and its rate saturate (`ρ = 1`), and the
-same source formula gives `τ(r) = s/(s-r+1)` rather than the non-rate expression obtained
-by continuing to substitute `k/(s·n)` past its valid regime.
+where `ρ` is the alphabet-normalized rate `LinearCode.alphabetRate (frsCode domain k s ω)`.
+Note `τ 1 = ρ` and `τ s = s * ρ`.
 
-Note: `[s]` in the paper denotes `{1, …, s}` (one-based), which we encode in Lean as
-`Finset.Icc 1 s`. With this convention `τ(1) = s·ρ/s = ρ` and `τ(s) = s·ρ`, matching
-the paper's boundary values.
+Since `dim (frsCode domain k s ω) = min k (s * n)`, the profile reads
+`τ r = (k / n) / (s - r + 1)` in the intended regime `k ≤ s * n`. Beyond it the rate
+saturates at `ρ = 1`, and the statement becomes vacuous: a profile that is at least `1`
+throughout `[1, s]` is a design profile for every code.
 
-The pinned tex (`thm:folded-rs-are-subspace-design`) states `|F| > n` as a shared
-precondition for both the FRS and the multiplicity cases; the FRS case additionally
-requires `(L, s)`-admissibility of `ω`, while the multiplicity case additionally requires
-`char(F) ≥ k`. This FRS half assumes `hFn`, `hω_adm`, and GK16's generator condition
-`hω_gen`; `ω ≠ 0` follows internally from the latter and `|F| ≥ 2`. The multiplicity half
-is `um_is_subspaceDesign_gk16` below. It uses GK16's classical Wronskian, not a
-“multiplicity analogue” of the folded Wronskian.
+Both hypotheses on `ω` are necessary.
 
-Admissibility is hypothesised at the canonical point set `Finset.univ.map domain`, matching
-every other statement about `frsCode` (`ReedSolomon.Folded.minDist_frsCode`, `dim_frsCode`,
-`alphabetRate_frsCode`, `frs_rate_distance_of_dvd`, and
-`CodingTheory.frs_lambda_le_johnson_mds`). A caller holding admissibility on some ambient
-`L ⊇ image domain` restricts it with `ReedSolomon.Folded.Admissible.subset`.
+* `hω_gen`, that `ω` generates `Fˣ`, is used once, through
+  `Polynomial.foldedWronskian_ne_zero_of_linearIndependent`. Without an order condition the
+  statement fails: over `𝔽₁₀₁` with `s = 2`, `ω = -1`, `k = 3` and evaluation points
+  `{1, …, 7}`, admissibility still holds, but the encodings of `1` and `X²` span a subspace
+  with `∑ i, dim Aᵢ = 7 > 6 = dim A * τ 2 * n`, since `(-x)² = x²`.
+* Admissibility of `ω` is used to make `(i, m) ↦ domain i * ω ^ m` injective. Its
+  intra-orbit clause `α * ω ^ i ≠ α` for `0 < i < s` forces `0 ∉ L` once `s ≥ 2`, and this
+  is needed even under `hω_gen`: over `ZMod 5` with `domain = (0, 1)`, `s = 3`, `k = 2`,
+  `ω = 2`, the `s`-orbit of `0` collapses to `{0}`, so the encoding of `X` spans a subspace
+  with `(∑ i, dim Aᵢ) / n = 1/2 > 1/3 = dim A * τ 1`.
 
-**Proof** (GK16's Theorem 14 argument).
-Outside the main regime the bound is bookkeeping: every block dimension is at most
-`σ := dim A`, so the design sum is at most `σ`, which settles both `σ = 0` and `τ(r) ≥ 1`
-(in particular `r ∉ [s]`, where `τ(r) = 1`). In the remaining regime `r ∈ [s]` and
-`k < n(s − r + 1)`, so `k < n·s ≤ |F| − 1` — the `n·s` folded evaluation points are
-distinct (`admissible_foldedPoints_injective`) and nonzero (for `s ≥ 2`; for `s = 1` this
-is `hFn`). The encoder is then injective on `degreeLT F k`
-(`frsEvalOnPoints_domRestrict_injective`), so `A` and each `A ⊓ ker(proj i)` lift to
-message-side subspaces `B` and `Nᵢ ≤ B` of the same dimension, with `Nᵢ` consisting of
-polynomials vanishing on the whole `i`-th orbit `{domain i · ω^j : j < s}`. Fix a basis
-`P₁, …, P_σ` of `B` and let `W` be its `ω`-folded Wronskian [GK16 Definition 11]. Then
-`W ≠ 0` (`Polynomial.foldedWronskian_ne_zero_of_linearIndependent`, GK16 Lemma 12 — this
-is where `hω_gen` is used) and `deg W ≤ σ(k − 1)`
-(`Polynomial.natDegree_foldedWronskian_le`), while for every block `i` and every
-`0 ≤ m ≤ s − σ` the point `domain i · ω^m` is a root of `W` of multiplicity at least
-`dim Nᵢ` (base-change to a basis of `B` adapted to `Nᵢ`, then
-`Matrix.pow_dvd_det_of_forall_mem_col_dvd`; the twist `ω^{i'}` of row `i' < σ` keeps
-the exponent `i' + m < s` inside the orbit). Counting these `n(s − σ + 1)` distinct roots
-against `deg W` gives `(s − σ + 1)·∑ᵢ dim(A ⊓ ker projᵢ) ≤ σ(k − 1)`, and `σ ≤ r` turns
-this into the claimed `∑ᵢ dim(A ⊓ ker projᵢ) / n ≤ σ · τ(r)`.
+Admissibility is hypothesised at the canonical point set `Finset.univ.map domain`, as in
+the other `frsCode` statements; restrict it from a larger ambient point set with
+`ReedSolomon.Folded.Admissible.subset`.
 
-**Two source hypotheses are missing from the printed statement.** ABF26 Theorem 2.18 and
-GG25's restatement (Definition 2.18 / Theorem 2.19, which asks only `q > sn`) are both
-**false as printed**, for two independent reasons. Each is repaired below by a hypothesis
-that the ultimate source, GK16, does impose. Recorded in
-`docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md` (rows `D2.14`,
-`T2.18`, and Existing Inconsistencies #6).
-
-*(1) No order condition on `ω` — repaired by `hω_gen`.* The statement without one is
-**false**: with `F = 𝔽₁₀₁`, `s = 2`, `ω = -1` (order 2), `k = 3`, `L = {1,…,7}` every other
-hypothesis holds (admissibility only forces `ord(ω) ≥ s`), yet for
-`A := span{enc 1, enc X²}` the encodings collapse to repeated-entry vectors (since
-`(-x)² = x²` and `ω² = 1`), giving
-`∑ᵢ dim(A ⊓ ker projᵢ) = n = 7 > 6 = finrank A · τ(2) · n`. The load-bearing source fact is
-[GK16 Lemma 12]'s folded-Wronskian criterion, stated for **`γ` a generator of `F×`**
-(`W_γ(1, X^d) = X^d(γ^d − 1)` vanishes when `γ^d = 1`, `d < k`). The pinned tex
-(`thm:folded-rs-are-subspace-design`) omits any order condition. We carry GK16's own
-generator hypothesis `hω_gen` — not a weaker `ord(ω) ≥ k` guard: that would block the known
-counterexample but is not licensed by the cited source, and a transcription must state
-exactly what its source proves, never an unlicensed hybrid strengthening. (The hypothesis is
-used exactly once, in `Polynomial.foldedWronskian_ne_zero_of_linearIndependent`.)
-
-*(2) `0 ∈ L` is permitted — repaired by the intra-orbit clause of `Admissible`.* This
-omission is independent of (1): the theorem is false with `0 ∈ L` **even when `hω_gen`
-holds**. ABF26 Definition 2.14 quantifies its admissibility condition only over *distinct*
-pairs `{α, β} ∈ (L choose 2)`, and GG25 Definition 2.18 likewise asks only `αᵢγᵗ ≠ αⱼ` for
-`i ≠ j`; neither excludes `0 ∈ L`. Counterexample: `F = ZMod 5`, `domain = (0, 1)`,
-`s = 3`, `k = 2`, `ω = 2` (a generator of `(ZMod 5)ˣ`, so `hω_gen` holds, and the paper's
-inter-orbit clause holds). Take `A := span{enc X}`, of dimension 1. The whole `s`-orbit of
-the point `0` degenerates to `{0}`, so the block at `0` is identically zero and contributes
-`dim = 1`, while the block at `1` contributes `0`; hence `∑ᵢ dim Aᵢ / n = 1/2`, whereas
-`dim A · τ(1) = (k/n)/(s − 1 + 1) = 1/3`. What fails in the proof is exactly `hfinj`, the
-injectivity of `(i, m) ↦ domain i · ω^m`, i.e. the root count over-counts.
-`ReedSolomon.Folded.Admissible` is deliberately **stronger** than ABF26 Definition 2.14: it
-adds the intra-orbit clause `α · ωⁱ ≠ α` for `0 < i < s`, which forces `0 ∉ L` whenever
-`s ≥ 2` (take `i = 1`). That clause is therefore **load-bearing for this theorem**, not
-merely a hedge protecting the folded-RS distance formula; it is what makes `Admissible`
-GR08's evaluation-point injectivity condition, and GK16 §4.2
-excludes `α = 0` for the same reason. Consequence for readers: this theorem is *weaker* than
-ABF26's printed claim, because it assumes more of `L` and `ω`.
-
-Boundary note: for `k ≥ s·|ι|` the code rate saturates at `1`, so the source profile satisfies
-`τ(r) ≥ 1` on all of `[1, s]` and `IsSubspaceDesign s τ C` holds for *every* code. Thus the
-statement is necessarily contentless there; its content lives in the intended
-`k < s·|ι|` regime (where the hypotheses are jointly satisfiable — e.g. `F = ZMod 5`,
-`ι = Fin 2`, `s = 2`, `k = 1`, `ω = 2`). -/
-theorem frs_is_subspaceDesign_gk16
+The proof is a Wronskian root count. Outside the main regime the bound is bookkeeping:
+every block dimension is at most `σ := dim A`, which settles `σ = 0` and `τ r ≥ 1`. In the
+remaining regime `1 ≤ r ≤ s` and `k < n * (s - r + 1)`, so the `n * s` folded evaluation
+points are distinct and nonzero, the encoder is injective on `degreeLT F k`, and `A`
+together with each `A ⊓ ker (proj i)` lifts to message-side subspaces `B` and `Nᵢ ≤ B` of
+the same dimension, the latter consisting of polynomials vanishing on the whole orbit
+`{domain i * ω ^ j | j < s}`. The `ω`-folded Wronskian `W` of a basis of `B` is nonzero and
+has `deg W ≤ σ * (k - 1)`, while each of the `n * (s - σ + 1)` distinct points
+`domain i * ω ^ m` with `m ≤ s - σ` is a root of `W` of multiplicity at least `dim Nᵢ`.
+Comparing the two gives `(s - σ + 1) * ∑ i, dim (A ⊓ ker (proj i)) ≤ σ * (k - 1)`, and
+`σ ≤ r` turns this into the design bound. -/
+theorem isSubspaceDesign_frsCode
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
@@ -894,46 +775,31 @@ theorem frs_is_subspaceDesign_gk16
   rw [hrw, le_div_iff₀ hb_pos]
   exact hSb
 
-/-- **ABF26 Theorem 2.18 [GK16], univariate-multiplicity half.** Let `ρ` be the
-alphabet-normalized rate of `UM[F, L, k, s]`. The code is a `τ`-subspace design for
+/-- Univariate multiplicity codes are subspace designs for the profile
 
-  `τ(r) = s · ρ / (s - r + 1)` when `1 ≤ r ≤ s`, and `τ(r) = 1` otherwise.
+  `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise,
 
-The rate is the actual code rate, so the statement remains exact in the saturated regime:
-`dim UM = min k (s·n)`. If `k > s·n`, then `ρ = 1` and the profile is already at least
-one; the substantive Wronskian argument runs only in the unsaturated branch.
+where `ρ` is the alphabet-normalized rate `LinearCode.alphabetRate (umCode domain k s)`.
 
-**Three source hypotheses are absent, each deliberately.**
+As in `isSubspaceDesign_frsCode`, `dim (umCode domain k s) = min k (s * n)`, so the
+statement stays exact in the saturated regime `k > s * n`, where `ρ = 1` makes it vacuous.
 
-*`|F| > n`* (printed in ABF26 as shared between the two halves) is not needed here: the
-embedding `domain : ι ↪ F` already supplies the only required property of the evaluation
-points, distinctness — and it supplies `|F| ≥ n` for free.
+The characteristic hypothesis is what makes `d !` a unit for every `d < k`, so that the
+classical Wronskian of a basis of a space of polynomials of degree `< k` is nonzero. It is
+phrased as the disjunction `ringChar F = 0 ∨ k ≤ ringChar F` so that characteristic zero,
+where the argument is unchanged, is not excluded by `ringChar F = 0` forcing `k = 0`.
 
-*`char F > k`* is weakened to `char F ≥ k`, which is ABF26 A.7's own condition (the paper's
-T2.18 prints `char > ρsn = k`, inconsistently with its A.7; the `≥` form is the correct one)
-and is what GK16 Lemma 10 actually needs — `d!` must be a unit for `d < k`. It is stated as
-the disjunction `ringChar F = 0 ∨ k ≤ ringChar F` so that characteristic-zero fields, for
-which the argument goes through unchanged, are not excluded by `ringChar F = 0` forcing
-`k = 0`.
+No relation between `s` and `k` is needed: if `s > k` then every polynomial of degree `< k`
+with a root of multiplicity at least `s` is zero, so every lifted block kernel is `⊥` and
+the design sum vanishes.
 
-*`s ≤ k`* (GK16 §5.1's `t ≤ m`, and ABF26 T2.18's `ρsn > s`) is not needed either. If
-`s > k` then every polynomial of degree `< k` with a root of multiplicity `≥ s` is zero, so
-each lifted block kernel `N i` is `⊥` and the design sum is `0`; the bound is then pure
-bookkeeping. The substantive Wronskian argument only ever uses `σ ≤ s`, which comes from
-`σ ≤ r ≤ s`.
-
-**Proof.** Lift a test subspace and each of its block kernels through the injective
-multiplicity encoder. For a basis of the resulting polynomial space, its classical
-Wronskian is nonzero by [GK16, Lemma 10]. If a lifted block kernel has dimension `t`, all
-of its polynomials vanish to multiplicity `s` at that block point; [GK16, Claim 19],
-formalized by `pow_dvd_classicalWronskian`, makes the Wronskian vanish there to
-multiplicity `(s-σ+1)t`. Summing over the distinct domain points and comparing with the
-Wronskian degree gives [GK16, Theorem 17]
-
-  `(s-σ+1) · Σᵢ dim(A ∩ ker(proj i)) ≤ σ · (k-1)`,
-
-which implies the stated ABF26 profile. -/
-theorem um_is_subspaceDesign_gk16
+The proof lifts a test subspace and each of its block kernels through the injective
+multiplicity encoder. The classical Wronskian `W` of a basis of the resulting polynomial
+space is nonzero, and a lifted block kernel of dimension `t` contributes a root of `W` at
+its block point of multiplicity at least `(s - σ + 1) * t`, by
+`pow_dvd_classicalWronskian`. Summing over the distinct evaluation points and comparing
+with `deg W ≤ σ * (k - 1)` gives the design bound. -/
+theorem isSubspaceDesign_umCode
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :

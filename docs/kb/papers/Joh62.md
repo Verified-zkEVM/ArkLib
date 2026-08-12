@@ -99,7 +99,7 @@ Xplore.
 
 - ~~Export `Jqℓ_eq_J` and `Jcap_le_J`, and reduce the three in-tree copies of the Johnson
   radius to one.~~ **Done.** `Jqℓ` is now *defined* as `J q (((ℓ-1)/ℓ) * δ)` with `Jqℓ_eq_J`
-  as the (`rfl`) bridge and `Jqℓ_paper_form` recovering ABF26 Definition 3.1's printed shape;
+  as the (`rfl`) bridge and `Jqℓ_eq_mul_one_sub_sqrt` recovering ABF26 Definition 3.1's printed shape;
   the two identical `q`-ary definitions collapsed to the single upstream
   `JohnsonBound.J` in `JohnsonBound/Lemmas.lean` (the downstream copy in
   `JohnsonBound/Basic.lean` is gone), `Jcap` lives beside the `sqrt_le_J` bridge in

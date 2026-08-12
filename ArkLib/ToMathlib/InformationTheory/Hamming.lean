@@ -9,15 +9,15 @@ import Mathlib.InformationTheory.Hamming
 /-!
 # Hamming distance under coordinate reindexing
 
-Mathlib's `hammingDist_comp` transports the *alphabet* along a map `f : α → β`; nothing
-there transports the *coordinate index*. This file provides that transport: precomposition
-with an index equivalence is a Hamming isometry.
+`hammingDist_comp` transports the *alphabet* along an injection `α → β`. This file adds the
+transport of the *coordinate index*: precomposition with an index equivalence is a Hamming
+isometry.
 
-Upstream target: `Mathlib.InformationTheory.Hamming`, next to `hammingDist_comp`.
+Intended as a candidate for upstreaming to `Mathlib.InformationTheory.Hamming`, next to
+`hammingDist_comp`.
 -/
 
-/-- Reindexing the coordinates by an equivalence preserves Hamming distance:
-precomposition with `e : ι' ≃ ι` is a Hamming isometry. -/
+/-- Reindexing the coordinates by an equivalence preserves Hamming distance. -/
 theorem hammingDist_comp_equiv {ι ι' α : Type*} [Fintype ι] [Fintype ι'] [DecidableEq α]
     (e : ι' ≃ ι) (x y : ι → α) :
     hammingDist (x ∘ e) (y ∘ e) = hammingDist x y := by

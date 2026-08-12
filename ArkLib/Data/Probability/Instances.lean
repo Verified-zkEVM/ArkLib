@@ -14,10 +14,13 @@ import Mathlib.Algebra.MvPolynomial.SchwartzZippel
 
 /-! # Probability Instances
 
+Basic probability instances and probability computations for `PMF`: uniform sampling,
+the Schwartz-Zippel bound in probability form, and collision bounds for linear forms.
+
 ## References
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-Agreement*][ABF26] (Lemma 2.1 and §6.4.1)
+Agreement*][ABF26]
 -/
 
 
@@ -542,17 +545,14 @@ theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : �
         exact mul_le_mul_of_nonneg_left (h b) zero_le
     _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
-/-- **Schwartz-Zippel Lemma** (Probability Form, parameterised by a degree bound `d`):
-For a non-zero `n`-variate polynomial `P` with `P.totalDegree ≤ d` over a finite domain `R`,
-the probability that `P(r)` evaluates to `0` for `r ←$ R^n` uniformly is at most `d / |R|`.
+/-- **Schwartz-Zippel**, in probability form at an arbitrary degree bound: for a nonzero
+`n`-variate polynomial `P` of total degree at most `d` over a finite domain `R`,
 
-The legacy specialisation (`d := n`) is `prob_schwartz_zippel_mv_polynomial`.
+  `Pr_{r ←$ᵖ R^n} [eval r P = 0] ≤ d / |R|` .
 
-This is the full-carrier wrapper around the sampling-set-generic
-`prob_eval_zero_univ_le_div` in `ArkLib.Data.MvPolynomial.SchwartzZippelCounting`.
-The finite-domain typeclasses are converted to a field by `Fintype.fieldOfDomain`.
-Mathlib's `MvPolynomial.schwartz_zippel_sum_degreeOf` can give a tighter coordinatewise
-bound when that statement shape is needed. -/
+The full-carrier case of `prob_eval_zero_univ_le_div`; `Fintype.fieldOfDomain` supplies the
+field structure. `MvPolynomial.schwartz_zippel_sum_degreeOf` gives a tighter coordinatewise
+bound where that shape is wanted. -/
 lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {n d : ℕ}
@@ -563,11 +563,8 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
   letI : Field R := Fintype.fieldOfDomain R
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
-/-- **Schwartz-Zippel Lemma** (Probability Form):
-For a non-zero multivariate polynomial `P` of total degree at most `n` over a finite field `R`,
-the probability that `P(r)` evaluates to 0 for a uniformly random `r` is at most `n / |R|`.
-
-`d := n` specialisation of `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
+/-- **Schwartz-Zippel**, in probability form at the degree bound `n`: the `d := n`
+specialisation of `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`. -/
 lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {n : ℕ}
     (P : MvPolynomial (Fin n) R) (h_nonzero : P ≠ 0) (h_deg : P.totalDegree ≤ n) :
@@ -575,23 +572,16 @@ lemma prob_schwartz_zippel_mv_polynomial {R : Type} [CommRing R] [IsDomain R] [F
       (n : ℝ≥0) / (Fintype.card R : ℝ≥0) :=
   prob_schwartz_zippel_mv_polynomial_of_totalDegree_le P h_nonzero h_deg
 
-/-- **Polynomial identity lemma in paper-individual-degree shape** ([ABF26] L2.1).
+/-- The polynomial identity lemma in individual-degree form: for a nonzero `m`-variate
+polynomial `P` of individual degree `< d` in each variable,
 
-For a non-zero `m`-variate polynomial `P` of *individual* degree `< d` in each variable
-(so `P ∈ F^<d[X_1, …, X_m]`):
+  `Pr_{r ←$ᵖ R^m} [eval r P = 0] ≤ m * (d - 1) / |R|` .
 
-  `Pr_{r ←$ᵖ F^m} [P(r) = 0] ≤ m · (d - 1) / |F|`.
+Obtained from `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` and
+`MvPolynomial.totalDegree_le_of_degreeOf_lt`.
 
-Wrapper around `prob_schwartz_zippel_mv_polynomial_of_totalDegree_le` via the
-`MvPolynomial.totalDegree_le_of_degreeOf_lt` from `ArkLib.Data.MvPolynomial.Degrees`.
-
-The `d = 0` corner splits on `m`: for `m ≥ 1` the hypothesis
-`h_indiv_deg : ∀ i, P.degreeOf i < 0` is unsatisfiable in `ℕ`, so there is nothing to
-prove; for `m = 0` it is vacuously satisfiable, and then both sides are `0` (the bound is
-`m * (d - 1) = 0`, and `Pr` is `0` because a nonzero constant never vanishes).
-The `ℝ≥0`-valued right-hand side is inherited from
-`prob_schwartz_zippel_mv_polynomial_of_totalDegree_le`, unlike the plain-`ENNReal` bounds
-of the collision lemmas further down this file. -/
+At `d = 0` the hypothesis `∀ i, P.degreeOf i < 0` is unsatisfiable for `m ≥ 1`, and for
+`m = 0` it is vacuous with both sides `0`, a nonzero constant never vanishing. -/
 lemma prob_polynomial_identity_le {R : Type} [CommRing R] [IsDomain R] [Fintype R]
     {m d : ℕ} (P : MvPolynomial (Fin m) R)
     (h_nonzero : P ≠ 0) (h_indiv_deg : ∀ i, P.degreeOf i < d) :
@@ -661,33 +651,21 @@ theorem _root_.PMF.map_uniformOfFintype_of_fiber_const
     rw [h_empty, Finset.card_empty]
     simp
 
-/-! ## Linear-form collision bounds ([ABF26] §6.4.1 counting inputs)
+/-! ## Collision bounds
 
-Collision-probability bounds feeding the two counting steps of the proof of [ABF26]
-Lemma 6.12, the toy-protocol list-decoding lower-bound attack (formalised in a later split
-of the [ABF26] development).
+Bounds of the form `≤ 1/|F|`, of the shape required by the pairwise-collision hypothesis of
+`Probability.exists_large_image_of_pairwise_collision_bound`.
 
-In the pinned tex, the proof of Lemma 6.12 applies Claim B.1
-(`Probability.exists_large_image_of_pairwise_collision_bound`) **twice**, once per counting
-step, and each application needs its own `≤ 1/|F|` pairwise-collision bound; those two
-bounds are the two theorems below. (The published PDF instead runs the second step as a
-pigeonhole, choosing `µ₁ ∈ F \ B` so that `ψ : S_v → Γ_{µ₁,µ₂}` is *fully* injective, and
-prints the weaker `|Λ| / (|F| + |Λ| − 1)` in place of the tex's `|Λ| / (|F| + 2|Λ|)`.)
-
-* `Pr_map_eq` — a pushforward probability identity (change of variables for a
-  `PMF.map`), used to reduce `Pr` over the distribution of collision maps `φ_v`
-  to `Pr` over the uniform sampling of `v`.
-* `prob_dotProduct_eq_zero_le` — a nonzero `F`-linear form vanishes with
-  probability `≤ 1/|F|`: the pairwise-collision hypothesis of the **first** Claim-B.1
-  application, the one producing a `v` with `|S_v|` large.
-* `prob_uniform_le_inv_of_card_le_one` — a predicate with at most one satisfying
-  value has uniform-sampling probability `≤ 1/|F|`: the pairwise-collision hypothesis of
-  the **second** Claim-B.1 application, the one producing a `µ₁` with large image set.
+* `Pr_map_eq` — change of variables for a `PMF.map`, reducing a probability over a
+  pushforward distribution to one over the sampling it is pushed forward from.
+* `prob_dotProduct_eq_zero_le` — a nonzero `F`-linear form vanishes with probability
+  `≤ 1/|F|`.
+* `prob_uniform_le_inv_of_card_le_one` — a predicate with at most one satisfying value has
+  uniform-sampling probability `≤ 1/|F|`.
 -/
 
-/-- **Pushforward probability (change of variables).** The probability of an event
-`Q` under the pushforward distribution `p.map g` equals the probability of the
-pulled-back event `Q ∘ g` under `p`. -/
+/-- Change of variables: the probability of an event `Q` under a pushforward distribution
+`p.map g` is the probability of the pulled-back event `Q ∘ g` under `p`. -/
 theorem Pr_map_eq {α β : Type} (p : PMF α) (g : α → β) (Q : β → Prop) :
     Pr_{ let b ← p.map g }[ Q b ] = Pr_{ let a ← p }[ Q (g a) ] := by
   classical
@@ -705,13 +683,9 @@ theorem Pr_map_eq {α β : Type} (p : PMF α) (g : α → β) (Q : β → Prop) 
   · intro b hb
     simp [hb]
 
-/-- **A nonzero `F`-linear form vanishes with probability exactly `1/|F|`.**
-For `d : Fin k → F` nonzero, the linear form `v ↦ ∑ⱼ dⱼ · vⱼ` evaluates to `0`
-with probability exactly `1/|F|` over a uniformly random `v ←$ F^k`: its kernel
-is a hyperplane of `|F|^{k-1}` points out of `|F|^k`.
-
-The `≤`-form actually consumed by the [ABF26] §6.4.1 counting argument is
-`prob_dotProduct_eq_zero_le` below. -/
+/-- A nonzero `F`-linear form vanishes with probability exactly `1/|F|`: for nonzero
+`d : Fin k → F`, the form `v ↦ ∑ j, d j * v j` has as kernel a hyperplane of `|F| ^ (k-1)`
+points out of `|F| ^ k`. -/
 theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
     Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
@@ -762,23 +736,16 @@ theorem prob_dotProduct_eq_zero_eq_inv_card {F : Type} [Field F] [Fintype F] {k 
       (ENNReal.mul_ne_top (by simp) (by simp)) hF (by simp)]
   ring
 
-/-- `≤`-corollary of `prob_dotProduct_eq_zero_eq_inv_card`, in the shape consumed by the
-[ABF26] §6.4.1 collision counting (and matching the `≤ 1/|F|` form printed in the paper):
-a nonzero `F`-linear form `v ↦ ∑ⱼ dⱼ · vⱼ` vanishes with probability at most `1/|F|`
-over a uniformly random `v ←$ F^k`. -/
+/-- `≤`-form of `prob_dotProduct_eq_zero_eq_inv_card`: a nonzero `F`-linear form vanishes
+with probability at most `1/|F|` over a uniformly random argument. -/
 theorem prob_dotProduct_eq_zero_le {F : Type} [Field F] [Fintype F] {k : ℕ}
     (d : Fin k → F) (hd : d ≠ 0) :
     Pr_{ let v ←$ᵖ (Fin k → F) }[ (∑ j, d j * v j = 0) ]
       ≤ (Fintype.card F : ENNReal)⁻¹ :=
   le_of_eq (prob_dotProduct_eq_zero_eq_inv_card d hd)
 
-/-- **A predicate with `≤ 1` satisfying value has uniform probability `≤ 1/|F|`.**
-This is the pairwise-collision hypothesis of the **second** Claim-B.1 application in
-[ABF26] Lemma 6.12 (see the section docstring above). With `µ₂` fixed outside the second
-coordinates of `S_v`, two distinct points of `S_v` have equal image under
-`(a₁, a₂) ↦ (µ₁ − a₁)/(a₂ − µ₂)` for at most one `µ₁` — no solution when the second
-coordinates agree, an affine equation in `µ₁` otherwise — so a uniformly random `µ₁`
-collides them with probability at most `1/|F|`. -/
+/-- A predicate with at most one satisfying value holds with probability at most `1/|F|`
+under uniform sampling from `F`. -/
 theorem prob_uniform_le_inv_of_card_le_one {F : Type} [Fintype F] [Nonempty F]
     (P : F → Prop) [DecidablePred P] (h : (Finset.univ.filter P).card ≤ 1) :
     Pr_{ let r ←$ᵖ F }[ P r ] ≤ (Fintype.card F : ENNReal)⁻¹ := by
@@ -793,10 +760,9 @@ end ProbabilityTools
 
 section UniformProductBound
 
-/-- **Uniform product bound.** For a uniformly random function `xs : Fin t → ι` into a finite
-nonempty type `ι`, the probability that every coordinate lands in a fixed `A : Finset ι` is
-exactly `(|A| / |ι|) ^ t`: the satisfying functions are exactly
-`Fintype.piFinset (fun _ ↦ A)`, of cardinality `|A| ^ t`, out of `|ι| ^ t` functions total. -/
+/-- For a uniformly random `xs : Fin t → ι` into a finite nonempty type, the probability that
+every coordinate lands in a fixed `A : Finset ι` is `(|A| / |ι|) ^ t`: the satisfying
+functions are exactly `Fintype.piFinset (fun _ ↦ A)`, of cardinality `|A| ^ t`. -/
 theorem prob_uniform_pi_mem_finset_eq {ι : Type} [Fintype ι] [Nonempty ι]
     (A : Finset ι) (t : ℕ) :
     Pr_{ let xs ←$ᵖ (Fin t → ι) }[ ∀ i, xs i ∈ A ] =
@@ -812,9 +778,7 @@ theorem prob_uniform_pi_mem_finset_eq {ι : Type} [Fintype ι] [Nonempty ι]
   push_cast
   rw [div_eq_mul_inv, div_eq_mul_inv, mul_pow, ENNReal.inv_pow]
 
-/-- `≤`-corollary of `prob_uniform_pi_mem_finset_eq`, in the shape usually consumed by
-round-by-round error accounting: the probability that a uniformly random tuple of `t`
-coordinates all land in `A` is at most `(|A| / |ι|) ^ t`. -/
+/-- `≤`-form of `prob_uniform_pi_mem_finset_eq`. -/
 theorem prob_uniform_pi_mem_finset_le {ι : Type} [Fintype ι] [Nonempty ι]
     (A : Finset ι) (t : ℕ) :
     Pr_{ let xs ←$ᵖ (Fin t → ι) }[ ∀ i, xs i ∈ A ] ≤

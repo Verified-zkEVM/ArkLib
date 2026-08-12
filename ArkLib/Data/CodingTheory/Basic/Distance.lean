@@ -40,29 +40,26 @@ import CompPoly.Data.Nat.Bitwise
 
   ## Type conventions
 
-  Distance quantities span several numeric types depending on the use case:
+  Distance quantities live in different numeric types:
 
   - Hamming distance (absolute, pairwise): `ℕ` — `hammingDist`, `Δ₀(u, v)`.
-  - Min distance of a code (absolute): `ℕ` — `Code.minDist`, `Code.dist` (`‖C‖₀`).
+  - Minimum distance of a code (absolute): `ℕ` — `Code.minDist`, `Code.dist` (`‖C‖₀`).
   - Distance to a code (absolute, may be `⊤`): `ℕ∞` — `distFromCode`, `Δ₀(u, C)`.
   - Relative Hamming distance (pairwise): `ℚ≥0` — `relHammingDist`, `δᵣ(u, v)`
     (in `Basic/RelativeDistance.lean`).
   - Relative distance to a code: `ENNReal` — `relDistFromCode`, `δᵣ(u, C)`
     (in `Basic/RelativeDistance.lean`).
   - Code rate: `ℚ≥0` — `LinearCode.rate`, `ρ C` (in `Basic/LinearCode.lean`).
-  - Computable variants do **not** share a single type: `dist'` (`‖C‖₀'`) and
-    `distFromCode'` (`Δ₀'(u, C)`) are `ℕ∞`, matching their generic counterparts,
-    whereas `relDistFromCode'` (`δᵣ'(u, C)`) is `ℚ≥0` — it requires `[Nonempty C]`
-    instead of using a `⊤` element, because there is no `ℚ≥0∞` yet (see the TODO below).
 
-  See `docs/wiki/coding-theory-conventions.md` for the broader set of
-  conventions (theorem naming, notation, ε-error types).
+  The computable variants do not share a single type: `dist'` (`‖C‖₀'`) and `distFromCode'`
+  (`Δ₀'(u, C)`) are `ℕ∞`, matching their generic counterparts, whereas `relDistFromCode'`
+  (`δᵣ'(u, C)`) is `ℚ≥0` and takes `[Nonempty C]` instead of using a `⊤` element, there
+  being no `ℚ≥0∞` (see the TODO below).
 
-  Bridges between these realms are spelled out in the "Switching between different
-  distance realms" subsection below (`relDistFromCode_eq_distFromCode_div`,
-  `distFromCode_le_iff_relDistFromCode_le`, etc.). Downstream consumers should
-  prefer the generic forms (`Δ₀`, `δᵣ`) and only switch to computable forms when
-  the proof actually needs evaluation.
+  Conversions are collected under "Switching between different distance realms" below
+  (`relDistFromCode_eq_distFromCode_div`, `distFromCode_le_iff_relDistFromCode_le`, …).
+  Prefer the generic forms `Δ₀` and `δᵣ`, switching to a computable form only where a proof
+  needs evaluation.
 
   ## Main Definitions
   1. Distance between two words:
@@ -141,36 +138,18 @@ theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
   simp only [hammingDist, Function.comp_apply]
   exact congrArg _ (Finset.filter_congr fun i _ => by simp [he.ne_iff])
 
-/-- The **disagreement set** of two `(ι → R)`-words: the coordinates where they differ.
+/-- The **disagreement set** of two words: the coordinates on which they differ, as a
+`Finset`. Its cardinality is the Hamming distance
+(`hammingDist_eq_disagreementCols_card`).
 
-Returns a `Finset ι` (requires `[Fintype ι]` and `[DecidableEq R]`).
-The cardinality is the standard Hamming distance — see
-`hammingDist_eq_disagreementCols_card`.
+This is the canonical primitive for pointwise disagreement. `Matrix.neqCols` is the same
+notion for matrices, namely this set applied to the transposes
+(`Matrix.neqCols_eq_disagreementCols_transpose`); the various `disagreementSet`s elsewhere in
+the tree each carry extra structure (interleaved tuples, answer-table comparisons,
+block fibers) and are specialisations rather than instances.
 
-This is intended as the canonical primitive for "coordinates where two
-words disagree". It is currently consumed by `ArkLib/Data/CodingTheory/Erasure.lean`
-and by `closeToWord_iff_exists_possibleDisagreeCols` below; most other
-pointwise-disagreement sites in the tree still inline the underlying filter,
-and migrating them is future work.
-
-`Matrix.neqCols` (`ArkLib/Data/CodingTheory/Prelims.lean`) is the *same*
-notion in matrix clothing: it collects the columns on which two matrices
-differ, which is exactly this disagreement set applied to the transposes.
-See `Matrix.neqCols_eq_disagreementCols_transpose` for the bridge.
-
-By contrast, the paper-shape `disagreementSet`s in
-`ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean`,
-`ArkLib/ProofSystem/Stir/Quotienting.lean`,
-`ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean` and
-`ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean` each carry
-additional structure (interleaved 4-tuples, `Ans`-table comparisons,
-block-fibers, iterated folds); those are intentional specialisations rather
-than instances of this base. Pure pointwise disagreement should use this
-primitive directly.
-
-Named `disagreementCols` rather than `disagreementSet` so that paper-
-specific subtypes that `open Code` can keep their `disagreementSet`
-local name without a resolution clash. -/
+The name avoids `disagreementSet` so that a namespace opening `Code` can still use that name
+locally. -/
 def disagreementCols (u v : n → R) : Finset n :=
   Finset.filter (fun i => u i ≠ v i) Finset.univ
 
@@ -184,12 +163,9 @@ lemma hammingDist_eq_disagreementCols_card (u v : n → R) :
     hammingDist u v = (disagreementCols u v).card := by
   simp only [hammingDist, disagreementCols, ne_eq]
 
-/-- `Matrix.neqCols` is `Code.disagreementCols` on the transposes: the columns on which
-two matrices differ are precisely the coordinates on which their transposes — read as
-words over the alphabet `ι → F` of columns — disagree.
-
-This identifies the matrix-shaped primitive in `ArkLib/Data/CodingTheory/Prelims.lean`
-with the base disagreement set, so results about one transport to the other. -/
+/-- `Matrix.neqCols` is `Code.disagreementCols` on the transposes: the columns on which two
+matrices differ are the coordinates on which their transposes, read as words over the
+alphabet of columns, disagree. -/
 lemma _root_.Matrix.neqCols_eq_disagreementCols_transpose
     {ι ι' F : Type*} [Fintype ι] [Fintype ι'] [DecidableEq F] (U V : Matrix ι ι' F) :
     Matrix.neqCols U V = disagreementCols U.transpose V.transpose := by
@@ -263,13 +239,8 @@ lemma pairDist_ge_code_mindist_of_ne {C : Set (n → R)} {u v : n → R}
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
 
-/-- Two codewords are equal if all coordinates on which they disagree lie in a set smaller
-than the code's minimum distance.
-
-This is the metric core of erasure-decoding uniqueness: if `T` is the set of erased
-coordinates, consistency with the received word implies `disagreementCols u v ⊆ T`. The
-statement is deliberately about an arbitrary code and an arbitrary exceptional-coordinate
-set, rather than being tied to `Option`-valued erased words or to linear codes. -/
+/-- Two codewords are equal if the coordinates on which they disagree are contained in a set
+of size less than the code's minimum distance. -/
 theorem eq_of_disagreementCols_subset_of_card_lt_minDist
     {C : Set (n → R)} {u v : n → R} (hu : u ∈ C) (hv : v ∈ C) (T : Finset n)
     (hsub : disagreementCols u v ⊆ T) (hcard : T.card < minDist C) :

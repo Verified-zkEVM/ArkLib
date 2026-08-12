@@ -24,7 +24,7 @@ linear codes, and basic constructions and dimension/rate facts for linear codes.
 ## References
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-Agreement*][ABF26] (§2.2: Definition 2.5 and Lemma 2.6)
+Agreement*][ABF26]
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
 with Mutual Correlated Agreement*][BCGM25]
@@ -240,16 +240,13 @@ def length [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
   Fintype.card ι
 
 /--
-The **base-field-dimension rate** of a code: `dim MC / |ι|`, the `F`-dimension of the
-code divided by the *block length* alone.
+The **base-field-dimension rate** of a code: `dim MC / |ι|`, the `F`-dimension of the code
+divided by the block length alone.
 
-For a code over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`.
-For a module alphabet `A = F^s` (folded, interleaved, …) it is **not** the
-alphabet-normalized rate `log_{|A|} |C| / n = dim/(s·n)` of [ABF26] Definition 2.5 — this
-definition never divides by the alphabet dimension `s`. The paper's normalization is
-`alphabetRate` below; `CodingTheory.subspaceDesign_tau_lower` and
-`CodingTheory.frs_is_subspaceDesign_gk16` use its `ℝ`-cast form `finrank/(s·n)` inline
-(the `finrank/n` form of those statements is false — `C = ⊤` is a counterexample).
+Over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`. Over a module
+alphabet `A = F^s` it is *not* the alphabet-normalized rate `log_{|A|} |C| / n = dim/(s*n)`,
+since it never divides by the alphabet dimension `s`; that normalization is `alphabetRate`
+below.
 -/
 noncomputable def rate [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℚ≥0 :=
@@ -266,17 +263,13 @@ scoped macro_rules
   | `(ρ $t:term) => `(LinearCode.rate $t)
 
 /--
-The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`
-(the linear-code specialization of [ABF26] Definition 2.5): when `F` is a finite nontrivial
-field and `s ≥ 1`, the paper's rate for `Σ = F^s` is
-`log_{|Σ|} |C| / n = dim/(s·n)`. The formula below is its algebraic extension to all `s`,
-all finite coordinate types, and the same `Semiring` generality as `rate`; in particular it
-assigns `0` when `s = 0` or the block length is zero.
-This is the normalization `rate` does **not** provide — `rate` divides by the block length
-alone — and the two agree when `s = 1`
-(`alphabetRate_one_eq_rate`). It is the rate appearing (inline, in its `ℝ`-cast form
-`alphabetRate_cast_eq`) in `CodingTheory.subspaceDesign_tau_lower` and
-`CodingTheory.frs_is_subspaceDesign_gk16`.
+The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`:
+`dim MC / (s * |ι|)`.
+
+For a finite nontrivial field `F` and `s ≥ 1` this is `log_{|Σ|} |C| / n` for the alphabet
+`Σ = F^s`, the rate relative to the alphabet rather than to the base field. The formula is
+algebraically total: it assigns `0` when `s = 0` or the block length is zero. It agrees
+with `rate` exactly when `s = 1` (`alphabetRate_one_eq_rate`).
 -/
 noncomputable def alphabetRate [Semiring F] {s : ℕ}
     (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=
@@ -290,14 +283,13 @@ lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
   rw [alphabetRate, rate, div_div, mul_comm]
 
 /-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
-rate: [ABF26] D2.5 and `rate` agree there. -/
+rate. -/
 lemma alphabetRate_one_eq_rate [Semiring F]
     (MC : ModuleCode ι F (Fin 1 → F)) :
     alphabetRate MC = rate MC := by
   rw [alphabetRate_eq_rate_div, Nat.cast_one, div_one]
 
-/-- `alphabetRate` in the `ℝ`-cast shape used by the subspace-design statements
-(`subspaceDesign_tau_lower`, `frs_is_subspaceDesign_gk16`): `finrank/(s·n)`. -/
+/-- `alphabetRate` cast to `ℝ`, in the explicit form `finrank / (s * n)`. -/
 lemma alphabetRate_cast_eq [Semiring F] {s : ℕ}
     (MC : ModuleCode ι F (Fin s → F)) :
     (alphabetRate MC : ℝ) = (Module.finrank F MC : ℝ) / (s * Fintype.card ι) := by
@@ -671,14 +663,12 @@ theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]
       (Nat.add_le_add_right (Nat.sub_le_sub_left hdist_le_min _) 1)
   exact h1.trans hmono'
 
-/-- **Singleton bound, module-alphabet finrank form.** For an `F`-linear code over a finite
-module alphabet `A` (a code `C ⊆ A^n` presented as an `F`-submodule of `ι → A`), the
-`F`-dimension is bounded by `finrank F A · (n − (d − 1))` where `d = Code.dist`.
+/-- Singleton bound over a module alphabet: for an `F`-linear code `C ⊆ A^n` with `A` a
+finite `F`-module, `dim_F C ≤ finrank F A * (n - (d - 1))` where `d = Code.dist C`.
 
-Specialises to (the `dist` form of) `singleton_bound_linear` at `A = F`, and covers the
-block alphabets `A = Fin s → F` of interleaved/folded codes, where `finrank F A = s`.
-Proof: compare `|C| = |F|^{dim C}` with the alphabet-general cardinality
-`singleton_bound`. -/
+At `A = F` this is the `dist` form of `singleton_bound_linear`; at `A = Fin s → F`, the
+block alphabet of interleaved and folded codes, the leading factor is `s`. The proof
+compares `|C| = |F| ^ dim C` with the alphabet-general `singleton_bound`. -/
 theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F] [Finite F]
     {A : Type*} [AddCommGroup A] [Module F A] [Finite A] [DecidableEq A]
     (C : Submodule F (ι → A)) :
@@ -709,12 +699,11 @@ def moduleCodeDist' {F A} {ι} [Fintype ι] [Semiring F] [Fintype A] [DecidableE
 
 end Computable
 
-/-- **Bridge: `IsMDS` ↔ rate-distance form.** The `IsMDS` predicate (defined upstream in
-this file as the additive Nat form `Code.dist LC.carrier = length LC - dim LC + 1`) is
-equivalent to the rate-distance form `δ_min(LC) / n = 1 - ρ + 1/n` where `ρ = k/n` is
-the rate. The latter is the form [ABF26] uses throughout §2-§3 (Lemma 2.6, Corollary 3.3).
+/-- `IsMDS` in rate-distance form: a linear code is MDS iff its relative minimum distance
+satisfies `δ_min / n = 1 - ρ + 1/n`, where `ρ = dim / n` is the rate.
 
-Requires `[Nonempty ι]` so `(Fintype.card ι : ℝ) ≠ 0`. -/
+This is the real-valued reading of the defining `ℕ`-equation
+`Code.dist = length - dim + 1`. `[Nonempty ι]` is needed for `(Fintype.card ι : ℝ) ≠ 0`. -/
 lemma IsMDS_iff_rate_distance
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [DecidableEq F]

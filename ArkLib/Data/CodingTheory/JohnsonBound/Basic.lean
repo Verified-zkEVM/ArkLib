@@ -18,7 +18,7 @@ In what follows we reference theorems from [listdecoding] by default.
 * [Guruswami, V. and others, *Algorithmic results in list decoding*][listdecoding]
 * [Guruswami, V., Rudra, A., and Sudan, M., *Essential coding theory*][codingtheory]
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-Agreement*][ABF26] (Definition 3.1)
+Agreement*][ABF26]
 -/
 
 open Fintype Finset Real
@@ -50,14 +50,10 @@ def JohnsonConditionStrong (B : Finset (Fin n → F)) (v : Fin n → F) : Prop :
   let frac := q / (q - 1)
   (1 - frac * d / n) < (1 - frac * e / n) ^ 2
 
-/-- **[ABF26] Definition 3.1, `J`.** The asymptotic ("capacity") Johnson bound
+/-- The asymptotic ("capacity") Johnson bound `1 - √(1 - δ)`, the `q → ∞` limit of the
+`q`-ary `JohnsonBound.J`.
 
-  `J(δ) := 1 - √(1 - δ)`
-
-which is the `q → ∞` limit of the `q`-ary `J q δ`. It is named `Jcap` (Johnson — *cap*acity) so
-that the pre-existing `J`, which is the paper's `q`-parametrised `J_q`, need not be renamed.
-
-It is *not* the binary Johnson bound: `J_2(δ) = ½(1 - √(1 - 2δ)) ≠ 1 - √(1 - δ)`. -/
+This is not the binary Johnson bound, which is `J 2 δ = (1 - √(1 - 2δ))/2`. -/
 noncomputable def Jcap (δ : ℝ) : ℝ := 1 - √(1 - δ)
 
 @[simp]
@@ -73,11 +69,7 @@ lemma division_by_conjugate {a b : ℝ} (hpos : 0 ≤ b) (hnonzero : a + √b �
   ring_nf
   simp_all
 
-/-- **[ABF26] Definition 3.1, `J(δ) ≤ J_q(δ)`.** The asymptotic Johnson bound
-`Jcap δ = 1 - √(1 - δ)` is at most the `q`-ary bound `J q δ`.
-
-(The bound `1 - √(1-δ)` is the `q → ∞` *capacity* bound, not the binary Johnson bound —
-the latter is `J 2 δ = ½(1 - √(1 - 2δ))`.) -/
+/-- The asymptotic Johnson bound is at most the `q`-ary one: `Jcap δ ≤ J q δ`. -/
 lemma sqrt_le_J {q δ : ℚ} (hq : q > 1) (hx0 : 0 ≤ δ) (hx1 : δ ≤ 1)
     (hqx : q / (q - 1) * δ ≤ 1) :
     Jcap δ ≤ J q δ := by

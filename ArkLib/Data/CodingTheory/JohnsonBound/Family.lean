@@ -12,102 +12,69 @@ import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.ToMathlib.InformationTheory.Hamming
 
 /-!
-# ABF26 §3.1 — Johnson family `J_{q,ℓ}, J_q, J` and Theorem 3.2 / Corollary 3.3
+# Johnson list-size bounds for codes and code families
 
-Extensions to `JohnsonBound/Basic.lean` matching the paper-shaped statements from
-ABF26 §3.1 (Arnon-Boneh-Fenzi, *Open Problems in List Decoding and Correlated
-Agreement*, 2026).
+Johnson-radius bounds on the list size `Lambda C δ`, the number of codewords within relative
+distance `δ` of a given word, and their specializations to MDS and Reed-Solomon families.
 
-Two of ABF26 Definition 3.1's three Johnson functions already live upstream:
-`JohnsonBound.J q δ`, in [`JohnsonBound/Lemmas.lean`](Lemmas.lean), is the paper's `J_q(δ)`,
-and `JohnsonBound.Jcap δ = 1 - √(1 - δ)`, in [`JohnsonBound/Basic.lean`](Basic.lean) (the
-conclusion of `sqrt_le_J` there), is the paper's asymptotic `J(δ)`. This file adds the
-remaining member:
+## Main definitions
 
-- `JohnsonBound.Jqℓ q ℓ δ` — paper's `J_{q,ℓ}(δ)`, with the `(ℓ-1)/ℓ` factor inside
-  the square root (matching the `.tex`, ~line 1347). Since `1 - 1/q = 1/(q/(q-1))`, the
-  list parameter is a pure *rescaling of the radius*, so `Jqℓ` is **defined** as
-  `J q (((ℓ-1)/ℓ) · δ)` rather than re-spelled; `Jqℓ_eq_J` is the (definitional) bridge to
-  the existing `J` API and `Jqℓ_paper_form` recovers the paper's printed shape.
+* `JohnsonBound.Jqℓ q ℓ δ` — the `q`-ary, list-`ℓ` Johnson function
+  `(1 - 1/q) * (1 - √(1 - q/(q-1) * (ℓ-1)/ℓ * δ))`, completing the family whose other two
+  members are `JohnsonBound.J` (its `ℓ → ∞` limit) and `JohnsonBound.Jcap` (the `q → ∞`
+  limit of that).
 
-The three are related by `J_{q,ℓ}(δ) →_{ℓ → ∞} J_q(δ) →_{q → ∞} J(δ)`; we state the
-limit relationships in docstrings but do not formalise the limits (the paper does
-not prove them either).
+## Main statements
 
-The file also states the paper-shaped versions of:
+* `CodingTheory.johnson_bound_lambda_le_ell` — the Johnson bound over an arbitrary finite
+  alphabet: `Lambda C (Jqℓ q ℓ (δ_min C)) ≤ ℓ` for every `ℓ ≥ 1`.
+* `CodingTheory.mds_johnson_lambda_le_of_rate_distance` — for a code of rate `ρ` satisfying
+  the MDS rate-distance equation and any `η > 0`, `Lambda C (1 - √ρ - η) ≤ 1/(2*η*ρ)`.
+* `CodingTheory.mds_johnson_lambda_le` — the field-linear wrapper, taking `LinearCode.IsMDS`
+  in place of the rate hypotheses.
+* `CodingTheory.rs_lambda_le_johnson_mds`, `CodingTheory.irs_lambda_le_johnson_mds`,
+  `CodingTheory.frs_lambda_le_johnson_mds` — the same bound at Reed-Solomon, interleaved
+  Reed-Solomon, and folded Reed-Solomon codes.
+* `CodingTheory.johnson_listDecodable` — the Johnson bound in the `listDecodable` shape.
 
-- `johnson_bound_lambda_le_ell` — ABF26 Theorem 3.2 [Joh62]:
-  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ` for every `ℓ ≥ 1`, the paper's full range (`ℓ = 0` is
-  genuinely false as encoded — a Lean-side artefact of `ℚ`-division, see the docstring).
-- `mds_johnson_lambda_le_of_rate_distance` — ABF26 Corollary 3.3 over an arbitrary finite
-  alphabet, parameterised by the alphabet-normalized rate and the MDS rate-distance equation:
-  for any MDS code `C` of rate `ρ` and `η > 0`, `|Λ(C, 1 - √ρ - η)| ≤ 1/(2·η·ρ)`.
-- `mds_johnson_lambda_le` — the field-linear wrapper, deriving the generic theorem's rate
-  assumptions from `LinearCode.IsMDS`.
-- `rs_lambda_le_johnson_mds` — C3.3 at Reed–Solomon, via the pre-existing
-  `ReedSolomon.isMDS_code`.
-- `johnson_listDecodable` — T3.2 in the `ListDecodable.listDecodable` shape consumed by the
-  STIR/WHIR development.
-
-`johnson_bound_lambda_le_ell` (T3.2) is **fully proven**: the in-tree absolute-distance
-Johnson bound (`johnson_bound` in `JohnsonBound/Basic.lean`, now field-free) is ported to
-ABF26's `Lambda`/`Jqℓ` form. The numeric core is factored into `johnson_card_le_ell`
-(stated over an abstract `Finset (Fin n → α)`), and the theorem reindexes an arbitrary
-finite index type `ι` to `Fin n` via `hammingDist_comp_equiv`
-(`ArkLib/ToMathlib/InformationTheory/Hamming.lean`).
-
-`mds_johnson_lambda_le_of_rate_distance` (C3.3) is **fully proven** for arbitrary finite
-alphabets, derived from T3.2 and the domination `domination_core`. The very-low-rate MDS
-"Plotkin corner" (where the `Jqℓ` radicand guard fails — genuinely reachable, e.g.
-`[4,2,3]` over `𝔽₃`) is closed by `plotkin_card_le_ell`, a q-ary Plotkin bound extracted
-from the in-tree Johnson counting lemma: past the Plotkin radius the *whole code* has fewer
-than `ℓ` words, so `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)`. The field-linear theorem only supplies
-its rate and rate-distance equation via `IsMDS_iff_rate_distance`; module and interleaved
-codes can supply their alphabet-normalized versions to the same generic core.
+The alphabet-generic bound is proved from the absolute-distance Johnson bound of
+`JohnsonBound/Basic.lean`, with the very-low-rate regime — where the Johnson radicand turns
+negative — handled by the `q`-ary Plotkin bound `plotkin_card_le_ell`.
 
 ## References
 
+* [Johnson, S. M., *A new upper bound for error-correcting codes*][Joh62]
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
-* [Johnson, S. M., *A new upper bound for error-correcting codes*][Joh62]
 -/
 
 namespace JohnsonBound
 
 open Real
 
-/-- **ABF26 Definition 3.1, `J_{q,ℓ}`.** The q-ary ℓ-radius Johnson function:
+/-- The `q`-ary, list-`ℓ` Johnson function
 
-  `J_{q,ℓ}(δ) := (1 - 1/q) · (1 - √(1 - q/(q-1) · (ℓ-1)/ℓ · δ))`
+  `J_{q,ℓ}(δ) = (1 - 1/q) * (1 - √(1 - q/(q-1) * (ℓ-1)/ℓ * δ))` .
 
-Because `1 - 1/q = 1/(q/(q-1))`, the list parameter only *rescales the radius*: the displayed
-expression is exactly the pre-existing `J q` evaluated at `((ℓ-1)/ℓ) · δ`. That is how `Jqℓ` is
-defined here, so the existing `J` API (`sqrt_le_J`, `johnson_e_div_ne_J`, …) applies to it
-directly. `Jqℓ_eq_J` is the bridge (definitional) and `Jqℓ_paper_form` recovers the printed
-shape above.
+Since `1 - 1/q = 1/(q/(q-1))`, the list parameter only rescales the radius, so `Jqℓ` is
+defined as `J q (((ℓ-1)/ℓ) * δ)` and the whole `J` API applies to it directly;
+`Jqℓ_eq_mul_one_sub_sqrt` recovers the displayed form.
 
-The `(ℓ-1)/ℓ` list factor matches the canonical `.tex` (~line 1347). It is the
-classical list-`ℓ` Johnson factor (= `1 - 1/ℓ`, cf. [codingtheory]), increasing in `ℓ`,
-so a *smaller* list budget `ℓ` gives a *smaller* radius. Both `(ℓ-1)/ℓ` and the
-limiting factor `1` agree as `ℓ → ∞`, so the paper's `J_q = lim_{ℓ→∞} J_{q,ℓ}`
-is unaffected.
-
-For `ℓ = 2` this is the *list-size-two* Johnson radius. (It is unrelated to the *binary*
-Johnson radius, which is `J 2 δ` — the alphabet size `q` and the list budget `ℓ` are
-independent parameters.) As `ℓ → ∞`, `Jqℓ q ℓ δ → J q δ` (the existing `JohnsonBound.J`).
-The `ℓ` parameter is the target list size. -/
+The list factor `(ℓ-1)/ℓ = 1 - 1/ℓ` increases in `ℓ`, so a smaller list budget gives a
+smaller radius, and `Jqℓ q ℓ δ → J q δ` as `ℓ → ∞`. The alphabet size `q` and the list
+budget `ℓ` are independent parameters: `Jqℓ 2 ℓ δ` is the binary radius, `Jqℓ q 2 δ` the
+list-size-two radius. -/
 noncomputable def Jqℓ (q ℓ : ℚ) (δ : ℚ) : ℝ := J q (((ℓ - 1) / ℓ) * δ)
 
-/-- **The list parameter is a radius rescaling.** `J_{q,ℓ}(δ) = J_q(((ℓ-1)/ℓ)·δ)`, so every
-fact about the pre-existing `JohnsonBound.J` transfers to `Jqℓ` through this bridge. Holds by
-definition; stated so that consumers need not unfold `Jqℓ`. -/
+/-- The list parameter of `Jqℓ` is a rescaling of the radius: `J_{q,ℓ}(δ) = J_q(((ℓ-1)/ℓ)·δ)`.
+True by definition, and stated so that consumers need not unfold `Jqℓ`. -/
 lemma Jqℓ_eq_J (q ℓ δ : ℚ) : Jqℓ q ℓ δ = J q (((ℓ - 1) / ℓ) * δ) := rfl
 
-/-- **ABF26 Definition 3.1, printed shape.** `Jqℓ` agrees with the paper's displayed formula
-`(1 - 1/q) · (1 - √(1 - q/(q-1) · (ℓ-1)/ℓ · δ))`. The hypothesis `q ≠ 0` is what makes the
-outer factors agree (`1 - 1/q = 1/(q/(q-1))` fails at `q = 0` under `ℚ`-division), and every
-coding-theory instance has `q = |Σ| ≥ 2`. -/
-lemma Jqℓ_paper_form {q : ℚ} (hq : q ≠ 0) (ℓ δ : ℚ) :
+/-- `Jqℓ` in expanded form, `(1 - 1/q) * (1 - √(1 - q/(q-1) * (ℓ-1)/ℓ * δ))`.
+
+The hypothesis `q ≠ 0` is what makes the outer factors agree, `1 - 1/q = 1/(q/(q-1))`
+failing at `q = 0` under `ℚ`-division; every coding-theory instance has `q = |Σ| ≥ 2`. -/
+lemma Jqℓ_eq_mul_one_sub_sqrt {q : ℚ} (hq : q ≠ 0) (ℓ δ : ℚ) :
     Jqℓ q ℓ δ =
       ((1 - 1 / q : ℚ) : ℝ) * (1 - √((1 - q / (q - 1) * ((ℓ - 1) / ℓ) * δ : ℚ))) := by
   have h1 : (1 / (q / (q - 1)) : ℚ) = 1 - 1 / q := by
@@ -132,7 +99,8 @@ open Real Finset Fintype
 set_option maxHeartbeats 1000000 in
 -- The numeric core carries several `nlinarith`/`field_simp`/cast steps over ℚ and ℝ; the
 -- default heartbeat budget is insufficient.
-/-- Numeric core of the Johnson list-size bound (T3.2), stated over an abstract `B`. -/
+/-- Numeric core of the Johnson list-size bound, stated for an arbitrary finite set of
+words `B` rather than for a Hamming ball in a code. -/
 lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (v : Fin n → α) (ℓ : ℕ) (mDist : ℕ)
     (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hmDist1 : 1 ≤ mDist)
@@ -320,17 +288,16 @@ lemma johnson_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
       _ = (ℓ:ℚ) := hbx_eq_ℓ
   exact_mod_cast hcard_le
 
-/-- **q-ary Plotkin bound**, in list-factor form: if the average pairwise distance of `B`
-(lower-bounded by `mDist`, e.g. a code's minimum distance) exceeds the Plotkin radius
-`(1 - 1/q)` by the list factor `ℓ/(ℓ-1)` — i.e. exactly when the `Jqℓ` radicand guard
-*fails* at `ℓ` — then the **whole set** `B` has at most `ℓ` elements.
+/-- The `q`-ary Plotkin bound, in list-factor form: if the average pairwise distance of `B`
+(lower-bounded by `mDist`) exceeds the Plotkin radius `1 - 1/q` by the list factor
+`ℓ/(ℓ-1)` — equivalently, if the `Jqℓ` radicand is negative at `ℓ` — then `B` itself has at
+most `ℓ` elements.
 
-Extracted from the in-tree Johnson counting lemma `JohnsonBound.johnson_bound_lemma` by
-dropping its nonnegative square term: with `D := q/(q-1) · d(B)/n` the counting lemma gives
-`|B| · (D - 1) ≤ D`, and the failed guard pins `D > ℓ/(ℓ-1) > 1`, hence `|B| < ℓ`. This is
-the numeric core for the very-low-rate "Plotkin corner" of
-`mds_johnson_lambda_le_of_rate_distance`; it is
-tight there (repetition codes and `[4,2,3]/𝔽₃` meet it with equality `|B| = δ/(δ-(1-1/q))`). -/
+Obtained from the Johnson counting lemma `JohnsonBound.johnson_bound_lemma` by dropping its
+nonnegative square term: with `D := q/(q-1) * d(B)/n` the counting lemma gives
+`|B| * (D - 1) ≤ D`, while the hypothesis pins `D > ℓ/(ℓ-1) > 1`, hence `|B| < ℓ`. The
+bound is tight: repetition codes and the `[4,2,3]` code over `𝔽₃` attain
+`|B| = δ/(δ - (1 - 1/q))`. -/
 lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
     (B : Finset (Fin n → α)) (ℓ : ℕ) (mDist : ℕ)
     (hℓ2 : 2 ≤ ℓ) (hn_pos : 0 < n) (hα2 : 2 ≤ Fintype.card α) (hB2 : 2 ≤ B.card)
@@ -371,24 +338,19 @@ lemma plotkin_card_le_ell {n : ℕ} {α : Type*} [Fintype α] [DecidableEq α]
   have hfinal : (B.card : ℚ) < (ℓ : ℚ) := by nlinarith [hmain, hDgt, hD1]
   exact_mod_cast hfinal.le
 
-/-- **Radicand-regime core of ABF26 Theorem 3.2** (see `johnson_bound_lambda_le_ell` for the
-paper's unconditional statement, which this lemma and `plotkin_card_le_ell` together prove).
+/-- The Johnson list-size bound in the regime where the `Jqℓ` radicand is nonnegative, so
+that `J_{q,ℓ}` is a genuine Johnson radius.
 
-`Jqℓ` contains `√(1 - q/(q-1) · (ℓ-1)/ℓ · δ_min)`. Lean's `Real.sqrt` truncates negative inputs
-to `0`, so where the radicand is negative the radius silently inflates to
-`(1 - 1/q) · (1 - 0) = 1 - 1/q`. The conclusion is still *true* there — past that point the
-whole code has at most `ℓ` words, by `plotkin_card_le_ell` — but the radius analysis below does
-not apply, so `h_radicand` confines this lemma to the regime where `J_{q,ℓ}` is a genuine
-(untruncated) Johnson radius.
+`Real.sqrt` truncates negative inputs to `0`, so where the radicand is negative the radius
+inflates to `1 - 1/q` and the argument below no longer applies; the conclusion still holds
+there, by `plotkin_card_le_ell`. Together the two prove the unconditional
+`johnson_bound_lambda_le_ell`.
 
-**Fully proven** by porting the in-tree absolute-distance Johnson bound (`johnson_bound` in
-[`JohnsonBound/Basic.lean`](Basic.lean), now field-free) to this `Lambda`/`Jqℓ` form.
-With the corrected `(ℓ-1)/ℓ` list factor (see `Jqℓ`, matching the `.tex`), the existing
-bound's `JohnsonConditionStrong` precondition *does* hold at the `Jqℓ` boundary: the
-denominator simplifies to `frac · δ_min · (1 - (ℓ-1)/ℓ) = frac · δ_min / ℓ > 0`
-(the printed `ℓ/(ℓ-1)` factor would have made it negative). The proof reindexes the
-arbitrary finite index `ι` to `Fin n` (via `hammingDist_comp_equiv`) and delegates the numeric
-core to `johnson_card_le_ell`. -/
+The proof ports the absolute-distance Johnson bound `JohnsonBound.johnson_bound` to the
+`Lambda`/`Jqℓ` form. Its `JohnsonConditionStrong` precondition holds at the `Jqℓ` boundary
+because the denominator simplifies to `frac * δ_min * (1 - (ℓ-1)/ℓ) = frac * δ_min / ℓ > 0`.
+An arbitrary finite index type `ι` is reindexed to `Fin n` via `hammingDist_comp_equiv`,
+and the numeric core is `johnson_card_le_ell`. -/
 private lemma johnson_lambda_le_ell_of_radicand
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
@@ -510,35 +472,26 @@ private lemma johnson_lambda_le_ell_of_radicand
         e_fact d_fact hrad
     rw [← hBcard]; exact_mod_cast hcard_le
 
-/-- **ABF26 Theorem 3.2 [Joh62].** Johnson bound on list size. For any code
-`C ⊆ Σ^n` with `|Σ| = q`,
+/-- The Johnson bound on list size: for any code `C ⊆ α^n` over a finite alphabet of size
+`q` and any `ℓ ≥ 1`,
 
-  `|Λ(C, J_{q,ℓ}(δ_min(C)))| ≤ ℓ`
+  `Lambda C (J_{q,ℓ}(δ_min C)) ≤ ℓ` ,
 
-where `δ_min(C) = minDist(C) / n` is the relative minimum distance and `J_{q,ℓ}`
-is the paper's q-ary ℓ-radius Johnson function. **Fully proven**, for every `ℓ ≥ 1` —
-the paper's full range.
+where `δ_min C = Code.minDist C / n` is the relative minimum distance.
 
-Three regimes:
+No algebraic structure on the alphabet is needed: the Johnson bound is a combinatorial fact
+about Hamming distance.
 
-* `ℓ = 1` — the radius degenerates (`J_{q,1}(δ) = J_q(0) = 0`), and a radius-0 list
-  contains at most the centre itself;
-* `ℓ ≥ 2`, `Jqℓ` radicand `1 - q/(q-1) · (ℓ-1)/ℓ · δ_min` nonnegative — `J_{q,ℓ}` is a
-  genuine Johnson radius and `johnson_lambda_le_ell_of_radicand` ports the in-tree
-  absolute-distance Johnson bound;
-* `ℓ ≥ 2`, radicand negative — `Real.sqrt` truncates and the radius inflates to `1 - 1/q`,
-  but the bound still holds *a fortiori*: the failed guard says `δ_min` exceeds the Plotkin
-  radius `1 - 1/q` by the list factor `ℓ/(ℓ-1)`, so by `plotkin_card_le_ell` the **whole
-  code** has at most `ℓ` words and `Λ(C, r) ≤ |C| ≤ ℓ` for *every* radius `r`.
+The proof splits into three regimes. At `ℓ = 1` the radius degenerates to
+`J_{q,1}(δ) = J_q 0 = 0`, and a radius-`0` list contains at most its centre. For `ℓ ≥ 2`
+with the `Jqℓ` radicand `1 - q/(q-1) * (ℓ-1)/ℓ * δ_min` nonnegative, the radius is a genuine
+Johnson radius and `johnson_lambda_le_ell_of_radicand` applies. For `ℓ ≥ 2` with the
+radicand negative, `Real.sqrt` truncates and the radius inflates to `1 - 1/q`, but
+`δ_min` then exceeds the Plotkin radius by the list factor, so `plotkin_card_le_ell` bounds
+the whole code by `ℓ` and the conclusion holds at every radius.
 
-**Alphabet generality.** Stated over an arbitrary alphabet `α` (not necessarily a
-field), matching the paper's `Σ`. The Johnson bound is a purely combinatorial fact
-about Hamming distance — it does not need field structure.
-
-**`ℓ = 0` is excluded, and is the one divergence from the paper's printed form.** It is
-**false** as encoded, not merely inconvenient: `ℚ`-division gives `Jqℓ q 0 δ = J q 0 = 0`,
-and `Λ(C, 0) ≥ 1` for every nonempty `C`, so the hypothesis `1 ≤ ℓ` is not removable. (The
-paper's `J_{q,0}` is undefined, so this is a Lean-side encoding artefact.) -/
+The hypothesis `1 ≤ ℓ` is not removable: `ℚ`-division gives `Jqℓ q 0 δ = J q 0 = 0`, while
+`Lambda C 0 ≥ 1` for every nonempty `C`. -/
 theorem johnson_bound_lambda_le_ell
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
@@ -659,27 +612,20 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
       _ ≤ 2 * η * s + η^2 := by nlinarith [sq_nonneg η]
   linarith [hLHS, hbound]
 
-/-- **ABF26 Corollary 3.3, alphabet-generic form.** For a code `C` over any finite
-alphabet, an explicit rate parameter `ρ`, and `η > 0`,
+/-- List-size bound just below the Johnson radius of an MDS code: for a code `C` over a
+finite alphabet, a rate `0 < ρ ≤ 1` satisfying the MDS rate-distance equation
+`δ_min C = 1 - ρ + 1/n`, and any `η > 0`,
 
-  `|Λ(C, 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`
+  `Lambda C (1 - √ρ - η) ≤ 1 / (2 * η * ρ)` .
 
-provided `0 < ρ ≤ 1` and the MDS rate-distance equation
-`δ_min(C) = 1 - ρ + 1/n` holds.
+The rate enters only through the two hypotheses, so linear, module-alphabet and interleaved
+codes can all instantiate this with their own rate normalization.
 
-The theorem is deliberately stated for an arbitrary code set and alphabet. It is the exact
-paper-level C3.3 once `ρ` is instantiated with ABF26's alphabet-normalized rate. Linear,
-module-alphabet, and interleaved-code APIs should provide only their appropriate rate definition
-and the displayed MDS equation, then reuse this metric core.
+No nontriviality hypothesis is needed: if `C` were a subsingleton then `minDist C = 0`,
+whereas `ρ ≤ 1` and positive block length make `1 - ρ + 1/n > 0`, so the rate-distance
+equation itself forces two distinct codewords, hence at least two alphabet symbols.
 
-No separate nontriviality hypothesis is required: if `C` were subsingleton, ArkLib's convention
-would give `minDist C = 0`, whereas `ρ ≤ 1` and positive block length make
-`1 - ρ + 1/n > 0`. Thus the equation itself forces two distinct codewords and, consequently,
-at least two alphabet symbols.
-
-The proof derives the bound from the alphabet-generic T3.2
-`johnson_bound_lambda_le_ell`, choosing `ℓ := ⌊1/(2ηρ)⌋₊`. The negative-radius,
-Johnson-radicand, and Plotkin-corner branches are all metric and use no algebraic structure. -/
+The proof instantiates `johnson_bound_lambda_le_ell` at `ℓ := ⌊1/(2*η*ρ)⌋₊`. -/
 theorem mds_johnson_lambda_le_of_rate_distance
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Finite α] [DecidableEq α]
@@ -841,7 +787,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
           rw [show s + η = √((s+η)^2) from by rw [Real.sqrt_sq hrhs_nn]]
           exact Real.sqrt_le_sqrt hsq_le
         rw [hs_def] at hsuff; linarith [hsuff]
-      -- Chain: `Lambda` monotone in the radius, then T3.2, then `ℓ ≤ 1/(2ηρ)`.
+      -- Chain: `Lambda` monotone in the radius, then the Johnson bound, then `ℓ ≤ 1/(2ηρ)`.
       have hstep1 : Lambda C (1 - √ρ - η)
           ≤ Lambda C (Jqℓ q ℓ δ_minQ) := Lambda_mono hdom
       calc (Lambda C (1 - √ρ - η) : ENNReal)
@@ -849,13 +795,10 @@ theorem mds_johnson_lambda_le_of_rate_distance
         _ ≤ ((ℓ : ℕ∞) : ENNReal) := by exact_mod_cast hT32
         _ = (ℓ : ENNReal) := by simp
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
-    · -- Plotkin corner: the radicand guard `frac·((ℓ-1)/ℓ)·δ_min ≤ 1` FAILS at this `ℓ`,
-      -- i.e. `δ_min` exceeds the Plotkin radius `1 - 1/q` by the list factor `ℓ/(ℓ-1)`.
-      -- There the *whole code* has fewer than `ℓ` words by the q-ary Plotkin bound
-      -- (`plotkin_card_le_ell`, extracted from the in-tree Johnson counting lemma), so
-      -- `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` closes the corner with no radius analysis at all.
-      -- This is tight on the reachable witnesses: repetition codes (`|C| = q`, corner
-      -- forces `ℓ > q`) and `[4,2,3]/𝔽₃` (`|C| = 9 = δ/(δ-(1-1/q))`, corner forces `ℓ > 9`).
+    · -- Plotkin corner: the radicand `frac·((ℓ-1)/ℓ)·δ_min ≤ 1` fails at this `ℓ`, i.e.
+      -- `δ_min` exceeds the Plotkin radius `1 - 1/q` by the list factor `ℓ/(ℓ-1)`. There
+      -- the whole code has fewer than `ℓ` words by `plotkin_card_le_ell`, so
+      -- `Lambda ≤ |C| ≤ ℓ ≤ 1/(2ηρ)` needs no radius analysis at all.
       classical
       -- The MDS rate-distance equation plus `ρ ≤ 1` already forced `C.Nontrivial`.
       obtain ⟨u0, hu0C, v0, hv0C, huv0⟩ := hC_nontrivial
@@ -912,13 +855,13 @@ theorem mds_johnson_lambda_le_of_rate_distance
             exact_mod_cast hcard_le
         _ ≤ ENNReal.ofReal (1 / (2 * η * ρ)) := hstep3
 
-/-- **ABF26 Corollary 3.3 for field-linear codes.** Thin wrapper around the
-alphabet-generic `mds_johnson_lambda_le_of_rate_distance`: `LinearCode.IsMDS` supplies the
-rate-distance equation via `LinearCode.IsMDS_iff_rate_distance`, while finite-dimensionality
-supplies `0 < ρ ≤ 1` for `ρ = finrank F C / n`.
+/-- `mds_johnson_lambda_le_of_rate_distance` for a field-linear MDS code, at the rate
+`ρ = finrank F C / n`.
 
-For module alphabets (including interleaved Reed–Solomon), use the generic theorem with the
-alphabet-normalized rate and the corresponding MDS rate-distance bridge. -/
+`LinearCode.IsMDS` supplies the rate-distance equation through
+`LinearCode.IsMDS_iff_rate_distance`, and finite-dimensionality supplies `0 < ρ ≤ 1`. Codes
+over a module alphabet are not covered — `LinearCode.IsMDS` is stated only for codes in
+`ι → F` — and should use the generic form with `LinearCode.alphabetRate`. -/
 theorem mds_johnson_lambda_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F] [DecidableEq F]
@@ -970,23 +913,13 @@ theorem mds_johnson_lambda_le
   exact mds_johnson_lambda_le_of_rate_distance (C : Set (ι → F)) ρ η
     hρ_pos hρ_le1 hη_pos hbridge
 
-/-! ## Consumers
+/-! ## Reed-Solomon instances -/
 
-The two crossings into the existing developments: ABF26 Corollary 3.3 instantiated at
-Reed–Solomon (through the pre-existing, proven `ReedSolomon.isMDS_code`), and Theorem 3.2
-delivered in the `ListDecodable.listDecodable` shape that the STIR/WHIR development consumes.
--/
+/-- The Johnson list-size bound at a Reed-Solomon code of rate `ρ = dim / n`:
 
-/-- **ABF26 Corollary 3.3 at Reed–Solomon.** For a Reed–Solomon code of rate
-`ρ = dim / n` and any `η > 0`,
+  `Lambda (ReedSolomon.code dom n) (1 - √ρ - η) ≤ 1 / (2 * η * ρ)` for `η > 0`.
 
-  `|Λ(RS[F, dom, n], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
-
-Immediate from the field wrapper `mds_johnson_lambda_le` and the pre-existing
-`ReedSolomon.isMDS_code`. The headline theorem
-`mds_johnson_lambda_le_of_rate_distance` is already alphabet-generic; interleaved
-Reed–Solomon consumers instantiate it with their alphabet-normalized rate and corresponding
-MDS rate-distance equation. -/
+Immediate from `mds_johnson_lambda_le` and `ReedSolomon.isMDS_code`. -/
 theorem rs_lambda_le_johnson_mds
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
@@ -999,10 +932,9 @@ theorem rs_lambda_le_johnson_mds
   letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
   exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
 
-/-- **ABF26 Theorem 3.2 in `listDecodable` shape.** The Johnson bound, transferred through
-`Lambda_le_iff_listDecodable` to the `∀`-form list-size predicate that the STIR/WHIR
-development consumes (`ArkLib/ProofSystem/Stir/MainThm.lean`'s `CodeParams.h_listDecode`,
-`Stir/OutOfDomSmpl.lean`'s `h_decodable`), at any radius `δ` below the Johnson radius. -/
+/-- The Johnson bound in `listDecodable` form: a code is `(δ, ℓ)`-list-decodable at every
+radius `δ` below its Johnson radius. Transferred through
+`ListDecodable.Lambda_le_iff_listDecodable`. -/
 theorem johnson_listDecodable
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
@@ -1012,11 +944,7 @@ theorem johnson_listDecodable
   Lambda_le_iff_listDecodable.mp
     ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
 
-/-- `johnson_listDecodable` at an arbitrary real list budget `r ≥ ℓ`.
-
-This is the shape the in-tree `listDecodable` consumers take: their list size is `ℝ≥0`-valued
-(`Stir/OutOfDomSmpl.lean`, `Stir/MainThm.lean`), so they instantiate `r := (l : ℝ)` and discharge
-`(ℓ : ℝ) ≤ l` numerically — no further cast bridge needed. -/
+/-- `johnson_listDecodable` weakened to an arbitrary real list budget `r ≥ ℓ`. -/
 theorem johnson_listDecodable_of_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
@@ -1027,28 +955,21 @@ theorem johnson_listDecodable_of_le
   fun y => ⟨(johnson_listDecodable C ℓ hℓ_ge hδ y).1,
     (johnson_listDecodable C ℓ hℓ_ge hδ y).2.trans hr⟩
 
-/-! ### Module-alphabet consumers
+/-! ### Module-alphabet instances
 
-`mds_johnson_lambda_le_of_rate_distance` above is alphabet-generic and asks its caller for
-exactly two things: a rate `ρ` with `0 < ρ ≤ 1`, and the MDS rate-distance equation
-`δ_min = 1 - ρ + 1/n`. The two module-alphabet Reed-Solomon families supply both, at the
-[ABF26] Definition 2.5 alphabet-normalized rate `LinearCode.alphabetRate`. Neither can go
-through the field wrapper `mds_johnson_lambda_le`: `LinearCode.IsMDS` is stated only for
-codes in `ι → F`, whereas these live in `ι → Fin s → F`.
+The interleaved and folded Reed-Solomon codes live in `ι → Fin s → F`, so they cannot go
+through the field wrapper `mds_johnson_lambda_le`; they instantiate
+`mds_johnson_lambda_le_of_rate_distance` directly at the alphabet-normalized rate
+`LinearCode.alphabetRate`.
 -/
 
-/-- **[ABF26] Corollary 3.3 at interleaved Reed-Solomon.** For `IRS[F, L, k, s]` of
-alphabet-normalized rate `ρ` and any `η > 0`,
+/-- The Johnson list-size bound at an interleaved Reed-Solomon code of alphabet-normalized
+rate `ρ`:
 
-  `|Λ(IRS[F, L, k, s], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
+  `Lambda (irsCode dom k s) (1 - √ρ - η) ≤ 1 / (2 * η * ρ)` for `η > 0`.
 
-The module-alphabet counterpart of `rs_lambda_le_johnson_mds`, and the instantiation the
-`mds_johnson_lambda_le_of_rate_distance` docstring anticipates. [ABF26] appeals to it when
-deriving Corollary 3.3 ("MDS codes, which include the important class of interleaved
-Reed-Solomon codes"). Its rate-distance input is
-`ReedSolomon.Interleaved.irs_rate_distance`, which needs neither `s ∣ k` nor
-non-saturation, so neither appears here — only its `0 < ⌊k/s⌋`, which is what makes the rate
-positive. -/
+The rate-distance input is `ReedSolomon.Interleaved.irs_rate_distance`, which requires
+neither `s ∣ k` nor non-saturation; the hypothesis `0 < k / s` is what makes `ρ` positive. -/
 theorem irs_lambda_le_johnson_mds
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]
@@ -1072,14 +993,14 @@ theorem irs_lambda_le_johnson_mds
   exact mds_johnson_lambda_le_of_rate_distance _ ρ η hρ_pos hρ_le1 hη_pos
     (ReedSolomon.Interleaved.irs_rate_distance dom k s hks)
 
-/-- **[ABF26] Corollary 3.3 at folded Reed-Solomon**, in the MDS regime `s ∣ k`. For
-`FRS[F, L, k, s, ω]` of alphabet-normalized rate `ρ = k / (s · n)` and any `η > 0`,
+/-- The Johnson list-size bound at a folded Reed-Solomon code of alphabet-normalized rate
+`ρ = k / (s * n)`, in the MDS regime `s ∣ k`:
 
-  `|Λ(FRS[F, L, k, s, ω], 1 - √ρ - η)| ≤ 1 / (2 · η · ρ)`.
+  `Lambda (frsCode dom k s ω) (1 - √ρ - η) ≤ 1 / (2 * η * ρ)` for `η > 0`.
 
 The divisibility hypothesis is not an artefact: without it the folded code misses the
-Singleton bound by its rounding term and `frs_rate_distance_of_dvd` is unavailable
-(see `ReedSolomon.Folded.minDist_frsCode`). -/
+Singleton bound by a rounding term (see `ReedSolomon.Folded.minDist_frsCode`), so the
+rate-distance equation `ReedSolomon.Folded.frs_rate_distance_of_dvd` is unavailable. -/
 theorem frs_lambda_le_johnson_mds
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [Finite F]

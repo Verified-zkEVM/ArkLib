@@ -367,15 +367,13 @@ lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι :
     ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
     := by rfl
 
-/-- **Interleaving preserves minimum block distance.** If the row index type `κ` is
-nonempty, then the minimum Hamming distance of the `κ`-fold interleaving of a code is
-exactly the minimum distance of the base code.
+/-- Interleaving over a nonempty row index preserves minimum block distance:
+`minDist (interleavedCodeSet C) = minDist C`.
 
-For the lower bound, two distinct interleaved words differ in some row, whose Hamming
-distance is bounded by their block distance. For the upper bound, place a
-minimum-distance base pair in one row and repeat one endpoint in every other row. The
-subsingleton cases are handled explicitly, matching ArkLib's convention that their
-minimum distance is zero. -/
+For `≥`, two distinct interleaved words differ in some row, whose Hamming distance is bounded
+by their block distance. For `≤`, place a minimum-distance base pair in one row and repeat
+one endpoint in every other row. The subsingleton case is handled separately, both sides
+being zero there. -/
 theorem minDist_interleavedCodeSet
     {κ ι A : Type*} [Fintype κ] [Nonempty κ] [Fintype ι] [DecidableEq A]
     (C : Set (ι → A)) :
@@ -499,20 +497,11 @@ theorem minDist_interleavedCodeSet
 
 section Finrank
 
-/-! ### Structure and dimension of an interleaved module code
+/-! ### Structure and dimension of an interleaved module code -/
 
-The interleave `MC ^⋈ κ` is the image of the *column-tuple* map sending a `κ`-indexed family
-of codewords of `MC` to the interleaved word whose `k`-th row is the `k`-th family member.
-That map is a linear equivalence onto `MC ^⋈ κ`, from which the dimension formula follows.
--/
-
-/-- **Column-tuple equivalence.** A `κ`-tuple of codewords of a `ModuleCode` `MC` is the same
-data as a codeword of the interleave `MC ^⋈ κ`: the tuple `g` corresponds to the interleaved
-word whose `k`-th row is `g k` (equivalently, whose `i`-th symbol is `fun k => (g k) i`).
-
-This is the structural fact underlying every "the interleave is `κ` independent copies of the
-base code" argument (dimension, freeness, cardinality). No finiteness of `κ` or `ι` is
-required. -/
+/-- A `κ`-tuple of codewords of a module code `MC` is the same data as a codeword of the
+interleave `MC ^⋈ κ`: the tuple `g` corresponds to the interleaved word whose `k`-th row is
+`g k`. No finiteness of `κ` or `ι` is required. -/
 def moduleInterleavedCodeEquiv {F : Type*} [Semiring F] {A : Type*} [AddCommMonoid A]
     [Module F A] {ι : Type*} (MC : ModuleCode ι F A) (κ : Type*) :
     (κ → MC) ≃ₗ[F] (MC ^⋈ κ) where
@@ -523,12 +512,12 @@ def moduleInterleavedCodeEquiv {F : Type*} [Semiring F] {A : Type*} [AddCommMono
   map_add' g g' := by apply Subtype.ext; funext i k; rfl
   map_smul' a g := by apply Subtype.ext; funext i k; rfl
 
-/-- **Dimension of an interleaved module code.** Interleaving multiplies the dimension by the
-interleaving factor: `finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`.
+/-- Interleaving multiplies the dimension by the interleaving factor:
+`finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`.
 
-Immediate from `moduleInterleavedCodeEquiv` and `Module.finrank_pi_fintype`. The `Module.Free`
-and `Module.Finite` hypotheses are exactly those of `Module.finrank_pi_fintype`; both are
-automatic whenever `F` is a field and the ambient `ι → A` is finite-dimensional. -/
+Immediate from `moduleInterleavedCodeEquiv` and `Module.finrank_pi_fintype`, whose `Free` and
+`Finite` hypotheses are inherited; both hold automatically when `F` is a field and the ambient
+`ι → A` is finite-dimensional. -/
 lemma finrank_moduleInterleavedCode {F : Type*} [Semiring F] [StrongRankCondition F]
     {A : Type*} [AddCommMonoid A] [Module F A] {ι : Type*} (MC : ModuleCode ι F A)
     [Module.Free F MC] [Module.Finite F MC] (κ : Type*) [Fintype κ] :

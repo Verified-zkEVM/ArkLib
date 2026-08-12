@@ -10,9 +10,19 @@ import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.FieldTheory.Finiteness
 
 /-!
-# A finite-field Kummer irreducibility criterion
+# A Kummer irreducibility criterion over a finite field
 
-Additional Frobenius and irreducibility facts intended as candidates for upstreaming to Mathlib.
+Over a finite field `F` of order `q`, the polynomial `X ^ (q - 1) - C ω` is irreducible
+whenever `ω` generates `Fˣ`, together with the Frobenius identities used to prove it.
+
+## Main statements
+
+* `Polynomial.aeval_pow_card_pow` — `aeval (y ^ q ^ i) f = aeval y f ^ q ^ i`.
+* `FiniteField.pow_card_pow_eq_mul` — if `x ^ (q - 1) = ω` in an `F`-algebra, then
+  `x ^ q ^ i = ω ^ i * x`.
+* `Polynomial.X_pow_card_sub_one_sub_C_irreducible` — the irreducibility criterion.
+
+Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 namespace Polynomial
@@ -26,15 +36,20 @@ private lemma expand_card_pow (i : ℕ) (f : F[X]) :
   | succ i ih =>
     rw [pow_succ, expand_mul, FiniteField.expand_card, map_pow, ih, ← pow_mul]
 
-/-- Frobenius transport for evaluation of a finite-field polynomial. -/
+/-- Frobenius transport for evaluation of a polynomial over a finite field. -/
 lemma aeval_pow_card_pow {K : Type*} [CommSemiring K] [Algebra F K]
     (y : K) (f : F[X]) (i : ℕ) :
     aeval (y ^ (Fintype.card F ^ i)) f = (aeval y f) ^ (Fintype.card F ^ i) := by
   rw [← expand_aeval, expand_card_pow, map_pow]
 
-/-- If `x ^ (q - 1) = ω` in an `F`-algebra, then
-`x ^ (q ^ i) = ω ^ i * x`. -/
-lemma pow_card_pow_eq {K : Type*} [CommRing K] [Algebra F K] {ω : F} {x : K}
+end Polynomial
+
+namespace FiniteField
+
+variable {F : Type*} [Field F] [Fintype F]
+
+/-- If `x ^ (q - 1) = ω` in an `F`-algebra, where `q = |F|`, then `x ^ q ^ i = ω ^ i * x`. -/
+lemma pow_card_pow_eq_mul {K : Type*} [CommRing K] [Algebra F K] {ω : F} {x : K}
     (hx : x ^ (Fintype.card F - 1) = algebraMap F K ω) (i : ℕ) :
     x ^ (Fintype.card F ^ i) = algebraMap F K (ω ^ i) * x := by
   have hcard : Fintype.card F = (Fintype.card F - 1) + 1 :=
@@ -52,8 +67,14 @@ lemma pow_card_pow_eq {K : Type*} [CommRing K] [Algebra F K] {ω : F} {x : K}
       _ = algebraMap F K (ω ^ i) * (algebraMap F K ω * x) := by rw [FiniteField.pow_card, hxq]
       _ = algebraMap F K (ω ^ (i + 1)) * x := by rw [← mul_assoc, ← map_mul, ← pow_succ]
 
-/-- For a generator `ω` of the multiplicative group of a finite field `F`,
-`X ^ (|F| - 1) - ω` is irreducible. -/
+end FiniteField
+
+namespace Polynomial
+
+variable {F : Type*} [Field F] [Fintype F]
+
+/-- For a generator `ω` of the multiplicative group of a finite field `F` of order `q`, the
+polynomial `X ^ (q - 1) - C ω` is irreducible. -/
 theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
     (hω : orderOf ω = Fintype.card F - 1) :
     Irreducible ((X : F[X]) ^ (Fintype.card F - 1) - C ω) := by
@@ -95,7 +116,7 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
   have hωd : ω ^ g.natDegree = 1 := by
     have h1 : algebraMap F (AdjoinRoot g) (ω ^ g.natDegree) * AdjoinRoot.root g =
         algebraMap F (AdjoinRoot g) 1 * AdjoinRoot.root g := by
-      rw [map_one, one_mul, ← pow_card_pow_eq hx g.natDegree]
+      rw [map_one, one_mul, ← FiniteField.pow_card_pow_eq_mul hx g.natDegree]
       exact hfix
     exact (algebraMap F (AdjoinRoot g)).injective (mul_right_cancel₀ hx0 h1)
   have hdvd : Fintype.card F - 1 ∣ g.natDegree := hω ▸ orderOf_dvd_of_pow_eq_one hωd

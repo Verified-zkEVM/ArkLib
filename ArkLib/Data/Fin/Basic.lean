@@ -96,9 +96,7 @@ theorem induction_two' {motive : Fin 3 → Sort*} {zero : motive 0}
     {succ : ∀ i : Fin 2, motive i.castSucc → motive i.succ} :
       induction (motive := motive) zero succ (2 : Fin 3) = succ 1 (succ 0 zero) := by rfl
 
-/-- Three-step unfolding of `Fin.induction`, matching the `induction_two` pair. Consumed by
-`simp only` lists in the ABF26 toy-problem layer (a later split); keep even though this layer
-has no by-name use. -/
+/-- Three-step unfolding of `Fin.induction`, matching the `induction_two` pair. -/
 @[simp]
 theorem induction_three {motive : Fin 4 → Sort*} {zero : motive 0}
     {succ : ∀ i : Fin 3, motive i.castSucc → motive i.succ} :
@@ -320,9 +318,8 @@ theorem castSum_castAdd {n m : ℕ} (i : Fin n) : castSum [n, m] (by simp) i = c
 
 /-- Case analysis on `Fin l.sum` by the list summand containing `i`.
 
-WIP (admitted): the recursive `natAdd` branch is a `sorry` (see the commented recursion
-sketch below); any definition elaborating through `sumCases` inherits `sorryAx`. No
-declaration in the ABF26 surface depends on it (2026-07-21 Phase-A axiom sweep). -/
+The recursive `natAdd` branch is still admitted (see the commented recursion sketch below),
+so anything elaborating through `sumCases` inherits `sorryAx`. -/
 def sumCases {l : List ℕ} {motive : Fin l.sum → Sort*}
     (cases : ∀ (n : ℕ) (h : n ∈ l) (i : Fin n), motive (castSum l h i))
     (i : Fin l.sum) : motive i := match l with

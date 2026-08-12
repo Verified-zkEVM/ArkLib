@@ -1,67 +1,47 @@
 # CodingTheory naming and convention guide
 
 Local conventions used in `ArkLib/Data/CodingTheory/` and its subdirectories.
-These are not enforced by tooling but they are followed consistently across the
-ABF26 statement layer. In the current tree that layer is `JohnsonBound/Family.lean`,
-`SubspaceDesign.lean`, and the `ReedSolomon/` code families; the next split of the
-ABF26 development (`ProximityGap/Errors.lean`, `ProximityGap/CapacityBounds.lean`,
-`ListDecoding/Bounds.lean`, `Connections/ListDecodingAndCA.lean`) follows the same
-conventions and several examples below are drawn from it. Reviewers should look
-for these patterns in both.
+They are not enforced by tooling. Where they say nothing, follow
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md) and Mathlib.
 
 ## Theorem naming
 
-**Status: target convention, not yet the tree's state.** The pattern below is the
-one the ABF26 ε-error and list-size layer is being written to. At the time of
-writing **no declaration in the tree conforms to it in full** — the examples in
-the table are all forthcoming names from the proximity-gap and toy-problem
-splits, not current ones. Treat this section as the rule for *new* ε-error and
-list-size bounds; do not expect to find it in existing code, and do not rename
-existing declarations to match it without a separate discussion.
+Follow the Mathlib conventions in
+[`CONTRIBUTING.md`](../../CONTRIBUTING.md#naming-conventions): a theorem name
+describes what it says, in `snake_case`, built from the symbol dictionary and the
+`_of_` / `_iff` / `_le` suffix conventions.
 
-Statement-level theorems that bound an ε-error or list-size for a specific code
-family should follow the pattern:
+**Do not encode paper items in declaration names.** No `<authors><year>` suffix,
+no `lemma_4_3`, no `thmA2`. Such a name drifts as soon as the source is
+renumbered or a second source is cited, and it tells a reader nothing that the
+statement does not. Citations belong in the module docstring's `## References`
+section; a declaration docstring may name a source only where the statement
+genuinely depends on which formulation is meant.
+
+For a statement bounding an ε-error or a list size for a specific code family,
+name it after the family, the quantity, and the regime:
 
 ```
-<codeFamily>_<quantity>_<regime>_<authors><year>
+<codeFamily>_<quantity>_<regime>
 ```
-
-Illustrative (all **forthcoming**, none present today):
 
 | Lean name | Reads as |
 |---|---|
-| `linear_epsCA_1_5_johnson_bgks20` | linear-code `ε_ca` bound in the 1.5-Johnson regime, from BGKS20 |
-| `rs_epsMCA_johnson_range_bchks25` | Reed-Solomon `ε_mca` bound in the Johnson range, from BCHKS25 |
-| `rs_epsCA_breakdown_cs25` | Reed-Solomon `ε_ca` breakdown bound, from CS25 |
-| `linear_lambda_ge_elias_volume_eli57` | linear-code list-size lower bound from Elias volume bound |
-| `rs_lambda_high_rate_jh01` | Reed-Solomon list-size bound in the high-rate regime, from JH01 |
-
-Where current names diverge, and why:
-
-| Current name | Divergence |
-|---|---|
-| `frs_is_subspaceDesign_gk16` | states a *property*, not a bound, so `<quantity>` is the property name |
-| `subspaceDesign_tau_lower` | no `<authors><year>` slot; the source is [GG25] |
-| `johnson_bound_lambda_le_ell` | `<codeFamily>` is absent (the bound is alphabet-generic) |
-| `mds_johnson_lambda_le` | no `<authors><year>` slot; the source is ABF26 Cor 3.3 |
-| `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds` | same: no `<authors><year>` slot, the source being ABF26 Cor 3.3 rather than a cited paper. `johnson_mds` occupies the `<regime>` slot |
-| `um_is_subspaceDesign_gk16` | as `frs_is_subspaceDesign_gk16`: states a property, not a bound |
-| `irs_rate_distance`, `frs_rate_distance_of_dvd` | `<quantity>` is an *equation* (the L2.6 MDS rate-distance identity), not a bound, so there is no `<regime>`; the `_of_dvd` suffix follows the Mathlib hypothesis-suffix convention instead |
-| `lambda_extensionCode_eq_lambda_interleaved` | descriptive equality, not a bound |
+| `johnson_bound_lambda_le_ell` | the Johnson list-size bound `Λ ≤ ℓ`; alphabet-generic, so no `<codeFamily>` |
+| `mds_johnson_lambda_le` | MDS list-size bound in the Johnson regime |
+| `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds` | the same at Reed-Solomon, interleaved RS, folded RS; `johnson_mds` is the `<regime>` |
+| `isSubspaceDesign_frsCode`, `isSubspaceDesign_umCode` | a *property* rather than a bound, so the predicate name leads (Mathlib's `isCompact_Icc` shape) |
+| `subspaceDesign_tau_lower` | a lower bound on the profile `τ` of a subspace design |
+| `irs_rate_distance`, `frs_rate_distance_of_dvd` | an *equation* rather than a bound, so no `<regime>`; `_of_dvd` is the Mathlib hypothesis suffix |
+| `lambda_extensionCode_eq_lambda_interleaved` | a descriptive equality |
 
 Slots:
 
 - **`<codeFamily>`** — `linear`, `rs`, `frs`, `irs`, `subspaceDesign`, `mds`, etc.
-- **`<quantity>`** — `lambda` (list size), `dim`, `johnson_bound`; and, from the
-  next split, `epsCA`, `epsMCA`, `epsPG`.
+- **`<quantity>`** — `lambda` (list size), `dim`, `johnson_bound`, `epsCA`,
+  `epsMCA`, `epsPG`.
 - **`<regime>`** — e.g. `unique_decoding`, `johnson_range`, `capacity`,
-  `breakdown`, `lower_capacity`. Skip when there's no regime distinction.
-- **`<authors><year>`** — lowercase author initials + 2-digit year (`bchks25`,
-  `gg25`, `eli57`). For two-paper joint citations: `bchks25_kk25`.
-
-The pattern keeps names searchable, indicates the source paper at a glance, and
-disambiguates the same quantity bounded under different regimes (e.g.
-`rs_epsCA_breakdown_cs25` vs `rs_epsCA_bchks25_item2`).
+  `breakdown`, `lower_capacity`. Skip when there is no regime distinction.
 
 ## Definition naming
 

@@ -70,7 +70,7 @@ Lean transcription.
 ## Open Formalization Gaps
 
 - **Minimum distance of `umCode` is unproved.** Its exact saturated dimension is
-  `dim_umCode_eq_min`, and `CodingTheory.um_is_subspaceDesign_gk16` is now a substantive
+  `dim_umCode_eq_min`, and `CodingTheory.isSubspaceDesign_umCode` is now a substantive
   in-repo consumer proving the univariate-multiplicity half of ABF26 Theorem 2.18 via GK16's
   classical Wronskian argument.
 - KSY14's actual results — local decodability, sublinear-time decoding, the high-rate LDC

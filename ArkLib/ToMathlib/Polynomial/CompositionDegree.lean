@@ -10,14 +10,19 @@ import Mathlib.Algebra.Polynomial.Degree.Lemmas
 /-!
 # Additional polynomial composition-degree lemmas
 
-Generic polynomial facts intended as candidates for upstreaming to Mathlib.
+## Main statements
+
+* `Polynomial.natDegree_comp_C_mul_X_le` — composing with a scaling `X ↦ a * X` does not
+  increase the degree.
+
+Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 namespace Polynomial
 
 variable {F : Type*} [Semiring F]
 
-/-- Composing with the scaling `X ↦ aX` never increases natural degree. -/
+/-- Composing with the scaling `X ↦ a * X` does not increase the natural degree. -/
 lemma natDegree_comp_C_mul_X_le (p : F[X]) (a : F) :
     (p.comp (C a * X)).natDegree ≤ p.natDegree :=
   natDegree_le_iff_coeff_eq_zero.mpr fun _ hm => by

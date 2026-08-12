@@ -9,30 +9,24 @@ import ArkLib.Data.CodingTheory.Basic.Distance
 /-!
 # Erasure-decoding uniqueness
 
-This file supplies the metric fact used by erasure decoders: below the minimum-distance
-threshold, at most one codeword is consistent with a partially erased word. The underlying
-exceptional-coordinate theorem is the more general
-`Code.eq_of_disagreementCols_subset_of_card_lt_minDist` in `Basic/Distance.lean`; the result
-here packages it for `Option`-valued observations.
+The metric fact underlying erasure decoding: fewer than `minDist C` erasures leave at most one
+codeword consistent with the observed word. Equivalently, a code of minimum distance `d`
+corrects `d - 1` erasures.
 
-ABF26 Definition 6.4 and Lemma 6.5 additionally concern a deterministic erasure-correction
-algorithm and its `O((s · n)³)` running time. ArkLib currently has no cost model in which to
-state that content. Merely existentially quantifying over an unrestricted mathematical
-function would make “supports erasure correction” true of every code, so this module does not
-introduce such a predicate or claim to formalize the algorithmic result.
+The observations are modelled as an `Option`-valued word, `none` marking an erasure. This
+file packages the general exceptional-coordinate theorem
+`Code.eq_of_disagreementCols_subset_of_card_lt_minDist` for that shape; the correction
+*algorithm* and its cost are out of scope, ArkLib having no cost model to state them in.
 
 ## Main statements
 
-* `CodingTheory.eq_of_consistent_with_erased` — uniqueness of the codeword consistent with a
-  lightly-erased word.
+* `CodingTheory.eq_of_consistent_with_erased`
 
 ## References
 
-* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
-    Agreement*][ABF26] (§6.2: Definition 6.4, Lemma 6.5)
 * [Guruswami, V., Rudra, A., and Sudan, M., *Essential Coding Theory*][codingtheory]
-    (Proposition 1.4.2(4): a code of minimum distance `d` corrects exactly `d − 1` erasures;
-    Exercise 5.3 for the Gaussian-elimination running time, which is out of scope here)
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+    Agreement*][ABF26]
 -/
 
 namespace CodingTheory
@@ -41,14 +35,9 @@ open Code
 
 variable {ι F : Type*} [Fintype ι]
 
-/-- **Uniqueness pigeonhole for erasure decoding (ABF26 L6.5 core).** Two
-codewords consistent with the same partially-erased word `f`, with strictly
-fewer than `minDist C` erasures, are equal: they can disagree only on erased
-coordinates, so their Hamming distance is below the code's minimum distance.
-
-This is the `Option`-valued corollary of
-`Code.eq_of_disagreementCols_subset_of_card_lt_minDist`; it does not duplicate the underlying
-minimum-distance argument. -/
+/-- Two codewords consistent with the same partially-erased word `f`, where fewer than
+`minDist C` coordinates are erased, are equal: they can disagree only on erased coordinates,
+so their Hamming distance is below the minimum distance. -/
 theorem eq_of_consistent_with_erased [DecidableEq F] {C : Set (ι → F)}
     {f : ι → Option F} {u v : ι → F} (hu : u ∈ C) (hv : v ∈ C)
     (hfu : ∀ i, f i = some (u i) ∨ f i = none)

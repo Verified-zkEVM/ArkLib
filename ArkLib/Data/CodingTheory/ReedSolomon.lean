@@ -62,15 +62,12 @@ lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
 
-/-- **Degenerate-parameter collapse, encoder-generic.** If a linear encoder
-`enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation on its single fold
-(`enc p x 0 = p.eval (domain x)`), then the code it cuts out of `degreeLT F k` is the plain
-Reed-Solomon code, up to erasing the trivial `Fin 1` index.
+/-- If a linear encoder `enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation at
+its single index, `enc p x 0 = p.eval (domain x)`, then the code it cuts out of
+`Polynomial.degreeLT F k` is `code domain k`, up to erasing the trivial `Fin 1` index.
 
-This is the shared content of the `s = 1` (resp. `m = 1`) collapse lemmas for the RS variants:
-`ReedSolomon.Folded.mem_frsCode_one_iff_mem_rsCode` and
-`ReedSolomon.Multiplicity.mem_umCode_one_iff_mem_rsCode` are both one-line corollaries. It lives
-here, next to `code`, because it mentions neither folding nor multiplicities. -/
+This is the shared content of the degenerate-parameter collapse for the Reed-Solomon
+variants over the alphabet `Fin s → F`. -/
 lemma mem_map_degreeLT_one_iff_mem_code [CommSemiring F] (k : ℕ)
     (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
     (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))

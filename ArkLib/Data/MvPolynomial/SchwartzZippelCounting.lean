@@ -124,10 +124,7 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
 of each factor. This bridges `schwartz_zippel_counting` with the probability formulation.
 
-This is the most general probabilistic Schwartz-Zippel statement in the tree.
-`prob_eval_zero_univ_le_div` below specializes it to full finite carriers, and the
-paper-shaped declarations in `ArkLib.Data.Probability.Instances` are wrappers around that
-specialization. Add new sampling-set-generic bounds here rather than starting another proof. -/
+`prob_eval_zero_univ_le_div` below specializes it to full finite carriers. -/
 lemma prob_eval_zero_le_div
   {F : Type} [Field F]
   {s : ℕ}
@@ -147,9 +144,8 @@ lemma prob_eval_zero_le_div
     · rw [Fintype.card_pi]
       aesop
 
-/-- Full-carrier specialization of `prob_eval_zero_le_div`. The explicit equivalence
-between a product of `Set.univ` subtypes and the ordinary function type keeps the
-uniform-sampling transport out of downstream coding-theory statements. -/
+/-- Full-carrier specialization of `prob_eval_zero_le_div`, transported along the
+equivalence between a product of `Set.univ` subtypes and the ordinary function type. -/
 lemma prob_eval_zero_univ_le_div
     {F : Type} [Field F] [Fintype F] {s d : ℕ}
     (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :

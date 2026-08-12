@@ -77,10 +77,7 @@ scoped macro_rules (kind := prStx)
   | `(Pr_{$items*}[$t]) => `((((do $items:doSeqItem*
                                      return $t:term) True) : ENNReal))
 
-/-- Unfold a single-sample event as the standard indicator-weighted PMF `tsum`.
-
-This primitive lives with the notation so that light-weight probability modules do not
-need to import the larger `Instances` module merely to unfold `Pr`. -/
+/-- Unfold a single-sample event as an indicator-weighted `tsum` over the `PMF`. -/
 lemma Pr_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
     [DecidablePred P] :
     Pr_{ let a ← p }[P a] =

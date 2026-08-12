@@ -9,7 +9,12 @@ import Mathlib.LinearAlgebra.Matrix.Determinant.Basic
 /-!
 # Additional determinant lemmas
 
-Generic determinant facts intended as candidates for upstreaming to Mathlib.
+## Main statements
+
+* `Matrix.pow_dvd_det_of_forall_mem_col_dvd` — a common divisor of `k` whole columns divides
+  the determinant to the `k`-th power.
+
+Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 namespace Matrix

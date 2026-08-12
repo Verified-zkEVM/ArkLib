@@ -11,19 +11,16 @@ import ArkLib.Data.Probability.Notation
 /-!
 # Probabilistic combinatorics
 
-Stand-alone probabilistic-combinatorics statements. Currently this module hosts
-`exists_large_image_of_pairwise_collision_bound`, which is Claim B.1 of [ABF26].
-
-Nothing in the repository consumes this module yet: its intended consumer is the
-ABF26 §6.4.1 development (Lemma 6.12, the toy-protocol list-decoding lower-bound
-attack), which lands in a later split of the ABF26 series. The collision-probability
-inputs it will be combined with live in `ArkLib.Data.Probability.Instances`
-(`Probability.prob_dotProduct_eq_zero_le`,
-`Probability.prob_uniform_le_inv_of_card_le_one`).
+A random function whose pairs collide with small probability has, for some sample, a large
+image.
 
 ## Main statements
 
-* `Probability.exists_large_image_of_pairwise_collision_bound` — Claim B.1 of [ABF26].
+* `Probability.exists_large_image_of_pairwise_collision_bound` — if every pair of distinct
+  points of a finite `S` collides with probability at most `ε` under `Φ : PMF (S → T)`, then
+  some `φ` in the support of `Φ` has `|image φ| ≥ |S| / (1 + (|S| - 1) * ε)`.
+* `Probability.exists_large_image_of_pairwise_collision_bound_of_Pr` — the same, stated with
+  `Pr_` notation, which forces `S` and `T` into `Type`.
 
 ## References
 
@@ -35,28 +32,23 @@ namespace Probability
 
 open Finset NNReal ENNReal ProbabilityTheory
 
-/-! ## Colliding-pair helpers (ABF26 Appendix B counting)
+/-! ## Colliding-pair helpers
 
-Helper definitions and the central Cauchy-Schwarz-on-fibers lemma used
-by `exists_large_image_of_pairwise_collision_bound` (Claim B.1). -/
+Fiber counting and the Cauchy-Schwarz step feeding
+`exists_large_image_of_pairwise_collision_bound`. -/
 
 section CollidingPairs
 
 variable {S T : Type*} [Fintype S] [DecidableEq S] [DecidableEq T]
 
-/-- Number of *ordered* pairs `(x, y) : S × S` with `x ≠ y` and `φ x = φ y`.
-
-This equals twice the number of distinct (unordered) colliding pairs;
-working ordered avoids needing a `LinearOrder S` to canonicalise unordered
-pairs. Paper's `|C_φ|` is `numCollsOrdered φ / 2`. -/
+/-- The number of *ordered* pairs `(x, y)` with `x ≠ y` and `φ x = φ y`, twice the number of
+unordered colliding pairs. Counting ordered pairs avoids needing a `LinearOrder S`. -/
 private def numCollsOrdered (φ : S → T) : ℕ :=
   (Finset.univ.filter (fun p : S × S ↦ p.1 ≠ p.2 ∧ φ p.1 = φ p.2)).card
 
-/-- Sum of squared fiber-cardinalities = `|S| + numCollsOrdered`.
-
-Each ordered pair `(x, y)` with `φ x = φ y` is counted once on the LHS
-(via its common image μ); the `|S|` diagonal pairs `(x, x)` and the
-`numCollsOrdered` off-diagonal pairs partition them. -/
+/-- The squared fiber cardinalities of `φ` sum to `|S| + numCollsOrdered φ`: each ordered
+pair with `φ x = φ y` is counted once, and the `|S|` diagonal pairs together with the
+`numCollsOrdered φ` off-diagonal ones exhaust them. -/
 private lemma sum_fiber_sq_eq (φ : S → T) :
     ∑ μ ∈ Finset.univ.image φ,
         ((Finset.univ.filter (fun x : S ↦ φ x = μ)).card)^2 =
@@ -123,12 +115,12 @@ private lemma sum_fiber_sq_eq (φ : S → T) :
   rw [Finset.card_image_of_injective _ (fun a b h ↦ (Prod.mk.injEq _ _ _ _).mp h |>.1)]
   rfl
 
-/-- Cauchy-Schwarz applied to fiber cardinalities.
+/-- Cauchy-Schwarz on the fiber cardinalities of `φ`:
+`|S| ^ 2 ≤ |image φ| * (|S| + numCollsOrdered φ)`.
 
-Equivalent to Mathlib's Chebyshev-style bound `sq_sum_le_card_mul_sum_sq` (which lives in
-the *root* namespace, not in `Finset`) applied over the image of `φ`, combined with
-`sum_fiber_sq_eq` to rewrite the squared-sum side and with
-`Finset.card_eq_sum_card_image` to identify `Σ μ ∈ image, |fiber μ| = |S|`. -/
+This is `sq_sum_le_card_mul_sum_sq` over the image of `φ`, with `sum_fiber_sq_eq` rewriting
+the sum of squares and `Finset.card_eq_sum_card_image` identifying
+`∑ μ ∈ image φ, |fiber μ| = |S|`. -/
 private lemma cauchy_schwarz_fiber (φ : S → T) :
     (Fintype.card S)^2 ≤
       (Finset.univ.image φ).card * (Fintype.card S + numCollsOrdered φ) := by
@@ -167,66 +159,28 @@ private lemma cauchy_schwarz_fiber (φ : S → T) :
 end CollidingPairs
 
 open Classical in
-/-- **Claim B.1 of [ABF26]** ("Omitted claim for Lemma 6.12").
+/-- If every pair of distinct points of a finite type `S` collides with probability at most
+`ε` under a distribution `Φ` on functions `S → T`, i.e.
 
-Suppose `S` is finite, `T` is any type, and `Φ` is a distribution on functions `S → T`
-such that for any distinct `x, y ∈ S`, the probability that a sample
-`φ ← Φ` sends `x` and `y` to the same image is bounded by `ε`:
-```
-∀ x y ∈ S, x ≠ y → ∑' φ, Φ φ · 1[φ x = φ y] ≤ ε.
-```
-Then there exists some `φ` in the support of `Φ` whose image has cardinality
-at least `|S| / (1 + (|S| − 1) · ε)`.
+  `∀ x ≠ y, ∑' φ, Φ φ * 1[φ x = φ y] ≤ ε` ,
 
-The raw indicator sum keeps this theorem universe-polymorphic: ArkLib's `Pr_` notation binds a
-`Prop` and is therefore universe-zero. The wrapper
-`exists_large_image_of_pairwise_collision_bound_of_Pr` below provides that notation when
-`S` and `T` live in `Type`.
+then some `φ` in the support of `Φ` has image of cardinality at least
+`|S| / (1 + (|S| - 1) * ε)`.
 
-## Use in ABF26 Lemma 6.12
+The hypothesis is stated as a raw indicator sum rather than with `Pr_` notation, which binds
+a `Prop` and would force `S` and `T` into `Type`; see
+`exists_large_image_of_pairwise_collision_bound_of_Pr` for that form.
 
-The pinned tex applies this claim **twice** in the proof of Lemma 6.12, once per counting
-step. First, with `φ_v(F₁, F₂) := (⟨F₁, v⟩, ⟨F₂, v⟩)`: distinct `F₁, F₂ ∈ S` collide under a
-uniform `v` with probability `≤ 1/|F|` (`Probability.prob_dotProduct_eq_zero_le`), so there
-is a `v ∈ F^k` with `|S_v| ≥ |F| · N / (|F| + N − 1)`, where `N := |S|`. Second, with `µ₂`
-fixed outside the second coordinates of `S_v` and the map `(a₁, a₂) ↦ (µ₁ − a₁)/(a₂ − µ₂)`:
-distinct points of `S_v` have equal image for at most one `µ₁`, so a uniform `µ₁` collides
-them with probability `≤ 1/|F|` (`Probability.prob_uniform_le_inv_of_card_le_one`), and
-there is a `µ₁` whose image set has size `≥ |F| · |S_v| / (|F| + |S_v| − 1)`. Composing the
-two applications — using monotonicity of `z ↦ z / (|F| + z − 1)` and one final relaxation —
-yields the printed soundness error `|Λ| / (|F| + 2|Λ|)`.
+Writing `N = |S|`, the proof runs by contradiction, using linearity of expectation in place
+of a convexity argument.
 
-The published PDF of ABF26 runs the second step differently: a single application of this
-claim, followed by a pigeonhole choosing `µ₁` outside the set `B` of the at most
-`C(|S_v|, 2)` bad values, which makes the map **fully** injective; it prints the weaker
-`|Λ| / (|F| + |Λ| − 1)`. The pinned tex has since been revised to the two-application form
-above, and that is the form these lemmas serve.
-
-## Proof sketch (contradiction-form, avoids Jensen)
-
-Let `N := |S|`, `δ := 1 + (N − 1) · ε`, `K := N / δ`. The proof tracks three
-in-line steps; the inelegance-saving idea is to negate the goal and exploit
-linearity of expectation instead of integrating a convex function.
-
-**Step A (pointwise Cauchy–Schwarz; [`cauchy_schwarz_fiber`]).** For every
-`φ : S → T`, the fiber decomposition `Σ μ ∈ image φ, |φ⁻¹(μ)| = |S|` combined
-with `sq_sum_le_card_mul_sum_sq` (Chebyshev for `f = g`) and
-[`sum_fiber_sq_eq`] gives `N² ≤ |image φ| · (N + numCollsOrdered φ)`.
-
-**Step B (linearity of expectation).** Each `numCollsOrdered φ` is a sum of
-`(φ p.1 = φ p.2)`-indicators over ordered off-diagonal pairs `P`. Swapping
-the outer PMF `tsum` with the inner `Finset.sum` via
-`Summable.tsum_finsetSum` and using the hypothesis `Pr_{φ ← Φ}[φ x = φ y] ≤ ε`
-(unfolded via [`Pr_eq_tsum_indicator`]) gives
-`∑' φ, Φ φ · (numCollsOrdered φ : ENNReal) ≤ N · (N − 1) · ε`.
-
-**Step C (contradiction by strict averaging).** Assume for contradiction
-`∀ φ ∈ Φ.support, |image φ| < K`. Step A then forces, for each such φ,
-`numCollsOrdered φ > N · (N − 1) · ε` (via `mul_lt_of_lt_div` and ENNReal
-cross-multiplication: `A · δ < N` combined with `N² ≤ A · (N + C)` together
-with the negation `C ≤ N(N−1)ε` produces `N² < N²`). Strict averaging via
-`ENNReal.tsum_lt_tsum` at any `φ₀ ∈ Φ.support` lifts the per-φ strict bound
-to `N · (N − 1) · ε < ∑' φ, Φ φ · numCollsOrdered φ`, contradicting Step B. -/
+* Pointwise, `cauchy_schwarz_fiber` gives `N ^ 2 ≤ |image φ| * (N + numCollsOrdered φ)` for
+  every `φ`.
+* On average, `numCollsOrdered φ` is a sum of collision indicators over ordered off-diagonal
+  pairs, so the hypothesis gives `∑' φ, Φ φ * numCollsOrdered φ ≤ N * (N - 1) * ε`.
+* If every `φ` in the support had `|image φ| < N / (1 + (N - 1) * ε)`, the first item would
+  force `numCollsOrdered φ > N * (N - 1) * ε` for each of them, and strict averaging over the
+  support would contradict the second. -/
 theorem exists_large_image_of_pairwise_collision_bound
     {S T : Type*} [Fintype S]
     (Φ : PMF (S → T)) (ε : ENNReal)
@@ -385,7 +339,8 @@ theorem exists_large_image_of_pairwise_collision_bound
   exact absurd (h_strict.trans_le h_lin) (lt_irrefl _)
 
 open Classical in
-/-- Universe-zero convenience wrapper for Claim B.1 using ArkLib's probability notation. -/
+/-- `exists_large_image_of_pairwise_collision_bound` stated with `Pr_` notation, which binds
+a `Prop` and so restricts `S` and `T` to `Type`. -/
 theorem exists_large_image_of_pairwise_collision_bound_of_Pr
     {S T : Type} [Fintype S]
     (Φ : PMF (S → T)) (ε : ENNReal)

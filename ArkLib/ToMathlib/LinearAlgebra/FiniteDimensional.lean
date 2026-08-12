@@ -10,7 +10,14 @@ import Mathlib.LinearAlgebra.Projection
 /-!
 # Additional finite-dimensional linear-algebra lemmas
 
-Generic linear-algebra facts intended as candidates for upstreaming to Mathlib.
+## Main statements
+
+* `LinearMap.finrank_eq_of_map_eq` — a linear map injective on `B` and mapping `B` onto `A`
+  makes the two submodules equidimensional.
+* `Submodule.exists_adapted_basis` — a finite-dimensional space has a basis whose initial
+  segment is a basis of a prescribed subspace.
+
+Generic facts intended as candidates for upstreaming to Mathlib.
 -/
 
 /-- If a linear map is injective on `B` and maps `B` onto `A`, then `B` and `A`
@@ -27,8 +34,8 @@ lemma LinearMap.finrank_eq_of_map_eq {F M N : Type*} [Field F]
     exact ⟨fun h => Subtype.ext (hinj p.1 p.2 h), fun h => by rw [h]; simp⟩
   rw [← LinearMap.finrank_range_of_inj hg, LinearMap.range_domRestrict, hmap]
 
-/-- A basis of a finite-dimensional space whose initial segment lies in a prescribed
-subspace. -/
+/-- A finite-dimensional space of dimension `n` has a basis indexed by `Fin n` whose first
+`finrank F N` vectors lie in a prescribed subspace `N`. -/
 lemma Submodule.exists_adapted_basis {F M : Type*} [Field F] [AddCommGroup M]
     [Module F M] [FiniteDimensional F M] (N : Submodule F M) {n : ℕ}
     (hn : Module.finrank F M = n) :

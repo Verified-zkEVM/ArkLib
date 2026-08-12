@@ -17,36 +17,33 @@ import Mathlib.LinearAlgebra.Vandermonde
 /-!
 # The classical Wronskian
 
-The classical Wronskian of `P 0, ..., P (sigma - 1)` is the determinant of the matrix
-whose `(i, j)` entry is the `i`-th ordinary formal derivative of `P j`. Over a field of
-characteristic zero, or of positive characteristic at least the common strict degree bound, it is
-nonzero exactly when the polynomials are linearly independent. The positive-characteristic case
-is [GK16, Definition 9 and Lemma 10].
+The classical Wronskian of `P 0, …, P (σ - 1)` is the determinant of the matrix whose
+`(i, j)` entry is the `i`-th ordinary formal derivative of `P j`. Over a field of
+characteristic zero, or of positive characteristic at least the common strict degree bound,
+it is nonzero exactly when the polynomials are linearly independent.
 
-The large-characteristic guard is essential: in characteristic `p`, the nonconstant
-polynomial `X ^ p` has zero derivative.
+The characteristic guard is essential: in characteristic `p`, the nonconstant polynomial
+`X ^ p` has zero derivative.
 
 ## Main definitions
 
-- `Polynomial.classicalWronskian` — GK16 Definition 9.
+* `Polynomial.classicalWronskian`
 
 ## Main statements
 
-- `Polynomial.natDegree_classicalWronskian_le` — degree bound `σ · k` for entries of
-  degree `≤ k`.
-- `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective` — the echelon-form core of
-  GK16 Lemma 10: nonzero polynomials with distinct degrees, all `< k`, have nonzero
-  Wronskian under the characteristic guard `ringChar F = 0 ∨ k ≤ ringChar F`.
-- `Polynomial.classicalWronskian_of_linearComb` — changing the family by a constant
+* `Polynomial.natDegree_classicalWronskian_le` — the degree bound `σ * k` for entries of
+  degree at most `k`.
+* `Polynomial.classicalWronskian_ne_zero_of_natDegree_injective` — nonzero polynomials with
+  distinct degrees, all `< k`, have nonzero Wronskian under the guard
+  `ringChar F = 0 ∨ k ≤ ringChar F`.
+* `Polynomial.classicalWronskian_of_linearComb` — changing the family by a constant
   coefficient matrix `U` multiplies the Wronskian by `C U.det`.
-- `Polynomial.classicalWronskian_ne_zero_of_basis` — GK16 Lemma 10 in basis form, the
-  statement consumed downstream: a basis of a polynomial subspace in degrees `< k` has
-  nonzero Wronskian under the same characteristic guard.
+* `Polynomial.classicalWronskian_ne_zero_of_basis` — the same nonvanishing for an arbitrary
+  basis of a polynomial subspace in degrees `< k`.
 
 ## References
 
-* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16] (Definition 9 and
-    Lemma 10)
+* [Guruswami, V., and Kopparty, S., *Explicit subspace designs*][GK16]
 -/
 
 namespace Polynomial
@@ -55,7 +52,8 @@ open Module
 open Matrix
 open scoped Function BigOperators
 
-/-- **[GK16, Definition 9].** The classical Wronskian of a finite family of polynomials. -/
+/-- The classical Wronskian of a finite family of polynomials: the determinant of the matrix
+whose `(i, j)` entry is the `i`-th derivative of `P j`. -/
 noncomputable def classicalWronskian {F : Type*} [CommRing F]
     (sigma : ℕ) (P : Fin sigma → F[X]) : F[X] :=
   (Matrix.of fun i j : Fin sigma => derivative^[i.val] (P j)).det
@@ -121,9 +119,9 @@ private lemma leadingCoeff_iterate_derivative {F : Type*} [Field F]
   rw [leadingCoeff, natDegree_iterate_derivative_eq hp hi hdeg hk,
     coeff_iterate_derivative, Nat.sub_add_cancel hi, nsmul_eq_mul, coeff_natDegree]
 
-/-- The classical Wronskian of nonzero polynomials with distinct degrees is nonzero in
-characteristic zero, and remains so in positive characteristic when their strict degree bound is
-no greater than the characteristic. This is the echelon-form core of [GK16, Lemma 10]. -/
+/-- The classical Wronskian of nonzero polynomials with pairwise distinct degrees is nonzero
+in characteristic zero, and remains so in positive characteristic when their common strict
+degree bound is no greater than the characteristic. -/
 theorem classicalWronskian_ne_zero_of_natDegree_injective
     {F : Type*} [Field F] {sigma k : ℕ}
     (P : Fin sigma → F[X]) (hP0 : ∀ j, P j ≠ 0)
@@ -333,13 +331,13 @@ lemma classicalWronskian_of_linearComb {F : Type*} [Field F] {sigma : ℕ}
   unfold classicalWronskian
   rw [hM, Matrix.det_mul, ← RingHom.map_det]
 
-/-- **[GK16, Lemma 10], basis form.** If a finite-dimensional polynomial subspace has
-a basis of polynomials of degree `< k`, then its classical Wronskian is nonzero in
-characteristic zero, or when `k` is no greater than the positive characteristic.
+/-- If a finite-dimensional polynomial subspace has a basis of polynomials of degree `< k`,
+its classical Wronskian is nonzero in characteristic zero, and in positive characteristic at
+least `k`.
 
-The proof first changes to a basis in degree-echelon form. The coefficient of maximal
-degree in its Wronskian is a nonzero Vandermonde determinant; changing back multiplies
-the Wronskian by a nonzero constant determinant. -/
+The proof changes to a basis in degree-echelon form, where the top-degree coefficient of the
+Wronskian is a nonzero Vandermonde determinant; changing back multiplies the Wronskian by a
+nonzero constant. -/
 theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {sigma k : ℕ}
     {B : Submodule F F[X]} (bas : Basis (Fin sigma) F B)
     (hdeg : ∀ j, ((bas j : B) : F[X]).natDegree < k)

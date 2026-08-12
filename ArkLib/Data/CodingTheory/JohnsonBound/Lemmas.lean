@@ -11,7 +11,7 @@ namespace JohnsonBound
 
 open Real Finset Fintype
 
-/-- The function used for the `q`-ary Johnson Bound. This is [ABF26] Definition 3.1's `J_q`. -/
+/-- The `q`-ary Johnson bound function `J_q`. -/
 noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
@@ -416,13 +416,12 @@ lemma johnson_bound₀ [Zero F]
   rw [← johnson_denom h_card, ← mul_assoc]
   exact johnson_unrefined_by_M' h_n h_B h_card
 
-/-- Johnson bound generalised to an arbitrary centre `v`.
+/-- The Johnson bound at an arbitrary centre `v`.
 
-Recentering at `v` is done by a coordinatewise transport (Mathlib's `Equiv.piCongrRight`)
-rather than the field subtraction `x ↦ x - v`, so no field structure is needed: each
-coordinate `σ i` sends `v i` to the fixed symbol `0` of `Fin (card F)`, hence
-`Equiv.piCongrRight σ v = 0`, and the transport preserves Hamming distance
-(`hammingDist_comp`), so `e`, `d`, and cardinalities are unchanged. -/
+Recentering is done by a coordinatewise transport along `Equiv.piCongrRight` rather than by
+the field subtraction `x ↦ x - v`, so no field structure is needed: each `σ i` sends `v i` to
+the symbol `0` of `Fin (card F)`, and the transport preserves Hamming distance, hence `e`,
+`d`, and cardinalities. -/
 protected lemma johnson_bound_lemma {v : Fin n → F}
     (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
