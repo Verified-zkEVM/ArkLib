@@ -87,8 +87,8 @@ lemma classicalWronskian_zero {F : Type*} [CommRing F] (P : Fin 0 → F[X]) :
 
 /-- The Wronskian of a single polynomial is that polynomial. -/
 @[simp]
-lemma classicalWronskian_one {F : Type*} [CommRing F] (p : F[X]) :
-    classicalWronskian 1 ![p] = p := by
+lemma classicalWronskian_one {F : Type*} [CommRing F] (P : Fin 1 → F[X]) :
+    classicalWronskian 1 P = P 0 := by
   simp [classicalWronskian, Matrix.det_unique]
 
 /-- At `σ = 2` the classical Wronskian is Mathlib's two-argument `Polynomial.wronskian`.
@@ -475,7 +475,10 @@ theorem classicalWronskian_ne_zero_of_basis {F : Type*} [Field F] {σ k : ℕ}
 
 /-- Over a field of characteristic zero, or of positive characteristic at least `k`,
 polynomials of degree `< k` are linearly independent iff their classical Wronskian is
-nonzero. -/
+nonzero.
+
+Only the `←` direction uses `hdeg` and `hk`. For `→` alone, reach for
+`classicalWronskian_eq_zero_of_not_linearIndependent`, which needs neither. -/
 theorem classicalWronskian_ne_zero_iff_linearIndependent {F : Type*} [Field F] {σ k : ℕ}
     (P : Fin σ → F[X]) (hdeg : ∀ j, (P j).natDegree < k)
     (hk : ringChar F = 0 ∨ k ≤ ringChar F) :

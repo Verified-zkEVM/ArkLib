@@ -116,7 +116,8 @@ lemma umEvalOnPoints_domRestrict_injective
       have hpow : ∀ i : ι,
           (Polynomial.X - Polynomial.C (domain i)) ^ s ∣ p.val := by
         intro i
-        apply Polynomial.X_sub_C_pow_dvd_of_isRoot_iterate_derivative p.2 hchar
+        apply Polynomial.X_sub_C_pow_dvd_of_isRoot_iterate_derivative p.2
+          (hchar.imp_right (min_le_right s k).trans)
         intro j
         exact congrFun (congrFun hfp i) j
       have hmult : ∀ i : ι, s ≤ p.val.rootMultiplicity (domain i) := by

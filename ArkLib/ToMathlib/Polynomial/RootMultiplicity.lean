@@ -4,11 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import Mathlib.Algebra.CharP.Lemmas
-import Mathlib.Algebra.Polynomial.Derivative
 import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.Polynomial.Taylor
-import Mathlib.Data.Nat.Factorial.NatCast
+import Mathlib.Data.Nat.Prime.Factorial
 import Mathlib.RingTheory.Polynomial.Basic
 
 /-!
@@ -28,11 +26,16 @@ against the degree, and one reading a multiplicity off the vanishing of iterated
 
 `X_sub_C_pow_dvd_of_isRoot_iterate_derivative` is the positive-characteristic complement of
 `lt_rootMultiplicity_iff_isRoot_iterate_derivative`, which assumes `CharZero`. Both concern
-*ordinary* derivatives, which agree with Hasse derivatives only up to the units `j !`; the
-guard `ringChar R = 0 ∨ k ≤ ringChar R` is what makes those factors invertible over the
-relevant degree range, and is phrased as a disjunction so that characteristic zero is not
-excluded by `ringChar R = 0` forcing `k = 0`. It cannot be dropped: in characteristic
-`p ≤ k` one has `derivative^[p] (X ^ p) = 0`.
+*ordinary* derivatives, which agree with Hasse derivatives only up to the factors `j !`; the
+guard `ringChar R = 0 ∨ min s k ≤ ringChar R` is what keeps those nonzero over the range
+where they are actually divided out. It is phrased as a disjunction so that characteristic
+zero is not excluded by `ringChar R = 0` forcing the bound to be `0`, and it cannot be
+dropped: in characteristic `p` with `p ≤ min s k` one has `derivative^[p] (X ^ p) = 0`.
+
+The bound is on `min s k` rather than on `k` alone. Only the factorials `j !` with `j < s`
+*and* `j < k` are ever divided out, and the two bounds are incomparable — neither `s ≤ p`
+nor `k ≤ p` implies the other — so `min` is the correct common weakening. This admits, for
+instance, characteristic `2` with `k = 5` and `s = 2`.
 
 ## Tags
 
@@ -63,14 +66,17 @@ lemma sum_rootMultiplicity_le_natDegree {R : Type*} [CommRing R] [IsDomain R]
   exact hcard.trans (card_roots' p)
 
 /-- If the first `s` ordinary derivatives of a polynomial of degree `< k` are all rooted at
-`a`, then `a` is a root of multiplicity at least `s`, provided the field has characteristic
-zero or characteristic at least `k`.
+`a`, then `a` is a root of multiplicity at least `s`, provided the ring has characteristic
+zero or characteristic at least `min s k`.
 
 Ordinary derivatives differ from the Hasse derivatives of Mathlib's multiplicity criterion by
-the factors `j !`; the characteristic hypothesis is what makes those invertible. -/
-lemma X_sub_C_pow_dvd_of_isRoot_iterate_derivative {F : Type*} [Field F]
-    {p : F[X]} {a : F} {s k : ℕ}
-    (hp : p ∈ degreeLT F k) (hchar : ringChar F = 0 ∨ k ≤ ringChar F)
+the factors `j !`; the characteristic hypothesis is what makes those nonzero. Only the
+factorials `j !` with `j < s` and `j < k` are ever inverted, which is why the bound is on
+`min s k` rather than on either argument alone — the two are incomparable, and neither
+implies the other. -/
+lemma X_sub_C_pow_dvd_of_isRoot_iterate_derivative {R : Type*} [CommRing R] [IsDomain R]
+    {p : R[X]} {a : R} {s k : ℕ}
+    (hp : p ∈ degreeLT R k) (hchar : ringChar R = 0 ∨ min s k ≤ ringChar R)
     (hroot : ∀ j : Fin s, (derivative^[j.val] p).IsRoot a) :
     (X - C a) ^ s ∣ p := by
   rw [X_sub_C_pow_dvd_iff, X_pow_dvd_iff]
@@ -78,19 +84,23 @@ lemma X_sub_C_pow_dvd_of_isRoot_iterate_derivative {F : Type*} [Field F]
   change (taylor a p).coeff d = 0
   rw [taylor_coeff]
   by_cases hdk : d < k
-  · have hfac : IsUnit (d.factorial : F) := by
+  · have hfac : (d.factorial : R) ≠ 0 := by
       rcases hchar with hchar0 | hcharpos
-      · letI : CharZero F := (CharP.ringChar_zero_iff_CharZero F).mp hchar0
-        exact IsUnit.natCast_factorial_of_algebra F d
-      · letI : NeZero (ringChar F) :=
-          ⟨Nat.ne_zero_of_lt ((Nat.zero_le d).trans_lt (hdk.trans_le hcharpos))⟩
-        letI : Fact (Nat.Prime (ringChar F)) := CharP.char_is_prime_of_pos F _
-        exact (IsUnit.natCast_factorial_iff_of_charP (ringChar F)).2 (hdk.trans_le hcharpos)
+      · letI : CharZero R := (CharP.ringChar_zero_iff_CharZero R).mp hchar0
+        exact Nat.cast_ne_zero.mpr d.factorial_ne_zero
+      · have hdlt : d < ringChar R := (lt_min hd hdk).trans_le hcharpos
+        haveI : NeZero (ringChar R) := ⟨by omega⟩
+        haveI : Fact (Nat.Prime (ringChar R)) := CharP.char_is_prime_of_pos R _
+        intro hzero
+        have hdvd : ringChar R ∣ d.factorial :=
+          (CharP.cast_eq_zero_iff R (ringChar R) _).mp hzero
+        have := (Nat.Prime.dvd_factorial (Fact.out (p := (ringChar R).Prime))).mp hdvd
+        omega
     have hder : (derivative^[d] p).eval a = 0 := hroot ⟨d, hd⟩
-    rw [← congrFun (factorial_smul_hasseDeriv (R := F) d) p] at hder
+    rw [← congrFun (factorial_smul_hasseDeriv (R := R) d) p] at hder
     simp only [LinearMap.smul_apply, eval_smul] at hder
     rw [nsmul_eq_mul] at hder
-    exact (mul_eq_zero.mp hder).resolve_left hfac.ne_zero
+    exact (mul_eq_zero.mp hder).resolve_left hfac
   · by_cases hp0 : p = 0
     · simp [hp0]
     · have hdeg : p.natDegree < k :=

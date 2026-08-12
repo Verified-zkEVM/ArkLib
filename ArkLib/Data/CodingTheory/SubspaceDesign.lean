@@ -994,7 +994,8 @@ theorem isSubspaceDesign_umCode
     refine pow_dvd_classicalWronskian B bas (N i) (hNle i) _ hσs ?_
     intro q hq
     apply Polynomial.X_sub_C_pow_dvd_of_isRoot_iterate_derivative
-      ((hBmem q).mp ((hNmem i q).mp hq).1).1 hchar
+      ((hBmem q).mp ((hNmem i q).mp hq).1).1
+      (hchar.imp_right (min_le_right _ _).trans)
     exact ((hNmem i q).mp hq).2
   have hcount : ∑ i : ι, (s - σ + 1) * Module.finrank F ↥(A ⊓
       (LinearMap.ker (LinearMap.proj (R := F)
