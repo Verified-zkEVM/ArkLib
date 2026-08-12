@@ -86,7 +86,9 @@ structure ModifiedGuruswami
 omit [DecidableEq (RatFunc F)] in
 /-- Claim 5.4 from [BCIKS20].
 It essentially claims that there exists a solution to the Guruswami-Sudan constraints above. -/
-lemma modified_guruswami_has_a_solution {m n k : ℕ} {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
+lemma modified_guruswami_has_a_solution {m n k : ℕ}
+    (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
+    {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
     ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ := by
   sorry
 
