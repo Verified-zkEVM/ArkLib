@@ -4,9 +4,9 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 326 files, 5565 declarations
+- `ArkLib` — 346 files, 5517 declarations
 
-## Same short-name across multiple files (161 groups)
+## Same short-name across multiple files (162 groups)
 
 Each group lists declarations sharing a short name across ≥2 files. Most are legitimate (overloaded interface, paper-shape vs general form), but the list is the right anchor to look for duplicates.
 
@@ -208,8 +208,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `disagreementSet` (4 declarations, 4 files)
 
-- `def BlockRelDistance.disagreementSet` [ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean:42](../../../ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean#L42) — Let C be a smooth ReedSolomon code `C = RS[F, ι^(2ⁱ), φ', m]` and `f,g : ι^(2ⁱ) → F`, then the (i,k)
-- `def disagreementSet` [ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean:56](../../../ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean#L56) — The set D = Δ^{2m}(U, V), columns where U₀≠V₀ or U₁≠V₁.
+- `def BlockRelDistance.disagreementSet` [ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean:43](../../../ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean#L43) — Let C be a smooth ReedSolomon code `C = RS[F, ι^(2ⁱ), φ', m]` and `f,g : ι^(2ⁱ) → F`, then the (i,k)
+- `def disagreementSet` [ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean:57](../../../ArkLib/Data/CodingTheory/ProximityGap/DG25/MainResults.lean#L57) — The set D = Δ^{2m}(U, V), columns where U₀≠V₀ or U₁≠V₁.
 - `def Binius.BinaryBasefold.disagreementSet` [ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean:1042](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/Prelude.lean#L1042) — Disagreement set Δ : The set of points where two functions disagree. For functions f^(i+ϑ) and g^(i+
 - `def Quotienting.disagreementSet` [ArkLib/ProofSystem/Stir/Quotienting.lean:52](../../../ArkLib/ProofSystem/Stir/Quotienting.lean#L52) — We define the set disagreementSet(f,ι,S,Ans) as the set of all points x ∈ ι that lie in S such that
 
@@ -293,7 +293,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `toFinset` (4 declarations, 3 files)
 
-- `def ReedSolomon.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon.lean:92](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L92) — (no docstring)
+- `def ReedSolomon.toFinset` [ArkLib/Data/CodingTheory/ReedSolomon.lean:115](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L115) — (no docstring)
 - `def Domain.CosetFftDomainClass.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:278](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L278) — The elements of a domain as a finset.
 - `abbrev Domain.CosetFftDomain.toFinset` [ArkLib/Data/Domain/CosetFftDomain/Defs.lean:296](../../../ArkLib/Data/Domain/CosetFftDomain/Defs.lean#L296) — The finset of elements of a concrete coset FFT domain.
 - `abbrev Domain.FftDomain.toFinset` [ArkLib/Data/Domain/FftDomain/Defs.lean:145](../../../ArkLib/Data/Domain/FftDomain/Defs.lean#L145) — The finite set of field elements contained in an FFT domain.
@@ -619,7 +619,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `LiftedWitness` (2 declarations, 2 files)
 
-- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:130](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L130) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
+- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:131](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L131) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
 - `structure RingSwitching.Lift.LiftedWitness` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:76](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L76) — The lifted witness of `Lift`: the `S`-witness `z` of the linear relation and one quotient polynomial
 
 ### `MessageIdx` (2 declarations, 2 files)
@@ -644,12 +644,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `append_left_injective` (2 declarations, 2 files)
 
-- `theorem Fin.append_left_injective` [ArkLib/Data/Fin/Basic.lean:238](../../../ArkLib/Data/Fin/Basic.lean#L238) — (no docstring)
+- `theorem Fin.append_left_injective` [ArkLib/Data/Fin/Basic.lean:250](../../../ArkLib/Data/Fin/Basic.lean#L250) — (no docstring)
 - `theorem ProtocolSpec.append_left_injective` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:55](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L55) — (no docstring)
 
 ### `append_right_injective` (2 declarations, 2 files)
 
-- `theorem Fin.append_right_injective` [ArkLib/Data/Fin/Basic.lean:246](../../../ArkLib/Data/Fin/Basic.lean#L246) — (no docstring)
+- `theorem Fin.append_right_injective` [ArkLib/Data/Fin/Basic.lean:258](../../../ArkLib/Data/Fin/Basic.lean#L258) — (no docstring)
 - `theorem ProtocolSpec.append_right_injective` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:65](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L65) — (no docstring)
 
 ### `batchingCoreReduction` (2 declarations, 2 files)
@@ -714,12 +714,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `coeffHom` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:243](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L243) — Reading off the `k`-th coefficient of the underlying polynomial, as an additive homomorphism `Rq Φ →
+- `def ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:260](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L260) — Reading off the `k`-th coefficient of the underlying polynomial, as an additive homomorphism `Rq Φ →
 - `def CompPoly.CPolynomial.coeffHom` [ArkLib/ToCompPoly/Univariate/Basic.lean:287](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L287) — Extracting the `k`-th coefficient as an additive homomorphism.
 
 ### `coeffHom_apply` (2 declarations, 2 files)
 
-- `theorem ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom_apply` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:248](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L248) — (no docstring)
+- `theorem ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom_apply` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:265](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L265) — (no docstring)
 - `theorem CompPoly.CPolynomial.coeffHom_apply` [ArkLib/ToCompPoly/Univariate/Basic.lean:293](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L293) — (no docstring)
 
 ### `computeRoundPoly` (2 declarations, 2 files)
@@ -869,7 +869,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `ofFinCoeff` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.CyclotomicModulus.Rq.ofFinCoeff` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:252](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L252) — The reduced representative with prescribed finite coefficients `Σ_{k<N} cₖ Xᵏ`, valid when `N` does
+- `def ArkLib.Lattices.CyclotomicModulus.Rq.ofFinCoeff` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:269](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L269) — The reduced representative with prescribed finite coefficients `Σ_{k<N} cₖ Xᵏ`, valid when `N` does
 - `def CompPoly.CPolynomial.ofFinCoeff` [ArkLib/ToCompPoly/Univariate/Basic.lean:296](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L296) — The polynomial with prescribed finite coefficient function: `Σ_{k<N} cₖ Xᵏ`.
 
 ### `pSpecCoreInteraction` (2 declarations, 2 files)
@@ -947,6 +947,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `abbrev RingSwitching.SumcheckPhase.roundKnowledgeError` [ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean:173](../../../ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean#L173) — (no docstring)
 - `def Sumcheck.Structured.roundKnowledgeError` [ArkLib/ProofSystem/Sumcheck/Structured/SingleRound.lean:297](../../../ArkLib/ProofSystem/Sumcheck/Structured/SingleRound.lean#L297) — Round-by-round knowledge error for a single round of the structured sumcheck: the Schwartz–Zippel bo
 
+### `rowSum` (2 declarations, 2 files)
+
+- `def ArkLib.Lattices.Ajtai.InnerOuter.rowSum` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:185](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L185) — Mathlib view of `cRowSum`, retained for degree and root-counting proofs.
+- `def RingSwitching.Lift.Presentation.rowSum` [ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean:213](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean#L213) — The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on canonical representatives (e
+
 ### `run` (2 declarations, 2 files)
 
 - `def AGM.Adversary.run` [ArkLib/AGM/Basic.lean:164](../../../ArkLib/AGM/Basic.lean#L164) — Running the adversary on a given table, returning the list of group elements it is supposed to outpu
@@ -980,7 +985,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `toPolynomial` (2 declarations, 2 files)
 
 - `def ArkLib.Lattices.Hachi.toPolynomial` [ArkLib/Commitments/Functional/Hachi/EvalSplit.lean:199](../../../ArkLib/Commitments/Functional/Hachi/EvalSplit.lean#L199) — Inverse reshape of `toMatrix`: read the `2 ^ nl × 2 ^ nh` matrix back into the `2 ^ (nl + nh)` coeff
-- `def ReedSolomon.toPolynomial` [ArkLib/Data/CodingTheory/ReedSolomon.lean:566](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L566) — The linear map that maps a Reed-Solomon codeword to its associated polynomial.
+- `def ReedSolomon.toPolynomial` [ArkLib/Data/CodingTheory/ReedSolomon.lean:599](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean#L599) — The linear map that maps a Reed-Solomon codeword to its associated polynomial.
 
 ### `topMsgAux` (2 declarations, 2 files)
 

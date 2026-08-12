@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 152,
-    "keys_cited": 30,
-    "total_citation_edges": 221
+    "files_with_citations": 168,
+    "keys_cited": 40,
+    "total_citation_edges": 253
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -126,9 +126,11 @@
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean": [
+      "HMZ25",
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean": [
+      "FMN24",
       "NOZ26"
     ],
     "ArkLib/Commitments/Functional/KZG/Basic.lean": [
@@ -167,11 +169,27 @@
     "ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/Basic/Entropy.lean": [
+      "ABF26"
+    ],
     "ArkLib/Data/CodingTheory/Basic/LinearCode.lean": [
+      "ABF26",
       "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/Basic/RelativeDistance.lean": [
+      "ABF26"
     ],
     "ArkLib/Data/CodingTheory/DivergenceOfSets.lean": [
       "BCIKS20"
+    ],
+    "ArkLib/Data/CodingTheory/Erasure.lean": [
+      "ABF26",
+      "codingtheory"
+    ],
+    "ArkLib/Data/CodingTheory/ExtensionCodes.lean": [
+      "ABF26",
+      "BCFW25",
+      "DP25"
     ],
     "ArkLib/Data/CodingTheory/GuruswamiSudan/Basic.lean": [
       "BCIKS20"
@@ -179,16 +197,25 @@
     "ArkLib/Data/CodingTheory/GuruswamiSudan/GuruswamiSudan.lean": [
       "BCIKS20"
     ],
+    "ArkLib/Data/CodingTheory/HammingBallVolume.lean": [
+      "ABF26"
+    ],
     "ArkLib/Data/CodingTheory/InterleavedCode.lean": [
       "AHIV22",
       "BCIKS20",
       "DG25"
     ],
     "ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean": [
+      "ABF26",
       "codingtheory",
       "listdecoding"
     ],
+    "ArkLib/Data/CodingTheory/JohnsonBound/Family.lean": [
+      "ABF26",
+      "Joh62"
+    ],
     "ArkLib/Data/CodingTheory/ListDecodability.lean": [
+      "ABF26",
       "ACFY24",
       "ACFY24stir"
     ],
@@ -268,8 +295,27 @@
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
       "ACFY24"
     ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean": [
+      "ABF26",
+      "GR08"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean": [
+      "ABF26"
+    ],
     "ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean": [
       "ACFY24"
+    ],
+    "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean": [
+      "ABF26",
+      "GW13",
+      "KSY14"
+    ],
+    "ArkLib/Data/CodingTheory/SubspaceDesign.lean": [
+      "ABF26",
+      "GG25",
+      "GK16",
+      "GR08",
+      "GX13"
     ],
     "ArkLib/Data/Domain/CosetFftDomain/Block.lean": [
       "ACFY24"
@@ -380,6 +426,15 @@
     "ArkLib/Data/Lattices/Vectors.lean": [
       "NOZ26"
     ],
+    "ArkLib/Data/MvPolynomial/Multilinear.lean": [
+      "NOZ26"
+    ],
+    "ArkLib/Data/Polynomial/ClassicalWronskian.lean": [
+      "GK16"
+    ],
+    "ArkLib/Data/Polynomial/FoldedWronskian.lean": [
+      "GK16"
+    ],
     "ArkLib/Data/Polynomial/FoldingPolynomial.lean": [
       "ACFY24"
     ],
@@ -415,6 +470,12 @@
     ],
     "ArkLib/Data/Polynomial/Trivariate.lean": [
       "BCIKS20"
+    ],
+    "ArkLib/Data/Probability/Combinatorial.lean": [
+      "ABF26"
+    ],
+    "ArkLib/Data/Probability/Instances.lean": [
+      "ABF26"
     ],
     "ArkLib/OracleReduction/Basic.lean": [
       "BCS16"
@@ -529,9 +590,29 @@
     "ArkLib/ProofSystem/Sumcheck/Spec/General.lean": [
       "BBS24",
       "LFKN92"
+    ],
+    "ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean": [
+      "NOZ26"
     ]
   },
   "keys": {
+    "ABF26": [
+      "ArkLib/Data/CodingTheory/Basic/Entropy.lean",
+      "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
+      "ArkLib/Data/CodingTheory/Basic/RelativeDistance.lean",
+      "ArkLib/Data/CodingTheory/Erasure.lean",
+      "ArkLib/Data/CodingTheory/ExtensionCodes.lean",
+      "ArkLib/Data/CodingTheory/HammingBallVolume.lean",
+      "ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean",
+      "ArkLib/Data/CodingTheory/JohnsonBound/Family.lean",
+      "ArkLib/Data/CodingTheory/ListDecodability.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean",
+      "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean",
+      "ArkLib/Data/CodingTheory/SubspaceDesign.lean",
+      "ArkLib/Data/Probability/Combinatorial.lean",
+      "ArkLib/Data/Probability/Instances.lean"
+    ],
     "ACFY24": [
       "ArkLib/Data/CodingTheory/Basic/BlockRelDistance.lean",
       "ArkLib/Data/CodingTheory/ListDecodability.lean",
@@ -567,6 +648,9 @@
     ],
     "BBS24": [
       "ArkLib/ProofSystem/Sumcheck/Spec/General.lean"
+    ],
+    "BCFW25": [
+      "ArkLib/Data/CodingTheory/ExtensionCodes.lean"
     ],
     "BCGM25": [
       "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
@@ -635,20 +719,43 @@
       "ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing.lean"
     ],
+    "DP25": [
+      "ArkLib/Data/CodingTheory/ExtensionCodes.lean"
+    ],
     "FMN24": [
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"
     ],
     "FRI1216": [
       "ArkLib/ProofSystem/Fri/Spec/SingleRound.lean"
     ],
+    "GG25": [
+      "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
+    ],
+    "GK16": [
+      "ArkLib/Data/CodingTheory/SubspaceDesign.lean",
+      "ArkLib/Data/Polynomial/ClassicalWronskian.lean",
+      "ArkLib/Data/Polynomial/FoldedWronskian.lean"
+    ],
+    "GR08": [
+      "ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean",
+      "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
+    ],
+    "GW13": [
+      "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean"
+    ],
     "GWZC19": [
       "ArkLib/ProofSystem/Plonk/Basic.lean"
+    ],
+    "GX13": [
+      "ArkLib/Data/CodingTheory/SubspaceDesign.lean"
     ],
     "HMZ25": [
       "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Basic.lean",
       "ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean",
+      "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Constraints.lean",
       "ArkLib/Data/Lattices/CyclotomicRing/QuotientLift.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean",
       "ArkLib/ProofSystem/RingSwitching/Basic.lean",
@@ -658,6 +765,12 @@
     ],
     "JM24": [
       "ArkLib/AGM/Basic.lean"
+    ],
+    "Joh62": [
+      "ArkLib/Data/CodingTheory/JohnsonBound/Family.lean"
+    ],
+    "KSY14": [
+      "ArkLib/Data/CodingTheory/ReedSolomon/Multiplicity.lean"
     ],
     "KZG10": [
       "ArkLib/Commitments/Functional/KZG/Basic.lean"
@@ -752,6 +865,7 @@
       "ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean",
       "ArkLib/Data/Lattices/ModuleSIS.lean",
       "ArkLib/Data/Lattices/Vectors.lean",
+      "ArkLib/Data/MvPolynomial/Multilinear.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean",
@@ -768,7 +882,8 @@
       "ArkLib/ProofSystem/RingSwitching/Lift.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean",
       "ArkLib/ProofSystem/RingSwitching/Packing.lean",
-      "ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean"
+      "ArkLib/ProofSystem/RingSwitching/RoundVerifiers.lean",
+      "ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean"
     ],
     "NS24": [
       "ArkLib/Commitments/Functional/Hachi/Commitment.lean",
@@ -808,6 +923,7 @@
       "ArkLib/Data/CodingTheory/PolishchukSpielman/PolishchukSpielman.lean"
     ],
     "codingtheory": [
+      "ArkLib/Data/CodingTheory/Erasure.lean",
       "ArkLib/Data/CodingTheory/JohnsonBound/Basic.lean"
     ],
     "listdecoding": [
