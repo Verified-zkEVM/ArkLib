@@ -13,6 +13,8 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.FieldTheory.Finiteness
 
+import Mathlib.Data.Fintype.EquivFin
+import Mathlib.Algebra.Order.Floor.Semifield
 /-!
 # Combinatorial bounds on the maximised list size
 
@@ -404,6 +406,38 @@ theorem linear_card_le_of_rate_radius
     _ ≤ (q : ℝ) ^ ((n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ)) :=
         Real.rpow_le_rpow_of_exponent_le hq1 hexp
 
+noncomputable def gsBalancedCenter (d : ℕ) (hd : 0 < d)
+    (S : Finset ι) (c : Fin d → (ι → F)) : ι → F :=
+  fun x =>
+    if hx : x ∈ S then
+      c ⟨(S.equivFin ⟨x, hx⟩).val % d, Nat.mod_lt _ hd⟩ x
+    else 0
+
+def gsFloorRatioNat (ℓ e : ℕ) (hℓ : 0 < ℓ) :
+    Nat.floor ((((ℓ : ℝ) + 1) / ℓ) * (e : ℝ)) = e + e / ℓ := by
+  have hℓ0 : (ℓ : ℝ) ≠ 0 := by exact_mod_cast (Nat.ne_of_gt hℓ)
+  have heq : (((ℓ : ℝ) + 1) / ℓ) * (e : ℝ) = (e : ℝ) / ℓ + e := by
+    field_simp
+    ring
+  rw [heq, Nat.floor_add_natCast (by positivity) e, Nat.floor_div_eq_div]
+  omega
+
+def gsNatRadiusBound (e ℓ : ℕ) (hℓ : 0 < ℓ) :
+    e + e / ℓ - (e + e / ℓ) / (ℓ + 1) ≤ e := by
+  have hmul : e / ℓ * ℓ ≤ e := Nat.div_mul_le_self e ℓ
+  have hdiv : e / ℓ ≤ (e + e / ℓ) / (ℓ + 1) := by
+    apply (Nat.le_div_iff_mul_le (by omega : 0 < ℓ + 1)).2
+    calc
+      e / ℓ * (ℓ + 1) = e / ℓ * ℓ + e / ℓ := by
+        rw [Nat.mul_add, Nat.mul_one]
+      _ ≤ e + e / ℓ := Nat.add_le_add_right hmul (e / ℓ)
+  omega
+
+def gsProjection (C : Submodule F (ι → F)) (T : Finset ι) :
+    C →ₗ[F] (↥T → F) :=
+  (LinearMap.funLeft F F (fun x : ↥T => (x : ι))).comp C.subtype
+
+
 /-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
 [ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer, and
 a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:
@@ -430,8 +464,7 @@ omission voids [ABF26]'s "Consequently `δ ≤ ℓ/(ℓ+1)·(1−ρ)`" for `C = 
 **Narrower than [ST20] in one direction.** Their Theorem 1.2 has a first, alphabet-generic half
 `|C| ≤ L·q^{n−a}` for arbitrary `C ⊆ Q^n`; the `L`-free form below is their linear refinement, which
 is what `_hℓ_lt : ℓ < |F|` buys and what [ABF26] prints. -/
-theorem linear_card_le_generalized_singleton
-    (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
+theorem linear_card_le_generalized_singleton (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
     (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
@@ -441,7 +474,183 @@ theorem linear_card_le_generalized_singleton
       ≤ (Fintype.card F : ℝ) ^
           ((Fintype.card ι : ℝ)
             - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) := by
-  sorry -- external admit: [ST20, Theorem 1.2].
+  classical
+  rcases _hδn_int with ⟨e, he⟩
+  set q : ℕ := Fintype.card F with hq
+  set n : ℕ := Fintype.card ι with hn
+  set k : ℕ := Module.finrank F C with hk
+  set a : ℕ := Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) with ha
+  have hℓ0 : ℓ ≠ 0 := Nat.ne_of_gt _hℓ_pos
+  have hnpos : 0 < n := hn ▸ Fintype.card_pos
+  have hepos : 0 < e := by
+    have : (0 : ℝ) < e := by rw [he]; positivity
+    exact_mod_cast this
+  have harg : ((ℓ : ℝ) + 1) / ℓ * δ * n = (e : ℝ) + (e : ℝ) / ℓ := by
+    calc
+      ((ℓ : ℝ) + 1) / ℓ * δ * n = ((ℓ : ℝ) + 1) / ℓ * (δ * n) := by ring
+      _ = ((ℓ : ℝ) + 1) / ℓ * e := by rw [← he]
+      _ = (e : ℝ) + (e : ℝ) / ℓ := by field_simp
+  have haeq : a = e + e / ℓ := by
+    rw [ha, harg]
+    calc
+      Nat.floor ((e : ℝ) + (e : ℝ) / ℓ) = Nat.floor ((e : ℝ) / ℓ + (e : ℝ)) := by rw [add_comm]
+      _ = Nat.floor ((e : ℝ) / ℓ) + e := Nat.floor_add_natCast (by positivity) e
+      _ = e / ℓ + e := by rw [Nat.floor_div_natCast, Nat.floor_natCast]
+      _ = e + e / ℓ := Nat.add_comm _ _
+  have hka : k + a ≤ n := by
+    by_contra hnot
+    have hlt : n < k + a := by omega
+    obtain ⟨T, hTsub, hTcard⟩ := Finset.exists_subset_card_eq
+      (show n - a ≤ (Finset.univ : Finset ι).card by simp only [Finset.card_univ]; omega)
+    let p : C →ₗ[F] (↥T → F) :=
+      (LinearMap.funLeft F F (fun x : ↥T => (x : ι))).comp C.subtype
+    have hrange : Module.finrank F p.range ≤ n - a := by
+      calc
+        Module.finrank F p.range ≤ Module.finrank F (↥T → F) := Submodule.finrank_le _
+        _ = Fintype.card ↥T := Module.finrank_pi F
+        _ = T.card := Fintype.card_coe T
+        _ = n - a := hTcard
+    have hkerpos : 0 < Module.finrank F p.ker := by
+      have hdim := LinearMap.finrank_range_add_finrank_ker p
+      rw [← hk] at hdim
+      omega
+    have hker_card : Fintype.card p.ker = q ^ Module.finrank F p.ker := by
+      rw [← Nat.card_eq_fintype_card, hq, ← Nat.card_eq_fintype_card (α := F)]
+      exact Module.natCard_eq_pow_finrank (K := F) (V := p.ker)
+    have hq1 : 1 ≤ q := by rw [hq]; exact Fintype.card_pos
+    have hq_le_ker : q ≤ Fintype.card p.ker := by
+      rw [hker_card]
+      exact le_self_pow hq1 (Nat.ne_of_gt hkerpos)
+    have hm_le_ker : ℓ + 1 ≤ Fintype.card p.ker := by omega
+    let cemb : Fin (ℓ + 1) ↪ p.ker := Classical.choice
+      (Function.Embedding.nonempty_of_card_le (by simpa using hm_le_ker))
+    let c : Fin (ℓ + 1) → C := fun i => (cemb i).1
+    have hc_zero : ∀ (i : Fin (ℓ + 1)) (x : ↥T), (c i : ι → F) x = 0 := by
+      intro i x
+      have hz := (cemb i).2
+      change (fun z : ↥T => (c i : ι → F) z) = 0 at hz
+      exact congrFun hz x
+    have hc_inj : Function.Injective c := by
+      intro i j hij
+      apply cemb.injective
+      apply Subtype.ext
+      exact hij
+    let U : Finset ι := Finset.univ \ T
+    have hUcard : U.card = a := by
+      dsimp [U]
+      rw [Finset.card_sdiff]
+      simp only [Finset.inter_univ, Finset.card_univ, hTcard]
+      omega
+    let d : ℕ := a / (ℓ + 1)
+    have hgd : Fintype.card (Fin (ℓ + 1) × Fin d) ≤ Fintype.card ↥U := by
+      simp only [Fintype.card_prod, Fintype.card_fin, Fintype.card_coe, hUcard]
+      dsimp [d]
+      simpa [mul_comm] using Nat.div_mul_le_self a (ℓ + 1)
+    let g : (Fin (ℓ + 1) × Fin d) ↪ ↥U := Classical.choice
+      (Function.Embedding.nonempty_of_card_le hgd)
+    let owner : ι → Fin (ℓ + 1) := fun x =>
+      if h : ∃ z : Fin (ℓ + 1) × Fin d, (g z : ι) = x then
+        (Classical.choose h).1
+      else 0
+    have howner : ∀ (i : Fin (ℓ + 1)) (j : Fin d), owner (g (i, j) : ι) = i := by
+      intro i j
+      dsimp [owner]
+      rw [dif_pos ⟨(i, j), rfl⟩]
+      have hz := Classical.choose_spec
+        (show ∃ z : Fin (ℓ + 1) × Fin d, (g z : ι) = (g (i, j) : ι) from ⟨(i, j), rfl⟩)
+      have heq : Classical.choose
+          (show ∃ z : Fin (ℓ + 1) × Fin d, (g z : ι) = (g (i, j) : ι) from ⟨(i, j), rfl⟩) = (i, j) := by
+        apply g.injective
+        apply Subtype.ext
+        exact hz
+      exact congrArg Prod.fst heq
+    let y : ι → F := fun x => if x ∈ T then 0 else (c (owner x) : ι → F) x
+    let B : Fin (ℓ + 1) → Finset ι := fun i => Finset.univ.image fun j : Fin d => (g (i, j) : ι)
+    have hBcard : ∀ i, (B i).card = d := by
+      intro i
+      have hinj : Set.InjOn (fun j : Fin d => (g (i, j) : ι)) (Finset.univ : Finset (Fin d)) := by
+        intro x _ z _ hxz
+        have : (i, x) = (i, z) := g.injective (Subtype.ext hxz)
+        exact congrArg Prod.snd this
+      dsimp [B]
+      rw [Finset.card_image_iff.mpr hinj]
+      exact Fintype.card_fin d
+    have hBsub : ∀ i, B i ⊆ U := by
+      intro i x hx
+      simp only [B, Finset.mem_image, Finset.mem_univ, true_and] at hx
+      obtain ⟨j, rfl⟩ := hx
+      exact (g (i, j)).2
+    have hdist : ∀ i, hammingDist (c i : ι → F) y ≤ a - d := by
+      intro i
+      rw [Code.hammingDist_eq_disagreementCols_card]
+      apply le_trans (Finset.card_le_card (show Code.disagreementCols (c i : ι → F) y ⊆ U \ B i by
+        intro x hx
+        have hxne : (c i : ι → F) x ≠ y x := Code.mem_disagreementCols.mp hx
+        have hxT : x ∉ T := by
+          intro hxmem
+          have hci : (c i : ι → F) x = 0 := hc_zero i ⟨x, hxmem⟩
+          have hy : y x = 0 := by simp only [y, hxmem, ↓reduceIte]
+          exact hxne (hci.trans hy.symm)
+        have hxU : x ∈ U := Finset.mem_sdiff.mpr ⟨Finset.mem_univ x, hxT⟩
+        refine Finset.mem_sdiff.mpr ⟨hxU, ?_⟩
+        intro hxmem
+        simp only [B, Finset.mem_image, Finset.mem_univ, true_and] at hxmem
+        obtain ⟨j, hj⟩ := hxmem
+        apply hxne
+        simp only [y, hxT, ↓reduceIte]
+        rw [← hj, howner]))
+      rw [Finset.card_sdiff, Finset.inter_eq_left.mpr (hBsub i), hUcard, hBcard]
+    have hradius : a - d ≤ e := by
+      dsimp [d]
+      rw [haeq]
+      have hmul : e / ℓ * ℓ ≤ e := Nat.div_mul_le_self e ℓ
+      have hdiv : e / ℓ ≤ (e + e / ℓ) / (ℓ + 1) := by
+        apply (Nat.le_div_iff_mul_le (by omega : 0 < ℓ + 1)).2
+        calc
+          e / ℓ * (ℓ + 1) = e / ℓ * ℓ + e / ℓ := by
+            rw [Nat.mul_add, Nat.mul_one]
+          _ ≤ e + e / ℓ := Nat.add_le_add_right hmul _
+      omega
+    have hdist_e : ∀ i, hammingDist (c i : ι → F) y ≤ e := fun i => (hdist i).trans hradius
+    have hfloor_e : Nat.floor (δ * Fintype.card ι) = e := by
+      rw [← he, Nat.floor_natCast]
+    have hclose : ∀ i, (c i : ι → F) ∈ closeCodewordsRel ((C : Set (ι → F))) y δ := by
+      intro i
+      rw [closeCodewordsRel_eq_setOf C δ (le_of_lt _hδ_pos) y]
+      exact ⟨(c i).2, by rw [hfloor_e]; exact hdist_e i⟩
+    have hlist := Lambda_le_iff_forall_ncard_le.mp _hΛ y
+    have hlower : ℓ + 1 ≤ (closeCodewordsRel ((C : Set (ι → F))) y δ).ncard := by
+      apply Set.le_ncard_of_inj_on_range
+        (fun r : ℕ => if hr : r < ℓ + 1 then (c ⟨r, hr⟩ : ι → F) else 0)
+      · intro r hr
+        rw [dif_pos hr]
+        exact hclose ⟨r, hr⟩
+      · intro r hr s hs hrs
+        simp only [dif_pos hr, dif_pos hs] at hrs
+        have hij : (⟨r, hr⟩ : Fin (ℓ + 1)) = ⟨s, hs⟩ := by
+          apply hc_inj
+          apply Subtype.ext
+          exact hrs
+        exact Fin.ext_iff.mp hij
+    omega
+  have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]
+      rfl
+    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
+    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+  have hq1R : (1 : ℝ) ≤ (q : ℝ) := by
+    have : 1 < q := hq ▸ Fintype.one_lt_card
+    exact_mod_cast this.le
+  have hkle : k ≤ n - a := by omega
+  have hexp : (k : ℝ) ≤ (n : ℝ) - (a : ℝ) := by
+    rw [← Nat.cast_sub _hexp_nonneg]
+    exact_mod_cast hkle
+  rw [hcard_C]
+  calc
+    ((q ^ k : ℕ) : ℝ) = (q : ℝ) ^ (k : ℝ) := by rw [Nat.cast_pow, Real.rpow_natCast]
+    _ ≤ (q : ℝ) ^ ((n : ℝ) - (a : ℝ)) :=
+      Real.rpow_le_rpow_of_exponent_le hq1R hexp -- external admit: [ST20, Theorem 1.2].
 
 end LowerBounds_General
 
