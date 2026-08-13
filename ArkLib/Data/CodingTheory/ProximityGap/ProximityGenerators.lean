@@ -136,15 +136,17 @@ Definition 3.14 [BCGM25]. -/
 def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
   (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
   ∀ U : ℓ → (ι → A), ∀ δ : I,
-    Pr_{let x ←$ᵖ S}[(IsMCA G MC x U δ)] ≤ ENNReal.ofReal (ε_mca δ)
+    Pr_{let x ←$ᵖ S}[(IsMCA G MC x U δ)] ≤ (ε_mca δ : ENNReal)
 
 /-- The mutual correlated agreement error of a generator for a module code: the worst-case,
 over families `U`, probability of the MCA event. This is the value form of the predicate
 `IsMCAGenerator` — see `isMCAGenerator_iff_mcaError_le`.
 
-No in-tree consumer yet: the value form exists so that a code family can be assigned *its* MCA
-error rather than merely be asserted to meet some bound, which is what the ABF26 `ε_mca` layer
-needs in order to be bridged to this definition instead of duplicating it. The supremum is over
+The value form exists so that a code family can be assigned *its* MCA error rather than merely be
+asserted to meet some bound, which is what the ABF26 `ε_mca` layer needs in order to be bridged to
+this definition instead of duplicating it. It is also the form in which the [BCGM25] transport
+lemmas are stated (`LinearTransformations.mcaError_le_of_event_implies` and its instances in
+`MCAGenerator.lean`), with the `ε_mca`-carrying versions derived from them. The supremum is over
 `ℓ → (ι → A)`, which is always inhabited, so `mcaError` is never a degenerate `⨆ over ∅`. -/
 noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : I → ENNReal :=
@@ -155,7 +157,7 @@ is pointwise bounded by `ε_mca`. -/
 lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
     [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A) :
-    IsMCAGenerator G ε_mca MC ↔ ∀ δ, mcaError G MC δ ≤ ENNReal.ofReal (ε_mca δ) := by
+    IsMCAGenerator G ε_mca MC ↔ ∀ δ, mcaError G MC δ ≤ (ε_mca δ : ENNReal) := by
   constructor
   · exact fun h δ => iSup_le fun U => h U δ
   · exact fun h U δ =>

@@ -291,7 +291,7 @@ theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I
     norm_cast
     rw [Fintype.card_fun, Fintype.card_fin]
   rw [hcard]
-  simp only [Pi.smul_apply, smul_eq_mul, NNReal.coe_mul, NNReal.coe_inv]
+  simp only [Pi.smul_apply, smul_eq_mul]
   obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hℓ LC U γ
   have hline := hGMCA W γ
   rw [prob_uniform_eq_ofReal] at hline
@@ -302,12 +302,14 @@ theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I
     ((Finset.univ.filter (fun t : F =>
         IsMCA (AffineLineGenerator F) LC t W γ)).card : ℝ) with hln
   have hlre : ln / (Fintype.card F : ℝ) ≤ (ε_mca γ : ℝ) :=
-    (ENNReal.ofReal_le_ofReal_iff (ε_mca γ).coe_nonneg).mp hline
+    (ENNReal.ofReal_le_ofReal_iff (ε_mca γ).coe_nonneg).mp
+      (by rwa [← ENNReal.ofReal_coe_nnreal] at hline)
   have hchain : (a : ℝ) * (sp / (Fintype.card F : ℝ) ^ ℓ) ≤ (ε_mca γ : ℝ) :=
     le_trans (ha_coe ▸ hW) hlre
   have hfin : sp / (Fintype.card F : ℝ) ^ ℓ ≤ (a : ℝ)⁻¹ * (ε_mca γ : ℝ) := by
     rw [inv_mul_eq_div, le_div_iff₀ ha, mul_comm]
     exact hchain
+  rw [← ENNReal.ofReal_coe_nnreal, NNReal.coe_mul, NNReal.coe_inv]
   exact ENNReal.ofReal_le_ofReal hfin
 
 end AffineMCAMain

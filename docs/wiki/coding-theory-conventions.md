@@ -83,9 +83,10 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
 | Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` — see the rate caveat below |
 | Alphabet-normalized rate | `ℚ≥0` | `LinearCode.alphabetRate`; `alphabetRate_cast_eq` gives the `ℝ`-cast form |
-| Proximity radius `δ` argument | `ℝ` in existing API; prefer `ℝ≥0` for new API | `Lambda` |
+| Proximity radius `δ` argument | `I` (`= [0,1]`) for new API; `ℝ` in `Lambda` | `IsMCA`, `mcaError`, `IsMCAGenerator`; `Lambda` is the outlier |
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
-| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | — |
+| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
+| ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
 | Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
 | List sizes | `ℕ∞`, cast to `ENNReal` for bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | Polynomial degree bound | `Polynomial.degreeLT F k : Submodule F F[X]` | `ReedSolomon.code`, `Folded.frsCode` |
@@ -98,6 +99,15 @@ base-field-dimension rate `dim/n`. Over a module alphabet `F^s` the alphabet-nor
 (`alphabetRate_one_eq_rate`). The subspace-design and MDS statements use the alphabet-normalized
 one; substituting `rate` there gives false statements. Both formulas are total and yield `0` in
 the zero-denominator cases.
+
+**The proximity radius is `I`, and `Lambda` is the known exception.** BCGM25 Def 3.14 types
+`ϵMCA : [0,1] → [0,1]` over `γ ∈ [0,1]` and ABF26 §1.2 writes `δ ∈ [0,1]` at all three error
+definitions, so `I` — the *closed* interval, per BCGM25 Lemma 3.18 and Remark 3.15 — is the
+faithful domain, and `ℝ≥0` would additionally drag truncated subtraction into the size clause.
+ABF26 puts `Λ` at `δ ∈ [0,1]` too, so `Lambda`'s `ℝ` is the unfaithful side; it is deferred rather
+than defended, because moving it touches live list-decoding work. See
+[`proximity-error-conventions.md`](proximity-error-conventions.md) for the full argument, the
+codomain choice, and which helper lemmas each error notion can carry.
 
 **`Lambda` is built from `Set.encard`,** so an infinite point list contributes `⊤` rather than
 collapsing to `0`. The real-valued `listDecodable` predicate pairs point-list finiteness with its

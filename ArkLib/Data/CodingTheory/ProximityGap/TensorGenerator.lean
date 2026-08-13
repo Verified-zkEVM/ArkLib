@@ -40,14 +40,21 @@ exactly two places, and they behave differently.
   through `n` and `δ_C`. The interleaving `C^ℓ ⊆ (Σ^ℓ)^n` is `F`-linear with the same `n` and
   the same relative distance, so Theorem 6.1 discharges the interleaved hypothesis directly.
   The strengthening costs nothing.
+
+  *Caveat.* The distance half of that argument — `δᵣ(MC^⋈κ) = δᵣ(MC)` — has **no in-tree
+  witness**: it is deferred, not proved here. So "costs nothing" is currently a claim about
+  [BCGM25]'s Theorem 6.1 read on paper, not a fact this file establishes. `F`-linearity of the
+  interleaving *is* in-tree (`ModuleCode.moduleInterleavedCode`).
 * **Theorem 9.2** (polynomial generators for Reed–Solomon, list-decoding regime). Here the base
   MCA comes from Lemma 9.3, which is stated **only** for `C := RS[F, D, k]` and whose proof is
   irreducibly Reed–Solomon-specific (it constructs the Guruswami–Sudan polynomial `Q(X, Y, Z)`
   of [BCIKS20, Theorem 5.1] and factors `disc*_Y(Q)`). The interleaving `RS^ℓ ⊆ (F^ℓ)^n` is not
   a Reed–Solomon code, so Lemma 9.3 says nothing about it and the interleaved hypothesis is
-  **not** dischargeable. For that application the available route is the weak form
-  `tensor_isMCAGenerator_of_base` at `ε_mca + ℓ • ε'_mca`, matching what [BCGM25]'s own
-  Lemma 10.1 (plain MCA implies MCA for the `k`-interleaving at error `k · ε_mca`) provides.
+  **not** dischargeable *at error `ε'_mca`*. It is dischargeable at a worse error: [BCGM25]'s
+  own Lemma 10.1 (plain MCA implies MCA for the `k`-interleaving at error `k · ε_mca`) supplies
+  the interleaved hypothesis at `ℓ · ε'_mca`. So the loss here is a factor of `ℓ`, not an
+  outright obstruction — which is exactly the error the weak form
+  `tensor_isMCAGenerator_of_base` reaches directly, at `ε_mca + ℓ • ε'_mca`.
 
 So the deviation is invisible at Theorem 8.2 and *material* at Theorem 9.2. Both forms are
 proved here for that reason; neither subsumes the other in practice.
@@ -75,6 +82,7 @@ namespace TensorMCA
 
 open NNReal ENNReal unitInterval LinearCode CoreDefinitions Code
 open scoped ProbabilityTheory
+open Probability
 
 variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
@@ -143,13 +151,13 @@ theorem tensor_isMCAGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
         rwa [hwrow] at h
   -- assemble: implication, union bound, and the two marginal bounds
   have hA : Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-      ≤ ENNReal.ofReal (ε_mca δ) := by
+      ≤ (ε_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
       (fun p => IsMCA G MC p.1 (W p.2) δ)]
     exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG (W x') δ
   have hB : Pr_{let p ← $ᵖ (S × S')}[
         IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ]
-      ≤ ENNReal.ofReal (ε'_mca δ) := by
+      ≤ (ε'_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_prod
       (fun p => IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ)]
     exact Pr_seq_le_of_forall_le _ _ _ fun _ => hG' w δ
@@ -161,10 +169,9 @@ theorem tensor_isMCAGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
         + Pr_{let p ← $ᵖ (S × S')}[
             IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
         Pr_or_le _ _ _
-    _ ≤ ENNReal.ofReal (ε_mca δ) + ENNReal.ofReal (ε'_mca δ) := add_le_add hA hB
-    _ = ENNReal.ofReal ((ε_mca + ε'_mca) δ) := by
-        rw [← ENNReal.ofReal_add (ε_mca δ).coe_nonneg (ε'_mca δ).coe_nonneg]
-        norm_num
+    _ ≤ (ε_mca δ : ENNReal) + (ε'_mca δ : ENNReal) := add_le_add hA hB
+    _ = ((ε_mca + ε'_mca) δ : ENNReal) := by
+        rw [Pi.add_apply, ENNReal.coe_add]
 
 omit [Fintype ℓ] in
 /-- Mutual correlated agreement for the `ℓ`-fold interleaving implies mutual correlated
@@ -233,17 +240,17 @@ theorem tensor_isMCAGenerator_of_base (G : Generator S ℓ F) (G' : Generator S'
     · push Not at hcase
       exact Or.inr ⟨i₀, T, hT, hcase i₀, j₀, hbad⟩
   have hA : Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
-      ≤ ENNReal.ofReal (ε_mca δ) := by
+      ≤ (ε_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
       (fun p => IsMCA G MC p.1 (W p.2) δ)]
     exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG (W x') δ
   have hB : Pr_{let p ← $ᵖ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
-      ≤ (Fintype.card ℓ : ENNReal) * ENNReal.ofReal (ε'_mca δ) := by
+      ≤ (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_prod
       (fun p => ∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ)]
     refine Pr_seq_le_of_forall_le _ _ _ fun _ => le_trans (Pr_exists_le _ _) ?_
     have hsum : ∑ i : ℓ, Pr_{let x' ← $ᵖ S'}[IsMCA G' MC x' (fun j => U (i, j)) δ]
-        ≤ ∑ _i : ℓ, ENNReal.ofReal (ε'_mca δ) := by
+        ≤ ∑ _i : ℓ, (ε'_mca δ : ENNReal) := by
       exact Finset.sum_le_sum fun i _ => hG' (fun j => U (i, j)) δ
     simpa [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] using hsum
   calc Pr_{let p ← $ᵖ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
@@ -253,12 +260,10 @@ theorem tensor_isMCAGenerator_of_base (G : Generator S ℓ F) (G' : Generator S'
     _ ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
         + Pr_{let p ← $ᵖ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ] :=
         Pr_or_le _ _ _
-    _ ≤ ENNReal.ofReal (ε_mca δ)
-        + (Fintype.card ℓ : ENNReal) * ENNReal.ofReal (ε'_mca δ) := add_le_add hA hB
-    _ = ENNReal.ofReal ((ε_mca + Fintype.card ℓ • ε'_mca) δ) := by
-        rw [← ENNReal.ofReal_natCast (Fintype.card ℓ),
-          ← ENNReal.ofReal_mul (Nat.cast_nonneg _),
-          ← ENNReal.ofReal_add (ε_mca δ).coe_nonneg (by positivity)]
-        norm_num
+    _ ≤ (ε_mca δ : ENNReal)
+        + (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := add_le_add hA hB
+    _ = ((ε_mca + Fintype.card ℓ • ε'_mca) δ : ENNReal) := by
+        rw [Pi.add_apply, Pi.smul_apply, nsmul_eq_mul, ENNReal.coe_add, ENNReal.coe_mul,
+          ENNReal.coe_natCast]
 
 end TensorMCA
