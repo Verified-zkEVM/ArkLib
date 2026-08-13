@@ -30,10 +30,19 @@ have many of its codewords vanish at many positions.
 
 * `CodingTheory.subspaceDesign_tau_lower` — every subspace-design profile obeys
   `τ r ≥ ρ - 1/n` for `r ≥ 1`, where `ρ` is the alphabet-normalized rate.
-* `CodingTheory.isSubspaceDesign_frsCode` — folded Reed-Solomon codes are subspace designs
-  for the profile `τ r = s * ρ / (s - r + 1)` on `1 ≤ r ≤ s`.
-* `CodingTheory.isSubspaceDesign_umCode` — univariate multiplicity codes are subspace
-  designs for the same profile.
+* `CodingTheory.sum_finrank_inf_ker_le` — a nonzero subspace loses a dimension at some
+  block, `(∑ i, dim Aᵢ) + 1 ≤ n * dim A`. This is the slack that separates the two profile
+  levels below.
+* `CodingTheory.isSubspaceDesign_frsCode_sub_one` and
+  `CodingTheory.isSubspaceDesign_umCode_sub_one` — folded Reed-Solomon codes and univariate
+  multiplicity codes are subspace designs for the `(k-1)`-level profile
+  `τ r = (s * ρ - 1/n) / (s - r + 1)` on `1 ≤ r ≤ s`, which is [CZ25, Definition B.2]'s and
+  what the Wronskian count actually proves.
+* `CodingTheory.isSubspaceDesign_frsCode` and `CodingTheory.isSubspaceDesign_umCode` — the
+  `1/n`-relaxations at [ABF26] Theorem 2.18's printed profile `τ r = s * ρ / (s - r + 1)`,
+  each a one-line `mono_tau` corollary of the sharp form. **Consumers proving list
+  decodability up to capacity need the sharp form**: at the relaxed level
+  [CZ25, Theorem B.5] is false, see `CodingTheory.subspaceDesign_lambda_le`.
 
 The two code-family results are proved by a Wronskian root count, using
 `Polynomial.foldedWronskian` and `Polynomial.classicalWronskian` respectively.
@@ -922,12 +931,11 @@ No relation between `s` and `k` is needed: if `s > k` then every polynomial of d
 with a root of multiplicity at least `s` is zero, so every lifted block kernel is `⊥` and
 the design sum vanishes.
 
-This is [ABF26] Theorem 2.18's printed profile. As for folded Reed-Solomon codes, the proof
-below actually derives the sharper `(k-1)`-level bound
-`(s - σ + 1) * ∑ᵢ dim Aᵢ ≤ σ * (k - 1)` and then relaxes it. A consumer needing
-[CZ25, Theorem B.5]'s premise — as `CodingTheory.subspaceDesign_lambda_le` does — would want
-the sharp form, obtained exactly as in `isSubspaceDesign_frsCode_sub_one`; not done here for
-want of a consumer.
+This is the `(k-1)`-level profile of [CZ25, Definition B.2] — one notch sharper than [ABF26]
+Theorem 2.18's printed `s * ρ / (s - r + 1)`, which `isSubspaceDesign_umCode` derives from it
+by `mono_tau`. The Wronskian root count below produces the sharp bound directly, and
+[CZ25, Theorem B.5] needs exactly it: see `CodingTheory.subspaceDesign_lambda_le`, which is
+false at the relaxed level.
 
 The proof lifts a test subspace and each of its block kernels through the injective
 multiplicity encoder. The classical Wronskian `W` of a basis of the resulting polynomial
@@ -935,22 +943,22 @@ space is nonzero, and a lifted block kernel of dimension `t` contributes a root 
 its block point of multiplicity at least `(s - σ + 1) * t`, by
 `pow_dvd_classicalWronskian`. Summing over the distinct evaluation points and comparing
 with `deg W ≤ σ * (k - 1)` gives the design bound. -/
-theorem isSubspaceDesign_umCode
+theorem isSubspaceDesign_umCode_sub_one
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F]
     (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
     let τ : ℕ → ℝ := fun r ↦
       if r ∈ Finset.Icc 1 s then
-        s * (LinearCode.alphabetRate
-          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - r + 1)
+        (s * (LinearCode.alphabetRate
+          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) - 1 / Fintype.card ι) / (s - r + 1)
       else 1
     IsSubspaceDesign s τ (ReedSolomon.Multiplicity.umCode domain k s) := by
   classical
   intro τ r A hAC hAr
   have hτdef : ∀ x : ℕ, τ x =
       if x ∈ Finset.Icc 1 s then
-        s * (LinearCode.alphabetRate
-          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - x + 1)
+        (s * (LinearCode.alphabetRate
+          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) - 1 / Fintype.card ι) / (s - x + 1)
       else 1 := fun _ => rfl
   have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   set σ := Module.finrank F ↥A with hσdef
@@ -966,24 +974,52 @@ theorem isSubspaceDesign_umCode
           exact_mod_cast Submodule.finrank_mono (inf_le_left : A ⊓ _ ≤ A)
       _ = σ * Fintype.card ι := by
           rw [Finset.sum_const, Finset.card_univ, nsmul_eq_mul, mul_comm]
-  by_cases hτ1 : (1 : ℝ) ≤ τ r
-  · exact hsum_le.trans (le_mul_of_one_le_right (by positivity) hτ1)
-  rw [not_le] at hτ1
   by_cases hσ0 : σ = 0
   · rw [hσ0] at hsum_le ⊢
     simpa using hsum_le
   have hσ1 : 1 ≤ σ := by omega
-  have hrmem : r ∈ Finset.Icc 1 s := by
-    by_contra h
-    rw [hτdef r, if_neg h] at hτ1
-    linarith
+  -- Outside `[1, s]` the profile is `1`, which `hsum_le` already discharges.
+  by_cases hrmem : r ∈ Finset.Icc 1 s
+  case neg =>
+    rw [hτdef r, if_neg hrmem]
+    simpa using hsum_le
   obtain ⟨hr1, hrs⟩ := Finset.mem_Icc.mp hrmem
   have hs_pos : (0 : ℝ) < s := by
     exact_mod_cast (show 0 < s by omega)
   have hσs : σ ≤ s := le_trans hAr hrs
+  have hσs_real : (σ : ℝ) ≤ s := by exact_mod_cast hσs
+  have hσ1_real : (1 : ℝ) ≤ σ := by exact_mod_cast hσ1
+  -- The sharper block count: a nonzero `A` loses a dimension at some block.
+  have hsum_le' : (∑ i : ι, (Module.finrank F ↥(A ⊓
+      (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i))) : ℝ)) /
+        Fintype.card ι ≤ (σ : ℝ) - 1 / Fintype.card ι := by
+    have hA_ne : A ≠ ⊥ := by
+      intro h
+      exact hσ0 (by rw [hσdef, h]; exact finrank_bot F _)
+    have hnat := sum_finrank_inf_ker_le A hA_ne
+    have hcast : (∑ i : ι, (Module.finrank F ↥(A ⊓
+        (LinearMap.ker (LinearMap.proj (R := F) (φ := fun _ : ι ↦ Fin s → F) i))) : ℝ)) + 1
+        ≤ (Fintype.card ι : ℝ) * σ := by
+      rw [← Nat.cast_sum]
+      exact_mod_cast hnat
+    rw [div_le_iff₀ hn_pos, sub_mul, div_mul_cancel₀ _ (ne_of_gt hn_pos)]
+    linarith
+  -- Near-saturation escape: for `τ r ≥ 1 - 1/(n*s)` the sharper count already suffices.
+  by_cases hτnear : 1 - 1 / ((Fintype.card ι : ℝ) * s) ≤ τ r
+  case pos =>
+    refine hsum_le'.trans (le_trans ?_ (mul_le_mul_of_nonneg_left hτnear (by positivity)))
+    rw [mul_sub, mul_one]
+    have hkey : (σ : ℝ) * (1 / ((Fintype.card ι : ℝ) * s)) ≤ 1 / Fintype.card ι := by
+      rw [mul_one_div, div_le_div_iff₀ (by positivity) hn_pos]
+      nlinarith
+    linarith
+  rw [not_le] at hτnear
+  have hτ1 : τ r < 1 := by
+    have : (0 : ℝ) < 1 / ((Fintype.card ι : ℝ) * s) := by positivity
+    linarith
   have hτrate : τ r =
-      s * (LinearCode.alphabetRate
-        (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) /
+      ((s : ℝ) * (LinearCode.alphabetRate
+        (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) - 1 / Fintype.card ι) /
         ((s : ℝ) - r + 1) := by
     rw [hτdef r, if_pos hrmem]
   have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
@@ -1001,18 +1037,25 @@ theorem isSubspaceDesign_umCode
       rw [LinearCode.alphabetRate_cast_eq, hdim]
       rw [Nat.cast_mul]
       exact div_self (mul_ne_zero (ne_of_gt hs_pos) (ne_of_gt hn_pos))
-    rw [hτrate, hrate] at hτ1
-    norm_num at hτ1
+    -- At saturation the sharp profile is still at least `1 - 1/(n*s)`, since `s - r + 1 ≤ s`,
+    -- so the near-saturation escape above would already have fired.
+    rw [hτrate, hrate] at hτnear
     have hden_le : (s : ℝ) - r + 1 ≤ s := by
       have : (1 : ℝ) ≤ r := by exact_mod_cast hr1
       linarith
-    have : (1 : ℝ) ≤ (s : ℝ) / ((s : ℝ) - r + 1) := by
-      rw [le_div_iff₀ hb_pos]
-      linarith
-    exact (not_lt_of_ge this) hτ1
+    have hfac_nonneg : (0 : ℝ) ≤ 1 - 1 / ((Fintype.card ι : ℝ) * s) := by
+      have hn1 : (1 : ℝ) ≤ Fintype.card ι := by exact_mod_cast Fintype.card_pos
+      have hs1 : (1 : ℝ) ≤ s := by exact_mod_cast (show 1 ≤ s by omega)
+      rw [sub_nonneg, div_le_one (by positivity)]
+      nlinarith
+    have hid : (1 - 1 / ((Fintype.card ι : ℝ) * s)) * s
+        = (s : ℝ) - 1 / Fintype.card ι := by
+      field_simp
+    rw [div_lt_iff₀ hb_pos] at hτnear
+    nlinarith [mul_le_mul_of_nonneg_left hden_le hfac_nonneg]
   have hdim : Module.finrank F (ReedSolomon.Multiplicity.umCode domain k s) = k :=
     ReedSolomon.Multiplicity.dim_umCode domain hchar hk_le
-  have hτval : τ r = (k : ℝ) / Fintype.card ι / ((s : ℝ) - r + 1) := by
+  have hτval : τ r = ((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1) := by
     rw [hτrate, LinearCode.alphabetRate_cast_eq, hdim]
     field_simp [ne_of_gt hs_pos]
   have hk1 : 1 ≤ k := by
@@ -1161,15 +1204,52 @@ theorem isSubspaceDesign_umCode
     exact h2
   have hS_nonneg : (0 : ℝ) ≤ S := Finset.sum_nonneg fun i _ => by positivity
   have hσr : (σ : ℝ) ≤ r := by exact_mod_cast hAr
-  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * k := by
+  have hSb : S * ((s : ℝ) - r + 1) ≤ σ * ((k : ℝ) - 1) := by
     have h1 : S * ((s : ℝ) - r + 1) ≤ S * ((s : ℝ) - σ + 1) := by nlinarith
     have h2 : (0 : ℝ) ≤ σ := by positivity
     nlinarith
   rw [hτval, div_le_iff₀ hn_pos]
-  have hrw : (σ : ℝ) * ((k : ℝ) / Fintype.card ι / ((s : ℝ) - r + 1)) *
-      Fintype.card ι = σ * k / ((s : ℝ) - r + 1) := by
+  have hrw : (σ : ℝ) * (((k : ℝ) - 1) / Fintype.card ι / ((s : ℝ) - r + 1)) *
+      Fintype.card ι = σ * ((k : ℝ) - 1) / ((s : ℝ) - r + 1) := by
     field_simp
   rw [hrw, le_div_iff₀ hb_pos]
   exact hSb
+
+/-- Univariate multiplicity codes are subspace designs for [ABF26] Theorem 2.18's printed
+profile
+
+  `τ r = s * ρ / (s - r + 1)` for `1 ≤ r ≤ s`, and `τ r = 1` otherwise.
+
+This is the `1/n`-relaxation of `isSubspaceDesign_umCode_sub_one`, which is what the Wronskian
+count actually proves; consumers proving list-decodability up to capacity need the sharp
+version. See `isSubspaceDesign_frsCode` for the folded Reed-Solomon counterpart. -/
+theorem isSubspaceDesign_umCode
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F]
+    (domain : ι ↪ F) (k s : ℕ) (hchar : ringChar F = 0 ∨ k ≤ ringChar F) :
+    let τ : ℕ → ℝ := fun r ↦
+      if r ∈ Finset.Icc 1 s then
+        s * (LinearCode.alphabetRate
+          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - r + 1)
+      else 1
+    IsSubspaceDesign s τ (ReedSolomon.Multiplicity.umCode domain k s) := by
+  intro τ
+  have hτdef : ∀ x : ℕ, τ x =
+      if x ∈ Finset.Icc 1 s then
+        s * (LinearCode.alphabetRate
+          (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) / (s - x + 1)
+      else 1 := fun _ => rfl
+  refine (isSubspaceDesign_umCode_sub_one domain k s hchar).mono_tau fun r => ?_
+  rw [hτdef r]
+  by_cases hr : r ∈ Finset.Icc 1 s
+  · simp only [hr, if_true]
+    have hb_pos : (0 : ℝ) < (s : ℝ) - r + 1 := by
+      have : (r : ℝ) ≤ s := by exact_mod_cast (Finset.mem_Icc.mp hr).2
+      linarith
+    have hn_pos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+    rw [sub_div]
+    have hdrop : (0 : ℝ) ≤ (1 / (Fintype.card ι : ℝ)) / ((s : ℝ) - r + 1) := by positivity
+    linarith
+  · simp [hr]
 
 end CodingTheory

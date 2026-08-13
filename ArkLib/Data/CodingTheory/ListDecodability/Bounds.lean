@@ -22,7 +22,8 @@ given relative radius. The two families answer opposite questions about the same
 * **Upper bounds** exhibit a radius at which the list is provably small, so they certify list
   decodability. The one here is for codes carrying a *subspace-design* profile
   (`CodingTheory.IsSubspaceDesign`), which is the abstraction folded Reed-Solomon codes satisfy;
-  the folded-RS consequence is `frs_lambda_le_capacity`. A second upper bound,
+  its two code-family consequences are `frs_lambda_le_capacity` and `um_lambda_le_capacity`, for
+  folded Reed-Solomon and univariate multiplicity codes. A second upper bound,
   `rs_random_domain_lambda_le`, is probabilistic: a Reed-Solomon code on a *uniformly random*
   evaluation domain is list-decodable near capacity with high probability.
 * **Lower bounds** exhibit a radius at which the list is provably large, so they rule out list
@@ -69,10 +70,10 @@ random-evaluation-domain bound, the three Reed-Solomon separations, and the subs
 Each admit's docstring carries the source statement verbatim, the variable map into ArkLib's
 vocabulary, and a note on every place the formalised statement differs from the printed one.
 
-Everything else in this file is proved: five derivations from admitted statements
+Everything else in this file is proved: six derivations from admitted statements
 (`random_linear_lambda_lower_exists`, `large_alphabet_card_ge_exp_of_inv_length`,
 `subspaceDesign_lambda_le_of_profile_le`, `subspaceDesign_lambda_le_of_eta`,
-`frs_lambda_le_capacity` — each therefore reachable-`sorryAx` and
+`frs_lambda_le_capacity`, `um_lambda_le_capacity` — each therefore reachable-`sorryAx` and
 carrying no more information than its input), the volume/averaging lower bound
 `linear_lambda_ge_elias_volume`, the arithmetic half `linear_card_le_of_rate_radius` of the
 generalized Singleton bound, and three supporting counting lemmas.
@@ -1157,6 +1158,86 @@ theorem frs_lambda_le_capacity
     rw [hδ_eq, hbound_eq]
     exact key
   · -- Profile domination on `1 ≤ L ≤ 1/η`: a smaller `L` only shrinks the denominator.
+    have hLs : (L : ℝ) < (s : ℝ) := lt_of_le_of_lt hLle _hη_lt_s
+    have hstep : (s : ℝ) * ρ = ρ * s := by ring
+    rw [hstep]
+    exact div_le_div_of_nonneg_left hρs_nonneg hdenom_pos (by linarith)
+
+/-- **Univariate multiplicity codes are list-decodable up to capacity** — the corollary [ABF26]
+asserts exists without stating it: "*Since folded Reed-Solomon codes are subspace-design codes the
+above theorem implies that they are list decodable up to capacity (**a similar corollary can be
+derived for univariate multiplicity codes**)*". For `C := UM[F, L, k, s]` of rate `ρ` and any
+`η > 0` with `1/η < s`, the same display as Corollary 3.5:
+
+  `|Λ(C, 1 - ρ·s/(s - 1/η + 1) - η)| ≤ (s·(1-ρ) + 1 - 1/η) / (η·(s + 1 - 1/η))` .
+
+**Derived in-tree** by the same chain as `frs_lambda_le_capacity`: `subspaceDesign_lambda_le` via
+`subspaceDesign_lambda_le_of_profile_le` at `t := ρ·s/(s − 1/η + 1)`, with the `(k−1)`-level design
+premise supplied by `isSubspaceDesign_umCode_sub_one`. It therefore inherits that admit.
+
+[CZ25] prove the multiplicity case directly too, as their Theorem 1.5 — "*Let `p` be a prime number.
+For any integers `s, n, L ≥ 1`, `k ∈ [n]`, and distinct `α₁, …, α_n ∈ F_p`, the code
+`MULT^{(s)}_{n,k}(α₁, …, α_n)` over the alphabet `F_p^s` is `(L/(L+1)(1 − sR/(s−L+1)), L)`
+list-decodable*" — with Corollary 1.6 / A.10 as the `(1 − R − ε, O(1/ε))` form. Going through the
+field-generic Theorem B.5 instead gives this for **any** field satisfying the characteristic
+condition, not only prime fields.
+
+**Hypotheses.** `_hchar` is inherited from `isSubspaceDesign_umCode_sub_one`; it is [ABF26] Theorem
+2.18's `char(F) > k`, relaxed to `k ≤ ringChar F`, which is all the Wronskian argument needs (`d!`
+must be a unit for `d < k`) and which the disjunction with `ringChar F = 0` keeps from forcing
+`k = 0` in characteristic zero. `_hk_le : k ≤ s·n` is what makes the paper's `ρ = k/(s·n)` equal
+`LinearCode.alphabetRate`; unlike the folded case there is no admissibility or generator
+hypothesis, multiplicity codes needing neither. -/
+theorem um_lambda_le_capacity
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (domain : ι ↪ F) (k s : ℕ)
+    (_hs_pos : 0 < s)
+    (_hchar : ringChar F = 0 ∨ k ≤ ringChar F)
+    (_hk_le : k ≤ s * Fintype.card ι)
+    (η : ℝ) (_hη_pos : 0 < η) (_hη_lt_s : 1 / η < s) :
+    let n : ℝ := Fintype.card ι
+    let ρ : ℝ := k / (s * n)
+    let δ : ℝ := 1 - ρ * s / (s - 1 / η + 1) - η
+    let bound : ℝ := (s * (1 - ρ) + 1 - 1 / η) / (η * (s + 1 - 1 / η))
+    (Lambda ((ReedSolomon.Multiplicity.umCode domain k s : Set (ι → Fin s → F))) δ : ENNReal) ≤
+      ENNReal.ofReal bound := by
+  intro n ρ δ bound
+  have hn_pos : (0 : ℝ) < n := Nat.cast_pos.mpr Fintype.card_pos
+  have hs_posR : (0 : ℝ) < (s : ℝ) := Nat.cast_pos.mpr _hs_pos
+  have hdenom_pos : (0 : ℝ) < (s : ℝ) - 1 / η + 1 := by linarith
+  -- Multiplicity codes carry the `(k-1)`-level design profile.
+  have hdesign := isSubspaceDesign_umCode_sub_one domain k s _hchar
+  -- Below saturation, `alphabetRate = k/(s·n) = ρ`.
+  have hrate : (LinearCode.alphabetRate (ReedSolomon.Multiplicity.umCode domain k s) : ℝ) = ρ := by
+    rw [LinearCode.alphabetRate_cast_eq,
+      ReedSolomon.Multiplicity.dim_umCode domain _hchar _hk_le]
+  have hρ_nonneg : (0 : ℝ) ≤ ρ := by rw [← hrate]; positivity
+  have hρs_nonneg : (0 : ℝ) ≤ ρ * s := by positivity
+  have ht_nonneg : 0 ≤ ρ * s / ((s : ℝ) - 1 / η + 1) := div_nonneg hρs_nonneg hdenom_pos.le
+  have key := subspaceDesign_lambda_le_of_profile_le s ρ
+    (ReedSolomon.Multiplicity.umCode domain k s) hrate (hrate ▸ hdesign) η
+    (ρ * s / ((s : ℝ) - 1 / η + 1)) _hη_pos ht_nonneg
+    (fun L hL1 hLle => ?_) _hη_lt_s.le
+  · -- Convert `key` to the source-display radius and bound, as in `frs_lambda_le_capacity`.
+    have hδ_eq : δ = 1 - ρ * s / ((s : ℝ) - 1 / η + 1) - η := rfl
+    have hbound_eq : bound = (1 - ρ * s / ((s : ℝ) - 1 / η + 1)) / η := by
+      have hd2 : ((s : ℝ) - 1 / η + 1) ≠ 0 := hdenom_pos.ne'
+      have hη0 : η ≠ 0 := _hη_pos.ne'
+      have hd3 : (-1 + (s : ℝ) * η + η) ≠ 0 := by
+        have hmul := mul_pos hdenom_pos _hη_pos
+        have heq : ((s : ℝ) - 1 / η + 1) * η = -1 + (s : ℝ) * η + η := by
+          field_simp; ring
+        rw [heq] at hmul; exact hmul.ne'
+      change (s * (1 - ρ) + 1 - 1 / η) / (η * (s + 1 - 1 / η))
+        = (1 - ρ * s / ((s : ℝ) - 1 / η + 1)) / η
+      have hkey : (-1 + (s : ℝ) * η + η) * (-1 + (s : ℝ) * η + η)⁻¹ = 1 :=
+        mul_inv_cancel₀ hd3
+      field_simp
+      linear_combination hkey
+    rw [hδ_eq, hbound_eq]
+    exact key
+  · -- Profile domination on `1 ≤ L ≤ 1/η`.
     have hLs : (L : ℝ) < (s : ℝ) := lt_of_le_of_lt hLle _hη_lt_s
     have hstep : (s : ℝ) * ρ = ρ * s := by ring
     rw [hstep]
