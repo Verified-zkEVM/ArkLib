@@ -116,20 +116,18 @@ extension-code equality), and arithmetic (`binom(b+r,r)·|Λ|^r`). A predicate e
 upper bounds. The value is therefore primitive and the propositions about it are derived; `Lambda` is
 not a rival predicate but a different kind of object.
 
-**Several readings, one definition.** Raised as a design objection worth recording (Ilia Vlasov,
-ArkLib #731): should a general-purpose library not carry several definitions and prove them
-equivalent? It does carry several readings — `Lambda_le_iff_forall_encard_le`,
+**Several readings, one definition.** The alternative formulations are characterisation lemmas, not
+parallel `def`s: `Lambda_le_iff_forall_encard_le`,
 `Lambda_le_iff_forall_ncard_le`, `isListDecodable_iff_forall_ncard_le`,
 `isListDecodable_iff_forall_finset_card_le`, `isListDecodable_iff_toENNReal_le_ofReal`,
-`isUniquelyDecodable_iff_subsingleton` — as characterisation lemmas rather than parallel `def`s,
-which is Mathlib's practice and gives the same freedom at the call site. Parallel definitions need
-`n²` bridges, fragment consumers, and each can drift.
+`isUniquelyDecodable_iff_subsingleton`. That is Mathlib's practice and gives the same freedom at the
+call site, where parallel definitions would need `n²` bridges, fragment consumers, and each drift.
 
 Rules for this layer:
 
-- **Do not add a second predicate for "the list is small."** That is how the two notions this layer
-  replaced came to disagree: a `Set.ncard`-based body is satisfied by an *infinite* point list,
-  since `ncard` reports `0` there. Hence the finiteness conjunct that used to be bolted on.
+- **Do not add a second predicate for "the list is small."** A `Set.ncard`-based body is satisfied by an
+  *infinite* point list, since `ncard` reports `0` there, so it needs a finiteness conjunct carried
+  alongside it — which is the drift this layer exists to prevent.
 - **Do not offer an ambient-finiteness escape hatch** (a `[Finite F]` lemma turning a bare `ncard`
   bound into `IsListDecodable`). It would be sound but imports a hypothesis the statement does not
   need. Bound the *finite subsets* instead, with `Lambda_le_of_forall_finset_card_le`, which is the
@@ -140,11 +138,8 @@ Rules for this layer:
   `IsUniquelyDecodable`. Do not grow a third account.
 - **Do not give a derived list its own `Lambda`.** A list contained in a point list is bounded by
   `encard_le_Lambda_of_subset_closeCodewordsRel`, and the absolute-radius point list is the relative
-  one at radius `r/n` (`closeCodewords_eq_closeCodewordsRel`). One outlier remains, in another
-  owner's file and left for a follow-up: `ProximityGap/BCIKS20/AffineSpaces.lean`'s
-  `rs_listDecoding_card_lt_field` inlines point-list membership instead of using
-  `closeCodewordsRel`, and is really `Lambda (code domain deg) δ < |F|`;
-  `Lambda_lt_of_forall_finset_card_lt` is the lemma it would go through.
+  one at radius `r/n` (`closeCodewords_eq_closeCodewordsRel`). A counting argument that inlines
+  point-list membership should go through `Lambda_lt_of_forall_finset_card_lt` instead.
 - **Do not open `closeCodewordsRel` to reason about membership.** It is defined `open Classical in`,
   so under an ambient `[DecidableEq F]` the two instances are definitionally but not syntactically
   equal and neither `simp` nor a direct `Code.mem_relHammingBall_iff` rewrite crosses them.
@@ -185,55 +180,24 @@ membership proof at every call site, and `Lambda` has meaning outside `[0, 1]` w
 probability does not. Hence the coercion at the boundary, as in `GrandChallenges`'
 `Lambda (C^⋈ m) (gridPt k : ℝ)`.
 
-**This layer lives in `namespace Code`, and that was a correction** (2026-08-13). It used to be
-`namespace ListDecodable` — a namespace naming a *property* while holding the objects: the point
-list, the list size, and one predicate about them. Everything it operates on was already next door
-in `Code` (`minDist`, `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), and this layer
-is now formally tied to that one through `isUniquelyDecodable_relativeUniqueDecodingRadius`, so
-keeping the two halves of a single notion in two namespaces was the same fragmentation the layer
-exists to remove. A local `abbrev Code ι S := Set (ι → S)` went with it, hence the `(C : Set (ι → F))`
-spellings: inside `namespace Code` the abbrev becomes `Code.Code`, which trips
-`linter.dupNamespace`, and a non-`sorry` warning under `ArkLib/Data/` fails `validate.sh`. It did
-*not* shadow the namespace — `Code.minDist` and `open Code` resolve fine alongside it — so renaming
-would also have worked; it was dropped rather than renamed because nothing outside its own file used
-it and `Set (ι → F)` is what the rest of the subtree writes.
+**This layer lives in `namespace Code`,** alongside the objects it operates on (`minDist`,
+`relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through
+`isUniquelyDecodable_relativeUniqueDecodingRadius`. Codes are spelled `Set (ι → F)` rather than
+through a local abbreviation: an `abbrev Code` here would be `Code.Code`, which trips
+`linter.dupNamespace`, and a non-`sorry` warning under `ArkLib/Data/` fails `validate.sh`.
 
-`Lambda` stays capitalised: a term named for a capital Greek letter is capitalised, which is
-Mathlib's own treatment (`Real.Gamma`, `Complex.Gamma`) rather than a local exception. The
-predicates gained the `Is` prefix Mathlib uses and this subtree already used for `IsMDS` —
-`Code.IsListDecodable`, `Code.IsUniquelyDecodable` — which only reads well once the namespace is
-right, and lemma names follow in lowerCamel (`isListDecodable_iff_Lambda_le`).
+`Lambda` is capitalised because it is named for a capital Greek letter, as Mathlib does with
+`Real.Gamma`. Predicates take the `Is` prefix — `Code.IsListDecodable`, `Code.IsUniquelyDecodable`,
+matching `IsMDS` — and their lemmas are lowerCamel (`isListDecodable_iff_Lambda_le`).
 
-> **Trap: never declare `Foo.bar` inside `namespace Code` when `Foo` is a namespace you also want to
-> `open` there.** Write `_root_.Foo.bar`, or put the lemma where it belongs. Declaring
-> `NNReal.foo` inside `namespace Code` brings `Code.NNReal` into existence, and a later
-> `open scoped NNReal` *inside* `namespace Code` — in this or any importing file — then resolves to
-> that empty sub-namespace, silently dropping the `ℝ≥0` notation so it reparses as `ℝ ≥ 0` and every
-> signature using it fails with `failed to synthesize LE Type`. The `open` must be lexically inside
-> the namespace to bite: `open Code NNReal` in one command, or `open Code` with a separate
-> root-level `open scoped NNReal`, are unaffected.
->
-> This was armed until 2026-08-13 by two wrapper lemmas in `Basic/RelativeDistance.lean`, since
-> deleted, which is why `Basic/DecodingRadius.lean` spells its `NNReal`s longhand — now an
-> unnecessary workaround, harmless but removable. Two unarmed instances of the pattern survive
-> elsewhere (`MvPolynomial/Interpolation.lean`, `Basic/MDSCode.lean`).
-
-**Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
-aliases were left. Five of the six cannot be restated at all: they mention `IsListDecodable` at a real
-bound, which no longer type-checks. The sixth, `Lambda_le_floor_of_toENNReal_le_ofReal`, mentions
-only `Lambda` and so could be kept, but it has no successor to alias *to* — its replacement is a
-different statement at `ℝ≥0`. An audit of every local and remote branch, plus both
-proximity-prize repositories, found no consumer of any of them. Each replacement below is
-compile-checked against the row it replaces:
-
-| Removed | Use instead |
-|---|---|
-| `Lambda_le_iff_listDecodable` | `isListDecodable_natCast_iff` |
-| `Lambda_le_floor_iff_listDecodable` | `isListDecodable_iff_Lambda_le` |
-| `Lambda_le_floor_iff_listDecodable_nnreal` | `isListDecodable_iff_Lambda_le` |
-| `Lambda_le_floor_of_listDecodable` | `isListDecodable_iff_Lambda_le` (`.mp`) |
-| `listDecodable_of_Lambda_le_natCast` | `isListDecodable_natCast_iff` then `IsListDecodable.mono` |
-| `Lambda_le_floor_of_toENNReal_le_ofReal` | `isListDecodable_iff_toENNReal_le_ofReal` |
+> **Never declare `Foo.bar` inside `namespace Code` when `Foo` is a namespace you also want to
+> `open` there.** Write `_root_.Foo.bar`, or put the lemma where it belongs. The declaration brings
+> `Code.Foo` into existence, and an `open scoped Foo` *inside* `namespace Code` — here or in any
+> importing file — then resolves to that empty sub-namespace, silently dropping the notation. For
+> `NNReal` the symptom is `ℝ≥0` reparsing as `ℝ ≥ 0`, with every signature using it failing on
+> `failed to synthesize LE Type`. The `open` must be lexically inside the namespace to bite:
+> `open Code NNReal` in one command, or `open Code` with a separate root-level `open scoped NNReal`,
+> are unaffected.
 
 ### Coercions
 

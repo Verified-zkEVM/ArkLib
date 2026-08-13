@@ -265,12 +265,9 @@ codeword within relative Hamming distance `r` of any word. The `ℓ = 1` case of
 def IsUniquelyDecodable (C : Set (ι → F)) (r : ℝ) : Prop :=
   IsListDecodable C r 1
 
-/-- **Unfolding lemma.** `IsListDecodable` *is* the inequality `Lambda C r ≤ ⌊ℓ⌋₊`, by definition.
-
-This is not a bridge between two notions — the five lemmas of that kind are gone, along with the
-second definition they connected. It is the entry point for rewriting into the `Lambda` form, which
-`exact` and `refine` do not need (they unify at default transparency) but `rw` and `simp only` do,
-`IsListDecodable` being semireducible. -/
+/-- `IsListDecodable` *is* the inequality `Lambda C r ≤ ⌊ℓ⌋₊`, by definition. The entry point
+for rewriting into the `Lambda` form, which `rw` and `simp only` need but `exact` and `refine`
+do not. -/
 lemma isListDecodable_iff_Lambda_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ≥0} :
     IsListDecodable C r ℓ ↔ Lambda C r ≤ (⌊ℓ⌋₊ : ℕ∞) := Iff.rfl
 
