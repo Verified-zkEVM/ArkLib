@@ -489,8 +489,8 @@
     <div class="sec-head assembly-head">
       <span class="eyebrow">Putting the pieces together</span>
       <h2>PCS assembly</h2>
-      <p>The composed opening certificate and scheme interface that turn the protocol links into a polynomial
-        commitment scheme.</p>
+      <p>The composed opening certificate, honest-prover correctness proofs, and commitment-scheme instantiation
+        that turn the protocol links into a polynomial commitment scheme.</p>
     </div>
     <div class="grid" id="pcsAssembly"></div>
   </section>
@@ -550,7 +550,7 @@
     <p class="foot-note">
       Design notes live in the module docstrings themselves — the corrected Lemma&nbsp;10 in
       <code>ZeroCheck/Reduction.lean</code> and the open row-11 gap in <code>Recursion/ZBatchBridge.lean</code>. The composition
-      home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
+      and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
       directly from this source snapshot; the open-sorry count counts genuine proof terms inside <code>Hachi/</code>.
       The generic guarded-append machinery under
       <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> is now proved and sorry-free.
@@ -632,15 +632,15 @@
       desc:"Guarded composition is complete: <code>IsGuarded.append</code> conjoins the checks, and <code>append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft</code> lifts escape-aware CWSS through a guarded left factor. An accepting composed tree forces every left check to pass — every CWSS suffix has a leaf, while a failed guard runs to <code>failure</code> — so the ordinary extraction argument applies. The sumcheck, final-evaluation, and trace-handoff seams now compose through proved generic machinery." },
   ];
   var PCS_ASSEMBLY = [
-    { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
+    { name:"Composition", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
       desc:"Imports every subprotocol's package and chains them: <code>evalChain</code> (the proven core, sorry-free) · <code>openCore</code> (rows 1–7, pure) · <code>openingChain</code> (rows 1–12, guarded tail and the §4.5 recursion adapters). Its <code>isCWSS</code> fields are the certificates; the file itself has no sorries — its soundness rests on the imported packages." },
-    { name:"Scheme interface", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
-      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof, pending honest-prover and correctness proofs for every opening subprotocol and their composition into the complete scheme." },
+    { name:"Honest provers and correctness", ref:"the prerequisite", files:[], status:"plan", note:"planned prerequisite",
+      desc:"Implement each opening subprotocol's honest prover and prove its completeness/correctness at its relation seam. Then compose those results along the full opening chain to establish correctness of the complete Hachi polynomial commitment scheme — the prerequisite for its <code>Commitment.Scheme</code> instantiation." },
+    { name:"Commitment Scheme instantiation", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
+      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof, pending the preceding honest-prover and correctness results for every opening subprotocol and their composition into the complete scheme." },
   ];
 
   var ROADMAP = [
-    { title:"Honest provers, completeness &amp; composed correctness", tag:"planned",
-      body:"Implement each opening subprotocol's honest prover and prove its completeness/correctness at its own relation seam. Then compose those results along the full opening chain to establish correctness of the Hachi <code>Commitment.Scheme</code>, materializing the provisional <code>hachi.opening</code> field." },
     { title:"Rust extraction &amp; verified optimization", tag:"planned",
       body:"Build an AI-driven optimization loop around the Hachi specifications: let AI generate and optimize both Lean definitions and Rust verifier/prover code; extract the Rust through Aeneas/Hax into a derived Lean model; then prove each operation succeeds and is equivalent to—or commutes with—the specification. Rust benchmarks against frozen baselines provide the fitness signal for the next round, so repeated Lean and Rust optimizations produce faster code without losing the proof connection. Adapt the running <a href=\"https://github.com/tobias-rothmann/AeneasCompPoly\">AeneasCompPoly</a> prototype for CompPoly to Hachi." },
     { title:"Recursive iteration loop (§3 / §4.5)", tag:"planned",
@@ -774,7 +774,7 @@
       '<div class="sc-top"><div><div class="sc-name">'+c.name+'</div><div class="sc-ref">'+c.ref+'</div></div>'+pill(c.status)+'</div>'+
       files +
       '<div class="sc-desc">'+c.desc+'</div>'+
-      (c.sorry>0?'<div class="sc-ref">'+c.sorry+' open sorry'+(c.sorry>1?"s":"")+'</div>':'<div class="sc-ref" style="color:var(--ok)">sorry-free</div>');
+      (c.note?'<div class="sc-ref">'+c.note+'</div>':(c.sorry>0?'<div class="sc-ref">'+c.sorry+' open sorry'+(c.sorry>1?"s":"")+'</div>':'<div class="sc-ref" style="color:var(--ok)">sorry-free</div>'));
     return d;
   }
   var infra = document.getElementById("infrastructure"); INFRASTRUCTURE.forEach(function(c){ infra.appendChild(subCard(c)); });
