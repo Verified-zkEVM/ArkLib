@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 import ArkLib.Data.CodingTheory.Basic.Entropy
 import ArkLib.Data.Probability.Notation
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.Analysis.SpecialFunctions.Stirling
 import Mathlib.FieldTheory.Finiteness
 
 /-!
@@ -125,6 +126,337 @@ theorem linear_lambda_ge_elias_volume
     _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
     _ ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := hLam
 
+theorem stirlingSeq_one_sq :
+    Stirling.stirlingSeq 1 * Stirling.stirlingSeq 1 =
+      2 * Stirling.stirlingSeq 2 := by
+  unfold Stirling.stirlingSeq
+  norm_num [Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+  field_simp [Real.exp_ne_zero]
+  ring_nf
+  rw [show (4 : ℝ) = (2 : ℝ) ^ 2 by norm_num,
+    Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 2),
+    Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
+
+theorem stirlingSeq_pos_of_pos (n : ℕ) (hn : 0 < n) :
+    0 < Stirling.stirlingSeq n := by
+  unfold Stirling.stirlingSeq
+  positivity
+
+set_option maxHeartbeats 1000000 in
+-- `field_simp`/`ring_nf` on the four-factorial identity below exceeds the default budget.
+theorem binomial_mean_mass_eq_stirlingSeq
+    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    (((d + m).choose d : ℕ) : ℝ) *
+        ((d : ℝ) / ((d + m : ℕ) : ℝ)) ^ d *
+        ((m : ℝ) / ((d + m : ℕ) : ℝ)) ^ m =
+      Stirling.stirlingSeq (d + m) /
+          (Stirling.stirlingSeq d * Stirling.stirlingSeq m) *
+        (Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
+          (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ)))) := by
+  rw [show (((d + m).choose d : ℕ) : ℝ) = (Nat.factorial (d + m) : ℝ) /
+        ((Nat.factorial d : ℝ) * (Nat.factorial m : ℝ)) from by
+      simpa only [Nat.add_sub_cancel_left] using
+        (Nat.cast_choose (K := ℝ) (show d ≤ d + m by omega))]
+  unfold Stirling.stirlingSeq
+  have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+  have hmR : (0 : ℝ) < m := by exact_mod_cast hm
+  have hdmR : (0 : ℝ) < d + m := by positivity
+  have hsd : Real.sqrt (2 * (d : ℝ)) ≠ 0 := by positivity
+  have hsm : Real.sqrt (2 * (m : ℝ)) ≠ 0 := by positivity
+  have hsdm : Real.sqrt (2 * ((d + m : ℕ) : ℝ)) ≠ 0 := by positivity
+  have hfd : (Nat.factorial d : ℝ) ≠ 0 := by positivity
+  have hfm : (Nat.factorial m : ℝ) ≠ 0 := by positivity
+  have hfdm : (Nat.factorial (d + m) : ℝ) ≠ 0 := by positivity
+  rw [pow_add, div_pow, div_pow, div_pow]
+  field_simp [hdR.ne', hmR.ne', hdmR.ne', hsd, hsm, hsdm,
+    hfd, hfm, hfdm, Real.exp_ne_zero]
+  have hcancel :
+      Real.exp 1 ^ d * (Real.exp 1)⁻¹ ^ d = 1 := by
+    rw [← mul_pow, mul_inv_cancel₀ (Real.exp_ne_zero 1), one_pow]
+  linear_combination
+    (-((d : ℝ) ^ d * (m : ℝ) ^ m * ((d + m : ℕ) : ℝ) ^ m *
+      (Real.exp 1)⁻¹ ^ m)) * hcancel
+
+theorem entropy_radius_integer_bounds (n d : ℕ) (δ : ℝ) (hn : 0 < n)
+    (hδ_pos : 0 < δ) (hδ_lt : δ < 1) (hd : (d : ℝ) = δ * n) :
+    0 < d ∧ d < n ∧ ⌊δ * n⌋₊ = d := by
+  have hn_real : (0 : ℝ) < n := by exact_mod_cast hn
+  have hd_real_pos : (0 : ℝ) < d := by rw [hd]; positivity
+  have hd_pos : 0 < d := by exact_mod_cast hd_real_pos
+  have hd_real_lt : (d : ℝ) < n := by rw [hd]; nlinarith
+  have hd_lt : d < n := by exact_mod_cast hd_real_lt
+  refine ⟨hd_pos, hd_lt, ?_⟩
+  rw [← hd, Nat.floor_natCast]
+
+theorem entropy_sqrt_factor_identity
+    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    (1 : ℝ) / 2 *
+        (Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
+          (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ)))) =
+      1 / Real.sqrt
+        (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) := by
+  have hdR : (0 : ℝ) < d := by exact_mod_cast hd
+  have hmR : (0 : ℝ) < m := by exact_mod_cast hm
+  have hdmR : (0 : ℝ) < d + m := by positivity
+  have hsd : 0 < Real.sqrt (2 * (d : ℝ)) := by positivity
+  have hsm : 0 < Real.sqrt (2 * (m : ℝ)) := by positivity
+  have hsdm : 0 < Real.sqrt (2 * ((d + m : ℕ) : ℝ)) := by positivity
+  have hx : 0 < 8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ) := by
+    positivity
+  have hsx : 0 < Real.sqrt
+      (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) := by
+    positivity
+  have hleft : 0 ≤ (1 : ℝ) / 2 *
+      (Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
+        (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ)))) := by
+    positivity
+  have hright : 0 ≤ 1 / Real.sqrt
+      (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) := by
+    positivity
+  have hleft_sq :
+      ((1 : ℝ) / 2 *
+        (Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
+          (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ))))) ^ 2 =
+        ((d + m : ℕ) : ℝ) / (8 * (d : ℝ) * (m : ℝ)) := by
+    field_simp [hsd.ne', hsm.ne']
+    rw [Real.sq_sqrt (by positivity : (0 : ℝ) ≤ 2 * d),
+      Real.sq_sqrt (by positivity : (0 : ℝ) ≤ 2 * m),
+      Real.sq_sqrt (by positivity : (0 : ℝ) ≤ 2 * ((d + m : ℕ) : ℝ))]
+    ring
+  have hright_sq :
+      (1 / Real.sqrt
+        (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ))) ^ 2 =
+        ((d + m : ℕ) : ℝ) / (8 * (d : ℝ) * (m : ℝ)) := by
+    field_simp [hsx.ne', hdR.ne', hmR.ne', hdmR.ne']
+    rw [Real.sq_sqrt hx.le]
+    field_simp [hdmR.ne']
+  nlinarith
+
+theorem log_stirlingSeq_diff_antitone :
+    Antitone (fun m : ℕ =>
+      Real.log (Stirling.stirlingSeq (m + 1)) -
+        Real.log (Stirling.stirlingSeq (m + 2))) := by
+  intro a b hab
+  apply hasSum_le (fun k => ?_)
+    (Stirling.log_stirlingSeq_sdiff_hasSum b)
+    (Stirling.log_stirlingSeq_sdiff_hasSum a)
+  have habR : (a : ℝ) ≤ b := by exact_mod_cast hab
+  gcongr
+
+theorem stirlingSeq_succ_ratio_mono
+    (a b : ℕ) (ha : 0 < a) (hab : a ≤ b) :
+    Stirling.stirlingSeq (a + 1) / Stirling.stirlingSeq a ≤
+      Stirling.stirlingSeq (b + 1) / Stirling.stirlingSeq b := by
+  have hb : 0 < b := lt_of_lt_of_le ha hab
+  have hab' : a - 1 ≤ b - 1 := Nat.sub_le_sub_right hab 1
+  have hdiff := log_stirlingSeq_diff_antitone hab'
+  dsimp only at hdiff
+  have ha1 : a - 1 + 1 = a := by omega
+  have ha2 : a - 1 + 2 = a + 1 := by omega
+  have hb1 : b - 1 + 1 = b := by omega
+  have hb2 : b - 1 + 2 = b + 1 := by omega
+  rw [ha1, ha2, hb1, hb2] at hdiff
+  have hleft : 0 < Stirling.stirlingSeq (a + 1) / Stirling.stirlingSeq a :=
+    div_pos (stirlingSeq_pos_of_pos (a + 1) (by omega))
+      (stirlingSeq_pos_of_pos a ha)
+  have hright : 0 < Stirling.stirlingSeq (b + 1) / Stirling.stirlingSeq b :=
+    div_pos (stirlingSeq_pos_of_pos (b + 1) (by omega))
+      (stirlingSeq_pos_of_pos b hb)
+  apply (Real.log_le_log_iff hleft hright).mp
+  rw [Real.log_div (stirlingSeq_pos_of_pos (a + 1) (by omega)).ne'
+      (stirlingSeq_pos_of_pos a ha).ne',
+    Real.log_div (stirlingSeq_pos_of_pos (b + 1) (by omega)).ne'
+      (stirlingSeq_pos_of_pos b hb).ne']
+  linarith
+
+theorem stirlingSeq_mul_le_two_mul_add
+    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    Stirling.stirlingSeq d * Stirling.stirlingSeq m ≤
+      2 * Stirling.stirlingSeq (d + m) := by
+  obtain ⟨r, rfl⟩ := Nat.exists_eq_succ_of_ne_zero (Nat.ne_of_gt hm)
+  induction r with
+  | zero =>
+      have hratio := stirlingSeq_succ_ratio_mono 1 d
+        Nat.zero_lt_one (by omega)
+      have hS1 := stirlingSeq_pos_of_pos 1 Nat.zero_lt_one
+      have hSd := stirlingSeq_pos_of_pos d hd
+      have hbase :
+          Stirling.stirlingSeq d * Stirling.stirlingSeq 1 ≤
+            2 * Stirling.stirlingSeq (d + 1) := by
+        calc
+          Stirling.stirlingSeq d * Stirling.stirlingSeq 1 =
+              2 * Stirling.stirlingSeq d *
+                (Stirling.stirlingSeq 2 / Stirling.stirlingSeq 1) := by
+                  field_simp [hS1.ne']
+                  nlinarith [stirlingSeq_one_sq]
+          _ ≤ 2 * Stirling.stirlingSeq d *
+                (Stirling.stirlingSeq (d + 1) / Stirling.stirlingSeq d) := by
+                  gcongr
+          _ = 2 * Stirling.stirlingSeq (d + 1) := by
+                  field_simp [hSd.ne']
+      simpa using hbase
+  | succ r ih =>
+      let t : ℕ := r + 1
+      have ht : 0 < t := by simp [t]
+      have ih' :
+          Stirling.stirlingSeq d * Stirling.stirlingSeq t ≤
+            2 * Stirling.stirlingSeq (d + t) := by
+        simpa [t, Nat.succ_eq_add_one] using ih
+      have hratio := stirlingSeq_succ_ratio_mono t (d + t) ht (by omega)
+      have hSt := stirlingSeq_pos_of_pos t ht
+      have hSt1 := stirlingSeq_pos_of_pos (t + 1) (by omega)
+      have hSdt := stirlingSeq_pos_of_pos (d + t) (by omega)
+      have hstep :
+          Stirling.stirlingSeq d * Stirling.stirlingSeq (t + 1) ≤
+            2 * Stirling.stirlingSeq (d + (t + 1)) := by
+        calc
+          Stirling.stirlingSeq d * Stirling.stirlingSeq (t + 1) =
+              (Stirling.stirlingSeq d * Stirling.stirlingSeq t) *
+                (Stirling.stirlingSeq (t + 1) / Stirling.stirlingSeq t) := by
+                  field_simp [hSt.ne']
+          _ ≤ (2 * Stirling.stirlingSeq (d + t)) *
+                (Stirling.stirlingSeq (t + 1) / Stirling.stirlingSeq t) := by
+                  gcongr
+          _ ≤ (2 * Stirling.stirlingSeq (d + t)) *
+                (Stirling.stirlingSeq (d + t + 1) /
+                  Stirling.stirlingSeq (d + t)) := by
+                  gcongr
+          _ = 2 * Stirling.stirlingSeq (d + t + 1) := by
+                  field_simp [hSdt.ne']
+      simpa [t, Nat.succ_eq_add_one, Nat.add_assoc] using hstep
+
+theorem binomial_mean_mass_ge
+    (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
+    1 / Real.sqrt
+        (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) ≤
+      (((d + m).choose d : ℕ) : ℝ) *
+        ((d : ℝ) / ((d + m : ℕ) : ℝ)) ^ d *
+        ((m : ℝ) / ((d + m : ℕ) : ℝ)) ^ m := by
+  have hSd := stirlingSeq_pos_of_pos d hd
+  have hSm := stirlingSeq_pos_of_pos m hm
+  have hprod : 0 < Stirling.stirlingSeq d * Stirling.stirlingSeq m :=
+    mul_pos hSd hSm
+  have hcross := stirlingSeq_mul_le_two_mul_add d m hd hm
+  have hratio :
+      (1 : ℝ) / 2 ≤
+        Stirling.stirlingSeq (d + m) /
+          (Stirling.stirlingSeq d * Stirling.stirlingSeq m) := by
+    apply (le_div_iff₀ hprod).2
+    nlinarith
+  have hsqrt : 0 ≤
+      Real.sqrt (2 * ((d + m : ℕ) : ℝ)) /
+        (Real.sqrt (2 * (d : ℝ)) * Real.sqrt (2 * (m : ℝ))) := by
+    positivity
+  have hmul := mul_le_mul_of_nonneg_right hratio hsqrt
+  rw [entropy_sqrt_factor_identity d m hd hm] at hmul
+  rw [← binomial_mean_mass_eq_stirlingSeq d m hd hm] at hmul
+  exact hmul
+
+theorem binomial_integral_mean_mass_ge
+    (n d : ℕ) (δ : ℝ) (hn : 0 < n)
+    (hδpos : 0 < δ) (hδlt : δ < 1)
+    (hd : (d : ℝ) = δ * n) :
+    1 / Real.sqrt (8 * (n : ℝ) * δ * (1 - δ)) ≤
+      (n.choose d : ℝ) * δ ^ d * (1 - δ) ^ (n - d) := by
+  obtain ⟨hdpos, hdlt, _⟩ :=
+    entropy_radius_integer_bounds n d δ hn hδpos hδlt hd
+  let m : ℕ := n - d
+  have hmpos : 0 < m := by
+    dsimp [m]
+    omega
+  have hsum : d + m = n := by
+    dsimp [m]
+    omega
+  have hnR : (0 : ℝ) < n := by exact_mod_cast hn
+  have hδeq : δ = (d : ℝ) / (n : ℝ) := by
+    apply (eq_div_iff hnR.ne').2
+    exact hd.symm
+  have hcomp : 1 - δ = (m : ℝ) / (n : ℝ) := by
+    rw [hδeq]
+    dsimp [m]
+    rw [Nat.cast_sub (Nat.le_of_lt hdlt)]
+    field_simp [hnR.ne']
+  have hmean := binomial_mean_mass_ge d m hdpos hmpos
+  calc
+    1 / Real.sqrt (8 * (n : ℝ) * δ * (1 - δ)) =
+        1 / Real.sqrt
+          (8 * (d : ℝ) * (m : ℝ) / ((d + m : ℕ) : ℝ)) := by
+      rw [hsum, hcomp, hδeq]
+      field_simp [hnR.ne']
+    _ ≤ (((d + m).choose d : ℕ) : ℝ) *
+          ((d : ℝ) / ((d + m : ℕ) : ℝ)) ^ d *
+          ((m : ℝ) / ((d + m : ℕ) : ℝ)) ^ m := hmean
+    _ = (n.choose d : ℝ) * δ ^ d * (1 - δ) ^ (n - d) := by
+      rw [hcomp, hδeq, hsum]
+
+theorem qEntropy_power_mul_mass_eq
+    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
+    (hδpos : 0 < δ) (hδlt : δ < 1)
+    (hd : (d : ℝ) = δ * n) :
+    (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
+        (δ ^ d * (1 - δ) ^ (n - d)) =
+      (((q - 1 : ℕ) : ℝ) ^ d) := by
+  obtain ⟨_, hdlt, _⟩ :=
+    entropy_radius_integer_bounds n d δ hn hδpos hδlt hd
+  have hqR : (0 : ℝ) < q := by exact_mod_cast (lt_of_lt_of_le Nat.zero_lt_two hq)
+  have hq1R : (1 : ℝ) < q := by exact_mod_cast (show 1 < q by omega)
+  have hqne : (q : ℝ) ≠ 1 := ne_of_gt hq1R
+  have hqm1R : (0 : ℝ) < (q : ℝ) - 1 := sub_pos.mpr hq1R
+  have hqsub : (((q - 1 : ℕ) : ℝ)) = (q : ℝ) - 1 := by
+    rw [Nat.cast_sub (show 1 ≤ q by omega)]
+    norm_num
+  have hcomp : (0 : ℝ) < 1 - δ := sub_pos.mpr hδlt
+  have hmcast : (((n - d : ℕ) : ℝ)) = (1 - δ) * (n : ℝ) := by
+    rw [Nat.cast_sub (Nat.le_of_lt hdlt), hd]
+    ring
+  have hexp :
+      (n : ℝ) * qEntropy q δ =
+        (d : ℝ) * Real.logb q ((q : ℝ) - 1) -
+          (d : ℝ) * Real.logb q δ -
+            ((n - d : ℕ) : ℝ) * Real.logb q (1 - δ) := by
+    rw [qEntropy_eq_logb_form, hd, hmcast]
+    ring
+  have hpow (x : ℝ) (hx : 0 < x) (r : ℕ) :
+      (q : ℝ) ^ ((r : ℝ) * Real.logb q x) = x ^ r := by
+    rw [mul_comm, Real.rpow_mul hqR.le,
+      Real.rpow_logb hqR hqne hx, Real.rpow_natCast]
+  have hδpow : δ ^ d ≠ 0 := pow_ne_zero d hδpos.ne'
+  have hcomppow : (1 - δ) ^ (n - d) ≠ 0 :=
+    pow_ne_zero (n - d) hcomp.ne'
+  rw [hexp, Real.rpow_sub hqR, Real.rpow_sub hqR,
+    hpow ((q : ℝ) - 1) hqm1R d,
+    hpow δ hδpos d, hpow (1 - δ) hcomp (n - d), hqsub]
+  field_simp [hδpow, hcomppow]
+
+theorem qary_shell_entropy_lower
+    (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
+    (hδpos : 0 < δ) (hδlt : δ < 1)
+    (hd : (d : ℝ) = δ * n) :
+    (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
+        (8 * (n : ℝ) * δ * (1 - δ)) ^ ((1 : ℝ) / 2) ≤
+      ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
+  have hbin :=
+    binomial_integral_mean_mass_ge n d δ hn hδpos hδlt hd
+  have hQ : 0 ≤ (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) :=
+    Real.rpow_nonneg (by positivity) _
+  have hscaled := mul_le_mul_of_nonneg_left hbin hQ
+  rw [← Real.sqrt_eq_rpow]
+  calc
+    (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
+        Real.sqrt (8 * (n : ℝ) * δ * (1 - δ)) =
+      (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
+        (1 / Real.sqrt (8 * (n : ℝ) * δ * (1 - δ))) := by ring
+    _ ≤ (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
+        ((n.choose d : ℝ) * δ ^ d * (1 - δ) ^ (n - d)) := hscaled
+    _ = (n.choose d : ℝ) *
+        ((q : ℝ) ^ ((n : ℝ) * qEntropy q δ) *
+          (δ ^ d * (1 - δ) ^ (n - d))) := by ring
+    _ = (n.choose d : ℝ) * (((q - 1 : ℕ) : ℝ) ^ d) := by
+      rw [qEntropy_power_mul_mass_eq q n d δ hq hn hδpos hδlt hd]
+    _ = ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
+      rw [Nat.cast_mul, Nat.cast_pow]
+
+open _root_.ListDecodable in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
 [MS77] Hamming-ball volume estimate `Vol_q(δ, n) ≥ q^{n·H_q(δ)} / √(8·n·δ·(1-δ))` into
 `linear_lambda_ge_elias_volume`, dividing by `q^{n-k}` and writing `ρ := k/n`, gives
@@ -151,7 +483,63 @@ theorem linear_lambda_ge_entropy_volume
         ((q : ℝ) ^ ((n : ℝ) * (ρ - 1 + qEntropy q δ))
           / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
       ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
-  sorry -- external admit: the [MS77] Hamming-ball volume estimate.
+  classical
+  dsimp
+  let q : ℕ := Fintype.card F
+  let n : ℕ := Fintype.card ι
+  let k : ℕ := Module.finrank F C
+  obtain ⟨d, hd⟩ := _hδn_int
+  have hn_pos : 0 < n := Fintype.card_pos
+  have hq_two : 2 ≤ q := by
+    dsimp [q]
+    exact Fintype.one_lt_card
+  have hd_lt_real : (d : ℝ) < n := by
+    rw [hd]
+    have hnR : (0 : ℝ) < n := by positivity
+    nlinarith
+  have hd_lt : d < n := by exact_mod_cast hd_lt_real
+  have hfloor : ⌊δ * (n : ℝ)⌋₊ = d := by
+    rw [← hd]
+    simp only [Nat.floor_natCast]
+  have hshell_nat : Nat.choose n d * (q - 1) ^ d ≤
+      hammingBallVolume q δ n := by
+    unfold hammingBallVolume
+    exact Finset.single_le_sum
+      (s := Finset.range (⌊δ * (n : ℝ)⌋₊ + 1))
+      (f := fun i => Nat.choose n i * (q - 1) ^ i)
+      (fun i _ => Nat.zero_le _)
+      (by simp only [Finset.mem_range, hfloor]; omega)
+  have hshell_real : ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) ≤
+      (hammingBallVolume q δ n : ℝ) := by
+    exact_mod_cast hshell_nat
+  have hvol : (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
+      (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2) ≤
+      (hammingBallVolume q δ n : ℝ) :=
+    le_trans (qary_shell_entropy_lower q n d δ hq_two hn_pos
+      _hδ_pos _hδ_lt (by simpa only [n] using hd)) hshell_real
+  have hq_posR : (0 : ℝ) < q := by positivity
+  have hElias := linear_lambda_ge_elias_volume C δ _hδ_pos _hδ_lt
+  apply le_trans ?_ hElias
+  apply ENNReal.ofReal_le_ofReal
+  change (q : ℝ) ^ ((n : ℝ) * ((k : ℝ) / n - 1 + qEntropy q δ)) /
+      (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2) ≤
+    (hammingBallVolume q δ n : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)
+  have hexp : (n : ℝ) * ((k : ℝ) / n - 1 + qEntropy q δ) =
+      (n : ℝ) * qEntropy q δ - ((n : ℝ) - k) := by
+    have hn0 : (n : ℝ) ≠ 0 := by positivity
+    field_simp
+    ring
+  rw [hexp, Real.rpow_sub hq_posR]
+  calc
+    (q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
+        (q : ℝ) ^ ((n : ℝ) - k) /
+        (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2) =
+      ((q : ℝ) ^ ((n : ℝ) * qEntropy q δ) /
+        (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2)) /
+          (q : ℝ) ^ ((n : ℝ) - k) := by ring
+    _ ≤ (hammingBallVolume q δ n : ℝ) /
+        (q : ℝ) ^ ((n : ℝ) - k) :=
+      div_le_div_of_nonneg_right hvol (Real.rpow_nonneg hq_posR.le _)
 
 /-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
 Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,
