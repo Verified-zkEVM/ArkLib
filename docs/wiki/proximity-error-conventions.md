@@ -96,11 +96,21 @@ precondition on the caller and costs little inside the definition; `I` in the *c
 the output and is exactly what blocks composing the transport lemmas. Both rows are settled — the
 domain by the sources, the codomain by Lean's constraints.
 
-Two known outliers, both tracked rather than fixed here:
+**`Code.Lambda`'s `δ : ℝ` is not an outlier to be fixed — leave it alone.** It is tempting to read
+ABF26's `Λ` at `δ ∈ [0,1]` as making `ℝ` the unfaithful side. It does not, for two reasons settled
+in `coding-theory-conventions.md` ("Why the radius is `ℝ` while the bound is `ℝ≥0`"): `I` carries
+no `Sub`, so a radius written `1 − √ρ − η` cannot even be *formed* in it without a membership proof
+at every call site; and narrowing only relocates the obligation, with both discharges worse than
+the status quo — truncating a negative radius to `0` turns a bound proved of the empty list into a
+claim about the singleton `{f}`, while guarding adds `0 ≤ 1 − √ρ − η` to statements whose
+mathematics does not need it. A negative radius is the honest value: empty ball, `Lambda = 0`.
 
-- `Lambda : Code ι F → ℝ → ℕ∞` (`ListDecodability.lean`) takes `δ : ℝ`. ABF26 puts `Λ` at
-  `δ ∈ [0,1]`, so `ℝ` is the unfaithful side. Moving it touches the live list-decoding work
-  (PRs #722 / #723), so it is deliberately deferred.
+The layers genuinely differ. An error probability has no meaning outside `[0,1]`; a list size does.
+So the two conventions coexist, with a coercion at the boundary — as in `GrandChallenges`'
+`Lambda (C^⋈ m) (gridPt k : ℝ)`.
+
+One genuine constraint, tracked rather than fixed:
+
 - `gridPt : ℕ → I` **cannot** be made total — `gridPt_le_one` needs `k ≤ Fintype.card ι`. Keep the
   δ-grid indexed by `ℕ` and discharge the bound at the call site; the content already lives on the
   integer index (`kStar`), which is more faithful than a "largest real `δ*`" phrasing anyway.
