@@ -12,8 +12,10 @@ shape for all of them, so that helper lemmas are written once rather than per no
 **Status.** The shape below is fully realised for MCA, in
 `ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`. The `ε_pg` / `ε_ca` layer
 (`ProximityGap/Errors.lean`) currently lives on `feat/abf26-plan` (PR #505) and is not yet on
-`main`; declarations below marked **(#505)** are on that branch only. Migrating them onto this
-shape is the open work.
+`main`; declarations below marked **(#505)** are on that branch only. The four correlated-agreement
+definitions in `ProximityGap/Basic.lean` are still one-per-family — see
+[What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not) for what collapsing
+them requires. Migrating both is the open work.
 
 ## The shape
 
@@ -27,8 +29,9 @@ noncomputable def mcaError (G : Generator S ℓ F) (MC : ModuleCode ι F A) : �
 
 -- 3. the predicate is DERIVED, never parallel — and is where `[0,1]` belongs
 def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
-  ∀ U, ∀ δ : I, Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)] ≤ ↑(ε_mca δ)
--- tied to the value by `isMCAGenerator_iff_mcaError_le`
+  ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
+-- so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`, and the `∀ U` reading that [BCGM25]
+-- Definition 3.14 prints is recovered by the lemma `IsMCAGenerator.apply`
 ```
 
 Five rules, each with a reason that has bitten us:
@@ -36,8 +39,13 @@ Five rules, each with a reason that has bitten us:
 1. **The value is the primitive; the predicate is derived.** A value can be *assigned* to a code
    family, not merely bounded — which is what the Grand Challenge and prize statements need. The
    reverse arrangement (predicate primitive, value alongside, tied by an `iff`) lets the two drift.
-   Same call as `Lambda` / `listDecodable`. Use `def`, not `abbrev`: `simp` will unfold an `abbrev`
-   whose body is a `≤` via `ge_iff_le`.
+   Same call as `Code.Lambda` / `Code.IsListDecodable`. Use `def`, not `abbrev`: `simp` will unfold
+   an `abbrev` whose body is a `≤` via `ge_iff_le`.
+
+   *Derived* means the predicate's body **is** the value inequality, so the unfolding lemma is
+   `Iff.rfl` and `exact`/`refine`/`apply` see through it. A predicate that merely happens to be
+   equivalent to the value, with a proved `iff` between them, is the parallel arrangement wearing
+   the right name: nothing stops a later edit from changing what one of them means.
 
    The payoff is concrete. Stated at the value, the [BCGM25] transport lemmas lose `ε_mca` from
    their statements entirely — `mcaError_generatorByRightMul_le` (Lemma 4.1),
@@ -53,13 +61,13 @@ Five rules, each with a reason that has bitten us:
    **But a shared shape is not a shared API.** The guard-turned-conjunct is *anti*-monotone in the
    distance, sitting in the same event as a monotone conjunct, so a guarded error is generally not
    monotone. `epsPG` and `epsCA'` are both pinned to `0` at `δ ≥ 1` while being nonzero below it,
-   so `epsPG_mono` and `epsCA'_mono` are **false theorems**, not open ones — see the regression
-   pins `epsPG_eq_zero_of_one_le` / `epsCA'_eq_zero_of_one_le` **(#505)**. Monotonicity holds for
-   `epsMCA` (guard-free, `epsMCA_mono`) and for `epsCA` in `δ_fld` only (`epsCA_mono_δ_fld`); it is
-   *antitone* in `δ_int` (`epsCA_antitone_δ_int`). This matches the sources: BCGM25 Lemma 3.16
-   states monotonicity for **MCA only**. Threshold-style statements (`ε ≤ ε*` below a radius,
-   `> ε*` above) are therefore MCA-specific; do not transplant them to CA'/PG, where they are
-   uninhabitable.
+   so `epsPG_mono` and `epsCA'_mono` are **false theorems**, not open ones: a monotone error would
+   have to stay at its sub-`1` value past `1`. Monotonicity holds for `epsMCA` (guard-free,
+   `epsMCA_mono` **(#505)**) and for `epsCA` in `δ_fld` only (`epsCA_mono_δ_fld` **(#505)**); it is
+   *antitone* in `δ_int` (`epsCA_antitone_δ_int` **(#505)**). This matches the sources: BCGM25
+   Lemma 3.16 states monotonicity for **MCA only**. Threshold-style statements (`ε ≤ ε*` below a
+   radius, `> ε*` above) are therefore MCA-specific; do not transplant them to CA'/PG, where they
+   are uninhabitable.
 
 3. **The family is a `Generator` argument, never a new definition.** Affine lines, affine spaces,
    curves, multilinear/tensor combinations and polynomial generators are all `G : S → F^ℓ`. A
@@ -117,8 +125,8 @@ Two things this buys, both checked rather than asserted:
   syntactically — `ℝ≥0`'s truncated `1 − δ` is `0`, `ℝ`'s is negative — but both are then vacuously
   true, so the equivalence survives on the whole domain.
 - **`gridPt` stays total.** It can remain `ℕ → ℝ≥0` (or `ℕ → ℝ`) and compose with `mcaError`
-  directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` already does. The former
-  note here — that `gridPt : ℕ → I` "cannot be made total" because `gridPt_le_one` needs
+  directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` **(#505)** already does.
+  The former note here — that `gridPt : ℕ → I` "cannot be made total" because `gridPt_le_one` needs
   `k ≤ Fintype.card ι` — described a constraint that only existed because the value took `I`. It is
   gone, not tracked.
 
@@ -126,8 +134,8 @@ Two things this buys, both checked rather than asserted:
 
 Follows `coding-theory-conventions.md`. The quantity tokens are `epsPG`, `epsCA`, `epsMCA`,
 `epsWCA`; ε-error material lives in `ProximityGap.*`. A bound for a specific code family reads
-`<codeFamily>_<quantity>_<regime>` — `rs_epsMCA_johnson_range_bchks25`,
-`subspaceDesign_epsMCA_gg25`.
+`<codeFamily>_<quantity>_<regime>` — `rs_epsMCA_johnson_range_bchks25` **(#505)**,
+`subspaceDesign_epsMCA_gg25` **(#505)**. `epsWCA` is reserved, not yet used anywhere.
 
 **The generator-framework value is `CoreDefinitions.mcaError`, not `epsMCA`, and must stay that way
 for now.** `ProximityGap.epsMCA` **(#505)** is a *different function* — `(C : Set (ι → A)) → ℝ≥0 →
@@ -136,6 +144,50 @@ ENNReal`, with the affine line hard-wired — and the two are related, not equal
 Renaming `mcaError` to `epsMCA` before that bridge has retired the abf26 definition would both
 collide on merge and make the bridge unstatable. Unify the names when the duplicate is deleted, not
 before.
+
+## What is a duplicate, and what is not
+
+Rules 1 and 3 say to collapse definitions. They do not say to collapse *notions*, and the
+difference decides how much of this subtree can actually shrink. Three categories:
+
+| declarations | relationship | what to do |
+|---|---|---|
+| `IsMCAGenerator` / `mcaError` | same `Prop`, unconditionally | one definition; the other is `Iff.rfl` (done) |
+| the four `δ_ε_…CorrelatedAgreement…` definitions in `ProximityGap/Basic.lean` | one notion at four generators | one value + four bridge lemmas (open) |
+| `DG25/Basic.lean`'s two `…_Nat` variants | one notion, `ℕ`-valued `Δ₀` carrier | keep both, bridge them; the side condition is `δ·n ∈ ℕ` |
+| `ε_pg` vs `ε_ca` vs `ε_mca` | different bad events, strictly ordered | keep three |
+| weighted CA | measure replaces cardinality counting | separate until someone checks |
+
+**The four CA definitions are pure duplicates.** Stripped of their binders, affine lines,
+multilinear, curves and affine spaces all read
+
+```
+∀ u : WordStack A κ ι, Pr_{x ←$ᵖ S}[δᵣ(combination of u at x, C) ≤ δ] > t → jointAgreement C δ u
+```
+
+with an identical consequent, differing only in the seed space `S`, the combination, and the
+threshold `t` — and "seed space plus combination" is exactly a `Generator S κ F`. Collapsing them
+is the `Lambda` move from #722: define the value once, guard-free per rule 2,
+
+```lean
+noncomputable def caError (G : Generator S ℓ F) (C : Set (ι → A)) : ℝ≥0 → ENNReal :=
+  fun δ => ⨆ U, Pr_{let x ←$ᵖ S}[δᵣ(fun k => ∑ j, G x j • U j k, C) ≤ δ ∧ ¬ jointAgreement C δ U]
+```
+
+after which each of the four is a *lemma* at its own threshold — `caError (AffineLineGenerator F)
+C δ ≤ ε`, `caError (curveGen k) C δ ≤ k · ε`, and so on — by the threshold equivalence below.
+`AffineLineGenerator` and `AffineSpaceGenerator` already exist; the curve generator is [BCGM25]'s
+`G_d(x) = (1, x, …, x^d)`. Affine spaces is the one that does not fall out immediately: it samples
+uniformly from the subspace *as a set* rather than from coefficients, and its own docstring records
+that the equivalence needs the coefficient map to have constant-size fibers. None of this is
+in-tree yet — `caError` above is a design note, not a declaration.
+
+**The three notions are not duplicates.** [ABF26] Fact 4.5 orders them, `ε_pg ≤ ε_ca ≤ ε_mca`, and
+states that the reverse implications are unknown. `MCASeparation.separation` exhibits a strict gap
+between the middle and the right: over the repetition code in `(ZMod 2)²` at radius `1/2` joint
+agreement is unconditional, so the CA bad event is empty, while the MCA event fires. No bridge
+collapses these, and any helper written for one has to be checked against the others rather than
+assumed to transfer — which is what the two per-notion caveats below are recording.
 
 ## The helper-lemma API
 
@@ -152,8 +204,17 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
 - `eps?_le_iff_threshold` — `eps? ≤ ↑t ↔ ∀ U, Pr > t → jointAgreement`, at an **arbitrary threshold
   `t`, not at `ε`**: the families do not share one. Affine lines and affine spaces use `> ε`, but
   curves use `> k · ε` and multilinear uses `> ϑ · ε`, so a bridge stated at `ε` silently covers
-  only two of the five. Each family supplies its own `t` at the call site, per rule 3. Subsumes any
-  threshold-implication phrasing, so no such phrasing needs to be a definition
+  only two of the five. Each family supplies its own `t` at the call site, per rule 3.
+
+  **An equivalence for CA, an implication only for MCA** — check which you are proving. It is an
+  equivalence exactly when the error's bad event is `close ∧ ¬jointAgreement`, which is CA's: if
+  the words jointly agree the event is empty, and if they do not it *is* `close`, so the two sides
+  match at every `t`. MCA's bad event is larger — it ties one `T` to both clauses, and joint
+  agreement may hold via a different set while the event still fires — so an `mcaError` bound
+  implies the threshold statement but is not implied by it. `MCASeparation.separation` is the
+  witness: over the repetition code in `(ZMod 2)²` at radius `1/2` every family jointly agrees, so
+  every threshold implication holds at every `t`, while the MCA event still fires. Only the CA form
+  subsumes a threshold-implication phrasing well enough to retire it as a definition
 - `epsPG ≤ epsCA ≤ epsMCA` (ABF26 Fact 4.5)
 - `epsMCA = epsCA` below the unique-decoding radius (ABF26 Lemma 4.6)
 - `eps?(C^⋈k) ≤ k · eps?(C)` (ABF26 Lemma 4.7 / BCGM25 Lemma 10.1)
@@ -183,6 +244,7 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   `p(L) > εpg(C, δ)`, `L` is `δ`-close to `C`"*. The `Xor` additionally asserts the branches are
   exclusive, which fails outright at `ε ≥ 1`. It has consumers (`DivergenceOfSets.lean`,
   `BCIKS20/ReedSolomonGap.lean`), so fixing it is its own change, not a drive-by.
-- **Threshold-style statements** (`ε ≤ ε*` below a radius, `> ε*` above — `grandMCAChallenge`)
+- **Threshold-style statements** (`ε ≤ ε*` below a radius, `> ε*` above — `grandMCAChallenge`
+  **(#505)**)
   depend on monotonicity and are therefore **MCA-specific**. A CA'/PG analogue would be
   uninhabitable.

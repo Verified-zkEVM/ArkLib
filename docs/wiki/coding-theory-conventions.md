@@ -194,8 +194,10 @@ their conclusions, and an `ℕ∞` hypothesis would force two variables and a co
 no `Sub`, so a radius written `1 - √ρ - η` cannot be *formed* in it without a membership proof at
 every call site. An earlier reading had the ε-error layer at `δ : I` and treated `Lambda`'s `ℝ` as
 the outlier; that is backwards, and narrowing the ε-error radius is what made the abf26
-`epsMCA ↔ mcaError` bridge carry a side condition and blocked a total `gridPt`. A radius reaches
-either layer with no coercion, as in `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)`.
+`epsMCA ↔ mcaError` bridge carry a side condition and blocked a total `gridPt`. A radius now
+reaches either layer with no *membership proof* — a numeric cast may still be needed, as in
+`GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)`, and that cast is free where a membership
+obligation is not.
 
 **This layer lives in `namespace Code`,** alongside the objects it operates on (`minDist`,
 `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through
