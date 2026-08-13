@@ -128,7 +128,324 @@ theorem rs_lambda_large_prime
             let C := ReedSolomon.code domain k
             ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) >
               c * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2) := by
-  sorry -- external admit: [GHSZ02, Corollary 20].
+  classical
+  let A : ℝ := (1 - β) / α
+  have hA : 0 < A := div_pos (sub_pos.mpr _hβ_lt) _hα_pos
+  have hAeq : α * A = 1 - β := by
+    dsimp [A]
+    field_simp [_hα_pos.ne']
+  let s : ℝ := β / (4 * (A + 1))
+  have hs : 0 < s := div_pos _hβ_pos (mul_pos (by norm_num) (by linarith))
+  have hsA : s * A ≤ β / 4 := by
+    dsimp [s]
+    have hden : 0 < 4 * (A + 1) := mul_pos (by norm_num) (by linarith)
+    rw [div_mul_eq_mul_div, div_le_iff₀ hden]
+    nlinarith
+  have hxTop : Filter.Tendsto (fun p : ℕ => (p : ℝ) ^ α) Filter.atTop Filter.atTop :=
+    (tendsto_rpow_atTop _hα_pos).comp tendsto_natCast_atTop_atTop
+  have hsTop : Filter.Tendsto (fun p : ℕ => (p : ℝ) ^ s) Filter.atTop Filter.atTop :=
+    (tendsto_rpow_atTop hs).comp tendsto_natCast_atTop_atTop
+  have hhalfTop : Filter.Tendsto (fun p : ℕ => (p : ℝ) ^ (1 - α)) Filter.atTop Filter.atTop :=
+    (tendsto_rpow_atTop (sub_pos.mpr _hα_lt)).comp tendsto_natCast_atTop_atTop
+  have hEA : ∀ᶠ p : ℕ in Filter.atTop, A ≤ (p : ℝ) ^ (1 - α) :=
+    hhalfTop.eventually (Filter.eventually_ge_atTop A)
+  have hE2 : ∀ᶠ p : ℕ in Filter.atTop, 2 ≤ p := Filter.eventually_ge_atTop 2
+  have hEbound : ∀ᶠ p : ℕ in Filter.atTop, A * (p : ℝ) ^ α ≤ (p : ℝ) := by
+    filter_upwards [hEA, hE2] with p hAp hp2
+    have hpR : (0 : ℝ) < p := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) hp2)
+    calc
+      A * (p : ℝ) ^ α ≤ (p : ℝ) ^ (1 - α) * (p : ℝ) ^ α :=
+        mul_le_mul_of_nonneg_right hAp (Real.rpow_nonneg hpR.le _)
+      _ = (p : ℝ) := by
+        rw [← Real.rpow_add hpR]
+        convert Real.rpow_one (p : ℝ) using 2
+        ring
+  have hparams : ∀ᶠ p : ℕ in Filter.atTop,
+      let x : ℝ := (p : ℝ) ^ α
+      let k : ℕ := Nat.floor x
+      let a : ℕ := ⌈A * x⌉₊
+      let δ : ℝ := 1 - A * (p : ℝ) ^ (α - 1)
+      2 ≤ p ∧ k ≤ p ∧ a ≤ p ∧ 0 ≤ δ ∧ p - a ≤ ⌊δ * p⌋₊ := by
+    filter_upwards [hEbound, hE2] with p hbound hp2
+    dsimp only
+    have hpR : (0 : ℝ) < p := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) hp2)
+    have hx0 : 0 ≤ (p : ℝ) ^ α := Real.rpow_nonneg hpR.le _
+    have hxle : (p : ℝ) ^ α ≤ (p : ℝ) := by
+      calc
+        (p : ℝ) ^ α ≤ (p : ℝ) ^ (1 : ℝ) :=
+          Real.rpow_le_rpow_of_exponent_le (by exact_mod_cast (show 1 ≤ p by omega)) _hα_lt.le
+        _ = (p : ℝ) := Real.rpow_one _
+    have hk : Nat.floor ((p : ℝ) ^ α) ≤ p := by
+      exact_mod_cast (Nat.floor_le hx0).trans hxle
+    have ha : ⌈A * (p : ℝ) ^ α⌉₊ ≤ p := Nat.ceil_le.mpr hbound
+    have hpowid : (p : ℝ) ^ (α - 1) * (p : ℝ) = (p : ℝ) ^ α := by
+      calc
+        (p : ℝ) ^ (α - 1) * (p : ℝ) =
+            (p : ℝ) ^ (α - 1) * (p : ℝ) ^ (1 : ℝ) := by rw [Real.rpow_one]
+        _ = (p : ℝ) ^ ((α - 1) + 1) := (Real.rpow_add hpR (α - 1) 1).symm
+        _ = (p : ℝ) ^ α := by congr 1; ring
+    have hsmall : A * (p : ℝ) ^ (α - 1) ≤ 1 := by
+      apply (mul_le_mul_iff_of_pos_right hpR).mp
+      rw [mul_assoc, hpowid, one_mul]
+      exact hbound
+    have hδ : 0 ≤ 1 - A * (p : ℝ) ^ (α - 1) := sub_nonneg.mpr hsmall
+    have hδmul : (1 - A * (p : ℝ) ^ (α - 1)) * (p : ℝ) =
+        (p : ℝ) - A * (p : ℝ) ^ α := by
+      rw [sub_mul, one_mul, mul_assoc, hpowid]
+    have hradius : p - ⌈A * (p : ℝ) ^ α⌉₊ ≤
+        ⌊(1 - A * (p : ℝ) ^ (α - 1)) * p⌋₊ := by
+      apply Nat.le_floor
+      rw [Nat.cast_sub ha, hδmul]
+      have hceil := Nat.le_ceil (A * (p : ℝ) ^ α)
+      linarith
+    exact ⟨hp2, hk, ha, hδ, hradius⟩
+  have hEx : ∀ᶠ p : ℕ in Filter.atTop,
+      1 ≤ (p : ℝ) ^ α ∧ 4 * (α + s + 1) / β ≤ (p : ℝ) ^ α := by
+    filter_upwards [hxTop.eventually (Filter.eventually_ge_atTop 1),
+      hxTop.eventually (Filter.eventually_ge_atTop (4 * (α + s + 1) / β))] with p h1 h2
+    exact ⟨h1, h2⟩
+  have hEs : ∀ᶠ p : ℕ in Filter.atTop, 2 * (A + 1) ≤ (p : ℝ) ^ s :=
+    hsTop.eventually (Filter.eventually_ge_atTop (2 * (A + 1)))
+  have hEhalf : ∀ᶠ p : ℕ in Filter.atTop, 2 * (A + 1) ≤ (p : ℝ) ^ (1 - α) :=
+    hhalfTop.eventually (Filter.eventually_ge_atTop (2 * (A + 1)))
+  have hcore : ∀ᶠ p : ℕ in Filter.atTop,
+      let x : ℝ := (p : ℝ) ^ α
+      let k : ℕ := Nat.floor x
+      let a : ℕ := ⌈A * x⌉₊
+      a ≤ p / 2 ∧
+      (α + s) * (a : ℝ) + β * x / 2 < (k : ℝ) ∧
+      (2 * a : ℝ) ≤ (p : ℝ) ^ (α + s) := by
+    filter_upwards [hEx, hEs, hEhalf, hE2] with p hx hps hphalf hp2
+    dsimp only
+    have hpR : (0 : ℝ) < p := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) hp2)
+    have hxpos : 0 < (p : ℝ) ^ α := Real.rpow_pos_of_pos hpR _
+    have hceil : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) < A * (p : ℝ) ^ α + 1 :=
+      Nat.ceil_lt_add_one (mul_nonneg hA.le hxpos.le)
+    have haAx : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (A + 1) * (p : ℝ) ^ α := by
+      nlinarith [hx.1]
+    have hpowprod : (p : ℝ) ^ s * (p : ℝ) ^ α = (p : ℝ) ^ (α + s) := by
+      rw [mul_comm, ← Real.rpow_add hpR]
+    have haPow : (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (p : ℝ) ^ (α + s) := by
+      calc
+        (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ 2 * ((A + 1) * (p : ℝ) ^ α) := by
+          exact mul_le_mul_of_nonneg_left haAx (by norm_num)
+        _ = (2 * (A + 1)) * (p : ℝ) ^ α := by ring
+        _ ≤ (p : ℝ) ^ s * (p : ℝ) ^ α :=
+          mul_le_mul_of_nonneg_right hps hxpos.le
+        _ = _ := hpowprod
+    have hak : (α + s) * (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) +
+        β * (p : ℝ) ^ α / 2 < (Nat.floor ((p : ℝ) ^ α) : ℝ) := by
+      have hk := Nat.lt_floor_add_one ((p : ℝ) ^ α)
+      have hx2 := hx.2
+      have hscale : α + s + 1 ≤ β * (p : ℝ) ^ α / 4 := by
+        have hh := (div_le_iff₀ _hβ_pos).mp hx2
+        nlinarith
+      have hmul := mul_lt_mul_of_pos_left hceil (add_pos _hα_pos hs)
+      nlinarith [hsA]
+    have hpowhalf : (p : ℝ) ^ α * (p : ℝ) ^ (1 - α) = (p : ℝ) := by
+      rw [← Real.rpow_add hpR]
+      convert Real.rpow_one (p : ℝ) using 2
+      ring
+    have hap2R : (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (p : ℝ) := by
+      calc
+        (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ 2 * ((A + 1) * (p : ℝ) ^ α) := by
+          exact mul_le_mul_of_nonneg_left haAx (by norm_num)
+        _ = (2 * (A + 1)) * (p : ℝ) ^ α := by ring
+        _ ≤ (p : ℝ) ^ (1 - α) * (p : ℝ) ^ α :=
+          mul_le_mul_of_nonneg_right hphalf hxpos.le
+        _ = (p : ℝ) := by rw [mul_comm, hpowhalf]
+    have hap2 : 2 * ⌈A * (p : ℝ) ^ α⌉₊ ≤ p := by exact_mod_cast hap2R
+    have hapHalf : ⌈A * (p : ℝ) ^ α⌉₊ ≤ p / 2 := by omega
+    exact ⟨hapHalf, hak, haPow⟩
+  have hshell (p a k : ℕ) (x : ℝ) (hp2 : 2 ≤ p) (ha0 : 0 < a)
+      (haHalf : a ≤ p / 2)
+      (hak : (α + s) * (a : ℝ) + β * x / 2 < (k : ℝ))
+      (haPow : (2 * a : ℝ) ≤ (p : ℝ) ^ (α + s)) :
+      (p : ℝ) ^ p * ((Real.exp (-2) / 2) * (p : ℝ) ^ (β * x / 2)) <
+        (p : ℝ) ^ k * ((p.choose a : ℝ) * (((p - 1 : ℕ) : ℝ) ^ (p - a))) := by
+    have hp1R : (1 : ℝ) < p := by exact_mod_cast (show 1 < p by omega)
+    have hpR : (0 : ℝ) < p := by linarith
+    have hap : a ≤ p := by omega
+    have hdenpos : 0 < (2 * a : ℝ) ^ a := by positivity
+    have hden : (2 * a : ℝ) ^ a < (p : ℝ) ^ ((k : ℝ) - β * x / 2) := by
+      calc
+        (2 * a : ℝ) ^ a ≤ ((p : ℝ) ^ (α + s)) ^ a :=
+          pow_le_pow_left₀ (by positivity) haPow a
+        _ = (p : ℝ) ^ ((α + s) * (a : ℝ)) := by
+          rw [← Real.rpow_natCast, ← Real.rpow_mul (by positivity)]
+        _ < (p : ℝ) ^ ((k : ℝ) - β * x / 2) := by
+          apply Real.rpow_lt_rpow_of_exponent_lt hp1R
+          linarith
+    have hquot : (p : ℝ) ^ (β * x / 2) <
+        (p : ℝ) ^ k / (2 * a : ℝ) ^ a := by
+      rw [lt_div_iff₀ hdenpos]
+      calc
+        (p : ℝ) ^ (β * x / 2) * (2 * a : ℝ) ^ a <
+            (p : ℝ) ^ (β * x / 2) * (p : ℝ) ^ ((k : ℝ) - β * x / 2) :=
+          mul_lt_mul_of_pos_left hden (Real.rpow_pos_of_pos hpR _)
+        _ = (p : ℝ) ^ k := by
+          rw [← Real.rpow_add hpR, ← Real.rpow_natCast]
+          congr 1
+          ring
+    have hchoose : (p : ℝ) ^ a / (2 * a : ℝ) ^ a ≤ (p.choose a : ℝ) := by
+      have hbase : (p : ℝ) / 2 ≤ (p + 1 - a : ℕ) := by
+        rw [Nat.cast_sub (by omega : a ≤ p + 1)]
+        push_cast
+        have ha2 : 2 * a ≤ p := by omega
+        have ha2R : (2 : ℝ) * a ≤ p := by exact_mod_cast ha2
+        nlinarith
+      have hnum : ((p : ℝ) / 2) ^ a ≤ ((p + 1 - a : ℕ) : ℝ) ^ a :=
+        pow_le_pow_left₀ (by positivity) hbase a
+      have hfac : ((a.factorial : ℕ) : ℝ) ≤ (a : ℝ) ^ a := by
+        exact_mod_cast Nat.factorial_le_pow a
+      have hraw : ((p : ℝ) / 2) ^ a / (a : ℝ) ^ a ≤ (p.choose a : ℝ) := by
+        calc
+          ((p : ℝ) / 2) ^ a / (a : ℝ) ^ a ≤
+              (((p + 1 - a : ℕ) : ℝ) ^ a) / (a.factorial : ℝ) := by
+            exact div_le_div₀ (by positivity) hnum (by exact_mod_cast Nat.factorial_pos a) hfac
+          _ ≤ (p.choose a : ℝ) := Nat.pow_le_choose a p
+      have hid : ((p : ℝ) / 2) ^ a / (a : ℝ) ^ a =
+          (p : ℝ) ^ a / (2 * a : ℝ) ^ a := by
+        rw [div_pow, mul_pow]
+        field_simp
+      rw [← hid]
+      exact hraw
+    have hfactor : Real.exp (-2) * (p : ℝ) ^ (p - a) ≤
+        ((p - 1 : ℕ) : ℝ) ^ (p - a) := by
+      have hp2R : (2 : ℝ) ≤ p := by exact_mod_cast hp2
+      have hp1subR : (0 : ℝ) < (p : ℝ) - 1 := by linarith
+      have hrpos : 0 < 1 - 1 / (p : ℝ) := by
+        rw [sub_pos, div_lt_one hpR]
+        linarith
+      have hrle : 1 - 1 / (p : ℝ) ≤ 1 := by
+        have : 0 ≤ 1 / (p : ℝ) := by positivity
+        linarith
+      have hlog0 := Real.one_sub_inv_le_log_of_pos hrpos
+      have hcalc : -2 ≤ (p : ℝ) * (1 - (1 - 1 / (p : ℝ))⁻¹) := by
+        field_simp
+        nlinarith
+      have hlog : -2 ≤ (p : ℝ) * Real.log (1 - 1 / (p : ℝ)) :=
+        hcalc.trans (mul_le_mul_of_nonneg_left hlog0 hpR.le)
+      have hratio : Real.exp (-2) ≤ (1 - 1 / (p : ℝ)) ^ p := by
+        calc
+          Real.exp (-2) ≤ Real.exp ((p : ℝ) * Real.log (1 - 1 / (p : ℝ))) :=
+            Real.exp_le_exp.mpr hlog
+          _ = Real.exp (Real.log ((1 - 1 / (p : ℝ)) ^ p)) := by rw [Real.log_pow]
+          _ = (1 - 1 / (p : ℝ)) ^ p := Real.exp_log (pow_pos hrpos p)
+      have hratio' : Real.exp (-2) ≤ (1 - 1 / (p : ℝ)) ^ (p - a) :=
+        hratio.trans (pow_le_pow_of_le_one hrpos.le hrle (Nat.sub_le p a))
+      calc
+        Real.exp (-2) * (p : ℝ) ^ (p - a) ≤
+            (1 - 1 / (p : ℝ)) ^ (p - a) * (p : ℝ) ^ (p - a) :=
+          mul_le_mul_of_nonneg_right hratio' (by positivity)
+        _ = ((1 - 1 / (p : ℝ)) * (p : ℝ)) ^ (p - a) := by rw [mul_pow]
+        _ = (((p - 1 : ℕ) : ℝ)) ^ (p - a) := by
+          congr 1
+          rw [Nat.cast_sub (by omega : 1 ≤ p)]
+          push_cast
+          field_simp
+    have hprod : Real.exp (-2) * ((p : ℝ) ^ p / (2 * a : ℝ) ^ a) ≤
+        (p.choose a : ℝ) * (((p - 1 : ℕ) : ℝ) ^ (p - a)) := by
+      have hm := mul_le_mul hchoose hfactor (by positivity) (by positivity)
+      calc
+        Real.exp (-2) * ((p : ℝ) ^ p / (2 * a : ℝ) ^ a) =
+            ((p : ℝ) ^ a / (2 * a : ℝ) ^ a) *
+              (Real.exp (-2) * (p : ℝ) ^ (p - a)) := by
+          field_simp
+          rw [← pow_add]
+          congr 2
+          omega
+        _ ≤ _ := hm
+    calc
+      (p : ℝ) ^ p * ((Real.exp (-2) / 2) * (p : ℝ) ^ (β * x / 2)) <
+          (p : ℝ) ^ p * (Real.exp (-2) *
+            ((p : ℝ) ^ k / (2 * a : ℝ) ^ a)) := by
+        apply mul_lt_mul_of_pos_left _ (by positivity)
+        have he : 0 < Real.exp (-2) := Real.exp_pos _
+        calc
+          Real.exp (-2) / 2 * (p : ℝ) ^ (β * x / 2) <
+              Real.exp (-2) * (p : ℝ) ^ (β * x / 2) := by
+            apply mul_lt_mul_of_pos_right _ (Real.rpow_pos_of_pos hpR _)
+            linarith
+          _ < Real.exp (-2) * ((p : ℝ) ^ k / (2 * a : ℝ) ^ a) :=
+            mul_lt_mul_of_pos_left hquot he
+      _ = (p : ℝ) ^ k *
+          (Real.exp (-2) * ((p : ℝ) ^ p / (2 * a : ℝ) ^ a)) := by ring
+      _ ≤ (p : ℝ) ^ k *
+          ((p.choose a : ℝ) * (((p - 1 : ℕ) : ℝ) ^ (p - a))) :=
+        mul_le_mul_of_nonneg_left hprod (by positivity)
+  rcases (Filter.eventually_atTop.1 hparams) with ⟨p₁, hp₁⟩
+  rcases (Filter.eventually_atTop.1 hcore) with ⟨p₂, hp₂⟩
+  refine ⟨Real.exp (-2) / 2, div_pos (Real.exp_pos _) (by norm_num), max p₁ p₂, ?_⟩
+  intro p _hpprime hp ι _ _ _ F _ _ _ hFp hιp
+  let x : ℝ := (p : ℝ) ^ α
+  let k : ℕ := Nat.floor x
+  let a : ℕ := ⌈A * x⌉₊
+  let δ : ℝ := 1 - A * (p : ℝ) ^ (α - 1)
+  obtain ⟨hp2, hkp, hap, hδ, hradius⟩ := hp₁ p (le_trans (le_max_left _ _) hp)
+  obtain ⟨haHalf, hak, haPow⟩ := hp₂ p (le_trans (le_max_right _ _) hp)
+  have hpR : (0 : ℝ) < p := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) hp2)
+  have hxpos : 0 < x := Real.rpow_pos_of_pos hpR _
+  have ha0 : 0 < a := by
+    have hax : 0 < A * x := mul_pos hA hxpos
+    have hceil := Nat.le_ceil (A * x)
+    exact_mod_cast (lt_of_lt_of_le hax hceil)
+  have hbig := hshell p a k x hp2 ha0 haHalf hak haPow
+  have hp1 : 1 ≤ p := by omega
+  let domain : ι ↪ F := (Fintype.equivOfCardEq (hιp.trans hFp.symm)).toEmbedding
+  let C := ReedSolomon.code domain k
+  have hdim : Module.finrank F C = k := by
+    apply ReedSolomon.dim_eq_deg_of_le
+    simpa only [hιp] using hkp
+  have hcardC : (C : Set (ι → F)).ncard = p ^ k := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]
+      rfl
+    calc
+      (C : Set (ι → F)).ncard = Nat.card C := h1
+      _ = Nat.card F ^ Module.finrank F C :=
+        Module.natCard_eq_pow_finrank (K := F) (V := C)
+      _ = p ^ k := by rw [Nat.card_eq_fintype_card, hFp, hdim]
+  have hvolterm : p.choose a * (p - 1) ^ (p - a) ≤ hammingBallVolume p δ p := by
+    unfold hammingBallVolume
+    rw [← Nat.choose_symm hap]
+    exact Finset.single_le_sum_of_canonicallyOrdered
+      (f := fun i => p.choose i * (p - 1) ^ i)
+      (Finset.mem_range.mpr (Nat.lt_succ_iff.mpr hradius))
+  let cnt : (ι → F) → ℕ := fun w => (closeCodewordsRel ((C : Set (ι → F))) w δ).ncard
+  have hsum : ∑ w : ι → F, cnt w = p ^ k * hammingBallVolume p δ p := by
+    dsimp [cnt]
+    rw [sum_ncard_closeCodewordsRel_eq C δ hδ, hcardC, hFp, hιp]
+  have hcardwords : Fintype.card (ι → F) = p ^ p := by
+    rw [Fintype.card_fun, hFp, hιp]
+  have hw : ∃ w : ι → F,
+      (Real.exp (-2) / 2) * (p : ℝ) ^ (x * β / 2) < (cnt w : ℝ) := by
+    by_contra hn
+    push Not at hn
+    have hsumle : (∑ w : ι → F, (cnt w : ℝ)) ≤
+        ∑ _w : ι → F, ((Real.exp (-2) / 2) * (p : ℝ) ^ (x * β / 2)) := by
+      exact Finset.sum_le_sum fun w _ => hn w
+    have hsumcast : (∑ w : ι → F, (cnt w : ℝ)) =
+        (p : ℝ) ^ k * (hammingBallVolume p δ p : ℝ) := by
+      exact_mod_cast hsum
+    rw [hsumcast, Finset.sum_const, Finset.card_univ, hcardwords, nsmul_eq_mul] at hsumle
+    push_cast at hsumle
+    have htermcast : ((p.choose a * (p - 1) ^ (p - a) : ℕ) : ℝ) ≤
+        (hammingBallVolume p δ p : ℝ) := by exact_mod_cast hvolterm
+    have hpnonneg : (0 : ℝ) ≤ p ^ k := by positivity
+    have hlow := mul_le_mul_of_nonneg_left htermcast hpnonneg
+    push_cast at hlow
+    have hbig' : (p : ℝ) ^ p *
+          ((Real.exp (-2) / 2) * (p : ℝ) ^ (x * β / 2)) <
+        (p : ℝ) ^ k * ((p.choose a : ℝ) * ((p - 1 : ℕ) : ℝ) ^ (p - a)) := by
+      simpa only [mul_comm x β] using hbig
+    exact (not_lt_of_ge (hlow.trans hsumle)) hbig'
+  obtain ⟨w, hw⟩ := hw
+  refine ⟨domain, w, ?_⟩
+  dsimp only
+  change ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) >
+    (Real.exp (-2) / 2) * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2)
+  simpa only [cnt, x] using hw
 
 /-- **High-rate Reed-Solomon codes cannot be list-decoded past `1/(j+1)`** ([ABF26] Theorem 3.14,
 after [JH01, Theorem 2]). Fix an integer `j ≥ 2`. For infinitely many prime powers `q` with
