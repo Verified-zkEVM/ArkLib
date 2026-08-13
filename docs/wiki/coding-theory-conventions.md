@@ -182,10 +182,9 @@ their conclusions — `|Λ(C, δ)| ≤ L` gives `ε_mca ≤ (L²δn + 1/η)/|F|`
 out-of-domain sampling pays `L(L-1)/2` — so an `ℕ∞` hypothesis would force two variables and a
 coupling, reintroducing one level up the very problem this layer removes.
 
-That all six predicate call sites already pass `ℝ≥0` for *both* arguments — three in
-`ProofSystem/Stir` here, three in `ProofSystem/Whir` on the branches where that development lives —
-is a consequence of these being the right carriers, not the reason for choosing them. It does mean
-the change costs no call-site edits.
+That the existing predicate call sites, in the STIR and WHIR developments, already pass `ℝ≥0` for
+*both* arguments is a consequence of these being the right carriers, not the reason for choosing
+them. It does mean the change cost no call-site edits.
 
 **Where this layer deliberately differs from the `ε`-error layer.** The proximity-error functions
 take `δ : I` (the closed unit interval), because their sources define them only there. `Lambda`
@@ -215,14 +214,14 @@ sources do arithmetic on it (see the shapes above); the propositions are what ge
 choice is not between two `Prop`s.
 
 **Whether to keep the predicate at all is an open question, deliberately answered "yes."**
-The maximally unified option is to delete `IsListDecodable` and spell its six hypotheses
-`Lambda (C i) (δ i) ≤ ⌊l i⌋₊`. It was weighed and not taken, and the reason is not that the
+The maximally unified option is to delete `IsListDecodable` and spell its hypotheses
+`Lambda (C i) (δ i) ≤ ⌊l i⌋₊` directly. It was weighed and not taken, and the reason is not that the
 existing hypotheses read that way. A bare inequality has no namespace: `h.mono` on
 `Lambda C r ≤ n` resolves to `LE.le.mono` and means something else, so every weakening step would
 have to be written out. The named predicate buys `IsListDecodable.mono` and `IsListDecodable.anti_radius`
 — the two moves every consumer makes — at zero mathematical cost, the predicate being
 *definitionally* the inequality. Nothing rests on the choice, so it stays revisitable; the cost of
-revisiting is editing those six hypotheses.
+revisiting is editing the hypotheses that mention it.
 
 **This layer lives in `namespace Code`, and that was a correction** (2026-08-13). It used to be
 `namespace ListDecodable` — a namespace naming a *property* while holding the objects: the point

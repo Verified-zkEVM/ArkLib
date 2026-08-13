@@ -15,61 +15,42 @@ import ArkLib.ToMathlib.Set.Finite
 # List Decodability
 
 The *point list* of a code `C` around a word `f` at radius `δ` is the set of codewords within
-relative Hamming distance `δ` of `f`. This file defines it and its size.
+relative Hamming distance `δ` of `f`. This file defines it, its size, and list decodability.
 
-The **size is the primitive**: `Lambda C δ : ℕ∞` is the maximised list size, and every statement
-about how large a point list is — an upper bound, a lower bound, or an equality between two codes'
-list sizes — is an (in)equality on it. `IsListDecodable` is a `def` whose body *is* one such
-inequality, not a parallel definition; keeping the two separate is what once let them disagree, a
-`Set.ncard`-based body being satisfied by an *infinite* point list. With `Set.encard` and `ℕ∞`,
-point-list finiteness is a consequence of a finite bound rather than a conjunct to be remembered.
+The size is the primitive: `Lambda C δ : ℕ∞` is the maximised point-list size, and
+`IsListDecodable` is a `def` whose body is the inequality `Lambda C r ≤ ⌊ℓ⌋₊`. The pointwise
+readings are lemmas rather than competing definitions. Design rationale for the carriers and for
+this arrangement is recorded in `docs/wiki/coding-theory-conventions.md`.
 
 ## Main definitions
 
-* `Code.closeCodewords`, `Code.closeCodewordsRel` — the codewords of `C`
-  inside a Hamming ball, at absolute and relative radius. Both are defined under
-  `open Classical in`, so they expose no decidability data; `mem_closeCodewordsRel_iff` is the
-  membership lemma that crosses to an ambient `[DecidableEq F]`, so no consumer needs to open the
-  definition. The absolute form is the relative one at a rescaled radius
-  (`closeCodewords_eq_closeCodewordsRel`), not a second notion.
-* `Code.Lambda` — the maximised list size `⨆ f, |closeCodewordsRel C f δ| : ℕ∞`.
-* `Code.IsListDecodable`, `Code.IsUniquelyDecodable` — `(r, ℓ)`-list decodability as
-  the `def` `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0`, and its `ℓ = 1` special case. Semireducible, and
-  that is load-bearing; see the `IsListDecodable` docstring.
+* `Code.closeCodewords`, `Code.closeCodewordsRel` — the codewords of `C` inside a Hamming ball, at
+  absolute and relative radius. The absolute form is the relative one at a rescaled radius
+  (`closeCodewords_eq_closeCodewordsRel`).
+* `Code.Lambda` — the maximised point-list size, `⨆ f, (closeCodewordsRel C f δ).encard`.
+* `Code.IsListDecodable`, `Code.IsUniquelyDecodable` — `(r, ℓ)`-list decodability, and its `ℓ = 1`
+  special case.
 
 ## Main statements
 
-* `Code.Lambda_le_of_forall_finset_card_le` — the primitive way to bound the size: a
-  uniform bound on the *finite subsets* of the point lists, which is the shape a counting
-  argument produces. `isListDecodable_of_forall_finset_card_le` is its real-bound form, and
-  `Lambda_lt_of_forall_finset_card_lt` its strict one, for the `|Λ(C, δ)| < |F|` statements.
-* `Code.isListDecodable_iff_forall_finset_card_le` — the same finite-subset reading as an
-  *equivalence*, so list decodability can be consumed in that shape as well as established in it;
-  `Code.IsListDecodable.finset_card_le` is its forward half, available as dot notation.
-* `Code.finite_closeCodewordsRel_of_Lambda_le` — finiteness as a consequence.
-* `Code.exists_encard_eq_Lambda`, `exists_encard_eq_Lambda_of_finite` — the supremum is
-  attained, so a proof may *choose* a maximising word, as [ABF26] Lemma 6.12 does.
-* `Code.Lambda_le_iff_forall_encard_le`, `Lambda_le_iff_forall_ncard_le`,
-  `isListDecodable_iff_forall_ncard_le` — the pointwise characterisations, as lemmas rather than a
-  competing definition, so they cannot drift.
+* `Code.Lambda_le_of_forall_finset_card_le`, `Code.Lambda_lt_of_forall_finset_card_lt` — bounding
+  the size by a uniform bound on the finite subsets of the point lists, loosely and strictly.
+* `Code.isListDecodable_iff_forall_finset_card_le`, `Code.isListDecodable_iff_forall_ncard_le`,
+  `Code.Lambda_le_iff_forall_encard_le`, `Code.Lambda_le_iff_forall_ncard_le` — the pointwise
+  characterisations.
+* `Code.finite_closeCodewordsRel_of_Lambda_le` — a finite bound implies the point lists are finite.
+* `Code.exists_encard_eq_Lambda`, `Code.exists_encard_eq_Lambda_of_finite` — the supremum is
+  attained, so a proof may choose a maximising word.
 * `Code.encard_closeCodewordsRel_le_Lambda`,
-  `Code.encard_le_Lambda_of_subset_closeCodewordsRel` — the two handles for *lower*
-  bounds on the list size, and for bounding any list contained in a point list (a derived list,
-  such as a block-relative one, therefore needs no `Lambda` of its own).
-* `Code.isListDecodable_iff_Lambda_le`, `isListDecodable_natCast_iff`,
-  `isUniquelyDecodable_iff_Lambda_le` — the definitional unfoldings, and the shape at a natural
-  bound, which is what combinatorial list-size theorems produce.
-* `Code.isUniquelyDecodable_iff_subsingleton` — unique decodability really is "at most one
-  close codeword".
-* `Code.isUniquelyDecodable_relativeUniqueDecodingRadius` — the `ℓ = 1` anchor, identifying
-  this layer's unique decodability with `Code.uniqueDecodingRadius` and
-  `Code.eq_of_le_uniqueDecodingRadius`, so the two accounts of unique decoding are one.
-* `Code.isListDecodable_iff_toENNReal_le_ofReal` — the one boundary at which real-valued
-  bounds, such as the Johnson family's `ENNReal.ofReal` shape, meet the integral `Lambda`.
-* `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius` — monotone in the
-  list-size bound, antitone in the radius.
-* `Code.Lambda_mono`, `Lambda_le_ncard`, `Lambda_le_card`, `Lambda_ne_top` — basic
-  algebra of `Lambda`.
+  `Code.encard_le_Lambda_of_subset_closeCodewordsRel` — bounding a point list, or any subset of
+  one, by the maximised size.
+* `Code.isUniquelyDecodable_iff_subsingleton`,
+  `Code.isUniquelyDecodable_relativeUniqueDecodingRadius` — unique decodability as "at most one
+  close codeword", and its agreement with `Code.uniqueDecodingRadius`.
+* `Code.isListDecodable_iff_toENNReal_le_ofReal` — transfer between a real-valued bound and the
+  integral `Lambda`.
+* `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius`, `Code.Lambda_mono` — monotone in
+  the list-size bound, antitone in the radius.
 
 ## References
 
@@ -103,14 +84,12 @@ Note that this is exactly `Λ (C, y, r)` from [ACFY24] and ` List (C, y, r)` fro
 def closeCodewordsRel (C : Set (ι → F)) (y : ι → F) (r : ℝ) : Set (ι → F) :=
   {c | c ∈ C ∧ c ∈ Code.relHammingBall y r}
 
-/-- **Membership in the point list, at whatever `DecidableEq F` is ambient.**
+/-- Membership in the point list, stated at an ambient `[DecidableEq F]`.
 
 `closeCodewordsRel` is defined under `open Classical in`, so its unfolding mentions
-`Classical.propDecidable`. A consumer working under an ambient `[DecidableEq F]` — which is the
-normal situation for this layer — therefore has two instances that are definitionally but not
-syntactically equal, and neither `simp` nor a direct rewrite with `Code.mem_relHammingBall_iff`
-crosses between them. `hammingDist` does not depend on the choice, so the crossing is sound; this
-lemma performs it once so that no consumer has to open the definition to do it again. -/
+`Classical.propDecidable`; that instance and an ambient one are definitionally but not syntactically
+equal, so neither `simp` nor a rewrite with `Code.mem_relHammingBall_iff` crosses between them. Use
+this lemma rather than unfolding the definition. -/
 lemma mem_closeCodewordsRel_iff [DecidableEq F] {C : Set (ι → F)} {y c : ι → F} {r : ℝ} :
     c ∈ closeCodewordsRel C y r ↔ c ∈ C ∧ (δᵣ(y, c) : ℝ) ≤ r := by
   constructor
@@ -123,13 +102,8 @@ lemma mem_closeCodewordsRel_iff [DecidableEq F] {C : Set (ι → F)} {y c : ι �
     convert hd using 2
     congr
 
-/-- The absolute-radius point list is the relative one at the rescaled radius `r / n`, relative
-Hamming distance being `Δ₀ / n` for `n = |ι|`.
-
-So `closeCodewords` is a spelling of `closeCodewordsRel`, not a parallel notion: it needs no list
-size of its own, and a bound on it is a `Lambda` bound after rewriting with this lemma. [ABF26]
-Definition 2.8 parameterises the point list by a relative radius, which is why `Lambda` is defined
-there.
+/-- The absolute-radius point list is the relative one at the rescaled radius `r / n`, for
+`n = |ι|`. So a bound on `closeCodewords` is a `Lambda` bound after rewriting with this lemma.
 
 No hypothesis on `ι`: when it is empty both sides are all of `C`, the radius on the right being
 `r / 0 = 0` and every distance being `0`. -/
@@ -149,44 +123,19 @@ lemma closeCodewords_eq_closeCodewordsRel (C : Set (ι → F)) (y : ι → F) (r
 
 /-! ## The maximised list size -/
 
-/-- The maximised list size of `C` at radius `δ`: the supremum over words `f` of the
-cardinality of the point list `closeCodewordsRel C f δ`.
+/-- The maximised point-list size of `C` at radius `δ`: the supremum over words `f` of the
+cardinality of `closeCodewordsRel C f δ`.
 
-This is `[ABF26]`'s `|Λ(C, δ)|` — the *size*, not the list. The list itself is `closeCodewordsRel`,
-which Definition 2.8 writes `Λ(C, δ, f)`; the paper's §1 uses the bare `Λ(C, δ)` for the maximised
-size, as here. Worth stating, because `[ACFY24]` and `[ACFY24stir]` use `Λ` for the *list*.
+This is `[ABF26]`'s `|Λ(C, δ)|`, the *size* rather than the list; note that `[ACFY24]` and
+`[ACFY24stir]` write `Λ` for the list itself, which here is `closeCodewordsRel`.
 
-**Why `ℕ∞`.** A list size is a cardinal, and the carrier is load-bearing twice over. Integrality
-makes flooring a real bound an *equivalence*, so a real-valued Johnson bound is recorded without
-loss. And `⊤` records an infinite point list honestly, where `Set.ncard` would report `0` — so a
-bound `Lambda C δ ≤ n` cannot be established by an infinite list, and finiteness is a
-*consequence* (`finite_closeCodewordsRel_of_Lambda_le`) rather than a side condition.
+Being `ℕ∞`-valued, an infinite point list contributes `⊤` rather than the `0` that `Set.ncard`
+would give, so a finite bound implies finiteness rather than assuming it
+(`finite_closeCodewordsRel_of_Lambda_le`).
 
-**Why the radius is `ℝ`, unrestricted.** Every radius the literature names is an *arithmetic
-expression* — `1 - √ρ - η`, `ℓ/(ℓ+1) · (1 - ρ - η)`, a Johnson radius — and none of them is
-constrained to `[0, 1]`, or even to `ℝ≥0`, by the mathematics that produces it. Narrowing the
-carrier does not make those expressions land in range; it only moves the obligation, and both ways
-of discharging it are worse than the total statement:
-
-* *Truncate.* At `δ < 0` the point list is empty, but the radius-`0` point list is `{f}` — so a
-  bound established for the empty list would be asserted of a singleton. The statement changes
-  meaning, silently, in a regime that is reachable rather than hypothetical. Silent wrongness under
-  a total-looking statement is precisely the failure mode this file exists to remove.
-* *Guard.* Carry `0 ≤ 1 - √ρ - η` as a hypothesis wherever such a radius appears. That is a
-  hypothesis the mathematics does not need — the bound holds for every `η > 0`, trivially so once
-  the ball is empty — and importing hypotheses a statement does not need is the anti-pattern
-  recorded in `docs/wiki/coding-theory-conventions.md`.
-
-So a negative radius is not a degenerate case to exclude but the honest value of a total function:
-the ball is empty and `Lambda` is `0`. That the list-size *bound* moves the other way, to `ℝ≥0`, is
-not an inconsistency between the two arguments but a difference between the two objects — a bound
-is a cardinality, where negative is unsatisfiable, while a radius is a threshold on a total distance
-function, where negative is attained. See `IsListDecodable` for that side.
-
-Membership in `closeCodewordsRel C f δ` is `δᵣ(f, ·) ≤ δ`, and relative Hamming distance is
-`1/n`-quantised for `n = |ι|` (`relHammingDistRange`), so `Lambda C` is a step function of
-`δ`, constant on each cell `[k/n, (k+1)/n)`. An extremal "largest `δ`" is therefore only
-meaningful as an integer boundary index `k/n`, not as a real number. -/
+The radius is an unrestricted `ℝ`: `Lambda` is total in it, taking value `0` below `0` where the
+ball is empty. Since relative Hamming distance is `1/|ι|`-quantised (`relHammingDistRange`),
+`Lambda C` is a step function of `δ`, constant on each `[k/n, (k+1)/n)`. -/
 noncomputable def Lambda (C : Set (ι → F)) (δ : ℝ) : ℕ∞ :=
   ⨆ f : ι → F, (closeCodewordsRel C f δ).encard
 
@@ -195,11 +144,8 @@ lemma encard_closeCodewordsRel_le_Lambda (C : Set (ι → F)) (δ : ℝ) (f : ι
     (closeCodewordsRel C f δ).encard ≤ Lambda C δ :=
   le_iSup (fun g : ι → F => (closeCodewordsRel C g δ).encard) f
 
-/-- Any set contained in a point list is bounded by the maximised list size.
-
-This is what a *derived* list needs, and the reason none of them requires a `Lambda` of its own:
-`BlockRelDistance.listBlock_subset_listHamming` places WHIR's block-relative list inside a point
-list, and its size bound then follows from this lemma. -/
+/-- Any set contained in a point list is bounded by the maximised list size. This is what a list
+derived from a point list needs, so such a list requires no `Lambda` of its own. -/
 lemma encard_le_Lambda_of_subset_closeCodewordsRel {C : Set (ι → F)} {δ : ℝ} {f : ι → F}
     {S : Set (ι → F)} (hS : S ⊆ closeCodewordsRel C f δ) : S.encard ≤ Lambda C δ :=
   (Set.encard_mono hS).trans (encard_closeCodewordsRel_le_Lambda C δ f)
@@ -209,16 +155,11 @@ lemma Lambda_le_iff_forall_encard_le {C : Set (ι → F)} {δ : ℝ} {b : ℕ∞
     Lambda C δ ≤ b ↔ ∀ f : ι → F, (closeCodewordsRel C f δ).encard ≤ b :=
   iSup_le_iff
 
-/-- **The supremum is attained.** `Lambda` is defined as a `⨆`, and a supremum is in general not a
-maximum — but `[ABF26]` uses it as one: the proof of Lemma 6.12 begins by *choosing* a word at
-which the point list has size `|Λ(C, δ)|`. That step is available here whenever `Lambda` is finite,
-a bounded set of naturals having a greatest element, and this lemma is what makes it available
-without a hypothesis. Without it the choice would have to be re-derived inline, or — the real risk
-— imported as an assumption.
+/-- A finite `Lambda` is attained: some word's point list has exactly that size. So a proof may
+choose a maximising word, as `[ABF26]` Lemma 6.12 does, without assuming one exists.
 
-`Nonempty (ι → F)` is genuinely needed and not merely convenient: over an empty word space there is
-no `f` to choose, while `Lambda` is still `0`. It is implied by `Nonempty F`, and also holds
-whenever `ι` is empty. -/
+`Nonempty (ι → F)` is necessary, not merely convenient: over an empty word space there is no `f` to
+choose while `Lambda` is still `0`. -/
 theorem exists_encard_eq_Lambda [Nonempty (ι → F)] {C : Set (ι → F)} {δ : ℝ}
     (h : Lambda C δ ≠ ⊤) : ∃ f : ι → F, (closeCodewordsRel C f δ).encard = Lambda C δ := by
   by_contra hcontra
@@ -265,20 +206,11 @@ lemma Lambda_le_iff_forall_ncard_le {C : Set (ι → F)} {δ : ℝ} {n : ℕ} :
   · rw [← (h f).1.cast_ncard_eq]
     exact_mod_cast (h f).2
 
-/-- **The primitive way to bound `Lambda`: bound the finite subsets of the point lists.** If every
-finite set of codewords inside the radius-`δ` ball around `f` has at most `n` elements, uniformly
-in `f`, then `Lambda C δ ≤ n`.
+/-- If every finite set of codewords inside the radius-`δ` ball around `f` has at most `n`
+elements, uniformly in `f`, then `Lambda C δ ≤ n`. This is the shape a counting argument produces.
 
-This is the shape a list-decoding counting argument naturally produces: it fixes a finite family
-of close codewords and bounds its cardinality. Finiteness of the whole point list follows from the
-same hypothesis, by `Set.Finite.of_forall_finset_card_le`, so no finiteness of the alphabet is
-required.
-
-Prefer this over an `[Finite F]` variant taking a bare `ncard` bound. Such a variant would be
-*sound* — under a finite alphabet `ncard` cannot lie, so there is no vacuity to exploit — but it
-imports a hypothesis the statement does not need, and it lets a proof reach the conclusion without
-ever exhibiting the finiteness that list decoding is about. This lemma asks for the bound a
-counting argument already has. -/
+Point-list finiteness follows from the same hypothesis by
+`Set.finite_of_forall_finset_card_le`, so no finiteness of the alphabet is required. -/
 lemma Lambda_le_of_forall_finset_card_le {C : Set (ι → F)} {δ : ℝ} {n : ℕ}
     (h : ∀ (f : ι → F) (T : Finset (ι → F)), (∀ c ∈ T, c ∈ closeCodewordsRel C f δ) →
       T.card ≤ n) :
@@ -286,19 +218,16 @@ lemma Lambda_le_of_forall_finset_card_le {C : Set (ι → F)} {δ : ℝ} {n : �
   rw [Lambda_le_iff_forall_encard_le]
   intro f
   have hfin : (closeCodewordsRel C f δ).Finite :=
-    Set.Finite.of_forall_finset_card_le (ℓ := (n : ℝ))
-      fun T hT => by exact_mod_cast h f T fun c hc => hT hc
+    Set.finite_of_forall_finset_card_le (R := ℕ) fun T hT => h f T fun _ hc => hT hc
   rw [← hfin.cast_ncard_eq]
   exact_mod_cast (Set.ncard_eq_toFinset_card _ hfin) ▸
     h f hfin.toFinset fun c hc => hfin.mem_toFinset.mp hc
 
-/-- The **strict** companion to `Lambda_le_of_forall_finset_card_le`.
+/-- The strict companion to `Lambda_le_of_forall_finset_card_le`, for the `|Λ(C, δ)| < |F|` bounds
+of `[ABF26]`.
 
-`[ABF26]` states list-size bounds strictly as well as loosely — `|Λ(C, δ)| < |F|` is the shape of
-[BCHKS25] Theorem 1.9 and the hypothesis of Lemma 6.12 — and a counting argument that produces a
-strict bound on finite subsets should not have to weaken it to reach `Lambda`. `0 < n` is forced:
-`T = ∅` already gives `0 ≤ n`, so `T.card < 0` is unsatisfiable and the hypothesis would be vacuous
-at `n = 0` while the conclusion `Lambda C δ < 0` is false. -/
+`0 < n` is necessary: at `n = 0` the hypothesis is unsatisfiable (`T = ∅` gives `0 < 0`) while the
+conclusion `Lambda C δ < 0` is false. -/
 lemma Lambda_lt_of_forall_finset_card_lt {C : Set (ι → F)} {δ : ℝ} {n : ℕ} (hn : 0 < n)
     (h : ∀ (f : ι → F) (T : Finset (ι → F)), (∀ c ∈ T, c ∈ closeCodewordsRel C f δ) →
       T.card < n) :
@@ -320,67 +249,20 @@ lemma Lambda_mono {C : Set (ι → F)} {δ₁ δ₂ : ℝ} (h : δ₁ ≤ δ₂)
   refine iSup_mono fun f => ?_
   exact Set.encard_mono (closeCodewordsRel_subset_of_le h f)
 
-/-! ## List decodability
+/-! ## List decodability -/
 
-`IsListDecodable` is notation, not a second notion: its content is the inequality
-`Lambda C r ≤ ⌊ℓ⌋₊`, and `isListDecodable_iff_Lambda_le` is `Iff.rfl`. One definition to keep
-correct, no two notions to keep in sync — while the literature-shaped name still reads better in
-a hypothesis list than the unfolded inequality.
+/-- A code `C` is `(r, ℓ)`-**list decodable** if every point list at relative radius `r` has at
+most `ℓ` codewords, that is, `Lambda C r ≤ ⌊ℓ⌋₊`.
 
-**Why keep a named predicate at all.** The maximally unified option is to have none: delete it and
-spell its consumers' hypotheses `Lambda (C i) (δ i) ≤ ⌊l i⌋₊` directly. That was weighed and not
-taken — not because the existing hypotheses read that way, but because a bare inequality has no
-namespace: `h.mono` on `Lambda C r ≤ n` resolves to `LE.le.mono` and means something else. The name
-buys `IsListDecodable.mono` and `IsListDecodable.anti_radius` at zero mathematical cost, the
-predicate being *definitionally* the inequality, so nothing rests on the choice and it stays
-revisitable —
-the cost is editing its six hypotheses, three in `ProofSystem/Stir` here and three in
-`ProofSystem/Whir` on the branches where that development lives. The naming question for this
-layer, including why the *namespace* is the part that should eventually change and when, is
-recorded once in `docs/wiki/coding-theory-conventions.md` rather than restated here.
--/
+The bound is `ℝ≥0`-valued because the theorems that consume such a hypothesis reuse the same bound
+as a number in their conclusions. Flooring loses nothing, `Lambda` being integer-valued
+(`isListDecodable_iff_forall_ncard_le`), and point-list finiteness is implied rather than asserted.
 
-/-- A code `C` is `(r, ℓ)`-**list decodable**: every point list at relative radius `r` has at most
-`ℓ` codewords, that is `Lambda C r ≤ ℓ`.
-
-**Why the bound is real-valued at all, rather than `ℕ∞`.** Because a list-decoding hypothesis is
-never used alone. The theorems that consume it put the *same* bound into the hypothesis and into
-the conclusion's arithmetic: `|Λ(C, δ)| ≤ L` gives `ε_mca(C, 1 - √(1-δ+η)) ≤ (L²·δn + 1/η)/|F|`
-([GCXK25] Theorem 3, via [ABF26]), and STIR's out-of-domain sampling pays `L(L-1)/2`. Stating the
-hypothesis at `ℕ∞` would force every such theorem to carry two variables and a coupling between
-them — reintroducing, one level up, exactly the two-objects-to-keep-in-sync problem this file
-removes. The bound has to be usable as a number.
-
-**And `ℝ≥0` rather than `ℝ`,** because a negative bound is not a weaker statement but an
-unsatisfiable one: `(ncard : ℝ) ≤ ℓ < 0` has no models, so the narrower carrier loses no statement
-worth making, while it drops the `0 ≤ ℓ` side condition from every transfer lemma. Admitting `ℝ`
-also splits the two readings, `⌊ℓ⌋₊ = 0` saying every point list is empty where `(ncard : ℝ) ≤ ℓ`
-says nothing is possible. That the existing call sites already pass `ℝ≥0` is a consequence of this,
-not the reason for it.
-
-**Proving a `IsListDecodable` goal.** `exact`, `refine` and `apply` unify at default transparency,
-so they see straight through to the underlying `Lambda … ≤ …` — no bridge lemma is needed. `simp`
-and `rw` match at *reducible* transparency and so leave it folded, which is what keeps goals
-readable; start from `refine Lambda_le_iff_forall_encard_le.mpr ?_` rather than
-`rw [Lambda_le_iff_forall_encard_le]` when you want the pointwise form.
-
-**`def`, not `abbrev`, and the difference is not cosmetic.** As an `abbrev` this is *reducible*,
-and then Mathlib's `@[simp] ge_iff_le` — an `Iff.rfl` whose left-hand side is a bare `GE.ge`
-application — unifies with the whole folded term and `simp` silently unfolds it, all the way to
-`WithBot.LE` on `ℕ∞`. Two costs: goals become unreadable, and `IsListDecodable.mono` becomes
-unreachable, since dot notation then looks for `WithBot.LE.mono`. Note this is specific to a
-`≤`-shaped body: an `abbrev` whose body is a `∀` is not affected. Downstream STIR/WHIR proofs are
-`simp`-heavy, so semireducibility is load-bearing here.
-
-**The floor has two spellings.** `ℝ≥0` carries its own (noncomputable) `FloorSemiring`, inherited
-from the subtype, so `⌊ℓ⌋₊` and `⌊(ℓ : ℝ)⌋₊` both elaborate and are definitionally equal — but not
-syntactically, so `rw` does not cross between them. This definition uses `⌊ℓ⌋₊`, the spelling
-natural to the type; a caller arriving with the coerced form crosses with `norm_cast`, Mathlib's
-`Nonneg.nat_floor_coe` being tagged `@[norm_cast]`.
-
-**Flooring at the definition is lossless**, `Lambda` being integer-valued: see
-`isListDecodable_iff_forall_ncard_le`. Point-list finiteness is likewise implied rather than
-asserted. -/
+Kept a `def` rather than an `abbrev`: as an `abbrev` it is reducible, and `simp` then unfolds the
+`≤`-shaped body through `ge_iff_le` down to `WithBot.LE`, which mangles goals and makes
+`IsListDecodable.mono` unreachable by dot notation. `exact`, `refine` and `apply` still see through
+to the `Lambda` inequality, so no bridge lemma is needed to prove one; `simp` and `rw` need
+`isListDecodable_iff_Lambda_le`. -/
 def IsListDecodable (C : Set (ι → F)) (r : ℝ) (ℓ : ℝ≥0) : Prop :=
   Lambda C r ≤ (⌊ℓ⌋₊ : ℕ∞)
 
@@ -437,17 +319,12 @@ lemma isUniquelyDecodable_iff_subsingleton {C : Set (ι → F)} {r : ℝ} :
   rw [isUniquelyDecodable_iff_Lambda_le, Lambda_le_iff_forall_encard_le]
   simp only [Set.encard_le_one_iff_subsingleton]
 
-/-- **Unique decoding is the `ℓ = 1` case, and this connects the two notions of it.** Every code is
-uniquely decodable at its relative unique-decoding radius — which is exactly what
-`Code.eq_of_le_uniqueDecodingRadius` says, phrased in the list-decoding layer.
+/-- Every code is uniquely decodable at its relative unique-decoding radius. This is
+`Code.eq_of_le_uniqueDecodingRadius` phrased in the list-decoding layer, identifying
+`Code.uniqueDecodingRadius` with the `ℓ = 1` case of list decodability.
 
-Without this, `Code.uniqueDecodingRadius` (used by the `ProximityGap` developments) and
-`IsUniquelyDecodable` would be two unconnected accounts of the same notion — the situation this file
-exists to avoid. [ABF26] introduces the list explicitly as the extension of unique decoding from
-`δ_min/2` to an arbitrary radius, so the two belong to one framework.
-
-No hypothesis on `ι`: when it is empty the whole word space `ι → F` is the singleton containing the
-empty function, so every point list is a subsingleton outright. -/
+No hypothesis on `ι`: when it is empty the word space `ι → F` is a singleton, so every point list
+is a subsingleton outright. -/
 theorem isUniquelyDecodable_relativeUniqueDecodingRadius [DecidableEq F]
     (C : Set (ι → F)) : IsUniquelyDecodable C (Code.relativeUniqueDecodingRadius C : ℝ) := by
   refine isUniquelyDecodable_iff_subsingleton.mpr fun y c hc c' hc' => ?_
@@ -492,14 +369,9 @@ lemma isListDecodable_of_forall_finset_card_le {C : Set (ι → F)} {r : ℝ} {�
     IsListDecodable C r ℓ :=
   Lambda_le_of_forall_finset_card_le fun f T hT => Nat.le_floor (h f T hT)
 
-/-- **Using a list-decodability hypothesis on a concrete finite family.** The converse of
-`isListDecodable_of_forall_finset_card_le`: any `Finset` of codewords inside the radius-`r` ball
-around `y` has at most `ℓ` elements.
-
-This is the direction a proof needs when list decodability is a *hypothesis* rather than the goal,
-and it is stated in the namespace so that dot notation works — `h.finset_card_le y T hT`. Without
-it, a consumer has to route through `isListDecodable_iff_forall_ncard_le` and carry the finiteness
-witness by hand, which is friction with no mathematical content. -/
+/-- Any `Finset` of codewords inside the radius-`r` ball around `y` has at most `ℓ` elements. The
+converse of `isListDecodable_of_forall_finset_card_le`, for use when list decodability is a
+hypothesis rather than the goal. -/
 lemma IsListDecodable.finset_card_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ≥0}
     (h : IsListDecodable C r ℓ) (y : ι → F) (T : Finset (ι → F))
     (hT : ∀ c ∈ T, c ∈ closeCodewordsRel C y r) : (T.card : ℝ) ≤ ℓ := by
@@ -507,27 +379,19 @@ lemma IsListDecodable.finset_card_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ�
   refine le_trans ?_ hcard
   exact_mod_cast Set.ncard_le_ncard (fun c hc => hT c hc) hfin
 
-/-- **The finite-subset characterisation of list decodability.** `C` is `(r, ℓ)`-list decodable
-exactly when every finite family of codewords inside a radius-`r` ball has at most `ℓ` elements.
+/-- `C` is `(r, ℓ)`-list decodable exactly when every finite family of codewords inside a
+radius-`r` ball has at most `ℓ` elements.
 
-This is the reading a counting argument produces *and* consumes, so it is worth having as an
-equivalence rather than only the constructor direction: `.mpr` is
-`isListDecodable_of_forall_finset_card_le` and `.mp` is `IsListDecodable.finset_card_le`.
-
-Note that this is a *characterisation*, not a second definition — the point-list finiteness that a
-`Set.ncard`-based formulation has to carry as a conjunct is a consequence here, so there is nothing
-to keep in sync. A caller preferring the subset spelling `↑T ⊆ closeCodewordsRel C y r` crosses to
-this one with `simp only [Set.subset_def, Finset.mem_coe]`. -/
+For the subset spelling `↑T ⊆ closeCodewordsRel C y r`, cross with
+`simp only [Set.subset_def, Finset.mem_coe]`. -/
 lemma isListDecodable_iff_forall_finset_card_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ≥0} :
     IsListDecodable C r ℓ ↔
       ∀ (y : ι → F) (T : Finset (ι → F)), (∀ c ∈ T, c ∈ closeCodewordsRel C y r) →
         (T.card : ℝ) ≤ ℓ :=
   ⟨fun h => h.finset_card_le, isListDecodable_of_forall_finset_card_le⟩
 
-/-- **The `ENNReal` transfer** — the one boundary at which real-valued bounds meet the integral
-`Lambda`. This is the shape the Johnson-family bounds produce, and the shape the `ε`-error layer
-(`ProximityGap`, and the Grand Challenge parameter carriers) states its list-size side conditions
-in, so both directions get used; see `isListDecodable_iff_toENNReal_le_ofReal`.
+/-- Transfer from an `ENNReal` bound on `Lambda`, which is the shape real-valued list-size bounds
+arrive in. See `isListDecodable_iff_toENNReal_le_ofReal` for the equivalence.
 
 No finiteness of the alphabet is needed: the hypothesis bounds every point list by
 `ENNReal.ofReal ℓ ≠ ⊤`, which forces it finite. -/
