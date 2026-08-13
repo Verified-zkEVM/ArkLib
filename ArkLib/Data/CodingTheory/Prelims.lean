@@ -46,7 +46,12 @@ variable {F : Type*}
 
 namespace Matrix
 
-/-- The set of column indices where two matrices differ. -/
+/-- The set of column indices where two matrices differ.
+
+This is the matrix-shaped form of `Code.disagreementCols`: reading a matrix as a word over
+the alphabet of its columns, `neqCols U V = Code.disagreementCols Uᵀ Vᵀ`. The bridge is
+`Matrix.neqCols_eq_disagreementCols_transpose`, stated downstream in `Basic/Distance.lean`.
+Prefer `Code.disagreementCols` for plain pointwise disagreement. -/
 def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' := {j | ∃ i : ι, V i j ≠ U i j}
 
 section

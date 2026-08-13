@@ -122,7 +122,9 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
 
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
-of each factor. This bridges `schwartz_zippel_counting` with the probability formulation. -/
+of each factor. This bridges `schwartz_zippel_counting` with the probability formulation.
+
+`prob_eval_zero_univ_le_div` below specializes it to full finite carriers. -/
 lemma prob_eval_zero_le_div
   {F : Type} [Field F]
   {s : ℕ}
@@ -141,6 +143,32 @@ lemma prob_eval_zero_le_div
     · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl
     · rw [Fintype.card_pi]
       aesop
+
+/-- Full-carrier specialization of `prob_eval_zero_le_div`, transported along the
+equivalence between a product of `Set.univ` subtypes and the ordinary function type. -/
+lemma prob_eval_zero_univ_le_div
+    {F : Type} [Field F] [Fintype F] {s d : ℕ}
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
+    Pr_{let x ←$ᵖ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card F := by
+  classical
+  let S : Fin s → Set F := fun _ => Set.univ
+  let e : (∀ i, ↑(S i)) ≃ (Fin s → F) :=
+    Equiv.piCongrRight fun _ => Equiv.Set.univ F
+  have h := prob_eval_zero_le_div (S := S) f hf d (Fintype.card F) hd
+    Fintype.card_pos (fun i => by simp [S])
+  have heval :
+      (fun x : ∀ i, ↑(S i) => MvPolynomial.eval (e x) f = 0) =
+        (fun x : ∀ i, ↑(S i) =>
+          MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0) := by
+    funext x
+    congr 2
+  rw [← ProbabilityTheory.Pr_uniform_equiv e
+    (fun x => MvPolynomial.eval x f = 0)]
+  change ((PMF.uniformOfFintype (∀ i, ↑(S i))).map
+    (fun x => MvPolynomial.eval (e x) f = 0)) True ≤ _
+  rw [heval]
+  exact h
 
 section ZeroCount
 

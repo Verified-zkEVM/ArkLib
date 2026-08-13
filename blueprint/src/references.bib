@@ -294,14 +294,6 @@
   url = {https://eprint.iacr.org/2023/323}
 }
 
-@misc{BLS12377,
-  author = {Alessandro Chiesa and Yuncong Hu and Mary Maller and Pratyush Mishra and Psi Vesely and Nicholas Ward},
-  title = {Marlin: Preprocessing zkSNARKs with Universal and Updatable SRS},
-  howpublished = {Cryptology {ePrint} Archive, Paper 2018/962},
-  year = {2018},
-  url = {https://eprint.iacr.org/2018/962}
-}
-
 @book{Lan02,
   author = {Lang, Serge},
   title = {Algebra},
@@ -318,13 +310,6 @@
   howpublished = {Cryptology {ePrint} Archive, Paper 2022/1216},
   year = {2022},
   url = {https://eprint.iacr.org/2022/1216}
-}
-
-@misc{STIR2005,
-  author = {Madhu Sudan},
-  title = {Reed-Solomon codes and polynomial reconstruction},
-  howpublished = {Available at https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf},
-  year = {2005}
 }
 
 @misc{BCGMMW18,
@@ -345,6 +330,7 @@
   pages={551--607},
   year={2008},
   publisher={SIAM},
+  doi={10.1137/050646445},
   url={https://people.csail.mit.edu/madhu/papers/2005/rspcpp-full.pdf}
 }
 
@@ -517,4 +503,97 @@
   pages        = {243--275},
   year         = {2024},
   publisher    = {Springer}
+}
+
+@misc{ABF26,
+      author = {Gal Arnon and Dan Boneh and Giacomo Fenzi},
+      title = {Open Problems in List Decoding and Correlated Agreement},
+      howpublished = {Manuscript, accompanying the Ethereum Foundation Proximity Prize},
+      year = {2026},
+      url = {https://proximityprize.org/}
+}
+
+@article{GK16,
+  title     = {Explicit subspace designs},
+  author    = {Guruswami, Venkatesan and Kopparty, Swastik},
+  journal   = {Combinatorica},
+  volume    = {36},
+  number    = {2},
+  pages     = {161--185},
+  year      = {2016},
+  publisher = {Springer}
+}
+
+@misc{GG25,
+      author = {Rohan Goyal and Venkatesan Guruswami},
+      title = {Optimal Proximity Gaps for Subspace-Design Codes and (Random) {Reed-Solomon} Codes},
+      howpublished = {Cryptology {ePrint} Archive, Paper 2025/2054},
+      year = {2025},
+      url = {https://eprint.iacr.org/2025/2054}
+}
+
+% NOTE: ABF26's own bibliography lists this key with the title "Combinatorial list-decoding of
+% Reed-Solomon codes beyond the Johnson radius", which is Shangguan-Tamo (STOC 2020), not this
+% paper. The authors, venue and page range there identify the Guruswami-Xing STOC '13 paper, whose
+% real title is used here (verified against the paper's own title page and dblp).
+@inproceedings{GX13,
+  title     = {List decoding {Reed-Solomon}, Algebraic-Geometric, and Gabidulin subcodes up to the
+               {Singleton} bound},
+  author    = {Guruswami, Venkatesan and Xing, Chaoping},
+  booktitle = {Proceedings of the 45th Annual ACM SIGACT Symposium on Theory of Computing},
+  series    = {STOC '13},
+  pages     = {843--852},
+  year      = {2013},
+  publisher = {ACM}
+}
+
+@article{GR08,
+  title   = {Explicit Codes Achieving List Decoding Capacity: Error-Correction With Optimal Redundancy},
+  author  = {Guruswami, Venkatesan and Rudra, Atri},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {54},
+  number  = {1},
+  pages   = {135--150},
+  year    = {2008}
+}
+
+@article{GW13,
+  title   = {Linear-Algebraic List Decoding for Variants of {Reed-Solomon} Codes},
+  author  = {Guruswami, Venkatesan and Wang, Carol},
+  journal = {IEEE Transactions on Information Theory},
+  volume  = {59},
+  number  = {6},
+  pages   = {3257--3268},
+  year    = {2013},
+  doi     = {10.1109/TIT.2013.2246813},
+  url     = {https://doi.org/10.1109/TIT.2013.2246813}
+}
+
+@article{KSY14,
+  title   = {High-rate codes with sublinear-time decoding},
+  author  = {Kopparty, Swastik and Saraf, Shubhangi and Yekhanin, Sergey},
+  journal = {Journal of the ACM},
+  volume  = {61},
+  number  = {5},
+  pages   = {28:1--28:20},
+  year    = {2014},
+  note    = {Preliminary version appeared in STOC '11}
+}
+
+@article{Joh62,
+  title   = {A new upper bound for error-correcting codes},
+  author  = {Johnson, Selmer M.},
+  journal = {IRE Transactions on Information Theory},
+  volume  = {8},
+  number  = {3},
+  pages   = {203--207},
+  year    = {1962}
+}
+
+@misc{BCFW25,
+      author = {Benedikt B\"unz and Alessandro Chiesa and Giacomo Fenzi and William Wang},
+      title = {Linear time accumulation schemes},
+      howpublished = {Cryptology {ePrint} Archive, Paper 2025/753},
+      year = {2025},
+      url = {https://eprint.iacr.org/2025/753}
 }
