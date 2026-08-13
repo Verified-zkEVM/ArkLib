@@ -154,12 +154,12 @@ difference decides how much of this subtree can actually shrink. Three categorie
 |---|---|---|
 | `IsMCAGenerator` / `mcaError` | same `Prop`, unconditionally | one definition; the other is `Iff.rfl` (done) |
 | the four `δ_ε_…CorrelatedAgreement…` definitions in `ProximityGap/Basic.lean` | one notion at four generators | one value + four bridge lemmas (open) |
-| `DG25/Basic.lean`'s two `…_Nat` variants | one notion, `ℕ`-valued `Δ₀` carrier | keep both, bridge them; the side condition is `δ·n ∈ ℕ` |
+| `DG25/Basic.lean`'s `e_ε_correlatedAgreementAffineLinesNat` and `δ_ε_multilinearCorrelatedAgreement_Nat` | one notion, `ℕ`-valued `Δ₀` carrier | keep both, bridge them; the side condition is `δ·n ∈ ℕ` |
 | `ε_pg` vs `ε_ca` vs `ε_mca` | different bad events, strictly ordered | keep three |
 | weighted CA | measure replaces cardinality counting | separate until someone checks |
 
-**The four CA definitions are pure duplicates.** Stripped of their binders, affine lines,
-multilinear, curves and affine spaces all read
+**Three of the four CA definitions are duplicates outright.** Stripped of their binders, affine
+lines, multilinear and curves all read
 
 ```
 ∀ u : WordStack A κ ι, Pr_{x ←$ᵖ S}[δᵣ(combination of u at x, C) ≤ δ] > t → jointAgreement C δ u
@@ -167,27 +167,38 @@ multilinear, curves and affine spaces all read
 
 with an identical consequent, differing only in the seed space `S`, the combination, and the
 threshold `t` — and "seed space plus combination" is exactly a `Generator S κ F`. Collapsing them
-is the `Lambda` move from #722: define the value once, guard-free per rule 2,
+is the `Lambda` move from #722: define the value once, guard-free per rule 2 and with the radius on
+`ℝ` per rule 5,
 
 ```lean
-noncomputable def caError (G : Generator S ℓ F) (C : Set (ι → A)) : ℝ≥0 → ENNReal :=
+noncomputable def caError (G : Generator S ℓ F) (C : Set (ι → A)) : ℝ → ENNReal :=
   fun δ => ⨆ U, Pr_{let x ←$ᵖ S}[δᵣ(fun k => ∑ j, G x j • U j k, C) ≤ δ ∧ ¬ jointAgreement C δ U]
 ```
 
-after which each of the four is a *lemma* at its own threshold — `caError (AffineLineGenerator F)
+after which each of the three is a *lemma* at its own threshold — `caError (AffineLineGenerator F)
 C δ ≤ ε`, `caError (curveGen k) C δ ≤ k · ε`, and so on — by the threshold equivalence below.
 `AffineLineGenerator` and `AffineSpaceGenerator` already exist; the curve generator is [BCGM25]'s
-`G_d(x) = (1, x, …, x^d)`. Affine spaces is the one that does not fall out immediately: it samples
-uniformly from the subspace *as a set* rather than from coefficients, and its own docstring records
-that the equivalence needs the coefficient map to have constant-size fibers. None of this is
-in-tree yet — `caError` above is a design note, not a declaration.
+`G_d(x) = (1, x, …, x^d)`.
+
+**Affine spaces is the exception, and the obstruction is typing, not effort.**
+`δ_ε_correlatedAgreementAffineSpaces` samples uniformly from
+`Affine.affineSubspaceAtOrigin (u 0) (Fin.tail u)` — a sample space that *depends on the family
+`u`*. A `⨆ U, Pr_{x ←$ᵖ S}[…]` cannot even be written when `S` varies with the bound `U`, so this
+one has to be restated over coefficients first, and its own docstring records that the restatement
+needs the coefficient map to have constant-size fibers. Do that before assuming it collapses.
+
+Two further caveats before anyone builds this: none of it is in-tree — `caError` above is a design
+note, not a declaration — and abf26's `epsCA` **(#505)** carries two radii (`δ_fld`, `δ_int`), so a
+single-radius `caError` subsumes the `Basic.lean` definitions but not that one.
 
 **The three notions are not duplicates.** [ABF26] Fact 4.5 orders them, `ε_pg ≤ ε_ca ≤ ε_mca`, and
-states that the reverse implications are unknown. `MCASeparation.separation` exhibits a strict gap
-between the middle and the right: over the repetition code in `(ZMod 2)²` at radius `1/2` joint
-agreement is unconditional, so the CA bad event is empty, while the MCA event fires. No bridge
-collapses these, and any helper written for one has to be checked against the others rather than
-assumed to transfer — which is what the two per-notion caveats below are recording.
+states that the reverse implications are unknown. `MCASeparation` exhibits a gap between the middle
+and the right: over the repetition code in `(ZMod 2)²` at radius `1/2` joint agreement is
+unconditional, so the CA bad event is empty, while the MCA event fires. That separates the two
+*definitions* — it is a small witness at `n = 2`, and says nothing about ABF26's quantitative open
+question. It is enough for the purpose here: no bridge collapses these, and any helper written for
+one has to be checked against the others rather than assumed to transfer, which is what the two
+per-notion caveats below are recording.
 
 ## The helper-lemma API
 
@@ -211,10 +222,12 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   the words jointly agree the event is empty, and if they do not it *is* `close`, so the two sides
   match at every `t`. MCA's bad event is larger — it ties one `T` to both clauses, and joint
   agreement may hold via a different set while the event still fires — so an `mcaError` bound
-  implies the threshold statement but is not implied by it. `MCASeparation.separation` is the
-  witness: over the repetition code in `(ZMod 2)²` at radius `1/2` every family jointly agrees, so
-  every threshold implication holds at every `t`, while the MCA event still fires. Only the CA form
-  subsumes a threshold-implication phrasing well enough to retire it as a definition
+  implies the threshold statement but is not implied by it.
+  `MCASeparation.no_threshold_characterisation` is the witness, and it quantifies over *every*
+  threshold-side predicate: over the repetition code in `(ZMod 2)²` at radius `1/2` joint agreement
+  is unconditional, so every threshold implication holds at every `t`, while
+  `MCASeparation.mcaError_rep_pos` puts the MCA error above `0`. Only the CA form subsumes a
+  threshold-implication phrasing well enough to retire it as a definition
 - `epsPG ≤ epsCA ≤ epsMCA` (ABF26 Fact 4.5)
 - `epsMCA = epsCA` below the unique-decoding radius (ABF26 Lemma 4.6)
 - `eps?(C^⋈k) ≤ k · eps?(C)` (ABF26 Lemma 4.7 / BCGM25 Lemma 10.1)
