@@ -391,7 +391,8 @@ Only consider the PR ready when:
 
 1. `./scripts/validate.sh` (with `--lint` / `--docs` as appropriate) succeeds.
 2. `ReadLints` is clean for every changed `.lean` file.
-3. Citation metadata is regenerated and consistent.
+3. Citation metadata is consistent, and `docs/kb/_generated/` matches the PR base exactly (step 3
+   — it is checked locally, never committed).
 4. The deleted-file sweep in step 4 comes back clean — no reference anywhere in the tree points at
    a path this branch removed. A green `validate.sh` does **not** imply this.
 5. You have reported any suggested improvements to this skill.
