@@ -31,7 +31,7 @@ noncomputable def mcaError (G : Generator S ℓ F) (MC : ModuleCode ι F A) : �
 def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
   ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
 -- so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`, and the `∀ U` reading that [BCGM25]
--- Definition 3.14 prints is recovered by the lemma `IsMCAGenerator.apply`
+-- Definition 3.14 prints is recovered by the lemma `IsMCAGenerator.prob_le`
 ```
 
 Five rules, each with a reason that has bitten us:
@@ -50,7 +50,7 @@ Five rules, each with a reason that has bitten us:
    The payoff is concrete. Stated at the value, the [BCGM25] transport lemmas lose `ε_mca` from
    their statements entirely — `mcaError_generatorByRightMul_le` (Lemma 4.1),
    `mcaError_projectedGenerator_le` (Cor 4.2) — and each is one application of a single shared
-   skeleton, `mcaError_le_of_event_implies`. Their `IsMCAGenerator` forms (`pseudoinverseGen`,
+   skeleton, `mcaError_le_of_forall_isMCA_imp`. Their `IsMCAGenerator` forms (`pseudoinverseGen`,
    `generatorSubset`) then follow in one line each. The only mathematical content left per lemma
    is its event implication.
 
@@ -109,15 +109,13 @@ way. What settles the closed reading on the bound is BCGM25 Def 3.14 together wi
 Grand Challenge quantifier; what settles totality on the value is that the sources contradict
 themselves, so faithfulness cannot decide it and Lean's ergonomics should.
 
-**The radius convention is now single.** `Code.Lambda`, `IsMCA` and `mcaError` all take `δ : ℝ`.
-The earlier reading — that `Λ`'s `ℝ` was an outlier to be pulled toward `I` — is wrong and is
-recorded as such in `coding-theory-conventions.md` ("Why the radius is `ℝ` while the bound is
-`ℝ≥0`"): `I` carries no `Sub`, so `1 − √ρ − η` cannot even be *formed* in it without a membership
-proof at every call site, and both ways of narrowing are worse than leaving it alone. That argument
-applies verbatim to the ε-error radius; the only thing `[0,1]` genuinely constrains is the *bound*,
-and that is where it now sits.
+**The radius convention is single across the two layers.** `Code.Lambda`, `IsMCA` and `mcaError`
+all take `δ : ℝ`. `I` carries no `Sub`, so a radius written `1 − √ρ − η` cannot be *formed* in it
+without a membership proof at every call site — see `coding-theory-conventions.md`, "Why the radius
+is `ℝ` while the bound is `ℝ≥0`". The only thing `[0,1]` genuinely constrains is the *bound*, and
+that is where it sits.
 
-Two things this buys, both checked rather than asserted:
+Two things this buys:
 
 - **The abf26 bridge is unconditional.** `epsMCA C δ = mcaError (AffineLineGenerator F) MC (δ : ℝ)`
   holds for **every** `δ : ℝ≥0` with no side condition. Under `δ : I` it required
@@ -126,9 +124,8 @@ Two things this buys, both checked rather than asserted:
   true, so the equivalence survives on the whole domain.
 - **`gridPt` stays total.** It can remain `ℕ → ℝ≥0` (or `ℕ → ℝ`) and compose with `mcaError`
   directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` **(#505)** already does.
-  The former note here — that `gridPt : ℕ → I` "cannot be made total" because `gridPt_le_one` needs
-  `k ≤ Fintype.card ι` — described a constraint that only existed because the value took `I`. It is
-  gone, not tracked.
+  A `gridPt : ℕ → I` would need `k ≤ Fintype.card ι` to land in the interval; nothing forces that
+  typing once the value it feeds is total.
 
 ## Naming
 
@@ -210,7 +207,7 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   **false** for `epsPG` and `epsCA'`. Done for MCA: `mcaError_mono` (BCGM25 Lemma 3.16)
 - `eps?_ne_top`, `eps?_le_one` — done for MCA: `mcaError_le_one`, `mcaError_ne_top`
 - `eps?_eq_of_floor_eq` — the `1/n` step-function fact (challenge radii are integer grid points).
-  Done for MCA: `mcaError_eq_of_floor_eq`, on the primitive `size_clause_iff_floor`
+  Done for MCA: `mcaError_eq_of_floor_eq`, on the primitive `le_card_iff_sub_card_le_floor`
 - `isXGenerator_iff_eps?_le` — definitional under rule 1 (`isMCAGenerator_iff_mcaError_le`)
 - `eps?_le_iff_threshold` — `eps? ≤ ↑t ↔ ∀ U, Pr > t → jointAgreement`, at an **arbitrary threshold
   `t`, not at `ε`**: the families do not share one. Affine lines and affine spaces use `> ε`, but
@@ -223,16 +220,16 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   match at every `t`. MCA's bad event is larger — it ties one `T` to both clauses, and joint
   agreement may hold via a different set while the event still fires — so an `mcaError` bound
   implies the threshold statement but is not implied by it.
-  `MCASeparation.no_threshold_characterisation` is the witness, and it quantifies over *every*
+  `MCASeparation.not_mcaError_le_iff_forall_jointAgreement` is the witness, and it quantifies over *every*
   threshold-side predicate: over the repetition code in `(ZMod 2)²` at radius `1/2` joint agreement
   is unconditional, so every threshold implication holds at every `t`, while
-  `MCASeparation.mcaError_rep_pos` puts the MCA error above `0`. Only the CA form subsumes a
+  `MCASeparation.mcaError_repetitionCode_pos` puts the MCA error above `0`. Only the CA form subsumes a
   threshold-implication phrasing well enough to retire it as a definition
 - `epsPG ≤ epsCA ≤ epsMCA` (ABF26 Fact 4.5)
 - `epsMCA = epsCA` below the unique-decoding radius (ABF26 Lemma 4.6)
 - `eps?(C^⋈k) ≤ k · eps?(C)` (ABF26 Lemma 4.7 / BCGM25 Lemma 10.1)
 - generator transport: pseudoinverse (BCGM25 L4.1), subset (Cor 4.2), tensor (L4.4), reindex — all
-  via `mcaError_le_of_event_implies`
+  via `mcaError_le_of_forall_isMCA_imp`
 - `δᵣ(MC^⋈κ) = δᵣ(MC)` — discharges interleaved hypotheses; **not yet proved in-tree**, so
   arguments that rely on it (e.g. the "free at BCGM25 Theorem 8.2" reading in
   `TensorGenerator.lean`) currently have no in-tree witness

@@ -122,17 +122,14 @@ lemma vecMul_eq_smul_sum {S : Type} (G : Generator S ℓ F) (x : S) (U : ℓ →
   funext k
   simp [Matrix.vecMul, dotProduct, smul_eq_mul]
 
-/-- **Regression pin for the module-alphabet generalisation.** At `A := F` — where
-`ModuleCode ι F F` and `LinearCode ι F` are the same type — `IsMCA` is *definitionally* the
-`Matrix.vecMul`-shaped predicate that this file carried before the alphabet generalisation.
-The proof is `Iff.rfl`, so any future edit that makes the generalisation merely propositional
-at the field alphabet will break this declaration rather than silently changing the meaning of
-every existing `F`-alphabet consumer.
+/-- At the field alphabet `A := F`, where `ModuleCode ι F F` and `LinearCode ι F` are the same
+type, `IsMCA` is the `Matrix.vecMul`-shaped predicate: the linear combination `∑ j, G x j • U j`
+is the matrix-vector product `G x ⬝ᵥ U`.
 
-Kept in-tree deliberately: the semantics-preservation claim is the load-bearing justification
-for generalising the definition in place instead of adding a parallel one, and a claim that
-lives only in a review note is not enforced by anything. -/
-theorem isMCA_iff_vecMul_form {S : Type} [Nonempty S] [Fintype S]
+The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit
+that weakens that breaks this declaration rather than silently changing what every field-alphabet
+consumer means. -/
+theorem isMCA_iff_vecMul {S : Type} [Nonempty S] [Fintype S]
     (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (δ : ℝ) :
     IsMCA G LC x U δ ↔
       ∃ T : Finset ι, (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
@@ -143,15 +140,15 @@ theorem isMCA_iff_vecMul_form {S : Type} [Nonempty S] [Fintype S]
 /-- The mutual correlated agreement error of a generator for a module code: the worst-case,
 over families `U`, probability of the MCA event.
 
-This is the primitive; `IsMCAGenerator` is *defined* as a bound on it. A value can be assigned to
-a code family rather than merely asserted to meet some bound, which is what the ABF26 `ε_mca` layer
-needs in order to be bridged to this definition instead of duplicating it, and it is the form in
-which the [BCGM25] transport lemmas are stated
-(`LinearTransformations.mcaError_le_of_event_implies` and its instances in `MCAGenerator.lean`).
-The supremum is over `ℓ → (ι → A)`, which is always inhabited, so this is never a degenerate
-`⨆` over an empty family.
+This is the primitive of the layer: `IsMCAGenerator` is defined as a bound on it, and the generator
+transport lemmas are stated on it directly, so they mention no error function at all. A value can
+be *assigned* to a code family rather than merely bounded, which is what a claim about a specific
+code needs.
 
-The radius is `ℝ`, matching `Code.Lambda` — see `IsMCA` for why. -/
+The supremum is over `ℓ → (ι → A)`, which is inhabited whenever `A` is — and `A` carries `Zero`
+— so this is never a degenerate `⨆` over an empty family.
+
+The radius is `ℝ`, matching `Code.Lambda`; see `IsMCA`. -/
 noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]
@@ -160,13 +157,13 @@ noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCo
 the generator satisfies the MCA condition is bounded above by `ε_mca`.
 Definition 3.14 [BCGM25].
 
-Defined *as* the `mcaError` bound rather than as a second `∀ U` quantification alongside it, so
-that the two cannot drift and `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`, `refine` and
-`apply` see through to the value inequality, and only `rw`/`simp` need the bridge. The pointwise
-reading — the bound at one individual `U` — is `IsMCAGenerator.apply`.
+The body is the `mcaError` bound, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`,
+`refine` and `apply` see through to the value inequality, and only `rw`/`simp` need the bridge.
+The pointwise reading — the bound at one individual family `U` — is `IsMCAGenerator.prob_le`.
 
-`[0,1]` binds here, on the bound, which is where [BCGM25] puts it; the value underneath is total
-in the radius. See `docs/wiki/proximity-error-conventions.md`. -/
+The radius is quantified over `I`, the closed unit interval: this is the bound, and the bound is
+where `[0,1]` belongs, while the value underneath is total in the radius. See
+`docs/wiki/proximity-error-conventions.md`. -/
 def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
   (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
   ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
@@ -181,7 +178,7 @@ lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Ty
 /-- The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the
 supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason
 the `∀ U` in [BCGM25] Definition 3.14 costs nothing after the definition is stated at the value. -/
-lemma IsMCAGenerator.apply {S : Type} [Nonempty S] [Fintype S] {A : Type}
+lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
     [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
     {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
     Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
@@ -202,12 +199,12 @@ lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMon
     mcaError G MC δ ≠ ⊤ :=
   ne_top_of_le_ne_top ENNReal.one_ne_top (mcaError_le_one G MC δ)
 
-/-- **Lemma 3.16 [BCGM25].** The MCA error is monotone in the distance: enlarging `δ` weakens the
-size clause `|T| ≥ n·(1 - δ)`, so more witness sets qualify and the bad event can only grow.
+/-- The MCA error is monotone in the distance: enlarging `δ` weakens the size clause
+`|T| ≥ n·(1 - δ)`, so more witness sets qualify and the bad event can only grow.
 
-[BCGM25] states this for MCA specifically, and it is MCA-specific: it holds here because the
-event carries no distance-*anti*monotone conjunct. Errors defined with a guard (`ε_pg`, `ε_ca'`)
-do carry one and are not monotone — see `docs/wiki/proximity-error-conventions.md`. -/
+Monotonicity is specific to this notion: it holds because the event carries no
+distance-*anti*monotone conjunct. Errors whose event carries a guard do, and are not monotone —
+see `docs/wiki/proximity-error-conventions.md`. -/
 lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ} (h : δ ≤ δ') :
     mcaError G MC δ ≤ mcaError G MC δ' := by
@@ -219,7 +216,7 @@ lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoi
 /-- The size clause `|T| ≥ n·(1 - δ)` is an *integer* condition on the complement: it says the
 `n - |T|` positions outside `T` number at most `⌊δ·n⌋`. Hence `δ` enters only through that
 floor. -/
-lemma size_clause_iff_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
+lemma le_card_iff_sub_card_le_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
     (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ↔
       Fintype.card ι - T.card ≤ ⌊δ * (Fintype.card ι : ℝ)⌋₊ := by
   have hTn : T.card ≤ Fintype.card ι := by
@@ -230,9 +227,8 @@ lemma size_clause_iff_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
 /-- **`mcaError` is a step function on the `1/n` grid.** Two radii with the same `⌊δ·n⌋` give the
 same error, because the size clause only ever compares `n - |T|` against that floor.
 
-This is what makes a challenge radius an *integer* grid index rather than a real number
-(cf. ABF26 Remark 4.2 and `ProximityGap.epsMCA_eq_of_floor_eq` on `feat/abf26-plan`): a claim
-stated at a real `δ` is either unattained or ambiguous, whereas one stated at `k/n` is neither. -/
+So a challenge radius is really an integer grid index: a claim stated at an arbitrary real `δ` is
+either unattained or ambiguous, whereas one stated at `k/n` is neither. -/
 lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ}
     (hδ : 0 ≤ δ) (hδ' : 0 ≤ δ')
@@ -240,7 +236,7 @@ lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [Ad
     mcaError G MC δ = mcaError G MC δ' := by
   refine iSup_congr fun U => Probability.Pr_congr fun x => ?_
   refine exists_congr fun T => and_congr_left fun _ => ?_
-  rw [size_clause_iff_floor T hδ, size_clause_iff_floor T hδ', h]
+  rw [le_card_iff_sub_card_le_floor T hδ, le_card_iff_sub_card_le_floor T hδ', h]
 
 /-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.

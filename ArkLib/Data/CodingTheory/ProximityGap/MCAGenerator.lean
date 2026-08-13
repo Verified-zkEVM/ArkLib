@@ -9,26 +9,34 @@ import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Probability.Instances
 
 /-!
-## Main Results
+# Preserving mutual correlated agreement under linear maps on the output
 
-- Lemma 4.1 [BCGM25] : Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `A` a matrix
-with a left  pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
-is an MCA generator with the same error `ε_mca` as `G`.
-- Corollary 4.2 [BCGM25] : Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
-subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
+Two ways of building a new generator from an old one leave the mutual correlated agreement error
+no larger: post-composing the output with a matrix that has a left pseudoinverse, and restricting
+the output to a subset of its coordinates.
 
-Each is stated twice. The primitive form is the inequality between MCA error *values*
-(`mcaError_generatorByRightMul_le`, `mcaError_projectedGenerator_le`), which mentions no error
-function at all; the `IsMCAGenerator` forms named in [BCGM25] follow from it by
-`isMCAGenerator_iff_mcaError_le` and transitivity. Both value forms are one application of the
-shared transport skeleton `mcaError_le_of_event_implies`, so the only mathematical content that
-lives in this file is the two event implications `isMCA_generatorByRightMul_of_isMCA` and
-`isMCA_projectedGenerator_of_isMCA`.
+Both are proved first at the error *value*, where no error function appears in the statement, and
+then in `IsMCAGenerator` form. Both value forms are one application of the shared transport
+skeleton `mcaError_le_of_forall_isMCA_imp`, whose hypothesis is an implication between bad events;
+so the only mathematical content in this file is the two event implications
+`isMCA_generatorByRightMul_of_isMCA` and `isMCA_projectedGenerator_of_isMCA`.
+
+## Main statements
+
+* `mcaError_le_of_forall_isMCA_imp` — the transport skeleton: an implication between bad events,
+  at the same radius and over the same seed space, bounds one error by the other.
+* `mcaError_generatorByRightMul_le`, `pseudoinverseGen` — right multiplication by a matrix with a
+  left pseudoinverse.
+* `mcaError_projectedGenerator_le`, `generatorSubset` — projection onto a subset of the output
+  coordinates.
+
+The correspondence to [BCGM25]'s numbered statements is in
+`docs/kb/audits/bcgm25-mca-generators.md`.
 
 ## References
 
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+    with Mutual Correlated Agreement*][BCGM25]
 -/
 
 namespace LinearTransformations
@@ -52,7 +60,7 @@ the tensor and reindexing arguments to come): the mathematical content of each i
 event implication, and everything else is this lemma. Stating it once at the *value* keeps `ε_mca`
 out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
 `isMCAGenerator_iff_mcaError_le` and transitivity. -/
-lemma mcaError_le_of_event_implies [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
+lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
     (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
     (h : ∀ (U : ℓ' → (ι → A)) (x : S), IsMCA G' MC x U δ → IsMCA G MC x (Φ U) δ) :
     mcaError G' MC δ ≤ mcaError G MC δ := by
@@ -62,14 +70,14 @@ lemma mcaError_le_of_event_implies [Nonempty S] (G : Generator S ℓ F) (G' : Ge
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and let `M` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
 generator defined by `x ↦ G(x) · M`.
-This is the generator `G'` inside Lemma 4.1 [BCGM25]. -/
+This is the generator whose error is bounded by `mcaError_generatorByRightMul_le`. -/
 def generatorByRightMul (G : Generator S ℓ F) (M : Matrix ℓ ℓ' F) : Generator S ℓ' F :=
     fun x ↦ Matrix.vecMul (G x) M
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and `κ` a subset of `ℓ`. Define a new generator
 `G' : S → 𝔽^κ`, which we call a projected generator, by restricting the output of `G` to the indices
 given by `κ`.
-This is the generator `G'` inside Corollary 4.2 [BCGM25] -/
+This is the generator whose error is bounded by `mcaError_projectedGenerator_le`. -/
 def projectedGenerator (G : Generator S ℓ F) (κ : Set ℓ) : Generator S κ F :=
     fun x ↦ Set.restrict κ (G x)
 
@@ -81,8 +89,8 @@ def matrixMulCodewords (M : Matrix ℓ ℓ' F) (U : ℓ' → (ι → A)) : ℓ �
 /-- If the MCA condition `IsMCA` holds for `generatorByRightMul G M`, then it holds for the
 original generator `G` with the word family transported by `M`.
 
-This is the mathematical content of Lemma 4.1 [BCGM25]; the error statements below are obtained
-from it by `mcaError_le_of_event_implies`. -/
+This event implication is the whole mathematical content of the bound; the error statements below
+follow from it by `mcaError_le_of_forall_isMCA_imp`. -/
 lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M)
     (U : ℓ' → (ι → A)) (γ : ℝ) (x : S) :
@@ -106,17 +114,17 @@ lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Ge
     simp [← Finset.sum_smul, ← Matrix.mul_apply, hB, Matrix.one_apply]
 
 /-- Right multiplication by a matrix with a left pseudoinverse does not increase the MCA error.
-Lemma 4.1 [BCGM25], at the error *value* — no `ε_mca` appears. -/
+Stated at the error *value*, so no error function appears. -/
 lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : ℝ) :
     mcaError (generatorByRightMul G M) MC γ ≤ mcaError G MC γ :=
-  mcaError_le_of_event_implies G (generatorByRightMul G M) MC γ (matrixMulCodewords M)
+  mcaError_le_of_forall_isMCA_imp G (generatorByRightMul G M) MC γ (matrixMulCodewords M)
     (fun U x h => isMCA_generatorByRightMul_of_isMCA G MC M hM U γ x h)
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `M` a matrix
 with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `M`
 is an MCA generator with the same error `ε_mca` as `G`.
-Lemma 4.1 [BCGM25], in `IsMCAGenerator` form. -/
+The `IsMCAGenerator` form of `mcaError_generatorByRightMul_le`. -/
 lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
   (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
   (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
@@ -148,16 +156,16 @@ lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G
     ⟨j, by rw [zeroExtend_val] ; assumption⟩⟩
 
 /-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
-error. Corollary 4.2 [BCGM25], at the error *value* — no `ε_mca` appears. -/
+error. Stated at the error *value*, so no error function appears. -/
 lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : ModuleCode ι F A)
     (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
     mcaError (projectedGenerator G κ) MC γ ≤ mcaError G MC γ :=
-  mcaError_le_of_event_implies G (projectedGenerator G κ) MC γ (zeroExtend κ)
+  mcaError_le_of_forall_isMCA_imp G (projectedGenerator G κ) MC γ (zeroExtend κ)
     (fun U x h => isMCA_projectedGenerator_of_isMCA MC G κ U γ x h)
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
 subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
-Corollary 4.2 [BCGM25], in `IsMCAGenerator` form. -/
+The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
 lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
   (MC : ModuleCode ι F A)
   (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
