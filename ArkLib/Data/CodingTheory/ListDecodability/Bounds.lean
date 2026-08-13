@@ -58,21 +58,41 @@ and "sufficiently large `n`". These are captured uniformly:
   exact rate, the equality is kept and the statement is vacuous at irrational `ρ` — as in the
   source, whose asymptotic form fixes `ρ` and quantifies over lengths realising it.
 
+## Where things live
+
+This file is the umbrella; the statements are in `Bounds/`.
+
+* `Bounds/Basic.lean` — the three counting identities everything else rests on.
+* `Bounds/Linear.lean` — bounds valid for every linear code: Elias volume and its entropy form, the
+  rate–radius arithmetic, the generalized Singleton bound, the large-alphabet barrier, random linear
+  codes.
+* `Bounds/ReedSolomon.lean` — the three Reed-Solomon separations, and the random-evaluation-domain
+  upper bound.
+* `Bounds/SubspaceDesign.lean` — [CZ25]'s upper bound, its two reformulations, and the folded-RS and
+  multiplicity-code corollaries, over the machinery in `Bounds/AgreementHypergraph.lean`.
+
 ## External admits
 
-Nine statements are admitted with a tagged `sorry`, never an `axiom`: the entropy-volume corollary,
-the generalized Singleton bound, the large-alphabet barrier, the random-linear-code bound, the
-random-evaluation-domain bound, the three Reed-Solomon separations, and the subspace-design theorem.
-Each admit's docstring carries the source statement verbatim, the variable map into ArkLib's
-vocabulary, and a note on every place the formalised statement differs from the printed one.
+Four statements are admitted with a tagged `sorry`, never an `axiom`: the large-alphabet barrier
+(`large_alphabet_lambda_lower`, [BDG24]/[AGL23]), the random-linear-code bound
+(`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
+(`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
+(`rs_random_domain_lambda_le`, [AGL24]). Each admit's docstring carries the source statement
+verbatim, the variable map into ArkLib's vocabulary, and a note on every place the formalised
+statement differs from the printed one.
 
-Everything else in this file is proved: six derivations from admitted statements
-(`random_linear_lambda_lower_exists`, `large_alphabet_card_ge_exp_of_inv_length`,
-`subspaceDesign_lambda_le_of_profile_le`, `subspaceDesign_lambda_le_of_eta`,
-`frs_lambda_le_capacity`, `um_lambda_le_capacity` — each therefore reachable-`sorryAx` and
-carrying no more information than its input), the volume/averaging lower bound
-`linear_lambda_ge_elias_volume`, the arithmetic half `linear_card_le_of_rate_radius` of the
-generalized Singleton bound, and three supporting counting lemmas.
+Two derivations inherit those admits and are therefore reachable-`sorryAx`, carrying no more
+information than their input: `random_linear_lambda_lower_exists` and
+`large_alphabet_card_ge_exp_of_inv_length`.
+
+Everything else is proved and axiom-clean, including the volume/averaging lower bound
+`linear_lambda_ge_elias_volume` and its entropy form `linear_lambda_ge_entropy_volume`, both halves
+of the generalized Singleton bound (`linear_card_le_of_rate_radius`,
+`linear_card_le_generalized_singleton`), the two prime-field Reed-Solomon separations
+(`rs_lambda_large_prime`, `rs_lambda_high_rate`), and — the deepest of them — [CZ25]'s
+subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
+means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
+and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
 
 Two source-side weakenings apply throughout and are not repeated on each declaration: [CZ25] and
 [AGL24] both state *average-radius* list-decodability, of which the plain `Λ` bound formalised here

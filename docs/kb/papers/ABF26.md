@@ -181,16 +181,20 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 
 - **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
   and relative-distance notions exist.
-- **§3 remainder.** Theorems 3.4–3.14 all have a Lean statement in
-  `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`; Definition 3.1 / Theorem 3.2 /
+- **§3 remainder.** Theorems 3.4–3.14 all have a Lean statement under
+  `ArkLib/Data/CodingTheory/ListDecodability/Bounds/`; Definition 3.1 / Theorem 3.2 /
   Corollary 3.3 (the Johnson family) are the pre-existing `Jqℓ` / `johnson_bound_lambda_le_ell` /
   `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.15 and 3.16 are absent.** What
   remains for 3.4–3.14 is *proof*, plus the fidelity gaps below.
   - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
-    argument) and the arithmetic half of Theorem 3.9 (`linear_card_le_of_rate_radius`).
-  - Admitted with the source statement in the docstring: Theorem 3.4, Corollary 3.8, Theorem 3.6,
-    Theorem 3.9, Theorem 3.10, Theorem 3.11, Theorems 3.12–3.14. Corollary 3.5 and the two `η`-forms
-    are *derived* from Theorem 3.4's admit, so they inherit it.
+    argument), both halves of Theorem 3.9, Corollary 3.8, Theorems 3.13 and 3.14, and — the deepest
+    of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
+    the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it. Five of
+    these landed together in one round of Aleph prover runs (ArkLib #724–#728).
+  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.10, Theorem 3.11,
+    Theorem 3.12. `large_alphabet_card_ge_exp_of_inv_length` and
+    `random_linear_lambda_lower_exists` are *derived* from Theorems 3.10 and 3.11, so they inherit
+    those admits.
   - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
     3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
     lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is unformalized and
