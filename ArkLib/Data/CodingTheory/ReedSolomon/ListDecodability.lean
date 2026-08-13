@@ -130,18 +130,9 @@ theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (h
   listDecodable (ReedSolomon.code domain m : Set (ι → F))
     (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)
     (1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ))) := by
-  intro y
-  constructor
-  ·  
-  rcases Set.finite_or_infinite
-      (closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
-        (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)) with hfin | hinf
-  · rw [Set.ncard_eq_toFinset_card _ hfin]
-    exact card_le_of_subset_closeCodewords domain hm hη y hfin.toFinset
-      fun c hc ↦ hfin.mem_toFinset.mp hc
-  · rw [hinf.ncard]
-    have hpos : 0 < (ReedSolomon.sqrtRate m domain : ℝ) := sqrtRate_pos hm (domain := domain)
-    simp only [Nat.cast_zero]
-    positivity
+  rw [listDecodable_iff_listDecodable']
+  intro y T hT
+  exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT hc
 
 end ReedSolomon
+
