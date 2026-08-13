@@ -35,7 +35,8 @@ distance `δ` of a given word, and their specializations to MDS and Reed-Solomon
 * `CodingTheory.rs_lambda_le_johnson_mds`, `CodingTheory.irs_lambda_le_johnson_mds`,
   `CodingTheory.frs_lambda_le_johnson_mds` — the same bound at Reed-Solomon, interleaved
   Reed-Solomon, and folded Reed-Solomon codes.
-* `CodingTheory.johnson_listDecodable` — the Johnson bound in the `IsListDecodable` shape.
+* `CodingTheory.johnson_isListDecodable`, `CodingTheory.johnson_isListDecodable_of_le` — the
+  Johnson bound in the `IsListDecodable` shape, and its weakening to any larger list budget.
 
 The alphabet-generic bound is proved from the absolute-distance Johnson bound of
 `JohnsonBound/Basic.lean`, with the very-low-rate regime — where the Johnson radicand turns
