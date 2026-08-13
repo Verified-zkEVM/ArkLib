@@ -149,6 +149,7 @@
   "Binius.FRIBinius.FullFRIBinius.fullOracleVerifier",
   "CodingTheory.frs_lambda_le_capacity",
   "CodingTheory.large_alphabet_lambda_lower",
+  "CodingTheory.linear_card_le_generalized_singleton",
   "CodingTheory.linear_lambda_ge_entropy_volume",
   "CodingTheory.random_linear_lambda_lower",
   "CodingTheory.random_linear_lambda_lower_exists",

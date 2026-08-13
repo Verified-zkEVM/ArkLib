@@ -198,8 +198,9 @@ home_page/            site assets and assembled website root
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
   results about them. Most of these bounds are deep external results carried as tagged `sorry`
-  admits with the source statement in the docstring; `linear_lambda_ge_elias_volume` and
-  `linear_card_le_generalized_singleton` are proved in-tree and axiom-clean.
+  admits with the source statement in the docstring. Proved in-tree and axiom-clean:
+  `linear_lambda_ge_elias_volume`, `linear_card_le_of_rate_radius` (the arithmetic half of the
+  generalized Singleton bound) and three supporting counting lemmas.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the

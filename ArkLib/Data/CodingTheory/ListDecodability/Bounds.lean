@@ -32,7 +32,8 @@ given relative radius. The two families answer opposite questions about the same
   (`rs_lambda_superpoly_extension`, `rs_lambda_large_prime`, `rs_lambda_high_rate`).
 * **Neither** is `linear_card_le_generalized_singleton`, which bounds `|C|` rather than a list and
   belongs to a third group with `large_alphabet_lambda_lower`: constraints on the *code* implied by
-  a list-size bound.
+  a list-size bound. Its arithmetic half, with no list-decoding premise at all, is
+  `linear_card_le_of_rate_radius`.
 
 Together they bracket the largest radius at which a code family can be list-decoded with a given
 list size — the quantity the Grand List Decoding Challenge of [ABF26] asks about.
@@ -60,24 +61,35 @@ and "sufficiently large `n`". These are captured uniformly:
 
 ## External admits
 
-Eight statements are admitted with a tagged `sorry`, never an `axiom`: the entropy-volume corollary,
-the large-alphabet barrier, the random-linear-code bound, the random-evaluation-domain bound, the
-three Reed-Solomon separations, and the subspace-design theorem. Each admit's docstring carries the
-source statement verbatim, the variable map into ArkLib's vocabulary, and a note on every place the
-formalised statement differs from the printed one. Everything else in this file — including the two
-derivations from admitted statements (`random_linear_lambda_lower_exists`, `frs_lambda_le_capacity`)
-and the two in-tree-proved bounds (`linear_lambda_ge_elias_volume`,
-`linear_card_le_generalized_singleton`) — is proved.
+Nine statements are admitted with a tagged `sorry`, never an `axiom`: the entropy-volume corollary,
+the generalized Singleton bound, the large-alphabet barrier, the random-linear-code bound, the
+random-evaluation-domain bound, the three Reed-Solomon separations, and the subspace-design theorem.
+Each admit's docstring carries the source statement verbatim, the variable map into ArkLib's
+vocabulary, and a note on every place the formalised statement differs from the printed one.
+
+Everything else in this file is proved: four derivations from admitted statements
+(`random_linear_lambda_lower_exists`, `subspaceDesign_lambda_le_of_profile_le`,
+`subspaceDesign_lambda_le_of_eta`, `frs_lambda_le_capacity` — each therefore reachable-`sorryAx` and
+carrying no more information than its input), the volume/averaging lower bound
+`linear_lambda_ge_elias_volume`, the arithmetic half `linear_card_le_of_rate_radius` of the
+generalized Singleton bound, and three supporting counting lemmas.
 
 Two source-side weakenings apply throughout and are not repeated on each declaration: [CZ25] and
 [AGL24] both state *average-radius* list-decodability, of which the plain `Λ` bound formalised here
 is a consequence; and where a source constructs a code, the Lean existentially binds it rather than
 reproducing the construction.
 
-One statement from [ABF26] §3 is deliberately absent: the algorithmic hardness barrier ([CW07])
-needs a computational-hardness framework ArkLib does not have — an adversary/advantage/running-time
-layer — and without one, a statement of it would be vacuous or would be about something other than
-hardness.
+Two statements from [ABF26] §3 are absent, one by decision and one not yet attempted.
+
+* The algorithmic hardness barrier (Theorem 3.16, [CW07]) is **deliberately** absent: it needs a
+  computational-hardness framework ArkLib does not have — an adversary/advantage/running-time
+  layer — and without one, a statement of it would be vacuous or would be about something other than
+  hardness.
+* Theorem 3.15, the [KKH26] asymptotic Reed-Solomon lower bound near minimum distance, is simply not
+  formalised. It postdates the cached [ABF26] build, which stops at Theorem 3.14 and numbers the
+  [CW07] barrier as 3.15; the numbering used throughout this file follows the current tex, in which
+  [KKH26] is 3.15 and [CW07] is 3.16. Its statement depends on the paper's appendix restatement of
+  [KKH26], also unformalised.
 
 ## References
 
@@ -89,7 +101,12 @@ hardness.
 * [ST20] Shangguan, Tamo. *Combinatorial list-decoding of Reed-Solomon codes beyond the Johnson
   radius*. 2020. Theorem 1.2, the generalized Singleton bound.
 * [BDG24] Brakensiek, Dhar, Gopi. *Improved field size bounds for higher order MDS codes*. IEEE
-  Trans. Inf. Theory 70(10), 2024. Corollary 1.7 and Theorem 1.8 give the `ℓ = 2` case.
+  Trans. Inf. Theory 70(10), 2024. Cited by [ABF26] at "Corollary 1.7, Thm 1.8" for the `ℓ = 2`
+  case. **Locator unverified:** in the arXiv version (2212.11262v2) those numbers are a statement
+  about MR tensor codes and an average-radius `LD-MDS(≤2)` corollary, and all of its items are
+  `ε`-free *exact*-achievement results rather than the `η`-parameterized form; the journal version
+  may renumber. Only [AGL23] visibly supports the `η`-form, of which [BDG24] is the `ε = 0`,
+  `ℓ = 2`, linear-MDS corner. Check the journal PDF before relying on these locators.
 * [AGL23] Alrabiah, Guruswami, Li. *AG codes have no list-decoding friends: approaching the
   generalized Singleton bound requires exponential alphabets*. arXiv:2308.13424, 2023. Generalizes
   [BDG24] to all `ℓ`; together they are the large-alphabet barrier.
@@ -313,42 +330,22 @@ theorem linear_lambda_ge_entropy_volume
       ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
   sorry -- external admit: the [MS77] Hamming-ball volume estimate.
 
-/-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
-[ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)`, and a linear code
-`C ⊆ F^n` of rate `ρ` with `|Λ(C, δ)| ≤ ℓ`:
+/-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
+Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,
 
-  `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}`
+  `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}` ,
 
-equivalently `δ ≤ ℓ/(ℓ+1) · (1-ρ)`.
+by `|C| = |F|^{dim C}` and `⌊(ℓ+1)/ℓ·δ·n⌋ ≤ n - dim C`.
 
-**Why the rate hypothesis `hδ_bound` is carried rather than derived.** [ST20] derives the
-rate–radius relation `δ ≤ ℓ/(ℓ+1)·(1-ρ)` *from* `ℓ`-list-decodability, but the list-decoding
-premise `_hΛ` alone does **not** give the cardinality conclusion: the ternary length-3 repetition
-code `C = {000, 111, 222}` over `𝔽₃` is `(δ = 1/2, ℓ = 1)`-list-decodable — its minimum distance
-is `3`, so the radius-`⌊δn⌋ = 1` balls are disjoint and `|Λ| ≤ 1` — yet
-`⌊(ℓ+1)/ℓ·δ·n⌋ = ⌊3⌋ = 3` forces the right-hand side to `3^0 = 1 < 3 = |C|`. The obstruction is
-floor/integer-radius quantisation: `_hΛ` does not pin `δ·n` to the lattice on which the pigeonhole
-exponent is meaningful. Carrying the equivalent rate–radius relation instead makes the cardinality
-bound a consequence of `|C| = |F|^{dim C}` and `⌊(ℓ+1)/ℓ·δ·n⌋ ≤ n - dim C`, which is what is
-proved here. `_hΛ` is retained to document the context in which `hδ_bound` arises — it, and the
-three range hypotheses, are genuinely unused by the proof.
-
-**So this covers less of [ST20] than it may appear.** [ST20]'s content is the *implication*
-`ℓ`-list-decodable ⇒ the rate–radius relation; what is proved here is the arithmetic step from that
-relation to the cardinality bound. The implication itself is formalized nowhere. [ST20] also states
-Theorem 1.2 with a factor `L` that drops for linear codes over `F_q` with `q > L`, and then adds
-"for ease of presentation, in what follows we always assume that the parameters of the code satisfy
-that `rn/L` is an integer, and therefore the floor operation in Theorem 1.2 can be removed" — that
-convention is exactly what [ABF26]'s printing drops, which is why the `𝔽₃` counterexample above
-bites. A source-faithful strengthening would hypothesise `∃ e : ℕ, δ * n = e` and *derive*
-`hδ_bound`. -/
-theorem linear_card_le_generalized_singleton
+This is deliberately *not* named for [ST20] Theorem 1.2: that theorem's content is the implication
+`ℓ`-list-decodable ⇒ the rate–radius relation, which is the admit
+`linear_card_le_generalized_singleton` below. Splitting the two keeps the proved part honest about
+what it proves — the arithmetic step, with no list-decoding premise at all. -/
+theorem linear_card_le_of_rate_radius
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
-    (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hℓ_pos : 0 < ℓ)
     (hδ_bound : δ ≤ (ℓ : ℝ) / (ℓ + 1) *
-      (1 - (Module.finrank F C : ℝ) / Fintype.card ι))
-    (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
+      (1 - (Module.finrank F C : ℝ) / Fintype.card ι)) :
     (Set.ncard ((C : Set (ι → F))) : ℝ)
       ≤ (Fintype.card F : ℝ) ^
           ((Fintype.card ι : ℝ)
@@ -403,6 +400,45 @@ theorem linear_card_le_generalized_singleton
     _ ≤ (q : ℝ) ^ ((n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ)) :=
         Real.rpow_le_rpow_of_exponent_le hq1 hexp
 
+/-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
+[ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer, and
+a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:
+
+  `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}` ,
+
+whence `δ ≤ ℓ/(ℓ+1) · (1-ρ)` via `linear_card_le_of_rate_radius`'s converse arithmetic. The content
+is the *implication* from list decodability; the arithmetic step is `linear_card_le_of_rate_radius`.
+
+**`_hδn_int` is [ST20]'s own hypothesis, not an ArkLib convenience.** Their proof of Theorem 1.2
+opens "Let `a := ⌊(L+1)rn/L⌋ = rn + ⌊rn/L⌋` (**assuming `rn` is an integer**)", and the identity it
+records is false otherwise. [ABF26]'s printing drops the hypothesis, and without it the statement is
+**false**: the ternary length-3 repetition code `C = {000, 111, 222}` over `𝔽₃` is
+`(δ = 1/2, ℓ = 1)`-list-decodable — its minimum distance is `3`, so the radius-`⌊δn⌋ = 1` balls are
+disjoint — yet `⌊(ℓ+1)/ℓ·δ·n⌋ = ⌊3⌋ = 3` forces the right-hand side to `3^0 = 1 < 3 = |C|`. ([ST20]
+separately assume `rn/L ∈ ℤ` "for ease of presentation", which only removes the floor.)
+
+**`_hexp_nonneg` is a second hypothesis both papers omit, and it is also necessary.** [ST20]'s
+pigeonhole needs `a ≤ n`, there being `q^{n−a}` prefixes only then. Without it the statement is
+false for the zero code: `C = ⊥` with `n = 10`, `δ = 9/10` and `ℓ = 1` has `Λ(C, δ) = 1 ≤ ℓ` and
+`δ·n = 9 ∈ ℕ`, while `a = ⌊2·9⌋ = 18 > n` makes the right-hand side `q^{−8} < 1 = |C|`. The same
+omission voids [ABF26]'s "Consequently `δ ≤ ℓ/(ℓ+1)·(1−ρ)`" for `C = ⊥`.
+
+**Narrower than [ST20] in one direction.** Their Theorem 1.2 has a first, alphabet-generic half
+`|C| ≤ L·q^{n−a}` for arbitrary `C ⊆ Q^n`; the `L`-free form below is their linear refinement, which
+is what `_hℓ_lt : ℓ < |F|` buys and what [ABF26] prints. -/
+theorem linear_card_le_generalized_singleton
+    (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
+    (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
+    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
+    (_hexp_nonneg : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) ≤ Fintype.card ι)
+    (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
+    (Set.ncard ((C : Set (ι → F))) : ℝ)
+      ≤ (Fintype.card F : ℝ) ^
+          ((Fintype.card ι : ℝ)
+            - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) := by
+  sorry -- external admit: [ST20, Theorem 1.2].
+
 end LowerBounds_General
 
 section LargeAlphabetBarrier
@@ -418,20 +454,31 @@ so approaching the generalized Singleton bound to within `η` costs alphabet siz
 `1/η`. Per [AGL23, Theorem 1.1] the length threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`, which is why `n₀` is
 bound *inside* the `∀ η`.
 
-**Why the rate is pinned by equality.** Both sources prove the barrier for a code of *fixed* rate:
-[AGL23, Theorem 1.1] reads "let `C` be a code of rate `R`", with the constant and the length
-threshold depending on that exact rate, and [BDG24] (the `ℓ = 2` progenitor) is stated for
-`[n, k]`-MDS codes of fixed dimension. A `finrank ≥ ρ·n` reading would assert one uniform `α` and
-`n₀` for *all* rates above `ρ` — a uniformization neither source proves, since the radius
-`ℓ/(ℓ+1)·(1−ρ−η)` is calibrated to the code's own rate and a higher-rate code admits no valid
-re-parameterisation once `finrank/n ≥ ρ + η`. The price is that for irrational `ρ` the equality is
-unsatisfiable and the statement is vacuous, exactly as in the sources' asymptotic form; instantiate
-at rational `ρ = finrank/n`.
+**The rate is pinned by equality, which is faithful but partly vacuous.** [AGL23] states the
+barrier for a code "of rate `R`" — Theorem 1.1 as *printed* omits the rate hypothesis altogether,
+which is a defect in that paper; the hypothesis appears in its abstract and in the worked
+Propositions 3.2/3.3 — and [BDG24] (the `ℓ = 2` progenitor) is stated for `[n, k]`-MDS codes of
+fixed dimension. Equality is therefore the faithful reading. The price is that at irrational `ρ` the
+statement is vacuous, and at rational `ρ = a/b` it is inhabited only for `b ∣ n`; instantiate at
+`ρ = finrank/n`.
 
-**Two further divergences, both recorded rather than repaired.** (i) [ABF26] states this for an
+A two-sided band `ρ ≤ finrank/n ≤ ρ + 1/n`, as `random_linear_lambda_lower` uses and this file's
+own quantification convention prescribes, would remove that vacuity and is supported by [AGL23]'s
+*proof*: it rounds `R` down to a multiple of `3/n` and passes to a subcode ("Taking `C′` to be any
+subcode of `C` of rate `R′`", Prop. 3.2; "Subcode `C′` has rate at least `R′ = R − (1/n)`",
+Prop. 3.3). It is not implied by the printed equality form, though — recovering rate exactly `ρ·n`
+from a code of rate in the band needs `ρ·n ∈ ℤ` — so it would be a mild strengthening, and the
+choice is left as recorded rather than made.
+
+**Three further divergences, all recorded rather than repaired.** (i) [ABF26] states this for an
 arbitrary code `C : Σ^k → Σ^n`, and dropping linearity is precisely [AGL23]'s headline advance over
 [BDG24]; the admit below is the linear-over-a-field case, so it does not capture the cited result in
-full. (ii) `η` is unguarded, and for `η > 1 − ρ` the radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
+full. (iii) The source's length threshold is the *explicit* `n ≥ Ω_{ℓ,ρ}(1/η)`, whereas `∃ n₀` after
+`∀ η` lets `n₀` depend on `η` arbitrarily. That is the safe direction, but it means this statement
+cannot be instantiated at `η = Θ(1/n)` — which is exactly the remark [ABF26] appends to Theorem
+3.10, that achieving the generalized Singleton bound *exactly* forces an exponential alphabet. That
+consequence is therefore out of reach of this form. (ii) `η` is unguarded, and for `η > 1 − ρ` the
+radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
 `Λ = 0 ≤ ℓ` holds for every code and the statement demands `|F| ≥ 2^(α/η)` unconditionally. Letting
 `η ↓ (1−ρ)` therefore forces `α ≤ 1 − ρ`, since `𝔽₂` carries rate-`ρ` codes of every admissible
 length. That does not make the statement false — `α := min (α_source) (1−ρ)` still works, shrinking
@@ -461,10 +508,17 @@ section RandomLinear
 The source, verbatim in its own variables: "Fix a prime power `q`, fix `p ∈ (0, 1 − 1/q)`, and fix
 `δ ∈ (0, 1)`. There exists `ε_{p,q,δ} > 0` such that for all `ε ∈ (0, ε_{p,q,δ})` and `n`
 sufficiently large, a random linear code in `F_q^n` of rate `1 − h_q(p) − ε` is not
-`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable with probability `1 − q^{−Ω(n)}`." Its random model (§1.2) is
-"a uniformly random subspace of `F_q^n` of certain dimension"; the working model samples `Rn`
-uniform generator rows, which is exponentially close in total variation and has dimension exactly
-`Rn` with probability `1 − exp(−Ω(n))`.
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable with probability `1 − q^{−Ω(n)}`." Its random model, from §1.1,
+is "a random linear code is a uniformly random subspace of `F_q^n` of certain dimension" — so the
+counting form below is the source's probability exactly, not an approximation of it. (Its §1.2
+working model is the kernel of a uniformly random parity-check matrix, which conditioned on full
+rank is the same uniform distribution over dimension-`k` subspaces, by `GL_n`-invariance.)
+
+**One stronger than [GLMRSW22], faithful to [ABF26].** [GLMRSW22] define `(p, L)`-list-decodable
+with a **strict** inequality — "`|{c ∈ C : δ(c,z) ≤ p}| < L`" (§1) — so their "not
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable" is `Λ ≥ ⌊·⌋`, whereas the bad event `Λ ≤ ⌊·⌋` below makes the
+good event `Λ ≥ ⌊·⌋ + 1`. [ABF26] prints the strict `>`, so the Lean tracks ground truth and is one
+stronger than the original; recorded, not repaired.
 
 Variable map into the form below: the source's radius `p` is our `δ`, its slack `δ` is our `ε`,
 its `ε_{p,q,δ}` is our `γ`, and its rate `1 − h_q(p) − ε` is our `ρ` — so its `ε` is
@@ -632,8 +686,22 @@ designated ground truth, so the Lean tracks it rather than the original): [BKR06
 [ABF26]'s `RS[F, L, k]` is degree **< k** (its own footnote defines it so) and instantiates
 `k = ⌊q^α⌋`. Under [ABF26]'s convention — which `ReedSolomon.code domain k` matches exactly — the
 witnesses of the cited construction sit one degree above the code. And [BKR06, Corollary 2.2]
-requires `α, β` **rational**; [ABF26] states it for real `α, β`. Both should be settled against
-[BKR06] before this admit is filled; the statement here is faithful to [ABF26]. -/
+requires `α, β` **rational**; [ABF26] states it for real `α, β`. The statement here is faithful to
+[ABF26], but the two divergences are of different weights.
+
+The degree convention is **harmless**: [BKR06]'s family consists of monic subspace polynomials
+`∏_{a ∈ L}(X − a)` of degree exactly `K`, so subtracting any fixed member gives `|P|` distinct
+polynomials of degree `< K` — inside the degree-`< k` code — all agreeing with the shifted word
+`w − P₀` on the same `≥ q^v` points. So the cited construction does transfer.
+
+The rationality gap is **not** harmless and may make the real-`α, β` statement false. [BKR06]
+Theorem 2.1 gives `|P| ≥ q^{(u+1)m − v²}` for *integers* `0 ≤ u ≤ v ≤ m`, which at exact
+`u = αm, v = βm` beats the target `2^{m²(α−β²)}` by a slack of exactly `+m`; rounding to
+`u = ⌊αm⌋, v = ⌈βm⌉` costs `−2βm − 1`, the same order, so the naive approximation *falls short
+polynomially* rather than merely failing to be tight. It looks recoverable — "for infinitely many
+`q`" lets one choose the subsequence of `m`, and by Weyl equidistribution there are infinitely many
+`m` with `{αm}` and `{βm}` both near `0` — but that is a Diophantine argument the source does not
+contain. Consider taking `α β : ℚ` instead. -/
 theorem rs_lambda_superpoly_extension
     (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧ (∀ i, IsPrimePow (qs i)) ∧
@@ -654,9 +722,31 @@ theorem rs_lambda_superpoly_extension
 [GHSZ02, Corollary 20]). Fix `0 < α, β < 1`. For all sufficiently large primes `p` there is a code
 `C := RS[F_p, F_p, ⌊p^α⌋]` and a word `w : F_p → F_p` with
 
-  `|Λ(C, 1 - ((1-β)/α) · p^{α-1}, w)| > Ω(p^{p^α · β/2})` . -/
+  `|Λ(C, 1 - ((1-β)/α) · p^{α-1}, w)| > Ω(p^{p^α · β/2})` .
+
+**Source statement and variable map.** [GHSZ02, Corollary 20] is stated for their asymptotic
+quantity `L_q^{poly}` in the variables `ε, γ > 0`; the map is `ε ↦ α`, `γ ↦ β`. Its proof is what
+[ABF26] renders: "Use an MDS `[n,k]_q` code with `n = q` and `k = n^ε`, such as a Reed-Solomon
+code … Letting `a = (1−γ)n^ε/ε` … the expected number of codewords in a ball of radius `n − a` is
+`Ω(n^{(γ/2)·n^ε})`." So the per-`n`, single-code form [ABF26] prints — and which is formalized here
+— lives in the source's *proof*, not in its statement, which bounds the asymptotic quantity instead.
+The local copy of [GHSZ02] is a scanned two-column paper whose text layer drops relation symbols, so
+Corollary 20's own display could not be transcribed verbatim; the proof text above could.
+
+**`_hαβ_le_one` is a source hypothesis [ABF26] drops.** The averaging bound the proof rests on
+([GHSZ02] Lemma 19: for an MDS `[n,k]_q` code and `a ≥ k`,
+`(1/e)·C(n,a)·q^{k−a} ≤ E_x[|B(x, n−a) ∩ C|] ≤ C(n,a)·q^{k−a}`) requires `a ≥ k`, i.e.
+`(1−β)/α ≥ 1`, i.e. `α + β ≤ 1`. It is carried here rather than dropped. (Dropping it looks
+harmless — `α + β > 1` gives `a < k`, hence a *larger* ball and a longer list — but the cited
+inequality is then outside its stated range, so the admit would no longer follow from the source.)
+
+**Quantifier encoding.** `Ω(·)` is the explicit constant `c > 0` bound *outside* the `∀ p`, and "all
+sufficiently large primes" is the explicit threshold `p₀`; `Nat.Prime p` is a conjunct of the
+implication's premises, not an antecedent that a non-prime could satisfy vacuously. The list is the
+*point* list at the exhibited `w`, as in the source, rather than `Lambda`. -/
 theorem rs_lambda_large_prime
-    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1) :
+    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < 1) (_hβ_pos : 0 < β) (_hβ_lt : β < 1)
+    (_hαβ_le_one : α + β ≤ 1) :
     ∃ (c : ℝ) (_ : 0 < c) (p₀ : ℕ),
       ∀ p : ℕ, Nat.Prime p → p₀ ≤ p →
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -724,57 +814,81 @@ end ReedSolomonBounds
 
 section SubspaceDesignUpperBounds
 
-/-- **Subspace-design codes are list-decodable up to capacity** ([ABF26] Theorem 3.4, after
-[CZ25, Theorem B.5]) — the source's one-integer-parameter form, at the source's **rate-derived**
-profile.
+/-- **Subspace-design codes are list-decodable up to capacity** — [CZ25, Theorem B.5], the
+one-integer-parameter form at [CZ25]'s `(k−1)`-level design premise. This is the engine behind
+[ABF26] Theorem 3.4 and Corollary 3.5, but it is **not** [ABF26] Theorem 3.4 as printed; see the
+last paragraph.
 
 [CZ25, Theorem B.5] verbatim, in its own variables: "Given a `F`-linear code `C ⊆ (F^s)^n` of block
 length `n` and rate `R = k/sn`. Assume that `C ⊆ (F^s)^n` is a `(ℓ, ℓ(k−1)/(s−ℓ+1))`-strong
 subspace designable code for all `ℓ ≤ s`. Then, `C` is `(L/(L+1) · (1 − sR/(s−L+1)), L)`
-(average-radius) list-decodable for any `L ≤ s`." In the τ-subspace-design abstraction
-(`IsSubspaceDesign`) the strong-subspace-designable premise is exactly the profile
-`τ(ℓ) = sR/(s−ℓ+1)`, so for every integer `1 ≤ L ≤ s`,
+(average-radius) list-decodable for any `L ≤ s`." The `IsSubspaceDesign` condition is
+`(∑ᵢ dim Aᵢ)/n ≤ dim A · τ(r)`, i.e. a budget of `n · dim A · τ(r)`, so [CZ25]'s
+`(ℓ, ℓ(k−1)/(s−ℓ+1))` premise is exactly the profile `τ(ℓ) = (sR − 1/n)/(s−ℓ+1)` — the `(k−1)`
+level, since `sR − 1/n = (k−1)/n`. For every integer `1 ≤ L ≤ s`,
 
   `|Λ(C, L/(L+1) · (1 − sR/(s−L+1)))| ≤ L` .
 
-**The profile must stay pinned to the rate; at an arbitrary `τ` this statement is FALSE.** This is
-not a stylistic preference — an earlier version of this admit quantified over an arbitrary
-`τ : ℕ → ℝ`, and that version is refuted by a compiled counterexample. Over `𝔽₂` with `ι = Fin 2`,
-`s = 1` and `C = span {(1,1)}` (the length-2 repetition code, viewed over the alphabet `𝔽₂¹`), the
-profile `τ ≡ 0` *is* a legitimate subspace design: no nonzero codeword vanishes at any position, so
-`A ⊓ ker (proj i) = ⊥` for every `A ≤ C` and every `i`, and every design sum is `0 ≤ dim A · 0`.
-But at `L = s = 1` the radius `1/2 · (1 − 0) = 1/2` has absolute radius `⌊1/2 · 2⌋ = 1`, and the
-ball of radius `1` around `(0,1)` contains both codewords `(0,0)` and `(1,1)`, giving `Λ ≥ 2 > 1`.
-Note `τ ≡ 0` is monotone and non-negative, so **neither monotonicity nor non-negativity of `τ`
-rescues the arbitrary-`τ` form**; what fails is the decoupling of `τ` from the rate. At the pinned
-profile the same code gets radius `1/2 · (1 − 1/2) = 1/4`, absolute radius `0`, and the bound holds.
-The sharp `L/(L+1)` radius is [CZ25]'s and is available only for [CZ25]'s rate-derived profile.
+**Two weakenings of this premise are each FALSE, and both were caught by compiled
+counterexamples.** The statement is brittle in exactly one direction, so both are recorded.
+
+*Arbitrary `τ`.* An early version quantified over an arbitrary `τ : ℕ → ℝ` while asserting [CZ25]'s
+sharp `L/(L+1)` radius. Over `𝔽₂` with `ι = Fin 2`, `s = 1` and `C = span {(1,1)}`, the profile
+`τ ≡ 0` *is* a legitimate subspace design — no nonzero codeword vanishes anywhere, so
+`A ⊓ ker (proj i) = ⊥` and every design sum is `0` — yet at `L = s = 1` the radius `1/2 · (1 − 0)`
+has absolute radius `⌊1/2 · 2⌋ = 1`, and the ball around `(0,1)` holds both codewords, giving
+`Λ ≥ 2 > 1`. `τ ≡ 0` is monotone and non-negative, so **neither monotonicity nor non-negativity
+rescues the arbitrary-`τ` form**; what fails is decoupling `τ` from the rate.
+
+*The `k` level.* Pinning `τ` to the rate is still not enough. The profile `sR/(s−r+1)` — [ABF26]
+Theorem 2.18's printed profile, one notch weaker than [CZ25]'s — also makes this statement
+**false**. Over `𝔽₂` with `ι = Fin 3`, `s = 1` and `C = span {(1,1,0)}` (so `k = 1`, `n = 3`,
+`R = 1/3`) the `k`-level condition holds *with equality*: the single vanishing coordinate gives
+`(∑ᵢ dim Cᵢ)/n = 1/3 = 1 · τ(1)`. But at `L = 1` the radius `1/2 · (1 − 1/3) = 1/3` has absolute
+radius `1`, and `(1,0,0)` is at distance `1` from both `(0,0,0)` and `(1,1,0)`, so `Λ ≥ 2 > 1`. An
+exhaustive sweep over `𝔽₂` finds 385 such code/`L` pairs at `(s,n) ∈ {(1,3),(1,4),(2,3)}` — so this
+is not an `s = 1` artefact — and every one of them fails the `(k−1)` premise, placing the falsity
+exactly and only in that notch. Structurally, at `s = 1` the `k` level says only `d ≥ n − k`, while
+unique decoding at `(1−ρ)/2` needs `d ≥ n − k + 1` whenever `n − k` is even.
+
+**Why the level is load-bearing rather than a fidelity nicety.** [CZ25]'s Lemma B.4 derives
+`∑ᵢ dim(Hᵢ ∩ W) ≥ ℓk/(s−ℓ+1)` and concludes "this contradicts the assumption that `C` is a
+`(ℓ, ℓ(k−1)/(s−ℓ+1))`-strong subspace designable code". At the `k` level the derived bound and the
+premise coincide, so there is no contradiction to derive and the argument collapses. Nothing
+compensates: `R` is the code's own rate and occurs identically in premise and conclusion, so the `k`
+level is unambiguously the weaker premise, hence unambiguously the stronger — and false — claim.
+
+`isSubspaceDesign_frsCode_sub_one` supplies this `(k−1)` premise for folded Reed-Solomon codes; its
+Wronskian count derives it directly, `isSubspaceDesign_frsCode` being its `1/n`-relaxation.
 
 The rate is carried as a parameter `R` with its defining equation `_hR`, following
 `mds_johnson_lambda_le_of_rate_distance`. The equation is an **equality**, not `≤`: a larger `R`
 weakens the design premise *and* the conclusion, so the `≤` form is not implied by the source. `R`
 is the alphabet-normalized rate `k/(s·n)` of [ABF26] Definition 2.5, the alphabet being `F^s`.
 
-The `if r ∈ Finset.Icc 1 s` guard is the shape `isSubspaceDesign_frsCode` produces, and is
-necessary: outside `[1, s]` the expression `sR/(s−r+1)` is negative, which no code satisfies.
+The `if r ∈ Finset.Icc 1 s` guard is the shape `isSubspaceDesign_frsCode_sub_one` produces, and is
+necessary: outside `[1, s]` the expression `(sR − 1/n)/(s−r+1)` is negative, which no code
+satisfies.
 
 `1 ≤ L` is implicit in [CZ25] (the proof derives a contradiction from `L + 1 ≥ 2` distinct
 polynomials; at `L = 0` the claim fails for any word equal to a codeword), and `L ≤ s` is the stated
 range.
 
-**Open faithfulness question**, recorded rather than resolved: [CZ25] states the design premise at
-the `(k−1)` level (`ℓ(k−1)/(s−ℓ+1)`), whereas `isSubspaceDesign_frsCode` — following [ABF26]
-Theorem 2.18 — supplies the `k` level. The `k` level is the larger bound, hence the weaker premise,
-which is the direction that would make this admit *stronger* than [CZ25]; but the same `R` also
-shrinks the radius, so the two effects partly cancel and the net direction is unresolved. Confirm
-against [CZ25] before filling this in. -/
+**What [ABF26] Theorem 3.4 says, and why it is not this.** The paper prints
+`Λ(C, 1 − τ(1/η) − η) ≤ (1 − τ(1/η))/η` for a `τ`-subspace-design code at an **arbitrary** `τ` — no
+integer parameter, no rate pin, and `τ` applied to the real argument `1/η`. That is an abstraction
+of [CZ25] which [CZ25] does not prove, and it is *not* refuted by either counterexample above: at
+`τ ≡ 0` it asserts only `Λ(C, 1−η) ≤ 1/η`, which the length-`n` repetition code satisfies for every
+`η`. It remains an open generalization. `subspaceDesign_lambda_le_of_eta` is its shape at the pinned
+profile. -/
 theorem subspaceDesign_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (_hR : (LinearCode.alphabetRate C : ℝ) = R)
     (_h : IsSubspaceDesign s
-      (fun r => if r ∈ Finset.Icc 1 s then s * R / (s - r + 1) else 1) C)
+      (fun r => if r ∈ Finset.Icc 1 s then
+        (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) C)
     (L : ℕ) (_hL_pos : 1 ≤ L) (_hL_le : L ≤ s) :
     Lambda ((C : Set (ι → Fin s → F)))
         ((L : ℝ) / (L + 1) * (1 - s * R / (s - L + 1))) ≤ (L : ℕ∞) := by
@@ -801,7 +915,8 @@ theorem subspaceDesign_lambda_le_of_profile_le
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
-      (fun r => if r ∈ Finset.Icc 1 s then s * R / (s - r + 1) else 1) C)
+      (fun r => if r ∈ Finset.Icc 1 s then
+        (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) C)
     (η t : ℝ) (hη_pos : 0 < η) (ht_nonneg : 0 ≤ t)
     (hτ_le : ∀ L : ℕ, 1 ≤ L → (L : ℝ) ≤ 1 / η → s * R / (s - L + 1) ≤ t)
     (hs : 1 / η ≤ (s : ℝ)) :
@@ -853,51 +968,45 @@ theorem subspaceDesign_lambda_le_of_profile_le
     rw [hzero]
     simp
 
-/-- **The `η`-form of the subspace-design bound, with one consistent rounding**, derived in-tree
-from `subspaceDesign_lambda_le`. For a code carrying the rate-derived design profile and any
-`0 < η ≤ 1` with `1/η ≤ s`:
+/-- **The `η`-form of the subspace-design bound**, derived in-tree from
+`subspaceDesign_lambda_le`. This is the shape of [ABF26] Theorem 3.4 at the pinned profile: for a
+code carrying the `(k−1)`-level design profile and any `η > 0` with `1/η ≤ s`,
 
-  `|Λ(C, 1 − sR/(s−⌊1/η⌋+1) − η)| ≤ (1 − sR/(s−⌊1/η⌋+1))/η` .
+  `|Λ(C, 1 − sR/(s−1/η+1) − η)| ≤ (1 − sR/(s−1/η+1))/η` .
 
-The [ABF26] text prints this with the ill-typed real argument `τ(1/η)` — `τ` applied to a real when
-a design profile is indexed by a dimension `ℕ`. Mirroring that would require inventing a rounding
-(radius at `⌈1/η⌉`, bound at `⌊1/η⌋`) that no source licenses. Here `1/η` is rounded ONE way (down)
-in both the radius and the bound, and the derivation runs through
-`subspaceDesign_lambda_le_of_profile_le` at `t := sR/(s−⌊1/η⌋+1)`.
+**No rounding is involved.** [ABF26] prints the profile at the real argument `1/η`, which is
+ill-typed for a `τ : ℕ → ℝ` indexed by a dimension. It does not need to be rounded to be reproduced:
+`subspaceDesign_lambda_le_of_profile_le` is generic in the *dominating value*, so instantiating it
+at `t := sR/(s − 1/η + 1)` — the profile expression at the real argument — gives the paper's display
+verbatim, with the domination hypothesis immediate from `L ≤ 1/η ⇒ s − L + 1 ≥ s − 1/η + 1`.
+An earlier version instead rounded `1/η` down in both the radius and the bound; the two roundings
+pull in opposite directions (the profile is increasing, so a smaller argument enlarges the radius
+but also enlarges the bound), so that statement neither implied nor followed from the paper's. It
+also needed `η ≤ 1` to keep `⌊1/η⌋ ≥ 1`, which the real-argument form does not.
 
-Profile monotonicity and non-negativity are now *proved* rather than hypothesised: `R` is a rate,
-hence non-negative (`LinearCode.alphabetRate` lands in `ℚ≥0`), and `r ↦ sR/(s−r+1)` is
-non-decreasing on `[1, s]` for that reason. `η ≤ 1` keeps `⌊1/η⌋ ≥ 1`, and `1/η ≤ s` keeps both
-instantiation points inside [CZ25]'s range `L ≤ s` — a hypothesis the abstract statement omits but
-its only instantiation carries as `1/η < s`. -/
+Non-negativity of `R` is *proved* rather than hypothesised (`LinearCode.alphabetRate` lands in
+`ℚ≥0`). `1/η ≤ s` keeps the instantiation point inside [CZ25]'s range `L ≤ s`; it is the hypothesis
+the abstract statement omits and its only instantiation carries as `1/η < s`. -/
 theorem subspaceDesign_lambda_le_of_eta
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (s : ℕ) (R : ℝ) (C : Submodule F (ι → Fin s → F))
     (hR : (LinearCode.alphabetRate C : ℝ) = R)
     (h : IsSubspaceDesign s
-      (fun r => if r ∈ Finset.Icc 1 s then s * R / (s - r + 1) else 1) C)
-    (η : ℝ) (hη_pos : 0 < η) (hη_le_one : η ≤ 1) (hηs : 1 / η ≤ (s : ℝ)) :
+      (fun r => if r ∈ Finset.Icc 1 s then
+        (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) C)
+    (η : ℝ) (hη_pos : 0 < η) (hηs : 1 / η ≤ (s : ℝ)) :
     (Lambda ((C : Set (ι → Fin s → F)))
-        (1 - s * R / ((s : ℝ) - (Nat.floor (1 / η) : ℕ) + 1) - η) : ENNReal) ≤
-      ENNReal.ofReal ((1 - s * R / ((s : ℝ) - (Nat.floor (1 / η) : ℕ) + 1)) / η) := by
+        (1 - s * R / ((s : ℝ) - 1 / η + 1) - η) : ENNReal) ≤
+      ENNReal.ofReal ((1 - s * R / ((s : ℝ) - 1 / η + 1)) / η) := by
   -- `R ≥ 0`: it is a rate, and `alphabetRate` lands in `ℚ≥0`.
   have hR_nonneg : 0 ≤ R := by rw [← hR]; positivity
-  have hm : 1 ≤ ⌊1 / η⌋₊ := by
-    apply Nat.le_floor
-    rw [Nat.cast_one, le_div_iff₀ hη_pos, one_mul]
-    exact hη_le_one
-  have hmle : ((⌊1 / η⌋₊ : ℕ) : ℝ) ≤ 1 / η := Nat.floor_le (by positivity)
-  have hden_pos : (0 : ℝ) < (s : ℝ) - (⌊1 / η⌋₊ : ℕ) + 1 := by
-    have := hmle.trans hηs
-    linarith
+  have hden_pos : (0 : ℝ) < (s : ℝ) - 1 / η + 1 := by linarith
   have hsR_nonneg : (0 : ℝ) ≤ s * R := by positivity
   refine subspaceDesign_lambda_le_of_profile_le s R C hR h η
-    (s * R / ((s : ℝ) - (⌊1 / η⌋₊ : ℕ) + 1)) hη_pos
+    (s * R / ((s : ℝ) - 1 / η + 1)) hη_pos
     (div_nonneg hsR_nonneg hden_pos.le) (fun L hL1 hLle => ?_) hηs
-  -- Profile domination: `L ≤ ⌊1/η⌋` shrinks the denominator, so the value only grows.
-  have hLm : L ≤ ⌊1 / η⌋₊ := Nat.le_floor hLle
-  have hLmR : ((L : ℕ) : ℝ) ≤ ((⌊1 / η⌋₊ : ℕ) : ℝ) := by exact_mod_cast hLm
+  -- Profile domination: `L ≤ 1/η` shrinks the denominator, so the value only grows.
   exact div_le_div_of_nonneg_left hsR_nonneg hden_pos (by linarith)
 
 /-- **Folded Reed-Solomon codes are list-decodable up to capacity** ([ABF26] Corollary 3.5, after
@@ -909,9 +1018,11 @@ When `η ≥ √(3/s)` the bound simplifies to `|Λ(C, 1 - ρ - η)| ≤ 1/η`.
 
 **Derived in-tree**, not a separate admit: from `subspaceDesign_lambda_le` (via
 `subspaceDesign_lambda_le_of_profile_le` at the real-argument profile value
-`t := ρ·s/(s − 1/η + 1)`) together with `isSubspaceDesign_frsCode`, whose profile is exactly the
-rate-derived one this chain needs. This is the route [CZ25] use for their Corollary 2.21 and
-[ABF26] for this one. The bound equals `(1 − t)/η` verbatim, since
+`t := ρ·s/(s − 1/η + 1)`) together with `isSubspaceDesign_frsCode_sub_one`, whose Wronskian count
+delivers exactly the `(k−1)`-level profile this chain needs. The `1/n`-relaxed
+`isSubspaceDesign_frsCode` does **not** suffice: at that level `subspaceDesign_lambda_le` is false.
+This is the route [CZ25] use for their Corollary 2.21 and [ABF26] for this one. The bound equals
+`(1 − t)/η` verbatim, since
 `1 − sρ/(s−1/η+1) = (s(1−ρ)+1−1/η)/(s+1−1/η)`.
 
 **Rate convention.** `FRS[F, L, k, s, ω] ⊆ (F^s)^n` has rate `ρ = k / (s·n)`, the alphabet being
@@ -930,7 +1041,7 @@ ArkLib's `frsCode` deliberately does not, so it is carried here as `_hadm`. With
 degenerates — at `ω = 1` all folds collapse — and the capacity bound is false.
 
 **Generator hypothesis.** `_hω_gen : ω` generates `F×` is inherited from
-`isSubspaceDesign_frsCode`, whose unguarded form is FALSE for low-order `ω` (counterexample
+`isSubspaceDesign_frsCode_sub_one`, whose unguarded form is FALSE for low-order `ω` (counterexample
 `ω = -1` over `𝔽₁₀₁`; see that declaration's docstring). It is also the classical folded-RS setting
 of [CZ25] and Guruswami–Rudra, where the fold element is primitive. `ω ≠ 0` is not a separate
 hypothesis, being derivable from it. -/
@@ -962,7 +1073,7 @@ theorem frs_lambda_le_capacity
     have hn1 : 1 ≤ Fintype.card ι := Fintype.card_pos
     omega
   -- FRS carries the rate-derived design profile.
-  have hdesign := isSubspaceDesign_frsCode domain k s ω _hFn _hadm _hω_gen
+  have hdesign := isSubspaceDesign_frsCode_sub_one domain k s ω _hFn _hadm _hω_gen
   -- Below saturation, `alphabetRate = k/(s·n) = ρ`.
   have hrate : (LinearCode.alphabetRate
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) = ρ := by
