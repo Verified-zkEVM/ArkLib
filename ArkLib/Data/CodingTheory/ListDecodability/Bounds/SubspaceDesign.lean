@@ -14,13 +14,18 @@ import Mathlib.FieldTheory.Finiteness
 /-!
 # The subspace-design upper bound, and the code families that satisfy it
 
-`[CZ25]`'s theorem that a code carrying a subspace-design profile is list-decodable up to a relaxed
+[CZ25]'s theorem that a code carrying a subspace-design profile is list-decodable up to a relaxed
 generalized Singleton radius, its real-radius and `η`-parameterized reformulations, and the two
 code-family corollaries it exists to serve: folded Reed-Solomon codes and univariate multiplicity
 codes achieve list-decoding capacity.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
+
+## References
+
+The keys cited here — [ABF26], [CZ25] — are resolved in the reference list of
+`ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry

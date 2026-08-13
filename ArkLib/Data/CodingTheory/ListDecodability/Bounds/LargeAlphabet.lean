@@ -15,15 +15,18 @@ size `ℓ ≥ 2` and rate `ρ`, a linear code that is `ℓ`-list-decodable at ra
 [BDG24] for `ℓ = 2` and [AGL23] in general, and `large_alphabet_card_ge_exp_of_inv_length` is the
 consequence [ABF26] draws from it — at `η = Θ(1/n)`, `|F| ≥ 2^{Ω(n)}`.
 
-The proof is long enough to live in its own directory, `Bounds/LargeAlphabet/`: bound the local
-neighbourhood of a centre from `Λ ≤ ℓ`, greedily extract a large *separated* subcode, and contradict
-a robust minimum-distance barrier built from sparse large-union families and a deterministic
-pigeonhole count. The source's probabilistic step is replaced by that counting argument.
-
-Split out of `Bounds/Linear.lean`, where these two statements previously sat, so that the other
-bounds for general linear codes do not import four files of barrier machinery.
+The argument runs through `Bounds/LargeAlphabet/`: bound the local neighbourhood of a centre from
+`Λ ≤ ℓ`, greedily extract a large *separated* subcode, and contradict a robust minimum-distance
+barrier built from sparse large-union families and a pigeonhole count. The source argues
+probabilistically at that last step; here it is a counting argument, so no distribution over codes
+is needed.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and references.
+
+## References
+
+The keys cited here — [ABF26], [AGL23], [BDG24] — are resolved in the reference list of
+`ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry

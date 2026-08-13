@@ -11,11 +11,12 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 /-!
 # Counting identities shared by the list-size bounds
 
-Three elementary identities that every bound in `ListDecodability.Bounds` rests on: the
-Hamming-ball fiber count, the description of a relative-radius close-codeword set as an explicit
-absolute-distance set, and the Fubini averaging identity that turns a sum of point-list sizes into
-`|C| · Vol_q(δ, n)`. They carry no list-decoding hypothesis and belong to no single bound family,
-which is why they live here rather than in any one of the sibling files.
+The elementary identities that every bound in `ListDecodability.Bounds` rests on: the Hamming-ball
+fiber count, the description of a relative-radius close-codeword set as an explicit
+absolute-distance set, the Fubini averaging identity turning a sum of point-list sizes into
+`|C| · Vol_q(δ, n)`, and the count `|C| = q ^ dim C` of a subspace, in both its natural and
+real-exponent forms. None of them carries a list-decoding hypothesis and none belongs to a single
+bound family, which is why they live here rather than in any one of the sibling files.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.

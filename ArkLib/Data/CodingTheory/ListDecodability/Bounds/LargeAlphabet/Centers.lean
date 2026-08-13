@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Basic
 /-!
 # Large-alphabet barrier: separated subcodes, centres, and incidence counting
 
-Second of four. Greedy extraction of a large *separated* subcode
+Greedy extraction of a large *separated* subcode
 (`aglGreedySeparatedExtraction`), the construction of a Hamming centre from disjoint agreement
 blocks (`aglHammingCenterFromDisjointBlocks`, `aglBalancedCenterConstruction`,
 `aglBarrierCenterFromBlocks`), the incidence double-counting lemmas that drive the moment bound, and
@@ -755,9 +755,14 @@ theorem aglNatQuotientWindow
   have hrem := Nat.mod_lt (radius - dZero) hℓ
   omega
 
+/-- The barrier's radius, `ℓ/(ℓ+1) · (1 − ρ − η)` — the generalized Singleton radius at rate `ρ`,
+pulled back by `η`. -/
 noncomputable def aglRadius (ℓ : ℕ) (ρ η : ℝ) : ℝ :=
   (ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)
 
+/-- **Existence of a barrier package.** For a list size `ℓ`, a rate `R` and a neighbourhood cap `B`,
+there are constants `ηCut, γ, K, Wmax` and a length threshold beyond which every small `η` admits
+barrier parameters, a block structure and a large-union family fitting together. -/
 def AGLBarrierPackageExistence : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (R : ℝ), 0 < R → R < 1 →
     ∀ (B : ℕ), 0 < B →
@@ -781,6 +786,10 @@ def AGLBarrierPackageExistence : Prop :=
                       ∀ j, Disjoint S (blocks.other j)) ∧
                     (2 : ℝ) ^ (γ * Fintype.card ι) ≤ family.sets.card
 
+/-- **The robust minimum-distance barrier.** A `boosted`-separated code over an alphabet of size at
+least `2`, whose list size at the barrier radius is at most `ℓ`, cannot be large: its size is capped
+by `|A|^(aFamily)`-type quantities, which forces `|A| ≥ 2^(α/η)`. This is the statement the
+large-alphabet lower bound consumes. -/
 def AGLRobustMinimumDistanceBarrierStatement : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (R : ℝ), 0 < R → R < 1 →
     ∀ (B : ℕ), 0 < B →
@@ -865,9 +874,13 @@ theorem aglRateLossToCardinality
     le_of_mul_le_mul_left hreal (by exact_mod_cast hB)
   exact_mod_cast hcancel
 
+/-- The length threshold `⌈(B+1)/R⌉` at which the barrier's basic bounds hold. -/
 noncomputable def aglRoundedBarrierBasicThreshold (R : ℝ) (B : ℕ) : ℕ :=
   Nat.ceil (((B + 1 : ℕ) : ℝ) / R)
 
+/-- The barrier's parameters at a given length, all rounded to integers: radius and boosted radius,
+the `dZero`/`dOne` block sizes, the used and unused coordinate counts, and the large-union family's
+set and union sizes. Every later estimate is stated against this record. -/
 noncomputable def aglRoundedBarrierData
     (ℓ : ℕ) (R η K : ℝ) (B n : ℕ) : AGLRoundedBarrierData :=
   let radius := Nat.floor (aglRadius ℓ R η * n)

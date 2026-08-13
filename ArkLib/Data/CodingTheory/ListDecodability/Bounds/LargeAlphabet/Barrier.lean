@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Pigeonhole
 /-!
 # Large-alphabet barrier: sparse large-union families, and the robust minimum-distance barrier
 
-Fourth of four, and the payoff. The sparse **large-union existence** theory — a family of
+The sparse **large-union existence** theory — a family of
 equal-sized coordinate sets, any `W` of which cover almost everything — with all of its floor/ceil
 bookkeeping, then the two assembly theorems: `aglBarrierPackageExistence` produces the parameter
 package, and `aglRobustMinimumDistanceBarrier` is the barrier itself, which

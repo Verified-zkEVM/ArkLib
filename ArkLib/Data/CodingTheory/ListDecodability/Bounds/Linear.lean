@@ -14,13 +14,21 @@ import Mathlib.FieldTheory.Finiteness
 /-!
 # Bounds that hold for every linear code
 
-The alphabet-generic half of the family: the volume/averaging lower bound `[Eli57]` and its entropy
-form, the arithmetic rate–radius cardinality bound, the generalized Singleton bound of `[ST20]`, the
-large-alphabet barrier of `[AGL23]`/`[BDG24]` that attaining it forces, and the random-linear-code
-lower bound of `[GLMRSW22]`. Nothing here is specific to a code family.
+The family's alphabet-generic half: the volume/averaging lower bound [Eli57] and its entropy form,
+the arithmetic rate–radius cardinality bound, the generalized Singleton bound of [ST20], and the
+random-linear-code lower bound of [GLMRSW22]. Nothing here is specific to a code family.
+
+The large-alphabet barrier that attaining the generalized Singleton bound forces ([AGL23], [BDG24])
+is in `Bounds/LargeAlphabet.lean`, over its own directory of machinery.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
+
+## References
+
+The keys cited here — [ABF26], [Eli57], [MS77], [ST20], [AGL23], [BDG24], [GLMRSW22], [DG25dist] —
+are resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which
+every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
@@ -123,6 +131,8 @@ theorem linear_lambda_ge_elias_volume
     _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
     _ ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := hLam
 
+/-- `stirlingSeq 1 ^ 2 = 2 · stirlingSeq 2`, the base case of the two-term comparison
+`stirlingSeq_mul_le_two_mul_add`. -/
 theorem stirlingSeq_one_sq :
     Stirling.stirlingSeq 1 * Stirling.stirlingSeq 1 =
       2 * Stirling.stirlingSeq 2 := by
@@ -134,6 +144,7 @@ theorem stirlingSeq_one_sq :
     Real.sqrt_sq (by norm_num : (0 : ℝ) ≤ 2),
     Real.sq_sqrt (by norm_num : (0 : ℝ) ≤ 2)]
 
+/-- Positivity of Stirling's sequence at a positive index, in `0 < n` form. -/
 theorem stirlingSeq_pos_of_pos (n : ℕ) (hn : 0 < n) :
     0 < Stirling.stirlingSeq n := by
   unfold Stirling.stirlingSeq
@@ -141,6 +152,12 @@ theorem stirlingSeq_pos_of_pos (n : ℕ) (hn : 0 < n) :
 
 set_option maxHeartbeats 1000000 in
 -- `field_simp`/`ring_nf` on the four-factorial identity below exceeds the default budget.
+/-- **The central binomial mass, exactly, in terms of Stirling's sequence.** For `d, m > 0`,
+
+`C(d+m, d) · (d/(d+m))^d · (m/(d+m))^m
+  = stirlingSeq (d+m) / (stirlingSeq d · stirlingSeq m) · √(2(d+m)) / (√(2d) · √(2m))`.
+
+The left side is the probability that a binomial on `d + m` trials takes its mean value. -/
 theorem binomial_mean_mass_eq_stirlingSeq
     (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
     (((d + m).choose d : ℕ) : ℝ) *
@@ -174,6 +191,8 @@ theorem binomial_mean_mass_eq_stirlingSeq
     (-((d : ℝ) ^ d * (m : ℝ) ^ m * ((d + m : ℕ) : ℝ) ^ m *
       (Real.exp 1)⁻¹ ^ m)) * hcancel
 
+/-- With `δ ∈ (0,1)` and `δ · n` an integer `d`, that integer is a genuine interior radius:
+`0 < d < n` and `⌊δ · n⌋ = d`. -/
 theorem entropy_radius_integer_bounds (n d : ℕ) (δ : ℝ) (hn : 0 < n)
     (hδ_pos : 0 < δ) (hδ_lt : δ < 1) (hd : (d : ℝ) = δ * n) :
     0 < d ∧ d < n ∧ ⌊δ * n⌋₊ = d := by
@@ -185,6 +204,8 @@ theorem entropy_radius_integer_bounds (n d : ℕ) (δ : ℝ) (hn : 0 < n)
   refine ⟨hd_pos, hd_lt, ?_⟩
   rw [← hd, Nat.floor_natCast]
 
+/-- `½ · √(2(d+m)) / (√(2d) · √(2m)) = 1 / √(8dm/(d+m))`. At `d = δn` and `m = n − δn` the right
+side is `1 / √(8nδ(1−δ))`. -/
 theorem entropy_sqrt_factor_identity
     (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
     (1 : ℝ) / 2 *
@@ -229,6 +250,9 @@ theorem entropy_sqrt_factor_identity
     field_simp [hdmR.ne']
   nlinarith
 
+/-- The successive-log *difference* `log (stirlingSeq (m+1)) − log (stirlingSeq (m+2))` is antitone:
+the decrements of `log ∘ stirlingSeq` shrink. Distinct from
+`Stirling.log_stirlingSeq'_antitone`, which is antitonicity of the sequence itself. -/
 theorem log_stirlingSeq_diff_antitone :
     Antitone (fun m : ℕ =>
       Real.log (Stirling.stirlingSeq (m + 1)) -
@@ -240,6 +264,7 @@ theorem log_stirlingSeq_diff_antitone :
   have habR : (a : ℝ) ≤ b := by exact_mod_cast hab
   gcongr
 
+/-- The ratio `stirlingSeq (n+1) / stirlingSeq n` is monotone in `n`. -/
 theorem stirlingSeq_succ_ratio_mono
     (a b : ℕ) (ha : 0 < a) (hab : a ≤ b) :
     Stirling.stirlingSeq (a + 1) / Stirling.stirlingSeq a ≤
@@ -266,6 +291,8 @@ theorem stirlingSeq_succ_ratio_mono
       (stirlingSeq_pos_of_pos b hb).ne']
   linarith
 
+/-- **Sub-multiplicativity up to a factor of two**:
+`stirlingSeq d · stirlingSeq m ≤ 2 · stirlingSeq (d+m)`. -/
 theorem stirlingSeq_mul_le_two_mul_add
     (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
     Stirling.stirlingSeq d * Stirling.stirlingSeq m ≤
@@ -322,6 +349,7 @@ theorem stirlingSeq_mul_le_two_mul_add
                   field_simp [hSdt.ne']
       simpa [t, Nat.succ_eq_add_one, Nat.add_assoc] using hstep
 
+/-- **Lower bound on the binomial mass at the mean**: it is at least `1 / √(8dm/(d+m))`. -/
 theorem binomial_mean_mass_ge
     (d m : ℕ) (hd : 0 < d) (hm : 0 < m) :
     1 / Real.sqrt
@@ -349,6 +377,8 @@ theorem binomial_mean_mass_ge
   rw [← binomial_mean_mass_eq_stirlingSeq d m hd hm] at hmul
   exact hmul
 
+/-- The previous bound in radius coordinates: for integral `d = δ · n`,
+`1 / √(8nδ(1−δ)) ≤ C(n,d) · δ^d · (1−δ)^(n−d)`. -/
 theorem binomial_integral_mean_mass_ge
     (n d : ℕ) (δ : ℝ) (hn : 0 < n)
     (hδpos : 0 < δ) (hδlt : δ < 1)
@@ -386,6 +416,8 @@ theorem binomial_integral_mean_mass_ge
     _ = (n.choose d : ℝ) * δ ^ d * (1 - δ) ^ (n - d) := by
       rw [hcomp, hδeq, hsum]
 
+/-- `q`-ary entropy against the binomial mass: `q^(n · H_q(δ)) · (δ^d · (1−δ)^(n−d)) = (q−1)^d`
+when `d = δ · n`. -/
 theorem qEntropy_power_mul_mass_eq
     (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
     (hδpos : 0 < δ) (hδlt : δ < 1)
@@ -425,6 +457,12 @@ theorem qEntropy_power_mul_mass_eq
     hpow δ hδpos d, hpow (1 - δ) hcomp (n - d), hqsub]
   field_simp [hδpow, hcomppow]
 
+/-- **The single-shell entropy bound**:
+
+`q^(n · H_q(δ)) / √(8nδ(1−δ)) ≤ C(n, δn) · (q−1)^(δn)`.
+
+The right side is a single shell of the Hamming ball, so the volume — the sum over all shells at
+radius at most `δn` — is at least as large. -/
 theorem qary_shell_entropy_lower
     (q n d : ℕ) (δ : ℝ) (hq : 2 ≤ q) (hn : 0 < n)
     (hδpos : 0 < δ) (hδlt : δ < 1)

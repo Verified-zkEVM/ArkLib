@@ -36,10 +36,15 @@ linear-heavy subset (`exists_minimal_linear_heavy_subset`) whose minimality forc
 `∑ᵢ` edge ranks. `agreementWeight_lt_of_subspaceDesign` assembles these into the strict inequality
 the list-size bound contradicts.
 
-Split out of `Bounds/SubspaceDesign.lean` to keep that file's statements legible, and because this
-development is reusable: nothing here mentions `Lambda`.
+Nothing here mentions `Lambda`: the development is about agreement counts and affine rank, and is
+independent of list decoding.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and references.
+
+## References
+
+The keys cited here — [CZ25] — are resolved in the reference list of
+`ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
@@ -56,6 +61,8 @@ open Code
 
 section AgreementHypergraph
 
+/-- The `i`-th **agreement edge**: the codewords in `T` that agree with the received word `y` at
+coordinate `i`. One edge per coordinate presents `T` as a hypergraph. -/
 def agreementEdges {ι : Type*} {A : Type*} [DecidableEq A]
     (T : Finset (ι → A)) (y : ι → A) (i : ι) : Finset (ι → A) :=
   T.filter (fun c => c i = y i)
@@ -74,11 +81,18 @@ theorem agreementEdges_inter_subset
     exact ⟨⟨hHT hcH, hci⟩, hcH⟩
 
 open scoped BigOperators in
+/-- The **agreement weight** of a codeword set `T` against a received word `y`:
+`∑ᵢ (|agreementEdges T y i| − 1)`, the number of agreements beyond the first at each coordinate.
+Natural subtraction, so a coordinate where at most one codeword agrees contributes `0`. -/
 def agreementWeight {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
     (y : ι → A) (T : Finset (ι → A)) : ℕ :=
   ∑ i : ι, ((T.filter (fun c => c i = y i)).card - 1)
 
 open scoped BigOperators in
+/-- **The double-counting lower bound.** If every codeword in `S` is within relative distance `δ` of
+`y`, then `S` forces agreement weight at least `|S| · n · (1 − δ) − n`: sum the per-codeword
+agreement counts, exchange the order of summation, and pay one unit per coordinate for the `− 1` in
+`agreementWeight`. -/
 theorem agreementWeight_ge_of_hammingDist_le
     {ι : Type*} {A : Type*} [Fintype ι] [DecidableEq A]
     (δ : ℝ) (y : ι → A) (S : Finset (ι → A))
@@ -135,6 +149,9 @@ theorem agreementWeight_ge_of_hammingDist_le
   rw [hdouble] at hlower
   linarith
 
+/-- The **flag level** of `x` against a basis `b`: the least `k` such that `x` lies in the span of
+the first `k` basis vectors, using `Module.Basis.flag`. It is `0` exactly when `x = 0`, and `j.succ`
+at the basis vector `b j`, so a strictly monotone family of levels is linearly independent. -/
 noncomputable def basisFlagLevel {F : Type*} {V : Type*}
     [Field F] [AddCommGroup V] [Module F V] {r : ℕ}
     (b : Module.Basis (Fin r) F V) (x : V) : Fin (r + 1) := by
@@ -234,6 +251,10 @@ theorem exists_minimal_subset_property
   apply hUT.2
   rw [heq]
 
+/-- **Extraction of a minimal heavy subset.** From any `T` of size `≥ 2` whose weight is at least
+`geometricEdgeWeight T · κ`, extract `U ⊆ T` still of size `≥ 2` and still heavy, but with *no*
+proper subset of size `≥ 2` heavy. Minimality is what supplies the lower bound the design premise
+then contradicts. -/
 theorem exists_minimal_linear_heavy_subset
     {V : Type*} [DecidableEq V] (weight : Finset V → ℝ)
     (κ : ℝ) (S : Finset V) (hScard : 2 ≤ S.card)
@@ -255,10 +276,16 @@ theorem exists_minimal_linear_heavy_subset
     exact hnot ⟨hUcard, hle⟩
   exact lt_of_not_ge hnle
 
+/-- The **affine rank** of a finite set: the dimension of its `vectorSpan`, equivalently one less
+than the size of a maximal affinely independent subset. -/
 noncomputable def geometricAffineRank {F : Type*} {V : Type*}
     [Field F] [AddCommGroup V] [Module F V] (S : Finset V) : ℕ :=
   Module.finrank F (vectorSpan F (S : Set V))
 
+/-- A **rank partition** of `S`: a partition into `geometricAffineRank S + 1` nonempty blocks such
+that every subset `e ⊆ S` meets at most `geometricAffineRank e + 1` of them. The last field is what
+converts a count of blocks met into a bound on affine rank. Constructed by
+`selectedGeometricFlagRankPartition`; existence is `exists_geometricRankPartition`. -/
 structure GeometricRankPartition {F : Type*} {V : Type*}
     [Field F] [AddCommGroup V] [Module F V] [DecidableEq V]
     (S : Finset V) where
@@ -271,6 +298,9 @@ structure GeometricRankPartition {F : Type*} {V : Type*}
     (Finset.univ.filter (fun a => (e ∩ blocks a).Nonempty)).card ≤
       geometricAffineRank (F := F) e + 1
 
+/-- A basis of `vectorSpan S` realised *inside* `S`: a base point `base ∈ S` together with witnesses
+`witness i ∈ S` whose differences `witness i − base` are the basis vectors. Existence is
+`exists_selectedGeometricFlagBasis`. -/
 structure SelectedGeometricFlagBasis
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] (S : Finset V) where
@@ -354,6 +384,8 @@ theorem geometricAffineRank_pos_of_two_le_card
   have hsub : x - y = 0 := hv
   exact hxy (sub_eq_zero.mp hsub)
 
+/-- The **weight** of an edge: one less than its cardinality, truncated at `0`. It decomposes over a
+rank partition up to a crossing term (`geometricEdgeWeight_partition_decomposition`). -/
 def geometricEdgeWeight {V : Type*} (S : Finset V) : ℕ :=
   S.card - 1
 
@@ -378,6 +410,9 @@ theorem geometricAffineRank_le_edgeWeight
     rw [Finset.image_id'] at hle
     exact hle
 
+/-- The **crossing number** of `e` against a rank partition: one less than the number of blocks `e`
+meets. Bounded above by `geometricAffineRank e` — that is exactly the partition's `rank_bound`
+field, repackaged as `geometricPartitionCrossing_le_affineRank`. -/
 noncomputable def geometricPartitionCrossing {F : Type*} {V : Type*}
     [Field F] [AddCommGroup V] [Module F V] [DecidableEq V]
     {S : Finset V} (P : GeometricRankPartition (F := F) S)
@@ -527,6 +562,9 @@ theorem geometricRankPartition_sum_blockWeight
   omega
 
 open scoped BigOperators in
+/-- The total edge weight of a hypergraph `E` restricted to `S`: `∑ᵢ geometricEdgeWeight (E i ∩ S)`.
+For the agreement edges this *is* the agreement weight
+(`agreementWeight_eq_geometricTotalWeight`). -/
 def geometricTotalWeight {ι : Type*} {V : Type*} [Fintype ι] [DecidableEq V]
     (E : ι → Finset V) (S : Finset V) : ℕ :=
   ∑ i : ι, geometricEdgeWeight (E i ∩ S)
@@ -751,6 +789,8 @@ theorem minimal_linear_heavy_affineRank_lower_of_partition
       exact_mod_cast geometricPartitionCrossing_le_affineRank P (E i ∩ S)
         Finset.inter_subset_right
 
+/-- The block index of `x` in the partition induced by a selected flag basis: the flag level of
+`x − B.base`, and `0` for points outside `S`. -/
 noncomputable def selectedGeometricFlagPart
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
@@ -821,6 +861,9 @@ theorem selectedGeometricFlagPart_witness
   rw [heq]
   exact basisFlagLevel_basis B.basis i
 
+/-- A representative in `S` for each block index: the base point at `0`, and the `i`-th witness at
+`i.succ`. It lands in its own block (`selectedGeometricFlagPart_rep`), which is what makes every
+block nonempty. -/
 noncomputable def selectedGeometricFlagRep
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
@@ -908,6 +951,9 @@ theorem selectedGeometricFlagPart_image_card_le
       Nat.add_le_add_right hfin 1
     _ = geometricAffineRank (F := F) E + 1 := rfl
 
+/-- The rank partition of `S` induced by a selected flag basis: block `a` collects the points of
+flag level `a`. This is the witness behind `exists_geometricRankPartition`, and its `rank_bound`
+comes from the affine independence of a transversal of the levels a subset meets. -/
 noncomputable def selectedGeometricFlagRankPartition
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] {S : Finset V}
@@ -954,6 +1000,8 @@ noncomputable def selectedGeometricFlagRankPartition
     rw [hfilter]
     exact selectedGeometricFlagPart_image_card_le B e he
 
+/-- **Every nonempty finite set admits a rank partition.** Obtained from a flag basis realised
+inside the set. -/
 theorem exists_geometricRankPartition
     {F : Type*} {V : Type*} [Field F] [AddCommGroup V] [Module F V]
     [DecidableEq V] (S : Finset V) (hS : S.Nonempty) :
@@ -962,6 +1010,8 @@ theorem exists_geometricRankPartition
   exact ⟨selectedGeometricFlagRankPartition B⟩
 
 open scoped BigOperators in
+/-- The subspace-design premise, in the form the counting argument consumes: for any subspace `A` of
+the code, `∑ᵢ dim (A ⊓ ker (proj i)) ≤ n · dim A · τ (dim A)`. -/
 theorem subspaceDesign_kernelSum_le_profile
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] {s : ℕ} {τ : ℕ → ℝ}
@@ -1028,6 +1078,14 @@ theorem vectorSpan_finset_le_submodule_of_subset
     exact C.sub_mem (hSC x (Finset.mem_of_mem_erase hx)) (hSC p hp)
 
 open scoped BigOperators in
+/-- **The subspace-design agreement bound.** If `τ` stays below `t` on `1 ≤ r ≤ d` and `T` is a set
+of at most `d + 1` codewords of a `τ`-design, then the agreement weight of `T` against any word is
+*strictly* less than `n · (|T| − 1) · t`.
+
+Two bounds on the same quantity meet: a minimal heavy subset `U` forces the sum of the edge affine
+ranks to be at least `geometricAffineRank U · n · t`, while `vectorSpan_agreementEdges_le_inf_ker`
+sends those ranks into `∑ᵢ dim (A ⊓ ker (proj i))` for `A = vectorSpan U`, which the design premise
+caps at `n · dim A · τ (dim A)`. -/
 theorem agreementWeight_lt_of_subspaceDesign
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [DecidableEq F]
@@ -1130,6 +1188,9 @@ theorem agreementWeight_lt_of_subspaceDesign
     hlower.trans (hsum.trans hupper)
   exact (not_lt_of_ge hchain) hstrict
 
+/-- `agreementWeight_lt_of_subspaceDesign` at the rate-derived profile
+`τ(r) = (s·R − 1/n) / (s − r + 1)`: a set of `d + 1` codewords has agreement weight strictly less
+than `n · d · (s·R / (s − d + 1))`. -/
 theorem agreementWeight_lt_of_subspaceDesign_rate
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {F : Type*} [Field F] [DecidableEq F]

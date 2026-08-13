@@ -34,19 +34,19 @@ import Mathlib.Tactic.FieldSimp
 /-!
 # Large-alphabet barrier: statements, coordinate blocks, and family counting
 
-First of four files carrying the [AGL23] exponential-alphabet barrier. The development is one long
-chain and the files are cut at declaration boundaries to stay inside the repo's line limit, so the
-seams are partly arithmetic; what each file holds is described here rather than implied by its name.
-
-This one holds the **statement layer** — the `AGL*` `Prop` abbreviations and the four bundling
-structures (`AGLBarrierParameters`, `AGLCoordinateBlocks`, `AGLLargeUnionFamily`,
-`AGLRoundedBarrierData`) that let the later files pass whole obligations around as values — together
-with the first block of proofs: the coordinate-block constructions, and the cardinality counting for
-the indexed families of restrictions (`aglConstrainedIndexedFamiliesCard`,
-`aglBadIndexedFamiliesCardBound`, `aglGoodBaseByDoubleCount`).
+The **statement layer** of the [AGL23] exponential-alphabet barrier — the `AGL*` `Prop`
+abbreviations, and the four structures (`AGLBarrierParameters`, `AGLCoordinateBlocks`,
+`AGLLargeUnionFamily`, `AGLRoundedBarrierData`) that let obligations be passed around as values —
+together with the coordinate-block constructions and the cardinality counting for the indexed
+families of restrictions.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
+
+## References
+
+The keys cited here — [AGL23] — are resolved in the reference list of
+`ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
@@ -63,6 +63,9 @@ open Code
 
 section LargeAlphabetBarrier
 
+/-- The barrier's integer parameters, bundled with the three inequalities that make them fit: the
+`ℓ + 1` agreement blocks fit inside the radius, a codeword avoiding the family's set still lies
+within the radius, and a repeated codeword would have to beat the boosted radius. -/
 structure AGLBarrierParameters (ℓ n radius boosted : ℕ) where
   aFamily : ℕ
   aUnion : ℕ
@@ -73,6 +76,9 @@ structure AGLBarrierParameters (ℓ n radius boosted : ℕ) where
   other_codeword_bound : n - dZero - dOne - aFamily ≤ radius
   repeated_codeword_contradiction : n - aUnion < boosted
 
+/-- **Many large sets share a large `ℓ`-wise intersection.** Given `M ≥ ⌈4ℓ²/p⌉` subsets of the
+coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^ℓ/4)·n⌉` coordinates.
+This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
 def AGLCommonDisagreementIntersection : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -83,6 +89,8 @@ def AGLCommonDisagreementIntersection : Prop :=
           Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
             ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard
 
+/-- A block structure on the coordinates: one `zero` block of size `dZero` and `ℓ` further pairwise
+disjoint blocks of size `dOne`, all disjoint from `zero`. -/
 structure AGLCoordinateBlocks (ι : Type) [DecidableEq ι]
     (ℓ dZero dOne : ℕ) where
   zero : Finset ι
@@ -92,12 +100,14 @@ structure AGLCoordinateBlocks (ι : Type) [DecidableEq ι]
   zero_disjoint : ∀ j, Disjoint zero (other j)
   other_disjoint : ∀ i j, i ≠ j → Disjoint (other i) (other j)
 
+/-- Such blocks exist whenever the coordinates can hold them, `dZero + ℓ · dOne ≤ n`. -/
 def AGLCoordinateBlocksExistence : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι],
       dZero + ℓ * dOne ≤ Fintype.card ι →
       ∃ _blocks : AGLCoordinateBlocks ι ℓ dZero dOne, True
 
+/-- The coordinates a block structure uses number exactly `dZero + ℓ · dOne`. -/
 def AGLCoordinateBlocksUsedCard : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -105,6 +115,7 @@ def AGLCoordinateBlocksUsedCard : Prop :=
       let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
       used.card = dZero + ℓ * dOne
 
+/-- A set of size at least `k · t` contains `k` pairwise disjoint subsets of size `t`. -/
 def AGLDisjointEqualBlocks : Prop :=
   ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
     (S : Finset ι) (k t : ℕ), k * t ≤ S.card →
@@ -113,6 +124,8 @@ def AGLDisjointEqualBlocks : Prop :=
         (∀ j, (blocks j).card = t) ∧
         ∀ i j, i ≠ j → Disjoint (blocks i) (blocks j)
 
+/-- **Small fibers force a large image.** If every fiber of `f` on `s` has fewer than `W` elements
+and `W · ℓ ≤ |s|`, then `f` takes at least `ℓ` distinct values on `s`. -/
 def AGLDistinctAlternativesOfBoundedFibers : Prop :=
   ∀ {α β : Type} [DecidableEq α] [DecidableEq β]
     (s : Finset α) (f : α → β) (W ℓ : ℕ), 0 < W →
@@ -120,6 +133,8 @@ def AGLDistinctAlternativesOfBoundedFibers : Prop :=
       (∀ y, (s.filter fun x => f x = y).card < W) →
       ℓ ≤ (s.image f).card
 
+/-- Double counting `ℓ`-subsets of set-indices against coordinates:
+`∑ᵢ C(incidence i, ℓ) = ∑_{|J| = ℓ} |{i : i ∈ S j for all j ∈ J}|`. -/
 def AGLIncidenceDoubleCount : Prop :=
   ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
     (ℓ : ℕ) (S : κ → Finset ι),
@@ -129,6 +144,8 @@ def AGLIncidenceDoubleCount : Prop :=
     ∑ i, Nat.choose (incidence i) ℓ =
       ∑ J ∈ Finset.univ.powersetCard ℓ, (common J).card
 
+/-- From a bound on the *mean* incidence to a bound on its `ℓ`-th binomial moment:
+`p·M·n ≤ ∑ᵢ aᵢ` implies `(3p^ℓ/4) · C(M, ℓ) · n ≤ ∑ᵢ C(aᵢ, ℓ)`, by convexity once `M ≥ ⌈4ℓ²/p⌉`. -/
 def AGLIncidenceMomentLower : Prop :=
   ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p → p < 1 →
     Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
@@ -137,18 +154,24 @@ def AGLIncidenceMomentLower : Prop :=
       (3 * p ^ ℓ / 4) * Nat.choose M ℓ * n ≤
         ∑ i, (Nat.choose (a i) ℓ : ℝ)
 
+/-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
+`M ≥ ⌈4ℓ²/p⌉`. -/
 def AGLIncidencePowerGap : Prop :=
   ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
     Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
     (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
       (p * M - (ℓ - 1)) ^ ℓ
 
+/-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
 def AGLIncidenceSumDoubleCount : Prop :=
   ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
     [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
     ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
       ∑ j, (S j).card
 
+/-- A **large-union family**: a finite family of coordinate sets, all of size `aFamily`, such that
+*any* `W` of them already cover at least `aUnion` coordinates. The barrier uses one to force a
+codeword that avoids a family member to be far from the centre. -/
 structure AGLLargeUnionFamily (ι : Type) [DecidableEq ι]
     (W aFamily aUnion : ℕ) where
   sets : Finset (Finset ι)
@@ -156,6 +179,8 @@ structure AGLLargeUnionFamily (ι : Type) [DecidableEq ι]
   large_union : ∀ T : Finset (Finset ι), T ⊆ sets → T.card = W →
     aUnion ≤ (T.biUnion id).card
 
+/-- Large-union families exist at densities `0 < α < β < 1`, with exponentially many sets:
+`2^(γ·m)` of them for some `γ > 0` and all large `m`. -/
 def AGLLargeUnionExistence : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
@@ -164,6 +189,8 @@ def AGLLargeUnionExistence : Prop :=
           (Nat.floor (α * m)) (Nat.ceil (β * m)),
           (2 : ℝ) ^ (γ * m) ≤ family.sets.card
 
+/-- A large-union family can be reparametrised to nearby sizes `a₁ ≥ a₀`, `b₁ ≤ b₀`, at the cost
+of a factor `W` in the number of sets. -/
 def AGLLargeUnionFamilyResize : Prop :=
   ∀ (W a₀ b₀ a₁ b₁ : ℕ), 0 < W → a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι], a₁ ≤ Fintype.card ι →
@@ -171,6 +198,8 @@ def AGLLargeUnionFamilyResize : Prop :=
         ∃ target : AGLLargeUnionFamily ι W a₁ b₁,
           source.sets.card ≤ W * target.sets.card
 
+/-- A large-union family on `Fin m` transports to one on the *unused* coordinates of a block
+structure, keeping its size and staying disjoint from every block. -/
 def AGLLargeUnionFamilyTransport : Prop :=
   ∀ (ℓ dZero dOne W aFamily aUnion : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -183,6 +212,8 @@ def AGLLargeUnionFamilyTransport : Prop :=
             ∀ S ∈ target.sets, Disjoint S blocks.zero ∧
               ∀ j, Disjoint S (blocks.other j)
 
+/-- The barrier's parameters after rounding to integers: radius, boosted radius, block sizes, the
+used and unused coordinate counts, and the family's set and union sizes. -/
 structure AGLRoundedBarrierData where
   radius : ℕ
   boosted : ℕ
@@ -193,10 +224,15 @@ structure AGLRoundedBarrierData where
   aFamily : ℕ
   aUnion : ℕ
 
+/-- `D` is `d`-**separated**: distinct elements are at Hamming distance at least `d`. -/
 def AGLSeparated {ι F : Type} [Fintype ι] [DecidableEq F]
     (D : Set (ι → F)) (d : ℕ) : Prop :=
   ∀ ⦃u : ι → F⦄, u ∈ D → ∀ ⦃v : ι → F⦄, v ∈ D → u ≠ v → d ≤ hammingDist u v
 
+/-- **The pigeonhole bound**, by counting rather than by a probabilistic argument. Given a separated
+code whose list size at the radius is at most `ℓ`, plus a block structure and a large-union family
+disjoint from it, a code with `2 · |A|^aFamily ≤ |C|` cannot exist: some alternative on the family's
+sets must repeat, and a repeat contradicts separation. -/
 def AGLDeterministicPigeonholeBound : Prop :=
   ∀ (ℓ n radius boosted : ℕ), 2 ≤ ℓ → 0 < n →
     ∀ {ι A : Type} [Fintype ι] [DecidableEq ι]
@@ -214,6 +250,8 @@ def AGLDeterministicPigeonholeBound : Prop :=
         family.sets.card ≤
           2 * params.W * ℓ * Fintype.card A ^ params.dZero
 
+/-- **Greedy extraction of a separated subcode.** If every ball of radius `d` around a codeword
+holds at most `B` codewords, then `C` has a `(d+1)`-separated subset `D` with `|C| ≤ B · |D|`. -/
 def AGLGreedySeparatedExtraction : Prop :=
   ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
     (C : Set (ι → A)) (d B : ℕ), C.Finite →
@@ -222,6 +260,7 @@ def AGLGreedySeparatedExtraction : Prop :=
     ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ AGLSeparated D (d + 1) ∧
       C.ncard ≤ B * D.ncard
 
+/-- The mean of the shifted incidences `aᵢ + 1 − ℓ` is at least `p·M − (ℓ−1)`. -/
 def AGLShiftedIncidenceMeanLower : Prop :=
   ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n →
     ∀ a : Fin n → ℕ,
@@ -229,11 +268,15 @@ def AGLShiftedIncidenceMeanLower : Prop :=
       p * M - (ℓ - 1) ≤
         (∑ i, ((a i + 1 - ℓ : ℕ) : ℝ)) / n
 
+/-- The binomial ratio estimate behind the sparse count:
+`C(b−1, a) / C(m, a) ≤ ((b−1)/(m+1−a))^a`. -/
 def AGLSparseChooseRatioBound : Prop :=
   ∀ (m a b : ℕ), a ≤ b - 1 → b - 1 ≤ m →
     ((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ≤
       ((((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) ^ a)
 
+/-- The *sparse* large-union existence statement, at `α + β < 1` rather than `β < 1`. This is the
+regime the barrier needs, and it is what the numerics below deliver. -/
 def AGLSparseLargeUnionExistence : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → α + β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
@@ -242,6 +285,8 @@ def AGLSparseLargeUnionExistence : Prop :=
           (Nat.floor (α * m)) (Nat.ceil (β * m)),
           (2 : ℝ) ^ (γ * m) ≤ family.sets.card
 
+/-- The purely numeric inequalities behind sparse existence: with `T = 2^(m/W)` candidate families,
+the count of *bad* families is smaller than the total, so a good one exists. -/
 def AGLSparseLargeUnionNumerics : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → α + β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
@@ -255,9 +300,12 @@ def AGLSparseLargeUnionNumerics : Prop :=
             Nat.choose m a ^ T ∧
           W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤ T
 
+/-- The numerics imply sparse existence — the probabilistic-method step, done by counting. -/
 def AGLSparseLargeUnionExistenceOfNumerics : Prop :=
   AGLSparseLargeUnionNumerics → AGLSparseLargeUnionExistence
 
+/-- The unused coordinates of a block structure are in bijection with `Fin` of their number, which
+is how a family built on `Fin m` is transported onto them. -/
 def AGLUnusedCoordinatesEquivFin : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
@@ -278,6 +326,8 @@ theorem aglAlphabetCardGeRpowOfAlphaLeEta
   have hcardR : (2 : ℝ) ≤ Fintype.card A := by exact_mod_cast hcard
   exact hpow.trans hcardR
 
+/-- The **bad** `T`-indexed families of `a`-subsets of `Fin m`: those for which some `W` of the sets
+have union smaller than `b`. Their complement gives a large-union family. -/
 noncomputable def aglBadIndexedFamilies
     (m a T W b : ℕ) :
     Finset (Fin T → {S : Finset (Fin m) // S.card = a}) := by
@@ -286,12 +336,16 @@ noncomputable def aglBadIndexedFamilies
     ∃ J : Finset (Fin T), J.card = W ∧
       (J.biUnion fun j => (A j).1).card < b
 
+/-- Counting the bad families: at most `C(T,W) · C(m,b−1) · C(b−1,a)^W · C(m,a)^(T−W)`, obtained by
+choosing the witnessing `W` indices and the `(b−1)`-set covering them. -/
 def AGLBadIndexedFamiliesCardBound : Prop :=
   ∀ (m a T W b : ℕ), 0 < W → W ≤ T → 0 < b → b ≤ m → a < b →
     (aglBadIndexedFamilies m a T W b).card ≤
       Nat.choose T W * Nat.choose m (b - 1) *
         Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
 
+/-- Every bad family admits a witness: `W` indices and a set of size `b−1` containing all of their
+sets. -/
 def AGLBadIndexedFamiliesWitnessCover : Prop :=
   ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
     ∀ A ∈ aglBadIndexedFamilies m a T W b,
@@ -299,6 +353,7 @@ def AGLBadIndexedFamiliesWitnessCover : Prop :=
         J.card = W ∧ U.card = b - 1 ∧
           ∀ j ∈ J, (A j).val ⊆ U
 
+/-- A family that is *not* bad yields a large-union family, with `T ≤ W · |family.sets|`. -/
 def AGLGoodIndexedFamilyToLargeUnionFamily : Prop :=
   ∀ (m a T W b : ℕ), 0 < W → a < b →
     ∀ A : Fin T → {S : Finset (Fin m) // S.card = a},
@@ -324,6 +379,7 @@ theorem aglBadIndexedFamiliesWitnessCover :
   apply hUnionSub
   exact Finset.mem_biUnion.mpr ⟨j, hj, hx⟩
 
+/-- The density at which the large-union family's sets are drawn: half the rate. -/
 noncomputable def aglBarrierAlphaDensity (R : ℝ) : ℝ := R / 2
 
 theorem aglBarrierExponentContradiction
@@ -341,6 +397,7 @@ theorem aglBarrierExponentContradiction
     Real.rpow_lt_rpow_of_exponent_lt (by norm_num) hexp
   exact (not_lt_of_ge hchain) hstrict
 
+/-- The barrier's length constant, `8·(B + ℓ + 10)`. -/
 noncomputable def aglBarrierK (ℓ B : ℕ) : ℝ :=
   ((8 * (B + ℓ + 10) : ℕ) : ℝ)
 
@@ -356,9 +413,14 @@ theorem aglBarrierKSlack
   field_simp [ne_of_gt hℓpos]
   nlinarith
 
+/-- The **boosted radius** `p + p^ℓ/(2ℓ)`: slightly beyond `p`, which is the room the
+balanced-centre construction needs. -/
 noncomputable def aglBoostedRadius (ℓ : ℕ) (p : ℝ) : ℝ :=
   p + p ^ ℓ / (2 * ℓ)
 
+/-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
+boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
+radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
 def AGLBalancedCenterConstruction : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
@@ -372,6 +434,9 @@ def AGLBalancedCenterConstruction : Prop :=
         hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
         ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι)
 
+/-- **The local neighbourhood bound.** A list size of at most `ℓ` at radius `p` caps how many
+codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ²/p⌉`. Proved by feeding
+the balanced-centre construction a hypothetical excess. -/
 def AGLLocalNeighborhoodBound : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -536,12 +601,15 @@ theorem aglChooseDistinctImages
     dsimp only [sel] at hij
     exact hi.symm.trans (hij.trans hj)
 
+/-- The families whose sets at the indices in `J` all sit inside `U` — the shape a bad family's
+witness puts it into. -/
 noncomputable def aglConstrainedIndexedFamilies
     (m a T : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)) :
     Finset (Fin T → {S : Finset (Fin m) // S.card = a}) := by
   classical
   exact Finset.univ.filter fun A => ∀ j ∈ J, (A j).1 ⊆ U
 
+/-- Every bad family lies in one of the constrained classes, indexed by its witness `(J, U)`. -/
 def AGLBadIndexedFamiliesSubsetCover : Prop :=
   ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
     aglBadIndexedFamilies m a T W b ⊆
@@ -549,6 +617,7 @@ def AGLBadIndexedFamiliesSubsetCover : Prop :=
         (Finset.univ.powersetCard (b - 1)).biUnion fun U =>
           aglConstrainedIndexedFamilies m a T J U
 
+/-- The exact size of a constrained class: `C(b−1, a)^W · C(m, a)^(T−W)`. -/
 def AGLConstrainedIndexedFamiliesCard : Prop :=
   ∀ (m a T W b : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)),
     J.card = W → U.card = b - 1 →

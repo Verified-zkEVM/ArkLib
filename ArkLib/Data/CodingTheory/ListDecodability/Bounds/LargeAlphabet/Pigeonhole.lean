@@ -9,7 +9,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Centers
 /-!
 # Large-alphabet barrier: the local neighbourhood bound and the pigeonhole barrier
 
-Third of four. The common-disagreement-intersection lemma, the **local neighbourhood bound** that
+The common-disagreement-intersection lemma, the **local neighbourhood bound** that
 turns `Λ(C, ·) ≤ ℓ` into a cap on how many codewords sit near a centre
 (`aglLocalNeighborhoodBound`), the **deterministic pigeonhole bound**
 (`aglDeterministicPigeonholeBound`) that replaces the source's probabilistic step, and the parameter
@@ -642,9 +642,12 @@ theorem aglSmallAlphabetPowerBound
     _ ≤ (2 : ℝ) ^ ((γ / 4) * n) :=
       Real.rpow_le_rpow_of_exponent_le (by norm_num) hexp
 
+/-- The radius at the mid-rate reference point, `ℓ/(ℓ+1) · (1 − ρ)/2`. Constants below are expressed
+against it so they do not degrade as `η → 0`. -/
 noncomputable def aglSmallRadius (ℓ : ℕ) (ρ : ℝ) : ℝ :=
   (ℓ : ℝ) / (ℓ + 1) * ((1 - ρ) / 2)
 
+/-- The cut-off below which `η` must lie for the barrier's parameters to fit. -/
 noncomputable def aglBarrierEtaCut (ℓ : ℕ) (R : ℝ) (B : ℕ) : ℝ :=
   min ((1 - R) / 2)
     (aglSmallRadius ℓ R / (2 * (aglBarrierK ℓ B + 1)))
@@ -707,9 +710,11 @@ theorem aglBarrierRadiusWindow
       _ < 1 := hcoefFac
   exact ⟨hsmall, hsmallLe, hp, hpcoef, hboost, hboostOne⟩
 
+/-- The density `ξ = smallRadius^ℓ / (8ℓ)` — the gap the large-union family must beat. -/
 noncomputable def aglBarrierXiDensity (ℓ : ℕ) (R : ℝ) : ℝ :=
   aglSmallRadius ℓ R ^ ℓ / (8 * ℓ)
 
+/-- The union density `β = 1 − ξ` demanded of the large-union family. -/
 noncomputable def aglBarrierBetaDensity (ℓ : ℕ) (R : ℝ) : ℝ :=
   1 - aglBarrierXiDensity ℓ R
 
@@ -860,9 +865,12 @@ theorem aglBarrierDensityRealGaps
     rw [hgapTwo]
     exact sub_nonneg.mpr hxiFour
 
+/-- The length past which the local neighbourhood bound applies, `⌈8ℓ / smallRadius^ℓ⌉`. -/
 noncomputable def aglLocalLengthThreshold (ℓ : ℕ) (ρ : ℝ) : ℕ :=
   Nat.ceil (8 * (ℓ : ℝ) / (aglSmallRadius ℓ ρ) ^ ℓ)
 
+/-- The local neighbourhood bound's value, `ℓ + ⌈4ℓ² / smallRadius⌉`: how many codewords can sit
+within the boosted radius of one codeword when the list size is at most `ℓ`. -/
 noncomputable def aglNeighborhoodCap (ℓ : ℕ) (ρ : ℝ) : ℕ :=
   ℓ + Nat.ceil (4 * (ℓ : ℝ) ^ 2 / aglSmallRadius ℓ ρ)
 
@@ -945,6 +953,7 @@ theorem aglRoundedBarrierBasicBounds
     simpa only [Nat.floor_natCast] using hfloor
   exact ⟨hone, hrateFloor, hdZero, hBoostPos, hBoostLe, hRadiusLe⟩
 
+/-- The length threshold at which every density estimate for the rounded parameters holds. -/
 noncomputable def aglRoundedBarrierDensityThreshold
     (ℓ : ℕ) (R : ℝ) (B : ℕ) : ℕ :=
   max (aglRoundedBarrierBasicThreshold R B)

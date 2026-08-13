@@ -16,13 +16,19 @@ import Mathlib.FieldTheory.Finiteness
 /-!
 # List-size bounds specific to Reed-Solomon codes
 
-The three Reed-Solomon separations of `[ABF26]` §3 — superpolynomial lists over extension fields
-`[BKR06]`, large lists over prime fields `[GHSZ02]`, and the high-rate obstruction `[JH01]` — and,
+The three Reed-Solomon separations of [ABF26] §3 — superpolynomial lists over extension fields
+[BKR06], large lists over prime fields [GHSZ02], and the high-rate obstruction [JH01] — and,
 in the opposite direction, the one probabilistic upper bound: a Reed-Solomon code on a *uniformly
-random* evaluation domain is list-decodable near capacity with high probability `[AGL24]`.
+random* evaluation domain is list-decodable near capacity with high probability [AGL24].
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
+
+## References
+
+The keys cited here — [ABF26], [BKR06], [GHSZ02], [JH01], [AGL24], [BGM23], [GZ23], [AGGLZ25] — are
+resolved in the reference list of `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`, which
+every file in this directory shares.
 -/
 
 -- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
