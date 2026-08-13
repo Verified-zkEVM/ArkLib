@@ -811,6 +811,54 @@ theorem rs_lambda_large_prime
               c * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2) := by
   sorry -- external admit: [GHSZ02, Corollary 20].
 
+def rsAgreesOffInjective {ι A : Type} [DecidableEq ι] (C : Set (ι → A))
+    (w : ι → A) (c : ι → ι → A) (hw : w ∉ C) (hc : ∀ a, c a ∈ C)
+    (hagree : ∀ a x, x ≠ a → c a x = w x) : Function.Injective c := by
+  intro a b hab
+  by_contra hne
+  apply hw
+  have hwca : w = c a := by
+    funext x
+    by_cases hxa : x = a
+    · have hxb : x ≠ b := by
+        intro hxb
+        exact hne (hxa.symm.trans hxb)
+      calc
+        w x = c b x := (hagree b x hxb).symm
+        _ = c a x := congrFun hab.symm x
+    · exact (hagree a x hxa).symm
+  rw [hwca]
+  exact hc a
+
+def rsHammingDistLeOne {ι : Type} [Fintype ι] [DecidableEq ι]
+    {A : ι → Type} [∀ x, DecidableEq (A x)] (u v : ∀ x, A x) (a : ι)
+    (hagree : ∀ x, x ≠ a → u x = v x) : hammingDist u v ≤ 1 := by
+  unfold hammingDist
+  calc
+    (Finset.univ.filter fun x => u x ≠ v x).card ≤ ({a} : Finset ι).card := by
+      apply Finset.card_le_card
+      intro x hx
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+      simp only [Finset.mem_singleton]
+      by_contra hxa
+      exact hx (hagree x hxa)
+    _ = 1 := Finset.card_singleton a
+
+noncomputable def rsOmitInterpolant {ι F : Type} [Field F] [Fintype ι]
+    [DecidableEq ι] (domain : ι ↪ F) (w : ι → F) (a : ι) : ι → F :=
+  _root_.ReedSolomon.evalOnPoints domain
+    (Lagrange.interpolate (Finset.univ.erase a) domain w)
+
+def rsRadiusOneFloor (j : ℕ) :
+    ⌊(1 / (j + 1 : ℝ)) * (j + 1 : ℕ)⌋₊ = 1 := by
+  have hpos : (0 : ℝ) < j + 1 := by positivity
+  have hprod : (1 / (j + 1 : ℝ)) * (j + 1 : ℕ) = 1 := by
+    rw [Nat.cast_add, Nat.cast_one, one_div,
+      inv_mul_cancel₀ (ne_of_gt hpos)]
+  rw [hprod]
+  exact Nat.floor_one
+
+
 /-- **High-rate Reed-Solomon codes cannot be list-decoded past `1/(j+1)`** ([ABF26] Theorem 3.14,
 after [JH01, Theorem 2]). Fix an integer `j ≥ 2`. For infinitely many prime powers `q` with
 `q ≡ 1 (mod j+1)` there is a code `C := RS[F_q, L, k]` with `|L| = j + 1` and rate `≈ (j-1)/(j+1)`
@@ -848,8 +896,7 @@ Theorem 2 proves at rate `(j−1)/(j+1)` — the modular condition is exactly th
 for `μ_{j+1} ⊆ F_q^×`, suggesting [JH01] pins `L = μ_{j+1}` and concludes something sharper. Both
 ingredients for an in-tree proof are available: `Nat.exists_prime_gt_modEq_one` for the sequence,
 and `Lagrange.interpolate` with `Lagrange.degree_interpolate_lt` for the interpolants. -/
-theorem rs_lambda_high_rate
-    (j : ℕ) (_hj_ge : 2 ≤ j) :
+theorem rs_lambda_high_rate (j : ℕ) (_hj_ge : 2 ≤ j) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧
       (∀ i, IsPrimePow (qs i)) ∧ (∀ i, qs i % (j + 1) = 1) ∧
       ∀ i : ℕ,
@@ -859,7 +906,133 @@ theorem rs_lambda_high_rate
           ∃ (domain : ι ↪ F) (w : ι → F),
             let C := ReedSolomon.code domain j
             (j : ℕ∞) < (closeCodewordsRel ((C : Set (ι → F))) w (1 / (j + 1 : ℝ))).ncard := by
-  sorry -- external admit: [JH01, Theorem 2].
+  classical
+  let m := j + 1
+  obtain ⟨p, hp_ge, hp⟩ := Nat.exists_infinite_primes (m + 1)
+  have hm_pos : 0 < m := by simp [m]
+  have hm_one : 1 < m := by simp [m]; omega
+  have hm_lt_p : m < p := by omega
+  have hcop : Nat.Coprime p m := Nat.coprime_of_lt_prime (by omega) hm_lt_p hp
+  have heuler : p ^ Nat.totient m ≡ 1 [MOD m] := Nat.ModEq.pow_totient hcop
+  let qs : ℕ → ℕ := fun i => p ^ (Nat.totient m * (i + 1))
+  have hqs_mono : StrictMono qs := by
+    intro a b hab
+    apply pow_right_strictMono₀ hp.one_lt
+    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
+    exact (Nat.mul_lt_mul_left htot).mpr (Nat.add_lt_add_right hab 1)
+  have hqs_pp : ∀ i, IsPrimePow (qs i) := by
+    intro i
+    apply hp.isPrimePow.pow
+    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
+    positivity
+  have hqs_mod : ∀ i, qs i % (j + 1) = 1 := by
+    intro i
+    have hcong : qs i ≡ 1 [MOD m] := by
+      rw [show qs i = (p ^ Nat.totient m) ^ (i + 1) by simp [qs, pow_mul]]
+      simpa using heuler.pow (i + 1)
+    change qs i % m = 1
+    exact Nat.mod_eq_of_modEq hcong hm_one
+  refine ⟨qs, hqs_mono, hqs_pp, hqs_mod, ?_⟩
+  intro i ι _ _ _ F _ _ _ hF hι
+  have hexp_pos : 0 < Nat.totient m * (i + 1) := by
+    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
+    positivity
+  have hp_le_qs : p ≤ qs i := by
+    change p ≤ p ^ (Nat.totient m * (i + 1))
+    exact Nat.le_pow hexp_pos
+  have hcard_le : Fintype.card ι ≤ Fintype.card F := by
+    rw [hι, hF]
+    change m ≤ qs i
+    omega
+  let domain : ι ↪ F := Classical.choice (Function.Embedding.nonempty_of_card_le hcard_le)
+  let C : Submodule F (ι → F) := ReedSolomon.code domain j
+  have hdimC : Module.finrank F C = j := by
+    change LinearCode.dim (ReedSolomon.code domain j) = j
+    exact ReedSolomon.dim_eq_deg_of_le (by omega)
+  have hdimV : Module.finrank F (ι → F) = j + 1 := by
+    rw [Module.finrank_fintype_fun_eq_card, hι]
+  obtain ⟨w, hw⟩ := Submodule.exists_of_finrank_lt C (by omega)
+  have hwC : w ∉ C := by
+    simpa only [one_smul] using hw (1 : F) one_ne_zero
+  let poly : ι → Polynomial F := fun a =>
+    Lagrange.interpolate (Finset.univ.erase a) domain w
+  let c : ι → (ι → F) := fun a => ReedSolomon.evalOnPoints domain (poly a)
+  have hdeg : ∀ a, (poly a).degree < (j : WithBot ℕ) := by
+    intro a
+    have hd := Lagrange.degree_interpolate_lt (s := Finset.univ.erase a)
+      (v := domain) (r := w) domain.injective.injOn
+    have hcard : (Finset.univ.erase a).card = j := by
+      rw [Finset.card_erase_of_mem (Finset.mem_univ a), Finset.card_univ, hι]
+      omega
+    rw [hcard] at hd
+    exact hd
+  have hc : ∀ a, c a ∈ C := by
+    intro a
+    exact ReedSolomon.evalOnPoints_mem_code_of_degree_lt (hdeg a)
+  have hagree : ∀ a x, x ≠ a → c a x = w x := by
+    intro a x hxa
+    change Polynomial.eval (domain x)
+      (Lagrange.interpolate (Finset.univ.erase a) domain w) = w x
+    exact Lagrange.eval_interpolate_at_node w domain.injective.injOn (by simp [hxa])
+  have cinj : Function.Injective c := by
+    intro a b hab
+    by_contra hne
+    have hcaw : c a = w := by
+      funext x
+      by_cases hxa : x = a
+      · have hxb : x ≠ b := by
+          intro hxb
+          apply hne
+          exact hxa.symm.trans hxb
+        calc
+          c a x = c b x := congrFun hab x
+          _ = w x := hagree b x hxb
+      · exact hagree a x hxa
+    exfalso
+    apply hwC
+    rw [← hcaw]
+    exact hc a
+  refine ⟨domain, w, ?_⟩
+  have hprod : (1 / (j + 1 : ℝ)) * (Fintype.card ι : ℝ) = 1 := by
+    rw [hι]
+    push_cast
+    field_simp
+  have hfloor : ⌊(1 / (j + 1 : ℝ)) * Fintype.card ι⌋₊ = 1 := by
+    rw [hprod]
+    norm_num
+  have hclose : ∀ a, c a ∈
+      _root_.ListDecodable.closeCodewordsRel ((C : Set (ι → F))) w
+        (1 / (j + 1 : ℝ)) := by
+    intro a
+    rw [CodingTheory.closeCodewordsRel_eq_setOf C _ (by positivity) w]
+    simp only [Set.mem_setOf_eq]
+    refine ⟨hc a, ?_⟩
+    rw [hfloor]
+    unfold hammingDist
+    calc
+      (Finset.filter (fun x => c a x ≠ w x) Finset.univ).card ≤
+          ({a} : Finset ι).card := by
+        apply Finset.card_le_card
+        intro x hx
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hx
+        simp only [Finset.mem_singleton]
+        by_contra hxa
+        exact hx (hagree a x hxa)
+      _ = 1 := Finset.card_singleton a
+  let S : Set (ι → F) :=
+    _root_.ListDecodable.closeCodewordsRel ((C : Set (ι → F))) w
+      (1 / (j + 1 : ℝ))
+  have hcount : (Set.univ : Set ι).ncard ≤ S.ncard := by
+    apply Set.ncard_le_ncard_of_injOn c
+    · intro a _
+      exact hclose a
+    · intro a _ b _ hab
+      exact cinj hab
+  have hcount' : Fintype.card ι ≤ S.ncard := by
+    simpa only [Set.ncard_univ, Nat.card_eq_fintype_card] using hcount
+  have hjlt : j < S.ncard := by omega
+  change (j : ℕ∞) < (S.ncard : ℕ∞)
+  exact_mod_cast hjlt -- external admit: [JH01, Theorem 2].
 
 end ReedSolomonBounds
 
