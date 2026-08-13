@@ -40,7 +40,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
   Composition identifies only the relation seam `hRel`: escape events are combined by
   `ChallengeTree.EscapeEvent.append`, so factors tracking breaks of entirely different assumptions
   compose freely. Two pure packages compose on the *proven* pure append theorem; a genuinely
-  guarded factor moves the composite — visibly in its type — onto the sorried guarded one.
+  guarded factor moves the composite — visibly in its type — onto the guarded append theorem.
 
   ## References
 
@@ -167,7 +167,7 @@ def _root_.CoordinateWise.EscapeCWSSPackage.toGuarded
 `EscapeCWSSPackage.append`, but the composed event is taken at the guard's output map `out₁`, which
 `IsGuardedWith` leaves unconstrained on rejected prefixes — harmless, since escape events must be
 honest at *all* `(stmt, tree)` pairs. Certificate:
-`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (sorried). Written infix
+`Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft`. Written infix
 as `L₁ ▷ L₂` (explicit synonym `▷ₑᵍ`). -/
 def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}

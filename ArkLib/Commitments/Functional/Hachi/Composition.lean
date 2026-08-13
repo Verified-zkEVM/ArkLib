@@ -91,8 +91,7 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
   never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8, 9,
   12 are **guarded**: their runtime check reads data the next statement type drops
   (the previous sumcheck target; the final targets; the packed claim value) — exactly the paper's
-  runtime checks — and compose through the guarded append, whose composition theorem is the
-  one sorried piece of *generic* machinery.
+  runtime checks — and compose through the proven guarded append theorem.
 - Row 6 implements the **corrected Lemma 10**: the paper's uniform-vector star extraction is not
   provable (axis-cross counterexample). Each coordinate of `τ₀` and `τα` is instead sampled in a
   separate scalar round, so the accepting transcript tree becomes a path-dependent complete
@@ -117,8 +116,8 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
 
 *Generic machinery*: `Verifier.IsGuarded.append` and
 `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (`Guarded.lean`; the latter is
-the fundamental obligation, stated escape-threaded at explicit guard data — the plain guarded
-append is *proven* from it at the never-firing events). The two scalar-round assemblies
+the escape-threaded fundamental theorem, stated at explicit guard data — the plain guarded append
+is its corollary at the never-firing events). The two scalar-round assemblies
 `coordinateWiseSpecialSoundWith(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) are proven, as
 are their readers, shape recovery, extractor and escape event. The escape
 layer (`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lean`) with its append

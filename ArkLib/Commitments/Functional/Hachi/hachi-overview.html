@@ -371,8 +371,8 @@
       <span class="chip">31 files</span>
       <span class="chip">24 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–4 sorry-free</span>
-      <span class="chip">34 open sorries</span>
+      <span class="chip">rows 1–6 CWSS sorry-free</span>
+      <span class="chip">20 open Hachi sorries</span>
     </div>
   </div>
 </header>
@@ -397,6 +397,7 @@
         <span class="k"><span class="sw" style="background:var(--ok)"></span>Proven — sorry-free &amp; complete</span>
         <span class="k"><span class="sw" style="background:var(--rep)"></span>Repaired — sorry-free, but a corrected variant of the paper</span>
         <span class="k"><span class="sw" style="background:var(--warn)"></span>WIP — theorems stated, proofs skeletal</span>
+        <span class="k"><span class="sw" style="background:var(--plan)"></span>Beyond current line — future iteration and other roadmap work</span>
       </div>
     </div>
   </section>
@@ -449,7 +450,7 @@
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill plan">planned</span></span>
-          <span class="txt">Named in the composition roadmap but not yet a file — future heads, tails, and the completeness layer.</span>
+          <span class="txt">Beyond the current opening line: future heads, tails, and the §4.5 recursive iteration loop. Some are represented by target skeletons, but are not counted as current-line WIP.</span>
         </div>
       </div>
     </div>
@@ -485,9 +486,9 @@
       <p>These files are not links in the chain, but the chain cannot stand without them: the proven mathematical
         base the line opens against, and the wiring that composes and threads it.</p>
     </div>
-    <div class="groupcap">Proven substrate — the commitment &amp; algebra the line opens against</div>
+    <div class="groupcap">Proven substrate — the commitment, algebra &amp; escape layer the line opens against</div>
     <div class="grid" id="substrateProven"></div>
-    <div class="groupcap">Cross-cutting — threading, shared encoding, composition &amp; the scheme interface</div>
+    <div class="groupcap">Cross-cutting — guarded composition, shared encoding, composition &amp; the scheme interface</div>
     <div class="grid" id="substrateCross"></div>
   </section>
 
@@ -506,6 +507,7 @@
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
+      <button data-f="plan" aria-pressed="false">beyond current line</button>
       <button data-f="umbrella" aria-pressed="false">umbrella</button>
     </div>
     <div class="tablewrap">
@@ -525,8 +527,8 @@
     <div class="sec-head">
       <span class="eyebrow">Still to do</span>
       <h2>Beyond the current line</h2>
-      <p>Work named in the <span class="mono">Composition.lean</span> roadmap that has no file yet — the outer interface,
-        the completeness layer, and the one piece of <em>generic</em> machinery the guarded seams wait on.</p>
+      <p>Work named in the <span class="mono">Composition.lean</span> roadmap that has no file yet — recursive iteration,
+        the completeness layer, and end-to-end security accounting.</p>
     </div>
     <div class="roadmap" id="roadmap"></div>
   </section>
@@ -546,9 +548,9 @@
       Design notes live in the module docstrings themselves — the corrected Lemma&nbsp;10 in
       <code>ZeroCheck/Reduction.lean</code> and the open row-11 gap in <code>Recursion/ZBatchBridge.lean</code>. The composition
       home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
-      directly from the current working tree on the <code>tr/cwss-packages-with-escape</code> branch; the open-sorry count
-      counts genuine proof terms inside <code>Hachi/</code> and excludes the generic guarded-append machinery, which lives under
-      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code>.
+      directly from this source snapshot; the open-sorry count counts genuine proof terms inside <code>Hachi/</code>.
+      The generic guarded-append machinery under
+      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> is now proved and sorry-free.
     </p>
   </div>
 </footer>
@@ -593,7 +595,7 @@
         desc:"The <b>un-batching pull-back <code>mem_relLift_of_relBatched</code> is proof-sorry-free and axiom-clean</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, so shortness is derived rather than assumed. The <b>Eq.&nbsp;(22) half is now a faithful paper-to-Lean bridge</b>: the public <code>M̃_α</code>/<code>α̃</code> contraction against the committed table is constructed (<code>mAlphaTilde</code>, <code>alphaTilde</code>, <code>alphaContract</code>) and <b>proved</b> equal to the per-row α-defect that <code>hAlphaEvals</code> stores (<code>alphaDefect_wTable</code>, axiom-clean), with the relation-level form <code>hAlpha_eq_zero_iff_alphaDefect</code>. Link&nbsp;5 remains WIP for one reason only: there is still no forward/honest-completeness theorem <code>relLift → relBatched</code>." },
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
         files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"m₀+m₁ scalar rounds", cwss:"k = 2 per round",
-        relIn:"relBatched", relOut:"relNestedZeroCheck", status:"repaired", sorry:0, badges:["repair"],
+        relIn:"relBatched", relOut:"relNestedZeroCheck", status:"repaired", sorry:0, badges:["repair","proven"],
         desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; the tree has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters, vs 2D−1=4095 for the printed lemma), and the extractor is non-constructive, so this is weaker than Lemma 10's <em>efficient deterministic</em> algorithm. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
@@ -605,8 +607,8 @@
         desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheck_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
-        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:3, badges:["guarded"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. The weak-binding failure mode is the escape event <code>roundEsc</code>; the three sorries are Lemma&nbsp;11 itself, its named <code>roundExtractor</code>, and the round encoding." },
+        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:2, badges:["guarded"],
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. The weak-binding failure mode is the escape event <code>roundEsc</code>; the two sorries are the named <code>roundExtractor</code> and Lemma&nbsp;11's CWSS theorem." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:3, badges:["guarded"],
@@ -621,25 +623,25 @@
       desc:"Multilinear evaluation as the vector–matrix–vector product <code>mb(xl) ⬝ᵥ (M ·ᵥ mb(xh))</code>, proved equal to <code>eval</code>. The bridge lemma the row-1 head consumes." },
     { name:"Inner-outer Ajtai commitment", ref:"§4.1 · [NS24]/[NOZ26]", files:[["InnerOuter","Scheme.lean"],["InnerOuter","Correctness.lean"],["InnerOuter","Security.lean"],["InnerOuter","Arithmetic.lean"]], status:"proven", sorry:0,
       desc:"The two-layer commitment the whole line opens against: the scheme with its weak openings, <b>perfect correctness</b>, and the <b>weak-binding reduction to Module-SIS</b> — plus the pinned power-of-two ring. All sorry-free, down to the [LS18] short-element invertibility the soundness rests on." },
+    { name:"Escape-aware CWSS packages", ref:"generic escape composition", files:[["OracleReduction/Security/CoordinateWiseSpecialSoundness","Escape.lean"]], status:"proven", sorry:0,
+      desc:"The escape layer is finished: a certificate may return a genuine cryptographic break as an escape event, and packages compose those events by <code>EscapeEvent.append</code>. Hachi's Lemma&nbsp;8 and the <code>evalChain</code> front use this completed machinery." },
   ];
   var SUB_CROSS = [
-    { name:"Escape threading", ref:"milestone F2.0", files:[["","Escape.lean"]], status:"wip", sorry:1,
-      desc:"Threads an abstract escape budget <code>E</code> through the finished front (<code>evalChain</code>) so the Figure-4 commitment's binding break has a home at every upstream seam. Relations, pull-back and the bridge package are sorry-free; the one sorry is the widened Lemma&nbsp;8." },
+    { name:"Guarded CWSS composition", ref:"generic guarded append", files:[["OracleReduction/Security/CoordinateWiseSpecialSoundness","Guarded.lean"]], status:"proven", sorry:0,
+      desc:"Guarded composition is complete: <code>IsGuarded.append</code> conjoins the checks, and <code>append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft</code> lifts escape-aware CWSS through a guarded left factor. An accepting composed tree forces every left check to pass — every CWSS suffix has a leaf, while a failed guard runs to <code>failure</code> — so the ordinary extraction argument applies. The sumcheck, final-evaluation, and trace-handoff seams now compose through proved generic machinery." },
     { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"wip", sorry:2,
       desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands (<code>sumcheckPoly*</code>, <code>zcTargetAlpha</code>, <code>hypercubeSum</code>) now have concrete computable bodies; the only remaining sorries are the two sum identities <code>sum_sumcheckPolyZero</code>/<code>sum_sumcheckPolyAlpha</code>." },
     { name:"Composition home", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:0,
       desc:"Imports every subprotocol's package and chains them: <code>evalChain</code> (the proven core, sorry-free) · <code>openCore</code> (rows 1–7, pure) · <code>openingChain</code> (rows 1–12, guarded tail and the §4.5 recursion adapters). Its <code>isCWSS</code> fields are the certificates; the file itself has no sorries — its soundness rests on the imported packages." },
     { name:"Scheme interface", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
-      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof — the one documented placeholder, pending the completeness layer." },
+      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof, pending honest-prover and correctness proofs for every opening subprotocol and their composition into the complete scheme." },
   ];
 
   var ROADMAP = [
-    { title:"§3 packing head — external extension-field claims", tag:"planned",
-      body:"Wrap an <code>F_{q^k}</code> evaluation claim in front of <code>relPolyEval</code>, as an instance of the generalized <code>RingSwitching</code> packing phase — a separate track, not a Hachi-local head." },
-    { title:"Honest-prover completeness layer", tag:"planned",
-      body:"Materialize <code>hachi.opening</code> by instantiating QuadEval's <code>computeV</code> / <code>computeResp</code> from the carrier/decomposition defs, discharging <code>Commitment.perfectCorrectness</code>." },
-    { title:"Generic guarded-append machinery", tag:"planned",
-      body:"The one sorried piece of <em>generic</em> infrastructure the guarded seams (rows 8, 9, 12) compose through — <code>Verifier.IsGuarded.append</code> and its CWSS composition theorem, under <code>OracleReduction/…/Guarded.lean</code>." },
+    { title:"Honest provers, completeness &amp; composed correctness", tag:"planned",
+      body:"Implement each opening subprotocol's honest prover and prove its completeness/correctness at its own relation seam. Then compose those results along the full opening chain to establish correctness of the Hachi <code>Commitment.Scheme</code>, materializing the provisional <code>hachi.opening</code> field." },
+    { title:"Recursive iteration loop (§3 / §4.5)", tag:"planned",
+      body:"The §3 packing head accepts an external <code>F_{q^k}</code> evaluation claim, then the current nine-link opening reaches an evaluation claim whose §4.5 adapters turn it into the next ring's <code>QuadEval</code> input. Repeating Hachi evaluation rounds in this loop progressively shrinks the remaining polynomial-evaluation task before a final base case, making the eventual proof smaller. The target adapters are outside the current line; their skeletons include the documented Z-packing soundness gap." },
     { title:"Knowledge-error accounting · extractability · Fiat–Shamir", tag:"planned",
       body:"FMN24 Lemma 4 knowledge-error, <code>Commitment.extractability</code>, and the Fiat–Shamir transform remain out of scope by design." },
   ];
@@ -663,16 +665,20 @@
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["","RingSwitch.lean","umbrella","§4.3","—","umbrella",0],
-    ["RingSwitch","Rlin.lean","bridge","§4.3","3","wip",3],
-    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","wip",1],
+    ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
+    ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
     ["","ZeroCheck.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
     ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",2],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
-    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
-    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",2],
+    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",3],
+    ["","Recursion.lean","umbrella","§4.5","—","umbrella",0],
+    ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","10","plan",6],
+    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","11","plan",2],
+    ["Recursion","TraceHandoff.lean","subprotocol","§4.5 · Eqs27–28","12","plan",4],
   ];
 
   /* ---------------- HELPERS ---------------- */
@@ -686,7 +692,7 @@
   /* Every status appearing in INDEX must have a key here, or it is invisible in the tiles and the
      bar and `total` stops matching the file count. Unrepresented statuses are reported loudly
      rather than dropped silently. */
-  var counts = { proven:0, repaired:0, wip:0 };
+  var counts = { proven:0, repaired:0, wip:0, plan:0 };
   var uncounted = [];
   INDEX.forEach(function(r){
     if(r[2]==="umbrella") return;
@@ -696,10 +702,10 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — all foundations plus the entire QuadEval subprotocol (rows 1–2)." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations, QuadEval, and ring-switching (rows 1–4)." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 3–5 and 7–9, escape threading, the shared encoding, composition and the scheme." },
-    { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer &amp; generic machinery." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 5 and 7–9, shared encoding, composition and the scheme." },
+    { cls:"plan", n:counts.plan, lbl:"Beyond current line", sub:"The three §4.5 recursion adapters close the next-iteration loop; their target skeletons and gap are tracked in the roadmap below." },
   ];
   var tilesEl = document.getElementById("tiles");
   tiles.forEach(function(t){
@@ -709,9 +715,9 @@
     tilesEl.appendChild(d);
   });
   /* status bar (files, excluding umbrellas) */
-  var total = counts.proven+counts.repaired+counts.wip;
+  var total = counts.proven+counts.repaired+counts.wip+counts.plan;
   var bar = document.getElementById("statusBar");
-  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip]].forEach(function(seg){
+  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip],["var(--plan)",counts.plan]].forEach(function(seg){
     var s=el("span"); s.style.background=seg[0]; s.style.width=(100*seg[1]/total)+"%"; bar.appendChild(s);
   });
 
@@ -734,6 +740,7 @@
         if(b==="guarded") return '<span class="badge guarded">guarded</span>';
         if(b==="core") return '<span class="badge core">proven core</span>';
         if(b==="repair") return '<span class="badge guarded">Lemma&nbsp;10 repair</span>';
+        if(b==="proven") return '<span class="badge" style="color:var(--ok);border-color:color-mix(in srgb,var(--ok) 40%,transparent);background:var(--ok-ghost)">proven</span>';
         if(b==="gap") return '<span class="badge" style="color:var(--bad);border-color:color-mix(in srgb,var(--bad) 40%,transparent);background:var(--bad-ghost)">open gap</span>';
         return '<span class="badge">'+b+'</span>';
       }).join("");
