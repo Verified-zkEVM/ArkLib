@@ -81,6 +81,7 @@ import ArkLib.Data.CodingTheory.JohnsonBound.Family
 import ArkLib.Data.CodingTheory.JohnsonBound.Lemmas
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon

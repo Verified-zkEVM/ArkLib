@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.AgreementHypergraph
 import ArkLib.Data.CodingTheory.SubspaceDesign
 import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
@@ -114,7 +115,50 @@ theorem subspaceDesign_lambda_le
     (L : ℕ) (_hL_pos : 1 ≤ L) (_hL_le : L ≤ s) :
     Lambda ((C : Set (ι → Fin s → F)))
         ((L : ℝ) / (L + 1) * (1 - s * R / (s - L + 1))) ≤ (L : ℕ∞) := by
-  sorry -- external admit: [CZ25, Theorem B.5].
+  classical
+  letI : DecidableEq (Fin s → F) := Classical.decEq _
+  apply Lambda_le_of_forall_finset_card_le
+  intro y T hT
+  by_contra hTL
+  have hbig : L + 1 ≤ T.card := by omega
+  obtain ⟨U, hUT, hUcard⟩ := Finset.exists_subset_card_eq hbig
+  have hUC : ∀ c ∈ U, c ∈ C := by
+    intro c hc
+    exact (hT c (hUT hc)).1
+  have hUclose : ∀ c ∈ U,
+      (Code.relHammingDist y c : ℝ) ≤
+        (L : ℝ) / (L + 1) * (1 - s * R / ((s : ℝ) - L + 1)) := by
+    intro c hc
+    have hcball := (hT c (hUT hc)).2
+    simpa only [Code.relHammingBall, Set.mem_setOf_eq] using hcball
+  have hupper0 := agreementWeight_lt_of_subspaceDesign_rate
+    _hR _h L _hL_pos _hL_le y U hUcard hUC
+  have hupper : (agreementWeight y U : ℝ) <
+      (Fintype.card ι : ℝ) * L * (s * R / ((s : ℝ) - L + 1)) := by
+    convert hupper0 using 1
+    congr
+  have hlower : (Fintype.card ι : ℝ) * L *
+      (s * R / ((s : ℝ) - L + 1)) ≤ (agreementWeight y U : ℝ) := by
+    have hn : (0 : ℝ) < Fintype.card ι := by
+      exact_mod_cast Fintype.card_pos
+    have hdist : ∀ c ∈ U, (hammingDist c y : ℝ) ≤
+        ((L : ℝ) / (L + 1) * (1 - s * R / ((s : ℝ) - L + 1))) * Fintype.card ι := by
+      intro c hc
+      have hclose := hUclose c hc
+      unfold Code.relHammingDist at hclose
+      simp only [NNRat.cast_div, NNRat.cast_natCast] at hclose
+      rw [div_le_iff₀ hn] at hclose
+      rw [hammingDist_comm]
+      exact hclose
+    have hgen := agreementWeight_ge_of_hammingDist_le
+      ((L : ℝ) / (L + 1) * (1 - s * R / ((s : ℝ) - L + 1))) y U hdist
+    rw [hUcard] at hgen
+    refine le_trans (le_of_eq ?_) hgen
+    have hL1 : (L : ℝ) + 1 ≠ 0 := by positivity
+    push_cast
+    field_simp
+    ring
+  exact (not_lt_of_ge hlower) hupper
 
 /-- **Real-radius form of the subspace-design bound**, derived in-tree from
 `subspaceDesign_lambda_le`. If `t` dominates the rate-derived profile on the integers
