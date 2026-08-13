@@ -126,8 +126,7 @@ lemma closeCodewords_eq_closeCodewordsRel (C : Set (ι → F)) (y : ι → F) (r
 /-- The maximised point-list size of `C` at radius `δ`: the supremum over words `f` of the
 cardinality of `closeCodewordsRel C f δ`.
 
-This is `[ABF26]`'s `|Λ(C, δ)|`, the *size* rather than the list; note that `[ACFY24]` and
-`[ACFY24stir]` write `Λ` for the list itself, which here is `closeCodewordsRel`.
+Note that this is the *size*; the point list itself is `closeCodewordsRel`.
 
 Being `ℕ∞`-valued, an infinite point list contributes `⊤` rather than the `0` that `Set.ncard`
 would give, so a finite bound implies finiteness rather than assuming it
@@ -156,7 +155,7 @@ lemma Lambda_le_iff_forall_encard_le {C : Set (ι → F)} {δ : ℝ} {b : ℕ∞
   iSup_le_iff
 
 /-- A finite `Lambda` is attained: some word's point list has exactly that size. So a proof may
-choose a maximising word, as `[ABF26]` Lemma 6.12 does, without assuming one exists.
+choose a maximising word without assuming one exists.
 
 `Nonempty (ι → F)` is necessary, not merely convenient: over an empty word space there is no `f` to
 choose while `Lambda` is still `0`. -/
@@ -223,8 +222,7 @@ lemma Lambda_le_of_forall_finset_card_le {C : Set (ι → F)} {δ : ℝ} {n : �
   exact_mod_cast (Set.ncard_eq_toFinset_card _ hfin) ▸
     h f hfin.toFinset fun c hc => hfin.mem_toFinset.mp hc
 
-/-- The strict companion to `Lambda_le_of_forall_finset_card_le`, for the `|Λ(C, δ)| < |F|` bounds
-of `[ABF26]`.
+/-- The strict companion to `Lambda_le_of_forall_finset_card_le`.
 
 `0 < n` is necessary: at `n = 0` the hypothesis is unsatisfiable (`T = ∅` gives `0 < 0`) while the
 conclusion `Lambda C δ < 0` is false. -/
@@ -254,15 +252,11 @@ lemma Lambda_mono {C : Set (ι → F)} {δ₁ δ₂ : ℝ} (h : δ₁ ≤ δ₂)
 /-- A code `C` is `(r, ℓ)`-**list decodable** if every point list at relative radius `r` has at
 most `ℓ` codewords, that is, `Lambda C r ≤ ⌊ℓ⌋₊`.
 
-The bound is `ℝ≥0`-valued because the theorems that consume such a hypothesis reuse the same bound
-as a number in their conclusions. Flooring loses nothing, `Lambda` being integer-valued
-(`isListDecodable_iff_forall_ncard_le`), and point-list finiteness is implied rather than asserted.
+Flooring loses nothing, `Lambda` being integer-valued (`isListDecodable_iff_forall_ncard_le`), and
+point-list finiteness is implied rather than asserted.
 
-Kept a `def` rather than an `abbrev`: as an `abbrev` it is reducible, and `simp` then unfolds the
-`≤`-shaped body through `ge_iff_le` down to `WithBot.LE`, which mangles goals and makes
-`IsListDecodable.mono` unreachable by dot notation. `exact`, `refine` and `apply` still see through
-to the `Lambda` inequality, so no bridge lemma is needed to prove one; `simp` and `rw` need
-`isListDecodable_iff_Lambda_le`. -/
+This is a `def`, not an `abbrev`, and so is semireducible: `exact`, `refine` and `apply` see through
+it to the `Lambda` inequality, while `simp` and `rw` need `isListDecodable_iff_Lambda_le`. -/
 def IsListDecodable (C : Set (ι → F)) (r : ℝ) (ℓ : ℝ≥0) : Prop :=
   Lambda C r ≤ (⌊ℓ⌋₊ : ℕ∞)
 

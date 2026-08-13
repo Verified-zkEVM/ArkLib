@@ -106,122 +106,84 @@ collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
 finite-alphabet consequence.
 
 **The list size is the primitive; list-decodability is notation for a bound on it.**
-`IsListDecodable` is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0` — not a second
-definition, so there is nothing to bridge, and the pointwise `∀`/`ncard` readings are lemmas
-(`Lambda_le_iff_forall_ncard_le`, `isListDecodable_iff_forall_ncard_le`) that cannot drift from it.
+`IsListDecodable` is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0`, so there is nothing to
+bridge, and the pointwise readings are lemmas that cannot drift from it.
 
-The value has to be primitive; this was not a free choice. `[ABF26]` states, on this one quantity,
-bounds that no predicate can carry: **ceilings** (for the constrained code,
-`|Λ(C⁺,δ)| ≤ ⌈|F|/(1-η)·ε_ca⌉`), **strict**
-bounds (`|Λ(C,δ)| < |F|`), **lower** bounds (Lemma 3.7 / Corollary 3.8), **inequalities and
-equalities between two codes' list sizes** (`|Λ(C,δ)| ≤ |Λ(C^⋈m,δ)| ≤ |Λ(C,δ)|^m`, and the
-extension-code equality), and **arithmetic** on them (`binom(b+r,r)·|Λ|^r`). A `∀`/`ncard`
-predicate expresses only the first two rows of that list.
+`[ABF26]` puts shapes on this one quantity that no predicate can carry:
+ceilings (`|Λ(C⁺,δ)| ≤ ⌈|F|/(1-η)·ε_ca⌉`), strict bounds (`|Λ(C,δ)| < |F|`), *lower* bounds,
+equalities between two codes' list sizes (`|Λ(C,δ)| ≤ |Λ(C^⋈m,δ)| ≤ |Λ(C,δ)|^m`, and the
+extension-code equality), and arithmetic (`binom(b+r,r)·|Λ|^r`). A predicate expresses only the
+upper bounds. The value is therefore primitive and the propositions about it are derived; `Lambda` is
+not a rival predicate but a different kind of object.
 
-Consequences worth knowing before touching this layer:
+**Several readings, one definition.** Raised as a design objection worth recording (Ilia Vlasov,
+ArkLib #731): should a general-purpose library not carry several definitions and prove them
+equivalent? It does carry several readings — `Lambda_le_iff_forall_encard_le`,
+`Lambda_le_iff_forall_ncard_le`, `isListDecodable_iff_forall_ncard_le`,
+`isListDecodable_iff_forall_finset_card_le`, `isListDecodable_iff_toENNReal_le_ofReal`,
+`isUniquelyDecodable_iff_subsingleton` — as characterisation lemmas rather than parallel `def`s,
+which is Mathlib's practice and gives the same freedom at the call site. Parallel definitions need
+`n²` bridges, fragment consumers, and each can drift.
 
-- **Do not add a second predicate for "the list is small."** Keeping one alongside the value is
-  how the two came to disagree once already: a `Set.ncard`-based body is satisfied by an
-  *infinite* point list, since `ncard` reports `0` there.
+Rules for this layer:
+
+- **Do not add a second predicate for "the list is small."** That is how the two notions this layer
+  replaced came to disagree: a `Set.ncard`-based body is satisfied by an *infinite* point list,
+  since `ncard` reports `0` there. Hence the finiteness conjunct that used to be bolted on.
 - **Do not offer an ambient-finiteness escape hatch** (a `[Finite F]` lemma turning a bare `ncard`
-  bound into `IsListDecodable`). Such a lemma is *sound* — under a finite alphabet `ncard` cannot lie
-  — but it imports a hypothesis the statement does not need, and it lets a proof reach the
-  conclusion without ever exhibiting the finiteness that list decoding is about. Bound the *finite
-  subsets* instead: `Lambda_le_of_forall_finset_card_le` is the shape a counting argument produces
-  anyway, and it needs nothing of the alphabet.
-- **The value is needed regardless of the predicate:** a *lower* bound on a list size, or an
-  equality between two codes' list sizes, has no predicate form at all.
+  bound into `IsListDecodable`). It would be sound but imports a hypothesis the statement does not
+  need. Bound the *finite subsets* instead, with `Lambda_le_of_forall_finset_card_le`, which is the
+  shape a counting argument produces anyway and needs nothing of the alphabet.
 - **Unique decoding is the `ℓ = 1` case, not a separate notion.** `Code.uniqueDecodingRadius` and
   `Code.eq_of_le_uniqueDecodingRadius` in `Basic/DecodingRadius.lean` are what the `ProximityGap`
   developments use; `isUniquelyDecodable_relativeUniqueDecodingRadius` identifies them with
-  `IsUniquelyDecodable`. Do not grow a third account: [ABF26] introduces the list precisely as the
-  extension of unique decoding from `δ_min/2` to an arbitrary radius.
-- **Do not give a derived list its own `Lambda`.** A list contained in a point list — WHIR's
-  block-relative `Λ𞁒` reaching it through `listBlock_subset_listHamming`, say — is bounded by
-  `encard_le_Lambda_of_subset_closeCodewordsRel`. Likewise the absolute-radius point list is the
-  relative one at radius `r/n` (`closeCodewords_eq_closeCodewordsRel`), so it needs no size notion.
-  One outlier remains, in another owner's file and left for a follow-up:
-  `ProximityGap/BCIKS20/AffineSpaces.lean`'s `rs_listDecoding_card_lt_field` inlines point-list
-  membership instead of using `closeCodewordsRel`, and is really `Lambda (code domain deg) δ < |F|`
-  — the `[ABF26]` statement, whose unified form already exists on the ABF26 branch.
-  `Lambda_lt_of_forall_finset_card_lt` is the lemma it would go through: its hypothesis is already
-  that theorem's, verbatim.
+  `IsUniquelyDecodable`. Do not grow a third account.
+- **Do not give a derived list its own `Lambda`.** A list contained in a point list is bounded by
+  `encard_le_Lambda_of_subset_closeCodewordsRel`, and the absolute-radius point list is the relative
+  one at radius `r/n` (`closeCodewords_eq_closeCodewordsRel`). One outlier remains, in another
+  owner's file and left for a follow-up: `ProximityGap/BCIKS20/AffineSpaces.lean`'s
+  `rs_listDecoding_card_lt_field` inlines point-list membership instead of using
+  `closeCodewordsRel`, and is really `Lambda (code domain deg) δ < |F|`;
+  `Lambda_lt_of_forall_finset_card_lt` is the lemma it would go through.
 - **Do not open `closeCodewordsRel` to reason about membership.** It is defined `open Classical in`,
   so under an ambient `[DecidableEq F]` the two instances are definitionally but not syntactically
   equal and neither `simp` nor a direct `Code.mem_relHammingBall_iff` rewrite crosses them.
-  `mem_closeCodewordsRel_iff` does the crossing once; use it rather than repeating the
-  `convert … using 2; congr` by hand.
-- **`Lambda` is a `⨆` but may be used as a `max`.** `exists_encard_eq_Lambda` (and its finite-
-  alphabet corollary) supplies the maximising word, which is what [ABF26] Lemma 6.12's proof
-  chooses. Do not add a hypothesis asserting the maximum exists.
+  `mem_closeCodewordsRel_iff` does the crossing once.
+- **`Lambda` is a `⨆` but may be used as a `max`.** `exists_encard_eq_Lambda` and its
+  finite-alphabet corollary supply the maximising word. Do not add a hypothesis asserting the
+  maximum exists.
+- **Keep `IsListDecodable` a `def`, not an `abbrev`.** As an `abbrev` it is reducible, and Mathlib's
+  `@[simp] ge_iff_le` then unifies with the `≤`-shaped body, so `simp` unfolds it to `WithBot.LE` —
+  mangling goals and making `IsListDecodable.mono` unreachable via dot notation. `exact`, `refine`
+  and `apply` see through it either way; `simp` and `rw` need `isListDecodable_iff_Lambda_le`.
+  (`omega` is no help on such goals: it has no `ℕ∞` support.)
+- **Keep the predicate.** Deleting it and spelling the hypotheses `Lambda (C i) (δ i) ≤ ⌊l i⌋₊` was
+  weighed and not taken: a bare inequality has no namespace, so `h.mono` would resolve to
+  `LE.le.mono`. The name buys `IsListDecodable.mono` and `IsListDecodable.anti_radius` at zero
+  mathematical cost, the predicate being *definitionally* the inequality, so the choice stays
+  revisitable.
 
-`exact`/`refine`/`apply` unify at default transparency and so see through `IsListDecodable` to the
-`Lambda` inequality; `simp` and `rw` match at reducible transparency and leave it folded. Keep it a
-`def`: as an `abbrev` it is reducible, and then Mathlib's `@[simp] ge_iff_le` unifies with the whole
-`≤`-shaped body and `simp` unfolds it to `WithBot.LE`, which both mangles goals and makes
-`IsListDecodable.mono` unreachable via dot notation. (`omega` is no help either way — it has no `ℕ∞`
-support; a bare `by omega` on such a goal only ever succeeds through its assumption fallback.)
-
-**Why the radius is `ℝ` while the bound is `ℝ≥0`.** These are two different objects, and each
-argument is about the object rather than about what the tree happens to contain.
+**Why the radius is `ℝ` while the bound is `ℝ≥0`.** They are different objects.
 
 The *radius* is a threshold on a total distance function, so `Lambda` is total in it, and every
 radius the literature names is an arithmetic expression (`1 - √ρ - η`, `ℓ/(ℓ+1)·(1 - ρ - η)`, a
-Johnson radius) that nothing constrains to `[0, 1]` or even to `ℝ≥0`. Narrowing the carrier only
-moves the obligation, and both discharges are worse: *truncating* replaces a negative radius by
-`0`, where the point list is `{f}` rather than `∅`, so a bound proved of the empty list gets
-asserted of a singleton — a silent meaning change in a reachable regime; *guarding* adds
-`0 ≤ 1 - √ρ - η` to statements whose mathematics does not need it, which is the anti-pattern two
-bullets up. A negative radius is not a degenerate case but the honest value: empty ball,
-`Lambda = 0`.
+Johnson radius) that nothing constrains to `[0, 1]` or even to `ℝ≥0`. Narrowing only moves the
+obligation, and both discharges are worse: *truncating* replaces a negative radius by `0`, where the
+point list is `{f}` rather than `∅`, so a bound proved of the empty list gets asserted of a
+singleton; *guarding* adds `0 ≤ 1 - √ρ - η` to statements whose mathematics does not need it. A
+negative radius is the honest value: empty ball, `Lambda = 0`.
 
-The *bound* is a cardinality, where negative is unsatisfiable rather than weak — so `ℝ≥0` loses no
+The *bound* is a cardinality, where negative is unsatisfiable rather than weak, so `ℝ≥0` loses no
 statement worth making and drops `0 ≤ ℓ` from every transfer. It is real-valued rather than `ℕ∞`
-because the theorems that consume a list-decoding hypothesis reuse the same bound as a *number* in
-their conclusions — `|Λ(C, δ)| ≤ L` gives `ε_mca ≤ (L²δn + 1/η)/|F|` ([GCXK25] Theorem 3), STIR's
-out-of-domain sampling pays `L(L-1)/2` — so an `ℕ∞` hypothesis would force two variables and a
-coupling, reintroducing one level up the very problem this layer removes.
+because the theorems consuming a list-decoding hypothesis reuse the same bound as a *number* in
+their conclusions, and an `ℕ∞` hypothesis would force two variables and a coupling between them.
 
-That the existing predicate call sites, in the STIR and WHIR developments, already pass `ℝ≥0` for
-*both* arguments is a consequence of these being the right carriers, not the reason for choosing
-them. It does mean the change cost no call-site edits.
-
-**Where this layer deliberately differs from the `ε`-error layer.** The proximity-error functions
-take `δ : I` (the closed unit interval), because their sources define them only there. `Lambda`
-takes `δ : ℝ` and is total. That is not drift: `I` carries no `Sub`, so a radius written as
-`1 - √ρ - η` cannot be *formed* in it without a membership proof at every call site, and `Lambda`
-has meaning outside `[0, 1]` (below, the empty ball; at and above `1`, all of `C`) where an error
-probability does not. The coercion at the boundary — `GrandChallenges` writes
-`Lambda (C^⋈ m) (gridPt k : ℝ)` — is the honest record of that difference, not a defect to unify
-away.
-
-**Several readings, one definition — the alternatives are `iff` lemmas, not parallel `def`s.**
-This came up as a design objection worth recording (Ilia Vlasov, ArkLib #731): in a general-purpose
-library, should we not carry *several* definitions of list decodability and prove them equivalent,
-rather than privileging one? The answer here is that we do carry several readings, as
-characterisation lemmas — `Lambda_le_iff_forall_encard_le`, `Lambda_le_iff_forall_ncard_le`,
-`isListDecodable_iff_forall_ncard_le`, `isListDecodable_iff_forall_finset_card_le`,
-`isListDecodable_iff_toENNReal_le_ofReal`, `isUniquelyDecodable_iff_subsingleton` — which is
-Mathlib's own practice and gives the same freedom at the call site. Parallel *definitions* cost
-what lemmas do not: `n` of them need `n²` bridges, consumers fragment across them, and each is a
-place to drift. This file is the cautionary case — the two notions it replaced *had* drifted, and
-the `Set.ncard`-based one turned out to be satisfiable by an **infinite** point list at bound `0`,
-which is why a finiteness conjunct had been bolted onto it.
-
-The distinction that makes the question look sharper than it is: `Lambda` is not a rival
-*predicate*, it is a different kind of object — a value in `ℕ∞`. It has to be primitive because the
-sources do arithmetic on it (see the shapes above); the propositions are what get derived. So the
-choice is not between two `Prop`s.
-
-**Whether to keep the predicate at all is an open question, deliberately answered "yes."**
-The maximally unified option is to delete `IsListDecodable` and spell its hypotheses
-`Lambda (C i) (δ i) ≤ ⌊l i⌋₊` directly. It was weighed and not taken, and the reason is not that the
-existing hypotheses read that way. A bare inequality has no namespace: `h.mono` on
-`Lambda C r ≤ n` resolves to `LE.le.mono` and means something else, so every weakening step would
-have to be written out. The named predicate buys `IsListDecodable.mono` and `IsListDecodable.anti_radius`
-— the two moves every consumer makes — at zero mathematical cost, the predicate being
-*definitionally* the inequality. Nothing rests on the choice, so it stays revisitable; the cost of
-revisiting is editing the hypotheses that mention it.
+**Where this layer differs from the `ε`-error layer.** The proximity-error functions take `δ : I`,
+the closed unit interval, because their sources define them only there; `Lambda` takes `δ : ℝ` and is
+total. `I` carries no `Sub`, so a radius written `1 - √ρ - η` cannot be *formed* in it without a
+membership proof at every call site, and `Lambda` has meaning outside `[0, 1]` where an error
+probability does not. Hence the coercion at the boundary, as in `GrandChallenges`'
+`Lambda (C^⋈ m) (gridPt k : ℝ)`.
 
 **This layer lives in `namespace Code`, and that was a correction** (2026-08-13). It used to be
 `namespace ListDecodable` — a namespace naming a *property* while holding the objects: the point
@@ -239,26 +201,19 @@ predicates gained the `Is` prefix Mathlib uses and this subtree already used for
 `Code.IsListDecodable`, `Code.IsUniquelyDecodable` — which only reads well once the namespace is
 right, and lemma names follow in lowerCamel (`isListDecodable_iff_Lambda_le`).
 
-> **Trap.** `open scoped NNReal` *inside* `namespace Code` silently fails to bring in the `ℝ≥0`
-> notation if any `Code.NNReal.*` declaration exists: the `open` resolves to that sub-namespace
-> instead of the real one, `ℝ≥0` reparses as `ℝ ≥ 0`, and every signature using it fails with
-> `failed to synthesize LE Type`. The `open` has to be lexically inside the namespace for this to
-> bite; `open Code NNReal` in one command, or `open Code` with a separate root-level
-> `open scoped NNReal`, are unaffected.
+> **Trap: never declare `Foo.bar` inside `namespace Code` when `Foo` is a namespace you also want to
+> `open` there.** Write `_root_.Foo.bar`, or put the lemma where it belongs. Declaring
+> `NNReal.foo` inside `namespace Code` brings `Code.NNReal` into existence, and a later
+> `open scoped NNReal` *inside* `namespace Code` — in this or any importing file — then resolves to
+> that empty sub-namespace, silently dropping the `ℝ≥0` notation so it reparses as `ℝ ≥ 0` and every
+> signature using it fails with `failed to synthesize LE Type`. The `open` must be lexically inside
+> the namespace to bite: `open Code NNReal` in one command, or `open Code` with a separate
+> root-level `open scoped NNReal`, are unaffected.
 >
-> `Basic/RelativeDistance.lean` used to declare two `lemma NNReal.foo` inside `namespace Code` and
-> so armed exactly this, which is why `Basic/DecodingRadius.lean` — which imports it and opens
-> `NNReal` inside `namespace Code` — spells its `NNReal`s longhand. Both lemmas were one-step
-> wrappers around `tsub_eq_zero_of_le` and `Nat.le_floor`, used once each in their own file, so they
-> were deleted rather than prefixed; `Code.NNReal` no longer exists and the longhand in
-> `DecodingRadius.lean` is now an unnecessary workaround, harmless but removable.
->
-> **The rule stands regardless: never declare `Foo.bar` inside `namespace Code` when `Foo` is a
-> namespace you also want to `open` there; write `_root_.Foo.bar`, or put the lemma where it
-> belongs.** Two pre-existing instances of the pattern survive elsewhere in the tree
-> (`MvPolynomial/Interpolation.lean` declaring `Function.extendDomain` inside `namespace
-> MvPolynomial`, `Basic/MDSCode.lean` declaring `Matrix.IsMDS` inside `namespace CoreResults`);
-> neither is armed today, since neither namespace is opened where it would matter.
+> This was armed until 2026-08-13 by two wrapper lemmas in `Basic/RelativeDistance.lean`, since
+> deleted, which is why `Basic/DecodingRadius.lean` spells its `NNReal`s longhand — now an
+> unnecessary workaround, harmless but removable. Two unarmed instances of the pattern survive
+> elsewhere (`MvPolynomial/Interpolation.lean`, `Basic/MDSCode.lean`).
 
 **Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
 aliases were left. Five of the six cannot be restated at all: they mention `IsListDecodable` at a real
