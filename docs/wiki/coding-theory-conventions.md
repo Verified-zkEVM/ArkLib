@@ -239,14 +239,26 @@ predicates gained the `Is` prefix Mathlib uses and this subtree already used for
 `Code.IsListDecodable`, `Code.IsUniquelyDecodable` — which only reads well once the namespace is
 right, and lemma names follow in lowerCamel (`isListDecodable_iff_Lambda_le`).
 
-> **Trap, and the reason the move was not free.** `open scoped NNReal` *inside* `namespace Code`
-> silently fails to bring in the `ℝ≥0` notation if any `Code.NNReal.*` declaration exists, because
-> the `open` resolves to that sub-namespace instead of the real one; `ℝ≥0` then reparses as
-> `ℝ ≥ 0` and every signature using it fails with `failed to synthesize LE Type`. Two lemmas in
-> `Basic/RelativeDistance.lean` were written `lemma NNReal.foo` inside `namespace Code` and so
-> created exactly that — which is why `Basic/DecodingRadius.lean` spells its `NNReal`s longhand.
-> They now carry `_root_.` prefixes. **Never declare `Foo.bar` inside `namespace Code` when `Foo`
-> is a namespace you also want to `open`; use `_root_.Foo.bar`.**
+> **Trap.** `open scoped NNReal` *inside* `namespace Code` silently fails to bring in the `ℝ≥0`
+> notation if any `Code.NNReal.*` declaration exists: the `open` resolves to that sub-namespace
+> instead of the real one, `ℝ≥0` reparses as `ℝ ≥ 0`, and every signature using it fails with
+> `failed to synthesize LE Type`. The `open` has to be lexically inside the namespace for this to
+> bite; `open Code NNReal` in one command, or `open Code` with a separate root-level
+> `open scoped NNReal`, are unaffected.
+>
+> `Basic/RelativeDistance.lean` used to declare two `lemma NNReal.foo` inside `namespace Code` and
+> so armed exactly this, which is why `Basic/DecodingRadius.lean` — which imports it and opens
+> `NNReal` inside `namespace Code` — spells its `NNReal`s longhand. Both lemmas were one-step
+> wrappers around `tsub_eq_zero_of_le` and `Nat.le_floor`, used once each in their own file, so they
+> were deleted rather than prefixed; `Code.NNReal` no longer exists and the longhand in
+> `DecodingRadius.lean` is now an unnecessary workaround, harmless but removable.
+>
+> **The rule stands regardless: never declare `Foo.bar` inside `namespace Code` when `Foo` is a
+> namespace you also want to `open` there; write `_root_.Foo.bar`, or put the lemma where it
+> belongs.** Two pre-existing instances of the pattern survive elsewhere in the tree
+> (`MvPolynomial/Interpolation.lean` declaring `Function.extendDomain` inside `namespace
+> MvPolynomial`, `Basic/MDSCode.lean` declaring `Matrix.IsMDS` inside `namespace CoreResults`);
+> neither is armed today, since neither namespace is opened where it would matter.
 
 **Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
 aliases were left. Five of the six cannot be restated at all: they mention `IsListDecodable` at a real
