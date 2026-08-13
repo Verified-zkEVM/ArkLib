@@ -54,7 +54,7 @@ supremum over centres. No entropy estimate is involved — for that see
 
 **Narrower than the source, and needlessly so.** [ABF26] states this for an arbitrary code
 `C : Σ^k → Σ^n` over an arbitrary alphabet; this is the linear-over-a-field case. Linearity enters
-the proof exactly once, at `Module.natCard_eq_pow_finrank`, to get `|C| = q^k`. Restating over
+the proof exactly once, at `submodule_ncard_eq_pow_finrank`, to get `|C| = q^k`. Restating over
 `C : Code ι A` for a finite alphabet `A` with `C.ncard = q ^ k` as a hypothesis would give the
 source's generality with this as a one-line corollary — the generic-core-plus-field-wrapper shape
 `mds_johnson_lambda_le_of_rate_distance` already uses. Left as a follow-up rather than done here. -/
@@ -76,10 +76,7 @@ theorem linear_lambda_ge_elias_volume
   set cnt : (ι → F) → ℕ := fun f => (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard with hcnt
   -- `|C| = q ^ k` as naturals.
   have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
-    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
-      rw [← Nat.card_coe_set_eq]; rfl
-    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
-    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+    rw [submodule_ncard_eq_pow_finrank, hq, hk]
   -- Total count over all centres `= |C| · Vol = q^k · Vol`.
   have hsum : ∑ f : ι → F, cnt f = q ^ k * Vol := by
     rw [hcnt]
@@ -567,10 +564,7 @@ theorem linear_card_le_of_rate_radius
   set k : ℕ := Module.finrank F C with hk
   -- `|C| = q ^ k` (linearity).
   have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
-    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
-      rw [← Nat.card_coe_set_eq]; rfl
-    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
-    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+    rw [submodule_ncard_eq_pow_finrank, hq, hk]
   have hq1 : (1 : ℝ) ≤ (q : ℝ) := by
     have : 1 < q := hq ▸ Fintype.one_lt_card
     exact_mod_cast this.le
@@ -804,11 +798,7 @@ theorem linear_card_le_generalized_singleton
         exact Fin.ext_iff.mp hij
     omega
   have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
-    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
-      rw [← Nat.card_coe_set_eq]
-      rfl
-    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
-    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+    rw [submodule_ncard_eq_pow_finrank, hq, hk]
   have hq1R : (1 : ℝ) ≤ (q : ℝ) := by
     have : 1 < q := hq ▸ Fintype.one_lt_card
     exact_mod_cast this.le

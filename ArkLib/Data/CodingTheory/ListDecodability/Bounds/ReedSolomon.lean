@@ -398,14 +398,7 @@ theorem rs_lambda_large_prime
     apply ReedSolomon.dim_eq_deg_of_le
     simpa only [hιp] using hkp
   have hcardC : (C : Set (ι → F)).ncard = p ^ k := by
-    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
-      rw [← Nat.card_coe_set_eq]
-      rfl
-    calc
-      (C : Set (ι → F)).ncard = Nat.card C := h1
-      _ = Nat.card F ^ Module.finrank F C :=
-        Module.natCard_eq_pow_finrank (K := F) (V := C)
-      _ = p ^ k := by rw [Nat.card_eq_fintype_card, hFp, hdim]
+    rw [submodule_ncard_eq_pow_finrank, hFp, hdim]
   have hvolterm : p.choose a * (p - 1) ^ (p - a) ≤ hammingBallVolume p δ p := by
     unfold hammingBallVolume
     rw [← Nat.choose_symm hap]

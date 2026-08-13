@@ -71,18 +71,24 @@ theorem closeCodewordsRel_eq_setOf {A : Type} [DecidableEq A]
   rw [hammingDist_comm c f]
   constructor <;> intro h <;> · convert h using 2
 
+/-- **A subspace has `q ^ dim` elements.** Stated for a submodule of an arbitrary finite
+`F`-module, since the list-size bounds apply it both to a code in `F^n` and to the kernel of a
+projection out of one. -/
+theorem submodule_ncard_eq_pow_finrank {V : Type*} [AddCommGroup V] [Module F V] [Finite V]
+    (W : Submodule F V) :
+    (W : Set V).ncard = Fintype.card F ^ Module.finrank F W := by
+  have h1 : (W : Set V).ncard = Nat.card W := by
+    rw [← Nat.card_coe_set_eq]
+    rfl
+  rw [h1, ← Nat.card_eq_fintype_card (α := F)]
+  exact Module.natCard_eq_pow_finrank (K := F) (V := W)
+
 /-- **A linear code has `q ^ dim` codewords**, in the real-exponent form the barrier arguments
 consume. -/
 theorem submodule_ncard_eq_rpow_finrank (C : Submodule F (ι → F)) :
     ((C : Set (ι → F)).ncard : ℝ)
       = (Fintype.card F : ℝ) ^ (Module.finrank F C : ℝ) := by
-  have hcard_nat : (C : Set (ι → F)).ncard = Fintype.card F ^ Module.finrank F C := by
-    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
-      rw [← Nat.card_coe_set_eq]
-      rfl
-    rw [h1, ← Nat.card_eq_fintype_card (α := F)]
-    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
-  rw [hcard_nat, Nat.cast_pow, Real.rpow_natCast]
+  rw [submodule_ncard_eq_pow_finrank, Nat.cast_pow, Real.rpow_natCast]
 
 open Classical in
 /-- **Averaging identity (Fubini).** Summing the point-list size `|Λ(C, δ, f)|` over all
