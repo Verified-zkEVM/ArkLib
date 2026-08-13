@@ -25,9 +25,10 @@ probability of obtaining a zero output from a non-zero vector is bounded above b
 function is a generator matrix for an MDS code
 - `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the
 probability that the generator satisfies the MCA condition is bounded above by `ε_mca`. Stated
-over module codes `ModuleCode ι F A`, matching [BCGM25]'s alphabet generality (Definition 3.2);
-`mcaError` is the corresponding worst-case error value, with
-`isMCAGenerator_iff_mcaError_le` tying the two together.
+over module codes `ModuleCode ι F A`, matching [BCGM25]'s alphabet generality (Definition 3.2).
+`mcaError` is the worst-case error *value* and is the primitive; `IsMCAGenerator` is defined as a
+bound on it, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl` rather than a bridge between two
+parallel definitions.
 - `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
 respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
 - `affine line generator`: A generator of the form `G : F → F²` such that `x ↦ (1,x)`.
@@ -139,40 +140,52 @@ theorem isMCA_iff_vecMul_form {S : Type} [Nonempty S] [Fintype S]
         ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T :=
   Iff.rfl
 
-/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
-generator satisfies the MCA condition is bounded above by `ε_mca`.
-Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
-  (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
-  ∀ U : ℓ → (ι → A), ∀ δ : I,
-    Pr_{let x ←$ᵖ S}[(IsMCA G MC x U (δ : ℝ))] ≤ (ε_mca δ : ENNReal)
-
 /-- The mutual correlated agreement error of a generator for a module code: the worst-case,
-over families `U`, probability of the MCA event. This is the value form of the predicate
-`IsMCAGenerator` — see `isMCAGenerator_iff_mcaError_le`.
+over families `U`, probability of the MCA event.
 
-The value form exists so that a code family can be assigned *its* MCA error rather than merely be
-asserted to meet some bound, which is what the ABF26 `ε_mca` layer needs in order to be bridged to
-this definition instead of duplicating it. It is also the form in which the [BCGM25] transport
-lemmas are stated (`LinearTransformations.mcaError_le_of_event_implies` and its instances in
-`MCAGenerator.lean`), with the `ε_mca`-carrying versions derived from them. The supremum is over
-`ℓ → (ι → A)`, which is always inhabited, so `mcaError` is never a degenerate `⨆ over ∅`.
+This is the primitive; `IsMCAGenerator` is *defined* as a bound on it. A value can be assigned to
+a code family rather than merely asserted to meet some bound, which is what the ABF26 `ε_mca` layer
+needs in order to be bridged to this definition instead of duplicating it, and it is the form in
+which the [BCGM25] transport lemmas are stated
+(`LinearTransformations.mcaError_le_of_event_implies` and its instances in `MCAGenerator.lean`).
+The supremum is over `ℓ → (ι → A)`, which is always inhabited, so this is never a degenerate
+`⨆` over an empty family.
 
 The radius is `ℝ`, matching `Code.Lambda` — see `IsMCA` for why. -/
 noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
     [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U : ℓ → (ι → A), Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]
 
-/-- A generator has mutual correlated agreement with error `ε_mca` iff its MCA error value
-is pointwise bounded by `ε_mca` on `[0,1]`, where [BCGM25] Definition 3.14 puts it. -/
+/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
+the generator satisfies the MCA condition is bounded above by `ε_mca`.
+Definition 3.14 [BCGM25].
+
+Defined *as* the `mcaError` bound rather than as a second `∀ U` quantification alongside it, so
+that the two cannot drift and `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`, `refine` and
+`apply` see through to the value inequality, and only `rw`/`simp` need the bridge. The pointwise
+reading — the bound at one individual `U` — is `IsMCAGenerator.apply`.
+
+`[0,1]` binds here, on the bound, which is where [BCGM25] puts it; the value underneath is total
+in the radius. See `docs/wiki/proximity-error-conventions.md`. -/
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+  (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
+  ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
+
+/-- **Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is
+the entry point for `rw` and `simp only`, which do not see through a semireducible `def`. -/
 lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
     [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A) :
-    IsMCAGenerator G ε_mca MC ↔ ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal) := by
-  constructor
-  · exact fun h δ => iSup_le fun U => h U δ
-  · exact fun h U δ =>
-      le_trans (le_iSup (fun U => Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)]) U) (h δ)
+    IsMCAGenerator G ε_mca MC ↔ ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal) := Iff.rfl
+
+/-- The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the
+supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason
+the `∀ U` in [BCGM25] Definition 3.14 costs nothing after the definition is stated at the value. -/
+lemma IsMCAGenerator.apply {S : Type} [Nonempty S] [Fintype S] {A : Type}
+    [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
+    {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
+    Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
+  le_trans (le_iSup (fun U => Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)]) U) (h δ)
 
 /-- The MCA error is a probability: it never exceeds `1`, and in particular is never `⊤`.
 

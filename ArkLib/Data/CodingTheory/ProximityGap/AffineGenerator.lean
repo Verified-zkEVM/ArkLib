@@ -276,7 +276,8 @@ theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I
     letI ε_mca' := a⁻¹ • ε_mca
     IsMCAGenerator (AffineSpaceGenerator F ℓ) ε_mca' LC := by
   classical
-  intro U γ
+  intro γ
+  refine iSup_le fun U => ?_
   set a : ℝ≥0 := (1 - 1 / (Fintype.card F : ℝ≥0)) with ha_def
   have hcard1 : (1 : ℝ) < (Fintype.card F : ℝ) := by exact_mod_cast Fintype.one_lt_card
   have hinv_le : (1 : ℝ≥0) / (Fintype.card F : ℝ≥0) ≤ 1 := by
@@ -293,7 +294,7 @@ theorem AffineLine_MCA_AffineSpaceMCA {ℓ : ℕ} (hℓ : ℓ ≥ 1) (ε_mca : I
   rw [hcard]
   simp only [Pi.smul_apply, smul_eq_mul]
   obtain ⟨W, hW⟩ := AffineMCALemmas.exists_line_bound hℓ LC U γ
-  have hline := hGMCA W γ
+  have hline := hGMCA.apply W γ
   rw [prob_uniform_eq_ofReal] at hline
   set sp : ℝ :=
     ((Finset.univ.filter (fun x : Fin ℓ → F =>

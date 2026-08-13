@@ -117,7 +117,8 @@ theorem tensor_isMCAGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
     (hG : IsMCAGenerator G ε_mca MC)
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
     IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε'_mca) MC := by
-  intro U δ
+  intro δ
+  refine iSup_le fun U => ?_
   classical
   -- the `G'`-combined rows, per outer seed `x'`
   set W : S' → ℓ → (ι → A) := fun x' i k => ∑ j, G' x' j • U (i, j) k with hW
@@ -164,13 +165,13 @@ theorem tensor_isMCAGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
       ≤ (ε_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
       (fun p => IsMCA G MC p.1 (W p.2) δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG (W x') δ
+    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG.apply (W x') δ
   have hB : Pr_{let p ← $ᵖ (S × S')}[
         IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ]
       ≤ (ε'_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_prod
       (fun p => IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun _ => hG' w δ
+    exact Pr_seq_le_of_forall_le _ _ _ fun _ => hG'.apply w δ
   calc Pr_{let p ← $ᵖ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
       ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨
           IsMCA G' (ModuleCode.moduleInterleavedCode F A ℓ ι MC) p.2 w δ] :=
@@ -192,8 +193,9 @@ theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S
     (ε'_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
     IsMCAGenerator G' ε'_mca MC := by
-  intro U δ
-  refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x' => ?_) (hG' (fun j k _ => U j k) δ)
+  intro δ
+  refine iSup_le fun U => ?_
+  refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x' => ?_) (hG'.apply (fun j k _ => U j k) δ)
   rintro ⟨T, hT, hcomb, j₀, hbad⟩
   refine ⟨T, hT, ?_, j₀, fun hmem => hbad ?_⟩
   · rw [projectedCodeSubmod_moduleInterleavedCode_iff]
@@ -226,7 +228,8 @@ theorem tensor_isMCAGenerator_of_base (G : Generator S ℓ F) (G' : Generator S'
     (hG : IsMCAGenerator G ε_mca MC)
     (hG' : IsMCAGenerator G' ε'_mca MC) :
     IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + Fintype.card ℓ • ε'_mca) MC := by
-  intro U δ
+  intro δ
+  refine iSup_le fun U => ?_
   classical
   set W : S' → ℓ → (ι → A) := fun x' i k => ∑ j, G' x' j • U (i, j) k with hW
   have hv : ∀ (x : S) (x' : S'),
@@ -253,7 +256,7 @@ theorem tensor_isMCAGenerator_of_base (G : Generator S ℓ F) (G' : Generator S'
       ≤ (ε_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')
       (fun p => IsMCA G MC p.1 (W p.2) δ)]
-    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG (W x') δ
+    exact Pr_seq_le_of_forall_le _ _ _ fun x' => hG.apply (W x') δ
   have hB : Pr_{let p ← $ᵖ (S × S')}[∃ i, IsMCA G' MC p.2 (fun j => U (i, j)) δ]
       ≤ (Fintype.card ℓ : ENNReal) * (ε'_mca δ : ENNReal) := by
     rw [prob_split_uniform_sampling_of_prod
@@ -261,7 +264,7 @@ theorem tensor_isMCAGenerator_of_base (G : Generator S ℓ F) (G' : Generator S'
     refine Pr_seq_le_of_forall_le _ _ _ fun _ => le_trans (Pr_exists_le _ _) ?_
     have hsum : ∑ i : ℓ, Pr_{let x' ← $ᵖ S'}[IsMCA G' MC x' (fun j => U (i, j)) δ]
         ≤ ∑ _i : ℓ, (ε'_mca δ : ENNReal) := by
-      exact Finset.sum_le_sum fun i _ => hG' (fun j => U (i, j)) δ
+      exact Finset.sum_le_sum fun i _ => hG'.apply (fun j => U (i, j)) δ
     simpa [Finset.sum_const, Finset.card_univ, nsmul_eq_mul] using hsum
   calc Pr_{let p ← $ᵖ (S × S')}[IsMCA (TensorGenerator_Explicit G G') MC p U δ]
       ≤ Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ ∨

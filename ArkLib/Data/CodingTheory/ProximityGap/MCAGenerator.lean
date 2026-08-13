@@ -121,9 +121,7 @@ lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (
   (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
   (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
     IsMCAGenerator (generatorByRightMul G M) ε_mca MC :=
-  (isMCAGenerator_iff_mcaError_le _ _ _).mpr fun γ =>
-    le_trans (mcaError_generatorByRightMul_le G MC M hM (γ : ℝ))
-      ((isMCAGenerator_iff_mcaError_le _ _ _).mp hGMCA γ)
+  fun γ => le_trans (mcaError_generatorByRightMul_le G MC M hM (γ : ℝ)) (hGMCA γ)
 
 open Classical in
 /-- Extend a collection of words `U : κ → (ι → A)` to `ℓ → (ι → A)` by filling in the extra
@@ -164,8 +162,6 @@ lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ�
   (MC : ModuleCode ι F A)
   (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
   IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
-  (isMCAGenerator_iff_mcaError_le _ _ _).mpr fun γ =>
-    le_trans (mcaError_projectedGenerator_le G MC κ (γ : ℝ))
-      ((isMCAGenerator_iff_mcaError_le _ _ _).mp hGMCA γ)
+  fun γ => le_trans (mcaError_projectedGenerator_le G MC κ (γ : ℝ)) (hGMCA γ)
 
 end LinearTransformations
