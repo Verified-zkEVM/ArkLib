@@ -182,9 +182,49 @@ home_page/            site assets and assembled website root
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).
-- Reed-Solomon code definitions live under the `ReedSolomon` namespace in
-  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, with the multilinear representation in
-  `ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean`.
+- Reed-Solomon code definitions live under the `ReedSolomon` namespace: the base RS code in
+  `ArkLib/Data/CodingTheory/ReedSolomon.lean`, and the folded/interleaved/multiplicity/multilinear
+  variants under `ArkLib/Data/CodingTheory/ReedSolomon/` (see
+  [coding-theory-conventions.md](coding-theory-conventions.md)).
+- **Two different "folds" coexist and must not be confused.** GR08 *alphabet-enlarging* folding —
+  a codeword symbol packs `(f̂(x), f̂(xω), …, f̂(xω^{s-1}))`, the degree bound is unchanged, and the
+  code lives in `ι → Fin s → F` — is `ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean`. The
+  FRI/STIR-style *split-and-fold*, where a challenge contracts the polynomial and the evaluation
+  domain shrinks, is `ProximityGap/Folding.lean`, `Data/Polynomial/SplitFold.lean`, and
+  `Data/Polynomial/FoldingPolynomial.lean`; the "folded RS code" there is a plain RS code on a
+  subdomain, not an FRS code.
+- The ABF26 generic coding-theory layer sits in `ArkLib/Data/CodingTheory/` under the
+  `CodingTheory` namespace: `SubspaceDesign.lean` (`IsSubspaceDesign` and the folded-RS
+  subspace-design theorem), `ExtensionCodes.lean` (extension-field presentations and extension
+  codes), `Erasure.lean` (erasure-consistency uniqueness below minimum distance),
+  `HammingBallVolume.lean`,
+  `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
+  `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
+  consumes.
+- The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
+  `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
+  `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
+  degree/derivative criterion behind the univariate-multiplicity half of ABF26 T2.18. Their
+  generic determinant-divisibility and finite-field Kummer dependencies live in
+  `ArkLib/ToMathlib/LinearAlgebra/Matrix/Determinant.lean` and
+  `ArkLib/ToMathlib/FieldTheory/Kummer.lean`.
+- **MDS lives in two shapes, and only one reaches module alphabets.** `LinearCode.IsMDS`
+  (`Basic/LinearCode.lean`) is the `ℕ` Singleton-equality form and is stated only for
+  `LinearCode ι F = Submodule F (ι → F)`; `LinearCode.IsMDS_iff_rate_distance` converts it to
+  the `ℝ` rate-distance form `δ_min = 1 − ρ + 1/n` that ABF26 uses. Codes over a module
+  alphabet `Fin s → F` (folded, interleaved, extension) **cannot** use the predicate and
+  supply the rate-distance equation directly instead, at the alphabet-normalized rate
+  `LinearCode.alphabetRate`: see `ReedSolomon.Interleaved.irs_rate_distance` (no divisibility
+  needed) and `ReedSolomon.Folded.frs_rate_distance_of_dvd` (needs `s ∣ k`). Both feed the
+  alphabet-generic `CodingTheory.mds_johnson_lambda_le_of_rate_distance`, whose module-alphabet
+  consumers are `CodingTheory.irs_lambda_le_johnson_mds` and
+  `CodingTheory.frs_lambda_le_johnson_mds` in `JohnsonBound/Family.lean`. Generalising the
+  `IsMDS` *predicate* itself to `ModuleCode ι F A` is deliberately left out; it belongs with
+  the module-alphabet generalisation of `IsMCA`, which touches the same file.
+- Finite-probability helpers live under the `Probability` namespace in
+  `ArkLib/Data/Probability/Instances.lean` (see
+  [probability-conventions.md](probability-conventions.md)); the collision bound for random
+  functions is `ArkLib/Data/Probability/Combinatorial.lean`.
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
