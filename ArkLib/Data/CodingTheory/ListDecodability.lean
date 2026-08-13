@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, František Silváši, Julian Sutherland
+Authors: Katerina Hristova, František Silváši, Julian Sutherland, Alexander Hicks, Ilia Vlasov
 -/
 
 import Mathlib.InformationTheory.Hamming
@@ -10,6 +10,7 @@ import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Basic.Distance
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
+import ArkLib.ToMathlib.Set.Finite
 /-!
 # List Decodability
 
@@ -42,6 +43,9 @@ point-list finiteness is a consequence of a finite bound rather than a conjunct 
   uniform bound on the *finite subsets* of the point lists, which is the shape a counting
   argument produces. `isListDecodable_of_forall_finset_card_le` is its real-bound form, and
   `Lambda_lt_of_forall_finset_card_lt` its strict one, for the `|Λ(C, δ)| < |F|` statements.
+* `Code.isListDecodable_iff_forall_finset_card_le` — the same finite-subset reading as an
+  *equivalence*, so list decodability can be consumed in that shape as well as established in it;
+  `Code.IsListDecodable.finset_card_le` is its forward half, available as dot notation.
 * `Code.finite_closeCodewordsRel_of_Lambda_le` — finiteness as a consequence.
 * `Code.exists_encard_eq_Lambda`, `exists_encard_eq_Lambda_of_finite` — the supremum is
   attained, so a proof may *choose* a maximising word, as [ABF26] Lemma 6.12 does.
@@ -267,8 +271,8 @@ in `f`, then `Lambda C δ ≤ n`.
 
 This is the shape a list-decoding counting argument naturally produces: it fixes a finite family
 of close codewords and bounds its cardinality. Finiteness of the whole point list follows from the
-same hypothesis, an infinite set having finite subsets of every cardinality
-(`Set.Infinite.exists_subset_card_eq`), so no finiteness of the alphabet is required.
+same hypothesis, by `Set.Finite.of_forall_finset_card_le`, so no finiteness of the alphabet is
+required.
 
 Prefer this over an `[Finite F]` variant taking a bare `ncard` bound. Such a variant would be
 *sound* — under a finite alphabet `ncard` cannot lie, so there is no vacuity to exploit — but it
@@ -281,11 +285,9 @@ lemma Lambda_le_of_forall_finset_card_le {C : Set (ι → F)} {δ : ℝ} {n : �
     Lambda C δ ≤ (n : ℕ∞) := by
   rw [Lambda_le_iff_forall_encard_le]
   intro f
-  have hfin : (closeCodewordsRel C f δ).Finite := by
-    by_contra hinf
-    obtain ⟨T, hTsub, hTcard⟩ := Set.Infinite.exists_subset_card_eq hinf (n + 1)
-    have hle := h f T fun c hc => hTsub hc
-    omega
+  have hfin : (closeCodewordsRel C f δ).Finite :=
+    Set.Finite.of_forall_finset_card_le (ℓ := (n : ℝ))
+      fun T hT => by exact_mod_cast h f T fun c hc => hT hc
   rw [← hfin.cast_ncard_eq]
   exact_mod_cast (Set.ncard_eq_toFinset_card _ hfin) ▸
     h f hfin.toFinset fun c hc => hfin.mem_toFinset.mp hc
@@ -489,6 +491,38 @@ lemma isListDecodable_of_forall_finset_card_le {C : Set (ι → F)} {r : ℝ} {�
       (T.card : ℝ) ≤ ℓ) :
     IsListDecodable C r ℓ :=
   Lambda_le_of_forall_finset_card_le fun f T hT => Nat.le_floor (h f T hT)
+
+/-- **Using a list-decodability hypothesis on a concrete finite family.** The converse of
+`isListDecodable_of_forall_finset_card_le`: any `Finset` of codewords inside the radius-`r` ball
+around `y` has at most `ℓ` elements.
+
+This is the direction a proof needs when list decodability is a *hypothesis* rather than the goal,
+and it is stated in the namespace so that dot notation works — `h.finset_card_le y T hT`. Without
+it, a consumer has to route through `isListDecodable_iff_forall_ncard_le` and carry the finiteness
+witness by hand, which is friction with no mathematical content. -/
+lemma IsListDecodable.finset_card_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ≥0}
+    (h : IsListDecodable C r ℓ) (y : ι → F) (T : Finset (ι → F))
+    (hT : ∀ c ∈ T, c ∈ closeCodewordsRel C y r) : (T.card : ℝ) ≤ ℓ := by
+  obtain ⟨hfin, hcard⟩ := isListDecodable_iff_forall_ncard_le.mp h y
+  refine le_trans ?_ hcard
+  exact_mod_cast Set.ncard_le_ncard (fun c hc => hT c hc) hfin
+
+/-- **The finite-subset characterisation of list decodability.** `C` is `(r, ℓ)`-list decodable
+exactly when every finite family of codewords inside a radius-`r` ball has at most `ℓ` elements.
+
+This is the reading a counting argument produces *and* consumes, so it is worth having as an
+equivalence rather than only the constructor direction: `.mpr` is
+`isListDecodable_of_forall_finset_card_le` and `.mp` is `IsListDecodable.finset_card_le`.
+
+Note that this is a *characterisation*, not a second definition — the point-list finiteness that a
+`Set.ncard`-based formulation has to carry as a conjunct is a consequence here, so there is nothing
+to keep in sync. A caller preferring the subset spelling `↑T ⊆ closeCodewordsRel C y r` crosses to
+this one with `simp only [Set.subset_def, Finset.mem_coe]`. -/
+lemma isListDecodable_iff_forall_finset_card_le {C : Set (ι → F)} {r : ℝ} {ℓ : ℝ≥0} :
+    IsListDecodable C r ℓ ↔
+      ∀ (y : ι → F) (T : Finset (ι → F)), (∀ c ∈ T, c ∈ closeCodewordsRel C y r) →
+        (T.card : ℝ) ≤ ℓ :=
+  ⟨fun h => h.finset_card_le, isListDecodable_of_forall_finset_card_le⟩
 
 /-- **The `ENNReal` transfer** — the one boundary at which real-valued bounds meet the integral
 `Lambda`. This is the shape the Johnson-family bounds produce, and the shape the `ε`-error layer

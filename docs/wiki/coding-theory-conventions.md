@@ -196,6 +196,24 @@ probability does not. The coercion at the boundary — `GrandChallenges` writes
 `Lambda (C^⋈ m) (gridPt k : ℝ)` — is the honest record of that difference, not a defect to unify
 away.
 
+**Several readings, one definition — the alternatives are `iff` lemmas, not parallel `def`s.**
+This came up as a design objection worth recording (Ilia Vlasov, ArkLib #731): in a general-purpose
+library, should we not carry *several* definitions of list decodability and prove them equivalent,
+rather than privileging one? The answer here is that we do carry several readings, as
+characterisation lemmas — `Lambda_le_iff_forall_encard_le`, `Lambda_le_iff_forall_ncard_le`,
+`isListDecodable_iff_forall_ncard_le`, `isListDecodable_iff_forall_finset_card_le`,
+`isListDecodable_iff_toENNReal_le_ofReal`, `isUniquelyDecodable_iff_subsingleton` — which is
+Mathlib's own practice and gives the same freedom at the call site. Parallel *definitions* cost
+what lemmas do not: `n` of them need `n²` bridges, consumers fragment across them, and each is a
+place to drift. This file is the cautionary case — the two notions it replaced *had* drifted, and
+the `Set.ncard`-based one turned out to be satisfiable by an **infinite** point list at bound `0`,
+which is why a finiteness conjunct had been bolted onto it.
+
+The distinction that makes the question look sharper than it is: `Lambda` is not a rival
+*predicate*, it is a different kind of object — a value in `ℕ∞`. It has to be primitive because the
+sources do arithmetic on it (see the shapes above); the propositions are what get derived. So the
+choice is not between two `Prop`s.
+
 **Whether to keep the predicate at all is an open question, deliberately answered "yes."**
 The maximally unified option is to delete `IsListDecodable` and spell its six hypotheses
 `Lambda (C i) (δ i) ≤ ⌊l i⌋₊`. It was weighed and not taken, and the reason is not that the
