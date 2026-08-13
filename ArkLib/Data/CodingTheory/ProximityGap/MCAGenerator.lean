@@ -53,7 +53,7 @@ event implication, and everything else is this lemma. Stating it once at the *va
 out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
 `isMCAGenerator_iff_mcaError_le` and transitivity. -/
 lemma mcaError_le_of_event_implies [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
-    (MC : ModuleCode ι F A) (δ : I) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
+    (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
     (h : ∀ (U : ℓ' → (ι → A)) (x : S), IsMCA G' MC x U δ → IsMCA G MC x (Φ U) δ) :
     mcaError G' MC δ ≤ mcaError G MC δ := by
   unfold mcaError
@@ -85,7 +85,7 @@ This is the mathematical content of Lemma 4.1 [BCGM25]; the error statements bel
 from it by `mcaError_le_of_event_implies`. -/
 lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
     (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M)
-    (U : ℓ' → (ι → A)) (γ : I) (x : S) :
+    (U : ℓ' → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (generatorByRightMul G M) MC x U γ → IsMCA G MC x (matrixMulCodewords M U) γ := by
   obtain ⟨B, hB⟩ := hM
   rintro ⟨T, hT_card, hT_proj, j, hj⟩
@@ -108,7 +108,7 @@ lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Ge
 /-- Right multiplication by a matrix with a left pseudoinverse does not increase the MCA error.
 Lemma 4.1 [BCGM25], at the error *value* — no `ε_mca` appears. -/
 lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
-    (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : I) :
+    (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : ℝ) :
     mcaError (generatorByRightMul G M) MC γ ≤ mcaError G MC γ :=
   mcaError_le_of_event_implies G (generatorByRightMul G M) MC γ (matrixMulCodewords M)
     (fun U x h => isMCA_generatorByRightMul_of_isMCA G MC M hM U γ x h)
@@ -122,7 +122,7 @@ lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (
   (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
     IsMCAGenerator (generatorByRightMul G M) ε_mca MC :=
   (isMCAGenerator_iff_mcaError_le _ _ _).mpr fun γ =>
-    le_trans (mcaError_generatorByRightMul_le G MC M hM γ)
+    le_trans (mcaError_generatorByRightMul_le G MC M hM (γ : ℝ))
       ((isMCAGenerator_iff_mcaError_le _ _ _).mp hGMCA γ)
 
 open Classical in
@@ -134,7 +134,7 @@ fun i => if h : i ∈ κ then U ⟨i, h⟩ else 0
 /-- If the MCA condition `IsMCA` holds for a projected generator, then `IsMCA` holds for the
 original generator `G` with the zero-extension defined above. -/
 lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G : Generator S ℓ F)
-    (κ : Set ℓ) [Fintype κ] (U : κ → (ι → A)) (γ : I) (x : S) :
+    (κ : Set ℓ) [Fintype κ] (U : κ → (ι → A)) (γ : ℝ) (x : S) :
     IsMCA (projectedGenerator G κ) MC x U γ → IsMCA G MC x (zeroExtend κ U) γ := by
   have smulSum_projectedGenerator (i : ι) :
     ∑ j, projectedGenerator G κ x j • U j i = ∑ j, G x j • zeroExtend κ U j i := by
@@ -152,7 +152,7 @@ lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G
 /-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
 error. Corollary 4.2 [BCGM25], at the error *value* — no `ε_mca` appears. -/
 lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : ModuleCode ι F A)
-    (κ : Set ℓ) [Fintype κ] (γ : I) :
+    (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
     mcaError (projectedGenerator G κ) MC γ ≤ mcaError G MC γ :=
   mcaError_le_of_event_implies G (projectedGenerator G κ) MC γ (zeroExtend κ)
     (fun U x h => isMCA_projectedGenerator_of_isMCA MC G κ U γ x h)
@@ -165,7 +165,7 @@ lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ�
   (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
   IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
   (isMCAGenerator_iff_mcaError_le _ _ _).mpr fun γ =>
-    le_trans (mcaError_projectedGenerator_le G MC κ γ)
+    le_trans (mcaError_projectedGenerator_le G MC κ (γ : ℝ))
       ((isMCAGenerator_iff_mcaError_le _ _ _).mp hGMCA γ)
 
 end LinearTransformations

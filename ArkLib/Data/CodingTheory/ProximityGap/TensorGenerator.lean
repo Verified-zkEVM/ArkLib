@@ -19,8 +19,18 @@ for `MC` itself), at the weaker error `ε_mca + ℓ • ε'_mca`: a union bound 
 forced by this proof strategy. (That the printed error is *unreachable* from the printed
 hypothesis is not claimed and not known: no separation at equal error is exhibited anywhere,
 here or in [BCGM25]. What is established is that the paper's own argument does not reach it.)
-Note the error type is `I → ℝ≥0` rather than `I → I`, so this bound is vacuous once
-`|ℓ| · ε'_mca δ ≥ 1`; [BCGM25] types its MCA error `[0,1] → [0,1]`.
+
+  **Where the missing factor actually lives.** The case-(b) event *is* the MCA event of `G'` for
+  the interleaving `MC^⋈ℓ`, so the printed error would follow from the printed hypothesis as soon
+  as `ε_mca(C^ℓ) ≤ ε_mca(C)` — that interleaving costs nothing. [BCGM25] Lemma 10.1 gives only
+  `ε_mca(C^k) ≤ k · ε_mca(C)`, and [ABF26] states the improvement as **open** immediately after
+  its Lemma 4.7 (`ε_mca(C^≡t, δ) ≤ t · ε_mca(C, δ)`): *"It is an open question whether this bound
+  is tight or can be improved."* So the `ℓ` here is exactly that open factor, not an artefact of
+  this formalisation — and a proof of Lemma 4.4 at the printed hypothesis and the printed error,
+  by this route, would resolve a stated open problem.
+
+  Note the error type is `I → ℝ≥0` rather than `I → I`, so this bound is vacuous once
+  `|ℓ| · ε'_mca δ ≥ 1`; [BCGM25] types its MCA error `[0,1] → [0,1]`.
 - `isMCAGenerator_of_moduleInterleavedCode` — MCA for the interleaving implies MCA for the base
 code at the same error, so the tight form's hypothesis is a strengthening of the printed one.
 

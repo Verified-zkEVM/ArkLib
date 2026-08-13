@@ -19,15 +19,15 @@ shape is the open work.
 
 ```lean
 -- 1. one event predicate per notion, generator-parametric and alphabet-general
-def IsMCA (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) (U : ℓ → (ι → A)) (δ : I) : Prop
+def IsMCA (G : Generator S ℓ F) (MC : ModuleCode ι F A) (x : S) (U : ℓ → (ι → A)) (δ : ℝ) : Prop
 
--- 2. the VALUE is the primitive
-noncomputable def mcaError (G : Generator S ℓ F) (MC : ModuleCode ι F A) : I → ENNReal :=
+-- 2. the VALUE is the primitive, and is TOTAL in the radius
+noncomputable def mcaError (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
   fun δ => ⨆ U, Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]
 
--- 3. the predicate is DERIVED, never parallel
+-- 3. the predicate is DERIVED, never parallel — and is where `[0,1]` belongs
 def IsMCAGenerator (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
-  ∀ U δ, Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ] ≤ ↑(ε_mca δ)
+  ∀ U, ∀ δ : I, Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)] ≤ ↑(ε_mca δ)
 -- tied to the value by `isMCAGenerator_iff_mcaError_le`
 ```
 
@@ -80,40 +80,47 @@ Five rules, each with a reason that has bitten us:
    equal to the column index. This is the argument that survives the objection; the typing argument
    alone does not.
 
-5. **`δ : I`, error bound `I → ℝ≥0`, compared with `↑` not `ENNReal.ofReal`.** See below.
+5. **Radius `δ : ℝ` on the value, `[0,1]` on the bound, compared with `↑` not
+   `ENNReal.ofReal`.** See below.
 
 ## Numeric conventions
 
 | Slot | Type | Why not the alternatives |
 |---|---|---|
-| distance `δ` | `I` | The sources say **closed** `[0,1]`: BCGM25 Def 3.14 types `ϵMCA : [0,1] → [0,1]` over `γ ∈ [0,1]`; ABF26 §1.2 writes `δ ∈ [0,1]` at all three error definitions. Genuinely closed, so not `Ioo 0 1` — BCGM25 Lemma 3.18 gives `ϵMCA(0) = ϵZE` and Remark 3.15 saturates `ϵMCA(γ) = 1` above `γ₀ < 1`. `ℝ≥0` additionally brings truncated subtraction into the size clause. (The papers' `(0,1)` is for `Λ` / ball volume, a different slot.) |
-| error **value** | `ENNReal` | It is a supremum of probabilities. |
+| distance `δ` — **argument to the value** (`IsMCA`, `mcaError`) | `ℝ` | Same call as `Code.Lambda`, and for the same reason: this is an argument, and narrowing it only relocates a membership obligation to every call site. The size clause `|T| ≥ n·(1 − δ)` is *total and honest* at every real — no `T` can meet it below `0`, and it is vacuous at and above `1` — so nothing is asserted outside `[0,1]` that the endpoints do not already assert. `I` costs a membership proof wherever a radius is computed (`1 − √ρ − η`, `k/n`); `ℝ≥0` drags truncated subtraction into the size clause and still cannot express a negative radius. |
+| distance `δ` — **quantifier on the bound** (`IsMCAGenerator`) | `I` | This is where the sources put `[0,1]`, so this is where it goes: BCGM25 Def 3.14 quantifies `γ ∈ [0,1]` and types `ϵMCA : [0,1] → [0,1]`. Closed, not `Ioo 0 1`: Lemma 3.18 gives `ϵMCA(0) = ϵZE`, Remark 3.15 saturates `ϵMCA(γ) = 1` above some `γ₀ < 1`, and both ABF26 Grand Challenges quantify `δ* ∈ [0,1]`. |
+| error **value** | `ENNReal` | It is a supremum of probabilities. Bounded (`mcaError_le_one`, `mcaError_ne_top`), so it crosses back to `ℝ≥0` freely. |
 | error **bound** | `ℝ≥0` | `I` **cannot express the transport lemmas at all** — it has no `Add` and no ℕ-`SMul`, so `ε + ε′` (BCGM25 L4.4), `ε + ℓ·ε′`, `k · ε` (L10.1) are unstatable. `ℝ` admits negative bounds, which `ENNReal.ofReal` silently maps to `0`, turning the bound into `Pr = 0`. `ENNReal` allows a meaningless `⊤`. |
 | comparison | `Pr ≤ ↑(ε δ)` | `ENNReal.ofReal (p : ℝ) = (p : ENNReal)` for `p : ℝ≥0`, so `ofReal` is a redundant round-trip through `ℝ`; using `↑` lets `norm_cast` discharge the arithmetic instead of hand-rolled `ofReal_add` / `ofReal_mul` / `ofReal_natCast` rewrites. |
 
-The asymmetry between the domain and the codomain is deliberate: `I` in the *domain* is a
-precondition on the caller and costs little inside the definition; `I` in the *codomain* constrains
-the output and is exactly what blocks composing the transport lemmas. Both rows are settled — the
-domain by the sources, the codomain by Lean's constraints.
+**Beware a citation trap here.** ABF26 **contradicts itself** on the radius domain in the ε-error
+slot, exactly as it does in the `Λ` slot: §1.2 and both Grand Challenge statements write
+`δ ∈ [0,1]`, while Definition 4.1, Definition 4.3, Fact 4.5 and Lemmas 4.6/4.7 all write
+`δ ∈ (0,1)`. So `(0,1)` is *not* "the `Λ` slot only" — do not cite ABF26 as settling this either
+way. What settles the closed reading on the bound is BCGM25 Def 3.14 together with ABF26's own
+Grand Challenge quantifier; what settles totality on the value is that the sources contradict
+themselves, so faithfulness cannot decide it and Lean's ergonomics should.
 
-**`Code.Lambda`'s `δ : ℝ` is not an outlier to be fixed — leave it alone.** It is tempting to read
-ABF26's `Λ` at `δ ∈ [0,1]` as making `ℝ` the unfaithful side. It does not, for two reasons settled
-in `coding-theory-conventions.md` ("Why the radius is `ℝ` while the bound is `ℝ≥0`"): `I` carries
-no `Sub`, so a radius written `1 − √ρ − η` cannot even be *formed* in it without a membership proof
-at every call site; and narrowing only relocates the obligation, with both discharges worse than
-the status quo — truncating a negative radius to `0` turns a bound proved of the empty list into a
-claim about the singleton `{f}`, while guarding adds `0 ≤ 1 − √ρ − η` to statements whose
-mathematics does not need it. A negative radius is the honest value: empty ball, `Lambda = 0`.
+**The radius convention is now single.** `Code.Lambda`, `IsMCA` and `mcaError` all take `δ : ℝ`.
+The earlier reading — that `Λ`'s `ℝ` was an outlier to be pulled toward `I` — is wrong and is
+recorded as such in `coding-theory-conventions.md` ("Why the radius is `ℝ` while the bound is
+`ℝ≥0`"): `I` carries no `Sub`, so `1 − √ρ − η` cannot even be *formed* in it without a membership
+proof at every call site, and both ways of narrowing are worse than leaving it alone. That argument
+applies verbatim to the ε-error radius; the only thing `[0,1]` genuinely constrains is the *bound*,
+and that is where it now sits.
 
-The layers genuinely differ. An error probability has no meaning outside `[0,1]`; a list size does.
-So the two conventions coexist, with a coercion at the boundary — as in `GrandChallenges`'
-`Lambda (C^⋈ m) (gridPt k : ℝ)`.
+Two things this buys, both checked rather than asserted:
 
-One genuine constraint, tracked rather than fixed:
-
-- `gridPt : ℕ → I` **cannot** be made total — `gridPt_le_one` needs `k ≤ Fintype.card ι`. Keep the
-  δ-grid indexed by `ℕ` and discharge the bound at the call site; the content already lives on the
-  integer index (`kStar`), which is more faithful than a "largest real `δ*`" phrasing anyway.
+- **The abf26 bridge is unconditional.** `epsMCA C δ = mcaError (AffineLineGenerator F) MC (δ : ℝ)`
+  holds for **every** `δ : ℝ≥0` with no side condition. Under `δ : I` it required
+  `(δn : ℝ) = (δi : ℝ)` supplied at each call site. Above `1` the two size clauses differ
+  syntactically — `ℝ≥0`'s truncated `1 − δ` is `0`, `ℝ`'s is negative — but both are then vacuously
+  true, so the equivalence survives on the whole domain.
+- **`gridPt` stays total.** It can remain `ℕ → ℝ≥0` (or `ℕ → ℝ`) and compose with `mcaError`
+  directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` already does. The former
+  note here — that `gridPt : ℕ → I` "cannot be made total" because `gridPt_le_one` needs
+  `k ≤ Fintype.card ι` — described a constraint that only existed because the value took `I`. It is
+  gone, not tracked.
 
 ## Naming
 
@@ -125,9 +132,10 @@ Follows `coding-theory-conventions.md`. The quantity tokens are `epsPG`, `epsCA`
 **The generator-framework value is `CoreDefinitions.mcaError`, not `epsMCA`, and must stay that way
 for now.** `ProximityGap.epsMCA` **(#505)** is a *different function* — `(C : Set (ι → A)) → ℝ≥0 →
 ENNReal`, with the affine line hard-wired — and the two are related, not equal:
-`epsMCA C δ = mcaError (AffineLineGenerator F) MC δ` at `C = ↑MC`. Renaming `mcaError` to `epsMCA`
-before that bridge has retired the abf26 definition would both collide on merge and make the bridge
-unstatable. Unify the names when the duplicate is deleted, not before.
+`epsMCA C δ = mcaError (AffineLineGenerator F) MC (δ : ℝ)` at `C = ↑MC`, for every `δ : ℝ≥0`.
+Renaming `mcaError` to `epsMCA` before that bridge has retired the abf26 definition would both
+collide on merge and make the bridge unstatable. Unify the names when the duplicate is deleted, not
+before.
 
 ## The helper-lemma API
 
@@ -136,9 +144,10 @@ But a notion is **not** required to carry all of them — monotonicity in partic
 notion-specific and two of the four cases are false (rule 2). Check that before attempting one.
 
 - `eps?_mono` in `δ` — **`epsMCA` only**; `epsCA` is monotone in `δ_fld` and *antitone* in `δ_int`;
-  **false** for `epsPG` and `epsCA'`
-- `eps?_ne_top`, `eps?_le_one`
-- `eps?_eq_of_floor_eq` — the `1/n` step-function fact (challenge radii are integer grid points)
+  **false** for `epsPG` and `epsCA'`. Done for MCA: `mcaError_mono` (BCGM25 Lemma 3.16)
+- `eps?_ne_top`, `eps?_le_one` — done for MCA: `mcaError_le_one`, `mcaError_ne_top`
+- `eps?_eq_of_floor_eq` — the `1/n` step-function fact (challenge radii are integer grid points).
+  Done for MCA: `mcaError_eq_of_floor_eq`, on the primitive `size_clause_iff_floor`
 - `isXGenerator_iff_eps?_le` — definitional under rule 1 (`isMCAGenerator_iff_mcaError_le`)
 - `eps?_le_iff_threshold` — `eps? ≤ ↑t ↔ ∀ U, Pr > t → jointAgreement`, at an **arbitrary threshold
   `t`, not at `ε`**: the families do not share one. Affine lines and affine spaces use `> ε`, but

@@ -172,7 +172,7 @@ open Classical in
 /-- There is a choice of two line-codewords `W` so that `(1 - 1/|F|)` times the density of
 affine-space bad seeds is at most the density of affine-line bad seeds for `W`. -/
 lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
-    (LC : LinearCode ι F) (U : Fin (s + 1) → (ι → F)) (γ : unitInterval) :
+    (LC : LinearCode ι F) (U : Fin (s + 1) → (ι → F)) (γ : ℝ) :
     ∃ W : Fin 2 → (ι → F),
       (1 - 1 / (Fintype.card F : ℝ)) *
         (((Finset.univ.filter (fun x : Fin s → F =>
