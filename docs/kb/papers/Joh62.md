@@ -90,14 +90,14 @@ Xplore.
   wrapper; module and interleaved codes instantiate the generic form with
   `LinearCode.alphabetRate` and their own rate-distance equation.
 - `Lambda` is built from `Set.encard`, so an infinite point list contributes `⊤` rather than
-  collapsing to zero, and a finite bound therefore implies point-list finiteness. `listDecodable`
+  collapsing to zero, and a finite bound therefore implies point-list finiteness. `IsListDecodable`
   is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊`, so the Johnson bounds land on the predicate
   directly and no transfer lemma is involved.
 
 ## Open Formalization Gaps
 
-- No `ArkLib/ProofSystem/Stir` proof yet discharges its `listDecodable` hypothesis from the
-  Johnson bounds. The suppliers exist (`johnson_listDecodable`, `johnson_listDecodable_of_le`);
+- No `ArkLib/ProofSystem/Stir` proof yet discharges its `IsListDecodable` hypothesis from the
+  Johnson bounds. The suppliers exist (`johnson_isListDecodable`, `johnson_isListDecodable_of_le`);
   wiring them up is a change to the STIR development, not to this layer.
 - The Elias and volume-based *lower* bounds (`ABF26` Lemma 3.7 / Corollary 3.8), which pair with
   the Johnson upper bound, are not proved. Only their support layer exists

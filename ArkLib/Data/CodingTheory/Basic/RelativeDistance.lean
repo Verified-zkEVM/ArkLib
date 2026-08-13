@@ -415,14 +415,21 @@ theorem relCloseToWord_iff_exists_agreementCols
   letI : DecidableEq ι := by exact Classical.typeDecidableEq ι
   rw [closeToWord_iff_exists_agreementCols]
 
-lemma NNReal.floor_ge_Nat_of_gt
+/-! The next two are general `ℝ≥0` facts, with nothing code-specific about them, and the `_root_.`
+prefixes are load-bearing. Written as `lemma NNReal.foo` inside `namespace Code` they would declare
+`Code.NNReal.foo` and so bring the namespace `Code.NNReal` into existence — after which a later
+`open scoped NNReal` *inside* `namespace Code`, in this or any other file, resolves to that empty
+namespace instead of the real one and silently drops the `ℝ≥0` notation, leaving `ℝ≥0` to reparse
+as `ℝ ≥ 0`. -/
+
+lemma _root_.NNReal.floor_ge_Nat_of_gt
     {r : ℝ≥0} {n : ℕ} (h : r > n) :
     Nat.floor r ≥ n := by
   apply (Nat.le_floor_iff (NNReal.coe_nonneg r)).mpr
   apply le_of_lt
   exact_mod_cast h
 
-lemma NNReal.sub_eq_zero_of_le (x y : ℝ≥0) (h : x ≤ y) : x - y = 0 := by
+lemma _root_.NNReal.sub_eq_zero_of_le (x y : ℝ≥0) (h : x ≤ y) : x - y = 0 := by
   exact tsub_eq_zero_of_le h
 
 /-- The equivalence between the two lowerbound of `upperBound` in Nat and NNReal context.

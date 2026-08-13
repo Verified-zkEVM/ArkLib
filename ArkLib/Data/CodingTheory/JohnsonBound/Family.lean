@@ -35,7 +35,7 @@ distance `δ` of a given word, and their specializations to MDS and Reed-Solomon
 * `CodingTheory.rs_lambda_le_johnson_mds`, `CodingTheory.irs_lambda_le_johnson_mds`,
   `CodingTheory.frs_lambda_le_johnson_mds` — the same bound at Reed-Solomon, interleaved
   Reed-Solomon, and folded Reed-Solomon codes.
-* `CodingTheory.johnson_listDecodable` — the Johnson bound in the `listDecodable` shape.
+* `CodingTheory.johnson_listDecodable` — the Johnson bound in the `IsListDecodable` shape.
 
 The alphabet-generic bound is proved from the absolute-distance Johnson bound of
 `JohnsonBound/Basic.lean`, with the very-low-rate regime — where the Johnson radicand turns
@@ -93,7 +93,7 @@ end JohnsonBound
 namespace CodingTheory
 
 open scoped NNReal
-open ListDecodable JohnsonBound
+open Code JohnsonBound
 open Real Finset Fintype
 
 set_option maxHeartbeats 1000000 in
@@ -932,30 +932,30 @@ theorem rs_lambda_le_johnson_mds
   letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
   exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
 
-/-- The Johnson bound in `listDecodable` form: a code is `(δ, ℓ)`-list-decodable at every
+/-- The Johnson bound in `IsListDecodable` form: a code is `(δ, ℓ)`-list-decodable at every
 radius `δ` below its Johnson radius.
 
-No transfer lemma is involved: `listDecodable C δ ℓ` unfolds to `Lambda C δ ≤ ⌊ℓ⌋₊`, so this is
+No transfer lemma is involved: `IsListDecodable C δ ℓ` unfolds to `Lambda C δ ≤ ⌊ℓ⌋₊`, so this is
 `johnson_bound_lambda_le_ell` composed with `Lambda_mono`, modulo `⌊(ℓ : ℝ≥0)⌋₊ = ℓ` for a natural
-`ℓ` — which is exactly `listDecodable_natCast_iff`. -/
-theorem johnson_listDecodable
+`ℓ` — which is exactly `isListDecodable_natCast_iff`. -/
+theorem johnson_isListDecodable
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι)) :
-    listDecodable C δ (ℓ : ℝ≥0) :=
-  listDecodable_natCast_iff.mpr ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
+    IsListDecodable C δ (ℓ : ℝ≥0) :=
+  isListDecodable_natCast_iff.mpr ((Lambda_mono hδ).trans (johnson_bound_lambda_le_ell C ℓ hℓ_ge))
 
-/-- `johnson_listDecodable` weakened to an arbitrary list budget `r ≥ ℓ`, via
-`ListDecodable.listDecodable.mono`. -/
-theorem johnson_listDecodable_of_le
+/-- `johnson_isListDecodable` weakened to an arbitrary list budget `r ≥ ℓ`, via
+`Code.IsListDecodable.mono`. -/
+theorem johnson_isListDecodable_of_le
     {ι : Type*} [Fintype ι] [Nonempty ι]
     {α : Type*} [Fintype α] [DecidableEq α]
     (C : Set (ι → α)) (ℓ : ℕ) (hℓ_ge : 1 ≤ ℓ) {δ : ℝ}
     (hδ : δ ≤ Jqℓ (Fintype.card α) ℓ ((Code.minDist C : ℚ) / Fintype.card ι))
     {r : ℝ≥0} (hr : (ℓ : ℝ≥0) ≤ r) :
-    listDecodable C δ r :=
-  (johnson_listDecodable C ℓ hℓ_ge hδ).mono hr
+    IsListDecodable C δ r :=
+  (johnson_isListDecodable C ℓ hℓ_ge hδ).mono hr
 
 /-! ### Module-alphabet instances
 
