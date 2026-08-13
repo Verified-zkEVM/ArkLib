@@ -189,12 +189,11 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
     argument), both halves of Theorem 3.9, Corollary 3.8, Theorems 3.13 and 3.14, and — the deepest
     of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
-    the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it. Five of
-    these landed together in one round of Aleph prover runs (ArkLib #724–#728).
-  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.10, Theorem 3.11,
-    Theorem 3.12. `large_alphabet_card_ge_exp_of_inv_length` and
-    `random_linear_lambda_lower_exists` are *derived* from Theorems 3.10 and 3.11, so they inherit
-    those admits.
+    the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it; and
+    Theorem 3.10, whose consequence `large_alphabet_card_ge_exp_of_inv_length` is axiom-clean with it.
+    Six of these landed from one round of Aleph prover runs (ArkLib #724–#728, #732).
+  - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.11, Theorem 3.12.
+    `random_linear_lambda_lower_exists` is *derived* from Theorem 3.11, so it inherits that admit.
   - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
     3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
     lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is unformalized and
@@ -203,8 +202,9 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   - Fidelity gaps to close, in rough priority order: (i) Lemma 3.7 / Corollary 3.8 / Theorem 3.10 are
     stated for linear codes over a field, whereas the paper states them for an arbitrary code
     `C : Σ^k → Σ^n` — for Lemma 3.7 the generalisation is nearly free, since linearity is used once;
-    (ii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ`, and its `∃ n₀`
-    placement forfeits the paper's `η = Θ(1/n)` corollary; (iii) Theorem 3.12 is stated at real
+    (ii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ` (the `∃ n₀`
+    concern is settled: the threshold sits outside `∀ η`, so the paper's `η = Θ(1/n)` corollary is
+    reachable and is derived); (iii) Theorem 3.12 is stated at real
     `α, β` where [BKR06] needs them rational, and the rounding shortfall is polynomial, so that
     admit may be false as stated; (iv) Theorem 3.11 is one stronger than [GLMRSW22]'s strict-`<L`
     definition, faithfully to [ABF26]'s printing.

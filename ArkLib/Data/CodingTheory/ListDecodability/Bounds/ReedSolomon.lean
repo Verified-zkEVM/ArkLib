@@ -35,7 +35,7 @@ set_option linter.unusedSectionVars false
 namespace CodingTheory
 
 open scoped NNReal
-open ListDecodable
+open Code
 
 section ReedSolomonBounds
 
@@ -596,7 +596,7 @@ theorem rs_lambda_high_rate
     rw [hprod]
     norm_num
   have hclose : ∀ a, c a ∈
-      _root_.ListDecodable.closeCodewordsRel ((C : Set (ι → F))) w
+      Code.closeCodewordsRel ((C : Set (ι → F))) w
         (1 / (j + 1 : ℝ)) := by
     intro a
     rw [CodingTheory.closeCodewordsRel_eq_setOf C _ (by positivity) w]
@@ -615,7 +615,7 @@ theorem rs_lambda_high_rate
         exact hx (hagree a x hxa)
       _ = 1 := Finset.card_singleton a
   let S : Set (ι → F) :=
-    _root_.ListDecodable.closeCodewordsRel ((C : Set (ι → F))) w
+    Code.closeCodewordsRel ((C : Set (ι → F))) w
       (1 / (j + 1 : ℝ))
   have hcount : (Set.univ : Set ι).ncard ≤ S.ncard := by
     apply Set.ncard_le_ncard_of_injOn c

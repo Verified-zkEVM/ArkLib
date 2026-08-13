@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.HammingBallVolume
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
 # Counting identities shared by the list-size bounds
@@ -30,7 +31,7 @@ set_option linter.unusedSectionVars false
 namespace CodingTheory
 
 open scoped NNReal
-open ListDecodable
+open Code
 
 section LowerBounds_General
 
@@ -53,19 +54,35 @@ theorem card_filter_hammingDist_le_eq_hammingBallVolume
     Code.mem_hammingBall_iff]
   congr!
 
-/-- **Relative-distance close-codeword set as an explicit absolute-distance set.** -/
-theorem closeCodewordsRel_eq_setOf
-    (C : Submodule F (ι → F)) (δ : ℝ) (hδ : 0 ≤ δ) (f : ι → F) :
-    closeCodewordsRel ((C : Set (ι → F))) f δ =
-      {c : ι → F | c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊} := by
+/-- **Relative-distance close-codeword set as an explicit absolute-distance set.**
+
+Stated for an arbitrary alphabet rather than a linear code over a field: the identity is pure
+arithmetic on `hammingDist`, and the large-alphabet barrier needs it at that generality. -/
+theorem closeCodewordsRel_eq_setOf {A : Type} [DecidableEq A]
+    (C : Set (ι → A)) (δ : ℝ) (hδ : 0 ≤ δ) (f : ι → A) :
+    closeCodewordsRel C f δ =
+      {c : ι → A | c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊} := by
   have h_n_pos : 0 < Fintype.card ι := Fintype.card_pos
   ext c
-  simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq, SetLike.mem_coe,
+  simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq,
     Code.relHammingDist, NNRat.cast_div, NNRat.cast_natCast]
   refine and_congr_right (fun _ => ?_)
   rw [div_le_iff₀ (by exact_mod_cast h_n_pos), ← Nat.le_floor_iff (by positivity)]
   rw [hammingDist_comm c f]
   constructor <;> intro h <;> · convert h using 2
+
+/-- **A linear code has `q ^ dim` codewords**, in the real-exponent form the barrier arguments
+consume. -/
+theorem submodule_ncard_eq_rpow_finrank (C : Submodule F (ι → F)) :
+    ((C : Set (ι → F)).ncard : ℝ)
+      = (Fintype.card F : ℝ) ^ (Module.finrank F C : ℝ) := by
+  have hcard_nat : (C : Set (ι → F)).ncard = Fintype.card F ^ Module.finrank F C := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]
+      rfl
+    rw [h1, ← Nat.card_eq_fintype_card (α := F)]
+    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+  rw [hcard_nat, Nat.cast_pow, Real.rpow_natCast]
 
 open Classical in
 /-- **Averaging identity (Fubini).** Summing the point-list size `|Λ(C, δ, f)|` over all
@@ -80,7 +97,7 @@ theorem sum_ncard_closeCodewordsRel_eq
       = (Finset.univ.filter
           (fun c : ι → F => c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊)).card := by
     intro f
-    rw [closeCodewordsRel_eq_setOf C δ hδ f, ← Set.ncard_coe_finset]
+    rw [closeCodewordsRel_eq_setOf (C : Set (ι → F)) δ hδ f, ← Set.ncard_coe_finset]
     congr 1
     ext c
     simp

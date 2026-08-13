@@ -52,7 +52,7 @@ set_option linter.unusedSectionVars false
 namespace CodingTheory
 
 open scoped NNReal
-open ListDecodable
+open Code
 
 section AgreementHypergraph
 

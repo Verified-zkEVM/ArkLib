@@ -33,7 +33,7 @@ set_option linter.unusedSectionVars false
 namespace CodingTheory
 
 open scoped NNReal
-open ListDecodable
+open Code
 
 section LowerBounds_General
 
@@ -456,7 +456,7 @@ theorem qary_shell_entropy_lower
     _ = ((Nat.choose n d * (q - 1) ^ d : ℕ) : ℝ) := by
       rw [Nat.cast_mul, Nat.cast_pow]
 
-open _root_.ListDecodable in
+open _root_.Code in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
 [MS77] Hamming-ball volume estimate `Vol_q(δ, n) ≥ q^{n·H_q(δ)} / √(8·n·δ·(1-δ))` into
 `linear_lambda_ge_elias_volume`, dividing by `q^{n-k}` and writing `ρ := k/n`, gives
@@ -823,112 +823,6 @@ theorem linear_card_le_generalized_singleton
       Real.rpow_le_rpow_of_exponent_le hq1R hexp
 
 end LowerBounds_General
-
-section LargeAlphabetBarrier
-
-/-- **Attaining the generalized Singleton bound forces a large alphabet** ([ABF26] Theorem 3.10,
-after [BDG24] and [AGL23]). For every `ℓ ≥ 2` and `ρ ∈ (0, 1)` there is a constant `α > 0` such
-that for every `η > 0` and every sufficiently large `n`, every linear code `C ⊆ F^n` of rate `ρ`
-with `|Λ(C, ℓ/(ℓ+1) · (1-ρ-η))| ≤ ℓ` satisfies
-
-  `|F| ≥ 2^{α / η}` ,
-
-so approaching the generalized Singleton bound to within `η` costs alphabet size exponential in
-`1/η`. Per [AGL23, Theorem 1.1] the length threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`, which is why `n₀` is
-bound *inside* the `∀ η`.
-
-**The rate is pinned by equality, which is faithful but partly vacuous.** [AGL23] states the
-barrier for a code "of rate `R`" — Theorem 1.1 as *printed* omits the rate hypothesis altogether,
-which is a defect in that paper; the hypothesis appears in its abstract and in the worked
-Propositions 3.2/3.3 — and [BDG24] (the `ℓ = 2` progenitor) is stated for `[n, k]`-MDS codes of
-fixed dimension. Equality is therefore the faithful reading. The price is that at irrational `ρ` the
-statement is vacuous, and at rational `ρ = a/b` it is inhabited only for `b ∣ n`; instantiate at
-`ρ = finrank/n`.
-
-A two-sided band `ρ ≤ finrank/n ≤ ρ + 1/n`, as `random_linear_lambda_lower` uses and this file's
-own quantification convention prescribes, would remove that vacuity and is supported by [AGL23]'s
-*proof*: it rounds `R` down to a multiple of `3/n` and passes to a subcode ("Taking `C′` to be any
-subcode of `C` of rate `R′`", Prop. 3.2; "Subcode `C′` has rate at least `R′ = R − (1/n)`",
-Prop. 3.3). It is not implied by the printed equality form, though — recovering rate exactly `ρ·n`
-from a code of rate in the band needs `ρ·n ∈ ℤ` — so it would be a mild strengthening, and the
-choice is left as recorded rather than made.
-
-**The length threshold is the source's, and the quantifier order is load-bearing.** [AGL23] state
-`n ≥ Ω_{ℓ,ρ}(1/η)`, i.e. one threshold constant for all `η`; their Theorem 4.3 spells it out as
-"there exists `n₀ = n₀(L,R)` such that the following holds for all `n ≥ n₀` **and `ε ≥ 1/n`**". Both
-conditions are reproduced below, with `n₀` bound *outside* `∀ η` and `1/η ≤ n` as a hypothesis. A
-weaker `∃ n₀` *inside* `∀ η` — letting the threshold depend on `η` arbitrarily — would be the safe
-direction, but it would make this theorem's only intended consequence unreachable: instantiating at
-`η := c/n` fixes `n` first and then needs `n₀(c/n) ≤ n`, which nothing supplies. That consequence is
-`large_alphabet_card_ge_exp_of_inv_length`, and it is the reason this theorem exists in [ABF26] —
-the paper never cross-references the theorem itself.
-
-**Two further divergences, both recorded rather than repaired.** (i) [ABF26] states this for an
-arbitrary code `C : Σ^k → Σ^n`, and dropping linearity is precisely [AGL23]'s headline advance over
-[BDG24]; the admit below is the linear-over-a-field case, so it does not capture the cited result in
-full. (ii) `η` is unguarded, and for `η > 1 − ρ` the radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
-`Λ = 0 ≤ ℓ` holds for every code and the statement demands `|F| ≥ 2^(α/η)` unconditionally. Letting
-`η ↓ (1−ρ)` therefore forces `α ≤ 1 − ρ`, since `𝔽₂` carries rate-`ρ` codes of every admissible
-length. That does not make the statement false — `α := min (α_source) (1−ρ)` still works, shrinking
-`α` only weakening the conclusion — but a prover will meet the constraint, and the sources plainly
-intend `η` in the meaningful range. -/
-theorem large_alphabet_lambda_lower
-    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < 1) :
-    ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
-      ∀ (η : ℝ), 0 < η →
-          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-            {F : Type} [Field F] [Fintype F] [DecidableEq F]
-            (C : Submodule F (ι → F)),
-            n₀ ≤ Fintype.card ι →
-            1 / η ≤ (Fintype.card ι : ℝ) →
-            (Module.finrank F C : ℝ) = ρ * Fintype.card ι →
-            Lambda ((C : Set (ι → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)) ≤ (ℓ : ℕ∞) →
-            (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α / η) := by
-  sorry -- external admit: [BDG24], [AGL23].
-
-/-- **Attaining the generalized Singleton bound exactly forces an exponentially large alphabet** —
-the consequence [ABF26] draws from Theorem 3.10, and the only use it puts that theorem to: "*this
-shows that achieving exactly the generalized singleton bound (which implies the case when
-`η = Θ(1/n)`) requires an alphabet of exponential size, which is undesirable.*"
-
-At `η := c/n` the barrier's `2^{α/η}` becomes `2^{(α/c)·n}`, so for every `ℓ ≥ 2`, `ρ ∈ (0,1)` and
-`c ≥ 1` there is `α > 0` with
-
-  `|Λ(C, ℓ/(ℓ+1) · (1 − ρ − c/n))| ≤ ℓ  ⟹  |F| ≥ 2^{α·n}`
-
-for every rate-`ρ` linear code of sufficiently large length `n`.
-
-**Derived in-tree** from `large_alphabet_lambda_lower`, which is admitted, so this inherits the
-admit. `1 ≤ c` is exactly [AGL23]'s `ε ≥ 1/n` at `η = c/n`, and it is the meaningful range: relative
-radii are `1/n`-quantised, so `η < 1/n` asks for a radius finer than the lattice the list size lives
-on. -/
-theorem large_alphabet_card_ge_exp_of_inv_length
-    (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (hρ_pos : 0 < ρ) (hρ_lt : ρ < 1)
-    (c : ℝ) (hc : 1 ≤ c) :
-    ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
-      ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-        {F : Type} [Field F] [Fintype F] [DecidableEq F]
-        (C : Submodule F (ι → F)),
-        n₀ ≤ Fintype.card ι →
-        (Module.finrank F C : ℝ) = ρ * Fintype.card ι →
-        Lambda ((C : Set (ι → F)))
-            ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - c / Fintype.card ι)) ≤ (ℓ : ℕ∞) →
-        (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α * Fintype.card ι) := by
-  obtain ⟨α, hα_pos, n₀, hmain⟩ := large_alphabet_lambda_lower ℓ hℓ_ge ρ hρ_pos hρ_lt
-  have hc_pos : (0 : ℝ) < c := lt_of_lt_of_le zero_lt_one hc
-  refine ⟨α / c, div_pos hα_pos hc_pos, n₀, fun {ι} _ _ _ {F} _ _ _ C hn hrate hΛ => ?_⟩
-  have hn_pos : (0 : ℝ) < Fintype.card ι := Nat.cast_pos.mpr Fintype.card_pos
-  -- Instantiate the barrier at `η := c/n`, whose two length conditions are `n₀ ≤ n` and `1/η ≤ n`.
-  have hη_pos : (0 : ℝ) < c / Fintype.card ι := div_pos hc_pos hn_pos
-  have hinv : 1 / (c / (Fintype.card ι : ℝ)) ≤ (Fintype.card ι : ℝ) := by
-    rw [one_div_div, div_le_iff₀ hc_pos]
-    nlinarith
-  have hkey := hmain (c / Fintype.card ι) hη_pos C hn hinv hrate hΛ
-  -- `α / (c/n) = (α/c) · n`.
-  rwa [show α / (c / (Fintype.card ι : ℝ)) = α / c * Fintype.card ι by
-    field_simp] at hkey
-
-end LargeAlphabetBarrier
 
 section RandomLinear
 

@@ -147,8 +147,6 @@
   "Binius.FRIBinius.FullFRIBinius.fullOracleReduction",
   "Binius.FRIBinius.FullFRIBinius.fullOracleReduction_perfectCompleteness",
   "Binius.FRIBinius.FullFRIBinius.fullOracleVerifier",
-  "CodingTheory.large_alphabet_card_ge_exp_of_inv_length",
-  "CodingTheory.large_alphabet_lambda_lower",
   "CodingTheory.random_linear_lambda_lower",
   "CodingTheory.random_linear_lambda_lower_exists",
   "CodingTheory.rs_lambda_superpoly_extension",

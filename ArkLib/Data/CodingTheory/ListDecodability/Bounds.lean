@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
@@ -12,7 +13,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 /-!
 # Combinatorial bounds on the maximised list size
 
-Upper and lower bounds on `ListDecodable.Lambda` — the block-maximised list size of a code at a
+Upper and lower bounds on `Code.Lambda` — the block-maximised list size of a code at a
 given relative radius. The two families answer opposite questions about the same quantity:
 
 * **Upper bounds** exhibit a radius at which the list is provably small, so they certify list
@@ -64,8 +65,9 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 * `Bounds/Basic.lean` — the three counting identities everything else rests on.
 * `Bounds/Linear.lean` — bounds valid for every linear code: Elias volume and its entropy form, the
-  rate–radius arithmetic, the generalized Singleton bound, the large-alphabet barrier, random linear
-  codes.
+  rate–radius arithmetic, the generalized Singleton bound, random linear codes.
+* `Bounds/LargeAlphabet.lean` — the barrier that attaining the generalized Singleton bound forces an
+  exponentially large alphabet, over the four-file development in `Bounds/LargeAlphabet/`.
 * `Bounds/ReedSolomon.lean` — the three Reed-Solomon separations, and the random-evaluation-domain
   upper bound.
 * `Bounds/SubspaceDesign.lean` — [CZ25]'s upper bound, its two reformulations, and the folded-RS and
@@ -73,23 +75,23 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 ## External admits
 
-Four statements are admitted with a tagged `sorry`, never an `axiom`: the large-alphabet barrier
-(`large_alphabet_lambda_lower`, [BDG24]/[AGL23]), the random-linear-code bound
+Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
 (`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
 (`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
 (`rs_random_domain_lambda_le`, [AGL24]). Each admit's docstring carries the source statement
 verbatim, the variable map into ArkLib's vocabulary, and a note on every place the formalised
 statement differs from the printed one.
 
-Two derivations inherit those admits and are therefore reachable-`sorryAx`, carrying no more
-information than their input: `random_linear_lambda_lower_exists` and
-`large_alphabet_card_ge_exp_of_inv_length`.
+One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
+than its input: `random_linear_lambda_lower_exists`.
 
 Everything else is proved and axiom-clean, including the volume/averaging lower bound
 `linear_lambda_ge_elias_volume` and its entropy form `linear_lambda_ge_entropy_volume`, both halves
 of the generalized Singleton bound (`linear_card_le_of_rate_radius`,
 `linear_card_le_generalized_singleton`), the two prime-field Reed-Solomon separations
-(`rs_lambda_large_prime`, `rs_lambda_high_rate`), and — the deepest of them — [CZ25]'s
+(`rs_lambda_large_prime`, `rs_lambda_high_rate`), the [AGL23] large-alphabet barrier
+`large_alphabet_lambda_lower` with its `η = Θ(1/n)` consequence
+`large_alphabet_card_ge_exp_of_inv_length`, and — the deepest of them — [CZ25]'s
 subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
 means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
 and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
