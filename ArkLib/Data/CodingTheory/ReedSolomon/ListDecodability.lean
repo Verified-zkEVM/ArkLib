@@ -28,7 +28,7 @@ namespace ReedSolomon
 
 open Finset ListDecodable ReedSolomon
 
-variable {ι F : Type*} [Fintype ι] [Field F] [DecidableEq F]
+variable {ι F : Type*} [Fintype ι] [Field F]
 
 /-- The main counting estimate: any finite set of codewords within relative distance
 `1 - √ρ - η` of a word `y` has at most `1/(2η√ρ)` elements. -/
@@ -37,6 +37,7 @@ lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : �
     (hT : ∀ c ∈ T, c ∈ closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
       (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)) :
     (T.card : ℝ) ≤ 1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ)) := by
+  classical
   set s : ℝ := (ReedSolomon.sqrtRate m domain : ℝ) with hs
   set n : ℝ := (Fintype.card ι : ℝ) with hn
   have hcard : 0 < Fintype.card ι := Fintype.card_pos
@@ -49,14 +50,14 @@ lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : �
   have hclose : ∀ c ∈ T, (s + η) * n ≤ (Code.agree c y : ℝ) := by
     intro c hc
     have hball := (hT c hc).2
-    rw [Code.mem_relHammingBall_iff, Code.relHammingDist_coe] at hball
+    simp only [Code.mem_relHammingBall_iff, Code.relHammingDist_coe] at hball
     rw [div_le_iff₀ hnpos] at hball
     have hsum : (Code.agree c y : ℝ) + (hammingDist c y : ℝ) = n := by
       rw [hn]
       exact_mod_cast congrArg (fun k : ℕ ↦ (k : ℝ)) Code.agree_add_hammingDist
     have hcomm : (hammingDist y c : ℝ) = (hammingDist c y : ℝ) := by
       rw [hammingDist_comm]
-    nlinarith [hball, hsum, hcomm]
+    grind
   -- upper bound on the pairwise agreements inside `T`
   have hpair : ∀ c ∈ T, ∀ c' ∈ T, c ≠ c' → (Code.agree c c' : ℝ) ≤ s ^ 2 * n := by
     intro c hc c' hc' hne
@@ -130,6 +131,8 @@ theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (h
     (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)
     (1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ))) := by
   intro y
+  constructor
+  ·  
   rcases Set.finite_or_infinite
       (closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
         (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)) with hfin | hinf
