@@ -10,9 +10,9 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Basic
 # Large-alphabet barrier: separated subcodes, centres, and incidence counting
 
 Greedy extraction of a large *separated* subcode
-(`aglGreedySeparatedExtraction`), the construction of a Hamming centre from disjoint agreement
-blocks (`aglHammingCenterFromDisjointBlocks`, `aglBalancedCenterConstruction`,
-`aglBarrierCenterFromBlocks`), the incidence double-counting lemmas that drive the moment bound, and
+(`greedy_separated_extraction`), the construction of a Hamming centre from disjoint agreement
+blocks (`hamming_center_from_disjoint_blocks`, `balanced_center_construction`,
+`barrier_center_from_blocks`), the incidence double-counting lemmas that drive the moment bound, and
 the core of the rounded-barrier codeword bound.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
@@ -31,22 +31,22 @@ namespace CodingTheory
 open scoped NNReal
 open Code
 
-section LargeAlphabetBarrier
+namespace LargeAlphabetBarrier
 
-theorem aglGreedySeparatedExtraction : AGLGreedySeparatedExtraction := by
+theorem greedy_separated_extraction : GreedySeparatedExtraction := by
   classical
   intro ι A _ _ C d B hC hlocal
   let s := hC.toFinset
   have hsC : (s : Set (ι → A)) = C := hC.coe_toFinset
   have aux : ∀ s : Finset (ι → A), (s : Set (ι → A)) ⊆ C →
-      ∃ t : Finset (ι → A), t ⊆ s ∧ AGLSeparated (t : Set (ι → A)) (d + 1) ∧
+      ∃ t : Finset (ι → A), t ⊆ s ∧ separated (t : Set (ι → A)) (d + 1) ∧
         s.card ≤ B * t.card := by
     apply Finset.strongInduction
     intro u ih huC
     by_cases hu : u = ∅
     · subst u
       refine ⟨∅, by simp, ?_, by simp⟩
-      simp only [AGLSeparated]
+      simp only [separated]
       intro x hx
       simp at hx
     · obtain ⟨c, hcu⟩ := Finset.nonempty_iff_ne_empty.mpr hu
@@ -128,7 +128,7 @@ theorem aglGreedySeparatedExtraction : AGLGreedySeparatedExtraction := by
   · rw [← hsC, Set.ncard_coe_finset, Set.ncard_coe_finset]
     exact hcard
 
-theorem aglHammingCenterFromDisjointBlocks
+theorem hamming_center_from_disjoint_blocks
     (ℓ r r' t : ℕ)
     {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
     (c : ι → A) (v : Fin ℓ → ι → A) (S : Finset ι)
@@ -216,14 +216,14 @@ theorem aglHammingCenterFromDisjointBlocks
       _ ≤ r' - t := Nat.sub_le_sub_right hDle t
       _ ≤ r := hother
 
-theorem aglBalancedCenterConstruction : AGLBalancedCenterConstruction := by
+theorem balanced_center_construction : BalancedCenterConstruction := by
   classical
   intro ℓ hℓ p hp hp_lt ι A _ _ _ c v hdist hsize hcommonCard
   let n := Fintype.card ι
   let r := Nat.floor (p * n)
-  let r' := Nat.floor (aglBoostedRadius ℓ p * n)
+  let r' := Nat.floor (boostedRadius ℓ p * n)
   let t := r' - r
-  have harith := aglBalancedCenterArithmetic ℓ p n hℓ hp hp_lt (by
+  have harith := balanced_center_arithmetic ℓ p n hℓ hp hp_lt (by
     simpa only [n] using hsize)
   rcases harith with ⟨hrle, hcancel, ht_center, ht_common⟩
   let S : Finset ι := Finset.univ.filter fun i => ∀ j, c i ≠ v j i
@@ -239,8 +239,8 @@ theorem aglBalancedCenterConstruction : AGLBalancedCenterConstruction := by
         simpa only [n] using hcommonCard
       _ = S.card := hScard.symm
   obtain ⟨blocks, hblocks_sub, hblocks_card, hblocks_disjoint⟩ :=
-    aglDisjointEqualBlocks S ℓ t hblocksSize
-  obtain ⟨y, hyc, hyv⟩ := aglHammingCenterFromDisjointBlocks
+    disjoint_equal_blocks S ℓ t hblocksSize
+  obtain ⟨y, hyc, hyv⟩ := hamming_center_from_disjoint_blocks
     ℓ r r' t c v S blocks hblocks_sub hblocks_card hblocks_disjoint
     (by
       intro i hi j
@@ -254,7 +254,7 @@ theorem aglBalancedCenterConstruction : AGLBalancedCenterConstruction := by
   · intro j
     simpa only [r, n] using hyv j
 
-theorem aglHammingDistLeCardComplOfAgree
+theorem hamming_dist_le_card_compl_of_agree
     {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
     (u v : ι → A) (S : Finset ι)
     (hagree : ∀ i ∈ S, u i = v i) :
@@ -276,17 +276,17 @@ theorem aglHammingDistLeCardComplOfAgree
     _ = Fintype.card ι - S.card := by
       rw [Finset.card_univ]
 
-theorem aglAlternativeFiberBound
+theorem alternative_fiber_bound
     (W aFamily aUnion n boosted : ℕ)
     {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
     (C : Set (ι → A)) (hn : Fintype.card ι = n)
-    (family : AGLLargeUnionFamily ι W aFamily aUnion)
+    (family : LargeUnionFamily ι W aFamily aUnion)
     (c₀ : ι → A) (hc₀ : c₀ ∈ C)
     (alt : Finset ι → ι → A)
     (haltC : ∀ S ∈ family.sets, alt S ∈ C)
     (haltNe : ∀ S ∈ family.sets, alt S ≠ c₀)
     (hagree : ∀ S ∈ family.sets, ∀ i ∈ S, alt S i = c₀ i)
-    (hsep : AGLSeparated C boosted)
+    (hsep : separated C boosted)
     (hgap : n - aUnion < boosted) (hW : 0 < W) :
     ∀ z, (family.sets.filter fun S => alt S = z).card < W := by
   classical
@@ -320,7 +320,7 @@ theorem aglAlternativeFiberBound
     have heq := hagree S hSfilter.1 i hiS
     rw [hSfilter.2] at heq
     exact heq.symm
-  have hdist := aglHammingDistLeCardComplOfAgree c₀ z
+  have hdist := hamming_dist_le_card_compl_of_agree c₀ z
     (T.biUnion id) hagreeUnion
   have hcomp : Fintype.card ι - (T.biUnion id).card ≤ n - aUnion := by
     rw [hn]
@@ -330,11 +330,11 @@ theorem aglAlternativeFiberBound
   have hdistge := hsep hc₀ hzC hzne.symm
   omega
 
-theorem aglBarrierCenterFromBlocks
+theorem barrier_center_from_blocks
     (ℓ n dZero dOne aFamily : ℕ)
     {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
     (hn : Fintype.card ι = n)
-    (blocks : AGLCoordinateBlocks ι ℓ dZero dOne)
+    (blocks : CoordinateBlocks ι ℓ dZero dOne)
     (c₀ : ι → A) (chosen : Fin ℓ → Finset ι)
     (u : Fin ℓ → ι → A) (common : blocks.zero → A)
     (hcard : ∀ j, (chosen j).card = aFamily)
@@ -442,11 +442,11 @@ theorem aglBarrierCenterFromBlocks
           exact (Finset.disjoint_left.mp ((hdisjoint j).2 k)) hchosen hik
         have hy : y i = c₀ i := by simp only [y, dif_neg hi0, dif_neg hiU]
         exact (hagree j i hchosen).trans hy.symm
-    have hd := aglHammingDistLeCardComplOfAgree (u j) y E hagreeE
+    have hd := hamming_dist_le_card_compl_of_agree (u j) y E hagreeE
     rw [hn, hEcard] at hd
     simpa only [Nat.sub_sub] using hd
 
-theorem aglIncidenceDoubleCount : AGLIncidenceDoubleCount := by
+theorem incidence_double_count : IncidenceDoubleCount := by
   classical
   intro ι κ _ _ _ _ ℓ S
   dsimp
@@ -483,7 +483,7 @@ theorem aglIncidenceDoubleCount : AGLIncidenceDoubleCount := by
       congr 1
       simp only [Finset.subset_iff, Finset.mem_filter, Finset.mem_univ, true_and]
 
-theorem aglIncidencePowerGap : AGLIncidencePowerGap := by
+theorem incidence_power_gap : IncidencePowerGap := by
   intro ℓ M p hℓ hp hM
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
@@ -539,7 +539,7 @@ theorem aglIncidencePowerGap : AGLIncidencePowerGap := by
     _ = (q * (p * M)) ^ ℓ := by simp only [mul_pow]
     _ ≤ (p * M - ((ℓ : ℝ) - 1)) ^ ℓ := hpow
 
-theorem aglIncidenceSumDoubleCount : AGLIncidenceSumDoubleCount := by
+theorem incidence_sum_double_count : IncidenceSumDoubleCount := by
   classical
   intro ι κ _ _ _ _ S
   calc
@@ -558,7 +558,7 @@ theorem aglIncidenceSumDoubleCount : AGLIncidenceSumDoubleCount := by
       ext i
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
 
-theorem aglInjectiveFamilyOfNcardDiff
+theorem injective_family_of_ncard_diff
     {α : Type} [Fintype α] [DecidableEq α]
     (I B : Set α) (ℓ M : ℕ) (hIB : I ⊆ B)
     (hI : I.ncard ≤ ℓ) (hB : ℓ + M < B.ncard) :
@@ -586,7 +586,7 @@ theorem aglInjectiveFamilyOfNcardDiff
     exact (e j).2
 
 open _root_.Code in
-theorem aglLambdaContradictionOfInjectiveCenter
+theorem lambda_contradiction_of_injective_center
     (ℓ : ℕ)
     {ι A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
       [Fintype A] [DecidableEq A]
@@ -633,7 +633,7 @@ theorem aglLambdaContradictionOfInjectiveCenter
   rw [htcard] at hle
   omega
 
-theorem aglLargeFiberOfImageBound
+theorem large_fiber_of_image_bound
     {X Y : Type} [DecidableEq X] [DecidableEq Y]
     (s : Finset X) (f : X → Y) (B k : ℕ)
     (hs : s.Nonempty) (himage : (s.image f).card ≤ B)
@@ -648,7 +648,7 @@ theorem aglLargeFiberOfImageBound
   · exact hs.image f
   · exact himul
 
-theorem aglLargeUnionFamilyResize : AGLLargeUnionFamilyResize := by
+theorem large_union_family_resize : LargeUnionFamilyResize := by
   classical
   intro W a₀ b₀ a₁ b₁ hW ha hlt hb ι _ _ ha₁ source
   have hext : ∀ A ∈ source.sets,
@@ -734,7 +734,7 @@ theorem aglLargeUnionFamilyResize : AGLLargeUnionFamilyResize := by
       rw [← hEq]
       exact hsub
     exact hb.trans (hlarge.trans (Finset.card_le_card hUnionSub))
-  let target : AGLLargeUnionFamily ι W a₁ b₁ :=
+  let target : LargeUnionFamily ι W a₁ b₁ :=
     { sets := targetSets
       card_each := hcard_each
       large_union := htarget_large }
@@ -742,7 +742,7 @@ theorem aglLargeUnionFamilyResize : AGLLargeUnionFamilyResize := by
   change source.sets.card ≤ W * targetSets.card
   exact Finset.card_le_mul_card_image source.sets W hfiber
 
-theorem aglNatQuotientWindow
+theorem nat_quotient_window
     (ℓ radius dZero n : ℕ) (hℓ : 0 < ℓ)
     (hdZero : dZero ≤ radius) (hradius : radius ≤ n) :
     let dOne := (radius - dZero) / ℓ
@@ -757,13 +757,13 @@ theorem aglNatQuotientWindow
 
 /-- The barrier's radius, `ℓ/(ℓ+1) · (1 − ρ − η)` — the generalized Singleton radius at rate `ρ`,
 pulled back by `η`. -/
-noncomputable def aglRadius (ℓ : ℕ) (ρ η : ℝ) : ℝ :=
+noncomputable def relRadius (ℓ : ℕ) (ρ η : ℝ) : ℝ :=
   (ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)
 
 /-- **Existence of a barrier package.** For a list size `ℓ`, a rate `R` and a neighbourhood cap `B`,
 there are constants `ηCut, γ, K, Wmax` and a length threshold beyond which every small `η` admits
 barrier parameters, a block structure and a large-union family fitting together. -/
-def AGLBarrierPackageExistence : Prop :=
+def BarrierPackageExistence : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (R : ℝ), 0 < R → R < 1 →
     ∀ (B : ℕ), 0 < B →
     ∃ ηCut : ℝ, 0 < ηCut ∧
@@ -773,14 +773,14 @@ def AGLBarrierPackageExistence : Prop :=
             ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι],
               n₀ ≤ Fintype.card ι →
               1 / η ≤ (Fintype.card ι : ℝ) →
-              ∃ params : AGLBarrierParameters ℓ (Fintype.card ι)
-                  (Nat.floor (aglRadius ℓ R η * Fintype.card ι))
-                  (Nat.ceil (aglBoostedRadius ℓ (aglRadius ℓ R η) * Fintype.card ι)),
+              ∃ params : BarrierParameters ℓ (Fintype.card ι)
+                  (Nat.floor (relRadius ℓ R η * Fintype.card ι))
+                  (Nat.ceil (boostedRadius ℓ (relRadius ℓ R η) * Fintype.card ι)),
                 0 < params.W ∧ params.W ≤ Wmax ∧
                 params.aFamily + (B + 1) ≤ Nat.floor (R * Fintype.card ι) ∧
                 params.dZero ≤ Nat.ceil (K * η * Fintype.card ι) ∧
-                ∃ blocks : AGLCoordinateBlocks ι ℓ params.dZero params.dOne,
-                  ∃ family : AGLLargeUnionFamily ι params.W
+                ∃ blocks : CoordinateBlocks ι ℓ params.dZero params.dOne,
+                  ∃ family : LargeUnionFamily ι params.W
                       params.aFamily params.aUnion,
                     (∀ S ∈ family.sets, Disjoint S blocks.zero ∧
                       ∀ j, Disjoint S (blocks.other j)) ∧
@@ -790,7 +790,7 @@ def AGLBarrierPackageExistence : Prop :=
 least `2`, whose list size at the barrier radius is at most `ℓ`, cannot be large: its size is capped
 by `|A|^(aFamily)`-type quantities, which forces `|A| ≥ 2^(α/η)`. This is the statement the
 large-alphabet lower bound consumes. -/
-def AGLRobustMinimumDistanceBarrierStatement : Prop :=
+def RobustMinimumDistanceBarrierStatement : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (R : ℝ), 0 < R → R < 1 →
     ∀ (B : ℕ), 0 < B →
     ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
@@ -803,28 +803,28 @@ def AGLRobustMinimumDistanceBarrierStatement : Prop :=
           1 / η ≤ (Fintype.card ι : ℝ) →
           (Fintype.card A : ℝ) ^ (R * Fintype.card ι) ≤
             (B : ℝ) * (C.ncard : ℝ) →
-          AGLSeparated C
-            (Nat.ceil (aglBoostedRadius ℓ (aglRadius ℓ R η) * Fintype.card ι)) →
-          Lambda C (aglRadius ℓ R η) ≤ (ℓ : ℕ∞) →
+          separated C
+            (Nat.ceil (boostedRadius ℓ (relRadius ℓ R η) * Fintype.card ι)) →
+          Lambda C (relRadius ℓ R η) ≤ (ℓ : ℕ∞) →
           (Fintype.card A : ℝ) ≥ (2 : ℝ) ^ (α / η)
 
-theorem aglRadiusBalance
+theorem relRadius_balance
     (ℓ : ℕ) (hℓ : 0 < ℓ) (R η : ℝ) :
-    R + aglRadius ℓ R η + aglRadius ℓ R η / ℓ = 1 - η := by
+    R + relRadius ℓ R η + relRadius ℓ R η / ℓ = 1 - η := by
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓ
-  unfold aglRadius
+  unfold relRadius
   field_simp [ne_of_gt hℓR]
   ring
 
-theorem aglRadius_pos (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
-    (ρ η : ℝ) (hη_lt : η < 1 - ρ) : 0 < aglRadius ℓ ρ η := by
-  unfold aglRadius
+theorem relRadius_pos (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
+    (ρ η : ℝ) (hη_lt : η < 1 - ρ) : 0 < relRadius ℓ ρ η := by
+  unfold relRadius
   have hℓ_real : (0 : ℝ) < ℓ := by exact_mod_cast hℓ_pos
   have hden : (0 : ℝ) < ℓ + 1 := by positivity
   have hgap : 0 < 1 - ρ - η := by linarith
   exact mul_pos (div_pos hℓ_real hden) hgap
 
-theorem aglRateLossToCardinality
+theorem rate_loss_to_cardinality
     (q B a n N : ℕ) (R : ℝ)
     (hq : 2 ≤ q) (hB : 0 < B) (hR : 0 ≤ R)
     (ha : a + (B + 1) ≤ Nat.floor (R * n))
@@ -875,16 +875,16 @@ theorem aglRateLossToCardinality
   exact_mod_cast hcancel
 
 /-- The length threshold `⌈(B+1)/R⌉` at which the barrier's basic bounds hold. -/
-noncomputable def aglRoundedBarrierBasicThreshold (R : ℝ) (B : ℕ) : ℕ :=
+noncomputable def roundedBarrierBasicThreshold (R : ℝ) (B : ℕ) : ℕ :=
   Nat.ceil (((B + 1 : ℕ) : ℝ) / R)
 
 /-- The barrier's parameters at a given length, all rounded to integers: radius and boosted radius,
 the `dZero`/`dOne` block sizes, the used and unused coordinate counts, and the large-union family's
 set and union sizes. Every later estimate is stated against this record. -/
-noncomputable def aglRoundedBarrierData
-    (ℓ : ℕ) (R η K : ℝ) (B n : ℕ) : AGLRoundedBarrierData :=
-  let radius := Nat.floor (aglRadius ℓ R η * n)
-  let boosted := Nat.ceil (aglBoostedRadius ℓ (aglRadius ℓ R η) * n)
+noncomputable def roundedBarrierData
+    (ℓ : ℕ) (R η K : ℝ) (B n : ℕ) : RoundedBarrierData :=
+  let radius := Nat.floor (relRadius ℓ R η * n)
+  let boosted := Nat.ceil (boostedRadius ℓ (relRadius ℓ R η) * n)
   let dZero := Nat.ceil (K * η * n)
   let dOne := (radius - dZero) / ℓ
   let used := dZero + ℓ * dOne
@@ -897,17 +897,17 @@ noncomputable def aglRoundedBarrierData
     aFamily := Nat.floor (R * n) - (B + 1)
     aUnion := n + 1 - boosted }
 
-theorem aglRoundedBarrierOtherCodewordBoundCore
+theorem rounded_barrier_other_codeword_bound_core
     (ℓ : ℕ) (hℓ : 2 ≤ ℓ) (R η : ℝ) (B n : ℕ)
     (hone : 1 ≤ η * n)
     (hrate : B + 1 ≤ Nat.floor (R * n))
-    (hdZero : Nat.ceil (aglBarrierK ℓ B * η * n) ≤
-      Nat.floor (aglRadius ℓ R η * n)) :
-    let d := aglRoundedBarrierData ℓ R η (aglBarrierK ℓ B) B n
+    (hdZero : Nat.ceil (barrierK ℓ B * η * n) ≤
+      Nat.floor (relRadius ℓ R η * n)) :
+    let d := roundedBarrierData ℓ R η (barrierK ℓ B) B n
     n - d.dZero - d.dOne - d.aFamily ≤ d.radius := by
-  dsimp only [aglRoundedBarrierData]
-  let p := aglRadius ℓ R η
-  let K := aglBarrierK ℓ B
+  dsimp only [roundedBarrierData]
+  let p := relRadius ℓ R η
+  let K := barrierK ℓ B
   let r := Nat.floor (p * n)
   let z := Nat.ceil (K * η * n)
   let o := (r - z) / ℓ
@@ -968,13 +968,13 @@ theorem aglRoundedBarrierOtherCodewordBoundCore
     norm_num only [Nat.cast_add, Nat.cast_one] at hrateFloor
     linarith
   have hbalance : R + p + p / (ℓ : ℝ) = 1 - η := by
-    simpa only [p] using aglRadiusBalance ℓ hℓpos R η
+    simpa only [p] using relRadius_balance ℓ hℓpos R η
   have hbalanceN :
       R * n + p * n + (p / (ℓ : ℝ)) * n =
         (n : ℝ) - η * n := by
     have h := congrArg (fun x : ℝ => x * (n : ℝ)) hbalance
     nlinarith
-  have hslack := aglBarrierKSlack ℓ B hℓ
+  have hslack := barrier_k_slack ℓ B hℓ
   change (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
     K * (1 - 1 / (ℓ : ℝ)) - 1 at hslack
   have hconstNonneg :
@@ -1042,7 +1042,7 @@ theorem aglRoundedBarrierOtherCodewordBoundCore
     exact_mod_cast hsumReal
   omega
 
-theorem aglShiftedIncidenceMeanLower : AGLShiftedIncidenceMeanLower := by
+theorem shifted_incidence_mean_lower : ShiftedIncidenceMeanLower := by
   intro ℓ M n p hℓ hn a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
@@ -1063,14 +1063,14 @@ theorem aglShiftedIncidenceMeanLower : AGLShiftedIncidenceMeanLower := by
   rw [le_div_iff₀ hnR]
   nlinarith
 
-theorem aglIncidenceMomentLower : AGLIncidenceMomentLower := by
+theorem incidence_moment_lower : IncidenceMomentLower := by
   intro ℓ M n p hℓ hn hp hp_lt hM a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
   let b : Fin n → ℝ := fun i => (a i + 1 - ℓ : ℕ)
   have hmean : p * M - (ℓ - 1) ≤ (∑ i, b i) / n := by
     simpa only [b] using
-      (aglShiftedIncidenceMeanLower ℓ M n p hℓ hn a hsum)
+      (shifted_incidence_mean_lower ℓ M n p hℓ hn a hsum)
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
   have hsize : 4 * (ℓ : ℝ) ^ 2 / p ≤ (M : ℝ) :=
@@ -1128,7 +1128,7 @@ theorem aglIncidenceMomentLower : AGLIncidenceMomentLower := by
       (M : ℝ) ^ ℓ / Nat.factorial ℓ := by
     exact Nat.choose_le_pow_div ℓ M
   have hcoeff : 0 ≤ 3 * p ^ ℓ / 4 := by positivity
-  have hgap := aglIncidencePowerGap ℓ M p hℓ hp hM
+  have hgap := incidence_power_gap ℓ M p hℓ hp hM
   have hfirst :
       (3 * p ^ ℓ / 4) * (Nat.choose M ℓ : ℝ) ≤
         (p * M - ((ℓ : ℝ) - 1)) ^ ℓ / Nat.factorial ℓ := by

@@ -40,6 +40,7 @@ namespace CodingTheory
 
 open scoped NNReal
 open Code
+open LargeAlphabetBarrier
 
 section LargeAlphabetBarrier
 
@@ -102,31 +103,29 @@ theorem large_alphabet_lambda_lower
             Lambda ((C : Set (ι → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)) ≤ (ℓ : ℕ∞) →
             (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α / η) := by
   classical
-  let p₀ : ℝ := aglSmallRadius ℓ ρ
-  let B₀ : ℕ := aglNeighborhoodCap ℓ ρ
-  let Nlocal : ℕ := aglLocalLengthThreshold ℓ ρ
+  let p₀ : ℝ := smallRadius ℓ ρ
+  let B₀ : ℕ := neighborhoodCap ℓ ρ
+  let Nlocal : ℕ := localLengthThreshold ℓ ρ
   have hp₀ : 0 < p₀ := by
-    dsimp only [p₀, aglSmallRadius]
+    dsimp only [p₀, smallRadius]
     have hℓpos : (0 : ℝ) < ℓ := by
       exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) _hℓ_ge)
     have hgap : 0 < 1 - ρ := by linarith
     positivity
   have hB₀ : 0 < B₀ := by
-    dsimp only [B₀, aglNeighborhoodCap]
+    dsimp only [B₀, neighborhoodCap]
     omega
   obtain ⟨αsep, hαsep, nsep, hsep⟩ :=
-    aglRobustMinimumDistanceBarrier
+    robust_minimum_distance_barrier
       ℓ _hℓ_ge ρ _hρ_pos _hρ_lt B₀ hB₀
   refine ⟨min αsep ((1 - ρ) / 2), ?_, max Nlocal nsep, ?_⟩
   · exact lt_min hαsep (by linarith)
   · intro η hη ι _ _ _ F _ _ _ C hn hηn hrate hLambda
     by_cases hlarge : (1 - ρ) / 2 ≤ η
-    · apply alphabet_card_ge_rpow_of_alpha_le_eta
-      · exact le_of_lt (lt_min hαsep (by linarith))
-      · exact hη
-      · exact (min_le_right _ _).trans hlarge
+    · exact alphabet_card_ge_rpow_of_alpha_le_eta _ _ hη
+        ((min_le_right _ _).trans hlarge) Fintype.one_lt_card
     · have hsmall : η < (1 - ρ) / 2 := lt_of_not_ge hlarge
-      let p : ℝ := aglRadius ℓ ρ η
+      let p : ℝ := relRadius ℓ ρ η
       have hℓpos : (0 : ℝ) < ℓ := by
         exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 2) _hℓ_ge)
       have hfacpos : 0 < (ℓ : ℝ) / (ℓ + 1) := by positivity
@@ -134,12 +133,12 @@ theorem large_alphabet_lambda_lower
         apply (div_lt_one (by positivity)).2
         linarith
       have hp₀p : p₀ ≤ p := by
-        dsimp only [p₀, p, aglSmallRadius, aglRadius]
+        dsimp only [p₀, p, smallRadius, relRadius]
         apply mul_le_mul_of_nonneg_left _ hfacpos.le
         linarith
       have hp : 0 < p := lt_of_lt_of_le hp₀ hp₀p
       have hplt : p < 1 := by
-        dsimp only [p, aglRadius]
+        dsimp only [p, relRadius]
         have hgaplt : 1 - ρ - η < 1 := by linarith
         have hmul : (ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η) <
             (ℓ : ℝ) / (ℓ + 1) * 1 :=
@@ -166,13 +165,13 @@ theorem large_alphabet_lambda_lower
           pow_le_pow_left₀ hp₀.le hp₀p ℓ
         have hnnonneg : (0 : ℝ) ≤ Fintype.card ι := by positivity
         nlinarith [mul_le_mul_of_nonneg_right hpow hnnonneg]
-      have hlocal := aglLocalNeighborhoodBound ℓ _hℓ_ge p hp hplt
+      have hlocal := local_neighborhood_bound ℓ _hℓ_ge p hp hplt
         (C : Set (ι → F))
-        (by simpa only [p, aglRadius] using hLambda) hlocalLength
+        (by simpa only [p, relRadius] using hLambda) hlocalLength
       have hcap : ∀ c ∈ (C : Set (ι → F)),
           ({x : ι → F | x ∈ (C : Set (ι → F)) ∧
             hammingDist c x ≤
-              Nat.floor (aglBoostedRadius ℓ p * Fintype.card ι)} :
+              Nat.floor (boostedRadius ℓ p * Fintype.card ι)} :
             Set (ι → F)).ncard ≤ B₀ := by
         intro c hc
         have hnum : 0 ≤ 4 * ((ℓ : ℝ) ^ 2) := by positivity
@@ -181,22 +180,22 @@ theorem large_alphabet_lambda_lower
           div_le_div_of_nonneg_left hnum hp₀ hp₀p
         have hceil := Nat.ceil_mono hfrac
         have hc0 := hlocal c hc
-        dsimp only [B₀, aglNeighborhoodCap]
+        dsimp only [B₀, neighborhoodCap]
         exact hc0.trans (Nat.add_le_add_left hceil ℓ)
       obtain ⟨D, hDC, hDfin, hDsep, hcard⟩ :=
-        aglGreedySeparatedExtraction
+        greedy_separated_extraction
           (C : Set (ι → F))
-          (Nat.floor (aglBoostedRadius ℓ p * Fintype.card ι)) B₀
+          (Nat.floor (boostedRadius ℓ p * Fintype.card ι)) B₀
           (Set.toFinite _) hcap
-      have hDsep' : AGLSeparated D
-          (Nat.ceil (aglBoostedRadius ℓ p * Fintype.card ι)) := by
+      have hDsep' : separated D
+          (Nat.ceil (boostedRadius ℓ p * Fintype.card ι)) := by
         intro u hu v hv huv
         exact (Nat.ceil_le_floor_add_one
-          (aglBoostedRadius ℓ p * Fintype.card ι)).trans
+          (boostedRadius ℓ p * Fintype.card ι)).trans
           (hDsep hu hv huv)
       have hDlambda : Lambda D p ≤ (ℓ : ℕ∞) := by
         exact (Lambda_mono_code hDC p).trans
-          (by simpa only [p, aglRadius] using hLambda)
+          (by simpa only [p, relRadius] using hLambda)
       have hcardR : ((C : Set (ι → F)).ncard : ℝ) ≤
           (B₀ : ℝ) * (D.ncard : ℝ) := by
         exact_mod_cast hcard
@@ -213,7 +212,7 @@ theorem large_alphabet_lambda_lower
         have h := Fintype.one_lt_card (α := F)
         omega
       have hbar := hsep η hη D hFcard hnsep hηn hrateCard hDsep'
-        (by simpa only [p, aglRadius] using hDlambda)
+        (by simpa only [p, relRadius] using hDlambda)
       have hexp : min αsep ((1 - ρ) / 2) / η ≤ αsep / η :=
         (div_le_div_iff_of_pos_right hη).2 (min_le_left _ _)
       have hpow : (2 : ℝ) ^

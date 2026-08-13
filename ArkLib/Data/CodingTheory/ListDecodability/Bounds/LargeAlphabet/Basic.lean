@@ -34,11 +34,11 @@ import Mathlib.Tactic.FieldSimp
 /-!
 # Large-alphabet barrier: statements, coordinate blocks, and family counting
 
-The **statement layer** of the [AGL23] exponential-alphabet barrier — the `AGL*` `Prop`
-abbreviations, and the four structures (`AGLBarrierParameters`, `AGLCoordinateBlocks`,
-`AGLLargeUnionFamily`, `AGLRoundedBarrierData`) that let obligations be passed around as values —
-together with the coordinate-block constructions and the cardinality counting for the indexed
-families of restrictions.
+The **statement layer** of the [AGL23] exponential-alphabet barrier, in namespace
+`LargeAlphabetBarrier`: the `Prop` abbreviations naming each step of the argument, and the four
+structures (`BarrierParameters`, `CoordinateBlocks`, `LargeUnionFamily`, `RoundedBarrierData`) that
+let obligations be passed around as values — together with the coordinate-block constructions and
+the cardinality counting for the indexed families of restrictions.
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview and the
 references, and `Bounds/LargeAlphabet.lean` for the two theorems this development serves.
@@ -61,12 +61,12 @@ namespace CodingTheory
 open scoped NNReal
 open Code
 
-section LargeAlphabetBarrier
+namespace LargeAlphabetBarrier
 
 /-- The barrier's integer parameters, bundled with the three inequalities that make them fit: the
 `ℓ + 1` agreement blocks fit inside the radius, a codeword avoiding the family's set still lies
 within the radius, and a repeated codeword would have to beat the boosted radius. -/
-structure AGLBarrierParameters (ℓ n radius boosted : ℕ) where
+structure BarrierParameters (ℓ n radius boosted : ℕ) where
   aFamily : ℕ
   aUnion : ℕ
   dZero : ℕ
@@ -79,7 +79,7 @@ structure AGLBarrierParameters (ℓ n radius boosted : ℕ) where
 /-- **Many large sets share a large `ℓ`-wise intersection.** Given `M ≥ ⌈4ℓ²/p⌉` subsets of the
 coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^ℓ/4)·n⌉` coordinates.
 This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
-def AGLCommonDisagreementIntersection : Prop :=
+def CommonDisagreementIntersection : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
       (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
@@ -91,7 +91,7 @@ def AGLCommonDisagreementIntersection : Prop :=
 
 /-- A block structure on the coordinates: one `zero` block of size `dZero` and `ℓ` further pairwise
 disjoint blocks of size `dOne`, all disjoint from `zero`. -/
-structure AGLCoordinateBlocks (ι : Type) [DecidableEq ι]
+structure CoordinateBlocks (ι : Type) [DecidableEq ι]
     (ℓ dZero dOne : ℕ) where
   zero : Finset ι
   other : Fin ℓ → Finset ι
@@ -101,22 +101,22 @@ structure AGLCoordinateBlocks (ι : Type) [DecidableEq ι]
   other_disjoint : ∀ i j, i ≠ j → Disjoint (other i) (other j)
 
 /-- Such blocks exist whenever the coordinates can hold them, `dZero + ℓ · dOne ≤ n`. -/
-def AGLCoordinateBlocksExistence : Prop :=
+def CoordinateBlocksExistence : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι],
       dZero + ℓ * dOne ≤ Fintype.card ι →
-      ∃ _blocks : AGLCoordinateBlocks ι ℓ dZero dOne, True
+      ∃ _blocks : CoordinateBlocks ι ℓ dZero dOne, True
 
 /-- The coordinates a block structure uses number exactly `dZero + ℓ · dOne`. -/
-def AGLCoordinateBlocksUsedCard : Prop :=
+def CoordinateBlocksUsedCard : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : AGLCoordinateBlocks ι ℓ dZero dOne),
+      (blocks : CoordinateBlocks ι ℓ dZero dOne),
       let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
       used.card = dZero + ℓ * dOne
 
 /-- A set of size at least `k · t` contains `k` pairwise disjoint subsets of size `t`. -/
-def AGLDisjointEqualBlocks : Prop :=
+def DisjointEqualBlocks : Prop :=
   ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
     (S : Finset ι) (k t : ℕ), k * t ≤ S.card →
       ∃ blocks : Fin k → Finset ι,
@@ -126,7 +126,7 @@ def AGLDisjointEqualBlocks : Prop :=
 
 /-- **Small fibers force a large image.** If every fiber of `f` on `s` has fewer than `W` elements
 and `W · ℓ ≤ |s|`, then `f` takes at least `ℓ` distinct values on `s`. -/
-def AGLDistinctAlternativesOfBoundedFibers : Prop :=
+def DistinctAlternativesOfBoundedFibers : Prop :=
   ∀ {α β : Type} [DecidableEq α] [DecidableEq β]
     (s : Finset α) (f : α → β) (W ℓ : ℕ), 0 < W →
       W * ℓ ≤ s.card →
@@ -135,7 +135,7 @@ def AGLDistinctAlternativesOfBoundedFibers : Prop :=
 
 /-- Double counting `ℓ`-subsets of set-indices against coordinates:
 `∑ᵢ C(incidence i, ℓ) = ∑_{|J| = ℓ} |{i : i ∈ S j for all j ∈ J}|`. -/
-def AGLIncidenceDoubleCount : Prop :=
+def IncidenceDoubleCount : Prop :=
   ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
     (ℓ : ℕ) (S : κ → Finset ι),
     let incidence : ι → ℕ := fun i => (Finset.univ.filter fun j => i ∈ S j).card
@@ -146,7 +146,7 @@ def AGLIncidenceDoubleCount : Prop :=
 
 /-- From a bound on the *mean* incidence to a bound on its `ℓ`-th binomial moment:
 `p·M·n ≤ ∑ᵢ aᵢ` implies `(3p^ℓ/4) · C(M, ℓ) · n ≤ ∑ᵢ C(aᵢ, ℓ)`, by convexity once `M ≥ ⌈4ℓ²/p⌉`. -/
-def AGLIncidenceMomentLower : Prop :=
+def IncidenceMomentLower : Prop :=
   ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p → p < 1 →
     Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
     ∀ a : Fin n → ℕ,
@@ -156,14 +156,14 @@ def AGLIncidenceMomentLower : Prop :=
 
 /-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
 `M ≥ ⌈4ℓ²/p⌉`. -/
-def AGLIncidencePowerGap : Prop :=
+def IncidencePowerGap : Prop :=
   ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
     Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
     (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
       (p * M - (ℓ - 1)) ^ ℓ
 
 /-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
-def AGLIncidenceSumDoubleCount : Prop :=
+def IncidenceSumDoubleCount : Prop :=
   ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
     [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
     ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
@@ -172,7 +172,7 @@ def AGLIncidenceSumDoubleCount : Prop :=
 /-- A **large-union family**: a finite family of coordinate sets, all of size `aFamily`, such that
 *any* `W` of them already cover at least `aUnion` coordinates. The barrier uses one to force a
 codeword that avoids a family member to be far from the centre. -/
-structure AGLLargeUnionFamily (ι : Type) [DecidableEq ι]
+structure LargeUnionFamily (ι : Type) [DecidableEq ι]
     (W aFamily aUnion : ℕ) where
   sets : Finset (Finset ι)
   card_each : ∀ A ∈ sets, A.card = aFamily
@@ -181,40 +181,40 @@ structure AGLLargeUnionFamily (ι : Type) [DecidableEq ι]
 
 /-- Large-union families exist at densities `0 < α < β < 1`, with exponentially many sets:
 `2^(γ·m)` of them for some `γ > 0` and all large `m`. -/
-def AGLLargeUnionExistence : Prop :=
+def LargeUnionExistence : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
       ∀ m : ℕ, m₀ ≤ m →
-        ∃ family : AGLLargeUnionFamily (Fin m) W
+        ∃ family : LargeUnionFamily (Fin m) W
           (Nat.floor (α * m)) (Nat.ceil (β * m)),
           (2 : ℝ) ^ (γ * m) ≤ family.sets.card
 
 /-- A large-union family can be reparametrised to nearby sizes `a₁ ≥ a₀`, `b₁ ≤ b₀`, at the cost
 of a factor `W` in the number of sets. -/
-def AGLLargeUnionFamilyResize : Prop :=
+def LargeUnionFamilyResize : Prop :=
   ∀ (W a₀ b₀ a₁ b₁ : ℕ), 0 < W → a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι], a₁ ≤ Fintype.card ι →
-      ∀ source : AGLLargeUnionFamily ι W a₀ b₀,
-        ∃ target : AGLLargeUnionFamily ι W a₁ b₁,
+      ∀ source : LargeUnionFamily ι W a₀ b₀,
+        ∃ target : LargeUnionFamily ι W a₁ b₁,
           source.sets.card ≤ W * target.sets.card
 
 /-- A large-union family on `Fin m` transports to one on the *unused* coordinates of a block
 structure, keeping its size and staying disjoint from every block. -/
-def AGLLargeUnionFamilyTransport : Prop :=
+def LargeUnionFamilyTransport : Prop :=
   ∀ (ℓ dZero dOne W aFamily aUnion : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : AGLCoordinateBlocks ι ℓ dZero dOne),
+      (blocks : CoordinateBlocks ι ℓ dZero dOne),
       let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
       ∀ (m : ℕ), m = Fintype.card ι - used.card →
-        ∀ source : AGLLargeUnionFamily (Fin m) W aFamily aUnion,
-          ∃ target : AGLLargeUnionFamily ι W aFamily aUnion,
+        ∀ source : LargeUnionFamily (Fin m) W aFamily aUnion,
+          ∃ target : LargeUnionFamily ι W aFamily aUnion,
             target.sets.card = source.sets.card ∧
             ∀ S ∈ target.sets, Disjoint S blocks.zero ∧
               ∀ j, Disjoint S (blocks.other j)
 
 /-- The barrier's parameters after rounding to integers: radius, boosted radius, block sizes, the
 used and unused coordinate counts, and the family's set and union sizes. -/
-structure AGLRoundedBarrierData where
+structure RoundedBarrierData where
   radius : ℕ
   boosted : ℕ
   dZero : ℕ
@@ -225,7 +225,7 @@ structure AGLRoundedBarrierData where
   aUnion : ℕ
 
 /-- `D` is `d`-**separated**: distinct elements are at Hamming distance at least `d`. -/
-def AGLSeparated {ι F : Type} [Fintype ι] [DecidableEq F]
+def separated {ι F : Type} [Fintype ι] [DecidableEq F]
     (D : Set (ι → F)) (d : ℕ) : Prop :=
   ∀ ⦃u : ι → F⦄, u ∈ D → ∀ ⦃v : ι → F⦄, v ∈ D → u ≠ v → d ≤ hammingDist u v
 
@@ -233,18 +233,18 @@ def AGLSeparated {ι F : Type} [Fintype ι] [DecidableEq F]
 code whose list size at the radius is at most `ℓ`, plus a block structure and a large-union family
 disjoint from it, a code with `2 · |A|^aFamily ≤ |C|` cannot exist: some alternative on the family's
 sets must repeat, and a repeat contradicts separation. -/
-def AGLDeterministicPigeonholeBound : Prop :=
+def DeterministicPigeonholeBound : Prop :=
   ∀ (ℓ n radius boosted : ℕ), 2 ≤ ℓ → 0 < n →
     ∀ {ι A : Type} [Fintype ι] [DecidableEq ι]
       [Fintype A] [DecidableEq A]
       (C : Set (ι → A)), 2 ≤ Fintype.card A →
       Fintype.card ι = n → C.Finite →
-      ∀ (params : AGLBarrierParameters ℓ n radius boosted), 0 < params.W →
-      ∀ (blocks : AGLCoordinateBlocks ι ℓ params.dZero params.dOne)
-        (family : AGLLargeUnionFamily ι params.W params.aFamily params.aUnion),
+      ∀ (params : BarrierParameters ℓ n radius boosted), 0 < params.W →
+      ∀ (blocks : CoordinateBlocks ι ℓ params.dZero params.dOne)
+        (family : LargeUnionFamily ι params.W params.aFamily params.aUnion),
         (∀ S ∈ family.sets, Disjoint S blocks.zero ∧
           ∀ j, Disjoint S (blocks.other j)) →
-        AGLSeparated C boosted →
+        separated C boosted →
         2 * Fintype.card A ^ params.aFamily ≤ C.ncard →
         Lambda C ((radius : ℝ) / n) ≤ (ℓ : ℕ∞) →
         family.sets.card ≤
@@ -252,16 +252,16 @@ def AGLDeterministicPigeonholeBound : Prop :=
 
 /-- **Greedy extraction of a separated subcode.** If every ball of radius `d` around a codeword
 holds at most `B` codewords, then `C` has a `(d+1)`-separated subset `D` with `|C| ≤ B · |D|`. -/
-def AGLGreedySeparatedExtraction : Prop :=
+def GreedySeparatedExtraction : Prop :=
   ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
     (C : Set (ι → A)) (d B : ℕ), C.Finite →
     (∀ c ∈ C,
       ({x : ι → A | x ∈ C ∧ hammingDist c x ≤ d} : Set (ι → A)).ncard ≤ B) →
-    ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ AGLSeparated D (d + 1) ∧
+    ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ separated D (d + 1) ∧
       C.ncard ≤ B * D.ncard
 
 /-- The mean of the shifted incidences `aᵢ + 1 − ℓ` is at least `p·M − (ℓ−1)`. -/
-def AGLShiftedIncidenceMeanLower : Prop :=
+def ShiftedIncidenceMeanLower : Prop :=
   ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n →
     ∀ a : Fin n → ℕ,
       p * M * n ≤ ∑ i, (a i : ℝ) →
@@ -270,24 +270,24 @@ def AGLShiftedIncidenceMeanLower : Prop :=
 
 /-- The binomial ratio estimate behind the sparse count:
 `C(b−1, a) / C(m, a) ≤ ((b−1)/(m+1−a))^a`. -/
-def AGLSparseChooseRatioBound : Prop :=
+def SparseChooseRatioBound : Prop :=
   ∀ (m a b : ℕ), a ≤ b - 1 → b - 1 ≤ m →
     ((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ≤
       ((((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) ^ a)
 
 /-- The *sparse* large-union existence statement, at `α + β < 1` rather than `β < 1`. This is the
 regime the barrier needs, and it is what the numerics below deliver. -/
-def AGLSparseLargeUnionExistence : Prop :=
+def SparseLargeUnionExistence : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → α + β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
       ∀ m : ℕ, m₀ ≤ m →
-        ∃ family : AGLLargeUnionFamily (Fin m) W
+        ∃ family : LargeUnionFamily (Fin m) W
           (Nat.floor (α * m)) (Nat.ceil (β * m)),
           (2 : ℝ) ^ (γ * m) ≤ family.sets.card
 
 /-- The purely numeric inequalities behind sparse existence: with `T = 2^(m/W)` candidate families,
 the count of *bad* families is smaller than the total, so a good one exists. -/
-def AGLSparseLargeUnionNumerics : Prop :=
+def SparseLargeUnionNumerics : Prop :=
   ∀ (α β : ℝ), 0 < α → α < β → α + β < 1 →
     ∃ W : ℕ, 0 < W ∧ ∃ γ : ℝ, 0 < γ ∧ ∃ m₀ : ℕ,
       ∀ m : ℕ, m₀ ≤ m →
@@ -301,19 +301,19 @@ def AGLSparseLargeUnionNumerics : Prop :=
           W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤ T
 
 /-- The numerics imply sparse existence — the probabilistic-method step, done by counting. -/
-def AGLSparseLargeUnionExistenceOfNumerics : Prop :=
-  AGLSparseLargeUnionNumerics → AGLSparseLargeUnionExistence
+def SparseLargeUnionExistenceOfNumerics : Prop :=
+  SparseLargeUnionNumerics → SparseLargeUnionExistence
 
 /-- The unused coordinates of a block structure are in bijection with `Fin` of their number, which
 is how a family built on `Fin m` is transported onto them. -/
-def AGLUnusedCoordinatesEquivFin : Prop :=
+def UnusedCoordinatesEquivFin : Prop :=
   ∀ (ℓ dZero dOne : ℕ),
     ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : AGLCoordinateBlocks ι ℓ dZero dOne),
+      (blocks : CoordinateBlocks ι ℓ dZero dOne),
       let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
       Nonempty (Fin (Fintype.card ι - used.card) ≃ {i : ι // i ∉ used})
 
-theorem aglAlphabetCardGeRpowOfAlphaLeEta
+theorem alphabet_card_ge_rpow_of_alpha_le_eta
     (α η : ℝ) (hη_pos : 0 < η) (hαη : α ≤ η)
     {A : Type} [Fintype A] (hcard : 2 ≤ Fintype.card A) :
     (Fintype.card A : ℝ) ≥ (2 : ℝ) ^ (α / η) := by
@@ -328,7 +328,7 @@ theorem aglAlphabetCardGeRpowOfAlphaLeEta
 
 /-- The **bad** `T`-indexed families of `a`-subsets of `Fin m`: those for which some `W` of the sets
 have union smaller than `b`. Their complement gives a large-union family. -/
-noncomputable def aglBadIndexedFamilies
+noncomputable def badIndexedFamilies
     (m a T W b : ℕ) :
     Finset (Fin T → {S : Finset (Fin m) // S.card = a}) := by
   classical
@@ -338,31 +338,31 @@ noncomputable def aglBadIndexedFamilies
 
 /-- Counting the bad families: at most `C(T,W) · C(m,b−1) · C(b−1,a)^W · C(m,a)^(T−W)`, obtained by
 choosing the witnessing `W` indices and the `(b−1)`-set covering them. -/
-def AGLBadIndexedFamiliesCardBound : Prop :=
+def BadIndexedFamiliesCardBound : Prop :=
   ∀ (m a T W b : ℕ), 0 < W → W ≤ T → 0 < b → b ≤ m → a < b →
-    (aglBadIndexedFamilies m a T W b).card ≤
+    (badIndexedFamilies m a T W b).card ≤
       Nat.choose T W * Nat.choose m (b - 1) *
         Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
 
 /-- Every bad family admits a witness: `W` indices and a set of size `b−1` containing all of their
 sets. -/
-def AGLBadIndexedFamiliesWitnessCover : Prop :=
+def BadIndexedFamiliesWitnessCover : Prop :=
   ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
-    ∀ A ∈ aglBadIndexedFamilies m a T W b,
+    ∀ A ∈ badIndexedFamilies m a T W b,
       ∃ J : Finset (Fin T), ∃ U : Finset (Fin m),
         J.card = W ∧ U.card = b - 1 ∧
           ∀ j ∈ J, (A j).val ⊆ U
 
 /-- A family that is *not* bad yields a large-union family, with `T ≤ W · |family.sets|`. -/
-def AGLGoodIndexedFamilyToLargeUnionFamily : Prop :=
+def GoodIndexedFamilyToLargeUnionFamily : Prop :=
   ∀ (m a T W b : ℕ), 0 < W → a < b →
     ∀ A : Fin T → {S : Finset (Fin m) // S.card = a},
-      A ∉ aglBadIndexedFamilies m a T W b →
-      ∃ family : AGLLargeUnionFamily (Fin m) W a b,
+      A ∉ badIndexedFamilies m a T W b →
+      ∃ family : LargeUnionFamily (Fin m) W a b,
         T ≤ W * family.sets.card
 
-theorem aglBadIndexedFamiliesWitnessCover :
-    AGLBadIndexedFamiliesWitnessCover := by
+theorem bad_indexed_families_witness_cover :
+    BadIndexedFamiliesWitnessCover := by
   classical
   intro m a T W b hb hbm A hA
   have hbad := (Finset.mem_filter.mp hA).2
@@ -380,9 +380,9 @@ theorem aglBadIndexedFamiliesWitnessCover :
   exact Finset.mem_biUnion.mpr ⟨j, hj, hx⟩
 
 /-- The density at which the large-union family's sets are drawn: half the rate. -/
-noncomputable def aglBarrierAlphaDensity (R : ℝ) : ℝ := R / 2
+noncomputable def barrierAlphaDensity (R : ℝ) : ℝ := R / 2
 
-theorem aglBarrierExponentContradiction
+theorem barrier_exponent_contradiction
     (K M n : ℕ) (γ : ℝ) (hγ : 0 < γ) (hn : 0 < n)
     (hlower : (2 : ℝ) ^ (γ * n) ≤ M)
     (hupper : (M : ℝ) ≤ (K : ℝ) * (2 : ℝ) ^ ((γ / 4) * n))
@@ -398,35 +398,35 @@ theorem aglBarrierExponentContradiction
   exact (not_lt_of_ge hchain) hstrict
 
 /-- The barrier's length constant, `8·(B + ℓ + 10)`. -/
-noncomputable def aglBarrierK (ℓ B : ℕ) : ℝ :=
+noncomputable def barrierK (ℓ B : ℕ) : ℝ :=
   ((8 * (B + ℓ + 10) : ℕ) : ℝ)
 
-theorem aglBarrierKSlack
+theorem barrier_k_slack
     (ℓ B : ℕ) (hℓ : 2 ≤ ℓ) :
     (B : ℝ) + 4 + 1 / (ℓ : ℝ) ≤
-      aglBarrierK ℓ B * (1 - 1 / (ℓ : ℝ)) - 1 := by
+      barrierK ℓ B * (1 - 1 / (ℓ : ℝ)) - 1 := by
   have hℓR : (2 : ℝ) ≤ ℓ := by exact_mod_cast hℓ
   have hℓpos : (0 : ℝ) < ℓ := by linarith
   have hB : (0 : ℝ) ≤ B := by positivity
-  unfold aglBarrierK
+  unfold barrierK
   norm_num only [Nat.cast_mul, Nat.cast_add, Nat.cast_ofNat]
   field_simp [ne_of_gt hℓpos]
   nlinarith
 
 /-- The **boosted radius** `p + p^ℓ/(2ℓ)`: slightly beyond `p`, which is the room the
 balanced-centre construction needs. -/
-noncomputable def aglBoostedRadius (ℓ : ℕ) (p : ℝ) : ℝ :=
+noncomputable def boostedRadius (ℓ : ℕ) (p : ℝ) : ℝ :=
   p + p ^ ℓ / (2 * ℓ)
 
 /-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
 boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
 radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
-def AGLBalancedCenterConstruction : Prop :=
+def BalancedCenterConstruction : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
       (c : ι → A) (v : Fin ℓ → ι → A),
       (∀ j, hammingDist c (v j) ≤
-        Nat.floor (aglBoostedRadius ℓ p * Fintype.card ι)) →
+        Nat.floor (boostedRadius ℓ p * Fintype.card ι)) →
       8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
       Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
         ({i : ι | ∀ j, c i ≠ v j i} : Set ι).ncard →
@@ -437,7 +437,7 @@ def AGLBalancedCenterConstruction : Prop :=
 /-- **The local neighbourhood bound.** A list size of at most `ℓ` at radius `p` caps how many
 codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ²/p⌉`. Proved by feeding
 the balanced-centre construction a hypothetical excess. -/
-def AGLLocalNeighborhoodBound : Prop :=
+def LocalNeighborhoodBound : Prop :=
   ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
     ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
       {A : Type} [Fintype A] [DecidableEq A]
@@ -446,19 +446,19 @@ def AGLLocalNeighborhoodBound : Prop :=
       ∀ c ∈ C,
         ({x : ι → A | x ∈ C ∧
           hammingDist c x ≤
-            Nat.floor (aglBoostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
+            Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
           ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p)
 
-theorem aglBalancedCenterArithmetic
+theorem balanced_center_arithmetic
     (ℓ : ℕ) (p : ℝ) (n : ℕ) (hℓ : 2 ≤ ℓ) (hp : 0 < p) (hp_lt : p < 1)
     (hsize : 8 * (ℓ : ℝ) ≤ p ^ ℓ * n) :
-    Nat.floor (p * n) ≤ Nat.floor (aglBoostedRadius ℓ p * n) ∧
-      Nat.floor (aglBoostedRadius ℓ p * n) -
-          (Nat.floor (aglBoostedRadius ℓ p * n) - Nat.floor (p * n)) =
+    Nat.floor (p * n) ≤ Nat.floor (boostedRadius ℓ p * n) ∧
+      Nat.floor (boostedRadius ℓ p * n) -
+          (Nat.floor (boostedRadius ℓ p * n) - Nat.floor (p * n)) =
         Nat.floor (p * n) ∧
-      ℓ * (Nat.floor (aglBoostedRadius ℓ p * n) - Nat.floor (p * n)) ≤
+      ℓ * (Nat.floor (boostedRadius ℓ p * n) - Nat.floor (p * n)) ≤
         Nat.floor (p * n) ∧
-      ℓ * (Nat.floor (aglBoostedRadius ℓ p * n) - Nat.floor (p * n)) ≤
+      ℓ * (Nat.floor (boostedRadius ℓ p * n) - Nat.floor (p * n)) ≤
         Nat.ceil ((3 * p ^ ℓ / 4) * n) := by
   have hℓpos : 0 < ℓ := by omega
   have hℓR : (0 : ℝ) < ℓ := by exact_mod_cast hℓpos
@@ -469,29 +469,29 @@ theorem aglBalancedCenterArithmetic
       mul_nonpos_of_nonneg_of_nonpos (pow_nonneg hp.le ℓ) hnle
     have hleft : (0 : ℝ) < 8 * ℓ := by positivity
     nlinarith
-  have hboost : p ≤ aglBoostedRadius ℓ p := by
-    unfold aglBoostedRadius
+  have hboost : p ≤ boostedRadius ℓ p := by
+    unfold boostedRadius
     have hpow : 0 ≤ p ^ ℓ := by positivity
     have hden : (0 : ℝ) < 2 * ℓ := by positivity
     exact le_add_of_nonneg_right (div_nonneg hpow hden.le)
-  have hboostPos : 0 < aglBoostedRadius ℓ p := hp.trans_le hboost
-  have hmul : p * n ≤ aglBoostedRadius ℓ p * n :=
+  have hboostPos : 0 < boostedRadius ℓ p := hp.trans_le hboost
+  have hmul : p * n ≤ boostedRadius ℓ p * n :=
     mul_le_mul_of_nonneg_right hboost hnR.le
   have hrle : Nat.floor (p * n) ≤
-      Nat.floor (aglBoostedRadius ℓ p * n) := Nat.floor_mono hmul
+      Nat.floor (boostedRadius ℓ p * n) := Nat.floor_mono hmul
   refine ⟨hrle, ?_, ?_, ?_⟩
   · omega
   · let r := Nat.floor (p * n)
-    let r' := Nat.floor (aglBoostedRadius ℓ p * n)
+    let r' := Nat.floor (boostedRadius ℓ p * n)
     let t := r' - r
     have htcast : (t : ℝ) = (r' : ℝ) - r := Nat.cast_sub hrle
-    have hr'le : (r' : ℝ) ≤ aglBoostedRadius ℓ p * n :=
+    have hr'le : (r' : ℝ) ≤ boostedRadius ℓ p * n :=
       Nat.floor_le (mul_nonneg hboostPos.le hnR.le)
     have hr'le' : (r' : ℝ) ≤ p * n + p ^ ℓ * n / (2 * ℓ) := by
       calc
-        (r' : ℝ) ≤ aglBoostedRadius ℓ p * n := hr'le
+        (r' : ℝ) ≤ boostedRadius ℓ p * n := hr'le
         _ = p * n + p ^ ℓ * n / (2 * ℓ) := by
-          unfold aglBoostedRadius
+          unfold boostedRadius
           ring
     have hrlt : p * n < (r : ℝ) + 1 := Nat.lt_floor_add_one _
     have ht : (t : ℝ) ≤ p ^ ℓ * n / (2 * ℓ) + 1 := by
@@ -517,16 +517,16 @@ theorem aglBalancedCenterArithmetic
     have hnat : ℓ * t < r + 1 := by exact_mod_cast hlt
     simpa only [r, r', t] using (Nat.lt_succ_iff.mp hnat)
   · let r := Nat.floor (p * n)
-    let r' := Nat.floor (aglBoostedRadius ℓ p * n)
+    let r' := Nat.floor (boostedRadius ℓ p * n)
     let t := r' - r
     have htcast : (t : ℝ) = (r' : ℝ) - r := Nat.cast_sub hrle
-    have hr'le : (r' : ℝ) ≤ aglBoostedRadius ℓ p * n :=
+    have hr'le : (r' : ℝ) ≤ boostedRadius ℓ p * n :=
       Nat.floor_le (mul_nonneg hboostPos.le hnR.le)
     have hr'le' : (r' : ℝ) ≤ p * n + p ^ ℓ * n / (2 * ℓ) := by
       calc
-        (r' : ℝ) ≤ aglBoostedRadius ℓ p * n := hr'le
+        (r' : ℝ) ≤ boostedRadius ℓ p * n := hr'le
         _ = p * n + p ^ ℓ * n / (2 * ℓ) := by
-          unfold aglBoostedRadius
+          unfold boostedRadius
           ring
     have hrlt : p * n < (r : ℝ) + 1 := Nat.lt_floor_add_one _
     have ht : (t : ℝ) ≤ p ^ ℓ * n / (2 * ℓ) + 1 := by
@@ -552,15 +552,15 @@ theorem aglBalancedCenterArithmetic
       exact hthree.trans hceil
     exact_mod_cast hcast
 
-theorem aglBoostedRadius_gt (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
-    (p : ℝ) (hp_pos : 0 < p) : p < aglBoostedRadius ℓ p := by
-  unfold aglBoostedRadius
+theorem boostedRadius_gt (ℓ : ℕ) (hℓ_pos : 0 < ℓ)
+    (p : ℝ) (hp_pos : 0 < p) : p < boostedRadius ℓ p := by
+  unfold boostedRadius
   have hpow : 0 < p ^ ℓ := pow_pos hp_pos ℓ
   have hden : (0 : ℝ) < 2 * ℓ := by positivity
   have hquot : 0 < p ^ ℓ / (2 * ℓ) := div_pos hpow hden
   linarith
 
-theorem aglCeilLinearBound
+theorem ceil_linear_bound
     (K η : ℝ) (n : ℕ) (hK : 0 ≤ K) (hη : 0 ≤ η)
     (hone : 1 ≤ η * n) :
     (Nat.ceil (K * η * n) : ℝ) < (K + 1) * η * n := by
@@ -570,7 +570,7 @@ theorem aglCeilLinearBound
     nlinarith
   exact hceil.trans_le hunit
 
-theorem aglChooseDistinctImages
+theorem choose_distinct_images
     {X Y : Type} [DecidableEq X] [DecidableEq Y]
     (s : Finset X) (f : X → Y) (k : ℕ)
     (hcard : k ≤ (s.image f).card) :
@@ -603,33 +603,33 @@ theorem aglChooseDistinctImages
 
 /-- The families whose sets at the indices in `J` all sit inside `U` — the shape a bad family's
 witness puts it into. -/
-noncomputable def aglConstrainedIndexedFamilies
+noncomputable def constrainedIndexedFamilies
     (m a T : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)) :
     Finset (Fin T → {S : Finset (Fin m) // S.card = a}) := by
   classical
   exact Finset.univ.filter fun A => ∀ j ∈ J, (A j).1 ⊆ U
 
 /-- Every bad family lies in one of the constrained classes, indexed by its witness `(J, U)`. -/
-def AGLBadIndexedFamiliesSubsetCover : Prop :=
+def BadIndexedFamiliesSubsetCover : Prop :=
   ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
-    aglBadIndexedFamilies m a T W b ⊆
+    badIndexedFamilies m a T W b ⊆
       (Finset.univ.powersetCard W).biUnion fun J =>
         (Finset.univ.powersetCard (b - 1)).biUnion fun U =>
-          aglConstrainedIndexedFamilies m a T J U
+          constrainedIndexedFamilies m a T J U
 
 /-- The exact size of a constrained class: `C(b−1, a)^W · C(m, a)^(T−W)`. -/
-def AGLConstrainedIndexedFamiliesCard : Prop :=
+def ConstrainedIndexedFamiliesCard : Prop :=
   ∀ (m a T W b : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)),
     J.card = W → U.card = b - 1 →
-    (aglConstrainedIndexedFamilies m a T J U).card =
+    (constrainedIndexedFamilies m a T J U).card =
       Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
 
-theorem aglBadIndexedFamiliesSubsetCover :
-    AGLBadIndexedFamiliesSubsetCover := by
+theorem bad_indexed_families_subset_cover :
+    BadIndexedFamiliesSubsetCover := by
   classical
   intro m a T W b hb hbm A hA
   obtain ⟨J, U, hJcard, hUcard, hconstrained⟩ :=
-    aglBadIndexedFamiliesWitnessCover m a T W b hb hbm A hA
+    bad_indexed_families_witness_cover m a T W b hb hbm A hA
   apply Finset.mem_biUnion.mpr
   refine ⟨J, ?_, ?_⟩
   · exact Finset.mem_powersetCard.mpr
@@ -638,11 +638,11 @@ theorem aglBadIndexedFamiliesSubsetCover :
     refine ⟨U, ?_, ?_⟩
     · exact Finset.mem_powersetCard.mpr
         ⟨Finset.subset_univ U, hUcard⟩
-    · simp only [aglConstrainedIndexedFamilies, Finset.mem_filter,
+    · simp only [constrainedIndexedFamilies, Finset.mem_filter,
         Finset.mem_univ, true_and]
       exact hconstrained
 
-theorem aglCoordinateBlocksExists : AGLCoordinateBlocksExistence := by
+theorem coordinate_blocks_exists : CoordinateBlocksExistence := by
   classical
   intro ℓ dZero dOne ι _ _ htotal
   let total := dZero + ℓ * dOne
@@ -728,7 +728,7 @@ theorem aglCoordinateBlocksExists : AGLCoordinateBlocksExistence := by
         simpa only [Nat.add_assoc] using hv.symm
       exact (Nat.ne_of_lt hlt) hv'
 
-theorem aglCoordinateBlocksUsedCard : AGLCoordinateBlocksUsedCard := by
+theorem coordinate_blocks_used_card : CoordinateBlocksUsedCard := by
   classical
   intro ℓ dZero dOne ι _ _ blocks
   dsimp
@@ -746,13 +746,13 @@ theorem aglCoordinateBlocksUsedCard : AGLCoordinateBlocksUsedCard := by
   simp only [blocks.card_zero, blocks.card_other, Finset.sum_const_nat,
     Finset.card_univ, Fintype.card_fin]
 
-theorem aglDisjointEqualBlocks : AGLDisjointEqualBlocks := by
+theorem disjoint_equal_blocks : DisjointEqualBlocks := by
   classical
   intro ι _ _ S k t hcard
   have htotal : 0 + k * t ≤ Fintype.card S := by
     simpa only [zero_add, Fintype.card_coe] using hcard
   obtain ⟨base, hbase⟩ :=
-    aglCoordinateBlocksExists k 0 t (ι := S) htotal
+    coordinate_blocks_exists k 0 t (ι := S) htotal
   let incl : S ↪ ι := Function.Embedding.subtype (fun x => x ∈ S)
   let blocks : Fin k → Finset ι := fun j => (base.other j).map incl
   refine ⟨blocks, ?_, ?_, ?_⟩
@@ -770,8 +770,8 @@ theorem aglDisjointEqualBlocks : AGLDisjointEqualBlocks := by
     subst b
     exact (Finset.disjoint_left.mp (base.other_disjoint i j hij)) ha hb
 
-theorem aglDistinctAlternativesOfBoundedFibers :
-    AGLDistinctAlternativesOfBoundedFibers := by
+theorem distinct_alternatives_of_bounded_fibers :
+    DistinctAlternativesOfBoundedFibers := by
   intro α β _ _ s f W ℓ hW hcard hfiber
   have hsle : s.card ≤ W * (s.image f).card := by
     apply Finset.card_le_mul_card_image s W
@@ -780,18 +780,18 @@ theorem aglDistinctAlternativesOfBoundedFibers :
   have hmul : W * ℓ ≤ W * (s.image f).card := hcard.trans hsle
   exact le_of_mul_le_mul_left hmul hW
 
-theorem aglEtaTimesLengthOne
+theorem eta_times_length_one
     (η : ℝ) (n : ℕ) (hη : 0 < η) (hlen : 1 / η ≤ (n : ℝ)) :
     1 ≤ η * n := by
   have h := (div_le_iff₀ hη).mp hlen
   simpa only [one_mul, mul_comm] using h
 
-theorem aglExactSubsetTypeCard (m a : ℕ) :
+theorem exact_subset_type_card (m a : ℕ) :
     Fintype.card {S : Finset (Fin m) // S.card = a} = Nat.choose m a := by
   simpa only [Fintype.card_fin] using
     (Fintype.card_finset_len (α := Fin m) a)
 
-theorem aglFixedFactorRpowAbsorb
+theorem fixed_factor_rpow_absorb
     (K : ℕ) (_hK : 0 < K) (γ : ℝ) (hγ : 0 < γ) :
     ∃ m₀ : ℕ, ∀ m : ℕ, m₀ ≤ m →
       (K : ℝ) * (2 : ℝ) ^ ((γ / 2) * m) ≤
@@ -824,7 +824,7 @@ theorem aglFixedFactorRpowAbsorb
     _ ≤ (2 : ℝ) ^ (γ * m) :=
       Real.rpow_le_rpow_of_exponent_le (by norm_num) hsum
 
-theorem aglFixedSubsetInsideCard (m a : ℕ) (U : Finset (Fin m)) :
+theorem fixed_subset_inside_card (m a : ℕ) (U : Finset (Fin m)) :
     Fintype.card {S : Finset (Fin m) // S.card = a ∧ S ⊆ U} =
       Nat.choose U.card a := by
   classical
@@ -837,8 +837,8 @@ theorem aglFixedSubsetInsideCard (m a : ℕ) (U : Finset (Fin m)) :
       aesop
     _ = Nat.choose U.card a := Finset.card_powersetCard a U
 
-theorem aglConstrainedIndexedFamiliesCard :
-    AGLConstrainedIndexedFamiliesCard := by
+theorem constrained_indexed_families_card :
+    ConstrainedIndexedFamiliesCard := by
   classical
   intro m a T W b J U hJ hU
   let inside : Finset {S : Finset (Fin m) // S.card = a} :=
@@ -858,13 +858,13 @@ theorem aglConstrainedIndexedFamiliesCard :
       inside.card = Fintype.card inside := (Fintype.card_coe inside).symm
       _ = Fintype.card {S : Finset (Fin m) // S.card = a ∧ S ⊆ U} :=
         Fintype.card_congr e
-      _ = Nat.choose U.card a := aglFixedSubsetInsideCard m a U
+      _ = Nat.choose U.card a := fixed_subset_inside_card m a U
   let allowed : Fin T → Finset {S : Finset (Fin m) // S.card = a} :=
     fun j => if j ∈ J then inside else Finset.univ
-  have heq : aglConstrainedIndexedFamilies m a T J U =
+  have heq : constrainedIndexedFamilies m a T J U =
       Fintype.piFinset allowed := by
     ext A
-    simp only [aglConstrainedIndexedFamilies, Finset.mem_filter,
+    simp only [constrainedIndexedFamilies, Finset.mem_filter,
       Finset.mem_univ, true_and, Fintype.mem_piFinset]
     constructor
     · intro h j
@@ -882,7 +882,7 @@ theorem aglConstrainedIndexedFamiliesCard :
     by_cases hj : j ∈ J
     · simp only [allowed, hj, if_pos, hinside]
     · simp only [allowed, hj]
-      exact aglExactSubsetTypeCard m a
+      exact exact_subset_type_card m a
   rw [heq, Fintype.card_piFinset]
   calc
     (∏ j, (allowed j).card) =
@@ -907,27 +907,27 @@ theorem aglConstrainedIndexedFamiliesCard :
         Nat.choose m a ^ (T - W) := by
       rw [hJ, hU]
 
-theorem aglBadIndexedFamiliesCardBound :
-    AGLBadIndexedFamiliesCardBound := by
+theorem bad_indexed_families_card_bound :
+    BadIndexedFamiliesCardBound := by
   classical
   intro m a T W b hW hWT hb hbm hab
   let Js : Finset (Finset (Fin T)) := Finset.univ.powersetCard W
   let Us : Finset (Finset (Fin m)) := Finset.univ.powersetCard (b - 1)
   let cover : Finset (Fin T → {S : Finset (Fin m) // S.card = a}) :=
     Js.biUnion fun J =>
-      Us.biUnion fun U => aglConstrainedIndexedFamilies m a T J U
-  have hsub : aglBadIndexedFamilies m a T W b ⊆ cover := by
+      Us.biUnion fun U => constrainedIndexedFamilies m a T J U
+  have hsub : badIndexedFamilies m a T W b ⊆ cover := by
     simpa only [Js, Us, cover] using
-      (aglBadIndexedFamiliesSubsetCover m a T W b hb hbm)
+      (bad_indexed_families_subset_cover m a T W b hb hbm)
   let K : ℕ :=
     Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
   have hsum :
       (∑ J ∈ Js, ∑ U ∈ Us,
-        (aglConstrainedIndexedFamilies m a T J U).card) =
+        (constrainedIndexedFamilies m a T J U).card) =
         Js.card * (Us.card * K) := by
     calc
       (∑ J ∈ Js, ∑ U ∈ Us,
-          (aglConstrainedIndexedFamilies m a T J U).card) =
+          (constrainedIndexedFamilies m a T J U).card) =
           ∑ J ∈ Js, ∑ U ∈ Us, K := by
         apply Finset.sum_congr rfl
         intro J hJ
@@ -938,7 +938,7 @@ theorem aglBadIndexedFamiliesCardBound :
         have hUcard : U.card = b - 1 :=
           (Finset.mem_powersetCard.mp hU).2
         simpa only [K] using
-          aglConstrainedIndexedFamiliesCard
+          constrained_indexed_families_card
             m a T W b J U hJcard hUcard
       _ = ∑ J ∈ Js, Us.card * K := by
         apply Finset.sum_congr rfl
@@ -947,13 +947,13 @@ theorem aglBadIndexedFamiliesCardBound :
       _ = Js.card * (Us.card * K) :=
         Finset.sum_const_nat fun _ _ => rfl
   calc
-    (aglBadIndexedFamilies m a T W b).card ≤ cover.card :=
+    (badIndexedFamilies m a T W b).card ≤ cover.card :=
       Finset.card_le_card hsub
     _ ≤ ∑ J ∈ Js, (Us.biUnion fun U =>
-        aglConstrainedIndexedFamilies m a T J U).card := by
+        constrainedIndexedFamilies m a T J U).card := by
       exact Finset.card_biUnion_le
     _ ≤ ∑ J ∈ Js, ∑ U ∈ Us,
-        (aglConstrainedIndexedFamilies m a T J U).card := by
+        (constrainedIndexedFamilies m a T J U).card := by
       apply Finset.sum_le_sum
       intro J hJ
       exact Finset.card_biUnion_le
@@ -970,19 +970,19 @@ theorem aglBadIndexedFamiliesCardBound :
       dsimp only [K]
       ring
 
-theorem aglFloorDivMulSelf (radius n : ℕ) (hn : 0 < n) :
+theorem floor_div_mul_self (radius n : ℕ) (hn : 0 < n) :
     Nat.floor (((radius : ℝ) / n) * n) = radius := by
   have hn0 : (n : ℝ) ≠ 0 := by positivity
   rw [div_mul_cancel₀ _ hn0, Nat.floor_natCast]
 
-theorem aglFloorRadiusRatioLe
+theorem floor_radius_ratio_le
     (p : ℝ) (n : ℕ) (hp : 0 ≤ p) (hn : 0 < n) :
     (Nat.floor (p * n) : ℝ) / n ≤ p := by
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn
   rw [div_le_iff₀ hnR]
   exact Nat.floor_le (mul_nonneg hp (Nat.cast_nonneg n))
 
-theorem aglGoodBaseByDoubleCount
+theorem good_base_by_double_count
     {X Y : Type} [DecidableEq X] [DecidableEq Y]
     (s : Finset X) (t : Finset Y) (P : X → Y → Prop) [DecidableRel P]
     (hs : s.Nonempty)
@@ -1035,8 +1035,8 @@ theorem aglGoodBaseByDoubleCount
     hlower.trans_lt (by simpa only [Nat.mul_comm] using hupper)
   exact (Nat.lt_irrefl _ hcontra)
 
-theorem aglGoodIndexedFamilyToLargeUnionFamily :
-    AGLGoodIndexedFamilyToLargeUnionFamily := by
+theorem good_indexed_family_to_large_union_family :
+    GoodIndexedFamilyToLargeUnionFamily := by
   classical
   intro m a T W b hW hab A hgood
   let f : Fin T → Finset (Fin m) := fun j => (A j).1
@@ -1063,7 +1063,7 @@ theorem aglGoodIndexedFamilyToLargeUnionFamily :
     apply Nat.le_of_not_gt
     intro hsmall
     apply hgood
-    simp only [aglBadIndexedFamilies, Finset.mem_filter,
+    simp only [badIndexedFamilies, Finset.mem_filter,
       Finset.mem_univ, true_and]
     refine ⟨J, hJcard, ?_⟩
     have hunion : Q.biUnion id = J.biUnion f := by
@@ -1079,7 +1079,7 @@ theorem aglGoodIndexedFamilyToLargeUnionFamily :
       exact (Nat.lt_of_not_ge hnot).le
     obtain ⟨J, hJsub, hJcard⟩ := Finset.exists_subset_card_eq hWle
     apply hgood
-    simp only [aglBadIndexedFamilies, Finset.mem_filter,
+    simp only [badIndexedFamilies, Finset.mem_filter,
       Finset.mem_univ, true_and]
     refine ⟨J, hJcard, ?_⟩
     have hUnionSub : J.biUnion f ⊆ S := by
@@ -1096,7 +1096,7 @@ theorem aglGoodIndexedFamilyToLargeUnionFamily :
       (J.biUnion f).card ≤ S.card := Finset.card_le_card hUnionSub
       _ = a := hScard
       _ < b := hab
-  let family : AGLLargeUnionFamily (Fin m) W a b :=
+  let family : LargeUnionFamily (Fin m) W a b :=
     { sets := Finset.univ.image f
       card_each := by
         intro S hS
