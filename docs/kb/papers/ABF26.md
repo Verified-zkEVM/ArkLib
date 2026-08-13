@@ -181,22 +181,33 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 
 - **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
   and relative-distance notions exist.
-- **§3 remainder.** All of §3 apart from Theorem 3.15 now has a Lean statement, in
-  `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`; what remains is *proof*, plus three
-  fidelity gaps.
-  - Proved in-tree: Lemma 3.7 (Elias volume bound, by the paper's own averaging argument) and
-    Theorem 3.9 (generalized Singleton, from the rate–radius relation).
+- **§3 remainder.** Theorems 3.4–3.14 all have a Lean statement in
+  `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean`; Definition 3.1 / Theorem 3.2 /
+  Corollary 3.3 (the Johnson family) are the pre-existing `Jqℓ` / `johnson_bound_lambda_le_ell` /
+  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.15 and 3.16 are absent.** What
+  remains for 3.4–3.14 is *proof*, plus the fidelity gaps below.
+  - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
+    argument) and the arithmetic half of Theorem 3.9 (`linear_card_le_of_rate_radius`).
   - Admitted with the source statement in the docstring: Theorem 3.4, Corollary 3.8, Theorem 3.6,
-    Theorem 3.10, Theorem 3.11, Theorems 3.12–3.14. Corollary 3.5 is *derived* from Theorem 3.4's
-    admit, so it inherits it.
-  - Fidelity gaps to close, in rough priority order: (i) Theorem 3.4 is stated at the
-    **rate-derived** profile only — the arbitrary-`τ` generalisation is false, refuted by a compiled
-    counterexample recorded in its docstring; (ii) Lemma 3.7 / Corollary 3.8 / Theorem 3.10 are
+    Theorem 3.9, Theorem 3.10, Theorem 3.11, Theorems 3.12–3.14. Corollary 3.5 and the two `η`-forms
+    are *derived* from Theorem 3.4's admit, so they inherit it.
+  - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
+    3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
+    lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is unformalized and
+    not yet attempted (it needs the paper's appendix restatement of [KKH26]); Theorem 3.16 stays
+    unformalized **by decision** — it needs a computational-hardness framework.
+  - Fidelity gaps to close, in rough priority order: (i) Lemma 3.7 / Corollary 3.8 / Theorem 3.10 are
     stated for linear codes over a field, whereas the paper states them for an arbitrary code
     `C : Σ^k → Σ^n` — for Lemma 3.7 the generalisation is nearly free, since linearity is used once;
-    (iii) Theorem 3.9 formalizes the arithmetic step but not [ST20]'s implication
-    *list-decodable ⇒ rate–radius relation*, which is where that theorem's content lies.
-  - **Theorem 3.15** stays unformalized by decision: it needs a computational-hardness framework.
+    (ii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ`, and its `∃ n₀`
+    placement forfeits the paper's `η = Θ(1/n)` corollary; (iii) Theorem 3.12 is stated at real
+    `α, β` where [BKR06] needs them rational, and the rounding shortfall is polynomial, so that
+    admit may be false as stated; (iv) Theorem 3.11 is one stronger than [GLMRSW22]'s strict-`<L`
+    definition, faithfully to [ABF26]'s printing.
+  - **Two paper defects found in §3 and owed upstream**: Theorem 3.9 drops [ST20]'s integrality
+    convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
+    either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
+    [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
 - **L2.10.** The interleaved-code list-size comparison (`[GGR11]`) is still absent.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
