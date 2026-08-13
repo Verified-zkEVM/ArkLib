@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Katerina Hristova, František Silváši, Julian Sutherland
+Authors: Katerina Hristova, František Silváši, Julian Sutherland,
+         Alexander Hicks, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import Mathlib.InformationTheory.Hamming
@@ -80,9 +81,45 @@ The finiteness conjunct is necessary because `Set.ncard` assigns cardinality zer
 sets, which would make the bound vacuous over an infinite alphabet. The bound is kept real
 rather than natural to accommodate the Johnson bounds; flooring it is lossless
 (`Lambda_le_floor_iff_listDecodable`). -/
-def listDecodable (C : Code ι F) (r : ℝ) (ℓ : ℝ) : Prop :=
+def listDecodable (C : Code ι F) (r ℓ : ℝ) : Prop :=
   ∀ y : ι → F,
     (closeCodewordsRel C y r).Finite ∧ (closeCodewordsRel C y r).ncard ≤ ℓ
+
+/-- A code `C` is `(δ, L)`-list decodable if for every word `y` there are at most `L` codewords
+within relative Hamming distance `r` of `y`.
+This is phrased as "every finite set of such codewords has at most `ℓ` elements", which is
+equivalent to saying that the set `closeCodewordsRel C y r` is finite with at most `ℓ` elements. -/
+def listDecodable' (C : Code ι F) (r ℓ : ℝ) : Prop :=
+  ∀ y : ι → F, ∀ T : Finset (ι → F), (T : Set (ι → F)) ⊆ closeCodewordsRel C y r →
+    (T.card : ℝ) ≤ ℓ
+
+/-- If every finite subset of a set `S` has cardinality at most a real number `ℓ`, then `S` is
+finite. -/
+private lemma finite_of_forall_finset_card_le {α : Type*} {S : Set α} {ℓ : ℝ}
+  (h : ∀ T : Finset α, (T : Set α) ⊆ S → (T.card : ℝ) ≤ ℓ) : S.Finite := by
+  by_contra! hinf
+  obtain ⟨T, hTS, hTcard⟩ := Set.Infinite.exists_subset_card_eq hinf (⌊ℓ⌋₊ + 1)
+  have := h T hTS
+  have hℓ0 : 0 ≤ ℓ := by grind
+  have : ⌊ℓ⌋₊ + 1 ≤ ℓ := by aesop
+  have := Nat.lt_floor_add_one ℓ
+  grind
+
+lemma listDecodable_iff_listDecodable' {C : Code ι F} {r ℓ : ℝ} :
+  listDecodable C r ℓ ↔ listDecodable' C r ℓ := by
+  constructor
+  · intro h y T hT
+    obtain ⟨hfin, hcard⟩ := h y
+    have := Set.ncard_le_ncard hT hfin
+    rw [Set.ncard_coe_finset] at this
+    exact le_trans (by exact_mod_cast this) hcard
+  · intro h y
+    have hfin : (closeCodewordsRel C y r).Finite := finite_of_forall_finset_card_le (h y)
+    refine ⟨hfin, ?_⟩
+    have hsub : (hfin.toFinset : Set (ι → F)) ⊆ closeCodewordsRel C y r := by
+      simp [Set.Finite.coe_toFinset]
+    have hcard := h y hfin.toFinset hsub
+    rwa [Set.ncard_eq_toFinset_card _ hfin]
 
 /-- A code `C` is uniquely decodable up to a relative distance `r` if for any word `y : ι → F`,
 there is at most one codeword in `C` within a relative Hamming distance of `r`.
