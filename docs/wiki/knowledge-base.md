@@ -33,7 +33,7 @@ The current KB policy is:
 
 ## Maintenance Rules
 
-- `blueprint/src/references.bib` is still the bibliographic source of truth.
+- `blueprint/src/references.bib` is the bibliographic source of truth.
 - The BibTeX key is the canonical identifier across Lean, bibliography, and KB pages.
 - Feature PRs should not commit `docs/kb/_generated/**`; generated-files PRs from the
   main-branch KB workflow refresh those files.
@@ -43,15 +43,19 @@ The current KB policy is:
 
 ## Review Integration
 
-For `.github/workflows/review.yml`, attach:
+`.github/workflows/review.yml` resolves the citation keys of the changed Lean files from
+`docs/kb/_generated/lean-citations.json` on the base ref and passes the corresponding
+`docs/kb/papers/KEY.md` pages to the reviewer as `spec_refs`. A `/review` comment can add to that:
 
-- KB paper pages via `repo_context_refs`;
-- KB audit pages for deep source-to-code comparison;
-- public paper URLs via `external_refs` when raw source text is needed.
+- lines under `Internal:` are merged into `spec_refs`, so this is where to attach an audit page or
+  any KB page the automatic resolution misses;
+- lines under `External:` and `Comments:` become free-text instructions, so this is where public
+  paper URLs go.
 
-This keeps review prompts grounded in repository-local context instead of rebuilding it ad hoc.
+Because the resolution reads the base ref, a paper page added in the same PR is not picked up
+automatically — attach it under `Internal:`.
 
-For local preparation of those fields, use:
+To prepare a comment body locally, use:
 
 ```bash
 python3 ./scripts/kb/review_context.py \
@@ -59,10 +63,10 @@ python3 ./scripts/kb/review_context.py \
   --format review
 ```
 
-or pass explicit keys with `--keys BCIKS20,ACFY24`.
+or pass explicit keys with `--keys BCIKS20,ACFY24`. The helper reads the committed
+`lean-citations.json`, so a file whose citations changed in the working tree needs `--keys`.
 
-The helper emits a normal `/review` comment body using the sections supported by the current
-workflow:
+The helper emits a `/review` comment body in the sections the workflow parses:
 
 ```text
 /review

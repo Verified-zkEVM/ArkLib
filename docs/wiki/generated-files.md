@@ -19,8 +19,8 @@ Edit the source of truth, not the output.
 
 ## Important Notes
 
-- `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files and now fails fast if
-  untracked Lean files would be skipped.
+- `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
+  untracked Lean files would be skipped. `git add` new paths before running validation.
 - Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
   generated-files PRs opened from `.github/workflows/kb-generated.yml`.
 - Missing cited-paper stubs under `docs/kb/papers/` and `docs/kb/sources/` are also scaffolded by

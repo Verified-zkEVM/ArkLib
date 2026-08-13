@@ -37,7 +37,6 @@ lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : �
     (hT : ∀ c ∈ T, c ∈ closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
       (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)) :
     (T.card : ℝ) ≤ 1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ)) := by
-  classical
   set s : ℝ := (ReedSolomon.sqrtRate m domain : ℝ) with hs
   set n : ℝ := (Fintype.card ι : ℝ) with hn
   have hcard : 0 < Fintype.card ι := Fintype.card_pos

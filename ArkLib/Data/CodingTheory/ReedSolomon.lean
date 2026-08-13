@@ -62,6 +62,29 @@ lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
 
+/-- If a linear encoder `enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation at
+its single index, `enc p x 0 = p.eval (domain x)`, then the code it cuts out of
+`Polynomial.degreeLT F k` is `code domain k`, up to erasing the trivial `Fin 1` index.
+
+This is the shared content of the degenerate-parameter collapse for the Reed-Solomon
+variants over the alphabet `Fin s → F`. -/
+lemma mem_map_degreeLT_one_iff_mem_code [CommSemiring F] (k : ℕ)
+    (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
+    (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))
+    (f : ι → Fin 1 → F) :
+    f ∈ (Polynomial.degreeLT F k).map enc ↔ (fun x ↦ f x 0) ∈ code domain k := by
+  simp only [Submodule.mem_map, code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact ⟨p, hp, funext fun x ↦ (henc p x).symm⟩
+  · rintro ⟨p, hp, hp_eval⟩
+    refine ⟨p, hp, ?_⟩
+    funext x j
+    have hj : j = 0 := Subsingleton.elim _ _
+    subst hj
+    rw [henc p x]
+    exact congrFun hp_eval x
+
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) [Semiring F] : Matrix (Fin deg) ι F :=
   .of fun i j => domain j ^ (i : ℕ)
@@ -582,7 +605,7 @@ theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [Dec
 
 
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
   {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by
   simp only [IsMDS, Submodule.carrier_eq_coe, length_eq_domain_card]
   rw [dist_eq_minDist, minDist_eq_card_sub_min_add_1, dim_eq_min_deg_card]

@@ -15,6 +15,7 @@ namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory Code
 open scoped BigOperators LinearCode ProbabilityTheory
+open Probability
 
 section CoreResults
 

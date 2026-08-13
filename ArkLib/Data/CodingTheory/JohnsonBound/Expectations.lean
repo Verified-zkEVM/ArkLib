@@ -30,6 +30,12 @@ def e (B : Finset (Fin n → F)) (v : Fin n → F) : ℚ :=
 def d (B : Finset (Fin n → F)) : ℚ :=
   (1 : ℚ) / (2 * choose_2 B.card) * ∑ x ∈ B ×ˢ B with x.1 ≠ x.2, Δ₀(x.1, x.2)
 
+/-! ### Recentering by subtraction, over a field
+
+The `lin_shift_*` lemmas recenter a code by the field subtraction `x ↦ x - v`. The
+alphabet-general form of the same transport is `card_image_piCongrRight`,
+`e_image_piCongrRight` and `d_image_piCongrRight` at the end of this file. -/
+
 @[simp]
 lemma lin_shift_card [Field F] [Fintype F] :
     B.card = ({ x - v | x ∈ B } : Finset _).card := by
@@ -58,7 +64,7 @@ lemma lin_shift_d [Field F] [Fintype F] (h_B : 2 ≤ B.card) :
   apply sum_bij (fun x _ => (x.1 - v, x.2 - v)) <;> try aesop
 
 @[simp]
-lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
+lemma e_ball_le_radius [Fintype F] {B : Finset (Fin n → F)} (v : Fin n → F) (r : ℚ)
     (h_B : (B ∩ ({ x | Δ₀(x, v) ≤ r } : Finset _)).card > 0) :
     e (B ∩ ({ x | Δ₀(x, v) ≤ r } : Finset _)) v ≤ r := by
   unfold e
@@ -81,7 +87,7 @@ lemma e_ball_le_radius [Field F] [Fintype F] {B : Finset (Fin n → F)} (v : Fin
     by exact_mod_cast h_B
   exact_mod_cast h3
 
-lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)} (h_B : B.card > 1) :
+lemma min_dist_le_d {B : Finset (Fin n → F)} (h_B : B.card > 1) :
     sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d } ≤ d B := by
   unfold d
   let d_weak := sInf { d | ∃ u ∈ B, ∃ v ∈ B, u ≠ v ∧ hammingDist u v = d }
@@ -132,5 +138,49 @@ lemma min_dist_le_d [Field F] {B : Finset (Fin n → F)} (h_B : B.card > 1) :
   simp at h_bound
   gcongr
   grind only
+
+/-! ## Coordinatewise transport
+
+Recentering without field structure: transport a code through a per-coordinate family of
+equivalences `σ : Fin n → (F ≃ G)`, applied by `Equiv.piCongrRight σ`. Each `σ i` being
+injective, this preserves Hamming distance and hence `e`, `d` and cardinalities. Choosing
+`σ i` to send the centre's `i`-th coordinate to a fixed symbol recenters at that symbol. -/
+
+omit [DecidableEq F] in
+lemma card_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) :
+    (B.image (Equiv.piCongrRight σ)).card = B.card :=
+  Finset.card_image_of_injective B (Equiv.piCongrRight σ).injective
+
+lemma e_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) (v : Fin n → F) :
+    e (B.image (Equiv.piCongrRight σ)) (Equiv.piCongrRight σ v) = e B v := by
+  simp only [e, card_image_piCongrRight]
+  congr 1
+  rw [Finset.sum_image (fun x _ y _ h => (Equiv.piCongrRight σ).injective h)]
+  norm_cast
+  refine Finset.sum_congr rfl fun x _ => ?_
+  exact hammingDist_comp (fun i => (σ i : F → G)) (fun i => (σ i).injective)
+
+lemma d_image_piCongrRight {G : Type*} [DecidableEq G] (σ : Fin n → (F ≃ G))
+    (B : Finset (Fin n → F)) :
+    d (B.image (Equiv.piCongrRight σ)) = d B := by
+  simp only [d, card_image_piCongrRight]
+  congr 1
+  have hprod : (B.image (Equiv.piCongrRight σ)) ×ˢ (B.image (Equiv.piCongrRight σ))
+      = (B ×ˢ B).image (Prod.map (Equiv.piCongrRight σ) (Equiv.piCongrRight σ)) := by
+    rw [Finset.prodMap_image_product]
+  rw [hprod, Finset.sum_filter, Finset.sum_image (fun x _ y _ h =>
+    Prod.ext ((Equiv.piCongrRight σ).injective (congrArg Prod.fst h))
+      ((Equiv.piCongrRight σ).injective (congrArg Prod.snd h)))]
+  rw [Finset.sum_filter]
+  norm_cast
+  refine Finset.sum_congr rfl fun x _ => ?_
+  simp only [Prod.map_fst, Prod.map_snd]
+  by_cases h : x.1 = x.2
+  · simp [h]
+  · rw [if_pos (show ¬ (Equiv.piCongrRight σ) x.1 = (Equiv.piCongrRight σ) x.2 from
+        fun hc => h ((Equiv.piCongrRight σ).injective hc)), if_pos h]
+    exact hammingDist_comp (fun i => (σ i : F → G)) (fun i => (σ i).injective)
 
 end JohnsonBound
