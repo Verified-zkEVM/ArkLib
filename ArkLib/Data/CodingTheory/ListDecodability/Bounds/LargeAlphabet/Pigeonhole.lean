@@ -34,7 +34,18 @@ open Code
 
 namespace LargeAlphabetBarrier
 
-theorem common_disagreement_intersection : CommonDisagreementIntersection := by
+/-- **Many large sets share a large `ℓ`-wise intersection.** Given `M ≥ ⌈4ℓ²/p⌉` subsets of the
+coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^ℓ/4)·n⌉` coordinates.
+This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
+theorem common_disagreement_intersection :
+    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+        (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
+        ∀ S : Fin M → Finset ι,
+          (∀ j, Nat.floor (p * Fintype.card ι) < (S j).card) →
+          ∃ J : Finset (Fin M), J.card = ℓ ∧
+            Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
+              ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard := by
   classical
   intro ℓ hℓ p hp hp_lt ι _ _ M hM S hS
   let n := Fintype.card ι
@@ -227,7 +238,20 @@ theorem balanced_center_from_far_family
   simpa only [u] using hyu k
 
 open _root_.Code in
-theorem local_neighborhood_bound : LocalNeighborhoodBound := by
+/-- **The local neighbourhood bound.** A list size of at most `ℓ` at radius `p` caps how many
+codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ²/p⌉`. Proved by feeding
+the balanced-centre construction a hypothetical excess. -/
+theorem local_neighborhood_bound :
+    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+      ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+        {A : Type} [Fintype A] [DecidableEq A]
+        (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
+        8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
+        ∀ c ∈ C,
+          ({x : ι → A | x ∈ C ∧
+            hammingDist c x ≤
+              Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
+            ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p) := by
   classical
   intro ℓ hℓ p hp hp_lt ι _ _ _ A _ _ C hLambda hsize c hc
   let n := Fintype.card ι

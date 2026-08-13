@@ -76,19 +76,6 @@ structure BarrierParameters (ℓ n radius boosted : ℕ) where
   other_codeword_bound : n - dZero - dOne - aFamily ≤ radius
   repeated_codeword_contradiction : n - aUnion < boosted
 
-/-- **Many large sets share a large `ℓ`-wise intersection.** Given `M ≥ ⌈4ℓ²/p⌉` subsets of the
-coordinates each of size `> p·n`, some `ℓ` of them meet in at least `⌈(3p^ℓ/4)·n⌉` coordinates.
-This is what lets a balanced centre be built from `ℓ` nearby codewords. -/
-def CommonDisagreementIntersection : Prop :=
-  ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (M : ℕ), Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
-      ∀ S : Fin M → Finset ι,
-        (∀ j, Nat.floor (p * Fintype.card ι) < (S j).card) →
-        ∃ J : Finset (Fin M), J.card = ℓ ∧
-          Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
-            ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard
-
 /-- A block structure on the coordinates: one `zero` block of size `dZero` and `ℓ` further pairwise
 disjoint blocks of size `dOne`, all disjoint from `zero`. -/
 structure CoordinateBlocks (ι : Type) [DecidableEq ι]
@@ -99,75 +86,6 @@ structure CoordinateBlocks (ι : Type) [DecidableEq ι]
   card_other : ∀ j, (other j).card = dOne
   zero_disjoint : ∀ j, Disjoint zero (other j)
   other_disjoint : ∀ i j, i ≠ j → Disjoint (other i) (other j)
-
-/-- Such blocks exist whenever the coordinates can hold them, `dZero + ℓ · dOne ≤ n`. -/
-def CoordinateBlocksExistence : Prop :=
-  ∀ (ℓ dZero dOne : ℕ),
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι],
-      dZero + ℓ * dOne ≤ Fintype.card ι →
-      ∃ _blocks : CoordinateBlocks ι ℓ dZero dOne, True
-
-/-- The coordinates a block structure uses number exactly `dZero + ℓ · dOne`. -/
-def CoordinateBlocksUsedCard : Prop :=
-  ∀ (ℓ dZero dOne : ℕ),
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : CoordinateBlocks ι ℓ dZero dOne),
-      let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
-      used.card = dZero + ℓ * dOne
-
-/-- A set of size at least `k · t` contains `k` pairwise disjoint subsets of size `t`. -/
-def DisjointEqualBlocks : Prop :=
-  ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-    (S : Finset ι) (k t : ℕ), k * t ≤ S.card →
-      ∃ blocks : Fin k → Finset ι,
-        (∀ j, blocks j ⊆ S) ∧
-        (∀ j, (blocks j).card = t) ∧
-        ∀ i j, i ≠ j → Disjoint (blocks i) (blocks j)
-
-/-- **Small fibers force a large image.** If every fiber of `f` on `s` has fewer than `W` elements
-and `W · ℓ ≤ |s|`, then `f` takes at least `ℓ` distinct values on `s`. -/
-def DistinctAlternativesOfBoundedFibers : Prop :=
-  ∀ {α β : Type} [DecidableEq α] [DecidableEq β]
-    (s : Finset α) (f : α → β) (W ℓ : ℕ), 0 < W →
-      W * ℓ ≤ s.card →
-      (∀ y, (s.filter fun x => f x = y).card < W) →
-      ℓ ≤ (s.image f).card
-
-/-- Double counting `ℓ`-subsets of set-indices against coordinates:
-`∑ᵢ C(incidence i, ℓ) = ∑_{|J| = ℓ} |{i : i ∈ S j for all j ∈ J}|`. -/
-def IncidenceDoubleCount : Prop :=
-  ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
-    (ℓ : ℕ) (S : κ → Finset ι),
-    let incidence : ι → ℕ := fun i => (Finset.univ.filter fun j => i ∈ S j).card
-    let common : Finset κ → Finset ι := fun J =>
-      Finset.univ.filter fun i => ∀ j ∈ J, i ∈ S j
-    ∑ i, Nat.choose (incidence i) ℓ =
-      ∑ J ∈ Finset.univ.powersetCard ℓ, (common J).card
-
-/-- From a bound on the *mean* incidence to a bound on its `ℓ`-th binomial moment:
-`p·M·n ≤ ∑ᵢ aᵢ` implies `(3p^ℓ/4) · C(M, ℓ) · n ≤ ∑ᵢ C(aᵢ, ℓ)`, by convexity once `M ≥ ⌈4ℓ²/p⌉`. -/
-def IncidenceMomentLower : Prop :=
-  ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p → p < 1 →
-    Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
-    ∀ a : Fin n → ℕ,
-      p * M * n ≤ ∑ i, (a i : ℝ) →
-      (3 * p ^ ℓ / 4) * Nat.choose M ℓ * n ≤
-        ∑ i, (Nat.choose (a i) ℓ : ℝ)
-
-/-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
-`M ≥ ⌈4ℓ²/p⌉`. -/
-def IncidencePowerGap : Prop :=
-  ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
-    Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
-    (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
-      (p * M - (ℓ - 1)) ^ ℓ
-
-/-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
-def IncidenceSumDoubleCount : Prop :=
-  ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
-    [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
-    ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
-      ∑ j, (S j).card
 
 /-- A **large-union family**: a finite family of coordinate sets, all of size `aFamily`, such that
 *any* `W` of them already cover at least `aUnion` coordinates. The barrier uses one to force a
@@ -188,29 +106,6 @@ def LargeUnionExistence : Prop :=
         ∃ family : LargeUnionFamily (Fin m) W
           (Nat.floor (α * m)) (Nat.ceil (β * m)),
           (2 : ℝ) ^ (γ * m) ≤ family.sets.card
-
-/-- A large-union family can be reparametrised to nearby sizes `a₁ ≥ a₀`, `b₁ ≤ b₀`, at the cost
-of a factor `W` in the number of sets. -/
-def LargeUnionFamilyResize : Prop :=
-  ∀ (W a₀ b₀ a₁ b₁ : ℕ), 0 < W → a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι], a₁ ≤ Fintype.card ι →
-      ∀ source : LargeUnionFamily ι W a₀ b₀,
-        ∃ target : LargeUnionFamily ι W a₁ b₁,
-          source.sets.card ≤ W * target.sets.card
-
-/-- A large-union family on `Fin m` transports to one on the *unused* coordinates of a block
-structure, keeping its size and staying disjoint from every block. -/
-def LargeUnionFamilyTransport : Prop :=
-  ∀ (ℓ dZero dOne W aFamily aUnion : ℕ),
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : CoordinateBlocks ι ℓ dZero dOne),
-      let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
-      ∀ (m : ℕ), m = Fintype.card ι - used.card →
-        ∀ source : LargeUnionFamily (Fin m) W aFamily aUnion,
-          ∃ target : LargeUnionFamily ι W aFamily aUnion,
-            target.sets.card = source.sets.card ∧
-            ∀ S ∈ target.sets, Disjoint S blocks.zero ∧
-              ∀ j, Disjoint S (blocks.other j)
 
 /-- The barrier's parameters after rounding to integers: radius, boosted radius, block sizes, the
 used and unused coordinate counts, and the family's set and union sizes. -/
@@ -250,31 +145,6 @@ def DeterministicPigeonholeBound : Prop :=
         family.sets.card ≤
           2 * params.W * ℓ * Fintype.card A ^ params.dZero
 
-/-- **Greedy extraction of a separated subcode.** If every ball of radius `d` around a codeword
-holds at most `B` codewords, then `C` has a `(d+1)`-separated subset `D` with `|C| ≤ B · |D|`. -/
-def GreedySeparatedExtraction : Prop :=
-  ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
-    (C : Set (ι → A)) (d B : ℕ), C.Finite →
-    (∀ c ∈ C,
-      ({x : ι → A | x ∈ C ∧ hammingDist c x ≤ d} : Set (ι → A)).ncard ≤ B) →
-    ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ separated D (d + 1) ∧
-      C.ncard ≤ B * D.ncard
-
-/-- The mean of the shifted incidences `aᵢ + 1 − ℓ` is at least `p·M − (ℓ−1)`. -/
-def ShiftedIncidenceMeanLower : Prop :=
-  ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n →
-    ∀ a : Fin n → ℕ,
-      p * M * n ≤ ∑ i, (a i : ℝ) →
-      p * M - (ℓ - 1) ≤
-        (∑ i, ((a i + 1 - ℓ : ℕ) : ℝ)) / n
-
-/-- The binomial ratio estimate behind the sparse count:
-`C(b−1, a) / C(m, a) ≤ ((b−1)/(m+1−a))^a`. -/
-def SparseChooseRatioBound : Prop :=
-  ∀ (m a b : ℕ), a ≤ b - 1 → b - 1 ≤ m →
-    ((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ≤
-      ((((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) ^ a)
-
 /-- The *sparse* large-union existence statement, at `α + β < 1` rather than `β < 1`. This is the
 regime the barrier needs, and it is what the numerics below deliver. -/
 def SparseLargeUnionExistence : Prop :=
@@ -300,19 +170,6 @@ def SparseLargeUnionNumerics : Prop :=
             Nat.choose m a ^ T ∧
           W * Nat.ceil ((2 : ℝ) ^ (γ * m)) ≤ T
 
-/-- The numerics imply sparse existence — the probabilistic-method step, done by counting. -/
-def SparseLargeUnionExistenceOfNumerics : Prop :=
-  SparseLargeUnionNumerics → SparseLargeUnionExistence
-
-/-- The unused coordinates of a block structure are in bijection with `Fin` of their number, which
-is how a family built on `Fin m` is transported onto them. -/
-def UnusedCoordinatesEquivFin : Prop :=
-  ∀ (ℓ dZero dOne : ℕ),
-    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
-      (blocks : CoordinateBlocks ι ℓ dZero dOne),
-      let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
-      Nonempty (Fin (Fintype.card ι - used.card) ≃ {i : ι // i ∉ used})
-
 theorem alphabet_card_ge_rpow_of_alpha_le_eta
     (α η : ℝ) (hη_pos : 0 < η) (hαη : α ≤ η)
     {A : Type} [Fintype A] (hcard : 2 ≤ Fintype.card A) :
@@ -336,33 +193,14 @@ noncomputable def badIndexedFamilies
     ∃ J : Finset (Fin T), J.card = W ∧
       (J.biUnion fun j => (A j).1).card < b
 
-/-- Counting the bad families: at most `C(T,W) · C(m,b−1) · C(b−1,a)^W · C(m,a)^(T−W)`, obtained by
-choosing the witnessing `W` indices and the `(b−1)`-set covering them. -/
-def BadIndexedFamiliesCardBound : Prop :=
-  ∀ (m a T W b : ℕ), 0 < W → W ≤ T → 0 < b → b ≤ m → a < b →
-    (badIndexedFamilies m a T W b).card ≤
-      Nat.choose T W * Nat.choose m (b - 1) *
-        Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
-
 /-- Every bad family admits a witness: `W` indices and a set of size `b−1` containing all of their
 sets. -/
-def BadIndexedFamiliesWitnessCover : Prop :=
-  ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
-    ∀ A ∈ badIndexedFamilies m a T W b,
-      ∃ J : Finset (Fin T), ∃ U : Finset (Fin m),
-        J.card = W ∧ U.card = b - 1 ∧
-          ∀ j ∈ J, (A j).val ⊆ U
-
-/-- A family that is *not* bad yields a large-union family, with `T ≤ W · |family.sets|`. -/
-def GoodIndexedFamilyToLargeUnionFamily : Prop :=
-  ∀ (m a T W b : ℕ), 0 < W → a < b →
-    ∀ A : Fin T → {S : Finset (Fin m) // S.card = a},
-      A ∉ badIndexedFamilies m a T W b →
-      ∃ family : LargeUnionFamily (Fin m) W a b,
-        T ≤ W * family.sets.card
-
 theorem bad_indexed_families_witness_cover :
-    BadIndexedFamiliesWitnessCover := by
+    ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
+      ∀ A ∈ badIndexedFamilies m a T W b,
+        ∃ J : Finset (Fin T), ∃ U : Finset (Fin m),
+          J.card = W ∧ U.card = b - 1 ∧
+            ∀ j ∈ J, (A j).val ⊆ U := by
   classical
   intro m a T W b hb hbm A hA
   have hbad := (Finset.mem_filter.mp hA).2
@@ -417,37 +255,6 @@ theorem barrier_k_slack
 balanced-centre construction needs. -/
 noncomputable def boostedRadius (ℓ : ℕ) (p : ℝ) : ℝ :=
   p + p ^ ℓ / (2 * ℓ)
-
-/-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
-boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
-radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
-def BalancedCenterConstruction : Prop :=
-  ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-    ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
-      (c : ι → A) (v : Fin ℓ → ι → A),
-      (∀ j, hammingDist c (v j) ≤
-        Nat.floor (boostedRadius ℓ p * Fintype.card ι)) →
-      8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
-      Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
-        ({i : ι | ∀ j, c i ≠ v j i} : Set ι).ncard →
-      ∃ y : ι → A,
-        hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
-        ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι)
-
-/-- **The local neighbourhood bound.** A list size of at most `ℓ` at radius `p` caps how many
-codewords sit within the *boosted* radius of any one codeword, at `ℓ + ⌈4ℓ²/p⌉`. Proved by feeding
-the balanced-centre construction a hypothetical excess. -/
-def LocalNeighborhoodBound : Prop :=
-  ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
-    ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-      {A : Type} [Fintype A] [DecidableEq A]
-      (C : Set (ι → A)), Lambda C p ≤ (ℓ : ℕ∞) →
-      8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
-      ∀ c ∈ C,
-        ({x : ι → A | x ∈ C ∧
-          hammingDist c x ≤
-            Nat.floor (boostedRadius ℓ p * Fintype.card ι)} : Set (ι → A)).ncard
-          ≤ ℓ + Nat.ceil (4 * ((ℓ : ℝ) ^ 2) / p)
 
 theorem balanced_center_arithmetic
     (ℓ : ℕ) (p : ℝ) (n : ℕ) (hℓ : 2 ≤ ℓ) (hp : 0 < p) (hp_lt : p < 1)
@@ -610,22 +417,12 @@ noncomputable def constrainedIndexedFamilies
   exact Finset.univ.filter fun A => ∀ j ∈ J, (A j).1 ⊆ U
 
 /-- Every bad family lies in one of the constrained classes, indexed by its witness `(J, U)`. -/
-def BadIndexedFamiliesSubsetCover : Prop :=
-  ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
-    badIndexedFamilies m a T W b ⊆
-      (Finset.univ.powersetCard W).biUnion fun J =>
-        (Finset.univ.powersetCard (b - 1)).biUnion fun U =>
-          constrainedIndexedFamilies m a T J U
-
-/-- The exact size of a constrained class: `C(b−1, a)^W · C(m, a)^(T−W)`. -/
-def ConstrainedIndexedFamiliesCard : Prop :=
-  ∀ (m a T W b : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)),
-    J.card = W → U.card = b - 1 →
-    (constrainedIndexedFamilies m a T J U).card =
-      Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W)
-
 theorem bad_indexed_families_subset_cover :
-    BadIndexedFamiliesSubsetCover := by
+    ∀ (m a T W b : ℕ), 0 < b → b ≤ m →
+      badIndexedFamilies m a T W b ⊆
+        (Finset.univ.powersetCard W).biUnion fun J =>
+          (Finset.univ.powersetCard (b - 1)).biUnion fun U =>
+            constrainedIndexedFamilies m a T J U := by
   classical
   intro m a T W b hb hbm A hA
   obtain ⟨J, U, hJcard, hUcard, hconstrained⟩ :=
@@ -642,7 +439,12 @@ theorem bad_indexed_families_subset_cover :
         Finset.mem_univ, true_and]
       exact hconstrained
 
-theorem coordinate_blocks_exists : CoordinateBlocksExistence := by
+/-- Such blocks exist whenever the coordinates can hold them, `dZero + ℓ · dOne ≤ n`. -/
+theorem coordinate_blocks_exists :
+    ∀ (ℓ dZero dOne : ℕ),
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι],
+        dZero + ℓ * dOne ≤ Fintype.card ι →
+        ∃ _blocks : CoordinateBlocks ι ℓ dZero dOne, True := by
   classical
   intro ℓ dZero dOne ι _ _ htotal
   let total := dZero + ℓ * dOne
@@ -728,7 +530,13 @@ theorem coordinate_blocks_exists : CoordinateBlocksExistence := by
         simpa only [Nat.add_assoc] using hv.symm
       exact (Nat.ne_of_lt hlt) hv'
 
-theorem coordinate_blocks_used_card : CoordinateBlocksUsedCard := by
+/-- The coordinates a block structure uses number exactly `dZero + ℓ · dOne`. -/
+theorem coordinate_blocks_used_card :
+    ∀ (ℓ dZero dOne : ℕ),
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+        (blocks : CoordinateBlocks ι ℓ dZero dOne),
+        let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
+        used.card = dZero + ℓ * dOne := by
   classical
   intro ℓ dZero dOne ι _ _ blocks
   dsimp
@@ -746,7 +554,14 @@ theorem coordinate_blocks_used_card : CoordinateBlocksUsedCard := by
   simp only [blocks.card_zero, blocks.card_other, Finset.sum_const_nat,
     Finset.card_univ, Fintype.card_fin]
 
-theorem disjoint_equal_blocks : DisjointEqualBlocks := by
+/-- A set of size at least `k · t` contains `k` pairwise disjoint subsets of size `t`. -/
+theorem disjoint_equal_blocks :
+    ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+      (S : Finset ι) (k t : ℕ), k * t ≤ S.card →
+        ∃ blocks : Fin k → Finset ι,
+          (∀ j, blocks j ⊆ S) ∧
+          (∀ j, (blocks j).card = t) ∧
+          ∀ i j, i ≠ j → Disjoint (blocks i) (blocks j) := by
   classical
   intro ι _ _ S k t hcard
   have htotal : 0 + k * t ≤ Fintype.card S := by
@@ -770,8 +585,14 @@ theorem disjoint_equal_blocks : DisjointEqualBlocks := by
     subst b
     exact (Finset.disjoint_left.mp (base.other_disjoint i j hij)) ha hb
 
+/-- **Small fibers force a large image.** If every fiber of `f` on `s` has fewer than `W` elements
+and `W · ℓ ≤ |s|`, then `f` takes at least `ℓ` distinct values on `s`. -/
 theorem distinct_alternatives_of_bounded_fibers :
-    DistinctAlternativesOfBoundedFibers := by
+    ∀ {α β : Type} [DecidableEq α] [DecidableEq β]
+      (s : Finset α) (f : α → β) (W ℓ : ℕ), 0 < W →
+        W * ℓ ≤ s.card →
+        (∀ y, (s.filter fun x => f x = y).card < W) →
+        ℓ ≤ (s.image f).card := by
   intro α β _ _ s f W ℓ hW hcard hfiber
   have hsle : s.card ≤ W * (s.image f).card := by
     apply Finset.card_le_mul_card_image s W
@@ -837,8 +658,12 @@ theorem fixed_subset_inside_card (m a : ℕ) (U : Finset (Fin m)) :
       aesop
     _ = Nat.choose U.card a := Finset.card_powersetCard a U
 
+/-- The exact size of a constrained class: `C(b−1, a)^W · C(m, a)^(T−W)`. -/
 theorem constrained_indexed_families_card :
-    ConstrainedIndexedFamiliesCard := by
+    ∀ (m a T W b : ℕ) (J : Finset (Fin T)) (U : Finset (Fin m)),
+      J.card = W → U.card = b - 1 →
+      (constrainedIndexedFamilies m a T J U).card =
+        Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W) := by
   classical
   intro m a T W b J U hJ hU
   let inside : Finset {S : Finset (Fin m) // S.card = a} :=
@@ -907,8 +732,13 @@ theorem constrained_indexed_families_card :
         Nat.choose m a ^ (T - W) := by
       rw [hJ, hU]
 
+/-- Counting the bad families: at most `C(T,W) · C(m,b−1) · C(b−1,a)^W · C(m,a)^(T−W)`, obtained by
+choosing the witnessing `W` indices and the `(b−1)`-set covering them. -/
 theorem bad_indexed_families_card_bound :
-    BadIndexedFamiliesCardBound := by
+    ∀ (m a T W b : ℕ), 0 < W → W ≤ T → 0 < b → b ≤ m → a < b →
+      (badIndexedFamilies m a T W b).card ≤
+        Nat.choose T W * Nat.choose m (b - 1) *
+          Nat.choose (b - 1) a ^ W * Nat.choose m a ^ (T - W) := by
   classical
   intro m a T W b hW hWT hb hbm hab
   let Js : Finset (Finset (Fin T)) := Finset.univ.powersetCard W
@@ -1035,8 +865,13 @@ theorem good_base_by_double_count
     hlower.trans_lt (by simpa only [Nat.mul_comm] using hupper)
   exact (Nat.lt_irrefl _ hcontra)
 
+/-- A family that is *not* bad yields a large-union family, with `T ≤ W · |family.sets|`. -/
 theorem good_indexed_family_to_large_union_family :
-    GoodIndexedFamilyToLargeUnionFamily := by
+    ∀ (m a T W b : ℕ), 0 < W → a < b →
+      ∀ A : Fin T → {S : Finset (Fin m) // S.card = a},
+        A ∉ badIndexedFamilies m a T W b →
+        ∃ family : LargeUnionFamily (Fin m) W a b,
+          T ≤ W * family.sets.card := by
   classical
   intro m a T W b hW hab A hgood
   let f : Fin T → Finset (Fin m) := fun j => (A j).1

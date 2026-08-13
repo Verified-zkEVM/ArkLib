@@ -43,7 +43,12 @@ theorem sparse_ceil_rpow_budget
     _ = (2 : ℝ) ^ (k / 2 : ℕ) := Real.rpow_natCast _ _
     _ = ((2 ^ (k / 2) : ℕ) : ℝ) := by norm_num
 
-theorem sparse_choose_ratio_bound : SparseChooseRatioBound := by
+/-- The binomial ratio estimate behind the sparse count:
+`C(b−1, a) / C(m, a) ≤ ((b−1)/(m+1−a))^a`. -/
+theorem sparse_choose_ratio_bound :
+    ∀ (m a b : ℕ), a ≤ b - 1 → b - 1 ≤ m →
+      ((Nat.choose (b - 1) a : ℝ) / Nat.choose m a) ≤
+        ((((b - 1 : ℕ) : ℝ) / ((m + 1 - a : ℕ) : ℝ)) ^ a) := by
   intro m a b hab hbm
   have ham : a ≤ m := hab.trans hbm
   have hchooseNat : 0 < Nat.choose m a := Nat.choose_pos ham
@@ -157,8 +162,9 @@ theorem sparse_floor_exponent_budget
     nlinarith
   exact_mod_cast hreal.le
 
+/-- The numerics imply sparse existence — the probabilistic-method step, done by counting. -/
 theorem sparse_large_union_existence_of_numerics :
-    SparseLargeUnionExistenceOfNumerics := by
+    SparseLargeUnionNumerics → SparseLargeUnionExistence := by
   intro hNumerics α β hα hαβ hsum
   obtain ⟨W, hW, γ, hγ, m₀, hnum⟩ :=
     hNumerics α β hα hαβ hsum
@@ -610,7 +616,14 @@ theorem large_union_existence : LargeUnionExistence := by
     (hAbsorb m hmAbsorb).trans (hsource.trans hresizeR)
   exact le_of_mul_le_mul_left hmul (by exact_mod_cast hW)
 
-theorem unused_coordinates_equiv_fin : UnusedCoordinatesEquivFin := by
+/-- The unused coordinates of a block structure are in bijection with `Fin` of their number, which
+is how a family built on `Fin m` is transported onto them. -/
+theorem unused_coordinates_equiv_fin :
+    ∀ (ℓ dZero dOne : ℕ),
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+        (blocks : CoordinateBlocks ι ℓ dZero dOne),
+        let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
+        Nonempty (Fin (Fintype.card ι - used.card) ≃ {i : ι // i ∉ used}) := by
   classical
   intro ℓ dZero dOne ι _ _ blocks
   dsimp
@@ -622,7 +635,19 @@ theorem unused_coordinates_equiv_fin : UnusedCoordinatesEquivFin := by
       right_inv := by intro x; rfl }
   exact ⟨(Finset.equivFinOfCardEq (Finset.card_compl used)).symm.trans ecomp⟩
 
-theorem large_union_family_transport : LargeUnionFamilyTransport := by
+/-- A large-union family on `Fin m` transports to one on the *unused* coordinates of a block
+structure, keeping its size and staying disjoint from every block. -/
+theorem large_union_family_transport :
+    ∀ (ℓ dZero dOne W aFamily aUnion : ℕ),
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι]
+        (blocks : CoordinateBlocks ι ℓ dZero dOne),
+        let used := blocks.zero ∪ Finset.univ.biUnion blocks.other
+        ∀ (m : ℕ), m = Fintype.card ι - used.card →
+          ∀ source : LargeUnionFamily (Fin m) W aFamily aUnion,
+            ∃ target : LargeUnionFamily ι W aFamily aUnion,
+              target.sets.card = source.sets.card ∧
+              ∀ S ∈ target.sets, Disjoint S blocks.zero ∧
+                ∀ j, Disjoint S (blocks.other j) := by
   classical
   intro ℓ dZero dOne W aFamily aUnion ι _ _ blocks
   dsimp

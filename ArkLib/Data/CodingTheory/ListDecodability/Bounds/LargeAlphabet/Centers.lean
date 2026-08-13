@@ -33,7 +33,15 @@ open Code
 
 namespace LargeAlphabetBarrier
 
-theorem greedy_separated_extraction : GreedySeparatedExtraction := by
+/-- **Greedy extraction of a separated subcode.** If every ball of radius `d` around a codeword
+holds at most `B` codewords, then `C` has a `(d+1)`-separated subset `D` with `|C| ≤ B · |D|`. -/
+theorem greedy_separated_extraction :
+    ∀ {ι A : Type} [Fintype ι] [DecidableEq A]
+      (C : Set (ι → A)) (d B : ℕ), C.Finite →
+      (∀ c ∈ C,
+        ({x : ι → A | x ∈ C ∧ hammingDist c x ≤ d} : Set (ι → A)).ncard ≤ B) →
+      ∃ D : Set (ι → A), D ⊆ C ∧ D.Finite ∧ separated D (d + 1) ∧
+        C.ncard ≤ B * D.ncard := by
   classical
   intro ι A _ _ C d B hC hlocal
   let s := hC.toFinset
@@ -216,7 +224,21 @@ theorem hamming_center_from_disjoint_blocks
       _ ≤ r' - t := Nat.sub_le_sub_right hDle t
       _ ≤ r := hother
 
-theorem balanced_center_construction : BalancedCenterConstruction := by
+/-- **Balanced centre from `ℓ` nearby codewords.** If `c` and `v 1, …, v ℓ` are pairwise within the
+boosted radius and they disagree with `c` on a large common set, then some single word `y` is within
+radius `p` of all of them — so the point list at `y` has `ℓ + 1` members. -/
+theorem balanced_center_construction :
+    ∀ (ℓ : ℕ), 2 ≤ ℓ → ∀ (p : ℝ), 0 < p → p < 1 →
+      ∀ {ι A : Type} [Fintype ι] [DecidableEq ι] [DecidableEq A]
+        (c : ι → A) (v : Fin ℓ → ι → A),
+        (∀ j, hammingDist c (v j) ≤
+          Nat.floor (boostedRadius ℓ p * Fintype.card ι)) →
+        8 * (ℓ : ℝ) ≤ p ^ ℓ * Fintype.card ι →
+        Nat.ceil ((3 * p ^ ℓ / 4) * Fintype.card ι) ≤
+          ({i : ι | ∀ j, c i ≠ v j i} : Set ι).ncard →
+        ∃ y : ι → A,
+          hammingDist c y ≤ Nat.floor (p * Fintype.card ι) ∧
+          ∀ j, hammingDist (v j) y ≤ Nat.floor (p * Fintype.card ι) := by
   classical
   intro ℓ hℓ p hp hp_lt ι A _ _ _ c v hdist hsize hcommonCard
   let n := Fintype.card ι
@@ -446,7 +468,16 @@ theorem barrier_center_from_blocks
     rw [hn, hEcard] at hd
     simpa only [Nat.sub_sub] using hd
 
-theorem incidence_double_count : IncidenceDoubleCount := by
+/-- Double counting `ℓ`-subsets of set-indices against coordinates:
+`∑ᵢ C(incidence i, ℓ) = ∑_{|J| = ℓ} |{i : i ∈ S j for all j ∈ J}|`. -/
+theorem incidence_double_count :
+    ∀ {ι κ : Type} [Fintype ι] [Fintype κ] [DecidableEq ι] [DecidableEq κ]
+      (ℓ : ℕ) (S : κ → Finset ι),
+      let incidence : ι → ℕ := fun i => (Finset.univ.filter fun j => i ∈ S j).card
+      let common : Finset κ → Finset ι := fun J =>
+        Finset.univ.filter fun i => ∀ j ∈ J, i ∈ S j
+      ∑ i, Nat.choose (incidence i) ℓ =
+        ∑ J ∈ Finset.univ.powersetCard ℓ, (common J).card := by
   classical
   intro ι κ _ _ _ _ ℓ S
   dsimp
@@ -483,7 +514,13 @@ theorem incidence_double_count : IncidenceDoubleCount := by
       congr 1
       simp only [Finset.subset_iff, Finset.mem_filter, Finset.mem_univ, true_and]
 
-theorem incidence_power_gap : IncidencePowerGap := by
+/-- The numeric slack the moment bound needs: `(3p^ℓ/4) · M^ℓ ≤ (p·M − (ℓ−1))^ℓ` once
+`M ≥ ⌈4ℓ²/p⌉`. -/
+theorem incidence_power_gap :
+    ∀ (ℓ M : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < p →
+      Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
+      (3 * p ^ ℓ / 4) * (M : ℝ) ^ ℓ ≤
+        (p * M - (ℓ - 1)) ^ ℓ := by
   intro ℓ M p hℓ hp hM
   have hℓR : (0 : ℝ) < ℓ := by
     exact_mod_cast (show 0 < ℓ by omega)
@@ -539,7 +576,12 @@ theorem incidence_power_gap : IncidencePowerGap := by
     _ = (q * (p * M)) ^ ℓ := by simp only [mul_pow]
     _ ≤ (p * M - ((ℓ : ℝ) - 1)) ^ ℓ := hpow
 
-theorem incidence_sum_double_count : IncidenceSumDoubleCount := by
+/-- Counting incidences two ways: `∑ᵢ #{j : i ∈ S j} = ∑_j |S j|`. -/
+theorem incidence_sum_double_count :
+    ∀ {ι κ : Type} [Fintype ι] [Fintype κ]
+      [DecidableEq ι] [DecidableEq κ] (S : κ → Finset ι),
+      ∑ i, (Finset.univ.filter fun j => i ∈ S j).card =
+        ∑ j, (S j).card := by
   classical
   intro ι κ _ _ _ _ S
   calc
@@ -648,7 +690,14 @@ theorem large_fiber_of_image_bound
   · exact hs.image f
   · exact himul
 
-theorem large_union_family_resize : LargeUnionFamilyResize := by
+/-- A large-union family can be reparametrised to nearby sizes `a₁ ≥ a₀`, `b₁ ≤ b₀`, at the cost
+of a factor `W` in the number of sets. -/
+theorem large_union_family_resize :
+    ∀ (W a₀ b₀ a₁ b₁ : ℕ), 0 < W → a₀ ≤ a₁ → a₁ < b₀ → b₁ ≤ b₀ →
+      ∀ {ι : Type} [Fintype ι] [DecidableEq ι], a₁ ≤ Fintype.card ι →
+        ∀ source : LargeUnionFamily ι W a₀ b₀,
+          ∃ target : LargeUnionFamily ι W a₁ b₁,
+            source.sets.card ≤ W * target.sets.card := by
   classical
   intro W a₀ b₀ a₁ b₁ hW ha hlt hb ι _ _ ha₁ source
   have hext : ∀ A ∈ source.sets,
@@ -1042,7 +1091,13 @@ theorem rounded_barrier_other_codeword_bound_core
     exact_mod_cast hsumReal
   omega
 
-theorem shifted_incidence_mean_lower : ShiftedIncidenceMeanLower := by
+/-- The mean of the shifted incidences `aᵢ + 1 − ℓ` is at least `p·M − (ℓ−1)`. -/
+theorem shifted_incidence_mean_lower :
+    ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n →
+      ∀ a : Fin n → ℕ,
+        p * M * n ≤ ∑ i, (a i : ℝ) →
+        p * M - (ℓ - 1) ≤
+          (∑ i, ((a i + 1 - ℓ : ℕ) : ℝ)) / n := by
   intro ℓ M n p hℓ hn a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
@@ -1063,7 +1118,15 @@ theorem shifted_incidence_mean_lower : ShiftedIncidenceMeanLower := by
   rw [le_div_iff₀ hnR]
   nlinarith
 
-theorem incidence_moment_lower : IncidenceMomentLower := by
+/-- From a bound on the *mean* incidence to a bound on its `ℓ`-th binomial moment:
+`p·M·n ≤ ∑ᵢ aᵢ` implies `(3p^ℓ/4) · C(M, ℓ) · n ≤ ∑ᵢ C(aᵢ, ℓ)`, by convexity once `M ≥ ⌈4ℓ²/p⌉`. -/
+theorem incidence_moment_lower :
+    ∀ (ℓ M n : ℕ) (p : ℝ), 2 ≤ ℓ → 0 < n → 0 < p → p < 1 →
+      Nat.ceil (4 * (ℓ : ℝ) ^ 2 / p) ≤ M →
+      ∀ a : Fin n → ℕ,
+        p * M * n ≤ ∑ i, (a i : ℝ) →
+        (3 * p ^ ℓ / 4) * Nat.choose M ℓ * n ≤
+          ∑ i, (Nat.choose (a i) ℓ : ℝ) := by
   intro ℓ M n p hℓ hn hp hp_lt hM a hsum
   have hnR : (0 : ℝ) < n := by
     exact_mod_cast hn
