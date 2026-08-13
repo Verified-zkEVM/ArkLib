@@ -118,7 +118,7 @@ equalities between two codes' list sizes** (`|Λ(C,δ)| ≤ |Λ(C^⋈m,δ)| ≤ 
 extension-code equality), and **arithmetic** on them (`binom(b+r,r)·|Λ|^r`). A `∀`/`ncard`
 predicate expresses only the first two rows of that list.
 
-Three consequences worth knowing before touching this layer:
+Consequences worth knowing before touching this layer:
 
 - **Do not add a second predicate for "the list is small."** Keeping one alongside the value is
   how the two came to disagree once already: a `Set.ncard`-based body is satisfied by an
@@ -144,6 +144,16 @@ Three consequences worth knowing before touching this layer:
   `ProximityGap/BCIKS20/AffineSpaces.lean`'s `rs_listDecoding_card_lt_field` inlines point-list
   membership instead of using `closeCodewordsRel`, and is really `Lambda (code domain deg) δ < |F|`
   — the `[ABF26]` statement, whose unified form already exists on the ABF26 branch.
+  `Lambda_lt_of_forall_finset_card_lt` is the lemma it would go through: its hypothesis is already
+  that theorem's, verbatim.
+- **Do not open `closeCodewordsRel` to reason about membership.** It is defined `open Classical in`,
+  so under an ambient `[DecidableEq F]` the two instances are definitionally but not syntactically
+  equal and neither `simp` nor a direct `Code.mem_relHammingBall_iff` rewrite crosses them.
+  `mem_closeCodewordsRel_iff` does the crossing once; use it rather than repeating the
+  `convert … using 2; congr` by hand.
+- **`Lambda` is a `⨆` but may be used as a `max`.** `exists_encard_eq_Lambda` (and its finite-
+  alphabet corollary) supplies the maximising word, which is what [ABF26] Lemma 6.12's proof
+  chooses. Do not add a hypothesis asserting the maximum exists.
 
 `exact`/`refine`/`apply` unify at default transparency and so see through `listDecodable` to the
 `Lambda` inequality; `simp` and `rw` match at reducible transparency and leave it folded. Keep it a
@@ -152,27 +162,63 @@ Three consequences worth knowing before touching this layer:
 `listDecodable.mono` unreachable via dot notation. (`omega` is no help either way — it has no `ℕ∞`
 support; a bare `by omega` on such a goal only ever succeeds through its assumption fallback.)
 
-**Why the radius stays `ℝ` while the bound is `ℝ≥0`.** The asymmetry is forced both ways. A
-negative list-size bound is meaningless. A negative *radius* is not — it is the empty ball, and it
-genuinely occurs: `1 - √ρ - η` is negative for large `η`, and
-`CodingTheory.mds_johnson_lambda_le_of_rate_distance` closes that corner by proving
-`Lambda C (1 - √ρ - η) = 0` there. An `ℝ≥0` radius would truncate it to `0`,
-where the point list is `{f}` rather than `∅`, changing the statement. All six predicate call sites
-already pass `ℝ≥0` for *both* arguments — three in `ProofSystem/Stir` here, three in
-`ProofSystem/Whir` on the branches where that development lives — so the bound's carrier costs no
-call-site edits.
+**Why the radius is `ℝ` while the bound is `ℝ≥0`.** These are two different objects, and each
+argument is about the object rather than about what the tree happens to contain.
 
-**Whether to keep the predicate at all is an open question, deliberately answered "yes for now."**
+The *radius* is a threshold on a total distance function, so `Lambda` is total in it, and every
+radius the literature names is an arithmetic expression (`1 - √ρ - η`, `ℓ/(ℓ+1)·(1 - ρ - η)`, a
+Johnson radius) that nothing constrains to `[0, 1]` or even to `ℝ≥0`. Narrowing the carrier only
+moves the obligation, and both discharges are worse: *truncating* replaces a negative radius by
+`0`, where the point list is `{f}` rather than `∅`, so a bound proved of the empty list gets
+asserted of a singleton — a silent meaning change in a reachable regime; *guarding* adds
+`0 ≤ 1 - √ρ - η` to statements whose mathematics does not need it, which is the anti-pattern two
+bullets up. A negative radius is not a degenerate case but the honest value: empty ball,
+`Lambda = 0`.
+
+The *bound* is a cardinality, where negative is unsatisfiable rather than weak — so `ℝ≥0` loses no
+statement worth making and drops `0 ≤ ℓ` from every transfer. It is real-valued rather than `ℕ∞`
+because the theorems that consume a list-decoding hypothesis reuse the same bound as a *number* in
+their conclusions — `|Λ(C, δ)| ≤ L` gives `ε_mca ≤ (L²δn + 1/η)/|F|` ([GCXK25] Theorem 3), STIR's
+out-of-domain sampling pays `L(L-1)/2` — so an `ℕ∞` hypothesis would force two variables and a
+coupling, reintroducing one level up the very problem this layer removes.
+
+That all six predicate call sites already pass `ℝ≥0` for *both* arguments — three in
+`ProofSystem/Stir` here, three in `ProofSystem/Whir` on the branches where that development lives —
+is a consequence of these being the right carriers, not the reason for choosing them. It does mean
+the change costs no call-site edits.
+
+**Where this layer deliberately differs from the `ε`-error layer.** The proximity-error functions
+take `δ : I` (the closed unit interval), because their sources define them only there. `Lambda`
+takes `δ : ℝ` and is total. That is not drift: `I` carries no `Sub`, so a radius written as
+`1 - √ρ - η` cannot be *formed* in it without a membership proof at every call site, and `Lambda`
+has meaning outside `[0, 1]` (below, the empty ball; at and above `1`, all of `C`) where an error
+probability does not. The coercion at the boundary — `GrandChallenges` writes
+`Lambda (C^⋈ m) (gridPt k : ℝ)` — is the honest record of that difference, not a defect to unify
+away.
+
+**Whether to keep the predicate at all is an open question, deliberately answered "yes."**
 The maximally unified option is to delete `listDecodable` and spell its six hypotheses
-`Lambda (C i) (δ i) ≤ ⌊l i⌋₊`. It was weighed and not taken: the literature-shaped name carries
-the `(δ, ℓ)`-list-decodable reading into STIR/WHIR hypothesis lists, and it gives the Johnson
-suppliers their natural name. Since the predicate is *definitionally* the inequality, nothing
-mathematical rests on the choice and it can be revisited later; the cost of revisiting is editing
-those six hypotheses. The same applies to the names in this layer (`Lambda` for a term, lowerCamel
-`listDecodable` for a `Prop`): both are within existing local precedent — the subtree already has
-`J`, `Jqℓ`, `Jcap` for paper symbols and both `proximityGap` and `IsMDS` for predicates — so they
-are left alone rather than churned, but a later rename would break `ListDecodability/Bounds.lean`,
-STIR, WHIR and the external proximity-prize repo, so it should be a deliberate one-shot change.
+`Lambda (C i) (δ i) ≤ ⌊l i⌋₊`. It was weighed and not taken, and the reason is not that the
+existing hypotheses read that way. A bare inequality has no namespace: `h.mono` on
+`Lambda C r ≤ n` resolves to `LE.le.mono` and means something else, so every weakening step would
+have to be written out. The named predicate buys `listDecodable.mono` and `listDecodable.anti_radius`
+— the two moves every consumer makes — at zero mathematical cost, the predicate being
+*definitionally* the inequality. Nothing rests on the choice, so it stays revisitable; the cost of
+revisiting is editing those six hypotheses.
+
+**`Lambda` is capitalised on purpose, and the namespace is the part that is wrong.** A term named
+for a capital Greek letter is capitalised — this is Mathlib's own treatment (`Real.Gamma`,
+`Complex.Gamma`), not a local exception. `listDecodable` in lowerCamel is the odd one: Mathlib
+spells a predicate `IsX`, as this very subtree does with `IsMDS`. But `ListDecodable.IsListDecodable`
+is absurd, which points at the real defect: the *namespace* `ListDecodable` names a property while
+holding the objects — the point list, the list size, and one predicate about them. The target is
+`Code`, which already holds `Code.minDist`, `Code.relHammingDist` and `Code.uniqueDecodingRadius`,
+and which this layer is now formally tied to through
+`uniqueDecodable_relativeUniqueDecodingRadius`. That rename is not deferred for taste: it breaks
+`ListDecoding/Bounds.lean`, STIR, WHIR **and the external proximity-prize repository**, which is
+pinned. **Do it when the prize pin is next cut** — that is the only moment the external consumer
+can absorb it — and do it in one shot, `ListDecodable.Lambda → Code.listSize` (or `Code.Lambda`)
+and `listDecodable → Code.IsListDecodable` together, rather than piecemeal.
 
 **Declarations removed when the list size became primitive** (2026-08-12). No `@[deprecated]`
 aliases were left. Five of the six cannot be restated at all: they mention `listDecodable` at a real
