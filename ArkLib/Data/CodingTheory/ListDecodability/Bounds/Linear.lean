@@ -1,0 +1,540 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks
+-/
+
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+import ArkLib.Data.CodingTheory.Basic.Entropy
+import ArkLib.Data.Probability.Notation
+import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import Mathlib.FieldTheory.Finiteness
+
+/-!
+# Bounds that hold for every linear code
+
+The alphabet-generic half of the family: the volume/averaging lower bound `[Eli57]` and its entropy
+form, the arithmetic rate–radius cardinality bound, the generalized Singleton bound of `[ST20]`, the
+large-alphabet barrier of `[AGL23]`/`[BDG24]` that attaining it forces, and the random-linear-code
+lower bound of `[GLMRSW22]`. Nothing here is specific to a code family.
+
+See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
+quantification conventions, and the references.
+-/
+
+-- All three are load-bearing, verified by removing them and rebuilding: the statements below carry
+-- `[Fintype ι]` / `[DecidableEq F]` and section variables that their *proofs* do not use, which the
+-- corresponding linters each report.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
+namespace CodingTheory
+
+open scoped NNReal
+open ListDecodable
+
+section LowerBounds_General
+
+variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
+/-- **The volume lower bound on list size** ([ABF26] Lemma 3.7, after [Eli57]):
+
+  `|Λ(C, δ)| ≥ Vol_q(δ, n) / q^(n-k)`
+
+where `q = |F|`, `n = |ι|`, and `k = dim C`, so `|C| = q^k`.
+
+Proved by the source's averaging argument: the mean over uniformly random centres `f` of the
+point-list size `|Λ(C, δ, f)|` is `|C| · Vol / q^n = Vol / q^{n-k}`
+(`sum_ncard_closeCodewordsRel_eq`), so some centre attains at least the mean, and `Lambda` is the
+supremum over centres. No entropy estimate is involved — for that see
+`linear_lambda_ge_entropy_volume`.
+
+**Narrower than the source, and needlessly so.** [ABF26] states this for an arbitrary code
+`C : Σ^k → Σ^n` over an arbitrary alphabet; this is the linear-over-a-field case. Linearity enters
+the proof exactly once, at `Module.natCard_eq_pow_finrank`, to get `|C| = q^k`. Restating over
+`C : Code ι A` for a finite alphabet `A` with `C.ncard = q ^ k` as a hypothesis would give the
+source's generality with this as a one-line corollary — the generic-core-plus-field-wrapper shape
+`mds_johnson_lambda_le_of_rate_distance` already uses. Left as a follow-up rather than done here. -/
+theorem linear_lambda_ge_elias_volume
+    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    ENNReal.ofReal
+        ((hammingBallVolume (Fintype.card F) δ (Fintype.card ι) : ℝ)
+          / (Fintype.card F : ℝ) ^
+              ((Fintype.card ι : ℝ) - Module.finrank F C))
+      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+  classical
+  set q : ℕ := Fintype.card F with hq
+  set n : ℕ := Fintype.card ι with hn
+  set k : ℕ := Module.finrank F C with hk
+  set Vol : ℕ := hammingBallVolume q δ n with hVol
+  have hq_pos : 0 < q := Fintype.card_pos
+  have hq_pos_real : (0 : ℝ) < q := by exact_mod_cast hq_pos
+  have hδ_nonneg : 0 ≤ δ := le_of_lt _hδ_pos
+  set cnt : (ι → F) → ℕ := fun f => (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard with hcnt
+  -- `|C| = q ^ k` as naturals.
+  have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]; rfl
+    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
+    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+  -- Total count over all centres `= |C| · Vol = q^k · Vol`.
+  have hsum : ∑ f : ι → F, cnt f = q ^ k * Vol := by
+    rw [hcnt]
+    rw [sum_ncard_closeCodewordsRel_eq C δ hδ_nonneg, hcard_C]
+  -- Number of centres is `q ^ n`.
+  have hcard_univ : (Finset.univ : Finset (ι → F)).card = q ^ n := by
+    rw [Finset.card_univ, hq, hn, Fintype.card_fun]
+  -- Real arithmetic identity `q^n · (Vol / q^(n-k)) = q^k · Vol`.
+  have h_arith : (q : ℝ) ^ n * ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) = (q : ℝ) ^ k * Vol := by
+    rw [Real.rpow_sub hq_pos_real, Real.rpow_natCast, Real.rpow_natCast]
+    field_simp
+  -- A centre `f₀` whose point list realises at least the mean.
+  have hmean_le : ∃ f₀ : ι → F,
+      ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) ≤ (cnt f₀ : ℝ) := by
+    by_contra hcon
+    push Not at hcon
+    have hsum_real : (∑ f : ι → F, (cnt f : ℝ)) = (q : ℝ) ^ k * Vol := by
+      have : ((∑ f : ι → F, cnt f : ℕ) : ℝ) = ((q ^ k * Vol : ℕ) : ℝ) := by exact_mod_cast hsum
+      push_cast at this ⊢
+      convert this using 2
+    have hlt : (∑ f : ι → F, (cnt f : ℝ))
+        < ∑ _f : ι → F, ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) := by
+      apply Finset.sum_lt_sum_of_nonempty
+      · exact Finset.univ_nonempty
+      · intro f _; exact hcon f
+    rw [Finset.sum_const, hcard_univ, hsum_real] at hlt
+    have : (q : ℝ) ^ k * Vol < (q : ℝ) ^ k * Vol := by
+      calc (q : ℝ) ^ k * Vol < (q ^ n : ℕ) • ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) := hlt
+        _ = (q : ℝ) ^ n * ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) := by
+              rw [nsmul_eq_mul]; push_cast; ring
+        _ = (q : ℝ) ^ k * Vol := h_arith
+    exact lt_irrefl _ this
+  obtain ⟨f₀, hf₀⟩ := hmean_le
+  -- Conclude: `Lambda ≥ |Λ(C, δ, f₀)| ≥ ofReal(mean)`.
+  have hfin : (closeCodewordsRel ((C : Set (ι → F))) f₀ δ).Finite := Set.toFinite _
+  have hLam : ((cnt f₀ : ℕ∞) : ENNReal) ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+    apply ENat.toENNReal_mono
+    calc ((cnt f₀ : ℕ) : ℕ∞)
+        = (closeCodewordsRel ((C : Set (ι → F))) f₀ δ).encard := hfin.cast_ncard_eq
+      _ ≤ Lambda ((C : Set (ι → F))) δ :=
+          encard_closeCodewordsRel_le_Lambda ((C : Set (ι → F))) δ f₀
+  calc ENNReal.ofReal ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k))
+      ≤ ENNReal.ofReal (cnt f₀ : ℝ) := ENNReal.ofReal_le_ofReal hf₀
+    _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
+    _ ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := hLam
+
+/-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
+[MS77] Hamming-ball volume estimate `Vol_q(δ, n) ≥ q^{n·H_q(δ)} / √(8·n·δ·(1-δ))` into
+`linear_lambda_ge_elias_volume`, dividing by `q^{n-k}` and writing `ρ := k/n`, gives
+
+  `|Λ(C, δ)| ≥ q^{n·(ρ - 1 + H_q(δ))} / √(8·n·δ·(1-δ))`.
+
+External admit: what is missing is the volume estimate itself, an analytic single-term Stirling
+bound. [DG25dist] gives refinements of it. As with `linear_lambda_ge_elias_volume`, [ABF26] states
+this for an arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the linear-over-a-field
+case below is a special case, which is the safe direction for an admit but is a coverage gap.
+
+The hypothesis `_hδn_int` (the radius `δ·n` is an integer) is the regime in which the [MS77]
+estimate is stated, and the corollary inherits it implicitly. It is not decoration: without it the
+bound is **false** at small `δ`, since for `0 < δ·n < 1` the relative ball collapses to Hamming
+radius `0`, so the list is `{f} ∩ C` while the entropy-volume right-hand side can exceed `1`. -/
+theorem linear_lambda_ge_entropy_volume
+    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδn_int : ∃ d : ℕ, (d : ℝ) = δ * Fintype.card ι) :
+    let q : ℕ := Fintype.card F
+    let n : ℕ := Fintype.card ι
+    let k : ℕ := Module.finrank F C
+    let ρ : ℝ := k / n
+    ENNReal.ofReal
+        ((q : ℝ) ^ ((n : ℝ) * (ρ - 1 + qEntropy q δ))
+          / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
+      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+  sorry -- external admit: the [MS77] Hamming-ball volume estimate.
+
+/-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
+Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,
+
+  `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}` ,
+
+by `|C| = |F|^{dim C}` and `⌊(ℓ+1)/ℓ·δ·n⌋ ≤ n - dim C`.
+
+This is deliberately *not* named for [ST20] Theorem 1.2: that theorem's content is the implication
+`ℓ`-list-decodable ⇒ the rate–radius relation, which is the admit
+`linear_card_le_generalized_singleton` below. Splitting the two keeps the proved part honest about
+what it proves — the arithmetic step, with no list-decoding premise at all. -/
+theorem linear_card_le_of_rate_radius
+    (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
+    (_hℓ_pos : 0 < ℓ)
+    (hδ_bound : δ ≤ (ℓ : ℝ) / (ℓ + 1) *
+      (1 - (Module.finrank F C : ℝ) / Fintype.card ι)) :
+    (Set.ncard ((C : Set (ι → F))) : ℝ)
+      ≤ (Fintype.card F : ℝ) ^
+          ((Fintype.card ι : ℝ)
+            - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) := by
+  classical
+  set q : ℕ := Fintype.card F with hq
+  set n : ℕ := Fintype.card ι with hn
+  set k : ℕ := Module.finrank F C with hk
+  -- `|C| = q ^ k` (linearity).
+  have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
+    have h1 : (C : Set (ι → F)).ncard = Nat.card C := by
+      rw [← Nat.card_coe_set_eq]; rfl
+    rw [h1, hq, hk, ← Nat.card_eq_fintype_card (α := F)]
+    exact Module.natCard_eq_pow_finrank (K := F) (V := C)
+  have hq1 : (1 : ℝ) ≤ (q : ℝ) := by
+    have : 1 < q := hq ▸ Fintype.one_lt_card
+    exact_mod_cast this.le
+  have hnpos : (0 : ℝ) < n := by rw [hn]; exact_mod_cast Fintype.card_pos
+  have hℓpos : (0 : ℝ) < ℓ := by exact_mod_cast _hℓ_pos
+  -- `k ≤ n` (rank of a subspace of `F^n` is at most `n`).
+  have hkn : k ≤ n := by
+    rw [hk, hn]
+    have h := Submodule.finrank_le C
+    rwa [Module.finrank_fintype_fun_eq_card] at h
+  -- From `hδ_bound`, `(ℓ+1)/ℓ · δ ≤ 1 - k/n`, hence `(ℓ+1)/ℓ · δ · n ≤ n - k`.
+  have hmid : ((ℓ : ℝ) + 1) / ℓ * δ ≤ 1 - (k : ℝ) / n := by
+    have hfac : (0 : ℝ) < ((ℓ : ℝ) + 1) / ℓ := by positivity
+    calc ((ℓ : ℝ) + 1) / ℓ * δ
+        ≤ ((ℓ : ℝ) + 1) / ℓ * ((ℓ : ℝ) / ((ℓ : ℝ) + 1) * (1 - (k : ℝ) / n)) :=
+          mul_le_mul_of_nonneg_left hδ_bound (le_of_lt hfac)
+      _ = 1 - (k : ℝ) / n := by field_simp
+  have hstep : ((ℓ : ℝ) + 1) / ℓ * δ * n ≤ (n : ℝ) - k := by
+    calc ((ℓ : ℝ) + 1) / ℓ * δ * n
+        = (((ℓ : ℝ) + 1) / ℓ * δ) * n := by ring
+      _ ≤ (1 - (k : ℝ) / n) * n := mul_le_mul_of_nonneg_right hmid (le_of_lt hnpos)
+      _ = (n : ℝ) - k := by field_simp
+  have hfloor : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) ≤ n - k := by
+    rw [← Nat.cast_sub hkn] at hstep
+    calc Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n)
+        ≤ Nat.floor (((n - k : ℕ) : ℝ)) := Nat.floor_le_floor hstep
+      _ = n - k := Nat.floor_natCast _
+  -- Conclude: `q^k ≤ q^(n - ⌊…⌋)` since the exponent is `≥ k`.
+  have hexp : (k : ℝ) ≤ (n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ) := by
+    have hle : (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ) ≤ (n : ℝ) - k := by
+      have := hfloor
+      rw [← Nat.cast_sub hkn]
+      exact_mod_cast this
+    linarith
+  rw [hcard_C]
+  calc ((q ^ k : ℕ) : ℝ)
+      = (q : ℝ) ^ (k : ℝ) := by rw [Nat.cast_pow, Real.rpow_natCast]
+    _ ≤ (q : ℝ) ^ ((n : ℝ) - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * n) : ℝ)) :=
+        Real.rpow_le_rpow_of_exponent_le hq1 hexp
+
+/-- **The generalized Singleton bound for list decoding** ([ABF26] Theorem 3.9, after
+[ST20, Theorem 1.2]). For a finite field `F`, `0 < ℓ < |F|`, `δ ∈ (0, 1)` with `δ·n` an integer, and
+a linear code `C ⊆ F^n` with `|Λ(C, δ)| ≤ ℓ`:
+
+  `|C| ≤ |F|^{n - ⌊(ℓ+1)/ℓ · δ · n⌋}` ,
+
+whence `δ ≤ ℓ/(ℓ+1) · (1-ρ)` via `linear_card_le_of_rate_radius`'s converse arithmetic. The content
+is the *implication* from list decodability; the arithmetic step is `linear_card_le_of_rate_radius`.
+
+**`_hδn_int` is [ST20]'s own hypothesis, not an ArkLib convenience.** Their proof of Theorem 1.2
+opens "Let `a := ⌊(L+1)rn/L⌋ = rn + ⌊rn/L⌋` (**assuming `rn` is an integer**)", and the identity it
+records is false otherwise. [ABF26]'s printing drops the hypothesis, and without it the statement is
+**false**: the ternary length-3 repetition code `C = {000, 111, 222}` over `𝔽₃` is
+`(δ = 1/2, ℓ = 1)`-list-decodable — its minimum distance is `3`, so the radius-`⌊δn⌋ = 1` balls are
+disjoint — yet `⌊(ℓ+1)/ℓ·δ·n⌋ = ⌊3⌋ = 3` forces the right-hand side to `3^0 = 1 < 3 = |C|`. ([ST20]
+separately assume `rn/L ∈ ℤ` "for ease of presentation", which only removes the floor.)
+
+**`_hexp_nonneg` is a second hypothesis both papers omit, and it is also necessary.** [ST20]'s
+pigeonhole needs `a ≤ n`, there being `q^{n−a}` prefixes only then. Without it the statement is
+false for the zero code: `C = ⊥` with `n = 10`, `δ = 9/10` and `ℓ = 1` has `Λ(C, δ) = 1 ≤ ℓ` and
+`δ·n = 9 ∈ ℕ`, while `a = ⌊2·9⌋ = 18 > n` makes the right-hand side `q^{−8} < 1 = |C|`. The same
+omission voids [ABF26]'s "Consequently `δ ≤ ℓ/(ℓ+1)·(1−ρ)`" for `C = ⊥`.
+
+**Narrower than [ST20] in one direction.** Their Theorem 1.2 has a first, alphabet-generic half
+`|C| ≤ L·q^{n−a}` for arbitrary `C ⊆ Q^n`; the `L`-free form below is their linear refinement, which
+is what `_hℓ_lt : ℓ < |F|` buys and what [ABF26] prints. -/
+theorem linear_card_le_generalized_singleton
+    (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
+    (_hℓ_pos : 0 < ℓ) (_hℓ_lt : ℓ < Fintype.card F)
+    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδn_int : ∃ e : ℕ, (e : ℝ) = δ * Fintype.card ι)
+    (_hexp_nonneg : Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) ≤ Fintype.card ι)
+    (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (ℓ : ℕ∞)) :
+    (Set.ncard ((C : Set (ι → F))) : ℝ)
+      ≤ (Fintype.card F : ℝ) ^
+          ((Fintype.card ι : ℝ)
+            - (Nat.floor (((ℓ : ℝ) + 1) / ℓ * δ * Fintype.card ι) : ℝ)) := by
+  sorry -- external admit: [ST20, Theorem 1.2].
+
+end LowerBounds_General
+
+section LargeAlphabetBarrier
+
+/-- **Attaining the generalized Singleton bound forces a large alphabet** ([ABF26] Theorem 3.10,
+after [BDG24] and [AGL23]). For every `ℓ ≥ 2` and `ρ ∈ (0, 1)` there is a constant `α > 0` such
+that for every `η > 0` and every sufficiently large `n`, every linear code `C ⊆ F^n` of rate `ρ`
+with `|Λ(C, ℓ/(ℓ+1) · (1-ρ-η))| ≤ ℓ` satisfies
+
+  `|F| ≥ 2^{α / η}` ,
+
+so approaching the generalized Singleton bound to within `η` costs alphabet size exponential in
+`1/η`. Per [AGL23, Theorem 1.1] the length threshold is `n ≥ Ω_{ℓ,ρ}(1/η)`, which is why `n₀` is
+bound *inside* the `∀ η`.
+
+**The rate is pinned by equality, which is faithful but partly vacuous.** [AGL23] states the
+barrier for a code "of rate `R`" — Theorem 1.1 as *printed* omits the rate hypothesis altogether,
+which is a defect in that paper; the hypothesis appears in its abstract and in the worked
+Propositions 3.2/3.3 — and [BDG24] (the `ℓ = 2` progenitor) is stated for `[n, k]`-MDS codes of
+fixed dimension. Equality is therefore the faithful reading. The price is that at irrational `ρ` the
+statement is vacuous, and at rational `ρ = a/b` it is inhabited only for `b ∣ n`; instantiate at
+`ρ = finrank/n`.
+
+A two-sided band `ρ ≤ finrank/n ≤ ρ + 1/n`, as `random_linear_lambda_lower` uses and this file's
+own quantification convention prescribes, would remove that vacuity and is supported by [AGL23]'s
+*proof*: it rounds `R` down to a multiple of `3/n` and passes to a subcode ("Taking `C′` to be any
+subcode of `C` of rate `R′`", Prop. 3.2; "Subcode `C′` has rate at least `R′ = R − (1/n)`",
+Prop. 3.3). It is not implied by the printed equality form, though — recovering rate exactly `ρ·n`
+from a code of rate in the band needs `ρ·n ∈ ℤ` — so it would be a mild strengthening, and the
+choice is left as recorded rather than made.
+
+**The length threshold is the source's, and the quantifier order is load-bearing.** [AGL23] state
+`n ≥ Ω_{ℓ,ρ}(1/η)`, i.e. one threshold constant for all `η`; their Theorem 4.3 spells it out as
+"there exists `n₀ = n₀(L,R)` such that the following holds for all `n ≥ n₀` **and `ε ≥ 1/n`**". Both
+conditions are reproduced below, with `n₀` bound *outside* `∀ η` and `1/η ≤ n` as a hypothesis. A
+weaker `∃ n₀` *inside* `∀ η` — letting the threshold depend on `η` arbitrarily — would be the safe
+direction, but it would make this theorem's only intended consequence unreachable: instantiating at
+`η := c/n` fixes `n` first and then needs `n₀(c/n) ≤ n`, which nothing supplies. That consequence is
+`large_alphabet_card_ge_exp_of_inv_length`, and it is the reason this theorem exists in [ABF26] —
+the paper never cross-references the theorem itself.
+
+**Two further divergences, both recorded rather than repaired.** (i) [ABF26] states this for an
+arbitrary code `C : Σ^k → Σ^n`, and dropping linearity is precisely [AGL23]'s headline advance over
+[BDG24]; the admit below is the linear-over-a-field case, so it does not capture the cited result in
+full. (ii) `η` is unguarded, and for `η > 1 − ρ` the radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
+`Λ = 0 ≤ ℓ` holds for every code and the statement demands `|F| ≥ 2^(α/η)` unconditionally. Letting
+`η ↓ (1−ρ)` therefore forces `α ≤ 1 − ρ`, since `𝔽₂` carries rate-`ρ` codes of every admissible
+length. That does not make the statement false — `α := min (α_source) (1−ρ)` still works, shrinking
+`α` only weakening the conclusion — but a prover will meet the constraint, and the sources plainly
+intend `η` in the meaningful range. -/
+theorem large_alphabet_lambda_lower
+    (ℓ : ℕ) (_hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < 1) :
+    ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
+      ∀ (η : ℝ), 0 < η →
+          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+            {F : Type} [Field F] [Fintype F] [DecidableEq F]
+            (C : Submodule F (ι → F)),
+            n₀ ≤ Fintype.card ι →
+            1 / η ≤ (Fintype.card ι : ℝ) →
+            (Module.finrank F C : ℝ) = ρ * Fintype.card ι →
+            Lambda ((C : Set (ι → F))) ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - η)) ≤ (ℓ : ℕ∞) →
+            (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α / η) := by
+  sorry -- external admit: [BDG24], [AGL23].
+
+/-- **Attaining the generalized Singleton bound exactly forces an exponentially large alphabet** —
+the consequence [ABF26] draws from Theorem 3.10, and the only use it puts that theorem to: "*this
+shows that achieving exactly the generalized singleton bound (which implies the case when
+`η = Θ(1/n)`) requires an alphabet of exponential size, which is undesirable.*"
+
+At `η := c/n` the barrier's `2^{α/η}` becomes `2^{(α/c)·n}`, so for every `ℓ ≥ 2`, `ρ ∈ (0,1)` and
+`c ≥ 1` there is `α > 0` with
+
+  `|Λ(C, ℓ/(ℓ+1) · (1 − ρ − c/n))| ≤ ℓ  ⟹  |F| ≥ 2^{α·n}`
+
+for every rate-`ρ` linear code of sufficiently large length `n`.
+
+**Derived in-tree** from `large_alphabet_lambda_lower`, which is admitted, so this inherits the
+admit. `1 ≤ c` is exactly [AGL23]'s `ε ≥ 1/n` at `η = c/n`, and it is the meaningful range: relative
+radii are `1/n`-quantised, so `η < 1/n` asks for a radius finer than the lattice the list size lives
+on. -/
+theorem large_alphabet_card_ge_exp_of_inv_length
+    (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (hρ_pos : 0 < ρ) (hρ_lt : ρ < 1)
+    (c : ℝ) (hc : 1 ≤ c) :
+    ∃ α : ℝ, 0 < α ∧ ∃ n₀ : ℕ,
+      ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+        {F : Type} [Field F] [Fintype F] [DecidableEq F]
+        (C : Submodule F (ι → F)),
+        n₀ ≤ Fintype.card ι →
+        (Module.finrank F C : ℝ) = ρ * Fintype.card ι →
+        Lambda ((C : Set (ι → F)))
+            ((ℓ : ℝ) / (ℓ + 1) * (1 - ρ - c / Fintype.card ι)) ≤ (ℓ : ℕ∞) →
+        (Fintype.card F : ℝ) ≥ (2 : ℝ) ^ (α * Fintype.card ι) := by
+  obtain ⟨α, hα_pos, n₀, hmain⟩ := large_alphabet_lambda_lower ℓ hℓ_ge ρ hρ_pos hρ_lt
+  have hc_pos : (0 : ℝ) < c := lt_of_lt_of_le zero_lt_one hc
+  refine ⟨α / c, div_pos hα_pos hc_pos, n₀, fun {ι} _ _ _ {F} _ _ _ C hn hrate hΛ => ?_⟩
+  have hn_pos : (0 : ℝ) < Fintype.card ι := Nat.cast_pos.mpr Fintype.card_pos
+  -- Instantiate the barrier at `η := c/n`, whose two length conditions are `n₀ ≤ n` and `1/η ≤ n`.
+  have hη_pos : (0 : ℝ) < c / Fintype.card ι := div_pos hc_pos hn_pos
+  have hinv : 1 / (c / (Fintype.card ι : ℝ)) ≤ (Fintype.card ι : ℝ) := by
+    rw [one_div_div, div_le_iff₀ hc_pos]
+    nlinarith
+  have hkey := hmain (c / Fintype.card ι) hη_pos C hn hinv hrate hΛ
+  -- `α / (c/n) = (α/c) · n`.
+  rwa [show α / (c / (Fintype.card ι : ℝ)) = α / c * Fintype.card ι by
+    field_simp] at hkey
+
+end LargeAlphabetBarrier
+
+section RandomLinear
+
+/-- **A random linear code of near-capacity rate has a large list** ([ABF26] Theorem 3.11, after
+[GLMRSW22, Theorem 4.1]).
+
+The source, verbatim in its own variables: "Fix a prime power `q`, fix `p ∈ (0, 1 − 1/q)`, and fix
+`δ ∈ (0, 1)`. There exists `ε_{p,q,δ} > 0` such that for all `ε ∈ (0, ε_{p,q,δ})` and `n`
+sufficiently large, a random linear code in `F_q^n` of rate `1 − h_q(p) − ε` is not
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable with probability `1 − q^{−Ω(n)}`." Its random model, from §1.1,
+is "a random linear code is a uniformly random subspace of `F_q^n` of certain dimension" — so the
+counting form below is the source's probability exactly, not an approximation of it. (Its §1.2
+working model is the kernel of a uniformly random parity-check matrix, which conditioned on full
+rank is the same uniform distribution over dimension-`k` subspaces, by `GL_n`-invariance.)
+
+**One stronger than [GLMRSW22], faithful to [ABF26].** [GLMRSW22] define `(p, L)`-list-decodable
+with a **strict** inequality — "`|{c ∈ C : δ(c,z) ≤ p}| < L`" (§1) — so their "not
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable" is `Λ ≥ ⌊·⌋`, whereas the bad event `Λ ≤ ⌊·⌋` below makes the
+good event `Λ ≥ ⌊·⌋ + 1`. [ABF26] prints the strict `>`, so the Lean tracks ground truth and is one
+stronger than the original; recorded, not repaired.
+
+Variable map into the form below: the source's radius `p` is our `δ`, its slack `δ` is our `ε`,
+its `ε_{p,q,δ}` is our `γ`, and its rate `1 − h_q(p) − ε` is our `ρ` — so its `ε` is
+`1 − H_q(δ) − ρ`, giving the list bound `⌊H_q(δ)/(1 − H_q(δ) − ρ) − ε⌋`.
+
+**Probability as counting.** ArkLib has no probability distribution over linear codes, so the
+`1 − q^{−Ω(n)}` statement is carried in its equivalent finite counting form over the uniform
+family `{C : Submodule F (ι → F) | finrank C = k}`:
+
+  `#{C : finrank C = k ∧ |Λ(C, δ)| ≤ ⌊…⌋} ≤ q^{−c·n} · #{C : finrank C = k}`
+
+with `c > 0` the `Ω(n)` constant, whose dependence on `q, δ, ε, ρ` is licensed by its binder
+position. This is deliberately stronger than bare existence of one witness code, which loses the
+high-probability content; that weaker form is *derived* below as
+`random_linear_lambda_lower_exists`.
+
+**Dimension pin.** The source's code has rate exactly `ρ`, with dimension `ρ·n` treated as an
+integer for exposition. Exact real equality is unsatisfiable at irrational `ρ`, so the dimension is
+pinned two-sidedly into `ρ ≤ k/n ≤ ρ + 1/n`, admitting `k = ⌈ρ·n⌉` up to the boundary case. -/
+theorem random_linear_lambda_lower
+    (q : ℕ) (_hq_pp : IsPrimePow q)
+    (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1 - 1 / q)
+    (ε : ℝ) (_hε_pos : 0 < ε) (_hε_lt : ε < 1) :
+    ∃ γ : ℝ, 0 < γ ∧
+      ∀ ρ : ℝ, 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
+        ∃ c : ℝ, 0 < c ∧ ∃ n₀ : ℕ,
+          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+            {F : Type} [Field F] [Fintype F] [DecidableEq F],
+            Fintype.card F = q → n₀ ≤ Fintype.card ι →
+            ∀ k : ℕ,
+              ρ ≤ (k : ℝ) / Fintype.card ι →
+              (k : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι →
+              (({C : Submodule F (ι → F) | Module.finrank F C = k ∧
+                  Lambda ((C : Set (ι → F))) δ ≤
+                    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) :
+                      ℕ∞)}.ncard : ℝ))
+                ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) *
+                    (({C : Submodule F (ι → F) | Module.finrank F C = k}.ncard : ℝ)) := by
+  sorry -- external admit: [GLMRSW22, Theorem 4.1].
+
+/-- **Existence form of the random-linear-code lower bound**, derived in-tree from the
+high-probability counting form `random_linear_lambda_lower`: some linear code `C ⊆ F^n` with
+dimension in the band `ρ ≤ finrank/n ≤ ρ + 1/n` satisfies
+
+  `|Λ(C, δ)| > ⌊H_q(δ) / (1 - H_q(δ) - ρ) - ε⌋` .
+
+The bad-event count is below the whole family's, the family `{C | finrank C = ⌈ρ·n⌉}` is nonempty
+(a coordinate-kernel subspace realises any dimension `≤ n`), so a good code exists.
+
+The hypothesis `hρ0 : 0 ≤ ρ` is trivially true in the source's regime, where rates approach
+capacity `1 − H_q(δ)` from below with small `γ`. It is needed here only because
+`Basic/Entropy.lean` does not yet prove `H_q(δ) < 1` for `δ < 1 − 1/q`, which would let `γ` be
+shrunk below `1 − H_q(δ)`. -/
+theorem random_linear_lambda_lower_exists
+    (q : ℕ) (hq_pp : IsPrimePow q)
+    (δ : ℝ) (hδ_pos : 0 < δ) (hδ_lt : δ < 1 - 1 / q)
+    (ε : ℝ) (hε_pos : 0 < ε) (hε_lt : ε < 1) :
+    ∃ γ : ℝ, 0 < γ ∧
+      ∀ ρ : ℝ, 0 ≤ ρ → 1 - qEntropy q δ - γ < ρ → ρ < 1 - qEntropy q δ →
+        ∃ n₀ : ℕ,
+          ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+            {F : Type} [Field F] [Fintype F] [DecidableEq F],
+            Fintype.card F = q → n₀ ≤ Fintype.card ι →
+            ∃ C : Submodule F (ι → F),
+              ρ ≤ (Module.finrank F C : ℝ) / Fintype.card ι ∧
+              (Module.finrank F C : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι ∧
+              ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) <
+                Lambda ((C : Set (ι → F))) δ := by
+  obtain ⟨γ, hγ_pos, hmain⟩ :=
+    random_linear_lambda_lower q hq_pp δ hδ_pos hδ_lt ε hε_pos hε_lt
+  refine ⟨γ, hγ_pos, fun ρ hρ0 hργ hρH => ?_⟩
+  obtain ⟨c, hc_pos, n₀, hbound⟩ := hmain ρ hργ hρH
+  refine ⟨n₀, fun {ι} _ _ _ {F} _ _ _ hcard hn => ?_⟩
+  have hn_pos : 0 < Fintype.card ι := Fintype.card_pos
+  have hn_posR : (0 : ℝ) < (Fintype.card ι : ℝ) := Nat.cast_pos.mpr hn_pos
+  -- `ρ ≤ 1` via `0 ≤ H_q(δ)`.
+  have hH_nonneg : 0 ≤ qEntropy q δ := by
+    rw [qEntropy_eq_qaryEntropy_div_log]
+    have hδ1 : δ ≤ 1 := by
+      have hq_inv : (0 : ℝ) ≤ 1 / (q : ℝ) := by positivity
+      linarith
+    exact div_nonneg
+      (Real.qaryEntropy_nonneg hδ_pos.le hδ1)
+      (Real.log_natCast_nonneg q)
+  have hρ1 : ρ ≤ 1 := hρH.le.trans (by linarith)
+  -- The source's dimension: `k = ⌈ρ·n⌉`, which sits in the band.
+  set k : ℕ := ⌈ρ * (Fintype.card ι : ℝ)⌉₊ with hk_def
+  have hband1 : ρ ≤ (k : ℝ) / (Fintype.card ι : ℝ) := by
+    rw [le_div_iff₀ hn_posR]
+    exact Nat.le_ceil _
+  have hband2 : (k : ℝ) / (Fintype.card ι : ℝ) ≤ ρ + 1 / (Fintype.card ι : ℝ) := by
+    rw [div_le_iff₀ hn_posR]
+    have h1 : (k : ℝ) < ρ * (Fintype.card ι : ℝ) + 1 :=
+      Nat.ceil_lt_add_one (by positivity)
+    have h2 : (ρ + 1 / (Fintype.card ι : ℝ)) * (Fintype.card ι : ℝ)
+        = ρ * (Fintype.card ι : ℝ) + 1 := by
+      field_simp
+    rw [h2]
+    linarith
+  have hkn : k ≤ Fintype.card ι := Nat.ceil_le.mpr (by nlinarith)
+  -- The family `{C | finrank C = k}` is nonempty: a coordinate-kernel subspace works.
+  obtain ⟨t, -, htcard⟩ := Finset.exists_subset_card_eq
+    (show Fintype.card ι - k ≤ (Finset.univ : Finset ι).card by
+      simp only [Finset.card_univ]; omega)
+  have hwitness : ∃ C₀ : Submodule F (ι → F), Module.finrank F C₀ = k := by
+    refine ⟨LinearMap.ker (LinearMap.funLeft F F (fun x : ↥t => (x : ι))), ?_⟩
+    have hsurj : Function.Surjective (LinearMap.funLeft F F (fun x : ↥t => (x : ι))) :=
+      LinearMap.funLeft_surjective_of_injective F F _ Subtype.val_injective
+    have h1 := LinearMap.finrank_range_add_finrank_ker
+      (LinearMap.funLeft F F (fun x : ↥t => (x : ι)))
+    rw [LinearMap.range_eq_top.mpr hsurj, finrank_top, Module.finrank_pi,
+      Module.finrank_pi, Fintype.card_coe, htcard] at h1
+    omega
+  -- Bad-event count is strictly below the family count, so a good code exists.
+  set B : ℕ∞ :=
+    ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) with hB_def
+  set bad : Set (Submodule F (ι → F)) :=
+    {C | Module.finrank F C = k ∧ Lambda ((C : Set (ι → F))) δ ≤ B} with hbad_def
+  set full : Set (Submodule F (ι → F)) := {C | Module.finrank F C = k} with hfull_def
+  have hsub : bad ⊆ full := fun C hC => hC.1
+  have hfull_pos : 0 < full.ncard := by
+    obtain ⟨C₀, hC₀⟩ := hwitness
+    exact (Set.ncard_pos (Set.toFinite full)).mpr ⟨C₀, hC₀⟩
+  have hlt : (bad.ncard : ℝ) < (full.ncard : ℝ) := by
+    have hkey := hbound hcard hn k hband1 hband2
+    have hq1 : (1 : ℝ) < (q : ℝ) := by exact_mod_cast lt_of_lt_of_le one_lt_two hq_pp.two_le
+    have hrpow : (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) < 1 :=
+      Real.rpow_lt_one_of_one_lt_of_neg hq1 (by nlinarith)
+    calc (bad.ncard : ℝ)
+        ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) * (full.ncard : ℝ) := hkey
+      _ < 1 * (full.ncard : ℝ) :=
+          mul_lt_mul_of_pos_right hrpow (by exact_mod_cast hfull_pos)
+      _ = (full.ncard : ℝ) := one_mul _
+  have hssub : bad ⊂ full := by
+    refine ⟨hsub, fun habs => ?_⟩
+    have : full.ncard ≤ bad.ncard := Set.ncard_le_ncard habs (Set.toFinite bad)
+    have : (full.ncard : ℝ) ≤ (bad.ncard : ℝ) := by exact_mod_cast this
+    linarith
+  obtain ⟨C, hCfull, hCbad⟩ := Set.exists_of_ssubset hssub
+  have hCk : Module.finrank F C = k := hCfull
+  refine ⟨C, ?_, ?_, ?_⟩
+  · rw [hCk]; exact hband1
+  · rw [hCk]; exact hband2
+  · by_contra hle
+    exact hCbad ⟨hCk, not_lt.mp hle⟩
+
+end RandomLinear
+
+end CodingTheory
