@@ -191,9 +191,12 @@ list, the list size, and one predicate about them. Everything it operates on was
 in `Code` (`minDist`, `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), and this layer
 is now formally tied to that one through `isUniquelyDecodable_relativeUniqueDecodingRadius`, so
 keeping the two halves of a single notion in two namespaces was the same fragmentation the layer
-exists to remove. A local `abbrev Code ι S := Set (ι → S)` went with it: it shadowed the `Code`
-namespace, was used only inside its own file, and `Set (ι → F)` is what the rest of the subtree
-writes anyway.
+exists to remove. A local `abbrev Code ι S := Set (ι → S)` went with it, hence the `(C : Set (ι → F))`
+spellings: inside `namespace Code` the abbrev becomes `Code.Code`, which trips
+`linter.dupNamespace`, and a non-`sorry` warning under `ArkLib/Data/` fails `validate.sh`. It did
+*not* shadow the namespace — `Code.minDist` and `open Code` resolve fine alongside it — so renaming
+would also have worked; it was dropped rather than renamed because nothing outside its own file used
+it and `Set (ι → F)` is what the rest of the subtree writes.
 
 `Lambda` stays capitalised: a term named for a capital Greek letter is capitalised, which is
 Mathlib's own treatment (`Real.Gamma`, `Complex.Gamma`) rather than a local exception. The
