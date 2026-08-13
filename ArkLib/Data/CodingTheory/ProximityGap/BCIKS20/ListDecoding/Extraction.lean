@@ -22,27 +22,46 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
          [Finite F]
 
 omit [DecidableEq (RatFunc F)] in
-/-- Equation 5.12 from [BCIKS20]. -/
+/-- Equation 5.12 from [BCIKS20].
+
+Considering `Q` as a polynomial in `Y` over `F[X, Z]`, it factors uniquely as
+
+`Q(X, Y, Z) = C(X, Z) * ∏ i, Rᵢ(X, Y ^ (p ^ fᵢ), Z) ^ eᵢ`
+
+where `p` is the characteristic of `F`, `fᵢ ≥ 0`, `eᵢ ≥ 1`, and each `Rᵢ` is irreducible and
+separable.
+
+The three lists are indexed *together*: the `i`-th factor pairs `R[i]` with its own exponents
+`f[i]` and `e[i]`. The product is therefore a single `List.zipWith` fold, not a product over
+three independent index sets. -/
 lemma irreducible_factorization_of_gs_solution
     {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (C : F[Z][X]) (R : List F[Z][X][Y]) (f : List ℕ) (e : List ℕ),
     R.length = f.length ∧
     f.length = e.length ∧
-    ∀ eᵢ ∈ e, 1 ≤ eᵢ ∧
-    ∀ Rᵢ ∈ R, Rᵢ.Separable ∧
-    ∀ Rᵢ ∈ R, Irreducible Rᵢ ∧
+    (∀ eᵢ ∈ e, 1 ≤ eᵢ) ∧
+    (∀ Rᵢ ∈ R, Rᵢ.Separable) ∧
+    (∀ Rᵢ ∈ R, Irreducible Rᵢ) ∧
     Q = (Polynomial.C C) *
-        ∏ (Rᵢ ∈ R.toFinset) (fᵢ ∈ f.toFinset) (eᵢ ∈ e.toFinset),
-          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ
+        (List.zipWith
+          (fun (Rᵢ : F[Z][X][Y]) (fe : ℕ × ℕ) =>
+            (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ (ringChar F ^ fe.1))) ^ fe.2)
+          R (f.zip e)).prod
     := sorry
 
 omit [DecidableEq (RatFunc F)] in
-/-- Claim 5.6 of [BCIKS20]. -/
+/-- Claim 5.6 of [BCIKS20]: there exists `x₀ ∈ F` such that for every irreducible component `Rᵢ`
+of the factorization (5.12), `discY(Rᵢ(X, Y, Z))(x₀) ≠ 0` **as an element of `F[Z]`**.
+
+The specialisation is `X := x₀`. Since `Bivariate.discr_y R : F[Z][X]` carries `X` as its *outer*
+variable and `Z` as its inner one, this is `Polynomial.eval (Polynomial.C x₀)`, which leaves a
+polynomial in `Z`. (`Bivariate.evalX` evaluates the *inner* variable, so it would set `Z := x₀`
+here — the opposite of what the claim needs.) -/
 lemma discr_of_irred_components_nonzero (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    ∃ x₀,
+    ∃ x₀ : F,
       ∀ R ∈ (irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose,
-      Bivariate.evalX x₀ (Bivariate.discr_y R) ≠ 0 := by sorry
+      Polynomial.eval (Polynomial.C x₀) (Bivariate.discr_y R) ≠ 0 := by sorry
 
 noncomputable def pg_Rset (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F[Z][X][Y] :=
   (UniqueFactorizationMonoid.normalizedFactors Q).toFinset
