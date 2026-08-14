@@ -7,7 +7,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ListDecodability
 import CompPoly.Data.MvPolynomial.Notation
 
-open Polynomial NNReal ReedSolomon ListDecodable
+open Polynomial NNReal ReedSolomon Code
 
 namespace Quotienting
 

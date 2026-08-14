@@ -27,3 +27,6 @@ Current audit pages:
 - [`noz26-zero-check-lemma10.md`](noz26-zero-check-lemma10.md)
   - [`NOZ26`](../papers/NOZ26.md) Figure 5 / Lemma 10: correspondence, the nested-tree repair, and
     the weak-binding seam in the escape-threaded opening chain.
+- [`bcgm25-mca-generators.md`](bcgm25-mca-generators.md)
+  - [`BCGM25`](../papers/BCGM25.md) generator layer: definition and result correspondence, the two
+    forms Lemma 4.4 is proved in and why, and a gap in the paper's Theorem 9.2 citation.
