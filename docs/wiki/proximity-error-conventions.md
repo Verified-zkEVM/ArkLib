@@ -14,6 +14,10 @@ correlated agreement. For code carriers and distance types, see
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
 | `ProximityGap/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
+| `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
+| `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |
+| `Connections/ListDecodingAndCA.lean` | §5 conversions between `Code.Lambda`, CA, and MCA |
+| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Admit-dependent capacity-bound witness extensions; imports the core carrier, never conversely |
 
 ## Mutual correlated agreement
 
@@ -91,7 +95,7 @@ This is `epsPg_le_epsCa_le_epsMca`; its two component inequalities are
 
 The unique-decoding comparison is:
 
-- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the externally sourced direction;
+- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the MCA-to-CA direction;
 - `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
 
 For a positive row-wise interleaving width and a radius in `(0, 1)`:
@@ -138,6 +142,11 @@ The prize API uses `PrizeDomainAdmissible`, `prizeRate`, `prizeDimension`, and
 `prizeCode_rate_eq` to select Reed--Solomon codes at exact rates. `McaPrizeResolution.to_prize`
 and `ListPrizeResolution.to_prize` assemble per-rate answers.
 
+Bounds that produce one-sided prize evidence belong in extension modules below
+`ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonRangeBound` is in
+`GrandChallenges/CapacityBounds.lean`; this keeps `GrandChallenges.lean` independent of the
+catalogue's external admits.
+
 ## Naming
 
 Names treat initialisms as words: `epsMca`, `epsCa`, `epsPg`, `GrandMcaAnswer`, and
@@ -146,9 +155,8 @@ The canonical generator-level value retains its established name `mcaError`. The
 `_eq`, `_mono`, `_of_...`, and `_iff_...` describe the conclusion and hypotheses in the usual
 mathlib style.
 
-## Source status
+## Sources and axiom accounting
 
-Externally sourced declarations retain a source locator on their `sorry` annotation. The paper KB
-pages describe the corresponding source statements, while `scripts/axiom_baseline.json` and the
-axiom sweep record their trusted impact. The public API and usage guidance on this page do not
-depend on the current number of admitted results.
+The file-level references and paper KB pages identify the source results represented by these
+theorems. Run `./scripts/validate.sh --axioms` to verify their axiom dependencies along with the
+rest of the library.
