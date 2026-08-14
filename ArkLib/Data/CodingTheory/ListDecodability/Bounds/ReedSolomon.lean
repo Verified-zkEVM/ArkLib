@@ -59,7 +59,9 @@ factor `1/ln 2`.
 **Parameter domain.** [BKR06, Corollary 2.2] assumes rational `α, β`; its proof chooses an extension
 degree on which `αm` and `βm` are integers. These binders therefore have type `ℚ` below, with
 explicit coercions to `ℝ` only in the real-power and logarithmic expressions. [ABF26] Theorem 3.12
-prints arbitrary real parameters, an extension not supplied by the cited source.
+prints arbitrary real parameters, an extension not supplied by the cited source. On the source's
+subsequence `q = 2^m`, integrality of `αm` also makes `q^α = 2^(αm)` a natural number, so
+`⌊q^α⌋ = q^α` exactly; the rational restriction removes a potential dimension-rounding mismatch.
 
 **Degree convention.** [BKR06] defines `RS[N, K]` by degree **≤ K** and its witnessing family has
 degree exactly `K = N^δ`, whereas [ABF26]'s `RS[F, L, k]` is degree **< k** (as its footnote
@@ -443,7 +445,7 @@ theorem rs_lambda_large_prime
     (Real.exp (-2) / 2) * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2)
   simpa only [cnt, x] using hw
 
-/-- **A codimension-one Reed-Solomon code has `n` nearby interpolants.** Let the block length be
+/-- **A codimension-one Reed-Solomon code has `j + 1` nearby interpolants.** Let the block length be
 `j + 1` and the message dimension be `j`. Over any field large enough to contain an evaluation
 domain of that length, there is a received word whose radius-`1/(j+1)` list has more than `j`
 codewords.
