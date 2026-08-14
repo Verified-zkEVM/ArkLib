@@ -82,8 +82,8 @@ manuscript, not to the original sources it cites — those get their own keys (`
   Plotkin regime → `CodingTheory.plotkin_card_le_ell`.
 - **§1 prize carriers and §4 errors.** `ProximityGap/GrandChallenges.lean` contains the
   adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
-  `epsCa`, the affine-line specialization `epsMca`, and their comparison theorems. The
-  information-set lower bound is in `InformationSetLowerBound.lean`.
+  `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
+  in `InformationSetLowerBound.lean`.
 - **§2 interleaving list size.** Lemma 2.10 is represented by
   `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
   `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.

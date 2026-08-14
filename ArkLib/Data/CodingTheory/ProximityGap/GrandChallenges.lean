@@ -25,10 +25,6 @@ The mutual-correlated-agreement challenge uses `CoreDefinitions.mcaError` with
   Agreement*][ABF26]
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace ProximityGap
 
 open scoped NNReal
@@ -65,7 +61,7 @@ theorem gridPt_coe_mul_card {ι : Type} [Fintype ι] [Nonempty ι] (k : ℕ) :
   exact_mod_cast gridPt_mul_card (ι := ι) k
 
 /-- Affine-line MCA is monotone along the integer-agreement grid. -/
-theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
+theorem mcaError_gridPt_mono {F ι : Type} [Field F] [Fintype F]
     [Fintype ι] [Nonempty ι] (C : LinearCode ι F) {k k' : ℕ} (h : k ≤ k') :
     mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤
       mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k' : ℝ) :=
@@ -122,8 +118,9 @@ structure PrizeDomainAdmissible (ι : Type) [Fintype ι] : Prop where
 namespace GrandChallenges
 
 variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
-    [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    [Fintype ι] [Nonempty ι]
 
+omit [Fintype F] [Nonempty ι] in
 /-- A smooth evaluation domain of length at least `16` is prize-domain admissible. -/
 theorem PrizeDomainAdmissible.of_smooth (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (hcard : 16 ≤ Fintype.card ι) : PrizeDomainAdmissible ι := by
@@ -147,6 +144,7 @@ def grandListDecodingChallengeRs (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (k m : ℕ) (ε_star : ℝ≥0) : Prop :=
   grandListDecodingChallenge (ReedSolomon.code domain k : Set (ι → F)) m ε_star
 
+omit [Fintype F] [DecidableEq F] [Nonempty ι] in
 /-- The code selected by `prizeDimension` has exactly the advertised prize rate. -/
 theorem prizeCode_rate_eq (domain : ι ↪ F) (h : PrizeDomainAdmissible ι) (j : Fin 4) :
     LinearCode.rate (ReedSolomon.code domain (prizeDimension (ι := ι) j)) = prizeRate j := by
@@ -211,12 +209,14 @@ namespace GrandMcaResolution
 
 variable {C : LinearCode ι F} {ε_star : ℝ≥0}
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- Below the safe grid point, the MCA bound remains safe. -/
 theorem le_of_gridPt (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
     (hδ : δ ≤ gridPt (ι := ι) R.kStar) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) :=
   le_trans (mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast hδ)) R.below
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- At or above the adjacent unsafe point, the MCA bound remains unsafe. -/
 theorem gt_of_gridPt (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
     (hδ : gridPt (ι := ι) (R.kStar + 1) ≤ δ) :
@@ -224,6 +224,7 @@ theorem gt_of_gridPt (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
   lt_of_lt_of_le R.above
     (mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast hδ))
 
+omit [DecidableEq F] in
 /-- Exact safe half of the boundary cell. -/
 theorem le_of_lt_next (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
     (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
@@ -245,6 +246,7 @@ theorem le_of_lt_next (R : GrandMcaResolution C ε_star) {δ : ℝ≥0}
   rw [mcaError_eq_of_floor_eq (AffineLineGenerator F) C (by positivity) (by positivity) hgrid.symm]
   exact le_trans (mcaError_gridPt_mono C hfloor) R.below
 
+omit [DecidableEq F] in
 /-- The MCA sublevel set is exactly the right-open interval ending at the unsafe grid point. -/
 theorem sublevel_iff (R : GrandMcaResolution C ε_star) {δ : ℝ≥0} :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) ↔
@@ -254,6 +256,7 @@ theorem sublevel_iff (R : GrandMcaResolution C ε_star) {δ : ℝ≥0} :
   push Not at hge
   exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
+omit [DecidableEq F] in
 /-- The adjacent-grid MCA boundary index is unique. -/
 theorem kStar_unique (R R' : GrandMcaResolution C ε_star) : R.kStar = R'.kStar := by
   rcases lt_trichotomy R.kStar R'.kStar with h | h | h
@@ -314,6 +317,7 @@ theorem McaPrizeResolution.to_prize {domain : ι ↪ F} [ReedSolomon.Smooth doma
     (R : McaPrizeResolution domain) : mcaPrize domain :=
   ⟨R.admissible, fun j => (R.answer j).to_challenge⟩
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- A safe witness lies strictly below the unsafe edge of every resolution. -/
 theorem McaLowerWitness.lt_boundary {C : LinearCode ι F} {ε_star : ℝ≥0}
     (w : McaLowerWitness C ε_star) (R : GrandMcaResolution C ε_star) :
@@ -322,6 +326,7 @@ theorem McaLowerWitness.lt_boundary {C : LinearCode ι F} {ε_star : ℝ≥0}
   push Not at h
   exact absurd w.bound (not_le.mpr (R.gt_of_gridPt h))
 
+omit [DecidableEq F] [Nonempty ι] in
 /-- An unsafe witness lies strictly above the safe edge of every resolution. -/
 theorem McaUpperWitness.boundary_lt {C : LinearCode ι F} {ε_star : ℝ≥0}
     (w : McaUpperWitness C ε_star) (R : GrandMcaResolution C ε_star) :
@@ -341,6 +346,7 @@ def McaUpperWitness.ofGt {C : LinearCode ι F} {ε_star δ : ℝ≥0} (hδ : δ 
     (h : mcaError (AffineLineGenerator F) C (δ : ℝ) > (ε_star : ENNReal)) :
     McaUpperWitness C ε_star := ⟨δ, hδ, h⟩
 
+open Classical in
 /-- A correlated-agreement lower bound at a unit-interval radius gives an unsafe MCA witness. -/
 def McaUpperWitness.ofEpsCaGt {C : LinearCode ι F} {ε_star δ : ℝ≥0}
     (hδ : δ ≤ 1)
@@ -383,6 +389,7 @@ structure ListUpperWitness (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) wh
   exceeds : (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) >
     (ε_star : ENNReal) * (Fintype.card F : ENNReal)
 
+omit [Field F] [Fintype F] [DecidableEq F] [Nonempty ι] in
 /-- The maximized list size is monotone on nonnegative radii. -/
 theorem lambda_mono_nnreal {C : Set (ι → F)} {m : ℕ} {a b : ℝ≥0} (hab : a ≤ b) :
     (Code.Lambda (C ^⋈ (Fin m)) (a : ℝ) : ENNReal) ≤
@@ -391,11 +398,12 @@ theorem lambda_mono_nnreal {C : Set (ι → F)} {m : ℕ} {a b : ℝ≥0} (hab :
   exact_mod_cast Code.Lambda_mono (C := C ^⋈ (Fin m)) hr
 
 /-- `Lambda` is constant on equal integer-agreement floor cells of nonnegative radii. -/
-theorem lambda_eq_of_floor_eq {B : Type} [DecidableEq B]
+theorem lambda_eq_of_floor_eq {B : Type}
     {C : Set (ι → B)} {δ δ' : ℝ≥0}
     (h : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ =
       ⌊δ' * (Fintype.card ι : ℝ≥0)⌋₊) :
     Code.Lambda C (δ : ℝ) = Code.Lambda C (δ' : ℝ) := by
+  classical
   unfold Code.Lambda
   apply iSup_congr
   intro y
@@ -422,6 +430,7 @@ namespace GrandListResolution
 
 variable {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
 
+omit [Field F] [DecidableEq F] [Nonempty ι] in
 /-- Below the safe list grid point, the bound remains safe. -/
 theorem le_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : δ ≤ gridPt (ι := ι) R.kStar) :
@@ -429,6 +438,7 @@ theorem le_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   le_trans (lambda_mono_nnreal hδ) R.below
 
+omit [Field F] [DecidableEq F] [Nonempty ι] in
 /-- At or above the adjacent unsafe list grid point, the bound remains unsafe. -/
 theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : gridPt (ι := ι) (R.kStar + 1) ≤ δ) :
@@ -436,6 +446,7 @@ theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   lt_of_lt_of_le R.above (lambda_mono_nnreal hδ)
 
+omit [Field F] [DecidableEq F] in
 /-- Exact safe half of the list-decoding boundary cell. -/
 theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
@@ -456,6 +467,7 @@ theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
   rw [lambda_eq_of_floor_eq (C := C ^⋈ (Fin m)) hgrid.symm]
   exact le_trans (lambda_mono_nnreal (gridPt_mono hfloor)) R.below
 
+omit [Field F] [DecidableEq F] in
 /-- The list-decoding sublevel set is exactly the right-open interval ending at the unsafe grid
 point. -/
 theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :
@@ -467,6 +479,7 @@ theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :
   push Not at hge
   exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
 
+omit [Field F] [DecidableEq F] [Nonempty ι] in
 /-- The adjacent-grid list-decoding boundary index is unique. -/
 theorem kStar_unique (R R' : GrandListResolution C m ε_star) : R.kStar = R'.kStar := by
   rcases lt_trichotomy R.kStar R'.kStar with h | h | h
@@ -522,6 +535,7 @@ theorem ListPrizeResolution.to_prize {domain : ι ↪ F} [ReedSolomon.Smooth dom
     {m : ℕ} (R : ListPrizeResolution domain m) : listDecodingPrize domain m :=
   ⟨R.m_pos, R.admissible, fun j => (R.answer j).to_challenge⟩
 
+omit [Field F] [DecidableEq F] [Nonempty ι] in
 /-- A safe list witness lies strictly below the unsafe edge of every resolution. -/
 theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListLowerWitness C m ε_star) (R : GrandListResolution C m ε_star) :
@@ -530,6 +544,7 @@ theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : �
   push Not at h
   exact absurd w.bound (not_le.mpr (R.gt_of_gridPt h))
 
+omit [Field F] [DecidableEq F] [Nonempty ι] in
 /-- An unsafe list witness lies strictly above the safe edge of every resolution. -/
 theorem ListUpperWitness.boundary_lt {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (w : ListUpperWitness C m ε_star) (R : GrandListResolution C m ε_star) :

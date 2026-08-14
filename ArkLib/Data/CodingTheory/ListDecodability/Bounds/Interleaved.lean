@@ -21,8 +21,6 @@ This file bounds the list size of row-wise interleavings in terms of the base co
   Interleaved Codes*][GGR11]
 -/
 
-set_option linter.unusedFintypeInType false
-
 namespace InterleavedCode
 
 open Code
@@ -36,7 +34,7 @@ open Code
 
 the list size of every nonempty row-wise interleaving is at most
 `choose (b + r) r * Lambda(C, δ)^r`. -/
-theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Fintype A]
+theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite A]
     [DecidableEq A]
     (C : Set (ι → A)) (δ : ℝ) (m : ℕ) (_hm : 1 ≤ m)
     (_hδ_lb : 0 ≤ δ)

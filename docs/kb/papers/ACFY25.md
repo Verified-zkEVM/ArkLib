@@ -41,8 +41,8 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 ## Known Divergences From ArkLib
 
 - The Lean statement is restricted to linear codes over the field alphabet and assumes `0 < δ`.
-- ArkLib's MCA value is the generator-parametric `CoreDefinitions.mcaError`; `epsMca` is its
-  affine-line specialization at a nonnegative radius.
+- ArkLib's MCA value is the generator-parametric `CoreDefinitions.mcaError`; the corresponding
+  affine-line value is `mcaError (AffineLineGenerator F) C δ`.
 
 ## Open Formalization Gaps
 

@@ -18,9 +18,6 @@ This file proves a lower bound on affine-line mutual correlated agreement for li
   Agreement*][ABF26]
 -/
 
-set_option linter.unusedSectionVars false
-set_option linter.unusedDecidableInType false
-
 namespace ProximityGap
 
 open NNReal Code Finset CoreDefinitions
@@ -30,7 +27,7 @@ open Probability
 /-- For a linear code `C` and a radius below its relative minimum distance, affine-line mutual
 correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
 theorem linear_mcaError_ge_information_set
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
@@ -209,15 +206,5 @@ theorem linear_mcaError_ge_information_set
   unfold mcaError
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
     Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
-
-/-- The information-set lower bound for the nonnegative-radius affine-line specialization. -/
-theorem linear_epsMca_ge_information_set
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    (C : LinearCode ι F) (δ : ℝ≥0)
-    (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
-    (↑(min ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) /
-      (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤ epsMca C δ :=
-  linear_mcaError_ge_information_set C δ hδ
 
 end ProximityGap

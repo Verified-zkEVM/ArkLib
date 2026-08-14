@@ -286,8 +286,6 @@
   "ProximityGap.correlatedAgreement_affine_curves",
   "ProximityGap.correlatedAgreement_affine_spaces",
   "ProximityGap.discr_of_irred_components_nonzero",
-  "ProximityGap.epsMca_eq_epsCa_of_pos_of_two_mul_lt_dist",
-  "ProximityGap.epsMca_interleaved_eq",
   "ProximityGap.evalX_R_separable",
   "ProximityGap.exists_a_set_and_a_matching_polynomial",
   "ProximityGap.exists_factors_with_large_common_root_set",

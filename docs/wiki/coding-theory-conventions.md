@@ -110,9 +110,9 @@ Challenges quantify `δ* ∈ [0,1]`, so `IsMCAGenerator` quantifies `δ : I` and
 `ϵMCA(γ) = 1` above some `γ₀ < 1`.
 
 It does **not** bind on the radius argument to a value. `IsMCA`, `mcaError`, and `Lambda` take
-`δ : ℝ`. The affine-line specialization `epsMca` accepts `δ : ℝ≥0` and coerces it to the canonical
-real-valued radius. See [`proximity-error-conventions.md`](proximity-error-conventions.md) for the
-complete proximity-error API.
+`δ : ℝ`. The abbreviation `epsMca` specializes `mcaError` to affine lines and accepts `δ : ℝ≥0`.
+See [`proximity-error-conventions.md`](proximity-error-conventions.md) for the complete
+proximity-error API.
 
 **`Lambda` is built from `Set.encard`,** so an infinite point list contributes `⊤` rather than
 collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
@@ -188,9 +188,9 @@ because the theorems consuming a list-decoding hypothesis reuse the same bound a
 their conclusions, and an `ℕ∞` hypothesis would force two variables and a coupling between them.
 
 **How this layer composes with the proximity-error layer.** `Code.Lambda` and `mcaError` both take
-total real radii. The paper-facing `epsPg`, `epsCa`, and `epsMca` values take nonnegative radii;
-`epsMca` is a reducible affine-line specialization of `mcaError`. A numeric cast is therefore
-sometimes needed, as in `Lambda (C^⋈ m) (gridPt k : ℝ)`, but no interval-membership proof is.
+total real radii, while `epsPg`, `epsCa`, and the affine-line abbreviation `epsMca` take
+nonnegative radii. A numeric cast is therefore sometimes needed, as in
+`Lambda (C^⋈ m) (gridPt k : ℝ)`, but no interval-membership proof is.
 
 **This layer lives in `namespace Code`,** alongside the objects it operates on (`minDist`,
 `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through

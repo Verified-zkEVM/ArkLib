@@ -12,17 +12,15 @@ import ArkLib.Data.Probability.Instances
 /-!
 # Numeric proximity-gap and correlated-agreement errors
 
-This file defines numeric proximity-gap and correlated-agreement errors. Mutual correlated
-agreement uses `CoreDefinitions.mcaError`; `epsMca` is its affine-line specialization with a
-nonnegative radius.
+This file defines numeric proximity-gap and correlated-agreement errors and compares them with
+`CoreDefinitions.mcaError` specialized to affine lines.
 
 ## Main definitions
 
 * `epsPg` — the proximity-gap error.
 * `epsCa` — the correlated-agreement error with separate fold and interleaved radii.
 * `epsCa'` — the equal-radius specialization of `epsCa`.
-* `epsMca` — the abbreviation
-  `mcaError (AffineLineGenerator F) C (δ : ℝ)`.
+* `epsMca` — affine-line notation for the canonical `mcaError`.
 
 The file also relates these values to the correlated-agreement predicates in `Basic.lean`, proves
 their elementary order and endpoint properties, and states the unique-decoding and interleaving
@@ -38,17 +36,13 @@ comparison theorems used by the grand-challenge API.
   Decodability*][Jo26]
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace ProximityGap
 
 open NNReal Code CoreDefinitions unitInterval
 open scoped ProbabilityTheory BigOperators
 open Probability
 
-section McaAdapter
+section McaNotation
 
 variable {ι : Type} [Fintype ι]
 variable {F : Type} [Field F] [Fintype F]
@@ -58,31 +52,7 @@ variable {A : Type} [AddCommMonoid A] [Module F A]
 noncomputable abbrev epsMca (C : ModuleCode ι F A) (δ : ℝ≥0) : ENNReal :=
   mcaError (AffineLineGenerator F) C (δ : ℝ)
 
-/-- `epsMca` is the affine-line specialization of `mcaError`. -/
-theorem epsMca_eq_mcaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
-    epsMca C δ = mcaError (AffineLineGenerator F) C (δ : ℝ) := rfl
-
-/-- The value of `epsMca` at radius zero. -/
-@[simp] theorem epsMca_zero (C : ModuleCode ι F A) :
-    epsMca C 0 = mcaError (AffineLineGenerator F) C 0 := rfl
-
-/-- The value of `epsMca` at radius one. -/
-@[simp] theorem epsMca_one (C : ModuleCode ι F A) :
-    epsMca C 1 = mcaError (AffineLineGenerator F) C 1 := rfl
-
-/-- `epsMca` is monotone in the radius. -/
-theorem epsMca_mono (C : ModuleCode ι F A) {δ δ' : ℝ≥0} (h : δ ≤ δ') :
-    epsMca C δ ≤ epsMca C δ' :=
-  mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast h)
-
-/-- `epsMca` is constant when the two radii have the same integer agreement bound. -/
-theorem epsMca_eq_of_floor_eq (C : ModuleCode ι F A) {δ δ' : ℝ≥0}
-    (h : ⌊(δ : ℝ) * (Fintype.card ι : ℝ)⌋₊ =
-      ⌊(δ' : ℝ) * (Fintype.card ι : ℝ)⌋₊) :
-    epsMca C δ = epsMca C δ' :=
-  mcaError_eq_of_floor_eq (AffineLineGenerator F) C (by positivity) (by positivity) h
-
-end McaAdapter
+end McaNotation
 
 section McaStructuralInterleaving
 
@@ -91,7 +61,7 @@ variable {F : Type} [Field F] [Fintype F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- Affine-line MCA of a code is at most that of any nonempty row-wise interleaving. -/
-theorem mcaError_le_interleaved
+theorem mcaError_le_moduleInterleavedCode
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
     (ht : 0 < t) (hδ_le : δ ≤ 1) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
@@ -158,6 +128,7 @@ noncomputable def epsCaAffineSpaces
 
 /-! ## Monotonicity -/
 
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is monotone in its fold radius. -/
 theorem epsCa_mono_left
     (C : Set (ι → A)) {δ_fld δ_fld' : ℝ≥0} (δ_int : ℝ≥0) (h : δ_fld ≤ δ_fld') :
@@ -173,6 +144,7 @@ theorem epsCa_mono_left
     intro _ hclose
     exact le_trans hclose (by exact_mod_cast h)
 
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is antitone in its interleaved radius. -/
 theorem epsCa_antitone_right
     (C : Set (ι → A)) (δ_fld : ℝ≥0) {δ_int δ_int' : ℝ≥0} (h : δ_int ≤ δ_int') :
@@ -192,6 +164,7 @@ theorem epsCa_antitone_right
 
 /-! ## Endpoint behavior -/
 
+omit [DecidableEq ι] in
 /-- Every word is within relative distance `δ` of a nonempty code once `1 ≤ δ`. -/
 lemma relDistFromCode_le_of_one_le {α : Type} [DecidableEq α] {C : Set (ι → α)}
     (hC : C.Nonempty) (w : ι → α) {δ : ℝ≥0} (hδ : 1 ≤ δ) : δᵣ(w, C) ≤ (δ : ENNReal) := by
@@ -204,6 +177,7 @@ lemma relDistFromCode_le_of_one_le {α : Type} [DecidableEq α] {C : Set (ι →
       _ ≤ δ * (Fintype.card ι : ℝ≥0) := by gcongr
   exact_mod_cast hfloor
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsPg C δ = 0` for `δ ≥ 1`. -/
 theorem epsPg_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty) {δ : ℝ≥0} (hδ : 1 ≤ δ) :
     epsPg (F := F) C δ = 0 := by
@@ -215,6 +189,7 @@ theorem epsPg_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty) {δ : ℝ
     fun γ => relDistFromCode_le_of_one_le hC _ hδ
   rw [if_pos hguard]
 
+omit [DecidableEq ι] [Fintype A] [AddCommGroup A] in
 /-- Every two-word stack is jointly close once the radius is at least one. -/
 lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
     (u : WordStack A (Fin 2) ι) {δ : ℝ≥0} (hδ : 1 ≤ δ) :
@@ -230,6 +205,7 @@ lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
     exact hv
   exact relDistFromCode_le_of_one_le hne _ hδ
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is zero when its interleaved radius is at least one. -/
 theorem epsCa_eq_zero_of_one_le_right {C : Set (ι → A)} (hC : C.Nonempty)
     (δ_fld : ℝ≥0) {δ_int : ℝ≥0} (hδ : 1 ≤ δ_int) :
@@ -239,32 +215,38 @@ theorem epsCa_eq_zero_of_one_le_right {C : Set (ι → A)} (hC : C.Nonempty)
   unfold epsCa
   exact iSup_le fun u => by rw [if_pos (jointProximity_of_one_le hC u hδ)]
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa'` is zero at every radius at least one. -/
 theorem epsCa'_eq_zero_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
     {δ : ℝ≥0} (hδ : 1 ≤ δ) : epsCa' (F := F) C δ = 0 :=
   epsCa_eq_zero_of_one_le_right hC δ hδ
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- A globally monotone `epsPg` is zero throughout the closed unit interval. -/
 theorem epsPg_eq_zero_of_mono {C : Set (ι → A)} (hC : C.Nonempty)
     (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsPg (F := F) C δ ≤ epsPg (F := F) C δ')
     {δ : ℝ≥0} (hδ : δ ≤ 1) : epsPg (F := F) C δ = 0 :=
   le_antisymm (le_of_le_of_eq (hmono δ 1 hδ) (epsPg_eq_zero_of_one_le hC le_rfl)) zero_le
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- A globally monotone `epsCa'` is zero throughout the closed unit interval. -/
 theorem epsCa'_eq_zero_of_mono {C : Set (ι → A)} (hC : C.Nonempty)
     (hmono : ∀ δ δ' : ℝ≥0, δ ≤ δ' → epsCa' (F := F) C δ ≤ epsCa' (F := F) C δ')
     {δ : ℝ≥0} (hδ : δ ≤ 1) : epsCa' (F := F) C δ = 0 :=
   le_antisymm (le_of_le_of_eq (hmono δ 1 hδ) (epsCa'_eq_zero_of_one_le hC le_rfl)) zero_le
 
+omit [DecidableEq ι] [Field F] [Fintype F] in
 private lemma dist_le_zero_iff_mem {C : Set (ι → F)} (u : ι → F) :
     δᵣ(u, C) ≤ (0 : ℝ≥0) ↔ u ∈ C := by
   rw [relDistFromCode_le_iff_distFromCode_le]
   simp [distFromCode_eq_zero_iff_mem]
 
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 private lemma const_mem_zero_iff (γ : F) :
     ((fun _ : ι => γ) ∈ ({0} : Set (ι → F))) ↔ γ = 0 := by
   simp [Set.mem_singleton_iff, funext_iff]
 
+omit [DecidableEq ι] in
 /-- The proximity-gap error of the zero singleton code is positive at radius zero. -/
 theorem epsPg_singleton_zero_pos :
     (0 : ENNReal) < epsPg (F := F) (A := F) (ι := ι) ({0} : Set (ι → F)) 0 := by
@@ -298,6 +280,7 @@ theorem epsPg_singleton_zero_pos :
 
 /-! ## Comparison and predicate bridges -/
 
+omit [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] in
 /-- If a pair is jointly close to a module code, every affine combination is close to the code. -/
 theorem line_close_of_jointProximity
     (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0)
@@ -323,6 +306,7 @@ theorem line_close_of_jointProximity
   · obtain ⟨h0, h1⟩ := hagree j hj
     exact hne (by simp [Pi.add_apply, Pi.smul_apply, h0, h1])
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The proximity-gap error is at most the equal-radius correlated-agreement error. -/
 theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
     epsPg (F := F) (MC : Set (ι → A)) δ ≤ epsCa (F := F) (MC : Set (ι → A)) δ δ := by
@@ -338,8 +322,8 @@ theorem epsPg_le_epsCa (MC : ModuleCode ι F A) (δ : ℝ≥0) :
       exact zero_le
     · rw [if_neg hall, if_neg hjp]
 
-/-- A line-close event outside joint proximity is an affine-line `IsMCA` event for the canonical
-projected-code formulation. -/
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- A line-close event outside joint proximity satisfies affine-line `IsMCA`. -/
 lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     (MC : ModuleCode ι F A) (u : WordStack A (Fin 2) ι) (δ : ℝ≥0) (γ : F)
     (hjp : ¬ jointProximity (C := (MC : Set (ι → A))) (u := u) δ)
@@ -381,6 +365,7 @@ lemma isMCA_affineLine_of_line_close_of_not_jointProximity
     refine ⟨Finset.mem_univ i, ?_⟩
     exact congr_fun (hvproj j).symm ⟨i, hi⟩
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The equal-radius correlated-agreement error is at most affine-line MCA. -/
 theorem epsCa_le_mcaError_affineLine (MC : ModuleCode ι F A) (δ : ℝ≥0) :
     epsCa (F := F) (MC : Set (ι → A)) δ δ ≤
@@ -396,17 +381,14 @@ theorem epsCa_le_mcaError_affineLine (MC : ModuleCode ι F A) (δ : ℝ≥0) :
     intro γ hline
     exact isMCA_affineLine_of_line_close_of_not_jointProximity MC u δ γ hjp hline
 
-/-- The equal-radius correlated-agreement error is at most `epsMca`. -/
-theorem epsCa_le_epsMca (MC : ModuleCode ι F A) (δ : ℝ≥0) :
-    epsCa (F := F) (MC : Set (ι → A)) δ δ ≤ epsMca MC δ :=
-  epsCa_le_mcaError_affineLine MC δ
-
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- The proximity-gap, correlated-agreement, and affine-line MCA errors are ordered. -/
 theorem epsPg_le_epsCa_le_epsMca (MC : ModuleCode ι F A) (δ : ℝ≥0) :
     epsPg (F := F) (MC : Set (ι → A)) δ ≤ epsCa (F := F) (MC : Set (ι → A)) δ δ ∧
     epsCa (F := F) (MC : Set (ι → A)) δ δ ≤ epsMca MC δ :=
-  ⟨epsPg_le_epsCa MC δ, epsCa_le_epsMca MC δ⟩
+  ⟨epsPg_le_epsCa MC δ, epsCa_le_mcaError_affineLine MC δ⟩
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- `epsCa` is constant when its interleaved radii have the same integer agreement bound. -/
 theorem epsCa_eq_of_floor_eq (C : Set (ι → A)) (δ_fld δ_int δ_int' : ℝ≥0)
     (h : Nat.floor (δ_int * Fintype.card ι) = Nat.floor (δ_int' * Fintype.card ι)) :
@@ -422,6 +404,7 @@ theorem epsCa_eq_of_floor_eq (C : Set (ι → A)) (δ_fld δ_int δ_int' : ℝ�
   · rw [if_pos hjp, if_pos (hiff.mp hjp)]
   · rw [if_neg hjp, if_neg (mt hiff.mpr hjp)]
 
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Bridge between affine-line correlated agreement and the numeric CA error. -/
 theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
@@ -450,6 +433,7 @@ theorem δ_ε_correlatedAgreementAffineLines_iff_epsCa_le
     · rw [if_neg hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
+omit [DecidableEq ι] [DecidableEq F] in
 /-- Bridge for the polynomial-curve correlated-agreement predicate. -/
 theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
@@ -478,6 +462,7 @@ theorem δ_ε_correlatedAgreementCurves_iff_epsCaCurves_le {k : ℕ}
     · rw [if_neg hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
+omit [Fintype F] [DecidableEq F] in
 /-- Bridge for the affine-space correlated-agreement predicate. -/
 theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
     (C : Set (ι → A)) (δ ε : ℝ≥0) :
@@ -508,6 +493,14 @@ theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCaAffineSpaces_le {k : ℕ}
 
 /-! ## Unique decoding and interleaving -/
 
+end
+
+section UniqueDecoding
+
+variable {ι : Type} [Fintype ι] [Nonempty ι]
+variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
+
+open Classical in
 /-- Below half the relative minimum distance, affine-line MCA is at most correlated agreement. -/
 theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
     (C : LinearCode ι F) (δ : ℝ≥0) (_hδ_pos : 0 < δ)
@@ -516,6 +509,7 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
   sorry -- external admit [ACFY25 Lemma 4.10].
 
+open Classical in
 /-- Below half the relative minimum distance, affine-line MCA equals correlated agreement. -/
 theorem mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist
     (C : LinearCode ι F) (δ : ℝ≥0) (hδ_pos : 0 < δ)
@@ -525,12 +519,13 @@ theorem mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist
   le_antisymm (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist C δ hδ_pos h_udr)
     (epsCa_le_mcaError_affineLine C δ)
 
-/-- Below half the relative minimum distance, `epsMca` equals correlated agreement. -/
-theorem epsMca_eq_epsCa_of_pos_of_two_mul_lt_dist
-    (C : LinearCode ι F) (δ : ℝ≥0) (hδ_pos : 0 < δ)
-    (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
-    epsMca C δ = epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ :=
-  mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist C δ hδ_pos h_udr
+end UniqueDecoding
+
+section Interleaving
+
+variable {ι : Type} [Fintype ι]
+variable {F : Type} [Field F] [Fintype F]
+variable {A : Type} [AddCommMonoid A] [Module F A]
 
 /-- A nonempty row-wise interleaving does not increase affine-line MCA at radii in `(0, 1)`. -/
 theorem mcaError_interleaved_le
@@ -547,15 +542,8 @@ theorem mcaError_interleaved_eq
     mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) =
       mcaError (AffineLineGenerator F) C (δ : ℝ) :=
   le_antisymm (mcaError_interleaved_le C t δ ht hδ_pos hδ_lt)
-    (mcaError_le_interleaved C t δ ht hδ_lt.le)
+    (mcaError_le_moduleInterleavedCode C t δ ht hδ_lt.le)
 
-/-- `epsMca` is invariant under nonempty row-wise interleaving at radii in `(0, 1)`. -/
-theorem epsMca_interleaved_eq
-    (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (ht : 0 < t) (hδ_pos : 0 < δ) (hδ_lt : δ < 1) :
-    epsMca (C ^⋈ (Fin t)) δ = epsMca C δ :=
-  mcaError_interleaved_eq C t δ ht hδ_pos hδ_lt
-
-end
+end Interleaving
 
 end ProximityGap

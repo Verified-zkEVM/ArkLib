@@ -10,7 +10,7 @@ correlated agreement. For code carriers and distance types, see
 | Module | Contents |
 | --- | --- |
 | `ProximityGap/ProximityGenerators.lean` | Generator-parametric mutual correlated agreement: `IsMCA`, `mcaError`, and `IsMCAGenerator` |
-| `ProximityGap/Errors.lean` | `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line comparison theorems |
+| `ProximityGap/Errors.lean` | `epsPg`, `epsCa`, `epsMca`, their order properties, predicate bridges, and affine-line MCA comparison theorems |
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
 | `ProximityGap/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
@@ -35,21 +35,19 @@ def IsMCAGenerator
 The defining equivalence is `isMCAGenerator_iff_mcaError_le`. Use
 `IsMCAGenerator.prob_le` when a proof needs the probability bound for one word family.
 
-`ProximityGap.epsMca` is the affine-line specialization with a nonnegative radius:
+`epsMca` provides concise notation for the affine-line specialization at a nonnegative radius:
 
 ```lean
 noncomputable abbrev epsMca (C : ModuleCode ι F A) (δ : ℝ≥0) : ENNReal :=
   mcaError (AffineLineGenerator F) C (δ : ℝ)
 ```
 
-Use `mcaError` for generator-parametric results and `epsMca` when working specifically with
-affine lines and nonnegative radii. `epsMca_eq_mcaError` states the specialization explicitly.
+The abbreviation is transparent; use the lemmas for `mcaError` directly.
 
 The main value lemmas are:
 
 - `mcaError_mono`, `mcaError_le_one`, and `mcaError_ne_top`;
 - `mcaError_eq_of_floor_eq` for constancy on integer-agreement cells;
-- `epsMca_mono` and `epsMca_eq_of_floor_eq` for the nonnegative-radius specialization;
 - the transport lemmas in `MCAGenerator.lean` and `TensorGenerator.lean`.
 
 ## Proximity gap and correlated agreement
@@ -71,7 +69,7 @@ Their order behavior is not uniform:
 
 | Value | Available behavior |
 | --- | --- |
-| `epsMca C δ` | monotone in `δ` |
+| `mcaError G C δ` (and hence `epsMca C δ`) | monotone in `δ` |
 | `epsCa C δ_fld δ_int` | monotone in `δ_fld` and antitone in `δ_int` |
 | `epsPg C δ` | zero for `1 ≤ δ`; the zero singleton code gives a positive value at `δ = 0`, so global monotonicity fails in general |
 | `epsCa' C δ` | zero for `1 ≤ δ`; no global monotonicity lemma is provided |
@@ -88,21 +86,19 @@ For a module code and a common nonnegative radius,
 epsPg C δ ≤ epsCa C δ δ ≤ epsMca C δ.
 ```
 
-This is `epsPg_le_epsCa_le_epsMca`; its two components are `epsPg_le_epsCa` and
-`epsCa_le_epsMca`. The second component also has the canonical form
-`epsCa_le_mcaError_affineLine`.
+This is `epsPg_le_epsCa_le_epsMca`; its two component inequalities are
+`epsPg_le_epsCa` and `epsCa_le_mcaError_affineLine`.
 
 The unique-decoding comparison is:
 
 - `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the externally sourced direction;
-- `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality;
-- `epsMca_eq_epsCa_of_pos_of_two_mul_lt_dist` for the nonnegative-radius specialization.
+- `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
 
 For a positive row-wise interleaving width and a radius in `(0, 1)`:
 
-- `mcaError_le_interleaved` gives the base-to-interleaved inequality;
+- `mcaError_le_moduleInterleavedCode` gives the base-to-interleaved inequality;
 - `mcaError_interleaved_le` gives the interleaved-to-base inequality;
-- `mcaError_interleaved_eq` and `epsMca_interleaved_eq` give equality.
+- `mcaError_interleaved_eq` gives equality.
 
 The numeric correlated-agreement values are connected to the predicate API by:
 
@@ -145,9 +141,10 @@ and `ListPrizeResolution.to_prize` assemble per-rate answers.
 ## Naming
 
 Names treat initialisms as words: `epsMca`, `epsCa`, `epsPg`, `GrandMcaAnswer`, and
-`grandMcaChallenge`. The canonical generator-level value retains its established name
-`mcaError`. The suffixes `_le`, `_eq`, `_mono`, `_of_...`, and `_iff_...` describe the conclusion
-and hypotheses in the usual mathlib style.
+`grandMcaChallenge`.
+The canonical generator-level value retains its established name `mcaError`. The suffixes `_le`,
+`_eq`, `_mono`, `_of_...`, and `_iff_...` describe the conclusion and hypotheses in the usual
+mathlib style.
 
 ## Source status
 
