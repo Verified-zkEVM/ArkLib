@@ -196,16 +196,19 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 
 - **D2.3.** Restricted Hamming distance `Δ_T` is not formalized; only the full-domain Hamming
   and relative-distance notions exist.
-- **§3 remainder.** Theorems 3.4–3.14 all have a Lean statement under
+- **§3 remainder.** Theorems 3.4–3.13 have a Lean statement under
   `ArkLib/Data/CodingTheory/ListDecodability/Bounds/`; Definition 3.1 / Theorem 3.2 /
   Corollary 3.3 (the Johnson family) are the pre-existing `Jqℓ` / `johnson_bound_lambda_le_ell` /
-  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.15 and 3.16 are absent.** What
-  remains for 3.4–3.14 is *proof*, plus the fidelity gaps below.
+  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.14, 3.15 and 3.16 are absent.**
+  Theorem 3.14 awaits primary-source verification of [JH01] Theorem 2; the proved
+  `rs_codimension_one_list_size` is a different internal lemma. What remains for 3.4–3.13 is
+  *proof*, plus the fidelity gaps below.
   - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
-    argument), both halves of Theorem 3.9, Corollary 3.8, Theorems 3.13 and 3.14, and — the deepest
+    argument), both halves of Theorem 3.9, Corollary 3.8, Theorem 3.13, and — the deepest
     of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
     the two `η`-forms, and the univariate-multiplicity sibling axiom-clean along with it; and
-    Theorem 3.10, whose consequence `large_alphabet_card_ge_exp_of_inv_length` is axiom-clean with it.
+    Theorem 3.10, whose consequence `large_alphabet_card_ge_exp_of_inv_length` is axiom-clean with
+    it. The internal codimension-one Reed-Solomon interpolation lemma is also axiom-clean.
     Six of these landed from one round of Aleph prover runs (ArkLib #724–#728, #732).
   - Admitted with the source statement in the docstring: Theorem 3.6, Theorem 3.11, Theorem 3.12.
     `random_linear_lambda_lower_exists` is *derived* from Theorem 3.11, so it inherits that admit.
@@ -214,15 +217,17 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is unformalized and
     not yet attempted (it needs the paper's appendix restatement of [KKH26]); Theorem 3.16 stays
     unformalized **by decision** — it needs a computational-hardness framework.
-  - Fidelity gaps to close, in rough priority order: (i) Lemma 3.7 / Corollary 3.8 / Theorem 3.10 are
+  - Fidelity gaps to close, in rough priority order: (i) Theorem 3.14 needs the closed-access JH01
+    primary source before a formal statement can be justified; (ii) Lemma 3.7 / Corollary 3.8 /
+    Theorem 3.10 are
     stated for linear codes over a field, whereas the paper states them for an arbitrary code
     `C : Σ^k → Σ^n` — for Lemma 3.7 the generalisation is nearly free, since linearity is used once;
-    (ii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ` (the `∃ n₀`
+    (iii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ` (the `∃ n₀`
     concern is settled: the threshold sits outside `∀ η`, so the paper's `η = Θ(1/n)` corollary is
-    reachable and is derived); (iii) Theorem 3.12 is stated at real
-    `α, β` where [BKR06] needs them rational, and the rounding shortfall is polynomial, so that
-    admit may be false as stated; (iv) Theorem 3.11 is one stronger than [GLMRSW22]'s strict-`<L`
-    definition, faithfully to [ABF26]'s printing.
+    reachable and is derived). The old Theorem 3.11 off-by-one and Theorem 3.12 all-real
+    overgeneralisation are closed: Lean now uses `Lambda < L` / `L ≤ Lambda` for [GLMRSW22] and
+    rational parameters for [BKR06]. The checked [MS77] source is a binary shell estimate; the
+    q-ary ball statement remains valid as a proved generalisation, not a verbatim attribution.
   - **Two paper defects found in §3 and owed upstream**: Theorem 3.9 drops [ST20]'s integrality
     convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
     either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs

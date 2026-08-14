@@ -20,10 +20,11 @@ fields, via subspace polynomials.
 
 ## What ArkLib Uses From This Paper
 
-Corollary 2.2 (low rate), as rendered by [ABF26] Theorem 3.12: for infinitely many `q` there is a word
-`w` with `|Λ(RS[F_q, F_q, ⌊q^α⌋], 1 − q^{β−1}, w)| ≥ q^{(α−β²)·log₂ q}`. It rests on Theorem 2.1, which
-produces a family `P` of polynomials of degree `q^u` and a word `w` with `|P| ≥ q^{(u+1)m−v²}` and
-`agree(w, P) ≥ q^v`.
+Corollary 2.2 (low rate): for rational `0 < α < β < 1` and infinitely many `q` there is a word `w`
+with `|Λ(RS[F_q, F_q, ⌊q^α⌋], 1 − q^{β−1}, w)| ≥ q^{(α−β²)·log₂ q}`. It rests on Theorem 2.1,
+which produces a family `P` of polynomials of degree `q^u` and a word `w` with
+`|P| ≥ q^{(u+1)m−v²}` and `agree(w, P) ≥ q^v`. [ABF26] Theorem 3.12 silently changes the rational
+parameters to reals; ArkLib follows the primary source instead.
 
 ## Main ArkLib Touchpoints
 
@@ -40,16 +41,15 @@ cited witnesses therefore sit one degree above the code, but they are monic subs
 `∏_{a ∈ L}(X − a)`, so subtracting any fixed member gives `|P|` distinct polynomials of degree `< K`, all
 agreeing with the shifted word `w − P₀` on the same `≥ q^v` points. The construction transfers.
 
-**Rationality — not harmless.** Corollary 2.2 requires `δ, ρ ∈ ℚ` and its proof needs `u = δm`, `v = ρm`
-integral; [ABF26] states it for real `α, β`. At exact `u, v` the source beats the target by a slack of
-`+m`, while `u = ⌊αm⌋, v = ⌈βm⌉` costs `−2βm − 1` — the same order, so the naive approximation falls
-short *polynomially*. It looks recoverable ("for infinitely many `q`" lets one choose the subsequence of
-`m`, and by Weyl equidistribution there are infinitely many `m` with `{αm}`, `{βm}` both near `0`), but
-that is a Diophantine argument the source does not contain.
+**Rationality is encoded, not approximated.** Corollary 2.2 requires `δ, ρ ∈ ℚ` and its proof needs
+`u = δm`, `v = ρm` integral. The Lean declaration therefore binds `α β : ℚ`, coercing them
+explicitly to `ℝ` in real powers and logarithmic exponents. There is no admitted all-real
+compatibility alias. Naive floor/ceiling approximation loses same-order slack and does not justify
+the all-real statement printed by [ABF26].
 
 ## Open Formalization Gaps
 
-Corollary 2.2 itself, and the real-`α, β` case in particular — see above.
+Corollary 2.2 itself. An arbitrary-real extension is also open and would require a separate proof.
 
 ## Source Access
 
