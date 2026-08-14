@@ -95,7 +95,7 @@ This is `epsPg_le_epsCa_le_epsMca`; its two component inequalities are
 
 The unique-decoding comparison is:
 
-- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the externally sourced direction;
+- `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` for the MCA-to-CA direction;
 - `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` for the resulting equality.
 
 For a positive row-wise interleaving width and a radius in `(0, 1)`:
@@ -155,9 +155,8 @@ The canonical generator-level value retains its established name `mcaError`. The
 `_eq`, `_mono`, `_of_...`, and `_iff_...` describe the conclusion and hypotheses in the usual
 mathlib style.
 
-## Source status
+## Sources and axiom accounting
 
-Externally sourced declarations retain a source locator on their `sorry` annotation. The paper KB
-pages describe the corresponding source statements, while `scripts/axiom_baseline.json` and the
-axiom sweep record their trusted impact. The public API and usage guidance on this page do not
-depend on the current number of admitted results.
+The file-level references and paper KB pages identify the source results represented by these
+theorems. Run `./scripts/validate.sh --axioms` to verify their axiom dependencies along with the
+rest of the library.
