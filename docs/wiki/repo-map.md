@@ -207,12 +207,11 @@ home_page/            site assets and assembled website root
   needs, which mentions no list size and is reusable). The file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
-  results about them. Four of these bounds remain deep external results carried as tagged `sorry`
-  admits with the source statement in the docstring — the interleaved-code bound, the
-  random-linear-code bound, the extension-field Reed-Solomon separation and the
-  random-evaluation-domain bound. Everything else is proved in-tree and axiom-clean, including
-  [CZ25]'s subspace-design theorem (and therefore the folded-Reed-Solomon and
-  univariate-multiplicity capacity corollaries) and the [AGL23] large-alphabet barrier.
+  results about them. Some deep bounds are externally sourced and carry tagged `sorry`
+  annotations; use the paper KB pages and the axiom baseline to inspect their source and trusted
+  impact. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
+  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
+  large-alphabet barrier.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the

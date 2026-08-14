@@ -22,33 +22,31 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 ## What ArkLib Uses From This Paper
 
 - Lemma 4.10's unique-decoding MCA-from-CA direction below half the relative minimum distance.
-- In Lean, only the `mcaError ≤ epsCA` direction is an external leaf. The reverse direction is
-  proved as ABF26 Fact 4.5, so the equality is an ABF26 consequence derived by antisymmetry.
+- In Lean, the sourced direction is `mcaError ≤ epsCa`. The reverse inequality is proved in-tree,
+  and the equality follows by antisymmetry.
 
 ## Main ArkLib Touchpoints
 
 - [`ProximityGap/Errors.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) contains
-  the admitted `mcaError_le_epsCA_below_udr` direction and the derived
-  `mcaError_eq_epsCA_below_udr` equality.
+  `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` and the derived
+  `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist` equality.
 - The [ABF26 audit](../audits/open-problems-list-decoding-and-correlated-agreement.md) records the
   statement-level comparison and the explicit open-radius hypothesis.
 
 ## Version Notes
 
 - `ACFY24` is the ePrint version; `ACFY25` is the published EUROCRYPT version.
-- ArkLib uses `ACFY25` for the Lemma 4.10 locator rather than silently transferring numbering
-  between versions.
+- Lean citations use `ACFY25` for the published Lemma 4.10 locator.
 
 ## Known Divergences From ArkLib
 
-- The trusted Lean statement is restricted to linear codes over the field alphabet and carries
-  `0 < δ` explicitly.
-- ArkLib's MCA value is the generator-parametric `CoreDefinitions.mcaError`; `epsMCA` is only its
-  reducible affine-line paper spelling.
+- The Lean statement is restricted to linear codes over the field alphabet and assumes `0 < δ`.
+- ArkLib's MCA value is the generator-parametric `CoreDefinitions.mcaError`; `epsMca` is its
+  affine-line specialization at a nonnegative radius.
 
 ## Open Formalization Gaps
 
-- Prove `mcaError_le_epsCA_below_udr` in-tree and remove the external leaf.
+- Prove `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` in-tree.
 
 ## Source Access
 

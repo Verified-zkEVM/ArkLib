@@ -8,10 +8,9 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 
 /-!
-# MCA information-set lower bound
+# Mutual correlated agreement information-set lower bound
 
-This file proves the elementary information-set lower bound from Section 4 of [ABF26]. Its
-conclusion is stated directly on the canonical affine-line `CoreDefinitions.mcaError` value.
+This file proves a lower bound on affine-line mutual correlated agreement for linear codes.
 
 ## References
 
@@ -28,12 +27,9 @@ open NNReal Code Finset CoreDefinitions
 open scoped BigOperators NNReal ENNReal ProbabilityTheory
 open Probability
 
-/-- **ABF26 `prop:mca-information-set-lower-bound`.** For a linear code `C` and a radius below its
-relative minimum distance, affine-line MCA is at least `min(⌊δ n⌋ / |F|, 1)`.
-
-The proof constructs `r := min(⌊δ n⌋, |F|)` distinct bad affine-line challenges and feeds their
-count directly into `mcaError`; no parallel MCA event or supremum is introduced. -/
-theorem linear_mcaError_ge_informationSet
+/-- For a linear code `C` and a radius below its relative minimum distance, affine-line mutual
+correlated agreement is at least `min(⌊δ n⌋ / |F|, 1)`. -/
+theorem linear_mcaError_ge_information_set
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
@@ -214,14 +210,14 @@ theorem linear_mcaError_ge_informationSet
   exact le_iSup (fun V : Fin 2 → (ι → F) =>
     Pr_{let γ ←$ᵖ F}[IsMCA (AffineLineGenerator F) C γ V (δ : ℝ)]) U
 
-/-- Compatibility theorem retaining the extraction's paper-oriented name. -/
-theorem linear_epsMCA_ge_informationSet
+/-- The information-set lower bound for the nonnegative-radius affine-line specialization. -/
+theorem linear_epsMca_ge_information_set
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : LinearCode ι F) (δ : ℝ≥0)
     (hδ : (δ : ℝ) * Fintype.card ι < (Code.dist (C : Set (ι → F)) : ℝ)) :
     (↑(min ((⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ : ℝ≥0) /
-      (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤ epsMCA C δ :=
-  linear_mcaError_ge_informationSet C δ hδ
+      (Fintype.card F : ℝ≥0)) 1) : ℝ≥0∞) ≤ epsMca C δ :=
+  linear_mcaError_ge_information_set C δ hδ
 
 end ProximityGap

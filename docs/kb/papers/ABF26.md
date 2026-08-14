@@ -80,14 +80,11 @@ manuscript, not to the original sources it cites — those get their own keys (`
   `mds_johnson_lambda_le` and the three code-family instantiations
   `rs_lambda_le_johnson_mds`, `irs_lambda_le_johnson_mds`, `frs_lambda_le_johnson_mds`. The
   Plotkin regime → `CodingTheory.plotkin_card_le_ell`.
-- **§1 prize carriers and §4 errors.** The adjacent integer-grid challenge contracts, their
-  `δ* = 1` all-good endpoint, and witness-carrying answers are in
-  `ProximityGap/GrandChallenges.lean`. Their MCA fields use the canonical
-  `CoreDefinitions.mcaError` specialized to `AffineLineGenerator`; `epsMCA` is only a reducible
-  paper-notation adapter. Numeric `epsPG` / `epsCA`, Fact 4.5, the guarded-error monotonicity
-  counter-pins, and admitted Lemmas 4.6/4.7 are in `ProximityGap/Errors.lean`.
-  The information-set MCA lower bound is proved in `InformationSetLowerBound.lean`.
-- **§2 interleaving list size.** Lemma 2.10 is the admitted
+- **§1 prize carriers and §4 errors.** `ProximityGap/GrandChallenges.lean` contains the
+  adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
+  `epsCa`, the affine-line specialization `epsMca`, and their comparison theorems. The
+  information-set lower bound is in `InformationSetLowerBound.lean`.
+- **§2 interleaving list size.** Lemma 2.10 is represented by
   `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
   `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.
 - **§6 erasure correction (support only).** `CodingTheory.eq_of_consistent_with_erased` proves

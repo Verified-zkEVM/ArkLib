@@ -32,9 +32,8 @@ folding/proximity-gap development; there is no WHIR protocol folder under `ArkLi
   [`ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
 - Folding and mutual-correlated-agreement material under
   [`ArkLib/Data/CodingTheory/ProximityGap/`](../../../ArkLib/Data/CodingTheory/ProximityGap/).
-- The ePrint lineage for Lemma 4.10's unique-decoding MCA consequence. The Lean file cites the
-  published `ACFY25` key; only the `mcaError ≤ epsCA` direction is externally admitted, and the
-  equality is derived using the proved reverse inequality.
+- The ePrint lineage for the published version's unique-decoding MCA consequence. The Lean
+  declaration uses the `ACFY25` key and is described on that paper's KB page.
 
 ## Main ArkLib Touchpoints
 

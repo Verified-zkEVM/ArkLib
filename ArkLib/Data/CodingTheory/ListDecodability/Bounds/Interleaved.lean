@@ -11,8 +11,7 @@ import Mathlib.Analysis.SpecialFunctions.Log.Basic
 /-!
 # List-size bounds for interleaved codes
 
-Paper-cited list-size bounds live in the `ListDecodability/Bounds` layer; the structural
-interleaving API remains independent of list decoding.
+This file bounds the list size of row-wise interleavings in terms of the base code's list size.
 
 ## References
 
@@ -28,15 +27,15 @@ namespace InterleavedCode
 
 open Code
 
-/-- **ABF26 Lemma 2.10 / GGR11 Theorem 2.5.** Let `C` have relative minimum distance
-`δ_C := minDist C / |ι|`, and let `δ ∈ [0, δ_C)`. With
+/-- Let `C` have relative minimum distance `δ_C := minDist C / |ι|`, and let
+`δ ∈ [0, δ_C)`. With
 
 * `η := δ_C - δ`,
 * `b := ⌈δ / η⌉`, and
 * `r := ⌈log₂(δ_C / η)⌉`,
 
-the list size of every nonempty row-wise interleaving is bounded by
-`choose (b + r) r * Lambda(C, δ)^r`, independently of the interleaving width. -/
+the list size of every nonempty row-wise interleaving is at most
+`choose (b + r) r * Lambda(C, δ)^r`. -/
 theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Fintype A]
     [DecidableEq A]
     (C : Set (ι → A)) (δ : ℝ) (m : ℕ) (_hm : 1 ≤ m)

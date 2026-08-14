@@ -83,7 +83,8 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
 | Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` — see the rate caveat below |
 | Alphabet-normalized rate | `ℚ≥0` | `LinearCode.alphabetRate`; `alphabetRate_cast_eq` gives the `ℝ`-cast form |
-| Proximity radius `δ` argument, **any** layer | `ℝ`, deliberately unrestricted | `Code.Lambda`, `IsMCA`, `mcaError` — see below; do **not** narrow it |
+| Proximity radius `δ` for list size and generator MCA | `ℝ`, deliberately unrestricted | `Code.Lambda`, `IsMCA`, `mcaError` |
+| Proximity radius `δ` for paper-facing errors | `ℝ≥0` | `epsPg`, `epsCa`, `epsMca` |
 | Proximity radius `δ` as a *quantifier on an error bound* | `I` (`= [0,1]`) | `IsMCAGenerator`'s `∀ δ : I` — this is the one place the sources' `[0,1]` binds |
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
 | ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
@@ -108,14 +109,10 @@ Challenges quantify `δ* ∈ [0,1]`, so `IsMCAGenerator` quantifies `δ : I` and
 `I → ℝ≥0`. Closed, not `Ioo 0 1`: BCGM25 Lemma 3.18 gives `ϵMCA(0) = ϵZE` and Remark 3.15 saturates
 `ϵMCA(γ) = 1` above some `γ₀ < 1`.
 
-It does **not** bind on the radius *argument* to a value. `IsMCA` and `mcaError` take `δ : ℝ`, like
-`Lambda`, because the size clause `|T| ≥ n·(1 − δ)` is total and honest at every real and because
-narrowing only relocates a membership obligation to every call site. Do not cite ABF26 as settling
-this: it contradicts itself, writing `δ ∈ [0,1]` in §1.2 and at the Grand Challenges but
-`δ ∈ (0,1)` at Definitions 4.1/4.3, Fact 4.5 and Lemmas 4.6/4.7. See
-[`proximity-error-conventions.md`](proximity-error-conventions.md) for the full argument, the two
-concrete payoffs (an unconditional abf26 bridge, a total `gridPt`), and which helper lemmas each
-error notion can actually carry.
+It does **not** bind on the radius argument to a value. `IsMCA`, `mcaError`, and `Lambda` take
+`δ : ℝ`. The affine-line specialization `epsMca` accepts `δ : ℝ≥0` and coerces it to the canonical
+real-valued radius. See [`proximity-error-conventions.md`](proximity-error-conventions.md) for the
+complete proximity-error API.
 
 **`Lambda` is built from `Set.encard`,** so an infinite point list contributes `⊤` rather than
 collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
@@ -190,12 +187,10 @@ statement worth making and drops `0 ≤ ℓ` from every transfer. It is real-val
 because the theorems consuming a list-decoding hypothesis reuse the same bound as a *number* in
 their conclusions, and an `ℕ∞` hypothesis would force two variables and a coupling between them.
 
-**Where this layer agrees with the `ε`-error layer.** Both take `δ : ℝ` and are total: `I` carries
-no `Sub`, so a radius written `1 - √ρ - η` cannot be *formed* in it without a membership proof at
-every call site. Narrowing either layer's radius to `I` is what puts a side condition on the
-`epsMCA`/`mcaError` bridge and blocks a total `gridPt`. A radius reaches either layer with no
-*membership proof*; a numeric cast may still be needed, as in `GrandChallenges`'
-`Lambda (C^⋈ m) (gridPt k : ℝ)`, and a cast is free where a membership obligation is not.
+**How this layer composes with the proximity-error layer.** `Code.Lambda` and `mcaError` both take
+total real radii. The paper-facing `epsPg`, `epsCa`, and `epsMca` values take nonnegative radii;
+`epsMca` is a reducible affine-line specialization of `mcaError`. A numeric cast is therefore
+sometimes needed, as in `Lambda (C^⋈ m) (gridPt k : ℝ)`, but no interval-membership proof is.
 
 **This layer lives in `namespace Code`,** alongside the objects it operates on (`minDist`,
 `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through
@@ -243,7 +238,7 @@ replace it.
   `<codeFamily>_<quantity>_<regime>`:
   - `<codeFamily>` — `linear`, `rs`, `frs`, `irs`, `mds`, `subspaceDesign`; omit when the
     statement is alphabet-generic.
-  - `<quantity>` — `lambda` (list size), `dim`, `johnson_bound`, `epsCA`, `epsMCA`, `epsPG`.
+  - `<quantity>` — `lambda` (list size), `dim`, `johnson_bound`, `epsCa`, `epsMca`, `epsPg`.
   - `<regime>` — `unique_decoding`, `johnson_range`, `capacity`, `breakdown`,
     `lower_capacity`, …; omit when there is no regime distinction.
 
