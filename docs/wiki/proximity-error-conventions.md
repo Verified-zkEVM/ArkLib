@@ -14,6 +14,10 @@ correlated agreement. For code carriers and distance types, see
 | `ProximityGap/Basic.lean` | Predicate forms of proximity gap and correlated agreement |
 | `ProximityGap/TensorGenerator.lean` | Mutual-correlated-agreement transport through tensor generators and row-wise interleaving |
 | `ProximityGap/GrandChallenges.lean` | Integer-grid challenge predicates, answer types, witnesses, and Reed--Solomon prize specializations |
+| `ProximityGap/CapacityBounds.lean` | Source-audited §4 upper/lower bounds on `epsCa` and canonical `mcaError` |
+| `ProximityGap/LineDecoding.lean` | Natural-cardinality line decodability and its MCA consequence |
+| `Connections/ListDecodingAndCA.lean` | §5 conversions between `Code.Lambda`, CA, and MCA |
+| `ProximityGap/GrandChallenges/CapacityBounds.lean` | Admit-dependent capacity-bound witness extensions; imports the core carrier, never conversely |
 
 ## Mutual correlated agreement
 
@@ -137,6 +141,11 @@ convert either form to its logical challenge.
 The prize API uses `PrizeDomainAdmissible`, `prizeRate`, `prizeDimension`, and
 `prizeCode_rate_eq` to select Reed--Solomon codes at exact rates. `McaPrizeResolution.to_prize`
 and `ListPrizeResolution.to_prize` assemble per-rate answers.
+
+Bounds that produce one-sided prize evidence belong in extension modules below
+`ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonBCHKS25` is in
+`GrandChallenges/CapacityBounds.lean`; this keeps `GrandChallenges.lean` independent of the
+catalogue's external admits.
 
 ## Naming
 

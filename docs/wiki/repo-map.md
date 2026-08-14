@@ -204,7 +204,9 @@ home_page/            site assets and assembled website root
   `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
   `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
   corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
-  needs, which mentions no list size and is reusable). The file/directory pair
+  needs, which mentions no list size and is reusable), and `Bounds/KKH26.lean` plus
+  `Bounds/KKH26Asymptotic.lean` (the concrete [KKH26] templates and ABF26 Theorem 3.15). The
+  file/directory pair
   `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
   `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
   results about them. Some deep bounds are externally sourced and carry tagged `sorry`
@@ -212,6 +214,12 @@ home_page/            site assets and assembled website root
   impact. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
   folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
   large-alphabet barrier.
+- ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
+  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds,
+  `ProximityGap/LineDecoding.lean` holds Definition 4.20 and Theorem 4.21, and
+  `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
+  that turn those admits into prize witnesses live below `ProximityGap/GrandChallenges/`, so the
+  core `GrandChallenges.lean` grid and carrier API does not import the catalogue.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the

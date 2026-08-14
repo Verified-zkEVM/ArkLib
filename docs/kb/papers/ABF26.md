@@ -16,9 +16,15 @@ related_modules:
   - ArkLib/Data/CodingTheory/ExtensionCodes.lean
   - ArkLib/Data/CodingTheory/JohnsonBound/Family.lean
   - ArkLib/Data/CodingTheory/ListDecodability/Bounds/Interleaved.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean
+  - ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean
+  - ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean
   - ArkLib/Data/CodingTheory/ProximityGap/Errors.lean
   - ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean
   - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean
   - ArkLib/Data/CodingTheory/SubspaceDesign.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean
@@ -84,6 +90,14 @@ manuscript, not to the original sources it cites — those get their own keys (`
   adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
   `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
   in `InformationSetLowerBound.lean`.
+- **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
+  `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
+  connections on the canonical error and list-size carriers. `LineDecoding.lean` formalizes
+  Definition 4.20 and its externally sourced MCA consequence. The prize witness consuming the
+  BCHKS25 upper bound is deliberately isolated in `GrandChallenges/CapacityBounds.lean`.
+- **§3.15 and the KKH appendix.** `ListDecodability/Bounds/KKH26.lean` contains the concrete
+  useful-family and sum-set templates; `KKH26Asymptotic.lean` derives the asymptotic list lower
+  bound while carrying finite-field/smooth-domain existence as an explicit hypothesis.
 - **§2 interleaving list size.** Lemma 2.10 is represented by
   `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
   `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.
@@ -123,6 +137,13 @@ manuscript, not to the original sources it cites — those get their own keys (`
   [`InformationSetLowerBound.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean),
   and [`GrandChallenges.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean)
   — §1 and §4 numeric MCA/CA infrastructure and prize carriers.
+- [`CapacityBounds.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean),
+  [`LineDecoding.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean),
+  and [`Connections/ListDecodingAndCA.lean`](../../../ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA.lean)
+  — the §4–§5 theorem catalogue.
+- [`ListDecodability/Bounds/KKH26.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26.lean)
+  and [`KKH26Asymptotic.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/KKH26Asymptotic.lean)
+  — the appendix templates and Theorem 3.15.
 - The running faithfulness ledger is
   [`docs/kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../audits/open-problems-list-decoding-and-correlated-agreement.md);
   it, not this page, is the place to record per-statement coverage.
@@ -199,10 +220,11 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 - **§3 remainder.** Theorems 3.4–3.13 have a Lean statement under
   `ArkLib/Data/CodingTheory/ListDecodability/Bounds/`; Definition 3.1 / Theorem 3.2 /
   Corollary 3.3 (the Johnson family) are the pre-existing `Jqℓ` / `johnson_bound_lambda_le_ell` /
-  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.14, 3.15 and 3.16 are absent.**
-  Theorem 3.14 awaits primary-source verification of [JH01] Theorem 2; the proved
-  `rs_codimension_one_list_size` is a different internal lemma. What remains for 3.4–3.13 is
-  *proof*, plus the fidelity gaps below.
+  `mds_johnson_lambda_le_of_rate_distance` under `JohnsonBound/`. **3.16 is absent by
+  design; 3.15 is present in the KKH modules.** Theorem 3.14 still awaits primary-source
+  verification of [JH01] Theorem 2; the proved `rs_codimension_one_list_size` is a different
+  internal lemma. What remains for the admitted catalogue is *proof*, plus the fidelity gaps
+  below.
   - Proved in-tree and axiom-clean: Lemma 3.7 (Elias volume bound, by the paper's own averaging
     argument), both halves of Theorem 3.9, Corollary 3.8, Theorem 3.13, and — the deepest
     of them — Theorem 3.4 at [CZ25] Theorem B.5's `(k−1)`-level premise, which makes Corollary 3.5,
@@ -214,9 +236,9 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     `random_linear_lambda_lower_exists` is *derived* from Theorem 3.11, so it inherits that admit.
   - **§3 numbering follows the tex, not the cached PDF.** The cached [ABF26] build stops at Theorem
     3.14 and numbers the [CW07] barrier 3.15; the tex inserts the [KKH26] asymptotic Reed-Solomon
-    lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is unformalized and
-    not yet attempted (it needs the paper's appendix restatement of [KKH26]); Theorem 3.16 stays
-    unformalized **by decision** — it needs a computational-hardness framework.
+    lower bound as **Theorem 3.15** and pushes [CW07] to **3.16**. Theorem 3.15 is now derived from
+    the formalized appendix templates. Theorem 3.16 stays unformalized **by decision** — it needs
+    a computational-hardness framework.
   - Fidelity gaps to close, in rough priority order: (i) Theorem 3.14 needs the closed-access JH01
     primary source before a formal statement can be justified; (ii) Lemma 3.7 / Corollary 3.8 /
     Theorem 3.10 are
@@ -237,9 +259,10 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
   lemmas exist; the erasure algorithm, its cost model, and the Lemma 6.12 application do not.
-- **§4, §5.** The correlated-agreement and mutual-correlated-agreement conjectures and the
-  list-decoding/CA connections are not formalized at this layer. See the ledger for the
-  per-statement position.
+- **§4, §5.** The cited bounds and list-decoding/CA connections are catalogued with 18 new
+  external admits, while their arithmetic corollaries and carrier bridges are proved in-tree.
+  The random-RS MCA result and the draft-only MCA conjecture remain outside this layer. See the
+  ledger for each statement's source-side guards and normalization choices.
 
 ## Source Access
 

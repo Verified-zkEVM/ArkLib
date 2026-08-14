@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
@@ -74,15 +75,18 @@ This file is the umbrella; the statements are in `Bounds/`.
   the random-evaluation-domain upper bound. The distinct [JH01] result is not formalised.
 * `Bounds/SubspaceDesign.lean` — [CZ25]'s upper bound, its two reformulations, and the folded-RS and
   multiplicity-code corollaries, over the machinery in `Bounds/AgreementHypergraph.lean`.
+* `Bounds/KKH26.lean` and `Bounds/KKH26Asymptotic.lean` — the concrete [KKH26] useful-family
+  templates and the derived ABF26 Theorem 3.15.
 
 ## External admits
 
-Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
+Four statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
 (`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
 (`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
-(`rs_random_domain_lambda_le`, [AGL24]). Each admit's docstring carries the source statement
-verbatim, the variable map into ArkLib's vocabulary, and a note on every place the formalised
-statement differs from the printed one.
+(`rs_random_domain_lambda_le`, [AGL24]), plus the number-theoretic KKH sum-set estimate
+(`two_pow_mul_choose_le_card_sumSet`, [KKH26] Lemma 1). Each admit's docstring carries the
+source statement, the variable map into ArkLib's vocabulary, and a note on every place the
+formalised statement differs from the printed one.
 
 One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
 than its input: `random_linear_lambda_lower_exists`.
@@ -98,13 +102,17 @@ large-alphabet barrier
 subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
 means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
 and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
+The KKH asymptotic result `rs_asymptotic_list_lower_bound_kkh26` is likewise proved from the
+concrete vanilla template; it carries smooth-domain existence as an explicit `supply` hypothesis
+and does not depend on the separate sum-set admit.
 
 Two source-side weakenings apply throughout and are not repeated on each declaration: [CZ25] and
 [AGL24] both state *average-radius* list-decodability, of which the plain `Λ` bound formalised here
 is a consequence; and where a source constructs a code, the Lean existentially binds it rather than
 reproducing the construction.
 
-Three statements from [ABF26] §3 are absent: two by decision and one not yet attempted.
+Two statements from [ABF26] §3 remain absent: one by decision and one awaiting primary-source
+verification.
 
 * Theorem 3.14 is not represented because the cited [JH01] primary source was unavailable for
   verification. `rs_codimension_one_list_size` records only the elementary theorem proved here.
@@ -112,11 +120,6 @@ Three statements from [ABF26] §3 are absent: two by decision and one not yet at
   computational-hardness framework ArkLib does not have — an adversary/advantage/running-time
   layer — and without one, a statement of it would be vacuous or would be about something other than
   hardness.
-* Theorem 3.15, the [KKH26] asymptotic Reed-Solomon lower bound near minimum distance, is simply not
-  formalised. It postdates the cached [ABF26] build, which stops at Theorem 3.14 and numbers the
-  [CW07] barrier as 3.15; the numbering used throughout this file follows the current tex, in which
-  [KKH26] is 3.15 and [CW07] is 3.16. Its statement depends on the paper's appendix restatement of
-  [KKH26], also unformalised.
 
 ## References
 
