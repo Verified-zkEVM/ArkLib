@@ -173,11 +173,7 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
   let P2 : ENNReal := Pr_{let a ←$ᵖ U; let z ←$ᵖ F}[good (a.1 + z • dir)]
   -- Expand the joint probability as an average over basepoints.
   have hP2 : P2 = ∑' a : U, ($ᵖ U) a * lineProb a := by
-    simpa [P2, lineProb] using
-      (prob_tsum_form_split_first (D := ($ᵖ U))
-        (D_rest := fun a : U => (do
-          let z ← $ᵖ F
-          return good (a.1 + z • dir))))
+    simp [P2, lineProb, prob_tsum_form_split_first]
   -- Swap the order of sampling the basepoint and line parameter.
   have hswap :
       (do
@@ -223,14 +219,15 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
     simp only [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
   -- Rewrite the original hypothesis as a lower bound on `P2`.
   have hP2_gt : P2 > ε := by
-    simpa [hP2_eq] using hprob
+    rw [hP2_eq]
+    exact hprob
   -- Rewrite that lower bound using the weighted-sum formula for `P2`.
   have hsum_gt : (∑' a : U, ($ᵖ U) a * lineProb a) > ε := by
     simpa [hP2] using hP2_gt
   -- Choose a basepoint whose line probability exceeds the threshold.
   rcases exists_of_weighted_avg_gt ($ᵖ U) lineProb (ε : ENNReal) hsum_gt with ⟨a, ha⟩
   refine ⟨a, ?_⟩
-  simpa [lineProb] using ha
+  exact ha
 
 theorem exists_basepoint_with_large_line_prob {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]

@@ -51,6 +51,43 @@ noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
   let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
   MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
 
+/-- Fixing the first `0` variables (with the empty challenge vector) is the identity. -/
+theorem fixFirstVariablesOfMQP_zero_eq (H : MvPolynomial (Fin ℓ) L) :
+    fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) H (challenges := Fin.elim0) = H := by
+  induction H using MvPolynomial.induction_on with
+  | C a =>
+      unfold fixFirstVariablesOfMQP
+      simp only [MvPolynomial.rename_C, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_C,
+        MvPolynomial.map_C, MvPolynomial.eval_C]
+      rfl
+  | add p q hp hq =>
+      have hadd : ∀ x y : MvPolynomial (Fin ℓ) L,
+          fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) (x + y) (challenges := Fin.elim0) =
+            fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) x (challenges := Fin.elim0) +
+              fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) y (challenges := Fin.elim0) := by
+        intro x y; unfold fixFirstVariablesOfMQP; simp only [map_add]
+      rw [hadd, hp, hq]
+      rfl
+  | mul_X p j hp =>
+      have hmul : ∀ (x : MvPolynomial (Fin ℓ) L) (i : Fin ℓ),
+          fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) (x * X i) (challenges := Fin.elim0) =
+            fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) x (challenges := Fin.elim0) *
+              fixFirstVariablesOfMQP ℓ (0 : Fin (ℓ + 1)) (X i) (challenges := Fin.elim0) := by
+        intro x i; unfold fixFirstVariablesOfMQP; simp only [map_mul]
+      rw [hmul, hp]
+      congr 1
+      -- image of `X j`: rename ↦ sumAlgEquiv ↦ map(eval elim0) sends `X j ↦ X j`
+      unfold fixFirstVariablesOfMQP
+      dsimp only
+      rw [MvPolynomial.rename_X]
+      have hj : (((finCongr (show ℓ = ((0 : Fin (ℓ + 1)) : ℕ) + (ℓ - ((0 : Fin (ℓ + 1)) : ℕ)) by
+              simp)).trans
+            (finSumFinEquiv.symm.trans (Equiv.sumComm _ _))) j) =
+              Sum.inl (Fin.cast (by simp) j) := by
+        simp [Equiv.sumComm, finCongr, finSumFinEquiv, Fin.addCases]; rfl
+      rw [hj, MvPolynomial.sumAlgEquiv_apply, MvPolynomial.sumToIter_Xl, MvPolynomial.map_X]
+      congr 1
+
 /-- The per-variable / prismalinear degree-survival lemma: if a polynomial respects a per-variable
 degree bound `b : Fin ℓ → ℕ`, then fixing the first `v` variables to scalars produces a polynomial
 whose surviving `Fin (ℓ-v)` variables respect `b` restricted to their original suffix indices.

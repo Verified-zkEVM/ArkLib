@@ -231,6 +231,35 @@ def simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
   QueryImpl.addLift (QueryImpl.id oSpec)
     (QueryImpl.add (simOracle0 T₁ t₁) (simOracle0 T₂ t₂))
 
+/-- simOracle never fails because it is a deterministic transcript lookup.
+
+Note: we require `[IsUniformSpec oSpec]` (rather than the weaker
+`[oSpec.Fintype] [oSpec.Inhabited]`) so that the `NeverFail` statement itself can be elaborated:
+`NeverFail` needs a `MonadLiftT (OracleComp oSpec) SPMF` instance in scope, which is only
+available once `oSpec` carries a genuine probability structure (`IsProbabilitySpec`, bundled into
+`IsUniformSpec`) — `Fintype`/`Inhabited` alone are not enough, and `IsUniformSpec` is deliberately
+not derived automatically from them. -/
+theorem neverFails_simOracle {ι : Type u} (oSpec : OracleSpec ι)
+    [IsUniformSpec oSpec]
+    {ι' : Type v} {T : ι' → Type w} [∀ i, OracleInterface (T i)]
+    (t : ∀ i, T i) :
+    ∀ q : (oSpec + [T]ₒ).Domain, NeverFail (simOracle oSpec t q) := by
+  intro q
+  infer_instance
+
+/-- simOracle2 never fails because it is a deterministic transcript lookup.
+
+See the docstring of `neverFails_simOracle` for why `[IsUniformSpec oSpec]` is required instead of
+`[oSpec.Fintype] [oSpec.Inhabited]`. -/
+theorem neverFails_simOracle2 {ι : Type u} (oSpec : OracleSpec ι)
+    [IsUniformSpec oSpec]
+    {ι₁ : Type v} {T₁ : ι₁ → Type w} [∀ i, OracleInterface (T₁ i)]
+    {ι₂ : Type v} {T₂ : ι₂ → Type w} [∀ i, OracleInterface (T₂ i)]
+    (t₁ : ∀ i, T₁ i) (t₂ : ∀ i, T₂ i) :
+    ∀ q : (oSpec + ([T₁]ₒ + [T₂]ₒ)).Domain, NeverFail (simOracle2 oSpec t₁ t₂ q) := by
+  intro q
+  infer_instance
+
 open Finset in
 /-- A message type together with a `OracleInterface` instance is said to have **oracle distance**
   (at most) `d` if for any two distinct messages, there is at most `d` queries that distinguish

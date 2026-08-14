@@ -116,6 +116,33 @@ structure RingSwitchingProfile (B L : Type*) (κ : ℕ)
   decomposeRows_spec : ∀ z : A, z = ∑ u, φ₀ (decomposeRows z u) * φ₁ (basis u)
   /-- **Column reconstruction law**: the right/`φ₁`-action dual of `decomposeRows_spec`. -/
   decomposeColumns_spec : ∀ z : A, z = ∑ v, φ₁ (decomposeColumns z v) * φ₀ (basis v)
+  /-- **Column additivity**: `decomposeColumns` is additive in its `A`-argument (it is a genuine
+  coordinate/`repr` map, not a law-free function). Binius: `map_add` of `baseChangeRight.repr`;
+  Hachi: linearity of `ψ⁻¹` (Theorem 2, `ψ` linearly homomorphic). -/
+  decomposeColumns_add : ∀ (z z' : A) (v : Fin κ → Fin 2),
+    decomposeColumns (z + z') v = decomposeColumns z v + decomposeColumns z' v
+  /-- **Column tmul/extraction law**: the `v`-column coordinate of `φ₀ x * φ₁ y` is
+  `basis.repr x v • y`. Binius: `Basis.baseChangeRight_repr_tmul`; Hachi: Theorem 2's trace
+  inner-product formula `Tr_H(ψ(a)·σ₋₁(ψ(b))) = (d/k)⟨a,b⟩`. Together with `decomposeColumns_add`
+  this lets the batching/sumcheck completeness proofs compute `decomposeColumns` on the
+  `∑_w φ₀(eqTilde_w)·φ₁(t'(w))` structure of `embedded_MLP_eval` — closing the generic proof. -/
+  decomposeColumns_tmul : ∀ (x y : L) (v : Fin κ → Fin 2),
+    decomposeColumns (φ₀ x * φ₁ y) v = basis.repr x v • y
+  /-- **Row additivity** (dual of `decomposeColumns_add`). -/
+  decomposeRows_add : ∀ (z z' : A) (u : Fin κ → Fin 2),
+    decomposeRows (z + z') u = decomposeRows z u + decomposeRows z' u
+  /-- **Row tmul/extraction law** (dual of `decomposeColumns_tmul`; the `φ₀`/`φ₁` roles swap):
+  the `u`-row coordinate of `φ₀ x * φ₁ y` is `basis.repr y u • x`. Binius:
+  `Basis.baseChange_repr_tmul`; Hachi: Theorem 2's trace formula. -/
+  decomposeRows_tmul : ∀ (x y : L) (u : Fin κ → Fin 2),
+    decomposeRows (φ₀ x * φ₁ y) u = basis.repr y u • x
+  /-- **Column injectivity/faithfulness**: `decomposeColumns` determines the `A`-element — it is a
+  genuine coordinate/`repr` map, so distinct `A`-elements have distinct column-coordinate vectors.
+  Binius: `(baseChangeRight β).repr` is a `LinearEquiv`, hence injective; Hachi: `ψ` is a bijection
+  (Theorem 2 invertibility, "crucial in arguing knowledge soundness"). Used by the batching
+  Schwartz–Zippel soundness argument (`batchingMismatchPoly_nonzero_of_ne`), which needs that a
+  nonzero column-coordinate mismatch witnesses a genuine `A`-level difference. -/
+  decomposeColumns_injective : Function.Injective decomposeColumns
 
 attribute [instance] RingSwitchingProfile.commRingA RingSwitchingProfile.algLA
 

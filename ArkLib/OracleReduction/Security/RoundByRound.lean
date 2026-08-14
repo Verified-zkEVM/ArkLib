@@ -123,6 +123,26 @@ end RoundByRoundOneShot
 
 end Extractor
 
+/-- **RBR Extraction Failure Event**: generic predicate for round-by-round knowledge soundness.
+
+Captures when the round-by-round extractor fails to produce a valid witness at round
+`i.1.castSucc`, yet a valid witness exists at round `i.1.succ` — the fundamental "bad event" that
+every RBR-knowledge-soundness proof must bound. Instantiate with the protocol's `kSF`, `extractor`,
+transcript, and challenge. This is the failure predicate produced by `unroll_rbrKnowledgeSoundness`;
+keeping it as one shared `@[reducible]` definition lets per-protocol doom bounds and the
+`rbrKnowledgeSoundness_of_*` round-reducers match syntactically (no unfolding of a heavy statement
+type at the seam). -/
+@[reducible]
+def rbrExtractionFailureEvent {WitMid : Fin (n + 1) → Type}
+    (kSF : (m : Fin (n + 1)) → StmtIn → Transcript m pSpec → WitMid m → Prop)
+    (extractor : Extractor.RoundByRound oSpec StmtIn WitIn WitOut pSpec WitMid)
+    (i : pSpec.ChallengeIdx) (stmtIn : StmtIn)
+    (transcript : Transcript i.1.castSucc pSpec) (challenge : pSpec.Challenge i) : Prop :=
+  ∃ witMid : WitMid i.1.succ,
+    ¬ kSF i.1.castSucc stmtIn transcript
+      (extractor.extractMid i.1 stmtIn (transcript.concat challenge) witMid) ∧
+    kSF i.1.succ stmtIn (transcript.concat challenge) witMid
+
 namespace Verifier
 
 section RoundByRound
@@ -582,6 +602,22 @@ theorem rbrKnowledgeSoundnessOneShot_implies_rbrKnowledgeSoundness
   · rw [if_neg hz] at hcast
     exact fun hstF => hcast (Or.inl hstF)
 
+/-- If a verifier is RBR knowledge sound with error ε₁, and ε₂ is pointwise equal to ε₁,
+    then it is RBR knowledge sound with error ε₂. Use this to state soundness with a
+    "flat" or Fin-like error definition that you prove equal to the composed error. -/
+theorem rbrKnowledgeSoundness_of_eq_error
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε₁ ε₂ : pSpec.ChallengeIdx → ℝ≥0}
+    (h_ε : ∀ i, ε₂ i = ε₁ i)
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε₁) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε₂ := by
+  unfold rbrKnowledgeSoundness at h ⊢
+  obtain ⟨WitMid, extractor, kSF, h_bound⟩ := h
+  refine ⟨WitMid, extractor, kSF, fun stmtIn witIn prover i => ?_⟩
+  rw [h_ε i]
+  exact h_bound stmtIn witIn prover i
+
 end RoundByRound
 
 end Verifier
@@ -631,6 +667,19 @@ def rbrKnowledgeSoundness
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
   verifier.toVerifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError
+
+/-- If an oracle verifier is RBR knowledge sound with error ε₁ and ε₂ is pointwise equal to ε₁,
+    then it is RBR knowledge sound with error ε₂. Use this to state soundness with a
+    "flat" or Fin-like error definition that you prove equal to the composed error. -/
+theorem rbrKnowledgeSoundness_of_eq_error
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {ε₁ ε₂ : pSpec.ChallengeIdx → ℝ≥0}
+    (h_ε : ∀ i, ε₂ i = ε₁ i)
+    (h : verifier.rbrKnowledgeSoundness init impl relIn relOut ε₁) :
+    verifier.rbrKnowledgeSoundness init impl relIn relOut ε₂ :=
+  Verifier.rbrKnowledgeSoundness_of_eq_error (init := init) (impl := impl) (h_ε := h_ε) (h := h)
 
 end OracleVerifier
 

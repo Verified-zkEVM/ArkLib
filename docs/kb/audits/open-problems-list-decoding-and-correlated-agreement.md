@@ -154,7 +154,7 @@ The largest mismatches between the paper and ArkLib are structural rather than m
 2. General MCA is not yet a first-class coding-theory notion in ArkLib.
    The TODO at the top of
    [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean)
-   still lists mutual correlated agreement as missing. 
+   still lists mutual correlated agreement as missing.
 3. Some core BCIKS20 interfaces are present, but the list-decoding regime branch is incomplete.
    In particular,
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean)

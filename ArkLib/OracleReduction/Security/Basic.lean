@@ -258,6 +258,21 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
   soundnessError : ℝ≥0
   is_sound : soundness init impl langIn langOut verifier soundnessError
 
+/-- If a verifier satisfies soundness with error `ε₁`, then it also satisfies soundness with any
+larger error `ε₂`. -/
+@[grind]
+theorem soundness_error_mono
+    {langIn : Set StmtIn} {langOut : Set StmtOut}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
+    verifier.soundness init impl langIn langOut ε₁ →
+      verifier.soundness init impl langIn langOut ε₂ := by
+  intro hSound
+  unfold soundness at hSound ⊢
+  intro WitIn WitOut witIn prover stmtIn hStmtIn
+  refine le_trans (hSound WitIn WitOut witIn prover stmtIn hStmtIn) ?_
+  exact_mod_cast hε
+
 -- How would one define a rewinding extractor? It should have oracle access to the prover's
 -- functions (receive challenges and send messages), and be able to observe & simulate the prover's
 -- oracle queries
@@ -310,6 +325,21 @@ class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
     (verifier : Verifier oSpec StmtIn StmtOut pSpec) where
   knowledgeError : ℝ≥0
   is_knowledge_sound : knowledgeSoundness init impl relIn relOut verifier knowledgeError
+
+/-- If a verifier satisfies knowledge soundness with error `ε₁`, then it also satisfies knowledge
+soundness with any larger error `ε₂`. -/
+@[grind]
+theorem knowledgeSoundness_error_mono
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
+    verifier.knowledgeSoundness init impl relIn relOut ε₁ →
+      verifier.knowledgeSoundness init impl relIn relOut ε₂ := by
+  rintro ⟨extractor, hKS⟩
+  refine ⟨extractor, ?_⟩
+  intro stmtIn witIn prover
+  refine le_trans (hKS stmtIn witIn prover) ?_
+  exact_mod_cast hε
 
 /-- An extractor is **monotone** if its success probability on a given query log is the same as
   the success probability on any extension of that query log. -/

@@ -11,33 +11,18 @@ import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
-# The composed interactive packing reduction
+# Full Ring-Switching Protocol
 
-The whole interactive `Packing` reduction, assembled by sequential composition, with
-its security statements. Input: an evaluation claim over the small ring against a committed
-multilinear. Output: accept/reject. The composition is
-
-1. **batching phase** — relocate the claim into the carrier and batch the coordinate claims
-   into one sumcheck target (`BatchingPhase.lean`);
-2. **relocation sumcheck** — `ℓ'` rounds plus the final consistency step, anchoring the
-   claim at a fresh random point (`SumcheckPhase.lean`);
-3. **downstream opening** — the residual large-ring evaluation claim is discharged by the
-   `MLIOPCS` parameter, an arbitrary multilinear opening protocol bundled with its own
-   completeness and round-by-round soundness.
-
-Perfect completeness composes from the phases. Round-by-round knowledge soundness composes
-with total error `κ/|L|` (batching) `+ 2/|L|` per sumcheck round `+ 1/|L|` (final step)
-`+` the downstream protocol's error; the Schwartz–Zippel steps require `[IsDomain L]`. Leaf
-proofs are open (`sorry`).
-
-This is one construction of the ring-switching family, not the family itself — see the
-folder umbrella `ArkLib/ProofSystem/RingSwitching/Basic.lean` for the taxonomy. It is
-instantiated by `ProofSystem/Binius/FRIBinius/`.
+This module contains specifications and security properties for the full
+ring-switching protocol. The protocol is a sequential composition of:
+1. **Batching Phase** (polynomial packing and batching via tensor algebra operations)
+2. **Sumcheck Phase** (ℓ' rounds of sumcheck, and the final sumcheck step)
+3. **Large Field Invocation** (invocation to underlying large-field IOPCS)
 
 ## References
 
-- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over
-  Binary Towers." Cryptology ePrint Archive (2024).
+- [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
+  Towers." Cryptology ePrint Archive (2024).
 -/
 
 namespace RingSwitching.FullRingSwitching
@@ -61,7 +46,7 @@ def batchingCoreVerifier :=
     (V₂:=SumcheckPhase.coreInteractionOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The oracle verifier for the full DP24 ring-switching protocol -/
+/-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
 def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
@@ -78,7 +63,7 @@ def batchingCoreReduction :=
        mlIOPCS.toAbstractOStmtIn)
     (pSpec₂:=pSpecCoreInteraction L ℓ')
 
-/-- The reduction for the full DP24 ring-switching protocol -/
+/-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
 def fullOracleReduction :
   OracleReduction (oSpec:=[]ₒ)
@@ -90,7 +75,7 @@ def fullOracleReduction :
     :=
   (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).append mlIOPCS.oracleReduction
 
-/-- The full DP24 ring-switching protocol as a Proof -/
+/-- The full Binary Basefold protocol as a Proof -/
 @[reducible]
 def fullOracleProof :
   OracleProof []ₒ
@@ -118,30 +103,31 @@ section SecurityProperties
 variable {σ : Type} (init : ProbComp σ) {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-lemma batchingCore_perfectCompleteness :
+lemma batchingCore_perfectCompleteness [IsDomain K] [IsDomain L] (hInit : NeverFail init) :
   (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
   (pSpec := pSpecLargeFieldReduction κ L K P ℓ')
-  (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-  (relOut := mlIOPCS.toRelInput)
+  (relIn := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+  (relOut := mlIOPCS.toStrictRelInput)
   (init:=init) (impl:=impl) := by
   apply OracleReduction.append_perfectCompleteness
   · exact BatchingPhase.batchingReduction_perfectCompleteness κ L K P ℓ ℓ' h_l
-       mlIOPCS.toAbstractOStmtIn
+       mlIOPCS.toAbstractOStmtIn hInit
   · exact SumcheckPhase.coreInteraction_perfectCompleteness
-      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl)
+      κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn (impl:=impl) hInit
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
-theorem fullOracleReduction_perfectCompleteness :
+theorem fullOracleReduction_perfectCompleteness [IsDomain K] [IsDomain L]
+    (hInit : NeverFail init) :
   (fullOracleReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
-    (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
+    (relIn := BatchingPhase.strictBatchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
     (relOut := acceptRejectOracleRel)
     (init := init)
     (impl := impl)
      := by
   apply OracleReduction.append_perfectCompleteness (Oₛ₃:=by
     exact fun _ ↦ OracleInterface.instDefault)
-  · exact batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init
-  · exact mlIOPCS.perfectCompleteness
+  · exact batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init hInit
+  · exact mlIOPCS.perfectCompleteness hInit
 
 def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K P ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
@@ -156,8 +142,9 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
 
 variable [SampleableType L]
 
+omit [∀ i, SampleableType (mlIOPCS.pSpec.Challenge i)] in
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
-theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
+theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain K] [IsDomain L] :
   OracleVerifier.rbrKnowledgeSoundness
     (verifier := fullOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
     (init := init)
@@ -190,14 +177,12 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
     (Oₛ₃:=by exact fun i ↦ OracleInterface.instDefault)
     (rbrKnowledgeError₁:=batchingCoreRbrKnowledgeError κ L K P ℓ')
     (rbrKnowledgeError₂:=mlIOPCS.rbrKnowledgeError)
-    (h₁:=batchInteractionRBRKS) (h₂:=by
-      convert mlIOPCS.rbrKnowledgeSoundness (L:=L) (ℓ' := ℓ') (init:=init) (impl:=impl)
-      · sorry
-    )
-  convert res
-  · simp only [ChallengeIdx, Challenge, instSampleableTypeChallengeFullPspec]
-    sorry
-  · rfl
+    (h₁:=batchInteractionRBRKS)
+    (h₂:= mlIOPCS.rbrKnowledgeSoundness)
+  exact OracleVerifier.rbrKnowledgeSoundness_of_eq_error
+    (init := init) (impl := impl)
+    (h_ε := by intro i; rfl)
+    (h := res)
 
 end SecurityProperties
 end
