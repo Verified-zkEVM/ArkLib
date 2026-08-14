@@ -9,17 +9,17 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Probability.Notation
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Analysis.SpecialFunctions.Log.Base
-import Mathlib.Data.Nat.Totient
 import Mathlib.FieldTheory.Finite.Basic
 import Mathlib.FieldTheory.Finiteness
 
 /-!
 # List-size bounds specific to Reed-Solomon codes
 
-The three Reed-Solomon separations of [ABF26] §3 — superpolynomial lists over extension fields
-[BKR06], large lists over prime fields [GHSZ02], and the high-rate obstruction [JH01] — and,
-in the opposite direction, the one probabilistic upper bound: a Reed-Solomon code on a *uniformly
-random* evaluation domain is list-decodable near capacity with high probability [AGL24].
+Two Reed-Solomon separations from [ABF26] §3 — superpolynomial lists over extension fields [BKR06]
+and large lists over prime fields [GHSZ02] — plus an internal codimension-one interpolation lemma.
+The distinct high-rate result attributed to [JH01] remains an explicit coverage gap. In the opposite
+direction, the file also contains the one probabilistic upper bound: a Reed-Solomon code on a
+*uniformly random* evaluation domain is list-decodable near capacity with high probability [AGL24].
 
 See `ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean` for the family overview, the
 quantification conventions, and the references.
@@ -56,30 +56,27 @@ Reed-Solomon code `C := RS[F_q, F_q, ⌊q^α⌋]` and a word `w : F_q → F_q` w
 `q^x = 2^{x·log₂ q}`. Hence `Real.logb 2 q`; a natural log here would weaken the exponent by a
 factor `1/ln 2`.
 
-**Two divergences from [BKR06], both introduced by [ABF26] and followed here** (the paper is the
-designated ground truth, so the Lean tracks it rather than the original): [BKR06] defines
-`RS[N, K]` by degree **≤ K** and its witnessing family has degree exactly `K = N^δ`, whereas
-[ABF26]'s `RS[F, L, k]` is degree **< k** (its own footnote defines it so) and instantiates
-`k = ⌊q^α⌋`. Under [ABF26]'s convention — which `ReedSolomon.code domain k` matches exactly — the
-witnesses of the cited construction sit one degree above the code. And [BKR06, Corollary 2.2]
-requires `α, β` **rational**; [ABF26] states it for real `α, β`. The statement here is faithful to
-[ABF26], but the two divergences are of different weights.
+**Parameter domain.** [BKR06, Corollary 2.2] assumes rational `α, β`; its proof chooses an extension
+degree on which `αm` and `βm` are integers. These binders therefore have type `ℚ` below, with
+explicit coercions to `ℝ` only in the real-power and logarithmic expressions. [ABF26] Theorem 3.12
+prints arbitrary real parameters, an extension not supplied by the cited source.
+
+**Degree convention.** [BKR06] defines `RS[N, K]` by degree **≤ K** and its witnessing family has
+degree exactly `K = N^δ`, whereas [ABF26]'s `RS[F, L, k]` is degree **< k** (as its footnote
+defines it) and instantiates `k = ⌊q^α⌋`. Under that convention — which
+`ReedSolomon.code domain k` matches exactly — the witnesses of the cited construction sit one
+degree above the code.
 
 The degree convention is **harmless**: [BKR06]'s family consists of monic subspace polynomials
 `∏_{a ∈ L}(X − a)` of degree exactly `K`, so subtracting any fixed member gives `|P|` distinct
 polynomials of degree `< K` — inside the degree-`< k` code — all agreeing with the shifted word
 `w − P₀` on the same `≥ q^v` points. So the cited construction does transfer.
 
-The rationality gap is **not** harmless and may make the real-`α, β` statement false. [BKR06]
-Theorem 2.1 gives `|P| ≥ q^{(u+1)m − v²}` for *integers* `0 ≤ u ≤ v ≤ m`, which at exact
-`u = αm, v = βm` beats the target `2^{m²(α−β²)}` by a slack of exactly `+m`; rounding to
-`u = ⌊αm⌋, v = ⌈βm⌉` costs `−2βm − 1`, the same order, so the naive approximation *falls short
-polynomially* rather than merely failing to be tight. It looks recoverable — "for infinitely many
-`q`" lets one choose the subsequence of `m`, and by Weyl equidistribution there are infinitely many
-`m` with `{αm}` and `{βm}` both near `0` — but that is a Diophantine argument the source does not
-contain. Consider taking `α β : ℚ` instead. -/
+The rational restriction is separate from that degree translation: subtracting a fixed monic
+witness justifies the latter, but says nothing about extending the source from rational to real
+parameters. -/
 theorem rs_lambda_superpoly_extension
-    (α β : ℝ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
+    (α β : ℚ) (_hα_pos : 0 < α) (_hα_lt : α < β) (_hβ_lt : β < 1) :
     ∃ qs : ℕ → ℕ, StrictMono qs ∧ (∀ i, IsPrimePow (qs i)) ∧
       ∀ i : ℕ,
         ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -87,11 +84,11 @@ theorem rs_lambda_superpoly_extension
           Fintype.card F = qs i → Fintype.card ι = qs i →
           ∃ (domain : ι ↪ F) (w : ι → F),
             let q : ℕ := qs i
-            let k : ℕ := Nat.floor ((q : ℝ) ^ α)
-            let δ : ℝ := 1 - (q : ℝ) ^ (β - 1)
+            let k : ℕ := Nat.floor ((q : ℝ) ^ (α : ℝ))
+            let δ : ℝ := 1 - (q : ℝ) ^ ((β : ℝ) - 1)
             let C := ReedSolomon.code domain k
             ((closeCodewordsRel ((C : Set (ι → F))) w δ).ncard : ℝ) ≥
-              (q : ℝ) ^ ((α - β ^ 2) * Real.logb 2 q) := by
+              (q : ℝ) ^ (((α : ℝ) - (β : ℝ) ^ 2) * Real.logb 2 q) := by
   sorry -- external admit: [BKR06, Corollary 2.2].
 
 /-- **Reed-Solomon codes over prime fields have large lists** ([ABF26] Theorem 3.13, after
@@ -446,98 +443,32 @@ theorem rs_lambda_large_prime
     (Real.exp (-2) / 2) * (p : ℝ) ^ ((p : ℝ) ^ α * β / 2)
   simpa only [cnt, x] using hw
 
-/-- **High-rate Reed-Solomon codes cannot be list-decoded past `1/(j+1)`** ([ABF26] Theorem 3.14,
-after [JH01, Theorem 2]). Fix an integer `j ≥ 2`. For infinitely many prime powers `q` with
-`q ≡ 1 (mod j+1)` there is a code `C := RS[F_q, L, k]` with `|L| = j + 1` and rate `≈ (j-1)/(j+1)`
-together with a word `w : L → F_q` such that
+/-- **A codimension-one Reed-Solomon code has `n` nearby interpolants.** Let the block length be
+`j + 1` and the message dimension be `j`. Over any field large enough to contain an evaluation
+domain of that length, there is a received word whose radius-`1/(j+1)` list has more than `j`
+codewords.
 
-  `|Λ(C, 1/(j+1), w)| > j` .
+This is an internal elementary lemma, not a formalization of [JH01, Theorem 2]. Choose `w` outside
+the codimension-one code. For each coordinate `a`, interpolate `w` on all coordinates except `a`.
+The resulting `j + 1` degree-`< j` codewords are within Hamming distance one of `w` and are pairwise
+distinct: if the interpolants omitting `a` and `b` coincided, they would agree with `w` everywhere,
+contrary to `w ∉ C`.
 
-**Encoding of the source's parameters.** Its `|L| = j + 1` is the block length, encoded as
-`Fintype.card ι = j + 1`. The dimension is pinned to `k := j` in ArkLib's `ReedSolomon.code domain
-k` convention (polynomials of degree `< k`, so dimension `k`). The pin matters in *both*
-directions:
-
-* `k = j - 1` (dimension `j - 1`) is **unsatisfiable**: the minimum distance is `n - k + 1 = 3`
-  while radius `1/(j+1)` permits a single error, so two list members would be within distance
-  `2 < 3` and the list size is at most `1`, never `> j`;
-* an unconstrained `∃ k` would let degenerate dimensions (e.g. `k = j + 1`, `C = F^L`) satisfy the
-  conclusion trivially.
-
-**The printed rate does not match, and this is a paper defect, not a convention difference.** With
-block length `j + 1`, dimension `j` gives rate `j/(j+1)`, whereas [ABF26] prints
-`ρ ≈ (j−1)/(j+1)`. No degree convention reconciles the two: degree-`≤ (j−1)` *is* dimension `j`, so
-it also yields `j/(j+1)`, and the only dimension yielding `(j−1)/(j+1)` is `j − 1`, which the
-argument above shows is unsatisfiable. At `j = 2` the discrepancy is `2/3` versus `1/3`, well
-outside "≈". Note [JH01] itself is **not** in the local reference cache, so this could not be
-checked against the original.
-
-**The conclusion at this dimension is elementary, and the source's conjuncts are inert.** With
-`k = j` the minimum distance is `2`, and radius `1/(j+1)` admits one error. For any `w ∉ C` the
-`j + 1` drop-one-coordinate interpolants are codewords within distance `1` of `w`, and they are
-pairwise distinct (two coinciding would agree with `w` everywhere, forcing `w ∈ C`), so the list has
-`j + 1 > j` elements. This uses **neither** `IsPrimePow (qs i)` **nor** `qs i % (j + 1) = 1`: it
-holds for every `q ≥ j + 2`, and `q ≡ 1 (mod j+1)` with `q ≥ 2` already forces `q ≥ j + 2`. So the
-statement is elementary rather than external — it is proved in-tree below — and correspondingly it
-does not capture whatever [JH01] Theorem 2 proves at rate `(j−1)/(j+1)`: the modular condition is
-exactly the existence condition for `μ_{j+1} ⊆ F_q^×`, suggesting [JH01] pins `L = μ_{j+1}` and
-concludes something sharper.
-
-**The sequence comes from Euler, not Dirichlet.** `qs i = p^(φ(j+1)·(i+1))` for any prime
-`p > j + 1` is strictly monotone, a prime power by construction, and `≡ 1 (mod j+1)` by
-`Nat.ModEq.pow_totient`. This avoids needing primes in an arithmetic progression
-(`Nat.exists_prime_gt_modEq_one`) for a statement that only asks for prime *powers*. The
-interpolants are `Lagrange.interpolate (Finset.univ.erase a) domain w`, in `C` by
-`Lagrange.degree_interpolate_lt`. -/
-theorem rs_lambda_high_rate
-    (j : ℕ) (_hj_ge : 2 ≤ j) :
-    ∃ qs : ℕ → ℕ, StrictMono qs ∧
-      (∀ i, IsPrimePow (qs i)) ∧ (∀ i, qs i % (j + 1) = 1) ∧
-      ∀ i : ℕ,
-        ∀ {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-          {F : Type} [Field F] [Fintype F] [DecidableEq F],
-          Fintype.card F = qs i → Fintype.card ι = j + 1 →
-          ∃ (domain : ι ↪ F) (w : ι → F),
-            let C := ReedSolomon.code domain j
-            (j : ℕ∞) < (closeCodewordsRel ((C : Set (ι → F))) w (1 / (j + 1 : ℝ))).ncard := by
+An earlier version wrapped this lemma in prime-power and congruence quantifiers and named it
+`rs_lambda_high_rate`, following [ABF26] Theorem 3.14. Those hypotheses were unused, and the code's
+actual rate `j/(j+1)` did not match ABF26's printed `≈(j−1)/(j+1)`. The exact JH01 article is closed
+access and was not available for primary-source verification, so JH01 coverage remains explicitly
+open rather than being attributed to this different result. -/
+theorem rs_codimension_one_list_size
+    (j : ℕ)
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (hcard_le : Fintype.card ι ≤ Fintype.card F)
+    (hι : Fintype.card ι = j + 1) :
+    ∃ (domain : ι ↪ F) (w : ι → F),
+      let C := ReedSolomon.code domain j
+      (j : ℕ∞) < (closeCodewordsRel ((C : Set (ι → F))) w (1 / (j + 1 : ℝ))).ncard := by
   classical
-  let m := j + 1
-  obtain ⟨p, hp_ge, hp⟩ := Nat.exists_infinite_primes (m + 1)
-  have hm_pos : 0 < m := by simp [m]
-  have hm_one : 1 < m := by simp [m]; omega
-  have hm_lt_p : m < p := by omega
-  have hcop : Nat.Coprime p m := Nat.coprime_of_lt_prime (by omega) hm_lt_p hp
-  have heuler : p ^ Nat.totient m ≡ 1 [MOD m] := Nat.ModEq.pow_totient hcop
-  let qs : ℕ → ℕ := fun i => p ^ (Nat.totient m * (i + 1))
-  have hqs_mono : StrictMono qs := by
-    intro a b hab
-    apply pow_right_strictMono₀ hp.one_lt
-    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
-    exact (Nat.mul_lt_mul_left htot).mpr (Nat.add_lt_add_right hab 1)
-  have hqs_pp : ∀ i, IsPrimePow (qs i) := by
-    intro i
-    apply hp.isPrimePow.pow
-    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
-    positivity
-  have hqs_mod : ∀ i, qs i % (j + 1) = 1 := by
-    intro i
-    have hcong : qs i ≡ 1 [MOD m] := by
-      rw [show qs i = (p ^ Nat.totient m) ^ (i + 1) by simp [qs, pow_mul]]
-      simpa using heuler.pow (i + 1)
-    change qs i % m = 1
-    exact Nat.mod_eq_of_modEq hcong hm_one
-  refine ⟨qs, hqs_mono, hqs_pp, hqs_mod, ?_⟩
-  intro i ι _ _ _ F _ _ _ hF hι
-  have hexp_pos : 0 < Nat.totient m * (i + 1) := by
-    have htot : 0 < Nat.totient m := Nat.totient_pos.mpr hm_pos
-    positivity
-  have hp_le_qs : p ≤ qs i := by
-    change p ≤ p ^ (Nat.totient m * (i + 1))
-    exact Nat.le_pow hexp_pos
-  have hcard_le : Fintype.card ι ≤ Fintype.card F := by
-    rw [hι, hF]
-    change m ≤ qs i
-    omega
   let domain : ι ↪ F := Classical.choice (Function.Embedding.nonempty_of_card_le hcard_le)
   let C : Submodule F (ι → F) := ReedSolomon.code domain j
   have hdimC : Module.finrank F C = j := by
