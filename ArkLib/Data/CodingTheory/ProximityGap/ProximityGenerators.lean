@@ -286,6 +286,11 @@ The affine space generator is a generator of the form `G : F^ℓ → F^(ℓ + 1)
 abbrev AffineSpaceGenerator (F : Type) [Field F] (ℓ : ℕ) : Generator (Fin ℓ → F) (Fin (ℓ + 1)) F :=
   fun x => Fin.cons 1 x
 
+/-- The univariate-powers generator `x ↦ (1, x, …, x^k)`. -/
+abbrev univariatePowersGenerator (F : Type) [Field F] (k : ℕ) :
+    Generator F (Fin (k + 1)) F :=
+  fun x i => x ^ (i : ℕ)
+
 end CoreDefinitions
 
 namespace PolynomialGenerator
