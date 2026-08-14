@@ -20,7 +20,7 @@ the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`, Hachi §2.1/§4.1), and t
 The eval-oracle interface and the honest committer operations are real; the opening `Proof` is
 deferred (`sorry`, see the `TODO`). The coordinate-wise-special-sound (CWSS) composition the
 finished opening will run over lives in the sibling `Composition.lean`
-(`evalChain` / `eval_coordinateWiseSpecialSoundWithEscape`).
+(`iteration` / `endPiece` / `evaluation`).
 
 ## Main definitions
 

@@ -42,10 +42,12 @@ import CompPoly.Univariate.Linear
 
   The loop is composed by **recursion over the binary guarded append**
   (`roundsChain count = roundsChain (count−1) ▷ roundPackage (count−1)`, base = the identity
-  package), so the only composition machinery it consumes is `Guarded.lean`'s skeleton.
+  package), so the composition machinery it consumes — `Escape.lean`'s `EscapeGCWSSPackage.append`
+  over `Guarded.lean`'s guarded append theorem — is fully proven.
 
-The loop's recursion pins the relation seams (`roundsChain_relIn` / `roundsChain_relOut`); the
-  composed escape event is assembled by `ChallengeTree.EscapeEvent.append`.
+  `roundsChain` re-pins the relation seams definitionally (`roundsChain_relIn` /
+  `roundsChain_relOut` hold by `rfl`); the composed escape event is assembled by
+  `ChallengeTree.EscapeEvent.append`.
 
   **Sorried**: the per-round extraction algorithm `roundExtractor` and the CWSS theorem
   `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11).
@@ -102,7 +104,7 @@ variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The round check ([NOZ26] Figure 6): both round polynomials sum to the current targets over
-`{0, 1}`. `Bool`-valued (design G3) so the guarded-verifier witness is definitional. -/
+`{0, 1}`. `Bool`-valued so the guarded-verifier witness is definitional. -/
 def roundCheck {TCom : Type} {i : ℕ}
     (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ i)
     (g : RoundMsg F b) : Bool :=
@@ -182,7 +184,8 @@ it tight. It does mention the guard's output map, which is plain data — the sa
 def roundEsc
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
-    ChallengeTree.EscapeEvent (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (pSpecScalar (RoundMsg F b) F)
+    ChallengeTree.EscapeEvent (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i)
+      (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
         (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))).arity :=
   ScalarRound.escEventScalarOfValid (round_two_le_k b)
@@ -306,7 +309,12 @@ noncomputable def roundsChainAux (init : ProbComp σ)
 
 /-- **The composed sumcheck loop** (Hachi Figure 7's round phase), from the round-`0` seam
 (installed by the sumcheck bridge) to the round-`count` seam (consumed by the final-evaluation
-step). Instantiated at `count := m₀` in the composition. -/
+step). Instantiated at `count := m₀` in the composition.
+
+The recursion's own relation fields are stuck terms for an open `count`, so this wrapper
+**re-pins them definitionally** to the round-`0`/round-`count` seam relations, transporting the
+certificate along the recursion invariant once and for all — downstream compositions can then
+discharge both seams by `rfl`, i.e. compose with the universal `▷`. -/
 noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
@@ -314,25 +322,29 @@ noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ count) (LiftedWitness Φ μ n)
       (roundsSpec F b count) :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).1
+  let aux := roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count
+  { aux.1 with
+    relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
+    relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count
+    isCWSS := by have h := aux.1.isCWSS; rw [aux.2.1, aux.2.2] at h; exact h }
 
-/-- The loop's input seam is the round-`0` relation (the seam pin for composing after the
-sumcheck bridge). -/
+/-- The loop's input seam is the round-`0` relation — definitional, by the re-pinning in
+`roundsChain`. -/
 theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
     (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relIn =
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.1
+  rfl
 
-/-- The loop's output seam is the round-`count` relation (the seam pin for composing with the
-final-evaluation step). -/
+/-- The loop's output seam is the round-`count` relation — definitional, by the re-pinning in
+`roundsChain`. -/
 theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (count : ℕ) :
     (roundsChain Φ m₀ m₁ bound ρBound b init impl K φF count).relOut =
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count :=
-  (roundsChainAux Φ m₀ m₁ bound ρBound b init impl K φF count).2.2
+  rfl
 
 end Protocol
 

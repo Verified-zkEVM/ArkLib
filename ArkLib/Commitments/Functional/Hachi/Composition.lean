@@ -5,7 +5,6 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
-import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
@@ -14,46 +13,40 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 /-!
 # Hachi — the CWSS composition home
 
-This is the designated home of the growing n-ary composition of the subprotocols of Hachi [NOZ26],
+This is the designated home of the composition of the subprotocols of Hachi [NOZ26],
 a lattice-based multilinear polynomial commitment scheme. Each subprotocol is formalized in its own
-file and exported as a CWSS *package* in the weakest of the four kinds it honestly lives in —
-`CWSSPackage`, `GCWSSPackage` (guarded verifier: may `failure` at runtime), `EscapeCWSSPackage`
-(extraction may exhibit a cryptographic escape), `EscapeGCWSSPackage` (both) — bundling the verifier
-with its proof of coordinate-wise special soundness (CWSS), the knowledge-soundness notion under
+file and exported as a CWSS *package*, bundling the verifier
+with its proof of coordinate-wise special soundness (CWSS), a soundness notion under
 which a witness is extracted from a suitably structured tree of accepting transcripts. This file
-only **imports those packages and chains them** with the universal append `▷`, which dispatches on
+**imports those packages and chains them** with the universal append `▷`, which dispatches on
 the factors' package kinds and lifts each to the join automatically (both lifts are lossless). Only
-the ordinary relation seam has to match — escape events compose without a seam. The guarded
-composition theorem lives in
-`OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean`. The composed chain's
-`isCWSS` field is the CWSS certificate for the whole reduction. (Hachi as a `Commitment.Scheme` —
+the ordinary relation seam has to match — escape events compose without a seam. The composed
+chain's `isCWSS` field is the CWSS certificate for the whole reduction. The sole non-imported
+resident is the sorried `endPiece` skeleton, hosted here until it is completed and moves to its
+own file/folder like the other subprotocols. (Hachi as a `Commitment.Scheme` —
 the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the
 sibling `Commitment.lean`.)
 
-## The three layers of this file
+## Iteration, end-piece, evaluation
 
-1. **`evalChain`** (sorry-free, finished): the polynomial-level bridge ▷ `QuadEval`
-   (§4.2 / Figure 3 / Lemma 8) — an escape-aware package whose event is `QuadEval`'s.
-2. **`openCore`** (skeleton, pure links): the escape-aware `evalChain` extended by the
-   §4.3 stages up to the sumcheck bridge — R^lin adapter (F2) ▷ HMZ25 lift (Figure 4 / Lemma 9)
-   ▷ batching bridge (Eqs. (22)–(23)) ▷ zero-check (Figure 5 / **corrected** Lemma 10) ▷
-   sumcheck bridge.
-3. **`openingChain`** (skeleton, guarded tail): the pure `openCore` ▷ the paired sumcheck loop
-   (Figure 6 / Lemma 11, `m₀` guarded rounds) ▷ final evaluation (Figure 7 tail) ▷ the
-   §4.5 recursion adapters (pure partial evaluations ▷ pure `Z`-packing bridge ▷ guarded trace
-   handoff), landing on
-   the **next iteration's** `QuadEval` input relation over the next ring `Φ'` — the recursion
-   loop's closing seam. The universal `▷` lifts each pure factor into the escape-guarded world
-   automatically (`CoordinateWiseSpecialSoundness/Escape.lean`, package-lattice section); no
-   explicit `.toGuarded` calls.
+The Hachi evaluation (opening) protocol decomposes into three pieces:
+
+1. **Iteration** (`iteration`): the concatenation of the subprotocols — rows 1–9 of the chain
+   table below. One iteration reduces the polynomial-evaluation claim `relPolyEval` to the bare
+   multilinear-evaluation claim `relWEvalClaim` (`mle[w̃](a) = y′`) on the committed table.
+2. **End-piece** (`endPiece`, sorried skeleton): the closing component that ends a (possible run
+   of) iteration(s): the prover sends the reduced (end) witness itself to the verifier, who
+   checks the reduced claim against it directly.
+3. **Evaluation** (`evaluation`): a single iteration concatenated with the end-piece — the
+   complete evaluation protocol of the Hachi commitment scheme.
 
 ## The composed verifier chain, seam by seam
 
-Top-to-bottom is one opening iteration of the ArkLib Hachi commitment, whose committed data is an
-`Rq`-valued multilinear polynomial. The opening starts with the Figure 3 path, not with §3: the §3
-packing head (extension-field claims into `Rq`-claims, via the generalized `RingSwitching` packing
-phase) is a separate track that wraps *external* extension-field claims in front of `relPolyEval`;
-the §4.5 adapters below close the recursion *internally*.
+Top-to-bottom is one iteration of the ArkLib Hachi evaluation, whose committed data is an
+`Rq`-valued multilinear polynomial. The iteration starts with the Figure 3 path, not with §3: the
+§3 packing head (extension-field claims into `Rq`-claims, via the generalized `RingSwitching`
+packing phase) is a separate track that wraps *external* extension-field claims in front of
+`relPolyEval`.
 
 Every row's relations are the ordinary protocol relations. The cryptographic failure modes of
 extraction live in the rows' **escape events** (`ChallengeTree.EscapeEvent`), which enter each
@@ -74,24 +67,20 @@ match their relation seam.
  8 | rounds ×m₀ (…/Rounds)      | (g-pair; aᵢ)ᵢ        | nestedRoundRel 0 → … m₀  | ℓ=1, k=2b+1
    |  — GUARDED: gᵢ(0)+gᵢ(1)=z |                      |                           |  (L11)/round
  9 | final eval (…/FinalEval)   | msg y′ ∈ F           | nestedRoundRel m₀ → relWEvalClaim | GUARDED
-10 | partials (Recursion/PartialEval)| msg (yᵢ)_{i≠0}  | relWEvalClaim → relPartialEval | any (pure)
-11 | Z-pack (…/ZBatchBridge)    | 0                    | relPartialEval → relHatEval | any — ⚠ GAP
-12 | handoff (…/TraceHandoff)   | msg p ∈ R′q          | relHatEval → relIn(Φ′) | any — GUARDED
-   |                            |                      |  = next iteration's row 2 |
 ```
 
 **Which rows carry an escape event.** Row 2 carries `QuadEval`'s Module-SIS(B/D) break of the fixed
 key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of the `w̃`-commitment
-(`LiftCom.Collision`, via `Lift.escEvent` / `zeroCheckEsc` / `roundEsc`). Those four are
+(`LiftCom.Collision`, via `Lift.escEvent` / `nestedZeroCheckEsc` / `roundEsc`). Those four are
 `EscapeCWSSPackage`/`EscapeGCWSSPackage`s; every other row is escape-free
 (`CWSSPackage`/`GCWSSPackage`) and enters the chain at the never-firing event through the universal
 `▷`'s lossless lift.
 
 - Rows 1–7 have **pure** verifiers: every check constrains either retained statement data or the
-  never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8, 9,
-  12 are **guarded**: their runtime check reads data the next statement type drops
-  (the previous sumcheck target; the final targets; the packed claim value) — exactly the paper's
-  runtime checks — and compose through the proven guarded append theorem.
+  never-sent witness, so it lives in the output relation (the `QuadEval` precedent). Rows 8 and 9
+  are **guarded**: their runtime check reads data the next statement type drops
+  (the previous sumcheck target; the final targets) — exactly the paper's runtime checks — and
+  they compose through the proven guarded append theorem.
 - Row 6 implements the **corrected Lemma 10**: the paper's uniform-vector star extraction is not
   provable (axis-cross counterexample). Each coordinate of `τ₀` and `τα` is instead sampled in a
   separate scalar round, so the accepting transcript tree becomes a path-dependent complete
@@ -100,60 +89,48 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
   from Figure 5; what changes is the tree shape the extractor is handed. The counterexample, the
   repair and their costs are spelled out in `ZeroCheck/Reduction.lean`; the full analysis is
   `docs/kb/audits/noz26-zero-check-lemma10.md`.
-- Row 11 isolates the **§4.5/§3.2 partial-evaluation gap** found while auditing this skeleton:
-  the packed claim of Eq. (26) pins only one `F`-linear functional of the per-slice values, so
-  the paper's step is (apparently) not knowledge-sound as stated; the bridge's pull-back sorry is
-  expected to be unprovable until a repair (batching challenge / generic §3.1 packing) is
-  adopted; the analysis and the candidate repairs are in `Recursion/ZBatchBridge.lean`. All other
-  sorries in the chain are honest skeleton work.
-- Row 12 lands on plain `relIn Φ'`. Iteration
-  `i+1` re-enters at `quadEvalPackage Φ'` directly (its bases are `eq`-tensor
-  packings, not monomial bases, so the polynomial-level bridge of row 1 is head-only).
-  Asymptotic termination (§4.4: reveal the final polynomial once small) and the concrete §4.5
-  Greyhound/LaBRADOR cutoff are future zero-round tails at that seam.
 
 ## Sorry inventory of the composed chain (provenance of the certificate)
 
-*Generic machinery*: `Verifier.IsGuarded.append` and
+*Generic machinery — proven.* `Verifier.IsGuarded.append` and
 `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (`Guarded.lean`; the latter is
 the escape-threaded fundamental theorem, stated at explicit guard data — the plain guarded append
-is its corollary at the never-firing events). The two scalar-round assemblies
-`coordinateWiseSpecialSoundWith(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) are proven, as
-are their readers, shape recovery, extractor and escape event. The escape
+is its corollary at the never-firing events) are proven, as are the two scalar-round assemblies
+`coordinateWiseSpecialSoundWith(Escape)_of_mkWitness_scalar` (`ScalarRound.lean`) with their
+readers, shape recovery, extractor and escape event. The escape
 layer (`TranscriptTree/Basic.lean`, `CWSS/{Basic,Composition}.lean`, `Escape.lean`) with its append
 theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
 sorried `Extractor.TreeBased`.
 
-**Rows 1–7 carry no sorried certificate.** The `R^lin` adapter
-(`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9, `liftPackage.isCWSS`,
-via the generic `Lift` layer on the proven scalar-round engine and the `QuotientLift` algebra)
-are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
+**Rows 1–7 carry no sorried certificate — and rows 1–6 are additionally `sorryAx`-free.** The
+`R^lin` adapter (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9,
+`liftPackage.isCWSS`, via the generic `Lift` layer on the proven scalar-round engine and the
+`QuotientLift` algebra) are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
 
 * row 5, the batching pull-back `mem_relLift_of_relBatched` — including the range-side soundness
   `H₀ ≡ 0 ⇒ liftShort` (`hZero_eq_zero_imp_liftShort`), so shortness is **derived**, not assumed,
   and `relBatched` stays norm-free;
 * row 6, the **corrected Lemma 10**: `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` with
   its named extractor and the weak-binding event `nestedZeroCheckEsc`, on the concrete
-  `CMlPolynomialEval` encodings `hZero`/`hAlpha` and the evaluation-tree zero test;
-* row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`.
+  `CMlPolynomialEval` encodings `hZero`/`hAlpha` and the evaluation-tree zero test.
 
-*Per-link math still sorried*: two F5 sumcheck identities in `Constraints.lean`
+Row 7, the sum-to-point bridge `mem_relNestedZeroCheck_of_nestedRoundRel`, is proved outright in
+`Sumcheck/Bridge.lean`, but it routes through the two still-sorried sumcheck identities below, so
+it inherits their `sorryAx` and is *not* axiom-clean.
+
+*Per-link math still sorried*: the two sumcheck identities in `Constraints.lean`
 (`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
-Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), the final evaluation
-(`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck` encoding),
-the partial-evaluation head (`partialEval_coordinateWiseSpecialSoundWith` + its encoding defs),
-and the trace handoff (`handoff_coordinateWiseSpecialSoundWith` +
-`traceCheck`/`toNextQuadEvalStatement`/`hatEval`).
-Every sorried encoding def carries an in-situ `**Sorried**` docstring.
-
-*Flagged as open gaps (not merely unproven)*: `mem_relPartialEval_of_relHatEval` (row 11), and
-the `Short` obligation on `handoff_coordinateWiseSpecialSoundWith` (row 12), which is **false as
-`openingChain` is currently parameterized** — see that theorem's docstring for the two missing
-ingredients.
+Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), and the final
+evaluation (`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck`
+encoding). The **end-piece** is a wholly sorried skeleton (`endPiece`: verifier, guard, extractor
+and certificate — its wire format, relations and challenge-free structure are pinned). Every
+sorried encoding def carries an in-situ `**Sorried**` docstring.
 
 ## References
 
+* [Fenzi, G., Moghaddas, H., and Nguyen, N. K., *Lattice-Based Polynomial Commitments:
+    Improved and Extended*][FMN24]
 * [Nguyen, N. K., and Seiler, G., *Greyhound: Fast Polynomial Commitments from Lattices*][NS24]
 * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
     Polynomial Commitments over Extension Fields*][NOZ26]
@@ -168,83 +145,22 @@ open CompPoly ArkLib.Lattices.CyclotomicModulus
 open WeakBinding
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.SingleRound
 
-section Composition
-
-variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
-variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
-variable {ι : Type} {oSpec : OracleSpec ι} {ω : ℕ}
-variable {σ : Type}
-
-/-- The polynomial bridge followed by `QuadEval`, along a single relation seam. The bridge is
-escape-free and `QuadEval` escape-aware, so the universal `▷` lifts the bridge at the never-firing
-event and the composed event fires exactly when `QuadEval`'s own event fires on the suffix tree. -/
-noncomputable def evalChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
-    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
-      innerDigits dRows) :
-    EscapeCWSSPackage init impl
-      (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
-      (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
-      (QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
-          innerDigits dRows ×
-        CarrierCom 𝓜(q, α) dRows ×
-          (Fin (2 ^ r) → ShortChallenge 𝓜(q, α) ω))
-      (QuadEvalResponse 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r)
-        innerDigits zDigits)
-      ((!p[] : ProtocolSpec 0) ++ₚ
-        pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r) :=
-  bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
-      (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
-    quadEvalPackage init impl hq5 hκ hτ pp
-
-/-- **Hachi evaluation reduction — escape-threaded coordinate-wise special soundness (Hachi
-[NOZ26, §4.2, Figure 3], `Rq`-level), `sorry`-free, at the chain's named extractor.** The endpoint
-relations are `relPolyEval` and `relOut`, and the extractor is the composed algorithm
-`(evalChain …).extractor` (the bridge's pull-back run on the prefix tree of `QuadEval`'s Lemma 8
-extractor). The reduction's Module-SIS(B/D) failure mode is the certificate's escape disjunct
-`(evalChain …).esc`, which by `ChallengeTree.EscapeEvent.append` reduces to `QuadEval`'s own event
-on the suffix tree at the bridge's verdict.
-
-Pinned to `𝓜(q, α)` with the [LS18] hypotheses of
-`quadEval_coordinateWiseSpecialSoundWithEscape`. -/
-theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
-    (impl : QueryImpl oSpec (StateT σ ProbComp)) (hq5 : q % 8 = 5) {b ω γ : ℕ}
-    (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
-    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
-      innerDigits dRows) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
-      (CWSSStructure.ofIsEmpty.append
-        (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
-          (C := ShortChallenge 𝓜(q, α) ω) (r := r)))
-      ((evalChain (b := b) (γ := γ) init impl hq5 hκ hτ pp).esc)
-      (relPolyEval 𝓜(q, α) pp (b : ZMod q)
-        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
-      (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
-      ((bridgeVerifier (oSpec := oSpec) (innerRows := innerRows) (messageDigits := messageDigits)
-          (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)
-          𝓜(q, α)).append
-        (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α)))
-      ((evalChain (b := b) (γ := γ) init impl hq5 hκ hτ pp).extractor) :=
-  (evalChain (b := b) (γ := γ) init impl hq5 hκ hτ pp).isCWSS
-
-end Composition
-
-section OpeningChain
+section Evaluation
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
-variable {E : Type} {F : Type} [Field F] [DecidableEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [SampleableType F]
 
 /-- Shorthand for the §4.3 chain's `R^lin` column count at the Eq. (20) instantiation. -/
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
 /-- Shorthand for the §4.3 chain's `R^lin` row count at the Eq. (20) instantiation. -/
 local notation "n₀" => rlinRows innerRows outerRows dRows
 
-/-- The wire format of the pure prefix `openCore` (rows 1–7): bridge (0) ⧺ `QuadEval` (2) ⧺
-R^lin adapter (0) ⧺ lift (2) ⧺ batching (0) ⧺ zero-check (1) ⧺ sumcheck bridge (0),
+/-- The wire format of the `iteration`'s pure prefix (rows 1–7): bridge (0) ⧺ `QuadEval` (2) ⧺
+R^lin adapter (0) ⧺ lift (2) ⧺ batching (0) ⧺ zero-check (m₀+m₁) ⧺ sumcheck bridge (0),
 right-associated as `▷` composes them. -/
-abbrev openCoreSpec (ω m₀ m₁ : ℕ) (TCom F : Type) :=
+abbrev coreSpec (ω m₀ m₁ : ℕ) (TCom F : Type) :=
   (((!p[] : ProtocolSpec 0) ++ₚ
       pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)) ++ₚ
     ((!p[] : ProtocolSpec 0) ++ₚ
@@ -252,15 +168,15 @@ abbrev openCoreSpec (ω m₀ m₁ : ℕ) (TCom F : Type) :=
         ((!p[] : ProtocolSpec 0) ++ₚ
           (pSpecNestedZeroCheck F m₀ m₁ ++ₚ (!p[] : ProtocolSpec 0)))))
 
-/-- Sampleability of the pure prefix's challenges, assembled **by name** from the per-link
+/-- Sampleability of the rows 1–7 prefix's challenges, assembled **by name** from the per-link
 instances (the generic append instance does not fire through the reducible `++ₚ` — its
 discrimination keys degenerate — so compound wire formats get their instances built explicitly;
 same workaround as `roundsSpecSampleable`). Requires a sampler for the fold challenges
 (`ShortChallenge`), which the repo does not yet provide as an instance. -/
-@[reducible] def openCoreSpecSampleable (ω m₀ m₁ : ℕ) (TCom F : Type) [SampleableType F]
+@[reducible] def coreSpecSampleable (ω m₀ m₁ : ℕ) (TCom F : Type) [SampleableType F]
     [SampleableType (ShortChallenge 𝓜(q, α) ω)] :
     ∀ i, SampleableType
-      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+      ((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
         ω m₀ m₁ TCom F).Challenge i) :=
   ProtocolSpec.instSampleableTypeChallengeAppend
     (h₁ := ProtocolSpec.instSampleableTypeChallengeAppend
@@ -276,15 +192,86 @@ same workaround as `roundsSpecSampleable`). Requires a sampler for the fold chal
           (h₁ := instSampleableTypeChallengePSpecNestedZeroCheck)
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
-/-- **The pure prefix of one Hachi opening iteration** (rows 1–7 of the chain table): the
-escape-aware evaluation front (`evalChain` = bridge ▷ `QuadEval`) extended by the §4.3 stages
-with pure verifiers — the `R^lin` adapter, the HMZ25 lift, the batching bridge, the
-(corrected-Lemma-10) zero-check, and the sumcheck bridge. Every relation seam is definitional
-(`rfl`). The public result reduces `relPolyEval` to the round-`0` `nestedRoundRel`; the composite's escape
-event is the `EscapeEvent.append`-nesting of the honest factor events (`QuadEval`'s Module-SIS break
-in row 2, the lift's weak-binding collision in row 4, the zero-check's in row 6), each on its own
-subtree. -/
-noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+/-- **One Hachi evaluation iteration** (rows 1–9 of the chain table): the concatenation of the
+subprotocols, in one line of `▷`s — bridge ▷ `QuadEval` ▷ `R^lin` adapter ▷ HMZ25 lift ▷
+batching bridge ▷ (corrected-Lemma-10) zero-check ▷ sumcheck bridge (rows 1–7, pure verifiers,
+every relation seam definitional) — closed by the guarded sumcheck tail: the `m₀` paired
+sumcheck rounds (Lemma 11, guarded on the round checks) and the final-evaluation step (guarded
+on the target checks). Every relation seam is definitional — `roundsChain` re-pins the loop's
+relations to the round-`0`/round-`m₀` seam relations — so the whole chain composes by the
+universal `▷`, with pure factors lifted into the escape-guarded world automatically. One
+iteration reduces the
+polynomial-evaluation claim `relPolyEval` to the evaluation claim `relWEvalClaim` —
+`mle[w̃](a) = y′` for the committed table `w̃` — the reduced claim the end-piece consumes. The
+composite's escape event is the `EscapeEvent.append`-nesting of the honest factor events
+(rows 2, 4, 6, 8), each on its own subtree.
+
+The certificate `iteration.isCWSS` is the one-iteration CWSS statement; its provenance (which
+links are finished and which are skeleton-sorried) is inventoried in the module header. -/
+noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    [SampleableType (ShortChallenge 𝓜(q, α) ω)]
+    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows)
+    (φF : ZMod q →+* F)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (_hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
+    (hn : n₀ ≤ 2 ^ m₁) :
+    EscapeGCWSSPackage init impl
+      (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (WEvalStatement K.TCom F m₀)
+      (LiftedWitness 𝓜(q, α) μ₀ n₀)
+      (coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F ++ₚ
+        roundsSpec F b m₀ ++ₚ pSpecFinalEval F) :=
+  haveI : ∀ i, SampleableType
+      ((((!p[] : ProtocolSpec 0) ++ₚ
+        pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+      (h₂ := CoordinateWise.SingleRound.instSampleableTypeChallengePSpec)
+  haveI i₀ := coreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
+    ω m₀ m₁ K.TCom F
+  haveI : ∀ i, SampleableType
+      (((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+        ω m₀ m₁ K.TCom F) ++ₚ
+        roundsSpec F b m₀).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
+      (h₂ := roundsSpecSampleable F b m₀)
+  let bridge := bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
+    (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω)
+  let quadEval := quadEvalPackage init impl hq5 hκ hτ pp
+  let rlin := rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl pp (b : ZMod q) ω γ
+  let lift := liftPackage 𝓜(q, α) γ ρBound K φF init impl hd
+  let batch := batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hcov hb hρ
+  let zeroCheck := nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+  let sumcheckBridge := nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+  let rounds := roundsChain 𝓜(q, α) m₀ m₁ γ ρBound b init impl K φF m₀
+  let finalEval := finalEvalPackage 𝓜(q, α) m₀ m₁ γ ρBound b init impl K φF
+  let core : EscapeCWSSPackage init impl
+      (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (NestedRoundStatement 𝓜(q, α) K.TCom F n₀ μ₀ m₀ m₁ 0)
+      (LiftedWitness 𝓜(q, α) μ₀ n₀)
+      (coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F) :=
+    (bridge ▷ quadEval) ▷ rlin ▷ lift ▷ batch ▷ zeroCheck ▷ sumcheckBridge
+  (core ▷ rounds) ▷ finalEval
+
+/- There is the possibility of adding recursion at the `relWEvalClaim` seam (the [NOZ26] §4.5
+adapters), so that multiple iterations can be concatenated together — followed by a single
+end-piece — to reduce the final witness/proof even further. -/
+
+/-- **Hachi one-iteration evaluation reduction — escape-threaded coordinate-wise special soundness
+(skeleton certificate), at the chain's named extractor.** The composed verifier of rows 1–9 is CWSS
+over the endpoint relations `relPolyEval` and the evaluation claim `relWEvalClaim`, at the composed
+extraction algorithm `(iteration …).extractor`, with the composed escape event `(iteration …).esc`
+as the certificate's disjunct — the `EscapeEvent.append`-nesting of the honest per-row events
+(rows 2, 4, 6, 8), each on its own subtree. The proof term is just `iteration.isCWSS`; its
+assumptions are exactly the sorried links inventoried in the module header (Lemma 11, the final
+evaluation, and the two `Constraints.lean` sum identities). -/
+theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
@@ -294,156 +281,123 @@ noncomputable def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
     (hn : n₀ ≤ 2 ^ m₁) :
-    EscapeCWSSPackage init impl
-      (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
-      (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
-      (NestedRoundStatement 𝓜(q, α) K.TCom F n₀ μ₀ m₀ m₁ 0)
-      (LiftedWitness 𝓜(q, α) μ₀ n₀)
-      (openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F) :=
-  haveI : ∀ i, SampleableType
-      ((((!p[] : ProtocolSpec 0) ++ₚ
-        pSpec (CarrierCom 𝓜(q, α) dRows) (ShortChallenge 𝓜(q, α) ω) r)).Challenge i) :=
-    ProtocolSpec.instSampleableTypeChallengeAppend
-      (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
-      (h₂ := CoordinateWise.SingleRound.instSampleableTypeChallengePSpec)
-  evalChain (b := b) (γ := γ) init impl hq5 hκ hτ pp ▷
-    rlinPackage (zDigits := zDigits) 𝓜(q, α) init impl pp (b : ZMod q) ω γ ▷
-    liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
-    batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hcov hb hρ ▷
-    nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
-    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
+        K pp φF hd hq2 hb hρ hcov hn).struct
+      (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
+        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn).esc
+      (relPolyEval 𝓜(q, α) pp (b : ZMod q)
+        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
+      (relWEvalClaim 𝓜(q, α) m₀ γ ρBound b K φF)
+      (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ
+        hτ K pp φF hd hq2 hb hρ hcov hn).verifier
+      (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
+        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn).extractor :=
+  (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
+    K pp φF hd hq2 hb hρ hcov hn).isCWSS
 
-/-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
-`openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on
-the round checks), the final-evaluation step (guarded on the target checks), and the §4.5
-recursion adapters (the pure partial-evaluation head, the ⚠ `Z`-packing bridge with the open
-row-11 soundness question, and the guarded trace handoff). Pure factors (`openCore`,
-`partialEvalPackage`, `zBatchPackage`) stay pure escape packages and are lifted into the
-escape-guarded world by the mixed appends behind the universal `▷` (the two head seams, whose
-relation identifications are the named `roundsChain_relIn`/`roundsChain_relOut` lemmas rather than
-`rfl`, use `EscapeCWSSPackage.appendEscapeGuarded` / `EscapeGCWSSPackage.appendGuarded`
-explicitly). The chain lands on the plain `relIn Φ'` relation — closing the recursion loop:
-iteration `i+1` is this chain re-instantiated at `Φ'` (entering at `quadEvalPackage`, without
-row 1).
+/-- The end-piece wire format: one prover message sending the reduced (end) witness itself. -/
+@[reducible] def pSpecEndPiece (Wit : Type) : ProtocolSpec 1 :=
+  ⟨!v[.P_to_V], !v[Wit]⟩
 
-The certificate `openingChain.isCWSS` is the one-iteration CWSS statement; its provenance (which
-links are finished, skeleton-sorried, or gap-flagged) is inventoried in the module header. The
-sumcheck arity is pinned to `m₀ := mLow + κ` so the recursion adapters can peel the top `κ`
-variables. -/
-noncomputable def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+/-- The end-piece has no challenge round: its `ChallengeIdx` is empty. -/
+instance {Wit : Type} : IsEmpty (pSpecEndPiece Wit).ChallengeIdx :=
+  ⟨fun ⟨0, h⟩ => nomatch h⟩
+
+/- The end-piece lives here only while it is a skeleton: once completed/filled it should move to
+a separate file/folder as a subprotocol in its own right, exporting its package the same way as
+the other subprotocols (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`). -/
+
+/-- **The end-piece (sorried skeleton)** — the closing component of the evaluation. It ends a
+(possible run of) iteration(s): the prover sends the reduced (end) witness `w̃` itself as its one
+message, and the verifier checks the reduced claim `relWEvalClaim` against it directly (recompute
+the commitment, evaluate the multilinear extension at the point) — necessarily a **guarded**
+check, since the trivial output statement drops everything the check reads. Nothing is left to
+reduce, so the output relation is the full relation on `Unit`.
+
+**Sorried** — the verifier (the direct claim check), its guardedness, the extractor (return the
+sent witness) and the CWSS certificate. The wire format, the relations and the challenge-free
+structure are pinned, so `evaluation` below is stated at the honest seam. -/
+noncomputable def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (m₀ b : ℕ) {γ ρBound : ℕ}
+    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
+    (φF : ZMod q →+* F) :
+    GCWSSPackage init impl
+      (WEvalStatement K.TCom F m₀) (LiftedWitness 𝓜(q, α) μ₀ n₀)
+      Unit Unit
+      (pSpecEndPiece (LiftedWitness 𝓜(q, α) μ₀ n₀)) where
+  verifier := sorry
+  struct := CWSSStructure.ofIsEmpty
+  relIn := relWEvalClaim 𝓜(q, α) m₀ γ ρBound b K φF
+  relOut := Set.univ
+  isGuarded := sorry
+  extractor := sorry
+  isCWSS := sorry
+
+/-- **The complete Hachi evaluation** (the opening argument of the commitment scheme): a single
+`iteration` concatenated with the `endPiece`. The composed reduction takes the
+polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: after the end-piece
+the verifier has checked the reduced witness against the reduced claim itself, so nothing is left
+to reduce. The certificate is `(evaluation …).isCWSS`; it is skeletal exactly where its factors
+are (the sorried links of the iteration and the sorried end-piece). -/
+noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
     (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
-    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
-    (hn : n₀ ≤ 2 ^ m₁)
-    (zpow : Fin (2 ^ κ) → F)
-    (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
-    {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
-    (reinterpretCom : K.TCom → Commitment Φ' outerRows')
-    (base' : ZMod q) (βSq' γ' κ' : ℕ) :
+    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
+    (hn : n₀ ≤ 2 ^ m₁) :
     EscapeGCWSSPackage init impl
       (PolyEvalStatement 𝓜(q, α) innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness 𝓜(q, α) innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
-      (QuadEvalStatement Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r') innerDigits'
-        dRows')
-      (QuadEvalWitness Φ' innerRows' (2 ^ m') messageDigits' (2 ^ r') innerDigits')
-      ((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω (mLow + κ) m₁ K.TCom F ++ₚ
-          roundsSpec F b (mLow + κ) ++ₚ pSpecFinalEval F) ++ₚ
-        (pSpecPartialEval F κ ++ₚ ((!p[] : ProtocolSpec 0) ++ₚ pSpecHandoff Φ'))) :=
-  haveI i₀ := openCoreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
-    ω (mLow + κ) m₁ K.TCom F
+      Unit Unit
+      ((coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F ++ₚ
+          roundsSpec F b m₀ ++ₚ pSpecFinalEval F) ++ₚ
+        pSpecEndPiece (LiftedWitness 𝓜(q, α) μ₀ n₀)) :=
+  haveI i₀ := coreSpecSampleable (q := q) (α := α) (dRows := dRows) (r := r)
+    ω m₀ m₁ K.TCom F
   haveI i₁ : ∀ i, SampleableType
-      (((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
-        ω (mLow + κ) m₁ K.TCom F) ++ₚ
-        roundsSpec F b (mLow + κ)).Challenge i) :=
+      (((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+        ω m₀ m₁ K.TCom F) ++ₚ
+        roundsSpec F b m₀).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₀)
-      (h₂ := roundsSpecSampleable F b (mLow + κ))
-  haveI i₂ : ∀ i, SampleableType
-      ((((openCoreSpec (q := q) (α := α) (dRows := dRows) (r := r)
-          ω (mLow + κ) m₁ K.TCom F) ++ₚ
-          roundsSpec F b (mLow + κ)) ++ₚ pSpecFinalEval F).Challenge i) :=
+      (h₂ := roundsSpecSampleable F b m₀)
+  haveI : ∀ i, SampleableType
+      ((((coreSpec (q := q) (α := α) (dRows := dRows) (r := r)
+          ω m₀ m₁ K.TCom F) ++ₚ
+          roundsSpec F b m₀) ++ₚ pSpecFinalEval F).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
-  (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K pp φF hd hq2 hb hρ hcov
-      hn).appendEscapeGuarded
-      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
-      (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
-        (mLow + κ)).symm).appendGuarded
-    (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF)
-    (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
-      (mLow + κ))) ▷
-  partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF ▷
-  zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF ▷
-  handoffPackage 𝓜(q, α) Φ' mLow κ γ ρBound init impl zpow K φF pp' reinterpretCom base' βSq'
-    γ' κ'
+  let iter := iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
+    hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn
+  let closing := endPiece init impl m₀ b K φF
+  iter ▷ closing
 
-/-- **Hachi one-iteration opening — escape-threaded coordinate-wise special soundness (skeleton
-certificate), at the chain's named extractor.** The composed verifier of rows 1–12 is CWSS over the
-endpoint relations `relPolyEval` (over the current ring `𝓜(q, α)`) and `relIn` (over `Φ'`), at the
-composed extraction algorithm `(openingChain …).extractor`, with the composed escape event
-`(openingChain …).esc` as the certificate's disjunct — the `EscapeEvent.append`-nesting of the
-honest per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just
-`openingChain.isCWSS`; its assumptions are exactly the sorried links inventoried in the module
-header (in particular the ⚠ row-11 gap and the guarded-append machinery). -/
-theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
-    (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (hq5 : q % 8 = 5) {b ω γ ρBound m₁ mLow κ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
-    [SampleableType (ShortChallenge 𝓜(q, α) ω)]
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
-    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
-      innerDigits dRows)
-    (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
-    (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
-    (hn : n₀ ≤ 2 ^ m₁)
-    (zpow : Fin (2 ^ κ) → F)
-    (Φ' : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ']
-    {innerRows' messageDigits' outerRows' innerDigits' dRows' m' r' : ℕ}
-    (pp' : Hachi.PublicParamsD Φ' innerRows' (2 ^ m') messageDigits' outerRows' (2 ^ r')
-      innerDigits' dRows')
-    (reinterpretCom : K.TCom → Commitment Φ' outerRows')
-    (base' : ZMod q) (βSq' γ' κ' : ℕ) :
-    Verifier.coordinateWiseSpecialSoundWithEscape init impl
-      (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-        K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
-      (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').esc
-      (relPolyEval 𝓜(q, α) pp (b : ZMod q)
-        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
-      (relIn Φ' pp' base' βSq' γ' κ')
-      (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ
-        hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').verifier
-      (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
-        κ').extractor :=
-  (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-    K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
-
-end OpeningChain
+end Evaluation
 
 /-! ## TODO — growing the composition
 
+* **Discharging the skeleton.** Work through the sorry inventory in the module header in
+  dependency order: the two sum identities of the shared encoding layer
+  (`ZeroCheck/Constraints.lean`), then Lemma 11's round certificate (`Sumcheck/Rounds.lean`) and
+  the final evaluation (`Sumcheck/FinalEval.lean`), and finally `endPiece` above — plus the
+  `LiftCom` instantiation (the inner-outer commitment without re-decomposition, with its collision
+  escape via `outputToModuleSIS_valid_of_verified`).
+* **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
+  tracked with @ErVinuelas.
 * **§3 packing head (external extension-field claims).** The paper's headline
   multilinear-over-`F_{q^k}` interface (§3.1/§3.2) wraps an extension-field evaluation claim in
   front of `relPolyEval`; it is planned as an instance of the generalized `RingSwitching`
   packing phase, not as a Hachi-local head.
-* **Recursion termination.** At the row-12 seam: the §4.4 asymptotic base case (reveal the final
-  small polynomial — a `SendWitness`-style tail) and the §4.5 concrete cutoff (switch to
-  Greyhound/LaBRADOR, i.e. the JL projection route) are future zero-round/one-message tails.
-* **Discharging the skeleton.** Work through the sorry inventory in the module header in
-  dependency order, starting from the guarded-append machinery (`Guarded.lean`), then the
-  zero-check encoding layer (`ZeroCheck/Constraints.lean`, `ZeroCheck/Batch.lean`), the sumcheck
-  rounds and final evaluation, and finally the recursion handoff — plus a repair decision for the
-  row-11 gap and the `LiftCom` instantiation (the inner-outer commitment without
-  re-decomposition, its collision escape via `outputToModuleSIS_valid_of_verified`, and the
-  ring-dimension reinterpretation used by row 12).
-* **Knowledge-error accounting** (FMN24 Lemma 4), `Commitment.extractability`, and Fiat–Shamir
+* **Recursion at the `relWEvalClaim` seam.** The §4.5 `Recursion/` adapters (`PartialEval`,
+  `ZBatchBridge`, `TraceHandoff`) would carry one iteration's evaluation claim to the next ring,
+  so that several iterations could precede a single `endPiece`. They are formalized but not
+  composed here, and `ZBatchBridge` carries a documented soundness gap needing a repair decision.
+  Termination is §4.4's asymptotic base case and §4.5's concrete Greyhound/LaBRADOR cutoff.
+* **Knowledge-error accounting** ([FMN24] Lemma 4), `Commitment.extractability`, and Fiat–Shamir
   remain out of scope. -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter

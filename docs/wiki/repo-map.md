@@ -149,20 +149,22 @@ home_page/            site assets and assembled website root
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
     sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
-    `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
-    recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports the folder.
-  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+    `▷ᵍ`, with `roundsChain` re-pinning both seam relations definitionally so the loop composes
+    with the universal `▷`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail)
+    landing on the evaluation claim `relWEvalClaim`. `Sumcheck/Basic.lean` re-exports the folder.
+  - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
+    `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
     (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
     `Recursion/Basic.lean` re-exports the folder.
-  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the
-    `bridgePackage ▷ quadEvalPackage` chain and `eval_coordinateWiseSpecialSoundWithEscape` is its
-    composed named-extractor CWSS certificate (`sorryAx`-free). `openCore` chains the pure §4.3 links
-    (rows 1–7 of the header's seam table), and `openingChain` /
-    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` compose the guarded tail (sumcheck loop,
-    final eval, recursion adapters) into the full one-iteration certificate — a skeleton whose sorry
+  - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
+    links (rows 1–9 of the header's seam table) into one evaluation iteration, and
+    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
+    certificate. `endPiece` is the sorried skeleton closing a run of iterations (the prover reveals
+    the reduced witness and the verifier checks the reduced claim against it directly), and
+    `evaluation` is `iteration ▷ endPiece` — the complete opening argument, a skeleton whose sorry
     provenance is inventoried in the module header. Escape events compose along the chain by
     `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest

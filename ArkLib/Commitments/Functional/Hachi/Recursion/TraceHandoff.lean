@@ -184,7 +184,7 @@ reinterpretation identity `Com_d(w̃) = Com'_{d′}(ψ(ŵ))` is an obligation of
 
 Since `LiftCom` is indexed by `liftShort Φ bound ρBound`, every relation on this side of the
 chain carries that predicate, and the pull-back above must **produce** it for the witness it
-returns. **As `openingChain` is currently parameterized, that is not merely unproven but false**:
+returns. **At this theorem's free parameters, that is not merely unproven but false**:
 `base' βSq' γ' κ'` are unconstrained, so nothing ties the next iteration's norm regime to this
 one's. Two things are missing, and neither is a proof-engineering detail:
 

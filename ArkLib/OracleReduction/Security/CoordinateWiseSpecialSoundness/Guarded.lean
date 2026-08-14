@@ -38,8 +38,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
     purity is the `check := fun _ _ => true` special case
     (`IsGuarded.of_isPure`).
-  * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append`
-    composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
+  * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append` (composite
+    check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
     `Verifier.IsPure.append`).
   * `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` — the escape-threaded
     guarded binary CWSS append, the *fundamental* obligation here (stated at
@@ -121,7 +121,7 @@ theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
 omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- Running an appended verifier with a guarded left factor either runs the right verifier at the
 left output or fails outright, according to the left guard. -/
-theorem append_run_guardedLeft
+theorem append_run_guarded_left
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
     (out₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
@@ -202,7 +202,7 @@ statements — harmless, since escape events must be honest breaks at *all* `(st
 
 The proof transplants `Verifier.append_treeSpecialSoundWithEscape` (`Composition.lean`) — the
 disjunction is handled exactly as there — with two deltas:
-1. A guarded left-run lemma `append_run_guardedLeft`:
+1. A guarded left-run lemma `append_run_guarded_left`:
    `(V₁.append V₂).run stmt (tr₁ ++ₜ tr₂) = if check₁ stmt tr₁ then V₂.run (out₁ stmt tr₁) tr₂
    else failure` (mirror of `append_run_pure_left`, plus `failure_bind`). On an accepting leaf
    (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`,
@@ -255,7 +255,7 @@ theorem append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft
       have hfull := hAccept _ hmem
       apply failure_not_accepting init impl (V₁.append V₂)
         stmt (path.fullTranscript ++ₜ suffixPath.fullTranscript) rel₃.language ?_ hfull
-      simpa [hfalse] using append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁
+      simpa [hfalse] using append_run_guarded_left V₁ V₂ check₁ out₁ hV₁
         stmt path.fullTranscript suffixPath.fullTranscript
     have hLang : ∀ path : ChallengeTree.LeafPath tree.appendSplit.fst,
         out₁ stmt path.fullTranscript ∈ rel₂.language := by
@@ -270,7 +270,7 @@ theorem append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft
         have hmem :=
           ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
         have hfull := hAccept _ hmem
-        simpa [append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁
+        simpa [append_run_guarded_left V₁ V₂ check₁ out₁ hV₁
           stmt path.fullTranscript tr₂, hCheck path] using hfull
       rcases hE₂ _ _ hSuffixStructured hSuffixAccept with hbad | hwit
       · exact absurd hbad (hesc path)

@@ -8,8 +8,8 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 /-!
 # Hachi Recursion Adapters
 
-Umbrella module for `Hachi/Recursion/`: the adapters that close one Hachi opening iteration and
-hand its evaluation claim to the next ring.
+Umbrella module for `Hachi/Recursion/`: the adapters that *would* close one Hachi opening
+iteration and hand its evaluation claim to the next ring (future recursion work).
 
 ## Folder structure
 
@@ -21,5 +21,8 @@ hand its evaluation claim to the next ring.
   introducing a new commitment, so all three are escape-free.
 
 This umbrella re-exports the folder (`TraceHandoff` transitively imports `ZBatchBridge` and
-`PartialEval`). The full guarded chain is composed in the sibling `Composition.lean`.
+`PartialEval`). These adapters are **not** currently composed into `Composition.lean`, whose
+`iteration` ends at the multilinear-evaluation claim `relWEvalClaim` and is closed by `endPiece`;
+they are staged for the future recursion step at that same seam, and `ZBatchBridge` carries a
+documented soundness gap that needs a repair decision first.
 -/
