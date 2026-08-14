@@ -28,6 +28,13 @@ ArkLib, missing, or present in a materially different form.
 - Open items are listed as `missing` or `partial`. For the narrative account of what remains, see
   [`../papers/ABF26.md`](../papers/ABF26.md) § *Open Formalization Gaps*.
 
+## Section 1 — Grand Challenges
+
+| Paper item | Status | Lean refs | Notes |
+| --- | --- | --- | --- |
+| Grand MCA Challenge | present | `grandMcaChallenge`, `GrandMcaAnswer.to_challenge`, `McaPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses affine-line `mcaError` and accepts either an adjacent grid crossing or an all-good endpoint at radius one. `PrizeDomainAdmissible` and `prizeCode_rate_eq` ensure that the selected Reed--Solomon codes have rates `1/2`, `1/4`, `1/8`, and `1/16`. |
+| Grand List Decoding Challenge | present | `grandListDecodingChallenge`, `GrandListAnswer.to_challenge`, `ListPrizeResolution.to_prize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses `Code.Lambda` on a positive-width interleaving and the same adjacent-crossing or all-good endpoint answer shape. |
+
 ## Section 2 — Preliminaries
 
 | ABF26 ID | Paper item | Status | Lean refs | Lean target | Notes |
@@ -41,7 +48,7 @@ ArkLib, missing, or present in a materially different form.
 | `D2.7` | F-additive code | present-but-different | `ModuleCode`, `LinearCode` in [LinearCode.lean](../../../ArkLib/Data/CodingTheory/Basic/LinearCode.lean) | use `ModuleCode ι F (Fin s → F)` directly | `ModuleCode` / `LinearCode` *bake in* F-linear subspace structure — the paper's "F-additive" notion is realised by these existing types. Theorems quantifying over a paper-style "F-additive `Set`-coded code `C`" can write `∃ MC : Submodule F (ι → A), (MC : Set _) = C` inline rather than via a dedicated paper-shape predicate; ArkLib convention avoids alias-style wrappers for items already realised by existing types. |
 | `D2.8` | `Λ(C,δ,f)` and `\|Λ(C,δ)\|` | present | `Code.closeCodewordsRel` (= point list `Λ(C,δ,f)`), `Code.Lambda`, `Lambda_le_iff_forall_ncard_le`, `Lambda_le_of_forall_finset_card_le`, `closeCodewordsRel_subset_of_le`, `Lambda_mono`, `Lambda_le_ncard` in [ListDecodability.lean](../../../ArkLib/Data/CodingTheory/ListDecodability.lean) | existing | `Lambda` is the `ℕ∞`-valued supremum of point-list `encard`s, so infinite lists contribute `⊤` and a finite bound *implies* point-list finiteness rather than asserting it. It is the primitive quantity: the `IsListDecodable` predicate consumed by STIR is a `def` whose body *is* `Lambda C r ≤ ⌊ℓ⌋₊` at `ℓ : ℝ≥0`, not a second definition, so there is no bridge and no finite-alphabet hypothesis anywhere. The absolute-radius point list is the relative one rescaled (`closeCodewords_eq_closeCodewordsRel`). |
 | `D2.9` | `m`-interleaved code `C^≡m` | present-but-different | `interleavedCodeSet`, `codewordStackSet` in [InterleavedCode.lean](../../../ArkLib/Data/CodingTheory/InterleavedCode.lean) | existing + `scoped notation "_^≡_"` | Matrix-based API; paper uses tuple notation. |
-| `L2.10` | `\|Λ(C^≡m,δ)\| ≤ binom(b+r,r)·\|Λ\|^r` | missing | none | — | The interleaved-code list-size comparison, attributed to `[GGR11]`. |
+| `L2.10` | `\|Λ(C^≡m,δ)\| ≤ binom(b+r,r)·\|Λ\|^r` | present-but-incomplete | `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in [Bounds/Interleaved.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/Interleaved.lean) | same | **External admit** ([GGR11] Theorem 2.5). The statement uses the canonical `Code.Lambda : ℕ∞`, binds `η := δ_C - δ`, `b := ⌈δ/η⌉`, and `r := ⌈log₂(δ_C/η)⌉`, is independent of the nonzero interleaving width `m`, and retains the source's finite-alphabet hypothesis. |
 | `D2.11` | Reed-Solomon code `RS[F,L,k]` | present-but-different | `ReedSolomon.code` in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean) | existing + `scoped notation "RS[" F ", " L ", " k "]"` | Parameterised by injection `ι ↪ F` rather than `L ⊆ F`. Strictly more general. |
 | `D2.12` | Smooth domain | present | `ReedSolomon.Smooth` in [ReedSolomon.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean) | existing | Verified: typeclass requires multiplicative coset of a subgroup with order a power of two. The companion directory [FftDomain/](../../../ArkLib/Data/Domain/FftDomain) (5 modules) provides FFT-domain machinery; not a paper-item match but noted here for completeness. |
 | `D2.13` | s-interleaved RS `IRS[F,L,k,s]` | present | [ReedSolomon/Interleaved.lean](../../../ArkLib/Data/CodingTheory/ReedSolomon/Interleaved.lean) | `ReedSolomon.Interleaved.irsCode`, plus `dim_irsCode_eq_min`, `minDist_irsCode`, `alphabetRate_irsCode_eq_min` and `irs_rate_distance` (all proved) | Defined as `interleavedCodeSet (RS[F, L, ⌊k/s⌋])`. The exact dimension `s · min ⌊k/s⌋ n` is `dim_irsCode_eq_min`, proved via the generic `Code.moduleInterleavedCodeEquiv` / `Code.finrank_moduleInterleavedCode` (interleaving multiplies `finrank` by the interleaving factor) composed with `ReedSolomon.dim_eq_min_deg_card`; `dim_irsCode` and `dim_irsCode_of_dvd` are its non-saturated and `s ∣ k` specialisations. Interleaving preserves the minimum **block** distance (`minDist_irsCode_eq_minDist_rsCode`, a two-line transport of the generic `Code.minDist_interleavedCodeSet`), giving the closed form `n − ⌊k/s⌋ + 1` (`minDist_irsCode`) with no divisibility and no non-saturation hypothesis — only `0 < ⌊k/s⌋`, whose necessity is recorded with a machine-checked witness. Hence the L2.6 MDS rate-distance equation at the D2.5 rate (`irs_rate_distance`), which is what the C3.3 consumer below needs. `interleavedCodeSet_rsCode_eq_irsCode` identifies the interleave of an RS code with an `irsCode`, so the D2.20 extension-code chain lands here. |
@@ -80,15 +87,18 @@ ArkLib, missing, or present in a materially different form.
 
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
-| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present-but-different | `δ_ε_correlatedAgreementAffineLines`, `δ_ε_correlatedAgreementCurves`, `δ_ε_correlatedAgreementAffineSpaces` in [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean) | ArkLib uses predicate-style CA notions, not the paper's maximized error-function interface. |
-| Remark 4.2 discretization of proximity loss | missing | related distance granularity in [ArkLib/Data/CodingTheory/Basic/Distance.lean](../../../ArkLib/Data/CodingTheory/Basic/Distance.lean) | The exact `εca`-specific remark is absent because `εca` is absent. |
+| §4.1 proximity-gap error `εpg(C,δ)` | present | `epsPg`, `epsPg_eq_zero_of_one_le`, and `epsPg_singleton_zero_pos` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric proximity-gap error with a nonnegative radius. |
+| Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `epsCa`, `epsCa'`, `epsCaCurves`, `epsCaAffineSpaces` and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric correlated-agreement values with separate fold and interleaved radii. |
+| Remark 4.2 discretization of proximity loss | present | `epsCa_eq_of_floor_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Constancy on integer-agreement floor cells. |
+| Definition 4.3 mutual correlated agreement error `εmca(C,δ)` | present | `CoreDefinitions.mcaError` / `IsMCA` in [ProximityGenerators.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean); `epsMca` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | `epsMca` is transparent notation for the affine-line specialization. |
 | Remark 4.4 MCA with proximity loss | missing | none | No matching notion was found. |
-| Fact 4.5 `εpg ≤ εca ≤ εmca` | missing | related CA/proximity-gap predicates in [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean) | Not expressible in current ArkLib interfaces because `εca` and `εmca` are not defined as numeric errors. |
-| Lemma 4.6 MCA equals CA below unique decoding radius | missing | none | No general theorem of this form was found. |
-| Lemma 4.7 interleaving degrades MCA by at most `t` | missing | none; see [`Jo26`](../papers/Jo26.md) | No general interleaving-vs-MCA theorem was found. Jo26 gives a sharper interleaving-stability target for generator MCA: no linear interleaving-width loss, exact transfer when the seed-set size is at most the field size, and a field-size weighted factor otherwise. |
+| Fact 4.5 `εpg ≤ εca ≤ εmca` | present | `epsPg_le_epsCa_le_epsMca`, with canonical second leg `epsCa_le_mcaError_affineLine`, in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Proved for module codes. |
+| Lemma 4.6 MCA equals CA below unique decoding radius | present-but-incomplete | `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist`, with derived equality `mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist`, in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | The `mcaError ≤ epsCa` direction is externally sourced from [ACFY25] Lemma 4.10. The reverse direction is proved in-tree. |
+| Lemma 4.7 interleaving stability for MCA | present-but-incomplete | `mcaError_interleaved_le`, `mcaError_le_moduleInterleavedCode`, and `mcaError_interleaved_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | The interleaved-to-base direction is externally sourced from [Jo26] Corollary 4.5; the reverse direction is proved from `TensorMCA.isMCAGenerator_of_moduleInterleavedCode`. |
+| §4.3 `prop:mca-information-set-lower-bound` | present | `linear_mcaError_ge_information_set` in [InformationSetLowerBound.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean) | Gives `εmca(C,δ) ≥ min(⌊δn⌋/|F|,1)` below the minimum-distance radius. |
 | Theorem 4.8 AHIV17 general-code unique-decoding bound | missing | related but different [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) | AHIV22 is present, but not this general `εmca/εca` statement. |
 | Theorem 4.9 RS unique-decoding results | present-but-different | `RS_correlatedAgreement_affineLines_uniqueDecodingRegime` and `RS_correlatedAgreement_affineLines` in [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean) and [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean) | Item 1 is represented via predicate-style CA for RS. Item 2, the BCHKS25 proximity-loss refinement, is missing. The main file still has a `sorry` in the non-unique-decoding branch. |
-| Remark 4.10 small proximity-loss simplification | missing | none | Depends on missing `εca` error-function interface. |
+| Remark 4.10 small proximity-loss simplification | partial | numeric `epsCa` interface in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | The error-function interface is present, but the simplification itself is not formalized. |
 | Theorem 4.11 1.5-Johnson regime for general linear codes | missing | none | No matching theorem was found. |
 | Theorem 4.13 MCA from subspace-design codes | missing | prerequisite `CodingTheory.IsSubspaceDesign` in [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | The subspace-design infrastructure is present; the MCA theorem is missing. |
 | Theorem 4.14 folded RS MCA up to capacity | missing | prerequisites `ReedSolomon.Folded.frsCode` and `CodingTheory.isSubspaceDesign_frsCode` | The folded-RS code and FRS half of T2.18 are present; the MCA theorem is missing. |
@@ -146,15 +156,17 @@ ArkLib, missing, or present in a materially different form.
 
 The largest mismatches between the paper and ArkLib are structural rather than mathematical.
 
-1. Correlated agreement is formalized as predicates, not error functions.
-   ArkLib currently exposes `δ_ε_correlatedAgreement...` predicates in
-   [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean),
-   while the paper is organized around numeric error functions `εpg`, `εca`, and `εmca`.
-
-2. General MCA is not yet a first-class coding-theory notion in ArkLib.
-   The TODO at the top of
+1. Correlated agreement has both predicate and numeric views.
+   ArkLib exposes maintained `δ_ε_correlatedAgreement...` predicates in
    [ArkLib/Data/CodingTheory/ProximityGap/Basic.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean)
-   still lists mutual correlated agreement as missing. 
+   and numeric `epsPg` / `epsCa` values with exact bridges in
+   [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean).
+
+2. General MCA is a first-class generator-level value.
+   The canonical definition is `CoreDefinitions.mcaError` in
+   [ProximityGenerators.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean).
+   `epsMca` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) is transparent
+   notation for its affine-line specialization.
 3. Some core BCIKS20 interfaces are present, but the list-decoding regime branch is incomplete.
    In particular,
    [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean)
