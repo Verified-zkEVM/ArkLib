@@ -31,7 +31,7 @@ related_modules:
 ## Main ArkLib Touchpoints
 
 - [`ListDecodability/Bounds/Interleaved.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds/Interleaved.lean)
-  contains the externally admitted `InterleavedCode.lambda_interleaved_le_choose_mul_pow`.
+  contains the proved `InterleavedCode.lambda_interleaved_le_choose_mul_pow`.
 - The [ABF26 audit](../audits/open-problems-list-decoding-and-correlated-agreement.md) records the
   parameter conversion and source scope.
 
@@ -44,10 +44,6 @@ related_modules:
 - `Code.Lambda` is `ℕ∞`-valued so an infinite point list is represented by `⊤`; the cited finite
   alphabet ensures the theorem's intended finite setting.
 - Interleaving uses ArkLib's canonical column-wise `interleavedCodeSet` representation.
-
-## Open Formalization Gaps
-
-- Prove the list-size comparison in-tree and remove the external leaf.
 
 ## Source Access
 
