@@ -191,6 +191,27 @@ home_page/            site assets and assembled website root
   `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
+- List-size bounds that are *not* of Johnson type are under `ListDecodability/Bounds/`, with
+  `ListDecodability/Bounds.lean` as the umbrella that imports them and carries the family overview,
+  the quantification conventions and the shared reference list. The split is by scope, not by paper:
+  `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
+  (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
+  arithmetic, the generalized Singleton bound, random linear codes),
+  `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
+  `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
+  neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
+  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
+  `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
+  corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
+  needs, which mentions no list size and is reusable). The file/directory pair
+  `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
+  `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
+  results about them. Three of these bounds remain deep external results carried as tagged `sorry`
+  admits with the source statement in the docstring — the random-linear-code bound, the
+  extension-field Reed-Solomon separation and the random-evaluation-domain bound. Everything else is
+  proved in-tree and axiom-clean, including [CZ25]'s subspace-design theorem (and therefore the
+  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
+  large-alphabet barrier.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the

@@ -49,8 +49,9 @@ this arrangement is recorded in `docs/wiki/coding-theory-conventions.md`.
   close codeword", and its agreement with `Code.uniqueDecodingRadius`.
 * `Code.isListDecodable_iff_toENNReal_le_ofReal` — transfer between a real-valued bound and the
   integral `Lambda`.
-* `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius`, `Code.Lambda_mono` — monotone in
-  the list-size bound, antitone in the radius.
+* `Code.IsListDecodable.mono`, `Code.IsListDecodable.anti_radius`, `Code.Lambda_mono`,
+  `Code.Lambda_mono_code` — monotone in the list-size bound, antitone in the radius, monotone in the
+  code.
 
 ## References
 
@@ -246,6 +247,13 @@ lemma Lambda_mono {C : Set (ι → F)} {δ₁ δ₂ : ℝ} (h : δ₁ ≤ δ₂)
     Lambda C δ₁ ≤ Lambda C δ₂ := by
   refine iSup_mono fun f => ?_
   exact Set.encard_mono (closeCodewordsRel_subset_of_le h f)
+
+/-- `Lambda` is monotone in the code. -/
+lemma Lambda_mono_code {C D : Set (ι → F)} (hDC : D ⊆ C) (δ : ℝ) :
+    Lambda D δ ≤ Lambda C δ := by
+  unfold Lambda
+  refine iSup_mono fun f => ?_
+  exact Set.encard_mono fun c hc => ⟨hDC hc.1, hc.2⟩
 
 /-! ## List decodability -/
 
