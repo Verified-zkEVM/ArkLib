@@ -29,7 +29,8 @@ in List Decoding and Correlated Agreement*, 2026, tex `thm:kikh-asymptotic-list-
   asymptotics pinned by an **explicit uniform constant** `Kc` (Lean lacks a generic `O(·)`),
   matching the template of `ProximityGap/CapacityBounds.lean`'s
   `exists_rs_epsCa_large_near_capacity`. It is *derived in-tree* from
-  `CodingTheory.KKH26.choose_le_Lambda_rs_vanilla_of_smooth` (ABF26 `cor:kikh-vanilla`); the
+  `CodingTheory.AdditiveSetListDecoding.choose_le_Lambda_rs_vanilla_of_smooth`
+  (ABF26 `cor:kikh-vanilla`); the
   only non-derived input is the number-theoretic existence of arbitrarily large smooth
   evaluation domains, carried as the hypothesis `supply` (see design notes).
 
@@ -94,7 +95,7 @@ set_option linter.unusedVariables false
 open Polynomial Finset Code ProximityGap Real Filter Topology
 open scoped NNReal BigOperators
 
-namespace CodingTheory.KKH26
+namespace CodingTheory.AdditiveSetListDecoding
 
 /-! ## Counting helpers (not in mathlib) -/
 
@@ -404,4 +405,4 @@ theorem exists_rs_asymptotic_Lambda_lower_bound
       exact_mod_cast hlistN
     exact le_trans hstep hcor
 
-end CodingTheory.KKH26
+end CodingTheory.AdditiveSetListDecoding

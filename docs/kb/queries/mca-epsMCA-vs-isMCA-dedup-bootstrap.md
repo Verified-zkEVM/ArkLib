@@ -1,30 +1,33 @@
-# MCA formalization dedup: `epsMCA` (ABF26) vs `IsMCA` (BCGM25)
+# MCA formalization dedup — historical design record
 
-**Status: SUPERSEDED for execution (2026-08-03) — analysis still current.**
-The trigger fired: Katy's generator framework landed on `main` via **#596** (2026-08-03).
-**Option B (§4) is now ACTIVE** and is being executed on branch `feat/mca-unification`; see
-[`mca-unification-bootstrap.md`](mca-unification-bootstrap.md) for the step plan.
+**Status: LANDED.** PR #692 unified the generator and module-alphabet MCA layers; PR #741 moved
+the ABF26 API onto that canonical definition. Sections 1–5 below preserve the reasoning that led
+to the design. They describe the tree *before* those PRs and are not current implementation
+instructions.
 
-Two things changed since this doc was written:
-- **Option B is no longer optional.** It is the only *faithful* fix for BCGM25 Lemma 4.4's tight
-  `ε + ε′`, which PR #610's Theorems 8.2/9.2 depend on and which is currently an unjustified
-  `sorry`. The paper's proof needs MCA for the ℓ-fold interleaving `C^ℓ`, and ArkLib's `IsMCA`
-  cannot express it. (BCGM25 Def 3.2/3.3 + Remark 3.4 confirm Σ is a general F-vector space, so
-  this is an ArkLib limitation, not a paper gap.)
-- **#505 no longer gates it.** The unification lands on `main`'s side; #505 bridges afterwards
-  (§4 Option B's `epsMCA := mcaError lineGenerator …`).
+The current architecture has one MCA event and one numeric value:
 
-§2's clause-by-clause coincidence has since been **compiled** (`scratchpad/unify.lean`), not just
-argued. §1, §3, §5–§7 below remain the reference; do not re-derive them.
+- `CoreDefinitions.IsMCA` is generator-parametric and accepts `ModuleCode ι F A` for an arbitrary
+  `F`-module alphabet `A`.
+- `CoreDefinitions.mcaError G C : ℝ → ENNReal` is the primitive worst-case value, and
+  `IsMCAGenerator` is definitionally its pointwise bound on radii in `I`.
+- `ProximityGap.epsMca` is only transparent notation for
+  `mcaError (AffineLineGenerator F) C`; there is no separate `mcaEvent`/`epsMCA` definition.
+- `Errors.lean` supplies affine-line comparisons, while `MCAGenerator.lean` and
+  `TensorGenerator.lean` supply generator transport. The Grand Challenges API consumes
+  `mcaError` directly.
 
-Also still to fold in: PR #618 (see §5).
+For the maintained API, use
+[`proximity-error-conventions.md`](../../wiki/proximity-error-conventions.md). The execution
+history and source-fidelity decisions remain in
+[`mca-unification-bootstrap.md`](mca-unification-bootstrap.md).
 
 ---
 
-## 1. The situation — two MCA formalizations, no bridge
+## 1. Historical situation — two MCA formalizations, no bridge
 
-ArkLib has two formalizations of "mutual correlated agreement," from two papers, that
-overlap but neither generalizes the other:
+Before #692 and #741, ArkLib had two formalizations of "mutual correlated agreement," from two
+papers, that overlapped but neither generalized the other:
 
 - **`epsMCA` / `mcaEvent`** — ABF26 Def 4.3. `ArkLib/Data/CodingTheory/ProximityGap/Errors.lean`
   (`mcaEvent` ~L233, `epsMCA` ~L251). Numeric `ENNReal`-valued worst-case error; line family
@@ -38,14 +41,15 @@ overlap but neither generalizes the other:
   Preservation lemmas in `MCAGenerator.lean` (`pseudoinverseGen` L59,
   `isMCA_projectedGenerator_of_isMCA` L89, `generatorSubset` L110) — BCGM25 Lem 4.1/4.2.
 
-There is **no bridging lemma**. Existing policy note: `CapacityBounds.lean` ~L644–650 says the
-generator framework is canonical and "do not grow a parallel polynomial-generator notion."
+There was **no bridging lemma**. The design policy was already that the generator framework should
+be canonical and that ArkLib should not grow a parallel polynomial-generator notion.
 (Supporting defs: `projectedWord`/`projectedCode` `LinearCode.lean` L260/L267;
 `pairJointAgreesOn` `Errors.lean` ~L192.)
 
-## 2. Where they coincide — verified clause by clause
+## 2. Historical overlap — verified clause by clause
 
-**Overlap = a single point in a 2-axis space**: alphabet `A = F`, code `C = ↑LC` linear,
+The pre-unification overlap was a single point in a two-axis space: alphabet `A = F`, code
+`C = ↑LC` linear,
 generator `G = lineGenerator` (`ℓ = Fin 2`, `G(x) = (1,x)` so `vecMul (G x) U = U 0 + x·U 1`),
 sample `x = γ ← F`, `δ ↔ γ` across `ℝ≥0 ↔ I`. There `mcaEvent` and `IsMCA lineGen` are the
 **same event**:
@@ -57,11 +61,11 @@ sample `x = γ ← F`, `δ ↔ γ` across `ℝ≥0 ↔ I`. There `mcaEvent` and 
 | non-agreement | `¬ pairJointAgreesOn C S u₀ u₁` | `∃ j, (U j)\|[T] ∉ (↑LC)\|[T]` | ✓ — `pairJointAgreesOn` factors (pair independent) into "`u₀` close ∧ `u₁` close", so its negation = "some `Uⱼ` not close" |
 | size | `(S.card:ℝ≥0) ≥ (1−δ)·n` | `(T.card:ℝ) ≥ n·(1−γ)` | ✓ mod `ℝ≥0↔ℝ`, `mul_comm`, `δ↔γ` on `[0,1]` |
 
-Hence the target equalities:
+Hence the then-targeted equalities were:
 - **value:** `epsMCA (↑LC) δ = ⨆_{U : Fin 2 → (ι→F)} Pr_{x←F}[IsMCA lineGen (↑LC) x U δ]`;
 - **predicate:** `IsMCAGenerator lineGen ε (↑LC) ⟺ ∀ δ, epsMCA (↑LC) δ ≤ ε δ`.
 
-## 3. Where they do NOT coincide (three disjoint regions)
+## 3. Why the old definitions did not subsume each other
 
 1. **`epsMCA` only — general `F`-module alphabet `A ≠ F`.** Used by `ConstrainedCode`.
    The source-audited `linear_mcaError_le_onePointFiveJohnson` is no longer an example:
@@ -74,14 +78,20 @@ Hence the target equalities:
    (`value ≤ ε`). The generator framework has *no value form* yet. *(Minor/mechanical: `IsMCA`
    uses `LinearCode` but only `↑LC : Set`; `γ : I` vs `δ : ℝ≥0`.)*
 
-**2-axis map:** overlap is `(alphabet = F) × (generator = line)`. `epsMCA` extends the
-*alphabet* axis; `IsMCA` extends the *generator* axis; neither contains the other.
+**Historical two-axis map:** overlap was `(alphabet = F) × (generator = line)`. `epsMCA`
+extended the *alphabet* axis; `IsMCA` extended the *generator* axis; neither contained the other.
 
-## 4. Two options
+## 4. Historical options — Option B landed
 
-### Option A — Bridge (low-risk, additive; the near-term move)
-New file `ProximityGap/MCABridge.lean` (imports `Errors` + `ProximityGenerators`; touches
-neither). Helper lemmas, all with verified clean characterizations:
+Do not execute either option below. They are retained to explain why the unified representation
+was selected; the current declarations are summarized at the top of this page.
+
+### Option A — Bridge (not chosen)
+
+A proposed `ProximityGap/MCABridge.lean` would have imported `Errors` and
+`ProximityGenerators` while touching neither. Its proposed helpers had verified clean
+characterizations:
+
 1. `def lineGenerator (γ : F) : Generator F (Fin 2) F := ![1, γ]` (not in tree yet).
 2. `vecMul (lineGenerator γ) U = U 0 + γ • U 1` (`Matrix.vecMul` + `Fin.sum_univ_two`).
 3. `v\|[T] ∈ C\|[T] ↔ ∃ c ∈ C, ∀ i ∈ T, c i = v i` (from `projectedCode` def; restriction-eq is
@@ -89,35 +99,30 @@ neither). Helper lemmas, all with verified clean characterizations:
 4. `(∃ j, (U j)\|[T] ∉ C\|[T]) ↔ ¬ pairJointAgreesOn C T (U 0) (U 1)` (pairJointAgreesOn factors).
 5. size-clause reconciliation `I ↔ ℝ≥0` (fiddly but mechanical; `δ ↔ γ` on `[0,1]`).
 6. assemble → event iff → `iSup_congr`/`propext` → the value equality in §2.
-Result: "epsMCA is the special case of IsMCA at (F, line)" becomes a **theorem**; kills drift;
-canonical target for #618. Does **not** foreclose Option B (it's a prerequisite/safety-net).
+This would have made "`epsMCA` is the special case of `IsMCA` at `(F, line)`" a theorem while
+retaining two definitions.
 
-### Option B — Unify (the principled endpoint; a real project)
-One minimal general def, general on **both** axes:
-`mcaError {A : F-module} (G : Generator S ℓ F) (C : Set (ι → A)) (δ : ℝ≥0) : ENNReal
-   := ⨆ U, Pr_{x←S}[IsMCA' G C x U δ]`, with `epsMCA := mcaError lineGenerator …` and
-`IsMCAGenerator` the `bounded-by` predicate over it. Cost, in order of difficulty:
-- **(real) generalize BCGM25 `IsMCA` alphabet `F → F`-module `A`** — `vecMul` → module
-  linear-combination, `projectedCode` over `Set (ι → A)`. Extends #489's framework.
-- **(new) add the `ENNReal` value form** (`IsMCAGenerator` is only a predicate today).
-- **(mechanical) retype `γ : I → ℝ≥0`** — verified cheap: in `IsMCA`, `γ` is an opaque scalar
-  in the real inequality `n·(1−γ)`; the three preservation lemmas carry it through untouched
-  (`intro U γ` … pass along), so ~5-site swap, no I-lattice structure used.
-- re-derive `epsMCA`'s numeric API on the new base; update ~15 call sites; **coordinate with
-  #489 owners** (their file).
+### Option B — Unify (landed in #692 and #741)
 
-**Recommendation:** A now (once PRs land) → derisks + proves coincidence; B as a scoped,
-coordinated follow-up if the team wants true minimality. Redefinition in B makes A's lemma
-`rfl`, so if B is committed-to, A's standalone lemma can be skipped.
+The selected design generalized `IsMCA` to module alphabets, added the generator-parametric
+`mcaError`, defined `IsMCAGenerator` as its bound, and made `epsMca` the affine-line abbreviation.
+The radius of `IsMCA` and `mcaError` is now `ℝ`; the paper-facing bound still quantifies over `I`.
+This removes the duplicate event and makes the former bridge definitional.
 
-## 5. PR #618 reconciliation
-PR #618 (`Katy/challenge`) defines a **third** `ε_mca` on `IsMCA`/`lineGenerator` —
-`ArkLib/Data/CodingTheory/ProximityPrize.lean`. It duplicates the ABF26 challenge quantity
-that `grandMCAChallenge` (on `epsMCA`) already expresses. Reconcile onto the canonical form
-(A's `epsMCA`, or B's `mcaError`) rather than landing a parallel error.
+## 5. Historical PR #618 reconciliation
 
-## 6. Decision-independent quick wins (do anytime; not blocked on §4)
-From the 2026-07-09 ProximityGap audit — polish/symmetry/hygiene on already-committed code:
+At planning time, PR #618 (`Katy/challenge`) defined a **third** `ε_mca` on
+`IsMCA`/`lineGenerator` —
+`ArkLib/Data/CodingTheory/ProximityPrize.lean`. It duplicated the ABF26 challenge quantity then
+expressed by `grandMCAChallenge` on `epsMCA`. The landing requirement was to reconcile it onto a
+canonical value rather than retain a third definition; the `mcaError`/`epsMca` architecture above
+is that resolution.
+
+## 6. Historical follow-up ledger
+
+This 2026-07-09 audit ledger is retained for provenance, not as current API guidance. Check the
+tree and the conventions page before acting on an item.
+
 - **A1** `epsMCA_eq_of_floor_eq` (`GrandChallenges.lean` ~L113) is over-specialized to `A := F`
   and mislocated → generalize over `A`, move beside `epsMCA_mono` in `Errors.lean`.
 - **A2** No `Lambda_eq_of_floor_eq` (`ListDecodability.lean`, only `Lambda_mono`) → add it, then
@@ -133,8 +138,10 @@ From the 2026-07-09 ProximityGap audit — polish/symmetry/hygiene on already-co
   `isMCA_projectedGenerator_of_isMCA`, `rs_epsCa_le_of_no_radius_level_crossing`;
   `Basic.lean` var shadowing.
 
-Sound status: every `sorry` in these files is a labeled external admit — **no in-tree gaps**.
+At the time of the audit, every `sorry` in the files under discussion was a labeled external
+admit rather than an in-tree proof gap.
 
-## 7. Cross-refs
+## 7. Historical cross-references
+
 Memory: `delta-grid-quantization.md`. Branch `feat/abf26-plan` (#505). BCGM25 = eprint 2025/2051.
 `CapacityBounds.lean` ~L644 policy note. (Line numbers approximate — anchor on decl names.)

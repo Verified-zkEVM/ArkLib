@@ -127,7 +127,7 @@
   "Binius.FRIBinius.FullFRIBinius.fullOracleReduction",
   "Binius.FRIBinius.FullFRIBinius.fullOracleReduction_perfectCompleteness",
   "Binius.FRIBinius.FullFRIBinius.fullOracleVerifier",
-  "CodingTheory.KKH26.two_pow_mul_choose_le_card_sumSet",
+  "CodingTheory.AdditiveSetListDecoding.two_pow_mul_choose_le_card_sumSet",
   "CodingTheory.LineDecodable.mcaError_le",
   "CodingTheory.exists_rs_epsCa_large_at_johnsonRadius",
   "CodingTheory.exists_rs_epsCa_large_near_capacity",

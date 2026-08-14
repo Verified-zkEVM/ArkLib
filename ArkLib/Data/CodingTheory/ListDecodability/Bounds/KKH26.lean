@@ -92,7 +92,7 @@ set_option linter.unusedDecidableInType false
 open Polynomial Finset Code ProximityGap
 open scoped NNReal BigOperators
 
-namespace CodingTheory.KKH26
+namespace CodingTheory.AdditiveSetListDecoding
 
 /-! ## The sum-set `Λ_𝒮` and useful families (ABF26 def:additive-sets) -/
 
@@ -1433,4 +1433,4 @@ theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F)
 
 end SmoothBridge
 
-end CodingTheory.KKH26
+end CodingTheory.AdditiveSetListDecoding
