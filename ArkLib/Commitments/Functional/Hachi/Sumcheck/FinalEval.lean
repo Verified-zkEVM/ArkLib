@@ -6,35 +6,27 @@ Authors: Pablo Martín Vinuelas, Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 
 /-!
-  # Final evaluation — Hachi Figure 7 tail
+  # Final evaluation
 
-  The step closing the sumcheck loop ([NOZ26] Figure 7, "Open `t` to evaluate
-  `w̃(a₁, …, a_ℓ)`; evaluate `M̃_α(a₁, …, a_ℓ)`; check the correctness of the sumcheck"):
+  The step closing the sumcheck loop:
 
   * **message (P→V)** — the claimed evaluation `y′ := w̃(a₁, …, a_{m₀}) ∈ F`, sent in the
     clear;
-  * **check (guarded)** — the verifier evaluates the two *public* factors at the challenge point —
-    `eq̃(τ₀, a)` and `Ã(a)`, the multilinear extension of `alphaPublicEvals`, i.e. the paper's
-    `∑ᵢ eq̃(τ_α, i)·M̃_α(i, ·)·α̃` and its expensive `Õ(√(2^ℓ)·λ)` step — and checks both final
-    sumcheck targets against the claimed `y′`: `eq̃(τ₀,a)·P_b(y′) = target₀` and
-    `y′·Ã(a) = target_α`, plus the bound-sanity conjunct. The verifier must be **guarded**: the
-    check reads the final targets, which the output statement drops — it can live neither
-    downstream nor in a pull-back.
-  * **output** — the *evaluation claim* `WEvalStatement`: the commitment `t`, the sumcheck point
-    `a`, and the claimed value `y′` — the recursion currency (`mle[w̃](a) = y′` for the
-    committed `w̃`), consumed by the `Recursion/` adapters.
+  * **check** — the verifier evaluates the two public factors `eq̃(τ₀, a)` and `Ã(a)` at the
+    challenge point and checks both final sumcheck targets against the claimed `y′`:
+    `eq̃(τ₀,a)·P_b(y′) = target₀` and `y′·Ã(a) = target_α`, plus the bound-sanity conjunct.
+    The check reads the final targets, which the output statement drops, so the verifier is
+    guarded (`failure` on a failed check), like the round verifiers of `Sumcheck/Rounds.lean`;
+  * **output** — the evaluation claim `WEvalStatement`: the commitment `t`, the sumcheck
+    point `a`, and the claimed value `y′`, consumed by the `Recursion/` adapters.
 
-  Extraction (`finalEval_coordinateWiseSpecialSoundWith`, **proven** and axiom-clean): the step has
-  no challenge round, so CWSS collapses through the no-challenge bridge to a transcript-level
-  argument. Acceptance forces the guard (a `failure` verdict has acceptance probability `0`) and
-  exhibits a `relWEvalClaim`-witness — a short opening `w̃` of `t` with `mle[w̃](a) = y′`. At
-  `i = m₀` the two claims of `nestedRoundRel m₀` are plain evaluations (`hypercubeSum_of_le`) which
-  factor through `mle[w̃](a)` (`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`), so substituting
-  `y′` turns them into exactly the two guard equations.
-
-  Shortness is the one conjunct that cannot come from the guard — the verifier never sees `w̃` —
-  so `relWEvalClaim` carries it; see that definition for why a norm-free seam would make this
-  link unprovable.
+  The step has no challenge round, so special soundness
+  (`finalEval_coordinateWiseSpecialSoundWith`) reduces to a transcript-level argument:
+  acceptance forces the check and exhibits a short opening `w̃` of `t` with `mle[w̃](a) = y′`;
+  at `i = m₀` the two claims of `nestedRoundRel m₀` are plain evaluations
+  (`hypercubeSum_of_le`) which factor through `mle[w̃](a)`
+  (`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`), so substituting `y′` turns them into
+  exactly the two check equations.
 
   ## References
 
@@ -61,10 +53,9 @@ instance {F : Type} [SampleableType F] :
     ∀ i, SampleableType ((pSpecFinalEval F).Challenge i) :=
   fun i => isEmptyElim i
 
-/-- **The evaluation-claim statement** — the recursion currency after one full §4.3 pass: the
+/-- The evaluation-claim statement, output of the sumcheck and input of the recursion: the
 `w̃`-commitment `t`, the sumcheck point `a ∈ F^{m₀}`, and the claimed multilinear evaluation
-`y′`. Everything else (the `R^lin` data, `α`, the seeds, the targets) is dropped — which is
-exactly why the final check must be a runtime guard. -/
+`y′`. Everything else (the `R^lin` data, `α`, the seeds, the targets) is dropped. -/
 structure WEvalStatement (TCom F : Type) (m₀ : ℕ) where
   /-- The `w̃`-commitment from the lift stage. -/
   t : TCom
@@ -81,22 +72,17 @@ variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- The final check ([NOZ26] Figure 7 tail): both final sumcheck targets against the public
-factors evaluated at the point, with the claimed `y′` in place of `w̃(a)`, plus the bound-sanity
-conjunct `bound ≤ rlin.bound`.
-
-It is read straight off the round-`m₀` relation. Once the sumcheck has consumed every cube
-coordinate the two claims of `nestedRoundRel m₀` are plain evaluations (`hypercubeSum_of_le`),
-and each summand factors into a public factor times a function of `mle[w̃](a)` alone
-(`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`):
+/-- The final check: both final sumcheck targets against the public factors evaluated at the
+challenge point, with the claimed `y′` in place of `w̃(a)`, plus the bound-sanity conjunct
+`bound ≤ rlin.bound`:
 
 * `eq̃(τ₀, a) · P_b(y′) = target₀` — the range claim;
-* `y′ · Ã(a) = target_α` — the linear claim, where `Ã` is the multilinear extension of the public
-  table `alphaPublicEvals` (the paper's `∑ᵢ eq̃(τ_α,i)·M̃_α(i,·)·α̃`); evaluating it is the
-  verifier's one expensive step, `Õ(√(2^ℓ)·λ)` by dynamic programming (§4.4).
+* `y′ · Ã(a) = target_α` — the linear claim, where `Ã` is the multilinear extension of the
+  public table `alphaPublicEvals`.
 
-Note what does *not* appear: no `R_q` element and no witness data — which is the formal content
-of the paper's "the verifier does not need to perform any multiplication over `R_q`". -/
+These are the two claims of `nestedRoundRel m₀` once the sumcheck has consumed every cube
+coordinate (`hypercubeSum_of_le`), each factored into a public factor times a function of
+`mle[w̃](a)` alone (`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`). -/
 def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) (y' : F) : Bool :=
   ((cEqualityPolynomial m₀ stmt.zc.τ₀).eval stmt.challenges * rangeProduct b y'
@@ -106,8 +92,8 @@ def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
       == stmt.targetα) &&
     decide (bound ≤ stmt.zc.rlin.bound)
 
-/-- The final-evaluation verifier: **guarded** on `finalCheck`, outputting the evaluation claim
-`⟨t, a, y′⟩`. -/
+/-- The final-evaluation verifier: on a passing `finalCheck`, output the evaluation claim
+`⟨t, a, y′⟩`; otherwise `failure`. -/
 def finalEvalVerifier {TCom : Type} (φF : ZMod q →+* F) :
     Verifier oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀)
       (WEvalStatement TCom F m₀)
@@ -144,19 +130,10 @@ def finalEvalProver {TCom Wit : Type}
   output := fun ⟨stmt, wit⟩ =>
     pure (⟨stmt.zc.t, stmt.challenges, computeY stmt wit⟩, wit)
 
-/-- **The evaluation-claim relation** — the §4.3 chain's final seam and the recursion's input:
-`w̃` is a *short* opening of `t` and its table's multilinear extension evaluates to the claimed
-value at the point.
-
-**Why the `liftShort` conjunct is not optional.** Shortness is a property of the *witness*, so —
-unlike the bound-sanity conjunct, which reads public data and is therefore re-checked by the
-guard — no verifier check can supply it: the verifier never sees `w̃`. The round relation
-`nestedRoundRel` carries it as the commitment's shortness index (it is what makes a pair of
-distinct openings a `LiftCom.Collision`, hence a Module-SIS break), so a norm-free output relation
-would make this link's pull-back unprovable: a long opening of `t` evaluating to `y′` passes every
-check the verifier can make, and nothing would force a short opening to exist at all. The same
-conjunct is threaded through `relPartialEval` and `relHatEval` so that the §4.5 handoff still has
-a norm to carry into the next iteration's `Short`. -/
+/-- The evaluation-claim relation, the sumcheck chain's output relation and the recursion's
+input: `w̃` is a *short* opening of `t` and its table's multilinear extension evaluates to
+the claimed value at the point. The shortness conjunct lives in the relation because the
+verifier never sees `w̃`, so no check can supply it. -/
 def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n)) :=
@@ -168,10 +145,9 @@ def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBou
 variable [SampleableType F]
 
 open Classical in
-/-- **The final-evaluation extraction map, at transcript level.** With no challenge round there is
-nothing to interpolate: the step is a *re-reading* of the same commitment, so extraction is just
-"take the opening the accepted evaluation claim asserts to exist". The `Classical.ofNonempty`
-branch is unreachable on accepting transcripts (`finalEval_coordinateWiseSpecialSoundWith`). -/
+/-- The final-evaluation extraction map, at transcript level: take the opening the accepted
+evaluation claim asserts to exist. The `Classical.ofNonempty` branch is unreachable on
+accepting transcripts (`finalEval_coordinateWiseSpecialSoundWith`). -/
 noncomputable def finalEvalWitness
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F)
@@ -180,8 +156,8 @@ noncomputable def finalEvalWitness
   if h : ∃ w, ((⟨stmt.zc.t, stmt.challenges, tr 0⟩ : WEvalStatement K.TCom F m₀), w) ∈
       relWEvalClaim Φ m₀ bound ρBound b K φF then h.choose else Classical.ofNonempty
 
-/-- **The final-evaluation extraction algorithm**: `finalEvalWitness` on the tree's unique
-transcript, which is the shape the no-challenge CWSS bridge
+/-- The final-evaluation extraction algorithm: `finalEvalWitness` on the tree's unique
+transcript, which is the shape the no-challenge bridge
 (`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) consumes. -/
 noncomputable def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -193,22 +169,21 @@ noncomputable def finalEvalExtractor
   fun stmtIn tree => finalEvalWitness Φ m₀ m₁ bound ρBound b K φF stmtIn tree.onlyTranscript
 
 omit [NeZero q] [SampleableType F] in
-/-- **CWSS of the final-evaluation step, at the named `finalEvalExtractor`** ([NOZ26] Figure 7
-tail).
+/-- Coordinate-wise special soundness of the final-evaluation step, with extractor
+`finalEvalExtractor`.
 
-With no challenge round, CWSS collapses through the probability-phrased no-challenge bridge
-(`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`, which already tolerates rejecting
-verifiers) to a transcript-level extraction, and the argument is three steps:
+With no challenge round, the statement collapses through the no-challenge bridge
+(`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level extraction,
+in three steps:
 
-1. acceptance forces the guard (`Verifier.not_accepting_of_verify_failure` — a `failure` verdict
-   has acceptance probability `0`);
+1. acceptance forces the check (`Verifier.not_accepting_of_verify_failure` — a `failure`
+   verdict has acceptance probability `0`);
 2. acceptance also puts the emitted claim `⟨t, a, y′⟩` in `relWEvalClaim.language`
-   (`Verifier.mem_of_pure_accepting` on the passing branch), which is the opening the extractor
-   returns — carrying `K.com w̃ = t`, `liftShort w̃`, and `mle[w̃](a) = y′`;
+   (`Verifier.mem_of_pure_accepting`), which is the opening the extractor returns — carrying
+   `K.com w̃ = t`, `liftShort w̃`, and `mle[w̃](a) = y′`;
 3. at `i = m₀` the two round claims are plain evaluations (`hypercubeSum_of_le`) that factor
    through `mle[w̃](a)` (`eval_sumcheckPolyZero` / `eval_sumcheckPolyAlpha`), so substituting
-   `y′` turns them into exactly the two guard equations. The bound-sanity conjunct is re-supplied
-   by the guard; shortness comes from the output relation, which is why it must sit there. -/
+   `y′` turns them into exactly the two check equations. -/
 theorem finalEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -265,10 +240,9 @@ theorem finalEval_coordinateWiseSpecialSoundWith
     rw [eval_sumcheckPolyAlpha, hval']
     exact hgα
 
-/-- **The final-evaluation step as a guarded `GCWSSPackage`**: the guarded one-message verifier with
-the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim `relWEvalClaim`.
-A guarded *re-reading* of the final targets, hence escape-free. Certificate:
-`finalEval_coordinateWiseSpecialSoundWith`. -/
+/-- The final-evaluation step as a guarded `GCWSSPackage`: the guarded one-message verifier
+with the empty challenge structure, reducing the round-`m₀` relation to the evaluation claim
+`relWEvalClaim`; no challenge round, hence no escape event. -/
 noncomputable def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :

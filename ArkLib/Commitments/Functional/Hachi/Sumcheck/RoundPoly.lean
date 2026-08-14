@@ -9,31 +9,32 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   # The round-polynomial layer of the Hachi sumcheck
 
   The partial hypercube sums of `ZeroCheck/Constraints.lean` are `F`-valued: `hypercubeSum`
-  *evaluates*. Hachi Figure 6 / Lemma 11 needs more than the value — it needs the partial sum in
-  the free coordinate to be an honest **univariate polynomial** of bounded degree, because that is
-  what upgrades "the sum agrees with the prover's message `gᵢ` at the `k` sibling challenges" to
-  "it agrees with `gᵢ` everywhere", and in particular at `0` and `1`. This file builds that
-  polynomial and the cube-split identity that consumes it.
+  *evaluates*. The round soundness argument needs more than the value — the partial sum, as a
+  function of the free coordinate, must be a univariate polynomial of bounded degree, because
+  that is what upgrades "the sum agrees with the prover's message `gᵢ` at the `k` sibling
+  challenges" to "it agrees with `gᵢ` everywhere", and in particular at `0` and `1`. This
+  file builds that polynomial and the cube-split identity that consumes it.
 
   ## Contents
 
-  * `hypercubeSum_succ` — the **cube split**: the round-`i` partial sum is the sum of the two
-    round-`(i+1)` partial sums at the Boolean extensions of the challenge prefix. With the round
-    guard `gᵢ(0) + gᵢ(1) = targetᵢ₋₁` this is what carries a round's claim back one round.
-  * `roundPoly` — the partial sum as a `Polynomial F`, with `roundPoly_eval` (its values are the
-    partial sums) and `roundPoly_degree_le` (it inherits the summand's per-variable degree).
-  * `roundPoly_degree_le_sumcheckPolyZero` / `…Alpha` — the two instances at Hachi's summands,
-    at the `roundDegZero b = 2b` and `roundDegAlpha = 2` pins that `RoundMsg` and Lemma 11's
-    `k = max (2b) 2 + 1` are set against.
+  * `hypercubeSum_succ` — the cube split: the round-`i` partial sum is the sum of the two
+    round-`(i+1)` partial sums at the Boolean extensions of the challenge prefix. With the
+    round check `gᵢ(0) + gᵢ(1) = targetᵢ₋₁` this is what carries a round's claim back one
+    round.
+  * `roundPoly` — the partial sum as a `Polynomial F`, with `roundPoly_eval` (its values are
+    the partial sums) and `roundPoly_degree_le` (it inherits the summand's per-variable
+    degree).
+  * `roundPoly_degree_le_sumcheckPolyZero` / `…Alpha` — the two instances at Hachi's
+    summands, with degree bounds `roundDegZero b = 2b` and `roundDegAlpha = 2`.
 
   ## Computability
 
-  `roundPoly` is deliberately a **proof-side** object: it is `noncomputable` and lives in Mathlib's
-  `Polynomial`, because its only role is to witness that the partial sum *is* polynomial. Nothing
-  the protocol computes depends on it — the wire object is the computable
-  `RoundMsg = CPolynomial.degreeLE (2b) × CPolynomial.degreeLE 2` of `Sumcheck/Rounds.lean`, and
-  the honest prover's round message (still to be built, with the completeness layer) must be a
-  `CPolynomial`. Keeping the two apart is what lets the soundness argument use Mathlib's degree
+  `roundPoly` is a proof-side object: it is `noncomputable` and lives in Mathlib's
+  `Polynomial`, because its only role is to witness that the partial sum *is* polynomial.
+  Nothing the protocol computes depends on it — the wire object is the computable
+  `RoundMsg = CPolynomial.degreeLE (2b) × CPolynomial.degreeLE 2` of `Sumcheck/Rounds.lean`,
+  and the honest prover's round message (still to be built, with the completeness layer) must
+  be a `CPolynomial`. Keeping the two apart lets the soundness argument use Mathlib's degree
   API without making any executable definition noncomputable.
 
   ## References
@@ -54,26 +55,19 @@ variable (m₀ m₁ : ℕ)
 
 /-! ### The round-polynomial layer
 
-Lemma 11 needs the partial sum **as a univariate polynomial**: from `k` branch equations
-`hypercubeSum H (i+1) (snoc cs aⱼ) = g(aⱼ)` at pairwise-distinct challenges it has to conclude the
-equation at `0` and `1`, which is legitimate only if the left-hand side is itself a polynomial in
-the free coordinate, of degree below `k`. `hypercubeSum` returns a field element, so that
-polynomial must be built.
-
-Everything in this section is stated at arity `M + 1`. That is no loss: a round only exists when
-there is a coordinate left to fold, so `0 < m₀` holds at every call site, and destructing it
-(`obtain ⟨M, rfl⟩`) is what lets `MvPolynomial (Fin m₀)` meet the `Fin (n + 1)` shape that
-`finSuccEquivNth` — and hence the whole `⸨X ⦃i⦄, …⸩` round-polynomial machinery of
-`ProofSystem/Sumcheck` — is stated at, without a dependent cast. -/
+Everything in this section is stated at arity `M + 1`. That is no loss: a round only exists
+when there is a coordinate left to fold, so `0 < m₀` holds at every call site, and
+destructing it (`obtain ⟨M, rfl⟩`) is what lets `MvPolynomial (Fin m₀)` meet the
+`Fin (n + 1)` shape that `finSuccEquivNth` is stated at, without a dependent cast. -/
 
 section RoundPoly
 
 variable {M : ℕ}
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- **Peeling the leading free coordinate.** Prepending `b` to the summation index of the
-round-`(i+1)` cube is the same as appending `b` to the round-`i` challenge prefix — both name the
-same point of `F^{M+1}`. This is the whole content of the cube split. -/
+/-- Peeling the leading free coordinate: prepending `b` to the summation index of the
+round-`(i+1)` cube is the same as appending `b` to the round-`i` challenge prefix — both name
+the same point of `F^{M+1}`. -/
 theorem hypercubePoint_cons (i : Fin (M + 1)) (cs : Fin i → F) (b : Fin 2)
     (y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2) :
     hypercubePoint (M + 1) i cs (Fin.cons b y ∘ finCongr (by omega)) =
@@ -100,10 +94,10 @@ theorem hypercubePoint_cons (i : Fin (M + 1)) (cs : Fin i → F) (b : Fin 2)
         Fin.cons_succ]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- **The cube split** — the identity every sumcheck round turns on: the round-`i` partial sum is
+/-- The cube split — the identity every sumcheck round turns on: the round-`i` partial sum is
 the sum of the two round-`(i+1)` partial sums at the two Boolean extensions of the challenge
-prefix. Together with the guard `g(0) + g(1) = targetᵢ₋₁` this is what carries a round's claim
-back to the previous round. -/
+prefix. Together with the round check `g(0) + g(1) = targetᵢ₋₁` this is what carries a
+round's claim back to the previous round. -/
 theorem hypercubeSum_succ (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     hypercubeSum (M + 1) H i cs =
       hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs 0) +
@@ -124,13 +118,13 @@ theorem hypercubeSum_succ (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : 
       rw [hypercubePoint_cons]
       norm_num
 
-/-- The **round polynomial** of a partial hypercube sum: the univariate whose value at `T` is the
-round-`(i+1)` partial sum at the challenge prefix extended by `T` (`roundPoly_eval`), with the
-per-variable degree of `H` as its degree bound (`roundPoly_degree_le`).
+/-- The round polynomial of a partial hypercube sum: the univariate whose value at `T` is the
+round-`(i+1)` partial sum at the challenge prefix extended by `T` (`roundPoly_eval`), with
+the per-variable degree of `H` as its degree bound (`roundPoly_degree_le`).
 
-This is what the honest prover sends in Figure 6. For *soundness* it plays a different and more
-important role: it is the object that upgrades "the sum agrees with the prover's `g` at `k`
-challenges" to "it agrees with `g` everywhere", which is the whole of Lemma 11's extraction. -/
+This is what the honest prover sends. For soundness it plays the central role: it is the
+object that upgrades "the sum agrees with the prover's `g` at `k` challenges" to "it agrees
+with `g` everywhere". -/
 noncomputable def roundPoly (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) :
     Polynomial F :=
   ∑ y : Fin (M + 1 - ((i : ℕ) + 1)) → Fin 2,
@@ -181,9 +175,8 @@ theorem insertNth_eq_hypercubePoint (i : Fin (M + 1)) (cs : Fin i → F) (T : F)
       exact congrArg (fun z : Fin 2 => ((z : ℕ) : F)) (congrArg y (Fin.ext hidx))
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
-/-- **The round polynomial computes the partial sum.** Its value at any `T` is the round-`(i+1)`
-partial hypercube sum at the prefix extended by `T` — so the two sides of a sumcheck round
-equation are values of honest polynomials, not merely of functions. -/
+/-- The round polynomial computes the partial sum: its value at any `T` is the round-`(i+1)`
+partial hypercube sum at the prefix extended by `T`. -/
 theorem roundPoly_eval (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F) (T : F) :
     Polynomial.eval T (roundPoly H i cs)
       = hypercubeSum (M + 1) H ((i : ℕ) + 1) (Fin.snoc cs T) := by
@@ -193,10 +186,9 @@ theorem roundPoly_eval (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin
     ← CPoly.eval_equiv]
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
-/-- **The round polynomial inherits `H`'s per-variable degree bound.** Each summand is a
-one-variable specialization of `H`, whose degree is `H`'s degree in the free coordinate, and a
-finite sum does not raise it. Combined with `degreeOf_sumcheckPolyZero` /
-`degreeOf_sumcheckPolyAlpha` this is the `2b` / `2` pin Lemma 11's `k` is set against. -/
+/-- The round polynomial inherits `H`'s per-variable degree bound: each summand is a
+one-variable specialization of `H`, whose degree is `H`'s degree in the free coordinate, and
+a finite sum does not raise it. -/
 theorem roundPoly_degree_le (H : CMvPolynomial (M + 1) F) (i : Fin (M + 1)) (cs : Fin i → F)
     {D : ℕ} (hH : ∀ j, (fromCMvPolynomial H).degreeOf j ≤ D) :
     (roundPoly H i cs).degree ≤ (D : WithBot ℕ) := by
@@ -209,9 +201,9 @@ end RoundPoly
 
 /-! ### The round polynomials of the two Hachi summands
 
-The two corollaries Lemma 11 consumes: each summand's partial sum is a univariate of the degree
-its `RoundMsg` component is bounded by, so a defect vanishing at `k = max (2b) 2 + 1` distinct
-challenges is identically zero. -/
+The two corollaries the round soundness consumes: each summand's partial sum is a univariate
+of the degree its `RoundMsg` component is bounded by, so a defect vanishing at
+`k = max (2b) 2 + 1` distinct challenges is identically zero. -/
 
 section RoundPolyHachi
 
