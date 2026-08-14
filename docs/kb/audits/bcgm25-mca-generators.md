@@ -36,7 +36,7 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Lemma 3.16 (monotone in the distance) | `CoreDefinitions.mcaError_mono` | proved |
 | Lemma 4.1 (right multiplication by a matrix with a left pseudoinverse) | `LinearTransformations.mcaError_generatorByRightMul_le`, `LinearTransformations.pseudoinverseGen` | proved |
 | Cor 4.2 (projection onto a subset of outputs) | `LinearTransformations.mcaError_projectedGenerator_le`, `LinearTransformations.generatorSubset` | proved |
-| Lemma 4.4 (tensor generator) | `TensorMCA.isMCAGenerator_tensorGenerator`, `TensorMCA.isMCAGenerator_tensorGenerator_of_base` | proved in two forms — see below |
+| Lemma 4.4 (tensor generator) | `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`, `TensorMCA.isMCAGenerator_tensorGenerator` | proved in two forms — see below |
 | Remark 3.20 (polynomial ⇒ zero-evading) | `PolynomialGenerator.poly_gen_is_zero_evading` | proved, total-degree variant |
 | Lemma 3.22 (MCA implies CA) | — | not formalized; this is what licenses reading an `mcaError` bound as a correlated-agreement threshold statement |
 | Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved |
@@ -59,9 +59,9 @@ give this. The bad index `k = (i₀, j₀)` is determined by the event and so de
 1. Apply `G′`'s MCA to the `ℓ`-fold interleaving `C^ℓ ⊆ (Σ^ℓ)ⁿ` with the family
    `w_j := (u_{(1,j)}, …, u_{(ℓ,j)})`. The `∀ i` clause is exactly membership in the interleaved
    projected code, `w` does not depend on `x′`, and the printed error is reached.
-   → `TensorMCA.isMCAGenerator_tensorGenerator`, hypothesis at the interleaving.
+   → `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`, hypothesis at the interleaving.
 2. Union-bound over the `ℓ` rows, paying a factor `ℓ`.
-   → `TensorMCA.isMCAGenerator_tensorGenerator_of_base`, hypothesis as printed, error
+   → `TensorMCA.isMCAGenerator_tensorGenerator`, hypothesis as printed, error
    `ϵMCA + ℓ · ϵ′MCA`.
 
 `TensorMCA.isMCAGenerator_of_moduleInterleavedCode` shows form 1's hypothesis is a strengthening of

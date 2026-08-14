@@ -35,11 +35,12 @@ vacuous once it reaches `1`.
 
 ## Main statements
 
-* `TensorMCA.isMCAGenerator_tensorGenerator` — errors add, given MCA for the interleaving.
-* `TensorMCA.isMCAGenerator_tensorGenerator_of_base` — errors add with the inner one scaled by
-  `Fintype.card ℓ`, given MCA for the base code.
+* `TensorMCA.isMCAGenerator_tensorGenerator` — given MCA for the base code, errors add with the
+  inner one scaled by `Fintype.card ℓ`.
+* `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` — given MCA for the
+  `ℓ`-fold interleaving instead, the errors add unscaled.
 * `TensorMCA.isMCAGenerator_of_moduleInterleavedCode` — MCA for the interleaving implies MCA for
-  the base code at the same error, so the first hypothesis is the stronger of the two.
+  the base code at the same error, so the interleaved hypothesis is the stronger of the two.
 
 ## References
 
@@ -72,7 +73,8 @@ Writing `W x' i := ∑ j, G' x' j • U (i, j)`, the tensor combination is the `
 if so, the tensor event implies `G`'s event at the family `W x'`; if not, it implies `G'`'s event
 at the interleaved family `w j := (k, i) ↦ U (i, j) k`, which is independent of `x'`. A union
 bound over the two cases gives the sum. -/
-theorem isMCAGenerator_tensorGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
+theorem isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
+    (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
     (ε_mca ε'_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hG : IsMCAGenerator G ε_mca MC)
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
@@ -148,7 +150,8 @@ omit [Fintype ℓ] in
 /-- Mutual correlated agreement for the `ℓ`-fold interleaving implies it for the base code, at the
 same error: stack a base family as an interleaved family with constant rows.
 
-So the interleaved hypothesis of `isMCAGenerator_tensorGenerator` is the stronger of the two. -/
+So the hypothesis of `isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` is the stronger of
+the two. -/
 theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S' ℓ' F)
     (ε'_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hG' : IsMCAGenerator G' ε'_mca (ModuleCode.moduleInterleavedCode F A ℓ ι MC)) :
@@ -177,9 +180,10 @@ theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S
 it for `MC` with the inner error scaled by `Fintype.card ℓ`.
 
 The factor is forced by this route: without the interleaved hypothesis of
-`isMCAGenerator_tensorGenerator`, the row witnessing non-membership depends on the outer seed `x'`,
+`isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`, the row witnessing non-membership
+depends on the outer seed `x'`,
 so the family fed to `G'` is not fixed and a union bound over the `ℓ` rows is required. -/
-theorem isMCAGenerator_tensorGenerator_of_base (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
+theorem isMCAGenerator_tensorGenerator (G : Generator S ℓ F) (G' : Generator S' ℓ' F)
     (ε_mca ε'_mca : I → ℝ≥0) (MC : ModuleCode ι F A)
     (hG : IsMCAGenerator G ε_mca MC)
     (hG' : IsMCAGenerator G' ε'_mca MC) :
