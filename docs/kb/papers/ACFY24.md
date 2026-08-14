@@ -13,6 +13,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon.lean
   - ArkLib/Data/CodingTheory/ListDecodability.lean
   - ArkLib/Data/CodingTheory/ProximityGap/Folding.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Errors.lean
 ---
 
 # ACFY24
@@ -31,6 +32,8 @@ folding/proximity-gap development; there is no WHIR protocol folder under `ArkLi
   [`ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
 - Folding and mutual-correlated-agreement material under
   [`ArkLib/Data/CodingTheory/ProximityGap/`](../../../ArkLib/Data/CodingTheory/ProximityGap/).
+- The ePrint lineage for the published version's unique-decoding MCA consequence. The Lean
+  declaration uses the `ACFY25` key and is described on that paper's KB page.
 
 ## Main ArkLib Touchpoints
 

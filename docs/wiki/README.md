@@ -18,6 +18,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
 - [`coding-theory-conventions.md`](coding-theory-conventions.md) - notation in scope, which
   numeric type each quantity uses, and the naming and layout choices local to
   `ArkLib/Data/CodingTheory/`.
+- [`proximity-error-conventions.md`](proximity-error-conventions.md) - the proximity-gap,
+  correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
@@ -33,6 +35,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   - `blueprint-and-citations.md` for blueprint workflow, references, and citation updates.
   - `knowledge-base.md` for when and how agents should use `docs/kb/`.
   - `coding-theory-conventions.md` for notation, types and local conventions in `CodingTheory/`.
+  - `proximity-error-conventions.md` for the public APIs and numeric types of the proximity-error
+    notions in `CodingTheory/ProximityGap/`.
   - `probability-conventions.md` for namespace/export conventions in `Data/Probability/`.
 - Add new pages when a recurring topic no longer fits cleanly in an existing guide.
 - If a PR changes commands, repo structure, generated-file behavior, or the paper workflow,
