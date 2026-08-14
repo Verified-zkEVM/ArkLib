@@ -12,58 +12,38 @@ import ArkLib.Data.CodingTheory.SubspaceDesign
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
-# Capacity-regime upper and lower bounds for ε_ca and ε_mca (ABF26 §4.2, §4.3)
+# Capacity-regime bounds for CA and MCA
 
-External-admit *statements* for the §4 results that bound `ε_ca` and `ε_mca` from above
-in the Johnson regime and from below in the capacity regime. From
-*Open Problems in List Decoding and Correlated Agreement* (Arnon-Boneh-Fenzi,
-April 8, 2026), §§4.2.2 and 4.3.
-
-These theorems sit immediately above the Grand MCA Challenge in ABF26 §1: each one
-either produces a witness `δ_C*` for `ε_mca(C, δ_C*) ≤ ε*` (upper bounds), or rules out
-witnesses above a given threshold (lower bounds). They are mostly cited from external
-papers ([GaoKL24], [BenSassonGKS20], [BCHKS25], [KKH26], [CS25], [DG25dist], etc.); we state them
-here in ArkLib's `ε_ca` / `ε_mca` form and admit the proofs as external results.
+This module collects numeric upper and lower bounds for `epsCa` and `mcaError`. The statements
+use ArkLib's canonical error carriers and retain source-side endpoint, integrality, and code-family
+hypotheses. Unless a docstring says otherwise, the result is an external admit.
 
 ## Numeric bounds in `ENNReal`
 
-The RHS of each upper bound is a real-valued numeric expression. To match the
-`ENNReal`-valued error functions, we wrap the bound with
-`ENNReal.ofReal`. The lower bounds use the same wrapping for symmetry. This keeps
-the bounds well-defined even when the bracketing real expression is negative or
-exceeds 1 (in which case `ENNReal.ofReal` either truncates to `0` or stays in `[0, ∞]`).
+Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 
 ## Proximity-radius conventions
 
-The canonical generator-level `mcaError` accepts a real radius, so MCA statements preserve
-the source's displayed real expression directly, even if it is negative. Legacy CA statements
-use `epsCa` and therefore retain nonnegative-real radii. This distinction avoids silently
-strengthening source hypotheses merely to justify an `ℝ → ℝ≥0` truncation.
+`mcaError` accepts real radii, while `epsCa` uses nonnegative radii.
 
 ## Main statements
 
-Most of these are external-admit *statements*; the exceptions are noted inline (e.g.
-R4.10 is *derived in-tree* from R4.2 + the admitted T4.9.2, so it carries no admit of
-its own beyond the inherited T4.9.2 `sorry`).
-
 ### General linear codes
 
-- `linear_mcaError_le_onePointFiveJohnson` — ABF26 Theorem 4.11 [GaoKL24 Thm 3]: `ε_mca` bound
+- `linear_mcaError_le_one_point_five_johnson` — ABF26 Theorem 4.11 [GaoKL24 Thm 3]: `ε_mca` bound
   in the "1.5-Johnson" regime `δ ≤ 1 - ∛(1 - δ_min(C) + η)`.
-- `linear_epsCa_le_onePointFiveJohnson` — ABF26 Theorem 4.11 [BenSassonGKS20 Lem 3.2]: `ε_ca` bound
-  with proximity loss `η`, valid in the same 1.5-Johnson regime.
+- `linear_epsCa_le_one_point_five_johnson` — ABF26 Theorem 4.11
+  [BenSassonGKS20 Lem 3.2]: `ε_ca` bound with proximity loss `η`, valid in the same
+  1.5-Johnson regime.
 
 ### Reed-Solomon codes
 
-- `rs_epsCa_le_in_uniqueDecodingRange` — ABF26 Theorem 4.9 Item 2 [BCHKS25 Thm 1.3]:
+- `rs_epsCa_le_in_unique_decoding_range` — ABF26 Theorem 4.9 Item 2 [BCHKS25 Thm 1.3]:
   RS `ε_ca` bound
   in the `δ_min/3`-to-Johnson regime (external admit).
-- `rs_epsCa_le_of_no_radius_level_crossing` — ABF26 Remark 4.10: small-proximity-loss
-  (`δ_int - δ_fld =
-  γ/n`) simplification of T4.9.2. **Derived in-tree** from R4.2 (`epsCa_eq_of_floor_eq`,
-  proven) + T4.9.2 (admitted), under an added no-level-set-crossing hypothesis; its only
-  `sorry` dependency is the one inherited from T4.9.2.
-- `rs_mcaError_le_in_johnsonRange` — source-native line case of [BCHKS25 Thm 4.6]:
+- `rs_epsCa_le_of_no_radius_level_crossing` — the derived small-proximity-loss form, under the
+  necessary no-grid-crossing hypothesis.
+- `rs_mcaError_le_in_johnson_range` — source-native line case of [BCHKS25 Thm 4.6]:
   explicit `ε_mca` bound for RS codes at every `0 < δ < 1 - √((k-1)/n)`.
 
 ### Lower bounds near capacity
@@ -75,30 +55,19 @@ its own beyond the inherited T4.9.2 `sorry`).
 - `rs_epsCa_eq_one_of_entropy_rate` — ABF26 Theorem 4.17 [CS25 Cor 1]: complete CA breakdown
   for RS codes when the rate sits inside an entropy-defined band, stated at the source's
   integer error radius.
-- `subfield_epsCa_lower_bound` — ABF26 `thm:base-field-ca-lowerbound` [CS25 Thm 3]:
-  subfield/extension-field CA lower bound near capacity for `RS[F, L, k]` with
-  `L ⊆ B ⊊ F`.
-  The third, distinct CS25 result (Cor 1 = T4.17 above; Thm 2 = T5.3 in
-  `ListDecodingAndCA.lean`). Uses the helper `subfieldCaFactor` (`a(x)` in the paper).
-- `exists_rs_epsCa_large_at_johnsonRadius` — ABF26 Theorem 4.18 [BCHKS25 Cor 1.7]: jump in
+- `subfield_epsCa_lower_bound` — a subfield/extension-field CA lower bound near capacity, using
+  the helper `subfieldCaFactor`.
+- `exists_rs_epsCa_large_at_johnson_radius` — ABF26 Theorem 4.18 [BCHKS25 Cor 1.7]: jump in
   `ε_ca` exactly at the Johnson bound, witnessed by characteristic-2 RS codes.
-- `linear_closeProbability_le_epsCa` — ABF26 Lemma 4.19 [DG25dist Thm 2.5]: `ε_ca(C, δ)`
+- `linear_close_probability_le_epsCa` — ABF26 Lemma 4.19 [DG25dist Thm 2.5]: `ε_ca(C, δ)`
   is bounded below by `((q-1)/q) · Pr_{u}[Δ(u, C) ≤ δ]`.
 
 ### Subspace-design / FRS MCA up to capacity (§4.2.2)
 
-- `subspaceDesign_mcaError_le` — ABF26 T4.13 [GG25 Cor 4.9]: τ-subspace-design code
+- `subspace_design_mcaError_le` — ABF26 T4.13 [GG25 Cor 4.9]: τ-subspace-design code
   has explicit `ε_mca` bound at `1 - τ(t+1) - 3/(2t)`.
 - `frs_mcaError_le` — ABF26 T4.14 [GG25 Cor 4.10]: folded RS up to capacity
   has the integer-native bound `ε_mca(C, 1 - ρ - 2/t) ≤ (nt+3t³)/|F|`.
-
-## Deferred statements
-
-- ABF26 Theorem 4.15 [GG25 Thm 5.15] (random RS MCA up to capacity) — blocked on a
-  uniform distribution over size-`n` subsets of `F`.
-
-These are tracked in `docs/kb/ABF26_PLAN.md` §7 and will be stated alongside the corresponding
-code-family definitions in Phase 3.
 
 ## References
 
@@ -130,21 +99,13 @@ section General
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **ABF26 Theorem 4.11, Item 1 [GaoKL24 Thm 3].** For any linear error-correcting code
-`C ⊆ F^n`, parameter `η > 0`, and `δ ≤ 1 - ∛(1 - δ_min(C) + η)`:
+/-- An affine-line MCA bound for a linear code in the 1.5-Johnson regime. For
+`δ ≤ 1 - ∛(1 - δ_min(C) + η)`, the error is at most
 
   `ε_mca(C, δ) ≤ ((n+6)/η + 2 / (η · (∛(1 - δ_min + η) - √(1 - δ_min + η))) ) · (1/|F|)`
 
-The "1.5-Johnson regime" refers to the fact that `1 - ∛(1 - δ_min)` lies strictly above
-the classical Johnson bound `1 - √(1 - δ_min)` and strictly below capacity. The bound is
-admitted from the cited paper.
-
-**Implicit hypothesis `η < δ_min`.** For the bound's denominator `∛x − √x` (with
-`x := 1 - δ_min + η`) to be strictly positive we need `x < 1`, i.e. `η < δ_min`. The
-paper's 1.5-Johnson regime is exactly this `η`-as-slack-below-δ_min picture; without it
-the bound becomes vacuous (or numerically infinite) and `δ ≤ 1 − ∛x` may not even
-restrict the parameter range. Added as an explicit hypothesis. -/
-theorem linear_mcaError_le_onePointFiveJohnson
+The hypothesis `η < δ_min` keeps the displayed denominator positive. -/
+theorem linear_mcaError_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_δ_min : η < δ_min)
@@ -159,28 +120,14 @@ theorem linear_mcaError_le_onePointFiveJohnson
          ) / (Fintype.card F : ℝ)) := by
   sorry -- ABF26-T4.11 Item 1; external admit [GaoKL24 Thm 3].
 
-/-- **ABF26 Theorem 4.11, Item 2 [BenSassonGKS20 Lem 3.2].** For any linear error-correcting code
-`C ⊆ F^n`, parameter `η > 0`, and radii `δ_fld < δ_src` with
-`δ_src < 1 - ∛(1 - δ_min(C) + η)`:
+/-- A CA bound for a linear code in the 1.5-Johnson regime. For `δ_fld < δ_src` and
+`δ_src < 1 - ∛(1 - δ_min(C) + η)`,
 
   `ε_ca(C, δ_fld, δ_int := δ_src + η) ≤ 2 / (η² · |F|)`
 
-Same regime as the GKL24 form but stated in CA-with-proximity-loss shape. Tighter when the
-GKL24 bound is dominated by its second term. Admitted from the cited paper.
-
-**Source hypotheses.** BGKS20 Lemma 3.2 (positive form) is stated for a linear code
-`V ⊆ F_q^D` of distance `λ` and parameters `ε, δ > 0` with `ε < 1/3` and
-`δ < 1 − (1 − λ + ε)^{1/3}` (strict): if
-`Pr_x[Δ(u* + x·u, V) < δ] ≥ 2/(ε²·q)` then `u, u*` jointly agree with codewords on a
-set of density `≥ 1 − δ − ε`. Notation map: the source's `ε` is our `η`, its `λ`
-is our `δ_min`, and its strict-event radius `δ` is our `δ_src`.
-
-ArkLib's `epsCa` event is non-strict (`≤ δ_fld`), so the separate hypothesis
-`δ_fld < δ_src` makes that event a subset of the source's strict event
-`Δ < δ_src`. The source then guarantees joint radius `δ_src + η`. This avoids an
-unsupported endpoint substitution when `δ_src · n` is integral. The additional
-`η < δ_min` hypothesis matches the common ABF26 Theorem 4.11 regime. -/
-theorem linear_epsCa_le_onePointFiveJohnson
+The strict gap `δ_fld < δ_src` embeds ArkLib's non-strict close event into the source's strict
+event and avoids an unsupported endpoint case. -/
+theorem linear_epsCa_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (_hη : 0 < η) (_hη_lt_third : (η : ℝ) < 1 / 3) (_hη_lt_δ_min : η < δ_min)
@@ -198,26 +145,15 @@ section ReedSolomon
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **ABF26 Theorem 4.9 Item 2 [BCHKS25 Theorem 1.3].** Reed-Solomon CA bound in the
-`δ_min/3`-to-half-distance regime. Let `C := RS[F, L, k]` with rate `ρ`. BCHKS25
-Theorem 1.3's regime is `γ ∈ [δ/3, δ/2 − 1/n]` (with `δ := 1 − k/n`) — the upper end is
-**strictly inside** half-distance by the finite-length margin `1/n`. We state the
-source's `δ_fld ≤ (1-ρ)/2 − 1/n`; Item 2 additionally requires
-`δ_min(C)/3 ≤ δ_fld < δ_int`:
+/-- Reed--Solomon CA bound between one third of the minimum distance and the finite-length
+half-distance boundary. For `δ_min(C)/3 ≤ δ_fld < δ_int`,
 
   `ε_ca(C, δ_fld, δ_int) ≤`
   `  max{ (1-ρ-δ_fld) / (δ_fld·(1-ρ-2·δ_fld)·|F|), δ_int / ((δ_int-δ_fld)·|F|) }`
 
-**Why the `− 1/n` matters (2026-07-18 fix).** ABF26's `thm:ud-rs` header prints the
-regime as `δ_fld ≤ (1-ρ)/2`, *including* the endpoint at which the first max-branch's
-denominator factor `1-ρ-2·δ_fld` is `0`. In Lean's totalized arithmetic `x/0 = 0`, so at
-that endpoint the branch silently collapses to `0` and the admitted statement becomes
-false (reproduced by the 2026-07-17 review's kernel probe `SemanticBoundaries.lean`).
-The source's margin gives `1-ρ-2·δ_fld ≥ 2/n > 0`, restoring denominator positivity.
-The dropped margin is also recorded upstream as `PAPER_REVS.md` finding #9.
-Tighter than T4.8 (AHIV17) in the regime `δ_fld ≥ δ_min/3`. Admitted as an external
-result; regime re-derived from the BCHKS25 PDF, not the ABF26 tex. -/
-theorem rs_epsCa_le_in_uniqueDecodingRange
+The upper-radius hypothesis includes the source's `1/n` margin, which keeps the first denominator
+strictly positive. -/
+theorem rs_epsCa_le_in_unique_decoding_range
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
     (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
     (_h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
@@ -232,42 +168,14 @@ theorem rs_epsCa_le_in_uniqueDecodingRange
       ENNReal.ofReal bound := by
   sorry -- ABF26-T4.9.2; external admit [BCHKS25 Thm 1.3].
 
-/-- **ABF26 Remark 4.10.** Small-proximity-loss simplification of T4.9.2 via R4.2.
-For `δ_int - δ_fld = γ/n` with `γ ∈ (0, 1)` (so that `R4.2` collapses `ε_ca` to its
-`δ_int := δ_fld` value):
+/-- A small-proximity-loss corollary of `rs_epsCa_le_in_unique_decoding_range`. If shifting the
+interleaved radius by `γ/n` does not cross a Hamming-distance grid level, then
 
   `ε_mca(C, δ_fld) = ε_ca(C, δ_fld) = ε_ca(C, δ_fld, δ_fld + γ/n) ≤`
   `  max{ (1-ρ-δ_fld) / (δ_fld·(1-ρ-2·δ_fld)·|F|), (n·δ_fld + γ) / (γ·|F|) }`
 
-The `(n·δ_fld + γ) / γ` term dominates the original `δ_int / (δ_int - δ_fld)` term
-once `δ_int - δ_fld` is below `1/n`. We state the resulting bound on
-`ε_ca(C, δ_fld, δ_fld)`; the equality with `ε_mca` follows from L4.6 in the
-unique-decoding regime, which is itself an external admit.
-
-As with T4.9.2 (`rs_epsCa_le_in_uniqueDecodingRange`), this inherits the source's enclosing
-hypothesis `δ_fld ≤ (1-ρ)/2 − 1/n` (BCHKS25 Thm 1.3's regime, with the finite-length
-margin restored 2026-07-18 — see the T4.9.2 docstring) — the remark is a specialisation
-of Item 2 and is only asserted inside that unique-decoding scope.
-
-**This proof is machine-checked in-tree** from R4.2 (`epsCa_eq_of_floor_eq`, which is
-*proven*, sorry-free) plus T4.9.2 (`rs_epsCa_le_in_uniqueDecodingRange`, an external
-admit). The only `sorryAx` this theorem depends on is the one inherited from T4.9.2;
-R4.2 contributes none.
-
-**Added no-level-set-crossing hypothesis `_h_no_cross`.** The paper's R4.2 "shift by
-`β ∈ [0, 1/n)`" idiom silently assumes the shifted interval does not cross a multiple of
-`1/n`. Concretely, collapsing `ε_ca(C, δ_fld, δ_fld) = ε_ca(C, δ_fld, δ_fld + γ/n)` via R4.2
-requires `⌊δ_fld·n + γ⌋ = ⌊δ_fld·n⌋`, which *fails* whenever `fract(δ_fld·n) + γ ≥ 1`. In
-that case no equal-floor `δ_int` with gap `≥ γ/n` exists, and since `x ↦ (a+x)/x` is
-decreasing the achievable second max-branch is strictly *worse* than the claimed
-`(n·δ_fld + γ)/(γ·|F|)` (recall `epsCa` is antitone in `δ_int`, `Errors.lean:269`, the wrong
-direction to transfer the bound from a larger `δ_int`). So the γ-bound is *not* derivable
-from T4.9.2 without this hypothesis. It holds automatically whenever `δ_fld·n` is an integer
-— the paper's implicit reading — and is exactly the caveat documented on
-`epsCa_eq_of_floor_eq` (R4.2) in `Errors.lean` ("that form follows … whenever the interval
-does not cross a multiple of `1/n` — in particular when `δ` is itself such a multiple"). We
-keep `_hγ_lt : γ < 1` for hypothesis-parity with the paper even though `_h_no_cross` implies
-it. -/
+The grid condition lets `epsCa_eq_of_floor_eq` identify the shifted and unshifted interleaved
+radii. This theorem is proved from that identity and `rs_epsCa_le_in_unique_decoding_range`. -/
 theorem rs_epsCa_le_of_no_radius_level_crossing
     (domain : ι ↪ F) (k : ℕ) (δ_fld : ℝ≥0) (γ : ℝ≥0)
     (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
@@ -303,7 +211,7 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
   rw [hcollapse]
   -- Apply T4.9.2 at `δ_int`.
   have hT492 :=
-    rs_epsCa_le_in_uniqueDecodingRange (F := F) domain k δ_fld δ_int _h_ud _h_dmin hlt
+    rs_epsCa_le_in_unique_decoding_range (F := F) domain k δ_fld δ_int _h_ud _h_dmin hlt
   simp only at hT492
   refine le_trans hT492 ?_
   -- Reduce to real-number equality of the two `max` bounds and monotonicity of `ENNReal.ofReal`.
@@ -327,9 +235,8 @@ theorem rs_epsCa_le_of_no_radius_level_crossing
   have hγ_ne0R : (γ : ℝ) ≠ 0 := by exact_mod_cast _hγ_pos.ne'
   field_simp
 
-/-- **[BCHKS25 Theorem 4.6], affine-line instance corresponding to ABF26 Theorem 4.12.**
-For ArkLib's dimension-`k` Reed--Solomon code, set the source's reduced rate to
-`ρ := (k-1)/n`. At every `0 < δ < 1-√ρ`, let
+/-- An affine-line MCA bound for a Reed--Solomon code in the Johnson range. Set the reduced rate
+to `ρ := (k-1)/n` and, for `0 < δ < 1-√ρ`, let
 
   `m := max(⌈√ρ/(1-√ρ-δ)⌉, 3)`.
 
@@ -338,15 +245,8 @@ Then
   `ε_mca(C, δ) ≤ (1/|F|) · ((2(m+½)⁵ + 3(m+½)·δ·ρ)/(3ρ^{3/2})·n
                               + (m+½)/√ρ)`.
 
-BCHKS25 states a degree-`M` polynomial-curve exceptional-set bound. Taking `M = 1`
-and dividing the exceptional-set cardinality by `|F|` gives the canonical affine-line
-`mcaError`. The reduced-rate convention is essential: the source's RS code has dimension
-one greater than its degree parameter, hence `(k-1)/n` for `ReedSolomon.code domain k`.
-
-ABF26 prints a slack-parameter extraction with a different rate and `m`; that expression
-is not a direct specialization of BCHKS25 Theorem 4.6. This declaration therefore records
-the source-licensed form. Admitted as an external result. -/
-theorem rs_mcaError_le_in_johnsonRange
+The reduced rate `(k-1)/n` accounts for ArkLib's degree-`< k` convention. -/
+theorem rs_mcaError_le_in_johnson_range
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
     (_hk : 1 < k) (_hδ_pos : 0 < δ)
     (_hδ :
@@ -364,40 +264,14 @@ theorem rs_mcaError_le_in_johnsonRange
            / (Fintype.card F : ℝ)) := by
   sorry -- ABF26-T4.12; external admit [BCHKS25 Thm 4.6].
 
-/-- **ABF26 Theorem 4.16 (`thm:ca-lower-bound`) [KKH26].** Existence: for every `c > 0`
-and target rate `ρ ∈ (0, 1/2)` there exist arbitrarily large powers of two `n ∈ ℕ` and
-Reed-Solomon codes `C := RS[F, L, k]` whose rate is within `O(1/log n)` of `ρ`,
-over a prime field `F` with `|F| = Θ(n^β)` for a source-licensed exponent `β`, and
-smooth `L` of size `n`, such that
+/-- For every `c > 0` and `ρ ∈ (0,1/2)`, there are arbitrarily large smooth Reed--Solomon
+codes over prime fields whose rate is within `O(1/log n)` of `ρ` and for which
 
   `ε_ca(C, 1 - ρ - Θ(1/log n)) ≥ n^c / |F|`
 
-**Attribution.** The canonical `.tex` (≈ lines 1847–1857) now attributes this theorem
-to [KKH26] (Krachun–Kazanin–Haböck), which *proved* (and improved) the variant that
-[BCHKS25] had shown under a conjecture (see also [CGHLL26], [Kambire26]); the earlier
-"BCHKS25 + KK25 under conjecture" citation is stale.
-
-**Encoding of the asymptotics.** Three knobs are pinned so the statement keeps the
-paper's content (none of them can be vacuously discharged):
-
-- *Rate control.* The source supplies only `|k/n-ρ| = O(1/log n)`, encoded by one
-  uniform positive constant `Kρ`. A tighter `1/n` rounding band would not be source-licensed.
-- *Slack `Θ(1/log n)`.* Uniform constants `K₁, K₂` are fixed *before* the code family,
-  with `K₁/log₂ n ≤ slack ≤ K₂/log₂ n` per instance. This keeps the advertised
-  "distance `Θ(1/log n)` from capacity" scale. Logs are base 2 (`Real.logb 2`),
-  matching the paper's convention.
-- *Field growth.* KKH26 chooses an auxiliary exponent `τ > c`, then an exponent
-  `β > max{τ+1, 12/5}` and primes `p = Θ(n^β)` with `p ≡ 1 mod n`. We make the
-  consequence `β > max{c+2, 12/5}` and the two-sided `Θ(n^β)` constants explicit.
-  Together with the prime-field and smooth-domain clauses, this pins the
-  number-theoretic family that is absent from the generic CS25 breakdown theorem.
-- *Family, not a single code.* The paper's `∃ n` plus `Θ(1/log n)` is only meaningful
-  for an infinite family, so we quantify `∀ n₀, ∃ … n₀ ≤ n` (arbitrarily large
-  witnesses) with the `Θ`-constants and field-growth data shared across the family —
-  for a single instance both would be vacuous.
-
-The power-of-two/smoothness of `L` is carried by the `ReedSolomon.Smooth domain`
-instance. Admitted as an external result. -/
+The uniform constants record the `O(1/log₂ n)` rate control, `Θ(1/log₂ n)` capacity slack, and
+two-sided `|F| = Θ(n^β)` field growth. Quantifying over every lower length bound makes this a
+family statement rather than a single-instance asymptotic claim. -/
 theorem exists_rs_epsCa_large_near_capacity
     (c : ℝ≥0) (_hc : 0 < c) (ρ : ℝ≥0) (_hρ_pos : 0 < ρ) (_hρ_lt : ρ < (1 / 2 : ℝ≥0)) :
     ∃ Kρ K₁ K₂ : ℝ, 0 < Kρ ∧ 0 < K₁ ∧ K₁ ≤ K₂ ∧
@@ -425,15 +299,12 @@ theorem exists_rs_epsCa_large_near_capacity
         ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
   sorry -- ABF26-T4.16; external admit [KKH26].
 
-/-- **ABF26 Theorem 4.17 [CS25 Cor 1].** Complete CA breakdown for Reed-Solomon codes.
-Let `C := RS[F, L, k]` with `q = |F| ≥ max(10, n)`, rate `ρ`, and integer error count
-`f ≤ n` satisfying:
+/-- Complete CA breakdown for a Reed--Solomon code whose rate lies in the entropy band
 
   `1 - H_q(f/n) + 2/n + √((H_q(f/n) - f/n)/n) ≤ ρ ≤ 1 - f/n - 2/n`
 
-Then `ε_ca(C, δ) = 1`. Uses `qEntropy` (ABF26 Definition 2.2, defined in
-`Basic/Entropy.lean`). Keeping `f` integer is essential: the source does not license the
-same entropy-rate hypothesis at an arbitrary real radius. Admitted as an external result. -/
+The radius is the integer grid point `f/n`; the entropy hypothesis is not extended to arbitrary
+real radii. -/
 theorem rs_epsCa_eq_one_of_entropy_rate
     (domain : ι ↪ F) (k f : ℕ)
     (_hq_ge : 10 ≤ Fintype.card F)
@@ -453,59 +324,20 @@ theorem rs_epsCa_eq_one_of_entropy_rate
     epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ = 1 := by
   sorry -- ABF26-T4.17; external admit [CS25 Cor 1].
 
-/-- **The factor `a(x)` from ABF26 `thm:base-field-ca-lowerbound` [CS25 Theorem 3].**
-
-  `a(x) := exp(x)` if `x ≤ 3/2`, else `exp(2√x) / √(2π·⌊√x⌋)`.
-
-This is the analytic factor appearing in the subfield CA lower bound
-(`subfield_epsCa_lower_bound`). For `x > 3/2` we have `√x > 1`, so `⌊√x⌋₊ ≥ 1`
-and the denominator `√(2π·⌊√x⌋)` is strictly positive (well-defined). -/
+/-- The piecewise analytic factor in `subfield_epsCa_lower_bound`:
+`exp x` for `x ≤ 3/2`, and `exp (2√x) / √(2π⌊√x⌋)` otherwise. -/
 noncomputable def subfieldCaFactor (x : ℝ) : ℝ :=
   if x ≤ 3 / 2 then Real.exp x
   else Real.exp (2 * Real.sqrt x) / Real.sqrt (2 * Real.pi * ⌊Real.sqrt x⌋₊)
 
-/-- **ABF26 `thm:base-field-ca-lowerbound` [CS25 Theorem 3].** Subfield/extension-field CA
-lower bound near capacity. Let `C := RS[F, L, k]` be a Reed-Solomon code where `B ⊊ F` are
-finite fields, `L ⊆ B`, `n := |L|`, and fix `δ ∈ (0, 1 - ρ(C))`. Then
+/-- A subfield/extension-field CA lower bound near capacity. For `B ⊊ F`, an evaluation
+domain contained in `B`, and `0 < δ < 1-ρ`,
 
   `ε_ca(C, δ) ≥ 1 − [ |F| · |B|^{n(1−ρ−δ)} · a(δ(1−δ)n²/|B|) ] / C(n, δn)`
 
-where `a(x) := exp(x)` if `x ≤ 3/2`, else `a(x) := exp(2√x)/√(2π·⌊√x⌋)`
-(the helper `subfieldCaFactor`).
-
-**Disambiguation of the three formalized CS25 results.** [CS25] = Crites–Stewart,
-*On Reed–Solomon Proximity Gaps Conjectures*, ePrint 2025/2046. Three of its results are
-formalized in ArkLib and must not be conflated:
-
-- [CS25 Corollary 1] = `rs_epsCa_eq_one_of_entropy_rate` (T4.17, this file) — complete CA breakdown
-  in an entropy-defined rate band.
-- [CS25 Theorem 2] = `rs_Lambda_extended_le_of_epsCa_intRadius` (native integer-radius admit,
-  `ListDecodingAndCA.lean`), from which the ABF26-shaped T5.3
-  `rs_Lambda_extended_le_of_epsCa` is derived in-tree.
-- [CS25 Theorem 3] = **this declaration** — the third, distinct result: the
-  subfield/extension-field CA lower bound near capacity.
-
-**Prize relevance.** This bound powers the attack table `tab:cs25-ca-lowerbound`
-(`.tex` ~L2845), and the subfield regime `L ⊆ B ⊆ F` matches the koala instantiation of the
-toy protocol (an extension field over a small base field).
-
-**Encoding choices (matching this file's conventions).**
-- *Proper subfield.* `B : Subfield F`, `_hB_proper : B < ⊤`, and
-  `_h_dom : ∀ i, domain i ∈ B` encode `L ⊆ B ⊊ F`. Properness is required by the source's
-  choice of an extension-field element outside the base field. `|B|` is `Nat.card B`
-  (avoids a `DecidablePred (· ∈ B)`/`Fintype` synthesis dependency; over the finite field
-  `F` it equals the cardinality of the subfield).
-- *`|B|` power.* `|B|^{n(1−ρ−δ)}` uses `Real.rpow` (real exponent).
-- *Binomial `C(n, δn)`.* Encoded as `Nat.choose n ⌊δ·n⌋₊`, guarded by the integrality
-  hypothesis `_h_int : (⌊δ·n⌋₊ : ℝ) = δ·n` so the admitted statement cannot silently drift
-  from the paper's `C(n, δn)` at non-integral `δn` (same conservatism as the file's other
-  satisfiability guards).
-- *`a(x)` helper.* `subfieldCaFactor` above. CS25 Theorem 3 prints `g(x)` without binding
-  `x`; the argument `δ(1-δ)n²/|B|` is an inference from Theorem 1's
-  `g(f(n-f)/q)` and the theorem's base-field sampling setup, not a literal bound variable
-  in the printed Theorem 3 statement.
-
-Admitted as an external result. -/
+where `a = subfieldCaFactor`. The integrality hypothesis makes `Nat.choose n ⌊δn⌋₊`
+the source's binomial coefficient at `δn`, and `Real.rpow` interprets the real exponent on
+`|B|`. -/
 theorem subfield_epsCa_lower_bound
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0) (B : Subfield F)
     (_hB_proper : B < ⊤)
@@ -523,20 +355,14 @@ theorem subfield_epsCa_lower_bound
       epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ := by
   sorry -- ABF26 thm:base-field-ca-lowerbound; external admit [CS25 Thm 3].
 
-/-- **[BCHKS25 Corollary 1.7], the Johnson-jump result cited by ABF26 Theorem 4.18.**
-For every fixed `ε ∈ (0,1)` and every sufficiently large characteristic-two field,
-there is a Reed--Solomon code of relative minimum distance `15/16` for which
+/-- For every `ε ∈ (0,1)` and every sufficiently large characteristic-two field, there is a
+Reed--Solomon code of relative minimum distance `15/16` for which
 
   `ε_ca(C, 3/4, δ_int) ≥ n^{2(1-ε)}/|F|`
 
-for every `δ_int < 7/8`. Here `3/4 = 1-√(1-15/16)` is the Johnson radius. The strict
-upper bound on `δ_int` is the direct consequence of the source's pair-distance witness
-`≥ 7/8`; no additional `1/n` margin is claimed. The source is asymptotic, so the field
-condition is encoded by an existential threshold `q₀`. Its construction-specific length
-scaling is not needed for this CA consequence and is not asserted here.
-
-Admitted as an external result. -/
-theorem exists_rs_epsCa_large_at_johnsonRadius
+for every `δ_int < 7/8`. The strict endpoint follows from a joint-distance witness equal to
+`7/8`, and the existential `q₀` records the asymptotic field threshold. -/
+theorem exists_rs_epsCa_large_at_johnson_radius
     (ε : ℝ≥0) (_hε : 0 < ε) (_hε_lt : (ε : ℝ) < 1) :
     ∃ q₀ : ℕ,
     ∀ {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2],
@@ -561,18 +387,12 @@ open scoped ProbabilityTheory
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **ABF26 Lemma 4.19 [DG25dist Thm 2.5].** Let `C ⊆ F^n` be a linear code and let
-`δ' := max_{u ∈ F^n} Δ(u, C)` be the (relative) covering radius. For every
-`δ ∈ (0, δ')`:
+/-- For a linear code and a radius strictly below its relative covering radius,
 
   `ε_ca(C, δ) ≥ ((q-1)/q) · Pr_{u ← F^n}[Δ(u, C) ≤ δ]`
 
-The probability is over a uniform word in `F^n`, expressed via the `Pr_{...}[...]`
-notation. DG25dist states the theorem at an integer absolute radius `z < R`; the
-`ℝ≥0` parameters here are a normalized grid restatement, and `_hδ_lt` is exactly the
-strict-below-covering-radius guard. The statement was checked directly against the
-primary ePrint 2025/2010 PDF. Admitted as an external result. -/
-theorem linear_closeProbability_le_epsCa
+The probability is over a uniformly sampled ambient word. -/
+theorem linear_close_probability_le_epsCa
     (C : LinearCode ι F) (δ δ' : ℝ≥0)
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < δ') :
@@ -585,20 +405,12 @@ end Sampling
 
 section SubspaceDesignFRS
 
-/-- **ABF26 Theorem 4.13 [GG25 Corollary 4.9].** τ-subspace-design codes have MCA bounds.
-Let `C : F^k → (F^s)^n` be a τ-subspace-design code. For every `t ∈ ℕ`:
+/-- An affine-line MCA bound for a `τ`-subspace-design code:
 
   `ε_mca(C, 1 - τ(t+1) - 3/(2t)) ≤ (t·n + 4·t³) / |F|`
 
-**Constant is `4t³`, not `4t²`** (2026-07-05 faithfulness audit): GG25 Corollary 4.9
-states MCA `(ℓ, 1 − τ(t·ℓ+ℓ) − 3/2t, t·ℓ·(n + 2t²(ℓ+1))/|F|)`; the ABF26 affine case
-`ℓ = 1` gives `t·(n + 4t²)/|F| = (t·n + 4t³)/|F|`, which is exactly the constant used in
-ABF26's own application (`.tex` L2929, `4r³`). ABF26's *theorem statement* (`.tex` L1830)
-has a `4t²` transcription typo; we follow the source-backed `4t³` (safe/weaker for `t ≥ 2`).
-
-Combined with `IsSubspaceDesign` (D2.16) and `subspaceDesign_tau_lower` (L2.17), this
-gives MCA up to capacity for subspace-design codes. Admitted as an external result. -/
-theorem subspaceDesign_mcaError_le
+The cubic term is the affine specialization of the source's general generator bound. -/
+theorem subspace_design_mcaError_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (s : ℕ) (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -609,47 +421,15 @@ theorem subspaceDesign_mcaError_le
       ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
   sorry -- ABF26-T4.13; external admit [GG25 Cor 4.9].
 
-/-- **ABF26 Theorem 4.14 [GG25 Corollary 4.10].** Folded Reed-Solomon codes have MCA
-up to capacity. Let `t > 0` be an integer and `C := FRS[F, L, k, s, ω]` be a folded
-RS code with `s > 4t²`. Then:
+/-- A capacity-regime MCA bound for an admissibly folded Reed--Solomon code. For an integer
+`t > 0` and folding parameter `s > 4t²`,
 
   `ε_mca(C, 1 - ρ - 2/t) ≤ (nt + 3t³)/|F|`
 
-This is the source-native integer form. ABF26 substitutes `t = 2/η`, but that is not
-an integer for arbitrary real `η`; flooring changes the radius in the unsafe direction,
-while ceiling requires a stronger folding hypothesis and yields a larger right-hand
-side. No unrounded real-parameter corollary is asserted here.
-
-**Rate convention.** The FRS code `FRS[F, L, k, s, ω] ⊆ (F^s)^n` has rate
-`ρ = k / (s·n)` per ABF26 Definition 2.5 (the alphabet is `F^s`), **not** `k/n` —
-with `k/n` the radius `1 - ρ - 2/t` would undershoot capacity by a factor-`s` error.
-
-**Folding admissibility (2026-07-18 fix).** GG25 Corollary 4.10 quantifies over
-`s`-folded RS codes *per its Definition 2.18 [GR08]*, which is not `frsCode` for an
-arbitrary `ω`: it requires (i) a field with `|F| > s·n`, and (ii) distinct evaluation
-points `α₁, …, α_n` with pairwise-disjoint `ω`-orbits (`αᵢ·ωᵗ ≠ αⱼ` for all `i ≠ j`,
-`t < s`). This statement previously took `frsCode domain k s ω` raw, with *no*
-hypotheses on `ω` or the domain, so it claimed the GG25 bound for degenerate folds —
-e.g. `ω = 0` or `ω` of multiplicative order `< s`, where a fold's `s`-tuple repeats
-entries and the subspace-design structure underlying the proof chain
-(GG25 Thm 2.19 [GK16] → Thm 4.8 → Cor 4.9/4.10) breaks — codes the source does not
-cover. We now carry the source hypotheses: `ReedSolomon.Folded.Admissible`
-(ArkLib's GR08 injectivity condition — GG25's inter-orbit clause plus the intra-orbit
-`ω`-order-`≥ s` strengthening documented in `ReedSolomon/Folded.lean`, exactly the
-condition used by `dim_frsCode`/`minDist_frsCode`), `ω ≠ 0`, and `|F| > s·n`
-(Definition 2.18's `q > sn`).
-
-A corollary of T4.13 via T2.18 (FRS is τ-subspace-design). Admitted as an external
-result.
-
-**Generator hypothesis (2026-07-21 Phase-A merge audit).** `_hω_gen : ω` generates `F×`
-is carried because this bound's proof chain runs through T2.18
-(`frs_is_subspaceDesign_gk16`), whose unguarded form is FALSE for low-order `ω`
-(counterexample `ω = -1` over `𝔽₁₀₁`, order 2 — admissibility only forces
-`ord(ω) ≥ s`; see the T2.18 docstring). GG25's own Def 2.18/Thm 2.19 restatement
-(`q > sn` only) is falsified by the same counterexample, so the generator condition is
-treated as the implicit source assumption inherited from [GK16 Lemma 12]; recorded
-upstream as PAPER_REVS #13. -/
+The rate is alphabet-normalized as `ρ = k/(s·n)`. The hypotheses require a generator of
+`Fˣ`, an admissible folding domain, and `s·n < |F|`; these are the conditions used by the
+subspace-design argument. The integer parameter is kept explicit rather than replaced by an
+unrounded real expression. -/
 theorem frs_mcaError_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -667,37 +447,17 @@ theorem frs_mcaError_le
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
   sorry -- ABF26-T4.14; external admit [GG25 Cor 4.10].
 
-/-- **[BCGM25 Theorem 8.2 + Definition 8.1], univariate-powers MCA instance.**
-For any `F`-linear code `C ⊆ A^n` (with any finite `F`-module alphabet `A`,
-matching [BCGM25]'s `Σ`), degree `k ≥ 1` with `|F| ≥ k + 1`, tradeoff `η ∈ (0, δ_min)`,
-and radius `δ ≤ 1 - (ρ_C + η)^{1/(k+2)}` (where `ρ_C := 1 - δ_min`):
+/-- An MCA bound for the univariate-powers generator on an `F`-linear code over a finite
+`F`-module alphabet. For `k ≥ 1`, `|F| ≥ k+1`, and
+`δ ≤ 1 - (ρ_C + η)^{1/(k+2)}` with `ρ_C := 1-δ_min`,
 
   `mcaError(G_k, C, δ) ≤ (n·γ_k/η)·(k/|F|)
       + max( 2k / (η·((ρ_C+η)^{1/(k+2)} - (ρ_C+η)^{1/(k+1)})·|F|),
              (k+1)·(k+2) / (η·|F|) )`,   `γ_k := 1 - (ρ_C+η)^{1/(k+1)}`.
 
-This is [BCGM25]'s error function `ξ_{C,k,|F|}` (Definition 8.1, middle branch) for the
-univariate-powers generator `G_k : x ↦ (1, x, …, x^k)`, instantiated at `S = F`
-via Theorem 8.2 (`s = 1`, `d₁ = k`; its hypothesis `|S| ≥ d + 1` is
-`|F| ≥ k + 1`). ArkLib's canonical generator-parametric MCA error lets the conclusion
-be stated directly as `mcaError G_k C δ`. The `η < δ_min` hypothesis keeps
-`ρ_C + η < 1`, so the branch guard is non-vacuous and the bound's inner denominator
-`(ρ_C+η)^{1/(k+2)} - (ρ_C+η)^{1/(k+1)}` is strictly positive.
-
-Definition 8.1's middle guard overlaps its first guard for typical parameters. On that
-overlap the first branch is the licensed value, but it is bounded by the displayed
-middle expression: `γ < γ_k ≤ γ_k/η` controls the `nγk/|F|` term, and
-`k/|F| ≤ (k+1)(k+2)/(η|F|)` controls the other. Thus the uniform displayed bound is a
-valid weakening across the overlap.
-
-**History (2026-07-18).** This replaces a tracked placeholder
-(`subspaceDesign_epsCA_curves_polynomial_generators_bcgm25`) that borrowed the GG25
-affine bound `(t·n + 4t³)/|F|` with a `k`-independent RHS — **false** for large curve
-degree `k` (exact counterexample at `n=1, t=1, q=7, k=6`: `ε ≥ 6/7 > 5/7`), as flagged
-by both 2026-07 reviews. [BCGM25]'s true error necessarily grows with `k`. [BCGM25] =
-ePrint 2025/2051 (Bordage–Chiesa–Guan–Manzur, "All Polynomial Generators Preserve
-Distance with Mutual Correlated Agreement"); statement checked against Definition 8.1
-and Theorem 8.2 in the primary PDF. -/
+Here `γ_k := 1 - (ρ_C+η)^{1/(k+1)}`. The hypothesis `η < δ_min` keeps the inner
+difference of powers positive. The displayed expression also dominates the overlapping first
+branch of the source's piecewise bound. -/
 theorem linear_mcaError_powers_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]

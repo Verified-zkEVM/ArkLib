@@ -10,70 +10,44 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import Mathlib.RingTheory.Polynomial.Vieta
 
 /-!
-# ABF26 Appendix — Concrete restatements of [KKH26]
+# Additive-set lower bounds for Reed--Solomon codes
 
-Formalization of the appendix "Concrete restatements of [KKH26]" of ABF26
-(Arnon-Boneh-Fenzi, *Open Problems in List Decoding and Correlated Agreement*, 2026),
-tex `\section{Concrete restatements of \cite{KKH26}}` (L3338-3601). [KKH26] is
-Krachun-Kazanin-Haböck, *Failure of proximity gaps close to capacity*, ePrint 2026/782.
+This module develops the useful-family and sum-set templates underlying the KKH26
+Reed--Solomon lower bounds.
 
-## Main declarations (tex labels)
+## Main declarations
 
 - `sumSet` — the sum-set `Λ_𝒮 = {∑_{α ∈ S} α : S ∈ 𝒮}`.
-- `IsUsefulFamily` / `IsUsefulFamilyWith` — **ABF26 def:additive-sets**: the
+- `IsUsefulFamily` / `IsUsefulFamilyWith` — the
   `(H, k̂, c)`-useful families (fixed elementary symmetric sums `e_i(S) = λ_i`, `i ∈ [c]`).
-- `prod_X_sub_C_eq_leadingPart_add_remainder` and its wrapper
-  `IsUsefulFamilyWith.vanishing_decomposition` — the **claim** after def:additive-sets:
+- `prod_X_sub_C_eq_leadingPart_add_remainder` and
+  `IsUsefulFamilyWith.vanishing_decomposition` — the Vieta decomposition
   `V_S(Y) = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S(Y)` with `deg p_S ≤ k̂ - c - 1` (Vieta).
-- `sumSet_card_div_le_epsCa` — **ABF26 lemma:kikh-proximity-gap-template [KKH26]**:
+- `sumSet_card_div_le_epsCa` — the CA lower-bound template
   `ε_ca(RS[F, L, k], 1 - k̂/h) ≥ |Λ_𝒮| / |F|`.
-- `two_pow_mul_choose_le_card_sumSet` — **ABF26 [KKH26, Lemma 1]**: over a prime field
+- `two_pow_mul_choose_le_card_sumSet` — over a prime field
   `𝔽_q` with `q > h^{h/2}`, the family of all `k̂`-subsets of a power-of-two-order
   subgroup `H` has `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)`. *External admit* (number-theoretic).
-- `usefulFamily_list_lower_bound` — **ABF26 lemma:kikh-general-template [KKH26]**:
-  a `(H, k̂, c)`-useful family yields a word `f` with
-  `|List(RS[F, L, k], 1 - k̂/h, f)| ≥ |𝒮|`.
-- `choose_le_Lambda_rs_vanilla` — **ABF26 cor:kikh-vanilla [KKH26]**:
+- `usefulFamily_list_lower_bound` — a useful family yields a nearby-word list of size `|𝒮|`.
+- `choose_le_Lambda_rs_vanilla` — the all-subsets specialization
   `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h, k̂)`.
-- `choose_le_Lambda_rs_antipodal_even` / `choose_le_Lambda_rs_antipodal_odd` —
-  **ABF26 cor:kikh-antipodal [KKH26]**: via antipodal pairs, list size at the same
+- `choose_le_Lambda_rs_antipodal_even` / `choose_le_Lambda_rs_antipodal_odd` — via antipodal
+  pairs, list size at the same
   radius is `≥ C(h/2, k̂/2)` (`k̂` even) resp. `≥ C(h/2 - 1, (k̂-1)/2)` (`k̂` odd).
 
-## Design notes
+## Formulation
 
-- **Domain/projection encoding.** The paper works with a smooth evaluation domain `L ⊆ F`
-  of size `n = d·h` and the projection `π : x ↦ x^d`, which maps `L` onto the smooth
-  subgroup `H` of size `h`, `d`-to-`1`. The main statements here take the *content* of
-  those bullets as explicit hypotheses on a finite set `H : Finset F`: `H.card = h` and
-  the `d`-regular-fiber property `∀ y ∈ H, #{i | domain i ^ d = y} = d`. The lemma
+- A smooth domain of size `n = d·h` is represented by an explicit power-map projection
+  `π : x ↦ x^d` onto a set `H` of size `h`, with fibers of size `d`. The lemma
   `Smooth.exists_pow_projection_structure` bridges from ArkLib's `ReedSolomon.Smooth`
   class (coset-of-a-2-group domains) to this package — including, for even `h`, the
   negation-closure of `H` used by the antipodal corollary — and the `*_of_smooth`
   wrappers restate the corollaries over `[Smooth domain]` exactly as in the paper.
-- **Sign correction.** The tex displays `w_S(x) := V_S(x^d) - f(x)` together with
-  `w_S(x) - f(x) = V_S(x^d)`, which are inconsistent (the latter forces
-  `w_S := f - V_S(x^d)`; both differ from the tex's by a global sign, and both are
-  codewords). We use `w_S := f - V_S(x^d) = -p_S(x^d)`, for which the agreement set
-  is exactly `{x : π(x) ∈ S}` as claimed. Similarly, in lemma:kikh-proximity-gap-template
-  the pair achieving the bound is `(f₀, -f₁)` (the vanishing polynomial has `-γ` as its
-  second coefficient), matching the tex's own expansion at its L3397.
-- **`IsUsefulFamilyWith` includes `i = 0`.** The paper fixes `λ_1, ..., λ_c` and sets
-  `λ_0 := 1`; we require `e_i(S) = λ i` for all `i ≤ c` *including* `i = 0` (forcing
-  `λ 0 = 1` on nonempty families, since `e_0 ≡ 1`). The existential `IsUsefulFamily`
-  is equivalent to the paper's definition.
-- **List sides use `Lambda` / `closeCodewordsRel`.** The template produces a word `f`
-  and bounds `(closeCodewordsRel C f δ).ncard` (the paper's `|List(C, δ, f)|`,
-  ABF26 Definition 2.8); the corollaries bound `Code.Lambda` (the maximised
-  `|List(C, δ)|`). `[Fintype F]` is assumed so that these lists are finite sets and
-  `Set.ncard` is meaningful.
-
-## Prize relevance
-
-These are the list-decoding *attack-side* lower bounds feeding ABF26's attack table
-(tex `tab:kikh-lowerbound`, ~L2799). They remain available for list-decoding-route
-attack analyses. The current Koala IRS upper anchor in
-`ArkLib/ProofSystem/ToyProblem/Leaderboard.lean` uses the correlated-agreement route
-instead, via ABF26 Lemma 6.13 and the CS25 base-field CA lower bound.
+- The codeword witness is `w_S := f - V_S(x^d) = -p_S(x^d)`, so its agreement set is
+  `{x : π(x) ∈ S}`. This is the sign-consistent form of the displayed construction.
+- `IsUsefulFamilyWith` includes `i = 0`; this records the conventional `λ₀ = 1` directly.
+- The template uses `closeCodewordsRel` for its explicit center and `Code.Lambda` for maximized
+  list size.
 
 ## References
 
@@ -94,39 +68,36 @@ open scoped NNReal BigOperators
 
 namespace CodingTheory.AdditiveSetListDecoding
 
-/-! ## The sum-set `Λ_𝒮` and useful families (ABF26 def:additive-sets) -/
+/-! ## Sum sets and useful families -/
 
 section Defs
 
 variable {F : Type*} [CommRing F]
 
-/-- The sum-set `Λ_𝒮 := {∑_{α ∈ S} α : S ∈ 𝒮}` of a family of finite sets
-(ABF26 lemma:kikh-proximity-gap-template / [KKH26]). -/
+/-- The sum set `Λ_𝒮 := {∑_{α ∈ S} α : S ∈ 𝒮}` of a family of finite sets. -/
 def sumSet [DecidableEq F] (𝒮 : Finset (Finset F)) : Finset F :=
   𝒮.image fun S => ∑ α ∈ S, α
 
-/-- **ABF26 def:additive-sets, explicit-witness form.** `𝒮` is a `(H, k̂, c)`-useful family
-with symmetric-function values `lam`: every `S ∈ 𝒮` is a `k̂`-subset of `H` whose
+/-- A family is `(H, k̂, c)`-useful with symmetric-function values `lam` when every
+`S ∈ 𝒮` is a `k̂`-subset of `H` whose
 elementary symmetric sums `e_i(S) = ∑_{A ⊆ S, |A| = i} ∏_{α ∈ A} α` equal `lam i` for
-all `i ≤ c`. (The paper fixes `λ_1, ..., λ_c` and sets `λ_0 := 1`; including `i = 0`
-here just forces `lam 0 = 1` on nonempty families since `e_0 ≡ 1`.) -/
+all `i ≤ c`. Including `i = 0` records `lam 0 = 1` for nonempty families. -/
 def IsUsefulFamilyWith (H : Finset F) (khat c : ℕ) (𝒮 : Finset (Finset F))
     (lam : ℕ → F) : Prop :=
   ∀ S ∈ 𝒮, S ⊆ H ∧ S.card = khat ∧ ∀ i ≤ c, S.1.esymm i = lam i
 
-/-- **ABF26 def:additive-sets.** `𝒮` is a `(H, k̂, c)`-useful family: there exist
-`λ_0 = 1, λ_1, ..., λ_c` such that every `S ∈ 𝒮` is a `k̂`-subset of `H` with
-`e_i(S) = λ_i` for `i ≤ c`. -/
+/-- A family is `(H, k̂, c)`-useful if its members share the first `c` elementary symmetric
+sums. -/
 def IsUsefulFamily (H : Finset F) (khat c : ℕ) (𝒮 : Finset (Finset F)) : Prop :=
   ∃ lam : ℕ → F, IsUsefulFamilyWith H khat c 𝒮 lam
 
 /-- The leading part `∑_{i=0}^{c} (-1)^i · λ_i · Y^{k̂-i}` of the vanishing polynomial of
-a member of a `(H, k̂, c)`-useful family (ABF26 def:additive-sets claim). -/
+a member of a useful family. -/
 noncomputable def leadingPart (khat c : ℕ) (lam : ℕ → F) : F[X] :=
   ∑ i ∈ Finset.range (c + 1), C ((-1) ^ i * lam i) * X ^ (khat - i)
 
-/-- **Vieta step for the ABF26 def:additive-sets claim** (per-set core). If `|S| = k̂` and
-the elementary symmetric sums `e_i(S)` for `i ≤ c ≤ k̂` are given by `lam`, then the
+/-- If `|S| = k̂` and the elementary symmetric sums `e_i(S)` for `i ≤ c ≤ k̂` are given by
+`lam`, then the
 vanishing polynomial `V_S(Y) = ∏_{α ∈ S} (Y - α)` decomposes as
 `V_S = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S` with `deg p_S ≤ k̂ - c - 1`.
 Mathlib's `Multiset.prod_X_sub_X_eq_sum_esymm` (Vieta) provides the full expansion. -/
@@ -162,8 +133,8 @@ theorem prod_X_sub_C_eq_leadingPart_add_remainder {S : Finset F} {khat c : ℕ} 
     exact Finset.sum_congr rfl fun i hi => by
       rw [hesymm i (by simpa using Nat.lt_succ_iff.mp (Finset.mem_range.mp hi))]
 
-/-- **ABF26 def:additive-sets claim.** For a `(H, k̂, c)`-useful family with values `lam`
-(`c < k̂`) and any `S ∈ 𝒮`, the vanishing polynomial decomposes as
+/-- For a `(H, k̂, c)`-useful family with values `lam`, `c < k̂`, and `S ∈ 𝒮`, the
+vanishing polynomial decomposes as
 `V_S(Y) = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S(Y)` with `deg p_S ≤ k̂ - c - 1`. -/
 theorem IsUsefulFamilyWith.vanishing_decomposition {H : Finset F} {khat c : ℕ}
     {𝒮 : Finset (Finset F)} {lam : ℕ → F} (hU : IsUsefulFamilyWith H khat c 𝒮 lam)
@@ -211,7 +182,7 @@ lemma card_filter_eval_eq_zero_le_natDegree (domain : ι ↪ F) {Q : F[X]} (hQ :
 
 end Counting
 
-/-! ## The two [KKH26] templates -/
+/-! ## Useful-family and sum-set templates -/
 
 section Templates
 
@@ -284,20 +255,14 @@ lemma relHammingDist_le_of_sub_eq_vanishing (domain : ι ↪ F) {d h : ℕ}
 
 omit [DecidableEq ι] in
 set_option linter.unusedVariables false in
-/-- **ABF26 lemma:kikh-general-template [KKH26].** Let the evaluation domain have size
-`n = d·h`, let `H : Finset F` with `|H| = h` be `d`-regularly covered by `x ↦ x^d`
-(the projection structure of a smooth domain, cf. `Smooth.exists_pow_projection_structure`),
-let `𝒮` be a `(H, k̂, c)`-useful family (`c < k̂`), and let
+/-- Let the evaluation domain have size `n = d·h`, let `H : Finset F` with `|H| = h` be
+`d`-regularly covered by `x ↦ x^d`, let `𝒮` be a `(H, k̂, c)`-useful family with `c < k̂`, and let
 `(k̂ - c - 1)·d < k ≤ k̂·d`. Then there is a word `f` with
 `|List(RS[F, L, k], 1 - k̂/h, f)| ≥ |𝒮|`.
 
 The witness is `f(x) = ∑_{i=0}^{c} (-1)^i λ_i x^{(k̂-i)d}`; each `S ∈ 𝒮` contributes the
-codeword `w_S := f - V_S(x^d) = -p_S(x^d)` (sign-corrected from the tex, see module
-docstring), which agrees with `f` exactly on the `k̂·d` points `{x : x^d ∈ S}`.
-
-(`hk2` is the paper's upper bound on `k`; the tex proof uses it only for the
-`Δ(f, C) ≥ 1 - k̂/h` aside, which the statement does not require — kept for
-faithfulness to the tex hypothesis list.) -/
+codeword `w_S := f - V_S(x^d) = -p_S(x^d)`, which agrees with `f` on the `k̂·d` points
+`{x : x^d ∈ S}`. -/
 theorem usefulFamily_list_lower_bound (domain : ι ↪ F) {d h khat c k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
@@ -435,12 +400,11 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) {d h khat c k : ℕ}
         obtain ⟨S, hS, rfl⟩ := hx
         exact hmem S hS
 
-/-- **ABF26 [KKH26, Lemma 1].** Let `H` be a multiplicative subgroup of a prime field
+/-- Let `H` be a multiplicative subgroup of a prime field
 `𝔽_q` with `|H| = h` a power of two. If `q > h^{h/2}`, then for any `1 ≤ k̂ ≤ h/2`,
 the family `𝒮` of all `k̂`-subsets of `H` satisfies `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)`.
 
-External admit: the proof in [KKH26] is number-theoretic (lifting the subgroup to
-characteristic zero and counting subset sums there); it is out of scope here. -/
+This is the module's number-theoretic external input. -/
 theorem two_pow_mul_choose_le_card_sumSet {q : ℕ} [Fact q.Prime] {h khat : ℕ}
     (H : Subgroup (ZMod q)ˣ) (hHcard : Nat.card H = h)
     (hpow2 : ∃ m : ℕ, h = 2 ^ m) (hq : h ^ (h / 2) < q)
@@ -461,16 +425,14 @@ private lemma esymm_one_eq_sum (S : Finset F) : S.1.esymm 1 = ∑ α ∈ S, α :
   rw [← Finset.sum_eq_multiset_sum]
 
 omit [DecidableEq ι] in
-/-- **ABF26 lemma:kikh-proximity-gap-template [KKH26].** Let the evaluation domain have
+/-- Let the evaluation domain have
 size `n = d·h`, let `H : Finset F` with `|H| = h` be `d`-regularly covered by `x ↦ x^d`,
 let `𝒮` be a family of `k̂`-subsets of `H`, and let `(k̂-2)·d < k ≤ (k̂-1)·d`. Then for
 `C := RS[F, L, k]`, the correlated agreement error at radius `1 - k̂/h` is at least
 `|Λ_𝒮| / |F|`.
 
-The witness pair is `(f₀, -f₁) = (x^{k̂d}, -x^{(k̂-1)d})` (sign-corrected from the tex,
-see module docstring): the second row is `> δ`-far from `C` (so the pair is not jointly
-close), while for every `γ = ∑_{α ∈ S} α ∈ Λ_𝒮` the fold `f₀ - γ·f₁` agrees with
-the
+The witness pair is `(f₀, -f₁) = (x^{k̂d}, -x^{(k̂-1)d})`: the second row is `> δ`-far
+from `C`, while for every `γ = ∑_{α ∈ S} α ∈ Λ_𝒮` the fold `f₀ - γ·f₁` agrees with the
 codeword `-p_S(x^d)` on the `k̂·d` points `{x : x^d ∈ S}`. -/
 theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
@@ -700,7 +662,7 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 omit [DecidableEq ι] [Fintype F] in
 /-- Radius bookkeeping for the corollaries: for `RS[F, L, k]` with `n = d·h` and
-`k ≤ k̂·d ≤ n`, the paper's radius `δ_min(C) - (k̂d - k + 1)/n` equals `1 - k̂/h`
+`k ≤ k̂·d ≤ n`, the radius `δ_min(C) - (k̂d - k + 1)/n` equals `1 - k̂/h`
 (via `ReedSolomon.minDist_eq'`: `minDist = n - k + 1`). -/
 lemma minRelDist_sub_eq (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hk0 : 0 < k) (hkh : khat ≤ h)
@@ -750,12 +712,12 @@ lemma minRelDist_sub_eq (domain : ι ↪ F) {d h khat k : ℕ}
   ring
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-vanilla [KKH26].** For a Reed-Solomon code over a domain of size
+/-- For a Reed--Solomon code over a domain of size
 `n = d·h` projecting `d`-regularly onto `H` (`|H| = h`), with `1 ≤ k̂ < h` and
 `(k̂-1)·d < k ≤ k̂·d`:
 `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h, k̂)`.
 
-Instantiates lemma:kikh-general-template with the `(H, k̂, 0)`-useful family of *all*
+This instantiates the useful-family template with the `(H, k̂, 0)`-useful family of all
 `k̂`-subsets of `H`. -/
 theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
@@ -878,12 +840,12 @@ private lemma esymm_zero_eq_one (S : Finset F) : S.1.esymm 0 = 1 := by
   simp [Multiset.esymm]
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-antipodal [KKH26], even case.** If additionally `H = -H` with no
+/-- If additionally `H = -H` with no
 `-`-fixed points (supplied for smooth domains by `Smooth.exists_pow_projection_structure`
 when `h` is even) and `k̂` is even, `(k̂-2)·d < k ≤ k̂·d`, then
 `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h/2, k̂/2)`.
 
-Instantiates lemma:kikh-general-template with the `(H, k̂, 1)`-useful family of unions of
+This instantiates the useful-family template with the `(H, k̂, 1)`-useful family of unions of
 `k̂/2` antipodal pairs (common sum `0`). -/
 theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
@@ -995,10 +957,10 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) {d h khat k : ℕ
   exact_mod_cast hf
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-antipodal [KKH26], odd case.** As in the even case but with `k̂` odd:
+/-- The odd-cardinality version of `choose_le_Lambda_rs_antipodal_even`:
 `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h/2 - 1, (k̂-1)/2)`.
 
-Instantiates lemma:kikh-general-template with the `(H, k̂, 1)`-useful family
+This instantiates the useful-family template with the `(H, k̂, 1)`-useful family
 `{α₀} ∪ (k̂-1)/2` antipodal pairs avoiding `±α₀` (common sum `α₀`). -/
 theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
@@ -1227,8 +1189,7 @@ omit [DecidableEq ι] [Fintype F] in
 /-- **Smooth-domain projection structure.** A smooth evaluation domain (a coset `a·H₀` of
 a 2-group `H₀ ≤ Fˣ`) of size `n = d·h` projects under `x ↦ x^d` onto a set `H` of exactly
 `h` values, `d`-to-`1`; when `h` is even, `H` is moreover closed under negation with no
-`-`-fixed points. This packages the paper's "π maps `L` onto the smooth subgroup `H` of
-size `h`" bullets for the statements above.
+`-`-fixed points. The smooth-domain corollaries below consume this package.
 
 Proof route (elementary, field-theoretic): every fiber of `x ↦ x^d` has at most `d`
 elements (roots of `X^d - y`); every projected value lies among the `≤ h` roots of
@@ -1386,8 +1347,7 @@ theorem Smooth.exists_pow_projection_structure (domain : ι ↪ F)
     omega
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-vanilla [KKH26]**, stated over a smooth domain exactly as in the
-paper. -/
+/-- `choose_le_Lambda_rs_vanilla` specialized to a smooth evaluation domain. -/
 theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F)
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hkhat : 1 ≤ khat) (hkh : khat < h)
@@ -1400,8 +1360,7 @@ theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F)
   exact choose_le_Lambda_rs_vanilla domain hn hHcard hfib hkhat hkh hk1 hk2
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-antipodal [KKH26]** (even `k̂`), stated over a smooth domain with
-`h` even exactly as in the paper. -/
+/-- `choose_le_Lambda_rs_antipodal_even` specialized to a smooth domain with even `h`. -/
 theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F)
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
@@ -1416,8 +1375,7 @@ theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F)
     (hanti hheven).2 hkhat hkh hkeven hk1 hk2
 
 omit [DecidableEq ι] in
-/-- **ABF26 cor:kikh-antipodal [KKH26]** (odd `k̂`), stated over a smooth domain with
-`h` even exactly as in the paper. -/
+/-- `choose_le_Lambda_rs_antipodal_odd` specialized to a smooth domain with even `h`. -/
 theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F)
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)

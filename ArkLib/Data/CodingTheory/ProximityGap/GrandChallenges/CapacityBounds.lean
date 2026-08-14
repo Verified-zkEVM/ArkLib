@@ -10,9 +10,12 @@ import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 /-!
 # Capacity-bound witnesses for the Grand MCA Challenge
 
-This extension connects the citation-heavy bounds catalogue to the prize carriers in
-`GrandChallenges.lean`. Keeping the import in this direction leaves the core grid and witness API
-independent of the catalogue's external admits.
+This extension turns capacity bounds into one-sided witnesses for the Grand MCA Challenge while
+keeping the core grid and witness API independent of external admits.
+
+## References
+
+- [BCHKS25] Theorem 4.6.
 -/
 
 namespace ProximityGap.GrandChallenges
@@ -24,8 +27,8 @@ open CodingTheory
 variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
 
-/-- The source-native BCHKS25 Johnson-range bound supplies a safe one-sided MCA witness whenever
-its explicit numerical upper bound is at most the requested threshold. -/
+/-- Builds a one-sided MCA witness from the Reed--Solomon Johnson-range bound whenever its
+explicit numerical upper bound is at most the requested threshold. -/
 noncomputable def McaLowerWitness.ofJohnsonRangeBound
     (domain : ι ↪ F) (k : ℕ) (δ ε_star : ℝ≥0)
     (hk : 1 < k) (hδ_pos : 0 < δ)
@@ -45,7 +48,7 @@ noncomputable def McaLowerWitness.ofJohnsonRangeBound
     McaLowerWitness (ReedSolomon.code domain k) ε_star :=
   McaLowerWitness.ofLe hδ_le_one
     (le_trans
-      (rs_mcaError_le_in_johnsonRange domain k δ hk hδ_pos hδ_johnson)
+      (rs_mcaError_le_in_johnson_range domain k δ hk hδ_pos hδ_johnson)
       hle)
 
 end ProximityGap.GrandChallenges

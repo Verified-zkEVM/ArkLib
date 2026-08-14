@@ -92,9 +92,10 @@ manuscript, not to the original sources it cites — those get their own keys (`
   in `InformationSetLowerBound.lean`.
 - **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
-  connections on the canonical error and list-size carriers. `LineDecoding.lean` formalizes
-  Definition 4.20 and its externally sourced MCA consequence. The prize witness consuming the
-  BCHKS25 upper bound is deliberately isolated in `GrandChallenges/CapacityBounds.lean`.
+  connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
+  close-and-aligned formulation from GG25 Definition 3.1 and its MCA consequence; this corrects
+  the missing close-set intersection in ABF26 Definition 4.20. The prize witness consuming the
+  BCHKS25 upper bound is isolated in `GrandChallenges/CapacityBounds.lean`.
 - **§3.15 and the KKH appendix.** `ListDecodability/Bounds/KKH26.lean` contains the concrete
   useful-family and sum-set templates; `KKH26Asymptotic.lean` derives the asymptotic list lower
   bound while carrying finite-field/smooth-domain existence as an explicit hypothesis.
@@ -168,8 +169,7 @@ manuscript, not to the original sources it cites — those get their own keys (`
 
 ## Known Divergences From ArkLib
 
-Three defects in the paper have been validated with compiled counterexamples, reproduced below.
-All three are handled in the Lean; all three are worth reporting upstream.
+Four source discrepancies affect ArkLib's formal interface. ArkLib uses the corrected forms.
 
 1. **Definition 3.1's list factor is inverted** (`ℓ/(ℓ−1)` for `(ℓ−1)/ℓ`) — see Version Notes.
    Fixed in Lean; already fixed upstream.
@@ -193,10 +193,20 @@ All three are handled in the Lean; all three are worth reporting upstream.
    (compiled refutation: `ZMod 5`, `domain = (0, 1)`, `s = 3`, `k = 2`, `ω = 2` a generator, so
    `Σ dim Aᵢ / n = 1/2 > 1/3 = dim A · τ(1)`). In ArkLib this is excluded as a side effect of
    the strengthened `Admissible` (the intra-orbit clause rules out `α = 0` for `s ≥ 2`), so the
-   Lean statement is correct as it stands — but the clause is load-bearing for T2.18, which
-   the Lean docstring should say and which is the newest of the three findings.
+   Lean statement is correct as it stands — but the clause is load-bearing for T2.18.
    Note that `GK16` itself is not affected by (b): its §4.2 setup requires `F_q(α) = F_{q^r}`
    with `|S_α| = r·t`, which excludes `α = 0`.
+4. **Definition 4.20 omits the close-set intersection required by line decoding.** Its printed
+   conclusion counts every challenge satisfying affine alignment, even when the sampled line is
+   not close to the selected codeword. GG25 Definition 3.1 counts challenges satisfying both
+   proximity and alignment, and GG25 Theorem 3.5 proves the MCA implication for that definition.
+   The printed ABF26 pair is false: for the zero code of length two over `𝔽₃`, take
+   `δ = 1/2`, `a = 1`, and `b = n+1 = 3`. The printed line-decodability condition holds because
+   every codeword family is identically zero and hence aligns on all three challenges. An ambient
+   affine line whose two coordinates vanish at distinct challenges nevertheless has MCA bad-event
+   probability at least `2/3`, exceeding the claimed `a/|F| = 1/3`. Consequently
+   `IsLineDecodable` and `IsLineDecodable.mcaError_le` follow GG25 rather than the printed ABF26
+   definition and theorem.
 
 Directions in which ArkLib is *weaker* than the paper (all deliberate, none unsound):
 

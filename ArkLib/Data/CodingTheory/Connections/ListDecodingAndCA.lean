@@ -10,49 +10,24 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
-# Connections between list decoding and correlated agreement (ABF26 §5)
+# Connections between list decoding and correlated agreement
 
-External-admit *statements* for the §5 theorems that link list-size bounds to
-correlated-agreement error bounds and vice versa. From ABF26 (Arnon-Boneh-Fenzi,
-*Open Problems in List Decoding and Correlated Agreement*, 2026), §5.
+This module relates the maximized list size `Code.Lambda` to the numeric CA and MCA errors. It
+contains source-facing bounds for general linear and Reed--Solomon codes, together with one
+in-tree real-radius corollary of the integer-radius CS25 statement.
 
-These four theorems directly bridge the Grand List Decoding Challenge and the
-Grand MCA Challenge of §1. T5.1 turns a list-size bound into an MCA bound;
-T5.2 / T5.3 turn CA bounds into list-size bounds; T5.4 demonstrates that the
-implication "list-decoding ⇒ CA" cannot be tight in general.
+## Main statements
 
-## Main statements (external admits)
+- `linear_mcaError_le_of_Lambda_le` turns a list-size bound below the relative minimum distance
+  into an affine-line MCA bound.
+- `rs_Lambda_le_card_of_epsCa_lt` bounds an RS list by the field size from a small CA error.
+- `rs_Lambda_extended_le_of_epsCa_int_radius` is the integer-radius CS25 bound for a related RS
+  code; `rs_Lambda_extended_le_of_epsCa` is its real-radius corollary.
+- `rs_epsCa_large_below_johnson_radius` separates list decoding from CA for characteristic-two
+  Reed--Solomon codes.
 
-- `linear_mcaError_le_of_Lambda_le` — ABF26 T5.1 [GCXK25 Thm 3]: list decoding at
-  `δ` (below the relative minimum distance of `C`, per the source) with list size `L`
-  implies `ε_mca(C, 1 - √(1-δ+η)) ≤ (L²·δ·n + 1/η)/|F|`.
-- `rs_Lambda_le_card_of_epsCa_lt` — ABF26 T5.2 [BCHKS25 Thm 1.9]:
-  `ε_ca < 1/(2n)` below the source's joint-distance boundary implies
-  `|Λ(C, δ)| ≤ |F|`.
-- `rs_Lambda_extended_le_of_epsCa_intRadius` — [CS25 Thm 2], the source's native
-  integer-radius form: CA for `RS[F, L, k]` at radius `f/n` with `f < n-k-1` and error
-  parameter `ε < (|F|-n)/(k·|F|)` implies `|Λ(RS[F, L, k+1], f/n)| ≤ ⌈ε|F|(|F|-n) /
-  (|F|-n-kε|F|)⌉`. This is the external admit.
-- `rs_Lambda_extended_le_of_epsCa` — ABF26 T5.3 [CS25 Thm 2]: small `ε_ca` for
-  `RS[F, L, k]` implies a quantitative list-size bound for the related code
-  `RS[F, L, k+1]`. **Not an admit**: derived in-tree from the native form above
-  (radius regime corrected to the source's `δ < (n-k-1)/n`; PAPER_REVS.md finding #8).
-- `rs_epsCa_large_below_johnsonRadius` — ABF26 T5.4 [BenSassonGKS20 Lem 3.3]:
-  characteristic-2 RS
-  codes with rate `1/8` have `ε_ca(C, 1 - ρ^{1/3}) ≥ 1 - 1/|F|`, separating list
-  decoding from CA.
-
-## Coercion conventions
-
-Each statement bounds an `ENNReal`-valued error (or `Lambda`) in terms of a real-valued
-numeric expression. To wire real expressions into the formal APIs we use:
-
-- `ENNReal.ofReal x` when `x : ℝ` is the RHS of a `≤` / `<` / `=`. This truncates
-  negative `x` to `0`, which only matters in degenerate parameter regimes where the
-  paper's bound is vacuous anyway.
-- `mcaError` directly at real radii for MCA statements, preserving the source expression.
-- `x.toNNReal` only where a CA statement uses the legacy `epsCa` interface and its radius
-  is provably nonnegative in the source regime.
+Real-valued numeric bounds are embedded into `ENNReal` with `ENNReal.ofReal`. MCA statements use
+the real-radius `mcaError`; CA statements use the nonnegative-radius `epsCa` interface.
 
 ## References
 
@@ -78,42 +53,12 @@ section ListImpliesMCA
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **ABF26 Theorem 5.1 [GCXK25 Theorem 3].** List decoding implies MCA.
-
-Let `C ⊆ F^n` be a linear code and let `δ, η ∈ (0, 1)`. If `|Λ(C, δ)| ≤ L`, then
+/-- A list-size bound below the relative minimum distance implies an affine-line MCA bound:
 
   `ε_mca(C, 1 - √(1 - δ + η)) ≤ (L²·δ·n + 1/η) / |F|`
 
-The conclusion's proximity radius `1 - √(1 - δ + η)` is the "Johnson lift" of `δ`
-(plus the `η` slack). For Reed-Solomon codes this implies MCA up to the "2 Johnson"
-regime via Corollary 3.3; for random RS codes (which list-decode to capacity by
-Theorem 3.6) it implies MCA for random RS up to the Johnson bound.
-
-The conclusion uses the canonical real-radius `mcaError` directly. In particular, no
-`toNNReal` truncation or extra `η ≤ δ` hypothesis is needed when the displayed Johnson
-lift is negative; this preserves the source's quantifiers over `δ, η ∈ (0,1)`.
-
-**2026-07-18 fix (review finding B01) — restored source hypothesis
-`δ < Δ_C`.** GCXK25 Theorem 3 reads: "Let `C ⊆ F_q^n` be a linear code
-with minimum relative distance `Δ_C`. `p < Δ_C` and suppose `C` is
-`(p, L)` list-decodable. `ε > 0`, `δ ≤ 1 - √(1 - p + ε)`. […] Then
-`|Bad(π₁, π₂, δ)| < L²·p·n + 1/ε`." (Notation map: paper `p` = our `δ`,
-paper `ε` = our `η`, paper's `(p, L)` list-decodability [GCXK25 Def 5]
-= `Λ(C, δ) ≤ L`, paper `Δ_C` [GCXK25 Def 3, min relative distance over
-distinct codeword pairs] = `Code.minDist C / n`.) The requirement
-`p < Δ_C` is part of the source theorem; ABF26's restatement
-(tex `thm:list-decoding-implies-mca`, which only assumes
-`δ, η ∈ (0, 1)`) omits it, and this admit had mirrored the omission.
-The hypothesis `_hδ_lt_dist` restores the source form. PAPER_REVS.md
-finding #7 records the upstream (tex) omission.
-
-**Kept conservatively (2026-07-21 review).** `_hδ_lt_dist` is retained, not broadened
-back to the tex's `δ, η ∈ (0,1)`: the paper's printed form has not been verified true
-without it (above the code distance the list radius/`Λ(C,δ)` behaviour is exactly what
-GCXK25's `p < Δ_C` guards), so it is treated as an implicit source assumption rather than
-a droppable one. Do not drop it without a first-hand GCXK25 re-derivation.
-
-Admitted as an external result. -/
+The radius is real-valued, so no truncation is needed when the displayed expression is negative.
+The strict hypothesis `δ < Δ_C` is part of the source theorem. -/
 theorem linear_mcaError_le_of_Lambda_le
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
@@ -134,22 +79,12 @@ section CAImpliesList
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **ABF26 Theorem 5.2 [BCHKS25 Theorem 1.9].** Small CA error implies small list size.
-
-Let `C := RS[F, L, k]` be a Reed-Solomon code with rate `ρ` and let `δ ∈ (0, 1-ρ)`.
-If
+/-- A sufficiently small CA error bounds the Reed--Solomon list size by the field size. If
 
   `ε_ca(C, δ_fld = δ + 2/n, δ_int) < 1/(2n)`
 
-then
-
-  `|Λ(C, δ)| ≤ |F|` .
-
-The source defines the list-decoding radius using list size `≤ L`, so taking `L = |F|`
-licenses a non-strict conclusion. Its witness has joint distance
-`≥ 1 - ρ - 1/n`; therefore the interleaved threshold is an explicit parameter strictly
-below that boundary, rather than the unsafe endpoint printed by ABF26. Admitted as an
-external result. -/
+then `Λ(C, δ) ≤ |F|`. The interleaved radius is strictly below `1 - ρ - 1/n`, the
+joint-distance boundary supplied by the source. -/
 theorem rs_Lambda_le_card_of_epsCa_lt
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (δ_int : ℝ≥0)
     (_hδ_pos : 0 < δ)
@@ -165,30 +100,13 @@ theorem rs_Lambda_le_card_of_epsCa_lt
     Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ ≤ (Fintype.card F : ℕ∞) := by
   sorry -- ABF26-T5.2; external admit [BCHKS25 Thm 1.9].
 
-/-- **[CS25 Theorem 2], native integer-radius form.** CS25 Theorem 2 reads: "If
-`RS(F_q, D, k)` satisfies correlated agreement over lines with `f < n - k - 1` errors
-with error parameter `ε < (q - n)/kq`, then `RS(F_q, D, k + 1)` is `(f/n, L)`-list
-decodable, where `L = ⌈εq(q - n) / (q - n - kεq)⌉`."
+/-- Integer-radius CA-to-list-size bound for related Reed--Solomon codes:
 
-Notation map: `q = |F|`, `n = |D| = |ι|`; CS25's `RS(F, D, k)` is evaluations of
-polynomials of degree at most `k - 1` = `ReedSolomon.code domain k`; "satisfies
-correlated agreement over lines with `f` errors with error parameter `ε`" (cf. CS25
-Thm 1.4 / Def 2: `Pr_z[Δ(u₀ + z·u₁, C) ≤ f] > ε` implies joint agreement on a
-subdomain of density `≥ 1 - f/n`) = `ε_ca(C, f/n, f/n) ≤ ε` (see
-`δ_ε_correlatedAgreementAffineLines_iff_epsCA_le`); `(f/n, L)`-list decodability
-(CS25 Def 1: every Hamming ball of radius `f/n·n = f` contains `≤ L` codewords)
-= `Λ(RS[F, L, k+1], f/n) ≤ L`.
+  `Λ(RS(k+1), f/n) ≤ ⌈εq(q-n)/(q-n-kεq)⌉`.
 
-The integer hypothesis `f < n - k - 1` is stated as `f + k + 1 < n` (same statement
-over `ℤ`, avoiding truncated `ℕ` subtraction). Note that `0 ≤ ε` (forced by the
-`toReal ≤ ε` hypothesis) together with `ε < (q-n)/(kq)` forces `n < q`, so the
-conclusion's denominator `q - n - kεq > 0` and the bound is never a `/0 = 0` artifact.
-
-This is the source-faithful admit backing ABF26 Theorem 5.3; the paper-shaped
-real-radius corollary `rs_Lambda_extended_le_of_epsCa` is *derived* from it
-below (2026-07-18, review finding B02; PAPER_REVS.md finding #8). Admitted as an
-external result. -/
-theorem rs_Lambda_extended_le_of_epsCa_intRadius
+The hypotheses `f + k + 1 < n` and `ε < (q-n)/(kq)` are the source's native parameter
+conditions. The real-radius theorem below is derived from this statement. -/
+theorem rs_Lambda_extended_le_of_epsCa_int_radius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
     (_hk_pos : 0 < k)
     (_hf_lt : f + k + 1 < Fintype.card ι)
@@ -245,46 +163,14 @@ private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 
   unfold Lambda
   exact iSup_congr fun y => by rw [hset y]
 
-/-- **ABF26 Theorem 5.3 [CS25 Theorem 2].** CA error converts to list size for related RS.
-
-Let `C := RS[F, L, k]` and `C⁺ := RS[F, L, k+1]` be Reed-Solomon codes with `|L| = n`.
-For `δ ∈ (0, (n-k-1)/n)` and `η ∈ [0, 1)`, if
+/-- A real-radius corollary of `rs_Lambda_extended_le_of_epsCa_int_radius`. For
+`δ ∈ (0, (n-k-1)/n)` and `η ∈ [0,1)`, if
 
   `ε_ca(C, δ) ≤ η · (1/k - n/(k·|F|))`
 
-then
-
-  `|Λ(C⁺, δ)| ≤ ⌈|F|/(1-η) · ε_ca(C, δ)⌉`
-
-Pivots CA on `C` to a list-size bound on the extended code `C⁺`.
-
-**Not an external admit** (2026-07-18, review finding B02): this is derived in-tree
-from the source-native `rs_Lambda_extended_le_of_epsCa_intRadius` by instantiating the integer
-radius at `f := ⌊δ·n⌋` and `ε := ε_ca(C, δ)`, using the `1/n`-quantisation of both
-`ε_ca` (`epsCa_eq_of_floor_eq` + `epsCa_mono_left`) and `Λ`
-(`Lambda_eq_floor_div_card`), plus ceiling monotonicity for the bound
-`εq(q-n)/(q-n-kεq) ≤ q/(1-η)·ε` (valid because `ε_ca ≤ η(q-n)/(kq)`).
-
-**Paper divergences** (PAPER_REVS.md finding #8):
-- ABF26's tex states the radius regime as `δ ∈ (0, δ_min(C))` with
-  `δ_min = (n-k+1)/n`; CS25 Theorem 2 only licenses the integer radius `f < n-k-1`,
-  i.e. `δ < (n-k-1)/n` — two `1/n` grid steps tighter. The hypothesis `hδ_radius`
-  uses the source's regime. Otherwise the tex form matches the source: the tex
-  hypothesis `ε_ca ≤ η(1/k - n/(k|F|)) = η(q-n)/(kq)` with `η < 1` implies the
-  source's strict `ε < (q-n)/(kq)`, and the tex conclusion `⌈q/(1-η)·ε_ca⌉` dominates
-  the source's `⌈εq(q-n)/(q-n-kεq)⌉`.
-- Added hypothesis `n < |F|` (the evaluation domain is a *proper* subset of the
-  field): the tex leaves it implicit, but the strictness step above needs
-  `(q-n)/(kq) > 0`. At `n = |F|` the tex hypothesis would force `ε_ca = 0`, which no
-  proper code attains (`ε_ca ≥ 1/|F|` via the `γ = 0` point of a line through a word
-  far from the code), so no non-vacuous instance is lost.
-
-**Kept conservatively (2026-07-21 review).** The `(n-k-1)/n` radius is retained, not
-widened to the tex's `δ_min`. This theorem is *derived* (not admitted) from the
-source-native integer form, so the source regime is also the regime in which the
-derivation is valid — the two extra `1/n` grid steps the tex allows are not merely
-unverified but sit at the unique-decoding boundary where CS25 gives no guarantee.
-Widening the radius would make the derivation fail, not silently admit a falsehood. -/
+then `Λ(RS(k+1), δ) ≤ ⌈|F|/(1-η) · ε_ca(C, δ)⌉`. The proof uses the `1/n` quantization
+of `epsCa` and `Lambda`. The strict radius bound and `n < |F|` ensure that the integer theorem's
+radius and denominator hypotheses hold. -/
 theorem rs_Lambda_extended_le_of_epsCa
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (η : ℝ)
     (hk_pos : 0 < k)
@@ -362,7 +248,7 @@ theorem rs_Lambda_extended_le_of_epsCa
     ENNReal.toReal_mono (epsCa_ne_top C _ _) h_eps_le
   -- Apply the source-native theorem at `f` and `ε`.
   have hmain :=
-    rs_Lambda_extended_le_of_epsCa_intRadius
+    rs_Lambda_extended_le_of_epsCa_int_radius
       (domain := domain) (k := k) (f := f) (ε := ε)
       hk_pos hf_lt hε_lt h_eps_toReal
   -- `Λ` at `δ` equals `Λ` at the grid point `f/n`.
@@ -392,24 +278,14 @@ end CAImpliesList
 
 section ListVsCAseparation
 
-/-- **ABF26 Theorem 5.4 [BenSassonGKS20 Lemma 3.3].** List decoding does **not** tightly imply CA.
-
-For all fields `F` of characteristic 2, the Reed-Solomon code `C := RS[F, F, |F|/8]`
-of rate `ρ = 1/8` (using `F` itself as the evaluation domain — a "full-domain" RS)
-satisfies
+/-- A characteristic-two Reed--Solomon family separating list decoding from CA. For the
+full-domain code of rate `ρ = 1/8`,
 
   `ε_ca(C, 1 - ρ^{1/3}) ≥ 1 - 1/|F|` .
 
-In particular `1 - ρ^{1/3} = 1 - (1/8)^{1/3} = 0.5`; the Johnson bound for the same
-code sits at `1 - √ρ - η ≈ 0.55`, where the list size is `≈ 40` (constant in `|F|`).
-This witnesses a code that is list-decodable at the Johnson radius yet has CA error
-≈ 1 at a smaller radius — separating list decoding from CA in general.
-
-The source's two distinguished words both have distance exactly `1 - ρ^{2/3}` from
-the code. Since `epsCa` guards on non-strict joint distance, the source licenses every
-interleaved threshold strictly below that boundary. The no-loss radius
-`δ_int = 1 - ρ^{1/3}` is a special case by monotonicity. Admitted as an external result. -/
-theorem rs_epsCa_large_below_johnsonRadius
+The interleaved threshold is strictly below `1 - ρ^{2/3}`, because the source supplies joint
+distance equal to that boundary while `epsCa` uses a non-strict guard. -/
+theorem rs_epsCa_large_below_johnson_radius
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [CharP F 2]
     (_hF_eq_ι : Fintype.card F = Fintype.card ι)

@@ -84,9 +84,8 @@ Four statements are admitted with a tagged `sorry`, never an `axiom`: the random
 (`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
 (`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
 (`rs_random_domain_lambda_le`, [AGL24]), plus the number-theoretic KKH sum-set estimate
-(`two_pow_mul_choose_le_card_sumSet`, [KKH26] Lemma 1). Each admit's docstring carries the
-source statement, the variable map into ArkLib's vocabulary, and a note on every place the
-formalised statement differs from the printed one.
+(`two_pow_mul_choose_le_card_sumSet`, [KKH26] Lemma 1). Source locators and formulation notes
+are recorded in the defining modules and knowledge-base pages.
 
 One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
 than its input: `random_linear_lambda_lower_exists`.

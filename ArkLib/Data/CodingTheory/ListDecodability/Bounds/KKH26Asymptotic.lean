@@ -10,79 +10,36 @@ import Mathlib.Analysis.SpecialFunctions.Log.Base
 import Mathlib.Analysis.SpecificLimits.Normed
 
 /-!
-# ABF26 `thm:kikh-asymptotic-list-lower-bound` [KKH26]
+# Asymptotic Reed--Solomon list-size lower bound
 
-Formalization of ABF26's asymptotic list-size lower bound (Arnon-Boneh-Fenzi, *Open Problems
-in List Decoding and Correlated Agreement*, 2026, tex `thm:kikh-asymptotic-list-lower-bound`).
-[KKH26] is Krachun-Kazanin-Haböck, *Failure of proximity gaps close to capacity*, ePrint
-2026/782.
-
-## Statement (tex, verbatim)
-
-> For `ρ ∈ (0,1)` and `c ∈ ℕ` constants, there exists an RS code `C = RS[F, L, k]` of rate `ρ`
-> and a word `w` with `|List(C, δ_min(C) − O_{ρ,c}(1/log n), w)| ≥ n^c` (`n = |L|`).
+For every rate `ρ ∈ (0,1)` and exponent `c`, this module constructs arbitrarily large smooth
+Reed--Solomon codes whose list size is at least `n^c` within `O(1/log n)` of minimum distance.
 
 ## Main declaration
 
-- `exists_rs_asymptotic_Lambda_lower_bound` — the theorem above, stated over the in-tree
-  `Code.Lambda` list notion that `choose_le_Lambda_rs_vanilla` bounds, with the
-  asymptotics pinned by an **explicit uniform constant** `Kc` (Lean lacks a generic `O(·)`),
-  matching the template of `ProximityGap/CapacityBounds.lean`'s
-  `exists_rs_epsCa_large_near_capacity`. It is *derived in-tree* from
-  `CodingTheory.AdditiveSetListDecoding.choose_le_Lambda_rs_vanilla_of_smooth`
-  (ABF26 `cor:kikh-vanilla`); the
-  only non-derived input is the number-theoretic existence of arbitrarily large smooth
-  evaluation domains, carried as the hypothesis `supply` (see design notes).
+- `exists_rs_asymptotic_Lambda_lower_bound` gives the family statement over `Code.Lambda`,
+  with an explicit uniform constant for the `O(1/log₂ n)` loss. It is proved from
+  `choose_le_Lambda_rs_vanilla_of_smooth`; existence of arbitrarily large smooth domains is
+  carried by the `supply` hypothesis.
 
-## Proof structure (following the tex proof)
+## Proof structure
 
-Let `Cst := 2(c+1)/H₂(ρ)`; the tex sets `d := 2^⌊s/Cst − log₂ s⌋`, `n := d·s`, `s` a power
-of two. Because ArkLib's `ReedSolomon.Smooth` domains have size `2^K` (`Smooth.h_card_pow2`),
-we work throughout with `h = 2^b`, `d = 2^a`, `n = 2^{a+b}`, so `log₂ n = a + b` is an *exact*
-integer and the tex's floors/real-logs become clean arithmetic. The counting core is:
+The construction uses `h = 2^b`, `d = 2^a`, and `n = 2^{a+b}`, so `log₂ n = a+b` exactly.
+Its main components are:
 
-1. `choose_ge_div_pow` — the classical `(s/t)^t ≤ C(s,t)` (product-of-ratios; not in mathlib).
-2. `core_ineq` — `n^{c+1} ≤ (h/khat)^{khat}` once `khat ≈ ρ·h` and `(c+1)·log₂ n ≤ H₂(ρ)·h/2`.
-   The tex's `O_ρ(log s)` slack is captured *tightly* via `Real.log (1+x) ≤ x`
-   (`Real.log_le_sub_one_of_pos`), which yields the constant `−2` exactly.
-3. `exists_asymptotic_params` — chooses `b` (via `Filter.Eventually`, using
-   `tendsto_pow_const_div_const_pow_of_one_lt` for `b / 2^b → 0`), then `a`, `k = ⌊ρ·n⌋+1`,
-   `khat = ⌈k/d⌉`, and discharges the `cor:kikh-vanilla` hypotheses, the rate band, the slack
-   bound, and `n^c ≤ C(h, khat)`.
+- `choose_ge_div_pow`, the classical lower bound `(s/t)^t ≤ C(s,t)`;
+- `core_ineq`, the entropy-scale comparison between `n^{c+1}` and `(h/khat)^khat`;
+- `exists_asymptotic_params`, which chooses `a`, `b`, `k`, and `khat` and proves the rate,
+  radius-loss, and binomial bounds.
 
-The main theorem then feeds these parameters and a smooth domain (from `supply`) into
-`choose_le_Lambda_rs_vanilla_of_smooth`.
+## Formulation
 
-## Design notes
+- The radius loss has only the source-supported upper bound `slack ≤ Kc/log₂ n`; no lower
+  `Θ(1/log n)` bound is claimed.
 
-- **`O(·)` vs `Θ(·)`.** The tex writes `O_{ρ,c}(1/log n)` — an *upper* bound on the radius
-  loss (its proof only bounds the loss `≤ 1/s + 1/n`). We follow the tex and pin `slack` from
-  *above* only (`slack ≤ Kc / log₂ n`), stating the list bound at the exact radius
-  `δ_min − slack` produced by `cor:kikh-vanilla` (`slack` = the actual loss). This differs from
-  the sibling `exists_rs_epsCa_large_near_capacity` (Theorem 4.16), which adds a *lower*
-  pin to assert `Θ`; that lower pin is genuinely false for the list construction here
-  (the loss can be as small as `1/n`), so we do not claim it — see "Deviations from tex"
-  below.
+- The rate is represented by the satisfiable rounding band `ρ < k/n ≤ ρ+1/n`.
 
-- **Rate band.** `ρ < k/n ≤ ρ + 1/n`, i.e. `|k − ρn| ≤ 1` with `k = ⌈ρn⌉` — the tex's exact
-  rate `ρ` (unsatisfiable for irrational `ρ`), matching `exists_rs_epsCa_large_near_capacity`.
-
-- **Field/domain existence carried, not discharged.** Producing arbitrarily large *smooth*
-  Reed-Solomon evaluation domains needs a finite field `F` with `2^K ∣ |F| − 1` (a prime
-  `p ≡ 1 (mod 2^K)` by Dirichlet, or a suitable prime power), which mathlib does not supply in
-  usable form. Following the guidance for `cor:kikh-vanilla` (whose smooth wrapper carries the
-  domain via the `Smooth` instance), we carry this as the hypothesis `supply` rather than
-  admitting it with a `sorry`. Every *mathematical* step of the derivation is proved. Note the
-  list bound is entirely field-size-agnostic (unlike Theorem 4.16's `ε_ca` form, it needs no
-  `|F| = poly(n)`), so `supply` asks only for arbitrarily large smooth domains.
-
-## Deviations from tex (faithfulness)
-
-- We formalize the tex statement's `O_{ρ,c}(1/log n)` as an explicit *upper* pin (no lower pin);
-  this is faithful to the tex's `O(·)` and its proof, and is strictly weaker than — hence
-  implied by the same construction as — the tex's informal reading. No statement was weakened
-  to become trivially provable: the list bound `n^c ≤ Λ(C, δ_min − slack)` with `slack ≤ Kc/log₂ n`
-  is the full content.
+- The `supply` hypothesis isolates finite-field existence; all remaining steps are proved in-tree.
 
 ## References
 
@@ -99,10 +56,8 @@ namespace CodingTheory.AdditiveSetListDecoding
 
 /-! ## Counting helpers (not in mathlib) -/
 
-/-- Classical binomial lower bound `(s/t)^t ≤ C(s,t)` for `1 ≤ t ≤ s`, via the
-product-of-ratios argument `C(s,t) = ∏_{i<t} (s−i)/(t−i)` with each factor `≥ s/t`.
-Mathlib has only `Nat.pow_le_choose` (`(n+1−r)^r / r! ≤ C(n,r)`), whose `r!` denominator is
-too lossy for the entropy-scale bound needed here; this sharper form is proved directly. -/
+/-- The classical binomial lower bound `(s/t)^t ≤ C(s,t)` for `1 ≤ t ≤ s`, proved by
+comparing the factors in `C(s,t) = ∏_{i<t} (s-i)/(t-i)`. -/
 theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
     ((s : ℝ) / t) ^ t ≤ (s.choose t : ℝ) := by
   have hnat : ∏ i ∈ range t, (t - i) = t.factorial := by
@@ -133,8 +88,7 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
     nlinarith [Nat.cast_nonneg (α := ℝ) i, hts']
 
 /-- Analytic core: `(2^K)^{cp} ≤ (2^b / khat)^{khat}` when `khat ≈ ρ·2^b` and
-`cp·K·log 2 ≤ ρ·log(1/ρ)·2^b − 2`. The `−2` slack (the tex's `O_ρ(log s)`) is exactly
-absorbed by `Real.log (1 + x) ≤ x`. -/
+`cp·K·log 2 ≤ ρ·log(1/ρ)·2^b - 2`. -/
 theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (cp : ℕ) (hcp : 1 ≤ cp)
     (b K khat : ℕ) (hkhat1 : 1 ≤ khat)
     (hkhat_lo : ρ * 2 ^ b < (khat : ℝ)) (hkhat_hi : (khat : ℝ) ≤ ρ * 2 ^ b + 2)
@@ -194,10 +148,11 @@ theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (cp : ℕ) (hcp : 1
 
 set_option maxHeartbeats 1600000 in
 -- Long `Filter.Eventually`/`nlinarith`/`Real.log` chain over many hypotheses; raised limit.
-/-- **Parameter-selection lemma** for `thm:kikh-asymptotic-list-lower-bound`. For every rate
-`ρ ∈ (0,1)` and `c ∈ ℕ` there is an explicit constant `Kc > 0` and a threshold `b₀` such that
+/-- For every rate `ρ ∈ (0,1)` and `c ∈ ℕ`, there is a constant `Kc > 0` and a threshold
+`b₀` such that
 for every `b ≥ b₀` the parameters `a`, `k = ⌈ρ·2^{a+b}⌉`, `khat = ⌈k/2^a⌉` satisfy the
-hypotheses of `cor:kikh-vanilla` at `d = 2^a`, `h = 2^b`, `n = 2^{a+b}`, together with the rate
+hypotheses of `choose_le_Lambda_rs_vanilla_of_smooth` at `d = 2^a`, `h = 2^b`,
+`n = 2^{a+b}`, together with the rate
 band, the `O(1/log n)` slack bound, and the list target `n^c ≤ C(2^b, khat)`. -/
 theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c : ℕ) :
     ∃ (Kc : ℝ), 0 < Kc ∧ ∃ b₀ : ℕ, ∀ b : ℕ, b₀ ≤ b →
@@ -339,15 +294,14 @@ theorem exists_asymptotic_params (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c :
 
 set_option maxHeartbeats 1600000 in
 -- Large existential goal with many instance-carrying witnesses; raised limit.
-/-- **ABF26 `thm:kikh-asymptotic-list-lower-bound` [KKH26].** For every rate `ρ ∈ (0,1)` and
-`c ∈ ℕ`, given a supply of arbitrarily large smooth Reed-Solomon evaluation domains (the
-number-theoretic input; see the module docstring), there is an explicit constant `Kc > 0` such
+/-- For every rate `ρ ∈ (0,1)` and `c ∈ ℕ`, given arbitrarily large smooth Reed--Solomon
+evaluation domains, there is a constant `Kc > 0` such
 that for every `N` there is a smooth RS code `C = RS[F, L, k]` with block length `n = |L| ≥ N`,
 rate within `1/n` of `ρ`, and a radius loss `slack ≤ Kc / log₂ n` for which
 
   `n^c ≤ |Λ(C, δ_min(C) − slack)|`.
 
-Derived in-tree from `choose_le_Lambda_rs_vanilla_of_smooth` (`cor:kikh-vanilla`). -/
+This is derived from `choose_le_Lambda_rs_vanilla_of_smooth`. -/
 theorem exists_rs_asymptotic_Lambda_lower_bound
     (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c : ℕ)
     (supply : ∀ K : ℕ, ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
