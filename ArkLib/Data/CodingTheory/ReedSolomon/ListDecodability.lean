@@ -9,7 +9,6 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 
 /-!
 # The Johnson-type list-decoding bound for Reed–Solomon codes
- .
 
   This file proves that the Reed–Solomon code
   `RS[F, L, m]` of rate `ρ` is `(1 - √ρ - η, 1/(2η√ρ))`-list decodable for every `η > 0`

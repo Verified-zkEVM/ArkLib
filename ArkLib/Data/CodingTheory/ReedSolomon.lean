@@ -243,43 +243,6 @@ lemma evalOnPoints_mem_code_of_natDegree_lt {α : ι ↪ F} {p : F[X]} (h_deg : 
   evalOnPoints α p ∈ code α n :=
   mem_code_of_polynomial_of_natDegree_lt_of_eval p h_deg (by simp [evalOnPoints])
 
-/-- Two distinct Reed–Solomon codewords of degree `< m` agree in fewer than `m` positions. -/
-lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
-  {domain : ι ↪ F} {m : ℕ} {c c' : ι → F}
-  (hc : c ∈ ReedSolomon.code domain m) (hc' : c' ∈ ReedSolomon.code domain m) (hne : c ≠ c') :
-  Code.agree c c' < m := by
-  classical
-  obtain ⟨p, hp, hpc⟩ := ReedSolomon.mem_code_iff_exists_polynomial.mp hc
-  obtain ⟨q, hq, hqc⟩ := ReedSolomon.mem_code_iff_exists_polynomial.mp hc'
-  have hpq : p ≠ q := by
-    rintro rfl
-    exact hne (hpc.trans hqc.symm)
-  have hr0 : p - q ≠ 0 := sub_ne_zero.mpr hpq
-  have hrdeg : (p - q).degree < (m : ℕ) :=
-    lt_of_le_of_lt (Polynomial.degree_sub_le p q) (max_lt hp hq)
-  have hcval : ∀ i, c i = p.eval (domain i) := fun i ↦ congrFun hpc i
-  have hc'val : ∀ i, c' i = q.eval (domain i) := fun i ↦ congrFun hqc i
-  have hcard : (Finset.univ.filter fun i => c i = c' i).card ≤ (p - q).roots.toFinset.card := by
-    refine Finset.card_le_card_of_injOn (fun i => domain i) ?_ ?_
-    · intro i hi
-      simp only [Finset.coe_filter, Finset.mem_univ, true_and, Set.mem_setOf_eq] at hi
-      simp only [Finset.mem_coe, Multiset.mem_toFinset, Polynomial.mem_roots hr0]
-      have hval : p.eval (domain i) = q.eval (domain i) := by
-        rw [←hcval i, ←hc'val i]; exact hi
-      simp [Polynomial.IsRoot, hval]
-    · exact fun i _ j _ h => domain.injective h
-  have hnat : (p - q).natDegree < m := by
-    rcases Nat.eq_zero_or_pos m with rfl | hm
-    · exfalso
-      have hbot : (p - q).degree = ⊥ := Nat.WithBot.lt_zero_iff.mp (by simpa using hrdeg)
-      exact hr0 (Polynomial.degree_eq_bot.mp hbot)
-    · exact (Polynomial.natDegree_lt_iff_degree_lt hr0).mpr hrdeg
-  calc agree c c' = (Finset.univ.filter fun i => c i = c' i).card := rfl
-    _ ≤ (p - q).roots.toFinset.card := hcard
-    _ ≤ Multiset.card (p - q).roots := Multiset.toFinset_card_le _
-    _ ≤ (p - q).natDegree := Polynomial.card_roots' _
-    _ < m := hnat
-
 /-- **Monotonicity of `code` in the degree bound.** If `n ≤ m`, the degree-`n` Reed-Solomon code
 is contained in the degree-`m` code over the same domain. -/
 @[mono]
@@ -603,6 +566,25 @@ theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [Dec
             aesop
     omega
 
+/-- Two distinct Reed–Solomon codewords of degree `< m` agree in fewer than `m` positions. -/
+lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
+  {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+  (hc : c ∈ ReedSolomon.code α n) (hc' : c' ∈ ReedSolomon.code α n) (hne : c ≠ c') :
+  Code.agree c c' < n := by
+  by_cases hn : n = 0
+  · aesop
+  · by_cases hcard : Fintype.card ι = 0
+    · exfalso
+      exact hne <| funext <| fun i ↦ by
+        rw [Fintype.card_eq_zero_iff, isEmpty_iff] at hcard
+        simpa using hcard i
+    · have : NeZero n := ⟨hn⟩
+      have : Inhabited ι := ⟨Classical.choice <| by
+        aesop (add safe [(by rw [←Fintype.card_pos_iff]), (by omega)])⟩
+      have := minDist_eq_card_sub_min_add_1 (n := n) (α := α)
+      have := minDist_le_dist hc hc' hne
+      have := Code.agree_add_hammingDist (u := c) (v := c')
+      by_cases! hn : n ≤ Fintype.card ι <;> grind
 
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
 lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]

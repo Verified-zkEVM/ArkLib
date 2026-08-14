@@ -225,6 +225,11 @@ lemma agree_add_hammingDist :
     Finset.card_filter_add_card_filter_not (s := Finset.univ)
       (p := fun i ↦ u i = v i)
 
+/-- `agree` is the complement of `disagreementCols`. -/
+lemma agree_add_card_disagreementCols (u v : n → R) :
+  agree u v + (disagreementCols u v).card = Fintype.card n := by
+  simp [←hammingDist_eq_disagreementCols_card]
+
 @[simp]
 lemma agree_self : agree u u = Fintype.card n := by simp [agree, Finset.card_univ]
 
@@ -311,6 +316,10 @@ lemma pairDist_ge_code_mindist_of_ne {C : Set (n → R)} {u v : n → R}
 
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
+
+lemma minDist_le_dist {C : Set (n → R)} {u v : n → R}
+  (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
+  minDist C ≤ Δ₀(u, v) := Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩
 
 /-- Two codewords are equal if the coordinates on which they disagree are contained in a set
 of size less than the code's minimum distance. -/
