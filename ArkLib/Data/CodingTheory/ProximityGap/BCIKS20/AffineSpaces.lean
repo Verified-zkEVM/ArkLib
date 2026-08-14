@@ -1856,10 +1856,8 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
             -- Chain in ℝ: (n-1)/n ≤ δᵣ ≤ δ, δ + sqrtRate ≤ 1 ⟹ sqrtRate ≤ 1/n.
             -- But √(rate) > rate ≥ 1/n ⟹ sqrtRate > 1/n. Contradiction.
             have hv_dist' : (δᵣ(w, v) : ℝ≥0) ≤ δ := (hclose v hv).2
-            have hsqrt_le_one : ReedSolomon.sqrtRate 1 domain ≤ 1 := by
-              simp only [ReedSolomon.sqrtRate]
-              exact NNReal.sqrt_le_one.mpr (by exact_mod_cast
-                @DivergenceOfSets.reedSolomon_rate_le_one ι _ _ F _ _ domain)
+            have hsqrt_le_one : ReedSolomon.sqrtRate 1 domain ≤ 1 :=
+              ReedSolomon.sqrtRate_le_one 1 domain
             have h_add_le : δ + ReedSolomon.sqrtRate 1 domain ≤ 1 :=
               (le_tsub_iff_right hsqrt_le_one).mp (le_of_lt hδ)
             have h_add_real : (δ : ℝ) + (ReedSolomon.sqrtRate 1 domain : ℝ) ≤ 1 := by
