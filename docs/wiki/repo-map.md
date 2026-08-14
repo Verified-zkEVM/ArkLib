@@ -216,7 +216,8 @@ home_page/            site assets and assembled website root
   large-alphabet barrier.
 - ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
   `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds,
-  `ProximityGap/LineDecoding.lean` holds Definition 4.20 and Theorem 4.21, and
+  `ProximityGap/LineDecoding.lean` holds the GG25-corrected interfaces corresponding to ABF26
+  Definition 4.20 and Theorem 4.21, and
   `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
   that turn those admits into prize witnesses live below `ProximityGap/GrandChallenges/`, so the
   core `GrandChallenges.lean` grid and carrier API does not import the catalogue.

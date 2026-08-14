@@ -14,7 +14,7 @@ align with one affine pair of codewords. ArkLib follows [GG25] Definition 3.1, w
 event requires both proximity and alignment. The proximity conjunct is absent from [ABF26]
 Definition 4.20; without it, the stated MCA consequence is false. The discrepancy and a finite
 counterexample are recorded in the
-[ABF26 knowledge-base page](../../../../../docs/kb/papers/ABF26.md).
+[ABF26 knowledge-base page](../../../../docs/kb/papers/ABF26.md).
 
 ## Main definitions
 
@@ -75,7 +75,7 @@ def IsLineDecodable (C : Set (ι → A)) (δ : ℝ≥0) (a b : ℕ) : Prop :=
 
   `IsLineDecodable (F := F) C δ a (n+1) → mcaError(AffineLineGenerator F, C, δ) ≤ a / |F|`
 
-where `n = |ι|`. The hypotheses retain the source conditions `0 < δ < 1` and `n < |F|`. -/
+where `n = |ι|`. The hypotheses retain the source radius conditions `0 < δ < 1`. -/
 theorem IsLineDecodable.mcaError_le
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
