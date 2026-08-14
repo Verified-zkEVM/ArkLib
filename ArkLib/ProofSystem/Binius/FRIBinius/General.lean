@@ -23,6 +23,9 @@ The FRI-Binius IOPCS consists of the following phases:
 
 - [DP24] Diamond, Benjamin E., and Jim Posen. "Polylogarithmic Proofs for Multilinears over Binary
   Towers." Cryptology ePrint Archive (2024).
+
+This initial development assumes `ϑ ∣ ℓ'`. DP24 §5.2's early-termination variant removes that
+notational-convenience assumption. TODO: formalize that variant.
 -/
 
 namespace Binius.FRIBinius.FullFRIBinius
@@ -340,7 +343,8 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness :
 Closed form: `(κ + 2·ℓ')/|L| + 2^(ℓ'+𝓡)/|L| + (1/2 + 1/(2·2^𝓡))^γ`, decomposed as
 ring-switching batching (`κ/|L|`), core-interaction sumcheck + fold
 (`2·ℓ'/|L| + 2^(ℓ'+𝓡)/|L|`, Props 4.23), and query-phase proximity (`(…)^γ`, Prop 4.24).
-This formalization proves the stronger knowledge-soundness statement with the same scalar. -/
+This formalization proves the stronger knowledge-soundness statement with the same scalar through
+explicit round-by-round extractors for its phases; DP24 is cited here for the numerical bound. -/
 
 /-- Single-repetition proximity testing error `1/2 + 1/(2·2^𝓡)` (third factor of DP24 §5.2 (43)). -/
 def querySingleRepetitionError : ℝ≥0 :=

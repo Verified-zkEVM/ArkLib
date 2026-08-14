@@ -349,24 +349,7 @@ lemma probFailure_challengeQueryImpl_run {n : ℕ} {pSpec : ProtocolSpec n} {σ 
   simp only [StateT.run, liftM, ChallengeIdx, Challenge, ofPFunctor_toPFunctor,
     probFailure_of_liftM_PMF]
 
-/-- **Generic Safety Preservation Lemma for Stateful Implementations**
-
-If an oracle implementation is safe and support-faithful, then simulation preserves safety
-from the specification level to the implementation level.
-
-This is a key building block for completeness proofs: it shows that if the spec says
-"this computation never fails" and the implementation only returns valid values
-(support-faithful), then running the simulated implementation also never fails.
-
-**Parameters:**
-- `impl`: The stateful oracle implementation
-- `hImplSafe`: Each query implementation is safe (never fails)
-- `hImplSupp`: The implementation is support-faithful (only returns valid values)
-- `oa`: The oracle computation at the spec level
-- `s`: The current state
-- `h_oa`: The spec computation is safe
-
-**Conclusion:** The simulated computation is also safe. -/
+/-- A stateful `simulateQ` computation has zero failure probability. -/
 theorem simulateQ_preserves_safety_stateful
     {oSpec : OracleSpec ι} [IsUniformSpec oSpec] {σ : Type}
     (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -374,17 +357,8 @@ theorem simulateQ_preserves_safety_stateful
     Pr[⊥ | (simulateQ impl oa).run s] = 0 := by
   simp only [probFailure_of_liftM_PMF]
 
-/-- **Reverse Safety Preservation for Stateful Implementations**
-
-If the simulated stateful computation is safe and the implementation has the same support
-vec the specification, then the original specification computation is safe.
-
-This is the reverse direction of `simulateQ_preserves_safety_stateful`.
-
-**Note**: This requires support **equality** rather than just subset (⊆) because we need
-to extract witnesses: if a result is valid in the spec, we need to know that the implementation
-can actually produce it (surjectivity).
--/
+/-- An oracle computation has zero failure probability. This stateful alias is retained for
+callers that use the corresponding simulation lemma. -/
 lemma neverFails_of_simulateQ_stateful
     {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
     {α : Type} (oa : OracleComp oSpec α) :
@@ -2038,14 +2012,7 @@ lemma OptionT.exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : 
 -- same statement. The local duplicate that used to live here was dropped to avoid an
 -- "already declared" clash.
 
-/-- Distributes `simulateQ` over `Vector.mapM`.
-
-TODO: This proof is non-trivial because `Vector.mapM` is implemented via an auxiliary
-`mapM.go` function that doesn't decompose cleanly. Attempted approaches:
-- Vector induction produces `insertIdx` terms that don't match `mapM` structure
-- toArray representation doesn't work since we're proving equality of `OracleComp` values
-- Need either: (1) a lemma relating `simulateQ` to Array.mapM, or
-  (2) a custom induction principle, or (3) direct reasoning about `mapM.go`. -/
+/-- Distributes `simulateQ` over `Vector.mapM`. -/
 lemma simulateQ_array_mapM {ι ι' : Type} {spec : OracleSpec ι} {superSpec : OracleSpec ι'}
     (so : SimOracle.Stateless spec superSpec)
     {α β : Type} (f : α → OracleComp spec β) (xs : Array α) :

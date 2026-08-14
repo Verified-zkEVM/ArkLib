@@ -2449,7 +2449,6 @@ theorem queryOracleProof_perfectCompleteness {σ : Type}
       -- pure equalities now
     -- 1.C Handle the `let __discr ← proverOut ...`
     -- Note: Use simp instead of rw to avoid typeclass diamond issues with Fintype instances
-    -- erw [probFailure_liftComp]
     -- split;
     simp only [ChallengeIdx, Challenge, MessageIdx, bind_pure_comp, liftComp_eq_liftM,
       OptionT.mem_support_iff, toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run,
@@ -2685,7 +2684,7 @@ oracle (not close to RS codeword) passes the fold consistency check is bounded b
 - `h_no_bad_event`: No bad folding events occurred (Definition 4.20)
 
 This is the fundamental proximity testing bound used in the soundness proof. -/
-theorem prop_4_23_singleRepetition_proximityCheck_bound
+theorem prop_4_24_singleRepetition_proximityCheck_bound
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
@@ -2701,7 +2700,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
   -- Delegates to Soundness Prop 4.24 (Lemma 4.26 supplies the query-rejection property).
   have h_res :=
-    (Binius.BinaryBasefold.prop_4_23_singleRepetition_proximityCheck_bound
+    (Binius.BinaryBasefold.prop_4_24_singleRepetition_proximityCheck_bound
       (stmtIn := stmtIn) (oStmtIn := oStmtIn)
       (h_not_consistent := h_not_oracleFoldingConsistent)
       (h_no_bad := h_no_bad_event)
@@ -2735,7 +2734,7 @@ theorem singleRepetition_proximityCheck_bound
     queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) := by
   -- This is Proposition 4.24 from the archived DP24 PDF specialized to a single repetition.
   exact
-    prop_4_23_singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
+    prop_4_24_singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
       (stmtIn := stmtIn) (oStmtIn := oStmtIn)
       (h_not_oracleFoldingConsistent := h_not_oracleFoldingConsistent)
       (h_no_bad_event := h_no_bad_event)

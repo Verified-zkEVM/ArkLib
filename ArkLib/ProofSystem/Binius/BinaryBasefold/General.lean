@@ -20,6 +20,12 @@ Sequential composition of:
 
 * [Diamond, B.E. and Posen, J., *Polylogarithmic proofs for multilinears over binary towers*][DP24]
   Statement numbering follows the archived revision of [DP24].
+
+This initial development assumes `ϑ ∣ ℓ`. DP24 §5.2 removes that notational-convenience assumption
+via early termination. TODO: formalize that variant.
+
+At round zero, the strict relation used for perfect completeness is contained in the relaxed
+round-by-round relation used for knowledge soundness, so both guarantees apply to strict inputs.
 -/
 
 open AdditiveNTT Polynomial
@@ -111,6 +117,47 @@ noncomputable def fullOracleProof :
 variable {σ : Type} {init : ProbComp σ}
   {impl : QueryImpl []ₒ (StateT σ ProbComp)}
 
+omit [CharP L 2] [SampleableType L] in
+/-- At the initial frontier, strict completeness inputs satisfy the relaxed relation used by
+round-by-round knowledge soundness. -/
+theorem strictRoundRelation_subset_roundRelation_zero :
+    strictRoundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0
+      ⊆ roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (𝓑 := 𝓑) 0 := by
+  rintro ⟨⟨stmt, oStmt⟩, wit⟩ h_strict
+  simp only [strictRoundRelation, strictRoundRelationProp, Set.mem_setOf_eq,
+    strictOracleWitnessConsistency] at h_strict
+  obtain ⟨h_sumcheck, h_struct, h_strict_fold⟩ := h_strict
+  simp only [roundRelation, roundRelationProp, Set.mem_setOf_eq, masterKStateProp]
+  right
+  refine ⟨h_sumcheck, h_struct, ?_, ?_⟩
+  · have h_eq := QueryPhase.polyToOracleFunc_eq_getFirstOracle 𝔽q β
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := wit.t)
+      (i := (OracleFrontierIndex.mkFromStmtIdx (0 : Fin (ℓ + 1))).val)
+      (challenges := Fin.take (m := (OracleFrontierIndex.mkFromStmtIdx
+        (0 : Fin (ℓ + 1))).val) (v := stmt.challenges)
+        (h := by simp only [Fin.val_fin_le, OracleFrontierIndex.val_le_i]))
+      (oStmt := oStmt) h_strict_fold
+    dsimp only [firstOracleWitnessConsistencyProp]
+    rw [h_eq]
+    dsimp only [pair_UDRClose]
+    have h_dist_pos :
+        0 < BBF_CodeDistance 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+          (i := (0 : Fin r)) := by
+      rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+        (i := (0 : Fin r)) (h_i := by simp)]
+      omega
+    simp only [hammingDist_self, mul_zero, h_dist_pos]
+  · dsimp only [oracleFoldingConsistencyProp]
+    intro j hj
+    have h_count :
+        toOutCodewordsCount ℓ ϑ
+          (OracleFrontierIndex.mkFromStmtIdx (0 : Fin (ℓ + 1))).val = 1 := by
+      rw [OracleFrontierIndex.val_mkFromStmtIdx]
+      exact toOutCodewordsCountOf0 ℓ ϑ
+    omega
+
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
 theorem fullOracleReduction_perfectCompleteness (hInit : NeverFail init) :
   OracleReduction.perfectCompleteness
@@ -192,7 +239,9 @@ stack (Diamond–Posen ePrint 2024/504). Fold/query terms align with **Theorem 4
 
 Important audit note: DP24 states these as **soundness** terms. This file proves `knowledgeSoundness`
 with the same scalar error. Also, this module-level `ℓ` corresponds to the Basefold core variable
-count (paper `ℓ'` when embedded into Construction 5.1).
+count (paper `ℓ'` when embedded into Construction 5.1). The knowledge-soundness strengthening is
+supplied by the explicit round-by-round extractors in the core and query phases; DP24 is cited here
+only for the numerical bound.
 
 Proof obligations: decompose `∑ fullRbrKnowledgeError` using `sumcheckFoldKnowledgeError_le`
 in `CoreInteractionPhase` and the query-phase sum, then

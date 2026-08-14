@@ -352,7 +352,7 @@ open Classical in
 /-! Definition of the per-round RBR KS error for Binary FoldFold.
 This combines the Sumcheck error (2/|L|) and the LDT Bad Event probability.
 For round i : rbrKnowledgeError(i) = err_SC + err_BE where
-- err_SC = 2/|L| (Schwartz-Zippel for degree 1)
+- err_SC = 2/|L| (Schwartz-Zippel for degree 2)
 - err_BE = |S^(last_oracle_domain_index_of_i + ϑ)| / |L|
 -/
 def foldKnowledgeError (i : Fin ℓ) (_ : (pSpecFold (L := L)).ChallengeIdx) : ℝ≥0 :=
@@ -655,52 +655,6 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       simp only [Function.comp_apply] at ha
       erw [support_pure] at ha
       simp only [Set.mem_singleton_iff, reduceCtorEq] at ha
-
-/-! This follows the KState of sum-check -/
-def foldKStateProps {i : Fin ℓ} (m : Fin (2 + 1))
-    (tr : Transcript m (pSpecFold (L := L))) (stmtMid : Statement (L := L) Context i.castSucc)
-    (witMid : foldWitMid 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i m)
-    (oStmtMid : ∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i.castSucc j) :
-    Prop :=
-  -- Ground-truth polynomial from witness
-  match m with
-  | ⟨0, _⟩ => -- Same as relIn (roundRelation at i.castSucc)
-    masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (stmtIdx := i.castSucc) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i.castSucc)
-      (stmt := stmtMid) (wit := witMid) (oStmt := oStmtMid)
-      (localChecks := sumcheckConsistencyProp (𝓑 := 𝓑) stmtMid.sumcheck_target witMid.H)
-  | ⟨1, _⟩ => -- After P sends hᵢ(X), before V sends r_i'
-    let h_star : ↥L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := witMid.H)
-    let h_i : ↥L⦃≤ 2⦄[X] := tr.messages ⟨0, rfl⟩
-    masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (stmtIdx := i.castSucc) (oracleIdx := OracleFrontierIndex.mkFromStmtIdx i.castSucc)
-      (stmt := stmtMid) (wit := witMid) (oStmt := oStmtMid)
-      (localChecks :=
-        -- Verifier's explicit check: h_i(0) + h_i(1) = sumcheck_target
-        let explicitVCheck := h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtMid.sumcheck_target
-        -- Honest prover check: h_i matches ground truth
-        let localizedRoundPolyCheck := h_i = h_star
-        explicitVCheck ∧ localizedRoundPolyCheck
-      )
-  | ⟨2, _⟩ => -- After V sends r_i': use OUTPUT state (consistent with foldStepRelOut)
-    let h_i : ↥L⦃≤ 2⦄[X] := tr.messages ⟨0, rfl⟩
-    let r_i' : L := tr.challenges ⟨1, rfl⟩
-    -- Forward-compute the output statement using transcript-derived values
-    let newSumcheckTarget : L := h_i.val.eval r_i'
-    let stmtOut : Statement (L := L) Context i.succ := { -- same as in getFoldProverFinalOutput
-      ctx := stmtMid.ctx,
-      sumcheck_target := newSumcheckTarget,
-      challenges := Fin.snoc stmtMid.challenges r_i'
-    }
-    let oStmtOut := oStmtMid
-    let witOut := witMid
-    -- Use OUTPUT state: stmtIdx advances to i.succ, oracleIdx stays at i.castSucc (no new oracle)
-    masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (stmtIdx := i.succ) (oracleIdx := OracleFrontierIndex.mkFromStmtIdxCastSuccOfSucc i)
-      (stmt := stmtOut) (wit := witOut) (oStmt := oStmtOut)
-      (localChecks :=
-        -- we reduce the sumcheck consistency check here
-        sumcheckConsistencyProp (𝓑 := 𝓑) stmtOut.sumcheck_target witOut.H)
 
 /-
 The fold-step extraction failure event implies either:

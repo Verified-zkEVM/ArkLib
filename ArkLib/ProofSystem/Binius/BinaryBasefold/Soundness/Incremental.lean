@@ -1226,7 +1226,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
       fold_k_f
     have h_U_far : ¬jointProximityNat (C := C_dest) (u := U)
         (e := e_prox) := by
-      apply lemma_4_21_interleaved_word_UDR_far 𝔽q β
+      apply lemma_4_22_interleaved_word_UDR_far 𝔽q β
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (i := i_ℓ) (steps := s + 1)
         (h_destIdx := by simp [i_ℓ]; omega)

@@ -420,7 +420,7 @@ lemma prop_4_21_case_2_fiberwise_far (i : Fin ℓ) (steps : ℕ) [NeZero steps]
   -- "Close" means dist ≤ e_prox = (d_next - 1)/2 < d_next/2.
   -- So U is strictly greater than e_prox distance away.
   have h_U_not_UDR_close : ¬ (jointProximityNat (u := U) (e := e_prox) (C := (C_next : Set _))) := by
-    apply lemma_4_21_interleaved_word_UDR_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
+    apply lemma_4_22_interleaved_word_UDR_far 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := i)
       (steps := steps) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le) (f_i := f_i) (h_far := h_far)
   -- The epsilon for RS codes / Tensor Gaps is typically |S_next| * steps (or similar).
   -- In DG25 Cor 3.7, ε = |S_next|. The bound is ϑ * ε / |L|.

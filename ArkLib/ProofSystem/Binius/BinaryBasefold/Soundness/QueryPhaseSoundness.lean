@@ -24,6 +24,7 @@ This file packages:
 
 namespace Binius.BinaryBasefold
 
+-- The terminal query-phase probability proof exceeds Lean's default heartbeat budget.
 set_option maxHeartbeats 400000
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
@@ -577,7 +578,7 @@ single-repetition logical check rejects.
 - **Inductive step (i > j*\cdot\vartheta):** Disagreement propagates using no-bad-events
   and compliance of subsequent blocks.
 - **Final step:** The final check fails. -/
-theorem lemma_4_25_reject_if_suffix_in_disagreement
+theorem lemma_4_26_reject_if_suffix_in_disagreement
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ) j)
@@ -1292,7 +1293,7 @@ open Classical in
 If any oracle is non-compliant and no bad folding event occurs, then a single
 repetition of the proximity check accepts with probability at most
 `(1/2) + 1/(2 * 2^𝓡)`. -/
-theorem prop_4_23_singleRepetition_proximityCheck_bound
+theorem prop_4_24_singleRepetition_proximityCheck_bound
     {h_le : ϑ ≤ ℓ}
     (stmtIn : FinalSumcheckStatementOut (L := L) (ℓ := ℓ))
     (oStmtIn : ∀ j, OracleStatement 𝔽q β (ϑ := ϑ)
@@ -1659,7 +1660,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
         destIdx h_destIdx_le (f := f_next) (h_within_radius := h_next_close)
       ¬ pair_UDRClose 𝔽q β destIdx h_destIdx_le f_i_star_folded f_bar_next := by
     exact
-      lemma_4_24_dist_folded_ge_of_last_noncompliant (𝔽q := 𝔽q) (β := β)
+      lemma_4_25_dist_folded_ge_of_last_noncompliant (𝔽q := 𝔽q) (β := β)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i_star := i_star) (steps := ϑ)
         (destIdx := destIdx) (h_destIdx := h_destIdx) (h_destIdx_le := h_destIdx_le)
         (f_star := f_star) (f_next := f_next) (r_challenges := r_challenges)
@@ -1692,7 +1693,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D := by
     intro v h_accept h_mem
     have h_reject :=
-      lemma_4_25_reject_if_suffix_in_disagreement (𝔽q := 𝔽q) (β := β)
+      lemma_4_26_reject_if_suffix_in_disagreement (𝔽q := 𝔽q) (β := β)
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (stmtIn := stmtIn) (oStmtIn := oStmtIn)
         (j_star := j_star) (destIdx := destIdx) (h_destIdx := by simp [destIdx])
         (h_destIdx_le := h_destIdx_le) (f_next := f_next)

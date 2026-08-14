@@ -191,11 +191,6 @@ theorem commitOracleReduction_perfectCompleteness (hInit : NeverFail init) (i : 
         toPFunctor_add, toPFunctor_emptySpec, OptionT.support_run, Prod.mk.eta, probFailure_eq_zero,
         implies_true]
     rw [and_true]
-    -- erw [OptionT.probFailure_mk]
-    -- simp only [ChallengeIdx, Challenge, MessageIdx, Fin.isValue, Message, Matrix.cons_val_zero,
-    --       -- simp only [probOutput_eq_zero_iff]
-    -- rw [OptionT.support_run_eq]
-    -- rw [OptionT.probOutput_none_bind_eq_zero_iff]
     simp only [bind_pure_comp]
     rw [OptionT.probFailure_liftComp_of_OracleComp_Option]
     conv_lhs =>

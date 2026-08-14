@@ -494,13 +494,6 @@ lemma probFailure_liftComp_of_OracleComp_Option {ι' : Type w} {spec : OracleSpe
 
 end OptionT
 
-@[simp]
-lemma probFailure_liftComp {ι' : Type w} {superSpec : OracleSpec ι'}
-    [IsUniformSpec spec] [IsUniformSpec superSpec]
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
-    (oa : OracleComp spec α) : Pr[⊥ | liftComp oa superSpec] = Pr[⊥ | oa] := by
-  rw [liftComp_eq_liftM]; simp only [probFailure_of_liftM_PMF]
-
 /-- Monad-lifting preserves the failure probability. -/
 @[simp]
 lemma probFailure_liftM {ι' : Type w} {superSpec : OracleSpec ι'}
@@ -509,14 +502,6 @@ lemma probFailure_liftM {ι' : Type w} {superSpec : OracleSpec ι'}
     (oa : OracleComp spec α) :
     Pr[⊥ | (liftM oa : OracleComp superSpec α)] = Pr[⊥ | oa] := by
   simp only [probFailure_of_liftM_PMF]
-
-/-- Spec-lifting preserves the failure probability. -/
-@[simp]
-lemma probFailure_liftComp_eq {ι' : Type} {superSpec : OracleSpec ι'}
-    [IsUniformSpec spec] [IsUniformSpec superSpec]
-    [MonadLift (OracleQuery spec) (OracleQuery superSpec)]
-    (oa : OracleComp spec α) : Pr[⊥ | liftComp oa superSpec] = Pr[⊥ | oa] := by
-  rw [liftComp_eq_liftM]; simp only [probFailure_of_liftM_PMF]
 
 -- `support_liftComp` (and `mem_support_liftComp_iff`, `probFailure_liftComp`,
 -- `probOutput_liftComp`) are now provided upstream by VCVio itself, in the `OracleComp`
@@ -552,9 +537,6 @@ lemma liftComp_id
     funext t
     rfl
   rw [heq, simulateQ_id']
-
-abbrev liftComp_self [IsUniformSpec spec]
-  (oa : OracleComp spec α) : liftComp oa spec = oa := liftComp_id oa
 
 /-- Identity spec-lifting does not change support. -/
 @[simp]
