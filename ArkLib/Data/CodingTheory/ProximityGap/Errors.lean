@@ -8,6 +8,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ProximityGap.TensorGenerator
 import ArkLib.Data.Probability.Instances
+import Mathlib.FieldTheory.Finiteness
 
 /-!
 # Numeric proximity-gap and correlated-agreement errors
@@ -38,7 +39,7 @@ comparison theorems used by the grand-challenge API.
 
 namespace ProximityGap
 
-open NNReal Code CoreDefinitions unitInterval
+open NNReal Code CoreDefinitions unitInterval LinearCode
 open scoped ProbabilityTheory BigOperators
 open Probability
 
@@ -389,20 +390,37 @@ theorem epsPg_le_epsCa_le_epsMca (MC : ModuleCode ι F A) (δ : ℝ≥0) :
   ⟨epsPg_le_epsCa MC δ, epsCa_le_mcaError_affineLine MC δ⟩
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
-/-- `epsCa` is constant when its interleaved radii have the same integer agreement bound. -/
-theorem epsCa_eq_of_floor_eq (C : Set (ι → A)) (δ_fld δ_int δ_int' : ℝ≥0)
-    (h : Nat.floor (δ_int * Fintype.card ι) = Nat.floor (δ_int' * Fintype.card ι)) :
-    epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld δ_int' := by
+/-- `epsCa` is constant when both radii have the same integer error bounds. -/
+theorem epsCa_eq_of_floors_eq (C : Set (ι → A))
+    (δ_fld δ_fld' δ_int δ_int' : ℝ≥0)
+    (hfld : Nat.floor (δ_fld * Fintype.card ι) =
+      Nat.floor (δ_fld' * Fintype.card ι))
+    (hint : Nat.floor (δ_int * Fintype.card ι) =
+      Nat.floor (δ_int' * Fintype.card ι)) :
+    epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld' δ_int' := by
   unfold epsCa
   apply iSup_congr
   intro u
   have hiff : jointProximity (C := C) (u := u) δ_int ↔
       jointProximity (C := C) (u := u) δ_int' := by
     unfold jointProximity
-    rw [relDistFromCode_le_iff_distFromCode_le, relDistFromCode_le_iff_distFromCode_le, h]
+    rw [relDistFromCode_le_iff_distFromCode_le, relDistFromCode_le_iff_distFromCode_le, hint]
+  have hclose : ∀ γ : F,
+      δᵣ(u 0 + γ • u 1, C) ≤ (δ_fld : ENNReal) ↔
+        δᵣ(u 0 + γ • u 1, C) ≤ (δ_fld' : ENNReal) := by
+    intro γ
+    rw [relDistFromCode_le_iff_distFromCode_le, relDistFromCode_le_iff_distFromCode_le, hfld]
   by_cases hjp : jointProximity (C := C) (u := u) δ_int
   · rw [if_pos hjp, if_pos (hiff.mp hjp)]
   · rw [if_neg hjp, if_neg (mt hiff.mpr hjp)]
+    exact Pr_congr hclose
+
+omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
+/-- `epsCa` is constant when its interleaved radii have the same integer agreement bound. -/
+theorem epsCa_eq_of_floor_eq (C : Set (ι → A)) (δ_fld δ_int δ_int' : ℝ≥0)
+    (h : Nat.floor (δ_int * Fintype.card ι) = Nat.floor (δ_int' * Fintype.card ι)) :
+    epsCa (F := F) C δ_fld δ_int = epsCa (F := F) C δ_fld δ_int' :=
+  epsCa_eq_of_floors_eq C δ_fld δ_fld δ_int δ_int' rfl h
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
 /-- Bridge between affine-line correlated agreement and the numeric CA error. -/
@@ -500,14 +518,408 @@ section UniqueDecoding
 variable {ι : Type} [Fintype ι] [Nonempty ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
+private noncomputable def pairErrors (u c : Fin 2 → ι → F) : Finset ι := by
+  classical
+  exact disagreementCols (u 0) (c 0) ∪ disagreementCols (u 1) (c 1)
+
+omit [Fintype F] in
+private lemma jointProximity_iff_exists_pairErrors_le
+    (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) :
+    jointProximity (C := (C : Set (ι → F))) (u := u) δ ↔
+      ∃ c : Fin 2 → ι → F, (∀ j, c j ∈ C) ∧
+        (pairErrors u c).card ≤ Nat.floor (δ * Fintype.card ι) := by
+  classical
+  rw [← jointAgreement_iff_jointProximity]
+  constructor
+  · rintro ⟨T, hT, c, hc⟩
+    refine ⟨c, fun j => (hc j).1, ?_⟩
+    have hsub : pairErrors u c ⊆ Tᶜ := by
+      intro i hi
+      simp only [pairErrors, Finset.mem_union, mem_disagreementCols] at hi
+      simp only [Finset.mem_compl]
+      intro hiT
+      rcases hi with hi | hi
+      · exact hi ((Finset.mem_filter.mp ((hc 0).2 hiT)).2.symm)
+      · exact hi ((Finset.mem_filter.mp ((hc 1).2 hiT)).2.symm)
+    have hTnat : Fintype.card ι - Nat.floor (δ * Fintype.card ι) ≤ T.card :=
+      (relDist_floor_bound_iff_complement_bound _ _ _).mpr hT
+    calc
+      (pairErrors u c).card ≤ Tᶜ.card := Finset.card_le_card hsub
+      _ = Fintype.card ι - T.card := Finset.card_compl T
+      _ ≤ Nat.floor (δ * Fintype.card ι) := by omega
+  · rintro ⟨c, hc, hE⟩
+    let E := pairErrors u c
+    have hEcard : E.card ≤ Fintype.card ι := by
+      simpa only [Finset.card_univ] using Finset.card_le_card (Finset.subset_univ E)
+    refine ⟨Eᶜ, (relDist_floor_bound_iff_complement_bound _ _ _).mp ?_, c, ?_⟩
+    · rw [Finset.card_compl]
+      exact Nat.sub_le_sub_left hE _
+    · intro j
+      refine ⟨hc j, ?_⟩
+      intro i hi
+      rw [Finset.mem_filter]
+      refine ⟨Finset.mem_univ i, ?_⟩
+      have hiE : i ∉ E := by simpa [E] using hi
+      simp only [E, pairErrors, Finset.mem_union, mem_disagreementCols, not_or] at hiE
+      fin_cases j
+      · exact of_not_not hiE.1 |>.symm
+      · exact of_not_not hiE.2 |>.symm
+
+private lemma line_close_of_isMCA_affineLine
+    (C : LinearCode ι F) (u : Fin 2 → ι → F) (δ : ℝ≥0) (γ : F)
+    (h : IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) :
+    δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ (δ : ENNReal) := by
+  classical
+  obtain ⟨T, hT, hcomb, _⟩ := h
+  rw [LinearCode.mem_projectedCodeSubmod_iff] at hcomb
+  obtain ⟨w, hw, hproj⟩ := hcomb
+  rw [relCloseToCode_iff_relCloseToCodeword_of_minDist]
+  refine ⟨w, hw, ?_⟩
+  rw [relCloseToWord_iff_exists_agreementCols]
+  refine ⟨T, ?_, ?_⟩
+  · apply (relDist_floor_bound_iff_complement_bound _ _ _).mpr
+    by_cases hδ_le : δ ≤ 1
+    · rw [← NNReal.coe_le_coe, NNReal.coe_mul, NNReal.coe_sub hδ_le]
+      push_cast
+      nlinarith
+    · rw [tsub_eq_zero_of_le (le_of_not_ge hδ_le)]
+      simp
+  · intro i
+    constructor
+    · intro hi
+      have := congr_fun hproj ⟨i, hi⟩
+      simpa [projectedWord, AffineLineGenerator] using this
+    · intro hne hi
+      have := congr_fun hproj ⟨i, hi⟩
+      exact hne (by simpa [projectedWord, AffineLineGenerator] using this)
+
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA is at most correlated agreement. -/
 theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
     (C : LinearCode ι F) (δ : ℝ≥0) (_hδ_pos : 0 < δ)
-    (_h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
+    (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       epsCa (F := F) (A := F) (C : Set (ι → F)) δ δ := by
-  sorry -- external admit [ACFY25 Lemma 4.10].
+  let e := Nat.floor (δ * Fintype.card ι)
+  have hdist_eq : Code.dist (C : Set (ι → F)) = Code.minDist (C : Set (ι → F)) :=
+    Code.dist_eq_minDist (C : Set (ι → F))
+  have hud : 2 * e < Code.minDist (C : Set (ι → F)) := by
+    have heR : (e : ℝ) ≤ (δ : ℝ) * Fintype.card ι := by
+      exact_mod_cast Nat.floor_le (mul_nonneg δ.coe_nonneg (Nat.cast_nonneg _))
+    have htwoR : ((2 * e : ℕ) : ℝ) < (Code.dist (C : Set (ι → F)) : ℝ) := by
+      calc
+        ((2 * e : ℕ) : ℝ) = 2 * (e : ℝ) := by norm_num
+        _ ≤ 2 * ((δ : ℝ) * Fintype.card ι) := by gcongr
+        _ = 2 * (δ : ℝ) * Fintype.card ι := by ring
+        _ < (Code.dist (C : Set (ι → F)) : ℝ) := h_udr
+    have htwoNat : 2 * e < Code.dist (C : Set (ι → F)) := by
+      exact_mod_cast htwoR
+    rwa [hdist_eq] at htwoNat
+  have hdle : Code.minDist (C : Set (ι → F)) ≤ Fintype.card ι := by
+    rw [← hdist_eq]
+    exact Code.dist_le_card (C : Set (ι → F))
+  have he_lt_n : e < Fintype.card ι := by omega
+  have hδ_lt_one : δ < 1 := by
+    have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+    have hdistleR : (Code.minDist (C : Set (ι → F)) : ℝ) ≤ Fintype.card ι := by
+      exact_mod_cast hdle
+    rw [hdist_eq] at h_udr
+    exact_mod_cast (by nlinarith : (δ : ℝ) < 1)
+  unfold mcaError
+  refine iSup_le fun u => ?_
+  by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
+  · obtain ⟨c, hc, hE⟩ :=
+      (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp
+    change (pairErrors u c).card ≤ e at hE
+    let B := Finset.univ.filter fun γ : F =>
+      IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)
+    have hcancel : ∀ γ ∈ B, ∃ i ∈ pairErrors u c,
+        (u 0 i - c 0 i) + γ * (u 1 i - c 1 i) = 0 := by
+      intro γ hγ
+      have hmca : IsMCA (AffineLineGenerator F) C γ u (δ : ℝ) :=
+        (Finset.mem_filter.mp hγ).2
+      obtain ⟨T, hT, hcomb, hfail⟩ := hmca
+      rw [LinearCode.mem_projectedCodeSubmod_iff] at hcomb
+      obtain ⟨w, hw, hproj⟩ := hcomb
+      have hcγ : c 0 + γ • c 1 ∈ C := C.add_mem (hc 0) (C.smul_mem γ (hc 1))
+      have hTnat : Fintype.card ι - e ≤ T.card := by
+        apply (relDist_floor_bound_iff_complement_bound _ _ _).mpr
+        rw [← NNReal.coe_le_coe, NNReal.coe_mul, NNReal.coe_sub hδ_lt_one.le]
+        push_cast
+        nlinarith
+      have huw : Δ₀(u 0 + γ • u 1, w) ≤ e := by
+        rw [hammingDist_eq_disagreementCols_card]
+        calc
+          (disagreementCols (u 0 + γ • u 1) w).card ≤ Tᶜ.card := by
+            apply Finset.card_le_card
+            intro i hi
+            rw [Finset.mem_compl]
+            intro hiT
+            have heq := congr_fun hproj ⟨i, hiT⟩
+            exact (mem_disagreementCols.mp hi) (by
+              simpa [projectedWord, AffineLineGenerator] using heq)
+          _ = Fintype.card ι - T.card := Finset.card_compl T
+          _ ≤ e := by omega
+      have huc : Δ₀(u 0 + γ • u 1, c 0 + γ • c 1) ≤ e := by
+        rw [hammingDist_eq_disagreementCols_card]
+        apply le_trans (Finset.card_le_card (t := pairErrors u c) ?_) hE
+        intro i hi
+        simp only [mem_disagreementCols, Pi.add_apply, Pi.smul_apply] at hi
+        by_contra hiE
+        simp only [pairErrors, Finset.mem_union, mem_disagreementCols, not_or] at hiE
+        exact hi (by simp [of_not_not hiE.1, of_not_not hiE.2])
+      have hw_eq : w = c 0 + γ • c 1 := by
+        apply Code.eq_of_lt_dist hw hcγ
+        calc
+          Δ₀(w, c 0 + γ • c 1) ≤
+              Δ₀(w, u 0 + γ • u 1) + Δ₀(u 0 + γ • u 1, c 0 + γ • c 1) :=
+            hammingDist_triangle _ _ _
+          _ ≤ e + e := by simpa [hammingDist_comm] using Nat.add_le_add huw huc
+          _ < Code.dist (C : Set (ι → F)) := by rw [hdist_eq]; omega
+      have hnsub : ¬ T ⊆ (pairErrors u c)ᶜ := by
+        intro hsub
+        obtain ⟨j, hj⟩ := hfail
+        apply hj
+        rw [LinearCode.mem_projectedCodeSubmod_iff]
+        refine ⟨c j, hc j, ?_⟩
+        funext i
+        have hiE : (i : ι) ∉ pairErrors u c := Finset.mem_compl.mp (hsub i.property)
+        simp only [pairErrors, Finset.mem_union, mem_disagreementCols, not_or] at hiE
+        fin_cases j
+        · simp [projectedWord, of_not_not hiE.1]
+        · simp [projectedWord, of_not_not hiE.2]
+      rw [Finset.not_subset] at hnsub
+      obtain ⟨i, hiT, hiE⟩ := hnsub
+      refine ⟨i, Finset.notMem_compl.mp hiE, ?_⟩
+      have heq := congr_fun hproj ⟨i, hiT⟩
+      have hline : u 0 i + γ * u 1 i = w i := by
+        simpa [projectedWord, AffineLineGenerator] using heq
+      rw [hw_eq] at hline
+      have hline' : u 0 i + γ * u 1 i = c 0 i + γ * c 1 i := by
+        simpa [Pi.add_apply, Pi.smul_apply] using hline
+      linear_combination hline'
+    choose f hfE hfcancel using fun γ : B => hcancel γ γ.property
+    have hfinj : Function.Injective f := by
+      intro γ γ' hff
+      have hγ := hfcancel γ
+      have hγ' := hfcancel γ'
+      rw [hff] at hγ
+      have hpair := hfE γ'
+      simp only [pairErrors, Finset.mem_union, mem_disagreementCols] at hpair
+      have hnonzero : u 1 (f γ') - c 1 (f γ') ≠ 0 := by
+        intro hz
+        rw [hz, mul_zero, add_zero] at hγ'
+        have h0 : u 0 (f γ') = c 0 (f γ') := sub_eq_zero.mp hγ'
+        rcases hpair with h0' | h1'
+        · exact h0' h0
+        · exact h1' (sub_eq_zero.mp hz)
+      apply Subtype.ext
+      apply (mul_left_cancel₀ hnonzero)
+      linear_combination hγ - hγ'
+    have hBcard : B.card ≤ e := by
+      let fE : B → pairErrors u c := fun γ => ⟨f γ, hfE γ⟩
+      have hfEinj : Function.Injective fE := fun γ γ' h => hfinj (congrArg Subtype.val h)
+      calc
+        B.card = Fintype.card B := (Fintype.card_coe B).symm
+        _ ≤ Fintype.card (pairErrors u c) := Fintype.card_le_of_injective fE hfEinj
+        _ = (pairErrors u c).card := Fintype.card_coe _
+        _ ≤ e := hE
+    by_cases hBne : B.Nonempty
+    · obtain ⟨β, hβ⟩ := hBne
+      let βB : B := ⟨β, hβ⟩
+      have hKle : e + 1 ≤ Fintype.card ι := by omega
+      obtain ⟨K, _hKuniv, hKcard⟩ :=
+        Finset.exists_subset_card_eq (s := (Finset.univ : Finset ι)) hKle
+      have hEmbCard : Fintype.card B ≤ Fintype.card K := by
+        rw [Fintype.card_coe, Fintype.card_coe, hKcard]
+        exact hBcard.trans (Nat.le_succ e)
+      let emb : B ↪ K := (Function.Embedding.nonempty_of_card_le hEmbCard).some
+      let assigned (i : ι) : Prop := ∃ γ : B, (emb γ).1 = i
+      let slope (i : ι) : F := if h : assigned i then (Classical.choose h).1 - β else 0
+      have hembK (γ : B) : (emb γ).1 ∈ K := (emb γ).2
+      have hslope (γ : B) : slope (emb γ).1 = γ.1 - β := by
+        simp only [slope]
+        split
+        next h =>
+          have heq : Classical.choose h = γ := by
+            apply emb.injective
+            apply Subtype.ext
+            exact Classical.choose_spec h
+          rw [heq]
+        next h => exact (h ⟨γ, rfl⟩).elim
+      have hnotAssigned (i : ι) (hi : i ∈ K)
+          (hni : ¬ assigned i) : i ≠ (emb βB).1 := by
+        intro h
+        apply hni
+        exact ⟨βB, h.symm⟩
+      let v : Fin 2 → ι → F := fun j i =>
+        if hi : i ∈ K then
+          if j = 0 then c 0 i + if assigned i then -slope i else 1
+          else c 1 i + if assigned i then 1 else 0
+        else c j i
+      have hpairV : pairErrors v c = K := by
+        ext i
+        by_cases hiK : i ∈ K
+        · by_cases hiA : assigned i
+          · simp [pairErrors, v, hiK, hiA, one_ne_zero]
+          · simp [pairErrors, v, hiK, hiA, one_ne_zero]
+        · simp [pairErrors, v, hiK]
+      have hrow1 : Δ₀(v 1, c 1) ≤ e := by
+        rw [hammingDist_eq_disagreementCols_card]
+        let R := Finset.univ.image fun γ : B => (emb γ).1
+        apply le_trans (Finset.card_le_card (t := R) ?_) ?_
+        · intro i hi
+          simp only [mem_disagreementCols] at hi
+          have hiK : i ∈ K := by
+            by_contra hiK
+            simp [v, hiK] at hi
+          have hiA : assigned i := by
+            by_contra hiA
+            simp [v, hiK, hiA] at hi
+          obtain ⟨γ, hγ⟩ := hiA
+          exact Finset.mem_image.mpr ⟨γ, Finset.mem_univ _, hγ⟩
+        · calc
+            R.card ≤ B.card := by
+              dsimp only [R]
+              simpa using (Finset.card_image_le :
+                ((Finset.univ : Finset B).image fun γ : B => (emb γ).1).card ≤
+                  (Finset.univ : Finset B).card)
+            _ ≤ e := hBcard
+      have hrow0 : Δ₀(v 0, c 0) ≤ e := by
+        rw [hammingDist_eq_disagreementCols_card]
+        apply le_trans (Finset.card_le_card (t := K.erase (emb βB).1) ?_) ?_
+        · intro i hi
+          simp only [mem_disagreementCols] at hi
+          have hiK : i ∈ K := by
+            by_contra hiK
+            simp [v, hiK] at hi
+          rw [Finset.mem_erase]
+          refine ⟨?_, hiK⟩
+          intro hiβ
+          subst i
+          have hiA : assigned (emb βB).1 := ⟨βB, rfl⟩
+          have hs : slope (emb βB).1 = 0 := by simpa [βB] using hslope βB
+          simp [v, hembK βB, hiA, hs] at hi
+        · rw [Finset.card_erase_of_mem (hembK βB), hKcard]
+          omega
+      have hvNotJoint : ¬ jointProximity (C := (C : Set (ι → F))) (u := v) δ := by
+        intro hvJoint
+        obtain ⟨d, hd, hdE⟩ :=
+          (jointProximity_iff_exists_pairErrors_le C v δ).mp hvJoint
+        change (pairErrors v d).card ≤ e at hdE
+        have hvd (j : Fin 2) : Δ₀(v j, d j) ≤ e := by
+          rw [hammingDist_eq_disagreementCols_card]
+          apply le_trans (Finset.card_le_card (t := pairErrors v d) ?_) hdE
+          intro i hi
+          simp only [mem_disagreementCols] at hi
+          fin_cases j
+          · exact Finset.mem_union_left _ (mem_disagreementCols.mpr hi)
+          · exact Finset.mem_union_right _ (mem_disagreementCols.mpr hi)
+        have hdc : d = c := by
+          funext j i
+          have hj : d j = c j := by
+            apply Code.eq_of_lt_dist (hd j) (hc j)
+            calc
+              Δ₀(d j, c j) ≤ Δ₀(d j, v j) + Δ₀(v j, c j) :=
+                hammingDist_triangle _ _ _
+              _ ≤ e + e := by
+                have hcj : Δ₀(v j, c j) ≤ e := by
+                  fin_cases j
+                  · exact hrow0
+                  · exact hrow1
+                simpa [hammingDist_comm] using Nat.add_le_add (hvd j) hcj
+              _ < Code.dist (C : Set (ι → F)) := by rw [hdist_eq]; omega
+          exact congr_fun hj i
+        subst d
+        rw [hpairV] at hdE
+        omega
+      have hcloseV (γ : B) :
+          δᵣ(v 0 + (γ.1 - β) • v 1, (C : Set (ι → F))) ≤ (δ : ENNReal) := by
+        let x := γ.1 - β
+        let iγ := (emb γ).1
+        have hiγK : iγ ∈ K := hembK γ
+        have hiγA : assigned iγ := ⟨γ, rfl⟩
+        have hdist : Δ₀(v 0 + x • v 1, c 0 + x • c 1) ≤ e := by
+          rw [hammingDist_eq_disagreementCols_card]
+          apply le_trans (Finset.card_le_card (t := K.erase iγ) ?_) ?_
+          · intro i hi
+            simp only [mem_disagreementCols] at hi
+            rw [Finset.mem_erase]
+            refine ⟨?_, ?_⟩
+            · intro hii
+              subst i
+              apply hi
+              have hv0 : v 0 iγ = c 0 iγ - x := by
+                simp [v, hiγK, hiγA, iγ, x, hslope γ]
+                ring
+              have hv1 : v 1 iγ = c 1 iγ + 1 := by
+                simp [v, hiγK, hiγA]
+              simp only [Pi.add_apply, Pi.smul_apply, hv0, hv1]
+              ring
+            · by_contra hiK
+              simp [v, hiK] at hi
+          · rw [Finset.card_erase_of_mem hiγK, hKcard]
+            omega
+        rw [relCloseToCode_iff_relCloseToCodeword_of_minDist]
+        refine ⟨c 0 + x • c 1, C.add_mem (hc 0) (C.smul_mem x (hc 1)), ?_⟩
+        rw [pairRelDist_le_iff_pairDist_le]
+        exact hdist
+      calc
+        Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+            Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] := by
+          rw [prob_uniform_eq_card_filter_div_card, prob_uniform_eq_card_filter_div_card]
+          apply ENNReal.div_le_div_right
+          exact_mod_cast (calc
+            (Finset.univ.filter fun γ : F =>
+                IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)).card = B.card := by rfl
+            _ = (B.image fun γ => γ - β).card := by
+              symm
+              apply Finset.card_image_of_injective
+              intro x y hxy
+              exact sub_left_injective hxy
+            _ ≤ (Finset.univ.filter fun x : F =>
+                δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ).card := by
+              apply Finset.card_le_card
+              intro x hx
+              obtain ⟨γ, hγB, rfl⟩ := Finset.mem_image.mp hx
+              rw [Finset.mem_filter]
+              exact ⟨Finset.mem_univ _, hcloseV ⟨γ, hγB⟩⟩)
+        _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ := by
+          unfold epsCa
+          calc
+            Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
+                (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
+                else Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
+              (if_neg hvNotJoint).symm
+            _ ≤ ⨆ w : WordStack F (Fin 2) ι,
+                if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
+                else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
+              @le_iSup ENNReal (WordStack F (Fin 2) ι)
+                ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
+    · have hBempty : B = ∅ := Finset.not_nonempty_iff_eq_empty.mp hBne
+      rw [prob_uniform_eq_card_filter_div_card]
+      have hfilter : (Finset.univ.filter fun γ : F =>
+          IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)) = B := rfl
+      rw [hfilter, hBempty]
+      simp
+  · calc
+      Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ u (δ : ℝ)] ≤
+          Pr_{let γ ← $ᵖ F}[δᵣ(u 0 + γ • u 1, (C : Set (ι → F))) ≤ δ] := by
+        apply Pr_le_Pr_of_implies
+        intro γ h
+        exact line_close_of_isMCA_affineLine C u δ γ h
+      _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ := by
+        unfold epsCa
+        calc
+          Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ] =
+              (if jointProximity (C := (C : Set (ι → F))) (u := u) δ then 0
+              else Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ]) :=
+            (if_neg hjp).symm
+          _ ≤ ⨆ w : WordStack F (Fin 2) ι,
+              if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
+              else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
+            @le_iSup ENNReal (WordStack F (Fin 2) ι)
+              ENNReal.instCompleteLinearOrder.toCompleteLattice _ u
 
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA equals correlated agreement. -/
@@ -527,13 +939,173 @@ variable {ι : Type} [Fintype ι]
 variable {F : Type} [Field F] [Fintype F]
 variable {A : Type} [AddCommMonoid A] [Module F A]
 
+/-- At most `|K|` proper subspaces cannot cover a nontrivial finite `K`-vector space. -/
+private lemma exists_forall_notMem_of_card_le
+    {α K M : Type} [Field K] [Fintype K] [AddCommGroup M] [Module K M]
+    [Finite M] [Nontrivial M]
+    (s : Finset α) (p : α → Submodule K M)
+    (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
+    ∃ x : M, ∀ i ∈ s, x ∉ p i := by
+  classical
+  letI := Fintype.ofFinite M
+  let q := Fintype.card K
+  let d := Module.finrank K M
+  let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
+  let covered := insert (0 : M) (s.biUnion nz)
+  have hq : 1 < q := Fintype.one_lt_card
+  have hd : 0 < d := Module.finrank_pos
+  have hnz (i : α) (hi : i ∈ s) : (nz i).card ≤ q ^ (d - 1) - 1 := by
+    let allp := Finset.univ.filter fun x : M => x ∈ p i
+    have hzero : (0 : M) ∈ allp := by simp [allp]
+    have hnz_eq : nz i = allp.erase 0 := by
+      ext x
+      simp [nz, allp, and_comm]
+    rw [hnz_eq, Finset.card_erase_of_mem hzero]
+    have hcard : allp.card = Fintype.card (p i) := by
+      symm
+      exact Fintype.card_ofFinset allp (by simp [allp])
+    have hcardpow : Fintype.card (p i) = q ^ Module.finrank K (p i) := by
+      simpa [q] using (Module.card_eq_pow_finrank (K := K) (V := p i))
+    rw [hcard, hcardpow]
+    exact Nat.sub_le_sub_right
+      (Nat.pow_le_pow_right (Nat.zero_lt_of_lt hq)
+        (Nat.le_sub_one_of_lt (Submodule.finrank_lt (hp i hi)))) 1
+  have hcovered : covered.card < Fintype.card M := by
+    have hbi : (s.biUnion nz).card ≤ s.card * (q ^ (d - 1) - 1) := by
+      calc
+        (s.biUnion nz).card ≤ ∑ i ∈ s, (nz i).card := Finset.card_biUnion_le
+        _ ≤ ∑ _i ∈ s, (q ^ (d - 1) - 1) :=
+          Finset.sum_le_sum fun i hi => hnz i hi
+        _ = s.card * (q ^ (d - 1) - 1) := by simp
+    have hmul : s.card * (q ^ (d - 1) - 1) ≤ q * (q ^ (d - 1) - 1) :=
+      Nat.mul_le_mul_right _ hs
+    have hpow : q ^ d = q * q ^ (d - 1) := by
+      conv_lhs => rw [← Nat.succ_pred_eq_of_pos hd]
+      simp [pow_succ, Nat.mul_comm]
+    have hcardM : Fintype.card M = q ^ d := by
+      simpa [q, d] using (Module.card_eq_pow_finrank (K := K) (V := M))
+    rw [hcardM, hpow]
+    calc
+      covered.card ≤ (s.biUnion nz).card + 1 := Finset.card_insert_le _ _
+      _ ≤ s.card * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hbi 1
+      _ ≤ q * (q ^ (d - 1) - 1) + 1 := Nat.add_le_add_right hmul 1
+      _ < q * q ^ (d - 1) := by
+        have hpos : 0 < q ^ (d - 1) := pow_pos (Nat.zero_lt_of_lt hq) _
+        have hqmul : q ≤ q * q ^ (d - 1) := by
+          simpa using Nat.mul_le_mul_left q hpos
+        rw [Nat.mul_sub_left_distrib]
+        simp only [mul_one]
+        omega
+  have hnot : ∃ x : M, x ∉ covered := by
+    by_contra! h
+    have heq : covered = Finset.univ := Finset.eq_univ_of_forall h
+    rw [heq, Finset.card_univ] at hcovered
+    exact lt_irrefl _ hcovered
+  obtain ⟨x, hx⟩ := hnot
+  refine ⟨x, fun i hi hxi => hx ?_⟩
+  by_cases hx0 : x = 0
+  · simp [covered, hx0]
+  · simp only [covered, Finset.mem_insert]
+    exact Or.inr (Finset.mem_biUnion.mpr ⟨i, hi, by simp [nz, hxi, hx0]⟩)
+
 /-- A nonempty row-wise interleaving does not increase affine-line MCA at radii in `(0, 1)`. -/
 theorem mcaError_interleaved_le
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (_ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    (ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
     mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) := by
-  sorry -- external admit [Jo26 Corollary 4.5].
+  classical
+  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
+  unfold mcaError
+  refine iSup_le fun U => ?_
+  let isBad (x : F) := IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)
+  let B := Finset.univ.filter isBad
+  obtain ⟨T, hT⟩ : ∃ T : F → Finset ι, ∀ x, isBad x →
+      (T x).card ≥ (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) ∧
+      projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x) ∈
+        projectedCodeSubmod (C ^⋈ (Fin t)) (T x) ∧
+      ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod (C ^⋈ (Fin t)) (T x) := by
+    choose! T hT using fun x (hx : isBad x) => hx
+    exact ⟨T, hT⟩
+  let rowComb (l : Fin t → F) (j : Fin 2) : ι → A :=
+    fun k => ∑ i, l i • U j k i
+  let K (x : F) : Submodule F (Fin t → F) :=
+    { carrier := {l | ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x)}
+      zero_mem' := by
+        intro j
+        have hz : projectedWord (rowComb 0 j) (T x) = 0 := by
+          ext k
+          simp [projectedWord, rowComb]
+        rw [hz]
+        exact (projectedCodeSubmod C (T x)).zero_mem
+      add_mem' := by
+        intro l l' hl hl' j
+        have hadd : projectedWord (rowComb (l + l') j) (T x) =
+            projectedWord (rowComb l j) (T x) + projectedWord (rowComb l' j) (T x) := by
+          ext k
+          simp [projectedWord, rowComb, add_smul, Finset.sum_add_distrib]
+        rw [hadd]
+        exact (projectedCodeSubmod C (T x)).add_mem (hl j) (hl' j)
+      smul_mem' := by
+        intro a l hl j
+        have hsmul : projectedWord (rowComb (a • l) j) (T x) =
+            a • projectedWord (rowComb l j) (T x) := by
+          ext k
+          simp [projectedWord, rowComb, Finset.smul_sum, mul_smul]
+        rw [hsmul]
+        exact (projectedCodeSubmod C (T x)).smul_mem a (hl j) }
+  have hK (x : F) (hx : x ∈ B) : K x ≠ ⊤ := by
+    obtain ⟨j, hj⟩ := (hT x (Finset.mem_filter.mp hx).2).2.2
+    have hj' : ¬ ∀ i : Fin t,
+        projectedWord (fun k => U j k i) (T x) ∈ projectedCodeSubmod C (T x) := by
+      intro hall
+      apply hj
+      exact (projectedCodeSubmod_moduleInterleavedCode_iff
+        F A (Fin t) ι C (U j) (T x)).mpr hall
+    push Not at hj'
+    obtain ⟨i, hi⟩ := hj'
+    intro htop
+    have he : Pi.single i (1 : F) ∈ K x := by rw [htop]; exact Submodule.mem_top
+    apply hi
+    simpa [K, rowComb] using he j
+  have hBcard : B.card ≤ Fintype.card F := by
+    simpa [B] using Finset.card_filter_le Finset.univ isBad
+  obtain ⟨l, hl⟩ := exists_forall_notMem_of_card_le B K hK hBcard
+  let V : Fin 2 → (ι → A) := rowComb l
+  have himp : ∀ x : F, isBad x → IsMCA (AffineLineGenerator F) C x V (δ : ℝ) := by
+    intro x hx
+    have hxB : x ∈ B := Finset.mem_filter.mpr ⟨Finset.mem_univ _, hx⟩
+    have hdata := hT x hx
+    refine ⟨T x, hdata.1, ?_, ?_⟩
+    · have hrows : ∀ i : Fin t,
+          projectedWord (fun k => ∑ j, AffineLineGenerator F x j • U j k i) (T x) ∈
+            projectedCodeSubmod C (T x) :=
+        (projectedCodeSubmod_moduleInterleavedCode_iff F A (Fin t) ι C
+          (fun k => ∑ j, AffineLineGenerator F x j • U j k) (T x)).mp hdata.2.1
+      rw [mem_projectedCodeSubmod_iff]
+      convert projectedCode_linearCombination C (T x)
+        (fun i k => ∑ j, AffineLineGenerator F x j • U j k i) l
+        (fun i => (mem_projectedCodeSubmod_iff C (T x) _).mp (hrows i)) using 1
+      ext k
+      simp only [projectedWord, Set.restrict_apply, V, rowComb, Finset.smul_sum, smul_smul]
+      rw [Finset.sum_comm]
+      apply Finset.sum_congr rfl
+      intro i _
+      apply Finset.sum_congr rfl
+      intro j _
+      rw [mul_comm]
+    · have hnot := hl x hxB
+      change ¬ ∀ j, projectedWord (rowComb l j) (T x) ∈ projectedCodeSubmod C (T x) at hnot
+      push Not at hnot
+      simpa [V] using hnot
+  calc
+    Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)]
+        ≤ Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
+      Pr_le_Pr_of_implies _ _ _ himp
+    _ ≤ ⨆ V : Fin 2 → (ι → A),
+        Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)] :=
+      le_iSup (fun V : Fin 2 → (ι → A) =>
+        Pr_{let x ← $ᵖ F}[IsMCA (AffineLineGenerator F) C x V (δ : ℝ)]) V
 
 /-- Affine-line MCA is invariant under nonempty row-wise interleaving at radii in `(0, 1)`. -/
 theorem mcaError_interleaved_eq
