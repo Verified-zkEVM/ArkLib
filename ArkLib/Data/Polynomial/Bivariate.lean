@@ -43,9 +43,9 @@ lemma ne_zero_iff_coeffs_ne_zero (f : F[X][Y]) : f ≠ 0 ↔ f.coeff ≠ 0 :=
   ⟩
 
 /-- The set of `Y`-degrees is non-empty. -/
-lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.support).Nonempty :=
-  Finsupp.support_nonempty_iff.mpr
-    fun h ↦ hf (Polynomial.ext (fun n => by rw [← Polynomial.toFinsupp_apply, h]; rfl))
+lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.coeff.support).Nonempty := by
+  rw [Polynomial.support_toFinsupp]
+  exact Polynomial.support_nonempty.mpr hf
 
 variable {f : F[X][Y]}
 
@@ -369,26 +369,21 @@ theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 
 /-- Definition of a monomial when the bivariate polynomial is considered as a univariate
 polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
-  toFun t := ⟨Finsupp.single n t⟩
-  map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp only [RingHom.id_apply, ofFinsupp_single]; rw [Polynomial.smul_monomial]
+  toFun t := Polynomial.monomial n t
+  map_add' x y := by simp
+  map_smul' r x := by simp only [RingHom.id_apply, Polynomial.smul_monomial]
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
-  toFun t := ⟨Finsupp.single m ⟨(Finsupp.single n t)⟩⟩
-  map_add' x y := by
-    simp only [ofFinsupp_single, map_add]
-  map_smul' x y := by
-    simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
-    rw [Polynomial.smul_monomial, Polynomial.smul_monomial]
-    simp
+  toFun t := Polynomial.monomial m (Polynomial.monomial n t)
+  map_add' x y := by simp
+  map_smul' x y := by simp only [RingHom.id_apply, Polynomial.smul_monomial]
 
 /-- The bivariate monomial is well-defined. -/
 @[grind _=_]
 theorem monomialXY_def {n m : ℕ} {a : F} :
     monomialXY n m a = Polynomial.monomial m (Polynomial.monomial n a) := by
-  unfold monomialXY
-  simp
+  rfl
 
 /-- Adding bivariate monomials works as expected.
 In particular, `(a + b) * X^n * Y^m = a * X^n * Y^m + b * X^n * Y^m`. -/
@@ -402,12 +397,7 @@ In particular, `(a * X^n * Y^m) * (b * X^p * Y^q) = (a * b) * X^(n+p) * Y^(m+q)`
 @[grind _=_]
 theorem monomialXY_mul_monomialXY {n m p q : ℕ} {a b : F} :
     monomialXY n m a * monomialXY p q b = monomialXY (n + p) (m + q) (a * b) :=
-  toFinsupp_injective <| by
-  rw [toFinsupp_mul]
-  change AddMonoidAlgebra.single m ((Polynomial.monomial n) a) *
-    AddMonoidAlgebra.single q ((Polynomial.monomial p) b) =
-    AddMonoidAlgebra.single (m + q) ((Polynomial.monomial (n + p)) (a * b))
-  rw [AddMonoidAlgebra.single_mul_single, Polynomial.monomial_mul_monomial]
+  by simp only [monomialXY_def, Polynomial.monomial_mul_monomial]
 
 /-- Taking a bivariate monomial to a power works as expected.
 In particular, ` (a * X^n * Y^m)^k = (a^k) * X^(n * k) * Y^(m * k)`. -/

@@ -58,9 +58,11 @@ theorem bindingAdvantage_le_moduleSIS_of_shortClosure {rows cols : Nat}
   unfold bindingAdvantage CommitmentScheme.bindingExp ModuleSIS.advantage
     SIS.advantage SIS.experiment ModuleSIS.problem bindingAdvToModuleSIS
     commitmentScheme ModuleSIS.relation
-  simp only [bind_pure_comp, Functor.map_map]
+  simp only [bind_assoc, pure_bind]
   refine probOutput_bind_mono fun A _ => ?_
-  refine probOutput_bind_mono fun ⟨c, s₁, o₁, s₂, o₂⟩ _ => ?_
+  refine probOutput_bind_mono (mx := adv A) (y := true) (z := true) fun
+    (x : Commitment Φ rows × Message Φ cols × Opening × Message Φ cols × Opening) _ => ?_
+  rcases x with ⟨c, s₁, o₁, s₂, o₂⟩
   refine probOutput_pure_bool_le _ _ (fun hwin => ?_)
   simp only [Bool.and_eq_true, decide_eq_true_eq] at hwin ⊢
   obtain ⟨⟨hne, hshort₁, hverify₁⟩, hshort₂, hverify₂⟩ := hwin

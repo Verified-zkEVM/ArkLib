@@ -52,9 +52,9 @@ and ensuring both implementations follow the same logic.
 def extractNextSuffixFromChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (i : ℕ) (h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i + ϑ, by omega⟩ := by
-  let val := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i:=0) (k:=i + ϑ) (h_bound:=by
-      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; exact h_i_add_ϑ_le_ℓ) (x:=v)
-  simp only [Fin.val_zero, zero_add] at val
+  let val := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+    (i := 0) (destIdx := ⟨i + ϑ, by omega⟩) (k := i + ϑ)
+    (h_destIdx := by simp) (h_destIdx_le := h_i_add_ϑ_le_ℓ) (x := v)
   exact val
 
 /-- This proposition declaratively captures the iterative logic of the verifier. For each repetition

@@ -71,12 +71,9 @@ lemma polynomialOfCoeffs_eq_zero :
     simp only [polynomialOfCoeffs, ne_eq, coeff_ofFinsupp, Finsupp.coe_mk, coeff_zero,
       dite_eq_right_iff] at this
     exact this hx
-  · simp only [polynomialOfCoeffs, ne_eq, ofFinsupp_eq_zero, AddMonoidAlgebra.ext_iff,
-      Finsupp.coe_mk]
-    intro m
-    split_ifs with hm
-    · exact h m hm
-    · rfl
+  · ext m
+    rw [coeff_polynomialOfCoeffs_eq_coeffs']
+    simp [h]
 
 lemma polynomialOfCoeffs_coeffsOfPolynomial {p : F[X]}
     (h : p.natDegree + 1 = deg) : polynomialOfCoeffs (coeffsOfPolynomial (deg := deg) p) = p := by

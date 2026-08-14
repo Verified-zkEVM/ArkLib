@@ -541,7 +541,8 @@ section IndicatedPolynomial
 
 variable {s' : Finset F}
 
-@[reducible] private def card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
+omit [Field F] [DecidableEq F] in
+private theorem card_ne_zero (hs' : s'.Nonempty) : NeZero (Finset.card s') where
   out := by aesop
 
 private lemma indicated_polynomial_degree_x_lt (hs' : s'.Nonempty) :

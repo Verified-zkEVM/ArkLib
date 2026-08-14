@@ -399,7 +399,7 @@ def sumcheckFoldOracleVerifier :=
       | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
          rw! (castMode := .all) [hi]
          rfl)
-      | (funext j; apply OracleInterface.ext <;> rfl)
+      | (apply OracleInterface.ext <;> rfl)
 
   sumcheckFoldOV
 
@@ -595,7 +595,7 @@ def sumcheckFoldOracleReduction :=
       | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
          rw! (castMode := .all) [hi]
          rfl)
-      | (funext j; apply OracleInterface.ext <;> rfl)
+      | (apply OracleInterface.ext <;> rfl)
 
   coreInteractionOracleReduction
 

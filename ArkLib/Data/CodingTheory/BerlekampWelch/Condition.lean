@@ -93,14 +93,15 @@ lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
   ring
 
 noncomputable def E_and_Q_to_a_solution (e : ℕ) (E Q : Polynomial F) (i : Fin n) : F :=
-  if i < e then E.toFinsupp i else Q.toFinsupp (i - e)
+  if i < e then E.coeff i else Q.coeff (i - e)
 
 @[simp]
 lemma E_and_Q_to_a_solution_coeff :
     E_and_Q_to_a_solution e E Q i = if i < e then E.coeff i else Q.coeff (i - e) := rfl
 
 def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
-  ⟨⟨p.1.1 ∩ Finset.range n, fun i ↦ if i < n then p.1.2 i else 0, by aesop⟩⟩
+  Polynomial.ofFinsupp <| AddMonoidAlgebra.ofCoeff
+    ⟨p.support ∩ Finset.range n, fun i ↦ if i < n then p.coeff i else 0, by aesop⟩
 
 @[simp]
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
