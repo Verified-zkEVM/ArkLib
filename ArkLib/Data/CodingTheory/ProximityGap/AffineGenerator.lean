@@ -12,15 +12,30 @@ import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.FieldTheory.Finiteness
 
 /-!
-## Main Results
+# Mutual correlated agreement for affine space generators
 
-- Lemma 7.1. [BCGM25]: Mutual correlated agreement (MCA) for the affine line generator implies
-MCA for the affine space generator.
+Mutual correlated agreement for the affine line generator `F → F²`, `x ↦ (1, x)`, implies it for
+the affine space generator `Fˡ → Fˡ⁺¹`, `x ↦ (1, x)`, with the error scaled by `(1 - 1/|F|)⁻¹`.
+
+The scaling is what passing from lines to spaces costs: the density of bad affine-space seeds is
+bounded, up to the factor `(1 - 1/|F|)`, by the density of bad affine-line seeds for a single
+well-chosen pair of words, to which the line generator's own error then applies.
+
+The error is valued in `ℝ≥0` rather than `I`, since the scaled error may exceed `1`.
+
+## Main statements
+
+* `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` — the implication, at
+  the scaled error.
+* `AffineMCALemmas.exists_line_bound` — the counting step it rests on.
+
+The correspondence to [BCGM25]'s numbered statements is in
+`docs/kb/audits/bcgm25-mca-generators.md`.
 
 ## References
 
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+    with Mutual Correlated Agreement*][BCGM25]
 -/
 
 namespace AffineMCALemmas
@@ -261,16 +276,14 @@ open Probability
 variable {ι : Type} [Fintype ι]
          {F : Type} [Field F] [Fintype F]
 
-/-- Lemma 7.1. [BCGM25].
-The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `LC` implies that
+/-- The affine line generator `F → F²`, `x ↦ (1, x)`, having MCA error `ε_mca` for `LC` implies that
 the affine space generator `Fˡ → Fˡ⁺¹`, `x ↦ (1, x)`, has MCA for `LC` with error
 `(1 - 1/|F|)⁻¹ • ε_mca`.
 
-Note: [BCGM25] states this for `ℓ ≥ 2`; we only need `ℓ ≥ 1`. At `ℓ = 1` the affine space
-generator is the affine line generator, so the conclusion is immediate, and the proof below
-covers that case uniformly.
+Only `ℓ ≥ 1` is required: at `ℓ = 1` the affine space generator *is* the affine line generator, so
+the conclusion is immediate, and the proof below covers that case uniformly.
 
-Note: the error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
+The error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
 theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (hℓ : ℓ ≥ 1)
     (ε_mca : I → ℝ≥0) (LC : LinearCode ι F)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca LC) :

@@ -25,7 +25,8 @@ into the code on the witness set `T`. If some row fails, the event implies `G`'s
 * given MCA for the base code only, the row witnessing failure depends on the outer seed, so a
   union bound over the `ℓ` rows is forced and the inner error is paid `ℓ` times.
 
-Neither hypothesis subsumes the other in use, so both forms are proved. The correspondence to
+The interleaved hypothesis is the stronger of the two, but it buys the stronger conclusion, so
+neither form subsumes the other and both are proved. The correspondence to
 [BCGM25]'s printed Lemma 4.4, which assumes the base code and claims the added error, is recorded
 in `docs/kb/audits/bcgm25-mca-generators.md` together with the argument that the paper's own proof
 reaches only these two forms.

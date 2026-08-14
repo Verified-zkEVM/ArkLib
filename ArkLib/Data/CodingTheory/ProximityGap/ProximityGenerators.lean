@@ -39,7 +39,7 @@ respectively, we can define their tensor product componentwise. This is a genera
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+    with Mutual Correlated Agreement*][BCGM25]
 -/
 
 section
@@ -336,11 +336,10 @@ noncomputable local instance {F : Type} [Fintype F] {S : Set F} : Fintype S := F
 
 /-- If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total
 degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`.
-Remark 3.20, the version of the statement in the brackets [BCGM25].
-Note: Remark 3.20 provides two ways of viewing a polynomial generator as a zero-evading generator.
-one in terms of individual degrees, and one in terms of total degrees. We choose the total degree
-approach. Ultimately, the reasoning is the same. The difference is the version of Schwartz-Zippel
-used to obtain the upper bound. -/
+
+This is the total-degree reading. An individual-degree reading of the same fact is also available;
+the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
+differs. -/
 theorem poly_gen_is_zero_evading
   {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]
