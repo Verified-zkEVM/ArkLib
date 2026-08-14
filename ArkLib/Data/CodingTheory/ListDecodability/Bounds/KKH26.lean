@@ -25,7 +25,7 @@ Krachun-Kazanin-Haböck, *Failure of proximity gaps close to capacity*, ePrint 2
 - `prod_X_sub_C_eq_leadingPart_add_remainder` and its wrapper
   `IsUsefulFamilyWith.vanishing_decomposition` — the **claim** after def:additive-sets:
   `V_S(Y) = ∑_{i=0}^{c} (-1)^i λ_i Y^{k̂-i} + p_S(Y)` with `deg p_S ≤ k̂ - c - 1` (Vieta).
-- `sumSet_card_div_le_epsCA` — **ABF26 lemma:kikh-proximity-gap-template [KKH26]**:
+- `sumSet_card_div_le_epsCa` — **ABF26 lemma:kikh-proximity-gap-template [KKH26]**:
   `ε_ca(RS[F, L, k], 1 - k̂/h) ≥ |Λ_𝒮| / |F|`.
 - `two_pow_mul_choose_le_card_sumSet` — **ABF26 [KKH26, Lemma 1]**: over a prime field
   `𝔽_q` with `q > h^{h/2}`, the family of all `k̂`-subsets of a power-of-two-order
@@ -472,7 +472,7 @@ see module docstring): the second row is `> δ`-far from `C` (so the pair is not
 close), while for every `γ = ∑_{α ∈ S} α ∈ Λ_𝒮` the fold `f₀ - γ·f₁` agrees with
 the
 codeword `-p_S(x^d)` on the `k̂·d` points `{x : x^d ∈ S}`. -/
-theorem sumSet_card_div_le_epsCA (domain : ι ↪ F) {d h khat k : ℕ}
+theorem sumSet_card_div_le_epsCa (domain : ι ↪ F) {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)

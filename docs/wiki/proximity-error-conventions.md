@@ -143,7 +143,7 @@ The prize API uses `PrizeDomainAdmissible`, `prizeRate`, `prizeDimension`, and
 and `ListPrizeResolution.to_prize` assemble per-rate answers.
 
 Bounds that produce one-sided prize evidence belong in extension modules below
-`ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonBCHKS25` is in
+`ProximityGap/GrandChallenges/`. For example, `McaLowerWitness.ofJohnsonRangeBound` is in
 `GrandChallenges/CapacityBounds.lean`; this keeps `GrandChallenges.lean` independent of the
 catalogue's external admits.
 

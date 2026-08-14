@@ -23,20 +23,22 @@ implication "list-decoding ⇒ CA" cannot be tight in general.
 
 ## Main statements (external admits)
 
-- `linear_listSize_to_epsMCA_gcxk25` — ABF26 T5.1 [GCXK25 Thm 3]: list decoding at
+- `linear_mcaError_le_of_Lambda_le` — ABF26 T5.1 [GCXK25 Thm 3]: list decoding at
   `δ` (below the relative minimum distance of `C`, per the source) with list size `L`
   implies `ε_mca(C, 1 - √(1-δ+η)) ≤ (L²·δ·n + 1/η)/|F|`.
-- `rs_epsCA_small_implies_lambda_lt_F_bchks25` — ABF26 T5.2 [BCHKS25 Thm 1.9]:
-  `ε_ca < 1/(2n)` (with explicit proximity loss) implies `|Λ(C, δ)| < |F|`.
-- `rs_epsCA_implies_lambda_cs25_int` — [CS25 Thm 2], the source's native
+- `rs_Lambda_le_card_of_epsCa_lt` — ABF26 T5.2 [BCHKS25 Thm 1.9]:
+  `ε_ca < 1/(2n)` below the source's joint-distance boundary implies
+  `|Λ(C, δ)| ≤ |F|`.
+- `rs_Lambda_extended_le_of_epsCa_intRadius` — [CS25 Thm 2], the source's native
   integer-radius form: CA for `RS[F, L, k]` at radius `f/n` with `f < n-k-1` and error
   parameter `ε < (|F|-n)/(k·|F|)` implies `|Λ(RS[F, L, k+1], f/n)| ≤ ⌈ε|F|(|F|-n) /
   (|F|-n-kε|F|)⌉`. This is the external admit.
-- `rs_epsCA_implies_lambda_extended_cs25` — ABF26 T5.3 [CS25 Thm 2]: small `ε_ca` for
+- `rs_Lambda_extended_le_of_epsCa` — ABF26 T5.3 [CS25 Thm 2]: small `ε_ca` for
   `RS[F, L, k]` implies a quantitative list-size bound for the related code
   `RS[F, L, k+1]`. **Not an admit**: derived in-tree from the native form above
   (radius regime corrected to the source's `δ < (n-k-1)/n`; PAPER_REVS.md finding #8).
-- `rs_epsCA_separation_bgks20` — ABF26 T5.4 [BenSassonGKS20 Lem 3.3]: characteristic-2 RS
+- `rs_epsCa_large_below_johnsonRadius` — ABF26 T5.4 [BenSassonGKS20 Lem 3.3]:
+  characteristic-2 RS
   codes with rate `1/8` have `ε_ca(C, 1 - ρ^{1/3}) ≥ 1 - 1/|F|`, separating list
   decoding from CA.
 
@@ -112,7 +114,7 @@ GCXK25's `p < Δ_C` guards), so it is treated as an implicit source assumption r
 a droppable one. Do not drop it without a first-hand GCXK25 re-derivation.
 
 Admitted as an external result. -/
-theorem linear_listSize_to_epsMCA_gcxk25
+theorem linear_mcaError_le_of_Lambda_le
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδ_lt_dist :
@@ -137,26 +139,30 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 Let `C := RS[F, L, k]` be a Reed-Solomon code with rate `ρ` and let `δ ∈ (0, 1-ρ)`.
 If
 
-  `ε_ca(C, δ_fld = δ + 2/n, δ_int = 1 - ρ - 1/n) < 1/(2n)`
+  `ε_ca(C, δ_fld = δ + 2/n, δ_int) < 1/(2n)`
 
 then
 
-  `|Λ(C, δ)| < |F|` .
+  `|Λ(C, δ)| ≤ |F|` .
 
-Reading: CA at `δ + 2/n` with proximity loss to `1 - ρ - 1/n` having very small error
-forces the list size at `δ` to be strictly below the field size. Admitted as an
+The source defines the list-decoding radius using list size `≤ L`, so taking `L = |F|`
+licenses a non-strict conclusion. Its witness has joint distance
+`≥ 1 - ρ - 1/n`; therefore the interleaved threshold is an explicit parameter strictly
+below that boundary, rather than the unsafe endpoint printed by ABF26. Admitted as an
 external result. -/
-theorem rs_epsCA_small_implies_lambda_lt_F_bchks25
-    (domain : ι ↪ F) (k : ℕ) (δ : ℝ)
+theorem rs_Lambda_le_card_of_epsCa_lt
+    (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (δ_int : ℝ≥0)
     (_hδ_pos : 0 < δ)
     (_hδ_lt : (δ : ℝ) < 1 - (k : ℝ) / Fintype.card ι)
+    (_hδ_int : (δ_int : ℝ) <
+      1 - (k : ℝ) / Fintype.card ι - 1 / Fintype.card ι)
     (_hε_ca :
         epsCa (F := F) (A := F)
             ((ReedSolomon.code domain k : Set (ι → F)))
             ((δ + 2 / Fintype.card ι).toNNReal)
-            ((1 - (k : ℝ) / Fintype.card ι - 1 / Fintype.card ι).toNNReal) <
+            δ_int <
           ENNReal.ofReal (1 / (2 * Fintype.card ι))) :
-    Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ < (Fintype.card F : ℕ∞) := by
+    Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ ≤ (Fintype.card F : ℕ∞) := by
   sorry -- ABF26-T5.2; external admit [BCHKS25 Thm 1.9].
 
 /-- **[CS25 Theorem 2], native integer-radius form.** CS25 Theorem 2 reads: "If
@@ -179,10 +185,10 @@ over `ℤ`, avoiding truncated `ℕ` subtraction). Note that `0 ≤ ε` (forced 
 conclusion's denominator `q - n - kεq > 0` and the bound is never a `/0 = 0` artifact.
 
 This is the source-faithful admit backing ABF26 Theorem 5.3; the paper-shaped
-real-radius corollary `rs_epsCA_implies_lambda_extended_cs25` is *derived* from it
+real-radius corollary `rs_Lambda_extended_le_of_epsCa` is *derived* from it
 below (2026-07-18, review finding B02; PAPER_REVS.md finding #8). Admitted as an
 external result. -/
-theorem rs_epsCA_implies_lambda_cs25_int
+theorem rs_Lambda_extended_le_of_epsCa_intRadius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
     (_hk_pos : 0 < k)
     (_hf_lt : f + k + 1 < Fintype.card ι)
@@ -198,8 +204,8 @@ theorem rs_epsCA_implies_lambda_cs25_int
   sorry -- ABF26-T5.3 source form; external admit [CS25 Thm 2].
 
 /-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a `PMF` probability
-(`≤ 1`). Derivation infrastructure for `rs_epsCA_implies_lambda_extended_cs25`. -/
-private lemma epsCA_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
+(`≤ 1`). Derivation infrastructure for `rs_Lambda_extended_le_of_epsCa`. -/
+private lemma epsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
@@ -210,7 +216,7 @@ private lemma epsCA_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
   · exact PMF.coe_le_one _ _
 
 /-- `Nat.floor` commutes with the `ℝ≥0 → ℝ` coercion. Derivation infrastructure for
-`rs_epsCA_implies_lambda_extended_cs25`. -/
+`rs_Lambda_extended_le_of_epsCa`. -/
 private lemma nat_floor_coe_nnreal (x : ℝ≥0) : Nat.floor (x : ℝ) = Nat.floor x :=
   le_antisymm
     (Nat.le_floor (by exact_mod_cast Nat.floor_le x.coe_nonneg))
@@ -219,7 +225,7 @@ private lemma nat_floor_coe_nnreal (x : ℝ≥0) : Nat.floor (x : ℝ) = Nat.flo
 /-- `Λ(C, ·)` is `1/n`-quantised: relative Hamming distance takes values in
 `{0, 1/n, …, 1}`, so the list size at a real radius `δ ≥ 0` equals the list size at the
 grid point `⌊δ·n⌋/n`. `Lambda` analogue of `ProximityGap.epsCa_eq_of_floor_eq`;
-derivation infrastructure for `rs_epsCA_implies_lambda_extended_cs25`. -/
+derivation infrastructure for `rs_Lambda_extended_le_of_epsCa`. -/
 private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 ≤ δ) :
     Lambda C δ
       = Lambda C ((⌊δ * Fintype.card ι⌋₊ : ℝ) / Fintype.card ι) := by
@@ -253,7 +259,7 @@ then
 Pivots CA on `C` to a list-size bound on the extended code `C⁺`.
 
 **Not an external admit** (2026-07-18, review finding B02): this is derived in-tree
-from the source-native `rs_epsCA_implies_lambda_cs25_int` by instantiating the integer
+from the source-native `rs_Lambda_extended_le_of_epsCa_intRadius` by instantiating the integer
 radius at `f := ⌊δ·n⌋` and `ε := ε_ca(C, δ)`, using the `1/n`-quantisation of both
 `ε_ca` (`epsCa_eq_of_floor_eq` + `epsCa_mono_left`) and `Λ`
 (`Lambda_eq_floor_div_card`), plus ceiling monotonicity for the bound
@@ -279,7 +285,7 @@ source-native integer form, so the source regime is also the regime in which the
 derivation is valid — the two extra `1/n` grid steps the tex allows are not merely
 unverified but sit at the unique-decoding boundary where CS25 gives no guarantee.
 Widening the radius would make the derivation fail, not silently admit a falsehood. -/
-theorem rs_epsCA_implies_lambda_extended_cs25
+theorem rs_Lambda_extended_le_of_epsCa
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (η : ℝ)
     (hk_pos : 0 < k)
     (hδ_pos : 0 < δ)
@@ -353,10 +359,11 @@ theorem rs_epsCA_implies_lambda_extended_cs25
           epsCa_mono_left C _ hfn_le
   have h_eps_toReal :
       (epsCa (F := F) (A := F) C ((f : ℝ≥0) / n) ((f : ℝ≥0) / n)).toReal ≤ ε :=
-    ENNReal.toReal_mono (epsCA_ne_top C _ _) h_eps_le
+    ENNReal.toReal_mono (epsCa_ne_top C _ _) h_eps_le
   -- Apply the source-native theorem at `f` and `ε`.
   have hmain :=
-    rs_epsCA_implies_lambda_cs25_int (domain := domain) (k := k) (f := f) (ε := ε)
+    rs_Lambda_extended_le_of_epsCa_intRadius
+      (domain := domain) (k := k) (f := f) (ε := ε)
       hk_pos hf_lt hε_lt h_eps_toReal
   -- `Λ` at `δ` equals `Λ` at the grid point `f/n`.
   have hΛ :
@@ -398,9 +405,11 @@ code sits at `1 - √ρ - η ≈ 0.55`, where the list size is `≈ 40` (constan
 This witnesses a code that is list-decodable at the Johnson radius yet has CA error
 ≈ 1 at a smaller radius — separating list decoding from CA in general.
 
-The paper notes the also-true proximity-loss version: `ε_ca(C, δ_fld = 1 - ρ^{1/3},
-δ_int = 1 - ρ^{2/3}) ≥ 1 - 1/|F|`. We state both. Admitted as an external result. -/
-theorem rs_epsCA_separation_bgks20
+The source's two distinguished words both have distance exactly `1 - ρ^{2/3}` from
+the code. Since `epsCa` guards on non-strict joint distance, the source licenses every
+interleaved threshold strictly below that boundary. The no-loss radius
+`δ_int = 1 - ρ^{1/3}` is a special case by monotonicity. Admitted as an external result. -/
+theorem rs_epsCa_large_below_johnsonRadius
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F] [CharP F 2]
     (_hF_eq_ι : Fintype.card F = Fintype.card ι)
@@ -409,20 +418,15 @@ theorem rs_epsCA_separation_bgks20
     -- `ε_ca(C, _) ≥ 1 - 1/|F|` is not the intended separation result.
     -- The paper implicitly assumes `|F|` large enough for a meaningful
     -- rate-`1/8` code; we surface that hypothesis explicitly.
-    (_hF_ge : 8 ≤ Fintype.card F)
+    (_hF_ge : 8 ≤ Fintype.card F) (δ_int : ℝ≥0)
+    (_hδ_int : (δ_int : ℝ) < 1 - (1 / 8 : ℝ) ^ ((2 : ℝ) / 3))
     (domain : ι ↪ F) :
     let k : ℕ := Fintype.card F / 8
     let ρ : ℝ := 1 / 8
     let C := ReedSolomon.code domain k
-    -- main statement
-    (epsCa (F := F) (A := F) ((C : Set (ι → F)))
+    epsCa (F := F) (A := F) ((C : Set (ι → F)))
         ((1 - ρ ^ ((1 : ℝ) / 3)).toNNReal)
-        ((1 - ρ ^ ((1 : ℝ) / 3)).toNNReal)) ≥
-      ENNReal.ofReal (1 - 1 / Fintype.card F) ∧
-    -- with proximity loss
-    (epsCa (F := F) (A := F) ((C : Set (ι → F)))
-        ((1 - ρ ^ ((1 : ℝ) / 3)).toNNReal)
-        ((1 - ρ ^ ((2 : ℝ) / 3)).toNNReal)) ≥
+        δ_int ≥
       ENNReal.ofReal (1 - 1 / Fintype.card F) := by
   sorry -- ABF26-T5.4; external admit [BenSassonGKS20 Lem 3.3].
 

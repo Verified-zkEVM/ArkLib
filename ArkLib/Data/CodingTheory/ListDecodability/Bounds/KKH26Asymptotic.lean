@@ -24,11 +24,11 @@ in List Decoding and Correlated Agreement*, 2026, tex `thm:kikh-asymptotic-list-
 
 ## Main declaration
 
-- `rs_asymptotic_list_lower_bound_kkh26` — the theorem above, stated over the in-tree
+- `exists_rs_asymptotic_Lambda_lower_bound` — the theorem above, stated over the in-tree
   `Code.Lambda` list notion that `choose_le_Lambda_rs_vanilla` bounds, with the
   asymptotics pinned by an **explicit uniform constant** `Kc` (Lean lacks a generic `O(·)`),
   matching the template of `ProximityGap/CapacityBounds.lean`'s
-  `rs_epsCA_lower_capacity_kkh26`. It is *derived in-tree* from
+  `exists_rs_epsCa_large_near_capacity`. It is *derived in-tree* from
   `CodingTheory.KKH26.choose_le_Lambda_rs_vanilla_of_smooth` (ABF26 `cor:kikh-vanilla`); the
   only non-derived input is the number-theoretic existence of arbitrarily large smooth
   evaluation domains, carried as the hypothesis `supply` (see design notes).
@@ -58,12 +58,13 @@ The main theorem then feeds these parameters and a smooth domain (from `supply`)
   loss (its proof only bounds the loss `≤ 1/s + 1/n`). We follow the tex and pin `slack` from
   *above* only (`slack ≤ Kc / log₂ n`), stating the list bound at the exact radius
   `δ_min − slack` produced by `cor:kikh-vanilla` (`slack` = the actual loss). This differs from
-  the sibling `rs_epsCA_lower_capacity_kkh26` (Theorem 4.16), which adds a *lower* pin to assert
-  `Θ`; that lower pin is genuinely false for the list construction here (the loss can be as
-  small as `1/n`), so we do not claim it — see "Deviations from tex" below.
+  the sibling `exists_rs_epsCa_large_near_capacity` (Theorem 4.16), which adds a *lower*
+  pin to assert `Θ`; that lower pin is genuinely false for the list construction here
+  (the loss can be as small as `1/n`), so we do not claim it — see "Deviations from tex"
+  below.
 
 - **Rate band.** `ρ < k/n ≤ ρ + 1/n`, i.e. `|k − ρn| ≤ 1` with `k = ⌈ρn⌉` — the tex's exact
-  rate `ρ` (unsatisfiable for irrational `ρ`), matching `rs_epsCA_lower_capacity_kkh26`.
+  rate `ρ` (unsatisfiable for irrational `ρ`), matching `exists_rs_epsCa_large_near_capacity`.
 
 - **Field/domain existence carried, not discharged.** Producing arbitrarily large *smooth*
   Reed-Solomon evaluation domains needs a finite field `F` with `2^K ∣ |F| − 1` (a prime
@@ -346,7 +347,7 @@ rate within `1/n` of `ρ`, and a radius loss `slack ≤ Kc / log₂ n` for which
   `n^c ≤ |Λ(C, δ_min(C) − slack)|`.
 
 Derived in-tree from `choose_le_Lambda_rs_vanilla_of_smooth` (`cor:kikh-vanilla`). -/
-theorem rs_asymptotic_list_lower_bound_kkh26
+theorem exists_rs_asymptotic_Lambda_lower_bound
     (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (c : ℕ)
     (supply : ∀ K : ℕ, ∃ (ιC : Type) (_ : Fintype ιC) (_ : Nonempty ιC) (_ : DecidableEq ιC)
         (FC : Type) (_ : Field FC) (_ : Fintype FC) (_ : DecidableEq FC)

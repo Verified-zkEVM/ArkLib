@@ -23,7 +23,7 @@ agreement (MCA) bound.
 
 ## Main statements
 
-- `CodingTheory.lineDecodable_imp_epsMCA_le` — ABF26 Theorem 4.21 [GG25 Thm 3.5]:
+- `CodingTheory.LineDecodable.mcaError_le` — ABF26 Theorem 4.21 [GG25 Thm 3.5]:
   `(δ, a, n+1)`-line-decodability gives an MCA bound `ε_mca(C, δ) ≤ a / |F|`.
   Admitted as an external result; the proof in GG25 routes through the line-decoder's
   alignment guarantee and a `Δ_S = 0`-witness argument.
@@ -54,13 +54,14 @@ open Classical in
 /-- **ABF26 Definition 4.20 [GG25 Def 3.1].** A code `C ⊆ A^ι` is `(δ, a, b)`-**line-decodable**
 when every `γ`-indexed family of codewords that aligns with a random line `f₁ + γ·f₂` on at
 least an `a/|F|` fraction of `γ`'s is itself induced (on at least a `b/|F|` fraction of `γ`'s)
-by a single affine pair `(u₁, u₂)` of codewords.
+by a single affine pair `(u₁, u₂)` of codewords on those same close challenges.
 
 In formula:
 
   `∀ f₁ f₂ : ι → A, ∀ U : F → ι → A, (∀ γ, U γ ∈ C) →`
   `  Pr_γ [δᵣ(f₁ + γ • f₂, U γ) ≤ δ] ≥ a / |F| →`
-  `  ∃ u₁ u₂ ∈ C, Pr_γ [U γ = u₁ + γ • u₂] ≥ b / |F|`
+  `  ∃ u₁ u₂ ∈ C, Pr_γ [δᵣ(f₁ + γ • f₂, U γ) ≤ δ ∧`
+  `                            U γ = u₁ + γ • u₂] ≥ b / |F|`
 
 The hypothesis pins each `U γ` inside `C`; ABF26 writes this as `U : F → C` but Lean is
 cleaner with a function into the ambient space plus a side condition. The probabilities
@@ -72,7 +73,8 @@ def LineDecodable (C : Set (ι → A)) (δ : ℝ≥0) (a b : ℕ) : Prop :=
         ≤ Pr_{let γ ← $ᵖ F}[δᵣ(f₁ + γ • f₂, U γ) ≤ δ] →
     ∃ u₁ ∈ C, ∃ u₂ ∈ C,
       (b : ENNReal) / (Fintype.card F : ENNReal)
-          ≤ Pr_{let γ ← $ᵖ F}[U γ = u₁ + γ • u₂]
+          ≤ Pr_{let γ ← $ᵖ F}[
+              δᵣ(f₁ + γ • f₂, U γ) ≤ δ ∧ U γ = u₁ + γ • u₂]
 
 /-- **ABF26 Theorem 4.21 [GG25 Thm 3.5].** If `C` is `(δ, a, n+1)`-line-decodable, then its
 mutual correlated agreement error is bounded by `a / |F|`:
@@ -84,9 +86,11 @@ where `n = |ι|`. The conclusion uses the canonical affine-line generator and re
 seeds and uses the `n+1` aligned seeds to force the common affine pair required to rule
 out the MCA obstruction.
 
+GG25 Theorem 3.5 assumes `δ ∈ (0,1)`; both inequalities are explicit below.
 Admitted as an external result; formalising the GG25 argument is tracked separately. -/
-theorem lineDecodable_imp_epsMCA_le
+theorem LineDecodable.mcaError_le
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
+    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_h : LineDecodable (F := F) ((C : Set (ι → A))) δ a
             (Fintype.card ι + 1)) :
     mcaError (AffineLineGenerator F) C (δ : ℝ)

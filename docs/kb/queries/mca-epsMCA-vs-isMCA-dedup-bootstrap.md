@@ -63,8 +63,10 @@ Hence the target equalities:
 
 ## 3. Where they do NOT coincide (three disjoint regions)
 
-1. **`epsMCA` only — general `F`-module alphabet `A ≠ F`.** Used (`linear_epsMCA_1_5_johnson_gkl24`,
-   ConstrainedCode). `IsMCA` is `F`-valued (`vecMul`, `LinearCode ι F`) → cannot express it.
+1. **`epsMCA` only — general `F`-module alphabet `A ≠ F`.** Used by `ConstrainedCode`.
+   The source-audited `linear_mcaError_le_onePointFiveJohnson` is no longer an example:
+   it now uses the cited theorem's field alphabet. `IsMCA` is `F`-valued (`vecMul`,
+   `LinearCode ι F`) → cannot express general module alphabets.
    *Essential, not mechanical.*
 2. **`IsMCA` only — general generator `G ≠ line`** (any `ℓ`, polynomial/tensor/MDS generators —
    the BCGM25 preservation theory). `epsMCA` is frozen at the `Fin 2` line → cannot express it.
@@ -124,10 +126,12 @@ From the 2026-07-09 ProximityGap audit — polish/symmetry/hygiene on already-co
 - **C1** `epsCA_le_epsMCA` (`Errors.lean` ~L404) requires `Submodule` but proof uses only set
   membership → relax to `C : Set`; ripples to `MCAUpperWitness.ofEpsCAGt`.
 - **C2** `epsCA_eq_of_floor_eq` only covers `δ_int`; docstring claims both → add `δ_fld` companion.
-- **C3** drop admittedly-unneeded hyps: `linear_epsCA_1_5_johnson_bgks20`, `rs_epsCA_small_loss_r4_10`.
+- **C3** drop admittedly-unneeded hyps in the former catalogue drafts; current semantic APIs are
+  `linear_epsCa_le_onePointFiveJohnson` and `rs_epsCa_le_of_no_radius_level_crossing`.
 - **B2-cheap** rename `IsMCA`'s `γ : I → δ` (collides with `mcaEvent`'s random scalar `γ : F`).
 - fragility (defensive, if touching): `poly_gen_is_zero_evading`, `minSeedCard_le`,
-  `isMCA_projectedGenerator_of_isMCA`, `rs_epsCA_small_loss_r4_10`; `Basic.lean` var shadowing.
+  `isMCA_projectedGenerator_of_isMCA`, `rs_epsCa_le_of_no_radius_level_crossing`;
+  `Basic.lean` var shadowing.
 
 Sound status: every `sorry` in these files is a labeled external admit — **no in-tree gaps**.
 

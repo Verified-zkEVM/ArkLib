@@ -26,7 +26,7 @@ variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /-- The source-native BCHKS25 Johnson-range bound supplies a safe one-sided MCA witness whenever
 its explicit numerical upper bound is at most the requested threshold. -/
-noncomputable def McaLowerWitness.ofJohnsonBCHKS25
+noncomputable def McaLowerWitness.ofJohnsonRangeBound
     (domain : ι ↪ F) (k : ℕ) (δ ε_star : ℝ≥0)
     (hk : 1 < k) (hδ_pos : 0 < δ)
     (hδ_johnson :
@@ -45,7 +45,7 @@ noncomputable def McaLowerWitness.ofJohnsonBCHKS25
     McaLowerWitness (ReedSolomon.code domain k) ε_star :=
   McaLowerWitness.ofLe hδ_le_one
     (le_trans
-      (rs_epsMCA_johnson_range_bchks25 domain k δ hk hδ_pos hδ_johnson)
+      (rs_mcaError_le_in_johnsonRange domain k δ hk hδ_pos hδ_johnson)
       hle)
 
 end ProximityGap.GrandChallenges

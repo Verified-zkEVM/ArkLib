@@ -102,7 +102,7 @@ large-alphabet barrier
 subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
 means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
 and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
-The KKH asymptotic result `rs_asymptotic_list_lower_bound_kkh26` is likewise proved from the
+The KKH asymptotic result `exists_rs_asymptotic_Lambda_lower_bound` is likewise proved from the
 concrete vanilla template; it carries smooth-domain existence as an explicit `supply` hypothesis
 and does not depend on the separate sum-set admit.
 
