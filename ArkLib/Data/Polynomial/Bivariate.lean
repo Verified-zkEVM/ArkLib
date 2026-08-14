@@ -105,7 +105,7 @@ theorem natDeg_sum_eq_of_unique {α : Type} {s : Finset α} {f : α → F[X]} {d
       simpa [hmxdeg] using hlt_sum
     have hsum_decomp : (∑ x ∈ s, f x) = (∑ x ∈ s \ {mx}, f x) + f mx := by
       classical
-      simpa using (Finset.sum_eq_sum_diff_singleton_add (s := s) (i := mx) (f := f) h)
+      simpa using (Finset.sum_eq_sum_sdiff_singleton_add (f := f) h)
     calc
       (∑ x ∈ s, f x).natDegree = ((∑ x ∈ s \ {mx}, f x) + f mx).natDegree := by
         simp [hsum_decomp]

@@ -335,12 +335,22 @@ lemma probFailure_simulateQ_liftQuery_eq
     Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α)] =
       Pr[⊥ | simulateQ (fun (t : spec.Domain) ↦
         (liftM (query t : OracleQuery spec (spec.Range t))
-          : OracleComp superSpec (spec.Range t))) oa] +
+          : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] +
       Pr[= none | simulateQ (fun (t : spec.Domain) ↦
         (liftM (query t : OracleQuery spec (spec.Range t))
-          : OracleComp superSpec (spec.Range t))) oa] := by
-  simpa [OracleComp.liftM_OptionT_eq] using
-    (OptionT.probFailure_eq (mx := (liftM oa : OptionT (OracleComp superSpec) α)))
+          : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] := by
+  have hrun : (liftM oa : OptionT (OracleComp superSpec) α).run =
+      simulateQ (fun (t : spec.Domain) ↦
+        (liftM (query t : OracleQuery spec (spec.Range t))
+          : OracleComp superSpec (spec.Range t))) oa.run := by
+    rw [OracleComp.liftM_OptionT_eq]
+    rfl
+  calc
+    Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α)] =
+        Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α).run] +
+          Pr[= none | (liftM oa : OptionT (OracleComp superSpec) α).run] :=
+      OptionT.probFailure_eq _
+    _ = _ := by rw [hrun]
 
 /-- Symmetric form of `probFailure_simulateQ_liftQuery_eq` with `simulateQ` terms on the LHS. -/
 @[simp]
@@ -352,10 +362,10 @@ lemma probFailure_simulateQ_liftQuery_add_none_eq
     {α : Type u} (oa : OptionT (OracleComp spec) α) :
     Pr[⊥ | simulateQ (fun (t : spec.Domain) ↦
       (liftM (query t : OracleQuery spec (spec.Range t))
-        : OracleComp superSpec (spec.Range t))) oa] +
+        : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] +
     Pr[= none | simulateQ (fun (t : spec.Domain) ↦
       (liftM (query t : OracleQuery spec (spec.Range t))
-        : OracleComp superSpec (spec.Range t))) oa] =
+        : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] =
     Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α)] := by
   simpa [add_comm] using
     (probFailure_simulateQ_liftQuery_eq (spec := spec)
@@ -372,10 +382,10 @@ lemma probFailure_simulateQ_liftQuery_eq_zero_iff
     Pr[⊥ | (liftM oa : OptionT (OracleComp superSpec) α)] = 0 ↔
       Pr[⊥ | simulateQ (fun (t : spec.Domain) ↦
         (liftM (query t : OracleQuery spec (spec.Range t))
-          : OracleComp superSpec (spec.Range t))) oa] = 0 ∧
+          : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] = 0 ∧
       Pr[= none | simulateQ (fun (t : spec.Domain) ↦
         (liftM (query t : OracleQuery spec (spec.Range t))
-          : OracleComp superSpec (spec.Range t))) oa] = 0 := by
+          : OracleComp superSpec (spec.Range t))) (OptionT.run oa)] = 0 := by
   rw [probFailure_simulateQ_liftQuery_eq (oa := oa), add_eq_zero]
 
 /-- Run-level failure-probability bridge for `simulateQ ...` vs `liftM` on

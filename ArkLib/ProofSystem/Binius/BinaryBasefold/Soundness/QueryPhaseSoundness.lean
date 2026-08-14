@@ -1043,12 +1043,42 @@ theorem lemma_4_25_reject_if_suffix_in_disagreement
                   (stmtIn := stmtIn) (oStmtIn := oStmtIn)
                   (j := j_prev) (hj := h_prev_succ)
                   (h_good := h_prev_good) (h_next_good := by
-                    simpa [j_cur, j_prev] using h_cur_good)
+                    simpa [j_cur, j_prev, Nat.add_assoc] using h_cur_good)
                   (h_no_bad_global := h_no_bad_global)
                   (v := v) (h_accept := h_accept)
                   (h_point_ne := by
                     simpa [j_prev] using h_prev_point_ne)
-              simpa [j_cur, j_prev] using h_step
+              have h_next_idx :
+                  (⟨j_prev.val + 1, h_prev_succ⟩ : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ))) =
+                    j_cur := by
+                apply Fin.ext
+                dsimp [j_prev, j_cur]
+                omega
+              have h_transport :
+                  ∀ (j_next : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)))
+                    (h_next_good : ¬ badBlockProp 𝔽q β
+                      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) stmtIn oStmtIn j_next),
+                    j_next = j_cur →
+                    (oStmtIn j_next
+                      (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+                        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v) ≠
+                    goodBlockCodeword (𝔽q := 𝔽q) (β := β)
+                      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                      (stmtIn := stmtIn) (oStmtIn := oStmtIn) (j := j_next) h_next_good
+                      (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+                        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_next v)) →
+                    (oStmtIn j_cur
+                      (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+                        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_cur v) ≠
+                    goodBlockCodeword (𝔽q := 𝔽q) (β := β)
+                      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+                      (stmtIn := stmtIn) (oStmtIn := oStmtIn) (j := j_cur) h_cur_good
+                      (queryBlockSourceSuffix (𝔽q := 𝔽q) (β := β)
+                        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) (ϑ := ϑ) j_cur v)) := by
+                intro j_next h_next_good h_eq h_point_ne
+                subst j_next
+                exact h_point_ne
+              exact h_transport _ _ h_next_idx h_step
         let j_end : Fin (nBlocks (ℓ := ℓ) (ϑ := ϑ)) := ⟨j_first.val + (j_last.val - j_first.val), by
           have h_le : j_first.val + (j_last.val - j_first.val) ≤ j_last.val := by
             rw [Nat.add_sub_of_le h_jfirst_le_jlast]
@@ -1687,8 +1717,7 @@ theorem prop_4_23_singleRepetition_proximityCheck_bound
         extractSuffixFromChallenge 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (v := v) (destIdx := destIdx) (h_destIdx_le := h_destIdx_le) ∉ D
       ] := by
-    apply prob_mono
-    exact h_accept_subset
+    exact Probability.Pr_le_Pr_of_implies _ _ _ h_accept_subset
   -- Evaluate the suffix probability for the complement set.
   have h_prob_suffix_not :
       Pr_{ let v ←$ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[

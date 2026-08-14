@@ -10,8 +10,9 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 # The Inner-Outer Commitment/Hachi Ring `Z_q[X] / (X^{2^α} + 1)`
 
 This file fixes the cyclotomic ring over which the **inner-outer Ajtai commitment** operates.
-That commitment — the Greyhound [NS24] / Hachi [NOZ26] construction — works specifically over
-the power-of-two cyclotomic ring `R_q := Z_q[X] / (X^{2^α} + 1)`.
+That commitment — the Greyhound [NS24] / Hachi [NOZ26] construction, which commits to a short
+vector by multiplying it with a public matrix — works specifically over the power-of-two
+cyclotomic ring `R_q := Z_q[X] / (X^{2^α} + 1)`.
 
 The ring itself now lives in `Data/Lattices` as `primePowTwoModulus` / `PrimePowTwoRing` (see
 `ArkLib/Data/Lattices/CyclotomicRing/PowTwo.lean`), since it is pure cyclotomic ring theory and
@@ -31,6 +32,9 @@ Micciancio/Young product norm bound (`scalarVecMul_mul_l2NormSq_le`) — hold on
   (a re-export of `primePowTwoModulus`).
 * `HachiRing q α` — the inner-outer commitment ring `Z_q[X] / (X^{2^α} + 1)`
   (a re-export of `PrimePowTwoRing`).
+* `hachiModulus_natDegree`, `hachiModulus_conductor` — `@[simp]` lemmas recording that the
+  modulus has degree `2^α` and conductor `2^{α+1}` (it is the `2^{α+1}`-th cyclotomic
+  polynomial).
 
 ## Notation
 

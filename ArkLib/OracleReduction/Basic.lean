@@ -15,7 +15,7 @@ format:
 
   - The protocol proceeds over a number of steps. In each step, either the prover or the verifier
     sends a message to the other. We assume that this sequence of interactions is fixed in advance,
-    and is described by a protocol specification (see `ProtocolSpec.lean`).
+    and is described by a protocol specification (see `ProtocolSpec/Basic.lean`).
 
     Note that we do _not_ require interleaving prover's messages with verifier's challenges, for
     maximum flexibility in defining reductions.
@@ -456,13 +456,13 @@ def toOracleVerifier
       (fun q => do
         let resp ← liftM <|
           query (spec := [OStmtIn]ₒ) (m := OracleComp oc) q
-        return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
+        return ⟨q.1, ⟨q.2, resp⟩⟩)
     let queryResponsesOMsg : List ((i : pSpec.MessageIdx) × ((q : (Oₘ i).Query) × (Oₘ i).Response q)) ←
       (naVerifier.queryMsg stmt challenges).mapM
       (fun q => do
         let resp ← liftM <|
           query (spec := [pSpec.Message]ₒ) (m := OracleComp oc) q
-        return ⟨q.1, ⟨q.2, by simpa only using resp⟩⟩)
+        return ⟨q.1, ⟨q.2, resp⟩⟩)
     let stmtOut ← liftM <| naVerifier.verify stmt challenges queryResponsesOStmt queryResponsesOMsg
     return stmtOut
 

@@ -7,6 +7,7 @@ import ArkLib.OracleReduction.Security.Basic
 import ArkLib.ToVCVio.Simulation
 import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.ToVCVio.Lemmas
+import ArkLib.Data.Probability.Instances
 
 /-!
 # Completeness Proof Patterns for Oracle Reductions
@@ -169,11 +170,19 @@ theorem unroll_n_message_reduction_perfectCompleteness
         simp only [QueryImpl.mapQuery, OracleQuery.input_apply, OracleQuery.cont_apply,
           QueryImpl.addLift_def, QueryImpl.add_apply_inr]
         have hq := support_challengeQueryImpl_run_eq (q := OracleQuery.mk i f) s
+        have hlift : support (liftQuery (OracleQuery.mk i f) :
+              OracleComp [pSpec.Challenge]ₒ β) =
+            support (liftQuery (OracleQuery.mk (Sum.inr i) f) :
+              OracleComp (oSpec + [pSpec.Challenge]ₒ) β) := by
+          simp only [liftQuery, OracleComp.support_liftM, OracleQuery.cont_apply]
+          rfl
+        change _ = support (liftQuery (OracleQuery.mk (Sum.inr i) f) :
+          OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
         simpa only [ChallengeIdx, Challenge, add_apply_inr, QueryImpl.liftTarget_apply,
           StateT.run_map, StateT.run_monadLift, monadLift_self, bind_pure_comp, Functor.map_map,
           support_map, Set.fmap_eq_image, toPFunctor_add, ofPFunctor_add, ofPFunctor_toPFunctor,
           QueryImpl.mapQuery, OracleQuery.input_apply, OracleQuery.cont_apply,
-          liftM_map] using hq
+          liftM_map] using hq.trans hlift
       )]
   conv_lhs =>
     enter [2];
@@ -186,11 +195,19 @@ theorem unroll_n_message_reduction_perfectCompleteness
         simp only [QueryImpl.mapQuery, OracleQuery.input_apply, OracleQuery.cont_apply,
           QueryImpl.addLift_def, QueryImpl.add_apply_inr]
         have hq := support_challengeQueryImpl_run_eq (q := OracleQuery.mk i f) s
+        have hlift : support (liftQuery (OracleQuery.mk i f) :
+              OracleComp [pSpec.Challenge]ₒ β) =
+            support (liftQuery (OracleQuery.mk (Sum.inr i) f) :
+              OracleComp (oSpec + [pSpec.Challenge]ₒ) β) := by
+          simp only [liftQuery, OracleComp.support_liftM, OracleQuery.cont_apply]
+          rfl
+        change _ = support (liftQuery (OracleQuery.mk (Sum.inr i) f) :
+          OracleComp (oSpec + [pSpec.Challenge]ₒ) β)
         simpa only [ChallengeIdx, Challenge, add_apply_inr, QueryImpl.liftTarget_apply,
           StateT.run_map, StateT.run_monadLift, monadLift_self, bind_pure_comp, Functor.map_map,
           support_map, Set.fmap_eq_image, toPFunctor_add, ofPFunctor_add, ofPFunctor_toPFunctor,
           QueryImpl.mapQuery, OracleQuery.input_apply, OracleQuery.cont_apply,
-          liftM_map] using hq
+          liftM_map] using hq.trans hlift
       )]
   simp only [liftM_bind]
   simp only [ChallengeIdx, Challenge, liftM_pure, bind_pure_comp, liftM_OptionT_eq, Prod.mk.eta,
@@ -233,15 +250,25 @@ theorem unroll_n_message_reduction_perfectCompleteness
   · apply and_congr
     · constructor
       · intro h tr lastPrvState h_mem_prvRun stmtOut oStmtOut witOut h_mem_prvOutput_support
-        have h_res := h ⟨tr, lastPrvState⟩ (by simpa using h_mem_prvRun)
-          ⟨⟨stmtOut, oStmtOut⟩, witOut⟩ (by simpa only using h_mem_prvOutput_support)
+        have h_res := h ⟨tr, lastPrvState⟩
+          (by
+            have h_mem := (OptionT.mem_support_iff _ _).mpr h_mem_prvRun
+            exact h_mem)
+          ⟨⟨stmtOut, oStmtOut⟩, witOut⟩
+          (by
+            have h_mem := (OptionT.mem_support_iff _ _).mpr h_mem_prvOutput_support
+            simpa only [OptionT.support_liftM] using h_mem)
         simp only [OptionT.probFailure_bind_pure_comp_eq_zero_iff] at h_res
         exact h_res
       · intro h ⟨tr, lastPrvState⟩ h_mem_prvRun ⟨⟨stmtOut, oStmtOut⟩, witOut⟩
           h_mem_prvOutput_support
         simp only
-        have h_res := h tr lastPrvState (by simpa only using h_mem_prvRun)
-          stmtOut oStmtOut witOut (by simpa only using h_mem_prvOutput_support)
+        have h_res := h tr lastPrvState
+          (by
+            exact (OptionT.mem_support_iff _ _).mp h_mem_prvRun)
+          stmtOut oStmtOut witOut
+          (by
+            exact (OptionT.mem_support_iff _ _).mp h_mem_prvOutput_support)
         simp only [OptionT.probFailure_bind_pure_comp_eq_zero_iff]
         exact h_res
     · apply and_congr
@@ -336,12 +363,12 @@ end GenericProtocol
 section ZeroMessageProtocol
 
 variable {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
-{StmtIn WitIn StmtOut WitOut : Type}
-{ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)]
-{pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
-[IsUniformSpec [pSpec.Challenge]ₒ]
-[∀ i, OracleInterface (pSpec.Message i)]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
+  [∀ i, OracleInterface (OStmtIn i)]
+  {pSpec : ProtocolSpec 0} [∀ i, SampleableType (pSpec.Challenge i)]
+  [IsUniformSpec [pSpec.Challenge]ₒ]
+  [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- **Derive 0-message version from generic n-message theorem**
 
@@ -393,12 +420,12 @@ end ZeroMessageProtocol
 section OneMessageProtocol
 
 variable {oSpec : OracleSpec ι} [IsUniformSpec oSpec]
-{StmtIn WitIn StmtOut WitOut : Type}
-{ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
-[∀ i, OracleInterface (OStmtIn i)]
-{pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
-[IsUniformSpec [pSpec.Challenge]ₒ]
-[∀ i, OracleInterface (pSpec.Message i)]
+  {StmtIn WitIn StmtOut WitOut : Type}
+  {ιₛᵢ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} {OStmtOut : ιₛₒ → Type}
+  [∀ i, OracleInterface (OStmtIn i)]
+  {pSpec : ProtocolSpec 1} [∀ i, SampleableType (pSpec.Challenge i)]
+  [IsUniformSpec [pSpec.Challenge]ₒ]
+  [∀ i, OracleInterface (pSpec.Message i)]
 
 /-- **Derive 1-message version from generic n-message theorem**
 
@@ -1093,7 +1120,7 @@ theorem probEvent_PMF_eq_Pr {α : Type} (pmf : PMF α) (P : α → Prop) [Decida
   -- RHS: Pr_{ let x ← pmf }[P x] = (do let x ← pmf; return P x).val True
   --     = ∑' x, pmf x * (if P x then 1 else 0)
   simp only [PMF.toOuterMeasure_apply]
-  rw [prob_tsum_form_singleton]
+  rw [Probability.prob_tsum_form_singleton]
   congr 1
   funext x
   simp only [Set.indicator_apply, Set.mem_setOf_eq, mul_ite, mul_one, mul_zero]
@@ -1265,11 +1292,12 @@ theorem rbrKnowledgeSoundness_of_2msg_PtoV_uniformChallenge
     rw [probEvent_eq_tsum_ite]
     erw [simulateQ_query]
     simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
-      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+      monadLift_self, QueryImpl.liftTarget_self,
       OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
     -- Routing a challenge query through `impl + challengeQueryImpl` is definitionally uniform
     -- sampling; the `+`-routing to the right branch holds by `rfl` for any `oSpec`.
-    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
+    have hchal : ((impl.addLift challengeQueryImpl :
+          QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp))
           (MonadLift.monadLift (OracleSpec.query q.input) :
             OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
         ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl
@@ -1362,9 +1390,10 @@ theorem rbrKnowledgeSoundness_of_1msg_VtoP_uniformChallenge
     rw [probEvent_eq_tsum_ite]
     erw [simulateQ_query]
     simp only [ChallengeIdx, Challenge, Fin.isValue, Nat.reduceAdd,
-      monadLift_self, QueryImpl.addLift_def, QueryImpl.liftTarget_self,
+      monadLift_self, QueryImpl.liftTarget_self,
       OracleQuery.input_query, StateT.run'_eq, StateT.run_map, Functor.map_map, ge_iff_le]
-    have hchal : ((impl + QueryImpl.liftTarget (StateT σ ProbComp) challengeQueryImpl)
+    have hchal : ((impl.addLift challengeQueryImpl :
+          QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp))
           (MonadLift.monadLift (OracleSpec.query q.input) :
             OracleQuery (oSpec + [pSpec.Challenge]ₒ) _).input).run x.2 =
         ((liftM (challengeQueryImpl (pSpec := pSpec) q.input)) : StateT σ ProbComp _).run x.2 := rfl

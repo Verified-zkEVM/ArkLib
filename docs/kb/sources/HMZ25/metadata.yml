@@ -1,0 +1,5 @@
+bibkey: HMZ25
+source_kind: bibliography-only
+canonical_url: https://eprint.iacr.org/2025/199
+committed_artifacts: []
+notes: "Sublinear Proofs over Polynomial Rings (ePrint 2025/199): sublinear proofs for Ring-R1CS over Z_Q[X]/(X^N+1). ArkLib uses its ring-switching lift, generically as ArkLib/ProofSystem/RingSwitching/Lift/ and as instantiated by Hachi (NOZ26, Figure 4 / Lemma 9) in ArkLib/Commitments/Functional/Hachi/RingSwitch/."

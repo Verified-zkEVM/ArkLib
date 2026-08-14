@@ -7,6 +7,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
+import ArkLib.Data.Probability.Instances
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Compliance
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Soundness.Lift
 import CompPoly.Fields.Binary.Tower.Prelude
@@ -32,7 +33,7 @@ open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomi
 open scoped NNReal
 open ReedSolomon Code BerlekampWelch Function
 open Finset AdditiveNTT Polynomial MvPolynomial Nat Matrix
-open ProbabilityTheory
+open Probability ProbabilityTheory
 
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
@@ -73,7 +74,7 @@ lemma not_jointProximityNat_of_not_jointProximityNat_split
   exact fun h_close => h_far (CA_split_rowwise_implies_CA C U e h_close)
 
 open Classical in
-omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] [SampleableType L] in
+omit [CharP L 2] [DecidableEq 𝔽q] h_β₀_eq_1 [NeZero ℓ] in
 /-- **Affine proximity gap bound for RS interleaved codes (contrapositive form).**
 If the pair `(u₀, u₁)` is NOT `e`-close to the interleaved code, then the
 affine line `(1-r)·u₀ + r·u₁` is `e`-close to `C` for at most `|S|` values
@@ -1274,7 +1275,7 @@ lemma prop_4_21_2_case_2_fiberwise_far_incremental
           (h_destIdx_le := by omega)
           f_block_start (Fin.snoc r_prefix r_new)] at h_fw_close
         simp only [Fin.init_snoc, Fin.snoc_last] at h_fw_close
-        convert h_fw_close using 1)
+        convert h_fw_close using 1 <;> omega)
 
 /-- **Proposition 4.21.2** (Incremental bad-event probability bound).
 This is the formalization-specific refinement of Proposition 4.21 for prefix-by-prefix folding

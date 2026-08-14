@@ -115,7 +115,8 @@ lemma exists_Pz_of_coeffs_of_close_proximity
     obtain ⟨w, hS, dist⟩ : ∃ a ∈ ReedSolomon.code ωs (k + 1), ↑δᵣ(u₀ + z • u₁, a) ≤ δ := by
       simpa using hS
     obtain ⟨p, hS⟩ : ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w := by
-      simpa using hS
+      change ∃ y ∈ degreeLT F (k + 1), (ReedSolomon.evalOnPoints ωs) y = w at hS
+      exact hS
     exact ⟨p, ⟨
       by if h : p = 0
          then simp [h]

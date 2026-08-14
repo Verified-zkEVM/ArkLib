@@ -103,7 +103,7 @@ lemma BBF_CodeDistance_eq (i : Fin r) (h_i : i ≤ ℓ) :
     ⟨fun x => x.val, fun x y h => by exact Subtype.ext h⟩
   -- Create α : Fin m → L by composing with an equivalence
   let m := Fintype.card ((sDomain 𝔽q β h_ℓ_add_R_rate) i)
-  have h_dist_RS := ReedSolomon.dist_eq' (F := L) (ι := (sDomain 𝔽q β h_ℓ_add_R_rate)
+  have h_dist_RS := ReedSolomon.dist_eq_of_le (F := L) (ι := (sDomain 𝔽q β h_ℓ_add_R_rate)
     (i := i)) (α := domain) (n := 2^(ℓ - i.val)) (h := by
       rw [sDomain_card 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound (by omega))]
       rw [hF₂.out];
@@ -352,7 +352,7 @@ lemma UDRClose_iff_within_UDR_radius (i : Fin r) (h_i : i ≤ ℓ)
   let card_Sᵢ := sDomain_card 𝔽q β h_ℓ_add_R_rate (i := i) (h_i := Sdomain_bound (by omega))
   conv_rhs =>
     unfold BBF_Code;
-    rw [ReedSolomon.uniqueDecodingRadius_RS_eq' (h := by
+    rw [ReedSolomon.uniqueDecodingRadius_RS_eq (h := by
       rw [card_Sᵢ, hF₂.out]; apply Nat.pow_le_pow_right (hx := by omega); omega
     )];
   simp_rw [card_Sᵢ, hF₂.out,
@@ -688,7 +688,6 @@ lemma hammingDist_le_fiberwiseDistance_mul_two_pow_steps (i : Fin r) {destIdx : 
     rw [h_dist_eq_card]
     -- Y_bad is the set of quotient points y that THERE EXISTS a bad fiber point x
     set Y_bad := fiberwiseDisagreementSet 𝔽q β i steps h_destIdx h_destIdx_le f g
-    simp only at * -- simplify domain indices everywhere
     -- ⊢ #ΔH ≤ Y_bad.ncard * 2 ^ steps
     have hFinType_Y_bad : Fintype Y_bad := by exact Fintype.ofFinite ↑Y_bad
     -- Every point of disagreement `x` must belong to a fiber over some `y` in `Y_bad`,

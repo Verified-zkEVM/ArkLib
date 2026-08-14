@@ -93,7 +93,7 @@ def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseCon
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ])
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
   let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
-    (a := fun ω => t.val.eval (bitsOfIndex ω))
+    (a := witnessNovelCoeffs t)
   let f₀ : (sDomain 𝔽q β h_ℓ_add_R_rate 0) → L := fun x => P₀.val.eval x.val
   let fᵢ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := 0) (steps := i) (destIdx := ⟨i, by omega⟩)
@@ -122,7 +122,7 @@ lemma getMidCodewords_succ (t : L⦃≤ 1⦄[X Fin ℓ]) (i : Fin ℓ)
       (h_destIdx_le := by simp only; omega)
       (f := fun x =>
         (polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (h_ℓ := by omega)
-          (a := fun ω => t.val.eval (bitsOfIndex ω))).val.eval x.val)
+          (a := witnessNovelCoeffs t)).val.eval x.val)
       (r_challenges₁ := challenges) (r_challenges₂ := fun _ => r_i')).symm
   rw [Fin.append_right_eq_snoc] at h_trans
   exact h_trans
@@ -164,7 +164,6 @@ noncomputable def getFoldProverFinalOutput (i : Fin ℓ)
     (i := ⟨i, by omega⟩) (steps := 1) (destIdx := ⟨i.succ, by omega⟩)
     (h_destIdx := by simp only [Fin.val_succ]) (h_destIdx_le := by simp only; omega)
     f_i challenges
-  simp only at fᵢ_succ
   let witOut : Witness (L := L) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i.succ := by
     let projectedH := projectToNextSumcheckPoly (L := L) (ℓ := ℓ)
       (i := i) (Hᵢ := witIn.H) (rᵢ := r_i')
@@ -800,7 +799,7 @@ def strictOracleFoldingConsistencyProp (t : MultilinearPoly L ℓ) (i : Fin (ℓ
     (challenges : Fin i → L)
     (oStmt : ∀ j, (OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i) j) : Prop :=
   let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
+    (witnessNovelCoeffs t)
   let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   ∀ (j : Fin (toOutCodewordsCount ℓ ϑ i)),
     let destIdx : Fin r := ⟨oraclePositionToDomainIndex (positionIdx := j), by

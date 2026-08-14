@@ -406,7 +406,13 @@ private lemma Monad.map_of_prod_fst_eq_prod_fst {m : Type u → Type v} [Monad m
     (fun a => (c, a.1)) <$> ma = Prod.mk c <$> Prod.fst <$> ma := by
   simp only [Functor.map_map]
 
-/-- Logging the queries made by both parties do not change the output of the reduction -/
+/-- Logging the queries made by both parties do not change the output of the reduction.
+
+**(admitted)** — the proof below is a `sorry`; a partial `calc` attempt is retained in comments.
+
+⚠️ This lemma is `@[simp]`, so **any** downstream proof whose `simp` call fires it silently
+inherits `sorryAx`. Check `#print axioms` on security-critical results that simp through this
+file, and treat a hit as a real gap rather than noise. -/
 @[simp]
 theorem Reduction.runWithLog_discard_logs_eq_run
     {stmt : StmtIn} {wit : WitIn}
@@ -491,6 +497,53 @@ theorem Prover.runToRound_zero_of_prover_first
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
       prover.runToRound 0 stmt wit = (pure (default, prover.input (stmt, wit))) := by
   simp [Prover.runToRound]
+
+/-- One-step unfolding of `runToRound`: running to round `i.succ` is running to round
+`i.castSucc` and then processing round `i`. The workhorse for collapsing concrete
+protocol executions round by round (e.g. in component completeness proofs). -/
+theorem Prover.runToRound_succ (i : Fin n)
+    (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :
+      prover.runToRound i.succ stmt wit =
+        prover.processRound i (prover.runToRound i.castSucc stmt wit) :=
+  Fin.induction_succ _ _ _
+
+/-- **Per-direction unfold of `processRound` (verifier-to-prover round).** When round `j` is a
+challenge round (`pSpec.dir j = .V_to_P`), processing it reads the previous result, draws the
+challenge, feeds it to `receiveChallenge`, and appends it to the transcript. This resolves the
+internal dependent `match hDir : pSpec.dir j` *once, at the framework level*, so concrete-protocol
+proofs no longer re-derive the direction split (and its `⟨j, hDir⟩` index proofs) by hand. Pairs
+with `processRound_of_dir_eq_P_to_V`, and with the `runToRound` unfolding lemmas above, to give a
+clean, monad-law-friendly challenge-first normal form for any `Prover.run`. -/
+theorem Prover.processRound_of_dir_eq_V_to_P (j : Fin n) (hDir : pSpec.dir j = .V_to_P)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (currentResult : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
+    prover.processRound j currentResult = (do
+      let ⟨transcript, state⟩ ← currentResult
+      let challenge ← pSpec.getChallenge ⟨j, hDir⟩
+      let newState := (← prover.receiveChallenge ⟨j, hDir⟩ state) challenge
+      return ⟨transcript.concat challenge, newState⟩) := by
+  simp only [Prover.processRound]
+  split <;> rename_i h
+  · rfl
+  · exact absurd (hDir.symm.trans h) (by decide)
+
+/-- **Per-direction unfold of `processRound` (prover-to-verifier round).** When round `j` is a
+message round (`pSpec.dir j = .P_to_V`), processing it reads the previous result, runs
+`sendMessage`, and appends the message to the transcript. The framework-level counterpart of
+`processRound_of_dir_eq_V_to_P`; see its docstring. -/
+theorem Prover.processRound_of_dir_eq_P_to_V (j : Fin n) (hDir : pSpec.dir j = .P_to_V)
+    (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (currentResult : OracleComp (oSpec + [pSpec.Challenge]ₒ)
+      (pSpec.Transcript j.castSucc × prover.PrvState j.castSucc)) :
+    prover.processRound j currentResult = (do
+      let ⟨transcript, state⟩ ← currentResult
+      let ⟨msg, newState⟩ ← prover.sendMessage ⟨j, hDir⟩ state
+      return ⟨transcript.concat msg, newState⟩) := by
+  simp only [Prover.processRound]
+  split <;> rename_i h
+  · exact absurd (hDir.symm.trans h) (by decide)
+  · rfl
 
 end Execution
 

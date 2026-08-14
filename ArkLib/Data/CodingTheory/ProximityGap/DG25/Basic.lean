@@ -18,7 +18,7 @@ import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Data.Finset.BooleanAlgebra
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Data.Set.Defs
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.RingTheory.Henselian
@@ -85,7 +85,7 @@ each pair of words `u_0` and `u_1` in `F^n`, if
 holds, then `d^2((u_i)_{i=0}^1, C^2) ≤ e` also does.
 -/
 def e_ε_correlatedAgreementAffineLinesNat
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     (C : Set (ι → A)) (e ε : ℕ) : Prop :=
   ∀ (u₀ u₁ : Word A ι),
     Pr_{let r ← $ᵖ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
@@ -126,8 +126,8 @@ theorem dist_affineCombination_le_dist_interleaved₂
 section TensorProximityGapDefinitions -- CommRing scalar set
 variable {F : Type} [CommRing F] [Module F A] [Fintype F]
 
-def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+def δ_ε_multilinearCorrelatedAgreement_Nat
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)

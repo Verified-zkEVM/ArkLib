@@ -6,7 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Elias Judin
 
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.RingTheory.Polynomial.Basic
 
 import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries

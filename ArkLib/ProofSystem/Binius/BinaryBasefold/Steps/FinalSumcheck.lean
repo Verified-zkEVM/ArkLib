@@ -403,6 +403,7 @@ lemma extractMLP_some_of_oracleFoldingConsistency
       (h_j := h_jLast_eq_zero.symm) (h_x := ?_)
     simp only [Fin.coe_ofNat_eq_mod, cast_cast]
     rfl
+    rfl
   · -- We reason on h_oracle_cons
     dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons
     have h_lt : ϑ < ℓ := by omega
@@ -1336,7 +1337,7 @@ lemma extracted_t_poly_eval_eq_final_constant
   rcases h_final_consistency with ⟨h_oracle_cons, h_final_cons⟩
   let P₀ : L⦃< 2^ℓ⦄[X] :=
     polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => tpoly.val.eval (bitsOfIndex ω))
+      (witnessNovelCoeffs tpoly)
   let f₀ : OracleFunction 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := (0 : Fin r)) :=
     polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   have h_pair :
@@ -1346,7 +1347,7 @@ lemma extracted_t_poly_eval_eq_final_constant
     have h_pair' :=
       (extractMLP_eq_some_iff_pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
         (f := getFirstOracle 𝔽q β oStmtOut) (tpoly := tpoly)).1 h_extractMLP
-    dsimp only [f₀] at h_pair' ⊢
+    dsimp [f₀, P₀, witnessNovelCoeffs] at h_pair' ⊢
     exact h_pair'
   let C₀ : Set ((sDomain 𝔽q β h_ℓ_add_R_rate (0 : Fin r)) → L) :=
     (BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := (0 : Fin r)))
@@ -1421,8 +1422,6 @@ lemma extracted_t_poly_eval_eq_final_constant
   have h_oracle_cons' := h_oracle_cons
   dsimp only [oracleFoldingConsistencyProp] at h_oracle_cons'
   rcases h_final_cons with ⟨h_fw_last, h_close_const, h_fold_last⟩
-  have h_last_const := congr_fun h_fold_last 0
-  simp only at h_last_const
   -- The last decoded oracle equals the constant oracle fun _ => stmtOut.final_constant.
   -- We apply the same unique-decoding argument as for the first oracle, but now at the
   -- last oracle index with code C_last and center u := oStmtOut jLast.

@@ -796,7 +796,9 @@ lemma finalCodeword_zero_eq_t_eval
   rw [congr_fun h_f_eq_getMidCodewords_t ⟨0, by simp only [zero_mem]⟩]
   let h_eval := BinaryBasefold.iterated_fold_to_level_ℓ_eval K β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (t := witIn.t)
-    (destIdx := ⟨Fin.last ℓ', by omega⟩)
+    (destIdx := ⟨Fin.last ℓ', by
+      simp only [Fin.val_last]
+      omega⟩)
     (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
   exact congr_fun h_eval ⟨0, by simp only [Fin.val_last, zero_mem]⟩
 
@@ -835,7 +837,7 @@ lemma iterated_fold_to_const_strict
       rw [h_k]
       have h_le : ϑ ≤ ℓ' := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ') (hdiv.out)
       have h_cId : cId.val < ϑ := cId.isLt
-      have h_last : (Fin.last ℓ').val = ℓ' := rfl
+      have h_last : (Fin.last ℓ').val = ℓ' := by simp only [Fin.val_last]
       omega
     ⟩
     let destDomainIdx : Fin (2 ^ κ) := ⟨k + ϑ, by
@@ -858,7 +860,7 @@ lemma iterated_fold_to_const_strict
     apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ') (hdiv.out)
   intro c lastDomainIdx k h_k curDomainIdx h_destIdx_eq f_k finalChallenges destDomainIdx folded
   let P₀ : L[X]_(2 ^ ℓ') := polynomialFromNovelCoeffsF₂ K β ℓ' (by omega)
-    (fun ω => witIn.t.val.eval (bitsOfIndex ω))
+    (witnessNovelCoeffs witIn.t)
   let f₀ := polyToOracleFunc K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   have h_wit_struct := h_strictOracleWitConsistency_In.1
   have h_strict_oracle_folding := h_strictOracleWitConsistency_In.2
@@ -900,8 +902,12 @@ lemma iterated_fold_to_const_strict
     have h_k_steps_eq : k_steps = k := by
       dsimp only [k_steps, k_pos_idx, k, lastDomainIdx]
     have h_cast_elim := iterated_fold_congr_dest_index K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-      (i := 0) (steps := k_steps) (destIdx := curDomainIdx) (destIdx' := ⟨k_steps, by omega⟩)
-      (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
+      (i := 0) (steps := k_steps) (destIdx := curDomainIdx) (destIdx' := ⟨k_steps, by
+        rw [h_k_steps_eq]
+        exact curDomainIdx.isLt⟩)
+      (h_destIdx := by
+        simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]
+        exact h_k_steps_eq.symm)
       (h_destIdx_le := by
         dsimp only [curDomainIdx]
         simp only [h_k, tsub_le_iff_right, le_add_iff_nonneg_right, zero_le]
@@ -911,7 +917,9 @@ lemma iterated_fold_to_const_strict
         stmtIn.challenges 0 (by simp only [zero_add, Fin.val_last]; omega))
     have h_cast_elim2 := iterated_fold_congr_dest_index K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := 0) (steps := k_steps) (destIdx := ⟨ℓ' - ϑ, by omega⟩) (destIdx' := curDomainIdx)
-      (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
+      (h_destIdx := by
+        simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]
+        rw [h_k_steps_eq, h_k])
       (h_destIdx_le := by
         dsimp only [curDomainIdx]
         simp only [tsub_le_iff_right, le_add_iff_nonneg_right, zero_le]
@@ -926,9 +934,9 @@ lemma iterated_fold_to_const_strict
     dsimp only [k_steps, k_pos_idx, f₀, P₀] at h_cast_elim
     dsimp only [k_steps, k_pos_idx, f₀, P₀] at h_cast_elim2
     conv_lhs =>
-      simp only [←h_cast_elim]
-      simp only [←h_cast_elim2]
-      simp only [←fun_eta_expansion]
+      simp only [← h_cast_elim]
+      simp only [← h_cast_elim2]
+      simp only [← fun_eta_expansion]
     have h_transitivity := iterated_fold_transitivity K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := 0) (midIdx := ⟨ℓ' - ϑ, by omega⟩) (destIdx := destDomainIdx)
       (steps₁ := k_steps) (steps₂ := ϑ)
@@ -960,7 +968,7 @@ lemma iterated_fold_to_const_strict
         have h_le : ϑ ≤ ℓ' := by
           apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ') (hdiv.out)
         have h_cId : cId.val < ϑ := cId.isLt
-        have h_last : (Fin.last ℓ').val = ℓ' := rfl
+        have h_last : (Fin.last ℓ').val = ℓ' := by simp only [Fin.val_last]
         omega
       ⟩ := by
       rfl
@@ -1000,7 +1008,9 @@ lemma iterated_fold_to_const_strict
     funext y
     have h_cast_elim3 := iterated_fold_congr_dest_index K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := 0) (steps := k_steps + ϑ) (destIdx := destDomainIdx)
-      (destIdx' := ⟨Fin.last ℓ', by omega⟩)
+      (destIdx' := ⟨Fin.last ℓ', by
+        simp only [Fin.val_last]
+        omega⟩)
       (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; rfl)
       (h_destIdx_le := by dsimp only [destDomainIdx]; omega)
       (h_destIdx_eq_destIdx' := by
@@ -1016,7 +1026,9 @@ lemma iterated_fold_to_const_strict
     rw [h_cast_elim3]
     have h_cast_elim4 := iterated_fold_congr_steps_index K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (i := 0) (steps := ℓ') (steps' := k_steps + ϑ)
-      (destIdx := ⟨Fin.last ℓ', by omega⟩)
+      (destIdx := ⟨Fin.last ℓ', by
+        simp only [Fin.val_last]
+        omega⟩)
       (h_steps_eq_steps' := by simp only [h_steps_eq])
       (h_destIdx := by
         dsimp only [destDomainIdx]
@@ -1026,7 +1038,9 @@ lemma iterated_fold_to_const_strict
       (f := f₀) (r_challenges := stmtIn.challenges)
     erw [←h_cast_elim4]
     set f_last := iterated_fold K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0 ℓ'
-      (destIdx := ⟨Fin.last ℓ', by omega⟩)
+      (destIdx := ⟨Fin.last ℓ', by
+        simp only [Fin.val_last]
+        omega⟩)
       (h_destIdx := by
         simp only [Fin.val_last, Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]
       )
@@ -1035,7 +1049,9 @@ lemma iterated_fold_to_const_strict
     have h_eval_eq : ∀ x, f_last x = f_last ⟨0, by simp only [zero_mem]⟩ := by
       intro x
       apply iterated_fold_to_level_ℓ_is_constant K β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-        (t := witIn.t) (destIdx := ⟨Fin.last ℓ', by omega⟩)
+        (t := witIn.t) (destIdx := ⟨Fin.last ℓ', by
+          simp only [Fin.val_last]
+          omega⟩)
         (h_destIdx := by simp only [Fin.val_last]) (challenges := stmtIn.challenges)
         (x := x) (y := 0)
     rw [h_eval_eq]
@@ -1864,7 +1880,12 @@ theorem coreInteractionOracleRbrKnowledgeError_le :
   simp only [Sum.elim_inl, Sum.elim_inr]
   have hb : (∑ i : (BinaryBasefold.pSpecFinalSumcheckStep (L := L)).ChallengeIdx,
       finalSumcheckKnowledgeError (L := L) i) = 0 := by
-    simpa using BinaryBasefold.CoreInteraction.finalSumcheckKnowledgeError_sum_eq_zero (L := L)
+    have hu : (Finset.univ : Finset (ChallengeIdx (BinaryBasefold.pSpecFinalSumcheckStep
+        (L := L)))) = ∅ := by
+      ext x
+      exact False.elim
+        (BinaryBasefold.CoreInteraction.challengeIdx_pSpecFinalSumcheckStep_isEmpty.false x)
+    simp [hu]
   rw [hb, add_zero]
   exact BinaryBasefold.CoreInteraction.sumcheckFoldKnowledgeError_le (𝔽q := K) (L := L) (β := β)
     (ϑ := ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ')

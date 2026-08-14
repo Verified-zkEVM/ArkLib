@@ -95,7 +95,7 @@ lemma polyToOracleFunc_eq_getFirstOracle
     (h_consistency : strictOracleFoldingConsistencyProp 𝔽q β (t := t) (i := i)
       (challenges := challenges) (oStmt := oStmt)) :
     let P₀ : L[X]_(2 ^ ℓ) :=
-      polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval (bitsOfIndex ω))
+      polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (witnessNovelCoeffs t)
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     f₀ = getFirstOracle 𝔽q β oStmt := by
   intro P₀ f₀

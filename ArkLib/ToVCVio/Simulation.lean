@@ -111,12 +111,20 @@ lemma OptionT.probOutput_none_bind_eq_zero_iff
           (mx := match x with
             | some a => OptionT.run (my a)
             | none => (pure none : m (Option β))) (none : Option β) = 0 := by
-  simpa only [OptionT.bind, OptionT.run, OptionT.mk] using
-    (_root_.probOutput_none_bind_eq_zero_iff
-      (mx := OptionT.run mx)
-      (my := fun x : Option α => match x with
+  change probOutput (m := m) (α := Option β)
+      (mx := OptionT.run mx >>= fun x => match x with
         | some a => OptionT.run (my a)
-        | none => (pure none : m (Option β))))
+        | none => (pure none : m (Option β))) (none : Option β) = 0 ↔
+      ∀ x ∈ support (m := m) (α := Option α) (mx := OptionT.run mx),
+        probOutput (m := m) (α := Option β)
+          (mx := match x with
+            | some a => OptionT.run (my a)
+            | none => (pure none : m (Option β))) (none : Option β) = 0
+  exact _root_.probOutput_none_bind_eq_zero_iff
+    (mx := OptionT.run mx)
+    (my := fun x : Option α => match x with
+      | some a => OptionT.run (my a)
+      | none => (pure none : m (Option β)))
 
 end ProbOutputNone
 
@@ -1204,9 +1212,9 @@ lemma OptionT.probFailure_mk_forIn_eq_zero_of_body_safe
     (f : α → σ → OptionT (OracleComp spec) (ForInStep σ))
     (h : ∀ x ∈ l, ∀ s, Pr[⊥ | f x s] = 0) :
     Pr[⊥ | OptionT.mk (forIn l init f : OptionT (OracleComp spec) σ)] = 0 := by
-  simpa using
-    (OptionT.probFailure_forIn_eq_zero_of_body_safe
-      (spec := spec) (l := l) (init := init) (f := f) h)
+  change Pr[⊥ | (forIn l init f : OptionT (OracleComp spec) σ)] = 0
+  exact OptionT.probFailure_forIn_eq_zero_of_body_safe
+    (spec := spec) (l := l) (init := init) (f := f) h
 
 /-- Prove forIn safety using an invariant.
     P done s: Predicate meaning state 's' is correct after processing 'done'. -/
@@ -1564,7 +1572,7 @@ lemma OptionT.simulateQ_forIn
       | some step =>
           cases step with
           | done res => rfl
-          | yield res => simpa [forIn'_eq_forIn] using ih res
+          | yield res => exact ih res
 
 /-- Stateful version of simulateQ_forIn.
     Distributes simulation over a loop where the oracle implementation itself has state. -/
@@ -1652,7 +1660,7 @@ lemma OptionT.simulateQ_forIn_stateful_comp {ι : Type} {spec : OracleSpec ι}
       | some step =>
           cases step with
           | done res => rfl
-          | yield res => simpa [forIn'_eq_forIn] using ih res
+          | yield res => exact ih res
 
 /-- **Loop Path Extraction**:
     If a stateful forIn loop over PUnit reaches a final state, then for every element
@@ -1711,8 +1719,9 @@ lemma OptionT.exists_path_of_mem_support_forIn_unit {σ α : Type} [spec.Fintype
       | none =>
           simp [h_opt] at h_rest
       | some step =>
+          rw [h_opt] at h_step_mem
           have h_step_some_mem : (some step, s_mid) ∈ support ((f a PUnit.unit).run s_init) := by
-            simpa [h_opt] using h_step_mem
+            exact h_step_mem
           have h_step_yield : step = ForInStep.yield PUnit.unit :=
             h_yield a s_init (step, s_mid) h_step_some_mem
           cases h_step_yield
@@ -1959,8 +1968,9 @@ lemma OptionT.exists_rel_path_of_mem_support_forIn_stateful {ι : Type} {spec : 
       | none =>
         simp [h_opt] at h_rest_sup
       | some step =>
+        rw [h_opt] at h_step_sup
         have h_step_some_mem : (some step, s') ∈ support ((f y b₀).run s₀) := by
-          simpa [h_opt] using h_step_sup
+          exact h_step_sup
         obtain ⟨b', h_yield_eq⟩ := h_yield y b₀ s₀ (step, s') h_step_some_mem
         subst h_yield_eq
         simp [h_opt] at h_rest_sup

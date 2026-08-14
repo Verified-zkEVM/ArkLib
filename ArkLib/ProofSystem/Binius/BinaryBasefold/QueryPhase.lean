@@ -930,7 +930,6 @@ lemma query_phase_final_fold_eq_constant
   rcases h_relIn with ⟨exists_t_MLP, h_final_oracle_fold_to_constant⟩
   simp only at h_final_oracle_fold_to_constant
   have h_final_oracle_fold_to_const_at_0 := congr_fun h_final_oracle_fold_to_constant 0
-  simp only at h_final_oracle_fold_to_const_at_0
   rw [h_final_oracle_fold_to_const_at_0.symm]
   rcases exists_t_MLP with ⟨t, h_t_mem_support, h_strictOracleFoldingConsistency⟩
   dsimp only [strictOracleFoldingConsistencyProp] at h_strictOracleFoldingConsistency
@@ -1062,7 +1061,8 @@ lemma query_phase_final_fold_eq_constant
   -- `res` matches up to η-expansion of the `f`-argument and a `cast ∘ cast` on the input
   -- (both `sDomain`s are equal, so the composite cast is the identity).
   convert res using 4
-  exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
+  · exact eq_of_heq ((cast_heq _ _).trans (cast_heq _ _))
+  · exact h_chalLeft.symm
 
 /-- Relation used in the forIn loop of `checkSingleRepetition`: at index 0 the folded value is 0;
   at index `oraclePositionIdx > 0` it equals `iterated_fold` up to that position with challenges
@@ -2809,7 +2809,7 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
     constructor
     · rintro ⟨_, h⟩; exact h
     · intro h; exact ⟨(), h⟩
-  rw [Pr_congr (h := hP_eq)]
+  rw [Probability.Pr_congr (h := hP_eq)]
   -- Bound `A ∧ (∀ rep, B (y rep))` by dropping `A` and applying the γ-fold product bound.
   by_cases hA : finalSumcheckRelOutProp 𝔽q β
       (input := ⟨⟨stmtIn_oStmtIn.1, stmtIn_oStmtIn.2⟩, ()⟩)
@@ -2822,8 +2822,8 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
                 stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
           ↔ False :=
       fun y => iff_false_intro (fun hy => hy.1 hA)
-    rw [Pr_congr (h := h_false)]
-    simp only [prob_tsum_form_singleton, ↓reduceIte, mul_zero, tsum_zero, zero_le]
+    rw [Probability.Pr_congr (h := h_false)]
+    simp only [Probability.prob_tsum_form_singleton, ↓reduceIte, mul_zero, tsum_zero, zero_le]
   · -- `¬ A`: the two negated preconditions of Proposition 4.24 hold (De Morgan).
     rw [finalSumcheckRelOutProp, finalSumcheckStepFoldingStateProp, not_or] at hA
     obtain ⟨h_not_consistent, h_no_bad⟩ := hA
@@ -2838,20 +2838,35 @@ lemma query_doom_escape_probability_bound {σ : Type} (init : ProbComp σ)
               ∀ rep : Fin γ_repetitions,
                 logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
                   stmtIn_oStmtIn.2 (y rep) stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant ] := by
-          apply Pr_le_Pr_of_implies
+          apply Probability.Pr_le_Pr_of_implies
           intro y hy
           exact hy.2
       _ ≤ (queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡)) ^ γ_repetitions := by
-          apply prob_pow_bound_of_forall
-            (A := sDomain 𝔽q β h_ℓ_add_R_rate 0)
-            (n := γ_repetitions)
-            (P := fun v => logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-              stmtIn_oStmtIn.2 v stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant)
-            (ε := queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡))
-          exact singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
-            (stmtIn := stmtIn_oStmtIn.1) (oStmtIn := stmtIn_oStmtIn.2)
-            (h_not_oracleFoldingConsistent := h_not_consistent)
-            (h_no_bad_event := h_no_bad)
+          let P : sDomain 𝔽q β h_ℓ_add_R_rate 0 → Prop := fun v =>
+            logical_checkSingleRepetition 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+              stmtIn_oStmtIn.2 v stmtIn_oStmtIn.1 stmtIn_oStmtIn.1.final_constant
+          change Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+            ∀ rep, P (y rep) ] ≤ (queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡)) ^ γ_repetitions
+          calc
+            Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+                ∀ rep, P (y rep) ] =
+                Pr_{ let y ← $ᵖ (Fin γ_repetitions → sDomain 𝔽q β h_ℓ_add_R_rate 0) }[
+                  ∀ rep, y rep ∈ Finset.univ.filter P ] := by
+                    apply Probability.Pr_congr
+                    intro y
+                    simp [P]
+            _ = (((Finset.univ.filter P).card : ENNReal) /
+                (Fintype.card (sDomain 𝔽q β h_ℓ_add_R_rate 0) : ENNReal)) ^ γ_repetitions :=
+              Probability.prob_uniform_pi_mem_finset_eq (Finset.univ.filter P) γ_repetitions
+            _ = (Pr_{ let v ← $ᵖ (sDomain 𝔽q β h_ℓ_add_R_rate 0) }[ P v ]) ^ γ_repetitions := by
+              rw [Probability.prob_uniform_eq_card_filter_div_card]
+              simp only [ENNReal.coe_natCast]
+            _ ≤ _ := by
+              apply pow_le_pow_left'
+              exact singleRepetition_proximityCheck_bound (𝔽q := 𝔽q) (β := β)
+                (stmtIn := stmtIn_oStmtIn.1) (oStmtIn := stmtIn_oStmtIn.2)
+                (h_not_oracleFoldingConsistent := h_not_consistent)
+                (h_no_bad_event := h_no_bad)
       _ = ↑(queryRbrKnowledgeError_singleRepetition (𝓡 := 𝓡) ^ γ_repetitions) := by
           rw [ENNReal.coe_pow]
 

@@ -144,7 +144,7 @@ lemma challengeTensorExpansionMatrix_mulVec_F₂_eq_Fin_merge_PO2 [CommRing L] (
   unfold mergeFinMap_PO2_left_right
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
-  simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
+  simp only [Matrix.zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
     sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
@@ -168,17 +168,19 @@ lemma challengeTensorExpansion_decompose_succ [CommRing L] (n : ℕ) (r : Fin (n
   by_cases h_colIdx_lt_2_pow_n : colIdx.val < 2 ^ n
   · simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
     Fin.val_cast, h_colIdx_lt_2_pow_n, Fin.zero_eta, of_apply, mod_succ, lt_self_iff_false,
-    zero_apply, mul_zero, add_zero]
+    Matrix.zero_apply, mul_zero, add_zero]
     rw [multilinearWeight_succ_lower_half (r := r) (i := colIdx)
       (h_lt := h_colIdx_lt_2_pow_n), mul_comm]
+    simp [h_colIdx_lt_2_pow_n]
   · have h_ne_lt_2_pow_n : ¬(colIdx.val < 2 ^ n) := by exact h_colIdx_lt_2_pow_n
     simp only [reduceAdd, Fin.isValue, Fin.coe_ofNat_eq_mod, zero_mod, zero_lt_one, ↓reduceDIte,
-      Fin.val_cast, h_ne_lt_2_pow_n, zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
+      Fin.val_cast, h_ne_lt_2_pow_n, Matrix.zero_apply, mul_zero, mod_succ, lt_self_iff_false, tsub_self,
       Fin.zero_eta, of_apply, zero_add]
     let u : Fin (2 ^ n) := ⟨colIdx.val - (2 ^ n), by omega⟩
     have h_eq: colIdx.val = u.val + (2 ^ n) := by dsimp only [u]; omega
     rw [multilinearWeight_succ_upper_half (r := r) (i := colIdx) (j := u)
       (h_eq := h_eq), mul_comm]
+    simp [h_ne_lt_2_pow_n, h_eq]
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
 variable (𝓑 : Fin 2 ↪ L)
@@ -518,6 +520,13 @@ lemma getSumcheckRoundPoly_sum_eq (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ 
 /-- Helper to convert an index `k` into a vector of bits (as field elements). -/
 def bitsOfIndex {n : ℕ} (k : Fin (2 ^ n)) : Fin n → L :=
   fun i => if Nat.testBit k i then 1 else 0
+
+/-- The Boolean-hypercube evaluation table of a multilinear witness, in the LSB-first order
+used by `Nat.binaryFinMapToNat`. In particular, this is not the diagonal evaluation
+`fun ω => t.val.eval ω`: coefficient `ω` is evaluated at the cube point whose `j`-th
+coordinate is `Nat.getBit j ω`. -/
+noncomputable def witnessNovelCoeffs {n : ℕ} (t : MultilinearPoly L n) : Fin (2 ^ n) → L :=
+  fun ω => t.val.eval (bitsOfIndex ω)
 
 /-- The double coercion `Fin (2^n) → (Fin n → Fin 2) → (Fin n → L)` equals `bitsOfIndex`.
 This connects the implicit coercion used in `polynomialFromNovelCoeffsF₂` with the explicit
@@ -926,7 +935,6 @@ theorem generates_quotient_point_if_is_fiber_of_y
     rw [getSDomainBasisCoeff_of_iteratedQuotientMap]
   have h_repr_x := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps)
     h_destIdx h_destIdx_le (y := y) (k := k) (j := ⟨j + steps, by omega⟩)
-  simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
   simp only [fiber_coeff, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
     Fin.eta] at h_repr_x
@@ -960,7 +968,6 @@ theorem is_fiber_iff_generates_quotient_point (i : Fin r) {destIdx : Fin r} (ste
       (steps := steps) h_destIdx h_destIdx_le (y := y) k)
     have h_repr_of_reConstructedX := qMap_total_fiber_repr_coeff 𝔽q β i (steps := steps)
       h_destIdx h_destIdx_le (y := y) (k := k) (j := j)
-    simp only at h_repr_of_reConstructedX
     -- ⊢ repr of reConstructedX at j = repr of x at j
     rw [h_repr_of_reConstructedX]; dsimp [k, pointToIterateQuotientIndex, fiber_coeff];
     rw [getBit_of_binaryFinMapToNat]; simp only [Fin.eta, dite_eq_right_iff, ite_eq_left_iff,
@@ -1406,8 +1413,8 @@ lemma butterflyMatrix_zero_apply (z₀ z₁ : L) :
   simp only [reduceAdd, reducePow, reindexSquareMatrix, Nat.pow_zero, finCongr_refl, neg_smul,
     one_smul, reindex_apply, Equiv.refl_symm, Equiv.coe_refl, submatrix_id_id]
   unfold Matrix.from4Blocks
-  simp only [reduceAdd, lt_one_iff, Fin.val_eq_zero_iff, Fin.isValue, smul_apply, smul_eq_mul,
-    neg_apply]
+  simp only [reduceAdd, lt_one_iff, Fin.val_eq_zero_iff, Fin.isValue, Matrix.smul_apply, smul_eq_mul,
+    Matrix.neg_apply]
   funext i j
   fin_cases i <;> fin_cases j
   · simp only [Fin.zero_eta, Fin.isValue, ↓reduceDIte, one_apply_eq, mul_one, of_apply, cons_val',
@@ -1477,7 +1484,7 @@ lemma blockDiagMatrix_mulVec_F₂_eq_Fin_merge_PO2 (n : ℕ)
   unfold mergeFinMap_PO2_left_right
   unfold Matrix.from4Blocks Fin.reindex Matrix.mulVec dotProduct
   -- Now unfold everything
-  simp only [zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
+  simp only [Matrix.zero_apply, finCongr_symm, Function.comp_apply, finCongr_apply, dite_mul, zero_mul,
     sum_dite_irrel, Fin.val_cast]
   simp_rw [Fin.sum_univ_add]
   simp_rw [←Finset.sum_add_distrib]
@@ -2736,7 +2743,7 @@ lemma iterated_fold_to_level_ℓ_eval
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
     let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
+      (witnessNovelCoeffs t)
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)
@@ -2746,7 +2753,7 @@ lemma iterated_fold_to_level_ℓ_eval
     f_ℓ = fun _ => t.val.eval challenges := by
   intro P₀ f₀ f_ℓ
   funext x
-  let coeffs := fun (ω : Fin (2 ^ ℓ)) => t.val.eval (bitsOfIndex ω)
+  let coeffs := witnessNovelCoeffs t
   have h_f_ℓ_eq_poly := iterated_fold_advances_evaluation_poly 𝔽q β
     (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ) (destIdx := destIdx)
     (h_destIdx := by simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
@@ -2815,6 +2822,7 @@ lemma iterated_fold_to_level_ℓ_eval
     apply Fin.ext
     simp only [zero_mul, zero_add]
   rw [h_idx_eq]
+  rfl
 
 omit [CharP L 2] in
 /-- When folding from level 0 all the way to level ℓ, the resulting function is constant. -/
@@ -2822,7 +2830,7 @@ lemma iterated_fold_to_level_ℓ_is_constant
     (t : MultilinearPoly L ℓ) (destIdx : Fin r) (h_destIdx : destIdx.val = ℓ)
     (challenges : Fin ℓ → L) :
     let P₀ : L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-      (fun ω => t.val.eval (bitsOfIndex ω))
+      (witnessNovelCoeffs t)
     let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
     let f_ℓ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (steps := ℓ)
       (destIdx := destIdx)

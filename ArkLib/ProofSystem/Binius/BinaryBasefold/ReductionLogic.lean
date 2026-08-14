@@ -901,7 +901,7 @@ def finalSumcheckStepLogic :
     simp only [MessageIdx, Fin.eta, Sum.inl.injEq] at h_ab_eq
     exact h_ab_eq
   ⟩
-  hEq := fun oracleIdx => by simp only [Fin.eta]
+  hEq := fun oracleIdx => by rfl
 
 omit [SampleableType L] in
 /-! **Strict version**: When folding the last oracle to level `ℓ` (final sumcheck),
@@ -965,7 +965,7 @@ lemma iterated_fold_to_const_strict
   intro step transcript verifierStmtOut verifierOStmtOut lastDomainIdx k h_k curDomainIdx
     h_destIdx_eq f_k finalChallenges destDomainIdx folded
   let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => witIn.t.val.eval (bitsOfIndex ω))
+    (witnessNovelCoeffs witIn.t)
   let f₀ := polyToOracleFunc 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (domainIdx := 0) (P := P₀)
   -- From strictOracleWitnessConsistency, we can construct strictfinalSumcheckStepFoldingStateProp
   -- which contains strictFinalConstantConsistency, giving us the desired equality
@@ -1079,7 +1079,7 @@ lemma iterated_fold_to_const_strict
         rw [h_k]
         have h_le : ϑ ≤ ℓ := by apply Nat.le_of_dvd (by exact Nat.pos_of_neZero ℓ) (hdiv.out)
         have h_cId : cId.val < ϑ := cId.isLt
-        have h_last : (Fin.last ℓ).val = ℓ := rfl
+        have h_last : (Fin.last ℓ).val = ℓ := by simp only [Fin.val_last]
         omega
       ⟩ := by rfl
     rw [h_finalChallenges_eq] at h_transitivity
@@ -1292,9 +1292,10 @@ lemma finalSumcheckStep_is_logic_complete :
     -- Now prove each component for the output
     refine ⟨?_, ?_⟩
     · -- Component 1: oracleFoldingConsistencyProp
-      use t
-      simp only [SetLike.coe_mem, exists_const]
-      exact h_oracle_folding_In
+      refine ⟨t, t.2, ?_⟩
+      intro j
+      change oStmtIn j = _
+      exact h_oracle_folding_In j
     · -- Component 2: finalOracleFoldingConsistency
       funext y
       classical

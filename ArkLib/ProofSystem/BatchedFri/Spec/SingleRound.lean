@@ -199,7 +199,7 @@ def batchVerifier :
       fun i => Sum.inl i,
       by intros _; aesop
     ⟩
-  hEq := by simp
+  hEq := by intro i; rfl
 
 /-- The batching round oracle reduction. -/
 def batchOracleReduction :

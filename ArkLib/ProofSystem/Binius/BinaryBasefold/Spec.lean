@@ -433,7 +433,7 @@ instance : ∀ i, SampleableType ((pSpecCoreInteraction 𝔽q β (ϑ:=ϑ)
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge i) := instSampleableTypeChallengeAppend
 
 /-- SampleableType instance for sDomain, constructed via its equivalence with a Fin type. -/
-instance instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
+def instSDomain {i : Fin r} (h_i : i < ℓ + 𝓡) :
     SampleableType (sDomain 𝔽q β h_ℓ_add_R_rate i) :=
   let T := sDomain 𝔽q β h_ℓ_add_R_rate i
   haveI : Fintype T := fintype_sDomain 𝔽q β h_ℓ_add_R_rate i
@@ -466,18 +466,16 @@ instance : SampleableType (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add
 /-! ## Additional OracleInterface and Fintype instances -/
 
 /-- OracleInterface instance for the matrix-indexed message type family using instDefault. -/
-instance : ∀ i, OracleInterface (![↥L⦃≤ 2⦄[X], L] i)
-  | ⟨0, h⟩ => by exact OracleInterface.instDefault  -- Polynomial message
-  | ⟨1, h⟩ => by exact OracleInterface.instDefault  -- Field element message
-  | ⟨n+2, h⟩ => by omega  -- Only 2 elements in the matrix
+instance instOracleInterfaceMatrixMessages {K : Type} [Field K] [Fintype K] [DecidableEq K] :
+    ∀ i, OracleInterface (![↥K⦃≤ 2⦄[X], K] i)
+  | 0 => OracleInterface.instDefault  -- Polynomial message
+  | 1 => OracleInterface.instDefault  -- Field element message
 
-omit [NeZero r] [CharP L 2] [SampleableType L] 𝔽q [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
-  h_Fq_char_prime hF₂ [Algebra 𝔽q L] β hβ_lin_indep h_β₀_eq_1 γ_repetitions [NeZero ℓ]
-  [NeZero 𝓡] [NeZero ϑ] h_ℓ_add_R_rate 𝓑 hdiv in
-private noncomputable def fintypeDegreeLETwo : Fintype (L⦃≤ 2⦄[X]) := by
+private noncomputable def fintypeDegreeLETwo {K : Type} [Field K] [Fintype K] [DecidableEq K] :
+    Fintype (K⦃≤ 2⦄[X]) := by
   classical
   -- Bound elaboration for this explicit finite encoding proof.
-  let coeffVec : L⦃≤ 2⦄[X] → Fin 3 → L := fun p i => p.1.coeff i
+  let coeffVec : K⦃≤ 2⦄[X] → Fin 3 → K := fun p i => p.1.coeff i
   have hcoeffVec : Function.Injective coeffVec := by
     intro p q h
     apply Subtype.ext
@@ -503,21 +501,23 @@ private noncomputable def fintypeDegreeLETwo : Fintype (L⦃≤ 2⦄[X]) := by
                   exact Polynomial.mem_degreeLE.mp q.2
                 have hpzero : p.1.coeff n.succ.succ.succ = 0 := by
                   apply Polynomial.coeff_eq_zero_of_natDegree_lt
-                  omega
+                  exact lt_of_le_of_lt hpnat
+                    (Nat.succ_lt_succ (Nat.succ_lt_succ (Nat.zero_lt_succ n)))
                 have hqzero : q.1.coeff n.succ.succ.succ = 0 := by
                   apply Polynomial.coeff_eq_zero_of_natDegree_lt
-                  omega
+                  exact lt_of_le_of_lt hqnat
+                    (Nat.succ_lt_succ (Nat.succ_lt_succ (Nat.zero_lt_succ n)))
                 exact hpzero.trans hqzero.symm
-  letI : Finite (L⦃≤ 2⦄[X]) := Finite.of_injective coeffVec hcoeffVec
-  exact Fintype.ofFinite (L⦃≤ 2⦄[X])
+  letI : Finite (K⦃≤ 2⦄[X]) := Finite.of_injective coeffVec hcoeffVec
+  exact Fintype.ofFinite (K⦃≤ 2⦄[X])
 
 /-! ## Fintype & Inhabited instances for oracle specifications -/
 
 instance instInhabitedOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Inhabited) where
-  inhabited_B i := nomatch i
+  inhabitedB i := nomatch i
 
 instance instFintypeOracleSpecEmpty : (([]ₒ : OracleSpec PEmpty).Fintype) where
-  fintype_B i := nomatch i
+  fintypeB i := nomatch i
 
 /-- `IsUniformSpec` (VCVio v4.30 opt-in) for the empty oracle spec, so
 `unroll_*_reduction_perfectCompleteness` and `unroll_rbrKnowledgeSoundness` can lift to `Pr[...]`. -/
@@ -528,17 +528,17 @@ noncomputable instance instIsUniformSpecOracleSpecEmpty :
 
 instance instInhabitedOracleStatement {i : Fin (ℓ + 1)} :
     [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]ₒ.Inhabited where
-  inhabited_B x := by
+  inhabitedB x := by
     rcases x with ⟨j, q⟩
     change Inhabited L
     exact ⟨0⟩
 
 instance instInhabitedPSpecRelayMessage : [(pSpecRelay).Message]ₒ.Inhabited where
-  inhabited_B x := nomatch x.1
+  inhabitedB x := nomatch x.1
 
 instance instInhabitedPSpecFinalSumcheckStepMessage :
     [(pSpecFinalSumcheckStep (L:=L)).Message]ₒ.Inhabited where
-  inhabited_B x := by
+  inhabitedB x := by
     letI : Inhabited L := ⟨0⟩
     rcases x with ⟨⟨i, hi⟩, q⟩
     have h0 : i = 0 := Fin.eq_zero i
@@ -579,7 +579,7 @@ instance {i : Fin ℓ} :
 
 instance instInhabitedPSpecQueryMessage :
     [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ.Inhabited where
-  inhabited_B x := by
+  inhabitedB x := by
     rcases x with ⟨⟨i, hi⟩, q⟩
     have h0 : i = 0 := Fin.eq_zero i
     subst h0
@@ -604,7 +604,7 @@ instance instInhabitedPSpecFold_AllChallenges : ∀ i, Inhabited ((pSpecFold (L 
 can use Pr[...]. -/
 instance instFintypePSpecFoldChallenge :
     [(pSpecFold (L := L)).Challenge]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 1 := by
@@ -618,7 +618,7 @@ instance instFintypePSpecFoldChallenge :
 
 instance instInhabitedPSpecFoldChallenge :
     [(pSpecFold (L := L)).Challenge]ₒ.Inhabited := by
-  refine { inhabited_B := ?_ }
+  refine { inhabitedB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   match i with
@@ -644,13 +644,13 @@ instance : ∀ j, ∀ q : OracleInterface.Query ((pSpecFold (L:=L)).Message j), 
       change Fintype ((instOracleInterfaceMessagePSpecFold (L := L) ⟨0, h⟩).toOC.spec q)
       cases q
       change Fintype (L⦃≤ 2⦄[X])
-      exact fintypeDegreeLETwo (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+      exact fintypeDegreeLETwo (K := L)
   | ⟨1, hj⟩, _ => by
       change Direction.V_to_P = Direction.P_to_V at hj
       cases hj
 
 instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := by
@@ -660,17 +660,23 @@ instance : ([(pSpecFold (L:=L)).Message]ₒ).Fintype := by
       change Direction.V_to_P = Direction.P_to_V at hi
       cases hi
     have hval : i.val = 0 := by
-      omega
+      apply Nat.eq_zero_of_not_pos
+      intro hpos
+      apply hi_ne_one
+      apply Fin.ext
+      apply Nat.le_antisymm
+      · exact Nat.le_of_lt_succ i.isLt
+      · exact Nat.succ_le_iff.mpr hpos
     exact Fin.ext hval
   subst h0
   change Fintype ((instOracleInterfaceMessagePSpecFold (L := L) ⟨0, by rfl⟩).toOC.spec q)
   cases q
   change Fintype (L⦃≤ 2⦄[X])
-  exact fintypeDegreeLETwo (r := r) (L := L) (ℓ := ℓ) (𝓡 := 𝓡)
+  exact fintypeDegreeLETwo (K := L)
 
 instance instOracleStatementFintype {i : Fin (ℓ + 1)} :
   [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨j, q⟩
   change Fintype L
@@ -683,7 +689,7 @@ instance instFintypePSpecFinalSumcheck_AllChallenges :
 
 instance instFintypePSpecFinalSumcheckStepChallenge :
   [pSpecFinalSumcheckStep (L := L).Challenge]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i
@@ -697,7 +703,7 @@ instance : Fintype (Fin γ_repetitions → ↥(sDomain 𝔽q β h_ℓ_add_R_rate
 
 instance instInhabitedPSpecFinalSumcheckStepChallenge :
   [(pSpecFinalSumcheckStep (L:=L)).Challenge]ₒ.Inhabited := by
-  refine { inhabited_B := ?_ }
+  refine { inhabitedB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i
@@ -726,7 +732,7 @@ instance : ∀ i, Inhabited ((pSpecQuery 𝔽q β γ_repetitions
 
 instance instFintypePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions
   (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i
@@ -737,7 +743,7 @@ instance instFintypePSpecQueryChallenge : [(pSpecQuery 𝔽q β γ_repetitions
 
 instance instInhabitedPSpecQueryChallenge :
   [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenge]ₒ.Inhabited := by
-  refine { inhabited_B := ?_ }
+  refine { inhabitedB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i
@@ -756,7 +762,7 @@ instance instFintypePspecCommit_AllChallenges {i : Fin ℓ} :
 
 instance instFintypePspecCommitChallenge {i : Fin ℓ} :
   [((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge)]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨j, hj⟩, q⟩
   have h0 : j = 0 := Fin.eq_zero j
@@ -768,7 +774,7 @@ instance instFintypePspecCommitChallenge {i : Fin ℓ} :
 
 instance instInhabitedPspecCommitChallenge {i : Fin ℓ} :
   [((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Challenge)]ₒ.Inhabited := by
-  refine { inhabited_B := ?_ }
+  refine { inhabitedB := ?_ }
   intro x
   rcases x with ⟨⟨j, hj⟩, q⟩
   have h0 : j = 0 := Fin.eq_zero j
@@ -790,13 +796,13 @@ instance instOracleInterfacePSpecRelay_AllChallenges
 
 instance instFintypePSpecRelayChallenge :
   [(pSpecRelay).Challenge]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   nomatch x.1
 
 instance instInhabitedPSpecRelayChallenge :
   [(pSpecRelay).Challenge]ₒ.Inhabited := by
-  refine { inhabited_B := ?_ }
+  refine { inhabitedB := ?_ }
   intro x
   nomatch x.1
 
@@ -810,7 +816,7 @@ instance instFintypeOracleStatementFinLast :
 
 instance instFintypePSpecQueryMessage :
   [(pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Message]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i
@@ -826,7 +832,7 @@ instance instFintypePSpecQuery_AllChallenges :
 
 instance instFintypePSpecFinalSumcheckStepMessage :
   [(pSpecFinalSumcheckStep (L := L)).Message]ₒ.Fintype := by
-  refine { fintype_B := ?_ }
+  refine { fintypeB := ?_ }
   intro x
   rcases x with ⟨⟨i, hi⟩, q⟩
   have h0 : i = 0 := Fin.eq_zero i

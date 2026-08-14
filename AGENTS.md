@@ -8,12 +8,17 @@ Start with [`README.md`](README.md) for project overview.
 ## Fast Start
 
 1. For a convenient routine check, start with `./scripts/validate.sh`.
+   Before committing or pushing, run it in full; it enforces the `ArkLib/Data` zero-warning gate.
 2. On a cold clone, run `lake exe cache get` first.
 3. If you add, rename, or delete files under `ArkLib/`, `git add` new paths before validation.
 4. If you also want Lean style linting, run `./scripts/validate.sh --lint`.
 5. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
 6. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
+7. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
+   `./scripts/validate.sh --axioms`; refresh `scripts/axiom_baseline.json` with
+   `lake exe axiomsweep --update-baseline` and commit the diff if the change is
+   intentional.
 
 ## Where To Work
 

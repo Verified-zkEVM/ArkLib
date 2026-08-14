@@ -1150,7 +1150,7 @@ def OracleStatement (ϑ : ℕ) [NeZero ϑ] (i : Fin (ℓ + 1)) :
 def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
   let P₀: L[X]_(2 ^ ℓ) := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega)
-    (fun ω => t.val.eval (bitsOfIndex ω))
+    (witnessNovelCoeffs t)
   -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
   pair_UDRClose 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (i := 0) (h_i := by
     simp only [Fin.coe_ofNat_eq_mod, zero_mod, _root_.zero_le]) (f := f₀)
@@ -1506,6 +1506,7 @@ lemma extractMLP_eq_some_iff_pair_UDRClose (f : (sDomain 𝔽q β h_ℓ_add_R_ra
         have h_mle_eq := extracted_mle_polynomial_eq (𝔽q := 𝔽q) (β := β)
           (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (P := P) h_deg_lt
         convert h_closeP using 4
+        exact h_mle_eq
   · intro h_close
     unfold extractMLP
     simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.sub_zero, ge_iff_le]

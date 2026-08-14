@@ -22,9 +22,10 @@ This section contains definitions and theorems about coding theory as they are u
     \lean{LinearCode.byCheckMatrix}
 \end{definition}
 
+% A code is modelled directly as `Set (ι → F)`; the `ListDecodable.Code` abbreviation for it was
+% removed in #722, so this node has no single Lean declaration to point at.
 \begin{definition}[Code]
     \label{def:code}
-    \lean{ListDecodable.Code}
 \end{definition}
 
 \begin{definition}[Linear Code]
@@ -34,7 +35,7 @@ This section contains definitions and theorems about coding theory as they are u
 
 \begin{definition}[Interleaved Code]
     \label{def:interleaved_code}
-    \lean{InterleavedCode}
+    \lean{Code.interleavedCodeSet}
 \end{definition}
 
 \begin{definition}[Reed-Solomon Code]
@@ -44,39 +45,39 @@ This section contains definitions and theorems about coding theory as they are u
 
 \begin{definition}[Smooth Reed-Solomon Code]
     \label{def:smooth_rs_code}
-    \lean{smoothCode}
+    \lean{ReedSolomon.smoothCode}
 \end{definition}
 
 \begin{definition}[Constrained Code]
     \label{def:constrained_code}
-    \lean{constrainedCode}
+    \lean{ReedSolomon.constrainedCode}
 \end{definition}
 
 \begin{definition}[Multi-constrained Code]
     \label{def:multi_constrained_code}
-    \lean{multiConstrainedCode}
+    \lean{ReedSolomon.multiConstrainedCode}
 \end{definition}
 
 \begin{definition}[Proximity Measure]
     \label{def:proximity_measure}
-    \lean{proximityMeasure}
+    \lean{ProximityGap.proximityMeasure}
     \uses{def:distance_from_code}
 \end{definition}
 
 \begin{definition}[Proximity Gap]
     \label{def:proximity_gap}
-    \lean{proximityGap}
+    \lean{ProximityGap.proximityGap}
     \uses{def:distance_from_code}
 \end{definition}
 
 \begin{definition}[List Decodability]
     \label{def:list_decodable}
-    \lean{ListDecodable.listDecodable}
+    \lean{Code.IsListDecodable}
     \uses{def:distance_from_code,def:code}
 \end{definition}
 
 \begin{definition}[List of Close Codewords]
     \label{def:list_close_codewords}
-    \lean{ListDecodable.relHammingBall}
+    \lean{Code.closeCodewordsRel}
     \uses{def:distance_from_code,def:code}
 \end{definition}

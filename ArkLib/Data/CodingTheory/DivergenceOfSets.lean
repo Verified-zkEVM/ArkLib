@@ -87,7 +87,9 @@ theorem Pr_uniform_eq_one_imp_forall {α : Type} [Fintype α] [Nonempty α] (P :
   by_contra hPa
   let q : PMF Prop := ($ᵖ α : PMF α).map P
   have hqTrue : q True = 1 := by
-    simpa only [q, PMF.monad_map_eq_map] using hPr
+    change (P <$> ($ᵖ α : PMF α)) True = 1 at hPr
+    rw [PMF.monad_map_eq_map] at hPr
+    exact hPr
   have hsupport : q.support = {True} := (PMF.apply_eq_one_iff q True).1 hqTrue
   have hPfalse : P a = False := by
     exact propext (iff_false_intro hPa)
@@ -100,63 +102,6 @@ theorem Pr_uniform_eq_one_imp_forall {α : Type} [Fintype α] [Nonempty α] (P :
   have hEq : False = True := by
     simp [Set.mem_singleton_iff] at this
   exact false_ne_true hEq
-
-open scoped ProbabilityTheory in
-theorem Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
-    (e : α ≃ β) (P : β → Prop) :
-  Pr_{let a ← $ᵖ α}[P (e a)] = Pr_{let b ← $ᵖ β}[P b] := by
-  classical
-  have hmap : (PMF.uniformOfFintype α).map e = PMF.uniformOfFintype β := by
-    ext b
-    -- Reduce to a finite sum over a singleton fiber.
-    simp only [PMF.map_apply, PMF.uniformOfFintype_apply,
-      Fintype.card_congr e, tsum_fintype]
-    -- Transport the sum along the equivalence `e`.
-    have hs :
-        Finset.univ.sum (fun a : α =>
-            if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
-          =
-          Finset.univ.sum (fun b' : β =>
-            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) := by
-      -- `Fintype.sum_equiv` is the change-of-variables lemma for sums over `univ`.
-      simpa using
-        (Fintype.sum_equiv e
-          (fun a : α => if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
-          (fun b' : β => if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0)
-          (by intro a; rfl))
-    -- Evaluate the Kronecker delta sum.
-    have hdelta :
-        Finset.univ.sum (fun b' : β =>
-            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) =
-          (Fintype.card β : ENNReal)⁻¹ := by
-      simp
-    exact hs.trans hdelta
-  -- Now use functoriality of `PMF.map` to move `P` across the equivalence.
-  -- (Unfolding `Pr_{...}[_]` gives a `PMF Prop` evaluated at `True`.)
-  change
-    (do
-        let a ← (PMF.uniformOfFintype α)
-        pure (P (e a))) True =
-      (do
-        let b ← (PMF.uniformOfFintype β)
-        pure (P b)) True
-  -- Rewrite the left-hand `do` block as successive `PMF.map`s.
-  -- First push forward along `e`, then along `P`.
-  --
-  -- `do let a ← p; pure (P (e a))` is `p.map (P ∘ e)`.
-  -- `PMF.map_comp` converts it to `((p.map e).map P)`.
-  have hcomp :
-      (PMF.uniformOfFintype α).map (P ∘ e) = ((PMF.uniformOfFintype α).map e).map P := by
-    simpa [Function.comp] using
-      (PMF.map_comp (p := PMF.uniformOfFintype α) (f := e) (g := P)).symm
-  -- Apply both sides to `True`, then use `hmap`.
-  -- Finally, recognize the right-hand side as the original `do` block.
-  calc
-    (do let a ← $ᵖ α; pure (P (e a))) True
-      = ((PMF.uniformOfFintype α).map (P ∘ e)) True := rfl
-    _ = (((PMF.uniformOfFintype α).map e).map P) True := by rw [hcomp]
-    _ = ((PMF.uniformOfFintype β).map P) True := by rw [hmap]
-    _ = (do let b ← $ᵖ β; pure (P b)) True := rfl
 
 theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
@@ -228,8 +173,8 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
     have hx_mem_S : (x : ι → F) ∈ S := by
       dsimp [S, Affine.AffSpanFinset]
       exact (Affine.AffSpanSet.instFinite (u := C 0)).mem_toFinset.2 (by
-        dsimp [Affine.AffSpanSet]
-        simpa using hx_mem_affineSpan)
+        change (x : ι → F) ∈ affineSpan F (Finset.univ.image u : Set (ι → F))
+        exact hx_mem_affineSpan)
     exact ⟨⟨(x : ι → F), hx_mem_S⟩⟩
   have hxorS :
       Xor
@@ -261,14 +206,13 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
   have h_AffSpanSet : Affine.AffSpanSet (U := C 0) = (U : Set (ι → F)) := by
     unfold Affine.AffSpanSet
     dsimp [C]
-    rw [h_affineSpan]
-    rfl
+    exact congrArg (fun A : AffineSubspace F (ι → F) => (A : Set (ι → F))) h_affineSpan
   have hUS : (U : Set (ι → F)) = (S : Set (ι → F)) := by
     have hScoe : (S : Set (ι → F)) = Affine.AffSpanSet (U := C 0) := by
       dsimp [S, Affine.AffSpanFinset]
       -- coercion of `toFinset` gives back the set
       simp
-    simpa [h_AffSpanSet] using hScoe.symm
+    exact h_AffSpanSet.symm.trans hScoe.symm
   -- Build an equivalence between U and S (identity on the underlying word)
   let eUS : U ≃ S :=
     { toFun := fun x =>
@@ -299,7 +243,7 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] =
         Pr_{let x ← $ᵖ S}[Code.relDistFromCode x (RScodeSet domain deg) ≤ δ] := by
     simpa [eUS] using
-      (Pr_uniform_equiv (α := U) (β := S) eUS
+      (ProbabilityTheory.Pr_uniform_equiv (α := U) (β := S) eUS
         (fun x : S => Code.relDistFromCode x (RScodeSet domain deg) ≤ δ))
   -- Rewrite the XOR statement for S into the desired one for U
   have hxorS' :
@@ -345,7 +289,8 @@ theorem reedSolomon_dim_le_deg {ι : Type} [Nonempty ι]
     simpa using
       (Submodule.finrank_map_le (f := ReedSolomon.evalOnPoints (F := F) domain)
         (p := Polynomial.degreeLT F deg))
-  simpa [Polynomial.finrank_degreeLT_n] using hle
+  rw [Polynomial.finrank_degreeLT_n] at hle
+  exact hle
 
 theorem reedSolomon_rate_le_one {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
@@ -830,11 +775,11 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
     intro u
     simpa [δ'] using (hpred (u : ι → F) u.property)
   -- Cast lemmas from ℚ≥0 to ENNReal via NNReal
-  have cast_ennreal_eq_iff (p q : ℚ≥0) : ((p : ENNReal) = (q : ENNReal)) ↔ p = q := by
-    change (((p : ℝ≥0) : ENNReal) = ((q : ℝ≥0) : ENNReal)) ↔ p = q
+  have cast_ennreal_eq_iff (p q : ℚ≥0) :
+      (((p : ℝ≥0) : ENNReal) = ((q : ℝ≥0) : ENNReal)) ↔ p = q := by
     simp [ENNReal.coe_inj]
-  have cast_ennreal_le_iff (p q : ℚ≥0) : ((p : ENNReal) ≤ (q : ENNReal)) ↔ p ≤ q := by
-    change (((p : ℝ≥0) : ENNReal) ≤ ((q : ℝ≥0) : ENNReal)) ↔ p ≤ q
+  have cast_ennreal_le_iff (p q : ℚ≥0) :
+      (((p : ℝ≥0) : ENNReal) ≤ ((q : ℝ≥0) : ENNReal)) ↔ p ≤ q := by
     simp [ENNReal.coe_le_coe]
   -- Bridge between ENNReal relative distance and the computable ℚ≥0 version
   have hbridge : ∀ u : ι → F, Code.relDistFromCode u V = (δᵣ'(u, V) : ENNReal) := by
@@ -848,7 +793,8 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
     set p : ℚ≥0 := δᵣ'((u : ι → F), V)
     have hs : p ≠ δ' ↔ p ≤ δ := by
       simpa [p] using (hpredU u)
-    have hcast : ((p : ENNReal) ≠ (δ' : ENNReal)) ↔ ((p : ENNReal) ≤ (δ : ENNReal)) := by
+    have hcast : (((p : ℝ≥0) : ENNReal) ≠ ((δ' : ℝ≥0) : ENNReal)) ↔
+        (((p : ℝ≥0) : ENNReal) ≤ ((δ : ℝ≥0) : ENNReal)) := by
       constructor
       · intro hne_cast
         have hne : p ≠ δ' := by
@@ -863,7 +809,10 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
         intro hEqCast
         have hEq : p = δ' := (cast_ennreal_eq_iff p δ').1 hEqCast
         exact hne hEq
-    simpa [hbridge (u := (u : ι → F)), p] using hcast
+    rw [hbridge (u := (u : ι → F))]
+    change (((p : ℝ≥0) : ENNReal) ≠ ((δ' : ℝ≥0) : ENNReal)) ↔
+      (((p : ℝ≥0) : ENNReal) ≤ ((δ : ℝ≥0) : ENNReal))
+    exact hcast
   -- Turn the pointwise iff into an equality of probabilities
   have hPr_eq :
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u V ≠ (δ' : ENNReal)] =
@@ -873,7 +822,7 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
       funext u
       apply propext
       simpa using (hiffU u)
-    exact congr_arg (fun f => (do let u ← $ᵖ U; pure (f u)) True) hfun
+    simp [hfun]
   -- Apply proximity gap at parameter δ
   have hδ_bound : (δ : ℝ≥0) < 1 - ReedSolomon.sqrtRate deg domain := by
     have hδ_lt_div : (δ : ℝ≥0) < (δ' : ℝ≥0) := by
@@ -891,8 +840,10 @@ theorem concentration_bounds {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq
     have hle_umax : Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := hall u_max_sub
     have hnot_le : ¬ Code.relDistFromCode u_max_sub V ≤ (δ : ℝ≥0) := by
       intro hle
-      have hle' : (δᵣ'(u_max, V) : ENNReal) ≤ (δ : ENNReal) := by
-        simpa [u_max_sub, hbridge (u := u_max)] using hle
+      have hle' : ((δᵣ'(u_max, V) : ℝ≥0) : ENNReal) ≤ ((δ : ℝ≥0) : ENNReal) := by
+        rw [hbridge] at hle
+        change ((δᵣ'(u_max, V) : ℝ≥0) : ENNReal) ≤ ((δ : ℝ≥0) : ENNReal) at hle
+        exact hle
       have hle_q : δᵣ'(u_max, V) ≤ δ := (cast_ennreal_le_iff (δᵣ'(u_max, V)) δ).1 hle'
       have hδ_lt_umax : δ < δᵣ'(u_max, V) := by simpa [hu_max_eq] using hδlt'
       exact (not_le_of_gt hδ_lt_umax) hle_q

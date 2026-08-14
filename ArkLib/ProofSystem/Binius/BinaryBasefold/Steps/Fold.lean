@@ -616,7 +616,6 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
       rw [h_stmtOut_sumcheck_target_eq] at h_relOut
       have h_explicit : h_i.val.eval (𝓑 0) + h_i.val.eval (𝓑 1) = stmtIn.sumcheck_target := by
         have h_explicit' := h_V_check
-        simp only at h_explicit' ⊢
         exact h_explicit'
       cases h_relOut with
       | inl h_bad =>
@@ -634,7 +633,6 @@ def foldKnowledgeStateFunction (i : Fin ℓ) :
           simp only [h_stmtOut_eq] at h_struct ⊢
           exact h_struct
         · have h_init := h_good.2.2.1
-          simp only at h_init ⊢
           exact h_init
         · have h_res := h_good.2.2.2
           simp only [h_stmtOut_eq] at ⊢ h_res
@@ -1540,7 +1538,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ℓ := ℓ) i stmtOStmtIn y
   let incrementalBadFoldEvent_or_sumcheckBadEvent := fun y : L =>
     (incrementalBadFoldEvent y) ∨ (sumcheckBadEvent y)
-  have h_prob_mono := prob_mono (D := $ᵖ L)
+  have h_prob_mono := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
     (f := doomEvent) (g := incrementalBadFoldEvent_or_sumcheckBadEvent)
     (h_imp := by
       intro y h_doomEscape
@@ -1561,7 +1559,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
   refine le_trans h_prob_mono ?_
   dsimp only [incrementalBadFoldEvent_or_sumcheckBadEvent, foldKnowledgeError]
   apply le_trans (
-      Pr_or_le ($ᵖ L) (f := incrementalBadFoldEvent) (g := sumcheckBadEvent)
+      Probability.Pr_or_le ($ᵖ L) (f := incrementalBadFoldEvent) (g := sumcheckBadEvent)
   )
   conv_rhs => simp only [ENNReal.coe_add]; rw [add_comm]
   apply add_le_add
@@ -1700,7 +1698,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
           (m := mp.multpoly stmtOStmtIn.1.ctx)
           (i := i.castSucc) (challenges := stmtOStmtIn.1.challenges)
       let h_star_fixed : L⦃≤ 2⦄[X] := getSumcheckRoundPoly ℓ 𝓑 (i := i) (h := H_fixed)
-      have h_prob_mono_sum := prob_mono (D := $ᵖ L)
+      have h_prob_mono_sum := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
         (f := fun y => sumcheckBadEvent y)
         (g := fun y => badSumcheckEventProp y h_i h_star_fixed)
         (h_imp := by
@@ -1722,7 +1720,7 @@ lemma foldStep_doom_escape_probability_bound (i : Fin ℓ)
           simp only [ne_eq, Nat.cast_eq_zero, Fintype.card_ne_zero, not_false_eq_true])]
         simp only [ENNReal.coe_ofNat, ENNReal.coe_natCast]
       exact h_sz
-    · have h_prob_mono_false := prob_mono (D := $ᵖ L)
+    · have h_prob_mono_false := Probability.Pr_le_Pr_of_implies (D := $ᵖ L)
         (f := fun y => sumcheckBadEvent y)
         (g := fun _ => False)
         (h_imp := by

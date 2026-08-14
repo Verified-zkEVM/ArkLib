@@ -19,6 +19,7 @@ namespace ProximityGap
 
 open NNReal Finset Function ProbabilityTheory ReedSolomon Code
 open scoped BigOperators LinearCode ProbabilityTheory
+open Probability
 
 section BCIKS20ProximityGapSection6
 
@@ -129,30 +130,6 @@ theorem jointAgreement_implies_linSpan_proximity {ι : Type} [Fintype ι] [Nonem
       (u := ∑ i, c i • W i) (C := (C : Set (ι → F))) (δ := δ)).2
       ⟨v', hv'_mem, hdist⟩
 
-theorem prob_uniform_congr_equiv {α : Type} [Fintype α] [Nonempty α]
-    (e : α ≃ α) (P : α → Prop) :
-    Pr_{let x ←$ᵖ α}[P (e x)] = Pr_{let x ←$ᵖ α}[P x] := by
-  classical
-  rw [prob_uniform_eq_card_filter_div_card (F := α) (P := fun x => P (e x))]
-  rw [prob_uniform_eq_card_filter_div_card (F := α) (P := P)]
-  have hcard : (Finset.filter (fun x : α => P (e x)) Finset.univ).card =
-      (Finset.filter (fun x : α => P x) Finset.univ).card := by
-    classical
-    refine Finset.card_bij (s := Finset.filter (fun x : α => P (e x)) Finset.univ)
-      (t := Finset.filter (fun x : α => P x) Finset.univ)
-      (i := fun a ha => e a) ?_ ?_ ?_
-    · intro a ha
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and] at ha
-      simp [Finset.mem_filter, ha]
-    · intro a1 ha1 a2 ha2 h
-      exact e.injective h
-    · intro b hb
-      refine ⟨e.symm b, ?_, ?_⟩
-      · simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hb
-        simp [Finset.mem_filter, hb]
-      · simp
-  simp [hcard]
-
 theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F] [DecidableEq F]
     {U : Finset (ι → F)} [Nonempty U]
@@ -178,7 +155,7 @@ theorem prob_uniform_shift_invariant {ι : Type} [Fintype ι] [Nonempty ι]
         ext i
         simp [add_comm] }
   simpa [shiftEquiv] using
-    (prob_uniform_congr_equiv (α := (U : Type)) (e := shiftEquiv)
+    (ProbabilityTheory.Pr_uniform_equiv (α := (U : Type)) (β := (U : Type)) (e := shiftEquiv)
       (P := fun a : (U : Type) => δᵣ(a.1, V) ≤ δ))
 
 theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [Nonempty ι]
@@ -219,7 +196,11 @@ theorem exists_basepoint_with_large_line_prob_aux {ι : Type} [Fintype ι] [None
     have hsplit :
         Pr_{let z ←$ᵖ F; let a ←$ᵖ U}[good (a.1 + z • dir)] =
           ∑' z : F, ($ᵖ F) z * Pr_{let a ←$ᵖ U}[good (a.1 + z • dir)] := by
-      simp
+      simpa using
+        (prob_tsum_form_split_first (D := ($ᵖ F))
+          (D_rest := fun z : F => (do
+            let a ← $ᵖ U
+            return good (a.1 + z • dir))))
     rw [hsplit]
     have hconst :
         ∀ z : F, Pr_{let a ←$ᵖ U}[good (a.1 + z • dir)] = Pr_{let a ←$ᵖ U}[good a.1] := by
@@ -1075,7 +1056,7 @@ theorem bucket_exists_common_codeword
       exact (Submodule.mem_bot F).mp this
     set j₀ : Fin k := ⟨0, NeZero.pos k⟩
     refine ⟨v_pair j₀ 0, S_j j₀, (hv_pair j₀ 0).1, hS_j j₀, ?_, ?_⟩
-    · convert (hv_pair j₀ 0).2 using 2
+    · simpa [finMapTwoWords, h_dirs_zero j₀] using (hv_pair j₀ 0).2
     · intro j
       refine ⟨0, V.zero_mem, ?_⟩
       intro c _
@@ -1481,7 +1462,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         rw [Real.coe_sqrt]
         congr 1
         haveI : NeZero deg := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]
         simp [LinearCode.length]
@@ -1516,7 +1497,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
         simp only [s, hs_def, ReedSolomon.sqrtRate]
         rw [Real.coe_sqrt]; congr 1
         haveI : NeZero deg := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg)
           (by omega : deg ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
       have hs_pos : 0 < s := by
@@ -1639,7 +1620,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
       have hs_eq : s = Real.sqrt ((1 : ℝ) / Fintype.card ι) := by
         simp only [s, hs_def, ReedSolomon.sqrtRate]; rw [Real.coe_sqrt]; congr 1
         haveI : NeZero (1 : ℕ) := ⟨by omega⟩
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := 1)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := 1)
           (by omega : 1 ≤ Fintype.card ι)
         rw [LinearCode.rate, hdim]; simp [LinearCode.length]
       have hgs_eq : gs_johnson 1 (Fintype.card ι) m = 1 - s - s / (2 * m) := by
@@ -1968,10 +1949,10 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
       have hrelUDR : Code.relativeUniqueDecodingRadius (ι := ι) (F := F)
           (C := (ReedSolomon.code domain deg : Set (ι → F))) =
           ((1 : ℝ≥0) - ↑deg / ↑(Fintype.card ι)) / 2 :=
-        ReedSolomon.relativeUniqueDecodingRadius_RS_eq' (by omega)
+        ReedSolomon.relativeUniqueDecodingRadius_RS_eq (by omega)
       have hrate_eq : (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) =
           (↑deg : ℝ≥0) / ↑(Fintype.card ι) := by
-        have hdim := ReedSolomon.dim_eq_deg_of_le' (α := domain) (n := deg) (by omega)
+        have hdim := ReedSolomon.dim_eq_deg_of_le (α := domain) (n := deg) (by omega)
         simp [LinearCode.rate, hdim, LinearCode.length]
       rw [hrate_eq] at hJ
       rw [← hrelUDR] at hJ

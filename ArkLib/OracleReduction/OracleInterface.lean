@@ -7,6 +7,8 @@ Authors: Quang Dao
 import VCVio
 import CompPoly.Data.MvPolynomial.Notation
 import Mathlib.Algebra.Polynomial.Roots
+import ArkLib.Data.MvPolynomial.Degrees
+import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 -- import ArkLib.Data.MlPoly.Basic
 
 /-!
@@ -111,18 +113,18 @@ instance {ι : Type u} [DecidableEq ι] (v : ι → Type v) [O : ∀ i, OracleIn
     [h : ∀ i, DecidableEq (Query (v i))]
     [h' : ∀ i q, DecidableEq ((O i).Response q)] :
     [v]ₒ.DecidableEq where
-  decidableEq_A := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
-  decidableEq_B | ⟨i, q⟩ => h' i q
+  decidableEqA := inferInstanceAs (DecidableEq ((i : ι) × Query (v i)))
+  decidableEqB | ⟨i, q⟩ => h' i q
 
 instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
     [h : ∀ i q, Fintype ((O i).Response q)] :
     [v]ₒ.Fintype where
-  fintype_B | ⟨i, q⟩ => h i q
+  fintypeB | ⟨i, q⟩ => h i q
 
 instance {ι : Type u} (v : ι → Type v) [O : ∀ i, OracleInterface (v i)]
     [h : ∀ i q, Inhabited ((O i).Response q)] :
     [v]ₒ.Inhabited where
-  inhabited_B | ⟨i, q⟩ => h i q
+  inhabitedB | ⟨i, q⟩ => h i q
 
 @[reducible, inline]
 instance {ι₁ : Type u} {T₁ : ι₁ → Type v} [inst₁ : ∀ i, OracleInterface (T₁ i)]
@@ -396,6 +398,17 @@ theorem distanceLE_polynomial_degreeLE :
 theorem distanceLE_mvPolynomial_degreeLE {σ : Type} [Fintype σ] [DecidableEq σ] :
     distanceLE (instMvPolynomialDegreeLE R d σ)
       (Fintype.card σ * d * Fintype.card R ^ (Fintype.card σ - 1)) := by
-  sorry
+  letI : Field R := Fintype.fieldOfDomain R
+  intro a b hab
+  have hne : (a : MvPolynomial σ R) - (b : MvPolynomial σ R) ≠ 0 := by
+    rw [sub_ne_zero]
+    exact fun h => hab (Subtype.ext h)
+  have hdeg : ((a : MvPolynomial σ R) - (b : MvPolynomial σ R)).totalDegree
+      ≤ Fintype.card σ * d :=
+    MvPolynomial.totalDegree_le_card_mul_of_mem_restrictDegree _ d (sub_mem a.2 b.2)
+  have hcount := MvPolynomial.card_zeros_le_of_totalDegree_le _ hne hdeg
+  refine le_trans (le_of_eq ?_) hcount
+  simp only [instMvPolynomialDegreeLE, map_sub, sub_eq_zero]
+  rfl
 
 end PolynomialDistance

@@ -1153,7 +1153,6 @@ noncomputable def iteratedQuotientMap [NeZero ℓ] (i : Fin r) {destIdx : Fin r}
               simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]) (h_k := by
                 simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega) (h_l := by
                 simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; omega)
-          simp only at h_comp
           convert h_comp.symm
         · omega
       · omega
@@ -1291,7 +1290,8 @@ lemma getSDomainBasisCoeff_of_sum_repr [NeZero R_rate] (i : Fin r) (h_i : i ≤ 
     exact hx
   -- The basis vectors `.val` are linearly independent in the ambient space `L`.
   have h_li : LinearIndependent 𝔽q (fun j' => (b j').val) := by
-    simpa using (b.linearIndependent.map' (Submodule.subtype _) (Submodule.ker_subtype _))
+    change LinearIndependent 𝔽q (Subtype.val ∘ b)
+    exact b.linearIndependent.map' (Submodule.subtype _) (Submodule.ker_subtype _)
   -- Since the basis vectors are linearly independent, the representation of `x.val` as a
   -- linear combination is unique. Therefore, the coefficients must be equal.
   have h_coeffs_eq : b.repr x = Finsupp.equivFunOnFinite.symm x_coeffs := by
@@ -1411,7 +1411,6 @@ lemma getSDomainBasisCoeff_of_iteratedQuotientMap
     have h_comp_eq : interW_i_k.comp W_i = W_i_add_k := by
       have hi := base_intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (k:=i) (h_k := by omega)
       have hi_add_k := base_intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (k:=destIdx) (h_k := by omega)
-      simp only at hi hi_add_k
       simp_rw [W_i, W_i_add_k, interW_i_k, ←hi, ←hi_add_k]
       have h_interW_comp := intermediateNormVpoly_comp 𝔽q β h_ℓ_add_R_rate
         (i := 0) (k:=i) (l:=k) (destIdx := i) (h_destIdx := by
@@ -1535,7 +1534,6 @@ theorem base_intermediateNovelBasisX (j : Fin (2 ^ ℓ)) :
   unfold intermediateNovelBasisX Xⱼ
   simp only [Fin.coe_ofNat_eq_mod]
   have h_res := base_intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate
-  simp only at h_res
   conv_lhs =>
     enter [2, x, 1]
     rw [h_res ⟨x, by omega⟩ (h_k := by simp only; omega)]
@@ -2695,7 +2693,6 @@ lemma NTTStage_correctness (i : Fin (ℓ))
       Nat.shiftRight_eq_div_pow]
   by_cases h_b_bit_eq_0: (j.val / (2 ^ i.val)) % 2 = 0
   · simp only [h_b_bit_eq_0, ↓reduceDIte]
-    simp only at h_b_bit_eq_0
     have bit_i_j_eq_0: Nat.getBit i.val j.val = 0 := by omega
     set x0 := twiddleFactor 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (h_i := by simp only; omega) ⟨j.val / 2 ^ i.val / 2, by
       rw [h_j_div_2_pow_left.symm]; exact h_j_div_2_pow_i_add_1_lt⟩

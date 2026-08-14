@@ -13,7 +13,7 @@ import Mathlib.Logic.Equiv.Fin.Basic
 import Mathlib.Order.CompletePartialOrder
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import ArkLib.Data.Fin.Basic
 import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Polynomial.Roots
@@ -59,6 +59,11 @@ Interleaved codes for generic codes over a semiring, with **unified global APIs*
   `ModuleCode ι F (InterleavedSymbol A κ)` (preserves submodule; used with `C^⋈κ`)
 - **`ModuleCode.codewordStackSubmodule`** - codeword stack as
   `Submodule F (WordStack A κ ι)` (preserves submodule for horizontal interleaving)
+
+### Structure of the interleaved module code
+- **`moduleInterleavedCodeEquiv`** - the column-tuple linear equivalence
+  `(κ → MC) ≃ₗ[F] (MC ^⋈ κ)`
+- **`finrank_moduleInterleavedCode`** - `finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`
 
 ### Joint Proximity & Agreement (Consequent of Proximity Gap)
 - **`jointProximity u δ`** - interleaved `u` within relative distance `δ` of `C^⋈κ`
@@ -146,7 +151,7 @@ noncomputable instance interleavedCodeSet_fintype {A : Type*} {κ ι : Type*}
 
 /-- Interleaved code submodule of any `ModuleCode`, where each row belongs to the code. -/
 @[simp]
-instance ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
+def ModuleCode.moduleInterleavedCode : ModuleCode ι F (InterleavedSymbol A κ) := {
   -- Simple condition wrapping over Matrix
   carrier := interleavedCodeSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -165,12 +170,38 @@ lemma mem_moduleInterleavedCode_iff (v : InterleavedWord A κ ι) :
     v ∈ ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := κ) (ι := ι) (MC := MC)
     ↔ ∀ k, InterleavedWord.getRowWord v k ∈ MC := by exact Eq.to_iff rfl
 
+omit [Fintype κ] [Fintype ι] in
+/-- **Projection commutes with interleaving.** An interleaved word projects into the interleaved
+code on `T` iff each of its rows projects into the base code on `T`.
+
+Forward direction: extract rows of the interleaved witness. Backward direction: assemble the
+chosen row witnesses into an interleaved codeword. This is the bridge that lets mutual correlated
+agreement be applied to interleaved codes: the proof of Lemma 4.4 [BCGM25] applies MCA of the
+inner generator to the `ℓ`-fold interleaving `C^ℓ`, and this lemma converts its projected
+membership clauses row-wise. -/
+lemma projectedCodeSubmod_moduleInterleavedCode_iff (v : InterleavedWord A κ ι) (T : Finset ι) :
+    LinearCode.projectedWord v T ∈
+      LinearCode.projectedCodeSubmod (ModuleCode.moduleInterleavedCode F A κ ι MC) T ↔
+    ∀ k, LinearCode.projectedWord (InterleavedWord.getRowWord v k) T ∈
+      LinearCode.projectedCodeSubmod MC T := by
+  constructor
+  · intro h k
+    obtain ⟨c, hc, hw⟩ := (LinearCode.mem_projectedCodeSubmod_iff _ T _).mp h
+    exact (LinearCode.mem_projectedCodeSubmod_iff _ T _).mpr
+      ⟨InterleavedWord.getRowWord c k, (mem_moduleInterleavedCode_iff F A κ ι MC c).mp hc k,
+        funext fun i => congr_fun (congr_fun hw i) k⟩
+  · intro h
+    choose c hc hw using fun k => (LinearCode.mem_projectedCodeSubmod_iff _ T _).mp (h k)
+    exact (LinearCode.mem_projectedCodeSubmod_iff _ T _).mpr
+      ⟨fun i k => c k i, (mem_moduleInterleavedCode_iff F A κ ι MC _).mpr fun k => hc k,
+        funext fun i => funext fun k => congr_fun (hw k) i⟩
+
 @[simp]
 def codewordStackSet {A : Type*} {κ ι : Type*} (C : Set (ι → A)) : Set (WordStack A κ ι) :=
   { V : WordStack A κ ι | ∀ k, V.getRowWord k ∈ C }
 
 @[simp]
-instance ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
+def ModuleCode.codewordStackSubmodule : Submodule F (WordStack A κ ι) := {
   -- Simple condition wrapping over Matrix
   carrier := codewordStackSet (C := (MC : Set (ι → A)))
   add_mem' hU hV i := MC.add_mem (hU i) (hV i)
@@ -362,6 +393,166 @@ lemma interleavedCode_eq_interleavedCodeSet_of_moduleCode {F A : Type*} {κ ι :
     ((MC ^⋈ κ) : Set (ι → (κ → A))) = interleavedCodeSet (κ := κ) (C := (MC : Set (ι → A)))
     := by rfl
 
+/-- Interleaving over a nonempty row index preserves minimum block distance:
+`minDist (interleavedCodeSet C) = minDist C`.
+
+For `≥`, two distinct interleaved words differ in some row, whose Hamming distance is bounded
+by their block distance. For `≤`, place a minimum-distance base pair in one row and repeat
+one endpoint in every other row. The subsingleton case is handled separately, both sides
+being zero there. -/
+theorem minDist_interleavedCodeSet
+    {κ ι A : Type*} [Fintype κ] [Nonempty κ] [Fintype ι] [DecidableEq A]
+    (C : Set (ι → A)) :
+    minDist (interleavedCodeSet (κ := κ) C) = minDist C := by
+  classical
+  let IC : Set (ι → κ → A) := {V | ∀ k, (fun i ↦ V i k) ∈ C}
+  change minDist IC = minDist C
+  by_cases hC : Set.Nontrivial C
+  · obtain ⟨u, hu, v, hv, huv⟩ := hC
+    let k0 : κ := Classical.choice ‹Nonempty κ›
+    let U : ι → κ → A := fun i _ ↦ u i
+    let V : ι → κ → A := fun i k ↦ if k = k0 then v i else u i
+    have hU : U ∈ IC := by
+      intro k
+      change (fun i ↦ u i) ∈ C
+      exact hu
+    have hV : V ∈ IC := by
+      intro k
+      by_cases hk : k = k0
+      · subst k
+        change (fun i ↦ if k0 = k0 then v i else u i) ∈ C
+        simpa using hv
+      · change (fun i ↦ if k = k0 then v i else u i) ∈ C
+        simp [hk, hu]
+    have hUV : U ≠ V := by
+      intro h
+      apply huv
+      funext i
+      have := congrFun (congrFun h i) k0
+      simpa [U, V] using this
+    have hupper : minDist IC ≤ minDist C := by
+      have hS : {d | ∃ x ∈ C, ∃ y ∈ C, x ≠ y ∧ hammingDist x y = d}.Nonempty :=
+        ⟨hammingDist u v, u, hu, v, hv, huv, rfl⟩
+      have hmem : ∃ x ∈ C, ∃ y ∈ C, x ≠ y ∧ hammingDist x y = minDist C := by
+        exact Nat.sInf_mem hS
+      obtain ⟨x, hx, y, hy, hxy, hdist⟩ := hmem
+      let X : ι → κ → A := fun i _ ↦ x i
+      let Y : ι → κ → A := fun i k ↦ if k = k0 then y i else x i
+      have hX : X ∈ IC := by
+        intro k
+        change (fun i ↦ x i) ∈ C
+        exact hx
+      have hY : Y ∈ IC := by
+        intro k
+        by_cases hk : k = k0
+        · subst k
+          change (fun i ↦ if k0 = k0 then y i else x i) ∈ C
+          simpa using hy
+        · change (fun i ↦ if k = k0 then y i else x i) ∈ C
+          simp [hk, hx]
+      have hXY : X ≠ Y := by
+        intro h
+        apply hxy
+        funext i
+        have := congrFun (congrFun h i) k0
+        simpa [X, Y] using this
+      apply Nat.sInf_le
+      refine ⟨X, hX, Y, hY, hXY, ?_⟩
+      rw [← hdist]
+      unfold hammingDist
+      congr 1
+      ext i
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      constructor
+      · intro hne hxy_i
+        apply hne
+        funext k
+        simp [X, Y, hxy_i]
+      · intro hxy_i hEq
+        apply hxy_i
+        have := congrFun hEq k0
+        simpa [X, Y] using this
+    have hSIC : {d | ∃ x ∈ IC, ∃ y ∈ IC, x ≠ y ∧ hammingDist x y = d}.Nonempty :=
+      ⟨hammingDist U V, U, hU, V, hV, hUV, rfl⟩
+    have hmemIC : ∃ X ∈ IC, ∃ Y ∈ IC, X ≠ Y ∧ hammingDist X Y = minDist IC := by
+      exact Nat.sInf_mem hSIC
+    obtain ⟨X, hX, Y, hY, hXY, hdist⟩ := hmemIC
+    have hex : ∃ i k, X i k ≠ Y i k := by
+      obtain ⟨i, hi⟩ := Function.ne_iff.mp hXY
+      obtain ⟨k, hk⟩ := Function.ne_iff.mp hi
+      exact ⟨i, k, hk⟩
+    obtain ⟨i0, k, hik⟩ := hex
+    have hrow : (fun i ↦ X i k) ≠ fun i ↦ Y i k := by
+      intro h
+      exact hik (congrFun h i0)
+    have hlower : minDist C ≤ minDist IC := by
+      calc
+        minDist C ≤ hammingDist (fun i ↦ X i k) (fun i ↦ Y i k) := by
+          apply Nat.sInf_le
+          exact ⟨_, hX k, _, hY k, hrow, rfl⟩
+        _ ≤ hammingDist X Y := by
+          unfold hammingDist
+          apply Finset.card_le_card
+          intro i hi
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi ⊢
+          intro h
+          exact hi (congrFun h k)
+        _ = minDist IC := hdist
+    exact le_antisymm hupper hlower
+  · have hCsub : Set.Subsingleton C := Set.not_nontrivial_iff.mp hC
+    have hICsub : Set.Subsingleton IC := by
+      intro U hU V hV
+      funext i k
+      have h := hCsub (hU k) (hV k)
+      exact congrFun h i
+    have hbase : minDist C = 0 := by
+      unfold minDist
+      have hempty : {d | ∃ x ∈ C, ∃ y ∈ C, x ≠ y ∧ hammingDist x y = d} = ∅ := by
+        rw [Set.eq_empty_iff_forall_notMem]
+        rintro d ⟨x, hx, y, hy, hxy, -⟩
+        exact hxy (hCsub hx hy)
+      rw [hempty, Nat.sInf_empty]
+    have hinter : minDist IC = 0 := by
+      unfold minDist
+      have hempty : {d | ∃ x ∈ IC, ∃ y ∈ IC, x ≠ y ∧ hammingDist x y = d} = ∅ := by
+        rw [Set.eq_empty_iff_forall_notMem]
+        rintro d ⟨x, hx, y, hy, hxy, -⟩
+        exact hxy (hICsub hx hy)
+      rw [hempty, Nat.sInf_empty]
+    rw [hbase, hinter]
+
+section Finrank
+
+/-! ### Structure and dimension of an interleaved module code -/
+
+/-- A `κ`-tuple of codewords of a module code `MC` is the same data as a codeword of the
+interleave `MC ^⋈ κ`: the tuple `g` corresponds to the interleaved word whose `k`-th row is
+`g k`. No finiteness of `κ` or `ι` is required. -/
+def moduleInterleavedCodeEquiv {F : Type*} [Semiring F] {A : Type*} [AddCommMonoid A]
+    [Module F A] {ι : Type*} (MC : ModuleCode ι F A) (κ : Type*) :
+    (κ → MC) ≃ₗ[F] (MC ^⋈ κ) where
+  toFun g := ⟨fun i k => (g k : ι → A) i, fun k => (g k).2⟩
+  invFun V := fun k => ⟨fun i => V.val i k, V.2 k⟩
+  left_inv g := by funext k; exact Subtype.ext rfl
+  right_inv V := by apply Subtype.ext; funext i k; rfl
+  map_add' g g' := by apply Subtype.ext; funext i k; rfl
+  map_smul' a g := by apply Subtype.ext; funext i k; rfl
+
+/-- Interleaving multiplies the dimension by the interleaving factor:
+`finrank F (MC ^⋈ κ) = Fintype.card κ * finrank F MC`.
+
+Immediate from `moduleInterleavedCodeEquiv` and `Module.finrank_pi_fintype`, whose `Free` and
+`Finite` hypotheses are inherited; both hold automatically when `F` is a field and the ambient
+`ι → A` is finite-dimensional. -/
+lemma finrank_moduleInterleavedCode {F : Type*} [Semiring F] [StrongRankCondition F]
+    {A : Type*} [AddCommMonoid A] [Module F A] {ι : Type*} (MC : ModuleCode ι F A)
+    [Module.Free F MC] [Module.Finite F MC] (κ : Type*) [Fintype κ] :
+    Module.finrank F (MC ^⋈ κ) = Fintype.card κ * Module.finrank F MC := by
+  rw [← (moduleInterleavedCodeEquiv MC κ).finrank_eq, Module.finrank_pi_fintype,
+    Finset.sum_const, Finset.card_univ, smul_eq_mul]
+
+end Finrank
+
 @[simp]
 instance {κ₁ κ₂ : Type*} :
     HAppend (WordStack A κ₁ ι) (WordStack A κ₂ ι) (WordStack A (Sum κ₁ κ₂) ι) where
@@ -452,21 +643,18 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
   eq_iff_all_rows_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i ↦ rfl
-    · intro h; ext i k;
-      let res := h i; simp only [WordStack, codewordStackSet, Word, WordStack.getRowWord,
-        Set.mem_setOf_eq, Subtype.mk.injEq] at res; exact congrFun res k
+    · intro h; ext i k
+      exact congrFun (congrArg Subtype.val (h i)) k
   eq_iff_all_symbols_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
-    · intro h; ext i k;
-      let res := h k; simp only [WordStack, codewordStackSet, Word,
-        Set.mem_setOf_eq] at res; exact congrFun res i
+    · intro h; ext i k
+      exact congrFun (h k) i
   eq_iff_all_cells_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i k ↦ rfl
-    · intro h; ext i k;
-      let res := h i k; simp only [WordStack, codewordStackSet, Word,
-        Set.mem_setOf_eq] at res; exact res
+    · intro h; ext i k
+      exact h i k
 
 -- InterleavedWord
 @[simp] instance instInterleavedStructureInterleavedWord :
@@ -509,7 +697,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
     · intro h; ext i k;
-      let res := h i; simp only at res; exact congrFun res k
+      exact congrFun (h i) k
   eq_iff_all_cells_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i k ↦ rfl
