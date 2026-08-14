@@ -794,15 +794,15 @@ lemma pairUDRClose_of_pairFiberwiseClose (i : Fin r) {destIdx : Fin r} (steps : 
     apply hammingDist_le_fiberwiseDistance_mul_two_pow_steps
   -- h_fw_dist_lt : 2 * d_fw < BBF_CodeDistance 𝔽q β ⟨↑i + steps, ⋯⟩
   have h_2_fw_dist_le : 2 * d_fw ≤ d_next - 1 := by omega
-  have h_2_fw_dist_mul_2_pow_steps_le :
-    2 * (d_fw * 2 ^ steps) ≤ (d_next * 2 ^ steps - 2 ^ steps):= by
+  have h_fiberwise_scaled_le :
+    2 * (d_fw * 2 ^ steps) ≤ (d_next * 2 ^ steps - 2 ^ steps) := by
     rw [←mul_assoc]
     conv_rhs =>
       rw (occs := [2]) [←one_mul (2 ^ steps)];
       rw [←Nat.sub_mul (n := d_next) (m := 1) (k := 2 ^ steps)];
     apply Nat.mul_le_mul_right
     exact h_2_fw_dist_le
-  have h_2_fw_dist_mul_2_pow_steps_le : (d_next * 2 ^ steps - 2 ^ steps) = d_cur - 1 := by
+  have h_scaled_distance_eq : (d_next * 2 ^ steps - 2 ^ steps) = d_cur - 1 := by
     dsimp only [d_next, d_cur]
     rw [BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega),
       BBF_CodeDistance_eq 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (h_i := by omega)]

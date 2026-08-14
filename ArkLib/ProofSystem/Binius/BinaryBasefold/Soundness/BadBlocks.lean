@@ -24,6 +24,7 @@ This file packages:
 
 namespace Binius.BinaryBasefold
 
+-- The terminal bad-block bookkeeping proof exceeds Lean's default heartbeat budget.
 set_option maxHeartbeats 400000
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial
