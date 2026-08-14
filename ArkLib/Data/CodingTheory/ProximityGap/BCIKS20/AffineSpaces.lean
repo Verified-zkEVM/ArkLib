@@ -1443,8 +1443,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
   have hn_le : Fintype.card ι ≤ Fintype.card F :=
     Fintype.card_le_of_injective domain domain.injective
   have hsqrt_le : ReedSolomon.sqrtRate deg domain ≤ 1 :=
-    NNReal.sqrt_le_one.mpr (by exact_mod_cast
-      @DivergenceOfSets.reedSolomon_rate_le_one ι _ _ F _ _ domain)
+    ReedSolomon.sqrtRate_le_one _ _
   have hδ_real : (δ : ℝ) < 1 - (ReedSolomon.sqrtRate deg domain : ℝ) := by
     calc (δ : ℝ) < ((1 - ReedSolomon.sqrtRate deg domain : ℝ≥0) : ℝ) := by exact_mod_cast hδ
       _ = 1 - (ReedSolomon.sqrtRate deg domain : ℝ) := by
@@ -1746,10 +1745,8 @@ theorem rs_listDecoding_card_lt_field {deg : ℕ} {domain : ι ↪ F} {δ : ℝ�
         exact h.symm
       -- closeWords.card ≤ |range(w)|: inject closeWords → range(w) via coeff 0
       -- Every close constant c must be in range(w)
-      have hsqrt_pos : (0 : ℝ≥0) < ReedSolomon.sqrtRate 1 domain := by
-        simp only [ReedSolomon.sqrtRate]
-        exact NNReal.sqrt_pos.mpr
-          (by exact_mod_cast DivergenceOfSets.reedSolomon_rate_pos Nat.one_pos)
+      have hsqrt_pos : (0 : ℝ≥0) < ReedSolomon.sqrtRate 1 domain :=
+        ReedSolomon.sqrtRate_pos (by simp)
       have hc_in_range : ∀ (v : ι → F) (hv : v ∈ closeWords),
           (choosePoly v hv).coeff 0 ∈ Finset.image w Finset.univ := by
         intro v hv

@@ -418,13 +418,17 @@ lemma sqrtRate_sq_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
   · rw [div_le_one (by exact_mod_cast h)]
     exact_mod_cast min_le_right _ _
 
-private lemma le_one_of_sq_le_one {x : ℝ} (hx : 0 ≤ x) (h : x ^ 2 ≤ 1) : x ≤ 1 := by
-  nlinarith
-
-@[simp]
+@[simp high]
 lemma sqrtRate_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
-  (ReedSolomon.sqrtRate m domain : ℝ) ≤ 1 :=
-  le_one_of_sq_le_one (sqrtRate_nonneg m domain) (sqrtRate_sq_le_one m domain)
+  ReedSolomon.sqrtRate m domain ≤ 1 :=
+  pow_le_one_iff_of_nonneg (sqrtRate_nonneg m domain) two_ne_zero |>.mp
+    (sqrtRate_sq_le_one m domain)
+
+@[simp high]
+lemma sqrtRate_le_one' [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (ReedSolomon.sqrtRate m domain : ℝ) ≤ 1 := by
+  norm_cast
+  simp
 
 end
 
