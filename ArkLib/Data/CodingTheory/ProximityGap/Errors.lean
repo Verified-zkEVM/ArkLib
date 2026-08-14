@@ -549,8 +549,6 @@ private lemma jointProximity_iff_exists_pairErrors_le
       _ ≤ Nat.floor (δ * Fintype.card ι) := by omega
   · rintro ⟨c, hc, hE⟩
     let E := pairErrors u c
-    have hEcard : E.card ≤ Fintype.card ι := by
-      simpa only [Finset.card_univ] using Finset.card_le_card (Finset.subset_univ E)
     refine ⟨Eᶜ, (relDist_floor_bound_iff_complement_bound _ _ _).mp ?_, c, ?_⟩
     · rw [Finset.card_compl]
       exact Nat.sub_le_sub_left hE _
@@ -747,11 +745,6 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
             exact Classical.choose_spec h
           rw [heq]
         next h => exact (h ⟨γ, rfl⟩).elim
-      have hnotAssigned (i : ι) (hi : i ∈ K)
-          (hni : ¬ assigned i) : i ≠ (emb βB).1 := by
-        intro h
-        apply hni
-        exact ⟨βB, h.symm⟩
       let v : Fin 2 → ι → F := fun j i =>
         if hi : i ∈ K then
           if j = 0 then c 0 i + if assigned i then -slope i else 1

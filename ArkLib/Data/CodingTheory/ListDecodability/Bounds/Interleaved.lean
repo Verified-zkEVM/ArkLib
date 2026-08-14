@@ -109,8 +109,6 @@ private theorem card_le_treeBound {d : ℕ} {α : Type} [DecidableEq α]
     have hjlt : j < d := hj
     by_cases hS : S = ∅
     · simp [hS]
-    obtain ⟨V₀, hV₀S⟩ := Finset.nonempty_iff_ne_empty.mpr hS
-    have hV₀T := hST hV₀S
     by_cases hw : ∃ V ∈ S, color j V = .white
     · obtain ⟨Vw, hVwS, hVwColor⟩ := hw
       have hnext : ∀ W ∈ S, Vw ⟨j, hjlt⟩ = W ⟨j, hjlt⟩ := by
