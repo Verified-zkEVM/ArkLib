@@ -207,7 +207,7 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   **false** for `epsPG` and `epsCA'`. Done for MCA: `mcaError_mono` (BCGM25 Lemma 3.16)
 - `eps?_ne_top`, `eps?_le_one` — done for MCA: `mcaError_le_one`, `mcaError_ne_top`
 - `eps?_eq_of_floor_eq` — the `1/n` step-function fact (challenge radii are integer grid points).
-  Done for MCA: `mcaError_eq_of_floor_eq`, on the primitive `le_card_iff_sub_card_le_floor`
+  Done for MCA: `mcaError_eq_of_floor_eq`, on the primitive `mul_one_sub_le_card_iff_sub_card_le_floor`
 - `isXGenerator_iff_eps?_le` — definitional under rule 1 (`isMCAGenerator_iff_mcaError_le`)
 - `eps?_le_iff_threshold` — `eps? ≤ ↑t ↔ ∀ U, Pr > t → jointAgreement`, at an **arbitrary threshold
   `t`, not at `ε`**: the families do not share one. Affine lines and affine spaces use `> ε`, but
@@ -220,11 +220,11 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   match at every `t`. MCA's bad event is larger — it ties one `T` to both clauses, and joint
   agreement may hold via a different set while the event still fires — so an `mcaError` bound
   implies the threshold statement but is not implied by it.
-  `MCASeparation.not_mcaError_le_iff_forall_jointAgreement` is the witness, and it quantifies over *every*
-  threshold-side predicate: over the repetition code in `(ZMod 2)²` at radius `1/2` joint agreement
-  is unconditional, so every threshold implication holds at every `t`, while
-  `MCASeparation.mcaError_repetitionCode_pos` puts the MCA error above `0`. Only the CA form subsumes a
-  threshold-implication phrasing well enough to retire it as a definition
+  `MCASeparation.not_mcaError_le_iff_forall_jointAgreement` is the witness: over the repetition code
+  in `(ZMod 2)²` at radius `1/2` joint agreement is unconditional, so every threshold implication
+  holds at every `t`, while `MCASeparation.mcaError_repetitionCode_pos` puts the MCA error above
+  `0`. The forward direction for MCA is [BCGM25] Lemma 3.22 and is not formalized. Only the CA form
+  subsumes a threshold-implication phrasing well enough to retire it as a definition
 - `epsPG ≤ epsCA ≤ epsMCA` (ABF26 Fact 4.5)
 - `epsMCA = epsCA` below the unique-decoding radius (ABF26 Lemma 4.6)
 - `eps?(C^⋈k) ≤ k · eps?(C)` (ABF26 Lemma 4.7 / BCGM25 Lemma 10.1)
@@ -232,7 +232,7 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   via `mcaError_le_of_forall_isMCA_imp`
 - `δᵣ(MC^⋈κ) = δᵣ(MC)` — discharges interleaved hypotheses; **not yet proved in-tree**, so
   arguments that rely on it (e.g. the "free at BCGM25 Theorem 8.2" reading in
-  `TensorGenerator.lean`) currently have no in-tree witness
+  `docs/kb/audits/bcgm25-mca-generators.md`) currently have no in-tree witness
 
 ## Known exceptions
 

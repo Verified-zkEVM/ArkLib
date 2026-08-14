@@ -124,7 +124,7 @@ lemma vecMul_eq_smul_sum {S : Type} (G : Generator S ℓ F) (x : S) (U : ℓ →
 
 /-- At the field alphabet `A := F`, where `ModuleCode ι F F` and `LinearCode ι F` are the same
 type, `IsMCA` is the `Matrix.vecMul`-shaped predicate: the linear combination `∑ j, G x j • U j`
-is the matrix-vector product `G x ⬝ᵥ U`.
+is the matrix-vector product `G x ᵥ* U`.
 
 The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit
 that weakens that breaks this declaration rather than silently changing what every field-alphabet
@@ -216,7 +216,7 @@ lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoi
 /-- The size clause `|T| ≥ n·(1 - δ)` is an *integer* condition on the complement: it says the
 `n - |T|` positions outside `T` number at most `⌊δ·n⌋`. Hence `δ` enters only through that
 floor. -/
-lemma le_card_iff_sub_card_le_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
+lemma mul_one_sub_le_card_iff_sub_card_le_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
     (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ↔
       Fintype.card ι - T.card ≤ ⌊δ * (Fintype.card ι : ℝ)⌋₊ := by
   have hTn : T.card ≤ Fintype.card ι := by
@@ -236,7 +236,8 @@ lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [Ad
     mcaError G MC δ = mcaError G MC δ' := by
   refine iSup_congr fun U => Probability.Pr_congr fun x => ?_
   refine exists_congr fun T => and_congr_left fun _ => ?_
-  rw [le_card_iff_sub_card_le_floor T hδ, le_card_iff_sub_card_le_floor T hδ', h]
+  rw [mul_one_sub_le_card_iff_sub_card_le_floor T hδ,
+    mul_one_sub_le_card_iff_sub_card_le_floor T hδ', h]
 
 /-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.

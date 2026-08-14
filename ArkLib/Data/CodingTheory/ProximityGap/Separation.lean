@@ -23,10 +23,12 @@ one ties a single `T` to both clauses: the combination agrees with a codeword on
 the mutual event still fires, making the mutual event the larger of the two.
 
 The consequence is that a bound on `CoreDefinitions.mcaError` *implies* the corresponding threshold
-statement but is not implied by it. `not_mcaError_le_iff_forall_jointAgreement` states this in the
-strongest available form: the equivalence fails for *every* threshold-side predicate. The witness
-is a two-coordinate code at radius `1/2`, so it separates the definitions and carries no
-quantitative content.
+statement — that direction is [BCGM25] Lemma 3.22, which is not formalized here — but is not
+implied by it. `not_mcaError_le_iff_forall_jointAgreement` is the failing direction.
+
+What is separated is the two *definitions*: the witness is a two-coordinate code at radius `1/2`,
+and no correlated-agreement definition appears in any statement below. The quantitative question
+[ABF26] leaves open after its Fact 4.5 is untouched.
 
 ## Main definitions
 
@@ -40,8 +42,8 @@ quantitative content.
   implication about `Code.jointAgreement` holds by its consequent at any threshold.
 * `MCASeparation.isMCA_repetitionCode` — the mutual event nevertheless fires, at seed `0`.
 * `MCASeparation.mcaError_repetitionCode_pos` — hence the error value is positive.
-* `MCASeparation.not_mcaError_le_iff_forall_jointAgreement` — no threshold implication is
-  equivalent to a `mcaError` bound.
+* `MCASeparation.not_mcaError_le_iff_forall_jointAgreement` — below the error value, no threshold
+  implication is equivalent to a `mcaError` bound.
 
 ## References
 
@@ -103,13 +105,6 @@ theorem isMCA_repetitionCode :
     simp [projectedWord, separatingFamily, ← ha] at h0 h1
     simp [← h0] at h1
 
-/-- The mutual bad event and joint agreement hold together, so `IsMCA` does not imply
-`¬ Code.jointAgreement`. -/
-theorem isMCA_and_jointAgreement :
-    IsMCA (AffineLineGenerator (ZMod 2)) repetitionCode (0 : ZMod 2) separatingFamily (1/2 : ℝ) ∧
-      Code.jointAgreement (repetitionCode : Set (Fin 2 → ZMod 2)) (1/2 : ℝ≥0) separatingFamily :=
-  ⟨isMCA_repetitionCode, jointAgreement_repetitionCode separatingFamily⟩
-
 /-- The error value is positive: the event fires on one seed out of two, and `mcaError` is a
 supremum over families, so `separatingFamily` alone bounds it below. -/
 theorem mcaError_repetitionCode_pos :
@@ -126,16 +121,22 @@ theorem mcaError_repetitionCode_pos :
   have hF : 0 < (Fintype.card (ZMod 2) : ℝ) := by norm_num
   positivity
 
-/-- No threshold implication characterizes `mcaError`. For *every* threshold-side predicate `P`
-the equivalence fails at threshold `0`: the right-hand side holds because joint agreement is
-unconditional here, and the left-hand side fails because the error value is positive.
+/-- No threshold implication characterizes `mcaError`. At any threshold `t` strictly below the
+error value — in particular at `t = 0`, by `mcaError_repetitionCode_pos` — the equivalence fails
+for every threshold-side predicate `P`: the right-hand side holds because joint agreement is
+unconditional over this code, while the left-hand side fails by hypothesis.
 
-The forward implication — a `mcaError` bound gives the threshold statement — does hold, and in
-that direction alone the bridge is available. -/
-theorem not_mcaError_le_iff_forall_jointAgreement (P : (Fin 2 → Fin 2 → ZMod 2) → Prop) :
-    ¬ (mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1/2 : ℝ) ≤ (0 : ENNReal) ↔
+The `∀ P` is carried by the right-hand side being true here, not by an argument about `P`. What
+makes the statement land on the intended target is that the correlated-agreement error, whose bad
+event is `close ∧ ¬ jointAgreement`, *does* satisfy the equivalence at every threshold.
+
+The forward implication for `mcaError` — a bound gives the threshold statement — is [BCGM25]
+Lemma 3.22 and is not formalized here. -/
+theorem not_mcaError_le_iff_forall_jointAgreement {t : ENNReal}
+    (ht : t < mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1 / 2 : ℝ))
+    (P : (Fin 2 → Fin 2 → ZMod 2) → Prop) :
+    ¬ (mcaError (AffineLineGenerator (ZMod 2)) repetitionCode (1/2 : ℝ) ≤ t ↔
         ∀ U, P U → Code.jointAgreement (repetitionCode : Set (Fin 2 → ZMod 2)) (1/2 : ℝ≥0) U) :=
-  fun h => absurd (h.mpr fun U _ => jointAgreement_repetitionCode U)
-    (not_le.mpr mcaError_repetitionCode_pos)
+  fun h => absurd (h.mpr fun U _ => jointAgreement_repetitionCode U) (not_le.mpr ht)
 
 end MCASeparation

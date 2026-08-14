@@ -63,6 +63,10 @@ variable {ι : Type} [Fintype ι]
 `ε'_mca` for the `ℓ`-fold interleaving of `MC`, then the tensor generator has it for `MC` with the
 errors added.
 
+Stated for `TensorGenerator_Explicit`, the componentwise form, which is the one that is a
+`Generator`; `TensorGenerator` lands in the tensor product and the two agree under
+`tensorProductPiFunEquiv`.
+
 Writing `W x' i := ∑ j, G' x' j • U (i, j)`, the tensor combination is the `G`-combination of
 `W x'`. Case-split on whether some `W x' i` fails to project into the code on the witness set `T`:
 if so, the tensor event implies `G`'s event at the family `W x'`; if not, it implies `G'`'s event

@@ -8,11 +8,15 @@ formalization departs from the paper as printed.
 Declaration docstrings in those files state what each declaration says; the correspondence to
 paper items, and the argument for the departures, live here.
 
+Checked against the ePrint version of 2025 held at `~/abf26-refs/BCGM25.pdf`. Paper items are cited
+by number, so re-check them against the version in hand before relying on a row.
+
 ## Definitions
 
 | Paper | Lean | Notes |
 |---|---|---|
 | Def 3.2 (`F`-linear code, `Σ` an `F`-vector space) | `ModuleCode ι F A` | The paper's alphabet generality is why the layer takes a module alphabet `A`, not `F` |
+| Def 3.3 (`k`-interleaving) | `Code.ModuleCode.moduleInterleavedCode` | Row-wise; `Code.projectedCodeSubmod_moduleInterleavedCode_iff` projects it |
 | Def 3.7 (projected code) | `LinearCode.projectedCodeSubmod` | |
 | Def 3.10 (generator) | `CoreDefinitions.Generator` | |
 | Def 3.11 (zero-evading) | `CoreDefinitions.IsZeroEvadingGenerator` | |
@@ -34,7 +38,9 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Cor 4.2 (projection onto a subset of outputs) | `LinearTransformations.mcaError_projectedGenerator_le`, `LinearTransformations.generatorSubset` | proved |
 | Lemma 4.4 (tensor generator) | `TensorMCA.isMCAGenerator_tensorGenerator`, `TensorMCA.isMCAGenerator_tensorGenerator_of_base` | proved in two forms — see below |
 | Remark 3.20 (polynomial ⇒ zero-evading) | `PolynomialGenerator.poly_gen_is_zero_evading` | proved, total-degree variant |
-| Thm 6.1 (MCA for every `F`-linear code) | — | not formalized; no unconditional inhabitant of `IsMCAGenerator` exists in-tree |
+| Lemma 3.22 (MCA implies CA) | — | not formalized; this is what licenses reading an `mcaError` bound as a correlated-agreement threshold statement |
+| Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved |
+| Thm 6.1 (MCA for **MDS** generators) | — | not formalized. Requires `G` MDS with `dim C_G = ℓ ≥ 2`; the error depends on `C` only through `n` and `δ_C`, which is what makes it discharge an interleaved hypothesis. No unconditional inhabitant of `IsMCAGenerator` exists in-tree |
 | Lemma 9.3 (`G_d` for Reed–Solomon) | — | not formalized |
 | Lemma 10.1 (`ϵMCA(C^k) ≤ k · ϵMCA(C)`) | — | not formalized |
 
@@ -63,19 +69,23 @@ form 2's, so the two do not subsume one another.
 
 That the printed error is *unreachable* from the printed hypothesis is not claimed and is not
 known — no separation at equal error is exhibited here or in the paper. What is established is that
-the paper's own argument does not reach it. Closing the gap needs `ϵMCA(C^ℓ) ≤ ϵMCA(C)`, that
-interleaving costs nothing; Lemma 10.1 gives only the factor `k`, and `ABF26` states the
-improvement as open immediately after its Lemma 4.7.
+the paper's own argument does not reach it.
+
+Closing the gap needs `ϵMCA(C^ℓ) ≤ ϵMCA(C)`, that interleaving costs nothing. Lemma 10.1 gives only
+the factor `k`, and `ABF26` states the improvement as open immediately after its Lemma 4.7
+(`ε_mca(C^≡t, δ) ≤ t · ε_mca(C, δ)`): *"It is an open question whether this bound is tight or can be
+improved."* So a proof of Lemma 4.4 at the printed hypothesis and the printed error, by this route,
+would resolve a stated open problem.
 
 ### Where the strengthening costs something
 
 BCGM25 invokes Lemma 4.4 twice.
 
-- **Thm 8.2** (polynomial generators). The base MCA comes from Thm 6.1, stated for every `F`-linear
+- **Thm 8.2** (polynomial generators). The base MCA comes from Thm 6.1 — for an MDS generator — stated for every `F`-linear
   code with error depending on `C` only through `n` and `δ_C`. The interleaving is `F`-linear with
   the same `n` and the same relative distance, so Thm 6.1 discharges the interleaved hypothesis and
   the strengthening is free. Caveat: the distance half of that, `δᵣ(MC^⋈κ) = δᵣ(MC)`, has no
-  in-tree witness — `ModuleCode.moduleInterleavedCode` gives `F`-linearity only. So "free" is a
+  in-tree witness — `Code.ModuleCode.moduleInterleavedCode` gives `F`-linearity only. So "free" is a
   reading of the paper, not a fact ArkLib establishes.
 - **Thm 9.2** (Reed–Solomon, list-decoding regime). The base MCA comes from Lemma 9.3, which is
   Reed–Solomon-specific: its proof constructs the Guruswami–Sudan polynomial `Q(X, Y, Z)` of
@@ -93,8 +103,3 @@ sentence in the proof of Thm 8.2 ("for any `F`-linear code `C`") *is* justified,
 Thm 9.2 one is not justified by the lemma it cites. Thm 9.2's printed error therefore does not
 follow from its printed proof, independently of anything in the formalization. Were Lemma 9.3 in
 fact alphabet-general, the interleaved hypothesis would be dischargeable there too.
-
-## Generality beyond the paper
-
-Lemma 4.4 types both generators `S → F^ℓ` with the same output arity, while Def 4.3 tensors
-`F^ℓ ⊗ F^ℓ′`. The Lean statements take independent arities `ℓ` and `ℓ′`, matching Def 4.3.

@@ -114,6 +114,9 @@ page under [`papers/`](papers/README.md); that directory, not this list, is the 
     seam as integrated into the escape-threaded opening chain.
 - [`audits/bciks20-appendix-a-rational-functions.md`](audits/bciks20-appendix-a-rational-functions.md)
   - status matrix for the rational-function and Hensel-lifting layer used by `BCIKS20`.
+- [`audits/bcgm25-mca-generators.md`](audits/bcgm25-mca-generators.md)
+  - `BCGM25` generator layer: definition and result correspondence, the two forms Lemma 4.4 is
+    proved in and why, and a gap in the paper's Theorem 9.2 citation.
 - [`audits/open-problems-list-decoding-and-correlated-agreement.md`](audits/open-problems-list-decoding-and-correlated-agreement.md)
   - detailed paper-to-ArkLib matrix for *Open Problems in List Decoding and Correlated Agreement*
     (dated April 8, 2026).

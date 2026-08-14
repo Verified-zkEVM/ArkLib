@@ -33,13 +33,13 @@ variable {ι : Type}
          {F : Type} [Field F]
 
 /-- The affine line combination `∑ j, (1, t) j • W j = W 0 + t • W 1`. -/
-lemma affineLineGenerator_smul_sum (W : Fin 2 → (ι → F)) (t : F) :
+lemma affineLineGenerator_sum_smul (W : Fin 2 → (ι → F)) (t : F) :
     (fun k => ∑ j, AffineLineGenerator F t j • W j k) = W 0 + t • W 1 := by
   ext k
   simp [AffineLineGenerator, Fin.sum_univ_two]
 
 /-- The affine space combination `∑ j, (1, x) j • U j` is `affineComb U x`. -/
-lemma affineSpaceGenerator_smul_sum {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) :
+lemma affineSpaceGenerator_sum_smul {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) :
     (fun k => ∑ j, AffineSpaceGenerator F s x j • U j k) = affineComb U x := by
   ext k
   simp [affineComb, Matrix.vecMul, dotProduct, smul_eq_mul]
@@ -187,7 +187,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
       projectedWord (affineComb U x) (T x) ∈ projectedCodeSubmod LC (T x) ∧
       ∃ j, projectedWord (U j) (T x) ∉ projectedCodeSubmod LC (T x) := by
     choose! T hT using fun x (hx : isB x) => hx
-    exact ⟨T, fun x hx => by rw [← affineSpaceGenerator_smul_sum]; exact hT x hx⟩
+    exact ⟨T, fun x hx => by rw [← affineSpaceGenerator_sum_smul]; exact hT x hx⟩
   obtain ⟨lam, hlam⟩ : ∃ lam : Fin s → F, (Bset.filter (fun x => projectedWord (linComb U lam) (T x)
                        ∈ projectedCodeSubmod LC (T x))).card ≤ m / (Fintype.card F : ℝ) := by
     have h_per_seed_le : ∀ x ∈ Bset, ∑ lam : Fin s → F, (if projectedWord (linComb U lam) (T x) ∈
@@ -242,7 +242,7 @@ lemma exists_line_bound [Fintype F] [Fintype ι] {s : ℕ} (hs : 1 ≤ s)
   · gcongr
     intro h
     use T (v + ‹_› • lam)
-    simp_all only [ge_iff_le, Finset.mem_univ, affineLineGenerator_smul_sum, Fin.isValue,
+    simp_all only [ge_iff_le, Finset.mem_univ, affineLineGenerator_sum_smul, Fin.isValue,
       Matrix.cons_val_zero,
       Matrix.cons_val_one, Matrix.cons_val_fin_one, Fin.exists_fin_two, not_false_eq_true, or_true,
       and_true]
@@ -271,7 +271,7 @@ generator is the affine line generator, so the conclusion is immediate, and the 
 covers that case uniformly.
 
 Note: the error is valued in `ℝ≥0` rather than `I`, since `(1 - 1/|F|)⁻¹ • ε_mca` may exceed `1`. -/
-theorem isMCAGenerator_affineSpaceGenerator_of_affineLine {ℓ : ℕ} (hℓ : ℓ ≥ 1)
+theorem isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator {ℓ : ℕ} (hℓ : ℓ ≥ 1)
     (ε_mca : I → ℝ≥0) (LC : LinearCode ι F)
     (hGMCA : IsMCAGenerator (AffineLineGenerator F) ε_mca LC) :
     letI a := (1 - 1 / Fintype.card F : ℝ≥0)
