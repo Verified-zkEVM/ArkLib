@@ -13,16 +13,19 @@ shape for all of them, so that helper lemmas are written once rather than per no
 `ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`. The paper-facing `ε_pg` / `ε_ca`
 values, their elementary laws and their bridges to the maintained predicates live in
 `ProximityGap/Errors.lean`. They are an explicit transitional exception to the canonical shape:
-they retain `Set (ι → A)` codes, `ℝ≥0` radii, the source's outer guarded `if`, two CA radii, and
-one definition per generator family. This preserves the exact ABF26 implication-shaped values
-while proving bridges to the pre-existing predicate API; it does not make those representations
-canonical for new work. Moving CA/PG to `ModuleCode`, total `ℝ` radii, guard-as-conjunct events,
-and a generator parameter is a coordinated breaking refactor because the dependent-sample-space
-affine-space case cannot be expressed by the ordinary `Generator` type. The four
-correlated-agreement predicates in `ProximityGap/Basic.lean` likewise remain one-per-family — see
-[What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not) for what collapsing
-them requires. MCA has no such exception: `mcaError` is its sole value, and `epsMCA` is reducibly
-the affine-line specialization.
+they retain `Set (ι → A)` codes, `ℝ≥0` radii, an outer guarded `if` extensionally equivalent to the
+source's guard conjunction, two CA radii, and one definition per generator family. This preserves
+the exact ABF26 implication-shaped values while proving bridges to the pre-existing predicate API;
+it does not make those representations canonical for new work.
+
+These deviations have separate migration costs. Affine lines already use `AffineLineGenerator`,
+and the powers family can use an ordinary `Generator`; only the dependent-sample-space affine-space
+case blocks complete generator unification. The `Set`/`ModuleCode`, `ℝ≥0`/total-`ℝ`, and guarded
+`if`/conjunct-event changes are independent compatibility refactors. The four correlated-agreement
+predicates in `ProximityGap/Basic.lean` likewise remain one-per-family — see [What is a duplicate,
+and what is not](#what-is-a-duplicate-and-what-is-not) for what collapsing them requires. MCA has no
+such exception: `mcaError` is its sole value, and `epsMCA` is reducibly the affine-line
+specialization.
 
 ## The shape
 

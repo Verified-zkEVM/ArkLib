@@ -21,10 +21,9 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 
 ## What ArkLib Uses From This Paper
 
-- Lemma 4.10's equality between affine-line mutual correlated agreement and correlated agreement
-  below half the relative minimum distance.
+- Lemma 4.10's unique-decoding MCA-from-CA direction below half the relative minimum distance.
 - In Lean, only the `mcaError ≤ epsCA` direction is an external leaf. The reverse direction is
-  proved as ABF26 Fact 4.5, and the equality is derived by antisymmetry.
+  proved as ABF26 Fact 4.5, so the equality is an ABF26 consequence derived by antisymmetry.
 
 ## Main ArkLib Touchpoints
 

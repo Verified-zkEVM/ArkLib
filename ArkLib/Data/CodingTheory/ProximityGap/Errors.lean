@@ -90,6 +90,39 @@ theorem epsMCA_eq_of_floor_eq (C : ModuleCode ι F A) {δ δ' : ℝ≥0}
 
 end MCAAdapter
 
+section MCAStructuralInterleaving
+
+variable {ι : Type} [Fintype ι]
+variable {F : Type} [Field F] [Fintype F]
+variable {A : Type} [AddCommMonoid A] [Module F A]
+
+/-- The PR 692 structural direction: affine-line MCA for a nonempty row-wise interleaving bounds
+affine-line MCA for the base code at every radius in `[0,1]`.
+
+The assumptions deliberately match the module-alphabet generality of
+`TensorMCA.isMCAGenerator_of_moduleInterleavedCode`. -/
+theorem mcaError_le_affineLine_interleaved
+    (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
+    (ht : 0 < t) (hδ_le : δ ≤ 1) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
+      mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
+  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
+  let ε : I → ℝ≥0 := fun γ =>
+    ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
+  have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
+    intro γ
+    dsimp [ε]
+    rw [ENNReal.coe_toNNReal
+      (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))]
+  have hBase := TensorMCA.isMCAGenerator_of_moduleInterleavedCode
+    (ℓ := Fin t) (AffineLineGenerator F) ε C hInterleaved
+  let δI : I :=
+    ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
+  simpa [δI, ε, ENNReal.coe_toNNReal
+    (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ))] using hBase δI
+
+end MCAStructuralInterleaving
+
 section
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -515,28 +548,6 @@ theorem epsMCA_eq_epsCA_below_udr
     (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
     epsMCA C δ = epsCA (F := F) (A := F) (C : Set (ι → F)) δ δ :=
   mcaError_eq_epsCA_below_udr C δ hδ_pos h_udr
-
-/-- The PR 692 structural direction: affine-line MCA for a nonempty row-wise interleaving bounds
-affine-line MCA for the base code at every radius in `[0,1]`. -/
-theorem mcaError_le_affineLine_interleaved
-    (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (ht : 0 < t) (hδ_le : δ ≤ 1) :
-    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
-      mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
-  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
-  let ε : I → ℝ≥0 := fun γ =>
-    ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
-  have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
-    intro γ
-    dsimp [ε]
-    rw [ENNReal.coe_toNNReal
-      (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))]
-  have hBase := TensorMCA.isMCAGenerator_of_moduleInterleavedCode
-    (ℓ := Fin t) (AffineLineGenerator F) ε C hInterleaved
-  let δI : I :=
-    ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
-  simpa [δI, ε, ENNReal.coe_toNNReal
-    (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ))] using hBase δI
 
 /-- The externally sourced direction of **ABF26 Lemma 4.7 / Jo26 Corollary 4.5**: nonempty
 row-wise interleaving does not increase affine-line MCA at radii in `(0,1)`. -/
