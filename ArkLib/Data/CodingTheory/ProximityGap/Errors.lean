@@ -625,6 +625,22 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
     exact_mod_cast (by nlinarith : (δ : ℝ) < 1)
   unfold mcaError
   refine iSup_le fun u => ?_
+  have fold_probability_le_epsCa_of_not_jointProximity
+      (v : WordStack F (Fin 2) ι)
+      (hv : ¬ jointProximity (C := (C : Set (ι → F))) (u := v) δ) :
+      Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] ≤
+        epsCa (F := F) (C : Set (ι → F)) δ δ := by
+    unfold epsCa
+    calc
+      Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
+          (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
+          else Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
+        (if_neg hv).symm
+      _ ≤ ⨆ w : WordStack F (Fin 2) ι,
+          if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
+          else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
+        @le_iSup ENNReal (WordStack F (Fin 2) ι)
+          ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
   by_cases hjp : jointProximity (C := (C : Set (ι → F))) (u := u) δ
   · obtain ⟨c, hc, hE⟩ :=
       (jointProximity_iff_exists_pairErrors_le C u δ).mp hjp
@@ -753,9 +769,7 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
       have hpairV : pairErrors v c = K := by
         ext i
         by_cases hiK : i ∈ K
-        · by_cases hiA : assigned i
-          · simp [pairErrors, v, hiK, hiA, one_ne_zero]
-          · simp [pairErrors, v, hiK, hiA, one_ne_zero]
+        · by_cases hiA : assigned i <;> simp [pairErrors, v, hiK, hiA, one_ne_zero]
         · simp [pairErrors, v, hiK]
       have hrow1 : Δ₀(v 1, c 1) ≤ e := by
         rw [hammingDist_eq_disagreementCols_card]
@@ -809,20 +823,18 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
           · exact Finset.mem_union_left _ (mem_disagreementCols.mpr hi)
           · exact Finset.mem_union_right _ (mem_disagreementCols.mpr hi)
         have hdc : d = c := by
-          funext j i
-          have hj : d j = c j := by
-            apply Code.eq_of_lt_dist (hd j) (hc j)
-            calc
-              Δ₀(d j, c j) ≤ Δ₀(d j, v j) + Δ₀(v j, c j) :=
-                hammingDist_triangle _ _ _
-              _ ≤ e + e := by
-                have hcj : Δ₀(v j, c j) ≤ e := by
-                  fin_cases j
-                  · exact hrow0
-                  · exact hrow1
-                simpa [hammingDist_comm] using Nat.add_le_add (hvd j) hcj
-              _ < Code.dist (C : Set (ι → F)) := by rw [hdist_eq]; omega
-          exact congr_fun hj i
+          funext j
+          apply Code.eq_of_lt_dist (hd j) (hc j)
+          calc
+            Δ₀(d j, c j) ≤ Δ₀(d j, v j) + Δ₀(v j, c j) :=
+              hammingDist_triangle _ _ _
+            _ ≤ e + e := by
+              have hcj : Δ₀(v j, c j) ≤ e := by
+                fin_cases j
+                · exact hrow0
+                · exact hrow1
+              simpa [hammingDist_comm] using Nat.add_le_add (hvd j) hcj
+            _ < Code.dist (C : Set (ι → F)) := by rw [hdist_eq]; omega
         subst d
         rw [hpairV] at hdE
         omega
@@ -877,18 +889,8 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
               obtain ⟨γ, hγB, rfl⟩ := Finset.mem_image.mp hx
               rw [Finset.mem_filter]
               exact ⟨Finset.mem_univ _, hcloseV ⟨γ, hγB⟩⟩)
-        _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ := by
-          unfold epsCa
-          calc
-            Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ] =
-                (if jointProximity (C := (C : Set (ι → F))) (u := v) δ then 0
-                else Pr_{let x ← $ᵖ F}[δᵣ(v 0 + x • v 1, (C : Set (ι → F))) ≤ δ]) :=
-              (if_neg hvNotJoint).symm
-            _ ≤ ⨆ w : WordStack F (Fin 2) ι,
-                if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
-                else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-              @le_iSup ENNReal (WordStack F (Fin 2) ι)
-                ENNReal.instCompleteLinearOrder.toCompleteLattice _ v
+        _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ :=
+          fold_probability_le_epsCa_of_not_jointProximity v hvNotJoint
     · have hBempty : B = ∅ := Finset.not_nonempty_iff_eq_empty.mp hBne
       rw [prob_uniform_eq_card_filter_div_card]
       have hfilter : (Finset.univ.filter fun γ : F =>
@@ -901,18 +903,8 @@ theorem mcaError_le_epsCa_of_pos_of_two_mul_lt_dist
         apply Pr_le_Pr_of_implies
         intro γ h
         exact line_close_of_isMCA_affineLine C u δ γ h
-      _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ := by
-        unfold epsCa
-        calc
-          Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ] =
-              (if jointProximity (C := (C : Set (ι → F))) (u := u) δ then 0
-              else Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ]) :=
-            (if_neg hjp).symm
-          _ ≤ ⨆ w : WordStack F (Fin 2) ι,
-              if jointProximity (C := (C : Set (ι → F))) (u := w) δ then 0
-              else Pr_{let x ← $ᵖ F}[δᵣ(w 0 + x • w 1, (C : Set (ι → F))) ≤ δ] :=
-            @le_iSup ENNReal (WordStack F (Fin 2) ι)
-              ENNReal.instCompleteLinearOrder.toCompleteLattice _ u
+      _ ≤ epsCa (F := F) (C : Set (ι → F)) δ δ :=
+        fold_probability_le_epsCa_of_not_jointProximity u hjp
 
 open Classical in
 /-- Below half the relative minimum distance, affine-line MCA equals correlated agreement. -/
@@ -989,12 +981,8 @@ private lemma exists_forall_notMem_of_card_le
         rw [Nat.mul_sub_left_distrib]
         simp only [mul_one]
         omega
-  have hnot : ∃ x : M, x ∉ covered := by
-    by_contra! h
-    have heq : covered = Finset.univ := Finset.eq_univ_of_forall h
-    rw [heq, Finset.card_univ] at hcovered
-    exact lt_irrefl _ hcovered
-  obtain ⟨x, hx⟩ := hnot
+  obtain ⟨x, -, hx⟩ := Finset.exists_mem_notMem_of_card_lt_card
+    (s := covered) (t := Finset.univ) (by simpa using hcovered)
   refine ⟨x, fun i hi hxi => hx ?_⟩
   by_cases hx0 : x = 0
   · simp [covered, hx0]

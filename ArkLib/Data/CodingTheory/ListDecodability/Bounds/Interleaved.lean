@@ -483,7 +483,7 @@ private lemma ggrColor_count_bounds {ι A : Type} [Fintype ι] [DecidableEq ι]
       _ ≤ D := hfin.2
 
 private lemma blue_count_le_ceil {n D e q : ℕ} {δ : ℝ}
-    (hn : 0 < n) (_hδ : 0 ≤ δ) (hδD : δ < (D : ℝ) / n)
+    (hn : 0 < n) (hδD : δ < (D : ℝ) / n)
     (he : (e : ℝ) ≤ δ * n) (hq : q * (D - e) ≤ e) :
     q ≤ ⌈δ / ((D : ℝ) / n - δ)⌉₊ := by
   let η : ℝ := (D : ℝ) / n - δ
@@ -510,7 +510,7 @@ private lemma blue_count_le_ceil {n D e q : ℕ} {δ : ℝ}
   exact_mod_cast hqdiv.trans (Nat.le_ceil (δ / η))
 
 private lemma red_count_le_ceil {n D e q : ℕ} {δ : ℝ}
-    (hn : 0 < n) (hδ : 0 ≤ δ) (hδD : δ < (D : ℝ) / n)
+    (hn : 0 < n) (hδD : δ < (D : ℝ) / n)
     (he : (e : ℝ) ≤ δ * n) (hq : 2 ^ q * (D - e) ≤ D) :
     q ≤ ⌈Real.log (((D : ℝ) / n) / ((D : ℝ) / n - δ)) / Real.log 2⌉₊ := by
   let δC : ℝ := (D : ℝ) / n
@@ -519,14 +519,6 @@ private lemma red_count_le_ceil {n D e q : ℕ} {δ : ℝ}
   have hnR : (0 : ℝ) < n := by exact_mod_cast hn
   have heD : e ≤ D := by
     exact_mod_cast (he.trans_lt ((lt_div_iff₀ hnR).mp hδD)).le
-  have hδC : 0 < δC := by
-    dsimp [δC]
-    have hD : 0 < D := by
-      by_contra hD0
-      have : D = 0 := Nat.eq_zero_of_not_pos hD0
-      have : (D : ℝ) / n = 0 := by simp [this]
-      linarith
-    positivity
   have hgap : (n : ℝ) * η ≤ D - e := by
     dsimp [η, δC]
     have : (n : ℝ) * ((D : ℝ) / n) = D := by field_simp
@@ -545,7 +537,6 @@ private lemma red_count_le_ceil {n D e q : ℕ} {δ : ℝ}
     dsimp [δC]
     apply (le_div_iff₀ hnR).mpr
     nlinarith
-  have hratio : 0 < δC / η := div_pos hδC hη
   have hlog := Real.log_le_log (by positivity : (0 : ℝ) < (2 : ℝ) ^ q) hp
   rw [Real.log_pow] at hlog
   have hlog2 : 0 < Real.log (2 : ℝ) := Real.log_pos (by norm_num)
@@ -672,11 +663,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     let Q := hcloseFinite.toFinset
     let stack : (ι → Fin m → A) → (Fin m → ι → A) := Matrix.transpose
     let T := Q.image stack
-    have hstack_inj : Function.Injective stack := by
-      intro V W h
-      funext i j
-      exact congrFun (congrFun h j) i
-    have hTcard : T.card = Q.card := Finset.card_image_of_injective Q hstack_inj
+    have hTcard : T.card = Q.card := Finset.card_image_of_injective Q fun _ _ h =>
+      Matrix.transpose_injective h
     have hQcard : Q.card =
         (closeCodewordsRel (interleavedCodeSet (κ := Fin m) C) U δ).ncard := by
       exact Set.ncard_eq_toFinset_card _ hcloseFinite |>.symm
@@ -793,8 +781,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
       have hnat := ggrColor_count_bounds D e hde R V (hglobal V hVT)
       rw [show color = ggrColor D e R from rfl]
       constructor
-      · exact blue_count_le_ceil hn hδ_lb (by simpa [D, n] using hδ_ub) heR hnat.1
-      · exact red_count_le_ceil hn hδ_lb (by simpa [D, n] using hδ_ub) heR hnat.2
+      · exact blue_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.1
+      · exact red_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.2
   · have hCempty : C = ∅ := Set.not_nonempty_iff_eq_empty.mp hC
     subst C
     rw [Lambda_le_iff_forall_encard_le]
