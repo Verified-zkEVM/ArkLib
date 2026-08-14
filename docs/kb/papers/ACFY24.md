@@ -13,6 +13,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ReedSolomon.lean
   - ArkLib/Data/CodingTheory/ListDecodability.lean
   - ArkLib/Data/CodingTheory/ProximityGap/Folding.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Errors.lean
 ---
 
 # ACFY24
@@ -31,6 +32,8 @@ folding/proximity-gap development; there is no WHIR protocol folder under `ArkLi
   [`ListDecodability.lean`](../../../ArkLib/Data/CodingTheory/ListDecodability.lean).
 - Folding and mutual-correlated-agreement material under
   [`ArkLib/Data/CodingTheory/ProximityGap/`](../../../ArkLib/Data/CodingTheory/ProximityGap/).
+- Lemma 4.10's unique-decoding MCA consequence, externally admitted in paper-shaped form as
+  `ProximityGap.mcaError_eq_epsCA_below_udr` in `ProximityGap/Errors.lean`.
 
 ## Main ArkLib Touchpoints
 
