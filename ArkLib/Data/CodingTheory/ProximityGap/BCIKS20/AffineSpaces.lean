@@ -1573,7 +1573,7 @@ lemma exists_gs_multiplicity {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
           have hδ_le : δ ≤ 1 - sqr_nn := le_of_lt (by
             simpa [sqr_nn, rate_nn, ReedSolomon.sqrtRate] using hδ)
           have hsqr_le1 : sqr_nn ≤ 1 := by
-            simpa [sqr_nn, rate_nn, ReedSolomon.sqrtRate] using hsqrt_le
+            simp [sqr_nn, rate_nn]
           have hmin_eq : (↑(min (1 - sqr_nn - δ) (sqr_nn / 20)) : ℝ) = μ := by
             rw [NNReal.coe_min, NNReal.coe_sub hδ_le, NNReal.coe_sub hsqr_le1,
               NNReal.coe_one, NNReal.coe_div, hsqr_s]
