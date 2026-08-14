@@ -310,30 +310,32 @@ def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
 
 open Submodule
 
-/-- The projected code of a linear code, as a submodule of `T → F`.
+/-- The projected code of a module code, as a submodule of `T → A`.
 Definition 3.7 [BCGM25]. -/
-def projectedCodeSubmod [Field F] (LC : LinearCode ι F) (T : Finset ι) :
-    Submodule F (T → F) := LC.map (LinearMap.funLeft F F (Subtype.val : T → ι))
+def projectedCodeSubmod [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι) :
+    Submodule F (T → A) := MC.map (LinearMap.funLeft F A (Subtype.val : T → ι))
 
+omit [Fintype ι] in
 /-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
-lemma mem_projectedCodeSubmod_iff [Field F] (LC : LinearCode ι F) (T : Finset ι)
-    (w : T → F) : w ∈ projectedCodeSubmod LC T ↔ w ∈ projectedCode LC.carrier T :=
+lemma mem_projectedCodeSubmod_iff [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι)
+    (w : T → A) : w ∈ projectedCodeSubmod MC T ↔ w ∈ projectedCode MC.carrier T :=
   Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
 
+omit [Fintype ι] in
 /-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
 then so do all `F`-linear combinations of these. -/
-lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
-    [Fintype α] (U : α → (ι → F)) (c : α → F)
-    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :
-    projectedWord (fun k => ∑ j, c j * U j k) T ∈ projectedCode LC.carrier T := by
-  obtain ⟨w, hw⟩ : ∃ w ∈ LC, ∀ t ∈ T, w t = ∑ j, c j * U j t := by
+lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode ι F A)
+    (T : Finset ι) {α : Type} [Fintype α] (U : α → (ι → A)) (c : α → F)
+    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode MC.carrier T) :
+    projectedWord (fun k => ∑ j, c j • U j k) T ∈ projectedCode MC.carrier T := by
+  obtain ⟨w, hw⟩ : ∃ w ∈ MC, ∀ t ∈ T, w t = ∑ j, c j • U j t := by
     choose w hw using hU
     use ∑ j, c j • w j
     exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
       fun t ht => by simp [show ∀ j, U j t = w j t from
         fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
   exact ⟨w, hw.1, funext fun t => by
-    change (∑ j, c j * U j t.1) = w t.1
+    change (∑ j, c j • U j t.1) = w t.1
     exact Eq.symm (hw.2 t t.2)⟩
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/

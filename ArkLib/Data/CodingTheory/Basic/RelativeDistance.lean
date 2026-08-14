@@ -420,16 +420,6 @@ theorem relCloseToWord_iff_exists_agreementCols
   letI : DecidableEq ι := by exact Classical.typeDecidableEq ι
   rw [closeToWord_iff_exists_agreementCols]
 
-lemma NNReal.floor_ge_Nat_of_gt
-    {r : ℝ≥0} {n : ℕ} (h : r > n) :
-    Nat.floor r ≥ n := by
-  apply (Nat.le_floor_iff (NNReal.coe_nonneg r)).mpr
-  apply le_of_lt
-  exact_mod_cast h
-
-lemma NNReal.sub_eq_zero_of_le (x y : ℝ≥0) (h : x ≤ y) : x - y = 0 := by
-  exact tsub_eq_zero_of_le h
-
 /-- The equivalence between the two lowerbound of `upperBound` in Nat and NNReal context.
 In which, `upperBound` is viewed as the size of an **agreement set** `S` (e.g. between two words,
 or between a word to a code, ...).
@@ -491,15 +481,13 @@ lemma relDist_floor_bound_iff_complement_bound (n upperBound : ℕ) (δ : ℝ≥
       -- by showing `n - m < n - r + 1 ≤ k + 1`
       linarith
   · have h_n_lt_r : n < r := by exact lt_of_not_ge h_r_le_n
-    have h_m_ge_n : m ≥ n :=
-      NNReal.floor_ge_Nat_of_gt (r := r) (n := n) (h := lt_of_not_ge h_r_le_n)
+    have h_m_ge_n : m ≥ n := Nat.le_floor (le_of_lt h_n_lt_r)
     have h_n_sub_m_eq_0 : n - m = 0 := Nat.sub_eq_zero_of_le h_m_ge_n
     have h_n_sub_r_eq_0 : (n : ENNReal) - r = 0 := by
       change ((n : NNReal) : ENNReal) - r = 0
       rw [←ENNReal.coe_sub] -- ↑((n : ℝ≥0) - r) = 0
-      have h_n_sub_r_eq_0_NNReal : (n : NNReal) - r = 0 := by
-        apply NNReal.sub_eq_zero_of_le
-        exact le_of_lt h_n_lt_r
+      have h_n_sub_r_eq_0_NNReal : (n : NNReal) - r = 0 :=
+        tsub_eq_zero_of_le (le_of_lt h_n_lt_r)
       rw [h_n_sub_r_eq_0_NNReal]
       exact rfl
     conv_lhs => -- convert ↑n - ↑m into 0

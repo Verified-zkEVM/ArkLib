@@ -26,7 +26,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 
 namespace ReedSolomon
 
-open Finset ListDecodable ReedSolomon
+open Finset ReedSolomon
 
 variable {ι F : Type*} [Fintype ι] [Field F]
 
@@ -34,7 +34,7 @@ variable {ι F : Type*} [Fintype ι] [Field F]
 `1 - √ρ - η` of a word `y` has at most `1/(2η√ρ)` elements. -/
 lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (hm : 0 < m)
     {η : ℝ} (hη : 0 < η) (y : ι → F) (T : Finset (ι → F))
-    (hT : ∀ c ∈ T, c ∈ closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
+    (hT : ∀ c ∈ T, c ∈ Code.closeCodewordsRel (ReedSolomon.code domain m : Set (ι → F)) y
       (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)) :
     (T.card : ℝ) ≤ 1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ)) := by
   classical
@@ -123,16 +123,17 @@ lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : �
   rw [le_div_iff₀ (by positivity : (0 : ℝ) < 2 * η * s)]
   exact hfinal
 
+open NNReal in
 /-- **Theorem 4.3.** The Reed–Solomon code `RS[F, domain, m]` of rate `ρ` is
 `(1 - √ρ - η, 1/(2η√ρ))`-list decodable, for every `η > 0`. -/
 theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (hm : 0 < m)
-  {η : ℝ} (hη : 0 < η) :
-  listDecodable (ReedSolomon.code domain m : Set (ι → F))
-    (1 - (ReedSolomon.sqrtRate m domain : ℝ) - η)
-    (1 / (2 * η * (ReedSolomon.sqrtRate m domain : ℝ))) := by
-  rw [listDecodable_iff_listDecodable']
+  {η : ℝ≥0} (hη : 0 < η) :
+  Code.IsListDecodable (ReedSolomon.code domain m : Set (ι → F))
+    (1 - (ReedSolomon.sqrtRate m domain) - η)
+    (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
+  rw [Code.isListDecodable_iff_forall_finset_card_le]
   intro y T hT
-  exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT hc
+  exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT _ hc
 
 end ReedSolomon
 

@@ -60,7 +60,7 @@ of `C_B` in `F^ι`.
 
 namespace CodingTheory
 
-open ListDecodable Module
+open Code Module
 
 /-- An *extension field presentation* of `F` over `B` is a finite `B`-basis of `F`,
 given a `B`-algebra structure on `F`.
