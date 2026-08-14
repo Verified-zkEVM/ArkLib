@@ -152,7 +152,6 @@ Code.distFromCode
 LinearCode.fromRowGenMat
 LinearCode.fromColGenMat
 LinearCode.byCheckMatrix
-ListDecodable.Code
 LinearCode
 Code.interleavedCodeSet
 ReedSolomon.code
@@ -161,8 +160,8 @@ ReedSolomon.constrainedCode
 ReedSolomon.multiConstrainedCode
 ProximityGap.proximityMeasure
 ProximityGap.proximityGap
-ListDecodable.listDecodable
-ListDecodable.closeCodewordsRel
+Code.IsListDecodable
+Code.closeCodewordsRel
 OracleSpec
 OracleSpec.emptySpec
 coinSpec

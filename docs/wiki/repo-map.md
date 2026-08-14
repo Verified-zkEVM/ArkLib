@@ -209,8 +209,11 @@ home_page/            site assets and assembled website root
   alphabet-generic `CodingTheory.mds_johnson_lambda_le_of_rate_distance`, whose module-alphabet
   consumers are `CodingTheory.irs_lambda_le_johnson_mds` and
   `CodingTheory.frs_lambda_le_johnson_mds` in `JohnsonBound/Family.lean`. Generalising the
-  `IsMDS` *predicate* itself to `ModuleCode ι F A` is deliberately left out; it belongs with
-  the module-alphabet generalisation of `IsMCA`, which touches the same file.
+  `IsMDS` *predicate* itself to `ModuleCode ι F A` is still open, and is **independent** of the
+  module-alphabet `IsMCA` (which has landed): `IsMDSGenerator` constrains `C_G ⊆ F^|S|`, the
+  generator's own code over the base field, so nothing on the MCA path needs it. Whoever does it
+  should update this bullet and the corresponding row in
+  [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md).
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random

@@ -112,6 +112,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
+import ArkLib.Data.CodingTheory.ProximityGap.Separation
+import ArkLib.Data.CodingTheory.ProximityGap.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved

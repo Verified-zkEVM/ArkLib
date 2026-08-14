@@ -83,9 +83,11 @@ Most friction in this subtree comes from picking the wrong numeric type, so chec
 | Min relative distance of a code | `ℚ≥0` | `minRelHammingDistCode`, `δᵣ C` |
 | Code rate | `ℚ≥0` | `LinearCode.rate`, `ρ C` — see the rate caveat below |
 | Alphabet-normalized rate | `ℚ≥0` | `LinearCode.alphabetRate`; `alphabetRate_cast_eq` gives the `ℝ`-cast form |
-| Proximity radius `δ` argument | `ℝ`, deliberately unrestricted | `Code.Lambda` — see below; do **not** narrow it |
+| Proximity radius `δ` argument, **any** layer | `ℝ`, deliberately unrestricted | `Code.Lambda`, `IsMCA`, `mcaError` — see below; do **not** narrow it |
+| Proximity radius `δ` as a *quantifier on an error bound* | `I` (`= [0,1]`) | `IsMCAGenerator`'s `∀ δ : I` — this is the one place the sources' `[0,1]` binds |
 | Real-valued bounds | `ℝ`, then wrapped | right-hand sides of capacity bounds, `JohnsonBound.Jqℓ`, `Jcap` |
-| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) | `ENNReal` | — |
+| ε-errors (`ε_pg`, `ε_ca`, `ε_mca`) — value | `ENNReal` | it is a supremum of probabilities |
+| ε-errors — *bound*, compared with `↑` not `ENNReal.ofReal` | `I → ℝ≥0` | `IsMCAGenerator`'s `ε_mca` |
 | Probabilities | `ENNReal` | the `Pr_{...}[...]` notation |
 | List sizes | `ℕ∞`, cast to `ENNReal` for real-valued bounds | `Lambda`, built from `closeCodewordsRel`'s `.encard` |
 | List-size *bounds* in a predicate | `ℝ≥0` | `Code.IsListDecodable`'s `ℓ` — see below for why, and why it is not `ℕ∞` |
@@ -99,6 +101,21 @@ base-field-dimension rate `dim/n`. Over a module alphabet `F^s` the alphabet-nor
 (`alphabetRate_one_eq_rate`). The subspace-design and MDS statements use the alphabet-normalized
 one; substituting `rate` there gives false statements. Both formulas are total and yield `0` in
 the zero-denominator cases.
+
+**Where the closed interval `[0,1]` does and does not bind.** It binds on the *error bound*:
+BCGM25 Def 3.14 types `ϵMCA : [0,1] → [0,1]` and quantifies `γ ∈ [0,1]`, and both ABF26 Grand
+Challenges quantify `δ* ∈ [0,1]`, so `IsMCAGenerator` quantifies `δ : I` and types its `ε_mca` as
+`I → ℝ≥0`. Closed, not `Ioo 0 1`: BCGM25 Lemma 3.18 gives `ϵMCA(0) = ϵZE` and Remark 3.15 saturates
+`ϵMCA(γ) = 1` above some `γ₀ < 1`.
+
+It does **not** bind on the radius *argument* to a value. `IsMCA` and `mcaError` take `δ : ℝ`, like
+`Lambda`, because the size clause `|T| ≥ n·(1 − δ)` is total and honest at every real and because
+narrowing only relocates a membership obligation to every call site. Do not cite ABF26 as settling
+this: it contradicts itself, writing `δ ∈ [0,1]` in §1.2 and at the Grand Challenges but
+`δ ∈ (0,1)` at Definitions 4.1/4.3, Fact 4.5 and Lemmas 4.6/4.7. See
+[`proximity-error-conventions.md`](proximity-error-conventions.md) for the full argument, the two
+concrete payoffs (an unconditional abf26 bridge, a total `gridPt`), and which helper lemmas each
+error notion can actually carry.
 
 **`Lambda` is built from `Set.encard`,** so an infinite point list contributes `⊤` rather than
 collapsing to `0`, and a finite bound therefore *implies* point-list finiteness
@@ -173,12 +190,12 @@ statement worth making and drops `0 ≤ ℓ` from every transfer. It is real-val
 because the theorems consuming a list-decoding hypothesis reuse the same bound as a *number* in
 their conclusions, and an `ℕ∞` hypothesis would force two variables and a coupling between them.
 
-**Where this layer differs from the `ε`-error layer.** The proximity-error functions take `δ : I`,
-the closed unit interval, because their sources define them only there; `Lambda` takes `δ : ℝ` and is
-total. `I` carries no `Sub`, so a radius written `1 - √ρ - η` cannot be *formed* in it without a
-membership proof at every call site, and `Lambda` has meaning outside `[0, 1]` where an error
-probability does not. Hence the coercion at the boundary, as in `GrandChallenges`'
-`Lambda (C^⋈ m) (gridPt k : ℝ)`.
+**Where this layer agrees with the `ε`-error layer.** Both take `δ : ℝ` and are total: `I` carries
+no `Sub`, so a radius written `1 - √ρ - η` cannot be *formed* in it without a membership proof at
+every call site. Narrowing either layer's radius to `I` is what puts a side condition on the
+`epsMCA`/`mcaError` bridge and blocks a total `gridPt`. A radius reaches either layer with no
+*membership proof*; a numeric cast may still be needed, as in `GrandChallenges`'
+`Lambda (C^⋈ m) (gridPt k : ℝ)`, and a cast is free where a membership obligation is not.
 
 **This layer lives in `namespace Code`,** alongside the objects it operates on (`minDist`,
 `relHammingDist`, `relHammingBall`, `uniqueDecodingRadius`), to which it is tied through
