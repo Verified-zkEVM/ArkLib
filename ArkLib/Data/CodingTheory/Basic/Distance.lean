@@ -164,6 +164,34 @@ lemma hammingDist_eq_disagreementCols_card (u v : n → R) :
     hammingDist u v = (disagreementCols u v).card := by
   simp only [hammingDist, disagreementCols, ne_eq]
 
+section Agreement
+
+variable {u v : n → R}
+
+/-- The number of positions at which the two words `u` and `v` agree. -/
+def agree (u v : n → R) : ℕ := ({i | u i = v i} : Finset _).card
+
+@[simp]
+lemma agree_add_hammingDist :
+    agree u v + Δ₀(u, v) = Fintype.card n := by
+  simpa [agree, hammingDist, Finset.card_univ] using
+    Finset.card_filter_add_card_filter_not (s := Finset.univ)
+      (p := fun i ↦ u i = v i)
+
+/-- `agree` is the complement of `disagreementCols`. -/
+lemma agree_add_card_disagreementCols (u v : n → R) :
+    agree u v + (disagreementCols u v).card = Fintype.card n := by
+  simp [←hammingDist_eq_disagreementCols_card]
+
+@[simp]
+lemma agree_self : agree u u = Fintype.card n := by simp [agree, Finset.card_univ]
+
+@[simp]
+lemma agree_le_card : agree u v ≤ Fintype.card n := by
+  simpa [agree, Finset.card_univ] using Finset.card_filter_le Finset.univ _
+
+end Agreement
+
 /-- `Matrix.neqCols` is `Code.disagreementCols` on the transposes: the columns on which two
 matrices differ are the coordinates on which their transposes, read as words over the
 alphabet of columns, disagree. -/
@@ -214,28 +242,6 @@ theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
 section Agreement
 
 variable {u v : n → R}
-
-/-- The number of positions at which the two words `u` and `v` agree. -/
-def agree (u v : n → R) : ℕ := ({i | u i = v i} : Finset _).card
-
-@[simp]
-lemma agree_add_hammingDist :
-  agree u v + Δ₀(u, v) = Fintype.card n := by
-  simpa [agree, hammingDist, Finset.card_univ] using
-    Finset.card_filter_add_card_filter_not (s := Finset.univ)
-      (p := fun i ↦ u i = v i)
-
-/-- `agree` is the complement of `disagreementCols`. -/
-lemma agree_add_card_disagreementCols (u v : n → R) :
-  agree u v + (disagreementCols u v).card = Fintype.card n := by
-  simp [←hammingDist_eq_disagreementCols_card]
-
-@[simp]
-lemma agree_self : agree u u = Fintype.card n := by simp [agree, Finset.card_univ]
-
-@[simp]
-lemma agree_le_card : agree u v ≤ Fintype.card n := by
-  simpa [agree, Finset.card_univ] using Finset.card_filter_le Finset.univ _
 
 section Counting
 

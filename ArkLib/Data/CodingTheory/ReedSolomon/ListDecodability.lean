@@ -12,7 +12,7 @@ import ArkLib.Data.CodingTheory.ReedSolomon
 
   This file proves that the Reed–Solomon code
   `RS[F, L, m]` of rate `ρ` is `(1 - √ρ - η, 1/(2η√ρ))`-list decodable for every `η > 0`
-  (`RSListDecoding.listDecodable_reedSolomon`) which appears as theorem 4.3
+  (`ReedSolomon.listDecodable_reedSolomon`) which appears as theorem 4.3
   in [ACFY24].
   The bound is independent of the size of `F`.
 
@@ -73,8 +73,12 @@ lemma card_le_of_subset_closeCodewords [Nonempty ι] (domain : ι ↪ F) {m : �
           rw [Finset.sum_const, nsmul_eq_mul, hL]
       _ ≤ ∑ c ∈ T, (Code.agree c y : ℝ) := Finset.sum_le_sum hclose
   -- the sum of all pairwise agreements
-  have hA : ∑ c ∈ T, ∑ c' ∈ T, (Code.agree c c' : ℝ) ≤ L * (n + (L - 1) * (s ^ 2 * n)) := by
-    have hrow : ∀ c ∈ T, ∑ c' ∈ T, (Code.agree c c' : ℝ) ≤ n + (L - 1) * (s ^ 2 * n) := by
+  have hA :
+      ∑ c ∈ T, ∑ c' ∈ T, (Code.agree c c' : ℝ) ≤
+        L * (n + (L - 1) * (s ^ 2 * n)) := by
+    have hrow :
+        ∀ c ∈ T, ∑ c' ∈ T, (Code.agree c c' : ℝ) ≤
+          n + (L - 1) * (s ^ 2 * n) := by
       intro c hc
       have hsplit : ∑ c' ∈ T, (Code.agree c c' : ℝ) =
         (Code.agree c c : ℝ) + ∑ c' ∈ T.erase c, (Code.agree c c' : ℝ) :=
@@ -126,13 +130,12 @@ open NNReal in
 /-- **Theorem 4.3.** The Reed–Solomon code `RS[F, domain, m]` of rate `ρ` is
 `(1 - √ρ - η, 1/(2η√ρ))`-list decodable, for every `η > 0`. -/
 theorem listDecodable_reedSolomon [Nonempty ι] (domain : ι ↪ F) {m : ℕ} (hm : 0 < m)
-  {η : ℝ≥0} (hη : 0 < η) :
-  Code.IsListDecodable (ReedSolomon.code domain m : Set (ι → F))
-    (1 - (ReedSolomon.sqrtRate m domain) - η)
-    (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
+    {η : ℝ≥0} (hη : 0 < η) :
+    Code.IsListDecodable (ReedSolomon.code domain m : Set (ι → F))
+      (1 - (ReedSolomon.sqrtRate m domain) - η)
+      (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
   rw [Code.isListDecodable_iff_forall_finset_card_le]
   intro y T hT
   exact card_le_of_subset_closeCodewords domain hm hη y T fun c hc ↦ hT _ hc
 
 end ReedSolomon
-
