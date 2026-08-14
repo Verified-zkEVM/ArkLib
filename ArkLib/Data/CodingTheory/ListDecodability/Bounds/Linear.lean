@@ -498,10 +498,10 @@ open _root_.Code in
 
   `|Λ(C, δ)| ≥ q^{n·(ρ - 1 + H_q(δ))} / √(8·n·δ·(1-δ))`.
 
-External admit: what is missing is the volume estimate itself, an analytic single-term Stirling
-bound. [DG25dist] gives refinements of it. As with `linear_lambda_ge_elias_volume`, [ABF26] states
-this for an arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the linear-over-a-field
-case below is a special case, which is the safe direction for an admit but is a coverage gap.
+The volume estimate is proved in-tree from an explicit single-shell Stirling bound; [DG25dist]
+gives refinements of it. As with `linear_lambda_ge_elias_volume`, [ABF26] states this for an
+arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the linear-over-a-field case below is
+a special case, so the alphabet-generic statement remains a coverage gap.
 
 The hypothesis `_hδn_int` (the radius `δ·n` is an integer) is the regime in which the [MS77]
 estimate is stated, and the corollary inherits it implicitly. It is not decoration: without it the
@@ -584,9 +584,9 @@ Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` 
 by `|C| = |F|^{dim C}` and `⌊(ℓ+1)/ℓ·δ·n⌋ ≤ n - dim C`.
 
 This is deliberately *not* named for [ST20] Theorem 1.2: that theorem's content is the implication
-`ℓ`-list-decodable ⇒ the rate–radius relation, which is the admit
-`linear_card_le_generalized_singleton` below. Splitting the two keeps the proved part honest about
-what it proves — the arithmetic step, with no list-decoding premise at all. -/
+from `ℓ`-list-decodability to the cardinality bound, proved by
+`linear_card_le_generalized_singleton` below. Splitting the two keeps this lemma honest about what
+it proves — the arithmetic step from the rate–radius relation, with no list-decoding premise. -/
 theorem linear_card_le_of_rate_radius
     (C : Submodule F (ι → F)) (ℓ : ℕ) (δ : ℝ)
     (_hℓ_pos : 0 < ℓ)

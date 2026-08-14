@@ -27,7 +27,7 @@ for an MDS `[n,k]_q` code and `a ≥ k`,
 
 ## Main ArkLib Touchpoints
 
-`rs_lambda_large_prime` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted).
+`rs_lambda_large_prime` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean), proved in-tree and axiom-clean.
 
 ## Known Divergences From ArkLib
 
@@ -45,7 +45,8 @@ could.
 
 ## Open Formalization Gaps
 
-Corollary 20 itself.
+The stronger asymptotic wrapper from Corollary 20; the per-code consequence used by [ABF26] is
+proved in-tree.
 
 ## Source Access
 

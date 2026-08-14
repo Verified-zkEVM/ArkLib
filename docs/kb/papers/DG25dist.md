@@ -20,8 +20,8 @@ related_modules:
 ## What ArkLib Uses From This Paper
 
 Nothing yet. [ABF26] cites it in a footnote to Corollary 3.8 for "further analysis bounding this
-value", i.e. sharper forms of the [MS77] estimate that `linear_lambda_ge_entropy_volume` is admitted
-on.
+value", i.e. refinements of the [MS77] estimate used by the proved theorem
+`linear_lambda_ge_entropy_volume`.
 
 ## Main ArkLib Touchpoints
 

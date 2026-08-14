@@ -83,8 +83,8 @@ the paper never cross-references the theorem itself.
 
 **Two further divergences, both recorded rather than repaired.** (i) [ABF26] states this for an
 arbitrary code `C : Σ^k → Σ^n`, and dropping linearity is precisely [AGL23]'s headline advance over
-[BDG24]; the admit below is the linear-over-a-field case, so it does not capture the cited result in
-full. (ii) `η` is unguarded, and for `η > 1 − ρ` the radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
+[BDG24]; the theorem below is the linear-over-a-field case, so it does not capture the cited result
+in full. (ii) `η` is unguarded, and for `η > 1 − ρ` the radius `ℓ/(ℓ+1)·(1−ρ−η)` is negative, so
 `Λ = 0 ≤ ℓ` holds for every code and the statement demands `|F| ≥ 2^(α/η)` unconditionally. Letting
 `η ↓ (1−ρ)` therefore forces `α ≤ 1 − ρ`, since `𝔽₂` carries rate-`ρ` codes of every admissible
 length. That does not make the statement false — `α := min (α_source) (1−ρ)` still works, shrinking
@@ -233,10 +233,9 @@ At `η := c/n` the barrier's `2^{α/η}` becomes `2^{(α/c)·n}`, so for every `
 
 for every rate-`ρ` linear code of sufficiently large length `n`.
 
-**Derived in-tree** from `large_alphabet_lambda_lower`, which is admitted, so this inherits the
-admit. `1 ≤ c` is exactly [AGL23]'s `ε ≥ 1/n` at `η = c/n`, and it is the meaningful range: relative
-radii are `1/n`-quantised, so `η < 1/n` asks for a radius finer than the lattice the list size lives
-on. -/
+**Derived in-tree, sorry-free and axiom-clean** from `large_alphabet_lambda_lower`. `1 ≤ c` is
+exactly [AGL23]'s `ε ≥ 1/n` at `η = c/n`, and it is the meaningful range: relative radii are
+`1/n`-quantised, so `η < 1/n` asks for a radius finer than the lattice the list size lives on. -/
 theorem large_alphabet_card_ge_exp_of_inv_length
     (ℓ : ℕ) (hℓ_ge : 2 ≤ ℓ) (ρ : ℝ) (hρ_pos : 0 < ρ) (hρ_lt : ρ < 1)
     (c : ℝ) (hc : 1 ≤ c) :

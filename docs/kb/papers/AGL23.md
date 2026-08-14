@@ -26,7 +26,7 @@ list-decodable has `q ≥ 2^{α_{L,R}/ε}`.
 
 ## Main ArkLib Touchpoints
 
-`large_alphabet_lambda_lower` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean) (admitted), and its in-tree consequence
+`large_alphabet_lambda_lower` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean), proved in-tree for linear codes over a field, and its axiom-clean consequence
 `large_alphabet_card_ge_exp_of_inv_length` — attaining the generalized Singleton bound *exactly*
 forces `|F| ≥ 2^{Ω(n)}`, which is the one use [ABF26] puts the barrier to.
 
@@ -48,8 +48,9 @@ ArkLib restricts to linear codes over a field, which drops precisely this paper'
 
 ## Open Formalization Gaps
 
-The barrier itself. Also: `α` and `n₀` are non-constructive existentials here, so the statement cannot
-reject a *concrete* parametrization; that would need constants extracted from the source's proof
+The alphabet-generic, non-linear strengthening. Also: `α` and `n₀` are non-constructive
+existentials here, so the statement cannot reject a *concrete* parametrization; that would need
+constants extracted from the source's proof
 (`α_R = α'_R/10`, `I₀ = {1, …, 4εn}` are explicit there, so it is extractable).
 
 ## Source Access

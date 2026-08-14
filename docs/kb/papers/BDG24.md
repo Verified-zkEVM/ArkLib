@@ -24,7 +24,7 @@ Cited by [ABF26] alongside [AGL23] for [ABF26] Theorem 3.10.
 
 ## Main ArkLib Touchpoints
 
-`large_alphabet_lambda_lower` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean), whose admit cites both papers.
+`large_alphabet_lambda_lower` in [Bounds.lean](../../../ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean), whose proved linear-code barrier cites both papers.
 
 ## Known Divergences From ArkLib
 
@@ -36,7 +36,8 @@ is the `ε = 0`, `ℓ = 2`, linear-MDS corner. Check the journal PDF before rely
 
 ## Open Formalization Gaps
 
-Nothing from this paper is formalized separately; it is subsumed by the [AGL23] admit.
+Nothing from this paper is formalized separately; its linear-code barrier is subsumed by the proved
+[AGL23] theorem.
 
 ## Source Access
 

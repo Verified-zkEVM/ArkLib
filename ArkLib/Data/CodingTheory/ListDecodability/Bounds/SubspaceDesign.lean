@@ -171,9 +171,9 @@ theorem subspaceDesign_lambda_le
 
   `|Λ(C, 1 − t − η)| ≤ (1 − t)/η` .
 
-This is the engine behind both the `⌊1/η⌋`-rounded `η`-form (`subspaceDesign_lambda_le_of_eta`) and
-the folded-RS corollary (`frs_lambda_le_capacity`, where `t` is the profile evaluated at the *real*
-argument `1/η`). The proof instantiates the integer theorem at `L := ⌊(1 − t)/η⌋` and uses
+This is the engine behind both the real-argument `η`-form (`subspaceDesign_lambda_le_of_eta`) and
+the folded-RS corollary (`frs_lambda_le_capacity`, where `t` is the profile evaluated at `1/η`).
+The proof instantiates the integer theorem at `L := ⌊(1 − t)/η⌋` and uses
 monotonicity of `Λ` in the radius: `L + 1 > (1 − t)/η` makes the integer radius
 `L/(L+1)·(1 − sR/(s−L+1))` at least `1 − t − η`, and `L ≤ (1 − t)/η` is the claimed list bound. This
 mirrors [CZ25]'s own derivation of its Corollary 2.21 from its Theorem 1.3.
@@ -391,9 +391,10 @@ derived for univariate multiplicity codes**)*". For `C := UM[F, L, k, s]` of rat
 
   `|Λ(C, 1 - ρ·s/(s - 1/η + 1) - η)| ≤ (s·(1-ρ) + 1 - 1/η) / (η·(s + 1 - 1/η))` .
 
-**Derived in-tree** by the same chain as `frs_lambda_le_capacity`: `subspaceDesign_lambda_le` via
-`subspaceDesign_lambda_le_of_profile_le` at `t := ρ·s/(s − 1/η + 1)`, with the `(k−1)`-level design
-premise supplied by `isSubspaceDesign_umCode_sub_one`. It therefore inherits that admit.
+**Derived in-tree, sorry-free and axiom-clean** by the same chain as `frs_lambda_le_capacity`:
+`subspaceDesign_lambda_le` via `subspaceDesign_lambda_le_of_profile_le` at
+`t := ρ·s/(s − 1/η + 1)`, with the `(k−1)`-level design premise supplied by
+`isSubspaceDesign_umCode_sub_one`.
 
 [CZ25] prove the multiplicity case directly too, as their Theorem 1.5 — "*Let `p` be a prime number.
 For any integers `s, n, L ≥ 1`, `k ∈ [n]`, and distinct `α₁, …, α_n ∈ F_p`, the code
