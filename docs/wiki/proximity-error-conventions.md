@@ -9,13 +9,14 @@ correlated agreement, and weighted correlated agreement. Historically each arriv
 shape, its own family of random combinations, and its own numeric conventions. This page fixes one
 shape for all of them, so that helper lemmas are written once rather than per notion × per family.
 
-**Status.** The shape below is fully realised for MCA, in
-`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`. The `ε_pg` / `ε_ca` layer
-(`ProximityGap/Errors.lean`) currently lives on `feat/abf26-plan` (PR #505) and is not yet on
-`main`; declarations below marked **(#505)** are on that branch only. The four correlated-agreement
-definitions in `ProximityGap/Basic.lean` are still one-per-family — see
-[What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not) for what collapsing
-them requires. Migrating both is the open work.
+**Status.** The shape below is fully realised for MCA in
+`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`. The paper-facing `ε_pg` / `ε_ca`
+values, their elementary laws and their bridges to the maintained predicates live in
+`ProximityGap/Errors.lean`. Those CA/PG definitions retain the source's two-radius and
+one-definition-per-family presentation; making that layer generator-parametric remains separate
+open work. The four correlated-agreement predicates in `ProximityGap/Basic.lean` likewise remain
+one-per-family — see [What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not)
+for what collapsing them requires.
 
 ## The shape
 
@@ -63,8 +64,8 @@ Five rules, each with a reason that has bitten us:
    monotone. `epsPG` and `epsCA'` are both pinned to `0` at `δ ≥ 1` while being nonzero below it,
    so `epsPG_mono` and `epsCA'_mono` are **false theorems**, not open ones: a monotone error would
    have to stay at its sub-`1` value past `1`. Monotonicity holds for `epsMCA` (guard-free,
-   `epsMCA_mono` **(#505)**) and for `epsCA` in `δ_fld` only (`epsCA_mono_δ_fld` **(#505)**); it is
-   *antitone* in `δ_int` (`epsCA_antitone_δ_int` **(#505)**). This matches the sources: BCGM25
+   `epsMCA_mono`) and for `epsCA` in `δ_fld` only (`epsCA_mono_δ_fld`); it is
+   *antitone* in `δ_int` (`epsCA_antitone_δ_int`). This matches the sources: BCGM25
    Lemma 3.16 states monotonicity for **MCA only**. Threshold-style statements (`ε ≤ ε*` below a
    radius, `> ε*` above) are therefore MCA-specific; do not transplant them to CA'/PG, where they
    are uninhabitable.
@@ -123,24 +124,19 @@ Two things this buys:
   syntactically — `ℝ≥0`'s truncated `1 − δ` is `0`, `ℝ`'s is negative — but both are then vacuously
   true, so the equivalence survives on the whole domain.
 - **`gridPt` stays total.** It can remain `ℕ → ℝ≥0` (or `ℕ → ℝ`) and compose with `mcaError`
-  directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` **(#505)** already does.
+  directly, exactly as `GrandChallenges`' `Lambda (C^⋈ m) (gridPt k : ℝ)` already does.
   A `gridPt : ℕ → I` would need `k ≤ Fintype.card ι` to land in the interval; nothing forces that
   typing once the value it feeds is total.
 
 ## Naming
 
 Follows `coding-theory-conventions.md`. The quantity tokens are `epsPG`, `epsCA`, `epsMCA`,
-`epsWCA`; ε-error material lives in `ProximityGap.*`. A bound for a specific code family reads
-`<codeFamily>_<quantity>_<regime>` — `rs_epsMCA_johnson_range_bchks25` **(#505)**,
-`subspaceDesign_epsMCA_gg25` **(#505)**. `epsWCA` is reserved, not yet used anywhere.
-
-**The generator-framework value is `CoreDefinitions.mcaError`, not `epsMCA`, and must stay that way
-for now.** `ProximityGap.epsMCA` **(#505)** is a *different function* — `(C : Set (ι → A)) → ℝ≥0 →
-ENNReal`, with the affine line hard-wired — and the two are related, not equal:
-`epsMCA C δ = mcaError (AffineLineGenerator F) MC (δ : ℝ)` at `C = ↑MC`, for every `δ : ℝ≥0`.
-Renaming `mcaError` to `epsMCA` before that bridge has retired the abf26 definition would both
-collide on merge and make the bridge unstatable. Unify the names when the duplicate is deleted, not
-before.
+`epsWCA`; ε-error material lives in `ProximityGap.*`. The canonical generator-framework value is
+`CoreDefinitions.mcaError`. `ProximityGap.epsMCA` is the sole sanctioned paper-notation adapter: a
+reducible abbreviation for `mcaError (AffineLineGenerator F) C (δ : ℝ)`, with the same module-code
+assumptions as the canonical value. It does not define a second supremum. New generic theorems use
+`mcaError` directly; `epsMCA` is retained only at the ABF26 compatibility seam. `epsWCA` is
+reserved, not yet used anywhere.
 
 ## What is a duplicate, and what is not
 
@@ -185,7 +181,7 @@ one has to be restated over coefficients first, and its own docstring records th
 needs the coefficient map to have constant-size fibers. Do that before assuming it collapses.
 
 Two further caveats before anyone builds this: none of it is in-tree — `caError` above is a design
-note, not a declaration — and abf26's `epsCA` **(#505)** carries two radii (`δ_fld`, `δ_int`), so a
+note, not a declaration — and ABF26's `epsCA` carries two radii (`δ_fld`, `δ_int`), so a
 single-radius `caError` subsumes the `Basic.lean` definitions but not that one.
 
 **The three notions are not duplicates.** [ABF26] Fact 4.5 orders them, `ε_pg ≤ ε_ca ≤ ε_mca`, and
@@ -227,7 +223,8 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   subsumes a threshold-implication phrasing well enough to retire it as a definition
 - `epsPG ≤ epsCA ≤ epsMCA` (ABF26 Fact 4.5)
 - `epsMCA = epsCA` below the unique-decoding radius (ABF26 Lemma 4.6)
-- `eps?(C^⋈k) ≤ k · eps?(C)` (ABF26 Lemma 4.7 / BCGM25 Lemma 10.1)
+- `epsMCA(C^⋈k) = epsMCA(C)` for positive `k` and open-unit radii (ABF26 Lemma 4.7 / Jo26
+  Corollary 4.5); this supersedes the older factor bound
 - generator transport: pseudoinverse (BCGM25 L4.1), subset (Cor 4.2), tensor (L4.4), reindex — all
   via `mcaError_le_of_forall_isMCA_imp`
 - `δᵣ(MC^⋈κ) = δᵣ(MC)` — discharges interleaved hypotheses; **not yet proved in-tree**, so
@@ -254,7 +251,6 @@ notion-specific and two of the four cases are false (rule 2). Check that before 
   `p(L) > εpg(C, δ)`, `L` is `δ`-close to `C`"*. The `Xor` additionally asserts the branches are
   exclusive, which fails outright at `ε ≥ 1`. It has consumers (`DivergenceOfSets.lean`,
   `BCIKS20/ReedSolomonGap.lean`), so fixing it is its own change, not a drive-by.
-- **Threshold-style statements** (`ε ≤ ε*` below a radius, `> ε*` above — `grandMCAChallenge`
-  **(#505)**)
+- **Threshold-style statements** (`ε ≤ ε*` below a radius, `> ε*` above — `grandMCAChallenge`)
   depend on monotonicity and are therefore **MCA-specific**. A CA'/PG analogue would be
   uninhabitable.

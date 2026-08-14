@@ -28,8 +28,8 @@ open NNReal Code Finset CoreDefinitions
 open scoped BigOperators NNReal ENNReal ProbabilityTheory
 open Probability
 
-/-- **ABF26 information-set lower bound.** For a linear code `C` and a radius below its relative
-minimum distance, affine-line MCA is at least `min(⌊δ n⌋ / |F|, 1)`.
+/-- **ABF26 `prop:mca-information-set-lower-bound`.** For a linear code `C` and a radius below its
+relative minimum distance, affine-line MCA is at least `min(⌊δ n⌋ / |F|, 1)`.
 
 The proof constructs `r := min(⌊δ n⌋, |F|)` distinct bad affine-line challenges and feeds their
 count directly into `mcaError`; no parallel MCA event or supremum is introduced. -/

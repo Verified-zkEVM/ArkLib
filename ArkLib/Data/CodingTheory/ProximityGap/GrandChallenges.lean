@@ -13,8 +13,9 @@ import ArkLib.Data.CodingTheory.ListDecodability
 
 The MCA and list-decoding prizes are integer-grid boundary problems. For a length-`n` code, a
 resolution certifies that the target bound is safe at `k / n` and unsafe at `(k + 1) / n`. This
-adjacent-cell convention is exact for the right-continuous step functions involved and makes the
-boundary index unique.
+adjacent-cell convention is exact for MCA and makes its boundary index unique. The complete
+challenge propositions also include the endpoint case where every grid point through radius one
+is safe.
 
 The MCA fields below mention the merged `CoreDefinitions.mcaError` value itself, specialized to
 `AffineLineGenerator F`. No independent prize error function occurs in the scored contract.
@@ -86,24 +87,31 @@ theorem mcaError_eq_of_nnreal_floor_eq {F ι : Type} [Field F] [Fintype F] [Deci
 
 /-! ## Logical challenge predicates -/
 
-/-- **ABF26 Grand MCA Challenge**, in adjacent integer-grid boundary form. -/
+/-- **ABF26 Grand MCA Challenge**: an adjacent integer-grid crossing, or the `δ* = 1`
+endpoint where every grid point through radius one is safe. -/
 def grandMCAChallenge {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     [Fintype ι] [Nonempty ι]
     (C : LinearCode ι F) (ε_star : ℝ≥0) : Prop :=
-  ∃ k : ℕ, k < Fintype.card ι ∧
-    mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤ (ε_star : ENNReal) ∧
-    mcaError (AffineLineGenerator F) C (gridPt (ι := ι) (k + 1) : ℝ) >
-      (ε_star : ENNReal)
+  (∃ k : ℕ, k < Fintype.card ι ∧
+      mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤ (ε_star : ENNReal) ∧
+      mcaError (AffineLineGenerator F) C (gridPt (ι := ι) (k + 1) : ℝ) >
+        (ε_star : ENNReal)) ∨
+    ∀ k : ℕ, k ≤ Fintype.card ι →
+      mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤ (ε_star : ENNReal)
 
-/-- **ABF26 Grand List Decoding Challenge**, in the same adjacent-grid boundary form. -/
+/-- **ABF26 Grand List Decoding Challenge**: an adjacent integer-grid crossing, or the `δ* = 1`
+endpoint where every grid point through radius one is safe. -/
 def grandListDecodingChallenge {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     [Fintype ι] [Nonempty ι]
     (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : Prop :=
-  ∃ k : ℕ, k < Fintype.card ι ∧
-    (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
-      (ε_star : ENNReal) * (Fintype.card F : ENNReal) ∧
-    (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) (k + 1) : ℝ) : ENNReal) >
-      (ε_star : ENNReal) * (Fintype.card F : ENNReal)
+  (∃ k : ℕ, k < Fintype.card ι ∧
+      (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
+        (ε_star : ENNReal) * (Fintype.card F : ENNReal) ∧
+      (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) (k + 1) : ℝ) : ENNReal) >
+        (ε_star : ENNReal) * (Fintype.card F : ENNReal)) ∨
+    ∀ k : ℕ, k ≤ Fintype.card ι →
+      (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
+        (ε_star : ENNReal) * (Fintype.card F : ENNReal)
 
 /-! ## Prize constants and smooth Reed--Solomon specializations -/
 
@@ -253,7 +261,7 @@ end GrandMCAResolution
 /-- A resolution proves the logical Grand MCA Challenge. -/
 theorem grandMCAChallenge_of_resolution {C : LinearCode ι F} {ε_star : ℝ≥0}
     (R : GrandMCAResolution C ε_star) : grandMCAChallenge C ε_star :=
-  ⟨R.kStar, R.lt_card, R.below, R.above⟩
+  Or.inl ⟨R.kStar, R.lt_card, R.below, R.above⟩
 
 /-- Complete MCA answer data: an adjacent boundary, or a certificate that every grid point through
 radius one is safe. -/
@@ -266,10 +274,13 @@ inductive GrandMCAAnswer (C : LinearCode ι F) (ε_star : ℝ≥0) : Type where
         mcaError (AffineLineGenerator F) C (gridPt (ι := ι) k : ℝ) ≤
           (ε_star : ENNReal))
 
-/-- A boundary answer proves the crossing predicate. -/
+/-- Every complete MCA answer proves the full logical challenge, including `allGood` at
+`δ* = 1`. -/
 theorem GrandMCAAnswer.toChallenge {C : LinearCode ι F} {ε_star : ℝ≥0}
-    (R : GrandMCAResolution C ε_star) : grandMCAChallenge C ε_star :=
-  grandMCAChallenge_of_resolution R
+    (A : GrandMCAAnswer C ε_star) : grandMCAChallenge C ε_star := by
+  cases A with
+  | boundary R => exact grandMCAChallenge_of_resolution R
+  | allGood h => exact Or.inr h
 
 /-- MCA submission data at all prize rates, over an ordinary smooth-domain RS code. -/
 structure MCAPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Type where
@@ -279,6 +290,11 @@ structure MCAPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain] : T
       (ReedSolomon.code domain
         ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊)
       (epsStar : ℝ≥0)
+
+/-- Complete per-rate MCA answers prove the logical prize proposition. -/
+theorem MCAPrizeResolution.toPrize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
+    (R : MCAPrizeResolution domain) : mcaPrize domain :=
+  fun j => (R.answer j).toChallenge
 
 /-- A safe witness lies strictly below the unsafe edge of every resolution. -/
 theorem MCALowerWitness.lt_boundary {C : LinearCode ι F} {ε_star : ℝ≥0}
@@ -377,7 +393,7 @@ end GrandListResolution
 theorem grandListDecodingChallenge_of_resolution
     {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
     (R : GrandListResolution C m ε_star) : grandListDecodingChallenge C m ε_star :=
-  ⟨R.kStar, R.lt_card, R.below, R.above⟩
+  Or.inl ⟨R.kStar, R.lt_card, R.below, R.above⟩
 
 /-- Complete list-decoding answer data, including the `δ* = 1` endpoint case. -/
 inductive GrandListDecodingAnswer (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) : Type where
@@ -389,6 +405,15 @@ inductive GrandListDecodingAnswer (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ�
         (Code.Lambda (C ^⋈ (Fin m)) (gridPt (ι := ι) k : ℝ) : ENNReal) ≤
           (ε_star : ENNReal) * (Fintype.card F : ENNReal))
 
+/-- Every complete list-decoding answer proves the full logical challenge, including `allGood` at
+`δ* = 1`. -/
+theorem GrandListDecodingAnswer.toChallenge
+    {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
+    (A : GrandListDecodingAnswer C m ε_star) : grandListDecodingChallenge C m ε_star := by
+  cases A with
+  | boundary R => exact grandListDecodingChallenge_of_resolution R
+  | allGood h => exact Or.inr h
+
 /-- List-decoding submission data at all prize rates. -/
 structure ListDecodingPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (m : ℕ) : Type where
@@ -398,6 +423,11 @@ structure ListDecodingPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth do
       (ReedSolomon.code domain
         ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ : Set (ι → F))
       m (epsStar : ℝ≥0)
+
+/-- Complete per-rate list-decoding answers prove the logical prize proposition. -/
+theorem ListDecodingPrizeResolution.toPrize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
+    {m : ℕ} (R : ListDecodingPrizeResolution domain m) : listDecodingPrize domain m :=
+  fun j => (R.answer j).toChallenge
 
 /-- A safe list witness lies strictly below the unsafe edge of every resolution. -/
 theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}

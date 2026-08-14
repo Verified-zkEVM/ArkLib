@@ -50,6 +50,45 @@ open NNReal Code CoreDefinitions
 open scoped ProbabilityTheory BigOperators
 open Probability
 
+section MCAAdapter
+
+variable {ι : Type} [Fintype ι]
+variable {F : Type} [Field F] [Fintype F]
+variable {A : Type} [AddCommMonoid A] [Module F A]
+
+/-- Paper-notation compatibility for affine-line MCA. This is a reducible adapter, not a second
+MCA supremum: unfolding it exposes the merged `CoreDefinitions.mcaError` value. Its assumptions
+are exactly those of the canonical value specialized to `AffineLineGenerator`. -/
+noncomputable abbrev epsMCA (C : ModuleCode ι F A) (δ : ℝ≥0) : ENNReal :=
+  mcaError (AffineLineGenerator F) C (δ : ℝ)
+
+/-- Exact bridge from the paper spelling to the canonical MCA value. -/
+theorem epsMCA_eq_mcaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
+    epsMCA C δ = mcaError (AffineLineGenerator F) C (δ : ℝ) := rfl
+
+/-- The `ℝ≥0 → ℝ` radius conversion preserves the zero endpoint. -/
+@[simp] theorem epsMCA_zero (C : ModuleCode ι F A) :
+    epsMCA C 0 = mcaError (AffineLineGenerator F) C 0 := rfl
+
+/-- The `ℝ≥0 → ℝ` radius conversion preserves the one endpoint. -/
+@[simp] theorem epsMCA_one (C : ModuleCode ι F A) :
+    epsMCA C 1 = mcaError (AffineLineGenerator F) C 1 := rfl
+
+/-- Monotonicity of the affine-line specialization, inherited from the canonical value. -/
+theorem epsMCA_mono (C : ModuleCode ι F A) {δ δ' : ℝ≥0} (h : δ ≤ δ') :
+    epsMCA C δ ≤ epsMCA C δ' :=
+  mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast h)
+
+/-- `epsMCA` is constant on the same integer-agreement cells as `mcaError`. The floor is
+deliberately stated after coercion to `ℝ`, matching the canonical lemma's value type. -/
+theorem epsMCA_eq_of_floor_eq (C : ModuleCode ι F A) {δ δ' : ℝ≥0}
+    (h : ⌊(δ : ℝ) * (Fintype.card ι : ℝ)⌋₊ =
+      ⌊(δ' : ℝ) * (Fintype.card ι : ℝ)⌋₊) :
+    epsMCA C δ = epsMCA C δ' :=
+  mcaError_eq_of_floor_eq (AffineLineGenerator F) C (by positivity) (by positivity) h
+
+end MCAAdapter
+
 section
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
@@ -93,23 +132,6 @@ noncomputable def epsCA_affineSpaces
     else Pr_{let y ← $ᵖ ↥(Affine.affineSubspaceAtOrigin (F := F) (u 0) (Fin.tail u))}[
       δᵣ(y.1, C) ≤ δ_fld]
 
-/-- Paper-notation compatibility for affine-line MCA. This is a reducible adapter, not a second
-MCA supremum: unfolding it exposes the merged `CoreDefinitions.mcaError` value. -/
-noncomputable abbrev epsMCA (C : ModuleCode ι F A) (δ : ℝ≥0) : ENNReal :=
-  mcaError (AffineLineGenerator F) C (δ : ℝ)
-
-/-- Exact bridge from the paper spelling to the canonical MCA value. -/
-theorem epsMCA_eq_mcaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
-    epsMCA C δ = mcaError (AffineLineGenerator F) C (δ : ℝ) := rfl
-
-/-- The `ℝ≥0 → ℝ` radius conversion preserves the zero endpoint. -/
-@[simp] theorem epsMCA_zero (C : ModuleCode ι F A) :
-    epsMCA C 0 = mcaError (AffineLineGenerator F) C 0 := rfl
-
-/-- The `ℝ≥0 → ℝ` radius conversion preserves the one endpoint. -/
-@[simp] theorem epsMCA_one (C : ModuleCode ι F A) :
-    epsMCA C 1 = mcaError (AffineLineGenerator F) C 1 := rfl
-
 /-! ## Monotonicity -/
 
 /-- `epsCA` is monotone in the fold radius. -/
@@ -143,19 +165,6 @@ theorem epsCA_antitone_δ_int
     exact zero_le
   · have hjp : ¬ jointProximity (C := C) (u := u) δ_int := fun h0 => hjp' (hjp_mono h0)
     rw [if_neg hjp', if_neg hjp]
-
-/-- Monotonicity of the affine-line specialization, inherited from the canonical value. -/
-theorem epsMCA_mono (C : ModuleCode ι F A) {δ δ' : ℝ≥0} (h : δ ≤ δ') :
-    epsMCA C δ ≤ epsMCA C δ' :=
-  mcaError_mono (AffineLineGenerator F) C (by exact_mod_cast h)
-
-/-- `epsMCA` is constant on the same integer-agreement cells as `mcaError`. The floor is
-deliberately stated after coercion to `ℝ`, matching the canonical lemma's value type. -/
-theorem epsMCA_eq_of_floor_eq (C : ModuleCode ι F A) {δ δ' : ℝ≥0}
-    (h : ⌊(δ : ℝ) * (Fintype.card ι : ℝ)⌋₊ =
-      ⌊(δ' : ℝ) * (Fintype.card ι : ℝ)⌋₊) :
-    epsMCA C δ = epsMCA C δ' :=
-  mcaError_eq_of_floor_eq (AffineLineGenerator F) C (by positivity) (by positivity) h
 
 /-! ## Why `epsPG` and `epsCA'` are not globally monotone -/
 

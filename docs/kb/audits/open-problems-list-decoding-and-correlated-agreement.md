@@ -28,6 +28,13 @@ ArkLib, missing, or present in a materially different form.
 - Open items are listed as `missing` or `partial`. For the narrative account of what remains, see
   [`../papers/ABF26.md`](../papers/ABF26.md) § *Open Formalization Gaps*.
 
+## Section 1 — Grand Challenges
+
+| Paper item | Status | Lean refs | Notes |
+| --- | --- | --- | --- |
+| Grand MCA Challenge | present | `grandMCAChallenge`, `GrandMCAAnswer.toChallenge`, `MCAPrizeResolution.toPrize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses the canonical affine-line `mcaError`. The logical contract accepts either the unique adjacent grid crossing or the paper-permitted `δ* = 1` all-good endpoint. |
+| Grand List Decoding Challenge | present | `grandListDecodingChallenge`, `GrandListDecodingAnswer.toChallenge`, `ListDecodingPrizeResolution.toPrize` in [GrandChallenges.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean) | Uses canonical interleaving and `Code.Lambda`, with the same adjacent-crossing / all-good endpoint split. |
+
 ## Section 2 — Preliminaries
 
 | ABF26 ID | Paper item | Status | Lean refs | Lean target | Notes |
@@ -80,6 +87,7 @@ ArkLib, missing, or present in a materially different form.
 
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
+| §4.1 proximity-gap error `εpg(C,δ)` | present | `epsPG` and its non-vacuity/endpoint pins in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric supremum in the paper's implication-shaped semantics. |
 | Definition 4.1 correlated agreement error `εca(C,δ_fld,δ_int)` | present | `epsCA`, `epsCA'`, `epsCA_curves`, `epsCA_affineSpaces` and the three predicate bridges in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Numeric supremum interface plus proved bridges to the maintained predicate API. |
 | Remark 4.2 discretization of proximity loss | present | `epsCA_eq_of_floor_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Proved in the stronger floor-cell form. |
 | Definition 4.3 mutual correlated agreement error `εmca(C,δ)` | present | canonical `CoreDefinitions.mcaError` / `IsMCA` in [ProximityGenerators.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean); reducible affine-line paper adapter and exact bridge `epsMCA_eq_mcaError` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | There is one MCA value. The paper spelling unfolds to `mcaError (AffineLineGenerator F) C (δ : ℝ)`; no second supremum or event representation is introduced. |
@@ -87,9 +95,10 @@ ArkLib, missing, or present in a materially different form.
 | Fact 4.5 `εpg ≤ εca ≤ εmca` | present | `epsPG_le_epsCA_le_epsMCA`, with canonical second leg `epsCA_le_mcaError_affineLine`, in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | Proved for module codes. |
 | Lemma 4.6 MCA equals CA below unique decoding radius | present-but-incomplete | `mcaError_eq_epsCA_below_udr` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | **External admit** ([ACFY25] Lemma 4.10), restricted to linear codes and carrying `0 < δ` explicitly because the source theorem is on an open radius interval. |
 | Lemma 4.7 interleaving stability for MCA | present-but-incomplete | `mcaError_affineLine_interleaved_eq` in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | **External admit** ([Jo26] Corollary 4.5), in the exact equality form superseding the older factor-`t` bound. Carries `0 < t` and `δ ∈ (0,1)` explicitly. |
+| §4.3 `prop:mca-information-set-lower-bound` | present | `linear_mcaError_ge_informationSet` in [InformationSetLowerBound.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean) | **PROVEN in-tree, sorry-free and axiom-clean.** Gives `εmca(C,δ) ≥ min(⌊δn⌋/|F|,1)` below the minimum-distance radius. |
 | Theorem 4.8 AHIV17 general-code unique-decoding bound | missing | related but different [ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/AHIV22.lean) | AHIV22 is present, but not this general `εmca/εca` statement. |
 | Theorem 4.9 RS unique-decoding results | present-but-different | `RS_correlatedAgreement_affineLines_uniqueDecodingRegime` and `RS_correlatedAgreement_affineLines` in [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/UniqueDecoding.lean) and [ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean) | Item 1 is represented via predicate-style CA for RS. Item 2, the BCHKS25 proximity-loss refinement, is missing. The main file still has a `sorry` in the non-unique-decoding branch. |
-| Remark 4.10 small proximity-loss simplification | missing | none | Depends on missing `εca` error-function interface. |
+| Remark 4.10 small proximity-loss simplification | partial | numeric `epsCA` interface in [Errors.lean](../../../ArkLib/Data/CodingTheory/ProximityGap/Errors.lean) | The required error-function interface is present, but the simplification itself is not formalized. |
 | Theorem 4.11 1.5-Johnson regime for general linear codes | missing | none | No matching theorem was found. |
 | Theorem 4.13 MCA from subspace-design codes | missing | prerequisite `CodingTheory.IsSubspaceDesign` in [SubspaceDesign.lean](../../../ArkLib/Data/CodingTheory/SubspaceDesign.lean) | The subspace-design infrastructure is present; the MCA theorem is missing. |
 | Theorem 4.14 folded RS MCA up to capacity | missing | prerequisites `ReedSolomon.Folded.frsCode` and `CodingTheory.isSubspaceDesign_frsCode` | The folded-RS code and FRS half of T2.18 are present; the MCA theorem is missing. |
