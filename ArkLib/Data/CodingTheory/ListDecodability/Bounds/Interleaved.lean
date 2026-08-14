@@ -22,6 +22,8 @@ interleaving API remains independent of list decoding.
   Interleaved Codes*][GGR11]
 -/
 
+set_option linter.unusedFintypeInType false
+
 namespace InterleavedCode
 
 open Code
@@ -35,7 +37,8 @@ open Code
 
 the list size of every nonempty row-wise interleaving is bounded by
 `choose (b + r) r * Lambda(C, δ)^r`, independently of the interleaving width. -/
-theorem lambda_interleaved_le_ggr11 {ι A : Type} [Fintype ι] [DecidableEq A]
+theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Fintype A]
+    [DecidableEq A]
     (C : Set (ι → A)) (δ : ℝ) (m : ℕ) (_hm : 1 ≤ m)
     (_hδ_lb : 0 ≤ δ)
     (_hδ_ub : δ < (Code.minDist C : ℝ) / Fintype.card ι) :
@@ -45,19 +48,6 @@ theorem lambda_interleaved_le_ggr11 {ι A : Type} [Fintype ι] [DecidableEq A]
     let r : ℕ := ⌈Real.log (δC / η) / Real.log 2⌉₊
     Lambda (interleavedCodeSet (κ := Fin m) C) δ ≤
       ((b + r).choose r : ℕ∞) * (Lambda C δ) ^ r := by
-  sorry -- ABF26-L2.10; external admit [GGR11, Theorem 2.5].
-
-/-- Compatibility name used by the original ABF26 extraction. -/
-theorem lambda_le_ggr11 {ι A : Type} [Fintype ι] [DecidableEq A]
-    (C : Set (ι → A)) (δ : ℝ) (m : ℕ) (hm : 1 ≤ m)
-    (hδ_lb : 0 ≤ δ)
-    (hδ_ub : δ < (Code.minDist C : ℝ) / Fintype.card ι) :
-    let η : ℝ := (Code.minDist C : ℝ) / Fintype.card ι - δ
-    let b : ℕ := ⌈δ / η⌉₊
-    let r : ℕ := ⌈Real.log ((Code.minDist C : ℝ) / Fintype.card ι / η) /
-      Real.log 2⌉₊
-    Lambda (interleavedCodeSet (κ := Fin m) C) δ ≤
-      ((b + r).choose r : ℕ∞) * (Lambda C δ) ^ r :=
-  lambda_interleaved_le_ggr11 C δ m hm hδ_lb hδ_ub
+  sorry -- external admit [GGR11 Theorem 2.5].
 
 end InterleavedCode

@@ -6,6 +6,7 @@ Authors: Alexander Hicks
 
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
+import ArkLib.Data.CodingTheory.ProximityGap.TensorGenerator
 import ArkLib.Data.Probability.Instances
 
 /-!
@@ -46,7 +47,7 @@ set_option linter.unusedSectionVars false
 
 namespace ProximityGap
 
-open NNReal Code CoreDefinitions
+open NNReal Code CoreDefinitions unitInterval
 open scoped ProbabilityTheory BigOperators
 open Probability
 
@@ -483,19 +484,30 @@ theorem δ_ε_correlatedAgreementAffineSpaces_iff_epsCA_affineSpaces_le {k : ℕ
     · rw [if_neg hjp] at hterm
       exact absurd hpr (not_lt.mpr hterm)
 
-/-! ## Externally sourced leaves -/
+/-! ## Externally sourced leaves and their derived equalities -/
 
-/-- **ABF26 Lemma 4.6 / ACFY25 Lemma 4.10.** For a linear code and a strictly positive radius
-below half its relative minimum distance, affine-line MCA and CA coincide.
+/-- The externally sourced direction of **ABF26 Lemma 4.6 / ACFY25 Lemma 4.10**: below half the
+relative minimum distance, affine-line MCA is at most CA.
 
 The explicit `0 < δ` hypothesis preserves the source's open radius domain; this admitted leaf does
 not claim endpoint behavior absent from the cited theorem. -/
-theorem mcaError_eq_epsCA_below_udr
+theorem mcaError_le_epsCA_below_udr
     (C : LinearCode ι F) (δ : ℝ≥0) (_hδ_pos : 0 < δ)
     (_h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
-    mcaError (AffineLineGenerator F) C (δ : ℝ) =
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       epsCA (F := F) (A := F) (C : Set (ι → F)) δ δ := by
-  sorry -- ABF26-L4.6; external admit [ACFY25, Lemma 4.10].
+  sorry -- external admit [ACFY25 Lemma 4.10].
+
+/-- **ABF26 Lemma 4.6 / ACFY25 Lemma 4.10.** Below half the relative minimum distance,
+affine-line MCA and CA coincide. The reverse inequality is the proved ABF26 Fact 4.5 bridge, so
+only `mcaError_le_epsCA_below_udr` is externally admitted. -/
+theorem mcaError_eq_epsCA_below_udr
+    (C : LinearCode ι F) (δ : ℝ≥0) (hδ_pos : 0 < δ)
+    (h_udr : 2 * (δ : ℝ) * Fintype.card ι < Code.dist (C : Set (ι → F))) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) =
+      epsCA (F := F) (A := F) (C : Set (ι → F)) δ δ :=
+  le_antisymm (mcaError_le_epsCA_below_udr C δ hδ_pos h_udr)
+    (epsCA_le_mcaError_affineLine C δ)
 
 /-- Compatibility spelling of `mcaError_eq_epsCA_below_udr`. -/
 theorem epsMCA_eq_epsCA_below_udr
@@ -504,16 +516,49 @@ theorem epsMCA_eq_epsCA_below_udr
     epsMCA C δ = epsCA (F := F) (A := F) (C : Set (ι → F)) δ δ :=
   mcaError_eq_epsCA_below_udr C δ hδ_pos h_udr
 
+/-- The PR 692 structural direction: affine-line MCA for a nonempty row-wise interleaving bounds
+affine-line MCA for the base code at every radius in `[0,1]`. -/
+theorem mcaError_le_affineLine_interleaved
+    (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
+    (ht : 0 < t) (hδ_le : δ ≤ 1) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
+      mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
+  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
+  let ε : I → ℝ≥0 := fun γ =>
+    ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
+  have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
+    intro γ
+    dsimp [ε]
+    rw [ENNReal.coe_toNNReal
+      (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))]
+  have hBase := TensorMCA.isMCAGenerator_of_moduleInterleavedCode
+    (ℓ := Fin t) (AffineLineGenerator F) ε C hInterleaved
+  let δI : I :=
+    ⟨(δ : ℝ), ⟨NNReal.coe_nonneg δ, by exact_mod_cast hδ_le⟩⟩
+  simpa [δI, ε, ENNReal.coe_toNNReal
+    (mcaError_ne_top (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ))] using hBase δI
+
+/-- The externally sourced direction of **ABF26 Lemma 4.7 / Jo26 Corollary 4.5**: nonempty
+row-wise interleaving does not increase affine-line MCA at radii in `(0,1)`. -/
+theorem mcaError_affineLine_interleaved_le
+    (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
+    (_ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) ≤
+      mcaError (AffineLineGenerator F) C (δ : ℝ) := by
+  sorry -- external admit [Jo26 Corollary 4.5].
+
 /-- **ABF26 Lemma 4.7 / Jo26 Corollary 4.5.** Affine-line MCA is invariant under nonempty
-row-wise interleaving at radii in `(0,1)`.
+row-wise interleaving at radii in `(0,1)`. The base-to-interleaved inequality is derived from PR
+692's `TensorMCA.isMCAGenerator_of_moduleInterleavedCode`; only the reverse is admitted.
 
 The theorem is stated directly on the canonical `mcaError` value. -/
 theorem mcaError_affineLine_interleaved_eq
     (C : ModuleCode ι F A) (t : ℕ) (δ : ℝ≥0)
-    (_ht : 0 < t) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    (ht : 0 < t) (hδ_pos : 0 < δ) (hδ_lt : δ < 1) :
     mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) =
-      mcaError (AffineLineGenerator F) C (δ : ℝ) := by
-  sorry -- ABF26-L4.7; external admit [Jo26, Corollary 4.5].
+      mcaError (AffineLineGenerator F) C (δ : ℝ) :=
+  le_antisymm (mcaError_affineLine_interleaved_le C t δ ht hδ_pos hδ_lt)
+    (mcaError_le_affineLine_interleaved C t δ ht hδ_lt.le)
 
 /-- Paper-notation compatibility for the canonical interleaving theorem. -/
 theorem epsMCA_interleaved_eq

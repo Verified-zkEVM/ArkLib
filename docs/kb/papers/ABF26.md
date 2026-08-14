@@ -88,7 +88,7 @@ manuscript, not to the original sources it cites — those get their own keys (`
   counter-pins, and admitted Lemmas 4.6/4.7 are in `ProximityGap/Errors.lean`.
   The information-set MCA lower bound is proved in `InformationSetLowerBound.lean`.
 - **§2 interleaving list size.** Lemma 2.10 is the admitted
-  `InterleavedCode.lambda_interleaved_le_ggr11` in
+  `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
   `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.
 - **§6 erasure correction (support only).** `CodingTheory.eq_of_consistent_with_erased` proves
   the reusable metric-uniqueness ingredient. Definition 6.4 and Lemma 6.5 themselves are missing:
@@ -230,7 +230,8 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
     either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
     [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
-- **L2.10.** The interleaved-code list-size comparison (`[GGR11]`) is still absent.
+- **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
+  proving it in-tree remains open.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
   §6.4.1 Lemma 6.12, the intended consumer of Claim B.1. Claim B.1 and its supporting probability
   lemmas exist; the erasure algorithm, its cost model, and the Lemma 6.12 application do not.

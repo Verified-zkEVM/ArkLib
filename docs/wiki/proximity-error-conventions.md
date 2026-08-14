@@ -12,11 +12,17 @@ shape for all of them, so that helper lemmas are written once rather than per no
 **Status.** The shape below is fully realised for MCA in
 `ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`. The paper-facing `ε_pg` / `ε_ca`
 values, their elementary laws and their bridges to the maintained predicates live in
-`ProximityGap/Errors.lean`. Those CA/PG definitions retain the source's two-radius and
-one-definition-per-family presentation; making that layer generator-parametric remains separate
-open work. The four correlated-agreement predicates in `ProximityGap/Basic.lean` likewise remain
-one-per-family — see [What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not)
-for what collapsing them requires.
+`ProximityGap/Errors.lean`. They are an explicit transitional exception to the canonical shape:
+they retain `Set (ι → A)` codes, `ℝ≥0` radii, the source's outer guarded `if`, two CA radii, and
+one definition per generator family. This preserves the exact ABF26 implication-shaped values
+while proving bridges to the pre-existing predicate API; it does not make those representations
+canonical for new work. Moving CA/PG to `ModuleCode`, total `ℝ` radii, guard-as-conjunct events,
+and a generator parameter is a coordinated breaking refactor because the dependent-sample-space
+affine-space case cannot be expressed by the ordinary `Generator` type. The four
+correlated-agreement predicates in `ProximityGap/Basic.lean` likewise remain one-per-family — see
+[What is a duplicate, and what is not](#what-is-a-duplicate-and-what-is-not) for what collapsing
+them requires. MCA has no such exception: `mcaError` is its sole value, and `epsMCA` is reducibly
+the affine-line specialization.
 
 ## The shape
 

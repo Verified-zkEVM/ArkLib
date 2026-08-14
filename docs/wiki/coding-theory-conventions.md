@@ -292,4 +292,5 @@ Each such `sorry` should correspond to a row in
 [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md);
 if an admit decomposes into sub-goals, record the decomposition there.
 
-`ArkLib/Data/CodingTheory/` currently contains no `sorry`.
+`ArkLib/Data/CodingTheory/` contains a baselined set of admitted external results. New or changed
+admissions must use this comment form and pass the exhaustive axiom sweep.

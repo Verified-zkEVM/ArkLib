@@ -121,17 +121,48 @@ def prizeRates (j : Fin 4) : ℚ≥0 := 1 / 2 ^ (j.val + 1)
 /-- ABF26 prize threshold `2⁻¹²⁸` as an exact nonnegative rational. -/
 def epsStar : ℚ≥0 := 1 / 2 ^ (128 : ℕ)
 
+/-- Denominator of the `j`th prize rate. -/
+def prizeDenominator (j : Fin 4) : ℕ := 2 ^ (j.val + 1)
+
+/-- Exact message length for the `j`th prize rate. -/
+def prizeDimension {ι : Type} [Fintype ι] (j : Fin 4) : ℕ :=
+  Fintype.card ι / prizeDenominator j
+
+/-- Domain-size conditions that make all four advertised prize rates exact. The lower bound rules
+out the degenerate small smooth domains, and divisibility records the precise arithmetic contract
+used by `prizeCode_rate_eq`. -/
+structure PrizeDomainAdmissible (ι : Type) [Fintype ι] : Prop where
+  /-- Every prize denominator through `16` fits in the evaluation domain. -/
+  card_ge : 16 ≤ Fintype.card ι
+  /-- Every prize denominator divides the evaluation-domain size. -/
+  denominator_dvd : ∀ j : Fin 4, prizeDenominator j ∣ Fintype.card ι
+
 namespace GrandChallenges
 
 variable {F ι : Type} [Field F] [Fintype F] [DecidableEq F]
     [Fintype ι] [Nonempty ι] [DecidableEq ι]
+
+/-- A smooth evaluation domain of length at least `16` satisfies the exact-rate arithmetic
+contract. -/
+theorem PrizeDomainAdmissible.ofSmooth (domain : ι ↪ F) [ReedSolomon.Smooth domain]
+    (hcard : 16 ≤ Fintype.card ι) : PrizeDomainAdmissible ι := by
+  refine ⟨hcard, fun j => ?_⟩
+  obtain ⟨k, hk⟩ := ReedSolomon.Smooth.h_card_pow2 (domain := domain)
+  rw [hk]
+  apply Nat.pow_dvd_pow
+  have hj : j.val + 1 ≤ 4 := by omega
+  have hk4 : 4 ≤ k := by
+    apply (Nat.pow_le_pow_iff_right (by omega : 1 < 2)).mp
+    simpa [hk] using hcard
+  exact hj.trans hk4
 
 /-- Grand MCA challenge for an ordinary Reed--Solomon code over a smooth domain. -/
 def grandMCAChallengeRS (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (k : ℕ) (ε_star : ℝ≥0) : Prop :=
   grandMCAChallenge (ReedSolomon.code domain k) ε_star
 
-/-- Rate-addressed Grand MCA challenge, with message length `⌊ρ n⌋`. -/
+/-- Generic rate-addressed Grand MCA challenge, with message length `⌊ρ n⌋`. The named prize
+contract below instead uses `prizeDimension`, whose exact rate is proved by `prizeCode_rate_eq`. -/
 def grandMCAChallengeRSrate (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (ρ ε_star : ℝ≥0) : Prop :=
   grandMCAChallengeRS domain ⌊ρ * (Fintype.card ι : ℝ≥0)⌋₊ ε_star
@@ -141,15 +172,33 @@ def grandListDecodingChallengeRS (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (k m : ℕ) (ε_star : ℝ≥0) : Prop :=
   grandListDecodingChallenge (ReedSolomon.code domain k : Set (ι → F)) m ε_star
 
-/-- Logical trace of the MCA prize at all four rates. -/
-def mcaPrize (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Prop :=
-  ∀ j : Fin 4, grandMCAChallengeRSrate domain (prizeRates j : ℝ≥0) (epsStar : ℝ≥0)
+/-- The code selected by `prizeDimension` has exactly the advertised prize rate. -/
+theorem prizeCode_rate_eq (domain : ι ↪ F) (h : PrizeDomainAdmissible ι) (j : Fin 4) :
+    LinearCode.rate (ReedSolomon.code domain (prizeDimension (ι := ι) j)) = prizeRates j := by
+  unfold prizeDimension
+  rw [ReedSolomon.rateOfLinearCode_eq_div (Nat.div_le_self _ _)]
+  unfold prizeRates
+  have hdpos : 0 < prizeDenominator j := by
+    simp [prizeDenominator]
+  rw [Nat.cast_div (h.denominator_dvd j) (by exact_mod_cast hdpos.ne')]
+  unfold prizeDenominator
+  have hn : (Fintype.card ι : ℚ≥0) ≠ 0 := by
+    have hcard := h.card_ge
+    exact_mod_cast (by omega : Fintype.card ι ≠ 0)
+  field_simp [hn]
+  norm_cast
 
-/-- Logical trace of the list-decoding prize at all four rates. -/
+/-- Logical trace of the MCA prize at all four exact rates. -/
+def mcaPrize (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Prop :=
+  PrizeDomainAdmissible ι ∧ ∀ j : Fin 4,
+    grandMCAChallengeRS domain (prizeDimension (ι := ι) j) (epsStar : ℝ≥0)
+
+/-- Logical trace of the list-decoding prize at all four exact rates and nonempty interleaving
+width. -/
 def listDecodingPrize (domain : ι ↪ F) [ReedSolomon.Smooth domain] (m : ℕ) : Prop :=
-  ∀ j : Fin 4,
+  0 < m ∧ PrizeDomainAdmissible ι ∧ ∀ j : Fin 4,
     grandListDecodingChallengeRS domain
-      ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ m (epsStar : ℝ≥0)
+      (prizeDimension (ι := ι) j) m (epsStar : ℝ≥0)
 
 /-! ## MCA boundary carriers -/
 
@@ -179,6 +228,8 @@ structure MCALowerWitness (C : LinearCode ι F) (ε_star : ℝ≥0) where
 structure MCAUpperWitness (C : LinearCode ι F) (ε_star : ℝ≥0) where
   /-- Certified radius. -/
   δ : ℝ≥0
+  /-- The radius lies in `[0,1]`. -/
+  le_one : δ ≤ 1
   /-- Canonical affine-line MCA exceeds the threshold. -/
   exceeds : mcaError (AffineLineGenerator F) C (δ : ℝ) > (ε_star : ENNReal)
 
@@ -254,7 +305,7 @@ noncomputable def toLowerWitness (R : GrandMCAResolution C ε_star) :
 /-- A resolution supplies an unsafe one-sided witness. -/
 noncomputable def toUpperWitness (R : GrandMCAResolution C ε_star) :
     MCAUpperWitness C ε_star :=
-  ⟨gridPt (ι := ι) (R.kStar + 1), R.above⟩
+  ⟨gridPt (ι := ι) (R.kStar + 1), gridPt_le_one (Nat.succ_le_iff.mpr R.lt_card), R.above⟩
 
 end GrandMCAResolution
 
@@ -284,17 +335,18 @@ theorem GrandMCAAnswer.toChallenge {C : LinearCode ι F} {ε_star : ℝ≥0}
 
 /-- MCA submission data at all prize rates, over an ordinary smooth-domain RS code. -/
 structure MCAPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain] : Type where
+  /-- The evaluation domain realizes all four prize rates exactly. -/
+  admissible : PrizeDomainAdmissible ι
   /-- Per-rate prize answers. -/
   answer : ∀ j : Fin 4,
     GrandMCAAnswer
-      (ReedSolomon.code domain
-        ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊)
+      (ReedSolomon.code domain (prizeDimension (ι := ι) j))
       (epsStar : ℝ≥0)
 
 /-- Complete per-rate MCA answers prove the logical prize proposition. -/
 theorem MCAPrizeResolution.toPrize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
     (R : MCAPrizeResolution domain) : mcaPrize domain :=
-  fun j => (R.answer j).toChallenge
+  ⟨R.admissible, fun j => (R.answer j).toChallenge⟩
 
 /-- A safe witness lies strictly below the unsafe edge of every resolution. -/
 theorem MCALowerWitness.lt_boundary {C : LinearCode ι F} {ε_star : ℝ≥0}
@@ -318,16 +370,17 @@ def MCALowerWitness.ofLe {C : LinearCode ι F} {ε_star δ : ℝ≥0}
     (h : mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal)) :
     MCALowerWitness C ε_star := ⟨δ, hδ, h⟩
 
-/-- Any canonical MCA lower bound gives an unsafe witness. -/
-def MCAUpperWitness.ofGt {C : LinearCode ι F} {ε_star δ : ℝ≥0}
+/-- Any canonical MCA lower bound at a unit-interval radius gives an unsafe witness. -/
+def MCAUpperWitness.ofGt {C : LinearCode ι F} {ε_star δ : ℝ≥0} (hδ : δ ≤ 1)
     (h : mcaError (AffineLineGenerator F) C (δ : ℝ) > (ε_star : ENNReal)) :
-    MCAUpperWitness C ε_star := ⟨δ, h⟩
+    MCAUpperWitness C ε_star := ⟨δ, hδ, h⟩
 
-/-- A CA lower bound gives an unsafe MCA witness via ABF26 Fact 4.5. -/
+/-- A CA lower bound at a unit-interval radius gives an unsafe MCA witness via ABF26 Fact 4.5. -/
 def MCAUpperWitness.ofEpsCAGt {C : LinearCode ι F} {ε_star δ : ℝ≥0}
+    (hδ : δ ≤ 1)
     (h : epsCA (F := F) (A := F) (C : Set (ι → F)) δ δ > (ε_star : ENNReal)) :
     MCAUpperWitness C ε_star :=
-  ⟨δ, lt_of_lt_of_le h (epsCA_le_mcaError_affineLine C δ)⟩
+  ⟨δ, hδ, lt_of_lt_of_le h (epsCA_le_mcaError_affineLine C δ)⟩
 
 /-! ## List-decoding boundary carriers -/
 
@@ -358,6 +411,8 @@ structure ListLowerWitness (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) wh
 structure ListUpperWitness (C : Set (ι → F)) (m : ℕ) (ε_star : ℝ≥0) where
   /-- Certified radius. -/
   δ : ℝ≥0
+  /-- The radius lies in `[0,1]`. -/
+  le_one : δ ≤ 1
   /-- The list-size bound is unsafe. -/
   exceeds : (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) >
     (ε_star : ENNReal) * (Fintype.card F : ENNReal)
@@ -368,6 +423,34 @@ theorem lambda_coe_mono {C : Set (ι → F)} {m : ℕ} {a b : ℝ≥0} (hab : a 
       (Code.Lambda (C ^⋈ (Fin m)) (b : ℝ) : ENNReal) := by
   have hr : (a : ℝ) ≤ (b : ℝ) := by exact_mod_cast hab
   exact_mod_cast Code.Lambda_mono (C := C ^⋈ (Fin m)) hr
+
+/-- `Lambda` is constant on equal integer-agreement floor cells. -/
+theorem lambda_eq_of_nnreal_floor_eq {B : Type} [DecidableEq B]
+    {C : Set (ι → B)} {δ δ' : ℝ≥0}
+    (h : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ =
+      ⌊δ' * (Fintype.card ι : ℝ≥0)⌋₊) :
+    Code.Lambda C (δ : ℝ) = Code.Lambda C (δ' : ℝ) := by
+  unfold Code.Lambda
+  apply iSup_congr
+  intro y
+  congr 1
+  ext c
+  rw [Code.mem_closeCodewordsRel_iff, Code.mem_closeCodewordsRel_iff]
+  apply and_congr_right
+  intro _
+  constructor
+  · intro hd
+    have hdnn : δᵣ(y, c) ≤ δ := by exact_mod_cast hd
+    rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
+    rw [h] at hdnn
+    rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
+    exact_mod_cast hdnn
+  · intro hd
+    have hdnn : δᵣ(y, c) ≤ δ' := by exact_mod_cast hd
+    rw [Code.pairRelDist_le_iff_pairDist_le] at hdnn
+    rw [← h] at hdnn
+    rw [← Code.pairRelDist_le_iff_pairDist_le] at hdnn
+    exact_mod_cast hdnn
 
 namespace GrandListResolution
 
@@ -386,6 +469,48 @@ theorem gt_of_gridPt (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
     (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) >
       (ε_star : ENNReal) * (Fintype.card F : ENNReal) :=
   lt_of_lt_of_le R.above (lambda_coe_mono hδ)
+
+/-- Exact safe half of the list-decoding boundary cell. -/
+theorem le_of_lt_next (R : GrandListResolution C m ε_star) {δ : ℝ≥0}
+    (hδ : δ < gridPt (ι := ι) (R.kStar + 1)) :
+    (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) ≤
+      (ε_star : ENNReal) * (Fintype.card F : ENNReal) := by
+  have hn : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by exact_mod_cast Fintype.card_pos
+  have hfloor : ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊ ≤ R.kStar := by
+    have hlt : δ * (Fintype.card ι : ℝ≥0) < ((R.kStar + 1 : ℕ) : ℝ≥0) := by
+      have h := hδ
+      rw [gridPt, lt_div_iff₀ hn] at h
+      exact h
+    have := (Nat.floor_lt (by positivity)).mpr hlt
+    omega
+  let j := ⌊δ * (Fintype.card ι : ℝ≥0)⌋₊
+  have hgrid : ⌊gridPt (ι := ι) j * (Fintype.card ι : ℝ≥0)⌋₊ = j := by
+    rw [gridPt_mul_card]
+    exact Nat.floor_natCast _
+  rw [lambda_eq_of_nnreal_floor_eq (C := C ^⋈ (Fin m)) hgrid.symm]
+  exact le_trans (lambda_coe_mono (gridPt_mono hfloor)) R.below
+
+/-- The list-decoding sublevel set is exactly the right-open interval ending at the unsafe grid
+point. -/
+theorem sublevel_iff (R : GrandListResolution C m ε_star) {δ : ℝ≥0} :
+    (Code.Lambda (C ^⋈ (Fin m)) (δ : ℝ) : ENNReal) ≤
+        (ε_star : ENNReal) * (Fintype.card F : ENNReal) ↔
+      δ < gridPt (ι := ι) (R.kStar + 1) := by
+  refine ⟨fun hle => ?_, R.le_of_lt_next⟩
+  by_contra hge
+  push Not at hge
+  exact absurd hle (not_le.mpr (R.gt_of_gridPt hge))
+
+/-- The adjacent-grid list-decoding boundary index is unique. -/
+theorem kStar_unique (R R' : GrandListResolution C m ε_star) : R.kStar = R'.kStar := by
+  rcases lt_trichotomy R.kStar R'.kStar with h | h | h
+  · exact absurd
+      (le_trans (lambda_coe_mono (gridPt_mono (by omega : R.kStar + 1 ≤ R'.kStar))) R'.below)
+      (not_le.mpr R.above)
+  · exact h
+  · exact absurd
+      (le_trans (lambda_coe_mono (gridPt_mono (by omega : R'.kStar + 1 ≤ R.kStar))) R.below)
+      (not_le.mpr R'.above)
 
 end GrandListResolution
 
@@ -417,17 +542,20 @@ theorem GrandListDecodingAnswer.toChallenge
 /-- List-decoding submission data at all prize rates. -/
 structure ListDecodingPrizeResolution (domain : ι ↪ F) [ReedSolomon.Smooth domain]
     (m : ℕ) : Type where
+  /-- The interleaving width is nonempty, as required by the cited list-size theorem. -/
+  m_pos : 0 < m
+  /-- The evaluation domain realizes all four prize rates exactly. -/
+  admissible : PrizeDomainAdmissible ι
   /-- Per-rate prize answers. -/
   answer : ∀ j : Fin 4,
     GrandListDecodingAnswer
-      (ReedSolomon.code domain
-        ⌊(prizeRates j : ℝ≥0) * (Fintype.card ι : ℝ≥0)⌋₊ : Set (ι → F))
+      (ReedSolomon.code domain (prizeDimension (ι := ι) j) : Set (ι → F))
       m (epsStar : ℝ≥0)
 
 /-- Complete per-rate list-decoding answers prove the logical prize proposition. -/
 theorem ListDecodingPrizeResolution.toPrize {domain : ι ↪ F} [ReedSolomon.Smooth domain]
     {m : ℕ} (R : ListDecodingPrizeResolution domain m) : listDecodingPrize domain m :=
-  fun j => (R.answer j).toChallenge
+  ⟨R.m_pos, R.admissible, fun j => (R.answer j).toChallenge⟩
 
 /-- A safe list witness lies strictly below the unsafe edge of every resolution. -/
 theorem ListLowerWitness.lt_boundary {C : Set (ι → F)} {m : ℕ} {ε_star : ℝ≥0}
