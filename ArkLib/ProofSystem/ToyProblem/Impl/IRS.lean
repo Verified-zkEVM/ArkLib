@@ -7,6 +7,7 @@ Authors: Alexander Hicks
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
 import ArkLib.ProofSystem.ToyProblem.Spec.ErasureDecoder
 import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 
 /-!
@@ -237,6 +238,74 @@ def oracleReductionIRS (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
       Spec.OutputStatement Spec.OutputOracleStatement Spec.OutputWitness
       (Spec.pSpec (ι := ι) (F := F) k t) :=
   Spec.oracleReduction (k := k) (t := t) (irsEncoder k s hdvd domain)
+
+/-- Construction 6.9 instantiated over the executable interleaved-RS
+alphabet.  Its output is a virtual oracle answered by querying both input
+codewords and taking their challenge-linear combination. -/
+def simplifiedOracleReductionIRS (k s : ℕ) :
+    OracleReduction (emptySpec.{0, 0})
+      (Spec.Statement (F := F) k)
+      (Spec.OracleStatement ι (Fin s → F))
+      (Spec.Witness (F := F) k)
+      (SimplifiedIOR.OutputStatement (F := F) k)
+      (SimplifiedIOR.OutputOracleStatement ι (Fin s → F))
+      (SimplifiedIOR.OutputWitness (F := F) k)
+      (SimplifiedIOR.pSpec (F := F)) :=
+  SimplifiedIOR.oracleReduction
+    (ι := ι) (F := F) (A := Fin s → F) (k := k)
+
+/-- Compatibility name for the bundled execution view of the executable
+interleaved-RS C6.9 reduction.  The composable protocol object is
+`simplifiedOracleReductionIRS`. -/
+def simplifiedReductionIRS (k s : ℕ) :
+    Reduction []ₒ
+      (Spec.Statement (F := F) k ×
+        (∀ i, Spec.OracleStatement ι (Fin s → F) i))
+      (Spec.Witness (F := F) k)
+      (SimplifiedIOR.OutputStatement (F := F) k ×
+        (∀ i, SimplifiedIOR.OutputOracleStatement ι (Fin s → F) i))
+      (SimplifiedIOR.OutputWitness (F := F) k)
+      (SimplifiedIOR.pSpec (F := F)) :=
+  SimplifiedIOR.reduction
+    (ι := ι) (F := F) (A := Fin s → F) (k := k)
+
+/-- Intermediate witness types for the executable C6.9 round-by-round
+extractor: a two-row input witness before `γ`, and the combined message after
+`γ`. -/
+def simplifiedIorRbrWitMid (k : ℕ) : Fin 2 → Type
+  | ⟨0, _⟩ => Spec.Witness (F := F) k
+  | ⟨1, _⟩ => SimplifiedIOR.OutputWitness (F := F) k
+
+/-- Named executable round-by-round extractor for C6.9 over interleaved RS.
+It erasure-decodes both input rows on the maximal agreement set selected by
+the exact combined output witness. -/
+def simplifiedIorRbrExtractor (k s : ℕ) (hdvd : s ∣ k)
+    (domain : ι ↪ F) :
+    Extractor.RoundByRound []ₒ
+      (Spec.Statement (F := F) k ×
+        (∀ i, Spec.OracleStatement ι (Fin s → F) i))
+      (Spec.Witness (F := F) k)
+      (SimplifiedIOR.OutputWitness (F := F) k)
+      (SimplifiedIOR.pSpec (F := F))
+      (simplifiedIorRbrWitMid (F := F) k) where
+  eqIn := rfl
+  extractMid
+  | ⟨0, _⟩ => fun stmtIn tr g ↦
+      irsTransitionExtractor k s hdvd domain stmtIn
+        (SimplifiedIOR.transcriptGamma (F := F) tr) g
+  extractOut := fun _ _ g ↦ g
+
+/-- Named executable straightline extractor for C6.9 over interleaved RS. -/
+def simplifiedIorStraightlineExtractor (k s : ℕ) (hdvd : s ∣ k)
+    (domain : ι ↪ F) :
+    Extractor.Straightline []ₒ
+      (Spec.Statement (F := F) k ×
+        (∀ i, Spec.OracleStatement ι (Fin s → F) i))
+      (Spec.Witness (F := F) k)
+      (SimplifiedIOR.OutputWitness (F := F) k)
+      (SimplifiedIOR.pSpec (F := F)) :=
+  SimplifiedIOR.transitionStraightlineExtractor k
+    (irsTransitionExtractor k s hdvd domain)
 
 /-- Intermediate witness types for the executable round-by-round extractor. -/
 def irsRbrWitMid (k : ℕ) : Fin 4 → Type
@@ -590,6 +659,192 @@ theorem irs_exact_gamma_failure_sample_le [SampleableType F] [Nonempty ι]
   rw [probEvent_uniformSample_eq_prob_uniformOfFintype,
     coe_irsCertifiedGammaError]
   exact irs_exact_gamma_failure_prob_le k s hdvd domain hfull δ hδ stmtIn
+
+/-- Public exact-extractor game theorem for C6.9 over executable interleaved
+RS.  The proposition names `simplifiedIorStraightlineExtractor`, whose
+algorithm erasure-decodes both input rows from the challenge and the claimed
+combined message. -/
+theorem simplifiedOracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).knowledgeSoundnessWith
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (simplifiedIorStraightlineExtractor k s hdvd domain)
+        (irsCertifiedGammaError k s domain δ) := by
+  apply SimplifiedIOR.knowledgeSoundWith_of_gamma_bound
+    (k := k) init impl δ (irsCertifiedGammaError k s domain δ)
+      (irsEncoder k s hdvd domain)
+      (irsTransitionExtractor k s hdvd domain)
+  intro stmtIn
+  exact irs_exact_gamma_failure_sample_le
+    k s hdvd domain hfull δ hδ stmtIn
+
+set_option linter.unusedDecidableInType false in
+/-- Existential C6.9 knowledge soundness, retained as a corollary of the
+public exact straightline-extractor theorem. -/
+theorem simplifiedOracleVerifier_knowledgeSoundness_irs
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).knowledgeSoundness
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (irsCertifiedGammaError k s domain δ) := by
+  exact OracleVerifier.knowledgeSoundness_of_with init impl
+    (simplifiedOracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor
+      k s hdvd domain hfull δ hδ init impl)
+
+/-- Knowledge-state function paired with the exact executable C6.9 extractor.
+The final state is the combined-message relation, expressed as the same
+`gammaState` used by the exact IRS failure event. -/
+noncomputable def simplifiedIorRbrKSF (k s : ℕ) (hdvd : s ∣ k)
+    (domain : ι ↪ F) (δ : ℝ≥0)
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ((SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).toVerifier).KnowledgeStateFunction
+      init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+      (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+      (simplifiedIorRbrExtractor k s hdvd domain) where
+  toFun
+  | ⟨0, _⟩ => fun stmtIn _ w ↦
+      (stmtIn, w) ∈ Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ
+  | ⟨1, _⟩ => fun stmtIn tr g ↦
+      Spec.gammaState k (irsEncoder k s hdvd domain) δ
+        stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+        (stmtIn.2 0) (stmtIn.2 1)
+        (SimplifiedIOR.transcriptGamma (F := F) tr) g
+  toFun_empty := fun _ _ ↦ Iff.rfl
+  toFun_next := fun m ↦ match m with
+    | ⟨0, _⟩ => fun hDir ↦ absurd hDir (fun h ↦ Direction.noConfusion h)
+  toFun_full := fun stmtIn tr witOut h ↦
+    SimplifiedIOR.outputRelation_of_probEvent_pos_oracleVerifier_run
+      (k := k) init impl (irsEncoder k s hdvd domain) δ stmtIn tr witOut h
+
+/-- Worst-case round-by-round knowledge soundness for C6.9, naming the exact
+executable IRS extractor and its knowledge-state function in the public
+theorem type.  This is the deterministic Definition A.5 contract used by
+Lemma 6.10. -/
+theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ((SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F)
+      (k := k)).toVerifier).rbrKnowledgeSoundnessWorstCaseWith
+        (WitIn := Spec.Witness (F := F) k)
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (simplifiedIorRbrWitMid (F := F) k)
+        (simplifiedIorRbrExtractor k s hdvd domain)
+        (simplifiedIorRbrKSF k s hdvd domain δ init impl)
+        (fun _ ↦ irsCertifiedGammaError k s domain δ) := by
+  classical
+  unfold Verifier.rbrKnowledgeSoundnessWorstCaseWith
+  intro stmtIn i transcript
+  obtain ⟨⟨iv, hi⟩, _hdir⟩ := i
+  rcases iv with _ | iv
+  · change Pr[ IRSExactGammaFailure k s hdvd domain δ stmtIn | $ᵗ F] ≤
+      (irsCertifiedGammaError k s domain δ : ENNReal)
+    exact irs_exact_gamma_failure_sample_le
+      k s hdvd domain hfull δ hδ stmtIn
+  · exact absurd hi (by omega)
+
+/-- Averaged C6.9 round-by-round knowledge soundness for the same exact
+executable extractor, derived from the worst-case-prefix theorem. -/
+theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_irsRbrExtractor
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).rbrKnowledgeSoundnessWith
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (simplifiedIorRbrWitMid (F := F) k)
+        (simplifiedIorRbrExtractor k s hdvd domain)
+        (simplifiedIorRbrKSF k s hdvd domain δ init impl)
+        (fun _ ↦ irsCertifiedGammaError k s domain δ) := by
+  unfold OracleVerifier.rbrKnowledgeSoundnessWith
+  exact Verifier.rbrKnowledgeSoundnessWorstCaseWith_implies_rbrKnowledgeSoundnessWith
+    init impl
+    (simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
+      k s hdvd domain hfull δ hδ init impl)
+
+set_option linter.unusedDecidableInType false in
+/-- Existential worst-case C6.9 RBR knowledge soundness, retained only as a
+corollary of the exact-object theorem. -/
+theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ((SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).toVerifier).rbrKnowledgeSoundnessWorstCase
+        (WitIn := Spec.Witness (F := F) k)
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (fun _ ↦ irsCertifiedGammaError k s domain δ) := by
+  classical
+  rw [Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with]
+  exact ⟨simplifiedIorRbrWitMid (F := F) k,
+    simplifiedIorRbrExtractor k s hdvd domain,
+    simplifiedIorRbrKSF k s hdvd domain δ init impl,
+    simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
+      k s hdvd domain hfull δ hδ init impl⟩
+
+set_option linter.unusedDecidableInType false in
+/-- Existential averaged C6.9 RBR knowledge soundness, retained only as a
+corollary of the exact-object theorem. -/
+theorem simplifiedOracleVerifier_rbrKnowledgeSoundness_irs
+    [SampleableType F] [Nonempty ι]
+    (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (SimplifiedIOR.oracleVerifier
+      (ι := ι) (F := F) (A := Fin s → F) (k := k)).rbrKnowledgeSoundness
+        (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+        init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (SimplifiedIOR.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+        (fun _ ↦ irsCertifiedGammaError k s domain δ) := by
+  classical
+  unfold OracleVerifier.rbrKnowledgeSoundness
+  rw [Verifier.rbrKnowledgeSoundness_iff_exists_with]
+  exact ⟨simplifiedIorRbrWitMid (F := F) k,
+    simplifiedIorRbrExtractor k s hdvd domain,
+    simplifiedIorRbrKSF k s hdvd domain δ init impl,
+    simplifiedOracleVerifier_rbrKnowledgeSoundnessWith_irsRbrExtractor
+      k s hdvd domain hfull δ hδ init impl⟩
 
 /-- Knowledge-state function paired with the executable interleaved-RS
 round-by-round extractor.  This is proof-side data; the extractor itself remains

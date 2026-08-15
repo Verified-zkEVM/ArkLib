@@ -55,6 +55,16 @@ def irsRbrExtractorProbe := @Impl.IRS.irsRbrExtractor
 /-- Out-of-section probe for the exact straightline extractor. -/
 def irsStraightlineExtractorProbe := @Impl.IRS.irsStraightlineExtractor
 
+/-- Out-of-section probe for the C6.9 virtual output-oracle implementation. -/
+def simplifiedOutputSimulationProbe := @SimplifiedIOR.outputSimulation
+
+/-- Out-of-section probe for the C6.9 round-by-round extractor. -/
+def simplifiedIorRbrExtractorProbe := @Impl.IRS.simplifiedIorRbrExtractor
+
+/-- Out-of-section probe for the C6.9 exact straightline extractor. -/
+def simplifiedIorStraightlineExtractorProbe :=
+  @Impl.IRS.simplifiedIorStraightlineExtractor
+
 assert_toy_ir KoalaBear.sampleExt6
 assert_toy_ir KoalaBear.sampleableTypeExt6
 assert_toy_ir Impl.IRS.irsUnflatten
@@ -65,5 +75,8 @@ assert_toy_ir Impl.IRS.irsErasureDecodeOrZero
 assert_toy_ir Impl.IRS.irsTransitionExtractor
 assert_toy_ir Impl.IRS.irsRbrExtractor
 assert_toy_ir Impl.IRS.irsStraightlineExtractor
+assert_toy_ir SimplifiedIOR.outputSimulation
+assert_toy_ir Impl.IRS.simplifiedIorRbrExtractor
+assert_toy_ir Impl.IRS.simplifiedIorStraightlineExtractor
 
 end ToyProblem.Codegen

@@ -14,7 +14,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
-  for KoalaBear sextic arithmetic and the executable interleaved-RS extraction path
+  for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
+  output-oracle and exact-extractor paths
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting

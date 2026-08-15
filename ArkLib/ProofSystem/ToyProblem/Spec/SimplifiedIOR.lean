@@ -43,13 +43,14 @@ The new instance lies in `R̃¹_{C,δ}` iff the original lay in
 
 ## Codeword alphabet `A` (folding-generic)
 
-As in `Spec/General.lean`: generic over the codeword alphabet `A` (an
-`F`-module), with `A = F` the scalar `s = 1` interleaved case
-(`Impl/IRS.lean`) and `A = Fin s → F` the genuine `s > 1` folded case
-(`Impl/FRS.lean`). The relative Hamming metric is over `A` (one symbol =
-one `A`-coordinate), the right folded metric — `ι := [n] × [s]` over a
-scalar alphabet would not recover it. The challenge `γ` and constraints
-stay scalar; the combined output oracle is `f₁ + γ • f₂` over `A`.
+As in `Spec/General.lean`, this layer is generic over the codeword
+alphabet `A` (an `F`-module). The scalar specialization is `A = F`.
+`Impl/IRS.lean` realizes genuine interleaved Reed--Solomon with
+`A = Fin s → F`, while `Impl/FRS.lean` is the separate folded-RS model.
+The relative Hamming metric is over `A` (one symbol = one
+`A`-coordinate); reindexing `ι := [n] × [s]` over a scalar alphabet would
+not recover that column metric. The challenge `γ` and constraints stay
+scalar; the combined output oracle is `f₁ + γ • f₂` over `A`.
 
 ## References
 
@@ -66,6 +67,15 @@ open Code InterleavedCode ProximityGap
 open scoped NNReal ENNReal
 open Probability
 open ToyProblem.Spec (Statement OracleStatement Witness)
+
+lemma simulateQ_optionT_pure {iota : Type}
+    {oSpec : OracleSpec iota} {M : Type → Type}
+    [Monad M] [LawfulMonad M] (impl : QueryImpl oSpec M) {X : Type} (x : X) :
+    simulateQ impl (pure x : OptionT (OracleComp oSpec) X) =
+      (pure x : OptionT M X) := by
+  apply OptionT.ext
+  change simulateQ impl (pure (some x)) = pure (some x)
+  exact simulateQ_pure impl (some x)
 
 -- The code-theoretic certificate uses `[Fintype A]`/`[DecidableEq A]`
 -- (and `[DecidableEq F]` via the `classical` proofs) in their bodies but not in the
@@ -91,7 +101,7 @@ constraint). -/
 def OutputStatement : Type := (Fin k → F) × F
 
 /-- Output oracle statement: the single combined codeword
-`f_new := f₁ + γ·f₂ : ι → F`. -/
+`f_new := f₁ + γ • f₂ : ι → A`. -/
 @[reducible]
 def OutputOracleStatement (ι A : Type) : Fin 1 → Type := fun _ ↦ ι → A
 
@@ -196,48 +206,193 @@ def reduction :
   prover := prover (ι := ι) (F := F) (k := k)
   verifier := verifier (k := k)
 
-/-! ### Why there is no `OracleReduction` flavour for Construction 6.9
+/-! ### Genuine virtual-oracle IOR
 
-C6.9 maps the input oracle pair `(f₁, f₂)` to a **combined** output
-oracle `f_new := f₁ + γ·f₂`. ArkLib's current `OracleVerifier`
-framework (`ArkLib/OracleReduction/Basic.lean :: OracleVerifier`) only
-allows the output oracle family to be a *subset* of the input oracles
-plus prover messages, specified via the `embed : ιₛₒ ↪ ιₛᵢ ⊕
-pSpec.MessageIdx` field. Concretely, `OracleVerifier.toVerifier`
-reads `OStmtOut i` *verbatim* from `embed`, not from the `verify`
-body's `OracleComp`.
+Construction 6.9's output oracle is derived rather than forwarded. The
+`OracleOutputSimulation` below gives both views required by ArkLib:
 
-There is therefore no way, within the current framework, to declare
-an output oracle whose contents are a `γ`-dependent linear combination
-of the inputs. The concrete prerequisite is **`simOStmt`-based virtual
-output oracles**: a refactor sketched in
-[`OracleReduction/Basic.lean`](../../OracleReduction/Basic.lean) at
-lines 278 and 293 (`simOStmt : QueryImpl [OStmtOut]ₒ
-(OracleComp ([OStmtIn]ₒ + [pSpec.Message]ₒ))`), under which the output
-oracle `f_new` would be *simulated* by querying `f₁, f₂` and combining.
-Once that lands, a C6.9 oracle flavour can be added back here.
+* `materialize` supplies the extensional function used by relation-facing
+  bundled semantics;
+* `simOStmt` answers each downstream query by querying both input oracles at
+  that point and returning their `γ`-linear combination.
 
-Until then, the bundled-input non-oracle `reduction` above captures
-the full protocol semantics, and C6.9 as formalized is sound for the
-**standalone** statements L6.10 (`simplifiedIOR_knowledgeSound`), L6.12
-and L6.13 (`Leaderboard.lean`) — but it is **not composable as an IOR**:
-sequential composition with a downstream oracle reduction (which would
-consume `f_new` as an input *oracle*) requires the oracle flavour, hence
-the `simOStmt` refactor. Downstream IRS instantiations
-(`ToyProblem/Impl/IRS.lean :: simplifiedReductionIRS`) consume the
-bundled `reduction` directly and are unaffected. -/
+The agreement field proves these are the same oracle. -/
 
-/-! ### Lemma 6.10 assembly — γ-round bound and game-shape reduction.
+/-- Query an input codeword at one coordinate in the full verifier oracle
+context. -/
+def queryInput {n : ℕ} (pSpec : ProtocolSpec n)
+    [∀ i, OracleInterface (pSpec.Message i)] (i : Fin 2) (x : ι) :
+    OracleComp ([]ₒ + ([OracleStatement ι A]ₒ + [pSpec.Message]ₒ)) A :=
+  liftM <| OracleSpec.query
+    (show ([]ₒ + ([OracleStatement ι A]ₒ + [pSpec.Message]ₒ)).Domain from
+      Sum.inr (Sum.inl ⟨i, x⟩))
 
-The L6.10 game is the single-round analogue of the L6.8 γ-round
-(`Spec/General.lean :: gamma_round_game_bound`): the extractor is the same
-classical choice `Spec.extractZero`, and the mathematical content is the same
-`ToyProblem.gamma_transition_prob_le`. What is new is the game-shape
-reduction: the plain knowledge-soundness game wraps the challenge draw inside
-`Reduction.runWithLog`, so we peel the logging (the extractor here ignores
-the query logs) and the always-accepting pure verifier to reach the
-challenge-first shape consumed by
-`ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. -/
+omit [Fintype ι] [AddCommGroup A] [DecidableEq ι] [Fintype A] [DecidableEq A] in
+@[simp]
+theorem simulateQ_queryInput {n : ℕ} (pSpec : ProtocolSpec n)
+    [∀ i, OracleInterface (pSpec.Message i)]
+    (oStmt : ∀ i, OracleStatement ι A i) (messages : pSpec.Messages)
+    (i : Fin 2) (x : ι) :
+    simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
+        (queryInput (A := A) pSpec i x) = pure (oStmt i x) := by
+  simp only [MessageIdx, Message, OracleInterface.simOracle2, QueryImpl.addLift,
+    queryInput, Lean.Elab.WF.paramLet, simulateQ_query, OracleQuery.input_query,
+    add_apply_inr, add_apply_inl, OracleQuery.cont_query, QueryImpl.add_apply_inr,
+    QueryImpl.liftTarget_apply]
+  change id <$> (pure (oStmt i x) : OracleComp []ₒ A) = pure (oStmt i x)
+  simp only [map_pure, id_eq]
+
+/-- Virtual implementation of the combined C6.9 output oracle. -/
+def outputSimulation :
+    OracleOutputSimulation []ₒ
+      (Statement (F := F) k) (OracleStatement ι A)
+      (OutputOracleStatement ι A) (pSpec (F := F)) where
+  outputInterface := fun _ ↦ inferInstance
+  materialize := fun _ challenges oStmt _ _ j ↦
+    let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
+    oStmt 0 j + γ • oStmt 1 j
+  simOStmt := fun _ challenges q ↦ do
+    let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
+    let f₀ : A ← queryInput (A := A) (pSpec (F := F)) 0 q.2
+    let f₁ : A ← queryInput (A := A) (pSpec (F := F)) 1 q.2
+    pure (f₀ + γ • f₁)
+  simOStmt_eq := by
+    intro stmt challenges oStmt messages q
+    rcases q with ⟨i, j⟩
+    fin_cases i
+    rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
+    rw [simulateQ_bind, simulateQ_queryInput, pure_bind, simulateQ_pure]
+    rfl
+
+/-- Honest prover at the oracle-reduction signature. -/
+def oracleProver :
+    OracleProver []ₒ
+      (Statement (F := F) k) (OracleStatement ι A) (Witness (F := F) k)
+      (OutputStatement (F := F) k) (OutputOracleStatement ι A)
+      (OutputWitness (F := F) k) (pSpec (F := F)) :=
+  prover (ι := ι) (F := F) (k := k)
+
+/-- Oracle verifier for Construction 6.9. The explicit output is the combined
+linear claim; the output codeword is supplied by `outputSimulation`. -/
+def oracleVerifier :
+    OracleVerifier []ₒ
+      (Statement (F := F) k) (OracleStatement ι A)
+      (OutputStatement (F := F) k) (OutputOracleStatement ι A)
+      (pSpec (F := F)) where
+  verify := fun stmt challenges ↦ do
+    let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
+    pure (stmt.1, stmt.2.1 + γ * stmt.2.2)
+  -- Compatibility fallback; virtual semantics overrides this projection.
+  embed := ⟨fun _ ↦ Sum.inl (0 : Fin 2), by
+    intro i j _
+    exact Subsingleton.elim i j⟩
+  hEq := fun _ ↦ rfl
+  outputSimulation := some (outputSimulation (ι := ι) (F := F) (A := A) k)
+
+/-- Construction 6.9 as a genuine interactive oracle reduction. -/
+def oracleReduction :
+    OracleReduction []ₒ
+      (Statement (F := F) k) (OracleStatement ι A) (Witness (F := F) k)
+      (OutputStatement (F := F) k) (OutputOracleStatement ι A)
+      (OutputWitness (F := F) k) (pSpec (F := F)) where
+  prover := oracleProver (ι := ι) (F := F) (k := k)
+  verifier := oracleVerifier (ι := ι) (F := F) (A := A) (k := k)
+
+/-- The unique C6.9 verifier challenge in a full transcript. -/
+def transcriptGamma (tr : (pSpec (F := F)).FullTranscript) : F :=
+  tr.challenges ⟨⟨0, by decide⟩, by rfl⟩
+
+/-- The explicit statement and extensional virtual oracle derived by C6.9. -/
+def derivedOutput
+    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
+    (γ : F) : OutputStatement (F := F) k ×
+      (∀ i, OutputOracleStatement ι A i) :=
+  ((stmtIn.1.1, stmtIn.1.2.1 + γ * stmtIn.1.2.2),
+    fun _ j ↦ stmtIn.2 0 j + γ • stmtIn.2 1 j)
+
+/-- Turn a deterministic C6.9 transition algorithm into the straightline
+extractor shape used by ArkLib's exact-extractor game. -/
+def transitionStraightlineExtractor
+    (transition :
+      (Statement (F := F) k × (∀ i, OracleStatement ι A i)) →
+        F → (Fin k → F) → Witness (F := F) k) :
+    Extractor.Straightline []ₒ
+      (Statement (F := F) k × (∀ i, OracleStatement ι A i))
+      (Witness (F := F) k) (OutputWitness (F := F) k)
+      (pSpec (F := F)) :=
+  fun stmtIn g tr _ _ ↦ pure <|
+    transition stmtIn (transcriptGamma (F := F) tr) g
+
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F]
+    [Fintype A] [DecidableEq A] in
+@[simp]
+theorem oracleVerifier_toVerifier_run_eq_pure
+    (stmtIn : Statement (F := F) k ×
+      (∀ i, OracleStatement ι A i))
+    (tr : (pSpec (F := F)).FullTranscript) :
+    ((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
+        stmtIn tr =
+      pure (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
+        (transcriptGamma (F := F) tr)) := by
+  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier,
+    outputSimulation, transcriptGamma, derivedOutput, bind_pure_comp]
+  erw [simulateQ_optionT_pure
+    (OracleInterface.simOracle2 []ₒ stmtIn.2 tr.messages)
+    (stmtIn.1.1, stmtIn.1.2.1 +
+      transcriptGamma (F := F) tr * stmtIn.1.2.2)]
+  rfl
+
+set_option linter.unusedSectionVars false in
+/-- The bundled security view of the virtual-oracle verifier is extensionally
+the original materialized C6.9 verifier. -/
+theorem oracleVerifier_toVerifier_eq_verifier :
+    (oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier =
+      verifier (ι := ι) (F := F) (A := A) (k := k) := by
+  ext stmtIn tr
+  exact oracleVerifier_toVerifier_run_eq_pure (k := k) stmtIn tr
+
+set_option linter.unusedSectionVars false in
+/-- Positive probability of producing an output related to `witOut` forces the
+deterministic C6.9 derived output itself to be related to `witOut`. -/
+theorem outputRelation_of_probEvent_pos_oracleVerifier_run
+    {X : Type} (init : ProbComp X)
+    (impl : QueryImpl []ₒ (StateT X ProbComp))
+    (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
+    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
+    (tr : (pSpec (F := F)).FullTranscript)
+    (witOut : OutputWitness (F := F) k)
+    (h : Pr[ fun stmtOut ↦ (stmtOut, witOut) ∈ outputRelationFor k encode δ
+      | OptionT.mk do
+          (simulateQ impl
+            (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
+              stmtIn tr)).run' (← init)] > 0) :
+    (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
+      (transcriptGamma (F := F) tr), witOut) ∈ outputRelationFor k encode δ := by
+  have hrun (s : X) :
+      (simulateQ impl
+        (((oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).toVerifier).run
+          stmtIn tr)).run' s =
+        (pure (some (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
+          (transcriptGamma (F := F) tr))) : ProbComp _) := by
+    rw [oracleVerifier_toVerifier_run_eq_pure]
+    rw [simulateQ_optionT_pure]
+    rfl
+  rw [gt_iff_lt, probEvent_pos_iff] at h
+  obtain ⟨stmtOut, hmem, hrel⟩ := h
+  obtain ⟨s₀, -, hmem⟩ := OptionT.mem_support_bind_mk init _ hmem
+  rw [OptionT.mem_support_iff] at hmem
+  rw [hrun] at hmem
+  simp only [OptionT.run_mk, support_pure, Set.mem_singleton_iff,
+    Option.some.injEq] at hmem
+  rwa [hmem] at hrel
+
+/-! ### Knowledge-soundness assembly
+
+`knowledgeSoundWith_of_gamma_bound` is the principal assembly: it keeps a
+deterministic transition extractor in the game type and applies equally to
+the virtual-oracle verifier. `gamma_game_bound` and
+`simplifiedIOR_knowledgeSound` retain the older alphabet-generic
+classical-choice existence result as a compatibility fallback. -/
 
 omit [DecidableEq ι] in
 /-- The L6.10 γ-round bound ([ABF26] §6.4, via
@@ -300,36 +455,87 @@ private lemma gamma_game_bound [SampleableType F] [Nonempty ι]
         (le_of_eq ?_)
       rw [coe_certifiedGammaError]
 
+set_option linter.unusedSectionVars false in
+/-- Exact-extractor C6.9 knowledge-soundness assembly.  Any deterministic
+transition algorithm whose challenge failure event has probability at most
+`gammaError` yields a straightline game theorem that keeps that algorithm in
+the proposition type. -/
+theorem knowledgeSoundWith_of_gamma_bound
+    [SampleableType F]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (δ gammaError : ℝ≥0)
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (transition :
+      (Statement (F := F) k × (∀ i, OracleStatement ι A i)) →
+        F → (Fin k → F) → Witness (F := F) k)
+    (hgamma : ∀ stmtIn,
+      Pr[ fun γ : F ↦ ∃ g : Fin k → F,
+          (stmtIn, transition stmtIn γ g) ∉
+              Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
+            Spec.gammaState k (encode : (Fin k → F) → (ι → A)) δ
+              stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+              (stmtIn.2 0) (stmtIn.2 1) γ g
+        | $ᵗ F] ≤ (gammaError : ENNReal)) :
+    (oracleVerifier (ι := ι) (F := F) (A := A) (k := k)).knowledgeSoundnessWith
+      (WitOut := OutputWitness (F := F) k)
+      init impl
+      (Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (transitionStraightlineExtractor k transition) gammaError := by
+  classical
+  unfold OracleVerifier.knowledgeSoundnessWith
+  rw [oracleVerifier_toVerifier_eq_verifier (k := k)]
+  unfold Verifier.knowledgeSoundnessWith
+  rintro ⟨stmt, oStmt⟩ witIn prover
+  refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le
+    init impl _ ⟨0, rfl⟩
+    (fun γ ↦ (liftComp (prover.receiveChallenge ⟨0, rfl⟩
+        (prover.input ((stmt, oStmt), witIn))) ([]ₒ + [(pSpec (F := F)).Challenge]ₒ))
+      >>= fun fc ↦ prover.output (fc γ))
+    (fun (γ : F) t ↦ ((stmt, oStmt),
+      some (transition (stmt, oStmt) γ t.2),
+      ((stmt.1, stmt.2.1 + γ * stmt.2.2),
+        (fun _ j ↦ oStmt 0 j + γ • oStmt 1 j :
+          ∀ i, OutputOracleStatement ι A i)),
+      t.2))
+    _ ?_ ?_
+  · simp only [Reduction.runWithLog, Verifier.run, verifier,
+      transitionStraightlineExtractor, Prover.runWithLog,
+      OptionT.run_pure, liftM_pure, pure_bind, bind_assoc]
+    simp only [loggingOracle.run_simulateQ_optionT_pure, liftM_pure, pure_bind,
+      Option.getM_some]
+    simp only [OptionT.liftM_def, bind_pure_comp]
+    simp only [OptionT.run_map, OptionT.run_lift, bind_pure_comp, Functor.map_map,
+      Option.map_some]
+    refine Eq.trans (loggingOracle.map_fst_run_simulateQ
+      (Prover.run (stmt, oStmt) witIn prover)
+      (fun y : (pSpec (F := F)).FullTranscript ×
+          ((OutputStatement (F := F) k × (∀ i, OutputOracleStatement ι A i)) ×
+            OutputWitness (F := F) k) ↦
+        let γ : F := y.1 ⟨0, Nat.one_pos⟩
+        some ((stmt, oStmt), some (transition (stmt, oStmt) γ y.2.2),
+          ((stmt.1, stmt.2.1 + γ * stmt.2.2),
+            fun _ j ↦ oStmt 0 j + γ • oStmt 1 j),
+          y.2.2))) ?_
+    rw [Prover.run_of_verifier_first]
+    simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+    rfl
+  · refine le_trans ?_ (hgamma (stmt, oStmt))
+    refine probEvent_mono ?_
+    rintro γ - ⟨t, hbad, hrel⟩
+    exact ⟨t.2, hbad _ rfl, hrel⟩
+
 omit [DecidableEq ι] in
-/-- **Lemma 6.10 of [ABF26]** (knowledge soundness of Construction 6.9).
+/-- Legacy alphabet-generic straightline knowledge-soundness existence
+theorem for C6.9. It uses the noncomputable `Spec.extractZero` selector and
+therefore is not the deterministic round-by-round Definition A.5 result.
 
-For any `δ ∈ (0, δ_min(C))` and fixed injective linear encoder with
-range `C` (injectivity is implicit in the paper's encoding map and
-load-bearing for the extractor's per-list-pair counting),
-the simplified IOR has knowledge soundness (paper Def A.5) from
-`R̃²_{C,δ}` to `R̃¹_{C,δ}` with error
-
-  `ε_mca(C, δ) + |Λ(C^{≡2}, δ)| / |F|`.
-
-Note the cleaner error term compared with L6.6: there's no `(1-δ)^t`
-spot-check term because C6.9 has no spot-check round.
-
-The `(Lambda …).toNat` in the error term is faithful: `Lambda` is never
-`⊤` over a finite alphabet (`Code.Lambda_ne_top`).
-
-The proof is the "1-round version"
-of L6.8 ([ABF26] §6.4: "easy to see by adapting Lemma 6.8"): the
-straightline extractor is the same classical choice `Spec.extractZero`
-(always-`some` — under the post-PR-#569 game, extraction failure scores
-against the prover, so an always-`some` extractor is strictly stronger),
-and the γ-round mathematical content is the same
-`ToyProblem.gamma_transition_prob_le` (via `gamma_game_bound` above).
-The game-shape reduction peels the query logs
-(`loggingOracle.map_fst_run_simulateQ` — the extractor ignores them) and
-the always-accepting pure verifier
-(`loggingOracle.run_simulateQ_optionT_pure`), exposing the
-challenge-first shape consumed by the master mixture lemma
-`ProtocolSpec.probEvent_optionT_simulateQ_addLift_getChallenge_bind_some_le`. -/
+The paper-facing executable Lemma 6.10 contracts are
+`Impl.IRS.simplifiedOracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor`
+and
+`Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor`;
+existential knowledge soundness is a corollary there. -/
 theorem simplifiedIOR_knowledgeSound
     [SampleableType F] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)

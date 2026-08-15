@@ -73,6 +73,52 @@ def extractStraightline : Option (ToyProblem.Spec.Witness (F := TestField) 4) :=
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))).run
 
+/-- The complete one-round C6.9 transcript. -/
+def simplifiedTranscript :
+    (ToyProblem.SimplifiedIOR.pSpec (F := TestField)).FullTranscript :=
+  fun i ↦ match i with
+    | ⟨0, _⟩ => gamma
+
+/-- Run the exact C6.9 straightline extractor named by its public game theorem. -/
+def extractSimplifiedStraightline :
+    Option (ToyProblem.Spec.Witness (F := TestField) 4) :=
+  runEmptyOracleComp <|
+    (simplifiedIorStraightlineExtractor 4 2 two_dvd_four testDomain
+      inputStatement combinedMessage simplifiedTranscript
+        ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))
+        ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))).run
+
+/-- Run the exact C6.9 round-by-round transition extractor. -/
+def extractSimplifiedRbr : ToyProblem.Spec.Witness (F := TestField) 4 :=
+  let extractor : Extractor.RoundByRound (emptySpec.{0, 0})
+      (ToyProblem.Spec.Statement (F := TestField) 4 ×
+        (∀ i, ToyProblem.Spec.OracleStatement
+          (Fin 4) (Fin 2 → TestField) i))
+      (ToyProblem.Spec.Witness (F := TestField) 4)
+      (ToyProblem.SimplifiedIOR.OutputWitness (F := TestField) 4)
+      (ToyProblem.SimplifiedIOR.pSpec (F := TestField))
+      (simplifiedIorRbrWitMid (F := TestField) 4) :=
+    simplifiedIorRbrExtractor 4 2 two_dvd_four testDomain
+  extractor.extractMid 0 inputStatement simplifiedTranscript combinedMessage
+
+/-- Query the C6.9 derived output through its VCV virtual-oracle implementation. -/
+def querySimplifiedOutput (j : Fin 4) : Fin 2 → TestField :=
+  let simulation : OracleOutputSimulation.{0, 0} (emptySpec.{0, 0})
+      (ToyProblem.Spec.Statement (F := TestField) 4)
+      (ToyProblem.Spec.OracleStatement (Fin 4) (Fin 2 → TestField))
+      (ToyProblem.SimplifiedIOR.OutputOracleStatement
+        (Fin 4) (Fin 2 → TestField))
+      (ToyProblem.SimplifiedIOR.pSpec (F := TestField)) :=
+    ToyProblem.SimplifiedIOR.outputSimulation
+      (ι := Fin 4) (F := TestField) (A := Fin 2 → TestField) 4
+  letI := simulation.outputInterface
+  runEmptyOracleComp <|
+    simulateQ
+      (OracleInterface.simOracle2 (emptySpec.{0, 0}) inputStatement.2
+        simplifiedTranscript.messages)
+      (simulation.simOStmt inputStatement.1 simplifiedTranscript.challenges
+        ⟨0, j⟩)
+
 def fieldArithmeticPasses : Bool :=
   let x : KoalaBear.Ext6 := CompPoly.Extension.Ext.ofFn fun i ↦ (i.val + 1 : ℕ)
   let y : KoalaBear.Ext6 := CompPoly.Extension.Ext.ofFn fun i ↦ (2 * i.val + 3 : ℕ)
@@ -103,6 +149,20 @@ def straightlinePasses : Bool :=
   | some extracted => extracted 0 == messageOne && extracted 1 == messageTwo
   | none => false
 
+def simplifiedStraightlinePasses : Bool :=
+  match extractSimplifiedStraightline with
+  | some extracted => extracted 0 == messageOne && extracted 1 == messageTwo
+  | none => false
+
+def simplifiedRbrPasses : Bool :=
+  extractSimplifiedRbr 0 == messageOne && extractSimplifiedRbr 1 == messageTwo
+
+def simplifiedVirtualOutputPasses : Bool :=
+  querySimplifiedOutput 0 == encodedOne 0 + gamma • encodedTwo 0 &&
+  querySimplifiedOutput 1 == encodedOne 1 + gamma • encodedTwo 1 &&
+  querySimplifiedOutput 2 == encodedOne 2 + gamma • encodedTwo 2 &&
+  querySimplifiedOutput 3 == encodedOne 3 + gamma • encodedTwo 3
+
 def check (name : String) (ok : Bool) : IO Unit :=
   unless ok do throw <| IO.userError s!"toy-problem runtime check failed: {name}"
 
@@ -113,6 +173,9 @@ def run : IO Unit := do
   check "dynamic agreement extraction" transitionPasses
   check "rejected dynamic agreement" rejectedTransitionPasses
   check "named straightline extractor" straightlinePasses
+  check "C6.9 named straightline extractor" simplifiedStraightlinePasses
+  check "C6.9 named RBR extractor" simplifiedRbrPasses
+  check "C6.9 virtual output oracle" simplifiedVirtualOutputPasses
   IO.println "toy-problem runtime checks passed"
 
 end ToyProblemRuntime

@@ -51,7 +51,7 @@ both the L6.8 and L6.6 proofs.
 ## Protocol description
 
 The verifier holds an explicit input `(v, μ₁, μ₂)` and has oracle
-access to two purported codewords `f₁, f₂ : ι → F`. The protocol runs:
+access to two purported codewords `f₁, f₂ : ι → A`. The protocol runs:
 
   1. **Combination randomness** (V → P): the verifier sends `γ ←$ F`.
   2. **Prover claim** (P → V): the prover sends `g : Fin k → F`. In the
@@ -90,19 +90,19 @@ How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
 
 ## Codeword alphabet `A` (folding-generic)
 
-The paper's Construction 6.1/6.2 inputs are `f : [n] → F^s` for a folding
-parameter `s` (and the §6.3 tables sweep `s = 2^0, …, 2^12`). This
-formalization is generic over the codeword alphabet `A` (an `F`-module):
-words are `ι → A`, with `A = F` the scalar `s = 1` interleaved case
-(`Impl/IRS.lean`) and `A = Fin s → F` the genuine `s > 1` folded case
-(`Impl/FRS.lean`, e.g. `s = 2^5`). The relative Hamming metric is over `A`
-(one symbol = one `A`-coordinate), which is exactly the right folded metric —
-reindexing `ι := [n] × [s]` over a scalar alphabet would **not** recover it,
-hence the genuine `F`-module `A` rather than a flattened index set. The
-challenge `γ`, constraint vector `v`, and constraint values `μ` stay scalar
-(`F`); only the codeword values and the encoder `(Fin k → F) →ₗ[F] (ι → A)`
-range over `A`. Combination of codeword values is the module action
-`f₀ + γ • f₁` (it specializes to `f₀ + γ · f₁` when `A = F`).
+The paper's Construction 6.1/6.2 inputs are `f : [n] → F^s` for an
+interleaving parameter `s` (and the §6.3 tables sweep `s = 2^0, …, 2^12`).
+This formalization is generic over the codeword alphabet `A` (an `F`-module):
+words are `ι → A`, with `A = F` the scalar specialization and
+`A = Fin s → F` the genuine interleaved alphabet implemented by
+`Impl/IRS.lean`. `Impl/FRS.lean` provides the distinct folded-RS model.
+The relative Hamming metric is over `A` (one symbol = one `A`-coordinate),
+which is the required column metric; reindexing `ι := [n] × [s]` over a
+scalar alphabet would **not** recover it. The challenge `γ`, constraint
+vector `v`, and constraint values `μ` stay scalar (`F`); only codeword
+values and the encoder `(Fin k → F) →ₗ[F] (ι → A)` range over `A`.
+Combination of codeword values is the module action `f₀ + γ • f₁` (it
+specializes to `f₀ + γ · f₁` when `A = F`).
 
 ## References
 
@@ -142,7 +142,7 @@ vector `v ∈ F^k` and the two constraint values `(μ₁, μ₂) ∈ F²`. -/
 def Statement : Type := (Fin k → F) × F × F
 
 /-- Oracle statements of Construction 6.2: the two purported codewords
-`f₁, f₂ : ι → F`. The verifier only queries them at the spot-check
+`f₁, f₂ : ι → A`. The verifier only queries them at the spot-check
 positions. -/
 @[reducible]
 def OracleStatement (ι A : Type) : Fin 2 → Type := fun _ ↦ ι → A
@@ -263,16 +263,13 @@ def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
 
 /-! ### Honest prover, verifier, and reduction
 
-This section mirrors the `foldProver` / `foldVerifier` / `foldOracleReduction`
-pattern in [`Fri/Spec/SingleRound.lean`](../../../Fri/Spec/SingleRound.lean).
-Because `OracleStatement ι A i = ι → A` is a plain function (not an
-oracle that needs the `OracleQuery` machinery), we use the **non-oracle**
-`Prover` / `Verifier` / `Reduction` triple with the oracle codewords
-threaded through the bundled input `StmtIn = Statement × (∀ i, OracleStatement i)`.
-This is sound — it's the same shape produced by
-`OracleReduction.toReduction` — and avoids the `embed` / `hEq`
-plumbing. The `OracleProver` / `OracleVerifier` flavour (the target of
-the completeness and soundness statements) follows in the next section.
+This section provides the bundled `Prover` / `Verifier` / `Reduction`
+compatibility view, with codewords threaded through
+`StmtIn = Statement × (∀ i, OracleStatement i)`. It is the extensional
+shape produced by `OracleReduction.toReduction`. The canonical
+`OracleProver` / `OracleVerifier` flavour, which routes codeword access
+through VCV's query machinery and is the target of the completeness and
+soundness statements, follows in the next section.
 -/
 
 section Protocol
@@ -379,12 +376,12 @@ this branch: extraction failure (`extractedWitIn? = none`) is scored against the
 prover. All three KS families are now proven and axiom-clean
 (`[propext, Classical.choice, Quot.sound]`, verified 2026-07-03):
 `protocol62_knowledgeSound`, `protocol62_rbrKnowledgeSoundWorstCase` plus its
-averaged corollary `protocol62_rbrKnowledgeSound` (below), and
-`simplifiedIOR_knowledgeSound` (`Spec/SimplifiedIOR.lean`). The rbrKS theorem
-carries the mathematical content; KS follows via the rbrKS → KS implication.
-(Honesty note: these alphabet-generic theorems use the classical `extractZero`
-extractor. `Spec/ErasureDecoder.lean` separately gives an executable scalar-RS
-dynamic-erasure extractor and the same worst-case and averaged RBR theorem shapes.)
+averaged corollary `protocol62_rbrKnowledgeSound` (below), and the legacy
+alphabet-generic `simplifiedIOR_knowledgeSound` fallback
+(`Spec/SimplifiedIOR.lean`). These generic existence theorems use the classical
+`extractZero` selector. `Impl/IRS.lean` supplies the principal executable path:
+exact named straightline and worst-case/averaged RBR extractors for both C6.2
+and the genuine virtual-oracle C6.9 reduction.
 -/
 
 /-- Same as `prover` but exposed at the `OracleProver` signature. The
@@ -991,21 +988,19 @@ open Classical in
 /-- Round-0 extraction for L6.8: if *any* witness completes `stmtIn` in the
 relaxed output relation, return one by choice; otherwise a dummy.
 
-Public (not `private`) because L6.10 reuses it verbatim: the C6.9 input relation is
-the same `R̃²_{C,δ}` (`outputRelationFor`), so the L6.10 straightline extractor is this
-same classical choice (`SimplifiedIOR.simplifiedIOR_knowledgeSound`).
+Public (not `private`) because the alphabet-generic compatibility theorems reuse
+it. The executable C6.9/L6.10 path does not: it is instantiated in
+`Impl/IRS.lean` with `simplifiedIorStraightlineExtractor` and
+`simplifiedIorRbrExtractor`.
 
 **Generic extractor status (B06).** This is a *nonconstructive existence* selector: it is
 `noncomputable`, returning a witness via `Classical.choice`. It serves as the abstract
-knowledge-extractor *interface* the alphabet-generic L6.6 / L6.8 / L6.10 soundness
+knowledge-extractor *interface* the alphabet-generic L6.6 / L6.8 soundness
 proofs are stated against — the only property they consume is `extractZero_mem`. It is
 **not** the paper's deterministic `O(enc + ecor)` erasure-decoder ([ABF26] App A.1).
-Consequently the generic crown-jewel proofs continue to use `extractZero`.
-`Spec/ErasureDecoder.lean` supplies the separate scalar Reed--Solomon realization: its
-round-0 extractor consumes the fresh `γ` and post-transition witness `g`, computes the
-maximal agreement set, and uses pinned CompPoly Lagrange interpolation to erasure-decode
-both rows. That path proves its own decoder-specific worst-case RBR theorem without a
-raw-error decoder or a dependency pin change. -/
+`Spec/ErasureDecoder.lean` supplies the reusable erasure-decoding kernel;
+`Impl/IRS.lean` applies it to the module alphabet `Fin s → F`, computes the
+maximal agreement set, and proves the exact extractor-specific game theorems. -/
 noncomputable def extractZero (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
     Witness (F := F) k :=

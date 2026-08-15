@@ -685,7 +685,7 @@ which the winning challenge set `Ω^{f_1,f_2}_{v,μ_1,μ_2}` (Definition 6.11)
 has at least `|Λ(C^{≡2}, δ)| · |F| / (|F| + 2·|Λ(C^{≡2}, δ)|)` elements.
 
 The protocol-level reading: the soundness error of the simplified IOR
-`T'[C, t]` (Construction 6.9, `ToyProblem.SimplifiedIOR.reduction`) is
+`T'[C, t]` (Construction 6.9, `ToyProblem.SimplifiedIOR.oracleReduction`) is
 at least `|Λ(C^{≡2}, δ)| / (|F| + 2·|Λ(C^{≡2}, δ)|)`.
 
 ## Statement provenance (corrected 2026-06-04, finding S5)
