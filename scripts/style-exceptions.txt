@@ -1,0 +1,4 @@
+ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/JohnsonLower.lean : line 1 : ERR_NUM_LIN : 1800 file contains 1673 lines, try to split it up
+ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean : line 1 : ERR_NUM_LIN : 2100 file contains 1930 lines, try to split it up
+ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Subfield.lean : line 1 : ERR_NUM_LIN : 2700 file contains 2584 lines, try to split it up
+ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/UniqueDecoding.lean : line 1 : ERR_NUM_LIN : 1800 file contains 1625 lines, try to split it up
