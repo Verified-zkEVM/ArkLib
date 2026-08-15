@@ -1313,30 +1313,35 @@ theorem winningSetSoundness_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
     ENNReal.coe_natCast, ENNReal.coe_natCast]
 
-/-- The actual full-protocol fixed-radius error: exact winning-set error in
-the combination round, sharply mixed with the spot-check error. -/
-noncomputable def actualFixedRadiusError {k : ℕ}
+/-- A certified full-protocol fixed-radius upper bound: the exact worst-case
+winning-set ratio for the combination round, mixed with the uniform
+`(1 - δ)^t` upper bound for the spot-check round.
+
+This is not claimed to equal the optimal full-protocol adversarial acceptance
+probability: the actual spot-check acceptance outside the winning set can be
+strictly smaller than `(1 - δ)^t`. -/
+noncomputable def winningSetFixedRadiusUpperBound {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
   (1 - δ) ^ t + winningSetSoundness enc δ * (1 - (1 - δ) ^ t)
 
 /-- The executable extractor's full fixed-radius certificate.  Unlike
-`actualFixedRadiusError`, its combination term is the proved MCA-plus-list
+`winningSetFixedRadiusUpperBound`, its combination term is the proved MCA-plus-list
 upper bound. -/
 noncomputable def extractorCertifiedError
     (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
   (1 - δ) ^ t + certifiedGammaError C δ * (1 - (1 - δ) ^ t)
 
-/-- The actual fixed-radius error is no larger than the executable
+/-- The winning-set/spot-check upper bound is no larger than the executable
 extractor's certificate. -/
-theorem actualFixedRadiusError_le_extractorCertifiedError {k : ℕ}
+theorem winningSetFixedRadiusUpperBound_le_extractorCertifiedError {k : ℕ}
     [Nonempty ι] (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
     (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
     (henc_range : Set.range enc = (C : Set (ι → A))) :
-    actualFixedRadiusError enc δ t ≤ extractorCertifiedError C δ t := by
-  rw [actualFixedRadiusError, extractorCertifiedError]
+    winningSetFixedRadiusUpperBound enc δ t ≤ extractorCertifiedError C δ t := by
+  rw [winningSetFixedRadiusUpperBound, extractorCertifiedError]
   gcongr
   exact winningSetSoundness_le_certifiedGammaError
     C δ hδ enc henc_inj henc_range

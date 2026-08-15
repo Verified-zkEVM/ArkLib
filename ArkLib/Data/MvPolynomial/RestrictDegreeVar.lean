@@ -21,9 +21,9 @@ plain multilinear case is `b = fun _ => 1`. The degree machinery (`degreeOf`) is
 per-coordinate, so the characterisation `mem_restrictDegreeVar_iff_degreeOf_le` is immediate.
 -/
 
--- The `sumToIter_monomial_aux` lemma below + the two helper lemmas mirror the (private) uniform
+-- The `sumAlgEquiv_monomial_aux` lemma below + the two helper lemmas mirror the (private) uniform
 -- proofs in `RestrictDegree.lean`. The `multiGoal` linter fires on a `congr! 2` split inside
--- `sumToIter_monomial_aux`; scope-suppress it file-wide.
+-- `sumAlgEquiv_monomial_aux`; scope-suppress it file-wide.
 set_option linter.style.multiGoal false
 
 namespace MvPolynomial
@@ -92,6 +92,9 @@ lemma sumAlgEquiv_monomial_aux {R : Type*} [CommSemiring R]
   ext s
   simp [MvPolynomial.sumAlgEquiv, MvPolynomial.monomial, MvPolynomial.coeff,
     Finsupp.comapDomain]
+
+@[deprecated sumAlgEquiv_monomial_aux (since := "2026-08-15")]
+alias sumToIter_monomial_aux := sumAlgEquiv_monomial_aux
 
 /-- Renaming by an equivalence `e : σ ≃ τ` transports a per-variable degree bound `b` to the
 pulled-back bound `b ∘ e.symm` on the target. -/

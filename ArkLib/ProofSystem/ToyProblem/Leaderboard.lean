@@ -13,7 +13,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 This is a small façade over the reusable toy-problem mathematics.  It packages
 an encoder, its code and repetition count, and gives stable projections for the
-actual winning-set error and the executable extractor's MCA-plus-list
+winning-set/spot-check upper bound and the executable extractor's MCA-plus-list
 certificate.  It intentionally contains no score format, ranking direction,
 submission metadata, or chosen operating radius.
 -/
@@ -35,11 +35,11 @@ structure FixedRadiusParameters where
   encoder_injective : Function.Injective encoder
   encoder_range : Set.range encoder = (code : Set (ι → A))
 
-/-- The actual winning-set/spot-check error for a neutral parameter point. -/
-noncomputable def FixedRadiusParameters.actualError
+/-- The certified winning-set/spot-check upper bound for a neutral parameter point. -/
+noncomputable def FixedRadiusParameters.winningSetUpperBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : ℝ≥0 :=
-  actualFixedRadiusError p.encoder δ p.t
+  winningSetFixedRadiusUpperBound p.encoder δ p.t
 
 /-- The MCA-plus-list/spot-check certificate used by the executable extractor. -/
 noncomputable def FixedRadiusParameters.extractorCertificate
@@ -48,19 +48,19 @@ noncomputable def FixedRadiusParameters.extractorCertificate
   extractorCertifiedError p.code δ p.t
 
 omit [Fintype A] in
-/-- At every admissible radius, actual error is bounded by the executable
-extractor certificate. -/
-theorem FixedRadiusParameters.actualError_le_extractorCertificate
+/-- At every admissible radius, the winning-set/spot-check upper bound is
+bounded by the executable extractor certificate. -/
+theorem FixedRadiusParameters.winningSetUpperBound_le_extractorCertificate
     [Finite A] [DecidableEq A] [Nonempty ι]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (p.code : Set (ι → A)) : ℝ≥0))) :
-    p.actualError δ ≤ p.extractorCertificate δ := by
+    p.winningSetUpperBound δ ≤ p.extractorCertificate δ := by
   classical
   letI := Fintype.ofFinite A
   letI : DecidableEq F := Classical.decEq F
-  exact actualFixedRadiusError_le_extractorCertifiedError
+  exact winningSetFixedRadiusUpperBound_le_extractorCertifiedError
     p.code δ p.t hδ p.encoder p.encoder_injective p.encoder_range
 
 /-- A neutral carrier for a proved upper bound on the executable extractor's

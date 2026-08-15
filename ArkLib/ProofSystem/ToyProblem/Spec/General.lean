@@ -8,6 +8,7 @@ import ArkLib.OracleReduction.Security.RoundByRound
 import ArkLib.ProofSystem.ToyProblem.Definitions
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
+import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
 import ArkLib.ToVCVio.OracleComp.SimSemantics.SimulateQ
 import ArkLib.OracleReduction.Security.RbrGame
 
@@ -1132,6 +1133,183 @@ private noncomputable def rbrKSF (encode : (Fin k → F) → (ι → A)) (δ : �
   toFun_full := fun stmtIn tr witOut h ↦
     accepts_of_probEvent_pos_verifier_run (k := k) (t := t) init impl encode
       stmtIn tr witOut _ h
+
+omit [DecidableEq ι] in
+/-- Per-transcript combination-round bound for the generic classical
+Construction 6.2 extractor.  The error is the certified affine-line
+MCA-plus-two-row-list upper bound. -/
+lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
+    (C : ModuleCode ι F A) (δ : ℝ≥0)
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (hinj : Function.Injective encode)
+    (hC : Set.range encode = (C : Set (ι → A)))
+    (hδ_pos : 0 < δ)
+    (hδ_lt : δ < (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0))
+    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)) :
+    Pr[fun γ : F ↦ ∃ w : Fin k → F,
+        (stmtIn, extractZero k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
+            outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
+          gammaState k (encode : (Fin k → F) → (ι → A)) δ
+            stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+            (stmtIn.2 0) (stmtIn.2 1) γ w
+      | $ᵗ F] ≤ (certifiedGammaError C δ : ENNReal) := by
+  classical
+  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
+  by_cases hw : ∃ M,
+      (stmtIn, M) ∈ outputRelationFor k
+        (encode : (Fin k → F) → (ι → A)) δ
+  · refine le_trans (le_of_eq ?_) zero_le
+    rw [prob_tsum_form_singleton]
+    have hnot : ∀ γ : F, ¬ (∃ w : Fin k → F,
+        (stmtIn, extractZero k (encode : (Fin k → F) → (ι → A)) δ stmtIn) ∉
+            outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
+          gammaState k (encode : (Fin k → F) → (ι → A)) δ
+            stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+            (stmtIn.2 0) (stmtIn.2 1) γ w) :=
+      fun _ h ↦ h.choose_spec.1 (extractZero_mem k hw)
+    simp [hnot]
+  · refine le_trans (Pr_le_Pr_of_implies _ _
+      (fun γ ↦ ∃ m : Fin k → F,
+        (∑ j, m j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2) ∧
+        ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
+          ∀ j ∈ S, stmtIn.2 0 j + γ • stmtIn.2 1 j = encode m j) ?_) ?_
+    · rintro γ ⟨m, -, hm⟩
+      exact ⟨m, hm⟩
+    · have hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
+          (∀ i : Fin 2, ∑ j, M i j * stmtIn.1.1 j =
+            ![stmtIn.1.2.1, stmtIn.1.2.2] i) ∧
+          ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
+            ∀ i : Fin 2, ∀ j ∈ S,
+              ![stmtIn.2 0, stmtIn.2 1] i j = encode (M i) j := by
+        rintro ⟨M, h1, S, h2, h3⟩
+        refine hw ⟨M, h1, S, h2, fun i j hj ↦ ?_⟩
+        fin_cases i
+        · simpa using h3 0 j hj
+        · simpa using h3 1 j hj
+      refine le_trans (gamma_transition_prob_le C δ encode hinj hC hδ_pos hδ_lt
+        stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+        (stmtIn.2 0) (stmtIn.2 1) hNoWit) (le_of_eq ?_)
+      rw [coe_certifiedGammaError]
+
+omit [DecidableEq ι] [Fintype F] [Fintype A] in
+set_option linter.unusedDecidableInType false in
+/-- Per-transcript spot-check-round bound for Construction 6.2: if the
+post-combination knowledge state is false, uniform spot checks accept with
+probability at most `(1 - δ)^t`. -/
+lemma spotcheck_round_game_bound [Nonempty ι]
+    (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
+    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
+    (γ : F) (g : Fin k → F) [SampleableType (Fin t → ι)] :
+    Pr[fun xs : Fin t → ι ↦ ∃ _w : PUnit,
+        ¬ gammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+            (stmtIn.2 0) (stmtIn.2 1) γ g ∧
+          accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2 γ g xs
+      | $ᵗ (Fin t → ι)] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal) := by
+  classical
+  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
+  by_cases hbad : gammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
+      (stmtIn.2 0) (stmtIn.2 1) γ g
+  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+    rintro xs ⟨-, hne, -⟩
+    exact hne hbad
+  by_cases hlin : ∑ j, g j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2
+  swap
+  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
+    rintro xs ⟨-, -, hacc⟩
+    exact hlin hacc.1
+  let S₀ : Finset ι :=
+    Finset.univ.filter (fun j ↦ stmtIn.2 0 j + γ • stmtIn.2 1 j = encode g j)
+  have hι : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hAcard : (S₀.card : ℝ) < (1 - (δ : ℝ)) * Fintype.card ι :=
+    not_le.mp fun hge ↦ hbad ⟨hlin, S₀, hge,
+      fun j hj ↦ (Finset.mem_filter.mp hj).2⟩
+  have hδ1 : δ ≤ 1 := by
+    by_contra hgt
+    have h1δ : (1 : ℝ) - (δ : ℝ) < 0 :=
+      sub_neg.mpr (by exact_mod_cast not_le.mp hgt)
+    linarith [mul_neg_of_neg_of_pos h1δ hι,
+      (Nat.cast_nonneg S₀.card : (0 : ℝ) ≤ S₀.card)]
+  have hbase : ((S₀.card : ℝ≥0) / (Fintype.card ι : ℝ≥0)) ≤ 1 - δ := by
+    rw [div_le_iff₀ (by exact_mod_cast Fintype.card_pos :
+      (0 : ℝ≥0) < Fintype.card ι), ← NNReal.coe_le_coe]
+    push_cast [NNReal.coe_sub hδ1]
+    linarith
+  refine le_trans (Pr_le_Pr_of_implies _ _ (fun xs ↦ ∀ j, xs j ∈ S₀) ?_) ?_
+  · rintro xs ⟨-, -, hacc⟩ j
+    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hacc.2 j).symm⟩
+  · refine le_trans (prob_uniform_pi_mem_finset_le S₀ t) ?_
+    rw [ENNReal.coe_pow]
+    refine pow_le_pow_left' ?_ t
+    rw [show ((S₀.card : ENNReal)) = ((S₀.card : ℝ≥0) : ENNReal) from
+        (ENNReal.coe_natCast _).symm,
+      show ((Fintype.card ι : ENNReal)) =
+        ((Fintype.card ι : ℝ≥0) : ENNReal) from (ENNReal.coe_natCast _).symm,
+      ← ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)]
+    exact ENNReal.coe_le_coe.mpr hbase
+
+omit [DecidableEq ι] in
+/-- Worst-case-per-fixed-prefix round-by-round knowledge soundness of
+Construction 6.2 in the alphabet-generic classical-extractor form.  Concrete
+IRS clients should prefer `Impl.IRS.oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs`,
+whose extractor is executable and named. -/
+theorem protocol62_rbrKnowledgeSoundWorstCase
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (C : ModuleCode ι F A) (δ : ℝ≥0)
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (hinj : Function.Injective encode)
+    (hC : Set.range encode = (C : Set (ι → A)))
+    (hδ_pos : 0 < δ)
+    (hδ_lt_min : δ <
+      (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)) :
+    ((oracleVerifier (k := k) (t := t)
+      (encode : (Fin k → F) → (ι → A))).toVerifier).rbrKnowledgeSoundnessWorstCase
+      (WitIn := Witness (F := F) k) (WitOut := OutputWitness)
+      init impl (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
+        OutputWitness))
+      (fun i ↦ if i.1 = 0 then certifiedGammaError C δ else (1 - δ) ^ t) := by
+  unfold Verifier.rbrKnowledgeSoundnessWorstCase
+  refine ⟨rbrWitMid (F := F) k,
+    rbrExtractor k t (encode : (Fin k → F) → (ι → A)) δ,
+    rbrKSF k t (encode : (Fin k → F) → (ι → A)) δ init impl, ?_⟩
+  intro stmtIn i transcript
+  obtain ⟨⟨iv, hi⟩, hdir⟩ := i
+  rcases iv with _ | _ | _ | iv
+  · exact gamma_round_game_bound k C δ encode hinj hC hδ_pos hδ_lt_min stmtIn
+  · exact absurd hdir (fun h ↦ Direction.noConfusion h)
+  · exact spotcheck_round_game_bound k t
+      (encode : (Fin k → F) → (ι → A)) δ stmtIn
+      (transcript ⟨0, Nat.zero_lt_succ _⟩)
+      (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
+  · exact absurd hi (by omega)
+
+omit [DecidableEq ι] in
+/-- Averaged round-by-round knowledge soundness, retained under the established
+public API name as a corollary of the stronger worst-case-per-prefix theorem. -/
+theorem protocol62_rbrKnowledgeSound
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (C : ModuleCode ι F A) (δ : ℝ≥0)
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (hinj : Function.Injective encode)
+    (hC : Set.range encode = (C : Set (ι → A)))
+    (hδ_pos : 0 < δ)
+    (hδ_lt_min : δ <
+      (minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)) :
+    (oracleVerifier (k := k) (t := t)
+      (encode : (Fin k → F) → (ι → A))).rbrKnowledgeSoundness
+      (WitOut := OutputWitness) init impl
+      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
+        OutputWitness))
+      (fun i ↦ if i.1 = 0 then certifiedGammaError C δ else (1 - δ) ^ t) := by
+  unfold OracleVerifier.rbrKnowledgeSoundness
+  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
+    init impl (protocol62_rbrKnowledgeSoundWorstCase k t init impl C δ encode
+      hinj hC hδ_pos hδ_lt_min)
 
 end Protocol
 

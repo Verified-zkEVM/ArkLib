@@ -631,10 +631,11 @@ noncomputable def irsRbrKSF (k s t : ℕ) (hdvd : s ∣ k)
     Spec.accepts_of_probEvent_pos_verifier_run (k := k) (t := t)
       init impl (irsEncoder k s hdvd domain) stmtIn tr witOut _ h
 
-omit [DecidableEq ι] in
 /-- Worst-case-per-fixed-prefix round-by-round knowledge soundness for the
-named executable interleaved-RS extractor. -/
-theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
+exact named executable interleaved-RS extractor and its knowledge-state
+function.  Both objects occur in the proposition type, rather than being
+hidden behind existential quantifiers. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
     (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
@@ -643,17 +644,18 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((Spec.oracleVerifier (k := k) (t := t)
-      (irsEncoder k s hdvd domain)).toVerifier).rbrKnowledgeSoundnessWorstCase
+      (irsEncoder k s hdvd domain)).toVerifier).rbrKnowledgeSoundnessWorstCaseWith
       (WitIn := Spec.Witness (F := F) k) (WitOut := Spec.OutputWitness)
       init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
       (Set.univ : Set ((Spec.OutputStatement ×
         ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
+      (irsRbrWitMid (F := F) k)
+      (irsRbrExtractor k s t hdvd domain)
+      (irsRbrKSF k s t hdvd domain δ init impl)
       (fun i ↦ if i.1 = 0 then irsCertifiedGammaError k s domain δ
         else (1 - δ) ^ t) := by
   classical
-  unfold Verifier.rbrKnowledgeSoundnessWorstCase
-  refine ⟨irsRbrWitMid (F := F) k, irsRbrExtractor k s t hdvd domain,
-    irsRbrKSF k s t hdvd domain δ init impl, ?_⟩
+  unfold Verifier.rbrKnowledgeSoundnessWorstCaseWith
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv
@@ -673,15 +675,69 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
           (transcript ⟨0, Nat.zero_lt_succ _⟩)
           (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩) xs
       | $ᵗ (Fin t → ι)] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal)
-    exact Spec.spotcheck_round_game_bound
+    exact Spec.spotcheck_round_game_bound k t
       (encode := irsEncoder k s hdvd domain) δ stmtIn
       (transcript ⟨0, Nat.zero_lt_succ _⟩)
       (transcript ⟨1, Nat.succ_lt_succ (Nat.zero_lt_succ _)⟩)
   · exact absurd hi (by omega)
 
 omit [DecidableEq ι] in
-/-- Averaged round-by-round knowledge soundness, derived from the stronger
-worst-case-per-prefix theorem with the same named error function. -/
+/-- Existential worst-case RBR knowledge soundness, retained as a compatibility
+corollary of the exact-object theorem. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    ((Spec.oracleVerifier (k := k) (t := t)
+      (irsEncoder k s hdvd domain)).toVerifier).rbrKnowledgeSoundnessWorstCase
+      (WitIn := Spec.Witness (F := F) k) (WitOut := Spec.OutputWitness)
+      init impl (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+      (Set.univ : Set ((Spec.OutputStatement ×
+        ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
+      (fun i ↦ if i.1 = 0 then irsCertifiedGammaError k s domain δ
+        else (1 - δ) ^ t) := by
+  classical
+  rw [Verifier.rbrKnowledgeSoundnessWorstCase_iff_exists_with]
+  exact ⟨irsRbrWitMid (F := F) k, irsRbrExtractor k s t hdvd domain,
+    irsRbrKSF k s t hdvd domain δ init impl,
+    oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
+      k s t hdvd domain hfull δ hδ init impl⟩
+
+/-- Averaged round-by-round knowledge soundness for the exact named executable
+extractor and knowledge-state function, derived from the stronger
+worst-case-per-prefix theorem without hiding either object. -/
+theorem oracleVerifier_rbrKnowledgeSoundnessWith_irsRbrExtractor
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
+    (hfull : k / s ≤ Fintype.card ι) (δ : ℝ≥0)
+    (hδ : δ < (minRelHammingDistCode
+      (ReedSolomon.code domain (k / s) : Set (ι → F)) : ℝ≥0))
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
+    (Spec.oracleVerifier (k := k) (t := t)
+      (irsEncoder k s hdvd domain)).rbrKnowledgeSoundnessWith
+      (WitOut := Spec.OutputWitness) init impl
+      (Spec.outputRelationFor k (irsEncoder k s hdvd domain) δ)
+      (Set.univ : Set ((Spec.OutputStatement ×
+        ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
+      (irsRbrWitMid (F := F) k)
+      (irsRbrExtractor k s t hdvd domain)
+      (irsRbrKSF k s t hdvd domain δ init impl)
+      (fun i ↦ if i.1 = 0 then irsCertifiedGammaError k s domain δ
+        else (1 - δ) ^ t) := by
+  unfold OracleVerifier.rbrKnowledgeSoundnessWith
+  exact Verifier.rbrKnowledgeSoundnessWorstCaseWith_implies_rbrKnowledgeSoundnessWith
+    init impl
+    (oracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_irsRbrExtractor
+      k s t hdvd domain hfull δ hδ init impl)
+
+omit [DecidableEq ι] in
+/-- Existential averaged RBR knowledge soundness, retained as a compatibility
+corollary of the exact-object theorem. -/
 theorem oracleVerifier_rbrKnowledgeSoundness_irs
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     (k s t : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)
@@ -698,10 +754,13 @@ theorem oracleVerifier_rbrKnowledgeSoundness_irs
         ∀ i, Spec.OutputOracleStatement i) × Spec.OutputWitness))
       (fun i ↦ if i.1 = 0 then irsCertifiedGammaError k s domain δ
         else (1 - δ) ^ t) := by
+  classical
   unfold OracleVerifier.rbrKnowledgeSoundness
-  exact Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
-    init impl (oracleVerifier_rbrKnowledgeSoundnessWorstCase_irs
-      k s t hdvd domain hfull δ hδ init impl)
+  rw [Verifier.rbrKnowledgeSoundness_iff_exists_with]
+  exact ⟨irsRbrWitMid (F := F) k, irsRbrExtractor k s t hdvd domain,
+    irsRbrKSF k s t hdvd domain δ init impl,
+    oracleVerifier_rbrKnowledgeSoundnessWith_irsRbrExtractor
+      k s t hdvd domain hfull δ hδ init impl⟩
 
 /-- Public exact-extractor theorem for the executable interleaved-RS toy
 protocol.  The theorem type names `irsStraightlineExtractor`, so downstream

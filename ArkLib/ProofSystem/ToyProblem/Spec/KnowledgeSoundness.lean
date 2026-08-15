@@ -61,60 +61,6 @@ private theorem Pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Pr
   rw [prob_tsum_form_singleton]
   simp [h]
 
-omit [DecidableEq ι] [Fintype F] [Fintype A] in
-/-- If the post-`γ` state is false, uniform spot checks accept with probability
-at most `(1-δ)^t`. -/
-theorem spotcheck_round_game_bound {k t : ℕ} [Nonempty ι]
-    (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
-    (stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i))
-    (γ : F) (g : Fin k → F) [SampleableType (Fin t → ι)] :
-    Pr[fun xs : Fin t → ι ↦ ∃ _w : PUnit,
-        ¬ gammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
-            (stmtIn.2 0) (stmtIn.2 1) γ g ∧
-          accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2 γ g xs
-      | $ᵗ (Fin t → ι)] ≤ (((1 - δ) ^ t : ℝ≥0) : ENNReal) := by
-  classical
-  rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
-  by_cases hbad : gammaState k encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
-      (stmtIn.2 0) (stmtIn.2 1) γ g
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
-    rintro xs ⟨-, hne, -⟩
-    exact hne hbad
-  by_cases hlin : ∑ j, g j * stmtIn.1.1 j = stmtIn.1.2.1 + γ * stmtIn.1.2.2
-  swap
-  · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
-    rintro xs ⟨-, -, hacc⟩
-    exact hlin hacc.1
-  let S₀ : Finset ι :=
-    Finset.univ.filter (fun j ↦ stmtIn.2 0 j + γ • stmtIn.2 1 j = encode g j)
-  have hι : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
-  have hAcard : (S₀.card : ℝ) < (1 - (δ : ℝ)) * Fintype.card ι :=
-    not_le.mp fun hge ↦ hbad ⟨hlin, S₀, hge,
-      fun j hj ↦ (Finset.mem_filter.mp hj).2⟩
-  have hδ1 : δ ≤ 1 := by
-    by_contra hgt
-    have h1δ : (1 : ℝ) - (δ : ℝ) < 0 :=
-      sub_neg.mpr (by exact_mod_cast not_le.mp hgt)
-    linarith [mul_neg_of_neg_of_pos h1δ hι,
-      (Nat.cast_nonneg S₀.card : (0 : ℝ) ≤ S₀.card)]
-  have hbase : ((S₀.card : ℝ≥0) / (Fintype.card ι : ℝ≥0)) ≤ 1 - δ := by
-    rw [div_le_iff₀ (by exact_mod_cast Fintype.card_pos :
-      (0 : ℝ≥0) < Fintype.card ι), ← NNReal.coe_le_coe]
-    push_cast [NNReal.coe_sub hδ1]
-    linarith
-  refine le_trans (Pr_le_Pr_of_implies _ _ (fun xs ↦ ∀ j, xs j ∈ S₀) ?_) ?_
-  · rintro xs ⟨-, -, hacc⟩ j
-    exact Finset.mem_filter.mpr ⟨Finset.mem_univ _, (hacc.2 j).symm⟩
-  · refine le_trans (prob_uniform_pi_mem_finset_le S₀ t) ?_
-    rw [ENNReal.coe_pow]
-    refine pow_le_pow_left' ?_ t
-    rw [show ((S₀.card : ENNReal)) = ((S₀.card : ℝ≥0) : ENNReal) from
-        (ENNReal.coe_natCast _).symm,
-      show ((Fintype.card ι : ENNReal)) = ((Fintype.card ι : ℝ≥0) : ENNReal) from
-        (ENNReal.coe_natCast _).symm,
-      ← ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero)]
-    exact ENNReal.coe_le_coe.mpr hbase
-
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 private theorem verifier_run_loggingOracle_eq
     {k t : ℕ} (encode : (Fin k → F) → (ι → A))
@@ -305,7 +251,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
     intro γ hγ s0
     refine ProtocolSpec.probEvent_optionT_simulateQ_addLift_prefix_getChallenge_bind_le
       s0 impl _ ⟨2, rfl⟩ _ _ _ _ rfl (fun pre ↦ ?_)
-    refine le_trans (probEvent_mono ?_) (spotcheck_round_game_bound
+    refine le_trans (probEvent_mono ?_) (spotcheck_round_game_bound k t
       ((encode : (Fin k → F) → (ι → A))) δ (stmt, oStmt) γ pre.1)
     rintro xs - ⟨out, b, hfb, hE⟩
     by_cases hacc : accepts (k := k) (t := t)
@@ -498,7 +444,7 @@ theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
         OutputWitness))
       (choiceStraightlineExtractor
         (t := t) (encode : (Fin k → F) → (ι → A)) δ)
-      (actualFixedRadiusError encode δ t) := by
+      (winningSetFixedRadiusUpperBound encode δ t) := by
   apply protocol62_knowledgeSoundWith_of_gamma_bound
     init impl δ (winningSetSoundness encode δ) encode
       (choiceTransition (encode : (Fin k → F) → (ι → A)) δ)
@@ -507,9 +453,9 @@ theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
   exact choiceTransition_failure_sample_le encode δ
 
 omit [DecidableEq ι] [Fintype A] in
-/-- Existential knowledge soundness for the actual-analysis error, retained as
+/-- Existential knowledge soundness for the winning-set/spot-check upper bound, retained as
 a corollary of the theorem naming the classical extractor. -/
-theorem protocol62_knowledgeSoundness_actual {k t : ℕ}
+theorem protocol62_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -520,9 +466,28 @@ theorem protocol62_knowledgeSoundness_actual {k t : ℕ}
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
         OutputWitness))
-      (actualFixedRadiusError encode δ t) :=
+      (winningSetFixedRadiusUpperBound encode δ t) :=
   OracleVerifier.knowledgeSoundness_of_with init impl
     (protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
       init impl encode δ)
+
+omit [DecidableEq ι] [Fintype A] in
+/-- Compatibility name for the generic Construction 6.2 knowledge-soundness
+theorem.  Its error is the certified winning-set/spot-check upper bound; the
+public executable-IRS theorem is
+`Impl.IRS.oracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor`. -/
+theorem protocol62_knowledgeSound {k t : ℕ}
+    [SampleableType F] [SampleableType ι] [Nonempty ι]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    (oracleVerifier (k := k) (t := t)
+      (encode : (Fin k → F) → (ι → A))).knowledgeSoundness
+      (WitOut := OutputWitness) init impl
+      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
+        OutputWitness))
+      (winningSetFixedRadiusUpperBound encode δ t) :=
+  protocol62_knowledgeSoundness_winningSetUpperBound init impl encode δ
 
 end ToyProblem.Spec
