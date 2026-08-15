@@ -53,10 +53,6 @@ distance and the finite-length half-distance boundary.
 - [BCHKS25] Theorem 1.3.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -67,7 +63,7 @@ section ReedSolomon
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-private structure BCHKSParameterFacts (n k e gap ax bx dz : ℕ) (δ : NNReal) : Prop where
+private structure BchksParameterFacts (n k e gap ax bx dz : ℕ) (δ : NNReal) : Prop where
   n_pos : 0 < n
   k_pos : 0 < k
   delta_pos : 0 < δ
@@ -95,7 +91,7 @@ private structure BCHKSParameterFacts (n k e gap ax bx dz : ℕ) (δ : NNReal) :
       ((δ : ℝ) * (1 - (k : ℝ) / n - 2 * (δ : ℝ)))
 
 open scoped BigOperators in
-private noncomputable def bchksConstraint {ι K : Type} [Field K]
+private noncomputable def bchks_constraint {ι K : Type} [Field K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
     (i : ι) (s : Fin (dz + 1)) : K :=
@@ -109,57 +105,57 @@ private noncomputable def bchksConstraint {ι K : Type} [Field K]
       else 0)
 
 open scoped BigOperators in
-private noncomputable def bchksConstraintMap {ι K : Type} [Fintype ι] [Field K]
+private noncomputable def bchks_constraint_map {ι K : Type} [Fintype ι] [Field K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ) :
     (Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K) →ₗ[K]
       Matrix ι (Fin (dz + 1)) K where
-  toFun := fun ab i s => bchksConstraint domain u ax bx dz ab i s
+  toFun := fun ab i s => bchks_constraint domain u ax bx dz ab i s
   map_add' := by
     intro x y
     ext i s
-    simp only [bchksConstraint, Prod.fst_add, Prod.snd_add, Matrix.add_apply, add_mul,
+    simp only [bchks_constraint, Prod.fst_add, Prod.snd_add, Matrix.add_apply, add_mul,
       Finset.sum_add_distrib]
     split_ifs <;> ring
   map_smul' := by
     intro c x
     ext i s
-    change bchksConstraint domain u ax bx dz (c • x) i s =
-      c * bchksConstraint domain u ax bx dz x i s
-    unfold bchksConstraint
+    change bchks_constraint domain u ax bx dz (c • x) i s =
+      c * bchks_constraint domain u ax bx dz x i s
+    unfold bchks_constraint
     simp only [Prod.smul_fst, Prod.smul_snd, Matrix.smul_apply, smul_eq_mul]
     split_ifs <;> simp_rw [mul_assoc, ← Finset.mul_sum] <;> ring
 
-private theorem bchksConstraintMap_eq_zero_of_mem_ker {ι K : Type} [Fintype ι] [Field K]
+private theorem bchks_constraint_map_eq_zero_of_mem_ker {ι K : Type} [Fintype ι] [Field K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
-    (hab : ab ∈ LinearMap.ker (bchksConstraintMap domain u ax bx dz))
+    (hab : ab ∈ LinearMap.ker (bchks_constraint_map domain u ax bx dz))
     (i : ι) (s : Fin (dz + 1)) :
-    bchksConstraint domain u ax bx dz ab i s = 0 := by
-  have hmap : bchksConstraintMap domain u ax bx dz ab = 0 := LinearMap.mem_ker.mp hab
+    bchks_constraint domain u ax bx dz ab i s = 0 := by
+  have hmap : bchks_constraint_map domain u ax bx dz ab = 0 := LinearMap.mem_ker.mp hab
   exact congrFun (congrFun hmap i) s
 
-private theorem bchksConstraintMap_exists_nonzero_ker {ι K : Type} [Fintype ι]
+private theorem bchks_constraint_map_exists_nonzero_ker {ι K : Type} [Fintype ι]
     [Field K] (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (hdim : Fintype.card ι * (dz + 1) <
       dz * (ax + 1) + (dz + 1) * (bx + 1)) :
     ∃ ab : Matrix (Fin dz) (Fin (ax + 1)) K ×
         Matrix (Fin (dz + 1)) (Fin (bx + 1)) K,
-      ab ≠ 0 ∧ ab ∈ LinearMap.ker (bchksConstraintMap domain u ax bx dz) := by
+      ab ≠ 0 ∧ ab ∈ LinearMap.ker (bchks_constraint_map domain u ax bx dz) := by
   have hfin :
       Module.finrank K (Matrix ι (Fin (dz + 1)) K) <
         Module.finrank K
           (Matrix (Fin dz) (Fin (ax + 1)) K ×
             Matrix (Fin (dz + 1)) (Fin (bx + 1)) K) := by
     simpa [Module.finrank_prod, Module.finrank_matrix, Module.finrank_self] using hdim
-  have hker : LinearMap.ker (bchksConstraintMap domain u ax bx dz) ≠ ⊥ :=
+  have hker : LinearMap.ker (bchks_constraint_map domain u ax bx dz) ≠ ⊥ :=
     LinearMap.ker_ne_bot_of_finrank_lt hfin
   rcases (Submodule.ne_bot_iff (LinearMap.ker
-    (bchksConstraintMap domain u ax bx dz))).mp hker with ⟨ab, hab, hne⟩
+    (bchks_constraint_map domain u ax bx dz))).mp hker with ⟨ab, hab, hne⟩
   exact ⟨ab, hne, hab⟩
 
-private def bchksDZ (n k e : ℕ) : ℕ := CeilDiv.ceilDiv (e + 1) (n - k - 2 * e + 1)
+private def bchks_dz (n k e : ℕ) : ℕ := CeilDiv.ceilDiv (e + 1) (n - k - 2 * e + 1)
 
-private noncomputable def bchksGoodPolynomial {ι K : Type} [Fintype ι] [Nonempty ι]
+private noncomputable def bchks_good_polynomial {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K] {k : ℕ} [NeZero k]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (δ : NNReal) (z : K) : Polynomial K :=
   if hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ then
@@ -168,44 +164,44 @@ private noncomputable def bchksGoodPolynomial {ι K : Type} [Fintype ι] [Nonemp
         (deg := k) (domain := domain) (δ := δ) u (z := z) hz)
   else 0
 
-private theorem bchksGoodPolynomial_spec {ι K : Type} [Fintype ι] [Nonempty ι]
+private theorem bchks_good_polynomial_spec {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K] {k : ℕ} [NeZero k]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (δ : NNReal) (z : K)
     (hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ) :
-    (bchksGoodPolynomial (k := k) domain u δ z).natDegree < k ∧
+    (bchks_good_polynomial (k := k) domain u δ z).natDegree < k ∧
       hammingDist (u 0 + z • u 1)
-          ((bchksGoodPolynomial (k := k) domain u δ z).eval ∘ domain) ≤
+          ((bchks_good_polynomial (k := k) domain u δ z).eval ∘ domain) ≤
         Nat.floor (δ * Fintype.card ι) := by
-  simpa only [bchksGoodPolynomial, dif_pos hz] using
+  simpa only [bchks_good_polynomial, dif_pos hz] using
     Classical.choose_spec
       (ProximityGap.RS_exists_Pz_of_mem_goodCoeffs
         (deg := k) (domain := domain) (δ := δ) u (z := z) hz)
 
-private theorem bchksGoodPolynomial_mem_code {ι K : Type} [Fintype ι] [Nonempty ι]
+private theorem bchks_good_polynomial_mem_code {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K] {k : ℕ} [NeZero k]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (δ : NNReal) (z : K)
     (hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ) :
-    (bchksGoodPolynomial (k := k) domain u δ z).eval ∘ domain ∈
+    (bchks_good_polynomial (k := k) domain u δ z).eval ∘ domain ∈
       ReedSolomon.code domain k := by
-  let Pz := bchksGoodPolynomial (k := k) domain u δ z
-  have hdeg : Pz.natDegree < k := (bchksGoodPolynomial_spec domain u δ z hz).1
+  let Pz := bchks_good_polynomial (k := k) domain u δ z
+  have hdeg : Pz.natDegree < k := (bchks_good_polynomial_spec domain u δ z hz).1
   exact ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval Pz hdeg (by intro i; rfl)
 
-private noncomputable def bchksHorizontalQuotient {ι K : Type} [Nonempty ι] [Field K]
+private noncomputable def bchks_horizontal_quotient {ι K : Type} [Nonempty ι] [Field K]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (x : K) : Polynomial K :=
   Polynomial.C (u 0 (Function.invFun domain x)) +
     Polynomial.X * Polynomial.C (u 1 (Function.invFun domain x))
 
-private theorem bchksHorizontalQuotient_domain {ι K : Type} [Nonempty ι] [Field K]
+private theorem bchks_horizontal_quotient_domain {ι K : Type} [Nonempty ι] [Field K]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (i : ι) :
-    bchksHorizontalQuotient domain u (domain i) =
+    bchks_horizontal_quotient domain u (domain i) =
       Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i) := by
-  unfold bchksHorizontalQuotient
+  unfold bchks_horizontal_quotient
   rw [Function.leftInverse_invFun domain.injective i]
 
-private theorem bchksHorizontalQuotient_natDegree_le_one {ι K : Type} [Nonempty ι] [Field K]
+private theorem bchks_horizontal_quotient_nat_degree_le_one {ι K : Type} [Nonempty ι] [Field K]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (x : K) :
-    (bchksHorizontalQuotient domain u x).natDegree ≤ 1 := by
+    (bchks_horizontal_quotient domain u x).natDegree ≤ 1 := by
   have hconst :
       (Polynomial.C (u 0 (Function.invFun domain x)) : Polynomial K).natDegree ≤ 1 := by
     simp
@@ -219,29 +215,30 @@ private theorem bchksHorizontalQuotient_natDegree_le_one {ι K : Type} [Nonempty
       (Polynomial.X * Polynomial.C
         (u 1 (Function.invFun domain x)) : Polynomial K).natDegree ≤ 1 := by
     simpa using hlin'
-  simpa only [bchksHorizontalQuotient] using
+  simpa only [bchks_horizontal_quotient] using
     (le_trans (Polynomial.natDegree_add_le _ _) (max_le hconst hlin))
 
-private noncomputable def bchksPairDisagreements {ι K : Type} [Fintype ι] [DecidableEq ι]
+private noncomputable def bchks_pair_disagreements {ι K : Type} [Fintype ι] [DecidableEq ι]
     [DecidableEq K] (u p : Fin 2 → ι → K) : Finset ι :=
   Code.disagreementCols (u 0) (p 0) ∪ Code.disagreementCols (u 1) (p 1)
 
 open scoped NNReal in
-private theorem bchksParameterFacts_of_target_hypotheses
+omit [DecidableEq ι] [Fintype F] in
+private theorem bchks_parameter_facts_of_target_hypotheses
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
     (hk : 0 < k)
     (h_ud : (δ : ℝ) ≤
       (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
     (h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
       / Fintype.card ι / 3 ≤ δ) :
-    BCHKSParameterFacts
+    BchksParameterFacts
       (Fintype.card ι)
       k
       (Nat.floor (δ * Fintype.card ι))
       (Fintype.card ι - k - 2 * Nat.floor (δ * Fintype.card ι) + 1)
       (Fintype.card ι - k - Nat.floor (δ * Fintype.card ι))
       (Fintype.card ι - Nat.floor (δ * Fintype.card ι) - 1)
-      (bchksDZ (Fintype.card ι) k (Nat.floor (δ * Fintype.card ι)))
+      (bchks_dz (Fintype.card ι) k (Nat.floor (δ * Fintype.card ι)))
       δ := by
   classical
   letI : NeZero k := ⟨hk.ne'⟩
@@ -250,8 +247,8 @@ private theorem bchksParameterFacts_of_target_hypotheses
   set gap : ℕ := n - k - 2 * e + 1
   set ax : ℕ := n - k - e
   set bx : ℕ := n - e - 1
-  set dz : ℕ := bchksDZ n k e
-  change BCHKSParameterFacts n k e gap ax bx dz δ
+  set dz : ℕ := bchks_dz n k e
+  change BchksParameterFacts n k e gap ax bx dz δ
   have hn_pos : 0 < n := by simp [n]
   have hnR_pos : (0 : ℝ) < n := by exact_mod_cast hn_pos
   have hnR_ne : (n : ℝ) ≠ 0 := ne_of_gt hnR_pos
@@ -306,7 +303,7 @@ private theorem bchksParameterFacts_of_target_hypotheses
   have hcover : e + 1 ≤ gap * dz := by
     have hc : e + 1 ≤ gap * CeilDiv.ceilDiv (e + 1) gap :=
       (ceilDiv_le_iff_le_mul hgap_pos).mp le_rfl
-    simpa [dz, bchksDZ] using hc
+    simpa [dz, bchks_dz] using hc
   have hdz_pos : 0 < dz := by
     by_contra hnot
     have hz : dz = 0 := Nat.eq_zero_of_not_pos hnot
@@ -434,52 +431,52 @@ private theorem bchksParameterFacts_of_target_hypotheses
     first_threshold_pos := hfirstpos
     dz_div_delta_le := hdzdiv }
 
-private noncomputable def bchksPolyOfMatrix {K : Type} [Semiring K] [DecidableEq K]
+private noncomputable def bchks_poly_of_matrix {K : Type} [Semiring K] [DecidableEq K]
     (dy dx : ℕ) (a : Matrix (Fin dy) (Fin dx) K) : Polynomial (Polynomial K) :=
   Polynomial.ofFn dy (fun s => Polynomial.ofFn dx (a s))
 
-private noncomputable def bchksInterpolantPair {K : Type} [Semiring K] [DecidableEq K]
+private noncomputable def bchks_interpolant_pair {K : Type} [Semiring K] [DecidableEq K]
     (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K) :
     Polynomial (Polynomial K) × Polynomial (Polynomial K) :=
-  (bchksPolyOfMatrix dz (ax + 1) ab.1,
-    bchksPolyOfMatrix (dz + 1) (bx + 1) ab.2)
+  (bchks_poly_of_matrix dz (ax + 1) ab.1,
+    bchks_poly_of_matrix (dz + 1) (bx + 1) ab.2)
 
-private theorem bchksPolyOfMatrix_coeff {K : Type} [Semiring K] [DecidableEq K]
+private theorem bchks_poly_of_matrix_coeff {K : Type} [Semiring K] [DecidableEq K]
     (dy dx : ℕ) (a : Matrix (Fin dy) (Fin dx) K) (s : ℕ) :
-    (bchksPolyOfMatrix dy dx a).coeff s =
+    (bchks_poly_of_matrix dy dx a).coeff s =
       if hs : s < dy then Polynomial.ofFn dx (a ⟨s, hs⟩) else 0 := by
-  unfold bchksPolyOfMatrix
+  unfold bchks_poly_of_matrix
   split_ifs with hs
   · exact Polynomial.ofFn_coeff_eq_val_of_lt _ hs
   · exact Polynomial.ofFn_coeff_eq_zero_of_ge _ (Nat.le_of_not_gt hs)
 
-private theorem bchksPolyOfMatrix_degreeX_le {K : Type} [Semiring K] [DecidableEq K]
+private theorem bchks_poly_of_matrix_degree_x_le {K : Type} [Semiring K] [DecidableEq K]
     (dy dx : ℕ) (hdx : 0 < dx) (a : Matrix (Fin dy) (Fin dx) K) :
-    Polynomial.Bivariate.degreeX (bchksPolyOfMatrix dy dx a) ≤ dx - 1 := by
+    Polynomial.Bivariate.degreeX (bchks_poly_of_matrix dy dx a) ≤ dx - 1 := by
   unfold Polynomial.Bivariate.degreeX
   refine Finset.sup_le_iff.2 ?_
   intro n hn
   have hnlt : n < dy := by
     by_contra hnot
-    have hzero : (bchksPolyOfMatrix dy dx a).coeff n = 0 := by
-      unfold bchksPolyOfMatrix
+    have hzero : (bchks_poly_of_matrix dy dx a).coeff n = 0 := by
+      unfold bchks_poly_of_matrix
       exact Polynomial.ofFn_coeff_eq_zero_of_ge _ (Nat.le_of_not_gt hnot)
-    have hne : (bchksPolyOfMatrix dy dx a).coeff n ≠ 0 := by
+    have hne : (bchks_poly_of_matrix dy dx a).coeff n ≠ 0 := by
       exact Polynomial.mem_support_iff.mp hn
     exact hne hzero
-  rw [show (bchksPolyOfMatrix dy dx a).coeff n = Polynomial.ofFn dx (a ⟨n, hnlt⟩) by
-    unfold bchksPolyOfMatrix
+  rw [show (bchks_poly_of_matrix dy dx a).coeff n = Polynomial.ofFn dx (a ⟨n, hnlt⟩) by
+    unfold bchks_poly_of_matrix
     exact Polynomial.ofFn_coeff_eq_val_of_lt _ hnlt]
   exact Nat.le_pred_of_lt
     (Polynomial.ofFn_natDegree_lt (Nat.one_le_iff_ne_zero.mpr hdx.ne') (a ⟨n, hnlt⟩))
 
 open scoped BigOperators in
-private theorem bchksPolyOfMatrix_evalX_coeff {K : Type} [Field K] [DecidableEq K]
+private theorem bchks_poly_of_matrix_eval_x_coeff {K : Type} [Field K] [DecidableEq K]
     (dy dx : ℕ) (a : Matrix (Fin dy) (Fin dx) K) (x : K) (s : ℕ) :
-    (Polynomial.Bivariate.evalX x (bchksPolyOfMatrix dy dx a)).coeff s =
+    (Polynomial.Bivariate.evalX x (bchks_poly_of_matrix dy dx a)).coeff s =
       if hs : s < dy then ∑ j : Fin dx, a ⟨s, hs⟩ j * x ^ (j : ℕ) else 0 := by
-  rw [Polynomial.Bivariate.evalX_eq_map, Polynomial.coeff_map, bchksPolyOfMatrix_coeff]
+  rw [Polynomial.Bivariate.evalX_eq_map, Polynomial.coeff_map, bchks_poly_of_matrix_coeff]
   split_ifs with hs
   · let v : Fin dx → K := fun j => a ⟨s, hs⟩ j
     change (Polynomial.ofFn dx v).eval x = ∑ j : Fin dx, v j * x ^ (j : ℕ)
@@ -489,8 +486,8 @@ private theorem bchksPolyOfMatrix_evalX_coeff {K : Type} [Field K] [DecidableEq 
     simp [Polynomial.eval_monomial]
   · simp
 
-private theorem bchksPolyOfMatrix_injective {K : Type} [Semiring K] [DecidableEq K]
-    (dy dx : ℕ) : Function.Injective (bchksPolyOfMatrix (K := K) dy dx) := by
+private theorem bchks_poly_of_matrix_injective {K : Type} [Semiring K] [DecidableEq K]
+    (dy dx : ℕ) : Function.Injective (bchks_poly_of_matrix (K := K) dy dx) := by
   intro a b hab
   funext s
   apply Polynomial.injective_ofFn dx
@@ -502,37 +499,37 @@ private theorem bchksPolyOfMatrix_injective {K : Type} [Semiring K] [DecidableEq
     Polynomial.ofFn_coeff_eq_val_of_lt _ s.isLt] at hs
   exact hs
 
-private theorem bchksInterpolantPair_injective {K : Type} [Semiring K] [DecidableEq K]
-    (ax bx dz : ℕ) : Function.Injective (bchksInterpolantPair (K := K) ax bx dz) := by
+private theorem bchks_interpolant_pair_injective {K : Type} [Semiring K] [DecidableEq K]
+    (ax bx dz : ℕ) : Function.Injective (bchks_interpolant_pair (K := K) ax bx dz) := by
   intro ab cd h
   apply Prod.ext
-  · apply bchksPolyOfMatrix_injective dz (ax + 1)
+  · apply bchks_poly_of_matrix_injective dz (ax + 1)
     exact congrArg Prod.fst h
-  · apply bchksPolyOfMatrix_injective (dz + 1) (bx + 1)
+  · apply bchks_poly_of_matrix_injective (dz + 1) (bx + 1)
     exact congrArg Prod.snd h
 
-private theorem bchksPolyOfMatrix_natDegreeY_le {K : Type} [Semiring K] [DecidableEq K]
+private theorem bchks_poly_of_matrix_nat_degree_y_le {K : Type} [Semiring K] [DecidableEq K]
     (dy dx : ℕ) (hdy : 0 < dy) (a : Matrix (Fin dy) (Fin dx) K) :
-    Polynomial.Bivariate.natDegreeY (bchksPolyOfMatrix dy dx a) ≤ dy - 1 := by
-  unfold Polynomial.Bivariate.natDegreeY bchksPolyOfMatrix
+    Polynomial.Bivariate.natDegreeY (bchks_poly_of_matrix dy dx a) ≤ dy - 1 := by
+  unfold Polynomial.Bivariate.natDegreeY bchks_poly_of_matrix
   exact Nat.le_pred_of_lt
     (Polynomial.ofFn_natDegree_lt (Nat.one_le_iff_ne_zero.mpr hdy.ne')
       (fun s => Polynomial.ofFn dx (a s)))
 
-private theorem bchksInterpolantPair_degree_bounds {K : Type} [Semiring K] [DecidableEq K]
+private theorem bchks_interpolant_pair_degree_bounds {K : Type} [Semiring K] [DecidableEq K]
     (ax bx dz : ℕ) (hdz : 0 < dz)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K) :
-    let AB := bchksInterpolantPair ax bx dz ab
+    let AB := bchks_interpolant_pair ax bx dz ab
     Polynomial.Bivariate.degreeX AB.1 ≤ ax ∧
       Polynomial.Bivariate.natDegreeY AB.1 ≤ dz - 1 ∧
       Polynomial.Bivariate.degreeX AB.2 ≤ bx ∧
       Polynomial.Bivariate.natDegreeY AB.2 ≤ dz := by
-  dsimp [bchksInterpolantPair]
+  dsimp [bchks_interpolant_pair]
   refine ⟨?_, ?_, ?_, ?_⟩
-  · simpa using bchksPolyOfMatrix_degreeX_le dz (ax + 1) (by omega) ab.1
-  · exact bchksPolyOfMatrix_natDegreeY_le dz (ax + 1) hdz ab.1
-  · simpa using bchksPolyOfMatrix_degreeX_le (dz + 1) (bx + 1) (by omega) ab.2
-  · simpa using bchksPolyOfMatrix_natDegreeY_le (dz + 1) (bx + 1) (by omega) ab.2
+  · simpa using bchks_poly_of_matrix_degree_x_le dz (ax + 1) (by omega) ab.1
+  · exact bchks_poly_of_matrix_nat_degree_y_le dz (ax + 1) hdz ab.1
+  · simpa using bchks_poly_of_matrix_degree_x_le (dz + 1) (bx + 1) (by omega) ab.2
+  · simpa using bchks_poly_of_matrix_nat_degree_y_le (dz + 1) (bx + 1) (by omega) ab.2
 
 private theorem bchks_affine_mul_coeff {K : Type} [Field K] (c₀ c₁ : K)
     (P : Polynomial K) (s : ℕ) :
@@ -550,43 +547,44 @@ private theorem bchks_affine_mul_coeff {K : Type} [Field K] (c₀ c₁ : K)
       simp only [Nat.zero_lt_succ, ↓reduceDIte, Nat.succ_sub_one]
 
 open scoped BigOperators in
-private theorem bchksConstraint_eq_coeff {ι K : Type} [Fintype ι] [Field K] [DecidableEq K]
+private theorem bchks_constraint_eq_coeff {ι K : Type} [Field K] [DecidableEq K]
     (domain : ι → K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
     (i : ι) (s : Fin (dz + 1)) :
-    bchksConstraint domain u ax bx dz ab i s =
-      (Polynomial.Bivariate.evalX (domain i) (bchksInterpolantPair ax bx dz ab).2 -
+    bchks_constraint domain u ax bx dz ab i s =
+      (Polynomial.Bivariate.evalX (domain i) (bchks_interpolant_pair ax bx dz ab).2 -
         (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
-          Polynomial.Bivariate.evalX (domain i) (bchksInterpolantPair ax bx dz ab).1).coeff s := by
-  unfold bchksConstraint bchksInterpolantPair
+          Polynomial.Bivariate.evalX (domain i)
+            (bchks_interpolant_pair ax bx dz ab).1).coeff s := by
+  unfold bchks_constraint bchks_interpolant_pair
   rw [Polynomial.coeff_sub]
-  rw [bchksPolyOfMatrix_evalX_coeff (dz + 1) (bx + 1) ab.2 (domain i) (s : ℕ)]
+  rw [bchks_poly_of_matrix_eval_x_coeff (dz + 1) (bx + 1) ab.2 (domain i) (s : ℕ)]
   simp only [s.isLt, ↓reduceDIte]
   rw [bchks_affine_mul_coeff]
   by_cases hs : (s : ℕ) < dz
-  · rw [bchksPolyOfMatrix_evalX_coeff dz (ax + 1) ab.1 (domain i) (s : ℕ)]
+  · rw [bchks_poly_of_matrix_eval_x_coeff dz (ax + 1) ab.1 (domain i) (s : ℕ)]
     simp only [hs, ↓reduceDIte]
     by_cases hpos : 0 < (s : ℕ)
     · have hprev : (s : ℕ) - 1 < dz := by omega
-      rw [bchksPolyOfMatrix_evalX_coeff dz (ax + 1) ab.1 (domain i) ((s : ℕ) - 1)]
+      rw [bchks_poly_of_matrix_eval_x_coeff dz (ax + 1) ab.1 (domain i) ((s : ℕ) - 1)]
       simp only [hpos, hprev, ↓reduceDIte]
       ring
     · simp only [hpos, ↓reduceDIte, add_zero, sub_zero]
-  · rw [bchksPolyOfMatrix_evalX_coeff dz (ax + 1) ab.1 (domain i) (s : ℕ)]
+  · rw [bchks_poly_of_matrix_eval_x_coeff dz (ax + 1) ab.1 (domain i) (s : ℕ)]
     simp only [hs, ↓reduceDIte]
     by_cases hpos : 0 < (s : ℕ)
     · have hprev : (s : ℕ) - 1 < dz := by omega
-      rw [bchksPolyOfMatrix_evalX_coeff dz (ax + 1) ab.1 (domain i) ((s : ℕ) - 1)]
+      rw [bchks_poly_of_matrix_eval_x_coeff dz (ax + 1) ab.1 (domain i) ((s : ℕ) - 1)]
       simp only [hpos, hprev, ↓reduceDIte]
       ring
     · simp only [hpos, ↓reduceDIte, mul_zero, add_zero, sub_zero]
 
-private theorem bchksInterpolantPair_vertical_identity {ι K : Type} [Fintype ι]
+private theorem bchks_interpolant_pair_vertical_identity {ι K : Type} [Fintype ι]
     [Field K] [DecidableEq K] (domain : ι → K) (u : Fin 2 → ι → K)
     (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
-    (hab : ab ∈ LinearMap.ker (bchksConstraintMap domain u ax bx dz)) :
-    let AB := bchksInterpolantPair ax bx dz ab
+    (hab : ab ∈ LinearMap.ker (bchks_constraint_map domain u ax bx dz)) :
+    let AB := bchks_interpolant_pair ax bx dz ab
     ∀ i : ι, Polynomial.Bivariate.evalX (domain i) AB.2 =
       (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
         Polynomial.Bivariate.evalX (domain i) AB.1 := by
@@ -596,49 +594,50 @@ private theorem bchksInterpolantPair_vertical_identity {ι K : Type} [Fintype ι
   intro s
   by_cases hs : s < dz + 1
   · let sf : Fin (dz + 1) := ⟨s, hs⟩
-    have hzero := bchksConstraintMap_eq_zero_of_mem_ker domain u ax bx dz ab hab i sf
-    rw [bchksConstraint_eq_coeff] at hzero
+    have hzero := bchks_constraint_map_eq_zero_of_mem_ker domain u ax bx dz ab hab i sf
+    rw [bchks_constraint_eq_coeff] at hzero
     rw [Polynomial.coeff_sub] at hzero
     exact sub_eq_zero.mp hzero
   · have hsB :
         (Polynomial.Bivariate.evalX (domain i)
-          (bchksPolyOfMatrix (dz + 1) (bx + 1) ab.2)).coeff s = 0 := by
-      rw [bchksPolyOfMatrix_evalX_coeff]
+          (bchks_poly_of_matrix (dz + 1) (bx + 1) ab.2)).coeff s = 0 := by
+      rw [bchks_poly_of_matrix_eval_x_coeff]
       simp only [hs, ↓reduceDIte]
-    rw [show (bchksInterpolantPair ax bx dz ab).2 =
-      bchksPolyOfMatrix (dz + 1) (bx + 1) ab.2 by rfl, hsB]
+    rw [show (bchks_interpolant_pair ax bx dz ab).2 =
+      bchks_poly_of_matrix (dz + 1) (bx + 1) ab.2 by rfl, hsB]
     rw [bchks_affine_mul_coeff]
     have hsA :
         (Polynomial.Bivariate.evalX (domain i)
-          (bchksPolyOfMatrix dz (ax + 1) ab.1)).coeff s = 0 := by
-      rw [bchksPolyOfMatrix_evalX_coeff]
+          (bchks_poly_of_matrix dz (ax + 1) ab.1)).coeff s = 0 := by
+      rw [bchks_poly_of_matrix_eval_x_coeff]
       split_ifs with hsd
       · omega
       · rfl
-    rw [show (bchksInterpolantPair ax bx dz ab).1 =
-      bchksPolyOfMatrix dz (ax + 1) ab.1 by rfl, hsA]
+    rw [show (bchks_interpolant_pair ax bx dz ab).1 =
+      bchks_poly_of_matrix dz (ax + 1) ab.1 by rfl, hsA]
     by_cases hpos : 0 < s
     · have hprev : ¬ s - 1 < dz := by omega
-      rw [bchksPolyOfMatrix_evalX_coeff dz (ax + 1) ab.1 (domain i) (s - 1)]
+      rw [bchks_poly_of_matrix_eval_x_coeff dz (ax + 1) ab.1 (domain i) (s - 1)]
       simp only [hpos, hprev, ↓reduceDIte, mul_zero, add_zero]
     · omega
 
 open scoped BigOperators in
-private theorem bchksInterpolantPair_fst_ne_zero {ι K : Type} [Fintype ι] [Field K] [DecidableEq K]
+private theorem bchks_interpolant_pair_fst_ne_zero
+    {ι K : Type} [Fintype ι] [Field K] [DecidableEq K]
     (domain : ι ↪ K) (u : Fin 2 → ι → K) (ax bx dz : ℕ)
     (ab : Matrix (Fin dz) (Fin (ax + 1)) K × Matrix (Fin (dz + 1)) (Fin (bx + 1)) K)
     (hab_ne : ab ≠ 0)
-    (hab_ker : ab ∈ LinearMap.ker (bchksConstraintMap domain u ax bx dz))
+    (hab_ker : ab ∈ LinearMap.ker (bchks_constraint_map domain u ax bx dz))
     (hbx : bx < Fintype.card ι) :
-    (bchksInterpolantPair ax bx dz ab).1 ≠ 0 := by
+    (bchks_interpolant_pair ax bx dz ab).1 ≠ 0 := by
   intro hA
   have hEvalB : ∀ i : ι,
-      Polynomial.Bivariate.evalX (domain i) (bchksInterpolantPair ax bx dz ab).2 = 0 := by
+      Polynomial.Bivariate.evalX (domain i) (bchks_interpolant_pair ax bx dz ab).2 = 0 := by
     intro i
-    have h := bchksInterpolantPair_vertical_identity domain u ax bx dz ab hab_ker i
+    have h := bchks_interpolant_pair_vertical_identity domain u ax bx dz ab hab_ker i
     rw [hA] at h
     calc
-      Polynomial.Bivariate.evalX (domain i) (bchksInterpolantPair ax bx dz ab).2 =
+      Polynomial.Bivariate.evalX (domain i) (bchks_interpolant_pair ax bx dz ab).2 =
           (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
             Polynomial.Bivariate.evalX (domain i) (0 : Polynomial (Polynomial K)) := h
       _ = 0 := by
@@ -649,9 +648,9 @@ private theorem bchksInterpolantPair_fst_ne_zero {ι K : Type} [Fintype ι] [Fie
     have hp_eval : ∀ i : ι, p.eval (domain i) = 0 := by
       intro i
       have hc := congrArg (fun q : Polynomial K => q.coeff (s : ℕ)) (hEvalB i)
-      rw [show (bchksInterpolantPair ax bx dz ab).2 =
-        bchksPolyOfMatrix (dz + 1) (bx + 1) ab.2 by rfl] at hc
-      rw [bchksPolyOfMatrix_evalX_coeff] at hc
+      rw [show (bchks_interpolant_pair ax bx dz ab).2 =
+        bchks_poly_of_matrix (dz + 1) (bx + 1) ab.2 by rfl] at hc
+      rw [bchks_poly_of_matrix_eval_x_coeff] at hc
       simp only [s.isLt, ↓reduceDIte] at hc
       rw [show p = Polynomial.ofFn (bx + 1) (ab.2 s) by rfl,
         Polynomial.ofFn_eq_sum_monomial, Polynomial.eval_finsetSum]
@@ -667,12 +666,12 @@ private theorem bchksInterpolantPair_fst_ne_zero {ι K : Type} [Fintype ι] [Fie
     rw [Polynomial.ofFn_coeff_eq_val_of_lt _ j.isLt] at hc
     simpa using hc
   have hab1 : ab.1 = 0 := by
-    apply bchksPolyOfMatrix_injective dz (ax + 1)
-    change (bchksInterpolantPair ax bx dz ab).1 = bchksPolyOfMatrix dz (ax + 1) 0
+    apply bchks_poly_of_matrix_injective dz (ax + 1)
+    change (bchks_interpolant_pair ax bx dz ab).1 = bchks_poly_of_matrix dz (ax + 1) 0
     rw [hA]
     apply Polynomial.ext
     intro s
-    rw [bchksPolyOfMatrix_coeff]
+    rw [bchks_poly_of_matrix_coeff]
     split_ifs with hs
     · change 0 = Polynomial.ofFn (ax + 1) (0 : Fin (ax + 1) → K)
       exact (map_zero (Polynomial.ofFn (R := K) (ax + 1))).symm
@@ -680,10 +679,11 @@ private theorem bchksInterpolantPair_fst_ne_zero {ι K : Type} [Fintype ι] [Fie
   apply hab_ne
   exact Prod.ext hab1 hab2
 
-private theorem RS_exists_oversized_bivariate_AB (domain : ι ↪ F) (u : Fin 2 → ι → F)
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+private theorem rs_exists_oversized_bivariate_ab (domain : ι ↪ F) (u : Fin 2 → ι → F)
     (n k e gap ax bx dz : ℕ) (δ : NNReal)
     (hn : n = Fintype.card ι)
-    (hfacts : BCHKSParameterFacts n k e gap ax bx dz δ) :
+    (hfacts : BchksParameterFacts n k e gap ax bx dz δ) :
     ∃ A B : Polynomial (Polynomial F),
       A ≠ 0 ∧
       Polynomial.Bivariate.degreeX A ≤ ax ∧
@@ -694,21 +694,23 @@ private theorem RS_exists_oversized_bivariate_AB (domain : ι ↪ F) (u : Fin 2 
         Polynomial.Bivariate.evalX (domain i) B =
           (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
             Polynomial.Bivariate.evalX (domain i) A) := by
+  classical
   have hdim : Fintype.card ι * (dz + 1) <
       dz * (ax + 1) + (dz + 1) * (bx + 1) := by
     simpa [hn] using hfacts.dimension_strict
   obtain ⟨ab, hab_ne, hab_ker⟩ :=
-    bchksConstraintMap_exists_nonzero_ker (domain : ι → F) u ax bx dz hdim
-  let AB := bchksInterpolantPair ax bx dz ab
+    bchks_constraint_map_exists_nonzero_ker (domain : ι → F) u ax bx dz hdim
+  let AB := bchks_interpolant_pair ax bx dz ab
   have hbx : bx < Fintype.card ι := by
     simpa [hn] using hfacts.bx_lt_n
   have hA0 : AB.1 ≠ 0 := by
-    exact bchksInterpolantPair_fst_ne_zero domain u ax bx dz ab hab_ne hab_ker hbx
-  have hdeg := bchksInterpolantPair_degree_bounds ax bx dz hfacts.dz_pos ab
-  have hvert := bchksInterpolantPair_vertical_identity (domain : ι → F) u ax bx dz ab hab_ker
+    exact bchks_interpolant_pair_fst_ne_zero domain u ax bx dz ab hab_ne hab_ker hbx
+  have hdeg := bchks_interpolant_pair_degree_bounds ax bx dz hfacts.dz_pos ab
+  have hvert := bchks_interpolant_pair_vertical_identity (domain : ι → F) u ax bx dz ab hab_ker
   exact ⟨AB.1, AB.2, hA0, hdeg.1, hdeg.2.1, hdeg.2.2.1, hdeg.2.2.2, hvert⟩
 
-private theorem RS_exists_oversized_bivariate_AB_of_dimension
+omit [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
+private theorem rs_exists_oversized_bivariate_ab_of_dimension
     (domain : ι ↪ F) (u : Fin 2 → ι → F) (ax bx dz : ℕ)
     (hdz : 0 < dz) (hbx : bx < Fintype.card ι)
     (hdim : Fintype.card ι * (dz + 1) <
@@ -723,16 +725,17 @@ private theorem RS_exists_oversized_bivariate_AB_of_dimension
         Polynomial.Bivariate.evalX (domain i) B =
           (Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
             Polynomial.Bivariate.evalX (domain i) A) := by
+  classical
   obtain ⟨ab, hab_ne, hab_ker⟩ :=
-    bchksConstraintMap_exists_nonzero_ker (domain : ι → F) u ax bx dz hdim
-  let AB := bchksInterpolantPair ax bx dz ab
+    bchks_constraint_map_exists_nonzero_ker (domain : ι → F) u ax bx dz hdim
+  let AB := bchks_interpolant_pair ax bx dz ab
   have hA0 : AB.1 ≠ 0 :=
-    bchksInterpolantPair_fst_ne_zero domain u ax bx dz ab hab_ne hab_ker hbx
-  have hdeg := bchksInterpolantPair_degree_bounds ax bx dz hdz ab
-  have hvert := bchksInterpolantPair_vertical_identity (domain : ι → F) u ax bx dz ab hab_ker
+    bchks_interpolant_pair_fst_ne_zero domain u ax bx dz ab hab_ne hab_ker hbx
+  have hdeg := bchks_interpolant_pair_degree_bounds ax bx dz hdz ab
+  have hvert := bchks_interpolant_pair_vertical_identity (domain : ι → F) u ax bx dz ab hab_ker
   exact ⟨AB.1, AB.2, hA0, hdeg.1, hdeg.2.1, hdeg.2.2.1, hdeg.2.2.2, hvert⟩
 
-private theorem bchks_evalX_eval_eq_evalY_eval {K : Type} [Field K]
+private theorem bchks_eval_x_eval_eq_eval_y_eval {K : Type} [Field K]
     (x z : K) (f : Polynomial (Polynomial K)) :
     (Polynomial.Bivariate.evalX x f).eval z =
       (Polynomial.Bivariate.evalY z f).eval x := by
@@ -750,7 +753,7 @@ private theorem bchks_evalX_eval_eq_evalY_eval {K : Type} [Field K]
           rfl
 
 open scoped BigOperators in
-private theorem bchks_evalY_natDegree_le_degreeX {K : Type} [Field K]
+private theorem bchks_eval_y_nat_degree_le_degree_x {K : Type} [Field K]
     (z : K) (f : Polynomial (Polynomial K)) :
     (Polynomial.Bivariate.evalY z f).natDegree ≤ Polynomial.Bivariate.degreeX f := by
   have heval :
@@ -772,10 +775,11 @@ private theorem bchks_evalY_natDegree_le_degreeX {K : Type} [Field K]
       (Polynomial.natDegree_mul_C_le (f := f.coeff j) (a := z ^ j))
   exact le_trans hmul hj_le
 
-private theorem bchks_goodPolynomial_horizontal_identity {k n e gap ax bx dz : ℕ} [NeZero k]
+omit [DecidableEq ι] in
+private theorem bchks_good_polynomial_horizontal_identity {k n e gap ax bx dz : ℕ} [NeZero k]
     (domain : ι ↪ F) (u : Fin 2 → ι → F) (δ : NNReal)
     (hn : n = Fintype.card ι)
-    (hfacts : BCHKSParameterFacts n k e gap ax bx dz δ)
+    (hfacts : BchksParameterFacts n k e gap ax bx dz δ)
     (A B : Polynomial (Polynomial F))
     (hA_degX : Polynomial.Bivariate.degreeX A ≤ ax)
     (hB_degX : Polynomial.Bivariate.degreeX B ≤ bx)
@@ -786,9 +790,10 @@ private theorem bchks_goodPolynomial_horizontal_identity {k n e gap ax bx dz : �
     (z : F)
     (hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ) :
     Polynomial.Bivariate.evalY z B =
-      bchksGoodPolynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
-  let Pz := bchksGoodPolynomial (k := k) domain u δ z
-  have hPz := bchksGoodPolynomial_spec domain u δ z hz
+      bchks_good_polynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
+  classical
+  let Pz := bchks_good_polynomial (k := k) domain u δ z
+  have hPz := bchks_good_polynomial_spec domain u δ z hz
   have hdist : hammingDist (u 0 + z • u 1) (Pz.eval ∘ domain) ≤ e := by
     simpa [Pz, hfacts.e_eq_floor, hn] using hPz.2
   obtain ⟨Tz, hTz_card, hTz_agree⟩ :=
@@ -808,7 +813,7 @@ private theorem bchks_goodPolynomial_horizontal_identity {k n e gap ax bx dz : �
         (Polynomial.Bivariate.evalY z B).eval (domain i) =
             (Polynomial.Bivariate.evalX (domain i) B).eval z := by
               symm
-              exact bchks_evalX_eval_eq_evalY_eval (domain i) z B
+              exact bchks_eval_x_eval_eq_eval_y_eval (domain i) z B
         _ = (((Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
               Polynomial.Bivariate.evalX (domain i) A)).eval z := by
               simpa using congrArg (fun p : Polynomial F => p.eval z) (hAB i)
@@ -824,15 +829,15 @@ private theorem bchks_goodPolynomial_horizontal_identity {k n e gap ax bx dz : �
               simp
         _ = Pz.eval (domain i) *
               (Polynomial.Bivariate.evalY z A).eval (domain i) := by
-              rw [hi_eq, bchks_evalX_eval_eq_evalY_eval]
+              rw [hi_eq, bchks_eval_x_eval_eq_eval_y_eval]
         _ = (Pz * Polynomial.Bivariate.evalY z A).eval (domain i) := by
               rw [Polynomial.eval_mul]
     simpa [Dz, sub_eq_zero] using hEq_eval
   have hDz_deg : Dz.natDegree ≤ bx := by
     have hB_eval : (Polynomial.Bivariate.evalY z B).natDegree ≤ bx :=
-      le_trans (bchks_evalY_natDegree_le_degreeX z B) hB_degX
+      le_trans (bchks_eval_y_nat_degree_le_degree_x z B) hB_degX
     have hA_eval : (Polynomial.Bivariate.evalY z A).natDegree ≤ ax :=
-      le_trans (bchks_evalY_natDegree_le_degreeX z A) hA_degX
+      le_trans (bchks_eval_y_nat_degree_le_degree_x z A) hA_degX
     have hprod : (Pz * Polynomial.Bivariate.evalY z A).natDegree ≤ bx := by
       calc
         (Pz * Polynomial.Bivariate.evalY z A).natDegree ≤
@@ -854,7 +859,8 @@ private theorem bchks_goodPolynomial_horizontal_identity {k n e gap ax bx dz : �
       (p := Dz) (s := Tz.image domain) hDz_eval hdeg_lt
   simpa [Dz, Pz, sub_eq_zero] using hzero
 
-private theorem bchks_goodPolynomial_horizontal_identity_basic {k n e ax bx : ℕ} [NeZero k]
+omit [DecidableEq ι] in
+private theorem bchks_good_polynomial_horizontal_identity_basic {k n e ax bx : ℕ} [NeZero k]
     (domain : ι ↪ F) (u : Fin 2 → ι → F) (δ : NNReal)
     (hn : n = Fintype.card ι)
     (he : e = Nat.floor (δ * n))
@@ -870,9 +876,10 @@ private theorem bchks_goodPolynomial_horizontal_identity_basic {k n e ax bx : �
     (z : F)
     (hz : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ) :
     Polynomial.Bivariate.evalY z B =
-      bchksGoodPolynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
-  let Pz := bchksGoodPolynomial (k := k) domain u δ z
-  have hPz := bchksGoodPolynomial_spec domain u δ z hz
+      bchks_good_polynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
+  classical
+  let Pz := bchks_good_polynomial (k := k) domain u δ z
+  have hPz := bchks_good_polynomial_spec domain u δ z hz
   have hdist : hammingDist (u 0 + z • u 1) (Pz.eval ∘ domain) ≤ e := by
     simpa [Pz, he, hn] using hPz.2
   obtain ⟨Tz, hTz_card, hTz_agree⟩ :=
@@ -892,7 +899,7 @@ private theorem bchks_goodPolynomial_horizontal_identity_basic {k n e ax bx : �
         (Polynomial.Bivariate.evalY z B).eval (domain i) =
             (Polynomial.Bivariate.evalX (domain i) B).eval z := by
               symm
-              exact bchks_evalX_eval_eq_evalY_eval (domain i) z B
+              exact bchks_eval_x_eval_eq_eval_y_eval (domain i) z B
         _ = (((Polynomial.C (u 0 i) + Polynomial.X * Polynomial.C (u 1 i)) *
               Polynomial.Bivariate.evalX (domain i) A)).eval z := by
               simpa using congrArg (fun p : Polynomial F => p.eval z) (hAB i)
@@ -908,15 +915,15 @@ private theorem bchks_goodPolynomial_horizontal_identity_basic {k n e ax bx : �
               simp
         _ = Pz.eval (domain i) *
               (Polynomial.Bivariate.evalY z A).eval (domain i) := by
-              rw [hi_eq, bchks_evalX_eval_eq_evalY_eval]
+              rw [hi_eq, bchks_eval_x_eval_eq_eval_y_eval]
         _ = (Pz * Polynomial.Bivariate.evalY z A).eval (domain i) := by
               rw [Polynomial.eval_mul]
     simpa [Dz, sub_eq_zero] using hEq_eval
   have hDz_deg : Dz.natDegree ≤ bx := by
     have hB_eval : (Polynomial.Bivariate.evalY z B).natDegree ≤ bx :=
-      le_trans (bchks_evalY_natDegree_le_degreeX z B) hB_degX
+      le_trans (bchks_eval_y_nat_degree_le_degree_x z B) hB_degX
     have hA_eval : (Polynomial.Bivariate.evalY z A).natDegree ≤ ax :=
-      le_trans (bchks_evalY_natDegree_le_degreeX z A) hA_degX
+      le_trans (bchks_eval_y_nat_degree_le_degree_x z A) hA_degX
     have hprod : (Pz * Polynomial.Bivariate.evalY z A).natDegree ≤ bx := by
       calc
         (Pz * Polynomial.Bivariate.evalY z A).natDegree ≤
@@ -938,6 +945,7 @@ private theorem bchks_goodPolynomial_horizontal_identity_basic {k n e ax bx : �
       (p := Dz) (s := Tz.image domain) hDz_eval hdeg_lt
   simpa [Dz, Pz, sub_eq_zero] using hzero
 
+omit [DecidableEq ι] in
 private theorem bchks_exists_global_affine_quotient_basic
     {k n e ax bx dz : ℕ} [NeZero k]
     (domain : ι ↪ F) (u : Fin 2 → ι → F) (δ : NNReal)
@@ -967,7 +975,8 @@ private theorem bchks_exists_global_affine_quotient_basic
         n - ax ≤ Qx.card ∧
         Qx ⊆ Finset.univ.map domain ∧
         ∀ x ∈ Qx,
-          Polynomial.Bivariate.evalX x P = bchksHorizontalQuotient domain u x := by
+          Polynomial.Bivariate.evalX x P = bchks_horizontal_quotient domain u x := by
+  classical
   let good := ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ
   let Px : Finset F := Finset.univ.map domain
   let Py : Finset F := good
@@ -983,30 +992,30 @@ private theorem bchks_exists_global_affine_quotient_basic
   have hcardy : (⟨good.card, by simpa [good] using hgood⟩ : ℕ+) ≤ Py.card := by
     simp [Py]
   have hquotx : ∀ z ∈ Py,
-      (bchksGoodPolynomial (k := k) domain u δ z).natDegree ≤ bx - ax ∧
+      (bchks_good_polynomial (k := k) domain u δ z).natDegree ≤ bx - ax ∧
       Polynomial.Bivariate.evalY z B =
-        bchksGoodPolynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
+        bchks_good_polynomial (k := k) domain u δ z * Polynomial.Bivariate.evalY z A := by
     intro z hz
     have hzgood : z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ := by
       simpa [Py, good] using hz
-    refine ⟨?_, bchks_goodPolynomial_horizontal_identity_basic domain u δ hn he hax hbx
+    refine ⟨?_, bchks_good_polynomial_horizontal_identity_basic domain u δ hn he hax hbx
       A B hA_degX hB_degX hAB z hzgood⟩
-    have hp := (bchksGoodPolynomial_spec domain u δ z hzgood).1
-    have hle : (bchksGoodPolynomial (k := k) domain u δ z).natDegree ≤ k - 1 :=
+    have hp := (bchks_good_polynomial_spec domain u δ z hzgood).1
+    have hle : (bchks_good_polynomial (k := k) domain u δ z).natDegree ≤ k - 1 :=
       Nat.le_pred_of_lt hp
     have heq : bx - ax = k - 1 := by omega
     simpa [heq] using hle
   have hquoty : ∀ x ∈ Px,
-      (bchksHorizontalQuotient domain u x).natDegree ≤ dz - (dz - 1) ∧
+      (bchks_horizontal_quotient domain u x).natDegree ≤ dz - (dz - 1) ∧
       Polynomial.Bivariate.evalX x B =
-        bchksHorizontalQuotient domain u x * Polynomial.Bivariate.evalX x A := by
+        bchks_horizontal_quotient domain u x * Polynomial.Bivariate.evalX x A := by
     intro x hx
     rcases Finset.mem_map.mp hx with ⟨i, -, rfl⟩
     refine ⟨?_, ?_⟩
-    · have hle := bchksHorizontalQuotient_natDegree_le_one domain u (domain i)
+    · have hle := bchks_horizontal_quotient_nat_degree_le_one domain u (domain i)
       have heq : dz - (dz - 1) = 1 := by omega
       simpa [heq] using hle
-    · simpa [bchksHorizontalQuotient_domain] using hAB i
+    · simpa [bchks_horizontal_quotient_domain] using hAB i
   have hratio' :
       (bx : ℚ) / ((⟨n, hnpos⟩ : ℕ+) : ℚ) +
         (dz : ℚ) / ((⟨good.card, by simpa [good] using hgood⟩ : ℕ+) : ℚ) < 1 := by
@@ -1018,8 +1027,8 @@ private theorem bchks_exists_global_affine_quotient_basic
       (n_y := ⟨good.card, by simpa [good] using hgood⟩)
       (h_bx_ge_ax := haxle) (h_by_ge_ay := by omega)
       (A := A) (B := B) hA0 hA_degX hB_degX hA_degY hB_degY
-      Px Py (bchksGoodPolynomial (k := k) domain u δ)
-      (bchksHorizontalQuotient domain u) hcardx hcardy hquotx hquoty hratio'
+      Px Py (bchks_good_polynomial (k := k) domain u δ)
+      (bchks_horizontal_quotient domain u) hcardx hcardy hquotx hquoty hratio'
   have hPX' : Polynomial.Bivariate.degreeX P ≤ k - 1 := by
     have heq : bx - ax = k - 1 := by omega
     simpa [heq] using hPX
@@ -1062,20 +1071,20 @@ private theorem bchks_second_threshold_card_facts (a : ℕ) (δ_fld δ_int : ℝ
   refine ⟨ha, ?_⟩
   nlinarith
 
-private theorem mem_bchksPairDisagreements {ι K : Type} [Fintype ι] [DecidableEq ι]
+private theorem mem_bchks_pair_disagreements {ι K : Type} [Fintype ι] [DecidableEq ι]
     [DecidableEq K] (u p : Fin 2 → ι → K) (i : ι) :
-    i ∈ bchksPairDisagreements u p ↔ u 0 i ≠ p 0 i ∨ u 1 i ≠ p 1 i := by
-  simp only [bchksPairDisagreements, Finset.mem_union, Code.mem_disagreementCols]
+    i ∈ bchks_pair_disagreements u p ↔ u 0 i ≠ p 0 i ∨ u 1 i ≠ p 1 i := by
+  simp only [bchks_pair_disagreements, Finset.mem_union, Code.mem_disagreementCols]
 
-private theorem affine_hammingDist_le_pairDisagreements_card {ι K : Type} [Fintype ι]
+private theorem affine_hamming_dist_le_pair_disagreements_card {ι K : Type} [Fintype ι]
     [DecidableEq ι] [Field K] [DecidableEq K]
     (u p : Fin 2 → ι → K) (z : K) :
     hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤
-      (bchksPairDisagreements u p).card := by
+      (bchks_pair_disagreements u p).card := by
   rw [Code.hammingDist_eq_disagreementCols_card]
   apply Finset.card_le_card
   intro i hi
-  rw [mem_bchksPairDisagreements]
+  rw [mem_bchks_pair_disagreements]
   by_contra hnot
   simp only [not_or] at hnot
   have h0 : u 0 i = p 0 i := of_not_not hnot.1
@@ -1089,9 +1098,9 @@ private theorem bchks_affine_close_double_count {ι K : Type} [Fintype ι] [Deci
     (_hgood : 1 < good.card)
     (hclose : ∀ z ∈ good,
       hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤ e) :
-    (good.card - 1) * (bchksPairDisagreements u p).card ≤ good.card * e := by
+    (good.card - 1) * (bchks_pair_disagreements u p).card ≤ good.card * e := by
   classical
-  let D : Finset ι := bchksPairDisagreements u p
+  let D : Finset ι := bchks_pair_disagreements u p
   let count : ι → ℕ := fun i =>
     (good.filter (fun z =>
       (u 0 + z • u 1) i ≠ (p 0 + z • p 1) i)).card
@@ -1131,7 +1140,7 @@ private theorem bchks_affine_close_double_count {ι K : Type} [Fintype ι] [Deci
       (good.filter (fun z =>
         (u 0 + z • u 1) i = (p 0 + z • p 1) i)).card ≤ 1 := by
     have hi : u 0 i ≠ p 0 i ∨ u 1 i ≠ p 1 i := by
-      simpa [D] using (mem_bchksPairDisagreements u p i).mp hiD
+      simpa [D] using (mem_bchks_pair_disagreements u p i).mp hiD
     by_cases hslope : u 1 i = p 1 i
     · have hbase : u 0 i ≠ p 0 i := by
         rcases hi with h0 | h1
@@ -1185,12 +1194,13 @@ private theorem bchks_affine_close_double_count {ι K : Type} [Fintype ι] [Deci
       _ ≤ Finset.univ.sum count :=
         Finset.sum_le_sum_of_subset (Finset.subset_univ D)
   calc
-    (good.card - 1) * (bchksPairDisagreements u p).card =
+    (good.card - 1) * (bchks_pair_disagreements u p).card =
         (good.card - 1) * D.card := by rfl
     _ ≤ Finset.univ.sum count := hsum_lower
     _ = good.sum (fun z => hammingDist (u 0 + z • u 1) (p 0 + z • p 1)) := hsum_eq.symm
     _ ≤ good.card * e := hsum_upper
 
+omit [Fintype F] in
 private theorem bchks_affine_pair_seed_of_global_quotient {k n ax : ℕ} [NeZero k]
     (domain : ι ↪ F) (u : Fin 2 → ι → F)
     (hn : n = Fintype.card ι)
@@ -1199,10 +1209,10 @@ private theorem bchks_affine_pair_seed_of_global_quotient {k n ax : ℕ} [NeZero
     (hQcard : n - ax ≤ Qx.card)
     (hQsub : Qx ⊆ Finset.univ.map domain)
     (hQeval : ∀ x ∈ Qx,
-      Polynomial.Bivariate.evalX x P = bchksHorizontalQuotient domain u x) :
+      Polynomial.Bivariate.evalX x P = bchks_horizontal_quotient domain u x) :
     ∃ p : Fin 2 → ι → F,
       (∀ j, p j ∈ ReedSolomon.code domain k) ∧
-      (bchksPairDisagreements u p).card ≤ ax := by
+      (bchks_pair_disagreements u p).card ≤ ax := by
   classical
   let S0 : Finset ι := Qx.preimage domain domain.injective.injOn
   have hmap : S0.map domain = Qx := by
@@ -1229,17 +1239,17 @@ private theorem bchks_affine_pair_seed_of_global_quotient {k n ax : ℕ} [NeZero
   have hagree (j : Fin 2) (i : ι) (hi : i ∈ S0) : p j i = u j i := by
     have hiQ : domain i ∈ Qx := Finset.mem_preimage.mp hi
     have hEval := hQeval (domain i) hiQ
-    rw [bchksHorizontalQuotient_domain] at hEval
+    rw [bchks_horizontal_quotient_domain] at hEval
     fin_cases j
     · have hc := congrArg (fun q : Polynomial F => q.coeff 0) hEval
       simpa [p, Polynomial.Bivariate.evalX, Polynomial.coeff] using hc
     · have hc := congrArg (fun q : Polynomial F => q.coeff 1) hEval
       simpa [p, Polynomial.Bivariate.evalX, Polynomial.coeff] using hc
-  have hDsub : bchksPairDisagreements u p ⊆ S0ᶜ := by
+  have hDsub : bchks_pair_disagreements u p ⊆ S0ᶜ := by
     intro i hiD
     rw [Finset.mem_compl]
     intro hiS
-    rcases (mem_bchksPairDisagreements u p i).mp hiD with h0 | h1
+    rcases (mem_bchks_pair_disagreements u p i).mp hiD with h0 | h1
     · exact h0 (hagree 0 i hiS).symm
     · exact h1 (hagree 1 i hiS).symm
   have hcomp : S0ᶜ.card ≤ ax := by
@@ -1249,15 +1259,15 @@ private theorem bchks_affine_pair_seed_of_global_quotient {k n ax : ℕ} [NeZero
     omega
   exact ⟨p, hp_mem, le_trans (Finset.card_le_card hDsub) hcomp⟩
 
-private theorem jointProximity_of_pairDisagreements_card_le {ι K : Type} [Fintype ι]
+private theorem joint_proximity_of_pair_disagreements_card_le {ι K : Type} [Fintype ι]
     [Nonempty ι] [DecidableEq ι] [Field K] [DecidableEq K]
     (C : LinearCode ι K) (u p : Fin 2 → ι → K) (δ : NNReal)
     (hp : ∀ j, p j ∈ C)
-    (hD : (bchksPairDisagreements u p).card ≤ Nat.floor (δ * Fintype.card ι)) :
+    (hD : (bchks_pair_disagreements u p).card ≤ Nat.floor (δ * Fintype.card ι)) :
     Code.jointProximity (C := (C : Set (ι → K))) (u := u) δ := by
   classical
   rw [← Code.jointAgreement_iff_jointProximity]
-  let D := bchksPairDisagreements u p
+  let D := bchks_pair_disagreements u p
   refine ⟨Dᶜ, (Code.relDist_floor_bound_iff_complement_bound _ _ _).mp ?_, p, ?_⟩
   · rw [Finset.card_compl]
     exact Nat.sub_le_sub_left (by simpa only [D] using hD) _
@@ -1267,14 +1277,14 @@ private theorem jointProximity_of_pairDisagreements_card_le {ι K : Type} [Finty
     rw [Finset.mem_filter]
     refine ⟨Finset.mem_univ i, ?_⟩
     have hiD : i ∉ D := by simpa only [Finset.mem_compl] using hi
-    simp only [D, mem_bchksPairDisagreements, not_or] at hiD
+    simp only [D, mem_bchks_pair_disagreements, not_or] at hiD
     fin_cases j
     · exact (of_not_not hiD.1).symm
     · exact (of_not_not hiD.2).symm
 
 open scoped NNReal in
-private theorem affine_many_close_implies_jointProximity {ι K : Type} [Fintype ι]
-    [Nonempty ι] [DecidableEq ι] [Field K] [DecidableEq K]
+private theorem affine_many_close_implies_joint_proximity {ι K : Type} [Fintype ι]
+    [Nonempty ι] [Field K] [DecidableEq K]
     (C : LinearCode ι K) (good : Finset K) (u p : Fin 2 → ι → K)
     (δ_fld δ_int : ℝ≥0)
     (hp : ∀ j, p j ∈ C)
@@ -1285,8 +1295,9 @@ private theorem affine_many_close_implies_jointProximity {ι K : Type} [Fintype 
     (hgap : (good.card : ℝ) * (δ_fld : ℝ) <
       ((good.card : ℝ) - 1) * (δ_int : ℝ)) :
     Code.jointProximity (C := (C : Set (ι → K))) (u := u) δ_int := by
+  classical
   let e : ℕ := Nat.floor (δ_fld * Fintype.card ι)
-  let D : Finset ι := bchksPairDisagreements u p
+  let D : Finset ι := bchks_pair_disagreements u p
   have hdc : (good.card - 1) * D.card ≤ good.card * e := by
     simpa [D, e] using bchks_affine_close_double_count good u p e hgood
       (by simpa [e] using hclose)
@@ -1325,7 +1336,7 @@ private theorem affine_many_close_implies_jointProximity {ι K : Type} [Fintype 
     exact_mod_cast (le_of_lt hDlt)
   have hDfloor : D.card ≤ Nat.floor (δ_int * Fintype.card ι) :=
     Nat.le_floor hDNN
-  exact jointProximity_of_pairDisagreements_card_le C u p δ_int hp
+  exact joint_proximity_of_pair_disagreements_card_le C u p δ_int hp
     (by simpa [D] using hDfloor)
 
 open scoped NNReal in
@@ -1333,23 +1344,23 @@ private theorem rs_all_good_close_to_affine_pair
     {k n e gap ax bx dz : ℕ} [NeZero k]
     (domain : ι ↪ F) (u p : Fin 2 → ι → F) (δ : ℝ≥0)
     (hn : n = Fintype.card ι)
-    (hfacts : BCHKSParameterFacts n k e gap ax bx dz δ)
+    (hfacts : BchksParameterFacts n k e gap ax bx dz δ)
     (hp : ∀ j, p j ∈ ReedSolomon.code domain k)
-    (hD : (bchksPairDisagreements u p).card ≤ ax) :
+    (hD : (bchks_pair_disagreements u p).card ≤ ax) :
     ∀ z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ,
       hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤ e := by
   intro z hz
-  let Pz := bchksGoodPolynomial (k := k) domain u δ z
+  let Pz := bchks_good_polynomial (k := k) domain u δ z
   have hPz_close : hammingDist (u 0 + z • u 1) (Pz.eval ∘ domain) ≤ e := by
     simpa [Pz, hfacts.e_eq_floor, hn] using
-      (bchksGoodPolynomial_spec domain u δ z hz).2
+      (bchks_good_polynomial_spec domain u δ z hz).2
   have hPz_mem : Pz.eval ∘ domain ∈ ReedSolomon.code domain k := by
-    simpa [Pz] using bchksGoodPolynomial_mem_code domain u δ z hz
+    simpa [Pz] using bchks_good_polynomial_mem_code domain u δ z hz
   have hAff_mem : p 0 + z • p 1 ∈ ReedSolomon.code domain k := by
     exact (ReedSolomon.code domain k).add_mem (hp 0)
       ((ReedSolomon.code domain k).smul_mem z (hp 1))
   have hAff_close : hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤ ax :=
-    le_trans (affine_hammingDist_le_pairDisagreements_card u p z) hD
+    le_trans (affine_hamming_dist_le_pair_disagreements_card u p z) hD
   have htri : hammingDist (Pz.eval ∘ domain) (p 0 + z • p 1) ≤ e + ax := by
     calc
       hammingDist (Pz.eval ∘ domain) (p 0 + z • p 1) ≤
@@ -1377,11 +1388,12 @@ private theorem rs_all_good_close_to_affine_pair
   exact hPz_close
 
 open scoped NNReal in
-private theorem rs_exists_affine_pair_of_many_goodCoeffs_pos
+omit [DecidableEq ι] in
+private theorem rs_exists_affine_pair_of_many_good_coeffs_pos
     {k n e gap ax bx dz : ℕ} [NeZero k]
     (domain : ι ↪ F) (u : Fin 2 → ι → F) (δ : ℝ≥0)
     (hn : n = Fintype.card ι)
-    (hfacts : BCHKSParameterFacts n k e gap ax bx dz δ)
+    (hfacts : BchksParameterFacts n k e gap ax bx dz δ)
     (hfirst :
       (1 - (k : ℝ) / n - (δ : ℝ)) /
           ((δ : ℝ) * (1 - (k : ℝ) / n - 2 * (δ : ℝ))) <
@@ -1390,6 +1402,7 @@ private theorem rs_exists_affine_pair_of_many_goodCoeffs_pos
       (∀ j, p j ∈ ReedSolomon.code domain k) ∧
       ∀ z ∈ ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ,
         hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤ e := by
+  classical
   let good := ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ
   have hgoodR : (0 : ℝ) < good.card := by
     exact lt_trans hfacts.first_threshold_pos (by simpa [good] using hfirst)
@@ -1407,7 +1420,7 @@ private theorem rs_exists_affine_pair_of_many_goodCoeffs_pos
     bchks_ps_ratio_lt_one_basic n bx dz good.card (δ : ℝ)
       hfacts.bx_ratio_lt hdz_card
   obtain ⟨A, B, hA0, hAX, hAY, hBX, hBY, hAB⟩ :=
-    RS_exists_oversized_bivariate_AB domain u n k e gap ax bx dz δ hn hfacts
+    rs_exists_oversized_bivariate_ab domain u n k e gap ax bx dz δ hn hfacts
   obtain ⟨P, Qx, hBA, hPX, hPY, hQcard, hQsub, hQeval⟩ :=
     bchks_exists_global_affine_quotient_basic
       (k := k) (n := n) (e := e) (ax := ax) (bx := bx) (dz := dz)
@@ -1421,11 +1434,13 @@ private theorem rs_exists_affine_pair_of_many_goodCoeffs_pos
   exact rs_all_good_close_to_affine_pair domain u p δ hn hfacts hp hD
 
 open scoped NNReal in
+omit [DecidableEq ι] in
 private theorem rs_zero_pair_close_of_good_coeff (domain : ι ↪ F)
     (u : Fin 2 → ι → F) (δ : ℝ≥0) (z : F)
     (hz : z ∈ ProximityGap.RS_goodCoeffs (deg := 0) (domain := domain) u δ) :
     hammingDist (u 0 + z • u 1) (0 : ι → F) ≤
       Nat.floor (δ * Fintype.card ι) := by
+  classical
   have hz_rel : δᵣ(u 0 + z • u 1, ReedSolomon.code domain 0) ≤ δ := by
     simpa [ProximityGap.RS_goodCoeffs] using (Finset.mem_filter.mp hz).2
   have hz_zero : δᵣ(u 0 + z • u 1, (0 : ι → F)) ≤ δ := by
@@ -1437,13 +1452,15 @@ private theorem rs_zero_pair_close_of_good_coeff (domain : ι ↪ F)
   exact hz_zero
 
 open scoped NNReal in
-private theorem rs_exists_affine_pair_of_many_goodCoeffs_zero (domain : ι ↪ F)
+omit [DecidableEq ι] in
+private theorem rs_exists_affine_pair_of_many_good_coeffs_zero (domain : ι ↪ F)
     (u : Fin 2 → ι → F) (δ : ℝ≥0) :
     ∃ p : Fin 2 → ι → F,
       (∀ j, p j ∈ ReedSolomon.code domain 0) ∧
       ∀ z ∈ ProximityGap.RS_goodCoeffs (deg := 0) (domain := domain) u δ,
         hammingDist (u 0 + z • u 1) (p 0 + z • p 1) ≤
           Nat.floor (δ * Fintype.card ι) := by
+  classical
   let p : Fin 2 → ι → F := fun _ => 0
   refine ⟨p, ?_, ?_⟩
   · intro j
@@ -1452,7 +1469,8 @@ private theorem rs_exists_affine_pair_of_many_goodCoeffs_zero (domain : ι ↪ F
     simpa [p] using rs_zero_pair_close_of_good_coeff domain u δ z hz
 
 open scoped NNReal in
-private theorem rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
+omit [DecidableEq ι] in
+private theorem rs_good_coeffs_card_le_max_threshold_of_not_joint_proximity
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
     (u : Fin 2 → ι → F)
     (h_ud : (δ_fld : ℝ) ≤
@@ -1468,6 +1486,7 @@ private theorem rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
           ((δ_fld : ℝ) *
             (1 - (k : ℝ) / Fintype.card ι - 2 * (δ_fld : ℝ))))
         ((δ_int : ℝ) / ((δ_int : ℝ) - (δ_fld : ℝ))) := by
+  classical
   let good := ProximityGap.RS_goodCoeffs (deg := k) (domain := domain) u δ_fld
   let T₁ : ℝ :=
     (1 - (k : ℝ) / Fintype.card ι - (δ_fld : ℝ)) /
@@ -1487,9 +1506,9 @@ private theorem rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
   by_cases hk0 : k = 0
   · subst k
     obtain ⟨p, hp, hclose⟩ :=
-      rs_exists_affine_pair_of_many_goodCoeffs_zero domain u δ_fld
+      rs_exists_affine_pair_of_many_good_coeffs_zero domain u δ_fld
     apply hjoint
-    exact affine_many_close_implies_jointProximity
+    exact affine_many_close_implies_joint_proximity
       (ReedSolomon.code domain 0) good u p δ_fld δ_int hp hgood
       (by simpa [good] using hclose) hgap
   · have hk : 0 < k := Nat.pos_of_ne_zero hk0
@@ -1499,21 +1518,21 @@ private theorem rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
     let gap : ℕ := n - k - 2 * e + 1
     let ax : ℕ := n - k - e
     let bx : ℕ := n - e - 1
-    let dz : ℕ := bchksDZ n k e
-    have hfacts : BCHKSParameterFacts n k e gap ax bx dz δ_fld := by
+    let dz : ℕ := bchks_dz n k e
+    have hfacts : BchksParameterFacts n k e gap ax bx dz δ_fld := by
       simpa [n, e, gap, ax, bx, dz] using
-        bchksParameterFacts_of_target_hypotheses domain k δ_fld hk h_ud h_dmin
+        bchks_parameter_facts_of_target_hypotheses domain k δ_fld hk h_ud h_dmin
     have hfirst' :
         (1 - (k : ℝ) / n - (δ_fld : ℝ)) /
             ((δ_fld : ℝ) * (1 - (k : ℝ) / n - 2 * (δ_fld : ℝ))) <
           (good.card : ℝ) := by
       simpa [T₁, n] using hfirst
     obtain ⟨p, hp, hclose⟩ :=
-      rs_exists_affine_pair_of_many_goodCoeffs_pos
+      rs_exists_affine_pair_of_many_good_coeffs_pos
         (k := k) (n := n) (e := e) (gap := gap) (ax := ax) (bx := bx) (dz := dz)
         domain u δ_fld (by rfl) hfacts (by simpa [good] using hfirst')
     apply hjoint
-    exact affine_many_close_implies_jointProximity
+    exact affine_many_close_implies_joint_proximity
       (ReedSolomon.code domain k) good u p δ_fld δ_int hp hgood
       (by
         intro z hz
@@ -1521,7 +1540,8 @@ private theorem rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
       hgap
 
 open scoped NNReal ProbabilityTheory in
-private theorem rs_fold_probability_le_bound_of_not_jointProximity
+omit [DecidableEq ι] in
+private theorem rs_fold_probability_le_bound_of_not_joint_proximity
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
     (h_ud : (δ_fld : ℝ) ≤
       (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
@@ -1550,7 +1570,7 @@ private theorem rs_fold_probability_le_bound_of_not_jointProximity
   let T₂ : ℝ := (δ_int : ℝ) / ((δ_int : ℝ) - (δ_fld : ℝ))
   have hcard : (good.card : ℝ) ≤ max T₁ T₂ := by
     simpa [good, T₁, T₂] using
-      rs_goodCoeffs_card_le_max_threshold_of_not_jointProximity
+      rs_good_coeffs_card_le_max_threshold_of_not_joint_proximity
         domain k δ_fld δ_int u h_ud h_dmin h_lt hjoint
   have hq : (0 : ℝ) < Fintype.card F := by exact_mod_cast Fintype.card_pos
   rw [Probability.prob_uniform_eq_ofReal]
@@ -1585,14 +1605,9 @@ private theorem rs_fold_probability_le_bound_of_not_jointProximity
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-/-- Reed--Solomon CA bound between one third of the minimum distance and the finite-length
-half-distance boundary. For `δ_min(C)/3 ≤ δ_fld < δ_int`,
-
-  `ε_ca(C, δ_fld, δ_int) ≤`
-  `  max{ (1-ρ-δ_fld) / (δ_fld·(1-ρ-2·δ_fld)·|F|), δ_int / ((δ_int-δ_fld)·|F|) }`
-
-The upper-radius hypothesis includes the source's `1/n` margin, which keeps the first denominator
-strictly positive. -/
+omit [DecidableEq ι] in
+/-- Bounds Reed--Solomon CA error when `δ_fld` lies between one third of the minimum
+distance and the finite-length unique-decoding radius, and `δ_fld < δ_int`. -/
 theorem rs_epsCa_le_in_unique_decoding_range
     (domain : ι ↪ F) (k : ℕ) (δ_fld δ_int : ℝ≥0)
     (_h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
@@ -1615,7 +1630,7 @@ theorem rs_epsCa_le_in_unique_decoding_range
   · rw [if_pos hj]
     exact zero_le
   · rw [if_neg hj]
-    exact rs_fold_probability_le_bound_of_not_jointProximity
+    exact rs_fold_probability_le_bound_of_not_joint_proximity
       domain k δ_fld δ_int _h_ud _h_dmin _h_lt u hj
 
 end ReedSolomon

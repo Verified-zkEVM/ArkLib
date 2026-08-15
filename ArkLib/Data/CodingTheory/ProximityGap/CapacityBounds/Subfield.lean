@@ -59,10 +59,6 @@ a first/second-moment estimate over subfield interpolation data.
 - [CS25] Crites--Stewart, Theorem 3.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -79,7 +75,7 @@ noncomputable def subfieldCaFactor (x : ℝ) : ℝ :=
   if x ≤ 3 / 2 then Real.exp x
   else Real.exp (2 * Real.sqrt x) / Real.sqrt (2 * Real.pi * ⌊Real.sqrt x⌋₊)
 
-private def SubfieldCaDivisibleDegreeLT
+private def subfield_ca_divisible_degree_lt
     (B : Subfield F) (k : ℕ) (H : Polynomial B) :=
   {r : Polynomial.degreeLT B k // H ∣ (r.1 : Polynomial B)}
 
@@ -151,7 +147,7 @@ private def finite_support_second_moment
   rw [← hsum, ← hsq]
   exact sq_sum_le_card_mul_sum_sq
 
-private def fold_density_le_epsCa_of_not_jointProximity
+private def fold_density_le_eps_ca_of_not_joint_proximity
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) (u : Fin 2 → ι → F)
     (hnot : ¬ Code.jointProximity (C := C) (u := u) δ_int) :
     ((((Finset.univ.filter (fun γ : F =>
@@ -182,116 +178,116 @@ private def fold_density_le_epsCa_of_not_jointProximity
         ENNReal.instCompleteLinearOrder.toCompleteLattice _ u
 
 open scoped BigOperators in
-private noncomputable def subfieldCaBesselPartial (x : ℝ) (m : ℕ) : ℝ :=
+private noncomputable def subfield_ca_bessel_partial (x : ℝ) (m : ℕ) : ℝ :=
   ∑ s ∈ Finset.range (m + 1), x ^ s / ((s.factorial : ℝ) ^ 2)
 
 open scoped BigOperators in
-private noncomputable def subfieldCaCollisionDivisor
+private noncomputable def subfield_ca_collision_divisor
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) : Polynomial B :=
   minpoly B a *
     ∏ i ∈ (Finset.univ \ (S ∪ T)),
       (Polynomial.X - Polynomial.C (domainB i))
 
-private def SubfieldCaPairParameters
+private def subfield_ca_pair_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :=
   Polynomial.degreeLT B k ×
-    SubfieldCaDivisibleDegreeLT B k
-      (subfieldCaCollisionDivisor B domainB a S T) ×
+    subfield_ca_divisible_degree_lt B k
+      (subfield_ca_collision_divisor B domainB a S T) ×
     (↥(S ∩ T) → B)
 
-private noncomputable def subfieldCaErrorSets (δ : NNReal) : Finset (Finset ι) :=
+private noncomputable def subfield_ca_error_sets (δ : NNReal) : Finset (Finset ι) :=
   (Finset.univ : Finset ι).powersetCard ⌊(δ : ℝ) * Fintype.card ι⌋₊
 
-private def subfieldCaErrorSets_card (δ : NNReal) :
-    (subfieldCaErrorSets (ι := ι) δ).card =
+private def subfield_ca_error_sets_card (δ : NNReal) :
+    (subfield_ca_error_sets (ι := ι) δ).card =
       Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊ := by
   classical
-  simp only [subfieldCaErrorSets, Finset.card_powersetCard, Finset.card_univ]
+  simp only [subfield_ca_error_sets, Finset.card_powersetCard, Finset.card_univ]
 
-private def subfieldCaErrorSets_mem_iff_card (δ : NNReal) (S : Finset ι) :
-    S ∈ subfieldCaErrorSets (ι := ι) δ ↔
+private def subfield_ca_error_sets_mem_iff_card (δ : NNReal) (S : Finset ι) :
+    S ∈ subfield_ca_error_sets (ι := ι) δ ↔
       S.card = ⌊(δ : ℝ) * Fintype.card ι⌋₊ := by
   classical
-  simp only [subfieldCaErrorSets, Finset.mem_powersetCard, Finset.subset_univ, true_and]
+  simp only [subfield_ca_error_sets, Finset.mem_powersetCard, Finset.subset_univ, true_and]
 
-private def subfieldCaEvent (B : Subfield F) (domainB : ι ↪ B)
+private def subfield_ca_event (B : Subfield F) (domainB : ι ↪ B)
     (k : ℕ) (a : F) (S : Finset ι) (y : ι → B) (α : F) : Prop :=
   ∃ p : Polynomial B,
     p.degree < k ∧
     (∀ i, i ∉ S → p.eval (domainB i) = y i) ∧
     Polynomial.aeval a p = α
 
-private noncomputable def subfieldCaEventFiber
+private noncomputable def subfield_ca_event_fiber
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F) (S : Finset ι) :
     Finset ((ι → B) × F) := by
   classical
   letI := Fintype.ofFinite B
   exact Finset.univ.filter
-    (fun z => subfieldCaEvent B domainB k a S z.1 z.2)
+    (fun z => subfield_ca_event B domainB k a S z.1 z.2)
 
-private noncomputable def subfieldCaEventIndicator
+private noncomputable def subfield_ca_event_indicator
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S : Finset ι) (y : ι → B) (α : F) : ℝ := by
   classical
-  exact if subfieldCaEvent B domainB k a S y α then 1 else 0
+  exact if subfield_ca_event B domainB k a S y α then 1 else 0
 
-private def subfieldCaFactor_nonneg (x : ℝ) : 0 ≤ subfieldCaFactor x := by
+private def subfield_ca_factor_nonneg (x : ℝ) : 0 ≤ subfieldCaFactor x := by
   rw [subfieldCaFactor]
   split_ifs
   · exact Real.exp_nonneg x
   · exact div_nonneg (Real.exp_nonneg _) (Real.sqrt_nonneg _)
 
-private noncomputable def subfieldCaMultiplicity
+private noncomputable def subfield_ca_multiplicity
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) (α : F) : ℕ := by
   classical
-  exact (subfieldCaErrorSets (ι := ι) δ).filter
-    (fun S => subfieldCaEvent B domainB k a S y α) |>.card
+  exact (subfield_ca_error_sets (ι := ι) δ).filter
+    (fun S => subfield_ca_event B domainB k a S y α) |>.card
 
 open scoped BigOperators in
-private noncomputable def subfieldCaFirstMoment
+private noncomputable def subfield_ca_first_moment
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) : ℕ := by
   classical
   letI := Fintype.ofFinite B
   exact ∑ y : ι → B, ∑ α : F,
-    subfieldCaMultiplicity B domainB k δ a y α
+    subfield_ca_multiplicity B domainB k δ a y α
 
-private noncomputable def subfieldCaGoodScalars
+private noncomputable def subfield_ca_good_scalars
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) : Finset F := by
   classical
   exact Finset.univ.filter
-    (fun α : F => 0 < subfieldCaMultiplicity B domainB k δ a y α)
+    (fun α : F => 0 < subfield_ca_multiplicity B domainB k δ a y α)
 
 open scoped BigOperators in
-private noncomputable def subfieldCaOverlapSum (n f b : ℕ) : ℝ :=
+private noncomputable def subfield_ca_overlap_sum (n f b : ℕ) : ℝ :=
   ∑ s ∈ Finset.range (f + 1),
     ((Nat.choose f s : ℝ) * (Nat.choose (n - f) s : ℝ)) / (b : ℝ) ^ s
 
-private noncomputable def subfieldCaPairEventFiber
+private noncomputable def subfield_ca_pair_event_fiber
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) : Finset ((ι → B) × F) := by
   classical
   letI := Fintype.ofFinite B
   exact Finset.univ.filter (fun z =>
-    subfieldCaEvent B domainB k a S z.1 z.2 ∧
-      subfieldCaEvent B domainB k a T z.1 z.2)
+    subfield_ca_event B domainB k a S z.1 z.2 ∧
+      subfield_ca_event B domainB k a T z.1 z.2)
 
-private noncomputable def subfieldCaPairFiberToWitness
+private noncomputable def subfield_ca_pair_fiber_to_witness
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
-    ↥(subfieldCaPairEventFiber B domainB k a S T) →
+    ↥(subfield_ca_pair_event_fiber B domainB k a S T) →
       SubfieldCaPairWitness B domainB k a S T := by
   classical
   letI := Fintype.ofFinite B
   intro z
   have hz :
-      subfieldCaEvent B domainB k a S z.1.1 z.1.2 ∧
-        subfieldCaEvent B domainB k a T z.1.1 z.1.2 := by
-    simpa only [subfieldCaPairEventFiber, Finset.mem_filter,
+      subfield_ca_event B domainB k a S z.1.1 z.1.2 ∧
+        subfield_ca_event B domainB k a T z.1.1 z.1.2 := by
+    simpa only [subfield_ca_pair_event_fiber, Finset.mem_filter,
       Finset.mem_univ, true_and] using z.2
   let p : Polynomial B := Classical.choose hz.1
   let q : Polynomial B := Classical.choose hz.2
@@ -307,11 +303,11 @@ private noncomputable def subfieldCaPairFiberToWitness
       p_value := hp.2.2
       q_value := hq.2.2 }
 
-private def subfieldCaPairFiberToWitness_injective
+private def subfield_ca_pair_fiber_to_witness_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
     Function.Injective
-      (subfieldCaPairFiberToWitness B domainB k a S T) := by
+      (subfield_ca_pair_fiber_to_witness B domainB k a S T) := by
   classical
   letI := Fintype.ofFinite B
   intro z w hzw
@@ -321,40 +317,40 @@ private def subfieldCaPairFiberToWitness_injective
   apply Subtype.ext
   exact hcoords
 
-private def subfieldCaReciprocalStack (domain : ι ↪ F) (B : Subfield F)
+private def subfield_ca_reciprocal_stack (domain : ι ↪ F) (B : Subfield F)
     (a : F) (y : ι → B) : Fin 2 → ι → F :=
   fun j i =>
     if j = 0 then (y i : F) / (domain i - a)
     else -(1 : F) / (domain i - a)
 
-private def subfieldCaGoodScalars_subset_fold_close
+private def subfield_ca_good_scalars_subset_fold_close
     (B : Subfield F) (domain : ι ↪ F) (domainB : ι ↪ B)
     (k : ℕ) (δ : NNReal) (a : F) (y : ι → B)
     (_hint : ((⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℝ)) =
       (δ : ℝ) * Fintype.card ι)
     (ha : a ∉ B)
     (hdom : ∀ i, (domainB i : F) = domain i) :
-    subfieldCaGoodScalars B domainB k δ a y ⊆
+    subfield_ca_good_scalars B domainB k δ a y ⊆
       Finset.univ.filter (fun α : F =>
         Code.relDistFromCode
-          ((subfieldCaReciprocalStack domain B a y) 0 +
-            α • (subfieldCaReciprocalStack domain B a y) 1)
+          ((subfield_ca_reciprocal_stack domain B a y) 0 +
+            α • (subfield_ca_reciprocal_stack domain B a y) 1)
           (ReedSolomon.code domain k : Set (ι → F)) ≤ δ) := by
   classical
   letI := Fintype.ofFinite B
   intro α hα
-  have hαpos : 0 < subfieldCaMultiplicity B domainB k δ a y α := by
-    simpa only [subfieldCaGoodScalars, Finset.mem_filter,
+  have hαpos : 0 < subfield_ca_multiplicity B domainB k δ a y α := by
+    simpa only [subfield_ca_good_scalars, Finset.mem_filter,
       Finset.mem_univ, true_and] using hα
-  unfold subfieldCaMultiplicity at hαpos
+  unfold subfield_ca_multiplicity at hαpos
   obtain ⟨S, hS⟩ := Finset.card_pos.mp hαpos
-  have hSerr : S ∈ subfieldCaErrorSets (ι := ι) δ :=
+  have hSerr : S ∈ subfield_ca_error_sets (ι := ι) δ :=
     (Finset.mem_filter.mp hS).1
-  have hSevent : subfieldCaEvent B domainB k a S y α :=
+  have hSevent : subfield_ca_event B domainB k a S y α :=
     (Finset.mem_filter.mp hS).2
   obtain ⟨p, hpdeg, hpagree, hpa⟩ := hSevent
   have hScard : S.card = ⌊(δ : ℝ) * Fintype.card ι⌋₊ :=
-    (subfieldCaErrorSets_mem_iff_card δ S).mp hSerr
+    (subfield_ca_error_sets_mem_iff_card δ S).mp hSerr
   let pF : Polynomial F := p.map B.subtype
   have hpFa : pF.eval a = α := by
     change (p.map B.subtype).eval a = α
@@ -400,7 +396,7 @@ private def subfieldCaGoodScalars_subset_fold_close
         Polynomial.degree_map_eq_of_injective B.subtype_injective p
       rw [hrdeg, hpFdeg] at hq_lt_r
       exact hq_lt_r.trans hpdeg
-  let u : Fin 2 → ι → F := subfieldCaReciprocalStack domain B a y
+  let u : Fin 2 → ι → F := subfield_ca_reciprocal_stack domain B a y
   let c : ι → F := ReedSolomon.evalOnPoints domain q
   have hc : c ∈ ReedSolomon.code domain k :=
     ReedSolomon.evalOnPoints_mem_code_of_degree_lt hqdeg
@@ -438,10 +434,10 @@ private def subfieldCaGoodScalars_subset_fold_close
         intro i hi
         by_contra hiS
         apply (Code.mem_disagreementCols.mp hi)
-        change subfieldCaReciprocalStack domain B a y 0 i +
-            α * subfieldCaReciprocalStack domain B a y 1 i =
+        change subfield_ca_reciprocal_stack domain B a y 0 i +
+            α * subfield_ca_reciprocal_stack domain B a y 1 i =
           q.eval (domain i)
-        unfold subfieldCaReciprocalStack
+        unfold subfield_ca_reciprocal_stack
         rw [if_pos rfl, if_neg (by decide : (1 : Fin 2) ≠ 0)]
         rw [hqeval i hiS]
         field_simp [hden i]
@@ -449,7 +445,7 @@ private def subfieldCaGoodScalars_subset_fold_close
       _ = ⌊(δ : ℝ) * Fintype.card ι⌋₊ := hScard
   exact_mod_cast hpair
 
-private def subfieldCaReciprocalStack_not_joint
+private def subfield_ca_reciprocal_stack_not_joint
     (domain : ι ↪ F) (B : Subfield F) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) (ha : a ∉ B)
     (hdom : ∀ i, domain i ∈ B)
@@ -459,9 +455,9 @@ private def subfieldCaReciprocalStack_not_joint
     (hkf : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι) :
     ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F)))
-      (u := subfieldCaReciprocalStack domain B a y) δ := by
+      (u := subfield_ca_reciprocal_stack domain B a y) δ := by
   classical
-  let u : Fin 2 → ι → F := subfieldCaReciprocalStack domain B a y
+  let u : Fin 2 → ι → F := subfield_ca_reciprocal_stack domain B a y
   intro hjoint
   rw [← Code.jointAgreement_iff_jointProximity] at hjoint
   obtain ⟨T, hTcard, v, hv⟩ := hjoint
@@ -498,7 +494,7 @@ private def subfieldCaReciprocalStack_not_joint
     dsimp only [Q]
     rw [Polynomial.eval_add, Polynomial.eval_mul, Polynomial.eval_sub,
       Polynomial.eval_X, Polynomial.eval_C, hpagree i hi, Polynomial.eval_one]
-    dsimp only [u, subfieldCaReciprocalStack]
+    dsimp only [u, subfield_ca_reciprocal_stack]
     rw [if_neg (by decide : (1 : Fin 2) ≠ 0)]
     field_simp [hden i]
     ring
@@ -534,23 +530,23 @@ private def subfieldCaReciprocalStack_not_joint
   exact one_ne_zero hone
 
 open scoped BigOperators in
-private noncomputable def subfieldCaSecondMoment
+private noncomputable def subfield_ca_second_moment
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) : ℝ := by
   classical
   letI := Fintype.ofFinite B
   exact ∑ y : ι → B, ∑ α : F,
-    (subfieldCaMultiplicity B domainB k δ a y α : ℝ) ^ 2
+    (subfield_ca_multiplicity B domainB k δ a y α : ℝ) ^ 2
 
-private noncomputable def subfieldCaSupport
+private noncomputable def subfield_ca_support
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) : Finset ((ι → B) × F) := by
   classical
   letI := Fintype.ofFinite B
   exact Finset.univ.filter (fun z =>
-    0 < subfieldCaMultiplicity B domainB k δ a z.1 z.2)
+    0 < subfield_ca_multiplicity B domainB k δ a z.1 z.2)
 
-private def subfieldCaWitnessData_epsCa
+private def subfield_ca_witness_data_eps_ca
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (u : Fin 2 → ι → F) (G : Finset F)
     (h : SubfieldCaWitnessData domain k δ B u G) :
@@ -585,14 +581,14 @@ private def subfieldCaWitnessData_epsCa
       · exact zero_le
     _ ≤ epsCa (F := F) (A := F)
         ((ReedSolomon.code domain k : Set (ι → F))) δ δ :=
-      fold_density_le_epsCa_of_not_jointProximity
+      fold_density_le_eps_ca_of_not_joint_proximity
         (ReedSolomon.code domain k : Set (ι → F)) δ δ u h.not_joint
 
 open scoped BigOperators in
-private def subfieldCa_bessel_partial_le_exp
+private def subfield_ca_bessel_partial_le_exp
     (x : ℝ) (m : ℕ) (hx : 0 ≤ x) :
-    subfieldCaBesselPartial x m ≤ Real.exp x := by
-  unfold subfieldCaBesselPartial
+    subfield_ca_bessel_partial x m ≤ Real.exp x := by
+  unfold subfield_ca_bessel_partial
   calc
     (∑ s ∈ Finset.range (m + 1), x ^ s / ((s.factorial : ℝ) ^ 2)) ≤
         ∑ s ∈ Finset.range (m + 1), x ^ s / (s.factorial : ℝ) := by
@@ -606,22 +602,22 @@ private def subfieldCa_bessel_partial_le_exp
         nlinarith [hfac])
     _ ≤ Real.exp x := Real.sum_le_exp_of_nonneg hx (m + 1)
 
-private def subfieldCa_bessel_partial_le_factor_small
+private def subfield_ca_bessel_partial_le_factor_small
     (x : ℝ) (m : ℕ) (hx : 0 ≤ x) (hxle : x ≤ 3 / 2) :
-    subfieldCaBesselPartial x m ≤ subfieldCaFactor x := by
+    subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
   rw [subfieldCaFactor, if_pos hxle]
-  exact subfieldCa_bessel_partial_le_exp x m hx
+  exact subfield_ca_bessel_partial_le_exp x m hx
 
-private def subfieldCa_card_eq_pow_finrank (B : Subfield F) :
+private def subfield_ca_card_eq_pow_finrank (B : Subfield F) :
     Fintype.card F = Nat.card B ^ Module.finrank B F := by
   rw [Fintype.card_eq_nat_card]
   exact Module.natCard_eq_pow_finrank
 
 open scoped BigOperators in
-private def subfieldCa_collision_divisor_dvd_aeval_zero
+private def subfield_ca_collision_divisor_dvd_aeval_zero
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (r : Polynomial B)
-    (hr : subfieldCaCollisionDivisor B domainB a S T ∣ r) :
+    (hr : subfield_ca_collision_divisor B domainB a S T ∣ r) :
     Polynomial.aeval a r = 0 := by
   apply (minpoly.dvd_iff).mp
   apply dvd_trans (dvd_mul_right (minpoly B a)
@@ -630,10 +626,10 @@ private def subfieldCa_collision_divisor_dvd_aeval_zero
   exact hr
 
 open scoped BigOperators in
-private def subfieldCa_collision_divisor_dvd_eval_zero
+private def subfield_ca_collision_divisor_dvd_eval_zero
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (r : Polynomial B)
-    (hr : subfieldCaCollisionDivisor B domainB a S T ∣ r)
+    (hr : subfield_ca_collision_divisor B domainB a S T ∣ r)
     (i : ι) (hi : i ∉ S ∪ T) :
     r.eval (domainB i) = 0 := by
   have hiU : i ∈ Finset.univ \ (S ∪ T) :=
@@ -646,8 +642,8 @@ private def subfieldCa_collision_divisor_dvd_eval_zero
       (fun j => Polynomial.X - Polynomial.C (domainB j)) hiU
   have hfacH :
       (Polynomial.X - Polynomial.C (domainB i)) ∣
-        subfieldCaCollisionDivisor B domainB a S T := by
-    unfold subfieldCaCollisionDivisor
+        subfield_ca_collision_divisor B domainB a S T := by
+    unfold subfield_ca_collision_divisor
     exact dvd_mul_of_dvd_right hfacprod (minpoly B a)
   have hfacr :
       (Polynomial.X - Polynomial.C (domainB i)) ∣ r :=
@@ -656,24 +652,24 @@ private def subfieldCa_collision_divisor_dvd_eval_zero
   exact hfacr
 
 open scoped BigOperators in
-private def subfieldCa_collision_divisor_monic
+private def subfield_ca_collision_divisor_monic
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) :
-    (subfieldCaCollisionDivisor B domainB a S T).Monic := by
-  unfold subfieldCaCollisionDivisor
+    (subfield_ca_collision_divisor B domainB a S T).Monic := by
+  unfold subfield_ca_collision_divisor
   apply Polynomial.Monic.mul
   · exact minpoly.monic (Algebra.IsIntegral.isIntegral a)
   · exact Polynomial.monic_prod_X_sub_C domainB
       (Finset.univ \ (S ∪ T))
 
 open scoped BigOperators in
-private def subfieldCa_collision_divisor_natDegree_card
+private def subfield_ca_collision_divisor_nat_degree_card
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι)
     (hmin : (minpoly B a).natDegree = Module.finrank B F) :
-    (subfieldCaCollisionDivisor B domainB a S T).natDegree =
+    (subfield_ca_collision_divisor B domainB a S T).natDegree =
       Module.finrank B F + (Finset.univ \ (S ∪ T)).card := by
-  unfold subfieldCaCollisionDivisor
+  unfold subfield_ca_collision_divisor
   have hmp : (minpoly B a).Monic :=
     minpoly.monic (Algebra.IsIntegral.isIntegral a)
   have hlin :
@@ -683,7 +679,7 @@ private def subfieldCa_collision_divisor_natDegree_card
   rw [hmp.natDegree_mul hlin, hmin,
     Polynomial.natDegree_finsetProd_X_sub_C_eq_card]
 
-private def subfieldCa_degreeLT_card (B : Subfield F) (k : ℕ) :
+private def subfield_ca_degree_lt_card (B : Subfield F) (k : ℕ) :
     Nat.card (Polynomial.degreeLT B k) = Nat.card B ^ k := by
   classical
   calc
@@ -691,7 +687,7 @@ private def subfieldCa_degreeLT_card (B : Subfield F) (k : ℕ) :
       Nat.card_congr (Polynomial.degreeLTEquiv B k).toEquiv
     _ = Nat.card B ^ k := by simp
 
-private def subfieldCa_density_error_term_eq
+private def subfield_ca_density_error_term_eq
     (n k f b q C : ℕ) (G : ℝ)
     (hkf : k + f ≤ n) (hb : 0 < b) (hC : 0 < C) :
     let A : ℝ := (C : ℝ) * (b : ℝ) ^ (k + f)
@@ -705,7 +701,7 @@ private def subfieldCa_density_error_term_eq
   rw [hexp, pow_sub₀ _ hbne hkf]
   field_simp [hbne, hCne]
 
-private def subfieldCa_divisible_degreeLT_mul_mem
+private def subfield_ca_divisible_degree_lt_mul_mem
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ)
     (q : Polynomial.degreeLT B (k - H.natDegree)) :
     H * q.1 ∈ Polynomial.degreeLT B k := by
@@ -721,7 +717,7 @@ private def subfieldCa_divisible_degreeLT_mul_mem
     rw [hH.natDegree_mul' hq0]
     omega
 
-private def subfieldCa_divisible_degreeLT_quotient_mem
+private def subfield_ca_divisible_degree_lt_quotient_mem
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ)
     (r : Polynomial.degreeLT B k) (hr : H ∣ (r.1 : Polynomial B)) :
     Polynomial.divByMonic r.1 H ∈
@@ -748,17 +744,17 @@ private def subfieldCa_divisible_degreeLT_quotient_mem
     rw [hdiv]
     exact (Polynomial.natDegree_lt_iff_degree_lt hq0).1 hqnat
 
-private noncomputable def subfieldCaDivisibleDegreeLTQuotient
+private noncomputable def subfield_ca_divisible_degree_lt_quotient
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
-    SubfieldCaDivisibleDegreeLT B k H →
+    subfield_ca_divisible_degree_lt B k H →
       Polynomial.degreeLT B (k - H.natDegree) :=
   fun r => ⟨Polynomial.divByMonic r.1.1 H,
-    subfieldCa_divisible_degreeLT_quotient_mem B H hH k r.1 r.2⟩
+    subfield_ca_divisible_degree_lt_quotient_mem B H hH k r.1 r.2⟩
 
-private def subfieldCaDivisibleDegreeLTQuotient_injective
+private def subfield_ca_divisible_degree_lt_quotient_injective
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
     Function.Injective
-      (subfieldCaDivisibleDegreeLTQuotient B H hH k) := by
+      (subfield_ca_divisible_degree_lt_quotient B H hH k) := by
   intro r s hrs
   have hdiv : Polynomial.divByMonic r.1.1 H =
       Polynomial.divByMonic s.1.1 H :=
@@ -771,9 +767,9 @@ private def subfieldCaDivisibleDegreeLTQuotient_injective
   apply Subtype.ext
   rw [hqr, hqs, hdiv]
 
-private def subfieldCa_divisible_degreeLT_card_le
+private def subfield_ca_divisible_degree_lt_card_le
     (B : Subfield F) (H : Polynomial B) (hH : H.Monic) (k : ℕ) :
-    Nat.card (SubfieldCaDivisibleDegreeLT B k H) ≤
+    Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
       Nat.card B ^ (k - H.natDegree) := by
   classical
   letI := Fintype.ofFinite B
@@ -781,42 +777,42 @@ private def subfieldCa_divisible_degreeLT_card_le
     Fintype.ofEquiv (Fin (k - H.natDegree) → B)
       (Polynomial.degreeLTEquiv B (k - H.natDegree)).toEquiv.symm
   calc
-    Nat.card (SubfieldCaDivisibleDegreeLT B k H) ≤
+    Nat.card (subfield_ca_divisible_degree_lt B k H) ≤
         Nat.card (Polynomial.degreeLT B (k - H.natDegree)) :=
       Nat.card_le_card_of_injective
-        (subfieldCaDivisibleDegreeLTQuotient B H hH k)
-        (subfieldCaDivisibleDegreeLTQuotient_injective B H hH k)
+        (subfield_ca_divisible_degree_lt_quotient B H hH k)
+        (subfield_ca_divisible_degree_lt_quotient_injective B H hH k)
     _ = Nat.card B ^ (k - H.natDegree) :=
-      subfieldCa_degreeLT_card B (k - H.natDegree)
+      subfield_ca_degree_lt_card B (k - H.natDegree)
 
-private def subfieldCa_exp_term_succ (t : ℝ) (s : ℕ) :
+private def subfield_ca_exp_term_succ (t : ℝ) (s : ℕ) :
     t ^ (s + 1) / ((s + 1).factorial : ℝ) =
       (t ^ s / (s.factorial : ℝ)) * t / (s + 1 : ℕ) := by
   rw [pow_succ, Nat.factorial_succ]
   push_cast
   field_simp
 
-private def subfieldCa_exp_term_step_down
+private def subfield_ca_exp_term_step_down
     (t : ℝ) (s : ℕ) (ht0 : 0 ≤ t) (hs : t ≤ (s + 1 : ℕ)) :
     t ^ (s + 1) / ((s + 1).factorial : ℝ) ≤
       t ^ s / (s.factorial : ℝ) := by
-  rw [subfieldCa_exp_term_succ]
+  rw [subfield_ca_exp_term_succ]
   have hterm : 0 ≤ t ^ s / (s.factorial : ℝ) := by positivity
   have hspos : (0 : ℝ) < (s + 1 : ℕ) := by positivity
   rw [div_le_iff₀ hspos]
   exact mul_le_mul_of_nonneg_left hs hterm
 
-private def subfieldCa_exp_term_step_up
+private def subfield_ca_exp_term_step_up
     (t : ℝ) (s : ℕ) (ht0 : 0 ≤ t) (hs : (s + 1 : ℕ) ≤ t) :
     t ^ s / (s.factorial : ℝ) ≤
       t ^ (s + 1) / ((s + 1).factorial : ℝ) := by
-  rw [subfieldCa_exp_term_succ]
+  rw [subfield_ca_exp_term_succ]
   have hterm : 0 ≤ t ^ s / (s.factorial : ℝ) := by positivity
   have hspos : (0 : ℝ) < (s + 1 : ℕ) := by positivity
   rw [le_div_iff₀ hspos]
   exact mul_le_mul_of_nonneg_left hs hterm
 
-private def subfieldCa_exp_term_le_floor_mode
+private def subfield_ca_exp_term_le_floor_mode
     (t : ℝ) (r s : ℕ) (ht0 : 0 ≤ t)
     (hrle : (r : ℝ) ≤ t) (htlt : t < (r : ℝ) + 1) :
     t ^ s / (s.factorial : ℝ) ≤
@@ -832,7 +828,7 @@ private def subfieldCa_exp_term_le_floor_mode
     have hjt : (j + 1 : ℕ) ≤ t := by
       have hjrR : ((j + 1 : ℕ) : ℝ) ≤ r := by exact_mod_cast hjr
       exact hjrR.trans hrle
-    exact (subfieldCa_exp_term_step_up t j ht0 hjt).trans ih
+    exact (subfield_ca_exp_term_step_up t j ht0 hjt).trans ih
   · have hrs : r ≤ s := Nat.le_of_lt (Nat.lt_of_not_ge hsr)
     refine Nat.le_induction
       (m := r)
@@ -843,9 +839,9 @@ private def subfieldCa_exp_term_le_floor_mode
     have hrj' : r + 1 ≤ j + 1 := Nat.add_le_add_right hrj 1
     have hrjR : (r : ℝ) + 1 ≤ (j + 1 : ℕ) := by exact_mod_cast hrj'
     have htj : t ≤ (j + 1 : ℕ) := le_of_lt (htlt.trans_le hrjR)
-    exact (subfieldCa_exp_term_step_down t j ht0 htj).trans ih
+    exact (subfield_ca_exp_term_step_down t j ht0 htj).trans ih
 
-private def subfieldCa_exponent_cast_eq
+private def subfield_ca_exponent_cast_eq
     (n k f : ℕ) (δ : NNReal)
     (hn : 0 < n) (hkf : k + f ≤ n)
     (hint : (f : ℝ) = (δ : ℝ) * n) :
@@ -858,26 +854,26 @@ private def subfieldCa_exponent_cast_eq
   field_simp [hnR]
 
 open scoped BigOperators in
-private def subfieldCa_first_moment_expand
+private def subfield_ca_first_moment_expand
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
-    subfieldCaFirstMoment B domainB k δ a =
-      ∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        (subfieldCaEventFiber B domainB k a S).card := by
+    subfield_ca_first_moment B domainB k δ a =
+      ∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        (subfield_ca_event_fiber B domainB k a S).card := by
   classical
   letI := Fintype.ofFinite B
-  unfold subfieldCaFirstMoment
+  unfold subfield_ca_first_moment
   have hprod := Fintype.sum_prod_type
     (fun z : (ι → B) × F =>
-      subfieldCaMultiplicity B domainB k δ a z.1 z.2)
+      subfield_ca_multiplicity B domainB k δ a z.1 z.2)
   rw [← hprod]
-  simp_rw [subfieldCaMultiplicity, Finset.card_filter]
+  simp_rw [subfield_ca_multiplicity, Finset.card_filter]
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
   intro S hS
-  rw [subfieldCaEventFiber, Finset.card_filter]
+  rw [subfield_ca_event_fiber, Finset.card_filter]
 
-private def subfieldCa_generator_adjoin_eq_top
+private def subfield_ca_generator_adjoin_eq_top
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     IntermediateField.adjoin B ({(g : F)} : Set F) = ⊤ := by
   apply top_unique
@@ -897,13 +893,13 @@ private def subfieldCa_generator_adjoin_eq_top
     rw [hval] at hpow
     exact hpow
 
-private def subfieldCa_generator_minpoly_natDegree
+private def subfield_ca_generator_minpoly_nat_degree
     (B : Subfield F) (g : Fˣ) (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     (minpoly B (g : F)).natDegree = Module.finrank B F := by
   exact (Field.primitive_element_iff_minpoly_natDegree_eq B (g : F)).mp
-    (subfieldCa_generator_adjoin_eq_top B g hg)
+    (subfield_ca_generator_adjoin_eq_top B g hg)
 
-private def subfieldCa_interpolant_unique
+private def subfield_ca_interpolant_unique
     (B : Subfield F) (domainB : ι ↪ B)
     (k f : ℕ) (hkf : k + f < Fintype.card ι)
     (S : Finset ι) (hS : S.card = f) (y : ι → B)
@@ -935,11 +931,11 @@ private def subfieldCa_interpolant_unique
     Polynomial.card_le_degree_of_subset_roots hroots
   omega
 
-private def subfieldCa_event_fiber_card
+private def subfield_ca_event_fiber_card
     (B : Subfield F) (domainB : ι ↪ B) (k f : ℕ)
     (a : F) (S : Finset ι) (hS : S.card = f)
     (hkf : k + f < Fintype.card ι) :
-    (subfieldCaEventFiber B domainB k a S).card =
+    (subfield_ca_event_fiber B domainB k a S).card =
       Nat.card B ^ (k + f) := by
   classical
   letI := Fintype.ofFinite B
@@ -952,10 +948,10 @@ private def subfieldCa_event_fiber_card
        Polynomial.aeval a z.1.1)
   have hcard :
       (Finset.univ : Finset (Polynomial.degreeLT B k × (S → B))).card =
-        (subfieldCaEventFiber B domainB k a S).card := by
+        (subfield_ca_event_fiber B domainB k a S).card := by
     apply Finset.card_bij (fun z _ => φ z)
     · intro z _hz
-      rw [subfieldCaEventFiber, Finset.mem_filter]
+      rw [subfield_ca_event_fiber, Finset.mem_filter]
       refine ⟨Finset.mem_univ _, ?_⟩
       refine ⟨z.1.1, Polynomial.mem_degreeLT.mp z.1.2, ?_, rfl⟩
       intro i hi
@@ -963,7 +959,7 @@ private def subfieldCa_event_fiber_card
     · intro z₁ _hz₁ z₂ _hz₂ heq
       have hy : (φ z₁).1 = (φ z₂).1 := congrArg Prod.fst heq
       have hp : z₁.1.1 = z₂.1.1 := by
-        apply subfieldCa_interpolant_unique B domainB k f hkf S hS (φ z₁).1
+        apply subfield_ca_interpolant_unique B domainB k f hkf S hS (φ z₁).1
           z₁.1.1 z₂.1.1
           (Polynomial.mem_degreeLT.mp z₁.1.2)
           (Polynomial.mem_degreeLT.mp z₂.1.2)
@@ -978,7 +974,7 @@ private def subfieldCa_event_fiber_card
         have hj := congrFun hy j
         simpa only [φ, j.property, ↓reduceDIte] using hj
     · intro w hw
-      rw [subfieldCaEventFiber, Finset.mem_filter] at hw
+      rw [subfield_ca_event_fiber, Finset.mem_filter] at hw
       obtain ⟨_hwuniv, p, hpdeg, hpagree, hpa⟩ := hw
       let z : Polynomial.degreeLT B k × (S → B) :=
         (⟨p, Polynomial.mem_degreeLT.mpr hpdeg⟩, fun j => w.1 j)
@@ -991,45 +987,45 @@ private def subfieldCa_event_fiber_card
       · simpa only [φ, z] using hpa
   rw [← hcard, Finset.card_univ, Fintype.card_prod, Fintype.card_fun,
     Fintype.card_coe, hS, pow_add]
-  rw [← Nat.card_eq_fintype_card, subfieldCa_degreeLT_card]
+  rw [← Nat.card_eq_fintype_card, subfield_ca_degree_lt_card]
   rw [Nat.card_eq_fintype_card]
 
 open scoped BigOperators in
-private def subfieldCa_first_moment_eq
+private def subfield_ca_first_moment_eq
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
     (hkf : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι) :
-    subfieldCaFirstMoment B domainB k δ a =
+    subfield_ca_first_moment B domainB k δ a =
       Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊ *
         Nat.card B ^ (k + ⌊(δ : ℝ) * Fintype.card ι⌋₊) := by
   classical
-  rw [subfieldCa_first_moment_expand]
+  rw [subfield_ca_first_moment_expand]
   calc
-    (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        (subfieldCaEventFiber B domainB k a S).card) =
-        ∑ _S ∈ subfieldCaErrorSets (ι := ι) δ,
+    (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        (subfield_ca_event_fiber B domainB k a S).card) =
+        ∑ _S ∈ subfield_ca_error_sets (ι := ι) δ,
           Nat.card B ^ (k + ⌊(δ : ℝ) * Fintype.card ι⌋₊) := by
       apply Finset.sum_congr rfl
       intro S hS
-      apply subfieldCa_event_fiber_card B domainB k
+      apply subfield_ca_event_fiber_card B domainB k
         ⌊(δ : ℝ) * Fintype.card ι⌋₊ a S
-      · exact subfieldCaErrorSets_mem_iff_card δ S |>.mp hS
+      · exact subfield_ca_error_sets_mem_iff_card δ S |>.mp hS
       · exact hkf
-    _ = (subfieldCaErrorSets (ι := ι) δ).card *
+    _ = (subfield_ca_error_sets (ι := ι) δ).card *
           Nat.card B ^ (k + ⌊(δ : ℝ) * Fintype.card ι⌋₊) := by
       simp only [Finset.sum_const, nsmul_eq_mul, Nat.cast_id]
     _ = Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊ *
           Nat.card B ^ (k + ⌊(δ : ℝ) * Fintype.card ι⌋₊) := by
-      rw [subfieldCaErrorSets_card]
+      rw [subfield_ca_error_sets_card]
 
 open scoped BigOperators in
-private def subfieldCa_first_moment_real_eq
+private def subfield_ca_first_moment_real_eq
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
     (hkf : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι) :
     letI := Fintype.ofFinite B
     ∑ z : (ι → B) × F,
-        (subfieldCaMultiplicity B domainB k δ a z.1 z.2 : ℝ) =
+        (subfield_ca_multiplicity B domainB k δ a z.1 z.2 : ℝ) =
       (Nat.choose (Fintype.card ι)
         ⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℝ) *
       (Nat.card B : ℝ) ^
@@ -1037,9 +1033,9 @@ private def subfieldCa_first_moment_real_eq
   classical
   letI := Fintype.ofFinite B
   rw [Fintype.sum_prod_type]
-  exact_mod_cast subfieldCa_first_moment_eq B domainB k δ a hkf
+  exact_mod_cast subfield_ca_first_moment_eq B domainB k δ a hkf
 
-private def subfieldCa_minpoly_coprime_linear
+private def subfield_ca_minpoly_coprime_linear
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (i : ι) :
     IsCoprime (minpoly B a)
@@ -1060,17 +1056,17 @@ private def subfieldCa_minpoly_coprime_linear
   exact (domainB i).property
 
 open scoped BigOperators in
-private def subfieldCa_minpoly_coprime_linear_prod
+private def subfield_ca_minpoly_coprime_linear_prod
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (U : Finset ι) :
     IsCoprime (minpoly B a)
       (∏ i ∈ U, (Polynomial.X - Polynomial.C (domainB i))) := by
   apply IsCoprime.prod_right
   intro i hi
-  exact subfieldCa_minpoly_coprime_linear B domainB a ha i
+  exact subfield_ca_minpoly_coprime_linear B domainB a ha i
 
 open scoped BigOperators in
-private def subfieldCa_collision_divisor_dvd_sub
+private def subfield_ca_collision_divisor_dvd_sub
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (y : ι → B) (α : F)
     (p q : Polynomial B)
@@ -1078,9 +1074,9 @@ private def subfieldCa_collision_divisor_dvd_sub
     (hq : ∀ i, i ∉ T → q.eval (domainB i) = y i)
     (hpa : Polynomial.aeval a p = α)
     (hqa : Polynomial.aeval a q = α) :
-    subfieldCaCollisionDivisor B domainB a S T ∣ p - q := by
-  unfold subfieldCaCollisionDivisor
-  apply (subfieldCa_minpoly_coprime_linear_prod B domainB a ha
+    subfield_ca_collision_divisor B domainB a S T ∣ p - q := by
+  unfold subfield_ca_collision_divisor
+  apply (subfield_ca_minpoly_coprime_linear_prod B domainB a ha
     (Finset.univ \ (S ∪ T))).mul_dvd
   · rw [minpoly.dvd_iff, Polynomial.aeval_sub, hpa, hqa, sub_self]
   · apply Finset.prod_dvd_of_coprime
@@ -1097,11 +1093,11 @@ private def subfieldCa_collision_divisor_dvd_sub
       rw [Polynomial.dvd_iff_isRoot, Polynomial.IsRoot.def,
         Polynomial.eval_sub, hp i hiS, hq i hiT, sub_self]
 
-private noncomputable def subfieldCaPairWitnessToParameters
+private noncomputable def subfield_ca_pair_witness_to_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     SubfieldCaPairWitness B domainB k a S T →
-      SubfieldCaPairParameters B domainB k a S T := by
+      subfield_ca_pair_parameters B domainB k a S T := by
   classical
   intro w
   let r : Polynomial.degreeLT B k :=
@@ -1111,22 +1107,22 @@ private noncomputable def subfieldCaPairWitnessToParameters
         (max_lt (Polynomial.mem_degreeLT.mp w.p.2)
           (Polynomial.mem_degreeLT.mp w.q.2))⟩
   refine ⟨w.q, ⟨r, ?_⟩, fun i => w.y i⟩
-  exact subfieldCa_collision_divisor_dvd_sub B domainB a ha S T
+  exact subfield_ca_collision_divisor_dvd_sub B domainB a ha S T
     w.y w.α w.p.1 w.q.1 w.p_agree w.q_agree w.p_value w.q_value
 
-private noncomputable def subfieldCaPairFiberToParameters
+private noncomputable def subfield_ca_pair_fiber_to_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
-    ↥(subfieldCaPairEventFiber B domainB k a S T) →
-      SubfieldCaPairParameters B domainB k a S T :=
-  fun z => subfieldCaPairWitnessToParameters B domainB k a ha S T
-    (subfieldCaPairFiberToWitness B domainB k a S T z)
+    ↥(subfield_ca_pair_event_fiber B domainB k a S T) →
+      subfield_ca_pair_parameters B domainB k a S T :=
+  fun z => subfield_ca_pair_witness_to_parameters B domainB k a ha S T
+    (subfield_ca_pair_fiber_to_witness B domainB k a S T z)
 
-private def subfieldCaPairWitnessToParameters_injective
+private def subfield_ca_pair_witness_to_parameters_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     Function.Injective
-      (subfieldCaPairWitnessToParameters B domainB k a ha S T) := by
+      (subfield_ca_pair_witness_to_parameters B domainB k a ha S T) := by
   classical
   intro w₁ w₂ h
   have hq : w₁.q.1 = w₂.q.1 :=
@@ -1168,37 +1164,37 @@ private def subfieldCaPairWitnessToParameters_injective
   cases hq'
   rfl
 
-private def subfieldCaPairFiberToParameters_injective
+private def subfield_ca_pair_fiber_to_parameters_injective
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
     Function.Injective
-      (subfieldCaPairFiberToParameters B domainB k a ha S T) :=
-  (subfieldCaPairWitnessToParameters_injective B domainB k a ha S T).comp
-    (subfieldCaPairFiberToWitness_injective B domainB k a S T)
+      (subfield_ca_pair_fiber_to_parameters B domainB k a ha S T) :=
+  (subfield_ca_pair_witness_to_parameters_injective B domainB k a ha S T).comp
+    (subfield_ca_pair_fiber_to_witness_injective B domainB k a S T)
 
 open scoped BigOperators in
-private def subfieldCa_multiplicity_real_eq_indicator_sum
+private def subfield_ca_multiplicity_real_eq_indicator_sum
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (y : ι → B) (α : F) :
-    (subfieldCaMultiplicity B domainB k δ a y α : ℝ) =
-      ∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        subfieldCaEventIndicator B domainB k a S y α := by
+    (subfield_ca_multiplicity B domainB k δ a y α : ℝ) =
+      ∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        subfield_ca_event_indicator B domainB k a S y α := by
   classical
-  unfold subfieldCaMultiplicity subfieldCaEventIndicator
+  unfold subfield_ca_multiplicity subfield_ca_event_indicator
   exact Finset.natCast_card_filter
-    (fun S => subfieldCaEvent B domainB k a S y α)
-    (subfieldCaErrorSets (ι := ι) δ)
+    (fun S => subfield_ca_event B domainB k a S y α)
+    (subfield_ca_error_sets (ι := ι) δ)
 
-private def subfieldCa_natural_power_eq_rpow
+private def subfield_ca_natural_power_eq_rpow
     (n k f b : ℕ) (δ : NNReal)
     (hn : 0 < n) (hkf : k + f ≤ n)
     (hint : (f : ℝ) = (δ : ℝ) * n) :
     (b : ℝ) ^ (n - k - f) =
       (b : ℝ) ^ ((n : ℝ) * (1 - (k : ℝ) / n - (δ : ℝ)) : ℝ) := by
   rw [← Real.rpow_natCast]
-  rw [subfieldCa_exponent_cast_eq n k f δ hn hkf hint]
+  rw [subfield_ca_exponent_cast_eq n k f δ hn hkf hint]
 
-private def subfieldCa_overlap_argument_eq
+private def subfield_ca_overlap_argument_eq
     (n f b : ℕ) (δ : NNReal)
     (hf : f ≤ n)
     (hint : (f : ℝ) = (δ : ℝ) * n) :
@@ -1207,7 +1203,7 @@ private def subfieldCa_overlap_argument_eq
   rw [Nat.cast_sub hf, hint]
   ring
 
-private def subfieldCa_overlap_count
+private def subfield_ca_overlap_count
     (S : Finset ι) (f s : ℕ) (hS : S.card = f) :
     ((Finset.univ.powersetCard f).filter
       (fun T : Finset ι => (S \ T).card = s)).card =
@@ -1302,11 +1298,11 @@ private def subfieldCa_overlap_count
     Finset.card_sdiff_of_subset (Finset.subset_univ S), Finset.card_univ, hS]
 
 open scoped BigOperators in
-private def subfieldCa_overlap_sum_le_bessel
+private def subfield_ca_overlap_sum_le_bessel
     (n f b : ℕ) (_hf : f ≤ n) (hb : 0 < b) :
-    subfieldCaOverlapSum n f b ≤
-      subfieldCaBesselPartial (((f : ℝ) * (n - f : ℕ)) / b) f := by
-  unfold subfieldCaOverlapSum subfieldCaBesselPartial
+    subfield_ca_overlap_sum n f b ≤
+      subfield_ca_bessel_partial (((f : ℝ) * (n - f : ℕ)) / b) f := by
+  unfold subfield_ca_overlap_sum subfield_ca_bessel_partial
   apply Finset.sum_le_sum
   intro s hs
   have h₁ : (Nat.choose f s : ℝ) ≤ (f : ℝ) ^ s / (s.factorial : ℝ) :=
@@ -1325,22 +1321,22 @@ private def subfieldCa_overlap_sum_le_bessel
       rw [div_pow, mul_pow]
       field_simp
 
-private def subfieldCa_overlap_sum_le_factor_small
+private def subfield_ca_overlap_sum_le_factor_small
     (n f b : ℕ) (hf : f ≤ n) (hb : 0 < b)
     (hxle : ((f : ℝ) * (n - f : ℕ)) / b ≤ 3 / 2) :
-    subfieldCaOverlapSum n f b ≤
+    subfield_ca_overlap_sum n f b ≤
       subfieldCaFactor (((f : ℝ) * (n - f : ℕ)) / b) := by
-  apply le_trans (subfieldCa_overlap_sum_le_bessel n f b hf hb)
-  apply subfieldCa_bessel_partial_le_factor_small
+  apply le_trans (subfield_ca_overlap_sum_le_bessel n f b hf hb)
+  apply subfield_ca_bessel_partial_le_factor_small
   · positivity
   · exact hxle
 
 open scoped BigOperators in
-private def subfieldCa_overlap_weight_sum
+private def subfield_ca_overlap_weight_sum
     (S : Finset ι) (f b : ℕ) (hS : S.card = f) :
     (∑ T ∈ Finset.univ.powersetCard f,
         (1 : ℝ) / (b : ℝ) ^ (S \ T).card) =
-      subfieldCaOverlapSum (Fintype.card ι) f b := by
+      subfield_ca_overlap_sum (Fintype.card ι) f b := by
   classical
   have hmap : ∀ T ∈ Finset.univ.powersetCard f,
       (S \ T).card ∈ Finset.range (f + 1) := by
@@ -1352,44 +1348,44 @@ private def subfieldCa_overlap_weight_sum
     (s := Finset.univ.powersetCard f) (t := Finset.range (f + 1))
     (g := fun T : Finset ι => (S \ T).card) hmap
     (fun s : ℕ => (1 : ℝ) / (b : ℝ) ^ s)]
-  unfold subfieldCaOverlapSum
+  unfold subfield_ca_overlap_sum
   apply Finset.sum_congr rfl
   intro s hs
   rw [Finset.sum_const, nsmul_eq_mul]
-  rw [subfieldCa_overlap_count S f s hS]
+  rw [subfield_ca_overlap_count S f s hS]
   push_cast
   ring
 
 open scoped BigOperators in
-private def subfieldCa_overlap_contribution_eq
+private def subfield_ca_overlap_contribution_eq
     (B : Subfield F) (k : ℕ) (δ : NNReal) :
     let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
-    (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-      ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+    (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+      ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
         (Nat.card B : ℝ) ^ (k + f) /
           (Nat.card B : ℝ) ^ (S \ T).card) =
       (Nat.choose (Fintype.card ι) f : ℝ) *
         (Nat.card B : ℝ) ^ (k + f) *
-          subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
+          subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
   classical
   dsimp only
   let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
-  change (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-      ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+  change (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+      ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
         (Nat.card B : ℝ) ^ (k + f) /
           (Nat.card B : ℝ) ^ (S \ T).card) =
     (Nat.choose (Fintype.card ι) f : ℝ) *
       (Nat.card B : ℝ) ^ (k + f) *
-        subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B)
+        subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B)
   have hinner (S : Finset ι)
-      (hS : S ∈ subfieldCaErrorSets (ι := ι) δ) :
-      (∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+      (hS : S ∈ subfield_ca_error_sets (ι := ι) δ) :
+      (∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
         (Nat.card B : ℝ) ^ (k + f) /
           (Nat.card B : ℝ) ^ (S \ T).card) =
         (Nat.card B : ℝ) ^ (k + f) *
-          subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
+          subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
     have hScard : S.card = f := by
-      exact subfieldCaErrorSets_mem_iff_card δ S |>.mp hS
+      exact subfield_ca_error_sets_mem_iff_card δ S |>.mp hS
     change (∑ T ∈ (Finset.univ : Finset ι).powersetCard f,
         (Nat.card B : ℝ) ^ (k + f) /
           (Nat.card B : ℝ) ^ (S \ T).card) = _
@@ -1405,98 +1401,98 @@ private def subfieldCa_overlap_contribution_eq
         intro T hT
         ring
       _ = (Nat.card B : ℝ) ^ (k + f) *
-          subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
-        rw [subfieldCa_overlap_weight_sum S f (Nat.card B) hScard]
+          subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
+        rw [subfield_ca_overlap_weight_sum S f (Nat.card B) hScard]
   calc
-    (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+    (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
           (Nat.card B : ℝ) ^ (k + f) /
             (Nat.card B : ℝ) ^ (S \ T).card) =
-        ∑ _S ∈ subfieldCaErrorSets (ι := ι) δ,
+        ∑ _S ∈ subfield_ca_error_sets (ι := ι) δ,
           (Nat.card B : ℝ) ^ (k + f) *
-            subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
+            subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
       apply Finset.sum_congr rfl
       intro S hS
       exact hinner S hS
-    _ = ((subfieldCaErrorSets (ι := ι) δ).card : ℝ) *
+    _ = ((subfield_ca_error_sets (ι := ι) δ).card : ℝ) *
         ((Nat.card B : ℝ) ^ (k + f) *
-          subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B)) := by
+          subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B)) := by
       rw [Finset.sum_const, nsmul_eq_mul]
     _ = (Nat.choose (Fintype.card ι) f : ℝ) *
         (Nat.card B : ℝ) ^ (k + f) *
-          subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
-      rw [subfieldCaErrorSets_card]
+          subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
+      rw [subfield_ca_error_sets_card]
       ring
 
-private def subfieldCa_pairEventFiber_natCard_le_parameters
+private def subfield_ca_pair_event_fiber_nat_card_le_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
-    Nat.card ↥(subfieldCaPairEventFiber B domainB k a S T) ≤
-      Nat.card (SubfieldCaPairParameters B domainB k a S T) := by
+    Nat.card ↥(subfield_ca_pair_event_fiber B domainB k a S T) ≤
+      Nat.card (subfield_ca_pair_parameters B domainB k a S T) := by
   classical
   letI := Fintype.ofFinite B
   letI : Fintype (Polynomial.degreeLT B k) :=
     Fintype.ofEquiv (Fin k → B)
       (Polynomial.degreeLTEquiv B k).toEquiv.symm
   letI : Finite
-      (SubfieldCaDivisibleDegreeLT B k
-        (subfieldCaCollisionDivisor B domainB a S T)) :=
+      (subfield_ca_divisible_degree_lt B k
+        (subfield_ca_collision_divisor B domainB a S T)) :=
     Subtype.finite
-  letI : Finite (SubfieldCaPairParameters B domainB k a S T) := by
-    unfold SubfieldCaPairParameters
+  letI : Finite (subfield_ca_pair_parameters B domainB k a S T) := by
+    unfold subfield_ca_pair_parameters
     infer_instance
   apply Nat.card_le_card_of_injective
-    (subfieldCaPairFiberToParameters B domainB k a ha S T)
-    (subfieldCaPairFiberToParameters_injective B domainB k a ha S T)
+    (subfield_ca_pair_fiber_to_parameters B domainB k a ha S T)
+    (subfield_ca_pair_fiber_to_parameters_injective B domainB k a ha S T)
 
-private def subfieldCa_pair_fiber_card_le_parameters
+private def subfield_ca_pair_fiber_card_le_parameters
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) :
-    (subfieldCaPairEventFiber B domainB k a S T).card ≤
-      Nat.card (SubfieldCaPairParameters B domainB k a S T) := by
+    (subfield_ca_pair_event_fiber B domainB k a S T).card ≤
+      Nat.card (subfield_ca_pair_parameters B domainB k a S T) := by
   rw [← Nat.card_eq_finsetCard]
-  exact subfieldCa_pairEventFiber_natCard_le_parameters
+  exact subfield_ca_pair_event_fiber_nat_card_le_parameters
     B domainB k a ha S T
 
 open scoped BigOperators in
-private def subfieldCa_pair_indicator_sum_eq_fiber_card
+private def subfield_ca_pair_indicator_sum_eq_fiber_card
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
     letI := Fintype.ofFinite B
     (∑ z : (ι → B) × F,
-        subfieldCaEventIndicator B domainB k a S z.1 z.2 *
-        subfieldCaEventIndicator B domainB k a T z.1 z.2) =
-      ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) := by
+        subfield_ca_event_indicator B domainB k a S z.1 z.2 *
+        subfield_ca_event_indicator B domainB k a T z.1 z.2) =
+      ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) := by
   classical
   letI := Fintype.ofFinite B
-  rw [subfieldCaPairEventFiber, Finset.natCast_card_filter]
+  rw [subfield_ca_pair_event_fiber, Finset.natCast_card_filter]
   apply Finset.sum_congr rfl
   intro z hz
-  unfold subfieldCaEventIndicator
-  by_cases hS : subfieldCaEvent B domainB k a S z.1 z.2
-  · by_cases hT : subfieldCaEvent B domainB k a T z.1 z.2
+  unfold subfield_ca_event_indicator
+  by_cases hS : subfield_ca_event B domainB k a S z.1 z.2
+  · by_cases hT : subfield_ca_event B domainB k a T z.1 z.2
     · simp only [hS, hT, if_true, mul_one, and_self]
     · simp only [hS, hT, if_true, if_false, mul_zero, and_false]
   · simp only [hS, if_false, zero_mul, false_and]
 
-private def subfieldCa_pair_parameters_card_le
+private def subfield_ca_pair_parameters_card_le
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (S T : Finset ι) :
-    Nat.card (SubfieldCaPairParameters B domainB k a S T) ≤
+    Nat.card (subfield_ca_pair_parameters B domainB k a S T) ≤
       Nat.card B ^ k *
         (Nat.card B ^
-            (k - (subfieldCaCollisionDivisor B domainB a S T).natDegree) *
+            (k - (subfield_ca_collision_divisor B domainB a S T).natDegree) *
           Nat.card B ^ (S ∩ T).card) := by
-  unfold SubfieldCaPairParameters
+  unfold subfield_ca_pair_parameters
   rw [Nat.card_prod, Nat.card_prod,
-    subfieldCa_degreeLT_card B k, Nat.card_fun,
+    subfield_ca_degree_lt_card B k, Nat.card_fun,
     Nat.card_eq_finsetCard]
   gcongr
-  exact subfieldCa_divisible_degreeLT_card_le B
-    (subfieldCaCollisionDivisor B domainB a S T)
-    (subfieldCa_collision_divisor_monic B domainB a S T) k
+  exact subfield_ca_divisible_degree_lt_card_le B
+    (subfield_ca_collision_divisor B domainB a S T)
+    (subfield_ca_collision_divisor_monic B domainB a S T) k
 
-private def subfieldCa_pair_set_card_facts
+private def subfield_ca_pair_set_card_facts
     (S T : Finset ι) (f : ℕ) (hS : S.card = f) (hT : T.card = f) :
     let s := (S \ T).card
     (S ∩ T).card = f - s ∧
@@ -1513,88 +1509,88 @@ private def subfieldCa_pair_set_card_facts
   · rw [Finset.card_univ_sdiff, hunioncard]
     omega
 
-private def subfieldCa_collision_divisor_natDegree
+private def subfield_ca_collision_divisor_nat_degree
     (B : Subfield F) (domainB : ι ↪ B) (a : F)
     (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F) :
-    (subfieldCaCollisionDivisor B domainB a S T).natDegree =
+    (subfield_ca_collision_divisor B domainB a S T).natDegree =
       Module.finrank B F +
         (Fintype.card ι - f - (S \ T).card) := by
-  rw [subfieldCa_collision_divisor_natDegree_card B domainB a S T hmin]
-  rw [(subfieldCa_pair_set_card_facts S T f hS hT).2]
+  rw [subfield_ca_collision_divisor_nat_degree_card B domainB a S T hmin]
+  rw [(subfield_ca_pair_set_card_facts S T f hS hT).2]
 
-private def subfieldCa_pair_fiber_card_le_overlap_branch
+private def subfield_ca_pair_fiber_card_le_overlap_branch
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
     (hlarge : k < Module.finrank B F +
       (Fintype.card ι - f - (S \ T).card)) :
-    (subfieldCaPairEventFiber B domainB k a S T).card ≤
+    (subfield_ca_pair_event_fiber B domainB k a S T).card ≤
       Nat.card B ^ (k + f - (S \ T).card) := by
   have hsle : (S \ T).card ≤ f := by
     rw [← hS]
     exact Finset.card_le_card Finset.sdiff_subset
-  have hdeg := subfieldCa_collision_divisor_natDegree
+  have hdeg := subfield_ca_collision_divisor_nat_degree
     B domainB a S T f hS hT hmin
-  have hinter := (subfieldCa_pair_set_card_facts S T f hS hT).1
-  have hsub : k - (subfieldCaCollisionDivisor B domainB a S T).natDegree = 0 := by
+  have hinter := (subfield_ca_pair_set_card_facts S T f hS hT).1
+  have hsub : k - (subfield_ca_collision_divisor B domainB a S T).natDegree = 0 := by
     rw [hdeg]
     exact Nat.sub_eq_zero_of_le (Nat.le_of_lt hlarge)
   calc
-    (subfieldCaPairEventFiber B domainB k a S T).card ≤
-        Nat.card (SubfieldCaPairParameters B domainB k a S T) :=
-      subfieldCa_pair_fiber_card_le_parameters B domainB k a ha S T
+    (subfield_ca_pair_event_fiber B domainB k a S T).card ≤
+        Nat.card (subfield_ca_pair_parameters B domainB k a S T) :=
+      subfield_ca_pair_fiber_card_le_parameters B domainB k a ha S T
     _ ≤ Nat.card B ^ k *
         (Nat.card B ^
-            (k - (subfieldCaCollisionDivisor B domainB a S T).natDegree) *
+            (k - (subfield_ca_collision_divisor B domainB a S T).natDegree) *
           Nat.card B ^ (S ∩ T).card) :=
-      subfieldCa_pair_parameters_card_le B domainB k a S T
+      subfield_ca_pair_parameters_card_le B domainB k a S T
     _ = Nat.card B ^ (k + (f - (S \ T).card)) := by
       rw [hsub, hinter, pow_zero, one_mul, ← pow_add]
     _ = Nat.card B ^ (k + f - (S \ T).card) := by
       congr 1
       omega
 
-private def subfieldCa_pair_fiber_card_le_overlap_real
+private def subfield_ca_pair_fiber_card_le_overlap_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
     (hlarge : k < Module.finrank B F +
       (Fintype.card ι - f - (S \ T).card)) :
-    ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+    ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
       (Nat.card B : ℝ) ^ (k + f) /
         (Nat.card B : ℝ) ^ (S \ T).card := by
   have hsle : (S \ T).card ≤ f := by
     rw [← hS]
     exact Finset.card_le_card Finset.sdiff_subset
   have hsle' : (S \ T).card ≤ k + f := by omega
-  have hnat := subfieldCa_pair_fiber_card_le_overlap_branch
+  have hnat := subfield_ca_pair_fiber_card_le_overlap_branch
     B domainB k a ha S T f hS hT hmin hlarge
   have hcast :
-      ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+      ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
         (Nat.card B : ℝ) ^ (k + f - (S \ T).card) := by
     exact_mod_cast hnat
   have hbpos : 0 < Nat.card B := Nat.card_pos
   have hbne : (Nat.card B : ℝ) ≠ 0 := by
     exact_mod_cast hbpos.ne'
   calc
-    ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+    ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
         (Nat.card B : ℝ) ^ (k + f - (S \ T).card) := hcast
     _ = (Nat.card B : ℝ) ^ (k + f) /
         (Nat.card B : ℝ) ^ (S \ T).card := by
       rw [pow_sub₀ _ hbne hsle', div_eq_mul_inv]
 
-private def subfieldCa_pair_fiber_card_le_uniform_nat_branch
+private def subfield_ca_pair_fiber_card_le_uniform_nat_branch
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
     (hsmall : Module.finrank B F +
       (Fintype.card ι - f - (S \ T).card) ≤ k) :
-    (subfieldCaPairEventFiber B domainB k a S T).card ≤
+    (subfield_ca_pair_event_fiber B domainB k a S T).card ≤
       Nat.card B ^
         (2 * (k + f) - Module.finrank B F - Fintype.card ι) := by
   have hsle : (S \ T).card ≤ f := by
@@ -1605,18 +1601,18 @@ private def subfieldCa_pair_fiber_card_le_uniform_nat_branch
   have hUle : (S ∪ T).card ≤ Fintype.card ι := by
     simpa only [Finset.card_univ] using
       Finset.card_le_card (Finset.subset_univ (S ∪ T))
-  have hdeg := subfieldCa_collision_divisor_natDegree
+  have hdeg := subfield_ca_collision_divisor_nat_degree
     B domainB a S T f hS hT hmin
-  have hinter := (subfieldCa_pair_set_card_facts S T f hS hT).1
+  have hinter := (subfield_ca_pair_set_card_facts S T f hS hT).1
   calc
-    (subfieldCaPairEventFiber B domainB k a S T).card ≤
-        Nat.card (SubfieldCaPairParameters B domainB k a S T) :=
-      subfieldCa_pair_fiber_card_le_parameters B domainB k a ha S T
+    (subfield_ca_pair_event_fiber B domainB k a S T).card ≤
+        Nat.card (subfield_ca_pair_parameters B domainB k a S T) :=
+      subfield_ca_pair_fiber_card_le_parameters B domainB k a ha S T
     _ ≤ Nat.card B ^ k *
         (Nat.card B ^
-            (k - (subfieldCaCollisionDivisor B domainB a S T).natDegree) *
+            (k - (subfield_ca_collision_divisor B domainB a S T).natDegree) *
           Nat.card B ^ (S ∩ T).card) :=
-      subfieldCa_pair_parameters_card_le B domainB k a S T
+      subfield_ca_pair_parameters_card_le B domainB k a S T
     _ = Nat.card B ^
         (k + ((k - (Module.finrank B F +
           (Fintype.card ι - f - (S \ T).card))) +
@@ -1627,14 +1623,14 @@ private def subfieldCa_pair_fiber_card_le_uniform_nat_branch
       congr 1
       omega
 
-private def subfieldCa_pair_fiber_card_le_uniform_real
+private def subfield_ca_pair_fiber_card_le_uniform_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
     (hsmall : Module.finrank B F +
       (Fintype.card ι - f - (S \ T).card) ≤ k) :
-    ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+    ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
       (Nat.card B : ℝ) ^ (2 * (k + f)) /
         ((Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ Fintype.card ι) := by
@@ -1653,10 +1649,10 @@ private def subfieldCa_pair_fiber_card_le_uniform_real
       2 * (k + f) - Module.finrank B F - Fintype.card ι =
         2 * (k + f) - (Module.finrank B F + Fintype.card ι) := by
     omega
-  have hnat := subfieldCa_pair_fiber_card_le_uniform_nat_branch
+  have hnat := subfield_ca_pair_fiber_card_le_uniform_nat_branch
     B domainB k a ha S T f hS hT hmin hsmall
   have hcast :
-      ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+      ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
         (Nat.card B : ℝ) ^
           (2 * (k + f) - Module.finrank B F - Fintype.card ι) := by
     exact_mod_cast hnat
@@ -1666,7 +1662,7 @@ private def subfieldCa_pair_fiber_card_le_uniform_real
   have hcard :
       (Fintype.card F : ℝ) =
         (Nat.card B : ℝ) ^ Module.finrank B F := by
-    exact_mod_cast subfieldCa_card_eq_pow_finrank B
+    exact_mod_cast subfield_ca_card_eq_pow_finrank B
   have hden :
       (Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ Fintype.card ι =
@@ -1674,7 +1670,7 @@ private def subfieldCa_pair_fiber_card_le_uniform_real
           (Module.finrank B F + Fintype.card ι) := by
     rw [hcard, pow_add]
   calc
-    ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+    ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
         (Nat.card B : ℝ) ^
           (2 * (k + f) - Module.finrank B F - Fintype.card ι) := hcast
     _ = (Nat.card B : ℝ) ^
@@ -1689,12 +1685,12 @@ private def subfieldCa_pair_fiber_card_le_uniform_real
           (Nat.card B : ℝ) ^ Fintype.card ι) := by
       rw [hden]
 
-private def subfieldCa_pair_fiber_card_le_real
+private def subfield_ca_pair_fiber_card_le_real
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (a : F)
     (ha : a ∉ B) (S T : Finset ι) (f : ℕ)
     (hS : S.card = f) (hT : T.card = f)
     (hmin : (minpoly B a).natDegree = Module.finrank B F) :
-    ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) ≤
+    ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) ≤
       (Nat.card B : ℝ) ^ (k + f) /
           (Nat.card B : ℝ) ^ (S \ T).card +
         (Nat.card B : ℝ) ^ (2 * (k + f)) /
@@ -1702,7 +1698,7 @@ private def subfieldCa_pair_fiber_card_le_real
             (Nat.card B : ℝ) ^ Fintype.card ι) := by
   by_cases hsmall : Module.finrank B F +
       (Fintype.card ι - f - (S \ T).card) ≤ k
-  · have h := subfieldCa_pair_fiber_card_le_uniform_real
+  · have h := subfield_ca_pair_fiber_card_le_uniform_real
       B domainB k a ha S T f hS hT hmin hsmall
     have hnon : 0 ≤ (Nat.card B : ℝ) ^ (k + f) /
         (Nat.card B : ℝ) ^ (S \ T).card := by positivity
@@ -1710,14 +1706,14 @@ private def subfieldCa_pair_fiber_card_le_real
   · have hlarge : k < Module.finrank B F +
         (Fintype.card ι - f - (S \ T).card) :=
       Nat.lt_of_not_ge hsmall
-    have h := subfieldCa_pair_fiber_card_le_overlap_real
+    have h := subfield_ca_pair_fiber_card_le_overlap_real
       B domainB k a ha S T f hS hT hmin hlarge
     have hnon : 0 ≤ (Nat.card B : ℝ) ^ (2 * (k + f)) /
         ((Fintype.card F : ℝ) *
           (Nat.card B : ℝ) ^ Fintype.card ι) := by positivity
     linarith
 
-private def subfieldCa_pow_ratio_le_exp_sub
+private def subfield_ca_pow_ratio_le_exp_sub
     (t : ℝ) (r : ℕ) (hrpos : 0 < r) (hrle : (r : ℝ) ≤ t) :
     (t / (r : ℝ)) ^ r ≤ Real.exp (t - r) := by
   have hrR : (0 : ℝ) < r := by exact_mod_cast hrpos
@@ -1742,7 +1738,7 @@ private def subfieldCa_pow_ratio_le_exp_sub
       rw [Real.exp_nat_mul]
     _ ≤ Real.exp (t - r) := hexp
 
-private def subfieldCa_floor_mode_le_stirling
+private def subfield_ca_floor_mode_le_stirling
     (t : ℝ) (r : ℕ) (hrpos : 0 < r) (hrle : (r : ℝ) ≤ t) :
     t ^ r / (r.factorial : ℝ) ≤
       Real.exp t / Real.sqrt (2 * Real.pi * (r : ℝ)) := by
@@ -1753,7 +1749,7 @@ private def subfieldCa_floor_mode_le_stirling
   have hd : 0 < Real.sqrt (2 * Real.pi * (r : ℝ)) :=
     Real.sqrt_pos.2 hdarg
   have hfac : (0 : ℝ) < (r.factorial : ℝ) := by positivity
-  have hratio := subfieldCa_pow_ratio_le_exp_sub t r hrpos hrle
+  have hratio := subfield_ca_pow_ratio_le_exp_sub t r hrpos hrle
   have hst := Stirling.le_factorial_stirling r
   have ht_pow :
       t ^ r = (t / (r : ℝ)) ^ r * (r : ℝ) ^ r := by
@@ -1800,21 +1796,21 @@ private def subfieldCa_floor_mode_le_stirling
   simpa only [mul_comm] using hcross
 
 open scoped BigOperators in
-private def subfieldCa_second_moment_expand
+private def subfield_ca_second_moment_expand
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
-    subfieldCaSecondMoment B domainB k δ a =
-      ∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
-          ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ) := by
+    subfield_ca_second_moment B domainB k δ a =
+      ∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
+          ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ) := by
   classical
   letI := Fintype.ofFinite B
-  unfold subfieldCaSecondMoment
+  unfold subfield_ca_second_moment
   have hprod := Fintype.sum_prod_type
     (fun z : (ι → B) × F =>
-      (subfieldCaMultiplicity B domainB k δ a z.1 z.2 : ℝ) ^ 2)
+      (subfield_ca_multiplicity B domainB k δ a z.1 z.2 : ℝ) ^ 2)
   rw [← hprod]
-  simp_rw [subfieldCa_multiplicity_real_eq_indicator_sum, pow_two,
+  simp_rw [subfield_ca_multiplicity_real_eq_indicator_sum, pow_two,
     Finset.sum_mul_sum]
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
@@ -1822,9 +1818,9 @@ private def subfieldCa_second_moment_expand
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
   intro T hT
-  exact subfieldCa_pair_indicator_sum_eq_fiber_card B domainB k a S T
+  exact subfield_ca_pair_indicator_sum_eq_fiber_card B domainB k a S T
 
-private def subfieldCa_sqrt_floor_facts (x : ℝ) (hx : 3 / 2 < x) :
+private def subfield_ca_sqrt_floor_facts (x : ℝ) (hx : 3 / 2 < x) :
     0 ≤ x ∧
       1 < Real.sqrt x ∧
       0 < ⌊Real.sqrt x⌋₊ ∧
@@ -1844,24 +1840,24 @@ private def subfieldCa_sqrt_floor_facts (x : ℝ) (hx : 3 / 2 < x) :
     exact Nat.lt_floor_add_one (Real.sqrt x)
   exact ⟨hx0, ht, hrpos, hrle, htlt, (Real.sq_sqrt hx0).symm⟩
 
-private def subfieldCa_bessel_term_le_mode
+private def subfield_ca_bessel_term_le_mode
     (x : ℝ) (hx : 3 / 2 < x) (s : ℕ) :
     (Real.sqrt x) ^ s / (s.factorial : ℝ) ≤
       (Real.sqrt x) ^ ⌊Real.sqrt x⌋₊ /
         (⌊Real.sqrt x⌋₊.factorial : ℝ) := by
   obtain ⟨hx0, _ht, _hrpos, hrle, htlt, _hsq⟩ :=
-    subfieldCa_sqrt_floor_facts x hx
-  exact subfieldCa_exp_term_le_floor_mode
+    subfield_ca_sqrt_floor_facts x hx
+  exact subfield_ca_exp_term_le_floor_mode
     (Real.sqrt x) ⌊Real.sqrt x⌋₊ s (Real.sqrt_nonneg x) hrle htlt
 
 open scoped BigOperators in
-private def subfieldCa_bessel_partial_le_factor_large
+private def subfield_ca_bessel_partial_le_factor_large
     (x : ℝ) (m : ℕ) (hx : 3 / 2 < x) :
-    subfieldCaBesselPartial x m ≤ subfieldCaFactor x := by
+    subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
   obtain ⟨hx0, _ht, hrpos, hrle, htlt, hsq⟩ :=
-    subfieldCa_sqrt_floor_facts x hx
+    subfield_ca_sqrt_floor_facts x hx
   rw [subfieldCaFactor, if_neg (not_le.mpr hx)]
-  unfold subfieldCaBesselPartial
+  unfold subfield_ca_bessel_partial
   let t : ℝ := Real.sqrt x
   let r : ℕ := ⌊Real.sqrt x⌋₊
   have ht0 : 0 ≤ t := by dsimp only [t]; exact Real.sqrt_nonneg x
@@ -1883,7 +1879,7 @@ private def subfieldCa_bessel_partial_le_factor_large
         t ^ s / (s.factorial : ℝ) ≤
           t ^ r / (r.factorial : ℝ) := by
       dsimp only [t, r]
-      exact subfieldCa_exp_term_le_floor_mode
+      exact subfield_ca_exp_term_le_floor_mode
         (Real.sqrt x) ⌊Real.sqrt x⌋₊ s (Real.sqrt_nonneg x) hrle htlt
     have hnon : 0 ≤ t ^ s / (s.factorial : ℝ) := by positivity
     rw [pow_two]
@@ -1915,7 +1911,7 @@ private def subfieldCa_bessel_partial_le_factor_large
   have hmode_bound :
       t ^ r / (r.factorial : ℝ) ≤
         Real.exp t / Real.sqrt (2 * Real.pi * (r : ℝ)) := by
-    apply subfieldCa_floor_mode_le_stirling
+    apply subfield_ca_floor_mode_le_stirling
     · exact hrpos
     · exact hrle
   have hpartial :
@@ -1947,23 +1943,23 @@ private def subfieldCa_bessel_partial_le_factor_large
       congr 2
       ring
 
-private def subfieldCa_bessel_partial_le_factor
+private def subfield_ca_bessel_partial_le_factor
     (x : ℝ) (m : ℕ) (hx : 0 ≤ x) :
-    subfieldCaBesselPartial x m ≤ subfieldCaFactor x := by
+    subfield_ca_bessel_partial x m ≤ subfieldCaFactor x := by
   by_cases hxle : x ≤ 3 / 2
-  · exact subfieldCa_bessel_partial_le_factor_small x m hx hxle
-  · exact subfieldCa_bessel_partial_le_factor_large x m (lt_of_not_ge hxle)
+  · exact subfield_ca_bessel_partial_le_factor_small x m hx hxle
+  · exact subfield_ca_bessel_partial_le_factor_large x m (lt_of_not_ge hxle)
 
-private def subfieldCa_overlap_sum_le_factor
+private def subfield_ca_overlap_sum_le_factor
     (n f b : ℕ) (hf : f ≤ n) (hb : 0 < b) :
-    subfieldCaOverlapSum n f b ≤
+    subfield_ca_overlap_sum n f b ≤
       subfieldCaFactor (((f : ℝ) * (n - f : ℕ)) / b) := by
-  apply le_trans (subfieldCa_overlap_sum_le_bessel n f b hf hb)
-  apply subfieldCa_bessel_partial_le_factor
+  apply le_trans (subfield_ca_overlap_sum_le_bessel n f b hf hb)
+  apply subfield_ca_bessel_partial_le_factor
   exact div_nonneg (mul_nonneg (Nat.cast_nonneg f) (Nat.cast_nonneg (n - f)))
     (Nat.cast_nonneg b)
 
-private def subfieldCa_support_algebra
+private def subfield_ca_support_algebra
     (A N H M G : ℝ)
     (hA : 0 < A) (hN : 0 < N) (hH : 0 ≤ H) (hHN : H ≤ N)
     (hG : 0 ≤ G)
@@ -1986,33 +1982,33 @@ private def subfieldCa_support_algebra
   nlinarith [hcross]
 
 open scoped BigOperators in
-private def subfieldCa_support_card_eq_sum_goodScalars
+private def subfield_ca_support_card_eq_sum_good_scalars
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
     letI := Fintype.ofFinite B
-    (subfieldCaSupport B domainB k δ a).card =
-      ∑ y : ι → B, (subfieldCaGoodScalars B domainB k δ a y).card := by
+    (subfield_ca_support B domainB k δ a).card =
+      ∑ y : ι → B, (subfield_ca_good_scalars B domainB k δ a y).card := by
   classical
   letI := Fintype.ofFinite B
-  unfold subfieldCaSupport subfieldCaGoodScalars
+  unfold subfield_ca_support subfield_ca_good_scalars
   simp_rw [Finset.card_filter]
   exact Fintype.sum_prod_type
     (fun z : (ι → B) × F =>
-      if 0 < subfieldCaMultiplicity B domainB k δ a z.1 z.2 then 1 else 0)
+      if 0 < subfield_ca_multiplicity B domainB k δ a z.1 z.2 then 1 else 0)
 
 open scoped BigOperators in
-private def subfieldCa_exists_center_from_support
+private def subfield_ca_exists_center_from_support
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
     ∃ y : ι → B,
-      ((subfieldCaSupport B domainB k δ a).card : ℝ) /
+      ((subfield_ca_support B domainB k δ a).card : ℝ) /
           ((Fintype.card F : ℝ) *
             (Nat.card B : ℝ) ^ Fintype.card ι) ≤
-        ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) /
+        ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
   classical
   letI := Fintype.ofFinite B
-  let H : ℝ := (subfieldCaSupport B domainB k δ a).card
+  let H : ℝ := (subfield_ca_support B domainB k δ a).card
   let N : ℝ := (Fintype.card F : ℝ) *
     (Nat.card B : ℝ) ^ Fintype.card ι
   let Q : ℝ := Fintype.card F
@@ -2023,14 +2019,14 @@ private def subfieldCa_exists_center_from_support
     exact_mod_cast Fintype.card_ne_zero
   have hsupportR : H =
       ∑ y : ι → B,
-        ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) := by
+        ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) := by
     dsimp only [H]
-    exact_mod_cast subfieldCa_support_card_eq_sum_goodScalars
+    exact_mod_cast subfield_ca_support_card_eq_sum_good_scalars
       B domainB k δ a
   have hsum_eq :
       (∑ _y : ι → B, H / N) =
         ∑ y : ι → B,
-          ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) / Q := by
+          ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) / Q := by
     rw [Finset.sum_const, nsmul_eq_mul]
     rw [← Finset.sum_div]
     rw [← hsupportR]
@@ -2043,40 +2039,40 @@ private def subfieldCa_exists_center_from_support
   have hsum_le :
       (∑ y ∈ (Finset.univ : Finset (ι → B)), H / N) ≤
         ∑ y ∈ (Finset.univ : Finset (ι → B)),
-          ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) / Q := by
+          ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) / Q := by
     simpa only using hsum_eq.le
   obtain ⟨y, _hyuniv, hy⟩ := Finset.exists_le_of_sum_le
     (s := (Finset.univ : Finset (ι → B)))
     (f := fun _y => H / N)
     (g := fun y =>
-      ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) / Q)
+      ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) / Q)
     Finset.univ_nonempty hsum_le
   refine ⟨y, ?_⟩
   simpa only [H, N, Q] using hy
 
-private def subfieldCa_support_card_le_ambient
+private def subfield_ca_support_card_le_ambient
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) :
-    ((subfieldCaSupport B domainB k δ a).card : ℝ) ≤
+    ((subfield_ca_support B domainB k δ a).card : ℝ) ≤
       (Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ Fintype.card ι := by
   classical
   letI := Fintype.ofFinite B
   have hnat :
-      (subfieldCaSupport B domainB k δ a).card ≤
+      (subfield_ca_support B domainB k δ a).card ≤
         Fintype.card ((ι → B) × F) := by
     calc
-      (subfieldCaSupport B domainB k δ a).card ≤
+      (subfield_ca_support B domainB k δ a).card ≤
           (Finset.univ : Finset ((ι → B) × F)).card := by
-        unfold subfieldCaSupport
+        unfold subfield_ca_support
         exact Finset.card_le_card (Finset.filter_subset _ _)
       _ = Fintype.card ((ι → B) × F) := Finset.card_univ
   have hreal :
-      ((subfieldCaSupport B domainB k δ a).card : ℝ) ≤
+      ((subfield_ca_support B domainB k δ a).card : ℝ) ≤
         (Fintype.card ((ι → B) × F) : ℝ) := by
     exact_mod_cast hnat
   calc
-    ((subfieldCaSupport B domainB k δ a).card : ℝ) ≤
+    ((subfield_ca_support B domainB k δ a).card : ℝ) ≤
         (Fintype.card ((ι → B) × F) : ℝ) := hreal
     _ = (Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ Fintype.card ι := by
@@ -2086,7 +2082,7 @@ private def subfieldCa_support_card_le_ambient
       ring
 
 open scoped BigOperators in
-private def subfieldCa_support_first_second
+private def subfield_ca_support_first_second
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F)
     (hkf : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ < Fintype.card ι) :
@@ -2094,8 +2090,8 @@ private def subfieldCa_support_first_second
     let A : ℝ := (Nat.choose (Fintype.card ι) f : ℝ) *
       (Nat.card B : ℝ) ^ (k + f)
     A ^ 2 ≤
-      ((subfieldCaSupport B domainB k δ a).card : ℝ) *
-        subfieldCaSecondMoment B domainB k δ a := by
+      ((subfield_ca_support B domainB k δ a).card : ℝ) *
+        subfield_ca_second_moment B domainB k δ a := by
   classical
   letI := Fintype.ofFinite B
   dsimp only
@@ -2103,21 +2099,21 @@ private def subfieldCa_support_first_second
   let A : ℝ := (Nat.choose (Fintype.card ι) f : ℝ) *
     (Nat.card B : ℝ) ^ (k + f)
   let X : ((ι → B) × F) → ℕ := fun z =>
-    subfieldCaMultiplicity B domainB k δ a z.1 z.2
+    subfield_ca_multiplicity B domainB k δ a z.1 z.2
   have h := finite_support_second_moment X
-  rw [subfieldCa_first_moment_real_eq B domainB k δ a hkf] at h
+  rw [subfield_ca_first_moment_real_eq B domainB k δ a hkf] at h
   rw [Fintype.sum_prod_type] at h
   change A ^ 2 ≤
-    ((subfieldCaSupport B domainB k δ a).card : ℝ) *
-      subfieldCaSecondMoment B domainB k δ a at h
+    ((subfield_ca_support B domainB k δ a).card : ℝ) *
+      subfield_ca_second_moment B domainB k δ a at h
   exact h
 
 open scoped BigOperators in
-private def subfieldCa_uniform_contribution_eq
+private def subfield_ca_uniform_contribution_eq
     (B : Subfield F) (k : ℕ) (δ : NNReal) :
     let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
-    (∑ _S ∈ subfieldCaErrorSets (ι := ι) δ,
-      ∑ _T ∈ subfieldCaErrorSets (ι := ι) δ,
+    (∑ _S ∈ subfield_ca_error_sets (ι := ι) δ,
+      ∑ _T ∈ subfield_ca_error_sets (ι := ι) δ,
         (Nat.card B : ℝ) ^ (2 * (k + f)) /
           ((Fintype.card F : ℝ) *
             (Nat.card B : ℝ) ^ Fintype.card ι)) =
@@ -2128,8 +2124,8 @@ private def subfieldCa_uniform_contribution_eq
   classical
   dsimp only
   let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
-  change (∑ _S ∈ subfieldCaErrorSets (ι := ι) δ,
-      ∑ _T ∈ subfieldCaErrorSets (ι := ι) δ,
+  change (∑ _S ∈ subfield_ca_error_sets (ι := ι) δ,
+      ∑ _T ∈ subfield_ca_error_sets (ι := ι) δ,
         (Nat.card B : ℝ) ^ (2 * (k + f)) /
           ((Fintype.card F : ℝ) *
             (Nat.card B : ℝ) ^ Fintype.card ι)) =
@@ -2138,13 +2134,13 @@ private def subfieldCa_uniform_contribution_eq
       ((Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ Fintype.card ι)
   rw [Finset.sum_const, nsmul_eq_mul, Finset.sum_const, nsmul_eq_mul]
-  rw [subfieldCaErrorSets_card]
+  rw [subfield_ca_error_sets_card]
   rw [show 2 * (k + f) = (k + f) * 2 by omega, pow_mul]
   dsimp only [f]
   ring
 
 open scoped BigOperators in
-private def subfieldCa_second_moment_le_overlap
+private def subfield_ca_second_moment_le_overlap
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
     (hmin : (minpoly B a).natDegree = Module.finrank B F) :
@@ -2153,9 +2149,9 @@ private def subfieldCa_second_moment_le_overlap
       (Nat.card B : ℝ) ^ (k + f)
     let N := (Fintype.card F : ℝ) *
       (Nat.card B : ℝ) ^ Fintype.card ι
-    subfieldCaSecondMoment B domainB k δ a ≤
+    subfield_ca_second_moment B domainB k δ a ≤
       A ^ 2 / N +
-        A * subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
+        A * subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
   classical
   dsimp only
   let f := ⌊(δ : ℝ) * Fintype.card ι⌋₊
@@ -2163,16 +2159,16 @@ private def subfieldCa_second_moment_le_overlap
     (Nat.card B : ℝ) ^ (k + f)
   let N : ℝ := (Fintype.card F : ℝ) *
     (Nat.card B : ℝ) ^ Fintype.card ι
-  change subfieldCaSecondMoment B domainB k δ a ≤
+  change subfield_ca_second_moment B domainB k δ a ≤
     A ^ 2 / N +
-      A * subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B)
-  rw [subfieldCa_second_moment_expand]
+      A * subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B)
+  rw [subfield_ca_second_moment_expand]
   calc
-    (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-        ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
-          ((subfieldCaPairEventFiber B domainB k a S T).card : ℝ)) ≤
-        ∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-          ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+    (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+        ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
+          ((subfield_ca_pair_event_fiber B domainB k a S T).card : ℝ)) ≤
+        ∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+          ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
             ((Nat.card B : ℝ) ^ (k + f) /
                 (Nat.card B : ℝ) ^ (S \ T).card +
               (Nat.card B : ℝ) ^ (2 * (k + f)) /
@@ -2182,27 +2178,27 @@ private def subfieldCa_second_moment_le_overlap
       intro S hS
       apply Finset.sum_le_sum
       intro T hT
-      exact subfieldCa_pair_fiber_card_le_real B domainB k a ha S T f
-        ((subfieldCaErrorSets_mem_iff_card δ S).mp hS)
-        ((subfieldCaErrorSets_mem_iff_card δ T).mp hT) hmin
-    _ = (∑ S ∈ subfieldCaErrorSets (ι := ι) δ,
-          ∑ T ∈ subfieldCaErrorSets (ι := ι) δ,
+      exact subfield_ca_pair_fiber_card_le_real B domainB k a ha S T f
+        ((subfield_ca_error_sets_mem_iff_card δ S).mp hS)
+        ((subfield_ca_error_sets_mem_iff_card δ T).mp hT) hmin
+    _ = (∑ S ∈ subfield_ca_error_sets (ι := ι) δ,
+          ∑ T ∈ subfield_ca_error_sets (ι := ι) δ,
             (Nat.card B : ℝ) ^ (k + f) /
               (Nat.card B : ℝ) ^ (S \ T).card) +
-        (∑ _S ∈ subfieldCaErrorSets (ι := ι) δ,
-          ∑ _T ∈ subfieldCaErrorSets (ι := ι) δ,
+        (∑ _S ∈ subfield_ca_error_sets (ι := ι) δ,
+          ∑ _T ∈ subfield_ca_error_sets (ι := ι) δ,
             (Nat.card B : ℝ) ^ (2 * (k + f)) /
               ((Fintype.card F : ℝ) *
                 (Nat.card B : ℝ) ^ Fintype.card ι)) := by
       simp_rw [Finset.sum_add_distrib]
     _ = A ^ 2 / N +
-        A * subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
-      rw [subfieldCa_overlap_contribution_eq,
-        subfieldCa_uniform_contribution_eq]
+        A * subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
+      rw [subfield_ca_overlap_contribution_eq,
+        subfield_ca_uniform_contribution_eq]
       dsimp only [A, N, f]
       ring
 
-private def subfieldCa_second_moment_le_factor
+private def subfield_ca_second_moment_le_factor
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
@@ -2212,7 +2208,7 @@ private def subfieldCa_second_moment_le_factor
       (Nat.card B : ℝ) ^ (k + f)
     let N := (Fintype.card F : ℝ) *
       (Nat.card B : ℝ) ^ Fintype.card ι
-    subfieldCaSecondMoment B domainB k δ a ≤
+    subfield_ca_second_moment B domainB k δ a ≤
       A ^ 2 / N +
         A * subfieldCaFactor
           (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B) := by
@@ -2222,27 +2218,27 @@ private def subfieldCa_second_moment_le_factor
     (Nat.card B : ℝ) ^ (k + f)
   let N : ℝ := (Fintype.card F : ℝ) *
     (Nat.card B : ℝ) ^ Fintype.card ι
-  change subfieldCaSecondMoment B domainB k δ a ≤
+  change subfield_ca_second_moment B domainB k δ a ≤
     A ^ 2 / N +
       A * subfieldCaFactor
         (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B)
-  have hover := subfieldCa_overlap_sum_le_factor
+  have hover := subfield_ca_overlap_sum_le_factor
     (Fintype.card ι) f (Nat.card B) hf Nat.card_pos
   have hA : 0 ≤ A := by
     dsimp only [A]
     positivity
   calc
-    subfieldCaSecondMoment B domainB k δ a ≤
+    subfield_ca_second_moment B domainB k δ a ≤
         A ^ 2 / N +
-          A * subfieldCaOverlapSum (Fintype.card ι) f (Nat.card B) := by
-      exact subfieldCa_second_moment_le_overlap B domainB k δ a ha hmin
+          A * subfield_ca_overlap_sum (Fintype.card ι) f (Nat.card B) := by
+      exact subfield_ca_second_moment_le_overlap B domainB k δ a ha hmin
     _ ≤ A ^ 2 / N +
         A * subfieldCaFactor
           (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B) := by
       exact add_le_add_right (mul_le_mul_of_nonneg_left hover hA) _
 
 open scoped BigOperators in
-private def subfieldCa_support_density_lower_nat
+private def subfield_ca_support_density_lower_nat
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
@@ -2257,7 +2253,7 @@ private def subfieldCa_support_density_lower_nat
           subfieldCaFactor
             (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B) /
           (Nat.choose (Fintype.card ι) f : ℝ) ≤
-      ((subfieldCaSupport B domainB k δ a).card : ℝ) / N := by
+      ((subfield_ca_support B domainB k δ a).card : ℝ) / N := by
   classical
   letI := Fintype.ofFinite B
   dsimp only
@@ -2266,8 +2262,8 @@ private def subfieldCa_support_density_lower_nat
   let A : ℝ := (C : ℝ) * (Nat.card B : ℝ) ^ (k + f)
   let N : ℝ := (Fintype.card F : ℝ) *
     (Nat.card B : ℝ) ^ Fintype.card ι
-  let H : ℝ := (subfieldCaSupport B domainB k δ a).card
-  let M : ℝ := subfieldCaSecondMoment B domainB k δ a
+  let H : ℝ := (subfield_ca_support B domainB k δ a).card
+  let M : ℝ := subfield_ca_second_moment B domainB k δ a
   let G : ℝ := subfieldCaFactor
     (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B)
   change 1 - (Fintype.card F : ℝ) *
@@ -2288,23 +2284,23 @@ private def subfieldCa_support_density_lower_nat
     positivity
   have hHN : H ≤ N := by
     dsimp only [H, N]
-    exact subfieldCa_support_card_le_ambient B domainB k δ a
+    exact subfield_ca_support_card_le_ambient B domainB k δ a
   have hG : 0 ≤ G := by
     dsimp only [G]
-    exact subfieldCaFactor_nonneg _
+    exact subfield_ca_factor_nonneg _
   have hfirst : A ^ 2 ≤ H * M := by
     dsimp only [A, C, H, M, f]
-    exact subfieldCa_support_first_second B domainB k δ a hkf
+    exact subfield_ca_support_first_second B domainB k δ a hkf
   have hsecond : M ≤ A ^ 2 / N + A * G := by
     dsimp only [M, A, C, N, G, f]
-    exact subfieldCa_second_moment_le_factor B domainB k δ a ha hmin hf_le
+    exact subfield_ca_second_moment_le_factor B domainB k δ a ha hmin hf_le
   have halg : 1 - N * G / A ≤ H / N :=
-    subfieldCa_support_algebra A N H M G hA hN hH hHN hG hfirst hsecond
+    subfield_ca_support_algebra A N H M G hA hN hH hHN hG hfirst hsecond
   have hcancel : N * G / A =
       (Fintype.card F : ℝ) *
         (Nat.card B : ℝ) ^ (Fintype.card ι - k - f) * G / (C : ℝ) := by
     dsimp only [A, N, C]
-    exact subfieldCa_density_error_term_eq
+    exact subfield_ca_density_error_term_eq
       (Fintype.card ι) k f (Nat.card B) (Fintype.card F) C G
       hkf_le hb hC
   calc
@@ -2314,7 +2310,7 @@ private def subfieldCa_support_density_lower_nat
     _ ≤ H / N := halg
 
 open scoped BigOperators in
-private def subfieldCa_exists_good_center_nat
+private def subfield_ca_exists_good_center_nat
     (B : Subfield F) (domainB : ι ↪ B) (k : ℕ) (δ : NNReal)
     (a : F) (ha : a ∉ B)
     (hmin : (minpoly B a).natDegree = Module.finrank B F)
@@ -2328,16 +2324,16 @@ private def subfieldCa_exists_good_center_nat
             subfieldCaFactor
               (((f : ℝ) * (Fintype.card ι - f : ℕ)) / Nat.card B) /
             (Nat.choose (Fintype.card ι) f : ℝ) ≤
-        ((subfieldCaGoodScalars B domainB k δ a y).card : ℝ) /
+        ((subfield_ca_good_scalars B domainB k δ a y).card : ℝ) /
           (Fintype.card F : ℝ) := by
   dsimp only
-  obtain ⟨y, hy⟩ := subfieldCa_exists_center_from_support
+  obtain ⟨y, hy⟩ := subfield_ca_exists_center_from_support
     B domainB k δ a
   refine ⟨y, ?_⟩
-  exact (subfieldCa_support_density_lower_nat
+  exact (subfield_ca_support_density_lower_nat
     B domainB k δ a ha hmin hkf hchoose).trans hy
 
-private def subfieldDomain (domain : ι ↪ F) (B : Subfield F)
+private def subfield_domain (domain : ι ↪ F) (B : Subfield F)
     (hdom : ∀ i, domain i ∈ B) : ι ↪ B :=
   { toFun := fun i => ⟨domain i, hdom i⟩
     inj' := by
@@ -2378,29 +2374,29 @@ private def subfield_primitive_not_mem
     exact b.property
   exact (ne_of_lt hB) hB_top
 
-private def subfieldCa_generator_not_mem
+private def subfield_ca_generator_not_mem
     (B : Subfield F) (hB : B < ⊤) (g : Fˣ)
     (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) : (g : F) ∉ B := by
   exact subfield_primitive_not_mem B hB (g : F)
-    (subfieldCa_generator_adjoin_eq_top B g hg)
+    (subfield_ca_generator_adjoin_eq_top B g hg)
 
-private def subfieldCa_generator_degree_card
+private def subfield_ca_generator_degree_card
     (B : Subfield F) (hB : B < ⊤) (g : Fˣ)
     (hg : ∀ y : Fˣ, y ∈ Submonoid.powers g) :
     (minpoly B (g : F)).natDegree = Module.finrank B F ∧
       Fintype.card F = Nat.card B ^ Module.finrank B F ∧
       (g : F) ∉ B := by
-  exact ⟨subfieldCa_generator_minpoly_natDegree B g hg,
-    subfieldCa_card_eq_pow_finrank B,
-    subfieldCa_generator_not_mem B hB g hg⟩
+  exact ⟨subfield_ca_generator_minpoly_nat_degree B g hg,
+    subfield_ca_card_eq_pow_finrank B,
+    subfield_ca_generator_not_mem B hB g hg⟩
 
-private def subfieldCa_exists_primitive_center
+private def subfield_ca_exists_primitive_center
     (B : Subfield F) (hB : B < ⊤) :
     ∃ a : F, a ∉ B ∧
       (minpoly B a).natDegree = Module.finrank B F := by
   obtain ⟨g, hg⟩ := exists_subfield_multiplicative_generator (F := F)
   obtain ⟨hdeg, _hcard, hnot⟩ :=
-    subfieldCa_generator_degree_card B hB g hg
+    subfield_ca_generator_degree_card B hB g hg
   exact ⟨(g : F), hnot, hdeg⟩
 
 private def subfield_radius_parameter_facts
@@ -2451,7 +2447,7 @@ private def subfield_radius_parameter_facts
   exact ⟨hδ_one, hk, hf, hkf, Nat.choose_ne_zero hf_le⟩
 
 open scoped NNReal in
-private def subfieldCa_exists_witness_data
+private def subfield_ca_exists_witness_data
     (domain : ι ↪ F) (k : ℕ) (δ : NNReal) (B : Subfield F)
     (hB : B < ⊤)
     (hdom : ∀ i, domain i ∈ B)
@@ -2463,36 +2459,36 @@ private def subfieldCa_exists_witness_data
       SubfieldCaWitnessData domain k δ B u G := by
   classical
   letI := Fintype.ofFinite B
-  let domainB : ι ↪ B := subfieldDomain domain B hdom
+  let domainB : ι ↪ B := subfield_domain domain B hdom
   obtain ⟨hδone, _hk, _hfpos, hkf, hchoose⟩ :=
     subfield_radius_parameter_facts (ι := ι) k δ hint hδpos hδlt
-  obtain ⟨a, ha, hmin⟩ := subfieldCa_exists_primitive_center B hB
-  obtain ⟨y, hy⟩ := subfieldCa_exists_good_center_nat
+  obtain ⟨a, ha, hmin⟩ := subfield_ca_exists_primitive_center B hB
+  obtain ⟨y, hy⟩ := subfield_ca_exists_good_center_nat
     B domainB k δ a ha hmin hkf hchoose
-  let u : Fin 2 → ι → F := subfieldCaReciprocalStack domain B a y
-  let G : Finset F := subfieldCaGoodScalars B domainB k δ a y
+  let u : Fin 2 → ι → F := subfield_ca_reciprocal_stack domain B a y
+  let G : Finset F := subfield_ca_good_scalars B domainB k δ a y
   have hdomB (i : ι) : (domainB i : F) = domain i := rfl
   have hgood : G ⊆ Finset.univ.filter (fun α : F =>
       Code.relDistFromCode (u 0 + α • u 1)
         (ReedSolomon.code domain k : Set (ι → F)) ≤ δ) := by
     simpa only [u, G] using
-      subfieldCaGoodScalars_subset_fold_close B domain domainB
+      subfield_ca_good_scalars_subset_fold_close B domain domainB
         k δ a y hint ha hdomB
   have hnot : ¬ Code.jointProximity
       (C := (ReedSolomon.code domain k : Set (ι → F)))
       (u := u) δ := by
     simpa only [u] using
-      subfieldCaReciprocalStack_not_joint domain B k δ a y ha hdom
+      subfield_ca_reciprocal_stack_not_joint domain B k δ a y ha hdom
         hint hδone hkf
   have hn : 0 < Fintype.card ι := Fintype.card_pos
   have hkf_le : k + ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι :=
     Nat.le_of_lt hkf
   have hf_le : ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ Fintype.card ι := by
     omega
-  have hpow := subfieldCa_natural_power_eq_rpow
+  have hpow := subfield_ca_natural_power_eq_rpow
     (Fintype.card ι) k ⌊(δ : ℝ) * Fintype.card ι⌋₊
       (Nat.card B) δ hn hkf_le hint
-  have harg := subfieldCa_overlap_argument_eq
+  have harg := subfield_ca_overlap_argument_eq
     (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊
       (Nat.card B) δ hf_le hint
   have hy' :
@@ -2549,14 +2545,9 @@ private def subfieldCa_exists_witness_data
       good_subset := hgood
       card_lower := hcard }⟩
 
-/-- A subfield/extension-field CA lower bound near capacity. For `B ⊊ F`, an evaluation
-domain contained in `B`, and `0 < δ < 1-ρ`,
-
-  `ε_ca(C, δ) ≥ 1 − [ |F| · |B|^{n(1−ρ−δ)} · a(δ(1−δ)n²/|B|) ] / C(n, δn)`
-
-where `a = subfieldCaFactor`. The integrality hypothesis makes `Nat.choose n ⌊δn⌋₊`
-the source's binomial coefficient at `δn`, and `Real.rpow` interprets the real exponent on
-`|B|`. -/
+omit [DecidableEq ι] in
+/-- Lower-bounds Reed--Solomon CA error when the evaluation domain lies in a proper
+subfield. The analytic correction term is `subfieldCaFactor`. -/
 theorem subfield_epsCa_lower_bound
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0) (B : Subfield F)
     (_hB_proper : B < ⊤)
@@ -2572,10 +2563,11 @@ theorem subfield_epsCa_lower_bound
                   / Nat.card B))
             / (Nat.choose (Fintype.card ι) ⌊(δ : ℝ) * Fintype.card ι⌋₊)) ≤
       epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ := by
+  classical
   dsimp only
-  obtain ⟨u, G, h⟩ := subfieldCa_exists_witness_data
+  obtain ⟨u, G, h⟩ := subfield_ca_exists_witness_data
     domain k δ B _hB_proper _h_dom _h_int _hδ_pos _hδ_lt
-  exact subfieldCaWitnessData_epsCa domain k δ B u G h
+  exact subfield_ca_witness_data_eps_ca domain k δ B u G h
 
 end ReedSolomon
 

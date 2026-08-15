@@ -9,7 +9,6 @@ import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
-
 /-!
 # BCHKS25 CA-to-list-size bound
 
@@ -25,10 +24,6 @@ to the field-cardinality list-size bound.
 - [BCHKS25] Theorem 1.9.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,12 +34,9 @@ section CAImpliesList
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- A sufficiently small CA error bounds the Reed--Solomon list size by the field size. If
-
-  `ε_ca(C, δ_fld = δ + 2/n, δ_int) < 1/(2n)`
-
-then `Λ(C, δ) ≤ |F|`. The interleaved radius is strictly below `1 - ρ - 1/n`, the
-joint-distance boundary supplied by the source. -/
+omit [DecidableEq ι] in
+/-- A Reed--Solomon CA error below `1 / (2 * n)` at field radius `δ + 2 / n` bounds
+the list size at radius `δ` by the field cardinality. -/
 theorem rs_Lambda_le_card_of_epsCa_lt
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (δ_int : ℝ≥0)
     (_hδ_pos : 0 < δ)

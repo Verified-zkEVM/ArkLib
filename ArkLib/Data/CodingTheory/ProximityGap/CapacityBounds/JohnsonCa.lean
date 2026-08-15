@@ -11,7 +11,6 @@ import ArkLib.Data.CodingTheory.HammingBallVolume
 import ArkLib.Data.CodingTheory.SubspaceDesign
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
-
 /-!
 # Ben-Sasson--Guruswami--Kopparty--Sudan CA bound
 
@@ -27,10 +26,6 @@ extracts dense agreement triples and reconstructs a common affine codeword line.
 - [BenSassonGKS20] Lemma 3.2.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -42,7 +37,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open scoped BigOperators in
-private def jointProximity_of_many_affine_agreements
+private def joint_proximity_of_many_affine_agreements
     (C : LinearCode ι F) (u0 u1 v0 v1 : ι → F)
     (A : Finset F) (S : ↥A → Finset ι) (d e : ℝ≥0)
     (he : 0 < (e : ℝ)) (hde : d + e ≤ 1)
@@ -186,25 +181,25 @@ private def jointProximity_of_many_affine_agreements
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
       simpa [Code.finMapTwoWords] using hi'.symm
 
-private noncomputable def linearBGKSClosestCodeword
+private noncomputable def linear_bgks_closest_codeword
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) : ι → F := by
   letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   exact (Code.pickRelClosestCodeword_of_Nonempty_Code
     (C : Set (ι → F)) (u 0 + x • u 1)).1
 
-private noncomputable def linearBGKSAgreementSet
+private noncomputable def linear_bgks_agreement_set
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) : Finset ι :=
   Finset.univ.filter fun i : ι =>
-    u 0 i + x * u 1 i = linearBGKSClosestCodeword C u x i
+    u 0 i + x * u 1 i = linear_bgks_closest_codeword C u x i
 
-private def linearBGKSClosestCodeword_mem
+private def linear_bgks_closest_codeword_mem
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) :
-    linearBGKSClosestCodeword C u x ∈ C := by
+    linear_bgks_closest_codeword C u x ∈ C := by
   classical
   letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
-  simp [linearBGKSClosestCodeword]
+  simp [linear_bgks_closest_codeword]
 
-private def linearBGKSCollisionNumeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
+private def linear_bgks_collision_numeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
     (hM : 2 / e ^ 2 < M) :
     3 * M ^ 2 < (e / 2) * M ^ 3 := by
   have he2 : 0 < e ^ 2 := sq_pos_of_pos he
@@ -219,18 +214,18 @@ private def linearBGKSCollisionNumeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3
   nlinarith
 
 open scoped NNReal in
-private noncomputable def linearBGKSGoodScalars
+private noncomputable def linear_bgks_good_scalars
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (δ_src : ℝ≥0) : Finset F :=
   Finset.univ.filter fun x : F =>
     δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal)
 
 open scoped NNReal in
-private def linearBGKSAgreementSet_card_gt
+private def linear_bgks_agreement_set_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src : ℝ≥0) (x : F)
-    (hx : x ∈ linearBGKSGoodScalars C u δ_src) :
+    (hx : x ∈ linear_bgks_good_scalars C u δ_src) :
     (1 - (δ_src : ℝ)) * Fintype.card ι <
-      ((linearBGKSAgreementSet C u x).card : ℝ) := by
+      ((linear_bgks_agreement_set C u x).card : ℝ) := by
   classical
   have hxclose :
       δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal) :=
@@ -238,64 +233,64 @@ private def linearBGKSAgreementSet_card_gt
   letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   rw [Code.relDistFromPickRelClosestCodeword_of_Nonempty_Code] at hxclose
   have hpair :
-      ((δᵣ(u 0 + x • u 1, linearBGKSClosestCodeword C u x) : ℚ≥0) : ENNReal) <
+      ((δᵣ(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℚ≥0) : ENNReal) <
         (δ_src : ENNReal) := by
-    simpa [linearBGKSClosestCodeword] using hxclose
+    simpa [linear_bgks_closest_codeword] using hxclose
   have hpairR :
-      (δᵣ(u 0 + x • u 1, linearBGKSClosestCodeword C u x) : ℝ) <
+      (δᵣ(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℝ) <
         (δ_src : ℝ) := by
     exact_mod_cast hpair
   rw [Code.relHammingDist_coe] at hpairR
   have hn : 0 < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
   have hdist :
-      (Δ₀(u 0 + x • u 1, linearBGKSClosestCodeword C u x) : ℝ) <
+      (Δ₀(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℝ) <
         (δ_src : ℝ) * Fintype.card ι :=
     (div_lt_iff₀ hn).mp hpairR
   have hcard :
-      (linearBGKSAgreementSet C u x).card =
-        Code.agree (u 0 + x • u 1) (linearBGKSClosestCodeword C u x) := by
-    simp [linearBGKSAgreementSet, Code.agree, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
+      (linear_bgks_agreement_set C u x).card =
+        Code.agree (u 0 + x • u 1) (linear_bgks_closest_codeword C u x) := by
+    simp [linear_bgks_agreement_set, Code.agree, Pi.add_apply, Pi.smul_apply, smul_eq_mul]
   have hagreeNat :=
     Code.agree_add_hammingDist
-      (u := u 0 + x • u 1) (v := linearBGKSClosestCodeword C u x)
+      (u := u 0 + x • u 1) (v := linear_bgks_closest_codeword C u x)
   have hagreeR :
-      (Code.agree (u 0 + x • u 1) (linearBGKSClosestCodeword C u x) : ℝ) +
-          (Δ₀(u 0 + x • u 1, linearBGKSClosestCodeword C u x) : ℝ) =
+      (Code.agree (u 0 + x • u 1) (linear_bgks_closest_codeword C u x) : ℝ) +
+          (Δ₀(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℝ) =
         (Fintype.card ι : ℝ) := by
     exact_mod_cast hagreeNat
   rw [hcard]
   nlinarith
 
 open scoped NNReal in
-private noncomputable def linearBGKSDenseTriples
+private noncomputable def linear_bgks_dense_triples
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (δ_src : ℝ≥0) :
-    Finset (↥(linearBGKSGoodScalars C u δ_src) ×
-      ↥(linearBGKSGoodScalars C u δ_src) ×
-      ↥(linearBGKSGoodScalars C u δ_src)) :=
+    Finset (↥(linear_bgks_good_scalars C u δ_src) ×
+      ↥(linear_bgks_good_scalars C u δ_src) ×
+      ↥(linear_bgks_good_scalars C u δ_src)) :=
   Finset.univ.filter fun p =>
     Fintype.card ι - Code.minDist (C : Set (ι → F)) <
-      (linearBGKSAgreementSet C u p.1 ∩
-        linearBGKSAgreementSet C u p.2.1 ∩
-        linearBGKSAgreementSet C u p.2.2).card
+      (linear_bgks_agreement_set C u p.1 ∩
+        linear_bgks_agreement_set C u p.2.1 ∩
+        linear_bgks_agreement_set C u p.2.2).card
 
 open scoped NNReal in
-private noncomputable def linearBGKSDistinctDenseTriples
+private noncomputable def linear_bgks_distinct_dense_triples
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (δ_src : ℝ≥0) :
-    Finset (↥(linearBGKSGoodScalars C u δ_src) ×
-      ↥(linearBGKSGoodScalars C u δ_src) ×
-      ↥(linearBGKSGoodScalars C u δ_src)) :=
-  (linearBGKSDenseTriples C u δ_src).filter fun p =>
+    Finset (↥(linear_bgks_good_scalars C u δ_src) ×
+      ↥(linear_bgks_good_scalars C u δ_src) ×
+      ↥(linear_bgks_good_scalars C u δ_src)) :=
+  (linear_bgks_dense_triples C u δ_src).filter fun p =>
     p.1 ≠ p.2.1 ∧ p.1 ≠ p.2.2 ∧ p.2.1 ≠ p.2.2
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linearBGKSGoodScalars_card_gt
+private def linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
       Pr_{
         let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < δ_src]) :
-    2 / (η : ℝ) ^ 2 < ((linearBGKSGoodScalars C u δ_src).card : ℝ) := by
+    2 / (η : ℝ) ^ 2 < ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by
   classical
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
   have hq : 0 < (Fintype.card F : ℝ) := by exact_mod_cast Fintype.card_pos
@@ -303,59 +298,59 @@ private def linearBGKSGoodScalars_card_gt
   have hprob' :
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
         ENNReal.ofReal
-          (((linearBGKSGoodScalars C u δ_src).card : ℝ) /
+          (((linear_bgks_good_scalars C u δ_src).card : ℝ) /
             (Fintype.card F : ℝ)) := by
-    simpa [linearBGKSGoodScalars] using hprob
+    simpa [linear_bgks_good_scalars] using hprob
   have hreal :
       2 / ((η : ℝ) ^ 2 * Fintype.card F) <
-        ((linearBGKSGoodScalars C u δ_src).card : ℝ) /
+        ((linear_bgks_good_scalars C u δ_src).card : ℝ) /
           (Fintype.card F : ℝ) :=
     (ENNReal.ofReal_lt_ofReal_iff').mp hprob' |>.1
   calc
     2 / (η : ℝ) ^ 2 =
         (2 / ((η : ℝ) ^ 2 * Fintype.card F)) * Fintype.card F := by
           field_simp
-    _ < (((linearBGKSGoodScalars C u δ_src).card : ℝ) /
+    _ < (((linear_bgks_good_scalars C u δ_src).card : ℝ) /
           (Fintype.card F : ℝ)) * Fintype.card F :=
       mul_lt_mul_of_pos_right hreal hq
-    _ = ((linearBGKSGoodScalars C u δ_src).card : ℝ) := by field_simp
+    _ = ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by field_simp
 
 open scoped BigOperators in
-private def linearBGKS_card_indicator
+private def linear_bgks_card_indicator
     {α : Type} [Fintype α] [DecidableEq α] (s : Finset α) :
     (s.card : ℝ) = ∑ i : α, if i ∈ s then (1 : ℝ) else 0 := by
   simp
 
 open scoped NNReal in
-private def linearBGKS_codewords_affine_of_distinctDenseTriple
+private def linear_bgks_codewords_affine_of_distinct_dense_triple
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src : ℝ≥0)
-    (x b g : ↥(linearBGKSGoodScalars C u δ_src))
-    (htriple : (x, b, g) ∈ linearBGKSDistinctDenseTriples C u δ_src) :
+    (x b g : ↥(linear_bgks_good_scalars C u δ_src))
+    (htriple : (x, b, g) ∈ linear_bgks_distinct_dense_triples C u δ_src) :
     let v1 : ι → F := (((b : F) - (x : F))⁻¹) •
-      (linearBGKSClosestCodeword C u b - linearBGKSClosestCodeword C u x)
-    let v0 : ι → F := linearBGKSClosestCodeword C u x - (x : F) • v1
+      (linear_bgks_closest_codeword C u b - linear_bgks_closest_codeword C u x)
+    let v0 : ι → F := linear_bgks_closest_codeword C u x - (x : F) • v1
     v0 ∈ C ∧ v1 ∈ C ∧
-      linearBGKSClosestCodeword C u g = v0 + (g : F) • v1 := by
+      linear_bgks_closest_codeword C u g = v0 + (g : F) • v1 := by
   classical
   let v1 : ι → F := (((b : F) - (x : F))⁻¹) •
-    (linearBGKSClosestCodeword C u b - linearBGKSClosestCodeword C u x)
-  let v0 : ι → F := linearBGKSClosestCodeword C u x - (x : F) • v1
+    (linear_bgks_closest_codeword C u b - linear_bgks_closest_codeword C u x)
+  let v0 : ι → F := linear_bgks_closest_codeword C u x - (x : F) • v1
   change v0 ∈ C ∧ v1 ∈ C ∧
-    linearBGKSClosestCodeword C u g = v0 + (g : F) • v1
-  rw [linearBGKSDistinctDenseTriples, Finset.mem_filter] at htriple
+    linear_bgks_closest_codeword C u g = v0 + (g : F) • v1
+  rw [linear_bgks_distinct_dense_triples, Finset.mem_filter] at htriple
   rcases htriple with ⟨hdense, hxb, hxg, hbg⟩
   have hbxval : (b : F) ≠ (x : F) := by
     intro heq
     apply hxb
     exact Subtype.ext heq.symm
   have hbx : (b : F) - (x : F) ≠ 0 := sub_ne_zero.mpr hbxval
-  have hcx : linearBGKSClosestCodeword C u x ∈ C :=
-    linearBGKSClosestCodeword_mem C u x
-  have hcb : linearBGKSClosestCodeword C u b ∈ C :=
-    linearBGKSClosestCodeword_mem C u b
-  have hcg : linearBGKSClosestCodeword C u g ∈ C :=
-    linearBGKSClosestCodeword_mem C u g
+  have hcx : linear_bgks_closest_codeword C u x ∈ C :=
+    linear_bgks_closest_codeword_mem C u x
+  have hcb : linear_bgks_closest_codeword C u b ∈ C :=
+    linear_bgks_closest_codeword_mem C u b
+  have hcg : linear_bgks_closest_codeword C u g ∈ C :=
+    linear_bgks_closest_codeword_mem C u g
   have hv1 : v1 ∈ C := by
     dsimp [v1]
     exact C.smul_mem _ (C.sub_mem hcb hcx)
@@ -366,11 +361,11 @@ private def linearBGKS_codewords_affine_of_distinctDenseTriple
     C.add_mem hv0 (C.smul_mem _ hv1)
   refine ⟨hv0, hv1, ?_⟩
   let I : Finset ι :=
-    linearBGKSAgreementSet C u x ∩
-      linearBGKSAgreementSet C u b ∩
-      linearBGKSAgreementSet C u g
+    linear_bgks_agreement_set C u x ∩
+      linear_bgks_agreement_set C u b ∩
+      linear_bgks_agreement_set C u g
   let T : Finset ι := Iᶜ
-  rw [linearBGKSDenseTriples, Finset.mem_filter] at hdense
+  rw [linear_bgks_dense_triples, Finset.mem_filter] at hdense
   have hinter :
       Fintype.card ι - Code.minDist (C : Set (ι → F)) < I.card := by
     simpa [I] using hdense.2
@@ -388,50 +383,50 @@ private def linearBGKS_codewords_affine_of_distinctDenseTriple
     rw [Finset.mem_compl]
     intro hiI
     have hi_ne :
-        linearBGKSClosestCodeword C u g i ≠
+        linear_bgks_closest_codeword C u g i ≠
           (v0 + (g : F) • v1) i := by
       simpa only [Code.mem_disagreementCols] using hi
     rcases Finset.mem_inter.mp hiI with ⟨hixb, hig⟩
     rcases Finset.mem_inter.mp hixb with ⟨hix, hib⟩
     have hxagree :
-        u 0 i + (x : F) * u 1 i = linearBGKSClosestCodeword C u x i := by
-      simpa [linearBGKSAgreementSet, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hix
+        u 0 i + (x : F) * u 1 i = linear_bgks_closest_codeword C u x i := by
+      simpa [linear_bgks_agreement_set, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hix
     have hbagree :
-        u 0 i + (b : F) * u 1 i = linearBGKSClosestCodeword C u b i := by
-      simpa [linearBGKSAgreementSet, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hib
+        u 0 i + (b : F) * u 1 i = linear_bgks_closest_codeword C u b i := by
+      simpa [linear_bgks_agreement_set, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hib
     have hgagree :
-        u 0 i + (g : F) * u 1 i = linearBGKSClosestCodeword C u g i := by
-      simpa [linearBGKSAgreementSet, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hig
+        u 0 i + (g : F) * u 1 i = linear_bgks_closest_codeword C u g i := by
+      simpa [linear_bgks_agreement_set, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hig
     have hdiff :
-        linearBGKSClosestCodeword C u b i - linearBGKSClosestCodeword C u x i =
+        linear_bgks_closest_codeword C u b i - linear_bgks_closest_codeword C u x i =
           ((b : F) - (x : F)) * u 1 i := by
       rw [← hbagree, ← hxagree]
       ring
     have hv1i : v1 i = u 1 i := by
       change ((b : F) - (x : F))⁻¹ *
-          (linearBGKSClosestCodeword C u b i -
-            linearBGKSClosestCodeword C u x i) = u 1 i
+          (linear_bgks_closest_codeword C u b i -
+            linear_bgks_closest_codeword C u x i) = u 1 i
       rw [hdiff, ← mul_assoc, inv_mul_cancel₀ hbx, one_mul]
     have hv0i : v0 i = u 0 i := by
-      change linearBGKSClosestCodeword C u x i - (x : F) * v1 i = u 0 i
+      change linear_bgks_closest_codeword C u x i - (x : F) * v1 i = u 0 i
       rw [hv1i, ← hxagree]
       ring
     apply hi_ne
     calc
-      linearBGKSClosestCodeword C u g i = u 0 i + (g : F) * u 1 i := hgagree.symm
+      linear_bgks_closest_codeword C u g i = u 0 i + (g : F) * u 1 i := hgagree.symm
       _ = v0 i + (g : F) * v1 i := by rw [hv0i, hv1i]
       _ = (v0 + (g : F) • v1) i := by rfl
   · exact hTcard
 
 open scoped BigOperators in
-private def linearBGKS_filter_card_indicator
+private def linear_bgks_filter_card_indicator
     {α : Type} [Fintype α] [DecidableEq α] (p : α → Prop) [DecidablePred p] :
     (((Finset.univ.filter p).card : ℝ)) =
       ∑ x : α, if p x then (1 : ℝ) else 0 := by
   simp
 
 open scoped NNReal in
-private def linearBGKS_numeric_setup
+private def linear_bgks_numeric_setup
     (C : LinearCode ι F) (δ_min η δ_src : ℝ≥0)
     (hδmin : (δ_min : ℝ) =
       (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
@@ -485,7 +480,7 @@ private def linearBGKS_numeric_setup
   refine ⟨hdmin_le, ha, hcube, ?_⟩
   nlinarith [hr_lt, heta_lt_r]
 
-private def linearBGKS_repeated_triples_card_le
+private def linear_bgks_repeated_triples_card_le
     {α : Type} [Fintype α] [DecidableEq α] :
     (((Finset.univ.filter fun p : α × α × α =>
       p.1 = p.2.1 ∨ p.1 = p.2.2 ∨ p.2.1 = p.2.2).card : ℝ)) ≤
@@ -540,7 +535,7 @@ private def linearBGKS_repeated_triples_card_le
   exact_mod_cast hR
 
 open scoped BigOperators in
-private def linearBGKS_triple_fiber_card_sum
+private def linear_bgks_triple_fiber_card_sum
     {α : Type} [Fintype α] [DecidableEq α]
     (D : Finset (α × α × α)) :
     (D.card : ℝ) = ∑ x : α, ∑ b : α,
@@ -570,7 +565,7 @@ private def linearBGKS_triple_fiber_card_sum
   exact_mod_cast hnat
 
 open scoped BigOperators in
-private def linearBGKS_rich_fiber_of_many_distinct
+private def linear_bgks_rich_fiber_of_many_distinct
     {α : Type} [Fintype α] [DecidableEq α]
     (D : Finset (α × α × α)) (e : ℝ)
     (he : 0 < e)
@@ -588,7 +583,7 @@ private def linearBGKS_rich_fiber_of_many_distinct
       (D.card : ℝ) = Finset.univ.sum (fun x : α =>
         Finset.univ.sum (fun b : α =>
           ((Finset.univ.filter (fun g : α => (x, b, g) ∈ D)).card : ℝ))) :=
-    linearBGKS_triple_fiber_card_sum D
+    linear_bgks_triple_fiber_card_sum D
   have hfiber_le (x b : α) :
       ((Finset.univ.filter (fun g : α => (x, b, g) ∈ D)).card : ℝ) ≤ 1 / e := by
     by_cases hxb : x = b
@@ -633,7 +628,7 @@ private def linearBGKS_rich_fiber_of_many_distinct
   exact (not_lt_of_ge hupper) (lt_trans hsep hD)
 
 open scoped BigOperators in
-private def linearBGKS_triple_intersection_moment
+private def linear_bgks_triple_intersection_moment
     {α : Type} [Fintype α] [Nonempty α] [DecidableEq α]
     {κ : Type} [Fintype κ] [Nonempty κ] [DecidableEq κ]
     (S : α → Finset κ) (r : ℝ)
@@ -653,13 +648,13 @@ private def linearBGKS_triple_intersection_moment
           ∑ i : κ, ∑ x : α, if i ∈ S x then (1 : ℝ) else 0 := by
             apply Finset.sum_congr rfl
             intro i hi
-            exact linearBGKS_filter_card_indicator (fun x : α => i ∈ S x)
+            exact linear_bgks_filter_card_indicator (fun x : α => i ∈ S x)
       _ = ∑ x : α, ∑ i : κ, if i ∈ S x then (1 : ℝ) else 0 := by
             rw [Finset.sum_comm]
       _ = ∑ x : α, ((S x).card : ℝ) := by
             apply Finset.sum_congr rfl
             intro x hx
-            exact (linearBGKS_card_indicator (S x)).symm
+            exact (linear_bgks_card_indicator (S x)).symm
   have factor_three (a : α → ℝ) :
       (∑ x : α, a x) ^ 3 =
         ∑ x : α, ∑ b : α, ∑ g : α, a x * a b * a g := by
@@ -681,7 +676,7 @@ private def linearBGKS_triple_intersection_moment
               intro b hb
               apply Finset.sum_congr rfl
               intro g hg
-              exact linearBGKS_card_indicator (S x ∩ S b ∩ S g)
+              exact linear_bgks_card_indicator (S x ∩ S b ∩ S g)
       _ = ∑ x : α, ∑ b : α, ∑ g : α, ∑ i : κ,
             (if i ∈ S x then (1 : ℝ) else 0) *
             (if i ∈ S b then (1 : ℝ) else 0) *
@@ -733,7 +728,7 @@ private def linearBGKS_triple_intersection_moment
             rw [← factor_three]
             dsimp [m]
             exact congrArg (fun z : ℝ => z ^ 3)
-              (linearBGKS_filter_card_indicator
+              (linear_bgks_filter_card_indicator
                 (fun x : α => i ∈ S x)).symm
   have hsum_lower :
       r * Fintype.card κ * (Fintype.card α : ℝ) < ∑ i : κ, m i := by
@@ -796,7 +791,7 @@ private def linearBGKS_triple_intersection_moment
 
 open scoped NNReal in
 open scoped BigOperators in
-private def linearBGKSDenseTriples_card_gt
+private def linear_bgks_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -805,14 +800,14 @@ private def linearBGKSDenseTriples_card_gt
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
     (hgood : 2 / (η : ℝ) ^ 2 <
-      ((linearBGKSGoodScalars C u δ_src).card : ℝ)) :
-    (η : ℝ) * ((linearBGKSGoodScalars C u δ_src).card : ℝ) ^ 3 <
-      ((linearBGKSDenseTriples C u δ_src).card : ℝ) := by
+      ((linear_bgks_good_scalars C u δ_src).card : ℝ)) :
+    (η : ℝ) * ((linear_bgks_good_scalars C u δ_src).card : ℝ) ^ 3 <
+      ((linear_bgks_dense_triples C u δ_src).card : ℝ) := by
   classical
-  let good : Finset F := linearBGKSGoodScalars C u δ_src
+  let good : Finset F := linear_bgks_good_scalars C u δ_src
   let α := ↥good
-  let S : α → Finset ι := fun x => linearBGKSAgreementSet C u x
-  let D : Finset (α × α × α) := linearBGKSDenseTriples C u δ_src
+  let S : α → Finset ι := fun x => linear_bgks_agreement_set C u x
+  let D : Finset (α × α × α) := linear_bgks_dense_triples C u δ_src
   let n : ℕ := Fintype.card ι
   let d : ℕ := Code.minDist (C : Set (ι → F))
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
@@ -829,18 +824,18 @@ private def linearBGKSDenseTriples_card_gt
     exact Code.dist_le_card _
   have hsubcast : ((n - d : ℕ) : ℝ) = (n : ℝ) - (d : ℝ) := by
     exact Nat.cast_sub hdle
-  have hnum := linearBGKS_numeric_setup C δ_min η δ_src hmin hη hη3 hsrc
+  have hnum := linear_bgks_numeric_setup C δ_min η δ_src hmin hη hη3 hsrc
   rcases hnum with ⟨hdmin_le, ha_pos, hcube, hsum_lt⟩
   have hS (x : α) :
       (1 - (δ_src : ℝ)) * Fintype.card ι < ((S x).card : ℝ) := by
     dsimp [S]
-    exact linearBGKSAgreementSet_card_gt C u δ_src x x.property
+    exact linear_bgks_agreement_set_card_gt C u δ_src x x.property
   have hmom :
       (1 - (δ_src : ℝ)) ^ 3 * Fintype.card ι *
           (Fintype.card α : ℝ) ^ 3 <
         ∑ x : α, ∑ b : α, ∑ g : α,
           (((S x ∩ S b ∩ S g).card : ℝ)) :=
-    linearBGKS_triple_intersection_moment S (1 - (δ_src : ℝ)) hS
+    linear_bgks_triple_intersection_moment S (1 - (δ_src : ℝ)) hS
   have htotal_prod :
       (∑ x : α, ∑ b : α, ∑ g : α,
           (((S x ∩ S b ∩ S g).card : ℝ))) =
@@ -870,8 +865,8 @@ private def linearBGKSDenseTriples_card_gt
       have hp' : ¬ n - d < (S p.1 ∩ S p.2.1 ∩ S p.2.2).card := by
         intro hdense
         apply hp
-        change p ∈ linearBGKSDenseTriples C u δ_src
-        rw [linearBGKSDenseTriples, Finset.mem_filter]
+        change p ∈ linear_bgks_dense_triples C u δ_src
+        rw [linear_bgks_dense_triples, Finset.mem_filter]
         refine ⟨Finset.mem_univ _, ?_⟩
         simpa [S, n, d] using hdense
       exact_mod_cast Nat.le_of_not_gt hp'
@@ -907,7 +902,7 @@ private def linearBGKSDenseTriples_card_gt
                         intro p hp
                         by_cases hpD : p ∈ D <;> simp [hpD]
                 _ = (n : ℝ) * (D.card : ℝ) := by
-                      rw [← linearBGKS_card_indicator D]
+                      rw [← linear_bgks_card_indicator D]
             rw [hind]
   have hcardα : (Fintype.card α : ℝ) = (good.card : ℝ) := by simp [α]
   rw [hcardα] at hmom
@@ -964,7 +959,7 @@ private def linearBGKSDenseTriples_card_gt
   exact (not_lt_of_ge hupper') hlower
 
 open scoped NNReal in
-private def linearBGKSDistinctDenseTriples_card_gt
+private def linear_bgks_distinct_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -973,14 +968,14 @@ private def linearBGKSDistinctDenseTriples_card_gt
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
     (hgood : 2 / (η : ℝ) ^ 2 <
-      ((linearBGKSGoodScalars C u δ_src).card : ℝ)) :
+      ((linear_bgks_good_scalars C u δ_src).card : ℝ)) :
     ((η : ℝ) / 2) *
-        ((linearBGKSGoodScalars C u δ_src).card : ℝ) ^ 3 <
-      ((linearBGKSDistinctDenseTriples C u δ_src).card : ℝ) := by
+        ((linear_bgks_good_scalars C u δ_src).card : ℝ) ^ 3 <
+      ((linear_bgks_distinct_dense_triples C u δ_src).card : ℝ) := by
   classical
-  let good : Finset F := linearBGKSGoodScalars C u δ_src
+  let good : Finset F := linear_bgks_good_scalars C u δ_src
   let α := ↥good
-  let D : Finset (α × α × α) := linearBGKSDenseTriples C u δ_src
+  let D : Finset (α × α × α) := linear_bgks_dense_triples C u δ_src
   let P : (α × α × α) → Prop := fun p =>
     p.1 ≠ p.2.1 ∧ p.1 ≠ p.2.2 ∧ p.2.1 ≠ p.2.2
   let R : Finset (α × α × α) := Finset.univ.filter fun p =>
@@ -1005,7 +1000,7 @@ private def linearBGKSDistinctDenseTriples_card_gt
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ p, hrep⟩
   have hR :
       (R.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
-    have h := linearBGKS_repeated_triples_card_le (α := α)
+    have h := linear_bgks_repeated_triples_card_le (α := α)
     simpa [R, α] using h
   have hB :
       (B.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
@@ -1015,22 +1010,22 @@ private def linearBGKSDistinctDenseTriples_card_gt
   have hDense :
       (η : ℝ) * (good.card : ℝ) ^ 3 < (D.card : ℝ) := by
     simpa [good, D] using
-      (linearBGKSDenseTriples_card_gt C u δ_min η δ_src
+      (linear_bgks_dense_triples_card_gt C u δ_min η δ_src
         hmin hη hη3 hηd hsrc hgood)
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
   have hCollision :
       3 * (good.card : ℝ) ^ 2 <
         ((η : ℝ) / 2) * (good.card : ℝ) ^ 3 :=
-    linearBGKSCollisionNumeric (η : ℝ) (good.card : ℝ) he hη3
+    linear_bgks_collision_numeric (η : ℝ) (good.card : ℝ) he hη3
       (by simpa [good] using hgood)
   have hresult :
       ((η : ℝ) / 2) * (good.card : ℝ) ^ 3 <
         ((D.filter P).card : ℝ) := by
     linarith
-  simpa [good, D, P, linearBGKSDistinctDenseTriples] using hresult
+  simpa [good, D, P, linear_bgks_distinct_dense_triples] using hresult
 
 open scoped NNReal in
-private def linearBGKS_rich_affine_line
+private def linear_bgks_rich_affine_line
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -1039,7 +1034,7 @@ private def linearBGKS_rich_affine_line
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
     (hgood : 2 / (η : ℝ) ^ 2 <
-      ((linearBGKSGoodScalars C u δ_src).card : ℝ)) :
+      ((linear_bgks_good_scalars C u δ_src).card : ℝ)) :
     ∃ v0 v1 : ι → F, v0 ∈ C ∧ v1 ∈ C ∧
       ∃ A : Finset F, 1 / (η : ℝ) + 2 < (A.card : ℝ) ∧
         ∃ T : ↥A → Finset ι,
@@ -1047,25 +1042,25 @@ private def linearBGKS_rich_affine_line
           (∀ x i, i ∈ T x →
             u 0 i + (x : F) * u 1 i = v0 i + (x : F) * v1 i) := by
   classical
-  let good : Finset F := linearBGKSGoodScalars C u δ_src
+  let good : Finset F := linear_bgks_good_scalars C u δ_src
   let α := ↥good
-  let D : Finset (α × α × α) := linearBGKSDistinctDenseTriples C u δ_src
+  let D : Finset (α × α × α) := linear_bgks_distinct_dense_triples C u δ_src
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
   have hM : 2 / (η : ℝ) ^ 2 < (Fintype.card α : ℝ) := by
     simpa [α, good] using hgood
   have hD :
       ((η : ℝ) / 2) * (Fintype.card α : ℝ) ^ 3 < (D.card : ℝ) := by
     simpa [α, good, D] using
-      (linearBGKSDistinctDenseTriples_card_gt C u δ_min η δ_src
+      (linear_bgks_distinct_dense_triples_card_gt C u δ_min η δ_src
         hmin hη hη3 hηd hsrc hgood)
   have hdistinct : ∀ p ∈ D,
       p.1 ≠ p.2.1 ∧ p.1 ≠ p.2.2 ∧ p.2.1 ≠ p.2.2 := by
     intro p hp
     dsimp [D] at hp
-    rw [linearBGKSDistinctDenseTriples, Finset.mem_filter] at hp
+    rw [linear_bgks_distinct_dense_triples, Finset.mem_filter] at hp
     exact hp.2
   obtain ⟨x, b, hxb, hrich⟩ :=
-    linearBGKS_rich_fiber_of_many_distinct D (η : ℝ) he hM hD hdistinct
+    linear_bgks_rich_fiber_of_many_distinct D (η : ℝ) he hM hD hdistinct
   let G : Finset α := Finset.univ.filter fun g : α => (x, b, g) ∈ D
   have hGcard : 1 / (η : ℝ) < (G.card : ℝ) := by
     simpa [G] using hrich
@@ -1076,12 +1071,12 @@ private def linearBGKS_rich_affine_line
   have hbx : (b : F) - (x : F) ≠ 0 :=
     sub_ne_zero.mpr (Ne.symm hxbval)
   let v1 : ι → F := (((b : F) - (x : F))⁻¹) •
-    (linearBGKSClosestCodeword C u b - linearBGKSClosestCodeword C u x)
-  let v0 : ι → F := linearBGKSClosestCodeword C u x - (x : F) • v1
-  have hcx : linearBGKSClosestCodeword C u x ∈ C :=
-    linearBGKSClosestCodeword_mem C u x
-  have hcb : linearBGKSClosestCodeword C u b ∈ C :=
-    linearBGKSClosestCodeword_mem C u b
+    (linear_bgks_closest_codeword C u b - linear_bgks_closest_codeword C u x)
+  let v0 : ι → F := linear_bgks_closest_codeword C u x - (x : F) • v1
+  have hcx : linear_bgks_closest_codeword C u x ∈ C :=
+    linear_bgks_closest_codeword_mem C u x
+  have hcb : linear_bgks_closest_codeword C u b ∈ C :=
+    linear_bgks_closest_codeword_mem C u b
   have hv1 : v1 ∈ C := by
     dsimp [v1]
     exact C.smul_mem _ (C.sub_mem hcb hcx)
@@ -1089,52 +1084,52 @@ private def linearBGKS_rich_affine_line
     dsimp [v0]
     exact C.sub_mem hcx (C.smul_mem _ hv1)
   have hxline :
-      linearBGKSClosestCodeword C u x = v0 + (x : F) • v1 := by
+      linear_bgks_closest_codeword C u x = v0 + (x : F) • v1 := by
     funext i
-    change linearBGKSClosestCodeword C u x i =
-      (linearBGKSClosestCodeword C u x i - (x : F) * v1 i) +
+    change linear_bgks_closest_codeword C u x i =
+      (linear_bgks_closest_codeword C u x i - (x : F) * v1 i) +
         (x : F) * v1 i
     ring
   have hbline :
-      linearBGKSClosestCodeword C u b = v0 + (b : F) • v1 := by
+      linear_bgks_closest_codeword C u b = v0 + (b : F) • v1 := by
     funext i
-    change linearBGKSClosestCodeword C u b i =
-      (linearBGKSClosestCodeword C u x i -
+    change linear_bgks_closest_codeword C u b i =
+      (linear_bgks_closest_codeword C u x i -
         (x : F) * (((b : F) - (x : F))⁻¹ *
-          (linearBGKSClosestCodeword C u b i -
-            linearBGKSClosestCodeword C u x i))) +
+          (linear_bgks_closest_codeword C u b i -
+            linear_bgks_closest_codeword C u x i))) +
       (b : F) * (((b : F) - (x : F))⁻¹ *
-        (linearBGKSClosestCodeword C u b i -
-          linearBGKSClosestCodeword C u x i))
+        (linear_bgks_closest_codeword C u b i -
+          linear_bgks_closest_codeword C u x i))
     symm
     calc
-      (linearBGKSClosestCodeword C u x i -
+      (linear_bgks_closest_codeword C u x i -
           (x : F) * (((b : F) - (x : F))⁻¹ *
-            (linearBGKSClosestCodeword C u b i -
-              linearBGKSClosestCodeword C u x i))) +
+            (linear_bgks_closest_codeword C u b i -
+              linear_bgks_closest_codeword C u x i))) +
         (b : F) * (((b : F) - (x : F))⁻¹ *
-          (linearBGKSClosestCodeword C u b i -
-            linearBGKSClosestCodeword C u x i)) =
-          linearBGKSClosestCodeword C u x i +
+          (linear_bgks_closest_codeword C u b i -
+            linear_bgks_closest_codeword C u x i)) =
+          linear_bgks_closest_codeword C u x i +
             (((b : F) - (x : F)) * ((b : F) - (x : F))⁻¹) *
-              (linearBGKSClosestCodeword C u b i -
-                linearBGKSClosestCodeword C u x i) := by ring
-      _ = linearBGKSClosestCodeword C u x i +
-            (linearBGKSClosestCodeword C u b i -
-              linearBGKSClosestCodeword C u x i) := by
+              (linear_bgks_closest_codeword C u b i -
+                linear_bgks_closest_codeword C u x i) := by ring
+      _ = linear_bgks_closest_codeword C u x i +
+            (linear_bgks_closest_codeword C u b i -
+              linear_bgks_closest_codeword C u x i) := by
             rw [mul_inv_cancel₀ hbx, one_mul]
-      _ = linearBGKSClosestCodeword C u b i := by ring
+      _ = linear_bgks_closest_codeword C u b i := by ring
   have hGtriple (g : α) (hg : g ∈ G) : (x, b, g) ∈ D :=
     (Finset.mem_filter.mp hg).2
   have hGdistinct (g : α) (hg : g ∈ G) :
       x ≠ b ∧ x ≠ g ∧ b ≠ g :=
     hdistinct (x, b, g) (hGtriple g hg)
   have hGline (g : α) (hg : g ∈ G) :
-      linearBGKSClosestCodeword C u g = v0 + (g : F) • v1 := by
-    have hg' : (x, b, g) ∈ linearBGKSDistinctDenseTriples C u δ_src := by
+      linear_bgks_closest_codeword C u g = v0 + (g : F) • v1 := by
+    have hg' : (x, b, g) ∈ linear_bgks_distinct_dense_triples C u δ_src := by
       simpa [D] using hGtriple g hg
     have haff :=
-      linearBGKS_codewords_affine_of_distinctDenseTriple C u δ_src x b g hg'
+      linear_bgks_codewords_affine_of_distinct_dense_triple C u δ_src x b g hg'
     dsimp only at haff
     exact haff.2.2
   let Gval : Finset F := G.image fun g : α => (g : F)
@@ -1172,34 +1167,34 @@ private def linearBGKS_rich_affine_line
       exact b.property
     · rcases Finset.mem_image.mp hy with ⟨g, hg, rfl⟩
       exact g.property
-  let T : ↥A → Finset ι := fun y => linearBGKSAgreementSet C u (y : F)
+  let T : ↥A → Finset ι := fun y => linear_bgks_agreement_set C u (y : F)
   refine ⟨v0, v1, hv0, hv1, A, hAcard, T, ?_, ?_⟩
   · intro y
-    have hyGood : (y : F) ∈ linearBGKSGoodScalars C u δ_src := by
+    have hyGood : (y : F) ∈ linear_bgks_good_scalars C u δ_src := by
       simpa [good] using hAgood (y : F) y.property
-    have hcard := linearBGKSAgreementSet_card_gt C u δ_src (y : F) hyGood
+    have hcard := linear_bgks_agreement_set_card_gt C u δ_src (y : F) hyGood
     simpa [T] using le_of_lt hcard
   · intro y i hi
-    have hi' : i ∈ linearBGKSAgreementSet C u (y : F) := by
+    have hi' : i ∈ linear_bgks_agreement_set C u (y : F) := by
       simpa [T] using hi
     have hyagree :
         u 0 i + (y : F) * u 1 i =
-          linearBGKSClosestCodeword C u (y : F) i := by
-      simpa [linearBGKSAgreementSet, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hi'
+          linear_bgks_closest_codeword C u (y : F) i := by
+      simpa [linear_bgks_agreement_set, Pi.add_apply, Pi.smul_apply, smul_eq_mul] using hi'
     have hyA : (y : F) ∈ A := y.property
     simp only [A, Finset.mem_insert] at hyA
     rcases hyA with hyx | hyb | hyG
     · calc
         u 0 i + (y : F) * u 1 i =
-            linearBGKSClosestCodeword C u (y : F) i := hyagree
-        _ = linearBGKSClosestCodeword C u x i := by rw [hyx]
+            linear_bgks_closest_codeword C u (y : F) i := hyagree
+        _ = linear_bgks_closest_codeword C u x i := by rw [hyx]
         _ = v0 i + (x : F) * v1 i := by
           simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using congrFun hxline i
         _ = v0 i + (y : F) * v1 i := by rw [hyx]
     · calc
         u 0 i + (y : F) * u 1 i =
-            linearBGKSClosestCodeword C u (y : F) i := hyagree
-        _ = linearBGKSClosestCodeword C u b i := by rw [hyb]
+            linear_bgks_closest_codeword C u (y : F) i := hyagree
+        _ = linear_bgks_closest_codeword C u b i := by rw [hyb]
         _ = v0 i + (b : F) * v1 i := by
           simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using congrFun hbline i
         _ = v0 i + (y : F) * v1 i := by rw [hyb]
@@ -1207,14 +1202,14 @@ private def linearBGKS_rich_affine_line
       have hgline := hGline g hg
       calc
         u 0 i + (y : F) * u 1 i =
-            linearBGKSClosestCodeword C u (y : F) i := hyagree
-        _ = linearBGKSClosestCodeword C u g i := by rw [← hgy]
+            linear_bgks_closest_codeword C u (y : F) i := hyagree
+        _ = linear_bgks_closest_codeword C u g i := by rw [← hgy]
         _ = v0 i + (g : F) * v1 i := by
           simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul] using congrFun hgline i
         _ = v0 i + (y : F) * v1 i := by rw [hgy]
 
 open scoped NNReal in
-private def linearBGKS_jointProximity_of_good_card_gt
+private def linear_bgks_joint_proximity_of_good_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -1223,17 +1218,17 @@ private def linearBGKS_jointProximity_of_good_card_gt
     (hsrc : (δ_src : ℝ) <
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
     (hgood : 2 / (η : ℝ) ^ 2 <
-      ((linearBGKSGoodScalars C u δ_src).card : ℝ)) :
+      ((linear_bgks_good_scalars C u δ_src).card : ℝ)) :
     Code.jointProximity (C : Set (ι → F)) u (δ_src + η) := by
-  have hnum := linearBGKS_numeric_setup C δ_min η δ_src hmin hη hη3 hsrc
+  have hnum := linear_bgks_numeric_setup C δ_min η δ_src hmin hη hη3 hsrc
   have hsumR : (δ_src : ℝ) + (η : ℝ) < 1 := hnum.2.2.2
   have hde : δ_src + η ≤ 1 := by
     exact_mod_cast le_of_lt hsumR
   have he : 0 < (η : ℝ) := by exact_mod_cast hη
   obtain ⟨v0, v1, hv0, hv1, A, hA, T, hT, hagree⟩ :=
-    linearBGKS_rich_affine_line C u δ_min η δ_src
+    linear_bgks_rich_affine_line C u δ_min η δ_src
       hmin hη hη3 hηd hsrc hgood
-  have hj := jointProximity_of_many_affine_agreements
+  have hj := joint_proximity_of_many_affine_agreements
     C (u 0) (u 1) v0 v1 A T δ_src η he hde hv0 hv1 hA hT hagree
   have hu : Code.finMapTwoWords (u 0) (u 1) = u := by
     funext j
@@ -1264,7 +1259,7 @@ private def linear_close_probability_mono_of_radius_lt
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linear_epsCa_le_one_point_five_johnson_aux
+private def linear_eps_ca_le_one_point_five_johnson_aux
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη3 : (η : ℝ) < 1 / 3) (hηd : η < δ_min)
@@ -1289,18 +1284,14 @@ private def linear_epsCa_le_one_point_five_johnson_aux
       lt_of_lt_of_le hgt
         (linear_close_probability_le_strict_of_radius_lt
           C u δ_fld δ_src hδlt)
-    have hgood := linearBGKSGoodScalars_card_gt
+    have hgood := linear_bgks_good_scalars_card_gt
       C u δ_src η hη hstrict
-    exact hjp (linearBGKS_jointProximity_of_good_card_gt
+    exact hjp (linear_bgks_joint_proximity_of_good_card_gt
       C u δ_min η δ_src hmin hη hη3 hηd hsrc hgood)
 
-/-- A CA bound for a linear code in the 1.5-Johnson regime. For `δ_fld < δ_src` and
-`δ_src < 1 - ∛(1 - δ_min(C) + η)`,
-
-  `ε_ca(C, δ_fld, δ_int := δ_src + η) ≤ 2 / (η² · |F|)`
-
-The strict gap `δ_fld < δ_src` embeds ArkLib's non-strict close event into the source's strict
-event and avoids an unsupported endpoint case. -/
+omit [DecidableEq ι] in
+/-- Bounds CA error at field radius `δ_fld` and interleaved radius `δ_src + η` when
+`δ_fld < δ_src` and `δ_src` is below the 1.5-Johnson radius. -/
 theorem linear_epsCa_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
@@ -1310,7 +1301,8 @@ theorem linear_epsCa_le_one_point_five_johnson
       1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3))) :
     epsCa (F := F) (A := F) ((C : Set (ι → F))) δ_fld (δ_src + η) ≤
       ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) := by
-  exact linear_epsCa_le_one_point_five_johnson_aux
+  classical
+  exact linear_eps_ca_le_one_point_five_johnson_aux
     C δ_min η δ_fld δ_src _h_δ_min _hη _hη_lt_third _hη_lt_δ_min
       _hδ_fld_pos _hδ_fld_lt _hδ_src
 

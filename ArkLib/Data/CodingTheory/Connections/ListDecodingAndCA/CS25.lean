@@ -24,10 +24,6 @@ dimensions.
 - [CS25] Crites--Stewart, Theorem 2.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,7 +35,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open scoped NNReal in
-private def rsEpsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
+private def rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
@@ -49,20 +45,20 @@ private def rsEpsCa_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
   · exact zero_le_one
   · exact PMF.coe_le_one _ _
 
-private def rsReciprocalStack (domain : ι ↪ F) (u : ι → F) (a : F) :
+private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
   fun j i => Fin.cases (u i / (domain i - a)) (fun _ => -1 / (domain i - a)) j
 
-private def rsReciprocalStack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
-    rsReciprocalStack domain u a 1 i = -1 / (domain i - a) := by
+private def rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
+    rs_reciprocal_stack domain u a 1 i = -1 / (domain i - a) := by
   rfl
 
-private def rsReciprocalStack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
-    rsReciprocalStack domain u a 0 i = u i / (domain i - a) := by
+private def rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
+    rs_reciprocal_stack domain u a 0 i = u i / (domain i - a) := by
   rfl
 
 open scoped NNReal ProbabilityTheory in
-private def rs_foldProbability_le_epsCa_of_not_joint
+private def rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
     Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤
@@ -76,13 +72,9 @@ private def rs_foldProbability_le_epsCa_of_not_joint
   rw [if_neg hnot] at hle
   exact hle
 
-
-/-- Integer-radius CA-to-list-size bound for related Reed--Solomon codes:
-
-  `Λ(RS(k+1), f/n) ≤ ⌈εq(q-n)/(q-n-kεq)⌉`.
-
-The hypotheses `f + k + 1 < n` and `ε < (q-n)/(kq)` are the source's native parameter
-conditions. The real-radius theorem below is derived from this statement. -/
+omit [DecidableEq ι] in
+/-- Bounds the list size of `RS(k + 1)` at radius `f / n` from the CA error of `RS(k)`
+at the same integral radius. -/
 theorem rs_Lambda_extended_le_of_epsCa_int_radius
     (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
     (_hk_pos : 0 < k)
@@ -367,7 +359,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
           return δᵣ(w 0 + x • w 1, Ck) ≤ ((f : ℝ≥0) / n : ℝ≥0)) True) : ENNReal)) v)
     rw [if_neg hvnot, Probability.prob_uniform_eq_card_filter_div_card]
   have hGoodR : (Good.card : ℝ) ≤ ε * q := by
-    have htr := ENNReal.toReal_mono (rsEpsCa_ne_top Ck _ _) hprob
+    have htr := ENNReal.toReal_mono (rs_eps_ca_ne_top Ck _ _) hprob
     have hdiv : (Good.card : ℝ) / q ≤
         (epsCa (F := F) (A := F) Ck ((f : ℝ≥0) / n) ((f : ℝ≥0) / n)).toReal := by
       simpa using htr

@@ -12,7 +12,6 @@ import ArkLib.Data.CodingTheory.HammingBallVolume
 import ArkLib.Data.CodingTheory.SubspaceDesign
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
-
 /-!
 # Gao--Kopparty--Lovett affine-line MCA bound
 
@@ -28,27 +27,18 @@ MCA theorem.
 - [GaoKL24] Theorem 3.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
 open CoreDefinitions ProximityGap
-
 
 section General
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- An affine-line MCA bound for a linear code in the 1.5-Johnson regime. For
-`δ ≤ 1 - ∛(1 - δ_min(C) + η)`, the error is at most
-
-  `ε_mca(C, δ) ≤ ((n+6)/η + 2 / (η · (∛(1 - δ_min + η) - √(1 - δ_min + η))) ) · (1/|F|)`
-
-The hypothesis `η < δ_min` keeps the displayed denominator positive. -/
+omit [DecidableEq ι] in
+/-- Bounds affine-line MCA error below the 1.5-Johnson radius of a linear code. -/
 theorem linear_mcaError_le_one_point_five_johnson
     (C : LinearCode ι F) (δ_min η δ : ℝ≥0)
     (_h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)

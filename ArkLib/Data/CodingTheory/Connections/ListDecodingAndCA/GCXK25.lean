@@ -27,10 +27,6 @@ finite-family incidence estimate.
 - [GCXK25] Theorem 3.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -41,18 +37,18 @@ section ListImpliesMCA
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-private noncomputable def largeFamilyLow {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_low {κ ι π : Type} [Fintype κ] [Fintype ι]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
   exact Finset.univ.filter fun x => ∃ p, D p ⊆ A x
 
-private noncomputable def largeFamilyHigh {κ ι π : Type} [Fintype κ] [Fintype ι]
+private noncomputable def large_family_high {κ ι π : Type} [Fintype κ] [Fintype ι]
     [Fintype π] [DecidableEq ι] (A : κ → Finset ι) (D : π → Finset ι) : Finset κ := by
   classical
-  exact Finset.univ \ largeFamilyLow A D
+  exact Finset.univ \ large_family_low A D
 
 open scoped BigOperators in
-private def largeFamily_sum_card_eq_sum_incidence
+private def large_family_sum_card_eq_sum_incidence
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) :
     (∑ x : κ, ((A x).card : ℝ)) =
@@ -73,7 +69,7 @@ private def largeFamily_sum_card_eq_sum_incidence
           exact Finset.sum_boole (R := ℝ) (fun x : κ => i ∈ A x) Finset.univ
 
 open scoped BigOperators in
-private def largeFamily_sum_sq_incidence_eq_sum_inter
+private def large_family_sum_sq_incidence_eq_sum_inter
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) :
     (∑ i : ι,
@@ -126,10 +122,10 @@ private def largeFamily_sum_sq_incidence_eq_sum_inter
           intro i hi
           rw [Finset.sum_boole (R := ℝ) (fun x : κ => i ∈ A x) Finset.univ]
 
-private def linearMca_affineAgreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
+private def linear_mca_affine_agreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
   Finset.univ.filter fun i => u 0 i + x * u 1 i = c i
 
-private def linearMca_affine_two_agreements (C : LinearCode ι F)
+private def linear_mca_affine_two_agreements (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (x y : F) (hxy : x ≠ y)
     (cx cy : ι → F) (hcx : cx ∈ C) (hcy : cy ∈ C) (S : Finset ι)
     (hx : ∀ i ∈ S, u 0 i + x * u 1 i = cx i)
@@ -160,14 +156,14 @@ private def linearMca_affine_two_agreements (C : LinearCode ι F)
       linear_combination hx i hi
     · simpa [d] using h1
 
-private noncomputable def linearMca_badScalars
+private noncomputable def linear_mca_bad_scalars
     (C : LinearCode ι F) (u : Fin 2 → ι → F) (p η : ℝ) : Finset F := by
   classical
   exact Finset.univ.filter fun x : F =>
     IsMCA (AffineLineGenerator F) C x u
       (1 - (1 - p + η) ^ ((1 : ℝ) / 2))
 
-private def linearMca_high_algebra (m p η s : ℝ)
+private def linear_mca_high_algebra (m p η s : ℝ)
     (hp_lt : p < 1) (hη_pos : 0 < η)
     (hs_sq : s ^ 2 = 1 - p + η)
     (hineq : m * s ^ 2 ≤ 1 + (m - 1) * (1 - p)) :
@@ -176,7 +172,7 @@ private def linearMca_high_algebra (m p η s : ℝ)
   nlinarith
 
 open scoped BigOperators in
-private def largeFamilySparse_card_lt
+private def large_family_sparse_card_lt
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) (p η s : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ)) (hp_lt : p < 1)
@@ -215,8 +211,8 @@ private def largeFamilySparse_card_lt
       (s := (Finset.univ : Finset ι))
       (f := fun i =>
         (((Finset.univ : Finset κ).filter fun x => i ∈ A x).card : ℝ))
-    rw [← largeFamily_sum_card_eq_sum_incidence A,
-      largeFamily_sum_sq_incidence_eq_sum_inter A] at hc
+    rw [← large_family_sum_card_eq_sum_incidence A,
+      large_family_sum_sq_incidence_eq_sum_inter A] at hc
     simpa [Z, Q, n] using hc
   let f : κ × κ → ℝ := fun z => (((A z.1) ∩ (A z.2)).card : ℝ)
   have hQsplit : Q = Z + ∑ z ∈ (Finset.univ : Finset κ).offDiag, f z := by
@@ -269,9 +265,9 @@ private def largeFamilySparse_card_lt
   have hineq : m * s ^ 2 ≤ 1 + (m - 1) * (1 - p) := by
     have hpos : 0 < m * n ^ 2 := mul_pos hm (sq_pos_of_pos hn0)
     nlinarith
-  exact linearMca_high_algebra m p η s hp_lt hη_pos hs_sq hineq
+  exact linear_mca_high_algebra m p η s hp_lt hη_pos hs_sq hineq
 
-private def largeFamilyHigh_card_le_of_domains
+private def large_family_high_card_le_of_domains
     {κ ι π : Type} [Fintype κ] [Fintype ι] [Fintype π] [DecidableEq ι]
     (A : κ → Finset ι) (D : π → Finset ι) (δ η s : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ)) (hδ_lt : δ < 1)
@@ -281,9 +277,9 @@ private def largeFamilyHigh_card_le_of_domains
     (hpair : ∀ x y, x ≠ y →
       (Fintype.card ι : ℝ) * (1 - δ) ≤ (((A x) ∩ (A y)).card : ℝ) →
       ∃ p, A x ∩ A y ⊆ D p ∧ D p ⊆ A x ∧ D p ⊆ A y) :
-    ((largeFamilyHigh A D).card : ℝ) ≤ 1 / η := by
+    ((large_family_high A D).card : ℝ) ≤ 1 / η := by
   classical
-  let H := largeFamilyHigh A D
+  let H := large_family_high A D
   let AH (x : H) : Finset ι := A x.1
   have hAH (x : H) : (Fintype.card ι : ℝ) * s ≤ ((AH x).card : ℝ) :=
     hA x.1
@@ -297,20 +293,20 @@ private def largeFamilyHigh_card_le_of_domains
       apply hxy
       exact Subtype.ext h
     obtain ⟨p, hIp, hpX, -⟩ := hpair x.1 y.1 hxyval hnot.le
-    have hxlow : x.1 ∈ largeFamilyLow A D := by
-      unfold largeFamilyLow
+    have hxlow : x.1 ∈ large_family_low A D := by
+      unfold large_family_low
       rw [Finset.mem_filter]
       exact ⟨Finset.mem_univ _, ⟨p, hpX⟩⟩
-    have hxhigh : x.1 ∈ largeFamilyHigh A D := x.2
-    unfold largeFamilyHigh at hxhigh
+    have hxhigh : x.1 ∈ large_family_high A D := x.2
+    unfold large_family_high at hxhigh
     exact (Finset.mem_sdiff.mp hxhigh).2 hxlow
-  have hsparse := largeFamilySparse_card_lt
+  have hsparse := large_family_sparse_card_lt
     (A := AH) δ η s hn hδ_lt hη_pos hs_nonneg hs_sq hAH hinter
-  have hcard : ((largeFamilyHigh A D).card : ℝ) < 1 / η := by
+  have hcard : ((large_family_high A D).card : ℝ) < 1 / η := by
     simpa [H] using hsparse
   exact hcard.le
 
-private def linearMca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
+private def linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
     [DecidableEq S] [DecidableEq α]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -348,7 +344,7 @@ private def linearMca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
     nlinarith
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
-private def linearMca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
+private def linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
     [DecidableEq S] [DecidableEq α]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -388,7 +384,7 @@ private def linearMca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
 open scoped BigOperators in
-private def largeFamilyLow_card_le_of_domains
+private def large_family_low_card_le_of_domains
     {κ ι π : Type} [Fintype κ] [Fintype ι] [Fintype π] [DecidableEq ι]
     (A : κ → Finset ι) (D : π → Finset ι) (δ : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ))
@@ -397,25 +393,25 @@ private def largeFamilyLow_card_le_of_domains
     (hpair : ∀ x y, x ≠ y →
       (Fintype.card ι : ℝ) * (1 - δ) ≤ (((A x) ∩ (A y)).card : ℝ) →
       ∃ p, A x ∩ A y ⊆ D p ∧ D p ⊆ A x ∧ D p ⊆ A y) :
-    ((largeFamilyLow A D).card : ℝ) ≤
+    ((large_family_low A D).card : ℝ) ≤
       (Fintype.card π : ℝ) * δ * (Fintype.card ι : ℝ) := by
   classical
   have hnNat : 0 < Fintype.card ι := by exact_mod_cast hn
   letI : Nonempty ι := Fintype.card_pos_iff.mp hnNat
   rcases isEmpty_or_nonempty π with hπ | hπ
-  · have hlow : largeFamilyLow A D = ∅ := by
+  · have hlow : large_family_low A D = ∅ := by
       apply Finset.eq_empty_iff_forall_notMem.mpr
       intro x hx
-      unfold largeFamilyLow at hx
+      unfold large_family_low at hx
       obtain ⟨p, -⟩ := (Finset.mem_filter.mp hx).2
       exact isEmptyElim p
     simp [hlow]
   · letI : Nonempty π := hπ
-    let L := largeFamilyLow A D
+    let L := large_family_low A D
     let cand (x : L) : Finset π := Finset.univ.filter fun p => D p ⊆ A x.1
     have hcand (x : L) : (cand x).Nonempty := by
-      have hxmem : x.1 ∈ largeFamilyLow A D := x.2
-      unfold largeFamilyLow at hxmem
+      have hxmem : x.1 ∈ large_family_low A D := x.2
+      unfold large_family_low at hxmem
       obtain ⟨p, hp⟩ := (Finset.mem_filter.mp hxmem).2
       exact ⟨p, Finset.mem_filter.mpr ⟨Finset.mem_univ p, hp⟩⟩
     have hmax (x : L) : ∃ p ∈ cand x, ∀ q ∈ cand x, (D q).card ≤ (D p).card :=
@@ -430,7 +426,7 @@ private def largeFamilyLow_card_le_of_domains
     let fiber (p : π) : Finset L := Finset.univ.filter fun x => best x = p
     have hfiber (p : π) : ((fiber p).card : ℝ) ≤
         δ * (Fintype.card ι : ℝ) := by
-      apply linearMca_low_family_card_le_of_disjoint
+      apply linear_mca_low_family_card_le_of_disjoint
         (B := fiber p) (A := fun x : L => A x.1) (D := D p) (p := δ)
       · intro x hx
         have hbp : best x = p := (Finset.mem_filter.mp hx).2
@@ -474,11 +470,11 @@ private def largeFamilyLow_card_le_of_domains
     have hmaps : ((Finset.univ : Finset L) : Set L).MapsTo best (Finset.univ : Finset π) := by
       intro x hx
       exact Finset.mem_univ _
-    have hcardEq : (largeFamilyLow A D).card = ∑ p : π, (fiber p).card := by
+    have hcardEq : (large_family_low A D).card = ∑ p : π, (fiber p).card := by
       have h := Finset.card_eq_sum_card_fiberwise hmaps
       simpa [L, fiber] using h
     calc
-      ((largeFamilyLow A D).card : ℝ) = ∑ p : π, ((fiber p).card : ℝ) := by
+      ((large_family_low A D).card : ℝ) = ∑ p : π, ((fiber p).card : ℝ) := by
         exact_mod_cast hcardEq
       _ ≤ ∑ _p : π, δ * (Fintype.card ι : ℝ) :=
         Finset.sum_le_sum fun p _ => hfiber p
@@ -503,63 +499,63 @@ private def large_family_card_le_of_domains
     (Fintype.card κ : ℝ) ≤
       (Fintype.card π : ℝ) * δ * (Fintype.card ι : ℝ) + 1 / η := by
   classical
-  have hlow := largeFamilyLow_card_le_of_domains
+  have hlow := large_family_low_card_le_of_domains
     A D δ hn hD hstrict hpair
-  have hhigh := largeFamilyHigh_card_le_of_domains
+  have hhigh := large_family_high_card_le_of_domains
     A D δ η s hn hδ_lt hη_pos hs_nonneg hs_sq hA hpair
-  have hlowNat : (largeFamilyLow A D).card ≤ Fintype.card κ := by
-    simpa using Finset.card_le_univ (largeFamilyLow A D)
-  have hhighEq : (largeFamilyHigh A D).card =
-      Fintype.card κ - (largeFamilyLow A D).card := by
-    unfold largeFamilyHigh
+  have hlowNat : (large_family_low A D).card ≤ Fintype.card κ := by
+    simpa using Finset.card_le_univ (large_family_low A D)
+  have hhighEq : (large_family_high A D).card =
+      Fintype.card κ - (large_family_low A D).card := by
+    unfold large_family_high
     rw [Finset.card_sdiff]
     simp
   have hsumNat : Fintype.card κ =
-      (largeFamilyLow A D).card + (largeFamilyHigh A D).card := by
+      (large_family_low A D).card + (large_family_high A D).card := by
     rw [hhighEq]
     omega
   have hsumR : (Fintype.card κ : ℝ) =
-      ((largeFamilyLow A D).card : ℝ) +
-        ((largeFamilyHigh A D).card : ℝ) := by
+      ((large_family_low A D).card : ℝ) +
+        ((large_family_high A D).card : ℝ) := by
     exact_mod_cast hsumNat
   rw [hsumR]
   exact add_le_add hlow hhigh
 
-private def linearMca_pairAgreement (u c : Fin 2 → ι → F) : Finset ι :=
+private def linear_mca_pair_agreement (u c : Fin 2 → ι → F) : Finset ι :=
   Finset.univ.filter fun i => ∀ j : Fin 2, u j i = c j i
 
-private noncomputable def linearMca_rowList (C : LinearCode ι F) (u : Fin 2 → ι → F)
+private noncomputable def linear_mca_row_list (C : LinearCode ι F) (u : Fin 2 → ι → F)
     (p : ℝ) (j : Fin 2) : Finset (ι → F) :=
   (Set.toFinite (closeCodewordsRel (C : Set (ι → F)) (u j) p)).toFinset
 
-private noncomputable def linearMca_relevantPairs (C : LinearCode ι F)
+private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (p : ℝ) : Finset ((ι → F) × (ι → F)) := by
   classical
-  exact ((linearMca_rowList C u p 0).product (linearMca_rowList C u p 1)).filter fun d =>
+  exact ((linear_mca_row_list C u p 0).product (linear_mca_row_list C u p 1)).filter fun d =>
     (Fintype.card ι : ℝ) * (1 - p) ≤
-      (linearMca_pairAgreement u ![d.1, d.2]).card
+      (linear_mca_pair_agreement u ![d.1, d.2]).card
 
-private def linearMca_relevantPairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
+private def linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
     (hΛ : Lambda ((C : Set (ι → F))) p ≤ (L : ℕ∞))
     (u : Fin 2 → ι → F) :
-    (linearMca_relevantPairs C u p).card ≤ L ^ 2 := by
+    (linear_mca_relevant_pairs C u p).card ≤ L ^ 2 := by
   classical
   have hlist0 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 0)
   have hlist1 := (Code.Lambda_le_iff_forall_ncard_le.mp hΛ) (u 1)
-  have hrow0 : (linearMca_rowList C u p 0).card ≤ L := by
-    simpa [linearMca_rowList, Set.ncard_eq_toFinset_card _ hlist0.1] using hlist0.2
-  have hrow1 : (linearMca_rowList C u p 1).card ≤ L := by
-    simpa [linearMca_rowList, Set.ncard_eq_toFinset_card _ hlist1.1] using hlist1.2
-  unfold linearMca_relevantPairs
+  have hrow0 : (linear_mca_row_list C u p 0).card ≤ L := by
+    simpa [linear_mca_row_list, Set.ncard_eq_toFinset_card _ hlist0.1] using hlist0.2
+  have hrow1 : (linear_mca_row_list C u p 1).card ≤ L := by
+    simpa [linear_mca_row_list, Set.ncard_eq_toFinset_card _ hlist1.1] using hlist1.2
+  unfold linear_mca_relevant_pairs
   calc
-    (((linearMca_rowList C u p 0).product
-      (linearMca_rowList C u p 1)).filter fun d =>
+    (((linear_mca_row_list C u p 0).product
+      (linear_mca_row_list C u p 1)).filter fun d =>
         (Fintype.card ι : ℝ) * (1 - p) ≤
-          (linearMca_pairAgreement u ![d.1, d.2]).card).card
-        ≤ ((linearMca_rowList C u p 0).product
-          (linearMca_rowList C u p 1)).card := Finset.card_filter_le _ _
-    _ = (linearMca_rowList C u p 0).card *
-        (linearMca_rowList C u p 1).card := Finset.card_product _ _
+          (linear_mca_pair_agreement u ![d.1, d.2]).card).card
+        ≤ ((linear_mca_row_list C u p 0).product
+          (linear_mca_row_list C u p 1)).card := Finset.card_filter_le _ _
+    _ = (linear_mca_row_list C u p 0).card *
+        (linear_mca_row_list C u p 1).card := Finset.card_product _ _
     _ ≤ L * L := Nat.mul_le_mul hrow0 hrow1
     _ = L ^ 2 := by ring
 
@@ -590,7 +586,7 @@ private def linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ
     exact_mod_cast lt_of_le_of_lt hcomp hpn
 
 open scoped BigOperators in
-private def linear_mcaError_le_of_Lambda_le_aux
+private def linear_mca_error_le_of_lambda_le_aux
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδ_lt_dist :
@@ -841,12 +837,9 @@ private def linear_mcaError_le_of_Lambda_le_aux
   have hcard' : (B.card : ENNReal) ≤ ENNReal.ofReal R := by
     exact_mod_cast (ENNReal.ofReal_le_ofReal hcard)
   simpa [B, R, r] using hcard'
-/-- A list-size bound below the relative minimum distance implies an affine-line MCA bound:
-
-  `ε_mca(C, 1 - √(1 - δ + η)) ≤ (L²·δ·n + 1/η) / |F|`
-
-The radius is real-valued, so no truncation is needed when the displayed expression is negative.
-The strict hypothesis `δ < Δ_C` is part of the source theorem. -/
+omit [DecidableEq ι] in
+/-- Converts a list-size bound at `δ` below the relative minimum distance into an
+affine-line MCA bound at radius `1 - √(1 - δ + η)`. -/
 theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδ_lt_dist :
@@ -857,7 +850,8 @@ theorem linear_mcaError_le_of_Lambda_le (C : LinearCode ι F) (L : ℕ) (δ η :
         (1 - (1 - δ + η) ^ ((1 : ℝ) / 2)) ≤
       ENNReal.ofReal
         (((L : ℝ) ^ 2 * δ * Fintype.card ι + 1 / η) / Fintype.card F) := by
-  exact linear_mcaError_le_of_Lambda_le_aux C L δ η _hδ_pos _hδ_lt
+  classical
+  exact linear_mca_error_le_of_lambda_le_aux C L δ η _hδ_pos _hδ_lt
     _hδ_lt_dist _hη_pos _hη_lt _hΛ
 
 end ListImpliesMCA

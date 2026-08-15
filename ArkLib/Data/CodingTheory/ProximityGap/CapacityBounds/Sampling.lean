@@ -11,7 +11,6 @@ import ArkLib.Data.CodingTheory.HammingBallVolume
 import ArkLib.Data.CodingTheory.SubspaceDesign
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
-
 /-!
 # Ambient density lower-bounds correlated agreement
 
@@ -27,10 +26,6 @@ correlated agreement.
 - [DG25dist] Theorem 2.5.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -43,11 +38,8 @@ open scoped ProbabilityTheory
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- For a linear code and a radius strictly below its relative covering radius,
-
-  `ε_ca(C, δ) ≥ ((q-1)/q) · Pr_{u ← F^n}[Δ(u, C) ≤ δ]`
-
-The probability is over a uniformly sampled ambient word. -/
+/-- Lower-bounds linear-code CA error by the probability that a uniformly sampled ambient
+word is within radius `δ`, provided `δ` is below the relative covering radius. -/
 theorem linear_close_probability_le_epsCa
     (C : LinearCode ι F) (δ δ' : ℝ≥0)
     (_h_δ' : (δ' : ENNReal) = ⨆ u : ι → F, δᵣ(u, (C : Set (ι → F))))

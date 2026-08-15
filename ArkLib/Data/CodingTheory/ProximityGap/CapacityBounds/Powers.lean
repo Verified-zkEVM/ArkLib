@@ -40,10 +40,6 @@ codewords from interpolation seeds, and bounds the exceptional seeds by double c
 - [BCGM25] Bafna, Choudhary, Guruswami, and Mardia. Theorem 8.2 and Definition 8.1.
 -/
 
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -65,7 +61,7 @@ private structure PowersBadWitness
     ∃ j : Fin (k + 1),
       LinearCode.projectedWord (U j) T ∉ LinearCode.projectedCodeSubmod C T
 
-private theorem moduleCode_eq_of_agree_gt_card_sub_minDist
+private theorem module_code_eq_of_agree_gt_card_sub_min_dist
     {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [DecidableEq A] [AddCommMonoid A] [Module F A]
@@ -79,7 +75,7 @@ private theorem moduleCode_eq_of_agree_gt_card_sub_minDist
   have hsum := Code.agree_add_hammingDist (u := c₁) (v := c₂)
   omega
 
-private theorem moduleCode_eq_of_eq_on_large_finset
+private theorem module_code_eq_of_eq_on_large_finset
     {ι : Type} [Fintype ι]
     {F : Type} [Semiring F]
     {A : Type} [DecidableEq A] [AddCommMonoid A] [Module F A]
@@ -88,7 +84,7 @@ private theorem moduleCode_eq_of_eq_on_large_finset
     (hT : T.card > Fintype.card ι - Code.minDist (C : Set (ι → A)))
     (heq : ∀ i ∈ T, c₁ i = c₂ i) :
     c₁ = c₂ := by
-  apply moduleCode_eq_of_agree_gt_card_sub_minDist C hc₁ hc₂
+  apply module_code_eq_of_agree_gt_card_sub_min_dist C hc₁ hc₂
   apply lt_of_lt_of_le hT
   unfold Code.agree
   apply Finset.card_le_card
@@ -96,7 +92,7 @@ private theorem moduleCode_eq_of_eq_on_large_finset
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
   exact heq i hi
 
-private def normalized_moduleCode_minDist_le_one
+private def normalized_module_code_min_dist_le_one
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -110,12 +106,12 @@ private def normalized_moduleCode_minDist_le_one
     rw [← Code.dist_eq_minDist]
     exact Code.dist_le_card _)
 
-private def powersBadSeedEmbedding
+private def powers_bad_seed_embedding
     {F : Type} (B : Finset F) : {x : F // x ∈ B} ↪ F :=
   ⟨Subtype.val, Subtype.val_injective⟩
 
 open scoped BigOperators in
-private noncomputable def powersBadWitness_of_isMCA
+private noncomputable def powers_bad_witness_of_is_mca
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     {A : Type} [AddCommMonoid A] [Module F A]
@@ -139,7 +135,7 @@ private noncomputable def powersBadWitness_of_isMCA
     CoreDefinitions.univariatePowersGenerator] using hpoint
 
 open scoped BigOperators in
-private noncomputable def powersBadWitness_of_badSeedSubtype
+private noncomputable def powers_bad_witness_of_bad_seed_subtype
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F]
     {A : Type} [AddCommMonoid A] [Module F A]
@@ -148,12 +144,12 @@ private noncomputable def powersBadWitness_of_badSeedSubtype
     (hB : ∀ x : F, x ∈ B ↔
       CoreDefinitions.IsMCA (CoreDefinitions.univariatePowersGenerator F k) C x U δ)
     (x : {x : F // x ∈ B}) :
-    PowersBadWitness C k U (powersBadSeedEmbedding B x) δ := by
-  apply powersBadWitness_of_isMCA
+    PowersBadWitness C k U (powers_bad_seed_embedding B x) δ := by
+  apply powers_bad_witness_of_is_mca
   exact (hB x.1).mp x.2
 
 open scoped BigOperators in
-private theorem powersBadWitness_w_eq_interpolated_of_eq_on_large_finset
+private theorem powers_bad_witness_w_eq_interpolated_of_eq_on_large_finset
     {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -177,7 +173,7 @@ private theorem powersBadWitness_w_eq_interpolated_of_eq_on_large_finset
   have hcinterp : cinterp ∈ C := by
     rw [hcinterp_eq]
     exact C.sum_mem fun j _ => C.smul_mem _ (hcstar j)
-  apply moduleCode_eq_of_eq_on_large_finset C bw.w_mem hcinterp T hTlarge
+  apply module_code_eq_of_eq_on_large_finset C bw.w_mem hcinterp T hTlarge
   intro i hi
   calc
     bw.w i = ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i :=
@@ -185,13 +181,13 @@ private theorem powersBadWitness_w_eq_interpolated_of_eq_on_large_finset
     _ = ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i := heq i hi
     _ = cinterp i := rfl
 
-private def powersCommonDomain
+private def powers_common_domain
     {ι : Type} [Fintype ι]
     {A : Type} [DecidableEq A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A) : Finset ι :=
   Finset.univ.filter fun i => ∀ j, U j i = cstar j i
 
-private theorem powersBadWitness_exists_mem_not_commonDomain
+private theorem powers_bad_witness_exists_mem_not_common_domain
     {ι : Type} [Fintype ι]
     {F : Type} [Field F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -199,9 +195,9 @@ private theorem powersBadWitness_exists_mem_not_commonDomain
     (U : Fin (k + 1) → ι → A) (x : F) (δ : ℝ)
     (bw : PowersBadWitness C k U x δ)
     (cstar : Fin (k + 1) → ι → A) (hcstar : ∀ j, cstar j ∈ C) :
-    ∃ i, i ∈ bw.T ∧ i ∉ powersCommonDomain k U cstar := by
+    ∃ i, i ∈ bw.T ∧ i ∉ powers_common_domain k U cstar := by
   by_contra hnone
-  have hsub : bw.T ⊆ powersCommonDomain k U cstar := by
+  have hsub : bw.T ⊆ powers_common_domain k U cstar := by
     intro i hi
     by_contra hout
     exact hnone ⟨i, hi, hout⟩
@@ -210,38 +206,38 @@ private theorem powersBadWitness_exists_mem_not_commonDomain
   rw [LinearCode.mem_projectedCodeSubmod_iff]
   refine ⟨cstar j, hcstar j, ?_⟩
   funext i
-  have hicommon : (i : ι) ∈ powersCommonDomain k U cstar := hsub i.property
+  have hicommon : (i : ι) ∈ powers_common_domain k U cstar := hsub i.property
   have hrow := (Finset.mem_filter.mp hicommon).2 j
   simpa only [LinearCode.projectedWord, Set.restrict_apply] using hrow
 
-private def powersPointDegree
+private def powers_point_degree
     {ι S : Type} [DecidableEq ι]
     (B : Finset S) (T : S → Finset ι) (i : ι) : ℕ :=
   (B.filter fun x => i ∈ T x).card
 
-private def powersRadiusBase (δmin η : ℝ) : ℝ := 1 - δmin + η
+private def powers_radius_base (δmin η : ℝ) : ℝ := 1 - δmin + η
 
-private noncomputable def powersMiddleBound (n q : ℕ) (k : ℕ) (δmin η : ℝ) : ℝ :=
-  ((n : ℝ) * (1 - powersRadiusBase δmin η ^ ((1 : ℝ) / (k + 1))) / η)
+private noncomputable def powers_middle_bound (n q : ℕ) (k : ℕ) (δmin η : ℝ) : ℝ :=
+  ((n : ℝ) * (1 - powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1))) / η)
       * ((k : ℝ) / q)
     + max
         (2 * (k : ℝ) /
-          (η * (powersRadiusBase δmin η ^ ((1 : ℝ) / (k + 2))
-            - powersRadiusBase δmin η ^ ((1 : ℝ) / (k + 1))) * q))
+          (η * (powers_radius_base δmin η ^ ((1 : ℝ) / (k + 2))
+            - powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1))) * q))
         (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η * q))
 
-private def powersRadiusBase_mem_Ioo (δmin η : NNReal)
+private def powers_radius_base_mem_ioo (δmin η : NNReal)
     (hδmin_le : (δmin : ℝ) ≤ 1) (hη : 0 < η) (hηlt : η < δmin) :
-    powersRadiusBase (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 := by
+    powers_radius_base (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 := by
   constructor
-  · unfold powersRadiusBase
+  · unfold powers_radius_base
     have hηR : (0 : ℝ) < η := by exact_mod_cast hη
     linarith
-  · unfold powersRadiusBase
+  · unfold powers_radius_base
     have hηltR : (η : ℝ) < δmin := by exact_mod_cast hηlt
     linarith
 
-private def powersRadiusBase_mem_Ioo_of_moduleCode
+private def powers_radius_base_mem_ioo_of_module_code
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -249,19 +245,19 @@ private def powersRadiusBase_mem_Ioo_of_moduleCode
     (hδmin : (δmin : ℝ) =
       (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hηlt : η < δmin) :
-    powersRadiusBase (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 :=
-  powersRadiusBase_mem_Ioo δmin η
-    (normalized_moduleCode_minDist_le_one C δmin hδmin) hη hηlt
+    powers_radius_base (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 :=
+  powers_radius_base_mem_ioo δmin η
+    (normalized_module_code_min_dist_le_one C δmin hδmin) hη hηlt
 
 open scoped BigOperators in
-private noncomputable def powersScalarPolynomial
+private noncomputable def powers_scalar_polynomial
     {F : Type} [Field F]
     {A : Type} [AddCommGroup A] [Module F A]
     (k : ℕ) (φ : A →ₗ[F] F) (v : Fin (k + 1) → A) : Polynomial F :=
   ∑ j : Fin (k + 1),
     Polynomial.C (φ (v j)) * Polynomial.X ^ (j : ℕ)
 
-private def powersTupleIntersection
+private def powers_tuple_intersection
     {ι S : Type} [Fintype ι] [DecidableEq ι]
     (t : ℕ) (T : S → Finset ι) (xs : Fin t → S) : Finset ι :=
   Finset.univ.filter fun i => ∀ s, i ∈ T (xs s)
@@ -275,11 +271,11 @@ private theorem powers_alpha_pow_relation
       (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hηlt : η < δmin) :
     (Fintype.card ι : ℝ) *
-        (powersRadiusBase (δmin : ℝ) (η : ℝ) ^
+        (powers_radius_base (δmin : ℝ) (η : ℝ) ^
           ((1 : ℝ) / (k + 2))) ^ (k + 2) =
       ((Fintype.card ι - Code.minDist (C : Set (ι → A)) : ℕ) : ℝ) +
         (Fintype.card ι : ℝ) * (η : ℝ) := by
-  have hr := powersRadiusBase_mem_Ioo_of_moduleCode C δmin η hδmin hη hηlt
+  have hr := powers_radius_base_mem_ioo_of_module_code C δmin η hδmin hη hηlt
   have hD : Code.minDist (C : Set (ι → A)) ≤ Fintype.card ι := by
     rw [← Code.dist_eq_minDist]
     exact Code.dist_le_card _
@@ -287,9 +283,9 @@ private theorem powers_alpha_pow_relation
     exact_mod_cast Fintype.card_pos
   have hnne : (Fintype.card ι : ℝ) ≠ 0 := hnpos.ne'
   have hpow :
-      (powersRadiusBase (δmin : ℝ) (η : ℝ) ^
+      (powers_radius_base (δmin : ℝ) (η : ℝ) ^
         ((1 : ℝ) / (k + 2))) ^ (k + 2) =
-        powersRadiusBase (δmin : ℝ) (η : ℝ) := by
+        powers_radius_base (δmin : ℝ) (η : ℝ) := by
     rw [one_div]
     convert Real.rpow_inv_natCast_pow (n := k + 2) hr.1.le (by omega) using 1
     all_goals norm_num
@@ -302,10 +298,10 @@ private theorem powers_alpha_pow_relation
       _ = (Code.minDist (C : Set (ι → A)) : ℝ) :=
         div_mul_cancel₀ _ hnne
   rw [hpow, Nat.cast_sub hD]
-  unfold powersRadiusBase
+  unfold powers_radius_base
   nlinarith
 
-private theorem powers_badSeed_final_arithmetic
+private theorem powers_bad_seed_final_arithmetic
     (η B c G N M : ℝ) (hη : 0 < η)
     (hlower : η * B - c ≤ G) (hupper : G ≤ N)
     (hcM : c / η ≤ M) :
@@ -320,7 +316,7 @@ private theorem powers_badSeed_final_arithmetic
   linarith
 
 open scoped ProbabilityTheory in
-private noncomputable def powers_badSeed_probability_le_card
+private noncomputable def powers_bad_seed_probability_le_card
     {S : Type} [Fintype S] [Nonempty S]
     (P : S → Prop) [DecidablePred P] (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
@@ -375,15 +371,15 @@ private theorem powers_collision_tuple_card_le
       Fintype.card_le_of_injective f hf
     _ = (Fintype.card S) ^ t := by simp
 
-private theorem powers_commonDomain_difference_ne
+private theorem powers_common_domain_difference_ne
     {ι : Type} [Fintype ι]
     {A : Type} [DecidableEq A] [AddCommGroup A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A) (i : ι)
-    (hi : i ∉ powersCommonDomain k U cstar) :
+    (hi : i ∉ powers_common_domain k U cstar) :
     (fun j : Fin (k + 1) => U j i - cstar j i) ≠ 0 := by
   intro hzero
   apply hi
-  simp only [powersCommonDomain, Finset.mem_filter, Finset.mem_univ, true_and]
+  simp only [powers_common_domain, Finset.mem_filter, Finset.mem_univ, true_and]
   intro j
   have hj := congrFun hzero j
   simp only [Pi.zero_apply] at hj
@@ -417,9 +413,9 @@ private theorem powers_good_witness_eq_interpolated_of_large_intersection
     (T : Finset ι)
     (hTlarge : T.card > Fintype.card ι - Code.minDist (C : Set (ι → A)))
     (hTbw : T ⊆ bw.T)
-    (hTcommon : T ⊆ powersCommonDomain k U cstar) :
+    (hTcommon : T ⊆ powers_common_domain k U cstar) :
     bw.w = fun i => ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i := by
-  apply powersBadWitness_w_eq_interpolated_of_eq_on_large_finset
+  apply powers_bad_witness_w_eq_interpolated_of_eq_on_large_finset
     C k U x δ bw cstar hcstar T hTlarge hTbw
   intro i hi
   have hicommon := hTcommon hi
@@ -442,7 +438,7 @@ private theorem powers_injective_prefix_of_snoc
 open scoped BigOperators in
 open scoped Matrix.Module in
 private theorem powers_interpolate_module_codewords
-    {ι : Type} [Fintype ι]
+    {ι : Type}
     {F : Type} [Field F]
     {A : Type} [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ)
@@ -500,7 +496,7 @@ private theorem powers_large_branch_arithmetic
 
 open scoped BigOperators in
 private theorem powers_module_zero_set_card_le
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (v : Fin (k + 1) → A) (hv : v ≠ 0) :
     (Finset.univ.filter fun x : F =>
@@ -515,7 +511,7 @@ private theorem powers_module_zero_set_card_le
   obtain ⟨φ, hφ, _⟩ :=
     Submodule.exists_le_ker_of_notMem
       (p := (⊥ : Submodule F A)) (v := v j0) (by simpa using hj0)
-  let p : Polynomial F := powersScalarPolynomial k φ v
+  let p : Polynomial F := powers_scalar_polynomial k φ v
   have hpcoeff : p.coeff (j0 : ℕ) = φ (v j0) := by
     change (∑ b ∈ (Finset.univ : Finset (Fin (k + 1))),
       Polynomial.C (φ (v b)) * Polynomial.X ^ (b : ℕ)).coeff (j0 : ℕ) = _
@@ -533,7 +529,7 @@ private theorem powers_module_zero_set_card_le
     have hz : p.coeff (j0 : ℕ) = 0 := by rw [hp0]; simp
     exact hφ (hpcoeff ▸ hz)
   have hdeg : p.degree < (k + 1 : ℕ) := by
-    simpa [p, powersScalarPolynomial] using
+    simpa [p, powers_scalar_polynomial] using
       (Polynomial.degree_sum_fin_lt (fun j : Fin (k + 1) => φ (v j)))
   have hnat : p.natDegree ≤ k := by
     have hlt : p.natDegree < k + 1 :=
@@ -572,15 +568,17 @@ private theorem powers_module_zero_set_card_le
 
 open scoped BigOperators in
 private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι : Type}
+    {F : Type} [Field F] [Finite F]
+    {A : Type} [AddCommGroup A] [Module F A]
     (k : ℕ) (xs : Fin (k + 1) → F) (hxs : Function.Injective xs)
     (U cstar : Fin (k + 1) → ι → A) (i : ι)
     (hagree : ∀ s : Fin (k + 1),
       (∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
+  classical
+  letI := Fintype.ofFinite F
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
   have hvzero : v = 0 := by
     by_contra hv
@@ -613,8 +611,8 @@ private theorem powers_coefficients_eq_of_agree_on_distinct_seeds
 open scoped BigOperators in
 private theorem powers_coefficients_eq_on_anchor_intersection
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
+    {F : Type} [Field F] [Finite F]
+    {A : Type} [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ)
     (U : Fin (k + 1) → ι → A) (δ : ℝ)
     (xs : Fin (k + 1) → F) (hxs : Function.Injective xs)
@@ -624,6 +622,8 @@ private theorem powers_coefficients_eq_on_anchor_intersection
       (∑ j : Fin (k + 1), (xs s ^ (j : ℕ)) • cstar j i) = (bw s).w i)
     (i : ι) (hi : ∀ s : Fin (k + 1), i ∈ (bw s).T) :
     ∀ j : Fin (k + 1), U j i = cstar j i := by
+  classical
+  letI := Fintype.ofFinite F
   apply powers_coefficients_eq_of_agree_on_distinct_seeds (F := F) k xs hxs U cstar i
   intro s
   calc
@@ -635,15 +635,16 @@ private theorem powers_coefficients_eq_on_anchor_intersection
 open scoped BigOperators in
 private theorem powers_coordinate_agreement_seeds_card_le
     {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Fintype F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A) (i : ι)
-    (hi : i ∉ powersCommonDomain k U cstar) :
+    (hi : i ∉ powers_common_domain k U cstar) :
     (Finset.univ.filter fun x : F =>
       (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i).card ≤ k := by
+  classical
   let v : Fin (k + 1) → A := fun j => U j i - cstar j i
-  have hv : v ≠ 0 := powers_commonDomain_difference_ne k U cstar i hi
+  have hv : v ≠ 0 := powers_common_domain_difference_ne k U cstar i hi
   have hroot := powers_module_zero_set_card_le (F := F) (A := A) k v hv
   have hfilter :
       (Finset.univ.filter fun x : F =>
@@ -667,19 +668,21 @@ private theorem powers_coordinate_agreement_seeds_card_le
   exact hroot
 
 open scoped BigOperators in
-private theorem powers_middle_goodSeeds_card_le
+private theorem powers_middle_good_seeds_card_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (Bgood : Finset F) (Bx : F → Finset ι)
     (hext : ∀ x ∈ Bgood,
-      ∃ i, i ∈ Bx x ∧ i ∉ powersCommonDomain k U cstar)
+      ∃ i, i ∈ Bx x ∧ i ∉ powers_common_domain k U cstar)
     (heq : ∀ x ∈ Bgood, ∀ i ∈ Bx x,
       (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i) :
-    Bgood.card ≤ (Finset.univ \ powersCommonDomain k U cstar).card * k := by
-  let T : Finset ι := Finset.univ \ powersCommonDomain k U cstar
+    Bgood.card ≤ (Finset.univ \ powers_common_domain k U cstar).card * k := by
+  classical
+  letI := Fintype.ofFinite F
+  let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : F → ι → Prop := fun x i => i ∈ Bx x
   have hleft : ∀ x ∈ Bgood, 1 ≤ (T.bipartiteAbove R x).card := by
     intro x hx
@@ -691,7 +694,7 @@ private theorem powers_middle_goodSeeds_card_le
     exact ⟨hiout, hiBx⟩
   have hright : ∀ i ∈ T, (Bgood.bipartiteBelow R i).card ≤ k := by
     intro i hi
-    have hiout : i ∉ powersCommonDomain k U cstar := (Finset.mem_sdiff.mp hi).2
+    have hiout : i ∉ powers_common_domain k U cstar := (Finset.mem_sdiff.mp hi).2
     apply le_trans (Finset.card_le_card ?_)
       (powers_coordinate_agreement_seeds_card_le (F := F) k U cstar i hiout)
     intro x hx
@@ -703,53 +706,55 @@ private theorem powers_middle_goodSeeds_card_le
   simpa [T] using hcount
 
 open scoped BigOperators in
-private theorem powers_middle_goodSeeds_real_card_le
-    {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+private theorem powers_middle_good_seeds_real_card_le
+    {ι : Type} [Fintype ι]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (γ : ℝ) (Bgood : Finset F) (Bx : F → Finset ι)
-    (hcommon : ((powersCommonDomain k U cstar).card : ℝ) ≥
+    (hcommon : ((powers_common_domain k U cstar).card : ℝ) ≥
       (Fintype.card ι : ℝ) * (1 - γ))
     (hext : ∀ x ∈ Bgood,
-      ∃ i, i ∈ Bx x ∧ i ∉ powersCommonDomain k U cstar)
+      ∃ i, i ∈ Bx x ∧ i ∉ powers_common_domain k U cstar)
     (heq : ∀ x ∈ Bgood, ∀ i ∈ Bx x,
       (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i) :
     (Bgood.card : ℝ) ≤
       (Fintype.card ι : ℝ) * γ * (k : ℝ) := by
-  have hnat := powers_middle_goodSeeds_card_le (F := F) k U cstar Bgood Bx hext heq
+  classical
+  letI := Fintype.ofFinite F
+  have hnat := powers_middle_good_seeds_card_le (F := F) k U cstar Bgood Bx hext heq
   have hreal : (Bgood.card : ℝ) ≤
-      ((Finset.univ \ powersCommonDomain k U cstar).card : ℝ) * (k : ℝ) := by
+      ((Finset.univ \ powers_common_domain k U cstar).card : ℝ) * (k : ℝ) := by
     exact_mod_cast hnat
   have hcomp := powers_complement_card_real_le
-    (powersCommonDomain k U cstar) γ hcommon
+    (powers_common_domain k U cstar) γ hcommon
   calc
     (Bgood.card : ℝ) ≤
-        ((Finset.univ \ powersCommonDomain k U cstar).card : ℝ) * (k : ℝ) := hreal
+        ((Finset.univ \ powers_common_domain k U cstar).card : ℝ) * (k : ℝ) := hreal
     _ ≤ ((Fintype.card ι : ℝ) * γ) * (k : ℝ) :=
       mul_le_mul_of_nonneg_right hcomp (Nat.cast_nonneg k)
     _ = (Fintype.card ι : ℝ) * γ * (k : ℝ) := rfl
 
 open scoped BigOperators in
-private theorem powers_middle_goodSeeds_real_card_le_embedding
-    {ι S : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+private theorem powers_middle_good_seeds_real_card_le_embedding
+    {ι S : Type} [Fintype ι]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
-    [DecidableEq S]
     (e : S ↪ F) (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (γ : ℝ) (Bgood : Finset S) (Bx : S → Finset ι)
-    (hcommon : ((powersCommonDomain k U cstar).card : ℝ) ≥
+    (hcommon : ((powers_common_domain k U cstar).card : ℝ) ≥
       (Fintype.card ι : ℝ) * (1 - γ))
     (hext : ∀ x ∈ Bgood,
-      ∃ i, i ∈ Bx x ∧ i ∉ powersCommonDomain k U cstar)
+      ∃ i, i ∈ Bx x ∧ i ∉ powers_common_domain k U cstar)
     (heq : ∀ x ∈ Bgood, ∀ i ∈ Bx x,
       (∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • cstar j i) :
     (Bgood.card : ℝ) ≤
       (Fintype.card ι : ℝ) * γ * (k : ℝ) := by
   classical
-  let T : Finset ι := Finset.univ \ powersCommonDomain k U cstar
+  letI := Fintype.ofFinite F
+  let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : S → ι → Prop := fun x i => i ∈ Bx x
   have hleft : ∀ x ∈ Bgood, 1 ≤ (T.bipartiteAbove R x).card := by
     intro x hx
@@ -761,7 +766,7 @@ private theorem powers_middle_goodSeeds_real_card_le_embedding
     exact ⟨hiout, hiBx⟩
   have hright : ∀ i ∈ T, (Bgood.bipartiteBelow R i).card ≤ k := by
     intro i hi
-    have hiout : i ∉ powersCommonDomain k U cstar := (Finset.mem_sdiff.mp hi).2
+    have hiout : i ∉ powers_common_domain k U cstar := (Finset.mem_sdiff.mp hi).2
     let Roots : Finset F := Finset.univ.filter fun y : F =>
       (∑ j : Fin (k + 1), (y ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (y ^ (j : ℕ)) • cstar j i
@@ -781,17 +786,17 @@ private theorem powers_middle_goodSeeds_real_card_le_embedding
         simpa only [Roots] using
           powers_coordinate_agreement_seeds_card_le (F := F) k U cstar i hiout
   have hnat : Bgood.card ≤
-      (Finset.univ \ powersCommonDomain k U cstar).card * k := by
+      (Finset.univ \ powers_common_domain k U cstar).card * k := by
     have hcount := Finset.card_mul_le_card_mul R hleft hright
     simpa [T] using hcount
   have hreal : (Bgood.card : ℝ) ≤
-      ((Finset.univ \ powersCommonDomain k U cstar).card : ℝ) * (k : ℝ) := by
+      ((Finset.univ \ powers_common_domain k U cstar).card : ℝ) * (k : ℝ) := by
     exact_mod_cast hnat
   have hcomp := powers_complement_card_real_le
-    (powersCommonDomain k U cstar) γ hcommon
+    (powers_common_domain k U cstar) γ hcommon
   calc
     (Bgood.card : ℝ) ≤
-        ((Finset.univ \ powersCommonDomain k U cstar).card : ℝ) * (k : ℝ) := hreal
+        ((Finset.univ \ powers_common_domain k U cstar).card : ℝ) * (k : ℝ) := hreal
     _ ≤ ((Fintype.card ι : ℝ) * γ) * (k : ℝ) :=
       mul_le_mul_of_nonneg_right hcomp (Nat.cast_nonneg k)
     _ = (Fintype.card ι : ℝ) * γ * (k : ℝ) := rfl
@@ -799,26 +804,28 @@ private theorem powers_middle_goodSeeds_real_card_le_embedding
 open scoped BigOperators in
 private theorem powers_middle_outside_incidence_card_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (Bgood : Finset F) (Bx : F → Finset ι)
     (heq : ∀ x ∈ Bgood, ∀ i ∈ Bx x,
       (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i) :
-    ∑ x ∈ Bgood, (Bx x \ powersCommonDomain k U cstar).card ≤
-      (Finset.univ \ powersCommonDomain k U cstar).card * k := by
-  let T : Finset ι := Finset.univ \ powersCommonDomain k U cstar
+    ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card ≤
+      (Finset.univ \ powers_common_domain k U cstar).card * k := by
+  classical
+  letI := Fintype.ofFinite F
+  let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : F → ι → Prop := fun x i => i ∈ Bx x
   have habove (x : F) : T.bipartiteAbove R x =
-      Bx x \ powersCommonDomain k U cstar := by
+      Bx x \ powers_common_domain k U cstar := by
     ext i
     simp only [Finset.mem_bipartiteAbove, T, R, Finset.mem_sdiff,
       Finset.mem_univ, true_and]
     exact and_comm
   have hright : ∀ i ∈ T, (Bgood.bipartiteBelow R i).card ≤ k := by
     intro i hi
-    have hiout : i ∉ powersCommonDomain k U cstar := (Finset.mem_sdiff.mp hi).2
+    have hiout : i ∉ powers_common_domain k U cstar := (Finset.mem_sdiff.mp hi).2
     apply le_trans (Finset.card_le_card ?_)
       (powers_coordinate_agreement_seeds_card_le (F := F) k U cstar i hiout)
     intro x hx
@@ -827,7 +834,7 @@ private theorem powers_middle_outside_incidence_card_le
     simp only [Finset.mem_filter, Finset.mem_univ, true_and]
     exact heq x hxdata.1 i hxdata.2
   calc
-    ∑ x ∈ Bgood, (Bx x \ powersCommonDomain k U cstar).card =
+    ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card =
         ∑ x ∈ Bgood, (T.bipartiteAbove R x).card := by
           apply Finset.sum_congr rfl
           intro x _
@@ -835,34 +842,34 @@ private theorem powers_middle_outside_incidence_card_le
     _ = ∑ i ∈ T, (Bgood.bipartiteBelow R i).card :=
       Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow R
     _ ≤ ∑ _i ∈ T, k := Finset.sum_le_sum fun i hi => hright i hi
-    _ = (Finset.univ \ powersCommonDomain k U cstar).card * k := by
+    _ = (Finset.univ \ powers_common_domain k U cstar).card * k := by
       simp [T]
 
 open scoped BigOperators in
 private theorem powers_middle_outside_incidence_card_le_embedding
     {ι S : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
-    [DecidableEq S]
     (e : S ↪ F) (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (Bgood : Finset S) (Bx : S → Finset ι)
     (heq : ∀ x ∈ Bgood, ∀ i ∈ Bx x,
       (∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • cstar j i) :
-    ∑ x ∈ Bgood, (Bx x \ powersCommonDomain k U cstar).card ≤
-      (Finset.univ \ powersCommonDomain k U cstar).card * k := by
+    ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card ≤
+      (Finset.univ \ powers_common_domain k U cstar).card * k := by
   classical
-  let T : Finset ι := Finset.univ \ powersCommonDomain k U cstar
+  letI := Fintype.ofFinite F
+  let T : Finset ι := Finset.univ \ powers_common_domain k U cstar
   let R : S → ι → Prop := fun x i => i ∈ Bx x
   have habove (x : S) : T.bipartiteAbove R x =
-      Bx x \ powersCommonDomain k U cstar := by
+      Bx x \ powers_common_domain k U cstar := by
     ext i
     simp only [Finset.mem_bipartiteAbove, T, R, Finset.mem_sdiff,
       Finset.mem_univ, true_and]
     exact and_comm
   have hright : ∀ i ∈ T, (Bgood.bipartiteBelow R i).card ≤ k := by
     intro i hi
-    have hiout : i ∉ powersCommonDomain k U cstar := (Finset.mem_sdiff.mp hi).2
+    have hiout : i ∉ powers_common_domain k U cstar := (Finset.mem_sdiff.mp hi).2
     let Roots : Finset F := Finset.univ.filter fun y : F =>
       (∑ j : Fin (k + 1), (y ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (y ^ (j : ℕ)) • cstar j i
@@ -882,7 +889,7 @@ private theorem powers_middle_outside_incidence_card_le_embedding
         simpa only [Roots] using
           powers_coordinate_agreement_seeds_card_le (F := F) k U cstar i hiout
   calc
-    ∑ x ∈ Bgood, (Bx x \ powersCommonDomain k U cstar).card =
+    ∑ x ∈ Bgood, (Bx x \ powers_common_domain k U cstar).card =
         ∑ x ∈ Bgood, (T.bipartiteAbove R x).card := by
           apply Finset.sum_congr rfl
           intro x _
@@ -890,7 +897,7 @@ private theorem powers_middle_outside_incidence_card_le_embedding
     _ = ∑ i ∈ T, (Bgood.bipartiteBelow R i).card :=
       Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow R
     _ ≤ ∑ _i ∈ T, k := Finset.sum_le_sum fun i hi => hright i hi
-    _ = (Finset.univ \ powersCommonDomain k U cstar).card * k := by
+    _ = (Finset.univ \ powers_common_domain k U cstar).card * k := by
       simp [T]
 
 private theorem powers_noninjective_tuple_card_le
@@ -937,34 +944,34 @@ private theorem powers_normalized_power_identity
   ring
 
 open scoped BigOperators in
-private theorem powers_pointDegree_sum_eq
+private theorem powers_point_degree_sum_eq
     {ι S : Type} [Fintype ι] [DecidableEq ι]
     (B : Finset S) (T : S → Finset ι) :
-    (∑ i : ι, powersPointDegree B T i) =
+    (∑ i : ι, powers_point_degree B T i) =
       ∑ x ∈ B, (T x).card := by
   classical
   let R : S → ι → Prop := fun x i => i ∈ T x
-  simpa [powersPointDegree, R, Finset.bipartiteBelow, Finset.bipartiteAbove] using
+  simpa [powers_point_degree, R, Finset.bipartiteBelow, Finset.bipartiteAbove] using
     (Finset.sum_card_bipartiteAbove_eq_sum_card_bipartiteBelow R
       (s := B) (t := (Finset.univ : Finset ι))).symm
 
 open scoped BigOperators in
-private theorem powers_pointDegree_moment_lower
+private theorem powers_point_degree_moment_lower
     {ι S : Type} [Fintype ι] [Fintype S] [DecidableEq ι]
     (T : S → Finset ι) (k : ℕ) :
     (∑ x : S, ((T x).card : ℝ)) ^ (k + 2) /
         (Fintype.card ι : ℝ) ^ (k + 1) ≤
       ∑ i : ι,
-        ((powersPointDegree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2) := by
+        ((powers_point_degree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2) := by
   classical
-  have hincNat := powers_pointDegree_sum_eq (B := (Finset.univ : Finset S)) T
+  have hincNat := powers_point_degree_sum_eq (B := (Finset.univ : Finset S)) T
   have hincReal :
-      (∑ i : ι, ((powersPointDegree (Finset.univ : Finset S) T i : ℕ) : ℝ)) =
+      (∑ i : ι, ((powers_point_degree (Finset.univ : Finset S) T i : ℕ) : ℝ)) =
         ∑ x : S, ((T x).card : ℝ) := by
     exact_mod_cast hincNat
   have hpow := pow_sum_div_card_le_sum_pow
     (s := (Finset.univ : Finset ι))
-    (f := fun i => ((powersPointDegree (Finset.univ : Finset S) T i : ℕ) : ℝ))
+    (f := fun i => ((powers_point_degree (Finset.univ : Finset S) T i : ℕ) : ℝ))
     (fun i hi => by positivity) (k + 1)
   simpa only [Finset.card_univ, hincReal, Nat.add_assoc] using hpow
 
@@ -974,22 +981,22 @@ private def powers_power_difference_pos (r : ℝ) (k : ℕ)
   rw [sub_pos]
   exact Real.rpow_lt_rpow_of_exponent_gt hr0 hr1 (powers_exponent_strict k)
 
-private def powersMiddleBound_nonneg (n q k : ℕ) (δmin η : ℝ)
+private def powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
     (hq : 0 < q) (hη : 0 < η)
-    (hr0 : 0 < powersRadiusBase δmin η)
-    (hr1 : powersRadiusBase δmin η < 1) :
-    0 ≤ powersMiddleBound n q k δmin η := by
+    (hr0 : 0 < powers_radius_base δmin η)
+    (hr1 : powers_radius_base δmin η < 1) :
+    0 ≤ powers_middle_bound n q k δmin η := by
   have hexp : 0 < (1 : ℝ) / (k + 1) := by positivity
-  have hpowlt : powersRadiusBase δmin η ^ ((1 : ℝ) / (k + 1)) < 1 :=
+  have hpowlt : powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1)) < 1 :=
     Real.rpow_lt_one hr0.le hr1 hexp
-  have hgamma : 0 ≤ 1 - powersRadiusBase δmin η ^ ((1 : ℝ) / (k + 1)) :=
+  have hgamma : 0 ≤ 1 - powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1)) :=
     (sub_pos.mpr hpowlt).le
-  have hdiff := powers_power_difference_pos (powersRadiusBase δmin η) k hr0 hr1
+  have hdiff := powers_power_difference_pos (powers_radius_base δmin η) k hr0 hr1
   have hqR : (0 : ℝ) < q := by exact_mod_cast hq
-  unfold powersMiddleBound
+  unfold powers_middle_bound
   positivity
 
-private def powers_power_difference_pos_of_moduleCode
+private def powers_power_difference_pos_of_module_code
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -997,9 +1004,9 @@ private def powers_power_difference_pos_of_moduleCode
     (hδmin : (δmin : ℝ) =
       (Code.minDist (C : Set (ι → A)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hηlt : η < δmin) :
-    0 < powersRadiusBase (δmin : ℝ) (η : ℝ) ^ ((1 : ℝ) / (k + 2)) -
-      powersRadiusBase (δmin : ℝ) (η : ℝ) ^ ((1 : ℝ) / (k + 1)) := by
-  have hr := powersRadiusBase_mem_Ioo_of_moduleCode C δmin η hδmin hη hηlt
+    0 < powers_radius_base (δmin : ℝ) (η : ℝ) ^ ((1 : ℝ) / (k + 2)) -
+      powers_radius_base (δmin : ℝ) (η : ℝ) ^ ((1 : ℝ) / (k + 1)) := by
+  have hr := powers_radius_base_mem_ioo_of_module_code C δmin η hδmin hη hηlt
   exact powers_power_difference_pos _ k hr.1 hr.2
 
 open scoped BigOperators in
@@ -1025,25 +1032,25 @@ private theorem powers_sum_over_snoc
     _ = ∑ xs : Fin t → S, ∑ x : S, f (Fin.snoc xs x) :=
       Finset.sum_comm
 
-private theorem powers_tupleIntersection_snoc_subset_last
+private theorem powers_tuple_intersection_snoc_subset_last
     {ι S : Type} [Fintype ι] [DecidableEq ι]
     (T : S → Finset ι) (t : ℕ) (xs : Fin t → S) (x : S) :
-    powersTupleIntersection (t + 1) T (Fin.snoc xs x) ⊆ T x := by
+    powers_tuple_intersection (t + 1) T (Fin.snoc xs x) ⊆ T x := by
   intro i hi
   have hall : ∀ s : Fin (t + 1),
       i ∈ T ((Fin.snoc xs x : Fin (t + 1) → S) s) := by
-    simpa only [powersTupleIntersection, Finset.mem_filter, Finset.mem_univ,
+    simpa only [powers_tuple_intersection, Finset.mem_filter, Finset.mem_univ,
       true_and] using hi
   have hlast := hall (Fin.last t)
   simpa only [Fin.snoc_last] using hlast
 
-private theorem powers_tupleIntersection_snoc_subset_prefix
+private theorem powers_tuple_intersection_snoc_subset_prefix
     {ι S : Type} [Fintype ι] [DecidableEq ι]
     (T : S → Finset ι) (t : ℕ) (xs : Fin t → S) (x : S) :
-    powersTupleIntersection (t + 1) T (Fin.snoc xs x) ⊆
-      powersTupleIntersection t T xs := by
+    powers_tuple_intersection (t + 1) T (Fin.snoc xs x) ⊆
+      powers_tuple_intersection t T xs := by
   intro i hi
-  simp only [powersTupleIntersection, Finset.mem_filter, Finset.mem_univ,
+  simp only [powers_tuple_intersection, Finset.mem_filter, Finset.mem_univ,
     true_and] at hi ⊢
   intro s
   have hs := hi s.castSucc
@@ -1053,9 +1060,9 @@ open scoped BigOperators in
 open scoped Matrix.Module in
 private theorem powers_interpolate_compatible_anchors
     {ι : Type} [Fintype ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
-    {S : Type} [Fintype S] [DecidableEq S]
+    {S : Type} [Finite S]
     (C : ModuleCode ι F A) (k : ℕ)
     (U : Fin (k + 1) → ι → A) (δ : ℝ)
     (e : S ↪ F)
@@ -1063,28 +1070,30 @@ private theorem powers_interpolate_compatible_anchors
     (xs : Fin (k + 1) → S) (hxs : Function.Injective xs)
     (Bgood : Finset S)
     (hgood : ∀ x ∈ Bgood,
-      (powersTupleIntersection (k + 2) (fun y => (bw y).T)
+      (powers_tuple_intersection (k + 2) (fun y => (bw y).T)
           (Fin.snoc xs x)).card >
         Fintype.card ι - Code.minDist (C : Set (ι → A))) :
     ∃ cstar : Fin (k + 1) → ι → A,
       (∀ j, cstar j ∈ C) ∧
-      powersTupleIntersection (k + 1) (fun y => (bw y).T) xs ⊆
-        powersCommonDomain k U cstar ∧
+      powers_tuple_intersection (k + 1) (fun y => (bw y).T) xs ⊆
+        powers_common_domain k U cstar ∧
       ∀ x ∈ Bgood,
         (bw x).w = fun i =>
           ∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • cstar j i := by
   classical
+  letI := Fintype.ofFinite F
+  letI := Fintype.ofFinite S
   let xF : Fin (k + 1) → F := fun s => e (xs s)
   have hxF : Function.Injective xF := e.injective.comp hxs
   obtain ⟨cstar, hcstar, hinterp⟩ :=
     powers_interpolate_module_codewords C k xF hxF
       (fun s => (bw (xs s)).w) (fun s => (bw (xs s)).w_mem)
   have hAnchor :
-      powersTupleIntersection (k + 1) (fun y => (bw y).T) xs ⊆
-        powersCommonDomain k U cstar := by
+      powers_tuple_intersection (k + 1) (fun y => (bw y).T) xs ⊆
+        powers_common_domain k U cstar := by
     intro i hi
     have hiAll : ∀ s : Fin (k + 1), i ∈ (bw (xs s)).T := by
-      simpa only [powersTupleIntersection, Finset.mem_filter, Finset.mem_univ,
+      simpa only [powers_tuple_intersection, Finset.mem_filter, Finset.mem_univ,
         true_and] using hi
     have hrows : ∀ j : Fin (k + 1), U j i = cstar j i := by
       apply powers_coefficients_eq_on_anchor_intersection
@@ -1093,25 +1102,25 @@ private theorem powers_interpolate_compatible_anchors
         simpa only [xF, Finset.sum_apply, Pi.smul_apply] using
           congrFun (hinterp s) i
       · exact hiAll
-    simpa only [powersCommonDomain, Finset.mem_filter, Finset.mem_univ,
+    simpa only [powers_common_domain, Finset.mem_filter, Finset.mem_univ,
       true_and] using hrows
   refine ⟨cstar, hcstar, hAnchor, ?_⟩
   intro x hx
   let Tfull : Finset ι :=
-    powersTupleIntersection (k + 2) (fun y => (bw y).T) (Fin.snoc xs x)
+    powers_tuple_intersection (k + 2) (fun y => (bw y).T) (Fin.snoc xs x)
   have hTlarge : Tfull.card >
       Fintype.card ι - Code.minDist (C : Set (ι → A)) := by
     simpa only [Tfull] using hgood x hx
   have hTbw : Tfull ⊆ (bw x).T := by
     simpa only [Tfull] using
-      powers_tupleIntersection_snoc_subset_last
+      powers_tuple_intersection_snoc_subset_last
         (fun y => (bw y).T) (k + 1) xs x
   have hTprefix : Tfull ⊆
-      powersTupleIntersection (k + 1) (fun y => (bw y).T) xs := by
+      powers_tuple_intersection (k + 1) (fun y => (bw y).T) xs := by
     simpa only [Tfull] using
-      powers_tupleIntersection_snoc_subset_prefix
+      powers_tuple_intersection_snoc_subset_prefix
         (fun y => (bw y).T) (k + 1) xs x
-  have hTcommon : Tfull ⊆ powersCommonDomain k U cstar :=
+  have hTcommon : Tfull ⊆ powers_common_domain k U cstar :=
     fun i hi => hAnchor (hTprefix hi)
   exact powers_good_witness_eq_interpolated_of_large_intersection
     C k U (e x) δ (bw x) cstar hcstar Tfull hTlarge hTbw hTcommon
@@ -1120,10 +1129,10 @@ open scoped BigOperators in
 private theorem powers_tuple_intersection_sum_eq
     {ι S : Type} [Fintype ι] [Fintype S] [DecidableEq ι]
     (T : S → Finset ι) (t : ℕ) :
-    (∑ xs : Fin t → S, (powersTupleIntersection t T xs).card) =
-      ∑ i : ι, (powersPointDegree (Finset.univ : Finset S) T i) ^ t := by
+    (∑ xs : Fin t → S, (powers_tuple_intersection t T xs).card) =
+      ∑ i : ι, (powers_point_degree (Finset.univ : Finset S) T i) ^ t := by
   classical
-  unfold powersTupleIntersection powersPointDegree
+  unfold powers_tuple_intersection powers_point_degree
   simp_rw [Finset.card_eq_sum_ones, Finset.sum_filter]
   rw [Finset.sum_comm]
   apply Finset.sum_congr rfl
@@ -1142,7 +1151,7 @@ private theorem powers_tuple_intersection_sum_lower
       (Fintype.card ι : ℝ) * α ≤ ((T x).card : ℝ)) :
     (Fintype.card ι : ℝ) * (Fintype.card S : ℝ) ^ (k + 2) * α ^ (k + 2) ≤
       ∑ xs : Fin (k + 2) → S,
-        ((powersTupleIntersection (k + 2) T xs).card : ℝ) := by
+        ((powers_tuple_intersection (k + 2) T xs).card : ℝ) := by
   classical
   have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hn : (Fintype.card ι : ℝ) ≠ 0 := hnpos.ne'
@@ -1160,13 +1169,13 @@ private theorem powers_tuple_intersection_sum_lower
       ((Fintype.card S : ℝ) * (Fintype.card ι : ℝ) * α) ^ (k + 2) ≤
         (∑ x : S, ((T x).card : ℝ)) ^ (k + 2) :=
     pow_le_pow_left₀ hbase_nonneg hsum (k + 2)
-  have hmoment := powers_pointDegree_moment_lower T k
+  have hmoment := powers_point_degree_moment_lower T k
   have hdoubleNat := powers_tuple_intersection_sum_eq T (k + 2)
   have hdoubleReal :
       (∑ i : ι,
-          ((powersPointDegree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2)) =
+          ((powers_point_degree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2)) =
         ∑ xs : Fin (k + 2) → S,
-          ((powersTupleIntersection (k + 2) T xs).card : ℝ) := by
+          ((powers_tuple_intersection (k + 2) T xs).card : ℝ) := by
     exact_mod_cast hdoubleNat.symm
   rw [powers_normalized_power_identity
     (Fintype.card ι : ℝ) (Fintype.card S : ℝ) α k hn]
@@ -1177,9 +1186,9 @@ private theorem powers_tuple_intersection_sum_lower
           (Fintype.card ι : ℝ) ^ (k + 1) :=
       div_le_div_of_nonneg_right hpow (by positivity)
     _ ≤ ∑ i : ι,
-          ((powersPointDegree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2) := hmoment
+          ((powers_point_degree (Finset.univ : Finset S) T i : ℕ) : ℝ) ^ (k + 2) := hmoment
     _ = ∑ xs : Fin (k + 2) → S,
-          ((powersTupleIntersection (k + 2) T xs).card : ℝ) := hdoubleReal
+          ((powers_tuple_intersection (k + 2) T xs).card : ℝ) := hdoubleReal
 
 open scoped BigOperators in
 private theorem powers_compatible_tuple_card_lower
@@ -1192,43 +1201,43 @@ private theorem powers_compatible_tuple_card_lower
       ((Fintype.card ι - D : ℕ) : ℝ) + (Fintype.card ι : ℝ) * η) :
     η * (Fintype.card S : ℝ) ^ (k + 2) ≤
       ((Finset.univ.filter fun xs : Fin (k + 2) → S =>
-        (powersTupleIntersection (k + 2) T xs).card >
+        (powers_tuple_intersection (k + 2) T xs).card >
           Fintype.card ι - D).card : ℝ) := by
   classical
   let Good : Finset (Fin (k + 2) → S) :=
     Finset.univ.filter fun xs =>
-      (powersTupleIntersection (k + 2) T xs).card > Fintype.card ι - D
+      (powers_tuple_intersection (k + 2) T xs).card > Fintype.card ι - D
   have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hlower := powers_tuple_intersection_sum_lower T k α hα hT
   have hupper :
       (∑ xs : Fin (k + 2) → S,
-          ((powersTupleIntersection (k + 2) T xs).card : ℝ)) ≤
+          ((powers_tuple_intersection (k + 2) T xs).card : ℝ)) ≤
         (Fintype.card S : ℝ) ^ (k + 2) *
             ((Fintype.card ι - D : ℕ) : ℝ) +
           (Good.card : ℝ) * (Fintype.card ι : ℝ) := by
     calc
       (∑ xs : Fin (k + 2) → S,
-          ((powersTupleIntersection (k + 2) T xs).card : ℝ)) ≤
+          ((powers_tuple_intersection (k + 2) T xs).card : ℝ)) ≤
           ∑ xs : Fin (k + 2) → S,
             (((Fintype.card ι - D : ℕ) : ℝ) +
               if xs ∈ Good then (Fintype.card ι : ℝ) else 0) := by
         apply Finset.sum_le_sum
         intro xs hxs
         by_cases hgood : xs ∈ Good
-        · have hcard : (powersTupleIntersection (k + 2) T xs).card ≤
+        · have hcard : (powers_tuple_intersection (k + 2) T xs).card ≤
               Fintype.card ι := by
             simpa only [← Finset.card_univ] using
-              Finset.card_le_univ (powersTupleIntersection (k + 2) T xs)
+              Finset.card_le_univ (powers_tuple_intersection (k + 2) T xs)
           have hcardR :
-              ((powersTupleIntersection (k + 2) T xs).card : ℝ) ≤
+              ((powers_tuple_intersection (k + 2) T xs).card : ℝ) ≤
                 (Fintype.card ι : ℝ) := by exact_mod_cast hcard
           have hsub : 0 ≤ ((Fintype.card ι - D : ℕ) : ℝ) := by positivity
           simp only [if_pos hgood]
           linarith
-        · have hnot : ¬ (powersTupleIntersection (k + 2) T xs).card >
+        · have hnot : ¬ (powers_tuple_intersection (k + 2) T xs).card >
               Fintype.card ι - D := by
             simpa only [Good, Finset.mem_filter, Finset.mem_univ, true_and] using hgood
-          have hcard : (powersTupleIntersection (k + 2) T xs).card ≤
+          have hcard : (powers_tuple_intersection (k + 2) T xs).card ≤
               Fintype.card ι - D := Nat.le_of_not_lt hnot
           simp only [if_neg hgood, add_zero]
           exact_mod_cast hcard
@@ -1280,15 +1289,15 @@ private theorem powers_injective_compatible_tuple_card_lower
     (Fintype.card S : ℝ) ^ (k + 1) *
         (η * (Fintype.card S : ℝ) - (Nat.choose (k + 2) 2 : ℝ)) ≤
       ((Finset.univ.filter fun xs : Fin (k + 2) → S =>
-        (powersTupleIntersection (k + 2) T xs).card >
+        (powers_tuple_intersection (k + 2) T xs).card >
             Fintype.card ι - D ∧ Function.Injective xs).card : ℝ) := by
   classical
   let G : Finset (Fin (k + 2) → S) :=
     Finset.univ.filter fun xs =>
-      (powersTupleIntersection (k + 2) T xs).card > Fintype.card ι - D
+      (powers_tuple_intersection (k + 2) T xs).card > Fintype.card ι - D
   let I : Finset (Fin (k + 2) → S) :=
     Finset.univ.filter fun xs =>
-      (powersTupleIntersection (k + 2) T xs).card > Fintype.card ι - D ∧
+      (powers_tuple_intersection (k + 2) T xs).card > Fintype.card ι - D ∧
         Function.Injective xs
   let N : Finset (Fin (k + 2) → S) :=
     Finset.univ.filter fun xs => ¬ Function.Injective xs
@@ -1303,7 +1312,7 @@ private theorem powers_injective_compatible_tuple_card_lower
   have hcover : G ⊆ I ∪ N := by
     intro xs hxs
     have hcompat :
-        (powersTupleIntersection (k + 2) T xs).card > Fintype.card ι - D := by
+        (powers_tuple_intersection (k + 2) T xs).card > Fintype.card ι - D := by
       simpa only [G, Finset.mem_filter, Finset.mem_univ, true_and] using hxs
     by_cases hinj : Function.Injective xs
     · apply Finset.mem_union_left
@@ -1342,14 +1351,14 @@ private theorem powers_select_compatible_anchors
       Function.Injective xs ∧
       η * (Fintype.card S : ℝ) - (Nat.choose (k + 2) 2 : ℝ) ≤
         ((Finset.univ.filter fun x : S =>
-          (powersTupleIntersection (k + 2) T (Fin.snoc xs x)).card >
+          (powers_tuple_intersection (k + 2) T (Fin.snoc xs x)).card >
               Fintype.card ι - D ∧
             Function.Injective (Fin.snoc xs x)).card : ℝ) := by
   classical
   let a : ℝ :=
     η * (Fintype.card S : ℝ) - (Nat.choose (k + 2) 2 : ℝ)
   let P : (Fin (k + 2) → S) → Prop := fun ys =>
-    (powersTupleIntersection (k + 2) T ys).card > Fintype.card ι - D ∧
+    (powers_tuple_intersection (k + 2) T ys).card > Fintype.card ι - D ∧
       Function.Injective ys
   let Bgood : (Fin (k + 1) → S) → Finset S := fun xs =>
     Finset.univ.filter fun x => P (Fin.snoc xs x)
@@ -1455,9 +1464,9 @@ private theorem powers_witness_outside_real_card_lower
   linarith
 
 open scoped BigOperators in
-private theorem powers_commonDomain_card_gt_of_many_goodSeeds
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+private theorem powers_common_domain_card_gt_of_many_good_seeds
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
     (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (α β : ℝ) (Bgood : Finset F) (Bx : F → Finset ι)
@@ -1468,38 +1477,40 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds
       (∑ j : Fin (k + 1), (x ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), (x ^ (j : ℕ)) • cstar j i) :
     (Fintype.card ι : ℝ) * β <
-      ((powersCommonDomain k U cstar).card : ℝ) := by
+      ((powers_common_domain k U cstar).card : ℝ) := by
+  classical
+  letI := Fintype.ofFinite F
   by_contra hnot
-  have hcommon : ((powersCommonDomain k U cstar).card : ℝ) ≤
+  have hcommon : ((powers_common_domain k U cstar).card : ℝ) ≤
       (Fintype.card ι : ℝ) * β := le_of_not_gt hnot
   have hsumLower :
       (∑ x ∈ Bgood, (Fintype.card ι : ℝ) * (α - β)) ≤
         ∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ) := by
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ) := by
     apply Finset.sum_le_sum
     intro x hx
     exact powers_witness_outside_real_card_lower
-      (Bx x) (powersCommonDomain k U cstar)
+      (Bx x) (powers_common_domain k U cstar)
       (Fintype.card ι : ℝ) α β (hBx x hx) hcommon
   have hincNat :=
     powers_middle_outside_incidence_card_le
       (F := F) k U cstar Bgood Bx heq
   have hincReal :
       (∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ)) ≤
-        (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ)) ≤
+        (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) := by
     exact_mod_cast hincNat
   have hcompNat :
-      (Finset.univ \ powersCommonDomain k U cstar).card ≤ Fintype.card ι := by
+      (Finset.univ \ powers_common_domain k U cstar).card ≤ Fintype.card ι := by
     simpa only [← Finset.card_univ] using
-      Finset.card_le_univ (Finset.univ \ powersCommonDomain k U cstar)
+      Finset.card_le_univ (Finset.univ \ powers_common_domain k U cstar)
   have hcompReal :
-      (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) ≤
+      (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) ≤
         (Fintype.card ι : ℝ) := by
     exact_mod_cast hcompNat
   have hupper :
-      (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+      (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) ≤ (Fintype.card ι : ℝ) * (k : ℝ) :=
     mul_le_mul_of_nonneg_right hcompReal (Nat.cast_nonneg k)
   have htotal :
@@ -1509,8 +1520,8 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds
       (Bgood.card : ℝ) * ((Fintype.card ι : ℝ) * (α - β)) =
           ∑ x ∈ Bgood, (Fintype.card ι : ℝ) * (α - β) := by simp
       _ ≤ ∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ) := hsumLower
-      _ ≤ (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ) := hsumLower
+      _ ≤ (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) := hincReal
       _ ≤ (Fintype.card ι : ℝ) * (k : ℝ) := hupper
   have hnpos : (0 : ℝ) < Fintype.card ι := by
@@ -1527,11 +1538,10 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds
   exact (not_lt_of_ge hcancel) hgap
 
 open scoped BigOperators in
-private theorem powers_commonDomain_card_gt_of_many_goodSeeds_embedding
-    {ι S : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+private theorem powers_common_domain_card_gt_of_many_good_seeds_embedding
+    {ι S : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F]
     {A : Type} [DecidableEq A] [AddCommGroup A] [Module F A]
-    [DecidableEq S]
     (e : S ↪ F) (k : ℕ) (U cstar : Fin (k + 1) → ι → A)
     (α β : ℝ) (Bgood : Finset S) (Bx : S → Finset ι)
     (hBx : ∀ x ∈ Bgood,
@@ -1541,38 +1551,40 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds_embedding
       (∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • U j i) =
         ∑ j : Fin (k + 1), ((e x) ^ (j : ℕ)) • cstar j i) :
     (Fintype.card ι : ℝ) * β <
-      ((powersCommonDomain k U cstar).card : ℝ) := by
+      ((powers_common_domain k U cstar).card : ℝ) := by
+  classical
+  letI := Fintype.ofFinite F
   by_contra hnot
-  have hcommon : ((powersCommonDomain k U cstar).card : ℝ) ≤
+  have hcommon : ((powers_common_domain k U cstar).card : ℝ) ≤
       (Fintype.card ι : ℝ) * β := le_of_not_gt hnot
   have hsumLower :
       (∑ x ∈ Bgood, (Fintype.card ι : ℝ) * (α - β)) ≤
         ∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ) := by
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ) := by
     apply Finset.sum_le_sum
     intro x hx
     exact powers_witness_outside_real_card_lower
-      (Bx x) (powersCommonDomain k U cstar)
+      (Bx x) (powers_common_domain k U cstar)
       (Fintype.card ι : ℝ) α β (hBx x hx) hcommon
   have hincNat :=
     powers_middle_outside_incidence_card_le_embedding
       e k U cstar Bgood Bx heq
   have hincReal :
       (∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ)) ≤
-        (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ)) ≤
+        (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) := by
     exact_mod_cast hincNat
   have hcompNat :
-      (Finset.univ \ powersCommonDomain k U cstar).card ≤ Fintype.card ι := by
+      (Finset.univ \ powers_common_domain k U cstar).card ≤ Fintype.card ι := by
     simpa only [← Finset.card_univ] using
-      Finset.card_le_univ (Finset.univ \ powersCommonDomain k U cstar)
+      Finset.card_le_univ (Finset.univ \ powers_common_domain k U cstar)
   have hcompReal :
-      (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) ≤
+      (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) ≤
         (Fintype.card ι : ℝ) := by
     exact_mod_cast hcompNat
   have hupper :
-      (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+      (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) ≤ (Fintype.card ι : ℝ) * (k : ℝ) :=
     mul_le_mul_of_nonneg_right hcompReal (Nat.cast_nonneg k)
   have htotal :
@@ -1582,8 +1594,8 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds_embedding
       (Bgood.card : ℝ) * ((Fintype.card ι : ℝ) * (α - β)) =
           ∑ x ∈ Bgood, (Fintype.card ι : ℝ) * (α - β) := by simp
       _ ≤ ∑ x ∈ Bgood,
-          (((Bx x \ powersCommonDomain k U cstar).card : ℕ) : ℝ) := hsumLower
-      _ ≤ (((Finset.univ \ powersCommonDomain k U cstar).card : ℕ) : ℝ) *
+          (((Bx x \ powers_common_domain k U cstar).card : ℕ) : ℝ) := hsumLower
+      _ ≤ (((Finset.univ \ powers_common_domain k U cstar).card : ℕ) : ℝ) *
           (k : ℝ) := hincReal
       _ ≤ (Fintype.card ι : ℝ) * (k : ℝ) := hupper
   have hnpos : (0 : ℝ) < Fintype.card ι := by
@@ -1602,10 +1614,10 @@ private theorem powers_commonDomain_card_gt_of_many_goodSeeds_embedding
 open scoped NNReal in
 open scoped BigOperators in
 open scoped Matrix.Module in
-private theorem powers_badSeed_finset_card_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+private theorem powers_bad_seed_finset_card_le
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δmin η : ℝ≥0)
     (U : Fin (k + 1) → ι → A) (B : Finset F)
     (hB : ∀ x : F, x ∈ B ↔
@@ -1626,7 +1638,8 @@ private theorem powers_badSeed_finset_card_le
                (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
           (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ)) := by
   classical
-  let r : ℝ := powersRadiusBase (δmin : ℝ) (η : ℝ)
+  letI := Fintype.ofFinite A
+  let r : ℝ := powers_radius_base (δmin : ℝ) (η : ℝ)
   let α : ℝ := r ^ ((1 : ℝ) / (k + 2))
   let β : ℝ := r ^ ((1 : ℝ) / (k + 1))
   let Δ : ℝ := α - β
@@ -1635,10 +1648,10 @@ private theorem powers_badSeed_finset_card_le
     max (2 * (k : ℝ) / ((η : ℝ) * Δ))
       (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ))
   have hηR : (0 : ℝ) < (η : ℝ) := by exact_mod_cast hη
-  have hr := powersRadiusBase_mem_Ioo_of_moduleCode C δmin η hδmin hη hηlt
+  have hr := powers_radius_base_mem_ioo_of_module_code C δmin η hδmin hη hηlt
   have hΔ : 0 < Δ := by
     simpa only [Δ, α, β, r] using
-      powers_power_difference_pos_of_moduleCode C k δmin η hδmin hη hηlt
+      powers_power_difference_pos_of_module_code C k δmin η hδmin hη hηlt
   have hα0 : 0 ≤ α := by
     dsimp only [α]
     exact Real.rpow_nonneg hr.1.le _
@@ -1657,14 +1670,14 @@ private theorem powers_badSeed_finset_card_le
     simpa only [α, r] using
       powers_alpha_pow_relation C k δmin η hδmin hη hηlt
   let S := {x : F // x ∈ B}
-  let e : S ↪ F := powersBadSeedEmbedding B
+  let e : S ↪ F := powers_bad_seed_embedding B
   have hBα : ∀ x : F, x ∈ B ↔
       CoreDefinitions.IsMCA (CoreDefinitions.univariatePowersGenerator F k) C x U
         (1 - α) := by
     intro x
-    simpa only [α, r, powersRadiusBase] using hB x
+    simpa only [α, r, powers_radius_base] using hB x
   let bw : (x : S) → PowersBadWitness C k U (e x) (1 - α) := fun x =>
-    powersBadWitness_of_badSeedSubtype C k U (1 - α) B hBα x
+    powers_bad_witness_of_bad_seed_subtype C k U (1 - α) B hBα x
   have hScard : Fintype.card S = B.card := by
     exact Fintype.card_of_subtype B (fun x => Iff.rfl)
   have hT : ∀ x : S,
@@ -1707,7 +1720,7 @@ private theorem powers_badSeed_finset_card_le
         (Code.minDist (C : Set (ι → A))) α (η : ℝ)
         hα0 hD hT hrel hcLargeS
     let Bgood : Finset S := Finset.univ.filter fun x : S =>
-      (powersTupleIntersection (k + 2) (fun y : S => (bw y).T)
+      (powers_tuple_intersection (k + 2) (fun y : S => (bw y).T)
           (Fin.snoc xs x)).card >
             Fintype.card ι - Code.minDist (C : Set (ι → A)) ∧
         Function.Injective (Fin.snoc xs x)
@@ -1723,7 +1736,7 @@ private theorem powers_badSeed_finset_card_le
     have hgap : (k : ℝ) < (Bgood.card : ℝ) * (α - β) := by
       simpa only [Δ] using harith.2
     have hgoodLarge : ∀ x ∈ Bgood,
-        (powersTupleIntersection (k + 2) (fun y : S => (bw y).T)
+        (powers_tuple_intersection (k + 2) (fun y : S => (bw y).T)
           (Fin.snoc xs x)).card >
             Fintype.card ι - Code.minDist (C : Set (ι → A)) := by
       intro x hx
@@ -1742,22 +1755,22 @@ private theorem powers_badSeed_finset_card_le
           congrFun (hinterp x hx) i
     have hcommonStrict :
         (Fintype.card ι : ℝ) * β <
-          ((powersCommonDomain k U cstar).card : ℝ) :=
-      powers_commonDomain_card_gt_of_many_goodSeeds_embedding
+          ((powers_common_domain k U cstar).card : ℝ) :=
+      powers_common_domain_card_gt_of_many_good_seeds_embedding
         e k U cstar α β Bgood (fun x : S => (bw x).T)
         (fun x _ => hT x) hgap heq
     have hcommon :
-        ((powersCommonDomain k U cstar).card : ℝ) ≥
+        ((powers_common_domain k U cstar).card : ℝ) ≥
           (Fintype.card ι : ℝ) * (1 - (1 - β)) := by
       nlinarith
     have hext : ∀ x ∈ Bgood,
-        ∃ i, i ∈ (bw x).T ∧ i ∉ powersCommonDomain k U cstar := by
+        ∃ i, i ∈ (bw x).T ∧ i ∉ powers_common_domain k U cstar := by
       intro x _
-      exact powersBadWitness_exists_mem_not_commonDomain
+      exact powers_bad_witness_exists_mem_not_common_domain
         C k U (e x) (1 - α) (bw x) cstar hcstar
     have hupper : (Bgood.card : ℝ) ≤
         (Fintype.card ι : ℝ) * (1 - β) * (k : ℝ) :=
-      powers_middle_goodSeeds_real_card_le_embedding
+      powers_middle_good_seeds_real_card_le_embedding
         e k U cstar (1 - β) Bgood (fun x : S => (bw x).T)
         hcommon hext heq
     have hcM : c / (η : ℝ) ≤ M := by
@@ -1768,7 +1781,7 @@ private theorem powers_badSeed_finset_card_le
       apply le_trans hcTwo
       rw [hchoose]
       exact le_max_right _ _
-    have hfinal := powers_badSeed_final_arithmetic
+    have hfinal := powers_bad_seed_final_arithmetic
       (η : ℝ) (B.card : ℝ) c (Bgood.card : ℝ)
       ((Fintype.card ι : ℝ) * (1 - β) * (k : ℝ)) M
       hηR hlowerB hupper hcM
@@ -1781,10 +1794,10 @@ private theorem powers_badSeed_finset_card_le
 open scoped NNReal in
 open scoped BigOperators in
 open scoped Matrix.Module in
-private theorem linear_mcaError_powers_badSeed_card_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+private theorem linear_mca_error_powers_bad_seed_card_le
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δmin η : ℝ≥0)
     (U : Fin (k + 1) → ι → A)
     (_hk : 1 ≤ k) (_hcard : k + 1 ≤ Fintype.card F)
@@ -1804,11 +1817,12 @@ private theorem linear_mcaError_powers_badSeed_card_le
                (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 1)))))
           (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η : ℝ)) := by
   classical
+  letI := Fintype.ofFinite A
   let P : F → Prop := fun x =>
     CoreDefinitions.IsMCA (CoreDefinitions.univariatePowersGenerator F k) C x U
       (1 - (1 - (δmin : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2)))
   let B : Finset F := Finset.univ.filter P
-  have hfin := powers_badSeed_finset_card_le C k δmin η U B
+  have hfin := powers_bad_seed_finset_card_le C k δmin η U B
     (fun x => by simp only [B, P, Finset.mem_filter, Finset.mem_univ, true_and])
     _hk _hcard hδmin hη hηlt
   have hcount : (B.card : ℝ) = (Nat.card {x : F // P x} : ℝ) := by
@@ -1819,7 +1833,7 @@ private theorem linear_mcaError_powers_badSeed_card_le
   rw [← hcount]
   exact hfin
 
-private noncomputable def univariatePowers_generatorCode_eq_rs
+private noncomputable def univariate_powers_generator_code_eq_rs
     {F : Type} [Field F] [Fintype F] (k : ℕ) :
     LinearCode.fromColGenMat (CoreDefinitions.M_G (CoreDefinitions.univariatePowersGenerator F k)) =
       ReedSolomon.code (Function.Embedding.refl F) (k + 1) := by
@@ -1828,39 +1842,29 @@ private noncomputable def univariatePowers_generatorCode_eq_rs
     (ReedSolomon.genMatIsVandermonde (F := F) (m := k + 1)
       (α := Function.Embedding.refl F))
 
-private noncomputable def univariatePowers_generatorCode_dim
+private noncomputable def univariate_powers_generator_code_dim
     {F : Type} [Field F] [Fintype F] (k : ℕ)
     (hcard : k + 1 ≤ Fintype.card F) :
     LinearCode.dim
         (LinearCode.fromColGenMat
           (CoreDefinitions.M_G (CoreDefinitions.univariatePowersGenerator F k))) = k + 1 := by
-  rw [univariatePowers_generatorCode_eq_rs]
+  rw [univariate_powers_generator_code_eq_rs]
   exact ReedSolomon.dim_eq_deg_of_le hcard
 
-private noncomputable def univariatePowers_isMDSGenerator
+private noncomputable def univariate_powers_is_mds_generator
     {F : Type} [Field F] [Fintype F] [DecidableEq F] (k : ℕ) :
     CoreDefinitions.IsMDSGenerator (CoreDefinitions.univariatePowersGenerator F k) := by
   unfold CoreDefinitions.IsMDSGenerator
-  rw [univariatePowers_generatorCode_eq_rs]
+  rw [univariate_powers_generator_code_eq_rs]
   letI : Inhabited F := ⟨0⟩
   exact ReedSolomon.isMDS_code
 
-
-/-- An MCA bound for the univariate-powers generator on an `F`-linear code over a finite
-`F`-module alphabet. For `k ≥ 1`, `|F| ≥ k+1`, and
-`δ ≤ 1 - (ρ_C + η)^{1/(k+2)}` with `ρ_C := 1-δ_min`,
-
-  `mcaError(G_k, C, δ) ≤ (n·γ_k/η)·(k/|F|)
-      + max( 2k / (η·((ρ_C+η)^{1/(k+2)} - (ρ_C+η)^{1/(k+1)})·|F|),
-             (k+1)·(k+2) / (η·|F|) )`,   `γ_k := 1 - (ρ_C+η)^{1/(k+1)}`.
-
-Here `γ_k := 1 - (ρ_C+η)^{1/(k+1)}`. The hypothesis `η < δ_min` keeps the inner
-difference of powers positive. The displayed expression also dominates the overlapping first
-branch of the source's piecewise bound. -/
+/-- Bounds the MCA error of the univariate-powers generator below its generalized Johnson
+radius. The maximum on the right combines the two nontrivial branches of the source bound. -/
 theorem linear_mcaError_powers_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (k : ℕ) (δ_min η δ : ℝ≥0)
     (_hk : 1 ≤ k)
     (_hcard : k + 1 ≤ Fintype.card F)
@@ -1880,6 +1884,7 @@ theorem linear_mcaError_powers_le
                   * Fintype.card F))
               (((k : ℝ) + 1) * ((k : ℝ) + 2) / ((η : ℝ) * Fintype.card F))) := by
   classical
+  letI := Fintype.ofFinite A
   refine le_trans
     (CoreDefinitions.mcaError_mono (univariatePowersGenerator F k) C _hδ) ?_
   unfold mcaError
@@ -1887,7 +1892,7 @@ theorem linear_mcaError_powers_le
   let P : F → Prop := fun x =>
     IsMCA (univariatePowersGenerator F k) C x U
       (1 - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / (k + 2)))
-  have hcard := linear_mcaError_powers_badSeed_card_le C k δ_min η U
+  have hcard := linear_mca_error_powers_bad_seed_card_le C k δ_min η U
     _hk _hcard _h_δ_min _hη _hη_lt_δ_min
   change (Nat.card {x : F // P x} : ℝ) ≤ _ at hcard
   have hprob :
