@@ -254,19 +254,54 @@ def OracleProver {ι : Type} (oSpec : OracleSpec ι)
     {n : ℕ} (pSpec : ProtocolSpec n) :=
   Prover oSpec (StmtIn × (∀ i, OStmtIn i)) WitIn (StmtOut × (∀ i, OStmtOut i)) WitOut pSpec
 
+/-- A virtual output-oracle implementation for an `OracleVerifier`.
+
+`materialize` gives the extensional oracle value used by the existing bundled
+`toVerifier` security interface. `simOStmt` gives the query-by-query VCV
+implementation used by downstream oracle computations. `simOStmt_eq` requires
+the two views to agree on every query. The output `OracleInterface` is stored
+with the implementation so a verifier can expose genuinely derived output
+oracles without imposing a new typeclass parameter on legacy embedded-output
+verifiers. -/
+structure OracleOutputSimulation {iota : Type} (oSpec : OracleSpec iota)
+    (StmtIn : Type) {iotaStmtIn : Type} (OStmtIn : iotaStmtIn → Type)
+    {iotaStmtOut : Type} (OStmtOut : iotaStmtOut → Type)
+    {n : ℕ} (pSpec : ProtocolSpec n)
+    [OStmtInInterface : ∀ i, OracleInterface (OStmtIn i)]
+    [MessageInterface : ∀ i, OracleInterface (pSpec.Message i)] where
+  /-- Oracle interface through which downstream verifiers query the virtual
+  output family. -/
+  outputInterface : ∀ i, OracleInterface.{0, 0} (OStmtOut i)
+  /-- Extensional materialization used by relation-facing bundled semantics. -/
+  materialize : StmtIn → pSpec.Challenges →
+    (∀ i, OStmtIn i) → pSpec.Messages → (∀ i, OStmtOut i)
+  /-- Query-by-query implementation of the virtual output family in terms of
+  input statement oracles and prover-message oracles. -/
+  simOStmt : letI := outputInterface
+    StmtIn → pSpec.Challenges →
+      QueryImpl [OStmtOut]ₒ
+        (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)))
+  /-- The VCV query implementation agrees with the extensional materialization. -/
+  simOStmt_eq : letI := outputInterface
+    ∀ stmt challenges oStmt messages q,
+      simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+          (simOStmt stmt challenges q) =
+        pure ((outputInterface q.1).answer
+          (materialize stmt challenges oStmt messages q.1) q.2)
+
 /-- An **(oracle) verifier** of an interactive **oracle** reduction consists of:
 
   - an oracle computation `verify` that outputs the next statement. It may make queries to each of
     the prover's messages and each of the oracles present in the statement (according to a specified
     interface defined by `OracleInterface` instances).
 
-  - output oracle statements `OStmtOut : ιₛₒ → Type`, meant to be a **subset** of the input oracle
-    statements and the prover's oracle messages. Formally, this is specified by an embedding `ιₛₒ ↪
-    ιₛᵢ ⊕ pSpec.MessageIdx` and a proof that `OStmtOut` is compatible with `OStmtIn` and
-    `pSpec.Messages` via this embedding.
+  - output oracle statements `OStmtOut : ιₛₒ → Type`. A verifier may expose them as
+    virtual oracles implemented query-by-query from its input and message oracles. Legacy
+    verifiers instead select a subset of those source oracles through `embed` and `hEq`.
 
-Intuitively, the oracle verifier cannot do anything more in returning the output oracle statements,
-other than specifying a subset of the ones it has received (and dropping the rest). -/
+The virtual form supports derived output oracles without materializing them for downstream
+oracle computations. Its agreement law connects that query-by-query implementation to the
+extensional values used by the bundled security interface. -/
 @[ext]
 structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
@@ -275,8 +310,6 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
     [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
     [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     where
-    -- This will be needed after the switch to `simOStmt`
-    -- [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
 
   /-- The core verification logic. Takes the input statement `stmtIn` and all verifier challenges
   `challenges` (which are determined outside this function, typically by sampling for
@@ -286,13 +319,8 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
   verify : StmtIn → pSpec.Challenges →
     OptionT (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))) StmtOut
 
-  -- TODO: this seems like the right way for compositionality
-  -- Makes it potentially more difficult for compilation with commitment schemes
-  -- Can recover the old version (with `embed` and `hEq`) via a constructor `QueryImpl.ofEmbed`
-
-  -- simOStmt : QueryImpl [OStmtOut]ₒ (OracleComp ([OStmtIn]ₒ + [pSpec.Message]ₒ))
-
-  /-- An embedding that specifies how each output oracle statement (indexed by `ιₛₒ`) is derived.
+  /-- A backwards-compatible embedding used when `outputSimulation = none`.
+  It specifies how each output oracle statement (indexed by `ιₛₒ`) is derived.
   It maps an index `i : ιₛₒ` to either an index `j : ιₛᵢ` (meaning `OStmtOut i` comes from
   `OStmtIn j`) or an index `k : pSpec.MessageIdx` (meaning `OStmtOut i` comes from the
   prover's message `pSpec.Message k`). This enforces that output oracles are a subset of
@@ -305,6 +333,12 @@ structure OracleVerifier {ι : Type} (oSpec : OracleSpec ι)
   hEq : ∀ i, OStmtOut i = match embed i with
     | Sum.inl j => OStmtIn j
     | Sum.inr j => pSpec.Message j
+
+  /-- Optional virtual output-oracle implementation. When present, this is the
+  semantic output family; `embed`/`hEq` remain as a backwards-compatible
+  structural fallback for legacy verifiers. -/
+  outputSimulation : Option
+    (OracleOutputSimulation oSpec StmtIn OStmtIn OStmtOut pSpec) := none
 
 -- Cannot find synthesization order...
 -- instance {ιₛᵢ ιₘ ιₛₒ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
@@ -328,9 +362,12 @@ def toVerifier : Verifier oSpec (StmtIn × ∀ i, OStmtIn i) (StmtOut × (∀ i,
   verify := fun ⟨stmt, oStmt⟩ transcript => do
     let stmtOut ← simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
       (verifier.verify stmt transcript.challenges)
-    letI oStmtOut := fun i => match h : verifier.embed i with
-      | Sum.inl j => (verifier.hEq i ▸ h ▸ oStmt j : OStmtOut i)
-      | Sum.inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
+    let oStmtOut : ∀ i, OStmtOut i := match verifier.outputSimulation with
+      | some simulation =>
+          simulation.materialize stmt transcript.challenges oStmt transcript.messages
+      | none => fun i => match h : verifier.embed i with
+        | Sum.inl j => (verifier.hEq i ▸ h ▸ oStmt j : OStmtOut i)
+        | Sum.inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
     return (stmtOut, oStmtOut)
 
 /-- The number of queries made to the oracle statements and the prover's messages, for a given input

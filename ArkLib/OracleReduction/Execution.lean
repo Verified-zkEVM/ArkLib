@@ -191,13 +191,8 @@ def Verifier.run (stmt : StmtIn) (transcript : FullTranscript pSpec)
 def OracleVerifier.run [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (stmt : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec)
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-      OptionT (OracleComp oSpec) (StmtOut × (∀ i, OStmtOut i)) := do
-  let f := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
-  let stmtOut ← simulateQ f (verifier.verify stmt transcript.challenges)
-  let oStmtOut : ∀ i, OStmtOut i := fun i => match h : verifier.embed i with
-    | .inl j => (verifier.hEq i ▸ h ▸ oStmtIn j : OStmtOut i)
-    | .inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
-  return ⟨stmtOut, oStmtOut⟩
+      OptionT (OracleComp oSpec) (StmtOut × (∀ i, OStmtOut i)) :=
+  verifier.toVerifier.run ⟨stmt, oStmtIn⟩ transcript
 
 /-- Running an oracle verifier then is equal to running its non-oracle counterpart -/
 @[simp]
@@ -205,9 +200,7 @@ theorem OracleVerifier.run_eq_run_verifier [Oₘ : ∀ i, OracleInterface (pSpec
     {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {transcript : FullTranscript pSpec}
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec} :
       verifier.run stmt oStmt transcript =
-        verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := by
-  simp only [OracleVerifier.run, OracleVerifier.toVerifier, Verifier.run]
-  rfl
+        verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := rfl
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement
