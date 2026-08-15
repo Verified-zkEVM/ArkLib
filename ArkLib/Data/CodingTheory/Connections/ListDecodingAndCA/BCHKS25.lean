@@ -4,10 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
+import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
 /-!
 # BCHKS25 CA-to-list-size bound

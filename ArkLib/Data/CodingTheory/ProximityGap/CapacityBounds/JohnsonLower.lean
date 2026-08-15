@@ -4,31 +4,9 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks, Aleph
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-
-import Mathlib.FieldTheory.Finite.GaloisField
-import Mathlib.LinearAlgebra.Dual.Lemmas
-import Mathlib.GroupTheory.Coset.Basic
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.LinearAlgebra.Pi
-import Mathlib.Algebra.MvPolynomial.SchwartzZippel
-import Mathlib.Algebra.CharP.Two
-import Mathlib.Algebra.MvPolynomial.Equiv
-import Mathlib.Data.Fin.Tuple.Basic
-import Mathlib.Algebra.Order.Archimedean.Basic
-import Mathlib.Algebra.Polynomial.Expand
-import Mathlib.Algebra.Ring.Parity
-import Mathlib.Algebra.MvPolynomial.Degrees
-import Mathlib.Algebra.Polynomial.Degree.Lemmas
-import Mathlib.Algebra.Polynomial.Degree.Operations
-import Mathlib.Algebra.Algebra.ZMod
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
+import Mathlib.Algebra.Algebra.ZMod
+import Mathlib.FieldTheory.Finite.Basic
 
 /-!
 # Reed--Solomon lower bound at the Johnson radius

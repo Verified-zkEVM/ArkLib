@@ -5,38 +5,8 @@ Authors: Alexander Hicks, Aleph
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-
-import Mathlib.Data.NNReal.Basic
-import Mathlib.Data.Matrix.Basic
-import Mathlib.Algebra.BigOperators.Fin
-import Mathlib.LinearAlgebra.FiniteDimensional.Lemmas
-import Mathlib.LinearAlgebra.Dimension.Constructions
-import Mathlib.Algebra.Order.Floor.Div
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
-import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Algebra.Polynomial.Degree.Operations
-import ArkLib.Data.CodingTheory.Basic.Distance
-import Mathlib.Data.Nat.ModEq
-import Mathlib.Algebra.Polynomial.OfFn
-import ArkLib.Data.Polynomial.Bivariate
-import CompPoly.ToMathlib.Polynomial.BivariateDegree
-import Mathlib.Algebra.Polynomial.Eval.Coeff
-import Mathlib.Algebra.Polynomial.Coeff
-import Mathlib.Algebra.Polynomial.Roots
-import ArkLib.Data.CodingTheory.PolishchukSpielman.PolishchukSpielman
-import Mathlib.Data.PNat.Basic
-import Mathlib.Data.Rat.Cast.Order
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import ArkLib.Data.CodingTheory.ProximityGap.Basic
-import ArkLib.Data.Probability.Instances
-import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
-import ArkLib.Data.CodingTheory.PolishchukSpielman
+import Mathlib.Algebra.Order.Floor.Div
 
 /-!
 # Reed--Solomon CA in the unique-decoding range

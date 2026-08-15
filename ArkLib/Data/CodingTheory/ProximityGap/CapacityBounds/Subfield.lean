@@ -5,44 +5,8 @@ Authors: Alexander Hicks, Aleph
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-
-import Mathlib.RingTheory.Polynomial.DegreeLT
-import Mathlib.RingTheory.IntegralDomain
-import Mathlib.GroupTheory.SpecificGroups.Cyclic.Basic
-import Mathlib.FieldTheory.PrimitiveElement
-import Mathlib.Algebra.Order.Chebyshev
-import Mathlib.FieldTheory.Minpoly.Field
-import Mathlib.Algebra.Polynomial.Eval.Defs
-import Mathlib.Algebra.Polynomial.Div
-import Mathlib.Algebra.Polynomial.FieldDivision
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Analysis.Complex.Exponential
-import Mathlib.FieldTheory.Finiteness
-import Mathlib.Algebra.BigOperators.Group.Finset.Piecewise
-import Mathlib.Algebra.Polynomial.BigOperators
-import Mathlib.Algebra.GroupWithZero.Units.Basic
-import Mathlib.SetTheory.Cardinal.Finite
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.FieldTheory.IntermediateField.Adjoin.Defs
-import Mathlib.Algebra.Group.Submonoid.Membership
-import Mathlib.RingTheory.PrincipalIdealDomain
-import Mathlib.RingTheory.Coprime.Lemmas
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Data.Finset.Powerset
-import Mathlib.Data.Nat.Choose.Bounds
-import Mathlib.Algebra.BigOperators.Group.Finset.Basic
-import Mathlib.Data.Fintype.Card
-import Mathlib.Analysis.SpecialFunctions.Log.Basic
 import Mathlib.Analysis.SpecialFunctions.Stirling
-import Mathlib.Algebra.Order.Floor.Semiring
-import Mathlib.Analysis.Real.Sqrt
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
-import Mathlib.Algebra.BigOperators.Field
+import Mathlib.FieldTheory.PrimitiveElement
 
 /-!
 # Subfield lower bound for Reed--Solomon correlated agreement

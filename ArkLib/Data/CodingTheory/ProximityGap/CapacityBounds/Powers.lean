@@ -5,24 +5,8 @@ Authors: Alexander Hicks, Aleph
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import ArkLib.Data.CodingTheory.ReedSolomon
-import ArkLib.Data.CodingTheory.Basic.Entropy
-import ArkLib.Data.CodingTheory.HammingBallVolume
-import ArkLib.Data.CodingTheory.SubspaceDesign
-import Mathlib.Analysis.SpecialFunctions.Pow.Real
-
-import Mathlib.Algebra.Polynomial.Roots
-import Mathlib.Data.Nat.Choose.Cast
-import Mathlib.Data.Fin.Tuple.Basic
-import Mathlib.Data.Fintype.BigOperators
-import Mathlib.LinearAlgebra.Matrix.Module
-import Mathlib.LinearAlgebra.Matrix.NonsingularInverse
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
-import Mathlib.Data.Finset.Powerset
-import Mathlib.Algebra.Order.Chebyshev
-import Mathlib.Algebra.BigOperators.Pi
-import Mathlib.Algebra.BigOperators.Ring.Finset
-import Mathlib.Algebra.Order.BigOperators.Group.Finset
+import Mathlib.LinearAlgebra.Matrix.Module
 
 /-!
 # MCA bounds for univariate powers
