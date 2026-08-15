@@ -328,6 +328,12 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
+  domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
+  interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
+  reference points, and `Codegen.lean` enforces compiler-IR availability. The compiled
+  small-parameter checks run with `lake exe toyproblem-runtime`; production-size profiles are
+  established by proof rather than evaluation.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared

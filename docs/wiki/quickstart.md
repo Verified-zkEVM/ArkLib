@@ -87,8 +87,9 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, `./scripts/check-imports.sh`, and
-  `python3 ./scripts/check-docs-integrity.py`, plus knowledge-base linting from source inputs.
+- By default it runs `lake build`, the compiled `toyproblem-runtime` checks,
+  `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
+  knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -130,6 +131,7 @@ You can still run the underlying pieces directly when debugging a specific issue
 
 ```bash
 lake build
+lake exe toyproblem-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py

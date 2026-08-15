@@ -125,8 +125,8 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
   `ε₂` for all `ε₂ ≥ ε₁`. -/
 @[grind]
 theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
-      completeness init impl relIn relOut reduction ε₁ →
-        completeness init impl relIn relOut reduction ε₂ := by
+    completeness init impl relIn relOut reduction ε₁ →
+      completeness init impl relIn relOut reduction ε₂ := by
   intro h
   dsimp [completeness] at h ⊢
   intro stmtIn witIn hstmtIn
@@ -262,6 +262,32 @@ class IsSound (langIn : Set StmtIn) (langOut : Set StmtOut)
 -- functions (receive challenges and send messages), and be able to observe & simulate the prover's
 -- oracle queries
 #check Reduction.runWithLog
+/-- The straightline knowledge-soundness game for one specified extractor.
+
+Unlike `knowledgeSoundness`, this predicate keeps the extractor's identity in its type. This is
+the appropriate public contract when a caller needs to name, execute, or audit the exact
+extractor certified by a theorem. -/
+def knowledgeSoundnessWith
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec)
+    (knowledgeError : ℝ≥0) : Prop :=
+  ∀ stmtIn : StmtIn,
+  ∀ witIn : WitIn,
+  ∀ prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec,
+    let pImpl : QueryImpl (oSpec + [pSpec.Challenge]ₒ) (StateT σ ProbComp) :=
+      impl.addLift challengeQueryImpl
+    let exec := do
+      let ⟨⟨⟨transcript, ⟨_, witOut⟩⟩, stmtOut⟩, proveQueryLog, verifyQueryLog⟩
+        ← (Reduction.mk prover verifier).runWithLog stmtIn witIn
+      let extractedWitIn? ←
+        liftM (extractor stmtIn witOut transcript proveQueryLog.fst verifyQueryLog).run
+      return (stmtIn, extractedWitIn?, stmtOut, witOut)
+    Pr[fun ⟨stmtIn, extractedWitIn?, stmtOut, witOut⟩ =>
+        (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
+          (stmtOut, witOut) ∈ relOut
+      | OptionT.mk do (simulateQ pImpl exec.run).run' (← init)] ≤ knowledgeError
+
 /-- A reduction satisfies **(straightline) knowledge soundness** with error `knowledgeError ≥ 0` and
   with respect to input relation `relIn` and output relation `relOut` if:
   - there exists a straightline extractor `E`, such that
@@ -304,6 +330,27 @@ def knowledgeSoundness (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut ×
         (∀ extractedWitIn ∈ extractedWitIn?, (stmtIn, extractedWitIn) ∉ relIn) ∧
           (stmtOut, witOut) ∈ relOut
       | OptionT.mk do (simulateQ pImpl exec.run).run' (← init)] ≤ knowledgeError
+
+/-- Existential knowledge soundness is exactly the existence of an extractor satisfying
+`knowledgeSoundnessWith`. -/
+theorem knowledgeSoundness_iff_exists_with
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (verifier : Verifier oSpec StmtIn StmtOut pSpec) (knowledgeError : ℝ≥0) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError ↔
+      ∃ extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec,
+        verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError :=
+  Iff.rfl
+
+/-- Forget the identity of a specified extractor to obtain the existing existential contract. -/
+theorem knowledgeSoundness_of_with
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {extractor : Extractor.Straightline oSpec StmtIn WitIn WitOut pSpec}
+    {knowledgeError : ℝ≥0}
+    (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
+  (knowledgeSoundness_iff_exists_with init impl relIn relOut verifier knowledgeError).mpr
+    ⟨extractor, h⟩
 
 /-- Type class for knowledge soundness for a verifier -/
 class IsKnowledgeSound (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -410,12 +457,36 @@ def soundness
   verifier.toVerifier.soundness init impl langIn langOut soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
+def knowledgeSoundnessWith
+    (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
+    (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
+    (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
+    (extractor : Extractor.Straightline oSpec
+      (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec)
+    (knowledgeError : ℝ≥0) : Prop :=
+  verifier.toVerifier.knowledgeSoundnessWith
+    init impl relIn relOut extractor knowledgeError
+
+/-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 def knowledgeSoundness
     (relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn))
     (relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut))
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec)
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.toVerifier.knowledgeSoundness init impl relIn relOut knowledgeError
+
+omit Oₛₒ in
+/-- Forget a specified oracle-reduction extractor to obtain existential knowledge soundness. -/
+theorem knowledgeSoundness_of_with
+    {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
+    {relOut : Set ((StmtOut × ∀ i, OStmtOut i) × WitOut)}
+    {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec}
+    {extractor : Extractor.Straightline oSpec
+      (StmtIn × ∀ i, OStmtIn i) WitIn WitOut pSpec}
+    {knowledgeError : ℝ≥0}
+    (h : verifier.knowledgeSoundnessWith init impl relIn relOut extractor knowledgeError) :
+    verifier.knowledgeSoundness init impl relIn relOut knowledgeError :=
+  Verifier.knowledgeSoundness_of_with init impl h
 
 end OracleVerifier
 

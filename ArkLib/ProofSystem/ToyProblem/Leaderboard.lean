@@ -1,0 +1,81 @@
+/-
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
+Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Alexander Hicks
+-/
+
+import ArkLib.ProofSystem.ToyProblem.Impl.FRS
+import ArkLib.ProofSystem.ToyProblem.Impl.IRS
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
+
+/-!
+# Neutral fixed-radius reference interface for the toy problem
+
+This is a small façade over the reusable toy-problem mathematics.  It packages
+an encoder, its code and repetition count, and gives stable projections for the
+actual winning-set error and the executable extractor's MCA-plus-list
+certificate.  It intentionally contains no score format, ranking direction,
+submission metadata, or chosen operating radius.
+-/
+
+namespace ToyProblem
+
+open Code
+open scoped NNReal
+
+variable {ι F A : Type} [Fintype ι] [Field F] [Fintype F]
+variable [AddCommGroup A] [Module F A] [Fintype A]
+
+/-- Neutral parameters needed to state a fixed-radius toy-protocol bound. -/
+structure FixedRadiusParameters where
+  k : ℕ
+  t : ℕ
+  code : ModuleCode ι F A
+  encoder : (Fin k → F) →ₗ[F] (ι → A)
+  encoder_injective : Function.Injective encoder
+  encoder_range : Set.range encoder = (code : Set (ι → A))
+
+/-- The actual winning-set/spot-check error for a neutral parameter point. -/
+noncomputable def FixedRadiusParameters.actualError
+    (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
+    (δ : ℝ≥0) : ℝ≥0 :=
+  actualFixedRadiusError p.encoder δ p.t
+
+/-- The MCA-plus-list/spot-check certificate used by the executable extractor. -/
+noncomputable def FixedRadiusParameters.extractorCertificate
+    (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
+    (δ : ℝ≥0) : ℝ≥0 :=
+  extractorCertifiedError p.code δ p.t
+
+omit [Fintype A] in
+/-- At every admissible radius, actual error is bounded by the executable
+extractor certificate. -/
+theorem FixedRadiusParameters.actualError_le_extractorCertificate
+    [Finite A] [DecidableEq A] [Nonempty ι]
+    (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
+    (δ : ℝ≥0)
+    (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
+      ((minRelHammingDistCode (p.code : Set (ι → A)) : ℝ≥0))) :
+    p.actualError δ ≤ p.extractorCertificate δ := by
+  classical
+  letI := Fintype.ofFinite A
+  letI : DecidableEq F := Classical.decEq F
+  exact actualFixedRadiusError_le_extractorCertifiedError
+    p.code δ p.t hδ p.encoder p.encoder_injective p.encoder_range
+
+/-- A neutral carrier for a proved upper bound on the executable extractor's
+fixed-radius certificate. -/
+structure FixedRadiusCertificateBound
+    (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
+    (δ : ℝ≥0) where
+  bound : ℝ≥0
+  proof : p.extractorCertificate δ ≤ bound
+
+/-- The bound carrier is non-vacuous: the exact certificate always supplies a
+canonical inhabitant. -/
+noncomputable def FixedRadiusCertificateBound.exact
+    (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
+    (δ : ℝ≥0) : FixedRadiusCertificateBound p δ :=
+  ⟨p.extractorCertificate δ, le_rfl⟩
+
+end ToyProblem

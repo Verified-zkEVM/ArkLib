@@ -44,3 +44,9 @@ name = "axiomsweep"
 srcDir = "scripts"
 root = "AxiomSweep"
 supportInterpreter = true
+
+# Compiled code-generation and execution checks for the toy-problem launch cone.
+[[lean_exe]]
+name = "toyproblem-runtime"
+srcDir = "scripts"
+root = "ToyProblemRuntime"

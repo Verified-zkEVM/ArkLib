@@ -18,6 +18,7 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake exe toyproblem-runtime
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
   - python3 ./scripts/check-docs-integrity.py
@@ -73,6 +74,10 @@ python3 ./scripts/check-warning-log.py "$build_log" \
   --path-prefix ArkLib/Data/ \
   --exclude-substring 'declaration uses `sorry`' \
   --label 'ArkLib/Data non-sorry warnings'
+
+echo ""
+echo "# Running toy-problem compiled runtime checks"
+lake exe toyproblem-runtime
 
 echo ""
 echo "# Checking umbrella imports"

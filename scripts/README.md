@@ -13,6 +13,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
+- **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
+  for KoalaBear sextic arithmetic and the executable interleaved-RS extraction path
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -63,6 +65,11 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ### Compile Only
 ```bash
 ./scripts/build-project.sh
+```
+
+### Toy-Problem Runtime Gate
+```bash
+lake exe toyproblem-runtime
 ```
 
 ### Build Timing Helper
