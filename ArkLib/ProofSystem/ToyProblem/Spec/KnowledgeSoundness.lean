@@ -75,57 +75,26 @@ private theorem verifier_run_loggingOracle_eq
           then some (((), nofun) :
             OutputStatement × ∀ i, OutputOracleStatement i) else none), ∅) := by
   classical
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  simp only [bind_pure_comp]
-  rw [verifierBody_simulateQ_eq_pure_ite (k := k) (t := t) encode oStmt tr.messages
-    stmt.1 stmt.2.1 stmt.2.2 (tr.challenges ⟨⟨0, by norm_num⟩, rfl⟩)
-    (tr.challenges ⟨⟨2, by norm_num⟩, rfl⟩)]
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_simulateQ_eq_pure_ite (k := k) (t := t)
+    encode stmt oStmt tr.challenges tr.messages]
   have hmap : ∀ (fn : Unit → OutputStatement × ∀ i, OutputOracleStatement i)
       (o : Option Unit),
       (simulateQ loggingOracle
-        ((fn <$> (show OptionT (OracleComp []ₒ) Unit from
-            (pure o : OracleComp []ₒ (Option Unit))) :
-          OptionT (OracleComp []ₒ)
-            (OutputStatement × ∀ i, OutputOracleStatement i)) :
-          OracleComp []ₒ
-            (Option (OutputStatement × ∀ i, OutputOracleStatement i)))).run =
+        (OptionT.mk (Option.map fn <$> (pure o : OracleComp []ₒ (Option Unit))))).run =
         pure (o.map fn, ∅) := by
     intro fn o
     cases o with
-    | none =>
-        rw [show ((fn <$> (show OptionT (OracleComp []ₒ) Unit from
-            (pure none : OracleComp []ₒ (Option Unit))) :
-            OptionT (OracleComp []ₒ)
-              (OutputStatement × ∀ i, OutputOracleStatement i)) :
-            OracleComp []ₒ
-              (Option (OutputStatement × ∀ i, OutputOracleStatement i))) =
-          (pure none : OracleComp []ₒ
-            (Option (OutputStatement × ∀ i, OutputOracleStatement i))) from rfl,
-          simulateQ_pure]
-        rfl
-    | some u =>
-        rw [show ((fn <$> (show OptionT (OracleComp []ₒ) Unit from
-            (pure (some u) : OracleComp []ₒ (Option Unit))) :
-            OptionT (OracleComp []ₒ)
-              (OutputStatement × ∀ i, OutputOracleStatement i)) :
-            OracleComp []ₒ
-              (Option (OutputStatement × ∀ i, OutputOracleStatement i))) =
-          (pure (some (fn u)) : OracleComp []ₒ
-            (Option (OutputStatement × ∀ i, OutputOracleStatement i))) from rfl,
-          simulateQ_pure]
-        rfl
+    | none => simp only [map_pure, Option.map_none]; rfl
+    | some u => simp only [map_pure, Option.map_some]; rfl
   rw [hmap]
-  split <;> rename_i h
-  · rw [if_pos (show accepts (k := k) (t := t) encode stmt oStmt
-      (tr.challenges ⟨0, rfl⟩) (tr.messages ⟨1, rfl⟩)
-      (tr.challenges ⟨2, rfl⟩) from h), Option.map_some]
+  split
+  · simp only [Option.map_some]
     refine congrArg pure (congrArg (·, ∅)
       (congrArg some (congrArg (Prod.mk ()) ?_)))
     funext i
     exact i.elim0
-  · rw [if_neg (fun hacc : accepts (k := k) (t := t) encode stmt oStmt
-      (tr.challenges ⟨0, rfl⟩) (tr.messages ⟨1, rfl⟩)
-      (tr.challenges ⟨2, rfl⟩) ↦ h hacc), Option.map_none]
+  · simp only [Option.map_none]
 
 omit [Fintype ι] [DecidableEq ι] [Field F] [Fintype F] [DecidableEq F]
   [AddCommGroup A] [Module F A] [Fintype A] [DecidableEq A] in

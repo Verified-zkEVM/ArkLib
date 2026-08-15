@@ -69,7 +69,8 @@ section Execution
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
  {WitIn : Type}
-  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)] {WitOut : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
 
 namespace Prover

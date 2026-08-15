@@ -271,32 +271,28 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   pSpec : ProtocolSpec numRounds
   Oₘ: ∀ j, OracleInterface (pSpec.Message j)
   O_challenges: ∀ (i : pSpec.ChallengeIdx), SampleableType (pSpec.Challenge i)
-  -- /-- The evaluation protocol Π' as an OracleReduction -/
-  oracleReduction : OracleReduction (oSpec:=[]ₒ)
-    (StmtIn := MLPEvalStatement L ℓ') (OStmtIn:= OStmtIn)
-    (StmtOut := Bool) (OStmtOut := fun _: Empty => Unit)
-    (WitIn := WitMLP L ℓ') (WitOut := Unit)
+  /-- The evaluation protocol Π' as an oracle proof. -/
+  oracleReduction : OracleProof (oSpec := []ₒ)
+    (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
+    (Witness := WitMLP L ℓ')
     (pSpec := pSpec)
   -- Security properties
   perfectCompleteness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
-      (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
-      (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
-      (WitIn:=WitMLP L ℓ') (WitOut:=Unit) (pSpec:=pSpec) (init:=init) (impl:=impl)
-      (relIn := toAbstractOStmtIn.toRelInput)
-      (relOut := acceptRejectOracleRel)
-      (oracleReduction := oracleReduction)
+    OracleProof.perfectCompleteness (oSpec := []ₒ)
+      (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
+      (Witness := WitMLP L ℓ') (pSpec := pSpec) (init := init) (impl := impl)
+      (relation := toAbstractOStmtIn.toRelInput)
+      (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   -- RBR knowledge soundness property
   rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
   },
-    OracleVerifier.rbrKnowledgeSoundness
-      (verifier := oracleReduction.verifier)
+    OracleProof.rbrKnowledgeSoundness
+      (verifier := oracleReduction.toOracleVerifier)
       (init := init)
       (impl := impl)
       (relIn := toAbstractOStmtIn.toRelInput)
-      (relOut := acceptRejectOracleRel)
       (rbrKnowledgeError := rbrKnowledgeError)
 
 end MLIOPCS

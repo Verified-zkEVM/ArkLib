@@ -105,6 +105,12 @@ def OutputStatement : Type := (Fin k → F) × F
 @[reducible]
 def OutputOracleStatement (ι A : Type) : Fin 1 → Type := fun _ ↦ ι → A
 
+/- Keep the public output-oracle API canonical even when `A` is itself a
+function type: a query selects one coordinate of the codeword. -/
+@[reducible] instance (priority := 10000) :
+    ∀ i, OracleInterface (OutputOracleStatement ι A i) :=
+  fun _ ↦ OracleInterface.instFunction
+
 /-- Output witness for C6.9: the combined message `M_new := M₁ + γ·M₂`. -/
 @[reducible]
 def OutputWitness : Type := Fin k → F
@@ -245,19 +251,18 @@ theorem simulateQ_queryInput {n : ℕ} (pSpec : ProtocolSpec n)
 /-- Virtual implementation of the combined C6.9 output oracle. -/
 def outputSimulation :
     OracleOutputSimulation []ₒ
-      (Statement (F := F) k) (OracleStatement ι A)
+      (OracleStatement ι A)
       (OutputOracleStatement ι A) (pSpec (F := F)) where
-  outputInterface := fun _ ↦ inferInstance
-  materialize := fun _ challenges oStmt _ _ j ↦
+  materialize := fun challenges oStmt _ _ j ↦
     let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
     oStmt 0 j + γ • oStmt 1 j
-  simOStmt := fun _ challenges q ↦ do
+  simOStmt := fun challenges q ↦ do
     let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
     let f₀ : A ← queryInput (A := A) (pSpec (F := F)) 0 q.2
     let f₁ : A ← queryInput (A := A) (pSpec (F := F)) 1 q.2
     pure (f₀ + γ • f₁)
   simOStmt_eq := by
-    intro stmt challenges oStmt messages q
+    intro challenges oStmt messages q
     rcases q with ⟨i, j⟩
     fin_cases i
     rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
@@ -282,12 +287,7 @@ def oracleVerifier :
   verify := fun stmt challenges ↦ do
     let γ : F := challenges ⟨⟨0, by decide⟩, by rfl⟩
     pure (stmt.1, stmt.2.1 + γ * stmt.2.2)
-  -- Compatibility fallback; virtual semantics overrides this projection.
-  embed := ⟨fun _ ↦ Sum.inl (0 : Fin 2), by
-    intro i j _
-    exact Subsingleton.elim i j⟩
-  hEq := fun _ ↦ rfl
-  outputSimulation := some (outputSimulation (ι := ι) (F := F) (A := A) k)
+  outputOracle := .inr (outputSimulation (ι := ι) (F := F) (A := A))
 
 /-- Construction 6.9 as a genuine interactive oracle reduction. -/
 def oracleReduction :

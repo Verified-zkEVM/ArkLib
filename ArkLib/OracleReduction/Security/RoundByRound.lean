@@ -693,6 +693,7 @@ variable
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
   {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
   [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+  [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)]
   [∀ i, OracleInterface (pSpec.Message i)]
 
 namespace OracleVerifier
@@ -772,21 +773,35 @@ end Proof
 
 namespace OracleProof
 
+/-- A knowledge state function for an IOP verifier, with its empty output-oracle
+family discharged explicitly. -/
+@[reducible, simp]
+def KnowledgeStateFunction
+    (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    {WitMid : Fin (n + 1) → Type}
+    (extractor : Extractor.RoundByRound oSpec
+      (Statement × (∀ i, OStatement i)) Witness Unit pSpec WitMid) :=
+  OracleVerifier.KnowledgeStateFunction (Oₛₒ := fun i => nomatch i)
+    init impl relIn acceptRejectOracleRel verifier extractor
+
 /-- Round-by-round soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def rbrSoundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrSoundness init impl langIn acceptRejectOracleRel.language rbrSoundnessError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (rbrSoundnessError : pSpec.ChallengeIdx → ℝ≥0) : Prop := by
+  exact OracleVerifier.rbrSoundness (Oₛₒ := fun i => nomatch i) init impl
+    langIn acceptRejectOracleRel.language verifier rbrSoundnessError
 
 /-- Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle
 reductions. -/
 def rbrKnowledgeSoundness
     (relIn : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop :=
-  verifier.rbrKnowledgeSoundness init impl relIn acceptRejectOracleRel rbrKnowledgeError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0) : Prop := by
+  exact OracleVerifier.rbrKnowledgeSoundness (Oₛₒ := fun i => nomatch i) init impl
+    relIn acceptRejectOracleRel verifier rbrKnowledgeError
 
 end OracleProof
 

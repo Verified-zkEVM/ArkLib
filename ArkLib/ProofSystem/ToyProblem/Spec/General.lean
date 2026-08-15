@@ -119,10 +119,10 @@ open Code InterleavedCode ProximityGap
 open scoped NNReal ENNReal ProbabilityTheory
 open Probability
 
--- `[Fintype A]`/`[DecidableEq A]` are used inside the bodies of the code-theoretic
--- terms (`epsMCA`, `interleavedCodeSet`, the `accepts` decidability) but do not
--- surface in the alphabet-generic lemma types; suppress the `unused…InType` linter
--- file-wide (the same toy idiom used in `SoundnessBounds.lean`).
+-- `[Fintype A]`/`[DecidableEq A]` are used inside code-theoretic and
+-- decidability bodies but do not surface in the alphabet-generic lemma types;
+-- suppress the `unused…InType` linter file-wide (the same toy idiom used in
+-- `SoundnessBounds.lean`).
 set_option linter.unusedFintypeInType false
 set_option linter.unusedDecidableInType false
 
@@ -147,7 +147,7 @@ positions. -/
 @[reducible]
 def OracleStatement (ι A : Type) : Fin 2 → Type := fun _ ↦ ι → A
 
-@[reducible] instance : ∀ i, OracleInterface (OracleStatement ι A i) :=
+@[reducible] instance (priority := 10000) : ∀ i, OracleInterface (OracleStatement ι A i) :=
   fun _ ↦ inferInstance
 
 /-- Honest witness: the underlying messages `M₁, M₂ : Fin k → F` whose
@@ -163,6 +163,9 @@ def OutputStatement : Type := Unit
 /-- Output oracle statement: the IOR has no output oracle component. -/
 @[reducible]
 def OutputOracleStatement : (Fin 0) → Type := nofun
+
+@[reducible] instance (i : Fin 0) : OracleInterface (OutputOracleStatement i) :=
+  i.elim0
 
 /-- Output witness: empty. -/
 @[reducible]
@@ -452,8 +455,10 @@ def oracleVerifier (encode : (Fin k → F) → (ι → A)) :
       let f₁ : A ← liftM <| queryF (ι := ι) (A := A) 1 (xs j)
       guard (encode g (xs j) = f₀ + γ • f₁)
     pure ()
-  embed := ⟨fun i ↦ i.elim0, fun a _ _ ↦ a.elim0⟩
-  hEq := fun i ↦ i.elim0
+  outputOracle := .inl {
+    embed := ⟨fun i ↦ i.elim0, fun a _ _ ↦ a.elim0⟩
+    hEq := fun i ↦ i.elim0
+    outputInterface_heq := fun i ↦ i.elim0 }
 
 /-- Honest oracle reduction for Construction 6.2: the
 `OracleProver` / `OracleVerifier` pair packaged as `OracleReduction`. -/
@@ -871,6 +876,27 @@ lemma verifierBody_simulateQ_eq_pure_ite
     rfl
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
+/-- The executable C6.2 oracle verifier, after routing its oracle and message queries, is exactly
+the decidable §6.1 acceptance predicate. Keeping this bridge at the `OracleVerifier` boundary
+prevents clients from depending on the verifier body's elaborated proof terms. -/
+lemma oracleVerifier_simulateQ_eq_pure_ite
+    (encode : (Fin k → F) → (ι → A))
+    (stmt : Statement (F := F) k) (oStmt : ∀ i, OracleStatement ι A i)
+    (challenges : (pSpec (ι := ι) (F := F) k t).Challenges)
+    (msgs : (pSpec (ι := ι) (F := F) k t).Messages) :
+    simulateQ (OracleInterface.simOracle2 []ₒ oStmt msgs)
+        ((oracleVerifier (k := k) (t := t) encode).verify stmt challenges).run =
+      pure (if accepts (k := k) (t := t) encode stmt oStmt
+        (challenges ⟨0, rfl⟩) (msgs ⟨1, rfl⟩) (challenges ⟨2, rfl⟩)
+        then some () else none) := by
+  unfold oracleVerifier
+  convert verifierBody_simulateQ_eq_pure_ite (encode := encode)
+    (oStmt := oStmt) (msgs := msgs) (stmt1 := stmt.1)
+    (mu1 := stmt.2.1) (mu2 := stmt.2.2)
+    (γ := challenges ⟨0, rfl⟩) (xs := challenges ⟨2, rfl⟩) using 1
+  all_goals (simp only [accepts, bind_pure_comp]; try congr 1)
+
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- **Soundness direction of the verifier-run support characterization** (converse companion
 of the completeness-side `verifierBody_simulateQ_eq_pure`): if the simulated run of the C6.2
 oracle verifier (routed through `toVerifier` / `simOracle2`, then through an arbitrary
@@ -894,18 +920,36 @@ lemma accepts_of_mem_support_verifier_run
       (tr ⟨0, by decide⟩) (tr ⟨1, by decide⟩) (tr ⟨2, by decide⟩) := by
   -- Drop the `impl` simulation layer (an empty-spec impl can only shrink the support).
   have hy' := support_simulateQ_run'_subset impl _ s₀ hy
-  -- Expose the `toVerifier`-routed verifier body and collapse it to its `ite` normal form.
-  simp only [OracleVerifier.toVerifier, oracleVerifier, Verifier.run, bind_pure_comp] at hy'
-  rw [verifierBody_simulateQ_eq_pure_ite (encode := encode) (stmt1 := stmtIn.1.1)
-      (mu1 := stmtIn.1.2.1) (mu2 := stmtIn.1.2.2)] at hy'
-  -- Peel the trailing output-assembly bind; a `none` head contradicts `some y` in the support.
-  rcases OptionT.mem_support_run_bind _ _ hy' with ⟨hnone, hcontra⟩ | ⟨a, ha, _⟩
-  · exact absurd hcontra (by simp)
-  · have ha := OracleComp.eq_of_mem_support_pure _ ha
-    split at ha
-    · rename_i hcond
-      exact hcond
-    · exact absurd ha (by simp)
+  -- Peel the output-oracle assembly map introduced by `OracleVerifier.toVerifier`.
+  let V := oracleVerifier (k := k) (t := t) encode
+  let assemble := fun (stmtOut : OutputStatement) =>
+    (stmtOut, V.materializeOutput tr.challenges stmtIn.2 tr.messages)
+  have hyMap : some y ∈ support
+      (Option.map assemble <$> simulateQ
+        (OracleInterface.simOracle2 []ₒ stmtIn.2 tr.messages)
+        (V.verify stmtIn.1 tr.challenges).run) := by
+    exact hy'
+  obtain ⟨result, hresult, hresult_eq⟩ :=
+    mem_support_map_peel (Option.map assemble) _ hyMap
+  cases result with
+  | none => simp at hresult_eq
+  | some a =>
+      -- Collapse the verifier body itself to the deterministic acceptance predicate.
+      have hVerify :
+          simulateQ (OracleInterface.simOracle2 []ₒ stmtIn.2 tr.messages)
+              (V.verify stmtIn.1 tr.challenges).run =
+            pure (if accepts (k := k) (t := t) encode stmtIn.1 stmtIn.2
+              (tr.challenges ⟨0, rfl⟩) (tr.messages ⟨1, rfl⟩)
+              (tr.challenges ⟨2, rfl⟩)
+              then some () else none) := by
+        simpa only [V] using oracleVerifier_simulateQ_eq_pure_ite
+          (k := k) (t := t) encode stmtIn.1 stmtIn.2 tr.challenges tr.messages
+      rw [hVerify] at hresult
+      simp only [support_pure, Set.mem_singleton_iff] at hresult
+      split at hresult
+      · rename_i hcond
+        exact hcond
+      · contradiction
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- Round-by-round-framework wrapper for `accepts_of_mem_support_verifier_run`, consuming the

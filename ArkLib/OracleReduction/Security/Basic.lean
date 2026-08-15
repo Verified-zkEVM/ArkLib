@@ -475,7 +475,6 @@ def knowledgeSoundness
     (knowledgeError : ℝ≥0) : Prop :=
   verifier.toVerifier.knowledgeSoundness init impl relIn relOut knowledgeError
 
-omit Oₛₒ in
 /-- Forget a specified oracle-reduction extractor to obtain existential knowledge soundness. -/
 theorem knowledgeSoundness_of_with
     {relIn : Set ((StmtIn × ∀ i, OStmtIn i) × WitIn)}
@@ -538,8 +537,8 @@ open OracleReduction Classical
 def completeness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec)
-    (completenessError : ℝ≥0) : Prop :=
-  OracleReduction.completeness init impl
+    (completenessError : ℝ≥0) : Prop := by
+  exact OracleReduction.completeness (Oₛₒ := fun i => nomatch i) init impl
     relation acceptRejectOracleRel oracleProof completenessError
 
 /-- Perfect completeness of an oracle reduction is the same as for non-oracle reductions. -/
@@ -547,24 +546,28 @@ def completeness
 def perfectCompleteness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec) :
-      Prop :=
-  OracleReduction.perfectCompleteness init impl relation acceptRejectOracleRel oracleProof
+      Prop := by
+  exact OracleReduction.perfectCompleteness (Oₛₒ := fun i => nomatch i)
+    init impl relation acceptRejectOracleRel oracleProof
 
 /-- Soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def soundness
     (langIn : Set (Statement × ∀ i, OStatement i))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (soundnessError : ℝ≥0) : Prop :=
-  verifier.toVerifier.soundness init impl langIn acceptRejectOracleRel.language soundnessError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (soundnessError : ℝ≥0) : Prop := by
+  exact (OracleVerifier.toVerifier (Oₛₒ := fun i => nomatch i) verifier).soundness init impl
+    langIn acceptRejectOracleRel.language soundnessError
 
 /-- Knowledge soundness of an oracle reduction is the same as for non-oracle reductions. -/
 @[reducible, simp]
 def knowledgeSoundness
     (relation : Set ((Statement × ∀ i, OStatement i) × Witness))
-    (verifier : OracleVerifier oSpec Statement OStatement Bool (fun _ : Empty => Unit) pSpec)
-    (knowledgeError : ℝ≥0) : Prop :=
-  verifier.toVerifier.knowledgeSoundness init impl relation acceptRejectOracleRel knowledgeError
+    (verifier : OracleProofVerifier oSpec Statement OStatement pSpec)
+    (knowledgeError : ℝ≥0) : Prop := by
+  exact (OracleVerifier.toVerifier
+    (Oₛₒ := fun i => nomatch i) verifier).knowledgeSoundness
+      init impl relation acceptRejectOracleRel knowledgeError
 
 end OracleProof
 

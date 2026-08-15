@@ -18,8 +18,9 @@ long-file cap; the completeness theorem and its dedicated helper are used
 by nothing else in the tree, so they live here as leaves.
 
 Like the rest of the §6 layer, both results are generic over the codeword
-alphabet `A` (an `F`-module): `A = F` recovers the scalar interleaved code
-(`Impl/IRS.lean`), `A = Fin s → F` the folded code (`Impl/FRS.lean`).
+alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
+`A = Fin s → F` is the genuine interleaved alphabet implemented by
+`Impl/IRS.lean`. `Impl/FRS.lean` is the separate folded-RS model.
 
 ## References
 
@@ -157,7 +158,7 @@ theorem oracleReduction_perfectCompleteness
   have h1 : (pSpec (ι := ι) (F := F) k t).dir 1 = .P_to_V := rfl
   have h2 : (pSpec (ι := ι) (F := F) k t).dir 2 = .V_to_P := rfl
   simp only [OracleReduction.toReduction, Reduction.run, oracleReduction,
-    oracleProver, OracleVerifier.toVerifier, oracleVerifier,
+    oracleProver, OracleVerifier.toVerifier,
     Prover.run, Prover.runToRound, Fin.induction_three,
     Prover.processRound_of_dir_eq_V_to_P 0 h0, Prover.processRound_of_dir_eq_P_to_V 1 h1,
     Prover.processRound_of_dir_eq_V_to_P 2 h2,
@@ -234,45 +235,33 @@ theorem oracleReduction_perfectCompleteness
   have hf2 := OracleComp.eq_of_mem_support_pure _ hf2
   have hf3 := OracleComp.eq_of_mem_support_pure _ hf3
   subst hf1 hf2 hf3 hr1 hr2 hr3 hPReq
-  -- Reduce the transcript accessors (`Fin.snoc` at indices 0/1/2) inside the verifier subterm.
-  simp only [id_eq, FullTranscript.challenges, Transcript.concat,
-    Fin.snoc, Fin.val_zero,
-    Fin.val_one, Fin.val_two, lt_self_iff_false, Fin.val_castLT,
-    Fin.castSucc_castLT, show (0 : ℕ) < 2 from by norm_num, show (0 : ℕ) < 1 from by norm_num,
-    show ¬ ((2 : ℕ) < 0) from by norm_num, dif_pos, cast_eq,
-    dite_false] at hx
   -- Extract the witness facts from the input relation.
   obtain ⟨hf, hM⟩ := hRel
-  -- Rewrite the verifier subterm in `hx` to `pure (some ())` via `verifierBody_simulateQ_eq_pure`.
-  -- `msgs`, `γ`, `xs` are inferred by unification; `hAcc1`/`hAcc2` come from
-  -- `accepts_of_inputRelation` after identifying round-1 message `msgs ⟨1, rfl⟩` with honest `g`.
-  rw [verifierBody_simulateQ_eq_pure (encode := (encode : (Fin k → F) → (ι → A)))
-      (stmt1 := stmtIn.1.1) (mu1 := stmtIn.1.2.1) (mu2 := stmtIn.1.2.2)
-      (hAcc1 := ?hAcc1) (hAcc2 := ?hAcc2)] at hx
-  · -- After the rewrite the verifier round-1 query produces `pure (some ())`, so the second bind's
-    -- first computation never fails. Peel it: the `none` branch is contradicted by `pure (some _)`.
+  have hacc := accepts_of_inputRelation (encode := encode) stmtIn.1 witIn
+    (fun i ↦ by have := hM i; fin_cases i <;> simpa using this) stmtIn.2
+    (fun i ↦ by have := hf i; simpa using this) (cast (by rfl) γ₀) xs₂
+  -- Rewrite through the stable `OracleVerifier`-boundary characterization; the output map is
+  -- retained and materializes the (empty) output-oracle family after successful verification.
+  rw [oracleVerifier_simulateQ_eq_pure_ite
+      (encode := (encode : (Fin k → F) → (ι → A)))] at hx
+  simp only [FullTranscript.challenges, FullTranscript.messages, Fin.snoc,
+    Fin.val_zero, Fin.val_one, Fin.val_two, lt_self_iff_false, Fin.val_castLT,
+    Fin.castSucc_castLT, show (0 : ℕ) < 2 from by norm_num,
+    show (0 : ℕ) < 1 from by norm_num, show (1 : ℕ) < 2 from by norm_num,
+    show ¬ ((2 : ℕ) < 0) from by norm_num, dif_pos, cast_eq, dite_false] at hx
+  split at hx
+  · -- The verifier computation cannot fail. Peel its output map and the trailing reduction bind.
     rcases OptionT.mem_support_run_bind _ _ hx with ⟨hverNone, _⟩ | ⟨stmtOut, hSO, hx⟩
     · exact absurd (OracleComp.eq_of_mem_support_pure _ hverNone) (by simp)
-    -- `hSO : some stmtOut ∈ support (liftM (g <$> pure (some ())))` is defeq `pure (g (some ()))`,
-    -- forcing `stmtOut = ((), embed)`; then `stmtOut.getM` succeeds and `x = some _`.
-    have hSO := OracleComp.eq_of_mem_support_pure _ hSO
-    rw [Option.some.injEq] at hSO
-    subst hSO
-    have hx := OracleComp.eq_of_mem_support_pure _ hx
-    exact ⟨_, hx⟩
-  case hAcc1 =>
-    have hacc := accepts_of_inputRelation (encode := encode) stmtIn.1 witIn
-      (fun i ↦ by have := hM i; fin_cases i <;> simpa using this) stmtIn.2
-      (fun i ↦ by have := hf i; simpa using this) (cast (by rfl) γ₀) xs₂
-    simp only [FullTranscript.messages, Fin.snoc] at *
-    exact hacc.1
-  case hAcc2 =>
-    have hacc := accepts_of_inputRelation (encode := encode) stmtIn.1 witIn
-      (fun i ↦ by have := hM i; fin_cases i <;> simpa using this) stmtIn.2
-      (fun i ↦ by have := hf i; simpa using this) (cast (by rfl) γ₀) xs₂
-    intro j
-    simp only [FullTranscript.messages, Fin.snoc] at *
-    exact hacc.2 j
+    · have hSO := OracleComp.eq_of_mem_support_pure _ hSO
+      rw [Option.some.injEq] at hSO
+      subst hSO
+      have hx := OracleComp.eq_of_mem_support_pure _ hx
+      exact ⟨_, hx⟩
+  · rename_i hreject
+    exfalso
+    apply hreject
+    convert hacc using 1 <;> congr 1
 
 end Protocol
 

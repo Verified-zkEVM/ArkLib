@@ -4,10 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 
 import Mathlib.Data.Vector.Basic
-import VCVio.EvalDist.Monad.Basic
+import VCVio.EvalDist.List
 
 /-!
 # Additions to VCV-io's `ToMathlib.Data.Vector.Basic`
+
+`Vector.support_mapM_index`, formerly proved in this module, now comes from
+`VCVio.EvalDist.List` under the same public name.
 -/
 
 /-- `Vector.mapM` commutes with post-composition by a pure map:

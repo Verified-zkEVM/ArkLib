@@ -100,7 +100,7 @@ def VectorIOR
     (StmtIn : Type) {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type) (WitIn : Type)
     (StmtOut : Type) {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type) (WitOut : Type)
     (vPSpec : ProtocolSpec.VectorSpec n) (A : Type)
-    [∀ i, OracleInterface (OStmtIn i)] :=
+    [∀ i, OracleInterface (OStmtIn i)] [∀ i, OracleInterface (OStmtOut i)] :=
   OracleReduction []ₒ StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut (vPSpec.toProtocolSpec A)
 
 /-- Vector Interactive Oracle Proofs
@@ -124,6 +124,7 @@ namespace VectorIOR
 
 variable {StmtIn WitIn StmtOut WitOut : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
   [∀ i, OracleInterface (OStmtIn i)] {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  [∀ i, OracleInterface (OStmtOut i)]
 
 /-- A vector IOR is **secure** with respect to input relation `relIn`, output relation `relOut`, and
     round-by-round knowledge error `ε_rbr` if it satisfies (perfect) completeness and round-by-round
@@ -165,7 +166,8 @@ class IsSecure
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness (pure ()) isEmptyElim relation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness
+      (pure ()) isEmptyElim relation vectorIOP.toOracleVerifier ε_rbr
 
 /-- A vector IOP **of proximity** is **secure** with respect to completeness relation
   `completeRelation`, soundness relation `soundRelation`, and round-by-round knowledge error
@@ -184,6 +186,7 @@ class IsSecureWithGap
   /-- The reduction is round-by-round knowledge sound with respect to `relIn`, `relOut`,
     `ε_rbr`, and the state function. -/
   is_rbr_knowledge_sound :
-    OracleProof.rbrKnowledgeSoundness (pure ()) isEmptyElim soundRelation vectorIOP.verifier ε_rbr
+    OracleProof.rbrKnowledgeSoundness
+      (pure ()) isEmptyElim soundRelation vectorIOP.toOracleVerifier ε_rbr
 
 end VectorIOP

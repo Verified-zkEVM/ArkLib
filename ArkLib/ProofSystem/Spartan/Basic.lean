@@ -307,6 +307,19 @@ abbrev Statement.AfterSendEvalClaim : Type := Statement.AfterFirstSumcheck R pp
 abbrev OracleStatement.AfterSendEvalClaim : R1CS.MatrixIdx ⊕ R1CS.MatrixIdx ⊕ Fin 1 → Type :=
   Sum.elim (EvalClaim R) (OracleStatement.AfterFirstSumcheck R pp)
 
+/-- Canonical interfaces for the newly sent evaluation claims and the carried oracle statements. -/
+instance : ∀ i, OracleInterface (OracleStatement.AfterSendEvalClaim R pp i) :=
+  fun i => match i with
+  | .inl _ => by
+      change OracleInterface R
+      exact default
+  | .inr i => by
+      rcases i with i | i
+      · change OracleInterface (OracleStatement R pp i)
+        infer_instance
+      · change OracleInterface (Witness R pp)
+        infer_instance
+
 @[simp]
 abbrev Witness.AfterSendEvalClaim : Type := Unit
 

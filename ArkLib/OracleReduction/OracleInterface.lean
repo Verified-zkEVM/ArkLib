@@ -76,6 +76,7 @@ def answer {Message : Type*} [O : OracleInterface Message]
   response returns the data. We do not register this as an instance, instead explicitly calling it
   where necessary.
 -/
+@[reducible]
 def instDefault {Message : Type u} : OracleInterface Message where
   Query := Unit
   toOC.spec := fun _ => Message

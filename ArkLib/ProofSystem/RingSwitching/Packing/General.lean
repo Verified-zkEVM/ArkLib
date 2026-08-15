@@ -67,8 +67,9 @@ def fullOracleVerifier :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (V₁:=batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
     (pSpec₁:=pSpecLargeFieldReduction κ L K P ℓ')
-    (V₂:=mlIOPCS.oracleReduction.verifier)
+    (V₂:=mlIOPCS.oracleReduction.toOracleVerifier)
     (pSpec₂:=mlIOPCS.pSpec)
+    (Oₛ₃ := fun i : Empty => nomatch i)
 
 def batchingCoreReduction :=
   OracleReduction.append
@@ -81,14 +82,15 @@ def batchingCoreReduction :=
 /-- The reduction for the full DP24 ring-switching protocol -/
 @[reducible]
 def fullOracleReduction :
-  OracleReduction (oSpec:=[]ₒ)
-    (StmtIn := BatchingStmtIn (L:=L) (ℓ := ℓ)) (StmtOut := Bool)
-    (OStmtIn:= mlIOPCS.OStmtIn)
-    (OStmtOut := fun _ : Empty => Unit)
-    (pSpec := fullPspec κ L K P ℓ' mlIOPCS)
-    (WitIn := BatchingWitIn (L:=L) (K:=K) (ℓ := ℓ) (ℓ' := ℓ')) (WitOut := Unit)
-    :=
-  (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS).append mlIOPCS.oracleReduction
+    OracleProof (oSpec:=[]ₒ)
+      (Statement := BatchingStmtIn (L:=L) (ℓ := ℓ))
+      (OStatement:= mlIOPCS.OStmtIn)
+      (pSpec := fullPspec κ L K P ℓ' mlIOPCS)
+      (Witness := BatchingWitIn (L:=L) (K:=K) (ℓ := ℓ) (ℓ' := ℓ')) :=
+  OracleReduction.append
+    (Oₛ₃ := fun i : Empty => nomatch i)
+    (batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
+    mlIOPCS.oracleReduction
 
 /-- The full DP24 ring-switching protocol as a Proof -/
 @[reducible]
@@ -98,7 +100,7 @@ def fullOracleProof :
     (OStatement := mlIOPCS.OStmtIn)
     (Witness := BatchingWitIn (L:=L) (K:=K) (ℓ := ℓ) (ℓ' := ℓ'))
     (pSpec:= fullPspec κ L K P ℓ' mlIOPCS) :=
-    fullOracleReduction κ L K P ℓ ℓ' h_l mlIOPCS
+    fullOracleReduction κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS
 
 /-!
 ## Security Properties
@@ -132,16 +134,18 @@ lemma batchingCore_perfectCompleteness :
 
 omit [(i : mlIOPCS.pSpec.ChallengeIdx) → SampleableType (mlIOPCS.pSpec.Challenge i)] in
 theorem fullOracleReduction_perfectCompleteness :
-  (fullOracleReduction κ L K P ℓ ℓ' h_l mlIOPCS).perfectCompleteness
-    (relIn := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l mlIOPCS.toAbstractOStmtIn)
-    (relOut := acceptRejectOracleRel)
-    (init := init)
-    (impl := impl)
-     := by
-  apply OracleReduction.append_perfectCompleteness (Oₛ₃:=by
-    exact fun _ ↦ OracleInterface.instDefault)
-  · exact batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init
-  · exact mlIOPCS.perfectCompleteness
+    OracleProof.perfectCompleteness
+      (oracleProof := fullOracleReduction κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
+      (relation := BatchingPhase.batchingInputRelation κ L K P ℓ ℓ' h_l
+        mlIOPCS.toAbstractOStmtIn)
+      (init := init)
+      (impl := impl) := by
+  exact OracleReduction.append_perfectCompleteness
+    (R₁ := batchingCoreReduction κ L K P ℓ ℓ' h_l mlIOPCS)
+    (R₂ := mlIOPCS.oracleReduction)
+    (Oₛ₃ := fun i : Empty => nomatch i)
+    (batchingCore_perfectCompleteness κ L K P ℓ ℓ' h_l mlIOPCS init)
+    mlIOPCS.perfectCompleteness
 
 def batchingCoreRbrKnowledgeError
     (i : (pSpecBatching κ L K P ++ₚ pSpecCoreInteraction L ℓ').ChallengeIdx) : ℝ≥0 :=
@@ -158,13 +162,12 @@ variable [SampleableType L]
 
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
-  OracleVerifier.rbrKnowledgeSoundness
-    (verifier := fullOracleVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
-    (init := init)
-    (impl := impl)
-    (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
-    (relOut := fullOutputRelation)
-    (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
+    OracleProof.rbrKnowledgeSoundness
+      (verifier := fullOracleVerifier κ L K P ℓ ℓ' (h_l := h_l) mlIOPCS)
+      (init := init)
+      (impl := impl)
+      (relIn := fullInputRelation κ L K P ℓ ℓ' h_l mlIOPCS)
+      (rbrKnowledgeError := fun i => fullRbrKnowledgeError κ L K P ℓ' mlIOPCS i) := by
   unfold fullOracleVerifier fullRbrKnowledgeError
   have batchInteractionRBRKS :=
     OracleVerifier.append_rbrKnowledgeSoundness (init:=init) (impl:=impl)
@@ -186,8 +189,8 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
     (rel₂:=mlIOPCS.toRelInput)
     (rel₃:=fullOutputRelation)
     (V₁:=batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
-    (V₂:=mlIOPCS.oracleReduction.verifier)
-    (Oₛ₃:=by exact fun i ↦ OracleInterface.instDefault)
+    (V₂:=mlIOPCS.oracleReduction.toOracleVerifier)
+    (Oₛ₃:=fun i : Empty => nomatch i)
     (rbrKnowledgeError₁:=batchingCoreRbrKnowledgeError κ L K P ℓ')
     (rbrKnowledgeError₂:=mlIOPCS.rbrKnowledgeError)
     (h₁:=batchInteractionRBRKS) (h₂:=by
@@ -197,7 +200,6 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
   convert res
   · simp only [ChallengeIdx, Challenge, instSampleableTypeChallengeFullPspec]
     sorry
-  · rfl
 
 end SecurityProperties
 end

@@ -256,6 +256,30 @@ def ChallengeIdx.inl (i : ChallengeIdx pSpec₁) : ChallengeIdx (pSpec₁ ++ₚ 
 def ChallengeIdx.inr (i : ChallengeIdx pSpec₂) : ChallengeIdx (pSpec₁ ++ₚ pSpec₂) :=
   ⟨Fin.natAdd m i.1, by simpa only [Fin.vappend_eq_append, Fin.append_right] using i.2⟩
 
+/-- Restrict challenges for an appended protocol to its first component. -/
+def Challenges.fst (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₁.Challenges :=
+  fun i => by
+    simpa [ChallengeIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_left] using challenges (ChallengeIdx.inl i)
+
+/-- Restrict challenges for an appended protocol to its second component. -/
+def Challenges.snd (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) : pSpec₂.Challenges :=
+  fun i => by
+    simpa [ChallengeIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_right] using challenges (ChallengeIdx.inr i)
+
+/-- Restrict messages for an appended protocol to its first component. -/
+def Messages.fst (messages : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₁.Messages :=
+  fun i => by
+    simpa [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_left] using messages (MessageIdx.inl i)
+
+/-- Restrict messages for an appended protocol to its second component. -/
+def Messages.snd (messages : (pSpec₁ ++ₚ pSpec₂).Messages) : pSpec₂.Messages :=
+  fun i => by
+    simpa [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append,
+      Fin.append_right] using messages (MessageIdx.inr i)
+
 @[simps!]
 def ChallengeIdx.sumEquiv :
     ChallengeIdx pSpec₁ ⊕ ChallengeIdx pSpec₂ ≃ ChallengeIdx (pSpec₁ ++ₚ pSpec₂) where
