@@ -153,11 +153,12 @@ variable {F : Type} [Field F]
 
 
 /-- Definition 9.1 MCA error function for Reed-Solomon codes [BCGM25]. -/
-noncomputable def ε_mca_RS [Fintype F] (n d m : ℕ) : I → ℝ :=
+noncomputable def ε_mca_RS [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ :=
+  letI n : ℝ := Fintype.card ι
   let ρ_sqrt := ReedSolomon.sqrtRate k D
   fun γ =>
     if γ ≤ 1 - (1 + (1 / (2 * m : ℝ))) * ρ_sqrt then
-      (|Fintype.card F| : ℝ)⁻¹  *  (m + 1 / 2) ^ 7  * (3 * (ρ_sqrt) ^ 3)⁻¹.toReal * d * n ^ 2
+      (Fintype.card F : ℝ)⁻¹  *  (m + 1 / 2) ^ 7  * (3 * (ρ_sqrt) ^ 3)⁻¹.toReal * d * n ^ 2
     else
       1
 
@@ -165,8 +166,8 @@ noncomputable def ε_mca_RS [Fintype F] (n d m : ℕ) : I → ℝ :=
 MCA for a Reed-Solomon code over a domain `D` and degree `k` with error `ε_mca_RS` as defined
 above.
 Lemma 9.3 [BCGM25]. -/
-lemma univariate_powers_MCA [Fintype F] (n d m : ℕ) (hm : 3 ≤ m) :
-    IsMCAGenerator (UnivariatePowers d) (ε_mca_RS k D n d m) (ReedSolomon.code D k) := by
+lemma univariate_powers_MCA [Fintype F] [NeZero k] (d m : ℕ) (hm : 3 ≤ m) :
+    IsMCAGenerator (UnivariatePowers d) (ε_mca_RS k D d m) (ReedSolomon.code D k) := by
   sorry
 
 /-- The multi-index (as a finitely supported function) associated to a bounded exponent vector. -/
@@ -285,21 +286,21 @@ lemma coeffMatrix_hasLeftPseudoInverse {s : ℕ} {ℓ : Type} [Fintype ℓ] [Dec
 `D`. Let `G` be a polynomial generator where each `S` is the whole field `F`.
 Then, for every `m ≥ 3`, `G` has MCA for with error `∑ i, ε_mca_RS`.
 Theorem 9.2 [BCGM25]. -/
-lemma polynomial_gen_MCA_RScode [Fintype F] (n m : ℕ) (hm : 3 ≤ m) {ℓ : Type} [Fintype ℓ] {s : ℕ}
-    {P : ℓ → MvPolynomial (Fin s) F} (G : Generator ((Fin s) → F) ℓ F)
-    (hG : IsPolynomialGeneratorOfFull G P) :
-    letI ε := ∑ i : Fin s, ε_mca_RS k D n (deg_max P i) m
+lemma polynomial_gen_MCA_RScode [Fintype F] [NeZero k] (m : ℕ) (hm : 3 ≤ m) {ℓ : Type} [Fintype ℓ]
+    {s : ℕ} {P : ℓ → MvPolynomial (Fin s) F}
+    (G : Generator ((Fin s) → F) ℓ F) (hG : IsPolynomialGeneratorOfFull G P) :
+    letI ε := ∑ i : Fin s, ε_mca_RS k D (deg_max P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
-  show IsMCAGenerator G (∑ i : Fin s, ε_mca_RS k D n (deg_max P i) m) (ReedSolomon.code D k)
+  show IsMCAGenerator G (∑ i : Fin s, ε_mca_RS k D (deg_max P i) m) (ReedSolomon.code D k)
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
     intro j i
     simpa [deg_max] using
       Finset.le_sup (f := fun j => (P j).degreeOf i) (Fintype.complete j)
   have htensor := tensorGeneratorPiUnivariate_isMCAGenerator (ReedSolomon.code D k)
-    (fun e => ε_mca_RS k D n e m) (fun e => univariate_powers_MCA k D n e m hm) (deg_max P)
+    (fun e => ε_mca_RS k D e m) (fun e => univariate_powers_MCA k D e m hm) (deg_max P)
   have hmul := pseudoinverseGen (tensorGeneratorPiUnivariate (deg_max P))
-    (fun γ => ∑ i, ε_mca_RS k D n (deg_max P i) m γ) (ReedSolomon.code D k) htensor
+    (fun γ => ∑ i, ε_mca_RS k D (deg_max P i) m γ) (ReedSolomon.code D k) htensor
     (coeffMatrix P (deg_max P))
     (coeffMatrix_hasLeftPseudoInverse P (deg_max P) hdeg hG.1)
   rw [generatorByRightMul_coeffMatrix P (deg_max P) hdeg G hG.2] at hmul
@@ -332,19 +333,19 @@ lemma UnivariatePowersOn.code_eq_reedSolomon (s : Set F) [Fintype s] [Nonempty s
   rw [hMG, genMatIsVandermonde]
 
 /-- The restricted univariate powers generator is an MDS generator (its code is Reed–Solomon,
-hence MDS). -/
-lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype s] [Nonempty s]
-    (d : ℕ) (h : d + 1 ≤ Fintype.card ↥s) : IsMDSGenerator (UnivariatePowersOn s d) := by
+hence MDS). Note that this holds for every degree `d`, with no bound relating `d` to `#s`. -/
+lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype s] [Inhabited s]
+    (d : ℕ) : IsMDSGenerator (UnivariatePowersOn s d) := by
   unfold IsMDSGenerator
   rw [UnivariatePowersOn.code_eq_reedSolomon]
-  exact ReedSolomon.isMDS_code h
+  exact ReedSolomon.isMDS_code
 
 /-- The restricted univariate powers generator has MCA for every linear code with error `ξ`.
 For `d ≥ 1` this is Theorem 6.1 (`IsMDSGenerator.isMCAGenerator`) together with the identification
 `ε_MCA_MDS = ξ` (`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ`
 suffices. -/
 lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
-    (s : Set F) [Fintype s] [Nonempty s]
+    (s : Set F) [Fintype s] [Inhabited s]
     (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
     (h : d + 1 ≤ Fintype.card ↥s) :
     IsMCAGenerator (UnivariatePowersOn s d) (ξ LC d (Fintype.card ↥s) η) LC := by
@@ -367,9 +368,9 @@ lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [
   · have hℓ : 2 ≤ Fintype.card (Fin (d + 1)) := by rw [Fintype.card_fin]; omega
     have hdim : LinearCode.dim (fromColGenMat (M_G (UnivariatePowersOn s d)))
         = Fintype.card (Fin (d + 1)) := by
-      rw [UnivariatePowersOn.code_eq_reedSolomon, ReedSolomon.dim_eq_deg_of_le' h, Fintype.card_fin]
+      rw [UnivariatePowersOn.code_eq_reedSolomon, ReedSolomon.dim_eq_deg_of_le h, Fintype.card_fin]
     have hmca := isMCAGenerator_of_isMDSGenerator (UnivariatePowersOn s d)
-      (UnivariatePowersOn.isMDSGenerator s d h) hdim η hη hℓ LC
+      (UnivariatePowersOn.isMDSGenerator s d) hdim η hη hℓ LC
     rwa [Fintype.card_fin, ε_MCA_MDS_eq_ξ] at hmca
 
 /-- The `s`-fold tensor product of restricted univariate powers generators, over the product seed
@@ -384,7 +385,7 @@ Lemma 4.4 (`tensor_of_MCA_is_MCA_tight`) [BCGM25], with each factor's MCA suppli
 `UnivariatePowersOn.isMCAGenerator`. -/
 lemma tensorGeneratorPiUnivariateOn_isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι]
     [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1)
-    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Nonempty ↥(S i)]
+    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Inhabited ↥(S i)]
     (d : Fin s → ℕ) (hcard : ∀ i, d i + 1 ≤ Fintype.card ↥(S i)) :
     IsMCAGenerator (tensorGeneratorPiUnivariateOn S d)
       (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) LC :=
@@ -417,7 +418,7 @@ lemma generatorByRightMul_coeffMatrix_sub {s : ℕ} {ℓ : Type} [Fintype ℓ]
 theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
     {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
     (η : ℝ) (hη : 0 < η ∧ η < 1)
-    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype (S i)] [∀ i, Nonempty (S i)]
+    {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype (S i)] [∀ i, Inhabited (S i)]
     (G : Generator (∀ i, S i) ℓ F)
     (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
     (hS : ∀ i : Fin s, (deg_max P i + 1) ≤ (Set.ncard (S i))) :
