@@ -28,7 +28,7 @@ Optional checks:
   --lint    Run ./scripts/lint-style.sh
   --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
   --site    Run ./scripts/build-web.sh (implies --docs)
-  --axioms  Run lake exe axiomsweep --check (axiom/sorry regression gate)
+  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
 EOF
 }
 
@@ -92,6 +92,9 @@ echo "# Checking knowledge base"
 python3 ./scripts/kb/lint.py
 
 if (( run_axioms )); then
+  echo ""
+  echo "# Testing the axiom sweep tool against its fixture matrix"
+  ./scripts/test-axiomsweep.sh
   echo ""
   echo "# Checking axiom/sorry regression baseline"
   # VCVio's FFI C sources live in git submodules that Lake does not fetch,
