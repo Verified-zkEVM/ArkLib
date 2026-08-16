@@ -36,7 +36,7 @@ variable {F : Type} [Field F]
 /-- A function assinging the maximum degree in the `i`-the variable of the collection of
 polynomials `P`. -/
 noncomputable def deg_max {s : ℕ} {ℓ : Type} [Fintype ℓ] (P : ℓ → MvPolynomial (Fin s) F) :
-    Fin s → ℕ := fun i => Finset.sup Fintype.elems (fun j => (P j).degreeOf i)
+    Fin s → ℕ := fun i => Finset.sup Finset.univ (fun j => (P j).degreeOf i)
 
 /-- Definition 8.1 (MCA error for univariate powers) [BCGM25].
 Note: In the paper, there is a hypothesis `η ∈ (0,1)`. This is omitted in the definition of `ξ`
@@ -296,7 +296,7 @@ lemma polynomial_gen_MCA_RScode [Fintype F] [NeZero k] (m : ℕ) (hm : 3 ≤ m) 
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
     intro j i
     simpa [deg_max] using
-      Finset.le_sup (f := fun j => (P j).degreeOf i) (Fintype.complete j)
+      Finset.le_sup (f := fun j => (P j).degreeOf i) (Finset.mem_univ j)
   have htensor := tensorGeneratorPiUnivariate_isMCAGenerator (ReedSolomon.code D k)
     (fun e => ε_mca_RS k D e m) (fun e => univariate_powers_MCA k D e m hm) (deg_max P)
   have hmul := pseudoinverseGen (tensorGeneratorPiUnivariate (deg_max P))
@@ -432,7 +432,7 @@ theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
     intro j i
     simpa [deg_max] using
-      Finset.le_sup (f := fun j => (P j).degreeOf i) (Fintype.complete j)
+      Finset.le_sup (f := fun j => (P j).degreeOf i) (Finset.mem_univ j)
   have hcard_deg : ∀ i : Fin s, deg_max P i + 1 ≤ Fintype.card (S i) := by
     intro i
     rw [← hcard i]
