@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority), Alexander Hicks, Ilia Vlasov
+Authors: Poulami Das (Least Authority), Alexander Hicks, Ilia Vlasov,
+         Aristotle (Harmonic)
 -/
 
 import Mathlib.Data.Finset.Union
@@ -29,7 +30,7 @@ as is done in the reference paper, as they are more general.
 
 namespace BlockRelDistance
 
-open Domain ListDecodable NNReal ReedSolomon CosetFftDomainClass
+open Domain Code NNReal ReedSolomon CosetFftDomainClass
 
 variable {F : Type} [Field F] [DecidableEq F]
          {n k : ℕ}
@@ -67,7 +68,6 @@ lemma disagreementSet_k_0 :
     constructor
     · aesop
         (add simp [disagreementSet])
-        (add safe (by rw [mem_subdomain_0_iff_mem]))
     · simp only [Finset.mem_filter, mem_toFinset_iff_mem, hmem,
         true_and, disagreementSet, forall_exists_index]
       intro j hj
@@ -75,7 +75,6 @@ lemma disagreementSet_k_0 :
         have := CosetFftDomainClass.injective φ (a₁ := i)
         aesop
       aesop
-        (add safe (by rw [mem_subdomain_0_iff_mem]))
   · aesop
       (add simp [disagreementSet, blockIdx_k_0_of_ne_mem])
 
@@ -130,6 +129,7 @@ lemma blockDistance_eq_hammingDist_k_0 :
   Δ𞁒(0, φ, f, g) = Δ₀(f, g) := by simp [blockDistance, hammingDist]
 
 /-- The block relative distance simplifies to the standard relative Hamming distance when `k=0`. -/
+@[simp]
 lemma blockRelDistance_eq_relHammingDist_k_0 :
   δ𞁒(0, φ, f, g) = δᵣ(f, g) := by simp [blockRelDistance, Code.relHammingDist]
 
@@ -152,28 +152,45 @@ private def complDisagreementSet
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
 
+lemma complDisagreementSet_def' :
+  complDisagreementSet k φ f g =
+    { z ∈ (φ.subdomain k).toFinset | ∀ i ∈ blockIdx φ k z, f i = g i  } := by
+  aesop (add simp [complDisagreementSet, disagreementSet])
+
 @[simp]
-private lemma card_complDisagreementSet_le :
+lemma card_complDisagreementSet_le :
   (complDisagreementSet k φ f g).card ≤ 2 ^ (n - k) := by
   simp [complDisagreementSet, Finset.card_sdiff]
 
 @[simp]
-private lemma complDisagreementSet_sub_subdomain :
+lemma complDisagreementSet_sub_subdomain :
   complDisagreementSet k φ f g ⊆ (φ.subdomain k).toFinset := by simp [complDisagreementSet]
 
-private lemma blockRelDistance_eq_one_sub' :
+lemma blockRelDistance_eq_one_sub' :
   δ𞁒(k, φ, f, g) =
     1 - ((complDisagreementSet k φ f g).card : ℚ) / (φ.subdomain k).toFinset.card := by
   aesop
     (add simp [complDisagreementSet, Finset.card_sdiff, blockRelDistance, blockDistance])
     (add unsafe (by ring_nf))
 
-private lemma blockRelDistance_eq_one_sub :
+lemma blockRelDistance_eq_one_sub :
   δ𞁒(k, φ, f, g) =
     1 - ((complDisagreementSet k φ f g).card : ℚ≥0) / (φ.subdomain k).toFinset.card := by
   rw [←NNRat.coe_inj, blockRelDistance_eq_one_sub',
       NNRat.coe_sub (by aesop (add safe [(by field_simp), (by norm_cast)]))]
   rfl
+
+lemma card_complDisagreementSet :
+  (complDisagreementSet k φ f g).card =
+    (φ.subdomain k).toFinset.card - (disagreementSet k φ f g).card := by
+  simp [complDisagreementSet, Finset.card_sdiff]
+
+lemma card_disagreementSet' :
+  (disagreementSet k φ f g).card =
+    (φ.subdomain k).toFinset.card - (complDisagreementSet k φ f g).card := by
+  aesop
+    (add simp [card_complDisagreementSet])
+    (add unsafe (by rw [Nat.sub_sub_self (by simp)]))
 
 private def agreementBlockUnion
   (k : ℕ) (φ : SmoothCosetFftDomain n F)
@@ -181,23 +198,19 @@ private def agreementBlockUnion
   Finset.biUnion (complDisagreementSet k φ f g) (blockIdx φ k)
 
 @[simp]
-private lemma card_agreementBlockUnion_le :
+lemma card_agreementBlockUnion_le :
   (agreementBlockUnion k φ f g).card ≤ 2 ^ n := by
   conv_rhs =>
     rw [show 2 ^ n = (Finset.univ (α := Fin (2 ^ n))).card by simp]
   exact Finset.card_le_card (by simp)
 
-private lemma card_agreementBlockUnion
+lemma card_agreementBlockUnion
   (hkn : k ≤ n) :
   (agreementBlockUnion k φ f g).card =
     2 ^ k * (complDisagreementSet k φ f g).card := by
   unfold agreementBlockUnion
-  rw [Finset.card_biUnion (by
-    aesop
-      (add simp [Set.PairwiseDisjoint, Set.Pairwise])
-      (add safe disjoint_blockIdx)
-  )]
-  rw [Finset.sum_equiv
+  rw [Finset.card_biUnion (by simp),
+      Finset.sum_equiv
         (Equiv.refl _)
         (g := fun _ ↦ 2 ^ k)
         (t := complDisagreementSet k φ f g)
@@ -206,13 +219,13 @@ private lemma card_agreementBlockUnion
           have := complDisagreementSet_sub_subdomain hi
           aesop (add simp [card_block_of_mem_subdomain'])
         )]
-  aesop (add unsafe (by rw [mul_comm]))
+  aesop (add safe (by ac_nf))
 
-private lemma agreement_sub_agreementBlockUnion :
+lemma agreement_sub_agreementBlockUnion :
   agreementBlockUnion k φ f g ⊆ ({ i | f i = g i } : Finset _) := fun x hx ↦ by
   aesop (add simp [agreementBlockUnion, complDisagreementSet, disagreementSet])
 
-private lemma card_disagreement_le :
+lemma card_disagreement_le :
   Finset.card { i | f i ≠ g i } ≤ 2 ^ n - (agreementBlockUnion k φ f g).card := by
   conv_rhs =>
     lhs
@@ -224,7 +237,7 @@ private lemma card_disagreement_le :
     have := agreement_sub_agreementBlockUnion contra
     simp_all
 
-private lemma relHammingDist_le_sub_agreementBlockUnion' :
+lemma relHammingDist_le_sub_agreementBlockUnion' :
   δᵣ(f, g) ≤ 1 - ((agreementBlockUnion k φ f g).card : ℚ) / (2 ^ n) := by
   unfold Code.relHammingDist
   simp only [hammingDist, ne_eq, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, NNRat.cast_div,
@@ -239,7 +252,7 @@ private lemma relHammingDist_le_sub_agreementBlockUnion' :
   · field_simp
     aesop
 
-private lemma relHammingDist_le_sub_agreementBlockUnion :
+lemma relHammingDist_le_sub_agreementBlockUnion :
   δᵣ(f, g) ≤ 1 - ((agreementBlockUnion k φ f g).card : ℚ≥0) / (2 ^ n) := by
   have := relHammingDist_le_sub_agreementBlockUnion' (f := f) (g := g) (φ := φ)
             (k := k)
@@ -281,15 +294,14 @@ lemma relHammingDist_le_blockRelDistance (hkn : k ≤ n) :
   within a certain block relative distance `δ` is a subset of the list of codewords
   within the same relative Hamming distance `δ`.
 -/
-lemma listBlock_subset_listHamming
-  (hkn : k ≤ n) (δ : ℝ≥0) (C : Set (Fin (2 ^ n) → F)) :
+lemma listBlock_subset_listHamming (hkn : k ≤ n) (δ : ℝ≥0) (C : Set (Fin (2 ^ n) → F)) :
   Λ𞁒(C, k, φ, f, δ) ⊆ closeCodewordsRel C f δ := by
   intro u hu
   simp only [blockRelDistanceBall, Set.mem_sep_iff] at hu
   refine ⟨hu.1, ?_⟩
   have h1 := relHammingDist_le_blockRelDistance
               (φ := φ) (k := k) (f := f) (g := u) hkn
-  simp only [relHammingBall, Set.mem_setOf_eq, ge_iff_le]
+  simp only [Code.relHammingBall, Set.mem_setOf_eq, ge_iff_le]
   apply le_trans (b := NNRat.cast δ𞁒(k, φ, f, u))
   · rewrite [NNRat.cast_le]
     convert h1

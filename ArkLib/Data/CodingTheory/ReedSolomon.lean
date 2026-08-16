@@ -2,7 +2,7 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland, Ilia Vlasov,
-Mirco Richter, Chung Thai Nguyen
+Mirco Richter, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.Matrix.Vandermonde
@@ -61,6 +61,29 @@ lemma evalOnPoints_mul [CommSemiring F] {domain : ι ↪ F} {p q : F[X]} :
 -/
 noncomputable def code (deg : ℕ) [Semiring F] : Submodule F (ι → F) :=
   (Polynomial.degreeLT F deg).map (evalOnPoints domain)
+
+/-- If a linear encoder `enc : F[X] →ₗ[F] (ι → Fin 1 → F)` agrees with plain evaluation at
+its single index, `enc p x 0 = p.eval (domain x)`, then the code it cuts out of
+`Polynomial.degreeLT F k` is `code domain k`, up to erasing the trivial `Fin 1` index.
+
+This is the shared content of the degenerate-parameter collapse for the Reed-Solomon
+variants over the alphabet `Fin s → F`. -/
+lemma mem_map_degreeLT_one_iff_mem_code [CommSemiring F] (k : ℕ)
+    (enc : F[X] →ₗ[F] (ι → Fin 1 → F))
+    (henc : ∀ (p : F[X]) (x : ι), enc p x 0 = p.eval (domain x))
+    (f : ι → Fin 1 → F) :
+    f ∈ (Polynomial.degreeLT F k).map enc ↔ (fun x ↦ f x 0) ∈ code domain k := by
+  simp only [Submodule.mem_map, code, evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
+  constructor
+  · rintro ⟨p, hp, rfl⟩
+    exact ⟨p, hp, funext fun x ↦ (henc p x).symm⟩
+  · rintro ⟨p, hp, hp_eval⟩
+    refine ⟨p, hp, ?_⟩
+    funext x j
+    have hj : j = 0 := Subsingleton.elim _ _
+    subst hj
+    rw [henc p x]
+    exact congrFun hp_eval x
 
 /-- The generator matrix of the Reed-Solomon code of degree `deg` and evaluation points `domain`. -/
 def genMatrix (deg : ℕ) [Semiring F] : Matrix (Fin deg) ι F :=
@@ -185,6 +208,11 @@ lemma mem_code_iff_exists_polynomial {n : ℕ} {α : ι ↪ F} {f : ι → F} :
             [Polynomial.degreeLT,
              Polynomial.degree_lt_iff_coeff_zero])
 
+theorem mem_code_iff_eval {n : ℕ} {α : ι ↪ F} {f : ι → F} :
+  f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.degree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial])
+
 lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔ ∃ p : Polynomial F, p.natDegree < n ∧ f = evalOnPoints α p := by
   rw [mem_code_iff_exists_polynomial]
@@ -197,6 +225,11 @@ lemma mem_code_iff_exists_polynomial_of_ne_zero {n : ℕ} [ne : NeZero n] {α : 
   aesop
     (add simp [Polynomial.natDegree_lt_iff_degree_lt])
     (add safe (by omega))
+
+theorem mem_code_iff_eval_of_ne_zero {n : ℕ} [NeZero n] {α : ι ↪ F} {f : ι → F} :
+  f ∈ ReedSolomon.code α n ↔
+    ∃ p : F[X], p.natDegree < n ∧ ∀ x, p.eval (α x) = f x := by
+  aesop (add simp [evalOnPoints, mem_code_iff_exists_polynomial_of_ne_zero])
 
 /-- `evalOnPoints α p` belongs to an RS-code of degree `n`,
   if `p.degree < n`. -/
@@ -351,6 +384,52 @@ lemma dist_le_length [DecidableEq F] (inj : Function.Injective α) :
 noncomputable abbrev sqrtRate [Fintype ι] (deg : ℕ) (domain : ι ↪ F) : ℝ≥0 :=
   (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0).sqrt
 
+@[simp]
+lemma sqrtRate_nonneg [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  0 ≤ (sqrtRate m domain : ℝ) := (sqrtRate m domain).coe_nonneg
+
+lemma sqrtRate_sq [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (sqrtRate m domain : ℝ) ^ 2 =
+    (min m (Fintype.card ι) : ℝ) / (Fintype.card ι : ℝ) := by
+  rw [sqrtRate, ←NNReal.coe_pow, NNReal.sq_sqrt,
+    ReedSolomon.rateOfLinearCode_eq_min_div]
+  push_cast
+  ring
+
+lemma sqrtRate_pos [Fintype ι] [Nonempty ι] {m : ℕ}
+  (hm : 0 < m) {domain : ι ↪ F} :
+  0 < (sqrtRate m domain : ℝ) := by
+  have hcard : 0 < Fintype.card ι := Fintype.card_pos
+  have hsq : 0 < (sqrtRate m domain : ℝ) ^ 2 := by
+    rw [sqrtRate_sq]
+    have : 0 < min m (Fintype.card ι) := lt_min hm hcard
+    positivity
+  rcases (sqrtRate_nonneg m domain).lt_or_eq with h | h
+  · exact h
+  · rw [←h] at hsq
+    simp at hsq
+
+@[simp]
+lemma sqrtRate_sq_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (sqrtRate m domain : ℝ) ^ 2 ≤ 1 := by
+  rw [sqrtRate_sq]
+  rcases Nat.eq_zero_or_pos (Fintype.card ι) with h | h
+  · simp [h]
+  · rw [div_le_one (by exact_mod_cast h)]
+    exact_mod_cast min_le_right _ _
+
+@[simp high]
+lemma sqrtRate_le_one [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  ReedSolomon.sqrtRate m domain ≤ 1 :=
+  pow_le_one_iff_of_nonneg (sqrtRate_nonneg m domain) two_ne_zero |>.mp
+    (sqrtRate_sq_le_one m domain)
+
+@[simp high]
+lemma sqrtRate_le_one' [Fintype ι] (m : ℕ) (domain : ι ↪ F) :
+  (ReedSolomon.sqrtRate m domain : ℝ) ≤ 1 := by
+  norm_cast
+  simp
+
 end
 
 lemma card_le_card_of_count_inj {α β : Type*} [DecidableEq α] [DecidableEq β]
@@ -491,9 +570,28 @@ theorem minDist_eq_card_sub_min_add_1 [Fintype ι] [Inhabited ι] [Field F] [Dec
             aesop
     omega
 
+/-- Two distinct Reed–Solomon codewords of degree `< m` agree in fewer than `m` positions. -/
+lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
+  {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+  (hc : c ∈ ReedSolomon.code α n) (hc' : c' ∈ ReedSolomon.code α n) (hne : c ≠ c') :
+  Code.agree c c' < n := by
+  by_cases hn : n = 0
+  · aesop
+  · by_cases hcard : Fintype.card ι = 0
+    · exfalso
+      exact hne <| funext <| fun i ↦ by
+        rw [Fintype.card_eq_zero_iff, isEmpty_iff] at hcard
+        simpa using hcard i
+    · have : NeZero n := ⟨hn⟩
+      have : Inhabited ι := ⟨Classical.choice <| by
+        aesop (add safe [(by rw [←Fintype.card_pos_iff]), (by omega)])⟩
+      have := minDist_eq_card_sub_min_add_1 (n := n) (α := α)
+      have := minDist_le_dist hc hc' hne
+      have := Code.agree_add_hammingDist (u := c) (v := c')
+      by_cases! hn : n ≤ Fintype.card ι <;> grind
 
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
-lemma isMDS_code {ι : Type} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
+lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
   {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by
   simp only [IsMDS, Submodule.carrier_eq_coe, length_eq_domain_card]
   rw [dist_eq_minDist, minDist_eq_card_sub_min_add_1, dim_eq_min_deg_card]

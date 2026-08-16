@@ -12,14 +12,14 @@ import ArkLib.OracleReduction.Composition.Sequential.IsPure
 
 A `CWSSPackage` bundles a verifier with everything needed to state and reuse its coordinate-wise
 special soundness (CWSS): the challenge structure `struct`, the input/output relations
-`relIn`/`relOut`, a purity witness `isPure`, and the CWSS certificate `isCWSS`, all with respect to
-a fixed sampling `(init, impl)`.
+`relIn`/`relOut`, a purity witness `isPure`, the named extraction algorithm `extractor`, and the
+CWSS certificate `isCWSS`, all with respect to a fixed sampling `(init, impl)`.
 
 The point is composition. `CWSSPackage.append` — written with the infix `▷` — chains two packages
 along a matching seam (`L₁.relOut = L₂.relIn`, discharged by `rfl`): it appends the verifiers
 (`Verifier.append`), appends the structures (`CWSSStructure.append`), composes the purity witnesses
 (`Verifier.IsPure.append`), and threads the two certificates through
-`Verifier.append_coordinateWiseSpecialSound`. Because purity is a package field, the composed
+`Verifier.append_coordinateWiseSpecialSoundWith`. Because purity is a package field, the composed
 package is itself pure and can be a left factor again, so a multi-step reduction reads as a single
 pleasant chain:
 
@@ -29,8 +29,9 @@ theorem chain_cwss := chain.isCWSS
 ```
 
 Each protocol component exports its own package next to its CWSS theorem; the composition site only
-imports and chains them. `▷` is `scoped` in `CoordinateWise`, so `open scoped CoordinateWise`
-(or `open CoordinateWise`) activates it.
+imports and chains them. The universal `▷` is a single elaborator defined in `Escape.lean` (it
+dispatches over all four package kinds — pure, guarded, escape-aware, or both); it is `scoped` in
+`CoordinateWise`, so `open scoped CoordinateWise` (or `open CoordinateWise`) activates it.
 
 ## References
 
@@ -49,8 +50,15 @@ namespace CoordinateWise
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- A **bundled coordinate-wise-special-sound reduction**: a verifier together with its CWSS
-structure, input/output relations, a purity witness, and the CWSS certificate, all with respect to
-a fixed sampling `(init, impl)`. Compose packages with `CWSSPackage.append` / the infix `▷`. -/
+structure, input/output relations, a purity witness, the **named extraction algorithm**
+`extractor`, and the certificate `isCWSS` that this extractor witnesses CWSS, all with respect
+to a fixed sampling `(init, impl)`. Compose packages with `CWSSPackage.append` / the infix `▷`.
+
+Carrying the extractor as a *field* (rather than existentially inside the certificate) means a
+composed chain exposes an actual end-to-end extractor — `chain.extractor` — which is what a
+later knowledge-error accounting must run, and what makes the certificate content-bearing
+(see `Verifier.treeSpecialSoundWith`). The existential form remains available as
+`L.isCWSS.toCWSS`. -/
 structure CWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (StmtIn WitIn StmtOut WitOut : Type) {n : ℕ} (pSpec : ProtocolSpec n) where
   /-- The package's verifier. -/
@@ -64,20 +72,26 @@ structure CWSSPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pr
   /-- The verifier is pure: its verdict is a deterministic function of statement and transcript.
   Needed to place this package as the left factor of an `append`. -/
   isPure : verifier.IsPure
-  /-- The certificate: `verifier` is coordinate-wise special sound for `struct`, reducing `relIn`
-  to `relOut`. -/
-  isCWSS : verifier.coordinateWiseSpecialSound init impl struct relIn relOut
+  /-- The package's named extraction algorithm. -/
+  extractor : Extractor.TreeBased StmtIn WitIn pSpec (CWSSStructure.toShape struct).arity
+  /-- The certificate: `extractor` witnesses that `verifier` is coordinate-wise special sound
+  for `struct`, reducing `relIn` to `relOut`. -/
+  isCWSS : Verifier.coordinateWiseSpecialSoundWith init impl struct relIn relOut verifier
+    extractor
 
 namespace CWSSPackage
+
+variable {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
+  {StmtIn WitIn StmtOut WitOut : Type} {n : ℕ} {pSpec : ProtocolSpec n}
 
 /-- **Compose two packages along a matching seam.** Given a left package `L₁ : relIn ⇒ mid`, a right
 package `L₂ : mid ⇒ relOut` whose seam agrees (`hseam : L₁.relOut = L₂.relIn`, discharged by `rfl`),
 this produces the composed package `relIn ⇒ relOut` over `pSpec₁ ++ₚ pSpec₂`: the verifiers are
 chained by `Verifier.append`, the structures by `CWSSStructure.append`, the purity witnesses by
-`Verifier.IsPure.append`, and the certificates by `Verifier.append_coordinateWiseSpecialSound`
-(the left package's `isPure` discharges its purity hypothesis). Written infix as `L₁ ▷ L₂`. -/
-def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
-    {StmtA WitA StmtB WitB StmtC WitC : Type}
+`Verifier.IsPure.append`, the extractors by running the left extractor on the prefix tree, and
+the certificates by `Verifier.append_coordinateWiseSpecialSoundWith` (the left package's `isPure`
+discharges its purity hypothesis). Written infix as `L₁ ▷ L₂`. -/
+noncomputable def append {StmtA WitA StmtB WitB StmtC WitC : Type}
     {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
     [∀ i, SampleableType (pSpec₁.Challenge i)]
     (L₁ : CWSSPackage init impl StmtA WitA StmtB WitB pSpec₁)
@@ -89,17 +103,15 @@ def append {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   relIn := L₁.relIn
   relOut := L₂.relOut
   isPure := Verifier.IsPure.append L₁.verifier L₂.verifier L₁.isPure L₂.isPure
+  extractor := fun stmt tree => L₁.extractor stmt tree.appendSplit.fst
   isCWSS := by
-    obtain ⟨verify₁, hV₁⟩ := L₁.isPure.is_pure
-    have h₂ := L₂.isCWSS
+    have h₂ := L₂.isCWSS.toCWSS
     rw [← hseam] at h₂
-    exact Verifier.append_coordinateWiseSpecialSound init impl
-      L₁.verifier L₂.verifier L₁.struct L₂.struct verify₁ hV₁ L₁.isCWSS h₂
+    exact Verifier.append_coordinateWiseSpecialSoundWith init impl
+      L₁.verifier L₂.verifier L₁.struct L₂.struct
+      L₁.isPure.is_pure.choose L₁.isPure.is_pure.choose_spec L₁.extractor L₁.isCWSS h₂
 
 end CWSSPackage
-
-@[inherit_doc CWSSPackage.append]
-scoped infixr:65 " ▷ " => CWSSPackage.append
 
 end CoordinateWise
 

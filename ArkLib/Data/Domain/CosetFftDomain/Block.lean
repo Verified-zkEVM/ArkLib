@@ -58,6 +58,26 @@ lemma mem_block :
 lemma block_k_0 :
   block ω 0 x = if x ∈ ω then {x} else ∅ := by aesop
 
+section Smooth
+
+variable {n : ℕ}
+variable {D : Type} [FunLike D (Fin (2 ^ n)) F] [CosetFftDomainClass D (Fin (2 ^ n)) F]
+variable {ω : D} {k : ℕ} {x y : F}
+
+lemma neg_mem_block_of_mem [NeZero k] (hy : y ∈ block ω k x) (hk : k ≤ n) :
+  -y ∈ block ω k x := by
+  aesop
+    (add unsafe cases Nat)
+    (add simp [Nat.even_pow])
+
+lemma neg_mem_block_iff_mem [NeZero k] (hk : k ≤ n) :
+  -y ∈ block ω k x ↔ y ∈ block ω k x := by
+  aesop
+    (add unsafe cases Nat)
+    (add simp [Nat.even_pow])
+
+end Smooth
+
 /-- An alternative definition of `block` in terms of
   `Polynomial.nthRootsFinset`. -/
 lemma block_eq_nthRootsFinset :
@@ -77,6 +97,11 @@ lemma card_block_le :
 /-- Blocks corresponding to different points are disjoint. -/
 theorem disjoint_block {x y : F} (hxy : x ≠ y) :
   Disjoint (block ω k x) (block ω k y) := by aesop (add simp [disjoint_iff])
+
+@[simp]
+theorem pairwise_disjoint_block {s : Set F} :
+  s.PairwiseDisjoint (block ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_block])
 
 /-- The set of indices of a block of `ω` at `x` of the degree `k`. -/
 def blockIdx (ω : D) (k : ℕ) (x : F) : Finset ι :=
@@ -129,6 +154,11 @@ lemma card_blockIdx :
 theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :
   Disjoint (blockIdx ω k x) (blockIdx ω k y) := by
   aesop (add simp [disjoint_iff_ne, mem_blockIdx_iff_mem_block])
+
+@[simp]
+theorem pairwise_disjoint_blockIdx {s : Set F} :
+  s.PairwiseDisjoint (blockIdx ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_blockIdx])
 
 end CosetFftDomainClass
 

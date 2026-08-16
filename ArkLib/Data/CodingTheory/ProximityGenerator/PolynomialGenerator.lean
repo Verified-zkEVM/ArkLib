@@ -5,6 +5,7 @@ Authors: Katerina Hristova
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.AlgebraicTopology.SimplexCategory.Basic
 import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
@@ -28,7 +29,7 @@ with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org
 
 namespace PolynomialGenIsMCA
 
-open unitInterval CoreDefinitions LinearTransformations
+open unitInterval NNReal Probability CoreDefinitions LinearTransformations
 
 variable {F : Type} [Field F]
          {ι : Type} [Fintype ι] [Nonempty ι]
@@ -43,22 +44,24 @@ Note: In the paper, there is a hypothesis `η ∈ (0,1)`. This is omitted in the
 since the hypothesis is not required to define `ξ`. However, we include it in statement that rely on
 or utilise `ξ`. -/
 noncomputable def ξ [DecidableEq F] (LC : LinearCode ι F) (d m : ℕ) (η : ℝ) :
-  I → ℝ :=
+  I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (LC.carrier) : ℝ)
   letI ρ_C : ℝ := 1 - δ_C
   letI γ_d : ℝ := 1 - (ρ_C + η) ^ (1 / (d + 1) : ℝ)
   fun γ =>
-    if γ < (δ_C / (d + 2) : ℝ) then
-      letI m' : ℝ := max (n * γ) 1
-      m' * (d / m : ℝ)
-    else
-      if γ ≤ 1 - (ρ_C + η) ^ (1 / (d + 2) : ℝ) then
-          (n * γ_d / η) * (d / m) +
-          max (2 * d / (η * ((ρ_C + η) ^ (1 / (d + 2) : ℝ) - (ρ_C + η) ^ (1 / (d + 1) : ℝ)) * m))
-              ((d + 1) * (d + 2) / (η * m) : ℝ)
+    Real.toNNReal <|
+      if γ < (δ_C / (d + 2) : ℝ) then
+        letI m' : ℝ := max (n * γ) 1
+        m' * (d / m : ℝ)
       else
-      1
+        if γ ≤ 1 - (ρ_C + η) ^ (1 / (d + 2) : ℝ) then
+            (n * γ_d / η) * (d / m) +
+            max (2 * d /
+                  (η * ((ρ_C + η) ^ (1 / (d + 2) : ℝ) - (ρ_C + η) ^ (1 / (d + 1) : ℝ)) * m))
+                ((d + 1) * (d + 2) / (η * m) : ℝ)
+        else
+        1
 
 /-- The MDS error bound `ε_MCA_MDS` for output size `d + 1` (the univariate powers generator of
 degree `d`, whose code has dimension `d + 1`) coincides with the univariate-powers error `ξ` of
@@ -85,20 +88,22 @@ the sum `∑ᵢ εᵢ` of the factors' errors.  This is the `s`-fold iteration o
 lemma tensorGeneratorPi_isMCAGenerator (LC : LinearCode ι F) :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
       [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)]
-      (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ),
+      (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
       (∀ i, IsMCAGenerator (G i) (ε i) LC) →
       IsMCAGenerator (tensorGeneratorPi G) (fun γ => ∑ i, ε i γ) LC := by
   intro s
   induction s with
   | zero =>
-    intro α ℓ _ _ _ G ε _ U γ
+    intro α ℓ _ _ _ G ε _ γ
     classical
-    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) LC x U γ := by
+    refine iSup_le fun U => ?_
+    -- With no factors the output index type is a subsingleton, so the combination is `U j`
+    -- itself and the MCA event is unsatisfiable.
+    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) LC x U (γ : ℝ) := by
       rintro x ⟨T, hT, hmem, j, hj⟩
       apply hj
-      have hvec : Matrix.vecMul (tensorGeneratorPi G x) U = U j := by
+      have hvec : (fun k => ∑ j', tensorGeneratorPi G x j' • U j' k) = U j := by
         funext w
-        simp only [Matrix.vecMul, dotProduct]
         rw [Fintype.sum_subsingleton _ j]
         simp [tensorGeneratorPi]
       rwa [hvec] at hmem
@@ -143,7 +148,7 @@ end PolynomialGenIsMCA
 
 namespace RSCode
 
-open unitInterval CoreDefinitions PolynomialGenIsMCA LinearTransformations MvPolynomial
+open unitInterval NNReal CoreDefinitions PolynomialGenIsMCA LinearTransformations MvPolynomial
   Matrix
 
 variable {F : Type} [Field F]
@@ -153,21 +158,22 @@ variable {F : Type} [Field F]
 
 
 /-- Definition 9.1 MCA error function for Reed-Solomon codes [BCGM25]. -/
-noncomputable def ε_mca_RS [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ :=
+noncomputable def ε_mca_RS [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   let ρ_sqrt := ReedSolomon.sqrtRate k D
   fun γ =>
-    if γ ≤ 1 - (1 + (1 / (2 * m : ℝ))) * ρ_sqrt then
-      (Fintype.card F : ℝ)⁻¹  *  (m + 1 / 2) ^ 7  * (3 * (ρ_sqrt) ^ 3)⁻¹.toReal * d * n ^ 2
-    else
-      1
+    Real.toNNReal <|
+      if γ ≤ 1 - (1 + (1 / (2 * m : ℝ))) * ρ_sqrt then
+        (Fintype.card F : ℝ)⁻¹  *  (m + 1 / 2) ^ 7  * (3 * (ρ_sqrt) ^ 3)⁻¹.toReal * d * n ^ 2
+      else
+        1
 
 /-- Let `F` be a field and `k, n, d, m ∈ ℕ` with `m ≥ 3`. Then the univariate powers generator has
 MCA for a Reed-Solomon code over a domain `D` and degree `k` with error `ε_mca_RS` as defined
 above.
 Lemma 9.3 [BCGM25]. -/
 lemma univariate_powers_MCA [Fintype F] [NeZero k] (d m : ℕ) (hm : 3 ≤ m) :
-    IsMCAGenerator (UnivariatePowers d) (ε_mca_RS k D d m) (ReedSolomon.code D k) := by
+    IsMCAGenerator (univariatePowersGenerator F d) (ε_mca_RS k D d m) (ReedSolomon.code D k) := by
   sorry
 
 /-- The multi-index (as a finitely supported function) associated to a bounded exponent vector. -/
@@ -204,12 +210,13 @@ def tensorGeneratorPiUnivariate {s : ℕ} (d : Fin s → ℕ) :
 generator has MCA for `LC` with error `ε e`.
 This is the `s`-fold iteration of Lemma 4.4 (tensor products preserve MCA) [BCGM25]. -/
 lemma tensorGeneratorPiUnivariate_isMCAGenerator [Fintype F] (LC : LinearCode ι F)
-    (ε : ℕ → I → ℝ) (huniv : ∀ e : ℕ, IsMCAGenerator (UnivariatePowers e) (ε e) LC) :
+    (ε : ℕ → I → ℝ≥0)
+    (huniv : ∀ e : ℕ, IsMCAGenerator (univariatePowersGenerator F e) (ε e) LC) :
     ∀ {s : ℕ} (d : Fin s → ℕ),
       IsMCAGenerator (tensorGeneratorPiUnivariate d) (fun γ => ∑ i, ε (d i) γ) LC := by
   intro s d
-  exact tensorGeneratorPi_isMCAGenerator LC (fun i => UnivariatePowers (d i)) (fun i => ε (d i))
-    (fun i => huniv (d i))
+  exact tensorGeneratorPi_isMCAGenerator LC (fun i => univariatePowersGenerator F (d i))
+    (fun i => ε (d i)) (fun i => huniv (d i))
 
 /-- The coefficient matrix expressing the polynomial generator `G` as a right multiplication of the
 tensor generator: the entry at `(e, j)` is the coefficient of the monomial `exponentFinsupp e` in
@@ -311,7 +318,7 @@ end RSCode
 namespace PolynomialGenIsMCA
 
 open CoreDefinitions LinearTransformations LinearCode RSCode ReedSolomon
-open unitInterval
+open unitInterval NNReal Probability
 
 variable {F : Type} [Field F]
 
@@ -353,13 +360,13 @@ lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [
   · subst hd
     classical
     haveI : Subsingleton (Fin (0 + 1)) := inferInstanceAs (Subsingleton (Fin 1))
-    intro U γ
-    have hfalse : ∀ x : ↥s, ¬ IsMCA (UnivariatePowersOn s 0) LC x U γ := by
+    intro γ
+    refine iSup_le fun U => ?_
+    have hfalse : ∀ x : ↥s, ¬ IsMCA (UnivariatePowersOn s 0) LC x U (γ : ℝ) := by
       rintro x ⟨T, hT, hmem, j, hj⟩
       apply hj
-      have hvec : Matrix.vecMul (UnivariatePowersOn s 0 x) U = U j := by
+      have hvec : (fun k => ∑ j', UnivariatePowersOn s 0 x j' • U j' k) = U j := by
         funext w
-        simp only [Matrix.vecMul, dotProduct]
         rw [Fintype.sum_subsingleton _ j]
         simp [UnivariatePowersOn]
       rwa [hvec] at hmem
@@ -422,7 +429,7 @@ theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F
     (G : Generator (∀ i, S i) ℓ F)
     (P : ℓ → MvPolynomial (Fin s) F) (hG : IsPolynomialGeneratorOf S G P)
     (hS : ∀ i : Fin s, (deg_max P i + 1) ≤ (Set.ncard (S i))) :
-    letI ε : I → ℝ := ∑ i : Fin s, (ξ LC (deg_max P i) (Set.ncard (S i)) η)
+    letI ε : I → ℝ≥0 := ∑ i : Fin s, (ξ LC (deg_max P i) (Set.ncard (S i)) η)
     IsMCAGenerator G ε LC := by
   classical
   show IsMCAGenerator G (∑ i : Fin s, ξ LC (deg_max P i) (Set.ncard (S i)) η) LC

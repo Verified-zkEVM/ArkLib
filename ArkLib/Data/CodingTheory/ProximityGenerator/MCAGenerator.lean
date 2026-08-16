@@ -9,96 +9,141 @@ import ArkLib.Data.Matrix.Basic
 import ArkLib.Data.Probability.Instances
 
 /-!
-## Main Results
+# Preserving mutual correlated agreement under linear maps on the output
 
-- Lemma 4.1 [BCGM25] : Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `A` a matrix
-with a left  pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
-is an MCA generator with the same error `ε_mca` as `G`.
-- Corollary 4.2 [BCGM25] : Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
-subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
-- `isMCAGenerator_reindex` : MCA is invariant under bijective relabellings of the seed space and
-of the output coordinates of a generator.
-- Lemma 4.4 [BCGM25] : the tensor product of two MCA generators is an MCA generator, with the
-weaker error `ε_mca + |ℓ| • ε_mca'` (`tensor_of_MCA_is_MCA`, fully proved) and with the tight
-error `ε_mca + ε_mca'` of the paper (`tensor_of_MCA_is_MCA_tight`, currently `sorry`ed pending a
-generalisation of `IsMCAGenerator` to module alphabets).
+Two ways of building a new generator from an old one leave the mutual correlated agreement error
+no larger: post-composing the output with a matrix that has a left pseudoinverse, and restricting
+the output to a subset of its coordinates.
+
+Both are proved first at the error *value*, where no error function appears in the statement, and
+then in `IsMCAGenerator` form. Both value forms are one application of the shared transport
+skeleton `mcaError_le_of_forall_isMCA_imp`, whose hypothesis is an implication between bad events;
+so the only mathematical content in this file is the two event implications
+`isMCA_generatorByRightMul_of_isMCA` and `isMCA_projectedGenerator_of_isMCA`.
+
+## Main statements
+
+* `mcaError_le_of_forall_isMCA_imp` — the transport skeleton: an implication between bad events,
+  at the same radius and over the same seed space, bounds one error by the other.
+* `mcaError_generatorByRightMul_le`, `pseudoinverseGen` — right multiplication by a matrix with a
+  left pseudoinverse.
+* `mcaError_projectedGenerator_le`, `generatorSubset` — projection onto a subset of the output
+  coordinates.
+
+The correspondence to [BCGM25]'s numbered statements is in
+`docs/kb/audits/bcgm25-mca-generators.md`.
 
 ## References
 
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+    with Mutual Correlated Agreement*][BCGM25]
 -/
 
 namespace LinearTransformations
 
 open NNReal ENNReal unitInterval LinearCode CoreDefinitions Matrix
 open scoped ProbabilityTheory
+open Probability
 
 variable {ι : Type} [Fintype ι]
          {F : Type} [Field F]
+         {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
          {S : Type} [Fintype S]
 
-/-- Let `G : S → 𝔽^ℓ` be a generator and let `A` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
-generator defined by `x ↦ G(x) · A`.
-This is the generator `G'` inside Lemma 4.1 [BCGM25]. -/
-def generatorByRightMul (G : Generator S ℓ F) (A : Matrix ℓ ℓ' F) : Generator S ℓ' F :=
-    fun x ↦ Matrix.vecMul (G x) A
+/-- **Value-level MCA transport.** If the MCA bad event for `G'` on a word family `U` implies the
+bad event for `G` on some reindexed family `Φ U`, at the same radius and over the same seed space,
+then `G'`'s MCA error value is bounded by `G`'s.
+
+This is the transport skeleton behind every [BCGM25] generator-preservation lemma (4.1, 4.2, and
+the tensor and reindexing arguments to come): the mathematical content of each is exactly the
+event implication, and everything else is this lemma. Stating it once at the *value* keeps `ε_mca`
+out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
+`isMCAGenerator_iff_mcaError_le` and transitivity. -/
+lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
+    (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
+    (h : ∀ (U : ℓ' → (ι → A)) (x : S), IsMCA G' MC x U δ → IsMCA G MC x (Φ U) δ) :
+    mcaError G' MC δ ≤ mcaError G MC δ := by
+  unfold mcaError
+  refine iSup_le fun U => le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ (fun x hx => h U x hx)) ?_
+  exact le_iSup (fun V => Pr_{let x ←$ᵖ S}[IsMCA G MC x V δ]) (Φ U)
+
+/-- Let `G : S → 𝔽^ℓ` be a generator and let `M` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
+generator defined by `x ↦ G(x) · M`.
+This is the generator whose error is bounded by `mcaError_generatorByRightMul_le`. -/
+def generatorByRightMul (G : Generator S ℓ F) (M : Matrix ℓ ℓ' F) : Generator S ℓ' F :=
+    fun x ↦ Matrix.vecMul (G x) M
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and `κ` a subset of `ℓ`. Define a new generator
 `G' : S → 𝔽^κ`, which we call a projected generator, by restricting the output of `G` to the indices
 given by `κ`.
-This is the generator `G'` inside Corollary 4.2 [BCGM25] -/
+This is the generator whose error is bounded by `mcaError_projectedGenerator_le`. -/
 def projectedGenerator (G : Generator S ℓ F) (κ : Set ℓ) : Generator S κ F :=
     fun x ↦ Set.restrict κ (G x)
 
-/-- Let `U : ℓ' → (ι → F)` be a family of `ℓ'` codewords over `𝔽^ι`. Obtain a family of `ℓ`
-codewords by acting on `U` by left multiplication with an `ℓ × ℓ'` matrix `A`. -/
-def matrixMulCodewords (A : Matrix ℓ ℓ' F) (U : ℓ' → (ι → F)) : ℓ → (ι → F) :=
-  fun i k => ∑ j : ℓ', A i j * U j k
+/-- Let `U : ℓ' → (ι → A)` be a family of `ℓ'` words over `A^ι`. Obtain a family of `ℓ`
+words by acting on `U` by left multiplication with an `ℓ × ℓ'` matrix `M` over `F`. -/
+def matrixMulCodewords (M : Matrix ℓ ℓ' F) (U : ℓ' → (ι → A)) : ℓ → (ι → A) :=
+  fun i k => ∑ j : ℓ', M i j • U j k
 
-/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `A` a matrix
-with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `A`
+/-- If the MCA condition `IsMCA` holds for `generatorByRightMul G M`, then it holds for the
+original generator `G` with the word family transported by `M`.
+
+This event implication is the whole mathematical content of the bound; the error statements below
+follow from it by `mcaError_le_of_forall_isMCA_imp`. -/
+lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
+    (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M)
+    (U : ℓ' → (ι → A)) (γ : ℝ) (x : S) :
+    IsMCA (generatorByRightMul G M) MC x U γ → IsMCA G MC x (matrixMulCodewords M U) γ := by
+  obtain ⟨B, hB⟩ := hM
+  rintro ⟨T, hT_card, hT_proj, j, hj⟩
+  refine ⟨T, hT_card, ?_, ?_⟩
+  · convert hT_proj using 1
+    ext i
+    simp only [generatorByRightMul, matrixMulCodewords, Matrix.vecMul,
+      dotProduct, Finset.smul_sum, Finset.sum_smul, smul_smul]
+    exact Finset.sum_comm
+  · contrapose! hj
+    simp only [LinearCode.mem_projectedCodeSubmod_iff] at hj ⊢
+    convert LinearCode.projectedCode_linearCombination MC T (fun i => matrixMulCodewords M U i)
+      (fun i => B j i) (fun i => hj i) using 1
+    ext k
+    simp only [projectedWord, Set.restrict_apply, matrixMulCodewords, Finset.smul_sum,
+      smul_smul]
+    rw [Finset.sum_comm]
+    simp [← Finset.sum_smul, ← Matrix.mul_apply, hB, Matrix.one_apply]
+
+/-- Right multiplication by a matrix with a left pseudoinverse does not increase the MCA error.
+Stated at the error *value*, so no error function appears. -/
+lemma mcaError_generatorByRightMul_le [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F)
+    (MC : ModuleCode ι F A) (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) (γ : ℝ) :
+    mcaError (generatorByRightMul G M) MC γ ≤ mcaError G MC γ :=
+  mcaError_le_of_forall_isMCA_imp G (generatorByRightMul G M) MC γ (matrixMulCodewords M)
+    (fun U x h => isMCA_generatorByRightMul_of_isMCA G MC M hM U γ x h)
+
+/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `M` a matrix
+with a left pseudoinverse. Then the generator `G'` obtained from `G` by right multiplication by `M`
 is an MCA generator with the same error `ε_mca` as `G`.
-Lemma 4.1 [BCGM25]. -/
-lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ)
-  (LC : LinearCode ι F) (hGMCA : IsMCAGenerator G ε_mca LC)
-  (A : Matrix ℓ ℓ' F) (hA : HasLeftPseudoInverse A) :
-    IsMCAGenerator (generatorByRightMul G A) ε_mca LC := by
-  intro U γ
-  have isMCA_generatorByRightMul_of_isMCA (x : S) :
-IsMCA (generatorByRightMul G A) LC x U γ → IsMCA G LC x (matrixMulCodewords A U) γ := by
-    obtain ⟨B, hB⟩ := hA
-    rintro ⟨T, hT_card, hT_proj, j, hj⟩
-    refine ⟨T, hT_card, ?_, ?_⟩
-    · convert hT_proj using 1
-      ext i
-      simp only [generatorByRightMul, Matrix.vecMul_vecMul]
-      congr! 2
-    · contrapose! hj
-      convert LinearCode.projectedCode_linearCombination LC T (fun i => matrixMulCodewords A U i)
-        (fun i => B j i) (fun i => hj i) using 1
-      · rfl
-      · ext k
-        simp [matrixMulCodewords, ← Matrix.mul_apply, ← Matrix.mul_assoc, hB]
-  exact le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _ fun x h => isMCA_generatorByRightMul_of_isMCA x h)
-    (hGMCA (matrixMulCodewords A U) γ)
+The `IsMCAGenerator` form of `mcaError_generatorByRightMul_le`. -/
+lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+    (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
+    (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
+    IsMCAGenerator (generatorByRightMul G M) ε_mca MC :=
+  fun γ => le_trans (mcaError_generatorByRightMul_le G MC M hM γ) (hGMCA γ)
 
 open Classical in
-/-- Extend a collection of words `U : κ → (ι → F)` to `ℓ → (ι → F)` by filling in the extra
+/-- Extend a collection of words `U : κ → (ι → A)` to `ℓ → (ι → A)` by filling in the extra
 positions with zeros. -/
-noncomputable def zeroExtend (κ : Set ℓ) (U : κ → (ι → F)) : ℓ → (ι → F) :=
+noncomputable def zeroExtend (κ : Set ℓ) (U : κ → (ι → A)) : ℓ → (ι → A) :=
 fun i => if h : i ∈ κ then U ⟨i, h⟩ else 0
 
 /-- If the MCA condition `IsMCA` holds for a projected generator, then `IsMCA` holds for the
 original generator `G` with the zero-extension defined above. -/
-lemma isMCA_projectedGenerator_of_isMCA (LC : LinearCode ι F) [Nonempty S] (G : Generator S ℓ F)
-    (κ : Set ℓ) [Fintype κ] (U : κ → (ι → F)) (γ : I) (x : S) :
-    IsMCA (projectedGenerator G κ) LC x U γ → IsMCA G LC x (zeroExtend κ U) γ := by
-  have vecMul_projectedGenerator :
-    Matrix.vecMul (projectedGenerator G κ x) U = Matrix.vecMul (G x) (zeroExtend κ U) := by
-    ext i
-    simp only [Matrix.vecMul, dotProduct]
+lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G : Generator S ℓ F)
+    (κ : Set ℓ) [Fintype κ] (U : κ → (ι → A)) (γ : ℝ) (x : S) :
+    IsMCA (projectedGenerator G κ) MC x U γ → IsMCA G MC x (zeroExtend κ U) γ := by
+  have smulSum_projectedGenerator (i : ι) :
+    ∑ j, projectedGenerator G κ x j • U j i = ∑ j, G x j • zeroExtend κ U j i := by
     rw [← Finset.sum_subset (Finset.subset_univ (Set.toFinset κ))]
     · refine Finset.sum_bij (fun j _ => j) ?_ ?_ ?_ ?_ <;>
         simp [projectedGenerator, zeroExtend]
@@ -107,139 +152,93 @@ lemma isMCA_projectedGenerator_of_isMCA (LC : LinearCode ι F) [Nonempty S] (G :
     simp [zeroExtend, j.property]
   rintro ⟨T, hT₁, hT₂, j, hT₃⟩
   exact ⟨T, hT₁,
-    by convert hT₂ using 1; exact funext fun _ => by simp [vecMul_projectedGenerator],
-    ⟨j, by rw [zeroExtend_val] ; assumption⟩⟩
+    by convert hT₂ using 1; exact funext fun i => (smulSum_projectedGenerator i.val).symm,
+    ⟨j, by
+      rw [zeroExtend_val]
+      assumption⟩⟩
+
+/-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
+error. Stated at the error *value*, so no error function appears. -/
+lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : ModuleCode ι F A)
+    (κ : Set ℓ) [Fintype κ] (γ : ℝ) :
+    mcaError (projectedGenerator G κ) MC γ ≤ mcaError G MC γ :=
+  mcaError_le_of_forall_isMCA_imp G (projectedGenerator G κ) MC γ (zeroExtend κ)
+    (fun U x h => isMCA_projectedGenerator_of_isMCA MC G κ U γ x h)
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
 subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
-Corollary 4.2 [BCGM25]. -/
-lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ) (LC : LinearCode ι F)
-(hGMCA : IsMCAGenerator G ε_mca LC) (κ : Set ℓ) [Fintype κ] :
-  IsMCAGenerator (projectedGenerator G κ) ε_mca LC := by
-  intro U γ
-  exact le_trans (Pr_le_Pr_of_implies ($ᵖ S) _ _
-          fun x h => isMCA_projectedGenerator_of_isMCA LC G κ U γ x h)
-    (hGMCA (zeroExtend κ U) γ)
+The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
+lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+    (MC : ModuleCode ι F A)
+    (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
+    IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
+  fun γ => le_trans (mcaError_projectedGenerator_le G MC κ γ) (hGMCA γ)
 
 /-- Mutual correlated agreement is invariant under bijective relabellings of the seed space and of
 the output coordinates of a generator. This lets us transport MCA statements along the canonical
-equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products of generators. -/
+equivalences (such as `Fin.consEquiv`) that arise when iterating tensor products of generators.
+
+Not an instance of `mcaError_le_of_forall_isMCA_imp`: that skeleton keeps the seed space fixed,
+whereas here the seed space is relabelled along `eS`, so the probabilities are compared by
+`Finset.card_equiv` rather than by monotonicity of `Pr`. -/
 lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
-    (LC : LinearCode ι F) (G : Generator S ℓ F) (ε_mca : I → ℝ)
-    (hGMCA : IsMCAGenerator G ε_mca LC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :
-    IsMCAGenerator (fun x' j' => G (eS x') (eL.symm j')) ε_mca LC := by
+    (MC : ModuleCode ι F A) (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+    (hGMCA : IsMCAGenerator G ε_mca MC) (eS : S' ≃ S) (eL : ℓ ≃ ℓ') :
+    IsMCAGenerator (fun x' j' => G (eS x') (eL.symm j')) ε_mca MC := by
   classical
-  intro U γ
+  intro γ
+  refine iSup_le fun U => ?_
   -- The reindexed combination is the original combination of the relabelled words `U ∘ eL`.
-  have hvec : ∀ x' : S', Matrix.vecMul (fun j' => G (eS x') (eL.symm j')) U
-      = Matrix.vecMul (G (eS x')) (fun j => U (eL j)) := by
+  have hvec : ∀ x' : S', (fun k => ∑ j', G (eS x') (eL.symm j') • U j' k)
+      = fun k => ∑ j, G (eS x') j • U (eL j) k := by
     intro x'
     funext kk
-    simp only [Matrix.vecMul, dotProduct]
-    rw [← Equiv.sum_comp eL fun j' => G (eS x') (eL.symm j') * U j' kk]
+    rw [← Equiv.sum_comp eL fun j' => G (eS x') (eL.symm j') • U j' kk]
     simp
   have hiff : ∀ x' : S',
-      IsMCA (fun x' j' => G (eS x') (eL.symm j')) LC x' U γ
-        ↔ IsMCA G LC (eS x') (fun j => U (eL j)) γ := by
+      IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)
+        ↔ IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ) := by
     intro x'
     constructor
     · rintro ⟨T, hT, hmem, j', hj'⟩
-      refine ⟨T, hT, ?_, eL.symm j', by simpa using hj'⟩
-      rw [← hvec x']
-      exact hmem
+      exact ⟨T, hT, by rw [← hvec x']; exact hmem, eL.symm j', by simpa using hj'⟩
     · rintro ⟨T, hT, hmem, j, hj⟩
-      refine ⟨T, hT, ?_, eL j, hj⟩
-      rw [hvec x']
-      exact hmem
+      exact ⟨T, hT, by rw [hvec x']; exact hmem, eL j, hj⟩
   have hcard : (Finset.univ.filter fun x' : S' =>
-        IsMCA G LC (eS x') (fun j => U (eL j)) γ).card
-      = (Finset.univ.filter fun x : S => IsMCA G LC x (fun j => U (eL j)) γ).card :=
+        IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)).card
+      = (Finset.univ.filter fun x : S => IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)).card :=
     Finset.card_equiv eS fun x' => by simp
-  calc Pr_{let x' ←$ᵖ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) LC x' U γ]
-      = Pr_{let x' ←$ᵖ S'}[IsMCA G LC (eS x') (fun j => U (eL j)) γ] := Pr_congr hiff
-    _ = Pr_{let x ←$ᵖ S}[IsMCA G LC x (fun j => U (eL j)) γ] := by
+  calc Pr_{let x' ←$ᵖ S'}[IsMCA (fun x' j' => G (eS x') (eL.symm j')) MC x' U (γ : ℝ)]
+      = Pr_{let x' ←$ᵖ S'}[IsMCA G MC (eS x') (fun j => U (eL j)) (γ : ℝ)] := Pr_congr hiff
+    _ = Pr_{let x ←$ᵖ S}[IsMCA G MC x (fun j => U (eL j)) (γ : ℝ)] := by
         rw [prob_uniform_eq_ofReal, prob_uniform_eq_ofReal, hcard, Fintype.card_congr eS]
-    _ ≤ ENNReal.ofReal (ε_mca γ) := hGMCA _ γ
+    _ ≤ (ε_mca γ : ENNReal) := hGMCA.prob_le _ γ
 
-/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
-generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
-is an MCA generator. -/
-lemma tensor_of_MCA_is_MCA [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S'] (LC : LinearCode ι F)
-    (G : Generator S ℓ F) (ε_mca : I → ℝ) (hε_mca : ∀ γ, 0 ≤ ε_mca γ)
-    (hGMCA : IsMCAGenerator G ε_mca LC)
-    (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ) (hε_mca' : ∀ γ, 0 ≤ ε_mca' γ)
-    (hG'MCA : IsMCAGenerator G' ε_mca' LC) :
-    IsMCAGenerator (TensorGenerator_Explicit G G')
-      (ε_mca + (Fintype.card ℓ : ℝ) • ε_mca') LC := by
-  intro U γ
-  -- `W x' i` is the `G'`-combination of the `i`-th "row" `(U (i, ·))` of the word matrix.
-  set W : S' → (ℓ → (ι → F)) := fun x' i => Matrix.vecMul (G' x') (fun j => U (i, j))
-  -- Pointwise: an MCA violation of the tensor generator forces an MCA violation of `G` (on the
-  -- `W`-rows) or of `G'` (on some individual row).
-  have himp : ∀ p : S × S', IsMCA (TensorGenerator_Explicit G G') LC p U γ →
-      IsMCA G LC p.1 (W p.2) γ ∨ ∃ i, IsMCA G' LC p.2 (fun j => U (i, j)) γ := by
-    rintro ⟨x, x'⟩ ⟨T, hTcard, hTproj, ⟨i₀, j₀⟩, hij⟩
-    rw [vecMul_tensorGenerator_explicit G G' U x x'] at hTproj
-    by_cases hcase : ∃ i, projectedWord (W x' i) T ∉ projectedCode_submod LC T
-    · exact Or.inl ⟨T, hTcard, hTproj, hcase⟩
-    · simp only [not_exists, not_not] at hcase
-      exact Or.inr ⟨i₀, T, hTcard, hcase i₀, j₀, hij⟩
-  -- Rewrite the target error as the matching sum of `ENNReal.ofReal`s.
-  have hEq : ENNReal.ofReal (ε_mca γ) + (Fintype.card ℓ : ℝ≥0∞) * ENNReal.ofReal (ε_mca' γ)
-      = ENNReal.ofReal ((ε_mca + (Fintype.card ℓ : ℝ) • ε_mca') γ) := by
-    rw [Pi.add_apply, Pi.smul_apply, smul_eq_mul,
-      ENNReal.ofReal_add (hε_mca γ) (mul_nonneg (by positivity) (hε_mca' γ)),
-      ENNReal.ofReal_mul (by positivity), ENNReal.ofReal_natCast]
-  -- `G`-term: reorder so `S'` is sampled first, then apply `hGMCA` for each `x'`.
-  have hA : Pr_{ let p ←$ᵖ (S × S') }[ IsMCA G LC p.1 (W p.2) γ ]
-      ≤ ENNReal.ofReal (ε_mca γ) := by
-    rw [prob_split_uniform_sampling_of_equiv_prod (Equiv.prodComm S S')]
-    simp only [Equiv.prodComm_symm, Equiv.prodComm_apply, Prod.swap_prod_mk]
-    exact Pr_seq_le_of_forall_le ($ᵖ S) ($ᵖ S')
-      (fun x x' => IsMCA G LC x (W x') γ) (fun x' => hGMCA (W x') γ)
-  -- `G'`-term: the event is independent of `x ∈ S`; union bound over the `ℓ` rows.
-  have hB : Pr_{ let p ←$ᵖ (S × S') }[ ∃ i, IsMCA G' LC p.2 (fun j => U (i, j)) γ ]
-      ≤ (Fintype.card ℓ : ℝ≥0∞) * ENNReal.ofReal (ε_mca' γ) := by
-    rw [prob_split_uniform_sampling_of_prod]
-    refine Pr_seq_le_of_forall_le ($ᵖ S') ($ᵖ S)
-      (fun x' _ => ∃ i, IsMCA G' LC x' (fun j => U (i, j)) γ) (fun _ => ?_)
-    refine (Pr_exists_le _ _).trans ?_
-    refine (Finset.sum_le_card_nsmul _ _ _ fun i _ => hG'MCA (fun j => U (i, j)) γ).trans ?_
-    simp [Finset.card_univ, nsmul_eq_mul]
-  -- Combine: the tensor MCA event implies one of the two, then union + additivity.
-  refine le_trans (Pr_le_Pr_of_implies ($ᵖ (S × S')) _ _ himp) ?_
-  refine le_trans (Pr_or_le ($ᵖ (S × S')) _ _) ?_
-  rw [← hEq]
-  exact add_le_add hA hB
+/-- The MCA error function for MDS codes, as defined in Theorem 6.1 [BCGM25].
 
-/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
-generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
-is an MCA generator with error `ε_mca + ε_mca'`. -/
-lemma tensor_of_MCA_is_MCA_tight [Nonempty S] {S' : Type} [Fintype S'] [Nonempty S']
-    (LC : LinearCode ι F)
-    (G : Generator S ℓ F) (ε_mca : I → ℝ) (hGMCA : IsMCAGenerator G ε_mca LC)
-    (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ) (hG'MCA : IsMCAGenerator G' ε_mca' LC) :
-    IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε_mca') LC := by
-  sorry
-
-/-- The MCA error function for MDS codes, as defined in Theorem 6.1 [BCGM25]. -/
+Valued in `ℝ≥0` to match `IsMCAGenerator`; the paper's expression is a real, and is clamped at `0`
+by `Real.toNNReal`. The clamp is not lossy for the intended parameter range — the expression is a
+bound on a probability, and is nonnegative wherever [BCGM25]'s hypotheses `0 < η < 1` and
+`2 ≤ ℓ` hold. -/
 noncomputable def ε_MCA_MDS [DecidableEq F] [Nonempty ι] (LC : LinearCode ι F) (ℓ s : ℕ) (η : ℝ) :
-    I → ℝ :=
+    I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (LC.carrier) : ℝ)
   letI ρ_C : ℝ := 1 - δ_C
   letI γ_ℓ : ℝ := 1 - (ρ_C + η) ^ (1 / ℓ : ℝ)
   fun γ =>
+    Real.toNNReal <|
       if γ < (δ_C / (ℓ + 1) : ℝ) then
-      letI m' : ℝ := max (n * γ) 1
-      m' * ((ℓ - 1) / s : ℝ)
-    else
-      if γ ≤ 1 - (ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) then
-          (n * γ_ℓ / η) * ((ℓ - 1) / s) +
-          max (2 * (ℓ - 1) / (η * ((ρ_C + η) ^ (1 / ((ℓ + 1) : ℝ)) - (ρ_C + η) ^ (1 / ℓ : ℝ)) * s))
-              (ℓ * (ℓ + 1) / (η * s) : ℝ)
+        letI m' : ℝ := max (n * γ) 1
+        m' * ((ℓ - 1) / s : ℝ)
       else
-      1
+        if γ ≤ 1 - (ρ_C + η) ^ (1 / (ℓ + 1) : ℝ) then
+            (n * γ_ℓ / η) * ((ℓ - 1) / s) +
+            max (2 * (ℓ - 1) /
+                  (η * ((ρ_C + η) ^ (1 / ((ℓ + 1) : ℝ)) - (ρ_C + η) ^ (1 / ℓ : ℝ)) * s))
+                (ℓ * (ℓ + 1) / (η * s) : ℝ)
+        else
+        1
 
 /-- Theorem 6.1 (MCA for MDS generators) [BCGM25]. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]

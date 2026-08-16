@@ -632,6 +632,28 @@
       "venue": "Cryptology ePrint Archive",
       "year": "2019"
     },
+    "HMZ25": {
+      "authors": [
+        "Huang, Mi-Ying Miryam",
+        "Mao, Xinyu",
+        "Zhang, Jiapeng"
+      ],
+      "authors_text": "Huang, Mi-Ying Miryam and Mao, Xinyu and Zhang, Jiapeng",
+      "doi": "",
+      "entry_type": "misc",
+      "fields": {
+        "author": "Huang, Mi-Ying Miryam and Mao, Xinyu and Zhang, Jiapeng",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2025/199",
+        "title": "Sublinear Proofs over Polynomial Rings",
+        "url": "https://eprint.iacr.org/2025/199",
+        "year": "2025"
+      },
+      "key": "HMZ25",
+      "title": "Sublinear Proofs over Polynomial Rings",
+      "url": "https://eprint.iacr.org/2025/199",
+      "venue": "",
+      "year": "2025"
+    },
     "IOPs": {
       "authors": [
         "Ben-Sasson, Eli",
@@ -949,16 +971,16 @@
     },
     "NOZ26": {
       "authors": [
-        "Nguyen, Ngoc Khanh",
-        "O'Rourke, George",
-        "Zhang, Jiapeng"
+        "Ngoc Khanh Nguyen",
+        "George O'Rourke",
+        "Jiapeng Zhang"
       ],
-      "authors_text": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
+      "authors_text": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
       "doi": "",
       "entry_type": "misc",
       "fields": {
-        "author": "Nguyen, Ngoc Khanh and O'Rourke, George and Zhang, Jiapeng",
-        "howpublished": "Cryptology ePrint Archive, Paper 2026/156",
+        "author": "Ngoc Khanh Nguyen and George O'Rourke and Jiapeng Zhang",
+        "howpublished": "Cryptology {ePrint} Archive, Paper 2026/156",
         "title": "Hachi: Efficient Lattice-Based Multilinear Polynomial Commitments over Extension Fields",
         "url": "https://eprint.iacr.org/2026/156",
         "year": "2026"

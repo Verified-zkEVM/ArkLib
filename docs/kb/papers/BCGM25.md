@@ -12,6 +12,9 @@ related_concepts:
 related_modules:
   - ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean
   - ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Separation.lean
 ---
 
 # BCGM25
@@ -29,14 +32,22 @@ with Reed-Solomon refinements up to the Johnson bound.
   [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean).
 - MCA generator definitions and linear-transformation closure statements in
   [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean).
+- Tensor-generator MCA bounds in
+  [`ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean).
+- The affine-line-to-affine-space MCA implication in
+  [`ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean).
 - The broader formalization target that polynomial-generator MCA bounds should become reusable
   coding-theory infrastructure rather than WHIR-only assumptions.
+
+The per-statement correspondence, including where the formalization departs from the paper as
+printed, is in [`../audits/bcgm25-mca-generators.md`](../audits/bcgm25-mca-generators.md).
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean)
 - [`ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean)
-- [`ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean`](../../../ArkLib/ProofSystem/Whir/MutualCorrAgreement.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean)
 
 ## Version Notes
 

@@ -14,7 +14,7 @@ are the ring automorphisms `σ_i` induced by `X ↦ X^i` for `i` a unit modulo t
 `2d = 2^{α+1}` (equivalently, `i` odd). These are the maps used throughout Hachi [NOZ26, §3]
 to identify the finite-field extensions inside `R_q`.
 
-Following the project's two-layer discipline (cf. `CyclotomicRing/Basic.lean`):
+Following the project's two-layer discipline (cf. `CyclotomicRing/Core/Basic.lean`):
 
 * **Computable layer** (`galoisAut`): on a reduced representative `a = Σ_{k<d} a_k X^k`, the
   automorphism remaps each monomial `X^k ↦ X^{ki}` and reduces modulo `X^d + 1`. Since
@@ -154,7 +154,7 @@ theorem galoisAutₛ_mk (α i : ℕ) (hi : Odd i) (p : Polynomial R) :
   rw [galoisAutₛ, Ideal.Quotient.lift_mk, RingHom.comp_apply, galoisAeval_apply]
 
 omit [DecidableEq R] in
-/-- **(S1)** The semantic automorphism on a lifted element: `galoisAutₛ` applied to
+/-- The semantic automorphism on a lifted element: `galoisAutₛ` applied to
 `a.toQuotient` is the class of `aeval (X^i)` applied to the underlying polynomial. -/
 theorem galoisAutₛ_toQuotient (α i : ℕ) (hi : Odd i) (a : Rq (powTwoCyclotomic (R := R) α)) :
     galoisAutₛ α i hi a.toQuotient
@@ -164,7 +164,7 @@ theorem galoisAutₛ_toQuotient (α i : ℕ) (hi : Odd i) (a : Rq (powTwoCycloto
 
 /-! ## Soundness bridge -/
 
-/-- **(S5)** The core polynomial identity behind soundness: the monomial-remapped sum (before
+/-- The core polynomial identity behind soundness: the monomial-remapped sum (before
 reduction) equals `aeval (X^i)` of the underlying polynomial. Both sides are
 `∑_{k<d} X^{ki}·a_k`. -/
 theorem galoisAut_sum_toPoly_eq_aeval (α i : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
@@ -179,7 +179,7 @@ theorem galoisAut_sum_toPoly_eq_aeval (α i : ℕ) (a : Rq (powTwoCyclotomic (R 
   refine Finset.sum_congr rfl (fun k _ => ?_)
   rw [toPoly_monomial, aeval_X_pow_monomial, coeff_toPoly]
 
-/-- **(S6) Soundness**: the computable automorphism agrees with the semantic one under
+/-- **Soundness**: the computable automorphism agrees with the semantic one under
 `Rq.toQuotient`. This is the key bridge (Hachi [NOZ26, §3]); it lets all algebraic structure
 (ring-hom laws, bijectivity) be proven on the Mathlib side and transported back. -/
 theorem galoisAut_toQuotient (α i : ℕ) (hi : Odd i) (a : Rq (powTwoCyclotomic (R := R) α)) :
@@ -204,7 +204,7 @@ theorem galoisAut_mul (α i : ℕ) (hi : Odd i) (a b : Rq (powTwoCyclotomic (R :
 
 -- TODO this is not the right place for this.
 omit [DecidableEq R] in
-/-- **(C-1)** `X^{2^{α+1}} ≡ 1` in the quotient, since `X^{2d} - 1 = (X^d - 1)(X^d + 1)`. -/
+/-- `X^{2^{α+1}} ≡ 1` in the quotient, since `X^{2d} - 1 = (X^d - 1)(X^d + 1)`. -/
 theorem mk_X_pow_conductor_eq_one (α : ℕ) :
     Ideal.Quotient.mk (powTwoCyclotomic (R := R) α).modIdeal (Polynomial.X ^ 2 ^ (α + 1)) = 1 := by
   have hmem : (Polynomial.X ^ 2 ^ (α + 1) - 1 : Polynomial R)
@@ -216,7 +216,7 @@ theorem mk_X_pow_conductor_eq_one (α : ℕ) :
   exact (Ideal.Quotient.eq_zero_iff_mem).mpr hmem
 
 omit [DecidableEq R] in
-/-- **(C-2)** `X^n ≡ X^{n mod 2^{α+1}}` in the quotient. -/
+/-- `X^n ≡ X^{n mod 2^{α+1}}` in the quotient. -/
 theorem mk_X_pow_periodic (α n : ℕ) :
     Ideal.Quotient.mk (powTwoCyclotomic (R := R) α).modIdeal (Polynomial.X ^ n)
       = Ideal.Quotient.mk _ (Polynomial.X ^ (n % 2 ^ (α + 1))) := by
@@ -224,7 +224,7 @@ theorem mk_X_pow_periodic (α n : ℕ) :
   rw [pow_add, pow_mul, map_mul, map_pow, mk_X_pow_conductor_eq_one, one_pow, _root_.one_mul]
 
 omit [DecidableEq R] in
-/-- **(C-3 helper)** `aeval (X^n)` and `aeval (X^{n mod 2^{α+1}})` agree in the quotient. -/
+/-- `aeval (X^n)` and `aeval (X^{n mod 2^{α+1}})` agree in the quotient. -/
 theorem mk_aeval_X_pow_periodic (α n : ℕ) (p : Polynomial R) :
     Ideal.Quotient.mk (powTwoCyclotomic (R := R) α).modIdeal
         (Polynomial.aeval (Polynomial.X ^ n : Polynomial R) p)
