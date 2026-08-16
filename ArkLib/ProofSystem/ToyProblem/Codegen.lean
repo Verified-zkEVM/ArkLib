@@ -55,6 +55,16 @@ def irsRbrExtractorProbe := @Impl.IRS.irsRbrExtractor
 /-- Out-of-section probe for the exact straightline extractor. -/
 def irsStraightlineExtractorProbe := @Impl.IRS.irsStraightlineExtractor
 
+/-- Out-of-section probes for the executable C6.2 protocol objects. -/
+def protocol62ProverProbe := @Spec.prover
+def protocol62OracleVerifierProbe := @Spec.oracleVerifier
+def protocol62OracleReductionProbe := @Spec.oracleReduction
+
+/-- Out-of-section probes for the executable C6.9 protocol objects. -/
+def protocol69ProverProbe := @SimplifiedIOR.prover
+def protocol69OracleVerifierProbe := @SimplifiedIOR.oracleVerifier
+def protocol69OracleReductionProbe := @SimplifiedIOR.oracleReduction
+
 /-- Out-of-section probe for the C6.9 virtual output-oracle implementation. -/
 def simplifiedOutputSimulationProbe := @SimplifiedIOR.outputSimulation
 
@@ -75,6 +85,12 @@ assert_toy_ir Impl.IRS.irsErasureDecodeOrZero
 assert_toy_ir Impl.IRS.irsTransitionExtractor
 assert_toy_ir Impl.IRS.irsRbrExtractor
 assert_toy_ir Impl.IRS.irsStraightlineExtractor
+assert_toy_ir Spec.prover
+assert_toy_ir Spec.oracleVerifier
+assert_toy_ir Spec.oracleReduction
+assert_toy_ir SimplifiedIOR.prover
+assert_toy_ir SimplifiedIOR.oracleVerifier
+assert_toy_ir SimplifiedIOR.oracleReduction
 assert_toy_ir SimplifiedIOR.outputSimulation
 assert_toy_ir Impl.IRS.simplifiedIorRbrExtractor
 assert_toy_ir Impl.IRS.simplifiedIorStraightlineExtractor

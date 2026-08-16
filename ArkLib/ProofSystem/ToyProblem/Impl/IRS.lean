@@ -465,8 +465,8 @@ theorem irsTransitionExtractor_pointList_and_affine [Nonempty ι]
         have hp := congrFun (hproj 1) ⟨x, hx⟩
         simpa [LinearCode.projectedWord] using hp
     · exact lt_of_lt_of_le hδ (by
-        exact_mod_cast (minRelHammingDistCode_le_one
-          (ReedSolomon.code domain (k / s) : Set (ι → F))))
+        exact_mod_cast (Code.minRelHammingDistCode_le_one
+          (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
   · have hlinear := hstate.1
     rw [hcombMsg] at hlinear
     simpa only [Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_mul,
@@ -544,8 +544,8 @@ theorem irs_exact_gamma_failure_prob_le [Nonempty ι]
       le_trans (by exact_mod_cast hncard) hencard
     rwa [← ENat.coe_toNat hfinite, Nat.cast_le] at hcast
   have hδ1 : δ < 1 := lt_of_lt_of_le hδ (by
-    exact_mod_cast (minRelHammingDistCode_le_one
-      (ReedSolomon.code domain (k / s) : Set (ι → F))))
+    exact_mod_cast (Code.minRelHammingDistCode_le_one
+      (C := (ReedSolomon.code domain (k / s) : Set (ι → F)))))
   have hcards : (Finset.univ.filter (fun γ : F ↦
       IRSExactGammaFailure k s hdvd domain δ stmtIn γ ∧
         ¬ IsMCA (AffineLineGenerator F) C γ
@@ -608,7 +608,7 @@ theorem irs_exact_gamma_failure_prob_le [Nonempty ι]
             ![stmtIn.2 0, stmtIn.2 1] (δ : ℝ)
         · exact Or.inl hm
         · exact Or.inr ⟨h, hm⟩))
-    (le_trans (Pr_or_le _ _) (add_le_add ?_ ?_))
+    (le_trans (Probability.Pr_or_le ($ᵖ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → Fin s → F) ↦
         Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])

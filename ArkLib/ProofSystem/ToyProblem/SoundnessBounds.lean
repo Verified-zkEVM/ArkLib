@@ -143,15 +143,11 @@ theorem encStack_mem_closeCodewordsRel_iff [Nonempty ι] {k : ℕ}
     exact_mod_cast hdist
 
 omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
-/-- The minimum relative distance of any code is at most one. -/
+/-- Deprecated compatibility name for the general coding-theory bound. -/
+@[deprecated Code.minRelHammingDistCode_le_one (since := "2026-08-16")]
 theorem minRelHammingDistCode_le_one [Nonempty ι] (C : Set (ι → A)) :
-    minRelHammingDistCode C ≤ 1 := by
-  by_cases h : (possibleRelHammingDists C).Nonempty
-  · obtain ⟨p, _, heq⟩ := minRelHammingDistCode_mem h
-    rw [← heq]
-    exact relHammingDist_le_one
-  · rw [minRelHammingDistCode_of_empty h]
-    exact zero_le_one
+    minRelHammingDistCode C ≤ 1 :=
+  Code.minRelHammingDistCode_le_one (C := C)
 
 omit [Field F] [Fintype F] [Fintype A] [AddCommGroup A] in
 /-- Two codewords agreeing on more than the minimum-distance erasure threshold
@@ -163,7 +159,7 @@ theorem codeword_eq_of_agree_on_large_set [Nonempty ι] {C : Set (ι → A)}
     (hagree : ∀ j ∈ S, w₁ j = w₂ j) : w₁ = w₂ := by
   by_contra hne
   have hδ1 : δ < 1 :=
-    lt_of_lt_of_le hδ_lt (by exact_mod_cast minRelHammingDistCode_le_one C)
+    lt_of_lt_of_le hδ_lt (by exact_mod_cast Code.minRelHammingDistCode_le_one (C := C))
   have hclose : (δᵣ(w₁, w₂) : ℝ≥0) ≤ δ := by
     rw [Code.relCloseToWord_iff_exists_agreementCols]
     refine ⟨S, ?_, fun colIdx ↦
@@ -202,23 +198,12 @@ theorem affine_solution_card_le_one {a b μ₁ μ₂ : F}
     · exact absurd (sub_eq_zero.mp h2) hb
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-/-- Union bound for two predicates under a uniform finite sample. -/
+/-- Deprecated compatibility name for the general probability union bound. -/
+@[deprecated Probability.Pr_or_le (since := "2026-08-16")]
 theorem Pr_or_le {α : Type} [Fintype α] [Nonempty α] (P Q : α → Prop) :
     Pr_{let x ← $ᵖ α}[P x ∨ Q x] ≤
-      Pr_{let x ← $ᵖ α}[P x] + Pr_{let x ← $ᵖ α}[Q x] := by
-  classical
-  rw [prob_uniform_eq_card_filter_div_card, prob_uniform_eq_card_filter_div_card,
-    prob_uniform_eq_card_filter_div_card, ← ENNReal.add_div]
-  refine ENNReal.div_le_div_right ?_ _
-  have hsub : Finset.univ.filter (fun x ↦ P x ∨ Q x) ⊆
-      Finset.univ.filter P ∪ Finset.univ.filter Q := by
-    intro x hx
-    rw [Finset.mem_filter] at hx
-    rw [Finset.mem_union, Finset.mem_filter, Finset.mem_filter]
-    rcases hx.2 with h | h
-    · exact Or.inl ⟨Finset.mem_univ _, h⟩
-    · exact Or.inr ⟨Finset.mem_univ _, h⟩
-  exact_mod_cast le_trans (Finset.card_le_card hsub) (Finset.card_union_le _ _)
+      Pr_{let x ← $ᵖ α}[P x] + Pr_{let x ← $ᵖ α}[Q x] :=
+  Probability.Pr_or_le ($ᵖ α) P Q
 
 /-- The post-combination-challenge state: a message satisfies the folded linear
 constraint and its codeword agrees with the folded received word on enough columns. -/
@@ -246,7 +231,7 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
   classical
   have hδ1 : δ < 1 :=
     lt_of_lt_of_le hδ_lt
-      (by exact_mod_cast minRelHammingDistCode_le_one (C : Set (ι → A)))
+      (by exact_mod_cast Code.minRelHammingDistCode_le_one (C := (C : Set (ι → A))))
   obtain ⟨m, hconstr, S, hScard, hagree⟩ := hEvent
   have hcard : (S.card : ℝ) ≥ (Fintype.card ι : ℝ) * (1 - (δ : ℝ)) := by
     linarith
@@ -362,7 +347,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
   classical
   have hδ1 : δ < 1 :=
     lt_of_lt_of_le hδ_lt
-      (by exact_mod_cast minRelHammingDistCode_le_one (C : Set (ι → A)))
+      (by exact_mod_cast Code.minRelHammingDistCode_le_one (C := (C : Set (ι → A))))
   let Cint : Set (ι → Fin 2 → A) :=
     ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
   let center : ι → Fin 2 → A := fun i ↦ ![f₁ i, f₂ i]
@@ -423,7 +408,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
         by_cases hm : IsMCA (AffineLineGenerator F) C γ ![f₁, f₂] (δ : ℝ)
         · exact Or.inl hm
         · exact Or.inr ⟨h, hm⟩))
-    (le_trans (Pr_or_le _ _) (add_le_add ?_ ?_))
+    (le_trans (Probability.Pr_or_le ($ᵖ F) _ _) (add_le_add ?_ ?_))
   · exact le_iSup
       (fun U : Fin 2 → (ι → A) ↦
         Pr_{let γ ← $ᵖ F}[IsMCA (AffineLineGenerator F) C γ U (δ : ℝ)])
@@ -691,7 +676,7 @@ at least `|Λ(C^{≡2}, δ)| / (|F| + 2·|Λ(C^{≡2}, δ)|)`.
 ## Statement provenance (corrected 2026-06-04, finding S5)
 
 Writing `N := |Λ(C^{≡2}, δ)|`, `F := |F|`, the **final** soundness bound in
-ABF26 §6.4.1 (canonical `.tex` `lemma:list-decoding-attack`, lines 2655–2719)
+ABF26 §6.4.1 (canonical `.tex` `lemma:list-decoding-attack`)
 is `N / (F + 2N)`, hence the winning-set cardinality bound `N · F / (F + 2N)`.
 The earlier in-tree denominator `F + N − 1` was the *intermediate* `|S_v|`
 bound from the **first** Claim-B.1 application (paper step 3); the winning set
@@ -1018,8 +1003,8 @@ theorem mem_winningSetFor_zero_of_relClose {k : ℕ} [Nonempty ι]
 
 omit [DecidableEq F] in
 /-- ABF26 Lemma 6.13 in fixed-encoding form: positive correlated-agreement
-error yields an explicit violating instance whose winning set realizes that
-error. -/
+error yields an explicit violating instance whose winning-set ratio
+lower-bounds that error. -/
 theorem simplified_iop_soundness_ca_lb {k : ℕ} [Nonempty ι]
     (C : Set (ι → A)) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ)
     (hδ_lt : δ < 1)
@@ -1090,16 +1075,18 @@ theorem simplified_iop_soundness_ca_lb {k : ℕ} [Nonempty ι]
     have hmono := Set.ncard_le_ncard hsub (Set.toFinite _)
     exact_mod_cast hmono
 
-/-! ## Actual and extractor-certified error interfaces
+/-! ## Winning-set and extractor-certified error interfaces
 
-The winning-set quantity below is the actual fixed-instance combination-round
-error from ABF26 Definition 6.11.  It is deliberately distinct from
+The winning-set quantity below is the exact combinatorial supremum from ABF26
+Definition 6.11.  It is deliberately distinct from
 `certifiedGammaError`, the MCA-plus-list expression proved for the executable
-extractor.  The bridge theorem makes their relationship explicit. -/
+extractor.  The bridge theorem makes their relationship explicit; the matching
+optimal-adversary theorem needed to call the supremum an exact protocol-game
+error is outside the proved interface. -/
 
 /-- A two-row instance which violates the relaxed toy relation for the pinned
-encoder.  These are precisely the instances over which actual soundness is
-measured. -/
+encoder.  These are precisely the instances indexed by Definition 6.11's
+winning-set supremum. -/
 structure ViolatingInstance {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) where
   v : Fin k → F
@@ -1109,6 +1096,23 @@ structure ViolatingInstance {k : ℕ}
   f₂ : ι → A
   violates : ¬ relaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂]
 
+/-- The Definition 6.11 supremum is never indexed by an empty type: the zero
+constraint vector with first claimed value `1` cannot be satisfied by any
+message, independently of the encoder or radius. -/
+instance violatingInstanceNonempty {k : ℕ}
+    (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    Nonempty (ViolatingInstance enc δ) := by
+  refine ⟨{
+    v := 0
+    μ₁ := 1
+    μ₂ := 0
+    f₁ := 0
+    f₂ := 0
+    violates := ?_ }⟩
+  rintro ⟨Wstar, ⟨M, -, hlin⟩, -⟩
+  have h := hlin 0
+  simp at h
+
 /-- The fraction of challenges won by one violating instance. -/
 noncomputable def winningSetRatio {k : ℕ}
     {enc : (Fin k → F) →ₗ[F] (ι → A)} {δ : ℝ≥0}
@@ -1116,7 +1120,11 @@ noncomputable def winningSetRatio {k : ℕ}
   ((winningSetFor enc δ x.v x.μ₁ x.μ₂ x.f₁ x.f₂).ncard : ℝ≥0) /
     (Fintype.card F : ℝ≥0)
 
-/-- The actual worst-case combination-round error at radius `δ`. -/
+/-- Definition 6.11's worst-case winning-challenge density at radius `δ`.
+
+This is an exact combinatorial quantity. The protocol-level upper coupling is proved below; the
+matching optimal-adversary/lower-coupling theorem needed to identify it with a minimal game error
+is not asserted here. -/
 noncomputable def winningSetSoundness {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) : ℝ≥0 :=
   ⨆ x : ViolatingInstance enc δ, winningSetRatio x
@@ -1139,7 +1147,7 @@ theorem winningSetRatio_le_one {k : ℕ}
   exact_mod_cast hle
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
-/-- The family of actual winning fractions is bounded above. -/
+/-- The family of winning-challenge fractions is bounded above. -/
 theorem bddAbove_winningSetRatio {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
     BddAbove (Set.range (fun x : ViolatingInstance enc δ ↦ winningSetRatio x)) := by
@@ -1148,7 +1156,7 @@ theorem bddAbove_winningSetRatio {k : ℕ}
   exact winningSetRatio_le_one x
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
-/-- Every explicit violating instance lower-bounds the actual worst-case error. -/
+/-- Every explicit violating instance lower-bounds the worst-case winning-set density. -/
 theorem winningSetRatio_le_winningSetSoundness {k : ℕ}
     {enc : (Fin k → F) →ₗ[F] (ι → A)} {δ : ℝ≥0}
     (x : ViolatingInstance enc δ) :
@@ -1156,15 +1164,15 @@ theorem winningSetRatio_le_winningSetSoundness {k : ℕ}
   le_ciSup (bddAbove_winningSetRatio enc δ) x
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
-/-- The actual combination-round error never exceeds one. -/
+/-- The worst-case winning-set density never exceeds one. -/
 theorem winningSetSoundness_le_one {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
     winningSetSoundness enc δ ≤ 1 :=
   ciSup_le' (fun x ↦ winningSetRatio_le_one x)
 
 omit [DecidableEq F] in
-/-- Correlated-agreement error lower-bounds the actual combination-round
-soundness error (ABF26 Lemma 6.13). -/
+/-- Correlated-agreement error lower-bounds the Definition 6.11 winning-set
+quantity (ABF26 Lemma 6.13). -/
 theorem epsCa_le_winningSetSoundness {k : ℕ} [Nonempty ι]
     {C : Set (ι → A)} (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1195,8 +1203,8 @@ theorem epsCa_le_winningSetSoundness {k : ℕ} [Nonempty ι]
   exact hbound
 
 omit [DecidableEq F] in
-/-- The two-row point-list attack lower-bounds actual combination-round
-soundness (ABF26 Lemma 6.12). -/
+/-- The two-row point-list attack lower-bounds the Definition 6.11 winning-set
+quantity (ABF26 Lemma 6.12). -/
 theorem listDecoding_le_winningSetSoundness {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1264,7 +1272,7 @@ theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
   rw [ENNReal.add_ne_top]
   exact ⟨mcaError_ne_top _ _ _, ENNReal.div_ne_top (by simp) (by simp)⟩
 
-/-- The actual winning-set error is bounded by the extractor-certified
+/-- The Definition 6.11 winning-set quantity is bounded by the extractor-certified
 MCA-plus-list error.  This is the quantitative content of ABF26 Lemma 6.10. -/
 theorem winningSetSoundness_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0)

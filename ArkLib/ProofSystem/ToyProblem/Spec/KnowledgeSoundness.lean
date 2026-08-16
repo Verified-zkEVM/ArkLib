@@ -4,8 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.ToyProblem.Spec.General
-import ArkLib.ProofSystem.ToyProblem.SoundnessBounds
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
 # Exact-extractor knowledge soundness for the toy protocol
@@ -286,7 +285,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
           else none)).trans ?_
       simp only [bind_assoc, map_eq_bind_pure_comp, Function.comp_def]
 
-/-! ## Direct bridge for the actual winning-set error
+/-! ## Direct bridge for the Definition 6.11 winning-set quantity
 
 This bridge intentionally uses the generic classical selector `extractZero`.
 The executable IRS theorem is separate and uses the distinct
@@ -396,8 +395,33 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
       _ ≤ (winningSetSoundness encode δ : ENNReal) := by
         exact_mod_cast winningSetRatio_le_winningSetSoundness x
 
+/-- Direct C6.9 game theorem at Definition 6.11's winning-set quantity.
+
+This is the protocol-level upper coupling missing from the bare combinatorial
+definition: the classical proof-side transition extractor fails with
+probability at most `winningSetSoundness encode δ`.  It does not assert the
+separate optimal-adversary/lower-coupling result that would identify this
+quantity as the minimal achievable game error. -/
+theorem simplifiedIOR_knowledgeSoundnessWith_choiceTransition
+    {k : ℕ} [SampleableType F]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    (SimplifiedIOR.oracleVerifier (ι := ι) (F := F) (A := A)
+      (k := k)).knowledgeSoundnessWith
+      (WitOut := SimplifiedIOR.OutputWitness (F := F) k)
+      init impl
+      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (SimplifiedIOR.outputRelationFor k
+        (encode : (Fin k → F) → (ι → A)) δ)
+      (SimplifiedIOR.transitionStraightlineExtractor k
+        (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
+      (winningSetSoundness encode δ) := by
+  apply SimplifiedIOR.knowledgeSoundWith_of_gamma_bound
+  exact choiceTransition_failure_sample_le encode δ
+
 omit [DecidableEq ι] [Fintype A] in
-/-- Direct fixed-radius game theorem for the actual-analysis error.  The theorem
+/-- Direct fixed-radius game theorem for the winning-set/spot-check upper bound. The theorem
 type names the classical `choiceStraightlineExtractor`; executable IRS clients
 should use the certified theorem in `Impl.IRS` instead. -/
 theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor

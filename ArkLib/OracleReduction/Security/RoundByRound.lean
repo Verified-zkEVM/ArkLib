@@ -148,9 +148,16 @@ structure StateFunction
   toFun_full : ∀ stmt tr, ¬ toFun (.last n) stmt tr →
     Pr[(· ∈ langOut) | OptionT.mk do (simulateQ impl (verifier.run stmt tr)).run' (← init)] = 0
 
-/-- A knowledge state function for a verifier, with respect to input relation `relIn`, output
-  relation `relOut`, and intermediate witness types `WitMid`. This is used to define
-  round-by-round knowledge soundness. -/
+/-- A generalized extractor-aware knowledge state function for a verifier, with respect to input
+relation `relIn`, output relation `relOut`, and stage-dependent witness types `WitMid`. This is used
+to define round-by-round knowledge soundness.
+
+This contract deliberately differs from ABF26 Definition A.5 in two ways. Across a prover move,
+`extractMid` may transform the later-stage witness before testing the earlier state, whereas A.5
+uses the same knowledge-state witness. At a full transcript, ArkLib requires the direction
+"positive-probability related verifier output implies the extracted final state"; A.5 prints an
+iff. These generalizations are sufficient for `toStateFunction` and the bad-transition proof, but
+source-fidelity claims must establish the stronger same-witness/final-iff properties separately. -/
 structure KnowledgeStateFunction
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)

@@ -13,6 +13,10 @@ import CompPoly.Data.Vector.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
 import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
 
+-- This established protocol prelude predates the default 1500-line cap. The VCVio compatibility
+-- migration in this PR changes dependent-argument spellings without adding a new subsystem.
+set_option linter.style.longFile 1700
+
 namespace Binius.BinaryBasefold
 
 open OracleSpec OracleComp ProtocolSpec Finset AdditiveNTT Polynomial MvPolynomial

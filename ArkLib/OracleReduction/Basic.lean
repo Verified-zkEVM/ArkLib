@@ -34,8 +34,9 @@ format:
     received as oracles. Which is which is specified by the protocol specification.
 
   - At the end of the interaction, the verifier performs a computation that outputs a new statement
-    `StmtOut`, and specify a _subset_ of the oracles it has received to be the output oracle
-    statements.
+    `StmtOut`. Each output oracle statement is represented either by a coherent embedding into an
+    input/message oracle or by a virtual oracle whose query implementation is proved to agree with
+    its extensional materialization.
 
 Our formulation of IORs can be seen in the literature as **F-IORs**, where `F` denotes an arbitrary
 class of oracles. See the blueprint for more details about our modeling choices.
@@ -572,10 +573,12 @@ theorem simulateOutputQuery_eq
   rcases q with ⟨i, q⟩
   cases hOutput : verifier.outputOracle with
   | inr simulation =>
-    simp [simulateOutputQuery, materializeOutput, materializeOutputOracle, hOutput]
+    simp only [simulateOutputQuery, materializeOutput, materializeOutputOracle,
+      hOutput, MessageIdx, Message]
     exact simulation.simOStmt_eq challenges oStmt messages ⟨i, q⟩
   | inl output =>
-    simp [simulateOutputQuery, materializeOutput, materializeOutputOracle, hOutput]
+    simp only [simulateOutputQuery, materializeOutput, materializeOutputOracle,
+      hOutput, MessageIdx, Message]
     split
     next j hEmbed =>
       have hType : OStmtOut i = OStmtIn j := by

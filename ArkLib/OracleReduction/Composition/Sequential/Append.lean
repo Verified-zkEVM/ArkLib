@@ -749,6 +749,15 @@ section Security
 
 open scoped NNReal
 
+/-! ### Admitted security-composition boundary
+
+The virtual-output execution semantics and the `append_toVerifier` commutation theorem above are
+proved. The generic completeness and security theorems below remain admitted because appended
+execution orders both prover phases before both verifier phases, while sequential execution
+interleaves each prover with its verifier. Their unrestricted `StateT` statements must therefore
+not be treated as established composition security. Standalone protocol theorems that do not invoke
+these declarations are outside this inherited trust boundary. -/
+
 section Protocol
 
 variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}

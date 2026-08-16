@@ -4,20 +4,17 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Alexander Hicks
 -/
 
-import ArkLib.ProofSystem.ToyProblem.Spec.General
+import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 
 /-!
-# Honest completeness of the toy-problem IOR (ABF26 Construction 6.2)
+# Honest completeness of the toy-problem IORs (ABF26 Constructions 6.2 and 6.9)
 
-Perfect completeness of the §6 toy-problem oracle reduction
-(`oracleReduction_perfectCompleteness`), together with its point-form
-companion `accepts_of_inputRelation`. Split out of `Spec/General.lean`
-(which hosts the protocol objects, the soundness-direction support lemmas,
-and round-by-round knowledge soundness) to keep that file under the
-long-file cap; the completeness theorem and its dedicated helper are used
-by nothing else in the tree, so they live here as leaves.
+Perfect completeness of both §6 toy-problem oracle reductions, together with
+their point-form companions. The C6.2 results live in `Spec`; the C6.9 results
+live in `SimplifiedIOR`. They are split out of the protocol-definition files to
+keep those modules focused and below the long-file cap.
 
-Like the rest of the §6 layer, both results are generic over the codeword
+Like the rest of the §6 layer, all results are generic over the codeword
 alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
 `A = Fin s → F` is the genuine interleaved alphabet implemented by
 `Impl/IRS.lean`. `Impl/FRS.lean` is the separate folded-RS model.
@@ -25,7 +22,7 @@ alphabet `A` (an `F`-module): `A = F` is the scalar specialization, while
 ## References
 
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and
-  Correlated Agreement*][ABF26] (§6, Construction 6.2).
+  Correlated Agreement*][ABF26] (§6, Constructions 6.2 and 6.9).
 -/
 
 namespace ToyProblem
@@ -266,5 +263,116 @@ theorem oracleReduction_perfectCompleteness
 end Protocol
 
 end Spec
+
+namespace SimplifiedIOR
+
+open OracleSpec OracleComp ProtocolSpec
+open scoped NNReal ENNReal ProbabilityTheory
+
+variable {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
+
+/-- Honest completeness for ABF26 Construction 6.9, point form.  A witness for
+the two-word relaxed relation maps, for every challenge `γ`, to the linear
+combination witness for the derived one-word relaxed relation.  The same
+agreement set works before and after the transition. -/
+theorem derivedOutput_mem_outputRelationFor {k : ℕ}
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
+    (stmtIn : Spec.Statement (F := F) k ×
+      (∀ i, Spec.OracleStatement ι A i))
+    (M : Spec.Witness (F := F) k)
+    (hM : (stmtIn, M) ∈ Spec.outputRelationFor k
+      (encode : (Fin k → F) → (ι → A)) δ)
+    (γ : F) :
+    (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn γ,
+        fun j ↦ M 0 j + γ * M 1 j) ∈
+      outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ := by
+  rcases hM with ⟨hlin, S, hScard, hagree⟩
+  refine ⟨?_, S, hScard, ?_⟩
+  · have h0 := hlin 0
+    have h1 := hlin 1
+    simp only [derivedOutput]
+    simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h0 h1
+    calc
+      ∑ j, (M 0 j + γ * M 1 j) * stmtIn.1.1 j =
+          (∑ j, M 0 j * stmtIn.1.1 j) + γ * ∑ j, M 1 j * stmtIn.1.1 j := by
+            simp_rw [add_mul, Finset.sum_add_distrib, Finset.mul_sum, mul_assoc]
+      _ = stmtIn.1.2.1 + γ * stmtIn.1.2.2 := by rw [h0, h1]
+  · intro j hj
+    simp only [derivedOutput]
+    have h0 := hagree 0 j hj
+    have h1 := hagree 1 j hj
+    rw [show (fun x ↦ M 0 x + γ * M 1 x) = M 0 + γ • M 1 by
+      funext x; simp [Pi.add_apply, Pi.smul_apply, smul_eq_mul]]
+    rw [map_add, map_smul]
+    simp only [Pi.add_apply, Pi.smul_apply]
+    rw [← h0, ← h1]
+
+/-- **Perfect completeness for Construction 6.9** (protocol-level form).
+
+For every verifier challenge, the honest prover and the virtual-output
+verifier produce the same derived statement and oracle, and
+`derivedOutput_mem_outputRelationFor` supplies the corresponding combined
+witness.  Thus C6.9 is perfectly complete from `R̃²_{C,δ}` to
+`R̃¹_{C,δ}`. -/
+theorem oracleReduction_perfectCompleteness {k : ℕ}
+    [SampleableType F]
+    {σ : Type} (init : ProbComp σ)
+    (impl : QueryImpl []ₒ (StateT σ ProbComp))
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
+    (oracleReduction (ι := ι) (F := F) (A := A) (k := k)).perfectCompleteness
+      init impl
+      (Spec.outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
+      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ) := by
+  classical
+  unfold OracleReduction.perfectCompleteness
+  rw [Reduction.perfectCompleteness_eq_prob_one]
+  intro stmtIn witIn hRel
+  have h0 : (pSpec (F := F)).dir 0 = .V_to_P := rfl
+  simp only [OracleReduction.toReduction, Reduction.run, oracleReduction,
+    oracleProver, Prover.run, Prover.runToRound, Fin.induction_one,
+    Prover.processRound_of_dir_eq_V_to_P 0 h0, prover]
+  apply OptionT.probEvent_eq_one_of_simulateQ_support_bind
+  intro x hx
+  obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
+  rw [show (monadLift : OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _ →
+        OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) = id from rfl,
+      id_eq] at hPR
+  obtain ⟨r1, hr1, hPR⟩ := OracleComp.mem_support_bind_peel _ _ hPR
+  obtain ⟨out, hout, hPReq⟩ := OracleComp.mem_support_bind_peel _ _ hPR
+  change out ∈ support (pure (match r1.2 with
+      | (γ, (stmt, oStmt), M) =>
+        (((stmt.1, stmt.2.1 + γ * stmt.2.2),
+          fun _ j => oStmt 0 j + γ • oStmt 1 j),
+          fun j => M 0 j + γ * M 1 j)) :
+        OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) at hout
+  have hout_eq := OracleComp.eq_of_mem_support_pure _ hout
+  subst out
+  have hPReq_eq := OracleComp.eq_of_mem_support_pure _ hPReq
+  subst proverResult
+  obtain ⟨r0, hr0, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
+  have hr0_eq := OracleComp.eq_of_mem_support_pure _ hr0
+  subst r0
+  obtain ⟨γ, -, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
+  obtain ⟨f1, hf1, hr1⟩ := OracleComp.mem_support_bind_peel _ _ hr1
+  change f1 ∈ support (pure (fun γ => (γ, (default, id (stmtIn, witIn)).2)) :
+    OracleComp ([]ₒ + [(pSpec (F := F)).Challenge]ₒ) _) at hf1
+  have hf1_eq := OracleComp.eq_of_mem_support_pure _ hf1
+  subst f1
+  have hr1_eq := OracleComp.eq_of_mem_support_pure _ hr1
+  subst r1
+  rw [oracleVerifier_toVerifier_run_eq_pure] at hx
+  rcases OptionT.mem_support_run_bind _ _ hx with ⟨hverNone, _⟩ | ⟨stmtOut, hSO, hx⟩
+  · exact absurd (OracleComp.eq_of_mem_support_pure _ hverNone) (by simp)
+  · have hSO_eq := OracleComp.eq_of_mem_support_pure _ hSO
+    rw [Option.some.injEq] at hSO_eq
+    subst stmtOut
+    have hx_eq := OracleComp.eq_of_mem_support_pure _ hx
+    refine ⟨_, hx_eq, ?_, ?_⟩
+    · apply derivedOutput_mem_outputRelationFor
+        (encode := encode) (δ := δ) (stmtIn := stmtIn)
+        (M := witIn) (γ := cast (by rfl) γ) hRel
+    · rfl
+
+end SimplifiedIOR
 
 end ToyProblem

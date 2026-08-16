@@ -38,11 +38,13 @@ round-by-round knowledge soundness (L6.8,
 `protocol62_rbrKnowledgeSoundWorstCase`, with
 `protocol62_rbrKnowledgeSound` as its averaged corollary) are **fully proven** here. Plain
 knowledge soundness (L6.6, `protocol62_knowledgeSound`) is **fully
-proven** in the sibling file `Spec/KnowledgeSoundness.lean`, with the
-convex-combination error
+proven** in the sibling file `Spec/KnowledgeSoundness.lean`. The generic theorem
+uses the sharper Definition 6.11 winning-set expression
+`(1-δ)^t + winningSetSoundness·(1 - (1-δ)^t)`. The executable IRS corollary bounds
+that quantity by
 `(1-δ)^t + (ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F|)·(1 - (1-δ)^t)`, which is `≤` the
-sum `(ε_mca + |Λ|/|F|) + (1-δ)^t` stated in [ABF26] Lemma 6.6 (current `.tex`,
-~line 2215) and so is at least as strong. (An earlier draft printed the unsound
+sum `(ε_mca + |Λ|/|F|) + (1-δ)^t` stated in [ABF26] Lemma 6.6
+(`lemma:toy-soundness`) and so is at least as strong. (An earlier draft printed the unsound
 `max` of the two terms; it was author-confirmed and corrected to the sum.) The
 per-round game bounds proven in this file
 (`gamma_round_game_bound`, `spotcheck_round_game_bound`) are shared by
@@ -257,6 +259,41 @@ def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
       ![input.1.1.2.1, input.1.1.2.2] i) ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
       ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j
+
+omit [Fintype ι] in
+/-- The language-level exact relation of Definition 6.1 is precisely the
+existential closure of the witness-bearing C6.2 input relation.  This bridge
+keeps paper-facing statements and OracleReduction security statements on one
+public contract. -/
+theorem relationFor_iff_exists_inputRelationFor
+    (encode : (Fin k → F) →ₗ[F] (ι → A))
+    (stmt : Statement (F := F) k)
+    (oStmt : ∀ i, OracleStatement ι A i) :
+    relationFor encode stmt.1 ![stmt.2.1, stmt.2.2] oStmt ↔
+      ∃ M, ((stmt, oStmt), M) ∈
+        inputRelationFor k (encode : (Fin k → F) → (ι → A)) := by
+  rfl
+
+/-- The language-level relaxed relation of Definition 6.3 is precisely the
+existential closure of the witness-bearing C6.2 output relation.  Both sides
+use one common agreement set for the two interleaved words. -/
+theorem relaxedRelationFor_iff_exists_outputRelationFor
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
+    (stmt : Statement (F := F) k)
+    (oStmt : ∀ i, OracleStatement ι A i) :
+    relaxedRelationFor encode δ stmt.1 ![stmt.2.1, stmt.2.2] oStmt ↔
+      ∃ M, ((stmt, oStmt), M) ∈
+        outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ := by
+  constructor
+  · rintro ⟨Wstar, ⟨M, hW, hlin⟩, S, hcard, hagree⟩
+    refine ⟨M, hlin, S, hcard, ?_⟩
+    intro i j hj
+    change oStmt i j = encode (M i) j
+    rw [hagree i j hj, hW i]
+  · rintro ⟨M, hlin, S, hcard, hagree⟩
+    refine ⟨fun i ↦ encode (M i), ⟨M, ?_, hlin⟩, S, hcard, hagree⟩
+    intro i
+    rfl
 
 -- The 1-arity relaxed relation `R̃¹_{C,δ}` lives in
 -- `Spec/SimplifiedIOR.lean :: outputRelationFor` (the C6.9 output relation).
@@ -1112,8 +1149,8 @@ extractor in `Spec/ErasureDecoder.lean` obtains those coordinates from the post-
 equality with the supplied `g`; this generic fixed-input lemma deliberately does not model
 that extra transition data. Cf.
 `Data/CodingTheory/Erasure.lean` (uniqueness below `minDist` erasures,
-`eq_of_consistent_with_erased`; existence of a — `noncomputable` — corrector,
-`additive_code_supports_erasure_correction_grs12`). -/
+`eq_of_consistent_with_erased`). The paper's generic polynomial-time implementation claim remains
+outside ArkLib's current cost model. -/
 lemma erasureExtractor_mem_of_leftInverse {encode : (Fin k → F) → (ι → A)} {δ : ℝ≥0}
     {dec : (ι → A) → (Fin k → F)}
     {stmtIn : Statement (F := F) k × (∀ i, OracleStatement ι A i)}

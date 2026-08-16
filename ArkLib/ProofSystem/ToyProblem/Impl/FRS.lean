@@ -12,7 +12,7 @@ import Mathlib.Analysis.SpecialFunctions.Pow.NNReal
 # Folded Reed--Solomon reference implementations for the toy problem
 
 This module supplies two concrete KoalaBear sextic folded-RS encoders.  It proves
-admissibility of their multiplicative-coset domains, injectivity, exact encoder
+admissibility of their geometric-progression domains, injectivity, exact encoder
 range, minimum relative distance, and small exact numerical reference facts.
 Application-specific parameter policy is intentionally outside this module.
 -/
@@ -25,22 +25,23 @@ open scoped NNReal ENNReal
 open Polynomial ReedSolomon.Folded Code
 
 set_option maxRecDepth 8000 in
-/-- **A high-order field element.** There exists `γ : KoalaBear.Ext6`
-with `γ ≠ 0` and multiplicative order at least `2^21`. KoalaBear's prime
+/-- **An exact-order field element.** There exists `γ : KoalaBear.Ext6`
+with `γ ≠ 0` and multiplicative order exactly `2^21`. KoalaBear's prime
 `q = 2^31 - 2^24 + 1` has `2^24 | q - 1`, so the multiplicative group of
 `KoalaBear.Ext6 = 𝔽_{q^6}` (cyclic of order `q^6 - 1`, divisible by `q - 1`) contains an
 element of order exactly `2^21`. The proof is pure finite-group theory plus `ℕ`
 arithmetic: a generator of `KoalaBear.Ext6ˣ` has order `q^6 - 1`, and the power
 `g ^ ((q^6 - 1) / 2^21)` has order `2^21` (`orderOf_pow'` + `Nat.div_div_self`); its unit
-coercion is the witness. No computation in the noncomputable field is needed.
+coercion is the witness. Ext6 arithmetic is computable; only the selected element and the
+definitions depending on that choice are noncomputable.
 
-**This single fact is the structural keystone behind both genuine multiplicative-coset FRS
+**This single fact is the structural keystone behind both geometric-progression FRS reference
 rows.** From it, domain injectivity, `(L, s)`-admissibility (`koalaFRSDomain_admissible` /
 `koalaFRS12Domain_admissible`), encoder injectivity (`koalaFRSEnc_injective` /
 `koalaFRS12Enc_injective`), and the folded minimum distance (`koalaFRS_minRelDist` /
 `koalaFRS12_minRelDist`) all derive from this theorem. Both `s = 32` and `s = 2^12` use the
 *same* `γ` (each needs only order `≥ s · |L| = 2^21`). -/
-theorem koalaFRSγ_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ 2 ^ 21 ≤ orderOf γ := by
+theorem koalaFRSγ_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ orderOf γ = 2 ^ 21 := by
   -- Abstract group theory: the multiplicative group `KoalaBear.Ext6ˣ` of the finite field
   -- `𝔽_{q^6}` is cyclic of order `q^6 - 1`. Since `q - 1 = 2^24 · 127` and
   -- `(q - 1) ∣ (q^6 - 1)`, we have `2^21 ∣ q^6 - 1`, so a generator's appropriate power
@@ -76,31 +77,33 @@ noncomputable def koalaFRSγ : KoalaBear.Ext6 := koalaFRSγ_exists.choose
 
 lemma koalaFRSγ_ne_zero : koalaFRSγ ≠ 0 := koalaFRSγ_exists.choose_spec.1
 
-lemma koalaFRSγ_order : 2 ^ 21 ≤ orderOf koalaFRSγ := koalaFRSγ_exists.choose_spec.2
+lemma koalaFRSγ_order : orderOf koalaFRSγ = 2 ^ 21 := koalaFRSγ_exists.choose_spec.2
 
-/-- Powers of `γ` below `2^21 ≤ orderOf γ` are pinned by their exponent: this is the
+/-- Powers of `γ` below its exact order `2^21` are pinned by their exponent: this is the
 `pow`-injectivity on `Set.Iio (orderOf γ)` that turns every distinctness side condition of
-the coset construction into a `ℕ`-arithmetic fact (dischargeable by `omega`). -/
+the progression construction into a `ℕ`-arithmetic fact (dischargeable by `omega`). -/
 lemma koalaFRSγ_pow_left_inj {a b : ℕ} (ha : a < 2 ^ 21) (hb : b < 2 ^ 21)
     (h : koalaFRSγ ^ a = koalaFRSγ ^ b) : a = b :=
   pow_injOn_Iio_orderOf
-    (Set.mem_Iio.mpr (lt_of_lt_of_le ha koalaFRSγ_order))
-    (Set.mem_Iio.mpr (lt_of_lt_of_le hb koalaFRSγ_order)) h
+    (Set.mem_Iio.mpr (by simpa [koalaFRSγ_order] using ha))
+    (Set.mem_Iio.mpr (by simpa [koalaFRSγ_order] using hb)) h
 
 /-- The folding multiplier `ω := γ` for the `s = 32` folded RS code — the shared
-high-order generator (`koalaFRSγ`). With the multiplicative-coset domain
+exact-order generator (`koalaFRSγ`). With the geometric-progression domain
 `koalaFRSDomain j = γ^(32·j)`, the folded points are `γ^(32·j) · γ^i = γ^(32·j + i)`
-over `32·j + i < 2^21 ≤ orderOf γ`, so `(L, 32)`-admissibility holds genuinely
+over `32·j + i < orderOf γ = 2^21`, so `(L, 32)`-admissibility holds
 (`koalaFRSDomain_admissible`) rather than being a documentary placeholder. -/
 noncomputable def koalaFoldω : KoalaBear.Ext6 := koalaFRSγ
 
-/-- The `2^16`-point folded-RS evaluation domain as a genuine **multiplicative coset**
-(here the cyclic subgroup `⟨γ^32⟩`): `j ↦ γ^(32·j) ⊆ KoalaBear.Ext6`, the [ABF26] §6.3
-"common case" smooth-coset domain. Injectivity is `pow`-injectivity of `γ` below its
-order: `32·j < 32·2^16 = 2^21 ≤ orderOf γ` (`koalaFRSγ_pow_left_inj`), replacing the
-earlier additive `{1,…,2^16}` placeholder. The coset is zero-free (`γ ≠ 0`, so every
+/-- A neutral `2^16`-point folded-RS evaluation domain in Ext6, given by the geometric
+progression `j ↦ γ^(32·j)`. Injectivity is `pow`-injectivity of `γ` below its
+exact order: `32·j < 32·2^16 = orderOf γ` (`koalaFRSγ_pow_left_inj`), replacing the
+earlier additive `{1,…,2^16}` placeholder. The progression is zero-free (`γ ≠ 0`, so every
 power is a unit), so the admissibility intra-orbit clause `α · ω^i ≠ α` is not
-vacuously false at `0`; here it holds outright via the order bound. -/
+vacuously false at `0`; here it holds outright via the order bound.
+
+This proof-only reference point does not claim the smooth base-field-domain provenance required
+by ABF26's concrete folded-RS profile; that protected profile is intentionally downstream. -/
 noncomputable def koalaFRSDomain : Fin (2 ^ 16) ↪ KoalaBear.Ext6 where
   toFun j := koalaFRSγ ^ (32 * j.val)
   inj' i j hij := by
@@ -109,9 +112,9 @@ noncomputable def koalaFRSDomain : Fin (2 ^ 16) ↪ KoalaBear.Ext6 where
     exact Fin.val_injective (by have := koalaFRSγ_pow_left_inj hi hj hij; omega)
 
 open Classical in
-/-- **`(L, 32)`-admissibility of the coset domain.** The `32 · 2^16 = 2^21` folded points
+/-- **`(L, 32)`-admissibility of the progression domain.** The `32 · 2^16 = 2^21` folded points
 `γ^(32·a) · γ^i = γ^(32·a + i)` are pairwise distinct because all exponents lie below
-`2^21 ≤ orderOf γ`: both `Admissible` conjuncts reduce, via `koalaFRSγ_pow_left_inj`, to
+`orderOf γ = 2^21`: both `Admissible` conjuncts reduce, via `koalaFRSγ_pow_left_inj`, to
 `ℕ`-arithmetic facts about `32·a + i` (`omega`) and the order bound
 `koalaFRSγ_order`. -/
 lemma koalaFRSDomain_admissible :
@@ -136,7 +139,7 @@ lemma koalaFRSDomain_admissible :
       hcontra
     omega
 
-/-- The genuine §6.3.2 folded encoder: the degree-`< 2^20` folded Reed–Solomon
+/-- The neutral `s = 32` folded encoder: the degree-`< 2^20` folded Reed–Solomon
 evaluation map on the `2^16` points of `koalaFRSDomain` with folding `s = 32`
 (`k = 2^20`, `|L| = 2^16`, `s = 2^5`, rate `ρ = 1/2`), as an `F`-linear map
 `(Fin 2^20 → F) →ₗ (Fin 2^16 → Fin 32 → F)`. Built as
@@ -266,14 +269,14 @@ This second concrete parameter point keeps the message dimension `k = 2^20`
 and unfolded length `s · |L| = 2^21`, so `s = 2^12` gives `|L| = 2^9 = 512`.
 The folded MDS distance is
 `δ_min = (|L| − ⌊(k−1)/s⌋)/|L| = (512 − 255)/512 = 257/512` (a degree-`< 2^20`
-polynomial has `< 2^20` roots, so `< (2^20−1)/2^12 = 256`, i.e. `≤ 255`, *whole*
+polynomial has `< 2^20` roots, so at most `⌊(2^20−1)/2^12⌋ = 255` *whole*
 folded symbols can vanish — the same count that gives the `s = 32` value
 `32769/65536`). -/
 
-/-- The `2^9 = 512`-point folded-RS evaluation domain for the `s = 2^12` row, the genuine
-multiplicative coset `j ↦ γ^(2^12·j) ⊆ KoalaBear.Ext6` (the cyclic subgroup `⟨γ^(2^12)⟩`),
-exactly as `koalaFRSDomain` but at folding `2^12`. Injectivity is `pow`-injectivity below
-`orderOf γ`: `2^12·j < 2^12·2^9 = 2^21 ≤ orderOf γ` (`koalaFRSγ_pow_left_inj`). -/
+/-- The `2^9 = 512`-point geometric-progression Ext6 domain for the neutral `s = 2^12`
+reference row, `j ↦ γ^(2^12·j)`, exactly as `koalaFRSDomain` but at folding `2^12`.
+Injectivity is `pow`-injectivity below
+`orderOf γ`: `2^12·j < 2^12·2^9 = orderOf γ` (`koalaFRSγ_pow_left_inj`). -/
 noncomputable def koalaFRS12Domain : Fin (2 ^ 9) ↪ KoalaBear.Ext6 where
   toFun j := koalaFRSγ ^ (2 ^ 12 * j.val)
   inj' i j hij := by
@@ -282,9 +285,9 @@ noncomputable def koalaFRS12Domain : Fin (2 ^ 9) ↪ KoalaBear.Ext6 where
     exact Fin.val_injective (by have := koalaFRSγ_pow_left_inj hi hj hij; omega)
 
 open Classical in
-/-- **`(L, 2^12)`-admissibility of the `s = 2^12` coset domain.** The `2^12 · 2^9 = 2^21`
+/-- **`(L, 2^12)`-admissibility of the `s = 2^12` progression domain.** The `2^12 · 2^9 = 2^21`
 folded points `γ^(2^12·a) · γ^i = γ^(2^12·a + i)` are pairwise distinct, all exponents
-below `2^21 ≤ orderOf γ`; both `Admissible` conjuncts reduce to `ℕ`-arithmetic via
+below `orderOf γ = 2^21`; both `Admissible` conjuncts reduce to `ℕ`-arithmetic via
 `koalaFRSγ_pow_left_inj`. Same (now-proven) order bound as `koalaFRSDomain_admissible`. -/
 lemma koalaFRS12Domain_admissible :
     ReedSolomon.Folded.Admissible (Finset.univ.map koalaFRS12Domain) (2 ^ 12) koalaFoldω := by

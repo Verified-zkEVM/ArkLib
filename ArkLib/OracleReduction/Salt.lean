@@ -281,6 +281,9 @@ def OracleReduction.addSalt
   prover := R.prover.addSalt Salt saltComp
   verifier := R.verifier.addSalt Salt
 
+-- The virtual-output semantics of the transformed verifier are covered by `addSalt_toVerifier` and
+-- the ToyProblem runtime regression. Whole-reduction execution, completeness, and security remain
+-- separate obligations; in particular the comments below are not proved by the semantic bridge.
 -- Theorems to prove
 -- Execution returns the same transcript as the original reduction (modulo salt)
 -- Completeness is preserved (for any salt computation)

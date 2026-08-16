@@ -135,6 +135,7 @@ def queryInput (i : Fin (m + 1)) (x : ω.toFinset) :
     (show ([]ₒ + ([OracleStatement m ω]ₒ + [(batchSpec F m).Message]ₒ)).Domain from
       Sum.inr (Sum.inl ⟨i, x⟩))
 
+omit [Fintype F] in
 @[simp]
 theorem simulateQ_queryInput
     (oStmt : ∀ i, OracleStatement m ω i) (messages : (batchSpec F m).Messages)

@@ -38,8 +38,9 @@ Outputs:
   Honest prover sets witness w* := M₁ + γ·M₂.
 ```
 
-The new instance lies in `R̃¹_{C,δ}` iff the original lay in
-`R̃²_{C,δ}` (up to the soundness error of L6.10).
+Perfect completeness says that an input in `R̃²_{C,δ}` maps to an output in
+`R̃¹_{C,δ}` for every challenge. In the converse direction, L6.10 bounds the
+probability that an input outside `R̃²_{C,δ}` nevertheless maps into `R̃¹_{C,δ}`.
 
 ## Codeword alphabet `A` (folding-generic)
 
@@ -133,6 +134,34 @@ def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
     (∑ j, input.2 j * input.1.1.1 j = input.1.1.2) ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
       ∀ j ∈ S, input.1.2 0 j = encode input.2 j
+
+/-- The language-level one-word relaxed relation is precisely the existential
+closure of the witness-bearing C6.9 output relation. -/
+theorem relaxedRelationFor_iff_exists_outputRelationFor
+    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
+    (stmt : OutputStatement (F := F) k)
+    (oStmt : ∀ i, OutputOracleStatement ι A i) :
+    relaxedRelationFor (ℓ := 1) encode δ stmt.1 (fun _ ↦ stmt.2) oStmt ↔
+      ∃ M, ((stmt, oStmt), M) ∈
+        outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ := by
+  constructor
+  · rintro ⟨Wstar, ⟨M, hW, hlin⟩, S, hcard, hagree⟩
+    refine ⟨M 0, ?_, S, hcard, ?_⟩
+    · simpa using hlin 0
+    · intro j hj
+      change oStmt 0 j = encode (M 0) j
+      rw [hagree 0 j hj, hW 0]
+  · rintro ⟨M, hlin, S, hcard, hagree⟩
+    refine ⟨fun _ ↦ encode M, ⟨fun _ ↦ M, ?_, ?_⟩, S, hcard, ?_⟩
+    · intro i
+      fin_cases i
+      rfl
+    · intro i
+      fin_cases i
+      simpa using hlin
+    · intro i j hj
+      fin_cases i
+      exact hagree j hj
 
 section Protocol
 variable [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A]

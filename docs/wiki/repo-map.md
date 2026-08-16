@@ -336,6 +336,15 @@ home_page/            site assets and assembled website root
   and RBR extractors. The compiled small-parameter checks run with
   `lake exe toyproblem-runtime`; production-size profiles are established by proof rather than
   evaluation.
+- Batched FRI's batching round now emits the random-linear-combination codeword directly as a
+  virtual output oracle. The former `BatchedFri.Spec.liftingLens` / `liftedFRI` repair layer was
+  removed rather than renamed: downstream code should compose
+  `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
+  `BatchedFri.Spec.batchedFRIreduction` does.
+- Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
+  not close the inherited generic append-security boundary: the unrestricted `StateT`
+  completeness/soundness composition theorems in `Composition/Sequential/Append.lean` remain
+  admitted and must not anchor a standalone security claim.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared

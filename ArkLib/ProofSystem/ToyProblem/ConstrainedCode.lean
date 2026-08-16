@@ -21,7 +21,7 @@ constraint `⟨m, v⟩ = μ` to `C`. Two results, of increasing fidelity:
   a per-instance **equivalence**: under `hNoWit`, the toy γ-event coincides with the
   *constraint-pinned* event `mcaEventConstrained` (constraint coordinate mandatory,
   proximity measured on the data coordinates). NB this is a restatement in MCA shape,
-  **not** a reduction to the library MCA experiment (`epsMCA`) of `constrainedCode` —
+  **not** an equality with the library MCA experiment (`IsMCA`) of `constrainedCode` —
   `mcaEventConstrained` is bespoke, phrased directly in `enc`/`v`, and its `¬`-clause
   is redundant under `hNoWit`; see the theorem docstring. The genuine reduction to the
   constrained code's MCA bad event is the `≤` bound above.
@@ -39,7 +39,7 @@ The main result, `gamma_transition_prob_le_constrained`, shows that the
 γ-round transition probability of the toy reduction (the event of
 `ToyProblem.gamma_transition_prob_le` / the private `gammaEvent`) is bounded by
 
-  `ε_mca(constrainedCode enc v, δ)`,
+  `mcaError(AffineLineGenerator F, constrainedCode enc v, δ)`,
 
 a **single** MCA quantity in which the linear constraint is internalized as a code
 coordinate, so no separate `|Λ|/|F|` list-size term appears (compare the paper's
@@ -47,22 +47,24 @@ split bound `ε_mca(C, δ) + |Λ(C^{≡2}, δ)| / |F|` proved by
 `ToyProblem.gamma_transition_prob_le`).
 
 The proof is purely structural — no coding-theory external is invoked. The toy bad
-event implies `mcaEvent (constrainedCode enc v) δ`, taking
+event implies `IsMCA (AffineLineGenerator F) (constrainedCode enc v) γ U δ`, taking
 the agreement set `S' = S ∪ {extra coordinate}`; the `+1` slack from the extra
 coordinate absorbs the `(1-δ)` factor, so the *same* `δ` works with no proximity
 rescaling.
 
 ## Caveat: this is an upper bound, not an equality or a proven improvement
 
-The result is `toy γ-event ≤ ε_mca(C_v, δ)`, established by a single `le_iSup`.
+The result is `toy γ-event ≤ mcaError(AffineLineGenerator F, C_v, δ)`, established by a
+single `le_iSup`.
 Two things it does **not** establish, and should not be read to:
 
-* **Not an equality.** `mcaEvent` (hence `ε_mca`) quantifies over *all* agreement
+* **Not an equality.** `IsMCA` (hence `mcaError`) quantifies over *all* agreement
   sets `S'` of size `≥ (1-δ)(n+1)`, including sets that *omit* the extra `Unit`
   coordinate. On such an `S'` the constraint is never tested, so that branch
   reduces to a plain base-code-`C` MCA bad event (at the larger `(1-δ)(n+1)` size
   budget). Hence `ε_mca(C_v, δ)` *over-counts* relative to the toy soundness and is
-  only an upper bound on it, not equal to it. (No comparison with `ε_mca(C, δ)` is
+  only an upper bound on it, not equal to it. (No comparison with
+  `mcaError(AffineLineGenerator F, C, δ)` is
   proved here in either direction: embedding a base agreement set `S ⊆ ι` into
   `ι ⊕ Unit` must clear the strictly larger `(1-δ)(n+1)` threshold, so the naive
   monotonicity argument fails.) The per-instance *equivalence* uses the **constraint-pinned**
@@ -75,7 +77,7 @@ Two things it does **not** establish, and should not be read to:
 * **Not a proven improvement.** Whether `ε_mca(C_v, δ) ≤ ε_mca(C, δ) + |Λ|/|F|`
   (i.e. whether this single quantity is tighter than / equal to the paper's split
   bound, rather than looser) is **not** proved here, and is non-trivial: the
-  `|Λ|/|F|` control on the constraint-pinned part of `ε_mca(C_v)` would itself
+  `|Λ|/|F|` control on the constraint-pinned part of `mcaError` for `C_v` would itself
   need the counting argument of `gamma_transition_prob_le`. Treat the relationship
   to the paper bound as open.
 
@@ -84,8 +86,8 @@ Two things it does **not** establish, and should not be read to:
 This is stated for the **scalar** specialization `A = F`,
 where the `F`-valued constraint coordinate lives in the same alphabet as the
 codeword. The general `F`-module alphabet `A` (folded RS, `A = Fin s → F`) would
-require the constrained code to live in `(ι → A) × F`, i.e. a generalization of
-the `ε_mca` ambient away from the uniform `ι → A` — left as future work.
+require the constrained code to live in `(ι → A) × F`, i.e. a heterogeneous-alphabet
+generalization of the current `mcaError` ambient — left as future work.
 
 ## References
 
@@ -140,20 +142,20 @@ def constrainedCode {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v : Fi
 the constrained code.** For an instance `(v, μ₁, μ₂, f₁, f₂)` of the toy reduction
 admitting **no** relaxed-relation witness (`hNoWit`), the probability over a
 uniform challenge `γ` that some message `m` satisfies the post-`γ` knowledge
-state is at most `ε_mca(constrainedCode enc v, δ)`.
+state is at most `mcaError(AffineLineGenerator F, constrainedCode enc v, δ)`.
 
 This is the constrained-code reformulation of `ToyProblem.gamma_transition_prob_le`
 (`A = F`): the linear constraint is internalized as a code coordinate, so the bound
 is a single MCA quantity with no separate `|Λ(C^{≡2}, δ)| / |F|` term.
 
 **Caveat (one-directional).** This is an upper bound, established by a single
-`le_iSup`. It is *not* an equality (`ε_mca C_v` over-counts: `mcaEvent` admits
+`le_iSup`. It is *not* an equality (`mcaError` for `C_v` over-counts: `IsMCA` admits
 agreement sets omitting the constraint coordinate, which reduce to base-code-`C`
 MCA events), and it is *not* shown to be `≤` the paper's split bound `ε_mca(C,δ) +
 |Λ|/|F|`. See the module docstring's caveat section.
 
 Directly, the toy bad event implies
-`mcaEvent (constrainedCode enc v) δ`, witnessed by the agreement set
+`IsMCA (AffineLineGenerator F) (constrainedCode enc v) γ U δ`, witnessed by the agreement set
 `S' = S ∪ {extra coordinate}`. -/
 theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
@@ -236,13 +238,13 @@ theorem gamma_transition_prob_le_constrained {k : ℕ} [DecidableEq ι]
 
 /-! ## The per-instance equivalence (constraint-pinned event, proximity on data coordinates)
 
-The `≤` bound above over-counts, because `mcaEvent` over `ι ⊕ Unit` admits agreement
+The `≤` bound above over-counts, because `IsMCA` over `ι ⊕ Unit` admits agreement
 sets that omit the constraint coordinate. An exact restatement of the toy γ-event in
 MCA shape requires (i) the constraint coordinate to be mandatory and (ii) proximity
 measured on the data coordinates `ι` only — pinning into the full index with the stock
 `(1-δ)(n+1)` budget loses a `δ` of slack in the backward direction and fails to give an
 equality. The resulting `mcaEventConstrained` is a bespoke event (not the library
-`mcaEvent`/`epsMCA` of any code), so the equivalence below is a per-instance
+`IsMCA`/`mcaError` experiment of any code), so the equivalence below is a per-instance
 restatement, not a reduction to the library MCA experiment.
 -/
 
@@ -268,7 +270,7 @@ automatically-satisfied) clause that no constrained-codeword *pair* agrees on `S
 
 This is a per-instance restatement, **not** a reduction to the library MCA
 experiment of `constrainedCode`: `mcaEventConstrained` is a bespoke event phrased
-directly in terms of `enc`/`v`, not via `constrainedCode` or `epsMCA`, and the
+directly in terms of `enc`/`v`, not via `constrainedCode` or `mcaError`, and the
 added `¬`-clause is redundant under `hNoWit`. The genuine reduction to the
 constrained code's MCA bad event is the upper bound
 `gamma_transition_prob_le_constrained` above; that is the headline result.

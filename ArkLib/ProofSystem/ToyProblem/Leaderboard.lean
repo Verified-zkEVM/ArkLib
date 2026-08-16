@@ -35,6 +35,25 @@ structure FixedRadiusParameters where
   encoder_injective : Function.Injective encoder
   encoder_range : Set.range encoder = (code : Set (ι → A))
 
+/-- A concrete inhabitant of the neutral fixed-radius façade, built from the
+proved Ext6 folded-RS geometric-progression reference point with `s = 32`,
+`k = 2^20`, and `t = 128`.
+
+This packages exactly the encoder, range, and injectivity facts required by
+`FixedRadiusParameters`; it does not add the smooth base-field provenance or
+the numerical security certificate of the separate protected prize profile. -/
+noncomputable def koalaFRSFixedRadiusParameters :
+    FixedRadiusParameters
+      (ι := Fin (2 ^ 16)) (F := KoalaBear.Ext6)
+      (A := Fin 32 → KoalaBear.Ext6) where
+  k := 2 ^ 20
+  t := 128
+  code := ReedSolomon.Folded.frsCode Impl.FRS.koalaFRSDomain (2 ^ 20) 32
+    Impl.FRS.koalaFoldω
+  encoder := Impl.FRS.koalaFRSEnc
+  encoder_injective := Impl.FRS.koalaFRSEnc_injective
+  encoder_range := Impl.FRS.koalaFRSEnc_range
+
 /-- The certified winning-set/spot-check upper bound for a neutral parameter point. -/
 noncomputable def FixedRadiusParameters.winningSetUpperBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))

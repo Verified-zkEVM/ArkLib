@@ -71,9 +71,9 @@ def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Ty
     Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
   -- TODO: fill in the extra conditions
-  /- Basically, as we model the output oracle statement as a subset of the input oracle statement +
-  the prover's messages, we need to make sure that this subset relation is satisfied in the
-  statement lens mapping.
+  /- For a legacy embedded output, the lens must preserve the embedding into the input oracle
+  statements and prover messages. Derived virtual outputs instead use `ExecutableLens`, which
+  transports their query implementation and materialization-agreement proof.
 
   We also need to provide a `QueryImpl` instance for simulating the outer oracle verifier using
   the inner oracle verifier.
