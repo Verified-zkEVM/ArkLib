@@ -82,24 +82,28 @@ def tensorGeneratorPi {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
   fun x j => ∏ i, G i (x i) (j i)
 
 omit [Nonempty ι] in
-/-- The iterated tensor of a family of MCA generators has MCA for any linear code `LC`, with error
+/-- The iterated tensor of a family of MCA generators has MCA for any module code `MC`, with error
 the sum `∑ᵢ εᵢ` of the factors' errors.  This is the `s`-fold iteration of Lemma 4.4
-(`tensor_of_MCA_is_MCA_tight`) [BCGM25]. -/
-lemma tensorGeneratorPi_isMCAGenerator (LC : LinearCode ι F) :
+(`tensor_of_MCA_is_MCA_tight`) [BCGM25].
+
+The seeds and generator entries stay over `F` — it is only the code alphabet that is a general
+`F`-module, which is all the induction needs: both `tensor_of_MCA_is_MCA_tight` and
+`isMCAGenerator_reindex` are already stated at that generality. At `A := F` this is the
+linear-code statement, since `LinearCode ι F` and `ModuleCode ι F F` are the same type. -/
+lemma tensorGeneratorPi_isMCAGenerator {A : Type} [AddCommMonoid A] [Module F A]
+    (MC : ModuleCode ι F A) :
     ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
       [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)]
       (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
-      (∀ i, IsMCAGenerator (G i) (ε i) LC) →
-      IsMCAGenerator (tensorGeneratorPi G) (fun γ => ∑ i, ε i γ) LC := by
+      (∀ i, IsMCAGenerator (G i) (ε i) MC) →
+      IsMCAGenerator (tensorGeneratorPi G) (fun γ => ∑ i, ε i γ) MC := by
   intro s
   induction s with
   | zero =>
     intro α ℓ _ _ _ G ε _ γ
     classical
     refine iSup_le fun U => ?_
-    -- With no factors the output index type is a subsingleton, so the combination is `U j`
-    -- itself and the MCA event is unsatisfiable.
-    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) LC x U (γ : ℝ) := by
+    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
       rintro x ⟨T, hT, hmem, j, hj⟩
       apply hj
       have hvec : (fun k => ∑ j', tensorGeneratorPi G x j' • U j' k) = U j := by
@@ -118,13 +122,13 @@ lemma tensorGeneratorPi_isMCAGenerator (LC : LinearCode ι F) :
       (Fin.consEquiv α).symm with heS
     set eL : (ℓ 0 × (∀ i : Fin s, Fin.tail ℓ i)) ≃ (∀ i : Fin (s + 1), ℓ i) :=
       Fin.consEquiv ℓ with heL
-    have hBin := tensor_of_MCA_is_MCA_tight LC
+    have hBin := tensor_of_MCA_is_MCA_tight MC
       (G 0) (ε 0) (hmca 0)
       (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G))
       (fun γ => ∑ i, Fin.tail ε i γ)
       (ih (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G) (Fin.tail ε)
         (fun i => hmca (Fin.succ i)))
-    have hR := isMCAGenerator_reindex LC
+    have hR := isMCAGenerator_reindex MC
       (TensorGenerator_Explicit (G 0)
         (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)))
       _ hBin eS eL
@@ -205,17 +209,21 @@ def tensorGeneratorPiUnivariate {s : ℕ} (d : Fin s → ℕ) :
     Generator (Fin s → F) ((i : Fin s) → Fin (d i + 1)) F :=
   fun x j => ∏ i, x i ^ (j i : ℕ)
 
-/-- The `s`-fold tensor product of univariate powers generators has MCA for any linear code
-`LC`, with error the sum `∑ i, ε (d i)` of the factors' errors, provided each univariate powers
-generator has MCA for `LC` with error `ε e`.
-This is the `s`-fold iteration of Lemma 4.4 (tensor products preserve MCA) [BCGM25]. -/
-lemma tensorGeneratorPiUnivariate_isMCAGenerator [Fintype F] (LC : LinearCode ι F)
+/-- The `s`-fold tensor product of univariate powers generators has MCA for any module code
+`MC`, with error the sum `∑ i, ε (d i)` of the factors' errors, provided each univariate powers
+generator has MCA for `MC` with error `ε e`.
+This is the `s`-fold iteration of Lemma 4.4 (tensor products preserve MCA) [BCGM25].
+
+As in `tensorGeneratorPi_isMCAGenerator`, only the code alphabet is generalised: the generator
+`x ↦ (1, x, …, x^e)` is still over `F`. At `A := F` this is the linear-code statement. -/
+lemma tensorGeneratorPiUnivariate_isMCAGenerator [Fintype F]
+    {A : Type} [AddCommMonoid A] [Module F A] (MC : ModuleCode ι F A)
     (ε : ℕ → I → ℝ≥0)
-    (huniv : ∀ e : ℕ, IsMCAGenerator (univariatePowersGenerator F e) (ε e) LC) :
+    (huniv : ∀ e : ℕ, IsMCAGenerator (univariatePowersGenerator F e) (ε e) MC) :
     ∀ {s : ℕ} (d : Fin s → ℕ),
-      IsMCAGenerator (tensorGeneratorPiUnivariate d) (fun γ => ∑ i, ε (d i) γ) LC := by
+      IsMCAGenerator (tensorGeneratorPiUnivariate d) (fun γ => ∑ i, ε (d i) γ) MC := by
   intro s d
-  exact tensorGeneratorPi_isMCAGenerator LC (fun i => univariatePowersGenerator F (d i))
+  exact tensorGeneratorPi_isMCAGenerator MC (fun i => univariatePowersGenerator F (d i))
     (fun i => ε (d i)) (fun i => huniv (d i))
 
 /-- The coefficient matrix expressing the polynomial generator `G` as a right multiplication of the
