@@ -482,7 +482,7 @@ theorem Pr_or_le {α : Type} (D : PMF α) (f g : α → Prop) :
   apply ENNReal.tsum_le_tsum
   intro r
   rw [← mul_add]
-  refine mul_le_mul_of_nonneg_left ?_ zero_le'
+  refine mul_le_mul_of_nonneg_left ?_ zero_le
   by_cases hf : f r <;> by_cases hg : g r <;> simp [hf, hg]
 
 /--
@@ -540,7 +540,7 @@ theorem Pr_seq_le_of_forall_le {α β : Type} (Da : PMF α) (Db : PMF β) (Q : �
     _ ≤ ∑' b, Db b * c := by
         apply ENNReal.tsum_le_tsum
         intro b
-        exact mul_le_mul_of_nonneg_left (h b) zero_le'
+        exact mul_le_mul_of_nonneg_left (h b) zero_le
     _ = c := by rw [ENNReal.tsum_mul_right, PMF.tsum_coe, one_mul]
 
 /-- **Schwartz-Zippel Lemma** (Probability Form):

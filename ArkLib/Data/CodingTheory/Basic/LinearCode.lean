@@ -257,19 +257,18 @@ scoped macro_rules
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
 We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
-def projectedWord [Fintype ι] (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
+def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
-`C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
+as the set of projected codewords for `c ∈ C`.
 Definition 3.7 [BCGM25]. -/
-def projectedCode [Fintype ι] (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
+def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
   {w | ∃ c ∈ C, w = projectedWord c T}
 
 open Submodule
 
 def projectedCode_submod
     [Field F]
-    [Fintype ι]
     (LC : LinearCode ι F)
     (T : Finset ι) :
     Submodule F (T → F) :=
