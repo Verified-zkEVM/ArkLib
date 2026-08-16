@@ -130,6 +130,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
