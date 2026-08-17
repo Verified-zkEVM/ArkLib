@@ -50,3 +50,11 @@ supportInterpreter = true
 name = "toyproblem-runtime"
 srcDir = "scripts"
 root = "ToyProblemRuntime"
+
+# Isolated executable fixtures for the axiom-sweep mutation matrix
+# (scripts/test-axiomsweep.sh). Not a default target: it deliberately contains
+# synthetic kernel taint of every shape the sweep reasons about.
+[[lean_lib]]
+name = "AxiomSweepTestFixtures"
+srcDir = "scripts"
+globs = ["AxiomSweepTestFixtures.+"]

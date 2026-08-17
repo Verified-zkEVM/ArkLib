@@ -53,7 +53,10 @@ If the task is specifically Lean warning cleanup, follow
 ./scripts/validate.sh --axioms
 ```
 
-This adds `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
+This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix under
+`scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions,
+the native-trust floor, and the exit-code contract) — and then
+`lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
 against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
 `sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
@@ -63,7 +66,14 @@ intentionally add a tagged `sorry` (or close one), refresh and commit the baseli
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check report-only while the baseline soaks (see `ci.yml`).
+The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
+(`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
+`…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
+a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
+while such taint is present — remove the dependency instead.
+
+CI runs the fixture matrix as an enforcing step and the library check report-only while
+the baseline soaks (see `ci.yml`).
 
 ### Docstrings, blueprint, or website changes
 
@@ -135,6 +145,7 @@ lake exe toyproblem-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
+./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
 
@@ -155,8 +166,8 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom sweep report-only, then uploads timing artifacts and posts a comparison
-  report on same-repo PRs.
+  axiom-sweep fixture matrix (enforcing) and the library sweep report-only, then
+  uploads timing artifacts and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
