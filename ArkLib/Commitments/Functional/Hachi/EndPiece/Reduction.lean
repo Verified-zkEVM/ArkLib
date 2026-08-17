@@ -10,59 +10,53 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
 /-!
   # The end-piece — closing the Hachi evaluation
 
-  The closing component of the Hachi evaluation ([NOZ26]): it ends a (possible run of)
-  iteration(s) of the §4.3 chain. The prover sends the reduced (end) witness `w̃` itself as its
-  one message, and the verifier checks the reduced claim `relWEvalClaim` against it directly —
-  recompute the commitment, evaluate the table's multilinear extension at the sumcheck point.
-  Nothing is left to reduce, so the output relation is the full relation on `Unit`.
+  The last step of Hachi's evaluation protocol ([NOZ26] §4.3). Every earlier step *reduces* one
+  claim to a smaller one; this step settles the claim outright.
 
-  The end-piece is a subprotocol in its own right, exporting its `GCWSSPackage` the same way as
-  its peers (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`); `Composition.lean` imports it
-  and concatenates it after `iteration` to form `evaluation`.
+  The chain in `Composition.lean` ends at the evaluation claim `relWEvalClaim`: a table `w̃` opens
+  the commitment `t`, and its multilinear extension takes the value `y′` at the sumcheck point `a`.
+  The prover sends `w̃`, and the verifier checks that claim directly — recompute `K.com w̃` and
+  compare with `t`, evaluate the extension at `a` and compare with `y′`. Nothing remains to reduce,
+  so the output statement is `Unit` and the output relation is everything.
 
-  * **message (P→V)** — the reduced witness `w̃ : LiftedWitness Φ μ n`, sent in the clear. Sending
-    the witness is sound *here* precisely because this is the terminal link: there is no
-    downstream claim whose zero-knowledge the disclosure could damage, and [NOZ26] treats the
-    evaluation argument as a plain (non-ZK) reduction.
-  * **check (guarded)** — `endPieceCheck`: the two conjuncts of `relWEvalClaim` on the sent
-    witness. The verifier **must** be guarded: the output statement is `Unit`, so it drops
-    everything the check reads and the check can live neither downstream nor in a pull-back.
-  * **output** — `Unit`, at the full relation `Set.univ`.
+  Revealing `w̃` costs nothing here: no later claim depends on it staying hidden, and [NOZ26]
+  treats the evaluation argument as a plain, non-zero-knowledge reduction.
 
-  ## Extraction
+  ## Why the verifier is guarded
 
-  The extractor is the reason the end-piece is cheap: the witness the extractor must produce is
-  *in the transcript*. `endPieceWitness` reads it off (`fun _ tr => tr 0`) and
-  `endPiece_coordinateWiseSpecialSoundWith` closes CWSS through the challenge-free bridge
-  `Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`: the protocol has no challenge
-  round, so CWSS collapses to a transcript-level obligation, and acceptance forces the guard
-  (`Verifier.check_eq_true_of_guarded_accepting`), which is definitionally the two conjuncts of
-  `relWEvalClaim`.
+  A *pure* verifier states its conditions in the output relation instead of rejecting. That is not
+  available here — the output statement is `Unit` and retains none of the data the check reads — so
+  the check runs at verification time and rejects on failure. That is a **guarded** verifier, in
+  the sense of `CoordinateWiseSpecialSoundness/Guarded.lean`.
 
-  ## Note on the `relWEvalClaim` seam
+  ## How extraction works
 
-  `endPiece`'s input relation is `relWEvalClaim` exactly as `Sumcheck/FinalEval.lean` defines it
-  on this branch: `K.com w̃ = t` and `mle[w̃](a) = y′`, with **no shortness conjunct** — so
-  `endPieceCheck` decides two conjuncts and the certificate projects two.
+  Special soundness asks for a witness recovered from accepting transcripts. Here the witness *is*
+  the transcript's only message, so `endPieceWitness` returns it unchanged. The certificate
+  `endPiece_coordinateWiseSpecialSoundWith` then follows in two moves:
 
-  **This seam is known to need a third conjunct, and the repair is not this file's to make.**
-  `nestedRoundRel` (`ZeroCheck/Constraints.lean`) requires `liftShort Φ bound ρBound p.2` as its
-  second component, and it is row 9's *input* relation — the thing `finalEval`'s extractor must
-  produce — while `relWEvalClaim` is row 9's *output*, the thing acceptance supplies. Norm-free,
-  it supplies no shortness, and the row-9 verifier cannot make up the difference: it sees only
-  `y′ ∈ F`, never `w̃`. So `finalEval_coordinateWiseSpecialSoundWith` is unsatisfiable as stated
-  here, which is why it is still `sorry` on this branch and proved on PR #729 — where
-  `relWEvalClaim` carries the conjunct and the proof visibly consumes it.
+  1. with no challenge round, coordinate-wise special soundness collapses to a statement about the
+     single transcript (`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`);
+  2. acceptance of a guarded verifier forces its check to have passed
+     (`check_eq_true_of_guarded_accepting`), and that check is exactly membership in
+     `relWEvalClaim`.
 
-  When #729's relation lands, `endPieceCheck` gains a third conjunct and
-  `endPiece_coordinateWiseSpecialSoundWith` a third projection. The end-piece is the right place
-  to discharge it, being the one link that actually receives `w̃`. It is not free: `liftShort` is
-  `vecLInftyNorm Φ w.z ≤ bound ∧ RhoShort ρBound w.ρ`, and while the first half is decidable as it
-  stands (`vecLInftyNorm` is a `Finset.sup` into `ℕ`),
-  `RhoShort ρBound ρ = ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound` quantifies over *all*
-  `k : ℕ`. Making it a `Bool` check needs a finite reformulation — restrict `k` to
-  `Finset.range ((ρ i).natDegree + 1)`, discharging the tail from
-  `Polynomial.coeff_eq_zero_of_natDegree_lt`.
+  Because the check only re-reads data the prover just sent, no hardness assumption is involved and
+  the package carries no escape event.
+
+  ## Known gap at the `relWEvalClaim` seam
+
+  `endPieceCheck` decides the two conjuncts that `relWEvalClaim` currently has. The chain needs a
+  third. `nestedRoundRel` (`ZeroCheck/Constraints.lean`) lists `liftShort Φ bound ρBound` among its
+  components, and that relation is what the *preceding* link's extractor has to produce out of an
+  accepting `relWEvalClaim`; a norm-free `relWEvalClaim` cannot supply it, and that link's verifier
+  cannot either, since it only ever sees `y′` and never `w̃`.
+
+  The end-piece is the natural place to close the gap, being the one step that receives `w̃`. Adding
+  `liftShort` to `endPieceCheck` is not purely mechanical: `vecLInftyNorm Φ w.z ≤ bound` is already
+  decidable, but `RhoShort ρBound ρ = ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound` ranges over
+  every `k : ℕ` and must first be cut down to `Finset.range ((ρ i).natDegree + 1)`, with the tail
+  discharged by `Polynomial.coeff_eq_zero_of_natDegree_lt`.
 
   ## References
 
@@ -95,17 +89,15 @@ variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- **The end-piece check** — the two conjuncts of `relWEvalClaim`, decided on the sent witness:
-the commitment recomputes to the claimed `t`, and the witness table's multilinear extension
-evaluates to the claimed value at the sumcheck point. Unlike `finalCheck`, this is a *complete*
-definition, not a placeholder: everything it reads is either public statement data or the
-message itself. -/
+/-- Decides `relWEvalClaim` on the witness the prover sent: the commitment recomputes to the
+claimed `t`, and the table's multilinear extension takes the claimed value at the sumcheck
+point. -/
 def endPieceCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] (φF : ZMod q →+* F)
     (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) : Bool :=
   (K.com w == stmt.t) && (wTableMleEval Φ m₀ φF b w stmt.point == stmt.value)
 
-/-- The end-piece verifier: **guarded** on `endPieceCheck`, outputting the trivial statement. -/
+/-- Accepts when `endPieceCheck` passes, rejects otherwise. The output statement is trivial. -/
 def endPieceVerifier (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] (φF : ZMod q →+* F) :
     Verifier oSpec (WEvalStatement K.TCom F m₀) Unit
@@ -114,7 +106,8 @@ def endPieceVerifier (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρ
     if endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0) then pure () else failure
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
-/-- The end-piece verifier is guarded — definitionally, by `endPieceCheck`. -/
+/-- The verifier is guarded, with `endPieceCheck` as its check. True by definition: the verifier
+is literally `if endPieceCheck … then pure () else failure`. -/
 theorem endPieceVerifier_isGuarded
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] (φF : ZMod q →+* F) :
@@ -123,21 +116,14 @@ theorem endPieceVerifier_isGuarded
    fun _ _ => (),
    fun _ _ => rfl⟩
 
-/-- **The end-piece extraction map, at transcript level**: return the witness the prover sent.
-
-This is the whole extraction algorithm — no search, no choice, no `Classical`. Keeping it as a
-separate transcript-level def (rather than inlining it into `endPieceExtractor`) is deliberate:
-it is the computable core, and it is the piece that survives unchanged if the tree-extractor
-interface moves to the witness-only form of PR #697 (`Extractor.TreeBased StmtIn WitIn WitOut`,
-returning `Option WitIn`), where only the wrapper below has to change. -/
+/-- The witness read off a transcript: the prover's single message. Kept apart from
+`endPieceExtractor` so that the extraction itself is a computable function of the transcript. -/
 def endPieceWitness {TCom : Type} (_stmt : WEvalStatement TCom F m₀)
     (tr : FullTranscript (pSpecEndPiece (LiftedWitness Φ μ n))) : LiftedWitness Φ μ n :=
   tr 0
 
-/-- **The end-piece extraction algorithm**: `endPieceWitness` on the tree's unique transcript.
-
-`noncomputable` only because `ChallengeTree.onlyTranscript` is defined by choice on this branch;
-the extraction content itself (`endPieceWitness`) is computable. -/
+/-- `endPieceWitness` applied to the transcript tree's unique branch. `noncomputable` because
+`ChallengeTree.onlyTranscript` is defined by choice. -/
 noncomputable def endPieceExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
     Extractor.TreeBased (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n)
@@ -147,14 +133,12 @@ noncomputable def endPieceExtractor
   fun stmtIn tree => endPieceWitness Φ m₀ stmtIn tree.onlyTranscript
 
 omit [NeZero q] [IsCyclotomic Φ] in
-/-- **CWSS of the end-piece, at the named `endPieceExtractor`.**
+/-- `endPieceExtractor` witnesses coordinate-wise special soundness, reducing `relWEvalClaim` to
+the trivial claim.
 
-The protocol is challenge-free, so CWSS collapses through
-`Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx` to the transcript-level
-obligation "acceptance implies the extracted witness lies in `relWEvalClaim`". Acceptance forces
-the guard (`Verifier.check_eq_true_of_guarded_accepting`), and the guard *is* the relation:
-`endPieceCheck` decides exactly `relWEvalClaim`'s two conjuncts on the sent witness, which is what
-`endPieceWitness` returns. -/
+With no challenge round the statement is about a single transcript, so it suffices to show that
+acceptance puts the extracted witness in `relWEvalClaim`. Acceptance forces `endPieceCheck` to have
+passed, and that check is `relWEvalClaim` evaluated at the message `endPieceWitness` returns. -/
 theorem endPiece_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -175,10 +159,9 @@ theorem endPiece_coordinateWiseSpecialSoundWith
   simp only [endPieceCheck, Bool.and_eq_true, beq_iff_eq] at hcheck
   exact ⟨hcheck.1, hcheck.2⟩
 
-/-- **The end-piece as a guarded `GCWSSPackage`**: the guarded one-message verifier with the empty
-challenge structure, reducing the evaluation claim `relWEvalClaim` to the trivial claim. Escape-free
-— the check re-reads data the prover just sent, so no cryptographic assumption is consulted and no
-escape event is needed. -/
+/-- The end-piece packaged for composition: a guarded one-message verifier over the empty
+challenge structure, taking `relWEvalClaim` to the trivial claim. No escape event — the check reads
+only what the prover just sent, so no hardness assumption is involved. -/
 noncomputable def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :

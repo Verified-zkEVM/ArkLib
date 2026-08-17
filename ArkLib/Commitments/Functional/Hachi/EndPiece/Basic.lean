@@ -6,27 +6,26 @@ Authors: Tobias Rothmann, Pablo Martin
 import ArkLib.Commitments.Functional.Hachi.EndPiece.Reduction
 
 /-!
-# Hachi End-Piece (the closing component of the evaluation)
+# Hachi End-Piece (the closing step of the evaluation)
 
-Umbrella module for `Hachi/EndPiece/`: the terminal link of Hachi's [NOZ26, §4.3] opening. It ends
-a (possible run of) `iteration`(s): the prover sends the reduced witness `w̃` itself, and the
-verifier checks the evaluation claim `relWEvalClaim` against it directly — recompute the
-commitment, evaluate the table's multilinear extension at the sumcheck point. Nothing is left to
-reduce, so the output relation is the full relation on `Unit`.
+Umbrella module for `Hachi/EndPiece/`, the last step of Hachi's [NOZ26, §4.3] opening protocol.
 
-The end-piece consumes exactly the seam `Sumcheck/FinalEval.lean` produces, and
-`Composition.lean` concatenates the two as `evaluation = iteration ▷ endPiece`.
+`Sumcheck/FinalEval.lean` leaves an evaluation claim `relWEvalClaim` — a table `w̃` opening the
+commitment `t`, whose multilinear extension takes the claimed value at the sumcheck point. The
+end-piece consumes that claim: the prover sends `w̃`, and the verifier checks the claim against it
+directly, leaving nothing to reduce. `Composition.lean` joins the two as
+`evaluation = iteration ▷ endPiece`.
+
+Unlike the other subprotocols, this one involves no cryptographic hardness and no algebraic
+recovery: the verifier only re-reads data the prover just sent, and extraction returns that same
+message.
 
 ## Folder structure
 
 * `EndPiece/Reduction.lean` — the subprotocol: the wire format `pSpecEndPiece`, the check
-  `endPieceCheck`, the guarded verifier and its guardedness, the extraction algorithm
-  (`endPieceWitness`/`endPieceExtractor`), the CWSS certificate
+  `endPieceCheck`, the guarded verifier, the extraction algorithm
+  (`endPieceWitness`/`endPieceExtractor`), the special-soundness certificate
   `endPiece_coordinateWiseSpecialSoundWith`, and the exported `endPiece : GCWSSPackage`.
-
-Unlike the other subprotocols the end-piece is **escape-free and sorry-free**: its check re-reads
-data the prover just sent, so no cryptographic assumption is consulted, and its extraction is the
-identity on the transcript message rather than an algebraic recovery argument.
 
 ## References
 
