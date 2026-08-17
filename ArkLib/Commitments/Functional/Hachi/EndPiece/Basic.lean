@@ -135,6 +135,7 @@ noncomputable def endPieceExtractor
 
 variable [SampleableType F]
 
+omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
 /-- **CWSS of the end-piece, at the named `endPieceExtractor`.**
 
 The protocol is challenge-free, so CWSS collapses through
@@ -153,7 +154,15 @@ theorem endPiece_coordinateWiseSpecialSoundWith
       (Set.univ : Set (Unit × Unit))
       (endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF)
       (endPieceExtractor Φ m₀ bound ρBound K) := by
-  sorry
+  have hGuard : (endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF).IsGuardedWith
+      (fun stmt tr => endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0))
+      (fun _ _ => ()) := fun _ _ => rfl
+  refine Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
+    CWSSStructure.ofIsEmpty _ _ _ (endPieceWitness Φ m₀) ?_
+  intro stmtIn tr hAcc
+  have hcheck := Verifier.check_eq_true_of_guarded_accepting init impl _ _ _ hGuard stmtIn tr _ hAcc
+  simp only [endPieceCheck, Bool.and_eq_true, beq_iff_eq] at hcheck
+  exact ⟨hcheck.1, hcheck.2⟩
 
 /-- **The end-piece as a guarded `GCWSSPackage`**: the guarded one-message verifier with the empty
 challenge structure, reducing the evaluation claim `relWEvalClaim` to the trivial claim. Escape-free

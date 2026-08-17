@@ -1,7 +1,6 @@
 {"sorry":
  ["AGM.Adversary.run",
   "ArkLib.Lattices.Ajtai.InnerOuter.deriveFamily",
-  "ArkLib.Lattices.Ajtai.InnerOuter.endPiece",
   "ArkLib.Lattices.Ajtai.InnerOuter.eqWeight",
   "ArkLib.Lattices.Ajtai.InnerOuter.evaluation",
   "ArkLib.Lattices.Ajtai.InnerOuter.finalCheck",
