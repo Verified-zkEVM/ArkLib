@@ -97,24 +97,29 @@ def weigthBoundIndices (k D : ℕ) : Finset (ℕ × ℕ) :=
 /-- The number of variables in the Guruswami-Sudan linear system. -/
 def numVars (k D : ℕ) : ℕ := (weigthBoundIndices k D).card
 
+/-- The index set of the Guruswami-Sudan system, with the range of the `Y`-degree already
+truncated to the values that can actually occur. -/
+lemma weigthBoundIndices_eq_filter_product (D : ℕ) (hk : 1 < k) :
+    weigthBoundIndices k D =
+      filter (fun p : ℕ × ℕ ↦ p.1 + (k - 1) * p.2 ≤ D)
+        ((range (D + 1)).product (range (D / (k - 1) + 1))) := by
+  ext ⟨i, j⟩
+  simp only [weigthBoundIndices, product_eq_sprod, mem_filter, mem_product, mem_range,
+    and_congr_left_iff, and_congr_right_iff]
+  exact fun _ _ ↦ iff_of_true (by
+    nlinarith [Nat.sub_pos_of_lt hk, D.div_add_mod (k - 1),
+      D.mod_lt (Nat.sub_pos_of_lt hk)])
+    (Nat.lt_succ_of_le (Nat.le_div_iff_mul_le (Nat.sub_pos_of_lt hk) |>.2
+    (by nlinarith [Nat.sub_pos_of_lt hk])))
+
 /-- The number of variables is the sum over j of the number of valid i's. -/
 lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
     (weigthBoundIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
     have h_split : (weigthBoundIndices k D).card =
         ∑ j ∈ range (D / (k - 1) + 1),
           ∑ i ∈ range (D + 1), if i + (k - 1) * j ≤ D then 1 else 0 := by
-      rw [show weigthBoundIndices k D =
-        filter (fun p : ℕ × ℕ ↦ p.1 + (k - 1) * p.2 ≤ D)
-        ((range (D + 1)).product (range (D / (k - 1) + 1))) from ?_, card_filter]
-      · erw [sum_product, Finset.sum_comm]
-      · ext ⟨i, j⟩
-        simp only [weigthBoundIndices, product_eq_sprod, mem_filter, mem_product, mem_range,
-          and_congr_left_iff, and_congr_right_iff]
-        exact fun _ _ ↦ iff_of_true (by
-          nlinarith [Nat.sub_pos_of_lt hk, D.div_add_mod (k - 1),
-            D.mod_lt (Nat.sub_pos_of_lt hk)])
-          (Nat.lt_succ_of_le (Nat.le_div_iff_mul_le (Nat.sub_pos_of_lt hk) |>.2
-          (by nlinarith [Nat.sub_pos_of_lt hk])))
+      rw [weigthBoundIndices_eq_filter_product D hk, card_filter]
+      erw [sum_product, Finset.sum_comm]
     have h_inner : ∀ j ∈ range (D / (k - 1) + 1), ∑ i ∈ range (D + 1),
         (if i + (k - 1) * j ≤ D then 1 else 0) = (D - (k - 1) * j) + 1 := by
       intro j hj
@@ -203,6 +208,99 @@ lemma numVars_lower_bound_tight {D : ℕ} (hk : 1 < k) :
           simp_all [← even_iff_two_dvd, parity_simps]
         by_cases h : Even (D / (k + 1)) <;> simp_all [parity_simps]
 
+/-- The exact first moment of `j ↦ j * (u - c * j)` over `range (J + 1)`, computed over `ℤ` so
+that the subtraction is not truncated. -/
+private lemma sum_range_mul_sub (u c J : ℕ) :
+    6 * (∑ j ∈ range (J + 1), (j : ℤ) * (u - c * j))
+      = 3 * u * J * (J + 1) - c * J * (J + 1) * (2 * J + 1) := by
+  induction J with
+  | zero => simp
+  | succ J ih =>
+      rw [Finset.sum_range_succ]
+      push_cast
+      linear_combination ih
+
+/-- Three-variable AM-GM, in the polynomial form needed for the first-moment bound.
+
+The three hints are the Schur-shaped products `a * (b - c) ^ 2` and its cyclic images, which
+already span the certificate. -/
+private lemma mul_mul_le_cube {a b c : ℤ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 0 ≤ c) :
+    27 * (a * b * c) ≤ (a + b + c) ^ 3 := by
+  nlinarith [mul_nonneg ha (sq_nonneg (b - c)), mul_nonneg hb (sq_nonneg (a - c)),
+    mul_nonneg hc (sq_nonneg (a - b))]
+
+/-- Summing the `Y`-degree over the index set, one `Y`-degree at a time. -/
+lemma sum_snd_weigthBoundIndices_eq (D : ℕ) (hk : 1 < k) :
+    (∑ p ∈ weigthBoundIndices k D, p.2)
+      = ∑ j ∈ range (D / (k - 1) + 1), j * (D - (k - 1) * j + 1) := by
+  rw [weigthBoundIndices_eq_filter_product D hk, Finset.sum_filter, product_eq_sprod,
+    Finset.sum_product, Finset.sum_comm]
+  refine Finset.sum_congr rfl fun j hj ↦ ?_
+  have hcj : (k - 1) * j ≤ D := by
+    have hj' : j ≤ D / (k - 1) := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
+    calc (k - 1) * j ≤ (k - 1) * (D / (k - 1)) := by gcongr
+      _ ≤ D := Nat.mul_div_le D (k - 1)
+  have hfilter : filter (fun i ↦ i + (k - 1) * j ≤ D) (range (D + 1))
+      = range (D - (k - 1) * j + 1) := by
+    ext i
+    simp only [mem_filter, mem_range]
+    omega
+  rw [← Finset.sum_filter, hfilter, Finset.sum_const, card_range, smul_eq_mul, mul_comm]
+
+/-- The first-moment bound of [BCIKS20], Appendix B.1: the sum of the `Y`-degrees over the
+Guruswami-Sudan index set `{(i, j) : i + (k-1) * j ≤ D}` is at most `(D + 1) ^ 3 / (6 * (k-1) ^ 2)`.
+
+The paper calls this quantity `D_C`; it is what controls the total `Y, Z`-degree of the
+interpolation polynomial in the curve regime. The bound is essentially tight: for `k = 2` and
+`D = 4` the two sides are `120` and `125`. -/
+lemma sum_snd_weigthBoundIndices_le (D : ℕ) (hk : 1 < k) :
+    6 * (k - 1) ^ 2 * (∑ p ∈ weigthBoundIndices k D, p.2) ≤ (D + 1) ^ 3 := by
+  obtain ⟨κ, rfl⟩ : ∃ κ, k = κ + 1 := ⟨k - 1, by omega⟩
+  have hκ0 : 0 < κ := by omega
+  rw [sum_snd_weigthBoundIndices_eq D hk]
+  simp only [Nat.add_sub_cancel]
+  set J := D / κ with hJdef
+  set S := ∑ j ∈ range (J + 1), j * (D - κ * j + 1) with hSdef
+  have hcj : ∀ j ∈ range (J + 1), κ * j ≤ D := by
+    intro j hj
+    have hj' : j ≤ D / κ := Nat.lt_succ_iff.mp (Finset.mem_range.mp hj)
+    calc κ * j ≤ κ * (D / κ) := by gcongr
+      _ ≤ D := Nat.mul_div_le D κ
+  have hcast : (S : ℤ) = ∑ j ∈ range (J + 1), (j : ℤ) * ((D : ℤ) + 1 - κ * j) := by
+    rw [hSdef]
+    push_cast
+    refine Finset.sum_congr rfl fun j hj ↦ ?_
+    rw [Nat.cast_sub (hcj j hj)]
+    push_cast
+    ring
+  have hexact : 6 * (S : ℤ)
+      = 3 * ((D : ℤ) + 1) * J * (J + 1) - κ * J * (J + 1) * (2 * J + 1) := by
+    rw [hcast]
+    exact_mod_cast sum_range_mul_sub (D + 1) κ J
+  rcases Nat.eq_zero_or_pos J with hJ0 | hJ1
+  · have hS0 : (S : ℤ) = 0 := by rw [hJ0] at hexact; push_cast at hexact; linarith
+    have : S = 0 := by exact_mod_cast hS0
+    simp [this]
+  · have hτD : κ * J ≤ D := by
+      calc κ * J ≤ κ * (D / κ) := by gcongr
+        _ ≤ D := Nat.mul_div_le D κ
+    have hτ0 : (0 : ℤ) ≤ (κ : ℤ) * J := by positivity
+    have hτu : (κ : ℤ) * J ≤ (D : ℤ) := by exact_mod_cast hτD
+    have hκτ : (κ : ℤ) ≤ (κ : ℤ) * J := by
+      exact_mod_cast Nat.le_mul_of_pos_right κ hJ1
+    have hc0 : (0 : ℤ) ≤ 3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ := by linarith
+    have hkey : 6 * (κ : ℤ) ^ 2 * S
+        = ((κ : ℤ) * J) * ((κ : ℤ) * J + κ)
+          * (3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ) := by
+      linear_combination (κ : ℤ) ^ 2 * hexact
+    have hamgm := mul_mul_le_cube hτ0 (by linarith : (0 : ℤ) ≤ (κ : ℤ) * J + κ) hc0
+    have hsum : (κ : ℤ) * J + ((κ : ℤ) * J + κ)
+        + (3 * ((D : ℤ) + 1) - 2 * ((κ : ℤ) * J) - κ) = 3 * ((D : ℤ) + 1) := by ring
+    rw [hsum] at hamgm
+    have hfinal : 6 * (κ : ℤ) ^ 2 * S ≤ ((D : ℤ) + 1) ^ 3 := by
+      rw [hkey]; nlinarith [hamgm]
+    exact_mod_cast hfinal
+
 end numVars
 
 section numConstraints
@@ -256,32 +354,44 @@ lemma proximity_gap_degree_bound_sq_gt (hn : n ≠ 0) :
       nlinarith [show 0 < (m + 1 / 2 : ℝ) * √((k + 1) * n) by
         positivity, Real.mul_self_sqrt (show 0 ≤ (k + 1 : ℝ) * n by positivity)]
 
+/-- The Guruswami-Sudan counting bound, stated for an arbitrary degree bound `D`: the system is
+underdetermined as soon as `D * (D + 2) > (k - 1) * n * m * (m + 1)`.
+
+This is the shared core of the counting arguments; a concrete degree bound only has to supply the
+displayed inequality, which for the usual choices follows from a lower bound on `(D + 1) ^ 2`. -/
+lemma numVars_gt_numConstraints_of_mul_lt {D : ℕ} (hk : 1 < k)
+    (h : ((k : ℝ) - 1) * n * m * (m + 1) < (D : ℝ) * (D + 2)) :
+    numVars k D > numConstraints n m := by
+  have h_ineq : 2 * (k - 1) * numVars k D > (k - 1) * n * m * (m + 1) := by
+    have h_lb : 2 * ((k : ℝ) - 1) * numVars k D ≥ (D : ℝ) * (D + 2) := by
+      convert numVars_lower_bound_tight hk using 1
+      · norm_cast
+        rw [Int.subNatNat_of_le] <;> norm_cast
+        linarith
+    have h_chain : ((k : ℝ) - 1) * n * m * (m + 1) < 2 * ((k : ℝ) - 1) * numVars k D :=
+      lt_of_lt_of_le h h_lb
+    norm_cast at h_chain
+    rw [Int.subNatNat_of_le hk.le] at h_chain
+    exact_mod_cast h_chain
+  have h_div : numVars k D > n * m * (m + 1) / 2 :=
+    Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
+  convert h_div using 1
+  convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
+  · rfl
+  · rw [← Nat.mul_div_assoc] <;> ring_nf
+    exact even_iff_two_dvd.mp (by simp [parity_simps])
+
 lemma numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1 ≤ m) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
       set D := proximity_gap_degree_bound k n m
       have hD : ((D + 1)^2 : ℝ) > ((m : ℝ) + 1 / 2)^2 * (k + 1) * n := by
         convert proximity_gap_degree_bound_sq_gt hn using 1
-      have h_ineq : 2 * (k - 1) * numVars k D > (k - 1) * n * m * (m + 1) := by
-        have h_ineq : 2 * (k - 1) * numVars k D ≥ (D : ℝ) * (D + 2) := by
-          convert numVars_lower_bound_tight hk using 1
-          · norm_cast
-            rw [Int.subNatNat_of_le] <;> norm_cast
-            linarith
-        have h_ineq : (D : ℝ) * (D + 2) > (k - 1) * n * m * (m + 1) := by
-          nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
-            exact Nat.one_le_cast.mpr hm, show (n : ℝ) ≥ 1 by
-              exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
-                (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr hm)
-                  (show (n : ℝ) ≥ 0 by positivity)]
-        norm_cast at *
-        rw [Int.subNatNat_of_le] at * <;> (norm_cast at *; linarith)
-      have h_div : numVars k D > n * m * (m + 1) / 2 := by
-        exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
-      convert h_div using 1
-      convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-      · rfl
-      · rw [← Nat.mul_div_assoc] <;> ring_nf
-        exact even_iff_two_dvd.mp (by simp [parity_simps])
+      refine numVars_gt_numConstraints_of_mul_lt hk ?_
+      nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
+        exact Nat.one_le_cast.mpr hm, show (n : ℝ) ≥ 1 by
+          exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
+            (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr hm)
+              (show (n : ℝ) ≥ 0 by positivity)]
 
 lemma numVars_gt_numConstraints (k n m : ℕ) :
     numVars k (proximity_gap_degree_bound k n m) > numConstraints n m := by
@@ -981,27 +1091,12 @@ lemma gs_numVars_gt_numConstraints_of_gt_one (hn : n ≠ 0) (hk : 1 < k) (hm : 1
   set D := gs_degree_bound k n m
   have hD : ((D + 1)^2 : ℝ) > ((m : ℝ) + 1 / 2)^2 * k * n := by
     convert gs_degree_bound_sq_gt hn (by omega : 0 < k) using 1
-  have h_ineq : 2 * (k - 1) * numVars k D > (k - 1) * n * m * (m + 1) := by
-    have h_ineq : 2 * (k - 1) * numVars k D ≥ (D : ℝ) * (D + 2) := by
-      convert numVars_lower_bound_tight hk using 1
-      · norm_cast
-        rw [Int.subNatNat_of_le] <;> norm_cast
-        linarith
-    have h_ineq : (D : ℝ) * (D + 2) > (k - 1) * n * m * (m + 1) := by
-      nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
-        exact Nat.one_le_cast.mpr hm, show (n : ℝ) ≥ 1 by
-          exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
-            (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr hm)
-              (show (n : ℝ) ≥ 0 by positivity)]
-    norm_cast at *
-    rw [Int.subNatNat_of_le] at * <;> (norm_cast at *; linarith)
-  have h_div : numVars k D > n * m * (m + 1) / 2 := by
-    exact Nat.div_lt_of_lt_mul <| by nlinarith [Nat.sub_pos_of_lt hk]
-  convert h_div using 1
-  convert congr_arg (fun x : ℕ ↦ n * x) (card_constraintIndices m) using 1
-  · rfl
-  · rw [← Nat.mul_div_assoc] <;> ring_nf
-    exact even_iff_two_dvd.mp (by simp [parity_simps])
+  refine numVars_gt_numConstraints_of_mul_lt hk ?_
+  nlinarith [show (k : ℝ) ≥ 2 by norm_cast, show (m : ℝ) ≥ 1 by
+    exact Nat.one_le_cast.mpr hm, show (n : ℝ) ≥ 1 by
+      exact Nat.one_le_cast.mpr (Nat.pos_of_ne_zero hn), mul_le_mul_of_nonneg_left
+        (show (m : ℝ) ≥ 1 by exact Nat.one_le_cast.mpr hm)
+          (show (n : ℝ) ≥ 0 by positivity)]
 
 /-- The degree bound with ρ = k/n is strictly less than m times the number of
     agreement points, provided the distance is within the rate-corrected Johnson
