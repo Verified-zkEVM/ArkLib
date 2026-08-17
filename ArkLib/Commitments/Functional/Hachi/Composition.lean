@@ -36,8 +36,9 @@ The Hachi evaluation (opening) protocol decomposes into three pieces:
    multilinear-evaluation claim `relWEvalClaim` (`mle[w̃](a) = y′`) on the committed table.
 2. **End-piece** (`endPiece`, `EndPiece/`): the closing component that ends a (possible
    run of) iteration(s): the prover sends the reduced (end) witness itself to the verifier, who
-   checks the reduced claim against it directly. Verifier, guard and extractor are complete; only
-   its CWSS certificate `endPiece_coordinateWiseSpecialSoundWith` is still sorried.
+   checks the reduced claim against it directly. **Finished** — check, verifier, guardedness,
+   extractor and the CWSS certificate `endPiece_coordinateWiseSpecialSoundWith` are all complete,
+   `sorry`-free and axiom-clean.
 3. **Evaluation** (`evaluation`): a single iteration concatenated with the end-piece — the
    complete evaluation protocol of the Hachi commitment scheme.
 
@@ -124,11 +125,18 @@ it inherits their `sorryAx` and is *not* axiom-clean.
 (`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
 Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), and the final
 evaluation (`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck`
-encoding). The **end-piece** (`EndPiece/Reduction.lean`) is no longer a skeleton: its check
-(`endPieceCheck`), verifier, guardedness (`endPieceVerifier_isGuarded`, by `rfl`) and extraction
-algorithm (`endPieceWitness`/`endPieceExtractor`) are complete definitions, leaving only the
-certificate `endPiece_coordinateWiseSpecialSoundWith` sorried. Every sorried encoding def carries
-an in-situ `**Sorried**` docstring.
+encoding). Every sorried encoding def carries an in-situ `**Sorried**` docstring.
+
+*The end-piece is finished.* `EndPiece/Reduction.lean` — its check (`endPieceCheck`), verifier,
+guardedness (`endPieceVerifier_isGuarded`, by `rfl`), extraction algorithm
+(`endPieceWitness`/`endPieceExtractor`) and CWSS certificate
+`endPiece_coordinateWiseSpecialSoundWith` are all complete, `sorry`-free and **axiom-clean**
+(`propext`/`Classical.choice`/`Quot.sound` only). It is the first link of the assembly layer to
+close outright: extraction is the identity on the transcript message, and CWSS follows from the
+challenge-free bridge (`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) composed with
+guarded acceptance (`check_eq_true_of_guarded_accepting`). It is also escape-free, so it adds no
+disjunct to the composite event. What `evaluation` still inherits comes entirely from the
+per-link math above (rows 8–9 and the shared encoding layer), never from the end-piece.
 
 ## References
 
@@ -299,17 +307,18 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
   (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
     K pp φF hd hq2 hb hρ hcov hn).isCWSS
 
-/- The end-piece is no longer a skeleton: it lives in `EndPiece/` as a subprotocol in its own
-right, exporting its `GCWSSPackage` the same way as the other subprotocols (`QuadEval/`,
-`RingSwitch/`, `ZeroCheck/`, `Sumcheck/`). Only its use in `evaluation` remains here. -/
+/- The end-piece lives in `EndPiece/` as a subprotocol in its own right, exporting its
+`GCWSSPackage` the same way as the other subprotocols (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`,
+`Sumcheck/`). Only its use in `evaluation` remains here. -/
 
 /-- **The complete Hachi evaluation** (the opening argument of the commitment scheme): a single
 `iteration` concatenated with the `endPiece`. The composed reduction takes the
 polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: after the end-piece
 the verifier has checked the reduced witness against the reduced claim itself, so nothing is left
 to reduce. The certificate is `(evaluation …).isCWSS`; it is skeletal exactly where its factors
-are (the sorried links of the iteration; the end-piece contributes only its own
-`endPiece_coordinateWiseSpecialSoundWith`). -/
+are — that is, entirely in the `iteration`'s sorried links (rows 8–9 and the shared encoding
+layer). The `endPiece` factor contributes nothing: it is `sorry`-free, axiom-clean and
+escape-free. -/
 noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
@@ -354,10 +363,9 @@ end Evaluation
 * **Discharging the skeleton.** Work through the sorry inventory in the module header in
   dependency order: the two sum identities of the shared encoding layer
   (`ZeroCheck/Constraints.lean`), then Lemma 11's round certificate (`Sumcheck/Rounds.lean`) and
-  the final evaluation (`Sumcheck/FinalEval.lean`), and the end-piece certificate
-  `endPiece_coordinateWiseSpecialSoundWith` (`EndPiece/Reduction.lean`) — plus the
-  `LiftCom` instantiation (the inner-outer commitment without re-decomposition, with its collision
-  escape via `outputToModuleSIS_valid_of_verified`).
+  the final evaluation (`Sumcheck/FinalEval.lean`) — plus the `LiftCom` instantiation (the
+  inner-outer commitment without re-decomposition, with its collision escape via
+  `outputToModuleSIS_valid_of_verified`). The end-piece is done and off this list.
 * **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
   tracked with @ErVinuelas.
 * **§3 packing head (external extension-field claims).** The paper's headline

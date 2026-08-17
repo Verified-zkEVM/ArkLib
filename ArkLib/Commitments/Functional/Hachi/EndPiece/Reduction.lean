@@ -138,9 +138,7 @@ noncomputable def endPieceExtractor
         (pSpec := pSpecEndPiece (LiftedWitness Φ μ n)))).arity :=
   fun stmtIn tree => endPieceWitness Φ m₀ stmtIn tree.onlyTranscript
 
-variable [SampleableType F]
-
-omit [NeZero q] [IsCyclotomic Φ] [SampleableType F] in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- **CWSS of the end-piece, at the named `endPieceExtractor`.**
 
 The protocol is challenge-free, so CWSS collapses through
