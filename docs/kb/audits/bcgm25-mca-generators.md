@@ -39,7 +39,7 @@ is unstatable in it. Bounds are therefore vacuous once they exceed `1`.
 | Lemma 4.4 (tensor generator) | `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`, `TensorMCA.isMCAGenerator_tensorGenerator` | proved in two forms — see below |
 | Remark 3.20 (polynomial ⇒ zero-evading) | `PolynomialGenerator.poly_gen_is_zero_evading` | proved, total-degree variant |
 | Lemma 3.22 (MCA implies CA) | — | not formalized; this is what licenses reading an `mcaError` bound as a correlated-agreement threshold statement |
-| Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved, at `ℓ ≥ 1` where the paper states `s ≥ 2`. At `ℓ = 1` the affine space generator *is* the affine line generator and the conclusion is immediate, since the scaled error `(1 - 1/|F|)⁻¹ · ϵMCA` only exceeds `ϵMCA`; the proof covers that case uniformly |
+| Lemma 7.1 (affine lines to affine spaces) | `AffineMCAMain.isMCAGenerator_affineSpaceGenerator_of_affineLineGenerator` | proved over module alphabets, at `ℓ ≥ 1` where the paper states `s ≥ 2`. At `ℓ = 1` the affine space generator *is* the affine line generator and the conclusion is immediate, since the scaled error `(1 - 1/|F|)⁻¹ · ϵMCA` only exceeds `ϵMCA`; the proof covers that case uniformly |
 | Thm 6.1 (MCA for **MDS** generators) | — | not formalized. Requires `G` MDS with `dim C_G = ℓ ≥ 2`; the error depends on `C` only through `n` and `δ_C`, which is what makes it discharge an interleaved hypothesis. No unconditional inhabitant of `IsMCAGenerator` exists in-tree |
 | Lemma 9.3 (`G_d` for Reed–Solomon) | — | not formalized |
 | Lemma 10.1 (`ϵMCA(C^k) ≤ k · ϵMCA(C)`) | — | not formalized |

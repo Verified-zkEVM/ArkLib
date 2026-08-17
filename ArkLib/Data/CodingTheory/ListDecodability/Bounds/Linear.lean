@@ -493,19 +493,25 @@ theorem qary_shell_entropy_lower
 
 open _root_.Code in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
-[MS77] Hamming-ball volume estimate `Vol_q(δ, n) ≥ q^{n·H_q(δ)} / √(8·n·δ·(1-δ))` into
-`linear_lambda_ge_elias_volume`, dividing by `q^{n-k}` and writing `ρ := k/n`, gives
+[MS77] binary binomial-coefficient estimate into `linear_lambda_ge_elias_volume`, dividing by
+`q^{n-k}` and writing `ρ := k/n`, gives
 
   `|Λ(C, δ)| ≥ q^{n·(ρ - 1 + H_q(δ))} / √(8·n·δ·(1-δ))`.
 
-The volume estimate is proved in-tree from an explicit single-shell Stirling bound; [DG25dist]
-gives refinements of it. As with `linear_lambda_ge_elias_volume`, [ABF26] states this for an
-arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the linear-over-a-field case below is
-a special case, so the alphabet-generic statement remains a coverage gap.
+Precisely, [MS77] Chapter 10, §11, Lemma 7, equation (16), printed page 309 states for
+`0 < δ < 1` and integer `δn` the binary shell estimate
+`2^{n·H₂(δ)} / √(8nδ(1−δ)) ≤ C(n,δn)`. It is not stated there as a q-ary ball bound. The in-tree
+proof first derives that same single-shell estimate from finite Stirling bounds, then multiplies by
+`(q−1)^{δn}` and uses the q-entropy identity to obtain the displayed q-ary shell bound; the ball is
+at least that shell. Thus the q-ary result is a proved algebraic generalisation, not a verbatim
+[MS77] theorem. [DG25dist] gives refinements. As with `linear_lambda_ge_elias_volume`, [ABF26]
+states this for an arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the
+linear-over-a-field case below is a special case, so the alphabet-generic statement remains a
+coverage gap.
 
-The hypothesis `_hδn_int` (the radius `δ·n` is an integer) is the regime in which the [MS77]
-estimate is stated, and the corollary inherits it implicitly. It is not decoration: without it the
-bound is **false** at small `δ`, since for `0 < δ·n < 1` the relative ball collapses to Hamming
+The hypothesis `_hδn_int` is exactly [MS77]'s `δn`-integrality condition. It is not decoration:
+without it the bound is **false** at small `δ`, since for `0 < δ·n < 1` the relative ball collapses
+to Hamming
 radius `0`, so the list is `{f} ∩ C` while the entropy-volume right-hand side can exceed `1`. -/
 theorem linear_lambda_ge_entropy_volume
     (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
@@ -866,11 +872,12 @@ counting form below is the source's probability exactly, not an approximation of
 working model is the kernel of a uniformly random parity-check matrix, which conditioned on full
 rank is the same uniform distribution over dimension-`k` subspaces, by `GL_n`-invariance.)
 
-**One stronger than [GLMRSW22], faithful to [ABF26].** [GLMRSW22] define `(p, L)`-list-decodable
-with a **strict** inequality — "`|{c ∈ C : δ(c,z) ≤ p}| < L`" (§1) — so their "not
-`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable" is `Λ ≥ ⌊·⌋`, whereas the bad event `Λ ≤ ⌊·⌋` below makes the
-good event `Λ ≥ ⌊·⌋ + 1`. [ABF26] prints the strict `>`, so the Lean tracks ground truth and is one
-stronger than the original; recorded, not repaired.
+**Endpoint.** [GLMRSW22] define `(p, L)`-list-decodable with the **strict** condition
+"`|{c ∈ C : δ(c,z) ≤ p}| < L`" (§1). Consequently, their "not
+`(p, ⌊h_q(p)/ε − δ⌋)`-list-decodable" means `Λ ≥ ⌊·⌋`. The bad event below is therefore
+`Λ < ⌊·⌋`, whose complement gives exactly the source-supported weak lower bound. [ABF26]
+Theorem 3.11 prints a strict `>`, one integer stronger than its cited source; that printing is not
+followed here.
 
 Variable map into the form below: the source's radius `p` is our `δ`, its slack `δ` is our `ε`,
 its `ε_{p,q,δ}` is our `γ`, and its rate `1 − h_q(p) − ε` is our `ρ` — so its `ε` is
@@ -880,7 +887,7 @@ its `ε_{p,q,δ}` is our `γ`, and its rate `1 − h_q(p) − ε` is our `ρ` �
 `1 − q^{−Ω(n)}` statement is carried in its equivalent finite counting form over the uniform
 family `{C : Submodule F (ι → F) | finrank C = k}`:
 
-  `#{C : finrank C = k ∧ |Λ(C, δ)| ≤ ⌊…⌋} ≤ q^{−c·n} · #{C : finrank C = k}`
+  `#{C : finrank C = k ∧ |Λ(C, δ)| < ⌊…⌋} ≤ q^{−c·n} · #{C : finrank C = k}`
 
 with `c > 0` the `Ω(n)` constant, whose dependence on `q, δ, ε, ρ` is licensed by its binder
 position. This is deliberately stronger than bare existence of one witness code, which loses the
@@ -904,7 +911,7 @@ theorem random_linear_lambda_lower
               ρ ≤ (k : ℝ) / Fintype.card ι →
               (k : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι →
               (({C : Submodule F (ι → F) | Module.finrank F C = k ∧
-                  Lambda ((C : Set (ι → F))) δ ≤
+                  Lambda ((C : Set (ι → F))) δ <
                     ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) :
                       ℕ∞)}.ncard : ℝ))
                 ≤ (q : ℝ) ^ (-(c * (Fintype.card ι : ℝ))) *
@@ -915,7 +922,7 @@ theorem random_linear_lambda_lower
 high-probability counting form `random_linear_lambda_lower`: some linear code `C ⊆ F^n` with
 dimension in the band `ρ ≤ finrank/n ≤ ρ + 1/n` satisfies
 
-  `|Λ(C, δ)| > ⌊H_q(δ) / (1 - H_q(δ) - ρ) - ε⌋` .
+  `|Λ(C, δ)| ≥ ⌊H_q(δ) / (1 - H_q(δ) - ρ) - ε⌋` .
 
 The bad-event count is below the whole family's, the family `{C | finrank C = ⌈ρ·n⌉}` is nonempty
 (a coordinate-kernel subspace realises any dimension `≤ n`), so a good code exists.
@@ -937,7 +944,7 @@ theorem random_linear_lambda_lower_exists
             ∃ C : Submodule F (ι → F),
               ρ ≤ (Module.finrank F C : ℝ) / Fintype.card ι ∧
               (Module.finrank F C : ℝ) / Fintype.card ι ≤ ρ + 1 / Fintype.card ι ∧
-              ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) <
+              ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) ≤
                 Lambda ((C : Set (ι → F))) δ := by
   obtain ⟨γ, hγ_pos, hmain⟩ :=
     random_linear_lambda_lower q hq_pp δ hδ_pos hδ_lt ε hε_pos hε_lt
@@ -988,7 +995,7 @@ theorem random_linear_lambda_lower_exists
   set B : ℕ∞ :=
     ((Nat.floor (qEntropy q δ / (1 - qEntropy q δ - ρ) - ε) : ℕ) : ℕ∞) with hB_def
   set bad : Set (Submodule F (ι → F)) :=
-    {C | Module.finrank F C = k ∧ Lambda ((C : Set (ι → F))) δ ≤ B} with hbad_def
+    {C | Module.finrank F C = k ∧ Lambda ((C : Set (ι → F))) δ < B} with hbad_def
   set full : Set (Submodule F (ι → F)) := {C | Module.finrank F C = k} with hfull_def
   have hsub : bad ⊆ full := fun C hC => hC.1
   have hfull_pos : 0 < full.ncard := by
@@ -1015,7 +1022,7 @@ theorem random_linear_lambda_lower_exists
   · rw [hCk]; exact hband1
   · rw [hCk]; exact hband2
   · by_contra hle
-    exact hCbad ⟨hCk, not_lt.mp hle⟩
+    exact hCbad ⟨hCk, lt_of_not_ge hle⟩
 
 end RandomLinear
 

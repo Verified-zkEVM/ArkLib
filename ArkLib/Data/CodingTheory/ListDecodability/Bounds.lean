@@ -5,6 +5,7 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Linear
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.ReedSolomon
@@ -27,7 +28,9 @@ given relative radius. The two families answer opposite questions about the same
   decodability above a threshold: a volume/averaging bound valid for every linear code
   (`linear_lambda_ge_elias_volume`, and its entropy form), a bound on random linear codes, and
   Reed-Solomon-specific separations
-  (`rs_lambda_superpoly_extension`, `rs_lambda_large_prime`, `rs_lambda_high_rate`).
+  (`rs_lambda_superpoly_extension`, `rs_lambda_large_prime`). The proved
+  `rs_codimension_one_list_size` is a separate elementary interpolation lemma, not the missing
+  [JH01] high-rate separation.
 * **Neither** is `linear_card_le_generalized_singleton`, which bounds `|C|` rather than a list and
   belongs to a third group with `large_alphabet_lambda_lower`: constraints on the *code* implied by
   a list-size bound. Its arithmetic half, with no list-decoding premise at all, is
@@ -68,19 +71,21 @@ This file is the umbrella; the statements are in `Bounds/`.
   rate–radius arithmetic, the generalized Singleton bound, random linear codes.
 * `Bounds/LargeAlphabet.lean` — the barrier that attaining the generalized Singleton bound forces an
   exponentially large alphabet, over the four-file development in `Bounds/LargeAlphabet/`.
-* `Bounds/ReedSolomon.lean` — the three Reed-Solomon separations, and the random-evaluation-domain
-  upper bound.
+* `Bounds/ReedSolomon.lean` — two Reed-Solomon separations, the internal codimension-one lemma, and
+  the random-evaluation-domain upper bound. The distinct [JH01] result is not formalised.
 * `Bounds/SubspaceDesign.lean` — [CZ25]'s upper bound, its two reformulations, and the folded-RS and
   multiplicity-code corollaries, over the machinery in `Bounds/AgreementHypergraph.lean`.
+* `Bounds/KKH26.lean` and `Bounds/KKH26Asymptotic.lean` — the concrete [KKH26] useful-family
+  templates and the derived ABF26 Theorem 3.15.
 
 ## External admits
 
-Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
+Four statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
 (`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
 (`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
-(`rs_random_domain_lambda_le`, [AGL24]). Each admit's docstring carries the source statement
-verbatim, the variable map into ArkLib's vocabulary, and a note on every place the formalised
-statement differs from the printed one.
+(`rs_random_domain_lambda_le`, [AGL24]), plus the number-theoretic KKH sum-set estimate
+(`two_pow_mul_choose_le_card_sumSet`, [KKH26] Lemma 1). Source locators and formulation notes
+are recorded in the defining modules and knowledge-base pages.
 
 One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
 than its input: `random_linear_lambda_lower_exists`.
@@ -88,38 +93,40 @@ than its input: `random_linear_lambda_lower_exists`.
 Everything else is proved and axiom-clean, including the volume/averaging lower bound
 `linear_lambda_ge_elias_volume` and its entropy form `linear_lambda_ge_entropy_volume`, both halves
 of the generalized Singleton bound (`linear_card_le_of_rate_radius`,
-`linear_card_le_generalized_singleton`), the two prime-field Reed-Solomon separations
-(`rs_lambda_large_prime`, `rs_lambda_high_rate`), the [AGL23] large-alphabet barrier
+`linear_card_le_generalized_singleton`), the prime-field Reed-Solomon separation
+`rs_lambda_large_prime`, the elementary `rs_codimension_one_list_size`, the [AGL23]
+large-alphabet barrier
 `large_alphabet_lambda_lower` with its `η = Θ(1/n)` consequence
 `large_alphabet_card_ge_exp_of_inv_length`, and — the deepest of them — [CZ25]'s
 subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
 means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
 and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
+The KKH asymptotic result `exists_rs_asymptotic_Lambda_lower_bound` is likewise proved from the
+concrete vanilla template; it carries smooth-domain existence as an explicit `supply` hypothesis
+and does not depend on the separate sum-set admit.
 
 Two source-side weakenings apply throughout and are not repeated on each declaration: [CZ25] and
 [AGL24] both state *average-radius* list-decodability, of which the plain `Λ` bound formalised here
 is a consequence; and where a source constructs a code, the Lean existentially binds it rather than
 reproducing the construction.
 
-Two statements from [ABF26] §3 are absent, one by decision and one not yet attempted.
+Two statements from [ABF26] §3 remain absent: one by decision and one awaiting primary-source
+verification.
 
+* Theorem 3.14 is not represented because the cited [JH01] primary source was unavailable for
+  verification. `rs_codimension_one_list_size` records only the elementary theorem proved here.
 * The algorithmic hardness barrier (Theorem 3.16, [CW07]) is **deliberately** absent: it needs a
   computational-hardness framework ArkLib does not have — an adversary/advantage/running-time
   layer — and without one, a statement of it would be vacuous or would be about something other than
   hardness.
-* Theorem 3.15, the [KKH26] asymptotic Reed-Solomon lower bound near minimum distance, is simply not
-  formalised. It postdates the cached [ABF26] build, which stops at Theorem 3.14 and numbers the
-  [CW07] barrier as 3.15; the numbering used throughout this file follows the current tex, in which
-  [KKH26] is 3.15 and [CW07] is 3.16. Its statement depends on the paper's appendix restatement of
-  [KKH26], also unformalised.
 
 ## References
 
 * [ABF26] Arnon, Boneh, Fenzi. *Open Problems in List Decoding and Correlated Agreement*. 2026.
   §3 is the source of every statement in this file.
 * [Eli57] Elias. *List decoding for noisy channels*. 1957. The volume/averaging lower bound.
-* [MS77] MacWilliams, Sloane. *The Theory of Error-Correcting Codes*. 1977. The Hamming-ball
-  volume estimate behind the entropy form.
+* [MS77] MacWilliams, Sloane. *The Theory of Error-Correcting Codes*. 1977. Chapter 10, §11,
+  Lemma 7 gives the binary single-binomial-shell estimate used to derive the q-ary entropy form.
 * [ST20] Shangguan, Tamo. *Combinatorial list-decoding of Reed-Solomon codes beyond the Johnson
   radius*. 2020. Theorem 1.2, the generalized Singleton bound.
 * [BDG24] Brakensiek, Dhar, Gopi. *Improved field size bounds for higher order MDS codes*. IEEE
@@ -138,7 +145,8 @@ Two statements from [ABF26] §3 are absent, one by decision and one not yet atte
   Reed-Solomon codes*. 2006. Corollary 2.2.
 * [GHSZ02] Guruswami, Håstad, Sudan, Zuckerman. *Combinatorial bounds for list decoding*. 2002.
   Corollary 20.
-* [JH01] Justesen, Høholdt. *Bounds on list decoding of MDS codes*. 2001. Theorem 2.
+* [JH01] Justesen, Høholdt. *Bounds on list decoding of MDS codes*. 2001. Theorem 2; closed-access
+  primary source and not formalised here.
 * [CZ25] Chen, Zhang. *Explicit folded Reed-Solomon and multiplicity codes achieve relaxed
   generalized Singleton bounds*. 2025. Theorem B.5 and Corollary 2.21.
 * [AGL24] Alrabiah, Guruswami, Li. *Randomly punctured Reed-Solomon codes achieve list-decoding

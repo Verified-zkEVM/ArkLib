@@ -38,10 +38,11 @@ subspace of `F_q^n` of certain dimension." ArkLib has no distribution over linea
 (Its §1.2 working model is the kernel of a uniformly random parity-check matrix, the same distribution
 conditioned on full rank, by `GL_n`-invariance.)
 
-**One stronger than the source, faithfully to [ABF26].** This paper defines `(p, L)`-list-decodable with
-a *strict* inequality, `|{c ∈ C : δ(c,z) ≤ p}| < L`, so "not `(p, ⌊·⌋)`-list-decodable" is `Λ ≥ ⌊·⌋`;
-the Lean's bad event `Λ ≤ ⌊·⌋` makes the good event `Λ ≥ ⌊·⌋ + 1`. [ABF26] prints the strict `>`, so the
-Lean tracks ground truth.
+**Endpoint corrected to the primary source.** This paper defines `(p, L)`-list-decodable with a
+*strict* inequality, `|{c ∈ C : δ(c,z) ≤ p}| < L`, so "not `(p, ⌊·⌋)`-list-decodable" is
+`Λ ≥ ⌊·⌋`. Accordingly, Lean counts the bad event `Λ < ⌊·⌋` and the derived existence theorem
+concludes `⌊·⌋ ≤ Λ`. [ABF26] prints the unsupported strict `>`; Lean deliberately does not inherit
+that off-by-one strengthening.
 
 The dimension is pinned into the band `ρ ≤ k/n ≤ ρ + 1/n`, the source treating `ρ·n` as an integer.
 
