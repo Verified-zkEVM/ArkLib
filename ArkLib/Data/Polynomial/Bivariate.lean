@@ -473,5 +473,33 @@ lemma evalX_mul {F : Type} [CommSemiring F] (x : F) (f g : F[X][Y]) :
     evalX x (f * g) = evalX x f * evalX x g := by
   simp [evalX_eq_map]
 
+section RootMultiplicity
+
+variable {R : Type} [CommSemiring R] [DecidableEq R]
+
+/-- A non-zero bivariate polynomial has a well-defined vanishing order at the origin. -/
+lemma rootMultiplicity₀_ne_none {g : R[X][Y]} (hg : g ≠ 0) : rootMultiplicity₀ g ≠ none := by
+  obtain ⟨i, j, hij⟩ : ∃ i j, coeff g i j ≠ 0 := by
+    by_contra h
+    simp only [not_exists, ne_eq, not_not] at h
+    exact hg (Polynomial.ext fun j ↦ Polynomial.ext fun i ↦ by simpa [coeff] using h i j)
+  exact fun hnone ↦
+    hij ((rootMultiplicity₀_ge_iff g (i + j + 1)).mpr (by simp [hnone]) i j (by omega))
+
+/-- The `(x, y)`-vanishing order of `g` is at least `m`, provided the shifted polynomial is
+non-zero and all of its coefficients of total degree less than `m` vanish.
+
+This is the ring-level counterpart of `rootMultiplicity₀_ge_iff`: it upgrades the vacuous
+`∀ r ∈ rootMultiplicity₀ _, m ≤ r` to an inequality in `Option ℕ`. -/
+lemma le_rootMultiplicity_of_coeff_shift_eq_zero {g : R[X][Y]} {x y : R} {m : ℕ}
+    (hg : shift g x y ≠ 0) (h : ∀ i j, i + j < m → coeff (shift g x y) i j = 0) :
+    (m : Option ℕ) ≤ rootMultiplicity g x y := by
+  obtain ⟨r, hr⟩ := Option.ne_none_iff_exists'.mp (rootMultiplicity₀_ne_none hg)
+  have hle : m ≤ r := (rootMultiplicity₀_ge_iff (shift g x y) m).mp h r (by rw [hr]; rfl)
+  rw [rootMultiplicity, hr]
+  exact Option.some_le_some.mpr hle
+
+end RootMultiplicity
+
 end
 end Polynomial.Bivariate
