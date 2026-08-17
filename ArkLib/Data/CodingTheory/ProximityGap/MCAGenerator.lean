@@ -126,10 +126,10 @@ with a left pseudoinverse. Then the generator `G'` obtained from `G` by right mu
 is an MCA generator with the same error `ε_mca` as `G`.
 The `IsMCAGenerator` form of `mcaError_generatorByRightMul_le`. -/
 lemma pseudoinverseGen [DecidableEq ℓ'] [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
-  (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
-  (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
+    (MC : ModuleCode ι F A) (hGMCA : IsMCAGenerator G ε_mca MC)
+    (M : Matrix ℓ ℓ' F) (hM : HasLeftPseudoInverse M) :
     IsMCAGenerator (generatorByRightMul G M) ε_mca MC :=
-  fun γ => le_trans (mcaError_generatorByRightMul_le G MC M hM (γ : ℝ)) (hGMCA γ)
+  fun γ => le_trans (mcaError_generatorByRightMul_le G MC M hM γ) (hGMCA γ)
 
 open Classical in
 /-- Extend a collection of words `U : κ → (ι → A)` to `ℓ → (ι → A)` by filling in the extra
@@ -153,7 +153,9 @@ lemma isMCA_projectedGenerator_of_isMCA (MC : ModuleCode ι F A) [Nonempty S] (G
   rintro ⟨T, hT₁, hT₂, j, hT₃⟩
   exact ⟨T, hT₁,
     by convert hT₂ using 1; exact funext fun i => (smulSum_projectedGenerator i.val).symm,
-    ⟨j, by rw [zeroExtend_val] ; assumption⟩⟩
+    ⟨j, by
+      rw [zeroExtend_val]
+      assumption⟩⟩
 
 /-- Projecting a generator onto a subset of its output coordinates does not increase the MCA
 error. Stated at the error *value*, so no error function appears. -/
@@ -167,9 +169,9 @@ lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : 
 subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
 The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
 lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
-  (MC : ModuleCode ι F A)
-  (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
-  IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
-  fun γ => le_trans (mcaError_projectedGenerator_le G MC κ (γ : ℝ)) (hGMCA γ)
+    (MC : ModuleCode ι F A)
+    (hGMCA : IsMCAGenerator G ε_mca MC) (κ : Set ℓ) [Fintype κ] :
+    IsMCAGenerator (projectedGenerator G κ) ε_mca MC :=
+  fun γ => le_trans (mcaError_projectedGenerator_le G MC κ γ) (hGMCA γ)
 
 end LinearTransformations
