@@ -106,6 +106,32 @@ values and the encoder `(Fin k → F) →ₗ[F] (ι → A)` range over `A`.
 Combination of codeword values is the module action `f₀ + γ • f₁` (it
 specializes to `f₀ + γ · f₁` when `A = F`).
 
+## Verified vs. admitted
+
+What is verified here is the **reduction**, with a **symbolic** error. Every theorem in
+`ProofSystem/ToyProblem/` is `sorry`-free, and the headline declarations (completeness, the plain
+and round-by-round knowledge-soundness theorems, the named-extractor contracts, the attack lower
+bounds, and the actual-vs-certified bridges) depend only on `propext`, `Classical.choice`, and
+`Quot.sound`. But the shipped knowledge error
+`(1-δ)^t + (ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F|)·(1 - (1-δ)^t)` keeps the bracket
+**opaque**: `ε_mca` and `Λ` are the definitions of `ProximityGap/Errors.lean` and
+`Code.Lambda`, not numerals. Nothing in this directory evaluates them.
+
+Numeric values for the bracket come from the MCA/CA capacity bounds in
+`Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which are **external admits** (each
+`sorry` there is tagged with the primary source it stands in for). That file is deliberately
+**not** in this directory's import cone, so the quarantine is structural rather than a
+convention: no toy-problem theorem can silently acquire a numeric claim. Consequently the
+theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but no
+numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
+the remaining distance is short and is spelled out in `Impl/IRS.lean`.
+
+Two further admitted regions sit outside every proof here and must not be read as backing any
+statement in this file: the generic `StateT` security-composition theorems of
+`OracleReduction/Composition/Sequential/Append.lean` (16 admitted sites, no toy-problem
+consumer — the virtual-output *execution* lemmas that composition needs are proven separately)
+and `Verifier.cast_rbrKnowledgeSoundness` in `OracleReduction/Cast.lean`.
+
 ## References
 
 * [Arnon, G., Boneh, D., Fenzi, G., *Open Problems in List Decoding and

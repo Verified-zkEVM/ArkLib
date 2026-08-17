@@ -24,6 +24,38 @@ executable encoder has exactly `k` scalar input coordinates and its range is the
 The definitions in the extraction path are computable.  Proofs may use classical logic,
 but no proof-side choice is called by the encoder, decoder, agreement-set computation, or
 transition extractor.
+
+## Distance from here to a numeric knowledge error
+
+Everything proven below is parametric: the shipped error keeps `ε_mca(C,δ)` and
+`Λ(C^{≡2},δ)` symbolic, so no numeral is asserted at any parameter shape (see the
+"Verified vs. admitted" section of `Spec/General.lean`).  For this interleaved-RS profile
+the route to a numeral is short, and it is worth recording exactly what is missing:
+
+* **MCA term.**  `ProximityGap.mcaError_interleaved_eq` (`ProximityGap/Errors.lean`,
+  `sorry`-free) collapses the interleaved MCA error to the scalar one, so at radius
+  `δ ∈ (0,1)` the `s`-interleaved code inherits the RS bound at message length `k / s`.
+  The scalar bound itself, `rs_mcaError_le_in_johnson_range`
+  (`ProximityGap/CapacityBounds.lean`), is the **one external admit** on this path
+  ([BCHKS25, Thm 4.6]).
+* **List term.**  Fully proven route, no admits:
+  `ListDecodability.lambda_interleaved_le_choose_mul_pow` composed with
+  `irs_lambda_le_johnson_mds` (both in `sorry`-free files), with
+  `ReedSolomon.Interleaved.minDist_irsCode` supplying the relative-distance input.  What
+  is missing is only real-arithmetic glue, not a mathematical input.
+* **Coercions.**  The `ENNReal → ℝ≥0` bridges needed to land the two terms in the
+  error type are proven.
+
+So a numeric §6.4-shaped corollary would rest on exactly one external admit.  It is
+deliberately not stated here.  Beyond the import-cone quarantine, the live downstream
+consumer of these theorems cannot use an admit-backed numeral at all: it enforces a
+transitive axiom closure of exactly `propext`, `Classical.choice`, `Quot.sound`, and it
+reaches a numeric bound by a different, fully axiom-clean route — ArkLib's *unique-decoding*
+correlated-agreement bound transported through interleaving, rather than the Johnson-range
+MCA admit.  An admit-backed corollary here would therefore be a weaker-provenance parallel
+route to the same quantity.  Any future numeric claim in-tree should adopt
+`CapacityBounds.lean`'s "external admit unless stated" convention rather than pull that file
+into the launch cone.
 -/
 
 namespace ToyProblem.Impl.IRS

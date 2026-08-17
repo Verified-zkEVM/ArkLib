@@ -16,6 +16,14 @@ an encoder, its code and repetition count, and gives stable projections for the
 winning-set/spot-check upper bound and the executable extractor's MCA-plus-list
 certificate.  It intentionally contains no score format, ranking direction,
 submission metadata, or chosen operating radius.
+
+**Verified vs. admitted.**  Both projections below are `sorry`-free and are *symbolic*:
+`extractorCertificate` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
+numeral.  Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
+parameter point; obtaining a numeral additionally requires the external MCA/CA admits of
+`Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which is deliberately outside this
+file's import cone (see the "Verified vs. admitted" section of `Spec/General.lean` and the
+numeric-route notes in `Impl/IRS.lean`).
 -/
 
 namespace ToyProblem
@@ -54,6 +62,31 @@ noncomputable def koalaFRSFixedRadiusParameters :
   encoder_injective := Impl.FRS.koalaFRSEnc_injective
   encoder_range := Impl.FRS.koalaFRSEnc_range
 
+/-! ### Why there is no in-tree interleaved-RS inhabitant
+
+The façade's one in-tree inhabitant is folded-RS over the sextic extension, which leaves an
+apparent asymmetry: the executable extractor ArkLib actually ships
+(`Impl.IRS.irsStraightlineExtractor`) is *interleaved*-RS.  The asymmetry is deliberate.
+
+[ABF26] §6.4.1's interleaved instantiation fixes `𝔽 = 𝔹^6` over the KoalaBear base field
+`𝔹 = 𝔽_q`, a **smooth domain `L ⊆ 𝔹`** with `|L| = 2^18`, `k = 2^20`, `s = 2^3` (so
+`s · |L| = 2^21` and rate `ρ = (k/s)/|L| = 1/2`) and `t = 128`.  That exact object is realized
+in the downstream prize-challenge repository, built from
+`Impl.IRS.irsEncoder`/`irsEncoder_injective`/`irsEncoder_range` and this very structure.  A
+second copy here would fork the protected profile.
+
+The two nearby alternatives are both worse than the cross-reference:
+
+* an interleaved point over `𝔹` **alone** would not be §6.4.1's protocol — the challenge `γ`
+  is sampled from `𝔽`, and `Λ/|𝔹|` at `|𝔹| = 2^31` is not the paper's regime; and
+* a hand-rolled `⟨ω⟩` domain from KoalaBear's two-adic generator table would fork
+  `CompPoly.CPolynomial.NTT.KoalaBear.domainOfLogN`, which already supplies the smooth domain
+  the downstream profile uses.
+
+So the split is: neutral, provably-inhabited façade plus a folded reference point here; the
+concrete interleaved profile, its smooth-domain provenance, and any numeric certificate stay
+downstream. -/
+
 /-- The certified winning-set/spot-check upper bound for a neutral parameter point. -/
 noncomputable def FixedRadiusParameters.winningSetUpperBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
@@ -83,7 +116,14 @@ theorem FixedRadiusParameters.winningSetUpperBound_le_extractorCertificate
     p.code δ p.t hδ p.encoder p.encoder_injective p.encoder_range
 
 /-- A neutral carrier for a proved upper bound on the executable extractor's
-fixed-radius certificate. -/
+fixed-radius certificate.
+
+**The carrier is directional, and inhabitation alone asserts nothing.**  The field
+`proof` is `extractorCertificate δ ≤ bound`, so *every* weaker `bound` qualifies and
+`FixedRadiusCertificateBound.exact` inhabits it unconditionally at the exact certificate.
+A **smaller** `bound` is the stronger statement.  Any downstream policy layer must
+therefore compare the numerals in `bound` and must not treat "this parameter point has a
+`FixedRadiusCertificateBound`" as a security claim. -/
 structure FixedRadiusCertificateBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) where

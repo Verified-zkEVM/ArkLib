@@ -334,8 +334,12 @@ home_page/            site assets and assembled website root
   reference points, and `Codegen.lean` enforces compiler-IR availability. Construction 6.9 is an
   `OracleReduction` with a query-by-query virtual output oracle and exact named IRS straightline
   and RBR extractors. The compiled small-parameter checks run with
-  `lake exe toyproblem-runtime`; production-size profiles are established by proof rather than
-  evaluation.
+  `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
+  radius, and the repetition count, so they apply at production sizes without evaluation. Turning
+  such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
+  `Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which are external admits and are
+  deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
+  any production shape.
 - Batched FRI's batching round now emits the random-linear-combination codeword directly as a
   virtual output oracle. The former `BatchedFri.Spec.liftingLens` / `liftedFRI` repair layer was
   removed rather than renamed: downstream code should compose

@@ -260,6 +260,54 @@ theorem oracleReduction_perfectCompleteness
     apply hreject
     convert hacc using 1 <;> congr 1
 
+/-! ### Regression guards: both decision checks are load-bearing
+
+The C6.2 security statements use `Set.univ` as their output relation — legitimately, since
+`OutputStatement = OutputWitness = Unit` — so *all* of the accept-gating rides on the
+verifier's `OptionT` failure, i.e. on the two `guard`s of `oracleVerifier` and hence on
+`accepts` being a genuinely partial predicate.  A refactor that dropped or weakened either
+`guard` would leave every theorem in this file still true and still provable, while making
+them vacuous.
+
+The two lemmas below pin that invariant at its source.  Each is a pair of instances of
+`accepts` that differ in **exactly one** input — the constraint value `μ₁` in the first, the
+oracle codewords in the second — with acceptance flipping between them.  So neither check can
+be dropped without breaking a compiled theorem, and neither is implied by the other.
+
+They pin the predicate, not the game: the stronger statement — that an always-accepting C6.2
+verifier fails knowledge soundness at small error — needs the full `Reduction.run`
+probability computation against a cheating prover and is not proven here. -/
+
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
+/-- **The linear-constraint check is load-bearing.** Two statements that differ only in `μ₁`
+(`0` versus `1`), at the zero encoder, zero codewords and zero prover message: the first is
+accepted, the second must not be.  Every spot-check passes in both, so acceptance here is
+decided by the linear constraint alone. -/
+theorem accepts_iff_of_linear_constraint {k t : ℕ} (γ : F) (xs : Fin t → ι) :
+    accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+        ((0 : Fin k → F), (0 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs ∧
+      ¬ accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+        ((0 : Fin k → F), (1 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs := by
+  refine ⟨⟨by simp, fun j ↦ by simp⟩, ?_⟩
+  rintro ⟨hlin, -⟩
+  simp at hlin
+
+omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
+/-- **The spot-checks are load-bearing.** Two oracle assignments that differ only in the first
+codeword (`0` versus the nonzero constant `a`), at the zero statement, zero encoder and zero
+prover message: the first is accepted, the second must not be.  The linear constraint passes
+in both, so acceptance here is decided by the spot-checks alone. -/
+theorem accepts_iff_of_spot_check {k t : ℕ}
+    (γ : F) (xs : Fin t → ι) (hpos : 0 < t) (a : A) (ha : a ≠ 0) :
+    accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+        ((0 : Fin k → F), (0 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs ∧
+      ¬ accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+        ((0 : Fin k → F), (0 : F), (0 : F))
+        (fun i _ ↦ if i = 0 then a else 0) γ 0 xs := by
+  refine ⟨⟨by simp, fun j ↦ by simp⟩, ?_⟩
+  rintro ⟨-, hspot⟩
+  exact ha (by simpa using (hspot ⟨0, hpos⟩).symm)
+
 end Protocol
 
 end Spec

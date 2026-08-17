@@ -447,7 +447,16 @@ theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
 
 omit [DecidableEq ι] [Fintype A] in
 /-- Existential knowledge soundness for the winning-set/spot-check upper bound, retained as
-a corollary of the theorem naming the classical extractor. -/
+a corollary of the theorem naming the classical extractor.
+
+**Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
+`winningSetFixedRadiusUpperBound encode δ t` is the Definition 6.11 winning-set quantity at
+whatever `δ` is supplied, so the statement is true at every radius.  It is only *meaningful*
+for `δ ∈ (0, d_min(C))`; outside that band the relaxed output relation degenerates and the
+bound, while true, certifies nothing useful.  The step that does need the band is the bridge
+to the certified error, `winningSetSoundness_le_certifiedGammaError`, whose `hδ` hypothesis is
+exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contracts in `Impl/IRS.lean`
+carry it as an explicit argument. -/
 theorem protocol62_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
@@ -468,7 +477,9 @@ omit [DecidableEq ι] [Fintype A] in
 /-- Compatibility name for the generic Construction 6.2 knowledge-soundness
 theorem.  Its error is the certified winning-set/spot-check upper bound; the
 public executable-IRS theorem is
-`Impl.IRS.oracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor`. -/
+`Impl.IRS.oracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor`.
+The same consumer note on `δ` as for
+`protocol62_knowledgeSoundness_winningSetUpperBound` applies. -/
 theorem protocol62_knowledgeSound {k t : ℕ}
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
