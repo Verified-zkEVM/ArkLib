@@ -713,9 +713,9 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations, QuadEval, and ring-switching (rows 1–4)." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations, QuadEval and ring-switching (rows 1–4), and the closing end-piece." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: rows 5 and 7–9, shared encoding, composition and the scheme." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Certificate still open, or inherited from a link that is: rows 5 and 7–9, shared encoding, composition and the scheme." },
     { cls:"plan", n:counts.plan, lbl:"Future work", sub:"The three §4.5 recursion adapters close the next-iteration loop; their target skeletons and gap are tracked in the roadmap below." },
   ];
   var tilesEl = document.getElementById("tiles");

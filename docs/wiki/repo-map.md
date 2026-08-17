@@ -152,6 +152,13 @@ home_page/            site assets and assembled website root
     `▷ᵍ`, with `roundsChain` re-pinning both seam relations definitionally so the loop composes
     with the universal `▷`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail)
     landing on the evaluation claim `relWEvalClaim`. `Sumcheck/Basic.lean` re-exports the folder.
+  - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
+    reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
+    (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
+    reduce. Escape-free — it re-reads data just sent, so no hardness assumption is consulted — and
+    **`sorry`-free and axiom-clean**: extraction is the identity on the transcript message
+    (`endPieceWitness`), and CWSS closes through the challenge-free bridge plus guarded
+    acceptance. `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
   - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
     `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
@@ -162,10 +169,10 @@ home_page/            site assets and assembled website root
   - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
     links (rows 1–9 of the header's seam table) into one evaluation iteration, and
     `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
-    certificate. `endPiece` is the sorried skeleton closing a run of iterations (the prover reveals
-    the reduced witness and the verifier checks the reduced claim against it directly), and
-    `evaluation` is `iteration ▷ endPiece` — the complete opening argument, a skeleton whose sorry
-    provenance is inventoried in the module header. Escape events compose along the chain by
+    certificate. `endPiece` (imported from `EndPiece/`) closes a run of iterations, and
+    `evaluation` is `iteration ▷ endPiece` — the complete opening argument, whose remaining sorry
+    provenance is inventoried in the module header (all of it in rows 8–9 and the shared encoding
+    layer; the end-piece contributes none). Escape events compose along the chain by
     `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the

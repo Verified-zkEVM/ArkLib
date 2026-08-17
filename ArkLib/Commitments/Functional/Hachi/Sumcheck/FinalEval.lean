@@ -22,7 +22,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
     pull-back.
   * **output** — the *evaluation claim* `WEvalStatement`: the commitment `t`, the sumcheck point
     `a`, and the claimed value `y′` — the evaluation currency (`mle[w̃](a) = y′` for the
-    committed `w̃`), consumed by `Composition.lean`'s `endPiece` and — in future recursion
+    committed `w̃`), consumed by `EndPiece/`'s `endPiece` and — in future recursion
     work — by the `Recursion/` adapters at the same seam.
 
   Extraction (sorried): from a `relWEvalClaim`-witness (an opening `w̃` of `t` with

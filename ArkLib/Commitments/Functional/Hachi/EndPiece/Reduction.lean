@@ -16,11 +16,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   recompute the commitment, evaluate the table's multilinear extension at the sumcheck point.
   Nothing is left to reduce, so the output relation is the full relation on `Unit`.
 
-  This file was split out of `Composition.lean`, where the end-piece lived as a sorried skeleton;
-  the split is what that file's own note asks for once the skeleton is filled ("it should move to
-  a separate file/folder as a subprotocol in its own right, exporting its package the same way as
-  the other subprotocols"). `Composition.lean` now imports `endPiece` and concatenates it after
-  `iteration` to form `evaluation`.
+  The end-piece is a subprotocol in its own right, exporting its `GCWSSPackage` the same way as
+  its peers (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`); `Composition.lean` imports it
+  and concatenates it after `iteration` to form `evaluation`.
 
   * **message (P→V)** — the reduced witness `w̃ : LiftedWitness Φ μ n`, sent in the clear. Sending
     the witness is sound *here* precisely because this is the terminal link: there is no
@@ -44,17 +42,27 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   ## Note on the `relWEvalClaim` seam
 
   `endPiece`'s input relation is `relWEvalClaim` exactly as `Sumcheck/FinalEval.lean` defines it
-  on this branch: `K.com w̃ = t` and `mle[w̃](a) = y′`, with **no shortness conjunct**. PR #729
-  carries a variant of `relWEvalClaim` that additionally requires `liftShort Φ bound ρBound w̃`.
-  Should that variant win, `endPieceCheck` needs a third conjunct deciding `liftShort` on the sent
-  witness and `endPiece_coordinateWiseSpecialSoundWith` a third projection.
+  on this branch: `K.com w̃ = t` and `mle[w̃](a) = y′`, with **no shortness conjunct** — so
+  `endPieceCheck` decides two conjuncts and the certificate projects two.
 
-  That third conjunct is not free. `liftShort` is `vecLInftyNorm Φ w.z ≤ bound ∧ RhoShort ρBound
-  w.ρ`; the first half is decidable as it stands (`vecLInftyNorm` is a `Finset.sup` into `ℕ`), but
+  **This seam is known to need a third conjunct, and the repair is not this file's to make.**
+  `nestedRoundRel` (`ZeroCheck/Constraints.lean`) requires `liftShort Φ bound ρBound p.2` as its
+  second component, and it is row 9's *input* relation — the thing `finalEval`'s extractor must
+  produce — while `relWEvalClaim` is row 9's *output*, the thing acceptance supplies. Norm-free,
+  it supplies no shortness, and the row-9 verifier cannot make up the difference: it sees only
+  `y′ ∈ F`, never `w̃`. So `finalEval_coordinateWiseSpecialSoundWith` is unsatisfiable as stated
+  here, which is why it is still `sorry` on this branch and proved on PR #729 — where
+  `relWEvalClaim` carries the conjunct and the proof visibly consumes it.
+
+  When #729's relation lands, `endPieceCheck` gains a third conjunct and
+  `endPiece_coordinateWiseSpecialSoundWith` a third projection. The end-piece is the right place
+  to discharge it, being the one link that actually receives `w̃`. It is not free: `liftShort` is
+  `vecLInftyNorm Φ w.z ≤ bound ∧ RhoShort ρBound w.ρ`, and while the first half is decidable as it
+  stands (`vecLInftyNorm` is a `Finset.sup` into `ℕ`),
   `RhoShort ρBound ρ = ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound` quantifies over *all*
-  `k : ℕ`. Turning it into a `Bool` check needs a finite reformulation — restrict `k` to
-  `Finset.range ((ρ i).natDegree + 1)` and discharge the tail from `Polynomial.coeff_eq_zero_of_
-  natDegree_lt` — so the seam repair is a small proof obligation, not a rename.
+  `k : ℕ`. Making it a `Bool` check needs a finite reformulation — restrict `k` to
+  `Finset.range ((ρ i).natDegree + 1)`, discharging the tail from
+  `Polynomial.coeff_eq_zero_of_natDegree_lt`.
 
   ## References
 
@@ -90,7 +98,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 /-- **The end-piece check** — the two conjuncts of `relWEvalClaim`, decided on the sent witness:
 the commitment recomputes to the claimed `t`, and the witness table's multilinear extension
 evaluates to the claimed value at the sumcheck point. Unlike `finalCheck`, this is a *complete*
-definition rather than a skeleton: everything it reads is either public statement data or the
+definition, not a placeholder: everything it reads is either public statement data or the
 message itself. -/
 def endPieceCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] (φF : ZMod q →+* F)
