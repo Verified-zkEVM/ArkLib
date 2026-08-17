@@ -22,8 +22,9 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 ## What ArkLib Uses From This Paper
 
 - Lemma 4.10's unique-decoding MCA-from-CA direction below half the relative minimum distance.
-- In Lean, the sourced direction is `mcaError ≤ epsCa`. The reverse inequality is proved in-tree,
-  and the equality follows by antisymmetry.
+- In Lean, `mcaError ≤ epsCa` is proved by counting the bad affine-line parameters. The reverse
+  inequality follows from the general CA-to-MCA comparison, and the equality follows by
+  antisymmetry.
 
 ## Main ArkLib Touchpoints
 
@@ -43,10 +44,6 @@ numbering from the published version matters, while `ACFY24` tracks the earlier 
 - The Lean statement is restricted to linear codes over the field alphabet and assumes `0 < δ`.
 - ArkLib's MCA value is the generator-parametric `CoreDefinitions.mcaError`; the corresponding
   affine-line value is `mcaError (AffineLineGenerator F) C δ`.
-
-## Open Formalization Gaps
-
-- Prove `mcaError_le_epsCa_of_pos_of_two_mul_lt_dist` in-tree.
 
 ## Source Access
 

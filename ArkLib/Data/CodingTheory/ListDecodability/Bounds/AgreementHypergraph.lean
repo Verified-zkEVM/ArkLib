@@ -101,29 +101,21 @@ theorem agreementWeight_ge_of_hammingDist_le
     (S.card : ℝ) * Fintype.card ι * (1 - δ) - Fintype.card ι ≤
       (agreementWeight y S : ℝ) := by
   classical
-  let agree : (ι → A) → ℕ := fun c =>
-    (Finset.univ.filter (fun i => c i = y i)).card
-  have hagree : ∀ c, agree c + hammingDist c y = Fintype.card ι := by
-    intro c
-    unfold agree hammingDist
-    simpa only [Finset.card_univ] using
-      (Finset.card_filter_add_card_filter_not
-        (s := Finset.univ) (fun i : ι => c i = y i))
   have hpoint : ∀ c ∈ S,
-      (Fintype.card ι : ℝ) * (1 - δ) ≤ (agree c : ℝ) := by
+      (Fintype.card ι : ℝ) * (1 - δ) ≤ (Code.agree c y : ℝ) := by
     intro c hc
-    have hcast : (agree c : ℝ) + hammingDist c y = Fintype.card ι := by
-      exact_mod_cast hagree c
+    have hcast : (Code.agree c y : ℝ) + hammingDist c y = Fintype.card ι := by
+      exact_mod_cast (Code.agree_add_hammingDist (u := c) (v := y))
     nlinarith [hdist c hc]
   have hlower :
       (S.card : ℝ) * Fintype.card ι * (1 - δ) ≤
-        ∑ c ∈ S, (agree c : ℝ) := by
+        ∑ c ∈ S, (Code.agree c y : ℝ) := by
     have hsum := Finset.sum_le_sum hpoint
     simpa only [Finset.sum_const, nsmul_eq_mul, mul_assoc] using hsum
   have hdouble :
-      (∑ c ∈ S, (agree c : ℝ)) =
+      (∑ c ∈ S, (Code.agree c y : ℝ)) =
         ∑ i : ι, ((S.filter (fun c => c i = y i)).card : ℝ) := by
-    unfold agree
+    unfold Code.agree
     simp_rw [Finset.natCast_card_filter]
     rw [Finset.sum_comm]
   have hfiber : ∀ i : ι,
