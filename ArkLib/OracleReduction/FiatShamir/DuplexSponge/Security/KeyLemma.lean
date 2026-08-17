@@ -959,8 +959,7 @@ theorem lemma_5_1_inner
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist
@@ -980,7 +979,6 @@ theorem lemma_5_1_inner
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
           (θStar tₕ tₚ tₚᵢ) := by
   intro maliciousProver hMaliciousBound
-  let _ := hTp
   let _ := hMaliciousBound
   sorry
 
@@ -992,8 +990,7 @@ theorem lemma_5_1_inner_tvBound
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
     ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist
@@ -1022,8 +1019,7 @@ theorem lemma_5_1_inner_queryBound
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
     ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       IsD2SAlgoChallengeQueryBound
@@ -1058,8 +1054,7 @@ theorem lemma_5_1
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
     ∃ (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (d2sTraceTransform : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
@@ -1082,7 +1077,7 @@ theorem lemma_5_1
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
     d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
-    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ hTp⟩
+    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ⟩
 
 end KeyLemma
 

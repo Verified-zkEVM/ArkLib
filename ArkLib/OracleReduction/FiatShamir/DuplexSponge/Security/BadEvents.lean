@@ -530,8 +530,7 @@ counting on freshly-sampled values. -/
 section Lemma_5_8
 
 /-- CO25 Lemma 5.8 — Closed-form upper bound on `max{Pr[E | 𝒟_𝔖], Pr[E | 𝒟_Σ]}`.
-For a `(tₕ, tₚ, tₚᵢ)`-query prover and verifier making `L` permutation queries (with `tₚ ≥ L`),
-the bound is:
+For a `(tₕ, tₚ, tₚᵢ)`-query prover with `L` verifier permutation queries, the bound is:
 
 ```
 (7·T² − 3·T) / (2·|Σ|^c)
@@ -787,10 +786,10 @@ noncomputable def lemma5_8SigmaTraceDist
 
 
 set_option linter.unusedDecidableInType false in
-/-- CO25 Lemma 5.8 — Bad-event probability bound (paper-faithful eager statement).
-For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃ with `tₚ ≥ L` (where
+/-- CO25 Lemma 5.8 — Bad-event probability bound (eager statement).
+For every salted `(tₕ, tₚ, tₚᵢ)`-query malicious prover P̃, where
 `L = pSpec.totalNumPermQueries = Lₚ + Lᵥ` is the verifier's total message/challenge
-permutation-query count, matching the §5.8 hybrid bookkeeping in `claim_5_21` / `_22` / `_24`),
+permutation-query count, matching the §5.8 hybrid bookkeeping in `claim_5_21` / `_22` / `_24`,
 
 ```
 max{ Pr[E(tr_P̃ ‖ tr_V) | 𝒟_𝔖], Pr[E(tr_P̃ ‖ tr_V) | 𝒟_Σ] }
@@ -810,8 +809,7 @@ theorem lemma_5_8
     (hMaliciousBound : -- `(tₕ, tₚ, tₚᵢ)`-query bound prover
       IsLemma5_8QueryBound
         (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-        maliciousProver tₕ tₚ tₚᵢ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+        maliciousProver tₕ tₚ tₚᵢ) :
     max
         (Pr[fun (tr : QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
                       QueryLog (duplexSpongeChallengeOracle StmtIn U)) =>
@@ -832,7 +830,6 @@ theorem lemma_5_8
             V maliciousProver])
       ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries) := by
   let _ := hMaliciousBound
-  let _ := hTp
   sorry
 
 end Lemma_5_8
