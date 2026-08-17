@@ -23,7 +23,7 @@ which a witness is extracted from a suitably structured tree of accepting transc
 the factors' package kinds and lifts each to the join automatically (both lifts are lossless). Only
 the ordinary relation seam has to match — escape events compose without a seam. The composed
 chain's `isCWSS` field is the CWSS certificate for the whole reduction. Every link is now imported,
-the end-piece included (`EndPiece/Basic.lean`); this file hosts no protocol of its own.
+the end-piece included (`EndPiece/Reduction.lean`); this file hosts no protocol of its own.
 (Hachi as a `Commitment.Scheme` — the honest committer `keygen`/`commit` and the `hachi` functional
 commitment — lives in the sibling `Commitment.lean`.)
 
@@ -34,7 +34,7 @@ The Hachi evaluation (opening) protocol decomposes into three pieces:
 1. **Iteration** (`iteration`): the concatenation of the subprotocols — rows 1–9 of the chain
    table below. One iteration reduces the polynomial-evaluation claim `relPolyEval` to the bare
    multilinear-evaluation claim `relWEvalClaim` (`mle[w̃](a) = y′`) on the committed table.
-2. **End-piece** (`endPiece`, `EndPiece/Basic.lean`): the closing component that ends a (possible
+2. **End-piece** (`endPiece`, `EndPiece/`): the closing component that ends a (possible
    run of) iteration(s): the prover sends the reduced (end) witness itself to the verifier, who
    checks the reduced claim against it directly. Verifier, guard and extractor are complete; only
    its CWSS certificate `endPiece_coordinateWiseSpecialSoundWith` is still sorried.
@@ -124,7 +124,7 @@ it inherits their `sorryAx` and is *not* axiom-clean.
 (`sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` — rows 7–9 depend on them transitively),
 Lemma 11 (`round_coordinateWiseSpecialSoundWithEscape` + `roundExtractor`), and the final
 evaluation (`finalEval_coordinateWiseSpecialSoundWith` + `finalEvalExtractor` + the `finalCheck`
-encoding). The **end-piece** (`EndPiece/Basic.lean`) is no longer a skeleton: its check
+encoding). The **end-piece** (`EndPiece/Reduction.lean`) is no longer a skeleton: its check
 (`endPieceCheck`), verifier, guardedness (`endPieceVerifier_isGuarded`, by `rfl`) and extraction
 algorithm (`endPieceWitness`/`endPieceExtractor`) are complete definitions, leaving only the
 certificate `endPiece_coordinateWiseSpecialSoundWith` sorried. Every sorried encoding def carries
@@ -299,8 +299,8 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
   (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
     K pp φF hd hq2 hb hρ hcov hn).isCWSS
 
-/- The end-piece is no longer a skeleton: it lives in `EndPiece/Basic.lean` as a subprotocol in its
-own right, exporting its `GCWSSPackage` the same way as the other subprotocols (`QuadEval/`,
+/- The end-piece is no longer a skeleton: it lives in `EndPiece/` as a subprotocol in its own
+right, exporting its `GCWSSPackage` the same way as the other subprotocols (`QuadEval/`,
 `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`). Only its use in `evaluation` remains here. -/
 
 /-- **The complete Hachi evaluation** (the opening argument of the commitment scheme): a single
@@ -355,7 +355,7 @@ end Evaluation
   dependency order: the two sum identities of the shared encoding layer
   (`ZeroCheck/Constraints.lean`), then Lemma 11's round certificate (`Sumcheck/Rounds.lean`) and
   the final evaluation (`Sumcheck/FinalEval.lean`), and the end-piece certificate
-  `endPiece_coordinateWiseSpecialSoundWith` (`EndPiece/Basic.lean`) — plus the
+  `endPiece_coordinateWiseSpecialSoundWith` (`EndPiece/Reduction.lean`) — plus the
   `LiftCom` instantiation (the inner-outer commitment without re-decomposition, with its collision
   escape via `outputToModuleSIS_valid_of_verified`).
 * **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
