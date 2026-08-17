@@ -139,12 +139,20 @@ open Trivariate
 omit [DecidableEq (RatFunc F)] in
 /-- Proposition 5.5 from [BCIKS20].
 There exists a subset `S'` of the set `S` and a bivariate polynomial `P(X, Z)` that matches `Pz` on
-that set. -/
+that set, with `degX P ≤ k` and `degZ P ≤ 1`.
+
+The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
+`∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
+
+Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
+Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
+`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
+there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
 lemma exists_a_set_and_a_matching_polynomial
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
-     #S' > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
-     ∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1) ∧
+     (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
+     (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
      P.natDegree ≤ k ∧
      Bivariate.degreeX P ≤ 1 := by
     sorry
