@@ -5,6 +5,8 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
@@ -88,10 +90,12 @@ Real-valued bounds are embedded into `ENNReal` with `ENNReal.ofReal`.
 - [CS25] Crites–Stewart, *On Reed–Solomon Proximity Gaps Conjectures*, ePrint 2025/2046.
   Corollary 1 = source of Theorem 4.17; Theorem 2 = source of T5.3
   (`ListDecodingAndCA.lean`); Theorem 3 = source of `thm:base-field-ca-lowerbound`
-  (`subfield_epsCa_lower_bound`, this file).
+  (`subfield_epsCa_lower_bound`, `CapacityBounds/Subfield.lean`).
 - [DG25dist] Theorem 2.5, source of Lemma 4.19.
 -/
 
+-- Pre-existing external admits below (not touched by this diff) have statements carrying
+-- unused `Fintype`/`DecidableEq` hypotheses; scoped narrowly once those admits are resolved.
 set_option linter.unusedFintypeInType false
 set_option linter.unusedDecidableInType false
 set_option linter.unusedSectionVars false
@@ -246,30 +250,6 @@ theorem exists_rs_epsCa_large_near_capacity
         ((Fintype.card ιC : ENNReal) ^ (c : ℝ)) / (Fintype.card FC : ENNReal) := by
   sorry -- ABF26-T4.16; external admit [KKH26].
 
-/-- Complete CA breakdown for a Reed--Solomon code whose rate lies in the entropy band
-
-  `1 - H_q(f/n) + 2/n + √((H_q(f/n) - f/n)/n) ≤ ρ ≤ 1 - f/n - 2/n`
-
-The radius is the integer grid point `f/n`; the entropy hypothesis is not extended to arbitrary
-real radii. -/
-theorem rs_epsCa_eq_one_of_entropy_rate
-    (domain : ι ↪ F) (k f : ℕ)
-    (_hq_ge : 10 ≤ Fintype.card F)
-    (_hn_le_q : Fintype.card ι ≤ Fintype.card F)
-    (_hf_le : f ≤ Fintype.card ι)
-    (_hδ_lo :
-        1 - qEntropy (Fintype.card F) ((f : ℝ) / Fintype.card ι)
-            + 2 / (Fintype.card ι : ℝ)
-            + ((qEntropy (Fintype.card F) ((f : ℝ) / Fintype.card ι)
-                  - (f : ℝ) / Fintype.card ι)
-                / (Fintype.card ι : ℝ)) ^ ((1 : ℝ) / 2)
-          ≤ (k : ℝ) / Fintype.card ι)
-    (_hδ_hi :
-        (k : ℝ) / Fintype.card ι ≤
-          1 - (f : ℝ) / Fintype.card ι - 2 / (Fintype.card ι : ℝ)) :
-    let δ : ℝ≥0 := (f : ℝ≥0) / Fintype.card ι
-    epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ δ = 1 := by
-  sorry -- ABF26-T4.17; external admit [CS25 Cor 1].
 
 end ReedSolomon
 
@@ -291,31 +271,6 @@ theorem subspace_design_mcaError_le
       ENNReal.ofReal (((t : ℝ) * Fintype.card ι + 4 * t ^ 3) / Fintype.card F) := by
   sorry -- ABF26-T4.13; external admit [GG25 Cor 4.9].
 
-/-- A capacity-regime MCA bound for an admissibly folded Reed--Solomon code. For an integer
-`t > 0` and folding parameter `s > 4t²`,
-
-  `ε_mca(C, 1 - ρ - 2/t) ≤ (nt + 3t³)/|F|`
-
-The rate is alphabet-normalized as `ρ = k/(s·n)`. The hypotheses require a generator of
-`Fˣ`, an admissible folding domain, and `s·n < |F|`; these are the conditions used by the
-subspace-design argument. The integer parameter is kept explicit rather than replaced by an
-unrounded real expression. -/
-theorem frs_mcaError_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    (domain : ι ↪ F) (k s : ℕ) (ω : F)
-    (_hω : ω ≠ 0)
-    (_hω_gen : orderOf ω = Fintype.card F - 1)
-    (_hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
-    (_hcard : s * Fintype.card ι < Fintype.card F)
-    (t : ℕ) (_ht_pos : 0 < t)
-    (_hs_gt : 4 * t ^ 2 < s) :
-    let n : ℝ := Fintype.card ι
-    let ρ : ℝ := k / (s * n)
-    mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
-        (1 - ρ - 2 / (t : ℝ)) ≤
-      ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
-  sorry -- ABF26-T4.14; external admit [GG25 Cor 4.10].
 
 end SubspaceDesignFRS
 
