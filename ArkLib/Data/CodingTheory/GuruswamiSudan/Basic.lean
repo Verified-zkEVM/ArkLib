@@ -13,7 +13,29 @@ import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.Polynomial.Bivariate
-/-! # Guruswami-Sudan Basics -/
+/-! # Guruswami-Sudan Basics
+
+Degree bounds and variable/constraint counting for the Guruswami-Sudan interpolation system, in
+the parametrization used by the affine-line proximity-gap argument: the system asks for a nonzero
+bivariate polynomial with a `(1, k-1)`-weighted degree bound that vanishes with multiplicity `m`
+at `n` prescribed points, and it is solvable as soon as it has more variables than constraints.
+
+## Main definitions and results
+
+- `proximity_gap_degree_bound`, `gs_degree_bound` — the `D_X`-style weighted-degree bounds, with
+  reduced rate `(k+1)/n` and `k/n` respectively.
+- `weightBoundIndices`, `numVars`, `numConstraints` — the monomial index set of the system and
+  the two counts.
+- `numVars_gt_numConstraints_of_mul_lt` — the shared counting core: the system is
+  underdetermined as soon as `D * (D + 2) > (k - 1) * n * m * (m + 1)`.
+- `sum_snd_weightBoundIndices_le` — the first-moment bound `6 (k-1)² · Σ j ≤ (D + 1)³` on the
+  total `Y`-degree of the index set.
+
+## References
+
+- [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
+  (ePrint 2020/654): Lemma 5.3 for the degree bounds, Appendix B.1 for the first-moment bound.
+-/
 
 
 open Polynomial Polynomial.Bivariate Finsupp Finset
@@ -91,20 +113,20 @@ section numVars
 
 /-- Given a nonnegative integer `D`, it is the set of indices `(i,j)` such
     that `i + (k - 1) * j ≤ D`. -/
-def weigthBoundIndices (k D : ℕ) : Finset (ℕ × ℕ) :=
+def weightBoundIndices (k D : ℕ) : Finset (ℕ × ℕ) :=
   (range (D + 1)).product (range (D + 1)) |>.filter (fun x ↦ x.1 + (k - 1) * x.2 ≤ D)
 
 /-- The number of variables in the Guruswami-Sudan linear system. -/
-def numVars (k D : ℕ) : ℕ := (weigthBoundIndices k D).card
+def numVars (k D : ℕ) : ℕ := (weightBoundIndices k D).card
 
 /-- The index set of the Guruswami-Sudan system, with the range of the `Y`-degree already
 truncated to the values that can actually occur. -/
-lemma weigthBoundIndices_eq_filter_product (D : ℕ) (hk : 1 < k) :
-    weigthBoundIndices k D =
+lemma weightBoundIndices_eq_filter_product (D : ℕ) (hk : 1 < k) :
+    weightBoundIndices k D =
       filter (fun p : ℕ × ℕ ↦ p.1 + (k - 1) * p.2 ≤ D)
         ((range (D + 1)).product (range (D / (k - 1) + 1))) := by
   ext ⟨i, j⟩
-  simp only [weigthBoundIndices, product_eq_sprod, mem_filter, mem_product, mem_range,
+  simp only [weightBoundIndices, product_eq_sprod, mem_filter, mem_product, mem_range,
     and_congr_left_iff, and_congr_right_iff]
   exact fun _ _ ↦ iff_of_true (by
     nlinarith [Nat.sub_pos_of_lt hk, D.div_add_mod (k - 1),
@@ -113,12 +135,12 @@ lemma weigthBoundIndices_eq_filter_product (D : ℕ) (hk : 1 < k) :
     (by nlinarith [Nat.sub_pos_of_lt hk])))
 
 /-- The number of variables is the sum over j of the number of valid i's. -/
-lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
-    (weigthBoundIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
-    have h_split : (weigthBoundIndices k D).card =
+lemma card_weightBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
+    (weightBoundIndices k D).card = ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j + 1) := by
+    have h_split : (weightBoundIndices k D).card =
         ∑ j ∈ range (D / (k - 1) + 1),
           ∑ i ∈ range (D + 1), if i + (k - 1) * j ≤ D then 1 else 0 := by
-      rw [weigthBoundIndices_eq_filter_product D hk, card_filter]
+      rw [weightBoundIndices_eq_filter_product D hk, card_filter]
       erw [sum_product, Finset.sum_comm]
     have h_inner : ∀ j ∈ range (D / (k - 1) + 1), ∑ i ∈ range (D + 1),
         (if i + (k - 1) * j ≤ D then 1 else 0) = (D - (k - 1) * j) + 1 := by
@@ -140,7 +162,7 @@ lemma card_weigthBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
 /-- Closed form for the number of variables when k > 1. -/
 lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
     numVars k D = let L := D / (k - 1); (L + 1) * (2 * D + 2 - (k - 1) * L) / 2 := by
-      convert card_weigthBoundIndices_eq_sum D hk using 1
+      convert card_weightBoundIndices_eq_sum D hk using 1
       · rfl
       next =>
       have h_simp : ∑ j ∈ range (D / (k - 1) + 1), (D - (k - 1) * j) =
@@ -181,7 +203,7 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
 lemma numVars_eq_sq {k D : ℕ} (hk : k ≤ 1) : numVars k D = (D + 1) ^ 2 := by
   interval_cases k
   all_goals
-  simp only [numVars, weigthBoundIndices, tsub_self, zero_mul, add_zero, product_eq_sprod]
+  simp only [numVars, weightBoundIndices, tsub_self, zero_mul, add_zero, product_eq_sprod]
   norm_num
   rw [filter_true_of_mem fun x hx ↦ by linarith [mem_range.mp (mem_product.mp hx |>.1)]]
   norm_num [sq, card_product]
@@ -230,10 +252,10 @@ private lemma mul_mul_le_cube {a b c : ℤ} (ha : 0 ≤ a) (hb : 0 ≤ b) (hc : 
     mul_nonneg hc (sq_nonneg (a - b))]
 
 /-- Summing the `Y`-degree over the index set, one `Y`-degree at a time. -/
-lemma sum_snd_weigthBoundIndices_eq (D : ℕ) (hk : 1 < k) :
-    (∑ p ∈ weigthBoundIndices k D, p.2)
+lemma sum_snd_weightBoundIndices_eq (D : ℕ) (hk : 1 < k) :
+    (∑ p ∈ weightBoundIndices k D, p.2)
       = ∑ j ∈ range (D / (k - 1) + 1), j * (D - (k - 1) * j + 1) := by
-  rw [weigthBoundIndices_eq_filter_product D hk, Finset.sum_filter, product_eq_sprod,
+  rw [weightBoundIndices_eq_filter_product D hk, Finset.sum_filter, product_eq_sprod,
     Finset.sum_product, Finset.sum_comm]
   refine Finset.sum_congr rfl fun j hj ↦ ?_
   have hcj : (k - 1) * j ≤ D := by
@@ -247,17 +269,18 @@ lemma sum_snd_weigthBoundIndices_eq (D : ℕ) (hk : 1 < k) :
     omega
   rw [← Finset.sum_filter, hfilter, Finset.sum_const, card_range, smul_eq_mul, mul_comm]
 
-/-- The first-moment bound of [BCIKS20], Appendix B.1: the sum of the `Y`-degrees over the
-Guruswami-Sudan index set `{(i, j) : i + (k-1) * j ≤ D}` is at most `(D + 1) ^ 3 / (6 * (k-1) ^ 2)`.
+/-- The first-moment bound: the sum of the `Y`-degrees over the Guruswami-Sudan index set
+`{(i, j) : i + (k-1) * j ≤ D}` is at most `(D + 1) ^ 3 / (6 * (k-1) ^ 2)`, stated
+denominator-free.
 
-The paper calls this quantity `D_C`; it is what controls the total `Y, Z`-degree of the
-interpolation polynomial in the curve regime. The bound is essentially tight: for `k = 2` and
-`D = 4` the two sides are `120` and `125`. -/
-lemma sum_snd_weigthBoundIndices_le (D : ℕ) (hk : 1 < k) :
-    6 * (k - 1) ^ 2 * (∑ p ∈ weigthBoundIndices k D, p.2) ≤ (D + 1) ^ 3 := by
+This sum (called `D_C` in [BCIKS20]) controls the total `Y, Z`-degree of the interpolation
+polynomial in the curve regime. The bound is essentially tight: for `k = 2` and `D = 4` the two
+sides are `120` and `125`. -/
+lemma sum_snd_weightBoundIndices_le (D : ℕ) (hk : 1 < k) :
+    6 * (k - 1) ^ 2 * (∑ p ∈ weightBoundIndices k D, p.2) ≤ (D + 1) ^ 3 := by
   obtain ⟨κ, rfl⟩ : ∃ κ, k = κ + 1 := ⟨k - 1, by omega⟩
   have hκ0 : 0 < κ := by omega
-  rw [sum_snd_weigthBoundIndices_eq D hk]
+  rw [sum_snd_weightBoundIndices_eq D hk]
   simp only [Nat.add_sub_cancel]
   set J := D / κ with hJdef
   set S := ∑ j ∈ range (J + 1), j * (D - κ * j + 1) with hSdef
@@ -459,9 +482,9 @@ end numVars_gt_numConstraints
 section solution
 
 /-- The linear map from the space of coefficients to polynomials. -/
-noncomputable def coeffsToPoly (k D : ℕ) : ((weigthBoundIndices k D) → F) →ₗ[F] F[X][Y] :=
-  linearCombination F (fun p : weigthBoundIndices k D ↦ monomial p.1.1 p.1.2) ∘ₗ
-    (linearEquivFunOnFinite F F (weigthBoundIndices k D)).symm.toLinearMap
+noncomputable def coeffsToPoly (k D : ℕ) : ((weightBoundIndices k D) → F) →ₗ[F] F[X][Y] :=
+  linearCombination F (fun p : weightBoundIndices k D ↦ monomial p.1.1 p.1.2) ∘ₗ
+    (linearEquivFunOnFinite F F (weightBoundIndices k D)).symm.toLinearMap
 
 /-- The linear map evaluating the (s,t)-th derivative coefficient at (x,y). -/
 noncomputable def evalConstraint (x y : F) (s t : ℕ) : F[X][Y] →ₗ[F] F where
@@ -471,16 +494,16 @@ noncomputable def evalConstraint (x y : F) (s t : ℕ) : F[X][Y] →ₗ[F] F whe
 
 /-- The linear map representing the system of linear equations. -/
 noncomputable def constraintMap (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (D : ℕ) :
-  ((weigthBoundIndices k D) → F) →ₗ[F] (Fin n → constraintIndices m → F) where
+  ((weightBoundIndices k D) → F) →ₗ[F] (Fin n → constraintIndices m → F) where
   toFun c i st := evalConstraint (ωs i) (f i) st.1.1 st.1.2 (coeffsToPoly k D c)
   map_add' c d := by simp +zetaDelta at *; rfl
   map_smul' a c := by unfold evalConstraint coeffsToPoly; aesop
 
 /-- There exists a non-zero polynomial satisfying the conditions. -/
 lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) :
-    ∃ c : (weigthBoundIndices k (proximity_gap_degree_bound k n m)) → F,
+    ∃ c : (weightBoundIndices k (proximity_gap_degree_bound k n m)) → F,
     c ≠ 0 ∧ constraintMap k n m ωs f (proximity_gap_degree_bound k n m) c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weigthBoundIndices k
+      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k
         (proximity_gap_degree_bound k n m)) → F) >
           Module.finrank F ((Fin n → constraintIndices m → F)) := by
         convert numVars_gt_numConstraints k n m using 1
@@ -500,9 +523,9 @@ lemma exists_nonzero_solution (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F
     given numVars k D > numConstraints n m. -/
 lemma exists_nonzero_solution_gen (k n m : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F) (D : ℕ)
     (hD : numVars k D > numConstraints n m) :
-    ∃ c : (weigthBoundIndices k D) → F,
+    ∃ c : (weightBoundIndices k D) → F,
     c ≠ 0 ∧ constraintMap k n m ωs f D c = 0 := by
-      have h_kernel_nontrivial : Module.finrank F ((weigthBoundIndices k D) → F) >
+      have h_kernel_nontrivial : Module.finrank F ((weightBoundIndices k D) → F) >
           Module.finrank F ((Fin n → constraintIndices m → F)) := by
         convert hD using 1
         · simp [numVars]
@@ -561,7 +584,7 @@ lemma polySol_ne_zero :
     have h_inj : Function.Injective (coeffsToPoly (F := F) k
     (proximity_gap_degree_bound k n m)) := by
       have : Function.Injective (linearCombination F
-        (fun p : weigthBoundIndices k (proximity_gap_degree_bound k n m) ↦
+        (fun p : weightBoundIndices k (proximity_gap_degree_bound k n m) ↦
           monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
       exact this.comp (LinearEquiv.injective _)
@@ -633,22 +656,22 @@ lemma natWeightedDegree_smul_le {F : Type} [Semiring F] (a : F) (p : F[X][Y]) (u
         (show b ∈ p.support from by aesop))
 
 /-- The weighted degree of the polynomial constructed from coefficients is bounded by D. -/
-lemma natWeightedDegree_coeffsToPoly_le (k D : ℕ) (c : (weigthBoundIndices k D) → F) :
+lemma natWeightedDegree_coeffsToPoly_le (k D : ℕ) (c : (weightBoundIndices k D) → F) :
     natWeightedDegree (coeffsToPoly k D c) 1 (k - 1) ≤ D := by
   have h_comb : ∃ (s : Finset (ℕ × ℕ)) (f : ℕ × ℕ → F), (coeffsToPoly k D c) =
       ∑ p ∈ s, f p • (monomial (F := F) p.1 p.2) ∧ ∀ p ∈ s, p.1 + (k - 1) * p.2 ≤ D := by
     norm_num +zetaDelta at *
     refine ⟨univ.image
-      (fun p : { x // x ∈ weigthBoundIndices k D } ↦ (p.val.1, p.val.2)) , ?_, ?_ ⟩;
+      (fun p : { x // x ∈ weightBoundIndices k D } ↦ (p.val.1, p.val.2)) , ?_, ?_ ⟩;
     · use fun p ↦ if h : p ∈ univ.image
-          (fun p : { x // x ∈ weigthBoundIndices k D } ↦ (p.val.1, p.val.2))
+          (fun p : { x // x ∈ weightBoundIndices k D } ↦ (p.val.1, p.val.2))
         then c ⟨p, by aesop⟩ else 0
       unfold coeffsToPoly
       simp only [LinearMap.coe_comp, LinearEquiv.coe_coe, Function.comp_apply,
         linearCombination_apply, zero_smul, implies_true, sum_fintype, univ_eq_attach, Prod.mk.eta,
         attach_image_val, dite_smul]
       refine sum_bij (fun x hx ↦ x) ?_ ?_ ?_ ?_ <;> aesop
-    · unfold weigthBoundIndices at *; aesop
+    · unfold weightBoundIndices at *; aesop
   obtain ⟨s, f, h₁, h₂⟩ := h_comb
   rw [h₁]
   refine le_trans (natWeightedDegree_sum_le s _ _ _) ?_
