@@ -1105,6 +1105,20 @@ theorem IsLineDecodable.mcaError_le
         ≤ (a : ENNReal) / (Fintype.card F : ENNReal) :=
   mcaError_le_proof C δ a _hδ_lt _h -- ABF26-T4.21; external admit [GG25 Thm 3.5].
 
+/-- Threshold form of `IsLineDecodable.mcaError_le`: any target `ε_star` that the `a/|F|`
+budget clears at the instantiated parameters is a genuine affine-line MCA bound. The numeric
+budget check is a hypothesis, so the contentful-range condition is discharged at the use site
+rather than assumed by the reader. -/
+theorem IsLineDecodable.mcaError_le_of_budget
+    (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
+    (hδ_pos : 0 < δ) (hδ_lt : δ < 1)
+    (h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
+           (Fintype.card ι + 1))
+    (ε_star : ℝ≥0)
+    (hbudget : (a : ENNReal) / (Fintype.card F : ENNReal) ≤ (ε_star : ENNReal)) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) :=
+  le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
+
 end
 
 end CodingTheory

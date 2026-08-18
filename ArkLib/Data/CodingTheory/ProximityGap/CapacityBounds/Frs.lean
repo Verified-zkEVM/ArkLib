@@ -2017,6 +2017,28 @@ theorem frs_mcaError_le
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
   exact frs_mcaError_le_proof domain k s ω _hω _hω_gen _hadm _hcard t _ht_pos _hs_gt
 
+/-- Threshold form of `frs_mcaError_le`: any target `ε_star` that the explicit
+`(nt + 3t³)/|F|` budget clears at the instantiated parameters is a genuine affine-line MCA
+bound for the folded Reed-Solomon code. The numeric budget check is a hypothesis, so the
+contentful-range condition is discharged at the use site rather than assumed by the reader. -/
+theorem frs_mcaError_le_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
+    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    (domain : ι ↪ F) (k s : ℕ) (ω : F)
+    (hω : ω ≠ 0)
+    (hω_gen : orderOf ω = Fintype.card F - 1)
+    (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
+    (hcard : s * Fintype.card ι < Fintype.card F)
+    (t : ℕ) (ht_pos : 0 < t)
+    (hs_gt : 4 * t ^ 2 < s)
+    (ε_star : ℝ≥0)
+    (hbudget :
+      ENNReal.ofReal (((Fintype.card ι : ℝ) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F)
+        ≤ (ε_star : ENNReal)) :
+    mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
+        (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ)) - 2 / (t : ℝ)) ≤ (ε_star : ENNReal) :=
+  le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
+
 end CodingTheory
 
 set_option linter.style.longFile 2200
