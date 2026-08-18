@@ -25,9 +25,9 @@ given relative radius. The two families answer opposite questions about the same
   `rs_random_domain_lambda_le`, is probabilistic: a Reed-Solomon code on a *uniformly random*
   evaluation domain is list-decodable near capacity with high probability.
 * **Lower bounds** exhibit a radius at which the list is provably large, so they rule out list
-  decodability above a threshold: a volume/averaging bound valid for every linear code
-  (`linear_lambda_ge_elias_volume`, and its entropy form), a bound on random linear codes, and
-  Reed-Solomon-specific separations
+  decodability above a threshold: volume/averaging bounds valid for every code over a finite
+  alphabet (`lambda_ge_elias_volume` and `lambda_ge_entropy_volume`), a bound on random linear
+  codes, and Reed-Solomon-specific separations
   (`rs_lambda_superpoly_extension`, `rs_lambda_large_prime`). The proved
   `rs_codimension_one_list_size` is a separate elementary interpolation lemma, not the missing
   [JH01] high-rate separation.
@@ -90,9 +90,10 @@ are recorded in the defining modules and knowledge-base pages.
 One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
 than its input: `random_linear_lambda_lower_exists`.
 
-Everything else is proved and axiom-clean, including the volume/averaging lower bound
-`linear_lambda_ge_elias_volume` and its entropy form `linear_lambda_ge_entropy_volume`, both halves
-of the generalized Singleton bound (`linear_card_le_of_rate_radius`,
+Everything else is proved and axiom-clean, including the alphabet-generic volume/averaging lower
+bounds `lambda_ge_elias_volume` and `lambda_ge_entropy_volume` and their field specializations
+`linear_lambda_ge_elias_volume` and `linear_lambda_ge_entropy_volume`, both halves of the
+generalized Singleton bound (`linear_card_le_of_rate_radius`,
 `linear_card_le_generalized_singleton`), the prime-field Reed-Solomon separation
 `rs_lambda_large_prime`, the elementary `rs_codimension_one_list_size`, the [AGL23]
 large-alphabet barrier
