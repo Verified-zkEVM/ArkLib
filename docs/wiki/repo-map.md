@@ -117,8 +117,15 @@ home_page/            site assets and assembled website root
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
-    `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Basic.lean` re-exports the reduction, its
-    soundness, and the bridge.
+    `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Completeness` is the **honest direction**:
+    the honest computations of Figure 3 instantiated from the gadget algebra and bundled with the
+    verifier as the computable protocol `quadEvalReduction` (in `QuadEval/Reduction`), then
+    `quadEvalReduction_perfectCompleteness` — error `0`, since the relation step
+    `mem_relOut_of_relIn` holds at every challenge vector — with
+    `…_zmodDigits` at the concrete base-`b` gadget and the paper's `γ := b`. The certificate is
+    tied to the same verifier by `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`.
+    `QuadEval/Basic.lean` re-exports the reduction, its soundness, its completeness,
+    and the bridge.
   - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is split into one flat folder per paper
     subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
@@ -301,6 +308,29 @@ home_page/            site assets and assembled website root
   a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
   hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
   it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
+  The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
+  message-round case: there the run-support half is a closed-form computation of `Prover.run`
+  (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
+- **Unfolding a fixed-length `Prover.runToRound` by hand: ascribe the round indices, do not rewrite
+  them.** `Prover.runToRound_succ` is stated at `i.succ` with the recursive call at `i.castSucc`,
+  but a concrete run starts from `Fin.last n`, and `Fin.last 2`, `Fin.succ 1`, `Fin.castSucc 1` and
+  `(1 : Fin 3)` are equal only after `Fin.val`/`Nat.mod` arithmetic. Consequences, all hit while
+  proving `QuadEval` completeness:
+  - `rw` on the index itself (`show Fin.last 2 = Fin.succ 1 from rfl`) fails with "motive is not
+    type correct", and `rw [Prover.runToRound_succ 1]` fails to match `runToRound (Fin.last 2)`.
+  - The working shape is to *state* each unfolding as a `have` at the index that literally occurs
+    (`Fin.last 2`, then `(1 : Fin 2).castSucc`, then `(0 : Fin 2).castSucc`) and prove it by the
+    framework lemma — the `have`'s type ascription is checked at full transparency, so the indices
+    reconcile there instead of inside `rw`. Chain them with `Eq.trans` / `rw`.
+  - At index `castSucc 0` the `Unique (Transcript 0 pSpec)` instance is not found; write the empty
+    transcript as `fun i => Fin.elim0 i` instead of `default`.
+  - Pass the direction proof (`pSpec.dir 1 = .V_to_P`) as a *named hypothesis*, not `rfl`:
+    `⟨1, rfl⟩` makes the surrounding term ill-typed at `instances` transparency, which silently
+    stops both `rw` matching and `simp` congruence.
+  - Once the rounds are unfolded, `simp [monad_norm, liftM, monadLift, MonadLift.monadLift]`
+    followed by `rfl` closes the monadic bookkeeping; `FullTranscript.mk2` and
+    `FullTranscript.mk2_eq_snoc_snoc` are the bridge between the `Transcript.concat` chain the
+    prover builds and the two transcript slots the verifier reads.
 - Transcript-tree infrastructure for special-soundness-style notions lives in
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,

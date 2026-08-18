@@ -16,6 +16,7 @@ import ArkLib.Commitments.Functional.Hachi.InnerOuter.Scheme
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Security
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Gadgets
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Reduction
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness

@@ -26,8 +26,9 @@ together with their composite, the one-iteration certificate
 that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
 composite `evaluation`. What is still open: the
 completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`), whose
-first link is in place: the zero-check (Figure 5) is proved perfectly complete in
-`ZeroCheck/Completeness.lean` — and the §4.5 `Recursion/` adapters, separate future work with
+first two links are in place: the zero-check (Figure 5) in `ZeroCheck/Completeness.lean` and the
+polynomial-evaluation reduction (Figure 3) in `QuadEval/Completeness.lean` are both proved
+perfectly complete — and the §4.5 `Recursion/` adapters, separate future work with
 their own sorries and a documented soundness gap described in `Recursion/Basic.lean`. See the
 `TODO` blocks in `Composition.lean` and `Commitment.lean`.
 
@@ -46,10 +47,11 @@ development:
   (`Scheme`), perfect correctness (`Correctness`), the weak-binding reduction to Module-SIS
   (`Security`), and the pinned power-of-two ring (`Arithmetic`).
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
-  (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
-  soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
+  (`Gadgets`), protocol data, relations and the honest protocol object (`Reduction`), Hachi Lemma 8
+  coordinate-wise special soundness (`Soundness`), perfect completeness (`Completeness`), and the
+  zero-round polynomial-level bridge (`Bridge`). Proved in both directions.
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only stage proved in both
+  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only §4.3 stage proved in both
   directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
   `ZeroCheck/Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
