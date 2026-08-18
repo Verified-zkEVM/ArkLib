@@ -183,7 +183,16 @@ Then
   `ε_mca(C, δ) ≤ (1/|F|) · ((2(m+½)⁵ + 3(m+½)·δ·ρ)/(3ρ^{3/2})·n
                               + (m+½)/√ρ)`.
 
-The reduced rate `(k-1)/n` accounts for ArkLib's degree-`< k` convention. -/
+The reduced rate `(k-1)/n` accounts for ArkLib's degree-`< k` convention.
+
+The multiplicity `m` is the source's printed, deliberately loose choice; the source's own proof
+(its §3.2 derivation of `D_X ≤ (1-δ)·m·n`) supports the tighter `m = ⌈√ρ/(2·(1-√ρ-δ))⌉`, a factor
+`2` smaller and hence `2⁵` smaller in the leading term. The admit stays pinned to the printed
+statement; a proof may establish the tighter constant as a separate result.
+
+This is the only theorem standing under every Johnson-range `McaLowerWitness` constructor
+(`McaLowerWitness.ofJohnsonRangeBound`); until it is proved, every Johnson-range Grand-MCA
+witness in the tree is admit-backed. -/
 theorem rs_mcaError_le_in_johnson_range
     (domain : ι ↪ F) (k : ℕ) (δ : ℝ≥0)
     (_hk : 1 < k) (_hδ_pos : 0 < δ)
