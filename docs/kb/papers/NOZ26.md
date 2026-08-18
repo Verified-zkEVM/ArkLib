@@ -120,8 +120,12 @@ Ring-switching layer:
   `ChallengeTree.LeafWitnesses`
   supplies an `Option` candidate opening for each leaf and it directly returns the all-left entry,
   while classical choice remains proof-local to the certificate. The weak-binding disjunct is
-  discharged through `LiftCom`'s norm-conditioned collision. At the batching bridge, shortness is
-  **derived** from the range
+  discharged through `LiftCom`'s norm-conditioned collision. The repair costs nothing on the
+  honest side: splitting the two vector challenges into scalar rounds leaves the interactive
+  protocol unchanged, and `ZeroCheck/Completeness.lean` proves the honest prover accepted with
+  probability one (`nestedZeroCheckReduction_perfectCompleteness`, axiom-clean, error exactly
+  zero — `relBatched` asserts the identities, so both polynomials vanish wherever the challenges
+  land). At the batching bridge, shortness is **derived** from the range
   identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
   At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` **do** carry a
   `liftShort` conjunct, but as the commitment's shortness index rather than as a range assumption:

@@ -3,6 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
+import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 
 /-!
@@ -12,7 +13,9 @@ Umbrella module for `Hachi/ZeroCheck/`: the batched-constraint encoding (Hachi [
 Eqs. (21)–(23))
 and the zero-check subprotocol that reduces the two polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` — the
 `eq̃`-batched range constraints and `α`-evaluated linear constraints — to evaluations at direct
-points assembled from scalar challenges.
+points assembled from scalar challenges, together with both of its security directions:
+coordinate-wise special soundness (`ZeroCheck/Reduction.lean`) and perfect completeness
+(`ZeroCheck/Completeness.lean`).
 
 ## Deviation from the paper's Lemma 10
 
@@ -61,12 +64,24 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   opening by the evaluation-tree zero test — `H₀` through the first `m₀` levels of a single tree,
   `H_α` through its last `m₁`. Tree size is machine-checked by
   `nestedZeroCheck_numLeaves`/`_lt`.
+* `ZeroCheck/Completeness.lean` — the honest direction:
+  `nestedZeroCheckReduction_perfectCompleteness`, perfect completeness of Figure 5 relative to
+  `relBatched`. Its algebraic half `mem_relNestedZeroCheck_of_relBatched` holds at *every* pair of
+  evaluation points — `relBatched` asserts the identities, so no property of the challenge
+  distribution is used and the error is exactly `0` — and its execution half
+  `nestedZeroCheckReduction_run_support` shows an honest run cannot fail and gives prover and
+  verifier the same output statement. They are joined by the generic
+  `Reduction.perfectCompleteness_of_run_support`
+  (`OracleReduction/Security/Basic.lean`), added there for this proof and reusable by every other
+  link. Still missing on the honest side of the chain: the `relLift → relBatched` direction at the
+  batching bridge, and the composition with it.
 
 The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
 `k`-ary trees and individual degree `< k`) with the computable view in
 `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`.
 
-This umbrella re-exports the folder (`Reduction` transitively imports `Batch` and `Constraints`).
+This umbrella re-exports the folder (`Completeness` imports `Reduction`, which
+transitively imports `Batch` and `Constraints`).
 Its output relation `relNestedZeroCheck` is the input of the sumcheck bridge in `Sumcheck/`, and
 the chain is composed in `Composition.lean`.
 

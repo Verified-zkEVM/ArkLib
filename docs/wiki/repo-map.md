@@ -155,7 +155,11 @@ home_page/            site assets and assembled website root
     `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode
     is the escape event `nestedZeroCheckEsc`, whose hardness target is `LiftCom.Collision`). Its
     module docstring carries the counterexample and the repair; the full analysis is
-    `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Basic.lean` re-exports the folder.
+    `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Completeness` is the honest direction
+    (`nestedZeroCheckReduction_perfectCompleteness`, proven and axiom-clean, with error exactly
+    zero — `relBatched` asserts the identities, so nothing about the challenge distribution is
+    used); this is the one link of the chain certified in both directions so far.
+    `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
     zero-check's point claims into the initial hypercube sums; `Sumcheck/RoundPoly` is the
@@ -284,6 +288,19 @@ home_page/            site assets and assembled website root
   (`eval_on_Z`, `toRatFuncPoly`, `D_Y`, `D_YZ`, and related notation) live in
   `ArkLib/Data/Polynomial/Trivariate.lean`, not in `ProximityGap/Basic.lean` or
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
+- **The reusable way into `perfectCompleteness` is `Reduction.perfectCompleteness_of_run_support`
+  in `Security/Basic.lean`**, not the commented-out `perfectCompleteness_forall_challenge` sketch
+  a few lines below it. It reduces perfect completeness to a support statement about the
+  *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
+  output pair is in the output relation and whose two output statements agree, and the probability
+  obligation is discharged (through VCVio's
+  `OptionT.probEvent_eq_one_of_simulateQ_support_bind`, which handles the sampled initial state and
+  the oracle implementation uniformly). It applies to any reduction, of any length, over any
+  `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
+  (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
+  a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
+  hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
+  it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
 - Transcript-tree infrastructure for special-soundness-style notions lives in
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,

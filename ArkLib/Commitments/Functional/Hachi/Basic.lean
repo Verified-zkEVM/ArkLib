@@ -25,10 +25,11 @@ together with their composite, the one-iteration certificate
 `hachi_iteration_coordinateWiseSpecialSoundWithEscape`, and the closing `endPiece` (`EndPiece/`)
 that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
 composite `evaluation`. What is still open: the
-completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`) — and the
-§4.5 `Recursion/` adapters, separate future work with their own sorries and a documented soundness
-gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.lean` and
-`Commitment.lean`.
+completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`), whose
+first link is in place: the zero-check (Figure 5) is proved perfectly complete in
+`ZeroCheck/Completeness.lean` — and the §4.5 `Recursion/` adapters, separate future work with
+their own sorries and a documented soundness gap described in `Recursion/Basic.lean`. See the
+`TODO` blocks in `Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 
@@ -48,7 +49,9 @@ development:
   (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
   soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain.
+  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only stage proved in both
+  directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
+  `ZeroCheck/Completeness.lean`.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
   guarded verifier checks the evaluation claim against it directly. Escape-free, `sorry`-free and
   axiom-clean (`Reduction`, re-exported by `Basic`).
