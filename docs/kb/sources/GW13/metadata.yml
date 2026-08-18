@@ -1,0 +1,6 @@
+bibkey: GW13
+source_kind: article
+canonical_url: https://doi.org/10.1109/TIT.2013.2246813
+doi: 10.1109/TIT.2013.2246813
+committed_artifacts: []
+notes: "Guruswami-Wang, IEEE Transactions on Information Theory 59(6) 2013. One of the two attribution keys on univariate multiplicity codes (ABF26 Definition A.7 is tagged GW13 plus KSY14); only the definition is formalized. Reference PDF (not committed) is ~/abf26-refs/GuruswamiW13.pdf, the ECCC Report No. 73 (2012) preprint, whose numbering may differ from the journal version."

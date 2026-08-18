@@ -32,7 +32,7 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Paper item | Status | Lean refs | Notes |
 | --- | --- | --- | --- |
 | Monicization `monicizeRatFunc` over `F(Z)[T]` | present | `monicizeRatFunc` | Defines the function-field-side monicization. |
-| Polynomial representative `monicize` over `F[Z][T]` | present | `monicize` | The coefficient indexing and zero-degree branch were corrected in #470. |
+| Polynomial representative `monicize` over `F[Z][T]` | present | `monicize` | Coefficient indexing and the zero-degree branch are both handled. |
 | Agreement between `monicize` and `monicizeRatFunc` | present | `map_monicize_eq_monicizeRatFunc` | Proved after the corrected definition. |
 | Positive-degree monicity of `monicize` | present | `monicize_monic` | Explicitly requires `0 < H.natDegree`, matching the `modByMonic` API. |
 | Regular ring `𝒪` and function field `𝕃` | infrastructure | `𝒪`, `𝕃`, `functionFieldT`, `embeddingOf𝒪Into𝕃`, `embeddingOf𝒪Into𝕃_injective` | Gives the quotient rings, the function-field `T` variable, and the embedding used by Appendix A. |
@@ -43,7 +43,7 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | A.2 `Λ(α)` minimal over representatives | present | `regularWeight_le_of_mk_eq`, `regularWeight_mk_le` | Attained at `canonicalRepOf𝒪` by definition. |
 | A.3 rational substitutions `π_z` on `𝒪` | present | `piZ`, `piZLift`, `piZ_eq_eval_canonicalRepOf𝒪`, `piZ_mk_C` | |
 | A.3 extension of `π_z` to `β / C(Z) ∈ 𝕃` | present | `piZOfDiv`, `piZOfDiv_congr`, `piZOfDiv_one`, `piZOfDiv_eq_zero_iff` | Well defined on the quotient, not just the presentation. Needed by §5, which substitutes into `β(x) / (W^{k+1} ξ^{e_k})`. |
-| Lemma A.1 | present | `lemmaA1_embedding_eq_zero_of_many_rational_roots` | Proved and axiom-clean, via the resultant/Sylvester route of the paper (`natDegree_resultant_le_weight_bound`, `rationalVanishingSet_subset_resultant_roots`). |
+| Lemma A.1 | present | `embedding_eq_zero_of_many_rational_roots` | Proved and axiom-clean, via the resultant/Sylvester route of the paper (`natDegree_resultant_le_weight_bound`, `rationalVanishingSet_subset_resultant_roots`). |
 | Claim A.2 Hensel lift exists (`α₀ = T/W`, `R(X, γ, Z) = 0`) | present | `exists_hensel_alpha_sequence`, `formalHenselAlphaSequence` | Axiom-clean. |
 | A.4 uniqueness of the lift | present | `hensel_alpha_sequence_unique`, `IsHenselNumeratorSequence.unique`, `IsHenselNumeratorSequence.eq_betaSeq` | Axiom-clean. Needed by [BCIKS20] Claim 5.9; also makes `betaSeq` canonical rather than an arbitrary choice. |
 | Claim A.2 regularity of `ξ` | present | `xi_regular`, `embeddingOf𝒪Into𝕃_xi` | The total Lean form of `ξ` has a concrete quotient representative `xiPre`. |
@@ -51,7 +51,7 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Claim A.2 regular numerators `βₜ` exist | present | `exists_hensel_numerator_sequence`, `IsHenselNumeratorSequence`, `exists_regular_numerator_shape`, `henselCoeffResidual_regular_after_clearing` | Axiom-clean, and deliberately *free of the weight conjunct* so that `betaSeq`/`α`/`γ` do not depend on the open quantitative step. |
 | Claim A.2 sharp weight bound | present | `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `betaSeq_weight_sharp_le` | Proved, with a correction term relative to the paper's stated inequality — see finding 2. This is the form Claim 5.10 needs. |
 | Claim A.2 loose weight bound `Λ(βₜ) ≤ (2t+1)dD` | present | `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `betaSeq_weight_le` | Weakening of the sharp bound via `numeratorShapeSharp_le_loose`; unaffected by the correction, so Claim 5.10 gets exactly what the paper gives it. |
-| Claim A.2 as stated in the paper | present | `claimA2_exists_numerators_with_weight_bounds` | Bundles existence with both weight bounds. Axiom-clean. |
+| Claim A.2 as stated in the paper | present | `exists_hensel_numerators_with_weight_bounds` | Bundles existence with both weight bounds. Axiom-clean. |
 | Hensel-lift coefficients `α`, `γ` | present | `alpha`, `alpha'`, `gamma`, `gamma'`, `betaSeq`, `betaSeq_spec` | Now defined from the qualitative existence theorem alone, hence axiom-clean. |
 
 ## Three findings on Appendix A.4
@@ -79,7 +79,7 @@ and in fact `R` is this factor" (start of Appendix A). So `2 ≤ deg_Y R` must b
 split inside §5: in the `deg_Y R = 1` branch `R` already has the desired shape and the Claim A.2
 weight machinery is not needed (there `ζ = ∂R/∂Y` is constant in `Y` and the lift is exact); the
 `≥ 2` branch is the one that consumes Claim A.2. The obligation is recorded in the docstring of
-`claimA2_hypotheses` in `BCIKS20/ListDecoding/Agreement.lean`, where §5 will meet it.
+`hensel_lift_hypotheses` in `BCIKS20/ListDecoding/Agreement.lean`, where §5 will meet it.
 
 ### 2. The paper's stated sharp bound needs a correction term
 

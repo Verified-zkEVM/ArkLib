@@ -15,6 +15,7 @@ import Mathlib.InformationTheory.Hamming
 import Mathlib.Tactic.Qify
 import Mathlib.Topology.MetricSpace.Infsep
 import Mathlib.Data.Real.ENatENNReal
+import Mathlib.Algebra.Order.Chebyshev
 import CompPoly.Data.Nat.Bitwise
 
 /-!
@@ -37,6 +38,29 @@ import CompPoly.Data.Nat.Bitwise
       smaller value range.
     - We usually prove the equality as a bridge from the suffixed definitions into the
       non-suffixed definitions (e.g. `distFromCode'_eq_distFromCode`, ...)
+
+  ## Type conventions
+
+  Distance quantities live in different numeric types:
+
+  - Hamming distance (absolute, pairwise): `ℕ` — `hammingDist`, `Δ₀(u, v)`.
+  - Minimum distance of a code (absolute): `ℕ` — `Code.minDist`, `Code.dist` (`‖C‖₀`).
+  - Distance to a code (absolute, may be `⊤`): `ℕ∞` — `distFromCode`, `Δ₀(u, C)`.
+  - Relative Hamming distance (pairwise): `ℚ≥0` — `relHammingDist`, `δᵣ(u, v)`
+    (in `Basic/RelativeDistance.lean`).
+  - Relative distance to a code: `ENNReal` — `relDistFromCode`, `δᵣ(u, C)`
+    (in `Basic/RelativeDistance.lean`).
+  - Code rate: `ℚ≥0` — `LinearCode.rate`, `ρ C` (in `Basic/LinearCode.lean`).
+
+  The computable variants do not share a single type: `dist'` (`‖C‖₀'`) and `distFromCode'`
+  (`Δ₀'(u, C)`) are `ℕ∞`, matching their generic counterparts, whereas `relDistFromCode'`
+  (`δᵣ'(u, C)`) is `ℚ≥0` and takes `[Nonempty C]` instead of using a `⊤` element, there
+  being no `ℚ≥0∞` (see the TODO below).
+
+  Conversions are collected under "Switching between different distance realms" below
+  (`relDistFromCode_eq_distFromCode_div`, `distFromCode_le_iff_relDistFromCode_le`, …).
+  Prefer the generic forms `Δ₀` and `δᵣ`, switching to a computable form only where a proof
+  needs evaluation.
 
   ## Main Definitions
   1. Distance between two words:
@@ -115,6 +139,68 @@ theorem hammingDist_comp' {A B : Type*} [DecidableEq A] [DecidableEq B]
   simp only [hammingDist, Function.comp_apply]
   exact congrArg _ (Finset.filter_congr fun i _ => by simp [he.ne_iff])
 
+/-- The **disagreement set** of two words: the coordinates on which they differ, as a
+`Finset`. Its cardinality is the Hamming distance
+(`hammingDist_eq_disagreementCols_card`).
+
+This is the canonical primitive for pointwise disagreement. `Matrix.neqCols` is the same
+notion for matrices, namely this set applied to the transposes
+(`Matrix.neqCols_eq_disagreementCols_transpose`); the various `disagreementSet`s elsewhere in
+the tree each carry extra structure (interleaved tuples, answer-table comparisons,
+block fibers) and are specialisations rather than instances.
+
+The name avoids `disagreementSet` so that a namespace opening `Code` can still use that name
+locally. -/
+def disagreementCols (u v : n → R) : Finset n :=
+  Finset.filter (fun i => u i ≠ v i) Finset.univ
+
+@[simp]
+lemma mem_disagreementCols {u v : n → R} {i : n} :
+    i ∈ disagreementCols u v ↔ u i ≠ v i := by
+  simp [disagreementCols]
+
+/-- The Hamming distance is the cardinality of the disagreement set. -/
+lemma hammingDist_eq_disagreementCols_card (u v : n → R) :
+    hammingDist u v = (disagreementCols u v).card := by
+  simp only [hammingDist, disagreementCols, ne_eq]
+
+section Agreement
+
+variable {u v : n → R}
+
+/-- The number of positions at which the two words `u` and `v` agree. -/
+def agree (u v : n → R) : ℕ := ({i | u i = v i} : Finset _).card
+
+@[simp]
+lemma agree_add_hammingDist :
+    agree u v + Δ₀(u, v) = Fintype.card n := by
+  simpa [agree, hammingDist, Finset.card_univ] using
+    Finset.card_filter_add_card_filter_not (s := Finset.univ)
+      (p := fun i ↦ u i = v i)
+
+/-- `agree` is the complement of `disagreementCols`. -/
+lemma agree_add_card_disagreementCols (u v : n → R) :
+    agree u v + (disagreementCols u v).card = Fintype.card n := by
+  simp [←hammingDist_eq_disagreementCols_card]
+
+@[simp]
+lemma agree_self : agree u u = Fintype.card n := by simp [agree, Finset.card_univ]
+
+@[simp]
+lemma agree_le_card : agree u v ≤ Fintype.card n := by
+  simpa [agree, Finset.card_univ] using Finset.card_filter_le Finset.univ _
+
+end Agreement
+
+/-- `Matrix.neqCols` is `Code.disagreementCols` on the transposes: the columns on which two
+matrices differ are the coordinates on which their transposes, read as words over the
+alphabet of columns, disagree. -/
+lemma _root_.Matrix.neqCols_eq_disagreementCols_transpose
+    {ι ι' F : Type*} [Fintype ι] [Fintype ι'] [DecidableEq F] (U V : Matrix ι ι' F) :
+    Matrix.neqCols U V = disagreementCols U.transpose V.transpose := by
+  ext j
+  simp [Matrix.neqCols, mem_disagreementCols, Function.ne_iff, ne_comm]
+
 /-- The Hamming distance of a code `C` is the minimum Hamming distance between any two distinct
   elements of the code.
 We formalize this as the infimum `sInf` over all `d : ℕ` such that there exist `u v : n → R` in the
@@ -153,6 +239,61 @@ theorem mem_hammingBall_iff (y x : n → R) (r : ℕ) :
   x ∈ hammingBall y r ↔ Δ₀(y, x) ≤ r := by
   aesop (add simp [hammingBall, hammingDist])
 
+section Agreement
+
+variable {u v : n → R}
+
+section Counting
+
+variable {T : Finset (n → R)}
+
+/-- Double counting: summing agreements with a fixed word `u` over a finite set `T` of words is
+the same as summing, over the positions, the number of words of `T` agreeing with `u` there. -/
+private lemma sum_agree_eq :
+  ∑ c ∈ T, (agree c u : ℝ) = ∑ i : n, ({c ∈ T | c i = u i}.card : ℝ) := by
+  simp only [agree, Finset.card_filter]
+  push_cast
+  rw [Finset.sum_comm]
+
+/-- Every position contributes at least the square of the number of words agreeing with `y`
+there to the total number of agreeing (ordered) pairs. -/
+private lemma sq_le_sum_agree :
+  ∑ i : n, ({c ∈ T | c i = u i}.card : ℝ) ^ 2 ≤
+    ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+  have hRHS : ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) =
+    ∑ i : n, ∑ c ∈ T, ∑ c' ∈ T, (if c i = c' i then (1 : ℝ) else 0) := by
+    simp only [agree, Finset.card_filter]
+    push_cast
+    rw [Finset.sum_congr rfl fun c _ => Finset.sum_comm, Finset.sum_comm]
+  rw [hRHS]
+  refine Finset.sum_le_sum fun i _ => ?_
+  have hsq : ({c ∈ T | c i = u i}.card : ℝ) ^ 2 =
+    ∑ c ∈ T, ∑ c' ∈ T,
+      (if c i = u i then 1 else 0) * (if c' i = u i then 1 else 0) := by
+    rw [sq, Finset.card_filter]
+    push_cast
+    rw [Finset.sum_mul_sum]
+  rw [hsq]
+  refine Finset.sum_le_sum fun c _ => Finset.sum_le_sum fun c' _ => ?_
+  by_cases h : c i = u i <;> by_cases h' : c' i = u i <;> simp [h, h'] <;>
+    split_ifs <;> norm_num
+
+/-- Cauchy–Schwarz for the agreement counts. -/
+lemma sq_sum_agree_le :
+  (∑ c ∈ T, (agree c u : ℝ)) ^ 2 ≤
+    (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+  rw [sum_agree_eq]
+  calc (∑ i : n, ((T.filter fun c => c i = u i).card : ℝ)) ^ 2
+      ≤ ((Finset.univ : Finset n).card : ℝ)
+          * ∑ i : n, ((T.filter fun c => c i = u i).card : ℝ) ^ 2 := sq_sum_le_card_mul_sum_sq
+    _ ≤ (Fintype.card n : ℝ) * ∑ c ∈ T, ∑ c' ∈ T, (agree c c' : ℝ) := by
+        rw [Finset.card_univ]
+        exact mul_le_mul_of_nonneg_left sq_le_sum_agree (by positivity)
+
+end Counting
+
+end Agreement
+
 /-- The distance to a code is at most the distance to any specific codeword. -/
 lemma distFromCode_le_dist_to_mem (u : n → R) {C : Set (n → R)} (v : n → R) (hv : v ∈ C) :
     Δ₀(u, C) ≤ Δ₀(u, v) := by
@@ -181,6 +322,24 @@ lemma pairDist_ge_code_mindist_of_ne {C : Set (n → R)} {u v : n → R}
 
 noncomputable def minDist (C : Set (n → R)) : ℕ :=
   sInf {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d}
+
+lemma minDist_le_dist {C : Set (n → R)} {u v : n → R}
+  (hu : u ∈ C) (hv : v ∈ C) (huv : u ≠ v) :
+  minDist C ≤ Δ₀(u, v) := Nat.sInf_le ⟨u, hu, v, hv, huv, rfl⟩
+
+/-- Two codewords are equal if the coordinates on which they disagree are contained in a set
+of size less than the code's minimum distance. -/
+theorem eq_of_disagreementCols_subset_of_card_lt_minDist
+    {C : Set (n → R)} {u v : n → R} (hu : u ∈ C) (hv : v ∈ C) (T : Finset n)
+    (hsub : disagreementCols u v ⊆ T) (hcard : T.card < minDist C) :
+    u = v := by
+  by_contra hne
+  have hdist : hammingDist u v ≤ T.card := by
+    rw [hammingDist_eq_disagreementCols_card]
+    exact Finset.card_le_card hsub
+  have hmin : minDist C ≤ hammingDist u v :=
+    Nat.sInf_le ⟨u, hu, v, hv, hne, rfl⟩
+  omega
 
 @[simp]
 theorem dist_empty : ‖ (∅ : Set (n → R) ) ‖₀ = 0 := by simp [dist]
@@ -391,12 +550,12 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
   · -- Direction 1: Δ₀(u, v) ≤ e → ∃ D, ...
     intro h_dist_le_e
     -- Define D as the set of disagreeing columns
-    let D : Finset ι := Finset.filter (fun colIdx => u colIdx ≠ v colIdx) Finset.univ
+    let D : Finset ι := disagreementCols u v
     use D
     constructor
     · -- Prove D.card ≤ e
-      have hD_card_eq_dist : D.card = hammingDist u v := by
-        simp only [hammingDist, ne_eq, D]
+      have hD_card_eq_dist : D.card = hammingDist u v :=
+        (hammingDist_eq_disagreementCols_card u v).symm
       rw [hD_card_eq_dist]
       -- Assume Δ₀(word, codeword) = hammingDist word codeword (perhaps needs coercion)
       -- Let's assume Δ₀ returns ℕ∞ and hammingDist returns ℕ for now
@@ -407,8 +566,7 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
     · -- Prove agreement outside D
       intro colIdx h_colIdx_notin_D
       -- h_colIdx_notin_D means colIdx is not in the filter
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and,
-        ne_eq, not_not, D] at h_colIdx_notin_D
+      simp only [D, mem_disagreementCols, ne_eq, not_not] at h_colIdx_notin_D
       -- Therefore, u colIdx = v.val colIdx
       exact h_colIdx_notin_D
   · -- Direction 2: (∃ D, ...) → Δ₀(u, v) ≤ e
@@ -417,11 +575,11 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
     -- Goal: Δ₀(u, v) ≤ e
 
     -- Consider the set where u and v differ
-    let Diff_set := Finset.filter (fun colIdx => u colIdx ≠ v colIdx) Finset.univ
+    let Diff_set := disagreementCols u v
     -- Show that Diff_set is a subset of D
     have h_subset : Diff_set ⊆ D := by
       intro colIdx h_diff -- Assume colIdx is in Diff_set, i.e., u colIdx ≠ v.val colIdx
-      simp only [Finset.mem_filter, Finset.mem_univ, true_and, Diff_set] at h_diff
+      simp only [Diff_set, mem_disagreementCols] at h_diff
       -- We need to show colIdx ∈ D
       -- Suppose colIdx ∉ D for contradiction
       by_contra h_notin_D
@@ -431,8 +589,8 @@ theorem closeToWord_iff_exists_possibleDisagreeCols
       exact h_diff h_eq
     -- Use card_le_card and the properties
     have h_card_diff_le_card_D : Diff_set.card ≤ D.card := Finset.card_le_card h_subset
-    have h_dist_eq_card_diff : hammingDist u v = Diff_set.card := by
-      simp only [hammingDist, ne_eq, Diff_set]
+    have h_dist_eq_card_diff : hammingDist u v = Diff_set.card :=
+      hammingDist_eq_disagreementCols_card u v
     -- Combine the inequalities
     -- Assuming Δ₀(w, c) = ↑(hammingDist w c)
     rw [← ENat.coe_le_coe] -- Convert goal to ℕ∞ ≤ ℕ∞
