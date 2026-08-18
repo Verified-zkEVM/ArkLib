@@ -170,6 +170,32 @@ lemma mem_moduleInterleavedCode_iff (v : InterleavedWord A κ ι) :
     v ∈ ModuleCode.moduleInterleavedCode (F := F) (A := A) (κ := κ) (ι := ι) (MC := MC)
     ↔ ∀ k, InterleavedWord.getRowWord v k ∈ MC := by exact Eq.to_iff rfl
 
+omit [Fintype κ] [Fintype ι] in
+/-- **Projection commutes with interleaving.** An interleaved word projects into the interleaved
+code on `T` iff each of its rows projects into the base code on `T`.
+
+Forward direction: extract rows of the interleaved witness. Backward direction: assemble the
+chosen row witnesses into an interleaved codeword. This is the bridge that lets mutual correlated
+agreement be applied to interleaved codes: the proof of Lemma 4.4 [BCGM25] applies MCA of the
+inner generator to the `ℓ`-fold interleaving `C^ℓ`, and this lemma converts its projected
+membership clauses row-wise. -/
+lemma projectedCodeSubmod_moduleInterleavedCode_iff (v : InterleavedWord A κ ι) (T : Finset ι) :
+    LinearCode.projectedWord v T ∈
+      LinearCode.projectedCodeSubmod (ModuleCode.moduleInterleavedCode F A κ ι MC) T ↔
+    ∀ k, LinearCode.projectedWord (InterleavedWord.getRowWord v k) T ∈
+      LinearCode.projectedCodeSubmod MC T := by
+  constructor
+  · intro h k
+    obtain ⟨c, hc, hw⟩ := (LinearCode.mem_projectedCodeSubmod_iff _ T _).mp h
+    exact (LinearCode.mem_projectedCodeSubmod_iff _ T _).mpr
+      ⟨InterleavedWord.getRowWord c k, (mem_moduleInterleavedCode_iff F A κ ι MC c).mp hc k,
+        funext fun i => congr_fun (congr_fun hw i) k⟩
+  · intro h
+    choose c hc hw using fun k => (LinearCode.mem_projectedCodeSubmod_iff _ T _).mp (h k)
+    exact (LinearCode.mem_projectedCodeSubmod_iff _ T _).mpr
+      ⟨fun i k => c k i, (mem_moduleInterleavedCode_iff F A κ ι MC _).mpr fun k => hc k,
+        funext fun i => funext fun k => congr_fun (hw k) i⟩
+
 @[simp]
 def codewordStackSet {A : Type*} {κ ι : Type*} (C : Set (ι → A)) : Set (WordStack A κ ι) :=
   { V : WordStack A κ ι | ∀ k, V.getRowWord k ∈ C }

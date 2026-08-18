@@ -191,6 +191,36 @@ home_page/            site assets and assembled website root
   `Basic/Entropy.lean` (`qEntropy`). List-size bounds of Johnson type are in
   `JohnsonBound/Family.lean`, alongside the pre-existing `JohnsonBound/Basic.lean` machinery it
   consumes.
+- List-size bounds that are *not* of Johnson type are under `ListDecodability/Bounds/`, with
+  `ListDecodability/Bounds.lean` as the umbrella that imports them and carries the family overview,
+  the quantification conventions and the shared reference list. The split is by scope, not by paper:
+  `Bounds/Basic.lean` (the three counting identities everything rests on), `Bounds/Linear.lean`
+  (bounds valid for every linear code — Elias volume and its entropy form, the rate–radius
+  arithmetic, the generalized Singleton bound, random linear codes),
+  `Bounds/LargeAlphabet.lean` (the exponential-alphabet barrier, over the four-file development in
+  `Bounds/LargeAlphabet/`: statements and family counting, centres and incidence counting, the local
+  neighbourhood bound and pigeonhole barrier, then sparse large-union families and the assembly),
+  `Bounds/Interleaved.lean` ([GGR11]'s interleaved-code list-size bound),
+  `Bounds/ReedSolomon.lean` (the Reed-Solomon separations and the random-evaluation-domain bound),
+  `Bounds/SubspaceDesign.lean` ([CZ25]'s upper bound and the folded-RS and multiplicity-code
+  corollaries) over `Bounds/AgreementHypergraph.lean` (the geometric agreement machinery that proof
+  needs, which mentions no list size and is reusable), and `Bounds/KKH26.lean` plus
+  `Bounds/KKH26Asymptotic.lean` (the concrete [KKH26] templates and ABF26 Theorem 3.15). The
+  file/directory pair
+  `ListDecodability.lean` + `ListDecodability/` follows the same shape as `ReedSolomon.lean` +
+  `ReedSolomon/`: the file holds the definitions (`Lambda`, `listDecodable`), the directory holds
+  results about them. Some deep bounds are externally sourced and carry tagged `sorry`
+  annotations; use the paper KB pages and the axiom baseline to inspect their source and trusted
+  impact. In-tree results include [CZ25]'s subspace-design theorem (and therefore the
+  folded-Reed-Solomon and univariate-multiplicity capacity corollaries) and the [AGL23]
+  large-alphabet barrier.
+- ABF26's citation-heavy §4–§5 catalogue is separated from the core error definitions:
+  `ProximityGap/CapacityBounds.lean` holds the numeric upper/lower bounds,
+  `ProximityGap/LineDecoding.lean` holds the GG25-corrected interfaces corresponding to ABF26
+  Definition 4.20 and Theorem 4.21, and
+  `Connections/ListDecodingAndCA.lean` holds the four list-decoding/CA connections. Extensions
+  that turn those admits into prize witnesses live below `ProximityGap/GrandChallenges/`, so the
+  core `GrandChallenges.lean` grid and carrier API does not import the catalogue.
 - The folded Wronskian (GK16 Definition 11) and its linear-independence criterion live in
   `ArkLib/Data/Polynomial/FoldedWronskian.lean`, not under `CodingTheory/`; its sibling
   `ArkLib/Data/Polynomial/ClassicalWronskian.lean` holds the ordinary Wronskian and the
@@ -209,8 +239,11 @@ home_page/            site assets and assembled website root
   alphabet-generic `CodingTheory.mds_johnson_lambda_le_of_rate_distance`, whose module-alphabet
   consumers are `CodingTheory.irs_lambda_le_johnson_mds` and
   `CodingTheory.frs_lambda_le_johnson_mds` in `JohnsonBound/Family.lean`. Generalising the
-  `IsMDS` *predicate* itself to `ModuleCode ι F A` is deliberately left out; it belongs with
-  the module-alphabet generalisation of `IsMCA`, which touches the same file.
+  `IsMDS` *predicate* itself to `ModuleCode ι F A` is still open, and is **independent** of the
+  module-alphabet `IsMCA` (which has landed): `IsMDSGenerator` constrains `C_G ⊆ F^|S|`, the
+  generator's own code over the base field, so nothing on the MCA path needs it. Whoever does it
+  should update this bullet and the corresponding row in
+  [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md).
 - Finite-probability helpers live under the `Probability` namespace in
   `ArkLib/Data/Probability/Instances.lean` (see
   [probability-conventions.md](probability-conventions.md)); the collision bound for random
