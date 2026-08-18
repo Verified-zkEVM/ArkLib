@@ -33,6 +33,7 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
+import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 import ArkLib.Commitments.Functional.KZG.Algebra
