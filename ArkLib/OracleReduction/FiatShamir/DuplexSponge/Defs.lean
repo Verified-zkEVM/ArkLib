@@ -504,13 +504,29 @@ noncomputable def D_f
 /-- Bridge: `SampleableType` for `eSpec` (Hyb₂ `e`) derived from
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
 (eSpec …))` at call sites in §5.8 hybrids. -/
-instance instSampleableTypeDecodedChallengeOracle
+noncomputable instance instSampleableTypeDecodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Challenge i)]
     [HasMessageSize pSpec] :
     SampleableType (OracleReduction.OracleFamily
       (eSpec (U := U) StmtIn pSpec δ)) := by
-  sorry
+  -- Same recipe as `instSampleableTypeEncodedChallengeOracle`; only the response type differs
+  -- (decoded `pSpec.Challenge i` instead of encoded `Vector U (challengeSize i)`).
+  letI : Fintype (eSpec (U := U) StmtIn pSpec δ).Domain :=
+    (inferInstance : Fintype ((i : pSpec.ChallengeIdx) ×
+      (StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc)))
+  letI : DecidableEq (eSpec (U := U) StmtIn pSpec δ).Domain :=
+    (inferInstance : DecidableEq ((i : pSpec.ChallengeIdx) ×
+      (StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc)))
+  letI : ∀ q : (eSpec (U := U) StmtIn pSpec δ).Domain,
+      Fintype ((eSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
+    (inferInstance : Fintype (pSpec.Challenge q.1))
+  letI : Fintype (OracleReduction.OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
+    inferInstance
+  -- Every decoded response type is inhabited via `VCVCompatible (pSpec.Challenge i)`.
+  letI : Nonempty (OracleReduction.OracleFamily (eSpec (U := U) StmtIn pSpec δ)) :=
+    ⟨fun q => (default : pSpec.Challenge q.1)⟩
+  apply SampleableType.ofFintype
 
 end Section58Oracles
 
