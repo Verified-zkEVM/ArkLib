@@ -20,7 +20,9 @@ and the weak-binding reduction to Module-SIS, and the polynomial-evaluation redu
 (§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
 tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
 proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`). See the `TODO` blocks in `Composition.lean` and `Commitment.lean`.
+`Commitment.lean`). The completeness layer has its first link: the zero-check (Figure 5) is proved
+perfectly complete in `ZeroCheck/Completeness.lean`. See the `TODO` blocks in `Composition.lean`
+and `Commitment.lean`.
 
 ## Folder structure
 
@@ -39,7 +41,9 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
   soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain.
+  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only stage proved in both
+  directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
+  `ZeroCheck/Completeness.lean`.
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
   one iteration at the next ring's plain `QuadEval.relIn` relation.
 * `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
