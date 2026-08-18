@@ -144,6 +144,27 @@ theorem linear_mcaError_le_one_point_five_johnson
       field_simp
       ring
 
+/-- Threshold form of `linear_mcaError_le_one_point_five_johnson`: any target `ε_star` that the
+explicit 1.5-Johnson budget clears at the instantiated parameters is a genuine affine-line MCA
+bound. The numeric budget check is a hypothesis, so the contentful-range condition is
+discharged at the use site. -/
+theorem linear_mcaError_le_one_point_five_johnson_of_budget
+    (C : LinearCode ι F) (δ_min η δ : ℝ≥0)
+    (h_δ_min : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
+    (hη : 0 < η) (hη_lt_δ_min : η < δ_min)
+    (hδ_pos : 0 < δ)
+    (hδ : (δ : ℝ) ≤ 1 - ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)))
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal
+        ((((Fintype.card ι : ℝ) + 6) / η
+          + 2 / ((η : ℝ) *
+              ((1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 3)
+                - (1 - (δ_min : ℝ) + (η : ℝ)) ^ ((1 : ℝ) / 2)))
+         ) / (Fintype.card F : ℝ)) ≤ (ε_star : ENNReal)) :
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) :=
+  le_trans (linear_mcaError_le_one_point_five_johnson C δ_min η δ h_δ_min hη
+    hη_lt_δ_min hδ_pos hδ) hbudget
+
 end General
 
 end CodingTheory

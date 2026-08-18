@@ -251,6 +251,35 @@ theorem exists_rs_epsCa_large_near_capacity
   sorry -- ABF26-T4.16; external admit [KKH26].
 
 
+/-- Threshold form of `rs_epsCa_le_of_no_radius_level_crossing`: any target `ε_star` that the
+two-branch no-grid-crossing budget clears at the instantiated parameters is a genuine CA bound.
+The numeric budget check is a hypothesis, so the contentful-range condition is discharged at
+the use site. -/
+theorem rs_epsCa_le_of_no_radius_level_crossing_of_budget
+    (domain : ι ↪ F) (k : ℕ) (δ_fld : ℝ≥0) (γ : ℝ≥0)
+    (h_ud : (δ_fld : ℝ) ≤ (1 - (k : ℝ) / Fintype.card ι) / 2 - 1 / Fintype.card ι)
+    (h_dmin : (Code.minDist ((ReedSolomon.code domain k : Set (ι → F))) : ℝ)
+                / Fintype.card ι / 3 ≤ δ_fld)
+    (hγ_pos : 0 < γ) (hγ_lt : (γ : ℝ) < 1)
+    (h_no_cross :
+        Nat.floor ((δ_fld + γ / (Fintype.card ι : ℝ≥0)) * (Fintype.card ι : ℝ≥0))
+          = Nat.floor ((δ_fld : ℝ≥0) * (Fintype.card ι : ℝ≥0)))
+    (ε_star : ℝ≥0)
+    (hbudget : ENNReal.ofReal
+        (max ((1 - (k : ℝ) / Fintype.card ι - δ_fld)
+                / (δ_fld * (1 - (k : ℝ) / Fintype.card ι - 2 * δ_fld) * Fintype.card F))
+             (((Fintype.card ι : ℝ) * δ_fld + γ) / (γ * Fintype.card F)))
+      ≤ (ε_star : ENNReal)) :
+    epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_fld ≤
+      (ε_star : ENNReal) := by
+  have h : epsCa (F := F) (A := F) ((ReedSolomon.code domain k : Set (ι → F))) δ_fld δ_fld ≤
+      ENNReal.ofReal
+        (max ((1 - (k : ℝ) / Fintype.card ι - δ_fld)
+                / (δ_fld * (1 - (k : ℝ) / Fintype.card ι - 2 * δ_fld) * Fintype.card F))
+             (((Fintype.card ι : ℝ) * δ_fld + γ) / (γ * Fintype.card F))) :=
+    rs_epsCa_le_of_no_radius_level_crossing domain k δ_fld γ h_ud h_dmin hγ_pos hγ_lt h_no_cross
+  exact le_trans h hbudget
+
 end ReedSolomon
 
 section SubspaceDesignFRS

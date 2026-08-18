@@ -8,6 +8,8 @@ import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import Mathlib.Analysis.SpecialFunctions.Stirling
 import Mathlib.FieldTheory.PrimitiveElement
 
+set_option linter.style.longFile 2700
+
 /-!
 # Subfield lower bound for Reed--Solomon correlated agreement
 
@@ -2537,4 +2539,3 @@ end ReedSolomon
 
 end CodingTheory
 
-set_option linter.style.longFile 2700

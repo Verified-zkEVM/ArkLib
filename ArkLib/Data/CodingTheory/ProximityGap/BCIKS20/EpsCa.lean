@@ -165,6 +165,33 @@ theorem rs_mcaError_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥
       (two_mul_lt_dist_of_le_relUDR hδ_pos hδ))
     (rs_epsCa_le_of_le_relUDR hδ le_rfl)
 
+/-- Threshold form of `rs_epsCa_le_of_le_relUDR`: any target `ε_star` that `n/|F|` clears is a
+genuine CA bound in the unique-decoding range, with the numeric check discharged at the use
+site. -/
+theorem rs_epsCa_le_of_le_relUDR_of_budget {deg : ℕ} {domain : ι ↪ F} {δ_fld δ_int : ℝ≥0}
+    (hδ : δ_fld ≤ relativeUniqueDecodingRadius
+            (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (hle : δ_fld ≤ δ_int)
+    (ε_star : ℝ≥0)
+    (hbudget : ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) ≤ (ε_star : ENNReal)) :
+    epsCa (F := F) (A := F) ((ReedSolomon.code domain deg : Set (ι → F))) δ_fld δ_int
+      ≤ (ε_star : ENNReal) :=
+  le_trans (rs_epsCa_le_of_le_relUDR hδ hle) hbudget
+
+/-- Threshold form of `rs_mcaError_le_of_le_relUDR`: any target `ε_star` that `n/|F|` clears is
+a genuine affine-line MCA bound in the unique-decoding range, with the numeric check discharged
+at the use site. This is the lemma-level counterpart of
+`GrandChallenges.McaLowerWitness.ofUniqueDecodingRange`. -/
+theorem rs_mcaError_le_of_le_relUDR_of_budget {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ_pos : 0 < δ)
+    (hδ : δ ≤ relativeUniqueDecodingRadius
+            (ι := ι) (F := F) (C := ReedSolomon.code domain deg))
+    (ε_star : ℝ≥0)
+    (hbudget : ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) ≤ (ε_star : ENNReal)) :
+    mcaError (AffineLineGenerator F) (ReedSolomon.code domain deg) (δ : ℝ)
+      ≤ (ε_star : ENNReal) :=
+  le_trans (rs_mcaError_le_of_le_relUDR hδ_pos hδ) hbudget
+
 end UniqueDecodingRegime
 
 end ProximityGap
