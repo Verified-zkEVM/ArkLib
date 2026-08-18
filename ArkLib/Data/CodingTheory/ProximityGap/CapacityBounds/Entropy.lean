@@ -9,6 +9,8 @@ import Mathlib.Analysis.Complex.ExponentialBounds
 import Mathlib.Combinatorics.Enumerative.DoubleCounting
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
 
+set_option linter.style.longFile 2200
+
 /-!
 # Entropy-regime CA breakdown for Reed--Solomon codes
 
@@ -2098,5 +2100,3 @@ theorem rs_epsCa_eq_one_of_entropy_rate
 end ReedSolomon
 
 end CodingTheory
-
-set_option linter.style.longFile 2200

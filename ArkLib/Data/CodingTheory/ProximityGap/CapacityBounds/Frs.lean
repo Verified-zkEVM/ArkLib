@@ -7,6 +7,8 @@ Authors: Alexander Hicks, Aleph
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.SubspaceDesign
 import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 
+set_option linter.style.longFile 2200
+
 /-!
 # MCA bound for folded Reed-Solomon codes up to capacity
 
@@ -2040,5 +2042,3 @@ theorem frs_mcaError_le_of_budget
   le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
 
 end CodingTheory
-
-set_option linter.style.longFile 2200
