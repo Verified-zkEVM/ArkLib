@@ -424,13 +424,37 @@ def D_Sigma
 /-- Bridge: `SampleableType` for `gSpec` (Hyb₁ `g`) derived from
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
 (gSpec …))` at call sites in §5.8 hybrids and in `BadEvents.lemma_5_8`'s
-eager `𝒟_Σ` sampling. -/
-instance instSampleableTypeEncodedChallengeOracle
+eager `𝒟_Σ` sampling.
+
+`[VCVCompatible StmtIn]` and `[VCVCompatible U]` are necessary, not just convenient:
+`SampleableType` implies `Finite` (see `SampleableType.Finite`), and the `gSpec` domain embeds
+`StmtIn × Vector U δ`, so the full-table family is infinite whenever `StmtIn` (or `U`, with
+`δ > 0`) is. Both hypotheses are ambient at every §5.8 call site (`KeyLemma`, `BadEvents`),
+matching `instSampleableTypeDecodedChallengeOracle` below. -/
+noncomputable instance instSampleableTypeEncodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    [VCVCompatible StmtIn] [VCVCompatible U]
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
     SampleableType (OracleReduction.OracleFamily
       (gSpec (U := U) StmtIn pSpec δ)) := by
-  sorry
+  -- The `gSpec` domain is definitionally the sigma of a challenge index and its query type;
+  -- state the `Fintype`/`DecidableEq` instances on the unfolded form (default-transparency
+  -- unification sees through `toOracleSpec`, which is not reducible for TC search).
+  letI : Fintype (gSpec (U := U) StmtIn pSpec δ).Domain :=
+    (inferInstance : Fintype ((i : pSpec.ChallengeIdx) ×
+      (StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc)))
+  letI : DecidableEq (gSpec (U := U) StmtIn pSpec δ).Domain :=
+    (inferInstance : DecidableEq ((i : pSpec.ChallengeIdx) ×
+      (StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc)))
+  letI : ∀ q : (gSpec (U := U) StmtIn pSpec δ).Domain,
+      Fintype ((gSpec (U := U) StmtIn pSpec δ).Range q) := fun q =>
+    (inferInstance : Fintype (Vector U (challengeSize (pSpec := pSpec) q.1)))
+  letI : Fintype (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
+    inferInstance
+  -- Every encoded response type is inhabited (`U` has a default element).
+  letI : Nonempty (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) :=
+    ⟨fun q => (default : Vector U (challengeSize (pSpec := pSpec) q.1))⟩
+  apply SampleableType.ofFintype
 
 /-- CO25 Eq. 52 — eager full-table distribution `e` over the decoded challenge-oracle family
 for `Hyb₂`.
