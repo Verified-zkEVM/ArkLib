@@ -7,6 +7,19 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 
+/-! # Weighted correlated agreement over curves and affine spaces
+
+Weighted-agreement forms of correlated agreement for Reed–Solomon codes: a random point of a
+low-degree curve or of an affine subspace with high `μ`-weighted agreement forces joint weighted
+agreement of the generating words. The agreement parameter `α` corresponds to the distance
+parameter via `δ = 1 - α`.
+
+## References
+
+- [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
+  (ePrint 2020/654): Theorems 7.1, 7.3, and 7.4.
+-/
+
 namespace ProximityGap
 
 namespace WeightedAgreement

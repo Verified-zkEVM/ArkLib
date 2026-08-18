@@ -7,6 +7,19 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 
+/-! # Factor extraction for the modified Guruswami-Sudan solution
+
+The unique factorization of a modified Guruswami-Sudan interpolant into a content part and
+Frobenius-twisted irreducible separable components, together with a specialization point at which
+every component has nonzero `Y`-discriminant. These are the inputs to the Hensel-lift analysis of
+the list-decoding regime.
+
+## References
+
+- [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
+  (ePrint 2020/654): Equation 5.12 and Claim 5.6.
+-/
+
 namespace ProximityGap
 
 open Polynomial Polynomial.Bivariate  NNReal Finset Function ProbabilityTheory Code Trivariate
