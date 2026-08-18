@@ -20,9 +20,10 @@ and the weak-binding reduction to Module-SIS, and the polynomial-evaluation redu
 (§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
 tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
 proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`). The completeness layer has its first link: the zero-check (Figure 5) is proved
-perfectly complete in `ZeroCheck/Completeness.lean`. See the `TODO` blocks in `Composition.lean`
-and `Commitment.lean`.
+`Commitment.lean`). The completeness layer has its first two links: the zero-check (Figure 5) in
+`ZeroCheck/Completeness.lean` and the polynomial-evaluation reduction (Figure 3) in
+`QuadEval/Completeness.lean` are both proved perfectly complete. See the `TODO` blocks in
+`Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 
@@ -38,10 +39,11 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   (`Scheme`), perfect correctness (`Correctness`), the weak-binding reduction to Module-SIS
   (`Security`), and the pinned power-of-two ring (`Arithmetic`).
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
-  (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
-  soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
+  (`Gadgets`), protocol data, relations and the honest protocol object (`Reduction`), Hachi Lemma 8
+  coordinate-wise special soundness (`Soundness`), perfect completeness (`Completeness`), and the
+  zero-round polynomial-level bridge (`Bridge`). Proved in both directions.
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only stage proved in both
+  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only §4.3 stage proved in both
   directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
   `ZeroCheck/Completeness.lean`.
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close

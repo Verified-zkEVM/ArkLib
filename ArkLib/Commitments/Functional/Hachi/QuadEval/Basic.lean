@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Soundness
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Completeness
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Bridge
 
 /-!
@@ -28,7 +29,10 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   opening) and `relOut` (Eq. (20) + the range checks) over the fixed commitment key `pp`, the
   `QuadEvalSISBreak`/`quadEvalSISSet` break vocabulary for the Module-SIS(B/D) extraction outcomes
   (validated against the same fixed `pp` — the key is a parameter, never statement data),
-  and the pure pass-through `verifier` with the honest `prover` skeleton.
+  the pure pass-through `verifier`, the honest `prover` parameterized by its two computations, and
+  their concrete instantiation from the gadget algebra (`honestComputeV` / `honestZ` /
+  `honestComputeResp`) bundled with the verifier as the computable protocol object
+  `quadEvalReduction`.
 * `QuadEval/Soundness.lean` — **Hachi Lemma 8**: the subtract-and-divide extraction
   (`buildWitness`, split into the plain assembler `quadEvalMkWitness` and the escape event
   `quadEvalEscLocal`) and the escape-threaded coordinate-wise special soundness
@@ -38,12 +42,19 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
   one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself
   proven, not deferred.
+* `QuadEval/Completeness.lean` — the honest direction: perfect completeness of
+  `quadEvalReduction` (`quadEvalReduction_perfectCompleteness`, and
+  `…_zmodDigits` at the concrete base-`b` gadget and the paper's range `γ := b`), factored into the
+  relation-preservation step `mem_relOut_of_relIn` (all eight Eq.-(20) rows, at *every* challenge
+  vector — hence error `0`) and the run characterization `quadEvalReduction_run_support`. Also
+  `sorry`-free and axiom-clean. `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`
+  (in `Soundness.lean`) checks that the two directions speak about the same verifier.
 * `QuadEval/Bridge.lean` — the zero-round polynomial-level head: reinterprets a `CMlPolynomial`
   evaluation statement (`PolyEvalStatement`) as a `QuadEvalStatement` via the monomial tensor
   bases, with the pulled-back relation `relPolyEval` and the composable `bridgePackage`.
 
-This umbrella re-exports the whole folder (`Soundness` and `Bridge` transitively import
-`Reduction` and `Gadgets`). The chain `bridgePackage ▷ quadEvalPackage` is composed in the
+This umbrella re-exports the whole folder (`Soundness`, `Completeness` and `Bridge` transitively
+import `Reduction` and `Gadgets`). The chain `bridgePackage ▷ quadEvalPackage` is composed in the
 sibling `Composition.lean`.
 
 ## References

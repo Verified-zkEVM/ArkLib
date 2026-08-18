@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import Mathlib.LinearAlgebra.Matrix.Defs
 import Mathlib.Algebra.BigOperators.Fin
+import Mathlib.Algebra.BigOperators.Pi
 import Mathlib.Tactic.Ring
 
 /-!
@@ -130,6 +131,13 @@ theorem dot_scalarVecMul {k : ℕ} (c : P) (u v : PolyVec P k) :
   simp only [dot_eq_sum, Finset.mul_sum, scalarVecMul_apply]
   exact Finset.sum_congr rfl (fun i _ => mul_left_comm _ _ _)
 
+/-- `dot` commutes with a finite sum in the second argument (the `Finset` form of
+`dot_add_right`, used to fold a challenge-weighted family of witness blocks into one vector). -/
+theorem dot_sum_right {k : ℕ} {ι : Type*} (s : Finset ι) (u : PolyVec P k) (v : ι → PolyVec P k) :
+    u ⬝ᵥ (∑ i ∈ s, v i) = ∑ i ∈ s, u ⬝ᵥ v i := by
+  simp only [dot_eq_sum, Finset.sum_apply, Finset.mul_sum]
+  exact Finset.sum_comm
+
 /-- Matrix–vector multiplication distributes over addition of vectors. -/
 theorem matVecMul_add {rows cols : ℕ} (A : PolyMatrix P rows cols) (v w : PolyVec P cols) :
     A *ᵥ (v + w) = A *ᵥ v + A *ᵥ w := by
@@ -153,6 +161,12 @@ theorem matVecMul_matrix_smul {rows cols : ℕ} (c : P) (A : PolyMatrix P rows c
 theorem matVecMul_scalarVecMul {rows cols : ℕ} (A : PolyMatrix P rows cols) (c : P)
     (v : PolyVec P cols) : A *ᵥ (c •ᵥ v) = c •ᵥ (A *ᵥ v) := by
   funext i; simp only [matVecMul_apply, scalarVecMul_apply, dot_scalarVecMul]
+
+/-- Matrix–vector multiplication commutes with a finite sum of vectors. -/
+theorem matVecMul_sum {rows cols : ℕ} {ι : Type*} (s : Finset ι) (A : PolyMatrix P rows cols)
+    (v : ι → PolyVec P cols) : A *ᵥ (∑ i ∈ s, v i) = ∑ i ∈ s, A *ᵥ v i := by
+  funext j
+  simp only [matVecMul_apply, Finset.sum_apply, dot_sum_right]
 
 /-- `matMul` entrywise: `(matMul M N) i k = ∑ⱼ Mᵢⱼ Nⱼₖ`. -/
 theorem matMul_apply {a b c : ℕ} (M : PolyMatrix P a b) (N : PolyMatrix P b c)
@@ -187,6 +201,13 @@ theorem splitForm_add_right {a b : ℕ} (M : PolyMatrix P a b) (u : PolyVec P a)
 theorem splitForm_smul_right {a b : ℕ} (M : PolyMatrix P a b) (u : PolyVec P a) (c : P)
     (v : PolyVec P b) : splitForm M u (scalarVecMul c v) = c * splitForm M u v := by
   simp only [splitForm, matVecMul_scalarVecMul, dot_scalarVecMul]
+
+/-- `splitForm` commutes with a finite sum in the inner (right) basis vector: the bilinear form
+of a challenge-weighted family is the weighted sum of the forms. -/
+theorem splitForm_sum_right {a b : ℕ} {ι : Type*} (s : Finset ι) (M : PolyMatrix P a b)
+    (u : PolyVec P a) (v : ι → PolyVec P b) :
+    splitForm M u (∑ i ∈ s, v i) = ∑ i ∈ s, splitForm M u (v i) := by
+  simp only [splitForm, matVecMul_sum, dot_sum_right]
 
 /-- `splitForm` is additive in the outer (left) basis vector. -/
 theorem splitForm_add_left {a b : ℕ} (M : PolyMatrix P a b) (u u' : PolyVec P a)
