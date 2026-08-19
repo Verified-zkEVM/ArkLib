@@ -224,11 +224,11 @@ private theorem symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
   obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
     by_contra h
-    push_neg at h
+    push Not at h
     exact hg (Polynomial.ext h)
   obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
     by_contra h
-    push_neg at h
+    push Not at h
     exact ht (Polynomial.ext h)
   have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
   have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
@@ -253,7 +253,7 @@ private theorem symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [
     · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
     · simp only [Polynomial.Bivariate.coeff, hs, if_false]
   rw [hempty] at hmem
-  simpa using hmem
+  simp at hmem
 
 private noncomputable def symbolicUpperTriangleBase (n k m : ℕ) : Finset (ℕ × ℕ) :=
   (GuruswamiSudan.weightBoundIndices (k + 2) (symbolicModifiedGSCap n k m - 1)).image
@@ -322,8 +322,7 @@ private theorem symbolicUpperTriangleCandidates_support {n k m : ℕ}
       have hweight : q.1 + (k + 1) * q.2 ≤ symbolicModifiedGSCap n k m - 1 := by
         simpa only [show k + 2 - 1 = k + 1 by omega] using hq.2
       constructor
-      · skip
-        omega
+      · omega
       · have heq : q.1 + q.2 + k * q.2 = q.1 + (k + 1) * q.2 := by ring
         have hnat : q.1 + q.2 + k * q.2 < symbolicModifiedGSCap n k m := by
           rw [heq]
@@ -338,8 +337,7 @@ private theorem symbolicUpperTriangleCandidates_support {n k m : ℕ}
     have hweight : q.1 + (k + 1) * q.2 ≤ symbolicModifiedGSCap n k m - 1 := by
       simpa only [show k + 2 - 1 = k + 1 by omega] using hq.2
     constructor
-    · skip
-      omega
+    · omega
     · have heq : q.1 + q.2 + k * q.2 = q.1 + (k + 1) * q.2 := by ring
       have hnat : q.1 + q.2 + k * q.2 < symbolicModifiedGSCap n k m := by
         rw [heq]
@@ -535,10 +533,7 @@ private theorem symbolicGSPoly_coeff_pair {F : Type} [Field F]
         if q.1.1 = (i, j) then Polynomial.monomial q.2.1 (c q) else 0 := by
   classical
   rw [symbolicGSPoly_eq_sum]
-  change ((∑ q ∈ Finset.univ, c q •
-    Polynomial.monomial q.1.1.2
-      (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1))).coeff j).coeff i = _
-  rw [Polynomial.finset_sum_coeff, Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff, Polynomial.finsetSum_coeff]
   apply Finset.sum_congr rfl
   intro q hq
   by_cases hp : q.1.1 = (i, j)
@@ -548,7 +543,7 @@ private theorem symbolicGSPoly_coeff_pair {F : Type} [Field F]
       Polynomial.smul_monomial, hp]
   · have hcases : q.1.1.2 ≠ j ∨ q.1.1.1 ≠ i := by
       by_contra h
-      push_neg at h
+      push Not at h
       exact hp (Prod.ext h.2 h.1)
     rcases hcases with hj | hi
     · simp [Polynomial.coeff_smul, Polynomial.coeff_monomial, hj, hp]
@@ -565,7 +560,7 @@ private theorem symbolicGSPoly_coeff_index {F : Type} [Field F]
   rw [symbolicGSPoly_coeff_pair]
   change (∑ r ∈ Finset.univ,
     (if r.1.1 = q.1.1 then Polynomial.monomial r.2.1 (c r) else 0)).coeff q.2.1 = c q
-  rw [Polynomial.finset_sum_coeff]
+  rw [Polynomial.finsetSum_coeff]
   rw [Finset.sum_eq_single q]
   · simp []
   · intro r hr hrq
@@ -632,8 +627,9 @@ private theorem symbolicGSPoly_shift_coeff_eq_sum {F : Type} [Field F]
     (∑ q ∈ Finset.univ, c q •
       ((Polynomial.Bivariate.shift
         (Polynomial.monomial q.1.1.2
-          (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1))) x y).coeff t).coeff s).coeff d
-  rw [Polynomial.finset_sum_coeff]
+          (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1)))
+            x y).coeff t).coeff s).coeff d
+  rw [Polynomial.finsetSum_coeff]
   rfl
 
 private theorem symbolicGSPoly_support_subset {F : Type} [Field F]
@@ -750,7 +746,7 @@ private theorem symbolic_DX_sq_identity {n k m : ℕ} (hn : 0 < n) :
   push_cast
   field_simp [show (n : ℝ) ≠ 0 by exact_mod_cast (ne_of_gt hn)]
 
-private theorem symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
+private theorem symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (_hm : 1 ≤ m) :
     (symbolicModifiedGSCap 1 1 m : ℝ) < D_X (2 : ℚ) 1 m := by
   have hle := symbolicModifiedGSCap_le_DX (n := 1) (k := 1) (m := m) (by omega)
   norm_num at hle
@@ -981,7 +977,7 @@ private theorem symbolicGSConstraintIndex_card_lt (n m : ℕ) (A : Finset (ℕ �
     exact hstep.trans_le hmul
   omega
 
-noncomputable def exists_symbolicGSKernelWitness {F : Type} [Field F]
+private theorem exists_symbolicGSKernelWitness {F : Type} [Field F]
     (n m : ℕ) (A : Finset (ℕ × ℕ)) (ωs : Fin n ↪ F) (u₀ u₁ : Fin n → F)
     (hcount : GuruswamiSudan.numConstraints n m < A.card) :
     Nonempty (SymbolicGSKernelWitness n m A ωs u₀ u₁) := by
@@ -1012,8 +1008,6 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
   have hdeg : (∑ q : SymbolicGSIndex A,
       if q.1.1 = (i, j) then Polynomial.monomial q.2.1 (c q) else 0).natDegree ≤
       symbolicYSum A - j := by
-    change (∑ q ∈ Finset.univ,
-      if q.1.1 = (i, j) then Polynomial.monomial q.2.1 (c q) else 0).natDegree ≤ _
     apply Polynomial.natDegree_sum_le_of_forall_le
     intro q hq
     by_cases heq : q.1.1 = (i, j)
@@ -1072,12 +1066,6 @@ private theorem symbolicGSPoly_shift_coeff_natDegree_le {F : Type} [Field F]
       (Polynomial.C y₀ + Polynomial.X * Polynomial.C y₁)).coeff t).coeff s).natDegree ≤
       symbolicYSum A := by
   rw [symbolicGSPoly_shift_coeff_eq_sum]
-  change (∑ q ∈ Finset.univ, c q •
-    ((Polynomial.Bivariate.shift
-      (Polynomial.monomial q.1.1.2
-        (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1)))
-      (Polynomial.C x)
-      (Polynomial.C y₀ + Polynomial.X * Polynomial.C y₁)).coeff t).coeff s).natDegree ≤ _
   apply Polynomial.natDegree_sum_le_of_forall_le
   intro q hq
   calc
