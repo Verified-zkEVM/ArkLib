@@ -125,8 +125,8 @@ instance [reduction.IsPerfectComplete init impl relIn relOut] :
   `ε₂` for all `ε₂ ≥ ε₁`. -/
 @[grind]
 theorem completeness_error_mono {ε₁ ε₂ : ℝ≥0} (hε : ε₁ ≤ ε₂) :
-      completeness init impl relIn relOut reduction ε₁ →
-        completeness init impl relIn relOut reduction ε₂ := by
+    completeness init impl relIn relOut reduction ε₁ →
+      completeness init impl relIn relOut reduction ε₂ := by
   intro h
   dsimp [completeness] at h ⊢
   intro stmtIn witIn hstmtIn

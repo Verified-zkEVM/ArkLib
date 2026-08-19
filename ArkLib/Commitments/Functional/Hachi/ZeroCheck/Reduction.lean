@@ -538,13 +538,14 @@ theorem nestedAssembly_escape_or_mem_relBatched
     refine Or.inl ⟨resp, hrel, p, base, hp, ?_, (hrel p).2.1, (hrel base).2.1⟩
     exact (hrel p).1.trans (hrel base).1.symm
   · -- all leaves share one opening: the tree zero test gives both identities
-    push_neg at hcol
+    push Not at hcol
     refine Or.inr ⟨(hrel base).1, ?_, ?_, (hrel base).2.2.2.2⟩
     · exact hZero_eq_zero_of_evaluationTree Φ m₀ (le_refl 2) φF b (resp base) evTree hDistinct
         (hVanishes₀ hcol)
     · exact hAlpha_eq_zero_of_evaluationTree Φ m₁ (le_refl 2) φF b stmt.1 stmt.2.2 (resp base)
         evTree hDistinct (hVanishesα hcol)
 
+omit [NeZero q] [BEq F] [LawfulBEq F] in
 /-- **Escape-threaded coordinate-wise special soundness of the nested scalar-round zero-check**
 (the corrected Hachi Lemma 10), at the named extractor `nestedZeroCheckExtractor`.
 
