@@ -99,7 +99,7 @@ def finsetMaxGetD_le (s : Finset ℕ) (B : ℕ)
   rw [← heq]
   exact hunbot
 
-def symbolicBivariateShiftNeZero {R : Type} [CommRing R]
+private theorem symbolicBivariateShiftNeZero {R : Type} [CommRing R]
     (f : Polynomial (Polynomial R)) (x y : R) (hf : f ≠ 0) :
     Polynomial.Bivariate.shift f x y ≠ 0 := by
   intro hs
@@ -116,7 +116,7 @@ def symbolicBivariateShiftNeZero {R : Type} [CommRing R]
     (Polynomial.map_eq_zero_iff hφ).mp hs
   exact hf (Polynomial.comp_X_add_C_eq_zero_iff.mp hcomp)
 
-def symbolicDY_lt_of_weighted {R : Type} [Semiring R]
+private theorem symbolicDY_lt_of_weighted {R : Type} [Semiring R]
     {Q : Polynomial (Polynomial R)} {k : ℕ} (hk : 0 < k) {B : ℝ}
     (hQ : Polynomial.Bivariate.natWeightedDegree Q 1 k < B) :
     Polynomial.Bivariate.natDegreeY Q < B / k := by
@@ -132,7 +132,7 @@ def symbolicDY_lt_of_weighted {R : Type} [Semiring R]
     simpa only [Nat.cast_mul, mul_comm] using hcast
   exact lt_of_le_of_lt hcast' hQ
 
-def symbolicDegreeXLeWeighted {R : Type} [Semiring R]
+private theorem symbolicDegreeXLeWeighted {R : Type} [Semiring R]
     (Q : Polynomial (Polynomial R)) (k : ℕ) :
     Polynomial.Bivariate.degreeX Q ≤
       Polynomial.Bivariate.natWeightedDegree Q 1 k := by
@@ -144,14 +144,14 @@ def symbolicDegreeXLeWeighted {R : Type} [Semiring R]
     (f := fun t => 1 * (Q.coeff t).natDegree + k * t) hj)
   omega
 
-noncomputable def symbolicGSEvalConstraint {F : Type} [Field F]
+private noncomputable def symbolicGSEvalConstraint {F : Type} [Field F]
     (x y : Polynomial F) (s t d : ℕ) :
     Polynomial (Polynomial (Polynomial F)) →ₗ[F] F where
   toFun Q := ((((Polynomial.Bivariate.shift Q x y).coeff t).coeff s).coeff d)
   map_add' Q R := by simp [Polynomial.Bivariate.shift]
   map_smul' a Q := by simp [Polynomial.Bivariate.shift]
 
-def symbolicInnerMonomial_shift_coeff {F : Type} [Field F]
+private theorem symbolicInnerMonomial_shift_coeff {F : Type} [Field F]
     (a h : ℕ) (x : F) (s : ℕ) :
     (((Polynomial.monomial a (Polynomial.monomial h 1) :
       Polynomial (Polynomial F)).comp
@@ -162,17 +162,17 @@ def symbolicInnerMonomial_shift_coeff {F : Type} [Field F]
   rw [← Polynomial.C_eq_natCast]
   rw [← map_pow, ← map_mul, Polynomial.monomial_mul_C, one_mul]
 
-noncomputable def symbolicModifiedGSCap (n k m : ℕ) : ℕ :=
+private noncomputable def symbolicModifiedGSCap (n k m : ℕ) : ℕ :=
   _root_.proximity_gap_degree_bound k n m
 
-def symbolicModifiedGSCap_le_DX {n k m : ℕ} (hn : 0 < n) :
+private theorem symbolicModifiedGSCap_le_DX {n k m : ℕ} (hn : 0 < n) :
     (symbolicModifiedGSCap n k m : ℝ) ≤
       D_X ((k + 1 : ℚ) / n) n m := by
   unfold symbolicModifiedGSCap _root_.proximity_gap_degree_bound D_X
   dsimp only
   exact Nat.floor_le (by positivity)
 
-def symbolicModifiedGSCap_pos {n k m : ℕ}
+private theorem symbolicModifiedGSCap_pos {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     0 < symbolicModifiedGSCap n k m := by
   unfold symbolicModifiedGSCap _root_.proximity_gap_degree_bound
@@ -202,14 +202,14 @@ def symbolicModifiedGSCap_pos {n k m : ℕ}
     mul_le_mul_of_nonneg_left hy1' (by positivity)
   exact hfac.trans (by simpa only [mul_one] using hmul)
 
-def symbolicModifiedGSCap_sq_gt {n k m : ℕ} (hn : 0 < n) :
+private theorem symbolicModifiedGSCap_sq_gt {n k m : ℕ} (hn : 0 < n) :
     ((symbolicModifiedGSCap n k m : ℝ) + 1) ^ 2 >
       (m + 1 / 2) ^ 2 * (k + 1) * n := by
   unfold symbolicModifiedGSCap
   exact GuruswamiSudan.proximity_gap_degree_bound_sq_gt
     (k := k) (n := n) (m := m) (ne_of_gt hn)
 
-def symbolicOuterAffine_map {F : Type} [Field F]
+private theorem symbolicOuterAffine_map {F : Type} [Field F]
     (x y₀ y₁ : F) :
     Polynomial.map
       (Polynomial.compRingHom (Polynomial.X + Polynomial.C (Polynomial.C x)))
@@ -219,7 +219,7 @@ def symbolicOuterAffine_map {F : Type} [Field F]
         (Polynomial.C (Polynomial.C y₀ + Polynomial.X * Polynomial.C y₁)) := by
   simp [Polynomial.coe_compRingHom_apply]
 
-def symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [DecidableEq R]
+private theorem symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [DecidableEq R]
     (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
   obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
@@ -255,11 +255,11 @@ def symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [DecidableEq 
   rw [hempty] at hmem
   simpa using hmem
 
-noncomputable def symbolicUpperTriangleBase (n k m : ℕ) : Finset (ℕ × ℕ) :=
+private noncomputable def symbolicUpperTriangleBase (n k m : ℕ) : Finset (ℕ × ℕ) :=
   (GuruswamiSudan.weightBoundIndices (k + 2) (symbolicModifiedGSCap n k m - 1)).image
     (fun p => (p.1 + p.2, p.2))
 
-def symbolicCapPoint_not_mem_base {n k m : ℕ}
+private theorem symbolicCapPoint_not_mem_base {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     (symbolicModifiedGSCap n k m, 0) ∉ symbolicUpperTriangleBase n k m := by
   classical
@@ -278,7 +278,7 @@ def symbolicCapPoint_not_mem_base {n k m : ℕ}
   simp only [mul_zero, add_zero] at hw
   omega
 
-def symbolicUpperTriangleBase_card (n k m : ℕ) :
+private theorem symbolicUpperTriangleBase_card (n k m : ℕ) :
     (symbolicUpperTriangleBase n k m).card =
       GuruswamiSudan.numVars (k + 2) (symbolicModifiedGSCap n k m - 1) := by
   classical
@@ -294,13 +294,13 @@ def symbolicUpperTriangleBase_card (n k m : ℕ) :
   unfold symbolicUpperTriangleBase GuruswamiSudan.numVars
   exact Finset.card_image_iff.mpr hinj
 
-noncomputable def symbolicUpperTriangleCandidates (n k m : ℕ) : Finset (ℕ × ℕ) :=
+private noncomputable def symbolicUpperTriangleCandidates (n k m : ℕ) : Finset (ℕ × ℕ) :=
   if (symbolicModifiedGSCap n k m : ℝ) < D_X ((k + 1 : ℚ) / n) n m then
     insert (symbolicModifiedGSCap n k m, 0) (symbolicUpperTriangleBase n k m)
   else
     symbolicUpperTriangleBase n k m
 
-def symbolicUpperTriangleCandidates_support {n k m : ℕ}
+private theorem symbolicUpperTriangleCandidates_support {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     ∀ p ∈ symbolicUpperTriangleCandidates n k m,
       p.2 ≤ p.1 ∧
@@ -348,21 +348,21 @@ def symbolicUpperTriangleCandidates_support {n k m : ℕ}
         ((q.1 + q.2 + k * q.2 : ℕ) : ℝ) < symbolicModifiedGSCap n k m) |>.trans_le hLle
 
 open scoped BigOperators in
-def symbolicYSum (A : Finset (ℕ × ℕ)) : ℕ := ∑ p ∈ A, p.2
+private def symbolicYSum (A : Finset (ℕ × ℕ)) : ℕ := ∑ p ∈ A, p.2
 
-def SymbolicGSConstraintIndex (n m : ℕ) (A : Finset (ℕ × ℕ)) :=
+private def SymbolicGSConstraintIndex (n m : ℕ) (A : Finset (ℕ × ℕ)) :=
   Fin n × (GuruswamiSudan.constraintIndices m) × Fin (symbolicYSum A + 1)
 
-abbrev SymbolicGSIndex (A : Finset (ℕ × ℕ)) :=
+private abbrev SymbolicGSIndex (A : Finset (ℕ × ℕ)) :=
   Σ p : {q // q ∈ A}, Fin (symbolicYSum A - p.1.2 + 1)
 
-noncomputable def symbolicGSBasis {F : Type} [Field F]
+private noncomputable def symbolicGSBasis {F : Type} [Field F]
     {A : Finset (ℕ × ℕ)} (q : SymbolicGSIndex A) :
     Polynomial (Polynomial (Polynomial F)) :=
   Polynomial.monomial q.1.1.2
     (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1))
 
-def symbolicGSBasis_shift_coeff_formula {F : Type} [Field F]
+private theorem symbolicGSBasis_shift_coeff_formula {F : Type} [Field F]
     {A : Finset (ℕ × ℕ)} (q : SymbolicGSIndex A)
     (x y₀ y₁ : F) (s t : ℕ) :
     ((Polynomial.Bivariate.shift (symbolicGSBasis (F := F) q)
@@ -394,7 +394,7 @@ def symbolicGSBasis_shift_coeff_formula {F : Type} [Field F]
         (Polynomial.C y₀ + Polynomial.X * Polynomial.C y₁) ^ (q.1.1.2 - t) := by
       rw [Polynomial.monomial_mul_C]
 
-def symbolicGSBasis_shift_coeff_natDegree_le {F : Type} [Field F]
+private theorem symbolicGSBasis_shift_coeff_natDegree_le {F : Type} [Field F]
     {A : Finset (ℕ × ℕ)} (q : SymbolicGSIndex A)
     (x y₀ y₁ : F) (s t : ℕ) :
     (((Polynomial.Bivariate.shift (symbolicGSBasis (F := F) q)
@@ -422,12 +422,12 @@ def symbolicGSBasis_shift_coeff_natDegree_le {F : Type} [Field F]
       exact add_le_add hmono (by simpa only [mul_one] using hpow)
     _ ≤ q.2.1 + q.1.1.2 := by omega
 
-noncomputable instance symbolicGSConstraintIndexFintype (n m : ℕ)
+private noncomputable instance symbolicGSConstraintIndexFintype (n m : ℕ)
     (A : Finset (ℕ × ℕ)) : Fintype (SymbolicGSConstraintIndex n m A) := by
   unfold SymbolicGSConstraintIndex
   infer_instance
 
-def symbolicGSConstraintIndex_card (n m : ℕ) (A : Finset (ℕ × ℕ)) :
+private theorem symbolicGSConstraintIndex_card (n m : ℕ) (A : Finset (ℕ × ℕ)) :
     Fintype.card (SymbolicGSConstraintIndex n m A) =
       GuruswamiSudan.numConstraints n m * (symbolicYSum A + 1) := by
   classical
@@ -438,7 +438,7 @@ def symbolicGSConstraintIndex_card (n m : ℕ) (A : Finset (ℕ × ℕ)) :
     Nat.mul_assoc]
 
 open scoped BigOperators in
-def symbolicGSIndex_card_sum (A : Finset (ℕ × ℕ)) :
+private theorem symbolicGSIndex_card_sum (A : Finset (ℕ × ℕ)) :
     Fintype.card (SymbolicGSIndex A) =
       ∑ p : {q // q ∈ A}, (symbolicYSum A - p.1.2 + 1) := by
   classical
@@ -447,7 +447,7 @@ def symbolicGSIndex_card_sum (A : Finset (ℕ × ℕ)) :
       Fintype.card (Σ p : {q // q ∈ A}, Fin (symbolicYSum A - p.1.2 + 1)) =
         ∑ p : {q // q ∈ A}, Fintype.card (Fin (symbolicYSum A - p.1.2 + 1)))
 
-noncomputable def symbolicGSPolyLinearMap {F : Type} [Field F]
+private noncomputable def symbolicGSPolyLinearMap {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) : (SymbolicGSIndex A → F) →ₗ[F]
       Polynomial (Polynomial (Polynomial F)) :=
   Finsupp.linearCombination F (fun q : SymbolicGSIndex A =>
@@ -455,7 +455,7 @@ noncomputable def symbolicGSPolyLinearMap {F : Type} [Field F]
       (Polynomial.monomial q.1.1.1 (Polynomial.monomial q.2.1 1))) ∘ₗ
     (Finsupp.linearEquivFunOnFinite F F (SymbolicGSIndex A)).symm.toLinearMap
 
-noncomputable def symbolicGSConstraintMap {F : Type} [Field F]
+private noncomputable def symbolicGSConstraintMap {F : Type} [Field F]
     (n m : ℕ) (A : Finset (ℕ × ℕ)) (ωs : Fin n ↪ F) (u₀ u₁ : Fin n → F) :
     (SymbolicGSIndex A → F) →ₗ[F] (SymbolicGSConstraintIndex n m A → F) :=
   LinearMap.pi (fun q =>
@@ -465,18 +465,18 @@ noncomputable def symbolicGSConstraintMap {F : Type} [Field F]
       q.2.1.1.1 q.2.1.1.2 q.2.2 ∘ₗ
     symbolicGSPolyLinearMap (F := F) A)
 
-structure SymbolicGSKernelWitness {F : Type} [Field F]
+private structure SymbolicGSKernelWitness {F : Type} [Field F]
     (n m : ℕ) (A : Finset (ℕ × ℕ)) (ωs : Fin n ↪ F) (u₀ u₁ : Fin n → F) where
   c : SymbolicGSIndex A → F
   c_ne_zero : c ≠ 0
   constraints : symbolicGSConstraintMap n m A ωs u₀ u₁ c = 0
 
 open scoped BigOperators in
-noncomputable def symbolicGSPoly {F : Type} [Field F] (A : Finset (ℕ × ℕ))
+private noncomputable def symbolicGSPoly {F : Type} [Field F] (A : Finset (ℕ × ℕ))
     (c : SymbolicGSIndex A → F) : Polynomial (Polynomial (Polynomial F)) :=
   symbolicGSPolyLinearMap (F := F) A c
 
-def symbolicGSConstraintMap_apply {F : Type} [Field F]
+private theorem symbolicGSConstraintMap_apply {F : Type} [Field F]
     (n m : ℕ) (A : Finset (ℕ × ℕ)) (ωs : Fin n ↪ F) (u₀ u₁ : Fin n → F)
     (c : SymbolicGSIndex A → F) (q : SymbolicGSConstraintIndex n m A) :
     symbolicGSConstraintMap n m A ωs u₀ u₁ c q =
@@ -486,7 +486,7 @@ def symbolicGSConstraintMap_apply {F : Type} [Field F]
           q.2.1.1.2).coeff q.2.1.1.1).coeff q.2.2) := by
   rfl
 
-def symbolicGSPolyMultiplicityBridge {F : Type} [Field F] [DecidableEq F]
+private theorem symbolicGSPolyMultiplicityBridge {F : Type} [Field F] [DecidableEq F]
     {m n : ℕ} {A : Finset (ℕ × ℕ)} {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F}
     {c : SymbolicGSIndex A → F}
     (hQ : symbolicGSPoly (F := F) A c ≠ 0)
@@ -517,7 +517,7 @@ def symbolicGSPolyMultiplicityBridge {F : Type} [Field F] [DecidableEq F]
       simpa only [hr, Option.some_le_some] using hmr
 
 open scoped BigOperators in
-def symbolicGSPoly_eq_sum {F : Type} [Field F]
+private theorem symbolicGSPoly_eq_sum {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     symbolicGSPoly (F := F) A c =
       ∑ q : SymbolicGSIndex A, c q •
@@ -528,7 +528,7 @@ def symbolicGSPoly_eq_sum {F : Type} [Field F]
     Fintype.linearCombination_apply]
 
 open scoped BigOperators in
-def symbolicGSPoly_coeff_pair {F : Type} [Field F]
+private theorem symbolicGSPoly_coeff_pair {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) (i j : ℕ) :
     ((symbolicGSPoly (F := F) A c).coeff j).coeff i =
       ∑ q : SymbolicGSIndex A,
@@ -557,7 +557,7 @@ def symbolicGSPoly_coeff_pair {F : Type} [Field F]
       · simp [Polynomial.coeff_smul, Polynomial.coeff_monomial, hj, hp]
 
 open scoped BigOperators in
-def symbolicGSPoly_coeff_index {F : Type} [Field F]
+private theorem symbolicGSPoly_coeff_index {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) (q : SymbolicGSIndex A) :
     ((((symbolicGSPoly (F := F) A c).coeff q.1.1.2).coeff q.1.1.1).coeff q.2.1) =
       c q := by
@@ -586,7 +586,7 @@ def symbolicGSPoly_coeff_index {F : Type} [Field F]
   · simp
 
 open scoped BigOperators in
-def symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
+private theorem symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) {i j : ℕ}
     (hcoeff : ((symbolicGSPoly (F := F) A c).coeff j).coeff i ≠ 0) :
     (i, j) ∈ A := by
@@ -601,7 +601,7 @@ def symbolicGSPoly_coeff_ne_zero_mem {F : Type} [Field F]
   rw [← heq]
   exact q.1.2
 
-def symbolicGSPoly_ne_zero {F : Type} [Field F]
+private theorem symbolicGSPoly_ne_zero {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) (hc : c ≠ 0) :
     symbolicGSPoly (F := F) A c ≠ 0 := by
   intro hQ
@@ -613,7 +613,7 @@ def symbolicGSPoly_ne_zero {F : Type} [Field F]
   exact h.symm
 
 open scoped BigOperators in
-def symbolicGSPoly_shift_coeff_eq_sum {F : Type} [Field F]
+private theorem symbolicGSPoly_shift_coeff_eq_sum {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
     (x y : Polynomial F) (s t : ℕ) :
     ((Polynomial.Bivariate.shift (symbolicGSPoly (F := F) A c) x y).coeff t).coeff s =
@@ -636,14 +636,14 @@ def symbolicGSPoly_shift_coeff_eq_sum {F : Type} [Field F]
   rw [Polynomial.finset_sum_coeff]
   rfl
 
-def symbolicGSPoly_support_subset {F : Type} [Field F]
+private theorem symbolicGSPoly_support_subset {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     ∀ {i j : ℕ}, j ∈ (symbolicGSPoly (F := F) A c).support →
       i ∈ ((symbolicGSPoly (F := F) A c).coeff j).support → (i, j) ∈ A := by
   intro i j hj hi
   exact symbolicGSPoly_coeff_ne_zero_mem A c (Polynomial.mem_support_iff.mp hi)
 
-def symbolicGSPoly_weighted_lt {F : Type} [Field F]
+private theorem symbolicGSPoly_weighted_lt {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) {k : ℕ} {D : ℝ}
     (hQ : symbolicGSPoly (F := F) A c ≠ 0)
     (hA : ∀ p ∈ A, ((p.1 + k * p.2 : ℕ) : ℝ) < D) :
@@ -666,7 +666,7 @@ def symbolicGSPoly_weighted_lt {F : Type} [Field F]
     hA (((symbolicGSPoly (F := F) A c).coeff j).natDegree, j) hp
 
 open scoped BigOperators in
-def symbolicUpperTriangleBase_ySum (n k m : ℕ) :
+private theorem symbolicUpperTriangleBase_ySum (n k m : ℕ) :
     symbolicYSum (symbolicUpperTriangleBase n k m) =
       ∑ p ∈ GuruswamiSudan.weightBoundIndices (k + 2)
         (symbolicModifiedGSCap n k m - 1), p.2 := by
@@ -684,7 +684,7 @@ def symbolicUpperTriangleBase_ySum (n k m : ℕ) :
   rw [Finset.sum_image hinj]
 
 open scoped BigOperators in
-def symbolicUpperTriangleCandidates_ySum_eq_base (n k m : ℕ) :
+private theorem symbolicUpperTriangleCandidates_ySum_eq_base (n k m : ℕ) :
     symbolicYSum (symbolicUpperTriangleCandidates n k m) =
       symbolicYSum (symbolicUpperTriangleBase n k m) := by
   classical
@@ -692,7 +692,7 @@ def symbolicUpperTriangleCandidates_ySum_eq_base (n k m : ℕ) :
   split <;> simp
 
 open scoped BigOperators in
-def symbolicUpperTriangleCandidates_ySum_nat_bound {n k m : ℕ}
+private theorem symbolicUpperTriangleCandidates_ySum_nat_bound {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     6 * (k + 1) ^ 2 * symbolicYSum (symbolicUpperTriangleCandidates n k m) ≤
       (symbolicModifiedGSCap n k m) ^ 3 := by
@@ -704,7 +704,7 @@ def symbolicUpperTriangleCandidates_ySum_nat_bound {n k m : ℕ}
   simpa only [show k + 2 - 1 = k + 1 by omega,
     Nat.sub_add_cancel (by omega : 1 ≤ symbolicModifiedGSCap n k m)] using h
 
-def symbolic_DX_cube_div_identity {n k m : ℕ} (hn : 0 < n) (hk : 0 < k) :
+private theorem symbolic_DX_cube_div_identity {n k m : ℕ} (hn : 0 < n) (hk : 0 < k) :
     D_X ((k + 1 : ℚ) / n) n m ^ 3 / (6 * ((k : ℝ) + 1) ^ 2) =
       n * (m + 1 / (2 : ℚ)) ^ 3 /
         (6 * Real.sqrt ((k + 1) / n)) := by
@@ -724,7 +724,7 @@ def symbolic_DX_cube_div_identity {n k m : ℕ} (hn : 0 < n) (hk : 0 < k) :
     field_simp [hn0]]
   ring
 
-def symbolicUpperTriangleCandidates_ySum_real_bound {n k m : ℕ}
+private theorem symbolicUpperTriangleCandidates_ySum_real_bound {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     (symbolicYSum (symbolicUpperTriangleCandidates n k m) : ℝ) ≤
       n * (m + 1 / (2 : ℚ)) ^ 3 /
@@ -742,7 +742,7 @@ def symbolicUpperTriangleCandidates_ySum_real_bound {n k m : ℕ}
   rw [le_div_iff₀ (by positivity : (0 : ℝ) < 6 * ((k : ℝ) + 1) ^ 2)]
   simpa only [mul_comm] using hcast.trans hcube
 
-def symbolic_DX_sq_identity {n k m : ℕ} (hn : 0 < n) :
+private theorem symbolic_DX_sq_identity {n k m : ℕ} (hn : 0 < n) :
     D_X ((k + 1 : ℚ) / n) n m ^ 2 =
       ((m : ℝ) + 1 / 2) ^ 2 * ((k : ℝ) + 1) * n := by
   unfold D_X
@@ -750,7 +750,7 @@ def symbolic_DX_sq_identity {n k m : ℕ} (hn : 0 < n) :
   push_cast
   field_simp [show (n : ℝ) ≠ 0 by exact_mod_cast (ne_of_gt hn)]
 
-def symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
+private theorem symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
     (symbolicModifiedGSCap 1 1 m : ℝ) < D_X (2 : ℚ) 1 m := by
   have hle := symbolicModifiedGSCap_le_DX (n := 1) (k := 1) (m := m) (by omega)
   norm_num at hle
@@ -769,7 +769,7 @@ def symbolicModifiedGSCap_strict_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
   have hmod := congrArg (fun x : ℕ => x % 2) hdouble
   norm_num [Nat.add_mod, Nat.mul_mod] at hmod
 
-def symbolic_numConstraints_scaled (n k m : ℕ) :
+private theorem symbolic_numConstraints_scaled (n k m : ℕ) :
     2 * (k + 1) * GuruswamiSudan.numConstraints n m =
       (k + 1) * n * m * (m + 1) := by
   unfold GuruswamiSudan.numConstraints
@@ -783,7 +783,7 @@ def symbolic_numConstraints_scaled (n k m : ℕ) :
     _ = (k + 1) * n * (m * (m + 1)) := by rw [htwo]
     _ = (k + 1) * n * m * (m + 1) := by ring
 
-def symbolic_numVars_lower_bound_boundary (a D : ℕ) (ha : 0 < a) :
+private theorem symbolic_numVars_lower_bound_boundary (a D : ℕ) (ha : 0 < a) :
     (D + 1) ^ 2 + a * (D + 1) ≤
       2 * a * GuruswamiSudan.numVars (a + 1) D := by
   have h_numVars_def : GuruswamiSudan.numVars (a + 1) D =
@@ -800,7 +800,7 @@ def symbolic_numVars_lower_bound_boundary (a D : ℕ) (ha : 0 < a) :
       simp_all [← even_iff_two_dvd, parity_simps]
     by_cases h : Even (D / a) <;> simp_all [parity_simps]
 
-def symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
+private theorem symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints 1 m ≤
       (symbolicUpperTriangleBase 1 1 m).card := by
   let T := symbolicModifiedGSCap 1 1 m
@@ -832,7 +832,7 @@ def symbolicUpperTriangleBase_card_ge_k_one_n_one {m : ℕ} (hm : 1 ≤ m) :
     hscaled'.trans hbound
   exact le_of_mul_le_mul_left hmul (by omega)
 
-def symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
+private theorem symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
     (hn : 2 ≤ n) (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints n m <
       (symbolicUpperTriangleBase n 1 m).card := by
@@ -864,7 +864,7 @@ def symbolicUpperTriangleBase_card_gt_k_one_of_two_le_n {n m : ℕ}
     hscaled'.trans_le hbound
   exact lt_of_mul_lt_mul_left' hmul
 
-def symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
+private theorem symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
     (hn : 0 < n) (hk : 2 ≤ k) (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints n m <
       (symbolicUpperTriangleBase n k m).card := by
@@ -894,7 +894,7 @@ def symbolicUpperTriangleBase_card_gt_of_two_le_k {n k m : ℕ}
     hscaled.trans_le hbound
   exact lt_of_mul_lt_mul_left' hmul
 
-def symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
+private theorem symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m) :
     GuruswamiSudan.numConstraints n m <
       (symbolicUpperTriangleCandidates n k m).card := by
@@ -928,13 +928,13 @@ def symbolicUpperTriangleCandidates_card_gt {n k m : ℕ}
         exact hstrict
 
 open scoped BigOperators in
-def symbolic_snd_le_ySum (A : Finset (ℕ × ℕ)) {p : ℕ × ℕ} (hp : p ∈ A) :
+private theorem symbolic_snd_le_ySum (A : Finset (ℕ × ℕ)) {p : ℕ × ℕ} (hp : p ∈ A) :
     p.2 ≤ symbolicYSum A := by
   unfold symbolicYSum
   exact Finset.single_le_sum (fun q hq => Nat.zero_le q.2) hp
 
 open scoped BigOperators in
-def symbolicGSIndex_card_closed (A : Finset (ℕ × ℕ)) :
+private theorem symbolicGSIndex_card_closed (A : Finset (ℕ × ℕ)) :
     Fintype.card (SymbolicGSIndex A) + symbolicYSum A =
       A.card * (symbolicYSum A + 1) := by
   classical
@@ -957,7 +957,7 @@ def symbolicGSIndex_card_closed (A : Finset (ℕ × ℕ)) :
     _ = A.card * (symbolicYSum A + 1) := by
       simp
 
-def symbolicGSConstraintIndex_card_lt (n m : ℕ) (A : Finset (ℕ × ℕ))
+private theorem symbolicGSConstraintIndex_card_lt (n m : ℕ) (A : Finset (ℕ × ℕ))
     (hcount : GuruswamiSudan.numConstraints n m < A.card) :
     Fintype.card (SymbolicGSConstraintIndex n m A) <
       Fintype.card (SymbolicGSIndex A) := by
@@ -995,14 +995,14 @@ noncomputable def exists_symbolicGSKernelWitness {F : Type} [Field F]
   refine ⟨{ c := c, c_ne_zero := hc0, constraints := ?_ }⟩
   exact hc
 
-def symbolicGSIndex_z_add_y_le (A : Finset (ℕ × ℕ)) (q : SymbolicGSIndex A) :
+private theorem symbolicGSIndex_z_add_y_le (A : Finset (ℕ × ℕ)) (q : SymbolicGSIndex A) :
     q.2.1 + q.1.1.2 ≤ symbolicYSum A := by
   have hy := symbolic_snd_le_ySum A q.1.2
   have hz := q.2.2
   omega
 
 open scoped BigOperators in
-def symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F]
+private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) {i j : ℕ}
     (hp : (i, j) ∈ A) :
     (((symbolicGSPoly (F := F) A c).coeff j).coeff i).natDegree + j ≤
@@ -1027,7 +1027,7 @@ def symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F]
       omega
   omega
 
-def symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
+private theorem symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
     (htri : ∀ p ∈ A, p.2 ≤ p.1) {i j : ℕ}
     (hi : i ∈ ((symbolicGSPoly (F := F) A c).coeff j).support) :
@@ -1048,7 +1048,7 @@ def symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
     have hdeg := symbolicGSPoly_coeff_natDegree_add_le_of_mem A c hp
     omega
 
-def symbolicGSPoly_DYZ_le {F : Type} [Field F]
+private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
     (htri : ∀ p ∈ A, p.2 ≤ p.1) :
     Trivariate.D_YZ (symbolicGSPoly (F := F) A c) ≤ symbolicYSum A := by
@@ -1064,7 +1064,7 @@ def symbolicGSPoly_DYZ_le {F : Type} [Field F]
   exact symbolicGSPoly_DYZ_term_le A c htri hi
 
 open scoped BigOperators in
-def symbolicGSPoly_shift_coeff_natDegree_le {F : Type} [Field F]
+private theorem symbolicGSPoly_shift_coeff_natDegree_le {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
     (x y₀ y₁ : F) (s t : ℕ) :
     (((Polynomial.Bivariate.shift (symbolicGSPoly (F := F) A c)
@@ -1096,7 +1096,7 @@ def symbolicGSPoly_shift_coeff_natDegree_le {F : Type} [Field F]
       symbolicGSBasis_shift_coeff_natDegree_le q x y₀ y₁ s t
     _ ≤ symbolicYSum A := symbolicGSIndex_z_add_y_le A q
 
-def symbolicGSKernelWitness_shift_vanish {F : Type} [Field F]
+private theorem symbolicGSKernelWitness_shift_vanish {F : Type} [Field F]
     {n m : ℕ} (A : Finset (ℕ × ℕ)) (ωs : Fin n ↪ F) (u₀ u₁ : Fin n → F)
     (w : SymbolicGSKernelWitness n m A ωs u₀ u₁) :
     ∀ i s t, s + t < m →
@@ -1165,7 +1165,7 @@ noncomputable def modified_guruswami_has_a_solution_core
     exact hyzR.trans (by
       simpa only [A] using symbolicUpperTriangleCandidates_ySum_real_bound hn hk hm)
 
-noncomputable def modified_guruswami_has_a_solution__proved {m n k : ℕ}
+private noncomputable def modified_guruswami_has_a_solution_proof {m n k : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
     {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
     ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ :=
@@ -1184,7 +1184,7 @@ lemma modified_guruswami_has_a_solution {m n k : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
     {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
     ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ :=
-  modified_guruswami_has_a_solution__proved hn hk hm
+  modified_guruswami_has_a_solution_proof hn hk hm
 
 end
 
