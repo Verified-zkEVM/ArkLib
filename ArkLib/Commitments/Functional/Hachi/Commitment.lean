@@ -96,10 +96,14 @@ def keygen :
 
 /-- Honest **commitment** to a multilinear polynomial `p`: reshape it into its `2^r × 2^m`
 coefficient matrix (`Hachi.toMatrix`, definitionally a `Message 𝓜(q,α) (2^m) (2^r)`),
-gadget-decompose it into the per-block messages/inner decompositions with the **canonical base-`b`
-digit decomposition** `zmodDigitDecomposition` at the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`
-(the `q ≤ bᵟ` obligation is `Nat.le_pow_clog`), and outer-commit (`commitWithDecomps`).
-Deterministic; the decommitment is the `Decomp` data. -/
+gadget-decompose it into the per-block messages/inner decompositions with the **canonical
+*unsigned* base-`b` digit decomposition** `zmodDigitDecomposition` at the paper's width
+`δ = ⌈log_b q⌉ = Nat.clog b q` (the `q ≤ bᵟ` obligation is `Nat.le_pow_clog`), and outer-commit
+(`commitWithDecomps`). Deterministic; the decommitment is the `Decomp` data.
+
+Its digits lie in `[0, b − 1]`, **not** in Eq. (20)'s balanced box `S_b`, so this committer supports
+the ball-relaxed reading of `QuadEval` completeness only; the paper-exact reading needs
+`commitBalanced`. -/
 def commit [DecidableEq (ZMod q)] (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
@@ -110,6 +114,33 @@ def commit [DecidableEq (ZMod q)] (hb : 1 < b)
     (Decomposition.ofDigits 𝓜(q, α)
       (zmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
       (zmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+    pp.toPublicParams (Hachi.toMatrix p)
+  (commitWithDecomps 𝓜(q, α) pp.toPublicParams decomps, decomps)
+
+/-- **Honest commitment with *balanced* base-`b` digits** — the variant paper-exact `QuadEval`
+completeness applies to.
+
+Identical to `commit` except that both gadget steps use `balancedZmodDigitDecomposition` instead of
+the unsigned `zmodDigitDecomposition`. The difference is not cosmetic: Eq. (20)'s range check is
+the balanced-digit box `S_b`, which unsigned digits generally violate (a digit `b − 1` exceeds the
+box's upper end `⌈b/2⌉ − 1` once `b ≥ 3`). So `commit` supports only the ball-relaxed reading of
+`QuadEval` completeness, while `commitBalanced` supports the paper-exact one
+(`mem_relInBox_of_commitBalanced`).
+
+Both are honest and both reconstruct (`gadgetDecompose_lawful`), so `commit` is not wrong — it is
+simply the decomposition whose digits live in `[0, b − 1]` rather than in `S_b`. The scheme value
+`hachi` still uses `commit`; packaging the balanced committer into a `Commitment.Scheme` waits on
+the `opening` field (see the `TODO` block). -/
+def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
+    Commitment 𝓜(q, α) outerRows ×
+      Decomp 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) (2 ^ r) (Nat.clog b q) :=
+  let decomps := generateDecomps 𝓜(q, α)
+    (Decomposition.ofDigits 𝓜(q, α)
+      (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+      (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
     pp.toPublicParams (Hachi.toMatrix p)
   (commitWithDecomps 𝓜(q, α) pp.toPublicParams decomps, decomps)
 
@@ -132,11 +163,15 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
-sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
-formalized (`QuadEval.prover`'s `computeV`/`computeResp`, the sumcheck loop's `computeG`, the
-tail's `computeY`). Everything else here is real. The stated `pSpec` is the composed evaluation
-protocol spec (`!p[] ++ₚ pSpec …`), i.e. the shape the finished opening will run over — see the
-`TODO` block. -/
+sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only after the remaining §4.3+ subprotocols
+and their honest-prover layer are formalized. Everything else here is real.
+
+⚠ The declared `pSpec` is **not** the full opening protocol's spec: `!p[] ++ₚ pSpec …` is the
+*bridge ▷ QuadEval prefix* only (zero rounds, then Figure 3's commit/challenge round). The finished
+opening additionally runs the §4.3 links — the `R^lin` adapter, the HMZ25 lift's `pSpecScalar`, the
+`m₀ + m₁` zero-check rounds, the sumcheck rounds and the final evaluation — so this field's *type*
+will change when the opening lands, not just its value. It is recorded here as the shape of the
+prefix that exists today; see the `TODO` block. -/
 def hachi [DecidableEq (ZMod q)] (hb : 1 < b) :
     Commitment.Scheme unifSpec
       (CMlPolynomial (Rq 𝓜(q, α)) (r + m))
@@ -163,10 +198,14 @@ Three separate notions, deliberately not merged:
   (`vecInSb_honestInnerDecomp_balanced`, true for `commitBalanced`, false in general for `commit`);
 * **evaluation consistency** — Eq. (15), a property of the polynomial layer, supplied by the caller.
 
-`mem_relInBox_of_honestBalanced` combines them into `QuadEval`'s box-carrying input
-relation `relInBox`, the input of paper-exact `QuadEval` completeness. This establishes that *input
-relation* only: the `opening` field of `hachi` is still `sorry`, so nothing here claims end-to-end
-commitment correctness (`Commitment.perfectCorrectness`). -/
+`mem_relInBox_of_honestBalanced` combines them into `QuadEval`'s box-carrying input relation
+`relInBox`, the input of paper-exact `QuadEval` completeness, and
+`mem_relInBox_of_commitBalanced` restates it at the actual output of `commitBalanced` — so the
+paper-exact link has a real committer to apply to. It does **not** apply to `hachi.commit`, which
+uses the unsigned decomposition (only the ball-relaxed reading does).
+
+This establishes that *input relation* only: the `opening` field of `hachi` is still `sorry`, so
+nothing here claims end-to-end commitment correctness (`Commitment.perfectCorrectness`). -/
 
 section HonestBalanced
 
@@ -308,20 +347,106 @@ end HonestBalanced
 
 end FunctionalCommitment
 
+/-! ## The balanced committer and paper-exact `QuadEval` -/
+
+section CommitBalancedRelInBox
+
+variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] {α : ℕ}
+variable {innerRows outerRows dRows m r : Nat} (b : ℕ)
+
+set_option linter.unusedSectionVars false in
+/-- `commitBalanced`'s commitment is the outer commitment of its own decompositions. Holds by
+`rfl`; recorded so the `relInBox` corollary can be stated against the committer's output rather than
+against a re-spelled `commitWithDecomps` term. -/
+theorem commitBalanced_fst (hb : 1 < b)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
+    (commitBalanced b hb pp p).1 = commitWithDecomps 𝓜(q, α) pp.toPublicParams
+      (generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+        pp.toPublicParams (Hachi.toMatrix p)) :=
+  rfl
+
+set_option linter.unusedSectionVars false in
+/-- `commitBalanced`'s decommitment is its honest decomposition data. Holds by `rfl`. -/
+theorem commitBalanced_snd (hb : 1 < b)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m)) :
+    (commitBalanced b hb pp p).2 = generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+      (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+      (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+      pp.toPublicParams (Hachi.toMatrix p) :=
+  rfl
+
+-- NB: these three results deliberately take **no** `[DecidableEq (ZMod q)]` binder, so that the
+-- canonical `ZMod.decidableEq` is used in `Decomposition.ofDigits`. With a local instance binder
+-- the committer's decomposition and the generic lemma's carry *different* `DecidableEq` instances,
+-- and unifying them is not just slow but impossible — the symptom is a diverging `whnf`.
+set_option linter.unusedSectionVars false in
+/-- **`commitBalanced` establishes paper-exact `QuadEval`'s input relation `relInBox`.**
+`mem_relInBox_of_honestBalanced` at the actual output of the balanced committer: the statement's
+commitment is `(commitBalanced …).1` and the witness is the honest opening over
+`(commitBalanced …).2`, so the paper-exact completeness theorem
+(`quadEvalReduction_perfectCompleteness_balancedDigits`) now has a real committer to apply to.
+
+What still has to be supplied is `heval`, Eq. (15) evaluation consistency of the committed
+polynomial against the statement's bases — the polynomial layer's obligation, not the committer's.
+
+**Scope, precisely.** `hachi`'s `commit` field uses the *unsigned* decomposition, so this does not
+apply to `hachi` as packaged; and `hachi.opening` is still `sorry`, so nothing here is a claim about
+`Commitment.perfectCorrectness`. What is established is the input relation of the paper-exact
+`QuadEval` link, for the balanced committer. -/
+theorem mem_relInBox_of_commitBalanced {κ : ℕ} (hb : 1 < b)
+    (hbq : b ≤ q / 2) (hdeg : 1 ≤ 𝓜(q, α).φ.natDegree) (hclog : 0 < Nat.clog b q) (hκ : 1 ≤ κ)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (p : CMlPolynomial (Rq 𝓜(q, α)) (r + m))
+    (stmt : QuadEvalStatement 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
+      (Nat.clog b q) dRows)
+    (hu : stmt.u = (commitBalanced b hb pp p).1)
+    (heval : evalConsistency 𝓜(q, α) (b : ZMod q) stmt.avec stmt.bvec stmt.y
+      (honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+        pp.toPublicParams (Hachi.toMatrix p))) :
+    (stmt, honestOpening 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+        pp.toPublicParams (Hachi.toMatrix p))
+      ∈ relInBox 𝓜(q, α) pp (b : ZMod q)
+        ((2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2)) (b / 2) κ b :=
+  by
+  have hu' : stmt.u = commitWithDecomps 𝓜(q, α) pp.toPublicParams
+      (generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
+        (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
+        pp.toPublicParams (Hachi.toMatrix p)) :=
+    hu.trans (commitBalanced_fst b hb pp p)
+  -- `heval` is discharged against the *instantiated* goal: passing it positionally makes the
+  -- unifier compare two copies of the `Rq 𝓜(q,α)` instance tower and blow up.
+  exact mem_relInBox_of_honestBalanced 𝓜(q, α) hb (Nat.le_pow_clog hb q) (Nat.le_pow_clog hb q)
+    hbq hdeg hclog hκ pp (Hachi.toMatrix p) stmt hu' heval
+
+end CommitBalancedRelInBox
+
 /-! ## TODO — completeness / honest-prover layer
 
-The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs the honest-prover
-layer, which is open for every link of the chain:
+The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs, in order:
 
-* `QuadEval.prover`'s `computeV` / `computeResp`, from the `QuadEval.Gadgets`
-  carrier/decomposition definitions (`carrierCommit`, `zDecomp`);
-* the sumcheck loop's `computeG` (`Sumcheck/Rounds.lean`) — the honest round-polynomial pair. This
-  one needs new infrastructure first: a *computable* `CPolynomial`-valued partial sum in the free
-  coordinate, plus its agreement lemma against the proof-side `roundPoly`
-  (`Sumcheck/RoundPoly.lean`, Computability section);
-* the final-evaluation and partial-evaluation tails' `computeY`;
-
-and then a completeness/forward direction at each seam, discharging
-`Commitment.perfectCorrectness` for `hachi`. -/
+1. the honest-prover layer for the remaining §4.3+ links (the `QuadEval` one exists —
+   `honestComputeV` / `honestComputeResp` — and the lift, adapter, zero-check and batching links now
+   have honest protocol objects with completeness proofs);
+2. **composition of those reductions**, which is blocked on the generic
+   `Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`) and
+   `liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`.
+   `HonestChain.lean` establishes the per-link theorems at compatible relations, which is *not* the
+   same as completeness of an appended reduction;
+3. widening this scheme's `pSpec` from the bridge ▷ QuadEval prefix to the full opening spec;
+4. only then `Commitment.perfectCorrectness` for `hachi` (and a decision about whether the packaged
+   `commit` should switch to `commitBalanced`, which is what the paper-exact `QuadEval` relation
+   needs). -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter

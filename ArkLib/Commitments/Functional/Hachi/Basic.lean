@@ -77,15 +77,19 @@ development:
   entering each certificate as a disjunct of its conclusion.
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
   the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
-  remaining subprotocols), plus the honest-committer facts the honest chain consumes: the honest
-  opening as a `WeakBinding.VerifiedOpening`, its balanced-box membership, and
-  `mem_relInBox_of_honestBalanced` — paper-exact `QuadEval`'s input relation established for the
-  balanced-digit committer.
+  remaining subprotocols), plus the honest-committer facts the honest chain consumes:
+  `commitBalanced` (the committer Eq. (20)'s box `S_b` accepts — the packaged
+  `commit` uses unsigned digits and supports only the ball-relaxed reading), the honest opening as a
+  `WeakBinding.VerifiedOpening`, its box membership, and `mem_relInBox_of_honestBalanced` /
+  `mem_relInBox_of_commitBalanced` — paper-exact `QuadEval`'s input relation, established for the
+  balanced committer's actual output.
 * `HonestChain.lean` — the honest side's parameter bookkeeping: `HonestRangeParams` (digit base,
-  Eq. (20) ball radius, zero-check range base, with the relations the seams need, and a proof that
-  they are satisfiable) and the per-seam corollaries restating each link's completeness at those
-  parameters. Its docstring records the one genuine limitation: at a single shared range base the
-  seams pin `γ = q/2`, because the honest lift quotient is not short.
+  Eq. (20) ball radius, zero-check range base, with the relations the *honest* direction needs and a
+  witness that they are satisfiable at a small ball radius) and the per-seam corollaries restating
+  each link's completeness at those parameters. These are per-link theorems at compatible relations,
+  **not** completeness of an appended reduction — that needs the still-sorried
+  `Reduction.append_completeness` / `liftContext_completeness`. Its docstring records what the
+  non-short honest lift quotient does cost: a zero-check range base of at least `q/2 + 1`.
 
 This file is the folder's **re-export hub**: it imports every per-folder umbrella
 (`Gadget/`, `InnerOuter/`, `QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`, `Recursion/`
