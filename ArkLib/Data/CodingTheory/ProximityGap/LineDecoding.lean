@@ -1110,14 +1110,19 @@ budget clears at the instantiated parameters is a genuine affine-line MCA bound.
 budget check is a hypothesis, so the contentful-range condition is discharged at the use site
 rather than assumed by the reader. -/
 theorem IsLineDecodable.mcaError_le_of_budget
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (a : ℕ)
     (hδ_pos : 0 < δ) (hδ_lt : δ < 1)
     (h : IsLineDecodable (F := F) ((C : Set (ι → A))) δ a
            (Fintype.card ι + 1))
     (ε_star : ℝ≥0)
     (hbudget : (a : ENNReal) / (Fintype.card F : ENNReal) ≤ (ε_star : ENNReal)) :
-    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) :=
-  le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
+    mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) := by
+  classical
+  letI : Fintype A := Fintype.ofFinite A
+  exact le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
 
 end
 
