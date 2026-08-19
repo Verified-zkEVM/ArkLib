@@ -2024,8 +2024,8 @@ theorem frs_mcaError_le
 bound for the folded Reed-Solomon code. The numeric budget check is a hypothesis, so the
 contentful-range condition is discharged at the use site rather than assumed by the reader. -/
 theorem frs_mcaError_le_of_budget
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hω : ω ≠ 0)
     (hω_gen : orderOf ω = Fintype.card F - 1)
@@ -2038,7 +2038,8 @@ theorem frs_mcaError_le_of_budget
       ENNReal.ofReal (((Fintype.card ι : ℝ) * t + 3 * (t : ℝ) ^ 3) / Fintype.card F)
         ≤ (ε_star : ENNReal)) :
     mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
-        (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ)) - 2 / (t : ℝ)) ≤ (ε_star : ENNReal) :=
-  le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
+        (1 - (k : ℝ) / (s * (Fintype.card ι : ℝ)) - 2 / (t : ℝ)) ≤ (ε_star : ENNReal) := by
+  classical
+  exact le_trans (frs_mcaError_le domain k s ω hω hω_gen hadm hcard t ht_pos hs_gt) hbudget
 
 end CodingTheory
