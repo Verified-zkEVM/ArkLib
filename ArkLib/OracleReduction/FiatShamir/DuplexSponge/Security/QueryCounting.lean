@@ -19,7 +19,7 @@ rate segment *and* input remains; `squeeze` permutes only when the squeeze posit
 end of the rate segment.  Consequently a phase processing `m` units from position `a ≤ R`
 makes exactly `(a + m − 1)/R − (a − 1)/R` permutation queries (`ℕ`-division), which is:
 
-- `0` for the salt phase (`a = 0`, `m = δ ≤ R`) — audit finding A2: the stated `(1, L, 0)`
+- `0` for the salt phase (`a = 0`, `m = δ ≤ R`): the stated `(1, L, 0)`
   budget requires `δ ≤ SpongeSize.R`;
 - at most `⌈m/R⌉ = L_P(i)` (resp. `L_V(i)`) for each message (resp. challenge) phase,
   from *any* starting position `a ≤ R` — so no cross-phase position invariant is needed
@@ -314,7 +314,11 @@ section SpongeOps
 
 variable {U : Type} [SpongeUnit U] [SpongeSize] {C : Type} [SpongeState U C]
 
-/-- `absorb` makes exactly `spongeOpCount R absorbPos len` (forward-permutation) queries. -/
+/-- Structural upper bound for the forward-permutation queries made by `absorb`.
+
+The equality-level dynamic statement is `absorb_counting_exact` below.  Keeping the two facts
+separate matters: `IsQueryBoundP` is an upper-bound predicate, whereas the stateful replay needs
+the path-by-path equality supplied by the counting-oracle theorem. -/
 lemma absorb_isQueryBoundP (ls : List U) (sponge : DuplexSponge U C) :
     IsQueryBoundP (DuplexSponge.absorb sponge ls) (fun _ => True)
       (spongeOpCount SpongeSize.R sponge.absorbPos.val ls.length) := by
@@ -342,7 +346,154 @@ lemma absorb_isQueryBoundP (ls : List U) (sponge : DuplexSponge U C) :
       refine (ih _).mono (le_of_eq ?_)
       simp [hsucc]
 
-/-- `squeeze` makes exactly `spongeOpCount R squeezePos len` (forward-permutation) queries. -/
+/-- Sum the per-query-state counters emitted by `countingOracle`.  A forward permutation has
+query index `C` (its complete input state), so its total number of calls is the finite sum here,
+not the count at one distinguished index. -/
+def queryCountTotal [Fintype C] (qc : QueryCount C) : ℕ :=
+  ∑ c, qc c
+
+/-- Removing the one query at `t` from a positive count decreases the finite total by exactly
+one.  This is the accounting step used when the support characterization peels a real oracle
+query from a lazy sponge execution. -/
+lemma queryCountTotal_update_pred [Fintype C] [DecidableEq C]
+    (qc : QueryCount C) (t : C) (ht : qc t ≠ 0) :
+    queryCountTotal (Function.update qc t (qc t - 1)) = queryCountTotal qc - 1 := by
+  unfold queryCountTotal
+  rw [Finset.sum_update_of_mem (Finset.mem_univ t)]
+  rw [← Finset.sum_erase_add Finset.univ qc (Finset.mem_univ t)]
+  rw [Finset.sdiff_singleton_eq_erase]
+  have hpos : 0 < qc t := Nat.pos_of_ne_zero ht
+  omega
+
+/-- Exact dynamic count for a lazy absorb: on every concrete counting-oracle execution path,
+the total number of forward calls is the value-free stateful schedule count.  This is the first
+operational half of the `N_𝒱` bridge; in particular it covers salt and prover-message absorbs
+that start or end in a partially used rate block. -/
+lemma absorb_counting_exact [Fintype C] [DecidableEq C]
+    (ls : List U) (sponge : DuplexSponge U C)
+    (z : DuplexSponge U C × QueryCount C)
+    (hz : z ∈ support (countingOracle.simulate (DuplexSponge.absorb sponge ls) 0)) :
+    queryCountTotal z.2 = spongeOpCount SpongeSize.R sponge.absorbPos.val ls.length := by
+  induction ls generalizing sponge z with
+  | nil =>
+      rw [DuplexSponge.absorb.eq_def, countingOracle.mem_support_simulate_pure_iff] at hz
+      subst z
+      simp [queryCountTotal, spongeOpCount]
+  | cons x xs ih =>
+      unfold DuplexSponge.absorb at hz
+      change queryCountTotal z.2 =
+        spongeOpCount SpongeSize.R sponge.absorbPos.val (xs.length + 1)
+      by_cases hpos : (sponge.absorbPos : ℕ) = SpongeSize.R
+      · rw [if_pos hpos] at hz
+        simp only [HasQuery.instOfMonadLift_query] at hz
+        rw [countingOracle.mem_support_simulate_queryBind_iff] at hz
+        rcases hz with ⟨hCount, permuted, htail⟩
+        have htailCount := ih _ _ htail
+        change queryCountTotal (Function.update z.2 sponge.state (z.2 sponge.state - 1)) =
+          spongeOpCount SpongeSize.R ((1 : Fin (SpongeSize.R + 1)) : ℕ) xs.length at htailCount
+        have hR : 0 < SpongeSize.R := SpongeSize.R_pos
+        have hOne : ((1 : Fin (SpongeSize.R + 1)) : ℕ) = 1 := by
+          change 1 % (SpongeSize.R + 1) = 1
+          exact Nat.mod_eq_of_lt (by omega)
+        rw [hOne] at htailCount
+        rw [spongeOpCount_succ, hpos, if_pos rfl]
+        have hupdate := queryCountTotal_update_pred z.2 sponge.state hCount
+        have hsum : z.2 sponge.state ≤ queryCountTotal z.2 := by
+          exact Finset.single_le_sum (fun _ _ => Nat.zero_le _) (Finset.mem_univ _)
+        calc
+          queryCountTotal z.2 =
+              queryCountTotal (Function.update z.2 sponge.state (z.2 sponge.state - 1)) + 1 := by
+            omega
+          _ = spongeOpCount SpongeSize.R 1 xs.length + 1 := by
+            rw [htailCount]
+      · rw [if_neg hpos] at hz
+        have htailCount := ih _ _ hz
+        rw [spongeOpCount_succ, if_neg hpos]
+        have hval : sponge.absorbPos.val < SpongeSize.R :=
+          lt_of_le_of_ne (Fin.is_le _) hpos
+        have hsucc : ((sponge.absorbPos + 1 : Fin (SpongeSize.R + 1)) : ℕ) =
+            sponge.absorbPos.val + 1 := by
+          rw [Fin.val_add_one_of_lt]
+          rw [Fin.lt_def, Fin.val_last]
+          exact hval
+        simpa [hsucc] using htailCount
+
+/-- Exact dynamic count for a lazy squeeze.  This is the squeeze counterpart of
+`absorb_counting_exact`: on every counting-oracle execution path, the number of actual forward
+permutation calls is the value-free stateful cursor count.  In particular, this does not round a
+partially consumed rate block to a fresh block. -/
+lemma squeeze_counting_exact [Fintype C] [DecidableEq C]
+    (len : Nat) (sponge : DuplexSponge U C)
+    (z : (Vector U len × DuplexSponge U C) × QueryCount C)
+    (hz : z ∈ support (countingOracle.simulate (DuplexSponge.squeeze sponge len) 0)) :
+    queryCountTotal z.2 = spongeOpCount SpongeSize.R sponge.squeezePos.val len := by
+  induction len generalizing sponge with
+  | zero =>
+      rw [DuplexSponge.squeeze.eq_def, countingOracle.mem_support_simulate_pure_iff] at hz
+      subst z
+      simp [queryCountTotal, spongeOpCount]
+  | succ n ih =>
+      unfold DuplexSponge.squeeze at hz
+      by_cases hpos : (sponge.squeezePos : ℕ) = SpongeSize.R
+      · rw [if_pos hpos] at hz
+        simp only [HasQuery.instOfMonadLift_query] at hz
+        rw [countingOracle.mem_support_simulate_queryBind_iff] at hz
+        rcases hz with ⟨hCount, permuted, htail⟩
+        simp [countingOracle.simulate] at htail
+        rcases htail with ⟨a, b, htail, _⟩
+        have htail' :
+            ((a, b), Function.update z.2 sponge.state (z.2 sponge.state - 1)) ∈
+              support (countingOracle.simulate
+                (DuplexSponge.squeeze
+                  { state := permuted, absorbPos := 0, squeezePos := 1 } n) 0) := by
+          simpa [countingOracle.simulate] using htail
+        have htailCount :=
+          ih { state := permuted, absorbPos := 0, squeezePos := 1 }
+            ((a, b), Function.update z.2 sponge.state (z.2 sponge.state - 1)) htail'
+        change queryCountTotal (Function.update z.2 sponge.state (z.2 sponge.state - 1)) =
+          spongeOpCount SpongeSize.R ((1 : Fin (SpongeSize.R + 1)) : ℕ) n at htailCount
+        have hR : 0 < SpongeSize.R := SpongeSize.R_pos
+        have hOne : ((1 : Fin (SpongeSize.R + 1)) : ℕ) = 1 := by
+          change 1 % (SpongeSize.R + 1) = 1
+          exact Nat.mod_eq_of_lt (by omega)
+        rw [hOne] at htailCount
+        rw [spongeOpCount_succ, hpos, if_pos rfl]
+        have hupdate := queryCountTotal_update_pred z.2 sponge.state hCount
+        have hsum : z.2 sponge.state ≤ queryCountTotal z.2 := by
+          exact Finset.single_le_sum (fun _ _ => Nat.zero_le _) (Finset.mem_univ _)
+        have hstatePos : 0 < z.2 sponge.state := Nat.pos_of_ne_zero hCount
+        have htotalPos : 0 < queryCountTotal z.2 := lt_of_lt_of_le hstatePos hsum
+        calc
+          queryCountTotal z.2 = queryCountTotal z.2 - 1 + 1 :=
+            (Nat.sub_add_cancel htotalPos).symm
+          _ = queryCountTotal (Function.update z.2 sponge.state (z.2 sponge.state - 1)) + 1 := by
+            rw [hupdate]
+          _ = spongeOpCount SpongeSize.R 1 n + 1 := by rw [htailCount]
+      · rw [if_neg (show ¬ ((({ sponge with absorbPos := 0 } : DuplexSponge U C)).squeezePos : ℕ)
+            = SpongeSize.R from hpos)] at hz
+        simp [countingOracle.simulate] at hz
+        rcases hz with ⟨a, b, qc, htail, hEq⟩
+        subst z
+        let next : DuplexSponge U C :=
+          { state := sponge.state, absorbPos := 0, squeezePos := sponge.squeezePos + 1 }
+        have htail' : ((a, b), qc) ∈
+            support (countingOracle.simulate (DuplexSponge.squeeze next n) 0) := by
+          simpa [next, countingOracle.simulate] using htail
+        have htailCount := ih next ((a, b), qc) htail'
+        rw [spongeOpCount_succ, if_neg hpos]
+        have hval : sponge.squeezePos.val < SpongeSize.R :=
+          lt_of_le_of_ne (Fin.is_le _) hpos
+        have hsucc : ((sponge.squeezePos + 1 : Fin (SpongeSize.R + 1)) : ℕ) =
+            sponge.squeezePos.val + 1 := by
+          rw [Fin.val_add_one_of_lt]
+          rw [Fin.lt_def, Fin.val_last]
+          exact hval
+        simpa [next, hsucc] using htailCount
+
+/-- Structural upper bound for the forward-permutation queries made by `squeeze`.
+
+As with `absorb_isQueryBoundP`, this remains an upper-bound theorem; the equality-level dynamic
+statement is `squeeze_counting_exact`. -/
 lemma squeeze_isQueryBoundP (len : Nat) (sponge : DuplexSponge U C) :
     IsQueryBoundP (DuplexSponge.squeeze sponge len) (fun _ => True)
       (spongeOpCount SpongeSize.R sponge.squeezePos.val len) := by
@@ -353,7 +504,7 @@ lemma squeeze_isQueryBoundP (len : Nat) (sponge : DuplexSponge U C) :
     by_cases hpos : (sponge.squeezePos : ℕ) = SpongeSize.R
     · rw [if_pos (show ((({ sponge with absorbPos := 0 } : DuplexSponge U C)).squeezePos : ℕ)
           = SpongeSize.R from hpos)]
-      simp only [HasQuery.instOfMonadLift_query, bind_assoc, pure_bind]
+      simp only [HasQuery.instOfMonadLift_query, pure_bind]
       rw [hpos, spongeOpCount_succ, if_pos rfl]
       rw [isQueryBoundP_query_bind_iff]
       refine ⟨Or.inr (by omega), fun u => ?_⟩
@@ -381,7 +532,7 @@ end SpongeOps
 
 `deriveTranscriptDSFSAux` makes only forward-permutation queries, at most `L_P(i)` (message
 rounds, `absorb`) resp. `L_V(i)` (challenge rounds, `squeeze`) per round; `DuplexSponge.start`
-makes the single hash query; the salt phase is free for `δ ≤ R` (audit finding A2). -/
+makes the single hash query; the salt phase is free for `δ ≤ R`. -/
 
 section DeriveTranscript
 
@@ -621,7 +772,7 @@ lemma deriveTranscriptDSFSAux_hash_bound (sponge : CanonicalDuplexSponge U)
 
 /-- **Salted derivation, forward class.** For `δ ≤ R` the salted transcript derivation makes at
 most `L = totalNumPermQueries` forward-permutation queries: `start` is a hash query, the salt
-phase is free (lazy sponge from the fresh position `0` — audit finding A2), and the rounds
+phase is free (the lazy sponge starts at the fresh position `0`), and the rounds
 contribute `permBudgetUpTo (last n) = L`. -/
 lemma deriveTranscriptDSFSSalted_fwd_bound {δ : ℕ} (hδR : δ ≤ SpongeSize.R)
     (stmtIn : StmtIn) (salt : Vector U δ) (messages : pSpec.Messages) :
@@ -687,6 +838,75 @@ lemma deriveTranscriptDSFSSalted_fwd_bound {δ : ℕ} (hδR : δ ≤ SpongeSize.
         exact spongeOpCount_zero_pos _ _ (Nat.pos_of_ne_zero (NeZero.ne _)) hδR
     · -- the rounds
       have h := deriveTranscriptDSFSAux_fwd_bound (oSpec := oSpec) (StmtIn := StmtIn)
+        sponge messages (Fin.last n)
+      rwa [permBudgetUpTo_last] at h
+
+/-- **Salted derivation, general forward class.** Without the extra hypothesis `δ ≤ R`, the
+salted derivation makes at most `\bar L = L_δ + L` forward-permutation queries.  This is the
+bound required by the stateful Backtrack repair: it is sound for salts ending in a partial rate
+block and deliberately does not assert that all of those blocks are queried. -/
+lemma deriveTranscriptDSFSSalted_fwd_bound_salted {δ : ℕ}
+    (stmtIn : StmtIn) (salt : Vector U δ) (messages : pSpec.Messages) :
+    IsQueryBoundP
+      (ProtocolSpec.Messages.deriveTranscriptDSFSSalted (oSpec := oSpec) (U := U)
+        stmtIn salt messages)
+      (fun t => isNarrowFwdPermPoint (oSpec := oSpec) (StmtIn := StmtIn) (U := U) t = true)
+      (pSpec.totalNumPermQueriesSalted δ) := by
+  rw [ProtocolSpec.Messages.deriveTranscriptDSFSSalted]
+  refine (isQueryBoundP_bind (n := 0) (m := pSpec.totalNumPermQueriesSalted δ) ?_
+    (fun sponge0 hs0 => ?_)).mono (by omega)
+  · -- `start` makes one hash query — no forward-perm query.
+    show IsQueryBoundP
+      ((liftM (liftM (OracleSpec.query (spec := StmtIn →ₒ Vector U SpongeSize.C) stmtIn) :
+          OracleQuery (oSpec + duplexSpongeForwardOracle StmtIn U)
+            (Vector U SpongeSize.C)) :
+        OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) (Vector U SpongeSize.C))
+        >>= fun c =>
+          pure ({
+              state := SpongeState.update (0 : CanonicalSpongeState U)
+                (((Vector.replicate SpongeSize.R (0 : U)) ++ c).cast (by simp)),
+              absorbPos := 0,
+              squeezePos := Fin.last SpongeSize.R } : CanonicalDuplexSponge U))
+      (fun t => isNarrowFwdPermPoint (oSpec := oSpec) (StmtIn := StmtIn) (U := U) t = true) 0
+    refine (isQueryBoundP_bind (n := 0) (m := 0) ?_ (fun c _ => by simp)).mono (by omega)
+    rw [liftM_query_reshape, isQueryBoundP_map_iff, isQueryBoundP_query_iff]
+    rw [show ((liftM (OracleSpec.query (spec := StmtIn →ₒ Vector U SpongeSize.C) stmtIn) :
+        OracleQuery (oSpec + duplexSpongeForwardOracle StmtIn U) _).input)
+      = Sum.inr (Sum.inl stmtIn) from rfl]
+    simp [isNarrowFwdPermPoint]
+  · -- Bound the salt and the protocol phases separately; the exact boundary position is irrelevant.
+    have hs0' : sponge0 ∈ support
+        ((liftM (liftM (OracleSpec.query (spec := StmtIn →ₒ Vector U SpongeSize.C) stmtIn) :
+            OracleQuery (oSpec + duplexSpongeForwardOracle StmtIn U)
+              (Vector U SpongeSize.C)) :
+          OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) (Vector U SpongeSize.C))
+          >>= fun c =>
+            pure ({
+                state := SpongeState.update (0 : CanonicalSpongeState U)
+                  (((Vector.replicate SpongeSize.R (0 : U)) ++ c).cast (by simp)),
+                absorbPos := 0,
+                squeezePos := Fin.last SpongeSize.R } :
+              CanonicalDuplexSponge U)) := hs0
+    rw [mem_support_bind_iff] at hs0'
+    obtain ⟨c, _, hs0'⟩ := hs0'
+    rw [mem_support_pure_iff] at hs0'
+    subst hs0'
+    refine (isQueryBoundP_bind (n := ProtocolSpec.numSaltBlocks δ)
+      (m := pSpec.totalNumPermQueries) ?_ (fun sponge _ => ?_)).mono (by
+        unfold ProtocolSpec.totalNumPermQueriesSalted
+        omega)
+    · refine (isQueryBoundP_liftM_of_lawful _
+        (p := fun _ : (forwardPermutationOracle (CanonicalSpongeState U)).Domain => True)
+        (fun t => ?_) (absorb_isQueryBoundP _ _)).mono ?_
+      · show IsQueryBoundP (liftM (liftM (OracleSpec.query t) :
+            OracleQuery (oSpec + duplexSpongeForwardOracle StmtIn U) _)) _ _
+        rw [liftM_query_reshape, isQueryBoundP_map_iff, isQueryBoundP_query_iff]
+        exact fun _ => by simp
+      · rw [show salt.toList.length = δ from by simp,
+          ProtocolSpec.numSaltBlocks,
+          nat_ceil_div_eq _ _ (Nat.pos_of_ne_zero (NeZero.ne _))]
+        exact spongeOpCount_le _ (Nat.pos_of_ne_zero (NeZero.ne _)) _ _ (Fin.is_le _)
+    · have h := deriveTranscriptDSFSAux_fwd_bound (oSpec := oSpec) (StmtIn := StmtIn)
         sponge messages (Fin.last n)
       rwa [permBudgetUpTo_last] at h
 
@@ -763,6 +983,46 @@ lemma dsfsForwardVerify_fwd_bound
       pSpec.totalNumPermQueries
     exact (isQueryBoundP_bind (n := pSpec.totalNumPermQueries) (m := 0)
       (deriveTranscriptDSFSSalted_fwd_bound hδR stmtIn proof.1 proof.2)
+      (fun a _ => by simp)).mono (by omega)
+  · rcases o with _ | x
+    · simp
+    · simp only [Option.elim]
+      obtain ⟨v, hv⟩ := emptySpec_eq_pure ((V.verify stmtIn x.2).run)
+      rw [hv]
+      show IsQueryBoundP
+        ((pure (some v) : OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) _)
+          >>= fun o' => Option.elim o' (pure none) fun v' =>
+            (match v' with
+              | none => (failure : OptionT (OracleComp ([]ₒ + duplexSpongeForwardOracle
+                  StmtIn U)) StmtOut)
+              | some a => pure a).run) _ _
+      rcases v with _ | a <;> simp
+
+/-- Narrow-spec forward verifier, salt-aware forward bound.  No `δ ≤ R` side condition is
+needed: the lazy salt absorption is charged to `L_δ`, yielding the safe `(1, \bar L, 0)`
+interface used by the repaired Section 5 analysis. -/
+lemma dsfsForwardVerify_fwd_bound_salted
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
+    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec) (stmtIn : StmtIn)
+    (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
+    IsQueryBoundP
+      (((Verifier.toDSFS (oSpec := []ₒ) (U := U) δ V).run stmtIn
+        (fun i => match i with | ⟨0, _⟩ => proof)).run)
+      (fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
+      (pSpec.totalNumPermQueriesSalted δ) := by
+  rw [Verifier.run, Verifier.toDSFS, Verifier.duplexSpongeFiatShamirSaltedForward]
+  dsimp only
+  simp only [OptionT.run_bind, OptionT.run_bind_lift, OptionT.run_lift, Option.getM,
+    OptionT.run_pure, OptionT.run_failure, Option.elimM]
+  refine (isQueryBoundP_bind (n := pSpec.totalNumPermQueriesSalted δ) (m := 0) ?_
+    (fun o _ => ?_)).mono (by omega)
+  · show IsQueryBoundP
+      ((ProtocolSpec.Messages.deriveTranscriptDSFSSalted (oSpec := []ₒ) (U := U)
+          stmtIn proof.1 proof.2) >>= fun a => pure (some a))
+      (fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
+      (pSpec.totalNumPermQueriesSalted δ)
+    exact (isQueryBoundP_bind (n := pSpec.totalNumPermQueriesSalted δ) (m := 0)
+      (deriveTranscriptDSFSSalted_fwd_bound_salted stmtIn proof.1 proof.2)
       (fun a _ => by simp)).mono (by omega)
   · rcases o with _ | x
     · simp

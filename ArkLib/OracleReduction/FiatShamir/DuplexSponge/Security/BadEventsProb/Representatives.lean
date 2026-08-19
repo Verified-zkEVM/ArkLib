@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.CapacityTargets
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.CacheTraceBridges
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.SampleProduct
 
 /-!
@@ -379,37 +380,6 @@ lemma getBaseTrace_append_perm_outlu_miss_eq_of_output_wf
       · exact hnot.1 hFwd)
 
 
-/-- A successful hash-table lookup, together with the `D2SQueryState` mirror invariant, gives a
-base-trace representative of the same hash pair. -/
-lemma hash_lookup_mem_baseTrace_of_mirror
-    {trΔ : TraceNabla T_H T_P StmtIn U}
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {stmt : StmtIn} {cap : Vector U SpongeSize.C}
-    (hMirror : trΔ.MirrorsQueryLog trace)
-    (hLookup : TraceTableOps.inlu trΔ.h stmt = some cap) :
-    (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
-      getBaseTrace trace := by
-  have hEntry : (stmt, cap) ∈ TraceTableOps.entries trΔ.h :=
-    TraceTableOps.mem_entries_of_inlu_eq_some hLookup
-  have hRaw : (⟨.inl stmt, cap⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace :=
-    (hMirror.1 stmt cap).mpr hEntry
-  exact DuplexSpongeFS.hash_pair_mem_getBaseTrace_of_mem trace hRaw
-
-/-- Appending a hash answer returned by a table hit leaves the base trace unchanged. -/
-lemma getBaseTrace_append_hash_lookup_eq
-    {trΔ : TraceNabla T_H T_P StmtIn U}
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {stmt : StmtIn} {cap : Vector U SpongeSize.C}
-    (hMirror : trΔ.MirrorsQueryLog trace)
-    (hLookup : TraceTableOps.inlu trΔ.h stmt = some cap) :
-    getBaseTrace (trace ++ [⟨.inl stmt, cap⟩]) = getBaseTrace trace := by
-  have hBase := hash_lookup_mem_baseTrace_of_mirror
-    (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U) hMirror hLookup
-  exact DuplexSpongeFS.getBaseTrace_append_singleton_of_redundant_base trace
-    ⟨.inl stmt, cap⟩ (by
-    simp only [isRedundantEntryOfPrefix]
-    exact hBase)
-
 /-- A successful inverse table lookup gives a base representative of the same normalized
 permutation pair, in either direction. -/
 lemma perm_outlu_pair_mem_baseTrace_of_mirror
@@ -445,6 +415,42 @@ lemma getBaseTrace_append_perm_outlu_eq
     ⟨.inr (.inr sOut), sIn⟩ (by
     simp only [isRedundantEntryOfPrefix]
     exact hBase.symm)
+
+/-- A successful forward table lookup gives a base representative of the same normalized
+permutation pair, in either orientation. -/
+lemma perm_inlu_pair_mem_baseTrace_of_mirror
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {sIn sOut : CanonicalSpongeState U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (hLookup : TraceTableOps.inlu trΔ.p sIn = some sOut) :
+    (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
+        getBaseTrace trace ∨
+      (⟨.inr (.inr sOut), sIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
+        getBaseTrace trace := by
+  have hEntry : (sIn, sOut) ∈ TraceTableOps.entries trΔ.p :=
+    TraceTableOps.mem_entries_of_inlu_eq_some hLookup
+  have hRaw :
+      (⟨.inr (.inl sIn), sOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace ∨
+        (⟨.inr (.inr sOut), sIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ trace :=
+    (hMirror.2 sIn sOut).mpr hEntry
+  exact normalizedPermPair_mem_getBaseTrace_of_mem trace sIn sOut hRaw
+
+/-- Appending a forward answer returned by `tr_∇.p.inlu` leaves the base trace unchanged. -/
+lemma getBaseTrace_append_perm_inlu_eq
+    {trΔ : TraceNabla T_H T_P StmtIn U}
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {sIn sOut : CanonicalSpongeState U}
+    (hMirror : trΔ.MirrorsQueryLog trace)
+    (hLookup : TraceTableOps.inlu trΔ.p sIn = some sOut) :
+    getBaseTrace (trace ++ [⟨.inr (.inl sIn), sOut⟩]) = getBaseTrace trace := by
+  have hBase := perm_inlu_pair_mem_baseTrace_of_mirror
+    (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+    hMirror hLookup
+  exact DuplexSpongeFS.getBaseTrace_append_singleton_of_redundant_base trace
+    ⟨.inr (.inl sIn), sOut⟩ (by
+      simp only [isRedundantEntryOfPrefix]
+      exact hBase)
 
 /-- The hash branch preserves the hash-table wellformedness fragment on every successful support
 point.  This is the local preservation lemma used by global sigma-runner invariants. -/
@@ -570,7 +576,7 @@ lemma d2sHandleBacktrackNoResult_support_hash_wf
         constructor
         · simpa [hh]
         · simpa [hh]
-  cases hCache : ProverTransform.popCacheByInput (U := U) st.cacheP stateIn with
+  cases hCache : ProverTransform.popRateOnlyTailByInput (U := U) st.rateCacheP stateIn with
   | some cached =>
       simp [hCache] at hi
       exact rebuild (by aesop)
@@ -653,24 +659,9 @@ lemma d2sHandleBacktrackSome_support_hash_wf
         constructor
         · simpa [hh]
         · simpa [hh]
-  split at hi
-  · -- codec-image branch: first query `g`, then either table hit or synthesize a fresh state.
-    simp at hi
-    obtain ⟨rhoHat, _hrhoHat, hi⟩ := mem_support_option_elimM_some hi
-    split at hi
-    · exact rebuild (by aesop)
-    · simp at hi
-      obtain ⟨rateBlocks, _hrateBlocks, hi⟩ := mem_support_option_elimM_some hi
-      obtain ⟨synth, _hsynth, hsynth⟩ := mem_support_map_nested_option_some hi
-      have hh : st'.trΔ.h = st.trΔ.h := by
-        injection hsynth with _ha hstEq
-        rw [← hstEq]
-      exact rebuild hh
-  · -- non-codec-image branch: table hit or fresh full-state sample, neither touches `h`.
-    simp at hi
-    split at hi
-    · exact rebuild (by aesop)
-    · exact rebuild (by aesop)
+  exact rebuild (ProverTransform.d2sHandleBacktrackSome_support_hashTable_eq
+    (T_H := T_H) (T_P := T_P) (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    gImpl auxImpl stateIn backtrackOut st hi a st' rfl)
 
 /-- One `d2sQueryStep` preserves the hash-table wellformedness fragment on every successful
 support point.  Permutation branches leave the hash table unchanged; the hash branch is handled by
@@ -958,6 +949,8 @@ lemma d2sHandleHashQuery_miss_sigma_atom_le
     [Nonempty U]
     [VCVCompatible U]
     [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Challenge i)]
     (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
     {stmt : StmtIn}
@@ -1039,30 +1032,26 @@ lemma d2sHandleHashQuery_miss_sigma_atom_le
     simp
 
 /-- Observable return-value projection for the forward-permutation `.noResult`/fresh branch:
-if neither `Cache_p` nor `tr_∇.p.inlu` provides an answer, projecting away the proof-carrying
-state component leaves exactly the lifted uniform full-state sampler. -/
+if neither the rate-only `Cache_p` nor `tr_∇.p.inlu` provides an answer, projecting away the
+proof-carrying state component leaves exactly the lifted uniform full-state sampler. -/
 lemma d2sHandleBacktrackNoResult_miss_return_projection
     {stateIn : CanonicalSpongeState U}
     (st : ProverTransform.D2SQueryState
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hCache : ProverTransform.popCacheByInput (U := U) st.cacheP stateIn = none)
+    (hCache : ProverTransform.popRateOnlyTailByInput (U := U) st.rateCacheP stateIn = none)
     (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none) :
     (Option.map Prod.fst <$>
       OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
         (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st)) =
       (some <$> ProverTransform.d2sSampleState
         (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) := by
-  have hCacheEntry :
-      ProverTransform.popCacheEntryByInput (U := U) st.cacheP stateIn = none :=
-    (ProverTransform.popCacheByInput_eq_none_iff
-      (U := U) st.cacheP stateIn).mp hCache
   unfold ProverTransform.d2sHandleBacktrackNoResult
-  simp [hCacheEntry, hLookup]
+  simp [hCache, hLookup]
 
 /-- Sigma-specialized probability bridge for the forward-permutation `.noResult`/fresh branch.
-Once both `Cache_p` and `tr_∇.p.inlu` miss, projecting away the proof-carrying simulator state
-leaves exactly one uniform sponge-state sample. -/
+Once both the rate-only `Cache_p` and `tr_∇.p.inlu` miss, projecting away the proof-carrying
+simulator state leaves exactly one uniform sponge-state sample. -/
 lemma d2sHandleBacktrackNoResult_miss_sigma_return_probEvent_eq
     [Fintype U]
     [SampleableType U]
@@ -1072,7 +1061,7 @@ lemma d2sHandleBacktrackNoResult_miss_sigma_return_probEvent_eq
     (st : ProverTransform.D2SQueryState
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hCache : ProverTransform.popCacheByInput (U := U) st.cacheP stateIn = none)
+    (hCache : ProverTransform.popRateOnlyTailByInput (U := U) st.rateCacheP stateIn = none)
     (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none)
     (P : Option (Option (CanonicalSpongeState U)) → Prop) :
     Pr[ fun r => P (Option.map (Option.map Prod.fst) r) |
@@ -1139,6 +1128,857 @@ lemma d2sHandleBacktrackNoResult_miss_sigma_return_probEvent_eq
           exact ProverTransform.d2sSampleState_simulateQ_sigma_probEvent_eq
             (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g
             (fun sampled? => P (Option.map some sampled?))
+
+/-- Local finite-target form of the ordinary Item 4(c) miss.  It is the familiar uniform-state
+charge; paired with the following cache rule, these are the two `Ordinary` fresh branches. -/
+lemma d2sHandleBacktrackNoResult_miss_sigma_capacity_mem_finset_le
+    [Fintype U]
+    [Nonempty U]
+    [VCVCompatible U]
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hCache : ProverTransform.popRateOnlyTailByInput st.rateCacheP stateIn = none)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none)
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  have hdist := d2sHandleBacktrackNoResult_miss_sigma_return_probEvent_eq
+    (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+    (U := U) (δ := δ) k_g st hCache hLookup
+    (fun o : Option (Option (CanonicalSpongeState U)) =>
+      match o with
+      | some (some sampled) => sampled.capacitySegment ∈ S
+      | _ => False)
+  calc
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run]
+        = Pr[ (fun r =>
+            match Option.map (Option.map Prod.fst) r with
+            | some (some sampled) => sampled.capacitySegment ∈ S
+            | _ => False) |
+          (simulateQ
+            ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+              fun aux => OptionT.lift
+                (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+            (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run] := by
+              apply probEvent_congr'
+              · intro r _
+                cases r with
+                | none => rfl
+                | some inner =>
+                    cases inner <;> rfl
+              · rfl
+    _ = Pr[ fun sampled : CanonicalSpongeState U => sampled.capacitySegment ∈ S |
+          ($ᵗ (CanonicalSpongeState U)) ] := by
+            simpa using hdist
+    _ ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) :=
+      probEvent_uniformState_capacitySegment_mem_finset_le (U := U) S
+
+/-- Sigma-specialized capacity projection for Item 4(c)i.  A consumed rate-only tail has no
+latent capacity: after projecting the returned state to its capacity component, the handler is
+exactly one fresh uniform capacity sample. -/
+lemma d2sHandleBacktrackNoResult_cache_sigma_capacity_probEvent_eq
+    [Fintype U]
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {tail : ProverTransform.RateOnlyTail (U := U)}
+    {cacheRest : List (ProverTransform.RateOnlyCacheEntry (U := U))}
+    (hCache : ProverTransform.popRateOnlyTailByInput st.rateCacheP stateIn =
+      some (tail, cacheRest))
+    (P : Option (Option (Vector U SpongeSize.C)) → Prop) :
+    Pr[ fun r => P (Option.map (Option.map (fun pair => pair.1.capacitySegment)) r) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run]
+      =
+    Pr[ fun capacity => P (some (some capacity)) | ($ᵗ (Vector U SpongeSize.C)) ] := by
+  let impl :=
+    ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+      fun aux => OptionT.lift
+        (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+  let handler :=
+    OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st)
+  have hproj :
+      (Option.map (fun pair => pair.1.capacitySegment) <$> handler) =
+        (some <$> ProverTransform.d2sSampleCapacity
+          (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) := by
+    dsimp [handler]
+    unfold ProverTransform.d2sHandleBacktrackNoResult
+    simp [hCache, ProverTransform.materializeRateOnlyCacheEntry,
+      ProverTransform.materializeRateOnlyTail]
+    congr 1
+    funext capacity
+    apply congrArg some
+    convert ProverTransform.d2sSynthesisState_capacitySegment (U := U) tail.nextRate capacity
+    ext i
+    simp
+  have hdist :
+      (Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+        (simulateQ impl handler).run) =
+        (Option.map some <$>
+          (simulateQ impl (ProverTransform.d2sSampleCapacity
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run) := by
+    calc
+      Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+          (simulateQ impl handler).run
+          = (simulateQ impl (Option.map (fun pair => pair.1.capacitySegment) <$> handler)).run := by
+              rw [simulateQ_map]
+              rw [OptionT.run_map]
+      _ = (simulateQ impl
+            (some <$> ProverTransform.d2sSampleCapacity
+              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run := by
+              rw [hproj]
+      _ = Option.map some <$>
+            (simulateQ impl (ProverTransform.d2sSampleCapacity
+              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run := by
+              rw [simulateQ_map]
+              rw [OptionT.run_map]
+  calc
+    Pr[ fun r => P (Option.map (Option.map (fun pair => pair.1.capacitySegment)) r) |
+        (simulateQ impl handler).run]
+        = Pr[ P |
+            Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+              (simulateQ impl handler).run] := by
+            rw [probEvent_map]
+            rfl
+    _ = Pr[ P |
+            Option.map some <$>
+              (simulateQ impl (ProverTransform.d2sSampleCapacity
+                (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run] := by
+            rw [hdist]
+    _ = Pr[ fun sampled? => P (Option.map some sampled?) |
+            (simulateQ impl (ProverTransform.d2sSampleCapacity
+              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run] := by
+            rw [probEvent_map]
+            rfl
+    _ = Pr[ fun capacity => P (some (some capacity)) | ($ᵗ (Vector U SpongeSize.C)) ] := by
+            dsimp [impl]
+            exact ProverTransform.d2sSampleCapacity_simulateQ_sigma_probEvent_eq
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g
+              (fun sampled? => P (Option.map some sampled?))
+
+/-- Local finite-target form of the rate-only cache rule.  Conditional on the prior state and a
+cache hit, the output capacity of this one actual forward occurrence hits `S` with probability at
+most `|S| / |Σ|^c`. -/
+lemma d2sHandleBacktrackNoResult_cache_sigma_capacity_mem_finset_le
+    [Fintype U]
+    [Nonempty U]
+    [VCVCompatible U]
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    {tail : ProverTransform.RateOnlyTail (U := U)}
+    {cacheRest : List (ProverTransform.RateOnlyCacheEntry (U := U))}
+    (hCache : ProverTransform.popRateOnlyTailByInput st.rateCacheP stateIn =
+      some (tail, cacheRest))
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  have hdist := d2sHandleBacktrackNoResult_cache_sigma_capacity_probEvent_eq
+    (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+    (U := U) (δ := δ) k_g st hCache
+    (fun o : Option (Option (Vector U SpongeSize.C)) =>
+      match o with
+      | some (some capacity) => capacity ∈ S
+      | _ => False)
+  rw [hdist]
+  exact probEvent_uniformCapacity_mem_finset_le (U := U) S
+
+/-- In the ordinary branch, once no rate-only tail is available, a successful forward-table
+lookup is only a repeated raw occurrence and leaves the base trace unchanged. -/
+lemma d2sHandleBacktrackNoResult_hit_support_baseTrace_eq
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn recovered : CanonicalSpongeState U}
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hCache : ProverTransform.popRateOnlyTailByInput st.rateCacheP stateIn = none)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = some recovered)
+    {i : Option (Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((ProverTransform.d2sHandleBacktrackNoResult
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn).run st))).run)
+    {a : CanonicalSpongeState U}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hiEq : i = some (some (a, st'))) :
+    a = recovered ∧ getBaseTrace st'.trace = getBaseTrace st.trace := by
+  subst i
+  have hHit :
+      a = recovered ∧ st'.trace = st.trace ++ [⟨dsPermQuery stateIn, recovered⟩] := by
+    unfold ProverTransform.d2sHandleBacktrackNoResult at hi
+    simp [hCache, hLookup] at hi
+    aesop
+  obtain ⟨ha, hTrace⟩ := hHit
+  subst a
+  constructor
+  · rfl
+  · rw [hTrace]
+    exact getBaseTrace_append_perm_inlu_eq
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+      st.h_mirror hLookup
+
+/-- Observable return projection for the Item 4(d) non-image table miss.  This branch does not
+consult `Cache_p`: once `tr_∇.p.inlu` misses it is exactly one fresh full-state sample. -/
+lemma d2sHandleBacktrackSome_nonimage_miss_return_projection
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hImage : ProverTransform.d2sInCodecImagePredicate
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut = false)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none) :
+    (Option.map Prod.fst <$>
+      OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        stateIn backtrackOut).run st)) =
+      (some <$> ProverTransform.d2sSampleState
+        (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) := by
+  unfold ProverTransform.d2sHandleBacktrackSome
+  simp only [hImage, Bool.false_eq_true, ↓reduceIte, StateT.run_bind, StateT.run_get,
+    StateT.run_set, StateT.run_lift, OptionT.run_bind, OptionT.run_lift, OptionT.run_pure,
+    Option.elimM, pure_bind, Option.elim_some]
+  split <;> simp_all
+
+/-- An Item 4(d) non-image table hit is likewise only a repeated base representative. -/
+lemma d2sHandleBacktrackSome_nonimage_hit_support_baseTrace_eq
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn recovered : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hImage : ProverTransform.d2sInCodecImagePredicate
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut = false)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = some recovered)
+    {i : Option (Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        stateIn backtrackOut).run st))).run)
+    {a : CanonicalSpongeState U}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hiEq : i = some (some (a, st'))) :
+    a = recovered ∧ getBaseTrace st'.trace = getBaseTrace st.trace := by
+  subst i
+  have hHit :
+      a = recovered ∧ st'.trace = st.trace ++ [⟨dsPermQuery stateIn, recovered⟩] := by
+    unfold ProverTransform.d2sHandleBacktrackSome at hi
+    simp [hImage, hLookup] at hi
+    aesop
+  obtain ⟨ha, hTrace⟩ := hHit
+  subst a
+  constructor
+  · rfl
+  · rw [hTrace]
+    exact getBaseTrace_append_perm_inlu_eq
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+      st.h_mirror hLookup
+
+/-- In the nonempty codec-image branch, the preliminary `gᵢ` query does not change the D2S
+table state.  Hence an eventual `tr_∇.p.inlu` hit still returns an already represented pair. -/
+lemma d2sHandleBacktrackSome_image_hit_support_baseTrace_eq
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn recovered : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hImage : ProverTransform.d2sInCodecImagePredicate
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut = true)
+    (hNonempty : 0 < challengeSize (pSpec := pSpec) backtrackOut.roundIdx)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = some recovered)
+    {i : Option (Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        stateIn backtrackOut).run st))).run)
+    {a : CanonicalSpongeState U}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hiEq : i = some (some (a, st'))) :
+    a = recovered ∧ getBaseTrace st'.trace = getBaseTrace st.trace := by
+  subst i
+  unfold ProverTransform.d2sHandleBacktrackSome at hi
+  simp [hImage, hNonempty] at hi
+  obtain ⟨rhoHat, _hrhoHat, hi⟩ := mem_support_option_elimM_some hi
+  have hHit :
+      a = recovered ∧ st'.trace = st.trace ++ [⟨dsPermQuery stateIn, recovered⟩] := by
+    unfold ProverTransform.d2sHandleBacktrackAfterG at hi
+    simp [hLookup] at hi
+    aesop
+  obtain ⟨ha, hTrace⟩ := hHit
+  subst a
+  constructor
+  · rfl
+  · rw [hTrace]
+    exact getBaseTrace_append_perm_inlu_eq
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+      st.h_mirror hLookup
+
+/-- Finite-target form of the Item 4(d) non-image miss.  As in an ordinary fresh miss, its
+output capacity lies in any fixed target set `S` with probability at most `|S| / |Σ|^c`. -/
+lemma d2sHandleBacktrackSome_nonimage_miss_sigma_capacity_mem_finset_le
+    [Fintype U] [Nonempty U] [VCVCompatible U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hImage : ProverTransform.d2sInCodecImagePredicate
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut = false)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none)
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          stateIn backtrackOut).run st))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  classical
+  let impl :=
+    ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+      fun aux => OptionT.lift
+        (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+  let handler := OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+    (δ := δ) (T_H := T_H) (T_P := T_P)
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) stateIn backtrackOut).run st)
+  have hproj :
+      (Option.map Prod.fst <$> handler) =
+        (some <$> ProverTransform.d2sSampleState
+          (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) := by
+    dsimp [handler]
+    exact d2sHandleBacktrackSome_nonimage_miss_return_projection
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (δ := δ) backtrackOut st hImage hLookup
+  have hdist :
+      (Option.map (Option.map Prod.fst) <$> (simulateQ impl handler).run) =
+        (Option.map some <$>
+          (simulateQ impl (ProverTransform.d2sSampleState
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run) := by
+    calc
+      Option.map (Option.map Prod.fst) <$> (simulateQ impl handler).run =
+          (simulateQ impl (Option.map Prod.fst <$> handler)).run := by
+            rw [simulateQ_map]
+            rw [OptionT.run_map]
+      _ = (simulateQ impl
+            (some <$> ProverTransform.d2sSampleState
+              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run := by
+            rw [hproj]
+      _ = Option.map some <$>
+          (simulateQ impl (ProverTransform.d2sSampleState
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run := by
+            rw [simulateQ_map]
+            rw [OptionT.run_map]
+  calc
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) | (simulateQ impl handler).run]
+        = Pr[ (fun result : Option (Option (CanonicalSpongeState U)) =>
+            match result with
+            | some (some stateOut) => stateOut.capacitySegment ∈ S
+            | _ => False) |
+            Option.map (Option.map Prod.fst) <$> (simulateQ impl handler).run] := by
+              rw [probEvent_map]
+              apply probEvent_congr'
+              · intro r _
+                cases r with
+                | none => rfl
+                | some inner =>
+                    cases inner with
+                    | none => rfl
+                    | some pair =>
+                        rcases pair with ⟨stateOut, st'⟩
+                        rfl
+              · rfl
+    _ = Pr[ (fun result : Option (Option (CanonicalSpongeState U)) =>
+          match result with
+          | some (some stateOut) => stateOut.capacitySegment ∈ S
+          | _ => False) |
+          Option.map some <$>
+            (simulateQ impl (ProverTransform.d2sSampleState
+              (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run] := by
+            rw [hdist]
+    _ = Pr[ (fun sampled? : Option (CanonicalSpongeState U) =>
+          match Option.map some sampled? with
+          | some (some stateOut) => stateOut.capacitySegment ∈ S
+          | _ => False) |
+          (simulateQ impl (ProverTransform.d2sSampleState
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))).run] := by
+            rw [probEvent_map]
+            rfl
+    _ = Pr[ fun sampled : CanonicalSpongeState U => sampled.capacitySegment ∈ S |
+          ($ᵗ (CanonicalSpongeState U)) ] := by
+            dsimp [impl]
+            rw [ProverTransform.d2sSampleState_simulateQ_sigma_probEvent_eq
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g]
+            apply probEvent_congr'
+            · intro sampled _
+              simp
+            · rfl
+    _ ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) :=
+      probEvent_uniformState_capacitySegment_mem_finset_le (U := U) S
+
+/-- Local finite-target charge for `Program` after the codec table miss.  Rate-block parsing and
+padding are an arbitrary preceding auxiliary computation; whichever nonempty block list they
+produce, exactly one fresh capacity is sampled for its first materialized block. -/
+lemma d2sProgramFirstBlock_sigma_capacity_mem_finset_le
+    [Fintype U]
+    [Nonempty U]
+    [VCVCompatible U]
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (sampledRhoHat : Vector U (challengeSize (pSpec := pSpec) backtrackOut.roundIdx))
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun result : Option (Option (Vector U SpongeSize.C)) =>
+        match result with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (do
+          let rateBlocks ← ProverTransform.d2sRateBlocksFromChallenge
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+            (i := backtrackOut.roundIdx) sampledRhoHat
+          match rateBlocks.toList with
+          | [] => pure none
+          | _ :: _ => (some <$> ProverTransform.d2sSampleCapacity
+            (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  classical
+  let impl :=
+    ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+      fun aux => OptionT.lift
+        (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+  let rateBlocks := ProverTransform.d2sRateBlocksFromChallenge
+    (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+    (i := backtrackOut.roundIdx) sampledRhoHat
+  change Pr[ (fun result : Option (Option (Vector U SpongeSize.C)) =>
+        match result with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ impl (do
+        let blocks ← rateBlocks
+        match blocks.toList with
+        | [] => pure none
+        | _ :: _ => (some <$> ProverTransform.d2sSampleCapacity
+          (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U)
+  rw [simulateQ_bind, OptionT.run_bind]
+  apply probEvent_bind_le_of_forall_le
+  intro blocks? _
+  cases blocks? with
+  | none =>
+      change Pr[ (fun result : Option (Option (Vector U SpongeSize.C)) =>
+          match result with
+          | some (some capacity) => capacity ∈ S
+          | _ => False) | pure none] ≤
+        (S.card : ℝ≥0∞) / capacitySpaceSize (U := U)
+      rw [probEvent_pure]
+      simp
+  | some blocks =>
+      cases hBlocks : blocks.toList with
+      | nil =>
+          simp only [hBlocks, Option.elim_some]
+          rw [simulateQ_pure, OptionT.run_pure]
+          rw [probEvent_pure]
+          simp
+      | cons firstRate remainingRates =>
+          simp only [Option.elim_some, hBlocks]
+          rw [simulateQ_map, OptionT.run_map]
+          rw [probEvent_map]
+          have hpred :
+              ((fun result : Option (Option (Vector U SpongeSize.C)) =>
+                  match result with
+                  | some (some capacity) => capacity ∈ S
+                  | _ => False) ∘ Option.map some) =
+                (fun capacity? : Option (Vector U SpongeSize.C) =>
+                  match capacity? with
+                  | some capacity => capacity ∈ S
+                  | none => False) := by
+                funext capacity?
+                cases capacity? <;> rfl
+          rw [hpred]
+          rw [ProverTransform.d2sSampleCapacity_simulateQ_sigma_probEvent_eq
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g
+            (fun capacity? =>
+              match capacity? with
+              | some capacity => capacity ∈ S
+              | none => False)]
+          exact probEvent_uniformCapacity_mem_finset_le (U := U) S
+
+/-- Live-handler form of the `Program` first-block charge.  This composes the return projection
+with the preceding local lemma, so the forward stopping proof can cite one ordinary handler fact
+for all three fresh materialization sites. -/
+lemma d2sHandleBacktrackAfterG_miss_sigma_capacity_mem_finset_le
+    [Fintype U]
+    [Nonempty U]
+    [VCVCompatible U]
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (sampledRhoHat : Vector U (challengeSize (pSpec := pSpec) backtrackOut.roundIdx))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none)
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackAfterG
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          stateIn backtrackOut sampledRhoHat).run st))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  classical
+  let impl :=
+    ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+      fun aux => OptionT.lift
+        (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+  let handler := OptionT.run ((ProverTransform.d2sHandleBacktrackAfterG
+    (δ := δ) (T_H := T_H) (T_P := T_P)
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    stateIn backtrackOut sampledRhoHat).run st)
+  let stateProgram := do
+    let rateBlocks ← ProverTransform.d2sRateBlocksFromChallenge
+      (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (i := backtrackOut.roundIdx) sampledRhoHat
+    match rateBlocks.toList with
+    | [] => pure none
+    | firstRate :: _ =>
+        let capacity ← ProverTransform.d2sSampleCapacity
+          (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        pure (some (ProverTransform.d2sSynthesisState (U := U) firstRate capacity))
+  let capacityProgram := do
+    let rateBlocks ← ProverTransform.d2sRateBlocksFromChallenge
+      (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (i := backtrackOut.roundIdx) sampledRhoHat
+    match rateBlocks.toList with
+    | [] => pure none
+    | _ :: _ => (some <$> ProverTransform.d2sSampleCapacity
+      (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+  have hstate : Option.map Prod.fst <$> handler = stateProgram := by
+    dsimp [handler, stateProgram]
+    exact ProverTransform.d2sHandleBacktrackAfterG_miss_return_projection
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (δ := δ) backtrackOut sampledRhoHat st hLookup
+  have hcapacity :
+      Option.map (fun pair => pair.1.capacitySegment) <$> handler = capacityProgram := by
+    calc
+      Option.map (fun pair => pair.1.capacitySegment) <$> handler =
+          Option.map (fun state => state.capacitySegment) <$>
+            (Option.map Prod.fst <$> handler) := by
+              simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind]
+              congr 1
+              funext result
+              cases result <;> rfl
+      _ = Option.map (fun state => state.capacitySegment) <$> stateProgram := by
+            rw [hstate]
+      _ = capacityProgram := by
+            dsimp [stateProgram, capacityProgram]
+            simp only [map_eq_bind_pure_comp, bind_assoc]
+            congr 1
+            funext rateBlocks
+            cases hBlocks : rateBlocks.toList with
+            | nil => simp [hBlocks]
+            | cons firstRate remainingRates =>
+                simp only [hBlocks, pure_bind]
+                simp only [bind_assoc, pure_bind]
+                congr 1
+                funext capacity
+                simp only [Function.comp_apply]
+                change pure (some ((ProverTransform.d2sSynthesisState
+                  (U := U) firstRate capacity).capacitySegment)) = pure (some capacity)
+                rw [ProverTransform.d2sSynthesisState_capacitySegment]
+  have hdist :
+      (Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+        (simulateQ impl handler).run) =
+        (simulateQ impl capacityProgram).run := by
+    calc
+      Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+          (simulateQ impl handler).run =
+          (simulateQ impl (Option.map (fun pair => pair.1.capacitySegment) <$> handler)).run := by
+            rw [simulateQ_map]
+            rw [OptionT.run_map]
+      _ = (simulateQ impl capacityProgram).run := by rw [hcapacity]
+  change Pr[ (fun r =>
+      match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+      | some (some capacity) => capacity ∈ S
+      | _ => False) | (simulateQ impl handler).run] ≤
+        (S.card : ℝ≥0∞) / capacitySpaceSize (U := U)
+  calc
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) | (simulateQ impl handler).run] =
+        Pr[ (fun result : Option (Option (Vector U SpongeSize.C)) =>
+          match result with
+          | some (some capacity) => capacity ∈ S
+          | _ => False) |
+          Option.map (Option.map (fun pair => pair.1.capacitySegment)) <$>
+            (simulateQ impl handler).run] := by
+              rw [probEvent_map]
+              rfl
+    _ = Pr[ (fun result : Option (Option (Vector U SpongeSize.C)) =>
+          match result with
+          | some (some capacity) => capacity ∈ S
+          | _ => False) | (simulateQ impl capacityProgram).run] := by
+            rw [hdist]
+    _ ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+          dsimp [impl, capacityProgram]
+          exact d2sProgramFirstBlock_sigma_capacity_mem_finset_le
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+            k_g backtrackOut sampledRhoHat S
+
+/-- A `Program` continuation whose forward-table lookup hits merely repeats an already
+represented normalized pair; it cannot create a new base position. -/
+lemma d2sHandleBacktrackAfterG_hit_support_baseTrace_eq
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn recovered : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (sampledRhoHat : Vector U (challengeSize (pSpec := pSpec) backtrackOut.roundIdx))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = some recovered)
+    {i : Option (Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))}
+    (hi : i ∈ support (simulateQ (gImpl + auxImpl)
+      (OptionT.run ((ProverTransform.d2sHandleBacktrackAfterG
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        stateIn backtrackOut sampledRhoHat).run st))).run)
+    {a : CanonicalSpongeState U}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hiEq : i = some (some (a, st'))) :
+    a = recovered ∧ getBaseTrace st'.trace = getBaseTrace st.trace := by
+  subst i
+  have hHit :
+      a = recovered ∧ st'.trace = st.trace ++ [⟨dsPermQuery stateIn, recovered⟩] := by
+    unfold ProverTransform.d2sHandleBacktrackAfterG at hi
+    simp [hLookup] at hi
+    aesop
+  obtain ⟨ha, hTrace⟩ := hHit
+  subst a
+  constructor
+  · rfl
+  · rw [hTrace]
+    exact getBaseTrace_append_perm_inlu_eq
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+      st.h_mirror hLookup
+
+/-- Conditioning on Item 4(e)i's `gᵢ` reply does not cost a capacity factor: after a table
+miss, every possible reply is followed by the same local `Program` first-block bound. -/
+lemma d2sHandleBacktrackSome_image_miss_sigma_capacity_mem_finset_le
+    [Fintype U] [Nonempty U] [VCVCompatible U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {stateIn : CanonicalSpongeState U}
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hImage : ProverTransform.d2sInCodecImagePredicate
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut = true)
+    (hNonempty : 0 < challengeSize (pSpec := pSpec) backtrackOut.roundIdx)
+    (hLookup : TraceTableOps.inlu st.trΔ.p stateIn = none)
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ (fun r =>
+        match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+        | some (some capacity) => capacity ∈ S
+        | _ => False) |
+      (simulateQ
+        ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+          fun aux => OptionT.lift
+            (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+        (OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          stateIn backtrackOut).run st))).run]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  classical
+  let impl :=
+    ((fun q => OptionT.lift ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q)) +
+      fun aux => OptionT.lift
+        (((ProverTransform.d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec) aux))
+  let P : Option (Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) → Prop :=
+    fun r => match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+    | some (some capacity) => capacity ∈ S
+    | _ => False
+  letI : DecidablePred P := Classical.decPred P
+  change Pr[ P | (simulateQ impl (OptionT.run ((ProverTransform.d2sHandleBacktrackSome
+    (δ := δ) (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    stateIn backtrackOut).run st))).run] ≤ _
+  unfold ProverTransform.d2sHandleBacktrackSome
+  simp only [hImage, ↓reduceIte, hNonempty, StateT.run_bind,
+    StateT.run_get, StateT.run_lift, OptionT.run_bind, OptionT.run_lift,
+    Option.elimM, pure_bind, Option.elim_some]
+  split
+  · simp only [StateT.run_bind, StateT.run_lift, OptionT.run_bind, OptionT.run_lift,
+      Option.elim_some, pure_bind]
+    rw [Option.elimM, Option.elimM]
+    rw [simulateQ_bind, OptionT.run_bind]
+    apply probEvent_bind_le_of_forall_le
+    intro first hfirst
+    cases first with
+    | none =>
+        simp only [Option.elim_none]
+        change Pr[ (fun r : Option (Option (CanonicalSpongeState U ×
+            ProverTransform.D2SQueryState
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) =>
+          match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+          | some (some capacity) => capacity ∈ S
+          | _ => False) | (pure none : ProbComp (Option (Option (CanonicalSpongeState U ×
+            ProverTransform.D2SQueryState
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))] ≤ _
+        rw [probEvent_pure]
+        simp
+    | some pair =>
+        cases pair with
+        | none =>
+            simp only [Option.elim_some, Option.elim_none]
+            rw [simulateQ_pure, OptionT.run_pure]
+            change Pr[ (fun r : Option (Option (CanonicalSpongeState U ×
+                ProverTransform.D2SQueryState
+                  (δ := δ) (T_H := T_H) (T_P := T_P)
+                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) =>
+              match Option.map (Option.map (fun pair => pair.1.capacitySegment)) r with
+              | some (some capacity) => capacity ∈ S
+              | _ => False) | (pure (some none) : ProbComp (Option (Option (CanonicalSpongeState U ×
+                ProverTransform.D2SQueryState
+                  (δ := δ) (T_H := T_H) (T_P := T_P)
+                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))))] ≤ _
+            rw [probEvent_pure]
+            simp
+        | some rhoAndState =>
+            rcases rhoAndState with ⟨rhoHat, stG⟩
+            simp only [Option.elim_some] at hfirst
+            simp at hfirst
+            rcases hfirst with ⟨_, rfl⟩
+            simp only [Option.elim_some]
+            exact d2sHandleBacktrackAfterG_miss_sigma_capacity_mem_finset_le
+              (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+              (U := U) (δ := δ) k_g backtrackOut rhoHat st hLookup S
+  · rename_i h
+    exact False.elim (h trivial)
 
 /-- If the inverse-permutation handler takes the `tr_∇.p.outlu` table-hit branch, every
 successful simulated result has the same base trace as the input state.  The raw trace appends the

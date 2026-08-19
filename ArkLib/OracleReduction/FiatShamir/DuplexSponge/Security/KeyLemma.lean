@@ -6,18 +6,27 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Preliminaries
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ProverTransform
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.TraceTransform
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BacktrackSchedule
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
+import ArkLib.ToVCVio.Tactic.VCVNorm
 import VCVio.OracleComp.QueryTracking.QueryBound
 
 /-!
 # Lemma 5.1 of the Chiesa-Orrù paper
 
-This file provides the Section 5 key-lemma interface:
+This file provides the legacy executable Section 5 key-lemma interface:
 - the DSFS and basic-FS game experiments,
 - canonical abstractions for `D2SAlgo` and the Section 5.8 trace algorithms, and
-- a statistical-distance theorem surface with the query-bound side condition.
+- a statistical-distance theorem surface used by the existing Section 6 interfaces.
+
+The authoritative revised Section 5 statements are in
+`Security.Statement.ConcreteHybrids`: they carry the explicit `Section5Nonempty` scope and use
+the stateful verifier count `N_𝒱 = verifierPermCallCount pSpec δ`.  This legacy file remains a
+compatibility surface while the executable hybrid refinements are migrated.  In particular, its
+open proof bodies are not evidence that the revised paper claims have been proved here.
 
 `StmtIn` is the Lean stand-in for the paper's hash-input space `{0,1}^{≤n}`. The paper's
 instance-size bound is fixed by choosing this type, while `n` in this file is the protocol round
@@ -42,6 +51,11 @@ Hyb_4  basic FS           f ← 𝒟_IP_salted (same f, different algos)
 
 Triangle-inequality sum of the four claim bounds gives `η★` (CO25 Eq. 57), the headline
 error bound of `lemma_5_1`.
+
+**Stateful-replay correction.** Every permutation-side caller in this file supplies the canonical
+exact count `verifierPermCallCount pSpec δ = N_𝒱`, not a rounded salted schedule budget.  The
+obsolete lower bound `tₚ ≥ max{Lₚ,Lᵥ}` has been removed: the transformed prover's standard-oracle
+queries are charged directly to source forward-permutation queries.
 
 ## Section map (top-to-bottom)
 
@@ -233,6 +247,29 @@ def runSection58TraceMap
   simulateQ
     (d2sUnitSampleImpl (U := U))
     ((traceMap fullTrace).run)
+
+omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U] in
+/-- The unit-sampled public D2STrace is the output projection of its lossless execution.  This
+is the local Hyb₀ line-4 refinement; it uses the same fiber samples on both sides. -/
+lemma runD2sTraceSaltedObserved_map_output_eq_runSection58TraceMap
+    [SampleableType U]
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    Option.map (fun observation : TraceTransform.D2STraceSaltedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      (δ := δ) (Salt := Salt) => observation.output) <$>
+        simulateQ (d2sUnitSampleImpl (U := U))
+          ((TraceTransform.d2sTraceSaltedObserved
+            (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log).run) =
+      runSection58TraceMap
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (TraceTransform.d2sTraceSalted
+          (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) log := by
+  rw [← ToVCVio.VCVNorm.simulateQ_optionT_map]
+  rfl
 
 /-! ### Common eager-sample handler for `Hyb_1` / `Hyb_2` / `Hyb_3` / `Hyb_4` -/
 
@@ -497,6 +534,185 @@ def mappedDSFSGameDist
       | none => return some (stmtIn, stmtOut, π, [])
       | some fullTraceFS => return some (stmtIn, stmtOut, π, fullTraceFS)
 
+/-- A lossless observation of the left-hand Section 5.8 experiment.  The existing
+`mappedDSFSGameDist` deliberately exposes only the basic-FS output after `D2STrace`; that is the
+right public distribution, but it discards the raw duplex trace on which the Hyb₀--Hyb₁
+lazy-sampling coupling stops.  This observation keeps that source result while computing exactly
+the same public output and applying exactly the same trace-map-abort convention.
+
+The raw source trace is not resampled or reconstructed: when `sourceOutput = some ...`, its
+tagged query log is the one actual `dsfsGame` run whose image is `publicOutput`.  Thus a future
+coupling can derive its Hyb₀ base trace from this observation without changing the public
+experiment. -/
+structure MappedDSFSGameObservation where
+  sourceOutput : Option (DSFSGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ))
+  publicOutput : Option (BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt))
+
+/-- The raw duplex-sponge base trace of an observed Hyb₀ run.  `sourceOutput` retains the
+actual tagged Figure-4 log; this projection discards only ambient-oracle entries and source tags,
+exactly as `D2STrace` does before running `StdTrace`.  A source-game abort has no base trace. -/
+def MappedDSFSGameObservation.baseTrace
+    (observation : MappedDSFSGameObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
+    QueryLog (duplexSpongeChallengeOracle StmtIn U) :=
+  match observation.sourceOutput with
+  | none => []
+  | some ⟨_, _, _, taggedLog⟩ =>
+      TraceTransform.dsTraceOfLog
+        (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+        (TaggedQueryLog.untagged taggedLog)
+
+/-- Instrumented Hyb₀ line-4 wrapper.  Projecting `publicOutput` is definitionally the same
+control flow as `mappedDSFSGameDist`; the additional `sourceOutput` field retains the actual
+pre-`D2STrace` DSFS execution for the stateful lazy-sampling coupling. -/
+def mappedDSFSGameDistObserved
+    [SampleableType U]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (traceMap : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (duplexSpongeChallengeOracle StmtIn U)) :
+    ProbComp (MappedDSFSGameObservation (oSpec := oSpec) (StmtIn := StmtIn)
+      (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
+  let sourceOutput ← dsfsGameDist
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
+    (U := U) init impl V P
+  match sourceOutput with
+  | none => return ⟨none, none⟩
+  | some source@⟨stmtIn, stmtOut, proof, fullTraceDS⟩ => do
+      let π : FSSaltedProof pSpec Salt :=
+        (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
+      let outputFS? ←
+        runSection58TraceMap
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          (Salt := Salt) traceMap fullTraceDS
+      let publicOutput :=
+        match outputFS? with
+        | none => some (stmtIn, stmtOut, π, [])
+        | some fullTraceFS => some (stmtIn, stmtOut, π, fullTraceFS)
+      return ⟨some source, publicOutput⟩
+
+/-- Fully instrumented Hyb₀ observation for the concrete corrected `D2STrace` map.  In addition
+to the raw source result and public basic-FS output, this retains the exact encoded StdTrace
+entries produced with the same random-fiber samples as the public output. -/
+structure MappedDSFSGameD2STraceObservation where
+  sourceOutput : Option (DSFSGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ))
+  traceObservation : Option (TraceTransform.D2STraceSaltedObservation
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (δ := δ) (Salt := Salt))
+  publicOutput : Option (BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt))
+
+/-- The direct duplex trace retained by the lossless Hyb₀ observation.  It is extracted from the
+same tagged source-game log that produced the observed transformed output; no trace is recovered
+from a decoded standard-FS output. -/
+def MappedDSFSGameD2STraceObservation.baseTrace
+    (observation : MappedDSFSGameD2STraceObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
+    QueryLog (duplexSpongeChallengeOracle StmtIn U) :=
+  match observation.sourceOutput with
+  | none => []
+  | some ⟨_, _, _, taggedLog⟩ =>
+      TraceTransform.dsTraceOfLog
+        (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+        (TaggedQueryLog.untagged taggedLog)
+
+/-- Lossless Hyb₀ wrapper specialized to the public corrected `D2STrace` implementation.  The
+branch returning an empty standard trace on transformation abort is deliberately identical to
+`mappedDSFSGameDist`; only the successful branch retains `traceObservation.encodedTrace` and
+`traceObservation.lookAheadMemo` before projecting its `output`. -/
+def mappedDSFSGameDistD2STraceObserved
+    [SampleableType U]
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    ProbComp (MappedDSFSGameD2STraceObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
+  let sourceOutput ← dsfsGameDist
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec)
+    (U := U) init impl V P
+  match sourceOutput with
+  | none => return ⟨none, none, none⟩
+  | some source@⟨stmtIn, stmtOut, proof, fullTraceDS⟩ => do
+      let π : FSSaltedProof pSpec Salt :=
+        (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
+      let traceObservation? ←
+        simulateQ
+          (d2sUnitSampleImpl (U := U))
+          ((TraceTransform.d2sTraceSaltedObserved
+            (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+            fullTraceDS).run)
+      let publicOutput :=
+        match traceObservation? with
+        | none => some (stmtIn, stmtOut, π, [])
+        | some observation => some (stmtIn, stmtOut, π, observation.output)
+      return ⟨some source, traceObservation?, publicOutput⟩
+
+omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U] in
+/-- The fully observed Hyb₀ wrapper is lossless: projecting away its raw source trace and
+encoded StdTrace witness recovers the ordinary Hyb₀ line-4 distribution exactly. -/
+lemma mappedDSFSGameDistD2STraceObserved_map_publicOutput_eq
+    [SampleableType U]
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl (oSpec + duplexSpongeChallengeOracle StmtIn U) (StateT σ ProbComp))
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (fun observation => observation.publicOutput) <$>
+        mappedDSFSGameDistD2STraceObserved
+          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+          (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          init impl V P =
+      mappedDSFSGameDist
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) init impl V P
+        (TraceTransform.d2sTraceSalted
+          (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
+  simp only [mappedDSFSGameDistD2STraceObserved, mappedDSFSGameDist, map_eq_pure_bind,
+    bind_assoc]
+  apply bind_congr
+  intro sourceOutput
+  cases sourceOutput with
+  | none => rfl
+  | some source =>
+      rcases source with ⟨stmtIn, stmtOut, proof, fullTraceDS⟩
+      simp only
+      simp only [runSection58TraceMap]
+      have hTrace := runD2sTraceSaltedObserved_map_output_eq_runSection58TraceMap
+        (δ := δ) (T_H := T_H) (T_P := T_P) (Salt := Salt)
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) fullTraceDS
+      unfold runSection58TraceMap at hTrace
+      have hPost := congrArg (fun traceDistribution =>
+        traceDistribution >>= fun outputFS? =>
+          match outputFS? with
+          | none => pure (some (stmtIn, stmtOut,
+              (SaltCodec.encode (Salt := Salt) proof.1, proof.2), []))
+          | some fullTraceFS => pure (some (stmtIn, stmtOut,
+              (SaltCodec.encode (Salt := Salt) proof.1, proof.2), fullTraceFS))) hTrace
+      dsimp at hPost
+      rw [bind_map_left] at hPost
+      refine Eq.trans ?_ hPost
+      simp only [bind_assoc, pure_bind]
+      apply bind_congr
+      intro traceObservation?
+      cases traceObservation? <;> rfl
+
 end SecurityGames
 
 section KeyLemma
@@ -505,9 +721,42 @@ open scoped NNReal
 
 /-! ### Numerical bounds: `θ★`, `CodecBias`, `η★`, per-claim bounds -/
 
-/-- CO25 Theorem 5.1 / Eq. (5). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
+/-- CO25 §5.8 / Eq (57). `θ★(t) := t_p` — forward-permutation query budget of `𝒫̃`, used as the
 query-bound multiplier in `η★`. -/
 def θStar (_tₕ tₚ _tₚᵢ : ℕ) : ℕ := tₚ
+
+/-- Select exactly the standard-FS challenge-oracle calls made by the transformed prover.
+The outer `oSpec` calls and the auxiliary unit-sampling calls are deliberately excluded: D2SAlgo
+passes both through, so a bound on *all* target-spec queries by `thetaStar = t_p` would be false.
+This is the Lean formulation of CO25's query bound, which counts calls to the programmed
+challenge oracle rather than unrelated ambient or sampling oracles. -/
+def isD2SAlgoChallengePoint :
+    (oSpec + D2SChallengePlusUnitOracle (U := U)
+      (fsChallengeOracle (StmtIn × Salt) pSpec)).Domain → Prop
+  | .inl _ => False
+  | .inr point => isD2SChallengePoint
+      (U := U) (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec) point
+
+instance : DecidablePred
+    (isD2SAlgoChallengePoint (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (Salt := Salt)) :=
+  fun point =>
+    match point with
+    | .inl _ => isFalse (fun h => h)
+    | .inr (.inl _) => isTrue trivial
+    | .inr (.inr _) => isFalse (fun h => h)
+
+/-- The query-bound half of Lemma 5.1: D2SAlgo makes at most `thetaStar = t_p`
+standard-FS challenge queries.  It intentionally is not a total-query bound over the enlarged
+implementation oracle surface. -/
+abbrev IsD2SAlgoChallengeQueryBound
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  OracleComp.IsQueryBoundP (d2sAlgoTransform maliciousProver)
+    (isD2SAlgoChallengePoint (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (Salt := Salt))
+    (θStar tₕ tₚ tₚᵢ)
 
 /-- CO25 Definition 4.1. Per-round codec bias profile `i ↦ ε_{cdc,i}(λ,n)`.
 Parameters `(λ, n)` are suppressed (assumed fixed by the ambient instantiation); `CodecBias`
@@ -515,12 +764,14 @@ carries only the per-round values `ε_{cdc,i}` used in Claims 5.22 and the `η�
 abbrev CodecBias :=
   pSpec.ChallengeIdx → ℝ≥0
 
-/-- CO25 Theorem 5.1 / Eq. (5). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
+/-- CO25 Theorem 5.1 / Eq (57). Additive error bound `η★(t_h, t_p, t_{p⁻¹})`:
 ```
 η★ := numerator / (2 · |Σ|^c) + θ★ · max_i ε_{cdc,i} + ∑_i ε_{cdc,i}
 ```
-where `numerator = 7(t+L)² + … − 13(L+1)` with `t = t_h + t_p + t_{p⁻¹}`, `L` the total
-permutation-query count from message/challenge absorb.  Sums the four hybrid-step bounds from
+where `numerator = 7(t+L)² + … − 13(L+1)` with `t = t_h + t_p + t_{p⁻¹}` and `L` a
+sound upper bound on all verifier-side forward-permutation queries.  For the general salted
+construction this is `Lbar = L_delta + L_P + L_V`, not the historical message/challenge-only
+quantity.  Sums the four hybrid-step bounds from
 Claims 5.21 (Hyb_0 → Hyb_1), 5.22 (Hyb_1 → Hyb_2), 5.23 = 0 (Hyb_2 → Hyb_3), and 5.24
 (Hyb_3 → Hyb_4). -/
 def ηStar (U : Type) [SpongeUnit U] [Fintype U]
@@ -577,6 +828,41 @@ def claim5_22Bound
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
+/-- The correct one-query codec bridge for CO25 Claim 5.22.
+
+Starting with a uniformly sampled decoded challenge and then sampling a uniform encoded
+preimage is at most `ε_cdc,i` away from a uniform encoded challenge.  The proof applies the
+same preimage kernel to `ψᵢ <$> 𝒰(Σ^{ℓ_V(i)})` and `𝒰(𝓜_{V,i})`, then uses data processing.
+This avoids the invalid stronger assertion that a uniform preimage of a uniform decoded value
+is itself uniform when decoder fibers have unequal cardinalities. -/
+theorem codec_uniformPreimage_bias
+    (i : pSpec.ChallengeIdx) :
+    PMF.tvDist (PMF.uniformOfFintype (Vector U (challengeSize (pSpec := pSpec) i)))
+      ((PMF.uniformOfFintype (pSpec.Challenge i)).bind
+        (Preliminaries.sampleUniformPreimage
+          (codec.decode i) (codec.decode_surjective i))) ≤
+      (codec.decodingBias i : ℝ) := by
+  calc
+    PMF.tvDist (PMF.uniformOfFintype (Vector U (challengeSize (pSpec := pSpec) i)))
+        ((PMF.uniformOfFintype (pSpec.Challenge i)).bind
+          (Preliminaries.sampleUniformPreimage
+            (codec.decode i) (codec.decode_surjective i))) ≤
+        PMF.tvDist (codec.decode i <$>
+          (PMF.uniformOfFintype (Vector U (challengeSize (pSpec := pSpec) i))))
+          (PMF.uniformOfFintype (pSpec.Challenge i)) :=
+      Preliminaries.tvDist_uniformPreimage_uniform_le
+        (codec.decode i) (codec.decode_surjective i)
+    _ = PMF.tvDist (PMF.uniformOfFintype (pSpec.Challenge i))
+          (codec.decode i <$>
+            PMF.uniformOfFintype (Vector U (challengeSize (pSpec := pSpec) i))) :=
+      PMF.tvDist_comm _ _
+    _ ≤ @Dist.dist (PMF (pSpec.Challenge i)) instDistPMFOfFintype_arkLib
+          (PMF.uniformOfFintype (pSpec.Challenge i))
+          (codec.decode i <$> PMF.uniformOfFintype
+            (Vector U (challengeSize (pSpec := pSpec) i))) :=
+      Preliminaries.pmf_tvDist_le_serdeDist _ _
+    _ ≤ (codec.decodingBias i : ℝ) := codec.decode_isBiased i
+
 /-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55):
 `(7·L·(2·t_h + 2 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
 def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
@@ -585,6 +871,38 @@ def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
   let cardPow : ℝ := ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
   (7 * Lr * (2 * (tₕ : ℝ) + 2 + 2 * (tₚ : ℝ) + Lr + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
     - (5 * (Lr + 1)) / cardPow
+
+/-- DS hash queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1HashQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
+
+/-- DS forward-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inl _)) => True
+  | _ => False
+
+/-- DS inverse-permutation queries in the combined Lemma 5.1 prover surface. -/
+def isLemma5_1PermInvQuery :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inr _)) => True
+  | _ => False
+
+/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
+The three DS oracle families have aggregate bounds; ambient-oracle queries are unconstrained. -/
+abbrev IsLemma5_1QueryBound
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
+      OracleComp.IsQueryBoundP maliciousProver
+        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
 
 /-! ### Hybrid distributions `Hyb_0` … `Hyb_4` and per-step claims 5.21–5.24 (CO25 §5.8)
 
@@ -681,7 +999,8 @@ theorem claim_5_21
       (hyb_1 (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver)
-    ≤ claim5_21Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries := by
+    ≤ claim5_21Bound U tₕ tₚ tₚᵢ
+      (DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ)) := by
   sorry
 
 /-- CO25 §5.8 Hyb_2. `Hyb_2` distribution sampled via state-based evaluation
@@ -701,26 +1020,11 @@ def hyb_2
       (pSpec := pSpec) (Salt := Salt)) := by
   let challengeSpec := eSpec (U := U) StmtIn pSpec δ
   let D_e := D_e (U := U) StmtIn pSpec δ
-  -- `Hyb_2` `gᵢ`-realization: query the decoded challenge oracle `eᵢ` for
-  -- `ρᵢ ∈ ℳ_{V,i}`, then sample a uniform `ψᵢ⁻¹` preimage to recover the encoded
-  -- `ρ̂ᵢ ∈ Σ^{ℓ_V(i)}` (CO25 §5.4 Item 4(e)i).  Trivial inner state `M := PUnit`
-  -- (`StateT.lift` wraps the no-memo body for the unified `hybridGameDist`).
-  let gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec PUnit :=
-    fun q => do
-      let challenge ← -- query to `e`
-        StateT.lift <|
-          OptionT.lift <|
-            (show OracleComp
-                (D2SChallengePlusUnitOracle (U := U) challengeSpec)
-                (pSpec.Challenge q.1) from
-              query
-                (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
-                (.inl q))
-      StateT.lift <|
-        OptionT.lift <|  -- apply `ψᵢ⁻¹` on the response `pᵢ` to get `p̂ᵢ`
-          uniformDeserializePreimage
-            (pSpec := pSpec) (U := U)
-            (challengeSpec := challengeSpec) challenge
+  -- `Hyb_2` `gᵢ`-realization: query `eᵢ` and sample a uniform `ψᵢ⁻¹`
+  -- preimage only on a cache miss.  This is the consistent composition
+  -- required by CO25 Item 3 for repeated encoded keys.
+  let gImpl := d2sDecodedBridgeImplMemo
+    (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   exact
     hybridGameDist
       (δ := δ) (Salt := Salt)
@@ -741,10 +1045,12 @@ eagerly via `hyb_1` / `hyb_2`. -/
 theorem claim_5_22
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    [DecidableEq ι]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) :
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ) :
     tvDist
       (hyb_1 (δ := δ) (T_H := T_H) (T_P := T_P)
         (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (Salt := Salt)
@@ -883,65 +1189,11 @@ theorem claim_5_24
         oSpecImpl V maliciousProver
         (d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
           (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-    ≤ claim5_24Bound U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries := by
+    ≤ claim5_24Bound U tₕ tₚ tₚᵢ
+      (DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ)) := by
   sorry
 
 /-! ### Main lemma 5.1: existential statement and salted `D2SAlgo` witness -/
-
-/-- DS hash queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1HashQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inl _) => True
-  | _ => False
-
-/-- DS forward-permutation queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1PermQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inl _)) => True
-  | _ => False
-
-/-- DS inverse-permutation queries in the combined Lemma 5.1 prover surface. -/
-def isLemma5_1PermInvQuery :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
-  | .inr (.inr (.inr _)) => True
-  | _ => False
-
-/-- Basic-FS challenge queries made by `D2SAlgo`; ambient queries and its private sampling
-oracles are deliberately excluded. -/
-def isD2SAlgoChallengeQuery :
-    (oSpec + D2SChallengePlusUnitOracle (U := U)
-      (fsChallengeOracle (StmtIn × Salt) pSpec)).Domain → Prop
-  | .inr (.inl _) => True
-  | _ => False
-
-/-- CO25 Theorem 5.1 query-bound predicate for the malicious prover `𝒫̃`.
-`t_h`, `t_p`, and `t_{p⁻¹}` are aggregate bounds for the hash, forward-permutation, and
-inverse-permutation oracle families.  The ambient `oSpec` handler is unconstrained: CO25's
-statement contains no ambient-oracle query budget. -/
-abbrev IsLemma5_1QueryBound
-    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1HashQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₕ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ ∧
-      OracleComp.IsQueryBoundP maliciousProver
-        (isLemma5_1PermInvQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚᵢ
-
-/-- CO25 Theorem 5.1's `θ★` query bound for the transformed prover.  This counts precisely the
-basic-FS challenge-oracle calls; `oSpec` and D2SAlgo's private sampling oracles are not adversary
-queries in the target FS security game. -/
-abbrev IsD2SAlgoChallengeQueryBound
-    (prover : AbortComp (oSpec + D2SChallengePlusUnitOracle (U := U)
-      (fsChallengeOracle (StmtIn × Salt) pSpec)) (StmtIn × FSSaltedProof pSpec Salt))
-    (t : ℕ) : Prop :=
-  by
-    classical
-    exact OracleComp.IsQueryBoundP prover
-      (isD2SAlgoChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
-        (Salt := Salt) (pSpec := pSpec)) t
 
 set_option linter.unusedDecidableInType false in
 set_option linter.unusedFintypeInType false in
@@ -952,15 +1204,14 @@ set_option linter.unusedFintypeInType false in
 `Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
 definitionally — an opaque `∃`-witness would block that defeq.  `lemma_5_1` re-packages this as the
 existential.  The body is the deep §5.8 distance bound (`claim_5_21`–`claim_5_24` triangle) +
-`D2SAlgo` query bound — the single remaining `sorry`. -/
+`D2SAlgo` query bound; the affected hybrid claims and this assembly are still open. -/
 theorem lemma_5_1_inner
     [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
       ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
       IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
       tvDist
@@ -974,62 +1225,15 @@ theorem lemma_5_1_inner
           oSpecImpl V maliciousProver
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
             (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ)
+        ≤ (ηStar U tₕ tₚ tₚᵢ
+          (DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ))
+          (εcodec := codec.decodingBias) : ℝ)
       ∧ IsD2SAlgoChallengeQueryBound
           (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
-          (θStar tₕ tₚ tₚᵢ) := by
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+          maliciousProver tₕ tₚ tₚᵢ := by
   intro maliciousProver hMaliciousBound
-  let _ := hTp
   let _ := hMaliciousBound
-  sorry
-
-omit [DecidableEq StmtIn] [DecidableEq U] in
-/-- The total-variation component of the concrete form of Lemma 5.1. -/
-theorem lemma_5_1_inner_tvBound
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
-    {T_H : Type} {T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
-      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
-      tvDist
-        (hyb_0 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
-          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-          oSpecImpl V maliciousProver
-          (d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
-            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-        (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
-          (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
-          oSpecImpl V maliciousProver
-          (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries (εcodec := codec.decodingBias) : ℝ) := by
-  sorry
-
-omit [DecidableEq StmtIn] [DecidableEq U] in
-/-- D2SAlgo's basic-FS challenge-query bound (the `θ★` part of Lemma 5.1):
-`#queries_f(D2SAlgo^f(𝒫̃)) ≤ θ★(tₕ, tₚ, tₚᵢ) = tₚ.`
-Only a forward-permutation query can trigger an `f`-query: it produces at most one `gᵢ` query,
-whose codec bridge makes at most one `fᵢ` query.  Hash and inverse-permutation queries make none;
-memoization only decreases the count.  `IsD2SAlgoChallengeQueryBound` formalizes `#queries_f`. -/
-theorem lemma_5_1_inner_queryBound
-    [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
-    {T_H : Type} {T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    ∀ (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ),
-      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
-      IsD2SAlgoChallengeQueryBound
-        (ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) maliciousProver)
-        (θStar tₕ tₚ tₚᵢ) := by
   sorry
 
 set_option linter.unusedDecidableInType false in
@@ -1042,7 +1246,7 @@ such that:
 ```
 |Pr[𝒱^{h,p}(𝕩,π)=1] − Pr[𝒱_std^f(𝕩,π)=1]| ≤ η★(t_h, t_p, t_{p⁻¹})
 ```
-and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` basic-FS challenge queries.
+and D2SAlgo makes at most `θ★(t_h, t_p, t_{p⁻¹}) = t_p` standard-FS challenge-oracle queries.
 
 Sampling shape (CO25 Def. 4.2 / Eqs. 15/52/54/4): both sides draw their oracles
 from `OracleDistribution` carriers at game start; the ambient `oSpec` is answered by
@@ -1058,8 +1262,7 @@ theorem lemma_5_1
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
+    (tₕ tₚ tₚᵢ : ℕ) :
     ∃ (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (d2sTraceTransform : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
@@ -1075,14 +1278,15 @@ theorem lemma_5_1
         (hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
           oSpecImpl V maliciousProver d2sAlgoTransform)
-        ≤ (ηStar U tₕ tₚ tₚᵢ pSpec.totalNumPermQueries
+        ≤ (ηStar U tₕ tₚ tₚᵢ
+          (DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ))
             (εcodec := codec.decodingBias) : ℝ)
-      ∧ IsD2SAlgoChallengeQueryBound (d2sAlgoTransform maliciousProver) (θStar tₕ tₚ tₚᵢ) :=
+      ∧ IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ :=
   ⟨ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
     d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U),
-    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ hTp⟩
+    lemma_5_1_inner (T_H := T_H) (T_P := T_P) oSpecImpl V tₕ tₚ tₚᵢ⟩
 
 end KeyLemma
 

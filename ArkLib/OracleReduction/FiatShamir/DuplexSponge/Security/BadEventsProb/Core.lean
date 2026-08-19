@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.QueryCounting
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.ExactVerifierCounting
 
 /-!
 # Probabilistic analysis of the duplex-sponge bad event `E` (CO25 Lemma 5.8)
@@ -711,6 +712,29 @@ end TotalQueryBound
 
 section VerifierQueryBound
 
+/-- Wide-spec forward verifier, exact stateful count: `≤ N_𝒱`.
+
+Unlike the historical `L` and `\bar L` variants below, this is obtained by
+following the live cursor through `Start`, salt absorption, and every
+subsequent absorb/squeeze action.  It is therefore valid when any action
+begins within a partially used rate block. -/
+lemma runForwardVerifierWide_fwd_bound_exact
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
+    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec) (stmtIn : StmtIn)
+    (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
+    OracleComp.IsQueryBoundP (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
+      (fun t => isFwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true)
+      (verifierPermCallCount (pSpec := pSpec) (δ := δ)) := by
+  rw [runForwardVerifierWide]
+  refine isQueryBoundP_liftComp' _
+    (p := fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
+    (fun t => ?_) (dsfsForwardVerify_fwd_bound_exact V stmtIn proof)
+  rcases t with e | (s | c)
+  · exact e.elim
+  · rfl
+  · rfl
+
 /-- Wide-spec forward verifier, forward-permutation class: `≤ L`. -/
 lemma runForwardVerifierWide_fwd_bound
     [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
@@ -725,6 +749,25 @@ lemma runForwardVerifierWide_fwd_bound
   refine isQueryBoundP_liftComp' _
     (p := fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
     (fun t => ?_) (dsfsForwardVerify_fwd_bound hδR V stmtIn proof)
+  rcases t with e | (s | c)
+  · exact e.elim
+  · rfl
+  · rfl
+
+/-- Wide-spec forward verifier, salt-aware forward bound: `≤ \bar L` without requiring that
+the salt fit in one rate block. -/
+lemma runForwardVerifierWide_fwd_bound_salted
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
+    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec) (stmtIn : StmtIn)
+    (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
+    OracleComp.IsQueryBoundP (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
+      (fun t => isFwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true)
+      (pSpec.totalNumPermQueriesSalted δ) := by
+  rw [runForwardVerifierWide]
+  refine isQueryBoundP_liftComp' _
+    (p := fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
+    (fun t => ?_) (dsfsForwardVerify_fwd_bound_salted V stmtIn proof)
   rcases t with e | (s | c)
   · exact e.elim
   · rfl
@@ -845,6 +888,146 @@ lemma lemma5_8ProjectedTraceDistAbortable_length {σ : Type}
           have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
           omega
 
+/-- Salt-aware version of `lemma5_8ProjectedTraceDistAbortable_length`.  This uses the proven
+`(1, \bar L, 0)` verifier bound and therefore needs no assumption that the salt fits in one
+rate block. -/
+lemma lemma5_8ProjectedTraceDistAbortable_length_salted {σ : Type}
+    [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
+    (init : ProbComp σ)
+    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ (OptionT ProbComp)))
+    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U) (δ := δ) init impl V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length
+        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
+  intro tr htr
+  have hproverBound : OracleComp.IsQueryBoundP maliciousProver
+      (fun t => t.isRight = true) (tₕ + tₚ + tₚᵢ) :=
+    isQueryBoundP_isRight_of_classes hMaliciousBound.1 hMaliciousBound.2.1 hMaliciousBound.2.2
+  rw [lemma5_8ProjectedTraceDistAbortable] at htr
+  rw [mem_support_bind_iff] at htr
+  obtain ⟨s₀, _, htr⟩ := htr
+  rw [mem_support_bind_iff] at htr
+  obtain ⟨proverResult, hpr, htr⟩ := htr
+  have hplen := logLength_le_of_isQueryBoundP impl hproverBound (s₀, ([] : QueryLog _)) hpr
+  simp only [List.length_nil, Nat.zero_add] at hplen
+  obtain ⟨res, s₁, trP⟩ := proverResult
+  rcases res with _ | ⟨stmtIn, proof⟩
+  · rw [mem_support_pure_iff] at htr
+    subst htr
+    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ [])).length
+        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ []).length :=
+          (getBaseTrace_sublist _).length_le
+      _ ≤ trP.length := by
+          rw [List.append_nil, lemma5_8ProjectTraceLog]
+          exact List.length_filterMap_le _ _
+      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
+          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
+          omega
+  · rw [mem_support_bind_iff] at htr
+    obtain ⟨verifierResult, hvr, htr⟩ := htr
+    rw [mem_support_pure_iff] at htr
+    subst htr
+    have hverifBound : OracleComp.IsQueryBoundP
+        (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
+        (fun t => t.isRight = true) (1 + pSpec.totalNumPermQueriesSalted δ + 0) :=
+      isQueryBoundP_isRight_of_classes
+        (runForwardVerifierWide_hash_bound V stmtIn proof)
+        (runForwardVerifierWide_fwd_bound_salted V stmtIn proof)
+        (runForwardVerifierWide_bwd_bound V stmtIn proof)
+    have hvlen := logLength_le_of_isQueryBoundP impl hverifBound (s₁, ([] : QueryLog _)) hvr
+    simp only [List.length_nil, Nat.zero_add] at hvlen
+    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
+            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2)).length
+        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
+            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2).length :=
+          (getBaseTrace_sublist _).length_le
+      _ ≤ trP.length + verifierResult.2.2.length := by
+          rw [List.length_append]
+          gcongr <;> · rw [lemma5_8ProjectTraceLog]; exact List.length_filterMap_le _ _
+      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
+          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
+          omega
+
+/-- Exact stateful trace-length form of the abortable Lemma-5.8 experiment.
+
+The verifier segment has one `DS.Start` hash occurrence and at most the actual
+stateful number `N_𝒱` of forward permutation occurrences.  In contrast to the
+historical `L` and `\bar L` bounds, no action is charged as if it began at a
+fresh rate block. -/
+lemma lemma5_8ProjectedTraceDistAbortable_length_exact {σ : Type}
+    [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
+    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
+    (init : ProbComp σ)
+    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ (OptionT ProbComp)))
+    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U) (δ := δ) init impl V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length ≤
+        tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
+  intro tr htr
+  have hproverBound : OracleComp.IsQueryBoundP maliciousProver
+      (fun t => t.isRight = true) (tₕ + tₚ + tₚᵢ) :=
+    isQueryBoundP_isRight_of_classes hMaliciousBound.1 hMaliciousBound.2.1 hMaliciousBound.2.2
+  rw [lemma5_8ProjectedTraceDistAbortable] at htr
+  rw [mem_support_bind_iff] at htr
+  obtain ⟨s₀, _, htr⟩ := htr
+  rw [mem_support_bind_iff] at htr
+  obtain ⟨proverResult, hpr, htr⟩ := htr
+  have hplen := logLength_le_of_isQueryBoundP impl hproverBound (s₀, ([] : QueryLog _)) hpr
+  simp only [List.length_nil, Nat.zero_add] at hplen
+  obtain ⟨res, s₁, trP⟩ := proverResult
+  rcases res with _ | ⟨stmtIn, proof⟩
+  · rw [mem_support_pure_iff] at htr
+    subst htr
+    calc
+      (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ [])).length
+          ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ []).length :=
+        (getBaseTrace_sublist _).length_le
+      _ ≤ trP.length := by
+        rw [List.append_nil, lemma5_8ProjectTraceLog]
+        exact List.length_filterMap_le _ _
+      _ ≤ tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
+        have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
+        omega
+  · rw [mem_support_bind_iff] at htr
+    obtain ⟨verifierResult, hvr, htr⟩ := htr
+    rw [mem_support_pure_iff] at htr
+    subst htr
+    have hverifBound : OracleComp.IsQueryBoundP
+        (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
+        (fun t => t.isRight = true)
+        (1 + verifierPermCallCount (pSpec := pSpec) (δ := δ) + 0) :=
+      isQueryBoundP_isRight_of_classes
+        (runForwardVerifierWide_hash_bound V stmtIn proof)
+        (runForwardVerifierWide_fwd_bound_exact V stmtIn proof)
+        (runForwardVerifierWide_bwd_bound V stmtIn proof)
+    have hvlen := logLength_le_of_isQueryBoundP impl hverifBound (s₁, ([] : QueryLog _)) hvr
+    simp only [List.length_nil, Nat.zero_add] at hvlen
+    calc
+      (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++
+          lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2)).length
+          ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++
+            lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2).length :=
+        (getBaseTrace_sublist _).length_le
+      _ ≤ trP.length + verifierResult.2.2.length := by
+        rw [List.length_append]
+        gcongr <;> · rw [lemma5_8ProjectTraceLog]; exact List.length_filterMap_le _ _
+      _ ≤ tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
+        have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
+        omega
+
 end AbortableExperimentLengthBound
 
 /-! ### Sponge and Sigma trace-length bounds
@@ -874,6 +1057,23 @@ lemma lemma5_8_sponge_length
   exact lemma5_8ProjectedTraceDistAbortable_length _ _ V maliciousProver tₕ tₚ tₚᵢ hδR
     hMaliciousBound
 
+/-- Salt-aware sponge-trace length bound, valid for arbitrary salt length. -/
+lemma lemma5_8_sponge_length_salted
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8SpongeTraceDist (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (n := n) (pSpec := pSpec) (U := U) (δ := δ)
+        (initSponge := (D_𝔖 StmtIn U).sample)
+        (implSponge := (D_𝔖 StmtIn U).eagerImpl) V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length
+        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
+  rw [lemma5_8SpongeTraceDist]
+  exact lemma5_8ProjectedTraceDistAbortable_length_salted _ _ V maliciousProver tₕ tₚ tₚᵢ
+    hMaliciousBound
+
 /-- **Sigma trace length bound.** Same length bound for the `𝒟_Σ` simulator experiment. -/
 lemma lemma5_8_sigma_length
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
@@ -891,6 +1091,59 @@ lemma lemma5_8_sigma_length
   rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
   obtain ⟨k_g, _, htr⟩ := htr
   exact lemma5_8ProjectedTraceDistAbortable_length _ _ V maliciousProver tₕ tₚ tₚᵢ hδR
+    hMaliciousBound tr htr
+
+/-- Salt-aware simulator-trace length bound, valid for arbitrary salt length. -/
+lemma lemma5_8_sigma_length_salted
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
+        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
+        V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length
+        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
+  intro tr htr
+  rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
+  obtain ⟨k_g, _, htr⟩ := htr
+  exact lemma5_8ProjectedTraceDistAbortable_length_salted _ _ V maliciousProver tₕ tₚ tₚᵢ
+    hMaliciousBound tr htr
+
+/-- Exact stateful base-trace length for the ideal-permutation experiment. -/
+lemma lemma5_8_sponge_length_exact
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8SpongeTraceDist (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (n := n) (pSpec := pSpec) (U := U) (δ := δ)
+        (initSponge := (D_𝔖 StmtIn U).sample)
+        (implSponge := (D_𝔖 StmtIn U).eagerImpl) V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length ≤
+        tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
+  rw [lemma5_8SpongeTraceDist]
+  exact lemma5_8ProjectedTraceDistAbortable_length_exact _ _ V maliciousProver tₕ tₚ tₚᵢ
+    hMaliciousBound
+
+/-- Exact stateful base-trace length for the sigma simulator experiment. -/
+lemma lemma5_8_sigma_length_exact
+    (V : Verifier []ₒ StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_8QueryBound
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
+    ∀ tr ∈ support (lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
+        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
+        V maliciousProver),
+      (getBaseTrace (tr.1 ++ tr.2)).length ≤
+        tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
+  intro tr htr
+  rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
+  obtain ⟨k_g, _, htr⟩ := htr
+  exact lemma5_8ProjectedTraceDistAbortable_length_exact _ _ V maliciousProver tₕ tₚ tₚᵢ
     hMaliciousBound tr htr
 
 end SpongeSigmaTraceLengthBounds

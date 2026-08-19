@@ -251,11 +251,14 @@ lemma foundational_sigma_hashTargetAtom_contract
           capacitySpaceSize (U := U) := by
             rw [hDen]
 
-/-- Foundational sigma forward-permutation lazy-sampling bridge. -/
+/-- Foundational sigma forward-permutation lazy-sampling bridge, stated at the first bad base
+position exactly as Lemma 5.8 uses it.  Earlier malformed/redundant raw occurrences are outside
+this stopped-prefix event and must not be treated as fresh materializations at `j`. -/
 lemma foundational_sigma_permFwdFreshHit_contract
     (V : Verifier []ₒ StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) (j : ℕ) :
-    Pr[ fun tr => permFwdFreshHitAt (getBaseTrace (tr.1 ++ tr.2)) j |
+    Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧
+        permFwdFreshHitAt (getBaseTrace (tr.1 ++ tr.2)) j |
         lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U) V maliciousProver]
       ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U) := by

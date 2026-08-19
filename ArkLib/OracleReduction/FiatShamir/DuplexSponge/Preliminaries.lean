@@ -23,7 +23,9 @@ namespace DuplexSpongeFS.Preliminaries
 
 section Lemma32
 
-variable {A B : Type*} [DecidableEq A] [Fintype B]
+universe u
+
+variable {A B : Type u} [DecidableEq A] [Fintype B]
 
 /-- The fiber of `ψ` over `a`. -/
 abbrev Preimage (ψ : B → A) (a : A) := { b : B // ψ b = a }
@@ -160,6 +162,57 @@ theorem bind_sampleUniformPreimage_eq_uniform (ψ : B → A) (hψ : Function.Sur
                 (ENNReal.natCast_ne_top (Fintype.card (Preimage ψ (ψ b)))))
   _ = ($ᵖ B : PMF B) b := by
           rw [PMF.uniformOfFintype_apply]
+
+/-- A uniform-preimage kernel cannot increase total variation distance.  Combined with
+`bind_sampleUniformPreimage_eq_uniform`, this is the sound form of the CO25 Claim 5.22
+one-query argument: compare `ψ <$> 𝒰(B)` with `𝒰(A)` first, then apply the *same* uniform
+preimage kernel to both distributions.  No claim is made that the preimage of `𝒰(A)` itself
+is uniform when fibers have different cardinalities. -/
+theorem tvDist_uniformPreimage_uniform_le
+    [Fintype A] [Nonempty A]
+    (ψ : B → A) (hψ : Function.Surjective ψ) :
+    PMF.tvDist ($ᵖ B)
+      (($ᵖ A : PMF A).bind (sampleUniformPreimage ψ hψ)) ≤
+      PMF.tvDist (ψ <$> ($ᵖ B : PMF B)) ($ᵖ A) := by
+  have h_uniform :
+      ((ψ <$> ($ᵖ B : PMF B)).bind (sampleUniformPreimage ψ hψ)) = $ᵖ B := by
+    change (PMF.map ψ ($ᵖ B : PMF B)).bind (sampleUniformPreimage ψ hψ) = $ᵖ B
+    rw [PMF.bind_map]
+    exact bind_sampleUniformPreimage_eq_uniform ψ hψ
+  calc
+    PMF.tvDist ($ᵖ B) (($ᵖ A : PMF A).bind (sampleUniformPreimage ψ hψ)) =
+        PMF.tvDist ((ψ <$> ($ᵖ B : PMF B)).bind (sampleUniformPreimage ψ hψ))
+          (($ᵖ A : PMF A).bind (sampleUniformPreimage ψ hψ)) := by rw [h_uniform]
+    _ ≤ PMF.tvDist (ψ <$> ($ᵖ B : PMF B)) ($ᵖ A) :=
+      PMF.tvDist_bind_right_le (sampleUniformPreimage ψ hψ) _ _
+
+/-- The legacy codec metric from `Serde` is the unnormalised finite L¹ distance, so it bounds
+the normalized total-variation distance used by the VCVio hybrid framework. -/
+theorem pmf_tvDist_le_serdeDist
+    {X : Type} [Fintype X] (p q : PMF X) :
+    PMF.tvDist p q ≤ @Dist.dist (PMF X) instDistPMFOfFintype_arkLib p q := by
+  change ((∑' x, ENNReal.absDiff (p x) (q x)) / 2).toReal ≤
+    ∑ x, |(p x).toReal - (q x).toReal|
+  rw [ENNReal.toReal_div]
+  rw [ENNReal.tsum_toReal_eq]
+  · rw [tsum_fintype]
+    have hsum : 0 ≤ ∑ x, (ENNReal.absDiff (p x) (q x)).toReal :=
+      Finset.sum_nonneg fun _ _ => ENNReal.toReal_nonneg
+    calc
+      (∑ x, (ENNReal.absDiff (p x) (q x)).toReal) / ENNReal.toReal 2
+          ≤ ∑ x, (ENNReal.absDiff (p x) (q x)).toReal := by
+            norm_num
+            linarith
+      _ = ∑ x, |(p x).toReal - (q x).toReal| := by
+            apply Finset.sum_congr rfl
+            intro x _
+            exact ENNReal.absDiff_toReal (PMF.apply_ne_top _ _) (PMF.apply_ne_top _ _)
+  · intro x
+    apply ne_of_lt
+    apply lt_of_le_of_lt (ENNReal.absDiff_le_add (p x) (q x))
+    rw [ENNReal.add_lt_top]
+    exact ⟨lt_top_iff_ne_top.mpr (PMF.apply_ne_top _ _),
+      lt_top_iff_ne_top.mpr (PMF.apply_ne_top _ _)⟩
 
 /-- CO25 Lemma 3.2: resampling a uniformly random element via a uniformly random preimage preserves
 the uniform distribution.

@@ -5,7 +5,6 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.AbortAnalysis
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEvents
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Completeness

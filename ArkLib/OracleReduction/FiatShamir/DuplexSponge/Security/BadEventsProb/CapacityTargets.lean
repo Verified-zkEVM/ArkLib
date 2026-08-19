@@ -497,6 +497,43 @@ lemma permFwdCapacityTargetFinset_card_le
         exact Nat.add_le_add (priorCapacityTargetFinset_card_le bt j)
           (optionToFinset_card_le_one (permInCapAt bt j))
 
+/-- At the newly appended forward representative, the input and output capacity readouts are
+exactly the queried state and returned state. -/
+lemma permOutCapAt_append_fwd_length
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateIn stateOut : CanonicalSpongeState U) :
+    permOutCapAt (bt ++ [⟨dsPermQuery stateIn, stateOut⟩]) bt.length =
+      some stateOut.capacitySegment := by
+  unfold permOutCapAt
+  rw [getElem?_append_singleton_length]
+  rfl
+
+/-- A non-forward representative has no forward output-capacity readout at its own index. -/
+lemma permOutCapAt_append_hash_length
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stmt : StmtIn) (answer : Vector U SpongeSize.C) :
+    permOutCapAt (bt ++ [⟨dsHashQuery stmt, answer⟩]) bt.length = none := by
+  unfold permOutCapAt
+  rw [getElem?_append_singleton_length]
+  rfl
+
+lemma permOutCapAt_append_bwd_length
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateOut stateIn : CanonicalSpongeState U) :
+    permOutCapAt (bt ++ [⟨dsPermInvQuery stateOut, stateIn⟩]) bt.length = none := by
+  unfold permOutCapAt
+  rw [getElem?_append_singleton_length]
+  rfl
+
+lemma permInCapAt_append_fwd_length
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateIn stateOut : CanonicalSpongeState U) :
+    permInCapAt (bt ++ [⟨dsPermQuery stateIn, stateOut⟩]) bt.length =
+      some stateIn.capacitySegment := by
+  unfold permInCapAt
+  rw [getElem?_append_singleton_length]
+  rfl
+
 /-- Finset of the `2*j + 1` inverse-permutation capacity targets:
 all prior capacity slots plus the same entry's queried-output/domain capacity. -/
 def permBwdCapacityTargetFinset
@@ -619,6 +656,24 @@ lemma permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
   rw [priorCapacityTargetFinset_eq_of_take_eq hprefix]
   rw [permInCapAt_eq_of_getElem?_eq hself]
 
+/-- The target family at a newly appended forward representative is already fixed before its
+output capacity is sampled: the old prior capacities plus the known input capacity. -/
+lemma permFwdCapacityTargetFinset_append_fwd_length
+    [DecidableEq U]
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateIn stateOut : CanonicalSpongeState U) :
+    permFwdCapacityTargetFinset (bt ++ [⟨dsPermQuery stateIn, stateOut⟩]) bt.length =
+      priorCapacityTargetFinset bt bt.length ∪ {stateIn.capacitySegment} := by
+  unfold permFwdCapacityTargetFinset
+  have htake :
+      (bt ++ [(⟨dsPermQuery stateIn, stateOut⟩ :
+        Sigma (duplexSpongeChallengeOracle StmtIn U))]).take bt.length =
+        bt.take bt.length := by
+    exact List.take_append_of_le_length (Nat.le_refl bt.length)
+  rw [priorCapacityTargetFinset_eq_of_take_eq htake]
+  rw [permInCapAt_append_fwd_length]
+  rfl
+
 lemma permBwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
     [DecidableEq U]
     {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -673,6 +728,105 @@ lemma permFwdFreshHitAt_imp_mem_targetFinset
       (Or.inl (mem_optionListToFinset_of_mem_some htarget))⟩
   · exact ⟨c, hout, Finset.mem_union.mpr
       (Or.inr (mem_optionToFinset_of_eq_some hself))⟩
+
+/-- The finite `2j+1` target set is an exact presentation of the forward fresh-hit predicate.
+This is the local bridge used by the rate-only forward sampler: once its newly sampled output
+capacity is in the pre-step target set, it is precisely the paper's forward collision event. -/
+lemma permFwdFreshHitAt_of_mem_targetFinset
+    [DecidableEq U]
+    {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    {c : Vector U SpongeSize.C}
+    (hout : permOutCapAt bt j = some c)
+    (hmem : c ∈ permFwdCapacityTargetFinset bt j) :
+    permFwdFreshHitAt bt j := by
+  unfold permFwdCapacityTargetFinset at hmem
+  rw [Finset.mem_union] at hmem
+  refine ⟨c, hout, ?_⟩
+  rcases hmem with hprior | hself
+  · exact Or.inl (mem_priorCapacityTargets_of_mem_priorCapacityTargetFinset hprior)
+  · cases hcap : permInCapAt bt j with
+    | none =>
+        unfold optionToFinset at hself
+        rw [hcap] at hself
+        exact False.elim (Finset.notMem_empty c hself)
+    | some c' =>
+        unfold optionToFinset at hself
+        rw [hcap] at hself
+        simp only [Finset.mem_singleton] at hself
+        subst c'
+        exact Or.inr rfl
+
+lemma permFwdFreshHitAt_iff_mem_targetFinset
+    [DecidableEq U]
+    {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ} :
+    permFwdFreshHitAt bt j ↔
+      ∃ c : Vector U SpongeSize.C,
+        permOutCapAt bt j = some c ∧ c ∈ permFwdCapacityTargetFinset bt j := by
+  constructor
+  · exact permFwdFreshHitAt_imp_mem_targetFinset
+  · intro h
+    obtain ⟨c, hout, hmem⟩ := h
+    exact permFwdFreshHitAt_of_mem_targetFinset hout hmem
+
+/-- For a just-materialized forward entry, the fresh-hit predicate is precisely membership of
+the newly sampled output capacity in the pre-step target set.  This is the shape required for
+the local rate-only cache and ordinary-sampling bounds. -/
+lemma permFwdFreshHitAt_append_fwd_length_iff
+    [DecidableEq U]
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateIn stateOut : CanonicalSpongeState U) :
+    permFwdFreshHitAt (bt ++ [⟨dsPermQuery stateIn, stateOut⟩]) bt.length ↔
+      stateOut.capacitySegment ∈
+        priorCapacityTargetFinset bt bt.length ∪ {stateIn.capacitySegment} := by
+  constructor
+  · intro h
+    obtain ⟨c, hout, hmem⟩ :=
+      (permFwdFreshHitAt_iff_mem_targetFinset
+        (StmtIn := StmtIn) (U := U)).mp h
+    rw [permOutCapAt_append_fwd_length] at hout
+    rw [permFwdCapacityTargetFinset_append_fwd_length] at hmem
+    injection hout with hc
+    subst c
+    exact hmem
+  · intro h
+    apply (permFwdFreshHitAt_iff_mem_targetFinset
+      (StmtIn := StmtIn) (U := U)).mpr
+    refine ⟨stateOut.capacitySegment, ?_, ?_⟩
+    · exact permOutCapAt_append_fwd_length bt stateIn stateOut
+    · rw [permFwdCapacityTargetFinset_append_fwd_length]
+      exact h
+
+/-- Forward fresh-hit stability under equality of the already-exposed base prefix and the
+current base entry. -/
+lemma permFwdFreshHitAt_iff_of_take_eq_of_getElem?_eq
+    [DecidableEq U]
+    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hprefix : bt₁.take j = bt₂.take j)
+    (hself : bt₁[j]? = bt₂[j]?) :
+    permFwdFreshHitAt bt₁ j ↔ permFwdFreshHitAt bt₂ j := by
+  constructor
+  · intro h
+    obtain ⟨c, hout, hmem⟩ :=
+      (permFwdFreshHitAt_iff_mem_targetFinset
+        (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mp h
+    refine (permFwdFreshHitAt_iff_mem_targetFinset
+      (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mpr ⟨c, ?_, ?_⟩
+    · rw [← permOutCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
+      exact hout
+    · rw [← permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
+        (StmtIn := StmtIn) (U := U) hprefix hself]
+      exact hmem
+  · intro h
+    obtain ⟨c, hout, hmem⟩ :=
+      (permFwdFreshHitAt_iff_mem_targetFinset
+        (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mp h
+    refine (permFwdFreshHitAt_iff_mem_targetFinset
+      (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mpr ⟨c, ?_, ?_⟩
+    · rw [permOutCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
+      exact hout
+    · rw [permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
+        (StmtIn := StmtIn) (U := U) hprefix hself]
+      exact hmem
 
 lemma permBwdFreshHitAt_imp_exists_target
     {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
@@ -739,6 +893,46 @@ lemma permBwdFreshHitAt_iff_mem_targetFinset
   · intro h
     obtain ⟨c, hout, hmem⟩ := h
     exact permBwdFreshHitAt_of_mem_targetFinset hout hmem
+
+/-- For a just-materialized inverse entry, the fresh-hit predicate is precisely membership of the
+newly sampled preimage capacity in the pre-step target set.  This is the inverse counterpart of
+`permFwdFreshHitAt_append_fwd_length_iff`, used by the direct inverse-query kernel. -/
+lemma permBwdFreshHitAt_append_bwd_length_iff
+    [DecidableEq U]
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stateOut stateIn : CanonicalSpongeState U) :
+    permBwdFreshHitAt (bt ++ [⟨dsPermInvQuery stateOut, stateIn⟩]) bt.length ↔
+      stateIn.capacitySegment ∈
+        priorCapacityTargetFinset bt bt.length ∪ {stateOut.capacitySegment} := by
+  have htarget :
+      permBwdCapacityTargetFinset (bt ++ [⟨dsPermInvQuery stateOut, stateIn⟩]) bt.length =
+        priorCapacityTargetFinset bt bt.length ∪ {stateOut.capacitySegment} := by
+    unfold permBwdCapacityTargetFinset
+    have htake :
+        (bt ++ [(⟨dsPermInvQuery stateOut, stateIn⟩ :
+          Sigma (duplexSpongeChallengeOracle StmtIn U))]).take bt.length =
+          bt.take bt.length := by
+      exact List.take_append_of_le_length (Nat.le_refl bt.length)
+    rw [priorCapacityTargetFinset_eq_of_take_eq htake]
+    rw [permInvDomainCapAt_append_bwd_length]
+    rfl
+  constructor
+  · intro h
+    obtain ⟨c, hout, hmem⟩ :=
+      (permBwdFreshHitAt_iff_mem_targetFinset
+        (StmtIn := StmtIn) (U := U)).mp h
+    rw [permInvRangeCapAt_append_bwd_length] at hout
+    rw [htarget] at hmem
+    injection hout with hc
+    subst c
+    exact hmem
+  · intro h
+    apply (permBwdFreshHitAt_iff_mem_targetFinset
+      (StmtIn := StmtIn) (U := U)).mpr
+    refine ⟨stateIn.capacitySegment, ?_, ?_⟩
+    · exact permInvRangeCapAt_append_bwd_length bt stateOut stateIn
+    · rw [htarget]
+      exact h
 
 /-- Inverse fresh-hit stability under equality of the already-exposed base prefix and the
 current base entry. -/
@@ -911,6 +1105,32 @@ lemma E_h_at_imp_hashFreshHitAt
         rw [he] at hsame'
         cases (Sigma.mk.inj_iff.mp hsame').1))
       (by rw [he]; exact congrArg some hc)
+
+/-- At the newly appended hash position, a hash fresh hit is exactly membership of the sampled
+capacity in the capacity targets exposed by the preceding base trace.  This is the hash-direction
+counterpart to the forward and inverse append normal forms. -/
+lemma hashFreshHitAt_append_hash_length_iff
+    [DecidableEq U]
+    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (stmt : StmtIn) (capacity : Vector U SpongeSize.C) :
+    hashFreshHitAt (bt ++ [⟨dsHashQuery stmt, capacity⟩]) bt.length ↔
+      capacity ∈ priorCapacityTargetFinset bt bt.length := by
+  have htake :
+      (bt ++ [(⟨dsHashQuery stmt, capacity⟩ :
+        Sigma (duplexSpongeChallengeOracle StmtIn U))]).take bt.length =
+        bt.take bt.length := by
+    exact List.take_append_of_le_length (Nat.le_refl bt.length)
+  constructor
+  · rintro ⟨observed, hout, htargets⟩
+    rw [hashOutCapAt_append_hash_length] at hout
+    injection hout with hcapacity
+    subst observed
+    rw [priorCapacityTargets_eq_of_take_eq htake] at htargets
+    exact mem_optionListToFinset_of_mem_some htargets
+  · intro htargets
+    refine ⟨capacity, hashOutCapAt_append_hash_length bt stmt capacity, ?_⟩
+    rw [priorCapacityTargets_eq_of_take_eq htake]
+    exact mem_priorCapacityTargets_of_mem_priorCapacityTargetFinset htargets
 
 end BadEventDS
 end DuplexSpongeFS

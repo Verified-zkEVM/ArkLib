@@ -7,6 +7,8 @@ Authors: Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.SpongeTrace
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.Representatives
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.PrefixEvents
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.CacheTraceBridges
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.MonitoredD2SQuery
 
 /-!
 # Operational prefix invariants for the functional bad event
@@ -246,51 +248,6 @@ lemma BwdHasPriorBad.append_of_E
       rw [hjEq]
       exact hjBadLt
 
-/-- A new forward base representative whose output state was already represented is charged by
-`E_p` at precisely its appended base index.  Handler-specific proofs obtain the base-trace-growth
-premise from an `inlu` miss plus the no-prior-bad table invariant. -/
-lemma E_p_at_append_forward_of_prior_same_output
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (sIn sIn' sOut : CanonicalSpongeState U)
-    (hPrior : (⟨.inr (.inl sIn'), sOut⟩ :
-        Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ getBaseTrace trace ∨
-      (⟨.inr (.inr sOut), sIn'⟩ :
-        Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈ getBaseTrace trace)
-    (hbase : getBaseTrace (trace ++ [⟨.inr (.inl sIn), sOut⟩]) =
-      getBaseTrace trace ++ [⟨.inr (.inl sIn), sOut⟩]) :
-    E_p_at (trace ++ [⟨.inr (.inl sIn), sOut⟩]) (getBaseTrace trace).length := by
-  unfold E_p_at
-  rw [hbase]
-  dsimp only
-  refine ⟨by
-    simp only [List.length_append, List.length_cons, List.length_nil]
-    exact Nat.le_refl _, sOut.capacitySegment, ?_, ?_⟩
-  · exact ⟨sIn, sOut, by simp, rfl⟩
-  unfold isDuplicatedPriorCapacity
-  rcases hPrior with hFwd | hBwd
-  · rw [List.mem_iff_get] at hFwd
-    obtain ⟨j', hprior⟩ := hFwd
-    simp only [List.get_eq_getElem] at hprior
-    refine Or.inr (Or.inl ⟨⟨j', by
-      simp only [List.length_append, List.length_cons, List.length_nil]
-      exact Nat.lt_trans j'.isLt (Nat.lt_succ_self _)⟩, ?_, sIn', sOut, ?_, rfl⟩)
-    · exact j'.isLt
-    · change (getBaseTrace trace ++ [⟨.inr (.inl sIn), sOut⟩])[j'.val]'_ = _
-      rw [List.getElem_append_left (bs := [⟨.inr (.inl sIn), sOut⟩]) j'.isLt]
-      exact hprior
-  · rw [List.mem_iff_get] at hBwd
-    obtain ⟨j', hprior⟩ := hBwd
-    simp only [List.get_eq_getElem] at hprior
-    refine Or.inr (Or.inr (Or.inr (Or.inr
-      ⟨⟨j', by
-        simp only [List.length_append, List.length_cons, List.length_nil]
-        exact Nat.lt_trans j'.isLt (Nat.lt_succ_self _)⟩,
-      ?_, sOut, sIn', ?_, rfl⟩)))
-    · exact Nat.le_of_lt j'.isLt
-    · change (getBaseTrace trace ++ [⟨.inr (.inl sIn), sOut⟩])[j'.val]'_ = _
-      rw [List.getElem_append_left (bs := [⟨.inr (.inl sIn), sOut⟩]) j'.isLt]
-      exact hprior
-
 /-- Set-semantic cache insertion preserves output functionality when the output key was absent.
 This is the cache-pop counterpart of `TracePermOutputWellformed.add_perm_outlu`. -/
 lemma TracePermOutputWellformed.insert_perm_outlu
@@ -404,6 +361,49 @@ lemma forward_miss_permOutput_wf_or_E
       exact Or.inl ((E_iff_exists_E_at _).mpr
         ⟨(getBaseTrace st.trace).length, Or.inr (Or.inl hEp)⟩)
 
+/-- At an E-good prefix, a forward table miss cannot be filtered as redundant: the query's
+single raw occurrence creates the next base representative.  This is the stopped-runner bridge
+that separates a genuinely fresh materialization from a deterministic table hit. -/
+lemma d2sQueryImpl_permFwd_support_baseTrace_append_of_inlu_miss_of_not_E
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U] [Fintype U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    {stateIn : CanonicalSpongeState U}
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hwf : TracePermOutputWellformed (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (U := U) st.trΔ)
+    (hNoE : ¬ E st.trace)
+    (hIn : TraceTableOps.inlu st.trΔ.p stateIn = none)
+    {r : Option (CanonicalSpongeState U ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))}
+    (hr : r ∈ support ((ProverTransform.d2sQueryImpl
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      gImpl auxImpl (dsPermQuery stateIn) st).run))
+    {stateOut : CanonicalSpongeState U}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hrEq : r = some (stateOut, st')) :
+    getBaseTrace st'.trace =
+      getBaseTrace st.trace ++ [⟨dsPermQuery stateIn, stateOut⟩] := by
+  let hInput : TracePermInputWellformed (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (U := U) st.trΔ :=
+    ⟨hwf.p_nodup,
+      table_inputFunctional_of_mirror_of_not_E (trace := st.trace) st.h_mirror hNoE⟩
+  have hraw : st'.trace = st.trace ++ [⟨dsPermQuery stateIn, stateOut⟩] :=
+    d2sQueryImpl_support_trace_append
+      (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (δ := δ) gImpl auxImpl (dsPermQuery stateIn) st hr stateOut st' hrEq
+  rw [hraw]
+  exact getBaseTrace_append_perm_inlu_miss_eq_of_input_wf
+    (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+    hInput st.h_mirror hIn
+
 /- The cache-pop branch has the same output-functional dichotomy as a fresh forward step.
 Set insertion is harmless when its output is fresh or when it repeats the exact represented pair;
 otherwise it appends a new output collision, hence `E_p`. -/
@@ -490,11 +490,11 @@ lemma d2sHandleBacktrackNoResult_support_permOutput_wf_or_E
       (StmtIn := StmtIn) (U := U) st'.trΔ := by
   subst i
   unfold ProverTransform.d2sHandleBacktrackNoResult at hi
-  cases hCache : ProverTransform.popCacheEntryByInput (U := U) st.cacheP stateIn with
+  cases hCache : ProverTransform.popRateOnlyTailByInput (U := U) st.rateCacheP stateIn with
   | some cached =>
-      rcases cached with ⟨cachedEntry, cacheTail⟩
+      rcases cached with ⟨tail, cacheTail⟩
       simp [hCache] at hi
-      rcases hi with ⟨ha, hst⟩
+      rcases hi with ⟨capacity, _hcapacity, ha, hst⟩
       subst a
       subst st'
       exact cache_insert_permOutput_wf_or_E
@@ -558,17 +558,31 @@ lemma d2sHandleBacktrackSome_support_permOutput_wf_or_E
       by rw [hp]; exact hwf.p_outputFunctional⟩
   split at hi
   · simp at hi
-    obtain ⟨rhoHat, _hrhoHat, hi⟩ := mem_support_option_elimM_some hi
     split at hi
-    · exact rebuild (by aesop)
     · simp at hi
-      obtain ⟨rateBlocks, _hrateBlocks, hi⟩ := mem_support_option_elimM_some hi
-      obtain ⟨synth, _hsynth, hsynth⟩ := mem_support_map_nested_option_some hi
-      injection hsynth with _ha hstEq
-      subst st'
-      exact forward_miss_permOutput_wf_or_E
+      obtain ⟨rhoHat, _hrhoHat, hi⟩ := mem_support_option_elimM_some hi
+      unfold ProverTransform.d2sHandleBacktrackAfterG at hi
+      simp only [StateT.run_bind, StateT.run_get, StateT.run_set, StateT.run_lift,
+        OptionT.run_bind, OptionT.run_lift, OptionT.run_pure, Option.elimM,
+        pure_bind, Option.elim_some] at hi
+      split at hi
+      · exact rebuild (by aesop)
+      · simp at hi
+        obtain ⟨rateBlocks, _hrateBlocks, hi⟩ := mem_support_option_elimM_some hi
+        cases hBlocks : rateBlocks.toList with
+        | nil => simp [hBlocks] at hi
+        | cons firstRate remainingRates =>
+          simp [hBlocks] at hi
+          obtain ⟨capacity, _hcapacity, ha, hstEq⟩ := hi
+          subst a
+          subst st'
+          exact forward_miss_permOutput_wf_or_E
+            (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+            (U := U) hwf hNoE (by assumption)
+    · exact d2sHandleBacktrackNoResult_support_permOutput_wf_or_E
         (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
-        (U := U) hwf hNoE (by assumption)
+        (U := U) (δ := δ) gImpl auxImpl st hwf hNoE (by
+          simpa using hi) rfl
   · simp at hi
     split at hi
     · exact rebuild (by aesop)
@@ -845,6 +859,78 @@ lemma d2sQueryImpl_support_permOutput_wf_or_E
           subst ha
           subst hs
           exact hstep
+
+/-- The revised monitored interface removes the exceptional branch from the forward-table
+invariant.  A raw transition can either preserve output functionality or create `E`; `Monitor`
+turns the latter case into an abort, so it has no successful support point. -/
+lemma d2sQueryImplMonitored_support_permOutput_wf
+    [Fintype U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hwf : TracePermOutputWellformed (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (U := U) st.trΔ)
+    (hNoE : ¬ E st.trace)
+    {r : Option ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+      ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))}
+    (hr : r ∈ support ((ProverTransform.d2sQueryImplMonitored
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      gImpl auxImpl q st).run)) :
+    ∀ a st', r = some (a, st') →
+      TracePermOutputWellformed (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (U := U) st'.trΔ := by
+  intro a₀ st₀ hrEq
+  rw [ProverTransform.d2sQueryImplMonitored] at hr
+  simp only [OptionT.run_bind, Option.elimM, mem_support_bind_iff] at hr
+  obtain ⟨result, hresult, hr⟩ := hr
+  cases result with
+  | none =>
+      have hr' : r ∈ support (pure none : ProbComp
+          (Option ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+            ProverTransform.D2SQueryState
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) := by
+        simpa using hr
+      rw [mem_support_pure_iff] at hr'
+      rw [hrEq] at hr'
+      simp at hr'
+  | some result =>
+      rcases result with ⟨a, st'⟩
+      by_cases hE : E st'.trace
+      · have hr' : r ∈ support (pure none : ProbComp
+          (Option ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+            ProverTransform.D2SQueryState
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) := by
+          simpa [hE] using hr
+        rw [mem_support_pure_iff] at hr'
+        rw [hrEq] at hr'
+        simp at hr'
+      · have hraw : E st'.trace ∨ TracePermOutputWellformed (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (U := U) st'.trΔ :=
+          d2sQueryImpl_support_permOutput_wf_or_E
+            (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+            (U := U) (δ := δ) gImpl auxImpl q st hwf hNoE hresult a st' rfl
+        have hpair : (a₀, st₀) = (a, st') := by
+          have hr' : r ∈ support (pure (some (a, st')) : ProbComp
+              (Option ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+                ProverTransform.D2SQueryState
+                  (δ := δ) (T_H := T_H) (T_P := T_P)
+                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))) := by
+            simpa [hE] using hr
+          rw [mem_support_pure_iff] at hr'
+          rw [hrEq] at hr'
+          exact Option.some.inj hr'
+        injection hpair with ha hs
+        subst ha
+        subst hs
+        exact hraw.resolve_left hE
 
 /-- Generic successful-result eliminator for the public `d2sQueryImpl` wrapper.  It isolates the
 single `OptionT`/simulation peel shared by every state invariant from the query-step-specific

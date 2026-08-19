@@ -193,6 +193,10 @@ The SR challenge oracle for this lifted verifier is `srChallengeOracle (StmtIn �
 which equals `fsChallengeOracle (StmtIn × Salt) pSpec` by alias. -/
 def saltedIPVerifier {Salt : Type} (V : Verifier oSpec StmtIn StmtOut pSpec) :
     Verifier oSpec (StmtIn × Salt) StmtOut pSpec where
+  -- NOTE: once the salt are used in oracle queries (`StmtIn × Salt` is the input statement) to
+  -- generate the transcript, the IP/IOP verifier's `verify` method doesn't need it anymore,
+  -- the salt's role is to randomize the oracle queries to add zero-knowledge and the verifier
+  -- isn't necessarily aware of zero-knowledge
   verify := fun ⟨stmtIn, _⟩ transcript => V.verify stmtIn transcript
 
 /-- Lift a soundness language `langIn : Set StmtIn` to `Set (StmtIn × Salt)`,

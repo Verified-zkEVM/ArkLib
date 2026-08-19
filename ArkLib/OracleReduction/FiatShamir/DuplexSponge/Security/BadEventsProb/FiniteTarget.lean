@@ -85,6 +85,29 @@ lemma probEvent_bind_rel_div_le {α β : Type}
     _ = (∑' x : α, Pr[= x | mx] * Pr[B | my x]) * D⁻¹ := by
           rw [ENNReal.tsum_mul_right]
 
+/-- **GENERIC — bind-stable multiplicative relative bound.**
+The multiplicative presentation is convenient when the denominator event is a reachability
+event.  It is equivalent in spirit to `probEvent_bind_rel_div_le`, but avoids introducing an
+artificial reciprocal when the conditional collision charge is already a probability. -/
+lemma probEvent_bind_rel_mul_le {α β : Type}
+    (mx : ProbComp α) (my : α → ProbComp β) (A B : β → Prop) (K : ℝ≥0∞)
+    (h : ∀ x ∈ support mx, Pr[ A | my x] ≤ Pr[ B | my x] * K) :
+    Pr[ A | mx >>= my] ≤ Pr[ B | mx >>= my] * K := by
+  rw [probEvent_bind_eq_tsum, probEvent_bind_eq_tsum]
+  calc
+    ∑' x : α, Pr[= x | mx] * Pr[A | my x]
+        ≤ ∑' x : α, Pr[= x | mx] * (Pr[B | my x] * K) := by
+          refine ENNReal.tsum_le_tsum ?_
+          intro x
+          by_cases hx : x ∈ support mx
+          · exact mul_le_mul' le_rfl (h x hx)
+          · simp [probOutput_eq_zero_of_not_mem_support hx]
+    _ = (∑' x : α, Pr[= x | mx] * Pr[B | my x]) * K := by
+          rw [← ENNReal.tsum_mul_right]
+          refine tsum_congr ?_
+          intro x
+          rw [mul_assoc]
+
 /-- **GENERIC — finite-cover union bound.**
 If every occurrence of `A` has a witness in the finite index set `I`, and each witnessed event
 has the stated weight, then `A` has at most the sum of those weights.  This packages the

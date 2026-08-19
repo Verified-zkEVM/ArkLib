@@ -316,6 +316,150 @@ lemma probEvent_uniformState_capacitySegment_mem_finset_le
     _ = (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
         rw [div_eq_mul_inv]
 
+/-- A uniformly sampled capacity block lands in a fixed finite target set with probability at
+most `|S| / |Σ|^c`.  This is the direct deferred-decision charge used by a rate-only tail: unlike
+the former full-state cache, the sampled value is exactly the capacity exposed at consumption. -/
+lemma probEvent_uniformCapacity_mem_finset_le
+    [Fintype U] [Nonempty U] [DecidableEq U] [VCVCompatible U]
+    [SampleableType (Vector U SpongeSize.C)]
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ fun c : Vector U SpongeSize.C => c ∈ S |
+        ($ᵗ (Vector U SpongeSize.C)) ]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  classical
+  have hcapacityCard :
+      (@Fintype.card (Vector U SpongeSize.C) Vector.instFintype : ℝ≥0∞) =
+        capacitySpaceSize (U := U) := by
+    have hcardVec :
+        @Fintype.card (Vector U SpongeSize.C) Vector.instFintype =
+          Fintype.card (Fin SpongeSize.C → U) := by
+      exact Fintype.card_congr (Equiv.rootVectorEquivFin (α := U) (n := SpongeSize.C))
+    rw [hcardVec, Fintype.card_fun, Fintype.card_fin, capacitySpaceSize, Nat.cast_pow]
+  have hEvent : (fun c : Vector U SpongeSize.C => c ∈ S) =
+      fun c : Vector U SpongeSize.C => ∃ target ∈ S, c = target := by
+    funext c
+    apply propext
+    constructor
+    · intro hmem
+      exact ⟨c, hmem, rfl⟩
+    · rintro ⟨target, hmem, rfl⟩
+      exact hmem
+  rw [hEvent]
+  calc
+    Pr[ fun c : Vector U SpongeSize.C => ∃ target ∈ S, c = target |
+        ($ᵗ (Vector U SpongeSize.C)) ]
+        ≤ ∑ target ∈ S,
+            Pr[ fun c : Vector U SpongeSize.C => c = target |
+              ($ᵗ (Vector U SpongeSize.C)) ] :=
+          probEvent_exists_finset_le_sum S _ _
+    _ = ∑ _target ∈ S, 1 / capacitySpaceSize (U := U) := by
+        apply Finset.sum_congr rfl
+        intro target htarget
+        rw [probEvent_eq_eq_probOutput, probOutput_uniformSample, hcapacityCard, div_eq_mul_inv]
+        simp
+    _ = (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+        rw [Finset.sum_const, nsmul_eq_mul, div_eq_mul_inv, div_eq_mul_inv]
+        simp
+
+/-- A computation that fixes arbitrary preceding data before one fresh capacity draw has the
+same finite-target charge as the draw itself.  No independence assumption is needed: every
+conditional continuation is bounded by the uniform-capacity estimate. -/
+lemma probEvent_prefix_then_uniformCapacity_mem_finset_le
+    {Γ : Type}
+    [Fintype U] [Nonempty U] [DecidableEq U] [VCVCompatible U]
+    [SampleableType (Vector U SpongeSize.C)]
+    (prior : ProbComp Γ)
+    (S : Finset (Vector U SpongeSize.C)) :
+    Pr[ fun result : Γ × Vector U SpongeSize.C => result.2 ∈ S |
+      (do
+        let preceding ← prior
+        let capacity ← ($ᵗ (Vector U SpongeSize.C))
+        pure (preceding, capacity)) ]
+      ≤ (S.card : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  apply probEvent_bind_le_of_forall_le
+  intro preceding _
+  rw [probEvent_bind_pure_left_pair]
+  exact probEvent_uniformCapacity_mem_finset_le (U := U) S
+
+/-- **Adaptive finite-target deferred decision.**  A prefix computation may choose its capacity
+target set after seeing all earlier randomness; one later uniform capacity draw still hits that
+set with probability bounded by its worst-case cardinality divided by `|Σ|^c`.  The predicate
+`P` is retained so callers can state a first-bad prefix condition, but no independence of `P` is
+needed beyond the fact that it is fixed before this draw.
+
+This is the sole probability primitive required by the five revised Lemma 5.8 gateways.  The
+gateway-specific proof obligation is only a deterministic implication from a stopped occurrence
+to membership in its prefix-selected target finset. -/
+lemma probEvent_prefix_then_uniformCapacity_mem_adaptive_finset_le
+    {Γ : Type}
+    [Fintype U] [Nonempty U] [DecidableEq U] [VCVCompatible U]
+    [SampleableType (Vector U SpongeSize.C)]
+    (prior : ProbComp Γ) (P : Γ → Prop)
+    (targets : Γ → Finset (Vector U SpongeSize.C)) (bound : ℕ)
+    (hcard : ∀ history, (targets history).card ≤ bound) :
+    Pr[ fun result : Γ × Vector U SpongeSize.C =>
+        P result.1 ∧ result.2 ∈ targets result.1 |
+      (do
+        let history ← prior
+        let capacity ← ($ᵗ (Vector U SpongeSize.C))
+        pure (history, capacity)) ]
+      ≤ (bound : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  apply probEvent_bind_le_of_forall_le
+  intro history _
+  rw [probEvent_bind_pure_left_pair]
+  calc
+    Pr[ fun capacity : Vector U SpongeSize.C =>
+        P history ∧ capacity ∈ targets history |
+      ($ᵗ (Vector U SpongeSize.C)) ]
+      ≤ Pr[ fun capacity : Vector U SpongeSize.C => capacity ∈ targets history |
+        ($ᵗ (Vector U SpongeSize.C)) ] := by
+          apply probEvent_mono''
+          intro capacity h
+          exact h.2
+    _ ≤ ((targets history).card : ℝ≥0∞) / capacitySpaceSize (U := U) :=
+      probEvent_uniformCapacity_mem_finset_le (U := U) (targets history)
+    _ ≤ (bound : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+      gcongr
+      exact_mod_cast hcard history
+
+/-- **Adaptive full-state deferred decision.**  This is the full-state counterpart of
+`probEvent_prefix_then_uniformCapacity_mem_adaptive_finset_le`: a preceding computation may
+choose a capacity target set, after which a uniformly sampled sponge state hits that set through
+its capacity segment with the same `|S| / |Σ|^c` bound.  It is the shared probability primitive
+for the revised forward and inverse table-miss gateways. -/
+lemma probEvent_prefix_then_uniformState_capacity_mem_adaptive_finset_le
+    {Γ : Type}
+    [Fintype U] [Nonempty U] [DecidableEq U] [VCVCompatible U]
+    [SampleableType (CanonicalSpongeState U)]
+    (prior : ProbComp Γ) (P : Γ → Prop)
+    (targets : Γ → Finset (Vector U SpongeSize.C)) (bound : ℕ)
+    (hcard : ∀ history, (targets history).card ≤ bound) :
+    Pr[ fun result : Γ × CanonicalSpongeState U =>
+        P result.1 ∧ result.2.capacitySegment ∈ targets result.1 |
+      (do
+        let history ← prior
+        let state ← ($ᵗ (CanonicalSpongeState U))
+        pure (history, state)) ]
+      ≤ (bound : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+  apply probEvent_bind_le_of_forall_le
+  intro history _
+  rw [probEvent_bind_pure_left_pair]
+  calc
+    Pr[ fun state : CanonicalSpongeState U =>
+        P history ∧ state.capacitySegment ∈ targets history |
+      ($ᵗ (CanonicalSpongeState U)) ]
+      ≤ Pr[ fun state : CanonicalSpongeState U =>
+          state.capacitySegment ∈ targets history |
+        ($ᵗ (CanonicalSpongeState U)) ] := by
+          apply probEvent_mono''
+          intro state h
+          exact h.2
+    _ ≤ ((targets history).card : ℝ≥0∞) / capacitySpaceSize (U := U) :=
+      probEvent_uniformState_capacitySegment_mem_finset_le (U := U) (targets history)
+    _ ≤ (bound : ℝ≥0∞) / capacitySpaceSize (U := U) := by
+      gcongr
+      exact_mod_cast hcard history
+
 
 end ProductFreshSample
 

@@ -86,10 +86,11 @@ lemma lemma5_8_sigma_E_p_first_at
       ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U)
   calc
     Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧ E_p_at (tr.1 ++ tr.2) j | exp]
-      ≤ Pr[ fun tr => permFwdFreshHitAt (getBaseTrace (tr.1 ++ tr.2)) j | exp] := by
+      ≤ Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧
+          permFwdFreshHitAt (getBaseTrace (tr.1 ++ tr.2)) j | exp] := by
       apply probEvent_mono
       intro tr _ h
-      exact E_p_at_imp_permFwdFreshHitAt _ _ h.2
+      exact ⟨h.1, E_p_at_imp_permFwdFreshHitAt _ _ h.2⟩
     _ ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U) :=
       foundational_sigma_permFwdFreshHit_contract
         (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec)

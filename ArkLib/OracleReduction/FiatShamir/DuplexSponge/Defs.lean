@@ -333,6 +333,15 @@ def totalNumPermQueries : Nat :=
 
 alias L := totalNumPermQueries
 
+/-- Salt-aware upper bound for a complete salted transcript replay.  This is
+`\bar L = L_δ + L_P + L_V`: unlike `L`, it remains valid when the salt spans more
+than one rate block.  It is deliberately an upper bound; a lazy sponge need not query the
+permutation after the final partially filled salt block. -/
+def totalNumPermQueriesSalted (δ : Nat) : Nat :=
+  numSaltBlocks δ + pSpec.totalNumPermQueries
+
+alias Lbar := totalNumPermQueriesSalted
+
 end BlockCountNotation
 
 variable (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
@@ -421,12 +430,86 @@ def D_Sigma
       (gSpec (U := U) StmtIn pSpec δ) :=
   OracleReduction.D_ROM _
 
+/-- A concrete sampler for the eager encoded challenge-oracle table used by Section 5.
+
+Unlike the legacy global instance below, this construction makes the required finiteness of the
+statement-input and sponge-unit alphabets explicit.  The query domain of `gSpec` is finite: it is
+a finite dependent sum of a statement input, a salt vector, and a fixed-length family of encoded
+prover-message vectors.  Hence its full oracle family is a finite, nonempty function type and can
+be sampled uniformly.  The compatibility instance below is exactly this construction, so every
+Section 5 hybrid uses the same finite-table semantics. -/
+noncomputable def sampleableEncodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type}
+    {pSpec : ProtocolSpec n} {δ : Nat}
+    [HasMessageSize pSpec] [HasChallengeSize pSpec]
+    [VCVCompatible StmtIn] [VCVCompatible U] :
+    SampleableType (OracleReduction.OracleFamily
+      (gSpec (U := U) StmtIn pSpec δ)) := by
+  letI : FinEnum StmtIn := VCVCompatible.instFinEnum
+  letI : FinEnum U := VCVCompatible.instFinEnum
+  letI : FinEnum pSpec.ChallengeIdx := inferInstance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum (pSpec.EncodedMessagesBefore U i.1.castSucc) := inferInstance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum ((gSpecInterface (U := U) StmtIn pSpec δ i).Query) := by
+    change FinEnum (StmtIn × Vector U δ ×
+      pSpec.EncodedMessagesBefore U i.1.castSucc)
+    infer_instance
+  letI : FinEnum ((gSpec (U := U) StmtIn pSpec δ).Domain) := inferInstance
+  letI (q : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+      FinEnum ((gSpec (U := U) StmtIn pSpec δ).Range q) := by
+    change FinEnum (Vector U (challengeSize q.1))
+    infer_instance
+  letI (q : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+      Inhabited ((gSpec (U := U) StmtIn pSpec δ).Range q) := by
+    change Inhabited (Vector U (challengeSize q.1))
+    infer_instance
+  letI : Nonempty (OracleReduction.OracleFamily
+      (gSpec (U := U) StmtIn pSpec δ)) := ⟨fun _ => default⟩
+  exact SampleableType.ofFintype _
+
+/-- The finite, explicit-table form of CO25's eager `D_Σ` distribution.
+
+`D_Sigma` predates the Section 5 replay revision and obtains its table sampler through global
+instance search.  This variant fixes the axiom-clean finite sampler locally, so a revised proof
+cannot accidentally inherit the legacy compatibility placeholder below. -/
+noncomputable def D_SigmaFinite
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec]
+    [VCVCompatible StmtIn] [VCVCompatible U] :
+    OracleReduction.OracleDistribution
+      (gSpec (U := U) StmtIn pSpec δ) := by
+  letI : SampleableType (OracleReduction.OracleFamily
+      (gSpec (U := U) StmtIn pSpec δ)) :=
+    sampleableEncodedChallengeOracle
+  exact OracleReduction.D_ROM _
+
 /-- Bridge: `SampleableType` for `gSpec` (Hyb₁ `g`) derived from
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
 (gSpec …))` at call sites in §5.8 hybrids and in `BadEvents.lemma_5_8`'s
 eager `𝒟_Σ` sampling. -/
-instance instSampleableTypeEncodedChallengeOracle
+@[instance 1100]
+noncomputable instance instSampleableTypeEncodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
+    [HasMessageSize pSpec] [HasChallengeSize pSpec]
+    [VCVCompatible StmtIn] [VCVCompatible U] :
+    SampleableType (OracleReduction.OracleFamily
+      (gSpec (U := U) StmtIn pSpec δ)) :=
+  sampleableEncodedChallengeOracle
+
+/-- Legacy compatibility assumption for the old eager-table path.
+
+The original development let arbitrary statement types instantiate a full sampled `g` table, even
+though a uniform full table is only constructible from a finite query domain.  The revised Section
+5 cone never uses this fallback: when `StmtIn` and `U` are `VCVCompatible`, the higher-priority
+axiom-clean instance above is selected.  We retain this low-priority placeholder only so that
+unmigrated legacy probability lemmas keep their historical type signatures while their eager-table
+semantics are replaced by the lazy/refined construction. -/
+@[instance 100]
+noncomputable instance instSampleableTypeEncodedChallengeOracleLegacy
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type}
+    {pSpec : ProtocolSpec n} {δ : Nat}
     [HasMessageSize pSpec] [HasChallengeSize pSpec] :
     SampleableType (OracleReduction.OracleFamily
       (gSpec (U := U) StmtIn pSpec δ)) := by
@@ -477,13 +560,62 @@ noncomputable def D_f
     OracleReduction.OracleDistribution (fsChallengeOracle (StmtIn × Salt) pSpec) :=
   D_IP_salted pSpec
 
+/-- A concrete sampler for the eager decoded challenge-oracle table used by `Hyb₂`.
+
+The domain is the same finite encoded-prefix domain as `gSpec`; each range is the finite decoded
+challenge space of the selected round. -/
+noncomputable def sampleableDecodedChallengeOracle
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type}
+    {pSpec : ProtocolSpec n} {δ : Nat}
+    [HasMessageSize pSpec]
+    [VCVCompatible StmtIn] [VCVCompatible U]
+    [∀ i, VCVCompatible (pSpec.Challenge i)] :
+    SampleableType (OracleReduction.OracleFamily
+      (eSpec (U := U) StmtIn pSpec δ)) := by
+  letI : FinEnum StmtIn := VCVCompatible.instFinEnum
+  letI : FinEnum U := VCVCompatible.instFinEnum
+  letI : FinEnum pSpec.ChallengeIdx := inferInstance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum (pSpec.EncodedMessagesBefore U i.1.castSucc) := inferInstance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum ((eSpecInterface (U := U) StmtIn pSpec δ i).Query) := by
+    change FinEnum (StmtIn × Vector U δ ×
+      pSpec.EncodedMessagesBefore U i.1.castSucc)
+    infer_instance
+  letI : FinEnum ((eSpec (U := U) StmtIn pSpec δ).Domain) := inferInstance
+  letI (q : (eSpec (U := U) StmtIn pSpec δ).Domain) :
+      FinEnum ((eSpec (U := U) StmtIn pSpec δ).Range q) := by
+    change FinEnum (pSpec.Challenge q.1)
+    exact VCVCompatible.instFinEnum
+  letI (q : (eSpec (U := U) StmtIn pSpec δ).Domain) :
+      Inhabited ((eSpec (U := U) StmtIn pSpec δ).Range q) := by
+    change Inhabited (pSpec.Challenge q.1)
+    infer_instance
+  letI : Nonempty (OracleReduction.OracleFamily
+      (eSpec (U := U) StmtIn pSpec δ)) := ⟨fun _ => default⟩
+  exact SampleableType.ofFintype _
+
 /-- Bridge: `SampleableType` for `eSpec` (Hyb₂ `e`) derived from
 granular `VCVCompatible` base-type hypotheses. Eliminates verbose `SampleableType (OracleFamily
 (eSpec …))` at call sites in §5.8 hybrids. -/
-instance instSampleableTypeDecodedChallengeOracle
+@[instance 1100]
+noncomputable instance instSampleableTypeDecodedChallengeOracle
     {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type} {pSpec : ProtocolSpec n} {δ : Nat}
     [VCVCompatible StmtIn] [VCVCompatible U] [∀ i, VCVCompatible (pSpec.Challenge i)]
     [HasMessageSize pSpec] :
+    SampleableType (OracleReduction.OracleFamily
+      (eSpec (U := U) StmtIn pSpec δ)) :=
+  sampleableDecodedChallengeOracle
+
+/-- Legacy counterpart of `instSampleableTypeEncodedChallengeOracleLegacy` for the eager decoded
+table.  It is deliberately lower priority than the finite, axiom-clean instance above and exists
+solely until the old `Hyb₂` path is migrated to the revised lazy sampler. -/
+@[instance 100]
+noncomputable instance instSampleableTypeDecodedChallengeOracleLegacy
+    {U : Type} [SpongeUnit U] [SpongeSize] {n : ℕ} {StmtIn : Type}
+    {pSpec : ProtocolSpec n} {δ : Nat}
+    [HasMessageSize pSpec]
+    [∀ i, VCVCompatible (pSpec.Challenge i)] :
     SampleableType (OracleReduction.OracleFamily
       (eSpec (U := U) StmtIn pSpec δ)) := by
   sorry
@@ -570,7 +702,7 @@ def duplexSpongeForwardOracle (StartType : Type) (U : Type) [SpongeUnit U] [Spon
 (CO25 Figure 4 line 3, `𝒱^{h,p}` inside the `(h, p, p⁻¹)` world): hash queries map to hash
 queries and **forward-permutation queries map to the forward slot** of the permutation oracle.
 
-Declared with high priority — **audit finding A3**: the forward and inverse permutation slots
+Declared with high priority because the forward and inverse permutation slots
 have identical signatures (`State →ₒ State`), so unguided instance search resolves the
 sub-goal `forwardPermutationOracle ⊂ₒ permutationOracle` via `subSpec_add_right` and silently
 embeds the honest verifier's forward queries into the **inverse** slot, making the §5.6–§5.8

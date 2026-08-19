@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen
 -/
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.HashCredit
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.MonitoredD2SQuery
 
 /-!
 # Hash stopping-time runner for Lemma 5.8
@@ -70,6 +71,205 @@ noncomputable def sigmaHashRun
       (gImpl := sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
       (auxImpl := sigmaAuxImpl (U := U)))) oa).run).run
     (st, log)
+
+/-- Proof-only first-bad execution of the same oracle program.  Unlike `sigmaHashRun`, a
+monitor failure retains the post-occurrence state in `monitorStop` and prevents the continuation
+from issuing another query.  This is the formal counterpart of paper-side `StopD2SQuery`; it is
+not a public D2SQuery interface. -/
+noncomputable def sigmaStoppedRun
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {α : Type}
+    (oa : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    ProbComp (Except
+      (ProverTransform.D2SStopReason
+        (ProverTransform.D2SQueryState
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+      (α × ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))) :=
+  ((simulateQ (ProverTransform.d2sStoppingCombinedImpl
+    (δ := δ) (T_H := T_H) (T_P := T_P)
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+    (sigmaAuxImpl (U := U))) oa).run st).run
+
+/-- The stopped runner has the expected terminal form. -/
+lemma sigmaStoppedRun_pure_eq
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {α : Type} (x : α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    sigmaStoppedRun (T_H := T_H) (T_P := T_P) k_g (pure x) st =
+      pure (.ok (x, st)) := by
+  unfold sigmaStoppedRun
+  rw [simulateQ_pure]
+  rfl
+
+/-- One stopped query either propagates its stop reason or supplies its ordinary answer to the
+continuation.  This is the sole structural equation needed for the forthcoming raw/stopped
+prefix coupling. -/
+lemma sigmaStoppedRun_query_bind_eq
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {α : Type}
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (mx : ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Range (Sum.inr q) →
+      OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    sigmaStoppedRun (T_H := T_H) (T_P := T_P) k_g
+      (liftM (OracleSpec.query (Sum.inr q)) >>= mx) st =
+      ((ProverTransform.d2sQueryImplStopping
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+        (sigmaAuxImpl (U := U)) q).run st).run >>= fun first =>
+          match first with
+          | .error stop => pure (.error stop)
+          | .ok (a, st') => sigmaStoppedRun (T_H := T_H) (T_P := T_P) k_g
+              (mx ((OracleSpec.query (Sum.inr q)).cont a)) st' := by
+  unfold sigmaStoppedRun
+  rw [simulateQ_query_bind, StateT.run_bind]
+  simp only [OracleQuery.input_query, monadLift_self, ExceptT.run_bind,
+    ProverTransform.d2sStoppingCombinedImpl]
+  apply bind_congr
+  intro first
+  cases first <;> rfl
+
+/-- Every ordinary terminal result of a stopped execution is an `E`-good state, provided its
+initial state was good.  A monitor failure is represented only by `Except.error`, hence cannot
+reach the continuation. -/
+lemma sigmaStoppedRun_support_ok_not_E
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    {α : Type}
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    (oa : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hgood : ¬ E st.trace)
+    {r : Except
+      (ProverTransform.D2SStopReason
+        (ProverTransform.D2SQueryState
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+      (α × ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))}
+    (hr : r ∈ support (sigmaStoppedRun (T_H := T_H) (T_P := T_P) k_g oa st)) :
+    ∀ a st', r = Except.ok (a, st') → ¬ E st'.trace := by
+  induction oa using OracleComp.inductionOn generalizing st with
+  | pure x =>
+      rw [sigmaStoppedRun_pure_eq (T_H := T_H) (T_P := T_P) k_g x st] at hr
+      rw [mem_support_pure_iff] at hr
+      intro a st' hrEq
+      have hpair : (a, st') = (x, st) := Except.ok.inj (hrEq.symm.trans hr)
+      injection hpair with _ hs
+      subst st'
+      exact hgood
+  | query_bind t mx ih =>
+      match t with
+      | Sum.inl e => exact PEmpty.elim e
+      | Sum.inr q =>
+          rw [sigmaStoppedRun_query_bind_eq (T_H := T_H) (T_P := T_P)
+            k_g q mx st] at hr
+          rw [mem_support_bind_iff] at hr
+          obtain ⟨first, hfirst, hrest⟩ := hr
+          cases first with
+          | error stop =>
+              rw [mem_support_pure_iff] at hrest
+              intro a st' hrEq
+              rw [hrest] at hrEq
+              contradiction
+          | ok pair =>
+              rcases pair with ⟨answer, stMid⟩
+              have hmid : ¬ E stMid.trace :=
+                ProverTransform.d2sQueryImplStopping_support_ok_not_E
+                  (δ := δ) (T_H := T_H) (T_P := T_P)
+                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                  (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+                  (sigmaAuxImpl (U := U)) q st hfirst
+              exact ih ((OracleSpec.query (Sum.inr q)).cont answer) stMid hmid hrest
+
+/-- A multi-query `monitorStop` retains an E-bad post-occurrence state.  Together with
+`sigmaStoppedRun_support_ok_not_E`, this is the reusable first-bad boundary: continuations are
+good, and the first non-continuation monitor record contains the bad occurrence. -/
+lemma sigmaStoppedRun_support_monitorStop_E
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    {α : Type}
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    (oa : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hgood : ¬ E st.trace)
+    {r : Except
+      (ProverTransform.D2SStopReason
+        (ProverTransform.D2SQueryState
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)))
+      (α × ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))}
+    {st' : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
+    (hr : r ∈ support (sigmaStoppedRun (T_H := T_H) (T_P := T_P) k_g oa st))
+    (hrStop : r = Except.error (ProverTransform.D2SStopReason.monitorStop st')) :
+    E st'.trace := by
+  induction oa using OracleComp.inductionOn generalizing st with
+  | pure x =>
+      rw [sigmaStoppedRun_pure_eq (T_H := T_H) (T_P := T_P) k_g x st] at hr
+      rw [mem_support_pure_iff] at hr
+      rw [hr] at hrStop
+      contradiction
+  | query_bind t mx ih =>
+      match t with
+      | Sum.inl e => exact PEmpty.elim e
+      | Sum.inr q =>
+          rw [sigmaStoppedRun_query_bind_eq (T_H := T_H) (T_P := T_P)
+            k_g q mx st] at hr
+          rw [mem_support_bind_iff] at hr
+          obtain ⟨first, hfirst, hrest⟩ := hr
+          cases first with
+          | error stop =>
+              rw [mem_support_pure_iff] at hrest
+              rw [hrest] at hrStop
+              have hstop : stop = ProverTransform.D2SStopReason.monitorStop st' :=
+                Except.error.inj hrStop
+              cases stop with
+              | monitorStop stMid =>
+                  have hstate : st' = stMid := ProverTransform.D2SStopReason.monitorStop.inj hstop.symm
+                  subst st'
+                  exact ProverTransform.d2sQueryImplStopping_support_monitorStop_E
+                    (δ := δ) (T_H := T_H) (T_P := T_P)
+                    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                    (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+                    (sigmaAuxImpl (U := U)) q st hfirst
+              | rawAbort stMid =>
+                  cases hstop
+          | ok pair =>
+              rcases pair with ⟨answer, stMid⟩
+              have hmid : ¬ E stMid.trace :=
+                ProverTransform.d2sQueryImplStopping_support_ok_not_E
+                  (δ := δ) (T_H := T_H) (T_P := T_P)
+                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+                  (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+                  (sigmaAuxImpl (U := U)) q st hfirst
+              exact ih ((OracleSpec.query (Sum.inr q)).cont answer) stMid hmid hrest
 
 /-- The relative bound for one atom, kept opaque while structurally recursing over an
 `OracleComp`.  This avoids re-elaborating the full simulator executor in every induction
@@ -726,6 +926,66 @@ lemma sigmaHashRun_bind_eq
   rcases first with ⟨answer, rest⟩
   rcases rest with ⟨st', log'⟩
   cases answer <;> rfl
+
+/-- Every raw simulator execution extends its incoming base trace.  Redundant D2S occurrences
+contribute the empty suffix; retained representatives contribute a singleton, and the induction
+only needs their concatenation.  This is the trace-side invariant needed to transport a first-bad
+witness from a raw final state back to the stopped prefix where it first appeared. -/
+lemma sigmaHashRun_support_baseTrace_append
+    [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
+    [VCVCompatible U] [SampleableType U]
+    (k_g : (D_Sigma (U := U) StmtIn pSpec δ).Carrier)
+    {α : Type}
+    (oa : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
+    (st : ProverTransform.D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (log : QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U))
+    {r : Option α ×
+      (ProverTransform.D2SQueryState
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) ×
+        QueryLog ([]ₒ + duplexSpongeChallengeOracle StmtIn U))}
+    (hr : r ∈ support (sigmaHashRun (T_H := T_H) (T_P := T_P) k_g oa st log)) :
+    ∃ extra : QueryLog (duplexSpongeChallengeOracle StmtIn U),
+      getBaseTrace r.2.1.trace = getBaseTrace st.trace ++ extra := by
+  classical
+  induction oa using OracleComp.inductionOn generalizing st log r with
+  | pure x =>
+      rw [sigmaHashRun_pure_eq (T_H := T_H) (T_P := T_P) k_g x st log] at hr
+      rw [mem_support_pure_iff] at hr
+      subst r
+      exact ⟨[], by simp⟩
+  | query_bind t mx ih =>
+      match t with
+      | Sum.inl e => exact PEmpty.elim e
+      | Sum.inr q =>
+          unfold sigmaHashRun at hr
+          rw [combinedImpl_run_query_bind_eq, wrappedDSImpl_run_eq_d2sQuery_bind] at hr
+          rw [mem_support_bind_iff] at hr
+          obtain ⟨first, hfirst, hrest⟩ := hr
+          rw [mem_support_bind_iff] at hfirst
+          obtain ⟨raw, hraw, hfirstEq⟩ := hfirst
+          cases raw with
+          | none =>
+              rw [mem_support_pure_iff] at hfirstEq
+              subst first
+              rw [mem_support_pure_iff] at hrest
+              subst r
+              exact ⟨[], by simp⟩
+          | some pair =>
+              rcases pair with ⟨a, stMid⟩
+              rw [mem_support_pure_iff] at hfirstEq
+              subst first
+              obtain ⟨extra₁, hbase₁⟩ := d2sQueryImpl_support_baseTrace_append
+                (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (pSpec := pSpec)
+                (U := U) (δ := δ)
+                (sigmaGImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) k_g)
+                (sigmaAuxImpl (U := U)) q st hraw rfl
+              obtain ⟨extra₂, hbase₂⟩ := ih a stMid
+                (log ++ QueryLog.singleton (Sum.inr q) a) hrest
+              refine ⟨extra₁ ++ extra₂, ?_⟩
+              rw [hbase₂, hbase₁, List.append_assoc]
 
 /-- Forgetting the wrapper log makes a fixed simulator run independent of its initial log
 prefix.  This is the state part of `sigmaHashRun_log_append_eq`. -/

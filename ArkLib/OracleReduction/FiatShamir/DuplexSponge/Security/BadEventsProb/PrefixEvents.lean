@@ -65,6 +65,15 @@ lemma getBaseTrace_getElem_eq_of_append_eq
     rw [List.getElem_append_left (bs := extra) hj]
   exact hleft.trans hright
 
+/-- An entry of an appended list whose natural index lies in the left prefix is literally the
+corresponding entry of that prefix.  This `Fin`-indexed form avoids proof-irrelevance casts in
+the backward (first-bad) transport lemmas below. -/
+lemma getElem_append_left_of_fin
+    {α : Type} {xs ys : List α}
+    (i : Fin (xs ++ ys).length) (hi : i.1 < xs.length) :
+    (xs ++ ys)[i.1]'i.2 = xs[i.1]'hi := by
+  rw [List.getElem_append_left (bs := ys) hi]
+
 /-- Transport a duplicate-capacity witness across definitional equality of base traces. -/
 lemma isDuplicatedPriorCapacity_of_baseTrace_eq
     {baseTrace baseTrace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -140,6 +149,63 @@ lemma isDuplicatedPriorCapacity_append_of_lt
         exact hidx
       exact hidx'
 
+/-- A duplicate-capacity witness at an old position of an appended base trace was already a
+witness in the prefix.  The capacity predicate therefore depends only on entries through its
+designated index. -/
+lemma isDuplicatedPriorCapacity_of_append_of_lt
+    {baseTrace extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {j : ℕ} (hj : j < baseTrace.length)
+    {capSeg : Vector U SpongeSize.C}
+    (hdup : isDuplicatedPriorCapacity (baseTrace ++ extra)
+      ⟨j, by
+        rw [List.length_append]
+        exact Nat.lt_of_lt_of_le hj (Nat.le_add_right _ _)
+      ⟩ capSeg) :
+    isDuplicatedPriorCapacity baseTrace ⟨j, hj⟩ capSeg := by
+  unfold isDuplicatedPriorCapacity at hdup ⊢
+  rcases hdup with hH | hPout | hPinIn | hPin | hPoutInv
+  · rcases hH with ⟨j', hlt, stmt', hidx⟩
+    have hjlt : j'.1 < j := by simpa only [Fin.mk_lt_mk] using hlt
+    have hjOld : j'.1 < baseTrace.length := Nat.lt_trans hjlt hj
+    refine Or.inl ⟨⟨j'.1, hjOld⟩, hjlt, stmt', ?_⟩
+    calc
+      baseTrace[j'.1]'hjOld = (baseTrace ++ extra)[j'.1]'j'.2 :=
+        (getElem_append_left_of_fin j' hjOld).symm
+      _ = ⟨Sum.inl stmt', capSeg⟩ := hidx
+  · rcases hPout with ⟨j', hlt, stateIn, stateOut, hidx, hcap⟩
+    have hjlt : j'.1 < j := by simpa only [Fin.mk_lt_mk] using hlt
+    have hjOld : j'.1 < baseTrace.length := Nat.lt_trans hjlt hj
+    refine Or.inr (Or.inl ⟨⟨j'.1, hjOld⟩, hjlt, stateIn, stateOut, ?_, hcap⟩)
+    calc
+      baseTrace[j'.1]'hjOld = (baseTrace ++ extra)[j'.1]'j'.2 :=
+        (getElem_append_left_of_fin j' hjOld).symm
+      _ = ⟨Sum.inr (Sum.inl stateIn), stateOut⟩ := hidx
+  · rcases hPinIn with ⟨j', hlt, stateOut, stateIn, hidx, hcap⟩
+    have hjlt : j'.1 < j := by simpa only [Fin.mk_lt_mk] using hlt
+    have hjOld : j'.1 < baseTrace.length := Nat.lt_trans hjlt hj
+    refine Or.inr (Or.inr (Or.inl
+      ⟨⟨j'.1, hjOld⟩, hjlt, stateOut, stateIn, ?_, hcap⟩))
+    calc
+      baseTrace[j'.1]'hjOld = (baseTrace ++ extra)[j'.1]'j'.2 :=
+        (getElem_append_left_of_fin j' hjOld).symm
+      _ = ⟨Sum.inr (Sum.inr stateOut), stateIn⟩ := hidx
+  · rcases hPin with ⟨j', hle, stateIn, stateOut, hidx, hcap⟩
+    have hjOld : j'.1 < baseTrace.length := Nat.lt_of_le_of_lt hle hj
+    refine Or.inr (Or.inr (Or.inr (Or.inl
+      ⟨⟨j'.1, hjOld⟩, hle, stateIn, stateOut, ?_, hcap⟩)))
+    calc
+      baseTrace[j'.1]'hjOld = (baseTrace ++ extra)[j'.1]'j'.2 :=
+        (getElem_append_left_of_fin j' hjOld).symm
+      _ = ⟨Sum.inr (Sum.inl stateIn), stateOut⟩ := hidx
+  · rcases hPoutInv with ⟨j', hle, stateOut, stateIn, hidx, hcap⟩
+    have hjOld : j'.1 < baseTrace.length := Nat.lt_of_le_of_lt hle hj
+    refine Or.inr (Or.inr (Or.inr (Or.inr
+      ⟨⟨j'.1, hjOld⟩, hle, stateOut, stateIn, ?_, hcap⟩)))
+    calc
+      baseTrace[j'.1]'hjOld = (baseTrace ++ extra)[j'.1]'j'.2 :=
+        (getElem_append_left_of_fin j' hjOld).symm
+      _ = ⟨Sum.inr (Sum.inr stateOut), stateIn⟩ := hidx
+
 /-- Helper combining append stability with transport along `getBaseTrace trace' = ...`. -/
 lemma duplicated_event_lift_append
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -157,6 +223,29 @@ lemma duplicated_event_lift_append
     (baseTrace' := getBaseTrace trace ++ extra) (j := j) (hj := hjNew) (hj' := hjApp)
     hbt (isDuplicatedPriorCapacity_append_of_lt (extra := extra) hj hdup)
 
+/-- Reflect a duplicate-capacity witness from an appended base trace to its left prefix. -/
+lemma duplicated_event_reflect_append
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    {capSeg : Vector U SpongeSize.C}
+    (hdup : isDuplicatedPriorCapacity (getBaseTrace trace')
+      ⟨j, by
+        rw [hbt, List.length_append]
+        exact Nat.lt_of_lt_of_le hj (Nat.le_add_right _ _)
+      ⟩ capSeg) :
+    isDuplicatedPriorCapacity (getBaseTrace trace) ⟨j, hj⟩ capSeg := by
+  let hjApp : j < (getBaseTrace trace ++ extra).length := by
+    rw [List.length_append]
+    exact Nat.lt_of_lt_of_le hj (Nat.le_add_right _ _)
+  have hdupApp : isDuplicatedPriorCapacity (getBaseTrace trace ++ extra)
+      ⟨j, hjApp⟩ capSeg :=
+    isDuplicatedPriorCapacity_of_baseTrace_eq
+      (baseTrace := getBaseTrace trace ++ extra) (baseTrace' := getBaseTrace trace')
+      (j := j) (hj := hjApp) hbt.symm hdup
+  exact isDuplicatedPriorCapacity_of_append_of_lt hj hdupApp
+
 lemma E_h_at_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
@@ -172,6 +261,21 @@ lemma E_h_at_of_getBaseTrace_append_eq
   refine ⟨hjNew, capSeg, ?_, duplicated_event_lift_append hbt hj hdup hjNew⟩
   rcases hentry with ⟨stmt, hidx⟩
   exact ⟨stmt, (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).trans hidx⟩
+
+/-- A hash duplicate event at an old base index is equivalent in a trace and any of its base
+trace extensions.  This is the reverse half of the first-bad prefix transport. -/
+lemma E_h_at_of_getBaseTrace_append_eq_of_lt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (h : E_h_at trace' j) :
+    E_h_at trace j := by
+  unfold E_h_at at h ⊢
+  rcases h with ⟨hjNew, capSeg, hentry, hdup⟩
+  refine ⟨hj, capSeg, ?_, duplicated_event_reflect_append hbt hj hdup⟩
+  rcases hentry with ⟨stmt, hidx⟩
+  exact ⟨stmt, (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).symm.trans hidx⟩
 
 lemma E_p_at_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -190,6 +294,21 @@ lemma E_p_at_of_getBaseTrace_append_eq
   exact ⟨stateIn, stateOut,
     (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).trans hidx, hcap⟩
 
+/-- Reflect a forward-permutation duplicate event from an extension to an old base index. -/
+lemma E_p_at_of_getBaseTrace_append_eq_of_lt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (h : E_p_at trace' j) :
+    E_p_at trace j := by
+  unfold E_p_at at h ⊢
+  rcases h with ⟨hjNew, capSeg, hentry, hdup⟩
+  refine ⟨hj, capSeg, ?_, duplicated_event_reflect_append hbt hj hdup⟩
+  rcases hentry with ⟨stateIn, stateOut, hidx, hcap⟩
+  exact ⟨stateIn, stateOut,
+    (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).symm.trans hidx, hcap⟩
+
 lemma E_pinv_at_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
     {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
@@ -206,6 +325,21 @@ lemma E_pinv_at_of_getBaseTrace_append_eq
   rcases hentry with ⟨stateOut, stateIn, hidx, hcap⟩
   exact ⟨stateOut, stateIn,
     (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).trans hidx, hcap⟩
+
+/-- Reflect an inverse-permutation duplicate event from an extension to an old base index. -/
+lemma E_pinv_at_of_getBaseTrace_append_eq_of_lt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (h : E_pinv_at trace' j) :
+    E_pinv_at trace j := by
+  unfold E_pinv_at at h ⊢
+  rcases h with ⟨hjNew, capSeg, hentry, hdup⟩
+  refine ⟨hj, capSeg, ?_, duplicated_event_reflect_append hbt hj hdup⟩
+  rcases hentry with ⟨stateOut, stateIn, hidx, hcap⟩
+  exact ⟨stateOut, stateIn,
+    (getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).symm.trans hidx, hcap⟩
 
 lemma E_func_at_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -255,6 +389,46 @@ lemma E_func_at_of_getBaseTrace_append_eq
         exact Or.inr ⟨stateIn2,
           (getBaseTrace_getElem_eq_of_append_eq hbt j'.2 hjpNew).trans hidx, hne⟩
 
+/-- Reflect a functionality event from an extension to an old base index.  Both entries in its
+witness lie at indices at most `j`, so neither can be introduced by the appended suffix. -/
+lemma E_func_at_of_getBaseTrace_append_eq_of_lt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (h : E_func_at trace' j) :
+    E_func_at trace j := by
+  unfold E_func_at at h ⊢
+  rcases h with ⟨hjNew, stateIn, stateOut, hF | hB⟩
+  · refine ⟨hj, stateIn, stateOut, Or.inl ?_⟩
+    rcases hF with ⟨hNow, hPrior⟩
+    refine ⟨(getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).symm.trans hNow, ?_⟩
+    rcases hPrior with ⟨j', hlt, hprior⟩
+    have hjpLt : j'.1 < j := by simpa only [Fin.mk_lt_mk] using hlt
+    have hjp : j'.1 < (getBaseTrace trace).length := Nat.lt_trans hjpLt hj
+    refine ⟨⟨j'.1, hjp⟩, hjpLt, ?_⟩
+    rcases hprior with hprior | hprior
+    · rcases hprior with ⟨stateOut1, hidx, hne⟩
+      exact Or.inl ⟨stateOut1,
+        (getBaseTrace_getElem_eq_of_append_eq hbt hjp j'.2).symm.trans hidx, hne⟩
+    · rcases hprior with ⟨stateOut2, hidx, hne⟩
+      exact Or.inr ⟨stateOut2,
+        (getBaseTrace_getElem_eq_of_append_eq hbt hjp j'.2).symm.trans hidx, hne⟩
+  · refine ⟨hj, stateIn, stateOut, Or.inr ?_⟩
+    rcases hB with ⟨hNow, hPrior⟩
+    refine ⟨(getBaseTrace_getElem_eq_of_append_eq hbt hj hjNew).symm.trans hNow, ?_⟩
+    rcases hPrior with ⟨j', hlt, hprior⟩
+    have hjpLt : j'.1 < j := by simpa only [Fin.mk_lt_mk] using hlt
+    have hjp : j'.1 < (getBaseTrace trace).length := Nat.lt_trans hjpLt hj
+    refine ⟨⟨j'.1, hjp⟩, hjpLt, ?_⟩
+    rcases hprior with hprior | hprior
+    · rcases hprior with ⟨stateIn1, hidx, hne⟩
+      exact Or.inl ⟨stateIn1,
+        (getBaseTrace_getElem_eq_of_append_eq hbt hjp j'.2).symm.trans hidx, hne⟩
+    · rcases hprior with ⟨stateIn2, hidx, hne⟩
+      exact Or.inr ⟨stateIn2,
+        (getBaseTrace_getElem_eq_of_append_eq hbt hjp j'.2).symm.trans hidx, hne⟩
+
 /-- Any old per-index bad event remains true after extending the base trace by an arbitrary
 suffix. -/
 lemma E_at_of_getBaseTrace_append_eq
@@ -270,6 +444,61 @@ lemma E_at_of_getBaseTrace_append_eq
   · exact Or.inr (Or.inr (Or.inl (E_pinv_at_of_getBaseTrace_append_eq hbt hj hPinv)))
   · exact Or.inr (Or.inr (Or.inr (E_func_at_of_getBaseTrace_append_eq hbt hj hFunc)))
 
+/-- Every per-index event whose index lies in a base-trace prefix reflects from an arbitrary
+suffix extension to that prefix. -/
+lemma E_at_of_getBaseTrace_append_eq_of_lt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (h : E_at trace' j) :
+    E_at trace j := by
+  rcases h with hH | hP | hPinv | hFunc
+  · exact Or.inl (E_h_at_of_getBaseTrace_append_eq_of_lt hbt hj hH)
+  · exact Or.inr (Or.inl (E_p_at_of_getBaseTrace_append_eq_of_lt hbt hj hP))
+  · exact Or.inr (Or.inr (Or.inl (E_pinv_at_of_getBaseTrace_append_eq_of_lt hbt hj hPinv)))
+  · exact Or.inr (Or.inr (Or.inr (E_func_at_of_getBaseTrace_append_eq_of_lt hbt hj hFunc)))
+
+/-- First-bad status at an index already present in a prefix is invariant under any later base
+trace suffix.  This is the precise trace fact used to identify a raw final first-bad witness with
+the state retained by `monitorStop`. -/
+lemma E_first_at_iff_of_getBaseTrace_append_eq
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length) :
+    E_first_at trace' j ↔ E_first_at trace j := by
+  constructor
+  · rintro ⟨hAt, hNoPrior⟩
+    refine ⟨E_at_of_getBaseTrace_append_eq_of_lt hbt hj hAt, ?_⟩
+    intro j' hj' hBad
+    exact hNoPrior j' hj' (E_at_of_getBaseTrace_append_eq hbt hBad)
+  · rintro ⟨hAt, hNoPrior⟩
+    refine ⟨E_at_of_getBaseTrace_append_eq hbt hAt, ?_⟩
+    intro j' hj' hBad
+    have hjOld : j' < (getBaseTrace trace).length := Nat.lt_trans hj' hj
+    exact hNoPrior j' hj'
+      (E_at_of_getBaseTrace_append_eq_of_lt hbt hjOld hBad)
+
+/-- If an earlier state is already bad, a later trace whose *first* bad event is at `j` cannot
+place that earlier state before position `j`.  Thus the designated index is necessarily present
+at the earlier state and the first-bad witness reflects there. -/
+lemma E_first_at_reflect_of_E_of_getBaseTrace_append_eq
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hE : E trace) (hFirst : E_first_at trace' j) :
+    ∃ hj : j < (getBaseTrace trace).length, E_first_at trace j := by
+  have hnot : ¬ (getBaseTrace trace).length ≤ j := by
+    intro hlen
+    obtain ⟨j', hBad⟩ := (E_iff_exists_E_at trace).mp hE
+    have hj'lt : j' < j := by
+      have hj'len : j' < (getBaseTrace trace).length := E_at_lt_length trace hBad
+      omega
+    exact hFirst.2 j' hj'lt (E_at_of_getBaseTrace_append_eq hbt hBad)
+  have hj : j < (getBaseTrace trace).length := Nat.lt_of_not_ge hnot
+  exact ⟨hj, (E_first_at_iff_of_getBaseTrace_append_eq hbt hj).mp hFirst⟩
+
 /-- Global bad-event monotonicity under a base-trace suffix extension. -/
 lemma E_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -279,6 +508,46 @@ lemma E_of_getBaseTrace_append_eq
     E trace' := by
   obtain ⟨j, hj⟩ := (E_iff_exists_E_at trace).mp h
   exact (E_iff_exists_E_at trace').mpr ⟨j, E_at_of_getBaseTrace_append_eq hbt hj⟩
+
+/-- The global bad event depends only on the normalized base trace.  This is the equality form
+of the preceding prefix transport lemmas and is the canonical eliminator for a redundant raw
+occurrence: no client must rewrite through dependent `Fin baseTrace.length` witnesses directly. -/
+lemma E_iff_of_getBaseTrace_eq
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hbt : getBaseTrace trace' = getBaseTrace trace) :
+    E trace' ↔ E trace := by
+  constructor
+  · intro hE
+    obtain ⟨j, hFirst⟩ := (E_iff_exists_E_first_at trace').mp hE
+    have hj : j < (getBaseTrace trace).length := by
+      have hj' := E_at_lt_length trace' hFirst.1
+      simpa only [hbt] using hj'
+    have hbt' : getBaseTrace trace' = getBaseTrace trace ++ [] := by
+      simpa using hbt
+    exact (E_iff_exists_E_first_at trace).mpr
+      ⟨j, (E_first_at_iff_of_getBaseTrace_append_eq hbt' hj).mp hFirst⟩
+  · intro hE
+    have hbt' : getBaseTrace trace' = getBaseTrace trace ++ [] := by
+      simpa using hbt
+    exact E_of_getBaseTrace_append_eq hbt' hE
+
+/-- A state whose base trace is a prefix ending no later than a designated first-bad position is
+E-good.  This is the stopped-prefix form needed by the revised rate-only D2SQuery proof: it
+turns `E_first_at trace' j` into the live `¬ E trace` invariant without inspecting redundant raw
+occurrences. -/
+lemma not_E_of_getBaseTrace_append_eq_of_noPriorBadAt
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hlen : (getBaseTrace trace).length ≤ j)
+    (hNoPrior : NoPriorBadAt trace' j) :
+    ¬ E trace := by
+  intro hE
+  obtain ⟨j', hBad⟩ := (E_iff_exists_E_at trace).mp hE
+  have hj'lt : j' < j := by
+    have hj'len : j' < (getBaseTrace trace).length := E_at_lt_length trace hBad
+    omega
+  exact hNoPrior j' hj'lt (E_at_of_getBaseTrace_append_eq hbt hBad)
 
 end BadEventDS
 

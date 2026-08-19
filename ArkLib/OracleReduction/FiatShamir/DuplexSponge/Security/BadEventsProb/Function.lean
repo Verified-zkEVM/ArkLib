@@ -64,6 +64,33 @@ def funcConflictAt (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)) (j j' 
       ((∃ sI1, bt[j']? = some ⟨.inr (.inr stateOut), sI1⟩ ∧ sI1 ≠ stateIn) ∨
        (∃ sI2, bt[j']? = some ⟨.inr (.inl sI2), stateOut⟩ ∧ sI2 ≠ stateIn)))
 
+/-- A pairwise functionality witness only reads positions `j' < j` and `j`; it is consequently
+invariant under any common prefix through `j`. -/
+lemma funcConflictAt_iff_of_take_eq
+    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {j j' : ℕ} (hprefix : bt₁.take (j + 1) = bt₂.take (j + 1))
+    (hj' : j' < j) :
+    funcConflictAt bt₁ j j' ↔ funcConflictAt bt₂ j j' := by
+  unfold funcConflictAt
+  have hj : j < j + 1 := Nat.lt_succ_self j
+  have hj'lt : j' < j + 1 := Nat.lt_trans hj' hj
+  rw [getElem?_eq_of_take_eq hprefix hj, getElem?_eq_of_take_eq hprefix hj'lt]
+
+/-- The first-bad pairwise functionality event is prefix-local once entry `j` exists. -/
+lemma E_first_at_and_funcConflictAt_iff_of_getBaseTrace_append_eq
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j j' : ℕ}
+    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
+    (hj : j < (getBaseTrace trace).length)
+    (hj' : j' < j) :
+    (E_first_at trace' j ∧ funcConflictAt (getBaseTrace trace') j j') ↔
+      (E_first_at trace j ∧ funcConflictAt (getBaseTrace trace) j j') := by
+  have hfirst := E_first_at_iff_of_getBaseTrace_append_eq hbt hj
+  have htake :
+      (getBaseTrace trace').take (j + 1) = (getBaseTrace trace).take (j + 1) := by
+    rw [hbt, List.take_append_of_le_length (Nat.succ_le_iff.mpr hj)]
+  exact and_congr hfirst (funcConflictAt_iff_of_take_eq htake hj')
+
 /-- **Reduction (E_func).** `E_func_at·j` is covered by one of the `≤ j` pairwise function conflicts. -/
 lemma E_func_at_imp_funcConflict
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) (j : ℕ) (h : E_func_at trace j) :

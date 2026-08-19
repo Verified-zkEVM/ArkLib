@@ -137,6 +137,279 @@ def prod {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec
 
 end OracleDistribution
 
+/-! ## Dependent full-table sampling -/
+
+end OracleReduction
+
+namespace OracleComp
+
+open scoped ENNReal
+open OracleSpec
+
+/-- **Overwriting one coordinate of a dependent uniform table is measure-preserving.**
+
+This is the dependent-range counterpart of VCVio's
+`evalDist_uniformSample_bind_update`.  An `OracleFamily spec` is a dependent function
+`(q : spec.Domain) → spec.Range q`, so a fresh oracle response replaces one coordinate using
+the dependent form of `Function.update`.  Sampling that coordinate freshly and independently
+before the full table leaves the uniform full-table distribution unchanged.
+
+It is the finite-product marginalization step needed to relate eager and lazy realizations of
+an `OracleSpec` whose query ranges vary with the query. -/
+lemma evalDist_uniformSample_bind_update_dependent
+    {D : Type} {R : D → Type} [Finite D] [DecidableEq D]
+    [∀ d, Finite (R d)] [∀ d, Nonempty (R d)]
+    [∀ d, SampleableType (R d)] [SampleableType ((d : D) → R d)]
+    (t : D) :
+    𝒟[do let u ← $ᵗ R t; let g ← $ᵗ ((d : D) → R d); pure (Function.update g t u)] =
+      𝒟[$ᵗ ((d : D) → R d)] := by
+  classical
+  letI := Fintype.ofFinite D
+  letI : ∀ d, Fintype (R d) := fun d => Fintype.ofFinite (R d)
+  haveI : Nonempty ((d : D) → R d) :=
+    ⟨fun d => Classical.arbitrary (R d)⟩
+  refine evalDist_ext fun h => ?_
+  rw [probOutput_uniformSample ((d : D) → R d) h, probOutput_bind_eq_sum_fintype]
+  have hinner : ∀ u : R t,
+      Pr[= h | (do let g ← $ᵗ ((d : D) → R d); pure (Function.update g t u))]
+        = (if u = h t then
+            (Fintype.card (R t) : ℝ≥0∞) *
+              (Fintype.card (∀ d : D, R d) : ℝ≥0∞)⁻¹ else 0) := by
+    intro u
+    have hmap : (do let g ← $ᵗ ((d : D) → R d); pure (Function.update g t u))
+        = (fun g => Function.update g t u) <$> ($ᵗ ((d : D) → R d)) := by
+      rw [bind_pure_comp]
+    rw [hmap, probOutput_map_eq_sum_fintype_ite]
+    simp only [probOutput_uniformSample ((d : D) → R d)]
+    rw [← Finset.sum_filter, Finset.sum_const, nsmul_eq_mul]
+    have hcard :
+        ((Finset.univ.filter fun g : (d : D) → R d => h = Function.update g t u).card : ℝ≥0∞)
+          = if u = h t then (Fintype.card (R t) : ℝ≥0∞) else 0 := by
+      by_cases hu : u = h t
+      · have hset :
+          (Finset.univ.filter fun g : (d : D) → R d => h = Function.update g t u)
+            = Finset.univ.image (fun r : R t => Function.update h t r) := by
+          ext g
+          simp only [Finset.mem_filter, Finset.mem_univ, true_and, Finset.mem_image]
+          constructor
+          · intro hg
+            refine ⟨g t, ?_⟩
+            rw [eq_comm, Function.update_eq_iff] at hg
+            obtain ⟨_, hg2⟩ := hg
+            funext x
+            by_cases hx : x = t
+            · subst hx
+              simp
+            · simp [Function.update_of_ne hx, hg2 x hx]
+          · rintro ⟨r, rfl⟩
+            rw [eq_comm, Function.update_eq_iff]
+            exact ⟨by simp [hu], fun x hx => by simp [Function.update_of_ne hx]⟩
+        rw [hset, Finset.card_image_of_injective _
+          (fun r₁ r₂ hr => by simpa using congrFun hr t), Finset.card_univ, if_pos hu]
+      · have hempty :
+          (Finset.univ.filter fun g : (d : D) → R d => h = Function.update g t u) = ∅ := by
+          rw [Finset.filter_eq_empty_iff]
+          intro g _ hg
+          rw [eq_comm, Function.update_eq_iff] at hg
+          exact hu hg.1
+        rw [hempty, Finset.card_empty, Nat.cast_zero, if_neg hu]
+    rw [hcard]
+    by_cases hu : u = h t <;> simp [hu]
+  simp_rw [hinner, mul_ite, mul_zero]
+  rw [Finset.sum_ite_eq' Finset.univ (h t)]
+  rw [if_pos (Finset.mem_univ _), probOutput_uniformSample (R t), ← mul_assoc,
+      ENNReal.inv_mul_cancel, one_mul]
+  · simp [Fintype.card_ne_zero]
+  · exact ENNReal.natCast_ne_top _
+
+/-- The total answer table obtained by overlaying a dependent query cache on a full table.
+
+Cached coordinates take priority; every uncached coordinate reads the pre-sampled table. -/
+@[reducible]
+def dependentTableExtending {ι : Type} {spec : OracleSpec ι}
+    (cache : spec.QueryCache) (table : OracleReduction.OracleFamily spec) :
+    OracleReduction.OracleFamily spec :=
+  fun q => (cache q).getD (table q)
+
+/-- Installing a cached answer is a dependent table update. -/
+lemma dependentTableExtending_cacheQuery
+    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    (cache : spec.QueryCache) (table : OracleReduction.OracleFamily spec)
+    (q : spec.Domain) (answer : spec.Range q) :
+    dependentTableExtending (cache.cacheQuery q answer) table =
+      Function.update (dependentTableExtending cache table) q answer := by
+  funext q'
+  by_cases hq : q' = q
+  · subst q'
+    simp [dependentTableExtending, QueryCache.cacheQuery]
+  · simp [dependentTableExtending, QueryCache.cacheQuery_of_ne _ _ hq,
+      Function.update_of_ne hq]
+
+/-- If `q` is uncached, updating the overlaid table is equivalent to updating the full table. -/
+lemma dependentTableExtending_update_of_none
+    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    (cache : spec.QueryCache) (table : OracleReduction.OracleFamily spec)
+    {q : spec.Domain} (hcache : cache q = none) (answer : spec.Range q) :
+    Function.update (dependentTableExtending cache table) q answer =
+      dependentTableExtending cache (Function.update table q answer) := by
+  funext q'
+  by_cases hq : q' = q
+  · subst q'
+    simp [dependentTableExtending, hcache]
+  · simp [dependentTableExtending, Function.update_of_ne hq]
+
+/-- **Lazy dependent random oracle equals eager full-table sampling.**
+
+This is VCVio's homogeneous `EagerTable` argument lifted to an arbitrary dependent
+`OracleSpec`.  Starting with a cache, lazily sampling an uncached query is distributionally
+identical to reading the same coordinate of a uniformly sampled full `OracleFamily`; cached
+answers override the corresponding full-table coordinate. -/
+theorem evalDist_simulateQ_randomOracle_run'_eq_dependentTableExtending
+    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    [Finite spec.Domain] [∀ q, Finite (spec.Range q)] [∀ q, Nonempty (spec.Range q)]
+    [∀ q, SampleableType (spec.Range q)]
+    [SampleableType (OracleReduction.OracleFamily spec)]
+    {α : Type} (oa : OracleComp spec α) (cache : spec.QueryCache) :
+    𝒟[(simulateQ randomOracle oa).run' cache] =
+      𝒟[do let table ← $ᵗ (OracleReduction.OracleFamily spec);
+            pure (evalWithAnswerFn (QueryImpl.ofFn
+              (dependentTableExtending cache table)) oa)] := by
+  classical
+  letI := Fintype.ofFinite spec.Domain
+  letI : ∀ q, Fintype (spec.Range q) := fun q => Fintype.ofFinite (spec.Range q)
+  haveI : Nonempty (OracleReduction.OracleFamily spec) :=
+    ⟨fun q => Classical.arbitrary (spec.Range q)⟩
+  induction oa using OracleComp.inductionOn generalizing cache with
+  | pure a =>
+      have hlhs : (simulateQ randomOracle (pure a : OracleComp spec α)).run' cache =
+          (pure a : ProbComp α) := by
+        rw [simulateQ_pure]
+        change (fun x => x.1) <$> (pure (a, cache) : ProbComp (α × _)) = pure a
+        rw [map_pure]
+      rw [hlhs]
+      simp only [evalWithAnswerFn_pure]
+      symm
+      refine evalDist_ext fun x => ?_
+      rw [probOutput_bind_eq_tsum, ENNReal.tsum_mul_right,
+        tsum_probOutput_eq_one' (mx := $ᵗ (OracleReduction.OracleFamily spec)) (by simp), one_mul]
+  | query_bind q k ih =>
+      have hred :
+          (simulateQ randomOracle (liftM (spec.query q) >>= k)).run' cache =
+            ((randomOracle (spec := spec) q).run cache) >>=
+              fun pair : spec.Range q × spec.QueryCache =>
+              (simulateQ randomOracle (k pair.1)).run' pair.2 := by
+        rw [simulateQ_bind, simulateQ_spec_query]
+        change Prod.fst <$> (((randomOracle (spec := spec) q).run cache) >>= fun pair =>
+          (simulateQ randomOracle (k pair.1)).run pair.2) = _
+        rw [map_bind]
+        rfl
+      have heval : ∀ table : OracleReduction.OracleFamily spec,
+          evalWithAnswerFn (QueryImpl.ofFn (dependentTableExtending cache table))
+              (liftM (spec.query q) >>= k) =
+            evalWithAnswerFn (QueryImpl.ofFn (dependentTableExtending cache table))
+              (k (dependentTableExtending cache table q)) := by
+        intro table
+        rw [evalWithAnswerFn_bind]
+        change evalWithAnswerFn (QueryImpl.ofFn (dependentTableExtending cache table))
+          (k (simulateQ (QueryImpl.ofFn (dependentTableExtending cache table))
+            (liftM (spec.query q)))) = _
+        rw [simulateQ_spec_query]
+        rfl
+      rw [hred]
+      simp_rw [heval]
+      rcases hcache : cache q with _ | answer
+      · rw [show ((randomOracle (spec := spec) q).run cache) =
+            (fun answer => (answer, cache.cacheQuery q answer)) <$> ($ᵗ spec.Range q) from
+            QueryImpl.withCaching_run_none _ hcache]
+        rw [show (((fun answer => (answer, cache.cacheQuery q answer)) <$> ($ᵗ spec.Range q)) >>=
+              fun pair : spec.Range q × spec.QueryCache =>
+                (simulateQ randomOracle (k pair.1)).run' pair.2)
+              = (($ᵗ spec.Range q) >>= fun answer =>
+                (simulateQ randomOracle (k answer)).run' (cache.cacheQuery q answer)) from by
+              rw [map_eq_bind_pure_comp]
+              simp [bind_assoc]]
+        set ψ : OracleReduction.OracleFamily spec → α := fun table =>
+          evalWithAnswerFn (QueryImpl.ofFn (dependentTableExtending cache table))
+            (k (dependentTableExtending cache table q)) with hψ
+        have hfun : ∀ answer : spec.Range q,
+            (fun table : OracleReduction.OracleFamily spec =>
+              evalWithAnswerFn (QueryImpl.ofFn
+                (dependentTableExtending (cache.cacheQuery q answer) table)) (k answer)) =
+              fun table : OracleReduction.OracleFamily spec =>
+                ψ (Function.update table q answer) := by
+          intro answer
+          funext table
+          simp only [hψ]
+          rw [dependentTableExtending_cacheQuery,
+            ← dependentTableExtending_update_of_none cache table hcache answer]
+          simp only [Function.update_self]
+        trans 𝒟[do let answer ← $ᵗ spec.Range q
+                    let table ← $ᵗ (OracleReduction.OracleFamily spec)
+                    pure (ψ (Function.update table q answer))]
+        · rw [evalDist_bind, evalDist_bind]
+          refine congrArg _ (funext fun answer => ?_)
+          rw [ih answer (cache.cacheQuery q answer), bind_pure_comp, bind_pure_comp, hfun answer]
+        · have hmap :
+            (do let answer ← $ᵗ spec.Range q
+                let table ← $ᵗ (OracleReduction.OracleFamily spec)
+                pure (ψ (Function.update table q answer))) =
+              ψ <$> (do let answer ← $ᵗ spec.Range q
+                        let table ← $ᵗ (OracleReduction.OracleFamily spec)
+                        pure (Function.update table q answer)) := by
+              simp [map_bind, bind_pure_comp]
+          have htable :
+            (do let table ← $ᵗ (OracleReduction.OracleFamily spec); pure (ψ table)) =
+              ψ <$> ($ᵗ (OracleReduction.OracleFamily spec)) := by
+              simp [bind_pure_comp]
+          rw [hmap, htable, evalDist_map, evalDist_map,
+            evalDist_uniformSample_bind_update_dependent q]
+      · rw [show ((randomOracle (spec := spec) q).run cache) =
+            (pure (answer, cache) : ProbComp _) from
+            QueryImpl.withCaching_run_some _ hcache]
+        rw [pure_bind]
+        rw [ih answer cache]
+        refine congrArg _ ?_
+        refine congrArg _ (funext fun table => ?_)
+        congr 1
+        have hlookup : dependentTableExtending cache table q = answer := by
+          simp [dependentTableExtending, hcache]
+        rw [hlookup]
+
+/-- Overlaying the empty cache leaves a dependent full table unchanged. -/
+lemma dependentTableExtending_empty
+    {ι : Type} {spec : OracleSpec ι}
+    (table : OracleReduction.OracleFamily spec) :
+    dependentTableExtending (∅ : spec.QueryCache) table = table := by
+  classical
+  funext q
+  simp [dependentTableExtending]
+
+/-- **Lazy dependent random oracle equals eager uniform full-table sampling.**
+
+The empty-cache specialization of
+`evalDist_simulateQ_randomOracle_run'_eq_dependentTableExtending`. -/
+theorem evalDist_simulateQ_randomOracle_run'_empty_eq_dependentUniformTable
+    {ι : Type} [DecidableEq ι] {spec : OracleSpec ι}
+    [Finite spec.Domain] [∀ q, Finite (spec.Range q)] [∀ q, Nonempty (spec.Range q)]
+    [∀ q, SampleableType (spec.Range q)]
+    [SampleableType (OracleReduction.OracleFamily spec)]
+    {α : Type} (oa : OracleComp spec α) :
+    𝒟[(simulateQ randomOracle oa).run' ∅] =
+      𝒟[do let table ← $ᵗ (OracleReduction.OracleFamily spec);
+            pure (evalWithAnswerFn (QueryImpl.ofFn table) oa)] := by
+  rw [evalDist_simulateQ_randomOracle_run'_eq_dependentTableExtending oa ∅]
+  refine congrArg _ ?_
+  refine congrArg _ (funext fun table => ?_)
+  rw [dependentTableExtending_empty]
+
+end OracleComp
+
+namespace OracleReduction
+
+open scoped ENNReal
+
+variable {ι : Type}
+
 /-! ## §3. Probability laws on `OracleDistribution.uniform`
 
 Pointwise marginal at a single query for the uniform full-table distribution.

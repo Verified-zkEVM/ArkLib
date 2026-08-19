@@ -6,6 +6,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventDefs
 
 /-!
 # Trace Transformations
@@ -32,21 +33,21 @@ noncomputable section
 
 /-- Key for `StdTrace` memoized `gᵢ`-style entries (CO25 §5.2 Step 4.D output; strict shape
 `BacktrackOutput`). -/
-private abbrev StdTraceQuery :=
+abbrev StdTraceQuery :=
   Backtrack.BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
 /-- One query-answer pair in `tr_std` / `tr_std^LA`. -/
-private structure StdTraceEntry where
+structure StdTraceEntry where
   query : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   response : Vector U (challengeSize query.roundIdx)
 
-private abbrev StdTraceEntries :=
+abbrev StdTraceEntries :=
   List (StdTraceEntry
     (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
 /-- Internal accumulator for `StdTrace`.
 Stores synthesized entries plus memoized LookAhead results. -/
-private structure StdTraceState where
+structure StdTraceState where
   trStd : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
 
   trStdLA : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
@@ -90,77 +91,56 @@ deterministic `e_i := ψ_i(ρ̂_i)` entry remap. They are forward-declared here 
 single `StdTrace` pipeline (and its abort analysis) can use them without exposing a free
 predicate/function field. -/
 
-/-- Implements the deterministic inverse codec map `φ_i⁻¹ : Im(φ_i) → ℳ_{P,i}`.
-Because `φ_i` (via `instSerializeMessageInjective`) is strictly injective and the message domain
-is finite, we can invert the serialization computationally via brute-force search.
--/
-private def decodeMessagePhiInv?
-    (msgIdx : pSpec.MessageIdx)
-    (encoded : Vector U (messageSize msgIdx)) :
-    Option (pSpec.Message msgIdx) := by
-  exact ((Finset.univ : Finset (pSpec.Message msgIdx)).toList.find? fun msg =>
-    Serialize.serialize msg = encoded)
+/-- View a global message index before `k` as an index of the `MessagesUpTo k` prefix. -/
+private def messageIdxUpToOfBefore
+    {k : Fin (n + 1)} (j : MessageIdxBefore k pSpec) :
+    pSpec.MessageIdxUpTo k :=
+  ⟨j.1.1.castLT j.2, by
+    simpa only [Fin.castLT, Fin.castLE] using j.1.2⟩
 
-/-- Looks up the encoded message block `α̂_j` from the flat list of extracted sponge queries. -/
-private def lookupEncodedMessageAlphaHat?
-    (encodedMessages :
-      List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)))
-    (msgIdx : pSpec.MessageIdx) :
-    Option (Vector U (messageSize msgIdx)) := by
-  exact encodedMessages.findSome? fun entry =>
-    match entry with
-    | ⟨idx, encoded⟩ =>
-        if hEq : idx = msgIdx then
-          some (hEq ▸ encoded)
-        else
-          none
+/-- CO25's componentwise prefix encoding `φ_{<i}`. -/
+def encodeMessagesBefore
+    {k : Fin (n + 1)} (messages : pSpec.MessagesUpTo k) :
+    pSpec.EncodedMessagesBefore U k := fun j => by
+  let j' : pSpec.MessageIdxUpTo k := messageIdxUpToOfBefore (pSpec := pSpec) j
+  apply codec.encode j.1
+  change pSpec.«Type» j.1.1
+  have hIndex : (j'.1.castLE (by omega) : Fin n) = j.1.1 := Fin.ext rfl
+  rw [← hIndex]
+  exact messages j'
 
-/-- One step of the `decodeMessagesPrefixPhiInv?` walk: extend the partial `MessagesUpTo` prefix
-by one round. On a `P_to_V` round, extract the encoded message `α̂_j` and apply `φ_j⁻¹`
-(`decodeMessagePhiInv?`); on a `V_to_P` round, extend the prefix with no payload. -/
-private noncomputable def decodeMessagesPrefixStepPhiInv
-    (encodedList :
-      List (Sigma fun msgIdx : pSpec.MessageIdx => Vector U (messageSize msgIdx)))
-    (j : Fin n) (messages : pSpec.MessagesUpTo j.castSucc) :
-    Option (pSpec.MessagesUpTo j.succ) := by
-  exact
-    match hDir : pSpec.dir j with
-    | .P_to_V =>
-        let msgIdx : pSpec.MessageIdx := ⟨j, hDir⟩
-        match lookupEncodedMessageAlphaHat? (pSpec := pSpec) encodedList msgIdx with
-        | none => none
-        | some encodedMsg =>
-            match decodeMessagePhiInv?
-                (pSpec := pSpec) (U := U) msgIdx encodedMsg with
-            | none => none
-            | some msg =>
-                some
-                  (ProtocolSpec.MessagesUpTo.concat
-                    (pSpec := pSpec) messages hDir msg)
-    | .V_to_P =>
-        some (ProtocolSpec.MessagesUpTo.extend (pSpec := pSpec) messages hDir)
+/-- Componentwise serialization is injective on complete message prefixes. -/
+lemma encodeMessagesBefore_injective
+    {k : Fin (n + 1)} :
+    Function.Injective (encodeMessagesBefore (pSpec := pSpec) (U := U) (k := k)) := by
+  intro messages₁ messages₂ hEncoded
+  funext i
+  let j : MessageIdxBefore k pSpec :=
+    ⟨⟨i.1.castLE (by omega), by
+      simpa only [Fin.castLE] using i.2⟩, i.1.isLt⟩
+  have hIndex : messageIdxUpToOfBefore (pSpec := pSpec) j = i := by
+    apply Subtype.ext
+    exact Fin.ext rfl
+  have hAt := congrFun hEncoded j
+  change codec.encode j.1 _ = codec.encode j.1 _ at hAt
+  have hMessages : messages₁ (messageIdxUpToOfBefore (pSpec := pSpec) j) =
+      messages₂ (messageIdxUpToOfBefore (pSpec := pSpec) j) :=
+    codec.encode_injective j.1 hAt
+  rw [hIndex] at hMessages
+  exact hMessages
 
-/-- Implements the full `φ⁻¹` map over a structured prefix of encoded messages up to round `i`.
-Walks the rounds `0..i-1` and iteratively applies `decodeMessagesPrefixStepPhiInv` to return
-the unencoded message sequence `α_{<i}`. -/
+/-- Implements the partial inverse `φ_{<i}^{-1}` by searching the finite decoded prefix space.
+It returns the unique prefix whose componentwise encoding is the supplied key, or `none` when
+the key is outside the image. -/
 private noncomputable def decodeMessagesPrefixPhiInv?
     (roundIdx : pSpec.ChallengeIdx)
     (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc) :
     Option (pSpec.MessagesUpTo roundIdx.1.castSucc) := by
-  -- Internal algorithm reuses the list-based lookup; we flatten via `toList` here so the
-  -- structured CO25 Eq. 15 prefix surface is honored at the boundary, while the existing
-  -- per-round walk stays unchanged.
-  let encodedList :=
-    EncodedMessagesBefore.toList (pSpec := pSpec) (U := U) encodedMessages
-  let build : (k : Fin (n + 1)) → Option (pSpec.MessagesUpTo k) :=
-    Fin.induction
-      (some default)
-      (fun j ih =>
-        match ih with
-        | none => none
-        | some messages =>
-            decodeMessagesPrefixStepPhiInv (pSpec := pSpec) (U := U) encodedList j messages)
-  exact build roundIdx.1.castSucc
+  letI : ∀ i : pSpec.MessageIdxUpTo roundIdx.1.castSucc,
+      Fintype (pSpec.MessageUpTo roundIdx.1.castSucc i) := fun i => by
+    exact inferInstanceAs (Fintype (pSpec.Message ⟨i.1.castLE (by omega), i.2⟩))
+  exact ((Finset.univ : Finset (pSpec.MessagesUpTo roundIdx.1.castSucc)).toList.find? fun messages =>
+    encodeMessagesBefore (pSpec := pSpec) (U := U) messages = encodedMessages)
 
 private noncomputable def stdTraceMessagesBefore?
     (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
@@ -179,16 +159,25 @@ private noncomputable def stdTraceInCodecImage
   | some _ => true
   | none => false
 
-/-- StdTrace Step 3: build `tr_∇` from the DS trace, keeping `h` and forward `p` entries.
-
-Kept polymorphic in the trace-table implementations `T_H`/`T_P` (with a `LawfulTraceNablaImpl`
-instance) so callers stay blackbox over the concrete data structure. -/
+/-- StdTrace Algorithm 5.5 Step 3, full lookup pass: build the normalized full `tr_∇` from the
+whole DS trace. Both forward and inverse permutation occurrences contribute their normalized
+forward pair to `p`; this is the table supplied to LookAhead. -/
 private def stdTraceDelta
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
     TraceNabla T_H T_P StmtIn U :=
-  TraceNabla.ofQueryLogForwardOnly dsTrace
+  TraceNabla.ofQueryLog dsTrace
+
+/-- StdTrace Algorithm 5.5 Step 4 strict-prefix table: the same normalized construction over the
+already processed DS prefix. This table is supplied only to Backtrack, so the current forward
+occurrence remains the uninserted sentinel. -/
+private def stdTracePrefixDelta
+    {T_H T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
+    TraceNabla T_H T_P StmtIn U :=
+  TraceNabla.ofQueryLog processed
 
 private def StdTraceState.appendEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
@@ -271,24 +260,26 @@ private noncomputable def stdTraceHandleBacktrackTuple
 
 /-- StdTrace Item 4(a) — process one forward `p` entry using BackTrack and LookAhead.
 
-Blackbox over `T_H T_P` via `[LawfulTraceNablaImpl …]`; the `tr_∇` value flows into `backTrack`
-(which is itself polymorphic in `T_H T_P`) and `dsTrΔ.p` flows into `lookAhead`. -/
+Backtrack receives the strict processed prefix, while LookAhead receives the independently built
+full normalized table. Both tables remain polymorphic in `T_H T_P`. -/
 private noncomputable def stdTraceHandlePQuery
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (dsTrΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace)
+    (processedTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (prefixTrΔ : TraceNabla T_H T_P StmtIn U)
+    (h_prefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processedTrace)
+    (fullTrΔp : T_P)
     (depthBound : Nat)
     (stateIn : CanonicalSpongeState U)
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     UnitSampleM U
       (StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
-  -- Item 4(a)i-ii — call `BackTrack(tr, tr_∇, s_in)` to recover `(i, 𝕩, α̂_{<i}, τ̂)` ∈ Σ★.
+  -- Item 4(a)i-ii — call Backtrack on the strict prefix. The current forward entry is absent
+  -- from `processedTrace`; `fullTrΔp` below remains the complete table for LookAhead.
   match
       backTrack (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        dsTrace dsTrΔ h_trΔ stateIn depthBound with
+        processedTrace prefixTrΔ h_prefixTrΔ stateIn depthBound with
   | .err =>
       failure
   | .noResult =>
@@ -298,7 +289,7 @@ private noncomputable def stdTraceHandlePQuery
       -- Items 4(a)iii-v — image check then memo/lookahead + append to `tr_std`.
       stdTraceHandleBacktrackTuple (δ := δ)
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
-        dsTrΔ.p stateIn backtrackOut st
+        fullTrΔp stateIn backtrackOut st
 
 /-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the encoded-message tuple returned by
 `BackTrack` to basic-FS message prefixes.
@@ -312,6 +303,233 @@ noncomputable def hybEncodedMessagesBefore?
   decodeMessagesPrefixPhiInv?
     (pSpec := pSpec) (U := U)
     roundIdx encodedMessages
+
+/-- The Section 5.8 parser succeeds precisely on the image of `φ_{<i}`, and its answer is the
+unique prefix having that encoding. -/
+lemma hybEncodedMessagesBefore?_eq_some_iff_encode
+    (roundIdx : pSpec.ChallengeIdx)
+    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
+    (messages : pSpec.MessagesUpTo roundIdx.1.castSucc) :
+    hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages = some messages ↔
+      encodeMessagesBefore (pSpec := pSpec) (U := U) messages = encodedMessages := by
+  unfold hybEncodedMessagesBefore? decodeMessagesPrefixPhiInv?
+  letI : ∀ i : pSpec.MessageIdxUpTo roundIdx.1.castSucc,
+      Fintype (pSpec.MessageUpTo roundIdx.1.castSucc i) := fun i => by
+    exact inferInstanceAs (Fintype (pSpec.Message ⟨i.1.castLE (by omega), i.2⟩))
+  let l : List (pSpec.MessagesUpTo roundIdx.1.castSucc) :=
+    (Finset.univ : Finset (pSpec.MessagesUpTo roundIdx.1.castSucc)).toList
+  let predicate : pSpec.MessagesUpTo roundIdx.1.castSucc → Bool := fun candidate =>
+    encodeMessagesBefore (pSpec := pSpec) (U := U) candidate = encodedMessages
+  change l.find? predicate = some messages ↔
+    encodeMessagesBefore (pSpec := pSpec) (U := U) messages = encodedMessages
+  constructor
+  · intro h
+    exact of_decide_eq_true (List.find?_eq_some_iff_getElem.mp h).1
+  · intro h
+    have hBool : predicate messages = true := by
+      exact decide_eq_true h
+    rcases hFind : l.find? predicate with _ | candidate
+    · have hMem : messages ∈ l := by
+        simp only [l, Finset.mem_toList, Finset.mem_univ]
+      have hNone := List.find?_eq_none.mp hFind messages hMem
+      rw [hBool] at hNone
+      contradiction
+    · have hCandidate := (List.find?_eq_some_iff_getElem.mp hFind).1
+      have hEq : candidate = messages := by
+        apply encodeMessagesBefore_injective (pSpec := pSpec) (U := U)
+        exact (of_decide_eq_true hCandidate).trans h.symm
+      subst candidate
+      rfl
+
+/-- A successful Section 5.8 `φ⁻¹` parse has one determined decoded prefix.
+
+This is deliberately stated at the `Option` boundary used by the hybrids: a single encoded
+oracle key cannot be translated to two different basic-FS keys.  It does not assert that every
+encoded prefix parses; failure is the intended malformed-prefix abort. -/
+lemma hybEncodedMessagesBefore?_some_unique
+    (roundIdx : pSpec.ChallengeIdx)
+    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
+    {messages₁ messages₂ : pSpec.MessagesUpTo roundIdx.1.castSucc}
+    (h₁ : hybEncodedMessagesBefore? (pSpec := pSpec) (U := U)
+      roundIdx encodedMessages = some messages₁)
+    (h₂ : hybEncodedMessagesBefore? (pSpec := pSpec) (U := U)
+      roundIdx encodedMessages = some messages₂) :
+    messages₁ = messages₂ := by
+  rw [h₁] at h₂
+  exact Option.some.inj h₂
+
+/-- The on-sponge salt component is preserved faithfully when a successful Section 5.8
+encoded key is reindexed to the salted basic-FS oracle.  This is CO25's injectivity of `bin`. -/
+lemma saltCodec_encode_eq_iff
+    {Salt : Type} [SaltCodec U δ Salt]
+    (salt₁ salt₂ : Vector U δ) :
+    SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁ =
+        SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂ ↔
+      salt₁ = salt₂ := by
+  constructor
+  · intro h
+    apply SaltCodec.encode_injective (U := U) (δ := δ) (Salt := Salt)
+    exact h
+  · intro h
+    rw [h]
+
+/-- Reindex one encoded `e`-oracle key to the salted basic-FS key used after the Section 5.8
+`φ⁻¹` check.  It is undefined precisely for malformed encoded message prefixes. -/
+noncomputable def hybEncodedToSaltedFSKey?
+    {Salt : Type} [SaltCodec U δ Salt]
+    (q : (eSpec (U := U) StmtIn pSpec δ).Domain) :
+    Option ((fsChallengeOracle (StmtIn × Salt) pSpec).Domain) :=
+  match q with
+  | ⟨roundIdx, (stmt, salt, encodedMessages)⟩ =>
+      match hybEncodedMessagesBefore?
+          (pSpec := pSpec) (U := U) roundIdx encodedMessages with
+      | none => none
+      | some messagesBefore =>
+          some ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩
+
+/-- Characterize the successful reindexing branch.  In particular, every successful encoded
+key has exactly one salted basic-FS target key. -/
+lemma hybEncodedToSaltedFSKey?_eq_some_iff
+    {Salt : Type} [SaltCodec U δ Salt]
+    (roundIdx : pSpec.ChallengeIdx) (stmt : StmtIn) (salt : Vector U δ)
+    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
+    (key : (fsChallengeOracle (StmtIn × Salt) pSpec).Domain) :
+    hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        ⟨roundIdx, (stmt, salt, encodedMessages)⟩ = some key ↔
+      ∃ messagesBefore,
+        hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages =
+          some messagesBefore ∧
+        key = ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩ := by
+  change
+    (match hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages with
+    | none => none
+    | some messagesBefore =>
+        some ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩) = some key ↔
+      ∃ messagesBefore,
+        hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages =
+          some messagesBefore ∧
+        key = ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩
+  rcases hParse : hybEncodedMessagesBefore?
+      (pSpec := pSpec) (U := U) roundIdx encodedMessages with _ | messagesBefore
+  · simp [hParse]
+  · constructor
+    · intro h
+      exact ⟨messagesBefore, rfl, (Option.some.inj h).symm⟩
+    · rintro ⟨otherMessages, hOther, hKey⟩
+      have hMessages : otherMessages = messagesBefore :=
+        Option.some.inj hOther.symm
+      subst otherMessages
+      rw [hKey]
+
+/-- The successful part of the encoded-to-salted key map is injective.
+
+This is the deterministic core of CO25 Claim 5.23: `φ_{<i}` and `bin` preserve all information
+needed to reindex a valid encoded `e_i` coordinate as one salted basic-FS coordinate. -/
+lemma hybEncodedToSaltedFSKey?_some_injective
+    {Salt : Type} [SaltCodec U δ Salt]
+    {q₁ q₂ : (eSpec (U := U) StmtIn pSpec δ).Domain}
+    {key : (fsChallengeOracle (StmtIn × Salt) pSpec).Domain}
+    (h₁ : hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q₁ = some key)
+    (h₂ : hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q₂ = some key) :
+    q₁ = q₂ := by
+  rcases q₁ with ⟨roundIdx₁, stmt₁, salt₁, encodedMessages₁⟩
+  rcases q₂ with ⟨roundIdx₂, stmt₂, salt₂, encodedMessages₂⟩
+  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+    roundIdx₁ stmt₁ salt₁ encodedMessages₁ key).mp h₁ with
+    ⟨messages₁, hParse₁, hKey₁⟩
+  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+    roundIdx₂ stmt₂ salt₂ encodedMessages₂ key).mp h₂ with
+    ⟨messages₂, hParse₂, hKey₂⟩
+  have hTarget :
+      (⟨roundIdx₁, ((stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁), messages₁)⟩ :
+        (fsChallengeOracle (StmtIn × Salt) pSpec).Domain) =
+      ⟨roundIdx₂, ((stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂), messages₂)⟩ := by
+    rw [← hKey₁, hKey₂]
+  have hRound : roundIdx₁ = roundIdx₂ := congrArg Sigma.fst hTarget
+  subst roundIdx₂
+  have hPayload : ((stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁), messages₁) =
+      ((stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂), messages₂) := by
+    exact eq_of_heq (Sigma.mk.inj_iff.mp hTarget).2
+  have hStmtSalt :
+      (stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁) =
+      (stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂) :=
+    congrArg Prod.fst hPayload
+  have hMessages : messages₁ = messages₂ := congrArg Prod.snd hPayload
+  have hStmt : stmt₁ = stmt₂ := congrArg Prod.fst hStmtSalt
+  have hSaltEncoded :
+      SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁ =
+      SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂ :=
+    congrArg Prod.snd hStmtSalt
+  have hSalt : salt₁ = salt₂ :=
+    (saltCodec_encode_eq_iff (U := U) (δ := δ) salt₁ salt₂).mp hSaltEncoded
+  have hEncodedMessages : encodedMessages₁ = encodedMessages₂ := by
+    calc
+      encodedMessages₁ = encodeMessagesBefore (pSpec := pSpec) (U := U) messages₁ :=
+        (hybEncodedMessagesBefore?_eq_some_iff_encode
+          (pSpec := pSpec) (U := U) roundIdx₁ encodedMessages₁ messages₁).mp hParse₁ |>.symm
+      _ = encodeMessagesBefore (pSpec := pSpec) (U := U) messages₂ := by rw [hMessages]
+      _ = encodedMessages₂ :=
+        (hybEncodedMessagesBefore?_eq_some_iff_encode
+          (pSpec := pSpec) (U := U) roundIdx₁ encodedMessages₂ messages₂).mp hParse₂
+  subst stmt₂
+  subst salt₂
+  subst encodedMessages₂
+  rfl
+
+/-- The subdomain of encoded `e`-oracle coordinates which pass CO25's `φ⁻¹` image check. -/
+def HybValidEncodedKey {Salt : Type} [SaltCodec U δ Salt] : Type :=
+  {q : (eSpec (U := U) StmtIn pSpec δ).Domain //
+    ∃ key : (fsChallengeOracle (StmtIn × Salt) pSpec).Domain,
+      hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        q = some key}
+
+/-- The total reindexing map from valid encoded coordinates to salted basic-FS coordinates. -/
+noncomputable def hybValidEncodedToSaltedFSKey
+    {Salt : Type} [SaltCodec U δ Salt]
+    (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
+    (fsChallengeOracle (StmtIn × Salt) pSpec).Domain :=
+  q.2.choose
+
+/-- `hybValidEncodedToSaltedFSKey` agrees with the partial map on every valid coordinate. -/
+lemma hybValidEncodedToSaltedFSKey_spec
+    {Salt : Type} [SaltCodec U δ Salt]
+    (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
+    hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q.1 = some (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
+        (U := U) (δ := δ) (Salt := Salt) q) :=
+  q.2.choose_spec
+
+/-- CO25's valid-coordinate reindexing is injective. -/
+lemma hybValidEncodedToSaltedFSKey_injective
+    {Salt : Type} [SaltCodec U δ Salt] :
+    Function.Injective
+      (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
+        (U := U) (δ := δ) (Salt := Salt)) := by
+  intro q₁ q₂ hKey
+  apply Subtype.ext
+  apply hybEncodedToSaltedFSKey?_some_injective
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+  · rw [hybValidEncodedToSaltedFSKey_spec]
+  · rw [hybValidEncodedToSaltedFSKey_spec]
+    exact congrArg some hKey.symm
+
+/-- Reindexing preserves the challenge round, hence also preserves the dependent response type. -/
+lemma hybValidEncodedToSaltedFSKey_roundIdx
+    {Salt : Type} [SaltCodec U δ Salt]
+    (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
+    (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
+      (U := U) (δ := δ) (Salt := Salt) q).1 = q.1.1 := by
+  rcases q with ⟨⟨roundIdx, stmt, salt, encodedMessages⟩, hValid⟩
+  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+    roundIdx stmt salt encodedMessages _).mp hValid.choose_spec with
+    ⟨messages, _, hKey⟩
+  change hValid.choose.1 = roundIdx
+  rw [hKey]
 
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
@@ -336,37 +554,64 @@ private noncomputable def stdTraceEntryToFSQuerySalted?
   pure ⟨⟨entry.query.roundIdx,
     ((entry.query.stmt, SaltCodec.encode entry.query.salt), messagesBefore)⟩, challenge⟩
 
-/-- §5.5.2 `D2STrace` — the single D2STrace engine.  Processes a `TaggedQueryLog` iteratively to
-map DSFS traces to FS-standard traces while preserving the `SourceTag` and exact ordering. -/
-noncomputable def d2sTraceSalted
+/-- Lossless result of the corrected `StdTrace`/`D2STrace` pipeline.  `encodedTrace` is the
+insertion-ordered encoded `gᵢ` trace produced by `StdTrace` (including repeated keys), while
+`lookAheadMemo` is its lexicographically keyed lookup table.  `output` is exactly the public
+decoded basic-FS trace returned by Algorithm 5.6.
+
+Keeping `encodedTrace` is necessary for the Hyb₀↔Hyb₁ coupling: decoding through `ψᵢ` need not be
+injective, so the encoded trace cannot be reconstructed from `output` afterward. -/
+structure D2STraceSaltedObservation {Salt : Type} where
+  encodedTrace : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  lookAheadMemo : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  output : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
+
+/-- Lossless §5.5.2 `D2STrace` execution.  It runs the same `StdTrace` state machine as the
+public transformation and returns the exact encoded insertion trace and LookAhead memo alongside
+the public decoded trace.  No additional sampling is performed. -/
+noncomputable def d2sTraceSaltedObserved
     {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
     UnitSampleM U
-      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
+      (D2STraceSaltedObservation (oSpec := oSpec) (StmtIn := StmtIn)
+        (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
   let combinedRaw := TaggedQueryLog.untagged log
   let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) combinedRaw
   let dsTrΔ : TraceNabla T_H T_P StmtIn U :=
     stdTraceDelta (StmtIn := StmtIn) (U := U) dsTrace
-  have h_trΔ : dsTrΔ.IsSubsetOfQueryLog dsTrace := TraceNabla.ofQueryLogForwardOnly_isSubset dsTrace
-  let depthBound := dsTrace.length + 1
+  -- Algorithm 5.5 Step 3 is the complete `PrefixUpdate`/`Monitor` pass. If its normalized
+  -- insertion trace is bad, StdTrace aborts before any Backtrack/LookAhead result is exposed.
+  letI : Decidable (BadEventDS.E dsTrace) := Classical.propDecidable _
+  if BadEventDS.E dsTrace then failure else
   let rec go
       (remaining : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+      (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U))
       (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
       (out : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
-      UnitSampleM U (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
+      UnitSampleM U (D2STraceSaltedObservation (oSpec := oSpec) (StmtIn := StmtIn)
+        (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
     match remaining with
-    | [] => pure out
+    | [] => pure ⟨st.trStd, st.trStdLA, out⟩
     | (tag, entry) :: rest =>
         match entry with
         | ⟨.inl query, response⟩ =>
             -- Forward oSpec entries verbatim, preserving their tag (C1)
             let outEntry : Sigma (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
               ⟨.inl query, response⟩
-            go rest st (out ++ [(tag, outEntry)])
-        | ⟨.inr (.inr (.inl stateIn)), _stateOut⟩ =>
+            go rest processed st (out ++ [(tag, outEntry)])
+        | ⟨.inr (.inl stmt), cap⟩ =>
+            -- Hash occurrences participate in the strict prefix and in the full normalized table,
+            -- but do not themselves produce a standard challenge-table entry.
+            go rest (processed ++ [⟨.inl stmt, cap⟩]) st out
+        | ⟨.inr (.inr (.inl stateIn)), stateOut⟩ =>
+            let prefixTrΔ : TraceNabla T_H T_P StmtIn U :=
+              stdTracePrefixDelta (StmtIn := StmtIn) (U := U) processed
+            have h_prefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processed :=
+              TraceNabla.ofQueryLog_isSubset processed
             let st' ← stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
-              (pSpec := pSpec) (U := U) dsTrace dsTrΔ h_trΔ depthBound stateIn st
+              (pSpec := pSpec) (U := U) processed prefixTrΔ h_prefixTrΔ dsTrΔ.p
+              (processed.length + 1) stateIn st
             -- Extract newly synthesized basic-FS challenge queries
             let newEntries := st'.trStd.drop st.trStd.length
             -- Apply line-4 transform to them
@@ -375,9 +620,42 @@ noncomputable def d2sTraceSalted
               (pSpec := pSpec) (U := U) (Salt := Salt) e with
               | none => none
               | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
-            go rest st' (out ++ mappedNewEntries)
-        | _ => go rest st out
-  go log { trStd := [], trStdLA := [] } []
+            -- The just-classified forward occurrence becomes visible only to later Backtrack
+            -- calls; it was deliberately absent from the strict-prefix call above.
+            go rest (processed ++ [⟨.inr (.inl stateIn), stateOut⟩]) st'
+              (out ++ mappedNewEntries)
+        | ⟨.inr (.inr (.inr stateOut)), stateIn⟩ =>
+            -- Normalize an inverse occurrence into the raw prefix for all later Backtrack calls.
+            go rest (processed ++ [⟨.inr (.inr stateOut), stateIn⟩]) st out
+  go log [] { trStd := [], trStdLA := [] } []
+
+/-- §5.5.2 `D2STrace` public projection.  This is intentionally defined by projection from the
+lossless execution above, so the public trace and the coupling-visible encoded trace are produced
+by one run with one sequence of random-fiber samples. -/
+noncomputable def d2sTraceSalted
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    UnitSampleM U
+      (TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) := do
+  let observation ← d2sTraceSaltedObserved
+    (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
+  pure observation.output
+
+/-- The public salted transform is the output projection of its lossless observed execution.
+This is the local projection law used by the Hyb₀ endpoint refinement; it neither resamples nor
+forgets an abort branch. -/
+lemma d2sTraceSaltedObserved_map_output_eq_d2sTraceSalted
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
+    (fun observation => observation.output) <$>
+        d2sTraceSaltedObserved (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log =
+      d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log := by
+  rfl
 
 section Line4Trace
 
