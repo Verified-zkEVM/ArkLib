@@ -48,14 +48,14 @@ development:
   (`Security`), and the pinned power-of-two ring (`Arithmetic`).
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
   (`Gadgets`), protocol data, relations and the honest protocol object (`Reduction`), Hachi Lemma 8
-  coordinate-wise special soundness (`Soundness`), perfect completeness (`Completeness`), and the
+  coordinate-wise special soundness (`Soundness`), completeness (`Completeness` — both the
+  ball-relaxed reading at `relOut` and the paper-exact one at `paperRelOut`; see that file), and the
   zero-round polynomial-level bridge (`Bridge`, itself proved in both directions:
   `bridge_coordinateWiseSpecialSoundWith` and `bridgeReduction_perfectCompleteness`).
-  Proved in both directions.
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only §4.3 stage proved in both
-  directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
-  `ZeroCheck/Completeness.lean`.
+  guarded sumcheck stages of the opening chain. `RingSwitch/` and `ZeroCheck/` are proved in both
+  directions (`…/Completeness.lean` each; the lift's honest direction is conditional on the range
+  check of its honest lifted witness); `Sumcheck/`'s completeness is still open.
 * `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
   guarded verifier checks the evaluation claim against it directly. Escape-free, `sorry`-free and
   axiom-clean (`Reduction`, re-exported by `Basic`).

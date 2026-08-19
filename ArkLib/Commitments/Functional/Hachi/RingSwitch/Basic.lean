@@ -48,17 +48,17 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   statement's bound convention, the commitment interface, and the norm implication
   `vecLInftyNorm_le_of_liftShort`.
 
-* `RingSwitch/Completeness.lean` — the **honest direction of both links**: the protocol objects
-  `rlinReduction` / `liftReduction` (each sharing its package's verifier, by `rfl`) and
-  `rlinReduction_perfectCompleteness` / `liftReduction_perfectCompleteness`, both at error `0` and
-  both `sorry`-free and axiom-clean. Like the soundness side they are instantiations: the honest
-  quotient witness, the check-at-every-challenge step and the two-round execution are generic
-  (`RingSwitching.Lift.honestWitness` / `…checkAt_honestWitness` /
-  `…reduction_perfectCompleteness`, over
+* `RingSwitch/Completeness.lean` — the **honest direction of both links**, proven and axiom-clean:
+  `rlinReduction_perfectCompleteness` (into `relRlin`) and `…_bounded` (into the honest chain's seam
+  relation `relRlinFor`, under `bound ≤ γ`), then
+  `liftReduction_perfectCompleteness_of_honestShort` — error `0`, but **conditional** on `liftShort`
+  of the honest lifted witness, an undischarged coefficient-growth bound through polynomial
+  division. Both protocol objects share their package's verifier by `rfl`. The lift consumes
+  `relRlinFor`, not `relRlin`: its side condition `bound ≤ s.bound` must be *carried* by the seam
+  relation, since as a hypothesis about every `RlinStatement` it is unsatisfiable for positive
+  `bound`. The execution and algebra are generic (`RingSwitching.Lift.honestWitness` /
+  `checkAt_honestWitness` / `reduction_perfectCompleteness_of_relIn`, over
   `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`).
-  The lift's completeness carries two explicit honest-side hypotheses — the statement bound
-  convention and admissibility (`liftShort`) of the honest lifted witness, i.e. Figure 4's range
-  checks; see that file's docstring.
 
 This umbrella re-exports the folder (`Completeness` transitively imports `Reduction`, which imports
 `Rlin`). The plain `relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is

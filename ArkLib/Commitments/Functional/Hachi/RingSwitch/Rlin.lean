@@ -185,6 +185,45 @@ def relRlin {n μ : ℕ} :
     Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ) :=
   {p | p.1.M *ᵥ p.2 = p.1.yvec ∧ vecLInftyNorm Φ p.2 ≤ p.1.bound}
 
+/-- **`relRlin` with the public bound pinned from below** — the seam relation of the *honest*
+chain. `relRlin` leaves the statement's public bound free, so nothing in it constrains how
+`s.bound` compares to a protocol-level norm parameter; the lift's honest prover needs
+`bound ≤ s.bound` (generic `Lift`'s `sideCond`), and demanding it of *every* `RlinStatement` is
+unsatisfiable for positive `bound` — `s.bound = 0` is a legal statement, and `M = 0`, `y = 0`,
+`z = 0` is even a `relRlin` member at it.
+
+So the condition belongs in the relation, where the preceding link establishes it: `rlinStmt` sets
+`bound := γ`, hence the adapter lands here as soon as the parameters satisfy `bound ≤ γ`
+(`rlinReduction_perfectCompleteness_bounded`). On the soundness side no analogue is needed — the
+lift's `recover` reads the side condition off the accepting transcript's `checkAt`, so the
+certificate chain keeps using the plain `relRlin`. -/
+def relRlinFor {n μ : ℕ} (bound : ℕ) :
+    Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ) :=
+  {p | p ∈ relRlin Φ ∧ bound ≤ p.1.bound}
+
+/-- `relRlinFor` is **inhabited at every `bound`** — the point of moving the side condition into the
+relation rather than assuming it. (The zero system at a statement declaring `bound` as its public
+bound; the honest chain populates it through
+`rlinReduction_perfectCompleteness_bounded` instead.) -/
+example {n μ bound : ℕ} :
+    ((⟨fun _ _ => 0, fun _ => 0, bound⟩ : RlinStatement Φ n μ),
+      (fun _ => 0 : ArkLib.Lattices.PolyVec (Rq Φ) μ)) ∈ relRlinFor Φ bound := by
+  refine ⟨⟨?_, ?_⟩, le_refl _⟩
+  · funext i
+    simp [matVecMul_apply, dot_eq_sum]
+  · rw [vecLInftyNorm]
+    refine Finset.sup_le fun i _ => ?_
+    rw [Rq.lInftyNorm]
+    refine Finset.sup_le fun k _ => ?_
+    rw [Rq.zero_val, CompPoly.CPolynomial.coeff_zero, ZMod.valMinAbs_zero, Int.natAbs_zero]
+    exact Nat.zero_le _
+
+omit [NeZero q] in
+/-- Membership in `relRlinFor`, unfolded. -/
+theorem mem_relRlinFor_iff {n μ bound : ℕ}
+    {p : RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ} :
+    p ∈ relRlinFor Φ bound ↔ p ∈ relRlin Φ ∧ bound ≤ p.1.bound := Iff.rfl
+
 /-! ## Stacking / un-stacking the response and the `c5` gadget matrix -/
 
 /-- Un-flatten a row-major block vector into blocks — the inverse of `PolyVec.flattenBlocks`. -/
@@ -325,6 +364,18 @@ def rlinStmt
         (Fin.append (fun _ : Fin 1 => X.1.y)
           (Fin.append (fun _ : Fin 1 => (0 : Rq Φ)) (fun _ : Fin innerRows => (0 : Rq Φ)))))
   bound := γ
+
+omit [NeZero q] in
+/-- The assembled statement's public bound is the range parameter `γ`. This is what lets the honest
+chain land in `relRlinFor Φ bound` under the parameter condition `bound ≤ γ`. Holds by `rfl`. -/
+@[simp] theorem rlinStmt_bound
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+          dRows ×
+        CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) :
+    (rlinStmt (zDigits := zDigits) Φ pp base ω γ X).bound = γ :=
+  rfl
 
 /-! ## The block-row equivalence -/
 

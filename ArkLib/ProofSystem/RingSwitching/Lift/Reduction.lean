@@ -262,23 +262,49 @@ omit [Field F] in
     (reduction (oSpec := oSpec) P getM getY K hd).verifier = verifier (oSpec := oSpec) (F := F) K :=
   rfl
 
-/-- **Perfect completeness of a quotient-evaluation switch**, at error exactly `0`.
+/-- **Perfect completeness of a quotient-evaluation switch**, at error exactly `0`, over an
+arbitrary input relation.
 
-Two hypotheses, both genuinely instance-side and neither provable at this generality:
+The input relation is a parameter rather than `relLin` because an honest prover needs *more* than
+the plain linear relation: it needs the statement-level `sideCond` too, and for concrete instances
+that condition is a property of the statement family (Hachi: the protocol's norm parameter is
+dominated by the statement's public bound) which no relation on `(statement, z)` pairs implies. An
+instance therefore threads it through its own input relation — the seam relation the preceding link
+lands in — and discharges `hside` from membership. On the soundness side the same condition arrives
+for free from the accepting transcript (`recover` reads it off `checkAt`), which is why only the
+honest direction has to carry it.
 
-* `hside` — the statement-level side condition holds at the statements the switch is run on (for
-  Hachi: the global norm parameter is dominated by the statement's public bound). It is not part of
-  `relLin`, so completeness cannot derive it.
-* `hshort` — the honest lifted witness is **admissible** for the commitment's shortness regime
-  `wShort`. This is the honest-side range check of the paper's figure (Hachi Figure 4's
-  `‖z‖∞ ≤ b − 1`, `‖r‖∞ ≤ b − 1`): a statement about the honest quotients' coefficient growth at
-  the concrete parameters, which the abstract `wShort` cannot see. Note the direction of the
-  asymmetry — `relLin`'s `zOk` bounds `z` by the *statement's* bound, while `wShort` bounds it by
-  the *protocol's*, so even the `z`-half does not follow.
+The three obligations:
+
+* `hrow` — the linear system holds (the substance of `relLin`);
+* `hside` — the statement-level side condition;
+* `hshort` — the honest lifted witness is **admissible** for the commitment's shortness regime.
+  This is the honest-side range check of the paper's figure (Hachi Figure 4's `‖z‖∞ ≤ b − 1`,
+  `‖r‖∞ ≤ b − 1`): a statement about the honest quotients' coefficient growth at the concrete
+  parameters, invisible to the abstract `wShort`.
 
 Everything else — commitment consistency, the check at every challenge, the impossibility of
-failure — is discharged generically by `CommittedScalar.reduction_perfectCompleteness` and
-`checkAt_honestWitness`. -/
+failure — is discharged by `CommittedScalar.reduction_perfectCompleteness` and
+`checkAt_honestWitness`. Error `0` because `checkAt_honestWitness` holds at every challenge. -/
+theorem reduction_perfectCompleteness_of_relIn [IsPresentation P] [SampleableType F]
+    (hd : P.modulus.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
+    (hrow : ∀ s z, (s, z) ∈ relIn → getM s *ᵥ z = getY s)
+    (hside : ∀ s z, (s, z) ∈ relIn → sideCond s)
+    (hshort : ∀ s z, (s, z) ∈ relIn → wShort (honestWitness P getM getY hd s z))
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) P getM getY K hd).perfectCompleteness init impl
+      relIn (relOut P φF getM getY sideCond K) :=
+  CommittedScalar.reduction_perfectCompleteness K (honestWitness P getM getY hd)
+    (checkAt P φF getM getY sideCond) relIn
+    (fun s z hIn a =>
+      checkAt_honestWitness P φF getM getY sideCond hd s z (hrow s z hIn) (hside s z hIn) a)
+    (fun s z hIn => hshort s z hIn) init impl
+
+/-- **Perfect completeness at the plain linear relation `relLin`.** The specialization of
+`reduction_perfectCompleteness_of_relIn` that keeps `relLin` as the input relation; `hside` then has
+to be supplied for every `relLin` member, which for a statement-carried side condition is usually
+too strong to be satisfiable — prefer the general form at a seam relation that carries the
+condition. -/
 theorem reduction_perfectCompleteness [IsPresentation P] [SampleableType F]
     (hd : P.modulus.toPoly.natDegree = d)
     (hside : ∀ s z, (s, z) ∈ relLin getM getY zOk → sideCond s)
@@ -287,11 +313,8 @@ theorem reduction_perfectCompleteness [IsPresentation P] [SampleableType F]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     (reduction (oSpec := oSpec) P getM getY K hd).perfectCompleteness init impl
       (relLin getM getY zOk) (relOut P φF getM getY sideCond K) :=
-  CommittedScalar.reduction_perfectCompleteness K (honestWitness P getM getY hd)
-    (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
-    (fun s z hIn a =>
-      checkAt_honestWitness P φF getM getY sideCond hd s z hIn.1 (hside s z hIn) a)
-    (fun s z hIn => hshort s z hIn) init impl
+  reduction_perfectCompleteness_of_relIn P φF getM getY sideCond K hd
+    (relLin getM getY zOk) (fun _ _ h => h.1) hside hshort init impl
 
 /-- `Lift` as a composable escape-aware CWSS package.
 
