@@ -48,21 +48,31 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   statement's bound convention, the commitment interface, and the norm implication
   `vecLInftyNorm_le_of_liftShort`.
 
+* `RingSwitch/QuotientNorms.lean` — centered coefficient bounds for the honest lift quotient. For
+  `φ = X^d + 1` division by the modulus *selects* coefficients
+  (`Polynomial.coeff_divByMonic_X_pow_add_one`), so the quotient bound is a row-sum coefficient
+  bound: `μ · 2d · βM · βz` from explicit matrix/witness bounds, with **no wraparound hypothesis**
+  (centered representatives are minimal among integer representatives). Also the unconditional
+  fallback `rhoShort_half` (`RhoShort (q/2)` always), which is what the Hachi chain uses — see its
+  docstring for why nothing sharper is available when the `R^lin` matrix carries the Ajtai key.
 * `RingSwitch/Completeness.lean` — the **honest direction of both links**, proven and axiom-clean:
-  `rlinReduction_perfectCompleteness` (into `relRlin`) and `…_bounded` (into the honest chain's seam
-  relation `relRlinFor`, under `bound ≤ γ`), then
-  `liftReduction_perfectCompleteness_of_honestShort` — error `0`, but **conditional** on `liftShort`
-  of the honest lifted witness, an undischarged coefficient-growth bound through polynomial
-  division. Both protocol objects share their package's verifier by `rfl`. The lift consumes
-  `relRlinFor`, not `relRlin`: its side condition `bound ≤ s.bound` must be *carried* by the seam
-  relation, since as a hypothesis about every `RlinStatement` it is unsatisfiable for positive
-  `bound`. The execution and algebra are generic (`RingSwitching.Lift.honestWitness` /
-  `checkAt_honestWitness` / `reduction_perfectCompleteness_of_relIn`, over
+  `rlinReduction_perfectCompleteness_image` (into the honest seam `relRlinImage`, unconditional)
+  with `rlinReduction_perfectCompleteness` as its coarsening to `relRlin`, and
+  `liftReduction_perfectCompleteness_image` — **unconditional** perfect completeness of the lift at
+  `bound = γ`, `ρBound = q/2`, error `0`: both halves of `liftShort` are discharged (the `z` half
+  from seam membership, the quotient half from `QuotientNorms`), so no `hshort` and no `hbound`
+  remain. `…_of_zShort` / `…_of_matrixShort` are the parameterized forms, the latter at the sharp
+  quotient bound. Both protocol objects share their package's verifier by `rfl`. The lift consumes
+  `relRlinImage`, not `relRlin`: the honest side needs the Eq. (20) provenance that the soundness
+  relation deliberately discards (see `relRlinImage`). The execution and algebra are generic
+  (`RingSwitching.Lift.honestWitness` / `checkAt_honestWitness` /
+  `reduction_perfectCompleteness_of_relIn`, over
   `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`).
 
-This umbrella re-exports the folder (`Completeness` transitively imports `Reduction`, which imports
-`Rlin`). The plain `relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is
-composed in `Composition.lean`.
+This umbrella re-exports the folder (`Completeness` imports `QuotientNorms`, which imports
+`Reduction`, which imports `Rlin`). The plain `relLift` is the input of the batching bridge in
+`ZeroCheck/`; the chain is composed in `Composition.lean`, and the honest side's parameter
+bookkeeping in `HonestChain.lean`.
 
 ## References
 

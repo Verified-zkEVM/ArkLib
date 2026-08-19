@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 
 /-!
   # `RingSwitch` — completeness (Hachi §4.3 entry: the `R^lin` adapter and the HMZ25 lift)
@@ -86,47 +86,44 @@ omit [NeZero q] in
   rfl
 
 omit [NeZero q] in
-/-- **Perfect completeness of the `R^lin` adapter.** An honest prover holding an Eq. (20)-valid
-`QuadEvalResponse` is accepted with probability one, and the stacked witness satisfies `relRlin` at
-the assembled statement, with the prover's and the verifier's output statements equal.
+/-- **Perfect completeness of the `R^lin` adapter, into the honest seam `relRlinImage`**
+(unconditional, error `0`). The honest prover of a zero-round `ReduceClaim` link *is* the pair of
+maps, so its output lands in their image by construction — this is the seam's defining property, and
+it is what carries the Eq. (20) provenance (matrix shape, public bound `γ`, `z`-range) forward
+to the lift. See `relRlinImage` for why the honest side needs provenance that `relRlin` discards.
 
-All of the content is the relation equivalence `relOut ↔ relRlin ∘ (rlinStmt, stack)`, whose two
-halves are the proven block-row lemmas of `Rlin.lean`; the zero-round `ReduceClaim` head draws no
-challenge and performs no check, so `ReduceClaim.reduction_completeness` discharges everything
-else. -/
+Only the forward relation implication is needed, via
+`ReduceClaim.reduction_completeness_of_imp`; the `↔` form could not be used here, since it would
+require `rlinStmt` to be injective. -/
+theorem rlinReduction_perfectCompleteness_image
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ) :
+    (rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp base ω γ).perfectCompleteness
+      init impl (relOut (zDigits := zDigits) Φ pp base ω γ)
+      (relRlinImage (zDigits := zDigits) Φ pp base ω γ) :=
+  ReduceClaim.reduction_completeness_of_imp
+    (relOut (zDigits := zDigits) Φ pp base ω γ)
+    (relRlinImage (zDigits := zDigits) Φ pp base ω γ)
+    (fun X w h => ⟨X, w, h, rfl⟩)
+
+omit [NeZero q] in
+/-- **Perfect completeness of the `R^lin` adapter at the soundness relation `relRlin`.** The
+coarsening of `…_image` along `relRlinImage ⊆ relRlin`
+(`mem_relRlin_of_mem_relRlinImage`) — so the two statements are ordered, not competing: the image
+seam is the honest chain's interface, `relRlin` the soundness-facing abstraction.
+
+All of the content is the block-row equivalence of `Rlin.lean`; the zero-round `ReduceClaim` head
+draws no challenge and performs no check. -/
 theorem rlinReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ) :
     (rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp base ω γ).perfectCompleteness
       init impl (relOut (zDigits := zDigits) Φ pp base ω γ) (relRlin Φ) :=
-  ReduceClaim.reduction_completeness
-    (relOut (zDigits := zDigits) Φ pp base ω γ) (relRlin Φ)
-    (fun X w =>
-      ⟨fun h => mem_relRlin_of_relOut Φ pp base ω γ X w h,
-        fun h => by
-          have h' := (rlin_iff_relOut Φ pp base ω γ X (stack Φ w)).mp h
-          rwa [unstack_stack] at h'⟩)
-
-omit [NeZero q] in
-/-- **The adapter lands in the honest chain's seam relation `relRlinFor`** under the single
-parameter condition `bound ≤ γ`. `rlinStmt` sets the assembled statement's public bound to `γ`
-(`rlinStmt_bound`), so this is where the lift's side condition `bound ≤ s.bound` is *established*
-rather than assumed — see `relRlinFor`'s docstring for why assuming it of every `RlinStatement` is
-not an option. -/
-theorem rlinReduction_perfectCompleteness_bounded
-    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
-      dRows) (base : ZMod q) (ω γ : ℕ) {bound : ℕ} (hbγ : bound ≤ γ) :
-    (rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp base ω γ).perfectCompleteness
-      init impl (relOut (zDigits := zDigits) Φ pp base ω γ) (relRlinFor Φ bound) :=
-  ReduceClaim.reduction_completeness
-    (relOut (zDigits := zDigits) Φ pp base ω γ) (relRlinFor Φ bound)
-    (fun X w =>
-      ⟨fun h => ⟨mem_relRlin_of_relOut Φ pp base ω γ X w h, hbγ⟩,
-        fun h => by
-          have h' := (rlin_iff_relOut Φ pp base ω γ X (stack Φ w)).mp h.1
-          rwa [unstack_stack] at h'⟩)
+  Reduction.completeness_relOut_mono init impl
+    (fun _ h => mem_relRlin_of_mem_relRlinImage Φ pp base ω γ h)
+    (rlinReduction_perfectCompleteness_image Φ init impl pp base ω γ)
 
 end Rlin
 
@@ -181,45 +178,138 @@ by `rfl`. -/
   rfl
 
 omit [NeZero q] in
-/-- **Conditional perfect completeness of Hachi's HMZ25 lift** (Figure 4 / Lemma 9), at error
-exactly `0`.
+/-- **The `ρ`-half of `liftShort` for the honest lifted witness**, at the explicit growth bound
+`μ · 2d · βM · βz`: the honest quotients are coefficientwise selections from the row sum
+(`valMinAbs_natAbs_coeff_quotient_le`), so coefficient bounds on the `R^lin` matrix and on the
+witness transfer with **no growth from the division itself**. No wraparound hypothesis is needed
+(centered representatives are minimal among integer representatives). -/
+theorem rhoShort_honestLiftWitness {d : ℕ} (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1) (hdpos : 0 < d)
+    (hd : 0 < Φ.φ.natDegree) {βM βz : ℕ} (s : RlinStatement Φ n μ)
+    (z : ArkLib.Lattices.PolyVec (Rq Φ) μ)
+    (hM : ∀ i j, Rq.lInftyNorm Φ (s.M i j) ≤ βM) (hz : ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz) :
+    RhoShort (μ * (2 * d * (βM * βz))) (honestLiftWitness Φ hd s z).ρ :=
+  fun i k => valMinAbs_natAbs_coeff_quotient_le Φ hφ hdpos s.M z s.yvec hM hz i k
 
-An honest prover holding a short solution `z` of the `R^lin` system commits to the lifted witness
-`(z, ρ)` with the honest quotients, and whatever `α` the verifier draws, the resulting
-statement/witness pair lies in `relLift`, with the prover's and the verifier's output statements
-equal. Error `0` because the honest quotients satisfy each lifted row identity *as polynomials*
-(`RingSwitching.Lift.checkAt_honestWitness`), so no property of `α` is used — the mirror image of
-why the soundness side needs `2d` distinct challenges.
+omit [NeZero q] in
+/-- **The `ρ`-half of `liftShort`, unconditionally**, at `ρBound := q/2`: centered representatives
+never exceed `q/2` (`rhoShort_half`). For the Hachi chain this is the operative bound, and
+`rhoShort_half`'s docstring records why no sharper one is available there: `rlinStmt`'s matrix
+carries the Ajtai key blocks and the gadget powers, so its honest `βM` is `q/2`. -/
+theorem rhoShort_honestLiftWitness_half (hd : 0 < Φ.φ.natDegree) (s : RlinStatement Φ n μ)
+    (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) :
+    RhoShort (q / 2) (honestLiftWitness Φ hd s z).ρ :=
+  rhoShort_half _
 
-**Exact boundary of this theorem.**
+omit [NeZero q] in
+/-- **Perfect completeness of Hachi's lift from an honest seam, at `ρBound := q/2`** — error `0`,
+and with **no admissibility hypothesis**: the `ρ`-half of `liftShort` is discharged outright
+(`rhoShort_honestLiftWitness_half`), so the only premises are the three facts the seam relation
+supplies about its own members.
 
-* Input relation is `relRlinFor Φ bound`, not `relRlin Φ`: the lift's `sideCond`
-  (`bound ≤ s.bound`) is *carried by the seam relation*, established by the preceding adapter
-  (`rlinReduction_perfectCompleteness_bounded`, under `bound ≤ γ`). It cannot be a hypothesis about
-  all statements — see `relRlinFor`.
-* `hshort` is a **genuine undischarged obligation**, which is why this is *conditional* perfect
-  completeness: the honest lifted witness must be admissible for the commitment's shortness regime
-  (`liftShort`, Figure 4's `‖z‖∞ ≤ bound` and `RhoShort ρBound ρ`). Neither half follows from
-  `relRlinFor`: it bounds `z` by the *statement's* bound while `liftShort` bounds it by the
-  *protocol's*, and the `ρ`-half is a coefficient-growth bound on `(rowSum − rep yᵢ) /ₘ φ`, i.e.
-  `ℓ∞` growth through **polynomial division**, which the norm theory
-  (`Gadget/Norms`, `CyclotomicRing/NormBounds`) does not yet cover. Until it is proved at concrete
-  parameters this link is complete only relative to `hshort`. -/
-theorem liftReduction_perfectCompleteness_of_honestShort [SampleableType F]
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
+* `hrow` — the linear system `M z = y`;
+* `hside` — the statement-level side condition `bound ≤ s.bound`;
+* `hzShort` — the protocol-level norm bound `‖z‖∞ ≤ bound`.
+
+All three hold on the honest seam `relRlinImage` (see
+`liftReduction_perfectCompleteness_image`, where they are discharged and nothing at all is
+assumed). Error `0` because the honest quotients satisfy each lifted row identity as polynomials
+(`RingSwitching.Lift.checkAt_honestWitness`), so no property of `α` is used. -/
+theorem liftReduction_perfectCompleteness_of_zShort [SampleableType F]
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound (q / 2))) (φF : ZMod q →+* F)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree)
-    (hshort : ∀ (s : RlinStatement Φ n μ) (z : ArkLib.Lattices.PolyVec (Rq Φ) μ),
-      (s, z) ∈ relRlinFor Φ bound → liftShort Φ bound ρBound (honestLiftWitness Φ hd s z)) :
-    (liftReduction (oSpec := oSpec) (F := F) Φ bound ρBound K hd).perfectCompleteness init impl
-      (relRlinFor Φ bound) (relLift Φ bound ρBound K φF) := by
+    (relIn : Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ))
+    (hrow : ∀ s z, (s, z) ∈ relIn → s.M *ᵥ z = s.yvec)
+    (hside : ∀ s z, (s, z) ∈ relIn → bound ≤ s.bound)
+    (hzShort : ∀ s z, (s, z) ∈ relIn → vecLInftyNorm Φ z ≤ bound) :
+    (liftReduction (oSpec := oSpec) (F := F) Φ bound (q / 2) K hd).perfectCompleteness init impl
+      relIn (relLift Φ bound (q / 2) K φF) := by
   haveI := isPresentation_cyclotomic Φ hd
   have h := Lift.reduction_perfectCompleteness_of_relIn (cyclotomicPresentation Φ) φF
     (fun s : RlinStatement Φ n μ => s.M) (fun s : RlinStatement Φ n μ => s.yvec)
     (fun s : RlinStatement Φ n μ => bound ≤ s.bound) K
-    (cyclotomicPresentation_modulus_natDegree Φ) (relRlinFor Φ bound)
-    (fun _ _ h => h.1.1) (fun _ _ h => h.2) (fun s z hIn => hshort s z hIn) init impl
+    (cyclotomicPresentation_modulus_natDegree Φ) relIn hrow hside
+    (fun s z hIn => ⟨hzShort s z hIn, rhoShort_honestLiftWitness_half Φ hd s z⟩) init impl
+  exact h
+
+omit [NeZero q] in
+/-- **Perfect completeness at the sharp quotient bound**, for callers whose `R^lin` matrix and
+witness are genuinely short: `ρBound := μ · 2d · βM · βz` from `rhoShort_honestLiftWitness`. Same
+three seam premises as `…_of_zShort`, plus the two explicit coefficient bounds. Nothing is assumed
+about `liftShort` itself. -/
+theorem liftReduction_perfectCompleteness_of_matrixShort [SampleableType F] {d βM βz : ℕ}
+    (hφ : Φ.φ.toPoly = Polynomial.X ^ d + 1) (hdpos : 0 < d)
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound (μ * (2 * d * (βM * βz)))))
+    (φF : ZMod q →+* F)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree)
+    (relIn : Set (RlinStatement Φ n μ × ArkLib.Lattices.PolyVec (Rq Φ) μ))
+    (hrow : ∀ s z, (s, z) ∈ relIn → s.M *ᵥ z = s.yvec)
+    (hside : ∀ s z, (s, z) ∈ relIn → bound ≤ s.bound)
+    (hzShort : ∀ s z, (s, z) ∈ relIn → vecLInftyNorm Φ z ≤ bound)
+    (hM : ∀ s z, (s, z) ∈ relIn → ∀ i j, Rq.lInftyNorm Φ (s.M i j) ≤ βM)
+    (hzβ : ∀ s z, (s, z) ∈ relIn → ∀ j, Rq.lInftyNorm Φ (z j) ≤ βz) :
+    (liftReduction (oSpec := oSpec) (F := F) Φ bound (μ * (2 * d * (βM * βz))) K
+        hd).perfectCompleteness init impl relIn
+      (relLift Φ bound (μ * (2 * d * (βM * βz))) K φF) := by
+  haveI := isPresentation_cyclotomic Φ hd
+  have h := Lift.reduction_perfectCompleteness_of_relIn (cyclotomicPresentation Φ) φF
+    (fun s : RlinStatement Φ n μ => s.M) (fun s : RlinStatement Φ n μ => s.yvec)
+    (fun s : RlinStatement Φ n μ => bound ≤ s.bound) K
+    (cyclotomicPresentation_modulus_natDegree Φ) relIn hrow hside
+    (fun s z hIn => ⟨hzShort s z hIn,
+      rhoShort_honestLiftWitness Φ hφ hdpos hd s z (hM s z hIn) (hzβ s z hIn)⟩) init impl
   exact h
 
 end Lift
+
+/-! ## The honest chain: adapter ▷ lift, at the seam -/
+
+section HonestChain
+
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r : Nat}
+variable {F : Type} [Field F]
+
+omit [NeZero q] in
+/-- **Perfect completeness of Hachi's HMZ25 lift on the honest chain — unconditional, error `0`.**
+
+This is the lift's completeness with *nothing* assumed beyond membership in the honest seam and the
+Hachi parameter conditions: the three premises of
+`liftReduction_perfectCompleteness_of_zShort` are all read off `relRlinImage`
+(`matVecMul_eq_of_mem_relRlinImage`, `bound_eq_of_mem_relRlinImage`,
+`vecLInftyNorm_le_of_mem_relRlinImage`), and the `ρ`-half of `liftShort` is discharged by the
+quotient bound. No `hshort`, no `hbound`, no admissibility hypothesis.
+
+Two parameter choices are *forced* by the chain and worth naming:
+
+* `bound = γ`. The seam gives `‖z‖∞ ≤ γ` and `s.bound = γ`, so the lift's protocol bound must be
+  `≥ γ` (shortness) and `≤ γ` (its side condition `bound ≤ s.bound`).
+* `ρBound = q/2`. That is the honest quotient's true size for a Hachi `R^lin` instance — see
+  `rhoShort_half`. A caller with a genuinely short matrix can use
+  `liftReduction_perfectCompleteness_of_matrixShort` at `μ · 2d · βM · βz` instead. -/
+theorem liftReduction_perfectCompleteness_image [SampleableType F] {γ : ℕ}
+    (K : LiftCom
+      (LiftedWitness Φ (rlinCols innerRows messageDigits innerDigits zDigits m r)
+        (rlinRows innerRows outerRows dRows))
+      (liftShort Φ γ (q / 2)))
+    (φF : ZMod q →+* F)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω : ℕ) :
+    (liftReduction (oSpec := oSpec) (F := F) Φ γ (q / 2) K hd).perfectCompleteness init impl
+      (relRlinImage (zDigits := zDigits) Φ pp base ω γ) (relLift Φ γ (q / 2) K φF) := by
+  -- Each seam projection is stated with a fully explicit type; feeding them in as `have`s keeps the
+  -- unifier away from the large dimension expressions.
+  have h1 : ∀ s z, (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ →
+      s.M *ᵥ z = s.yvec :=
+    fun s z h => matVecMul_eq_of_mem_relRlinImage (zDigits := zDigits) Φ pp base ω γ s z h
+  have h2 : ∀ s z, (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ → γ ≤ s.bound :=
+    fun s z h =>
+      le_of_eq (bound_eq_of_mem_relRlinImage (zDigits := zDigits) Φ pp base ω γ s z h).symm
+  have h3 : ∀ s z, (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ →
+      vecLInftyNorm Φ z ≤ γ :=
+    fun s z h => vecLInftyNorm_le_of_mem_relRlinImage (zDigits := zDigits) Φ pp base ω γ s z h
+  exact liftReduction_perfectCompleteness_of_zShort Φ γ K φF init impl hd _ h1 h2 h3
+
+end HonestChain
+
 
 end ArkLib.Lattices.Ajtai.InnerOuter

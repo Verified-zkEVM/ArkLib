@@ -297,9 +297,14 @@ statements being equal for the trivial reason that both are the input statement.
 The content is entirely the relation equivalence, i.e. the two proven directions of `Batch.lean`.
 Note the parameter hypotheses come in **both** orientations: the pull-back needs the declared norm
 bounds to dominate the range base (`b − 1 ≤ bound`, `b − 1 ≤ ρBound`) and the honest direction needs
-them dominated by it, so an application of this theorem pins `bound = ρBound = b − 1` — the paper's
-own parameter choice. At those parameters `relLift` and `relBatched` are the same relation read two
-ways, which is exactly what a bridge should be. -/
+them dominated by it, so an application pins `bound = ρBound = b − 1`. At those parameters `relLift`
+and `relBatched` are the same relation read two ways, which is exactly what a bridge should be.
+
+That pinning has a consequence for the *chain*, not visible from this link alone: the honest lift's
+quotient bound is `ρBound = q/2` (`rhoShort_half`), so composing forces `b − 1 = q/2`. It is
+therefore **not** the paper's small range base; see `HonestChain.lean`, which bundles the
+orientations and records the limitation (a single shared range base for the `z` and quotient halves
+of the table `w̃`). -/
 theorem batchReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))

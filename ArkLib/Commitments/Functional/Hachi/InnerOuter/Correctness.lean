@@ -237,6 +237,26 @@ theorem perfectlyCorrect (b κ : ℕ) (hb : 1 < b) (hκ : 1 ≤ κ) (hbq : b - 1
     exact vecLInftyNorm_flattenBlocks_le Φ _
       (fun i => gadgetDecompose_zmod_vecLInftyNorm_le Φ hb hqi hbq _)
 
+/-! ## The honest opening as a weak opening
+
+`commitmentScheme`'s `commit` returns the honest decompositions paired with the trivial challenge
+`cᵢ = 1`; `honestOpening` names that pair, and `perfectlyCorrect` above says it passes `verify`.
+
+The *structured* repackaging as a `WeakBinding.VerifiedOpening` — the form Hachi §4.2's `relIn`
+consumes — cannot live here, because `InnerOuter/Security.lean` (where `VerifiedOpening` is defined)
+imports this file. It is `verifiedOpening_honestOpening` in `Commitment.lean`, the honest
+commitment layer, together with the balanced-box membership and the `relInBox` packaging. The three
+notions stay separate there: weak-opening validity, evaluation consistency, and box membership. -/
+
+/-- The honest opening of `commitmentScheme.commit`: the honest decompositions
+(`generateDecomps`) with the trivial challenge `cᵢ = 1`. -/
+def honestOpening (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
+    (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
+    (m : Message Φ messageRows blocks) :
+    Opening Φ innerRows messageRows messageDigits blocks innerDigits where
+  toDecomp := generateDecomps Φ decomp pp m
+  challenge := fun _ => 1
+
 end ZMod
 
 end ArkLib.Lattices.Ajtai.InnerOuter
