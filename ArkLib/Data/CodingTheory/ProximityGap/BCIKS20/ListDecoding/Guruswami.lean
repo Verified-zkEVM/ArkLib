@@ -268,7 +268,7 @@ private theorem symbolicCapPoint_not_mem_base {n k m : ℕ}
   rw [Finset.mem_image] at hmem
   obtain ⟨q, hq, heq⟩ := hmem
   unfold GuruswamiSudan.weightBoundIndices at hq
-  simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_range] at hq
+  simp only [Finset.mem_filter] at hq
   simp only [Prod.mk.injEq] at heq
   have hLpos := symbolicModifiedGSCap_pos hn hk hm
   have hq2 : q.2 = 0 := heq.2
@@ -313,16 +313,16 @@ private theorem symbolicUpperTriangleCandidates_support {n k m : ℕ}
   · rename_i hstrict
     simp only [Finset.mem_insert] at hp
     rcases hp with rfl | hp
-    · exact ⟨by simp only [Prod.snd, Prod.fst, Nat.zero_le], by simpa using hstrict⟩
+    · exact ⟨by simp only [Nat.zero_le], by simpa using hstrict⟩
     · unfold symbolicUpperTriangleBase at hp
       rw [Finset.mem_image] at hp
       obtain ⟨q, hq, rfl⟩ := hp
       unfold GuruswamiSudan.weightBoundIndices at hq
-      simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_range] at hq
+      simp only [Finset.mem_filter] at hq
       have hweight : q.1 + (k + 1) * q.2 ≤ symbolicModifiedGSCap n k m - 1 := by
         simpa only [show k + 2 - 1 = k + 1 by omega] using hq.2
       constructor
-      · simp only [Prod.snd, Prod.fst]
+      · skip
         omega
       · have heq : q.1 + q.2 + k * q.2 = q.1 + (k + 1) * q.2 := by ring
         have hnat : q.1 + q.2 + k * q.2 < symbolicModifiedGSCap n k m := by
@@ -334,11 +334,11 @@ private theorem symbolicUpperTriangleCandidates_support {n k m : ℕ}
     rw [Finset.mem_image] at hp
     obtain ⟨q, hq, rfl⟩ := hp
     unfold GuruswamiSudan.weightBoundIndices at hq
-    simp only [Finset.mem_filter, Finset.mem_product, Finset.mem_range] at hq
+    simp only [Finset.mem_filter] at hq
     have hweight : q.1 + (k + 1) * q.2 ≤ symbolicModifiedGSCap n k m - 1 := by
       simpa only [show k + 2 - 1 = k + 1 by omega] using hq.2
     constructor
-    · simp only [Prod.snd, Prod.fst]
+    · skip
       omega
     · have heq : q.1 + q.2 + k * q.2 = q.1 + (k + 1) * q.2 := by ring
       have hnat : q.1 + q.2 + k * q.2 < symbolicModifiedGSCap n k m := by
@@ -544,8 +544,8 @@ private theorem symbolicGSPoly_coeff_pair {F : Type} [Field F]
   by_cases hp : q.1.1 = (i, j)
   · have hi : q.1.1.1 = i := congrArg Prod.fst hp
     have hj : q.1.1.2 = j := congrArg Prod.snd hp
-    simp [Polynomial.coeff_smul, Polynomial.coeff_monomial,
-      Polynomial.smul_monomial, hi, hj, hp]
+    simp [
+      Polynomial.smul_monomial, hp]
   · have hcases : q.1.1.2 ≠ j ∨ q.1.1.1 ≠ i := by
       by_contra h
       push_neg at h
@@ -567,7 +567,7 @@ private theorem symbolicGSPoly_coeff_index {F : Type} [Field F]
     (if r.1.1 = q.1.1 then Polynomial.monomial r.2.1 (c r) else 0)).coeff q.2.1 = c q
   rw [Polynomial.finset_sum_coeff]
   rw [Finset.sum_eq_single q]
-  · simp [Polynomial.coeff_monomial]
+  · simp []
   · intro r hr hrq
     by_cases hp : r.1.1 = q.1.1
     · have hz : r.2.1 ≠ q.2.1 := by
