@@ -12,15 +12,24 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
   soundness certificates (`rlinPackage.isCWSS`, `liftPackage.isCWSS`). Each theorem states its own
   exact boundary; in summary:
 
-  * `rlinReduction_perfectCompleteness` — the zero-round `R^lin` adapter, into `relRlin`.
-    Unconditional, error `0`.
-  * `rlinReduction_perfectCompleteness_bounded` — the same adapter into the honest chain's seam
-    relation `relRlinFor Φ bound`, under the parameter condition `bound ≤ γ`.
-  * `liftReduction_perfectCompleteness_of_honestShort` — the lift (Figure 4 / Lemma 9), error `0`,
-    **conditional**: it assumes `liftShort` of the honest lifted witness, an undischarged
-    coefficient-growth bound through polynomial division. Its input relation is `relRlinFor`, not
-    `relRlin`, because the lift's side condition has to be carried by the seam relation rather than
-    assumed of every statement (see `relRlinFor`).
+  * `rlinReduction_perfectCompleteness_image` — the zero-round `R^lin` adapter, into the honest
+    chain's seam relation `relRlinImage` (the *image* of the adapter's two maps on `relOut`).
+    Unconditional, error `0`. Uses `ReduceClaim.reduction_completeness_of_imp`, since the `↔` form
+    would require `rlinStmt` to be injective.
+  * `rlinReduction_perfectCompleteness` — its coarsening along `relRlinImage ⊆ relRlin`, for callers
+    that only need the soundness-facing relation.
+  * `liftReduction_perfectCompleteness_image` — the lift (Figure 4 / Lemma 9) on that seam:
+    **unconditional**, error `0`, at `bound = γ` and `ρBound = q/2`. Both halves of `liftShort` are
+    discharged — the `z`-bound from seam membership (`vecLInftyNorm_le_of_mem_relRlinImage`), the
+    quotient bound from `RingSwitch/QuotientNorms.lean` — so no admissibility hypothesis remains.
+    `…_of_zShort` / `…_of_matrixShort` are the parameterized forms over an arbitrary input relation,
+    the latter at the sharp quotient bound `μ · 2d · βM · βz` for a caller with a short matrix.
+  * `rhoShort_honestLiftWitness` / `…_half` — the `ρ`-half of `liftShort` in those two forms.
+
+  The lift consumes `relRlinImage`, not `relRlin`: `relRlin` forgets the matrix provenance and the
+  value of `s.bound`, and `∀ s, bound ≤ s.bound` is false for positive `bound`, so the honest side
+  needs the image seam (see `relRlinImage` in `Rlin.lean`). The seam refines `relRlin`, so no
+  relation is weakened for soundness.
 
   Both protocol objects share their package's verifier by `rfl`
   (`rlinReduction_verifier`, `liftReduction_verifier`). The execution and algebra are generic

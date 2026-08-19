@@ -294,31 +294,23 @@ An honest prover holding a lift-valid short witness is accepted with probability
 same statement/witness pair satisfies the batched identities, the prover's and the verifier's output
 statements being equal for the trivial reason that both are the input statement.
 
-The content is entirely the relation equivalence, i.e. the two proven directions of `Batch.lean`.
-Note the parameter hypotheses come in **both** orientations: the pull-back needs the declared norm
-bounds to dominate the range base (`b − 1 ≤ bound`, `b − 1 ≤ ρBound`) and the honest direction needs
-them dominated by it, so an application pins `bound = ρBound = b − 1`. At those parameters `relLift`
-and `relBatched` are the same relation read two ways, which is exactly what a bridge should be.
+**Only the honest direction is used**, via `ReduceClaim.reduction_completeness_of_imp`: the content
+is `mem_relBatched_of_relLift` alone, so the range hypotheses appear in one orientation only
+(`bound ≤ b − 1`, `ρBound ≤ b − 1` — the declared norm bounds are dominated by the range base), and
+the pull-back's arity conditions `n ≤ 2 ^ m₁` and `(μ + n)·deg φ ≤ 2 ^ m₀` are not needed at all.
 
-That pinning has a consequence for the *chain*, not visible from this link alone: the honest lift's
-quotient bound is `ρBound = q/2` (`rhoShort_half`), so composing forces `b − 1 = q/2`. It is
-therefore **not** the paper's small range base; see `HonestChain.lean`, which bundles the
-orientations and records the limitation (a single shared range base for the `z` and quotient halves
-of the table `w̃`). -/
+That matters for the chain: a *single* parameterization serving both directions is pinned to
+`bound = ρBound = b − 1` (the pull-back needs the reverse orientation); honest completeness alone
+leaves `bound` free below `b − 1`. See `HonestChain.lean`. -/
 theorem batchReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound)
-    (hbound' : bound ≤ b - 1) (hρBound' : ρBound ≤ b - 1) :
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hbound : bound ≤ b - 1) (hρBound : ρBound ≤ b - 1) :
     (batchReduction (oSpec := oSpec) Φ bound ρBound K).perfectCompleteness init impl
       (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b) :=
-  ReduceClaim.reduction_completeness
+  ReduceClaim.reduction_completeness_of_imp
     (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b)
-    (fun X w =>
-      ⟨fun h => mem_relBatched_of_relLift Φ m₀ m₁ bound ρBound K φF b hd hbound' hρBound' X w h,
-        fun h => mem_relLift_of_relBatched Φ m₀ m₁ bound ρBound K φF b hn hd hμn hbound hρBound
-          X w h⟩)
+    (fun X w h => mem_relBatched_of_relLift Φ m₀ m₁ bound ρBound K φF b hd hbound hρBound X w h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter
