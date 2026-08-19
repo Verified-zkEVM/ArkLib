@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Tobias Rothmann
+Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 
@@ -9,19 +9,18 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   # Sumcheck bridge — point claims to hypercube sums (zero-round)
 
   Zero-round bridge from the zero-check's *point-evaluation* claims to the *initial sumcheck*
-  claims consumed by the round loop ([NOZ26] §4.3, "finish the proof using sumcheck protocols"):
+  claims consumed by the round loop:
 
   * `relIn = relNestedZeroCheck` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τα) = 0` at the direct points;
   * `relOut = nestedRoundRel 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
     `∑_{x ∈ {0,1}^{m₀}} F_{α,τ_α}(x) = a`, where the initial linear target
-    `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the statement
-    alone.
+    `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the
+    statement alone.
 
   The statement map installs the empty challenge prefix and the initial target pair
-  `(0, zcTargetAlpha)`. The bridge is pure reshaping — the two directions are the algebraic
+  `(0, zcTargetAlpha)`. The bridge is pure reshaping: soundness is the pair of algebraic
   identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`
-  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`) — so the
-  pull-back is proved through those identities.
+  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`).
 
   ## References
 
@@ -48,14 +47,14 @@ def nestedToRoundStatement {TCom : Type} (φF : ZMod q →+* F)
   ⟨s, fun j => j.elim0, 0, zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα⟩
 
 omit [NeZero q] in
-/-- **Sum-to-point pull-back**: the initial hypercube-sum claims at the installed targets imply
-the zero-check's direct point-evaluation claims, through the batching identities
-`∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The points are the
-scalar-round challenges themselves; no derived evaluation-point encoding is involved. The
-commitment, shortness and bound-sanity conjuncts are shared verbatim. -/
+/-- Sum-to-point pull-back: the initial hypercube-sum claims at the installed targets imply
+the zero-check's direct point-evaluation claims, through the identities
+`∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The commitment,
+shortness and bound-sanity conjuncts are shared verbatim. -/
 theorem mem_relNestedZeroCheck_of_nestedRoundRel
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ)
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
     (w : LiftedWitness Φ μ n)
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
@@ -75,16 +74,17 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w] at hZero
     exact hZero
   · rw [hAlpha_eval_eq]
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w] at hAlpha
+    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w hd hμn] at hAlpha
     exact add_eq_right.mp hAlpha
 
-/-- **The sumcheck bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+/-- The sumcheck bridge as a (plain) `CWSSPackage`: zero-round `ReduceClaim` at
 `mapStmt := nestedToRoundStatement`, reducing `relNestedZeroCheck` to the round-`0`
-`nestedRoundRel` with no soundness error, hence escape-free. -/
+`nestedRoundRel`. -/
 noncomputable def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
+    (φF : ZMod q →+* F) (b : ℕ)
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     CWSSPackage init impl
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
@@ -101,6 +101,6 @@ noncomputable def nestedSumcheckBridgePackage (init : ProbComp σ)
     (relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
     (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b)
+    (mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b hd hμn)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

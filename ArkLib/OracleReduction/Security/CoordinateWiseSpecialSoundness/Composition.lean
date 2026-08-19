@@ -319,6 +319,47 @@ theorem mem_of_pure_accepting
   rw [OptionT.mem_support_iff, OptionT.run_mk, hrun, support_bind_const, support_pure]
   exact ⟨Set.mem_singleton _, hne⟩
 
+/-- **A rejecting verifier is never accepting.** If the verdict on `(stmt, tr)` is `failure`, the
+run cannot be accepted into any language with probability one.
+
+This is the third member of the acceptance bridge, alongside `pure_accepting_of_mem` and
+`mem_of_pure_accepting`, and the one that only becomes meaningful once verifiers are allowed to
+reject (`Guarded.lean`). It is what lets a *guarded* composition read "the composite tree is
+accepting" as "every surviving prefix passed its check": a `failure` leaf would drive the whole
+run's failure probability to one, contradicting acceptance.
+
+Note the argument needs no assumption on `init`: whether or not the sampling itself can fail, the
+total mass splits between failing and producing `none`, and acceptance forces *both* to vanish. -/
+theorem not_accepting_of_verify_failure
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (V : Verifier oSpec Stmt₁ Stmt₂ pSpec)
+    (stmt : Stmt₁) (tr : pSpec.FullTranscript) (lang : Set Stmt₂)
+    (hV : V.verify stmt tr = failure) :
+      Pr[ (· ∈ lang) |
+        OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] ≠ 1 := by
+  intro hAcc
+  rw [probEvent_eq_one_iff] at hAcc
+  obtain ⟨hFail, -⟩ := hAcc
+  -- The underlying probabilistic computation is `init >>= fun _ => pure none`.
+  have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
+      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
+    simp only [Verifier.run, hV]
+    congr 1
+  rw [OptionT.probFailure_eq, OptionT.run_mk, hrun] at hFail
+  obtain ⟨hbase, hnone⟩ := add_eq_zero.mp hFail
+  -- All the mass sits on `none`, which acceptance has just forced to zero.
+  have htsum : (∑' x : Option Stmt₂,
+      Pr[= x | (init >>= fun _ => pure none : ProbComp (Option Stmt₂))]) = 0 := by
+    refine (tsum_eq_single none ?_).trans hnone
+    intro y hy
+    refine probOutput_eq_zero_of_not_mem_support ?_
+    rw [support_bind_const, support_pure]
+    simp [hy]
+  have htotal := probFailure_add_tsum_probOutput
+    (init >>= fun _ => pure none : ProbComp (Option Stmt₂))
+  rw [hbase, htsum] at htotal
+  simp at htotal
+
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
 /-- **Named-extractor preservation of tree-special soundness under binary verifier append.** The
 composed extractor is a named function of the *left* factor's extractor alone: it runs `Ext₁` on
