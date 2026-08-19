@@ -417,8 +417,7 @@ theorem mem_relInBox_of_commitBalanced {κ : ℕ} (hb : 1 < b)
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q)))
         pp.toPublicParams (Hachi.toMatrix p))
       ∈ relInBox 𝓜(q, α) pp (b : ZMod q)
-        ((2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2)) (b / 2) κ b :=
-  by
+        ((2 ^ m) * Nat.clog b q * (𝓜(q, α).φ.natDegree * (b / 2) ^ 2)) (b / 2) κ b := by
   have hu' : stmt.u = commitWithDecomps 𝓜(q, α) pp.toPublicParams
       (generateDecomps 𝓜(q, α) (Decomposition.ofDigits 𝓜(q, α)
         (balancedZmodDigitDecomposition b (Nat.clog b q) hb (Nat.le_pow_clog hb q))
