@@ -41,7 +41,9 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
   (`Gadgets`), protocol data, relations and the honest protocol object (`Reduction`), Hachi Lemma 8
   coordinate-wise special soundness (`Soundness`), perfect completeness (`Completeness`), and the
-  zero-round polynomial-level bridge (`Bridge`). Proved in both directions.
+  zero-round polynomial-level bridge (`Bridge`, itself proved in both directions:
+  `bridge_coordinateWiseSpecialSoundWith` and `bridgeReduction_perfectCompleteness`).
+  Proved in both directions.
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
   guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only §4.3 stage proved in both
   directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in

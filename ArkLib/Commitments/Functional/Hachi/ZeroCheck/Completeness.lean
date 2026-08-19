@@ -257,4 +257,63 @@ theorem nestedZeroCheckReduction_perfectCompleteness [SampleableType F]
     mem_relNestedZeroCheck_of_relBatched Φ m₀ m₁ bound ρBound K φF b hd hμn hbound hρBound
       X w hBatched _ _, rfl⟩
 
+/-! ## The batching bridge: the honest direction, closed
+
+`Batch.lean` now has both relation directions (`mem_relLift_of_relBatched` and the new
+`mem_relBatched_of_relLift`), which is all a zero-round `ReduceClaim` link needs: the two together
+are the `hRel` *equivalence* that `ReduceClaim.reduction_completeness` consumes.
+-/
+
+/-- **The batching bridge as a protocol object**: the zero-round `ReduceClaim` reduction at
+`mapStmt := id` and the identity witness map — the honest prover of a bridge that only changes how
+the claims are *read* does nothing at all. Its verifier is `batchPackage`'s
+(`batchReduction_verifier`), so the two security directions of the link cannot drift apart. -/
+def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
+    Reduction oSpec
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (!p[] : ProtocolSpec 0) :=
+  ReduceClaim.reduction oSpec id (fun _ w => w)
+
+set_option linter.unusedSectionVars false in
+/-- The bridge's protocol object and its soundness certificate share a verifier. Holds by `rfl`. -/
+@[simp] theorem batchReduction_verifier
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound) :
+    (batchReduction (oSpec := oSpec) Φ bound ρBound K).verifier
+      = (batchPackage Φ m₀ m₁ bound ρBound init impl K φF b hn hd hμn hbound hρBound).verifier :=
+  rfl
+
+set_option linter.unusedSectionVars false in
+/-- **Perfect completeness of the batching bridge** (Hachi Eqs. (22)–(23)), at error exactly `0`.
+
+An honest prover holding a lift-valid short witness is accepted with probability one and the very
+same statement/witness pair satisfies the batched identities, the prover's and the verifier's output
+statements being equal for the trivial reason that both are the input statement.
+
+The content is entirely the relation equivalence, i.e. the two proven directions of `Batch.lean`.
+Note the parameter hypotheses come in **both** orientations: the pull-back needs the declared norm
+bounds to dominate the range base (`b − 1 ≤ bound`, `b − 1 ≤ ρBound`) and the honest direction needs
+them dominated by it, so an application of this theorem pins `bound = ρBound = b − 1` — the paper's
+own parameter choice. At those parameters `relLift` and `relBatched` are the same relation read two
+ways, which is exactly what a bridge should be. -/
+theorem batchReduction_perfectCompleteness
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound)
+    (hbound' : bound ≤ b - 1) (hρBound' : ρBound ≤ b - 1) :
+    (batchReduction (oSpec := oSpec) Φ bound ρBound K).perfectCompleteness init impl
+      (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b) :=
+  ReduceClaim.reduction_completeness
+    (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b)
+    (fun X w =>
+      ⟨fun h => mem_relBatched_of_relLift Φ m₀ m₁ bound ρBound K φF b hd hbound' hρBound' X w h,
+        fun h => mem_relLift_of_relBatched Φ m₀ m₁ bound ρBound K φF b hn hd hμn hbound hρBound
+          X w h⟩)
+
 end ArkLib.Lattices.Ajtai.InnerOuter
