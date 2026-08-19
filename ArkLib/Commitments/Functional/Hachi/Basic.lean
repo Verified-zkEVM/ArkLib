@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.HonestChain
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
@@ -76,7 +77,15 @@ development:
   entering each certificate as a disjunct of its conclusion.
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
   the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
-  remaining subprotocols).
+  remaining subprotocols), plus the honest-committer facts the honest chain consumes: the honest
+  opening as a `WeakBinding.VerifiedOpening`, its balanced-box membership, and
+  `mem_relInBox_of_honestBalanced` — paper-exact `QuadEval`'s input relation established for the
+  balanced-digit committer.
+* `HonestChain.lean` — the honest side's parameter bookkeeping: `HonestRangeParams` (digit base,
+  Eq. (20) ball radius, zero-check range base, with the relations the seams need, and a proof that
+  they are satisfiable) and the per-seam corollaries restating each link's completeness at those
+  parameters. Its docstring records the one genuine limitation: at a single shared range base the
+  seams pin `γ = q/2`, because the honest lift quotient is not short.
 
 This file is the folder's **re-export hub**: it imports every per-folder umbrella
 (`Gadget/`, `InnerOuter/`, `QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`, `Recursion/`

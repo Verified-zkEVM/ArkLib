@@ -319,6 +319,15 @@ theorem vecLInftyNorm_le_of_vecInSb {β γ cols : ℕ} (hγ : β / 2 ≤ γ)
   unfold vecLInftyNorm
   exact Finset.sup_le fun i _ => lInftyNorm_le_of_InSb Φ hγ (h i)
 
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Box membership passes through block flattening: `flattenBlocks` only re-indexes, so the
+flattened vector lies in `S_β` as soon as every block does. (The `ℓ∞` analogue is
+`vecLInftyNorm_flattenBlocks_le`.) -/
+theorem vecInSb_flattenBlocks {β blocks width : ℕ}
+    (xs : PolyVec (PolyVec (Rq Φ) width) blocks) (h : ∀ i, vecInSb Φ β (xs i)) :
+    vecInSb Φ β (PolyVec.flattenBlocks xs) :=
+  fun j => h (finProdFinEquiv.symm j).1 (finProdFinEquiv.symm j).2
+
 /-- **`paperRelOut` — the Figure 3 / Eq. (20) verifier verbatim.** Identical to `relOut` except the
 c6 range checks are the paper's exact `S_b` box membership (`vecInSb`, Hachi [NOZ26] §2.1) instead
 of the symmetric `ℓ∞` ball. This is the relation the Hachi verifier actually checks; rows c1–c5

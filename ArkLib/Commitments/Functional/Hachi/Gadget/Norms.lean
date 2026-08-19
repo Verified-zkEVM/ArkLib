@@ -131,6 +131,18 @@ theorem balancedZmodDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hq : q �
   rw [hval]
   omega
 
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **Ball form of the balanced-digit bound**: every balanced digit has centered absolute value at
+most `⌊b/2⌋` — the box `[−⌊b/2⌋, ⌈b/2⌉−1]` is contained in the symmetric ball of radius `⌊b/2⌋`
+(check both parities: `(b+1)/2 − 1 ≤ b/2` always). This is the form the `ℓ∞`/`ℓ₂²` gadget bounds
+consume, so the balanced decomposition is short in the ordinary sense too, at half the radius of the
+unsigned one. -/
+theorem balancedZmodDigit_natAbs_le {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
+    (hbq : b ≤ q / 2) (c : ZMod q) (e : Fin digits) :
+    ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs.natAbs ≤ b / 2 := by
+  obtain ⟨hlo, hhi⟩ := balancedZmodDigit_valMinAbs_mem hb hq hbq c e
+  omega
+
 /-! ## `ℓ∞` bound -/
 
 omit [NeZero q] in
@@ -224,6 +236,37 @@ theorem gadgetDecompose_zmod_vecL2NormSq_le {b digits rows : ℕ} (hb : 1 < b) (
       ≤ ∑ _i : Fin (rows * digits), Φ.φ.natDegree * (b - 1) ^ 2 :=
         Finset.sum_le_sum (fun i _ => gadgetDecompose_zmod_l2NormSq_le Φ hb hq hbq x i)
     _ = rows * digits * (Φ.φ.natDegree * (b - 1) ^ 2) := by
+        rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
+
+omit [NeZero q] in
+/-- **`ℓ₂²` shortness of one `G⁻¹` block from a digit bound, for an arbitrary
+`DigitDecomposition`** — the `ℓ₂²` twin of `gadgetDecompose_lInftyNorm_le_of_digit_le`. -/
+theorem gadgetDecompose_l2NormSq_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) :
+    ‖gadgetDecompose Φ dd x j‖₂² ≤ Φ.φ.natDegree * γ ^ 2 := by
+  unfold Rq.l2NormSq
+  calc ∑ k ∈ Finset.range Φ.φ.natDegree,
+        ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs.natAbs ^ 2
+      ≤ ∑ _k ∈ Finset.range Φ.φ.natDegree, γ ^ 2 := by
+        refine Finset.sum_le_sum (fun k hk => ?_)
+        rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
+        exact Nat.pow_le_pow_left (hdd _ _) 2
+    _ = Φ.φ.natDegree * γ ^ 2 := by rw [Finset.sum_const, Finset.card_range, smul_eq_mul]
+
+omit [NeZero q] in
+/-- Vector form of `gadgetDecompose_l2NormSq_le_of_digit_le`. -/
+theorem gadgetDecompose_vecL2NormSq_le_of_digit_le {base : ZMod q} {digits rows γ : ℕ}
+    (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits), (dd.digit c e).valMinAbs.natAbs ≤ γ)
+    (x : PolyVec (Rq Φ) rows) :
+    ‖gadgetDecompose Φ dd x‖₂² ≤ rows * digits * (Φ.φ.natDegree * γ ^ 2) := by
+  unfold vecL2NormSq
+  calc ∑ i : Fin (rows * digits), Rq.l2NormSq Φ (gadgetDecompose Φ dd x i)
+      ≤ ∑ _i : Fin (rows * digits), Φ.φ.natDegree * γ ^ 2 :=
+        Finset.sum_le_sum (fun i _ => gadgetDecompose_l2NormSq_le_of_digit_le Φ dd hdd x i)
+    _ = rows * digits * (Φ.φ.natDegree * γ ^ 2) := by
         rw [Finset.sum_const, Finset.card_univ, Fintype.card_fin, smul_eq_mul]
 
 end ZModGadgetNorms

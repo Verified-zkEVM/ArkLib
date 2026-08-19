@@ -152,6 +152,160 @@ def hachi [DecidableEq (ZMod q)] (hb : 1 < b) :
   commit := fun pp p => pure (commit b hb pp p)
   opening := sorry
 
+/-! ## The honest commitment and the paper-exact input relation `relInBox`
+
+Three separate notions, deliberately not merged:
+
+* **weak-opening validity** — the committer's output is a `WeakBinding.VerifiedOpening`
+  (`verifiedOpening_honestOpening`);
+* **balanced-box membership** — its inner decomposition lies in Eq. (20)'s box `S_b`, a fact
+  about *which* digit decomposition the committer was instantiated with
+  (`vecInSb_honestInnerDecomp_balanced`, true for `commitBalanced`, false in general for `commit`);
+* **evaluation consistency** — Eq. (15), a property of the polynomial layer, supplied by the caller.
+
+`mem_relInBox_of_honestBalanced` combines them into `QuadEval`'s box-carrying input
+relation `relInBox`, the input of paper-exact `QuadEval` completeness. This establishes that *input
+relation* only: the `opening` field of `hachi` is still `sorry`, so nothing here claims end-to-end
+commitment correctness (`Commitment.perfectCorrectness`). -/
+
+section HonestBalanced
+
+variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+  (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
+variable {innerRows messageRows messageDigits outerRows blocks innerDigits : Nat}
+
+omit [NeZero q] in
+/-- **The honest opening is a weak opening.** Every `WeakBinding.VerifiedOpening` field of
+`InnerOuter.honestOpening` is discharged: the outer equation holds by construction
+(`commitWithDecomps` *is* that commitment), the inner gadget relation is `generateDecomps_inner_eq`,
+and the challenge fields are the trivial challenge's (`isUnit_one`, `‖1‖₁ ≤ κ`). The two remaining
+fields are the weak verifier's norm side conditions, kept as the hypotheses `hβ` (per-block `ℓ₂²`
+shortness of the message decomposition) and `hγ` (`ℓ∞` shortness of the flattened inner
+decomposition) — exactly as in `perfectlyCorrect_of_lawful`, and discharged for balanced digits in
+`mem_relInBox_of_honestBalanced`.
+
+(It lives here rather than in `InnerOuter/Correctness.lean` because `VerifiedOpening` is defined in
+`InnerOuter/Security.lean`, which imports that file.) -/
+theorem verifiedOpening_honestOpening (base : ZMod q) (βSq γ κ : ℕ)
+    (decomp : Decomposition Φ messageRows messageDigits innerRows innerDigits)
+    (hInnerDecomp : IsLawfulGadgetDecomposition Φ base decomp.inner)
+    (hκle : ‖(1 : Rq Φ)‖₁ ≤ κ)
+    (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
+    (msg : Message Φ messageRows blocks)
+    (hβ : ∀ i, ‖(generateDecomps Φ decomp pp msg).message i‖₂² ≤ βSq)
+    (hγ : vecLInftyNorm Φ
+      (PolyVec.flattenBlocks (generateDecomps Φ decomp pp msg).innerDecomp) ≤ γ) :
+    VerifiedOpening Φ base βSq γ κ pp
+      (commitWithDecomps Φ pp (generateDecomps Φ decomp pp msg))
+      (honestOpening Φ decomp pp msg) where
+  outer_eq := rfl
+  outer_short := hγ
+  block i :=
+    { unit := isUnit_one
+      challenge_short := hκle
+      scaled_short := by
+        have hone : (honestOpening Φ decomp pp msg).challenge i •ᵥ
+              (honestOpening Φ decomp pp msg).message i
+            = (generateDecomps Φ decomp pp msg).message i := by
+          funext j; simp [honestOpening]
+        rw [hone]
+        exact hβ i
+      inner_eq := generateDecomps_inner_eq Φ base decomp hInnerDecomp pp msg i }
+
+set_option linter.unusedSectionVars false in
+/-- **The honest inner decomposition lies in Eq. (20)'s box `S_b`** when the committer is
+instantiated with the *balanced* digits. Each block is `gadgetDecompose … (balanced …)` applied to
+that block's inner commitment, so each of its coefficients is a balanced digit
+(`gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem` at `balancedZmodDigit_valMinAbs_mem`), and
+`vecInSb_flattenBlocks` transports the box through the flattening. -/
+theorem vecInSb_honestInnerDecomp_balanced {b : ℕ} (hb : 1 < b)
+    (hqi : q ≤ b ^ innerDigits) (hbq : b ≤ q / 2)
+    (ddMsg : DigitDecomposition (b : ZMod q) messageDigits)
+    (pp : PublicParams Φ innerRows messageRows messageDigits outerRows blocks innerDigits)
+    (msg : Message Φ messageRows blocks) :
+    vecInSb Φ b (PolyVec.flattenBlocks (generateDecomps Φ
+      (Decomposition.ofDigits Φ ddMsg (balancedZmodDigitDecomposition b innerDigits hb hqi))
+      pp msg).innerDecomp) :=
+  vecInSb_flattenBlocks Φ _ fun _ j _ hk =>
+    gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem Φ _
+      (fun c e => balancedZmodDigit_valMinAbs_mem hb hqi hbq c e) _ j hk
+
+section RelInBox
+
+variable {innerRows messageDigits outerRows innerDigits dRows m r : Nat}
+
+set_option linter.unusedSectionVars false in
+/-- **The honest balanced commitment establishes `relInBox`** — paper-exact `QuadEval`
+completeness's input relation.
+
+The three conjuncts come from the three separate places they belong:
+
+* `VerifiedOpening` — `verifiedOpening_honestOpening`, with its two norm side conditions discharged
+  here for the balanced digits: `ℓ₂²` shortness at `βSq = (2ᵐ·δ)·(deg φ)·⌊b/2⌋²`
+  (`gadgetDecompose_vecL2NormSq_le_of_digit_le`) and `ℓ∞` shortness at `γ = ⌊b/2⌋`
+  (`gadgetDecompose_vecLInftyNorm_le_of_digit_le`), both via `balancedZmodDigit_natAbs_le`. Note the
+  balanced digits are short at *half* the unsigned radius, which is why `γ = ⌊b/2⌋` here where
+  `perfectlyCorrect` has `b − 1`.
+* Eq. (15) evaluation consistency — the hypothesis `heval`, supplied by the polynomial layer (it is
+  `Hachi.splitForm_monomialBasis_eq_eval` at the statement's monomial bases; see
+  `QuadEval/Bridge.lean`).
+* Box membership — `vecInSb_honestInnerDecomp_balanced`, true because the committer was instantiated
+  with `balancedZmodDigitDecomposition`.
+
+Hypotheses: `hu` pins the statement's commitment to the honest one, `1 < b`, the two digit-count
+conditions `q ≤ b^…`, the anti-wraparound `b ≤ q/2` (needed for balanced digits to be centered — see
+`balancedZmodDigit_valMinAbs_mem`), `1 ≤ deg φ`, positive digit counts, and `1 ≤ κ`.
+
+**Scope.** This establishes the input relation only. The `opening` field of `hachi` is still
+`sorry`, so no claim is made about `Commitment.perfectCorrectness`. -/
+theorem mem_relInBox_of_honestBalanced {b κ : ℕ} (hb : 1 < b)
+    (hqm : q ≤ b ^ messageDigits) (hqi : q ≤ b ^ innerDigits) (hbq : b ≤ q / 2)
+    (hdeg : 1 ≤ Φ.φ.natDegree) (hinner : 0 < innerDigits) (hκ : 1 ≤ κ)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (msg : Message Φ (2 ^ m) (2 ^ r))
+    (stmt : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hu : stmt.u = commitWithDecomps Φ pp.toPublicParams (generateDecomps Φ
+      (Decomposition.ofDigits Φ (balancedZmodDigitDecomposition b messageDigits hb hqm)
+        (balancedZmodDigitDecomposition b innerDigits hb hqi)) pp.toPublicParams msg))
+    (heval : evalConsistency Φ (b : ZMod q) stmt.avec stmt.bvec stmt.y
+      (honestOpening Φ (Decomposition.ofDigits Φ
+        (balancedZmodDigitDecomposition b messageDigits hb hqm)
+        (balancedZmodDigitDecomposition b innerDigits hb hqi)) pp.toPublicParams msg)) :
+    (stmt, honestOpening Φ (Decomposition.ofDigits Φ
+        (balancedZmodDigitDecomposition b messageDigits hb hqm)
+        (balancedZmodDigitDecomposition b innerDigits hb hqi)) pp.toPublicParams msg)
+      ∈ relInBox Φ pp (b : ZMod q)
+        ((2 ^ m) * messageDigits * (Φ.φ.natDegree * (b / 2) ^ 2)) (b / 2) κ b := by
+  -- The honest committer's decomposition pair, named so the goals below stay readable.
+  set ddM := balancedZmodDigitDecomposition b messageDigits hb hqm with hddM
+  set ddI := balancedZmodDigitDecomposition b innerDigits hb hqi with hddI
+  -- `ℓ₂²` shortness of each message block: it *is* a `gadgetDecompose` at `ddM`.
+  have hβ : ∀ i, ‖(generateDecomps Φ (Decomposition.ofDigits Φ ddM ddI)
+      pp.toPublicParams msg).message i‖₂²
+      ≤ (2 ^ m) * messageDigits * (Φ.φ.natDegree * (b / 2) ^ 2) := by
+    intro i
+    change ‖gadgetDecompose Φ ddM (msg i)‖₂² ≤ _
+    exact gadgetDecompose_vecL2NormSq_le_of_digit_le Φ ddM
+      (fun c e => balancedZmodDigit_natAbs_le hb hqm hbq c e) (msg i)
+  -- `ℓ∞` shortness of the flattened inner decomposition, block by block.
+  have hγ : vecLInftyNorm Φ (PolyVec.flattenBlocks (generateDecomps Φ
+      (Decomposition.ofDigits Φ ddM ddI) pp.toPublicParams msg).innerDecomp) ≤ b / 2 := by
+    refine vecLInftyNorm_flattenBlocks_le Φ _ fun i => ?_
+    change vecLInftyNorm Φ (gadgetDecompose Φ ddI _) ≤ b / 2
+    exact gadgetDecompose_vecLInftyNorm_le_of_digit_le Φ ddI
+      (fun c e => balancedZmodDigit_natAbs_le hb hqi hbq c e) _
+  have hκle : ‖(1 : Rq Φ)‖₁ ≤ κ := by rw [Rq.l1Norm_one Φ hdeg]; exact hκ
+  refine ⟨⟨?_, heval⟩, vecInSb_honestInnerDecomp_balanced Φ hb hqi hbq _ pp.toPublicParams msg⟩
+  rw [hu]
+  exact verifiedOpening_honestOpening Φ (b : ZMod q) _ _ κ (Decomposition.ofDigits Φ ddM ddI)
+    (gadgetDecompose_lawful Φ hinner hdeg ddI) hκle pp.toPublicParams msg hβ hγ
+
+end RelInBox
+
+end HonestBalanced
+
 end FunctionalCommitment
 
 /-! ## TODO — completeness / honest-prover layer

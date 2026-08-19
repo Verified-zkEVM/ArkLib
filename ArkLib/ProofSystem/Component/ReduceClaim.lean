@@ -64,10 +64,16 @@ variable {oSpec} {mapStmt} {mapWit}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
 
-/-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. -/
-@[simp]
-theorem reduction_completeness --(h : init.neverFails)
-    (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
+/-- **Perfect completeness of `ReduceClaim` from the forward relation implication alone.**
+
+Only the `→` direction of the relation correspondence is completeness-relevant: the honest prover
+maps `(stmtIn, witIn)` to `(mapStmt stmtIn, mapWit stmtIn witIn)`, so all that is needed is that
+this lands in `relOut`. The `↔` form (`reduction_completeness`, now a corollary) is convenient when
+the two relations are equivalent, but it excludes perfectly good honest seams — e.g. an *image*
+relation `{p | ∃ x, x ∈ relIn ∧ p = (mapStmt x.1, mapWit x.1 x.2)}`, whose reverse direction would
+need `mapStmt` to be injective. -/
+theorem reduction_completeness_of_imp
+    (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn →
       (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
     (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut := by
   simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
@@ -108,7 +114,16 @@ theorem reduction_completeness --(h : init.neverFails)
     rw [StateT.run_pure] at hx
     simp [map_pure, support_pure] at hx
     cases hx
-    exact ⟨(hRel stmtIn witIn).mp hIn, rfl⟩
+    exact ⟨hRel stmtIn witIn hIn, rfl⟩
+
+/-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. The `↔` form of
+`reduction_completeness_of_imp`; only the forward direction is used. -/
+@[simp]
+theorem reduction_completeness --(h : init.neverFails)
+    (hRel : ∀ stmtIn witIn, (stmtIn, witIn) ∈ relIn ↔
+      (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut) :
+    (reduction oSpec mapStmt mapWit).perfectCompleteness init impl relIn relOut :=
+  reduction_completeness_of_imp relIn relOut (fun s w => (hRel s w).mp)
 
 /-- The round-by-round extractor for the `ReduceClaim` (oracle) reduction. Requires a mapping
   `mapWitInv` from the output witness to the input witness. -/

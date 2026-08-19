@@ -9,6 +9,7 @@ import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Commitments.Functional.Hachi.Gadget.Core
 import ArkLib.Commitments.Functional.Hachi.Gadget.Norms
+import ArkLib.Commitments.Functional.Hachi.HonestChain
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Arithmetic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Correctness
@@ -26,6 +27,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
@@ -395,6 +397,7 @@ import ArkLib.ToMathlib.List.Basic
 import ArkLib.ToMathlib.Polynomial.AevalXPow
 import ArkLib.ToMathlib.Polynomial.CompositionDegree
 import ArkLib.ToMathlib.Polynomial.DegreeLT
+import ArkLib.ToMathlib.Polynomial.DivByXPowAddOne
 import ArkLib.ToMathlib.Polynomial.EvalExt
 import ArkLib.ToMathlib.Polynomial.NatDegreeOfSum
 import ArkLib.ToMathlib.Polynomial.RootMultiplicity
