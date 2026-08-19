@@ -1219,7 +1219,7 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
   rw [hL]
   simp only [hAlphaML, eval_MLE_eq_sum, hAlphaEvals, zcTargetAlpha]
   rw [sum_cube_rowIndexed m₁ τ₁ (fun i => cEvalAt φF α (cRowSum Φ s w.z i)
-      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i)),
+      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly),
     ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   by_cases hi : (i : ℕ) < 2 ^ m₁

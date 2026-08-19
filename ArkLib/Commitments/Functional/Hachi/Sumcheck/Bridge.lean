@@ -58,6 +58,8 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     (φF : ZMod q →+* F) (b : ℕ)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
     (w : LiftedWitness Φ μ n)
+    (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :
     (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
@@ -75,7 +77,7 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w] at hZero
     exact hZero
   · rw [hAlpha_eval_eq]
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w] at hAlpha
+    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w hd hμn] at hAlpha
     exact add_eq_right.mp hAlpha
 
 /-- **The nested sumcheck bridge verifier's purity as data** (`Verifier.PureForm`): the verdict is
@@ -97,7 +99,8 @@ def nestedSumcheckBridgeVerifierPureForm
 def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     CWSSPackage init impl
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
@@ -112,6 +115,7 @@ def nestedSumcheckBridgePackage (init : ProbComp σ)
     (relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
     (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b)
+    (fun s w =>
+      mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b s w hd hμn)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

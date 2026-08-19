@@ -115,7 +115,6 @@ def finalEvalVerifierGuardedForm {TCom : Type} (φF : ZMod q →+* F) :
   out := fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩
   verify_eq := fun _ _ => rfl
 
-omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- The final-evaluation verifier is guarded — definitionally, by `finalCheck`. -/
 theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
     (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (n := n) (μ := μ) (TCom := TCom)

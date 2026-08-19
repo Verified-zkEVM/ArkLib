@@ -319,7 +319,7 @@ def openCore (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     liftPackage 𝓜(q, α) γ ρBound K φF init impl hd ▷
     batchPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hn hd hcov hb hρ ▷
     nestedZeroCheckPackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b ▷
-    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b
+    nestedSumcheckBridgePackage 𝓜(q, α) m₀ m₁ γ ρBound init impl K φF b hd hcov
 
 /-- **One full Hachi opening iteration** (rows 1–12 of the chain table): the pure prefix
 `openCore` composed with the guarded tail: the `m₀` paired sumcheck rounds (Lemma 11, guarded on the
@@ -345,7 +345,8 @@ def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hpos : 0 < b)
+    (hb : b - 1 ≤ γ)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
     (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
@@ -380,12 +381,12 @@ def openingChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbCom
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   (((openCore (m₀ := mLow + κ) (m₁ := m₁) init impl hq5 hκ hτ K pp φF hd hq2 hb hρ hcov
       hn).appendEscapeGuarded
-      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF (mLow + κ))
+      (roundsChain 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF hpos (mLow + κ) le_rfl)
       (roundsChain_relIn 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
-        (mLow + κ)).symm).appendGuarded
+        hpos (mLow + κ) le_rfl).symm).appendGuarded
     (finalEvalPackage 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF)
     (roundsChain_relOut 𝓜(q, α) (mLow + κ) m₁ γ ρBound b init impl K φF
-      (mLow + κ))) ▷
+      hpos (mLow + κ) le_rfl)) ▷
   partialEvalPackage 𝓜(q, α) mLow κ γ ρBound b init impl K φF ▷
   zBatchPackage 𝓜(q, α) mLow κ γ ρBound init impl zpow K φF ▷
   handoffPackage 𝓜(q, α) Φ' mLow κ γ ρBound init impl zpow K φF pp' reinterpretCom base' βSq'
@@ -407,7 +408,8 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hpos : 0 < b)
+    (hb : b - 1 ≤ γ)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ (mLow + κ))
     (hn : n₀ ≤ 2 ^ m₁)
     (zpow : Fin (2 ^ κ) → F)
@@ -419,19 +421,19 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (base' : ZMod q) (βSq' γ' κ' : ℕ) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-        K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
+        K pp φF hd hq2 hpos hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').struct
       (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').esc
+        hq5 hκ hτ K pp φF hd hq2 hpos hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').esc
       (relPolyEval 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
       (relIn Φ' pp' base' βSq' γ' κ')
       (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ
-        hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').verifier
+        hτ K pp φF hd hq2 hpos hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').verifier
       (openingChain (b := b) (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
+        hq5 hκ hτ K pp φF hd hq2 hpos hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ'
         κ').extractor :=
   (openingChain (zDigits := zDigits) (ω := ω) (mLow := mLow) (m₁ := m₁) init impl hq5 hκ hτ
-    K pp φF hd hq2 hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
+    K pp φF hd hq2 hpos hb hρ hcov hn zpow Φ' pp' reinterpretCom base' βSq' γ' κ').isCWSS
 
 end OpeningChain
 
