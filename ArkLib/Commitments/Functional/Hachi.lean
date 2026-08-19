@@ -40,14 +40,14 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   (`Security`), and the pinned power-of-two ring (`Arithmetic`).
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
   (`Gadgets`), protocol data, relations and the honest protocol object (`Reduction`), Hachi Lemma 8
-  coordinate-wise special soundness (`Soundness`), perfect completeness (`Completeness`), and the
+  coordinate-wise special soundness (`Soundness`), completeness (`Completeness` — both the
+  ball-relaxed reading at `relOut` and the paper-exact one at `paperRelOut`; see that file), and the
   zero-round polynomial-level bridge (`Bridge`, itself proved in both directions:
   `bridge_coordinateWiseSpecialSoundWith` and `bridgeReduction_perfectCompleteness`).
-  Proved in both directions.
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain. `ZeroCheck/` is the only §4.3 stage proved in both
-  directions so far: soundness in `ZeroCheck/Reduction.lean`, perfect completeness in
-  `ZeroCheck/Completeness.lean`.
+  guarded sumcheck stages of the opening chain. `RingSwitch/` and `ZeroCheck/` are proved in both
+  directions (`…/Completeness.lean` each; the lift's honest direction is conditional on the range
+  check of its honest lifted witness); `Sumcheck/` has soundness only.
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
   one iteration at the next ring's plain `QuadEval.relIn` relation.
 * `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷

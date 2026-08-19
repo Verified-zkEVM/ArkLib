@@ -42,13 +42,20 @@ inner-outer lift of Greyhound's [NS24, §3.1] folding protocol.
   axiom-clean (`#print axioms` gives only `propext` / `Classical.choice` / `Quot.sound`), and its
   one deep input, Lyubashevsky–Seiler short-element invertibility `isUnit_of_l1Norm_le`, is itself
   proven, not deferred.
-* `QuadEval/Completeness.lean` — the honest direction: perfect completeness of
-  `quadEvalReduction` (`quadEvalReduction_perfectCompleteness`, and
-  `…_zmodDigits` at the concrete base-`b` gadget and the paper's range `γ := b`), factored into the
-  relation-preservation step `mem_relOut_of_relIn` (all eight Eq.-(20) rows, at *every* challenge
-  vector — hence error `0`) and the run characterization `quadEvalReduction_run_support`. Also
-  `sorry`-free and axiom-clean. `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`
-  (in `Soundness.lean`) checks that the two directions speak about the same verifier.
+* `QuadEval/Completeness.lean` — the honest direction, in **two readings** that must not be
+  conflated (the file's docstring is the reference; both are error `0`, `sorry`-free and
+  axiom-clean):
+  - *ball-relaxed*, into ArkLib's `relOut`: `quadEvalReduction_perfectCompleteness`, with
+    `…_zmodDigits` at the unsigned base-`b` digits;
+  - *paper-exact*, into `paperRelOut` (Eq. (20) verbatim, box `S_b`):
+    `quadEvalReduction_perfectCompleteness_paperRelOut`, with `…_balancedDigits` at the balanced
+    base-`b` digits, from the box-carrying input relation `relInBox`.
+
+  The shared linear content is `honestRows_of_relIn` (Eq.-(20) rows c1–c5 at *every* challenge
+  vector — hence error `0`); the range steps and the run characterization
+  `quadEvalReduction_run_support` complete each reading.
+  `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`
+  (in `Soundness.lean`) checks that the two security directions speak about the same verifier.
 * `QuadEval/Bridge.lean` — the zero-round polynomial-level head: reinterprets a `CMlPolynomial`
   evaluation statement (`PolyEvalStatement`) as a `QuadEvalStatement` via the monomial tensor
   bases, with the pulled-back relation `relPolyEval` and the composable `bridgePackage`.

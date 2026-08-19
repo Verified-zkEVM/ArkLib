@@ -127,6 +127,42 @@ def zmodDigitDecomposition (b digits : ℕ) (hb : 1 < b) (hq : q ≤ b ^ digits)
       _ = ((c.val : ℕ) : ZMod q) := by rw [hL, Nat.ofDigits_digits]
       _ = c := ZMod.natCast_zmod_val c
 
+/-- The shift `⌊b/2⌋ · (1 + b + ⋯ + b^{digits-1})` that turns unsigned base-`b` digits into
+**balanced** ones: subtracting `⌊b/2⌋` from each digit of `c + balancedShift` recovers `c`, because
+the shift is exactly what the per-digit subtractions remove. -/
+def balancedShift (b digits : ℕ) : ZMod q :=
+  ((b / 2 : ℕ) : ZMod q) * ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ)
+
+/-- **The balanced base-`b` digit decomposition over `ZMod q`**: digit `e` of `c` is the `e`-th
+unsigned base-`b` digit of the shifted coefficient `c + balancedShift b digits`, less `⌊b/2⌋`.
+
+Because the unsigned digits lie in `[0, b−1]`, the balanced digits lie in
+`[−⌊b/2⌋, b−1−⌊b/2⌋] = [⌈−b/2⌉, ⌈b/2⌉−1]` — which is *exactly* the paper's balanced-digit box `S_b`
+([NOZ26] §2.1), for both parities of `b`. That is what makes this the decomposition Hachi's exact
+Eq. (20) range check accepts; the centered bounds are
+`ArkLib.Lattices.Ajtai.balancedZmodDigit_valMinAbs_mem` (`Gadget/Norms.lean`), and the honest
+prover's use of it is `QuadEval/Completeness.lean`.
+
+Reconstruction is inherited from `zmodDigitDecomposition` at the shifted input: the digitwise
+subtractions of `⌊b/2⌋` sum to exactly `balancedShift`, cancelling the shift. -/
+def balancedZmodDigitDecomposition (b digits : ℕ) (hb : 1 < b) (hq : q ≤ b ^ digits) :
+    DigitDecomposition (R := ZMod q) (b : ZMod q) digits where
+  digit c e :=
+    (zmodDigitDecomposition b digits hb hq).digit (c + balancedShift b digits) e
+      - ((b / 2 : ℕ) : ZMod q)
+  reconstruct c := by
+    have hrec := (zmodDigitDecomposition b digits hb hq).reconstruct (c + balancedShift b digits)
+    calc ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) *
+            ((zmodDigitDecomposition b digits hb hq).digit (c + balancedShift b digits) e
+              - ((b / 2 : ℕ) : ZMod q))
+        = (∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) *
+              (zmodDigitDecomposition b digits hb hq).digit (c + balancedShift b digits) e)
+            - ((b / 2 : ℕ) : ZMod q) * ∑ e : Fin digits, (b : ZMod q) ^ (e : ℕ) := by
+          rw [Finset.mul_sum, ← Finset.sum_sub_distrib]
+          exact Finset.sum_congr rfl fun e _ => by ring
+      _ = (c + balancedShift b digits) - balancedShift b digits := by rw [hrec, balancedShift]
+      _ = c := by ring
+
 end ZModDigit
 
 /-! ## The gadget matrix over `Rq Φ` -/

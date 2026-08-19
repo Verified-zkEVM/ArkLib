@@ -95,6 +95,42 @@ theorem gadgetDecompose_coeff {base : ZMod q} {rows digits : ℕ}
         dd.digit ((x (finProdFinEquiv.symm j).1).1.coeff k) (finProdFinEquiv.symm j).2) from rfl,
     Rq.ofFinCoeff_coeff Φ _ (Rq.phi_natDegree_le_degree Φ) k, if_pos hk]
 
+omit [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- **Core balanced-digit bound.** Each digit of `balancedZmodDigitDecomposition`, as a centered
+residue, lies in the two-sided box `[−⌊b/2⌋, ⌈b/2⌉−1]` — i.e. `[-(b/2), (b+1)/2 - 1]` in `Nat`
+division. This is the paper's balanced-digit box `S_b` ([NOZ26] §2.1) on the nose, for both
+parities of `b`, and it is a genuinely two-sided statement: unlike `zmodDigit_natAbs_le` it is not
+a symmetric `ℓ∞` ball but the exact interval Eq. (20)'s range check tests.
+
+The digit is `u − ⌊b/2⌋` for an unsigned base-`b` digit `u < b`, so as an *integer* it lies in
+`[−⌊b/2⌋, b−1−⌊b/2⌋]`, and `b − 1 − b/2 = (b+1)/2 − 1` for both parities. The hypothesis
+`b ≤ q/2` (slightly stronger than `zmodDigit_natAbs_le`'s `b − 1 ≤ q/2`) is the anti-wraparound
+condition that makes that integer *be* the centered representative, via `ZMod.valMinAbs_spec`. -/
+theorem balancedZmodDigit_valMinAbs_mem {b digits : ℕ} (hb : 1 < b) (hq : q ≤ b ^ digits)
+    (hbq : b ≤ q / 2) (c : ZMod q) (e : Fin digits) :
+    -((b / 2 : ℕ) : ℤ) ≤
+        ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs ∧
+      ((balancedZmodDigitDecomposition b digits hb hq).digit c e).valMinAbs
+        ≤ (((b + 1) / 2 : ℕ) : ℤ) - 1 := by
+  have hq0 : 0 < q := Nat.pos_of_ne_zero (NeZero.ne q)
+  simp only [balancedZmodDigitDecomposition, zmodDigitDecomposition]
+  set u := (Nat.digits b (c + balancedShift b digits).val).getD (e : ℕ) 0 with hu
+  -- The unsigned digit is `< b` (out-of-range positions are `0`).
+  have hub : u < b := by
+    rcases lt_or_ge (e : ℕ) (Nat.digits b (c + balancedShift b digits).val).length with hlt | hge
+    · rw [hu, List.getD_eq_getElem _ _ hlt]
+      exact Nat.digits_lt_base hb (List.getElem_mem _)
+    · rw [hu, List.getD_eq_default _ _ hge]; omega
+  -- `u − ⌊b/2⌋` is small enough not to wrap, so it *is* the centered representative.
+  have hval : ((u : ZMod q) - ((b / 2 : ℕ) : ZMod q)).valMinAbs = (u : ℤ) - ((b / 2 : ℕ) : ℤ) := by
+    refine (ZMod.valMinAbs_spec _ _).mpr ⟨?_, ?_⟩
+    · -- `push_cast` would turn `((b / 2 : ℕ) : ℤ)` into an `ℤ`-division; rewrite the casts by hand.
+      simp only [Int.cast_sub, Int.cast_natCast]
+    · rw [Set.mem_Ioc]
+      omega
+  rw [hval]
+  omega
+
 /-! ## `ℓ∞` bound -/
 
 omit [NeZero q] in
@@ -113,6 +149,23 @@ theorem gadgetDecompose_lInftyNorm_le_of_digit_le {base : ZMod q} {digits rows �
   unfold Rq.lInftyNorm
   refine Finset.sup_le (fun k hk => ?_)
   rw [gadgetDecompose_coeff Φ _ x j (Finset.mem_range.mp hk)]
+  exact hdd _ _
+
+omit [NeZero q] in
+/-- **Two-sided (box) form of the same bookkeeping**: if every digit of `dd` has its centered
+representative in the interval `[lo, hi]`, so does every coefficient of the gadget decomposition.
+
+The `ℓ∞` lemmas above give a symmetric ball; Hachi's exact Eq. (20) range check is the asymmetric
+box `S_b`, so the honest side of `paperRelOut` needs this form. Same one-line mechanism
+(`gadgetDecompose_coeff`): each output coefficient *is* a digit of an input coefficient. -/
+theorem gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem {base : ZMod q} {digits rows : ℕ}
+    {lo hi : ℤ} (dd : DigitDecomposition base digits)
+    (hdd : ∀ (c : ZMod q) (e : Fin digits),
+      lo ≤ (dd.digit c e).valMinAbs ∧ (dd.digit c e).valMinAbs ≤ hi)
+    (x : PolyVec (Rq Φ) rows) (j : Fin (rows * digits)) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    lo ≤ ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ∧
+      ((gadgetDecompose Φ dd x j).1.coeff k).valMinAbs ≤ hi := by
+  rw [gadgetDecompose_coeff Φ _ x j hk]
   exact hdd _ _
 
 omit [NeZero q] in
