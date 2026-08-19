@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 
 /-!
 # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -48,9 +48,21 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   statement's bound convention, the commitment interface, and the norm implication
   `vecLInftyNorm_le_of_liftShort`.
 
-This umbrella re-exports the folder (`Reduction` transitively imports `Rlin`). The plain
-`relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is composed in
-`Composition.lean`.
+* `RingSwitch/Completeness.lean` — the **honest direction of both links**: the protocol objects
+  `rlinReduction` / `liftReduction` (each sharing its package's verifier, by `rfl`) and
+  `rlinReduction_perfectCompleteness` / `liftReduction_perfectCompleteness`, both at error `0` and
+  both `sorry`-free and axiom-clean. Like the soundness side they are instantiations: the honest
+  quotient witness, the check-at-every-challenge step and the two-round execution are generic
+  (`RingSwitching.Lift.honestWitness` / `…checkAt_honestWitness` /
+  `…reduction_perfectCompleteness`, over
+  `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`).
+  The lift's completeness carries two explicit honest-side hypotheses — the statement bound
+  convention and admissibility (`liftShort`) of the honest lifted witness, i.e. Figure 4's range
+  checks; see that file's docstring.
+
+This umbrella re-exports the folder (`Completeness` transitively imports `Reduction`, which imports
+`Rlin`). The plain `relLift` is the input of the batching bridge in `ZeroCheck/`; the chain is
+composed in `Composition.lean`.
 
 ## References
 

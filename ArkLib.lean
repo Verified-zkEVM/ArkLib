@@ -25,6 +25,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.PartialEval
 import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic

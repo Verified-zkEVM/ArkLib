@@ -108,6 +108,31 @@ notation "‖" a "‖₂²" => Rq.l2NormSq _ a
 /-- Centered squared-`ℓ₂` norm `‖z‖₂²` of a vector (`Φ` inferred). -/
 notation "‖" z "‖₂²" => vecL2NormSq _ z
 
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Read a coefficient bound off an `ℓ∞` bound: every coefficient in the modulus' degree range has
+centered absolute value at most the `ℓ∞` norm. The elimination counterpart of the `Finset.sup_le`
+introductions used throughout this file. -/
+theorem Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le {B : ℕ} {a : Rq Φ}
+    (h : Rq.lInftyNorm Φ a ≤ B) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    ((a.1.coeff k).valMinAbs).natAbs ≤ B :=
+  le_trans (Finset.le_sup (f := fun k => ((a.1.coeff k).valMinAbs).natAbs)
+    (Finset.mem_range.mpr hk)) h
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Read an entrywise `ℓ∞` bound off a vector `ℓ∞` bound. -/
+theorem Rq.lInftyNorm_le_of_vecLInftyNorm_le {cols B : ℕ} {z : PolyVec (Rq Φ) cols}
+    (h : vecLInftyNorm Φ z ≤ B) (i : Fin cols) : Rq.lInftyNorm Φ (z i) ≤ B :=
+  le_trans (Finset.le_sup (f := fun i => Rq.lInftyNorm Φ (z i)) (Finset.mem_univ i)) h
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Coefficientwise form of a vector `ℓ∞` bound: every coefficient of every entry has centered
+absolute value at most the bound. -/
+theorem Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le {cols B : ℕ} {z : PolyVec (Rq Φ) cols}
+    (h : vecLInftyNorm Φ z ≤ B) (i : Fin cols) {k : ℕ} (hk : k < Φ.φ.natDegree) :
+    (((z i).1.coeff k).valMinAbs).natAbs ≤ B :=
+  Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le Φ
+    (Rq.lInftyNorm_le_of_vecLInftyNorm_le Φ h i) hk
+
 omit [NeZero q] in
 /-- The underlying polynomial of `1 : Rq Φ` is the constant `1` (no reduction occurs, as
 `deg 1 = 0 < deg φ`). -/

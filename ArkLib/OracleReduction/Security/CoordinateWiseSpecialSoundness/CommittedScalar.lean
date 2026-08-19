@@ -289,6 +289,156 @@ def package {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   extractor := treeExtractor hk K project
   isCWSS := coordinateWiseSpecialSoundWithEscape hk K project checkAt relIn recover init impl
 
+/-! ## Completeness of a committed scalar phase
+
+The honest counterpart of `coordinateWiseSpecialSoundWithEscape`, owned here for the same reason:
+the execution of the two-round commit-then-challenge shape is protocol-independent, so an
+instantiation should supply only the two facts about its own `computeW` that the *relation*
+`rel K checkAt` asks for — the challenge-local check at every challenge, and admissibility.
+-/
+
+section Completeness
+
+variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+
+/-- **The committed scalar phase as a protocol object**: the honest prover shell paired with the
+statement-extending verifier. The verifier field is `verifier K`, the very verifier `package`
+certifies, so the two security directions of an instantiated phase cannot drift apart. -/
+def reduction (K : BindingCommitment W Short) (computeW : Stmt → WitIn → W) :
+    Reduction oSpec Stmt WitIn (Statement Stmt K.TCom Challenge) W
+      (pSpecScalar K.TCom Challenge) where
+  prover := prover K computeW
+  verifier := verifier K
+
+section Execution
+
+variable (K : BindingCommitment W Short) (computeW : Stmt → WitIn → W)
+
+/-- **Honest execution of both rounds.** Running the prover shell to the last round appends the
+commitment `K.com (computeW stmt wit)` (round 0, a message round that leaves the state untouched),
+then draws the challenge `c` (round 1) and stores it, ending at the transcript `⟨K.com w, c⟩`
+(`FullTranscript.mk2`) with state `((stmt, wit), c)`.
+
+Proved by the two framework round-unfoldings rather than by induction — there are only two rounds.
+`hdir` is `pSpecScalar.dir 1 = .V_to_P`, taken as a named argument rather than `rfl` so that the
+round-1 challenge index stays type-correct at the transparency `rw` uses. The `Challenge`
+ascription on `prover` is load-bearing too: the output statement is the only place that type
+argument occurs, so without it the statement elaborates with an unassigned challenge type. -/
+lemma prover_runToRound_last (stmt : Stmt) (wit : WitIn)
+    (hdir : (pSpecScalar K.TCom Challenge).dir 1 = .V_to_P) :
+    (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+        computeW).runToRound (Fin.last 2) stmt wit
+      = (do
+          let c ← (pSpecScalar K.TCom Challenge).getChallenge ⟨1, hdir⟩
+          pure (FullTranscript.mk2 (K.com (computeW stmt wit)) c, ((stmt, wit), c))) := by
+  have step2 : (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+        computeW).runToRound (Fin.last 2) stmt wit
+      = (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+          computeW).processRound (1 : Fin 2)
+          ((prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+            computeW).runToRound ((1 : Fin 2).castSucc) stmt wit) :=
+    Prover.runToRound_succ (1 : Fin 2) stmt wit _
+  have step1 : (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+        computeW).runToRound ((1 : Fin 2).castSucc) stmt wit
+      = (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+          computeW).processRound (0 : Fin 2)
+          ((prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+            computeW).runToRound ((0 : Fin 2).castSucc) stmt wit) :=
+    Prover.runToRound_succ (0 : Fin 2) stmt wit _
+  have step0 : (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K
+        computeW).runToRound ((0 : Fin 2).castSucc) stmt wit
+      = pure ((fun i => Fin.elim0 i), (stmt, wit)) := rfl
+  refine step2.trans ?_
+  rw [step1, step0, Prover.processRound_of_dir_eq_P_to_V (0 : Fin 2) rfl,
+    Prover.processRound_of_dir_eq_V_to_P (1 : Fin 2) hdir]
+  simp only [prover, liftM, monadLift, MonadLift.monadLift, OracleComp.liftComp_pure,
+    monad_norm, FullTranscript.mk2_eq_snoc_snoc]
+  rfl
+
+/-- **The honest prover's run in closed form**: draw `c`, then emit the transcript `⟨K.com w, c⟩`,
+the output statement `(stmt, K.com w, c)` and the opening `w = computeW stmt wit`. Everything about
+the run is a function of the single challenge. -/
+lemma prover_run_eq (stmt : Stmt) (wit : WitIn)
+    (hdir : (pSpecScalar K.TCom Challenge).dir 1 = .V_to_P) :
+    (prover (oSpec := oSpec) (WitIn := WitIn) (Challenge := Challenge) K computeW).run stmt wit
+      = (do
+          let c ← (pSpecScalar K.TCom Challenge).getChallenge ⟨1, hdir⟩
+          pure (FullTranscript.mk2 (K.com (computeW stmt wit)) c,
+            (stmt, K.com (computeW stmt wit), c), computeW stmt wit)) := by
+  unfold Prover.run
+  rw [prover_runToRound_last K computeW stmt wit hdir]
+  simp only [prover, liftM, monadLift, MonadLift.monadLift]
+  rfl
+
+/-- **Honest-run characterization.** Every element of the support of an honest run is a success
+determined by the drawn challenge alone: prover and verifier both output `(stmt, K.com w, c)`, and
+the prover hands on the opening `w = computeW stmt wit`.
+
+Failure is impossible because the only `OptionT` layer in `Reduction.run` comes from the verifier,
+and `verifier` is a `pure` statement extension with no acceptance test — all the checks of a
+committed scalar phase live in `rel K checkAt`. -/
+lemma reduction_run_support (stmt : Stmt) (wit : WitIn)
+    (hdir : (pSpecScalar K.TCom Challenge).dir 1 = .V_to_P) :
+    ∀ x ∈ support ((reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).run
+        stmt wit).run,
+      ∃ c : Challenge,
+        x = some ((FullTranscript.mk2 (K.com (computeW stmt wit)) c,
+              (stmt, K.com (computeW stmt wit), c), computeW stmt wit),
+            (stmt, K.com (computeW stmt wit), c)) := by
+  intro x hx
+  unfold Reduction.run at hx
+  simp only [OptionT.run_bind, Option.elimM] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨prOpt, hpr, hx⟩ := hx
+  rw [show ((liftM (Prover.run stmt wit
+        (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover) :
+        OptionT (OracleComp _) _)).run
+      = (Prover.run stmt wit
+          (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover)
+        >>= fun a => pure (some a) from rfl] at hpr
+  rw [mem_support_bind_iff] at hpr
+  obtain ⟨pr, hpr, hprOpt⟩ := hpr
+  rw [mem_support_pure_iff] at hprOpt
+  subst hprOpt
+  rw [show (reduction (oSpec := oSpec) (Challenge := Challenge) K computeW).prover
+      = prover (WitIn := WitIn) (Challenge := Challenge) K computeW from rfl,
+    prover_run_eq K computeW stmt wit hdir, mem_support_bind_iff] at hpr
+  obtain ⟨c, -, hpr⟩ := hpr
+  rw [mem_support_pure_iff] at hpr
+  subst hpr
+  refine ⟨c, ?_⟩
+  simp only [Option.elim_some, reduction, verifier, Verifier.run] at hx
+  simp only [ProtocolSpec.ChallengeIdx, ProtocolSpec.Challenge, OptionT.run_pure, liftM_pure,
+    ProgrammingPolicy.empty_apply, pure_bind, Option.elim_some, Option.getM_some, support_pure,
+    Set.mem_singleton_iff] at hx
+  exact hx
+
+end Execution
+
+/-- **Perfect completeness of a committed scalar phase**, at error exactly `0`.
+
+The two hypotheses are precisely the two conjuncts of `rel K checkAt` that are not true by
+construction: `hcheck`, the challenge-local predicate at **every** challenge (which is why the error
+is `0` and why no property of the challenge distribution is used), and `hshort`, admissibility of
+the opening the honest prover computes. Commitment consistency is definitional — the prover shell
+derives its round-0 message from `computeW`, so it cannot commit to anything else.
+
+`SampleableType Challenge` is needed only so that execution can draw the challenge at all. -/
+theorem reduction_perfectCompleteness [SampleableType Challenge]
+    (K : BindingCommitment W Short) (computeW : Stmt → WitIn → W)
+    (checkAt : Stmt → Challenge → W → Prop) (relIn : Set (Stmt × WitIn))
+    (hcheck : ∀ stmt wit, (stmt, wit) ∈ relIn → ∀ c, checkAt stmt c (computeW stmt wit))
+    (hshort : ∀ stmt wit, (stmt, wit) ∈ relIn → Short (computeW stmt wit))
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
+    (reduction (oSpec := oSpec) K computeW).perfectCompleteness init impl relIn
+      (rel K checkAt) := by
+  apply Reduction.perfectCompleteness_of_run_support
+  intro stmt wit hIn x hx
+  obtain ⟨c, rfl⟩ := reduction_run_support K computeW stmt wit rfl x hx
+  exact ⟨_, rfl, ⟨rfl, hcheck stmt wit hIn c, hshort stmt wit hIn⟩, rfl⟩
+
+end Completeness
+
 end CommittedScalar
 
 end CoordinateWise

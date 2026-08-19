@@ -56,7 +56,11 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   `LiftCom.Collision` is defined on pairs of distinct *short* openings, so the conjunct is what
   makes the weak-binding branch a Module-SIS break. Since `relBatched` — the relation whose
   `H₀ ≡ 0` proves shortness — is itself norm-free, the derivation is not circular. See the
-  "Where the norm sits" section of `ZeroCheck/Reduction.lean`.
+  "Where the norm sits" section of `ZeroCheck/Reduction.lean`. The **honest direction**
+  `mem_relBatched_of_relLift` lives here too (`hZero_eq_zero_of_liftShort` +
+  `hAlpha_eq_zero_of_rows`), so the bridge is settled both ways; it needs neither arity hypothesis,
+  but the range-base fits in the opposite orientation, which pins the paper's
+  `bound = ρBound = b − 1`.
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: `m₀ + m₁` scalar challenge rounds
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
   `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reduces `relBatched` to
@@ -73,8 +77,11 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   verifier the same output statement. They are joined by the generic
   `Reduction.perfectCompleteness_of_run_support`
   (`OracleReduction/Security/Basic.lean`), added there for this proof and reusable by every other
-  link. Still missing on the honest side of the chain: the `relLift → relBatched` direction at the
-  batching bridge, and the composition with it.
+  link. The file also closes the **batching bridge** on the honest side:
+  `batchReduction_perfectCompleteness` (protocol object `batchReduction`, verifier shared with
+  `batchPackage` by `rfl`), assembled from `Batch.lean`'s two relation directions through
+  `ReduceClaim.reduction_completeness`. Still missing on the honest side of the chain: only the
+  composition of the links (blocked on the sorried generic `Reduction.append_completeness`).
 
 The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
 `k`-ary trees and individual degree `< k`) with the computable view in
