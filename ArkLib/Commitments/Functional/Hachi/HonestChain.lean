@@ -6,6 +6,7 @@ Authors: Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
+import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
 # The honest Hachi chain: parameters and per-seam corollaries
@@ -206,5 +207,159 @@ theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [
     P.hγZero P.hρZero
 
 end Seams
+
+/-! ## The complete proved prefix, composed
+
+The reduction below appends every Hachi protocol object whose honest direction is currently proved:
+the polynomial bridge, `QuadEval`, the `R^lin` adapter, the HMZ25 lift, the batching bridge, and the
+nested zero-check. Its completeness theorem uses `Reduction.append_perfectCompleteness`; until the
+generic append theorem is made an explicit project axiom, this declaration inherits its existing
+`sorryAx` dependency.
+
+There is one additional parameter boundary compared with the per-seam results above. The batching
+bridge itself needs only the honest orientations in `HonestRangeParams`, but
+`nestedZeroCheckReduction_perfectCompleteness` is stated on all of `relBatched`: because that
+relation forgets shortness, the theorem re-derives it from the range identity and needs the reverse
+inequalities `bZero - 1 ≤ γ` and `bZero - 1 ≤ q / 2`. Thus the complete prefix is presently
+available only at a bidirectional (hence pinned) parameterization. Removing these two hypotheses
+requires a shortness-preserving honest seam between batching and zero-check. -/
+
+section CompletePrefix
+
+variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+  (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
+variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r m₀ m₁ : Nat} {ω : ℕ}
+variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+
+local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
+local notation "n₀" => rlinRows innerRows outerRows dRows
+
+/-- Sampleability of the complete prefix's nested wire format, assembled explicitly because the
+generic append instance does not reliably fire through a deeply nested `ProtocolSpec`. -/
+@[reducible] instance completePrefixSpecSampleable
+    {TCom : Type}
+    [∀ i, SampleableType
+      ((CoordinateWise.SingleRound.pSpec
+        (CarrierCom Φ dRows) (ShortChallenge Φ ω) r).Challenge i)] :
+    ∀ i, SampleableType
+      (((!p[] : ProtocolSpec 0) ++ₚ
+        (CoordinateWise.SingleRound.pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
+          ((!p[] : ProtocolSpec 0) ++ₚ
+            (pSpecScalar TCom F ++ₚ
+              ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁))))).Challenge i) :=
+  ProtocolSpec.instSampleableTypeChallengeAppend
+    (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+    (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := by infer_instance)
+      (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
+        (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+        (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
+          (h₁ := CoordinateWise.ScalarRound.instSampleableTypeChallengePSpecScalar)
+          (h₂ := ProtocolSpec.instSampleableTypeChallengeAppend
+            (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+            (h₂ := instSampleableTypeChallengePSpecNestedZeroCheck)))))
+
+/-- The honest protocol obtained by appending every currently complete Hachi link, from the
+polynomial-level evaluation bridge through the nested zero-check. -/
+noncomputable def completePrefixReduction (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (hd : 0 < Φ.φ.natDegree) : Reduction oSpec
+      (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (NestedZeroCheckStatement Φ K.TCom F n₀ μ₀ m₀ m₁)
+      (LiftedWitness Φ μ₀ n₀)
+      ((!p[] : ProtocolSpec 0) ++ₚ
+        (CoordinateWise.SingleRound.pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
+          ((!p[] : ProtocolSpec 0) ++ₚ
+            (pSpecScalar K.TCom F ++ₚ
+              ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁))))) :=
+  (bridgeReduction (oSpec := oSpec) Φ).append
+    ((quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω) Φ pp
+      (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
+      (balancedZmodDigitDecomposition P.b zDigits P.hb hqz)).append
+    ((rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp (P.b : ZMod q) ω P.γ).append
+    ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ (q / 2) K hd).append
+    ((batchReduction (oSpec := oSpec) Φ P.γ (q / 2) K).append
+      (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
+        (Wit := LiftedWitness Φ μ₀ n₀) Φ m₀ m₁)))))
+
+/-- **Perfect completeness of the complete currently proved Hachi prefix**, from the
+polynomial-level evaluation relation through `relNestedZeroCheck`.
+
+The two reverse range hypotheses are needed only by the last link, as explained above. Together
+with `P.hγZero` and `P.hρZero` they imply the pinned parameterization; this theorem does not conceal
+that cost. All individual links have error zero, so the composed prefix has error zero as well. -/
+theorem completePrefixReduction_perfectCompleteness
+    [∀ i, SampleableType
+      ((CoordinateWise.SingleRound.pSpec
+        (CarrierCom Φ dRows) (ShortChallenge Φ ω) r).Challenge i)]
+    {m₀ m₁ : ℕ} (P : HonestRangeParams q)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    {βSq κ : ℕ} :
+    (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
+      Φ P pp hqm hqz K hd).perfectCompleteness init impl
+      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      (relNestedZeroCheck Φ m₀ m₁ P.γ (q / 2) K φF P.bZero) := by
+  have hBridge :=
+    bridgeReduction_perfectCompleteness Φ init impl pp (P.b : ZMod q) βSq P.γ κ
+  have hQuad := quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
+      (βSq := βSq) (γ := P.γ) (κ := κ)
+      Φ init impl pp _ _ hmd hτ hd
+      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqm P.hbq x e) P.hbγ)
+      (fun x e => le_trans (balancedZmodDigit_natAbs_le P.hb hqz P.hbq x e) P.hbγ)
+  have hRlin := rlinReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
+    Φ P init impl pp (P.b : ZMod q)
+  have hLift := liftReduction_perfectCompleteness_params (zDigits := zDigits) (ω := ω)
+    Φ P K φF init impl hd pp (P.b : ZMod q)
+  have hBatch := batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
+    Φ P init impl K φF hd
+  have hZero := nestedZeroCheckReduction_perfectCompleteness
+    Φ m₀ m₁ P.γ (q / 2) init impl K φF P.bZero hd hμn hZeroγ hZeroρ
+  letI sampleEmptyNested : ∀ i, SampleableType
+      (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+      (h₂ := instSampleableTypeChallengePSpecNestedZeroCheck)
+  letI sampleScalarTail : ∀ i, SampleableType
+      ((pSpecScalar K.TCom F ++ₚ
+        ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁)).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := CoordinateWise.ScalarRound.instSampleableTypeChallengePSpecScalar)
+      (h₂ := sampleEmptyNested)
+  letI sampleEmptyScalarTail : ∀ i, SampleableType
+      (((!p[] : ProtocolSpec 0) ++ₚ
+        (pSpecScalar K.TCom F ++ₚ
+          ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁))).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := ProtocolSpec.instSampleableTypeChallengeEmpty)
+      (h₂ := sampleScalarTail)
+  letI sampleQuadTail : ∀ i, SampleableType
+      ((CoordinateWise.SingleRound.pSpec
+          (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
+        ((!p[] : ProtocolSpec 0) ++ₚ
+          (pSpecScalar K.TCom F ++ₚ
+            ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁)))).Challenge i) :=
+    ProtocolSpec.instSampleableTypeChallengeAppend
+      (h₁ := by infer_instance)
+      (h₂ := sampleEmptyScalarTail)
+  have hBatchZero := Reduction.append_perfectCompleteness _ _ hBatch hZero
+  have hLiftZero := Reduction.append_perfectCompleteness _ _ hLift hBatchZero
+  have hRlinZero := Reduction.append_perfectCompleteness _ _ hRlin hLiftZero
+  have hQuadZero := Reduction.append_perfectCompleteness _ _ hQuad hRlinZero
+  have hPrefix := Reduction.append_perfectCompleteness _ _ hBridge hQuadZero
+  exact hPrefix
+
+end CompletePrefix
 
 end ArkLib.Lattices.Ajtai.InnerOuter
