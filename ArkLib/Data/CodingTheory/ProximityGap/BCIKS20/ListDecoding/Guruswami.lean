@@ -99,50 +99,8 @@ private theorem finsetMaxGetD_le (s : Finset ℕ) (B : ℕ)
   rw [← heq]
   exact hunbot
 
-private theorem symbolicBivariateShiftNeZero {R : Type} [CommRing R]
-    (f : Polynomial (Polynomial R)) (x y : R) (hf : f ≠ 0) :
-    Polynomial.Bivariate.shift f x y ≠ 0 := by
-  intro hs
-  unfold Polynomial.Bivariate.shift at hs
-  let φ : Polynomial R →+* Polynomial R :=
-    Polynomial.compRingHom (Polynomial.X + Polynomial.C x)
-  have hφ : Function.Injective φ := by
-    intro p q hpq
-    apply sub_eq_zero.mp
-    apply Polynomial.comp_X_add_C_eq_zero_iff.mp
-    change φ (p - q) = 0
-    rw [map_sub, hpq, sub_self]
-  have hcomp : f.comp (Polynomial.X + Polynomial.C (Polynomial.C y)) = 0 :=
-    (Polynomial.map_eq_zero_iff hφ).mp hs
-  exact hf (Polynomial.comp_X_add_C_eq_zero_iff.mp hcomp)
 
-private theorem symbolicDY_lt_of_weighted {R : Type} [Semiring R]
-    {Q : Polynomial (Polynomial R)} {k : ℕ} (hk : 0 < k) {B : ℝ}
-    (hQ : Polynomial.Bivariate.natWeightedDegree Q 1 k < B) :
-    Polynomial.Bivariate.natDegreeY Q < B / k := by
-  have hweight := Polynomial.Bivariate.weight_le_natWeightedDegree_of_lt_natDegree_succ
-    (f := Q) (u := 1) (v := k) (n := Q.natDegree) (Nat.lt_succ_self _)
-  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
-  rw [lt_div_iff₀ hkR]
-  have hcast : ((k * Q.natDegree : ℕ) : ℝ) ≤
-      Polynomial.Bivariate.natWeightedDegree Q 1 k := by
-    exact_mod_cast le_trans (Nat.le_add_left _ _) hweight
-  have hcast' : (Q.natDegree : ℝ) * k ≤
-      Polynomial.Bivariate.natWeightedDegree Q 1 k := by
-    simpa only [Nat.cast_mul, mul_comm] using hcast
-  exact lt_of_le_of_lt hcast' hQ
 
-private theorem symbolicDegreeXLeWeighted {R : Type} [Semiring R]
-    (Q : Polynomial (Polynomial R)) (k : ℕ) :
-    Polynomial.Bivariate.degreeX Q ≤
-      Polynomial.Bivariate.natWeightedDegree Q 1 k := by
-  rw [Polynomial.Bivariate.degreeX_as_weighted_deg]
-  unfold Polynomial.Bivariate.natWeightedDegree
-  refine Finset.sup_le ?_
-  intro j hj
-  refine le_trans ?_ (Finset.le_sup
-    (f := fun t => 1 * (Q.coeff t).natDegree + k * t) hj)
-  omega
 
 private noncomputable def symbolicGSEvalConstraint {F : Type} [Field F]
     (x y : Polynomial F) (s t d : ℕ) :
@@ -219,41 +177,6 @@ private theorem symbolicOuterAffine_map {F : Type} [Field F]
         (Polynomial.C (Polynomial.C y₀ + Polynomial.X * Polynomial.C y₁)) := by
   simp [Polynomial.coe_compRingHom_apply]
 
-private theorem symbolicRootMultiplicityZeroNeNone {R : Type} [CommSemiring R] [DecidableEq R]
-    (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
-    Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
-  obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact hg (Polynomial.ext h)
-  obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact ht (Polynomial.ext h)
-  have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
-  have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
-  have htotal : (g.coeff t).natDegree + t ≤
-      Polynomial.Bivariate.natWeightedDegree g 1 1 := by
-    simpa only [Polynomial.Bivariate.natWeightedDegree, one_mul] using
-      (Finset.le_sup (f := fun j => (g.coeff j).natDegree + j) htmem)
-  have hslt : s < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
-  have htlt : t < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
-  intro hnone
-  simp only [Polynomial.Bivariate.rootMultiplicity₀,
-    Polynomial.Bivariate.weightedDegree_eq_natWeightedDegree] at hnone
-  have hempty := List.min?_eq_none_iff.mp hnone
-  have hmem : s + t ∈ List.filterMap
-      (fun p : ℕ × ℕ => if Polynomial.Bivariate.coeff g p.1 p.2 = 0
-        then none else some (p.1 + p.2))
-      (List.product
-        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))
-        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))) := by
-    rw [List.mem_filterMap]
-    refine ⟨(s,t), ?_, ?_⟩
-    · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
-    · simp only [Polynomial.Bivariate.coeff, hs, if_false]
-  rw [hempty] at hmem
-  simp at hmem
 
 private noncomputable def symbolicUpperTriangleBase (n k m : ℕ) : Finset (ℕ × ℕ) :=
   (GuruswamiSudan.weightBoundIndices (k + 2) (symbolicModifiedGSCap n k m - 1)).image
@@ -504,9 +427,9 @@ private theorem symbolicGSPolyMultiplicityBridge {F : Type} [Field F] [Decidable
     intro s t hst
     exact hvan i s t hst
   have H := (Polynomial.Bivariate.rootMultiplicity₀_ge_iff g m).mp hg
-  have hgne : g ≠ 0 := symbolicBivariateShiftNeZero _ _ _ hQ
+  have hgne : g ≠ 0 := Polynomial.Bivariate.shift_ne_zero _ _ _ hQ
   have hroot : Polynomial.Bivariate.rootMultiplicity₀ g ≠ none :=
-    symbolicRootMultiplicityZeroNeNone g hgne
+    Polynomial.Bivariate.rootMultiplicity₀_ne_none g hgne
   change (some m : Option ℕ) ≤ Polynomial.Bivariate.rootMultiplicity₀ g
   cases hr : Polynomial.Bivariate.rootMultiplicity₀ g with
   | none => exact False.elim (hroot hr)
@@ -632,12 +555,6 @@ private theorem symbolicGSPoly_shift_coeff_eq_sum {F : Type} [Field F]
   rw [Polynomial.finsetSum_coeff]
   rfl
 
-private theorem symbolicGSPoly_support_subset {F : Type} [Field F]
-    (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
-    ∀ {i j : ℕ}, j ∈ (symbolicGSPoly (F := F) A c).support →
-      i ∈ ((symbolicGSPoly (F := F) A c).coeff j).support → (i, j) ∈ A := by
-  intro i j hj hi
-  exact symbolicGSPoly_coeff_ne_zero_mem A c (Polynomial.mem_support_iff.mp hi)
 
 private theorem symbolicGSPoly_weighted_lt {F : Type} [Field F]
     (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) {k : ℕ} {D : ℝ}
@@ -1110,6 +1027,19 @@ private theorem symbolicGSKernelWitness_shift_vanish {F : Type} [Field F]
       (ωs i) (u₀ i) (u₁ i) s t
     exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hdeg (by omega))
 
+
+private theorem symbolicDY_lt_of_weighted {R : Type} [Semiring R]
+    {Q : Polynomial (Polynomial R)} {k : ℕ} (hk : 0 < k) {B : ℝ}
+    (hQ : ((Polynomial.Bivariate.natWeightedDegree Q 1 k : ℕ) : ℝ) < B) :
+    ((Polynomial.Bivariate.natDegreeY Q : ℕ) : ℝ) < B / k := by
+  have h := Polynomial.Bivariate.mul_natDegreeY_le_natWeightedDegree Q k
+  have hkR : (0 : ℝ) < k := by exact_mod_cast hk
+  rw [lt_div_iff₀ hkR]
+  calc ((Polynomial.Bivariate.natDegreeY Q : ℕ) : ℝ) * k
+      = ((k * Polynomial.Bivariate.natDegreeY Q : ℕ) : ℝ) := by push_cast; ring
+    _ ≤ ((Polynomial.Bivariate.natWeightedDegree Q 1 k : ℕ) : ℝ) := by exact_mod_cast h
+    _ < B := hQ
+
 private theorem modified_guruswami_has_a_solution_core
     {F : Type} [Field F] [DecidableEq F] {m n k : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
@@ -1143,7 +1073,7 @@ private theorem modified_guruswami_has_a_solution_core
     Q_D_YZ := ?_ }⟩
   · apply symbolicGSPolyMultiplicityBridge hQ
     exact symbolicGSKernelWitness_shift_vanish A ωs u₀ u₁ w
-  · have hx := symbolicDegreeXLeWeighted Q k
+  · have hx := Polynomial.Bivariate.degreeX_le_natWeightedDegree Q k
     exact lt_of_le_of_lt (by exact_mod_cast hx) hdeg
   · have hy := symbolicDY_lt_of_weighted (Q := Q) hk hdeg
     simpa only [Trivariate.D_Y] using hy
