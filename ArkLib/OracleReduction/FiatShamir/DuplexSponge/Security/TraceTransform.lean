@@ -109,26 +109,6 @@ def encodeMessagesBefore
   rw [← hIndex]
   exact messages j'
 
-/-- Componentwise serialization is injective on complete message prefixes. -/
-lemma encodeMessagesBefore_injective
-    {k : Fin (n + 1)} :
-    Function.Injective (encodeMessagesBefore (pSpec := pSpec) (U := U) (k := k)) := by
-  intro messages₁ messages₂ hEncoded
-  funext i
-  let j : MessageIdxBefore k pSpec :=
-    ⟨⟨i.1.castLE (by omega), by
-      simpa only [Fin.castLE] using i.2⟩, i.1.isLt⟩
-  have hIndex : messageIdxUpToOfBefore (pSpec := pSpec) j = i := by
-    apply Subtype.ext
-    exact Fin.ext rfl
-  have hAt := congrFun hEncoded j
-  change codec.encode j.1 _ = codec.encode j.1 _ at hAt
-  have hMessages : messages₁ (messageIdxUpToOfBefore (pSpec := pSpec) j) =
-      messages₂ (messageIdxUpToOfBefore (pSpec := pSpec) j) :=
-    codec.encode_injective j.1 hAt
-  rw [hIndex] at hMessages
-  exact hMessages
-
 /-- Implements the partial inverse `φ_{<i}^{-1}` by searching the finite decoded prefix space.
 It returns the unique prefix whose componentwise encoding is the supplied key, or `none` when
 the key is outside the image. -/
@@ -304,75 +284,6 @@ noncomputable def hybEncodedMessagesBefore?
     (pSpec := pSpec) (U := U)
     roundIdx encodedMessages
 
-/-- The Section 5.8 parser succeeds precisely on the image of `φ_{<i}`, and its answer is the
-unique prefix having that encoding. -/
-lemma hybEncodedMessagesBefore?_eq_some_iff_encode
-    (roundIdx : pSpec.ChallengeIdx)
-    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
-    (messages : pSpec.MessagesUpTo roundIdx.1.castSucc) :
-    hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages = some messages ↔
-      encodeMessagesBefore (pSpec := pSpec) (U := U) messages = encodedMessages := by
-  unfold hybEncodedMessagesBefore? decodeMessagesPrefixPhiInv?
-  letI : ∀ i : pSpec.MessageIdxUpTo roundIdx.1.castSucc,
-      Fintype (pSpec.MessageUpTo roundIdx.1.castSucc i) := fun i => by
-    exact inferInstanceAs (Fintype (pSpec.Message ⟨i.1.castLE (by omega), i.2⟩))
-  let l : List (pSpec.MessagesUpTo roundIdx.1.castSucc) :=
-    (Finset.univ : Finset (pSpec.MessagesUpTo roundIdx.1.castSucc)).toList
-  let predicate : pSpec.MessagesUpTo roundIdx.1.castSucc → Bool := fun candidate =>
-    encodeMessagesBefore (pSpec := pSpec) (U := U) candidate = encodedMessages
-  change l.find? predicate = some messages ↔
-    encodeMessagesBefore (pSpec := pSpec) (U := U) messages = encodedMessages
-  constructor
-  · intro h
-    exact of_decide_eq_true (List.find?_eq_some_iff_getElem.mp h).1
-  · intro h
-    have hBool : predicate messages = true := by
-      exact decide_eq_true h
-    rcases hFind : l.find? predicate with _ | candidate
-    · have hMem : messages ∈ l := by
-        simp only [l, Finset.mem_toList, Finset.mem_univ]
-      have hNone := List.find?_eq_none.mp hFind messages hMem
-      rw [hBool] at hNone
-      contradiction
-    · have hCandidate := (List.find?_eq_some_iff_getElem.mp hFind).1
-      have hEq : candidate = messages := by
-        apply encodeMessagesBefore_injective (pSpec := pSpec) (U := U)
-        exact (of_decide_eq_true hCandidate).trans h.symm
-      subst candidate
-      rfl
-
-/-- A successful Section 5.8 `φ⁻¹` parse has one determined decoded prefix.
-
-This is deliberately stated at the `Option` boundary used by the hybrids: a single encoded
-oracle key cannot be translated to two different basic-FS keys.  It does not assert that every
-encoded prefix parses; failure is the intended malformed-prefix abort. -/
-lemma hybEncodedMessagesBefore?_some_unique
-    (roundIdx : pSpec.ChallengeIdx)
-    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
-    {messages₁ messages₂ : pSpec.MessagesUpTo roundIdx.1.castSucc}
-    (h₁ : hybEncodedMessagesBefore? (pSpec := pSpec) (U := U)
-      roundIdx encodedMessages = some messages₁)
-    (h₂ : hybEncodedMessagesBefore? (pSpec := pSpec) (U := U)
-      roundIdx encodedMessages = some messages₂) :
-    messages₁ = messages₂ := by
-  rw [h₁] at h₂
-  exact Option.some.inj h₂
-
-/-- The on-sponge salt component is preserved faithfully when a successful Section 5.8
-encoded key is reindexed to the salted basic-FS oracle.  This is CO25's injectivity of `bin`. -/
-lemma saltCodec_encode_eq_iff
-    {Salt : Type} [SaltCodec U δ Salt]
-    (salt₁ salt₂ : Vector U δ) :
-    SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁ =
-        SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂ ↔
-      salt₁ = salt₂ := by
-  constructor
-  · intro h
-    apply SaltCodec.encode_injective (U := U) (δ := δ) (Salt := Salt)
-    exact h
-  · intro h
-    rw [h]
-
 /-- Reindex one encoded `e`-oracle key to the salted basic-FS key used after the Section 5.8
 `φ⁻¹` check.  It is undefined precisely for malformed encoded message prefixes. -/
 noncomputable def hybEncodedToSaltedFSKey?
@@ -387,99 +298,6 @@ noncomputable def hybEncodedToSaltedFSKey?
       | some messagesBefore =>
           some ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩
 
-/-- Characterize the successful reindexing branch.  In particular, every successful encoded
-key has exactly one salted basic-FS target key. -/
-lemma hybEncodedToSaltedFSKey?_eq_some_iff
-    {Salt : Type} [SaltCodec U δ Salt]
-    (roundIdx : pSpec.ChallengeIdx) (stmt : StmtIn) (salt : Vector U δ)
-    (encodedMessages : pSpec.EncodedMessagesBefore U roundIdx.1.castSucc)
-    (key : (fsChallengeOracle (StmtIn × Salt) pSpec).Domain) :
-    hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-        ⟨roundIdx, (stmt, salt, encodedMessages)⟩ = some key ↔
-      ∃ messagesBefore,
-        hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages =
-          some messagesBefore ∧
-        key = ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩ := by
-  change
-    (match hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages with
-    | none => none
-    | some messagesBefore =>
-        some ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩) = some key ↔
-      ∃ messagesBefore,
-        hybEncodedMessagesBefore? (pSpec := pSpec) (U := U) roundIdx encodedMessages =
-          some messagesBefore ∧
-        key = ⟨roundIdx, ((stmt, SaltCodec.encode salt), messagesBefore)⟩
-  rcases hParse : hybEncodedMessagesBefore?
-      (pSpec := pSpec) (U := U) roundIdx encodedMessages with _ | messagesBefore
-  · simp [hParse]
-  · constructor
-    · intro h
-      exact ⟨messagesBefore, rfl, (Option.some.inj h).symm⟩
-    · rintro ⟨otherMessages, hOther, hKey⟩
-      have hMessages : otherMessages = messagesBefore :=
-        Option.some.inj hOther.symm
-      subst otherMessages
-      rw [hKey]
-
-/-- The successful part of the encoded-to-salted key map is injective.
-
-This is the deterministic core of CO25 Claim 5.23: `φ_{<i}` and `bin` preserve all information
-needed to reindex a valid encoded `e_i` coordinate as one salted basic-FS coordinate. -/
-lemma hybEncodedToSaltedFSKey?_some_injective
-    {Salt : Type} [SaltCodec U δ Salt]
-    {q₁ q₂ : (eSpec (U := U) StmtIn pSpec δ).Domain}
-    {key : (fsChallengeOracle (StmtIn × Salt) pSpec).Domain}
-    (h₁ : hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      q₁ = some key)
-    (h₂ : hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      q₂ = some key) :
-    q₁ = q₂ := by
-  rcases q₁ with ⟨roundIdx₁, stmt₁, salt₁, encodedMessages₁⟩
-  rcases q₂ with ⟨roundIdx₂, stmt₂, salt₂, encodedMessages₂⟩
-  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-    roundIdx₁ stmt₁ salt₁ encodedMessages₁ key).mp h₁ with
-    ⟨messages₁, hParse₁, hKey₁⟩
-  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-    roundIdx₂ stmt₂ salt₂ encodedMessages₂ key).mp h₂ with
-    ⟨messages₂, hParse₂, hKey₂⟩
-  have hTarget :
-      (⟨roundIdx₁, ((stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁), messages₁)⟩ :
-        (fsChallengeOracle (StmtIn × Salt) pSpec).Domain) =
-      ⟨roundIdx₂, ((stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂), messages₂)⟩ := by
-    rw [← hKey₁, hKey₂]
-  have hRound : roundIdx₁ = roundIdx₂ := congrArg Sigma.fst hTarget
-  subst roundIdx₂
-  have hPayload : ((stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁), messages₁) =
-      ((stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂), messages₂) := by
-    exact eq_of_heq (Sigma.mk.inj_iff.mp hTarget).2
-  have hStmtSalt :
-      (stmt₁, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁) =
-      (stmt₂, SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂) :=
-    congrArg Prod.fst hPayload
-  have hMessages : messages₁ = messages₂ := congrArg Prod.snd hPayload
-  have hStmt : stmt₁ = stmt₂ := congrArg Prod.fst hStmtSalt
-  have hSaltEncoded :
-      SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₁ =
-      SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) salt₂ :=
-    congrArg Prod.snd hStmtSalt
-  have hSalt : salt₁ = salt₂ :=
-    (saltCodec_encode_eq_iff (U := U) (δ := δ) salt₁ salt₂).mp hSaltEncoded
-  have hEncodedMessages : encodedMessages₁ = encodedMessages₂ := by
-    calc
-      encodedMessages₁ = encodeMessagesBefore (pSpec := pSpec) (U := U) messages₁ :=
-        (hybEncodedMessagesBefore?_eq_some_iff_encode
-          (pSpec := pSpec) (U := U) roundIdx₁ encodedMessages₁ messages₁).mp hParse₁ |>.symm
-      _ = encodeMessagesBefore (pSpec := pSpec) (U := U) messages₂ := by rw [hMessages]
-      _ = encodedMessages₂ :=
-        (hybEncodedMessagesBefore?_eq_some_iff_encode
-          (pSpec := pSpec) (U := U) roundIdx₁ encodedMessages₂ messages₂).mp hParse₂
-  subst stmt₂
-  subst salt₂
-  subst encodedMessages₂
-  rfl
-
 /-- The subdomain of encoded `e`-oracle coordinates which pass CO25's `φ⁻¹` image check. -/
 def HybValidEncodedKey {Salt : Type} [SaltCodec U δ Salt] : Type :=
   {q : (eSpec (U := U) StmtIn pSpec δ).Domain //
@@ -493,43 +311,6 @@ noncomputable def hybValidEncodedToSaltedFSKey
     (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
     (fsChallengeOracle (StmtIn × Salt) pSpec).Domain :=
   q.2.choose
-
-/-- `hybValidEncodedToSaltedFSKey` agrees with the partial map on every valid coordinate. -/
-lemma hybValidEncodedToSaltedFSKey_spec
-    {Salt : Type} [SaltCodec U δ Salt]
-    (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
-    hybEncodedToSaltedFSKey? (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      q.1 = some (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
-        (U := U) (δ := δ) (Salt := Salt) q) :=
-  q.2.choose_spec
-
-/-- CO25's valid-coordinate reindexing is injective. -/
-lemma hybValidEncodedToSaltedFSKey_injective
-    {Salt : Type} [SaltCodec U δ Salt] :
-    Function.Injective
-      (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
-        (U := U) (δ := δ) (Salt := Salt)) := by
-  intro q₁ q₂ hKey
-  apply Subtype.ext
-  apply hybEncodedToSaltedFSKey?_some_injective
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
-  · rw [hybValidEncodedToSaltedFSKey_spec]
-  · rw [hybValidEncodedToSaltedFSKey_spec]
-    exact congrArg some hKey.symm
-
-/-- Reindexing preserves the challenge round, hence also preserves the dependent response type. -/
-lemma hybValidEncodedToSaltedFSKey_roundIdx
-    {Salt : Type} [SaltCodec U δ Salt]
-    (q : HybValidEncodedKey (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) :
-    (hybValidEncodedToSaltedFSKey (StmtIn := StmtIn) (pSpec := pSpec)
-      (U := U) (δ := δ) (Salt := Salt) q).1 = q.1.1 := by
-  rcases q with ⟨⟨roundIdx, stmt, salt, encodedMessages⟩, hValid⟩
-  rcases (hybEncodedToSaltedFSKey?_eq_some_iff
-    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-    roundIdx stmt salt encodedMessages _).mp hValid.choose_spec with
-    ⟨messages, _, hKey⟩
-  change hValid.choose.1 = roundIdx
-  rw [hKey]
 
 /-! ## Salted FS variants (CO25 §5.5.1 Item 4(a)v)
 
@@ -642,20 +423,6 @@ noncomputable def d2sTraceSalted
     (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
     (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log
   pure observation.output
-
-/-- The public salted transform is the output projection of its lossless observed execution.
-This is the local projection law used by the Hyb₀ endpoint refinement; it neither resamples nor
-forgets an abort branch. -/
-lemma d2sTraceSaltedObserved_map_output_eq_d2sTraceSalted
-    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (log : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U)) :
-    (fun observation => observation.output) <$>
-        d2sTraceSaltedObserved (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
-          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log =
-      d2sTraceSalted (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
-        (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) log := by
-  rfl
 
 section Line4Trace
 

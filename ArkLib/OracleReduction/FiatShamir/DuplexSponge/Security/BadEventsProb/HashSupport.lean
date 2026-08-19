@@ -90,45 +90,6 @@ lemma probEvent_pred_fresh_hits_fin_targets_le {α β : Type} [Fintype β]
           rw [div_eq_mul_inv, one_mul]
           exact (div_eq_mul_inv (m : ℝ≥0∞) D).symm
 
-/-- An unconditioned fresh optional readout can hit at most `m` targets. -/
-lemma probEvent_fresh_hits_fin_targets_le {α β : Type} [Fintype β]
-    (exp : ProbComp α) (fresh : α → Option β) (m : ℕ)
-    (target : Fin m → α → Option β) (D : ℝ≥0∞)
-    (hAtom : ∀ i c,
-      Pr[ fun a => fresh a = some c ∧ target i a = some c | exp]
-        ≤ Pr[ fun a => target i a = some c | exp] / D) :
-    Pr[ fun a => ∃ i : Fin m, ∃ c : β,
-        fresh a = some c ∧ target i a = some c | exp]
-      ≤ (m : ℝ≥0∞) / D := by
-  have hEvent :
-      (fun a => ∃ i : Fin m, ∃ c : β,
-        fresh a = some c ∧ target i a = some c) =
-      fun a => True ∧ ∃ i : Fin m, ∃ c : β,
-        fresh a = some c ∧ target i a = some c := by
-    funext a
-    apply propext
-    constructor
-    · intro h
-      exact ⟨True.intro, h⟩
-    · intro h
-      exact h.2
-  rw [hEvent]
-  exact probEvent_pred_fresh_hits_fin_targets_le exp (fun _ => True) fresh m target D
-    (by
-      intro i c
-      have hEvent :
-          (fun a => True ∧ fresh a = some c ∧ target i a = some c) =
-            fun a => fresh a = some c ∧ target i a = some c := by
-          funext a
-          apply propext
-          constructor
-          · intro h
-            exact h.2
-          · intro h
-            exact ⟨True.intro, h⟩
-      rw [hEvent]
-      exact hAtom i c)
-
 /-- A patched coordinate of a random function is uniform under an update-invariant predicate. -/
 lemma probEvent_uniformFn_freshCoord_le
     {A B : Type} [Fintype A] [DecidableEq A] [Fintype B] [Nonempty B]

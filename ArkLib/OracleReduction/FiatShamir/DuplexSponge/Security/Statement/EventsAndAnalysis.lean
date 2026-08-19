@@ -239,67 +239,6 @@ def RevisedD2SNoAbort {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq
           (pure ExperimentOutput.err : OracleComp (Unit →ₒ U)
             (ExperimentOutput (Vector U (challengeSize context.round)))))
 
-/-- **Claim 5.19 (corrected)** — Backtrack no-abort: absent the bad event on the trace, the real
-stateful `BackTrack` never returns `.err` at any state.  This is the real `BacktrackNoAbort` (module
-2, cited); it names the real trace, the bad event, and the real `.err` outcome. -/
-noncomputable abbrev Claim519 {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq StmtIn]
-    [DecidableEq U] {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    (trace : Trace StmtIn U) (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace) : Prop :=
-  ∀ state : CanonicalSpongeState U,
-    @BacktrackNoAbort StmtIn U _ _ _ _ T_H T_P _ n pSpec δ _ _ trace trΔ h_trΔ state
-
-/-- **Claim 5.20 (corrected)** — LookAhead no-abort: absent the bad event, `LookAhead(tr∇.p,s,i)`
-is not `.err` for every certified nonempty BackTrack marker `(s,i)`.  Names the real trace, the bad
-event, the real `LookAhead` `.err`, and the exact round-local `ProgramContext`. -/
-noncomputable abbrev Claim520 {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq StmtIn]
-    [DecidableEq U] {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {n : Nat} {pSpec : ProtocolSpec n} [HasChallengeSize pSpec]
-    (trace : Trace StmtIn U) (trΔ : TraceNabla T_H T_P StmtIn U)
-    (_h_trΔ : trΔ.IsSubsetOfQueryLog trace) (context : D2SQuery.ProgramContext pSpec)
-    : Prop :=
-  ¬ BadEvent trace →
-    ∀ state : CanonicalSpongeState U,
-      Certified SpongeSize.R context.cursor (challengeSize context.round) context.pos →
-        @LookAheadNoAbort U _ _ _ n pSpec _ T_P _ trΔ.p state context.round
-
-/-- **Lemma 5.17** — corrected StdTrace does not abort under `E(tr)=0`: every prefix of an
-`E`-good trace is `E`-good, so the full-table monitor never fires and the per-state BackTrack /
-per-marker LookAhead no-abort (Claims 5.19/5.20) hold.  This is the real revised-D2S no-abort core
-on the trace. -/
-noncomputable abbrev Lemma517 {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq StmtIn]
-    [DecidableEq U] {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (trace : Trace StmtIn U) (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace) (context : D2SQuery.ProgramContext pSpec) : Prop :=
-  @RevisedD2SNoAbort StmtIn U _ _ _ _ T_H T_P _ n pSpec δ _ _ _ trace trΔ h_trΔ context
-
-/-- **Corollary 5.20a** — under `E(tr)=0`, corrected StdTrace **and** revised `D2SQuery` do not
-abort on any query whose trace prefix is contained in `tr` (parser aborts excluded by Claim 5.19,
-look-ahead aborts by Claim 5.20, monitor abort by `E`-monotonicity).  Stated as the real revised-D2S
-no-abort core on the trace (the executable end-to-end union is an M1/S3a refinement). -/
-noncomputable abbrev Corollary520a {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-    [DecidableEq StmtIn]
-    [DecidableEq U] {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (trace : Trace StmtIn U) (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace) (context : D2SQuery.ProgramContext pSpec) : Prop :=
-  @RevisedD2SNoAbort StmtIn U _ _ _ _ T_H T_P _ n pSpec δ _ _ _ trace trΔ h_trΔ context
-
-/-- **Lemma 5.18** — an algorithm with revised `D2SQuery` access does not abort when
-`E(tr_A)=0`: the parser and look-ahead aborts (Claims 5.19/5.20) and the monitor abort
-(`E`-monotonicity) are all excluded.  Stated as the real revised-D2S no-abort core on the trace. -/
-noncomputable abbrev Lemma518 {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq StmtIn]
-    [DecidableEq U] {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec] [HasChallengeSize pSpec]
-    [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
-    (trace : Trace StmtIn U) (trΔ : TraceNabla T_H T_P StmtIn U)
-    (h_trΔ : trΔ.IsSubsetOfQueryLog trace) (context : D2SQuery.ProgramContext pSpec) : Prop :=
-  @RevisedD2SNoAbort StmtIn U _ _ _ _ T_H T_P _ n pSpec δ _ _ _ trace trΔ h_trΔ context
-
 /-! ## Lemma 5.25 (stateful replay) and Claims 5.22 / 5.23 -/
 
 /-- The **round-indexed marker**: `pos` is the certified marker of round `j` — the real

@@ -199,7 +199,7 @@ def D2SAdaptiveStepResult.ofRevised
   | .stopped normal record => .stopped normal record
   | .underlyingAbort => .underlyingAbort
 
-omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
+omit [VCVCompatible U] [Nonempty U] [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
 @[simp] lemma D2SAdaptiveStepResult.ofRevised_isMonitorStop
     {S : Type} (state : S)
@@ -223,7 +223,7 @@ structure D2SAdaptiveStepKernel (S : Type) where
     ProbComp (D2SAdaptiveStepResult
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S q)
 
-omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
+omit [VCVCompatible U] [Nonempty U] [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
 @[simp] lemma D2SAdaptiveRunResult.toStepResult_isMonitorStop
     {S : Type}
@@ -344,44 +344,6 @@ noncomputable def d2sQueryStepRevisedKernel
     D2SAdaptiveStepResult.ofRevised state <$> simulateQ
       (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
       (d2sQueryStepRevised normal q)
-
-omit [VCVCompatible U] [Fintype U] [Nonempty U] in
-/-- The old lossless runner is exactly the state-threaded runner instantiated with the direct
-dispatcher kernel.  This equation prevents the state-threaded facility from creating a second
-first-bad execution semantics. -/
-lemma d2sQueryRunRevisedAdaptiveWithStep_direct_eq
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    d2sQueryRunRevisedAdaptiveWithStep
-        (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P) gImpl) control
-        fuel controlState normal =
-      d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal := by
-  induction fuel generalizing controlState normal with
-  | zero =>
-      cases hNext : control.next controlState normal <;>
-        simp [d2sQueryRunRevisedAdaptiveWithStep, d2sQueryRunRevisedAdaptiveWithControl, hNext]
-  | succ fuel ih =>
-      cases hNext : control.next controlState normal with
-      | done =>
-          simp [d2sQueryRunRevisedAdaptiveWithStep,
-            d2sQueryRunRevisedAdaptiveWithControl, hNext]
-      | query q advance =>
-          simp only [d2sQueryRunRevisedAdaptiveWithStep, d2sQueryStepRevisedKernel,
-            d2sQueryRunRevisedAdaptiveWithControl, hNext, map_eq_pure_bind, bind_assoc,
-            pure_bind]
-          apply bind_congr
-          intro result
-          cases result with
-          | «continue» answer normal' =>
-              simpa using ih (advance controlState answer normal') normal'
-          | stopped normal' record => simp [D2SAdaptiveStepResult.ofRevised]
-          | underlyingAbort => simp [D2SAdaptiveStepResult.ofRevised]
 
 /-- The two local facts needed to aggregate a first-bad bound through a state-threaded kernel.
 They are deliberately phrased over the kernel's real `ProbComp` support: no caller may assert an
@@ -623,140 +585,6 @@ noncomputable def d2sQueryStepRevisedKernelHistoryContract
     | underlyingAbort =>
         simp [D2SAdaptiveStepResult.ofRevised] at hEq
 
-omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
-  [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
-/-- A finite adaptive D2S execution preserves its initial insertion trace as a literal prefix of
-every supported **non-monitor-stop** terminal trace.  A continuing step contributes its exact
-occurrence through the trace contract.  Monitor stops require the second, explicit stop-history
-field of the live kernel refinement, because a generic kernel is allowed to name a distinct
-pre-stop normal state.  Keeping that obligation separate prevents this generic lemma from
-silently assuming the very refinement that the Figure-4 proof must establish. -/
-lemma d2sQueryRunRevisedAdaptiveWithStep_nonMonitorTerminalTrace_extends
-    {S : Type}
-    (kernel : D2SAdaptiveStepKernel
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (contract : D2SAdaptiveKernelTraceContract kernel)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (terminal : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (hTerminal : terminal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep kernel control fuel controlState normal)) :
-    ¬ terminal.isMonitorStop →
-      D2STraceExtends normal.state.trace terminal.terminalTrace := by
-  intro hNotStop
-  induction fuel generalizing controlState normal terminal with
-  | zero =>
-      cases hNext : control.next controlState normal <;>
-        rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal <;>
-        subst terminal <;> exact D2STraceExtends.refl normal.state.trace
-  | succ fuel ih =>
-      cases hNext : control.next controlState normal with
-      | done =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal
-          subst terminal
-          exact D2STraceExtends.refl normal.state.trace
-      | query q advance =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_bind_iff] at hTerminal
-          obtain ⟨stepResult, hStep, hTerminal⟩ := hTerminal
-          cases stepResult with
-          | «continue» answer state' normal' =>
-              have hOne := contract.continue_append_one controlState normal q answer state'
-                normal' hStep
-              have hRest := ih (advance state' answer normal') normal' terminal hTerminal hNotStop
-              rcases hOne with ⟨occurrence, hOne⟩
-              apply D2STraceExtends.trans ⟨[occurrence], hOne⟩ hRest
-          | stopped stoppedNormal record =>
-              rw [mem_support_pure_iff] at hTerminal
-              subst terminal
-              simp [D2SAdaptiveRunResult.isMonitorStop] at hNotStop
-          | underlyingAbort =>
-              rw [mem_support_pure_iff] at hTerminal
-              subst terminal
-              exact D2STraceExtends.refl normal.state.trace
-
-omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
-  [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
-/-- The full history contract upgrades the preceding non-stop theorem to every terminal face.
-At a monitor stop the record's final occurrence is composed with the explicitly supplied
-pre-stop prefix.  This theorem is structural and distribution-free, so a hybrid can reuse it
-unchanged once it proves the contract for its actual memo/table interpreter. -/
-lemma d2sQueryRunRevisedAdaptiveWithStep_terminalTrace_extends
-    {S : Type}
-    (kernel : D2SAdaptiveStepKernel
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (contract : D2SAdaptiveKernelHistoryContract kernel)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (terminal : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (hTerminal : terminal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep kernel control fuel controlState normal)) :
-    D2STraceExtends normal.state.trace terminal.terminalTrace := by
-  induction fuel generalizing controlState normal terminal with
-  | zero =>
-      cases hNext : control.next controlState normal <;>
-        rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal <;>
-        subst terminal <;> exact D2STraceExtends.refl normal.state.trace
-  | succ fuel ih =>
-      cases hNext : control.next controlState normal with
-      | done =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal
-          subst terminal
-          exact D2STraceExtends.refl normal.state.trace
-      | query q advance =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_bind_iff] at hTerminal
-          obtain ⟨stepResult, hStep, hTerminal⟩ := hTerminal
-          cases stepResult with
-          | «continue» answer state' normal' =>
-              have hOne := contract.continue_append_one controlState normal q answer state'
-                normal' hStep
-              have hRest := ih (advance state' answer normal') normal' terminal hTerminal
-              rcases hOne with ⟨occurrence, hOne⟩
-              apply D2STraceExtends.trans ⟨[occurrence], hOne⟩ hRest
-          | stopped stoppedNormal record =>
-              rw [mem_support_pure_iff] at hTerminal
-              subst terminal
-              exact contract.monitorStop_prefix controlState normal q stoppedNormal record hStep
-          | underlyingAbort =>
-              rw [mem_support_pure_iff] at hTerminal
-              subst terminal
-              exact D2STraceExtends.refl normal.state.trace
-
-omit [Fintype U] in
-/-- The live direct dispatcher instantiates the full adaptive terminal-history theorem without
-any caller-supplied stop premise.  This is the executable prover→verifier history boundary:
-every supported terminal trace, including a monitored stop, literally extends the normal trace
-with which the adaptive phase began. -/
-lemma d2sQueryRunRevisedAdaptiveWithStep_direct_terminalTrace_extends
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (terminal : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (hTerminal : terminal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep
-        (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P) gImpl) control
-        fuel controlState normal)) :
-    D2STraceExtends normal.state.trace terminal.terminalTrace := by
-  exact d2sQueryRunRevisedAdaptiveWithStep_terminalTrace_extends
-    (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P) gImpl)
-    (d2sQueryStepRevisedKernelHistoryContract (T_H := T_H) (T_P := T_P) gImpl)
-    control fuel controlState normal terminal hTerminal
-
 omit [VCVCompatible U] [Nonempty U] [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
 /-- Aggregate the exact first-bad charge through an arbitrary state-threaded adaptive kernel.
@@ -837,46 +665,6 @@ lemma d2sQueryRunRevisedAdaptiveWithStep_monitorStop_le
             exact_mod_cast hcharge
           rw [hchargeENN] at hBound
           simpa [d2sQueryRunRevisedAdaptiveWithStep, hNext, next] using hBound
-
-omit [VCVCompatible U] [Fintype U] [Nonempty U] in
-/-- Forgetting the controller payload of the lossless runner gives precisely the original
-adaptive first-bad runner.  This is an executable equality, not a simulation hypothesis: the
-two definitions make the same random calls in the same order and differ only in retained terminal
-metadata. -/
-lemma d2sQueryRunRevisedAdaptiveWithControl_forget_eq
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    (fun result => result.toStepResult) <$>
-        d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal =
-      d2sQueryRunRevisedAdaptive gImpl control fuel controlState normal := by
-  induction fuel generalizing controlState normal with
-  | zero =>
-      cases hNext : control.next controlState normal <;>
-        simp [D2SAdaptiveRunResult.toStepResult, d2sQueryRunRevisedAdaptiveWithControl,
-          d2sQueryRunRevisedAdaptive, hNext]
-  | succ fuel ih =>
-      cases hNext : control.next controlState normal with
-      | done =>
-          simp [D2SAdaptiveRunResult.toStepResult, d2sQueryRunRevisedAdaptiveWithControl,
-            d2sQueryRunRevisedAdaptive, hNext]
-      | query q advance =>
-          simp only [d2sQueryRunRevisedAdaptiveWithControl, d2sQueryRunRevisedAdaptive, hNext,
-            map_bind]
-          apply bind_congr
-          intro result
-          cases result with
-          | «continue» answer normal' =>
-              simpa using ih (advance controlState answer normal') normal'
-          | stopped normal' record =>
-              simp [D2SAdaptiveRunResult.toStepResult]
-          | underlyingAbort =>
-              simp [D2SAdaptiveRunResult.toStepResult]
 
 omit [VCVCompatible U] [Fintype U] [Nonempty U] in
 @[simp] lemma d2sQueryRunRevisedAdaptive_zero
@@ -985,185 +773,6 @@ omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
       (δ := δ) (T_H := T_H) (T_P := T_P) α).next
         (OracleComp.queryBind (.inr q) continuation) normal =
       .query q (fun _ answer _ => continuation answer) := rfl
-
-omit [VCVCompatible U] [Fintype U] [Nonempty U] [SampleableType U]
-  [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
-/-- A wide `[]ₒ + DS` residual has an explicit `done` decision exactly when it has completed.  The
-empty-left elimination is essential here: this would be false for a genuinely ambient sum
-interface, whose next request might belong to the left summand rather than represent completion.
--/
-lemma D2SAdaptiveControl.ofEmptyLiftedOracleComp_next_eq_done_iff
-    {α : Type}
-    (residual : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
-    (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (δ := δ) (T_H := T_H) (T_P := T_P) α).next residual normal = .done ↔
-      ∃ value, residual = pure value := by
-  constructor
-  · cases residual with
-    | pure value => intro _; exact ⟨value, rfl⟩
-    | queryBind query continuation =>
-        cases query with
-        | inl impossible => exact PEmpty.elim impossible
-        | inr q => simp [D2SAdaptiveControl.ofEmptyLiftedOracleComp]
-  · rintro ⟨value, rfl⟩
-    rfl
-
-omit [VCVCompatible U] [Fintype U] [Nonempty U] in
-/-- The adaptive runner on `ofList` is exactly the existing live fixed-stream runner after its
-internal D2S oracle calls are interpreted.  This validates that the new adaptive facility extends
-rather than replaces the previously verified finite-run path. -/
-lemma d2sQueryRunRevisedAdaptive_ofList_eq
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (queries : List (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    d2sQueryRunRevisedAdaptive gImpl (D2SAdaptiveControl.ofList
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P))
-      queries.length queries normal =
-      simulateQ
-        (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
-        (d2sQueryRunRevised normal queries) := by
-  induction queries generalizing normal with
-  | nil =>
-      simp [d2sQueryRunRevisedAdaptive, d2sQueryRunRevised_nil, simulateQ_pure]
-  | cons q queries ih =>
-      simp only [d2sQueryRunRevisedAdaptive, D2SAdaptiveControl.ofList]
-      rw [d2sQueryRunRevised_cons, simulateQ_bind]
-      apply bind_congr
-      intro result
-      cases result with
-      | «continue» answer normal' =>
-          simpa using ih normal'
-      | stopped normal' record =>
-          simp
-      | underlyingAbort =>
-          simp
-
-/-- The adaptive first-bad bound.  Starting from base-trace length at most `j`, no controller
-that issues at most `fuel` D2S queries has monitor-stop probability above
-`fuel (2j + fuel) / |Σ|ᶜ`.  This is the same exact odd-number sum as the finite-list theorem,
-but each successive query may depend on the preceding normal state and dependent response.
-
-The proof uses the live one-step dispatcher bound and its proved one-entry continuation growth.
-It performs one `probEvent_bind_le_add` per *reached* adaptive query, and therefore charges no
-suffix after a monitored stop or underlying abort. -/
-lemma d2sQueryRunRevisedAdaptive_monitorStop_le
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (j : ℕ) (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ j) :
-    Pr[ fun result => result.isMonitorStop |
-      d2sQueryRunRevisedAdaptive gImpl control fuel controlState normal] ≤
-      ((fuel * (2 * j + fuel) : ℕ) : ℝ≥0∞) /
-        BadEventDS.capacitySpaceSize (U := U) := by
-  classical
-  induction fuel generalizing controlState normal j with
-  | zero =>
-      simp [d2sQueryRunRevisedAdaptive]
-  | succ fuel ih =>
-      cases hNext : control.next controlState normal with
-      | done =>
-          rw [d2sQueryRunRevisedAdaptive, hNext, probEvent_pure]
-          simp only [D2SRevisedStepResult.isMonitorStop_continue, ↓reduceIte]
-          exact bot_le
-      | query q advance =>
-          let impl : QueryImpl
-              (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)) ProbComp :=
-            gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec)
-          let next := fun stepResult : D2SRevisedStepResult
-              (δ := δ) (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-              ((duplexSpongeChallengeOracle StmtIn U).Range q) =>
-            match stepResult with
-            | .continue answer normal' =>
-                d2sQueryRunRevisedAdaptive gImpl control fuel
-                  (advance controlState answer normal') normal'
-            | .stopped normal' record => pure (.stopped normal' record)
-            | .underlyingAbort => pure .underlyingAbort
-          have hStep := d2sQueryStepRevised_monitorStop_le_of_baseLength_le
-            gImpl normal q hCoherent j hBaseLength
-          have hBound := probEvent_bind_le_add
-            (mx := simulateQ impl (d2sQueryStepRevised normal q))
-            (my := next)
-            (p := fun stepResult => ¬ stepResult.isMonitorStop)
-            (q := fun result => ¬ result.isMonitorStop)
-            (ε₁ := ((2 * j + 1 : ℕ) : ℝ≥0∞) / BadEventDS.capacitySpaceSize (U := U))
-            (ε₂ := ((fuel * (2 * (j + 1) + fuel) : ℕ) : ℝ≥0∞) /
-              BadEventDS.capacitySpaceSize (U := U))
-            (by simpa only [not_not] using hStep) (by
-              intro stepResult hResult hNotStop
-              cases stepResult with
-              | «continue» answer normal' =>
-                  have hInvariant := d2sQueryStepRevised_maintainsInvariant normal hCoherent q
-                    gImpl (.continue answer normal') hResult
-                  have hNextLength : (getBaseTrace normal'.state.trace).length ≤ j + 1 :=
-                    Nat.le_trans
-                      (d2sQueryStepRevised_continue_baseTrace_length_le normal q gImpl answer
-                        normal' hResult)
-                      (Nat.succ_le_succ hBaseLength)
-                  simpa only [next, not_not] using
-                    ih (advance controlState answer normal') normal' (j + 1)
-                      hInvariant.1 hNextLength
-              | stopped _ _ =>
-                  simp only [D2SRevisedStepResult.isMonitorStop_stopped, not_true_eq_false]
-                    at hNotStop
-              | underlyingAbort =>
-                  simp [next])
-          rw [← ENNReal.add_div] at hBound
-          simp only [not_not] at hBound
-          have hcharge :
-              2 * j + 1 + fuel * (2 * (j + 1) + fuel) =
-                (fuel + 1) * (2 * j + (fuel + 1)) := by
-            ring
-          have hchargeENN :
-              ((2 * j + 1 : ℕ) : ℝ≥0∞) +
-                  ((fuel * (2 * (j + 1) + fuel) : ℕ) : ℝ≥0∞) =
-                (((fuel + 1) * (2 * j + (fuel + 1)) : ℕ) : ℝ≥0∞) := by
-            exact_mod_cast hcharge
-          rw [hchargeENN] at hBound
-          simpa [d2sQueryRunRevisedAdaptive, hNext, impl, next] using hBound
-
-/-- The first-bad bound applies unchanged to the lossless adaptive runner.  This is obtained by
-the executable payload-forgetting equality above, so retaining an outer control state costs no
-extra union-bound term. -/
-lemma d2sQueryRunRevisedAdaptiveWithControl_monitorStop_le
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (j : ℕ) (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ j) :
-    Pr[ fun result => result.isMonitorStop |
-      d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal] ≤
-      ((fuel * (2 * j + fuel) : ℕ) : ℝ≥0∞) /
-        BadEventDS.capacitySpaceSize (U := U) := by
-  have hBound := d2sQueryRunRevisedAdaptive_monitorStop_le
-    gImpl control fuel controlState normal j hCoherent hBaseLength
-  rw [← d2sQueryRunRevisedAdaptiveWithControl_forget_eq] at hBound
-  rw [probEvent_map] at hBound
-  change Pr[ fun result => result.toStepResult.isMonitorStop |
-    d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal] ≤ _ at hBound
-  rw [show (fun result : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S =>
-      result.toStepResult.isMonitorStop) = fun result => result.isMonitorStop by
-    funext result
-    exact propext (D2SAdaptiveRunResult.toStepResult_isMonitorStop result)] at hBound
-  exact hBound
 
 /-! ## The concrete pure-`Hyb₁` verifier segment -/
 
@@ -1390,39 +999,6 @@ lemma hyb1PureVerifierAdaptiveRun_at_verifierPermCallCount_succ_monitorStop_le {
     (T_H := T_H) (T_P := T_P) kSigma V stmtIn proof
     (verifierPermCallCount (pSpec := pSpec) (δ := δ) + 1) normal j hCoherent hBaseLength
 
-omit [Fintype U] in
-/-- Every terminal trace of the concrete finite-table Hyb₁ verifier segment extends the incoming
-normal trace, including the trace owned by a first monitor stop.  This is the exact history fact
-needed when the verifier starts from the prover's stateful replay result; no fresh-state or
-rounded-block argument is hidden in this lemma. -/
-lemma hyb1PureVerifierAdaptiveRun_terminalTrace_extends {StmtOut : Type}
-    [VCVCompatible StmtIn]
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (stmtIn : StmtIn) (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    (fuel : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (terminal : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (Hyb1VerifierState (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) StmtOut))
-    (hTerminal : terminal ∈ support
-      (hyb1PureVerifierAdaptiveRun
-        (T_H := T_H) (T_P := T_P) kSigma V stmtIn proof fuel normal)) :
-    D2STraceExtends normal.state.trace terminal.terminalTrace := by
-  exact d2sQueryRunRevisedAdaptiveWithStep_terminalTrace_extends
-    (hyb1VerifierStepKernel
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtOut))
-    (hyb1VerifierStepKernelHistoryContract
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtOut))
-    (hyb1VerifierControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtOut))
-    fuel (kSigma, runForwardVerifierWide δ V stmtIn proof) normal terminal hTerminal
-
 /-- A standalone pure-`Hyb₁` verifier segment from a fresh D2S state.  This is useful as the
 zero-prefix base case for the adaptive first-bad arithmetic, but it is **not** the verifier phase
 of the combined Figure-4 game: that phase must use `hyb1PureVerifierAdaptiveRun` with the exact
@@ -1441,33 +1017,5 @@ noncomputable def hyb1PureVerifierAdaptiveRunFromInitial {StmtOut : Type} [VCVCo
     (D2SNormalState.initial
       (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-
-/-- Exact first-bad charge for the concrete pure-`Hyb₁` verifier segment.  This is a local
-verifier-segment fact: the eventual hybrid proof still has to supply its request fuel and connect
-the public observed game to this run, but no further D2SQuery probability induction is needed. -/
-lemma hyb1PureVerifierAdaptiveRunFromInitial_monitorStop_le {StmtOut : Type}
-    [VCVCompatible StmtIn]
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (stmtIn : StmtIn) (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    (fuel : ℕ) :
-    Pr[ fun result => result.isMonitorStop |
-      hyb1PureVerifierAdaptiveRunFromInitial
-        (T_H := T_H) (T_P := T_P) kSigma V stmtIn proof fuel] ≤
-      ((fuel * fuel : ℕ) : ℝ≥0∞) / BadEventDS.capacitySpaceSize (U := U) := by
-  have hBaseLength :
-      (getBaseTrace
-        (D2SNormalState.initial
-          (T_H := T_H) (T_P := T_P)
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)).state.trace).length ≤ 0 := by
-    change (getBaseTrace ([] : QueryLog (duplexSpongeChallengeOracle StmtIn U))).length ≤ 0
-    simp [getBaseTrace, getBaseTraceAux]
-  simpa [hyb1PureVerifierAdaptiveRunFromInitial] using
-    hyb1PureVerifierAdaptiveRun_monitorStop_le
-      (T_H := T_H) (T_P := T_P) (StmtOut := StmtOut) kSigma V stmtIn proof fuel
-      (D2SNormalState.initial
-        (T_H := T_H) (T_P := T_P)
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-      0 RateOnlyCacheCoherent.initial hBaseLength
 
 end DuplexSpongeFS.ProverTransform

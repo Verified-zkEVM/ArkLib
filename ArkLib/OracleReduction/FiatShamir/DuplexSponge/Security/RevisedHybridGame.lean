@@ -328,24 +328,6 @@ theorem HybridGameRevisedResult.probBadEvent_le_of_monitorStop
 
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
-/-- Erasing raw query logs preserves the exact monitored-stop witness. -/
-theorem HybridGameRevisedObservation.result_monitorStop?_eq
-    {κ : Type} {challengeSpec : OracleSpec κ} {T_H T_P M : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (observation : HybridGameRevisedObservation
-      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) :
-    observation.result.monitorStop? = observation.monitorStop? := by
-  rcases observation with ⟨phase⟩
-  cases phase with
-  | proverStopped reason rawLog =>
-      cases reason <;> rfl
-  | verifier proverRun verifierResult proverRawLog verifierRawLog =>
-      cases verifierResult with
-      | ok verifierRun => rfl
-      | error reason =>
-          cases reason <;> rfl
-
 omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
 /-- A monitored stop of the global revised Figure-4 game witnesses the concrete `E` event on its
@@ -538,81 +520,6 @@ noncomputable def hybridGameRevisedObserved
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
-/-- Logging enriches the revised Figure-4 phase with raw-query histories but does not alter its
-result marginal.  This is the exact seam used by the stopped-execution probability argument;
-the log itself remains available in `hybridGameRevisedObserved` for the later coupling proof. -/
-lemma hybridGameRevisedObserved_map_result_eq
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    {κ : Type} {challengeSpec : OracleSpec κ}
-    {T_H : Type} {T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {M : Type} [Inhabited M]
-    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
-    (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
-    (fun observation => observation.result) <$>
-        hybridGameRevisedObserved (δ := δ) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) gImpl V P =
-      hybridGameRevisedResult (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) gImpl V P := by
-  unfold hybridGameRevisedObserved hybridGameRevisedResult
-  simp only [map_eq_pure_bind, bind_assoc, HybridGameRevisedObservation.result]
-  calc
-    _ = ((simulateQ loggingOracle
-        (d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P default)).run >>=
-      fun proverLog =>
-        match proverLog.1 with
-        | .error reason => pure (HybridGameRevisedResult.proverStopped reason)
-        | .ok proverRun =>
-            (simulateQ loggingOracle
-              (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P) gImpl
-                (runForwardVerifierWide δ V proverRun.1.1.1 proverRun.1.1.2)
-                proverRun.1.2 proverRun.2)).run >>= fun verifierLog =>
-              pure (HybridGameRevisedResult.verifier proverRun verifierLog.1)) := by
-        apply bind_congr
-        rintro ⟨proverResult, proverRawLog⟩
-        cases proverResult with
-        | error reason => rfl
-        | ok proverRun =>
-            simp only [bind_assoc, pure_bind]
-    _ = _ := by
-      calc
-        _ = (d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P default >>= fun proverResult =>
-          match proverResult with
-          | .error reason => pure (HybridGameRevisedResult.proverStopped reason)
-          | .ok proverRun =>
-              (simulateQ loggingOracle
-                (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P) gImpl
-                  (runForwardVerifierWide δ V proverRun.1.1.1 proverRun.1.1.2)
-                  proverRun.1.2 proverRun.2)).run >>= fun verifierLog =>
-                    pure (HybridGameRevisedResult.verifier proverRun verifierLog.1)) := by
-              exact loggingOracle.run_simulateQ_bind_fst
-                (d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P default)
-                (fun proverResult =>
-                  match proverResult with
-                  | .error reason => pure (HybridGameRevisedResult.proverStopped reason)
-                  | .ok proverRun =>
-                      (simulateQ loggingOracle
-                        (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P) gImpl
-                          (runForwardVerifierWide δ V proverRun.1.1.1 proverRun.1.1.2)
-                          proverRun.1.2 proverRun.2)).run >>= fun verifierLog =>
-                            pure (HybridGameRevisedResult.verifier proverRun verifierLog.1))
-        _ = _ := by
-          apply bind_congr
-          intro proverResult
-          cases proverResult with
-          | error reason => rfl
-          | ok proverRun =>
-              exact loggingOracle.run_simulateQ_bind_fst
-                (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P) gImpl
-                  (runForwardVerifierWide δ V proverRun.1.1.1 proverRun.1.1.2)
-                  proverRun.1.2 proverRun.2)
-                (fun verifierResult =>
-                  pure (HybridGameRevisedResult.verifier proverRun verifierResult))
-
 /-- The distribution-level logged phase endpoint, before line-4 trace mapping.  It is the
 trace-sensitive endpoint for the Hyb₀--Hyb₁ coupling. -/
 noncomputable def hybridGameRevisedPhaseDist
@@ -668,38 +575,6 @@ noncomputable def hybridGameRevisedResultDist
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
-/-- The logged and result-only distribution endpoints have exactly the same result marginal. -/
-lemma hybridGameRevisedPhaseDist_map_result_eq
-    [SampleableType U]
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    {κ : Type} {challengeSpec : OracleSpec κ}
-    {T_H : Type} {T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {M : Type} [Inhabited M]
-    {σ : Type}
-    (init : ProbComp σ)
-    (impl : QueryImpl
-      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
-      (StateT σ ProbComp))
-    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
-    (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
-    (fun observation => observation.result) <$>
-        hybridGameRevisedPhaseDist (δ := δ) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) init impl gImpl V P =
-      hybridGameRevisedResultDist (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) init impl gImpl V P := by
-  unfold hybridGameRevisedPhaseDist hybridGameRevisedResultDist
-  simp only [map_bind]
-  apply bind_congr
-  intro initial
-  rw [← StateT.run'_map', ← simulateQ_map]
-  exact congrArg (fun comp => (simulateQ impl comp).run' initial)
-    (hybridGameRevisedObserved_map_result_eq (T_H := T_H) (T_P := T_P) gImpl V P)
-
 /-- Figure 4 lines 2--3 with the live revised D2SQuery executor.  The prover starts from the
 fresh initial state; a successful verifier then starts from the prover's exact normal state and
 memo.  Any abort is absorbing, so no verifier query is made after a prover stop.  The public
@@ -726,28 +601,6 @@ noncomputable def hybridGameRevised
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
-/-- The abort-erasing revised Figure-4 game is the public-output projection of its lossless
-observation.  This is a local `OracleComp` identity: no sampler, hybrid, or coupling argument is
-involved. -/
-lemma hybridGameRevisedObserved_map_publicOutput_eq_run
-    [∀ i, Fintype (pSpec.Message i)]
-    [∀ i, DecidableEq (pSpec.Message i)]
-    {κ : Type} {challengeSpec : OracleSpec κ}
-    {T_H : Type} {T_P : Type}
-    [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    {M : Type} [Inhabited M]
-    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
-    (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
-    (fun observation => observation.publicOutput) <$>
-        hybridGameRevisedObserved (δ := δ) (T_H := T_H) (T_P := T_P)
-          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-          (pSpec := pSpec) (U := U) gImpl V P =
-      (hybridGameRevised (δ := δ) (T_H := T_H) (T_P := T_P)
-        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) gImpl V P).run := by
-  rfl
-
 /-- Distribution wrapper for `hybridGameRevised`.  It is definitionally the same outer sampling
 and line-4 codec process as `hybridGameDist`; only the live transition interpreter differs.
 Keeping this wrapper separate makes a later coupling theorem state exactly the intended
@@ -926,49 +779,10 @@ noncomputable def hyb1GImpl :
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)]
   [DecidableEq StmtIn] [DecidableEq U] in
-/-- Installing Hyb₁'s outer eager finite-table sampler turns its `gᵢ` slot into the direct
-finite-table answer.  This is the query-level leaf of the later live-executor/adaptive-run
-refinement; it carries no distributional approximation. -/
-lemma hybChallengeImpl_hyb1G_query
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (q : (gSpec (U := U) StmtIn pSpec δ).Domain) :
-    (hybChallengeImpl
-      (oSpec := oSpec) (U := U) (challengeSpec := gSpec (U := U) StmtIn pSpec δ)
-      oSpecImpl (D_SigmaFinite (U := U) StmtIn pSpec δ)
-      (Sum.inr (Sum.inl q))).run' kSigma =
-        (D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma q := by
-  rfl
-
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)]
   [DecidableEq StmtIn] [DecidableEq U] in
-/-- The unit-sampling auxiliary slot has the same direct interpretation before and after the
-outer Hyb₁ sampler is installed. -/
-lemma hybChallengeImpl_hyb1Unit_query
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (q : Unit) :
-    (hybChallengeImpl
-      (oSpec := oSpec) (U := U) (challengeSpec := gSpec (U := U) StmtIn pSpec δ)
-      oSpecImpl (D_SigmaFinite (U := U) StmtIn pSpec δ)
-      (Sum.inr (Sum.inr (Sum.inl q)))).run' kSigma =
-        d2sUnitSampleImpl (U := U) q := by
-  simp [hybChallengeImpl]
-
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)]
   [DecidableEq StmtIn] [DecidableEq U] in
-/-- The uniform auxiliary slot is likewise unchanged by the Hyb₁ outer sampler. -/
-lemma hybChallengeImpl_hyb1Unif_query
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (q : ℕ) :
-    (hybChallengeImpl
-      (oSpec := oSpec) (U := U) (challengeSpec := gSpec (U := U) StmtIn pSpec δ)
-      oSpecImpl (D_SigmaFinite (U := U) StmtIn pSpec δ)
-      (Sum.inr (Sum.inr (Sum.inr q)))).run' kSigma =
-        QueryImpl.id' unifSpec q := by
-  rfl
-
 /-- The full three-slot D2S handler seen after fixing Hyb₁'s eagerly sampled finite table.
 
 The definition retains the outer-handler presentation used by the real game, while its next
@@ -995,45 +809,6 @@ noncomputable def hyb1D2SOuterAfterSampleImpl
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)]
   [DecidableEq StmtIn] [DecidableEq U] in
-/-- Fixing the eager Hyb₁ table makes the real outer three-slot handler definitionally equal to
-the direct adaptive-run handler.  This is an exact implementation equality, not a coupling. -/
-lemma hyb1D2SOuterAfterSampleImpl_eq_direct
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier) :
-    hyb1D2SOuterAfterSampleImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-        oSpecImpl kSigma =
-      (D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma +
-        (d2sUnitSampleImpl (U := U) + QueryImpl.id' unifSpec) := by
-  apply QueryImpl.ext
-  rintro (q | q | q)
-  · exact hybChallengeImpl_hyb1G_query (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (δ := δ) oSpecImpl kSigma q
-  · exact hybChallengeImpl_hyb1Unit_query (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (δ := δ) oSpecImpl kSigma q
-  · exact hybChallengeImpl_hyb1Unif_query (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (δ := δ) oSpecImpl kSigma q
-
-omit [∀ i, VCVCompatible (pSpec.Challenge i)] in
-/-- Consequently the real fixed-table handler and the adaptive handler give identical
-distributions to every one-step revised D2S query. -/
-lemma hyb1D2SOuterAfterSampleImpl_step_eq_direct
-    {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (oSpecImpl : QueryImpl oSpec ProbComp)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    simulateQ
-      (hyb1D2SOuterAfterSampleImpl
-        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) oSpecImpl kSigma)
-      (d2sQueryStepRevised normal q) =
-    simulateQ
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma +
-        (d2sUnitSampleImpl (U := U) + QueryImpl.id' unifSpec))
-      (d2sQueryStepRevised normal q) := by
-  rw [hyb1D2SOuterAfterSampleImpl_eq_direct]
-
 /-- The exact result projection used by the lossless outer D2F interpreter for one Hyb₁ D2S
 query.  A continuation retains the vacuous `PUnit` memo; a monitored stop and an underlying
 search failure become the corresponding structured stopping reasons at the *input* normal state.
@@ -1173,40 +948,6 @@ noncomputable def hyb1D2FStoppingDirectImpl
         (d2sQueryStepRevised normal request)
       StateT.mk fun memo => ExceptT.mk (pure (d2sRevisedStepPost normal result memo))
 
-omit [∀ i, VCVCompatible (pSpec.Challenge i)] in
-/-- A direct fixed-table D2F request has exactly the terminal projection used by the adaptive
-first-bad runner.  This is the one-query base case for the remaining residual-program induction. -/
-lemma hyb1D2FStoppingDirectImpl_step
-    {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (request : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    (((hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma
-      (.inr request)).run normal).run PUnit.unit).run =
-      hyb1D2SStepToStopping normal <$>
-        simulateQ
-          ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma +
-            (d2sUnitSampleImpl (U := U) + QueryImpl.id' unifSpec))
-          (d2sQueryStepRevised normal request) := by
-  rw [hyb1D2FStoppingDirectImpl]
-  change ExceptT.run ((do
-    let result ← simulateQ
-      (hyb1StoppingD2SDirect (T_H := T_H) (T_P := T_P) kSigma)
-      (d2sQueryStepRevised normal request)
-    StateT.mk fun memo => ExceptT.mk (pure (d2sRevisedStepPost normal result memo))).run
-      PUnit.unit) = _
-  simp only [StateT.run_bind, ExceptT.run_bind]
-  conv_lhs =>
-    enter [1]
-    rw [hyb1StoppingD2SDirect_step_run (T_H := T_H) (T_P := T_P) kSigma normal request]
-  rw [bind_map_left]
-  rw [map_eq_pure_bind]
-  apply bind_congr
-  intro result
-  cases result <;> rfl
-
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)] in
 /-- Fixing the Hyb₁ table before executing one D2S step agrees exactly with pushing that table
 through the live inner handler.  This bridges the real D2F executor to the adaptive first-bad
@@ -1268,29 +1009,6 @@ lemma hyb1D2fStoppingD2SInner_mapped_eq_direct
     hyb1StoppingD2SDirect (T_H := T_H) (T_P := T_P) kSigma := by
   simpa [hyb1StoppingD2SInner] using
     hyb1StoppingD2SInner_mapped_eq_direct (T_H := T_H) (T_P := T_P) normal kSigma
-
-omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)] in
-/-- The preceding handler equality lifts from one query to every finite D2S oracle computation.
-This is the local monadic-morphism step needed when the live D2F handler binds the D2S result
-before classifying it as a continuation or a structured stop. -/
-lemma hyb1StoppingD2SInner_pushes_outer
-    {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    {α : Type}
-    (oa : OracleComp
-      (d2sQueryOracles (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) α)
-    (memo : PUnit) :
-    simulateQ
-      (hyb1VerifierOuterImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) kSigma)
-      (ExceptT.run ((simulateQ
-        (hyb1StoppingD2SInner (T_H := T_H) (T_P := T_P) normal) oa).run memo)) =
-      ExceptT.run ((simulateQ
-        (hyb1StoppingD2SDirect (T_H := T_H) (T_P := T_P) kSigma) oa).run memo) := by
-  rw [QueryImpl.simulateQ_mapStateTExceptTBase_run]
-  rw [hyb1StoppingD2SInner_mapped_eq_direct]
 
 /-- The direct, fixed-table realization of the full outer D2F handler used by a pure Hyb₁
 verifier residual.  It is not a second D2F semantics: it is obtained by pushing the fixed

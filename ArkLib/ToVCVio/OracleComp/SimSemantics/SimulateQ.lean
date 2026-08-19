@@ -140,14 +140,3 @@ lemma StateT.run'_simulateQ_bind_map_eq_of_body
   rw [← StateT.run'_map_comm f]
   exact congrArg (fun mx : StateT σ ProbComp β => mx.run' s)
     (simulateQ_bind_map_eq_of_body impl oa body₁ body₂ f hBody)
-
-@[simp]
-theorem simulateQ_map_OptionT {ι σ α β : Type} {spec : OracleSpec ι}
-    (impl : QueryImpl spec (StateT σ ProbComp)) (f : α → β)
-    (m : OptionT (OracleComp spec) α) :
-    simulateQ impl (f <$> m : OptionT _ β) = Option.map f <$> simulateQ impl m := by
-  rw [← simulateQ_map]
-  congr 1
-  apply OptionT.ext
-  rw [OptionT.run_map]
-  rfl

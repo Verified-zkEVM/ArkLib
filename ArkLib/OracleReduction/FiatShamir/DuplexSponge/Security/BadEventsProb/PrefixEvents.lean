@@ -30,22 +30,6 @@ open DuplexSpongeFS.DSTraceStorage
 variable {StmtIn : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
 
-/-- A one-entry raw extension retains the old base trace and appends at most its representative.
-This trace-only suffix decomposition is shared by the hash-credit and functional-invariant
-runner proofs. -/
-lemma getBaseTrace_append_singleton_exists_suffix
-    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U)) :
-    ∃ extra : QueryLog (duplexSpongeChallengeOracle StmtIn U),
-      getBaseTrace (trace ++ [entry]) = getBaseTrace trace ++ extra := by
-  classical
-  by_cases hred : isRedundantEntryOfPrefix (getBaseTrace trace) entry
-  · refine ⟨[], ?_⟩
-    rw [DuplexSpongeFS.getBaseTrace_append_singleton_of_redundant_base trace entry hred]
-    rw [List.append_nil]
-  · refine ⟨[entry], ?_⟩
-    exact DuplexSpongeFS.getBaseTrace_append_singleton_of_not_redundant_base trace entry hred
-
 /-- If a later trace has base trace `getBaseTrace trace ++ extra`, then old base-trace entries
 at old indices are unchanged. -/
 lemma getBaseTrace_getElem_eq_of_append_eq
@@ -480,25 +464,6 @@ lemma E_first_at_iff_of_getBaseTrace_append_eq
     exact hNoPrior j' hj'
       (E_at_of_getBaseTrace_append_eq_of_lt hbt hjOld hBad)
 
-/-- If an earlier state is already bad, a later trace whose *first* bad event is at `j` cannot
-place that earlier state before position `j`.  Thus the designated index is necessarily present
-at the earlier state and the first-bad witness reflects there. -/
-lemma E_first_at_reflect_of_E_of_getBaseTrace_append_eq
-    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
-    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
-    (hE : E trace) (hFirst : E_first_at trace' j) :
-    ∃ hj : j < (getBaseTrace trace).length, E_first_at trace j := by
-  have hnot : ¬ (getBaseTrace trace).length ≤ j := by
-    intro hlen
-    obtain ⟨j', hBad⟩ := (E_iff_exists_E_at trace).mp hE
-    have hj'lt : j' < j := by
-      have hj'len : j' < (getBaseTrace trace).length := E_at_lt_length trace hBad
-      omega
-    exact hFirst.2 j' hj'lt (E_at_of_getBaseTrace_append_eq hbt hBad)
-  have hj : j < (getBaseTrace trace).length := Nat.lt_of_not_ge hnot
-  exact ⟨hj, (E_first_at_iff_of_getBaseTrace_append_eq hbt hj).mp hFirst⟩
-
 /-- Global bad-event monotonicity under a base-trace suffix extension. -/
 lemma E_of_getBaseTrace_append_eq
     {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
@@ -530,24 +495,6 @@ lemma E_iff_of_getBaseTrace_eq
     have hbt' : getBaseTrace trace' = getBaseTrace trace ++ [] := by
       simpa using hbt
     exact E_of_getBaseTrace_append_eq hbt' hE
-
-/-- A state whose base trace is a prefix ending no later than a designated first-bad position is
-E-good.  This is the stopped-prefix form needed by the revised rate-only D2SQuery proof: it
-turns `E_first_at trace' j` into the live `¬ E trace` invariant without inspecting redundant raw
-occurrences. -/
-lemma not_E_of_getBaseTrace_append_eq_of_noPriorBadAt
-    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {extra : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
-    (hbt : getBaseTrace trace' = getBaseTrace trace ++ extra)
-    (hlen : (getBaseTrace trace).length ≤ j)
-    (hNoPrior : NoPriorBadAt trace' j) :
-    ¬ E trace := by
-  intro hE
-  obtain ⟨j', hBad⟩ := (E_iff_exists_E_at trace).mp hE
-  have hj'lt : j' < j := by
-    have hj'len : j' < (getBaseTrace trace).length := E_at_lt_length trace hBad
-    omega
-  exact hNoPrior j' hj'lt (E_at_of_getBaseTrace_append_eq hbt hBad)
 
 end BadEventDS
 

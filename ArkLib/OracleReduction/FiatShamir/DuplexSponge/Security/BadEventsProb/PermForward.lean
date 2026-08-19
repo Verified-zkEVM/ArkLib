@@ -71,31 +71,6 @@ lemma lemma5_8_sponge_E_p_first_at
         (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec)
         (U := U) (δ := δ) V maliciousProver j
 
-/-- Sigma `E_p` bound at the earliest bad index. -/
-lemma lemma5_8_sigma_E_p_first_at
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) (j : ℕ) :
-    Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧ E_p_at (tr.1 ++ tr.2) j |
-        lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ) (StmtIn := StmtIn)
-          (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U) V maliciousProver]
-      ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U) := by
-  let exp := lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
-    (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
-    V maliciousProver
-  change Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧ E_p_at (tr.1 ++ tr.2) j | exp]
-      ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U)
-  calc
-    Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧ E_p_at (tr.1 ++ tr.2) j | exp]
-      ≤ Pr[ fun tr => E_first_at (tr.1 ++ tr.2) j ∧
-          permFwdFreshHitAt (getBaseTrace (tr.1 ++ tr.2)) j | exp] := by
-      apply probEvent_mono
-      intro tr _ h
-      exact ⟨h.1, E_p_at_imp_permFwdFreshHitAt _ _ h.2⟩
-    _ ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U) :=
-      foundational_sigma_permFwdFreshHit_contract
-        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec)
-        (U := U) (T_H := T_H) (T_P := T_P) (δ := δ) V maliciousProver j
-
 end PerIndexCollisionBounds
 
 end BadEventDS

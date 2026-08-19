@@ -117,68 +117,6 @@ noncomputable def d2sInstallPermForwardStateRevised
         exact .continue stateOut ⟨st', hE, normal.permutationNodup,
           normal.hashNodup, normal.hashInputFunctional⟩
 
-/-- **Forward `Install = conflict` contract.**  The reusable table/cache is untouched (the stopped
-record's `normalState` is definitionally the input normal state), the attempted occurrence is
-appended to the terminal trace, and the result is a `stopped` record — not `Option.none`. -/
-lemma d2sInstallPermForwardStateRevised_conflict
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    d2sInstallPermForwardStateRevised normal stateIn stateOut =
-      .stopped normal
-        ⟨dsPermQuery stateIn, stateOut, install_conflict_fwd_imp_E normal hStatus⟩ := by
-  classical
-  unfold d2sInstallPermForwardStateRevised
-  split
-  · simp
-  · rename_i hfresh
-    exact (nomatch (hfresh.symm.trans hStatus))
-  · rename_i hpresent
-    exact (nomatch (hpresent.symm.trans hStatus))
-
-/-- **Forward correspondence.**  Whenever the restated transition continues, the raw table-only
-install produced exactly the successor D2SQueryState. -/
-lemma d2sInstallPermForwardStateRevised_correspondence
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (h : d2sInstallPermForwardStateRevised normal stateIn stateOut = .continue stateOut normal') :
-    d2sInstallPermForwardState normal.state stateIn stateOut = some normal'.state := by
-  classical
-  unfold d2sInstallPermForwardStateRevised at h
-  split at h
-  · simp_all
-  · rename_i hfresh
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      unfold d2sInstallPermForwardState
-      split
-      · rename_i hcon
-        exact (nomatch (hcon.symm.trans hfresh))
-      · rfl
-      · rename_i hpre
-        exact (nomatch (hpre.symm.trans hfresh))
-  · rename_i hpresent
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      unfold d2sInstallPermForwardState
-      split
-      · rename_i hcon
-        exact (nomatch (hcon.symm.trans hpresent))
-      · rename_i hfre
-        exact (nomatch (hfre.symm.trans hpresent))
-      · rfl
-
 /-- A successful forward `Install` returns exactly the state supplied as its selected output.
 This dependent-result fact lets lazy-tail and Program proofs recover the exact synthesized output
 without re-unfolding the three `Install` status branches. -/
@@ -259,32 +197,6 @@ lemma d2sInstallPermForwardStateRevised_continue_table_fresh
   · rename_i hpresent
     exact (nomatch (hpresent.symm.trans hStatus))
 
-/-- **Forward `continue` table (present) contract.**  A present install leaves the table
-unchanged. -/
-lemma d2sInstallPermForwardStateRevised_continue_table_present
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (h : d2sInstallPermForwardStateRevised normal stateIn stateOut = .continue stateOut normal') :
-    normal'.state.trΔ.p = normal.state.trΔ.p := by
-  classical
-  unfold d2sInstallPermForwardStateRevised at h
-  split at h
-  · simp_all
-  · rename_i hfresh
-    exact (nomatch (hfresh.symm.trans hStatus))
-  · rename_i hpresent
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      simp
-
 /-- **Forward `continue` cache contract.**  A continuing install leaves the rate-only cache
 untouched. -/
 lemma d2sInstallPermForwardStateRevised_continue_cache
@@ -313,58 +225,6 @@ lemma d2sInstallPermForwardStateRevised_continue_cache
     · simp [hE] at h
       subst normal'
       simp
-
-/-- A `present` forward `Install` cannot stop: its occurrence is already redundant in the
-`E`-good normal prefix, so `Monitor` remains false after the re-recording.  In particular this
-deterministic table-hit branch has no fresh-capacity event to charge in Lemma 5.8. -/
-lemma d2sInstallPermForwardStateRevised_present_not_stopped
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    (state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state) :
-    d2sInstallPermForwardStateRevised normal stateIn stateOut ≠ .stopped state record := by
-  classical
-  intro hStop
-  unfold d2sInstallPermForwardStateRevised at hStop
-  split at hStop
-  · rename_i hConflict
-    exact nomatch (hConflict.symm.trans hStatus)
-  · rename_i hFresh
-    exact nomatch (hFresh.symm.trans hStatus)
-  · rename_i _hPresent
-    simp [not_E_append_forward_of_present normal stateIn stateOut hStatus] at hStop
-
-/-- Every stopped forward `Install` comes from a fresh or conflicting pair, never from a
-deterministic table hit.  This is the exact status split used by the first-event probability
-kernel: the sole capacity-bearing candidate is the one selected before this transition. -/
-lemma d2sInstallPermForwardStateRevised_stopped_status
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state)
-    (hStop : d2sInstallPermForwardStateRevised normal stateIn stateOut = .stopped state record) :
-    permInstallStatus normal.state.trΔ.p stateIn stateOut = .fresh ∨
-      permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict := by
-  cases hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut with
-  | fresh => exact Or.inl rfl
-  | conflict => exact Or.inr rfl
-  | present =>
-      exact False.elim
-        (d2sInstallPermForwardStateRevised_present_not_stopped normal stateIn stateOut hStatus
-          state record hStop)
 
 /-! ## Restated inverse `Install` -/
 
@@ -423,67 +283,6 @@ noncomputable def d2sInstallPermInverseStateRevised
         exact .continue stateIn ⟨st', hE, normal.permutationNodup,
           normal.hashNodup, normal.hashInputFunctional⟩
 
-/-- **Inverse `Install = conflict` contract.**  Same as the forward conflict contract, with the
-inverse occurrence and `install_conflict_inv_imp_E`. -/
-lemma d2sInstallPermInverseStateRevised_conflict
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    d2sInstallPermInverseStateRevised normal stateOut stateIn =
-      .stopped normal
-        ⟨dsPermInvQuery stateOut, stateIn, install_conflict_inv_imp_E normal hStatus⟩ := by
-  classical
-  unfold d2sInstallPermInverseStateRevised
-  split
-  · simp
-  · rename_i hfresh
-    exact (nomatch (hfresh.symm.trans hStatus))
-  · rename_i hpresent
-    exact (nomatch (hpresent.symm.trans hStatus))
-
-/-- **Inverse correspondence.**  Whenever the restated inverse transition continues, the raw
-table-only inverse install produced exactly the successor D2SQueryState. -/
-lemma d2sInstallPermInverseStateRevised_correspondence
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (h : d2sInstallPermInverseStateRevised normal stateOut stateIn = .continue stateIn normal') :
-    d2sInstallPermInverseState normal.state stateOut stateIn = some normal'.state := by
-  classical
-  unfold d2sInstallPermInverseStateRevised at h
-  split at h
-  · simp_all
-  · rename_i hfresh
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      unfold d2sInstallPermInverseState
-      split
-      · rename_i hcon
-        exact (nomatch (hcon.symm.trans hfresh))
-      · rfl
-      · rename_i hpre
-        exact (nomatch (hpre.symm.trans hfresh))
-  · rename_i hpresent
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      unfold d2sInstallPermInverseState
-      split
-      · rename_i hcon
-        exact (nomatch (hcon.symm.trans hpresent))
-      · rename_i hfre
-        exact (nomatch (hfre.symm.trans hpresent))
-      · rfl
-
 /-- **Inverse `continue` trace contract.**  A continuing inverse install appends exactly the
 inverse occurrence. -/
 lemma d2sInstallPermInverseStateRevised_continue_trace
@@ -539,32 +338,6 @@ lemma d2sInstallPermInverseStateRevised_continue_table_fresh
   · rename_i hpresent
     exact (nomatch (hpresent.symm.trans hStatus))
 
-/-- **Inverse `continue` table (present) contract.**  A present inverse install leaves the table
-unchanged. -/
-lemma d2sInstallPermInverseStateRevised_continue_table_present
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (h : d2sInstallPermInverseStateRevised normal stateOut stateIn = .continue stateIn normal') :
-    normal'.state.trΔ.p = normal.state.trΔ.p := by
-  classical
-  unfold d2sInstallPermInverseStateRevised at h
-  split at h
-  · simp_all
-  · rename_i hfresh
-    exact (nomatch (hfresh.symm.trans hStatus))
-  · rename_i hpresent
-    by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩])
-    · simp [hE] at h
-    · simp [hE] at h
-      subst normal'
-      simp
-
 /-- **Inverse `continue` cache contract.**  A continuing inverse install leaves the rate-only cache
 untouched. -/
 lemma d2sInstallPermInverseStateRevised_continue_cache
@@ -593,54 +366,5 @@ lemma d2sInstallPermInverseStateRevised_continue_cache
     · simp [hE] at h
       subst normal'
       simp
-
-/-- The inverse table-hit counterpart of
-`d2sInstallPermForwardStateRevised_present_not_stopped`. -/
-lemma d2sInstallPermInverseStateRevised_present_not_stopped
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    (state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state) :
-    d2sInstallPermInverseStateRevised normal stateOut stateIn ≠ .stopped state record := by
-  classical
-  intro hStop
-  unfold d2sInstallPermInverseStateRevised at hStop
-  split at hStop
-  · rename_i hConflict
-    exact nomatch (hConflict.symm.trans hStatus)
-  · rename_i hFresh
-    exact nomatch (hFresh.symm.trans hStatus)
-  · rename_i _hPresent
-    simp [not_E_append_inverse_of_present normal stateIn stateOut hStatus] at hStop
-
-/-- Inverse counterpart of `d2sInstallPermForwardStateRevised_stopped_status`. -/
-lemma d2sInstallPermInverseStateRevised_stopped_status
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state)
-    (hStop : d2sInstallPermInverseStateRevised normal stateOut stateIn = .stopped state record) :
-    permInstallStatus normal.state.trΔ.p stateIn stateOut = .fresh ∨
-      permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict := by
-  cases hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut with
-  | fresh => exact Or.inl rfl
-  | conflict => exact Or.inr rfl
-  | present =>
-      exact False.elim
-        (d2sInstallPermInverseStateRevised_present_not_stopped normal stateOut stateIn hStatus
-          state record hStop)
 
 end DuplexSpongeFS.ProverTransform

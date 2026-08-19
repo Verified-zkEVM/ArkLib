@@ -129,25 +129,6 @@ lemma d2sPermResolvedStep_continue_trace
         · rcases h with ⟨hAnswer, hNormal⟩
           rfl
 
-/-- The common resolved transition can increase the base trace by at most one representative on
-a continuing result.  It makes no freshness assumption: a reissued table entry is allowed to be
-redundant in the base trace. -/
-lemma d2sPermResolvedStep_continue_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (action : D2SPermResolvedAction U)
-    {answer : CanonicalSpongeState U}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (h : d2sPermResolvedStep normal action = .continue answer normal') :
-    (getBaseTrace normal'.state.trace).length ≤
-      (getBaseTrace normal.state.trace).length + 1 := by
-  rw [d2sPermResolvedStep_continue_trace normal action h]
-  exact getBaseTrace_append_singleton_length_le_succ normal.state.trace
-    (action.occurrence StmtIn)
-
 /-- Resolved permutation actions cannot have an underlying parser abort: their input/output pair
 has already been selected by a branch, so the only possible non-continuation is the explicit
 post-occurrence monitor stop.  This keeps the first-bad-event induction separate from the
@@ -392,35 +373,6 @@ This equation is the forward lazy-sampling interface used by the first-event pro
       d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) >>= fun capacity =>
         pure (d2sConsumePoppedRateOnlyTailRevised normal entry cacheRest capacity) := rfl
 
-/-- A continuing tail consumption installs exactly its residual rate-only cache.  The table and
-trace portion of the successor comes from the common resolved forward action; only this cache
-field is changed here. -/
-lemma d2sConsumePoppedRateOnlyTailRevised_continue_cache
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (entry : RateOnlyCacheEntry (U := U))
-    (cacheRest : List (RateOnlyCacheEntry (U := U)))
-    (capacity : Vector U SpongeSize.C)
-    {stateOut : CanonicalSpongeState U}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sConsumePoppedRateOnlyTailRevised normal entry cacheRest capacity =
-      .continue stateOut normal') :
-    normal'.state.rateCacheP = rateOnlyTailResidualCache entry cacheRest capacity := by
-  unfold d2sConsumePoppedRateOnlyTailRevised at hContinue
-  cases hStep : d2sPermResolvedStep normal
-      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1)
-  next answer normal'' =>
-    simp [hStep] at hContinue
-    exact congrArg (fun state => state.state.rateCacheP) hContinue.2.symm
-  next normal'' record'' =>
-    simp [hStep] at hContinue
-  next =>
-    exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal
-      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hStep)
-
 /-- A continuing lazy-tail materialization appends exactly the one forward occurrence it
 materializes.  Replacing the rate-only cache changes no trace coordinate, so this is inherited
 directly from the resolved forward action. -/
@@ -450,69 +402,6 @@ lemma d2sConsumePoppedRateOnlyTailRevised_continue_trace
   rw [hTrace]
   exact d2sPermResolvedStep_continue_trace normal
     (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hSource
-
-/-- Materializing one selected lazy tail still contributes at most one base-trace representative.
-The residual-tail update is intentionally irrelevant to this bound: it changes only `Cache_p` on
-the continuing successor, while the underlying resolved forward action owns the sole occurrence. -/
-lemma d2sConsumePoppedRateOnlyTailRevised_continue_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (entry : RateOnlyCacheEntry (U := U))
-    (cacheRest : List (RateOnlyCacheEntry (U := U)))
-    (capacity : Vector U SpongeSize.C)
-    {stateOut : CanonicalSpongeState U}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sConsumePoppedRateOnlyTailRevised normal entry cacheRest capacity =
-      .continue stateOut normal') :
-    (getBaseTrace normal'.state.trace).length ≤
-      (getBaseTrace normal.state.trace).length + 1 := by
-  unfold d2sConsumePoppedRateOnlyTailRevised at hContinue
-  obtain ⟨source, hSource, hTrace, _⟩ :=
-    d2sReplaceRateCacheOnContinue_continue_source
-      (rateOnlyTailResidualCache entry cacheRest capacity)
-      (d2sPermResolvedStep normal
-        (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1))
-      hContinue
-  rw [hTrace]
-  exact d2sPermResolvedStep_continue_baseTrace_length_le normal
-    (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hSource
-
-/-- A stopped tail consumption preserves the pre-consumption cache: the terminal record's normal
-state is the input normal state, independently of whether the stopping cause was an `Install`
-conflict or a generic monitor failure. -/
-lemma d2sConsumePoppedRateOnlyTailRevised_stopped_cache
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (entry : RateOnlyCacheEntry (U := U))
-    (cacheRest : List (RateOnlyCacheEntry (U := U)))
-    (capacity : Vector U SpongeSize.C)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    {record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) normal'}
-    (hStop : d2sConsumePoppedRateOnlyTailRevised normal entry cacheRest capacity =
-      .stopped normal' record) :
-    normal'.state.rateCacheP = normal.state.rateCacheP := by
-  unfold d2sConsumePoppedRateOnlyTailRevised at hStop
-  cases hStep : d2sPermResolvedStep normal
-      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1)
-  next answer normal'' =>
-    simp [hStep] at hStop
-  next normal'' record'' =>
-    have hInput : normal'' = normal := d2sPermResolvedStep_stopped_normal_eq normal
-      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hStep
-    subst normal''
-    simp [hStep] at hStop
-    exact congrArg (fun state => state.state.rateCacheP) hStop.1.symm
-  next =>
-    exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal
-      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hStep)
 
 /-- A stopped lazy-tail materialization retains a terminal trace rooted at the input normal
 state.  Updating the residual tail is continuation-only, so it cannot change this fact. -/
@@ -663,36 +552,6 @@ noncomputable def d2sProgramFirstRateRevised
   let stateOut := d2sSynthesisState (U := U) firstRate capacity
   d2sReplaceRateCacheOnContinue (programResidualRateCache normal stateOut remainingRates)
     (d2sPermResolvedStep normal (.forward stateIn stateOut))
-
-/-- Program's first materialized block has the same one-representative trace-growth bound as an
-ordinary resolved forward action.  The remaining verifier blocks stay rate-only cache data and
-cannot add a trace entry until a later materialization. -/
-lemma d2sProgramFirstRateRevised_continue_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn : CanonicalSpongeState U)
-    (firstRate : Vector U SpongeSize.R)
-    (remainingRates : List (Vector U SpongeSize.R))
-    (capacity : Vector U SpongeSize.C)
-    {stateOut : CanonicalSpongeState U}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sProgramFirstRateRevised normal stateIn firstRate remainingRates capacity =
-      .continue stateOut normal') :
-    (getBaseTrace normal'.state.trace).length ≤
-      (getBaseTrace normal.state.trace).length + 1 := by
-  unfold d2sProgramFirstRateRevised at hContinue
-  obtain ⟨source, hSource, hTrace, _⟩ :=
-    d2sReplaceRateCacheOnContinue_continue_source
-      (programResidualRateCache normal
-        (d2sSynthesisState (U := U) firstRate capacity) remainingRates)
-      (d2sPermResolvedStep normal
-        (.forward stateIn (d2sSynthesisState (U := U) firstRate capacity))) hContinue
-  rw [hTrace]
-  exact d2sPermResolvedStep_continue_baseTrace_length_le normal
-    (.forward stateIn (d2sSynthesisState (U := U) firstRate capacity)) hSource
 
 /-- A continuing Program materialization appends exactly its first programmed forward
 occurrence.  The remaining rate blocks are cache-only data and have no hidden trace effect. -/
@@ -846,17 +705,6 @@ the inverse part of the Lemma 5.8 first-bad calculation. -/
   unfold d2sHandleInversePermQueryRevised
   rw [hLookup]
 
-/-- Every result constructed by the revised inverse branch is either a normal continuation or a
-post-occurrence monitor stop; the branch itself cannot report an underlying parser abort.  The
-support-level version used in probability proofs follows by `simulateQ` and this pointwise fact. -/
-lemma d2sHandleInversePermQueryRevised_result_ne_underlyingAbort
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U) :
-    d2sPermResolvedStep normal (.inverse stateOut stateIn) ≠ .underlyingAbort :=
-  d2sPermResolvedStep_ne_underlyingAbort normal (.inverse stateOut stateIn)
-
 /-! ## Revised hash branch
 
 Hash queries do not use permutation `Install`, but they obey the same append-then-monitor terminal
@@ -922,32 +770,6 @@ noncomputable def d2sHandleHashFreshRevised
     exact .continue capacity ⟨state', hE, normal.permutationNodup,
       normal.hash_add_nodup hLookup, normal.hash_add_inputFunctional hLookup⟩
 
-/-- A continuing stored-hash replay appends at most one base representative. -/
-lemma d2sHandleHashPresentRevised_continue_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stmt : StmtIn) (capacity : Vector U SpongeSize.C)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.h stmt = some capacity)
-    {answer : Vector U SpongeSize.C}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sHandleHashPresentRevised normal stmt capacity hLookup =
-      .continue answer normal') :
-    (getBaseTrace normal'.state.trace).length ≤
-      (getBaseTrace normal.state.trace).length + 1 := by
-  classical
-  unfold d2sHandleHashPresentRevised at hContinue
-  dsimp at hContinue
-  by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsHashQuery stmt, capacity⟩])
-  · simp [hE] at hContinue
-  · simp [hE] at hContinue
-    rcases hContinue with ⟨_, hNormal⟩
-    rw [← hNormal]
-    exact getBaseTrace_append_singleton_length_le_succ normal.state.trace
-      ⟨dsHashQuery stmt, capacity⟩
-
 omit [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] in
 /-- A continuing stored-hash replay appends its one queried occurrence exactly. -/
 lemma d2sHandleHashPresentRevised_continue_trace
@@ -996,33 +818,6 @@ lemma d2sHandleHashPresentRevised_stopped_trace_extends
     cases hStop.1
     exact ⟨[⟨record.query, record.answer⟩], rfl⟩
   · simp [hE] at hStop
-
-/-- A continuing freshly-sampled hash mapping has the same one-representative trace-growth
-bound; only its hash-table field differs from a stored-hash replay. -/
-lemma d2sHandleHashFreshRevised_continue_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stmt : StmtIn) (capacity : Vector U SpongeSize.C)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.h stmt = none)
-    {answer : Vector U SpongeSize.C}
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sHandleHashFreshRevised normal stmt capacity hLookup =
-      .continue answer normal') :
-    (getBaseTrace normal'.state.trace).length ≤
-      (getBaseTrace normal.state.trace).length + 1 := by
-  classical
-  unfold d2sHandleHashFreshRevised at hContinue
-  dsimp at hContinue
-  by_cases hE : BadEventDS.E (normal.state.trace ++ [⟨dsHashQuery stmt, capacity⟩])
-  · simp [hE] at hContinue
-  · simp [hE] at hContinue
-    rcases hContinue with ⟨_, hNormal⟩
-    rw [← hNormal]
-    exact getBaseTrace_append_singleton_length_le_succ normal.state.trace
-      ⟨dsHashQuery stmt, capacity⟩
 
 /-- A continuing freshly sampled hash mapping appends its one queried occurrence exactly. -/
 lemma d2sHandleHashFreshRevised_continue_trace
@@ -1126,28 +921,6 @@ fresh-hash continuation. -/
   · rename_i capacity hCase
     exact (nomatch (hCase.symm.trans hLookup))
   · rfl
-
-/-- Neither deterministic hash continuation can report a parser abort. -/
-lemma d2sHandleHashPresentRevised_ne_underlyingAbort
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stmt : StmtIn) (capacity : Vector U SpongeSize.C)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.h stmt = some capacity) :
-    d2sHandleHashPresentRevised normal stmt capacity hLookup ≠ .underlyingAbort := by
-  dsimp [d2sHandleHashPresentRevised]
-  split <;> simp
-
-/-- Neither deterministic hash continuation can report a parser abort. -/
-lemma d2sHandleHashFreshRevised_ne_underlyingAbort
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stmt : StmtIn) (capacity : Vector U SpongeSize.C)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.h stmt = none) :
-    d2sHandleHashFreshRevised normal stmt capacity hLookup ≠ .underlyingAbort := by
-  dsimp [d2sHandleHashFreshRevised]
-  split <;> simp
 
 /-! ## Finite mixed-direction runner
 
@@ -1324,165 +1097,5 @@ noncomputable def d2sPermResolvedRun
       (δ := δ) (T_H := T_H) (T_P := T_P)
       (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
     d2sPermResolvedRun normal [] = .continue () normal := rfl
-
-/-- The finite resolved-action core also cannot produce an underlying abort.  Any non-continuing
-execution is therefore a monitor stop with its one post-occurrence bad-event record. -/
-lemma d2sPermResolvedRun_ne_underlyingAbort
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (actions : List (D2SPermResolvedAction U)) :
-    d2sPermResolvedRun normal actions ≠ .underlyingAbort := by
-  induction actions generalizing normal with
-  | nil => simp [d2sPermResolvedRun]
-  | cons action actions ih =>
-      unfold d2sPermResolvedRun
-      split
-      · rename_i _ normal' _
-        exact ih normal'
-      · simp
-      · rename_i hAbort
-        exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal action hAbort)
-
-/-- If a finite resolved-action run stops, its retained post-occurrence trace contains no more
-than one attempted occurrence per action.  The terminal occurrence is included, so this is the
-form needed by the first-bad accounting rather than a bound on the reusable table alone. -/
-lemma d2sPermResolvedRun_stopped_trace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (actions : List (D2SPermResolvedAction U))
-    {state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    {record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state}
-    (hRun : d2sPermResolvedRun normal actions = .stopped state record) :
-    record.trace.length ≤ normal.state.trace.length + actions.length := by
-  induction actions generalizing normal state record with
-  | nil =>
-      simp [d2sPermResolvedRun] at hRun
-  | cons action actions ih =>
-      unfold d2sPermResolvedRun at hRun
-      cases hStep : d2sPermResolvedStep normal action
-      next answer middle =>
-          have hTail : d2sPermResolvedRun middle actions = .stopped state record := by
-            simpa [hStep] using hRun
-          have hBound := ih middle hTail
-          have hHead := d2sPermResolvedStep_continue_trace normal action hStep
-          rw [hHead, List.length_append] at hBound
-          simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using hBound
-      next middle terminal =>
-          have hNormal := d2sPermResolvedStep_stopped_normal_eq normal action hStep
-          subst middle
-          simp [hStep] at hRun
-          cases hRun.1
-          cases hRun.2
-          simp [D2SPostOccurrenceStopRecord.trace_length]
-      next =>
-          exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal action hStep)
-
-/-- The normalized base trace of a stopped resolved-action run grows by at most one entry per
-attempted action.  In particular, present/reissued mappings cost no additional base position;
-this is the counting invariant used by the (C(T,v)) first-event calculation in Lemma 5.8b. -/
-lemma d2sPermResolvedRun_stopped_baseTrace_length_le
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (actions : List (D2SPermResolvedAction U))
-    {state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    {record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state}
-    (hRun : d2sPermResolvedRun normal actions = .stopped state record) :
-    (getBaseTrace record.trace).length ≤
-      (getBaseTrace normal.state.trace).length + actions.length := by
-  induction actions generalizing normal state record with
-  | nil =>
-      simp [d2sPermResolvedRun] at hRun
-  | cons action actions ih =>
-      unfold d2sPermResolvedRun at hRun
-      cases hStep : d2sPermResolvedStep normal action
-      next answer middle =>
-          have hTail : d2sPermResolvedRun middle actions = .stopped state record := by
-            simpa [hStep] using hRun
-          have hBound := ih middle hTail
-          have hHead := d2sPermResolvedStep_continue_baseTrace_length_le normal action hStep
-          calc
-            (getBaseTrace record.trace).length ≤
-                (getBaseTrace middle.state.trace).length + actions.length := hBound
-            _ ≤ (getBaseTrace normal.state.trace).length + 1 + actions.length :=
-              Nat.add_le_add_right hHead actions.length
-            _ = (getBaseTrace normal.state.trace).length + (actions.length + 1) := by
-              omega
-      next middle terminal =>
-          have hNormal := d2sPermResolvedStep_stopped_normal_eq normal action hStep
-          subst middle
-          simp [hStep] at hRun
-          cases hRun.1
-          cases hRun.2
-          calc
-            (getBaseTrace terminal.trace).length ≤
-                (getBaseTrace normal.state.trace).length + 1 := by
-                  simpa [D2SPostOccurrenceStopRecord.trace] using
-                    (getBaseTrace_append_singleton_length_le_succ normal.state.trace
-                      ⟨terminal.query, terminal.answer⟩)
-            _ ≤ (getBaseTrace normal.state.trace).length + 1 + actions.length :=
-              Nat.le_add_right _ _
-            _ = (getBaseTrace normal.state.trace).length + (actions.length + 1) := by
-              omega
-      next =>
-          exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal action hStep)
-
-/-- A stopping run exposes precisely the post-occurrence terminal trace from its stop record.
-Together with `record.monitorFails`, this is the exact first-bad-event interface needed by the
-Lemma 5.8 stopping-time proof; it never exposes the final attempted occurrence as a reusable table
-mapping. -/
-lemma d2sPermResolvedRun_stopped_terminalTrace
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (actions : List (D2SPermResolvedAction U))
-    (state : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) state)
-    (h : d2sPermResolvedRun normal actions = .stopped state record) :
-    (d2sPermResolvedRun normal actions).terminalTrace? = some record.trace := by
-  rw [h]
-  rfl
-
-/-- The finite resolved-action runner has exactly the two outcomes relevant to a first-event
-argument.  It either completes in a reusable `E`-good normal state, or it stops at a record whose
-final base entry is the canonical first bad index.  The third `D2SRevisedStepResult` constructor
-is absent here by `d2sPermResolvedRun_ne_underlyingAbort`.
-
-This is intentionally a structural dichotomy, not a probability statement.  It lets the Lemma
-5.8 induction condition only on its current normal prefix: no branch has to reconstruct a base
-index, prove that a monitor stop retained its occurrence, or separately rule out a hidden abort.
--/
-lemma d2sPermResolvedRun_good_or_firstBad
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (actions : List (D2SPermResolvedAction U)) :
-    (∃ normal', d2sPermResolvedRun normal actions = .continue () normal' ∧
-      ¬ BadEventDS.E normal'.state.trace) ∨
-    ∃ state record, d2sPermResolvedRun normal actions = .stopped state record ∧
-      BadEventDS.E_first_at record.trace record.firstBadIndex := by
-  cases hRun : d2sPermResolvedRun normal actions
-  next answer normal' =>
-      cases answer
-      exact Or.inl ⟨normal', rfl, normal'.monitorPassed⟩
-  next state record =>
-      exact Or.inr ⟨state, record, rfl, record.first_bad_at⟩
-  next =>
-      exact False.elim (d2sPermResolvedRun_ne_underlyingAbort normal actions hRun)
-
 
 end DuplexSpongeFS.ProverTransform

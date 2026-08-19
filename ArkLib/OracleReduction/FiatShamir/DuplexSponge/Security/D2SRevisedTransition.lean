@@ -145,30 +145,6 @@ lemma permInstallStatus_fresh_or_conflict_of_inlu_eq_none
       rw [hLookup] at hSome
       simp at hSome
 
-/-- An ordinary forward-table miss rules out the same-input side of a later `Install`
-conflict.  Consequently, if Step 4.c.iii samples an output after `inlu stateIn = none`, a
-conflict can only reuse the sampled **output**.  This is the structural reason that the ordinary
-fresh-sample kernel is charged to the `E_p` capacity-target family, rather than to `E_func`.
-
-The lemma is deliberately table-level: the later `Monitor`/base-trace argument is supplied by
-`install_conflict_fwd_same_output_imp_E_dup`.  Keeping the selection fact separate lets the
-probability proof expose one fresh sample without redoing lookup functionality. -/
-lemma forward_input_miss_excludes_same_input_conflict
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.p stateIn = none) :
-    ¬ ∃ entry ∈ TraceTableOps.entries normal.state.trΔ.p,
-      entry.1 = stateIn ∧ entry.2 ≠ stateOut := by
-  rintro ⟨entry, hEntry, hInput, _⟩
-  have hEntryMs : (entry.1, entry.2) ∈ LawfulTraceTable.toMultiSet normal.state.trΔ.p := by
-    rw [← LawfulTraceTable.toMultiSet_ofEntries]
-    exact hEntry
-  have hNoMem := TraceTableOps.no_mem_of_inlu_eq_none_of_nodup_of_inputFunctional
-    normal.permutationNodup (D2SNormalState.table_inputFunctional normal) hLookup entry.2
-  exact hNoMem (by simpa [hInput] using hEntryMs)
-
 /-- A failed forward lookup also rules out every prior **normalized** permutation representative
 with that input in the base trace.  This is the trace-facing form of
 `forward_input_miss_excludes_same_input_conflict`: it is used to eliminate `E_func` at the final
@@ -199,26 +175,6 @@ lemma forward_input_miss_excludes_prior_normalized_pair
     normal.permutationNodup (D2SNormalState.table_inputFunctional normal) hLookup stateOut
   exact hNoMem hPairMs
 
-/-- A conflicting ordinary forward miss has an output-side witness.  The input-side alternative
-from `permPairConflicts` is impossible by `forward_input_miss_excludes_same_input_conflict`; this
-is the exact branch classifier used by the first-event capacity proof. -/
-lemma forward_conflict_of_input_miss_has_output_witness
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.p stateIn = none)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    ∃ entry ∈ TraceTableOps.entries normal.state.trΔ.p,
-      entry.2 = stateOut ∧ entry.1 ≠ stateIn := by
-  have hConflict : permPairConflicts normal.state.trΔ.p stateIn stateOut = true :=
-    (permInstallStatus_conflict_iff normal.state.trΔ.p stateIn stateOut).mp hStatus
-  rw [permPairConflicts_eq_true_iff] at hConflict
-  rcases hConflict with ⟨entry, hEntry, hInput | hOutput⟩
-  · exact False.elim (forward_input_miss_excludes_same_input_conflict normal stateIn stateOut
-      hLookup ⟨entry, hEntry, hInput⟩)
-  · exact ⟨entry, hEntry, hOutput⟩
-
 /-- The inverse dual of `permInstallStatus_fresh_or_conflict_of_inlu_eq_none`: an inverse-table
 miss excludes `present`, while a sampled preimage can still conflict and must be monitored as a
 terminal occurrence. -/
@@ -241,26 +197,6 @@ lemma permInstallStatus_fresh_or_conflict_of_outlu_eq_none
           (D2SNormalState.table_outputFunctional normal) hMember
       rw [hLookup] at hSome
       simp at hSome
-
-/-- An inverse-table miss rules out the same-output side of a later `Install` conflict.  Thus a
-fresh inverse sample can conflict only by reusing its sampled **input**, which is precisely the
-`E_pinv` capacity-target side; the backward `E_func` alternative is unavailable after `outlu
-stateOut = none`. -/
-lemma inverse_output_miss_excludes_same_output_conflict
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.outlu normal.state.trΔ.p stateOut = none) :
-    ¬ ∃ entry ∈ TraceTableOps.entries normal.state.trΔ.p,
-      entry.2 = stateOut ∧ entry.1 ≠ stateIn := by
-  rintro ⟨entry, hEntry, hOutput, _⟩
-  have hEntryMs : (entry.1, entry.2) ∈ LawfulTraceTable.toMultiSet normal.state.trΔ.p := by
-    rw [← LawfulTraceTable.toMultiSet_ofEntries]
-    exact hEntry
-  have hNoMem := TraceTableOps.no_mem_of_outlu_eq_none_of_nodup_of_outputFunctional
-    normal.permutationNodup (D2SNormalState.table_outputFunctional normal) hLookup entry.1
-  exact hNoMem (by simpa [hOutput] using hEntryMs)
 
 /-- The trace-facing form of an inverse output miss.  A base representative with the queried
 output would mirror to a table entry, contradicting the failed `outlu` lookup.  This excludes the
@@ -290,26 +226,6 @@ lemma inverse_output_miss_excludes_prior_normalized_pair
   have hNoMem := TraceTableOps.no_mem_of_outlu_eq_none_of_nodup_of_outputFunctional
     normal.permutationNodup (D2SNormalState.table_outputFunctional normal) hLookup stateIn
   exact hNoMem hPairMs
-
-/-- A conflicting inverse-table miss has an input-side witness.  This is the inverse dual of
-`forward_conflict_of_input_miss_has_output_witness` and isolates the sole `E_pinv` collision
-route before the first-event probability calculation. -/
-lemma inverse_conflict_of_output_miss_has_input_witness
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.outlu normal.state.trΔ.p stateOut = none)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    ∃ entry ∈ TraceTableOps.entries normal.state.trΔ.p,
-      entry.1 = stateIn ∧ entry.2 ≠ stateOut := by
-  have hConflict : permPairConflicts normal.state.trΔ.p stateIn stateOut = true :=
-    (permInstallStatus_conflict_iff normal.state.trΔ.p stateIn stateOut).mp hStatus
-  rw [permPairConflicts_eq_true_iff] at hConflict
-  rcases hConflict with ⟨entry, hEntry, hInput | hOutput⟩
-  · exact ⟨entry, hEntry, hInput⟩
-  · exact False.elim (inverse_output_miss_excludes_same_output_conflict normal stateOut stateIn
-      hLookup ⟨entry, hEntry, hOutput⟩)
 
 /-- A same-input conflict witness forces the attempted pair out of the forward table: if
 `(stateIn, stateOut)` were present, input functionality would force `stateOut` to equal the
@@ -610,53 +526,6 @@ lemma install_conflict_fwd_same_output_imp_E_dup
   have hP := install_conflict_fwd_same_output_imp_E_p_at normal hConfigH hOutputSide
   exact (BadEventDS.E_iff_exists_E_at _).mpr ⟨j, Or.inr (Or.inl (by simpa [j] using hP))⟩
 
-/-- The terminal event of a conflicting ordinary forward miss is the **forward duplicate-capacity
-clause at the final base index**.  This strengthens the generic conflict-to-`E` gate precisely
-where deferred-decision accounting needs it: it does not merely know that `Monitor` stops, it
-knows which finite target family charges the stop. -/
-lemma forward_conflict_of_input_miss_imp_E_p_at
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.p stateIn = none)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    BadEventDS.E_p_at (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩])
-      (getBaseTrace normal.state.trace).length := by
-  exact install_conflict_fwd_same_output_imp_E_p_at normal hStatus
-    (forward_conflict_of_input_miss_has_output_witness normal stateIn stateOut hLookup hStatus)
-
-/-- The ordinary forward-miss conflict is exactly a hit in its at-most-`2j+1` capacity target
-set, with `j = |base(prefix)|`.  This is a deterministic bridge; the later probability lemma
-only has to bound a uniform capacity's membership in this displayed finite set. -/
-lemma forward_conflict_of_input_miss_in_capacity_target
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.inlu normal.state.trΔ.p stateIn = none)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    stateOut.capacitySegment ∈
-      BadEventDS.priorCapacityTargetFinset (getBaseTrace normal.state.trace)
-        (getBaseTrace normal.state.trace).length ∪ {stateIn.capacitySegment} := by
-  let tr := normal.state.trace
-  let occ : Sigma (duplexSpongeChallengeOracle StmtIn U) := ⟨dsPermQuery stateIn, stateOut⟩
-  have hWitness := forward_conflict_of_input_miss_has_output_witness normal stateIn stateOut
-    hLookup hStatus
-  have hNotRed : ¬ isRedundantEntryOfPrefix (getBaseTrace tr) occ := by
-    simpa [tr, occ] using install_conflict_fwd_occ_not_redundant normal
-      (install_conflict_fwd_same_output_pair_not_in_entries normal hWitness)
-  have hBase : getBaseTrace (tr ++ [occ]) = getBaseTrace tr ++ [occ] :=
-    getBaseTrace_append_singleton_of_not_redundant_base tr occ hNotRed
-  have hAt := forward_conflict_of_input_miss_imp_E_p_at normal stateIn stateOut hLookup hStatus
-  have hHit := BadEventDS.E_p_at_imp_permFwdFreshHitAt
-    (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩])
-    (getBaseTrace normal.state.trace).length hAt
-  rw [show normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩] = tr ++ [occ] by rfl,
-    hBase] at hHit
-  exact (BadEventDS.permFwdFreshHitAt_append_fwd_length_iff
-    (getBaseTrace tr) stateIn stateOut).mp hHit
-
 /-! ## Forward occurrence: combined conflict → `E` -/
 
 /-- **Forward combined.**  Any `.conflict` classification, whether from a same-input or a
@@ -849,22 +718,6 @@ lemma install_conflict_inv_same_input_imp_E_pinv
   exact (BadEventDS.E_iff_exists_E_at _).mpr ⟨j, Or.inr (Or.inr (Or.inl (by
     simpa [j] using hP)))⟩
 
-/-- The terminal event of a conflicting inverse-table miss is the **inverse duplicate-capacity
-clause at the final base index**.  The lookup miss removes the backward-functional alternative
-before probability enters the proof; this leaves the `E_pinv` finite-target kernel as the only
-possible sampled-collision charge. -/
-lemma inverse_conflict_of_output_miss_imp_E_pinv_at
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hLookup : TraceTableOps.outlu normal.state.trΔ.p stateOut = none)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .conflict) :
-    BadEventDS.E_pinv_at (normal.state.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩])
-      (getBaseTrace normal.state.trace).length := by
-  exact install_conflict_inv_same_input_imp_E_pinv_at normal hStatus
-    (inverse_conflict_of_output_miss_has_input_witness normal stateOut stateIn hLookup hStatus)
-
 /-- **Inverse combined.**  Any `.conflict` classification, whether from a same-input or a
 same-output witness, forces `E` of the trace extended by the inverse occurrence.  This is the gating
 obligation consumed by the revised transition's inverse `Install`. -/
@@ -963,83 +816,6 @@ lemma D2SPostOccurrenceStopRecord.getBaseTrace_append
       getBaseTrace normal.state.trace ++ [⟨record.query, record.answer⟩] := by
   exact getBaseTrace_append_singleton_of_not_redundant_base normal.state.trace
     ⟨record.query, record.answer⟩ record.occ_not_redundant
-
-/-- A `present` forward `Install` pair is already represented by the normal state's mirrored
-table, hence its re-recorded forward occurrence is redundant in the prefix base trace.  This is a
-deterministic fact: no fresh capacity is sampled and no first-event probability charge belongs to
-this branch. -/
-lemma present_forward_occ_redundant
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present) :
-    isRedundantEntryOfPrefix (getBaseTrace normal.state.trace)
-      (⟨dsPermQuery stateIn, stateOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) := by
-  have hPair : (stateIn, stateOut) ∈ TraceTableOps.entries normal.state.trΔ.p :=
-    permInstallStatus_present_mem normal.state.trΔ.p stateIn stateOut hStatus
-  have hRaw :
-      (⟨dsPermQuery stateIn, stateOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
-          normal.state.trace ∨
-        ⟨dsPermInvQuery stateOut, stateIn⟩ ∈ normal.state.trace :=
-    (normal.state.h_mirror.2 stateIn stateOut).mpr hPair
-  exact normalizedPermPair_mem_getBaseTrace_of_mem normal.state.trace stateIn stateOut hRaw
-
-/-- A `present` inverse `Install` pair is likewise already represented in the base trace. -/
-lemma present_inverse_occ_redundant
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present) :
-    isRedundantEntryOfPrefix (getBaseTrace normal.state.trace)
-      (⟨dsPermInvQuery stateOut, stateIn⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) := by
-  have hPair : (stateIn, stateOut) ∈ TraceTableOps.entries normal.state.trΔ.p :=
-    permInstallStatus_present_mem normal.state.trΔ.p stateIn stateOut hStatus
-  have hRaw :
-      (⟨dsPermQuery stateIn, stateOut⟩ : Sigma (duplexSpongeChallengeOracle StmtIn U)) ∈
-          normal.state.trace ∨
-        ⟨dsPermInvQuery stateOut, stateIn⟩ ∈ normal.state.trace :=
-    (normal.state.h_mirror.2 stateIn stateOut).mpr hPair
-  rcases normalizedPermPair_mem_getBaseTrace_of_mem normal.state.trace stateIn stateOut hRaw with
-    hForward | hInverse
-  · exact Or.inr hForward
-  · exact Or.inl hInverse
-
-/-- A `present` forward pair cannot make `Monitor` fail.  Were its appended occurrence bad, it
-would form a stop record; `occ_not_redundant` would then contradict
-`present_forward_occ_redundant`. -/
-lemma not_E_append_forward_of_present
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present) :
-    ¬ BadEventDS.E (normal.state.trace ++ [⟨dsPermQuery stateIn, stateOut⟩]) := by
-  intro hE
-  let record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) normal :=
-    ⟨dsPermQuery stateIn, stateOut, hE⟩
-  exact record.occ_not_redundant
-    (present_forward_occ_redundant normal stateIn stateOut hStatus)
-
-/-- The inverse counterpart: repeated inverse-table observations are deterministic and cannot
-create a monitor stop on an `E`-good normal prefix. -/
-lemma not_E_append_inverse_of_present
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present) :
-    ¬ BadEventDS.E (normal.state.trace ++ [⟨dsPermInvQuery stateOut, stateIn⟩]) := by
-  intro hE
-  let record : D2SPostOccurrenceStopRecord
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) normal :=
-    ⟨dsPermInvQuery stateOut, stateIn, hE⟩
-  exact record.occ_not_redundant
-    (present_inverse_occ_redundant normal stateIn stateOut hStatus)
 
 /-- The single final base entry of a monitored stop is a first `E_at` witness.  All strictly
 earlier base indices belong to the normal prefix and are `E`-good; the terminal record supplies

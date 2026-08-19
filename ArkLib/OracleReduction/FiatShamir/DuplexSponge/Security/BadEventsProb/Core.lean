@@ -223,43 +223,6 @@ lemma probEvent_and_left_le
   intro x _ hx
   exact hx.2
 
-/-- Per-index subadditivity: split `E_at` into its four disjuncts. -/
-lemma probEvent_E_at_le
-    (exp : ProbComp α) (f : α → QueryLog (duplexSpongeChallengeOracle StmtIn U)) (j : ℕ) :
-    Pr[ fun x => E_at (f x) j | exp]
-      ≤ Pr[ fun x => E_h_at (f x) j | exp] + Pr[ fun x => E_p_at (f x) j | exp]
-        + Pr[ fun x => E_pinv_at (f x) j | exp] + Pr[ fun x => E_func_at (f x) j | exp] := by
-  calc Pr[ fun x => E_at (f x) j | exp]
-      ≤ Pr[ fun x => E_h_at (f x) j | exp]
-          + Pr[ fun x => (E_p_at (f x) j ∨ E_pinv_at (f x) j ∨ E_func_at (f x) j) | exp] :=
-        probEvent_or_le exp _ _
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-          + (Pr[ fun x => E_p_at (f x) j | exp]
-              + Pr[ fun x => (E_pinv_at (f x) j ∨ E_func_at (f x) j) | exp]) := by
-          gcongr; exact probEvent_or_le exp _ _
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-          + (Pr[ fun x => E_p_at (f x) j | exp]
-              + (Pr[ fun x => E_pinv_at (f x) j | exp] + Pr[ fun x => E_func_at (f x) j | exp])) := by
-          gcongr; exact probEvent_or_le exp _ _
-    _ = _ := by ring
-
-/-- **Event union bound.** For any experiment whose combined base trace has length `≤ T` on its
-support, the bad-event probability is dominated by the sum of the per-index probabilities over
-`Finset.range T`. -/
-lemma probEvent_E_le_sum_range
-    (exp : ProbComp α) (f : α → QueryLog (duplexSpongeChallengeOracle StmtIn U)) (T : ℕ)
-    (h_basetrace_len : ∀ x ∈ support exp, (getBaseTrace (f x)).length ≤ T) :
-    Pr[ fun x => E (f x) | exp] ≤ ∑ j ∈ Finset.range T, Pr[ fun x => E_at (f x) j | exp] := by
-  have hmono :
-      Pr[ fun x => E (f x) | exp]
-        ≤ Pr[ fun x => ∃ j ∈ Finset.range T, E_at (f x) j | exp] := by
-    apply probEvent_mono
-    intro x hx hE
-    obtain ⟨j, hj⟩ := (E_iff_exists_E_at (f x)).mp hE
-    exact ⟨j, Finset.mem_range.mpr (lt_of_lt_of_le (E_at_lt_length (f x) hj) (h_basetrace_len x hx)), hj⟩
-  exact le_trans hmono
-    (probEvent_exists_finset_le_sum (Finset.range T) exp (fun j x => E_at (f x) j))
-
 /-- **First-witness union bound.** The same event bound, refined to the earliest per-index
 witness.  This is the form used to charge the forward `E_func` clause while proving that the
 backward clause has zero probability in the sigma experiment. -/
@@ -277,65 +240,6 @@ lemma probEvent_E_le_sum_range_first
       (lt_of_lt_of_le (E_at_lt_length (f x) hj.1) (h_basetrace_len x hx)), hj⟩
   exact le_trans hmono
     (probEvent_exists_finset_le_sum (Finset.range T) exp (fun j x => E_first_at (f x) j))
-
-/-- Split an earliest bad-event witness into the three capacity events and the two directions of
-the canonical bidirectional functional event.  The capacity terms deliberately drop the
-first-witness conjunct (they are bounded by their existing unconditional birthday atoms); the two
-functional terms retain it, which is essential for eliminating the backward branch on the sigma
-side. -/
-lemma probEvent_E_first_at_le_split
-    (exp : ProbComp α) (f : α → QueryLog (duplexSpongeChallengeOracle StmtIn U)) (j : ℕ) :
-    Pr[ fun x => E_first_at (f x) j | exp]
-      ≤ Pr[ fun x => E_h_at (f x) j | exp]
-        + Pr[ fun x => E_p_at (f x) j | exp]
-        + Pr[ fun x => E_pinv_at (f x) j | exp]
-        + Pr[ fun x => E_first_at (f x) j ∧ E_func_fwd_at (f x) j | exp]
-        + Pr[ fun x => E_first_at (f x) j ∧ E_func_bwd_at (f x) j | exp] := by
-  have hmono :
-      Pr[ fun x => E_first_at (f x) j | exp]
-        ≤ Pr[ fun x => E_h_at (f x) j ∨ E_p_at (f x) j ∨ E_pinv_at (f x) j
-          ∨ (E_first_at (f x) j ∧ E_func_fwd_at (f x) j)
-          ∨ (E_first_at (f x) j ∧ E_func_bwd_at (f x) j) | exp] := by
-    apply probEvent_mono
-    intro x _ hFirst
-    rcases hFirst.1 with hH | hP | hPinv | hFunc
-    · exact Or.inl hH
-    · exact Or.inr (Or.inl hP)
-    · exact Or.inr (Or.inr (Or.inl hPinv))
-    · rcases (E_func_at_iff_fwd_or_bwd (f x)).mp hFunc with hFwd | hBwd
-      · exact Or.inr (Or.inr (Or.inr (Or.inl ⟨hFirst, hFwd⟩)))
-      · exact Or.inr (Or.inr (Or.inr (Or.inr ⟨hFirst, hBwd⟩)))
-  calc Pr[ fun x => E_first_at (f x) j | exp]
-      ≤ Pr[ fun x => E_h_at (f x) j ∨ E_p_at (f x) j ∨ E_pinv_at (f x) j
-          ∨ (E_first_at (f x) j ∧ E_func_fwd_at (f x) j)
-          ∨ (E_first_at (f x) j ∧ E_func_bwd_at (f x) j) | exp] := hmono
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-        + Pr[ fun x => E_p_at (f x) j ∨ E_pinv_at (f x) j
-          ∨ (E_first_at (f x) j ∧ E_func_fwd_at (f x) j)
-          ∨ (E_first_at (f x) j ∧ E_func_bwd_at (f x) j) | exp] :=
-        probEvent_or_le exp _ _
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-        + (Pr[ fun x => E_p_at (f x) j | exp]
-          + Pr[ fun x => E_pinv_at (f x) j
-            ∨ (E_first_at (f x) j ∧ E_func_fwd_at (f x) j)
-            ∨ (E_first_at (f x) j ∧ E_func_bwd_at (f x) j) | exp]) := by
-          gcongr
-          exact probEvent_or_le exp _ _
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-        + (Pr[ fun x => E_p_at (f x) j | exp]
-          + (Pr[ fun x => E_pinv_at (f x) j | exp]
-            + Pr[ fun x => (E_first_at (f x) j ∧ E_func_fwd_at (f x) j)
-              ∨ (E_first_at (f x) j ∧ E_func_bwd_at (f x) j) | exp])) := by
-          gcongr
-          exact probEvent_or_le exp _ _
-    _ ≤ Pr[ fun x => E_h_at (f x) j | exp]
-        + (Pr[ fun x => E_p_at (f x) j | exp]
-          + (Pr[ fun x => E_pinv_at (f x) j | exp]
-            + (Pr[ fun x => E_first_at (f x) j ∧ E_func_fwd_at (f x) j | exp]
-              + Pr[ fun x => E_first_at (f x) j ∧ E_func_bwd_at (f x) j | exp]))) := by
-          gcongr
-          exact probEvent_or_le exp _ _
-    _ = _ := by ring
 
 /-- Fully first-witness split.  Unlike `probEvent_E_first_at_le_split`, this keeps the earliest
 bad-index conjunct on the capacity events too.  This is the right interface for sponge-side
@@ -402,19 +306,6 @@ lemma probEvent_E_le_sum_range_first_split_all_first
   refine le_trans (probEvent_E_le_sum_range_first exp f T h_basetrace_len) ?_
   exact Finset.sum_le_sum (fun j _ => probEvent_E_first_at_le_split_all_first exp f j)
 
-/-- **Event union bound, fully split.** Combines `probEvent_E_le_sum_range` with `probEvent_E_at_le`: the
-bad-event probability is dominated by the sum over `j < T` of the four per-index sub-event
-probabilities. -/
-lemma probEvent_E_le_sum_range_split
-    (exp : ProbComp α) (f : α → QueryLog (duplexSpongeChallengeOracle StmtIn U)) (T : ℕ)
-    (h_basetrace_len : ∀ x ∈ support exp, (getBaseTrace (f x)).length ≤ T) :
-    Pr[ fun x => E (f x) | exp]
-      ≤ ∑ j ∈ Finset.range T,
-          (Pr[ fun x => E_h_at (f x) j | exp] + Pr[ fun x => E_p_at (f x) j | exp]
-            + Pr[ fun x => E_pinv_at (f x) j | exp] + Pr[ fun x => E_func_at (f x) j | exp]) := by
-  refine le_trans (probEvent_E_le_sum_range exp f T h_basetrace_len) ?_
-  exact Finset.sum_le_sum (fun j _ => probEvent_E_at_le exp f j)
-
 end TraceEventUnionBound
 
 /-! ## Event count summation: the per-index count sums to `(7T² − 3T)/2`
@@ -472,52 +363,6 @@ omit [SpongeUnit U] in
 private lemma capacitySpaceSize_pos : 0 < (Fintype.card U : ℝ) ^ SpongeSize.C := by
   have : 0 < Fintype.card U := Fintype.card_pos
   positivity
-
-/-- **Generic trace combiner.** Assemble the per-index bounds + length bound into `lemma5_8Bound`. -/
-lemma probEvent_E_le_lemma5_8Bound
-    (exp : ProbComp α) (f : α → QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (tₕ tₚ tₚᵢ L : ℕ)
-    (h_basetrace_len : ∀ x ∈ support exp, (getBaseTrace (f x)).length ≤ tₕ + 1 + tₚ + L + tₚᵢ)
-    (hh : ∀ j, Pr[ fun x => E_h_at (f x) j | exp] ≤ (2 * (j : ℝ≥0∞)) / capacitySpaceSize (U := U))
-    (hp : ∀ j, Pr[ fun x => E_p_at (f x) j | exp] ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U))
-    (hpi : ∀ j, Pr[ fun x => E_pinv_at (f x) j | exp] ≤ (2 * (j : ℝ≥0∞) + 1) / capacitySpaceSize (U := U))
-    (hfunc : ∀ j, Pr[ fun x => E_func_at (f x) j | exp] ≤ (j : ℝ≥0∞) / capacitySpaceSize (U := U)) :
-    Pr[ fun x => E (f x) | exp]
-      ≤ ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
-  set T := tₕ + 1 + tₚ + L + tₚᵢ with hT
-  set K : ℝ≥0∞ := capacitySpaceSize (U := U) with hK
-  calc Pr[ fun x => E (f x) | exp]
-      ≤ ∑ j ∈ Finset.range T,
-          (Pr[ fun x => E_h_at (f x) j | exp] + Pr[ fun x => E_p_at (f x) j | exp]
-            + Pr[ fun x => E_pinv_at (f x) j | exp] + Pr[ fun x => E_func_at (f x) j | exp]) :=
-        probEvent_E_le_sum_range_split exp f T h_basetrace_len
-    _ ≤ ∑ j ∈ Finset.range T,
-          ((2 * (j : ℝ≥0∞)) / K + (2 * (j : ℝ≥0∞) + 1) / K
-            + (2 * (j : ℝ≥0∞) + 1) / K + (j : ℝ≥0∞) / K) := by
-        refine Finset.sum_le_sum (fun j _ => ?_)
-        gcongr
-        · exact hh j
-        · exact hp j
-        · exact hpi j
-        · exact hfunc j
-    _ = ∑ j ∈ Finset.range T, ((7 * (j : ℝ≥0∞) + 2) / K) := by
-        refine Finset.sum_congr rfl (fun j _ => ?_)
-        simp only [div_eq_mul_inv]
-        ring
-    _ = (∑ j ∈ Finset.range T, (7 * (j : ℝ≥0∞) + 2)) / K := by
-        simp only [div_eq_mul_inv, ← Finset.sum_mul]
-    _ = ENNReal.ofReal ((7 * (T : ℝ) ^ 2 - 3 * T) / 2) / K := by
-        rw [sum_range_perIndexCount_ennreal]
-    _ = ENNReal.ofReal (lemma5_8Bound U tₕ tₚ tₚᵢ L) := by
-        have hKeq : K = ENNReal.ofReal ((Fintype.card U : ℝ) ^ SpongeSize.C) := by
-          rw [hK]
-          simp only [capacitySpaceSize]
-          rw [ENNReal.ofReal_pow (by positivity), ENNReal.ofReal_natCast]
-        rw [hKeq, ← ENNReal.ofReal_div_of_pos (capacitySpaceSize_pos (U := U))]
-        congr 1
-        rw [lemma5_8Bound]
-        push_cast [hT]
-        rw [div_div]
 
 /-- **First-witness combiner, all clauses.** This variant keeps the `E_first_at` conjunct on
 hash, permutation, inverse-permutation, and functional clauses.  It is the sound assembly target
@@ -735,44 +580,6 @@ lemma runForwardVerifierWide_fwd_bound_exact
   · rfl
   · rfl
 
-/-- Wide-spec forward verifier, forward-permutation class: `≤ L`. -/
-lemma runForwardVerifierWide_fwd_bound
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
-    (hδR : δ ≤ SpongeSize.R)
-    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec) (stmtIn : StmtIn)
-    (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
-    OracleComp.IsQueryBoundP (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
-      (fun t => isFwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true)
-      pSpec.totalNumPermQueries := by
-  rw [runForwardVerifierWide]
-  refine isQueryBoundP_liftComp' _
-    (p := fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
-    (fun t => ?_) (dsfsForwardVerify_fwd_bound hδR V stmtIn proof)
-  rcases t with e | (s | c)
-  · exact e.elim
-  · rfl
-  · rfl
-
-/-- Wide-spec forward verifier, salt-aware forward bound: `≤ \bar L` without requiring that
-the salt fit in one rate block. -/
-lemma runForwardVerifierWide_fwd_bound_salted
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
-    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec) (stmtIn : StmtIn)
-    (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ) :
-    OracleComp.IsQueryBoundP (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
-      (fun t => isFwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true)
-      (pSpec.totalNumPermQueriesSalted δ) := by
-  rw [runForwardVerifierWide]
-  refine isQueryBoundP_liftComp' _
-    (p := fun t => isNarrowFwdPermPoint (oSpec := []ₒ) (StmtIn := StmtIn) (U := U) t = true)
-    (fun t => ?_) (dsfsForwardVerify_fwd_bound_salted V stmtIn proof)
-  rcases t with e | (s | c)
-  · exact e.elim
-  · rfl
-  · rfl
-
 /-- Wide-spec forward verifier, hash class: `≤ 1`. -/
 lemma runForwardVerifierWide_hash_bound
     [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
@@ -813,147 +620,6 @@ end VerifierQueryBound
 /-! ### Generic length bound for the abortable experiment -/
 
 section AbortableExperimentLengthBound
-
-/-- **Generic trace length bound.** Any instantiation of the abortable Lemma-5.8 experiment (sponge or
-simulated) produces a combined base trace of length at most `T = tₕ + 1 + tₚ + L + tₚᵢ`:
-the prover contributes at most its `(tₕ, tₚ, tₚᵢ)` budget, the forward verifier its
-`(1, L, 0)` budget, and projection/deduplication only shorten. -/
-lemma lemma5_8ProjectedTraceDistAbortable_length {σ : Type}
-    [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
-    (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ (OptionT ProbComp)))
-    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) (hδR : δ ≤ SpongeSize.R)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
-    ∀ tr ∈ support (lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (δ := δ) init impl V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length
-        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueries + tₚᵢ := by
-  intro tr htr
-  -- Total prover DS budget from the three per-class totals.
-  have hproverBound : OracleComp.IsQueryBoundP maliciousProver
-      (fun t => t.isRight = true) (tₕ + tₚ + tₚᵢ) :=
-    isQueryBoundP_isRight_of_classes hMaliciousBound.1 hMaliciousBound.2.1 hMaliciousBound.2.2
-  rw [lemma5_8ProjectedTraceDistAbortable] at htr
-  rw [mem_support_bind_iff] at htr
-  obtain ⟨s₀, _, htr⟩ := htr
-  rw [mem_support_bind_iff] at htr
-  obtain ⟨proverResult, hpr, htr⟩ := htr
-  -- Prover log length.
-  have hplen := logLength_le_of_isQueryBoundP impl hproverBound (s₀, ([] : QueryLog _)) hpr
-  simp only [List.length_nil, Nat.zero_add] at hplen
-  -- Case on abort.
-  obtain ⟨res, s₁, trP⟩ := proverResult
-  rcases res with _ | ⟨stmtIn, proof⟩
-  · -- Abort: `tr_V = []`.
-    rw [mem_support_pure_iff] at htr
-    subst htr
-    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ [])).length
-        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ []).length :=
-          (getBaseTrace_sublist _).length_le
-      _ ≤ trP.length := by
-          rw [List.append_nil, lemma5_8ProjectTraceLog]
-          exact List.length_filterMap_le _ _
-      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueries + tₚᵢ := by
-          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
-          omega
-  · -- Success: the verifier runs with a fresh log.
-    rw [mem_support_bind_iff] at htr
-    obtain ⟨verifierResult, hvr, htr⟩ := htr
-    rw [mem_support_pure_iff] at htr
-    subst htr
-    -- Verifier total DS budget: `(1, L, 0)`.
-    have hverifBound : OracleComp.IsQueryBoundP
-        (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
-        (fun t => t.isRight = true) (1 + pSpec.totalNumPermQueries + 0) :=
-      isQueryBoundP_isRight_of_classes
-        (runForwardVerifierWide_hash_bound V stmtIn proof)
-        (runForwardVerifierWide_fwd_bound hδR V stmtIn proof)
-        (runForwardVerifierWide_bwd_bound V stmtIn proof)
-    have hvlen := logLength_le_of_isQueryBoundP impl hverifBound (s₁, ([] : QueryLog _)) hvr
-    simp only [List.length_nil, Nat.zero_add] at hvlen
-    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
-            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2)).length
-        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
-            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2).length :=
-          (getBaseTrace_sublist _).length_le
-      _ ≤ trP.length + verifierResult.2.2.length := by
-          rw [List.length_append]
-          gcongr <;> · rw [lemma5_8ProjectTraceLog]; exact List.length_filterMap_le _ _
-      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueries + tₚᵢ := by
-          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
-          omega
-
-/-- Salt-aware version of `lemma5_8ProjectedTraceDistAbortable_length`.  This uses the proven
-`(1, \bar L, 0)` verifier bound and therefore needs no assumption that the salt fits in one
-rate block. -/
-lemma lemma5_8ProjectedTraceDistAbortable_length_salted {σ : Type}
-    [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeForwardOracle StmtIn U)]
-    [IsUniformSpec (([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) + duplexSpongeChallengeOracle StmtIn U)]
-    (init : ProbComp σ)
-    (impl : QueryImpl (duplexSpongeChallengeOracle StmtIn U) (StateT σ (OptionT ProbComp)))
-    (V : Verifier ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}) StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
-    ∀ tr ∈ support (lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (pSpec := pSpec) (U := U) (δ := δ) init impl V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length
-        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
-  intro tr htr
-  have hproverBound : OracleComp.IsQueryBoundP maliciousProver
-      (fun t => t.isRight = true) (tₕ + tₚ + tₚᵢ) :=
-    isQueryBoundP_isRight_of_classes hMaliciousBound.1 hMaliciousBound.2.1 hMaliciousBound.2.2
-  rw [lemma5_8ProjectedTraceDistAbortable] at htr
-  rw [mem_support_bind_iff] at htr
-  obtain ⟨s₀, _, htr⟩ := htr
-  rw [mem_support_bind_iff] at htr
-  obtain ⟨proverResult, hpr, htr⟩ := htr
-  have hplen := logLength_le_of_isQueryBoundP impl hproverBound (s₀, ([] : QueryLog _)) hpr
-  simp only [List.length_nil, Nat.zero_add] at hplen
-  obtain ⟨res, s₁, trP⟩ := proverResult
-  rcases res with _ | ⟨stmtIn, proof⟩
-  · rw [mem_support_pure_iff] at htr
-    subst htr
-    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ [])).length
-        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP ++ []).length :=
-          (getBaseTrace_sublist _).length_le
-      _ ≤ trP.length := by
-          rw [List.append_nil, lemma5_8ProjectTraceLog]
-          exact List.length_filterMap_le _ _
-      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
-          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
-          omega
-  · rw [mem_support_bind_iff] at htr
-    obtain ⟨verifierResult, hvr, htr⟩ := htr
-    rw [mem_support_pure_iff] at htr
-    subst htr
-    have hverifBound : OracleComp.IsQueryBoundP
-        (runForwardVerifierWide (oSpec := []ₒ) δ V stmtIn proof)
-        (fun t => t.isRight = true) (1 + pSpec.totalNumPermQueriesSalted δ + 0) :=
-      isQueryBoundP_isRight_of_classes
-        (runForwardVerifierWide_hash_bound V stmtIn proof)
-        (runForwardVerifierWide_fwd_bound_salted V stmtIn proof)
-        (runForwardVerifierWide_bwd_bound V stmtIn proof)
-    have hvlen := logLength_le_of_isQueryBoundP impl hverifBound (s₁, ([] : QueryLog _)) hvr
-    simp only [List.length_nil, Nat.zero_add] at hvlen
-    calc (getBaseTrace (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
-            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2)).length
-        ≤ (lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) trP
-            ++ lemma5_8ProjectTraceLog (StmtIn := StmtIn) (U := U) verifierResult.2.2).length :=
-          (getBaseTrace_sublist _).length_le
-      _ ≤ trP.length + verifierResult.2.2.length := by
-          rw [List.length_append]
-          gcongr <;> · rw [lemma5_8ProjectTraceLog]; exact List.length_filterMap_le _ _
-      _ ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
-          have hp : trP.length ≤ tₕ + tₚ + tₚᵢ := hplen
-          omega
 
 /-- Exact stateful trace-length form of the abortable Lemma-5.8 experiment.
 
@@ -1034,82 +700,8 @@ end AbortableExperimentLengthBound
 
 
 Instantiations of the generic bound for the two concrete experiments. -/
-section SpongeSigmaTraceLengthBounds
+section SpongeTraceLengthBounds
 
-
-/-- **Sponge trace length bound.** The combined base trace of the `𝒟_𝔖` experiment has length `≤ T`.
-`tr_P̃` contributes `≤ tₕ + tₚ + tₚᵢ` (prover query budget); the forward verifier `tr_V`
-contributes `≤ 1 + L` (`(1, L, 0)`-query).  `getBaseTrace` only shortens. -/
-lemma lemma5_8_sponge_length
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hδR : δ ≤ SpongeSize.R)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    ∀ tr ∈ support (lemma5_8SpongeTraceDist (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (n := n) (pSpec := pSpec) (U := U) (δ := δ)
-        (initSponge := (D_𝔖 StmtIn U).sample)
-        (implSponge := (D_𝔖 StmtIn U).eagerImpl) V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueries + tₚᵢ := by
-  rw [lemma5_8SpongeTraceDist]
-  exact lemma5_8ProjectedTraceDistAbortable_length _ _ V maliciousProver tₕ tₚ tₚᵢ hδR
-    hMaliciousBound
-
-/-- Salt-aware sponge-trace length bound, valid for arbitrary salt length. -/
-lemma lemma5_8_sponge_length_salted
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
-    ∀ tr ∈ support (lemma5_8SpongeTraceDist (StmtIn := StmtIn) (StmtOut := StmtOut)
-        (n := n) (pSpec := pSpec) (U := U) (δ := δ)
-        (initSponge := (D_𝔖 StmtIn U).sample)
-        (implSponge := (D_𝔖 StmtIn U).eagerImpl) V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length
-        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
-  rw [lemma5_8SpongeTraceDist]
-  exact lemma5_8ProjectedTraceDistAbortable_length_salted _ _ V maliciousProver tₕ tₚ tₚᵢ
-    hMaliciousBound
-
-/-- **Sigma trace length bound.** Same length bound for the `𝒟_Σ` simulator experiment. -/
-lemma lemma5_8_sigma_length
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hδR : δ ≤ SpongeSize.R)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ)
-    (hTp : tₚ ≥ pSpec.totalNumPermQueries) :
-    ∀ tr ∈ support (lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
-        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
-        V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueries + tₚᵢ := by
-  intro tr htr
-  rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
-  obtain ⟨k_g, _, htr⟩ := htr
-  exact lemma5_8ProjectedTraceDistAbortable_length _ _ V maliciousProver tₕ tₚ tₚᵢ hδR
-    hMaliciousBound tr htr
-
-/-- Salt-aware simulator-trace length bound, valid for arbitrary salt length. -/
-lemma lemma5_8_sigma_length_salted
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
-    ∀ tr ∈ support (lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
-        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
-        V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length
-        ≤ tₕ + 1 + tₚ + pSpec.totalNumPermQueriesSalted δ + tₚᵢ := by
-  intro tr htr
-  rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
-  obtain ⟨k_g, _, htr⟩ := htr
-  exact lemma5_8ProjectedTraceDistAbortable_length_salted _ _ V maliciousProver tₕ tₚ tₚᵢ
-    hMaliciousBound tr htr
 
 /-- Exact stateful base-trace length for the ideal-permutation experiment. -/
 lemma lemma5_8_sponge_length_exact
@@ -1128,25 +720,7 @@ lemma lemma5_8_sponge_length_exact
   exact lemma5_8ProjectedTraceDistAbortable_length_exact _ _ V maliciousProver tₕ tₚ tₚᵢ
     hMaliciousBound
 
-/-- Exact stateful base-trace length for the sigma simulator experiment. -/
-lemma lemma5_8_sigma_length_exact
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hMaliciousBound : IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) maliciousProver tₕ tₚ tₚᵢ) :
-    ∀ tr ∈ support (lemma5_8SigmaTraceDist (T_H := T_H) (T_P := T_P) (δ := δ)
-        (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n) (pSpec := pSpec) (U := U)
-        V maliciousProver),
-      (getBaseTrace (tr.1 ++ tr.2)).length ≤
-        tₕ + 1 + tₚ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + tₚᵢ := by
-  intro tr htr
-  rw [lemma5_8SigmaTraceDist, mem_support_bind_iff] at htr
-  obtain ⟨k_g, _, htr⟩ := htr
-  exact lemma5_8ProjectedTraceDistAbortable_length_exact _ _ V maliciousProver tₕ tₚ tₚᵢ
-    hMaliciousBound tr htr
-
-end SpongeSigmaTraceLengthBounds
+end SpongeTraceLengthBounds
 
 /-! ## Shared base-trace capacity readouts -/
 

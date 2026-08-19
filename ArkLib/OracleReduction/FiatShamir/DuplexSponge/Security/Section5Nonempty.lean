@@ -58,10 +58,6 @@ namespace Section5Nonempty
 variable {n : ℕ} {pSpec : ProtocolSpec n}
   [HasMessageSize pSpec] [HasChallengeSize pSpec] [Section5Nonempty pSpec]
 
-/-- The Section 5 convention supplies the positive encoded length of each prover action. -/
-lemma message_pos (i : pSpec.MessageIdx) : 0 < messageSize i :=
-  Section5Nonempty.message_size_pos i
-
 /-- The Section 5 convention supplies the positive encoded length of each verifier action. -/
 lemma challenge_pos (i : pSpec.ChallengeIdx) : 0 < challengeSize i :=
   Section5Nonempty.challenge_size_pos i
@@ -91,13 +87,6 @@ lemma verifierPermCallCount_pos [SpongeSize] (δ : ℕ) :
       have : False := by simpa [hdir] using i.2
       exact False.elim this
     · rfl
-
-/-- Consequently the `(T,N_𝒱) = (0,0)` exceptional branch of the general stopped-extension
-bound is unreachable in the scoped Section 5 hybrid claims.  The branch remains necessary for
-the reusable trace-level lemma, whose interface deliberately permits empty schedules. -/
-lemma verifierPermCallCount_ne_zero [SpongeSize] (δ : ℕ) :
-    verifierPermCallCount (pSpec := pSpec) (δ := δ) ≠ 0 :=
-  Nat.ne_of_gt (verifierPermCallCount_pos (pSpec := pSpec) δ)
 
 end Section5Nonempty
 

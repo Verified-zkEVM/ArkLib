@@ -291,34 +291,6 @@ noncomputable def lemma5_8SpongeTraceDist
     (spongeImpl := lemma5_8TotalAbortLift (StmtIn := StmtIn) (U := U) implSponge)
     V maliciousProver
 
-/-- CO25 Lemma 5.8 — Right-hand-side trace distribution with explicit abort handling.
-Simulator execution under eager `g ← 𝒟_Σ(λ, n)` with `D2SQuery` as the oracle implementation.
-The `d2sQueryImpl` runs in `StateT D2SQueryState (OptionT ProbComp)`: an `OptionT`-abort halts the
-experiment (paper line 1417). Returns the pair `(tr_P̃, tr_V)`.
-
-The `g` carrier is sampled **once** at experiment start from `𝒟_Σ`, captured by closure,
-and consulted deterministically by every `gᵢ` query. This mirrors `lemma5_8SpongeTraceDist`'s
-eager `(h, p, p⁻¹) ← 𝒟_𝔖` sampling — CO25 Def. 4.2 + Lemma 5.8 statement. -/
-noncomputable def lemma5_8SigmaTraceDist
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ) :
-    ProbComp (QueryLog (duplexSpongeChallengeOracle StmtIn U) ×
-              QueryLog (duplexSpongeChallengeOracle StmtIn U)) := do
-  let k_g ←
-    (D_Sigma (U := U) StmtIn pSpec δ).sample
-  lemma5_8ProjectedTraceDistAbortable (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U) (δ := δ)
-    (init := pure default)
-    (spongeImpl := ProverTransform.d2sQueryImpl
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (gImpl := fun q => OptionT.lift
-        ((D_Sigma (U := U) StmtIn pSpec δ).toImpl k_g q))
-      (auxImpl := fun aux => OptionT.lift
-        ((ProverTransform.d2sUnitSampleImpl (U := U) +
-          QueryImpl.id' unifSpec) aux)))
-    V maliciousProver
-
 /- The revised Lemma 5.8 endpoints are stated in `Lemma58Revised.lean`.  Its ideal-side proof
 uses the reusable per-index union-bound infrastructure; its revised-D2S side uses the stateful
 first-bad runner.  The obsolete eager max-of-sponge-and-Σ façade has been removed. -/

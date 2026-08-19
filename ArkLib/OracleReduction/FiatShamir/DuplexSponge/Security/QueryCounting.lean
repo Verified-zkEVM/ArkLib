@@ -562,13 +562,6 @@ def roundPermBudget (pSpec : ProtocolSpec n) [HasMessageSize pSpec] [HasChalleng
   | .P_to_V => pSpec.Lₚᵢ ⟨i, hdir⟩
   | .V_to_P => pSpec.Lᵥᵢ ⟨i, hdir⟩
 
-/-- Image of a forward-permutation query point under the narrow-spec lift. -/
-private lemma narrow_lift_input (t : CanonicalSpongeState U) :
-    ((liftM (OracleSpec.query t) :
-      OracleQuery (oSpec + duplexSpongeForwardOracle StmtIn U)
-        ((forwardPermutationOracle (CanonicalSpongeState U)).Range t))).input
-    = Sum.inr (Sum.inr t) := rfl
-
 variable [IsUniformSpec (oSpec + duplexSpongeForwardOracle StmtIn U)]
 
 variable [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]

@@ -677,31 +677,6 @@ lemma d2sHandleForwardPermQueryRevised_noResult_maintainsInvariant
   exact d2sHandleForwardNoResultRevised_maintainsInvariant normal stateIn hCoherent hPop
     gImpl result hResult
 
-/-- A successful BackTrack output still cannot preempt a selected lazy continuation. -/
-lemma d2sHandleBacktrackSomeRevised_tail_maintainsInvariant
-    [VCVCompatible U] [Nonempty U] [SampleableType U]
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn : CanonicalSpongeState U)
-    (backtrackOut : Backtrack.BacktrackOutput
-      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (tail : RateOnlyTail (U := U))
-    (cacheRest : List (RateOnlyCacheEntry (U := U)))
-    (hCoherent : RateOnlyCacheCoherent normal)
-    (hPop : popRateOnlyTailByInput normal.state.rateCacheP stateIn = some (tail, cacheRest))
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (result : D2SRevisedStepResult
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (CanonicalSpongeState U))
-    (hResult : result ∈ support (simulateQ
-      (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
-      (d2sHandleBacktrackSomeRevised normal stateIn backtrackOut))) :
-    D2SRunOutcomeInvariant result := by
-  rw [d2sHandleBacktrackSomeRevised_tail normal stateIn backtrackOut tail cacheRest hPop] at hResult
-  exact d2sHandlePoppedRateOnlyTailRevised_maintainsInvariant normal ⟨stateIn, tail⟩ cacheRest
-    hCoherent hPop gImpl result hResult
-
 /-- Algorithm 5.3 Step 4.d follows the ordinary non-tail transition on an out-of-image tuple. -/
 lemma d2sHandleBacktrackSomeRevised_notInImage_maintainsInvariant
     [VCVCompatible U] [Nonempty U] [SampleableType U]

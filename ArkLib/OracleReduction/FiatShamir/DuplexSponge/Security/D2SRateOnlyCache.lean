@@ -249,21 +249,6 @@ lemma popRateOnlyTailByInput_rest_key_ne
               exact hEq hEntryEq
             · exact ih tail' rest' hCache hTail entry hRestEntry hEntryEq
 
-/-- If a tail is consumed and has a successor, that successor contains precisely the pending
-blocks following the consumed rate block. -/
-lemma RateOnlyTail.advance?_some_blocks
-    (tail successor : RateOnlyTail (U := U))
-    (hadvance : tail.advance? = some successor) :
-    tail.blocks.tail = successor.blocks := by
-  cases tail with
-  | mk next remaining =>
-      cases remaining with
-      | nil => simp [RateOnlyTail.advance?] at hadvance
-      | cons next' remaining' =>
-          simp only [RateOnlyTail.advance?] at hadvance
-          cases hadvance
-          simp [RateOnlyTail.blocks]
-
 /-- Materialize exactly the next pending rate block with one newly sampled capacity block.
 
 This is the only operation that turns a latent `RateOnlyTail` into an observable full sponge
@@ -300,15 +285,6 @@ def consumeRateOnlyCache
         | some successor => successor :: cacheRest
       some (materialized.1, cache')
 
-/-- The observable capacity of a materialized tail is exactly the capacity supplied at its
-consumption point. -/
-lemma materializeRateOnlyTail_capacitySegment
-    (tail : RateOnlyTail (U := U))
-    (capacity : Vector U SpongeSize.C) :
-    (materializeRateOnlyTail (U := U) tail capacity).1.capacitySegment = capacity := by
-  change (d2sSynthesisState (U := U) tail.nextRate capacity).capacitySegment = capacity
-  exact d2sSynthesisState_capacitySegment _ _
-
 /-- The output of a materialized cache record has exactly the capacity supplied at that one
 materialization.  Re-keying a residual tail changes only its input key, never this fact. -/
 lemma materializeRateOnlyCacheEntry_capacitySegment
@@ -317,41 +293,6 @@ lemma materializeRateOnlyCacheEntry_capacitySegment
     (materializeRateOnlyCacheEntry (U := U) entry capacity).1.capacitySegment = capacity := by
   change (d2sSynthesisState (U := U) entry.tail.nextRate capacity).capacitySegment = capacity
   exact d2sSynthesisState_capacitySegment _ _
-
-/-- A successful cache consumption exposes the capacity provided to that one call. -/
-lemma consumeRateOnlyCache_capacitySegment
-    (cache : List (RateOnlyCacheEntry (U := U)))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (cache' : List (RateOnlyCacheEntry (U := U)))
-    (capacity : Vector U SpongeSize.C)
-    (hconsume : consumeRateOnlyCache (U := U) cache stateIn capacity = some (stateOut, cache')) :
-    stateOut.capacitySegment = capacity := by
-  unfold consumeRateOnlyCache at hconsume
-  cases hpop : popRateOnlyTailByInput cache stateIn with
-  | none => simp [hpop] at hconsume
-  | some result =>
-      rcases result with ⟨tail, cacheRest⟩
-      simp only [hpop] at hconsume
-      cases hmaterialized : materializeRateOnlyCacheEntry (U := U) ⟨stateIn, tail⟩ capacity with
-      | mk output successor =>
-          simp only [hmaterialized] at hconsume
-          cases hconsume
-          have hOutput : d2sSynthesisState (U := U) tail.nextRate capacity = stateOut := by
-            simpa [materializeRateOnlyCacheEntry, materializeRateOnlyTail] using
-              congrArg Prod.fst hmaterialized
-          rw [← hOutput]
-          exact d2sSynthesisState_capacitySegment _ _
-
-/-- A non-final consumption moves precisely the residual rate blocks to the state it just
-materialized.  This is the stateful version of the old full-state cache chain. -/
-lemma materializeRateOnlyCacheEntry_some_tail
-    (entry : RateOnlyCacheEntry (U := U))
-    (capacity : Vector U SpongeSize.C)
-    (tail : RateOnlyTail (U := U))
-    (hadvance : entry.tail.advance? = some tail) :
-    (materializeRateOnlyCacheEntry (U := U) entry capacity).2 =
-      some ⟨(materializeRateOnlyCacheEntry (U := U) entry capacity).1, tail⟩ := by
-  simp [materializeRateOnlyCacheEntry, materializeRateOnlyTail, hadvance]
 
 /-- A residual cache entry is keyed at the full state just materialized from the preceding
 entry.  This is independent of the sampled capacity and is the provenance link used by the
@@ -372,21 +313,5 @@ lemma materializeRateOnlyCacheEntry_some_stateIn
           hmaterialize.symm
       subst successor
       rfl
-
-/-- The residual record contains exactly the unconsumed rate blocks. -/
-lemma materializeRateOnlyCacheEntry_some_blocks
-    (entry : RateOnlyCacheEntry (U := U))
-    (capacity : Vector U SpongeSize.C)
-    (successor : RateOnlyCacheEntry (U := U))
-    (hmaterialize : (materializeRateOnlyCacheEntry (U := U) entry capacity).2 = some successor) :
-    entry.tail.blocks.tail = successor.tail.blocks := by
-  cases hadvance : entry.tail.advance? with
-  | none => simp [materializeRateOnlyCacheEntry, materializeRateOnlyTail, hadvance] at hmaterialize
-  | some tail =>
-      have hsuccessor : successor =
-          ⟨d2sSynthesisState (U := U) entry.tail.nextRate capacity, tail⟩ := by
-        simpa [materializeRateOnlyCacheEntry, materializeRateOnlyTail, hadvance] using hmaterialize.symm
-      subst successor
-      exact RateOnlyTail.advance?_some_blocks _ _ hadvance
 
 end DuplexSpongeFS.ProverTransform

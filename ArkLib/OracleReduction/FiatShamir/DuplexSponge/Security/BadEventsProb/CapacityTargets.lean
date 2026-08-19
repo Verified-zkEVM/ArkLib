@@ -508,23 +508,6 @@ lemma permOutCapAt_append_fwd_length
   rw [getElem?_append_singleton_length]
   rfl
 
-/-- A non-forward representative has no forward output-capacity readout at its own index. -/
-lemma permOutCapAt_append_hash_length
-    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (stmt : StmtIn) (answer : Vector U SpongeSize.C) :
-    permOutCapAt (bt ++ [⟨dsHashQuery stmt, answer⟩]) bt.length = none := by
-  unfold permOutCapAt
-  rw [getElem?_append_singleton_length]
-  rfl
-
-lemma permOutCapAt_append_bwd_length
-    (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-    (stateOut stateIn : CanonicalSpongeState U) :
-    permOutCapAt (bt ++ [⟨dsPermInvQuery stateOut, stateIn⟩]) bt.length = none := by
-  unfold permOutCapAt
-  rw [getElem?_append_singleton_length]
-  rfl
-
 lemma permInCapAt_append_fwd_length
     (bt : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (stateIn stateOut : CanonicalSpongeState U) :
@@ -607,55 +590,6 @@ lemma priorCapacityTargetAt_eq_of_take_eq
       exact i.2)] at hget
   exact Option.some.inj hget
 
-/-- Appending the current representative does not change the `2*j` prior target readouts at
-`j = bt.length`. -/
-lemma priorCapacityTargetAt_append_singleton_length
-    {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (entry : Sigma (duplexSpongeChallengeOracle StmtIn U))
-    (i : Fin (2 * bt.length)) :
-    priorCapacityTargetAt (bt ++ [entry]) bt.length i =
-      priorCapacityTargetAt bt bt.length i := by
-  apply priorCapacityTargetAt_eq_of_take_eq
-  rw [List.take_append_of_le_length (by omega)]
-
-lemma permInCapAt_eq_of_getElem?_eq
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (h : bt₁[j]? = bt₂[j]?) :
-    permInCapAt bt₁ j = permInCapAt bt₂ j := by
-  unfold permInCapAt
-  rw [h]
-
-lemma permInvDomainCapAt_eq_of_getElem?_eq
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (h : bt₁[j]? = bt₂[j]?) :
-    permInvDomainCapAt bt₁ j = permInvDomainCapAt bt₂ j := by
-  unfold permInvDomainCapAt
-  rw [h]
-
-lemma permOutCapAt_eq_of_getElem?_eq
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (h : bt₁[j]? = bt₂[j]?) :
-    permOutCapAt bt₁ j = permOutCapAt bt₂ j := by
-  unfold permOutCapAt
-  rw [h]
-
-lemma permInvRangeCapAt_eq_of_getElem?_eq
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (h : bt₁[j]? = bt₂[j]?) :
-    permInvRangeCapAt bt₁ j = permInvRangeCapAt bt₂ j := by
-  unfold permInvRangeCapAt
-  rw [h]
-
-lemma permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-    [DecidableEq U]
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (hprefix : bt₁.take j = bt₂.take j)
-    (hself : bt₁[j]? = bt₂[j]?) :
-    permFwdCapacityTargetFinset bt₁ j = permFwdCapacityTargetFinset bt₂ j := by
-  unfold permFwdCapacityTargetFinset
-  rw [priorCapacityTargetFinset_eq_of_take_eq hprefix]
-  rw [permInCapAt_eq_of_getElem?_eq hself]
-
 /-- The target family at a newly appended forward representative is already fixed before its
 output capacity is sampled: the old prior capacities plus the known input capacity. -/
 lemma permFwdCapacityTargetFinset_append_fwd_length
@@ -673,16 +607,6 @@ lemma permFwdCapacityTargetFinset_append_fwd_length
   rw [priorCapacityTargetFinset_eq_of_take_eq htake]
   rw [permInCapAt_append_fwd_length]
   rfl
-
-lemma permBwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-    [DecidableEq U]
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {j : ℕ} (hprefix : bt₁.take j = bt₂.take j)
-    (hself : bt₁[j]? = bt₂[j]?) :
-    permBwdCapacityTargetFinset bt₁ j = permBwdCapacityTargetFinset bt₂ j := by
-  unfold permBwdCapacityTargetFinset
-  rw [priorCapacityTargetFinset_eq_of_take_eq hprefix]
-  rw [permInvDomainCapAt_eq_of_getElem?_eq hself]
 
 /-- Forward permutation freshness hit event: the output capacity at `j` matches a prior capacity
 target or its own input capacity. -/
@@ -796,56 +720,6 @@ lemma permFwdFreshHitAt_append_fwd_length_iff
     · rw [permFwdCapacityTargetFinset_append_fwd_length]
       exact h
 
-/-- Forward fresh-hit stability under equality of the already-exposed base prefix and the
-current base entry. -/
-lemma permFwdFreshHitAt_iff_of_take_eq_of_getElem?_eq
-    [DecidableEq U]
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
-    (hprefix : bt₁.take j = bt₂.take j)
-    (hself : bt₁[j]? = bt₂[j]?) :
-    permFwdFreshHitAt bt₁ j ↔ permFwdFreshHitAt bt₂ j := by
-  constructor
-  · intro h
-    obtain ⟨c, hout, hmem⟩ :=
-      (permFwdFreshHitAt_iff_mem_targetFinset
-        (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mp h
-    refine (permFwdFreshHitAt_iff_mem_targetFinset
-      (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mpr ⟨c, ?_, ?_⟩
-    · rw [← permOutCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
-      exact hout
-    · rw [← permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-        (StmtIn := StmtIn) (U := U) hprefix hself]
-      exact hmem
-  · intro h
-    obtain ⟨c, hout, hmem⟩ :=
-      (permFwdFreshHitAt_iff_mem_targetFinset
-        (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mp h
-    refine (permFwdFreshHitAt_iff_mem_targetFinset
-      (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mpr ⟨c, ?_, ?_⟩
-    · rw [permOutCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
-      exact hout
-    · rw [permFwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-        (StmtIn := StmtIn) (U := U) hprefix hself]
-      exact hmem
-
-lemma permBwdFreshHitAt_imp_exists_target
-    {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
-    (h : permBwdFreshHitAt bt j) :
-    ∃ i : Fin (2 * j + 1), ∃ c : Vector U SpongeSize.C,
-      permInvRangeCapAt bt j = some c ∧ permBwdCapacityTargetAt bt j i = some c := by
-  obtain ⟨c, hout, htarget | hself⟩ := h
-  · obtain ⟨i, hi⟩ := exists_priorCapacityTargetAt_of_mem htarget
-    let i' : Fin (2 * j + 1) := ⟨i.1, lt_trans i.2 (Nat.lt_succ_self (2 * j))⟩
-    refine ⟨i', c, hout, ?_⟩
-    unfold permBwdCapacityTargetAt
-    rw [dif_pos i.2]
-    exact hi
-  · let i' : Fin (2 * j + 1) := ⟨2 * j, Nat.lt_succ_self (2 * j)⟩
-    refine ⟨i', c, hout, ?_⟩
-    unfold permBwdCapacityTargetAt
-    rw [dif_neg (Nat.lt_irrefl (2 * j))]
-    exact hself
-
 lemma permBwdFreshHitAt_imp_mem_targetFinset
     [DecidableEq U]
     {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
@@ -933,38 +807,6 @@ lemma permBwdFreshHitAt_append_bwd_length_iff
     · exact permInvRangeCapAt_append_bwd_length bt stateOut stateIn
     · rw [htarget]
       exact h
-
-/-- Inverse fresh-hit stability under equality of the already-exposed base prefix and the
-current base entry. -/
-lemma permBwdFreshHitAt_iff_of_take_eq_of_getElem?_eq
-    [DecidableEq U]
-    {bt₁ bt₂ : QueryLog (duplexSpongeChallengeOracle StmtIn U)} {j : ℕ}
-    (hprefix : bt₁.take j = bt₂.take j)
-    (hself : bt₁[j]? = bt₂[j]?) :
-    permBwdFreshHitAt bt₁ j ↔ permBwdFreshHitAt bt₂ j := by
-  constructor
-  · intro h
-    obtain ⟨c, hout, hmem⟩ :=
-      (permBwdFreshHitAt_iff_mem_targetFinset
-        (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mp h
-    refine (permBwdFreshHitAt_iff_mem_targetFinset
-      (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mpr ⟨c, ?_, ?_⟩
-    · rw [← permInvRangeCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
-      exact hout
-    · rw [← permBwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-        (StmtIn := StmtIn) (U := U) hprefix hself]
-      exact hmem
-  · intro h
-    obtain ⟨c, hout, hmem⟩ :=
-      (permBwdFreshHitAt_iff_mem_targetFinset
-        (StmtIn := StmtIn) (U := U) (bt := bt₂) (j := j)).mp h
-    refine (permBwdFreshHitAt_iff_mem_targetFinset
-      (StmtIn := StmtIn) (U := U) (bt := bt₁) (j := j)).mpr ⟨c, ?_, ?_⟩
-    · rw [permInvRangeCapAt_eq_of_getElem?_eq (StmtIn := StmtIn) (U := U) hself]
-      exact hout
-    · rw [permBwdCapacityTargetFinset_eq_of_take_eq_of_getElem?_eq
-        (StmtIn := StmtIn) (U := U) hprefix hself]
-      exact hmem
 
 lemma mem_priorCapacityTargets_of_entryCapAt
     {bt : QueryLog (duplexSpongeChallengeOracle StmtIn U)}

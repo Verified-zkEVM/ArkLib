@@ -32,25 +32,6 @@ def d2sSynthesisState
   (Vector.append rateSeg capSeg).cast (by
     simp [SpongeSize.R_plus_C_eq_N])
 
-/-- CO25 §5.4 Item 4(e)iiiC — the ordered states assembled from the ordered rate and capacity
-blocks.  This is the trace-facing provenance interface for the emitted state and the latent
-`Cache_p` chain. -/
-def d2sSynthesisStates
-    (rateBlocks : List (Vector U SpongeSize.R))
-    (caps : List (Vector U SpongeSize.C)) :
-    List (CanonicalSpongeState U) :=
-  (rateBlocks.zip caps).map fun rc => d2sSynthesisState (U := U) rc.1 rc.2
-
-/-- The synthesis-state list has one state for each sampled capacity block whenever the rate
-parser produced the matching number of blocks. -/
-lemma d2sSynthesisStates_length
-    (rateBlocks : List (Vector U SpongeSize.R))
-    (caps : List (Vector U SpongeSize.C))
-    (hLength : rateBlocks.length = caps.length) :
-    (d2sSynthesisStates (U := U) rateBlocks caps).length = caps.length := by
-  rw [d2sSynthesisStates, List.length_map, List.length_zip, hLength]
-  exact min_self _
-
 /-- The capacity of a synthesized state is exactly its corresponding sampled capacity block. -/
 lemma d2sSynthesisState_capacitySegment
     (rateSeg : Vector U SpongeSize.R)
@@ -69,22 +50,5 @@ lemma d2sSynthesisState_capacitySegment
   · simp only [Nat.add_sub_cancel_left]
     exact Eq.refl _
   · omega
-
-/-- Indexed capacity provenance for Item 4(e)iiiC: state `i` in the emitted/cache chain carries
-the capacity sample `caps[i]`. -/
-lemma d2sSynthesisStates_get_capacitySegment
-    (rateBlocks : List (Vector U SpongeSize.R))
-    (caps : List (Vector U SpongeSize.C))
-    (hLength : rateBlocks.length = caps.length)
-    (i : Fin caps.length) :
-    CanonicalSpongeState.capacitySegment
-      ((d2sSynthesisStates (U := U) rateBlocks caps).get ⟨i, by
-        rw [d2sSynthesisStates_length rateBlocks caps hLength]
-        exact i.isLt⟩) = caps.get i := by
-  unfold d2sSynthesisStates
-  rw [List.get_eq_getElem, List.get_eq_getElem]
-  rw [List.getElem_map]
-  rw [List.getElem_zip]
-  exact d2sSynthesisState_capacitySegment _ _
 
 end DuplexSpongeFS.ProverTransform

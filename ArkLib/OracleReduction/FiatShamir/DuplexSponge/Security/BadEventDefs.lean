@@ -120,31 +120,6 @@ lemma getBaseTrace_noRedundant
     hasNoRedundantEntries (getBaseTrace log) :=
   getBaseTraceAux_noRedundant log [] (noRedundantEntryDS_nil (StmtIn := StmtIn) (U := U))
 
-/-- In a non-redundant trace, a forward permutation representative has no earlier copy of its
-normalized pair in either direction.  This is the raw trace-side uniqueness fact used to relate
-the base trace to the multiplicity-sensitive `tr_∇.p` table. -/
-lemma hasNoRedundantEntries.forward_pair_not_mem_take
-    {log : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hNoRedundant : hasNoRedundantEntries log)
-    {i : ℕ} (hi : i < log.length)
-    {stateIn stateOut : CanonicalSpongeState U}
-    (hEntry : log[i] = ⟨.inr (.inl stateIn), stateOut⟩) :
-    ⟨.inr (.inl stateIn), stateOut⟩ ∉ log.take i ∧
-      ⟨.inr (.inr stateOut), stateIn⟩ ∉ log.take i := by
-  simpa [isRedundantEntryOfPrefix, hEntry] using hNoRedundant i hi
-
-/-- In a non-redundant trace, an inverse permutation representative has no earlier copy of its
-normalized pair in either direction. -/
-lemma hasNoRedundantEntries.inverse_pair_not_mem_take
-    {log : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    (hNoRedundant : hasNoRedundantEntries log)
-    {i : ℕ} (hi : i < log.length)
-    {stateIn stateOut : CanonicalSpongeState U}
-    (hEntry : log[i] = ⟨.inr (.inr stateOut), stateIn⟩) :
-    ⟨.inr (.inr stateOut), stateIn⟩ ∉ log.take i ∧
-      ⟨.inr (.inl stateIn), stateOut⟩ ∉ log.take i := by
-  simpa [isRedundantEntryOfPrefix, hEntry] using hNoRedundant i hi
-
 /-! ### Structural lemmas about `getBaseTrace` (membership / order bridge)
 
 These connect the *external* `trace` (where backtrack sequences live) to its base trace `tr̄`

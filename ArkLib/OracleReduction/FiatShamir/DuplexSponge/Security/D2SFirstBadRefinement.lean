@@ -51,59 +51,6 @@ lemma maliciousProver_isQueryBound_all
     · exact PEmpty.elim impossible
     · simp
 
-omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] in
-/-- The lossless adaptive `StopD2SQuery` runner already satisfies the paper's complete
-Lemma-5.8a envelope.  This is the direct-D2S half of the corrected lemma: from a state with at
-most `j` realized base entries, at most `fuel` further adaptive requests can create a monitored
-first bad event with probability at most `B(j + fuel)`.  The result retains the terminal
-post-occurrence record, so it is suitable for the first-stop coupling rather than merely for a
-public abort probability. -/
-lemma d2sQueryRunRevisedAdaptiveWithControl_monitorStop_le_badEventBound
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (j : ℕ) (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ j) :
-    Pr[ fun result => result.isMonitorStop |
-      d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal] ≤
-      ENNReal.ofReal (Statement.badEventBound U (j + fuel)) := by
-  exact (d2sQueryRunRevisedAdaptiveWithControl_monitorStop_le
-    gImpl control fuel controlState normal j hCoherent hBaseLength).trans
-      (Statement.adaptiveD2SCharge_div_le_badEventBoundENN (U := U) j fuel)
-
-omit [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)] in
-/-- **Stateful Lemma-5.8a endpoint.**  For an adaptive revised-D2SQuery execution, the paper
-event on the retained terminal trace is not merely bounded by a stopping surrogate: it is
-definitionally the monitored first-stop event.  Hence the exact adaptive first-bad calculation
-gives `B(j + fuel)` directly for `Pr[E(terminal trace)]`.  Underlying search aborts and fuel
-exhaustion remain uncharged because they retain an `E`-good normal trace. -/
-lemma d2sQueryRunRevisedAdaptiveWithControl_terminalBad_le_badEventBound
-    {S : Type}
-    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
-    (control : D2SAdaptiveControl
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S)
-    (fuel : ℕ) (controlState : S)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (j : ℕ) (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ j) :
-    Pr[ fun result => BadEventDS.E result.terminalTrace |
-      d2sQueryRunRevisedAdaptiveWithControl gImpl control fuel controlState normal] ≤
-      ENNReal.ofReal (Statement.badEventBound U (j + fuel)) := by
-  rw [show (fun result : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) S =>
-      BadEventDS.E result.terminalTrace) = fun result => result.isMonitorStop by
-    funext result
-    exact propext result.isMonitorStop_iff_badEvent_terminalTrace.symm]
-  exact d2sQueryRunRevisedAdaptiveWithControl_monitorStop_le_badEventBound
-    gImpl control fuel controlState normal j hCoherent hBaseLength
-
 /-- The same paper event bound for a state-threaded adaptive kernel.  This is the reusable
 bridge for a live hybrid controller whose state contains an eager challenge table and a residual
 program: the terminal trace is bad exactly at its retained monitor stop. -/
@@ -196,71 +143,6 @@ lemma d2sQueryRunRevisedAdaptiveWithStep_complete_invariant
               rw [mem_support_pure_iff] at hTerminal
               cases hTerminal
 
-/-- A `complete` terminal result of an empty-lifted adaptive run carries an actually completed
-residual program.  This extracts the real prover output from the stateful replay interface; it
-uses only the empty-left oracle fact and is independent of the D2S step kernel. -/
-lemma d2sQueryRunRevisedAdaptiveWithStep_complete_ofEmptyLifted_exists_output
-    {α : Type}
-    (kernel : D2SAdaptiveStepKernel
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α))
-    (fuel : ℕ)
-    (residual : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (finalResidual : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) α)
-    (finalNormal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hTerminal : .complete finalResidual finalNormal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep kernel
-        (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-          (δ := δ) (T_H := T_H) (T_P := T_P) α)
-        fuel residual normal)) :
-    ∃ output, finalResidual = pure output := by
-  induction fuel generalizing residual normal finalResidual finalNormal with
-  | zero =>
-      cases hNext :
-          (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-            (δ := δ) (T_H := T_H) (T_P := T_P) α).next residual normal with
-      | done =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal
-          injection hTerminal with hResidual hNormal
-          subst finalResidual
-          subst finalNormal
-          exact (D2SAdaptiveControl.ofEmptyLiftedOracleComp_next_eq_done_iff residual normal).mp
-            hNext
-      | query q advance =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal
-          cases hTerminal
-  | succ fuel ih =>
-      cases hNext :
-          (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-            (δ := δ) (T_H := T_H) (T_P := T_P) α).next residual normal with
-      | done =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_pure_iff] at hTerminal
-          injection hTerminal with hResidual hNormal
-          subst finalResidual
-          subst finalNormal
-          exact (D2SAdaptiveControl.ofEmptyLiftedOracleComp_next_eq_done_iff residual normal).mp
-            hNext
-      | query q advance =>
-          rw [d2sQueryRunRevisedAdaptiveWithStep, hNext, mem_support_bind_iff] at hTerminal
-          obtain ⟨stepResult, hStep, hTerminal⟩ := hTerminal
-          cases stepResult with
-          | «continue» answer state' normal' =>
-              exact ih (advance state' answer normal') normal' finalResidual finalNormal hTerminal
-          | stopped stoppedNormal record =>
-              rw [mem_support_pure_iff] at hTerminal
-              cases hTerminal
-          | underlyingAbort =>
-              rw [mem_support_pure_iff] at hTerminal
-              cases hTerminal
-
 /-- Extract a successful value and its returned normal state from an empty-lifted adaptive
 terminal result.  All stopped, search-aborting, fuel-exhausted, and nonterminal residual faces
 map to `none`, exactly matching the absorbing-stop convention of the revised Figure-4 game. -/
@@ -329,98 +211,6 @@ lemma d2sQueryRunRevisedAdaptiveWithStep_completedValue_support_invariant
       simp [d2sAdaptiveRunResultCompletedValue?] at hValue
   | fuelExhausted control exhaustedNormal =>
       simp [d2sAdaptiveRunResultCompletedValue?] at hValue
-
-/-- Successful stateful replay of the actual Lemma-5.8 malicious prover preserves cache
-coherence and grows the base trace by at most its total D2S query budget.  This is the missing
-prover-prefix fact required before applying the already-proved live-Hyb₁ stopped-verifier bound
-to the returned normal state. -/
-lemma maliciousProverAdaptive_complete_invariant
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (fuel j : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ j)
-    (finalResidual : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (finalNormal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hTerminal : .complete finalResidual finalNormal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep
-        (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P)
-          ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma)
-          (S := MaliciousProver []ₒ pSpec StmtIn U δ))
-        (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-          (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-        fuel maliciousProver normal)) :
-    RateOnlyCacheCoherent finalNormal ∧
-      (getBaseTrace finalNormal.state.trace).length ≤ j + fuel := by
-  exact d2sQueryRunRevisedAdaptiveWithStep_complete_invariant
-    (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P)
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma)
-      (S := MaliciousProver []ₒ pSpec StmtIn U δ))
-    (d2sQueryStepRevisedKernelFirstBadContract (T_H := T_H) (T_P := T_P)
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma))
-    (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-    fuel maliciousProver normal j hCoherent hBaseLength finalResidual finalNormal hTerminal
-
-/-- At the total `(tₕ,tₚ,tₚᵢ)` budget from Lemma 5.8, the stateful adaptive presentation of
-the malicious prover cannot terminate through its artificial fuel-exhaustion branch.  Together
-with `maliciousProverAdaptive_complete_invariant`, this makes a successful prover prefix an
-honest reusable input to the live fixed-table verifier charge. -/
-lemma maliciousProverAdaptive_not_fuelExhausted_of_lemma5_8_bound
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (terminal : D2SAdaptiveRunResult
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-      (MaliciousProver []ₒ pSpec StmtIn U δ))
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ)
-    (hTerminal : terminal ∈ support
-      (d2sQueryRunRevisedAdaptiveWithStep
-        (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P)
-          ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma)
-          (S := MaliciousProver []ₒ pSpec StmtIn U δ))
-        (D2SAdaptiveControl.ofEmptyLiftedOracleComp
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-          (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-        (tₕ + tₚ + tₚᵢ) maliciousProver normal)) :
-    ¬ terminal.isFuelExhausted := by
-  exact Statement.d2sQueryRunRevisedAdaptiveWithStep_ofEmptyLifted_not_fuelExhausted
-    (d2sQueryStepRevisedKernel (T_H := T_H) (T_P := T_P)
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma)
-      (S := MaliciousProver []ₒ pSpec StmtIn U δ))
-    (tₕ + tₚ + tₚᵢ) maliciousProver normal terminal
-    (maliciousProver_isQueryBound_all maliciousProver tₕ tₚ tₚᵢ hBound) hTerminal
-
-/-- Adding the successful `some` marker used by the lossless stopping interpreter costs no D2S
-queries.  This is the exact residual shape accepted by the direct/adaptive Hyb₁ bridge. -/
-lemma maliciousProver_some_isQueryBound_all
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    IsQueryBoundP
-      (maliciousProver >>= fun output => pure (some output))
-      (fun _ => True) (tₕ + tₚ + tₚᵢ) := by
-  refine (isQueryBoundP_bind (n := tₕ + tₚ + tₚᵢ) (m := 0)
-    (maliciousProver_isQueryBound_all maliciousProver tₕ tₚ tₚᵢ hBound)
-    (fun _ _ => ?_)).mono (by omega)
-  simp
 
 /-- Interpret a terminal adaptive verifier result as the exact result shape of the direct
 lossless D2F executor.  The two syntactically impossible faces are deliberately classified as
@@ -566,41 +356,6 @@ lemma hyb1AdaptiveRun_to_directResidual_eq_of_bound
                   rfl
               | underlyingAbort =>
                   rfl
-
-/-- The actual Lemma-5.8 malicious prover, with only the lossless-success marker added, has
-the same stateful adaptive execution as the direct fixed-table Hyb₁ residual interpreter.  This
-is an equality of complete distributions, not a hybrid estimate. -/
-lemma maliciousProverAdaptiveRun_to_directResidual_eq
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    hyb1AdaptiveTerminalToStopping (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) <$>
-        d2sQueryRunRevisedAdaptiveWithStep
-          (hyb1VerifierStepKernel
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (hyb1VerifierControl
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (tₕ + tₚ + tₚᵢ)
-          (kSigma, maliciousProver >>= fun output => pure (some output)) normal =
-      hyb1DirectResidualRun (T_H := T_H) (T_P := T_P) kSigma
-        (maliciousProver >>= fun output => pure (some output)) normal := by
-  exact hyb1AdaptiveRun_to_directResidual_eq_of_bound
-    (T_H := T_H) (T_P := T_P)
-    (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    kSigma (tₕ + tₚ + tₚᵢ)
-    (maliciousProver >>= fun output => pure (some output)) normal
-    (maliciousProver_some_isQueryBound_all maliciousProver tₕ tₚ tₚᵢ hBound)
 
 omit [DecidableEq StmtIn] [DecidableEq U] in
 /-- The concrete forward verifier residual has sufficient adaptive fuel at the exact stateful
@@ -1090,29 +845,6 @@ lemma hyb1FullDirect_monitorStop_eq_outerGame
     (hyb1VerifierOuterImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) kSigma))
     (hyb1FullResidual_monitorStop_eq_game (T_H := T_H) (T_P := T_P) V maliciousProver)
 
-/-- Averaging the fixed-table full-residual bound over the single eager `D_Σ` sample preserves
-the same exact bound.  The table is sampled once and shared by both residual phases; this is a
-pointwise application of the preceding theorem, rather than a second first-bad calculation. -/
-lemma hyb1FullSampledDirect_monitorStop_le_badEventBound
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    Pr[hyb1FullStoppingResultIsMonitorStop (T_H := T_H) (T_P := T_P) |
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).sample >>= fun kSigma =>
-        (((simulateQ (hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma)
-          (hyb1FullResidual V maliciousProver)).run
-            (D2SNormalState.initial (T_H := T_H) (T_P := T_P)
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U))).run PUnit.unit).run)] ≤
-      ENNReal.ofReal (Statement.badEventBound U
-        (tₕ + tₚ + tₚᵢ + verifierPermCallCount (pSpec := pSpec) (δ := δ) + 1)) := by
-  apply probEvent_bind_le_of_forall_le
-  intro kSigma _
-  exact hyb1FullDirect_monitorStop_le_badEventBound (T_H := T_H) (T_P := T_P)
-    kSigma V maliciousProver tₕ tₚ tₚᵢ hBound
-
 /-- The same bound stated at the genuine sampled Figure-4 H1 boundary.  This transports only the
 Boolean monitor observation through the proved lossless outer-interpreter equality; it does not
 assume an independence relation between the sampled table and the adversarial prover. -/
@@ -1167,142 +899,6 @@ lemma hyb1FullSampledOuterGame_terminalBad_le_badEventBound
   apply HybridGameRevisedResult.probBadEvent_le_of_monitorStop
   exact hyb1FullSampledOuterGame_monitorStop_le_badEventBound
     (T_H := T_H) (T_P := T_P) V maliciousProver tₕ tₚ tₚᵢ hBound
-
-/-- The sampled revised-Hyb₁ first-stop endpoint has the same birthday-bound spelling as the
-ideal-permutation endpoint.  This is only the proved arithmetic identification of the two
-notations; it adds neither a second sampling argument nor an extra error term. -/
-lemma hyb1FullSampledOuterGame_monitorStop_le_legacyLemma58Bound
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    Pr[fun result => result.monitorStop? ≠ none |
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).sample >>= fun kSigma =>
-        simulateQ
-          (hyb1VerifierOuterImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-            (δ := δ) kSigma)
-          (hybridGameRevisedResult (T_H := T_H) (T_P := T_P)
-            (hyb1GImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-            V maliciousProver))] ≤
-      ENNReal.ofReal (BadEventDS.lemma5_8Bound U tₕ tₚ tₚᵢ
-        (verifierPermCallCount (pSpec := pSpec) (δ := δ))) := by
-  rw [Statement.legacyLemma58Bound_eq_badEventBound]
-  simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
-    hyb1FullSampledOuterGame_monitorStop_le_badEventBound
-      (T_H := T_H) (T_P := T_P) V maliciousProver tₕ tₚ tₚᵢ hBound
-
-/-- The stateful adaptive presentation of the actual Lemma-5.8 prover agrees with the live
-fixed-table stopping executor after adding only its `some` success marker.  Thus the adaptive
-prefix invariant and the live Hyb₁ execution refer to the same sampled execution, not merely
-to programs with similar request bounds. -/
-lemma maliciousProverAdaptiveRun_to_liveDirect_eq
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    hyb1AdaptiveTerminalToStopping (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) <$>
-        d2sQueryRunRevisedAdaptiveWithStep
-          (hyb1VerifierStepKernel
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (hyb1VerifierControl
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (tₕ + tₚ + tₚᵢ)
-          (kSigma, maliciousProver >>= fun output => pure (some output)) normal =
-      (((simulateQ (hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma)
-        (maliciousProver >>= fun output => pure (some output))).run normal).run
-          PUnit.unit).run := by
-  rw [maliciousProverAdaptiveRun_to_directResidual_eq
-    (T_H := T_H) (T_P := T_P) kSigma maliciousProver tₕ tₚ tₚᵢ normal hBound]
-  exact hyb1DirectResidualRun_eq_liveDirect (T_H := T_H) (T_P := T_P)
-    (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    kSigma (maliciousProver >>= fun output => pure (some output)) normal
-
-/-- After a particular eager `D_Σ` table has been sampled, the real outer Hyb₁ interpreter for
-the malicious prover is exactly its stateful adaptive first-bad replay.  This is the pointwise
-form required to push the equality under the one-time table sampler. -/
-lemma maliciousProverAdaptiveRun_to_outerFixedTable_eq
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    hyb1AdaptiveTerminalToStopping (T_H := T_H) (T_P := T_P)
-      (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) <$>
-        d2sQueryRunRevisedAdaptiveWithStep
-          (hyb1VerifierStepKernel
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (hyb1VerifierControl
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-            (T_H := T_H) (T_P := T_P)
-            (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-          (tₕ + tₚ + tₚᵢ)
-          (kSigma, maliciousProver >>= fun output => pure (some output)) normal =
-      simulateQ
-        (hyb1VerifierOuterImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) kSigma)
-        (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P)
-          (hyb1GImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-          (maliciousProver >>= fun output => pure (some output)) normal PUnit.unit) := by
-  rw [maliciousProverAdaptiveRun_to_liveDirect_eq
-    (T_H := T_H) (T_P := T_P) kSigma maliciousProver tₕ tₚ tₚᵢ normal hBound]
-  exact (hyb1D2fRawRevisedStopping_hyb1_eq_direct (T_H := T_H) (T_P := T_P)
-    (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    kSigma (maliciousProver >>= fun output => pure (some output)) normal).symm
-
-/-- The preceding fixed-table equality is stable under Hyb₁'s one-time eager `D_Σ` sampling.
-This is only `bind_congr`: the sampled table remains shared for the whole prover segment and no
-new random object or error charge is introduced while passing to the adaptive presentation. -/
-lemma maliciousProverAdaptiveRun_sampled_eq_outerFixedTable
-    (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (hBound : BadEventDS.IsLemma5_8QueryBound
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-      maliciousProver tₕ tₚ tₚᵢ) :
-    ((D_SigmaFinite (U := U) StmtIn pSpec δ).sample >>= fun kSigma =>
-      hyb1AdaptiveTerminalToStopping (T_H := T_H) (T_P := T_P)
-        (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) <$>
-          d2sQueryRunRevisedAdaptiveWithStep
-            (hyb1VerifierStepKernel
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-              (T_H := T_H) (T_P := T_P)
-              (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-            (hyb1VerifierControl
-              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
-              (T_H := T_H) (T_P := T_P)
-              (StmtOut := StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ))
-            (tₕ + tₚ + tₚᵢ)
-            (kSigma, maliciousProver >>= fun output => pure (some output)) normal) =
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).sample >>= fun kSigma =>
-        simulateQ
-          (hyb1VerifierOuterImpl
-            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) kSigma)
-          (d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P)
-            (hyb1GImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
-            (maliciousProver >>= fun output => pure (some output)) normal PUnit.unit)) := by
-  apply bind_congr
-  intro kSigma
-  exact maliciousProverAdaptiveRun_to_outerFixedTable_eq
-    (T_H := T_H) (T_P := T_P) kSigma maliciousProver tₕ tₚ tₚᵢ normal hBound
 
 /-- The monitor-stop predicate on the live lossless executor.  Successful verifier returns and
 all non-monitor exceptions are deliberately uncharged. -/
@@ -1399,62 +995,6 @@ lemma hyb1LiveDirect_monitorStop_le_Dcap
   rw [hPredicate]
   exact Statement.hyb1PureVerifierAdaptiveRun_monitorStop_le_Dcap
     (T_H := T_H) (T_P := T_P) kSigma V stmtIn proof normal T hCoherent hBaseLength
-
-/-- The live revised Hyb₁ verifier stop is bounded by the common Lemma-5.8 budget at the end of
-its exact `N_𝒱`-call replay.  This merely composes the stopped-extension charge `D(T,N_𝒱)` with
-the proved arithmetic inclusion `D(T,N_𝒱) ≤ B(T+N_𝒱+1)`; no rounded schedule budget or extra
-query hypothesis is introduced. -/
-lemma hyb1LiveDirect_monitorStop_le_badEventBound
-    [Nonempty U] [Section5Nonempty pSpec]
-    {StmtOut : Type}
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (stmtIn : StmtIn) (proof : DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (T : ℕ) (hCoherent : RateOnlyCacheCoherent normal)
-    (hBaseLength : (getBaseTrace normal.state.trace).length ≤ T) :
-    Pr[ hyb1StoppingResultIsMonitorStop (T_H := T_H) (T_P := T_P) |
-      (((simulateQ (hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma)
-        (runForwardVerifierWide δ V stmtIn proof)).run normal).run PUnit.unit).run] ≤
-      ENNReal.ofReal (Statement.badEventBound U
-        (T + verifierPermCallCount (pSpec := pSpec) (δ := δ) + 1)) := by
-  exact (hyb1LiveDirect_monitorStop_le_Dcap (T_H := T_H) (T_P := T_P)
-    kSigma V stmtIn proof normal T hCoherent hBaseLength).trans
-      (ENNReal.ofReal_le_ofReal
-        (Statement.Dcap_le_badEventBound (U := U) T
-          (verifierPermCallCount (pSpec := pSpec) (δ := δ))))
-
-/-- A live fixed-table verifier may be run after any sampled prover-prefix distribution once
-every supported prefix exposes a coherent returned normal state with base trace length at most
-`T`.  The stopped-verifier charge remains the single paper envelope `D(T,N_𝒱)`; averaging over
-the prover output introduces neither a fresh collision term nor an independence assumption. -/
-lemma hyb1LiveDirect_monitorStop_bind_le_Dcap
-    [Nonempty U] [Section5Nonempty pSpec]
-    {α StmtOut : Type}
-    (prefixDist : ProbComp α)
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (V : Verifier []ₒ StmtIn StmtOut pSpec)
-    (stmtIn : α → StmtIn)
-    (proof : α → DSSaltedProof (pSpec := pSpec) (U := U) δ)
-    (normal : α → D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (T : ℕ)
-    (hPrefix : ∀ a ∈ support prefixDist,
-      RateOnlyCacheCoherent (normal a) ∧
-        (getBaseTrace (normal a).state.trace).length ≤ T) :
-    Pr[ hyb1StoppingResultIsMonitorStop (T_H := T_H) (T_P := T_P) |
-      prefixDist >>= fun a =>
-        (((simulateQ (hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma)
-          (runForwardVerifierWide δ V (stmtIn a) (proof a))).run (normal a)).run PUnit.unit).run] ≤
-      ENNReal.ofReal (Statement.Dcap U T
-        (verifierPermCallCount (pSpec := pSpec) (δ := δ))) := by
-  apply probEvent_bind_le_of_forall_le
-  intro a ha
-  exact hyb1LiveDirect_monitorStop_le_Dcap (T_H := T_H) (T_P := T_P)
-    kSigma V (stmtIn a) (proof a) (normal a) T (hPrefix a ha).1 (hPrefix a ha).2
 
 /-- The stopped-verifier bound applies directly after a stateful adaptive prover replay.  Only
 terminals exposing an actual prover value invoke the verifier; every other terminal is absorbed
@@ -1565,38 +1105,5 @@ lemma hyb1LiveDirect_monitorStop_after_adaptiveProver_le_badEventBound
       (ENNReal.ofReal_le_ofReal
         (Statement.Dcap_le_badEventBound (U := U) T
           (verifierPermCallCount (pSpec := pSpec) (δ := δ))))
-
-omit [(i : pSpec.ChallengeIdx) → VCVCompatible (pSpec.Challenge i)] in
-/-- The state-threaded adaptive Hyb₁ kernel and the direct D2F handler have identical one-step
-outcomes after forgetting only the adaptive control payload. -/
-lemma hyb1VerifierStepKernel_toStopping_eq_direct
-    (kSigma : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
-    (residual : OracleComp ([]ₒ + duplexSpongeChallengeOracle StmtIn U) (Option StmtOut))
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
-    hyb1AdaptiveStepToStopping (T_H := T_H) (T_P := T_P) normal <$>
-        (hyb1VerifierStepKernel
-          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P)
-          (StmtOut := StmtOut)).step (kSigma, residual) normal q =
-      (((hyb1D2FStoppingDirectImpl (T_H := T_H) (T_P := T_P) kSigma
-        (.inr q)).run normal).run PUnit.unit).run := by
-  rw [hyb1VerifierStepKernel, hyb1D2FStoppingDirectImpl_step]
-  simp only [map_eq_pure_bind, bind_assoc, pure_bind]
-  change (simulateQ
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma +
-        (d2sUnitSampleImpl (U := U) + QueryImpl.id' unifSpec))
-      (d2sQueryStepRevised normal q) >>= fun result =>
-        pure (hyb1AdaptiveStepToStopping normal
-          (D2SAdaptiveStepResult.ofRevised (kSigma, residual) result))) =
-    (simulateQ
-      ((D_SigmaFinite (U := U) StmtIn pSpec δ).toImpl kSigma +
-        (d2sUnitSampleImpl (U := U) + QueryImpl.id' unifSpec))
-      (d2sQueryStepRevised normal q) >>= fun result =>
-        pure (hyb1D2SStepToStopping normal result))
-  apply bind_congr
-  intro result
-  cases result <;> rfl
 
 end DuplexSpongeFS.KeyLemma

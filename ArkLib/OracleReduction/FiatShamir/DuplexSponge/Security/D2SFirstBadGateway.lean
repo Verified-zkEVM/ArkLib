@@ -933,52 +933,6 @@ lemma RateOnlyCacheCoherent.append_same_cache_and_permutation
   · rw [hCache]
     exact hCoherent.keyNodup
 
-/-- A continuing forward table hit (`Install = present`) merely appends the repeated occurrence;
-it cannot change the pending-tail cache, so it preserves the full cache invariant through the
-common no-cache-mutation lemma. -/
-lemma RateOnlyCacheCoherent.forward_present_continue
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateIn stateOut : CanonicalSpongeState U)
-    (hCoherent : RateOnlyCacheCoherent normal)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sInstallPermForwardStateRevised normal stateIn stateOut =
-      .continue stateOut normal') :
-    RateOnlyCacheCoherent normal' :=
-  RateOnlyCacheCoherent.append_same_cache_and_permutation normal normal'
-    ⟨dsPermQuery stateIn, stateOut⟩ hCoherent
-    (d2sInstallPermForwardStateRevised_continue_trace normal stateIn stateOut hContinue)
-    (d2sInstallPermForwardStateRevised_continue_table_present normal stateIn stateOut hStatus
-      hContinue)
-    (d2sInstallPermForwardStateRevised_continue_cache normal stateIn stateOut hContinue)
-
-/-- A continuing inverse table hit is the inverse-direction counterpart of
-`RateOnlyCacheCoherent.forward_present_continue`.  The raw insertion trace still records the
-actual inverse occurrence, while the normalized table and the rate-only cache are unchanged. -/
-lemma RateOnlyCacheCoherent.inverse_present_continue
-    (normal : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-    (stateOut stateIn : CanonicalSpongeState U)
-    (hCoherent : RateOnlyCacheCoherent normal)
-    (hStatus : permInstallStatus normal.state.trΔ.p stateIn stateOut = .present)
-    {normal' : D2SNormalState
-      (δ := δ) (T_H := T_H) (T_P := T_P)
-      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)}
-    (hContinue : d2sInstallPermInverseStateRevised normal stateOut stateIn =
-      .continue stateIn normal') :
-    RateOnlyCacheCoherent normal' :=
-  RateOnlyCacheCoherent.append_same_cache_and_permutation normal normal'
-    ⟨dsPermInvQuery stateOut, stateIn⟩ hCoherent
-    (d2sInstallPermInverseStateRevised_continue_trace normal stateOut stateIn hContinue)
-    (d2sInstallPermInverseStateRevised_continue_table_present normal stateOut stateIn hStatus
-      hContinue)
-    (d2sInstallPermInverseStateRevised_continue_cache normal stateOut stateIn hContinue)
-
 /-- The ordinary true-miss forward continuation preserves the complete rate-only cache
 invariant.  This is the direct `4.c.iii` transition consumed by the whole first-bad runner. -/
 lemma RateOnlyCacheCoherent.forward_miss_continue

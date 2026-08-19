@@ -333,24 +333,6 @@ structure BacktrackSequenceFamily (trace : QueryLog (duplexSpongeChallengeOracle
   complete : ∀ seq : BacktrackSequence trace state,
     seq ∈ seqFamily ↔ seq.IsMaximal
 
-/-- Every member of the semantic `S_BT` family is a simple capacity walk. -/
-lemma BacktrackSequenceFamily.member_hasDistinctInputCapacities
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (family : BacktrackSequenceFamily trace state)
-    {seq : BacktrackSequence trace state} (hseq : seq ∈ family.seqFamily) :
-    seq.HasDistinctInputCapacities :=
-  ((family.complete seq).mp hseq).1
-
-/-- Every maximal valid simple chain is represented in the semantic `S_BT` family. -/
-lemma BacktrackSequenceFamily.mem_iff_isMaximal
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (family : BacktrackSequenceFamily trace state)
-    (seq : BacktrackSequence trace state) :
-    seq ∈ family.seqFamily ↔ seq.IsMaximal :=
-  family.complete seq
-
 /-- Definition 5.3: `S_BT(tr,s)` family of backtracking sequences. -/
 abbrev S_BT
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
@@ -751,25 +733,6 @@ lemmas apply to the same layout used for candidate extraction. -/
 private def statefulPhaseShapes : List ScheduleCursor.PhaseShape :=
   (statefulOperations (pSpec := pSpec)).map StatefulOperation.phaseShape
 
-omit [SpongeSize] in
-/-- Forgetting dependent indices preserves exactly one phase per protocol
-operation.  This prevents the parser's operation/layout traversal from
-silently changing protocol order. -/
-private lemma statefulPhaseShapes_length :
-    (statefulPhaseShapes (pSpec := pSpec)).length =
-      (statefulOperations (pSpec := pSpec)).length := by
-  simp [statefulPhaseShapes]
-
-/-- The concrete phase schedule consumed by the parser has a layout for every
-protocol operation. -/
-private lemma statefulSchedule_phaseLayouts_length
-    (cursor : ScheduleCursor) (saltLength : ℕ) :
-    (ScheduleCursor.buildPhaseSchedule SpongeSize.R cursor saltLength
-      (statefulPhaseShapes (pSpec := pSpec))).phaseLayouts.length =
-        (statefulOperations (pSpec := pSpec)).length := by
-  rw [ScheduleCursor.buildPhaseSchedule_phaseLayouts_length]
-  exact statefulPhaseShapes_length (pSpec := pSpec)
-
 /-- BackTrack §5.2 Step 1: initialize the input-state list for a candidate chain. -/
 private def backtrackStep1Init
     (state : CanonicalSpongeState U)
@@ -856,22 +819,6 @@ private def BacktrackSequence.checkFrames
   (List.range seq.inputState.length).all fun queryIndex =>
     (List.range SpongeSize.R).all fun rateOffset =>
       seq.frameHoldsAt writes queryIndex rateOffset
-
-omit [DecidableEq StmtIn] in
-/-- A successful generated frame check covers every rate coordinate of every
-input state in the recovered backtrack chain.  This is the proof-facing form
-of the executable validator: later replay-correctness lemmas may reason about
-an arbitrary in-range coordinate instead of re-unfolding nested `List.all`s. -/
-private lemma BacktrackSequence.checkFrames_eq_true_iff
-    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
-    {state : CanonicalSpongeState U}
-    (seq : BacktrackSequence trace state)
-    (writes : List ScheduleCursor.RateLocation) :
-    seq.checkFrames writes = true ↔
-      ∀ queryIndex < seq.inputState.length, ∀ rateOffset < SpongeSize.R,
-        seq.frameHoldsAt writes queryIndex rateOffset = true := by
-  simp only [BacktrackSequence.checkFrames, List.all_eq_true, List.mem_range,
-    ]
 
 /-- Stateful replacement for CO25 §5.2 Steps 3--4.
 
