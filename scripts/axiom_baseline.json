@@ -272,7 +272,6 @@
   "ProximityGap.matching_set",
   "ProximityGap.matching_set_at_x",
   "ProximityGap.matching_set_is_a_sub_of_coeffs_of_close_proximity",
-  "ProximityGap.modified_guruswami_has_a_solution",
   "ProximityGap.natDegree_H_pos",
   "ProximityGap.proximity_gap_RSCodes",
   "ProximityGap.solution_gamma_is_linear_in_Z",
