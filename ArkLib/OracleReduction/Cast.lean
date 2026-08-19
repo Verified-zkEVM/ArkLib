@@ -325,7 +325,79 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
-  sorry
+  -- After `subst`, the cast is definitionally trivial and the only residual difference is the
+  -- `Finite` instance on each challenge type; `uniformSample`'s distribution is
+  -- instance-irrelevant, so the two games have equal `evalDist` and the bound transports.
+  subst hn
+  simp only [ProtocolSpec.cast_id, id_eq] at hSpec
+  subst hSpec
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ init impl relIn relOut V ε
+  have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
+      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] =
+      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] := by
+    intro t s
+    cases t with
+    | inl t => rfl
+    | inr t =>
+      rcases t with ⟨i, q⟩
+      cases q
+      have huni :
+          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
+          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
+        letI : Fintype (pSpec₁.Challenge i) := Fintype.ofFinite _
+        apply evalDist_ext
+        intro x
+        exact (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₁ i) this x).trans
+          (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₂ i) this x).symm
+      change
+        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
+            StateT σ ProbComp (pSpec₁.Challenge i)).run s] =
+        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
+            StateT σ ProbComp (pSpec₁.Challenge i)).run s]
+      rw [OracleComp.liftM_run_StateT, OracleComp.liftM_run_StateT]
+      rw [evalDist_bind, evalDist_bind]
+      exact congrArg
+        (fun d : SPMF (pSpec₁.Challenge i) =>
+          d >>= fun x => 𝒟[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
+  have hsim : ∀ {α : Type} (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) (s : σ),
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] =
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] := by
+    intro α oa s
+    exact evalDist_simulateQ_run_congr _ _ hhandler oa s
+  unfold rbrKnowledgeSoundness at hRbrKs ⊢
+  obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
+  refine ⟨WitMid, extractor, kSF, ?_⟩
+  intro stmtIn witIn prover i
+  let game := do
+    let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
+    let challenge ← (pSpec₁.getChallenge i).liftComp (oSpec + [pSpec₁.Challenge]ₒ)
+    return (transcript, challenge, proveQueryLog)
+  have hrun (s : σ) :
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] =
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] := by
+    simp only [StateT.run'_eq, evalDist_map]
+    exact congrArg (Functor.map Prod.fst) (hsim game s)
+  have heval :
+      𝒟[(do
+        let s ← init
+        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] =
+      𝒟[(do
+        let s ← init
+        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] := by
+    rw [evalDist_bind, evalDist_bind]
+    apply bind_congr
+    intro s
+    exact (hrun s).symm
+  exact (probEvent_congr' (fun _ _ => Iff.rfl) heval).trans_le
+    (hbound stmtIn witIn prover i)
 
 end Verifier
 
