@@ -128,6 +128,21 @@ def isLemma5_8PermInvQuery :
     ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop :=
   fun t => isBwdPermQueryPoint (StmtIn := StmtIn) (U := U) t = true
 
+instance : DecidablePred (isLemma5_8HashQuery (StmtIn := StmtIn) (U := U)) := by
+  intro t
+  unfold isLemma5_8HashQuery
+  infer_instance
+
+instance : DecidablePred (isLemma5_8PermQuery (StmtIn := StmtIn) (U := U)) := by
+  intro t
+  unfold isLemma5_8PermQuery
+  infer_instance
+
+instance : DecidablePred (isLemma5_8PermInvQuery (StmtIn := StmtIn) (U := U)) := by
+  intro t
+  unfold isLemma5_8PermInvQuery
+  infer_instance
+
 /-- CO25 Lemma 5.8 — Semantic `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
 `IsLemma5_8QueryBound maliciousProver tₕ tₚ tₚᵢ` asserts that the prover makes **in total** at
 most `tₕ` hash queries, `tₚ` forward permutation queries, and `tₚᵢ` inverse permutation queries

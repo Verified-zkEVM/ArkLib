@@ -568,8 +568,8 @@ noncomputable def Hyb01LazySamplingCoupling
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  KeyLemma.IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
     Nonempty (Hyb01CouplingWitness (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec)
       (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
       oSpecImpl V maliciousProver tₕ tₚ tₚᵢ)
@@ -614,8 +614,8 @@ noncomputable def Claim521
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  KeyLemma.IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
     let T := tₕ + tₚ + tₚᵢ
     let nV := DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ)
     HybridTVDist
@@ -633,13 +633,13 @@ lemma claim521_of_hyb01LazySamplingCoupling
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ)
+    (tₕ tₚ tₚᵢ : ℕ)
     (hCoupling : Hyb01LazySamplingCoupling (StmtIn := StmtIn) (StmtOut := StmtOut)
       (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
-      (T_P := T_P) oSpecImpl V maliciousProver tShared tₕ tₚ tₚᵢ) :
+      (T_P := T_P) oSpecImpl V maliciousProver tₕ tₚ tₚᵢ) :
     Claim521 (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec) (pSpec := pSpec)
       (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-      oSpecImpl V maliciousProver tShared tₕ tₚ tₚᵢ := by
+      oSpecImpl V maliciousProver tₕ tₚ tₚᵢ := by
   intro hQueryBound
   rcases hCoupling hQueryBound with ⟨witness⟩
   let N := Hyb01BoundCount (U := U) (pSpec := pSpec) (δ := δ) tₕ tₚ tₚᵢ
@@ -767,8 +767,8 @@ noncomputable def Claim523
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  KeyLemma.IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
     Nonempty (Hyb23CodecCouplingWitness (StmtIn := StmtIn) (StmtOut := StmtOut)
       (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
       (T_P := T_P) oSpecImpl V maliciousProver tₚ)
@@ -782,8 +782,8 @@ noncomputable def Claim524
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  KeyLemma.IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+  KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
     let T := tₕ + tₚ + tₚᵢ
     let nV := DuplexSpongeFS.verifierPermCallCount (pSpec := pSpec) (δ := δ)
     HybridTVDist
@@ -799,9 +799,9 @@ noncomputable def Lemma51
     [DecidableEq ι] [Section5Nonempty pSpec]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) : Prop :=
+    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
   ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
-      KeyLemma.IsLemma5_1QueryBound maliciousProver tShared tₕ tₚ tₚᵢ →
+      KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
         HybridTVDist (Hyb0 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
           (Hyb4 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) ≤
             KeyLemma.ηStar U tₕ tₚ tₚᵢ

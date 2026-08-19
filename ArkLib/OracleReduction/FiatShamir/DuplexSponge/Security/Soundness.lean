@@ -416,6 +416,101 @@ def nargInducedProver
       (StmtIn × FSSaltedProof pSpec Salt) :=
   simulateQ srReassocImpl ((fun o => o.getD default) <$> (d2sAlgoTransform maliciousProver).run)
 
+/-- Basic-FS challenge queries in the regrouped single-salt prover surface. -/
+def isSaltedFSChallengeQuery :
+    ((oSpec + srChallengeOracle (StmtIn × Salt) pSpec) + ((Unit →ₒ U) + unifSpec)).Domain → Prop
+  | .inl (.inr _) => True
+  | _ => False
+
+instance : DecidablePred
+    (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+      (pSpec := pSpec) (U := U)) := by
+  classical
+  exact fun _ => inferInstance
+
+/-- Aggregate bound on the basic-FS challenge calls of a regrouped single-salt prover. -/
+abbrev IsSaltedFSChallengeQueryBound {α : Type}
+    (prover : OracleComp
+      ((oSpec + srChallengeOracle (StmtIn × Salt) pSpec) + ((Unit →ₒ U) + unifSpec)) α)
+    (t : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP prover
+      (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+        (pSpec := pSpec) (U := U)) t
+
+/-- Predicate-bound transport through a stateless query simulation. -/
+private theorem isQueryBoundP_simulateQ_of_step
+    {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+    {α : Type} {p : ι₁ → Prop} [DecidablePred p] {q : ι₂ → Prop} [DecidablePred q]
+    {impl : QueryImpl spec₁ (OracleComp spec₂)}
+    {oa : OracleComp spec₁ α} {n : ℕ}
+    (h : OracleComp.IsQueryBoundP oa p n)
+    (hstep_p : ∀ t, p t → OracleComp.IsQueryBoundP (impl t) q 1)
+    (hstep_np : ∀ t, ¬ p t → OracleComp.IsQueryBoundP (impl t) q 0) :
+    OracleComp.IsQueryBoundP (simulateQ impl oa) q n := by
+  induction oa using OracleComp.inductionOn generalizing n with
+  | pure x => simp [simulateQ_pure]
+  | query_bind t mx ih =>
+      rw [OracleComp.isQueryBoundP_query_bind_iff] at h
+      simp only [simulateQ_query_bind, OracleQuery.input_query, monadLift_self]
+      have hlift : OracleComp.IsQueryBoundP (impl t) q (if p t then 1 else 0) := by
+        by_cases hpt : p t
+        · simpa [if_pos hpt] using hstep_p t hpt
+        · simpa [if_neg hpt] using hstep_np t hpt
+      have hrest : ∀ u, OracleComp.IsQueryBoundP (simulateQ impl (mx u)) q
+          (if p t then n - 1 else n) := fun u => ih u (h.2 u)
+      have hbound : (if p t then 1 else 0) + (if p t then n - 1 else n) = n := by
+        by_cases hpt : p t
+        · simp only [if_pos hpt]
+          rcases h.1 with hnp | hn
+          · exact absurd hpt hnp
+          · omega
+        · simp only [if_neg hpt]
+          omega
+      simpa [hbound] using OracleComp.isQueryBoundP_bind hlift (fun u _ => hrest u)
+
+/-- Regrouping the D2S output preserves its aggregate basic-FS challenge-query budget. -/
+private theorem isSaltedFSChallengeBound_nargInducedProver
+    [DecidableEq ι]
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ) :
+    IsSaltedFSChallengeQueryBound (nargInducedProver maliciousProver d2sAlgoTransform)
+      (θStar tₕ tₚ tₚᵢ) := by
+  classical
+  unfold nargInducedProver
+  rw [simulateQ_map]
+  change OracleComp.IsQueryBoundP
+    ((fun o => o.getD default) <$> simulateQ srReassocImpl
+      (d2sAlgoTransform maliciousProver).run)
+    (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+      (pSpec := pSpec) (U := U)) (θStar tₕ tₚ tₚᵢ)
+  rw [OracleComp.isQueryBoundP_map_iff]
+  refine isQueryBoundP_simulateQ_of_step hBound ?_ ?_
+  · rintro (qO | qC | qA) hq
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 1
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+  · rintro (qO | qC | qA) hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 0
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 0
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+
 /-- The DSFS proof-only attacker as a **Def-3.6 NARG adversary**. -/
 def nargInducedProverKS [Inhabited WitOut]
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
@@ -426,6 +521,137 @@ def nargInducedProverKS [Inhabited WitOut]
   simulateQ srReassocImpl
     ((fun o => let p := o.getD default; (p.1, p.2, (default : WitOut))) <$>
       (d2sAlgoTransform maliciousProver).run)
+
+/-- The KS output repackaging does not affect the compiled prover's challenge-query budget. -/
+private theorem isSaltedFSChallengeBound_nargInducedProverKS
+    [DecidableEq ι] [Inhabited WitOut]
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ) :
+    IsSaltedFSChallengeQueryBound (nargInducedProverKS (WitOut := WitOut)
+      maliciousProver d2sAlgoTransform) (θStar tₕ tₚ tₚᵢ) := by
+  classical
+  unfold nargInducedProverKS
+  rw [simulateQ_map]
+  change OracleComp.IsQueryBoundP
+    ((fun o => let p := o.getD default; (p.1, p.2, (default : WitOut))) <$>
+      simulateQ srReassocImpl (d2sAlgoTransform maliciousProver).run)
+    (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+      (pSpec := pSpec) (U := U)) (θStar tₕ tₚ tₚᵢ)
+  rw [OracleComp.isQueryBoundP_map_iff]
+  refine isQueryBoundP_simulateQ_of_step hBound ?_ ?_
+  · rintro (qO | qC | qA) hq
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 1
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+  · rintro (qO | qC | qA) hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 0
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+    · simp [isD2SAlgoChallengePoint, isD2SChallengePoint] at hq
+    · simp only [srReassocImpl]
+      change OracleComp.IsQueryBoundP (liftM (OracleSpec.query _) : OracleComp _ _)
+        isSaltedFSChallengeQuery 0
+      rw [OracleComp.isQueryBoundP_query_iff]
+      simp [isSaltedFSChallengeQuery]
+
+/-- The single-salt SR-KS wrapper only repackages the compiled prover's output. -/
+private theorem isSaltedFSChallengeBound_srInducedProverKS
+    [DecidableEq ι] [Inhabited WitOut]
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hBound : IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ) :
+    IsSaltedFSChallengeQueryBound
+      (srInducedProverKS (nargInducedProverKS (WitOut := WitOut)
+        maliciousProver d2sAlgoTransform)) (θStar tₕ tₚ tₚᵢ) := by
+  rw [srInducedProverKS_eq_map]
+  change OracleComp.IsQueryBoundP
+    ((fun p => ((p.1, p.2.1.1), p.2.1.2, p.2.2)) <$>
+      nargInducedProverKS (WitOut := WitOut) maliciousProver d2sAlgoTransform)
+    (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+      (pSpec := pSpec) (U := U)) (θStar tₕ tₚ tₚᵢ)
+  rw [OracleComp.isQueryBoundP_map_iff]
+  exact isSaltedFSChallengeBound_nargInducedProverKS (WitOut := WitOut)
+    maliciousProver d2sAlgoTransform tₕ tₚ tₚᵢ hBound
+
+/-- The basic-FS prover class produced by a fixed D2S algorithm transform. -/
+def basicFSCompiledKSBound [DecidableEq ι] [Inhabited WitOut]
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ) :
+    OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + ((Unit →ₒ U) + unifSpec))
+      (StmtIn × FSSaltedProof pSpec Salt × WitOut) → Prop :=
+  fun prover => ∃ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+    IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ ∧
+      prover = nargInducedProverKS (WitOut := WitOut) maliciousProver d2sAlgoTransform
+
+/-- Every compiled basic-FS prover maps to the corresponding bounded SR-KS class. -/
+private theorem basicFSCompiledKSBound_to_sr
+    [DecidableEq ι] [Inhabited WitOut]
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hD2SBound : ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+        IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ)
+    (prover : OracleComp
+      ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + ((Unit →ₒ U) + unifSpec))
+      (StmtIn × FSSaltedProof pSpec Salt × WitOut))
+    (hBound : basicFSCompiledKSBound d2sAlgoTransform tₕ tₚ tₚᵢ prover) :
+    IsSaltedFSChallengeQueryBound (srInducedProverKS prover) (θStar tₕ tₚ tₚᵢ) := by
+  obtain ⟨maliciousProver, hMaliciousBound, rfl⟩ := hBound
+  exact isSaltedFSChallengeBound_srInducedProverKS (WitOut := WitOut)
+    maliciousProver d2sAlgoTransform tₕ tₚ tₚᵢ (hD2SBound maliciousProver hMaliciousBound)
+
+/-- Theorem 3.19 instantiated with the compiled provers supplied by Lemma 5.1. -/
+private theorem basicFS_straightlineKS_withCompiledBound
+    [∀ i, DecidableEq (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    [DecidableEq ι] [Inhabited WitOut]
+    (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hD2SBound : ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+        IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ)
+    (ε_sr : ENNReal)
+    (h_IP_SR_KS : Verifier.StateRestoration.knowledgeSoundnessWithCoins
+        (init := srInitDIP) (impl := srImplLift oSpecImpl)
+        ((Unit →ₒ U) + unifSpec) d2sAuxImpl
+        (relInSalted relIn) relOut (saltedIPVerifier (Salt := Salt) V)
+        (fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ)) ε_sr) :
+    Verifier.adaptiveNARGKnowledgeSoundnessWithCoins (WitIn := WitIn) (WitOut := WitOut)
+      (init := srInitDIP (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec))
+      (impl := (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl).addLift
+        srChallengeQueryImpl')
+      d2sAuxImpl (d2sUnitSampleImpl (U := U))
+      (verifier := Verifier.singleSaltFiatShamir (Salt := Salt) V)
+      relIn relOut
+      (bound := basicFSCompiledKSBound d2sAlgoTransform tₕ tₚ tₚᵢ)
+      ε_sr := by
+  exact theorem_3_19_straightline_ks
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (WitIn := WitIn) (WitOut := WitOut)
+    (pSpec := pSpec) (Salt := Salt) ((Unit →ₒ U) + unifSpec) d2sAuxImpl
+    (Unit →ₒ U) (d2sUnitSampleImpl (U := U)) V relIn relOut
+    (srInitDIP (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec))
+    (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl)
+    (srBound := fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ))
+    (bound := basicFSCompiledKSBound d2sAlgoTransform tₕ tₚ tₚᵢ)
+    (hBound := basicFSCompiledKSBound_to_sr d2sAlgoTransform tₕ tₚ tₚᵢ hD2SBound)
+    (ε := ε_sr) (h_sr_ks := h_IP_SR_KS)
 
 /-- The DSFS proof-only attacker as a CO25 **Def-3.6 NARG adversary**: the malicious prover `𝒫̃`
 outputs `(𝕩, π)` and claims the trivial `default` output witness (a NARG / public-coin IP has no
@@ -596,7 +822,7 @@ theorem hyb4_eq_coinNARGgame
             (Verifier.singleSaltFiatShamir (Salt := Salt) V)
             (nargInducedProver maliciousProver d2sAlgoTransform) ] := by rw [hdist]
 
-omit [SaltCodec U δ Salt] [DecidableEq U] codec in
+omit [DecidableEq U] in
 /-- **CO25 §6.1 step L3 (two-hop):** false acceptance in `Hyb₄` is bounded by the basic-FS NARG
 soundness error.  Combines `hyb4_eq_coinNARGgame` (L3a) with the coin-bearing NARG soundness
 hypothesis (delivered by Thm 3.18 from IP SR soundness, L3b) applied to the induced prover. -/
@@ -610,13 +836,19 @@ theorem hyb4_falseAccept_le_nargSoundness
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
     (d2sAlgoTransform : D2SAlgoTransform (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (tₕ tₚ tₚᵢ : ℕ)
+    (hMaliciousBound : IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ)
+    (hD2SBound : ∀ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+        IsD2SAlgoChallengeQueryBound d2sAlgoTransform maliciousProver tₕ tₚ tₚᵢ)
     (ε_sr : ENNReal)
     -- Coin-bearing IP SR soundness (the same hypothesis as `theorem_6_1_soundness`).
     (h_IP_SR_sound : Verifier.StateRestoration.soundnessWithCoins
         (srInitDIP (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec))
         (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl)
         ((Unit →ₒ U) + unifSpec) d2sAuxImpl
-        (langInSalted langIn) langOut (saltedIPVerifier (Salt := Salt) V) ε_sr) :
+        (langInSalted langIn) langOut (saltedIPVerifier (Salt := Salt) V)
+        (fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ)) ε_sr) :
     Pr[ dsfsSoundnessEvent langIn langOut |
         hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
           (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
@@ -624,10 +856,27 @@ theorem hyb4_falseAccept_le_nargSoundness
   -- L3b: FS NARG soundness from IP SR soundness (Thm 3.18), coin-bearing.
   have h_NARG := theorem_3_18_soundness (Salt := Salt) ((Unit →ₒ U) + unifSpec) d2sAuxImpl V
     langIn langOut (srInitDIP (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec))
-    (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl) ε_sr h_IP_SR_sound
+    (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl)
+    (fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ))
+    (fun prover => ∃ maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ,
+      IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ ∧
+        prover = nargInducedProver maliciousProver d2sAlgoTransform)
+    (fun prover hProver => by
+      obtain ⟨maliciousProver, hBound, rfl⟩ := hProver
+      rw [srInducedProver_eq_map]
+      change OracleComp.IsQueryBoundP
+        ((fun p => ((p.1, p.2.1), p.2.2)) <$>
+          nargInducedProver maliciousProver d2sAlgoTransform)
+        (isSaltedFSChallengeQuery (oSpec := oSpec) (StmtIn := StmtIn) (Salt := Salt)
+          (pSpec := pSpec) (U := U)) (θStar tₕ tₚ tₚᵢ)
+      rw [OracleComp.isQueryBoundP_map_iff]
+      exact isSaltedFSChallengeBound_nargInducedProver maliciousProver d2sAlgoTransform
+        tₕ tₚ tₚᵢ (hD2SBound maliciousProver hBound))
+    ε_sr h_IP_SR_sound
   -- L3a: Hyb₄ = the coin-bearing NARG game; apply NARG soundness to the induced prover.
   rw [hyb4_eq_coinNARGgame V oSpecImpl langIn langOut maliciousProver d2sAlgoTransform]
-  exact h_NARG (nargInducedProver maliciousProver d2sAlgoTransform) trivial
+  exact h_NARG (nargInducedProver maliciousProver d2sAlgoTransform)
+    ⟨maliciousProver, hMaliciousBound, rfl⟩
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [∀ i, VCVCompatible (pSpec.Message i)]
   [DecidableEq StmtIn] [DecidableEq U] in
@@ -742,7 +991,8 @@ theorem theorem_6_1_soundness
     (h_IP_SR_sound : Verifier.StateRestoration.soundnessWithCoins
         (init := srInitDIP) (impl := srImplLift oSpecImpl)
         ((Unit →ₒ U) + unifSpec) d2sAuxImpl
-        (langInSalted langIn) langOut (saltedIPVerifier (Salt := Salt) V) ε_sr) :
+        (langInSalted langIn) langOut (saltedIPVerifier (Salt := Salt) V)
+        (fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ)) ε_sr) :
       -- ε_NARG(λ, (tₕ,tₚ,tₚ⁻¹), n) — CO25 **Def 3.5** as a property of the DSFS NARG *verifier*
       -- `Verifier.dsfsNargNIV δ V` (= `𝒱^{h,p}`), query-bounded attacker.
       (Verifier.dsfsNargNIV δ V).adaptiveNARGSoundness
@@ -769,7 +1019,8 @@ theorem theorem_6_1_soundness
   -- L3 (paper two-hop): false acceptance in Hyb₄ ≤ basic-FS NARG soundness (L3a) ≤ IP SR
   -- soundness ε_sr (L3b, Thm 3.18). Matches CO25 §6.1 Eq. lines 1950–1957.
   have hL3 := hyb4_falseAccept_le_nargSoundness V oSpecImpl langIn langOut
-    maliciousProver d2sAlgoTransform ε_sr h_IP_SR_sound
+    maliciousProver d2sAlgoTransform tₕ tₚ tₚᵢ hBound
+    (fun maliciousProver hBound => (hKey maliciousProver hBound).2) ε_sr h_IP_SR_sound
   -- §6.1 derivation (open seams: `lemma_5_1` at L2, `hyb4_falseAccept_le_nargSoundness` at L3):
   --   ε_NARG = Pr[ |𝕩|≤n ∧ 𝕩∉ℒ(ℛ) ∧ 𝒱^{h,p}(𝕩,π)=1 | (h,p,p⁻¹)←𝒟_𝔖; (𝕩,π)←𝒫̃^{h,p,p⁻¹} ]
   --     = Pr[ ... | Hyb₀ ]                                   -- (L1) trace map preserves acceptance
@@ -1113,7 +1364,8 @@ theorem theorem_6_2_straightline
     (h_IP_SR_KS : Verifier.StateRestoration.knowledgeSoundnessWithCoins
         (init := srInitDIP) (impl := srImplLift oSpecImpl)
         ((Unit →ₒ U) + unifSpec) d2sAuxImpl
-        (relInSalted relIn) relOut (saltedIPVerifier (Salt := Salt) V) ε_sr) :
+        (relInSalted relIn) relOut (saltedIPVerifier (Salt := Salt) V)
+        (fun prover => IsSaltedFSChallengeQueryBound prover (θStar tₕ tₚ tₚᵢ)) ε_sr) :
     -- CO25 **Def 3.6** (`adaptiveNARGKnowledgeSoundness`) at the DSFS NARG: oracle model
     -- `hyb0Init`/`hyb0Impl`, verifier `dsfsNargVerify V`, acceptance `(stmtOut, witOut) ∈ relOut`;
     -- adversary class = the query-bounded proof-only DSFS attacker `dsfsKSAdversary 𝒫̃`.
@@ -1131,12 +1383,22 @@ theorem theorem_6_2_straightline
   -- CO25 Def 3.6 (`adaptiveNARGKnowledgeSoundness`) at the DSFS NARG verifier `Verifier.dsfsNargNIV
   -- δ V`: provide the Construction-6.3 extractor (`use`) and run the §6.2 proof verbatim.
   -- **Step 4 (Theorem 3.19).** IP SR-KS ⟹ basic-FS NARG straightline-KS, delivering `E_std`.
+  letI : ∀ i, DecidableEq (pSpec.Message i) :=
+    fun _ => instDecidableEqOfVCVCompatible
+  let d2sAlgoTransform := ProverTransform.d2sAlgo (δ := δ) (Salt := Salt)
+    (T_H := T_H) (T_P := T_P) (oSpec := oSpec) (StmtIn := StmtIn)
+    (pSpec := pSpec) (U := U)
   obtain ⟨E_std, hE_std⟩ := -- constructor for the DSFS-transformed NARG
-    theorem_3_19_straightline_ks (Salt := Salt) ((Unit →ₒ U) + unifSpec) d2sAuxImpl
-      (Unit →ₒ U) (d2sUnitSampleImpl (U := U)) V relIn relOut
-      (srInitDIP (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec))
-      (srImplLift (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec) oSpecImpl)
-      (ε := ε_sr) (h_sr_ks := h_IP_SR_KS)
+    basicFS_straightlineKS_withCompiledBound d2sAlgoTransform V oSpecImpl relIn relOut
+      tₕ tₚ tₚᵢ
+      (fun maliciousProver hBound => by
+        convert (lemma_5_1_inner (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P) (U := U)
+          oSpecImpl V tₕ tₚ tₚᵢ maliciousProver hBound).2 using 1
+        unfold d2sAlgoTransform
+        congr
+        exact Subsingleton.elim _ _
+      )
+      ε_sr h_IP_SR_KS
   -- Extractor witness: Construction 6.3 in NARG shape (`dsfsNargExtractor`) over `E_std`.
   use dsfsNargExtractor (WitOut := WitOut) (T_H := T_H) (T_P := T_P) E_std
   intro P hBound -- arbitrary bound-query prover
@@ -1154,8 +1416,6 @@ theorem theorem_6_2_straightline
   have hKey := lemma_5_1_inner (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P) (U := U)
     oSpecImpl V tₕ tₚ tₚᵢ
   have hTv := (hKey maliciousProver hQB).1
-  let d2sAlgoTransform := ProverTransform.d2sAlgo (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-    (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   -- **Seam #2 (the §6.2 game-match) — the shared extractor kernel `k := ksFactKernel E_std` and the
   -- two equalities `hL1` (Step 1: unfold Construction 6.3) ∧ `hL3` (Step 3: Hyb₄ = NARG-KS game, KS
   -- twin of `hyb4_eq_coinNARGgame`), consumed directly by the calc below.**
@@ -1211,7 +1471,8 @@ theorem theorem_6_2_straightline
               (verifierPermCallCount (pSpec := pSpec) (δ := δ)) codec.decodingBias) := by
         rw [hL3]
         refine add_le_add ?_ (le_refl _)
-        exact hE_std (nargInducedProverKS maliciousProver d2sAlgoTransform) trivial
+        exact hE_std (nargInducedProverKS maliciousProver d2sAlgoTransform)
+          ⟨maliciousProver, hQB, rfl⟩
 
 end
 
