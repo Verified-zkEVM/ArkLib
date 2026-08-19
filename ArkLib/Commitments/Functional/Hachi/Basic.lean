@@ -5,6 +5,12 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
+import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
+import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
 import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
@@ -71,6 +77,13 @@ development:
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
   the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
   remaining subprotocols).
+
+This file is the folder's **re-export hub**: it imports every per-folder umbrella
+(`Gadget/`, `InnerOuter/`, `QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`, `Recursion/`
+`Basic.lean`), each of which re-exports its own leaves — soundness *and* completeness. So
+`import ArkLib.Commitments.Functional.Hachi` brings in the whole development, and no Hachi file
+depends on the generated root `ArkLib.lean` to be reachable. Adding a file to this tree means adding
+it to its folder umbrella; the umbrella chain then carries it here.
 
 Generic infrastructure the development builds on: the coordinate-wise-special-soundness notion
 and its composition live in `OracleReduction/Security/CoordinateWiseSpecialSoundness/`, the
