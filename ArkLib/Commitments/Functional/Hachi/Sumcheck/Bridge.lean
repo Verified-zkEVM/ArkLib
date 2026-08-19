@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Tobias Rothmann
+Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
 
@@ -9,7 +9,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   # Sumcheck bridge — point claims to hypercube sums (zero-round)
 
   Zero-round bridge from the zero-check's *point-evaluation* claims to the *initial sumcheck*
-  claims consumed by the round loop ([NOZ26] §4.3, "finish the proof using sumcheck protocols"):
+  claims consumed by the round loop:
 
   * `relIn = relNestedZeroCheck` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τα) = 0` at the direct points;
   * `relOut = nestedRoundRel 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
@@ -18,10 +18,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
     alone.
 
   The statement map installs the empty challenge prefix and the initial target pair
-  `(0, zcTargetAlpha)`. The bridge is pure reshaping — the two directions are the algebraic
+  `(0, zcTargetAlpha)`. The bridge is pure reshaping: soundness is the pair of algebraic
   identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`
-  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`) — so the
-  pull-back is proved through those identities.
+  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`).
 
   ## References
 
@@ -48,11 +47,10 @@ def nestedToRoundStatement {TCom : Type} (φF : ZMod q →+* F)
   ⟨s, fun j => j.elim0, 0, zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα⟩
 
 omit [NeZero q] in
-/-- **Sum-to-point pull-back**: the initial hypercube-sum claims at the installed targets imply
-the zero-check's direct point-evaluation claims, through the batching identities
-`∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The points are the
-scalar-round challenges themselves; no derived evaluation-point encoding is involved. The
-commitment, shortness and bound-sanity conjuncts are shared verbatim. -/
+/-- Sum-to-point pull-back: the initial hypercube-sum claims at the installed targets imply
+the zero-check's direct point-evaluation claims, through the identities
+`∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The commitment,
+shortness and bound-sanity conjuncts are shared verbatim. -/
 theorem mem_relNestedZeroCheck_of_nestedRoundRel
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ)
@@ -80,8 +78,9 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w hd hμn] at hAlpha
     exact add_eq_right.mp hAlpha
 
-/-- **The nested sumcheck bridge verifier's purity as data** (`Verifier.PureForm`): the verdict is
-`nestedToRoundStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq` is `rfl`.
+/-- The nested sumcheck bridge verifier's purity as computable data (`Verifier.PureForm`): the
+verdict is `nestedToRoundStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq`
+is `rfl`.
 
 The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
 *run* this verdict at the seam and reading it off the `IsPure` existential would cost
@@ -93,9 +92,9 @@ def nestedSumcheckBridgeVerifierPureForm
   verify := fun stmt _ => nestedToRoundStatement Φ m₀ m₁ φF stmt
   verify_eq := fun _ _ => rfl
 
-/-- **The sumcheck bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+/-- The sumcheck bridge as a (plain) `CWSSPackage`: zero-round `ReduceClaim` at
 `mapStmt := nestedToRoundStatement`, reducing `relNestedZeroCheck` to the round-`0`
-`nestedRoundRel` with no soundness error, hence escape-free. -/
+`nestedRoundRel`. -/
 def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
