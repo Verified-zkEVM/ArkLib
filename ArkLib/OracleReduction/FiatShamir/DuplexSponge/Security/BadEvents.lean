@@ -569,24 +569,34 @@ variable {StmtOut : Type}
   {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
 
-/-- CO25 §5.6 Lemma 5.8 — Per-oracle query budget map for a salted malicious prover on
-`[]ₒ + duplexSpongeChallengeOracle`. `tₕ` bounds `h` queries, `tₚ` forward `p` queries,
-`tₚᵢ` backward `p⁻¹` queries; the `[]ₒ` branch is uncallable so its share is `0`.
-Aligns with the §5.8 hybrid bookkeeping (`duplexSpongeQueryBudgetWithShared` in `Defs.lean`)
-so Lemma 5.8 plugs into `claim_5_21` / `claim_5_22` / `claim_5_24` without re-keying. -/
-def lemma5_8QueryBudget (tₕ tₚ tₚᵢ : ℕ) :
-    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → ℕ :=
-  duplexSpongeQueryBudgetWithShared (oSpec := []ₒ) PEmpty.elim tₕ tₚ tₚᵢ
+/-- CO25 Lemma 5.8 — aggregate DS hash queries in the combined empty-plus-DS surface. -/
+def isLemma5_8HashQuery :
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inl _) => True
+  | _ => False
 
-/-- CO25 Lemma 5.8 — Semantic `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
-`IsLemma5_8QueryBound maliciousProver tₕ tₚ tₚᵢ` asserts that the prover makes at most `tₕ`
-hash queries, `tₚ` forward permutation queries, and `tₚᵢ` inverse permutation queries on the
-combined `[]ₒ + DS` surface that matches the §5.8 hybrid games (LHS=Hyb_0, RHS=Hyb_1). -/
+/-- CO25 Lemma 5.8 — aggregate DS forward-permutation queries in the combined surface. -/
+def isLemma5_8PermQuery :
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inl _)) => True
+  | _ => False
+
+/-- CO25 Lemma 5.8 — aggregate DS inverse-permutation queries in the combined surface. -/
+def isLemma5_8PermInvQuery :
+    ([]ₒ + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inr (.inr (.inr _)) => True
+  | _ => False
+
+/-- CO25 Lemma 5.8 — semantic aggregate `(tₕ, tₚ, tₚᵢ)` query bound for the salted §5.6 prover.
+Each counter ranges over its entire oracle family, rather than resetting for every oracle input. -/
 abbrev IsLemma5_8QueryBound
     (maliciousProver : MaliciousProver []ₒ pSpec StmtIn U δ)
     (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  OracleComp.IsPerIndexQueryBound maliciousProver
-    (lemma5_8QueryBudget (StmtIn := StmtIn) (U := U) tₕ tₚ tₚᵢ)
+  by
+    classical
+    exact OracleComp.IsQueryBoundP maliciousProver isLemma5_8HashQuery tₕ ∧
+      OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermQuery tₚ ∧
+      OracleComp.IsQueryBoundP maliciousProver isLemma5_8PermInvQuery tₚᵢ
 
 /-- CO25 §5.6 — Project a `[]ₒ + DS` combined trace log down to just the DS component.
 The empty-oracle branch is unreachable, so we discard it via `PEmpty.elim`. -/

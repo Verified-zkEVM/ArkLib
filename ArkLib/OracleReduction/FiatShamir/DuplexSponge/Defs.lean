@@ -666,26 +666,6 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {U : Type} [SpongeUnit U] [SpongeSize]
   [Codec pSpec U]
 
-namespace OracleSpec
-
-/-- Per-index query budget for the DS oracle alone: `tₕ` for hash, `tₚ` for forward permutation,
-    `tₚᵢ` for inverse permutation. Used directly for DS-only provers (e.g. Lemma 5.8). -/
-def duplexSpongeQueryBudget (tₕ tₚ tₚᵢ : ℕ) :
-    (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ
-  | .inl _ => tₕ
-  | .inr (.inl _) => tₚ
-  | .inr (.inr _) => tₚᵢ
-
-/-- Extends `duplexSpongeQueryBudget` to a prover that also queries an ambient oracle `oSpec`.
-    `tShared` bounds the `oSpec` slice; DS queries delegate to `duplexSpongeQueryBudget`.
-    Used for provers against `oSpec + duplexSpongeChallengeOracle` (e.g. Lemma 5.1). -/
-def duplexSpongeQueryBudgetWithShared (tShared : oSpec.Domain → ℕ) (tₕ tₚ tₚᵢ : ℕ) :
-    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → ℕ
-  | .inl q => tShared q
-  | .inr q => duplexSpongeQueryBudget tₕ tₚ tₚᵢ q
-
-end OracleSpec
-
 /-- Proof-string format for the salted DSFS surface (`τ` plus prover messages). -/
 abbrev DSSaltedProof (pSpec : ProtocolSpec n) (U : Type) (δ : Nat) :=
   Vector U δ × pSpec.Messages

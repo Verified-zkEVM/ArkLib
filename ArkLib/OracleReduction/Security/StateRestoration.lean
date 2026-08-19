@@ -210,13 +210,18 @@ def coinSRExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
 /-- **Coin-bearing** state-restoration soundness: identical to `soundness`, but the prover may use
 private coins `auxSpec` (answered at game time by the sampler `auxImpl`). The challenge oracle is
 still answered by `srChallengeQueryImpl'` (the pre-sampled function in `init`), the IP's shared
-oracle by `impl`. Taking `auxSpec := []ₒ` recovers `soundness`. -/
+oracle by `impl`. Taking `auxSpec := []ₒ` recovers `soundness`.
+
+The error is quantified over the prover class carved out by `bound`; `bound := fun _ => True`
+recovers the unbounded statement. -/
 def soundnessWithCoins {κ : Type} (auxSpec : OracleSpec κ)
     (auxImpl : QueryImpl auxSpec ProbComp)
     (langIn : Set StmtIn) (langOut : Set StmtOut)
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec → Prop)
     (srSoundnessError : ENNReal) : Prop :=
   ∀ srProver : Prover.StateRestoration.SoundnessWithCoins oSpec StmtIn pSpec auxSpec,
+    bound srProver →
     coinSRExperimentProb (init := init) (impl := impl) auxImpl langIn langOut verifier srProver
       ≤ srSoundnessError
 
@@ -274,16 +279,20 @@ def coinKSExperimentProb {κ : Type} {auxSpec : OracleSpec κ}
 
 /-- **Coin-bearing** SR knowledge soundness (KS analog of `soundnessWithCoins`): there is a
 *straightline* (base-`oSpec`) extractor such that every coin-bearing SR-KS prover (over
-`oSpec + auxSpec`) has extraction-failure probability ≤ the error.  Taking `auxSpec := []ₒ` recovers
-`knowledgeSoundness`. -/
+`oSpec + auxSpec`) in the class carved out by `bound` has extraction-failure probability at most
+the error.  Taking `auxSpec := []ₒ` recovers `knowledgeSoundness`; `bound := fun _ => True`
+is the unbounded statement. -/
 def knowledgeSoundnessWithCoins {κ : Type} (auxSpec : OracleSpec κ)
     (auxImpl : QueryImpl auxSpec ProbComp)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
+    (bound : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
+      auxSpec → Prop)
     (srKnowledgeSoundnessError : ENNReal) : Prop :=
   ∃ srExtractor : Extractor.StateRestoration oSpec StmtIn WitIn WitOut pSpec,
   ∀ srProver : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec StmtIn WitOut pSpec
       auxSpec,
+    bound srProver →
     coinKSExperimentProb (init := init) (impl := impl) auxImpl srExtractor relIn relOut verifier
       srProver ≤ srKnowledgeSoundnessError
 

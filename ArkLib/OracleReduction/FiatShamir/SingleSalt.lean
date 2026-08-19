@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Chung Thai Nguyen
+Authors: Chung Thai Nguyen, Michele Orru
 -/
 
 import ArkLib.OracleReduction.FiatShamir.Basic
@@ -231,6 +231,25 @@ theorem fsSaltedNIV_verify {Salt : Type} [VCVCompatible Salt]
       = fsSaltedVerify V x π :=
   rfl
 
+/-- The SR prover induced by a coin-bearing single-salt FS prover: it only repackages the
+statement, salt, and message tuple. -/
+def srInducedProver {Salt : Type} [VCVCompatible Salt]
+    {κ : Type} {auxSpec : OracleSpec κ}
+    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt)) :
+    Prover.StateRestoration.SoundnessWithCoins oSpec (StmtIn × Salt) pSpec auxSpec := do
+  let ⟨x, proof⟩ ← P
+  return ⟨(x, proof.1), proof.2⟩
+
+/-- The induced SR prover is a pure map of its source prover. -/
+lemma srInducedProver_eq_map {Salt : Type} [VCVCompatible Salt]
+    {κ : Type} {auxSpec : OracleSpec κ}
+    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt)) :
+    srInducedProver (Salt := Salt) P = (fun p => ((p.1, p.2.1), p.2.2)) <$> P := by
+  rw [map_eq_bind_pure_comp]
+  exact bind_congr fun p => rfl
+
 /-- CO25 Theorem 3.18 — Single-salt FS soundness from IP SR-soundness.
 
 If `saltedIPVerifier V` has state-restoration soundness (for `langInSalted langIn`) with error
@@ -249,20 +268,47 @@ theorem theorem_3_18_soundness
     (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
       (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+    (srBound : Prover.StateRestoration.SoundnessWithCoins oSpec (StmtIn × Salt) pSpec
+      auxSpec → Prop)
+    (bound : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt) → Prop)
+    (hBound : ∀ P, bound P → srBound (srInducedProver P))
     (ε : ENNReal)
     -- Coin-bearing SR soundness of the salted IP (the compiled FS prover may use private coins).
     (h_sr : Verifier.StateRestoration.soundnessWithCoins fsInit fsImpl auxSpec auxImpl
-        (langInSalted (Salt := Salt) langIn) langOut (saltedIPVerifier (Salt := Salt) V) ε) :
+        (langInSalted (Salt := Salt) langIn) langOut (saltedIPVerifier (Salt := Salt) V)
+        srBound ε) :
     -- CO25 Def 3.5 (adaptive, coin-bearing NARG soundness) of the single-salt FS argument,
     -- phrased as a property of the NARG verifier `Verifier.singleSaltFiatShamir V`.
     Verifier.adaptiveNARGSoundnessWithCoins
       (init := fsInit) (impl := fsImpl.addLift srChallengeQueryImpl')
       auxImpl
       (verifier := Verifier.singleSaltFiatShamir (Salt := Salt) V)
-      langIn langOut (bound := fun _ => True) ε := by
+      langIn langOut (bound := bound) ε := by
   -- FS↔SR crosswalk: salted FS NARG game ≡ IP SR game (`fsChallengeOracle = srChallengeOracle`,
   -- `deriveTranscriptFS = deriveTranscriptSR`) up to prover-spec regroup; coins carry through.
   sorry
+
+/-- The SR-KS prover induced by a coin-bearing single-salt FS KS prover: it only repackages its
+output statement, salt, messages, and claimed output witness. -/
+def srInducedProverKS {Salt : Type} [VCVCompatible Salt]
+    {κ : Type} {auxSpec : OracleSpec κ}
+    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt × WitOut)) :
+    Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec (StmtIn × Salt) WitOut pSpec
+      auxSpec := do
+  let ⟨x, proof, witOut⟩ ← P
+  return ⟨(x, proof.1), proof.2, witOut⟩
+
+/-- The induced SR-KS prover is a pure map of its source prover. -/
+lemma srInducedProverKS_eq_map {Salt : Type} [VCVCompatible Salt]
+    {κ : Type} {auxSpec : OracleSpec κ}
+    (P : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt × WitOut)) :
+    srInducedProverKS (Salt := Salt) P
+      = (fun p => ((p.1, p.2.1.1), p.2.1.2, p.2.2)) <$> P := by
+  rw [map_eq_bind_pure_comp]
+  exact bind_congr fun p => rfl
 
 /-- CO25 Theorem 3.19 — Single-salt FS straightline KS from IP SR-KS.
 
@@ -285,17 +331,23 @@ theorem theorem_3_19_straightline_ks
     (fsInit : ProbComp (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id))
     (fsImpl : QueryImpl oSpec
       (StateT (QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp))
+    (srBound : Prover.StateRestoration.KnowledgeSoundnessWithCoins oSpec (StmtIn × Salt) WitOut
+      pSpec auxSpec → Prop)
+    (bound : OracleComp ((oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) + auxSpec)
+      (StmtIn × FSSaltedProof pSpec Salt × WitOut) → Prop)
+    (hBound : ∀ P, bound P → srBound (srInducedProverKS P))
     (ε : ENNReal)
     -- Coin-bearing SR knowledge soundness of the salted IP.
     (h_sr_ks : Verifier.StateRestoration.knowledgeSoundnessWithCoins fsInit fsImpl auxSpec auxImpl
-        (relInSalted (Salt := Salt) relIn) relOut (saltedIPVerifier (Salt := Salt) V) ε) :
+        (relInSalted (Salt := Salt) relIn) relOut (saltedIPVerifier (Salt := Salt) V)
+        srBound ε) :
     -- CO25 Def 3.6 (adaptive, coin-bearing straightline KS) of the single-salt FS argument,
     -- phrased as a property of the NARG verifier `Verifier.singleSaltFiatShamir V`.
     Verifier.adaptiveNARGKnowledgeSoundnessWithCoins (WitIn := WitIn) (WitOut := WitOut)
       (init := fsInit) (impl := fsImpl.addLift srChallengeQueryImpl')
       auxImpl auxImplE
       (verifier := Verifier.singleSaltFiatShamir (Salt := Salt) V)
-      relIn relOut (bound := fun _ => True) ε := by
+      relIn relOut (bound := bound) ε := by
   -- FS↔SR crosswalk for KS: SR straightline extractor ⇒ FS straightline extractor (Construction
   -- 3.19); transcripts coincide by alias; coins carry through.
   sorry
