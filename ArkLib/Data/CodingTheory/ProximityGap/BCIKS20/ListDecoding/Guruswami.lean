@@ -83,7 +83,7 @@ structure ModifiedGuruswami
   Q_D_YZ :
     D_YZ Q ≤ n * (m + 1/(2 : ℚ))^3 / (6 * Real.sqrt ((k + 1) / n))
 
-def finsetMaxGetD_le (s : Finset ℕ) (B : ℕ)
+private theorem finsetMaxGetD_le (s : Finset ℕ) (B : ℕ)
     (h : ∀ a ∈ s, a ≤ B) : Option.getD (Finset.max s) 0 ≤ B := by
   have hmax : Finset.max s ≤ (B : WithBot ℕ) := by
     apply Finset.max_le
@@ -1110,7 +1110,7 @@ private theorem symbolicGSKernelWitness_shift_vanish {F : Type} [Field F]
       (ωs i) (u₀ i) (u₁ i) s t
     exact Polynomial.coeff_eq_zero_of_natDegree_lt (lt_of_le_of_lt hdeg (by omega))
 
-noncomputable def modified_guruswami_has_a_solution_core
+private theorem modified_guruswami_has_a_solution_core
     {F : Type} [Field F] [DecidableEq F] {m n k : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
     {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
@@ -1153,12 +1153,6 @@ noncomputable def modified_guruswami_has_a_solution_core
     exact hyzR.trans (by
       simpa only [A] using symbolicUpperTriangleCandidates_ySum_real_bound hn hk hm)
 
-private noncomputable def modified_guruswami_has_a_solution_proof {m n k : ℕ}
-    (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
-    {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
-    ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ :=
-  modified_guruswami_has_a_solution_core hn hk hm
-
 
 omit [DecidableEq (RatFunc F)] in
 /-- The modified Guruswami-Sudan system is solvable: for every evaluation domain `ωs` and word
@@ -1172,7 +1166,7 @@ lemma modified_guruswami_has_a_solution {m n k : ℕ}
     (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
     {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
     ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ :=
-  modified_guruswami_has_a_solution_proof hn hk hm
+  modified_guruswami_has_a_solution_core hn hk hm
 
 end
 
