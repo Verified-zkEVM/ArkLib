@@ -312,32 +312,6 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
       ext q
       simp only [Finset.mem_filter, Finset.mem_univ, true_and]
       rfl
-  -- unfold SimOracle.append
-  -- simp [challengeQueryImpl]
-  -- classical
-  -- simp only [probEvent_bind_eq_tsum]
-  -- simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
-  -- unfold Function.comp
-  -- dsimp
-  -- calc
-  -- _ ≤ ((Finset.card
-  --   {x | ¬oracles 0 = oracles 1 ∧ answer (oracles 0) x = answer (oracles 1) x} : ENNReal) /
-  --       (Fintype.card (Query OStatement))) := by
-  --   rw [ENNReal.tsum_mul_right]
-  --   grw [OracleComp.tsum_probOutput_le_one]
-  --   simp
-  -- _ ≤ (((d : ℝ≥0) / (Fintype.card (Query OStatement)))) := by
-  --   gcongr
-  --   simp
-  --   by_cases hOracles : oracles 0 = oracles 1
-  --   · simp [hOracles]
-  --   · simp [hOracles]
-  --     exact hDist (oracles 0) (oracles 1) hOracles
-  -- _ = _ := by
-  --   refine (ENNReal.toNNReal_eq_toNNReal_iff' ?_ ?_).mp ?_
-  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-  --   · simp
 
 end RandomQuery
 

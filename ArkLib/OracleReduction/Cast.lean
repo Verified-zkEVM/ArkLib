@@ -325,6 +325,9 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
+  -- After `subst`, the cast is definitionally trivial and the only residual difference is the
+  -- `Finite` instance on each challenge type; `uniformSample`'s distribution is
+  -- instance-irrelevant, so the two games have equal `evalDist` and the bound transports.
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
