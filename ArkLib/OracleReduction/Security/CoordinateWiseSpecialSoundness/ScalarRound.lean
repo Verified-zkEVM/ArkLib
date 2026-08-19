@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SingleRound
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Guarded
 
 /-!
   # Scalar single-challenge-round CWSS assembly (generic building block)
@@ -573,5 +574,171 @@ theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar
     rfl
 
 end Assembly
+
+/-! ## The guarded, target-replacing scalar round
+
+The assembly above serves a verifier that is **pure** and **statement-extending**: it never
+rejects, and its output is the input statement paired with the round's message and challenge. A
+Hachi sumcheck round ([NOZ26] Figure 6) is neither. It *rejects* when `gᵢ(0) + gᵢ(1)` misses the
+running target, and it *replaces* that target rather than appending to the statement — the two
+properties are linked, since it is precisely the dropping of the old target that forces the check
+out of the output relation and into a runtime guard (`Guarded.lean`).
+
+So the engine is re-run here at an arbitrary output type `StmtOut`, with the verifier presented as
+a check/output pair `(check, out)` of the input statement, the message and the challenge. The
+escape event and extractor are the `…OfValid` forms, which pin per-branch responses to the
+verifier's *own* output statement — that is what keeps the event tight when the output is not the
+input plus data. -/
+
+section GuardedAssembly
+
+variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn StmtOut WitIn WitOut : Type} {σ : Type}
+
+/-- The guarded scalar-round tree extractor: as `treeExtractorScalar`, but its leaf witnesses
+certify the verifier's own target-replaced outputs. The extractor reads those witnesses directly;
+it never chooses one from a relation proof. -/
+def treeExtractorScalarOfValid {k : ℕ} (hk : 2 ≤ k)
+    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn) :
+    Extractor.TreeBased StmtIn WitIn WitOut (pSpecScalar Msg C)
+      (CWSSStructure.toShape (scalarStructure (Msg := Msg) (C := C) k hk)).arity :=
+  fun stmtIn tree o =>
+    (SingleRound.collect (fun j : Fin k => o (branchPathOf tree
+        (Fin.cast (scalarStructure_arity (Msg := Msg) (C := C) hk).symm j)))).map
+      (mkWitness stmtIn (readPre tree) (readFam hk tree))
+
+variable (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+
+/-- **Per-branch reading of an accepting star tree, guarded form.** Each branch of an accepting
+star both *passes the guard* and lands its output statement in `relOut.language`. The first
+conjunct is the new one: a branch whose check failed would make the verifier `failure` on that
+branch's transcript, which no accepting tree admits
+(`Verifier.not_accepting_of_failure`). -/
+theorem branch_guarded_relOut_language
+    (V : Verifier oSpec StmtIn StmtOut (pSpecScalar Msg C))
+    (check : StmtIn → Msg → C → Bool) (out : StmtIn → Msg → C → StmtOut)
+    (hV : V.IsGuardedWith
+      (fun s tr => check s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+      (fun s tr => out s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩)))
+    (relOut : Set (StmtOut × WitOut))
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (hAcc : (tree2 v challenges).IsAccepting init impl V stmtIn relOut.language)
+    (j : Fin (arity ⟨1, rfl⟩)) :
+    check stmtIn v (challenges j) = true ∧
+      out stmtIn v (challenges j) ∈ relOut.language := by
+  have hacc := hAcc _ (branch_mem v challenges j)
+  have hverify := hV stmtIn (branchTr v challenges j)
+  simp only [branch_pre, branch_challenge] at hverify
+  have hc : check stmtIn v (challenges j) = true := by
+    by_contra hc
+    exact Verifier.not_accepting_of_failure (V := V) (stmt := stmtIn)
+      (tr := branchTr v challenges j) (by rw [hverify, if_neg hc]) hacc
+  exact ⟨hc, Verifier.mem_of_pure_accepting init impl V stmtIn (branchTr v challenges j)
+    relOut.language _ (by rw [hverify, if_pos hc]) hacc⟩
+
+/-- The guarded counterpart of `collect_branch_data`: valid leaf witnessing pins every selected
+response to the target-replaced statement of its branch, without a choice operation. -/
+theorem collect_branch_data_of_valid {k : ℕ}
+    (harity : k = arity ⟨1, rfl⟩)
+    (out : StmtIn → Msg → C → StmtOut)
+    (stmtIn : StmtIn) (v : Msg)
+    (challenges : Fin (arity ⟨1, rfl⟩) → (pSpecScalar Msg C).Challenge ⟨1, rfl⟩)
+    (o : ChallengeTree.LeafWitnesses (tree2 v challenges) WitOut)
+    (relOut : Set (StmtOut × WitOut))
+    (hvalid : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+        (out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+          (p.fullTranscript.challenges ⟨1, rfl⟩), w) ∈ relOut) :
+    ∃ resp : Fin k → WitOut,
+      (∀ j, o (branchPathOf (tree2 v challenges) (Fin.cast harity j)) = some (resp j)) ∧
+      (∀ j, (out stmtIn v (challenges (Fin.cast harity j)), resp j) ∈ relOut) := by
+  have hsome : ∀ j : Fin k,
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).isSome := by
+    intro j
+    obtain ⟨w, hw, -⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+    rw [hw]
+    rfl
+  refine ⟨fun j => (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j),
+    fun j => (Option.some_get (hsome j)).symm, fun j => ?_⟩
+  obtain ⟨w, hw, hrel⟩ := hvalid (branchPathOf (tree2 v challenges) (Fin.cast harity j))
+  rw [fullTranscript_branchPathOf, branch_pre, branch_challenge] at hrel
+  have hget : (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j) = w :=
+    Option.some.inj ((Option.some_get (hsome j)).trans hw)
+  change (out stmtIn v (challenges (Fin.cast harity j)),
+      (o (branchPathOf (tree2 v challenges) (Fin.cast harity j))).get (hsome j)) ∈ relOut
+  rw [hget]
+  exact hrel
+
+/-- **Generic guarded scalar-round escape-threaded CWSS assembly, named form.** The guarded,
+target-replacing twin of `coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar`: the verifier
+is given by a check/output pair rather than assumed pure and statement-extending, and `hmk`
+receives the extra premise that **every branch passed the guard** — the formal content of the
+paper's "valid transcripts" premise, and exactly what a sumcheck round needs in order to read
+`gᵢ(0) + gᵢ(1) = targetᵢ₋₁` off an accepting tree ([NOZ26] Lemma 11).
+
+All tree plumbing is discharged here once; the protocol-specific work lives entirely in `hmk`. -/
+theorem coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded
+    {k : ℕ} (hk : 2 ≤ k)
+    (V : Verifier oSpec StmtIn StmtOut (pSpecScalar Msg C))
+    (check : StmtIn → Msg → C → Bool) (out : StmtIn → Msg → C → StmtOut)
+    (hV : V.IsGuardedWith
+      (fun s tr => check s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+      (fun s tr => out s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩)))
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (mkWitness : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → WitIn)
+    (escLocal : StmtIn → Msg → (Fin k → C) → (Fin k → WitOut) → Prop)
+    (hmk : ∀ s v (fam : Fin k → C) (resp : Fin k → WitOut),
+      (∀ j, check s v (fam j) = true) →
+      (∀ j, (out s v (fam j), resp j) ∈ relOut) → Function.Injective fam →
+      escLocal s v fam resp ∨ (s, mkWitness s v fam resp) ∈ relIn) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
+      (escEventScalarOfValid hk (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal)
+      relIn relOut V (treeExtractorScalarOfValid hk mkWitness) := by
+  classical
+  intro stmtIn tree hStruct hAcc
+  obtain ⟨v, challenges, rfl⟩ := tree_shape tree
+  have harity := (scalarStructure_arity (Msg := Msg) (C := C) (k := k) hk).symm
+  have hbranch := fun j : Fin k =>
+    branch_guarded_relOut_language init impl V check out hV relOut stmtIn v challenges hAcc
+      (Fin.cast harity j)
+  by_cases hesc : escEventScalarOfValid hk
+      (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal stmtIn (tree2 v challenges)
+  · exact Or.inl hesc
+  refine Or.inr fun o hvalid => ?_
+  have hvalid' : ∀ p : LeafPath (tree2 v challenges), ∃ w, o p = some w ∧
+      (out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+        (p.fullTranscript.challenges ⟨1, rfl⟩), w) ∈ relOut := by
+    intro p
+    obtain ⟨w, hw, out', hout, hrel⟩ := hvalid p
+    refine ⟨w, hw, ?_⟩
+    have hout' : out' = out stmtIn (p.fullTranscript.messages ⟨0, rfl⟩)
+        (p.fullTranscript.challenges ⟨1, rfl⟩) :=
+      Verifier.outputs_guarded_subsingleton init impl V
+        (fun s tr => check s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+        (fun s tr => out s (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
+        hV stmtIn p.fullTranscript hout
+    rw [← hout']
+    exact hrel
+  obtain ⟨resp, hro, hresp⟩ :=
+    collect_branch_data_of_valid harity out stmtIn v challenges o relOut hvalid'
+  have hinj := injective_of_nodeOk (Msg := Msg) (C := C) (hk := hk) hStruct.1
+  have hcol : SingleRound.collect (fun j : Fin k =>
+      o (branchPathOf (tree2 v challenges) (Fin.cast harity j))) = some resp :=
+    SingleRound.collect_eq_some hro
+  rcases hmk stmtIn v (fun j => challenges (Fin.cast harity j)) resp
+    (fun j => (hbranch j).1) hresp hinj with hbad | hgood
+  · exact absurd
+      (show escEventScalarOfValid hk
+          (fun s v fam j w => (out s v (fam j), w) ∈ relOut) escLocal stmtIn
+          (tree2 v challenges) from ⟨resp, hresp, hbad⟩)
+      hesc
+  · refine ⟨mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp, ?_, hgood⟩
+    change (SingleRound.collect (fun j : Fin k =>
+        o (branchPathOf (tree2 v challenges) (Fin.cast harity j)))).map
+        (mkWitness stmtIn (readPre (tree2 v challenges)) (readFam hk (tree2 v challenges)))
+      = some (mkWitness stmtIn v (fun j => challenges (Fin.cast harity j)) resp)
+    rw [hcol]
+    rfl
+
+end GuardedAssembly
 
 end CoordinateWise.ScalarRound

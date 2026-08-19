@@ -115,8 +115,8 @@ home_page/            site assets and assembled website root
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
     `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Basic.lean` re-exports the reduction, its
     soundness, and the bridge.
-  - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is a **skeleton** split into one flat
-    folder per paper subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
+  - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is split into one flat folder per paper
+    subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
     escape *event*) for the links whose extraction can break an assumption.
@@ -151,9 +151,11 @@ home_page/            site assets and assembled website root
     `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening. `Sumcheck/Bridge` reshapes the zero-check's point claims into the initial hypercube
-    sums; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by recursion over
-    `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
-    recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports the folder.
+    sums; `Sumcheck/RoundPoly` supplies the partial-hypercube univariate construction and its
+    degree/evaluation facts; `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck (loop by
+    recursion over `▷ᵍ`) with a computable extractor that reads the supplied branch openings;
+    `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail), whose computable
+    extractor reads the unique leaf opening. `Sumcheck/Basic.lean` re-exports the folder.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`

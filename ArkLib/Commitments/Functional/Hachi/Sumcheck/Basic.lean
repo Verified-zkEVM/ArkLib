@@ -17,19 +17,12 @@ recursion (`Recursion/`). It operates on the shared batched-constraint encoding 
 `ZeroCheck/Constraints.lean` (the sumcheck polynomials `F_{0,τ₀}`/`F_{α,τ₁}` and
 `nestedRoundRel`).
 
-## TODO — reuse the existing structured sum-check
+## Relation to `ArkLib/ProofSystem/Sumcheck`
 
-This subprotocol should be **rebased onto `ArkLib/ProofSystem/Sumcheck/Structured`** rather than
-carrying bespoke round machinery. Concretely: the round polynomials `F_{0,τ₀}`/`F_{α,τ₁}` are
-instances of `Sumcheck.Structured.computeRoundPoly` via `SumcheckMultiplierParam` (identity
-combinator for the degree-2 linear check `F_α`; the range combinator `∏ⱼ (X − j)` of degree `2b`
-for `F₀` — the multiplier docstring in `Structured.lean` already anticipates exactly this Hachi
-case); the round consistency is `Sumcheck.Structured.sumcheckConsistencyProp` over
-`SumcheckDomain.boolDomain`; the per-round data is `Structured.Statement`/`SumcheckWitness`. The
-**exact CWSS round verifier remains `sorry`** (`Sumcheck/Rounds.lean`): wiring the
-structured round into the CWSS chain first needs the wire format (`!v[...]`) and the
-record-then-bridge convention reconciled with the structured round's `![...]` RBR verifier
-(`Structured/SingleRound.lean`'s `roundOracleVerifier`), which is deferred.
+This folder keeps Hachi's paired, guarded round layer local: its two sumchecks share a challenge,
+each output statement replaces its targets, and the verifier can reject on the prior-target check.
+The reusable round-polynomial facts live in `Sumcheck/RoundPoly.lean`; a future generic
+guarded/paired sumcheck layer could promote that file and the guarded scalar-round assembly.
 
 ## Folder structure
 
@@ -40,10 +33,14 @@ record-then-bridge convention reconciled with the structured round's `![...]` RB
 * `Sumcheck/Rounds.lean` — **Hachi Figure 6 / Lemma 11**: the `m₀`-round paired sumcheck loop
   (each round sends the univariate pair `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under a shared challenge `aᵢ`), with
   **guarded** round verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`), composed by recursion over the binary
-  guarded append. CWSS theorem `round_coordinateWiseSpecialSoundWithEscape` (**sorried**).
+  guarded append. Lemma 11 is proved at a computable extractor that reads the supplied branch
+  openings directly.
+* `Sumcheck/RoundPoly.lean` — the partial-hypercube round-polynomial construction and its
+  degree/evaluation facts used by Lemma 11.
 * `Sumcheck/FinalEval.lean` — **Hachi Figure 7 tail**: the closing step — the prover sends the
   claimed evaluation `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and
-  the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters.
+  the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters. Its
+  computable extractor reads the unique leaf opening directly.
 
 This umbrella re-exports the folder (`FinalEval` transitively imports `Rounds` and `Bridge`).
 The plain output relation `relWEvalClaim` is the input of the §4.5 recursion; the full chain,

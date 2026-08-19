@@ -82,7 +82,12 @@ explicitly. **Sorried** — the verifier's expensive public-evaluation step (`M�
 dynamic programming). -/
 def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀) (y' : F) : Bool :=
-  sorry
+  ((cEqualityPolynomial m₀ stmt.zc.τ₀).eval stmt.challenges * rangeProduct b y'
+      == stmt.target₀) &&
+    (y' * (cMultilinearExtension m₀
+        (alphaPublicEvals Φ m₀ m₁ φF stmt.zc.rlin stmt.zc.α stmt.zc.τα)).eval stmt.challenges
+      == stmt.targetα) &&
+    decide (bound ≤ stmt.zc.rlin.bound)
 
 /-- The final-evaluation verifier: **guarded** on `finalCheck`, outputting the evaluation claim
 `⟨t, a, y′⟩`. -/
@@ -145,18 +150,12 @@ def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBou
     Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
+    liftShort Φ bound ρBound p.2 ∧
     wTableMleEval Φ m₀ φF b p.2 p.1.point = p.1.value}
 
 variable [SampleableType F]
 
-/-- **The final-evaluation extraction algorithm.**
-
-**Sorried** — this def is the extraction *algorithm* itself (the transcript-level pull-back of the
-proof plan on `finalEval_coordinateWiseSpecialSoundWith`).
-
-No `noncomputable` marker: the gap here is the missing algorithm, not an architectural obstruction,
-so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
-generated code panics when run. -/
+/-- The final-evaluation extractor reads the opening from the unique valid leaf witness. -/
 def finalEvalExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
@@ -164,20 +163,14 @@ def finalEvalExtractor
       (LiftedWitness Φ μ n) (pSpecFinalEval F)
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
         (pSpec := pSpecFinalEval F))).arity :=
-  sorry
+  fun _ tree o => o tree.onlyPath
 
 /-- **CWSS of the final-evaluation step, at the named `finalEvalExtractor`**
 (the named form is deliberate — see `Verifier.treeSpecialSoundWith`; closing this gap means
 filling the extractor and this specification about it).
 
-**Sorried.** Proof plan: the protocol has no challenge round, so CWSS collapses (via the
-probability-phrased no-challenge bridge, which already tolerates rejecting verifiers) to a
-transcript-level extraction: acceptance forces `finalCheck = true` (the guarded rejection
-lemma) and yields a `relWEvalClaim`-witness; evaluate the two sumcheck polynomials at the
-point through `mle[w̃](a) = y′` and the guard's target equations to recover
-`nestedRoundRel m₀`'s point claims (the round-`m₀` `hypercubeSum` is the plain evaluation); the
-bound-sanity conjunct is
-re-supplied by the guard. -/
+The supplied leaf witnessing provides the opening directly; acceptance forces the guard and pins
+the witnessing's reachable output to the verifier's evaluation claim. -/
 theorem finalEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -188,7 +181,47 @@ theorem finalEval_coordinateWiseSpecialSoundWith
       (relWEvalClaim Φ m₀ bound ρBound b K φF)
       (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF)
       (finalEvalExtractor Φ m₀ m₁ bound ρBound K φF) := by
-  sorry
+  intro stmt tree _ hAcc o hvalid
+  obtain ⟨w, hw, out, hout, hrel⟩ := hvalid tree.onlyPath
+  have hacc := hAcc _ tree.onlyPath.mem_fullTranscripts
+  have hguard : finalCheck Φ m₀ m₁ bound b φF stmt (tree.onlyPath.fullTranscript 0) = true := by
+    by_contra hc
+    exact Verifier.not_accepting_of_failure
+      (V := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF)
+      (stmt := stmt) (tr := tree.onlyPath.fullTranscript)
+      (by simp [finalEvalVerifier, hc]) hacc
+  have hout' : out = ⟨stmt.zc.t, stmt.challenges, tree.onlyPath.fullTranscript 0⟩ :=
+    Verifier.outputs_guarded_subsingleton init impl
+      (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF)
+      (fun s tr => finalCheck Φ m₀ m₁ bound b φF s (tr 0))
+      (fun s tr => ⟨s.zc.t, s.challenges, tr 0⟩)
+      (finalEvalVerifierGuardedForm Φ m₀ m₁ bound b φF).verify_eq
+      stmt tree.onlyPath.fullTranscript hout
+  rw [hout'] at hrel
+  obtain ⟨hcom, hshort, hval⟩ := hrel
+  rw [finalCheck, Bool.and_eq_true, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
+    decide_eq_true_iff] at hguard
+  obtain ⟨⟨hg0, hgα⟩, hgb⟩ := hguard
+  refine ⟨w, ?_, ?_⟩
+  · change o tree.onlyPath = some w
+    exact hw
+  · refine ⟨hcom, hshort, ?_, ?_, hgb⟩
+    · change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ w) m₀
+        stmt.challenges = _
+      refine (hypercubeSum_of_le m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ w) le_rfl
+        stmt.challenges).trans ?_
+      simp only [Fin.eta]
+      rw [eval_sumcheckPolyZero, hval]
+      exact hg0
+    · change hypercubeSum m₀
+        (sumcheckPolyAlpha Φ m₀ m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) m₀
+        stmt.challenges = _
+      refine (hypercubeSum_of_le m₀
+        (sumcheckPolyAlpha Φ m₀ m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα w) le_rfl
+        stmt.challenges).trans ?_
+      simp only [Fin.eta]
+      rw [eval_sumcheckPolyAlpha, hval]
+      exact hgα
 
 /-- **The final-evaluation step as a guarded `GCWSSPackage`**: the guarded one-message
 verifier with the empty challenge structure, reducing the round-`m₀` seam to the evaluation claim

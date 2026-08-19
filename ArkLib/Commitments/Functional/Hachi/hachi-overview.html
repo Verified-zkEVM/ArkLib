@@ -368,11 +368,11 @@
       subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
-      <span class="chip">31 files</span>
-      <span class="chip">24 with protocol content</span>
+      <span class="chip">32 files</span>
+      <span class="chip">25 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–4 sorry-free</span>
-      <span class="chip">34 open sorries</span>
+      <span class="chip">rows 1–9 source proofs complete</span>
+      <span class="chip">13 open sorries</span>
     </div>
   </div>
 </header>
@@ -386,7 +386,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 24 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
+      <p>Counts are over the 25 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects real <span class="mono">sorry</span> proof terms, not the word
         appearing in a docstring.</p>
     </div>
@@ -498,11 +498,11 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 31 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 32 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 31</button>
+      <button data-f="all" aria-pressed="true">all · 32</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
@@ -597,20 +597,20 @@
         desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; <code>ChallengeTree.LeafWitnesses</code> supplies an <code>Option</code> candidate output witness at every leaf, and the named extractor directly returns the all-left entry without a runtime relation search (classical choice is proof-local). This scalar-round route has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters) and requires sequential Fiat–Shamir hashing. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
-      znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
+      znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix; its source-level certificates and extractors are now complete.",
       rows:[
       { n:7, kind:"bridge", name:"Sumcheck entry bridge", sub:"Sumcheck", fn:"Bridge.lean",
         files:[["Sumcheck","Bridge.lean"]], ref:"§4.3", rounds:"0 rounds", cwss:"any",
-        relIn:"relNestedZeroCheck", relOut:"nestedRoundRel 0", status:"wip", sorry:0, badges:["bridge"],
-        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier). The pull-back <code>mem_relNestedZeroCheck_of_nestedRoundRel</code> is now <b>proved</b> in this file, but it routes through the two still-sorried sum identities <code>sum_sumcheckPoly*</code> (Constraints.lean), so it inherits their <code>sorryAx</code>." },
-      { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
-        files:[["Sumcheck","Rounds.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
-        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"wip", sorry:3, badges:["guarded"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Composed by recursion over the guarded escape append into <code>roundsChain</code>, whose recursion pins the relation seams. The weak-binding failure mode is the escape event <code>roundEsc</code>; the three sorries are Lemma&nbsp;11 itself, its named <code>roundExtractor</code>, and the round encoding." },
+        relIn:"relNestedZeroCheck", relOut:"nestedRoundRel 0", status:"proven", sorry:0, badges:["bridge"],
+        desc:"Reshapes the zero-check's point-evaluation claims into the initial hypercube-sum claims (∑ F₀ = 0, ∑ F_α = a with the linear target a computed by the verifier)." },
+      { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds · RoundPoly",
+        files:[["Sumcheck","Rounds.lean"],["Sumcheck","RoundPoly.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
+        relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"proven", sorry:0, badges:["guarded","core"],
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Lemma&nbsp;11 is proved at a computable <code>roundExtractor</code> that reads supplied branch openings directly; unequal openings trigger the weak-binding escape event <code>roundEsc</code>." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
-        relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"wip", sorry:3, badges:["guarded"],
-        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Output is the evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
+        relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"proven", sorry:0, badges:["guarded"],
+        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. The computable <code>finalEvalExtractor</code> returns the opening in the unique supplied leaf witness." },
     ]},
   ];
 
@@ -670,9 +670,10 @@
     ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","wip",2],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
-    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
-    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",1],
-    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",2],
+    ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
+    ["Sumcheck","RoundPoly.lean","infrastructure","§4.3 · Fig6","8","proven",0],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
+    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","proven",0],
   ];
 
   /* ---------------- HELPERS ---------------- */
