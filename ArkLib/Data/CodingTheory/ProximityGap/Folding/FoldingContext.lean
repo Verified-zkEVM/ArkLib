@@ -96,6 +96,7 @@ scoped instance {k d n : ℕ} [FoldingContext k d n] : NeZero n where
     have := FoldingContextMiddle.k_le_n
     omega
 
+set_option linter.defProp false in
 /-- Build a `FoldingContext` from the three inequalities `1 ≤ k`, `k ≤ d` and `d ≤ n`. -/
 @[reducible]
 def mk' {k d n : ℕ} (h_k_ge_1 : 1 ≤ k) (h_k_le_d : k ≤ d)
@@ -104,6 +105,7 @@ def mk' {k d n : ℕ} (h_k_ge_1 : 1 ≤ k) (h_k_le_d : k ≤ d)
   k_le_d := h_k_le_d
   d_le_n := h_d_le_n
 
+set_option linter.defProp false in
 /-- Any `FoldingContextMiddle k n` upgrades to the degenerate full context
   `FoldingContext k n n`, i.e. the rate-one case where messages may have degree up to
   the size of the domain. Useful for reusing full-context lemmas when only the middle
@@ -114,6 +116,7 @@ def ofMiddle {k n : ℕ} [FoldingContextMiddle k n] : FoldingContext k n n where
   k_le_d := FoldingContextMiddle.k_le_n
   d_le_n := le_refl _
 
+set_option linter.defProp false in
 /-- If `k` folding steps are allowed then so is just one step. -/
 @[reducible]
 def oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
