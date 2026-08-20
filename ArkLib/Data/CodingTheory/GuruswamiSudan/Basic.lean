@@ -874,13 +874,13 @@ open ReedSolomon
 lemma degree_eval_le_weightedDegree (Q : F[X][Y]) (P : F[X]) (k : ℕ) (hP : P.natDegree ≤ k - 1) :
     (Q.eval P).natDegree ≤ natWeightedDegree Q 1 (k - 1) := by
   have h_deg_Q : (Q.eval P).natDegree ≤
-      ((Q.toFinsupp.support).image (fun m => (Q.coeff m).natDegree + (k - 1) * m)).sup id := by
+      (Q.support.image (fun m => (Q.coeff m).natDegree + (k - 1) * m)).sup id := by
     rw [Polynomial.eval_eq_sum_range]
     refine le_trans (Polynomial.natDegree_sum_le _ _) (Finset.sup_le ?_)
     intro i hi; by_cases hi' : Q.coeff i = 0 <;> simp_all only [mem_range, Function.comp_apply,
       zero_mul, natDegree_zero, sup_image, CompTriple.comp_eq, zero_le]
     refine le_trans ?_ (Finset.le_sup
-      (f := fun m ↦ (Q.coeff m).natDegree + (k - 1) * m) (show i ∈ Q.toFinsupp.support from ?_))
+      (f := fun m ↦ (Q.coeff m).natDegree + (k - 1) * m) (show i ∈ Q.support from ?_))
     · exact le_trans (Polynomial.natDegree_mul_le ..) (by norm_num; nlinarith)
     · aesop
   unfold natWeightedDegree

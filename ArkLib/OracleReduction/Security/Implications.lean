@@ -388,7 +388,7 @@ namespace OracleVerifier
 open ProtocolSpec
 
 variable {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   [∀ i, OracleInterface (pSpec.Message i)]
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in

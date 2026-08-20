@@ -194,7 +194,6 @@ lemma reduction_verifier_eq_verifier :
     (reduction R deg D n oSpec).verifier = verifier R deg D n oSpec := by
   rfl
 
-omit [SampleableType R] in
 @[simp]
 lemma oracleReduction_verifier_eq_oracleVerifier :
     (oracleReduction R deg D n oSpec).verifier = oracleVerifier R deg D n oSpec := by

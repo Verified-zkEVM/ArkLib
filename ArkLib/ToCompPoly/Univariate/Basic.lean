@@ -176,32 +176,30 @@ private lemma divModByMonicAux_go_eq (n : ℕ) (p q : CPolynomial.Raw R) :
     · simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
       rw [Raw.toPoly_zero]
       ring
-    · let k := p.size - q.size
-      let q' := Raw.C p.leadingCoeff * (q * Raw.X.pow k)
-      let p' := (p - q').trim
-      have ih' := ih p'
-      simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
-      change q.toPoly *
-            ((Raw.divModByMonicAux.go n p' q).1 +
-              Raw.C p.leadingCoeff * Raw.X ^ k).toPoly +
-          (Raw.divModByMonicAux.go n p' q).2.toPoly = p.toPoly
+    · simp only [Raw.divModByMonicAux.go, hlt, ↓reduceIte]
+      set k := p.size - q.size
+      set step := (p - Raw.C p.leadingCoeff * (q * Raw.X.pow k)).trim
+      have hstep_as_pow :
+          step = (p - Raw.C p.leadingCoeff * (q * Raw.X ^ k)).trim := by
+        simp only [step, HPow.hPow, Pow.pow]
+      have ih' := ih step
       rw [Raw.toPoly_add, Raw.toPoly_mul_eq, Raw.toPoly_C, Raw.toPoly_pow_eq,
         Raw.toPoly_X]
-      set g := Raw.divModByMonicAux.go n p' q
-      change q.toPoly * g.1.toPoly + g.2.toPoly = p'.toPoly at ih'
+      set g := Raw.divModByMonicAux.go n step q
       calc
         q.toPoly * (g.1.toPoly + Polynomial.C p.leadingCoeff * Polynomial.X ^ k) +
             g.2.toPoly =
           (q.toPoly * g.1.toPoly + g.2.toPoly) +
             q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ k) := by
             ring
-        _ = p'.toPoly +
+        _ = step.toPoly +
             q.toPoly * (Polynomial.C p.leadingCoeff * Polynomial.X ^ k) := by
             rw [ih']
         _ = p.toPoly := by
-          dsimp only [p', q', k]
+          rw [hstep_as_pow]
+          simp only [k]
           rw [Raw.toPoly_trim, Raw.toPoly_sub_eq, Raw.toPoly_mul_eq, Raw.toPoly_C,
-            Raw.toPoly_mul_eq, Raw.toPoly_powFn_eq, Raw.toPoly_X]
+            Raw.toPoly_mul_eq, Raw.toPoly_pow_eq, Raw.toPoly_X]
           ring
 
 

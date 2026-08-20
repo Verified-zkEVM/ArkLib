@@ -34,6 +34,13 @@ witness.
   Corollary 1 = source of Theorem 4.17.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -56,13 +63,13 @@ private noncomputable def cs25CertificateCount
 private noncomputable def cs25EntropyGapFn (q : ℕ) (x : ℝ) : ℝ :=
   Real.log q * Real.qaryEntropy q x - x * (Real.log q) ^ 2 - 4 * x * (1 - x)
 
-private noncomputable def cs25EntropyGapFn_continuous_proof (q : ℕ) :
+private theorem cs25EntropyGapFn_continuous_proof (q : ℕ) :
     Continuous (cs25EntropyGapFn q) := by
   unfold cs25EntropyGapFn
   fun_prop
 
 open Filter Topology in
-private noncomputable def cs25EntropyGapFn_deriv2_proof
+private theorem cs25EntropyGapFn_deriv2_proof
     (q : ℕ) (x : ℝ) (hx0 : x ≠ 0) (hx1 : x ≠ 1) :
     (deriv^[2] (cs25EntropyGapFn q)) x =
       8 - Real.log (q : ℝ) / (x * (1 - x)) := by
@@ -130,7 +137,7 @@ private noncomputable def cs25OverlapSum (q n k f : ℕ) : ℝ :=
   ∑ ℓ ∈ Finset.range (n - f - k),
     (Nat.choose f ℓ : ℝ) * (Nat.choose (n - f) ℓ : ℝ) / (q : ℝ) ^ ℓ
 
-private noncomputable def cs25OverlapSum_le_exp_two_sqrt
+private theorem cs25OverlapSum_le_exp_two_sqrt
     (q n k f : ℕ) (hq : 0 < q) :
     cs25OverlapSum q n k f ≤
       Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) := by
@@ -186,7 +193,7 @@ private noncomputable def cs25OverlapSum_le_exp_two_sqrt
           dsimp [x]
           ring
 
-private noncomputable def cs25OverlapSum_nonneg (q n k f : ℕ) :
+private theorem cs25OverlapSum_nonneg (q n k f : ℕ) :
     0 ≤ cs25OverlapSum q n k f := by
   unfold cs25OverlapSum
   apply Finset.sum_nonneg
@@ -202,7 +209,7 @@ private def cs25SecondMomentANat (q n k f : ℕ) : ℕ :=
     Nat.choose f ℓ * Nat.choose (n - f) ℓ * q ^ (n - f - k - ℓ)
 
 open scoped BigOperators in
-private noncomputable def cs25SecondMomentA_eq_weighted_sum_proof
+private theorem cs25SecondMomentA_eq_weighted_sum_proof
     (q n k f : ℕ) (hq : 0 < q) :
     cs25SecondMomentA q n k f =
       ∑ ℓ ∈ Finset.range (n - f - k),
@@ -218,7 +225,7 @@ private noncomputable def cs25SecondMomentA_eq_weighted_sum_proof
   ring
 
 open scoped BigOperators in
-private noncomputable def cs25SecondMomentANat_cast_proof
+private theorem cs25SecondMomentANat_cast_proof
     (q n k f : ℕ) (hq : 0 < q) :
     (cs25SecondMomentANat q n k f : ℝ) = cs25SecondMomentA q n k f := by
   rw [cs25SecondMomentA_eq_weighted_sum_proof q n k f hq]
@@ -226,12 +233,12 @@ private noncomputable def cs25SecondMomentANat_cast_proof
   push_cast
   rfl
 
-private noncomputable def cs25SecondMomentA_nonneg_proof (q n k f : ℕ) :
+private theorem cs25SecondMomentA_nonneg_proof (q n k f : ℕ) :
     0 ≤ cs25SecondMomentA q n k f := by
   unfold cs25SecondMomentA
   exact mul_nonneg (by positivity) (cs25OverlapSum_nonneg q n k f)
 
-private noncomputable def cs25_entropy_shell_le_choose_proof
+private theorem cs25_entropy_shell_le_choose_proof
     (q n f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
     (hfpos : 0 < f) (hflt : f < n) :
     (q : ℝ) ^ ((n : ℝ) * qEntropy q ((f : ℝ) / n)) ≤
@@ -269,7 +276,7 @@ private noncomputable def cs25_entropy_shell_le_choose_proof
     _ = (Nat.choose n f : ℝ) * ((q : ℝ) - 1) ^ f * D := by
       rw [hcast]
 
-private noncomputable def cs25_log_card_gt_two (q : ℕ) (hq : 10 ≤ q) :
+private theorem cs25_log_card_gt_two (q : ℕ) (hq : 10 ≤ q) :
     2 < Real.log q := by
   have hqR : (0 : ℝ) < q := by exact_mod_cast (lt_of_lt_of_le (by omega : 0 < 10) hq)
   rw [Real.lt_log_iff_exp_lt hqR]
@@ -282,7 +289,7 @@ private noncomputable def cs25_log_card_gt_two (q : ℕ) (hq : 10 ≤ q) :
     _ < 10 := hesq
     _ ≤ q := by exact_mod_cast hq
 
-private noncomputable def cs25EntropyGapFn_endpoints_proof
+private theorem cs25EntropyGapFn_endpoints_proof
     (q : ℕ) (hq : 10 ≤ q) :
     cs25EntropyGapFn q 0 = 0 ∧
       0 ≤ cs25EntropyGapFn q (1 - 1 / (q : ℝ)) := by
@@ -312,7 +319,7 @@ private noncomputable def cs25EntropyGapFn_endpoints_proof
             (Real.log (q : ℝ) ^ 2 - 4 * (1 - 1 / (q : ℝ))) := by ring
       _ ≥ 0 := mul_nonneg (by positivity) (by nlinarith [sq_nonneg (Real.log (q : ℝ) - 2)])
 
-private noncomputable def cs25_entropy_gap_lt_half_proof
+private theorem cs25_entropy_gap_lt_half_proof
     (q : ℕ) (x : ℝ) (hq : 10 ≤ q) (hx : 0 ≤ x) :
     qEntropy q x - x < (1 : ℝ) / 2 := by
   have hloggt : 2 < Real.log (q : ℝ) := cs25_log_card_gt_two q hq
@@ -349,7 +356,7 @@ private noncomputable def cs25_entropy_gap_lt_half_proof
     nlinarith
   exact lt_of_le_of_lt hmain hfrac
 
-private noncomputable def cs25_quadratic_entropy_gap_proof
+private theorem cs25_quadratic_entropy_gap_proof
     (q : ℕ) (x : ℝ) (hq : 10 ≤ q)
     (hx0 : 0 ≤ x) (hxpeak : x ≤ 1 - 1 / (q : ℝ)) :
     4 * x * (1 - x) ≤
@@ -403,7 +410,7 @@ private noncomputable def cs25_quadratic_entropy_gap_proof
   rw [hident] at hGx
   linarith
 
-private noncomputable def cs25_shell_factor_lt_q
+private theorem cs25_shell_factor_lt_q
     (q n f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     (8 * (n : ℝ) * ((f : ℝ) / n) * (1 - (f : ℝ) / n)) ^ ((1 : ℝ) / 2) < q := by
@@ -424,7 +431,7 @@ private noncomputable def cs25_shell_factor_lt_q
   dsimp [x] at hA ⊢
   nlinarith
 
-private noncomputable def cs25_shell_power_bound
+private theorem cs25_shell_power_bound
     (q n f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     ((q : ℝ) - 1) ^ (f + 1) *
@@ -446,7 +453,7 @@ private noncomputable def cs25_shell_power_bound
     _ = (q : ℝ) ^ (f + 2) := by
       simp only [pow_succ]
 
-private noncomputable def epsCa_le_one
+private theorem epsCa_le_one
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (δ_fld δ_int : NNReal) :
@@ -459,7 +466,7 @@ private noncomputable def epsCa_le_one
   · exact PMF.coe_le_one _ _
 
 open scoped ProbabilityTheory in
-private noncomputable def epsCa_eq_one_of_all_folds_close_not_joint
+private theorem epsCa_eq_one_of_all_folds_close_not_joint
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (δ : NNReal) (u : Code.WordStack F (Fin 2) ι)
@@ -493,7 +500,7 @@ private noncomputable def epsCa_eq_one_of_all_folds_close_not_joint
         else Pr_{let γ ← $ᵖ F}[
           Code.relDistFromCode (w 0 + γ • w 1) C ≤ (δ : ENNReal)]) u
 
-private noncomputable def exists_base_all_translates_close_of_bad_count
+private theorem exists_base_all_translates_close_of_bad_count
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (v : ι → F) (f : ℕ)
@@ -554,7 +561,7 @@ private noncomputable def exists_base_all_translates_close_of_bad_count
   rw [← hambient] at hlt
   exact (lt_irrefl _ hlt)
 
-private noncomputable def nat_card_lt_pow_pred_of_weighted_bound
+private theorem nat_card_lt_pow_pred_of_weighted_bound
     (q n N B : ℕ) (A : ℝ)
     (hq : 1 < q) (hn : 0 < n) (hN : 0 < N) (hA : 0 ≤ A)
     (hsmall : ((q : ℝ) - 1) * A < (N : ℝ))
@@ -590,7 +597,7 @@ private noncomputable def nat_card_lt_pow_pred_of_weighted_bound
   have hcontr : (N : ℝ) ≤ ((q : ℝ) - 1) * A := by linarith
   exact (not_le_of_gt hsmall) hcontr
 
-private noncomputable def not_jointProximity_of_second_row_far
+private theorem not_jointProximity_of_second_row_far
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (C : Set (ι → F)) (u : Code.WordStack F (Fin 2) ι) (δ : NNReal)
@@ -626,7 +633,7 @@ private noncomputable def rsAgreementPairCount
     w ∈ rsAgreementSpace domain k E ∧
     w ∈ rsAgreementSpace domain k E').card
 
-private noncomputable def rsAgreementSpace_mem_iff
+private theorem rsAgreementSpace_mem_iff
     {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) (w : ι → F) :
@@ -650,7 +657,7 @@ private noncomputable def rsAgreementSpace_mem_iff
     · ext i
       simp [Pi.add_apply, Pi.sub_apply]
 
-private noncomputable def rsAgreementSpace_eq_top_of_large
+private theorem rsAgreementSpace_eq_top_of_large
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
@@ -682,7 +689,7 @@ private noncomputable def rsAgreementSpace_eq_top_of_large
 private def rsBoundaryWord {ι F : Type} [Monoid F] (domain : ι ↪ F) (k : ℕ) : ι → F :=
   fun i => domain i ^ k
 
-private noncomputable def rsBoundaryWord_far
+private theorem rsBoundaryWord_far
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -730,7 +737,7 @@ private noncomputable def rsBoundaryWord_far
   have hfar : f < hammingDist (rsBoundaryWord domain k) c := by omega
   exact (not_le_of_gt hfar) (by exact_mod_cast hdist)
 
-private noncomputable def rsCode_disjoint_supported_of_small
+private theorem rsCode_disjoint_supported_of_small
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
@@ -755,7 +762,7 @@ private noncomputable def rsCode_disjoint_supported_of_small
   rw [hcomp] at hcard
   omega
 
-private noncomputable def rsAgreementSpace_finrank_small
+private theorem rsAgreementSpace_finrank_small
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
@@ -775,7 +782,7 @@ private noncomputable def rsAgreementSpace_finrank_small
   unfold rsAgreementSpace
   omega
 
-private noncomputable def rsAgreementSpace_filter_card_small_proof
+private theorem rsAgreementSpace_filter_card_small_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
@@ -800,7 +807,7 @@ private noncomputable def rsAgreementSpace_filter_card_small_proof
     _ = Fintype.card F ^ (k + E.card) := by
       rw [rsAgreementSpace_finrank_small domain k E hsmall]
 
-private noncomputable def rsAgreementSpace_finrank
+private theorem rsAgreementSpace_finrank
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι) :
@@ -812,7 +819,7 @@ private noncomputable def rsAgreementSpace_finrank
     rw [rsAgreementSpace_eq_top_of_large domain k E hlarge, finrank_top,
       Module.finrank_pi, min_eq_left hlarge]
 
-private noncomputable def rsAgreementSpace_ncard_small_proof
+private theorem rsAgreementSpace_ncard_small_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E : Finset ι)
@@ -834,7 +841,7 @@ private noncomputable def rsAgreementCertificates
   exact (rsExactErrorSets f).filter fun E =>
     w ∈ rsAgreementSpace domain k E
 
-private noncomputable def cs25CertificateCount_eq_filter_proof
+private theorem cs25CertificateCount_eq_filter_proof
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (w : ι → F) :
@@ -848,7 +855,7 @@ private noncomputable def cs25CertificateCount_eq_filter_proof
     Finset.mem_powersetCard, Finset.subset_univ]
   rw [rsAgreementSpace_mem_iff]
 
-private noncomputable def cs25CertificateCount_pos_iff_close_proof
+private theorem cs25CertificateCount_pos_iff_close_proof
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (w : ι → F)
@@ -893,7 +900,7 @@ private noncomputable def cs25CertificateCount_pos_iff_close_proof
       exact hDE (Code.mem_disagreementCols.mpr hne)
 
 open scoped BigOperators in
-private noncomputable def cs25CertificateCount_sq_sum_eq_pair_sum_nat_proof
+private theorem cs25CertificateCount_sq_sum_eq_pair_sum_nat_proof
     {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) :
@@ -951,14 +958,14 @@ private noncomputable def cs25CertificateCount_sq_sum_eq_pair_sum_nat_proof
       dsimp [P, S]
       exact Finset.sum_product _ _ _
 
-private def rsExactErrorSets_card_proof
+private theorem rsExactErrorSets_card_proof
     {ι : Type} [Fintype ι] [DecidableEq ι] (f : ℕ) :
     (rsExactErrorSets (ι := ι) f).card = Nat.choose (Fintype.card ι) f := by
   unfold rsExactErrorSets
   rw [Finset.card_powersetCard, Finset.card_univ]
 
 open scoped BigOperators in
-private noncomputable def cs25CertificateCount_sum_nat_proof
+private theorem cs25CertificateCount_sum_nat_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -1023,7 +1030,7 @@ private noncomputable def rsFarWords
   exact Finset.univ.filter fun w =>
     ¬ Code.distFromCode w (ReedSolomon.code domain k : Set (ι → F)) ≤ f
 
-private noncomputable def rsSupportedSpace_sup
+private theorem rsSupportedSpace_sup
     {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] (E E' : Finset ι) :
     Pi.spanSubset F (E : Set ι) ⊔ Pi.spanSubset F (E' : Set ι) =
@@ -1064,7 +1071,7 @@ private noncomputable def rsSupportedSpace_sup
     · ext i
       simp [z, y]
 
-private noncomputable def rsAgreementSpace_sup
+private theorem rsAgreementSpace_sup
     {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k : ℕ) (E E' : Finset ι) :
@@ -1083,7 +1090,7 @@ private noncomputable def rsAgreementSpace_sup
         (Pi.spanSubset F (E : Set ι) ⊔ Pi.spanSubset F (E' : Set ι)) := by
           rw [← sup_assoc, sup_idem]
 
-private noncomputable def rs_close_words_eq_certificate_support_proof
+private theorem rs_close_words_eq_certificate_support_proof
     {ι F : Type} [Fintype ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (hf : f ≤ Fintype.card ι) :
@@ -1094,7 +1101,7 @@ private noncomputable def rs_close_words_eq_certificate_support_proof
   ext w
   simp [rsFarWords, cs25CertificateCount_pos_iff_close_proof domain k f w hf]
 
-private noncomputable def rs_entropy_rate_d_le_kf_proof
+private theorem rs_entropy_rate_d_le_kf_proof
     (q n k f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
@@ -1128,7 +1135,7 @@ private noncomputable def rs_entropy_rate_d_le_kf_proof
   have hnat : n < 2 * (k + f) := by exact_mod_cast hreal
   omega
 
-private def rs_entropy_rate_nat_margin {ι : Type} [Fintype ι] [Nonempty ι]
+private theorem rs_entropy_rate_nat_margin {ι : Type} [Fintype ι] [Nonempty ι]
     (k f : ℕ)
     (hδ_hi : (k : ℝ) / Fintype.card ι ≤
       1 - (f : ℝ) / Fintype.card ι - 2 / (Fintype.card ι : ℝ)) :
@@ -1140,7 +1147,7 @@ private def rs_entropy_rate_nat_margin {ι : Type} [Fintype ι] [Nonempty ι]
   have hR : (k : ℝ) + f + 2 ≤ Fintype.card ι := by nlinarith
   exact_mod_cast hR
 
-private noncomputable def rs_entropy_rate_parameter_facts
+private theorem rs_entropy_rate_parameter_facts
     (q n k f : ℕ) (hn : 0 < n)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
@@ -1183,7 +1190,7 @@ private noncomputable def rs_entropy_rate_parameter_facts
     lt_of_lt_of_le (by linarith : 0 < 4 / (n : ℝ) + s) hgap
   exact ⟨hslack, hfpos, hflt, hdiff⟩
 
-private noncomputable def rs_entropy_rate_exponent_slack
+private theorem rs_entropy_rate_exponent_slack
     (q n k f : ℕ) (hn : 0 < n)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
@@ -1223,7 +1230,7 @@ private noncomputable def rs_entropy_rate_exponent_slack
   rw [hdcast, hrhs]
   linarith
 
-private noncomputable def rs_entropy_rate_full_parameter_facts_proof
+private theorem rs_entropy_rate_full_parameter_facts_proof
     (q n k f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
@@ -1237,7 +1244,7 @@ private noncomputable def rs_entropy_rate_full_parameter_facts_proof
   have hdle := rs_entropy_rate_d_le_kf_proof q n k f hq hn hlo
   exact ⟨hmargin, hfpos, hflt, by omega, hdle⟩
 
-private noncomputable def rs_exact_error_exchange_fiber_card_le_proof
+private theorem rs_exact_error_exchange_fiber_card_le_proof
     {ι : Type} [Fintype ι] [DecidableEq ι]
     (E : Finset ι) (f ℓ : ℕ) (hE : E.card = f) :
     ((rsExactErrorSets (ι := ι) f).filter
@@ -1284,7 +1291,7 @@ private noncomputable def rs_exact_error_exchange_fiber_card_le_proof
   simpa [S, T, Finset.card_product, Finset.card_powersetCard,
     Finset.card_sdiff, hE, Finset.card_univ] using hcard
 
-private def rs_exact_error_union_card_proof
+private theorem rs_exact_error_union_card_proof
     {ι : Type} [DecidableEq ι] (E E' : Finset ι) (f : ℕ)
     (_hE : E.card = f) (hE' : E'.card = f) :
     (E ∪ E').card = f + (E \ E').card := by
@@ -1293,7 +1300,7 @@ private def rs_exact_error_union_card_proof
       (Finset.card_sdiff_add_card E E').symm
     _ = f + (E \ E').card := by omega
 
-private noncomputable def rsAgreementPair_finrank_proof
+private theorem rsAgreementPair_finrank_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (E E' : Finset ι)
@@ -1323,7 +1330,7 @@ private noncomputable def rsAgreementPair_finrank_proof
     rw [min_eq_left hnle] at hdim
     omega
 
-private noncomputable def rsAgreementPairCount_eq_pow_proof
+private theorem rsAgreementPairCount_eq_pow_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (E E' : Finset ι)
@@ -1356,7 +1363,7 @@ private noncomputable def rsAgreementPairCount_eq_pow_proof
       rw [rsAgreementPair_finrank_proof domain k f E E' hsmall hE hE']
 
 open scoped BigOperators in
-private noncomputable def rsAgreementPairCount_high_overlap_sum_le_proof
+private theorem rsAgreementPairCount_high_overlap_sum_le_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
@@ -1395,7 +1402,7 @@ private noncomputable def rsAgreementPairCount_high_overlap_sum_le_proof
     simpa [Nat.mul_comm] using hmul)
 
 open scoped BigOperators in
-private noncomputable def rsAgreementPairCount_low_overlap_fiber_le_proof
+private theorem rsAgreementPairCount_low_overlap_fiber_le_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f ℓ : ℕ) (E : Finset ι)
@@ -1431,7 +1438,7 @@ private noncomputable def rsAgreementPairCount_low_overlap_fiber_le_proof
     simpa [Nat.mul_assoc] using hmul)
 
 open scoped BigOperators in
-private noncomputable def rsAgreementPairCount_low_overlap_sum_le_proof
+private theorem rsAgreementPairCount_low_overlap_sum_le_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
@@ -1488,7 +1495,7 @@ private noncomputable def rsAgreementPairCount_low_overlap_sum_le_proof
         ac_rfl
 
 open scoped BigOperators in
-private noncomputable def rsAgreementPairCount_fixed_error_sum_le_proof
+private theorem rsAgreementPairCount_fixed_error_sum_le_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ) (E : Finset ι)
@@ -1535,7 +1542,7 @@ private noncomputable def rsAgreementPairCount_fixed_error_sum_le_proof
     _ = Q * (A + N) := by rw [Nat.mul_add]
 
 open scoped BigOperators in
-private noncomputable def cs25CertificateCount_sq_sum_le_proof
+private theorem cs25CertificateCount_sq_sum_le_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -1577,7 +1584,7 @@ private noncomputable def cs25CertificateCount_sq_sum_le_proof
       simp only [Q, Nat.nsmul_eq_mul, Nat.mul_assoc]
 
 open scoped BigOperators in
-private noncomputable def cs25CertificateSupport_lower_bound_proof
+private theorem cs25CertificateSupport_lower_bound_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -1706,7 +1713,7 @@ private noncomputable def cs25CertificateSupport_lower_bound_proof
   exact le_of_mul_le_mul_of_pos_left hfactor hfactorPos
 
 open scoped BigOperators in
-private noncomputable def rsFarWords_weighted_card_bound_proof
+private theorem rsFarWords_weighted_card_bound_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -1755,7 +1762,7 @@ private noncomputable def rsFarWords_weighted_card_bound_proof
     _ = ((S.card : ℝ) + (B.card : ℝ)) * A := by ring
     _ = (q : ℝ) ^ n * A := by rw [hcardReal]
 
-private noncomputable def rs_fraction_le_entropy_peak
+private theorem rs_fraction_le_entropy_peak
     (q n f : ℕ) (hq : 2 ≤ q) (hnq : n ≤ q) (hf : f < n) :
     (f : ℝ) / n ≤ 1 - 1 / (q : ℝ) := by
   have hn : 0 < n := by omega
@@ -1770,7 +1777,7 @@ private noncomputable def rs_fraction_le_entropy_peak
     _ ≤ (n : ℝ) - (n : ℝ) / q := by linarith
     _ = (1 - 1 / (q : ℝ)) * n := by ring
 
-private noncomputable def cs25_overlap_exp_le_entropy_power_proof
+private theorem cs25_overlap_exp_le_entropy_power_proof
     (q n f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) ≤
@@ -1839,7 +1846,7 @@ private noncomputable def cs25_overlap_exp_le_entropy_power_proof
   rw [hl_sq, hr_sq]
   exact hsq_bound
 
-private noncomputable def cs25SecondMomentA_le_entropy_power_proof
+private theorem cs25SecondMomentA_le_entropy_power_proof
     (q n k f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
     (hfpos : 0 < f) (hflt : f < n) :
     let h : ℝ := qEntropy q ((f : ℝ) / n) - (f : ℝ) / n
@@ -1867,7 +1874,7 @@ private noncomputable def cs25SecondMomentA_le_entropy_power_proof
           ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)) := by
       rw [Real.rpow_add hqR, Real.rpow_natCast]
 
-private noncomputable def cs25_second_momentA_small_of_entropy_rate_proof
+private theorem cs25_second_momentA_small_of_entropy_rate_proof
     (q n k f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q) (hn : 0 < n)
     (hlo :
       1 - qEntropy q ((f : ℝ) / n) + 2 / (n : ℝ) +
@@ -1952,7 +1959,7 @@ private noncomputable def cs25_second_momentA_small_of_entropy_rate_proof
   exact lt_of_mul_lt_mul_right hprod hBpos.le
 
 open scoped BigOperators in
-private noncomputable def rsFarWords_card_lt_of_entropy_rate_proof
+private theorem rsFarWords_card_lt_of_entropy_rate_proof
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)
@@ -2008,7 +2015,7 @@ private noncomputable def rsFarWords_card_lt_of_entropy_rate_proof
 
 open scoped ProbabilityTheory in
 open scoped BigOperators in
-private noncomputable def rs_epsCa_eq_one_of_entropy_rate_impl
+private theorem rs_epsCa_eq_one_of_entropy_rate_impl
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k f : ℕ)

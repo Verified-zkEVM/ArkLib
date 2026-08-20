@@ -681,6 +681,92 @@ def challengeQueryImpl {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Ch
     QueryImpl ([pSpec.Challenge]ₒ'challengeOracleInterface) ProbComp :=
   fun q => $ᵗ (pSpec.Challenge q.1)
 
+section ChallengeReindex
+
+/-! ### Reindexing challenge oracles
+
+A protocol's challenge oracles embed into another's whenever challenge *indices* embed in a way
+that preserves the challenge *types*. That data — an index map `f` together with the transport
+`∀ i, q.Challenge (f i) = p.Challenge i` — is all a `SubSpec` needs, so we build the
+`SubSpec` / `LawfulSubSpec` / `DisjointSubSpec` package from it once here rather than case by case.
+
+Scope: this is stated for the *default* `challengeOracleInterface`, whose `Query` is `Unit` at
+every index — which is what lets `challengeReindexQuery` reuse the query payload across the
+reindexing. It does not apply to `challengeOracleInterfaceSR` / `..FS`, whose query type is
+index-dependent (`Statement × MessagesUpTo i`); those are `def`s rather than instances, so the
+interface is fixed at each declaration below and cannot be silently swapped.
+
+Clients are the composition operators, each of which supplies an index map and a transport lemma.
+`++ₚ` supplies `ChallengeIdx.inl` / `ChallengeIdx.inr` with `challenge_append_inl` /
+`challenge_append_inr`; `seqCompose` would supply `sigmaChallengeIdxToSeqCompose`, whose transport
+follows from `seqCompose_challenge_eq` and `seqComposeChallengeEquiv.left_inv` (not instantiated
+here, as nothing consumes it yet). -/
+
+variable {k l : ℕ} {p : ProtocolSpec k} {q : ProtocolSpec l}
+  (f : p.ChallengeIdx → q.ChallengeIdx) (hf : ∀ i, q.Challenge (f i) = p.Challenge i)
+
+/-- Forward map on challenge queries induced by an index map: reindex, keep the (trivial) query. -/
+@[reducible] def challengeReindexQuery (t : [p.Challenge]ₒ.Domain) : [q.Challenge]ₒ.Domain :=
+  ⟨f t.1, t.2⟩
+
+/-- Backward map on challenge responses induced by an index map with matching challenge types:
+transport the response along `hf`.
+
+This is the intended transport, but note what does and does not force it. Neither `SubSpec` nor
+`LawfulSubSpec` nor `DisjointSubSpec` pins it down: post-composing any fibrewise automorphism of
+`p.Challenge t.1` yields a different `onResponse` with the *same* `onQuery` that is equally lawful
+and equally disjoint. What pins this definition down is defeq evidence at the client sites — see
+the `@[simp]` lemmas `liftM_challenge_append_inl` / `_inr` in `ProtocolSpec/SeqCompose.lean`, which
+compute the lifted query and would break if the transport were changed. -/
+@[reducible] def challengeReindexResponse (t : [p.Challenge]ₒ.Domain)
+    (r : [q.Challenge]ₒ.Range (challengeReindexQuery f t)) : [p.Challenge]ₒ.Range t :=
+  show p.Challenge t.1 from (hf t.1) ▸ (show q.Challenge (f t.1) from r)
+
+/-- `challengeReindexResponse` is exactly `cast` along the challenge-type transport. -/
+theorem challengeReindexResponse_eq_cast (t : [p.Challenge]ₒ.Domain) :
+    challengeReindexResponse f hf t = cast (hf t.1) := rfl
+
+/-- Transporting a challenge response along an equality of challenge types is a bijection.
+This is what makes the induced inclusion *lawful*, i.e. uniform-challenge preserving. -/
+theorem challengeReindexResponse_bijective (t : [p.Challenge]ₒ.Domain) :
+    Function.Bijective (challengeReindexResponse f hf t) :=
+  (Equiv.cast (hf t.1)).bijective
+
+/-- An embedding of challenge indices that preserves challenge types induces an inclusion of
+challenge oracles.
+
+`monadLift` is spelled out in lens form (rather than left to the class default) so that the lifted
+query reduces during `simp` / `rw` matching; see the `OracleSpec.SubSpec` docstring. -/
+@[reducible] def subSpecOfChallengeReindex : [p.Challenge]ₒ ⊂ₒ [q.Challenge]ₒ where
+  monadLift qry := ⟨challengeReindexQuery f qry.input,
+    qry.cont ∘ challengeReindexResponse f hf qry.input⟩
+  onQuery := challengeReindexQuery f
+  onResponse := challengeReindexResponse f hf
+
+/-- The induced inclusion is lawful: `onResponse` is bijective on every fibre, which is exactly
+what VCV-io needs to preserve the uniform distribution on challenges under the lift
+(`evalDist_liftComp`, `probEvent_liftComp`, `support_liftComp`). -/
+theorem lawfulSubSpecOfChallengeReindex :
+    letI := subSpecOfChallengeReindex f hf
+    [p.Challenge]ₒ ˡ⊂ₒ [q.Challenge]ₒ := by
+  letI := subSpecOfChallengeReindex f hf
+  exact ⟨challengeReindexResponse_bijective f hf⟩
+
+/-- Two reindexings into a common protocol have disjoint query images as soon as their index maps
+do. Completes the package: given the index-level disjointness, no oracle-spec-level reasoning is
+needed. -/
+theorem disjointSubSpecOfChallengeReindex {k' : ℕ} {p' : ProtocolSpec k'}
+    (f' : p'.ChallengeIdx → q.ChallengeIdx) (hf' : ∀ i, q.Challenge (f' i) = p'.Challenge i)
+    (hdisj : ∀ i i', f i ≠ f' i') :
+    letI := subSpecOfChallengeReindex f hf
+    letI := subSpecOfChallengeReindex f' hf'
+    OracleSpec.DisjointSubSpec [p.Challenge]ₒ [p'.Challenge]ₒ [q.Challenge]ₒ := by
+  letI := subSpecOfChallengeReindex f hf
+  letI := subSpecOfChallengeReindex f' hf'
+  exact ⟨fun t t' h => hdisj t.1 t'.1 (congrArg Sigma.fst h)⟩
+
+end ChallengeReindex
+
 /-- The oracle interface for state-restoration and (basic) Fiat-Shamir.
 
 This is the version where we hash the input statement and the entire transcript up to

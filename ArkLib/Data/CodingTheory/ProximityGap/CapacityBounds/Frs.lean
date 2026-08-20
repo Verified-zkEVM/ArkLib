@@ -27,6 +27,13 @@ capacity regime, via an affine-line collision-counting argument and a subspace-d
   Reed-Solomon Codes*, ePrint 2025/2054. Corollary 4.10.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -39,7 +46,7 @@ private noncomputable def affineLineCollisionSeeds
     (u₀ u₁ v₀ v₁ : ι → A) : Finset F :=
   Finset.univ.filter (fun γ => u₀ + γ • u₁ = v₀ + γ • v₁)
 
-private noncomputable def affineLineCollisionSeeds_card_le_one
+private theorem affineLineCollisionSeeds_card_le_one
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -79,7 +86,7 @@ private noncomputable def affineLineCollisionSeeds_card_le_one
     · exact sub_eq_zero.mp hab
     · exact (hs (sub_eq_zero.mp hv)).elim
 
-private noncomputable def boosted_frs_radius_le_list_radius
+private theorem boosted_frs_radius_le_list_radius
     (s t : ℕ) (R : ℝ) (ht : 3 ≤ t)
     (hs : 4 * t ^ 2 < s) (hR0 : 0 ≤ R) :
     (1 - R - 2 / (t : ℝ)) * (((2 * t : ℕ) : ℝ)) /
@@ -110,7 +117,7 @@ private noncomputable def boosted_frs_radius_le_list_radius
     nlinarith [mul_nonneg hgap (show (0 : ℝ) ≤ t + 4 by positivity)]
   nlinarith [mul_nonneg hR0 hc]
 
-private noncomputable def exists_finset_lift_image_eq_injOn
+private theorem exists_finset_lift_image_eq_injOn
     {α β : Type} [DecidableEq α] [DecidableEq β]
     (f : α → β) (s : Set α) (t : Finset β)
     (h : (↑t : Set β) ⊆ f '' s) :
@@ -122,7 +129,7 @@ private noncomputable def exists_finset_lift_image_eq_injOn
   exact h hy
 
 open scoped BigOperators in
-private noncomputable def exists_seed_pairwise_distinct_affine_lines
+private theorem exists_seed_pairwise_distinct_affine_lines
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -168,7 +175,7 @@ private noncomputable def exists_seed_pairwise_distinct_affine_lines
     exact ⟨Finset.mem_univ _, heq⟩
 
 open scoped BigOperators in
-private noncomputable def finset_card_sdiff_biUnion_ge
+private theorem finset_card_sdiff_biUnion_ge
     {α β : Type} [DecidableEq α] [DecidableEq β]
     (P : Finset α) (T : Finset β) (K : α → Finset β)
     (n L a : ℕ)
@@ -211,7 +218,7 @@ private noncomputable def globallyCloseAffinePairs
         (Code.relHammingDist (f₀ + γ • f₁) (p.1 + γ • p.2) : ℝ) ≤ δ)
 
 open scoped NNReal in
-private noncomputable def globallyCloseAffinePairs_card_le
+private theorem globallyCloseAffinePairs_card_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s L : ℕ} (C : Set (ι → Fin s → F))
@@ -258,7 +265,7 @@ private noncomputable def lineAgreementSeeds
     (T : Finset F) (i : ι) : Finset F :=
   T.filter (fun γ => U γ i = f₀ i + γ • f₁ i)
 
-private noncomputable def lineAgreementSeeds_card_le_one_of_ne_at
+private theorem lineAgreementSeeds_card_le_one_of_ne_at
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (f₀ f₁ u₀ u₁ : ι → Fin s → F)
@@ -303,7 +310,7 @@ private noncomputable def lineAgreementSeeds_card_le_one_of_ne_at
     · exact sub_eq_zero.mp hab
     · exact (hs (sub_eq_zero.mp hv)).elim
 
-private noncomputable def lineAgreement_span_finrank_le_two
+private theorem lineAgreement_span_finrank_le_two
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
@@ -351,7 +358,7 @@ private noncomputable def lineAgreement_span_finrank_le_two
         ({f₀ i, f₁ i} : Finset (Fin s → F))
     _ ≤ 2 := Finset.card_le_two
 
-private noncomputable def lineAgreementSeeds_card_le_kernel_finrank_add_two
+private theorem lineAgreementSeeds_card_le_kernel_finrank_add_two
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
@@ -464,7 +471,7 @@ private noncomputable def lineCloseSpan
     Submodule F (ι → Fin s → F) :=
   Submodule.span F (U '' (↑(lineCloseSeeds f₀ f₁ U δ) : Set F))
 
-private noncomputable def exists_lineCloseSeeds_linearIndepOn_card_eq
+private theorem exists_lineCloseSeeds_linearIndepOn_card_eq
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ}
@@ -510,7 +517,7 @@ private noncomputable def exists_lineCloseSeeds_linearIndepOn_card_eq
       _ = r := hWcard
 
 open scoped NNReal in
-private noncomputable def lineCloseSpan_le_code
+private theorem lineCloseSpan_le_code
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Submodule F (ι → Fin s → F))
@@ -522,7 +529,7 @@ private noncomputable def lineCloseSpan_le_code
   exact hU γ
 
 open scoped NNReal in
-private noncomputable def lineClose_sum_agreement_lower
+private theorem lineClose_sum_agreement_lower
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ}
@@ -582,7 +589,7 @@ private noncomputable def lineClose_sum_agreement_lower
 open scoped BigOperators in
 open scoped NNReal in
 open Code in
-private noncomputable def aligned_affineLine_global_close
+private theorem aligned_affineLine_global_close
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s b : ℕ} (hb : 1 < b)
@@ -668,7 +675,7 @@ private noncomputable def linePinnedSeedsOn
     (S : Finset ι) : Finset F :=
   T.filter (fun γ => ∀ i ∈ S, U γ i = f₀ i + γ • f₁ i)
 
-private noncomputable def linePinnedSeedsOn_empty
+private theorem linePinnedSeedsOn_empty
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
@@ -678,7 +685,7 @@ private noncomputable def linePinnedSeedsOn_empty
   ext γ
   simp [linePinnedSeedsOn]
 
-private noncomputable def linePinnedSeedsOn_insert
+private theorem linePinnedSeedsOn_insert
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
@@ -692,7 +699,7 @@ private noncomputable def linePinnedSeedsOn_insert
     Finset.mem_insert]
   aesop
 
-private noncomputable def linePinnedSeedsOn_insert_subset
+private theorem linePinnedSeedsOn_insert_subset
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
@@ -710,7 +717,7 @@ private noncomputable def linePinnedSeedsOn_insert_subset
   intro j hj
   exact hdata.2 j (Finset.mem_insert_of_mem hj)
 
-private noncomputable def linePinnedSeedsOn_insert_card_le
+private theorem linePinnedSeedsOn_insert_card_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (T : Finset F)
@@ -722,7 +729,7 @@ private noncomputable def linePinnedSeedsOn_insert_card_le
 
 open _root_.CoreDefinitions in
 open _root_.ProximityGap in
-private noncomputable def mcaError_affineLine_zero_le_inv_card
+private theorem mcaError_affineLine_zero_le_inv_card
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -800,7 +807,7 @@ private noncomputable def mcaError_affineLine_zero_le_inv_card
       exact ⟨U j, hUjC, rfl⟩)
   · positivity
 
-private noncomputable def mcaError_eq_zero_of_neg_radius
+private theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
@@ -829,7 +836,7 @@ private noncomputable def mcaError_eq_zero_of_neg_radius
     norm_num
   · exact bot_le
 
-private noncomputable def pinning_potential_compose
+private theorem pinning_potential_compose
     (A B C d d' ε : ℝ) (hd : 0 ≤ d) (hd' : 0 ≤ d') (hε : 0 < ε)
     (hstep : A * (d' + ε) ≤ B * (d + ε))
     (hterminal : B * ε ≤ C * (d' + ε)) :
@@ -847,7 +854,7 @@ private noncomputable def sharpSubspaceProfile
     (s * R - 1 / Fintype.card ι) / (s - r + 1)
   else 1
 
-private noncomputable def isSubspaceDesign_frsCode_sharpProfile
+private theorem isSubspaceDesign_frsCode_sharpProfile
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
@@ -869,14 +876,14 @@ private noncomputable def isSubspaceDesign_frsCode_sharpProfile
   refine hdesign.mono_tau fun r => ?_
   rw [sharpSubspaceProfile]
 
-private noncomputable def sharpSubspaceProfile_eq_fun
+private theorem sharpSubspaceProfile_eq_fun
     {ι : Type} [Fintype ι] (s : ℕ) (R : ℝ) :
     sharpSubspaceProfile (ι := ι) s R =
       (fun r => if r ∈ Finset.Icc 1 s then
         (s * R - 1 / Fintype.card ι) / (s - r + 1) else 1) := by
   rfl
 
-private noncomputable def sharpSubspaceProfile_two_mul_le_rate_add
+private theorem sharpSubspaceProfile_two_mul_le_rate_add
     {ι : Type} [Fintype ι] [Nonempty ι]
     (s t : ℕ) (R : ℝ)
     (ht : 0 < t) (hs : 4 * t ^ 2 < s)
@@ -911,7 +918,7 @@ private noncomputable def sharpSubspaceProfile_two_mul_le_rate_add
 open scoped NNReal in
 open scoped BigOperators in
 open Code in
-private noncomputable def strongLineDecodable_boost_of_lambda_le
+private theorem strongLineDecodable_boost_of_lambda_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s a b L : ℕ} {δ : NNReal}
@@ -1011,7 +1018,7 @@ private noncomputable def strongLineDecodable_boost_of_lambda_le
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private noncomputable def strongLineDecodable_to_isLineDecodable
+private theorem strongLineDecodable_to_isLineDecodable
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s a b : ℕ} (C : Set (ι → Fin s → F)) (δ : NNReal)
@@ -1058,7 +1065,7 @@ private noncomputable def strongLineDecodable_to_isLineDecodable
 
 open scoped BigOperators in
 open scoped NNReal in
-private noncomputable def subspaceDesign_lineCloseSpan_finrank_lt
+private theorem subspaceDesign_lineCloseSpan_finrank_lt
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1160,7 +1167,7 @@ private noncomputable def pinnedSubspace
     Submodule F (ι → Fin s → F) :=
   H ⊓ vanishOnCoordinates (F := F) (s := s) S
 
-private noncomputable def pinnedSubspace_empty
+private theorem pinnedSubspace_empty
     {ι : Type} [Fintype ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) :
@@ -1172,7 +1179,7 @@ private noncomputable def pinnedSubspace_empty
   apply LinearMap.mem_ker.mpr
   exact Subsingleton.elim _ _
 
-private noncomputable def pinned_lineSeeds_lie_on_affine_codeword_line
+private theorem pinned_lineSeeds_lie_on_affine_codeword_line
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s : ℕ} (C : Submodule F (ι → Fin s → F))
@@ -1267,7 +1274,7 @@ private noncomputable def pinningInactiveCoordinates
   exact Finset.univ.filter (fun i =>
     pinnedSubspace H (insert i S) = pinnedSubspace H S)
 
-private noncomputable def pinningActiveCoordinates_disjoint_inactive
+private theorem pinningActiveCoordinates_disjoint_inactive
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) :
@@ -1287,7 +1294,7 @@ private noncomputable def pinningActiveCoordinates_disjoint_inactive
   exact (lt_irrefl _ hlt).elim
 
 open scoped BigOperators in
-private noncomputable def pinning_tau_nonneg
+private theorem pinning_tau_nonneg
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1329,7 +1336,7 @@ private noncomputable def pinning_tau_nonneg
   have hprod : (0 : ℝ) ≤ Module.finrank F K * τ r := hleft.trans hdes
   nlinarith
 
-private noncomputable def vanishOnCoordinates_insert
+private theorem vanishOnCoordinates_insert
     {ι : Type} [DecidableEq ι] {F : Type} [Field F] {s : ℕ}
     (S : Finset ι) (i : ι) :
     vanishOnCoordinates (F := F) (s := s) (insert i S) =
@@ -1363,7 +1370,7 @@ private noncomputable def vanishOnCoordinates_insert
       have hj := congrFun hallS (⟨j, hjS⟩ : ↥S)
       simpa [vanishOnCoordinates] using hj
 
-private noncomputable def pinnedSubspace_insert_le
+private theorem pinnedSubspace_insert_le
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) (i : ι) :
@@ -1371,7 +1378,7 @@ private noncomputable def pinnedSubspace_insert_le
   rw [pinnedSubspace, pinnedSubspace, vanishOnCoordinates_insert, ← inf_assoc]
   exact inf_le_left
 
-private noncomputable def pinningActiveCoordinates_nonempty
+private theorem pinningActiveCoordinates_nonempty
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι)
@@ -1398,7 +1405,7 @@ private noncomputable def pinningActiveCoordinates_nonempty
   simp only [pinningActiveCoordinates, Finset.mem_filter, Finset.mem_univ, true_and]
   exact Submodule.finrank_lt_finrank_of_lt hproper
 
-private noncomputable def pinning_active_or_inactive
+private theorem pinning_active_or_inactive
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) (i : ι) :
@@ -1414,7 +1421,7 @@ private noncomputable def pinning_active_or_inactive
     exact Submodule.finrank_lt_finrank_of_lt
       (lt_of_le_of_ne (pinnedSubspace_insert_le H S i) heq)
 
-private noncomputable def pinningActiveCoordinates_union_inactive
+private theorem pinningActiveCoordinates_union_inactive
     {ι : Type} [Fintype ι] [DecidableEq ι]
     {F : Type} [Field F] {s : ℕ}
     (H : Submodule F (ι → Fin s → F)) (S : Finset ι) :
@@ -1427,7 +1434,7 @@ private noncomputable def pinningActiveCoordinates_union_inactive
 
 open scoped BigOperators in
 open scoped NNReal in
-private noncomputable def pinned_child_card_sum_lower
+private theorem pinned_child_card_sum_lower
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ)
@@ -1497,7 +1504,7 @@ private noncomputable def pinned_child_card_sum_lower
   nlinarith
 
 open scoped BigOperators in
-private noncomputable def pinning_weight_sum_le
+private theorem pinning_weight_sum_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] {s r : ℕ}
     (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1614,7 +1621,7 @@ private noncomputable def pinning_weight_sum_le
   nlinarith
 
 open scoped BigOperators in
-private noncomputable def shared_pinning_step
+private theorem shared_pinning_step
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1695,7 +1702,7 @@ private noncomputable def shared_pinning_step
   · simpa only [H, A, d] using hi
 
 open scoped BigOperators in
-private noncomputable def exists_terminal_line_pinning
+private theorem exists_terminal_line_pinning
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1758,7 +1765,7 @@ private noncomputable def exists_terminal_line_pinning
 
 open scoped NNReal in
 open scoped BigOperators in
-private noncomputable def strongLineDecodable_of_subspaceDesign
+private theorem strongLineDecodable_of_subspaceDesign
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s r a b : ℕ} (τ : ℕ → ℝ) (C : Submodule F (ι → Fin s → F))
@@ -1814,7 +1821,7 @@ private noncomputable def strongLineDecodable_of_subspaceDesign
   exact ⟨hdata.1, halign γ hγ⟩
 
 open scoped NNReal in
-private noncomputable def strongLineDecodable_two_mul_of_profile_le
+private theorem strongLineDecodable_two_mul_of_profile_le
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     {s t : ℕ} (τ : ℕ → ℝ) (R : ℝ)
@@ -1854,7 +1861,7 @@ private noncomputable def strongLineDecodable_two_mul_of_profile_le
 
 open scoped NNReal in
 open Code in
-private noncomputable def frs_mcaError_le_proof
+private theorem frs_mcaError_le_proof
     {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     {F : Type} [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)

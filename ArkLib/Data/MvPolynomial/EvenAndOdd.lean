@@ -324,9 +324,18 @@ lemma even_and_odd_eval
   p.1.aeval
     (fun i ↦ if h : i = 0 then C α else (X ⟨i.val - 1, by omega⟩ :  R[X (Fin (n - 1))])) =
     (even_pred p).1 + C α * (odd_pred p).1 := by
-  conv_lhs => rw [←even_and_odd_formula' hchar]
-  aesop
-    (add safe [(by erw [MvPolynomial.aeval_bind₁])])
+  let evalAt : Fin n → R[X (Fin (n - 1))] := fun i ↦
+    if h : i = 0 then C α else X ⟨i.val - 1, by omega⟩
+  let shiftUp : Fin (n - 1) → R[X (Fin n)] := fun i ↦ X ⟨i.val + 1, by omega⟩
+  have hcomp (q : R[X (Fin (n - 1))]) : (q.aeval shiftUp).aeval evalAt = q := by
+    erw [MvPolynomial.aeval_bind₁]
+    have hvars : (fun i ↦ (shiftUp i).aeval evalAt) = fun i ↦ X i := by
+      funext i
+      simp [evalAt, shiftUp]
+    rw [hvars, aeval_X_left_apply]
+  change p.1.aeval evalAt = _
+  rw [← even_and_odd_formula' hchar, map_add, map_mul, hcomp, hcomp]
+  simp [evalAt]
 
 noncomputable def shiftedPowAlgHom :
     MvPolynomial (Fin (n - 1)) R →ₐ[R] Polynomial R :=

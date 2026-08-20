@@ -102,10 +102,11 @@ manuscript, not to the original sources it cites — those get their own keys (`
 - **§2 interleaving list size.** Lemma 2.10 is represented by
   `InterleavedCode.lambda_interleaved_le_choose_mul_pow` in
   `ListDecodability/Bounds/Interleaved.lean`, stated on the canonical `Code.Lambda` carrier.
-- **§6 erasure correction (support only).** `CodingTheory.eq_of_consistent_with_erased` proves
-  the reusable metric-uniqueness ingredient. Definition 6.4 and Lemma 6.5 themselves are missing:
-  neither the recovery algorithm nor its operation bound is formalized. ArkLib deliberately does
-  not replace them with an unrestricted existential over functions, which would be tautological.
+- **§6 toy problem and erasure correction.** `ProofSystem/ToyProblem/` formalizes Constructions
+  6.2 and 6.9, their completeness/security layer, and executable checked scalar-RS/row-wise IRS
+  erasure decoders and extractors. `CodingTheory.eq_of_consistent_with_erased` supplies the generic
+  metric-uniqueness ingredient. The paper's generic algorithm for every additive code and its
+  operation bound remain outside ArkLib's current cost model.
 - **Appendix A.2 multiplicity codes.** Definitions A.6 / A.7 (after `GW13`, `KSY14`) →
   `ReedSolomon.Multiplicity.umEvalOnPoints` / `umCode`.
 - **Appendix B counting.** Claim B.1 →
@@ -128,7 +129,10 @@ manuscript, not to the original sources it cites — those get their own keys (`
 - [`ArkLib/Data/CodingTheory/ExtensionCodes.lean`](../../../ArkLib/Data/CodingTheory/ExtensionCodes.lean)
   — D2.19/D2.20 at both encoder and code-image level, L2.21, and the DP25 distance equality.
 - [`ArkLib/Data/CodingTheory/Erasure.lean`](../../../ArkLib/Data/CodingTheory/Erasure.lean)
-  — metric support for §6.2; D6.4/L6.5 remain missing.
+  — generic metric support for §6.2.
+- [`ArkLib/ProofSystem/ToyProblem/`](../../../ArkLib/ProofSystem/ToyProblem)
+  — exact/relaxed relations, Constructions 6.2/6.9, completeness and knowledge-soundness
+  contracts, executable RS/IRS decoding/extraction, and neutral FRS reference points.
 - [`ArkLib/Data/CodingTheory/HammingBallVolume.lean`](../../../ArkLib/Data/CodingTheory/HammingBallVolume.lean),
   [`Basic/Entropy.lean`](../../../ArkLib/Data/CodingTheory/Basic/Entropy.lean)
   — D2.4 / D2.2 support for the §3 lower bounds.

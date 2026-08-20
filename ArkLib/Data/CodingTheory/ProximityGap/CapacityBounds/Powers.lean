@@ -24,6 +24,13 @@ codewords from interpolation seeds, and bounds the exceptional seeds by double c
 - [BCGM25] Bafna, Choudhary, Guruswami, and Mardia. Theorem 8.2 and Definition 8.1.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -76,7 +83,7 @@ private theorem module_code_eq_of_eq_on_large_finset
   simp only [Finset.mem_filter, Finset.mem_univ, true_and]
   exact heq i hi
 
-private def normalized_module_code_min_dist_le_one
+private theorem normalized_module_code_min_dist_le_one
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -210,7 +217,7 @@ private noncomputable def powers_middle_bound (n q : ℕ) (k : ℕ) (δmin η : 
             - powers_radius_base δmin η ^ ((1 : ℝ) / (k + 1))) * q))
         (((k : ℝ) + 1) * ((k : ℝ) + 2) / (η * q))
 
-private def powers_radius_base_mem_ioo (δmin η : NNReal)
+private theorem powers_radius_base_mem_ioo (δmin η : NNReal)
     (hδmin_le : (δmin : ℝ) ≤ 1) (hη : 0 < η) (hηlt : η < δmin) :
     powers_radius_base (δmin : ℝ) (η : ℝ) ∈ Set.Ioo (0 : ℝ) 1 := by
   constructor
@@ -221,7 +228,7 @@ private def powers_radius_base_mem_ioo (δmin η : NNReal)
     have hηltR : (η : ℝ) < δmin := by exact_mod_cast hηlt
     linarith
 
-private def powers_radius_base_mem_ioo_of_module_code
+private theorem powers_radius_base_mem_ioo_of_module_code
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -300,7 +307,7 @@ private theorem powers_bad_seed_final_arithmetic
   linarith
 
 open scoped ProbabilityTheory in
-private noncomputable def powers_bad_seed_probability_le_card
+private theorem powers_bad_seed_probability_le_card
     {S : Type} [Fintype S] [Nonempty S]
     (P : S → Prop) [DecidablePred P] (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
@@ -379,7 +386,7 @@ private theorem powers_complement_card_real_le
   rw [Finset.card_univ_sdiff, Nat.cast_sub hle]
   linarith
 
-private def powers_exponent_strict (k : ℕ) :
+private theorem powers_exponent_strict (k : ℕ) :
     (1 : ℝ) / (k + 2) < (1 : ℝ) / (k + 1) := by
   apply one_div_lt_one_div_of_lt
   · positivity
@@ -959,13 +966,13 @@ private theorem powers_point_degree_moment_lower
     (fun i hi => by positivity) (k + 1)
   simpa only [Finset.card_univ, hincReal, Nat.add_assoc] using hpow
 
-private def powers_power_difference_pos (r : ℝ) (k : ℕ)
+private theorem powers_power_difference_pos (r : ℝ) (k : ℕ)
     (hr0 : 0 < r) (hr1 : r < 1) :
     0 < r ^ ((1 : ℝ) / (k + 2)) - r ^ ((1 : ℝ) / (k + 1)) := by
   rw [sub_pos]
   exact Real.rpow_lt_rpow_of_exponent_gt hr0 hr1 (powers_exponent_strict k)
 
-private def powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
+private theorem powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
     (hq : 0 < q) (hη : 0 < η)
     (hr0 : 0 < powers_radius_base δmin η)
     (hr1 : powers_radius_base δmin η < 1) :
@@ -980,7 +987,7 @@ private def powers_middle_bound_nonneg (n q k : ℕ) (δmin η : ℝ)
   unfold powers_middle_bound
   positivity
 
-private def powers_power_difference_pos_of_module_code
+private theorem powers_power_difference_pos_of_module_code
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Semiring F]
     {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
@@ -1817,7 +1824,7 @@ private theorem linear_mca_error_powers_bad_seed_card_le
   rw [← hcount]
   exact hfin
 
-private noncomputable def univariate_powers_generator_code_eq_rs
+private theorem univariate_powers_generator_code_eq_rs
     {F : Type} [Field F] [Fintype F] (k : ℕ) :
     LinearCode.fromColGenMat (CoreDefinitions.M_G (CoreDefinitions.univariatePowersGenerator F k)) =
       ReedSolomon.code (Function.Embedding.refl F) (k + 1) := by
@@ -1826,7 +1833,7 @@ private noncomputable def univariate_powers_generator_code_eq_rs
     (ReedSolomon.genMatIsVandermonde (F := F) (m := k + 1)
       (α := Function.Embedding.refl F))
 
-private noncomputable def univariate_powers_generator_code_dim
+private theorem univariate_powers_generator_code_dim
     {F : Type} [Field F] [Fintype F] (k : ℕ)
     (hcard : k + 1 ≤ Fintype.card F) :
     LinearCode.dim
@@ -1835,7 +1842,7 @@ private noncomputable def univariate_powers_generator_code_dim
   rw [univariate_powers_generator_code_eq_rs]
   exact ReedSolomon.dim_eq_deg_of_le hcard
 
-private noncomputable def univariate_powers_is_mds_generator
+private theorem univariate_powers_is_mds_generator
     {F : Type} [Field F] [Fintype F] [DecidableEq F] (k : ℕ) :
     CoreDefinitions.IsMDSGenerator (CoreDefinitions.univariatePowersGenerator F k) := by
   unfold CoreDefinitions.IsMDSGenerator

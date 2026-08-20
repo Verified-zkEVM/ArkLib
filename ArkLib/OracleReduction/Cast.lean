@@ -20,6 +20,11 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   We also show that casting preserves execution (up to casting of the transcripts) and thus security
   properties.
+
+  **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
+  `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness transfer
+  (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
+  completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
 open OracleComp
@@ -114,7 +119,6 @@ namespace OracleVerifier
 variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   [Oₘ₂ : ∀ i, OracleInterface (pSpec₂.Message i)]
 
-open Function in
 /-- Casting the oracle verifier of a non-oracle reduction across an equality of `ProtocolSpec`s.
 
 TODO: need a cast of the oracle interfaces as well (i.e. the oracle interface instance is not
@@ -122,22 +126,14 @@ necessarily unique for every type) -/
 protected def cast
     (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
-    OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ where
-  verify := fun stmt challenges =>
-    let impl : QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec₁.Message]ₒ))
-      (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec₂.Message]ₒ))) := sorry
-    simulateQ impl (V.verify stmt (dcast₂ hn.symm (dcast_symm hn hSpec) challenges))
-  embed := V.embed.trans
-    (Embedding.sumMap
-      (Equiv.refl _).toEmbedding
-      ⟨MessageIdx.cast hn hSpec, MessageIdx.cast_injective hn hSpec⟩)
-  hEq := fun i => by
-    simp [Embedding.sumMap, Equiv.refl]
-    have := V.hEq i
-    rw [this]
-    split
-    next a b h' => simp [h']
-    next a b h' => simp [h']; exact (Message.cast_idx hSpec).symm
+    OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ := by
+  subst hn
+  subst hSpec
+  have hInterfaces : Oₘ₁ = Oₘ₂ := by
+    funext i
+    simpa [MessageIdx.cast, dcast_eq_root_cast] using hOₘ i
+  subst hInterfaces
+  exact V
 
 variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
@@ -156,7 +152,13 @@ variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.
 @[simp]
 theorem cast_toVerifier (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     (OracleVerifier.cast hn hSpec hOₘ V).toVerifier = Verifier.cast hn hSpec V.toVerifier := by
-  sorry
+  subst hn
+  subst hSpec
+  have hInterfaces : Oₘ₁ = Oₘ₂ := by
+    funext i
+    simpa [MessageIdx.cast, dcast_eq_root_cast] using hOₘ i
+  subst hInterfaces
+  rfl
 
 end OracleVerifier
 
@@ -320,6 +322,8 @@ namespace Verifier
 
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
+This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
@@ -433,6 +437,8 @@ namespace OracleVerifier
 
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on the oracle
+side; reduces to `Verifier.cast_rbrKnowledgeSoundness`. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
