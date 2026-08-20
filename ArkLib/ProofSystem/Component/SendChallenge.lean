@@ -64,12 +64,33 @@ def oracleProver : OracleProver oSpec
 
 /-- The oracle verifier samples the challenge `c` (as the `V_to_P` round), reads it off the
 transcript, and appends it to the output statement — no check. This keeps it pure. -/
+def outputEmbedding : OracleOutputEmbedding OStatement (pSpec C ℓ).Message OStatement where
+  embed := Function.Embedding.inl
+  hEq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+  outputInterface_heq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
     Statement OStatement (Statement × (Fin ℓ → C)) OStatement (pSpec C ℓ) where
   verify := fun stmt chal => pure (stmt, chal ⟨0, rfl⟩)
-  embed := Function.Embedding.inl
-  hEq := fun _ => rfl
+  outputOracle := .inl (outputEmbedding OStatement C ℓ)
+
+@[simp]
+theorem oracleVerifier_materializeOutput (challenges : (pSpec C ℓ).Challenges)
+    (oStmt : ∀ i, OStatement i) (messages : (pSpec C ℓ).Messages) :
+    (oracleVerifier oSpec Statement OStatement C ℓ).materializeOutput
+        challenges oStmt messages = oStmt := by
+  unfold OracleVerifier.materializeOutput oracleVerifier
+  change OracleVerifier.materializeOutputOracle
+      (Sum.inl (outputEmbedding OStatement C ℓ)) challenges oStmt messages = oStmt
+  simp only [OracleVerifier.materializeOutputOracle]
+  funext i
+  simp only [outputEmbedding]
+  rfl
 
 /-- The oracle reduction for `SendChallenge`. -/
 @[inline, specialize]
@@ -90,13 +111,9 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     {tr : (pSpec C ℓ).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement C ℓ).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨(stmt, tr.challenges ⟨0, rfl⟩), oStmt⟩ := by
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure (stmt, tr.challenges ⟨0, rfl⟩) :
-          OptionT (OracleComp _) (Statement × (Fin ℓ → C)))
-      = (pure (stmt, tr.challenges ⟨0, rfl⟩) :
-          OptionT (OracleComp oSpec) (Statement × (Fin ℓ → C))) from rfl, pure_bind]
-  congr 1
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_materializeOutput]
+  rfl
 
 /-- The `SendChallenge` oracle verifier is pure: it deterministically appends the (transcript-read)
 challenge to the statement. This discharges the deterministic-left hypothesis of the CWSS append,

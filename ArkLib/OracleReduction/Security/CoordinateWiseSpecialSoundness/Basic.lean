@@ -340,7 +340,7 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

@@ -6,7 +6,6 @@ Authors: Quang Dao, František Silváši, Julian Sutherland, Ilia Vlasov
 
 
 import ArkLib.OracleReduction.Composition.Sequential.General
-import ArkLib.OracleReduction.LiftContext.OracleReduction
 import ArkLib.ProofSystem.BatchedFri.Spec.SingleRound
 import ArkLib.ProofSystem.Fri.Spec.General
 
@@ -45,55 +44,6 @@ def inputRelation [DecidableEq F] (δ : ℝ≥0) :
       ) := sorry
 
 
-/- Lifting FRI to include using `liftingLens`:
-    - RLC in statement
-    - Simulate batched polynomial oracle using oracles of
-      batched polynomials
--/
-def liftingLens :
-  OracleContext.Lens
-    ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1))) (Fri.Spec.FinalStatement F k)
-    (Fri.Spec.Statement F (0 : Fin (k + 1))) (Fri.Spec.FinalStatement F k)
-    (OracleStatement m ω) (Fri.Spec.FinalOracleStatement s ω)
-    (Fri.Spec.OracleStatement s ω 0) (Fri.Spec.FinalOracleStatement s ω)
-    (Fri.Spec.Witness F s d 0) (Fri.Spec.Witness F s d (Fin.last (k + 1)))
-    (Fri.Spec.Witness F s d 0) (Fri.Spec.Witness F s d (Fin.last (k + 1))) where
-  stmt := Witness.InvLens.ofOutputOnly <| fun ⟨⟨cs, stmt⟩, ostmt⟩ =>
-    ⟨
-      stmt,
-      fun j v =>
-          have : v.1 ∈ ω.toFinset := by {
-            simp only [CosetFftDomainClass.mem_toFinset_iff_mem]
-            rcases j with ⟨j, h⟩
-            have : j = 0 := by simpa using h
-            simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, Nat.reduceAdd] at v
-            rcases v with ⟨v, h'⟩
-            simp only
-            subst this
-            simp only [finRangeTo.eq_1, List.take_zero, List.toFinset_nil, Finset.sum_empty,
-              Nat.sub_zero, CosetFftDomainClass.mem_toFinset_iff_mem] at h'
-            rw [←CosetFftDomainClass.mem_subdomain_0_iff_mem]
-            exact h'
-          }
-          (ostmt 0) ⟨v.1, this⟩ + ∑ j, cs j * ostmt j.succ ⟨v.1, this⟩
-    ⟩
-  wit  := Witness.Lens.id
-
-def liftedFRI [DecidableEq F] :
-  OracleReduction []ₒ
-    ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1)))
-      (OracleStatement m ω) (Fri.Spec.Witness F s d 0)
-    (Fri.Spec.FinalStatement F k)
-      (Fri.Spec.FinalOracleStatement s ω) (Fri.Spec.Witness F s d (Fin.last (k + 1)))
-    (
-      Fri.Spec.pSpecFold (ω := ω) k s ++ₚ
-      Fri.Spec.FinalFoldPhase.pSpec F ++ₚ
-      Fri.Spec.QueryRound.pSpec (ω := ω) l
-    ) :=
-    OracleReduction.liftContext
-      (liftingLens k s d m)
-      (Fri.Spec.reduction k s d dom_size_cond l)
-
 instance instBatchFRIreductionMessageOI : ∀ j,
   OracleInterface
     ((batchSpec F m ++ₚ
@@ -122,7 +72,7 @@ def batchedFRIreduction [DecidableEq F]
  :=
   OracleReduction.append
     (BatchingRound.batchOracleReduction s d m)
-    (liftedFRI (ω := ω) k s d dom_size_cond l m)
+    (Fri.Spec.reduction (ω := ω) k s d dom_size_cond l)
 
 end Spec
 
