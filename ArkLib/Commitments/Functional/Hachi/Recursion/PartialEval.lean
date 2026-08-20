@@ -145,15 +145,20 @@ def partialEvalProver {TCom Wit : Type}
       deriveFamily κ stmt.value (fun j => stmt.point (Fin.natAdd mLow j))
         (computeY stmt wit)⟩, wit)
 
-/-- **The per-`i` partial-evaluation relation** (the residual claims of Eq. (24)): `w̃` opens
-`t` and *every* partial evaluation in the derived family is well-formed. This seam is the sound
-stopping point of the §4.5 peeling; collapsing it into the single `Z`-packed claim is the
-`Recursion/ZBatchBridge.lean` step (⚠ see there). -/
+/-- **The per-`i` partial-evaluation relation** (the residual claims of Eq. (24)): `w̃` is a
+*short* opening of `t` and *every* partial evaluation in the derived family is well-formed. This
+seam is the sound stopping point of the §4.5 peeling; collapsing it into the single `Z`-packed
+claim is the `Recursion/ZBatchBridge.lean` step (⚠ see there).
+
+The `liftShort` conjunct is the commitment's shortness index, carried unchanged from
+`relWEvalClaim` (see there for why a norm-free seam is not an option) and consumed at the §4.5
+handoff, whose output must exhibit the *next* iteration's `Short`. -/
 def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
+    liftShort Φ bound ρBound p.2 ∧
     ∀ i, partialEvalAt Φ mLow κ φF p.2 p.1.pointLow i = p.1.partials i}
 
 variable [SampleableType F]

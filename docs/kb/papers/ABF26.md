@@ -254,10 +254,9 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     the formalized appendix templates. Theorem 3.16 stays unformalized **by decision** — it needs
     a computational-hardness framework.
   - Fidelity gaps to close, in rough priority order: (i) Theorem 3.14 needs the closed-access JH01
-    primary source before a formal statement can be justified; (ii) Lemma 3.7 / Corollary 3.8 /
-    Theorem 3.10 are
-    stated for linear codes over a field, whereas the paper states them for an arbitrary code
-    `C : Σ^k → Σ^n` — for Lemma 3.7 the generalisation is nearly free, since linearity is used once;
+    primary source before a formal statement can be justified; (ii) Theorem 3.10 is stated for a
+    linear code over a field, whereas the paper states it for an arbitrary code
+    `C : Σ^k → Σ^n`;
     (iii) Theorem 3.10's rate is pinned by equality, hence vacuous at irrational `ρ` (the `∃ n₀`
     concern is settled: the threshold sits outside `∀ η`, so the paper's `η = Θ(1/n)` corollary is
     reachable and is derived). The old Theorem 3.11 off-by-one and Theorem 3.12 all-real

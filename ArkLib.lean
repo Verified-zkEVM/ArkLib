@@ -27,6 +27,7 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Basic
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
@@ -67,6 +68,9 @@ import ArkLib.Data.CodingTheory.BerlekampWelch.ElocPoly
 import ArkLib.Data.CodingTheory.BerlekampWelch.Existence
 import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
 import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
 import ArkLib.Data.CodingTheory.DivergenceOfSets
 import ArkLib.Data.CodingTheory.Erasure
 import ArkLib.Data.CodingTheory.ExtensionCodes
@@ -87,6 +91,7 @@ import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Basic
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.Interleaved
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26Asymptotic
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26SumSet
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Barrier
 import ArkLib.Data.CodingTheory.ListDecodability.Bounds.LargeAlphabet.Basic
@@ -111,6 +116,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.Main
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineSpaces
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.Curves
+import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.EpsCa
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ErrorBound
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Agreement
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Extraction
@@ -120,6 +126,15 @@ import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ReedSolomonGap
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.WeightedAgreement
 import ArkLib.Data.CodingTheory.ProximityGap.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Entropy
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Frs
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonCa
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonLower
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.JohnsonMca
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Powers
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Sampling
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.Subfield
+import ArkLib.Data.CodingTheory.ProximityGap.CapacityBounds.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.Basic
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.MainResults
 import ArkLib.Data.CodingTheory.ProximityGap.DG25.ReedSolomon
@@ -129,6 +144,7 @@ import ArkLib.Data.CodingTheory.ProximityGap.Folding.ListDecodability
 import ArkLib.Data.CodingTheory.ProximityGap.Folding.Multilinear
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
+import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
@@ -358,6 +374,7 @@ import ArkLib.ProofSystem.ToyProblem.Spec.KnowledgeSoundness
 import ArkLib.ProofSystem.ToyProblem.Spec.SimplifiedIOR
 import ArkLib.ToCompPoly.Multilinear.Basic
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin

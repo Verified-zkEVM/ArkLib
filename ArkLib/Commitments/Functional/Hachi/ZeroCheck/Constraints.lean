@@ -6,6 +6,7 @@ Authors: Tobias Rothmann, Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.ToCompPoly.Multilinear.NestedEvaluationTree
+import ArkLib.ToCompPoly.Multivariate.Eval
 import CompPoly.Multivariate.Operations
 
 /-!
@@ -760,6 +761,221 @@ computable representation — this is the fold the prover actually runs. -/
 def hypercubeSum (H : CMvPolynomial m₀ F) (i : ℕ) (cs : Fin i → F) : F :=
   ∑ x : Fin (m₀ - i) → Fin 2, H.eval (hypercubePoint m₀ i cs x)
 
+omit [BEq F] [LawfulBEq F] in
+/-- **Saturation of the partial sum.** Once the challenge prefix covers every cube coordinate
+(`m₀ ≤ i`), the trailing cube is a single point and `hypercubeSum` collapses to a plain evaluation
+at the prefix — in particular it stops depending on the coordinates beyond the `m₀`-th.
+
+Two consumers, in opposite directions:
+
+* at `i = m₀` this is what makes the loop's last seam a *point* claim, which is what the
+  final-evaluation check reads ([NOZ26] Figure 7 tail);
+* for `m₀ < i` it is exactly why a further round would be unsound: the round polynomial `g` is
+  forced constant `= H.eval cs`, so the guard `g(0) + g(1) = target` yields `2·H.eval cs = target`
+  while the round-`i` claim asks for `H.eval cs = target`. This is the reason
+  `round_coordinateWiseSpecialSoundWithEscape` (`Sumcheck/Rounds.lean`) carries `i < m₀`. -/
+theorem hypercubeSum_of_le (H : CMvPolynomial m₀ F) {i : ℕ} (hi : m₀ ≤ i) (cs : Fin i → F) :
+    hypercubeSum m₀ H i cs = H.eval (fun j => cs ⟨j, lt_of_lt_of_le j.isLt hi⟩) := by
+  haveI : IsEmpty (Fin (m₀ - i)) := ⟨fun j => absurd j.isLt (by omega)⟩
+  rw [hypercubeSum, Fintype.sum_unique]
+  congr 1
+  funext j
+  simp only [hypercubePoint]
+  exact dif_pos (lt_of_lt_of_le j.isLt hi)
+
+
+/-! ### Evaluating the computable summands
+
+The summands are assembled from three computable pieces — the Lagrange basis
+`cBooleanEqPolynomial`, the multilinear extension `cMultilinearExtension`, and the range factor
+`cRangeProduct`. Each of the next lemmas says what one of them evaluates to, which is all the
+sum identities below need: they turn a `CMvPolynomial` evaluation into an `F`-level expression,
+after which the argument is ordinary algebra over the Boolean cube. The `CMvPolynomial`-side
+`Finset` machinery is `ArkLib/ToCompPoly/Multivariate/Eval.lean`. -/
+
+omit [BEq F] [LawfulBEq F] in
+/-- `eq̃(x, τ)` for a *Boolean* `x`: the Mathlib equality polynomial of a cube point, evaluated at
+an arbitrary point, is the product of per-coordinate selections. This is the shape the computable
+Lagrange basis produces, so it is the bridge between the two representations of `eq̃`. -/
+theorem eval_eqPolynomial_boolean (x : Fin m₀ → Fin 2) (τ : Fin m₀ → F) :
+    MvPolynomial.eval τ (eqPolynomial ((x : Fin m₀ → F))) =
+      ∏ i : Fin m₀, if x i = 1 then τ i else 1 - τ i := by
+  rw [eqPolynomial_expanded, _root_.map_prod]
+  refine Finset.prod_congr rfl fun i _ => ?_
+  simp only [_root_.map_add, _root_.map_mul, _root_.map_sub, _root_.map_one,
+    MvPolynomial.eval_C, MvPolynomial.eval_X]
+  by_cases h : x i = 1
+  · rw [if_pos h, h]; norm_num
+  · have h0 : x i = 0 := by fin_omega
+    rw [if_neg h, h0]; norm_num
+
+omit [BEq F] [LawfulBEq F] in
+/-- **A multilinear extension evaluates to the `eq̃`-weighted cube sum of its table.** The
+Mathlib-side reading of "the sum over the cube of `eq̃(τ, ·)` against a table is that table's
+multilinear extension at `τ`" — the identity both sum theorems below are ultimately instances
+of. -/
+theorem eval_MLE_eq_sum (g : (Fin m₀ → Fin 2) → F) (τ : Fin m₀ → F) :
+    MvPolynomial.eval τ (MLE g) =
+      ∑ x : Fin m₀ → Fin 2, g x * ∏ i : Fin m₀, if x i = 1 then τ i else 1 - τ i := by
+  rw [MLE, _root_.map_sum]
+  exact Finset.sum_congr rfl fun x _ => by
+    rw [_root_.map_mul, MvPolynomial.eval_C, eval_eqPolynomial_boolean, mul_comm]
+
+/-- The computable Lagrange basis polynomial of a cube point, evaluated at an arbitrary point. -/
+theorem cBooleanEqPolynomial_eval (x : Fin m₀ → Fin 2) (τ : Fin m₀ → F) :
+    (cBooleanEqPolynomial m₀ x).eval τ =
+      ∏ i : Fin m₀, if x i = 1 then τ i else 1 - τ i := by
+  rw [cBooleanEqPolynomial, CMvPolynomial.eval_prod]
+  refine Finset.prod_congr rfl fun i _ => ?_
+  by_cases h : x i = 1 <;> simp [h]
+
+/-- **The computable multilinear extension is Mathlib's.** Both representations of the multilinear
+extension of a Boolean table agree at every point; the computable one is what the protocol folds,
+the Mathlib one is what the algebra below reasons about. -/
+theorem cMultilinearExtension_eval (evals : (Fin m₀ → Fin 2) → F) (τ : Fin m₀ → F) :
+    (cMultilinearExtension m₀ evals).eval τ = MvPolynomial.eval τ (MLE evals) := by
+  rw [cMultilinearExtension, CMvPolynomial.eval_sum, eval_MLE_eq_sum]
+  exact Finset.sum_congr rfl fun x _ => by
+    rw [CPoly.eval_mul, CPoly.eval_C, cBooleanEqPolynomial_eval]
+
+/-- At a Boolean point the computable multilinear extension returns the table entry. -/
+theorem cMultilinearExtension_eval_boolean (evals : (Fin m₀ → Fin 2) → F)
+    (y : Fin m₀ → Fin 2) :
+    (cMultilinearExtension m₀ evals).eval ((y : Fin m₀ → F)) = evals y := by
+  rw [cMultilinearExtension_eval, MLE_eval_zeroOne]
+
+/-- At a Boolean point the computable `eq̃(τ₀, ·)` polynomial returns the per-coordinate
+selection product. -/
+theorem cEqualityPolynomial_eval_boolean (τ : Fin m₀ → F) (y : Fin m₀ → Fin 2) :
+    (cEqualityPolynomial m₀ τ).eval ((y : Fin m₀ → F)) =
+      ∏ i : Fin m₀, if y i = 1 then τ i else 1 - τ i := by
+  rw [cEqualityPolynomial, cMultilinearExtension_eval_boolean]
+
+/-- The range factor commutes with evaluation: applying `cRangeProduct` and then evaluating is
+applying `rangeProduct` to the evaluation. -/
+theorem cRangeProduct_eval (b : ℕ) (p : CMvPolynomial m₀ F) (τ : Fin m₀ → F) :
+    (cRangeProduct m₀ b p).eval τ = rangeProduct b (p.eval τ) := by
+  rw [cRangeProduct, rangeProduct, CPoly.eval_mul, CMvPolynomial.eval_prod]
+  exact congrArg _ (Finset.prod_congr rfl fun j _ => by simp)
+
+/-! ### Per-variable degrees of the summands
+
+The round message is degree-bounded (`RoundMsg`, `Sumcheck/Rounds.lean`), and Lemma 11's
+extraction needs the matching bound on the summand: a defect polynomial of degree `≤ D` vanishing
+at `D + 1` points is identically zero. A degree is *not* determined by values — two distinct
+polynomials agree everywhere over a finite field — so unlike the evaluation lemmas above these
+must cross the representation boundary at the level of the polynomial itself, through
+`fromCMvPolynomial`. -/
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable Lagrange basis transports to Mathlib's equality polynomial. -/
+theorem fromCMvPolynomial_cBooleanEqPolynomial (x : Fin m₀ → Fin 2) :
+    fromCMvPolynomial (cBooleanEqPolynomial m₀ x) = eqPolynomial ((x : Fin m₀ → F)) := by
+  rw [cBooleanEqPolynomial, CMvPolynomial.fromCMvPolynomial_prod, eqPolynomial_zeroOne]
+  refine Finset.prod_congr rfl fun i _ => ?_
+  by_cases h : x i = 1
+  · rw [if_pos h, if_neg (by rw [h]; decide), CMvPolynomial.fromCMvPolynomial_X]
+  · have h0 : x i = 0 := by fin_omega
+    rw [if_neg h, if_pos h0, CMvPolynomial.fromCMvPolynomial_sub',
+      CMvPolynomial.fromCMvPolynomial_one', CMvPolynomial.fromCMvPolynomial_X]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **The computable multilinear extension transports to Mathlib's `MLE`.** Strictly stronger than
+`cMultilinearExtension_eval`, which only matches their values: this is an identity of
+polynomials, which is what a degree bound needs. -/
+theorem fromCMvPolynomial_cMultilinearExtension (evals : (Fin m₀ → Fin 2) → F) :
+    fromCMvPolynomial (cMultilinearExtension m₀ evals) = MLE evals := by
+  rw [cMultilinearExtension, CMvPolynomial.fromCMvPolynomial_sum, MLE]
+  exact Finset.sum_congr rfl fun x _ => by
+    rw [CMvPolynomial.fromCMvPolynomial_mul', CMvPolynomial.fromCMvPolynomial_C,
+      fromCMvPolynomial_cBooleanEqPolynomial, mul_comm]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable range factor transports to the corresponding Mathlib product. -/
+theorem fromCMvPolynomial_cRangeProduct (b : ℕ) (p : CMvPolynomial m₀ F) :
+    fromCMvPolynomial (cRangeProduct m₀ b p) =
+      fromCMvPolynomial p * ∏ k ∈ Finset.Icc 1 (b - 1),
+        ((fromCMvPolynomial p - MvPolynomial.C (k : F)) *
+          (fromCMvPolynomial p + MvPolynomial.C (k : F))) := by
+  rw [cRangeProduct, CMvPolynomial.fromCMvPolynomial_mul',
+    CMvPolynomial.fromCMvPolynomial_prod]
+  exact congrArg _ (Finset.prod_congr rfl fun k _ => by
+    rw [CMvPolynomial.fromCMvPolynomial_mul', CMvPolynomial.fromCMvPolynomial_sub',
+      CMvPolynomial.fromCMvPolynomial_add', CMvPolynomial.fromCMvPolynomial_C])
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- Shifting by a constant does not raise the per-variable degree. -/
+theorem degreeOf_add_C_le {P : MvPolynomial (Fin m₀) F} {j : Fin m₀} {c : F} {D : ℕ}
+    (hP : P.degreeOf j ≤ D) : (P + MvPolynomial.C c).degreeOf j ≤ D :=
+  le_trans (MvPolynomial.degreeOf_add_le _ _ _)
+    (by simp [MvPolynomial.degreeOf_C, hP])
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- **The range product raises the per-variable degree from `≤ 1` to `≤ 2b − 1`**: it is `P` times
+`b − 1` quadratic factors. The `0 < b` hypothesis is real — at `b = 0` the product is empty, the
+polynomial is `P` itself of degree `1`, and the claimed bound `2·0 − 1 = 0` fails. -/
+theorem degreeOf_rangeProduct_le {b : ℕ} (hb : 0 < b) (P : MvPolynomial (Fin m₀) F)
+    (j : Fin m₀) (hP : P.degreeOf j ≤ 1) :
+    (P * ∏ k ∈ Finset.Icc 1 (b - 1),
+        ((P - MvPolynomial.C (k : F)) * (P + MvPolynomial.C (k : F)))).degreeOf j
+      ≤ 2 * b - 1 := by
+  have hfac : ∀ k ∈ Finset.Icc 1 (b - 1),
+      ((P - MvPolynomial.C (k : F)) * (P + MvPolynomial.C (k : F))).degreeOf j ≤ 2 := by
+    intro k _
+    have hsub : (P - MvPolynomial.C (k : F)).degreeOf j ≤ 1 := by
+      have : P - MvPolynomial.C (k : F) = P + MvPolynomial.C (-(k : F)) := by
+        rw [_root_.map_neg, ← sub_eq_add_neg]
+      rw [this]; exact degreeOf_add_C_le (hP := hP)
+    have hadd : (P + MvPolynomial.C (k : F)).degreeOf j ≤ 1 := degreeOf_add_C_le (hP := hP)
+    exact le_trans (MvPolynomial.degreeOf_mul_le _ _ _) (by omega)
+  have hprod : (∏ k ∈ Finset.Icc 1 (b - 1),
+      ((P - MvPolynomial.C (k : F)) * (P + MvPolynomial.C (k : F)))).degreeOf j
+      ≤ 2 * (b - 1) := by
+    refine le_trans (MvPolynomial.degreeOf_prod_le _ _ _) ?_
+    refine le_trans (Finset.sum_le_sum hfac) ?_
+    rw [Finset.sum_const, Nat.card_Icc, smul_eq_mul]
+    omega
+  exact le_trans (MvPolynomial.degreeOf_mul_le _ _ _) (by omega)
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Per-variable degree of the range summand: `deg F_{0,τ₀} ≤ 2b`** — the `roundDegZero b` pin
+that `RoundMsg`'s first component and Lemma 11's `k = max (2b) 2 + 1` are set against.
+`eq̃(τ₀, ·)` contributes `1` and the range product `2b − 1`. -/
+theorem degreeOf_sumcheckPolyZero {b : ℕ} (hb : 0 < b) (φF : ZMod q →+* F) (τ₀ : Fin m₀ → F)
+    (w : LiftedWitness Φ μ n) (j : Fin m₀) :
+    (fromCMvPolynomial (sumcheckPolyZero Φ m₀ φF b τ₀ w)).degreeOf j ≤ roundDegZero b := by
+  rw [sumcheckPolyZero, CMvPolynomial.fromCMvPolynomial_mul', cEqualityPolynomial,
+    fromCMvPolynomial_cMultilinearExtension, fromCMvPolynomial_cRangeProduct,
+    fromCMvPolynomial_cMultilinearExtension, roundDegZero]
+  refine le_trans (MvPolynomial.degreeOf_mul_le _ _ _) ?_
+  have h₁ := MLE_degreeOf (fun x => ∏ i : Fin m₀, if x i = 1 then τ₀ i else 1 - τ₀ i) j
+  have h₂ := degreeOf_rangeProduct_le (hb := hb) (P := MLE (wTable Φ m₀ φF b w)) (j := j)
+    (hP := MLE_degreeOf (wTable Φ m₀ φF b w) j)
+  omega
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Per-variable degree of the linear summand: `deg F_{α,τ₁} ≤ 2`** — the `roundDegAlpha` pin.
+It is a product of two multilinear factors, so no hypothesis on `b` is needed. -/
+theorem degreeOf_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (j : Fin m₀) :
+    (fromCMvPolynomial (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w)).degreeOf j
+      ≤ roundDegAlpha := by
+  rw [sumcheckPolyAlpha, CMvPolynomial.fromCMvPolynomial_mul',
+    fromCMvPolynomial_cMultilinearExtension,
+    fromCMvPolynomial_cMultilinearExtension, roundDegAlpha]
+  refine le_trans (MvPolynomial.degreeOf_mul_le _ _ _) ?_
+  have h₁ := MLE_degreeOf (wTable Φ m₀ φF b w) j
+  have h₂ := MLE_degreeOf (alphaPublicEvals Φ m₀ m₁ φF s α τ₁) j
+  omega
+
+omit [NeZero q] [BEq F] [LawfulBEq F] in
+/-- The full-cube sum, with the empty challenge prefix unfolded: `hypercubeSum … 0` ranges over
+every Boolean point of the `m₀`-cube. -/
+theorem hypercubeSum_zero (H : CMvPolynomial m₀ F) :
+    hypercubeSum m₀ H 0 (fun j => j.elim0) =
+      ∑ x : Fin m₀ → Fin 2, H.eval ((x : Fin m₀ → F)) := rfl
+
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- The full-cube sum of the range summand `F_{0,τ₀}` equals `H₀(τ₀)`.
 
 ### Deliberate divergence: no `1_{≤μ}` indicator
@@ -780,9 +996,13 @@ theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ 
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =
       MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val := by
-  sorry
+  rw [hypercubeSum_zero]
+  simp only [hZeroML, eval_MLE_eq_sum]
+  refine Finset.sum_congr rfl fun x _ => ?_
+  rw [sumcheckPolyZero, CPoly.eval_mul, cEqualityPolynomial_eval_boolean, cRangeProduct_eval,
+    cMultilinearExtension_eval_boolean, mul_comm]
 
-omit [NeZero q] in
+omit [NeZero q] [IsCyclotomic Φ] in
 /-- Alias of `sum_sumcheckPolyZero` retained for the sumcheck bridge. -/
 theorem sum_sumcheckPolyZero' (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
@@ -790,22 +1010,266 @@ theorem sum_sumcheckPolyZero' (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀
       MvPolynomial.eval τ₀ (hZeroML Φ m₀ φF b w).val :=
   sum_sumcheckPolyZero Φ m₀ φF b τ₀ w
 
-/-- The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`. -/
+/-! ### The `α`-summand's table contraction
+
+`alphaPublicEvals` multiplies the committed table by the public data at the *flat cube index*,
+reading the row as `idx / d` and the column as `idx % d`; Eq. (22)'s `alphaContract` instead sums
+over the table's `(row, column)` block. The next lemmas reconcile the two sums: the flat index of
+block entry `(u, ℓ)` is `d·u + ℓ`, that assignment is injective, and off its image the public
+matrix vanishes — so the cube sum and the block sum have the same terms. -/
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- Outside the encoded block the public matrix vanishes: row `u ≥ μ + n` is neither an `R^lin`
+column (`u < μ`) nor the `r`-block diagonal entry (`u = μ + i`, which has `u < μ + n`). This is
+what makes the cube sum collapse onto the block. -/
+theorem mAlphaTilde_eq_zero_of_ge (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (α : F)
+    (i : Fin n) {u : ℕ} (hu : μ + n ≤ u) :
+    mAlphaTilde Φ φF s α i u = 0 := by
+  have hi := i.isLt
+  rw [mAlphaTilde, dif_neg (by omega), if_neg (by omega)]
+
+/-- The flat `m₀`-cube index of table entry `(u, ℓ)`, namely `d·u + ℓ` — the index `wTablePoint`
+decodes and the index `alphaPublicEvals` reads back through `/ d` and `% d`. -/
+def wTableIndex (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (p : Fin (μ + n) × Fin Φ.φ.natDegree) : Fin (2 ^ m₀) :=
+  ⟨Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ), by
+    have hu := p.1.isLt
+    have hl := p.2.isLt
+    have s1 : Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ) < Φ.φ.natDegree * ((p.1 : ℕ) + 1) := by
+      rw [Nat.mul_succ]; omega
+    have s2 : Φ.φ.natDegree * ((p.1 : ℕ) + 1) ≤ (μ + n) * Φ.φ.natDegree := by
+      rw [Nat.mul_comm]; exact Nat.mul_le_mul (by omega) (le_refl _)
+    omega⟩
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `wTablePoint` is `wTableIndex` decoded — the two spellings of the same cube point. -/
+theorem wTablePoint_eq_symm_wTableIndex (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (u : Fin (μ + n)) (ℓ : Fin Φ.φ.natDegree) :
+    wTablePoint Φ m₀ hμn u ℓ = finFunctionFinEquiv.symm (wTableIndex Φ m₀ hμn (u, ℓ)) := rfl
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Recovering the block coordinates from the flat index: `(d·u + ℓ) / d = u` and
+`(d·u + ℓ) % d = ℓ`. -/
+theorem wTableIndex_div_mod (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (p : Fin (μ + n) × Fin Φ.φ.natDegree) :
+    ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree = (p.1 : ℕ) ∧
+      ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree = (p.2 : ℕ) := by
+  have hdiv : (Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ)) / Φ.φ.natDegree = (p.1 : ℕ) := by
+    rw [Nat.mul_add_div hd, Nat.div_eq_of_lt p.2.isLt, Nat.add_zero]
+  refine ⟨hdiv, ?_⟩
+  have h := Nat.div_add_mod (Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ)) Φ.φ.natDegree
+  rw [show ((wTableIndex Φ m₀ hμn p : Fin (2 ^ m₀)) : ℕ)
+    = Φ.φ.natDegree * (p.1 : ℕ) + (p.2 : ℕ) from rfl, hdiv] at *
+  omega
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- Distinct block entries have distinct flat indices. -/
+theorem wTableIndex_injective (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    Function.Injective (wTableIndex Φ m₀ hμn) := by
+  rintro ⟨u, l⟩ ⟨u', l'⟩ h
+  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u, l)
+  obtain ⟨hu', hl'⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u', l')
+  rw [h] at hu hl
+  exact Prod.ext (Fin.ext (hu.symm.trans hu')) (Fin.ext (hl.symm.trans hl'))
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- **The cube sum of the `α`-summand's public factor is Eq. (22)'s block contraction.** Summing
+the committed table against `α̃` and `M̃_α` over the whole `m₀`-cube — which is what the sumcheck
+does — equals `alphaContract`, which sums over the table block only. The terms outside the block
+vanish because `M̃_α` does (`mAlphaTilde_eq_zero_of_ge`), and inside it the flat index is exactly
+the block coordinate. -/
+theorem sum_cube_alphaPublic (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
+    ∑ y : Fin m₀ → Fin 2,
+        wTable Φ m₀ φF b w y *
+          (alphaTilde α (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree) *
+            mAlphaTilde Φ φF s α i
+              (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree))
+      = alphaContract Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i := by
+  classical
+  set g : Fin (2 ^ m₀) → F := fun k =>
+    wTable Φ m₀ φF b w (finFunctionFinEquiv.symm k) *
+      (alphaTilde α ((k : ℕ) % Φ.φ.natDegree) *
+        mAlphaTilde Φ φF s α i ((k : ℕ) / Φ.φ.natDegree)) with hgdef
+  -- Reindex the cube by the flat index.
+  have hre : ∑ y : Fin m₀ → Fin 2,
+      wTable Φ m₀ φF b w y *
+        (alphaTilde α (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree) *
+          mAlphaTilde Φ φF s α i
+            (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree))
+      = ∑ k : Fin (2 ^ m₀), g k := by
+    refine (Equiv.sum_comp finFunctionFinEquiv.symm _).symm.trans ?_
+    exact Finset.sum_congr rfl fun k _ => by simp [hgdef]
+  rw [hre]
+  -- Off the block the public matrix vanishes, so the cube sum is the block sum.
+  have hzero : ∀ k ∈ (Finset.univ : Finset (Fin (2 ^ m₀))),
+      k ∉ Finset.univ.image (wTableIndex Φ m₀ hμn) → g k = 0 := by
+    intro k _ hk
+    have hrow : μ + n ≤ (k : ℕ) / Φ.φ.natDegree := by
+      by_contra hlt
+      rw [Nat.not_le] at hlt
+      refine hk (Finset.mem_image.mpr ⟨(⟨(k : ℕ) / Φ.φ.natDegree, hlt⟩,
+        ⟨(k : ℕ) % Φ.φ.natDegree, Nat.mod_lt _ hd⟩), Finset.mem_univ _, ?_⟩)
+      exact Fin.ext (Nat.div_add_mod _ _)
+    rw [hgdef]
+    simp only [mAlphaTilde_eq_zero_of_ge Φ φF s α i hrow, mul_zero]
+  rw [(Finset.sum_subset (Finset.subset_univ _) hzero).symm,
+    Finset.sum_image fun p _ p' _ h => wTableIndex_injective Φ m₀ hd hμn h,
+    alphaContract, ← Finset.univ_product_univ, Finset.sum_product]
+  refine Finset.sum_congr rfl fun u _ => Finset.sum_congr rfl fun ℓ _ => ?_
+  obtain ⟨hu, hl⟩ := wTableIndex_div_mod Φ m₀ hd hμn (u, ℓ)
+  rw [hgdef]
+  simp only [hu, hl, ← wTablePoint_eq_symm_wTableIndex]
+  ring
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- **Row-indexed cube sums.** An `eq̃(τ₁, ·)`-weighted sum over the `m₁`-batching cube of a table
+supported on the rows `< n` equals the row-indexed sum that `zcTargetAlpha` and `alphaPublicEvals`
+are written with.
+
+Both sides silently drop the same rows — on the left the cube's padding rows `≥ n`, on the right
+the rows `≥ 2 ^ m₁` that the cube cannot encode — so the two supports agree and **no `n ≤ 2 ^ m₁`
+hypothesis is needed**, even though the row encoding `rowPoint` requires one. -/
+theorem sum_cube_rowIndexed (τ₁ : Fin m₁ → F) (f : Fin n → F) :
+    ∑ z : Fin m₁ → Fin 2,
+        (if h : ((finFunctionFinEquiv z : Fin (2 ^ m₁)) : ℕ) < n then f ⟨_, h⟩ else 0) *
+          ∏ j : Fin m₁, (if z j = 1 then τ₁ j else 1 - τ₁ j)
+      = ∑ i : Fin n, (if hi : (i : ℕ) < 2 ^ m₁ then
+          (∏ j : Fin m₁,
+            if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) * f i
+        else 0) := by
+  classical
+  rw [← Equiv.sum_comp finFunctionFinEquiv.symm
+    (fun z : Fin m₁ → Fin 2 =>
+      (if h : ((finFunctionFinEquiv z : Fin (2 ^ m₁)) : ℕ) < n then f ⟨_, h⟩ else 0) *
+        ∏ j : Fin m₁, (if z j = 1 then τ₁ j else 1 - τ₁ j))]
+  simp only [Equiv.apply_symm_apply]
+  -- Restrict both sides to their supports, then match them row by row.
+  rw [← Finset.sum_subset (Finset.subset_univ
+        (Finset.univ.filter (fun k : Fin (2 ^ m₁) => (k : ℕ) < n)))
+      (fun k _ hk => by
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hk
+        rw [dif_neg hk, zero_mul]),
+    ← Finset.sum_subset (Finset.subset_univ
+        (Finset.univ.filter (fun i : Fin n => (i : ℕ) < 2 ^ m₁)))
+      (fun i _ hi => by
+        simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi
+        rw [dif_neg hi])]
+  refine Finset.sum_bij'
+    (fun k hk => (⟨(k : ℕ), by simpa using hk⟩ : Fin n))
+    (fun i hi => (⟨(i : ℕ), by simpa using hi⟩ : Fin (2 ^ m₁)))
+    (fun k hk => by simp) (fun i hi => by simp)
+    (fun _ _ => rfl) (fun _ _ => rfl) ?_
+  intro k hk
+  simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hk
+  rw [dif_pos hk, dif_pos k.isLt, mul_comm]
+
+omit [NeZero q] in
+/-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
+
+The two hypotheses are the ones that make the table encoding faithful, and both are already
+carried by the composition (`Composition.openingChain`'s `hd` and `hcov`): `hd` is what lets the
+flat cube index be split as `(row, column)`, and `hμn` is what makes every coefficient position a
+genuine cube point. Without them the cube contraction of `M̃_α`, `w̃` and `α̃` does **not**
+reproduce the ring-level row defect that `H_α` stores — the block would overflow the cube — so
+the identity is false as stated without them, not merely unprovable. -/
 theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) :
+    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
       MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
         zcTargetAlpha Φ m₁ φF s α τ₁ := by
-  sorry
+  classical
+  -- The left side: evaluate both multilinear extensions at every Boolean point, then exchange
+  -- the cube sum with the row sum hidden inside `alphaPublicEvals`.
+  have hL : hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0)
+      = ∑ i : Fin n, (if hi : (i : ℕ) < 2 ^ m₁ then
+          (∏ j : Fin m₁,
+            if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
+              alphaContract Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i
+        else 0) := by
+    rw [hypercubeSum_zero]
+    have hpt : ∀ y : Fin m₀ → Fin 2,
+        (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w).eval ((y : Fin m₀ → F))
+          = ∑ i : Fin n, wTable Φ m₀ φF b w y *
+              (alphaTilde α (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) % Φ.φ.natDegree) *
+                (if hi : (i : ℕ) < 2 ^ m₁ then
+                  (∏ j : Fin m₁,
+                    if (finFunctionFinEquiv.symm ⟨(i : ℕ), hi⟩) j = 1 then τ₁ j else 1 - τ₁ j) *
+                      mAlphaTilde Φ φF s α i
+                        (((finFunctionFinEquiv y : Fin (2 ^ m₀)) : ℕ) / Φ.φ.natDegree)
+                else 0)) := by
+      intro y
+      rw [sumcheckPolyAlpha, CPoly.eval_mul, cMultilinearExtension_eval_boolean,
+        cMultilinearExtension_eval_boolean, alphaPublicEvals, Finset.mul_sum, Finset.mul_sum]
+    rw [Finset.sum_congr rfl fun y _ => hpt y, Finset.sum_comm]
+    refine Finset.sum_congr rfl fun i _ => ?_
+    by_cases hi : (i : ℕ) < 2 ^ m₁
+    · rw [dif_pos hi, ← sum_cube_alphaPublic Φ m₀ φF b s α w hd hμn i, Finset.mul_sum]
+      exact Finset.sum_congr rfl fun y _ => by rw [dif_pos hi]; ring
+    · rw [dif_neg hi]
+      exact Finset.sum_eq_zero fun y _ => by rw [dif_neg hi]; ring
+  -- The right side: the `H_α` cube sum and `zcTargetAlpha` are two row-indexed sums, and the
+  -- row-level defect plus `yᵢ(α)` is exactly Eq. (22)'s contraction.
+  rw [hL]
+  simp only [hAlphaML, eval_MLE_eq_sum, hAlphaEvals, zcTargetAlpha]
+  rw [sum_cube_rowIndexed m₁ τ₁ (fun i => cEvalAt φF α (cRowSum Φ s w.z i)
+      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i)),
+    ← Finset.sum_add_distrib]
+  refine Finset.sum_congr rfl fun i _ => ?_
+  by_cases hi : (i : ℕ) < 2 ^ m₁
+  · rw [dif_pos hi, dif_pos hi, dif_pos hi, ← mul_add]
+    congr 1
+    have := alphaDefect_wTable Φ m₀ φF b s α w hd hμn i
+    rw [alphaDefect] at this
+    linear_combination this
+  · rw [dif_neg hi, dif_neg hi, dif_neg hi, add_zero]
 
 omit [NeZero q] in
 /-- Alias of `sum_sumcheckPolyAlpha` retained for the sumcheck bridge. -/
 theorem sum_sumcheckPolyAlpha' (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
-    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) :
+    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w) 0 (fun j => j.elim0) =
       MvPolynomial.eval τ₁ (hAlphaML Φ m₁ φF b s α w).val +
         zcTargetAlpha Φ m₁ φF s α τ₁ :=
-  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w
+  sum_sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w hd hμn
+
+/-! ### Evaluation at a point: the final-evaluation factorizations
+
+The sum identities above are what the *bridge* needs (row 7): the full-cube sums of the summands
+are the zero-check's point claims. The final-evaluation step (row 9, [NOZ26] Figure 7 tail) needs
+the opposite reading of the same two polynomials: once the sumcheck has consumed every cube
+coordinate, each summand is a plain evaluation at the challenge point, and it **factors into a
+public factor times a function of `mle[w̃]` alone**. That is what lets the verifier check the last
+two targets against the single claimed value `y′` — the formal content of "the verifier does not
+need to perform any multiplication over `R_q`" (§4.4): neither factor below mentions the
+witness except through `wTableMleEval`. -/
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Evaluation factorization of the range summand**:
+`F_{0,τ₀}(a) = eq̃(τ₀, a) · P_b(mle[w̃](a))`. The left factor is public; the right depends on the
+witness only through the claimed evaluation. -/
+theorem eval_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
+    (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
+    (sumcheckPolyZero Φ m₀ φF b τ₀ w).eval a =
+      (cEqualityPolynomial m₀ τ₀).eval a * rangeProduct b (wTableMleEval Φ m₀ φF b w a) := by
+  rw [sumcheckPolyZero, CPoly.eval_mul, cRangeProduct_eval, cMultilinearExtension_eval,
+    wTableMleEval_eq]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Evaluation factorization of the linear summand**:
+`F_{α,τ₁}(a) = mle[w̃](a) · Ã(a)`, where `Ã` is the multilinear extension of the public table
+`alphaPublicEvals` — the paper's `∑ᵢ eq̃(τ₁,i)·M̃_α(i,·)·α̃`, whose evaluation at the sumcheck
+point is the verifier's one expensive step (`Õ(√(2^ℓ)·λ)` by dynamic programming, §4.4). -/
+theorem eval_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (τ₁ : Fin m₁ → F) (w : LiftedWitness Φ μ n) (a : Fin m₀ → F) :
+    (sumcheckPolyAlpha Φ m₀ m₁ φF b s α τ₁ w).eval a =
+      wTableMleEval Φ m₀ φF b w a *
+        (cMultilinearExtension m₀ (alphaPublicEvals Φ m₀ m₁ φF s α τ₁)).eval a := by
+  rw [sumcheckPolyAlpha, CPoly.eval_mul, wTableMleEval_eq, cMultilinearExtension_eval]
 
 /-! ## Statement types of the zero-check and sumcheck stages -/
 
