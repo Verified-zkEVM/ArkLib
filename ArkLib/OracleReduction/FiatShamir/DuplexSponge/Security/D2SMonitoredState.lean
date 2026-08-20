@@ -6,6 +6,7 @@ Authors: Chung Thai Nguyen
 
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SCacheHistory
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventDefs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SPermInstall
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Defs
 
 /-!
@@ -84,6 +85,29 @@ noncomputable def D2SNormalState.initial : D2SNormalState
   · change TraceTableOps.InputFunctional (TraceTableOps.empty : T_H)
     intro stmt capacity₁ capacity₂ h₁ _
     simp [LawfulTraceTable.toMultiSet_empty] at h₁
+
+/-- Lift a successful offline `PrefixUpdate` into the reusable normal-state boundary once its
+caller has passed `Monitor`.  The raw trace is preserved verbatim and the rate-only cache starts
+empty; this is the H₀-side bridge from revised StdTrace tables to the same lookup invariants used
+by revised D2SQuery. -/
+noncomputable def D2SNormalState.ofPrefixUpdate
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trDelta : TraceNabla T_H T_P StmtIn U)
+    (hUpdate : prefixUpdateTrace trace = some trDelta)
+    (hMonitor : ¬ BadEventDS.E trace) :
+    D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) := by
+  let hInvariant := prefixUpdateTrace_invariant hUpdate
+  let state : D2SQueryState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) :=
+    { trace := trace
+      trΔ := trDelta
+      h_inv := prefixUpdateTrace_isSubset hUpdate
+      h_mirror := hInvariant.mirrors }
+  exact ⟨state, hMonitor, hInvariant.permutationNodup, hInvariant.hashNodup,
+    hInvariant.hashInputFunctional⟩
 
 /-- Adding a hash-table pair after a genuine input lookup miss preserves the normalized hash
 table's pair-nodup invariant. -/

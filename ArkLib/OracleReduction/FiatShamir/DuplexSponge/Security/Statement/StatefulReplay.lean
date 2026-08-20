@@ -397,8 +397,13 @@ object in which:
   trace cutoff`, `full` = `fullTable trace`) are linked by `tablesDerived`, and `prefix_is_prefix`
   is the two-table law on them.
 
-Nothing here is an independent prop: cursor, schedule, trace, and tables are all tied to one
-another and to the folded replay. -/
+The cursor/schedule and two-table parts are coherent by construction: `runs` folds the real
+schedule and the tables are derived from the one observed raw trace.  Crucially, this record does
+**not** yet assert that the observed trace realizes that schedule — its `trace` can contain hash,
+forward, and inverse occurrences whose phase-by-phase origin must still be proved.  That stronger
+link is the purpose of the separate `ReplayHistory` witness below and of Lemma 5.25.  Keeping the
+distinction explicit prevents a cursor-count fact from being mistaken for a live replay
+realization theorem. -/
 structure ReplayExecution (StmtIn : Type) (U : Type) [SpongeUnit U] [SpongeSize]
     (R δ : ℕ) (phases : List ReplayPhase) where
   trace : DuplexSpongeFS.Statement.Trace StmtIn U

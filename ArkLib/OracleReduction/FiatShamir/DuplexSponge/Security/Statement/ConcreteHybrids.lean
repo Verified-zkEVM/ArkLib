@@ -5,6 +5,7 @@ Authors: Chung Thai Nguyen
 -/
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SAmbientLazySampling
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SRevisedForward
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Hyb2LogCoupling
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.RevisedHybridGame
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Section5Nonempty
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Statement.EventsAndAnalysis
@@ -180,6 +181,107 @@ noncomputable def Hyb2
   KeyLemma.hyb2Revised (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt) (oSpec := oSpec)
     (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver
 
+/-- The lossless H₂ execution.  This retains the decoded-table execution and its raw phase log,
+so the Claim 5.23 coupling can state agreement of actual adaptive codec executions before either
+side is projected to a public output. -/
+noncomputable def Hyb2Observed
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    ProbComp (KeyLemma.HybridGameRevisedMappedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+      (eSpec (U := U) StmtIn pSpec δ) T_H T_P
+      (gSpec (U := U) StmtIn pSpec δ).QueryCache) :=
+  KeyLemma.hyb2RevisedObserved (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+    oSpecImpl V maliciousProver
+
+/-- Forgetting H₂'s retained execution and log gives exactly the public H₂ experiment. -/
+lemma Hyb2Observed_map_publicOutput_eq_Hyb2
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (fun observation => observation.publicOutput) <$>
+        Hyb2Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver =
+      Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
+  letI : Inhabited (gSpec (U := U) StmtIn pSpec δ).QueryCache := ⟨∅⟩
+  change (fun observation => observation.publicOutput) <$>
+      KeyLemma.hyb2RevisedObserved (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+        oSpecImpl V maliciousProver =
+    KeyLemma.hyb2Revised (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+      oSpecImpl V maliciousProver
+  rw [KeyLemma.hyb2RevisedObserved_eq_hybridGameDistRevisedObserved,
+    KeyLemma.hyb2Revised_eq_hybridGameDistRevised]
+  exact KeyLemma.hybridGameDistRevisedObserved_map_publicOutput_eq
+    (init := KeyLemma.hybChallengeInit
+      (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
+      (D_e (U := U) StmtIn pSpec δ))
+    (impl := KeyLemma.hybChallengeImpl
+      (oSpec := oSpec) (U := U)
+      (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
+      oSpecImpl (D_e (U := U) StmtIn pSpec δ))
+    (gImpl := ProverTransform.d2sDecodedBridgeImplCacheOfImage
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) V maliciousProver
+    (TraceTransform.hyb2Line4Trace (δ := δ) (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+
+/-- One lossless H₂ run together with its actual eager decoded-table carrier.  Although that
+carrier is represented by encoded table values internally, H₂ observes it only through `decode`;
+retaining it makes Claim 5.23's H₂/H₃ agreement a relation over real executions rather than an
+unrecoverable equality of final public outputs. -/
+structure Hyb2ObservedSample (T_H T_P : Type)
+    [LawfulTraceNablaImpl T_H T_P StmtIn U] where
+  table : (D_e (U := U) StmtIn pSpec δ).Carrier
+  observation : KeyLemma.HybridGameRevisedMappedObservation
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+    (eSpec (U := U) StmtIn pSpec δ) T_H T_P
+    (gSpec (U := U) StmtIn pSpec δ).QueryCache
+
+/-- Run the real H₂ experiment from an explicitly retained eager decoded-table carrier. -/
+noncomputable def Hyb2ObservedWithTable
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    ProbComp (Hyb2ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P) := by
+  letI : Inhabited (gSpec (U := U) StmtIn pSpec δ).QueryCache := ⟨∅⟩
+  exact do
+    let table ← (D_e (U := U) StmtIn pSpec δ).sample
+    let observation ← KeyLemma.hybridGameDistRevisedObserved
+      (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U)
+      (init := pure table)
+      (impl := KeyLemma.hybChallengeImpl
+        (oSpec := oSpec) (U := U)
+        (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
+        oSpecImpl (D_e (U := U) StmtIn pSpec δ))
+      (ProverTransform.d2sDecodedBridgeImplCacheOfImage
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) V maliciousProver
+      (TraceTransform.hyb2Line4Trace (δ := δ) (Salt := Salt) (oSpec := oSpec)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    pure ⟨table, observation⟩
+
+/-- Forgetting H₂'s retained eager table gives the lossless H₂ observation exactly. -/
+lemma Hyb2ObservedWithTable_map_observation_eq_Hyb2Observed
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (fun sample => sample.observation) <$> Hyb2ObservedWithTable
+      (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver =
+      Hyb2Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+        oSpecImpl V maliciousProver := by
+  unfold Hyb2ObservedWithTable Hyb2Observed KeyLemma.hyb2RevisedObserved
+    KeyLemma.hybridGameDistRevisedObserved
+  simp only [KeyLemma.hybChallengeInit]
+  simp only [map_bind, map_pure, pure_bind, bind_pure_comp, Functor.map_map]
+  simp
+
 /-- CO25 Hyb3, definitionally the real salted-FS / revised-D2SQuery game. -/
 noncomputable def Hyb3
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -229,6 +331,56 @@ lemma Hyb3Observed_map_publicOutput_eq_Hyb3
       Hyb3 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
   simpa only [Hyb3, Hyb3Observed, KeyLemma.hyb3Revised,
     KeyLemma.hybridGameDistRevisedObserved_map_publicOutput_eq]
+
+/-- A lossless Hyb₃ run together with the particular standard challenge table from which its
+outer oracle answers were served.  This is the table that Claim 5.23 must share with Hyb₄;
+retaining an arbitrary independently sampled table would be too weak for the private-shadow
+argument of Lemma 5.24a. -/
+structure Hyb3ObservedSample (T_H T_P : Type)
+    [LawfulTraceNablaImpl T_H T_P StmtIn U] where
+  table : (D_IP_salted (StmtIn := StmtIn) (Salt := Salt) pSpec).Carrier
+  observation : KeyLemma.HybridGameRevisedMappedObservation
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+    (fsChallengeOracle (StmtIn × Salt) pSpec) T_H T_P
+    (ProverTransform.D2SAlgoMemo StmtIn U δ Salt pSpec)
+
+/-- Run the real Hyb₃ experiment from an explicitly retained eager `D_IP_salted` table. -/
+noncomputable def Hyb3ObservedWithTable
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    ProbComp (Hyb3ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P) := do
+  let table ← (D_IP_salted (StmtIn := StmtIn) (Salt := Salt) pSpec).sample
+  let observation ← KeyLemma.hybridGameDistRevisedObserved
+    (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U)
+    (init := pure table)
+    (impl := KeyLemma.hybChallengeImpl
+      (oSpec := oSpec) (U := U)
+      (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)
+      oSpecImpl (D_IP_salted (StmtIn := StmtIn) (Salt := Salt) pSpec))
+    (ProverTransform.d2sCodecBridgeImplMemo (δ := δ) (Salt := Salt)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) V maliciousProver
+    (TraceTransform.hyb3Line4Trace (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+  pure ⟨table, observation⟩
+
+/-- Forgetting the retained eager table gives the lossless Hyb₃ experiment exactly. -/
+lemma Hyb3ObservedWithTable_map_observation_eq_Hyb3Observed
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (fun sample => sample.observation) <$> Hyb3ObservedWithTable
+      (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver =
+      Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+        oSpecImpl V maliciousProver := by
+  unfold Hyb3ObservedWithTable
+  unfold Hyb3Observed KeyLemma.hybChallengeInit
+    KeyLemma.hybridGameDistRevisedObserved
+  simp
 
 /-- The explicit out-of-image branch of the partial Hyb₃ codec bridge.  The `fᵢ` table and all
 other outer components are total; therefore an `oracleAbort` of this revised execution is the
@@ -605,10 +757,12 @@ structure Hyb01CouplingWitness
   joint : ProbComp (Hyb01CouplingSample (StmtIn := StmtIn) (StmtOut := StmtOut)
     (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
     (T_P := T_P) (Hyb01BoundCount (U := U) (pSpec := pSpec) (δ := δ) tₕ tₚ tₚᵢ))
-  h0_marginal : (fun sample => sample.h0) <$> joint =
-    Hyb0Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
-  h1_marginal : (fun sample => sample.h1) <$> joint =
-    Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+  /-- As for every probabilistic coupling, a marginal is equality of induced distributions—not
+  raw `ProbComp` syntax, which may also retain the other side's coupled randomness. -/
+  h0_marginal : evalDist ((fun sample => sample.h0) <$> joint) =
+    evalDist (Hyb0Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  h1_marginal : evalDist ((fun sample => sample.h1) <$> joint) =
+    evalDist (Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
   first_stop_bound :
     (Pr[ fun sample => sample.stop.τ ≤
       Hyb01BoundCount (U := U) (pSpec := pSpec) (δ := δ) tₕ tₚ tₚᵢ | joint ]).toReal ≤
@@ -715,8 +869,36 @@ lemma claim521_of_hyb01LazySamplingCoupling
             ((fun sample => sample.h1) <$> witness.joint)) ≤
         (Pr[ fun sample => sample.stop.τ ≤ N | witness.joint ]).toReal := by
     simpa only [Functor.map_map, Function.comp_apply] using htv
-  rw [witness.h0_marginal, witness.h1_marginal,
-    Hyb0Observed_map_publicOutput_eq_Hyb0, Hyb1Observed_map_publicOutput_eq_Hyb1] at htv'
+  have h0Output :
+      evalDist ((fun observation => observation.publicOutput) <$>
+        ((fun sample => sample.h0) <$> witness.joint)) =
+        evalDist (Hyb0 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun observation => observation.publicOutput) <$>
+          ((fun sample => sample.h0) <$> witness.joint)) =
+          evalDist ((fun observation => observation.publicOutput) <$>
+            Hyb0Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq witness.h0_marginal
+          (fun observation => observation.publicOutput)
+      _ = evalDist (Hyb0 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb0Observed_map_publicOutput_eq_Hyb0
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  have h1Output :
+      evalDist ((fun observation => observation.publicOutput) <$>
+        ((fun sample => sample.h1) <$> witness.joint)) =
+        evalDist (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun observation => observation.publicOutput) <$>
+          ((fun sample => sample.h1) <$> witness.joint)) =
+          evalDist ((fun observation => observation.publicOutput) <$>
+            Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq witness.h1_marginal
+          (fun observation => observation.publicOutput)
+      _ = evalDist (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb1Observed_map_publicOutput_eq_Hyb1
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  unfold HybridTVDist tvDist at htv' ⊢
+  rw [h0Output, h1Output] at htv'
   exact htv'.trans witness.first_stop_bound
 
 /-- One sample of the exact H₁/H₂ image-fibre coupling.  The left component retains the
@@ -742,13 +924,14 @@ structure Hyb12ImageFibreCouplingWitness
   joint : ProbComp (Hyb12ImageFibreCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
     (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
     (T_P := T_P))
-  h1_marginal : (fun sample => sample.h1) <$> joint =
-    Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
-  h2_marginal : (fun sample => sample.h2) <$> joint =
-    Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+  h1_marginal : evalDist ((fun sample => sample.h1) <$> joint) =
+    evalDist (Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  h2_marginal : evalDist ((fun sample => sample.h2) <$> joint) =
+    evalDist (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
   outputs_agree : ∀ sample : Hyb12ImageFibreCouplingSample (oSpec := oSpec)
       (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
-      (Salt := Salt) (T_H := T_H) (T_P := T_P), sample.h1.publicOutput = sample.h2
+      (Salt := Salt) (T_H := T_H) (T_P := T_P), sample ∈ support joint →
+      sample.h1.publicOutput = sample.h2
 
 /-- The only unresolved operational premise of Claim 5.22.  The exact Core-only proof route is
 recorded in `Security.DecodedFibreCoupling`: `sampleImageFibreTablePair` proves the uniform H₁
@@ -790,45 +973,49 @@ lemma claim522_of_hyb12ImageFibreCoupling
     Claim522 (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec) (pSpec := pSpec)
       (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
   rcases hCoupling with ⟨witness⟩
-  let Sample := Hyb12ImageFibreCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
-    (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
-    (T_P := T_P)
-  have hpointwise :
-      (fun sample : Sample => sample.h1.publicOutput) = (fun sample : Sample => sample.h2) :=
-    funext witness.outputs_agree
-  have hmap :
-      (fun sample : Sample => sample.h1.publicOutput) <$> witness.joint =
-        (fun sample : Sample => sample.h2) <$> witness.joint :=
-    congrArg (fun f => f <$> witness.joint) hpointwise
-  change tvDist
-    (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
-    (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) = 0
-  rw [← Hyb1Observed_map_publicOutput_eq_Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P)
-    oSpecImpl V maliciousProver, ← witness.h1_marginal, ← witness.h2_marginal]
-  simp only [Functor.map_map]
-  rw [hmap]
-  exact tvDist_self _
+  have houtput :
+      evalDist ((fun sample => sample.h1.publicOutput) <$> witness.joint) =
+        evalDist ((fun sample => sample.h2) <$> witness.joint) := by
+    apply evalDist_ext
+    intro output
+    apply probOutput_bind_congr
+    intro sample hsample
+    simp [witness.outputs_agree sample hsample]
+  have h1Output :
+      evalDist ((fun sample => sample.h1.publicOutput) <$> witness.joint) =
+        evalDist (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun sample => sample.h1.publicOutput) <$> witness.joint) =
+          evalDist ((fun observation => observation.publicOutput) <$>
+            ((fun sample => sample.h1) <$> witness.joint)) := by
+              simp only [Functor.map_map]
+      _ = evalDist ((fun observation => observation.publicOutput) <$>
+          Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq witness.h1_marginal
+          (fun observation => observation.publicOutput)
+      _ = evalDist (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb1Observed_map_publicOutput_eq_Hyb1
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  unfold Claim522 HybridTVDist tvDist
+  rw [← h1Output, ← witness.h2_marginal, houtput]
+  exact SPMF.tvDist_self _
 
 /-- One sample of the Claim-5.23 codec coupling.  `h4` retains the actual eager salted FS table
 *with* its real Hyb4 output; the later private-shadow proof therefore cannot accidentally use a
 separately sampled table. -/
 structure Hyb23CodecCouplingSample (T_H T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U] where
-  h2 : ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (Salt := Salt)
-  h3 : KeyLemma.HybridGameRevisedMappedObservation
-    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
-    (fsChallengeOracle (StmtIn × Salt) pSpec) T_H T_P
-    (ProverTransform.D2SAlgoMemo StmtIn U δ Salt pSpec)
+  h2 : Hyb2ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P
+  h3 : Hyb3ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P
   h4 : Hyb4ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (Salt := Salt)
 
-/-- A concrete adaptive codec coupling.  Its two output marginals are the real Hyb2 and Hyb3
-games, and its third marginal is the lossless observed Hyb4 run, retaining the table actually
-used to produce that Hyb4 output.  The event may depend on the whole coupled sample, so a proof
-may expose table cells in adaptive order; the off-event equality is exactly the property consumed
-by the Claim-5.24 private shadow. -/
+/-- A concrete adaptive codec coupling.  It retains actual H₂ and H₃ executions and the
+lossless observed H₄ run, including the tables used by each execution.  The event may depend on
+the whole coupled sample, so a proof may expose table cells in adaptive order; the off-event
+equality is exactly the property consumed by the Claim-5.24 private shadow. -/
 structure Hyb23CodecCouplingWitness
     [SampleableType U]
     (oSpecImpl : QueryImpl oSpec ProbComp)
@@ -838,12 +1025,18 @@ structure Hyb23CodecCouplingWitness
   joint : ProbComp (Hyb23CodecCouplingSample (StmtIn := StmtIn) (StmtOut := StmtOut)
     (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
     T_H T_P)
-  h2_marginal : (fun sample => sample.h2) <$> joint =
-    Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
-  h3_marginal : (fun sample => sample.h3) <$> joint =
-    Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
-  h4_marginal : (fun sample => sample.h4) <$> joint =
-    Hyb4Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+  /-- A coupling has the required H₂ marginal semantically.  Equality of raw `ProbComp` syntax
+  would be wrong here: a joint execution may carry the randomness of the other components. -/
+  h2_marginal : evalDist ((fun sample => sample.h2) <$> joint) =
+    evalDist (Hyb2ObservedWithTable (Salt := Salt) (T_H := T_H) (T_P := T_P)
+      oSpecImpl V maliciousProver)
+  /-- This is an equality of the table-retaining observation, not merely of its execution
+  projection. Thus `shared_standard_table` identifies the actual `f` table used by H₃. -/
+  h3_marginal : evalDist ((fun sample => sample.h3) <$> joint) =
+    evalDist (Hyb3ObservedWithTable (Salt := Salt) (T_H := T_H) (T_P := T_P)
+      oSpecImpl V maliciousProver)
+  h4_marginal : evalDist ((fun sample => sample.h4) <$> joint) =
+    evalDist (Hyb4Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
   codecBad : Hyb23CodecCouplingSample (StmtIn := StmtIn) (StmtOut := StmtOut)
     (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P → Prop
   codecBad_bound :
@@ -852,9 +1045,17 @@ structure Hyb23CodecCouplingWitness
         (∑ i, (codec.decodingBias i : ℝ))
   /-- The partial bridge's out-of-image branch is not hidden as an ordinary D2S abort: it is a
   codec mismatch and is charged by this same, single event. -/
-  imageFailure_charged : ∀ sample,
-    Hyb3CodecImageFailure (T_H := T_H) (T_P := T_P) sample.h3 → codecBad sample
-  agrees_off_codecBad : ∀ sample, ¬ codecBad sample → sample.h2 = sample.h3.publicOutput
+  imageFailure_charged : ∀ sample, sample ∈ support joint →
+    Hyb3CodecImageFailure (T_H := T_H) (T_P := T_P) sample.h3.observation → codecBad sample
+  /-- Both sides use the one common standard table, including after a codec mismatch.  The
+  mismatch changes only the two executions' continuation, never which `f_i` function Hyb₄
+  consults. -/
+  shared_standard_table : ∀ sample : Hyb23CodecCouplingSample
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec) (pSpec := pSpec) (U := U)
+      (δ := δ) (Salt := Salt) T_H T_P, sample ∈ support joint →
+      sample.h3.table = sample.h4.table
+  agrees_off_codecBad : ∀ sample, sample ∈ support joint → ¬ codecBad sample →
+    sample.h2.observation.publicOutput = sample.h3.observation.publicOutput
 
 /-- The probability-theoretic endgame of Claim 5.23.  The cryptographic content is the
 adaptive construction of `Hyb23CodecCouplingWitness`; once it is available, equality outside
@@ -869,15 +1070,40 @@ private lemma tvDist_map_h2_h3_le_codecBad
       (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
       (T_P := T_P) oSpecImpl V maliciousProver tₚ) :
     tvDist
-        ((fun sample => sample.h2) <$> witness.joint)
-        ((fun sample => sample.h3.publicOutput) <$> witness.joint) ≤
+        ((fun sample => sample.h2.observation.publicOutput) <$> witness.joint)
+        ((fun sample => sample.h3.observation.publicOutput) <$> witness.joint) ≤
       (Pr[ witness.codecBad | witness.joint ]).toReal := by
-  simpa only [map_eq_bind_pure_comp, Function.comp_apply] using
-    (tvDist_bind_left_event_le witness.joint
-      (fun sample => pure sample.h2)
-      (fun sample => pure sample.h3.publicOutput)
-      witness.codecBad
-      (fun sample hnot => by simp [witness.agrees_off_codecBad sample hnot]))
+  classical
+  let sameOutsideSupport : Hyb23CodecCouplingSample
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec) (pSpec := pSpec) (U := U)
+      (δ := δ) (Salt := Salt) T_H T_P → ProbComp
+      (ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (Salt := Salt)) := fun sample =>
+    if sample ∈ support witness.joint then pure sample.h3.observation.publicOutput
+    else pure sample.h2.observation.publicOutput
+  have h_event := tvDist_bind_left_event_le witness.joint
+    (fun sample => pure sample.h2.observation.publicOutput)
+    sameOutsideSupport witness.codecBad (fun sample hnot => by
+      by_cases hsample : sample ∈ support witness.joint
+      · simp only [sameOutsideSupport, if_pos hsample]
+        simp [witness.agrees_off_codecBad sample hsample hnot]
+      · simp [sameOutsideSupport, hsample])
+  have h_sameOutsideSupport :
+      evalDist (witness.joint >>= sameOutsideSupport) =
+        evalDist (witness.joint >>= fun sample => pure sample.h3.observation.publicOutput) := by
+    apply evalDist_ext
+    intro output
+    apply probOutput_bind_congr
+    intro sample hsample
+    simp [sameOutsideSupport, hsample]
+  have htv :
+      tvDist (witness.joint >>= fun sample => pure sample.h2.observation.publicOutput)
+        (witness.joint >>= fun sample => pure sample.h3.observation.publicOutput) ≤
+        (Pr[ witness.codecBad | witness.joint ]).toReal := by
+    unfold tvDist at h_event ⊢
+    rw [← h_sameOutsideSupport]
+    exact h_event
+  simpa only [map_eq_bind_pure_comp, Function.comp_apply] using htv
 
 /-- A constructed codec coupling immediately gives the quantitative Hyb2--Hyb3 consequence of
 Claim 5.23.  The retained Hyb4 observation is intentionally not projected here: it is reserved
@@ -901,13 +1127,78 @@ lemma hyb23CodecCouplingWitness_tvdist
     (T_P := T_P) oSpecImpl V maliciousProver tₚ witness
   have htv' :
       tvDist
-          ((fun sample => sample.h2) <$> witness.joint)
           ((fun observation => observation.publicOutput) <$>
-            ((fun sample => sample.h3) <$> witness.joint)) ≤
+            ((fun sample => sample.h2.observation) <$> witness.joint))
+          ((fun observation => observation.publicOutput) <$>
+            ((fun sample => sample.h3.observation) <$> witness.joint)) ≤
         (Pr[ witness.codecBad | witness.joint ]).toReal := by
     simpa only [Functor.map_map, Function.comp_apply] using htv
-  rw [witness.h2_marginal, witness.h3_marginal,
-    Hyb3Observed_map_publicOutput_eq_Hyb3] at htv'
+  have h3Observed :
+      evalDist ((fun sample => sample.h3.observation) <$> witness.joint) =
+        evalDist (Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun sample => sample.h3.observation) <$> witness.joint) =
+          evalDist ((fun sample => sample.observation) <$>
+            ((fun sample => sample.h3) <$> witness.joint)) := by
+              simp only [Functor.map_map]
+      _ = evalDist ((fun sample => sample.observation) <$> Hyb3ObservedWithTable
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq witness.h3_marginal (fun sample => sample.observation)
+      _ = evalDist (Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb3ObservedWithTable_map_observation_eq_Hyb3Observed
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  have h2Observed :
+      evalDist ((fun sample => sample.h2.observation) <$> witness.joint) =
+        evalDist (Hyb2Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun sample => sample.h2.observation) <$> witness.joint) =
+          evalDist ((fun sample => sample.observation) <$>
+            ((fun sample => sample.h2) <$> witness.joint)) := by
+              simp only [Functor.map_map]
+      _ = evalDist ((fun sample => sample.observation) <$> Hyb2ObservedWithTable
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq witness.h2_marginal (fun sample => sample.observation)
+      _ = evalDist (Hyb2Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb2ObservedWithTable_map_observation_eq_Hyb2Observed
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  have h3Output :
+      evalDist ((fun observation => observation.publicOutput) <$>
+        ((fun sample => sample.h3.observation) <$> witness.joint)) =
+        evalDist (Hyb3 (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun observation => observation.publicOutput) <$>
+          ((fun sample => sample.h3.observation) <$> witness.joint)) =
+          evalDist ((fun observation => observation.publicOutput) <$>
+            Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+              oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq h3Observed (fun observation => observation.publicOutput)
+      _ = evalDist (Hyb3 (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb3Observed_map_publicOutput_eq_Hyb3
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  have h2Output :
+      evalDist ((fun observation => observation.publicOutput) <$>
+        ((fun sample => sample.h2.observation) <$> witness.joint)) =
+        evalDist (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) := by
+    calc
+      evalDist ((fun observation => observation.publicOutput) <$>
+          ((fun sample => sample.h2.observation) <$> witness.joint)) =
+          evalDist ((fun observation => observation.publicOutput) <$>
+            Hyb2Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+              oSpecImpl V maliciousProver) :=
+        evalDist_map_eq_of_evalDist_eq h2Observed (fun observation => observation.publicOutput)
+      _ = evalDist (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver) :=
+        congrArg evalDist (Hyb2Observed_map_publicOutput_eq_Hyb2
+          (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+  unfold HybridTVDist tvDist at htv' ⊢
+  rw [h2Output, h3Output] at htv'
   exact htv'.trans witness.codecBad_bound
 
 /-- The only adversarial resource used by the codec coupling: each fresh source standard-table

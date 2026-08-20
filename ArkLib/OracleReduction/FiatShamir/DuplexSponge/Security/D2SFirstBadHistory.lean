@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SFirstBadDispatcher
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Section5Nonempty
 
 /-!
 # Terminal-history gateway for revised D2SQuery
@@ -289,6 +290,59 @@ lemma d2sHandleBacktrackAfterGRevised_stopped_trace_extension_of_support
           rw [hBlocks] at hResult
           exact d2sHandleProgramFirstRateRevised_stopped_trace_extension_of_support normal
             stateIn firstRate remainingRates gImpl stoppedNormal record hResult
+
+/-- In the revised nonempty Section 5 scope, the Program continuation after a successful
+`gᵢ` query never returns `underlyingAbort`.  A table hit is a resolved action; on a table miss,
+the parser returns a vector whose statically prescribed positive length rules out its legacy
+empty-list branch, and the selected first block is a resolved Program action.  Hence the only
+live forward abort left for the later Backtrack refinement is a genuine search failure. -/
+lemma d2sHandleBacktrackAfterGRevised_no_underlyingAbort_of_support
+    [VCVCompatible U] [Nonempty U] [SampleableType U] [Section5Nonempty pSpec]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U)
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (rhoHat : Vector U (challengeSize (pSpec := pSpec) backtrackOut.roundIdx))
+    (gImpl : QueryImpl (gSpec (U := U) StmtIn pSpec δ) ProbComp)
+    (hResult : (.underlyingAbort : D2SRevisedStepResult
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (CanonicalSpongeState U)) ∈ support
+        (simulateQ (gImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+          (d2sHandleBacktrackAfterGRevised normal stateIn backtrackOut rhoHat))) : False := by
+  cases hLookup : TraceTableOps.inlu normal.state.trΔ.p stateIn with
+  | some stateOut =>
+      rw [d2sHandleBacktrackAfterGRevised_hit normal stateIn stateOut backtrackOut rhoHat
+        hLookup] at hResult
+      have hEq : (.underlyingAbort : D2SRevisedStepResult
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (CanonicalSpongeState U)) =
+          d2sPermResolvedStep normal (.forward stateIn stateOut) := by
+        simpa only [simulateQ_pure, mem_support_pure_iff] using hResult
+      exact d2sPermResolvedStep_ne_underlyingAbort normal (.forward stateIn stateOut)
+        hEq.symm
+  | none =>
+      rw [d2sHandleBacktrackAfterGRevised_miss normal stateIn backtrackOut rhoHat hLookup]
+        at hResult
+      rw [simulateQ_bind, mem_support_bind_iff] at hResult
+      obtain ⟨rateBlocks, _hRateBlocks, hResult⟩ := hResult
+      cases hBlocks : rateBlocks.toList with
+      | nil =>
+          exact (Section5Nonempty.challenge_rateBlocks_toList_ne_nil
+            (pSpec := pSpec) (U := U) backtrackOut.roundIdx rateBlocks) hBlocks
+      | cons firstRate remainingRates =>
+          simp only [hBlocks] at hResult
+          rw [d2sHandleProgramFirstRateRevised_eq normal stateIn firstRate remainingRates,
+            simulateQ_bind, mem_support_bind_iff] at hResult
+          obtain ⟨capacity, _hCapacity, hResult⟩ := hResult
+          have hEq : (.underlyingAbort : D2SRevisedStepResult
+              (δ := δ) (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (CanonicalSpongeState U)) =
+              d2sProgramFirstRateRevised normal stateIn firstRate remainingRates capacity := by
+            simpa only [simulateQ_pure, mem_support_pure_iff] using hResult
+          exact d2sProgramFirstRateRevised_ne_underlyingAbort normal stateIn firstRate
+            remainingRates capacity hEq.symm
 
 /-- A recovered Backtrack candidate preserves the input trace at every monitor stop.  This
 includes the important priority case where an old rate-only tail is consumed before the candidate

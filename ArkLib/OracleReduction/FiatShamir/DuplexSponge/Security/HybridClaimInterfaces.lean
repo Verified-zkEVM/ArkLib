@@ -4,6 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Statement.ConcreteHybrids
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Claim522ImageFibre
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Hyb01LivePrefixRealization
 
 /-!
 # Paper-critical Section 5 hybrid-claim interfaces
@@ -15,7 +17,8 @@ not hypotheses added to Lemma 5.1 and not replacements for the executable hybrid
 
 The intended proof dependency order is:
 
-1. Lemma 5.25 and the lazy first-stop coupling prove Claim 5.21;
+1. Lemma 5.25, the imported live common-prefix/no-hidden-abort bridge, and the lazy first-stop
+   coupling prove Claim 5.21;
 2. the Core-only image-fibre coupling proves Claim 5.22, without decoder surjectivity;
 3. the adaptive partial-codec coupling proves Claim 5.23; and
 4. Claim 5.23 plus the private-shadow and stopped-extension arguments prove Claim 5.24.
@@ -65,8 +68,10 @@ theorem claim_5_22
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
     Statement.Claim522 (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec)
       (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
-      oSpecImpl V maliciousProver := by
-  sorry
+      oSpecImpl V maliciousProver :=
+  claim522_imageFibre (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+    oSpecImpl V maliciousProver
 
 /-- **Claim 5.23.** The adaptive partial-codec coupling of H₂, H₃, and the H₄ table exists under
 the source forward-query budget.  Its pending proof exposes only image fibres and charges every

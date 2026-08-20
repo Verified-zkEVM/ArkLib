@@ -30,6 +30,13 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn U : Type}
 
 local instance : DecidableEq (gSpec (U := U) StmtIn pSpec δ).Domain := Classical.decEq _
 
+/-- The adaptive cache used by the Core-only image-fibre bridge needs decidable equality of both
+encoded keys and responses.  This is proof-local classical infrastructure, not a codec
+surjectivity assumption. -/
+local instance : (gSpec (U := U) StmtIn pSpec δ).DecidableEq :=
+  { decidableEq_A := Classical.decEq _
+    decidableEq_B := fun _ => Classical.decEq _ }
+
 /-- Caching preserves a pointwise exact distributional equality of two base query handlers.
 This is the operational form needed for Claim 5.22: the first occurrence uses the equal
 one-cell fibre sampler, and every later occurrence is a deterministic cache hit on both sides. -/
@@ -529,8 +536,60 @@ noncomputable def decodedBridgeSampledImplOfImage
     (uniformDeserializePreimageOfImage (pSpec := pSpec) (U := U)
       (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
       (codec.decode q.1 (table q))
-      (decodedTableCell_preimages_nonempty (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
-        (δ := δ) table q))
+    (decodedTableCell_preimages_nonempty (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      (δ := δ) table q))
+
+
+/-- One fixed-table call through the live partial H₂ bridge has exactly the same distribution as
+the Core-only image-fibre sampler.  The decoded-table lookup is deterministic after fixing
+`table`; the sole random step is therefore a representative of the witnessed fibre of
+`decode (table q)`.  This is the one-cell bridge from the executable `e`-query-and-cache
+implementation to the adaptive fibre realization used by Claim 5.22. -/
+theorem evalDist_decodedBridgeSampledImplOfImage_eq_decodedFibreSamplerOfImage
+    [VCVCompatible StmtIn] [VCVCompatible U] [SampleableType U]
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    (table : OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+    𝒟[decodedBridgeSampledImplOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      table q] =
+      𝒟[decodedFibreSamplerOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        table q] := by
+  rw [evalDist_decodedFibreSamplerOfImage_eq_uniformFibre]
+  convert (evalDist_sampledFibreAfterDecodedLookup (pSpec := pSpec) (U := U)
+    ((D_e (U := U) StmtIn pSpec δ).toImpl table)
+    (codec.decode q.1 (table q))
+    (decodedTableCell_preimages_nonempty (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      (δ := δ) table q)) using 1
+
+/-- The one-cell image-fibre law is stable under the exact adaptive cache discipline used by
+the H₂ bridge: a first visit samples one representative of the witnessed fibre, while every
+repeated encoded key returns that same representative.  This is the reusable operational half
+of revised Claim 5.22; the remaining endpoint work only transports this cached computation
+through the real prover--verifier execution and its insertion-order log. -/
+theorem evalDist_cachedDecodedBridgeSampledImplOfImage_eq_cachedFibreSamplerOfImage
+    [VCVCompatible StmtIn] [VCVCompatible U] [SampleableType U]
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    (table : OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))
+    {α : Type} (oa : OracleComp (gSpec (U := U) StmtIn pSpec δ) α)
+    (cache : (gSpec (U := U) StmtIn pSpec δ).QueryCache) :
+    𝒟[(simulateQ
+      (decodedBridgeSampledImplOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (δ := δ) table).withCaching oa).run cache] =
+      𝒟[(simulateQ
+        (decodedFibreSamplerOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          (δ := δ) table).withCaching oa).run cache] := by
+  exact evalDist_simulateQ_withCaching_eq_of_base
+    (decodedBridgeSampledImplOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      (δ := δ) table)
+    (decodedFibreSamplerOfImage (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+      (δ := δ) table)
+    (fun q => evalDist_decodedBridgeSampledImplOfImage_eq_decodedFibreSamplerOfImage
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) table q)
+    oa cache
 
 /-- The dependent encoded-response oracle obtained by taking, at each `e`-table cell, the fibre
 of its decoded challenge. -/

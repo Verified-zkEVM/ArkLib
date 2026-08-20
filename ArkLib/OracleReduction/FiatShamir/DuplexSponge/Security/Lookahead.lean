@@ -536,6 +536,39 @@ private theorem linearScanForwards_ne_fork_of_searchUnambiguous
         exact (successorCandidates_not_two_or_more trΔp current hUnambiguous a b rest
           hMany).elim
 
+private theorem linearScanForwards_done_none_implies_no_successor
+    (trΔp : T_P) (fuel : Nat) (current : CanonicalSpongeState U)
+    (hFuel : 0 < fuel)
+    (hDone : linearScanForwards trΔp fuel current = .done none) :
+    successorCandidates trΔp current = [] := by
+  cases fuel with
+  | zero => simp at hFuel
+  | succ fuel' =>
+      simp only [linearScanForwards] at hDone
+      split at hDone
+      · assumption
+      · split at hDone
+        · simp at hDone
+        · split at hDone <;> simp at hDone
+      · simp at hDone
+
+/-- A nonempty first forward lookup prevents the linear scan from reporting the empty-chain
+case.  Later successors may be absent, but the first mapping itself already yields the singleton
+LookAhead sequence required by Algorithm 5.2. -/
+private theorem linearScanForwards_ne_done_none_of_forward_mem
+    (trΔp : T_P) (fuel : Nat) (current next : CanonicalSpongeState U)
+    (hFuel : 0 < fuel)
+    (hForward : (current, next) ∈ TraceTableOps.entries trΔp) :
+    linearScanForwards trΔp fuel current ≠ .done none := by
+  intro hDone
+  have hEmpty := linearScanForwards_done_none_implies_no_successor trΔp fuel current hFuel hDone
+  have hNext : next ∈ successorCandidates trΔp current := by
+    unfold successorCandidates
+    refine List.mem_filterMap.mpr ⟨(current, next), hForward, ?_⟩
+    simp
+  rw [hEmpty] at hNext
+  simp at hNext
+
 /-- Interpret an already-computed scan result.  Separating this from the scan makes the
 support-level no-abort proof structural even though the successful branch samples rate blocks. -/
 private noncomputable def linearLookAheadFromScan
@@ -606,6 +639,22 @@ private theorem linearLookAheadFromScan_noErr
       | none => simp [linearLookAheadFromScan, NoErr]
       | some seq => simp [linearLookAheadFromScan, NoErr]
 
+/-- The scan-level counterpart of `lookAhead_noNoResult_of_forward_mem`.  Keeping the result
+at this boundary avoids dependent rewriting through the proof argument carried by
+`linearLookAheadFromScan`. -/
+private theorem linearLookAheadFromScan_noNoResult
+    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx)
+    (scan : LinearForwardScanResult (U := U) trΔp state)
+    (hScan : linearScanForwards (T_P := T_P) (U := U) trΔp (pSpec.Lᵥᵢ i) state = scan)
+    (hNonempty : scan ≠ .done none) :
+    ExperimentOutput.noResult ∉ support (linearLookAheadFromScan trΔp state i scan hScan) := by
+  cases scan with
+  | forkErr => simp [linearLookAheadFromScan]
+  | done seq? =>
+      cases seq? with
+      | none => exact (hNonempty rfl).elim
+      | some seq => simp [linearLookAheadFromScan]
+
 theorem lookAhead_noErr_of_searchUnambiguous
     (trΔp : T_P) (hUnambiguous : SearchUnambiguous trΔp)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
@@ -614,6 +663,22 @@ theorem lookAhead_noErr_of_searchUnambiguous
   apply linearLookAheadFromScan_noErr
   exact linearScanForwards_ne_fork_of_searchUnambiguous trΔp hUnambiguous
     (pSpec.Lᵥᵢ i) state
+
+/-- At a nonempty verifier phase, LookAhead cannot return `none` when the full normalized table
+already contains the certified marker's first forward mapping.  Together with
+`lookAhead_noErr_of_searchUnambiguous`, this is the precise success fact used by corrected
+StdTrace after BackTrack has returned a marker. -/
+theorem lookAhead_noNoResult_of_forward_mem
+    (trΔp : T_P) (state next : CanonicalSpongeState U) (i : pSpec.ChallengeIdx)
+    (hPositive : 0 < pSpec.Lᵥᵢ i)
+    (hForward : (state, next) ∈ TraceTableOps.entries trΔp) :
+    ExperimentOutput.noResult ∉ support (lookAhead (pSpec := pSpec) trΔp state i) := by
+  unfold lookAhead linearLookAhead
+  have hScan : linearScanForwards (T_P := T_P) (U := U) trΔp (pSpec.Lᵥᵢ i) state ≠ .done none := by
+    exact linearScanForwards_ne_done_none_of_forward_mem trΔp (pSpec.Lᵥᵢ i) state next
+      hPositive hForward
+  apply linearLookAheadFromScan_noNoResult
+  exact hScan
 
 end
 

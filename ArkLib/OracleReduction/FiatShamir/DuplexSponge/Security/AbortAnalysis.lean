@@ -7,6 +7,7 @@ Authors: Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Statement.EventsAndAnalysis
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventsProb.PrefixEvents
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.MonitoredD2SQuery
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Section5Nonempty
 
 /-!
 # Abort analysis for the revised stateful D2S transformation
@@ -37,11 +38,9 @@ open DuplexSpongeFS.Statement
 the stop record's post-occurrence trace; an underlying search abort exposes the unchanged normal
 trace at which it occurred. -/
 def terminalTrace {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
-    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
-    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
     (terminal : D2SQuery.D2SRunTerminal StmtIn pSpec U δ T_H T_P) :
     Trace StmtIn U :=
@@ -53,7 +52,7 @@ def terminalTrace {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
 /-- The `Program` contexts in a query stream, in the exact order and multiplicity in which revised
 D2SQuery invokes the encoded challenge oracle. -/
 def programContexts {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U]
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U]
     (stream : D2SQuery.QueryStream StmtIn pSpec U) : List (D2SQuery.ProgramContext pSpec) :=
   stream.filterMap fun occurrence => occurrence.programContext
 
@@ -65,7 +64,7 @@ list and retain their order/multiplicity.  The genuine fold-style D2SQuery run r
 occurrences to its terminal outcome.  The later live-executor refinement identifies an `OracleComp`
 adversary's query log with this `stream`. -/
 structure D2SQueryExecution (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n)
-    (U : Type) [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    (U : Type) [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] where
@@ -82,7 +81,7 @@ structure D2SQueryExecution (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n)
 
 /-- The full trace resulting from a revised D2SQuery execution. -/
 abbrev D2SQueryExecution.trace {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -92,7 +91,7 @@ abbrev D2SQueryExecution.trace {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n
 /-- A revised D2SQuery execution completes normally exactly when its real three-way terminal
 outcome is `.finished`; both `.stopped` and `.underlyingAbort` are excluded. -/
 def D2SQueryExecution.completes {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -171,7 +170,7 @@ forward-first BackTrack walk.  Inverse-origin entries need not be reverse-capaci
 are deliberately excluded by `ForwardFirst`. -/
 private lemma searchUnambiguous_of_normal
     {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (normal : ProverTransform.D2SNormalState
@@ -218,7 +217,7 @@ functionality gives one successor per full input, and `¬E_dup` rules out a capa
 either a forward- or inverse-origin normalized pair. -/
 private lemma lookaheadSearchUnambiguous_of_normal
     {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -364,7 +363,7 @@ live table on which the algorithm runs. -/
 theorem claim_5_19_backTrack_noAbort
     {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec]
     [HasChallengeSize pSpec] {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-    [codec : Codec pSpec U] [DecidableEq StmtIn] [DecidableEq U]
+    [codec : CodecCore pSpec U] [DecidableEq StmtIn] [DecidableEq U]
     {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (normal : ProverTransform.D2SNormalState
       (δ := δ) (T_H := T_H) (T_P := T_P)
@@ -382,7 +381,7 @@ paper invocation, while correctly retaining the fact that the successful branch 
 theorem claim_5_20_lookAhead_noAbort
     {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec]
     [HasChallengeSize pSpec] {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-    [codec : Codec pSpec U] [DecidableEq StmtIn] [DecidableEq U]
+    [codec : CodecCore pSpec U] [DecidableEq StmtIn] [DecidableEq U]
     {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
     (normal : ProverTransform.D2SNormalState
@@ -394,6 +393,37 @@ theorem claim_5_20_lookAhead_noAbort
   apply Lookahead.lookAhead_noErr_of_searchUnambiguous
   exact lookaheadSearchUnambiguous_of_normal normal
 
+/-- **Lemma 5.17 marker-success bridge.** At a certified nonempty verifier phase, the full
+normalized table contains the current forward mapping.  LookAhead therefore has neither of its
+two non-success outcomes: Claim 5.20 excludes `.err`, while the present forward mapping excludes
+`.noResult`.  This is the exact fact consumed by the live StdTrace replay after Backtrack has
+returned a tuple for the current forward occurrence. -/
+theorem claim_5_20_lookAhead_support_some_of_forward_mem
+    {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec]
+    [HasChallengeSize pSpec] [Section5Nonempty pSpec] {StmtIn U : Type} [SpongeUnit U]
+    [SpongeSize] [codec : CodecCore pSpec U] [DecidableEq StmtIn] [DecidableEq U]
+    {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+    (normal : ProverTransform.D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (round : pSpec.ChallengeIdx) (stateIn stateOut : CanonicalSpongeState U)
+    (hForward : (stateIn, stateOut) ∈ TraceTableOps.entries normal.state.trΔ.p)
+    (result : ExperimentOutput (Vector U (challengeSize round)))
+    (hResult : result ∈ support
+      (Lookahead.lookAhead (pSpec := pSpec) normal.state.trΔ.p stateIn round)) :
+    ∃ rhoHat, result = .some rhoHat := by
+  cases result with
+  | err =>
+      have hNoErr := claim_5_20_lookAhead_noAbort (pSpec := pSpec) normal round stateIn
+      exact False.elim (hNoErr hResult)
+  | noResult =>
+      have hNoResult := Lookahead.lookAhead_noNoResult_of_forward_mem
+        normal.state.trΔ.p stateIn stateOut round
+        (Section5Nonempty.challenge_block_count_pos (pSpec := pSpec) round) hForward
+      exact False.elim (hNoResult hResult)
+  | some rhoHat => exact ⟨rhoHat, rfl⟩
+
 /-- **Corollary 5.20a (revised).** The stateful Backtrack/LookAhead no-abort facts hold at every
 actual *reusable monitored state* and every certified Program marker.  A reusable normal state is
 the live representation of an `E`-good trace prefix together with its incrementally maintained
@@ -403,7 +433,7 @@ theorem corollary_5_20a_revisedD2SNoAbort
     {StmtIn U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq StmtIn] [DecidableEq U]
     {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
     {n : Nat} {pSpec : ProtocolSpec n} {δ : Nat} [HasMessageSize pSpec]
-    [HasChallengeSize pSpec] [codec : Codec pSpec U]
+    [HasChallengeSize pSpec] [codec : CodecCore pSpec U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
     (normal : ProverTransform.D2SNormalState
       (δ := δ) (T_H := T_H) (T_P := T_P)
@@ -436,7 +466,7 @@ normal state.  Every ordinary branch rules that result out by its exact `D2SStep
 sole explicit abort branch is the real Backtrack `.err`, excluded by Claim 5.19. -/
 private theorem d2sBranchStep_ne_underlyingAbort
     {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -473,7 +503,7 @@ complete stream.  A monitor stop carries `E` of precisely that terminal trace, a
 pre-occurrence abort is ruled out by `d2sBranchStep_ne_underlyingAbort`. -/
 private theorem d2sQueryRun_completes_of_terminal_not_E
     {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -508,7 +538,7 @@ private theorem d2sQueryRun_completes_of_terminal_not_E
 execution has the real normal `.finished` terminal outcome. -/
 theorem lemma_5_18_d2sQuery_noAbort
     {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-    {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+    {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
     [DecidableEq StmtIn] [DecidableEq U] {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]

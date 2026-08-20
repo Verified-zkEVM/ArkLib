@@ -346,6 +346,28 @@ noncomputable def d2sConsumePoppedRateOnlyTailRevised
   d2sReplaceRateCacheOnContinue (rateOnlyTailResidualCache entry cacheRest capacity)
     (d2sPermResolvedStep normal (.forward entry.stateIn materialized.1))
 
+/-- Materializing an already-selected lazy tail cannot introduce an underlying abort.  The only
+underlying-abort branch of cache replacement would have to come from the resolved forward action,
+which has already fixed a permutation pair and therefore can only continue or stop after
+`Install → append → Monitor`. -/
+lemma d2sConsumePoppedRateOnlyTailRevised_ne_underlyingAbort
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (entry : RateOnlyCacheEntry (U := U))
+    (cacheRest : List (RateOnlyCacheEntry (U := U)))
+    (capacity : Vector U SpongeSize.C) :
+    d2sConsumePoppedRateOnlyTailRevised normal entry cacheRest capacity ≠ .underlyingAbort := by
+  unfold d2sConsumePoppedRateOnlyTailRevised
+  cases hStep : d2sPermResolvedStep normal
+      (.forward entry.stateIn (materializeRateOnlyCacheEntry (U := U) entry capacity).1)
+  · simp [hStep]
+  · simp [hStep]
+  ·
+      exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal
+        (.forward entry.stateIn
+          (materializeRateOnlyCacheEntry (U := U) entry capacity).1) hStep)
+
 /-- The sampling form of a selected cache-tail branch.  It issues precisely one capacity query;
 the capacity is not sampled when the tail is created, and no full state is sampled here. -/
 noncomputable def d2sHandlePoppedRateOnlyTailRevised
@@ -552,6 +574,27 @@ noncomputable def d2sProgramFirstRateRevised
   let stateOut := d2sSynthesisState (U := U) firstRate capacity
   d2sReplaceRateCacheOnContinue (programResidualRateCache normal stateOut remainingRates)
     (d2sPermResolvedStep normal (.forward stateIn stateOut))
+
+/-- Once the first parsed rate block and its capacity are fixed, Program has the same no-parser-
+abort guarantee as an ordinary resolved forward action.  Later rate blocks are only a latent
+tail, so they cannot alter this three-way outcome. -/
+lemma d2sProgramFirstRateRevised_ne_underlyingAbort
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U)
+    (firstRate : Vector U SpongeSize.R)
+    (remainingRates : List (Vector U SpongeSize.R))
+    (capacity : Vector U SpongeSize.C) :
+    d2sProgramFirstRateRevised normal stateIn firstRate remainingRates capacity ≠
+      .underlyingAbort := by
+  unfold d2sProgramFirstRateRevised
+  cases hStep : d2sPermResolvedStep normal
+      (.forward stateIn (d2sSynthesisState (U := U) firstRate capacity))
+  · simp [hStep]
+  · simp [hStep]
+  · exact False.elim (d2sPermResolvedStep_ne_underlyingAbort normal
+        (.forward stateIn (d2sSynthesisState (U := U) firstRate capacity)) hStep)
 
 /-- A continuing Program materialization appends exactly its first programmed forward
 occurrence.  The remaining rate blocks are cache-only data and have no hidden trace effect. -/

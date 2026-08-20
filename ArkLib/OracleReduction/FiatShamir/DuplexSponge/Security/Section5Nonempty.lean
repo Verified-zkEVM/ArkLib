@@ -55,12 +55,32 @@ class Section5RoundStructure {n : ℕ} (roundCount : ℕ) (pSpec : ProtocolSpec 
 
 namespace Section5Nonempty
 
-variable {n : ℕ} {pSpec : ProtocolSpec n}
+variable {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
   [HasMessageSize pSpec] [HasChallengeSize pSpec] [Section5Nonempty pSpec]
 
 /-- The Section 5 convention supplies the positive encoded length of each verifier action. -/
 lemma challenge_pos (i : pSpec.ChallengeIdx) : 0 < challengeSize i :=
   Section5Nonempty.challenge_size_pos i
+
+/-- Every verifier action in the Section 5 scope occupies at least one padded rate block.
+This is the small bridge from the paper's no-empty-challenge convention to the executable
+`d2sRateBlocksFromChallenge` parser: the parser's `[]` branch is unreachable for a certified
+verifier challenge. -/
+lemma challenge_block_count_pos [SpongeSize] (i : pSpec.ChallengeIdx) :
+    0 < pSpec.Lᵥᵢ i := by
+  unfold ProtocolSpec.Lᵥᵢ ProtocolSpec.numPermQueriesChallenge
+  apply Nat.ceil_pos.mpr
+  exact div_pos
+    (by exact_mod_cast challenge_pos i)
+    (by exact_mod_cast SpongeSize.R_pos)
+
+/-- A vector of the rate blocks output by the verifier-challenge parser cannot be empty in the
+Section 5 scope.  Keeping this as a vector fact makes it directly usable after an adaptive
+`d2sRateBlocksFromChallenge` call has produced its concrete blocks. -/
+lemma challenge_rateBlocks_toList_ne_nil [SpongeSize] (i : pSpec.ChallengeIdx)
+    (blocks : Vector (Vector U SpongeSize.R) (pSpec.Lᵥᵢ i)) : blocks.toList ≠ [] := by
+  apply List.ne_nil_of_length_pos
+  simpa only [Vector.length_toList] using challenge_block_count_pos (pSpec := pSpec) i
 
 /-- The revised Section 5 scope gives a genuinely positive exact verifier permutation count.
 This derives `N_𝒱 ≥ 1` from an actual positive-length challenge phase by the stateful schedule;

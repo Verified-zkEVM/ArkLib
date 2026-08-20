@@ -7,6 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Backtrack
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Lookahead
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.BadEventDefs
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SPermInstall
 
 /-!
 # Trace Transformations
@@ -139,25 +140,25 @@ private noncomputable def stdTraceInCodecImage
   | some _ => true
   | none => false
 
-/-- StdTrace Algorithm 5.5 Step 3, full lookup pass: build the normalized full `tr_∇` from the
-whole DS trace. Both forward and inverse permutation occurrences contribute their normalized
-forward pair to `p`; this is the table supplied to LookAhead. -/
+/-- StdTrace Algorithm 5.5 Step 3, full `PrefixUpdate` pass.  Exact repeats stay only in the raw
+insertion trace, while fresh mappings enter the normalized full `tr_∇`; an installation conflict
+is reported explicitly rather than silently retained in a multiset.  This is the table supplied
+to LookAhead. -/
 private def stdTraceDelta
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (dsTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
-    TraceNabla T_H T_P StmtIn U :=
-  TraceNabla.ofQueryLog dsTrace
+    Option (TraceNabla T_H T_P StmtIn U) :=
+  ProverTransform.prefixUpdateTrace dsTrace
 
-/-- StdTrace Algorithm 5.5 Step 4 strict-prefix table: the same normalized construction over the
-already processed DS prefix. This table is supplied only to Backtrack, so the current forward
-occurrence remains the uninserted sentinel. -/
+/-- StdTrace Algorithm 5.5 Step 4 strict-prefix `PrefixUpdate` table.  This is supplied only to
+Backtrack, so the current forward occurrence remains the uninserted sentinel. -/
 private def stdTracePrefixDelta
     {T_H T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U)) :
-    TraceNabla T_H T_P StmtIn U :=
-  TraceNabla.ofQueryLog processed
+    Option (TraceNabla T_H T_P StmtIn U) :=
+  ProverTransform.prefixUpdateTrace processed
 
 private def StdTraceState.appendEntry
     (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
@@ -271,6 +272,73 @@ private noncomputable def stdTraceHandlePQuery
         (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
         fullTrΔp stateIn backtrackOut st
 
+/-- The concrete non-monitor-failure contract of one live StdTrace forward occurrence.  The two
+premises are precisely the real search facts later supplied by the H₀ replay invariant: Backtrack
+cannot return `.err` on its strict normalized prefix, and a fresh LookAhead call cannot return
+either non-success value when the complete table contains the current forward successor.  The
+ordinary Backtrack `.noResult` branch remains successful, as specified by Algorithm 5.5.
+
+Keeping this fact beside the executable helper makes the reduction from the live abortable code to
+the paper's no-abort reasoning explicit; no relation or caller-selected result is introduced. -/
+theorem stdTraceHandlePQuery_none_not_mem_support
+    {T_H T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (processedTrace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (prefixTrΔ : TraceNabla T_H T_P StmtIn U)
+    (h_prefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processedTrace)
+    (fullTrΔp : T_P)
+    (depthBound : Nat)
+    (stateIn : CanonicalSpongeState U)
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (hBacktrack : backTrack (δ := δ)
+      (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+      processedTrace prefixTrΔ h_prefixTrΔ stateIn depthBound ≠ .err)
+    (hLookAhead : ∀
+      (q : StdTraceQuery (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      (result : ExperimentOutput (Vector U (challengeSize q.roundIdx))),
+        result ∈ support (lookAhead (pSpec := pSpec) (U := U) fullTrΔp stateIn q.roundIdx) →
+          ∃ rhoHat, result = .some rhoHat) :
+    none ∉ support
+      (stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
+        (pSpec := pSpec) (U := U) processedTrace prefixTrΔ h_prefixTrΔ
+        fullTrΔp depthBound stateIn st).run := by
+  classical
+  intro hNone
+  unfold stdTraceHandlePQuery at hNone
+  generalize hResult : backTrack (δ := δ)
+    (StmtIn := StmtIn) (n := n) (pSpec := pSpec) (U := U)
+    processedTrace prefixTrΔ h_prefixTrΔ stateIn depthBound = result at hNone
+  cases result with
+  | err =>
+      exact hBacktrack hResult
+  | noResult =>
+      simp at hNone
+  | some backtrackOut =>
+      simp only at hNone
+      unfold stdTraceHandleBacktrackTuple at hNone
+      split at hNone
+      · unfold stdTraceLookupOrLookAhead at hNone
+        dsimp at hNone
+        generalize hMemo : lookupStdTraceMemo st.trStdLA backtrackOut = memo at hNone
+        cases memo with
+        | some rhoHat => simp at hNone
+        | none =>
+          simp only [OptionT.run_bind, Option.elimM] at hNone
+          rw [mem_support_bind_iff] at hNone
+          obtain ⟨result, hResultSupport, hNone⟩ := hNone
+          cases result with
+          | none => simp at hResultSupport
+          | some result =>
+              have hLookAheadSupport :
+                  result ∈ support
+                    (lookAhead fullTrΔp stateIn backtrackOut.roundIdx) := by
+                simpa [OptionT.run_lift, support_map] using hResultSupport
+              obtain ⟨rhoHat, hResultEq⟩ :=
+                hLookAhead backtrackOut result hLookAheadSupport
+              cases hResultEq
+              simp at hNone
+      · simp at hNone
+
 /-- Public wrapper for the Section 5.8 `φ⁻¹` parser from the encoded-message tuple returned by
 `BackTrack` to basic-FS message prefixes.
 
@@ -347,6 +415,162 @@ structure D2STraceSaltedObservation {Salt : Type} where
   lookAheadMemo : StdTraceEntries (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   output : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
 
+/-- The actual recursive executor of corrected `StdTrace`/`D2STrace` after its complete
+`PrefixUpdate` table has been constructed.  It exposes the live offline replay loop as one
+proof-visible boundary: `processed` is the strict raw prefix supplied to Backtrack, while
+`fullTrΔ.p` is the complete normalized table supplied to LookAhead.  In particular, a failed
+strict-prefix `PrefixUpdate`, Backtrack error, or LookAhead non-success is a genuine failure of
+this computation, not an abstract relation chosen by a caller. -/
+noncomputable def d2sTraceSaltedObservedGo
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (fullTrΔ : TraceNabla T_H T_P StmtIn U)
+    (remaining : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+    (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (out : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
+    UnitSampleM U
+      (D2STraceSaltedObservation (oSpec := oSpec) (StmtIn := StmtIn)
+        (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
+  match remaining with
+  | [] => pure ⟨st.trStd, st.trStdLA, out⟩
+  | (tag, entry) :: rest =>
+      match entry with
+      | ⟨.inl query, response⟩ =>
+          let outEntry : Sigma (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
+            ⟨.inl query, response⟩
+          d2sTraceSaltedObservedGo fullTrΔ rest processed st (out ++ [(tag, outEntry)])
+      | ⟨.inr (.inl stmt), cap⟩ =>
+          d2sTraceSaltedObservedGo fullTrΔ rest (processed ++ [⟨.inl stmt, cap⟩]) st out
+      | ⟨.inr (.inr (.inl stateIn)), stateOut⟩ =>
+          match hPrefix : stdTracePrefixDelta (T_H := T_H) (T_P := T_P)
+              (StmtIn := StmtIn) (U := U) processed with
+          | none => failure
+          | some prefixTrΔ =>
+              have h_prefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processed :=
+                ProverTransform.prefixUpdateTrace_isSubset (by
+                  simpa [stdTracePrefixDelta] using hPrefix)
+              let st' ← stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
+                (pSpec := pSpec) (U := U) processed prefixTrΔ h_prefixTrΔ fullTrΔ.p
+                (processed.length + 1) stateIn st
+              let newEntries := st'.trStd.drop st.trStd.length
+              let mappedNewEntries := newEntries.filterMap fun e =>
+                match stdTraceEntryToFSQuerySalted? (δ := δ) (StmtIn := StmtIn)
+                    (pSpec := pSpec) (U := U) (Salt := Salt) e with
+                | none => none
+                | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
+              d2sTraceSaltedObservedGo fullTrΔ rest
+                (processed ++ [⟨.inr (.inl stateIn), stateOut⟩]) st'
+                  (out ++ mappedNewEntries)
+      | ⟨.inr (.inr (.inr stateOut)), stateIn⟩ =>
+          d2sTraceSaltedObservedGo fullTrΔ rest
+            (processed ++ [⟨.inr (.inr stateOut), stateIn⟩]) st out
+
+/-- The whole live offline loop has no non-monitor failure once each strict raw prefix can be
+normalized and each encountered forward occurrence satisfies the real Backtrack/LookAhead
+contract.  The invariant is deliberately an equality with the complete raw trace, rather than a
+mere membership fact: it makes the exact current forward pair available to the caller that proves
+the LookAhead premise.  H₀ instantiates these two hypotheses from its fixed ideal-sponge family
+and the complete `PrefixUpdate` table.
+
+This is the executable no-abort bridge required by Claim 5.21.  It does not replace the loop by a
+semantic relation: the conclusion is about the support of `d2sTraceSaltedObservedGo.run` itself. -/
+theorem d2sTraceSaltedObservedGo_none_not_mem_support
+    {T_H T_P : Type} {Salt : Type} [SaltCodec U δ Salt]
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (fullTrΔ : TraceNabla T_H T_P StmtIn U)
+    (raw : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (hPrefix : ∀ processed : QueryLog (duplexSpongeChallengeOracle StmtIn U),
+      processed <+: raw → ∃ prefixTrΔ : TraceNabla T_H T_P StmtIn U,
+        stdTracePrefixDelta (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U)
+          processed = some prefixTrΔ)
+    (hForward : ∀ (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+      (prefixTrΔ : TraceNabla T_H T_P StmtIn U)
+      (hPrefixUpdate : stdTracePrefixDelta (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (U := U) processed = some prefixTrΔ)
+      (hPrefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processed)
+      (hProcessedPrefix : processed <+: raw)
+      (stateIn stateOut : CanonicalSpongeState U)
+      (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)),
+        ⟨.inr (.inl stateIn), stateOut⟩ ∈ raw →
+        none ∉ support
+          (stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
+            (pSpec := pSpec) (U := U) processed prefixTrΔ hPrefixTrΔ fullTrΔ.p
+            (processed.length + 1) stateIn st).run)
+    (remaining : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
+    (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (out : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec))
+    (hRaw : processed ++ dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U)
+      (TaggedQueryLog.untagged remaining) = raw) :
+    none ∉ support
+      (d2sTraceSaltedObservedGo (oSpec := oSpec) (StmtIn := StmtIn) (n := n)
+        (pSpec := pSpec) (U := U) (δ := δ) (T_H := T_H) (T_P := T_P) (Salt := Salt)
+        fullTrΔ remaining processed st out).run := by
+  induction remaining generalizing processed st out with
+  | nil =>
+      simp [d2sTraceSaltedObservedGo]
+  | cons taggedEntry rest ih =>
+      rcases taggedEntry with ⟨tag, entry⟩
+      rcases entry with ⟨query, answer⟩
+      cases query with
+      | inl query =>
+          simpa [d2sTraceSaltedObservedGo] using
+            ih processed st (out ++ [(tag, ⟨.inl query, answer⟩)])
+              (by simpa [TaggedQueryLog.untagged, dsTraceOfLog] using hRaw)
+      | inr permQuery =>
+          cases permQuery with
+          | inl stmt =>
+              simpa [d2sTraceSaltedObservedGo] using
+                ih (processed ++ [⟨.inl stmt, answer⟩]) st out
+                  (by
+                    simpa [TaggedQueryLog.untagged, dsTraceOfLog, List.append_assoc] using hRaw)
+          | inr permQuery =>
+              cases permQuery with
+              | inl stateIn =>
+                  have hProcessedPrefix : processed <+: raw := by
+                    rw [← hRaw]
+                    exact List.prefix_append _ _
+                  obtain ⟨witnessPrefix, hWitnessPrefix⟩ := hPrefix processed hProcessedPrefix
+                  intro hNone
+                  simp only [d2sTraceSaltedObservedGo] at hNone
+                  split at hNone
+                  · rename_i hCurrent
+                    simp [hCurrent] at hWitnessPrefix
+                  · rename_i prefixTrΔ hCurrent
+                    have hSubset : prefixTrΔ.IsSubsetOfQueryLog processed :=
+                      ProverTransform.prefixUpdateTrace_isSubset (by
+                        simpa [stdTracePrefixDelta] using hCurrent)
+                    have hEntry : ⟨.inr (.inl stateIn), answer⟩ ∈ raw := by
+                      rw [← hRaw]
+                      simp [TaggedQueryLog.untagged, dsTraceOfLog]
+                    have hHandle := hForward processed prefixTrΔ hCurrent hSubset
+                      hProcessedPrefix stateIn answer st hEntry
+                    simp only [OptionT.run_bind, Option.elimM] at hNone
+                    rw [mem_support_bind_iff] at hNone
+                    obtain ⟨result, hResultSupport, hNone⟩ := hNone
+                    cases result with
+                    | none =>
+                        exact hHandle
+                          (by simpa [OptionT.run_lift, support_map] using hResultSupport)
+                    | some st' =>
+                        apply ih (processed ++ [⟨.inr (.inl stateIn), answer⟩]) st'
+                          (out ++
+                            ((st'.trStd.drop st.trStd.length).filterMap fun e =>
+                              match stdTraceEntryToFSQuerySalted? (δ := δ)
+                                  (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (Salt := Salt) e with
+                              | none => none
+                              | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)))
+                        · simpa [TaggedQueryLog.untagged, dsTraceOfLog, List.append_assoc]
+                            using hRaw
+                        · exact hNone
+              | inr stateOut =>
+                  simpa [d2sTraceSaltedObservedGo] using
+                    ih (processed ++ [⟨.inr (.inr stateOut), answer⟩]) st out
+                      (by
+                        simpa [TaggedQueryLog.untagged, dsTraceOfLog, List.append_assoc]
+                          using hRaw)
+
 /-- Lossless §5.5.2 `D2STrace` execution.  It runs the same `StdTrace` state machine as the
 public transformation and returns the exact encoded insertion trace and LookAhead memo alongside
 the public decoded trace.  No additional sampling is performed. -/
@@ -359,56 +583,16 @@ noncomputable def d2sTraceSaltedObserved
         (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
   let combinedRaw := TaggedQueryLog.untagged log
   let dsTrace := dsTraceOfLog (oSpec := oSpec) (StmtIn := StmtIn) (U := U) combinedRaw
-  let dsTrΔ : TraceNabla T_H T_P StmtIn U :=
-    stdTraceDelta (StmtIn := StmtIn) (U := U) dsTrace
+  let dsTrΔ : TraceNabla T_H T_P StmtIn U ←
+    match stdTraceDelta (T_H := T_H) (T_P := T_P) (StmtIn := StmtIn) (U := U) dsTrace with
+    | some trDelta => pure trDelta
+    | none => failure
   -- Algorithm 5.5 Step 3 is the complete `PrefixUpdate`/`Monitor` pass. If its normalized
   -- insertion trace is bad, StdTrace aborts before any Backtrack/LookAhead result is exposed.
   letI : Decidable (BadEventDS.E dsTrace) := Classical.propDecidable _
   if BadEventDS.E dsTrace then failure else
-  let rec go
-      (remaining : TaggedQueryLog (oSpec + duplexSpongeChallengeOracle StmtIn U))
-      (processed : QueryLog (duplexSpongeChallengeOracle StmtIn U))
-      (st : StdTraceState (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
-      (out : TaggedQueryLog (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)) :
-      UnitSampleM U (D2STraceSaltedObservation (oSpec := oSpec) (StmtIn := StmtIn)
-        (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)) := do
-    match remaining with
-    | [] => pure ⟨st.trStd, st.trStdLA, out⟩
-    | (tag, entry) :: rest =>
-        match entry with
-        | ⟨.inl query, response⟩ =>
-            -- Forward oSpec entries verbatim, preserving their tag (C1)
-            let outEntry : Sigma (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec) :=
-              ⟨.inl query, response⟩
-            go rest processed st (out ++ [(tag, outEntry)])
-        | ⟨.inr (.inl stmt), cap⟩ =>
-            -- Hash occurrences participate in the strict prefix and in the full normalized table,
-            -- but do not themselves produce a standard challenge-table entry.
-            go rest (processed ++ [⟨.inl stmt, cap⟩]) st out
-        | ⟨.inr (.inr (.inl stateIn)), stateOut⟩ =>
-            let prefixTrΔ : TraceNabla T_H T_P StmtIn U :=
-              stdTracePrefixDelta (StmtIn := StmtIn) (U := U) processed
-            have h_prefixTrΔ : prefixTrΔ.IsSubsetOfQueryLog processed :=
-              TraceNabla.ofQueryLog_isSubset processed
-            let st' ← stdTraceHandlePQuery (δ := δ) (StmtIn := StmtIn) (n := n)
-              (pSpec := pSpec) (U := U) processed prefixTrΔ h_prefixTrΔ dsTrΔ.p
-              (processed.length + 1) stateIn st
-            -- Extract newly synthesized basic-FS challenge queries
-            let newEntries := st'.trStd.drop st.trStd.length
-            -- Apply line-4 transform to them
-            let mappedNewEntries := newEntries.filterMap fun e =>
-              match stdTraceEntryToFSQuerySalted? (δ := δ) (StmtIn := StmtIn)
-              (pSpec := pSpec) (U := U) (Salt := Salt) e with
-              | none => none
-              | some mapped => some (tag, ⟨.inr mapped.1, mapped.2⟩)
-            -- The just-classified forward occurrence becomes visible only to later Backtrack
-            -- calls; it was deliberately absent from the strict-prefix call above.
-            go rest (processed ++ [⟨.inr (.inl stateIn), stateOut⟩]) st'
-              (out ++ mappedNewEntries)
-        | ⟨.inr (.inr (.inr stateOut)), stateIn⟩ =>
-            -- Normalize an inverse occurrence into the raw prefix for all later Backtrack calls.
-            go rest (processed ++ [⟨.inr (.inr stateOut), stateIn⟩]) st out
-  go log [] { trStd := [], trStdLA := [] } []
+  d2sTraceSaltedObservedGo dsTrΔ log []
+    { trStd := [], trStdLA := [] } []
 
 /-- §5.5.2 `D2STrace` public projection.  This is intentionally defined by projection from the
 lossless execution above, so the public trace and the coupling-visible encoded trace are produced
