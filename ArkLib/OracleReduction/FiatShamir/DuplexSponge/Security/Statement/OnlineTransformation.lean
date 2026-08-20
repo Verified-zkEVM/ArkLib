@@ -44,7 +44,7 @@ open OracleComp OracleSpec ProtocolSpec DSTraceStorage
 open DuplexSpongeFS.ProverTransform
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+  {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -57,7 +57,7 @@ final reusable normal state with `Monitor` passing at every step (`finished`), s
 first monitored failure carrying the real `E`-stop record (`stopped`), or aborted on a named
 underlying BackTrack / LookAhead failure at the current normal state (`aborted`). -/
 inductive D2SRunTerminal (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] : Type where
@@ -76,7 +76,7 @@ inductive D2SRunTerminal (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U :
 `programContext = none`; a Program occurrence contains its own recovered replay cursor, verifier
 challenge length, and first-squeeze position. -/
 structure QueryOccurrence (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] where
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] where
   programContext : Option (ProgramContext pSpec)
   query : (duplexSpongeChallengeOracle StmtIn U).Domain
 
@@ -84,7 +84,7 @@ structure QueryOccurrence (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U 
 with the occurrence, so different forward queries may legitimately refer to different replay
 rounds. -/
 abbrev QueryStream (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] : Type :=
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] : Type :=
   List (QueryOccurrence StmtIn pSpec U)
 
 /-- The revised D2SQuery **runner**: from a reusable normal state and a finite query stream, it

@@ -701,35 +701,37 @@ lemma squeeze_support_cursor_agrees_live {U C : Type} [SpongeUnit U] [SpongeSize
 
 /-- The two standard DSFS lifts preserve the cursor-position invariant of a live squeeze.
 `deriveTranscriptDSFSAux` uses exactly this route: forward permutation queries are first embedded
-beside the ambient (here empty) oracle, then beside the duplex hash oracle. -/
-lemma lifted_squeeze_support_cursor_agrees_live {U StmtIn : Type} [SpongeUnit U] [SpongeSize]
+beside the ambient oracle, then beside the duplex hash oracle. -/
+lemma lifted_squeeze_support_cursor_agrees_live {ι U StmtIn : Type} {oSpec : OracleSpec ι}
+    [SpongeUnit U] [SpongeSize]
     (sponge : CanonicalDuplexSponge U) (cursor : ScheduleCursor) (len : ℕ)
     (z : Vector U len × CanonicalDuplexSponge U) (hcursor : SpongeCursorAgrees sponge cursor)
     (hz : z ∈ support (liftM (DuplexSponge.squeeze sponge len) :
-      OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) _)) :
+      OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) _)) :
     SpongeCursorAgrees z.2 (squeeze SpongeSize.R cursor len) := by
   change z ∈ support
     (OracleComp.liftComp
       (OracleComp.liftComp (DuplexSponge.squeeze sponge len)
-        ([]ₒ + forwardPermutationOracle (CanonicalSpongeState U)))
-      ([]ₒ + duplexSpongeForwardOracle StmtIn U)) at hz
+        (oSpec + forwardPermutationOracle (CanonicalSpongeState U)))
+      (oSpec + duplexSpongeForwardOracle StmtIn U)) at hz
   rw [OracleComp.mem_support_liftComp_iff] at hz
   rw [OracleComp.mem_support_liftComp_iff] at hz
   exact squeeze_support_cursor_agrees_live sponge cursor len z hcursor hz
 
 /-- The absorb counterpart of `lifted_squeeze_support_cursor_agrees_live`.  It is the operational
 bridge for salt and prover-message absorbs performed by the live transcript derivation. -/
-lemma lifted_absorb_support_cursor_agrees_live {U StmtIn : Type} [SpongeUnit U] [SpongeSize]
+lemma lifted_absorb_support_cursor_agrees_live {ι U StmtIn : Type} {oSpec : OracleSpec ι}
+    [SpongeUnit U] [SpongeSize]
     (sponge : CanonicalDuplexSponge U) (cursor : ScheduleCursor) (ls : List U)
     (z : CanonicalDuplexSponge U) (hcursor : SpongeCursorAgrees sponge cursor)
     (hz : z ∈ support (liftM (DuplexSponge.absorb sponge ls) :
-      OracleComp ([]ₒ + duplexSpongeForwardOracle StmtIn U) _)) :
+      OracleComp (oSpec + duplexSpongeForwardOracle StmtIn U) _)) :
     SpongeCursorAgrees z (absorb SpongeSize.R cursor ls.length) := by
   change z ∈ support
     (OracleComp.liftComp
       (OracleComp.liftComp (DuplexSponge.absorb sponge ls)
-        ([]ₒ + forwardPermutationOracle (CanonicalSpongeState U)))
-      ([]ₒ + duplexSpongeForwardOracle StmtIn U)) at hz
+        (oSpec + forwardPermutationOracle (CanonicalSpongeState U)))
+      (oSpec + duplexSpongeForwardOracle StmtIn U)) at hz
   rw [OracleComp.mem_support_liftComp_iff] at hz
   rw [OracleComp.mem_support_liftComp_iff] at hz
   exact absorb_support_cursor_agrees_live sponge cursor ls z hcursor hz
@@ -1173,13 +1175,13 @@ lemma deriveTranscriptCursor_queryIndex_le [pSpec.HasMessageSize] [pSpec.HasChal
 /-- Every support point of the actual DSFS transcript derivation has the
 stateful cursor obtained by replaying the same protocol-action prefix. -/
 theorem deriveTranscriptDSFSAux_support_cursor_agrees_live
-    {U StmtIn : Type} [SpongeUnit U] [SpongeSize] [pSpec.Codec U]
+    {ι U StmtIn : Type} {oSpec : OracleSpec ι} [SpongeUnit U] [SpongeSize] [pSpec.CodecCore U]
     (sponge : CanonicalDuplexSponge U) (messages : pSpec.Messages)
     (initial : Backtrack.ScheduleCursor)
     (hinitial : Backtrack.ScheduleCursor.SpongeCursorAgrees sponge initial) :
     ∀ (k : Fin (n + 1)) (z : CanonicalDuplexSponge U × pSpec.Transcript k),
       z ∈ support (ProtocolSpec.Messages.deriveTranscriptDSFSAux
-        (pSpec := pSpec) (oSpec := []ₒ) (StmtIn := StmtIn) sponge messages k) →
+        (pSpec := pSpec) (oSpec := oSpec) (StmtIn := StmtIn) sponge messages k) →
       Backtrack.ScheduleCursor.SpongeCursorAgrees z.1
         (deriveTranscriptCursor (pSpec := pSpec) SpongeSize.R initial k) := by
   intro k

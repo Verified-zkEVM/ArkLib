@@ -417,13 +417,45 @@ private def predecessorCandidates
     else
       none
 
+/-- A normalized pair is eligible for the executable reverse walk precisely when the first
+occurrence of that pair in either permutation direction is a forward `p` query.  This is the
+paper's `tr_∇.p.fwdcapoutlu` restriction.  In particular, an inverse-origin pair is not a
+backward predecessor merely because the capacity of its *query* happens to match the current
+capacity. -/
+def ForwardFirst
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (sIn sOut : CanonicalSpongeState U) : Prop :=
+  ∃ k : Nat,
+    (trace)[k]? = some ⟨.inr (.inl sIn), sOut⟩ ∧
+    ∀ j < k,
+      (trace)[j]? ≠ some ⟨.inr (.inl sIn), sOut⟩ ∧
+        (trace)[j]? ≠ some ⟨.inr (.inr sOut), sIn⟩
+
+/-- Paper §5.2 `p.fwdcapoutlu`: the reverse capacity lookup used by the executable BackTrack
+walk.  It considers only forward-first normalized pairs; unrestricted reverse lookup is unsound
+because distinct inverse queries may share an output *query* capacity without witnessing `E`.
+The balanced-tree implementation stores this forward-first subset explicitly; this list-level
+definition is its extensional specification. -/
+private noncomputable def forwardPredecessorCandidates
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (nextInputCap : Vector U SpongeSize.C) :
+    List (CanonicalSpongeState U × CanonicalSpongeState U) := by
+  classical
+  exact (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p).filterMap fun pair =>
+    if pair.2.capacitySegment = nextInputCap ∧ ForwardFirst trace pair.1 pair.2 then
+      some pair
+    else
+      none
+
 /-! ### Linear-scan helpers (CO25 §5.2 BackTrack "look for at most one element" optimization)
 
 The paper's Algorithm 1 enumerates all maximal sequences then post-filters. CO25 line 1056 notes
 the procedure can equivalently `look for at most one element` — i.e. abort on scan-time forks.
-A scan-time fork strictly implies an `E_fork,p`/`E_fork,h,p`/`E_fork` event, so returning `err`
-on a fork is a strict over-approximation of the paper's post-filter `err` condition and the
-soundness bound of CO25 Theorem 5.19 is preserved. -/
+The required refinement is deliberately kept explicit: it must show that a lookup conflict of
+the normalized, duplicate-free live table yields the paper's ambiguity witness.  This is not a
+property of an arbitrary `TraceTableOps` implementation or of a raw trace reconstructed with
+duplicate insertions. -/
 
 /-- Three-way classification of lookup results, used to detect scan-time forks. -/
 private inductive LookupResult (α : Type _) where
@@ -445,6 +477,155 @@ private def hashAnchorCandidates
   classical
   exact (TraceTableOps.entries (V := Vector U SpongeSize.C) trΔ.h).filterMap fun pair =>
     if pair.2 = cap then some pair.1 else none
+
+/-- The table invariant needed by the linear ``look for at most one'' optimization.
+
+The paper-level bad-event argument establishes this for a reusable D2S normal state: stored
+pairs have no duplicates, and two stored permutation (respectively hash) answers cannot have the
+same capacity unless they are the same pair. It is deliberately stated independently of a raw
+trace, because rebuilding a table from a raw trace with `add` may retain harmless repeated
+occurrences and does not satisfy this invariant. -/
+def SearchUnambiguous (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U) : Prop :=
+  (TraceTableOps.entries trΔ.p).Nodup ∧
+  (TraceTableOps.entries trΔ.h).Nodup ∧
+  (∀ pair₁ ∈ TraceTableOps.entries trΔ.p, ∀ pair₂ ∈ TraceTableOps.entries trΔ.p,
+    ForwardFirst trace pair₁.1 pair₁.2 → ForwardFirst trace pair₂.1 pair₂.2 →
+      pair₁.2.capacitySegment = pair₂.2.capacitySegment → pair₁ = pair₂) ∧
+  (∀ pair₁ ∈ TraceTableOps.entries trΔ.h, ∀ pair₂ ∈ TraceTableOps.entries trΔ.h,
+    pair₁.2 = pair₂.2 → pair₁ = pair₂)
+
+private lemma classifyLookup_ne_conflict_of_nodup_of_all_eq
+    {α : Type _} {xs : List α}
+    (hNodup : xs.Nodup)
+    (hAllEq : ∀ a ∈ xs, ∀ b ∈ xs, a = b) :
+    classifyLookup xs ≠ .conflict := by
+  intro hConflict
+  cases xs with
+  | nil => simp [classifyLookup] at hConflict
+  | cons a xs =>
+      cases xs with
+      | nil => simp [classifyLookup] at hConflict
+      | cons b xs =>
+          have hab : a = b := hAllEq a (by simp) b (by simp)
+          subst b
+          have hNotMem : a ∉ a :: xs := (List.nodup_cons.mp hNodup).1
+          exact hNotMem (by simp)
+
+private lemma forwardPredecessorCandidates_nodup
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hNodup : (TraceTableOps.entries trΔ.p).Nodup) :
+    (forwardPredecessorCandidates trace trΔ cap).Nodup := by
+  classical
+  unfold forwardPredecessorCandidates
+  apply List.Nodup.filterMap _ hNodup
+  intro pair₁ pair₂ pair h₁ h₂
+  change (if pair₁.2.capacitySegment = cap ∧ ForwardFirst trace pair₁.1 pair₁.2
+    then some pair₁ else none) = some pair at h₁
+  change (if pair₂.2.capacitySegment = cap ∧ ForwardFirst trace pair₂.1 pair₂.2
+    then some pair₂ else none) = some pair at h₂
+  split at h₁ <;> try contradiction
+  next _ =>
+    injection h₁ with hPair₁
+    split at h₂ <;> try contradiction
+    next _ =>
+      injection h₂ with hPair₂
+      exact hPair₁.trans hPair₂.symm
+
+private lemma forwardPredecessorCandidates_all_eq
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hUnique : ∀ pair₁ ∈ TraceTableOps.entries trΔ.p,
+      ∀ pair₂ ∈ TraceTableOps.entries trΔ.p,
+      ForwardFirst trace pair₁.1 pair₁.2 → ForwardFirst trace pair₂.1 pair₂.2 →
+        pair₁.2.capacitySegment = pair₂.2.capacitySegment → pair₁ = pair₂) :
+    ∀ pair₁ ∈ forwardPredecessorCandidates trace trΔ cap,
+      ∀ pair₂ ∈ forwardPredecessorCandidates trace trΔ cap, pair₁ = pair₂ := by
+  classical
+  intro pair₁ h₁ pair₂ h₂
+  unfold forwardPredecessorCandidates at h₁ h₂
+  rcases List.mem_filterMap.mp h₁ with ⟨source₁, hSource₁, hMap₁⟩
+  rcases List.mem_filterMap.mp h₂ with ⟨source₂, hSource₂, hMap₂⟩
+  change (if source₁.2.capacitySegment = cap ∧ ForwardFirst trace source₁.1 source₁.2
+    then some source₁ else none) = some pair₁ at hMap₁
+  change (if source₂.2.capacitySegment = cap ∧ ForwardFirst trace source₂.1 source₂.2
+    then some source₂ else none) = some pair₂ at hMap₂
+  split at hMap₁ <;> try contradiction
+  next hEligible₁ =>
+    injection hMap₁ with hPair₁
+    subst pair₁
+    split at hMap₂ <;> try contradiction
+    next hEligible₂ =>
+      injection hMap₂ with hPair₂
+      subst pair₂
+      exact hUnique source₁ hSource₁ source₂ hSource₂ hEligible₁.2 hEligible₂.2
+        (hEligible₁.1.trans hEligible₂.1.symm)
+
+private lemma hashAnchorCandidates_nodup
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hNodup : (TraceTableOps.entries trΔ.h).Nodup) :
+    (hashAnchorCandidates trΔ cap).Nodup := by
+  unfold hashAnchorCandidates
+  apply List.Nodup.filterMap _ hNodup
+  intro pair₁ pair₂ stmt h₁ h₂
+  change (if pair₁.2 = cap then some pair₁.1 else none) = some stmt at h₁
+  change (if pair₂.2 = cap then some pair₂.1 else none) = some stmt at h₂
+  split at h₁ <;> try contradiction
+  next hCap₁ =>
+    injection h₁ with hStmt₁
+    split at h₂ <;> try contradiction
+    next hCap₂ =>
+      injection h₂ with hStmt₂
+      apply Prod.ext
+      · exact hStmt₁.trans hStmt₂.symm
+      · exact hCap₁.trans hCap₂.symm
+
+private lemma hashAnchorCandidates_all_eq
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hUnique : ∀ pair₁ ∈ TraceTableOps.entries trΔ.h,
+      ∀ pair₂ ∈ TraceTableOps.entries trΔ.h,
+      pair₁.2 = pair₂.2 → pair₁ = pair₂) :
+    ∀ stmt₁ ∈ hashAnchorCandidates trΔ cap,
+      ∀ stmt₂ ∈ hashAnchorCandidates trΔ cap, stmt₁ = stmt₂ := by
+  intro stmt₁ h₁ stmt₂ h₂
+  unfold hashAnchorCandidates at h₁ h₂
+  rcases List.mem_filterMap.mp h₁ with ⟨source₁, hSource₁, hMap₁⟩
+  rcases List.mem_filterMap.mp h₂ with ⟨source₂, hSource₂, hMap₂⟩
+  split at hMap₁ <;> try contradiction
+  next hCap₁ =>
+    injection hMap₁ with hStmt₁
+    subst stmt₁
+    split at hMap₂ <;> try contradiction
+    next hCap₂ =>
+      injection hMap₂ with hStmt₂
+      subst stmt₂
+      have hPair := hUnique source₁ hSource₁ source₂ hSource₂ (hCap₁.trans hCap₂.symm)
+      exact congrArg Prod.fst hPair
+
+private lemma forwardPredecessor_lookup_ne_conflict
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hUnambiguous : SearchUnambiguous trace trΔ) :
+    classifyLookup (forwardPredecessorCandidates trace trΔ cap) ≠ .conflict :=
+  classifyLookup_ne_conflict_of_nodup_of_all_eq
+    (forwardPredecessorCandidates_nodup trace trΔ cap hUnambiguous.1)
+    (forwardPredecessorCandidates_all_eq trace trΔ cap hUnambiguous.2.2.1)
+
+private lemma hash_lookup_ne_conflict
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (cap : Vector U SpongeSize.C)
+    (hUnambiguous : SearchUnambiguous trace trΔ) :
+    classifyLookup (hashAnchorCandidates trΔ cap) ≠ .conflict :=
+  classifyLookup_ne_conflict_of_nodup_of_all_eq
+    (hashAnchorCandidates_nodup trΔ cap hUnambiguous.2.1)
+    (hashAnchorCandidates_all_eq trΔ cap hUnambiguous.2.2.2)
 
 /-! ### Helper lemmas connecting `trΔ.h`/`trΔ.p` entries to the original `trace`
 
@@ -618,22 +799,24 @@ private lemma hash_unique_mem_entries
       rw [hCap] at hMem'; exact hMem'
   · contradiction
 
-private lemma pred_unique_mem_and_cap
+private lemma forwardPred_unique_mem_and_cap
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (cap : Vector U SpongeSize.C)
     (s_in s_out : CanonicalSpongeState U)
-    (h : classifyLookup (predecessorCandidates trΔ cap) = .unique (s_in, s_out)) :
+    (h : classifyLookup (forwardPredecessorCandidates trace trΔ cap) = .unique (s_in, s_out)) :
     (s_in, s_out) ∈ TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p ∧
-      s_out.capacitySegment = cap := by
-  unfold predecessorCandidates at h
+      s_out.capacitySegment = cap ∧ ForwardFirst trace s_in s_out := by
+  unfold forwardPredecessorCandidates at h
   classical
   have ⟨pair, hMem, hEq⟩ := classifyLookup_filterMap_singleton_mem
       (TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p)
-      (fun pair => if pair.2.capacitySegment = cap then some pair else none) (s_in, s_out) h
+      (fun pair => if pair.2.capacitySegment = cap ∧ ForwardFirst trace pair.1 pair.2
+        then some pair else none) (s_in, s_out) h
   split at hEq
-  · next hCap =>
+  · next hEligible =>
       injection hEq with hInj; subst hInj
-      exact ⟨hMem, hCap.symm ▸ rfl⟩
+      exact ⟨hMem, hEligible.1.symm ▸ rfl, hEligible.2⟩
   · contradiction
 
 /-- Output of a linear backwards scan: either a fork was detected, or the scan terminated
@@ -646,10 +829,14 @@ private inductive LinearScanResult (trace : QueryLog (duplexSpongeChallengeOracl
 
 /-- CO25 §5.2 BackTrack linear backwards scan: from `currentState`, classify the predecessor
 candidates in `tr_∇.p`. `[]` ends the scan; `[pred]` continues; `_::_::_` is a fork → `.forkErr`.
-Loops in capacity segment are detected using `vCap` and result in `.forkErr`.
+
+A self-loop or a repeated input capacity is an invalid candidate chain: it violates the
+simple-capacity-walk side condition of Definition 5.3. It is not an ambiguity between two valid
+`Outs` entries, so those branches return `.noResult`. `.forkErr` is reserved for an actual
+multiple-match lookup.
 Structurally recursive on `fuel`; the caller supplies `fuel = depthBound`.
 Uses a tail-recursive accumulator `acc` to build the sequence by prepending. -/
-private def linearScanBackwards
+private noncomputable def linearScanBackwards
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
@@ -661,7 +848,7 @@ private def linearScanBackwards
   | 0 => .noResult
   | fuel' + 1 =>
     -- Look up predecessor in `tr_∇.p` (CO25 §5.2 Step 2.b)
-    match hClsPred : classifyLookup (predecessorCandidates (T_P := T_P) (U := U) trΔ
+    match hClsPred : classifyLookup (forwardPredecessorCandidates (T_P := T_P) (U := U) trace trΔ
       currentState.capacitySegment) with
     | .noMatch =>
         -- Not in `tr_∇.p`, check `tr_∇.h` (CO25 §5.2 Step 2.c)
@@ -682,26 +869,58 @@ private def linearScanBackwards
         let s_in := pred.1
         let s_out := pred.2
         if hNoLoop : s_in.capacitySegment = s_out.capacitySegment then
-          .forkErr -- Self-loop → `E_inv`
+          .noResult -- invalid candidate: Def. 5.3(e)
         else
           have hNoLoop' : s_in.capacitySegment ≠ s_out.capacitySegment := hNoLoop
           if s_in.capacitySegment ∈ vCap then
-            .forkErr -- Cycle detected
+            .noResult -- invalid candidate: repeated input capacity
           else
             have hMatch : s_out.capacitySegment = currentState.capacitySegment :=
-              (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).2
-            have hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨
-              ⟨.inr (.inr s_out), s_in⟩ ∈ trace := by
-              have hMem : (s_in, s_out) ∈
-                TraceTableOps.entries (V := CanonicalSpongeState U) trΔ.p :=
-                (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).1
-              exact h_trΔ.2 _ _ hMem
+              (forwardPred_unique_mem_and_cap trace trΔ currentState.capacitySegment s_in s_out
+                hClsPred).2.1
+            have hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace := by
+              obtain ⟨_, hForward, _⟩ :=
+                (forwardPred_unique_mem_and_cap trace trΔ currentState.capacitySegment s_in s_out
+                  hClsPred).2.2
+              exact List.mem_iff_getElem?.mpr ⟨_, hForward⟩
             -- Prepend to sequence and continue scanning (CO25 §5.2 Step 2.b)
             let acc' := prependPartialSequence trace targetState currentState
-              s_in s_out acc hMatch hEntry hNoLoop'
+              s_in s_out acc hMatch (Or.inl hEntry) hNoLoop'
             linearScanBackwards trace trΔ h_trΔ fuel' s_in targetState
               (s_in.capacitySegment :: vCap) acc'
     | .conflict => .forkErr -- `L_p` collision → `E_fork`
+
+private theorem linearScanBackwards_ne_fork_of_searchUnambiguous
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (hUnambiguous : SearchUnambiguous trace trΔ)
+    (fuel : Nat) (currentState targetState : CanonicalSpongeState U)
+    (vCap : List (Vector U SpongeSize.C))
+    (acc : PartialBacktrackSequence trace currentState targetState) :
+    linearScanBackwards trace trΔ h_trΔ fuel currentState targetState vCap acc ≠ .forkErr := by
+  induction fuel generalizing currentState vCap acc with
+  | zero => simp [linearScanBackwards]
+  | succ fuel ih =>
+      simp only [linearScanBackwards]
+      split
+      case h_1 hPred =>
+        split
+        case h_1 => simp
+        case h_2 => simp
+        case h_3 hHash =>
+          exact (hash_lookup_ne_conflict trace trΔ currentState.capacitySegment hUnambiguous hHash).elim
+      case h_2 pred hPred =>
+        split
+        case isTrue => simp
+        case isFalse hLoop =>
+          split
+          case isTrue => simp
+          case isFalse hSeen =>
+            apply ih
+      case h_3 hPred =>
+        exact (forwardPredecessor_lookup_ne_conflict trace trΔ currentState.capacitySegment
+          hUnambiguous hPred).elim
 
 end S_BT_BacktrackComputation
 
@@ -899,7 +1118,7 @@ After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h
 stateful layout parser is run; its `none` becomes `noResult`. This is not yet the executable
 realization of the paper algorithm: the required parser/branch-completeness refinement theorem
 is intentionally a separate obligation. -/
-private def linearBackTrack
+private noncomputable def linearBackTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
@@ -929,7 +1148,7 @@ And returns one of the following:
 Implementation status: delegates to `linearBackTrack`. The paper-facing algorithm is the
 exhaustive `S_BT`-and-`Outs` construction; this scan becomes an implementation of it only after
 the separate branch-completeness/parser-refinement theorem is proved. -/
-def backTrack
+noncomputable def backTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
@@ -937,6 +1156,32 @@ def backTrack
     (depthBound : Nat := trace.length + 1) :
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :=
   linearBackTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound
+
+/-- The executable scan has no `.err` outcome once its live normalized table has one candidate
+per output capacity and one hash anchor per capacity.  Invalid cyclic branches are already
+classified as `noResult` by the scan; hence only an actual multiple-match lookup could produce
+`.err`, and `SearchUnambiguous` rules that out. -/
+theorem backTrack_ne_err_of_searchUnambiguous
+    (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
+    (trΔ : TraceNabla T_H T_P StmtIn U)
+    (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
+    (hUnambiguous : SearchUnambiguous trace trΔ)
+    (state : CanonicalSpongeState U)
+    (depthBound : Nat := trace.length + 1) :
+    backTrack (δ := δ) (pSpec := pSpec) trace trΔ h_trΔ state depthBound ≠
+      ExperimentOutput.err := by
+  unfold backTrack linearBackTrack
+  generalize hScan :
+    linearScanBackwards trace trΔ h_trΔ depthBound state state [state.capacitySegment]
+      (emptyPartialSequence trace state) = result
+  cases result with
+  | forkErr =>
+      exact (linearScanBackwards_ne_fork_of_searchUnambiguous trace trΔ h_trΔ hUnambiguous
+        depthBound state state [state.capacitySegment] (emptyPartialSequence trace state) hScan).elim
+  | noResult => simp
+  | done seq =>
+      cases hOut : seq.extractCandidateStateful (pSpec := pSpec) (δ := δ) (StmtIn := StmtIn)
+        (U := U) (state := state) (trace := trace) <;> simp [hOut]
 
 end BacktrackProcedure
 

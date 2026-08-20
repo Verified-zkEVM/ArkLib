@@ -4,9 +4,10 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
 
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.SecurityGames
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SRevisedForward
 import ArkLib.ToVCVio.OracleComp.SimSemantics.ExceptT.Basic
+import ArkLib.ToVCVio.ToMathlib.Control.StateT
 
 /-!
 # Stateful Section 5 hybrid-game executor
@@ -34,7 +35,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
-  [∀ i, VCVCompatible (pSpec.Message i)] [codec : Codec pSpec U]
+  [∀ i, VCVCompatible (pSpec.Message i)] [codec : CodecCore pSpec U]
   {δ : Nat} {Salt : Type} [VCVCompatible Salt] [SaltCodec U δ Salt]
   [DecidableEq StmtIn] [DecidableEq U]
 
@@ -67,6 +68,52 @@ inductive HybridGameRevisedPhase
             (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) × M))
       (proverRawLog verifierRawLog :
         QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))
+
+/-- The same legal prover/verifier phase boundary with its outer log carrier made explicit.
+
+This is the reusable coupling form of `HybridGameRevisedPhase`: the game result, normal state,
+and memo are unchanged, while a proof may choose a log representation different from the oracle
+specification being executed.  In particular, the fixed-table H₂ proof records the encoded H₁
+representative for each decoded H₂ request and later decodes that log back to the ordinary H₂
+log. -/
+inductive HybridGameRevisedPhaseWithLog
+    {κ : Type} (oSpec : OracleSpec ι) (challengeSpec : OracleSpec κ) (T_H T_P M Log : Type)
+    [LawfulTraceNablaImpl T_H T_P StmtIn U] where
+  | proverStopped
+      (reason : D2SRevisedStoppingReason
+        (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+      (proverRawLog : Log)
+  | verifier
+      (proverRun : (((StmtIn × DSSaltedProof (pSpec := pSpec) (U := U) δ) ×
+        D2SNormalState
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) × M))
+      (verifierResult : Except
+        (D2SRevisedStoppingReason
+          (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+        ((Option StmtOut ×
+          D2SNormalState
+            (δ := δ) (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) × M))
+      (proverRawLog verifierRawLog : Log)
+
+/-- Reinterpret a generic-log phase as the ordinary raw-query-log phase. -/
+def HybridGameRevisedPhaseWithLog.toPhase
+    {κ : Type} {challengeSpec : OracleSpec κ} {T_H T_P M : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (phase : HybridGameRevisedPhaseWithLog
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
+      oSpec challengeSpec T_H T_P M
+      (QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))) :
+    HybridGameRevisedPhase
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
+      oSpec challengeSpec T_H T_P M :=
+  match phase with
+  | .proverStopped reason proverRawLog => .proverStopped reason proverRawLog
+  | .verifier proverRun verifierResult proverRawLog verifierRawLog =>
+      .verifier proverRun verifierResult proverRawLog verifierRawLog
 
 /-- The log-erased outcome of the revised Figure-4 prover/verifier execution.  This is the
 value marginal of `HybridGameRevisedPhase`: it retains the exact stopping reason and the exact
@@ -485,11 +532,48 @@ noncomputable def hybridGameRevisedResult
         gImpl rawVerifierComp normal memo
       return .verifier proverRun verifierResult
 
-/-- Instrumented Figure 4 lines 2--3 with the revised global D2S state discipline.  A prover
-stop is absorbing: it records no verifier log and returns the `proverStopped` phase.  On prover
-success, the verifier begins from that exact returned normal state and `gᵢ` memo.  Hence its
-normal trace/table/cache extends the prover's state rather than resetting it. -/
-noncomputable def hybridGameRevisedObserved
+/-- Execute the revised Figure-4 prover/verifier boundary under an arbitrary response-dependent
+outer logger.  This is the semantic hook for trace couplings: it preserves the ordinary game
+control flow and the exact prover-to-verifier normal/memo handoff, but leaves the recorded log
+carrier explicit. -/
+noncomputable def hybridGameRevisedPhaseWithLoggerFrom
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    {Log : Type} [EmptyCollection Log] [Append Log] {m : Type → Type} [Monad m]
+    (logger : QueryImpl
+      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec) (WriterT Log m))
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (initialMemo : M) :
+    m (HybridGameRevisedPhaseWithLog
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
+      oSpec challengeSpec T_H T_P M Log) := do
+  let proverComp := d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P initialMemo
+  let ⟨proverResult, proveQueryLogRaw⟩ ← (simulateQ logger proverComp).run
+  match proverResult with
+  | .error reason =>
+      return .proverStopped reason proveQueryLogRaw
+  | .ok proverRun =>
+      let stmtIn := proverRun.1.1.1
+      let proof := proverRun.1.1.2
+      let normal := proverRun.1.2
+      let memo := proverRun.2
+      let rawVerifierComp := runForwardVerifierWide δ V stmtIn proof
+      let verifierComp := d2fRawRevisedStoppingFrom (T_H := T_H) (T_P := T_P)
+        gImpl rawVerifierComp normal memo
+      let ⟨verifierResult, verifyQueryLogRaw⟩ ← (simulateQ logger verifierComp).run
+      return .verifier proverRun verifierResult proveQueryLogRaw verifyQueryLogRaw
+
+/-- Instrumented Figure 4 lines 2--3, started from an explicitly supplied D2S memo.  The
+explicit form is used only for semantic couplings such as the full-cache H₂ realization; the
+ordinary game below instantiates it with `default`.  A prover stop is absorbing, and a successful
+verifier inherits both the prover's exact normal state and its returned memo. -/
+noncomputable def hybridGameRevisedObservedFrom
     [∀ i, Fintype (pSpec.Message i)]
     [∀ i, DecidableEq (pSpec.Message i)]
     {κ : Type} {challengeSpec : OracleSpec κ}
@@ -498,11 +582,12 @@ noncomputable def hybridGameRevisedObserved
     {M : Type} [Inhabited M]
     (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
-    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (initialMemo : M) :
     OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
       (HybridGameRevisedObservation (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
         (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) := do
-  let proverComp := d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P default
+  let proverComp := d2fRawRevisedStopping (T_H := T_H) (T_P := T_P) gImpl P initialMemo
   let ⟨proverResult, proveQueryLogRaw⟩ ← (simulateQ loggingOracle proverComp).run
   match proverResult with
   | .error reason =>
@@ -517,6 +602,95 @@ noncomputable def hybridGameRevisedObserved
         gImpl rawVerifierComp normal memo
       let ⟨verifierResult, verifyQueryLogRaw⟩ ← (simulateQ loggingOracle verifierComp).run
       return ⟨.verifier proverRun verifierResult proveQueryLogRaw verifyQueryLogRaw⟩
+
+/-- Instantiating the explicit-log executor with the ordinary query logger recovers the existing
+lossless observation exactly. -/
+theorem hybridGameRevisedObservedFrom_eq_phaseWithLogger
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (initialMemo : M) :
+    hybridGameRevisedObservedFrom (T_H := T_H) (T_P := T_P) gImpl V P initialMemo =
+      (fun phase => ⟨phase.toPhase⟩) <$>
+        hybridGameRevisedPhaseWithLoggerFrom
+          (T_H := T_H) (T_P := T_P) (logger := loggingOracle) gImpl V P initialMemo := by
+  simp only [hybridGameRevisedObservedFrom, hybridGameRevisedPhaseWithLoggerFrom,
+    HybridGameRevisedPhaseWithLog.toPhase, map_bind]
+  apply bind_congr
+  rintro ⟨proverResult, proverLog⟩
+  cases proverResult with
+  | error reason => rfl
+  | ok proverRun =>
+      rw [map_eq_bind_pure_comp, bind_assoc]
+      simp
+
+/-- Instrumented Figure 4 lines 2--3 with the revised global D2S state discipline.  This is the
+ordinary fresh-memo game, definitionally the explicit-start executor at `default`. -/
+noncomputable def hybridGameRevisedObserved
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (HybridGameRevisedObservation (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) :=
+  hybridGameRevisedObservedFrom (T_H := T_H) (T_P := T_P) gImpl V P default
+
+/-- The fresh-memo observed executor is exactly the explicit-start executor at `default`. -/
+theorem hybridGameRevisedObserved_eq_from_default
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    hybridGameRevisedObserved (T_H := T_H) (T_P := T_P) gImpl V P =
+      hybridGameRevisedObservedFrom (T_H := T_H) (T_P := T_P) gImpl V P default := rfl
+
+omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
+  [∀ i, VCVCompatible (pSpec.Message i)] in
+/-- The distribution-level logged phase endpoint started from a supplied inner memo.  This is
+the semantic form used by full-cache couplings: both the prover and the verifier retain the
+same explicit memo across their legal phase boundary, while the outer oracle table is still
+sampled exactly once by `init`. -/
+noncomputable def hybridGameRevisedPhaseDistFrom
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl
+      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (StateT σ ProbComp))
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (initialMemo : M) :
+    ProbComp (HybridGameRevisedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) := do
+  (simulateQ impl
+    (hybridGameRevisedObservedFrom (δ := δ) (T_H := T_H) (T_P := T_P)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) gImpl V P initialMemo)).run' (← init)
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] in
@@ -540,11 +714,35 @@ noncomputable def hybridGameRevisedPhaseDist
     (P : MaliciousProver oSpec pSpec StmtIn U δ) :
     ProbComp (HybridGameRevisedObservation
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-      (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) := do
+    (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M) := do
   (simulateQ impl
     (hybridGameRevisedObserved (δ := δ) (T_H := T_H) (T_P := T_P)
       (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) gImpl V P)).run' (← init)
+
+omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
+  [∀ i, VCVCompatible (pSpec.Message i)] in
+/-- The ordinary logged phase endpoint is the explicit-memo form at the default memo. -/
+theorem hybridGameRevisedPhaseDist_eq_from_default
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl
+      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (StateT σ ProbComp))
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ) :
+    hybridGameRevisedPhaseDist (δ := δ) (T_H := T_H) (T_P := T_P)
+      init impl gImpl V P =
+      hybridGameRevisedPhaseDistFrom (δ := δ) (T_H := T_H) (T_P := T_P)
+        init impl gImpl V P default := rfl
 
 /-- The result-only distribution-level endpoint.  It is intentionally defined independently of
 the logged endpoint, so a probability proof does not depend on a trace projection or a later
@@ -666,6 +864,46 @@ structure HybridGameRevisedMappedObservation
     (BasicFiatShamirGameOutput (oSpec := oSpec) (StmtIn := StmtIn)
       (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt))
 
+/-- Finish one explicitly logged revised prover--verifier phase with exactly the public
+line-4 postprocessing used by `hybridGameDistRevisedObserved`.  Keeping this adapter separate
+lets hybrid couplings change only the phase/log representation and then invoke one common public
+output calculation. -/
+noncomputable def finishRevisedGamePhase
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type}
+    (traceMap : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) challengeSpec)
+    (phase : HybridGameRevisedPhaseWithLog
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
+      oSpec challengeSpec T_H T_P M
+      (QueryLog (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec))) :
+    ProbComp (HybridGameRevisedMappedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) challengeSpec T_H T_P M) := do
+  let game : HybridGameRevisedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M :=
+    ⟨phase.toPhase⟩
+  let publicOutput ←
+    match game.publicOutput with
+    | none => pure none
+    | some ⟨stmtIn, stmtOut, proof, projectedTrace⟩ => do
+        let π : FSSaltedProof pSpec Salt :=
+          (SaltCodec.encode (Salt := Salt) proof.1, proof.2)
+        let outputFS? ←
+          runSection58TraceMap
+            (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+            (Salt := Salt) traceMap projectedTrace
+        match outputFS? with
+        | none => pure (some (stmtIn, stmtOut, π, []))
+        | some fullTraceFS => pure (some (stmtIn, stmtOut, π, fullTraceFS))
+  return ⟨game, publicOutput⟩
+
 /-- Distribution-level lossless counterpart of `hybridGameDistRevised`.  It samples the same
 outer oracle-family carrier and runs the same revised Figure-4 game, but retains the actual
 pre-line-4 observation needed to state the Hyb₀↔Hyb₁ coupling. -/
@@ -710,6 +948,68 @@ noncomputable def hybridGameDistRevisedObserved
         | none => pure (some (stmtIn, stmtOut, π, []))
         | some fullTraceFS => pure (some (stmtIn, stmtOut, π, fullTraceFS))
   return ⟨game, publicOutput⟩
+
+/-- The lossless revised-game wrapper is equivalently: sample the outer table, run the
+explicitly logged phase, then apply `finishRevisedGamePhase`.  This is an equality of full
+distributions, including both a prover stop and the inherited-state verifier branch. -/
+theorem hybridGameDistRevisedObserved_eq_finishRevisedGamePhase
+    [SampleableType U]
+    [∀ i, Fintype (pSpec.Message i)]
+    [∀ i, DecidableEq (pSpec.Message i)]
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    {M : Type} [Inhabited M]
+    {σ : Type}
+    (init : ProbComp σ)
+    (impl : QueryImpl
+      (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (StateT σ ProbComp))
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (P : MaliciousProver oSpec pSpec StmtIn U δ)
+    (traceMap : D2STraceTransform (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) challengeSpec) :
+    hybridGameDistRevisedObserved
+        (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+        (pSpec := pSpec) (U := U) init impl gImpl V P traceMap =
+      (do
+        let initial ← init
+        let phase ←
+          (simulateQ impl
+            (hybridGameRevisedPhaseWithLoggerFrom
+              (T_H := T_H) (T_P := T_P) (logger := loggingOracle) gImpl V P default)).run'
+            initial
+        finishRevisedGamePhase
+          (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+          (pSpec := pSpec) (U := U) traceMap phase) := by
+  unfold hybridGameDistRevisedObserved
+  apply bind_congr
+  intro initial
+  have hPhase :
+      (simulateQ impl
+        (hybridGameRevisedObservedFrom (T_H := T_H) (T_P := T_P)
+          gImpl V P default)).run' initial =
+        (simulateQ impl
+          ((fun phase =>
+            ({ phase := phase.toPhase } : HybridGameRevisedObservation
+              (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+              (pSpec := pSpec) (U := U) (δ := δ) challengeSpec T_H T_P M)) <$>
+            hybridGameRevisedPhaseWithLoggerFrom
+              (T_H := T_H) (T_P := T_P) (logger := loggingOracle)
+              gImpl V P default)).run' initial :=
+    congrArg (fun computation => (simulateQ impl computation).run' initial)
+      (hybridGameRevisedObservedFrom_eq_phaseWithLogger
+        (T_H := T_H) (T_P := T_P) gImpl V P default)
+  rw [hybridGameRevisedObserved, hPhase]
+  rw [simulateQ_map]
+  rw [StateT.run'_map_comm]
+  simp only [map_eq_bind_pure_comp, bind_assoc]
+  apply bind_congr
+  intro phase
+  rfl
 
 omit [∀ i, VCVCompatible (pSpec.Challenge i)] [VCVCompatible U]
   [∀ i, VCVCompatible (pSpec.Message i)] [VCVCompatible Salt] in
@@ -1210,9 +1510,10 @@ noncomputable def hyb1Revised
         (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
 
-/-- CO25 Hyb₂ over the live revised D2SQuery executor.  The decoded-table oracle and the
-memoized uniform-fiber bridge are unchanged from `KeyLemma.hyb_2`; only the duplex interpreter is
-the corrected stateful one. -/
+/-- CO25 Hyb₂ over the live revised D2SQuery executor.  The decoded-table oracle is lifted only
+on its decoder image: a decoded-table cell is sampled as the decoding of an encoded cell, so the
+partial fibre sampler is always called at a witnessed image point.  This is the Claim 5.22
+normal form; only the duplex interpreter differs from the original Figure-4 game. -/
 noncomputable def hyb2Revised
     {T_H : Type} {T_P : Type}
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -1224,7 +1525,8 @@ noncomputable def hyb2Revised
       (pSpec := pSpec) (Salt := Salt)) := by
   let challengeSpec := eSpec (U := U) StmtIn pSpec δ
   let D_e := D_e (U := U) StmtIn pSpec δ
-  let gImpl := d2sDecodedBridgeImplMemo
+  letI : Inhabited (gSpec (U := U) StmtIn pSpec δ).QueryCache := ⟨∅⟩
+  let gImpl := d2sDecodedBridgeImplCacheOfImage
     (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
   exact
     hybridGameDistRevised
@@ -1239,6 +1541,36 @@ noncomputable def hyb2Revised
       (hyb2Line4Trace
         (δ := δ) (Salt := Salt)
         (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+
+/-- Expose the concrete game expression underlying revised H₂ without unfolding it through
+later coupling goals.  Keeping this one-step definition equality named avoids elaborator-heavy
+reduction of the image-fibre bridge at each endpoint transport. -/
+theorem hyb2Revised_eq_hybridGameDistRevised
+    {T_H : Type} {T_P : Type}
+    [LawfulTraceNablaImpl T_H T_P StmtIn U]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    hyb2Revised (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+      oSpecImpl V maliciousProver =
+      letI : Inhabited (gSpec (U := U) StmtIn pSpec δ).QueryCache := ⟨∅⟩
+      hybridGameDistRevised
+        (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+        (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
+        (init := hybChallengeInit
+          (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
+          (D_e (U := U) StmtIn pSpec δ))
+        (impl := hybChallengeImpl
+          (oSpec := oSpec) (U := U) (challengeSpec := eSpec (U := U) StmtIn pSpec δ)
+          oSpecImpl (D_e (U := U) StmtIn pSpec δ))
+        (d2sDecodedBridgeImplCacheOfImage
+          (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+        V maliciousProver
+        (hyb2Line4Trace
+          (δ := δ) (Salt := Salt)
+          (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
+  rfl
 
 /-- CO25 Hyb₃ over the live revised D2SQuery executor.  Its one-run `D2SAlgoMemo` is shared by
 the prover and verifier exactly as in the paper, so repeated encoded keys are reissued and retain

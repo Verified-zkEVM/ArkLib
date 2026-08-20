@@ -31,7 +31,7 @@ open Backtrack Lookahead DSTraceStorage TraceTransform
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [codec : Codec pSpec U]
+  [codec : CodecCore pSpec U]
   {δ : Nat}
 
 local instance : Inhabited U := ⟨0⟩
@@ -92,6 +92,21 @@ noncomputable def deserializePreimageFinset
   exact (Finset.univ : Finset (Vector U (challengeSize (pSpec := pSpec) i))).filter fun encoded =>
     Deserialize.deserialize encoded = challenge
 
+/-- A challenge obtained by decoding an encoded rate string is in the decoder image.  This is
+the small support fact used by the revised H₂ bridge: its partial `Lift_i` branch cannot fail on
+answers produced from the encoded verifier table.  Unlike the legacy total sampler, this needs no
+global surjectivity assumption. -/
+lemma deserializePreimageFinset_nonempty_of_decode
+    {i : pSpec.ChallengeIdx}
+    [Fintype U] [DecidableEq U]
+    [Fintype (pSpec.Challenge i)] [DecidableEq (pSpec.Challenge i)]
+    (encoded : Vector U (challengeSize (pSpec := pSpec) i)) :
+    (deserializePreimageFinset (pSpec := pSpec) (U := U) (codec.decode i encoded)).Nonempty := by
+  refine ⟨encoded, ?_⟩
+  simp only [deserializePreimageFinset, Finset.mem_filter, Finset.mem_univ, true_and]
+  change codec.decode i encoded = codec.decode i encoded
+  rfl
+
 /-- Sample a uniformly random element from a non-empty list using the `unifSpec` branch. -/
 def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U]
     (l : List α) (hl : l ≠ []) :
@@ -104,6 +119,77 @@ def sampleFromList {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U]
     have hlen_eq : (l.length - 1) + 1 = l.length := Nat.sub_add_cancel (Nat.succ_le_of_lt hlen_pos)
     simpa [hlen_eq] using idxRaw.2⟩
   pure (l.get idx)
+
+/-- Executing `sampleFromList` under a handler which forwards the `unifSpec` summand is exactly
+uniform selection of an index of the supplied nonempty list.  The challenge and unit summands are
+present only to give the simulator its full Section-5 target type: this computation never queries
+either of them.  This is the computational form of the uniform-fibre sample used in Claim 5.22. -/
+lemma simulateQ_sampleFromList
+    {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U] [SampleableType U]
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (l : List α) (hl : l ≠ []) :
+    simulateQ
+      (challengeImpl +
+        ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (sampleFromList (U := U) (challengeSpec := challengeSpec) l hl) =
+      (do
+        let idxRaw ← ProbComp.uniformFin (l.length - 1)
+        let idx : Fin l.length := ⟨idxRaw.1, by
+          have hlen_pos : 0 < l.length := List.length_pos_iff_ne_nil.mpr hl
+          have hlen_eq : (l.length - 1) + 1 = l.length :=
+            Nat.sub_add_cancel (Nat.succ_le_of_lt hlen_pos)
+          simpa [hlen_eq] using idxRaw.2⟩
+        pure (l.get idx)) := by
+  unfold sampleFromList
+  rw [simulateQ_bind]
+  change (do
+    let idxRaw ← ProbComp.uniformFin (l.length - 1)
+    let idx : Fin l.length := ⟨idxRaw.1, by
+      have hlen_pos : 0 < l.length := List.length_pos_iff_ne_nil.mpr hl
+      have hlen_eq : (l.length - 1) + 1 = l.length :=
+        Nat.sub_add_cancel (Nat.succ_le_of_lt hlen_pos)
+      simpa [hlen_eq] using idxRaw.2⟩
+    pure (l.get idx)) = _
+  rfl
+
+/-- The nonempty-list sampler is the successful branch of the standard list uniform-selection
+operator.  This exposes its exact probability law through `probOutput_uniformSelectList`. -/
+lemma lift_simulateQ_sampleFromList_eq_uniformSelect
+    {α κ : Type} {challengeSpec : OracleSpec κ} [SpongeUnit U] [SampleableType U]
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (l : List α) (hl : l ≠ []) :
+    OptionT.lift
+      (simulateQ
+        (challengeImpl +
+          ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+        (sampleFromList (U := U) (challengeSpec := challengeSpec) l hl)) =
+      ($ l : OptionT ProbComp α) := by
+  cases l with
+  | nil => exact (hl rfl).elim
+  | cons x xs =>
+      simp only [sampleFromList, List.length_cons, Nat.succ_sub_one]
+      rfl
+
+/-- Pointwise law of the simulated nonempty-list sampler. -/
+lemma probOutput_simulateQ_sampleFromList
+    {α κ : Type} [DecidableEq α] {challengeSpec : OracleSpec κ}
+    [SpongeUnit U] [SampleableType U]
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (l : List α) (hl : l ≠ []) (x : α) :
+    Pr[= x | (simulateQ
+        (challengeImpl +
+          ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+        (sampleFromList (U := U) (challengeSpec := challengeSpec) l hl))] =
+      (l.count x : ENNReal) / l.length := by
+  have h := congrArg (fun computation : OptionT ProbComp α => Pr[= x | computation])
+    (lift_simulateQ_sampleFromList_eq_uniformSelect (U := U) challengeImpl l hl)
+  change Pr[= x | OptionT.lift
+    (simulateQ
+      (challengeImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (sampleFromList (U := U) (challengeSpec := challengeSpec) l hl))] =
+      Pr[= x | ($ l : OptionT ProbComp α)] at h
+  rw [OptionT.probOutput_lift, ProbComp.probOutput_uniformSelectList] at h
+  exact h
 
 /-- Predicate selecting the challenge-oracle component from the combined D2S target. -/
 def isD2SChallengePoint {κ : Type} {challengeSpec : OracleSpec κ} :
@@ -118,25 +204,272 @@ instance {κ : Type} {challengeSpec : OracleSpec κ} :
     | .inl _ => isTrue True.intro
     | .inr _ => isFalse (fun h => h)
 
-/-- CO25 §5.4 / §5.8 — Uniform `ψᵢ⁻¹` preimage sampler: samples `α̂ ←$ ψᵢ⁻¹(α)` by toListing
-`deserializePreimageFinset α` and indexing via `unifSpec` -/
-noncomputable def uniformDeserializePreimage
+/-- CO25 §5.4 / §5.8 — Uniform partial-fibre sampler.  It is available only after the caller
+has established that the decoded value is in the image of `ψᵢ`; no decoder-surjectivity premise
+is hidden in this operation. -/
+noncomputable def uniformDeserializePreimageOfImage
     {κ : Type} {challengeSpec : OracleSpec κ}
     [Fintype U] [DecidableEq U]
     [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
     {i : pSpec.ChallengeIdx}
-    (challenge : pSpec.Challenge i) :
+    (challenge : pSpec.Challenge i)
+    (hpreimages_nonempty :
+      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty) :
     OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
       (Vector U (challengeSize (pSpec := pSpec) i)) := do
-  have hpreimages_nonempty :
-      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty := by
-    rcases codec.decode_surjective i challenge with ⟨encoded, hencoded⟩
-    have hencoded' : Deserialize.deserialize encoded = challenge := hencoded
-    exact ⟨encoded, by simp [deserializePreimageFinset, hencoded']⟩
   let preimages := (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).toList
   have hpreimages_ne : preimages ≠ [] := by
     simpa [preimages] using hpreimages_nonempty.toList_ne_nil
   sampleFromList preimages hpreimages_ne
+
+/-- Legacy total-fibre wrapper.  New revised Section 5 callers use
+`uniformDeserializePreimageOfImage` after their explicit image test; this wrapper is retained
+for pre-existing total-codec clients. -/
+noncomputable def uniformDeserializePreimage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    [CodecTotal pSpec U]
+    {i : pSpec.ChallengeIdx}
+    (challenge : pSpec.Challenge i) :
+    OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)
+      (Vector U (challengeSize (pSpec := pSpec) i)) :=
+  uniformDeserializePreimageOfImage
+    (pSpec := pSpec) (U := U) (challengeSpec := challengeSpec) challenge (by
+      rcases CodecTotal.decode_surjective (pSpec := pSpec) (U := U) i challenge with
+        ⟨encoded, hencoded⟩
+      have hencoded' : Deserialize.deserialize encoded = challenge := hencoded
+      exact ⟨encoded, by simp [deserializePreimageFinset, hencoded']⟩)
+
+/-- Under the live Section-5 auxiliary handler, `uniformDeserializePreimage` has exactly the
+uniform distribution on the decoder fibre.  This is the single-query probability identity behind
+the H₁--H₂ reparameterization; the later adaptive proof must additionally establish that the
+memoized bridge invokes this kernel only at the first occurrence of a key. -/
+lemma probOutput_simulateQ_uniformDeserializePreimage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    [CodecTotal pSpec U]
+    {i : pSpec.ChallengeIdx}
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (challenge : pSpec.Challenge i)
+    (encoded : Vector U (challengeSize (pSpec := pSpec) i)) :
+    Pr[= encoded | (simulateQ
+      (challengeImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (uniformDeserializePreimage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge))] =
+      Preliminaries.sampleUniformPreimage
+        (codec.decode i) (CodecTotal.decode_surjective (pSpec := pSpec) (U := U) i)
+        challenge encoded := by
+  unfold uniformDeserializePreimage uniformDeserializePreimageOfImage
+  rw [probOutput_simulateQ_sampleFromList]
+  rw [Preliminaries.sampleUniformPreimage_apply]
+  set s := deserializePreimageFinset (pSpec := pSpec) (U := U) challenge with hs
+  have hmem : ∀ value, value ∈ s ↔ codec.decode i value = challenge := by
+    intro value
+    rw [hs]
+    simp only [deserializePreimageFinset, Finset.mem_filter, Finset.mem_univ, true_and]
+    change codec.decode i value = challenge ↔ codec.decode i value = challenge
+    rfl
+  have hcard : Fintype.card (Preliminaries.Preimage (codec.decode i) challenge) = s.card := by
+    apply Fintype.card_of_subtype s
+    intro value
+    exact hmem value
+  have hlength : s.toList.length = s.card := Finset.length_toList s
+  letI : BEq (Vector U (challengeSize (pSpec := pSpec) i)) := instBEqOfDecidableEq
+  change ((↑(s.toList.count encoded) : ENNReal) / (↑s.toList.length : ENNReal)) = _
+  by_cases h : encoded ∈ s
+  · have hcount : s.toList.count encoded = 1 :=
+      List.count_eq_one_of_mem s.nodup_toList (by simpa using h)
+    rw [hcount, hlength, if_pos (hmem encoded |>.mp h), hcard]
+    simp
+  · have hcount : s.toList.count encoded = 0 :=
+      List.count_eq_zero_of_not_mem (by simpa using h)
+    rw [hcount, if_neg (fun hdecode => h (hmem encoded |>.mpr hdecode))]
+    simp
+
+/-- Distributional form of the live uniform-fibre sampler.  The right-hand side is the PMF
+kernel used in CO25 Lemma 3.2, embedded into the `SPMF` semantics of `ProbComp`. -/
+lemma evalDist_simulateQ_uniformDeserializePreimage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    [CodecTotal pSpec U]
+    {i : pSpec.ChallengeIdx}
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (challenge : pSpec.Challenge i) :
+    𝒟[simulateQ
+      (challengeImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (uniformDeserializePreimage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge)] =
+      (liftM (Preliminaries.sampleUniformPreimage
+        (codec.decode i) (CodecTotal.decode_surjective (pSpec := pSpec) (U := U) i)
+        challenge) :
+        SPMF (Vector U (challengeSize (pSpec := pSpec) i))) := by
+  apply (evalDist_eq_liftM_iff _ _).mpr
+  intro encoded
+  exact probOutput_simulateQ_uniformDeserializePreimage
+    (pSpec := pSpec) (U := U) challengeImpl challenge encoded
+
+/-- Executing the partial `Lift` kernel at an explicitly in-image challenge has exactly the
+uniform fibre law.  This is the executable one-cell form used by the revised Claim 5.22 route;
+unlike the legacy lemma above, it has no `CodecTotal` requirement. -/
+lemma probOutput_simulateQ_uniformDeserializePreimageOfImage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    {i : pSpec.ChallengeIdx}
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (challenge : pSpec.Challenge i)
+    (hpreimages_nonempty :
+      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty)
+    (encoded : Vector U (challengeSize (pSpec := pSpec) i)) :
+    Pr[= encoded | (simulateQ
+      (challengeImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (uniformDeserializePreimageOfImage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge hpreimages_nonempty))] =
+      Preliminaries.sampleUniformPreimageOfImage (codec.decode i) challenge (by
+        rcases hpreimages_nonempty with ⟨preimage, hpreimage⟩
+        refine ⟨preimage, ?_⟩
+        simpa [deserializePreimageFinset] using hpreimage) encoded := by
+  unfold uniformDeserializePreimageOfImage
+  rw [probOutput_simulateQ_sampleFromList]
+  rw [Preliminaries.sampleUniformPreimageOfImage_apply]
+  set s := deserializePreimageFinset (pSpec := pSpec) (U := U) challenge with hs
+  have hmem : ∀ value, value ∈ s ↔ codec.decode i value = challenge := by
+    intro value
+    rw [hs]
+    simp only [deserializePreimageFinset, Finset.mem_filter, Finset.mem_univ, true_and]
+    rfl
+  have hcard : Fintype.card (Preliminaries.Preimage (codec.decode i) challenge) = s.card := by
+    apply Fintype.card_of_subtype s
+    intro value
+    exact hmem value
+  have hlength : s.toList.length = s.card := Finset.length_toList s
+  letI : BEq (Vector U (challengeSize (pSpec := pSpec) i)) := instBEqOfDecidableEq
+  change ((↑(s.toList.count encoded) : ENNReal) / (↑s.toList.length : ENNReal)) = _
+  by_cases h : encoded ∈ s
+  · have hcount : s.toList.count encoded = 1 :=
+      List.count_eq_one_of_mem s.nodup_toList (by simpa using h)
+    rw [hcount, hlength, if_pos (hmem encoded |>.mp h), hcard]
+    simp
+  · have hcount : s.toList.count encoded = 0 :=
+      List.count_eq_zero_of_not_mem (by simpa using h)
+    rw [hcount, if_neg (fun hdecode => h (hmem encoded |>.mpr hdecode))]
+    simp
+
+/-- Distributional form of the executable partial `Lift` identity. -/
+lemma evalDist_simulateQ_uniformDeserializePreimageOfImage
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U] [SampleableType U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    {i : pSpec.ChallengeIdx}
+    (challengeImpl : QueryImpl challengeSpec ProbComp)
+    (challenge : pSpec.Challenge i)
+    (hpreimages_nonempty :
+      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty) :
+    𝒟[simulateQ
+      (challengeImpl + ((d2sUnitSampleImpl (U := U)) + QueryImpl.id' unifSpec))
+      (uniformDeserializePreimageOfImage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge hpreimages_nonempty)] =
+      (liftM
+        (Preliminaries.sampleUniformPreimageOfImage (codec.decode i) challenge (by
+          rcases hpreimages_nonempty with ⟨preimage, hpreimage⟩
+          refine ⟨preimage, ?_⟩
+          simpa [deserializePreimageFinset] using hpreimage) :
+          PMF (Vector U (challengeSize (pSpec := pSpec) i))) :
+        SPMF (Vector U (challengeSize (pSpec := pSpec) i))) := by
+  apply (evalDist_eq_liftM_iff _ _).mpr
+  intro encoded
+  exact probOutput_simulateQ_uniformDeserializePreimageOfImage
+    (pSpec := pSpec) (U := U) challengeImpl challenge hpreimages_nonempty encoded
+
+/-- **Claim 5.23, one-cell partial-lift bound.**  The decoded-table distribution and the
+standard uniform challenge distribution are processed by the same total `Lift` kernel: an
+in-image challenge yields a uniform fibre representative, while an out-of-image challenge
+yields `none`.  Consequently the explicit image stop costs no extra term beyond the decoder
+bias, and no decoder-surjectivity assumption is needed. -/
+theorem codec_partialLift_bias
+    [Fintype U] [Nonempty U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, Nonempty (pSpec.Challenge i)]
+    [∀ i, DecidableEq (pSpec.Challenge i)]
+    (i : pSpec.ChallengeIdx) :
+    PMF.tvDist
+      ((codec.decode i <$> PMF.uniformOfFintype
+        (Vector U (challengeSize (pSpec := pSpec) i))).bind
+        (Preliminaries.sampleUniformPreimageOrNone (codec.decode i)))
+      ((PMF.uniformOfFintype (pSpec.Challenge i)).bind
+        (Preliminaries.sampleUniformPreimageOrNone (codec.decode i))) ≤
+      (codec.decodingBias i : ℝ) := by
+  calc
+    PMF.tvDist
+        ((codec.decode i <$> PMF.uniformOfFintype
+          (Vector U (challengeSize (pSpec := pSpec) i))).bind
+          (Preliminaries.sampleUniformPreimageOrNone (codec.decode i)))
+        ((PMF.uniformOfFintype (pSpec.Challenge i)).bind
+          (Preliminaries.sampleUniformPreimageOrNone (codec.decode i))) ≤
+        PMF.tvDist
+          (codec.decode i <$> PMF.uniformOfFintype
+            (Vector U (challengeSize (pSpec := pSpec) i)))
+          (PMF.uniformOfFintype (pSpec.Challenge i)) :=
+      Preliminaries.tvDist_bind_sampleUniformPreimageOrNone_le (codec.decode i)
+    _ ≤ @Dist.dist (PMF (pSpec.Challenge i)) instDistPMFOfFintype_arkLib
+          (codec.decode i <$> PMF.uniformOfFintype
+            (Vector U (challengeSize (pSpec := pSpec) i)))
+          (PMF.uniformOfFintype (pSpec.Challenge i)) :=
+      Preliminaries.pmf_tvDist_le_serdeDist _ _
+    _ = @Dist.dist (PMF (pSpec.Challenge i)) instDistPMFOfFintype_arkLib
+          (PMF.uniformOfFintype (pSpec.Challenge i))
+          (codec.decode i <$> PMF.uniformOfFintype
+            (Vector U (challengeSize (pSpec := pSpec) i))) :=
+      by
+        change
+          (∑ challenge, |((codec.decode i <$> PMF.uniformOfFintype
+            (Vector U (challengeSize (pSpec := pSpec) i))) challenge).toReal -
+            ((PMF.uniformOfFintype (pSpec.Challenge i)) challenge).toReal|) =
+          ∑ challenge, |((PMF.uniformOfFintype (pSpec.Challenge i)) challenge).toReal -
+            ((codec.decode i <$> PMF.uniformOfFintype
+              (Vector U (challengeSize (pSpec := pSpec) i))) challenge).toReal|
+        apply Finset.sum_congr rfl
+        intro challenge _
+        exact abs_sub_comm _ _
+    _ ≤ (codec.decodingBias i : ℝ) := codec.decode_isBiased i
+
+/-- Sampling an in-image fiber representative uses only the auxiliary finite-index oracle, never
+the standard challenge-table summand. -/
+lemma uniformDeserializePreimageOfImage_isQueryBoundP_challenge_zero
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    {i : pSpec.ChallengeIdx}
+    (challenge : pSpec.Challenge i)
+    (hpreimages_nonempty :
+      (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty) :
+    OracleComp.IsQueryBoundP
+      (uniformDeserializePreimageOfImage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge hpreimages_nonempty)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) 0 := by
+  unfold uniformDeserializePreimageOfImage
+  unfold sampleFromList
+  refine OracleComp.isQueryBoundP_bind (n := 0) (m := 0) ?_ (fun _ _ => by simp)
+  apply (OracleComp.isQueryBoundP_query_iff _ _ 0).mpr
+  intro h
+  exact h.elim
+
+/-- The legacy total-fibre wrapper has the same auxiliary-only query bound. -/
+lemma uniformDeserializePreimage_isQueryBoundP_challenge_zero
+    {κ : Type} {challengeSpec : OracleSpec κ}
+    [Fintype U] [DecidableEq U]
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    [CodecTotal pSpec U]
+    {i : pSpec.ChallengeIdx}
+    (challenge : pSpec.Challenge i) :
+    OracleComp.IsQueryBoundP
+      (uniformDeserializePreimage (pSpec := pSpec) (U := U)
+        (challengeSpec := challengeSpec) challenge)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) 0 := by
+  unfold uniformDeserializePreimage
+  apply uniformDeserializePreimageOfImage_isQueryBoundP_challenge_zero
 
 end D2SChallengePlusUnit
 
@@ -160,6 +493,20 @@ variable [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
 abbrev d2sQueryOracles :=
   D2SChallengePlusUnitOracle
     (U := U) (challengeSpec := gSpec (U := U) StmtIn pSpec δ)
+
+/-- Predicate selecting the `gᵢ` summand of the internal `D2SQuery` oracle.  All sampling
+helpers use the right-hand `Unit →ₒ U` / `unifSpec` summands, while Item 4(e)i is the sole
+source of a query satisfying this predicate. -/
+def isD2SQueryGPoint :
+    (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)).Domain → Prop
+  | .inl _ => True
+  | .inr _ => False
+
+instance : DecidablePred
+    (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) :=
+  fun
+  | .inl _ => isTrue trivial
+  | .inr _ => isFalse fun h => h
 
 /-- CO25 §5.4 Item 4(e)i — Query `gᵢ(𝕩, τ̂, α̂₁, …, α̂ᵢ) → ρ̂ᵢ ∈ Σ^{ℓ_V(i)}`.
 
@@ -199,6 +546,25 @@ private def d2sSampleVector :
       let u ← d2sSampleUnit (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
       pure (xs.push u)
 
+/-- The internal unit samplers used by revised `D2SQuery` never address the `gᵢ` summand.
+This small accounting fact is the zero-cost half of the Lemma 5.1 query-budget transport. -/
+lemma d2sSampleVector_isQueryBoundP_g_zero (m : Nat) :
+    OracleComp.IsQueryBoundP
+      (d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  induction m with
+  | zero => simp [d2sSampleVector]
+  | succ m ih =>
+      change (d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) m >>= fun xs =>
+        d2sSampleUnit (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) >>= fun u =>
+          pure (xs.push u)).IsQueryBoundP
+        (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0
+      simpa using OracleComp.isQueryBoundP_bind ih (fun xs _ => by
+        unfold d2sSampleUnit
+        apply (OracleComp.isQueryBoundP_query_iff _ _ 0).mpr
+        intro h
+        exact h.elim)
+
 /-- CO25 §5.4 Item 2(b) — Sample `s_{C,out} ← 𝒰(Σ^c)`. -/
 def d2sSampleCapacity :
     OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
@@ -210,6 +576,20 @@ def d2sSampleState :
     OracleComp (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
       (CanonicalSpongeState U) :=
   d2sSampleVector (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) SpongeSize.N
+
+/-- The fresh capacity branch performs no `gᵢ` query. -/
+lemma d2sSampleCapacity_isQueryBoundP_g_zero :
+    OracleComp.IsQueryBoundP
+      (d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  exact d2sSampleVector_isQueryBoundP_g_zero SpongeSize.C
+
+/-- The fresh full-state branch performs no `gᵢ` query. -/
+lemma d2sSampleState_isQueryBoundP_g_zero :
+    OracleComp.IsQueryBoundP
+      (d2sSampleState (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  exact d2sSampleVector_isQueryBoundP_g_zero SpongeSize.N
 
 private lemma d2sSampleVector_simulateQ_probEvent_eq
     [SampleableType U]
@@ -346,6 +726,31 @@ private def d2sRateBlocksFromUnitsM :
       let ⟨tail, hTail⟩ ← d2sRateBlocksFromUnitsM m restUnits
       pure ⟨block :: tail, by simp [hTail]⟩
 
+/-- Padding an encoded verifier answer consumes only auxiliary unit samples, never `gᵢ`.
+This is the other zero-cost branch needed by the per-forward-query D2S budget proof. -/
+private lemma d2sRateBlocksFromUnitsM_isQueryBoundP_g_zero :
+    ∀ (m : Nat) (units : List U),
+      OracleComp.IsQueryBoundP
+        (d2sRateBlocksFromUnitsM (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+          m units)
+        (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  intro m
+  induction m with
+  | zero =>
+      intro units
+      simp [d2sRateBlocksFromUnitsM]
+  | succ m ih =>
+      intro units
+      unfold d2sRateBlocksFromUnitsM
+      dsimp
+      split
+      · simpa using ih (List.drop SpongeSize.R units)
+      · rename_i hFull
+        simpa using OracleComp.isQueryBoundP_bind
+          (d2sSampleVector_isQueryBoundP_g_zero
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) _)
+          (fun _ _ => by simpa using ih (List.drop SpongeSize.R units))
+
 /-- CO25 §5.4 Item 4(e)iiiB — Reshape `ρ̂ᵢ ∈ Σ^{ℓ_V(i)}` into `L_V(i)` rate blocks,
 padding the final partial block with fresh `𝒰(Σ)` samples. -/
 def d2sRateBlocksFromChallenge
@@ -356,6 +761,19 @@ def d2sRateBlocksFromChallenge
   let ⟨blocks, hBlocks⟩ ← d2sRateBlocksFromUnitsM (U := U) (StmtIn := StmtIn)
     (pSpec := pSpec) (δ := δ) (pSpec.Lᵥᵢ i) challenge.toList
   pure ⟨blocks.toArray, by simp [hBlocks]⟩
+
+/-- Reshaping/padding a verifier answer does not issue a `gᵢ` query. -/
+lemma d2sRateBlocksFromChallenge_isQueryBoundP_g_zero
+    {i : pSpec.ChallengeIdx}
+    (challenge : Vector U (challengeSize (pSpec := pSpec) i)) :
+    OracleComp.IsQueryBoundP
+      (d2sRateBlocksFromChallenge (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        challenge)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  unfold d2sRateBlocksFromChallenge
+  simpa using d2sRateBlocksFromUnitsM_isQueryBoundP_g_zero
+    (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+    (pSpec.Lᵥᵢ i) challenge.toList
 
 /-! ### `d2sQueryStep` / `d2sQueryImpl`
 
@@ -1077,20 +1495,6 @@ end WithOracle
 
 /-! ### Local `g`-query accounting -/
 
-/-- Predicate selecting the `gᵢ` summand of the internal `D2SQuery` oracle.  All sampling
-helpers use the right-hand `Unit →ₒ U` / `unifSpec` summands, while Item 4(e)i is the sole
-source of a query satisfying this predicate. -/
-def isD2SQueryGPoint :
-    (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)).Domain → Prop
-  | .inl _ => True
-  | .inr _ => False
-
-local instance : DecidablePred
-    (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) :=
-  fun
-  | .inl _ => isTrue trivial
-  | .inr _ => isFalse fun h => h
-
 section LocalGQueryBounds
 
 variable {T_H : Type} {T_P : Type}
@@ -1105,7 +1509,7 @@ def isD2SForwardPermPoint :
   | Sum.inr (Sum.inl _) => True
   | _ => False
 
-private instance : DecidablePred (isD2SForwardPermPoint (StmtIn := StmtIn) (U := U)) :=
+instance : DecidablePred (isD2SForwardPermPoint (StmtIn := StmtIn) (U := U)) :=
   fun q =>
     match q with
     | Sum.inr (Sum.inl _) => isTrue True.intro
@@ -1164,6 +1568,127 @@ noncomputable def d2sCodecBridgeQuery
             (.inl ⟨roundIdx,
               ((stmt, SaltCodec.encode (Salt := Salt) salt), messagesBefore)⟩))
 
+/-- The codec bridge's query-producing prefix makes at most one standard challenge-table call.
+If encoded messages fail to parse, it makes none; this is the exact local accounting fact needed
+for D2SAlgo's `tₚ` budget and does not assume decoder surjectivity. -/
+lemma d2sCodecBridgeQuery_isQueryBoundP_challenge_le_one
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain) :
+    OracleComp.IsQueryBoundP
+      (d2sCodecBridgeQuery (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        (Salt := Salt) q).run
+      (isD2SChallengePoint (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) 1 := by
+  unfold d2sCodecBridgeQuery
+  dsimp
+  split
+  · apply (OracleComp.isQueryBoundP_query_iff _ _ 1).mpr
+    exact fun _ => by simp [isD2SChallengePoint]
+  · simp
+
+/-- A lossless `Option.elimM` adds no target-oracle calls when each branch is target-query-free.
+The helper keeps the `OptionT` short-circuit in the codec bridge visible to the accounting proof. -/
+private lemma d2s_option_elimM_isQueryBoundP
+    {κ α β : Type} {challengeSpec : OracleSpec κ}
+    (oa : OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) (Option α))
+    (onone : OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) β)
+    (onsome : α → OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec) β)
+    (n m : ℕ)
+    (h : OracleComp.IsQueryBoundP oa
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) n)
+    (hnone : OracleComp.IsQueryBoundP onone
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) m)
+    (hsome : ∀ a, OracleComp.IsQueryBoundP (onsome a)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) m) :
+    OracleComp.IsQueryBoundP (Option.elimM oa onone onsome)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) (n + m) := by
+  unfold Option.elimM
+  simpa using OracleComp.isQueryBoundP_bind (n := n) (m := m) h (fun value _ => by
+    cases value with
+    | none => simpa using hnone
+    | some a => simpa using hsome a)
+
+/-- Generic predicate-query accounting for the `Option.elimM` normal form of `OptionT.run`. -/
+private lemma isQueryBoundP_option_elimM
+    {ι : Type} {spec : OracleSpec ι} {α β : Type}
+    {p : ι → Prop} [DecidablePred p]
+    (oa : OracleComp spec (Option α)) (onone : OracleComp spec β)
+    (onsome : α → OracleComp spec β) (n m : ℕ)
+    (h : OracleComp.IsQueryBoundP oa p n)
+    (hnone : OracleComp.IsQueryBoundP onone p m)
+    (hsome : ∀ a, OracleComp.IsQueryBoundP (onsome a) p m) :
+    OracleComp.IsQueryBoundP (Option.elimM oa onone onsome) p (n + m) := by
+  unfold Option.elimM
+  simpa using OracleComp.isQueryBoundP_bind (n := n) (m := m) h (fun value _ => by
+    cases value with
+    | none => simpa using hnone
+    | some a => simpa using hsome a)
+
+/-- Public predicate-query accounting for a one-state aborting simulation.  One source request
+costs at most one target request exactly at the selected source predicate. -/
+theorem isQueryBoundP_simulateQ_run_StateT_OptionT_of_step
+    {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+    {α σ : Type} {p : ι₁ → Prop} [DecidablePred p] {q : ι₂ → Prop} [DecidablePred q]
+    {impl : QueryImpl spec₁ (StateT σ (OptionT (OracleComp spec₂)))}
+    {oa : OracleComp spec₁ α} {n : ℕ}
+    (h : OracleComp.IsQueryBoundP oa p n)
+    (hstep : ∀ t s, OracleComp.IsQueryBoundP (((impl t).run s).run) q
+      (if p t then 1 else 0))
+    (s : σ) :
+    OracleComp.IsQueryBoundP (((simulateQ impl oa).run s).run) q n := by
+  induction oa using OracleComp.inductionOn generalizing n s with
+  | pure x => simp [simulateQ_pure]
+  | query_bind t mx ih =>
+      rw [OracleComp.isQueryBoundP_query_bind_iff] at h
+      rw [simulateQ_query_bind, StateT.run_bind, OptionT.run_bind]
+      change OracleComp.IsQueryBoundP
+        (Option.elimM (((impl t).run s).run) (pure none)
+          (fun result => ((simulateQ impl (mx result.1)).run result.2).run)) q n
+      refine (isQueryBoundP_option_elimM _ _ _
+        (if p t then 1 else 0) (if p t then n - 1 else n)
+        (hstep t s) (by simp) (fun result => ?_)).mono ?_
+      · exact ih result.1 (h.2 result.1) result.2
+      · by_cases hpt : p t
+        · simp only [if_pos hpt]
+          rcases h.1 with hnot | hpositive
+          · exact False.elim (hnot hpt)
+          · omega
+        · simp only [if_neg hpt]
+          omega
+
+/-- Public two-state predicate-query transport for D2SAlgo.  Source-query simulation threads the
+D2S normal state and memo independently while retaining the same predicate-query budget. -/
+theorem isQueryBoundP_simulateQ_run_StateT_StateT_OptionT_of_step
+    {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂}
+    {α σ τ : Type} {p : ι₁ → Prop} [DecidablePred p] {q : ι₂ → Prop} [DecidablePred q]
+    {impl : QueryImpl spec₁ (StateT σ (StateT τ (OptionT (OracleComp spec₂))))}
+    {oa : OracleComp spec₁ α} {n : ℕ}
+    (h : OracleComp.IsQueryBoundP oa p n)
+    (hstep : ∀ t s u, OracleComp.IsQueryBoundP ((((impl t).run s).run u).run) q
+      (if p t then 1 else 0))
+    (s : σ) (u : τ) :
+    OracleComp.IsQueryBoundP ((((simulateQ impl oa).run s).run u).run) q n := by
+  induction oa using OracleComp.inductionOn generalizing n s u with
+  | pure x => simp [simulateQ_pure]
+  | query_bind t mx ih =>
+      rw [OracleComp.isQueryBoundP_query_bind_iff] at h
+      rw [simulateQ_query_bind, StateT.run_bind, StateT.run_bind, OptionT.run_bind]
+      change OracleComp.IsQueryBoundP
+        (Option.elimM ((((impl t).run s).run u).run) (pure none)
+          (fun result =>
+            (((simulateQ impl (mx result.1.1)).run result.1.2).run result.2).run))
+        q n
+      refine (isQueryBoundP_option_elimM _ _ _
+        (if p t then 1 else 0) (if p t then n - 1 else n)
+        (hstep t s u) (by simp) (fun result => ?_)).mono ?_
+      · exact ih result.1.1 (h.2 result.1.1) result.1.2 result.2
+      · by_cases hpt : p t
+        · simp only [if_pos hpt]
+          rcases h.1 with hnot | hpositive
+          · exact False.elim (hnot hpt)
+          · omega
+        · simp only [if_neg hpt]
+          omega
+
 /-- CO25 §5.4 Eq. 16 — `gᵢ`-summand of the codec bridge: `ψᵢ⁻¹ ∘ fᵢ ∘ φᵢ⁻¹`.
 
 Given a `gSpec` query `(i, 𝕩, τ̂, α̂₁, …, α̂ᵢ)`:
@@ -1171,7 +1696,9 @@ Given a `gSpec` query `(i, 𝕩, τ̂, α̂₁, …, α̂ᵢ)`:
 2. `f`: query `fᵢ(𝕩, bin(τ̂), α₁, …, αᵢ)` → `ρᵢ ∈ ℳ_{V,i}` via `fsChallengeOracle`
    keyed at the pre-encoded salt `Salt` (paper's `{0,1}^{δ⋆}`; bridge =
    `SaltCodec.encode = bin`)
-3. `ψ⁻¹`: sample `ρ̂ᵢ ← 𝒰(ψᵢ⁻¹(ρᵢ))` via `uniformDeserializePreimage` -/
+3. `Lift`: if `ρᵢ ∉ Im(ψᵢ)`, stop; otherwise sample
+   `ρ̂ᵢ ← 𝒰(ψᵢ⁻¹(ρᵢ))`.  This explicit image test is the paper's Claim 5.23
+   codec stop, not a duplex bad event. -/
 noncomputable def d2sCodecBridgeImpl :
     QueryImpl (gSpec (U := U) StmtIn pSpec δ)
       (OptionT (OracleComp
@@ -1181,12 +1708,18 @@ noncomputable def d2sCodecBridgeImpl :
     let challenge ←
       d2sCodecBridgeQuery (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
         (Salt := Salt) q
-    -- Step 3 (`ψ⁻¹`) — uniform preimage: `ρ̂_i ←$ ψ_i⁻¹(ρ_i) ⊆ Σ^{ℓ_V(i)}`.
-    OptionT.lift <|
-      uniformDeserializePreimage
-        (pSpec := pSpec) (U := U)
-        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)
-        challenge
+    if hpreimages :
+        (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+      -- The partial `Lift_i` kernel is called only on `Im(ψ_i)`.
+      OptionT.lift <|
+        uniformDeserializePreimageOfImage
+          (pSpec := pSpec) (U := U)
+          (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)
+          challenge hpreimages
+    else
+      -- This is the public codec-image stop of Claim 5.23.  It occurs after the `f_i`
+      -- occurrence above and before a new duplex occurrence can be installed.
+      failure
 
 end CodecBridge
 
@@ -1201,6 +1734,8 @@ section DecodedBridgeMemo
 variable [DecidableEq StmtIn] [DecidableEq U] [Fintype U]
 variable [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
+
+local instance : DecidableEq (gSpec (U := U) StmtIn pSpec δ).Domain := Classical.decEq _
 
 structure D2SDecodedMemoEntry
     (StmtIn : Type) (U : Type) (δ : ℕ) {n : ℕ} (pSpec : ProtocolSpec n)
@@ -1241,8 +1776,240 @@ def insertD2SDecodedMemo
     D2SDecodedMemo StmtIn U δ pSpec :=
   memo ++ [entry]
 
+/-- A newly inserted decoded-bridge entry is found at its exact encoded key, provided that key
+was absent before insertion.  This is the memo invariant needed to lift the one-cell Claim 5.22
+reparameterization to an adaptive sequence: the fresh fibre sample is made once and every later
+occurrence observes that same representative. -/
+lemma lookupD2SDecodedMemo_insert_same_of_none
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (entry : D2SDecodedMemoEntry StmtIn U δ pSpec)
+    (hmiss : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo entry.roundIdx entry.stmt entry.salt entry.encodedMessages = none) :
+    lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      (insertD2SDecodedMemo memo entry) entry.roundIdx entry.stmt entry.salt
+      entry.encodedMessages = some entry.response := by
+  unfold lookupD2SDecodedMemo at hmiss
+  unfold insertD2SDecodedMemo lookupD2SDecodedMemo
+  rw [List.foldl_append]
+  simp only [List.foldl_cons, List.foldl_nil, hmiss]
+  simp
+
+/-- Extending the decoded-bridge memo cannot change an already-recorded response.  The lookup is
+left-biased, so this is the stability invariant needed when an adaptive run later inserts a
+different fresh key. -/
+lemma lookupD2SDecodedMemo_insert_preserves_some
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (entry : D2SDecodedMemoEntry StmtIn U δ pSpec)
+    (i : pSpec.ChallengeIdx) (stmt : StmtIn) (salt : Vector U δ)
+    (encodedMessages : pSpec.EncodedMessagesBefore U i.1.castSucc)
+    (response : Vector U (challengeSize (pSpec := pSpec) i))
+    (hlookup : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo i stmt salt encodedMessages = some response) :
+    lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      (insertD2SDecodedMemo memo entry) i stmt salt encodedMessages = some response := by
+  unfold lookupD2SDecodedMemo at hlookup
+  unfold insertD2SDecodedMemo lookupD2SDecodedMemo
+  rw [List.foldl_append]
+  simp only [List.foldl_cons, List.foldl_nil, hlookup]
+  simp
+
+/-- The non-aborting one-cell H₂ bridge computation.  It queries the decoded table and samples
+one uniform representative of the returned decoder fibre. -/
+noncomputable def d2sDecodedBridgeBaseRun [CodecTotal pSpec U] :
+    QueryImpl (gSpec (U := U) StmtIn pSpec δ)
+      (OracleComp (D2SChallengePlusUnitOracle (U := U)
+        (eSpec (U := U) StmtIn pSpec δ))) :=
+  fun q => do
+    let challenge ←
+      (show OracleComp
+          (D2SChallengePlusUnitOracle (U := U)
+            (eSpec (U := U) StmtIn pSpec δ))
+          (pSpec.Challenge q.1) from
+        query
+          (spec := D2SChallengePlusUnitOracle (U := U)
+            (eSpec (U := U) StmtIn pSpec δ))
+          (.inl q))
+    uniformDeserializePreimage
+      (pSpec := pSpec) (U := U)
+      (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge
+
+/-- The uncached one-cell H₂ bridge, lifted into the common abort stack.  The underlying
+`d2sDecodedBridgeBaseRun` has no failure branch; the cache wrapper below is therefore the
+authoritative live implementation without adding a semantic abort possibility. -/
+noncomputable def d2sDecodedBridgeBaseImpl [CodecTotal pSpec U] :
+    QueryImpl (gSpec (U := U) StmtIn pSpec δ)
+      (AbortComp (D2SChallengePlusUnitOracle (U := U)
+        (eSpec (U := U) StmtIn pSpec δ))) :=
+  fun q => OptionT.lift <|
+    d2sDecodedBridgeBaseRun (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) q
+
+/-- The authoritative H₂ bridge implementation.  Every encoded `gᵢ` invocation first reissues
+its corresponding decoded-table `eᵢ` query, so the translated trace retains the original
+occurrence order and multiplicity.  The cache memoizes only the sampled encoded representative:
+on a repeat it returns that same representative after the reissued `eᵢ` lookup. -/
+noncomputable def d2sDecodedBridgeImplCache [CodecTotal pSpec U] :
+    GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (eSpec (U := U) StmtIn pSpec δ)
+      ((gSpec (U := U) StmtIn pSpec δ).QueryCache) :=
+  fun q => do
+    let challenge ← StateT.lift <| OptionT.lift <|
+      (show OracleComp
+          (D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+          (pSpec.Challenge q.1) from
+        query
+          (spec := D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+          (.inl q))
+    let cache ← get
+    match cache q with
+    | some response => pure response
+    | none =>
+        let response ← StateT.lift <| OptionT.lift <|
+          uniformDeserializePreimage
+            (pSpec := pSpec) (U := U)
+            (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge
+        modify (fun current => current.cacheQuery q response)
+        pure response
+
+/-- Revised-paper H₂ bridge.  It has the same requery-and-memo behavior as the legacy cache
+bridge, but invokes the decoder-fibre sampler only after an explicit image test.  Therefore it
+implements the partial `Lift` convention of Claim 5.22 rather than relying on the global
+surjectivity field of the legacy `Codec` interface.  For H₂'s actual `D_e` sampler this failure
+branch is unreachable; retaining it here makes the oracle-level operation total only on the
+decoder image, as the paper requires. -/
+noncomputable def d2sDecodedBridgeImplCacheOfImage :
+    GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+      (eSpec (U := U) StmtIn pSpec δ)
+      ((gSpec (U := U) StmtIn pSpec δ).QueryCache) :=
+  fun q => do
+    let challenge ← StateT.lift <| OptionT.lift <|
+      (show OracleComp
+          (D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+          (pSpec.Challenge q.1) from
+        query
+          (spec := D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+          (.inl q))
+    if hpreimages :
+        (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+      let cache ← get
+      match cache q with
+      | some response => pure response
+      | none =>
+          let response ← StateT.lift <| OptionT.lift <|
+            uniformDeserializePreimageOfImage
+              (pSpec := pSpec) (U := U)
+              (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge hpreimages
+          modify (fun current => current.cacheQuery q response)
+          pure response
+    else
+      failure
+
+/-- The post-lookup hit residual of the partial H₂ bridge is deterministic.  This small
+state-machine equality is separated from the outer decoded-table query so later coupling proofs
+can retain the public occurrence while simplifying only the cache transition. -/
+lemma d2sDecodedBridgeImplCacheOfImage_hit_residual
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (cache : (gSpec (U := U) StmtIn pSpec δ).QueryCache)
+    (response : Vector U (challengeSize (pSpec := pSpec) q.1))
+    (challenge : pSpec.Challenge q.1)
+    (hcache : cache q = some response) :
+    ((if hpreimages :
+        (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+        do
+          let current : (gSpec (U := U) StmtIn pSpec δ).QueryCache ← get
+          match current q with
+          | some response => pure response
+          | none =>
+              let fresh ← StateT.lift <| OptionT.lift <|
+                uniformDeserializePreimageOfImage
+                  (pSpec := pSpec) (U := U)
+                  (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge hpreimages
+              modify (fun (current : (gSpec (U := U) StmtIn pSpec δ).QueryCache) =>
+                current.cacheQuery q fresh)
+              pure fresh
+      else
+        failure).run cache) =
+      (if hpreimages :
+          (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+        pure (response, cache)
+      else
+        failure) := by
+  split <;> simp [hcache] <;> rfl
+
+/-- The post-lookup cache-miss residual of the partial H₂ bridge performs one partial-fibre
+sample, installs it at the encoded key, and otherwise preserves the image-failure abort. -/
+lemma d2sDecodedBridgeImplCacheOfImage_miss_residual
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (cache : (gSpec (U := U) StmtIn pSpec δ).QueryCache)
+    (challenge : pSpec.Challenge q.1)
+    (hcache : cache q = none) :
+    ((if hpreimages :
+        (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+        do
+          let current : (gSpec (U := U) StmtIn pSpec δ).QueryCache ← get
+          match current q with
+          | some response => pure response
+          | none =>
+              let fresh ← StateT.lift <| OptionT.lift <|
+                uniformDeserializePreimageOfImage
+                  (pSpec := pSpec) (U := U)
+                  (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge hpreimages
+              modify (fun (current : (gSpec (U := U) StmtIn pSpec δ).QueryCache) =>
+                current.cacheQuery q fresh)
+              pure fresh
+      else
+        failure).run cache) =
+      (if hpreimages :
+          (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+        do
+          let fresh ← OptionT.lift <|
+            uniformDeserializePreimageOfImage
+              (pSpec := pSpec) (U := U)
+              (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge hpreimages
+          pure (fresh, cache.cacheQuery q fresh)
+      else
+        failure) := by
+  split <;> simp [hcache] <;> rfl
+
+/-- On an H₂ cache hit, the bridge still reissues the corresponding decoded challenge query,
+then returns the stored encoded representative without modifying the cache. -/
+lemma d2sDecodedBridgeImplCache_run_of_hit
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (cache : (gSpec (U := U) StmtIn pSpec δ).QueryCache)
+    (response : Vector U (challengeSize (pSpec := pSpec) q.1))
+    (hcache : cache q = some response) :
+    (d2sDecodedBridgeImplCache (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q).run cache = (do
+        let _ ← OptionT.lift <|
+          (show OracleComp
+              (D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+              (pSpec.Challenge q.1) from
+            query
+              (spec := D2SChallengePlusUnitOracle (U := U) (eSpec (U := U) StmtIn pSpec δ))
+              (.inl q))
+        pure (response, cache)) := by
+  apply OptionT.ext
+  simp [d2sDecodedBridgeImplCache, hcache]
+
+/-- On an H₂ cache miss, the bridge executes one decoded-table/fibre step and installs its
+result at the encoded key. -/
+lemma d2sDecodedBridgeImplCache_run_of_miss
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (cache : (gSpec (U := U) StmtIn pSpec δ).QueryCache)
+    (hcache : cache q = none) :
+    (d2sDecodedBridgeImplCache (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q).run cache =
+      (fun response => (response, cache.cacheQuery q response)) <$>
+        (d2sDecodedBridgeBaseImpl (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+          q) := by
+  apply OptionT.ext
+  simp [d2sDecodedBridgeImplCache, d2sDecodedBridgeBaseImpl,
+    d2sDecodedBridgeBaseRun, hcache]
+  rfl
+
 /-- Memoized `ψ⁻¹ ∘ e`: the decoded oracle is queried only on a cache miss. -/
-noncomputable def d2sDecodedBridgeImplMemo :
+noncomputable def d2sDecodedBridgeImplMemo [CodecTotal pSpec U] :
     GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
       (eSpec (U := U) StmtIn pSpec δ)
       (D2SDecodedMemo StmtIn U δ pSpec) :=
@@ -1277,6 +2044,135 @@ noncomputable def d2sDecodedBridgeImplMemo :
               { roundIdx := roundIdx, stmt := stmt, salt := salt,
                 encodedMessages := encodedMessages, response := response })
           pure response
+
+/-- On a decoded-bridge memo hit, the bridge is deterministic: it makes no `eᵢ` lookup and
+returns the stored encoded representative without changing the memo.  This is the repeat-key
+half of the adaptive Claim 5.22 coupling. -/
+lemma d2sDecodedBridgeImplMemo_run_of_lookup_eq_some
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (response : Vector U (challengeSize (pSpec := pSpec) q.1))
+    (hlookup : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo q.1 q.2.1 q.2.2.1 q.2.2.2 = some response) :
+    (d2sDecodedBridgeImplMemo (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q).run memo = pure (response, memo) := by
+  apply OptionT.ext
+  simp [d2sDecodedBridgeImplMemo, hlookup]
+  rfl
+
+/-- On a decoded-bridge memo miss, the operational bridge makes exactly its one decoded-table
+query, uniformly lifts that decoded answer to an encoded representative, and records that
+representative under the queried key.  This is the fresh-key half of the adaptive Claim 5.22
+coupling; paired with the hit lemma above, it exposes the bridge as a genuine lazy table. -/
+lemma d2sDecodedBridgeImplMemo_run_of_lookup_eq_none
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (hmiss : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo q.1 q.2.1 q.2.2.1 q.2.2.2 = none) :
+    (d2sDecodedBridgeImplMemo (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q).run memo =
+      (do
+        let challenge ← OptionT.lift <|
+          (show OracleComp
+              (D2SChallengePlusUnitOracle (U := U)
+                (eSpec (U := U) StmtIn pSpec δ))
+              (pSpec.Challenge q.1) from
+            query
+              (spec := D2SChallengePlusUnitOracle (U := U)
+                (eSpec (U := U) StmtIn pSpec δ))
+              (.inl q))
+        let response ← OptionT.lift <|
+          uniformDeserializePreimage
+            (pSpec := pSpec) (U := U)
+            (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge
+        let entry : D2SDecodedMemoEntry StmtIn U δ pSpec :=
+          { roundIdx := q.1, stmt := q.2.1, salt := q.2.2.1,
+            encodedMessages := q.2.2.2, response := response }
+        pure (response,
+          insertD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+            memo entry)) := by
+  simp [d2sDecodedBridgeImplMemo, hmiss]
+
+/-- Immediately after a genuine miss inserts its entry, the next occurrence of that same encoded
+key is a deterministic memo hit.  This packages the insertion and hit laws in the exact form
+used by an induction over an adaptive query transcript. -/
+lemma d2sDecodedBridgeImplMemo_run_after_insert_of_lookup_eq_none
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (response : Vector U (challengeSize (pSpec := pSpec) q.1))
+    (hmiss : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo q.1 q.2.1 q.2.2.1 q.2.2.2 = none) :
+    (d2sDecodedBridgeImplMemo (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      q).run
+        (insertD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec) memo
+          { roundIdx := q.1, stmt := q.2.1, salt := q.2.2.1,
+            encodedMessages := q.2.2.2, response := response }) =
+      pure (response,
+        insertD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec) memo
+          { roundIdx := q.1, stmt := q.2.1, salt := q.2.2.1,
+            encodedMessages := q.2.2.2, response := response }) := by
+  apply d2sDecodedBridgeImplMemo_run_of_lookup_eq_some
+  exact lookupD2SDecodedMemo_insert_same_of_none
+    (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec) _ _ hmiss
+
+/-- A decoded-bridge memo hit incurs no decoded-challenge-table query.  Together with the
+miss branch, this isolates the exact ``one fresh cell per distinct key'' accounting required by
+the adaptive H₁--H₂ reparameterization. -/
+lemma d2sDecodedBridgeImplMemo_run_of_lookup_eq_some_isQueryBoundP_challenge_zero
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SDecodedMemo StmtIn U δ pSpec)
+    (response : Vector U (challengeSize (pSpec := pSpec) q.1))
+    (hlookup : lookupD2SDecodedMemo (StmtIn := StmtIn) (U := U) (δ := δ) (pSpec := pSpec)
+      memo q.1 q.2.1 q.2.2.1 q.2.2.2 = some response) :
+    OracleComp.IsQueryBoundP
+      (((d2sDecodedBridgeImplMemo (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        q).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := eSpec (U := U) StmtIn pSpec δ)) 0 := by
+  rw [d2sDecodedBridgeImplMemo_run_of_lookup_eq_some (q := q) (memo := memo)
+    (response := response) hlookup]
+  change OracleComp.IsQueryBoundP (pure (some (response, memo))) _ 0
+  simp
+
+/-- Every decoded-bridge invocation consumes at most one `eᵢ` table cell; by the preceding
+hit lemma that one cell can occur only on a memo miss. -/
+lemma d2sDecodedBridgeImplMemo_run_isQueryBoundP_challenge_le_one
+    [CodecTotal pSpec U]
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SDecodedMemo StmtIn U δ pSpec) :
+    OracleComp.IsQueryBoundP
+      (((d2sDecodedBridgeImplMemo (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        q).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := eSpec (U := U) StmtIn pSpec δ)) 1 := by
+  simp [d2sDecodedBridgeImplMemo]
+  split
+  · simp
+  · simp only [StateT.run_bind, StateT.run_lift, OptionT.run_bind, OptionT.run_lift, modify]
+    apply isQueryBoundP_option_elimM (n := 1) (m := 0)
+    · apply d2s_option_elimM_isQueryBoundP (n := 1) (m := 0)
+      · change OracleComp.IsQueryBoundP
+          (liftM (OracleSpec.query (Sum.inl q)) >>= fun x => pure (some x)) _ 1
+        rw [OracleComp.isQueryBoundP_query_bind_iff]
+        refine ⟨Or.inr (by omega), fun _ => by simp⟩
+      · simp
+      · intro _
+        simp
+    · simp
+    · rintro ⟨challenge, memo'⟩
+      apply isQueryBoundP_option_elimM (n := 0) (m := 0)
+      · apply d2s_option_elimM_isQueryBoundP (n := 0) (m := 0)
+        · simpa using uniformDeserializePreimage_isQueryBoundP_challenge_zero
+            (pSpec := pSpec) (U := U)
+            (challengeSpec := eSpec (U := U) StmtIn pSpec δ) challenge
+        · simp
+        · intro _
+          simp
+      · simp
+      · intro _
+        simp
 
 end DecodedBridgeMemo
 
@@ -1372,25 +2268,59 @@ noncomputable def d2sCodecBridgeImplMemo :
       let challenge ← StateT.lift <|
         d2sCodecBridgeQuery (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
           (Salt := Salt) q
-      let memo ← get
-      match lookupD2SAlgoMemo (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec)
-          memo roundIdx stmt encodedSalt encodedMessages with
-      -- Item 3 cache hit: retain the just-issued `f_i` occurrence, return the stored `ρ̂_i`.
-      | some response => pure response
+      if hpreimages :
+          (deserializePreimageFinset (pSpec := pSpec) (U := U) challenge).Nonempty then
+        let memo ← get
+        match lookupD2SAlgoMemo (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt)
+            (pSpec := pSpec) memo roundIdx stmt encodedSalt encodedMessages with
+        -- Item 3 cache hit: retain the just-issued `f_i` occurrence, return the stored `ρ̂_i`.
+        | some response => pure response
+        | none =>
+            -- Item 3 cache miss: use the queried `f_i` answer to sample `ρ̂_i`,
+            --   then `tr_i := tr_i ∪ {(i, 𝕩, τ̂, α̂_1, …, α̂_i) ↦ ρ̂_i}`.
+            let response ← StateT.lift <|
+              uniformDeserializePreimageOfImage
+                (pSpec := pSpec) (U := U)
+                (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)
+                challenge hpreimages
+            modify (fun m =>
+              insertD2SAlgoMemo
+                (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec) m
+                { roundIdx := roundIdx, stmt := stmt, salt := encodedSalt,
+                  encodedMessages := encodedMessages, response := response })
+            pure response
+      else
+        -- Paper Algorithm 5.4 Step 2: this outer stop is charged solely by Claim 5.23.
+        failure
+
+/-- Every invocation of the memoized codec bridge retains its corresponding standard `f_i`
+occurrence.  A memo hit avoids only the auxiliary fiber sample; it never reduces the challenge
+table trace multiplicity. -/
+lemma d2sCodecBridgeImplMemo_run_isQueryBoundP_challenge_le_one
+    (q : (gSpec (U := U) StmtIn pSpec δ).Domain)
+    (memo : D2SAlgoMemo StmtIn U δ Salt pSpec) :
+    OracleComp.IsQueryBoundP
+      ((d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+        (Salt := Salt) q).run memo).run
+      (isD2SChallengePoint (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) 1 := by
+  simp [d2sCodecBridgeImplMemo]
+  apply d2s_option_elimM_isQueryBoundP (m := 0)
+  · exact d2sCodecBridgeQuery_isQueryBoundP_challenge_le_one
+      (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) (Salt := Salt) q
+  · simp
+  · intro challenge
+    split
+    · generalize hlookup : lookupD2SAlgoMemo
+        (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec)
+        memo q.1 q.2.1 (SaltCodec.encode (U := U) (δ := δ) (Salt := Salt) q.2.2.1)
+        q.2.2.2 = hit
+      cases hit with
       | none =>
-          -- Item 3 cache miss: use the queried `f_i` answer to sample `ρ̂_i`,
-          --   then `tr_i := tr_i ∪ {(i, 𝕩, τ̂, α̂_1, …, α̂_i) ↦ ρ̂_i}`.
-          let response ← StateT.lift <|
-            uniformDeserializePreimage
-              (pSpec := pSpec) (U := U)
-              (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)
-              challenge
-          modify (fun m =>
-            insertD2SAlgoMemo
-              (StmtIn := StmtIn) (U := U) (δ := δ) (Salt := Salt) (pSpec := pSpec) m
-              { roundIdx := roundIdx, stmt := stmt, salt := encodedSalt,
-                encodedMessages := encodedMessages, response := response })
-          pure response
+          simp [StateT.run_bind, StateT.run_lift, StateT.run_modifyGet, modify, hlookup,
+            uniformDeserializePreimageOfImage_isQueryBoundP_challenge_zero]
+      | some response => simp [StateT.run_bind, hlookup]
+    · simp
 
 end D2SAlgoMemo
 

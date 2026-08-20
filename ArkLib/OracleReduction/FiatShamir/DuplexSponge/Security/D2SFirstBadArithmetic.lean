@@ -25,7 +25,7 @@ open DuplexSpongeFS.ProverTransform DuplexSpongeFS.DSTraceStorage
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
-  [codec : Codec pSpec U] {δ : Nat}
+  [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U] [Nonempty U] [SampleableType U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -217,7 +217,7 @@ The only later use of this theorem must additionally prove that the live observe
 execution is this runner; no rounded query budget occurs in this statement. -/
 lemma hyb1PureVerifierAdaptiveRun_monitorStop_le_Ccap {StmtOut StmtIn : Type}
     {n : ℕ} {pSpec : ProtocolSpec n} {δ : ℕ}
-    [VCVCompatible U] [codec : Codec pSpec U]
+    [VCVCompatible U] [codec : CodecCore pSpec U]
     [DecidableEq StmtIn] [DecidableEq U] [Nonempty U] [SampleableType U]
     {T_H T_P : Type}
     [DSTraceStorage.LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -257,7 +257,7 @@ lemma hyb1PureVerifierAdaptiveRun_monitorStop_le_Ccap {StmtOut StmtIn : Type}
 only the explicit nonempty-round scope to rule out the paper's `(T,N_𝒱)=(0,0)` exception. -/
 lemma hyb1PureVerifierAdaptiveRun_monitorStop_le_Dcap {StmtOut StmtIn : Type}
     {n : ℕ} {pSpec : ProtocolSpec n} {δ : ℕ}
-    [VCVCompatible U] [codec : Codec pSpec U]
+    [VCVCompatible U] [codec : CodecCore pSpec U]
     [DecidableEq StmtIn] [DecidableEq U] [Nonempty U] [SampleableType U]
     {T_H T_P : Type}
     [DSTraceStorage.LawfulTraceNablaImpl T_H T_P StmtIn U]

@@ -33,7 +33,7 @@ open DSTraceStorage
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
-  [codec : Codec pSpec U] {δ : Nat}
+  [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U] [Fintype U] [Nonempty U] [SampleableType U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]

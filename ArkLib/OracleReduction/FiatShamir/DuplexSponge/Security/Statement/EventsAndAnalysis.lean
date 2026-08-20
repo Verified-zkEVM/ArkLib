@@ -262,7 +262,7 @@ agrees with the insertion order of the real encoded-`gᵢ` trace (items 5–7, v
 `MemoizesEncodedPreimage` and `EncodedTraceRealizesInvocations`).  This is the **core**;
 the complete 7-item interface is `Lemma525` below. -/
 structure Lemma525Core {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat} [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat} [DecidableEq StmtIn]
     [DecidableEq U]
     {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]
@@ -312,7 +312,7 @@ mapping `(stateIn,stateOut)` and its exact reusable successor `newNormal`.  The 
 installed output and successor so the round-indexed tail/capacity realization below can refer to
 the same occurrence, rather than to an unrelated existential. -/
 structure ProgramBranchWitness {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -333,7 +333,7 @@ structure ProgramBranchWitness {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n
 bridge is definitionally built with `D2SBranchStep.program`; it prevents a tail-hit, table-hit, or
 fresh-miss witness from being used as a Program occurrence. -/
 def ProgramBranchWitness.toBranchStep {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
   [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -349,7 +349,7 @@ def ProgramBranchWitness.toBranchStep {StmtIn : Type} {n : Nat} (pSpec : Protoco
 /-- The current Program occurrence is the Step **4.e.ii** reuse case.  Its `tail = none`, table
 hit, present Install, and unchanged-cache continuation are all part of the branch relation. -/
 def ProgramBranchWitness.Reuses {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -363,7 +363,7 @@ def ProgramBranchWitness.Reuses {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec 
 first-capacity transition, and exact round-indexed residual-tail policy are all part of the branch
 relation. -/
 def ProgramBranchWitness.Materializes {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n)
-    (U : Type) [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    (U : Type) [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -377,7 +377,7 @@ def ProgramBranchWitness.Materializes {StmtIn : Type} {n : Nat} (pSpec : Protoco
 stateful replay: its cursor is that round's predecessor boundary, its length is exactly the
 round's verifier-challenge length, and its position is the certified first-squeeze marker. -/
 def ProgramContextAtRound {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-    {n : Nat} (pSpec : ProtocolSpec n) [codec : Codec pSpec U] (R δ : ℕ)
+    {n : Nat} (pSpec : ProtocolSpec n) [codec : CodecCore pSpec U] (R δ : ℕ)
     (phases : List ReplayPhase)
     (history : ReplayHistory StmtIn U R δ phases) (j : pSpec.ChallengeIdx)
     (context : D2SQuery.ProgramContext pSpec) : Prop :=
@@ -389,7 +389,7 @@ def ProgramContextAtRound {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
 round of the same replay history.  This closes the former global-marker loophole: a stream cannot
 silently attach an arbitrary `(cursor, length, pos)` triple to a forward query. -/
 def QueryStreamRespectsHistory {StmtIn U : Type} [SpongeUnit U] [SpongeSize]
-    {n : Nat} (pSpec : ProtocolSpec n) [codec : Codec pSpec U] (δ : ℕ)
+    {n : Nat} (pSpec : ProtocolSpec n) [codec : CodecCore pSpec U] (δ : ℕ)
     (history : ReplayHistory StmtIn U SpongeSize.R δ
       (DuplexSpongeFS.protocolPhases (pSpec := pSpec)))
     (stream : D2SQuery.QueryStream StmtIn pSpec U) : Prop :=
@@ -406,7 +406,7 @@ oracle trace may contain earlier unrelated queries and a later repeated Program 
 already installed mapping.  This rules out attaching a marker from an unrelated replay while
 preserving the paper's selected-chain semantics. -/
 def ProgramContextMatchesNormal {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -424,7 +424,7 @@ each Program occurrence is checked against the **current** normal-state trace an
 round. This is deliberately a recursive runner, rather than the old loose conjunction of a generic
 run with a global context-membership property. -/
 def D2SQueryRunOnHistory {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -459,7 +459,7 @@ needs more than one permutation block, and that continuation has exactly `Lᵥ(i
 For `Lᵥ(i) ≤ 1`, it leaves the pre-existing cache unchanged; it does not forbid a pre-existing
 tail whose key happens to equal the new permutation output. -/
 abbrev ProgramTailRealization {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat} [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat} [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -494,7 +494,7 @@ The replayed marker prefix is an order-preserving subtrace of the current normal
 than being falsely equated with the entire ambient trace.  Thus a later reuse can refer to the
 earlier materializing occurrence which installed its mapping. -/
 structure ProgramOccurrence {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -552,7 +552,7 @@ structure ProgramOccurrence {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (
 
 /-- The Step 4.e.ii face of a concrete Program occurrence. -/
 def ProgramOccurrence.Reuses {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -565,7 +565,7 @@ def ProgramOccurrence.Reuses {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) 
 
 /-- The Step 4.e.iii face of a concrete Program occurrence. -/
 def ProgramOccurrence.Materializes {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -580,7 +580,7 @@ def ProgramOccurrence.Materializes {StmtIn : Type} {n : Nat} (pSpec : ProtocolSp
 recorded round.  This bridge is the point at which the generic D2SQuery stream is tied back to the
 specific stateful replay that recovered the marker. -/
 theorem ProgramOccurrence.context_at_round {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n)
-    (U : Type) [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    (U : Type) [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -631,7 +631,7 @@ Every item is tied to a concrete execution/position with real predecessor/succes
 globally-quantified placeholder, no `x = x`, no generic list/schedule fact standing in for a paper
 item. -/
 structure Lemma525 {StmtIn : Type} {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat} [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat} [DecidableEq StmtIn]
     [DecidableEq U]
     {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [LawfulTraceTable T_P (CanonicalSpongeState U) (CanonicalSpongeState U)]

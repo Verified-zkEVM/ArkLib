@@ -24,7 +24,7 @@ open Backtrack Lookahead DSTraceStorage
 variable {ι : Type} {oSpec : OracleSpec ι} {StmtIn : Type} [DecidableEq StmtIn]
   {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize] [DecidableEq U]
-  [codec : Codec pSpec U]
+  [codec : CodecCore pSpec U]
   [∀ i, Fintype (pSpec.Message i)]
   {δ : Nat}
 
@@ -426,6 +426,18 @@ noncomputable def d2sTraceSalted
 
 section Line4Trace
 
+/-- Decode just the encoded-challenge responses in a tagged H₁ log.  Ambient entries, tags,
+and encoded query keys are retained verbatim.  This is the log-level Eq. (52) projection used
+by the exact H₁--H₂ reparameterization. -/
+def decodeTaggedGLog
+    (log : TaggedQueryLog (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
+    TaggedQueryLog (oSpec + eSpec (U := U) StmtIn pSpec δ) :=
+  log.map fun ⟨tag, entry⟩ =>
+    match entry with
+    | ⟨.inl query, response⟩ => ⟨tag, ⟨.inl query, response⟩⟩
+    | ⟨.inr ⟨roundIdx, key⟩, response⟩ =>
+        ⟨tag, ⟨.inr ⟨roundIdx, key⟩, codec.decode roundIdx response⟩⟩
+
 /-- Section 5.8 `Hyb₁` line-4 per-entry remap. Encoded prover-prefix + encoded verifier response
 ↦ decoded prover-prefix + decoded challenge. Salt is projected `Σ^δ → Salt` via
 `SaltCodec.encode = bin` (paper line 1188). `oSpec` entries are forwarded verbatim. -/
@@ -493,6 +505,34 @@ noncomputable def hyb2Line4Trace
     match hyb2RemapEntry? (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) entry with
     | some mapped => some (tag, mapped)
     | none => none)
+
+/-- The H₁ line-4 map factors through the decoded tagged log: `Hyb₁` performs the response
+decode itself, while `Hyb₂` receives that decoded response from its Eq. (52) oracle.  Thus the
+two post-processing maps are exactly equal once the raw H₁ log is projected by
+`decodeTaggedGLog`. -/
+theorem hyb1Line4Trace_eq_hyb2Line4Trace_decodeTaggedGLog
+    {Salt : Type} [SaltCodec U δ Salt]
+    (log : TaggedQueryLog (oSpec + gSpec (U := U) StmtIn pSpec δ)) :
+    hyb1Line4Trace (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+      (Salt := Salt) log =
+      hyb2Line4Trace (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+        (Salt := Salt)
+        (decodeTaggedGLog (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          (δ := δ) log) := by
+  unfold hyb1Line4Trace hyb2Line4Trace decodeTaggedGLog
+  simp only [List.filterMap_map]
+  congr
+  funext entry
+  rcases entry with ⟨tag, entry⟩
+  rcases entry with ⟨query, response⟩
+  cases query with
+  | inl query => rfl
+  | inr query =>
+      rcases query with ⟨roundIdx, key⟩
+      simp only [hyb1RemapEntry?, hyb2RemapEntry?]
+      all_goals
+        dsimp [Function.comp_def]
+        aesop
 
 /-- Section 5.8 `Hyb₃` line-4 trace translation.
 

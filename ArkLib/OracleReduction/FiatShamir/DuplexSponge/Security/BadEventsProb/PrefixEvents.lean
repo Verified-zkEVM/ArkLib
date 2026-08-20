@@ -474,6 +474,22 @@ lemma E_of_getBaseTrace_append_eq
   obtain ⟨j, hj⟩ := (E_iff_exists_E_at trace).mp h
   exact (E_iff_exists_E_at trace').mpr ⟨j, E_at_of_getBaseTrace_append_eq hbt hj⟩
 
+/-- The combined bad event is monotone under extension of the *raw* insertion trace.  Normalizing
+the longer trace may discard later redundant entries, but it never changes the already processed
+base prefix (`getBaseTrace_prefix_of_prefix`); hence a witness already present in the prefix is
+still a witness in the extension.  This is the form consumed by the revised `StdTrace` and
+stateful-run abort arguments. -/
+lemma E_mono_of_raw_prefix
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+  (hprefix : trace <+: trace')
+    (h : E trace) :
+    E trace' := by
+  have hbase : getBaseTrace trace ++ (getBaseTrace trace').drop (getBaseTrace trace).length =
+      getBaseTrace trace' :=
+    List.prefix_iff_eq_append.mp
+      (getBaseTrace_prefix_of_prefix (StmtIn := StmtIn) (U := U) hprefix)
+  exact E_of_getBaseTrace_append_eq hbase.symm h
+
 /-- The global bad event depends only on the normalized base trace.  This is the equality form
 of the preceding prefix transport lemmas and is the canonical eliminator for a redundant raw
 occurrence: no client must rewrite through dependent `Fin baseTrace.length` witnesses directly. -/

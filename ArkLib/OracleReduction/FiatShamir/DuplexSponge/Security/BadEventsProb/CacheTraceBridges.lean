@@ -28,7 +28,7 @@ open DuplexSpongeFS.DSTraceStorage
 
 variable {StmtIn : Type} {n : ℕ} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [codec : Codec pSpec U] {δ : ℕ}
+  [codec : CodecCore pSpec U] {δ : ℕ}
   {T_H : Type} {T_P : Type}
   [DecidableEq StmtIn] [DecidableEq U]
   [LawfulTraceNablaImpl T_H T_P StmtIn U]

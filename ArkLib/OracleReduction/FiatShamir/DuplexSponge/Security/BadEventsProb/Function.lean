@@ -32,7 +32,7 @@ variable (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
 
 variable {StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-  [codec : Codec pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
+  [codec : CodecCore pSpec U] {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
   [VCVCompatible U] [SampleableType U]
   [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]
@@ -122,7 +122,6 @@ lemma lemma5_8_sponge_E_func_first_at
     (probEvent_and_left_le _ _ _)
     (lemma5_8_sponge_E_func_at (StmtIn := StmtIn) (StmtOut := StmtOut) (n := n)
       (pSpec := pSpec) (U := U) (δ := δ) V maliciousProver j)
-
 
 end FunctionViolationReduction
 

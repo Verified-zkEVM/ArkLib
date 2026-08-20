@@ -22,7 +22,7 @@ open DSTraceStorage
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [codec : Codec pSpec U] {δ : Nat}
+  [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -643,6 +643,59 @@ noncomputable def d2sHandleProgramFirstRateRevised
     d2sHandleProgramFirstRateRevised normal stateIn firstRate remainingRates =
       d2sSampleCapacity (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) >>= fun capacity =>
         pure (d2sProgramFirstRateRevised normal stateIn firstRate remainingRates capacity) := rfl
+
+/-- None of the rate-only-tail machinery addresses the programmed `gᵢ` oracle.  These local
+accounting lemmas isolate the auxiliary sampling performed by the three forward continuations,
+so the only positive `gᵢ` cost in the complete dispatcher is the explicit query in Step 4.e.i. -/
+lemma d2sHandlePoppedRateOnlyTailRevised_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (entry : RateOnlyCacheEntry (U := U))
+    (cacheRest : List (RateOnlyCacheEntry (U := U))) :
+    OracleComp.IsQueryBoundP
+      (d2sHandlePoppedRateOnlyTailRevised normal entry cacheRest)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  rw [d2sHandlePoppedRateOnlyTailRevised_eq]
+  simpa using d2sSampleCapacity_isQueryBoundP_g_zero
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+
+lemma d2sHandleForwardNoResultRevised_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U) :
+    OracleComp.IsQueryBoundP
+      (d2sHandleForwardNoResultRevised normal stateIn)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  unfold d2sHandleForwardNoResultRevised
+  split
+  · rename_i tail cacheRest _
+    simpa using d2sHandlePoppedRateOnlyTailRevised_isQueryBoundP_g_zero
+      (normal := normal) (entry := ⟨stateIn, tail⟩) (cacheRest := cacheRest)
+  · split
+    · simp
+    · change (d2sSampleState (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) >>= fun stateOut =>
+        pure (d2sPermResolvedStep normal (.forward stateIn stateOut))).IsQueryBoundP _ 0
+      simpa using d2sSampleState_isQueryBoundP_g_zero
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+
+lemma d2sHandleProgramFirstRateRevised_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U)
+    (firstRate : Vector U SpongeSize.R)
+    (remainingRates : List (Vector U SpongeSize.R)) :
+    OracleComp.IsQueryBoundP
+      (d2sHandleProgramFirstRateRevised normal stateIn firstRate remainingRates)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  rw [d2sHandleProgramFirstRateRevised_eq]
+  simpa using d2sSampleCapacity_isQueryBoundP_g_zero
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
 
 /-! ## Revised inverse branch
 

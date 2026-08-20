@@ -40,7 +40,7 @@ open OracleComp OracleSpec ProtocolSpec DSTraceStorage
 open DuplexSpongeFS.ProverTransform
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+  {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -183,7 +183,7 @@ it is carried by the genuine execution relation `Execution`, so the three outcom
 a reusable normal view, `stopped` with a terminal record, `underlyingAbort`) each tie a real
 outcome to the view's actual trace. -/
 structure View (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] where
@@ -226,7 +226,7 @@ namespace D2SAlgo
 `StmtIn × Vector U δ × EncodedMessagesBefore … i` and `ρ̂ᵢ : Vector U (challengeSize i)` is the
 encoded challenge. -/
 abbrev EncodedTrace (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat) : Type :=
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat) : Type :=
   OracleSpec.QueryLog (gSpec (U := U) StmtIn pSpec δ)
 
 /-- A **decidable image** of the real encoded `gᵢ` query key `(i, κ̂)`, used so `List.count` can
@@ -249,7 +249,7 @@ abbrev OccurrenceKey (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Typ
 /-- Project a real encoded occurrence `⟨(i, κ̂), ρ̂ᵢ⟩` to the **decidable image** of its query key
 `(i, κ̂)` (round index, statement, salt, and injectively-listified prover prefix). -/
 noncomputable def occurrenceKey (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     (occ : Sigma (gSpec (U := U) StmtIn pSpec δ)) : OccurrenceKey StmtIn pSpec U δ :=
   ⟨occ.1.1, (occ.1.2.1, (occ.1.2.2.1, EncodedMessagesBefore.toList occ.1.2.2.2))⟩
 

@@ -21,7 +21,7 @@ open Backtrack DSTraceStorage
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [codec : Codec pSpec U] {δ : Nat}
+  [codec : CodecCore pSpec U] {δ : Nat}
 
 local instance : Inhabited U := ⟨0⟩
 noncomputable section

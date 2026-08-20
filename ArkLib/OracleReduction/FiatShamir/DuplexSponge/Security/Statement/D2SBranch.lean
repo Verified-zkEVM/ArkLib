@@ -53,7 +53,7 @@ open OracleComp OracleSpec ProtocolSpec DSTraceStorage
 open DuplexSpongeFS.ProverTransform
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+  {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -69,7 +69,7 @@ All section-variable parameters are applied so each abbreviation is a plain `Typ
 /-- The reusable normal state of revised D2SQuery: the real `D2SNormalState` (a `D2SQueryState`
 whose trace has passed `Monitor`, i.e. `monitorPassed : ¬ BadEventDS.E state.trace`). -/
 abbrev NormalState (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)] : Type :=
@@ -79,7 +79,7 @@ abbrev NormalState (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
 /-- The real post-occurrence stop record over a reusable normal state `normal`: the actual final
 query, its answer, and the real monitor failure `E (trace ++ [⟨query, answer⟩])`. -/
 abbrev StopRecord (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -91,7 +91,7 @@ abbrev StopRecord (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
 monitored failure), or `underlyingAbort` (an underlying BackTrack / LookAhead failure before any
 occurrence). -/
 abbrev StepResult (StmtIn : Type) {n : Nat} (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] (δ : Nat)
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] (δ : Nat)
     [DecidableEq StmtIn] [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -463,7 +463,7 @@ pre-existing cache unchanged.  The `none` case deliberately does **not** say tha
 keyed at `stateOut`: a permutation output may legally equal a prior permutation input, so such an
 absence would be an unwanted and generally false precondition. -/
 def ProgramTailRealization (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat} [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat} [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]
@@ -509,7 +509,7 @@ def ProgramExistingMapping (normal : NormalState StmtIn pSpec U δ T_H T_P)
 parser/padding logic materializes its first rate block with one fresh capacity.  Only this case
 may install the round-indexed `Lᵥ(j)-1` rate-only continuation. -/
 def ProgramMaterialization (pSpec : ProtocolSpec n) (U : Type)
-    [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat} [DecidableEq StmtIn]
+    [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat} [DecidableEq StmtIn]
     [DecidableEq U] (T_H : Type) (T_P : Type)
     [LawfulTraceNablaImpl T_H T_P StmtIn U]
     [∀ i, Fintype (pSpec.Message i)] [∀ i, DecidableEq (pSpec.Message i)]

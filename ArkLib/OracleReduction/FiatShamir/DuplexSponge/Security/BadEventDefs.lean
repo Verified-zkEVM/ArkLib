@@ -362,6 +362,23 @@ lemma getBaseTrace_take_prefix
         unfold getBaseTrace
         rw [← getBaseTraceAux_append, ← hsplit]
 
+/-- Normalization never changes the order of already processed base entries.  More precisely,
+if a raw trace is a prefix of another raw trace, then its normalized base trace is a prefix of
+the latter normalized base trace.  This is the general, non-indexed form of
+`getBaseTrace_take_prefix`; it is the bridge needed to carry a monitored bad-event witness from
+an early stopped execution to the complete raw trace. -/
+lemma getBaseTrace_prefix_of_prefix
+    {trace trace' : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    (hprefix : trace <+: trace') :
+    getBaseTrace trace <+: getBaseTrace trace' := by
+  classical
+  have htrace' : trace ++ trace'.drop trace.length = trace' :=
+    List.prefix_iff_eq_append.mp hprefix
+  rw [← htrace']
+  unfold getBaseTrace
+  rw [getBaseTraceAux_append]
+  exact getBaseTraceAux_prefix _ _
+
 /-- Length form of `getBaseTrace_take_prefix`. -/
 lemma getBaseTrace_take_length_mono
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)) {a b : ℕ} (hab : a ≤ b) :

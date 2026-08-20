@@ -218,7 +218,7 @@ is solved by unification against the goal (never re-synthesized — the composit
 `MonadLiftT (OracleComp _) (OracleComp _)` instances arising from sub-spec chains are only
 propositionally, not definitionally, equal across synthesis paths).  The single-query image
 obligation `hquery` is discharged at the application site. -/
-lemma isQueryBoundP_liftM_of_lawful [IsUniformSpec superSpec]
+lemma isQueryBoundP_liftM_of_lawful
     (instL : MonadLiftT (OracleComp spec) (OracleComp superSpec))
     [instLaw : @LawfulMonadLiftT (OracleComp spec) (OracleComp superSpec) _ _ instL]
     {p : spec.Domain → Prop} [DecidablePred p]
@@ -542,7 +542,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [Codec pSpec U]
+  [CodecCore pSpec U]
 
 /-- Forward-permutation query points of the narrow (`𝒱^{h,p}`) spec. -/
 def isNarrowFwdPermPoint : (oSpec + duplexSpongeForwardOracle StmtIn U).Domain → Bool
@@ -561,10 +561,6 @@ def roundPermBudget (pSpec : ProtocolSpec n) [HasMessageSize pSpec] [HasChalleng
   match hdir : pSpec.dir i with
   | .P_to_V => pSpec.Lₚᵢ ⟨i, hdir⟩
   | .V_to_P => pSpec.Lᵥᵢ ⟨i, hdir⟩
-
-variable [IsUniformSpec (oSpec + duplexSpongeForwardOracle StmtIn U)]
-
-variable [IsUniformSpec (duplexSpongeForwardOracle StmtIn U)]
 
 /-- Match-reduction: message round. -/
 lemma roundPermBudget_eq_msg {i : Fin n} (h : pSpec.dir i = .P_to_V) :

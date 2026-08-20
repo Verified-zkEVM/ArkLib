@@ -32,7 +32,7 @@ open DSTraceStorage
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [codec : Codec pSpec U] {δ : Nat}
+  [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -386,6 +386,184 @@ noncomputable def d2sQueryStepRevised
     (stateIn : CanonicalSpongeState U) :
     d2sQueryStepRevised normal (dsPermQuery stateIn) =
       d2sHandleForwardPermQueryRevised normal stateIn := rfl
+
+/-- A revised hash query cannot invoke the programmed `gᵢ` interface.  Its only fresh branch
+samples one capacity from the auxiliary unit oracle. -/
+lemma d2sQueryStepRevised_hash_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stmt : StmtIn) :
+    OracleComp.IsQueryBoundP
+      (d2sQueryStepRevised normal (dsHashQuery stmt))
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  rw [d2sQueryStepRevised_hash]
+  unfold d2sHandleHashQueryRevised
+  split
+  · simp
+  · change (d2sSampleCapacity (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) >>=
+      fun capacity => pure (d2sHandleHashFreshRevised normal stmt capacity _)).IsQueryBoundP _ 0
+    simpa using d2sSampleCapacity_isQueryBoundP_g_zero
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+
+/-- A revised inverse-permutation query cannot invoke the programmed `gᵢ` interface.  Its
+only fresh branch samples one full state from the auxiliary unit oracle. -/
+lemma d2sQueryStepRevised_inverse_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateOut : CanonicalSpongeState U) :
+    OracleComp.IsQueryBoundP
+      (d2sQueryStepRevised normal (dsPermInvQuery stateOut))
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  rw [d2sQueryStepRevised_inverse]
+  unfold d2sHandleInversePermQueryRevised
+  split
+  · simp
+  · change (d2sSampleState (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) >>=
+      fun stateIn => pure (d2sPermResolvedStep normal (.inverse stateOut stateIn))).IsQueryBoundP _ 0
+    simpa using d2sSampleState_isQueryBoundP_g_zero
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)
+
+/-- Once the explicit `gᵢ` answer is available, Program parsing/padding and its first
+materialization use only auxiliary randomness. -/
+lemma d2sHandleBacktrackAfterGRevised_isQueryBoundP_g_zero
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U)
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (rhoHat : Vector U (challengeSize (pSpec := pSpec) backtrackOut.roundIdx)) :
+    OracleComp.IsQueryBoundP
+      (d2sHandleBacktrackAfterGRevised normal stateIn backtrackOut rhoHat)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 0 := by
+  unfold d2sHandleBacktrackAfterGRevised
+  split
+  · simp
+  · refine OracleComp.isQueryBoundP_bind (n := 0) (m := 0)
+      (d2sRateBlocksFromChallenge_isQueryBoundP_g_zero
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ) rhoHat)
+      (fun rateBlocks _ => ?_)
+    cases hBlocks : rateBlocks.toList with
+    | nil => simp
+    | cons firstRate remainingRates =>
+      simpa [hBlocks] using d2sHandleProgramFirstRateRevised_isQueryBoundP_g_zero
+        (normal := normal) (stateIn := stateIn) (firstRate := firstRate)
+        (remainingRates := remainingRates)
+
+lemma d2sHandleBacktrackSomeRevised_isQueryBoundP_g_le_one
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U)
+    (backtrackOut : Backtrack.BacktrackOutput
+      (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) :
+    OracleComp.IsQueryBoundP
+      (d2sHandleBacktrackSomeRevised normal stateIn backtrackOut)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 1 := by
+  by_cases hPop : ∃ tail cacheRest,
+      popRateOnlyTailByInput normal.state.rateCacheP stateIn = some (tail, cacheRest)
+  · obtain ⟨tail, cacheRest, hPop⟩ := hPop
+    rw [d2sHandleBacktrackSomeRevised_tail normal stateIn backtrackOut tail cacheRest hPop]
+    exact (d2sHandlePoppedRateOnlyTailRevised_isQueryBoundP_g_zero
+      (normal := normal) (entry := ⟨stateIn, tail⟩) (cacheRest := cacheRest)).mono (by omega)
+  · have hPopNone : popRateOnlyTailByInput normal.state.rateCacheP stateIn = none := by
+      cases h : popRateOnlyTailByInput normal.state.rateCacheP stateIn with
+      | none => rfl
+      | some pair =>
+        rcases pair with ⟨tail, cacheRest⟩
+        exact False.elim (hPop ⟨tail, cacheRest, h⟩)
+    by_cases hImage : d2sInCodecImagePredicate
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U) backtrackOut
+    · by_cases hNonempty : 0 < challengeSize (pSpec := pSpec) backtrackOut.roundIdx
+      · rw [d2sHandleBacktrackSomeRevised_nonemptyChallenge
+          normal stateIn backtrackOut hPopNone hImage hNonempty]
+        have hG : OracleComp.IsQueryBoundP
+            (d2sQueryG (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ)
+              backtrackOut.roundIdx backtrackOut.stmt backtrackOut.salt
+              backtrackOut.encodedMessages)
+            (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 1 := by
+          unfold d2sQueryG
+          apply (OracleComp.isQueryBoundP_query_iff _ _ 1).mpr
+          exact fun _ => by omega
+        refine OracleComp.isQueryBoundP_bind (n := 1) (m := 0) hG (fun rhoHat _ => ?_)
+        · exact d2sHandleBacktrackAfterGRevised_isQueryBoundP_g_zero
+            normal stateIn backtrackOut rhoHat
+      · rw [d2sHandleBacktrackSomeRevised_emptyChallenge
+          normal stateIn backtrackOut hPopNone hImage hNonempty]
+        exact (d2sHandleForwardNoResultRevised_isQueryBoundP_g_zero normal stateIn).mono
+          (by omega)
+    · rw [d2sHandleBacktrackSomeRevised_notInImage
+        normal stateIn backtrackOut hPopNone hImage]
+      exact (d2sHandleForwardNoResultRevised_isQueryBoundP_g_zero normal stateIn).mono
+        (by omega)
+
+/-- The complete revised forward permutation branch can cross the `gᵢ` boundary at most once.
+All tail, ordinary, and parser-error paths are `gᵢ`-free; a successful in-image candidate has
+one direct `gᵢ` query followed by the zero-cost Program continuation above. -/
+lemma d2sQueryStepRevised_forward_isQueryBoundP_g_le_one
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (stateIn : CanonicalSpongeState U) :
+    OracleComp.IsQueryBoundP
+      (d2sQueryStepRevised normal (dsPermQuery stateIn))
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ)) 1 := by
+  rw [d2sQueryStepRevised_forward]
+  by_cases hPop : ∃ tail cacheRest,
+      popRateOnlyTailByInput normal.state.rateCacheP stateIn = some (tail, cacheRest)
+  · obtain ⟨tail, cacheRest, hPop⟩ := hPop
+    rw [d2sHandleForwardPermQueryRevised_tail normal stateIn tail cacheRest hPop]
+    exact (d2sHandlePoppedRateOnlyTailRevised_isQueryBoundP_g_zero
+      (normal := normal) (entry := ⟨stateIn, tail⟩) (cacheRest := cacheRest)).mono (by omega)
+  · have hPopNone : popRateOnlyTailByInput normal.state.rateCacheP stateIn = none := by
+      cases h : popRateOnlyTailByInput normal.state.rateCacheP stateIn with
+      | none => rfl
+      | some pair =>
+        rcases pair with ⟨tail, cacheRest⟩
+        exact False.elim (hPop ⟨tail, cacheRest, h⟩)
+    cases hBacktrack : Backtrack.backTrack
+        (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        normal.state.trace normal.state.trΔ normal.state.h_inv stateIn
+        (normal.state.trace.length + 1) with
+    | err =>
+      rw [d2sHandleForwardPermQueryRevised_err normal stateIn hPopNone hBacktrack]
+      simp
+    | noResult =>
+      rw [d2sHandleForwardPermQueryRevised_noResult normal stateIn hPopNone hBacktrack]
+      exact (d2sHandleForwardNoResultRevised_isQueryBoundP_g_zero normal stateIn).mono
+        (by omega)
+    | some backtrackOut =>
+      rw [d2sHandleForwardPermQueryRevised_some
+        normal stateIn backtrackOut hPopNone hBacktrack]
+      exact d2sHandleBacktrackSomeRevised_isQueryBoundP_g_le_one normal stateIn backtrackOut
+
+/-- Per-request accounting for the revised dispatcher.  This is the executable version of the
+paper fact that only a source forward-permutation request can reach D2SQuery Step 4.e.i, and it
+can do so only once. -/
+lemma d2sQueryStepRevised_isQueryBoundP_g
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain) :
+    OracleComp.IsQueryBoundP
+      (d2sQueryStepRevised normal q)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
+      (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0) := by
+  rcases q with stmt | stateIn | stateOut
+  · simpa [isD2SForwardPermPoint] using
+      d2sQueryStepRevised_hash_isQueryBoundP_g_zero normal stmt
+  · simpa [isD2SForwardPermPoint] using
+      d2sQueryStepRevised_forward_isQueryBoundP_g_le_one normal stateIn
+  · simpa [isD2SForwardPermPoint] using
+      d2sQueryStepRevised_inverse_isQueryBoundP_g_zero normal stateOut
 
 /-! ## One-sample gateway distribution equations
 
@@ -744,6 +922,261 @@ noncomputable def d2fOuterImplRevised
           (spec := D2SChallengePlusUnitOracle (U := U) challengeSpec)
           (Sum.inr aux)))
 
+/-- The source requests that can reach an Item-4(e)i codec-bridge query in the revised
+Eq. (16) executor.  Ambient requests are passed through and hashes/inverses never reach `gᵢ`. -/
+def isD2SOuterForwardPermPoint :
+    (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain → Prop
+  | .inl _ => False
+  | .inr q => isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q
+
+instance : DecidablePred
+    (isD2SOuterForwardPermPoint (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) :=
+  fun q =>
+    match q with
+    | .inl _ => isFalse (fun h => h)
+    | .inr q => by
+        exact (inferInstance : Decidable
+          (isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q))
+
+/-- The standard challenge-table requests among the enlarged target interface. -/
+def isD2SOuterChallengePoint {κ : Type} {challengeSpec : OracleSpec κ} :
+    (oSpec + D2SChallengePlusUnitOracle (U := U) challengeSpec).Domain → Prop
+  | .inl _ => False
+  | .inr (.inl _) => True
+  | .inr (.inr _) => False
+
+instance {κ : Type} {challengeSpec : OracleSpec κ} : DecidablePred
+    (isD2SOuterChallengePoint (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec)) :=
+  fun q =>
+    match q with
+    | .inl _ => isFalse (fun h => h)
+    | .inr (.inl _) => isTrue trivial
+    | .inr (.inr _) => isFalse (fun h => h)
+
+/-- Query-bound transport along the right injection of an oracle-spec sum.  Unlike the generic
+sub-spec theorem, this structural induction deliberately needs no `IsUniformSpec` instance for
+the ambient left summand: no left-summand query is ever introduced by this lift. -/
+private theorem isQueryBoundP_liftComp_inr
+    {ι₁ ι₂ : Type} {spec₁ : OracleSpec ι₁} {spec₂ : OracleSpec ι₂} {α : Type}
+    {p : spec₁.Domain → Prop} [DecidablePred p]
+    {q : (spec₂ + spec₁).Domain → Prop} [DecidablePred q]
+    (hpq : ∀ t : spec₁.Domain, q (Sum.inr t) ↔ p t)
+    {oa : OracleComp spec₁ α} {n : ℕ}
+    (hb : OracleComp.IsQueryBoundP oa p n) :
+    OracleComp.IsQueryBoundP (liftComp oa (spec₂ + spec₁)) q n := by
+  induction oa using OracleComp.inductionOn generalizing n with
+  | pure x => simp [liftComp]
+  | query_bind t mx ih =>
+    rw [OracleComp.isQueryBoundP_query_bind_iff] at hb
+    rw [liftComp_def, simulateQ_query_bind]
+    refine (OracleComp.isQueryBoundP_bind
+      (n := if p t then 1 else 0)
+      (m := if p t then n - 1 else n) ?_ (fun response _ => ?_)).mono ?_
+    · show OracleComp.IsQueryBoundP
+        (liftM (liftM (OracleSpec.query t) :
+          OracleQuery (spec₂ + spec₁) _) : OracleComp (spec₂ + spec₁) _) q
+        (if p t then 1 else 0)
+      rw [liftM_query_reshape, OracleComp.isQueryBoundP_map_iff,
+        OracleComp.isQueryBoundP_query_iff]
+      intro hq
+      have hpt : p t := (hpq t).mp (by simpa using hq)
+      simp [hpt]
+    · exact ih response (hb.2 response)
+    · by_cases hpt : p t
+      · simp only [if_pos hpt]
+        rcases hb.1 with hnot | hpositive
+        · exact False.elim (hnot hpt)
+        · omega
+      · simp only [if_neg hpt]
+        omega
+
+/-- One revised D2S query preserves the source forward-permutation charge when the internal
+`gᵢ` implementation charges at most one standard challenge query per `gᵢ` request. -/
+lemma d2sQueryImplRevised_isQueryBoundP_outerChallenge
+    {κ : Type} {challengeSpec : OracleSpec κ} {M : Type}
+    (gImpl : GImpl (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) challengeSpec M)
+    (hG : ∀ q memo, OracleComp.IsQueryBoundP (((gImpl q).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) 1)
+    (auxImpl : QueryImpl ((Unit →ₒ U) + unifSpec)
+      (StateT M (OptionT
+        (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))))
+    (hAux : ∀ q memo, OracleComp.IsQueryBoundP (((auxImpl q).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec)) 0)
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (memo : M) :
+    OracleComp.IsQueryBoundP
+      ((((d2sQueryImplRevised (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (gImpl := gImpl)
+        (auxImpl := auxImpl) q).run
+          normal).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec))
+      (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0) := by
+  let combinedImpl :
+      QueryImpl (d2sQueryOracles (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ))
+        (StateT M (OptionT
+          (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))) :=
+    gImpl + auxImpl
+  have hInner : OracleComp.IsQueryBoundP
+      (((simulateQ combinedImpl
+        (d2sQueryStepRevised (T_H := T_H) (T_P := T_P) normal q)).run memo).run)
+      (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec))
+      (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0) := by
+    apply isQueryBoundP_simulateQ_run_StateT_OptionT_of_step
+      (d2sQueryStepRevised_isQueryBoundP_g normal q)
+    intro point memo
+    rcases point with gq | aux
+    · simpa [combinedImpl, isD2SQueryGPoint] using hG gq memo
+    · simpa [combinedImpl, isD2SQueryGPoint] using hAux aux memo
+  unfold d2sQueryImplRevised
+  change OracleComp.IsQueryBoundP
+    (((do
+      let result ← simulateQ (gImpl + auxImpl)
+        (d2sQueryStepRevised (T_H := T_H) (T_P := T_P) normal q)
+      match result with
+      | .continue answer normal' => pure (answer, normal')
+      | .stopped _ _ => failure
+      | .underlyingAbort => failure :
+      StateT M (OptionT
+        (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))
+        ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+          D2SNormalState (δ := δ) (T_H := T_H) (T_P := T_P)
+            (StmtIn := StmtIn) (pSpec := pSpec) (U := U))).run memo).run)
+    (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec))
+    (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0)
+  simp only [StateT.run_bind, OptionT.run_bind, Option.elimM]
+
+  change OracleComp.IsQueryBoundP
+    (Option.elimM
+      (((simulateQ (gImpl + auxImpl)
+        (d2sQueryStepRevised (T_H := T_H) (T_P := T_P) normal q)).run memo).run)
+      (pure none)
+      (fun result =>
+        ((match result.1 with
+          | .continue answer normal' => pure (answer, normal')
+          | .stopped _ _ => failure
+          | .underlyingAbort => failure :
+          StateT M (OptionT
+            (OracleComp (D2SChallengePlusUnitOracle (U := U) challengeSpec)))
+            ((duplexSpongeChallengeOracle StmtIn U).Range q ×
+              D2SNormalState (δ := δ) (T_H := T_H) (T_P := T_P)
+                (StmtIn := StmtIn) (pSpec := pSpec) (U := U))).run result.2).run))
+    (isD2SChallengePoint (U := U) (challengeSpec := challengeSpec))
+    (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0)
+  unfold Option.elimM
+  refine (OracleComp.isQueryBoundP_bind
+    (n := if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0)
+    (m := 0) hInner (fun result _ => ?_)).mono ?_
+  · cases result with
+    | none => simp
+    | some result =>
+      rcases result with ⟨step, memo'⟩
+      cases step <;> simp
+  · omega
+
+/-- The concrete memoized codec bridge instantiates the one-query D2S bound.  A cache hit is
+included: it reissues `fᵢ` and therefore still consumes exactly the permitted single charge. -/
+lemma d2sQueryImplRevised_memo_isQueryBoundP_challenge
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    {Salt : Type} [SaltCodec U δ Salt]
+    (q : (duplexSpongeChallengeOracle StmtIn U).Domain)
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (memo : D2SAlgoMemo StmtIn U δ Salt pSpec) :
+    OracleComp.IsQueryBoundP
+      ((((d2sQueryImplRevised (δ := δ) (T_H := T_H) (T_P := T_P)
+        (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+        (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+          (pSpec := pSpec) (δ := δ) (Salt := Salt))
+        (auxImpl := fun aux => StateT.lift <| query
+          (spec := D2SChallengePlusUnitOracle (U := U)
+            (fsChallengeOracle (StmtIn × Salt) pSpec))
+          (Sum.inr aux)) q).run normal).run memo).run)
+      (isD2SChallengePoint (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0) := by
+  apply d2sQueryImplRevised_isQueryBoundP_outerChallenge
+    (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+      (pSpec := pSpec) (δ := δ) (Salt := Salt))
+  · intro gq memo
+    exact d2sCodecBridgeImplMemo_run_isQueryBoundP_challenge_le_one
+      (U := U) (StmtIn := StmtIn) (pSpec := pSpec) (δ := δ) (Salt := Salt) gq memo
+  · intro aux memo
+    change OracleComp.IsQueryBoundP
+      (liftM (OracleSpec.query
+        (Sum.inr aux : (D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)).Domain) :
+        OracleQuery (D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)) _) :
+        OracleComp (D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)) _) _ 0
+    rw [OracleComp.isQueryBoundP_query_iff]
+    simp [isD2SChallengePoint]
+
+/-- A concrete request to the complete revised Eq. (16) outer handler makes at most one standard
+challenge query, and only when the original request is a forward permutation request. -/
+lemma d2fOuterImplRevised_memo_step_isQueryBoundP_challenge
+    [∀ i, Fintype (pSpec.Challenge i)] [∀ i, DecidableEq (pSpec.Challenge i)]
+    {Salt : Type} [SaltCodec U δ Salt]
+    (source : (oSpec + duplexSpongeChallengeOracle StmtIn U).Domain)
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (memo : D2SAlgoMemo StmtIn U δ Salt pSpec) :
+    OracleComp.IsQueryBoundP
+      ((((d2fOuterImplRevised (oSpec := oSpec) (δ := δ) (T_H := T_H) (T_P := T_P)
+        (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+          (pSpec := pSpec) (δ := δ) (Salt := Salt)) source).run normal).run memo).run)
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (if isD2SOuterForwardPermPoint (oSpec := oSpec) (StmtIn := StmtIn) (U := U) source
+        then 1 else 0) := by
+  rcases source with source | source
+  · unfold d2fOuterImplRevised
+    simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply]
+    change OracleComp.IsQueryBoundP
+      (liftM (OracleSpec.query (Sum.inl source) :
+        OracleQuery (oSpec + D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)) _) :
+        OracleComp (oSpec + D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)) _) _ 0
+    rw [OracleComp.isQueryBoundP_query_iff]
+    simp [isD2SOuterChallengePoint]
+  · have hInner := d2sQueryImplRevised_memo_isQueryBoundP_challenge
+      (T_H := T_H) (T_P := T_P) (Salt := Salt) source normal memo
+    unfold d2fOuterImplRevised
+    simp only [QueryImpl.addLift_def, QueryImpl.add_apply_inr, QueryImpl.liftTarget_apply]
+    simp [MonadLiftT.monadLift, MonadLift.monadLift, StateT.run_monadLift,
+      OptionT.run_monadLift]
+    change OracleComp.IsQueryBoundP
+      (liftComp
+        (((d2sQueryImplRevised (δ := δ) (T_H := T_H) (T_P := T_P)
+          (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+          (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+            (pSpec := pSpec) (δ := δ) (Salt := Salt))
+          (auxImpl := fun aux => StateT.lift <| query
+            (spec := D2SChallengePlusUnitOracle (U := U)
+              (fsChallengeOracle (StmtIn × Salt) pSpec))
+            (Sum.inr aux)) source).run normal).run memo)
+        (oSpec + D2SChallengePlusUnitOracle (U := U)
+          (fsChallengeOracle (StmtIn × Salt) pSpec)))
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) source then 1 else 0)
+    refine isQueryBoundP_liftComp_inr
+      (p := isD2SChallengePoint (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (q := isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec))
+      (fun point => ?_) hInner
+    rcases point with point | point
+    · simp [isD2SChallengePoint, isD2SOuterChallengePoint]
+    · simp [isD2SChallengePoint, isD2SOuterChallengePoint]
+
 /-- The lossless Eq. (16) outer implementation.  It is extensionally the same sequence of
 oracle calls as `d2fOuterImplRevised`, but an absorbing revised-D2SQuery outcome is returned as a
 `D2SRevisedStoppingReason` instead of disappearing through the inner `OptionT`.
@@ -935,6 +1368,63 @@ noncomputable def d2sAlgoRevised
     D2FQueryProverRevised (Salt := Salt) (T_H := T_H) (T_P := T_P) 𝒜
   return ⟨stmt, ⟨SaltCodec.encode (Salt := Salt) salt, messages⟩⟩
 
+/-- The revised D2SAlgo invokes the standard challenge oracle at most once for each source
+forward-permutation request.  This is the exact query-budget half of revised Lemma 5.1; ambient
+and auxiliary sampling requests are not counted. -/
+lemma d2sAlgoRevised_isQueryBoundP_challenge_of_forward
+    (𝒜 : MaliciousProver oSpec pSpec StmtIn U δ)
+    (tₚ : ℕ)
+    (h𝒜 : OracleComp.IsQueryBoundP 𝒜
+      (isD2SOuterForwardPermPoint (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ) :
+    OracleComp.IsQueryBoundP
+      (d2sAlgoRevised (Salt := Salt) (T_H := T_H) (T_P := T_P) 𝒜)
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ := by
+  have hRaw : OracleComp.IsQueryBoundP
+      (d2fRawRevised (oSpec := oSpec) (T_H := T_H) (T_P := T_P)
+        (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+          (pSpec := pSpec) (δ := δ) (Salt := Salt))
+        𝒜 default)
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ := by
+    unfold d2fRawRevised d2fRawRevisedFrom
+    apply isQueryBoundP_simulateQ_run_StateT_StateT_OptionT_of_step h𝒜
+    intro source normal memo
+    exact d2fOuterImplRevised_memo_step_isQueryBoundP_challenge
+      (T_H := T_H) (T_P := T_P) (Salt := Salt) source normal memo
+      |>.mono (by
+        simp only [isD2SOuterForwardPermPoint]
+        split <;> omega)
+  change OracleComp.IsQueryBoundP
+    (d2sAlgoRevised (Salt := Salt) (T_H := T_H) (T_P := T_P) 𝒜).run
+    (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+      (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ
+  unfold d2sAlgoRevised D2FQueryProverRevised
+  simp only [OptionT.run_bind, OptionT.run_map, OptionT.run_pure, Option.elimM]
+  let raw := d2fRawRevised (oSpec := oSpec) (T_H := T_H) (T_P := T_P)
+    (gImpl := d2sCodecBridgeImplMemo (U := U) (StmtIn := StmtIn)
+      (pSpec := pSpec) (δ := δ) (Salt := Salt)) 𝒜 default
+  have hRawRun : OracleComp.IsQueryBoundP raw.run
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ := hRaw
+  have hD2FRun : OracleComp.IsQueryBoundP
+      (Option.map Prod.fst <$> Option.map Prod.fst <$> raw.run)
+      (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+        (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ := by
+    rw [OracleComp.isQueryBoundP_map_iff, OracleComp.isQueryBoundP_map_iff]
+    exact hRawRun
+  change OracleComp.IsQueryBoundP
+    (Option.elimM (Option.map Prod.fst <$> Option.map Prod.fst <$> raw.run)
+      (pure none)
+      (fun result => pure (some (result.1,
+        (SaltCodec.encode (Salt := Salt) result.2.1, result.2.2)))))
+    (isD2SOuterChallengePoint (oSpec := oSpec) (U := U)
+      (challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec)) tₚ
+  unfold Option.elimM
+  refine (OracleComp.isQueryBoundP_bind (n := tₚ) (m := 0) hD2FRun
+    (fun result _ => ?_)).mono (by omega)
+  cases result <;> simp
+
 end RevisedD2SAlgo
 
 /-! ## Whole revised query execution -/
@@ -980,5 +1470,40 @@ impossible to query a suffix after a stop record or an underlying abort. -/
       | .continue _ normal' => d2sQueryRunRevised normal' qs
       | .stopped normal' record => pure (.stopped normal' record)
       | .underlyingAbort => pure .underlyingAbort) := rfl
+
+/-- Number of source forward-permutation requests in a finite concrete D2SQuery request stream.
+The runner can stop before reaching the end of the stream, so this is an upper bound rather than
+an assertion that every listed request is executed. -/
+def d2sForwardRequestCount :
+    List (duplexSpongeChallengeOracle StmtIn U).Domain → ℕ
+  | [] => 0
+  | q :: qs => (if isD2SForwardPermPoint (StmtIn := StmtIn) (U := U) q then 1 else 0) +
+      d2sForwardRequestCount qs
+
+/-- The live absorbing runner crosses the programmed `gᵢ` interface at most once per source
+forward-permutation request.  This is the finite-run form of the D2SAlgo query-complexity
+argument; later transport through the malicious prover only has to account for the source
+forward-query budget. -/
+lemma d2sQueryRunRevised_isQueryBoundP_g
+    [Fintype U]
+    (normal : D2SNormalState
+      (δ := δ) (T_H := T_H) (T_P := T_P)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+    (qs : List (duplexSpongeChallengeOracle StmtIn U).Domain) :
+    OracleComp.IsQueryBoundP
+      (d2sQueryRunRevised normal qs)
+      (isD2SQueryGPoint (StmtIn := StmtIn) (pSpec := pSpec) (U := U) (δ := δ))
+      (d2sForwardRequestCount (StmtIn := StmtIn) (U := U) qs) := by
+  induction qs generalizing normal with
+  | nil => simp [d2sQueryRunRevised, d2sForwardRequestCount]
+  | cons q qs ih =>
+    rw [d2sQueryRunRevised_cons]
+    refine OracleComp.isQueryBoundP_bind
+      (d2sQueryStepRevised_isQueryBoundP_g normal q) (fun result _ => ?_)
+    exact match result with
+      | .continue _ normal' => by
+          simpa [d2sForwardRequestCount] using ih normal'
+      | .stopped _ _ => by simp
+      | .underlyingAbort => by simp
 
 end DuplexSpongeFS.ProverTransform

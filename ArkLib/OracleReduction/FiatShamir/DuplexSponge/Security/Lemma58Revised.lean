@@ -26,7 +26,7 @@ open scoped ENNReal
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn StmtOut U : Type}
   [SpongeUnit U] [SpongeSize] [VCVCompatible U] [VCVCompatible StmtIn]
-  [∀ i, VCVCompatible (pSpec.Challenge i)] [codec : Codec pSpec U] {δ : ℕ}
+  [∀ i, VCVCompatible (pSpec.Challenge i)] [codec : CodecCore pSpec U] {δ : ℕ}
   {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
   [Fintype U] [Nonempty U] [SampleableType U] [∀ i, Fintype (pSpec.Message i)]
   [∀ i, DecidableEq (pSpec.Message i)]

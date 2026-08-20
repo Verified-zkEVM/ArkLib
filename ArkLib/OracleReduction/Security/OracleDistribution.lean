@@ -596,12 +596,35 @@ noncomputable instance instSampleableTypeFSChallengeOracle
     [∀ i, VCVCompatible (pSpec.Message i)]
     [∀ i, VCVCompatible (pSpec.Challenge i)] :
     SampleableType (OracleFamily (ProtocolSpec.fsChallengeOracle Statement pSpec)) := by
-  -- `OracleFamily spec = (q : Domain) → spec.Range q` (dependent Pi over the domain sigma type).
-  -- Domain = Σ i : ChallengeIdx, (Statement × MessagesUpTo i.1.castSucc).
-  -- Range q = pSpec.Challenge q.1.
-  -- Each component is VCVCompatible; the full table is finite via FinEnum.sigma + Pi.finEnum.
-  -- The MessagesUpTo component needs pSpec.MessageUpTo k i = pSpec.Message i_orig; deferred.
-  sorry
+  -- `OracleFamily spec = (q : Domain) → spec.Range q` (a dependent Pi over the
+  -- finite challenge-indexed domain).  A message in a finite prefix is merely a
+  -- message of the original protocol at the corresponding global prover index.
+  letI : FinEnum Statement := VCVCompatible.instFinEnum
+  letI : FinEnum pSpec.ChallengeIdx := inferInstance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum (pSpec.MessagesUpTo i.1.castSucc) := by
+    letI : FinEnum (pSpec.MessageIdxUpTo i.1.castSucc) := inferInstance
+    letI (j : pSpec.MessageIdxUpTo i.1.castSucc) :
+        FinEnum (pSpec.MessageUpTo i.1.castSucc j) := by
+      change FinEnum (pSpec.Message ⟨j.1.castLE (by omega), j.2⟩)
+      exact VCVCompatible.instFinEnum
+    infer_instance
+  letI (i : pSpec.ChallengeIdx) :
+      FinEnum ((ProtocolSpec.challengeOracleInterfaceSR Statement pSpec i).Query) := by
+    change FinEnum (Statement × pSpec.MessagesUpTo i.1.castSucc)
+    infer_instance
+  letI : FinEnum ((ProtocolSpec.fsChallengeOracle Statement pSpec).Domain) := inferInstance
+  letI (q : (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain) :
+      FinEnum ((ProtocolSpec.fsChallengeOracle Statement pSpec).Range q) := by
+    change FinEnum (pSpec.Challenge q.1)
+    exact VCVCompatible.instFinEnum
+  letI (q : (ProtocolSpec.fsChallengeOracle Statement pSpec).Domain) :
+      Inhabited ((ProtocolSpec.fsChallengeOracle Statement pSpec).Range q) := by
+    change Inhabited (pSpec.Challenge q.1)
+    infer_instance
+  letI : Nonempty (OracleFamily (ProtocolSpec.fsChallengeOracle Statement pSpec)) :=
+    ⟨fun _ => default⟩
+  exact SampleableType.ofFintype _
 
 /-- `D_IP` over `fsChallengeOracle Statement pSpec`: uniform random function from prover-prefix
 queries to challenges. DSFS Hyb3 / Hyb4 use this with `Statement := StmtIn × Vector U δ`. -/

@@ -27,7 +27,7 @@ open DuplexSpongeFS.ProverTransform DuplexSpongeFS.DSTraceStorage
 variable {n : ℕ} {pSpec : ProtocolSpec n} {StmtIn StmtOut : Type}
   {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
-  [∀ i, VCVCompatible (pSpec.Message i)] [codec : Codec pSpec U]
+  [∀ i, VCVCompatible (pSpec.Message i)] [codec : CodecCore pSpec U]
   {δ : ℕ} [DecidableEq StmtIn] [DecidableEq U]
   {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
 

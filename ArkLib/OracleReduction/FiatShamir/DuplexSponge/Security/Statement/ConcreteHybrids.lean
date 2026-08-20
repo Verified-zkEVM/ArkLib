@@ -3,7 +3,7 @@ Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen
 -/
-import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.KeyLemma
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SAmbientLazySampling
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.D2SRevisedForward
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.RevisedHybridGame
 import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Security.Section5Nonempty
@@ -37,7 +37,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn StmtOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize] [VCVCompatible U]
-  [∀ i, VCVCompatible (pSpec.Message i)] [codec : Codec pSpec U]
+  [∀ i, VCVCompatible (pSpec.Message i)] [codec : CodecCore pSpec U]
   {δ : Nat} {Salt : Type} [VCVCompatible Salt] [SaltCodec U δ Salt]
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H T_P : Type} [LawfulTraceNablaImpl T_H T_P StmtIn U]
@@ -190,15 +190,70 @@ noncomputable def Hyb3
   KeyLemma.hyb3Revised (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt) (oSpec := oSpec)
     (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver
 
-/-- CO25 Hyb4, definitionally the real basic-FS experiment with the live revised `D2SAlgo`
-executor. -/
+/-- The lossless Hyb₃ execution.  In contrast to the public endpoint, this retains the revised
+prover/verifier phase and hence distinguishes a partial codec-lift `oracleAbort` from an
+underlying stateful D2S failure.  Claim 5.23 uses exactly that distinction to charge an
+out-of-image `fᵢ` value to `Bad_cdc`, rather than silently assuming a total decoder fibre. -/
+noncomputable def Hyb3Observed
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    ProbComp (KeyLemma.HybridGameRevisedMappedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+      (fsChallengeOracle (StmtIn × Salt) pSpec) T_H T_P
+      (ProverTransform.D2SAlgoMemo StmtIn U δ Salt pSpec)) := by
+  let challengeSpec := fsChallengeOracle (StmtIn × Salt) pSpec
+  let D_IP_salted := D_IP_salted (StmtIn := StmtIn) (Salt := Salt) (pSpec := pSpec)
+  let gImpl := ProverTransform.d2sCodecBridgeImplMemo (δ := δ) (Salt := Salt)
+    (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+  exact KeyLemma.hybridGameDistRevisedObserved
+    (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U)
+    (init := KeyLemma.hybChallengeInit (challengeSpec := challengeSpec) D_IP_salted)
+    (impl := KeyLemma.hybChallengeImpl
+      (oSpec := oSpec) (U := U) (challengeSpec := challengeSpec) oSpecImpl D_IP_salted)
+    gImpl V maliciousProver
+    (TraceTransform.hyb3Line4Trace (Salt := Salt) (oSpec := oSpec)
+      (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
+
+/-- Forgetting Hyb₃'s retained phase/log data is exactly the public revised Hyb₃ experiment. -/
+lemma Hyb3Observed_map_publicOutput_eq_Hyb3
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
+    (fun observation => observation.publicOutput) <$>
+        Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
+          oSpecImpl V maliciousProver =
+      Hyb3 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
+  simpa only [Hyb3, Hyb3Observed, KeyLemma.hyb3Revised,
+    KeyLemma.hybridGameDistRevisedObserved_map_publicOutput_eq]
+
+/-- The explicit out-of-image branch of the partial Hyb₃ codec bridge.  The `fᵢ` table and all
+other outer components are total; therefore an `oracleAbort` of this revised execution is the
+branch where the queried standard challenge did not have an encoded decoder preimage. -/
+def Hyb3CodecImageFailure
+    (observation : KeyLemma.HybridGameRevisedMappedObservation
+      (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+      (fsChallengeOracle (StmtIn × Salt) pSpec) T_H T_P
+      (ProverTransform.D2SAlgoMemo StmtIn U δ Salt pSpec)) : Prop :=
+  match observation.game.phase with
+  | .proverStopped (.oracleAbort _) _ => True
+  | .verifier _ (.error (.oracleAbort _)) _ _ => True
+  | _ => False
+
+/-- CO25 Hyb4, definitionally the real **absorbing** basic-FS experiment with the live revised
+`D2SAlgo` executor.  A source-side failure returns `⊥` before invoking the standard verifier,
+as required by revised Claims 5.23--5.24. -/
 noncomputable def Hyb4
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) :
     ProbComp (ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (Salt := Salt)) :=
-  KeyLemma.hyb_4 (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
+  KeyLemma.hyb4Absorbing (δ := δ) (Salt := Salt) (oSpec := oSpec) (StmtIn := StmtIn)
     (StmtOut := StmtOut) (pSpec := pSpec) (U := U) oSpecImpl V maliciousProver
     (ProverTransform.d2sAlgoRevised (T_H := T_H) (T_P := T_P) (δ := δ) (Salt := Salt)
       (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U))
@@ -219,7 +274,7 @@ noncomputable def Hyb4Observed
     ProbComp (Hyb4ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (Salt := Salt)) := do
   let table ← (D_IP_salted (StmtIn := StmtIn) (Salt := Salt) pSpec).sample
-  let output ← KeyLemma.basicFiatShamirGameDist
+  let output ← KeyLemma.basicFiatShamirGameAbsorbingDist
     (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U)
     (Salt := Salt)
     (init := pure table)
@@ -239,7 +294,8 @@ lemma Hyb4Observed_map_output_eq_Hyb4
     (fun sample => sample.output) <$> Hyb4Observed (Salt := Salt) (T_H := T_H) (T_P := T_P)
       oSpecImpl V maliciousProver =
       Hyb4 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
-  simp [Hyb4Observed, Hyb4, KeyLemma.hyb_4, KeyLemma.basicFiatShamirGameDist,
+  simp [Hyb4Observed, Hyb4, KeyLemma.hyb4Absorbing,
+    KeyLemma.basicFiatShamirGameAbsorbingDist,
     KeyLemma.hybChallengeInit]
 
 /-- The complete, concrete Hyb0--Hyb4 family.  Unlike the previous generic family, this is a
@@ -491,10 +547,12 @@ noncomputable def Hyb01BoundCount (tₕ tₚ tₚᵢ : ℕ) : ℕ :=
 
 /-- The stop certificate for paper (44c)--(44e), over the two **actual** lossless observations.
 `τ = N + 1` is the no-stop value.  Before `τ`, the direct base traces agree, neither prefix is
-bad or aborted, and the two M/C snapshots agree.  At a genuine stop, either side has a bad
-prefix or has actually aborted by `τ`.  On no stop, exact encoded-trace equality and equality of
-the complete public outputs give (44e).  `trace_bound` is the paper's common `N`-entry budget,
-so the sentinel `N + 1` never conceals an unbounded completed trace. -/
+bad, and direct Hyb₁ has not aborted.  Hyb₀'s offline `D2STrace` postprocessing is deliberately
+not a base-oracle stopping event; its no-stop totality is supplied separately by Lemma 5.17.
+At a genuine stop, either trace has a bad prefix or Hyb₁ has actually aborted by `τ`.  On no
+stop, exact encoded-trace equality and equality of the complete public outputs give (44e).
+`trace_bound` is the paper's common `N`-entry budget, so the sentinel `N + 1` never conceals an
+unbounded completed trace. -/
 structure Hyb01StopCertificate
     (h0 : Hyb0Observation (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
       (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt))
@@ -509,14 +567,12 @@ structure Hyb01StopCertificate
     h0.baseTrace.take j = h1.game.baseTrace.take j ∧
       ¬ BadEvent (h0.baseTrace.take j) ∧
       ¬ BadEvent (h1.game.baseTrace.take j) ∧
-      ¬ AbortedBy h0.abortIndex? j ∧
       ¬ AbortedBy h1.abortIndex? j ∧
       registers.side0 j = registers.side1 j
   terminal : τ = N + 1 ∨
     τ ≤ N ∧
       (BadEvent (h0.baseTrace.take τ) ∨
         BadEvent (h1.game.baseTrace.take τ) ∨
-        AbortedBy h0.abortIndex? τ ∨
         AbortedBy h1.abortIndex? τ)
   no_stop : τ = N + 1 →
     h0.baseTrace = h1.game.baseTrace ∧
@@ -663,6 +719,51 @@ lemma claim521_of_hyb01LazySamplingCoupling
     Hyb0Observed_map_publicOutput_eq_Hyb0, Hyb1Observed_map_publicOutput_eq_Hyb1] at htv'
   exact htv'.trans witness.first_stop_bound
 
+/-- One sample of the exact H₁/H₂ image-fibre coupling.  The left component retains the
+lossless H₁ observation, so its raw request log, order, and repeated-key multiplicity remain
+available to the construction.  The right component is the actual H₂ public output. -/
+structure Hyb12ImageFibreCouplingSample where
+  h1 : Hyb1Observation (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P)
+  h2 : ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (Salt := Salt)
+
+/-- The concrete endpoint witness for revised Claim 5.22.  Its construction is the paper's
+image-fibre coupling: sample an encoded table, retain its decoded image table and an image
+witness, then sample one uniform representative from every exposed fibre.  Equation (46a)
+gives the H₁ encoded-table marginal; the fibre cache gives the adaptive H₂ marginal and reuses
+the representative at a repeated key.  The construction must also carry the observed H₁ log
+through the H₂ line-4 map, so `outputs_agree` includes the final public game output rather than
+only a table marginal.  No decoder-surjectivity assumption is permitted here. -/
+structure Hyb12ImageFibreCouplingWitness
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) where
+  joint : ProbComp (Hyb12ImageFibreCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
+    (T_P := T_P))
+  h1_marginal : (fun sample => sample.h1) <$> joint =
+    Hyb1Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+  h2_marginal : (fun sample => sample.h2) <$> joint =
+    Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+  outputs_agree : ∀ sample : Hyb12ImageFibreCouplingSample (oSpec := oSpec)
+      (StmtIn := StmtIn) (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ)
+      (Salt := Salt) (T_H := T_H) (T_P := T_P), sample.h1.publicOutput = sample.h2
+
+/-- The only unresolved operational premise of Claim 5.22.  The exact Core-only proof route is
+recorded in `Security.DecodedFibreCoupling`: `sampleImageFibreTablePair` proves the uniform H₁
+table marginal, `evalDist_decodedFibreLazyImpl_eq_eager` proves adaptive/repeated-key fibre
+realization, and the remaining live-runner factorization preserves the observed log.  This is
+temporary proof state, not a new public paper assumption and not evidence that Claim 5.22 has
+already been closed. -/
+noncomputable def Hyb12ImageFibreCoupling
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) : Prop :=
+  Nonempty (Hyb12ImageFibreCouplingWitness (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
+    (T_P := T_P) oSpecImpl V maliciousProver)
+
 /-- Updated Claim 5.22: reparameterizing an encoded challenge table by first sampling its
 decoded value and then one lifted representative is exact.  The codec bias belongs to Claim 5.23
 instead; retaining it here was the old-paper ordering and would make the revised hybrid proof
@@ -675,14 +776,51 @@ noncomputable def Claim522
   HybridTVDist (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
     (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) = 0
 
+/-- The purely probabilistic endpoint of the H₁/H₂ image-fibre coupling.  Once the concrete
+Core-only joint execution has been constructed, the revised public Claim 5.22 follows with
+zero loss. -/
+lemma claim522_of_hyb12ImageFibreCoupling
+    [Section5Nonempty pSpec]
+    (oSpecImpl : QueryImpl oSpec ProbComp)
+    (V : Verifier oSpec StmtIn StmtOut pSpec)
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
+    (hCoupling : Hyb12ImageFibreCoupling (StmtIn := StmtIn) (StmtOut := StmtOut)
+      (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
+      (T_P := T_P) oSpecImpl V maliciousProver) :
+    Claim522 (StmtIn := StmtIn) (StmtOut := StmtOut) (oSpec := oSpec) (pSpec := pSpec)
+      (U := U) (δ := δ) (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver := by
+  rcases hCoupling with ⟨witness⟩
+  let Sample := Hyb12ImageFibreCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
+    (StmtOut := StmtOut) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
+    (T_P := T_P)
+  have hpointwise :
+      (fun sample : Sample => sample.h1.publicOutput) = (fun sample : Sample => sample.h2) :=
+    funext witness.outputs_agree
+  have hmap :
+      (fun sample : Sample => sample.h1.publicOutput) <$> witness.joint =
+        (fun sample : Sample => sample.h2) <$> witness.joint :=
+    congrArg (fun f => f <$> witness.joint) hpointwise
+  change tvDist
+    (Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver)
+    (Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver) = 0
+  rw [← Hyb1Observed_map_publicOutput_eq_Hyb1 (Salt := Salt) (T_H := T_H) (T_P := T_P)
+    oSpecImpl V maliciousProver, ← witness.h1_marginal, ← witness.h2_marginal]
+  simp only [Functor.map_map]
+  rw [hmap]
+  exact tvDist_self _
+
 /-- One sample of the Claim-5.23 codec coupling.  `h4` retains the actual eager salted FS table
 *with* its real Hyb4 output; the later private-shadow proof therefore cannot accidentally use a
 separately sampled table. -/
-structure Hyb23CodecCouplingSample where
+structure Hyb23CodecCouplingSample (T_H T_P : Type)
+    [LawfulTraceNablaImpl T_H T_P StmtIn U] where
   h2 : ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (Salt := Salt)
-  h3 : ConcreteHybridOutput (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
-    (pSpec := pSpec) (Salt := Salt)
+  h3 : KeyLemma.HybridGameRevisedMappedObservation
+    (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+    (fsChallengeOracle (StmtIn × Salt) pSpec) T_H T_P
+    (ProverTransform.D2SAlgoMemo StmtIn U δ Salt pSpec)
   h4 : Hyb4ObservedSample (oSpec := oSpec) (StmtIn := StmtIn) (StmtOut := StmtOut)
     (pSpec := pSpec) (Salt := Salt)
 
@@ -697,21 +835,26 @@ structure Hyb23CodecCouplingWitness
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
     (tₚ : ℕ) where
-  joint : ProbComp (Hyb23CodecCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
-    (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt))
+  joint : ProbComp (Hyb23CodecCouplingSample (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt)
+    T_H T_P)
   h2_marginal : (fun sample => sample.h2) <$> joint =
     Hyb2 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
   h3_marginal : (fun sample => sample.h3) <$> joint =
-    Hyb3 (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
+    Hyb3Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
   h4_marginal : (fun sample => sample.h4) <$> joint =
     Hyb4Observed (Salt := Salt) (T_H := T_H) (T_P := T_P) oSpecImpl V maliciousProver
-  codecBad : Hyb23CodecCouplingSample (oSpec := oSpec) (StmtIn := StmtIn)
-    (StmtOut := StmtOut) (pSpec := pSpec) (Salt := Salt) → Prop
+  codecBad : Hyb23CodecCouplingSample (StmtIn := StmtIn) (StmtOut := StmtOut)
+    (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) T_H T_P → Prop
   codecBad_bound :
     (Pr[ codecBad | joint ]).toReal ≤
       etaStarCodecTerm (tₚ : ℝ) (iSup fun i => (codec.decodingBias i : ℝ))
         (∑ i, (codec.decodingBias i : ℝ))
-  agrees_off_codecBad : ∀ sample, ¬ codecBad sample → sample.h2 = sample.h3
+  /-- The partial bridge's out-of-image branch is not hidden as an ordinary D2S abort: it is a
+  codec mismatch and is charged by this same, single event. -/
+  imageFailure_charged : ∀ sample,
+    Hyb3CodecImageFailure (T_H := T_H) (T_P := T_P) sample.h3 → codecBad sample
+  agrees_off_codecBad : ∀ sample, ¬ codecBad sample → sample.h2 = sample.h3.publicOutput
 
 /-- The probability-theoretic endgame of Claim 5.23.  The cryptographic content is the
 adaptive construction of `Hyb23CodecCouplingWitness`; once it is available, equality outside
@@ -727,12 +870,12 @@ private lemma tvDist_map_h2_h3_le_codecBad
       (T_P := T_P) oSpecImpl V maliciousProver tₚ) :
     tvDist
         ((fun sample => sample.h2) <$> witness.joint)
-        ((fun sample => sample.h3) <$> witness.joint) ≤
+        ((fun sample => sample.h3.publicOutput) <$> witness.joint) ≤
       (Pr[ witness.codecBad | witness.joint ]).toReal := by
   simpa only [map_eq_bind_pure_comp, Function.comp_apply] using
     (tvDist_bind_left_event_le witness.joint
       (fun sample => pure sample.h2)
-      (fun sample => pure sample.h3)
+      (fun sample => pure sample.h3.publicOutput)
       witness.codecBad
       (fun sample hnot => by simp [witness.agrees_off_codecBad sample hnot]))
 
@@ -756,19 +899,39 @@ lemma hyb23CodecCouplingWitness_tvdist
   have htv := tvDist_map_h2_h3_le_codecBad (StmtIn := StmtIn) (StmtOut := StmtOut)
     (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
     (T_P := T_P) oSpecImpl V maliciousProver tₚ witness
-  rw [witness.h2_marginal, witness.h3_marginal] at htv
-  exact htv.trans witness.codecBad_bound
+  have htv' :
+      tvDist
+          ((fun sample => sample.h2) <$> witness.joint)
+          ((fun observation => observation.publicOutput) <$>
+            ((fun sample => sample.h3) <$> witness.joint)) ≤
+        (Pr[ witness.codecBad | witness.joint ]).toReal := by
+    simpa only [Functor.map_map, Function.comp_apply] using htv
+  rw [witness.h2_marginal, witness.h3_marginal,
+    Hyb3Observed_map_publicOutput_eq_Hyb3] at htv'
+  exact htv'.trans witness.codecBad_bound
+
+/-- The only adversarial resource used by the codec coupling: each fresh source standard-table
+cell is caused by a source forward-permutation query.  Hash and inverse-permutation budgets do
+not enter Claim 5.23's bound. -/
+abbrev IsClaim523ForwardQueryBound
+    (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ) (tₚ : ℕ) : Prop :=
+  by
+    classical
+    exact OracleComp.IsQueryBoundP maliciousProver
+      (KeyLemma.isLemma5_1PermQuery (oSpec := oSpec) (StmtIn := StmtIn) (U := U)) tₚ
 
 /-- Updated Claim 5.23: the codec comparison is an adaptive three-way coupling of Hyb2, Hyb3,
 and the Hyb4 standard table.  This is stronger than a bare TV bound and records the shared table
-needed by Lemma 5.24a. -/
+needed by Lemma 5.24a.  Its sole resource premise is the `tₚ` bound on source forward permutation
+queries, exactly as in the revised paper's fresh-cell accounting. -/
 noncomputable def Claim523
     [DecidableEq ι] [Section5Nonempty pSpec]
     (oSpecImpl : QueryImpl oSpec ProbComp)
     (V : Verifier oSpec StmtIn StmtOut pSpec)
     (maliciousProver : MaliciousProver oSpec pSpec StmtIn U δ)
-    (tₕ tₚ tₚᵢ : ℕ) : Prop :=
-  KeyLemma.IsLemma5_1QueryBound maliciousProver tₕ tₚ tₚᵢ →
+    (tₚ : ℕ) : Prop :=
+  IsClaim523ForwardQueryBound (oSpec := oSpec) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)
+    (δ := δ) maliciousProver tₚ →
     Nonempty (Hyb23CodecCouplingWitness (StmtIn := StmtIn) (StmtOut := StmtOut)
       (oSpec := oSpec) (pSpec := pSpec) (U := U) (δ := δ) (Salt := Salt) (T_H := T_H)
       (T_P := T_P) oSpecImpl V maliciousProver tₚ)

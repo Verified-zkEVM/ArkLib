@@ -7,6 +7,7 @@ Authors: Quang Dao, Chung Thai Nguyen
 import ArkLib.Data.Hash.DuplexSponge
 import ArkLib.OracleReduction.FiatShamir.Basic
 import ArkLib.OracleReduction.FiatShamir.SingleSalt
+import ArkLib.OracleReduction.FiatShamir.DuplexSponge.Preliminaries
 
 import ArkLib.OracleReduction.Security.OracleDistribution
 
@@ -169,7 +170,7 @@ We account for this by explicitly tracking **decoding biases**. We say that a co
 (i.e., it maps the uniform distribution on `Σ^{ℓ_V(i)}` to a distribution that is
 `ε_{cdc, i}`-close to the uniform distribution on `M_{V, i}`).
 -/
-class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
+class CodecCore {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
     extends HasMessageSize pSpec, HasChallengeSize pSpec where
   /-- `φᵢ : Message i → Σ^{ℓ_P(i)}` — message encoder (CO25 Def. 4.1). -/
   encode : (i : pSpec.MessageIdx) → pSpec.Message i → Vector U (messageSize i)
@@ -184,6 +185,12 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
       [Fintype (pSpec.Challenge i)] [Nonempty (pSpec.Challenge i)],
       dist (PMF.uniformOfFintype (pSpec.Challenge i))
         (decode i <$> PMF.uniformOfFintype (Vector U (challengeSize i))) ≤ decodingBias i
+
+/-- Legacy total-fibre codec interface.  The revised Section 5 proof is parameterized by
+`CodecCore`: it invokes `Lift` only after an explicit image-membership test, exactly as in the
+paper.  This stronger extension remains available to pre-existing callers that use a total
+uniform preimage sampler. -/
+class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type) extends CodecCore pSpec U where
   /-- For every `i`, `decode i` is surjective: every challenge has at least one encoded preimage.
     Required for the `ψ⁻¹` sampler in the Section 5.8 reduction. -/
   decode_surjective : ∀ i, Function.Surjective (decode i)
@@ -191,20 +198,47 @@ class Codec {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
   sampleChallengePreimage :
     (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
 
+/-- Legacy capability for code paths that intentionally require a total decoder fibre.  The
+revised Section 5 construction itself is parameterized only by `CodecCore`: it uses a lift only
+at an explicitly witnessed image point.  Splitting this capability out lets legacy clients retain
+their total sampler without silently strengthening the paper-facing game statements. -/
+class CodecTotal {n : ℕ} (pSpec : ProtocolSpec n) (U : Type)
+    [codec : CodecCore pSpec U] where
+  decode_surjective : ∀ i, Function.Surjective (codec.decode i)
+  sampleChallengePreimage :
+    (i : pSpec.ChallengeIdx) → pSpec.Challenge i → ProbComp (Vector U (challengeSize i))
+
+/-- Every legacy `Codec` supplies the separated total-fibre capability. -/
+instance (priority := high) instCodecTotal {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
+    [codec : Codec pSpec U] : CodecTotal pSpec U where
+  decode_surjective := codec.decode_surjective
+  sampleChallengePreimage := codec.sampleChallengePreimage
+
+/-- Reassemble the legacy total codec interface when a caller deliberately supplies the
+paper-facing core together with the separated total-fibre capability.  This is a definition,
+not a global instance: revised Section 5 code must never regain decoder surjectivity by typeclass
+search. -/
+@[reducible]
+def Codec.ofCoreTotal {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
+    [codec : CodecCore pSpec U] [codecTotal : CodecTotal pSpec U] : Codec pSpec U where
+  toCodecCore := codec
+  decode_surjective := codecTotal.decode_surjective
+  sampleChallengePreimage := codecTotal.sampleChallengePreimage
+
 namespace Codec
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {U : Type}
 
-instance (priority := high) instSerializeMessage [c : Codec pSpec U] (i : pSpec.MessageIdx) :
+instance (priority := high) instSerializeMessage [c : CodecCore pSpec U] (i : pSpec.MessageIdx) :
     Serialize (pSpec.Message i) (Vector U (messageSize i)) where
   serialize := c.encode i
 
-instance (priority := high) instSerializeMessageInjective [c : Codec pSpec U]
+instance (priority := high) instSerializeMessageInjective [c : CodecCore pSpec U]
     (i : pSpec.MessageIdx) :
     Serialize.IsInjective (pSpec.Message i) (Vector U (messageSize i)) where
   serialize_inj := c.encode_injective i
 
-instance (priority := high) instDeserializeChallenge [c : Codec pSpec U] (i : pSpec.ChallengeIdx) :
+instance (priority := high) instDeserializeChallenge [c : CodecCore pSpec U] (i : pSpec.ChallengeIdx) :
     Deserialize (pSpec.Challenge i) (Vector U (challengeSize i)) where
   deserialize := c.decode i
 
@@ -515,23 +549,141 @@ noncomputable instance instSampleableTypeEncodedChallengeOracleLegacy
       (gSpec (U := U) StmtIn pSpec δ)) := by
   sorry
 
-/-- CO25 Eq. 52 — eager full-table distribution `e` over the decoded challenge-oracle family
-for `Hyb₂`.
+/-- CO25 Eq. 52 — the decoded challenge-table distribution `e` for `Hyb₂`.
 
-Same eager full-table semantics as `D_Sigma`, with the
-response type swapped from `Σ^{ℓ_V(i)}` to the decoded `pSpec.Challenge i`. Realizes
-`e ← 𝒰((dom_i → ℳ_{V,i})_{i∈[k]})`. -/
-def D_e
+Sample one encoded table `g ← D_Σ` and answer an `eᵢ` cell by
+`ψᵢ(gᵢ(cell))`.  Thus each decoded cell has the required pushforward law
+`ψᵢ(𝒰(Σ^{ℓ_V(i)}))`, rather than the generally different uniform law on
+`pSpec.Challenge i`.  This is the exact reparameterization used by Claim 5.22; replacing it by
+`D_ROM eSpec` would be sound only for balanced codec fibers. -/
+noncomputable def D_e
     {U : Type} [SpongeUnit U] [SpongeSize]
     (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n)
     (δ : Nat)
-    [HasMessageSize pSpec]
-    [SampleableType
-      (OracleReduction.OracleFamily
-        (eSpec (U := U) StmtIn pSpec δ))] :
+    [codec : CodecCore pSpec U]
+    [VCVCompatible StmtIn] [VCVCompatible U] :
     OracleReduction.OracleDistribution
-      (eSpec (U := U) StmtIn pSpec δ) :=
-    OracleReduction.D_ROM _
+      (eSpec (U := U) StmtIn pSpec δ) where
+  Carrier := OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)
+  sample := (D_SigmaFinite (U := U) StmtIn pSpec δ).sample
+  -- Destructure the dependent query first: this exposes the common Eq. 52
+  -- prefix type shared by `eSpec` and `gSpec`, so the encoded table can be
+  -- indexed at precisely the decoded-oracle cell being answered.
+  toImpl := fun table ⟨i, key⟩ =>
+    let hRange : (gSpec (U := U) StmtIn pSpec δ).Range ⟨i, key⟩ =
+        Vector U (challengeSize i) := by
+      rfl
+    pure (codec.decode i (Eq.mp hRange (table ⟨i, key⟩)))
+
+/-- The decoded view of a complete encoded challenge table.  This is the whole-table form of
+CO25 Eq. (52): a cell at phase `i` is decoded with `ψᵢ`, while the table keeps the same encoded
+query domain as `gSpec`.  It is used by the exact H₁--H₂ reparameterization, separately from the
+lazy implementation which exposes only the cells that are queried. -/
+abbrev DecodedChallengeTable
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [HasMessageSize pSpec] [HasChallengeSize pSpec] :=
+  (q : (gSpec (U := U) StmtIn pSpec δ).Domain) → pSpec.Challenge q.1
+
+/-- Decode every cell of an encoded challenge table. -/
+def decodeEncodedChallengeTable
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U] :
+    OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ) →
+      DecodedChallengeTable (U := U) StmtIn pSpec δ :=
+  fun table q => codec.decode q.1 (table q)
+
+/-- Cellwise decoder surjectivity lifts to the complete encoded challenge table. -/
+theorem decodeEncodedChallengeTable_surjective
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U] [CodecTotal pSpec U] :
+    Function.Surjective
+      (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ) := by
+  intro decoded
+  choose encoded hencoded using fun q =>
+    CodecTotal.decode_surjective (pSpec := pSpec) (U := U) q.1 (decoded q)
+  refine ⟨fun q => encoded q, ?_⟩
+  funext q
+  exact hencoded q
+
+/-- **Whole-table Claim 5.22 kernel.** Sample a uniform encoded table, expose its decoded view,
+then draw a uniform encoded table from the fibre of that view.  The resulting table is again
+uniform.  This is a direct instance of Lemma 3.2 at the table type, and is the exact
+probabilistic core of the H₁--H₂ coupling.  The separate lazy-realization theorem must show that
+the memoized bridge exposes this same kernel one fresh key at a time. -/
+theorem encodedTable_uniform_fiber_reparameterization
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U] [CodecTotal pSpec U]
+    [Fintype (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))]
+    [Nonempty (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))]
+    [DecidableEq (DecodedChallengeTable (U := U) StmtIn pSpec δ)] :
+    PMF.bind
+      (PMF.uniformOfFintype
+        (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)))
+      (fun table => DuplexSpongeFS.Preliminaries.sampleUniformPreimage
+        (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ)
+        (decodeEncodedChallengeTable_surjective (U := U) StmtIn pSpec δ)
+        (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ table)) =
+      PMF.uniformOfFintype
+        (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) := by
+  exact DuplexSpongeFS.Preliminaries.bind_sampleUniformPreimage_eq_uniform
+    (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ)
+    (decodeEncodedChallengeTable_surjective (U := U) StmtIn pSpec δ)
+
+/-- Paper-faithful whole-table Claim 5.22 kernel.  The lift target is the decoded view of the
+sampled encoded table itself, so its fibre is nonempty without assuming that the decoder reaches
+every nominal challenge.  This is the theorem used by the revised H₁--H₂ coupling; the preceding
+surjective version remains only for legacy total-fibre clients. -/
+theorem encodedTable_uniform_fiber_reparameterization_of_image
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U]
+    [Fintype (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))]
+    [Nonempty (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ))]
+    [DecidableEq (DecodedChallengeTable (U := U) StmtIn pSpec δ)] :
+    PMF.bind
+      (PMF.uniformOfFintype
+        (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)))
+      (fun table => DuplexSpongeFS.Preliminaries.sampleUniformPreimageOfImage
+        (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ)
+        (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ table)
+        ⟨table, rfl⟩) =
+      PMF.uniformOfFintype
+        (OracleReduction.OracleFamily (gSpec (U := U) StmtIn pSpec δ)) := by
+  exact DuplexSpongeFS.Preliminaries.bind_sampleUniformPreimageOfImage_eq_uniform
+    (decodeEncodedChallengeTable (U := U) StmtIn pSpec δ)
+
+/-- `D_e` and `D_Σ` sample exactly the same encoded table.  Claim 5.22 does
+not replace that table by an independently uniform decoded table: it merely
+observes each sampled encoded cell through the decoder, then restores an
+encoded representative with the bridge's memoized preimage sampler. -/
+@[simp]
+theorem D_e_sample_eq_D_SigmaFinite
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U]
+    [VCVCompatible StmtIn] [VCVCompatible U] :
+    (D_e (U := U) StmtIn pSpec δ).sample =
+      (D_SigmaFinite (U := U) StmtIn pSpec δ).sample :=
+  rfl
+
+/-- Cellwise form of Eq. (52).  The decoded Hyb₂ oracle is a view of the
+same encoded table sampled by Hyb₁; no fresh decoded table is sampled here. -/
+@[simp]
+theorem D_e_toImpl_apply
+    {U : Type} [SpongeUnit U] [SpongeSize]
+    (StmtIn : Type) {n : ℕ} (pSpec : ProtocolSpec n) (δ : Nat)
+    [codec : CodecCore pSpec U]
+    [VCVCompatible StmtIn] [VCVCompatible U]
+    (table : (D_SigmaFinite (U := U) StmtIn pSpec δ).Carrier)
+    (i : pSpec.ChallengeIdx)
+    (key : StmtIn × Vector U δ × pSpec.EncodedMessagesBefore U i.1.castSucc) :
+    (D_e (U := U) StmtIn pSpec δ).toImpl table ⟨i, key⟩ =
+      pure (codec.decode i (table ⟨i, key⟩)) := by
+  rfl
 
 /-! ## Setup: oracle distributions and `SampleableType` bridges -/
 
@@ -819,7 +971,7 @@ variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   [VCVCompatible StmtIn] [∀ i, VCVCompatible (pSpec.Challenge i)]
   {U : Type} [SpongeUnit U] [SpongeSize]
-  [Codec pSpec U]
+  [CodecCore pSpec U]
 
 /-- Proof-string format for the salted DSFS surface (`τ` plus prover messages). -/
 abbrev DSSaltedProof (pSpec : ProtocolSpec n) (U : Type) (δ : Nat) :=
@@ -1221,7 +1373,7 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {n : ℕ} {pSpec : ProtocolSpec n}
   {StmtIn : Type} {U : Type} [SpongeUnit U] [SpongeSize]
   {δ : Nat}
-  [codec : Codec pSpec U]
+  [codec : CodecCore pSpec U]
 
 /-- CO25 §5.4 — External challenge-oracle family augmented with the auxiliary sampling oracles.
 

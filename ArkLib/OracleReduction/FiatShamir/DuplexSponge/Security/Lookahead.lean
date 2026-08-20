@@ -353,6 +353,85 @@ The paper's Algorithm 2 enumerates the maximal family then post-filters. CO25 li
 "the search stops if it encounters two conflicting chains" — i.e. scan-time fork → return `err`
 directly. This is paper-faithful: scan-time fork detection coincides with `E_fork,p`. -/
 
+/-- The live normalized-table invariant sufficient for the forward LookAhead scan.  Unlike the
+BackTrack reverse lookup, successors are selected by their complete input state, so ordinary
+input functionality is enough; `noLoop` is the separate capacity guard of Definition 5.3. -/
+def SearchUnambiguous
+    (trΔp : T_P) : Prop :=
+  (TraceTableOps.entries trΔp).Nodup ∧
+  TraceTableOps.InputFunctional trΔp ∧
+  ∀ pair ∈ TraceTableOps.entries trΔp,
+    pair.1.capacitySegment ≠ pair.2.capacitySegment
+
+private lemma successorCandidates_nodup
+    (trΔp : T_P) (current : CanonicalSpongeState U)
+    (hNodup : (TraceTableOps.entries trΔp).Nodup) :
+    (successorCandidates trΔp current).Nodup := by
+  unfold successorCandidates
+  apply List.Nodup.filterMap _ hNodup
+  intro pair₁ pair₂ next h₁ h₂
+  change (if pair₁.1 = current then some pair₁.2 else none) = some next at h₁
+  change (if pair₂.1 = current then some pair₂.2 else none) = some next at h₂
+  split at h₁ <;> try contradiction
+  next hCurrent₁ =>
+    injection h₁ with hNext₁
+    split at h₂ <;> try contradiction
+    next hCurrent₂ =>
+      injection h₂ with hNext₂
+      apply Prod.ext
+      · exact hCurrent₁.trans hCurrent₂.symm
+      · exact hNext₁.trans hNext₂.symm
+
+private lemma successorCandidates_all_eq
+    (trΔp : T_P) (current : CanonicalSpongeState U)
+    (hFunctional : TraceTableOps.InputFunctional trΔp) :
+    ∀ next₁ ∈ successorCandidates trΔp current,
+      ∀ next₂ ∈ successorCandidates trΔp current, next₁ = next₂ := by
+  intro next₁ hNext₁ next₂ hNext₂
+  unfold successorCandidates at hNext₁ hNext₂
+  rcases List.mem_filterMap.mp hNext₁ with ⟨pair₁, hPair₁, hMap₁⟩
+  rcases List.mem_filterMap.mp hNext₂ with ⟨pair₂, hPair₂, hMap₂⟩
+  change (if pair₁.1 = current then some pair₁.2 else none) = some next₁ at hMap₁
+  change (if pair₂.1 = current then some pair₂.2 else none) = some next₂ at hMap₂
+  split at hMap₁ <;> try contradiction
+  next hCurrent₁ =>
+    injection hMap₁ with hOutput₁
+    subst next₁
+    split at hMap₂ <;> try contradiction
+    next hCurrent₂ =>
+      injection hMap₂ with hOutput₂
+      subst next₂
+      have hMem₁ : (current, pair₁.2) ∈ LawfulTraceTable.toMultiSet trΔp := by
+        rw [← LawfulTraceTable.toMultiSet_ofEntries]
+        rw [← hCurrent₁]
+        exact Multiset.mem_coe.mpr hPair₁
+      have hMem₂ : (current, pair₂.2) ∈ LawfulTraceTable.toMultiSet trΔp := by
+        rw [← LawfulTraceTable.toMultiSet_ofEntries]
+        rw [← hCurrent₂]
+        exact Multiset.mem_coe.mpr hPair₂
+      have hOutput : pair₂.2 = pair₁.2 :=
+        hFunctional current pair₁.2 pair₂.2 hMem₁ hMem₂
+      have hPairEq : pair₁ = pair₂ := by
+        apply Prod.ext
+        · exact hCurrent₁.trans hCurrent₂.symm
+        · exact hOutput.symm
+      exact congrArg Prod.snd hPairEq
+
+private lemma successorCandidates_not_two_or_more
+    (trΔp : T_P) (current : CanonicalSpongeState U)
+    (hUnambiguous : SearchUnambiguous trΔp)
+    (a b : CanonicalSpongeState U)
+    (rest : List (CanonicalSpongeState U)) :
+    successorCandidates trΔp current ≠ a :: b :: rest := by
+  intro hEq
+  have hNodup := successorCandidates_nodup trΔp current hUnambiguous.1
+  have hAllEq := successorCandidates_all_eq trΔp current hUnambiguous.2.1
+  rw [hEq] at hNodup
+  rw [hEq] at hAllEq
+  have hab : a = b := hAllEq a (by simp) b (by simp)
+  subst b
+  exact (List.nodup_cons.mp hNodup).1 (by simp)
+
 
 /-- Output of linear forwards scan: either a fork was detected,
 or scan terminated with an optional sequence. -/
@@ -428,24 +507,60 @@ private lemma linearScanForwards_seq_length_le
       · -- succs = _ :: _ :: _: .forkErr, contradiction
         simp at hScan
 
-/-- `linearLookAhead` uses the linear scan to return either a challenge vector or
-`err` directly (paper-faithful): a scan-time fork means `|S_LA| > 1`, which the paper's
-Step 2(a) maps to `err` anyway, so no family enumeration is needed. -/
-private def linearLookAhead
-    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
-    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) := do
-  let maxSteps := pSpec.Lᵥᵢ i
-  match hScan : linearScanForwards (T_P := T_P) (U := U) trΔp maxSteps state with
+/-- Under the live normalized-table invariant, the executable LookAhead scan cannot encounter
+either source of its early `.forkErr`: a repeated full input is excluded by input functionality,
+and an equal input/output capacity is excluded by the no-loop component. -/
+private theorem linearScanForwards_ne_fork_of_searchUnambiguous
+    (trΔp : T_P) (hUnambiguous : SearchUnambiguous trΔp)
+    (fuel : Nat) (current : CanonicalSpongeState U) :
+    linearScanForwards trΔp fuel current ≠ .forkErr := by
+  induction fuel generalizing current with
+  | zero => simp [linearScanForwards]
+  | succ fuel ih =>
+      simp only [linearScanForwards]
+      split
+      case h_1 hEmpty => simp
+      case h_2 next hSingleton =>
+        have hEntry : (current, next) ∈ TraceTableOps.entries trΔp :=
+          successor_singleton_mem_entries trΔp current next hSingleton
+        have hNoLoop : current.capacitySegment ≠ next.capacitySegment :=
+          hUnambiguous.2.2 (current, next) hEntry
+        split
+        case isTrue hLoop => exact (hNoLoop hLoop).elim
+        case isFalse _ =>
+          split
+          case h_1 hFork => exact (ih next hFork).elim
+          case h_2 => simp
+          case h_3 => simp
+      case h_3 a b rest hMany =>
+        exact (successorCandidates_not_two_or_more trΔp current hUnambiguous a b rest
+          hMany).elim
+
+/-- Interpret an already-computed scan result.  Separating this from the scan makes the
+support-level no-abort proof structural even though the successful branch samples rate blocks. -/
+private noncomputable def linearLookAheadFromScan
+    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx)
+    (scan : LinearForwardScanResult (U := U) trΔp state)
+    (hScan : linearScanForwards (T_P := T_P) (U := U) trΔp (pSpec.Lᵥᵢ i) state = scan) :
+    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) :=
+  match scan with
   | .forkErr => pure ExperimentOutput.err
   | .done none => pure ExperimentOutput.noResult
-  | .done (some seq) =>
+  | .done (some seq) => do
       have hLen : seq.inputState.length ≤ pSpec.Lᵥᵢ i := by
-        -- scan-invariant: `pairs.length ≤ maxSteps = pSpec.Lᵥᵢ i`.
         rw [inputState_length_eq_pairs_length]
-        exact linearScanForwards_seq_length_le trΔp maxSteps state hScan
+        exact linearScanForwards_seq_length_le trΔp (pSpec.Lᵥᵢ i) state hScan
       let rhoHat_i ← sampleChallengeFromSequence (T_P := T_P) (U := U) (pSpec := pSpec)
         (seq := seq) (i := i) (hInputLenLe := hLen)
       pure (ExperimentOutput.some rhoHat_i)
+
+/-- `linearLookAhead` uses the linear scan to return either a challenge vector or `err`
+directly (paper-faithful): a scan-time fork means `|S_LA| > 1`, which Step 2(a) maps to `err`. -/
+private noncomputable def linearLookAhead
+    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
+    OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) :=
+  linearLookAheadFromScan trΔp state i
+    (linearScanForwards (T_P := T_P) (U := U) trΔp (pSpec.Lᵥᵢ i) state) rfl
 
 /-- CO25 §5.3 Algorithm 2 — `LookAhead(tr_∇.p, s, i)`, polymorphic over any
 `[LawfulTraceTable T_P ...]` for `tr_∇.p`.
@@ -465,11 +580,40 @@ Output: a probabilistic computation returning either
 Implementation: delegates to `linearLookAhead`, which performs CO25 line-1107's scan-time
 fork-detection optimization. Proofs quantify over the family structure `S_LA` as an explicit
 hypothesis when needed — no family enumeration is computed (design note above). -/
-def lookAhead
+noncomputable def lookAhead
     (trΔp : T_P)
     (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
     OracleComp (Unit →ₒ U) (ExperimentOutput (Vector U (challengeSize i))) :=
   linearLookAhead (pSpec := pSpec) trΔp state i
+
+/-- The public LookAhead computation never returns `.err` on a reusable normalized table.  This
+is a support property, not syntactic inequality with `pure err`: the successful branch samples
+missing rate blocks and is therefore generally not a pure computation. -/
+def NoErr (i : pSpec.ChallengeIdx) (comp : OracleComp (Unit →ₒ U)
+    (ExperimentOutput (Vector U (challengeSize i)))) : Prop :=
+  ExperimentOutput.err ∉ support comp
+
+private theorem linearLookAheadFromScan_noErr
+    (trΔp : T_P) (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx)
+    (scan : LinearForwardScanResult (U := U) trΔp state)
+    (hScan : linearScanForwards trΔp (pSpec.Lᵥᵢ i) state = scan)
+    (hNoFork : scan ≠ .forkErr) :
+    NoErr (i := i) (linearLookAheadFromScan trΔp state i scan hScan) := by
+  cases scan with
+  | forkErr => exact (hNoFork rfl).elim
+  | done seq? =>
+      cases seq? with
+      | none => simp [linearLookAheadFromScan, NoErr]
+      | some seq => simp [linearLookAheadFromScan, NoErr]
+
+theorem lookAhead_noErr_of_searchUnambiguous
+    (trΔp : T_P) (hUnambiguous : SearchUnambiguous trΔp)
+    (state : CanonicalSpongeState U) (i : pSpec.ChallengeIdx) :
+    NoErr (i := i) (lookAhead (pSpec := pSpec) trΔp state i) := by
+  unfold lookAhead linearLookAhead NoErr
+  apply linearLookAheadFromScan_noErr
+  exact linearScanForwards_ne_fork_of_searchUnambiguous trΔp hUnambiguous
+    (pSpec.Lᵥᵢ i) state
 
 end
 

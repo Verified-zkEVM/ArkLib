@@ -43,7 +43,7 @@ open DuplexSpongeFS.Backtrack
 open DuplexSpongeFS.ProverTransform
 
 variable {StmtIn : Type} {n : Nat} {pSpec : ProtocolSpec n}
-  {U : Type} [SpongeUnit U] [SpongeSize] [codec : Codec pSpec U] {δ : Nat}
+  {U : Type} [SpongeUnit U] [SpongeSize] [codec : CodecCore pSpec U] {δ : Nat}
   [DecidableEq StmtIn] [DecidableEq U]
   {T_H : Type} {T_P : Type}
   [LawfulTraceNablaImpl T_H T_P StmtIn U]
