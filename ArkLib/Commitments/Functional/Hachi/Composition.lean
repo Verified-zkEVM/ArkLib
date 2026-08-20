@@ -469,11 +469,14 @@ end OpeningChain
   inner-outer commitment: instantiating it (no re-decomposition, the collision escape via
   `outputToModuleSIS_valid_of_verified`, and the ring-dimension reinterpretation row 12 consumes)
   is what makes those escapes concrete Module-SIS breaks.
-* **Honest-prover / completeness layer.** Every link's prover is a skeleton parameterized by its
-  compute functions (`QuadEval`'s `computeV`/`computeResp`, the sumcheck's `computeG`, the tail's
-  `computeY`); nothing instantiates them, and `Commitment.lean`'s `opening` waits on that. For the
-  sumcheck loop specifically this needs a *computable* round message — see
-  `Sumcheck/RoundPoly.lean`'s Computability section.
+* **Honest-prover / completeness layer.** Each link's prover is a skeleton parameterized by its
+  compute functions, and all of them through the sumcheck are now instantiated with a completeness
+  proof (`QuadEval`'s `honestComputeV`/`honestComputeResp`, the sumcheck's `honestComputeG` at the
+  computable `computableRoundPoly`, the final evaluation's `honestComputeY`); the honest chain is
+  appended in `HonestChain.lean` up to `relWEvalClaim`. What is still open is the recursion tail's
+  `computeY` (`Recursion/PartialEval.lean`) and — for every *composed* completeness statement,
+  including `Commitment.lean`'s `opening` — the sorried generic `Reduction.append_completeness`,
+  which those statements inherit as a `sorryAx` dependency.
 * **Knowledge-error accounting** (FMN24 Lemma 4), `Commitment.extractability`, and Fiat–Shamir
   remain out of scope. Note what this means for the certificate above: CWSS delivers a witness (or
   an escape) from a *structured accepting tree*, with no probability attached — no per-round

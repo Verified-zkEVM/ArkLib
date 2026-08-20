@@ -6,6 +6,7 @@ Authors: Pablo Martín Vinuelas
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Completeness
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
 import ArkLib.OracleReduction.Composition.Sequential.Append
 
 /-!
@@ -27,16 +28,18 @@ HMZ25 lift            relRlinImage γ  → relLift γ (q/2)  (bound = γ forced 
 batching bridge       relLift γ (q/2) → relBatched bZero (γ, q/2 ≤ bZero − 1)
 ```
 
-## What is *not* here: the composed reduction
+## The composed reductions, and what they cost
 
-These are **per-link theorems at compatible relations**, not completeness of an appended reduction.
-Composing them into one statement about the opening protocol needs
-`Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`) and, for the
-context-lifted links, `liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`) —
-**both still `sorry`**. Nothing in this file, or anywhere in the Hachi tree, states completeness of
-the composed opening; `Composition.lean` composes the *soundness* certificates only. What the seam
-corollaries do establish is that the relation interfaces match, so no relation-level obstruction
-remains once the generic composition lemmas land.
+The seam corollaries above are **per-link theorems at compatible relations**: they establish that
+the relation interfaces match, with no reference to composition. Two composed statements are also
+here — `completePrefixReduction_perfectCompleteness` (through the nested zero-check) and
+`completeThroughSumcheckReduction_perfectCompleteness` (through the sumcheck, to
+`relWEvalClaim`) — but both are **`sorryAx`-tainted by construction**: appending completeness needs
+`Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`), still
+`sorry`, and the context-lifted links would additionally need `liftContext_completeness`
+(`OracleReduction/LiftContext/Reduction.lean`), also still `sorry`. Every per-link input is
+axiom-clean; nothing beyond `relWEvalClaim` is composed at all (the recursion tail's honest layer
+does not exist yet), and `Composition.lean` composes the *soundness* certificates only.
 
 ## What the non-short honest quotient costs
 
@@ -361,5 +364,113 @@ theorem completePrefixReduction_perfectCompleteness
   exact hPrefix
 
 end CompletePrefix
+
+/-! ## Through the sumcheck
+
+`completePrefixReduction` stops at `relNestedZeroCheck`. `Sumcheck/Completeness.lean` carries that
+relation on to the evaluation claim `relWEvalClaim` — bridge, `m₀` paired rounds, final
+evaluation — so the two compose into an honest protocol from the polynomial-evaluation relation
+all the way to the claim the `Recursion/` adapters consume.
+
+The prefix is left untouched: this is a new definition appending to it, so nothing already proved
+about `completePrefixReduction` moves.
+
+Two boundaries are visible in the statement:
+
+* the sumcheck's arity is `m₀ = M + 1` — the loop needs at least one cube coordinate to fold, the
+  same successor shape `Sumcheck/RoundPoly.lean` and the round soundness theorem use;
+* like everything appended, this inherits `sorryAx` from the generic
+  `Reduction.append_completeness`. The links it is built from are individually axiom-clean. -/
+
+section ThroughSumcheck
+
+variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
+  (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
+variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
+variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+
+local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
+local notation "n₀" => rlinRows innerRows outerRows dRows
+
+/-- The honest Hachi protocol from the polynomial-evaluation claim through the sumcheck: the
+complete proved prefix (`completePrefixReduction`) followed by the local sumcheck
+(`sumcheckReduction`). -/
+noncomputable def completeThroughSumcheckReduction (P : HonestRangeParams q)
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) : Reduction oSpec
+      (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
+      (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
+      (WEvalStatement K.TCom F (M + 1))
+      (LiftedWitness Φ μ₀ n₀)
+      (((!p[] : ProtocolSpec 0) ++ₚ
+        (CoordinateWise.SingleRound.pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
+          ((!p[] : ProtocolSpec 0) ++ₚ
+            (pSpecScalar K.TCom F ++ₚ
+              ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F (M + 1) m₁))))) ++ₚ
+        sumcheckSpec F P.bZero (M + 1)) :=
+  (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := M + 1) (m₁ := m₁)
+      Φ P pp hqm hqz K hd).append
+    (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ P.γ P.bZero hbZero φF)
+
+/-- Sampleability of the through-sumcheck wire format: the prefix's own instance appended to the
+sumcheck's, assembled explicitly for the same reason `completePrefixSpecSampleable` is — the
+generic append instance does not fire reliably through a deeply nested `ProtocolSpec`. -/
+@[reducible] instance throughSumcheckSpecSampleable {TCom : Type} (bZero : ℕ)
+    [∀ i, SampleableType
+      ((CoordinateWise.SingleRound.pSpec
+        (CarrierCom Φ dRows) (ShortChallenge Φ ω) r).Challenge i)] :
+    ∀ i, SampleableType
+      ((((!p[] : ProtocolSpec 0) ++ₚ
+        (CoordinateWise.SingleRound.pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r ++ₚ
+          ((!p[] : ProtocolSpec 0) ++ₚ
+            (pSpecScalar TCom F ++ₚ
+              ((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F (M + 1) m₁))))) ++ₚ
+        sumcheckSpec F bZero (M + 1)).Challenge i) :=
+  ProtocolSpec.instSampleableTypeChallengeAppend
+    (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
+
+set_option linter.unusedSectionVars false in
+/-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
+the evaluation claim `relWEvalClaim`, error `0`.
+
+Hypotheses are the prefix's (`completePrefixReduction_perfectCompleteness`, including the two
+reverse range orientations the nested zero-check's honest seam needs) plus the sumcheck's
+`0 < bZero` and `(μ₀ + n₀)·deg φ ≤ 2^{m₀}`. The seam itself needs nothing: the prefix's output
+relation `relNestedZeroCheck` *is* the sumcheck's input relation, at the same parameters.
+
+⚠ **Inherits `sorryAx`** through `Reduction.append_perfectCompleteness` — the generic
+`Reduction.append_completeness` is still `sorry`. Each link is axiom-clean on its own. -/
+theorem completeThroughSumcheckReduction_perfectCompleteness
+    [∀ i, SampleableType
+      ((CoordinateWise.SingleRound.pSpec
+        (CarrierCom Φ dRows) (ShortChallenge Φ ω) r).Challenge i)]
+    (P : HonestRangeParams q)
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows)
+    (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
+    (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
+    (hbZero : 0 < P.bZero)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    {βSq κ : ℕ} :
+    (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
+      Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
+      (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
+      (relWEvalClaim Φ (M + 1) P.γ (q / 2) P.bZero K φF) :=
+  Reduction.append_perfectCompleteness _ _
+    (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
+      (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
+      Φ P init impl pp hqm hqz hmd hτ hd K φF hμn hZeroγ hZeroρ)
+    (sumcheckReduction_perfectCompleteness Φ m₁ P.γ (q / 2) P.bZero init impl K hbZero φF hd hμn)
+
+end ThroughSumcheck
+
+
 
 end ArkLib.Lattices.Ajtai.InnerOuter

@@ -164,8 +164,9 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
 sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
-formalized (`QuadEval.prover`'s `computeV`/`computeResp`, the sumcheck loop's `computeG`, the
-tail's `computeY`). Everything else here is real.
+formalized (`QuadEval.prover`'s `computeV`/`computeResp` and the partial-evaluation tail's
+`computeY`; the sumcheck loop's `computeG` is now `honestComputeG`). Everything else here is
+real.
 
 ⚠ The declared `pSpec` is **not** the full opening protocol's spec: `!p[] ++ₚ pSpec …` is the
 *bridge ▷ QuadEval prefix* only (zero rounds, then Figure 3's commit/challenge round). The finished
@@ -438,13 +439,14 @@ The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs,
 
 1. **the honest-prover layer for the links that still lack one.** `QuadEval` has it
    (`honestComputeV` / `honestComputeResp`, from `QuadEval.Gadgets`' `carrierCommit` / `zDecomp`),
-   as do the `R^lin` adapter, the HMZ25 lift, the batching bridge and the nested zero-check — each
-   with a completeness proof. Still open:
-   * the sumcheck loop's `computeG` (`Sumcheck/Rounds.lean`), the honest round-polynomial pair. This
-     one needs new infrastructure first: a *computable* `CPolynomial`-valued partial sum in the free
-     coordinate, plus its agreement lemma against the proof-side `roundPoly`
-     (`Sumcheck/RoundPoly.lean`, Computability section);
-   * the final-evaluation and partial-evaluation tails' `computeY`;
+   as do the `R^lin` adapter, the HMZ25 lift, the batching bridge, the nested zero-check, the
+   sumcheck loop (`honestComputeG` at `computableRoundPoly`, `Sumcheck/Completeness.lean`) and the
+   final-evaluation step (`honestComputeY`, `Sumcheck/FinalEval.lean` — the first link whose
+   verifier can actually reject, so its completeness needs `finalCheck_honestComputeY`) — each with
+   a completeness proof. Still open:
+   * the partial-evaluation tail's `computeY` (`Recursion/PartialEval.lean`), which is additionally
+     blocked on that file's sorried encoding layer (`partialEvalAt`, `deriveFamily`,
+     `wTableMleEval_split`);
 2. **composition of those reductions**, blocked on the generic `Reduction.append_completeness`
    (`OracleReduction/Composition/Sequential/Append.lean`) and `liftContext_completeness`
    (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`. `HonestChain.lean` appends

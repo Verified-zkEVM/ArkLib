@@ -1,6 +1,7 @@
 {"sorry":
  ["AGM.Adversary.run",
   "ArkLib.Lattices.Ajtai.InnerOuter.completePrefixReduction_perfectCompleteness",
+  "ArkLib.Lattices.Ajtai.InnerOuter.completeThroughSumcheckReduction_perfectCompleteness",
   "ArkLib.Lattices.Ajtai.InnerOuter.deriveFamily",
   "ArkLib.Lattices.Ajtai.InnerOuter.eqWeight",
   "ArkLib.Lattices.Ajtai.InnerOuter.hachi",
@@ -22,6 +23,9 @@
   "ArkLib.Lattices.Ajtai.InnerOuter.partialEval_coordinateWiseSpecialSoundWith",
   "ArkLib.Lattices.Ajtai.InnerOuter.relHatEval",
   "ArkLib.Lattices.Ajtai.InnerOuter.relPartialEval",
+  "ArkLib.Lattices.Ajtai.InnerOuter.roundsReductionAux_perfectCompleteness",
+  "ArkLib.Lattices.Ajtai.InnerOuter.roundsReduction_perfectCompleteness",
+  "ArkLib.Lattices.Ajtai.InnerOuter.sumcheckReduction_perfectCompleteness",
   "ArkLib.Lattices.Ajtai.InnerOuter.toNextQuadEvalStatement",
   "ArkLib.Lattices.Ajtai.InnerOuter.traceCheck",
   "ArkLib.Lattices.Ajtai.InnerOuter.wTableMleEval_split",

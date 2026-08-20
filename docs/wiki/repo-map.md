@@ -194,14 +194,19 @@ home_page/            site assets and assembled website root
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
     zero-check's point claims into the initial hypercube sums; `Sumcheck/RoundPoly` is the
-    proof-side round-polynomial layer (cube split, the partial sum as a univariate with its
-    evaluation and degree lemmas); `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck
-    (Lemma 11, loop by recursion over `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)`
-    (Figure 7 tail) landing on the recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports
-    the folder and records why this round layer is *not* built on the generic
+    round-polynomial layer (cube split, the partial sum as a univariate with its evaluation and
+    degree lemmas — proof-side in Mathlib's `Polynomial`, plus the computable `computableRoundPoly`
+    the prover sends and the transfer lemma tying the two together); `Sumcheck/Rounds` is the
+    `m₀`-round guarded paired sumcheck (Lemma 11, loop by recursion over `▷ᵍ`);
+    `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
+    recursion's evaluation claim; `Sumcheck/Completeness` is the honest side — `honestComputeG`,
+    one round's perfect completeness (axiom-clean), the `m₀`-fold honest chain sharing its
+    verifier with `roundsChain`, and `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
+    re-exports the folder and records why this round layer is *not* built on the generic
     `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
-    extraction, and neither carries a soundness certificate to inherit). The honest provers are
-    skeletons: their round message is a parameter, awaiting the completeness layer.
+    extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
+    side: every *folded* completeness statement inherits `sorryAx` from the generic
+    `Reduction.append_completeness`, which is still `sorry`.
   - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`

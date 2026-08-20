@@ -30,6 +30,7 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
+import ArkLib.Commitments.Functional.Hachi.Sumcheck.Completeness
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.RoundPoly
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
