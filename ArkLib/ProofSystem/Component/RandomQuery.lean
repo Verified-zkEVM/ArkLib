@@ -283,55 +283,35 @@ theorem oracleVerifier_rbrKnowledgeSoundness [Nonempty (Query OStatement)]
       (relIn OStatement)
       (relOut OStatement)
       (fun _ => (d : ℝ≥0) / (Fintype.card (Query OStatement) : ℝ≥0)) := by
-  unfold OracleVerifier.rbrKnowledgeSoundness Verifier.rbrKnowledgeSoundness
+  apply Verifier.rbrKnowledgeSoundnessWorstCase_implies_rbrKnowledgeSoundness
   refine ⟨fun _ => Unit, rbrExtractor oSpec OStatement,
     knowledgeStateFunction oSpec OStatement, ?_⟩
-  intro ⟨_, oracles⟩ _ rbrP i
-  have : i = ⟨0, by simp⟩ := by aesop
+  rintro ⟨stmt, oracles⟩ i transcript
+  have hi : i = ⟨0, by simp [pSpec]⟩ := by aesop
   subst i
-  dsimp at oracles
-  simp [Prover.runWithLogToRound, Prover.runToRound, rbrExtractor, knowledgeStateFunction]
-  -- After simp, the goal bounds the probability over a uniformly sampled challenge that
-  -- `¬oracles 0 = oracles 1 ∧ answer (oracles 0) chal = answer (oracles 1) chal`. Case split.
+  have htr : transcript = fun j => Fin.elim0 j := by
+    funext j
+    exact Fin.elim0 j
+  rw [htr]
+  simp [knowledgeStateFunction, rbrExtractor, pSpec, ProtocolSpec.Transcript.concat]
+  simp [Fin.snoc]
   rcases Classical.em (oracles 0 = oracles 1) with hOracles | hOracles
   · simp [hOracles]
-  · -- Eliminate `¬ oracles 0 = oracles 1` from the conjunction (it always holds).
-    simp only [hOracles, not_false_eq_true, true_and]
-    -- BLOCKED: Schwartz–Zippel surface. The intended bound is via the marginal-uniform
-    -- distribution of `challenge`, then `probEvent_uniformSample` + `distanceLE`. Mechanizing this
-    -- requires deep manipulation through `simulateQ (impl + challengeQueryImpl-lift)` of a do-block
-    -- (nested OracleComp + StateT + WriterT loggingOracle), which does not reduce under
-    -- standard simp lemmas due to multiple monad-transformer layers and `Fin (↑(Fin.last 1))`
-    -- type-class synthesis failures on `change` rewrites. See the prior agent's commented-out
-    -- `probEvent_bind_eq_tsum` + `ENNReal.tsum_mul_right` + `OracleComp.tsum_probOutput_le_one`
-    -- calc-block below for the intended proof skeleton.
-    sorry
-  -- unfold SimOracle.append
-  -- simp [challengeQueryImpl]
-  -- classical
-  -- simp only [probEvent_bind_eq_tsum]
-  -- simp [ProtocolSpec.Transcript.concat, Fin.snoc, default]
-  -- unfold Function.comp
-  -- dsimp
-  -- calc
-  -- _ ≤ ((Finset.card
-  --   {x | ¬oracles 0 = oracles 1 ∧ answer (oracles 0) x = answer (oracles 1) x} : ENNReal) /
-  --       (Fintype.card (Query OStatement))) := by
-  --   rw [ENNReal.tsum_mul_right]
-  --   grw [OracleComp.tsum_probOutput_le_one]
-  --   simp
-  -- _ ≤ (((d : ℝ≥0) / (Fintype.card (Query OStatement)))) := by
-  --   gcongr
-  --   simp
-  --   by_cases hOracles : oracles 0 = oracles 1
-  --   · simp [hOracles]
-  --   · simp [hOracles]
-  --     exact hDist (oracles 0) (oracles 1) hOracles
-  -- _ = _ := by
-  --   refine (ENNReal.toNNReal_eq_toNNReal_iff' ?_ ?_).mp ?_
-  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-  --   · simp; intro h'; apply ENNReal.div_eq_top.mp at h'; simp at h'
-  --   · simp
+  · simp only [hOracles, not_false_eq_true, true_and]
+    have decEqAnswer (q : Query OStatement) : DecidableEq (O.toOC.spec q) := inferInstance
+    let decPred : DecidablePred (fun q : Query OStatement =>
+        answer (oracles 0) q = answer (oracles 1) q) := fun q =>
+      decEqAnswer q (answer (oracles 0) q) (answer (oracles 1) q)
+    rw [@probEvent_uniformSample (Query OStatement) inst _ _ decPred]
+    gcongr
+    have hcard := hDist (oracles 0) (oracles 1) hOracles
+    unfold answer
+    convert hcard using 1
+    · rfl
+    · apply congrArg Finset.card
+      ext q
+      simp only [Finset.mem_filter, Finset.mem_univ, true_and]
+      rfl
 
 end RandomQuery
 

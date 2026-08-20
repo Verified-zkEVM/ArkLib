@@ -5,9 +5,8 @@ Authors: Alexander Hicks
 -/
 
 import ArkLib.Data.CodingTheory.ListDecodability
-import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.ListDecodability.Bounds.KKH26SumSet
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
-import Mathlib.RingTheory.Polynomial.Vieta
 
 /-!
 # Additive-set lower bounds for Reed--Solomon codes
@@ -27,7 +26,8 @@ Reed--Solomon lower bounds.
   `ε_ca(RS[F, L, k], 1 - k̂/h) ≥ |Λ_𝒮| / |F|`.
 - `two_pow_mul_choose_le_card_sumSet` — over a prime field
   `𝔽_q` with `q > h^{h/2}`, the family of all `k̂`-subsets of a power-of-two-order
-  subgroup `H` has `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)`. *External admit* (number-theoretic).
+  subgroup `H` has `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)` [KKH26, Lemma 1]; proved in
+  `KKH26SumSet.lean`.
 - `usefulFamily_list_lower_bound` — a useful family yields a nearby-word list of size `|𝒮|`.
 - `choose_le_Lambda_rs_vanilla` — the all-subsets specialization
   `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h, k̂)`.
@@ -73,10 +73,6 @@ namespace CodingTheory.AdditiveSetListDecoding
 section Defs
 
 variable {F : Type*} [CommRing F]
-
-/-- The sum set `Λ_𝒮 := {∑_{α ∈ S} α : S ∈ 𝒮}` of a family of finite sets. -/
-def sumSet [DecidableEq F] (𝒮 : Finset (Finset F)) : Finset F :=
-  𝒮.image fun S => ∑ α ∈ S, α
 
 /-- A family is `(H, k̂, c)`-useful with symmetric-function values `lam` when every
 `S ∈ 𝒮` is a `k̂`-subset of `H` whose
@@ -399,21 +395,6 @@ theorem usefulFamily_list_lower_bound (domain : ι ↪ F) {d h khat c k : ℕ}
         simp only [Finset.coe_image, Set.mem_image, Finset.mem_coe] at hx
         obtain ⟨S, hS, rfl⟩ := hx
         exact hmem S hS
-
-/-- Let `H` be a multiplicative subgroup of a prime field
-`𝔽_q` with `|H| = h` a power of two. If `q > h^{h/2}`, then for any `1 ≤ k̂ ≤ h/2`,
-the family `𝒮` of all `k̂`-subsets of `H` satisfies `|Λ_𝒮| ≥ 2^k̂ · C(h/2, k̂)`.
-
-This is the module's number-theoretic external input. -/
-theorem two_pow_mul_choose_le_card_sumSet {q : ℕ} [Fact q.Prime] {h khat : ℕ}
-    (H : Subgroup (ZMod q)ˣ) (hHcard : Nat.card H = h)
-    (hpow2 : ∃ m : ℕ, h = 2 ^ m) (hq : h ^ (h / 2) < q)
-    (hk1 : 1 ≤ khat) (hk2 : khat ≤ h / 2) :
-    2 ^ khat * (h / 2).choose khat ≤
-      (sumSet ((Set.toFinite
-        ((fun u : (ZMod q)ˣ => (u : ZMod q)) '' (H : Set (ZMod q)ˣ))).toFinset.powersetCard
-          khat)).card := by
-  sorry -- ABF26 [KKH26, Lemma 1]; external admit (number-theoretic sum-set bound).
 
 omit [Fintype ι] [Nonempty ι] [DecidableEq ι] [Fintype F] [DecidableEq F] in
 /-- The first elementary symmetric sum of a finite set is its sum:

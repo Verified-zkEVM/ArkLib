@@ -101,6 +101,70 @@ theorem rs_epsCa_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ_fld δ_int 
       ((ReedSolomon.code domain deg : Set (ι → F))) δ_fld hle)
     hEq
 
+omit [Field F] [Fintype F] [DecidableEq ι] in
+/-- A positive radius at most the relative unique-decoding radius satisfies the strict form
+`2·δ·n < d` that the MCA/CA comparison lemmas take as their hypothesis.
+
+`relativeUniqueDecodingRadius` is `((d - 1) / 2) / n` with **truncated** `ℝ≥0` subtraction, so
+the degenerate `d = 0` case is not vacuous on its face: there the radius collapses to `0` and
+the positivity hypothesis is what rules it out. For `d ≥ 1` the bound is the honest
+`2·δ·n ≤ d - 1 < d`. -/
+lemma two_mul_lt_dist_of_le_relUDR {C : Set (ι → F)} {δ : ℝ≥0}
+    (hδ_pos : 0 < δ) (hδ : δ ≤ relativeUniqueDecodingRadius C) :
+    2 * (δ : ℝ) * Fintype.card ι < Code.dist C := by
+  have hn_pos : (0 : ℝ≥0) < (Fintype.card ι : ℝ≥0) := by
+    exact_mod_cast (Fintype.card_pos (α := ι))
+  rw [relativeUniqueDecodingRadius] at hδ
+  -- `δ · n ≤ (d - 1) / 2`, then `2 · δ · n ≤ d - 1`, all in `ℝ≥0`.
+  have h1 : δ * (Fintype.card ι : ℝ≥0) ≤ ((Code.dist C : ℝ≥0) - 1) / 2 :=
+    (le_div_iff₀ hn_pos).mp hδ
+  have h2 : 2 * δ * (Fintype.card ι : ℝ≥0) ≤ (Code.dist C : ℝ≥0) - 1 := by
+    have hmul := mul_le_mul_of_nonneg_left h1 (by norm_num : (0 : ℝ≥0) ≤ 2)
+    calc 2 * δ * (Fintype.card ι : ℝ≥0)
+        = 2 * (δ * (Fintype.card ι : ℝ≥0)) := by ring
+      _ ≤ 2 * (((Code.dist C : ℝ≥0) - 1) / 2) := hmul
+      _ = (Code.dist C : ℝ≥0) - 1 := by
+          rw [mul_div_cancel₀]; norm_num
+  -- The left-hand side is strictly positive, which rules out the degenerate `d = 0` branch.
+  have hδn : (0 : ℝ≥0) < 2 * δ * (Fintype.card ι : ℝ≥0) :=
+    mul_pos (mul_pos (by norm_num) hδ_pos) hn_pos
+  have hd_pos : 0 < Code.dist C := by
+    rcases Nat.eq_zero_or_pos (Code.dist C) with hd0 | hd
+    · exfalso
+      rw [hd0] at h2
+      simp only [Nat.cast_zero, zero_tsub] at h2
+      exact absurd h2 (not_le.mpr hδn)
+    · exact hd
+  -- For `d ≥ 1`, `d - 1 < d` in `ℝ≥0`, so the strict inequality transfers to `ℝ`.
+  have h3 : 2 * δ * (Fintype.card ι : ℝ≥0) < (Code.dist C : ℝ≥0) := by
+    refine lt_of_le_of_lt h2 ?_
+    have hdR : (0 : ℝ≥0) < (Code.dist C : ℝ≥0) := by exact_mod_cast hd_pos
+    exact tsub_lt_self hdR one_pos
+  exact_mod_cast h3
+
+omit [DecidableEq ι] in
+/-- **[BCIKS20] affine-line MCA for Reed-Solomon codes in the unique-decoding range.** For a
+positive fold radius at most the relative unique-decoding radius,
+
+  `ε_mca(C, δ) ≤ n / |F|` .
+
+Below half the minimum distance, affine-line MCA and correlated agreement agree
+(`mcaError_eq_epsCa_of_pos_of_two_mul_lt_dist`), so `rs_epsCa_le_of_le_relUDR` transfers directly.
+
+This is the MCA-side companion of `rs_epsCa_le_of_le_relUDR`, and it is what
+`ProximityGap.GrandChallenges` consumes: `McaLowerWitness` is stated on `mcaError`, not on
+`epsCa`. -/
+theorem rs_mcaError_le_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ_pos : 0 < δ)
+    (hδ : δ ≤ relativeUniqueDecodingRadius
+            (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :
+    mcaError (AffineLineGenerator F) (ReedSolomon.code domain deg) (δ : ℝ)
+      ≤ ((Fintype.card ι / Fintype.card F : ℝ≥0) : ENNReal) :=
+  le_trans
+    (mcaError_le_epsCa_of_pos_of_two_mul_lt_dist (ReedSolomon.code domain deg) δ hδ_pos
+      (two_mul_lt_dist_of_le_relUDR hδ_pos hδ))
+    (rs_epsCa_le_of_le_relUDR hδ le_rfl)
+
 end UniqueDecodingRegime
 
 end ProximityGap
