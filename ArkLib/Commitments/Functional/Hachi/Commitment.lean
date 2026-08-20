@@ -163,8 +163,10 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
-sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only after the remaining §4.3+ subprotocols
-and their honest-prover layer are formalized. Everything else here is real.
+sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
+formalized (`QuadEval.prover`'s `computeV`/`computeResp` and the partial-evaluation tail's
+`computeY`; the sumcheck loop's `computeG` is now `honestComputeG`). Everything else here is
+real.
 
 ⚠ The declared `pSpec` is **not** the full opening protocol's spec: `!p[] ++ₚ pSpec …` is the
 *bridge ▷ QuadEval prefix* only (zero rounds, then Figure 3's commit/challenge round). The finished
@@ -435,14 +437,21 @@ end CommitBalancedRelInBox
 
 The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs, in order:
 
-1. the honest-prover layer for the remaining §4.3+ links (the `QuadEval` one exists —
-   `honestComputeV` / `honestComputeResp` — and the lift, adapter, zero-check and batching links now
-   have honest protocol objects with completeness proofs);
-2. **composition of those reductions**, which is blocked on the generic
-   `Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`) and
-   `liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`.
-   `HonestChain.lean` establishes the per-link theorems at compatible relations, which is *not* the
-   same as completeness of an appended reduction;
+1. **the honest-prover layer for the links that still lack one.** `QuadEval` has it
+   (`honestComputeV` / `honestComputeResp`, from `QuadEval.Gadgets`' `carrierCommit` / `zDecomp`),
+   as do the `R^lin` adapter, the HMZ25 lift, the batching bridge, the nested zero-check, the
+   sumcheck loop (`honestComputeG` at `computableRoundPoly`, `Sumcheck/Completeness.lean`) and the
+   final-evaluation step (`honestComputeY`, `Sumcheck/FinalEval.lean` — the first link whose
+   verifier can actually reject, so its completeness needs `finalCheck_honestComputeY`) — each with
+   a completeness proof. Still open:
+   * the partial-evaluation tail's `computeY` (`Recursion/PartialEval.lean`), which is additionally
+     blocked on that file's sorried encoding layer (`partialEvalAt`, `deriveFamily`,
+     `wTableMleEval_split`);
+2. **composition of those reductions**, blocked on the generic `Reduction.append_completeness`
+   (`OracleReduction/Composition/Sequential/Append.lean`) and `liftContext_completeness`
+   (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`. `HonestChain.lean` appends
+   the finished prefix (`completePrefixReduction`) and proves its completeness modulo exactly those
+   lemmas;
 3. widening this scheme's `pSpec` from the bridge ▷ QuadEval prefix to the full opening spec;
 4. only then `Commitment.perfectCorrectness` for `hachi` (and a decision about whether the packaged
    `commit` should switch to `commitBalanced`, which is what the paper-exact `QuadEval` relation

@@ -116,6 +116,29 @@ theorem reduction_completeness_of_imp
     cases hx
     exact ⟨hRel stmtIn witIn hIn, rfl⟩
 
+/-- **The `ReduceClaim` reduction's honest run, in closed form.** A zero-round reduction draws
+nothing and can only succeed: the run's support is the single success carrying the empty
+transcript, the mapped statement on both sides, and the mapped witness.
+
+Stated separately from `reduction_completeness_of_imp` because it is *instance-free* — it says
+nothing about challenge sampling — which is what lets it be used at a protocol spec that is only
+*definitionally* `!p[]` (e.g. the zero-round base case of a composed loop, where the ambient
+`SampleableType` instance is the loop's rather than the empty spec's, and so cannot be unified
+with `reduction_completeness_of_imp`'s). Combine with
+`Reduction.perfectCompleteness_of_run_support` in that situation. -/
+theorem reduction_run_support (stmt : StmtIn) (wit : WitIn) :
+    ∀ x ∈ support ((reduction oSpec mapStmt mapWit).run stmt wit).run,
+      x = some ((default, (mapStmt stmt, mapWit stmt wit)), mapStmt stmt) := by
+  intro x hx
+  have hrun : ((reduction oSpec mapStmt mapWit).run stmt wit).run
+      = (pure (some ((default, (mapStmt stmt, mapWit stmt wit)), mapStmt stmt)) :
+          OracleComp _ _) := by
+    simp [reduction, Reduction.run, prover, verifier, Prover.run, Verifier.run,
+      Prover.runToRound]
+    rfl
+  rw [hrun, support_pure, Set.mem_singleton_iff] at hx
+  exact hx
+
 /-- The `ReduceClaim` reduction satisfies perfect completeness for any relation. The `↔` form of
 `reduction_completeness_of_imp`; only the forward direction is used. -/
 @[simp]

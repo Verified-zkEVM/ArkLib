@@ -441,6 +441,14 @@ end Evaluation
   Eq. (26) soundness gap, and a **repair decision comes first** — any repair changes the protocol
   content of all three adapters, so polishing their proofs before deciding is wasted work.
   Termination is §4.4's asymptotic base case and §4.5's concrete Greyhound/LaBRADOR cutoff.
+* **Honest-prover / completeness layer.** Each link's prover is a skeleton parameterized by its
+  compute functions, and all of them through the sumcheck are now instantiated with a completeness
+  proof (`QuadEval`'s `honestComputeV`/`honestComputeResp`, the sumcheck's `honestComputeG` at the
+  computable `computableRoundPoly`, the final evaluation's `honestComputeY`); the honest chain is
+  appended in `HonestChain.lean` up to `relWEvalClaim`. What is still open is the recursion tail's
+  `computeY` (`Recursion/PartialEval.lean`) and — for every *composed* completeness statement,
+  including `Commitment.lean`'s `opening` — the sorried generic `Reduction.append_completeness`,
+  which those statements inherit as a `sorryAx` dependency.
 * **Knowledge-error accounting** ([FMN24] Lemma 4), `Commitment.extractability`, and Fiat–Shamir
   remain out of scope. -/
 

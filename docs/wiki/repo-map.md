@@ -170,16 +170,21 @@ home_page/            site assets and assembled website root
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
     zero-check's point claims into the initial hypercube sums; `Sumcheck/RoundPoly` is the
-    proof-side round-polynomial layer (cube split, the partial sum as a univariate, and its
-    evaluation and degree lemmas); `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck
-    (Lemma 11, loop by recursion over `▷ᵍ`) with a computable extractor that reads the supplied
-    branch openings; `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail)
-    landing on the short-opening evaluation claim `relWEvalClaim`, whose computable extractor
-    reads the unique leaf opening.
-    `Sumcheck/Basic.lean` re-exports the folder and records why this round layer is not built on
-    the generic `ProofSystem/Sumcheck/` modes: their rejection convention conflicts with
-    tree-based extraction, and neither carries a soundness certificate to inherit. The honest
-    provers remain skeletons, with their round message waiting on the completeness layer.
+    round-polynomial layer (cube split, the partial sum as a univariate with its evaluation and
+    degree lemmas — proof-side in Mathlib's `Polynomial`, plus the computable `computableRoundPoly`
+    the prover sends and the transfer lemma tying the two together); `Sumcheck/Rounds` is the
+    `m₀`-round guarded paired sumcheck (Lemma 11, loop by recursion over `▷ᵍ`) with a computable
+    extractor that reads the supplied branch openings; `Sumcheck/FinalEval` is the guarded reveal
+    of `w̃(a)` (Figure 7 tail) landing on the short-opening evaluation claim `relWEvalClaim`,
+    whose computable extractor reads the unique leaf opening; `Sumcheck/Completeness` is the
+    honest side — `honestComputeG`, one round's perfect completeness (axiom-clean), the `m₀`-fold
+    honest chain sharing its verifier with `roundsChain`, and
+    `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
+    re-exports the folder and records why this round layer is *not* built on the generic
+    `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
+    extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
+    side: every *folded* completeness statement inherits `sorryAx` from the generic
+    `Reduction.append_completeness`, which is still `sorry`.
   - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
     reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
     (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
