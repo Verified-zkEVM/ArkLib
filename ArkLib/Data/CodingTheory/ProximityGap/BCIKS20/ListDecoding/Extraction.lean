@@ -156,12 +156,6 @@ theorem pg_natDegree_pos_of_mem_positiveDegreeFactors {p : F[Z][X]} {H : F[Z][X]
   simpa [pg_positiveDegreeFactors] using (Multiset.of_mem_filter hH)
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
-theorem pg_mem_normalizedFactors_of_mem_positiveDegreeFactors {p : F[Z][X]} {H : F[Z][X]}
-    (hH : H ∈ pg_positiveDegreeFactors p) :
-    H ∈ UniqueFactorizationMonoid.normalizedFactors p :=
-  Multiset.mem_of_mem_filter hH
-
-omit [DecidableEq (RatFunc F)] [Finite F] in
 /-- Every candidate pair has a second component of positive `Y`-degree.
 
 No separability hypothesis is needed now that `pg_candidatePairs` ranges over

@@ -25,10 +25,16 @@ certificate calculus on `𝕃 H`, the sharp per-step budget
 `numeratorShapeSharp = 1 + (t+1)Λ(W) + eₜΛ(ξ)`, its weakening to the paper's `(2t+1)·d·D`, and the
 induction transporting them along the cleared Hensel residual.
 
-Everything here is proved.  The one subtlety is that the bound `numeratorShapeSharp` carries a
-correction term relative to the inequality [BCIKS20] states, because a factor of `W` that the
-recursion *saves* is only worth `deg W` while one it *charges* costs the bound `D - dH`; see the
-docstring of `numeratorShapeSharp`.
+Everything here is proved.  Two places diverge from the inequalities [BCIKS20] states.
+
+`numeratorShapeSharp` carries a correction term, because a factor of `W` that the recursion
+*saves* is only worth `deg W` while one it *charges* costs the bound `D - dH`; see its own
+docstring.  It and `numeratorShapeSharp_le_loose` are exactly as the paper's accounting gives them.
+
+The numerators are then bounded not by `numeratorShapeSharp` but by
+`numeratorShapeSharpContent`, which adds `eₜ · contentWeight`, and the loose bound becomes
+`(2t+1)·(dY+1)·D` in place of `(2t+1)·dY·D`.  That is forced: A.2's `Λ(ξ)` bound omits a content
+charge and is false without it.  See `RationalFunctions.HenselNumerators.contentWeight`.
 
 ## References
 
@@ -334,21 +340,86 @@ The uncorrected bound would follow instead from `Λ(αₜ) ≤ Λ(T) - Λ(W)`, i
 on `𝕃` rather than on `𝒪`, giving `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)`.  That route is not taken
 here: bounding the quotient `αₜ = -cₜ/ζ` needs a *lower* bound on `Λ(ζ)`, and only upper bounds are
 available. -/
-def numeratorShapeSharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) : ℕ :=
+def numeratorShapeSharp (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) : ℕ :=
   1 + (t + 1) * (D - Bivariate.natDegreeY H) +
     henselDenominatorExponent t *
-      ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1) +
-        contentWeight x₀ R H) +
+      ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) +
     (t - 1) * (D - Bivariate.natDegreeY R)
 
 /-- The sharp bound weakens to the loose paper bound consumed by the final assembly:
 `sharp t ≤ (2t+1)·dY·D`.  Pure arithmetic, using `dH ≥ 1`, `dH ≤ dY`, `dH ≤ D`, and
 `eₜ ≤ 2t`. -/
 lemma numeratorShapeSharp_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
+    (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) {D : ℕ}
+    (hD_H : Bivariate.totalDegree H ≤ D) (t : ℕ) :
+    numeratorShapeSharp R H D t ≤ (2 * t + 1) * Bivariate.natDegreeY R * D := by
+  -- Translate the degree facts into the bare numeric hypotheses needed by the arithmetic.
+  have hdH_dY : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
+    natDegree_H_le_natDegree_R_of_hypotheses hHyp
+  have hdH_pos : 1 ≤ Bivariate.natDegreeY H := hH
+  have hdH_D : Bivariate.natDegreeY H ≤ D := by
+    have hH_in : H.natDegree ∈ H.support :=
+      Polynomial.mem_support_iff.mpr (Polynomial.leadingCoeff_ne_zero.mpr
+        (by rintro rfl; simp at hH))
+    have h1 : (H.coeff H.natDegree).natDegree + H.natDegree ≤ Bivariate.totalDegree H :=
+      Bivariate.coeff_totalDegree_le H hH_in
+    rw [show Bivariate.natDegreeY H = H.natDegree from rfl]; omega
+  have het : henselDenominatorExponent t ≤ 2 * t := by
+    unfold henselDenominatorExponent; split <;> omega
+  unfold numeratorShapeSharp
+  set D' := D
+  set dH := Bivariate.natDegreeY H with hdHdef
+  set dY := Bivariate.natDegreeY R with hdYdef
+  set et := henselDenominatorExponent t with hetdef
+  clear_value D' dH dY et
+  obtain ⟨a, rfl⟩ : ∃ a, D' = dH + a := ⟨D' - dH, by omega⟩
+  obtain ⟨b, rfl⟩ : ∃ b, dY = dH + b := ⟨dY - dH, by omega⟩
+  obtain ⟨c, rfl⟩ : ∃ c, dH = c + 1 := ⟨dH - 1, by omega⟩
+  simp only [Nat.add_sub_cancel_left] at *
+  rw [show c + 1 + b - 1 = c + b by omega, show c + 1 + a - (c + 1 + b) = a - b by omega]
+  -- `P` is the `ξ`-charge; the correction contributes at most `t * a`
+  set P := (c + b) * (a + 1) with hPdef
+  have hA : et * P ≤ 2 * t * P := Nat.mul_le_mul_right _ (by omega)
+  have hCorr : (t - 1) * (a - b) ≤ t * a := Nat.mul_le_mul (by omega) (by omega)
+  -- the right-hand side dominates `(2t+1)·(P + a + 1)`
+  have hRHSexp : P + a + 1 + ((c + b) * c + c) = (c + 1 + b) * (c + 1 + a) := by
+    rw [hPdef]; ring
+  have hRHS : (2 * t + 1) * (P + a + 1) ≤ (2 * t + 1) * ((c + 1 + b) * (c + 1 + a)) :=
+    Nat.mul_le_mul_left _ (by omega)
+  have hPle : 2 * t * P ≤ (2 * t + 1) * P := Nat.mul_le_mul_right _ (by omega)
+  calc 1 + (t + 1) * a + et * P + (t - 1) * (a - b)
+      ≤ 1 + (t + 1) * a + 2 * t * P + t * a :=
+        Nat.add_le_add (Nat.add_le_add_left hA _) hCorr
+    _ = 1 + (2 * t + 1) * a + 2 * t * P := by ring
+    _ ≤ (2 * t + 1) * P + (2 * t + 1) * a + (2 * t + 1) := by omega
+    _ = (2 * t + 1) * (P + a + 1) := by ring
+    _ ≤ (2 * t + 1) * ((c + 1 + b) * (c + 1 + a)) := hRHS
+    _ = (2 * t + 1) * (c + 1 + b) * (c + 1 + a) := by ring
+
+/-- The content-charged sharp bound: `numeratorShapeSharp` plus `eₜ · contentWeight`.
+
+`numeratorShapeSharp` itself is untouched, and `numeratorShapeSharp_le_loose` still holds of it —
+that lemma is arithmetic about a defined quantity, and nothing about it was defective.  What is
+defective is the claim that `Λ(βₜ)` is bounded by it: that needs the content charge, because
+[BCIKS20] Claim A.2's `Λ(ξ)` bound does.  See `contentWeight`. -/
+def numeratorShapeSharpContent (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) (D t : ℕ) : ℕ :=
+  1 + (t + 1) * (D - Bivariate.natDegreeY H) +
+    henselDenominatorExponent t *
+      ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1) +
+        contentWeight x₀ R H) +
+    (t - 1) * (D - Bivariate.natDegreeY R)
+
+/-- The content-charged sharp bound weakens to `(2t+1)·(dY+1)·D`, in place of the paper's
+`(2t+1)·dY·D`.  Arithmetic, using `dH ≥ 1`, `dH ≤ dY`, `dH ≤ D`, `eₜ ≤ 2t` and
+`contentWeight ≤ D - dY`.
+
+The `dY + 1` is necessary, not slack: at `dY = 2`, `dH = 2`, `D = 100`, `t = 10` the paper's bound
+is `4200` while the charged quantity reaches `5704`. -/
+lemma numeratorShapeSharpContent_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) (t : ℕ) :
-    numeratorShapeSharp x₀ R H D t ≤ (2 * t + 1) * (Bivariate.natDegreeY R + 1) * D := by
+    numeratorShapeSharpContent x₀ R H D t ≤ (2 * t + 1) * (Bivariate.natDegreeY R + 1) * D := by
   -- Translate the degree facts into the bare numeric hypotheses needed by the arithmetic.
   have hdH_dY : Bivariate.natDegreeY H ≤ Bivariate.natDegreeY R :=
     natDegree_H_le_natDegree_R_of_hypotheses hHyp
@@ -365,7 +436,7 @@ lemma numeratorShapeSharp_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hcw : contentWeight x₀ R H ≤ D - Bivariate.natDegreeY R := by
     rw [show Bivariate.natDegreeY R = R.natDegree from rfl]
     exact contentWeight_le x₀ hH hHyp hRdeg hD_Rx0
-  unfold numeratorShapeSharp
+  unfold numeratorShapeSharpContent
   set D' := D
   set dH := Bivariate.natDegreeY H with hdHdef
   set dY := Bivariate.natDegreeY R with hdYdef
@@ -470,7 +541,7 @@ set_option maxHeartbeats 2000000 in
 -- exhausted by the resulting `ring`/`omega` normalisations.
 /-- Weight-tracking per-degree clearing lemma: the `Λ`-graded analogue of
 `henselClearedTerm_regular`.  Each degree-`j` summand of the cleared `(t+1)`-st residual is
-regular with sharp `Λ`-weight at most `numeratorShapeSharp x₀ R H D (t+1)`.
+regular with sharp `Λ`-weight at most `numeratorShapeSharpContent x₀ R H D (t+1)`.
 
 The proof splits on the *boundary* summand `p.1 = 0`, `j = d ≥ 2`, `p.2 = t+1`, which is the one
 place where the `d` part-certificates want one more factor of `W` than the goal supplies.  There the
@@ -490,7 +561,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       RegularWeightLe hH
         (αtrunc i * (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
           (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i))
-        D (numeratorShapeSharp x₀ R H D i))
+        D (numeratorShapeSharpContent x₀ R H D i))
     (hαzero : ∀ i, t < i → αtrunc i = 0)
     (j : ℕ) (hj : j ∈ Finset.range (R.natDegree + 1)) :
     RegularWeightLe hH
@@ -499,7 +570,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
           (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
           liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)))
-      D (numeratorShapeSharp x₀ R H D (t + 1)) := by
+      D (numeratorShapeSharpContent x₀ R H D (t + 1)) := by
   classical
   set W : 𝕃 H := liftToFunctionField (H := H) H.leadingCoeff with hWdef
   set eta : 𝕃 H := embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp) with hetadef
@@ -552,7 +623,7 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     have hPweq : Pw = p.2 + j := by rw [hPwdef, Finset.sum_add_distrib, hbsum]; simp
     have hprodW : RegularWeightLe hH
         ((∏ i ∈ Finset.range j, αtrunc (l i)) * (W ^ Pw * eta ^ Pe)) D
-        (∑ i ∈ Finset.range j, numeratorShapeSharp x₀ R H D (l i)) := by
+        (∑ i ∈ Finset.range j, numeratorShapeSharpContent x₀ R H D (l i)) := by
       rw [hPwdef, hPedef, ← Finset.prod_pow_eq_pow_sum, ← Finset.prod_pow_eq_pow_sum,
         ← Finset.prod_mul_distrib, ← Finset.prod_mul_distrib]
       refine RegularWeightLe.prod _ _ _ hD_H ?_
@@ -611,11 +682,11 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           by_contra h; push Not at h; interval_cases S1 <;> omega
         omega
     -- sharp-sum identity: ∑ sharp(l i) = j + Pw*ΛW + Pe*Λξ + Pc*G
-    have hsharpSum : (∑ i ∈ Finset.range j, numeratorShapeSharp x₀ R H D (l i)) =
+    have hsharpSum : (∑ i ∈ Finset.range j, numeratorShapeSharpContent x₀ R H D (l i)) =
         j + Pw * ΛW + Pe * Λξ + Pc * G := by
-      have hexpand : ∀ i, numeratorShapeSharp x₀ R H D (l i) =
+      have hexpand : ∀ i, numeratorShapeSharpContent x₀ R H D (l i) =
           1 + (l i + 1) * ΛW + henselDenominatorExponent (l i) * Λξ + (l i - 1) * G := by
-        intro i; rw [numeratorShapeSharp, hΛWdef, hΛξdef, hGdef]
+        intro i; rw [numeratorShapeSharpContent, hΛWdef, hΛξdef, hGdef]
       simp only [hexpand]
       rw [Finset.sum_add_distrib, Finset.sum_add_distrib, Finset.sum_add_distrib]
       rw [Finset.sum_const, Finset.card_range, smul_eq_mul, Nat.mul_one]
@@ -736,9 +807,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           ((regularWeightLe_liftToFunctionField hD_H hH c).mono hc_deg) hprodW)
         (hRWLeta.pow hD_H _)).mono ?_
       rw [hsharpSum]
-      have hsharpSucc : numeratorShapeSharp x₀ R H D (t + 1) =
+      have hsharpSucc : numeratorShapeSharpContent x₀ R H D (t + 1) =
           1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
-        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
+        rw [numeratorShapeSharpContent, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
         rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
           show t + 1 - 1 = t by omega]
       rw [hsharpSucc]
@@ -803,9 +874,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       -- weight: (D-j) + (j + Pw*ΛW + Pe*Λξ) + ((wb-Pw)*ΛW + (E1-Pe)*Λξ) ≤ sharp(t+1)
       rw [hsharpSum]
       -- sharp(t+1) expansion
-      have hsharpSucc : numeratorShapeSharp x₀ R H D (t + 1) =
+      have hsharpSucc : numeratorShapeSharpContent x₀ R H D (t + 1) =
           1 + (t + 2) * ΛW + (2 * t + 1) * Λξ + t * G := by
-        rw [numeratorShapeSharp, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
+        rw [numeratorShapeSharpContent, ← hΛWdef, ← hΛξdef, ← hGdef, henselDenominatorExponent_succ]
         rw [show 2 * (t + 1) - 1 = 2 * t + 1 by omega, show t + 1 + 1 = t + 2 by omega,
           show t + 1 - 1 = t by omega]
       rw [hsharpSucc]
@@ -861,8 +932,9 @@ lemma henselClearedTerm_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
 
 /-- The cleared `(t+1)`-st Hensel residual `henselCoeffResidual · Ddiv` (with `Ddiv` the global
 clearing denominator `W^{t+2}·η^{E-1}·W^{d-2}`) is regular with sharp `Λ`-weight at most
-`numeratorShapeSharp x₀ R H D (t+1)`, given that every previous numerator `βseq s` (`s ≤ t`) has
-sharp weight `≤ numeratorShapeSharp x₀ R H D s`.
+`numeratorShapeSharpContent x₀ R H D (t+1)`, given that every previous numerator `βseq s`
+(`s ≤ t`) has
+sharp weight `≤ numeratorShapeSharpContent x₀ R H D s`.
 
 This is the quantitative (weight-tracking) heart of the argument: it is the `Λ`-graded
 analogue of `henselCoeffResidual_regular_after_clearing`, refining mere regularity to the sharp
@@ -881,13 +953,13 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq)
     (t : ℕ)
     (ihAll : ∀ s ≤ t,
-      RegularWeightLe hH (embeddingOf𝒪Into𝕃 H (βseq s)) D (numeratorShapeSharp x₀ R H D s)) :
+      RegularWeightLe hH (embeddingOf𝒪Into𝕃 H (βseq s)) D (numeratorShapeSharpContent x₀ R H D s)) :
     RegularWeightLe hH
       (henselCoeffResidual x₀ R H αseq t *
         (liftToFunctionField (H := H) H.leadingCoeff ^ (t + 1 + 1) *
           (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ (henselDenominatorExponent (t + 1) - 1) *
           liftToFunctionField (H := H) H.leadingCoeff ^ (R.natDegree - 2)))
-      D (numeratorShapeSharp x₀ R H D (t + 1)) := by
+      D (numeratorShapeSharpContent x₀ R H D (t + 1)) := by
   classical
   set αtrunc : ℕ → 𝕃 H := fun i => if i ≤ t then αseq i else 0 with hαtrunc
   rw [henselCoeffResidual_eq_trunc x₀ R H αseq hα0 t]
@@ -912,7 +984,7 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
       RegularWeightLe hH
         (αtrunc i * (liftToFunctionField (H := H) H.leadingCoeff ^ (i + 1) *
           (embeddingOf𝒪Into𝕃 H (xi x₀ R H hHyp)) ^ henselDenominatorExponent i))
-        D (numeratorShapeSharp x₀ R H D i) := by
+        D (numeratorShapeSharpContent x₀ R H D i) := by
     intro i hi
     have hW : liftToFunctionField (H := H) H.leadingCoeff ≠ 0 :=
       liftToFunctionField_leadingCoeff_ne_zero (H := H)
@@ -931,7 +1003,8 @@ lemma henselClearedResidual_weight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   intro j hj
   exact henselClearedTerm_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg t αtrunc ihNum hαzero j hj
 
-/-- Sharp `Λ`-weight bound on every Hensel numerator: `Λ(βₜ) ≤ numeratorShapeSharp x₀ R H D t`,
+/-- Sharp `Λ`-weight bound on every Hensel numerator:
+`Λ(βₜ) ≤ numeratorShapeSharpContent x₀ R H D t`,
 i.e. `1 + (t+1)(D-dH) + eₜ(dY-1)(D-dH+1)` plus the correction term.  Proved by strong induction,
 the successor step being `henselClearedResidual_weight` together with the identity
 `embeddingOf𝒪Into𝕃 (βₜ₊₁) = -(henselCoeffResidual · Ddiv)`.
@@ -940,7 +1013,8 @@ The hypothesis `2 ≤ dY` is the standing assumption under which `ξ = W^{dY-2}�
 for `dY < 2` that expression carries a negative power of `W`.  It is load-bearing rather than
 cosmetic.  Truncated subtraction silently reads `W^{dY-2}` as `1` for `dY ≤ 2`, so dropping the
 hypothesis would make this statement *false*: with `dY = dH = 1` one has `ξ = ζ`, of weight up to
-`D - 1 > 0`, while the factor `(dY-1) = 0` erases the `ξ`-contribution from `numeratorShapeSharp`.
+`D - 1 > 0`, while the factor `(dY-1) = 0` erases the `ξ`-contribution from
+`numeratorShapeSharpContent`.
 A witness is `R = (1+Z)Y + 1 + ZX`, `x₀ = 0`, `H = (1+Z)Y + 1`, where `D = 2` and `Λ(ξ) = 1` against
 a bound of `0`.  Accordingly `xi_weight_le` assumes `2 ≤ dY` as well. -/
 theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
@@ -954,7 +1028,7 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hroot : evalRAtPowerSeries x₀ H R (gammaFromAlpha H αseq) = 0)
     (hshape : HasNumeratorShape x₀ R H hHyp αseq βseq) :
     ∀ t : ℕ, RegularWeightLe hH (embeddingOf𝒪Into𝕃 H (βseq t)) D
-      (numeratorShapeSharp x₀ R H D t) := by
+      (numeratorShapeSharpContent x₀ R H D t) := by
   intro t
   induction t using Nat.strong_induction_on with
   | _ t ih =>
@@ -970,7 +1044,7 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           simpa only [pow_one, one_mul] using (weight_X_pow_le (H := H) (D := D) (k := 1))
         refine hX.trans ?_
         rw [WithBot.coe_le_coe]
-        unfold numeratorShapeSharp
+        unfold numeratorShapeSharpContent
         rw [henselDenominatorExponent_zero]
         omega
     | succ t =>
@@ -989,7 +1063,8 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
           hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
 
 /-- The loose bound `Λ(βₜ) ≤ (2t+1)·dY·D` for a numerator sequence presented through its
-coefficients, obtained from `numerator_shape_weight_sharp` by `numeratorShapeSharp_le_loose`.  This
+coefficients, obtained from `numerator_shape_weight_sharp` by
+`numeratorShapeSharpContent_le_loose`.  This
 is the form consumers usually want. -/
 theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
@@ -1009,7 +1084,8 @@ theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     numerator_shape_weight_sharp x₀ R H hHyp hH hD_H hD_R hRdeg αseq βseq hα0 hroot hshape t
   refine (regularWeight_le_of_regularWeightLe (βseq t) hsharp).trans ?_
   rw [WithBot.coe_le_coe]
-  exact numeratorShapeSharp_le_loose x₀ R H hHyp hH (by simpa [Bivariate.natDegreeY] using hRdeg)
+  exact numeratorShapeSharpContent_le_loose x₀ R H hHyp hH
+    (by simpa [Bivariate.natDegreeY] using hRdeg)
     hD_H (evalX_totalDegree_le_of_coeff_bound x₀ R hD_R) t
 
 /-- A sequence with the Hensel-lift semantics has the numerator shape witnessed by
@@ -1026,7 +1102,7 @@ lemma hasNumeratorShape_alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][
 
 /-- The **sharp** weight bound for an arbitrary Hensel numerator sequence:
 `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)`, with the bounds `Λ(W) ≤ D - dH` and
-`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted, plus the correction term of `numeratorShapeSharp`.
+`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted, plus the correction term of `numeratorShapeSharpContent`.
 
 This is the form to use when the bound has to telescope across `t = 0, …, k`:
 `max_t (Λ(βₜ) + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = 1 + (k+1)Λ(W) + e_kΛ(ξ) ≤ (2k+1)dD`.
@@ -1040,7 +1116,7 @@ theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y
     {βseq : ℕ → 𝒪 H} (hβ : IsHenselNumeratorSequence x₀ R H hHyp βseq) :
     ∀ t : ℕ,
       regularWeight hH (βseq t) D ≤
-        (WithBot.some (numeratorShapeSharp x₀ R H D t) : WithBot ℕ) := by
+        (WithBot.some (numeratorShapeSharpContent x₀ R H D t) : WithBot ℕ) := by
   intro t
   exact regularWeight_le_of_regularWeightLe (βseq t)
     (numerator_shape_weight_sharp x₀ R H hHyp hH hD_H hD_R hRdeg
@@ -1062,7 +1138,8 @@ theorem hensel_numerator_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   intro t
   refine (hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg hβ t).trans ?_
   rw [WithBot.coe_le_coe]
-  exact numeratorShapeSharp_le_loose x₀ R H hHyp hH (by simpa [Bivariate.natDegreeY] using hRdeg)
+  exact numeratorShapeSharpContent_le_loose x₀ R H hHyp hH
+    (by simpa [Bivariate.natDegreeY] using hRdeg)
     hD_H (evalX_totalDegree_le_of_coeff_bound x₀ R hD_R) t
 
 
