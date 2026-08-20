@@ -365,6 +365,9 @@ private lemma interpolate_eq_folding_poly_eval
 open FoldingContext in
 /-- Perfect completeness of folding: folding a codeword is the same as
   applying `polyFold` and then encoding.
+
+  `d` and `n` are the log degree and the log size of the RS-code
+  respectively.
 -/
 theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
   {α : F}
@@ -393,6 +396,9 @@ theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
 
 /-- Perfect completeness of folding: if a word belongs to an RS-code
   then its `foldWord` belongs to a folded RS-code.
+
+  `d` and `n` are the log degree and the log size of the
+  original RS-code respectively.
 -/
 theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
   {α : F}
@@ -804,12 +810,12 @@ set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
 /--
 Folding preserves distance from Reed–Solomon codes.
 
-For any word `f` over the smooth coset FFT domain, degree parameter `d`,
+For any word `f` over the smooth coset FFT domain, log degree parameter `d`,
 folding parameter `k`, and distance threshold `δ` satisfying
-`0 < δ < min (δᵣ(f, RS[d])) (1 - sqrtRate(d))`, the probability over a
+`0 < δ < min (δᵣ(f, RS[2 ^ d])) (1 - sqrtRate(2 ^ d))`, the probability over a
 uniformly random folding challenge `r : F` that the folded word is within
 relative distance `δ` of the Reed–Solomon code of reduced degree
-`d / 2^k` on the folded subdomain is bounded by the proximity-gap error
+`2 ^ d / 2^k` on the folded subdomain is bounded by the proximity-gap error
 term.
 
 This is Lemma 4.9 from [ACFY24]: a random `2^k`-folding step preserves distance from
