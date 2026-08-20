@@ -44,8 +44,9 @@ uses the sharper Definition 6.11 winning-set expression
 that quantity by
 `(1-δ)^t + (ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F|)·(1 - (1-δ)^t)`, which is `≤` the
 sum `(ε_mca + |Λ|/|F|) + (1-δ)^t` stated in [ABF26] Lemma 6.6
-(`lemma:toy-soundness`) and so is at least as strong. (An earlier draft printed the unsound
-`max` of the two terms; it was author-confirmed and corrected to the sum.) The
+(`lemma:toy-soundness`) and so is at least as strong.  (The `max` of the two
+terms would be a strictly weaker — and unsound — target; the sum is the correct
+reading of the paper.) The
 per-round game bounds proven in this file
 (`gamma_round_game_bound`, `spotcheck_round_game_bound`) are shared by
 both the L6.8 and L6.6 proofs.
@@ -80,6 +81,11 @@ How each step of Construction 6.2 lands on an ArkLib / VCV-io primitive:
 * oracle access to `f₁, f₂` ↦ `OracleStatement` queried via `queryOracleStatement`,
   routed through the per-index `OracleInterface` instances.
 * the §6.1 decision predicate ↦ `Accepts`.
+* the exact input relation (Definition 6.1) ↦ `inputRelationFor`; the relaxed
+  output relation (Definition 6.3) ↦ `outputRelationFor` — both with the
+  verifier's encoder **fixed** (see `inputRelationFor` for why).
+* the §6.2 round-by-round state and extractor (L6.8) ↦ `GammaState`,
+  `rbrKnowledgeStateFunction`, `rbrExtractor`.
 * verifier query routing ↦ `OracleInterface.simOracle2` / `simulateQ`
   (VCV-io's query-simulation semantics).
 * completeness game ↦ `OracleReduction.perfectCompleteness`.
@@ -122,8 +128,8 @@ Numeric values for the bracket come from the MCA/CA capacity bounds in
 `sorry` there is tagged with the primary source it stands in for). That file is deliberately
 **not** in this directory's import cone, so the quarantine is structural rather than a
 convention: no toy-problem theorem can silently acquire a numeric claim. Consequently the
-theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but no
-numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
+theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but
+no numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
 the remaining distance is short and is spelled out in `Impl/IRS.lean`.
 
 Two further admitted regions sit outside every proof here and must not be read as backing any
@@ -164,12 +170,12 @@ in below for the protocol-object definitions. -/
 variable {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
 variable (k t : ℕ)
 
-/-- Input (explicit) statement of Construction 6.2: the linear-constraint
+/-- Input (explicit) statement of the toy protocol: the linear-constraint
 vector `v ∈ F^k` and the two constraint values `(μ₁, μ₂) ∈ F²`. -/
 @[reducible]
 def Statement : Type := (Fin k → F) × F × F
 
-/-- Oracle statements of Construction 6.2: the two purported codewords
+/-- Oracle statements of the toy protocol: the two purported codewords
 `f₁, f₂ : ι → A`. The verifier only queries them at the spot-check
 positions. -/
 @[reducible]
@@ -199,7 +205,7 @@ def OutputOracleStatement : (Fin 0) → Type := nofun
 @[reducible]
 def OutputWitness : Type := Unit
 
-/-- Protocol specification for Construction 6.2: three rounds, in the
+/-- Protocol specification for the toy protocol: three rounds, in the
 order
 
     V → P  (γ : F)            -- combination randomness
@@ -231,7 +237,7 @@ instance [SampleableType F] [SampleableType ι] :
   | ⟨1, h⟩ => nomatch h
   | ⟨2, _⟩ => (inferInstance : SampleableType (Fin t → ι))
 
-/-- The §6.1 decision predicate, factored out so completeness proofs and
+/-- The decision predicate, factored out so completeness proofs and
 the verifier object share the same statement.
 
 Given the explicit input `(v, μ₁, μ₂)`, the oracle codewords
@@ -248,7 +254,7 @@ def Accepts (encode : (Fin k → F) → (ι → A))
   (∑ j, g j * stmt.1 j = stmt.2.1 + γ * stmt.2.2) ∧
   ∀ j : Fin t, encode g (xs j) = f 0 (xs j) + γ • f 1 (xs j)
 
-/-- The IOR-shaped **fixed-encoding** input relation (Definition 6.1).
+/-- The IOR-shaped **fixed-encoding** input relation.
 
 `((v, μ₁, μ₂), (f₀, f₁)) ∈ inputRelationFor encode` with witness `M`
 iff the oracle codewords are the `encode`-images of the witness messages
@@ -258,10 +264,11 @@ function, matching `oracleVerifier`), and the witness `M` is tied to the
 statement — this is what the honest prover sends `g = M₀ + γ·M₁` against and
 what `accepts_of_mem_inputRelationFor` consumes.
 
-This replaces the earlier existential-encoding form (`ToyProblem.relation`,
-`∃ encode'`), under which honest completeness is unprovable / false: the honest
-prover's `encode g` need not match `fᵢ = encode' (Mᵢ)` when `encode' ≠ encode`
-(the same defect found for the L6.12 attack — see `ToyProblem.RelationFor`). -/
+The fixed encoder is load-bearing: with an existentially quantified encoder
+(`∃ encode', fᵢ = encode' (Mᵢ)`) honest completeness is false — the honest
+prover's `encode g` need not match `encode' (Mᵢ)` when `encode' ≠ encode` — and
+the attack lower bound breaks the same way. See `ToyProblem.RelationFor` for
+the shared fixed-encoder relation family. -/
 def inputRelationFor (encode : (Fin k → F) → (ι → A)) :
     Set ((Statement (F := F) k × (∀ i, OracleStatement ι A i)) ×
       Witness (F := F) k) :=
@@ -269,7 +276,7 @@ def inputRelationFor (encode : (Fin k → F) → (ι → A)) :
     (∀ i : Fin 2, input.1.2 i = encode (input.2 i)) ∧
     (∀ i : Fin 2, ∑ j, input.2 i j * input.1.1.1 j = ![input.1.1.2.1, input.1.1.2.2] i)
 
-/-- The IOR-shaped **fixed-encoding** *relaxed* output relation (Definition 6.3).
+/-- The IOR-shaped **fixed-encoding** *relaxed* output relation.
 The soundness statement of L6.6/6.8 is with respect to this: the verifier's
 "accept" guarantee is that the input `(f₀, f₁)` is `δ`-close (on a common
 agreement column set) to a valid instance `encode (M i)` for some constraint-
@@ -287,7 +294,7 @@ def outputRelationFor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
       ∀ i : Fin 2, ∀ j ∈ S, input.1.2 i j = encode (input.2 i) j
 
 omit [Fintype ι] in
-/-- The language-level exact relation of Definition 6.1 is precisely the
+/-- The language-level exact relation `RelationFor` is precisely the
 existential closure of the witness-bearing C6.2 input relation.  This bridge
 keeps paper-facing statements and OracleReduction security statements on one
 public contract. -/
@@ -300,7 +307,7 @@ theorem relationFor_iff_exists_inputRelationFor
         inputRelationFor k (encode : (Fin k → F) → (ι → A)) := by
   rfl
 
-/-- The language-level relaxed relation of Definition 6.3 is precisely the
+/-- The language-level relaxed relation `RelaxedRelationFor` is precisely the
 existential closure of the witness-bearing C6.2 output relation.  Both sides
 use one common agreement set for the two interleaved words. -/
 theorem relaxedRelationFor_iff_exists_outputRelationFor
@@ -341,7 +348,7 @@ soundness statements, follows in the next section.
 section Protocol
 variable [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A]
 
-/-- Honest prover for Construction 6.2. After receiving the combination
+/-- Honest prover for the toy protocol. After receiving the combination
 randomness `γ`, the prover sends `g := M 0 + γ · M 1` (point-wise on
 `Fin k`). The spot-check positions `xs` are not used by the prover —
 they only feed the verifier's spot-check at the end.
@@ -375,7 +382,7 @@ def prover :
 
   output := fun _ ↦ pure ((), ())
 
-/-- The §6.1 decision predicate is decidable: it's a finite conjunction
+/-- The decision predicate is decidable: it is a finite conjunction
 of equalities in `F` (decidable via `DecidableEq F`) and a `Fin t`
 universally-quantified equality (decidable via the `Fintype` `Decidable`
 instance). Marking explicitly so the `verifier` below can stay
@@ -387,7 +394,7 @@ instance Accepts.instDecidable
     Decidable (Accepts (k := k) (t := t) encode stmt f γ g xs) := by
   unfold Accepts; infer_instance
 
-/-- Honest verifier for Construction 6.2. Takes the bundled input
+/-- Honest verifier for the toy protocol. Takes the bundled input
 `(stmt, oStmt) = ((v, μ₁, μ₂), (f₁, f₂))` and the full transcript
 `(γ, g, xs)`; accepts iff `Accepts` holds for the supplied encoding.
 
@@ -405,7 +412,7 @@ def verifier (encode : (Fin k → F) → (ι → A)) :
     if Accepts (k := k) (t := t) encode stmt oStmt γ g xs
     then pure () else failure
 
-/-- Honest reduction for Construction 6.2: the package
+/-- Honest reduction for the toy protocol: the package
 `{prover, verifier}` over the bundled-input `Reduction` type. -/
 def reduction (encode : (Fin k → F) → (ι → A)) :
     Reduction []ₒ
@@ -434,20 +441,17 @@ definitionally `toVerifier.knowledgeSoundness` /
 `toVerifier.rbrKnowledgeSoundness`, so the oracle-flavour statements
 carry no extra proof burden over the bundled-input forms.
 
-**Framework vacuity (KS) — RESOLVED 2026-06-11, theorems now CLOSED.** The
-historical trap — `Verifier.knowledgeSoundness` admitted an always-failing
-`OptionT` extractor that drove the bad-event probability to `0` — was fixed by
-PR #569 (`fix/knowledge-soundness-failing-extractor`), now merged and synced into
-this branch: extraction failure (`extractedWitIn? = none`) is scored against the
-prover. All three KS families are now proven and axiom-clean
-(`[propext, Classical.choice, Quot.sound]`, verified 2026-07-03):
-`oracleVerifier_knowledgeSoundness_winningSetUpperBound`, `oracleVerifier_rbrKnowledgeSoundnessWorstCase` plus its
-averaged corollary `oracleVerifier_rbrKnowledgeSoundness` (below), and the legacy
-alphabet-generic `verifier_knowledgeSoundness` fallback
-(`Spec/SimplifiedIOR.lean`). These generic existence theorems use the classical
-`chooseRelaxedWitness` selector. `Impl/IRS.lean` supplies the principal executable path:
-exact named straightline and worst-case/averaged RBR extractors for both C6.2
-and the genuine virtual-oracle C6.9 reduction.
+**Extractor-failure polarity.** In `Verifier.knowledgeSoundness`, extraction
+failure (`extractedWitIn? = none`) is scored against the prover; an
+always-failing `OptionT` extractor therefore certifies nothing, and none of the
+knowledge-soundness statements below can be discharged vacuously through it.
+The generic existence theorems (`oracleVerifier_knowledgeSoundness_winningSetUpperBound`,
+`oracleVerifier_rbrKnowledgeSoundnessWorstCase` with its averaged corollary
+`oracleVerifier_rbrKnowledgeSoundness`, and the alphabet-generic
+`verifier_knowledgeSoundness` in `Spec/SimplifiedIOR.lean`) use the classical
+`chooseRelaxedWitness` selector; `Impl/IRS.lean` supplies the principal
+executable path — exact named straightline and worst-case/averaged RBR
+extractors for both the three-round protocol and the virtual-oracle reduction.
 -/
 
 /-- Same as `prover` but exposed at the `OracleProver` signature. The
@@ -494,7 +498,7 @@ def queryOracleStatement (i : Fin 2) (x : ι) : OracleComp [OracleStatement ι A
   liftM <| OracleSpec.query
     (show [OracleStatement ι A]ₒ.Domain from ⟨i, (by change ι; exact x)⟩)
 
-/-- Oracle verifier for Construction 6.2.
+/-- Oracle verifier for the toy protocol.
 
 Queries the prover's message `g` once and the two oracle codewords
 `f₁, f₂` at each of the `t` spot-check positions (query complexity:
@@ -523,7 +527,7 @@ def oracleVerifier (encode : (Fin k → F) → (ι → A)) :
     hEq := fun i ↦ i.elim0
     outputInterface_heq := fun i ↦ i.elim0 }
 
-/-- Honest oracle reduction for Construction 6.2: the
+/-- Honest oracle reduction for the toy protocol: the
 `OracleProver` / `OracleVerifier` pair packaged as `OracleReduction`. -/
 def oracleReduction (encode : (Fin k → F) → (ι → A)) :
     OracleReduction []ₒ
@@ -627,7 +631,8 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
       simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
         ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
           (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
-            OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>= fun f₁ ↦
+            OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
+              fun f₁ ↦
               guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                 pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
             OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
@@ -637,7 +642,8 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
     intro j
     simp only [simulateQ_optionT_bind, simulateQ_optionT_lift,
       queryOracleStatement, OracleInterface.simOracle2, QueryImpl.addLift_def]
-    -- Resolve the two `queryOracleStatement` reads (`f₀ = oStmt 0 (xs j)`, `f₁ = oStmt 1 (xs j)`) by defeq.
+    -- Resolve the two `queryOracleStatement` reads (`f₀ = oStmt 0 (xs j)`,
+    -- `f₁ = oStmt 1 (xs j)`) by defeq.
     conv_lhs =>
       enter [1, 1]
       change (QueryImpl.liftTarget (OracleComp []ₒ) (QueryImpl.id []ₒ) +
@@ -698,7 +704,8 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
     change simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
         ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
           (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
-            OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>= fun f₁ ↦
+            OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
+              fun f₁ ↦
               guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                 pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
             OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
@@ -718,12 +725,13 @@ lemma oracleVerifier_verify_simulateQ_eq_pure
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- Two-sided (`ite`) companion of `oracleVerifier_verify_simulateQ_eq_pure`: the simulated verifier
-body is the **deterministic** computation `pure (some ())` when both §6.1 accept conditions
+body is the **deterministic** computation `pure (some ())` when both accept conditions
 hold for the supplied challenge `γ`, prover message `msgs ⟨1, rfl⟩`, and spot-check positions
 `xs`, and `pure none` otherwise (a failed `guard` propagates through the remaining `OptionT`
 binds, short-circuiting the spot-check loop).
 
-The accepting direction delegates to `oracleVerifier_verify_simulateQ_eq_pure`; the failing directions
+The accepting direction delegates to `oracleVerifier_verify_simulateQ_eq_pure`; the failing
+directions
 re-run the same defeq bridges (see that lemma's docstring for the toolkit) and collapse the
 failed `guard` via `simulateQ_optionT_failure` / Batteries' `failure_bind`, using
 `simulateQ_optionT_forIn_yield_pure_none` for a failure inside the spot-check `forIn`. This is
@@ -769,7 +777,8 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
               OracleComp ([]ₒ + ([OracleStatement ι A]ₒ +
                 [(pSpec (ι := ι) (F := F) k t).Message]ₒ)) (Fin k → F)) from
             (OracleComp.monadLift_liftM_OptionT _).symm]
-      simp only [show ∀ (i : Fin 2) (x : ι), (liftM (queryOracleStatement (ι := ι) (A := A) i x) :
+      simp only [show ∀ (i : Fin 2) (x : ι),
+          (liftM (queryOracleStatement (ι := ι) (A := A) i x) :
             OptionT (OracleComp ([]ₒ + ([OracleStatement ι A]ₒ +
               [(pSpec (ι := ι) (F := F) k t).Message]ₒ))) A)
           = OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) i x) :
@@ -812,8 +821,10 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
       have hForIn :
           simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
             ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
-              (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
-                OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>= fun f₁ ↦
+              (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>=
+                fun f₀ ↦
+                OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
+              fun f₁ ↦
                   guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                     pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
                 OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
@@ -824,7 +835,8 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
           (fun j ↦ ?_) (fun hall ↦ h2 (fun j ↦ hall j (List.mem_finRange j)))
         simp only [simulateQ_optionT_bind, simulateQ_optionT_lift,
           queryOracleStatement, OracleInterface.simOracle2, QueryImpl.addLift_def]
-        -- Resolve the two `queryOracleStatement` reads (`f₀`, `f₁`) by defeq, as in the `some` direction.
+        -- Resolve the two `queryOracleStatement` reads (`f₀`, `f₁`) by defeq, as in the
+        -- `some` direction.
         conv_lhs =>
           enter [1, 1]
           change (QueryImpl.liftTarget (OracleComp []ₒ) (QueryImpl.id []ₒ) +
@@ -891,8 +903,10 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
         enter [1]
         change simulateQ (OracleInterface.simOracle2 (emptySpec.{0, 0}) oStmt msgs)
             ((forIn (List.finRange t) PUnit.unit fun (j : Fin t) (_ : PUnit) ↦
-              (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>= fun f₀ ↦
-                OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>= fun f₁ ↦
+              (OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 0 (xs j))) >>=
+                fun f₀ ↦
+                OptionT.lift (liftM (queryOracleStatement (ι := ι) (A := A) 1 (xs j))) >>=
+              fun f₁ ↦
                   guard (encode (msgs ⟨1, rfl⟩) (xs j) = f₀ + γ • f₁) >>=
                     pure ∘ fun _ ↦ ForInStep.yield PUnit.unit) :
                 OptionT (OracleComp (emptySpec.{0, 0} + ([OracleStatement ι A]ₒ +
@@ -940,7 +954,7 @@ lemma oracleVerifier_verify_simulateQ_eq_pure_ite
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- The executable C6.2 oracle verifier, after routing its oracle and message queries, is exactly
-the decidable §6.1 acceptance predicate. Keeping this bridge at the `OracleVerifier` boundary
+the decidable acceptance predicate. Keeping this bridge at the `OracleVerifier` boundary
 prevents clients from depending on the verifier body's elaborated proof terms. -/
 lemma oracleVerifier_simulateQ_eq_pure_ite
     (encode : (Fin k → F) → (ι → A))
@@ -961,10 +975,11 @@ lemma oracleVerifier_simulateQ_eq_pure_ite
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- **Soundness direction of the verifier-run support characterization** (converse companion
-of the completeness-side `oracleVerifier_verify_simulateQ_eq_pure`): if the simulated run of the C6.2
+of the completeness-side `oracleVerifier_verify_simulateQ_eq_pure`): if the simulated run of
+the
 oracle verifier (routed through `toVerifier` / `simOracle2`, then through an arbitrary
 empty-spec `impl`) on a **fixed** full transcript `tr` can succeed — `some _` lies in the run's
-support — then the §6.1 decision predicate `Accepts` holds for that transcript's challenge
+support — then the decision predicate `Accepts` holds for that transcript's challenge
 `γ = tr 0`, prover message `g = tr 1`, and spot-check positions `xs = tr 2`.
 
 Proof: the empty-spec simulation can only shrink support
@@ -1020,10 +1035,10 @@ exact hypothesis shape that `KnowledgeStateFunction.toFun_full`
 (`ArkLib/OracleReduction/Security/RoundByRound.lean`) provides for the C6.2 oracle verifier:
 if the verifier's simulated run on a fixed transcript outputs, with positive probability, a
 statement that is `relOut`-related to some `witOut` (for **any** `relOut`, in particular
-`Set.univ`), then the §6.1 decision predicate `Accepts` holds on that transcript. This is the
+`Set.univ`), then the decision predicate `Accepts` holds on that transcript. This is the
 entry point for the L6.8 round-by-round knowledge-soundness state function: at the full
 transcript it converts the framework's `Pr[…] > 0` acceptance hypothesis into the concrete
-accept equations that the [ABF26] §6.2 argument consumes. -/
+accept equations that the soundness arguments consume. -/
 lemma accepts_of_probEvent_pos_verifier_run
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp))
     (encode : (Fin k → F) → (ι → A))
@@ -1069,7 +1084,7 @@ private lemma Pr_eq_zero_of_forall_not {α : Type} (D : PMF α) (P : α → Prop
   classical rw [prob_tsum_form_singleton]; simp [h]
 
 omit [DecidableEq ι] [Fintype F] [DecidableEq F] in
-/-- The post-`γ` knowledge state of the L6.8 argument ([ABF26] §6.2): `m`
+/-- The post-`γ` knowledge state of the round-by-round argument: `m`
 satisfies the folded linear constraint at `γ`, and `f₁ + γ·f₂` agrees with
 `encode m` on a `≥ (1-δ)`-fraction column set. Shaped to match the event of
 `ToyProblem.gamma_transition_prob_le` exactly.
@@ -1188,7 +1203,7 @@ lemma erasureExtractor_mem_of_leftInverse {encode : (Fin k → F) → (ι → A)
   exact erasureExtractor_mem (k := k) ⟨M, hM, funext (hli M hM)⟩
 
 omit [DecidableEq ι] in
-/-- The L6.8 round-by-round extractor ([ABF26] §6.2): round 0 extracts a
+/-- The round-by-round extractor: round 0 extracts a
 relaxed-relation witness by choice, round 1 passes the candidate message
 through, round 2 reads the prover's claim `g` off the transcript. -/
 private noncomputable def rbrExtractor (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
@@ -1204,12 +1219,13 @@ private noncomputable def rbrExtractor (encode : (Fin k → F) → (ι → A)) (
   extractOut := fun _ _ _ ↦ PUnit.unit
 
 omit [DecidableEq ι] in
-/-- The L6.8 knowledge state function ([ABF26] §6.2): relaxed-relation
-membership at round 0, `GammaState` after rounds 1–2, and the §6.1 acceptance
+/-- The round-by-round knowledge state function: relaxed-relation
+membership at round 0, `GammaState` after rounds 1–2, and the acceptance
 predicate after the spot-check round (the witness-ignoring final state is a
-deliberate repair of the paper's printed state — see the §6.8-assembly section
+deliberate repair of the paper's printed state — see the assembly section
 comment above). -/
-private noncomputable def rbrKSF (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
+private noncomputable def rbrKnowledgeStateFunction
+    (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0)
     {σ : Type} (init : ProbComp σ) (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
     ((oracleVerifier (k := k) (t := t) encode).toVerifier).KnowledgeStateFunction init impl
       (outputRelationFor k encode δ)
@@ -1238,7 +1254,7 @@ private noncomputable def rbrKSF (encode : (Fin k → F) → (ι → A)) (δ : �
 
 omit [DecidableEq ι] in
 /-- Per-transcript combination-round bound for the generic classical
-Construction 6.2 extractor.  The error is the certified affine-line
+toy-protocol extractor.  The error is the certified affine-line
 MCA-plus-two-row-list upper bound. -/
 lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
@@ -1295,7 +1311,7 @@ lemma gamma_round_game_bound [SampleableType F] [Nonempty ι]
 
 omit [DecidableEq ι] [Fintype F] [Fintype A] in
 set_option linter.unusedDecidableInType false in
-/-- Per-transcript spot-check-round bound for Construction 6.2: if the
+/-- Per-transcript spot-check-round bound for the toy protocol: if the
 post-combination knowledge state is false, uniform spot checks accept with
 probability at most `(1 - δ)^t`. -/
 lemma spotcheck_round_game_bound [Nonempty ι]
@@ -1351,7 +1367,7 @@ lemma spotcheck_round_game_bound [Nonempty ι]
 
 omit [DecidableEq ι] in
 /-- Worst-case-per-fixed-prefix round-by-round knowledge soundness of
-Construction 6.2 in the alphabet-generic classical-extractor form.  Concrete
+the toy protocol in the alphabet-generic classical-extractor form.  Concrete
 IRS clients should prefer `Impl.IRS.oracleVerifier_rbrKnowledgeSoundnessWorstCase`,
 whose extractor is executable and named. -/
 theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
@@ -1375,7 +1391,7 @@ theorem oracleVerifier_rbrKnowledgeSoundnessWorstCase
   unfold Verifier.rbrKnowledgeSoundnessWorstCase
   refine ⟨rbrWitMid (F := F) k,
     rbrExtractor k t (encode : (Fin k → F) → (ι → A)) δ,
-    rbrKSF k t (encode : (Fin k → F) → (ι → A)) δ init impl, ?_⟩
+    rbrKnowledgeStateFunction k t (encode : (Fin k → F) → (ι → A)) δ init impl, ?_⟩
   intro stmtIn i transcript
   obtain ⟨⟨iv, hi⟩, hdir⟩ := i
   rcases iv with _ | _ | _ | iv

@@ -331,9 +331,10 @@ home_page/            site assets and assembled website root
 - The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
   domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
   interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
-  reference points, and `Codegen.lean` enforces compiler-IR availability. Construction 6.9 is an
-  `OracleReduction` with a query-by-query virtual output oracle and exact named IRS straightline
-  and RBR extractors. The compiled small-parameter checks run with
+  reference points, and `Codegen.lean` enforces compiler-IR availability. The simplified IOR
+  (`SimplifiedIOR`) is an `OracleReduction` with a query-by-query virtual output oracle and
+  exact named interleaved-RS straightline and RBR extractors. The compiled small-parameter
+  checks run with
   `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
   radius, and the repetition count, so they apply at production sizes without evaluation. Turning
   such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in

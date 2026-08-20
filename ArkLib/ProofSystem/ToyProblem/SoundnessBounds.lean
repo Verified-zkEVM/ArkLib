@@ -26,6 +26,24 @@ instance has no relaxed witness.  The proof splits on `IsMCA`.  Off the MCA even
 the common projected codewords form a two-row point-list element, and each invalid
 message pair accounts for at most one affine challenge.
 
+## Paper mapping ([ABF26] §6)
+
+* `winningSetFor` / `winningSetDensity` — the winning-challenge set and its
+  worst-case density, Definition 6.11, with the code's **encoding pinned**
+  (the paper's existential encoder makes the attack statements false; see
+  `ToyProblem.RelationFor`).
+* `winningSetDensity_le_certifiedGammaError` — the quantitative content of
+  Lemma 6.10.
+* `exists_winningSetFor_ncard_ge_of_lambda_lt_card` and
+  `listDecoding_le_winningSetDensity` — Lemma 6.12 (the list-decoding attack,
+  §6.4.1); `exists_winningSetFor_ncard_ge_of_epsCa_pos` and
+  `epsCa_le_winningSetDensity` — Lemma 6.13.
+* `exists_large_image_of_pairwise_collision_bound` (with
+  `exists_dotProduct_image_card_le` / `exists_affine_image_card_le`, its two
+  applications) — Claim B.1; the "collision-image bound" below always refers
+  to it.
+* `gamma_transition_prob_le` — the §6.4.1 combination-round bound.
+
 ## References
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
@@ -299,7 +317,8 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
 omit [Fintype F] [DecidableEq F] [Fintype A] in
 /-- Every point-list message pair violates at least one original constraint when
 the two-row input has no relaxed witness. -/
-theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ≥0}
+theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι]
+    (C : ModuleCode ι F A) {δ : ℝ≥0}
     (hδ1 : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (hC : Set.range enc = (C : Set (ι → A)))
     {v : Fin k → F} {μ₁ μ₂ : F} {f₁ f₂ : ι → A}
@@ -397,7 +416,8 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
           (∑ j, p.1 j * v j) + γ * (∑ j, p.2 j * v j) = μ₁ + γ * μ₂)).card
           ≤ ∑ _p ∈ Smsg, 1 := Finset.sum_le_sum fun p hp ↦
             affine_solution_card_le_one
-              (not_constraint_pair_of_mem_closeCodewordsRel C hδ1 enc hC hNoWit (Finset.mem_filter.mp hp).2)
+              (not_constraint_pair_of_mem_closeCodewordsRel C hδ1 enc hC hNoWit
+                (Finset.mem_filter.mp hp).2)
       _ = Smsg.card := by rw [Finset.sum_const, smul_eq_mul, mul_one]
       _ ≤ (Code.Lambda Cint (δ : ℝ)).toNat := hSmsg_le
   refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
@@ -417,7 +437,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
     exact ENNReal.div_le_div_right (by exact_mod_cast hcards) _
 
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
-/-- **ENNReal → ℝ bridge for the Claim-B.1 output.** Rewrites Claim B.1's image
+/-- **ENNReal → ℝ bridge for the collision-image bound.** Rewrites the image
 bound `M / (1 + (M−1)·|F|⁻¹) ≤ s` into the real-arithmetic form
 `M·c/(c+M−1) ≤ s` consumed by `listDecoding_div_le_div` (here `c = |F|`). -/
 private lemma image_bound_toReal {M s c : ℕ} (hc : 1 ≤ c) (hM : 1 ≤ M)
@@ -481,7 +501,7 @@ injective family `a : σ → (F^k)²` of message pairs, there is a constraint ve
 size at least `|σ| / (1 + (|σ|−1)/|F|)` (= `|σ|·|F|/(|F|+|σ|−1)`).
 
 This is the first of the two `exists_large_image_of_pairwise_collision_bound`
-(Claim B.1) applications in ABF26 §6.4.1, stripped of all coding theory: the
+applications of the attack argument, stripped of all coding theory: the
 pairwise-collision bound is exactly `prob_dotProduct_eq_zero_le` (a nonzero
 linear form vanishes with probability `≤ 1/|F|`), pulled back through the
 pushforward identity `Pr_map_eq`. -/
@@ -534,7 +554,7 @@ private lemma exists_dotProduct_image_card_le {k : ℕ} {σ : Type} [Fintype σ]
   simp
 
 omit [Fintype ι] in
-/-- **Affine collision has at most one solution (ABF26 §6.4.1, second B.1).**
+/-- **Affine collision has at most one solution.**
 For distinct points `(a₁,a₂) ≠ (b₁,b₂)` with `a₂, b₂ ≠ μ₂`, the equation
 `(μ₁−a₁)/(a₂−μ₂) = (μ₁−b₁)/(b₂−μ₂)` has at most one solution `μ₁`: if `a₂ ≠ b₂`
 it is affine in `μ₁`; if `a₂ = b₂` it is unsatisfiable. -/
@@ -564,8 +584,8 @@ with `|T| < |F|`, there is a value `μ₂` avoiding every second coordinate of `
 and a `μ₁` under which the affine map `(a,b) ↦ (μ₁−a)/(b−μ₂)` has image of size
 at least `|T| / (1 + (|T|−1)/|F|)` (= `|F|·|T|/(|F|+|T|−1)`).
 
-This is the second `exists_large_image_of_pairwise_collision_bound` (Claim B.1)
-application in ABF26 §6.4.1: the per-point collision bound is `≤ 1/|F|` because
+This is the second `exists_large_image_of_pairwise_collision_bound`
+application of the attack argument: the per-point collision bound is `≤ 1/|F|` because
 the affine equation has `≤ 1` solution (`affine_collision_card_le_one`). The
 `∀ p ∈ T, p.2 ≠ μ₂` clause also forces `(μ₁,μ₂) ∉ T` (the violation step). -/
 private lemma exists_affine_image_card_le (T : Finset (F × F))
@@ -616,8 +636,8 @@ private lemma exists_affine_image_card_le (T : Finset (F × F))
 omit [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- **Fixed-encoding winning-set membership (agreement form).** Generalises
 `mem_winningSetFor_zero_of_relClose` to arbitrary instance data `(v, μ₁, μ₂)`, against
-the *fixed-encoding* winning set `winningSetFor enc` (Definition 6.11 of [ABF26]
-with the code's encoding pinned — the faithful object for the §6.4.1 attack).
+the *fixed-encoding* winning set `winningSetFor enc` (the winning-challenge set
+with the code's encoding pinned — see the module docstring for why the pin is required).
 
 If `f₁ + γ·f₂` agrees with the codeword `enc m` on a column set `S` covering at
 least a `(1 - δ)`-fraction of `ι`, and the message `m` satisfies the linear
@@ -635,7 +655,7 @@ theorem mem_winningSetFor_of_agree {k : ℕ} {δ : ℝ≥0}
     ⟨fun _ ↦ m, fun _ ↦ rfl, fun _ ↦ hconstr⟩,
     S, hScard, fun _ j hj ↦ hagree j hj⟩
 
-/-- **Real-arithmetic chain closing ABF26 §6.4.1.** From the first Claim-B.1
+/-- **Real-arithmetic chain closing the attack bound.** From the first collision-image
 lower bound `N·|F|/(|F|+N−1) ≤ s` (here `s = |S_v|`), the second Claim-B.1
 application's winning fraction `|F|·s/(|F|+s−1)` is at least the final bound
 `N·|F|/(|F|+2N)`.
@@ -660,36 +680,34 @@ lemma listDecoding_div_le_div {Fc N s : ℝ} (hF : (1 : ℝ) ≤ Fc) (hN : (1 : 
     mul_nonneg (by linarith : (0:ℝ) ≤ s) (by linarith : (0:ℝ) ≤ N)]
 
 omit [DecidableEq F] in
-/-- **Lemma 6.12 of [ABF26]** (list-decoding lower bound on the simplified IOR).
+/-- **List-decoding lower bound on the simplified IOR.**
 
 Coding-theory form: if `C` is a linear code (the image of an `F`-linear
 encoding of message dimension `k`) and `|Λ(C^{≡2}, δ)| < |F|`,
 then there exist witnesses `(v, μ_1, μ_2, f_1, f_2)` with `(f_1, f_2)` lying
 **outside** the relaxed relation `R̃_{C,δ}^2` (the `violates` conjunct), for
-which the winning challenge set `Ω^{f_1,f_2}_{v,μ_1,μ_2}` (Definition 6.11)
+which the winning challenge set `Ω^{f_1,f_2}_{v,μ_1,μ_2}` (`winningSetFor`)
 has at least `|Λ(C^{≡2}, δ)| · |F| / (|F| + 2·|Λ(C^{≡2}, δ)|)` elements.
 
 The protocol-level reading: the soundness error of the simplified IOR
-`T'[C, t]` (Construction 6.9, `ToyProblem.SimplifiedIOR.oracleReduction`) is
+`T'[C, t]` (`ToyProblem.SimplifiedIOR.oracleReduction`) is
 at least `|Λ(C^{≡2}, δ)| / (|F| + 2·|Λ(C^{≡2}, δ)|)`.
 
-## Statement provenance (corrected 2026-06-04, finding S5)
+## The two denominators
 
-Writing `N := |Λ(C^{≡2}, δ)|`, `F := |F|`, the **final** soundness bound in
-ABF26 §6.4.1 (canonical `.tex` `lemma:list-decoding-attack`)
-is `N / (F + 2N)`, hence the winning-set cardinality bound `N · F / (F + 2N)`.
-The earlier in-tree denominator `F + N − 1` was the *intermediate* `|S_v|`
-bound from the **first** Claim-B.1 application (paper step 3); the winning set
-is bounded only after a **second** B.1 application (step 4) by
-`F · |S_v| / (F + |S_v| − 1)`, which the paper then chains down (via the
-increasing map `z ↦ z/(F + z − 1)` and `(F−1)² + (2F−1)N ≤ F² + 2FN`) to the
-final `N/(F + 2N)`. The old `N · F / (F + N − 1)` therefore *overshot* the
-provable bound. The corrected `N · F / (F + 2N)` matches the `.tex`.
+Writing `N := |Λ(C^{≡2}, δ)|`, `F := |F|`, the **final** soundness bound is
+`N / (F + 2N)`, hence the winning-set cardinality bound `N · F / (F + 2N)`.
+The nearby quantity `N · F / (F + N − 1)` is **not** a provable winning-set
+bound: it is only the *intermediate* `|S_v|` bound from the first Claim-B.1
+application; the winning set is bounded only after a second B.1 application
+by `F · |S_v| / (F + |S_v| − 1)`, which chains down (via the increasing map
+`z ↦ z/(F + z − 1)` and `(F−1)² + (2F−1)N ≤ F² + 2FN`) to the final
+`N/(F + 2N)`. Conflating the two overshoots the provable bound.
 
-## Proof recipe (ABF26 §6.4.1, with B.1 now machine-checked)
+## Proof recipe
 
 The intermediate `|S_v| ≥ N · F / (F + N − 1)` is exactly the conclusion of
-Claim B.1 specialised to `|S| = N`, `|T| = F`, `ε = 1/F`:
+the collision-image bound specialised to `|S| = N`, `|T| = F`, `ε = 1/F`:
 `N / (1 + (N − 1) · (1/F)) = N · F / (F + N − 1)`, so the proof skeleton is:
 
 1. **Build the list.** Enumerate `Λ(C^{≡2}, δ)` as pairs `(W₀(λ), W₁(λ))` of
@@ -713,11 +731,11 @@ faithful "linear code of dimension `k`" assumption (an injective `F`-linear
 encoding onto `C`), which is what makes `Λ(C^{≡2}, δ)` enumerable by *message*
 pairs `F^k × F^k` (the inner products `⟨·, v⟩` of paper step 1 live on messages).
 This matches L6.13's hypothesis shape and the pinned `encode` of
-`ToyProblem.RelationFor` (Definition 6.1's "code as the injective map").
+`ToyProblem.RelationFor` ("code as the injective map").
 
 The statement is against the **fixed-encoding** relation and winning set
 (`RelaxedRelationFor enc`, `winningSetFor enc`), with `enc` the code's injective
-`F`-linear encoding (`Set.range enc = C`). This is the paper's `R_C`. (Against
+`F`-linear encoding (`Set.range enc = C`), the relation `R_C`. (Against
 an existential-encoding relaxed relation the violation conjunct is false — an
 adversary reparameterises the constraint through another encoding; that
 defective family has been deleted from `Definitions.lean`.)
@@ -1002,7 +1020,7 @@ theorem mem_winningSetFor_zero_of_relClose {k : ℕ} [Nonempty ι]
     simpa only [Pi.add_apply, Pi.smul_apply] using hagree
 
 omit [DecidableEq F] in
-/-- ABF26 Lemma 6.13 in fixed-encoding form: positive correlated-agreement
+/-- Correlated-agreement lower bound, fixed-encoding form: positive correlated-agreement
 error yields an explicit violating instance whose winning-set ratio
 lower-bounds that error. -/
 theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
@@ -1085,7 +1103,7 @@ optimal-adversary theorem needed to call the supremum an exact protocol-game
 error is outside the proved interface. -/
 
 /-- A two-row instance which violates the relaxed toy relation for the pinned
-encoder.  These are precisely the instances indexed by Definition 6.11's
+encoder.  These are precisely the instances indexed by the winning-set density's
 winning-set supremum. -/
 structure ViolatingInstance {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) where
@@ -1096,7 +1114,7 @@ structure ViolatingInstance {k : ℕ}
   f₂ : ι → A
   violates : ¬ RelaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂]
 
-/-- The Definition 6.11 supremum is never indexed by an empty type: the zero
+/-- The winning-set-density supremum is never indexed by an empty type: the zero
 constraint vector with first claimed value `1` cannot be satisfied by any
 message, independently of the encoder or radius. -/
 instance violatingInstanceNonempty {k : ℕ}
@@ -1120,7 +1138,7 @@ noncomputable def winningSetRatio {k : ℕ}
   ((winningSetFor enc δ x.v x.μ₁ x.μ₂ x.f₁ x.f₂).ncard : ℝ≥0) /
     (Fintype.card F : ℝ≥0)
 
-/-- Definition 6.11's worst-case winning-challenge density at radius `δ`.
+/-- The worst-case winning-challenge density at radius `δ`.
 
 This is an exact combinatorial quantity. The protocol-level upper coupling is proved below; the
 matching optimal-adversary/lower-coupling theorem needed to identify it with a minimal game error
@@ -1171,8 +1189,7 @@ theorem winningSetDensity_le_one {k : ℕ}
   ciSup_le' (fun x ↦ winningSetRatio_le_one x)
 
 omit [DecidableEq F] in
-/-- Correlated-agreement error lower-bounds the Definition 6.11 winning-set
-quantity (ABF26 Lemma 6.13). -/
+/-- Correlated-agreement error lower-bounds the worst-case winning-set density. -/
 theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι]
     {C : Set (ι → A)} (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1203,8 +1220,7 @@ theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι]
   exact hbound
 
 omit [DecidableEq F] in
-/-- The two-row point-list attack lower-bounds the Definition 6.11 winning-set
-quantity (ABF26 Lemma 6.12). -/
+/-- The two-row point-list attack lower-bounds the worst-case winning-set density. -/
 theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
@@ -1272,8 +1288,8 @@ theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
   rw [ENNReal.add_ne_top]
   exact ⟨mcaError_ne_top _ _ _, ENNReal.div_ne_top (by simp) (by simp)⟩
 
-/-- The Definition 6.11 winning-set quantity is bounded by the extractor-certified
-MCA-plus-list error.  This is the quantitative content of ABF26 Lemma 6.10. -/
+/-- The worst-case winning-set density is bounded by the certified
+MCA-plus-list extractor error. -/
 theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)

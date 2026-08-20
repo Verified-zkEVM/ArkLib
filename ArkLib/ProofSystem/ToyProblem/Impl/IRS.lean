@@ -56,6 +56,12 @@ MCA admit.  An admit-backed corollary here would therefore be a weaker-provenanc
 route to the same quantity.  Any future numeric claim in-tree should adopt
 `CapacityBounds.lean`'s "external admit unless stated" convention rather than pull that file
 into the launch cone.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
+  Correlated Agreement*][ABF26], §6 (the interleaved-RS instantiation and the
+  Appendix A.1 erasure-decoding extractor realized executably here).
 -/
 
 namespace ToyProblem.Impl.IRS
@@ -271,7 +277,7 @@ def oracleReduction (k s t : ℕ) (hdvd : s ∣ k) (domain : ι ↪ F) :
       (Spec.pSpec (ι := ι) (F := F) k t) :=
   Spec.oracleReduction (k := k) (t := t) (encoder k s hdvd domain)
 
-/-- Construction 6.9 instantiated over the executable interleaved-RS
+/-- The simplified IOR instantiated over the executable interleaved-RS
 alphabet.  Its output is a virtual oracle answered by querying both input
 codewords and taking their challenge-linear combination. -/
 def simplifiedOracleReduction (k s : ℕ) :
@@ -770,7 +776,7 @@ noncomputable def simplifiedRbrKnowledgeStateFunction (k s : ℕ) (hdvd : s ∣ 
 /-- Worst-case round-by-round knowledge soundness for C6.9, naming the exact
 executable IRS extractor and its knowledge-state function in the public
 theorem type.  This is the deterministic Definition A.5 contract used by
-Lemma 6.10. -/
+the combination-round argument. -/
 theorem simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor
     [SampleableType F] [Nonempty ι]
     (k s : ℕ) (hdvd : s ∣ k) [NeZero (k / s)] (domain : ι ↪ F)

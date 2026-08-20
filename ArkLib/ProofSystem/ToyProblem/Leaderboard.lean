@@ -62,30 +62,14 @@ noncomputable def FixedRadiusParameters.koalaFRS :
   encoder_injective := Impl.FRS.encoder_injective
   encoder_range := Impl.FRS.encoder_range
 
-/-! ### Why there is no in-tree interleaved-RS inhabitant
+/-! ### Scope: no in-tree interleaved-RS inhabitant
 
-The façade's one in-tree inhabitant is folded-RS over the sextic extension, which leaves an
-apparent asymmetry: the executable extractor ArkLib actually ships
-(`Impl.IRS.straightlineExtractor`) is *interleaved*-RS.  The asymmetry is deliberate.
-
-[ABF26] §6.4.1's interleaved instantiation fixes `𝔽 = 𝔹^6` over the KoalaBear base field
-`𝔹 = 𝔽_q`, a **smooth domain `L ⊆ 𝔹`** with `|L| = 2^18`, `k = 2^20`, `s = 2^3` (so
-`s · |L| = 2^21` and rate `ρ = (k/s)/|L| = 1/2`) and `t = 128`.  That exact object is realized
-in the downstream prize-challenge repository, built from
-`Impl.IRS.encoder`/`encoder_injective`/`encoder_range` and this very structure.  A
-second copy here would fork the protected profile.
-
-The two nearby alternatives are both worse than the cross-reference:
-
-* an interleaved point over `𝔹` **alone** would not be §6.4.1's protocol — the challenge `γ`
-  is sampled from `𝔽`, and `Λ/|𝔹|` at `|𝔹| = 2^31` is not the paper's regime; and
-* a hand-rolled `⟨ω⟩` domain from KoalaBear's two-adic generator table would fork
-  `CompPoly.CPolynomial.NTT.KoalaBear.domainOfLogN`, which already supplies the smooth domain
-  the downstream profile uses.
-
-So the split is: neutral, provably-inhabited façade plus a folded reference point here; the
-concrete interleaved profile, its smooth-domain provenance, and any numeric certificate stay
-downstream. -/
+The façade's one in-tree inhabitant is folded-RS, even though the executable extractor
+(`Impl.IRS.straightlineExtractor`) is interleaved-RS.  The concrete interleaved profile —
+smooth base-field evaluation domain, production parameter shape, and any numeric
+certificate — is realized in the downstream prize-challenge repository from
+`Impl.IRS.encoder`/`encoder_injective`/`encoder_range` and this structure; a second copy
+here would fork that protected profile and its domain construction. -/
 
 /-- The certified winning-set/spot-check upper bound for a neutral parameter point. -/
 noncomputable def FixedRadiusParameters.winningSetUpperBound

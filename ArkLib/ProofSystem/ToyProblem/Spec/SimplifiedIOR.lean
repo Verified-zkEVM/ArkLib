@@ -108,7 +108,7 @@ function type: a query selects one coordinate of the codeword. -/
 def OutputWitness : Type := Fin k → F
 
 /-- The 1-arity relaxed relation `R̃¹_{C,δ}` — the output relation of
-Construction 6.9.
+the simplified IOR.
 
 Bundles the post-step instance `((v, μ_new), f_new)` together with the
 post-step witness `M_new` and asserts that `(v, μ_new, f_new)` is
@@ -157,7 +157,7 @@ theorem relaxedRelationFor_iff_exists_outputRelationFor
 section Protocol
 variable [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A]
 
-/-- Protocol specification for Construction 6.9: a single
+/-- Protocol specification for the simplified IOR: a single
 `V → P` round sending the combination randomness `γ : F`. -/
 @[reducible]
 def pSpec : ProtocolSpec 1 :=
@@ -176,7 +176,7 @@ instance : ProtocolSpec.VerifierFirst (pSpec (F := F)) := ⟨rfl⟩
 
 instance : ProtocolSpec.VerifierOnly (pSpec (F := F)) := ⟨⟩
 
-/-- Honest prover for Construction 6.9. After receiving `γ`, sets the
+/-- Honest prover for the simplified IOR. After receiving `γ`, sets the
 new witness `M_new := M₀ + γ·M₁` and outputs the reduced instance.
 
 State machine (`PrvState : Fin 2 → Type`):
@@ -206,7 +206,7 @@ def prover :
        fun _ ↦ fun j ↦ oStmt 0 j + γ • oStmt 1 j⟩,
       fun j ↦ M 0 j + γ * M 1 j⟩
 
-/-- Honest verifier for Construction 6.9. Reads `γ` from the transcript
+/-- Honest verifier for the simplified IOR. Reads `γ` from the transcript
 and produces the new statement `(v, μ₁ + γ·μ₂)` and oracle
 `f_new := f₁ + γ·f₂`. Always accepts — the "test" semantics of C6.2
 become a "reduce" semantics here.
@@ -223,7 +223,7 @@ def verifier :
     pure ((stmt.1, stmt.2.1 + γ * stmt.2.2),
            fun _ ↦ fun j ↦ oStmt 0 j + γ • oStmt 1 j)
 
-/-- Honest reduction for Construction 6.9. -/
+/-- Honest reduction for the simplified IOR. -/
 def reduction :
     Reduction []ₒ
       (Statement (F := F) k × (∀ i, OracleStatement ι A i)) (Witness (F := F) k)
@@ -297,7 +297,7 @@ def oracleProver :
       (OutputWitness (F := F) k) (pSpec (F := F)) :=
   prover (ι := ι) (F := F) (k := k)
 
-/-- Oracle verifier for Construction 6.9. The explicit output is the combined
+/-- Oracle verifier for the simplified IOR. The explicit output is the combined
 linear claim; the output codeword is supplied by `outputSimulation`. -/
 def oracleVerifier :
     OracleVerifier []ₒ
@@ -309,7 +309,7 @@ def oracleVerifier :
     pure (stmt.1, stmt.2.1 + γ * stmt.2.2)
   outputOracle := .inr (outputSimulation (ι := ι) (F := F) (A := A))
 
-/-- Construction 6.9 as a genuine interactive oracle reduction. -/
+/-- The simplified protocol as a genuine interactive oracle reduction. -/
 def oracleReduction :
     OracleReduction []ₒ
       (Statement (F := F) k) (OracleStatement ι A) (Witness (F := F) k)
@@ -415,7 +415,7 @@ the virtual-oracle verifier. `gamma_game_bound` and
 classical-choice existence result as a compatibility fallback. -/
 
 omit [DecidableEq ι] in
-/-- The L6.10 γ-round bound ([ABF26] §6.4, via
+/-- The γ-round bound (via
 `ToyProblem.gamma_transition_prob_le`): if the choice extractor fails on
 `stmtIn` then no `R̃²` witness exists, and the probability over a uniform `γ`
 that the folded instance has an `R̃¹` witness is at most
@@ -551,7 +551,7 @@ omit [DecidableEq ι] in
 theorem for C6.9. It uses the noncomputable `Spec.chooseRelaxedWitness` selector and
 therefore is not the deterministic round-by-round Definition A.5 result.
 
-The paper-facing executable Lemma 6.10 contracts are
+The executable exact-extractor contracts are
 `Impl.IRS.simplifiedOracleVerifier_knowledgeSoundnessWith_straightlineExtractor`
 and
 `Impl.IRS.simplifiedOracleVerifier_rbrKnowledgeSoundnessWorstCaseWith_rbrExtractor`;
@@ -606,7 +606,8 @@ theorem verifier_knowledgeSoundness
             OutputWitness (F := F) k) ↦
         let γ : F := y.1 ⟨0, Nat.one_pos⟩
         some ((stmt, oStmt),
-          some (Spec.chooseRelaxedWitness k ((encode : (Fin k → F) → (ι → A))) δ (stmt, oStmt)),
+          some (Spec.chooseRelaxedWitness k
+            ((encode : (Fin k → F) → (ι → A))) δ (stmt, oStmt)),
           ((stmt.1, stmt.2.1 + γ * stmt.2.2),
             fun _ j ↦ oStmt 0 j + γ • oStmt 1 j),
           y.2.2))) ?_

@@ -40,10 +40,10 @@ section Protocol
 variable [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [DecidableEq A] in
-/-- Honest completeness for ABF26 Construction 6.2, point form: if
-`((v, μ₁, μ₂), (f₁, f₂))` lies in `inputRelation` with the underlying
+/-- Honest completeness for the toy protocol, point form: if
+`((v, μ₁, μ₂), (f₁, f₂))` lies in `inputRelationFor` with the underlying
 messages `M = (M₀, M₁)` (and `fᵢ` is the `encode`-image of `Mᵢ`), then
-for any verifier challenges `(γ, xs)` the §6.1 decision `Accepts` holds
+for any verifier challenges `(γ, xs)` the decision predicate `Accepts` holds
 against the honest prover's message `g = M₀ + γ · M₁`.
 
 This is the point-form companion to the
@@ -84,54 +84,30 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     simp [Pi.add_apply, Pi.smul_apply]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
-/-- **Honest completeness for Construction 6.2** (protocol-level form).
+/-- **Honest completeness of the three-round toy protocol** (protocol-level form).
 
 The honest oracle reduction is perfectly complete from `inputRelationFor encode`
 to the trivial output relation `Set.univ`. The load-bearing fact is
 `accepts_of_mem_inputRelationFor` above: under any verifier challenges, the
 honest prover's message `g = M₀ + γ M₁` makes `Accepts` hold, so the
-verifier's `if accepts then pure () else failure` never fails.
+verifier's `OptionT` guards never fail.
 
-The proof unfolds
-`OracleReduction.perfectCompleteness` through `toReduction`, expands the
-prover's three-round `runToRound` via `Fin.induction_three`, resolves the three
-round directions via the framework per-direction `processRound` unfolds
-(`Prover.processRound_of_dir_eq_{V_to_P,P_to_V}`, `OracleReduction/Execution.lean`),
-and reduces the `Pr[…] = 1` goal to a support-membership
-obligation via `OptionT.probEvent_eq_one_of_simulateQ_support_bind`
-(`ArkLib/ToVCVio/OracleComp/SimSemantics/SimulateQ.lean`). The support
-obligation splits into:
+Proof shape: unfold `OracleReduction.perfectCompleteness` through
+`toReduction`, expand the three-round prover via `Fin.induction_three` and the
+per-direction `processRound` unfolds, and reduce the `Pr[…] = 1` goal to a
+support-membership obligation via
+`OptionT.probEvent_eq_one_of_simulateQ_support_bind`. That obligation splits
+into (1) the monadic core — the verifier body simulated against `simOracle2`
+collapses to `pure (some ())`, packaged as
+`oracleVerifier_verify_simulateQ_eq_pure` above — and (2) support plumbing,
+peeling the `Reduction.run` bind chain with the definitional-unification
+helpers of `ArkLib/ToVCVio/OracleComp/SimSemantics/SimulateQ.lean` and closing
+each support element with `accepts_of_mem_inputRelationFor`.
 
-  1. **The monadic core** — resolving the verifier body's `queryMessage`/`queryOracleStatement`
-     against `simOracle2` through the composed `MonadLiftT`/`OptionT` instance
-     chains and collapsing the spot-check `forIn` — packaged as
-     `oracleVerifier_verify_simulateQ_eq_pure` (above), built on the staged toolkit
-     (`simulateQ_optionT_bind`/`_lift`, `simulateQ_optionT_forIn_yield_pure_some`,
-     `OracleComp.monadLift_liftM_OptionT`); the query routing itself is done by
-     manual definitional bridges, not by the staged `simulateQ_add_add_liftM_*`
-     simp family (whose `implA + implB` left-hand sides do not match
-     `simOracle2`'s `addLift`/`liftTarget` spelling — that family remains an
-     upstream-candidate for canonically-spelled goals). The recurrent obstacle —
-     elaborated `MonadLift`/`ForIn` instance trees that are *definitionally* but
-     not *syntactically* equal to the toolkit lemmas' canonical spellings — is
-     bridged by `conv … change`/`show … from rfl` steps and a universe-pinned
-     `emptySpec.{0,0}` ascription (the `[]ₒ` notation otherwise leaves a free
-     universe metavariable that blocks `rw`).
-  2. **Support plumbing** — peeling the `Reduction.run` OptionT-bind chain
-     (challenge sampling, `Transcript.concat` layers, final `Option.getM`) via
-     the `obtain`-friendly defeq peelers (`OptionT.mem_support_run_bind`,
-     `OracleComp.mem_support_bind_peel`, …, same staged file), landing each
-     support element on `oracleVerifier_verify_simulateQ_eq_pure` with the accept
-     hypotheses supplied by `accepts_of_mem_inputRelationFor` from `hRel`.
-
-**Statement faithfulness (fixed 2026-06-04).** The input relation is the
-**fixed-encoding** `inputRelationFor encode` (the verifier's own `encode`, with
-the witness `M` tied to the codewords `fᵢ = encode (M i)`). An earlier
-existential-encoding form (`ToyProblem.relation`, `∃ encode'`) made completeness
-*unprovable / false* — the honest prover's `encode g` need not match
-`fᵢ = encode' (Mᵢ)` when `encode' ≠ encode` (the same defect found for the L6.12
-attack). With `inputRelationFor encode` the discharge to `accepts_of_mem_inputRelationFor`
-(`hf : fᵢ = encode (M i)`, `hM : ⟨M i, v⟩ = μᵢ`) goes through. -/
+The input relation must be the **fixed-encoding** `inputRelationFor encode`:
+with an existentially quantified encoder this statement is false (the honest
+prover's `encode g` need not match `encode' (Mᵢ)` when `encode' ≠ encode`; see
+`inputRelationFor`). -/
 theorem oracleReduction_perfectCompleteness
     [SampleableType F] [SampleableType ι]
     {σ : Type} (init : ProbComp σ)
@@ -169,34 +145,15 @@ theorem oracleReduction_perfectCompleteness
   -- conjuncts (`(a.2, a.1.2.2) ∈ Set.univ` and `a.1.2.1 = a.2`) hold for *every* `a`
   -- (`Subsingleton Unit`). It therefore suffices to show `x = some a` for some `a`.
   refine (fun ⟨a, ha⟩ ↦ ⟨a, ha, Set.mem_univ _, Subsingleton.elim _ _⟩) (?_ : ∃ a, x = some a)
-  -- The monadic-simulation core (the historical C6.2 blocker — routing `queryMessage`/`queryOracleStatement` through
-  -- the composed `simOracle2` `MonadLift` chain and collapsing the `OptionT` spot-check `forIn`) is
-  -- now **closed**, packaged as `oracleVerifier_verify_simulateQ_eq_pure` (above) on top of the staged
-  -- toolkit (`simulateQ_optionT_bind`/`_lift`, `simulateQ_optionT_forIn_yield_pure_some`,
-  -- `OracleComp.monadLift_liftM_OptionT`). The defeq-vs-syntactic lift-instance gaps are bridged
-  -- there by `conv … change` + universe-pinned `emptySpec.{0,0}` ascriptions.
-  --
-  -- The verifier body resolves to `pure (some ())` by `oracleVerifier_verify_simulateQ_eq_pure` (above) —
-  -- this is the load-bearing C6.2 content, now **fully proven**: for *any* sampled challenge `γ`
-  -- and spot-check positions `xs`, the honest prover's round-1 message `g = M₀ + γ·M₁` makes both
-  -- guards pass (`accepts_of_mem_inputRelationFor`, supplied via `hRel : … ∈ inputRelationFor encode`),
-  -- so the simulated verifier body never fails and yields `some ()`. Concretely, in `hx`'s run the
-  -- verifier subterm is `simulateQ (simOracle2 []ₒ stmtIn.2 proverResult.1.messages) (do let g ←
-  -- queryMessage; guard …; for …; …).run`, which is exactly `oracleVerifier_verify_simulateQ_eq_pure` at
-  -- `oStmt := stmtIn.2`, `msgs := proverResult.1.messages`, `g := proverResult.1.messages ⟨1,rfl⟩`.
-  --
-  -- The remaining work (ABF26-C6.2, now **closed**) is generic support plumbing: decompose
-  -- `support (Reduction.run …)` through the `Prover.run` challenge-sampling binds (`getChallenge`
-  -- for the two `V_to_P` rounds), the `Transcript.concat`/`liftM` coercion layers, and the final
-  -- `OptionT.run`/`Option.getM`. The elaborated `liftM`/`OptionT`/`Fin.induction` bind tree is
-  -- defeq but not syntactically `>>=`, so the syntactic `support_bind`/`mem_support_liftComp_iff`
-  -- `rw`s do not engage; instead the peel is driven by the *definitional*-unification `obtain`
-  -- helpers `OracleComp.mem_support_bind_peel`/`mem_support_map_peel`/`eq_of_mem_support_pure` and
-  -- `OptionT.mem_support_run_bind`/`_lift_bind` (`ArkLib/ToVCVio/.../SimulateQ.lean`). Each support
-  -- element fixes a sampled `(γ₀, xs₂)` and the deterministic honest message
-  -- `proverResult.1.messages ⟨1,rfl⟩ = fun j => witIn 0 j + γ₀ · witIn 1 j`; under that message
-  -- `oracleVerifier_verify_simulateQ_eq_pure` (via `accepts_of_mem_inputRelationFor`) collapses the verifier body
-  -- to `pure (some ())`, forcing `stmtOut = some _` and hence `x = some _`.
+  -- Peel `support (Reduction.run …)` through the challenge-sampling binds, the
+  -- `Transcript.concat`/`liftM` coercion layers, and the final `OptionT.run`/`Option.getM`.
+  -- The elaborated bind tree is defeq but not syntactically `>>=`, so the peel uses the
+  -- definitional-unification `obtain` helpers (`OptionT.mem_support_run_bind`,
+  -- `OracleComp.mem_support_bind_peel`, …). Each support element fixes a sampled `(γ₀, xs₂)`
+  -- and the deterministic honest message `fun j => witIn 0 j + γ₀ · witIn 1 j`; under that
+  -- message `oracleVerifier_verify_simulateQ_eq_pure` (via `accepts_of_mem_inputRelationFor`,
+  -- supplied by `hRel`) collapses the simulated verifier body to `pure (some ())`, forcing
+  -- `x = some _`.
   obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
   -- Characterize the honest prover's transcript from `hPR`.
   rw [show (monadLift : OracleComp ([]ₒ + [(pSpec (ι := ι) (F := F) k t).Challenge]ₒ) _ →
@@ -319,7 +276,7 @@ open scoped NNReal ENNReal ProbabilityTheory
 
 variable {ι F A : Type} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
 
-/-- Honest completeness for ABF26 Construction 6.9, point form.  A witness for
+/-- Honest completeness for the simplified IOR, point form.  A witness for
 the two-word relaxed relation maps, for every challenge `γ`, to the linear
 combination witness for the derived one-word relaxed relation.  The same
 agreement set works before and after the transition. -/
@@ -355,7 +312,7 @@ theorem derivedOutput_mem_outputRelationFor {k : ℕ}
     simp only [Pi.add_apply, Pi.smul_apply]
     rw [← h0, ← h1]
 
-/-- **Perfect completeness for Construction 6.9** (protocol-level form).
+/-- **Perfect completeness of the simplified IOR** (protocol-level form).
 
 For every verifier challenge, the honest prover and the virtual-output
 verifier produce the same derived statement and oracle, and

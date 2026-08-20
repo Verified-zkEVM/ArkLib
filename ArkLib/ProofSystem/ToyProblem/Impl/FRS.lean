@@ -15,6 +15,12 @@ This module supplies two concrete KoalaBear sextic folded-RS encoders.  It prove
 admissibility of their geometric-progression domains, injectivity, exact encoder
 range, minimum relative distance, and small exact numerical reference facts.
 Application-specific parameter policy is intentionally outside this module.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and
+  Correlated Agreement*][ABF26], §6.4 (the folded-RS instantiation whose
+  parameter shape these reference points mirror).
 -/
 
 namespace ToyProblem
@@ -39,7 +45,8 @@ definitions depending on that choice are noncomputable.
 rows.** From it, domain injectivity, `(L, s)`-admissibility (`admissible_domain` /
 `admissible_domain12`), encoder injectivity (`encoder_injective` /
 `encoder12_injective`), and the folded minimum distance (`minRelHammingDistCode_range_encoder` /
-`minRelHammingDistCode_range_encoder12`) all derive from this theorem. Both `s = 32` and `s = 2^12` use the
+`minRelHammingDistCode_range_encoder12`) all derive from this theorem. Both `s = 32` and
+`s = 2^12` use the
 *same* `γ` (each needs only order `≥ s · |L| = 2^21`). -/
 theorem gamma_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ orderOf γ = 2 ^ 21 := by
   -- Abstract group theory: the multiplicative group `KoalaBear.Ext6ˣ` of the finite field
@@ -97,10 +104,10 @@ noncomputable def foldOmega : KoalaBear.Ext6 := gamma
 
 /-- A neutral `2^16`-point folded-RS evaluation domain in Ext6, given by the geometric
 progression `j ↦ γ^(32·j)`. Injectivity is `pow`-injectivity of `γ` below its
-exact order: `32·j < 32·2^16 = orderOf γ` (`gamma_pow_left_inj`), replacing the
-earlier additive `{1,…,2^16}` placeholder. The progression is zero-free (`γ ≠ 0`, so every
-power is a unit), so the admissibility intra-orbit clause `α · ω^i ≠ α` is not
-vacuously false at `0`; here it holds outright via the order bound.
+exact order: `32·j < 32·2^16 = orderOf γ` (`gamma_pow_left_inj`). The
+progression is zero-free (`γ ≠ 0`, so every power is a unit), so the
+admissibility intra-orbit clause `α · ω^i ≠ α` is not vacuously false at `0`;
+here it holds outright via the order bound.
 
 This proof-only reference point does not claim the smooth base-field-domain provenance required
 by ABF26's concrete folded-RS profile; that protected profile is intentionally downstream. -/
@@ -143,9 +150,9 @@ lemma admissible_domain :
 evaluation map on the `2^16` points of `domain` with folding `s = 32`
 (`k = 2^20`, `|L| = 2^16`, `s = 2^5`, rate `ρ = 1/2`), as an `F`-linear map
 `(Fin 2^20 → F) →ₗ (Fin 2^16 → Fin 32 → F)`. Built as
-`frsEvalOnPoints ∘ (degreeLTEquiv).symm`, mirroring `koalaEnc` with
-`ReedSolomon.Folded.frsEvalOnPoints` in place of `evalOnPoints` (the scalar
-`s = 1` case). The codeword alphabet is `A = Fin 32 → KoalaBear.Ext6`. -/
+`frsEvalOnPoints ∘ (degreeLTEquiv).symm`, with
+`ReedSolomon.Folded.frsEvalOnPoints` in place of the scalar `s = 1`
+`evalOnPoints`. The codeword alphabet is `A = Fin 32 → KoalaBear.Ext6`. -/
 noncomputable def encoder :
     (Fin (2 ^ 20) → KoalaBear.Ext6) →ₗ[KoalaBear.Ext6] (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6) :=
   (frsEvalOnPoints domain 32 foldOmega).domRestrict
@@ -153,7 +160,7 @@ noncomputable def encoder :
     ∘ₗ (Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20)).symm.toLinearMap
 
 open Classical in
-/-- **Injectivity of the folded encoder** ([ABF26] Definition 6.1's "code as the
+/-- **Injectivity of the folded encoder** (the "code as the
 injective map"). Mathematically this would follow from `(L, s)`-admissibility of
 `foldOmega` (`ReedSolomon.Folded.Admissible`, the GR08 condition that the `s·|L|`
 folded evaluation points `{α · ω^i}` are pairwise distinct) together with

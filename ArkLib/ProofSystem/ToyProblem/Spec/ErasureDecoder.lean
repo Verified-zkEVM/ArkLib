@@ -267,7 +267,7 @@ theorem mem_gammaAgreementSet [Fintype ι] {k : ℕ}
       encode g j = f₁ j + γ • f₂ j := by
   simp [gammaAgreementSet]
 
-/-- Concrete scalar-RS transition extractor from ABF26 Lemma 6.8.  It consumes both
+/-- Concrete scalar-RS transition extractor.  It consumes both
 the fresh challenge `γ` and the post-transition witness `g`, computes `S(γ,g)`, and
 erasure-decodes both input rows on that same set. -/
 def rsTransitionExtractor [Fintype ι] (k : ℕ) (domain : ι ↪ F)

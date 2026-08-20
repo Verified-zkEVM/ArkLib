@@ -395,7 +395,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
       _ ≤ (winningSetDensity encode δ : ENNReal) := by
         exact_mod_cast winningSetRatio_le_winningSetDensity x
 
-/-- Direct C6.9 game theorem at Definition 6.11's winning-set quantity.
+/-- Direct simplified-IOR game theorem at the worst-case winning-set density.
 
 This is the protocol-level upper coupling missing from the bare combinatorial
 definition: the classical proof-side transition extractor fails with
@@ -450,12 +450,13 @@ omit [DecidableEq ι] [Fintype A] in
 a corollary of the theorem naming the classical extractor.
 
 **Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
-`winningSetUpperBound encode δ t` is the Definition 6.11 winning-set quantity at
+`winningSetUpperBound encode δ t` is the winning-set/spot-check expression at
 whatever `δ` is supplied, so the statement is true at every radius.  It is only *meaningful*
 for `δ ∈ (0, d_min(C))`; outside that band the relaxed output relation degenerates and the
 bound, while true, certifies nothing useful.  The step that does need the band is the bridge
 to the certified error, `winningSetDensity_le_certifiedGammaError`, whose `hδ` hypothesis is
-exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contracts in `Impl/IRS.lean`
+exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contracts in
+`Impl/IRS.lean`
 carry it as an explicit argument. -/
 theorem oracleVerifier_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
     [SampleableType F] [SampleableType ι] [Nonempty ι]
