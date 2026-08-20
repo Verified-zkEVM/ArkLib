@@ -378,6 +378,7 @@ import ArkLib.ToCompPoly.Multivariate.Eval
 import ArkLib.ToCompPoly.Univariate.Basic
 import ArkLib.ToCompPoly.Univariate.Lagrange
 import ArkLib.ToMathlib.BigOperators.Fin
+import ArkLib.ToMathlib.Control.MonadLift
 import ArkLib.ToMathlib.FieldTheory.Kummer
 import ArkLib.ToMathlib.Finset.Basic
 import ArkLib.ToMathlib.Finset.ToListWithProof
