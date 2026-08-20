@@ -213,8 +213,54 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece and
-    honest-prover/completeness layers).
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the §4.5 recursion
+    tail and the honest-prover/completeness layer). It also carries the **honest-committer facts**
+    the honest chain needs: `verifiedOpening_honestOpening` (the committer's own output is a
+    `WeakBinding.VerifiedOpening` — it lives here, not in `InnerOuter/Correctness`, because
+    `InnerOuter/Security` imports that file), `vecInSb_honestInnerDecomp_balanced`, and
+    `mem_relInBox_of_honestBalanced` / `mem_relInBox_of_commitBalanced`: with
+    `balancedZmodDigitDecomposition` the honest opening satisfies paper-exact `QuadEval`'s input
+    relation `relInBox`, given Eq. (15) evaluation consistency — the second one at the actual
+    output of `commitBalanced`. **The packaged `hachi.commit` uses unsigned digits**, so the
+    paper-exact link does not apply to it (only the ball-relaxed reading does); switching the
+    scheme's committer is part of the opening work. Weak-opening validity, evaluation consistency
+    and box membership stay separate, and establishing that input relation is **not** a claim about
+    `Commitment.perfectCorrectness` (`hachi.opening` is still `sorry`, and the declared `pSpec`
+    covers only the bridge ▷ QuadEval prefix, not the full opening protocol). The **nonrecursive**
+    scheme `hachiNonrecursive` in `Correctness.lean` is where the balanced committer is packaged
+    with a complete opening and perfect correctness is actually proved.
+  - `HonestChain.lean` — the honest side's **parameter interface** and prefix composition:
+    `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero`,
+    with the box→ball condition and the batching bridge's *honest-direction* inequalities only, plus
+    `HonestRangeParams.ofDigitBase` witnessing them at `γ = ⌊b/2⌋`), one named corollary per seam,
+    and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
+    zero-check protocol, whose completeness is proved **modulo the sorried generic
+    `Reduction.append_completeness` / `liftContext_completeness`** (so it is `sorryAx`-tainted, by
+    design and recorded in the baseline; the per-link theorems it composes are not). What the
+    non-short honest lift quotient costs is a *zero-check range base* of at least `q/2 + 1`, **not**
+    a large ball radius — honest completeness of the batching bridge needs only
+    `bound, ρBound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
+    `γ` stays free. The collapse `γ = q/2 = bZero − 1` applies only to a *single* parameterization
+    that also serves the bridge's pull-back
+    (`HonestRangeParams.pinned_of_soundness_orientations`); removing it needs a two-range table in
+    `ZeroCheck/Constraints`.
+  - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
+    chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
+    reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
+    `relWEvalClaim` predicate on it (`terminalCheck`, reflection lemma
+    `terminalCheck_eq_true_iff`, both axiom-clean — the quotient range check needs only the
+    coefficient window up to `deg φ`, by the witness's own degree bound). A zero-round
+    **input adapter** (`commitInputReduction`, honest lemma `mem_relPolyEval_of_relCommitInput`)
+    converts the commitment API's claim into `relPolyEval` for the balanced committer. Adapter ▷
+    chain-through-sumcheck ▷ terminal compose into `hachiNonrecursiveOpening`, packaged with
+    `commitBalanced` as the scheme `hachiNonrecursive`, and
+    `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
+    bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
+    (`Commitments/Functional/Basic.lean`, axiom-clean, on the new
+    `OptionT.probEvent_eq_one_bind`). The three composed theorems inherit `sorryAx` from the
+    admitted generic `Reduction.append_completeness` only (recorded in the baseline); every link,
+    the adapter, the terminal step, and the bridge are individually axiom-clean. Recursion
+    (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).
