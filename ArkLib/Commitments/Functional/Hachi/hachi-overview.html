@@ -368,8 +368,8 @@
       subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
-      <span class="chip">32 files</span>
-      <span class="chip">25 with protocol content</span>
+      <span class="chip">39 files</span>
+      <span class="chip">32 with protocol content</span>
       <span class="chip">9-link opening + 3 recursion adapters</span>
       <span class="chip">rows 1–9 sorry-free</span>
       <span class="chip">13 open sorries</span>
@@ -386,7 +386,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 25 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
+      <p>Counts are over the 32 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects real <span class="mono">sorry</span> proof terms, not the word
         appearing in a docstring.</p>
     </div>
@@ -434,7 +434,7 @@
         <h3>Proof status</h3>
         <div class="legend-row">
           <span class="key"><span class="pill proven">proven</span></span>
-          <span class="txt">Sorry-free on the soundness side. Every proven link of the opening line (rows 1–9) is <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span> — and they compose that way: <span class="mono">openCore</span>, <span class="mono">roundsChain</span> and <span class="mono">finalEvalPackage</span> carry no <span class="mono">sorryAx</span>. The <b>honest-prover / completeness layer is a separate gap</b>, open for the whole chain (see the roadmap), so a <span class="mono">proven</span> pill means the CWSS certificate, not the forward direction.</span>
+          <span class="txt">Sorry-free on the soundness side. Every proven link of the opening line (rows 1–9) is <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span> — and they compose that way: <span class="mono">openCore</span>, <span class="mono">roundsChain</span> and <span class="mono">finalEvalPackage</span> carry no <span class="mono">sorryAx</span>. The <b>honest-prover / completeness layer</b> is tracked in its own files (the <span class="mono">*/Completeness.lean</span> files, <span class="mono">HonestChain.lean</span>, <span class="mono">Correctness.lean</span> — all sorry-free, with composition inheriting the admitted <span class="mono">append_completeness</span>), so a <span class="mono">proven</span> pill on a spine row means the CWSS certificate, not the forward direction.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill repaired">repaired</span></span>
@@ -500,11 +500,11 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 32 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 39 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 32</button>
+      <button data-f="all" aria-pressed="true">all · 39</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
@@ -654,8 +654,8 @@
   var ROADMAP = [
     { title:"§3 packing head — external extension-field claims", tag:"planned",
       body:"Wrap an <code>F_{q^k}</code> evaluation claim in front of <code>relPolyEval</code>, as an instance of the generalized <code>RingSwitching</code> packing phase — a separate track, not a Hachi-local head." },
-    { title:"Honest-prover completeness layer", tag:"planned",
-      body:"Every link's prover is a skeleton parameterized by its compute functions, and no link has a forward/completeness theorem. Materializing <code>hachi.opening</code> needs QuadEval's <code>computeV</code>/<code>computeResp</code> from the carrier/decomposition defs, and the sumcheck loop's <code>computeG</code> — which first needs a <em>computable</em> <code>CPolynomial</code> partial sum in the free coordinate, plus its agreement lemma against the proof-side <code>roundPoly</code>. Then <code>Commitment.perfectCorrectness</code>." },
+    { title:"Completeness layer — the recursion tail", tag:"planned",
+      body:"The honest-prover layer now exists through the sumcheck (per-link completeness theorems, composed in <code>HonestChain.lean</code>) and is closed <em>nonrecursively</em> by the terminal reveal-and-check of <code>Correctness.lean</code>: <code>hachiNonrecursive</code> carries a real <code>opening</code> and <code>hachiNonrecursive_perfectCorrectness</code>, modulo only the admitted generic <code>Reduction.append_completeness</code>. Still open: the §4.5 recursion tail's honest layer (<code>PartialEval</code>'s <code>computeY</code> and its encoding defs), discharging <code>append_completeness</code> itself, and <code>hachi.opening</code> — the succinct, recursive opening." },
     { title:"LiftCom instantiation — making the escapes concrete", tag:"planned",
       body:"The chain is stated at an abstract weak-binding commitment, so the escape events of rows 4/6/8 point at <code>LiftCom.Collision</code> without yet being tied to the inner-outer commitment. Instantiating it (no re-decomposition, the collision escape via <code>outputToModuleSIS_valid_of_verified</code>, and the ring-dimension reinterpretation row 12 consumes) is what turns those escapes into concrete Module-SIS breaks." },
     { title:"Knowledge-error accounting · extractability · Fiat–Shamir", tag:"planned",
@@ -666,7 +666,9 @@
   var INDEX = [
     ["","Commitment.lean","commitment-interface","§2.1/§4.1","—","wip",1],
     ["","Composition.lean","composition","§4.2–4.5","—","wip",0],
+    ["","Correctness.lean","completeness","§4.2–§4.3","1–9 + reveal","proven",0],
     ["","EvalSplit.lean","infrastructure","§4 · Eq.12","—","proven",0],
+    ["","HonestChain.lean","completeness","§4.2–4.3","1–9","proven",0],
     ["Gadget","Basic.lean","umbrella","§2.1","—","umbrella",0],
     ["Gadget","Core.lean","infrastructure","§2.1","—","proven",0],
     ["Gadget","Norms.lean","infrastructure","§2.1","—","proven",0],
@@ -677,21 +679,26 @@
     ["InnerOuter","Security.lean","infrastructure","§4.1","—","proven",0],
     ["QuadEval","Basic.lean","umbrella","§4.2","—","umbrella",0],
     ["QuadEval","Bridge.lean","bridge","§4.2 · Eq.12","1","proven",0],
+    ["QuadEval","Completeness.lean","completeness","§4.2 · L8","2","proven",0],
     ["QuadEval","Gadgets.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["RingSwitch","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
+    ["RingSwitch","Completeness.lean","completeness","§4.3 · Fig4 · L9","3–4","proven",0],
+    ["RingSwitch","QuotientNorms.lean","infrastructure","§4.3 · L9","—","proven",0],
     ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","proven",0],
     ["ZeroCheck","Constraints.lean","infrastructure","§4.3 · Eq21–23","—","proven",0],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
+    ["ZeroCheck","Completeness.lean","completeness","§4.3 · Fig5","5–6","proven",0],
     ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
     ["Sumcheck","RoundPoly.lean","infrastructure","§4.3 · Fig6","8","proven",0],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
     ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","proven",0],
+    ["Sumcheck","Completeness.lean","completeness","§4.3 · Fig6–7","7–9","proven",0],
     ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
     ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","10","wip",6],
     ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eq25–26","11","gap",2],
@@ -719,11 +726,11 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free on the soundness side — all foundations plus the whole opening line, rows 1–9 (QuadEval, the HMZ25 lift, the batching bridge, and the sumcheck loop with its final evaluation)." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free — all foundations, the whole opening line rows 1–9 (QuadEval, the HMZ25 lift, the batching bridge, and the sumcheck loop with its final evaluation), and the honest completeness layer through the nonrecursive opening." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
     { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: the §4.5 recursion adapters (rows 10 and 12) plus the two packaging files." },
     { cls:"bad", n:counts.gap, lbl:"Open gap", sub:"A step whose soundness appears to fail as the paper states it — row&nbsp;11's Z-packing bridge, awaiting a repair decision." },
-    { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the completeness layer, the LiftCom instantiation &amp; the knowledge-error bridge." },
+    { cls:"plan", n:ROADMAP.length, lbl:"Planned", sub:"Named in the roadmap but not yet a file — the outer interface, the recursion tail's completeness, the LiftCom instantiation &amp; the knowledge-error bridge." },
   ];
   var tilesEl = document.getElementById("tiles");
   tiles.forEach(function(t){

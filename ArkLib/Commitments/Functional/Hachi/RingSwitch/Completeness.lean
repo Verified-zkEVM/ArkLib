@@ -145,8 +145,9 @@ variable {n μ : ℕ} {F : Type} [Field F] (bound ρBound : ℕ)
 /-- **The honest lifted witness of Hachi's lift**: the `R^lin` witness `z` together with the
 per-row honest quotients of the cyclotomic presentation — the generic
 `RingSwitching.Lift.honestWitness` at `cyclotomicPresentation`. This is what the honest Figure-4
-prover commits to and later outputs, and it is the term the admissibility hypothesis of
-`liftReduction_perfectCompleteness_of_honestShort` is stated about.
+prover commits to and later outputs, and it is the term whose `liftShort` admissibility the
+completeness theorems discharge — the quotient half by `rhoShort_honestLiftWitness_half`, the
+`z` half from the image seam (`liftReduction_perfectCompleteness_image`).
 
 `noncomputable`, because the quotients are Mathlib polynomials produced by division: the lifted
 witness type `LiftedWitness` stores `Polynomial (ZMod q)`, not the computable `CPolynomial`. An
