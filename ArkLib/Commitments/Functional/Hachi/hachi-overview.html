@@ -368,7 +368,7 @@
       subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
-      <span class="chip">31 files</span>
+      <span class="chip">32 files</span>
       <span class="chip">25 with protocol content</span>
       <span class="chip">9-link opening chain</span>
       <span class="chip">rows 1–9 no sorried certificate · all axiom-clean</span>
@@ -386,7 +386,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 24 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
+      <p>Counts are over the 25 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects declarations that actually use
         <span class="mono">sorry</span>, not the word appearing in a docstring.</p>
     </div>
@@ -434,7 +434,7 @@
         <h3>Proof status</h3>
         <div class="legend-row">
           <span class="key"><span class="pill proven">proven</span></span>
-          <span class="txt">Sorry-free and complete. The QuadEval subprotocol (Lemma&nbsp;8) and the HMZ25 lift (Lemma&nbsp;9) are even <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span>.</span>
+          <span class="txt">Sorry-free and complete. Every link of the nine-row chain is <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span> — and so is their composite <span class="mono">iteration</span>, verified by <span class="mono">lake exe axiomsweep</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill repaired">repaired</span></span>
@@ -442,7 +442,7 @@
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
-          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>. One exception carries <span class="mono">sorry&nbsp;0</span> — link&nbsp;5's pull-back is proved and its Eqs.&nbsp;(22)–(23) encoding is now paper-faithful, but the link is still WIP because it has no honest-completeness direction <span class="mono">relLift → relBatched</span>.</span>
+          <span class="txt">Not finished — but for two different reasons, so read the <span class="mono">sorry</span> column. <span class="mono">sorry&nbsp;&gt;&nbsp;0</span> is a real skeleton: types, relations, verifier and package typecheck, but a proof (and sometimes an encoding def) is still <span class="mono">sorry</span> — the end-piece in <span class="mono">Composition.lean</span> and the opening <span class="mono">Proof</span> in <span class="mono">Commitment.lean</span>. <span class="mono">sorry&nbsp;0</span> means the soundness side is proved and only the <b>honest-completeness direction</b> is missing — link&nbsp;5 (<span class="mono">relLift → relBatched</span>) and the encoding home it shares with rows&nbsp;6–9.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill gap">gap</span></span>
@@ -515,11 +515,11 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 31 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 32 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 31</button>
+      <button data-f="all" aria-pressed="true">all · 32</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
@@ -614,7 +614,7 @@
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"],["Sumcheck","RoundPoly.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
         relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"proven", sorry:0, badges:["guarded","proven"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Lemma&nbsp;11's named extractor and CWSS theorem are now proved through the guarded scalar-round engine and the new proof-side <code>RoundPoly.lean</code> layer. The weak-binding failure mode is <code>roundEsc</code>. The loop is composed recursively; its proved input/output seam equalities are used explicitly by <code>Composition.lean</code>, with the non-vacuous range-degree condition <code>0 &lt; b</code>." },
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Lemma&nbsp;11's named extractor and CWSS theorem are now proved through the guarded scalar-round engine and the new proof-side <code>RoundPoly.lean</code> layer. The weak-binding failure mode is <code>roundEsc</code>. The loop is composed recursively and <b>re-pins its input/output seams definitionally</b>, so <code>Composition.lean</code> appends the guarded tail with the universal <code>▷</code>, with the non-vacuous range-degree condition <code>0 &lt; b</code>." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"proven", sorry:0, badges:["guarded","proven"],
@@ -675,12 +675,13 @@
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
     ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
-    ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","wip",2],
+    ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","wip",0],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
     ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
-    ["Sumcheck","Bridge.lean","bridge","§4.3","7","wip",0],
-    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","wip",2],
-    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","wip",3],
+    ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
+    ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
+    ["Sumcheck","RoundPoly.lean","proof-side round-polynomial layer","§4.3 · Fig6","8","proven",0],
+    ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","proven",0],
     ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
     ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","—","plan",6],
     ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","—","plan",2],
@@ -708,7 +709,7 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations and the full nine-link iteration." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations and the soundness certificate of all nine chain links." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
     { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: row 5's completeness direction, the end-piece, and the scheme." },
     { cls:"plan", n:counts.plan, lbl:"Future work", sub:"The three §4.5 recursion adapters close the next-iteration loop; their target skeletons and gap are tracked in the roadmap below." },

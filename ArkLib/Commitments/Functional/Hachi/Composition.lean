@@ -89,6 +89,17 @@ key (`quadEvalEscLocal`); rows 4, 6 and 8 carry the weak-binding collision of th
   from Figure 5; what changes is the tree shape the extractor is handed. The counterexample, the
   repair and their costs are spelled out in `ZeroCheck/Reduction.lean`; the full analysis is
   `docs/kb/audits/noz26-zero-check-lemma10.md`.
+- **Why the chain stops at row 9**, i.e. why the §4.5 `Recursion/` adapters are not composed
+  here. They would carry one iteration's evaluation claim to the next ring, but the middle one —
+  the `Z`-packing bridge of Eq. (26) (`Recursion/ZBatchBridge.lean`) — carries a ⚠ **soundness
+  gap**, not merely an unproven step. Eq. (26) is a *single* `F_{q^k}` equation, and the packing
+  map `(yᵢ)ᵢ ↦ ∑ᵢ yᵢ·Z^{⟨i⟩}` is `F_{q^k}`-linear on `F_{q^k}^{2^κ}`, hence far from injective;
+  the `Z_j`-basis property the paper invokes is an `F_q`-basis statement and does not pin an
+  `F_{q^k}`-valued tuple. So the paper's "equivalent to proving (26)" is an overstatement, its
+  pull-back `mem_relPartialEval_of_relHatEval` is expected to be **unprovable as stated**, and
+  any repair (a batching challenge over the peeled index; or the generic §3.1 packing — both in
+  that file's header) changes the protocol content of all three adapters. Keeping those rows out
+  of the advertised certificate is therefore a deliberate, justified scope cut, not a bare one.
 
 ## Sorry inventory of the composed chain (provenance of the certificate)
 
@@ -103,7 +114,11 @@ theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSou
 proven (`sorryAx`-free). Each sorried row carries its extraction *algorithm* as an explicitly
 sorried `Extractor.TreeBased`.
 
-**Rows 1–9 carry no sorried certificate and are `sorryAx`-free.** The
+**Rows 1–9 carry no sorried certificate and are `sorryAx`-free** — so is their composite, hence
+`iteration` and `hachi_iteration_coordinateWiseSpecialSoundWithEscape` (verified by
+`lake exe axiomsweep`; the baseline records no entry for either). The rows 1–2 front — the paper's
+Figure 3 reduction on its own — is additionally exported as a named certificate,
+`eval_coordinateWiseSpecialSoundWithEscape`. The
 `R^lin` adapter (`rlinStmt`/`unstack`/`mem_relOut_of_relRlin`) and the HMZ25 lift (Lemma 9,
 `liftPackage.isCWSS`, via the generic `Lift` layer on the proven scalar-round engine and the
 `QuotientLift` algebra) are sorry-free and axiom-clean (rows 3–4). So are, on this branch:
@@ -192,6 +207,50 @@ same workaround as `roundsSpecSampleable`). Requires a sampler for the fold chal
           (h₁ := instSampleableTypeChallengePSpecNestedZeroCheck)
             (h₂ := ProtocolSpec.instSampleableTypeChallengeEmpty)))))
 
+/-- **Hachi evaluation front — escape-threaded coordinate-wise special soundness (Hachi
+[NOZ26, §4.2, Figure 3], `Rq`-level), `sorry`-free and axiom-clean, at the chain's named
+extractor.** Rows 1–2 of the table: the polynomial-level bridge followed by `QuadEval`, along a
+single relation seam. The bridge is escape-free and `QuadEval` escape-aware, so the universal `▷`
+lifts the bridge at the never-firing event and the composed event fires exactly when `QuadEval`'s
+own event fires on the suffix tree.
+
+The endpoint relations are `relPolyEval` and `relOut`, and the extractor is the composed algorithm
+(the bridge's pull-back run on the prefix tree of `QuadEval`'s Lemma 8 extractor). The reduction's
+Module-SIS(B/D) failure mode is the certificate's escape disjunct, which by
+`ChallengeTree.EscapeEvent.append` reduces to `QuadEval`'s own event on the suffix tree at the
+bridge's verdict.
+
+This is the front of `iteration` below, kept as a named statement because it is the paper's
+Figure 3 reduction on its own — the `Rq`-level polynomial-evaluation step, independent of the §4.3
+opening chain that follows; `iteration` reuses exactly this composite as its first two factors.
+Pinned to `𝓜(q, α)` with the [LS18] hypotheses of
+`quadEval_coordinateWiseSpecialSoundWithEscape`. -/
+theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp)) (hq5 : q % 8 = 5) {b ω γ : ℕ}
+    (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows) :
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (CWSSStructure.ofIsEmpty.append
+        (foldStructure (CarrierCom := CarrierCom 𝓜(q, α) dRows)
+          (C := ShortChallenge 𝓜(q, α) ω) (r := r)))
+      ((bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
+            (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
+          quadEvalPackage init impl hq5 hκ hτ pp).esc)
+      (relPolyEval 𝓜(q, α) pp (b : ZMod q)
+        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
+      (relOut (zDigits := zDigits) 𝓜(q, α) pp (b : ZMod q) ω γ)
+      ((bridgeVerifier (oSpec := oSpec) (innerRows := innerRows) (messageDigits := messageDigits)
+          (outerRows := outerRows) (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)
+          𝓜(q, α)).append
+        (verifier (oSpec := oSpec) (ω := ω) 𝓜(q, α)))
+      ((bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
+            (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
+          quadEvalPackage init impl hq5 hκ hτ pp).extractor) :=
+  (bridgePackage (oSpec := oSpec) 𝓜(q, α) init impl pp (b : ZMod q)
+        (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω) ▷
+      quadEvalPackage init impl hq5 hκ hτ pp).isCWSS
+
 /-- **One Hachi evaluation iteration** (rows 1–9 of the chain table): the concatenation of the
 subprotocols, in one line of `▷`s — bridge ▷ `QuadEval` ▷ `R^lin` adapter ▷ HMZ25 lift ▷
 batching bridge ▷ (corrected-Lemma-10) zero-check ▷ sumcheck bridge (rows 1–7, pure verifiers,
@@ -206,10 +265,8 @@ polynomial-evaluation claim `relPolyEval` to the evaluation claim `relWEvalClaim
 composite's escape event is the `EscapeEvent.append`-nesting of the honest factor events
 (rows 2, 4, 6, 8), each on its own subtree.
 
-The certificate `iteration.isCWSS` is the one-iteration CWSS statement; its provenance (which
-links are finished and which are skeleton-sorried) is inventoried in the module header. The
-round-loop endpoints are supplied by `roundsChain_relIn` / `roundsChain_relOut` rather than by
-definitional reduction, so the guarded tail uses the corresponding explicit append operations. -/
+The certificate `iteration.isCWSS` is the one-iteration CWSS statement — every factor discharged,
+`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header. -/
 noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
@@ -217,7 +274,7 @@ noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (_hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hb : b - 1 ≤ γ)
     (hbpos : 0 < b)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
     (hn : n₀ ≤ 2 ^ m₁) :
@@ -260,22 +317,21 @@ noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT
       (LiftedWitness 𝓜(q, α) μ₀ n₀)
       (coreSpec (q := q) (α := α) (dRows := dRows) (r := r) ω m₀ m₁ K.TCom F) :=
     (bridge ▷ quadEval) ▷ rlin ▷ lift ▷ batch ▷ zeroCheck ▷ sumcheckBridge
-  (core.appendEscapeGuarded rounds
-    (roundsChain_relIn 𝓜(q, α) m₀ m₁ γ ρBound b init impl K φF hbpos m₀ le_rfl).symm).appendGuarded
-    finalEval (roundsChain_relOut 𝓜(q, α) m₀ m₁ γ ρBound b init impl K φF hbpos m₀ le_rfl)
+  (core ▷ rounds) ▷ finalEval
 
 /- There is the possibility of adding recursion at the `relWEvalClaim` seam (the [NOZ26] §4.5
 adapters), so that multiple iterations can be concatenated together — followed by a single
 end-piece — to reduce the final witness/proof even further. -/
 
-/-- **Hachi one-iteration evaluation reduction — escape-threaded coordinate-wise special soundness
-(skeleton certificate), at the chain's named extractor.** The composed verifier of rows 1–9 is CWSS
-over the endpoint relations `relPolyEval` and the evaluation claim `relWEvalClaim`, at the composed
-extraction algorithm `(iteration …).extractor`, with the composed escape event `(iteration …).esc`
-as the certificate's disjunct — the `EscapeEvent.append`-nesting of the honest per-row events
-(rows 2, 4, 6, 8), each on its own subtree. The proof term is just `iteration.isCWSS`; its
-assumptions are exactly the sorried links inventoried in the module header (Lemma 11, the final
-evaluation, and the two `Constraints.lean` sum identities). -/
+/-- **Hachi one-iteration evaluation reduction — escape-threaded coordinate-wise special soundness,
+`sorry`-free and axiom-clean, at the chain's named extractor.** The composed verifier of rows 1–9 is
+CWSS over the endpoint relations `relPolyEval` and the evaluation claim `relWEvalClaim`, at the
+composed extraction algorithm `(iteration …).extractor`, with the composed escape event
+`(iteration …).esc` as the certificate's disjunct — the `EscapeEvent.append`-nesting of the honest
+per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just
+`iteration.isCWSS`, and every one of its factors is now discharged (see the module header's sorry
+inventory), so this is the end-to-end one-iteration certificate: `sorryAx` enters the development
+only at `endPiece`, i.e. at `evaluation` below. -/
 theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
@@ -284,24 +340,24 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hb : b - 1 ≤ γ)
     (hbpos : 0 < b)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
     (hn : n₀ ≤ 2 ^ m₁) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
       (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
-        K pp φF hd hq2 hb hbpos hρ hcov hn).struct
+        K pp φF hd hb hbpos hρ hcov hn).struct
       (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hbpos hρ hcov hn).esc
+        hq5 hκ hτ K pp φF hd hb hbpos hρ hcov hn).esc
       (relPolyEval 𝓜(q, α) pp (b : ZMod q)
         (quadEvalBetaSq γ b zDigits ((𝓜(q, α)).φ.natDegree) m messageDigits) γ (2 * ω))
       (relWEvalClaim 𝓜(q, α) m₀ γ ρBound b K φF)
       (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ
-        hτ K pp φF hd hq2 hb hbpos hρ hcov hn).verifier
+        hτ K pp φF hd hb hbpos hρ hcov hn).verifier
       (iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-        hq5 hκ hτ K pp φF hd hq2 hb hbpos hρ hcov hn).extractor :=
+        hq5 hκ hτ K pp φF hd hb hbpos hρ hcov hn).extractor :=
   (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
-    K pp φF hd hq2 hb hbpos hρ hcov hn).isCWSS
+    K pp φF hd hb hbpos hρ hcov hn).isCWSS
 
 /-- The end-piece wire format: one prover message sending the reduced (end) witness itself. -/
 @[reducible] def pSpecEndPiece (Wit : Type) : ProtocolSpec 1 :=
@@ -345,8 +401,8 @@ noncomputable def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT 
 `iteration` concatenated with the `endPiece`. The composed reduction takes the
 polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: after the end-piece
 the verifier has checked the reduced witness against the reduced claim itself, so nothing is left
-to reduce. The certificate is `(evaluation …).isCWSS`; it is skeletal exactly where its factors
-are (the sorried links of the iteration and the sorried end-piece). -/
+to reduce. The certificate is `(evaluation …).isCWSS`; its one skeletal factor is the sorried
+`endPiece` — `iteration` is discharged, so this is where `sorryAx` enters the development. -/
 noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
@@ -354,7 +410,7 @@ noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (State
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
-    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hq2 : 2 * b ≤ q + 1) (hb : b - 1 ≤ γ)
+    (hd : 0 < (𝓜(q, α)).φ.natDegree) (hb : b - 1 ≤ γ)
     (hbpos : 0 < b)
     (hρ : b - 1 ≤ ρBound) (hcov : (μ₀ + n₀) * (𝓜(q, α)).φ.natDegree ≤ 2 ^ m₀)
     (hn : n₀ ≤ 2 ^ m₁) :
@@ -380,7 +436,7 @@ noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (State
     ProtocolSpec.instSampleableTypeChallengeAppend (h₁ := i₁)
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   let iter := iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
-    hq5 hκ hτ K pp φF hd hq2 hb hbpos hρ hcov hn
+    hq5 hκ hτ K pp φF hd hb hbpos hρ hcov hn
   let closing := endPiece init impl m₀ b K φF
   iter ▷ closing
 
@@ -401,7 +457,9 @@ end Evaluation
 * **Recursion at the `relWEvalClaim` seam.** The §4.5 `Recursion/` adapters (`PartialEval`,
   `ZBatchBridge`, `TraceHandoff`) would carry one iteration's evaluation claim to the next ring,
   so that several iterations could precede a single `endPiece`. They are formalized but not
-  composed here, and `ZBatchBridge` carries a documented soundness gap needing a repair decision.
+  composed here, for the reason recorded in the chain notes above: `ZBatchBridge` carries the ⚠
+  Eq. (26) soundness gap, and a **repair decision comes first** — any repair changes the protocol
+  content of all three adapters, so polishing their proofs before deciding is wasted work.
   Termination is §4.4's asymptotic base case and §4.5's concrete Greyhound/LaBRADOR cutoff.
 * **Knowledge-error accounting** ([FMN24] Lemma 4), `Commitment.extractability`, and Fiat–Shamir
   remain out of scope. -/

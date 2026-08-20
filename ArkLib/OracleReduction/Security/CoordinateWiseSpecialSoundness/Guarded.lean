@@ -151,7 +151,7 @@ theorem append_run_guardedLeft
   · rw [if_neg hc, if_neg hc]
     simp
 
-/-- **Guarded binary CWSS append, escape-threaded named form (skeleton).** Escape-threaded CWSS is
+/-- **Guarded binary CWSS append, escape-threaded named form.** Escape-threaded CWSS is
 preserved by `Verifier.append` when the left factor is merely *guarded* rather than pure, at the
 same composed extractor and event as the pure append.
 
@@ -160,20 +160,13 @@ because the composed event has to *name* the left verdict map `out₁`. On rejec
 unconstrained by `IsGuardedWith`, so the composed event may evaluate `esc₂` at junk intermediate
 statements — harmless, since escape events must be honest breaks at *all* `(stmt, tree)` pairs.
 
-**Sorried.** Proof plan: transplant `Verifier.append_treeSpecialSoundWithEscape`
-(`Composition.lean`) — the disjunction is handled exactly as there — with two deltas:
-1. A guarded left-run lemma `append_run_guardedLeft`:
-   `(V₁.append V₂).run stmt (tr₁ ++ₜ tr₂) = if check₁ stmt tr₁ then V₂.run (out₁ stmt tr₁) tr₂
-   else failure` (mirror of `append_run_pure_left`, plus `failure_bind`). On an accepting leaf
-   (`Pr = 1`), the `check₁ = false` branch contradicts `failure`'s acceptance probability `0`,
-   so every surviving leaf has `check₁ = true` and the proof is literally
-   the pure proof from there.
-2. Where the pure proof certifies each left-leaf output in `rel₂.language` via
-   `pure_accepting_of_mem`, use its guarded analogue fed by the `check₁ = true` fact from delta 1.
-   (Each left leaf learns `check₁ = true` from *some* suffix transcript — the same nonemptiness
-   the pure proof already extracts via `LeafPath.exists_of_mem_fullTranscripts`.)
-
-The tree machinery (`appendSplit` and friends) is untouched. -/
+The proof follows `Verifier.append_treeSpecialSoundWithEscape` (`Composition.lean`) — the
+disjunction is handled exactly as there — with one step the pure argument does not need: every
+prefix leaf is shown to pass `check₁`, since a failing leaf makes the composite `failure` on the
+full transcript through it (`Verifier.append_run_guardedLeft`, at a suffix transcript supplied by
+`ChallengeTree.LeafPath.some`), contradicting acceptance. From there the pure argument runs
+verbatim with `out₁` in place of the left verifier's verdict, and the tree machinery
+(`appendSplit` and friends) is untouched. -/
 theorem append_treeSpecialSoundWithEscape_of_guardedLeft
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)

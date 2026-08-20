@@ -165,12 +165,15 @@ home_page/            site assets and assembled website root
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
     (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder.
+    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
+    it so the umbrella reaches every folder it documents.
   - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
     links (rows 1–9 of the header's seam table) into one evaluation iteration, and
     `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
-    certificate. The sumcheck loop's endpoints use the proved `roundsChain_relIn` /
-    `roundsChain_relOut` seam equalities, so the guarded tail is appended explicitly. `endPiece` is
+    certificate (`sorry`-free and axiom-clean). `eval_coordinateWiseSpecialSoundWithEscape` states
+    the same for the rows 1–2 front alone — the paper's Figure 3 reduction. `roundsChain` re-pins
+    the sumcheck loop's relation seams definitionally, so the guarded tail composes with the
+    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` is
     the sorried skeleton closing a run of iterations (the prover reveals the reduced witness and
     the verifier checks the reduced claim against it directly), and `evaluation` is
     `iteration ▷ endPiece` — the complete opening argument. Escape events compose along the chain
