@@ -348,7 +348,7 @@ home_page/            site assets and assembled website root
   `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
   radius, and the repetition count, so they apply at production sizes without evaluation. Turning
   such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
-  `Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which are external admits and are
+  `Data/CodingTheory/ProximityGap/CapacityBounds`, several proven and the rest external admits,
   deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
   any production shape.
 - Batched FRI's batching round now emits the random-linear-combination codeword directly as a

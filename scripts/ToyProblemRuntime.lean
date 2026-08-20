@@ -19,8 +19,9 @@ These small tests exercise sextic arithmetic and the executable interleaved-RS l
 They deliberately use `s = 2`. This is not a coverage gap: the security theorems are parametric
 in the code, the radius, and the repetition count, so they already apply at production sizes and
 need no evaluation. What *is* missing at production sizes is a numeric error value — that needs
-the MCA/CA capacity bounds of `ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which
-are external admits kept outside the toy-problem import cone.
+the MCA/CA capacity bounds of `ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds.lean`,
+which live outside the toy-problem import cone (several proven; the Johnson-range MCA input
+is still an external admit).
 -/
 
 namespace ToyProblemRuntime

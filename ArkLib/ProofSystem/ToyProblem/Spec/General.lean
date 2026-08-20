@@ -123,20 +123,22 @@ bounds, and the actual-vs-certified bridges) depend only on `propext`, `Classica
 **opaque**: `ε_mca` and `Λ` are the definitions of `ProximityGap/Errors.lean` and
 `Code.Lambda`, not numerals. Nothing in this directory evaluates them.
 
-Numeric values for the bracket come from the MCA/CA capacity bounds in
-`Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which are **external admits** (each
-`sorry` there is tagged with the primary source it stands in for). That file is deliberately
-**not** in this directory's import cone, so the quarantine is structural rather than a
-convention: no toy-problem theorem can silently acquire a numeric claim. Consequently the
+Numeric values for the bracket come from the MCA/CA capacity bounds under
+`Data/CodingTheory/ProximityGap/CapacityBounds`. Several of those are fully proven; the rest
+are **external admits** (each `sorry` is tagged with the primary source it stands in for) —
+in particular the Johnson-range MCA input `rs_mcaError_le_in_johnson_range`.
+That subtree is deliberately **not** in this directory's import cone, so the quarantine is
+structural rather than a convention: no toy-problem theorem can silently acquire a numeric
+claim, admit-backed or otherwise. Consequently the
 theorems apply at production parameter sizes — they are parametric in `C`, `δ`, and `t` — but
 no numeric error value is proven in-tree at any production shape. For the interleaved-RS profile
 the remaining distance is short and is spelled out in `Impl/IRS.lean`.
 
-Two further admitted regions sit outside every proof here and must not be read as backing any
+One further admitted region sits outside every proof here and must not be read as backing any
 statement in this file: the generic `StateT` security-composition theorems of
-`OracleReduction/Composition/Sequential/Append.lean` (16 admitted sites, no toy-problem
-consumer — the virtual-output *execution* lemmas that composition needs are proven separately)
-and `Verifier.cast_rbrKnowledgeSoundness` in `OracleReduction/Cast.lean`.
+`OracleReduction/Composition/Sequential/Append.lean` (admitted, with no toy-problem
+consumer — the virtual-output *execution* lemmas that composition needs are proven
+separately).
 
 ## References
 

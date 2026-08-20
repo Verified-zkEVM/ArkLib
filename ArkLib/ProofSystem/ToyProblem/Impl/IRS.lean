@@ -35,9 +35,11 @@ the route to a numeral is short, and it is worth recording exactly what is missi
 * **MCA term.**  `ProximityGap.mcaError_interleaved_eq` (`ProximityGap/Errors.lean`,
   `sorry`-free) collapses the interleaved MCA error to the scalar one, so at radius
   `δ ∈ (0,1)` the `s`-interleaved code inherits the RS bound at message length `k / s`.
-  The scalar bound itself, `rs_mcaError_le_in_johnson_range`
+  In the Johnson range the scalar bound, `rs_mcaError_le_in_johnson_range`
   (`ProximityGap/CapacityBounds.lean`), is the **one external admit** on this path
-  ([BCHKS25, Thm 4.6]).
+  ([BCHKS25, Thm 4.6]); at smaller radii the proven
+  `linear_mcaError_le_one_point_five_johnson`
+  (`ProximityGap/CapacityBounds/JohnsonMca.lean`) already supplies an admit-free bound.
 * **List term.**  Fully proven route, no admits:
   `ListDecodability.lambda_interleaved_le_choose_mul_pow` composed with
   `irs_lambda_le_johnson_mds` (both in `sorry`-free files), with

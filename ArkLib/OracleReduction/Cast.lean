@@ -22,13 +22,9 @@ import ArkLib.OracleReduction.Security.RoundByRound
   properties.
 
   **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
-  `OracleVerifier.cast_toVerifier`) are proven. The *security* transfer is not: the base
-  `Verifier.cast_rbrKnowledgeSoundness` below is admitted, and the oracle-side
-  `OracleVerifier.cast_rbrKnowledgeSoundness` is derived from it, so it inherits the admit even
-  though its own proof is complete. The completeness transfer lemmas are commented out entirely.
-  Nothing here may anchor a standalone security claim; in particular "casting is proven now"
-  refers to execution commuting through `cast`, not to round-by-round knowledge soundness
-  transferring across it.
+  `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness transfer
+  (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
+  completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
 open OracleComp
@@ -326,9 +322,8 @@ namespace Verifier
 
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
-/-- **Admitted.** Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
-This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to, so both are
-`sorry`-tainted; the *execution* lemmas around them are proven. -/
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
+This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
@@ -443,9 +438,7 @@ namespace OracleVerifier
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
 /-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on the oracle
-side.  The proof is complete, but it discharges to the admitted
-`Verifier.cast_rbrKnowledgeSoundness`, so this declaration is `sorry`-tainted too.  (The
-neighbouring `cast_toVerifier` execution lemma, by contrast, is genuinely proven.) -/
+side; reduces to `Verifier.cast_rbrKnowledgeSoundness`. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :

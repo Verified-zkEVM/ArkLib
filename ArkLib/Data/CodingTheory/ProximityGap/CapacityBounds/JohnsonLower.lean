@@ -23,6 +23,13 @@ linearized polynomials, and Schwartz--Zippel.
 - [BCHKS25] Corollary 1.7.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -37,7 +44,7 @@ private def IsBinaryLinearized {K : Type} [Field K] (P : Polynomial K) : Prop :=
   ∀ n ∈ P.support, ∃ i : ℕ, n = 2 ^ i
 
 open scoped NNReal in
-private noncomputable def agreement_card_gt_two_mul_of_lt_seven_eighths
+private theorem agreement_card_gt_two_mul_of_lt_seven_eighths
     {ι : Type} [Fintype ι]
     (d : ℕ) (hd : 0 < d) (δ : ℝ≥0) (S : Finset ι)
     (hcard : Fintype.card ι = 16 * d)
@@ -64,14 +71,14 @@ private def binary_basis_vector {b : ℕ} (i : Fin b) : Fin b → ZMod 2 :=
   fun i' => if i' = i then 1 else 0
 
 open scoped BigOperators in
-private noncomputable def binary_basis_vector_sum {b : ℕ}
+private theorem binary_basis_vector_sum {b : ℕ}
     (x : Fin b → ZMod 2) :
     (∑ i : Fin b, x i • binary_basis_vector i) = x := by
   classical
   funext j
   simp [binary_basis_vector]
 
-private noncomputable def binary_functional_ker_nat_card {b : ℕ}
+private theorem binary_functional_ker_nat_card {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
     Nat.card (LinearMap.ker h) = 2 ^ (b - 1) := by
   have hdim := Module.Dual.finrank_ker_add_one_of_ne_zero hh
@@ -82,7 +89,7 @@ private noncomputable def binary_functional_ker_nat_card {b : ℕ}
   rw [Module.natCard_eq_pow_finrank (K := ZMod 2) (V := LinearMap.ker h), hker]
   norm_num [ZMod.card]
 
-private noncomputable def binary_functional_fiber_card {b : ℕ}
+private theorem binary_functional_fiber_card {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0)
     (z : ZMod 2) : Fintype.card {x : Fin b → ZMod 2 // h x = z} = 2 ^ (b - 1) := by
   have hsurj : Function.Surjective h := LinearMap.surjective hh
@@ -115,7 +122,7 @@ private noncomputable def binary_functional_root_polynomial {b : ℕ}
   exact ∏ x : Fin b → ZMod 2, (Polynomial.X - Polynomial.C (h x))
 
 open scoped BigOperators in
-private noncomputable def binary_functional_root_polynomial_of_ne_zero {b : ℕ}
+private theorem binary_functional_root_polynomial_of_ne_zero {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
     binary_functional_root_polynomial h =
       Polynomial.X ^ (2 ^ (b - 1)) *
@@ -145,7 +152,7 @@ private noncomputable def binary_functional_root_polynomial_of_ne_zero {b : ℕ}
       rw [Fin.prod_univ_two]
       norm_num
 
-private noncomputable def binary_functional_lambda_one {b : ℕ}
+private theorem binary_functional_lambda_one {b : ℕ}
     (h : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) (hh : h ≠ 0) :
     (binary_functional_root_polynomial h).coeff (2 ^ (b - 1)) = 1 := by
   rw [binary_functional_root_polynomial_of_ne_zero h hh]
@@ -158,7 +165,7 @@ private noncomputable def binary_functional_lambda_one {b : ℕ}
   decide
 
 open scoped BigOperators in
-private noncomputable def binary_functional_root_polynomial_zero (b : ℕ) :
+private theorem binary_functional_root_polynomial_zero (b : ℕ) :
     binary_functional_root_polynomial
       (0 : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2) = Polynomial.X ^ (2 ^ b) := by
   classical
@@ -166,7 +173,7 @@ private noncomputable def binary_functional_root_polynomial_zero (b : ℕ) :
   simp [ZMod.card]
 
 open scoped BigOperators in
-private noncomputable def binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
+private theorem binary_functional_lambda_zero (b : ℕ) (hb : 0 < b) :
     (binary_functional_root_polynomial
       (0 : (Fin b → ZMod 2) →ₗ[ZMod 2] ZMod 2)).coeff (2 ^ (b - 1)) = 0 := by
   rw [binary_functional_root_polynomial_zero]
@@ -181,7 +188,7 @@ private def binary_graph_embedding_prod {b : ℕ}
       ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
   LinearMap.prod LinearMap.id φ
 
-private def binary_graph_embedding_prod_injective {b : ℕ}
+private theorem binary_graph_embedding_prod_injective {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
     Function.Injective (binary_graph_embedding_prod φ) := by
   intro x y hxy
@@ -192,14 +199,14 @@ private def binary_graph_subspace_prod {b : ℕ}
     Submodule (ZMod 2) ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
   LinearMap.range (binary_graph_embedding_prod φ)
 
-private def binary_graph_subspace_prod_finrank {b : ℕ}
+private theorem binary_graph_subspace_prod_finrank {b : ℕ}
     (φ : (Fin b → ZMod 2) →ₗ[ZMod 2] (Fin 2 → ZMod 2)) :
     Module.finrank (ZMod 2) (binary_graph_subspace_prod φ) = b := by
   rw [binary_graph_subspace_prod, LinearMap.finrank_range_of_inj
     (binary_graph_embedding_prod_injective φ)]
   simp
 
-private def binary_graph_subspace_prod_injective {b : ℕ} :
+private theorem binary_graph_subspace_prod_injective {b : ℕ} :
     Function.Injective (binary_graph_subspace_prod (b := b)) := by
   intro φ ψ hφψ
   apply LinearMap.ext
@@ -243,13 +250,13 @@ private noncomputable def binary_matrix_graph_finset {b : ℕ}
   classical
   exact Finset.univ.image (binary_matrix_graph_point M)
 
-private noncomputable def binary_matrix_graph_point_injective {b : ℕ}
+private theorem binary_matrix_graph_point_injective {b : ℕ}
     (M : Fin 2 → Fin b → ZMod 2) :
     Function.Injective (binary_matrix_graph_point M) := by
   intro x y hxy
   exact congrArg Prod.fst hxy
 
-private noncomputable def binary_matrix_graph_finset_card {b : ℕ}
+private theorem binary_matrix_graph_finset_card {b : ℕ}
     (M : Fin 2 → Fin b → ZMod 2) :
     (binary_matrix_graph_finset M).card = 2 ^ b := by
   classical
@@ -258,7 +265,7 @@ private noncomputable def binary_matrix_graph_finset_card {b : ℕ}
     (binary_matrix_graph_point_injective M), Finset.card_univ]
   simp [ZMod.card]
 
-private noncomputable def binary_matrix_graph_finset_card_add_two (r : ℕ)
+private theorem binary_matrix_graph_finset_card_add_two (r : ℕ)
     (M : Fin 2 → Fin (r + 2) → ZMod 2) :
     (binary_matrix_graph_finset M).card = 4 * 2 ^ r := by
   rw [binary_matrix_graph_finset_card]
@@ -271,7 +278,7 @@ private noncomputable def binary_matrix_graph_subspace {b : ℕ}
     Submodule (ZMod 2) ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :=
   binary_graph_subspace_prod (binary_matrix_linear_map M)
 
-private def binary_matrix_parameter_card (b : ℕ) :
+private theorem binary_matrix_parameter_card (b : ℕ) :
     Fintype.card (Fin 2 → Fin b → ZMod 2) = 2 ^ (2 * b) := by
   simp [ZMod.card, ← pow_mul, Nat.mul_comm]
 
@@ -282,7 +289,7 @@ private noncomputable def binary_matrix_row_difference_functional {b : ℕ}
     (binary_matrix_linear_map M - binary_matrix_linear_map N)
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_row_difference_functional_apply_basis {b : ℕ}
+private theorem binary_matrix_row_difference_functional_apply_basis {b : ℕ}
     (A N : Fin 2 → Fin b → ZMod 2) (j : Fin 2) (i : Fin b) :
     binary_matrix_row_difference_functional A N j (binary_basis_vector i) =
       A j i - N j i := by
@@ -290,7 +297,7 @@ private noncomputable def binary_matrix_row_difference_functional_apply_basis {b
   unfold binary_matrix_row_difference_functional binary_matrix_linear_map binary_basis_vector
   simp
 
-private noncomputable def binary_matrix_row_difference_functional_ne_zero {b : ℕ}
+private theorem binary_matrix_row_difference_functional_ne_zero {b : ℕ}
     (A N : Fin 2 → Fin b → ZMod 2) (j : Fin 2) (hrow : A j ≠ N j) :
     binary_matrix_row_difference_functional A N j ≠ 0 := by
   rcases Function.ne_iff.mp hrow with ⟨i, hi⟩
@@ -300,14 +307,14 @@ private noncomputable def binary_matrix_row_difference_functional_ne_zero {b : �
   simp only [LinearMap.zero_apply] at hval
   exact hi (sub_eq_zero.mp hval)
 
-private noncomputable def binary_matrix_row_difference_functional_self {b : ℕ}
+private theorem binary_matrix_row_difference_functional_self {b : ℕ}
     (M : Fin 2 → Fin b → ZMod 2) (j : Fin 2) :
     binary_matrix_row_difference_functional M M j = 0 := by
   ext x
   simp [binary_matrix_row_difference_functional]
 
 open scoped NNReal in
-private noncomputable def binary_matrix_exponent_real_le
+private theorem binary_matrix_exponent_real_le
     (ε : ℝ≥0) (r : ℕ)
     (hscale : (2 : ℝ) ≤ (ε : ℝ) * (r + 4)) :
     ((r + 4 : ℕ) : ℝ) * (2 * ((1 : ℝ) - ε)) ≤
@@ -316,7 +323,7 @@ private noncomputable def binary_matrix_exponent_real_le
   nlinarith
 
 open scoped NNReal ENNReal in
-private noncomputable def binary_matrix_exponent_ennreal_le
+private theorem binary_matrix_exponent_ennreal_le
     (ε : ℝ≥0) (r : ℕ)
     (hscale : (2 : ℝ) ≤ (ε : ℝ) * (r + 4)) :
     (((16 * 2 ^ r : ℕ) : ENNReal) ^ (2 * ((1 : ℝ) - ε))) ≤
@@ -333,11 +340,11 @@ private noncomputable def binary_matrix_exponent_ennreal_le
   rw [← ENNReal.rpow_natCast (2 : ENNReal) (2 * (r + 2))]
   exact ENNReal.rpow_le_rpow_of_exponent_le (by norm_num) hexp
 
-private def binary_product_index_card (b : ℕ) :
+private theorem binary_product_index_card (b : ℕ) :
     Fintype.card ((Fin b → ZMod 2) × (Fin 2 → ZMod 2)) = 2 ^ (b + 2) := by
   simp [Fintype.card_prod, ZMod.card, pow_add]
 
-private def binary_product_index_card_add_two (r : ℕ) :
+private theorem binary_product_index_card_add_two (r : ℕ) :
     Fintype.card ((Fin (r + 2) → ZMod 2) × (Fin 2 → ZMod 2)) =
       16 * 2 ^ r := by
   rw [binary_product_index_card]
@@ -383,7 +390,7 @@ private noncomputable def binary_matrix_good_coefficients
   exact Finset.univ.image (fun M : Fin 2 → Fin b → ZMod 2 =>
     MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M))
 
-private noncomputable def binary_matrix_good_coefficients_card
+private theorem binary_matrix_good_coefficients_card
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (hinj : Function.Injective (fun M : Fin 2 → Fin b → ZMod 2 =>
@@ -394,7 +401,7 @@ private noncomputable def binary_matrix_good_coefficients_card
   rw [Finset.card_image_of_injective Finset.univ hinj,
     Finset.card_univ, binary_matrix_parameter_card]
 
-private noncomputable def binary_matrix_good_coefficients_mem
+private theorem binary_matrix_good_coefficients_mem
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K) (γ : K) :
     γ ∈ binary_matrix_good_coefficients t ↔
@@ -409,7 +416,7 @@ private noncomputable def binary_matrix_separator_threshold (b : ℕ) : ℕ :=
   (binary_matrix_direct_configuration_separator b).totalDegree + 1
 
 open scoped BigOperators in
-private noncomputable def binary_product_linear_form_mv_eval_distinguishing_tuple {b : ℕ}
+private theorem binary_product_linear_form_mv_eval_distinguishing_tuple {b : ℕ}
     (A N : Fin 2 → Fin b → ZMod 2) (j : Fin 2) (x : Fin b → ZMod 2) :
     MvPolynomial.eval (binary_matrix_distinguishing_tuple N j)
       (binary_product_linear_form_mv (x, binary_matrix_linear_map A x)) =
@@ -441,7 +448,7 @@ private noncomputable def binary_product_linear_form_mv_eval_distinguishing_tupl
     ac_rfl
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_lambda_mv_eval_distinguishing_tuple {b : ℕ}
+private theorem binary_matrix_lambda_mv_eval_distinguishing_tuple {b : ℕ}
     (A N : Fin 2 → Fin b → ZMod 2) (j : Fin 2) :
     MvPolynomial.eval (binary_matrix_distinguishing_tuple N j)
         (binary_matrix_lambda_mv A) =
@@ -459,7 +466,7 @@ private noncomputable def binary_matrix_lambda_mv_eval_distinguishing_tuple {b :
   rw [binary_product_linear_form_mv_eval_distinguishing_tuple]
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_lambda_mv_injective {b : ℕ} (hb : 0 < b) :
+private theorem binary_matrix_lambda_mv_injective {b : ℕ} (hb : 0 < b) :
     Function.Injective (binary_matrix_lambda_mv (b := b)) := by
   intro A N hEq
   by_contra hAN
@@ -488,7 +495,7 @@ private noncomputable def binary_matrix_lambda_mv_injective {b : ℕ} (hb : 0 < 
   exact one_ne_zero hcongr
 
 open scoped BigOperators in
-private noncomputable def binary_product_linear_form_mv_eval_left_basis {b : ℕ}
+private theorem binary_product_linear_form_mv_eval_left_basis {b : ℕ}
     (w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2)) (i : Fin b) :
     MvPolynomial.eval (binary_product_left_basis_tuple i)
       (binary_product_linear_form_mv w) = w.1 i := by
@@ -501,7 +508,7 @@ private def binary_product_right_basis_tuple {b : ℕ} (j : Fin 2) :
   Fin.append (fun _ => 0) (fun j' => if j' = j then 1 else 0)
 
 open scoped BigOperators in
-private noncomputable def binary_product_linear_form_mv_eval_right_basis {b : ℕ}
+private theorem binary_product_linear_form_mv_eval_right_basis {b : ℕ}
     (w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2)) (j : Fin 2) :
     MvPolynomial.eval (binary_product_right_basis_tuple (b := b) j)
       (binary_product_linear_form_mv w) = w.2 j := by
@@ -510,7 +517,7 @@ private noncomputable def binary_product_linear_form_mv_eval_right_basis {b : �
   fin_cases j <;> simp [Fin.append_left, Fin.append_right]
 
 open scoped BigOperators in
-private noncomputable def binary_product_linear_form_mv_ne_zero {b : ℕ}
+private theorem binary_product_linear_form_mv_ne_zero {b : ℕ}
     (w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2)) (hw : w ≠ 0) :
     binary_product_linear_form_mv w ≠ 0 := by
   classical
@@ -537,7 +544,7 @@ private noncomputable def binary_product_linear_form_mv_ne_zero {b : ℕ}
     exact hi heval
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_configuration_separator_left_ne_zero (b : ℕ) :
+private theorem binary_matrix_configuration_separator_left_ne_zero (b : ℕ) :
     (∏ w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2),
       if w = 0 then (1 : MvPolynomial (Fin (b + 2)) (ZMod 2))
       else binary_product_linear_form_mv w) ≠ 0 := by
@@ -551,7 +558,7 @@ private noncomputable def binary_matrix_configuration_separator_left_ne_zero (b 
     exact binary_product_linear_form_mv_ne_zero w hzero
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_direct_configuration_separator_ne_zero_of_injective (b : ℕ)
+private theorem binary_matrix_direct_configuration_separator_ne_zero_of_injective (b : ℕ)
     (hinj : Function.Injective (binary_matrix_lambda_mv (b := b))) :
     binary_matrix_direct_configuration_separator b ≠ 0 := by
   classical
@@ -569,7 +576,7 @@ private noncomputable def binary_matrix_direct_configuration_separator_ne_zero_o
       exact sub_ne_zero.mpr (hinj.ne hMN)
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_direct_configuration_separator_ne_zero
+private theorem binary_matrix_direct_configuration_separator_ne_zero
     (b : ℕ) (hb : 0 < b) :
     binary_matrix_direct_configuration_separator b ≠ 0 :=
   binary_matrix_direct_configuration_separator_ne_zero_of_injective b
@@ -598,7 +605,7 @@ private noncomputable def binary_matrix_configuration_separator (b : ℕ) :
           binary_product_subspace_lambda_mv b (binary_matrix_graph_subspace N))
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_configuration_separator_ne_zero_of_lambda (b : ℕ)
+private theorem binary_matrix_configuration_separator_ne_zero_of_lambda (b : ℕ)
     (hlambda : ∀ M N : Fin 2 → Fin b → ZMod 2, M ≠ N →
       binary_product_subspace_lambda_mv b (binary_matrix_graph_subspace M) ≠
         binary_product_subspace_lambda_mv b (binary_matrix_graph_subspace N)) :
@@ -655,7 +662,7 @@ private noncomputable def binary_matrix_graph_basis
     (binary_basis_vector i, binary_matrix_linear_map M (binary_basis_vector i))
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_graph_basis_sum
+private theorem binary_matrix_graph_basis_sum
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (M : Fin 2 → Fin b → ZMod 2) (x : Fin b → ZMod 2) :
@@ -695,7 +702,7 @@ private noncomputable def binary_matrix_graph_basis_sum
           rw [binary_basis_vector_sum]
 
 open scoped BigOperators in
-private noncomputable def binary_product_linear_form_mv_eval₂
+private theorem binary_product_linear_form_mv_eval₂
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (w : (Fin b → ZMod 2) × (Fin 2 → ZMod 2)) :
@@ -709,7 +716,7 @@ private noncomputable def binary_product_linear_form_mv_eval₂
   rfl
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_generic_tuple_of_separator_eval_ne_zero
+private theorem binary_matrix_generic_tuple_of_separator_eval_ne_zero
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (heval : MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
@@ -747,7 +754,7 @@ private noncomputable def binary_span_factor
   Polynomial.X - Polynomial.C (∑ i : Fin d, c i • v i)
 
 open scoped BigOperators in
-private noncomputable def binary_span_factor_comp_sub_c
+private theorem binary_span_factor_comp_sub_c
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (c : Fin d → ZMod 2) (a : K) :
     (binary_span_factor v c).comp (Polynomial.X - Polynomial.C a) =
@@ -758,7 +765,7 @@ private noncomputable def binary_span_factor_comp_sub_c
   ring
 
 open scoped BigOperators in
-private noncomputable def binary_span_factor_snoc
+private theorem binary_span_factor_snoc
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (a : K)
     (c : Fin d → ZMod 2) (z : ZMod 2) :
@@ -777,7 +784,7 @@ private noncomputable def binary_span_polynomial {K : Type} [Field K] [CharP K 2
     (Polynomial.X - Polynomial.C (∑ i : Fin d, a i • v i))
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_lambda_eval_eq_span_coeff
+private theorem binary_matrix_lambda_eval_eq_span_coeff
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (M : Fin 2 → Fin b → ZMod 2) :
@@ -798,14 +805,14 @@ private noncomputable def binary_matrix_lambda_eval_eq_span_coeff
     ← binary_matrix_graph_basis_sum]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_eq_prod_factor
+private theorem binary_span_polynomial_eq_prod_factor
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) :
     binary_span_polynomial v = ∏ c : Fin d → ZMod 2, binary_span_factor v c := by
   rfl
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_graph_root
+private theorem binary_span_polynomial_graph_root
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {b : ℕ} (t : Fin (b + 2) → K)
     (M : Fin 2 → Fin b → ZMod 2) (x : Fin b → ZMod 2) :
@@ -819,7 +826,7 @@ private noncomputable def binary_span_polynomial_graph_root
     ← binary_matrix_graph_basis_sum, sub_self]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_monic
+private theorem binary_span_polynomial_monic
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) : (binary_span_polynomial v).Monic := by
   classical
@@ -828,7 +835,7 @@ private noncomputable def binary_span_polynomial_monic
     (fun c : Fin d → ZMod 2 => ∑ i : Fin d, c i • v i) Finset.univ)
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_nat_degree
+private theorem binary_span_polynomial_nat_degree
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) :
     (binary_span_polynomial v).natDegree = 2 ^ d := by
@@ -838,7 +845,7 @@ private noncomputable def binary_span_polynomial_nat_degree
   simp [ZMod.card]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_snoc_reindex
+private theorem binary_span_polynomial_snoc_reindex
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (a : K) :
     binary_span_polynomial (Fin.snoc v a) =
@@ -863,7 +870,7 @@ private noncomputable def binary_span_polynomial_snoc_reindex
       rw [Fintype.prod_prod_type]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_snoc_split
+private theorem binary_span_polynomial_snoc_split
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (a : K) :
     binary_span_polynomial (Fin.snoc v a) =
@@ -901,14 +908,14 @@ private noncomputable def binary_span_polynomial_snoc_split
       rw [binary_span_factor_comp_sub_c]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_zero
+private theorem binary_span_polynomial_zero
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     (v : Fin 0 → K) : binary_span_polynomial v = Polynomial.X := by
   unfold binary_span_polynomial
   simp
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_translate
+private theorem binary_span_polynomial_translate
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (y : K) :
     (binary_span_polynomial v).comp (Polynomial.X - Polynomial.C y) =
@@ -940,7 +947,7 @@ private noncomputable def binary_span_polynomial_translate
     simp only [mul_zero, zero_add]
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_snoc_recurrence
+private theorem binary_span_polynomial_snoc_recurrence
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) (a : K) :
     binary_span_polynomial (Fin.snoc v a) =
@@ -980,7 +987,7 @@ private def binary_subspace_lambda_set {K : Type} [Field K] [Fintype K]
     W ≤ V ∧ Module.finrank (ZMod 2) W = b ∧ binary_subspace_lambda b W = z}
 
 open scoped BigOperators in
-private noncomputable def binary_subspace_polynomial_basic
+private theorem binary_subspace_polynomial_basic
     {K : Type} [Field K] [Fintype K] [CharP K 2] [Algebra (ZMod 2) K]
     (W : Submodule (ZMod 2) K) :
     (binary_subspace_polynomial W).Monic ∧
@@ -1017,7 +1024,7 @@ private noncomputable def binary_tuple_linear_map {K : Type} [Field K] [CharP K 
     simp only [Pi.smul_apply, smul_eq_mul, Finset.smul_sum, mul_smul, RingHom.id_apply]
 
 open scoped NNReal ProbabilityTheory in
-private noncomputable def eps_ca_lower_of_finset_witness
+private theorem eps_ca_lower_of_finset_witness
     {ι F A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
@@ -1039,7 +1046,7 @@ private noncomputable def eps_ca_lower_of_finset_witness
     exact ⟨Finset.mem_univ _, hclose γ hγ⟩)
 
 open scoped NNReal in
-private noncomputable def exists_binary_matrix_scale_parameter
+private theorem exists_binary_matrix_scale_parameter
     (ε : ℝ≥0) (hε : 0 < ε) :
     ∃ r : ℕ, (2 : ℝ) ≤ (ε : ℝ) * (r + 4) := by
   have hεR : (0 : ℝ) < (ε : ℝ) := by exact_mod_cast hε
@@ -1050,7 +1057,7 @@ private noncomputable def exists_binary_matrix_scale_parameter
   nlinarith
 
 open scoped NNReal ENNReal in
-private noncomputable def exists_binary_matrix_exponent_parameter
+private theorem exists_binary_matrix_exponent_parameter
     (ε : ℝ≥0) (hε : 0 < ε) :
     ∃ r : ℕ,
       (((16 * 2 ^ r : ℕ) : ENNReal) ^ (2 * ((1 : ℝ) - ε))) ≤
@@ -1058,7 +1065,7 @@ private noncomputable def exists_binary_matrix_exponent_parameter
   obtain ⟨r, hr⟩ := exists_binary_matrix_scale_parameter ε hε
   exact ⟨r, binary_matrix_exponent_ennreal_le ε r hr⟩
 
-private noncomputable def is_binary_linearized_c_mul
+private theorem is_binary_linearized_c_mul
     {K : Type} [Field K] (c : K) (P : Polynomial K)
     (hP : IsBinaryLinearized P) :
     IsBinaryLinearized (Polynomial.C c * P) := by
@@ -1071,7 +1078,7 @@ private noncomputable def is_binary_linearized_c_mul
     rw [hp0, mul_zero]
   exact hP n (Polynomial.mem_support_iff.mpr hp)
 
-private noncomputable def is_binary_linearized_x
+private theorem is_binary_linearized_x
     {K : Type} [Field K] :
     IsBinaryLinearized (Polynomial.X : Polynomial K) := by
   unfold IsBinaryLinearized
@@ -1080,7 +1087,7 @@ private noncomputable def is_binary_linearized_x
   have hn1 : n = 1 := Finset.mem_singleton.mp hn
   exact ⟨0, by simp [hn1]⟩
 
-private noncomputable def is_binary_linearized_sq
+private theorem is_binary_linearized_sq
     {K : Type} [Field K] [CharP K 2] (P : Polynomial K)
     (hP : IsBinaryLinearized P) :
     IsBinaryLinearized (P ^ 2) := by
@@ -1106,7 +1113,7 @@ private noncomputable def is_binary_linearized_sq
   · rw [if_neg hd, map_zero] at hncoeff
     exact False.elim (hncoeff rfl)
 
-private noncomputable def is_binary_linearized_sub
+private theorem is_binary_linearized_sub
     {K : Type} [Field K] (P Q : Polynomial K)
     (hP : IsBinaryLinearized P) (hQ : IsBinaryLinearized Q) :
     IsBinaryLinearized (P - Q) := by
@@ -1122,7 +1129,7 @@ private noncomputable def is_binary_linearized_sub
   · exact hP n (Polynomial.mem_support_iff.mpr hp)
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_is_binary_linearized
+private theorem binary_span_polynomial_is_binary_linearized
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     {d : ℕ} (v : Fin d → K) :
     IsBinaryLinearized (binary_span_polynomial v) := by
@@ -1143,7 +1150,7 @@ private noncomputable def mapped_binary_matrix_configuration_separator
   MvPolynomial.map (algebraMap (ZMod 2) K) (binary_matrix_configuration_separator b)
 
 open scoped BigOperators in
-private noncomputable def mapped_binary_matrix_configuration_separator_ne_zero_of_lambda
+private theorem mapped_binary_matrix_configuration_separator_ne_zero_of_lambda
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K] (b : ℕ)
     (hlambda : ∀ M N : Fin 2 → Fin b → ZMod 2, M ≠ N →
       binary_product_subspace_lambda_mv b (binary_matrix_graph_subspace M) ≠
@@ -1163,7 +1170,7 @@ private noncomputable def mapped_binary_matrix_direct_configuration_separator
     (binary_matrix_direct_configuration_separator b)
 
 open scoped BigOperators in
-private noncomputable def mapped_binary_matrix_direct_configuration_separator_ne_zero_of_injective
+private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero_of_injective
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K] (b : ℕ)
     (hinj : Function.Injective (binary_matrix_lambda_mv (b := b))) :
     mapped_binary_matrix_direct_configuration_separator (K := K) b ≠ 0 := by
@@ -1175,14 +1182,14 @@ private noncomputable def mapped_binary_matrix_direct_configuration_separator_ne
   simpa only [map_zero] using hzero
 
 open scoped BigOperators in
-private noncomputable def mapped_binary_matrix_direct_configuration_separator_ne_zero
+private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b) :
     mapped_binary_matrix_direct_configuration_separator (K := K) b ≠ 0 :=
   mapped_binary_matrix_direct_configuration_separator_ne_zero_of_injective b
     (binary_matrix_lambda_mv_injective hb)
 
-private noncomputable def mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
+private theorem mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
     {n : ℕ} {K : Type} [Field K] [Fintype K] [DecidableEq K]
     (p : MvPolynomial (Fin n) K) (hp : p ≠ 0)
     (hdeg : p.totalDegree < Fintype.card K) :
@@ -1201,7 +1208,7 @@ private noncomputable def mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_
     (div_lt_one hcardpos).2 hdeg'
   exact (not_le_of_gt hlt) hone
 
-private noncomputable def mv_polynomial_total_degree_map_le
+private theorem mv_polynomial_total_degree_map_le
     {R S σ : Type} [CommSemiring R] [CommSemiring S]
     (f : R →+* S) (p : MvPolynomial σ R) :
     (MvPolynomial.map f p).totalDegree ≤ p.totalDegree := by
@@ -1209,7 +1216,7 @@ private noncomputable def mv_polynomial_total_degree_map_le
   exact Finset.sup_mono (MvPolynomial.support_map_subset f p)
 
 open scoped BigOperators in
-private noncomputable def exists_binary_matrix_direct_configuration_separator_eval_ne_zero
+private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
     {K : Type} [Field K] [Fintype K] [DecidableEq K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
@@ -1237,7 +1244,7 @@ private noncomputable def exists_binary_matrix_direct_configuration_separator_ev
   simpa only [MvPolynomial.eval_map] using ht
 
 open scoped BigOperators in
-private noncomputable def exists_binary_matrix_generic_tuple
+private theorem exists_binary_matrix_generic_tuple
     {K : Type} [Field K] [Fintype K] [DecidableEq K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
@@ -1250,7 +1257,7 @@ private noncomputable def exists_binary_matrix_generic_tuple
     exists_binary_matrix_direct_configuration_separator_eval_ne_zero b hb hcard
   exact ⟨t, binary_matrix_generic_tuple_of_separator_eval_ne_zero t ht⟩
 
-private def pow_two_gap_add_two (r i : ℕ)
+private theorem pow_two_gap_add_two (r i : ℕ)
     (hlow : 2 ^ r < 2 ^ i) (hhigh : 2 ^ i ≤ 2 ^ (r + 2)) :
     i = r + 1 ∨ i = r + 2 := by
   have hmono : StrictMono ((2 : ℕ) ^ ·) :=
@@ -1268,7 +1275,7 @@ private def pow_two_gap_add_two (r i : ℕ)
   omega
 
 open scoped BigOperators in
-private noncomputable def binary_span_polynomial_top_gap_add_two
+private theorem binary_span_polynomial_top_gap_add_two
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     (r : ℕ) (v : Fin (r + 2) → K) :
     ∃ R : Polynomial K,
@@ -1334,7 +1341,7 @@ private noncomputable def binary_span_polynomial_top_gap_add_two
         ring
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_span_polynomial_decomposition
+private theorem binary_matrix_span_polynomial_decomposition
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     (r : ℕ) (t : Fin (r + 4) → K)
     (M : Fin 2 → Fin (r + 2) → ZMod 2) :
@@ -1354,7 +1361,7 @@ private noncomputable def binary_matrix_span_polynomial_decomposition
   exact hR
 
 open scoped BigOperators in
-private noncomputable def binary_matrix_graph_agreement
+private theorem binary_matrix_graph_agreement
     {K : Type} [Field K] [CharP K 2] [Algebra (ZMod 2) K]
     (r : ℕ) (t : Fin (r + 4) → K)
     (M : Fin 2 → Fin (r + 2) → ZMod 2) :
@@ -1386,7 +1393,7 @@ private noncomputable def binary_matrix_graph_agreement
     exact (CharTwo.add_eq_zero.mp hroot).symm
 
 open scoped BigOperators NNReal ENNReal in
-private noncomputable def binary_matrix_johnson_raw
+private theorem binary_matrix_johnson_raw
     (ε : ℝ≥0) (hε : 0 < ε) :
     ∃ q₀ : ℕ,
     ∀ {FC : Type} [Field FC] [Fintype FC] [DecidableEq FC] [CharP FC 2],
@@ -1453,7 +1460,7 @@ private noncomputable def binary_matrix_johnson_raw
       simpa only [h4, h2, hM] using hagree i hi
 
 open scoped NNReal in
-private noncomputable def rs_fold_close_of_graph_agreement
+private theorem rs_fold_close_of_graph_agreement
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ)
@@ -1499,7 +1506,7 @@ private noncomputable def rs_fold_close_of_graph_agreement
       simp only [Pi.add_apply, Pi.smul_apply, smul_eq_mul]
       exact (hagree i hi).symm
 
-private noncomputable def rs_monomial_agreement_card_le_two_mul
+private theorem rs_monomial_agreement_card_le_two_mul
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
@@ -1538,7 +1545,7 @@ private noncomputable def rs_monomial_agreement_card_le_two_mul
     _ = 2 * d := hQnat
 
 open scoped NNReal in
-private noncomputable def binary_monomial_stack_not_joint
+private theorem binary_monomial_stack_not_joint
     {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     [Field F] [Fintype F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
@@ -1566,7 +1573,7 @@ private noncomputable def binary_monomial_stack_not_joint
     rs_monomial_agreement_card_le_two_mul domain d hd (v 1) hv1 S hagree
   omega
 
-private noncomputable def rs_relative_min_dist_fifteen_sixteen
+private theorem rs_relative_min_dist_fifteen_sixteen
     {ι K : Type} [Fintype ι] [Nonempty ι]
     [Field K] [Fintype K] [DecidableEq K]
     (domain : ι ↪ K) (t : ℕ) (ht : 0 < t)

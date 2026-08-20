@@ -21,6 +21,13 @@ extracts dense agreement triples and reconstructs a common affine codeword line.
 - [BenSassonGKS20] Lemma 3.2.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -32,7 +39,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open scoped BigOperators in
-private def joint_proximity_of_many_affine_agreements
+private theorem joint_proximity_of_many_affine_agreements
     (C : LinearCode ι F) (u0 u1 v0 v1 : ι → F)
     (A : Finset F) (S : ↥A → Finset ι) (d e : ℝ≥0)
     (he : 0 < (e : ℝ)) (hde : d + e ≤ 1)
@@ -187,14 +194,14 @@ private noncomputable def linear_bgks_agreement_set
   Finset.univ.filter fun i : ι =>
     u 0 i + x * u 1 i = linear_bgks_closest_codeword C u x i
 
-private def linear_bgks_closest_codeword_mem
+private theorem linear_bgks_closest_codeword_mem
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) :
     linear_bgks_closest_codeword C u x ∈ C := by
   classical
   letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   simp [linear_bgks_closest_codeword]
 
-private def linear_bgks_collision_numeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
+private theorem linear_bgks_collision_numeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
     (hM : 2 / e ^ 2 < M) :
     3 * M ^ 2 < (e / 2) * M ^ 3 := by
   have he2 : 0 < e ^ 2 := sq_pos_of_pos he
@@ -215,7 +222,7 @@ private noncomputable def linear_bgks_good_scalars
     δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal)
 
 open scoped NNReal in
-private def linear_bgks_agreement_set_card_gt
+private theorem linear_bgks_agreement_set_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src : ℝ≥0) (x : F)
     (hx : x ∈ linear_bgks_good_scalars C u δ_src) :
@@ -279,7 +286,7 @@ private noncomputable def linear_bgks_distinct_dense_triples
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linear_bgks_good_scalars_card_gt
+private theorem linear_bgks_good_scalars_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src η : ℝ≥0) (hη : 0 < η)
     (hprob : ENNReal.ofReal (2 / ((η : ℝ) ^ 2 * Fintype.card F)) <
@@ -311,13 +318,13 @@ private def linear_bgks_good_scalars_card_gt
     _ = ((linear_bgks_good_scalars C u δ_src).card : ℝ) := by field_simp
 
 open scoped BigOperators in
-private def linear_bgks_card_indicator
+private theorem linear_bgks_card_indicator
     {α : Type} [Fintype α] [DecidableEq α] (s : Finset α) :
     (s.card : ℝ) = ∑ i : α, if i ∈ s then (1 : ℝ) else 0 := by
   simp
 
 open scoped NNReal in
-private def linear_bgks_codewords_affine_of_distinct_dense_triple
+private theorem linear_bgks_codewords_affine_of_distinct_dense_triple
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_src : ℝ≥0)
     (x b g : ↥(linear_bgks_good_scalars C u δ_src))
@@ -414,14 +421,14 @@ private def linear_bgks_codewords_affine_of_distinct_dense_triple
   · exact hTcard
 
 open scoped BigOperators in
-private def linear_bgks_filter_card_indicator
+private theorem linear_bgks_filter_card_indicator
     {α : Type} [Fintype α] [DecidableEq α] (p : α → Prop) [DecidablePred p] :
     (((Finset.univ.filter p).card : ℝ)) =
       ∑ x : α, if p x then (1 : ℝ) else 0 := by
   simp
 
 open scoped NNReal in
-private def linear_bgks_numeric_setup
+private theorem linear_bgks_numeric_setup
     (C : LinearCode ι F) (δ_min η δ_src : ℝ≥0)
     (hδmin : (δ_min : ℝ) =
       (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
@@ -475,7 +482,7 @@ private def linear_bgks_numeric_setup
   refine ⟨hdmin_le, ha, hcube, ?_⟩
   nlinarith [hr_lt, heta_lt_r]
 
-private def linear_bgks_repeated_triples_card_le
+private theorem linear_bgks_repeated_triples_card_le
     {α : Type} [Fintype α] [DecidableEq α] :
     (((Finset.univ.filter fun p : α × α × α =>
       p.1 = p.2.1 ∨ p.1 = p.2.2 ∨ p.2.1 = p.2.2).card : ℝ)) ≤
@@ -530,7 +537,7 @@ private def linear_bgks_repeated_triples_card_le
   exact_mod_cast hR
 
 open scoped BigOperators in
-private def linear_bgks_triple_fiber_card_sum
+private theorem linear_bgks_triple_fiber_card_sum
     {α : Type} [Fintype α] [DecidableEq α]
     (D : Finset (α × α × α)) :
     (D.card : ℝ) = ∑ x : α, ∑ b : α,
@@ -560,7 +567,7 @@ private def linear_bgks_triple_fiber_card_sum
   exact_mod_cast hnat
 
 open scoped BigOperators in
-private def linear_bgks_rich_fiber_of_many_distinct
+private theorem linear_bgks_rich_fiber_of_many_distinct
     {α : Type} [Fintype α] [DecidableEq α]
     (D : Finset (α × α × α)) (e : ℝ)
     (he : 0 < e)
@@ -623,7 +630,7 @@ private def linear_bgks_rich_fiber_of_many_distinct
   exact (not_lt_of_ge hupper) (lt_trans hsep hD)
 
 open scoped BigOperators in
-private def linear_bgks_triple_intersection_moment
+private theorem linear_bgks_triple_intersection_moment
     {α : Type} [Fintype α] [Nonempty α] [DecidableEq α]
     {κ : Type} [Fintype κ] [Nonempty κ] [DecidableEq κ]
     (S : α → Finset κ) (r : ℝ)
@@ -786,7 +793,7 @@ private def linear_bgks_triple_intersection_moment
 
 open scoped NNReal in
 open scoped BigOperators in
-private def linear_bgks_dense_triples_card_gt
+private theorem linear_bgks_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -954,7 +961,7 @@ private def linear_bgks_dense_triples_card_gt
   exact (not_lt_of_ge hupper') hlower
 
 open scoped NNReal in
-private def linear_bgks_distinct_dense_triples_card_gt
+private theorem linear_bgks_distinct_dense_triples_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -1020,7 +1027,7 @@ private def linear_bgks_distinct_dense_triples_card_gt
   simpa [good, D, P, linear_bgks_distinct_dense_triples] using hresult
 
 open scoped NNReal in
-private def linear_bgks_rich_affine_line
+private theorem linear_bgks_rich_affine_line
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -1204,7 +1211,7 @@ private def linear_bgks_rich_affine_line
         _ = v0 i + (y : F) * v1 i := by rw [hgy]
 
 open scoped NNReal in
-private def linear_bgks_joint_proximity_of_good_card_gt
+private theorem linear_bgks_joint_proximity_of_good_card_gt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_min η δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) =
@@ -1232,7 +1239,7 @@ private def linear_bgks_joint_proximity_of_good_card_gt
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linear_close_probability_le_strict_of_radius_lt
+private theorem linear_close_probability_le_strict_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
     Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
@@ -1243,7 +1250,7 @@ private def linear_close_probability_le_strict_of_radius_lt
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linear_close_probability_mono_of_radius_lt
+private theorem linear_close_probability_mono_of_radius_lt
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι)
     (δ_fld δ_src : ℝ≥0) (hδ : δ_fld < δ_src) :
     Pr_{let x ← $ᵖ F}[δᵣ(u 0 + x • u 1, (C : Set (ι → F))) ≤ δ_fld] ≤
@@ -1254,7 +1261,7 @@ private def linear_close_probability_mono_of_radius_lt
 
 open scoped NNReal in
 open scoped ProbabilityTheory in
-private def linear_eps_ca_le_one_point_five_johnson_aux
+private theorem linear_eps_ca_le_one_point_five_johnson_aux
     (C : LinearCode ι F) (δ_min η δ_fld δ_src : ℝ≥0)
     (hmin : (δ_min : ℝ) = (Code.minDist (C : Set (ι → F)) : ℝ) / Fintype.card ι)
     (hη : 0 < η) (hη3 : (η : ℝ) < 1 / 3) (hηd : η < δ_min)

@@ -20,10 +20,10 @@ submission metadata, or chosen operating radius.
 **Verified vs. admitted.**  Both projections below are `sorry`-free and are *symbolic*:
 `certifiedExtractorError` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
 numeral.  Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
-parameter point; obtaining a numeral additionally requires the external MCA/CA admits of
-`Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which is deliberately outside this
-file's import cone (see the "Verified vs. admitted" section of `Spec/General.lean` and the
-numeric-route notes in `Impl/IRS.lean`).
+parameter point; obtaining a numeral additionally requires the MCA/CA capacity bounds under
+`Data/CodingTheory/ProximityGap/CapacityBounds` (several proven, the rest external admits),
+which are deliberately outside this file's import cone (see the "Verified vs. admitted"
+section of `Spec/General.lean` and the numeric-route notes in `Impl/IRS.lean`).
 -/
 
 namespace ToyProblem

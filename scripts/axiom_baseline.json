@@ -176,7 +176,6 @@
   "OracleVerifier.append_rbrKnowledgeSoundness",
   "OracleVerifier.append_rbrSoundness",
   "OracleVerifier.append_soundness",
-  "OracleVerifier.cast_rbrKnowledgeSoundness",
   "OracleVerifier.id_soundness",
   "OracleVerifier.liftContext_knowledgeSoundness",
   "OracleVerifier.liftContext_rbr_knowledgeSoundness",
