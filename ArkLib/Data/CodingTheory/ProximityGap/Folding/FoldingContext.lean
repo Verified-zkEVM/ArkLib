@@ -89,13 +89,6 @@ scoped instance {k n : ℕ} [FoldingContextMiddle k n] : NeZero n where
     have := FoldingContextMiddle.k_le_n
     omega
 
-/-- `n` is nonzero, since `1 ≤ k ≤ n`, in a `FoldingContext k d n`. -/
-scoped instance {k d n : ℕ} [FoldingContext k d n] : NeZero n where
-  out := by
-    have := FoldingContextLeft.k_ge_1
-    have := FoldingContextMiddle.k_le_n
-    omega
-
 set_option linter.defProp false in
 /-- Build a `FoldingContext` from the three inequalities `1 ≤ k`, `k ≤ d` and `d ≤ n`. -/
 @[reducible]
@@ -135,7 +128,7 @@ attribute [grind cases] FoldingContext
 /-- Monotonicity of truncated subtraction on the context bounds: `k - 1 ≤ n - 1`.
   Appears when comparing block indices after a single halving step. -/
 @[grind! →]
-lemma k_sub_one_le_n_sub_one {k d n : ℕ} [FoldingContext k d n] :
+lemma k_sub_one_le_n_sub_one {k n : ℕ} [FoldingContextMiddle k n] :
   k - 1 ≤ n - 1 := by
   grind
 
@@ -197,7 +190,7 @@ lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
 @[grind =]
 lemma pow_2_n_sub_k_eq_n_sub_k
   {A : Type*} [Group A] [OfNat A 2]
-  {k d n : ℕ} [FoldingContext k d n] :
+  {k n : ℕ} [FoldingContextMiddle k n] :
   (2 : A) ^ n / (2 : A) ^ k = (2 : A) ^ (n - k) := by
   calc
     (2 : A) ^ n / (2 : A) ^ k =
@@ -209,7 +202,7 @@ lemma pow_2_n_sub_k_eq_n_sub_k
 /-- The shifted-by-one variant of `pow_2_n_sub_k_eq_n_sub_k`:
   `2 ^ (n - 1) / 2 ^ (k - 1) = 2 ^ (n - k)`. -/
 @[grind =]
-lemma pow_2_n_sub_1_sub_k_sub_1_eq_n_sub_k
+lemma pow_2_n_sub_1_div_pow_2_k_sub_1_eq_n_sub_k
   {A : Type*} [Group A] [OfNat A 2]
   {k d n : ℕ} [FoldingContext k d n] :
   (2 : A) ^ (n - 1) / (2 : A) ^ ((k - 1)) = (2 : A) ^ (n - k) := by
