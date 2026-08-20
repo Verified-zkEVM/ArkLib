@@ -265,7 +265,7 @@ lemma betaSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
       regularWeight hH ((betaSeq x₀ R H hHyp) t) D ≤
-        (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ) :=
+        (WithBot.some (numeratorShapeSharp x₀ R H D t) : WithBot ℕ) :=
   hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
 
 /-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for the chosen numerator sequence. -/
@@ -277,7 +277,7 @@ lemma betaSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
       regularWeight hH ((betaSeq x₀ R H hHyp) t) D ≤
-        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
+        (WithBot.some ((2 * t + 1) * (Bivariate.natDegreeY R + 1) * D) : WithBot ℕ) :=
   hensel_numerator_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
 
 /-- The sharp weight bound at the canonical degree bound `defaultDegreeBound R H`,
@@ -290,7 +290,7 @@ lemma betaSeq_weight_sharp_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H 
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
       regularWeight hH ((betaSeq x₀ R H hHyp) t) (defaultDegreeBound R H) ≤
-        (WithBot.some (numeratorShapeSharp R H (defaultDegreeBound R H) t) : WithBot ℕ) :=
+        (WithBot.some (numeratorShapeSharp x₀ R H (defaultDegreeBound R H) t) : WithBot ℕ) :=
   betaSeq_weight_sharp_le x₀ R H hHyp hH (defaultDegreeBound_ge_H R H)
     (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi) hRdeg
 
@@ -301,7 +301,7 @@ lemma betaSeq_weight_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H : F[X]
     (hRdeg : 2 ≤ Bivariate.natDegreeY R) :
     ∀ t : ℕ,
       regularWeight hH ((betaSeq x₀ R H hHyp) t) (defaultDegreeBound R H) ≤
-        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * defaultDegreeBound R H) :
+        (WithBot.some ((2 * t + 1) * (Bivariate.natDegreeY R + 1) * defaultDegreeBound R H) :
           WithBot ℕ) :=
   betaSeq_weight_le x₀ R H hHyp hH (defaultDegreeBound_ge_H R H)
     (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi) hRdeg
@@ -325,9 +325,9 @@ theorem exists_hensel_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y]) 
     ∃ βseq : ℕ → 𝒪 H,
       IsHenselNumeratorSequence x₀ R H hHyp βseq ∧
       (∀ t : ℕ, regularWeight hH (βseq t) D ≤
-        (WithBot.some (numeratorShapeSharp R H D t) : WithBot ℕ)) ∧
+        (WithBot.some (numeratorShapeSharp x₀ R H D t) : WithBot ℕ)) ∧
       ∀ t : ℕ, regularWeight hH (βseq t) D ≤
-        (WithBot.some ((2 * t + 1) * Bivariate.natDegreeY R * D) : WithBot ℕ) :=
+        (WithBot.some ((2 * t + 1) * (Bivariate.natDegreeY R + 1) * D) : WithBot ℕ) :=
   ⟨betaSeq x₀ R H hHyp, betaSeq_spec x₀ R H hHyp,
     betaSeq_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg,
     betaSeq_weight_le x₀ R H hHyp hH hD_H hD_R hRdeg⟩

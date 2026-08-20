@@ -483,43 +483,41 @@ theorem shift_ne_zero {R : Type} [CommRing R]
     (Polynomial.map_eq_zero_iff hφ).mp hs
   exact hf (Polynomial.comp_X_add_C_eq_zero_iff.mp hcomp)
 
-/-- A nonzero bivariate polynomial has a well-defined multiplicity at the origin: some
-coefficient in the truncation grid is nonzero, so the defining `min?` is over a nonempty list. -/
+/-- A nonzero bivariate polynomial has a well-defined multiplicity at the origin.
+
+The argument runs `rootMultiplicity₀_ge_iff` backwards: were the multiplicity `none`, its
+right-hand side `∀ m ∈ none, r ≤ m` would hold vacuously for *every* `r`, forcing every
+coefficient to vanish. -/
 theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
     (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
     Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
-  obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
+  obtain ⟨i, j, hij⟩ : ∃ i j, Polynomial.Bivariate.coeff g i j ≠ 0 := by
     by_contra h
-    push Not at h
-    exact hg (Polynomial.ext h)
-  obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
-    by_contra h
-    push Not at h
-    exact ht (Polynomial.ext h)
-  have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
-  have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
-  have htotal : (g.coeff t).natDegree + t ≤
-      Polynomial.Bivariate.natWeightedDegree g 1 1 := by
-    simpa only [Polynomial.Bivariate.natWeightedDegree, one_mul] using
-      (Finset.le_sup (f := fun j => (g.coeff j).natDegree + j) htmem)
-  have hslt : s < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
-  have htlt : t < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
-  intro hnone
-  simp only [Polynomial.Bivariate.rootMultiplicity₀,
-    Polynomial.Bivariate.weightedDegree_eq_natWeightedDegree] at hnone
-  have hempty := List.min?_eq_none_iff.mp hnone
-  have hmem : s + t ∈ List.filterMap
-      (fun p : ℕ × ℕ => if Polynomial.Bivariate.coeff g p.1 p.2 = 0
-        then none else some (p.1 + p.2))
-      (List.product
-        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))
-        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))) := by
-    rw [List.mem_filterMap]
-    refine ⟨(s,t), ?_, ?_⟩
-    · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
-    · simp only [Polynomial.Bivariate.coeff, hs, if_false]
-  rw [hempty] at hmem
-  simp at hmem
+    simp only [not_exists, ne_eq, not_not] at h
+    exact hg (Polynomial.ext fun j ↦ Polynomial.ext fun i ↦ by
+      simpa [Polynomial.Bivariate.coeff] using h i j)
+  exact fun hnone ↦
+    hij ((Polynomial.Bivariate.rootMultiplicity₀_ge_iff g (i + j + 1)).mpr (by simp [hnone])
+      i j (by omega))
+
+/-- The `(x, y)`-vanishing order of `g` is at least `m`, provided the shifted polynomial is
+nonzero and each of its coefficients of total degree below `m` vanishes.
+
+`rootMultiplicity₀_ge_iff` on its own only yields `∀ r ∈ rootMultiplicity₀ _, m ≤ r`, which is
+vacuous exactly when the multiplicity is `none`; pairing it with `rootMultiplicity₀_ne_none`
+turns it into an inequality in `Option ℕ`. -/
+lemma le_rootMultiplicity_of_coeff_shift_eq_zero {R : Type} [CommSemiring R] [DecidableEq R]
+    {g : Polynomial (Polynomial R)} {x y : R} {m : ℕ}
+    (hg : Polynomial.Bivariate.shift g x y ≠ 0)
+    (h : ∀ i j, i + j < m →
+      Polynomial.Bivariate.coeff (Polynomial.Bivariate.shift g x y) i j = 0) :
+    (m : Option ℕ) ≤ Polynomial.Bivariate.rootMultiplicity g x y := by
+  obtain ⟨r, hr⟩ := Option.ne_none_iff_exists'.mp (rootMultiplicity₀_ne_none _ hg)
+  have hle : m ≤ r :=
+    (Polynomial.Bivariate.rootMultiplicity₀_ge_iff
+      (Polynomial.Bivariate.shift g x y) m).mp h r (by rw [hr]; rfl)
+  rw [Polynomial.Bivariate.rootMultiplicity, hr]
+  exact Option.some_le_some.mpr hle
 
 /-- The `Y`-degree is controlled by the `(1, k)`-weighted degree: each unit of `Y`-degree costs
 `k` units of weight. Stated natively over `ℕ`, with no division. -/

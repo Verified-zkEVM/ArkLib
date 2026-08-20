@@ -24,12 +24,25 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
 
 open Trivariate in
 open Bivariate in
-/-- Claim 5.7 of [BCIKS20]. -/
+/-- Claim 5.7 of [BCIKS20].
+
+The separability conjunct is separability of `R(x₀,·,Z)` **over the fraction field** `F(Z)`, which
+is what the paper means by "separable in `Y`" and exactly what the Hensel setup consumes
+(`RationalFunctions.HenselNumerators.Hypotheses`).  It is not `Polynomial.Separable` over `F[Z]`:
+that is `IsCoprime f f.derivative` in the ambient ring, so over a non-field base it forces the
+discriminant to be a unit, and it fails for genuine factors at legitimate Claim 5.6 points — over
+`𝔽₅`, `R = Z·Y² + Z·Y + (Z + X)` at `x₀ = 0` gives `R(0, Y, Z) = Z·(Y² + Y + 1)`, which shares the
+factor `Z` with its `Y`-derivative.
+
+Claim 5.6 supplies the *unspecialized* condition `discY R (x₀) ≠ 0`; deriving this conjunct from it
+is the disc-commutes-with-specialization step, which needs the `Y`-leading coefficient of `R` to
+survive at `x₀`, and belongs to this claim's proof. -/
 lemma exists_factors_with_large_common_root_set (δ : ℚ) (x₀ : F)
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ R H, R ∈ (irreducible_factorization_of_gs_solution h_gs).choose_spec.choose ∧
     Irreducible H ∧ 0 < H.natDegree ∧ H ∣ (Bivariate.evalX (Polynomial.C x₀) R) ∧
-    (Bivariate.evalX (Polynomial.C x₀) R).Separable ∧
+    ((Bivariate.evalX (Polynomial.C x₀) R).map
+      (ToRatFunc.univPolyHom (F := F))).Separable ∧
     #(@Set.toFinset _ { z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁ |
         letI Pz := Pz z.2
         (Trivariate.eval_on_Z R z.1).eval Pz = 0 ∧
@@ -63,9 +76,10 @@ lemma H_dvd_evalX_R (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     H k δ x₀ h_gs ∣ Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs) :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.1
 
-/-- The specialization `R(x₀, Y, Z)` is separable in `Y`, as required for Claim A.2. -/
-lemma evalX_R_separable (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    (Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs)).Separable :=
+/-- The specialization `R(x₀, Y, Z)` is separable in `Y` over `F(Z)`, as required for Claim A.2. -/
+lemma evalX_R_separable_over_ratFunc (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+    ((Bivariate.evalX (Polynomial.C x₀) (R k δ x₀ h_gs)).map
+      (ToRatFunc.univPolyHom (F := F))).Separable :=
   (exists_factors_with_large_common_root_set k δ x₀ h_gs).choose_spec.choose_spec.2.2.2.2.1
 
 open RationalFunctions.HenselNumerators in
@@ -90,7 +104,7 @@ all: `R = R₁·Y + R₀` has the single rational root `γ = -R₀/R₁`, and Cl
 be reached directly.  The `≥ 2` branch is the one that consumes the weight bounds. -/
 lemma hensel_lift_hypotheses (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     Hypotheses x₀ (R k δ x₀ h_gs) (H k δ x₀ h_gs) :=
-  ⟨H_dvd_evalX_R k h_gs, evalX_R_separable k h_gs⟩
+  ⟨H_dvd_evalX_R k h_gs, evalX_R_separable_over_ratFunc k h_gs⟩
 
 open RationalFunctions.HenselNumerators in
 /-- Claim 5.8 from [BCIKS20].
@@ -174,25 +188,35 @@ lemma gamma_eq_P (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
 noncomputable def matching_set_at_x
     (δ : ℚ)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁))
     (x : Fin n)
-    : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs,
+    : Finset F := @Set.toFinset _ {z : F | ∃ h : z ∈ matching_set k ωs δ u₀ u₁ h_gs hS,
     u₀ x + z * u₁ x =
-      (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs h)).eval (ωs x)}
+      (Pz (matching_set_is_a_sub_of_coeffs_of_close_proximity k h_gs hS h)).eval (ωs x)}
     (Fintype.ofFinite _)
 
 /-- Claim 5.10 of [BCIKS20].
 Needed to prove Claim 5.9. This claim states that `γ(x) = w(x,Z)` if the cardinality `|S'_x|` is big
-enough. -/
+enough.
+
+The threshold carries `dY + 1` where the paper writes `dY`.  It has to: the paper reaches
+`|S'_x| > (2k+1)·dH·dY·D ≥ dH·Λ(β̃(x))` from Claim A.2's `Λ(βₜ) ≤ (2t+1)·dY·D`, and that bound is
+short by the content charge — see `RationalFunctions.HenselNumerators.contentWeight`.  With the
+charge accounted for, the available bound is `(2t+1)·(dY+1)·D`
+(`numeratorShapeSharp_le_loose`), so the hypothesis has to be strengthened to match.  Concretely at
+`dY = 2`, `dH = 2`, `D = 100`, `k = 10` the paper's threshold is `4200` while the true weight can
+reach `4822`. -/
 lemma solution_gamma_matches_word_if_subset_large
     {ωs : Fin n ↪ F}
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     {x : Fin n}
     {D : ℕ}
+    (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁))
     (hD : D ≥ Bivariate.totalDegree (H k δ x₀ h_gs))
-    (hx : (matching_set_at_x k δ h_gs x).card >
+    (hx : (matching_set_at_x k δ h_gs hS x).card >
       (2 * k + 1)
         * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
-        * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
+        * (Bivariate.natDegreeY (R k δ x₀ h_gs) + 1)
         * D)
     : (P k δ x₀ h_gs).eval (Polynomial.C (ωs x)) =
       (Polynomial.C <| u₀ x) + u₁ x • Polynomial.X
@@ -206,15 +230,16 @@ lemma exists_points_with_large_matching_subset
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     {x : Fin n}
     {D : ℕ}
+    (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁))
     (hD : D ≥ Bivariate.totalDegree (H k δ x₀ h_gs))
     :
   ∃ Dtop : Finset (Fin n),
     Dtop.card = k + 1 ∧
     ∀ x ∈ Dtop,
-      (matching_set_at_x k δ h_gs x).card >
+      (matching_set_at_x k δ h_gs hS x).card >
         (2 * k + 1)
         * (Bivariate.natDegreeY <| H k δ x₀ h_gs)
-        * (Bivariate.natDegreeY <| R k δ x₀ h_gs)
+        * (Bivariate.natDegreeY (R k δ x₀ h_gs) + 1)
         * D := by sorry
 
 end BCIKS20ProximityGapSection5

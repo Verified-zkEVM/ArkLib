@@ -745,8 +745,20 @@ theorem zeta_ne_zero_of_hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
   have hderiv_evalX : Bivariate.evalX (Polynomial.C x₀) R.derivative = P.derivative := by
     ext i
     simp [P, derivative_evalX_coeff, Polynomial.coeff_derivative, Nat.cast_add, Nat.cast_one]
+  -- `liftToFunctionField` factors through `F(Z)`, so fraction-field separability is enough here.
+  set ψ : RatFunc F →+* 𝕃 H :=
+    (Ideal.Quotient.mk (Ideal.span {monicizeRatFunc H})).comp
+      (Polynomial.C : RatFunc F →+* Polynomial (RatFunc F)) with hψ
+  have hfactor : (liftToFunctionField (H := H)) = ψ.comp (univPolyHom (F := F)) :=
+    RingHom.ext fun c => by
+      simp only [hψ, RingHom.comp_apply, liftToFunctionField, coeffAsRatFunc,
+        ToRatFunc.bivPolyHom, Polynomial.coe_mapRingHom, Polynomial.map_C]
+  have hroot' : Polynomial.eval₂ ψ t (P.map (univPolyHom (F := F))) = 0 := by
+    rw [Polynomial.eval₂_map, ← hfactor]; exact hroot
   have hne : Polynomial.eval₂ (liftToFunctionField (H := H)) t P.derivative ≠ 0 := by
-    exact hHyp.separable_evalX.eval₂_derivative_ne_zero (liftToFunctionField (H := H)) hroot
+    have hsep := hHyp.separable_evalX.eval₂_derivative_ne_zero ψ hroot'
+    rw [Polynomial.derivative_map, Polynomial.eval₂_map, ← hfactor] at hsep
+    exact hsep
   simpa [zeta, P, t, hderiv_evalX] using hne
 
 /-- `formalHenselAlphaSequence` with its two hypotheses discharged from `Hypotheses`. -/

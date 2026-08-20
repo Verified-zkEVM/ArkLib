@@ -420,22 +420,8 @@ private theorem symbolicGSPolyMultiplicityBridge {F : Type} [Field F] [Decidable
       (Polynomial.C (ωs i))
       (Polynomial.C (u₀ i) + Polynomial.X * Polynomial.C (u₁ i)) := by
   intro i
-  let g := Polynomial.Bivariate.shift (symbolicGSPoly (F := F) A c)
-    (Polynomial.C (ωs i))
-    (Polynomial.C (u₀ i) + Polynomial.X * Polynomial.C (u₁ i))
-  have hg : ∀ s t, s + t < m → Polynomial.Bivariate.coeff g s t = 0 := by
-    intro s t hst
-    exact hvan i s t hst
-  have H := (Polynomial.Bivariate.rootMultiplicity₀_ge_iff g m).mp hg
-  have hgne : g ≠ 0 := Polynomial.Bivariate.shift_ne_zero _ _ _ hQ
-  have hroot : Polynomial.Bivariate.rootMultiplicity₀ g ≠ none :=
-    Polynomial.Bivariate.rootMultiplicity₀_ne_none g hgne
-  change (some m : Option ℕ) ≤ Polynomial.Bivariate.rootMultiplicity₀ g
-  cases hr : Polynomial.Bivariate.rootMultiplicity₀ g with
-  | none => exact False.elim (hroot hr)
-  | some r =>
-      have hmr : m ≤ r := H r (by simp only [hr, Option.mem_def])
-      simpa only [hr, Option.some_le_some] using hmr
+  exact Polynomial.Bivariate.le_rootMultiplicity_of_coeff_shift_eq_zero
+    (Polynomial.Bivariate.shift_ne_zero _ _ _ hQ) (fun s t hst => hvan i s t hst)
 
 open scoped BigOperators in
 private theorem symbolicGSPoly_eq_sum {F : Type} [Field F]
@@ -1131,12 +1117,18 @@ that set, with `degX P ≤ k` and `degZ P ≤ 1`.
 The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
 `∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
 
-Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
-Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
-`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
-there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
+`hS` is the residue of the standing hypothesis on `#S` that §5.2 inherits from Theorem 5.1
+(eq. 5.3): §5.2 runs under the assumption that correlated agreement has already failed, so `#S` is
+large.  The rendering dropped it, and without it the statement is false — at `δ < 0`, or for words
+far from the code, `coeffs_of_close_proximity` is empty, `S' ⊆ ∅` forces `#S' = 0`, and (5.9)
+demands `#S' > 0`.  Nonemptiness is the weakest form that restores provability, so that is what is
+assumed here rather than the paper's quantitative bound.
+
+`ModifiedGuruswami` still permits `D_Y Q = 0`; with real division the right-hand side of (5.9) is
+then `0` rather than the paper's `+∞`, which under `hS` is harmless. -/
 lemma exists_a_set_and_a_matching_polynomial
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁)) :
     ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
      (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
      (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
@@ -1144,17 +1136,19 @@ lemma exists_a_set_and_a_matching_polynomial
      Bivariate.degreeX P ≤ 1 := by
     sorry
 
-/-- The subset `S'` extracted from Proprosition 5.5 [BCIKS20]. -/
+/-- The subset `S'` extracted from Proposition 5.5 [BCIKS20]. -/
 noncomputable def matching_set (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+  (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁)) : Finset F :=
+  (exists_a_set_and_a_matching_polynomial k h_gs hS (δ := δ)).choose
 
 omit [DecidableEq (RatFunc F)] in
 /-- `S'` is indeed a subset of `S` -/
 lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hS : 0 < #(coeffs_of_close_proximity k ωs δ u₀ u₁)) :
+    matching_set k ωs δ u₀ u₁ h_gs hS ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
+  (exists_a_set_and_a_matching_polynomial k h_gs hS (δ := δ)).choose_spec.choose
 
 end BCIKS20ProximityGapSection5
 

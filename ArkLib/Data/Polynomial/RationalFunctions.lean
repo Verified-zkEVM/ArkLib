@@ -72,8 +72,21 @@ Everything in this package is proved: no `sorry`, and no axioms beyond `propext`
    `Λ(ξ) = 1` against a claimed bound of `0`. Consumers must case-split on `deg_Y R`.
 2. `numeratorShapeSharp` carries a correction term relative to the inequality A.4 states, because
    a factor of `W` that the recursion *saves* is worth only `deg W` while one it *charges* costs
-   the bound `D - dH`. The loose bound `(2t+1)·d·D` is unaffected, so consumers of that bound see
-   no difference. See `numeratorShapeSharp`'s docstring for the full accounting.
+   the bound `D - dH`. See `numeratorShapeSharp`'s docstring for the full accounting.
+3. `xi_weight_le` carries a `contentWeight` summand that A.2's `Λ(ξ) ≤ (d-1)(D - dH + 1)` omits,
+   and consequently the loose bound is `(2t+1)·(d+1)·D` rather than the paper's `(2t+1)·d·D`.
+   This is the same disease as item 2 one level up: A.2's chain needs `Λ(W) = D - dH`, while the
+   paper proves only `Λ(W) ≤ D - dH`, so the term of `ξ` whose `W`-power is negative can dominate.
+   The gap is real, not an artefact of the formalization: over `𝔽₅` with
+   `R = Z·Y² + Z·Y + (Z + X)`, `x₀ = 0`, `H = Y² + Y + 1`, `D = 3` — every A.4 hypothesis holds and
+   `discY R = Z(-3Z - 4X)` makes `x₀ = 0` a legitimate Claim 5.6 point — the representative of `ξ`
+   is `Z + 2Z·T`, of weight `3` against a stated bound of `2`. Consumers of the loose bound must
+   use the `d + 1` form; the affected §5 statements (`solution_gamma_matches_word_if_subset_large`,
+   `exists_points_with_large_matching_subset`) have been adjusted. See `contentWeight`.
+
+   Ring-level `Polynomial.Separable` in `Hypotheses` used to hide this, since it forces the
+   content of the specialization to be a unit; that hypothesis is unsatisfiable in the intended
+   application, so `Hypotheses` now asks for separability over `F(Z)`, the paper's actual meaning.
 
 ## References
 
