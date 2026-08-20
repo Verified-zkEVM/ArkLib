@@ -122,24 +122,6 @@ def runWithLogToRound (i : Fin (n + 1))
         ((pSpec.Transcript i × prover.PrvState i) × QueryLog (oSpec + [pSpec.Challenge]ₒ)) :=
   WriterT.run (simulateQ loggingOracle (prover.runToRound i stmt wit))
 
-private lemma fst_map_simulateQ_loggingOracle_run {ι : Type} {spec : OracleSpec ι} {α : Type}
-    (oa : OracleComp spec α) :
-    Prod.fst <$> WriterT.run (simulateQ loggingOracle oa) = oa := by
-  induction oa using OracleComp.induction with
-  | pure a => simp
-  | query_bind t oa ih =>
-    simp only [simulateQ_query_bind]
-    show Prod.fst <$> (do let u ← liftM (loggingOracle t); simulateQ loggingOracle (oa u)).run =
-      liftM (query t) >>= oa
-    stop -- This is broken for now until the refactor of `loggingOracle` and `WriterT`
-    simp only [WriterT.run_bind, map_bind, Functor.map_map]
-    have key : ∀ (w : QueryLog spec), (fun a_1 => (Prod.map id (w * ·) a_1).1) =
-        (Prod.fst : α × QueryLog spec → α) :=
-      fun w => funext fun ⟨a, b⟩ => rfl
-    simp_rw [key, ih]
-    rw [← bind_map_left Prod.fst]
-    rfl
-
 @[simp]
 lemma runWithLogToRound_discard_log_eq_runToRound (i : Fin (n + 1))
     (stmt : StmtIn) (wit : WitIn) (prover : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec) :

@@ -675,8 +675,18 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 -- theorem append_runToRound
 
-instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
-instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
+-- The challenge-oracle inclusions that `append_run`'s statement lifts along are provided
+-- (proved) by `ProtocolSpec.subSpec_challenge_append_left` / `..._right` in
+-- `ProtocolSpec/SeqCompose.lean`, with their `LawfulSubSpec` instances and the `@[simp]` lemmas
+-- `liftM_getChallenge_append_inl` / `_inr` that compute the lifted challenge query.
+--
+-- Scope of what lawfulness buys: `support_liftComp` / `mem_support_liftComp_iff` apply directly.
+-- `evalDist_liftComp` / `probEvent_liftComp` do NOT apply at this shape — they additionally
+-- require `IsUniformSpec` on both specs, and `oSpec` here is arbitrary. The security definitions
+-- below measure after `simulateQ pImpl`, so relating the two sides at the distribution level will
+-- need `simulateQ_liftM_eq_of_query` plus the fact that `challengeQueryImpl` for the appended
+-- protocol, precomposed with the lift, agrees with `challengeQueryImpl` for the component — a
+-- `SampleableType`-compatibility fact across the transport that is not yet proved.
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and
