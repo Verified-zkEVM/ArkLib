@@ -41,6 +41,7 @@ variable {n d : ℕ}
 variable {domain : SmoothCosetFftDomain n F} {f : Word F (Fin (2 ^ n))}
 variable {k : ℕ} {x : F}
 
+open FoldingContext in
 /-- One step of lemma 4.15 from [ACFY24]. -/
 lemma foldWord_eq_evalOnPoints_powAlgHom [FoldingContext 1 d n] {α : F}
   {g : F⦃≤ 1⦄[X (Fin d)]}
@@ -125,6 +126,7 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
     rw [←aeval_substFun_comp (k := m) β gg.1]
     exact hmem
 
+open FoldingContext in
 /-- Lemma 4.15 from [ACFY24]. Provides a way to
   compute the corresponding multilinear extension
   for the interated folding of codewords. -/
@@ -140,7 +142,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [FoldingContext k d n]
   suffices H : ∀ (k : ℕ), k ≤ d → ∀ (α : Fin k → F),
       iteratedFoldWord domain f k α
         = evalOnPoints (domain.subdomain k) (powAlgHom (g.1.aeval (substFun k α))) by
-    exact H k (by simp) α
+    exact H k (by grind) α
   intro k
   induction k with
   | zero =>

@@ -336,9 +336,7 @@ private lemma interpolate_eq_folding_poly_eval
   · apply eq_of_eval_eq_degree (n := 2 ^ k)
         (s := block domain k x)
     · exact lt_of_lt_of_le (Lagrange.degree_interpolate_lt _ (by simp)) <| by
-        aesop 
-          (add simp [card_block_of_mem_subdomain'])
-          (add safe (by grind))
+        aesop (add safe (by norm_cast))
     · exact lt_of_le_of_lt Polynomial.degree_map_le <| by
         have h := FoldingPolynomial.folding_polynomial_deg_y_bound_x_k
           (f := (Lagrange.interpolate univ ⇑domain) f)
@@ -354,7 +352,7 @@ private lemma interpolate_eq_folding_poly_eval
                   (s := univ) (v := domain) f]))
         )] at h
         exact h
-    · aesop (add simp [card_block_of_mem_subdomain'])
+    · simp [card_block_of_mem_subdomain' (by grind) hx]
     · simp only [mem_block, and_imp]
       rintro u ⟨i, hu₁⟩ hu₂
       rw [←hu₂, ←foldValue_def', ←hu₁,
@@ -364,6 +362,7 @@ private lemma interpolate_eq_folding_poly_eval
         (add safe (by rw [Lagrange.eval_interpolate_at_node]))
         (add simp [FoldingPolynomial.eval_property_of_folding_polynomial_x_k])
 
+open FoldingContext in
 /-- Perfect completeness of folding: folding a codeword is the same as
   applying `polyFold` and then encoding.
 -/
@@ -377,7 +376,7 @@ theorem foldWord_codeword {d : ℕ} [FoldingContext k d n]
   simp only [foldWord, foldValue, foldWordAux, evalOnPoints,
     Embedding.coeFn_mk, toPolynomial, LinearMap.coe_mk, AddHom.coe_mk,
     FoldingPolynomial.polyFold]
-  rw [eval_comm, interpolate_eq_folding_poly_eval (by grind)]
+  rw [eval_comm, interpolate_eq_folding_poly_eval (by simp)]
   aesop
 
 theorem foldWord_evalOnPoints [FoldingContextMiddle k n]
@@ -413,7 +412,7 @@ theorem foldWord_mem_code_of_mem_code {d : ℕ} [FoldingContext k d n]
         have : p.natDegree < 2 ^ d := by
           rw [←Polynomial.natDegree_lt_iff_degree_lt hp] at hf'
           aesop
-        simp [this]
+        grind
   · intro i
     have := foldWord_codeword (α := α) (p := ⟨f, hf⟩)
     simp only at this
@@ -683,14 +682,15 @@ private lemma contradictory_hamming_dist_zero :
 
 @[simp]
 private lemma contradictory_hamming_dist_formula {s : Finset F}
-  {d : ℕ} [FoldingContext k d n]
+  [FoldingContextMiddle k n]
   (h_s : s ⊆ (domain.subdomain k).toFinset) :
   hammingDistBound k domain s =
     2 ^ n - 2 ^ k * Finset.card s := by
   aesop
     (add simp [hammingDistBound, hammingDistComplementBound])
-    (add safe (by rw [Pullback.card_pullback_eq_mul_card_pullback₂,
-                      Pullback.card_pullback₂_eq]))
+    (add safe [(by grind),
+               (by rw [Pullback.card_pullback_eq_mul_card_pullback₂,
+                      Pullback.card_pullback₂_eq])])
 
 private lemma correlated_agreement_implies_contradictory_hamm_dist
   [Fintype F]
@@ -748,6 +748,7 @@ private lemma correlated_agreement_implies_contradictory_hamm_dist
             (h_u_deg i)
             (by rw [pick_subset_card_eq_of_ne h_s'_s])
 
+open FoldingContext in
 private lemma dist_from_code_bound_of_correlated_agreement
   [Finite F]
   {s : Finset F}
@@ -769,7 +770,7 @@ private lemma dist_from_code_bound_of_correlated_agreement
         (add safe (by rw [contradictory_hamming_dist_formula]))) <| by
     obtain ⟨f', h_f'_deg, hdist⟩ :=
       correlated_agreement_implies_contradictory_hamm_dist h_s h_u (by {
-    exact le_trans (b := 2 ^ n) (by simp) <| by
+    exact le_trans (b := 2 ^ n) (by grind) <| by
       convert card_toFinset_le_fintype_card (ω := domain) <;> aesop
   }) h_u_deg
     simp only [Set.mem_setOf_eq, Nat.cast_le]
@@ -781,13 +782,10 @@ lemma folded_rate_eq {d : ℕ} [FoldingContext k d n] :
   LinearCode.rate
       (ReedSolomon.code (domain.subdomain k : Fin (2 ^ (n - k)) ↪ F) (2 ^ (d - k))) =
     LinearCode.rate (ReedSolomon.code (domain : Fin (2 ^ n) ↪ F) (2 ^ d)) := by
-  simp only [rateOfLinearCode_eq_min_div, Fintype.card_fin, min_def, Nat.cast_ite, Nat.cast_pow,
-    Nat.cast_ofNat]
-  have hif : 2 ^ (d - k) ≤ 2 ^ (n - k) := by simp
-  simp [hif]
-  field_simp
-  rw [←pow_add, ←pow_add]
-  grind
+  aesop
+    (add simp [rateOfLinearCode_eq_min_div, min_def])
+    (add unsafe (by rw [←pow_add, ←pow_add]))
+    (add safe [(by grind), (by field_simp)])
 
 omit [DecidableEq F] in
 /-- The square root of the rate of the folded RS-code is the same. -/
@@ -798,6 +796,7 @@ lemma folded_sqrtRate_eq {d : ℕ} [FoldingContext k d n] :
     ReedSolomon.sqrtRate (2 ^ d) (domain : Fin (2 ^ n) ↪ F) := by
   simp [ReedSolomon.sqrtRate, folded_rate_eq]
 
+open FoldingContext in
 set_option linter.unusedVariables false in -- linter complains about `δ_gt_0`
                                            -- which is a result of it missing
                                            -- from the proximity gap theorem args.

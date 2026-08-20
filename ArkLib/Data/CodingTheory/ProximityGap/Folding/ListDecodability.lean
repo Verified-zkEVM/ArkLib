@@ -32,6 +32,7 @@ variable {f : Word F (Fin (2 ^ n))}
     with Super-Fast Verification*][ACFY24]
 -/
 
+open FoldingContext in
 /-- The block distance of foldings of two words does not exceed
   the block distance of the original words.
 
@@ -69,10 +70,11 @@ lemma folding_contracts_block_rel_distance [FoldingContextMiddle k n]
   δ𞁒(k - 1, ω.subdomain 1, foldWord ω u 1 α, foldWord ω f 1 α) ≤
     δ𞁒(k , ω, u, f) := by
   aesop
-    (add simp blockRelDistance)
+    (add simp [blockRelDistance, FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k])
     (add unsafe folding_contracts_block_distance)
     (add safe (by field_simp))
 
+open FoldingContext in
 /-- If a word `u` belongs to a block relative distance ball
   then its folding belongs to a "folded" block relative distance ball too.
 

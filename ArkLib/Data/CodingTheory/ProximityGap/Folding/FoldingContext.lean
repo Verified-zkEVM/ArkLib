@@ -253,7 +253,7 @@ lemma pow_2_d_sub_k_mul_pow_2_k {A : Type*} [Monoid A] [OfNat A 2]
 @[grind _=_]
 lemma pow_2_k_mul_pow_2_d_sub_k {A : Type*} [Monoid A] [OfNat A 2]
   {k d : ℕ} [FoldingContextLeft k d] :
-  (2 : A) ^ k * (2 : A) ^ (d - k) = (2 : A) ^ d := by 
+  (2 : A) ^ k * (2 : A) ^ (d - k) = (2 : A) ^ d := by
   aesop (add safe [(by rw [←pow_add]), (by grind)])
 
 /-- Since `d ≤ n`, the minimum of the message-space and domain sizes is `2 ^ d`. This is
