@@ -30,16 +30,16 @@ variable {ι F A : Type*} [Fintype ι] [Field F] [AddCommGroup A] [Module F A]
 
 /-- The toy-problem relation for a fixed linear encoder. Each word is the encoding of one
 message row, and every message row satisfies its prescribed linear constraint. -/
-def relationFor {k ℓ : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A))
+def RelationFor {k ℓ : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A))
     (v : Fin k → F) (μ : Fin ℓ → F) (W : Fin ℓ → ι → A) : Prop :=
   ∃ M : Fin ℓ → Fin k → F, (∀ i, W i = encode (M i)) ∧
     ∀ i, ∑ j, M i j * v j = μ i
 
 /-- The relaxed toy-problem relation. A word stack is valid when it agrees with an exact
 instance on at least a `1 - δ` fraction of coordinate blocks. -/
-def relaxedRelationFor {k ℓ : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
+def RelaxedRelationFor {k ℓ : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
     (v : Fin k → F) (μ : Fin ℓ → F) (W : Fin ℓ → ι → A) : Prop :=
-  ∃ Wstar : Fin ℓ → ι → A, relationFor encode v μ Wstar ∧
+  ∃ Wstar : Fin ℓ → ι → A, RelationFor encode v μ Wstar ∧
     ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
       ∀ i, ∀ j ∈ S, W i j = Wstar i j
 
@@ -47,7 +47,7 @@ def relaxedRelationFor {k ℓ : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A
 one-row relaxed instance. -/
 def winningSetFor {k : ℕ} (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → A) : Set F :=
-  {γ | relaxedRelationFor (ℓ := 1) encode δ v
+  {γ | RelaxedRelationFor (ℓ := 1) encode δ v
     (fun _ ↦ μ₁ + γ * μ₂) (fun _ j ↦ f₁ j + γ • f₂ j)}
 
 end ToyProblem

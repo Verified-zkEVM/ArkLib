@@ -258,34 +258,34 @@ def OracleProver {ι : Type} (oSpec : OracleSpec ι)
 
 /-- A virtual output-oracle implementation for an `OracleVerifier`.
 
-`materialize` gives the extensional oracle value used by the existing bundled
-`toVerifier` security interface. `simOStmt` gives the query-by-query VCV
-implementation used by downstream oracle computations. `simOStmt_eq` requires
+`materializeOutput` gives the extensional oracle value used by the existing bundled
+`toVerifier` security interface. `simulateOutputQuery` gives the query-by-query VCV
+implementation used by downstream oracle computations. `simulateOutputQuery_eq` requires
 the two views to agree on every query. The output interface is a parameter of
 both this structure and `OracleVerifier`; consequently the interface used to
 produce virtual answers is definitionally the interface used by a downstream
 verifier. -/
-structure OracleOutputSimulation {iota : Type} (oSpec : OracleSpec iota)
-    {iotaStmtIn : Type} (OStmtIn : iotaStmtIn → Type)
-    {iotaStmtOut : Type} (OStmtOut : iotaStmtOut → Type)
+structure OracleOutputSimulation {ι : Type} (oSpec : OracleSpec ι)
+    {ιₛᵢ : Type} (OStmtIn : ιₛᵢ → Type)
+    {ιₛₒ : Type} (OStmtOut : ιₛₒ → Type)
     {n : ℕ} (pSpec : ProtocolSpec n)
-    [OStmtInInterface : ∀ i, OracleInterface (OStmtIn i)]
-    [MessageInterface : ∀ i, OracleInterface (pSpec.Message i)]
-    [OStmtOutInterface : ∀ i, OracleInterface (OStmtOut i)] where
+    [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
+    [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)] where
   /-- Extensional materialization used by relation-facing bundled semantics. -/
-  materialize : pSpec.Challenges →
+  materializeOutput : pSpec.Challenges →
     (∀ i, OStmtIn i) → pSpec.Messages → (∀ i, OStmtOut i)
   /-- Query-by-query implementation of the virtual output family in terms of
   input statement oracles and prover-message oracles. -/
-  simOStmt : pSpec.Challenges →
+  simulateOutputQuery : pSpec.Challenges →
       QueryImpl [OStmtOut]ₒ
         (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ)))
   /-- The VCV query implementation agrees with the extensional materialization. -/
-  simOStmt_eq : ∀ challenges oStmt messages q,
+  simulateOutputQuery_eq : ∀ challenges oStmt messages q,
       simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
-          (simOStmt challenges q) =
-        pure ((OStmtOutInterface q.1).answer
-          (materialize challenges oStmt messages q.1) q.2)
+          (simulateOutputQuery challenges q) =
+        pure ((Oₛₒ q.1).answer
+          (materializeOutput challenges oStmt messages q.1) q.2)
 
 /-- Legacy output-oracle semantics: every output is an input oracle or prover
 message, with an explicit coherence proof for its public interface. -/
@@ -367,7 +367,7 @@ def materializeOutputOracle
     (challenges : pSpec.Challenges)
     (oStmt : ∀ i, OStmtIn i) (messages : pSpec.Messages) : ∀ i, OStmtOut i :=
   match outputOracle with
-    | Sum.inr simulation => simulation.materialize challenges oStmt messages
+    | Sum.inr simulation => simulation.materializeOutput challenges oStmt messages
     | Sum.inl output => fun i => match h : output.embed i with
       | Sum.inl j => (output.hEq i ▸ h ▸ oStmt j : OStmtOut i)
       | Sum.inr j => (output.hEq i ▸ h ▸ messages j : OStmtOut i)
@@ -394,7 +394,7 @@ def simulateOutputQuery (challenges : pSpec.Challenges) :
     QueryImpl [OStmtOut]ₒ
       (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec.Message]ₒ))) :=
   match verifier.outputOracle with
-    | Sum.inr simulation => simulation.simOStmt challenges
+    | Sum.inr simulation => simulation.simulateOutputQuery challenges
     | Sum.inl output => fun q => match h : output.embed q.1 with
       | Sum.inl j => by
           have hType : OStmtOut q.1 = OStmtIn j := by
@@ -575,7 +575,7 @@ theorem simulateOutputQuery_eq
   | inr simulation =>
     simp only [simulateOutputQuery, materializeOutput, materializeOutputOracle,
       hOutput, MessageIdx, Message]
-    exact simulation.simOStmt_eq challenges oStmt messages ⟨i, q⟩
+    exact simulation.simulateOutputQuery_eq challenges oStmt messages ⟨i, q⟩
   | inl output =>
     simp only [simulateOutputQuery, materializeOutput, materializeOutputOracle,
       hOutput, MessageIdx, Message]
@@ -802,13 +802,13 @@ def OracleReduction.toReduction {ι : Type} {oSpec : OracleSpec ι}
 /-- The verifier type underlying an interactive oracle proof. Its output-oracle
 family is empty, so its interface is supplied by elimination rather than by a
 global `OracleInterface Unit` instance. -/
-@[reducible] def OracleProofVerifier {iota : Type} (oSpec : OracleSpec iota)
-    (Statement : Type) {iotaStmt : Type} (OStatement : iotaStmt → Type)
+@[reducible] def OracleProofVerifier {ι : Type} (oSpec : OracleSpec ι)
+    (Statement : Type) {ιₛ : Type} (OStatement : ιₛ → Type)
     {n : ℕ} (pSpec : ProtocolSpec n)
-    [OStatementInterface : ∀ i, OracleInterface (OStatement i)]
-    [MessageInterface : ∀ i, OracleInterface (pSpec.Message i)] :=
-  @OracleVerifier iota oSpec Statement iotaStmt OStatement Bool Empty
-    (fun _ : Empty => Unit) n pSpec OStatementInterface MessageInterface
+    [Oₛ : ∀ i, OracleInterface (OStatement i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)] :=
+  @OracleVerifier ι oSpec Statement ιₛ OStatement Bool Empty
+    (fun _ : Empty => Unit) n pSpec Oₛ Oₘ
       (fun i => nomatch i)
 
 namespace OracleProofVerifier
@@ -816,20 +816,20 @@ namespace OracleProofVerifier
 /-- Construct the verifier of an interactive oracle proof. The empty output
 family is discharged locally, without introducing a global interface instance
 for `Unit`. -/
-def mk {iota : Type} {oSpec : OracleSpec iota}
-    {Statement : Type} {iotaStmt : Type} {OStatement : iotaStmt → Type}
+def ofVerify {ι : Type} {oSpec : OracleSpec ι}
+    {Statement : Type} {ιₛ : Type} {OStatement : ιₛ → Type}
     {n : ℕ} {pSpec : ProtocolSpec n}
-    [OStatementInterface : ∀ i, OracleInterface (OStatement i)]
-    [MessageInterface : ∀ i, OracleInterface (pSpec.Message i)]
+    [Oₛ : ∀ i, OracleInterface (OStatement i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (verify : Statement → pSpec.Challenges →
       OptionT (OracleComp (oSpec + ([OStatement]ₒ + [pSpec.Message]ₒ))) Bool) :
       OracleProofVerifier oSpec Statement OStatement pSpec :=
-  @OracleVerifier.mk iota oSpec Statement iotaStmt OStatement Bool Empty
-    (fun _ : Empty => Unit) n pSpec OStatementInterface MessageInterface
+  @OracleVerifier.mk ι oSpec Statement ιₛ OStatement Bool Empty
+    (fun _ : Empty => Unit) n pSpec Oₛ Oₘ
     (fun i => nomatch i) verify
-    (.inl <| @OracleOutputEmbedding.mk iotaStmt Empty OStatement
+    (.inl <| @OracleOutputEmbedding.mk ιₛ Empty OStatement
       pSpec.MessageIdx pSpec.Message (fun _ : Empty => Unit)
-      OStatementInterface MessageInterface (fun i => nomatch i)
+      Oₛ Oₘ (fun i => nomatch i)
       ⟨Empty.elim, fun a _ => Empty.elim a⟩
       (fun i => Empty.elim i) (fun i => Empty.elim i))
 
@@ -837,17 +837,17 @@ end OracleProofVerifier
 
 /-- Obtain the verifier of an `OracleProof` without requiring a global
 interface for its uninhabited output-oracle family. -/
-@[reducible] def OracleProof.toOracleVerifier {iota : Type}
-    {oSpec : OracleSpec iota} {Statement : Type} {iotaStmt : Type}
-    {OStatement : iotaStmt → Type} {Witness : Type} {n : ℕ}
+@[reducible] def OracleProof.toOracleVerifier {ι : Type}
+    {oSpec : OracleSpec ι} {Statement : Type} {ιₛ : Type}
+    {OStatement : ιₛ → Type} {Witness : Type} {n : ℕ}
     {pSpec : ProtocolSpec n}
-    [OStatementInterface : ∀ i, OracleInterface (OStatement i)]
-    [MessageInterface : ∀ i, OracleInterface (pSpec.Message i)]
+    [Oₛ : ∀ i, OracleInterface (OStatement i)]
+    [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (oracleProof : OracleProof oSpec Statement OStatement Witness pSpec) :
       OracleProofVerifier oSpec Statement OStatement pSpec :=
-  @OracleReduction.verifier iota oSpec Statement iotaStmt OStatement Witness
-    Bool Empty (fun _ : Empty => Unit) Unit n pSpec OStatementInterface
-      MessageInterface (fun i => nomatch i) oracleProof
+  @OracleReduction.verifier ι oSpec Statement ιₛ OStatement Witness
+    Bool Empty (fun _ : Empty => Unit) Unit n pSpec Oₛ
+      Oₘ (fun i => nomatch i) oracleProof
 
 /-- A **non-interactive prover** is a prover that only sends a single message to the verifier. -/
 @[reducible] def NonInteractiveProver (Message : Type) {ι : Type} (oSpec : OracleSpec ι)

@@ -277,11 +277,11 @@ def rsTransitionExtractor [Fintype ι] (k : ℕ) (domain : ι ↪ F)
   fun i ↦ rsErasureDecodeOrZero k domain S (stmtIn.2 i)
 
 omit [DecidableEq ι] [BEq F] [LawfulBEq F] in
-/-- A `gammaState` witness makes the computed maximal agreement set large. -/
+/-- A `GammaState` witness makes the computed maximal agreement set large. -/
 theorem gammaAgreementSet_card_of_gammaState [Fintype ι] {k : ℕ}
     {encode : (Fin k → F) → (ι → F)} {δ : ℝ≥0} {v : Fin k → F} {μ₁ μ₂ γ : F}
     {f₁ f₂ : ι → F} {g : Fin k → F}
-    (hstate : gammaState k encode δ v μ₁ μ₂ f₁ f₂ γ g) :
+    (hstate : GammaState k encode δ v μ₁ μ₂ f₁ f₂ γ g) :
     (1 - (δ : ℝ)) * Fintype.card ι ≤
       (gammaAgreementSet encode f₁ f₂ γ g).card := by
   obtain ⟨-, S, hScard, hagree⟩ := hstate

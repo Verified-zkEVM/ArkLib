@@ -43,13 +43,13 @@ omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [Deci
 /-- Honest completeness for ABF26 Construction 6.2, point form: if
 `((v, μ₁, μ₂), (f₁, f₂))` lies in `inputRelation` with the underlying
 messages `M = (M₀, M₁)` (and `fᵢ` is the `encode`-image of `Mᵢ`), then
-for any verifier challenges `(γ, xs)` the §6.1 decision `accepts` holds
+for any verifier challenges `(γ, xs)` the §6.1 decision `Accepts` holds
 against the honest prover's message `g = M₀ + γ · M₁`.
 
 This is the point-form companion to the
 `OracleReduction.perfectCompleteness` theorem that wraps the prover and
 verifier objects below. -/
-theorem accepts_of_inputRelation {k t : ℕ}
+theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     {encode : (Fin k → F) →ₗ[F] (ι → A)}
     (stmt : Statement (F := F) k)
     (M : Witness (F := F) k)
@@ -58,7 +58,7 @@ theorem accepts_of_inputRelation {k t : ℕ}
     (f : ∀ i, OracleStatement ι A i)
     (hf : ∀ i, f i = encode (M i))
     (γ : F) (xs : Fin t → ι) :
-    accepts (k := k) (t := t) (encode := (encode : (Fin k → F) → (ι → A)))
+    Accepts (k := k) (t := t) (encode := (encode : (Fin k → F) → (ι → A)))
       stmt f γ (fun j ↦ M 0 j + γ * M 1 j) xs := by
   refine ⟨?_, ?_⟩
   · -- Linear-constraint: ∑ j, (M 0 j + γ * M 1 j) * v j = μ₁ + γ * μ₂.
@@ -88,8 +88,8 @@ omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
 
 The honest oracle reduction is perfectly complete from `inputRelationFor encode`
 to the trivial output relation `Set.univ`. The load-bearing fact is
-`accepts_of_inputRelation` above: under any verifier challenges, the
-honest prover's message `g = M₀ + γ M₁` makes `accepts` hold, so the
+`accepts_of_mem_inputRelationFor` above: under any verifier challenges, the
+honest prover's message `g = M₀ + γ M₁` makes `Accepts` hold, so the
 verifier's `if accepts then pure () else failure` never fails.
 
 The proof unfolds
@@ -102,10 +102,10 @@ obligation via `OptionT.probEvent_eq_one_of_simulateQ_support_bind`
 (`ArkLib/ToVCVio/OracleComp/SimSemantics/SimulateQ.lean`). The support
 obligation splits into:
 
-  1. **The monadic core** — resolving the verifier body's `queryG`/`queryF`
+  1. **The monadic core** — resolving the verifier body's `queryMessage`/`queryOracleStatement`
      against `simOracle2` through the composed `MonadLiftT`/`OptionT` instance
      chains and collapsing the spot-check `forIn` — packaged as
-     `verifierBody_simulateQ_eq_pure` (above), built on the staged toolkit
+     `oracleVerifier_verify_simulateQ_eq_pure` (above), built on the staged toolkit
      (`simulateQ_optionT_bind`/`_lift`, `simulateQ_optionT_forIn_yield_pure_some`,
      `OracleComp.monadLift_liftM_OptionT`); the query routing itself is done by
      manual definitional bridges, not by the staged `simulateQ_add_add_liftM_*`
@@ -121,8 +121,8 @@ obligation splits into:
      (challenge sampling, `Transcript.concat` layers, final `Option.getM`) via
      the `obtain`-friendly defeq peelers (`OptionT.mem_support_run_bind`,
      `OracleComp.mem_support_bind_peel`, …, same staged file), landing each
-     support element on `verifierBody_simulateQ_eq_pure` with the accept
-     hypotheses supplied by `accepts_of_inputRelation` from `hRel`.
+     support element on `oracleVerifier_verify_simulateQ_eq_pure` with the accept
+     hypotheses supplied by `accepts_of_mem_inputRelationFor` from `hRel`.
 
 **Statement faithfulness (fixed 2026-06-04).** The input relation is the
 **fixed-encoding** `inputRelationFor encode` (the verifier's own `encode`, with
@@ -130,7 +130,7 @@ the witness `M` tied to the codewords `fᵢ = encode (M i)`). An earlier
 existential-encoding form (`ToyProblem.relation`, `∃ encode'`) made completeness
 *unprovable / false* — the honest prover's `encode g` need not match
 `fᵢ = encode' (Mᵢ)` when `encode' ≠ encode` (the same defect found for the L6.12
-attack). With `inputRelationFor encode` the discharge to `accepts_of_inputRelation`
+attack). With `inputRelationFor encode` the discharge to `accepts_of_mem_inputRelationFor`
 (`hf : fᵢ = encode (M i)`, `hM : ⟨M i, v⟩ = μᵢ`) goes through. -/
 theorem oracleReduction_perfectCompleteness
     [SampleableType F] [SampleableType ι]
@@ -169,20 +169,20 @@ theorem oracleReduction_perfectCompleteness
   -- conjuncts (`(a.2, a.1.2.2) ∈ Set.univ` and `a.1.2.1 = a.2`) hold for *every* `a`
   -- (`Subsingleton Unit`). It therefore suffices to show `x = some a` for some `a`.
   refine (fun ⟨a, ha⟩ ↦ ⟨a, ha, Set.mem_univ _, Subsingleton.elim _ _⟩) (?_ : ∃ a, x = some a)
-  -- The monadic-simulation core (the historical C6.2 blocker — routing `queryG`/`queryF` through
+  -- The monadic-simulation core (the historical C6.2 blocker — routing `queryMessage`/`queryOracleStatement` through
   -- the composed `simOracle2` `MonadLift` chain and collapsing the `OptionT` spot-check `forIn`) is
-  -- now **closed**, packaged as `verifierBody_simulateQ_eq_pure` (above) on top of the staged
+  -- now **closed**, packaged as `oracleVerifier_verify_simulateQ_eq_pure` (above) on top of the staged
   -- toolkit (`simulateQ_optionT_bind`/`_lift`, `simulateQ_optionT_forIn_yield_pure_some`,
   -- `OracleComp.monadLift_liftM_OptionT`). The defeq-vs-syntactic lift-instance gaps are bridged
   -- there by `conv … change` + universe-pinned `emptySpec.{0,0}` ascriptions.
   --
-  -- The verifier body resolves to `pure (some ())` by `verifierBody_simulateQ_eq_pure` (above) —
+  -- The verifier body resolves to `pure (some ())` by `oracleVerifier_verify_simulateQ_eq_pure` (above) —
   -- this is the load-bearing C6.2 content, now **fully proven**: for *any* sampled challenge `γ`
   -- and spot-check positions `xs`, the honest prover's round-1 message `g = M₀ + γ·M₁` makes both
-  -- guards pass (`accepts_of_inputRelation`, supplied via `hRel : … ∈ inputRelationFor encode`),
+  -- guards pass (`accepts_of_mem_inputRelationFor`, supplied via `hRel : … ∈ inputRelationFor encode`),
   -- so the simulated verifier body never fails and yields `some ()`. Concretely, in `hx`'s run the
   -- verifier subterm is `simulateQ (simOracle2 []ₒ stmtIn.2 proverResult.1.messages) (do let g ←
-  -- queryG; guard …; for …; …).run`, which is exactly `verifierBody_simulateQ_eq_pure` at
+  -- queryMessage; guard …; for …; …).run`, which is exactly `oracleVerifier_verify_simulateQ_eq_pure` at
   -- `oStmt := stmtIn.2`, `msgs := proverResult.1.messages`, `g := proverResult.1.messages ⟨1,rfl⟩`.
   --
   -- The remaining work (ABF26-C6.2, now **closed**) is generic support plumbing: decompose
@@ -195,7 +195,7 @@ theorem oracleReduction_perfectCompleteness
   -- `OptionT.mem_support_run_bind`/`_lift_bind` (`ArkLib/ToVCVio/.../SimulateQ.lean`). Each support
   -- element fixes a sampled `(γ₀, xs₂)` and the deterministic honest message
   -- `proverResult.1.messages ⟨1,rfl⟩ = fun j => witIn 0 j + γ₀ · witIn 1 j`; under that message
-  -- `verifierBody_simulateQ_eq_pure` (via `accepts_of_inputRelation`) collapses the verifier body
+  -- `oracleVerifier_verify_simulateQ_eq_pure` (via `accepts_of_mem_inputRelationFor`) collapses the verifier body
   -- to `pure (some ())`, forcing `stmtOut = some _` and hence `x = some _`.
   obtain ⟨proverResult, hPR, hx⟩ := OptionT.mem_support_run_lift_bind _ _ hx
   -- Characterize the honest prover's transcript from `hPR`.
@@ -234,7 +234,7 @@ theorem oracleReduction_perfectCompleteness
   subst hf1 hf2 hf3 hr1 hr2 hr3 hPReq
   -- Extract the witness facts from the input relation.
   obtain ⟨hf, hM⟩ := hRel
-  have hacc := accepts_of_inputRelation (encode := encode) stmtIn.1 witIn
+  have hacc := accepts_of_mem_inputRelationFor (encode := encode) stmtIn.1 witIn
     (fun i ↦ by have := hM i; fin_cases i <;> simpa using this) stmtIn.2
     (fun i ↦ by have := hf i; simpa using this) (cast (by rfl) γ₀) xs₂
   -- Rewrite through the stable `OracleVerifier`-boundary characterization; the output map is
@@ -265,12 +265,12 @@ theorem oracleReduction_perfectCompleteness
 The C6.2 security statements use `Set.univ` as their output relation — legitimately, since
 `OutputStatement = OutputWitness = Unit` — so *all* of the accept-gating rides on the
 verifier's `OptionT` failure, i.e. on the two `guard`s of `oracleVerifier` and hence on
-`accepts` being a genuinely partial predicate.  A refactor that dropped or weakened either
+`Accepts` being a genuinely partial predicate.  A refactor that dropped or weakened either
 `guard` would leave every theorem in this file still true and still provable, while making
 them vacuous.
 
 The two lemmas below pin that invariant at its source.  Each is a pair of instances of
-`accepts` that differ in **exactly one** input — the constraint value `μ₁` in the first, the
+`Accepts` that differ in **exactly one** input — the constraint value `μ₁` in the first, the
 oracle codewords in the second — with acceptance flipping between them.  So neither check can
 be dropped without breaking a compiled theorem, and neither is implied by the other.
 
@@ -283,10 +283,10 @@ omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [Deci
 (`0` versus `1`), at the zero encoder, zero codewords and zero prover message: the first is
 accepted, the second must not be.  Every spot-check passes in both, so acceptance here is
 decided by the linear constraint alone. -/
-theorem accepts_iff_of_linear_constraint {k t : ℕ} (γ : F) (xs : Fin t → ι) :
-    accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+theorem accepts_and_not_accepts_linearConstraint {k t : ℕ} (γ : F) (xs : Fin t → ι) :
+    Accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
         ((0 : Fin k → F), (0 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs ∧
-      ¬ accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+      ¬ Accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
         ((0 : Fin k → F), (1 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs := by
   refine ⟨⟨by simp, fun j ↦ by simp⟩, ?_⟩
   rintro ⟨hlin, -⟩
@@ -297,11 +297,11 @@ omit [Fintype ι] [DecidableEq ι] [Fintype F] [DecidableEq F] [Fintype A] [Deci
 codeword (`0` versus the nonzero constant `a`), at the zero statement, zero encoder and zero
 prover message: the first is accepted, the second must not be.  The linear constraint passes
 in both, so acceptance here is decided by the spot-checks alone. -/
-theorem accepts_iff_of_spot_check {k t : ℕ}
+theorem accepts_and_not_accepts_spotCheck {k t : ℕ}
     (γ : F) (xs : Fin t → ι) (hpos : 0 < t) (a : A) (ha : a ≠ 0) :
-    accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+    Accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
         ((0 : Fin k → F), (0 : F), (0 : F)) (fun _ _ ↦ (0 : A)) γ 0 xs ∧
-      ¬ accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
+      ¬ Accepts (ι := ι) (F := F) (A := A) k t (fun _ ↦ (0 : ι → A))
         ((0 : Fin k → F), (0 : F), (0 : F))
         (fun i _ ↦ if i = 0 then a else 0) γ 0 xs := by
   refine ⟨⟨by simp, fun j ↦ by simp⟩, ?_⟩

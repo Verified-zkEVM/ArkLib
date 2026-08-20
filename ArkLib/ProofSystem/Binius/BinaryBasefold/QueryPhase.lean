@@ -195,7 +195,7 @@ noncomputable def queryOracleVerifier :
     (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
     (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
-  OracleProofVerifier.mk
+  OracleProofVerifier.ofVerify
     (oSpec := []ₒ)
     (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ)

@@ -79,11 +79,11 @@ def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Ty
   the inner oracle verifier.
   -/
 
-  -- simOStmt : QueryImpl [InnerOStmtIn]ₒ
+  -- simulateOutputQuery : QueryImpl [InnerOStmtIn]ₒ
   --   (ReaderT OuterStmtIn (OracleComp [OuterOStmtIn]ₒ))
 
   -- simOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn,
-  --   ((simOStmt.impl (query i t)).run outerStmtIn).neverFails
+  --   ((simulateOutputQuery.impl (query i t)).run outerStmtIn).neverFails
   -- To get back an output oracle statement in the outer context, we may simulate it using the input
   -- (non-oracle) statement of the outer context, the output (non-oracle) statement of the inner
   -- context, along with oracle access to the inner output oracle statements

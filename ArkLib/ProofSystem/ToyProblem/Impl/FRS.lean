@@ -36,12 +36,12 @@ coercion is the witness. Ext6 arithmetic is computable; only the selected elemen
 definitions depending on that choice are noncomputable.
 
 **This single fact is the structural keystone behind both geometric-progression FRS reference
-rows.** From it, domain injectivity, `(L, s)`-admissibility (`koalaFRSDomain_admissible` /
-`koalaFRS12Domain_admissible`), encoder injectivity (`koalaFRSEnc_injective` /
-`koalaFRS12Enc_injective`), and the folded minimum distance (`koalaFRS_minRelDist` /
-`koalaFRS12_minRelDist`) all derive from this theorem. Both `s = 32` and `s = 2^12` use the
+rows.** From it, domain injectivity, `(L, s)`-admissibility (`admissible_domain` /
+`admissible_domain12`), encoder injectivity (`encoder_injective` /
+`encoder12_injective`), and the folded minimum distance (`minRelHammingDistCode_range_encoder` /
+`minRelHammingDistCode_range_encoder12`) all derive from this theorem. Both `s = 32` and `s = 2^12` use the
 *same* `γ` (each needs only order `≥ s · |L| = 2^21`). -/
-theorem koalaFRSγ_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ orderOf γ = 2 ^ 21 := by
+theorem gamma_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ orderOf γ = 2 ^ 21 := by
   -- Abstract group theory: the multiplicative group `KoalaBear.Ext6ˣ` of the finite field
   -- `𝔽_{q^6}` is cyclic of order `q^6 - 1`. Since `q - 1 = 2^24 · 127` and
   -- `(q - 1) ∣ (q^6 - 1)`, we have `2^21 ∣ q^6 - 1`, so a generator's appropriate power
@@ -72,121 +72,121 @@ theorem koalaFRSγ_exists : ∃ γ : KoalaBear.Ext6, γ ≠ 0 ∧ orderOf γ = 2
   rw [orderOf_pow' g hm_ne, ← hn_def, Nat.gcd_eq_right (Nat.div_dvd_of_dvd hdvd),
     Nat.div_div_self hdvd hn_pos]
 
-/-- The shared high-order generator `γ` of `koalaFRSγ_exists`. -/
-noncomputable def koalaFRSγ : KoalaBear.Ext6 := koalaFRSγ_exists.choose
+/-- The shared high-order generator `γ` of `gamma_exists`. -/
+noncomputable def gamma : KoalaBear.Ext6 := gamma_exists.choose
 
-lemma koalaFRSγ_ne_zero : koalaFRSγ ≠ 0 := koalaFRSγ_exists.choose_spec.1
+lemma gamma_ne_zero : gamma ≠ 0 := gamma_exists.choose_spec.1
 
-lemma koalaFRSγ_order : orderOf koalaFRSγ = 2 ^ 21 := koalaFRSγ_exists.choose_spec.2
+lemma orderOf_gamma : orderOf gamma = 2 ^ 21 := gamma_exists.choose_spec.2
 
 /-- Powers of `γ` below its exact order `2^21` are pinned by their exponent: this is the
 `pow`-injectivity on `Set.Iio (orderOf γ)` that turns every distinctness side condition of
 the progression construction into a `ℕ`-arithmetic fact (dischargeable by `omega`). -/
-lemma koalaFRSγ_pow_left_inj {a b : ℕ} (ha : a < 2 ^ 21) (hb : b < 2 ^ 21)
-    (h : koalaFRSγ ^ a = koalaFRSγ ^ b) : a = b :=
+lemma gamma_pow_left_inj {a b : ℕ} (ha : a < 2 ^ 21) (hb : b < 2 ^ 21)
+    (h : gamma ^ a = gamma ^ b) : a = b :=
   pow_injOn_Iio_orderOf
-    (Set.mem_Iio.mpr (by simpa [koalaFRSγ_order] using ha))
-    (Set.mem_Iio.mpr (by simpa [koalaFRSγ_order] using hb)) h
+    (Set.mem_Iio.mpr (by simpa [orderOf_gamma] using ha))
+    (Set.mem_Iio.mpr (by simpa [orderOf_gamma] using hb)) h
 
 /-- The folding multiplier `ω := γ` for the `s = 32` folded RS code — the shared
-exact-order generator (`koalaFRSγ`). With the geometric-progression domain
-`koalaFRSDomain j = γ^(32·j)`, the folded points are `γ^(32·j) · γ^i = γ^(32·j + i)`
+exact-order generator (`gamma`). With the geometric-progression domain
+`domain j = γ^(32·j)`, the folded points are `γ^(32·j) · γ^i = γ^(32·j + i)`
 over `32·j + i < orderOf γ = 2^21`, so `(L, 32)`-admissibility holds
-(`koalaFRSDomain_admissible`) rather than being a documentary placeholder. -/
-noncomputable def koalaFoldω : KoalaBear.Ext6 := koalaFRSγ
+(`admissible_domain`) rather than being a documentary placeholder. -/
+noncomputable def foldOmega : KoalaBear.Ext6 := gamma
 
 /-- A neutral `2^16`-point folded-RS evaluation domain in Ext6, given by the geometric
 progression `j ↦ γ^(32·j)`. Injectivity is `pow`-injectivity of `γ` below its
-exact order: `32·j < 32·2^16 = orderOf γ` (`koalaFRSγ_pow_left_inj`), replacing the
+exact order: `32·j < 32·2^16 = orderOf γ` (`gamma_pow_left_inj`), replacing the
 earlier additive `{1,…,2^16}` placeholder. The progression is zero-free (`γ ≠ 0`, so every
 power is a unit), so the admissibility intra-orbit clause `α · ω^i ≠ α` is not
 vacuously false at `0`; here it holds outright via the order bound.
 
 This proof-only reference point does not claim the smooth base-field-domain provenance required
 by ABF26's concrete folded-RS profile; that protected profile is intentionally downstream. -/
-noncomputable def koalaFRSDomain : Fin (2 ^ 16) ↪ KoalaBear.Ext6 where
-  toFun j := koalaFRSγ ^ (32 * j.val)
+noncomputable def domain : Fin (2 ^ 16) ↪ KoalaBear.Ext6 where
+  toFun j := gamma ^ (32 * j.val)
   inj' i j hij := by
     have hi : 32 * (i : ℕ) < 2 ^ 21 := by have := i.isLt; omega
     have hj : 32 * (j : ℕ) < 2 ^ 21 := by have := j.isLt; omega
-    exact Fin.val_injective (by have := koalaFRSγ_pow_left_inj hi hj hij; omega)
+    exact Fin.val_injective (by have := gamma_pow_left_inj hi hj hij; omega)
 
 open Classical in
 /-- **`(L, 32)`-admissibility of the progression domain.** The `32 · 2^16 = 2^21` folded points
 `γ^(32·a) · γ^i = γ^(32·a + i)` are pairwise distinct because all exponents lie below
-`orderOf γ = 2^21`: both `Admissible` conjuncts reduce, via `koalaFRSγ_pow_left_inj`, to
+`orderOf γ = 2^21`: both `Admissible` conjuncts reduce, via `gamma_pow_left_inj`, to
 `ℕ`-arithmetic facts about `32·a + i` (`omega`) and the order bound
-`koalaFRSγ_order`. -/
-lemma koalaFRSDomain_admissible :
-    ReedSolomon.Folded.Admissible (Finset.univ.map koalaFRSDomain) 32 koalaFoldω := by
+`orderOf_gamma`. -/
+lemma admissible_domain :
+    ReedSolomon.Folded.Admissible (Finset.univ.map domain) 32 foldOmega := by
   refine ⟨?_, ?_⟩
   · intro α hα β hβ hαβ i hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα hβ
     obtain ⟨a, rfl⟩ := hα
     obtain ⟨b, rfl⟩ := hβ
-    simp only [koalaFRSDomain, koalaFoldω, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
+    simp only [domain, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
     have ha := a.isLt; have hb := b.isLt
     have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (by rw [h])
-    have := koalaFRSγ_pow_left_inj (a := 32 * a.val + i) (b := 32 * b.val) (by omega) (by omega)
+    have := gamma_pow_left_inj (a := 32 * a.val + i) (b := 32 * b.val) (by omega) (by omega)
       hcontra
     omega
   · intro α hα i hipos hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα
     obtain ⟨a, rfl⟩ := hα
-    simp only [koalaFRSDomain, koalaFoldω, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
+    simp only [domain, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
     have ha := a.isLt
-    have := koalaFRSγ_pow_left_inj (a := 32 * a.val + i) (b := 32 * a.val) (by omega) (by omega)
+    have := gamma_pow_left_inj (a := 32 * a.val + i) (b := 32 * a.val) (by omega) (by omega)
       hcontra
     omega
 
 /-- The neutral `s = 32` folded encoder: the degree-`< 2^20` folded Reed–Solomon
-evaluation map on the `2^16` points of `koalaFRSDomain` with folding `s = 32`
+evaluation map on the `2^16` points of `domain` with folding `s = 32`
 (`k = 2^20`, `|L| = 2^16`, `s = 2^5`, rate `ρ = 1/2`), as an `F`-linear map
 `(Fin 2^20 → F) →ₗ (Fin 2^16 → Fin 32 → F)`. Built as
 `frsEvalOnPoints ∘ (degreeLTEquiv).symm`, mirroring `koalaEnc` with
 `ReedSolomon.Folded.frsEvalOnPoints` in place of `evalOnPoints` (the scalar
 `s = 1` case). The codeword alphabet is `A = Fin 32 → KoalaBear.Ext6`. -/
-noncomputable def koalaFRSEnc :
+noncomputable def encoder :
     (Fin (2 ^ 20) → KoalaBear.Ext6) →ₗ[KoalaBear.Ext6] (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6) :=
-  (frsEvalOnPoints koalaFRSDomain 32 koalaFoldω).domRestrict
+  (frsEvalOnPoints domain 32 foldOmega).domRestrict
       (Polynomial.degreeLT KoalaBear.Ext6 (2 ^ 20))
     ∘ₗ (Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20)).symm.toLinearMap
 
 open Classical in
 /-- **Injectivity of the folded encoder** ([ABF26] Definition 6.1's "code as the
 injective map"). Mathematically this would follow from `(L, s)`-admissibility of
-`koalaFoldω` (`ReedSolomon.Folded.Admissible`, the GR08 condition that the `s·|L|`
+`foldOmega` (`ReedSolomon.Folded.Admissible`, the GR08 condition that the `s·|L|`
 folded evaluation points `{α · ω^i}` are pairwise distinct) together with
 `k ≤ s·|L|` (here `2^20 ≤ 32·2^16 = 2^21`): a degree-`< k` polynomial vanishing
 on `s·|L| ≥ k` distinct points is zero, so the unfolded evaluation — hence
-`frsEvalOnPoints` on `degreeLT k` — would be injective. `koalaFRSDomain` is
-zero-free precisely so `Admissible koalaFoldω` is not *provably false* (its
-intra-orbit clause fails at `0`; see `koalaFRSDomain`).
+`frsEvalOnPoints` on `degreeLT k` — would be injective. `domain` is
+zero-free precisely so `Admissible foldOmega` is not *provably false* (its
+intra-orbit clause fails at `0`; see `domain`).
 
 This is a direct derivation through the in-tree bridge
 `ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective` (the `Admissible ω → injective`
 bridge that also backs the FRS dimension formula `dim_frsCode`): the encoder is
 `(injective domRestrict) ∘ (injective degreeLTEquiv.symm)`. The `domRestrict` injectivity
-consumes `koalaFRSDomain_admissible`, `koalaFRSγ_ne_zero`, and `k = 2^20 ≤ 32 · 2^16 =
-2^21 = s · |ι|`. The order witness `koalaFRSγ_exists` is proved using abstract cyclicity. -/
-theorem koalaFRSEnc_injective : Function.Injective koalaFRSEnc := by
+consumes `admissible_domain`, `gamma_ne_zero`, and `k = 2^20 ≤ 32 · 2^16 =
+2^21 = s · |ι|`. The order witness `gamma_exists` is proved using abstract cyclicity. -/
+theorem encoder_injective : Function.Injective encoder := by
   haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
-  simp only [koalaFRSEnc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
+  simp only [encoder, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
   refine (ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective (k := 2 ^ 20) (s := 32)
-    koalaFRSDomain koalaFoldω koalaFRSDomain_admissible koalaFRSγ_ne_zero ?_).comp
+    domain foldOmega admissible_domain gamma_ne_zero ?_).comp
     (LinearEquiv.injective _)
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
 set_option maxRecDepth 8000 in
-/-- **The folded encoder's image is exactly the folded RS code** `FRS[koalaFRSDomain, 2^20,
-32, koalaFoldω]`. The FRS counterpart of `koalaEnc_range`: `koalaFRSEnc = frsEvalOnPoints ∘
+/-- **The folded encoder's image is exactly the folded RS code** `FRS[domain, 2^20,
+32, foldOmega]`. The FRS counterpart of `koalaEnc_range`: `encoder = frsEvalOnPoints ∘
 (degreeLTEquiv).symm`, and as the latter ranges over all degree-`< 2^20` polynomials its
 image is `(degreeLT 2^20).map (frsEvalOnPoints …) = frsCode …`. This identifies
-`Set.range ⇑koalaFRSEnc` with `frsCode`, unlocking the folded MDS distance below. -/
-theorem koalaFRSEnc_range :
-    Set.range ⇑koalaFRSEnc =
-      (↑(ReedSolomon.Folded.frsCode koalaFRSDomain (2 ^ 20) 32 koalaFoldω) :
+`Set.range ⇑encoder` with `frsCode`, unlocking the folded MDS distance below. -/
+theorem encoder_range :
+    Set.range ⇑encoder =
+      (↑(ReedSolomon.Folded.frsCode domain (2 ^ 20) 32 foldOmega) :
         Set (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6)) := by
   ext y
   rw [SetLike.mem_coe, ReedSolomon.Folded.frsCode, Submodule.mem_map]
@@ -194,41 +194,41 @@ theorem koalaFRSEnc_range :
   constructor
   · rintro ⟨m, rfl⟩
     refine ⟨↑((Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20)).symm m), Submodule.coe_mem _, ?_⟩
-    simp only [koalaFRSEnc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
+    simp only [encoder, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
       LinearMap.domRestrict_apply]
   · rintro ⟨p, hp, rfl⟩
     refine ⟨Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20) ⟨p, hp⟩, ?_⟩
-    simp only [koalaFRSEnc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
+    simp only [encoder, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
       LinearEquiv.symm_apply_apply, LinearMap.domRestrict_apply]
 
 open Classical in
 /-- **Folded-RS minimum relative distance**, derived through the in-tree folded-distance
 bridge `ReedSolomon.Folded.minDist_frsCode`.
-`minRelHammingDistCode (Set.range ⇑koalaFRSEnc) = 32769/65536`, the folded-Singleton (MDS-type)
+`minRelHammingDistCode (Set.range ⇑encoder) = 32769/65536`, the folded-Singleton (MDS-type)
 distance for `FRS[F, L, 2^20, 32, ω]`: a nonzero degree-`< 2^20` polynomial has `< 2^20`
 roots, so it vanishes on `≤ ⌊(2^20-1)/32⌋ = 32767` *whole* folded symbols, hence the folded
 Hamming distance is `D = |L| − 32767 = 65536 − 32767 = 32769` and `δ_min = D/|L| =
-32769/65536`. Via `koalaFRSEnc_range` (the code *is* `frsCode`), `minDist_frsCode`, and the
+32769/65536`. Via `encoder_range` (the code *is* `frsCode`), `minDist_frsCode`, and the
 absolute-to-relative bridge `minDist_div_card_eq_minRelHammingDistCode`. -/
-theorem koalaFRS_minRelDist :
-    minRelHammingDistCode (Set.range ⇑koalaFRSEnc) = (32769 / 65536 : ℚ≥0) := by
+theorem minRelHammingDistCode_range_encoder :
+    minRelHammingDistCode (Set.range ⇑encoder) = (32769 / 65536 : ℚ≥0) := by
   haveI : Nonempty (Fin (2 ^ 16)) := inferInstance
   haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
-  have hcode : Set.range ⇑koalaFRSEnc =
-      (↑(ReedSolomon.Folded.frsCode koalaFRSDomain (2 ^ 20) 32 koalaFoldω) :
-        Set (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6)) := koalaFRSEnc_range
-  have hmin : Code.minDist (Set.range ⇑koalaFRSEnc) = 32769 := by
+  have hcode : Set.range ⇑encoder =
+      (↑(ReedSolomon.Folded.frsCode domain (2 ^ 20) 32 foldOmega) :
+        Set (Fin (2 ^ 16) → Fin 32 → KoalaBear.Ext6)) := encoder_range
+  have hmin : Code.minDist (Set.range ⇑encoder) = 32769 := by
     have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 32) (by norm_num)
-      koalaFRSDomain koalaFoldω koalaFRSDomain_admissible koalaFRSγ_ne_zero
+      domain foldOmega admissible_domain gamma_ne_zero
       (by rw [Fintype.card_fin]; norm_num)
     simp only [Fintype.card_fin] at h
     norm_num at h
     rw [hcode]; exact h
-  have hbridge := minDist_div_card_eq_minRelHammingDistCode (Set.range ⇑koalaFRSEnc)
+  have hbridge := minDist_div_card_eq_minRelHammingDistCode (Set.range ⇑encoder)
   have hcardι : Fintype.card (Fin (2 ^ 16)) = 65536 := by
     rw [Fintype.card_fin]; norm_num
   rw [hmin, hcardι] at hbridge
-  have hQ : ((minRelHammingDistCode (Set.range ⇑koalaFRSEnc) : ℚ≥0) : ℚ) =
+  have hQ : ((minRelHammingDistCode (Set.range ⇑encoder) : ℚ≥0) : ℚ) =
       ((32769 / 65536 : ℚ≥0) : ℚ) := by
     rw [← hbridge]; push_cast; norm_num
   exact_mod_cast hQ
@@ -241,7 +241,7 @@ since `32767/65536 = (32767/32768)·(1/2)`, this reduces to `2^(-0.01) ≤
 **proven integer inequality** `256^100 ≤ 2·255^100` (`log₁₀`: `100·2.4082 =
 240.82 ≤ 0.301 + 240.65`). No float `#eval`. (True value `(32767/65536)^128 ≈
 2^(-128.006)`, comfortably above the `2^(-128.01)` ceiling.) -/
-theorem koalaFRS_spotcheck_lb :
+theorem two_rpow_le_spotcheckPow :
     (2 : ℝ≥0) ^ (-(128.01 : ℝ)) ≤ ((32767 : ℝ≥0) / 65536) ^ (128 : ℕ) := by
   rw [← NNReal.coe_le_coe]
   push_cast [NNReal.coe_rpow]
@@ -274,76 +274,76 @@ folded symbols can vanish — the same count that gives the `s = 32` value
 `32769/65536`). -/
 
 /-- The `2^9 = 512`-point geometric-progression Ext6 domain for the neutral `s = 2^12`
-reference row, `j ↦ γ^(2^12·j)`, exactly as `koalaFRSDomain` but at folding `2^12`.
+reference row, `j ↦ γ^(2^12·j)`, exactly as `domain` but at folding `2^12`.
 Injectivity is `pow`-injectivity below
-`orderOf γ`: `2^12·j < 2^12·2^9 = orderOf γ` (`koalaFRSγ_pow_left_inj`). -/
-noncomputable def koalaFRS12Domain : Fin (2 ^ 9) ↪ KoalaBear.Ext6 where
-  toFun j := koalaFRSγ ^ (2 ^ 12 * j.val)
+`orderOf γ`: `2^12·j < 2^12·2^9 = orderOf γ` (`gamma_pow_left_inj`). -/
+noncomputable def domain12 : Fin (2 ^ 9) ↪ KoalaBear.Ext6 where
+  toFun j := gamma ^ (2 ^ 12 * j.val)
   inj' i j hij := by
     have hi : 2 ^ 12 * (i : ℕ) < 2 ^ 21 := by have := i.isLt; omega
     have hj : 2 ^ 12 * (j : ℕ) < 2 ^ 21 := by have := j.isLt; omega
-    exact Fin.val_injective (by have := koalaFRSγ_pow_left_inj hi hj hij; omega)
+    exact Fin.val_injective (by have := gamma_pow_left_inj hi hj hij; omega)
 
 open Classical in
 /-- **`(L, 2^12)`-admissibility of the `s = 2^12` progression domain.** The `2^12 · 2^9 = 2^21`
 folded points `γ^(2^12·a) · γ^i = γ^(2^12·a + i)` are pairwise distinct, all exponents
 below `orderOf γ = 2^21`; both `Admissible` conjuncts reduce to `ℕ`-arithmetic via
-`koalaFRSγ_pow_left_inj`. Same (now-proven) order bound as `koalaFRSDomain_admissible`. -/
-lemma koalaFRS12Domain_admissible :
-    ReedSolomon.Folded.Admissible (Finset.univ.map koalaFRS12Domain) (2 ^ 12) koalaFoldω := by
+`gamma_pow_left_inj`. Same (now-proven) order bound as `admissible_domain`. -/
+lemma admissible_domain12 :
+    ReedSolomon.Folded.Admissible (Finset.univ.map domain12) (2 ^ 12) foldOmega := by
   refine ⟨?_, ?_⟩
   · intro α hα β hβ hαβ i hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα hβ
     obtain ⟨a, rfl⟩ := hα
     obtain ⟨b, rfl⟩ := hβ
-    simp only [koalaFRS12Domain, koalaFoldω, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
+    simp only [domain12, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hαβ hcontra
     have ha := a.isLt; have hb := b.isLt
     have hab : (a : ℕ) ≠ (b : ℕ) := fun h => hαβ (by rw [h])
-    have := koalaFRSγ_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * b.val)
+    have := gamma_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * b.val)
       (by omega) (by omega) hcontra
     omega
   · intro α hα i hipos hi hcontra
     simp only [Finset.mem_map, Finset.mem_univ, true_and] at hα
     obtain ⟨a, rfl⟩ := hα
-    simp only [koalaFRS12Domain, koalaFoldω, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
+    simp only [domain12, foldOmega, Function.Embedding.coeFn_mk, ← pow_add] at hcontra
     have ha := a.isLt
-    have := koalaFRSγ_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * a.val)
+    have := gamma_pow_left_inj (a := 2 ^ 12 * a.val + i) (b := 2 ^ 12 * a.val)
       (by omega) (by omega) hcontra
     omega
 
 /-- The `s = 2^12 = 4096` folded encoder: degree-`< 2^20` folded RS evaluation on
-the `2^9` points of `koalaFRS12Domain` with folding `s = 4096` (`k = 2^20`,
+the `2^9` points of `domain12` with folding `s = 4096` (`k = 2^20`,
 `|L| = 2^9`, rate `ρ = 1/2`), as `(Fin 2^20 → F) →ₗ (Fin 2^9 → Fin 4096 → F)`.
-Same `frsEvalOnPoints ∘ (degreeLTEquiv).symm` shape as `koalaFRSEnc`, with the
+Same `frsEvalOnPoints ∘ (degreeLTEquiv).symm` shape as `encoder`, with the
 folding parameter `2^12` and the smaller `2^9`-point domain. -/
-noncomputable def koalaFRS12Enc :
+noncomputable def encoder12 :
     (Fin (2 ^ 20) → KoalaBear.Ext6) →ₗ[KoalaBear.Ext6]
       (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6) :=
-  (frsEvalOnPoints koalaFRS12Domain (2 ^ 12) koalaFoldω).domRestrict
+  (frsEvalOnPoints domain12 (2 ^ 12) foldOmega).domRestrict
       (Polynomial.degreeLT KoalaBear.Ext6 (2 ^ 20))
     ∘ₗ (Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20)).symm.toLinearMap
 
 open Classical in
 /-- **Injectivity of the `s = 2^12` folded encoder** — the large-folding counterpart of
-`koalaFRSEnc_injective`, derived through the in-tree bridge
+`encoder_injective`, derived through the in-tree bridge
 `ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective`, consuming
-`koalaFRS12Domain_admissible`, `koalaFRSγ_ne_zero`, and `k = 2^20 ≤ s·|L| = 2^12·2^9 =
-2^21`. It uses the same shared order witness `koalaFRSγ_exists` as the `s = 32` row. -/
-theorem koalaFRS12Enc_injective : Function.Injective koalaFRS12Enc := by
+`admissible_domain12`, `gamma_ne_zero`, and `k = 2^20 ≤ s·|L| = 2^12·2^9 =
+2^21`. It uses the same shared order witness `gamma_exists` as the `s = 32` row. -/
+theorem encoder12_injective : Function.Injective encoder12 := by
   haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
-  simp only [koalaFRS12Enc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
+  simp only [encoder12, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap]
   refine (ReedSolomon.Folded.frsEvalOnPoints_domRestrict_injective (k := 2 ^ 20) (s := 2 ^ 12)
-    koalaFRS12Domain koalaFoldω koalaFRS12Domain_admissible koalaFRSγ_ne_zero ?_).comp
+    domain12 foldOmega admissible_domain12 gamma_ne_zero ?_).comp
     (LinearEquiv.injective _)
   rw [Fintype.card_fin]; norm_num
 
 open Classical in
 set_option maxRecDepth 8000 in
 /-- **The `s = 2^12` folded encoder's image is exactly `frsCode`** — the large-folding
-counterpart of `koalaFRSEnc_range`. -/
-theorem koalaFRS12Enc_range :
-    Set.range ⇑koalaFRS12Enc =
-      (↑(ReedSolomon.Folded.frsCode koalaFRS12Domain (2 ^ 20) (2 ^ 12) koalaFoldω) :
+counterpart of `encoder_range`. -/
+theorem encoder12_range :
+    Set.range ⇑encoder12 =
+      (↑(ReedSolomon.Folded.frsCode domain12 (2 ^ 20) (2 ^ 12) foldOmega) :
         Set (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6)) := by
   ext y
   rw [SetLike.mem_coe, ReedSolomon.Folded.frsCode, Submodule.mem_map]
@@ -351,40 +351,40 @@ theorem koalaFRS12Enc_range :
   constructor
   · rintro ⟨m, rfl⟩
     refine ⟨↑((Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20)).symm m), Submodule.coe_mem _, ?_⟩
-    simp only [koalaFRS12Enc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
+    simp only [encoder12, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
       LinearMap.domRestrict_apply]
   · rintro ⟨p, hp, rfl⟩
     refine ⟨Polynomial.degreeLTEquiv KoalaBear.Ext6 (2 ^ 20) ⟨p, hp⟩, ?_⟩
-    simp only [koalaFRS12Enc, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
+    simp only [encoder12, LinearMap.coe_comp, LinearEquiv.coe_toLinearMap, Function.comp_apply,
       LinearEquiv.symm_apply_apply, LinearMap.domRestrict_apply]
 
 open Classical in
 set_option maxRecDepth 8000 in
 /-- **Folded-RS minimum relative distance at `s = 2^12`**, derived through
-`ReedSolomon.Folded.minDist_frsCode` exactly as `koalaFRS_minRelDist`.
-`minRelHammingDistCode (Set.range ⇑koalaFRS12Enc) = 257/512`, the folded-Singleton distance for
+`ReedSolomon.Folded.minDist_frsCode` exactly as `minRelHammingDistCode_range_encoder`.
+`minRelHammingDistCode (Set.range ⇑encoder12) = 257/512`, the folded-Singleton distance for
 `FRS[F, L, 2^20, 4096, ω]`: a nonzero degree-`< 2^20` polynomial vanishes on
 `≤ ⌊(2^20−1)/4096⌋ = 255` whole folded symbols, so `D = |L| − 255 = 512 − 255 = 257` and
 `δ_min = 257/512`. -/
-theorem koalaFRS12_minRelDist :
-    minRelHammingDistCode (Set.range ⇑koalaFRS12Enc) = (257 / 512 : ℚ≥0) := by
+theorem minRelHammingDistCode_range_encoder12 :
+    minRelHammingDistCode (Set.range ⇑encoder12) = (257 / 512 : ℚ≥0) := by
   haveI : Nonempty (Fin (2 ^ 9)) := inferInstance
   haveI : NeZero (2 ^ 20 : ℕ) := ⟨by norm_num⟩
-  have hcode : Set.range ⇑koalaFRS12Enc =
-      (↑(ReedSolomon.Folded.frsCode koalaFRS12Domain (2 ^ 20) (2 ^ 12) koalaFoldω) :
-        Set (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6)) := koalaFRS12Enc_range
-  have hmin : Code.minDist (Set.range ⇑koalaFRS12Enc) = 257 := by
+  have hcode : Set.range ⇑encoder12 =
+      (↑(ReedSolomon.Folded.frsCode domain12 (2 ^ 20) (2 ^ 12) foldOmega) :
+        Set (Fin (2 ^ 9) → Fin (2 ^ 12) → KoalaBear.Ext6)) := encoder12_range
+  have hmin : Code.minDist (Set.range ⇑encoder12) = 257 := by
     have h := ReedSolomon.Folded.minDist_frsCode (k := 2 ^ 20) (s := 2 ^ 12) (by norm_num)
-      koalaFRS12Domain koalaFoldω koalaFRS12Domain_admissible koalaFRSγ_ne_zero
+      domain12 foldOmega admissible_domain12 gamma_ne_zero
       (by rw [Fintype.card_fin]; norm_num)
     simp only [Fintype.card_fin] at h
     norm_num at h
     rw [hcode]; exact h
-  have hbridge := minDist_div_card_eq_minRelHammingDistCode (Set.range ⇑koalaFRS12Enc)
+  have hbridge := minDist_div_card_eq_minRelHammingDistCode (Set.range ⇑encoder12)
   have hcardι : Fintype.card (Fin (2 ^ 9)) = 512 := by
     rw [Fintype.card_fin]; norm_num
   rw [hmin, hcardι] at hbridge
-  have hQ : ((minRelHammingDistCode (Set.range ⇑koalaFRS12Enc) : ℚ≥0) : ℚ) =
+  have hQ : ((minRelHammingDistCode (Set.range ⇑encoder12) : ℚ≥0) : ℚ) =
       ((257 / 512 : ℚ≥0) : ℚ) := by
     rw [← hbridge]; push_cast; norm_num
   exact_mod_cast hQ
@@ -397,7 +397,7 @@ is too weak here, so we **sandwich through `3/5`**: `2^(-0.75) ≤ 3/5` (the sma
 integer fact `(3/5)^4 = 81/625 ≥ 1/8 = 2^(-3)`) and `3/5 ≤ (255/256)^128` (the
 integer fact `3·256^128 ≤ 5·255^128`). True value `(255/512)^128 ≈ 2^(-128.723)`,
 comfortably above the `2^(-128.75)` ceiling. No float `#eval`. -/
-theorem koalaFRS12_spotcheck_lb :
+theorem two_rpow_le_spotcheckPow12 :
     (2 : ℝ≥0) ^ (-(128.75 : ℝ)) ≤ ((255 : ℝ≥0) / 512) ^ (128 : ℕ) := by
   rw [← NNReal.coe_le_coe]
   push_cast [NNReal.coe_rpow]

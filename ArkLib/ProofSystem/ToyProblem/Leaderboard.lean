@@ -18,7 +18,7 @@ certificate.  It intentionally contains no score format, ranking direction,
 submission metadata, or chosen operating radius.
 
 **Verified vs. admitted.**  Both projections below are `sorry`-free and are *symbolic*:
-`extractorCertificate` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
+`certifiedExtractorError` unfolds to `ε_mca(C,δ) + |Λ(C^{≡2},δ)|/|F| `-shaped data, not to a
 numeral.  Instantiating a `FixedRadiusParameters` therefore asserts nothing numeric about a
 parameter point; obtaining a numeral additionally requires the external MCA/CA admits of
 `Data/CodingTheory/ProximityGap/CapacityBounds.lean`, which is deliberately outside this
@@ -50,29 +50,29 @@ proved Ext6 folded-RS geometric-progression reference point with `s = 32`,
 This packages exactly the encoder, range, and injectivity facts required by
 `FixedRadiusParameters`; it does not add the smooth base-field provenance or
 the numerical security certificate of the separate protected prize profile. -/
-noncomputable def koalaFRSFixedRadiusParameters :
+noncomputable def FixedRadiusParameters.koalaFRS :
     FixedRadiusParameters
       (ι := Fin (2 ^ 16)) (F := KoalaBear.Ext6)
       (A := Fin 32 → KoalaBear.Ext6) where
   k := 2 ^ 20
   t := 128
-  code := ReedSolomon.Folded.frsCode Impl.FRS.koalaFRSDomain (2 ^ 20) 32
-    Impl.FRS.koalaFoldω
-  encoder := Impl.FRS.koalaFRSEnc
-  encoder_injective := Impl.FRS.koalaFRSEnc_injective
-  encoder_range := Impl.FRS.koalaFRSEnc_range
+  code := ReedSolomon.Folded.frsCode Impl.FRS.domain (2 ^ 20) 32
+    Impl.FRS.foldOmega
+  encoder := Impl.FRS.encoder
+  encoder_injective := Impl.FRS.encoder_injective
+  encoder_range := Impl.FRS.encoder_range
 
 /-! ### Why there is no in-tree interleaved-RS inhabitant
 
 The façade's one in-tree inhabitant is folded-RS over the sextic extension, which leaves an
 apparent asymmetry: the executable extractor ArkLib actually ships
-(`Impl.IRS.irsStraightlineExtractor`) is *interleaved*-RS.  The asymmetry is deliberate.
+(`Impl.IRS.straightlineExtractor`) is *interleaved*-RS.  The asymmetry is deliberate.
 
 [ABF26] §6.4.1's interleaved instantiation fixes `𝔽 = 𝔹^6` over the KoalaBear base field
 `𝔹 = 𝔽_q`, a **smooth domain `L ⊆ 𝔹`** with `|L| = 2^18`, `k = 2^20`, `s = 2^3` (so
 `s · |L| = 2^21` and rate `ρ = (k/s)/|L| = 1/2`) and `t = 128`.  That exact object is realized
 in the downstream prize-challenge repository, built from
-`Impl.IRS.irsEncoder`/`irsEncoder_injective`/`irsEncoder_range` and this very structure.  A
+`Impl.IRS.encoder`/`encoder_injective`/`encoder_range` and this very structure.  A
 second copy here would fork the protected profile.
 
 The two nearby alternatives are both worse than the cross-reference:
@@ -91,36 +91,36 @@ downstream. -/
 noncomputable def FixedRadiusParameters.winningSetUpperBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : ℝ≥0 :=
-  winningSetFixedRadiusUpperBound p.encoder δ p.t
+  ToyProblem.winningSetUpperBound p.encoder δ p.t
 
 /-- The MCA-plus-list/spot-check certificate used by the executable extractor. -/
-noncomputable def FixedRadiusParameters.extractorCertificate
+noncomputable def FixedRadiusParameters.certifiedExtractorError
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : ℝ≥0 :=
-  extractorCertifiedError p.code δ p.t
+  ToyProblem.certifiedExtractorError p.code δ p.t
 
 omit [Fintype A] in
 /-- At every admissible radius, the winning-set/spot-check upper bound is
 bounded by the executable extractor certificate. -/
-theorem FixedRadiusParameters.winningSetUpperBound_le_extractorCertificate
+theorem FixedRadiusParameters.winningSetUpperBound_le_certifiedExtractorError
     [Finite A] [DecidableEq A] [Nonempty ι]
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (p.code : Set (ι → A)) : ℝ≥0))) :
-    p.winningSetUpperBound δ ≤ p.extractorCertificate δ := by
+    p.winningSetUpperBound δ ≤ p.certifiedExtractorError δ := by
   classical
   letI := Fintype.ofFinite A
   letI : DecidableEq F := Classical.decEq F
-  exact winningSetFixedRadiusUpperBound_le_extractorCertifiedError
+  exact ToyProblem.winningSetUpperBound_le_certifiedExtractorError
     p.code δ p.t hδ p.encoder p.encoder_injective p.encoder_range
 
 /-- A neutral carrier for a proved upper bound on the executable extractor's
 fixed-radius certificate.
 
 **The carrier is directional, and inhabitation alone asserts nothing.**  The field
-`proof` is `extractorCertificate δ ≤ bound`, so *every* weaker `bound` qualifies and
-`FixedRadiusCertificateBound.exact` inhabits it unconditionally at the exact certificate.
+`proof` is `certifiedExtractorError δ ≤ bound`, so *every* weaker `bound` qualifies and
+`FixedRadiusCertificateBound.self` inhabits it unconditionally at the exact certificate.
 A **smaller** `bound` is the stronger statement.  Any downstream policy layer must
 therefore compare the numerals in `bound` and must not treat "this parameter point has a
 `FixedRadiusCertificateBound`" as a security claim. -/
@@ -128,13 +128,13 @@ structure FixedRadiusCertificateBound
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) where
   bound : ℝ≥0
-  proof : p.extractorCertificate δ ≤ bound
+  proof : p.certifiedExtractorError δ ≤ bound
 
 /-- The bound carrier is non-vacuous: the exact certificate always supplies a
 canonical inhabitant. -/
-noncomputable def FixedRadiusCertificateBound.exact
+noncomputable def FixedRadiusCertificateBound.self
     (p : FixedRadiusParameters (ι := ι) (F := F) (A := A))
     (δ : ℝ≥0) : FixedRadiusCertificateBound p δ :=
-  ⟨p.extractorCertificate δ, le_rfl⟩
+  ⟨p.certifiedExtractorError δ, le_rfl⟩
 
 end ToyProblem

@@ -56,10 +56,10 @@ def messageOne : Fin 4 → TestField := ![1, 2, 3, 4]
 def messageTwo : Fin 4 → TestField := ![4, 3, 2, 1]
 
 def encodedOne : Fin 4 → Fin 2 → TestField :=
-  irsEncoder 4 2 two_dvd_four testDomain messageOne
+  encoder 4 2 two_dvd_four testDomain messageOne
 
 def encodedTwo : Fin 4 → Fin 2 → TestField :=
-  irsEncoder 4 2 two_dvd_four testDomain messageTwo
+  encoder 4 2 two_dvd_four testDomain messageTwo
 
 def inputStatement : ToyProblem.Spec.Statement (F := TestField) 4 ×
     (∀ i, ToyProblem.Spec.OracleStatement (Fin 4) (Fin 2 → TestField) i) :=
@@ -76,7 +76,7 @@ def runEmptyOracleComp {α : Type} :
   | .liftBind q _ => nomatch q
 
 /-- A complete C6.2 transcript with a caller-supplied prover message. -/
-def protocol62Transcript (g : Fin 4 → TestField) :
+def testTranscript (g : Fin 4 → TestField) :
     (ToyProblem.Spec.pSpec (ι := Fin 4) (F := TestField) 4 1).FullTranscript :=
   fun i ↦ match i with
     | ⟨0, _⟩ => gamma
@@ -86,26 +86,26 @@ def protocol62Transcript (g : Fin 4 → TestField) :
 /-- Run the exact straightline extractor named by the public game theorem. -/
 def extractStraightline : Option (ToyProblem.Spec.Witness (F := TestField) 4) :=
   runEmptyOracleComp <|
-    (irsStraightlineExtractor 4 2 1 two_dvd_four testDomain
-      inputStatement () (protocol62Transcript combinedMessage)
+    (straightlineExtractor 4 2 1 two_dvd_four testDomain
+      inputStatement () (testTranscript combinedMessage)
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))).run
 
 /-- Execute the actual C6.2 deciding verifier, including both guards and the
 spot-check loop, against a complete transcript. -/
-def runProtocol62Verifier (g : Fin 4 → TestField) :
+def runOracleVerifier (g : Fin 4 → TestField) :
     Option (ToyProblem.Spec.OutputStatement ×
       ∀ i, ToyProblem.Spec.OutputOracleStatement i) :=
   let verifier := ToyProblem.Spec.oracleVerifier
-    (k := 4) (t := 1) (irsEncoder 4 2 two_dvd_four testDomain)
+    (k := 4) (t := 1) (encoder 4 2 two_dvd_four testDomain)
   runEmptyOracleComp <| simulateQ
     (@OracleInterface.simOracle2 _ (emptySpec.{0, 0}) _
       (ToyProblem.Spec.OracleStatement (Fin 4) (Fin 2 → TestField))
       ToyProblem.Spec.instOracleInterfaceOracleStatement _
       (ToyProblem.Spec.pSpec (ι := Fin 4) (F := TestField) 4 1).Message
       (ToyProblem.Spec.instOracleInterfaceMessagePSpec 4 1) inputStatement.2
-      (protocol62Transcript g).messages)
-    (verifier.toVerifier.run inputStatement (protocol62Transcript g)).run
+      (testTranscript g).messages)
+    (verifier.toVerifier.run inputStatement (testTranscript g)).run
 
 /-- The complete one-round C6.9 transcript. -/
 def simplifiedTranscript :
@@ -117,7 +117,7 @@ def simplifiedTranscript :
 def extractSimplifiedStraightline :
     Option (ToyProblem.Spec.Witness (F := TestField) 4) :=
   runEmptyOracleComp <|
-    (simplifiedIorStraightlineExtractor 4 2 two_dvd_four testDomain
+    (simplifiedStraightlineExtractor 4 2 two_dvd_four testDomain
       inputStatement combinedMessage simplifiedTranscript
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))
         ([] : QueryLog ([]ₒ : OracleSpec.{0, 0} PEmpty.{1}))).run
@@ -131,8 +131,8 @@ def extractSimplifiedRbr : ToyProblem.Spec.Witness (F := TestField) 4 :=
       (ToyProblem.Spec.Witness (F := TestField) 4)
       (ToyProblem.SimplifiedIOR.OutputWitness (F := TestField) 4)
       (ToyProblem.SimplifiedIOR.pSpec (F := TestField))
-      (simplifiedIorRbrWitMid (F := TestField) 4) :=
-    simplifiedIorRbrExtractor 4 2 two_dvd_four testDomain
+      (simplifiedRbrWitMid (F := TestField) 4) :=
+    simplifiedRbrExtractor 4 2 two_dvd_four testDomain
   extractor.extractMid 0 inputStatement simplifiedTranscript combinedMessage
 
 /-- Query the C6.9 derived output through its VCV virtual-oracle implementation. -/
@@ -371,8 +371,8 @@ def downstreamVirtualVerifier : OracleVerifier []ₒ
       (Fin 4) (Fin 2 → TestField)) !p[] where
   verify := fun stmt _ ↦ pure stmt
   outputOracle := .inr {
-    materialize := fun _ oStmt _ ↦ oStmt
-    simOStmt := fun _ q ↦ by
+    materializeOutput := fun _ oStmt _ ↦ oStmt
+    simulateOutputQuery := fun _ q ↦ by
       rcases q with ⟨i, j⟩
       change OracleComp
         ([]ₒ + ([ToyProblem.SimplifiedIOR.OutputOracleStatement
@@ -387,7 +387,7 @@ def downstreamVirtualVerifier : OracleVerifier []ₒ
           OracleComp
             ([]ₒ + ([ToyProblem.SimplifiedIOR.OutputOracleStatement
               (Fin 4) (Fin 2 → TestField)]ₒ + [!p[].Message]ₒ)) _)
-    simOStmt_eq := by
+    simulateOutputQuery_eq := by
       intro _ oStmt messages q
       rcases q with ⟨i, j⟩
       change simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
@@ -431,22 +431,22 @@ def fieldArithmeticPasses : Bool :=
   (x * y) / x == y
 
 def encodeDecodePasses : Bool :=
-  irsErasureDecodeOrZero 4 2 two_dvd_four testDomain Finset.univ encodedOne == messageOne
+  erasureDecodeOrZero 4 2 two_dvd_four testDomain Finset.univ encodedOne == messageOne
 
 def rejectedErasurePasses : Bool :=
   ToyProblem.Spec.rsErasureDecoder 2 testDomain ({0} : Finset (Fin 4))
     (fun _ ↦ 0) == none
 
 def transitionPasses : Bool :=
-  let extracted := irsTransitionExtractor 4 2 two_dvd_four testDomain
+  let extracted := transitionExtractor 4 2 two_dvd_four testDomain
     inputStatement gamma combinedMessage
   extracted 0 == messageOne && extracted 1 == messageTwo
 
 def rejectedTransitionPasses : Bool :=
   let zeroMessage : Fin 4 → TestField := 0
-  let nodes := irsGammaAgreementSet 4 2 two_dvd_four testDomain
+  let nodes := gammaAgreementSet 4 2 two_dvd_four testDomain
     encodedOne encodedTwo 0 zeroMessage
-  let extracted := irsTransitionExtractor 4 2 two_dvd_four testDomain
+  let extracted := transitionExtractor 4 2 two_dvd_four testDomain
     inputStatement 0 zeroMessage
   nodes.card == 0 && extracted 0 == 0 && extracted 1 == 0
 
@@ -455,9 +455,9 @@ def straightlinePasses : Bool :=
   | some extracted => extracted 0 == messageOne && extracted 1 == messageTwo
   | none => false
 
-def protocol62VerifierPasses : Bool :=
-  (runProtocol62Verifier combinedMessage).isSome &&
-    !(runProtocol62Verifier 0).isSome
+def verifierAcceptRejectPasses : Bool :=
+  (runOracleVerifier combinedMessage).isSome &&
+    !(runOracleVerifier 0).isSome
 
 def simplifiedStraightlinePasses : Bool :=
   match extractSimplifiedStraightline with
@@ -519,7 +519,7 @@ def run : IO Unit := do
   check "dynamic agreement extraction" transitionPasses
   check "rejected dynamic agreement" rejectedTransitionPasses
   check "named straightline extractor" straightlinePasses
-  check "C6.2 deciding verifier accept/reject" protocol62VerifierPasses
+  check "C6.2 deciding verifier accept/reject" verifierAcceptRejectPasses
   check "C6.9 named straightline extractor" simplifiedStraightlinePasses
   check "C6.9 named RBR extractor" simplifiedRbrPasses
   check "C6.9 virtual output oracle" simplifiedVirtualOutputPasses

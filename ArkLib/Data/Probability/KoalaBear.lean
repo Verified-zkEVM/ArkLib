@@ -18,36 +18,36 @@ elements or use `SampleableType.ofFintype`.
 
 open OracleComp
 
-namespace KoalaBear
+namespace KoalaBear.Ext6
 
 /-- The executable equivalence between six base-field coefficients and the sextic extension. -/
-def ext6CoeffsEquiv : Vector Field 6 ≃ Ext6 where
+def coeffsEquiv : Vector Field 6 ≃ Ext6 where
   toFun := fun v => CompPoly.Extension.Ext.ofVector (P := ext6Params) v
   invFun := fun x => CompPoly.Extension.Ext.coeffs (P := ext6Params) x
   left_inv _ := rfl
   right_inv _ := rfl
 
 /-- Boolean equality on `Ext6` agrees with propositional equality coefficientwise. -/
-instance instLawfulBEqExt6 : LawfulBEq Ext6 :=
+instance instLawfulBEq : LawfulBEq Ext6 :=
   inferInstanceAs (LawfulBEq (Vector Field 6))
 
 /-- Sample `Ext6` by sampling its six base-field coefficients independently. -/
-def sampleExt6 : ProbComp Ext6 :=
-  ext6CoeffsEquiv <$> ($ᵗ (Vector Field 6))
+def sample : ProbComp Ext6 :=
+  coeffsEquiv <$> ($ᵗ (Vector Field 6))
 
 /-- The pinned six-base-limb sampler for `KoalaBear.Ext6`. -/
-@[reducible] def sampleableTypeExt6 : SampleableType Ext6 :=
-  SampleableType.ofEquiv ext6CoeffsEquiv
+@[reducible] def sampleableType : SampleableType Ext6 :=
+  SampleableType.ofEquiv coeffsEquiv
 
-instance instSampleableTypeExt6 : SampleableType Ext6 := sampleableTypeExt6
+instance instSampleableType : SampleableType Ext6 := sampleableType
 
 /-- The canonical `Ext6` uniform sample is definitionally the six-limb sampler above. -/
-theorem uniformSample_ext6_eq_sampleExt6 : ($ᵗ Ext6) = sampleExt6 := rfl
+theorem uniformSample_eq_sample : ($ᵗ Ext6) = sample := rfl
 
 /-- Sampling six independent base limbs induces the uniform distribution on `Ext6`. -/
-theorem evalDist_sampleExt6 :
-    𝒟[sampleExt6] = liftM (PMF.uniformOfFintype Ext6) := by
-  rw [← uniformSample_ext6_eq_sampleExt6]
+theorem evalDist_sample :
+    𝒟[sample] = liftM (PMF.uniformOfFintype Ext6) := by
+  rw [← uniformSample_eq_sample]
   exact evalDist_uniformSample Ext6
 
-end KoalaBear
+end KoalaBear.Ext6

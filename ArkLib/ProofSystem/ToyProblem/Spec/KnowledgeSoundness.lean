@@ -14,7 +14,7 @@ the identity of a supplied executable transition extractor.  The coding-theory
 argument for the combination round is a premise; the spot-check tail and all
 protocol/game plumbing are proved here once, independently of a concrete code.
 
-`protocol62_knowledgeSoundWith_of_gamma_bound` concludes the public
+`oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le` concludes the public
 `knowledgeSoundnessWith` predicate, so the extractor remains visible in the
 theorem type.  Concrete implementations may derive the older existential
 `knowledgeSoundness` contract only as a corollary.
@@ -68,7 +68,7 @@ private theorem verifier_run_loggingOracle_eq
     (simulateQ loggingOracle
         ((oracleVerifier (k := k) (t := t) encode).toVerifier.run
           (stmt, oStmt) tr)).run =
-      pure ((if accepts (k := k) (t := t) encode stmt oStmt
+      pure ((if Accepts (k := k) (t := t) encode stmt oStmt
             (tr.challenges ⟨0, rfl⟩) (tr.messages ⟨1, rfl⟩)
             (tr.challenges ⟨2, rfl⟩)
           then some (((), nofun) :
@@ -149,7 +149,7 @@ omit [DecidableEq ι] [Fintype F] [Fintype A] in
 /-- Full fixed-radius knowledge soundness for one exact transition-based
 straightline extractor.  The combination-round premise is composed with the
 spot-check tail by the sharp convex/union expression. -/
-theorem protocol62_knowledgeSoundWith_of_gamma_bound
+theorem oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
     {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -166,7 +166,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
       Pr[ fun γ : F ↦ ∃ g : Fin k → F,
           (stmtIn, transition stmtIn γ g) ∉
               outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
-            gammaState k (encode : (Fin k → F) → (ι → A)) δ
+            GammaState k (encode : (Fin k → F) → (ι → A)) δ
               stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
               (stmtIn.2 0) (stmtIn.2 1) γ g
         | $ᵗ F] ≤ (gammaError : ENNReal)) :
@@ -194,7 +194,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
       let xs ← liftComp ((pSpec (ι := ι) (F := F) k t).getChallenge ⟨2, rfl⟩)
           ([]ₒ + [(pSpec (ι := ι) (F := F) k t).Challenge]ₒ)
       (fun out : (OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness ↦
-        if accepts (k := k) (t := t)
+        if Accepts (k := k) (t := t)
             ((encode : (Fin k → F) → (ι → A))) stmt oStmt γ pre.1 xs
         then some ((stmt, oStmt), some (transition (stmt, oStmt) γ pre.1),
           (((), nofun) : OutputStatement × ∀ i, OutputOracleStatement i), out.2)
@@ -208,7 +208,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
     (fun γ ↦ ∃ g : Fin k → F,
       ((stmt, oStmt), transition (stmt, oStmt) γ g) ∉
           outputRelationFor k ((encode : (Fin k → F) → (ι → A))) δ ∧
-        gammaState k ((encode : (Fin k → F) → (ι → A))) δ
+        GammaState k ((encode : (Fin k → F) → (ι → A))) δ
           stmt.1 stmt.2.1 stmt.2.2 (oStmt 0) (oStmt 1) γ g)
     ?hε₂ ?hoa ?h₁ ?h₂
   case hε₂ =>
@@ -222,7 +222,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
     refine le_trans (probEvent_mono ?_) (spotcheck_round_game_bound k t
       ((encode : (Fin k → F) → (ι → A))) δ (stmt, oStmt) γ pre.1)
     rintro xs - ⟨out, b, hfb, hE⟩
-    by_cases hacc : accepts (k := k) (t := t)
+    by_cases hacc : Accepts (k := k) (t := t)
         ((encode : (Fin k → F) → (ι → A))) stmt oStmt γ pre.1 xs
     · rw [if_pos hacc, Option.some_inj] at hfb
       subst hfb
@@ -236,7 +236,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
         Option (Witness (F := F) k) ×
         (OutputStatement × ∀ i, OutputOracleStatement i) × OutputWitness) :=
       fun r ↦
-        if accepts (k := k) (t := t)
+        if Accepts (k := k) (t := t)
               (encode : (Fin k → F) → (ι → A))
               stmt oStmt (r.1.challenges ⟨0, rfl⟩)
               (r.1.messages ⟨1, rfl⟩) (r.1.challenges ⟨2, rfl⟩)
@@ -278,7 +278,7 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
     case hC =>
       refine (prover_run_map_eq prover (stmt, oStmt) witIn
         (fun c m xs out ↦
-          if accepts (k := k) (t := t)
+          if Accepts (k := k) (t := t)
             ((encode : (Fin k → F) → (ι → A))) stmt oStmt c m xs
           then some ((stmt, oStmt), some (transition (stmt, oStmt) c m),
             (((), nofun) : OutputStatement × ∀ i, OutputOracleStatement i), out.2)
@@ -287,9 +287,9 @@ theorem protocol62_knowledgeSoundWith_of_gamma_bound
 
 /-! ## Direct bridge for the Definition 6.11 winning-set quantity
 
-This bridge intentionally uses the generic classical selector `extractZero`.
+This bridge intentionally uses the generic classical selector `chooseRelaxedWitness`.
 The executable IRS theorem is separate and uses the distinct
-`extractorCertifiedError` interface. -/
+`certifiedExtractorError` interface. -/
 
 omit [DecidableEq ι] in
 /-- Proof-side transition which ignores the transcript and chooses a relaxed
@@ -299,7 +299,7 @@ noncomputable def choiceTransition {k : ℕ}
     (encode : (Fin k → F) → (ι → A)) (δ : ℝ≥0) :
     (Statement (F := F) k × (∀ i, OracleStatement ι A i)) →
       F → (Fin k → F) → Witness (F := F) k :=
-  fun stmtIn _ _ ↦ extractZero k encode δ stmtIn
+  fun stmtIn _ _ ↦ chooseRelaxedWitness k encode δ stmtIn
 
 omit [DecidableEq ι] in
 /-- Straightline wrapper around `choiceTransition`.  Its name and docstring
@@ -323,10 +323,10 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         (stmtIn, choiceTransition
           (encode : (Fin k → F) → (ι → A)) δ stmtIn γ g) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
-          gammaState k (encode : (Fin k → F) → (ι → A)) δ
+          GammaState k (encode : (Fin k → F) → (ι → A)) δ
             stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ g
-      | $ᵗ F] ≤ (winningSetSoundness encode δ : ENNReal) := by
+      | $ᵗ F] ≤ (winningSetDensity encode δ : ENNReal) := by
   classical
   rw [probEvent_uniformSample_eq_prob_uniformOfFintype]
   by_cases hw : ∃ M,
@@ -335,8 +335,8 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
   · refine (Pr_eq_zero_of_forall_not _ _ ?_).trans_le zero_le
     intro γ hbad
     obtain ⟨g, hnot, _⟩ := hbad
-    exact hnot (extractZero_mem k hw)
-  · have hviol : ¬ relaxedRelationFor (ℓ := 2) encode δ
+    exact hnot (chooseRelaxedWitness_mem k hw)
+  · have hviol : ¬ RelaxedRelationFor (ℓ := 2) encode δ
         stmtIn.1.1 ![stmtIn.1.2.1, stmtIn.1.2.2]
         ![stmtIn.2 0, stmtIn.2 1] := by
       rintro ⟨Wstar, ⟨M, hWeq, hlin⟩, S, hScard, hagree⟩
@@ -352,7 +352,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         (stmtIn, choiceTransition
           (encode : (Fin k → F) → (ι → A)) δ stmtIn γ g) ∉
             outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ ∧
-          gammaState k (encode : (Fin k → F) → (ι → A)) δ
+          GammaState k (encode : (Fin k → F) → (ι → A)) δ
             stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
             (stmtIn.2 0) (stmtIn.2 1) γ g) =
         GammaEvent encode δ stmtIn.1.1 stmtIn.1.2.1 stmtIn.1.2.2
@@ -392,17 +392,17 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
         Set.toFinset_setOf,
         ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
         ENNReal.coe_natCast, ENNReal.coe_natCast]
-      _ ≤ (winningSetSoundness encode δ : ENNReal) := by
-        exact_mod_cast winningSetRatio_le_winningSetSoundness x
+      _ ≤ (winningSetDensity encode δ : ENNReal) := by
+        exact_mod_cast winningSetRatio_le_winningSetDensity x
 
 /-- Direct C6.9 game theorem at Definition 6.11's winning-set quantity.
 
 This is the protocol-level upper coupling missing from the bare combinatorial
 definition: the classical proof-side transition extractor fails with
-probability at most `winningSetSoundness encode δ`.  It does not assert the
+probability at most `winningSetDensity encode δ`.  It does not assert the
 separate optimal-adversary/lower-coupling result that would identify this
 quantity as the minimal achievable game error. -/
-theorem simplifiedIOR_knowledgeSoundnessWith_choiceTransition
+theorem simplifiedOracleVerifier_knowledgeSoundnessWith_choiceTransition
     {k : ℕ} [SampleableType F]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -416,15 +416,15 @@ theorem simplifiedIOR_knowledgeSoundnessWith_choiceTransition
         (encode : (Fin k → F) → (ι → A)) δ)
       (SimplifiedIOR.transitionStraightlineExtractor k
         (choiceTransition (encode : (Fin k → F) → (ι → A)) δ))
-      (winningSetSoundness encode δ) := by
-  apply SimplifiedIOR.knowledgeSoundWith_of_gamma_bound
+      (winningSetDensity encode δ) := by
+  apply SimplifiedIOR.knowledgeSoundnessWith_of_transition_failure_prob_le
   exact choiceTransition_failure_sample_le encode δ
 
 omit [DecidableEq ι] [Fintype A] in
 /-- Direct fixed-radius game theorem for the winning-set/spot-check upper bound. The theorem
 type names the classical `choiceStraightlineExtractor`; executable IRS clients
 should use the certified theorem in `Impl.IRS` instead. -/
-theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
+theorem oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
     {k t : ℕ} [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -437,9 +437,9 @@ theorem protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
         OutputWitness))
       (choiceStraightlineExtractor
         (t := t) (encode : (Fin k → F) → (ι → A)) δ)
-      (winningSetFixedRadiusUpperBound encode δ t) := by
-  apply protocol62_knowledgeSoundWith_of_gamma_bound
-    init impl δ (winningSetSoundness encode δ) encode
+      (winningSetUpperBound encode δ t) := by
+  apply oracleVerifier_knowledgeSoundnessWith_of_transition_failure_prob_le
+    init impl δ (winningSetDensity encode δ) encode
       (choiceTransition (encode : (Fin k → F) → (ι → A)) δ)
       (choiceStraightlineExtractor
         (t := t) (encode : (Fin k → F) → (ι → A)) δ) rfl
@@ -450,14 +450,14 @@ omit [DecidableEq ι] [Fintype A] in
 a corollary of the theorem naming the classical extractor.
 
 **Consumer note on `δ`.**  No hypothesis constrains `δ` here, and that is sound: the error
-`winningSetFixedRadiusUpperBound encode δ t` is the Definition 6.11 winning-set quantity at
+`winningSetUpperBound encode δ t` is the Definition 6.11 winning-set quantity at
 whatever `δ` is supplied, so the statement is true at every radius.  It is only *meaningful*
 for `δ ∈ (0, d_min(C))`; outside that band the relaxed output relation degenerates and the
 bound, while true, certifies nothing useful.  The step that does need the band is the bridge
-to the certified error, `winningSetSoundness_le_certifiedGammaError`, whose `hδ` hypothesis is
+to the certified error, `winningSetDensity_le_certifiedGammaError`, whose `hδ` hypothesis is
 exactly `δ ∈ Set.Ioo 0 (minRelHammingDistCode …)`; the executable IRS contracts in `Impl/IRS.lean`
 carry it as an explicit argument. -/
-theorem protocol62_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
+theorem oracleVerifier_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
     [SampleableType F] [SampleableType ι] [Nonempty ι]
     {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp))
@@ -468,30 +468,9 @@ theorem protocol62_knowledgeSoundness_winningSetUpperBound {k t : ℕ}
       (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
       (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
         OutputWitness))
-      (winningSetFixedRadiusUpperBound encode δ t) :=
+      (winningSetUpperBound encode δ t) :=
   OracleVerifier.knowledgeSoundness_of_with init impl
-    (protocol62_knowledgeSoundnessWith_choiceStraightlineExtractor
+    (oracleVerifier_knowledgeSoundnessWith_choiceStraightlineExtractor
       init impl encode δ)
-
-omit [DecidableEq ι] [Fintype A] in
-/-- Compatibility name for the generic Construction 6.2 knowledge-soundness
-theorem.  Its error is the certified winning-set/spot-check upper bound; the
-public executable-IRS theorem is
-`Impl.IRS.oracleVerifier_knowledgeSoundnessWith_irsStraightlineExtractor`.
-The same consumer note on `δ` as for
-`protocol62_knowledgeSoundness_winningSetUpperBound` applies. -/
-theorem protocol62_knowledgeSound {k t : ℕ}
-    [SampleableType F] [SampleableType ι] [Nonempty ι]
-    {σ : Type} (init : ProbComp σ)
-    (impl : QueryImpl []ₒ (StateT σ ProbComp))
-    (encode : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
-    (oracleVerifier (k := k) (t := t)
-      (encode : (Fin k → F) → (ι → A))).knowledgeSoundness
-      (WitOut := OutputWitness) init impl
-      (outputRelationFor k (encode : (Fin k → F) → (ι → A)) δ)
-      (Set.univ : Set ((OutputStatement × ∀ i, OutputOracleStatement i) ×
-        OutputWitness))
-      (winningSetFixedRadiusUpperBound encode δ t) :=
-  protocol62_knowledgeSoundness_winningSetUpperBound init impl encode δ
 
 end ToyProblem.Spec

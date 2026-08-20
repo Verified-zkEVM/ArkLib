@@ -234,15 +234,15 @@ private theorem simulateAddSaltQueryImplComp
 private def addSaltOutputSimulation
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
     OracleOutputSimulation oSpec OStmtIn OStmtOut (pSpec.addSalt Salt) where
-  materialize := fun challenges oStmt messages =>
+  materializeOutput := fun challenges oStmt messages =>
     V.materializeOutput
       (Challenges.removeSalt (pSpec := pSpec) (Salt := Salt) challenges) oStmt
       (Messages.removeSalt (pSpec := pSpec) (Salt := Salt) messages)
-  simOStmt := fun challenges q =>
+  simulateOutputQuery := fun challenges q =>
     simulateQ (addSaltQueryImpl (OStmtIn := OStmtIn) (Salt := Salt))
       (V.simulateOutputQuery
         (Challenges.removeSalt (pSpec := pSpec) (Salt := Salt) challenges) q)
-  simOStmt_eq := by
+  simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rw [simulateAddSaltQueryImplComp]
     exact V.simulateOutputQuery_eq

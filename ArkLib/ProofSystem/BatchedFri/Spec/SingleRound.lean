@@ -238,16 +238,16 @@ coordinate of all batched input codewords. -/
 def outputSimulation :
     OracleOutputSimulation []ₒ (OracleStatement m ω)
       (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1))) (batchSpec F m) where
-  materialize := fun challenges oStmt _ =>
+  materializeOutput := fun challenges oStmt _ =>
     combinedOracle (s := s) m (challenges ⟨0, by simp⟩) oStmt
-  simOStmt := fun challenges q => do
+  simulateOutputQuery := fun challenges q => do
     let x := initialDomainPoint (s := s) q.1 q.2
     let f₀ ← queryInput (F := F) m 0 x
     let fs ← (List.finRange m).mapM fun (i : Fin m) => do
       let fi ← queryInput (F := F) m i.succ x
       pure (challenges ⟨0, by simp⟩ i * fi)
     pure (f₀ + fs.sum)
-  simOStmt_eq := by
+  simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨j, v⟩
     simp only [simulateQ_bind, simulateQ_queryInput, simulateQ_list_mapM,

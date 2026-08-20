@@ -17,12 +17,12 @@ constraint `⟨m, v⟩ = μ` to `C`. Two results, of increasing fidelity:
 * `gamma_transition_prob_le_constrained` — an upper bound `toy γ-event ≤
   ε_mca(C_v, δ)` against the **stock** MCA error of the appended-coordinate code
   `C_v` (see the caveat: this over-counts, so it is only a bound).
-* `gamma_event_iff_constrainedMCA` / `gamma_transition_prob_eq_constrainedMCA` —
+* `gammaEvent_iff_constrainedMCAEvent` / `gammaEvent_prob_eq_constrainedMCAEvent` —
   a per-instance **equivalence**: under `hNoWit`, the toy γ-event coincides with the
-  *constraint-pinned* event `mcaEventConstrained` (constraint coordinate mandatory,
+  *constraint-pinned* event `ConstrainedMCAEvent` (constraint coordinate mandatory,
   proximity measured on the data coordinates). NB this is a restatement in MCA shape,
   **not** an equality with the library MCA experiment (`IsMCA`) of `constrainedCode` —
-  `mcaEventConstrained` is bespoke, phrased directly in `enc`/`v`, and its `¬`-clause
+  `ConstrainedMCAEvent` is bespoke, phrased directly in `enc`/`v`, and its `¬`-clause
   is redundant under `hNoWit`; see the theorem docstring. The genuine reduction to the
   constrained code's MCA bad event is the `≤` bound above.
 
@@ -68,8 +68,8 @@ Two things it does **not** establish, and should not be read to:
   proved here in either direction: embedding a base agreement set `S ⊆ ι` into
   `ι ⊕ Unit` must clear the strictly larger `(1-δ)(n+1)` threshold, so the naive
   monotonicity argument fails.) The per-instance *equivalence* uses the **constraint-pinned**
-  MCA event `mcaEventConstrained` (constraint coordinate mandatory; proximity on the
-  data coordinates `ι`) — see `gamma_event_iff_constrainedMCA`. Pinning into the
+  MCA event `ConstrainedMCAEvent` (constraint coordinate mandatory; proximity on the
+  data coordinates `ι`) — see `gammaEvent_iff_constrainedMCAEvent`. Pinning into the
   *full* index `ι ⊕ Unit` with the stock `(1-δ)(n+1)` size budget does **not** give
   an equality: the backward direction loses a `δ` of slack (recovering only
   `|S ∩ ι| ≥ (1-δ)n - δ`), so the pinned event must measure size on `ι` only.
@@ -243,7 +243,7 @@ sets that omit the constraint coordinate. An exact restatement of the toy γ-eve
 MCA shape requires (i) the constraint coordinate to be mandatory and (ii) proximity
 measured on the data coordinates `ι` only — pinning into the full index with the stock
 `(1-δ)(n+1)` budget loses a `δ` of slack in the backward direction and fails to give an
-equality. The resulting `mcaEventConstrained` is a bespoke event (not the library
+equality. The resulting `ConstrainedMCAEvent` is a bespoke event (not the library
 `IsMCA`/`mcaError` experiment of any code), so the equivalence below is a per-instance
 restatement, not a reduction to the library MCA experiment.
 -/
@@ -254,7 +254,7 @@ the data coordinates `ι`; the constraint coordinate is mandatory but outside th
 size budget). The folded constrained codeword (target `μ₁ + γ·μ₂`) agrees with the
 folded word on `S`, while no constrained-codeword *pair* (targets `μ₁, μ₂`) agrees
 with `(f₁, f₂)` on `S`. -/
-def mcaEventConstrained {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v : Fin k → F)
+def ConstrainedMCAEvent {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v : Fin k → F)
     (δ : ℝ≥0) (μ₁ μ₂ : F) (f₁ f₂ : ι → F) (γ : F) : Prop :=
   ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
     (∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧ ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j) ∧
@@ -265,11 +265,11 @@ def mcaEventConstrained {k : ℕ} (enc : (Fin k → F) →ₗ[F] (ι → F)) (v 
 set_option linter.unusedFintypeInType false in
 /-- **Per-instance equivalence (constraint-pinned).** Under `hNoWit` (the instance
 admits no relaxed-relation witness), the toy γ-event is equivalent, for every `γ`,
-to `mcaEventConstrained` — the toy event augmented with the (under `hNoWit`
+to `ConstrainedMCAEvent` — the toy event augmented with the (under `hNoWit`
 automatically-satisfied) clause that no constrained-codeword *pair* agrees on `S`.
 
 This is a per-instance restatement, **not** a reduction to the library MCA
-experiment of `constrainedCode`: `mcaEventConstrained` is a bespoke event phrased
+experiment of `constrainedCode`: `ConstrainedMCAEvent` is a bespoke event phrased
 directly in terms of `enc`/`v`, not via `constrainedCode` or `mcaError`, and the
 added `¬`-clause is redundant under `hNoWit`. The genuine reduction to the
 constrained code's MCA bad event is the upper bound
@@ -278,7 +278,7 @@ constrained code's MCA bad event is the upper bound
 Forward (`mp`, uses `hNoWit`): the toy event's witness set `S` satisfies the
 `¬`-clause because a local witness on `S` would be a global witness. Backward
 (`mpr`, no `hNoWit`): drop the `¬`-clause and read off the message `m`. -/
-theorem gamma_event_iff_constrainedMCA {k : ℕ}
+theorem gammaEvent_iff_constrainedMCAEvent {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → F)
     (hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
@@ -288,7 +288,7 @@ theorem gamma_event_iff_constrainedMCA {k : ℕ}
     (∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j)
-      ↔ mcaEventConstrained enc v δ μ₁ μ₂ f₁ f₂ γ := by
+      ↔ ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ := by
   constructor
   · rintro ⟨m, hconstr, S, hScard, hagree⟩
     refine ⟨S, hScard, ⟨m, hconstr, hagree⟩, ?_⟩
@@ -300,7 +300,7 @@ theorem gamma_event_iff_constrainedMCA {k : ℕ}
 set_option linter.unusedFintypeInType false in
 /-- **Probability form of the equality**: the toy γ-round transition probability
 equals the probability of the constraint-pinned MCA event of the constrained code. -/
-theorem gamma_transition_prob_eq_constrainedMCA {k : ℕ}
+theorem gammaEvent_prob_eq_constrainedMCAEvent {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → F)) (δ : ℝ≥0)
     (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → F)
     (hNoWit : ¬ ∃ M : Fin 2 → (Fin k → F),
@@ -310,11 +310,11 @@ theorem gamma_transition_prob_eq_constrainedMCA {k : ℕ}
     Pr_{let γ ← $ᵖ F}[∃ m : Fin k → F, (∑ j, m j * v j = μ₁ + γ * μ₂) ∧
         ∃ S : Finset ι, (1 - (δ : ℝ)) * Fintype.card ι ≤ S.card ∧
           ∀ j ∈ S, f₁ j + γ • f₂ j = enc m j]
-      = Pr_{let γ ← $ᵖ F}[mcaEventConstrained enc v δ μ₁ μ₂ f₁ f₂ γ] := by
+      = Pr_{let γ ← $ᵖ F}[ConstrainedMCAEvent enc v δ μ₁ μ₂ f₁ f₂ γ] := by
   refine le_antisymm ?_ ?_
   · exact Pr_le_Pr_of_implies ($ᵖ F) _ _
-      (fun γ h ↦ (gamma_event_iff_constrainedMCA enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mp h)
+      (fun γ h ↦ (gammaEvent_iff_constrainedMCAEvent enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mp h)
   · exact Pr_le_Pr_of_implies ($ᵖ F) _ _
-      (fun γ h ↦ (gamma_event_iff_constrainedMCA enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mpr h)
+      (fun γ h ↦ (gammaEvent_iff_constrainedMCAEvent enc δ v μ₁ μ₂ f₁ f₂ hNoWit γ).mpr h)
 
 end ToyProblem

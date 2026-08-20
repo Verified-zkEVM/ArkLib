@@ -409,7 +409,7 @@ end RandomQuery
 -- --   projStmt := fun () => ()
 -- --   liftStmt := fun () => ()
 -- --   projOStmt := fun i => fun () => ()
--- --   simOStmt := fun i => fun () => ()
+-- --   simulateOutputQuery := fun i => fun () => ()
 -- --   liftOStmt := fun i => fun () => ()
 -- --   projWit := fun () => ()
 -- --   liftWit := fun () => ()

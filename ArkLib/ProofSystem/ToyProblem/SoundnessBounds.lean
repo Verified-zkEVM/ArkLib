@@ -299,7 +299,7 @@ theorem gamma_bad_pair {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ
 omit [Fintype F] [DecidableEq F] [Fintype A] in
 /-- Every point-list message pair violates at least one original constraint when
 the two-row input has no relaxed witness. -/
-theorem pair_violates {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ≥0}
+theorem not_constraint_pair_of_mem_closeCodewordsRel {k : ℕ} [Nonempty ι] (C : ModuleCode ι F A) {δ : ℝ≥0}
     (hδ1 : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (hC : Set.range enc = (C : Set (ι → A)))
     {v : Fin k → F} {μ₁ μ₂ : F} {f₁ f₂ : ι → A}
@@ -397,7 +397,7 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
           (∑ j, p.1 j * v j) + γ * (∑ j, p.2 j * v j) = μ₁ + γ * μ₂)).card
           ≤ ∑ _p ∈ Smsg, 1 := Finset.sum_le_sum fun p hp ↦
             affine_solution_card_le_one
-              (pair_violates C hδ1 enc hC hNoWit (Finset.mem_filter.mp hp).2)
+              (not_constraint_pair_of_mem_closeCodewordsRel C hδ1 enc hC hNoWit (Finset.mem_filter.mp hp).2)
       _ = Smsg.card := by rw [Finset.sum_const, smul_eq_mul, mul_one]
       _ ≤ (Code.Lambda Cint (δ : ℝ)).toNat := hSmsg_le
   refine le_trans (Pr_le_Pr_of_implies ($ᵖ F) _
@@ -419,8 +419,8 @@ theorem gamma_transition_prob_le {k : ℕ} [Nonempty ι]
 omit [Fintype ι] [Fintype F] [DecidableEq F] in
 /-- **ENNReal → ℝ bridge for the Claim-B.1 output.** Rewrites Claim B.1's image
 bound `M / (1 + (M−1)·|F|⁻¹) ≤ s` into the real-arithmetic form
-`M·c/(c+M−1) ≤ s` consumed by `listDecoding_winning_lb` (here `c = |F|`). -/
-private lemma claimB1_bound_to_real {M s c : ℕ} (hc : 1 ≤ c) (hM : 1 ≤ M)
+`M·c/(c+M−1) ≤ s` consumed by `listDecoding_div_le_div` (here `c = |F|`). -/
+private lemma image_bound_toReal {M s c : ℕ} (hc : 1 ≤ c) (hM : 1 ≤ M)
     (h : (M : ENNReal) / (1 + ((M : ENNReal) - 1) * (c : ENNReal)⁻¹) ≤ (s : ENNReal)) :
     (M : ℝ) * c / (c + M - 1) ≤ s := by
   have hc0 : (c : ENNReal) ≠ 0 := by exact_mod_cast Nat.one_le_iff_ne_zero.mp hc
@@ -485,7 +485,7 @@ This is the first of the two `exists_large_image_of_pairwise_collision_bound`
 pairwise-collision bound is exactly `prob_dotProduct_eq_zero_le` (a nonzero
 linear form vanishes with probability `≤ 1/|F|`), pulled back through the
 pushforward identity `Pr_map_eq`. -/
-private lemma exists_dotProduct_image_lb {k : ℕ} {σ : Type} [Fintype σ]
+private lemma exists_dotProduct_image_card_le {k : ℕ} {σ : Type} [Fintype σ]
     (a : σ → (Fin k → F) × (Fin k → F)) (ha : Function.Injective a) :
     ∃ v : Fin k → F,
       (Fintype.card σ : ENNReal) / (1 + (Fintype.card σ - 1) * (Fintype.card F : ENNReal)⁻¹)
@@ -568,7 +568,7 @@ This is the second `exists_large_image_of_pairwise_collision_bound` (Claim B.1)
 application in ABF26 §6.4.1: the per-point collision bound is `≤ 1/|F|` because
 the affine equation has `≤ 1` solution (`affine_collision_card_le_one`). The
 `∀ p ∈ T, p.2 ≠ μ₂` clause also forces `(μ₁,μ₂) ∉ T` (the violation step). -/
-private lemma exists_affine_image_lb (T : Finset (F × F))
+private lemma exists_affine_image_card_le (T : Finset (F × F))
     (hTcard : T.card < Fintype.card F) :
     ∃ (μ₁ μ₂ : F), (∀ p ∈ T, p.2 ≠ μ₂) ∧
       (T.card : ENNReal) / (1 + (T.card - 1) * (Fintype.card F : ENNReal)⁻¹)
@@ -644,7 +644,7 @@ The paper argues via the increasing map `z ↦ z/(|F|+z−1)` and the inequality
 `(|F|−1)²+(2|F|−1)N ≤ |F|²+2|F|N`; after clearing denominators the whole chain
 collapses to `N·(|F|−1) ≤ s·(|F|+N)`, which follows from `N·|F| ≤ s·(|F|+N−1)`
 and `s ≥ 0`. -/
-lemma listDecoding_winning_lb {Fc N s : ℝ} (hF : (1 : ℝ) ≤ Fc) (hN : (1 : ℝ) ≤ N)
+lemma listDecoding_div_le_div {Fc N s : ℝ} (hF : (1 : ℝ) ≤ Fc) (hN : (1 : ℝ) ≤ N)
     (hslb : N * Fc / (Fc + N - 1) ≤ s) :
     N * Fc / (Fc + 2 * N) ≤ Fc * s / (Fc + s - 1) := by
   have hFN1 : (0 : ℝ) < Fc + N - 1 := by linarith
@@ -713,22 +713,22 @@ faithful "linear code of dimension `k`" assumption (an injective `F`-linear
 encoding onto `C`), which is what makes `Λ(C^{≡2}, δ)` enumerable by *message*
 pairs `F^k × F^k` (the inner products `⟨·, v⟩` of paper step 1 live on messages).
 This matches L6.13's hypothesis shape and the pinned `encode` of
-`ToyProblem.relationFor` (Definition 6.1's "code as the injective map").
+`ToyProblem.RelationFor` (Definition 6.1's "code as the injective map").
 
 The statement is against the **fixed-encoding** relation and winning set
-(`relaxedRelationFor enc`, `winningSetFor enc`), with `enc` the code's injective
+(`RelaxedRelationFor enc`, `winningSetFor enc`), with `enc` the code's injective
 `F`-linear encoding (`Set.range enc = C`). This is the paper's `R_C`. (Against
 an existential-encoding relaxed relation the violation conjunct is false — an
 adversary reparameterises the constraint through another encoding; that
 defective family has been deleted from `Definitions.lean`.)
 
 The proof decomposes into reusable, separately-verified pieces:
-`exists_dotProduct_image_lb` (first B.1, inner-product collision via
-`prob_dotProduct_eq_zero_le`), `exists_affine_image_lb` (second B.1, affine
-collision via `affine_collision_card_le_one`), `claimB1_bound_to_real` (the
-ENNReal→ℝ bridge), `listDecoding_winning_lb` (the `z ↦ z/(F+z−1)` denominator
+`exists_dotProduct_image_card_le` (first B.1, inner-product collision via
+`prob_dotProduct_eq_zero_le`), `exists_affine_image_card_le` (second B.1, affine
+collision via `affine_collision_card_le_one`), `image_bound_toReal` (the
+ENNReal→ℝ bridge), `listDecoding_div_le_div` (the `z ↦ z/(F+z−1)` denominator
 chain), and `mem_winningSetFor_of_agree` (the membership step). -/
-theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
+theorem exists_winningSetFor_ncard_ge_of_lambda_lt_card {k : ℕ}
     [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ) (_hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (hinj : Function.Injective enc)
@@ -737,7 +737,7 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
       (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
       (δ : ℝ)).toNat : ℝ) < Fintype.card F) :
     ∃ (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → A),
-      ¬ relaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂] ∧
+      ¬ RelaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂] ∧
       ((winningSetFor enc δ v μ₁ μ₂ f₁ f₂).ncard : ℝ) ≥
         (((Lambda
           (((C^⋈(Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A)))
@@ -818,7 +818,7 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
   have hcardSmsg : Fintype.card ↥Smsg = N := by rw [Fintype.card_coe, hSmsgN]
   -- FIRST B.1: a constraint vector `v` with a large inner-product image `S_v`.
   obtain ⟨v, hv⟩ :=
-    exists_dotProduct_image_lb (Subtype.val : ↥Smsg → (Fin k → F) × (Fin k → F))
+    exists_dotProduct_image_card_le (Subtype.val : ↥Smsg → (Fin k → F) × (Fin k → F))
       Subtype.coe_injective
   rw [hcardSmsg] at hv
   set Sv : Finset (F × F) := Finset.univ.image
@@ -837,7 +837,7 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
     rw [← hcardSmsg, hSvdef]; exact le_trans Finset.card_image_le (le_of_eq (Finset.card_univ))
   have hSvltF : Sv.card < Fintype.card F := lt_of_le_of_lt hSvle hNltF
   -- SECOND B.1: pick `μ₂` off the second coordinates and a winning `μ₁`.
-  obtain ⟨μ₁, μ₂, hμ₂off, hwin⟩ := exists_affine_image_lb Sv hSvltF
+  obtain ⟨μ₁, μ₂, hμ₂off, hwin⟩ := exists_affine_image_card_le Sv hSvltF
   set winImg : Finset F := Sv.image (fun p ↦ (μ₁ - p.1) / (p.2 - μ₂)) with hwinImg
   have hwinCard : (Set.range (fun p : ↥Sv ↦
       (μ₁ - (p : F × F).1) / ((p : F × F).2 - μ₂))).ncard = winImg.card := by
@@ -847,10 +847,10 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
     simp [hwinImg]
   rw [hwinCard] at hwin
   refine ⟨v, μ₁, μ₂, f₁, f₂, ?_, ?_⟩
-  · -- VIOLATION CONJUNCT (against the fixed-encoding `relaxedRelationFor enc`).
+  · -- VIOLATION CONJUNCT (against the fixed-encoding `RelaxedRelationFor enc`).
     --
     -- The paper's violation `Δ((f₁,f₂), R²[x]) > δ` is, under the code's fixed
-    -- encoding, exactly `(μ₁,μ₂) ∉ S_v`. PROOF: suppose `relaxedRelationFor enc`
+    -- encoding, exactly `(μ₁,μ₂) ∉ S_v`. PROOF: suppose `RelaxedRelationFor enc`
     -- holds — extract `Wstar` with `Wstar i = enc (M i)` and `∑ⱼ M i j vⱼ = μ i`
     -- (so `⟨M 0, v⟩ = μ₁`, `⟨M 1, v⟩ = μ₂`), δ-close to `![f₁,f₂]` on a set `S'`.
     -- Then `encStack enc (M 0, M 1) = Wstar` is δ-close to `fStar`, so it lies in
@@ -935,7 +935,7 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
         rw [show f₁ i = fStar i 0 from rfl, show f₂ i = fStar i 1 from rfl, h0, h1]
     -- A + bridge: `N·F/(F+N−1) ≤ |S_v|`.
     have hAreal : (N : ℝ) * Fintype.card F / (Fintype.card F + N - 1) ≤ (Sv.card : ℝ) :=
-      claimB1_bound_to_real hcardF1 hN1 hv
+      image_bound_toReal hcardF1 hN1 hv
     -- B + bridge: `|S_v|·F/(F+|S_v|−1) ≤ |winImg|`.
     have hSv1 : 1 ≤ Sv.card := by
       rcases Nat.eq_zero_or_pos Sv.card with h0 | h; swap; · exact h
@@ -949,11 +949,11 @@ theorem simplified_iop_soundness_listDecoding_lb {k : ℕ}
         positivity
       rw [h0] at hAreal; norm_num at hAreal; linarith
     have hBreal : (Sv.card : ℝ) * Fintype.card F / (Fintype.card F + Sv.card - 1)
-        ≤ (winImg.card : ℝ) := claimB1_bound_to_real hcardF1 hSv1 hwin
+        ≤ (winImg.card : ℝ) := image_bound_toReal hcardF1 hSv1 hwin
     -- Denominator chain.
     have hchain : (N : ℝ) * Fintype.card F / (Fintype.card F + 2 * N)
         ≤ Fintype.card F * (Sv.card : ℝ) / (Fintype.card F + Sv.card - 1) :=
-      listDecoding_winning_lb (by exact_mod_cast hcardF1) (by exact_mod_cast hN1) hAreal
+      listDecoding_div_le_div (by exact_mod_cast hcardF1) (by exact_mod_cast hN1) hAreal
     have hwinge : (N : ℝ) * Fintype.card F / (Fintype.card F + 2 * N) ≤ (winImg.card : ℝ) := by
       refine le_trans hchain (le_trans (le_of_eq ?_) hBreal)
       ring
@@ -1005,14 +1005,14 @@ omit [DecidableEq F] in
 /-- ABF26 Lemma 6.13 in fixed-encoding form: positive correlated-agreement
 error yields an explicit violating instance whose winning-set ratio
 lower-bounds that error. -/
-theorem simplified_iop_soundness_ca_lb {k : ℕ} [Nonempty ι]
+theorem exists_winningSetFor_ncard_ge_of_epsCa_pos {k : ℕ} [Nonempty ι]
     (C : Set (ι → A)) (δ : ℝ≥0) (_hδ_pos : (0 : ℝ≥0) < δ)
     (hδ_lt : δ < 1)
     (enc : (Fin k → F) →ₗ[F] (ι → A))
     (_henc_inj : Function.Injective enc) (hC : Set.range enc = C)
     (hca : 0 < epsCa (F := F) (A := A) C δ δ) :
     ∃ (v : Fin k → F) (μ₁ μ₂ : F) (f₁ f₂ : ι → A),
-      ¬ relaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂] ∧
+      ¬ RelaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂] ∧
       ((winningSetFor enc δ v μ₁ μ₂ f₁ f₂).ncard : ENNReal) ≥
         epsCa (F := F) (A := A) C δ δ *
           (Fintype.card F : ENNReal) := by
@@ -1094,7 +1094,7 @@ structure ViolatingInstance {k : ℕ}
   μ₂ : F
   f₁ : ι → A
   f₂ : ι → A
-  violates : ¬ relaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂]
+  violates : ¬ RelaxedRelationFor (ℓ := 2) enc δ v ![μ₁, μ₂] ![f₁, f₂]
 
 /-- The Definition 6.11 supremum is never indexed by an empty type: the zero
 constraint vector with first claimed value `1` cannot be satisfied by any
@@ -1125,7 +1125,7 @@ noncomputable def winningSetRatio {k : ℕ}
 This is an exact combinatorial quantity. The protocol-level upper coupling is proved below; the
 matching optimal-adversary/lower-coupling theorem needed to identify it with a minimal game error
 is not asserted here. -/
-noncomputable def winningSetSoundness {k : ℕ}
+noncomputable def winningSetDensity {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) : ℝ≥0 :=
   ⨆ x : ViolatingInstance enc δ, winningSetRatio x
 
@@ -1157,34 +1157,34 @@ theorem bddAbove_winningSetRatio {k : ℕ}
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- Every explicit violating instance lower-bounds the worst-case winning-set density. -/
-theorem winningSetRatio_le_winningSetSoundness {k : ℕ}
+theorem winningSetRatio_le_winningSetDensity {k : ℕ}
     {enc : (Fin k → F) →ₗ[F] (ι → A)} {δ : ℝ≥0}
     (x : ViolatingInstance enc δ) :
-    winningSetRatio x ≤ winningSetSoundness enc δ :=
+    winningSetRatio x ≤ winningSetDensity enc δ :=
   le_ciSup (bddAbove_winningSetRatio enc δ) x
 
 omit [DecidableEq F] [Fintype A] [DecidableEq A] in
 /-- The worst-case winning-set density never exceeds one. -/
-theorem winningSetSoundness_le_one {k : ℕ}
+theorem winningSetDensity_le_one {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) :
-    winningSetSoundness enc δ ≤ 1 :=
+    winningSetDensity enc δ ≤ 1 :=
   ciSup_le' (fun x ↦ winningSetRatio_le_one x)
 
 omit [DecidableEq F] in
 /-- Correlated-agreement error lower-bounds the Definition 6.11 winning-set
 quantity (ABF26 Lemma 6.13). -/
-theorem epsCa_le_winningSetSoundness {k : ℕ} [Nonempty ι]
+theorem epsCa_le_winningSetDensity {k : ℕ} [Nonempty ι]
     {C : Set (ι → A)} (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc) (henc_range : Set.range enc = C) :
     epsCa (F := F) (A := A) C δ δ ≤
-      (winningSetSoundness enc δ : ENNReal) := by
+      (winningSetDensity enc δ : ENNReal) := by
   rcases eq_or_lt_of_le
       (zero_le (a := epsCa (F := F) (A := A) C δ δ)) with hzero | hca
   · rw [← hzero]
     exact zero_le
   obtain ⟨v, μ₁, μ₂, f₁, f₂, hviol, hbound⟩ :=
-    simplified_iop_soundness_ca_lb
+    exists_winningSetFor_ncard_ge_of_epsCa_pos
       C δ hδpos hδlt enc henc_inj henc_range hca
   let x : ViolatingInstance enc δ := ⟨v, μ₁, μ₂, f₁, f₂, hviol⟩
   have hratio : (winningSetRatio x : ENNReal) =
@@ -1195,8 +1195,8 @@ theorem epsCa_le_winningSetSoundness {k : ℕ} [Nonempty ι]
     push_cast
     rfl
   have hactual : (winningSetRatio x : ENNReal) ≤
-      (winningSetSoundness enc δ : ENNReal) := by
-    exact_mod_cast winningSetRatio_le_winningSetSoundness x
+      (winningSetDensity enc δ : ENNReal) := by
+    exact_mod_cast winningSetRatio_le_winningSetDensity x
   refine le_trans ?_ hactual
   rw [hratio, ENNReal.le_div_iff_mul_le (Or.inl (by simp))
     (Or.inl (ENNReal.natCast_ne_top _))]
@@ -1205,7 +1205,7 @@ theorem epsCa_le_winningSetSoundness {k : ℕ} [Nonempty ι]
 omit [DecidableEq F] in
 /-- The two-row point-list attack lower-bounds the Definition 6.11 winning-set
 quantity (ABF26 Lemma 6.12). -/
-theorem listDecoding_le_winningSetSoundness {k : ℕ} [Nonempty ι]
+theorem listDecoding_le_winningSetDensity {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0) (hδpos : (0 : ℝ≥0) < δ)
     (hδlt : δ < 1) (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
@@ -1220,16 +1220,16 @@ theorem listDecoding_le_winningSetSoundness {k : ℕ} [Nonempty ι]
           2 * ((Code.Lambda
             ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) :
               Set (ι → Fin 2 → A))
-            (δ : ℝ)).toNat : ℝ≥0)) ≤ winningSetSoundness enc δ := by
+            (δ : ℝ)).toNat : ℝ≥0)) ≤ winningSetDensity enc δ := by
   obtain ⟨v, μ₁, μ₂, f₁, f₂, hviol, hbound⟩ :=
-    simplified_iop_soundness_listDecoding_lb
+    exists_winningSetFor_ncard_ge_of_lambda_lt_card
       C δ hδpos hδlt enc henc_inj henc_range hF
   rw [ge_iff_le] at hbound
   let N : ℕ := (Code.Lambda
     ((C ^⋈ (Fin 2) : ModuleCode ι F (Fin 2 → A)) : Set (ι → Fin 2 → A))
     (δ : ℝ)).toNat
   let x : ViolatingInstance enc δ := ⟨v, μ₁, μ₂, f₁, f₂, hviol⟩
-  refine le_trans ?_ (winningSetRatio_le_winningSetSoundness x)
+  refine le_trans ?_ (winningSetRatio_le_winningSetDensity x)
   have hcardF : (0 : ℝ) < (Fintype.card F : ℝ) := by
     exact_mod_cast Fintype.card_pos
   have hden : (0 : ℝ) < (Fintype.card F : ℝ) + 2 * N := by
@@ -1274,14 +1274,14 @@ theorem coe_certifiedGammaError (C : ModuleCode ι F A) (δ : ℝ≥0) :
 
 /-- The Definition 6.11 winning-set quantity is bounded by the extractor-certified
 MCA-plus-list error.  This is the quantitative content of ABF26 Lemma 6.10. -/
-theorem winningSetSoundness_le_certifiedGammaError {k : ℕ} [Nonempty ι]
+theorem winningSetDensity_le_certifiedGammaError {k : ℕ} [Nonempty ι]
     (C : ModuleCode ι F A) (δ : ℝ≥0)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
     (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
     (henc_range : Set.range enc = (C : Set (ι → A))) :
-    winningSetSoundness enc δ ≤ certifiedGammaError C δ := by
+    winningSetDensity enc δ ≤ certifiedGammaError C δ := by
   classical
   obtain ⟨hδpos, hδlt⟩ := hδ
   refine ciSup_le' (fun x ↦ ?_)
@@ -1328,30 +1328,30 @@ winning-set ratio for the combination round, mixed with the uniform
 This is not claimed to equal the optimal full-protocol adversarial acceptance
 probability: the actual spot-check acceptance outside the winning set can be
 strictly smaller than `(1 - δ)^t`. -/
-noncomputable def winningSetFixedRadiusUpperBound {k : ℕ}
+noncomputable def winningSetUpperBound {k : ℕ}
     (enc : (Fin k → F) →ₗ[F] (ι → A)) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
-  (1 - δ) ^ t + winningSetSoundness enc δ * (1 - (1 - δ) ^ t)
+  (1 - δ) ^ t + winningSetDensity enc δ * (1 - (1 - δ) ^ t)
 
 /-- The executable extractor's full fixed-radius certificate.  Unlike
-`winningSetFixedRadiusUpperBound`, its combination term is the proved MCA-plus-list
+`winningSetUpperBound`, its combination term is the proved MCA-plus-list
 upper bound. -/
-noncomputable def extractorCertifiedError
+noncomputable def certifiedExtractorError
     (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ) : ℝ≥0 :=
   (1 - δ) ^ t + certifiedGammaError C δ * (1 - (1 - δ) ^ t)
 
 /-- The winning-set/spot-check upper bound is no larger than the executable
 extractor's certificate. -/
-theorem winningSetFixedRadiusUpperBound_le_extractorCertifiedError {k : ℕ}
+theorem winningSetUpperBound_le_certifiedExtractorError {k : ℕ}
     [Nonempty ι] (C : ModuleCode ι F A) (δ : ℝ≥0) (t : ℕ)
     (hδ : δ ∈ Set.Ioo (0 : ℝ≥0)
       ((minRelHammingDistCode (C : Set (ι → A)) : ℝ≥0)))
     (enc : (Fin k → F) →ₗ[F] (ι → A))
     (henc_inj : Function.Injective enc)
     (henc_range : Set.range enc = (C : Set (ι → A))) :
-    winningSetFixedRadiusUpperBound enc δ t ≤ extractorCertifiedError C δ t := by
-  rw [winningSetFixedRadiusUpperBound, extractorCertifiedError]
+    winningSetUpperBound enc δ t ≤ certifiedExtractorError C δ t := by
+  rw [winningSetUpperBound, certifiedExtractorError]
   gcongr
-  exact winningSetSoundness_le_certifiedGammaError
+  exact winningSetDensity_le_certifiedGammaError
     C δ hδ enc henc_inj henc_range
 
 end ToyProblem

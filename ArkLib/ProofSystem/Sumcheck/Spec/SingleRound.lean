@@ -956,11 +956,11 @@ adapter and sequential composition path. -/
 def liftOutputSimulation {ι : Type} (oSpec : OracleSpec ι) :
     OracleOutputSimulation oSpec (OracleStatement R n deg)
       (OracleStatement R n deg) (pSpec R deg) where
-  materialize := fun _ oStmt _ => oStmt
-  simOStmt := fun _ q => liftM <| OracleSpec.query
+  materializeOutput := fun _ oStmt _ => oStmt
+  simulateOutputQuery := fun _ q => liftM <| OracleSpec.query
     (show (oSpec + ([OracleStatement R n deg]ₒ + [(pSpec R deg).Message]ₒ)).Domain from
       Sum.inr (Sum.inl q))
-  simOStmt_eq := by
+  simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rcases q with ⟨u, point⟩
     rcases u with ⟨⟩

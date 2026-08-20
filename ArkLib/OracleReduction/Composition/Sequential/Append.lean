@@ -434,13 +434,13 @@ private def appendOutputSimulation
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂) :
     OracleOutputSimulation oSpec OStmt₁ OStmt₃ (pSpec₁ ++ₚ pSpec₂) where
-  materialize := fun challenges oStmt messages =>
+  materializeOutput := fun challenges oStmt messages =>
     V₂.materializeOutput challenges.snd
       (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd
-  simOStmt := fun challenges q =>
+  simulateOutputQuery := fun challenges q =>
     simulateQ (secondQueryImpl V₁ challenges.fst)
       (V₂.simulateOutputQuery challenges.snd q)
-  simOStmt_eq := by
+  simulateOutputQuery_eq := by
     intro challenges oStmt messages q
     rw [simulateSecondQueryImplComp]
     exact simulateOutputQueryEq V₂ challenges.snd
