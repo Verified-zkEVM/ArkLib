@@ -939,29 +939,18 @@ private theorem symbolicGSPoly_coeff_natDegree_add_le_of_mem {F : Type} [Field F
   omega
 
 private theorem symbolicGSPoly_DYZ_term_le {F : Type} [Field F]
-    (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
-    (htri : ∀ p ∈ A, p.2 ≤ p.1) {i j : ℕ}
+    (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) {i j : ℕ}
     (hi : i ∈ ((symbolicGSPoly (F := F) A c).coeff j).support) :
-    j + (Polynomial.Bivariate.coeff (symbolicGSPoly (F := F) A c) j i).natDegree ≤
+    j + (Polynomial.Bivariate.coeff (symbolicGSPoly (F := F) A c) i j).natDegree ≤
       symbolicYSum A := by
   have hp : (i, j) ∈ A := symbolicGSPoly_coeff_ne_zero_mem A c
     (Polynomial.mem_support_iff.mp hi)
-  have hji : j ≤ i := htri (i, j) hp
-  have hjB := symbolic_snd_le_ySum A hp
+  have hdeg := symbolicGSPoly_coeff_natDegree_add_le_of_mem A c hp
   unfold Polynomial.Bivariate.coeff
-  by_cases ht : ((symbolicGSPoly (F := F) A c).coeff i).coeff j = 0
-  · rw [ht, Polynomial.natDegree_zero, add_zero]
-    exact hjB
-  · have hpt : (j, i) ∈ A := symbolicGSPoly_coeff_ne_zero_mem A c ht
-    have hij : i ≤ j := htri (j, i) hpt
-    have hijEq : i = j := by omega
-    subst i
-    have hdeg := symbolicGSPoly_coeff_natDegree_add_le_of_mem A c hp
-    omega
+  omega
 
 private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
-    (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F)
-    (htri : ∀ p ∈ A, p.2 ≤ p.1) :
+    (A : Finset (ℕ × ℕ)) (c : SymbolicGSIndex A → F) :
     Trivariate.D_YZ (symbolicGSPoly (F := F) A c) ≤ symbolicYSum A := by
   unfold Trivariate.D_YZ
   apply finsetMaxGetD_le
@@ -972,7 +961,7 @@ private theorem symbolicGSPoly_DYZ_le {F : Type} [Field F]
   intro inner hinner
   rw [Finset.mem_image] at hinner
   obtain ⟨i, hi, rfl⟩ := hinner
-  exact symbolicGSPoly_DYZ_term_le A c htri hi
+  exact symbolicGSPoly_DYZ_term_le A c hi
 
 open scoped BigOperators in
 private theorem symbolicGSPoly_shift_coeff_natDegree_le {F : Type} [Field F]
@@ -1052,9 +1041,6 @@ private theorem modified_guruswami_has_a_solution_core
       (by simpa only [A] using symbolicUpperTriangleCandidates_card_gt hn hk hm))
   let Q := symbolicGSPoly (F := F) A w.c
   have hsupp := symbolicUpperTriangleCandidates_support hn hk hm
-  have htri : ∀ p ∈ A, p.2 ≤ p.1 := by
-    intro p hp
-    exact (hsupp p (by simpa only [A] using hp)).1
   have hweight : ∀ p ∈ A,
       ((p.1 + k * p.2 : ℕ) : ℝ) < D_X ((k + 1 : ℚ) / n) n m := by
     intro p hp
@@ -1077,7 +1063,7 @@ private theorem modified_guruswami_has_a_solution_core
     exact lt_of_le_of_lt (by exact_mod_cast hx) hdeg
   · have hy := symbolicDY_lt_of_weighted (Q := Q) hk hdeg
     simpa only [Trivariate.D_Y] using hy
-  · have hyz := symbolicGSPoly_DYZ_le A w.c htri
+  · have hyz := symbolicGSPoly_DYZ_le A w.c
     have hyzR : (Trivariate.D_YZ Q : ℝ) ≤ symbolicYSum A := by
       exact_mod_cast hyz
     exact hyzR.trans (by
@@ -1140,12 +1126,20 @@ open Trivariate
 omit [DecidableEq (RatFunc F)] in
 /-- Proposition 5.5 from [BCIKS20].
 There exists a subset `S'` of the set `S` and a bivariate polynomial `P(X, Z)` that matches `Pz` on
-that set. -/
+that set, with `degX P ≤ k` and `degZ P ≤ 1`.
+
+The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
+`∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
+
+Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
+Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
+`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
+there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
 lemma exists_a_set_and_a_matching_polynomial
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
-     #S' > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
-     ∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1) ∧
+     (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
+     (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
      P.natDegree ≤ k ∧
      Bivariate.degreeX P ≤ 1 := by
     sorry
