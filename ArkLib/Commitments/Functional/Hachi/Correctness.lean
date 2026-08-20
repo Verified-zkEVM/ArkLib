@@ -319,7 +319,7 @@ honest weak opening at the trivial challenge. The honest direction
 
 section InputAdapter
 
--- Upstreamable `Vector` helper: `take`/`drop` at the split point recover the vector.
+/-- Upstreamable `Vector` helper: `take`/`drop` at the split point recover the vector. -/
 private theorem Vector.cast_take_append_cast_drop {γ : Type*} {r m : ℕ}
     (v : Vector γ (r + m)) :
     (v.take r).cast (by omega) ++ (v.drop r).cast (by omega) = v := by
@@ -430,7 +430,7 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
         (fun c e => balancedZmodDigit_natAbs_le hb (Nat.le_pow_clog hb q) hbq c e) _
     have hκle : ‖(1 : Rq 𝓜(q, α))‖₁ ≤ κ := by
       rw [Rq.l1Norm_one 𝓜(q, α) hdeg]; exact hκ
-    show VerifiedOpening 𝓜(q, α) (b : ZMod q) βSq γ κ pp.toPublicParams
+    change VerifiedOpening 𝓜(q, α) (b : ZMod q) βSq γ κ pp.toPublicParams
       (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s).u _
     rw [show (commitInputStmtMap (innerRows := innerRows) (dRows := dRows) b s).u = s.1
       from rfl, hu]
@@ -447,9 +447,9 @@ theorem mem_relPolyEval_of_relCommitInput {βSq γ κ : ℕ} (hb : 1 < b)
         (Decomposition.ofDigits 𝓜(q, α) dd dd)
         (gadgetDecompose_lawful 𝓜(q, α) hclog hdeg dd) pp.toPublicParams
         (Hachi.toMatrix w.1) i) k
-    show CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q) _) _ = _
+    change CMlPolynomial.eval (extractedPoly 𝓜(q, α) (b : ZMod q) _) _ = _
     rw [extractedPoly, hM, Hachi.toPolynomial_toMatrix]
-    show CMlPolynomial.eval w.1
+    change CMlPolynomial.eval w.1
       ((s.2.1.take r).cast (by omega) ++ (s.2.1.drop r).cast (by omega)) = s.2.2
     rw [Vector.cast_take_append_cast_drop]
     exact heval

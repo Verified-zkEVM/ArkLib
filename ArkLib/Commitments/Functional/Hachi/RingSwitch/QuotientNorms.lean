@@ -35,7 +35,7 @@ representative bounds it. `valMinAbs_natAbs_mul_le` and `valMinAbs_natAbs_sum_le
 * `valMinAbs_natAbs_coeff_quotient_le`: the quotient bound `μ · 2d · βM · βz` (assembled into
   `RhoShort` for the honest lifted witness by `rhoShort_honestLiftWitness` in
   `RingSwitch/Completeness`, where the honest witness is named).
-* `Rq.lInftyNorm_le_half`, `rlinMatrixShort_half`, `rhoShort_half`: the *unconditional* fallback.
+* `Rq.lInftyNorm_le_half`, `vecLInftyNorm_le_half`, `rhoShort_half`: the *unconditional* fallback.
   Every element of `Rq Φ` has centered `ℓ∞` norm `≤ q/2`, so `RhoShort (q/2)` holds for **any**
   quotient family with no hypotheses at all. This is what makes the honest lift's `liftShort`
   obligation dischargeable for the Hachi chain, where the `R^lin` matrix contains the Ajtai key
@@ -186,8 +186,8 @@ representatives live in `(−q/2, q/2]`, so this needs no hypotheses whatsoever.
 It is the bound the Hachi chain actually uses, and that is a substantive statement about the
 construction rather than laziness: `rlinStmt` assembles its matrix from the Ajtai key blocks `D`,
 `B`, `A` and the gadget powers `bᵉ`, all of which are (or may be) uniform mod `q`, so the honest
-`βM` of `rhoShort_honestQuotient` is `q/2` and the growth bound `μ · 2d · (q/2) · βz` exceeds `q/2`
-— i.e. the honest quotient of a Hachi `R^lin` instance is *not* short, and no sharper claim is
+`βM` of `rhoShort_honestLiftWitness` is `q/2` and the growth bound `μ · 2d · (q/2) · βz` exceeds
+`q/2` — i.e. the honest quotient of a Hachi `R^lin` instance is *not* short, and no sharper claim is
 available without assuming a short commitment key. Downstream consequence, documented at the
 batching bridge: a zero-check range base `b` with `ρBound ≤ b − 1` must then satisfy `b − 1 ≥ q/2`,
 so the single-`b` range table of `ZeroCheck/Constraints` cannot check the quotient half tightly. -/

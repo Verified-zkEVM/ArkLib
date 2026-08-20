@@ -1,6 +1,7 @@
 /-
-Copyright (c) 2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2025-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
+Authors: Pablo Martín Vinuelas
 -/
 
 import VCVio.EvalDist.Instances.OptionT
@@ -21,8 +22,8 @@ the proof is monad-generic modulo the failure/support characterizations used. -/
 lemma OptionT.probEvent_eq_one_bind {α β : Type} {oa : ProbComp α}
     {f : α → ProbComp (Option β)} {P : β → Prop}
     (h1 : NeverFail oa)
-    (h2 : ∀ a ∈ support oa, Pr[P | OptionT.mk (f a)] = 1) :
-    Pr[P | OptionT.mk (oa >>= f)] = 1 := by
+    (h2 : ∀ a ∈ support oa, Pr[ P | OptionT.mk (f a)] = 1) :
+    Pr[ P | OptionT.mk (oa >>= f)] = 1 := by
   have h2' : ∀ a ∈ support oa, Pr[⊥ | OptionT.mk (f a)] = 0 ∧
       ∀ x ∈ support (OptionT.mk (f a)), P x :=
     fun a ha => probEvent_eq_one_iff.mp (h2 a ha)

@@ -190,7 +190,8 @@ The honest response passes the input witness's own `t̂` straight through
 (`honestComputeResp.innerDec = wit.innerDecomp`), so Eq. (20)'s middle range check is a property of
 the *input* opening, and `relIn` only bounds it by the ball `‖·‖∞ ≤ γ`. Demanding the box of every
 `relIn` member is false (a ball-short opening with a coefficient above `⌈b/2⌉−1` is a legal member),
-so — exactly as with `relRlinFor` at the lift — the condition belongs in the relation, where the
+so — exactly as with the lift's image seam `relRlinImage` — the condition belongs in the
+relation, where the
 layer that *chose* the committer's decomposition establishes it: for an honest committer
 instantiated with `balancedZmodDigitDecomposition` (`Decomposition.ofDigits`), box shortness of
 `flatten t̂` is `gadgetDecompose_coeff_valMinAbs_mem_of_digit_mem` applied to
