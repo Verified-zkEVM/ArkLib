@@ -53,6 +53,17 @@ variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
+omit [CharP L 2] [SampleableType L] [DecidableEq 𝔽q] hF₂ h_β₀_eq_1 [NeZero 𝓡] hdiv in
+private theorem instOracleStatementBinaryBasefold_heq_of_index_eq
+    {i i' : Fin (ℓ + 1)} (h : i = i') :
+    HEq
+      (instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := i))
+      (instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := i')) := by
+  subst i'
+  rfl
+
 section ComponentReductions
 variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumcheck context
 
@@ -316,7 +327,15 @@ def nonLastBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
           rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)]
           rw [Nat.add_mul, Nat.one_mul]
         rw! (castMode:=.all) [h] at lastOracleVerifier
-        exact lastOracleVerifier
+        convert lastOracleVerifier
+        all_goals try rfl
+        case e'_13 hOStmt =>
+          cases hOStmt
+          apply eq_of_heq
+          rw [heq_eqRec_iff_heq]
+          apply instOracleStatementBinaryBasefold_heq_of_index_eq
+          apply Fin.ext
+          simpa only [Fin.val_succ] using h.symm
       )
 
   nonLastBlockOracleVerifier
@@ -353,8 +372,18 @@ def lastBlockOracleVerifier :=
       simp only [Fin.val_last]; dsimp [bIdx];
       rw [Nat.sub_mul, one_mul, Nat.div_mul_cancel (hdiv.out)]
       rw [Nat.sub_add_cancel (by exact Nat.le_of_dvd (h:=by exact Nat.pos_of_neZero ℓ) (hdiv.out))]
-    rw! [h] at cur
-    exact cur
+    rw! (castMode := .all) [h] at cur
+    convert cur
+    all_goals try rfl
+    case e'_12.h a a' ha =>
+      unfold pSpecLastBlock pSpecFoldRelaySequence at *
+      cases ha
+      rfl
+    case e'_13 =>
+      apply eq_of_heq
+      rw [heq_eqRec_iff_heq]
+      apply instOracleStatementBinaryBasefold_heq_of_index_eq
+      simpa only [Fin.val_last] using h.symm
   V
 
 @[reducible]
@@ -399,7 +428,7 @@ def sumcheckFoldOracleVerifier :=
       | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
          rw! (castMode := .all) [hi]
          rfl)
-      | (funext j; apply OracleInterface.ext <;> rfl)
+      | (apply OracleInterface.ext <;> rfl)
 
   sumcheckFoldOV
 
@@ -493,7 +522,15 @@ def nonLastBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
           rw [Nat.add_assoc, Nat.sub_add_cancel (by exact NeZero.one_le)]
           rw [Nat.add_mul, Nat.one_mul]
         rw! (castMode:=.all) [h] at lastOracleReduction
-        exact lastOracleReduction
+        convert lastOracleReduction
+        all_goals try rfl
+        case e'_15 hOStmt =>
+          cases hOStmt
+          apply eq_of_heq
+          rw [heq_eqRec_iff_heq]
+          apply instOracleStatementBinaryBasefold_heq_of_index_eq
+          apply Fin.ext
+          simpa only [Fin.val_succ] using h.symm
       )
 
   nonLastBlockOracleReduction
@@ -541,8 +578,18 @@ def lastBlockOracleReduction :=
         rw [Nat.sub_mul, one_mul, Nat.div_mul_cancel (hdiv.out)]
         rw [Nat.sub_add_cancel
           (by exact Nat.le_of_dvd (h:=by exact Nat.pos_of_neZero ℓ) (hdiv.out))]
-      rw! [h] at cur
-      exact cur
+      rw! (castMode := .all) [h] at cur
+      convert cur
+      all_goals try rfl
+      case e'_14.h a a' ha =>
+        unfold pSpecLastBlock pSpecFoldRelaySequence at *
+        cases ha
+        rfl
+      case e'_15 =>
+        apply eq_of_heq
+        rw [heq_eqRec_iff_heq]
+        apply instOracleStatementBinaryBasefold_heq_of_index_eq
+        simpa only [Fin.val_last] using h.symm
   V
 
 @[reducible]
@@ -595,7 +642,7 @@ def sumcheckFoldOracleReduction :=
       | (have hi : (⟨0 * ϑ, by omega⟩ : Fin (ℓ + 1)) = 0 := Fin.ext (by simp)
          rw! (castMode := .all) [hi]
          rfl)
-      | (funext j; apply OracleInterface.ext <;> rfl)
+      | (apply OracleInterface.ext <;> rfl)
 
   coreInteractionOracleReduction
 
@@ -786,7 +833,9 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
       (relOut := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
       (rbrKnowledgeError := coreInteractionOracleRbrKnowledgeError 𝔽q β (ϑ:=ϑ)) := by
   unfold coreInteractionOracleVerifier pSpecCoreInteraction
-  apply OracleVerifier.append_rbrKnowledgeSoundness
+  unfold coreInteractionOracleRbrKnowledgeError
+  convert
+    (OracleVerifier.append_rbrKnowledgeSoundness
     (init:=init) (impl:=impl)
     (rel₁ := roundRelation 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 0)
       (rel₂ := roundRelation (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ)
@@ -796,7 +845,6 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
         (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ) )
     (V₂ := finalSumcheckVerifier 𝔽q β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
-    (Oₛ₃:=by exact fun i ↦ by exact OracleInterface.instDefault)
       (rbrKnowledgeError₁ := sumcheckFoldKnowledgeError
         (mp := BBF_SumcheckMultiplierParam) 𝔽q β (ϑ:=ϑ))
       (rbrKnowledgeError₂ := finalSumcheckKnowledgeError (L := L))
@@ -805,7 +853,8 @@ theorem coreInteractionOracleVerifier_rbrKnowledgeSoundness :
           (mp := BBF_SumcheckMultiplierParam) 𝔽q β
           (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
           (init := init) (impl := impl))
-    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness)
+    (h₂ := by apply finalSumcheckOracleVerifier_rbrKnowledgeSoundness)) using 1
+  all_goals rfl
 
 end CoreInteractionPhaseReduction
 

@@ -38,6 +38,7 @@ variable {ι : Type} (oSpec : OracleSpec ι)
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
   [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
   (mapStmt : StmtIn → StmtOut) (mapWit : StmtIn → WitIn → WitOut)
 
 section Reduction
@@ -262,6 +263,9 @@ section OracleReduction
 variable
   -- Require map on indices to go the other way
   (embedIdx : ιₛₒ ↪ ιₛᵢ) (hEq : ∀ i, OStmtIn (embedIdx i) = OStmtOut i)
+  (hInterface : ∀ i, HEq
+    (inferInstance : OracleInterface (OStmtOut i))
+    (inferInstance : OracleInterface (OStmtIn (embedIdx i))))
 
 @[reducible, simp]
 def mapOStmt (oStmtIn : ∀ i, OStmtIn i) : ∀ i, OStmtOut i := fun i => (hEq i) ▸ oStmtIn (embedIdx i)
@@ -279,16 +283,20 @@ def oracleProver : OracleProver oSpec
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
-  embed := .trans embedIdx .inl
-  hEq := by intro i; simp [hEq]
+  outputOracle := .inl {
+    embed := .trans embedIdx .inl
+    hEq := by intro i; simp [hEq]
+    outputInterface_heq := by
+      intro i
+      simpa using hInterface i }
 
 /-- The oracle reduction for the `ReduceClaim` oracle reduction. -/
 def oracleReduction : OracleReduction oSpec
     StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   prover := oracleProver oSpec mapStmt mapWit embedIdx hEq
-  verifier := oracleVerifier oSpec mapStmt embedIdx hEq
+  verifier := oracleVerifier oSpec mapStmt embedIdx hEq hInterface
 
-variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq}
+variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq} {hInterface}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
   (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
@@ -303,13 +311,13 @@ theorem oracleReduction_completeness --(h : init.neverFails)
     (hRel : ∀ stmtIn oStmtIn witIn,
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
-    (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
+    (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).perfectCompleteness init impl
       relIn relOut := by
   simp only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
     Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro ⟨stmtIn, oStmtIn⟩ witIn hIn
   -- Reduce the run to a deterministic `pure` of the expected output.
-  have hrun : (oracleReduction oSpec mapStmt mapWit embedIdx hEq).toReduction.run
+  have hrun : (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).toReduction.run
       ⟨stmtIn, oStmtIn⟩ witIn =
       (pure ((default,
           ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
@@ -381,7 +389,7 @@ variable {mapWitInv : (StmtIn × (∀ i, OStmtIn i)) → WitOut → WitIn}
 def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
     ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).KnowledgeStateFunction
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
   toFun_empty := fun stmtIn witIn => by simp
@@ -417,7 +425,8 @@ knowledge state function. -/
 theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
     ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
     ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).rbrKnowledgeSoundness
+      init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
   intro stmtIn witIn prover i
   exact Fin.elim0 i.1
@@ -426,7 +435,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
 mapped statement together with the reshaped oracle statements (`mapOStmt`). -/
 theorem oracleVerifier_toVerifier_run {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i}
     {tr : (!p[] : ProtocolSpec 0).FullTranscript} :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier.run ⟨stmt, oStmt⟩ tr =
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨mapStmt stmt, mapOStmt embedIdx hEq oStmt⟩ := by
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   rfl
@@ -434,7 +443,7 @@ theorem oracleVerifier_toVerifier_run {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i}
 /-- The `ReduceClaim` oracle verifier is pure, discharging the deterministic-left hypothesis of the
 CWSS binary append. -/
 instance instIsPureOracle :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier.IsPure :=
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.IsPure :=
   ⟨fun p _ => ⟨mapStmt p.1, mapOStmt embedIdx hEq p.2⟩,
    fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
 
@@ -461,20 +470,20 @@ theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
     (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).coordinateWiseSpecialSoundWith init impl D
-      relIn relOut
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).coordinateWiseSpecialSoundWith
+      init impl D relIn relOut
       (oracleTreeExtractor (mapStmt := mapStmt) (embedIdx := embedIdx) (hEq := hEq)
         relOut mapWitInv D) := by
   classical
   have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
-    (oracleVerifier oSpec mapStmt embedIdx hEq) relIn relOut
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface) relIn relOut
     (fun s _ =>
       if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
       then mapWitInv s h.choose else Classical.ofNonempty)
     (fun s tr hAcc => by
       have hlang : (mapStmt s.1, mapOStmt embedIdx hEq s.2) ∈ relOut.language :=
         Verifier.mem_of_pure_accepting init impl
-          (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier s tr relOut.language _
+          (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier s tr relOut.language _
           (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
       have hex := (Set.mem_language_iff _ _).1 hlang
       rw [dif_pos hex]

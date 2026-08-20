@@ -278,8 +278,13 @@ def roundOracleVerifier (i : Fin ℓ) :
       challenges := Fin.snoc stmtIn.challenges r_i'
     }
     pure stmtOut
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun _ => rfl
+  outputOracle := .inl {
+    embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+    hEq := fun _ => rfl
+    outputInterface_heq := by
+      intro j
+      simp only [Function.Embedding.coeFn_mk]
+      rfl }
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/
 def roundOracleReduction (i : Fin ℓ) :
@@ -292,7 +297,8 @@ def roundOracleReduction (i : Fin ℓ) :
     (WitOut := SumcheckWitness L ℓ i.succ d)
     (pSpec := pSpecSumcheckRound L d) where
   prover := roundOracleProver (L := L) ℓ D Context (OStmtIn := OStmtIn) d i
-  verifier := roundOracleVerifier (L := L) ℓ D Context (OStmtIn := OStmtIn) d i
+  verifier := roundOracleVerifier (L := L) (ℓ := ℓ) (D := D)
+    (Context := Context) (OStmtIn := OStmtIn) (d := d) i
 
 end SingleRound
 

@@ -71,19 +71,19 @@ def OracleStatement.Lens (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Ty
     Statement.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i) (OuterStmtOut × ∀ i, OuterOStmtOut i)
                   (InnerStmtIn × ∀ i, InnerOStmtIn i) (InnerStmtOut × ∀ i, InnerOStmtOut i)
   -- TODO: fill in the extra conditions
-  /- Basically, as we model the output oracle statement as a subset of the input oracle statement +
-  the prover's messages, we need to make sure that this subset relation is satisfied in the
-  statement lens mapping.
+  /- For a legacy embedded output, the lens must preserve the embedding into the input oracle
+  statements and prover messages. Derived virtual outputs instead use `ExecutableLens`, which
+  transports their query implementation and materialization-agreement proof.
 
   We also need to provide a `QueryImpl` instance for simulating the outer oracle verifier using
   the inner oracle verifier.
   -/
 
-  -- simOStmt : QueryImpl [InnerOStmtIn]ₒ
+  -- simulateOutputQuery : QueryImpl [InnerOStmtIn]ₒ
   --   (ReaderT OuterStmtIn (OracleComp [OuterOStmtIn]ₒ))
 
   -- simOStmt_neverFails : ∀ i, ∀ t, ∀ outerStmtIn,
-  --   ((simOStmt.impl (query i t)).run outerStmtIn).neverFails
+  --   ((simulateOutputQuery.impl (query i t)).run outerStmtIn).neverFails
   -- To get back an output oracle statement in the outer context, we may simulate it using the input
   -- (non-oracle) statement of the outer context, the output (non-oracle) statement of the inner
   -- context, along with oracle access to the inner output oracle statements
@@ -124,6 +124,85 @@ def lift : OuterStmtIn × (∀ i, OuterOStmtIn i) → InnerStmtOut × (∀ i, In
 --   := oStmtLens
 
 end OracleStatement.Lens
+
+/-! ### Executable oracle-statement lenses
+
+The extensional `OracleStatement.Lens` above is sufficient for relation-level
+reasoning, but it cannot by itself implement an oracle verifier: an arbitrary
+function on whole oracle values need not be realizable by queries.  The
+following structure records the query implementations and their pointwise
+agreement with materialized oracle values. -/
+
+/-- A query-realizable lens between oracle statements.
+
+Input-oracle projection may depend on the explicit outer input statement.
+Output-oracle lifting is deliberately statement-independent: this is the
+condition needed for output-oracle simulations to remain composable without
+materializing intermediate verifier statements. -/
+structure OracleStatement.ExecutableLens
+    (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type)
+    [OuterOᵢ : ∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type)
+    [OuterOₒ : ∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type)
+    [InnerOᵢ : ∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type)
+    [InnerOₒ : ∀ i, OracleInterface (InnerOStmtOut i)] where
+  /-- Project the explicit input statement. -/
+  projStmt : OuterStmtIn → InnerStmtIn
+  /-- Materialized input-oracle projection, used by relation-facing semantics. -/
+  materializeInput : OuterStmtIn →
+    (∀ i, OuterOStmtIn i) → ∀ i, InnerOStmtIn i
+  /-- Query-by-query implementation of the input-oracle projection. -/
+  simulateInput : OuterStmtIn →
+    QueryImpl [InnerOStmtIn]ₒ (OracleComp [OuterOStmtIn]ₒ)
+  /-- The input query implementation agrees with the materialized projection. -/
+  simulateInput_eq : ∀ outerStmt outerOStmt q,
+    simulateQ (OracleInterface.simOracle0 OuterOStmtIn outerOStmt)
+        (simulateInput outerStmt q) =
+      (InnerOᵢ q.1).answer (materializeInput outerStmt outerOStmt q.1) q.2
+  /-- Lift the explicit output statement. -/
+  liftStmt : OuterStmtIn → InnerStmtOut → OuterStmtOut
+  /-- Materialized output-oracle lift, used by relation-facing semantics. -/
+  materializeOutput : (∀ i, OuterOStmtIn i) →
+    (∀ i, InnerOStmtOut i) → ∀ i, OuterOStmtOut i
+  /-- Query-by-query implementation of the output-oracle lift. -/
+  simulateOutput :
+    QueryImpl [OuterOStmtOut]ₒ (OracleComp ([OuterOStmtIn]ₒ + [InnerOStmtOut]ₒ))
+  /-- The output query implementation agrees with the materialized lift. -/
+  simulateOutput_eq : ∀ outerOStmt innerOStmt q,
+    simulateQ
+        (QueryImpl.add (OracleInterface.simOracle0 OuterOStmtIn outerOStmt)
+          (OracleInterface.simOracle0 InnerOStmtOut innerOStmt))
+        (simulateOutput q) =
+      (OuterOₒ q.1).answer (materializeOutput outerOStmt innerOStmt q.1) q.2
+
+namespace OracleStatement.ExecutableLens
+
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type}
+    [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type}
+    [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type}
+    [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type}
+    [∀ i, OracleInterface (InnerOStmtOut i)]
+
+/-- Forget query implementations and retain the extensional statement lens. -/
+@[reducible]
+def toLens (lens : OracleStatement.ExecutableLens
+    OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut) :
+    OracleStatement.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+      OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut where
+  toFunA := fun ⟨stmt, oStmt⟩ ↦
+    ⟨lens.projStmt stmt, lens.materializeInput stmt oStmt⟩
+  toFunB := fun ⟨stmt, oStmt⟩ ⟨stmtOut, oStmtOut⟩ ↦
+    ⟨lens.liftStmt stmt stmtOut, lens.materializeOutput oStmt oStmtOut⟩
+
+end OracleStatement.ExecutableLens
 
 /-- Lenses for transporting the input & output witnesses from an inner protocol to an outer
     protocol.
@@ -233,6 +312,54 @@ def toContext :
   ⟨lens.stmt, lens.wit⟩
 
 end OracleContext.Lens
+
+/-- An oracle-context lens whose statement component is executable by
+querying, together with the ordinary witness lens used by the prover. -/
+structure OracleContext.ExecutableLens
+    (OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type)
+    {Outer_ιₛᵢ : Type} (OuterOStmtIn : Outer_ιₛᵢ → Type)
+    [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} (OuterOStmtOut : Outer_ιₛₒ → Type)
+    [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} (InnerOStmtIn : Inner_ιₛᵢ → Type)
+    [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} (InnerOStmtOut : Inner_ιₛₒ → Type)
+    [∀ i, OracleInterface (InnerOStmtOut i)]
+    (OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type) where
+  stmt : OracleStatement.ExecutableLens
+    OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+  wit : Witness.Lens (OuterStmtIn × ∀ i, OuterOStmtIn i)
+    (InnerStmtOut × ∀ i, InnerOStmtOut i)
+    OuterWitIn OuterWitOut InnerWitIn InnerWitOut
+
+namespace OracleContext.ExecutableLens
+
+variable {OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut : Type}
+    {Outer_ιₛᵢ : Type} {OuterOStmtIn : Outer_ιₛᵢ → Type}
+    [∀ i, OracleInterface (OuterOStmtIn i)]
+    {Outer_ιₛₒ : Type} {OuterOStmtOut : Outer_ιₛₒ → Type}
+    [∀ i, OracleInterface (OuterOStmtOut i)]
+    {Inner_ιₛᵢ : Type} {InnerOStmtIn : Inner_ιₛᵢ → Type}
+    [∀ i, OracleInterface (InnerOStmtIn i)]
+    {Inner_ιₛₒ : Type} {InnerOStmtOut : Inner_ιₛₒ → Type}
+    [∀ i, OracleInterface (InnerOStmtOut i)]
+    {OuterWitIn OuterWitOut InnerWitIn InnerWitOut : Type}
+
+/-- Forget the executable implementations and retain the extensional oracle
+context lens. -/
+@[reducible]
+def toLens (lens : OracleContext.ExecutableLens
+    OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+    OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+    OuterWitIn OuterWitOut InnerWitIn InnerWitOut) :
+    OracleContext.Lens OuterStmtIn OuterStmtOut InnerStmtIn InnerStmtOut
+      OuterOStmtIn OuterOStmtOut InnerOStmtIn InnerOStmtOut
+      OuterWitIn OuterWitOut InnerWitIn InnerWitOut where
+  stmt := lens.stmt.toLens
+  wit := lens.wit
+
+end OracleContext.ExecutableLens
 
 /-- Lens for lifting the witness extraction procedure from the inner reduction to the outer
   reduction.

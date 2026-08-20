@@ -4,10 +4,13 @@ Released under Apache 2.0 license as described in the file LICENSE.
 -/
 
 import Mathlib.Data.Vector.Basic
-import VCVio.EvalDist.Monad.Basic
+import VCVio.EvalDist.List
 
 /-!
 # Additions to VCV-io's `ToMathlib.Data.Vector.Basic`
+
+`Vector.support_mapM_index`, formerly proved in this module, now comes from
+`VCVio.EvalDist.List` under the same public name.
 -/
 
 /-- `Vector.mapM` commutes with post-composition by a pure map:
@@ -59,46 +62,6 @@ lemma Vector.mapM_bind_map_eq {m : Type → Type} {α β γ δ : Type} {n : ℕ}
   apply bind_congr
   intro opts
   exact hpost opts
-
-/-- Index-extraction for `Vector.mapM`: any component of a vector in the support of
-    the sequenced computation lies in the support of the corresponding component computation. -/
-lemma Vector.support_mapM_index
-    {m : Type → Type} [Monad m] [LawfulMonad m]
-    [MonadLiftT m SetM] [LawfulMonadLiftT m SetM]
-    {α β : Type} {L : ℕ} (xs : Vector β L) (f : β → m α)
-    {v : Vector α L} (hv : v ∈ support (xs.mapM f)) (i : Fin L) :
-    v[i] ∈ support (f xs[i]) := by
-  induction L with
-  | zero => exact Fin.elim0 i
-  | succ L ih =>
-      obtain ⟨xs0, x, hxs⟩ := Vector.exists_push (xs := xs)
-      obtain ⟨v0, y, hv0⟩ := Vector.exists_push (xs := v)
-      subst hxs
-      subst hv0
-      have hpush : (xs0.push x).mapM f =
-          (xs0.mapM f >>= (fun ys => f x >>= fun last => pure (ys.push last))) := by
-        have hsingle : (#v[x]).mapM f = (fun last => #v[last]) <$> f x := by
-          apply Vector.map_toArray_inj.mp
-          simp
-        rw [← Vector.append_singleton, Vector.mapM_append, hsingle]
-        simp only [map_eq_bind_pure_comp, bind_assoc, Function.comp, pure_bind]
-        rfl
-      rw [hpush] at hv
-      rw [mem_support_bind_iff] at hv
-      obtain ⟨ys, hys, hv⟩ := hv
-      rw [mem_support_bind_iff] at hv
-      obtain ⟨last, hlast, hpush_eq⟩ := hv
-      rw [mem_support_pure_iff] at hpush_eq
-      have hparts := Vector.push_eq_push.mp hpush_eq.symm
-      by_cases hi : (i : ℕ) < L
-      · change (v0.push y)[(i : ℕ)] ∈ support (f ((xs0.push x)[(i : ℕ)]))
-        rw [Vector.getElem_push_lt hi, Vector.getElem_push_lt hi]
-        rw [← hparts.2]
-        exact ih xs0 hys ⟨i, hi⟩
-      · have hilast : (i : ℕ) = L := by omega
-        have hi_eq : i = ⟨L, Nat.lt_succ_self L⟩ := Fin.ext hilast
-        subst i
-        simpa [← hparts.1] using hlast
 
 /-- For a `Vector` of `Option` values, if `mapM id` yields `some w`, then each entry is
     `some` of the corresponding entry in `w`. -/

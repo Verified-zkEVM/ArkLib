@@ -147,7 +147,7 @@ theorem append_run_guardedLeft
     ProtocolSpec.FullTranscript.append_snd]
   rw [hV₁ stmt₁ tr₁]
   by_cases hc : check₁ stmt₁ tr₁ = true
-  · rw [if_pos hc, if_pos hc, pure_bind, bind_pure]
+  · rw [if_pos hc, if_pos hc, pure_bind]
   · rw [if_neg hc, if_neg hc]
     simp
 

@@ -485,6 +485,28 @@ home_page/            site assets and assembled website root
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
+- The ABF26 Section 6 toy IOP lives under `ProofSystem/ToyProblem/`. `Spec/` contains the
+  domain-generic protocol and extraction theorems, `Impl/IRS.lean` supplies the computable
+  interleaved Reed--Solomon extractor, `Impl/FRS.lean` contains neutral KoalaBear folded-RS
+  reference points, and `Codegen.lean` enforces compiler-IR availability. The simplified IOR
+  (`SimplifiedIOR`) is an `OracleReduction` with a query-by-query virtual output oracle and
+  exact named interleaved-RS straightline and RBR extractors. The compiled small-parameter
+  checks run with
+  `lake exe toyproblem-runtime`; the security theorems themselves are parametric in the code, the
+  radius, and the repetition count, so they apply at production sizes without evaluation. Turning
+  such a theorem into a *numeric* error value additionally requires the MCA/CA capacity bounds in
+  `Data/CodingTheory/ProximityGap/CapacityBounds`, several proven and the rest external admits,
+  deliberately outside the toy-problem import cone; no numeric error value is proven in-tree at
+  any production shape.
+- Batched FRI's batching round now emits the random-linear-combination codeword directly as a
+  virtual output oracle. The former `BatchedFri.Spec.liftingLens` / `liftedFRI` repair layer was
+  removed rather than renamed: downstream code should compose
+  `BatchingRound.batchOracleReduction` directly with `Fri.Spec.reduction` as
+  `BatchedFri.Spec.batchedFRIreduction` does.
+- Virtual-output execution commutes through append, salt, cast, and executable lifting. This does
+  not close the inherited generic append-security boundary: the unrestricted `StateT`
+  completeness/soundness composition theorems in `Composition/Sequential/Append.lean` remain
+  admitted and must not anchor a standalone security claim.
 - Ring switching is a **family of constructions, not one protocol** — the umbrella
   `ProofSystem/RingSwitching/Basic.lean` carries the taxonomy over two construction folders.
   `Packing/` is the small→large packing family: `Profile.lean` holds the shared
