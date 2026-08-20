@@ -11,7 +11,7 @@ import ArkLib.Data.Probability.Notation
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Fintype.Vector
 
-open Finset ListDecodable NNReal Polynomial ProbabilityTheory ReedSolomon
+open Finset Code NNReal Polynomial ProbabilityTheory ReedSolomon
 namespace OutOfDomSmpl
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
@@ -52,7 +52,7 @@ noncomputable def listDecodingCollisionProbability
 lemma out_of_dom_smpl_1
   {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)
-  (h_decodable : listDecodable C δ l)
+  (h_decodable : IsListDecodable C δ l)
   (h_nonempty : Nonempty (domainComplement φ)) :
   listDecodingCollisionProbability φ f δ s degree h_nonempty ≤
     ((l * (l-1) / 2)) * ((degree - 1) / (Fintype.card F - Fintype.card ι))^s
@@ -62,7 +62,7 @@ lemma out_of_dom_smpl_1
 lemma out_of_dom_smpl_2
   {δ l : ℝ≥0} {s : ℕ} {f : ι → F} {degree : ℕ} {φ : ι ↪ F}
   (C : Set (ι → F)) (hC : C = code φ degree)
-  (h_decodable : listDecodable C δ l)
+  (h_decodable : IsListDecodable C δ l)
   (h_nonempty : Nonempty (domainComplement φ)) :
   listDecodingCollisionProbability φ f δ s degree h_nonempty ≤
     ((l^2 / 2)) * (degree / (Fintype.card F - Fintype.card ι))^s

@@ -201,6 +201,19 @@ theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolyno
     _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
     _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
 
+/-- If every variable's degree in `P` is strictly less than `d`, the total degree is at most
+`m * (d - 1)` for `m` variables. Strict-inequality corollary of
+`totalDegree_le_card_mul_of_mem_restrictDegree`. -/
+theorem totalDegree_le_of_degreeOf_lt
+    {R : Type*} [CommSemiring R] {m d : ℕ}
+    (P : MvPolynomial (Fin m) R)
+    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
+    P.totalDegree ≤ m * (d - 1) := by
+  have h := totalDegree_le_card_mul_of_mem_restrictDegree P (d - 1)
+    ((mem_restrictDegree_iff_degreeOf_le P (d - 1)).mpr
+      fun i => Nat.le_sub_one_of_lt (h_indiv_deg i))
+  simpa using h
+
 end DegreeOf
 
 section Equiv

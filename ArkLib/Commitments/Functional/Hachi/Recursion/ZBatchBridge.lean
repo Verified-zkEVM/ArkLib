@@ -79,15 +79,20 @@ def hatEval (φF : ZMod q →+* F) (zpow : Fin (2 ^ κ) → F) (w : LiftedWitnes
     (a₀ : Fin mLow → F) : F :=
   sorry
 
-/-- **The `Z`-packed claim relation** (Hachi Eq. (26)): `w̃` opens `t` and its `Z`-packed table
-evaluates to the packed public value at the low point half. This is the claim the trace handoff
-(`Recursion/TraceHandoff.lean`) converts into the next iteration's `Rq`-statement. -/
+/-- **The `Z`-packed claim relation** (Hachi Eq. (26)): `w̃` is a *short* opening of `t` and its
+`Z`-packed table evaluates to the packed public value at the low point half. This is the claim the
+trace handoff (`Recursion/TraceHandoff.lean`) converts into the next iteration's `Rq`-statement.
+
+The `liftShort` conjunct is carried unchanged from `relWEvalClaim` (see there); it is the norm the
+handoff pushes through `ψ` — Lemma 6's `‖ψ(a)‖∞ ≤ 2β` — to produce the next iteration's `Short`,
+so it must survive this seam. -/
 def relHatEval (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
     Set (HatEvalStatement K.TCom F mLow × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
+    liftShort Φ bound ρBound p.2 ∧
     hatEval Φ mLow κ φF zpow p.2 p.1.pointLow = p.1.value}
 
 /-- The bridge's statement map: forget the peeled point half and pack the partial evaluations

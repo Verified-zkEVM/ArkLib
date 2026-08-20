@@ -1,5 +1,6 @@
 import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
+import ArkLib.ToMathlib.Control.MonadLift
 import ArkLib.ToVCVio.OracleComp.EvalDist
 
 /-!
@@ -69,7 +70,8 @@ section Execution
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [Oₛᵢ : ∀ i, OracleInterface (OStmtIn i)]
  {WitIn : Type}
-  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
+  {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  [Oₛₒ : ∀ i, OracleInterface (OStmtOut i)] {WitOut : Type}
   {n : ℕ} {pSpec : ProtocolSpec n}
 
 namespace Prover
@@ -119,24 +121,6 @@ def runWithLogToRound (i : Fin (n + 1))
       OracleComp (oSpec + [pSpec.Challenge]ₒ)
         ((pSpec.Transcript i × prover.PrvState i) × QueryLog (oSpec + [pSpec.Challenge]ₒ)) :=
   WriterT.run (simulateQ loggingOracle (prover.runToRound i stmt wit))
-
-private lemma fst_map_simulateQ_loggingOracle_run {ι : Type} {spec : OracleSpec ι} {α : Type}
-    (oa : OracleComp spec α) :
-    Prod.fst <$> WriterT.run (simulateQ loggingOracle oa) = oa := by
-  induction oa using OracleComp.induction with
-  | pure a => simp
-  | query_bind t oa ih =>
-    simp only [simulateQ_query_bind]
-    show Prod.fst <$> (do let u ← liftM (loggingOracle t); simulateQ loggingOracle (oa u)).run =
-      liftM (query t) >>= oa
-    stop -- This is broken for now until the refactor of `loggingOracle` and `WriterT`
-    simp only [WriterT.run_bind, map_bind, Functor.map_map]
-    have key : ∀ (w : QueryLog spec), (fun a_1 => (Prod.map id (w * ·) a_1).1) =
-        (Prod.fst : α × QueryLog spec → α) :=
-      fun w => funext fun ⟨a, b⟩ => rfl
-    simp_rw [key, ih]
-    rw [← bind_map_left Prod.fst]
-    rfl
 
 @[simp]
 lemma runWithLogToRound_discard_log_eq_runToRound (i : Fin (n + 1))
@@ -191,13 +175,8 @@ def Verifier.run (stmt : StmtIn) (transcript : FullTranscript pSpec)
 def OracleVerifier.run [Oₘ : ∀ i, OracleInterface (pSpec.Message i)]
     (stmt : StmtIn) (oStmtIn : ∀ i, OStmtIn i) (transcript : FullTranscript pSpec)
     (verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec) :
-      OptionT (OracleComp oSpec) (StmtOut × (∀ i, OStmtOut i)) := do
-  let f := OracleInterface.simOracle2 oSpec oStmtIn transcript.messages
-  let stmtOut ← simulateQ f (verifier.verify stmt transcript.challenges)
-  let oStmtOut : ∀ i, OStmtOut i := fun i => match h : verifier.embed i with
-    | .inl j => (verifier.hEq i ▸ h ▸ oStmtIn j : OStmtOut i)
-    | .inr j => (verifier.hEq i ▸ h ▸ transcript.messages j : OStmtOut i)
-  return ⟨stmtOut, oStmtOut⟩
+      OptionT (OracleComp oSpec) (StmtOut × (∀ i, OStmtOut i)) :=
+  verifier.toVerifier.run ⟨stmt, oStmtIn⟩ transcript
 
 /-- Running an oracle verifier then is equal to running its non-oracle counterpart -/
 @[simp]
@@ -205,9 +184,7 @@ theorem OracleVerifier.run_eq_run_verifier [Oₘ : ∀ i, OracleInterface (pSpec
     {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i} {transcript : FullTranscript pSpec}
     {verifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec} :
       verifier.run stmt oStmt transcript =
-        verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := by
-  simp only [OracleVerifier.run, OracleVerifier.toVerifier, Verifier.run]
-  rfl
+        verifier.toVerifier.run ⟨stmt, oStmt⟩ transcript := rfl
 
 /-- An execution of an interactive reduction on a given initial statement and witness. Consists of
   first running the prover, and then the verifier. Returns the full transcript, the output statement
@@ -404,43 +381,36 @@ def Reduction.runWithLog (stmt : StmtIn) (wit : WitIn)
     liftM (simulateQ loggingOracle (reduction.verifier.run stmt proverResult.1)).run
   return ⟨⟨proverResult, ← stmtOut.getM⟩, proveQueryLog, verifyQueryLog⟩
 
-/-- TODO: figure out a better name for this -/
-private lemma Monad.map_of_prod_fst_eq_prod_fst {m : Type u → Type v} [Monad m] [LawfulMonad m]
-    {α β γ : Type u} (ma : m (α × β)) (c : γ) :
-    (fun a => (c, a.1)) <$> ma = Prod.mk c <$> Prod.fst <$> ma := by
-  simp only [Functor.map_map]
-
 /-- Logging the queries made by both parties do not change the output of the reduction.
 
-**(admitted)** — the proof below is a `sorry`; a partial `calc` attempt is retained in comments.
-
-⚠️ This lemma is `@[simp]`, so **any** downstream proof whose `simp` call fires it silently
-inherits `sorryAx`. Check `#print axioms` on security-critical results that simp through this
-file, and treat a hit as a real gap rather than noise. -/
+Both logs are discarded the same way: `monadLift_bind_fst` pulls the `Prod.fst` projection inside
+the lift, which exposes the party's logged run to the lemma that strips its log —
+`Prover.runWithLog_discard_log_eq_run` for the prover and VCV-io's
+`loggingOracle.fst_map_run_simulateQ` for the verifier. The `▸`/`exact` spelling is forced rather
+than stylistic: after `simp only` the goal is not type-correct at `instances` transparency (ArkLib's
+`Verifier.run` is an `OptionT`, which `kabstract` sees as `OracleComp _ (Option _)`), so `rw`
+cannot operate on it. -/
 @[simp]
 theorem Reduction.runWithLog_discard_logs_eq_run
     {stmt : StmtIn} {wit : WitIn}
     {reduction : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec} :
       Prod.fst <$>
         reduction.runWithLog stmt wit = reduction.run stmt wit := by
-  simp [runWithLog, run, Prover.runWithLog]
-  sorry
-  -- calc
-  -- _ = (do
-  --   let a ← (simulateQ loggingOracle proverRun).run
-  --   (fun aFst : (pSpec.FullTranscript × StmtOut × WitOut) => (fun b => (aFst, Prod.fst b)) <$>
-  --       (simulateQ loggingOracle (Verifier.run stmt aFst.1 reduction.verifier)).run.liftComp
-  --         (oSpec + [pSpec.Challenge]ₒ)) a.1) := rfl
-  -- _ = _ := by
-    -- rw [loggingOracle.simulateQ_bind_fst_comp proverRun
-    --   (fun a => (fun b => (a, Prod.fst b)) <$>
-    --     (simulateQ loggingOracle (Verifier.run stmt a.1 reduction.verifier)).run.liftComp
-    --       (oSpec + [pSpec.Challenge]ₒ))]
-    -- congr
-    -- ext proverResult
-    -- rw [← Functor.map_map]
-    -- simp
-
+  simp only [Reduction.runWithLog, Reduction.run, map_bind, map_pure]
+  have hProver := monadLift_bind_fst (m := OracleComp (oSpec + [pSpec.Challenge]ₒ))
+    (n := OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)))
+    (Prover.runWithLog stmt wit reduction.prover)
+    (fun proverResult =>
+      liftM (simulateQ loggingOracle (Verifier.run stmt proverResult.1 reduction.verifier)).run
+        >>= fun a_1 => (fun a_2 => (proverResult, a_2)) <$> a_1.1.getM)
+  exact hProver ▸ by
+    rw [Prover.runWithLog_discard_log_eq_run]
+    congr 1; ext proverResult
+    have hVerif := monadLift_bind_fst (m := OracleComp oSpec)
+      (n := OptionT (OracleComp (oSpec + [pSpec.Challenge]ₒ)))
+      (simulateQ loggingOracle (Verifier.run stmt proverResult.1 reduction.verifier)).run
+      (fun stmtOut => (fun a_2 => (proverResult, a_2)) <$> stmtOut.getM)
+    exact hVerif ▸ by rw [loggingOracle.fst_map_run_simulateQ]; rfl
 
 /-- Run an interactive oracle reduction. Returns the full transcript, the output statement and
   witness, the log of all prover's oracle queries, and the log of all verifier's oracle queries to

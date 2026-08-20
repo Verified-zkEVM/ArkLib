@@ -41,10 +41,19 @@ The committed baseline (`scripts/axiom_baseline.json`) records the currently-kno
 `sorryAx`-tainted declarations and any declarations depending on non-standard axioms
 (anything beyond `propext`, `Classical.choice`, `Quot.sound` — so native trust axioms
 surface here too: `native_decide`-style tactics mint per-declaration
-`…._native.<tactic>.ax_*` axioms, recorded under their owning declaration). `--check`
-fails exactly when a declaration is tainted that the baseline does not cover. When gaps
-are closed, `--check` reports them and stays green; run `--update-baseline` to shrink the
-file in the same PR.
+`…._native.<tactic>.ax_<number>_<number>` axioms, recorded under their owning
+declaration). `--check` fails exactly when a declaration is tainted that the baseline
+does not cover. When gaps are closed, `--check` reports them and stays green; run
+`--update-baseline` to shrink the file in the same PR.
+
+The baseline is an allowlist for `sorryAx` debt only. Native trust is held to PolyFun's
+zero-debt rule instead: `neverAllowlistable` rejects any `._native.` axiom outside the
+explicit `grandfatheredNativeTrust` list, so no baseline edit can widen the trusted
+computing base. Exit codes are a contract with CI — `1` is a taint verdict, anything else
+an infrastructure failure — which is why `main` traps uncaught exceptions into `2`.
+
+`scripts/test-axiomsweep.sh` exercises all of this against the `AxiomSweepTestFixtures`
+library, whose fixtures carry synthetic taint of each shape this file reasons about.
 -/
 
 open Lean
@@ -57,11 +66,32 @@ def defaultRoots : Array Name := #[`ArkLib]
 /-- Axioms that carry no extra trust assumptions beyond Lean's standard foundation. -/
 def standardAxioms : List Name := [``propext, ``Classical.choice, ``Quot.sound]
 
-/-- Axioms that may never be baselined: bare native-compiler trust. A baseline edit
-cannot green these — remove the dependency instead. (Zero hits today; this floor keeps
-the baseline from ever becoming a second, laxer policy.) -/
+/-- Whether `a` names native-compiler trust: either a bare compiler axiom, or one of the
+per-declaration axioms `native_decide`-style tactics mint, which this toolchain names
+`Owner._native.<tactic>.ax_<n>_<n>` rather than routing through `Lean.ofReduceBool`. -/
+def isNativeTrust (a : String) : Bool :=
+  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler" || (a.splitOn "._native.").length > 1
+
+/-- The native trust this repository has already accepted, listed by full axiom name so
+any acceptance is auditable in source rather than hidden in a JSON allowlist. ArkLib has
+accepted none: the list is empty, and the floor below keeps it that way unless an entry
+is consciously added here.
+
+Fails closed: if a private-name index or module path shifts, an entry stops matching and
+`--check` goes red until someone consciously re-accepts it. -/
+def grandfatheredNativeTrust : List String := []
+
+/-- Axioms that may never be baselined: native-compiler trust beyond what
+`grandfatheredNativeTrust` already accepts. Unlike `sorryAx` debt — honest work in
+progress, which the baseline is allowed to track — new native trust is a widening of the
+trusted computing base, so no baseline edit can green it; remove the dependency instead.
+
+This is the counterpart of PolyFun's zero-debt gate. PolyFun refuses a nonempty baseline
+outright; ArkLib cannot, since it carries genuine `sorryAx` debt, so the floor applies the
+same "cannot pre-authorize future taint" rule to the part of the baseline where widening
+the TCB is at stake. -/
 def neverAllowlistable (a : String) : Bool :=
-  a == "Lean.ofReduceBool" || a == "Lean.trustCompiler"
+  isNativeTrust a && !grandfatheredNativeTrust.contains a
 
 /-- Phase 1: DFS. Compute, for every constant reachable from the work list, an
 under-approximation of the set of axioms it transitively depends on, memoised across
@@ -144,14 +174,28 @@ structure Baseline where
   nonstandard : Array NonstandardEntry
   deriving FromJson, ToJson
 
-/-- Collapse the volatile counter suffix of native trust axioms
+/-- Whether `s` is a nonempty string of ASCII decimal digits. -/
+def isDecimal (s : String) : Bool :=
+  !s.isEmpty && s.toList.all fun c => '0' ≤ c && c ≤ '9'
+
+/-- Collapse exactly the generated counter suffix of native trust axioms
 (`Foo._native.native_decide.ax_1_1` → `Foo._native.native_decide`), so baselines key by
-owning declaration rather than a rebuild-volatile counter. -/
+owning declaration rather than a rebuild-volatile counter. Names that merely contain
+`._native.` or resemble a generated suffix are preserved: collapsing them would let two
+distinct axioms share one baseline key, so real taint could hide behind an accepted
+entry. -/
 def normalizeAxiomName (s : String) : String :=
   match s.splitOn "._native." with
   | [owner, tail] =>
     match tail.splitOn "." with
-    | tactic :: _ => owner ++ "._native." ++ tactic
+    | [tactic, counter] =>
+      match counter.splitOn "_" with
+      | ["ax", major, minor] =>
+        if !owner.isEmpty && !tactic.isEmpty && isDecimal major && isDecimal minor then
+          owner ++ "._native." ++ tactic
+        else
+          s
+      | _ => s
     | _ => s
   | _ => s
 
@@ -280,6 +324,22 @@ def runCheck (cur : Baseline) (basePath : String) : IO UInt32 := do
   IO.println "axiomsweep: check passed (no new axiom/sorry taint)."
   return 0
 
+/-- Rewrite the baseline from the current build. Refuses while never-allowlistable taint
+is present: `--check` would reject the result anyway (the floor is enforced there, not
+here), so writing it would only produce a baseline that looks authoritative and is not.
+Recording new `sorryAx` debt is fine — that is what the baseline is for. -/
+def runUpdate (cur : Baseline) (basePath : String) : IO UInt32 := do
+  let floor := cur.nonstandard.filter fun e => e.axioms.any neverAllowlistable
+  if !floor.isEmpty then
+    IO.eprintln s!"axiomsweep: refusing to update {basePath} while \
+      {floor.size} declaration(s) depend on never-allowlistable axioms:"
+    for e in floor do IO.eprintln s!"  {e.name} : {e.axioms.filter neverAllowlistable}"
+    IO.eprintln "axiomsweep: remove the dependency; the baseline cannot pre-authorize it."
+    return 1
+  IO.FS.writeFile basePath ((toJson cur).pretty ++ "\n")
+  IO.println s!"axiomsweep: wrote baseline to {basePath}"
+  return 0
+
 structure Config where
   roots : Array Name := #[]
   out? : Option String := none
@@ -302,7 +362,10 @@ def parseArgs : List String → Config → Except String Config
 end AxiomSweep
 
 open AxiomSweep in
-unsafe def main (args : List String) : IO UInt32 := do
+/-- Tool body. Exit codes are a contract with CI, which reads `1` as a taint verdict and
+anything else as an infrastructure failure; `main` wraps this so an uncaught exception
+cannot masquerade as the former. -/
+unsafe def run (args : List String) : IO UInt32 := do
   let cfg ← match parseArgs args {} with
     | .ok cfg => pure cfg
     | .error e => IO.eprintln e; return 2
@@ -338,9 +401,15 @@ unsafe def main (args : List String) : IO UInt32 := do
     IO.FS.writeFile out (report.pretty ++ "\n")
     IO.println s!"axiomsweep: wrote report to {out}"
   if cfg.update then
-    IO.FS.writeFile cfg.baseline ((toJson cur).pretty ++ "\n")
-    IO.println s!"axiomsweep: wrote baseline to {cfg.baseline}"
-    return 0
+    return (← runUpdate cur cfg.baseline)
   if cfg.check then
     return (← runCheck cur cfg.baseline)
   return 0
+
+open AxiomSweep in
+unsafe def main (args : List String) : IO UInt32 := do
+  try
+    run args
+  catch e =>
+    IO.eprintln s!"axiomsweep: internal error: {e}"
+    return 2

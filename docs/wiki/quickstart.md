@@ -33,7 +33,7 @@ git add path/to/newfile.lean
 ./scripts/validate.sh
 ```
 
-`./scripts/update-lib.sh` only considers tracked files, and now fails fast if untracked
+`./scripts/update-lib.sh` only considers tracked files, and fails fast if untracked
 `ArkLib/**/*.lean` files are present.
 
 ### Lean-heavy refactors or cleanup
@@ -42,8 +42,8 @@ git add path/to/newfile.lean
 ./scripts/validate.sh --lint
 ```
 
-This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build currently runs
-with lint disabled, so treat this as opt-in for now.
+This adds `./scripts/lint-style.sh` to the convenience wrapper. The main CI build runs with
+`lint: false`, so this is opt-in.
 If the task is specifically Lean warning cleanup, follow
 [`../skills/fix-lean-warnings.md`](../skills/fix-lean-warnings.md).
 
@@ -53,7 +53,10 @@ If the task is specifically Lean warning cleanup, follow
 ./scripts/validate.sh --axioms
 ```
 
-This adds `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
+This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix under
+`scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions,
+the native-trust floor, and the exit-code contract) — and then
+`lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
 against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
 `sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
@@ -63,7 +66,14 @@ intentionally add a tagged `sorry` (or close one), refresh and commit the baseli
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check report-only for now (see `ci.yml`).
+The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
+(`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
+`…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
+a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
+while such taint is present — remove the dependency instead.
+
+CI runs the fixture matrix as an enforcing step and the library check report-only while
+the baseline soaks (see `ci.yml`).
 
 ### Docstrings, blueprint, or website changes
 
@@ -77,8 +87,8 @@ For website or blueprint output, run:
 ./scripts/validate.sh --site
 ```
 
-`./scripts/build-web.sh` is still what assembles the site, and it skips blueprint generation if
-`leanblueprint` is not installed. If blueprint output matters, install it first:
+`./scripts/build-web.sh` assembles the site, and skips blueprint generation if `leanblueprint`
+is not installed. If blueprint output matters, install it first:
 
 ```bash
 python3 -m pip install leanblueprint
@@ -87,15 +97,43 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, `./scripts/check-imports.sh`, and
-  `python3 ./scripts/check-docs-integrity.py`, plus knowledge-base linting from source inputs.
+- By default it runs `lake build`, the compiled `toyproblem-runtime` checks,
+  `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
+  knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
-- `scripts/build-project.sh` is now just a compile-only helper, not the convenience wrapper.
-- `scripts/README.md` is still useful as an inventory of helper scripts.
+- `scripts/build-project.sh` is a compile-only helper, not the convenience wrapper.
+- `scripts/README.md` is the inventory of helper scripts.
 - Only run docs and site builds when those surfaces are relevant; they are slower and more
   tool-dependent than normal Lean builds.
+- `--lint` fails on `main` as well as on feature branches: `scripts/lint-style.sh` reports a
+  large pre-existing style backlog, and `validate.sh` runs under `set -euo pipefail`, so `--lint`
+  **aborts the script before `--docs`**. To exercise the docgen gate, run
+  `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
+  compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
+
+## Checking axiom hygiene correctly
+
+ArkLib's axiom-clean baseline is exactly `{propext, Classical.choice, Quot.sound}` (see
+[`../skills/prove-milestone.md`](../skills/prove-milestone.md) invariant 6). Two traps make a
+naive check report success on something that should fail:
+
+- **`#print axioms` is only meaningful for declarations that elaborated cleanly.**
+  (`Lean.collectAxioms` does traverse both the type and the value, so a `sorry`-patched
+  statement *does* report `sorryAx` — but a declaration that failed to elaborate outright may
+  not exist to probe at all, and probing a *different*, successfully-elaborated declaration
+  proves nothing about the broken one.) Check the file compiles with zero errors first; a
+  belt-and-braces `(← getConstInfo n).type.hasSorry = false` assertion is cheap in sweep
+  metaprograms. A silent `#print axioms` result on its own is not evidence the intended
+  statement was proved.
+- **A metaprogram sweep over the environment silently skips private declarations**, whose internal
+  names are mangled. De-mangle with `Lean.privateToUserName?` before filtering by module, or the
+  sweep will quietly under-report.
+
+When reporting results, prefer "axiom-clean against the baseline" over "axiom-free", and state the
+counting basis (public / source-level / all-non-internal) — declaration totals are not comparable
+across differently-written probes, whereas the set of `sorryAx` carriers is.
 
 ## Optional Direct Commands
 
@@ -103,9 +141,11 @@ You can still run the underlying pieces directly when debugging a specific issue
 
 ```bash
 lake build
+lake exe toyproblem-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
+./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
 
@@ -126,8 +166,8 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom sweep report-only, then uploads timing artifacts and posts a comparison
-  report on same-repo PRs.
+  axiom-sweep fixture matrix (enforcing) and the library sweep report-only, then
+  uploads timing artifacts and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)

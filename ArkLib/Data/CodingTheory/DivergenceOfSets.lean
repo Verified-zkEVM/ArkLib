@@ -103,63 +103,6 @@ theorem Pr_uniform_eq_one_imp_forall {α : Type} [Fintype α] [Nonempty α] (P :
     simp [Set.mem_singleton_iff] at this
   exact false_ne_true hEq
 
-open scoped ProbabilityTheory in
-theorem Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α] [Fintype β] [Nonempty β]
-    (e : α ≃ β) (P : β → Prop) :
-  Pr_{let a ← $ᵖ α}[P (e a)] = Pr_{let b ← $ᵖ β}[P b] := by
-  classical
-  have hmap : (PMF.uniformOfFintype α).map e = PMF.uniformOfFintype β := by
-    ext b
-    -- Reduce to a finite sum over a singleton fiber.
-    simp only [PMF.map_apply, PMF.uniformOfFintype_apply,
-      Fintype.card_congr e, tsum_fintype]
-    -- Transport the sum along the equivalence `e`.
-    have hs :
-        Finset.univ.sum (fun a : α =>
-            if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
-          =
-          Finset.univ.sum (fun b' : β =>
-            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) := by
-      -- `Fintype.sum_equiv` is the change-of-variables lemma for sums over `univ`.
-      simpa using
-        (Fintype.sum_equiv e
-          (fun a : α => if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
-          (fun b' : β => if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0)
-          (by intro a; rfl))
-    -- Evaluate the Kronecker delta sum.
-    have hdelta :
-        Finset.univ.sum (fun b' : β =>
-            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) =
-          (Fintype.card β : ENNReal)⁻¹ := by
-      simp
-    exact hs.trans hdelta
-  -- Now use functoriality of `PMF.map` to move `P` across the equivalence.
-  -- (Unfolding `Pr_{...}[_]` gives a `PMF Prop` evaluated at `True`.)
-  change
-    (do
-        let a ← (PMF.uniformOfFintype α)
-        pure (P (e a))) True =
-      (do
-        let b ← (PMF.uniformOfFintype β)
-        pure (P b)) True
-  -- Rewrite the left-hand `do` block as successive `PMF.map`s.
-  -- First push forward along `e`, then along `P`.
-  --
-  -- `do let a ← p; pure (P (e a))` is `p.map (P ∘ e)`.
-  -- `PMF.map_comp` converts it to `((p.map e).map P)`.
-  have hcomp :
-      (PMF.uniformOfFintype α).map (P ∘ e) = ((PMF.uniformOfFintype α).map e).map P := by
-    simpa [Function.comp] using
-      (PMF.map_comp (p := PMF.uniformOfFintype α) (f := e) (g := P)).symm
-  -- Apply both sides to `True`, then use `hmap`.
-  -- Finally, recognize the right-hand side as the original `do` block.
-  simpa using congrArg (fun q : PMF Prop => q True) (by
-    calc
-      (PMF.uniformOfFintype α).map (P ∘ e)
-          = ((PMF.uniformOfFintype α).map e).map P := hcomp
-      _ = (PMF.uniformOfFintype β).map P := by simp [hmap]
-    )
-
 theorem divergence_attains {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [DecidableEq F]
   {U V : Set (ι → F)} [Nonempty U] [Nonempty V] [Fintype V] :
@@ -300,7 +243,7 @@ theorem proximity_gap_affineSubspace {ι : Type} [Fintype ι] [Nonempty ι] [Dec
       Pr_{let u ← $ᵖ U}[Code.relDistFromCode u (RScodeSet domain deg) ≤ δ] =
         Pr_{let x ← $ᵖ S}[Code.relDistFromCode x (RScodeSet domain deg) ≤ δ] := by
     simpa [eUS] using
-      (Pr_uniform_equiv (α := U) (β := S) eUS
+      (ProbabilityTheory.Pr_uniform_equiv (α := U) (β := S) eUS
         (fun x : S => Code.relDistFromCode x (RScodeSet domain deg) ≤ δ))
   -- Rewrite the XOR statement for S into the desired one for U
   have hxorS' :

@@ -242,7 +242,8 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
             rw [← StateT.run'_map', ← simulateQ_map]
-            rfl
+            simp only [map_eq_bind_pure_comp]
+            congr 1
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> Groups.sampleNonzeroZMod (p := p) := by

@@ -23,7 +23,7 @@ section re-checked against the tree; every `#print axioms` claim below re-run).
 > the forward/honest-completeness theorem `relLift → relBatched`, which is still absent.
 > Downstream, the link-7 sumcheck-bridge pull-back `mem_relNestedZeroCheck_of_nestedRoundRel`
 > is now **proved**, but `#print axioms` shows it inherits `sorryAx` from the two still-`sorry`
-> sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (F5).
+> sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`.
 > **The range half is now load-bearing:** shortness (`liftShort`) is *derived* from the range
 > identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`, resolution *option 1*),
 > not carried as a free conjunct of `relBatched`.
@@ -114,8 +114,8 @@ Consequences worth recording:
   `F_{α,τ₁} = mle[w̃] · mle[α̃(·) · ∑ᵢ eq̃(τ₁, i)·M̃_α(i, ·)]`, per-variable degree
   `2 = roundDegAlpha`), the public target `zcTargetAlpha = ∑ᵢ eq̃(τ₁, i)·yᵢ(α)` and the prover
   fold `hypercubeSum` all have concrete computable bodies (via `cEqualityPolynomial`,
-  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). What remains `sorry`
-  (milestone F5/F7) are the two full-cube sum identities `sum_sumcheckPolyZero`
+  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). What remains `sorry` are the
+  two full-cube sum identities `sum_sumcheckPolyZero`
   (`∑ F_{0,τ₀} = H₀(τ₀)`) and `sum_sumcheckPolyAlpha` (`∑ F_{α,τ₁} = H_α(τ₁) + zcTargetAlpha`).
   The sumcheck bridge's proved pull-back invokes exactly these two, which is where its `sorryAx`
   comes from.
@@ -129,9 +129,9 @@ Consequences worth recording:
   over-count, and the two "fixes" the worry suggests would each break something correct: inserting a
   `∏_{j ≥ m₁} (1 − Xⱼ)` masking factor moves the sum away from `H_α(τ₁) + a` and so falsifies
   `sum_sumcheckPolyAlpha`, whose statement is faithful to p. 22; re-typing to `CMvPolynomial m₁ F`
-  makes the `w̃(x,y)` factor untypable, since `w̃` lives on the `m₀`-cube. F7 therefore needs no
-  extra `m₀`/`m₁` pin — the pins `n ≤ 2^{m₁}` and `(μ+n)·deg φ ≤ 2^{m₀}` already carried by link 5
-  are about the row-indexing and range-table embeddings, not about this sum.
+  makes the `w̃(x,y)` factor untypable, since `w̃` lives on the `m₀`-cube. So the per-round CWSS
+  needs no extra `m₀`/`m₁` pin — the pins `n ≤ 2^{m₁}` and `(μ+n)·deg φ ≤ 2^{m₀}` already carried
+  by link 5 are about the row-indexing and range-table embeddings, not about this sum.
 
 ## Uniform-vector challenge gap (why the repair is needed)
 
@@ -373,7 +373,7 @@ Hachi instantiates that index with the range predicate itself,
 into the symmetric range `[−(b−1), b−1]`, so `liftShort` is a *consequence*. `relBatched`
 therefore **carries no `liftShort` conjunct**; the pull-back
 `mem_relLift_of_relBatched` derives it via `hZero_eq_zero_imp_liftShort` (see Link 5). This is
-the fix requested in review PR #656: the range machinery is load-bearing, and knowledge soundness
+the range machinery is load-bearing, and knowledge soundness
 *proves* the committed witness short rather than assuming it.
 
 **At the point-check seams — `liftShort` is present, as the commitment's shortness index
@@ -419,7 +419,7 @@ discharged over the family by the binary-evaluation-tree zero test
 
 ## Residual gaps (out of Lemma-10 scope)
 
-- **F5 encoding — the two identities are complete; only the sumcheck summands remain.** `hZero`
+- **Encoding — the two identities are complete; only the sumcheck summands remain.** `hZero`
   and `hAlpha` are genuine multilinear extensions, both coefficient functions are concrete (no
   longer `sorry`), and both now correspond to the paper's own construction:
   - `hAlphaEvals` = the `α`-evaluated per-row lift defect, row-encoded into the `m₁`-cube via
@@ -427,7 +427,7 @@ discharged over the family by the binary-evaluation-tree zero test
     specification in the *ring* representation, but it is **no longer only that**: the paper's
     Eq. (22) contraction is built (`mAlphaTilde`, `alphaTilde`, `wTablePoint`, `alphaContract`,
     `alphaDefect`) and proved equal to it (`alphaDefect_wTable`, axiom-clean), with the
-    relation-level consequence `hAlpha_eq_zero_iff_alphaDefect`. So this is no longer an F5 gap.
+    relation-level consequence `hAlpha_eq_zero_iff_alphaDefect`. So this is no longer a gap.
   - `wTable` reads the committed `z`/`r` coefficients **directly** (decoding the `m₀`-cube to
     `row := idx / d`, `col := idx % d`), so `H₀ ≡ 0` is a genuine (non-vacuous) shortness statement
     on the committed data. (Re-decomposing to base-`b` digits would be vacuous — digits are always
@@ -439,9 +439,9 @@ discharged over the family by the binary-evaluation-tree zero test
   `Classical.choice` is the constructivity caveat below, from `nestedPathResponse`'s witness
   selection). The standalone kernel `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise
   axiom-clean.
-  **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is now proven** (`hZero_eq_zero_imp_liftShort`,
-  see Link 5) — no longer an F5 gap. **Still F5 (out of Lemma-10 scope):** the two sum identities
-  `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (the summand *definitions* are now concrete).
+  **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is proven** (`hZero_eq_zero_imp_liftShort`,
+  see Link 5). **Still open, out of Lemma-10 scope:** the two sum identities
+  `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (the summand *definitions* are concrete).
 - **Link 5 (batching bridge).** The un-batching pull-back `mem_relLift_of_relBatched`
   (`relBatched → relLift`, `ZeroCheck/Batch.lean`) is **proof-`sorry`-free and axiom-clean**
   (`#print axioms` = `propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`). It establishes both
@@ -476,10 +476,10 @@ discharged over the family by the binary-evaluation-tree zero test
   `relNestedZeroCheck` (see above), and the sumcheck
   bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved** — but
   `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
-  bridge is only as discharged as F5. Further down the chain (out of Lemma-10 scope), the
-  per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11, milestone F7) and the
-  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`, milestone F8)
-  remain `sorry`.
+  bridge is only as discharged as those. Further down the chain (out of Lemma-10 scope), the
+  per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` ([NOZ26] Lemma 11) and the
+  final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`) remain
+  `sorry`.
 
 ## Resolution options (for the record)
 

@@ -792,10 +792,39 @@ def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseCon
     degCombinator := 1
     combinator_natDegree_le := by intro _; exact Polynomial.natDegree_X_le }
 
+/-- The [DP24] coefficient vector of a multilinear witness `t`: its Boolean-hypercube table,
+read in the LSB-first bit order of `Nat.binaryFinMapToNat` (`ω = ∑ⱼ 2^j·wⱼ`, so coefficient `ω`
+is `t` at the point `w j = getBit j ω`). This is the inverse of the index mapping used by the
+novel-coefficients decoder above (`hypercube_evals`, via `Nat.binaryFinMapToNat`).
+
+This explicit map avoids the silent coercion in the old spelling `fun ω => t.val.eval ω`, which
+evaluated `t` at the constant point `fun _ => ↑ω` instead of at the Boolean cube point. -/
+def witnessNovelCoeffs (t : L⦃≤ 1⦄[X Fin ℓ]) : Fin (2^ℓ) → L :=
+  fun ω => t.val.eval (fun j => (Nat.getBit j.val ω.val : L))
+
+-- Regression probe: the old diagonal encoding mapped `X 0` and `X 1` to the same table. The
+-- cube-table encoding distinguishes them at `ω = 1`, whose first two bits are `(1, 0)`.
+example :
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨0, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ ≠
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨1, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ := by
+  have h0 : Nat.getBit 0 1 = 1 := rfl
+  have h1 : Nat.getBit 1 1 = 0 := rfl
+  simp only [witnessNovelCoeffs, MvPolynomial.eval_X, h0, h1, Nat.cast_one, Nat.cast_zero]
+  exact one_ne_zero
+
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ]) -- original polynomial t
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
-  let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
+  let P₀ : L⦃< 2^ℓ⦄[X] :=
+    polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (witnessNovelCoeffs (L := L) t)
   let f₀ : (sDomain 𝔽q β h_ℓ_add_R_rate 0) → L := fun x => P₀.val.eval x.val
   let fᵢ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := 0)
@@ -829,7 +858,8 @@ export Sumcheck.Structured (sumcheckConsistencyProp)
     evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
 def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
-  let P₀ : L⦃< 2 ^ ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
+  let P₀ : L⦃< 2 ^ ℓ⦄[X] :=
+    polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (witnessNovelCoeffs (L := L) t)
   -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
   2 * hammingDist (fun x => P₀.val.eval x.val) f₀ < BBF_CodeDistance ℓ 𝓡 ⟨0, by omega⟩
 

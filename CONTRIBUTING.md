@@ -74,6 +74,13 @@ Our [linting script](`./scripts/lint-style.sh`) helps enforce some aspects of th
 * **Identifiers**: 
     * Use namespaces for logical properties (e.g., `And.comm`, `Or.intro`).
     * Use descriptive names for arithmetic/algebraic properties (e.g., `mul_comm`, `add_assoc`).
+* **No paper items in names**: name a declaration for what it says, never for where it came from.
+  No author-year suffix (`..._gk16`), no numbering (`lemma_4_3`, `claimA2_...`, `thmA2`), and no
+  internal planning code (`milestone_F5`, `design_D5`). Such a name drifts the moment the source is
+  renumbered, revised, or joined by a second citation, and it tells a reader nothing the statement
+  does not. Cite the source in the module docstring's `## References` section instead (see
+  [Citation Standards](#citation-standards)); a declaration docstring may name a source where the
+  statement depends on which formulation is meant.
 
 ### Theorem Naming Logic
 

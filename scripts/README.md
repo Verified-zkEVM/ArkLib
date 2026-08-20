@@ -13,6 +13,12 @@ This directory contains various utility scripts for the ArkLib project.
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
+- **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
+  (gate directions, native-trust floor, exit-code contract), against the synthetic-taint
+  fixtures in `AxiomSweepTestFixtures/`
+- **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
+  for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
+  output-oracle and exact-extractor paths
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -63,6 +69,11 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ### Compile Only
 ```bash
 ./scripts/build-project.sh
+```
+
+### Toy-Problem Runtime Gate
+```bash
+lake exe toyproblem-runtime
 ```
 
 ### Build Timing Helper
@@ -126,8 +137,24 @@ lake exe axiomsweep --update-baseline
 ```
 
 The committed baseline makes the distinction the repo cares about mechanical:
-pre-existing `sorry` gaps are allowed, *new* ones fail `--check`. CI runs the check
-report-only; `./scripts/validate.sh --axioms` runs it enforcing.
+pre-existing `sorry` gaps are allowed, *new* ones fail `--check`. The baseline is an
+allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+`Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
+minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
+regardless of the baseline, and `--update-baseline` refuses to write while it is present.
+CI runs the library check report-only; `./scripts/validate.sh --axioms` runs it enforcing.
+
+The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
+`AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep
+reasons about: direct and transitive `sorry`, axiom-in-type, mutual-inductive inheritance,
+generated native-trust names and near-miss collisions, and an unimported file) and checks
+report determinism, every gate direction, and the exit-code contract (`1` = taint verdict,
+`2` = infrastructure failure). CI runs it as an enforcing step:
+
+```bash
+lake build AxiomSweepTestFixtures
+./scripts/test-axiomsweep.sh
+```
 
 ### `build_timing_report.sh`
 

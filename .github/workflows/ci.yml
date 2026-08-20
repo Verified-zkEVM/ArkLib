@@ -112,6 +112,12 @@ jobs:
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
+      # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
+      # directions, native-trust floor, exit-code contract), independent of any
+      # taint verdict about the library.
+      - name: Test the axiom sweep tool
+        run: ./scripts/test-axiomsweep.sh
+
       # Taint findings are report-only during the initial soak (flip to enforcing by
       # failing on exit 1 too); infrastructure failures (exit != 1: missing baseline,
       # tool build breakage) always fail so the soak cannot silently rot.

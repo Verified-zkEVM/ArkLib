@@ -18,6 +18,7 @@ noncomputable section
 open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
 open NNReal Finset Function Real
 open scoped BigOperators LinearCode ProbabilityTheory
+open Probability
 
 universe u v w k l
 variable {κ : Type k} {ι : Type l} [Fintype ι] [Nonempty ι] [DecidableEq ι] [DecidableEq κ]

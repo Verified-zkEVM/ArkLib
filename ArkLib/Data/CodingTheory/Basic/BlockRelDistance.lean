@@ -30,7 +30,7 @@ as is done in the reference paper, as they are more general.
 
 namespace BlockRelDistance
 
-open Domain ListDecodable NNReal ReedSolomon CosetFftDomainClass
+open Domain Code NNReal ReedSolomon CosetFftDomainClass
 
 variable {F : Type} [Field F] [DecidableEq F]
          {n k : ℕ}

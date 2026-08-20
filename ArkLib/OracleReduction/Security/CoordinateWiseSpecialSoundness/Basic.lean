@@ -159,6 +159,14 @@ namespace CWSSStructure
 
 variable {pSpec : ProtocolSpec n} (D : CWSSStructure pSpec)
 
+/-- **Every coordinate-wise structure branches at least once**: the arity `ℓᵢ·(kᵢ−1)+1` is
+positive whatever `ℓᵢ` and `kᵢ` are. Consumed by `ChallengeTree.LeafPath.some` to produce a
+transcript of an arbitrary structured subtree, which is what rules out a rejecting prefix in the
+guarded composition. -/
+theorem arity_pos (i : pSpec.ChallengeIdx) : 0 < D.arity i := by
+  have h := congrFun D.arity_eq i
+  omega
+
 /-- The coordinate count `ℓᵢ` as a natural number. -/
 abbrev ell (i : pSpec.ChallengeIdx) : ℕ := (D.coordIndex i).val
 
@@ -332,7 +340,7 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
