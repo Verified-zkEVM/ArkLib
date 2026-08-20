@@ -48,65 +48,60 @@ section LowerBounds_General
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- **The volume lower bound on list size** ([ABF26] Lemma 3.7, after [Eli57]):
+/-- **The volume lower bound on list size** ([ABF26] Lemma 3.7, after [Eli57]), at the source's
+generality: for any code `C ⊆ A^n` over a finite alphabet `A` with `|C| = q^k`,
 
   `|Λ(C, δ)| ≥ Vol_q(δ, n) / q^(n-k)`
 
-where `q = |F|`, `n = |ι|`, and `k = dim C`, so `|C| = q^k`.
+where `q = |A|` and `n = |ι|`.
 
 Proved by the source's averaging argument: the mean over uniformly random centres `f` of the
 point-list size `|Λ(C, δ, f)|` is `|C| · Vol / q^n = Vol / q^{n-k}`
-(`sum_ncard_closeCodewordsRel_eq`), so some centre attains at least the mean, and `Lambda` is the
-supremum over centres. No entropy estimate is involved — for that see
-`linear_lambda_ge_entropy_volume`.
+(`sum_ncard_closeCodewordsRel_eq_of_set`), so some centre attains at least the mean, and `Lambda`
+is the supremum over centres. No entropy estimate is involved — for that see
+`lambda_ge_entropy_volume`.
 
-**Narrower than the source, and needlessly so.** [ABF26] states this for an arbitrary code
-`C : Σ^k → Σ^n` over an arbitrary alphabet; this is the linear-over-a-field case. Linearity enters
-the proof exactly once, at `submodule_ncard_eq_pow_finrank`, to get `|C| = q^k`. Restating over
-`C : Code ι A` for a finite alphabet `A` with `C.ncard = q ^ k` as a hypothesis would give the
-source's generality with this as a one-line corollary — the generic-core-plus-field-wrapper shape
-`mds_johnson_lambda_le_of_rate_distance` already uses. Left as a follow-up rather than done here. -/
-theorem linear_lambda_ge_elias_volume
-    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+The codeword count enters only as the hypothesis `hcard`, so linear, module-alphabet and
+interleaved codes can all instantiate this with their own cardinality argument;
+`linear_lambda_ge_elias_volume` is the field-linear case. `[Nonempty A]` is needed for the
+positivity of `q` that the averaging step rests on. -/
+theorem lambda_ge_elias_volume {A : Type} [Fintype A] [Nonempty A] [DecidableEq A]
+    (C : Set (ι → A)) (k : ℕ) (hcard : C.ncard = Fintype.card A ^ k)
+    (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
     ENNReal.ofReal
-        ((hammingBallVolume (Fintype.card F) δ (Fintype.card ι) : ℝ)
-          / (Fintype.card F : ℝ) ^
-              ((Fintype.card ι : ℝ) - Module.finrank F C))
-      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+        ((hammingBallVolume (Fintype.card A) δ (Fintype.card ι) : ℝ)
+          / (Fintype.card A : ℝ) ^ ((Fintype.card ι : ℝ) - k))
+      ≤ (Lambda C δ : ENNReal) := by
   classical
-  set q : ℕ := Fintype.card F with hq
+  set q : ℕ := Fintype.card A with hq
   set n : ℕ := Fintype.card ι with hn
-  set k : ℕ := Module.finrank F C with hk
   set Vol : ℕ := hammingBallVolume q δ n with hVol
   have hq_pos : 0 < q := Fintype.card_pos
   have hq_pos_real : (0 : ℝ) < q := by exact_mod_cast hq_pos
   have hδ_nonneg : 0 ≤ δ := le_of_lt _hδ_pos
-  set cnt : (ι → F) → ℕ := fun f => (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard with hcnt
-  -- `|C| = q ^ k` as naturals.
-  have hcard_C : (C : Set (ι → F)).ncard = q ^ k := by
-    rw [submodule_ncard_eq_pow_finrank, hq, hk]
+  set cnt : (ι → A) → ℕ := fun f => (closeCodewordsRel C f δ).ncard with hcnt
   -- Total count over all centres `= |C| · Vol = q^k · Vol`.
-  have hsum : ∑ f : ι → F, cnt f = q ^ k * Vol := by
+  have hsum : ∑ f : ι → A, cnt f = q ^ k * Vol := by
     rw [hcnt]
-    rw [sum_ncard_closeCodewordsRel_eq C δ hδ_nonneg, hcard_C]
+    rw [sum_ncard_closeCodewordsRel_eq_of_set C δ hδ_nonneg, hcard]
   -- Number of centres is `q ^ n`.
-  have hcard_univ : (Finset.univ : Finset (ι → F)).card = q ^ n := by
+  have hcard_univ : (Finset.univ : Finset (ι → A)).card = q ^ n := by
     rw [Finset.card_univ, hq, hn, Fintype.card_fun]
   -- Real arithmetic identity `q^n · (Vol / q^(n-k)) = q^k · Vol`.
   have h_arith : (q : ℝ) ^ n * ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) = (q : ℝ) ^ k * Vol := by
     rw [Real.rpow_sub hq_pos_real, Real.rpow_natCast, Real.rpow_natCast]
     field_simp
   -- A centre `f₀` whose point list realises at least the mean.
-  have hmean_le : ∃ f₀ : ι → F,
+  have hmean_le : ∃ f₀ : ι → A,
       ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) ≤ (cnt f₀ : ℝ) := by
     by_contra hcon
     push Not at hcon
-    have hsum_real : (∑ f : ι → F, (cnt f : ℝ)) = (q : ℝ) ^ k * Vol := by
-      have : ((∑ f : ι → F, cnt f : ℕ) : ℝ) = ((q ^ k * Vol : ℕ) : ℝ) := by exact_mod_cast hsum
+    have hsum_real : (∑ f : ι → A, (cnt f : ℝ)) = (q : ℝ) ^ k * Vol := by
+      have : ((∑ f : ι → A, cnt f : ℕ) : ℝ) = ((q ^ k * Vol : ℕ) : ℝ) := by exact_mod_cast hsum
       push_cast at this ⊢
       convert this using 2
-    have hlt : (∑ f : ι → F, (cnt f : ℝ))
-        < ∑ _f : ι → F, ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) := by
+    have hlt : (∑ f : ι → A, (cnt f : ℝ))
+        < ∑ _f : ι → A, ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k)) := by
       apply Finset.sum_lt_sum_of_nonempty
       · exact Finset.univ_nonempty
       · intro f _; exact hcon f
@@ -119,17 +114,35 @@ theorem linear_lambda_ge_elias_volume
     exact lt_irrefl _ this
   obtain ⟨f₀, hf₀⟩ := hmean_le
   -- Conclude: `Lambda ≥ |Λ(C, δ, f₀)| ≥ ofReal(mean)`.
-  have hfin : (closeCodewordsRel ((C : Set (ι → F))) f₀ δ).Finite := Set.toFinite _
-  have hLam : ((cnt f₀ : ℕ∞) : ENNReal) ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+  have hfin : (closeCodewordsRel C f₀ δ).Finite := Set.toFinite _
+  have hLam : ((cnt f₀ : ℕ∞) : ENNReal) ≤ (Lambda C δ : ENNReal) := by
     apply ENat.toENNReal_mono
     calc ((cnt f₀ : ℕ) : ℕ∞)
-        = (closeCodewordsRel ((C : Set (ι → F))) f₀ δ).encard := hfin.cast_ncard_eq
-      _ ≤ Lambda ((C : Set (ι → F))) δ :=
-          encard_closeCodewordsRel_le_Lambda ((C : Set (ι → F))) δ f₀
+        = (closeCodewordsRel C f₀ δ).encard := hfin.cast_ncard_eq
+      _ ≤ Lambda C δ := encard_closeCodewordsRel_le_Lambda C δ f₀
   calc ENNReal.ofReal ((Vol : ℝ) / (q : ℝ) ^ ((n : ℝ) - k))
       ≤ ENNReal.ofReal (cnt f₀ : ℝ) := ENNReal.ofReal_le_ofReal hf₀
     _ = ((cnt f₀ : ℕ∞) : ENNReal) := by rw [ENNReal.ofReal_natCast, ENat.toENNReal_coe]
-    _ ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := hLam
+    _ ≤ (Lambda C δ : ENNReal) := hLam
+
+/-- **The volume lower bound on list size** for a field-linear code ([ABF26] Lemma 3.7):
+
+  `|Λ(C, δ)| ≥ Vol_q(δ, n) / q^(n-k)`
+
+where `q = |F|`, `n = |ι|`, and `k = dim C`, so `|C| = q^k`.
+
+This is the field-linear specialization of `lambda_ge_elias_volume`, which states the source's
+arbitrary-alphabet form; linearity enters only through `submodule_ncard_eq_pow_finrank`, supplying
+the codeword count `|C| = q^k` that the generic core takes as a hypothesis. -/
+theorem linear_lambda_ge_elias_volume
+    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1) :
+    ENNReal.ofReal
+        ((hammingBallVolume (Fintype.card F) δ (Fintype.card ι) : ℝ)
+          / (Fintype.card F : ℝ) ^
+              ((Fintype.card ι : ℝ) - Module.finrank F C))
+      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) :=
+  lambda_ge_elias_volume (C : Set (ι → F)) (Module.finrank F C)
+    (submodule_ncard_eq_pow_finrank C) δ _hδ_pos _hδ_lt
 
 /-- `stirlingSeq 1 ^ 2 = 2 · stirlingSeq 2`, the base case of the two-term comparison
 `stirlingSeq_mul_le_two_mul_add`. -/
@@ -493,8 +506,8 @@ theorem qary_shell_entropy_lower
 
 open _root_.Code in
 /-- **The entropy form of the volume lower bound** ([ABF26] Corollary 3.8). Feeding the
-[MS77] binary binomial-coefficient estimate into `linear_lambda_ge_elias_volume`, dividing by
-`q^{n-k}` and writing `ρ := k/n`, gives
+[MS77] binary binomial-coefficient estimate into `lambda_ge_elias_volume`, dividing by `q^{n-k}`
+and writing `ρ := k/n`, gives
 
   `|Λ(C, δ)| ≥ q^{n·(ρ - 1 + H_q(δ))} / √(8·n·δ·(1-δ))`.
 
@@ -504,31 +517,28 @@ Precisely, [MS77] Chapter 10, §11, Lemma 7, equation (16), printed page 309 sta
 proof first derives that same single-shell estimate from finite Stirling bounds, then multiplies by
 `(q−1)^{δn}` and uses the q-entropy identity to obtain the displayed q-ary shell bound; the ball is
 at least that shell. Thus the q-ary result is a proved algebraic generalisation, not a verbatim
-[MS77] theorem. [DG25dist] gives refinements. As with `linear_lambda_ge_elias_volume`, [ABF26]
-states this for an arbitrary code over an arbitrary alphabet (`C : Σ^k → Σ^n`); the
-linear-over-a-field case below is a special case, so the alphabet-generic statement remains a
-coverage gap.
+[MS77] theorem. [DG25dist] gives refinements. This is the arbitrary-alphabet form stated by
+[ABF26]; `linear_lambda_ge_entropy_volume` below is its field-linear specialization.
 
 The hypothesis `_hδn_int` is exactly [MS77]'s `δn`-integrality condition. It is not decoration:
 without it the bound is **false** at small `δ`, since for `0 < δ·n < 1` the relative ball collapses
 to Hamming
 radius `0`, so the list is `{f} ∩ C` while the entropy-volume right-hand side can exceed `1`. -/
-theorem linear_lambda_ge_entropy_volume
-    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+theorem lambda_ge_entropy_volume {A : Type} [Fintype A] [Nontrivial A] [DecidableEq A]
+    (C : Set (ι → A)) (k : ℕ) (hcard : C.ncard = Fintype.card A ^ k)
+    (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδn_int : ∃ d : ℕ, (d : ℝ) = δ * Fintype.card ι) :
-    let q : ℕ := Fintype.card F
+    let q : ℕ := Fintype.card A
     let n : ℕ := Fintype.card ι
-    let k : ℕ := Module.finrank F C
     let ρ : ℝ := k / n
     ENNReal.ofReal
         ((q : ℝ) ^ ((n : ℝ) * (ρ - 1 + qEntropy q δ))
           / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
-      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) := by
+      ≤ (Lambda C δ : ENNReal) := by
   classical
   dsimp
-  let q : ℕ := Fintype.card F
+  let q : ℕ := Fintype.card A
   let n : ℕ := Fintype.card ι
-  let k : ℕ := Module.finrank F C
   obtain ⟨d, hd⟩ := _hδn_int
   have hn_pos : 0 < n := Fintype.card_pos
   have hq_two : 2 ≤ q := by
@@ -559,7 +569,7 @@ theorem linear_lambda_ge_entropy_volume
     le_trans (qary_shell_entropy_lower q n d δ hq_two hn_pos
       _hδ_pos _hδ_lt (by simpa only [n] using hd)) hshell_real
   have hq_posR : (0 : ℝ) < q := by positivity
-  have hElias := linear_lambda_ge_elias_volume C δ _hδ_pos _hδ_lt
+  have hElias := lambda_ge_elias_volume C k hcard δ _hδ_pos _hδ_lt
   apply le_trans ?_ hElias
   apply ENNReal.ofReal_le_ofReal
   change (q : ℝ) ^ ((n : ℝ) * ((k : ℝ) / n - 1 + qEntropy q δ)) /
@@ -581,6 +591,22 @@ theorem linear_lambda_ge_entropy_volume
     _ ≤ (hammingBallVolume q δ n : ℝ) /
         (q : ℝ) ^ ((n : ℝ) - k) :=
       div_le_div_of_nonneg_right hvol (Real.rpow_nonneg hq_posR.le _)
+
+/-- **The entropy form of the volume lower bound** for a field-linear code ([ABF26] Corollary
+3.8), specialized from `lambda_ge_entropy_volume`. -/
+theorem linear_lambda_ge_entropy_volume
+    (C : Submodule F (ι → F)) (δ : ℝ) (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
+    (_hδn_int : ∃ d : ℕ, (d : ℝ) = δ * Fintype.card ι) :
+    let q : ℕ := Fintype.card F
+    let n : ℕ := Fintype.card ι
+    let k : ℕ := Module.finrank F C
+    let ρ : ℝ := k / n
+    ENNReal.ofReal
+        ((q : ℝ) ^ ((n : ℝ) * (ρ - 1 + qEntropy q δ))
+          / (8 * n * δ * (1 - δ)) ^ ((1 : ℝ) / 2))
+      ≤ (Lambda ((C : Set (ι → F))) δ : ENNReal) :=
+  lambda_ge_entropy_volume (C : Set (ι → F)) (Module.finrank F C)
+    (submodule_ncard_eq_pow_finrank C) δ _hδ_pos _hδ_lt _hδn_int
 
 /-- **The cardinality bound from the rate–radius relation** — the arithmetic half of [ABF26]
 Theorem 3.9. Given `δ ≤ ℓ/(ℓ+1) · (1-ρ)` for a linear code `C ⊆ F^n` of rate `ρ`,

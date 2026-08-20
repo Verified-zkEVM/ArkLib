@@ -41,11 +41,14 @@ variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 /-- **Hamming-ball fiber count.** For a fixed centre `c`, the number of words `f` within
 absolute distance `⌊δ · n⌋` of `c` equals `Vol_q(δ, n)` (independent of `c`), via the
-existing `hammingBallVolume_eq_ncard_hammingBall` bridge. -/
-theorem card_filter_hammingDist_le_eq_hammingBallVolume
-    (c : ι → F) (δ : ℝ) :
-    (Finset.univ.filter (fun f : ι → F => hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊)).card
-      = hammingBallVolume (Fintype.card F) δ (Fintype.card ι) := by
+existing `hammingBallVolume_eq_ncard_hammingBall` bridge.
+
+Stated for an arbitrary finite alphabet rather than a linear code over a field: the count is pure
+`hammingDist` combinatorics, and the alphabet-generic volume bounds need it at that generality. -/
+theorem card_filter_hammingDist_le_eq_hammingBallVolume {A : Type} [Fintype A] [DecidableEq A]
+    (c : ι → A) (δ : ℝ) :
+    (Finset.univ.filter (fun f : ι → A => hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊)).card
+      = hammingBallVolume (Fintype.card A) δ (Fintype.card ι) := by
   rw [hammingBallVolume_eq_ncard_hammingBall δ c, ← Set.ncard_coe_finset]
   congr 1
   ext f
@@ -92,27 +95,31 @@ theorem submodule_ncard_eq_rpow_finrank (C : Submodule F (ι → F)) :
   rw [submodule_ncard_eq_pow_finrank, Nat.cast_pow, Real.rpow_natCast]
 
 open Classical in
-/-- **Averaging identity (Fubini).** Summing the point-list size `|Λ(C, δ, f)|` over all
-centres `f` gives `|C| · Vol_q(δ, n)`: swap the order of summation and use that each
-codeword `c ∈ C` is counted once per centre in its `⌊δ·n⌋`-ball, of which there are
-exactly `Vol_q(δ, n)`. -/
-theorem sum_ncard_closeCodewordsRel_eq
-    (C : Submodule F (ι → F)) (δ : ℝ) (hδ : 0 ≤ δ) :
-    ∑ f : ι → F, (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard
-      = (C : Set (ι → F)).ncard * hammingBallVolume (Fintype.card F) δ (Fintype.card ι) := by
-  have hsummand : ∀ f : ι → F, (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard
+/-- **Averaging identity (Fubini), for an arbitrary code over a finite alphabet.** Summing the
+point-list size `|Λ(C, δ, f)|` over all centres `f` gives `|C| · Vol_q(δ, n)`: swap the order of
+summation and use that each codeword `c ∈ C` is counted once per centre in its `⌊δ·n⌋`-ball, of
+which there are exactly `Vol_q(δ, n)`.
+
+Nothing here is linear: the argument only ever asks whether `c ∈ C`. Stating it over a plain
+`Set (ι → A)` is what lets the volume lower bounds hold at the generality their sources claim,
+with the field-linear `sum_ncard_closeCodewordsRel_eq` below as the specialization. -/
+theorem sum_ncard_closeCodewordsRel_eq_of_set {A : Type} [Fintype A] [DecidableEq A]
+    (C : Set (ι → A)) (δ : ℝ) (hδ : 0 ≤ δ) :
+    ∑ f : ι → A, (closeCodewordsRel C f δ).ncard
+      = C.ncard * hammingBallVolume (Fintype.card A) δ (Fintype.card ι) := by
+  have hsummand : ∀ f : ι → A, (closeCodewordsRel C f δ).ncard
       = (Finset.univ.filter
-          (fun c : ι → F => c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊)).card := by
+          (fun c : ι → A => c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊)).card := by
     intro f
-    rw [closeCodewordsRel_eq_setOf (C : Set (ι → F)) δ hδ f, ← Set.ncard_coe_finset]
+    rw [closeCodewordsRel_eq_setOf C δ hδ f, ← Set.ncard_coe_finset]
     congr 1
     ext c
     simp
   simp_rw [hsummand, Finset.card_filter]
   rw [Finset.sum_comm]
-  have hstep : ∀ c : ι → F,
-      (∑ f : ι → F, if c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊ then 1 else 0)
-        = if c ∈ C then hammingBallVolume (Fintype.card F) δ (Fintype.card ι) else 0 := by
+  have hstep : ∀ c : ι → A,
+      (∑ f : ι → A, if c ∈ C ∧ hammingDist c f ≤ ⌊δ * Fintype.card ι⌋₊ then 1 else 0)
+        = if c ∈ C then hammingBallVolume (Fintype.card A) δ (Fintype.card ι) else 0 := by
     intro c
     by_cases hc : c ∈ C
     · simp only [hc, true_and, if_true]
@@ -125,6 +132,14 @@ theorem sum_ncard_closeCodewordsRel_eq
   rw [← Set.ncard_coe_finset]
   congr 1
   ext c; simp
+
+/-- **Averaging identity (Fubini)** for a field-linear code, the specialization of
+`sum_ncard_closeCodewordsRel_eq_of_set` at `C : Submodule F (ι → F)`. -/
+theorem sum_ncard_closeCodewordsRel_eq
+    (C : Submodule F (ι → F)) (δ : ℝ) (hδ : 0 ≤ δ) :
+    ∑ f : ι → F, (closeCodewordsRel ((C : Set (ι → F))) f δ).ncard
+      = (C : Set (ι → F)).ncard * hammingBallVolume (Fintype.card F) δ (Fintype.card ι) :=
+  sum_ncard_closeCodewordsRel_eq_of_set (C : Set (ι → F)) δ hδ
 
 end LowerBounds_General
 

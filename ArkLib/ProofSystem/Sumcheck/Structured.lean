@@ -12,7 +12,9 @@ import ArkLib.ProofSystem.Sumcheck.Domain
 
 This file collects the data types and degree-bookkeeping helpers used by the
 **structured sumcheck**: the witness-mode degree-2 multilinear-times-multilinear sumcheck
-that underlies Binius BinaryBasefold, Binius RingSwitching, and (in the future) Hachi.
+that underlies Binius BinaryBasefold and Binius RingSwitching. (Hachi's §4.3 sumcheck is *shaped*
+like this — see `SumcheckMultiplierParam` — but carries its own guarded round layer under
+`Commitments/Functional/Hachi/Sumcheck/`, for the reasons set out in that folder's umbrella.)
 
 Unlike the canonical, oracle-mode sumcheck in `ArkLib/ProofSystem/Sumcheck/Spec/*`, where
 the polynomial being sumchecked is an oracle statement accessible to the verifier, here
@@ -76,8 +78,12 @@ example {L : Type} [CommSemiring L] {ℓ : ℕ} :
 
 No instantiation is privileged: every consumer specifies its own `combinator`, `degCombinator`,
 and degree proof. The plain degree-2 case `H = P · t` (Binary Basefold, ring-switching) takes
-`combinator := X`, `degCombinator := 1`; Hachi's range/smallness check uses `Q := ∏ⱼ (X − j)` of
-degree `2b`, giving a degree-`(2b+1)` round polynomial. For the SWIRL hyperprism (where `P` is
+`combinator := X`, `degCombinator := 1`; Hachi's range/smallness check uses the vanishing
+polynomial of the symmetric range `{−(b−1), …, b−1}`, `Q := X · ∏_{j=1}^{b−1} (X − j)(X + j)`, of
+degree `2b − 1`, giving a degree-`2b` round polynomial (`roundDegZero b = 2 * b` in
+`Commitments/Functional/Hachi/ZeroCheck/Constraints.lean`; the range side degenerates at `b = 0`,
+where `Q = X`, so Hachi's degree pin carries a `0 < b` hypothesis). For the SWIRL hyperprism
+(where `P` is
 *prismalinear* rather than multilinear), use the parallel
 `Sumcheck.Structured.Prismalinear.SumcheckMultiplierParam` shape in `Structured/Prismalinear.lean`.
 
@@ -254,7 +260,8 @@ section Witness
   challenges.
 
 The degree bound `d` is explicit (no privileged instantiation): the `H = P · t'` case passes
-`d := 2`, Hachi's degree-`(2b+1)` smallness check passes `d := 2b+1`.
+`d := 2`, Hachi's smallness check passes `d := 2b` (a degree-`(2b−1)` range combinator times the
+multilinear multiplier).
 
 Generic in shape; the per-round prover/verifier consume this witness uniformly across all
 structured-sumcheck instantiations. -/

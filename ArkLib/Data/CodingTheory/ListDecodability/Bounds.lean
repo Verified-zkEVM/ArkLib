@@ -25,9 +25,9 @@ given relative radius. The two families answer opposite questions about the same
   `rs_random_domain_lambda_le`, is probabilistic: a Reed-Solomon code on a *uniformly random*
   evaluation domain is list-decodable near capacity with high probability.
 * **Lower bounds** exhibit a radius at which the list is provably large, so they rule out list
-  decodability above a threshold: a volume/averaging bound valid for every linear code
-  (`linear_lambda_ge_elias_volume`, and its entropy form), a bound on random linear codes, and
-  Reed-Solomon-specific separations
+  decodability above a threshold: volume/averaging bounds valid for every code over a finite
+  alphabet (`lambda_ge_elias_volume` and `lambda_ge_entropy_volume`), a bound on random linear
+  codes, and Reed-Solomon-specific separations
   (`rs_lambda_superpoly_extension`, `rs_lambda_large_prime`). The proved
   `rs_codimension_one_list_size` is a separate elementary interpolation lemma, not the missing
   [JH01] high-rate separation.
@@ -80,30 +80,32 @@ This file is the umbrella; the statements are in `Bounds/`.
 
 ## External admits
 
-Four statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
+Three statements are admitted with a tagged `sorry`, never an `axiom`: the random-linear-code bound
 (`random_linear_lambda_lower`, [GLMRSW22]), the extension-field Reed-Solomon separation
 (`rs_lambda_superpoly_extension`, [BKR06]), and the random-evaluation-domain bound
-(`rs_random_domain_lambda_le`, [AGL24]), plus the number-theoretic KKH sum-set estimate
-(`two_pow_mul_choose_le_card_sumSet`, [KKH26] Lemma 1). Source locators and formulation notes
-are recorded in the defining modules and knowledge-base pages.
+(`rs_random_domain_lambda_le`, [AGL24]). Source locators and formulation notes are recorded in the
+defining modules and knowledge-base pages.
 
 One derivation inherits an admit and is therefore reachable-`sorryAx`, carrying no more information
 than its input: `random_linear_lambda_lower_exists`.
 
-Everything else is proved and axiom-clean, including the volume/averaging lower bound
-`linear_lambda_ge_elias_volume` and its entropy form `linear_lambda_ge_entropy_volume`, both halves
-of the generalized Singleton bound (`linear_card_le_of_rate_radius`,
+Everything else is proved and axiom-clean, including the alphabet-generic volume/averaging lower
+bounds `lambda_ge_elias_volume` and `lambda_ge_entropy_volume` and their field specializations
+`linear_lambda_ge_elias_volume` and `linear_lambda_ge_entropy_volume`, both halves of the
+generalized Singleton bound (`linear_card_le_of_rate_radius`,
 `linear_card_le_generalized_singleton`), the prime-field Reed-Solomon separation
 `rs_lambda_large_prime`, the elementary `rs_codimension_one_list_size`, the [AGL23]
 large-alphabet barrier
 `large_alphabet_lambda_lower` with its `η = Θ(1/n)` consequence
-`large_alphabet_card_ge_exp_of_inv_length`, and — the deepest of them — [CZ25]'s
+`large_alphabet_card_ge_exp_of_inv_length`, the number-theoretic KKH sum-set estimate
+`two_pow_mul_choose_le_card_sumSet` ([KKH26] Lemma 1, proved via a signed subset-sum
+embedding and a resultant/root-of-unity argument), and — the deepest of them — [CZ25]'s
 subspace-design theorem `subspaceDesign_lambda_le` with the four results derived from it, which
 means `frs_lambda_le_capacity` and `um_lambda_le_capacity`, the statements that folded Reed-Solomon
 and univariate multiplicity codes achieve list-decoding capacity, now hold unconditionally in-tree.
 The KKH asymptotic result `exists_rs_asymptotic_Lambda_lower_bound` is likewise proved from the
 concrete vanilla template; it carries smooth-domain existence as an explicit `supply` hypothesis
-and does not depend on the separate sum-set admit.
+and does not depend on the sum-set estimate.
 
 Two source-side weakenings apply throughout and are not repeated on each declaration: [CZ25] and
 [AGL24] both state *average-radius* list-decodability, of which the plain `Λ` bound formalised here

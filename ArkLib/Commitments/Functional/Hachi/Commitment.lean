@@ -31,7 +31,7 @@ finished opening will run over lives in the sibling `Composition.lean`
 * `commit`: honest commitment — reshape the polynomial into its `2^r × 2^m` coefficient matrix,
   gadget-decompose it, and outer-commit; the decommitment is the `Decomp` data. Deterministic.
 * `hachi`: the `Commitment.Scheme` value packaging the above; its `opening` field is a documented
-  `sorry` pending the §4.3+ subprotocols (see the `TODO` block).
+  `sorry` pending the honest-prover / completeness layer (see the `TODO` block).
 
 Same namespace/opens discipline as the rest of the Hachi tree
 (`namespace ArkLib.Lattices.Ajtai.InnerOuter`, `open WeakBinding`).
@@ -148,8 +148,9 @@ def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
 oracle and the honest `keygen` / `commit` are real, but the `opening` field is a placeholder
 (`sorry`, see below and the `TODO` block), so this value does **not** yet certify end-to-end
 opening correctness. It is committed now only as the target packaging the finished opening will
-slot into once the §4.3+ subprotocols and the honest-prover layer land (the follow-up tracked by
-the `TODO` here and in `Composition.lean`).
+slot into once the honest-prover layer lands (the follow-up tracked by the `TODO` here and in
+`Composition.lean`; the §4.3 soundness chain it will run over is finished — rows 1–9 of that file's
+seam table).
 
 Over the multilinear data `CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable polynomial,
 with the `r`/`m` split feeding the outer/inner gadgets. It commits a polynomial directly (no
@@ -162,8 +163,9 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
-sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only after the remaining §4.3+ subprotocols
-and their honest-prover layer are formalized. Everything else here is real.
+sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
+formalized (`QuadEval.prover`'s `computeV`/`computeResp`, the sumcheck loop's `computeG`, the
+tail's `computeY`). Everything else here is real.
 
 ⚠ The declared `pSpec` is **not** the full opening protocol's spec: `!p[] ++ₚ pSpec …` is the
 *bridge ▷ QuadEval prefix* only (zero rounds, then Figure 3's commit/challenge round). The finished
@@ -434,17 +436,23 @@ end CommitBalancedRelInBox
 
 The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs, in order:
 
-1. the honest-prover layer for the remaining §4.3+ links (the `QuadEval` one exists —
-   `honestComputeV` / `honestComputeResp` — and the lift, adapter, zero-check and batching links now
-   have honest protocol objects with completeness proofs);
-2. **composition of those reductions**, which is blocked on the generic
-   `Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`) and
-   `liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`.
-   `HonestChain.lean` establishes the per-link theorems at compatible relations, which is *not* the
-   same as completeness of an appended reduction;
+1. **the honest-prover layer for the links that still lack one.** `QuadEval` has it
+   (`honestComputeV` / `honestComputeResp`, from `QuadEval.Gadgets`' `carrierCommit` / `zDecomp`),
+   as do the `R^lin` adapter, the HMZ25 lift, the batching bridge and the nested zero-check — each
+   with a completeness proof. Still open:
+   * the sumcheck loop's `computeG` (`Sumcheck/Rounds.lean`), the honest round-polynomial pair. This
+     one needs new infrastructure first: a *computable* `CPolynomial`-valued partial sum in the free
+     coordinate, plus its agreement lemma against the proof-side `roundPoly`
+     (`Sumcheck/RoundPoly.lean`, Computability section);
+   * the final-evaluation and partial-evaluation tails' `computeY`;
+2. **composition of those reductions**, blocked on the generic `Reduction.append_completeness`
+   (`OracleReduction/Composition/Sequential/Append.lean`) and `liftContext_completeness`
+   (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`. `HonestChain.lean` appends
+   the finished prefix (`completePrefixReduction`) and proves its completeness modulo exactly those
+   lemmas;
 3. widening this scheme's `pSpec` from the bridge ▷ QuadEval prefix to the full opening spec;
-4. only then `Commitment.perfectCorrectness` for `hachi` (and a decision about whether the packaged
+4. only then `Commitment.perfectCorrectness` for `hachi` — and a decision on whether the packaged
    `commit` should switch to `commitBalanced`, which is what the paper-exact `QuadEval` relation
-   needs). -/
+   needs. -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter

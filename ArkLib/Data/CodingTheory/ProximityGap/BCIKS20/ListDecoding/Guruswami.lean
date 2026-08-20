@@ -84,9 +84,16 @@ structure ModifiedGuruswami
     D_YZ Q ≤ n * (m + 1/(2 : ℚ))^3 / (6 * Real.sqrt ((k + 1) / n))
 
 omit [DecidableEq (RatFunc F)] in
-/-- Claim 5.4 from [BCIKS20].
-It essentially claims that there exists a solution to the Guruswami-Sudan constraints above. -/
-lemma modified_guruswami_has_a_solution {m n k : ℕ} {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
+/-- The modified Guruswami-Sudan system is solvable: for every evaluation domain `ωs` and word
+pair `u₀ u₁`, some nonzero trivariate `Q` meets all the degree and multiplicity constraints of
+`ModifiedGuruswami` (Claim 5.4).
+
+The hypotheses `0 < n` and `0 < k` are necessary: with `n = 0` or `k = 0` the rational degree
+bounds `D_X` and `D_X / k` collapse to `0`, making the strict degree constraints unsatisfiable.
+`1 ≤ m` matches the interpolation count that supplies `Q`. -/
+lemma modified_guruswami_has_a_solution {m n k : ℕ}
+    (hn : 0 < n) (hk : 0 < k) (hm : 1 ≤ m)
+    {ωs : Fin n ↪ F} {u₀ u₁ : Fin n → F} :
     ∃ Q : F[Z][X][Y], ModifiedGuruswami m n k ωs Q u₀ u₁ := by
   sorry
 

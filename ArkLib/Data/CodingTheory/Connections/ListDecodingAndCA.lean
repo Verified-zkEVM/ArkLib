@@ -7,6 +7,9 @@ Authors: Alexander Hicks
 import ArkLib.Data.CodingTheory.ProximityGap.Errors
 import ArkLib.Data.CodingTheory.ListDecodability
 import ArkLib.Data.CodingTheory.ReedSolomon
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.BCHKS25
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.CS25
+import ArkLib.Data.CodingTheory.Connections.ListDecodingAndCA.GCXK25
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 
 /-!
@@ -53,73 +56,12 @@ section ListImpliesMCA
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
-/-- A list-size bound below the relative minimum distance implies an affine-line MCA bound:
-
-  `ε_mca(C, 1 - √(1 - δ + η)) ≤ (L²·δ·n + 1/η) / |F|`
-
-The radius is real-valued, so no truncation is needed when the displayed expression is negative.
-The strict hypothesis `δ < Δ_C` is part of the source theorem. -/
-theorem linear_mcaError_le_of_Lambda_le
-    (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
-    (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
-    (_hδ_lt_dist :
-        δ < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
-    (_hη_pos : 0 < η) (_hη_lt : η < 1)
-    (_hΛ : Lambda ((C : Set (ι → F))) δ ≤ (L : ℕ∞)) :
-    mcaError (AffineLineGenerator F) C
-        (1 - (1 - δ + η) ^ ((1 : ℝ) / 2)) ≤
-      ENNReal.ofReal
-        (((L : ℝ) ^ 2 * δ * Fintype.card ι + 1 / η) / Fintype.card F) := by
-  sorry -- ABF26-T5.1; external admit [GCXK25 Thm 3].
-
 end ListImpliesMCA
 
 section CAImpliesList
 
 variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
-
-/-- A sufficiently small CA error bounds the Reed--Solomon list size by the field size. If
-
-  `ε_ca(C, δ_fld = δ + 2/n, δ_int) < 1/(2n)`
-
-then `Λ(C, δ) ≤ |F|`. The interleaved radius is strictly below `1 - ρ - 1/n`, the
-joint-distance boundary supplied by the source. -/
-theorem rs_Lambda_le_card_of_epsCa_lt
-    (domain : ι ↪ F) (k : ℕ) (δ : ℝ) (δ_int : ℝ≥0)
-    (_hδ_pos : 0 < δ)
-    (_hδ_lt : (δ : ℝ) < 1 - (k : ℝ) / Fintype.card ι)
-    (_hδ_int : (δ_int : ℝ) <
-      1 - (k : ℝ) / Fintype.card ι - 1 / Fintype.card ι)
-    (_hε_ca :
-        epsCa (F := F) (A := F)
-            ((ReedSolomon.code domain k : Set (ι → F)))
-            ((δ + 2 / Fintype.card ι).toNNReal)
-            δ_int <
-          ENNReal.ofReal (1 / (2 * Fintype.card ι))) :
-    Lambda ((ReedSolomon.code domain k : Set (ι → F))) δ ≤ (Fintype.card F : ℕ∞) := by
-  sorry -- ABF26-T5.2; external admit [BCHKS25 Thm 1.9].
-
-/-- Integer-radius CA-to-list-size bound for related Reed--Solomon codes:
-
-  `Λ(RS(k+1), f/n) ≤ ⌈εq(q-n)/(q-n-kεq)⌉`.
-
-The hypotheses `f + k + 1 < n` and `ε < (q-n)/(kq)` are the source's native parameter
-conditions. The real-radius theorem below is derived from this statement. -/
-theorem rs_Lambda_extended_le_of_epsCa_int_radius
-    (domain : ι ↪ F) (k f : ℕ) (ε : ℝ)
-    (_hk_pos : 0 < k)
-    (_hf_lt : f + k + 1 < Fintype.card ι)
-    (_hε_lt : ε < ((Fintype.card F : ℝ) - Fintype.card ι) / (k * Fintype.card F))
-    (_hε_ca :
-        (epsCa (F := F) (A := F)
-            ((ReedSolomon.code domain k : Set (ι → F)))
-            ((f : ℝ≥0) / Fintype.card ι) ((f : ℝ≥0) / Fintype.card ι)).toReal ≤ ε) :
-    Lambda ((ReedSolomon.code domain (k + 1) : Set (ι → F))) ((f : ℝ) / Fintype.card ι) ≤
-      (Nat.ceil
-        (ε * Fintype.card F * ((Fintype.card F : ℝ) - Fintype.card ι)
-          / ((Fintype.card F : ℝ) - Fintype.card ι - k * ε * Fintype.card F)) : ℕ∞) := by
-  sorry -- ABF26-T5.3 source form; external admit [CS25 Thm 2].
 
 /-- `ε_ca` is never `⊤`: each branch of the supremum is `0` or a `PMF` probability
 (`≤ 1`). Derivation infrastructure for `rs_Lambda_extended_le_of_epsCa`. -/
