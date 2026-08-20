@@ -38,8 +38,9 @@ here — `completePrefixReduction_perfectCompleteness` (through the nested zero-
 `Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`), still
 `sorry`, and the context-lifted links would additionally need `liftContext_completeness`
 (`OracleReduction/LiftContext/Reduction.lean`), also still `sorry`. Every per-link input is
-axiom-clean; nothing beyond `relWEvalClaim` is composed at all (the recursion tail's honest layer
-does not exist yet), and `Composition.lean` composes the *soundness* certificates only.
+axiom-clean; `Composition.lean` composes the *soundness* certificates only. Beyond
+`relWEvalClaim`, the **nonrecursive** run is closed by the terminal reveal-and-check in
+`Correctness.lean` (the recursion tail's honest layer still does not exist).
 
 ## What the non-short honest quotient costs
 

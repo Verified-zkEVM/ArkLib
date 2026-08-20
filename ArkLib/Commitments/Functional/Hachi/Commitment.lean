@@ -455,6 +455,13 @@ The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs,
 3. widening this scheme's `pSpec` from the bridge ▷ QuadEval prefix to the full opening spec;
 4. only then `Commitment.perfectCorrectness` for `hachi` — and a decision on whether the packaged
    `commit` should switch to `commitBalanced`, which is what the paper-exact `QuadEval` relation
-   needs. -/
+   needs.
+
+For the **nonrecursive** run all four steps are done in `Correctness.lean`: the separate scheme
+`hachiNonrecursive` packages `commitBalanced` with the complete composed opening (input adapter ▷
+chain through the sumcheck ▷ terminal reveal-and-check) and proves
+`hachiNonrecursive_perfectCorrectness`, modulo only the admitted `Reduction.append_completeness`.
+What remains open *here* is `hachi` itself, i.e. the succinct opening with the §4.5 recursion
+tail. -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter
