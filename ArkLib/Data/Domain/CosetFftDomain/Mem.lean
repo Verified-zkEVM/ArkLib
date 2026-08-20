@@ -91,7 +91,6 @@ lemma mem_toFinset_iff_mem [Fintype ι] [DecidableEq F] :
 lemma mem_toFinset_self [Fintype ι] [DecidableEq F] {i : ι} :
   ω i ∈ toFinset ω := by simp
 
-@[simp high]
 lemma card_toFinset_le_fintype_card [Fintype F] [Fintype ι] [DecidableEq F] :
   Finset.card (toFinset ω) ≤ Fintype.card F := Finset.card_le_card (by simp)
 
