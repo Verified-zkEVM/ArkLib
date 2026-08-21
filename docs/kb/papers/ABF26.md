@@ -24,6 +24,7 @@ related_modules:
   - ArkLib/Data/CodingTheory/ProximityGap/InformationSetLowerBound.lean
   - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges.lean
   - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/CapacityBounds.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/GrandChallenges/ListDecoding.lean
   - ArkLib/Data/CodingTheory/ProximityGap/LineDecoding.lean
   - ArkLib/Data/CodingTheory/SubspaceDesign.lean
   - ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean
@@ -90,6 +91,16 @@ manuscript, not to the original sources it cites — those get their own keys (`
   adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
   `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
   in `InformationSetLowerBound.lean`.
+- **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds
+  `ListLowerWitness.ofUniqueDecodingRange`, the first constructor for either list witness type:
+  interleaving preserves minimum distance, hence the unique-decoding radius
+  (`relUDR_interleavedCode_eq`), and inside that radius the interleaved point lists are
+  subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. It is axiom-clean, and so is the whole of
+  `GrandChallenges.lean`. The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`,
+  and `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with
+  an oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. As on the MCA
+  side, the unique-decoding radius is far short of the Johnson and capacity radii, so none of
+  this approaches the prize thresholds; see the gap note below.
 - **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
@@ -267,6 +278,19 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
     convention *and* the non-negative-exponent guard its pigeonhole needs, and is false without
     either; Theorem 3.4's premise, read at Theorem 2.18's printed profile, is false (it needs
     [CZ25]'s `(k−1)` level). Both have compiled axiom-clean counterexamples.
+- **§1 challenge resolutions.** Both prize propositions remain unproved at every rate, and this
+  is the open research question rather than a formalization backlog: `mcaPrize` and
+  `listDecodingPrize` reduce to `McaPrizeResolution` / `ListPrizeResolution`, neither of which is
+  ever constructed, because each demands a full `GrandMcaResolution` / `GrandListResolution` —
+  an exact adjacent-grid crossing, or safety at every grid point. Nothing outside
+  `GrandChallenges.lean` instantiates `prizeDimension` / `prizeRate` at any `j : Fin 4`, so the
+  rates `1/4`, `1/8`, `1/16` are untouched. Two nearer gaps are ordinary formalization work: no
+  `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
+  `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
+  large-list or CA-failure construction); and no list witness yet reaches past the
+  unique-decoding radius, though `CodingTheory.johnson_bound_lambda_le_ell` is stated over an
+  arbitrary finite alphabet and is axiom-clean, so a Johnson-radius `ListLowerWitness` is
+  reachable without new admits.
 - **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
   proving it in-tree remains open.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
