@@ -47,11 +47,11 @@ Downstream users include the BCIKS20 list-decoding agreement files under
 | Claim A.2 Hensel lift exists (`α₀ = T/W`, `R(X, γ, Z) = 0`) | present | `exists_hensel_alpha_sequence`, `formalHenselAlphaSequence` | Axiom-clean. |
 | A.4 uniqueness of the lift | present | `hensel_alpha_sequence_unique`, `IsHenselNumeratorSequence.unique`, `IsHenselNumeratorSequence.eq_betaSeq` | Axiom-clean. Needed by [BCIKS20] Claim 5.9; also makes `betaSeq` canonical rather than an arbitrary choice. |
 | Claim A.2 regularity of `ξ` | present | `xi_regular`, `embeddingOf𝒪Into𝕃_xi` | The total Lean form of `ξ` has a concrete quotient representative `xiPre`. |
-| Claim A.2 bound for `ξ` | present | `xi_weight_le` | Assumes `2 ≤ natDegreeY R`, which is the paper's standing assumption in A.4 (see below). |
+| Claim A.2 bound for `ξ` | corrected | `contentWeight`, `contentWeight_le`, `xi_weight_le` | Assumes `2 ≤ natDegreeY R` and adds the specialization-content term omitted by the paper (finding 3). |
 | Claim A.2 regular numerators `βₜ` exist | present | `exists_hensel_numerator_sequence`, `IsHenselNumeratorSequence`, `exists_regular_numerator_shape`, `henselCoeffResidual_regular_after_clearing` | Axiom-clean, and deliberately *free of the weight conjunct* so that `betaSeq`/`α`/`γ` do not depend on the open quantitative step. |
-| Claim A.2 sharp weight bound | present | `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `betaSeq_weight_sharp_le` | Proved, with a correction term relative to the paper's stated inequality — see finding 2. This is the form Claim 5.10 needs. |
-| Claim A.2 loose weight bound `Λ(βₜ) ≤ (2t+1)dD` | present | `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `betaSeq_weight_le` | Weakening of the sharp bound via `numeratorShapeSharp_le_loose`; unaffected by the correction, so Claim 5.10 gets exactly what the paper gives it. |
-| Claim A.2 as stated in the paper | present | `exists_hensel_numerators_with_weight_bounds` | Bundles existence with both weight bounds. Axiom-clean. |
+| Claim A.2 sharp weight bound | corrected | `numeratorShapeSharpContent`, `numerator_shape_weight_sharp`, `hensel_numerator_weight_sharp_le`, `betaSeq_weight_sharp_le` | Includes both the recursion correction (finding 2) and the specialization-content charge (finding 3). |
+| Claim A.2 loose weight bound | corrected | `numeratorShapeSharpContent_le_loose`, `numerator_shape_weight_bound`, `hensel_numerator_weight_le`, `betaSeq_weight_le` | The proved uniform form is `Λ(βₜ) ≤ (2t+1)(dY+1)D`. It is sufficient, but not asserted to be optimal. |
+| Corrected Claim A.2 package | present | `exists_hensel_numerators_with_weight_bounds` | Bundles existence with the content-aware sharp and conservative loose bounds. Axiom-clean. |
 | Hensel-lift coefficients `α`, `γ` | present | `alpha`, `alpha'`, `gamma`, `gamma'`, `betaSeq`, `betaSeq_spec` | Now defined from the qualitative existence theorem alone, hence axiom-clean. |
 
 ## Three findings on Appendix A.4
@@ -107,13 +107,11 @@ The correction pays that deficit and is superadditive on precisely the configura
 deficit occurs. The boundary summand needs `p.2 = t+1` split into `d` parts each `≤ t`, hence at
 least two nonzero parts `S₁ ≥ 2`, and then
 `t·(D - dY) - ∑ᵢ (lᵢ-1)·(D - dY) = (S₁-1)·(D - dY) ≥ D - dY ≥ Λ(c)`.
-Every other summand has `∑ᵢ (lᵢ-1) ≤ t`, so the correction is free there. Simply raising the
-`ξ`-charge instead would *not* work: it breaks the loose bound the paper quotes
-(`d = 2, dH = 1, D = 100, Λ(W) = 0, t = 5` gives `2377 > 2200 = (2t+1)dD`).
+Every other summand has `∑ᵢ (lᵢ-1) ≤ t`, so the correction is free there.
 
-**Nothing downstream is weakened.** `numeratorShapeSharp_le_loose` still yields `(2t+1)·dY·D`, and
-that is the only form Claim 5.10 consumes: its telescoping maximizes at `t = k`, giving
-`max_t (sharp t + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = sharp k ≤ (2k+1)·dY·D`.
+The arithmetic theorem `numeratorShapeSharp_le_loose` still yields `(2t+1)·dY·D` for that
+*defined budget*. It must not be confused with a bound on the actual numerators after finding 3:
+the latter use `numeratorShapeSharpContent`.
 
 The paper's *literal* inequality would follow from its other route — `Λ(αₜ) = Λ(Y)`, i.e. a weight
 function on `𝕃` rather than on `𝒪`, which gives `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)` with no
@@ -122,25 +120,40 @@ from `weight_mul`, since multiplying by an `F[Z]`-element never triggers reducti
 the crux is open: bounding `αₜ = -cₜ/ζ` requires a **lower** bound on `Λ(ζ)`, and only upper bounds
 are available. Newton-polygon reasoning has the same shape — bounding root degrees needs a lower
 bound on the leading coefficient. That is what the paper's one-line "γ has the same weight as Y,
-since X and x₀ have weight 0" conceals. Since both routes deliver the same usable consequence, this
-is a fidelity question only.
+since X and x₀ have weight 0" conceals. Completing that route could recover the paper's smaller
+budget; it is not currently part of the proved API.
 
-### 3. The paper's sharper `Λ(ξ)` bound also assumes `Λ(W) = D - dH`
+### 3. The paper's `Λ(ξ)` bound omits specialization content
 
-A.4 states `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)`. Only the second, weaker form is formalized
-(`xi_weight_le`), and the first is *not* provable as stated. With `ξ`'s explicit representative
-`xiPre = ∑_{i<d-1} C(Pᵢ W^{d-2-i}) Tⁱ + C(P_{d-1}/W) T^{d-1}` (`P = ∂R/∂Y(x₀,·,Z)`, so
-`deg_Z Pᵢ ≤ D-1-i`), the `i`-th monomial has weight `i·(D-dH+1) + (D-1-i) + (d-2-i)Λ(W)`, and
-requiring that to be `≤ (D-1) + (d-2)Λ(W)` for all `i` reduces to `D - dH ≤ Λ(W)` — the same hidden
-assumption as in finding 2, since `Λ(W) ≤ D - dH` always. Under that assumption the two forms agree
-up to `d - dH`; in general only the weaker one holds, and it is the one used here.
+A.4 states `Λ(ξ) ≤ (D-1) + (d-2)Λ(W) ≤ (d-1)(D-dH+1)`. The final `T^{d-1}` coefficient of
+the explicit representative is `P_{d-1}/W`; when `dH = d`, this is the content left in
+`R(x₀,Y,Z) = H(Y,Z)·C(Z)`. Fraction-field separability does not force `C` to be a unit.
+
+The missing contribution is formalized as `contentWeight x₀ R H`, with
+`contentWeight ≤ D-dY`, and the proved estimate is
+
+```
+Λ(ξ) ≤ (dY-1)(D-dH+1) + contentWeight x₀ R H.
+```
+
+This is a genuine counterexample to the literal Claim A.2 bound. Over `𝔽₅`, take
+`R = Z·Y² + Z·Y + (Z+X)`, `x₀ = 0`, `H = Y²+Y+1`, and `D = 3`. The specialization is separable
+over `𝔽₅(Z)`, while `ξ` has representative `Z + 2Z·T` of weight `3`; the paper's bound is `2`.
+
+Propagating the proved sharp budget gives the safe loose bound `(2t+1)(dY+1)D`. This does **not**
+show that an actual numerator attains that arithmetic budget, so the extra `+1` is not claimed to
+be necessary and the paper's smaller loose numerator bound is not marked disproved.
 
 ## Near-Term Work
 
-1. Case-split on `deg_Y R` in §5 to discharge `2 ≤ natDegreeY R` (finding 1 above).
-2. Optional, fidelity only: extend `Λ` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)` to obtain the
+1. Complete the degree-one/direct-root branch in §5; the Claims 5.8--5.11 APIs now explicitly
+   isolate the `2 ≤ natDegreeY R` branch (finding 1).
+2. Formalize the finite exceptional-set argument behind
+   `Claim57Assumptions.positive_pair_for_every_z`, so content roots cannot masquerade as
+   positive-`Y`-degree factors.
+3. Optional, fidelity only: extend `Λ` to `𝕃` and prove `Λ(αₜ) ≤ Λ(T) - Λ(W)` to obtain the
    paper's uncorrected sharp inequality (finding 2 above). No downstream consequence.
 
 **Appendix A is otherwise complete**: every declaration in
-`ArkLib/Data/Polynomial/RationalFunctions/` is axiom-clean (266 declarations, zero `sorryAx`, zero
-non-standard axioms), including Lemma A.1 and all of Claim A.2.
+`ArkLib/Data/Polynomial/RationalFunctions/` is axiom-clean, including Lemma A.1 and the corrected
+Claim A.2 package.

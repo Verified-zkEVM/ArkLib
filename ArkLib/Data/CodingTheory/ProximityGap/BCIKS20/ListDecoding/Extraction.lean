@@ -79,8 +79,15 @@ of the factorization (5.12), `discY(Rᵢ(X, Y, Z))(x₀) ≠ 0` **as an element 
 The specialisation is `X := x₀`. Since `Bivariate.discr_y R : F[Z][X]` carries `X` as its *outer*
 variable and `Z` as its inner one, this is `Polynomial.eval (Polynomial.C x₀)`, which leaves a
 polynomial in `Z`. (`Bivariate.evalX` evaluates the *inner* variable, so it would set `Z := x₀`
-here — the opposite of what the claim needs.) -/
-lemma discr_of_irred_components_nonzero (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+here — the opposite of what the claim needs.)
+
+The degree hypothesis is the exact finite-field root-counting premise used by Claim 5.6.  In the
+paper it is derived from (5.3) and the formal discriminant-degree estimate; it cannot be obtained
+from `ModifiedGuruswami` alone. -/
+lemma discr_of_irred_components_nonzero (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hdegree :
+      ((irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose.map
+        Bivariate.discr_y).prod.natDegree < Nat.card F) :
     ∃ x₀ : F,
       ∀ R ∈ (irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose,
       Polynomial.eval (Polynomial.C x₀) (Bivariate.discr_y R) ≠ 0 := by sorry
@@ -128,14 +135,14 @@ Claim 5.7's counting runs over these, since only they can serve as the `H` of th
 (`natDegree_H_pos`), and only for these is the count bounded by `natDegreeY Q` — see
 `pg_card_positiveDegreePairs_le_natDegreeY` and `pg_positiveDegreeFactors`.
 
-**Open obligation.**  `pg_exists_pair_for_z` produces a pair in `pg_candidatePairs`, not
+**Explicit bridge required downstream.**  `pg_exists_pair_for_z` produces a pair in
+`pg_candidatePairs`, not
 necessarily in this subset: a constant prime factor `C c` of `R(x₀,·,Z)` satisfies the vanishing
 condition exactly when `c(z) = 0`, which does happen.  Bridging the two therefore requires
 discarding the finitely many `z` annihilated by the content of `R(x₀,·,Z)`, which is part of Claim
-5.7's counting argument and is not available here.  Previously this bridge was obtained from
-ring-level `Polynomial.Separable` on the specialization, which excludes constant factors outright —
-but that hypothesis is unsatisfiable in the intended setting, so the obligation is recorded rather
-than discharged. -/
+5.7's counting argument.  `Claim57Assumptions.positive_pair_for_every_z` records this bridge until
+that finite exceptional-set argument is formalized.  Ring-level `Polynomial.Separable` would
+exclude constant factors, but is stronger than the source's fraction-field separability. -/
 noncomputable def pg_positiveDegreePairs
     (x₀ : F)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
@@ -156,9 +163,37 @@ theorem pg_natDegree_pos_of_mem_positiveDegreeFactors {p : F[Z][X]} {H : F[Z][X]
   simpa [pg_positiveDegreeFactors] using (Multiset.of_mem_filter hH)
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
-/-- Every candidate pair has a second component of positive `Y`-degree.
+/-- Under the stronger ring-level separability hypothesis, every normalized factor has positive
+degree.  This remains a useful general helper even though Claim 5.7 only supplies fraction-field
+separability and therefore uses the filtered variant above. -/
+theorem pg_natDegree_pos_of_mem_normalizedFactors_of_separable (p : F[Z][X])
+    (hp : p.Separable) {H : F[Z][X]}
+    (hH : H ∈ UniqueFactorizationMonoid.normalizedFactors p) :
+    0 < H.natDegree := by
+  have hH_irred : Irreducible H :=
+    UniqueFactorizationMonoid.irreducible_of_normalized_factor H hH
+  have hH_dvd : H ∣ p :=
+    UniqueFactorizationMonoid.dvd_of_mem_normalizedFactors hH
+  have hH_sep : H.Separable :=
+    Polynomial.Separable.of_dvd hp hH_dvd
+  by_contra hHdeg
+  have hHdeg0 : H.natDegree = 0 := Nat.eq_zero_of_not_pos hHdeg
+  have hconst : H = Polynomial.C (H.coeff 0) :=
+    Polynomial.eq_C_of_natDegree_eq_zero hHdeg0
+  have hsepC : (Polynomial.C (H.coeff 0) : F[Z][X]).Separable := by
+    exact hconst ▸ hH_sep
+  have hunitCoeff : IsUnit (H.coeff 0) :=
+    (Polynomial.separable_C (H.coeff 0)).1 hsepC
+  have hunitC : IsUnit (Polynomial.C (H.coeff 0) : F[Z][X]) :=
+    (Polynomial.isUnit_C).2 hunitCoeff
+  have hunit : IsUnit H := by
+    exact hconst.symm ▸ hunitC
+  exact hH_irred.not_isUnit hunit
 
-No separability hypothesis is needed now that `pg_candidatePairs` ranges over
+omit [DecidableEq (RatFunc F)] [Finite F] in
+/-- Every positive-degree candidate pair has a second component of positive `Y`-degree.
+
+No separability hypothesis is needed because `pg_positiveDegreePairs` ranges over
 `pg_positiveDegreeFactors`. -/
 theorem pg_positiveDegreePairs_snd_natDegree_pos (x₀ : F)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
@@ -173,6 +208,30 @@ theorem pg_positiveDegreePairs_snd_natDegree_pos (x₀ : F)
         H ∈ pg_positiveDegreeFactors (Bivariate.evalX (Polynomial.C x₀) R) := by
     simpa [pg_positiveDegreePairs] using hmem
   exact pg_natDegree_pos_of_mem_positiveDegreeFactors h'.2
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
+/-- The unfiltered candidate-pair API remains valid when callers really do have ring-level
+separability.  Claim 5.7 does not, so it uses `pg_positiveDegreePairs_snd_natDegree_pos`. -/
+theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hsep : ∀ R : F[Z][X][Y],
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs →
+        (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+    {R : F[Z][X][Y]} {H : F[Z][X]}
+    (hmem : (R, H) ∈ pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs)
+      (Q := Q) (u₀ := u₀) (u₁ := u₁) x₀ h_gs) :
+    0 < H.natDegree := by
+  classical
+  have h' :
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs ∧
+        H ∈
+          UniqueFactorizationMonoid.normalizedFactors
+            (Bivariate.evalX (Polynomial.C x₀) R) := by
+    simpa [pg_candidatePairs] using hmem
+  exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable
+    (Bivariate.evalX (Polynomial.C x₀) R) (hsep R h'.1) h'.2
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 /-- At most `p.natDegree` distinct factors of positive `Y`-degree.
@@ -222,6 +281,52 @@ theorem pg_card_positiveDegreeFactors_toFinset_le_natDegree (p : F[Z][X]) :
       Polynomial.natDegree_multiset_prod (t := s) hs0
     have hfin : #f.toFinset ≤ f.card := Multiset.toFinset_card_le (m := f)
     omega
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
+/-- The corresponding unfiltered factor-count bound under ring-level separability.  Kept alongside
+the filtered theorem because the hypothesis is meaningful for other callers even though it is too
+strong for the BCIKS20 specialization. -/
+theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Separable) :
+    #((UniqueFactorizationMonoid.normalizedFactors p).toFinset) ≤ p.natDegree := by
+  classical
+  let s : Multiset (F[Z][X]) := UniqueFactorizationMonoid.normalizedFactors p
+  have hs0 : (0 : F[Z][X]) ∉ s := by
+    simpa [s] using (UniqueFactorizationMonoid.zero_notMem_normalizedFactors p)
+  have hp0 : p ≠ 0 := hp.ne_zero
+  have hpos : ∀ q ∈ s, 1 ≤ q.natDegree := by
+    intro q hq
+    have hq' : q ∈ UniqueFactorizationMonoid.normalizedFactors p := by
+      simpa [s] using hq
+    exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable p hp hq'
+  have hcard_le_sum : s.card ≤ (s.map Polynomial.natDegree).sum := by
+    have : (∀ q ∈ s, 1 ≤ q.natDegree) → s.card ≤ (s.map Polynomial.natDegree).sum := by
+      refine Multiset.induction_on s ?_ ?_
+      · intro _
+        simp
+      · intro a t ih ht
+        have ha : 1 ≤ a.natDegree := ht a (by simp)
+        have ht' : ∀ q ∈ t, 1 ≤ q.natDegree := by
+          intro q hq
+          exact ht q (Multiset.mem_cons_of_mem hq)
+        have ih' : t.card ≤ (t.map Polynomial.natDegree).sum := ih ht'
+        have hstep : t.card + 1 ≤ (t.map Polynomial.natDegree).sum + a.natDegree :=
+          Nat.add_le_add ih' ha
+        simpa [Multiset.card_cons, Multiset.map_cons, Multiset.sum_cons, Nat.add_comm] using hstep
+    exact this hpos
+  have hassoc : Associated s.prod p := by
+    simpa [s] using (UniqueFactorizationMonoid.prod_normalizedFactors (a := p) hp0)
+  have hnatDegree_prod : s.prod.natDegree = p.natDegree := by
+    apply Polynomial.natDegree_eq_of_degree_eq
+    exact Polynomial.degree_eq_degree_of_associated hassoc
+  have hcard_le : s.card ≤ p.natDegree := by
+    have hnat : s.prod.natDegree = (s.map Polynomial.natDegree).sum :=
+      Polynomial.natDegree_multiset_prod (t := s) hs0
+    have h1 : s.card ≤ s.prod.natDegree := by
+      simpa [hnat.symm] using hcard_le_sum
+    simpa [hnatDegree_prod] using h1
+  have hfin : #s.toFinset ≤ p.natDegree :=
+    (Multiset.toFinset_card_le (m := s)).trans hcard_le
+  simpa [s] using hfin
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_evalX_eq_map_evalRingHom (x₀ : F) (R : F[Z][X][Y]) :
@@ -538,7 +643,7 @@ omit [DecidableEq (RatFunc F)] [Finite F] in
 /-- The positive-degree candidate pairs number at most `natDegreeY Q`.
 
 No separability hypothesis: the bound now comes from filtering out the constant factors rather than
-from ring-level `Polynomial.Separable` on each specialization, which is unsatisfiable here — see
+from ring-level `Polynomial.Separable` on each specialization, which is too strong here — see
 `pg_positiveDegreeFactors` and `irreducible_factorization_of_gs_solution`. -/
 theorem pg_card_positiveDegreePairs_le_natDegreeY (x₀ : F)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
@@ -608,6 +713,71 @@ theorem pg_card_positiveDegreePairs_le_natDegreeY (x₀ : F)
       (pg_sum_natDegreeY_Rset_le_natDegreeY_Q (m := m) (n := n) (k := k)
         (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs)
   -- Put everything together.
+  exact (hcard_biUnion.trans (hsum.trans hsum_Rset_le))
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
+/-- The original unfiltered candidate-pair count under ring-level separability.  This theorem is
+valid and retained for callers that can supply its stronger hypothesis; the BCIKS20 path uses the
+filtered theorem above. -/
+theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hsep : ∀ R : F[Z][X][Y],
+    R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
+      (Bivariate.evalX (Polynomial.C x₀) R).Separable) :
+  #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+      (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Bivariate.natDegreeY Q := by
+  classical
+  set Rset : Finset F[Z][X][Y] :=
+    pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs with hRset
+  set t : F[Z][X][Y] → Finset (F[Z][X][Y] × F[Z][X]) := fun R ↦
+    (UniqueFactorizationMonoid.normalizedFactors
+        (Bivariate.evalX (Polynomial.C x₀) R)).toFinset.image (fun H ↦ (R, H)) with ht
+  have hcp :
+      pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) x₀ h_gs = Rset.biUnion t := by
+    simp [pg_candidatePairs, pg_Rset, hRset, ht]
+  have hcard_biUnion :
+      #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ ∑ R ∈ Rset, #(t R) := by
+    simpa [hcp] using (Finset.card_biUnion_le (s := Rset) (t := t))
+  have hpoint : ∀ R : F[Z][X][Y], R ∈ Rset → #(t R) ≤ Bivariate.natDegreeY R := by
+    intro R hR
+    have hinj : Function.Injective (fun H : F[Z][X] ↦ (R, H)) := by
+      intro H1 H2 h
+      simpa using congrArg Prod.snd h
+    have hcard_image :
+        #(t R) =
+          #((UniqueFactorizationMonoid.normalizedFactors
+              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset) := by
+      simpa [ht] using
+        (Finset.card_image_of_injective
+          (s := (UniqueFactorizationMonoid.normalizedFactors
+              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset)
+          (f := fun H : F[Z][X] ↦ (R, H)) hinj)
+    have hR' : R ∈
+        pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs := by
+      simpa [hRset] using hR
+    have hcard_nf :
+        #((UniqueFactorizationMonoid.normalizedFactors
+            (Bivariate.evalX (Polynomial.C x₀) R)).toFinset)
+          ≤ (Bivariate.evalX (Polynomial.C x₀) R).natDegree :=
+      pg_card_normalizedFactors_toFinset_le_natDegree (F := F)
+        (p := (Bivariate.evalX (Polynomial.C x₀) R)) (hp := hsep R hR')
+    have hdeg : (Bivariate.evalX (Polynomial.C x₀) R).natDegree ≤ Bivariate.natDegreeY R :=
+      pg_natDegree_evalX_le_natDegreeY (F := F) x₀ R
+    calc
+      #(t R) =
+          #((UniqueFactorizationMonoid.normalizedFactors
+              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset) := hcard_image
+      _ ≤ (Bivariate.evalX (Polynomial.C x₀) R).natDegree := hcard_nf
+      _ ≤ Bivariate.natDegreeY R := hdeg
+  have hsum : (∑ R ∈ Rset, #(t R)) ≤ ∑ R ∈ Rset, Bivariate.natDegreeY R := by
+    refine Finset.sum_le_sum ?_
+    intro R hR
+    exact hpoint R hR
+  have hsum_Rset_le : (∑ R ∈ Rset, Bivariate.natDegreeY R) ≤ Bivariate.natDegreeY Q := by
+    simpa [hRset] using
+      (pg_sum_natDegreeY_Rset_le_natDegreeY_Q (m := m) (n := n) (k := k)
+        (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs)
   exact (hcard_biUnion.trans (hsum.trans hsum_Rset_le))
 
 end BCIKS20ProximityGapSection5

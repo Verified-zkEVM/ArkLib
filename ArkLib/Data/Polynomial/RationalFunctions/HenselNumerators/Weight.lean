@@ -21,9 +21,8 @@ import ArkLib.Data.Polynomial.RationalFunctions.HenselNumerators.Hensel
 # Weight Bounds for the Hensel Numerators
 
 Appendix A.4 of [BCIKS20], the quantitative half of Claim A.2: the `RegularWeightLe`
-certificate calculus on `𝕃 H`, the sharp per-step budget
-`numeratorShapeSharp = 1 + (t+1)Λ(W) + eₜΛ(ξ)`, its weakening to the paper's `(2t+1)·d·D`, and the
-induction transporting them along the cleared Hensel residual.
+certificate calculus on `𝕃 H`, the corrected sharp per-step budget, its loose weakening, and
+the induction transporting them along the cleared Hensel residual.
 
 Everything here is proved.  Two places diverge from the inequalities [BCIKS20] states.
 
@@ -33,8 +32,10 @@ docstring.  It and `numeratorShapeSharp_le_loose` are exactly as the paper's acc
 
 The numerators are then bounded not by `numeratorShapeSharp` but by
 `numeratorShapeSharpContent`, which adds `eₜ · contentWeight`, and the loose bound becomes
-`(2t+1)·(dY+1)·D` in place of `(2t+1)·dY·D`.  That is forced: A.2's `Λ(ξ)` bound omits a content
-charge and is false without it.  See `RationalFunctions.HenselNumerators.contentWeight`.
+`(2t+1)·(dY+1)·D` in place of `(2t+1)·dY·D`.  The content charge is required by the proved
+sharp estimate because A.2's `Λ(ξ)` bound is false without it.  The `dY+1` form is a convenient
+uniform weakening; it is not claimed to be optimal.  See
+`RationalFunctions.HenselNumerators.contentWeight`.
 
 ## References
 
@@ -330,11 +331,12 @@ parts each `≤ t`, hence at least two nonzero parts `S ≥ 2`, and then
 `t·(D - dY) - ∑ᵢ (lᵢ-1)·(D - dY) = (S-1)·(D - dY) ≥ D - dY`.
 Every other summand satisfies `∑ᵢ (lᵢ-1) ≤ t`, so the correction never costs anything there.
 
-## Why the correction costs nothing
+## Arithmetic weakening of the uncharged budget
 
-`numeratorShapeSharp_le_loose` still gives the loose bound `(2t+1)·dY·D`, and that is the form
-consumers want, since the correction is invisible to the telescoping they perform:
-`max_t (sharp t + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = sharp k ≤ (2k+1)·dY·D`.
+`numeratorShapeSharp_le_loose` still gives `(2t+1)·dY·D` for this defined quantity: the recursion
+correction alone fits within the paper's loose arithmetic budget.  The theorem is retained because
+it is valid, but it is not the final numerator bound after the separate specialization-content
+charge below is included.
 
 The uncorrected bound would follow instead from `Λ(αₜ) ≤ Λ(T) - Λ(W)`, i.e. from a weight function
 on `𝕃` rather than on `𝒪`, giving `Λ(T) + t·deg W ≤ 1 + (t+1)(D - dH)`.  That route is not taken
@@ -413,8 +415,8 @@ def numeratorShapeSharpContent (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) (D t : 
 `(2t+1)·dY·D`.  Arithmetic, using `dH ≥ 1`, `dH ≤ dY`, `dH ≤ D`, `eₜ ≤ 2t` and
 `contentWeight ≤ D - dY`.
 
-The `dY + 1` is necessary, not slack: at `dY = 2`, `dH = 2`, `D = 100`, `t = 10` the paper's bound
-is `4200` while the charged quantity reaches `5704`. -/
+This proves a safe uniform budget.  It does not show that an actual Hensel numerator can attain the
+budget, or that the paper's smaller loose bound is false after cancellations in the recursion. -/
 lemma numeratorShapeSharpContent_le_loose (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree) (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
     (hD_H : Bivariate.totalDegree H ≤ D)
@@ -1062,10 +1064,9 @@ theorem numerator_shape_weight_sharp (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         exact henselClearedResidual_weight x₀ R H hHyp hH hD_H hD_R hD_Rx0 hRdeg αseq βseq hα0
           hroot hshape t (fun s hs => ih s (Nat.lt_succ_of_le hs))
 
-/-- The loose bound `Λ(βₜ) ≤ (2t+1)·dY·D` for a numerator sequence presented through its
+/-- The loose bound `Λ(βₜ) ≤ (2t+1)·(dY+1)·D` for a numerator sequence presented through its
 coefficients, obtained from `numerator_shape_weight_sharp` by
-`numeratorShapeSharpContent_le_loose`.  This
-is the form consumers usually want. -/
+`numeratorShapeSharpContent_le_loose`.  This is the form consumers usually want. -/
 theorem numerator_shape_weight_bound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -1102,11 +1103,12 @@ lemma hasNumeratorShape_alphaOfNumerators (x₀ : F) (R : F[X][X][Y]) (H : F[X][
 
 /-- The **sharp** weight bound for an arbitrary Hensel numerator sequence:
 `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)`, with the bounds `Λ(W) ≤ D - dH` and
-`Λ(ξ) ≤ (dY-1)(D - dH + 1)` substituted, plus the correction term of `numeratorShapeSharpContent`.
+`Λ(ξ) ≤ (dY-1)(D - dH + 1) + contentWeight` substituted, plus the recursion correction
+term of `numeratorShapeSharpContent`.
 
 This is the form to use when the bound has to telescope across `t = 0, …, k`:
-`max_t (Λ(βₜ) + (k-t)Λ(W) + (e_k-eₜ)Λ(ξ)) = 1 + (k+1)Λ(W) + e_kΛ(ξ) ≤ (2k+1)dD`.
-The loose bound `numerator_shape_weight_bound` does *not* suffice there. -/
+the explicit content-charged shape preserves the dependence on `t` that the assembly needs.  The
+loose bound `numerator_shape_weight_bound` does *not* by itself suffice for that step. -/
 theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -1123,7 +1125,7 @@ theorem hensel_numerator_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y
       (alphaOfNumerators x₀ R H hHyp βseq) βseq hβ.1 hβ.2
       (hasNumeratorShape_alphaOfNumerators x₀ R H hHyp βseq) t)
 
-/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for an arbitrary Hensel numerator sequence.
+/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·(dY+1)·D` for an arbitrary Hensel numerator sequence.
 Weakening of `hensel_numerator_weight_sharp_le`. -/
 theorem hensel_numerator_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [_H_irreducible : Fact (Irreducible H)] [_H_natDegree_pos : Fact (0 < H.natDegree)]

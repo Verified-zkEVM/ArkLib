@@ -268,7 +268,7 @@ lemma betaSeq_weight_sharp_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
         (WithBot.some (numeratorShapeSharpContent x₀ R H D t) : WithBot ℕ) :=
   hensel_numerator_weight_sharp_le x₀ R H hHyp hH hD_H hD_R hRdeg (betaSeq_spec x₀ R H hHyp)
 
-/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` for the chosen numerator sequence. -/
+/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·(dY+1)·D` for the chosen numerator sequence. -/
 lemma betaSeq_weight_le (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -294,7 +294,7 @@ lemma betaSeq_weight_sharp_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H 
   betaSeq_weight_sharp_le x₀ R H hHyp hH (defaultDegreeBound_ge_H R H)
     (fun _ hi => defaultDegreeBound_ge_R_coeff R H hi) hRdeg
 
-/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·dY·D` at the canonical degree bound. -/
+/-- The loose weight bound `Λ(βₜ) ≤ (2t+1)·(dY+1)·D` at the canonical degree bound. -/
 lemma betaSeq_weight_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])
     [φ : Fact (Irreducible H)] [H_natDegree_pos : Fact (0 < H.natDegree)]
     (hHyp : Hypotheses x₀ R H) (hH : 0 < H.natDegree)
@@ -310,10 +310,10 @@ lemma betaSeq_weight_le_defaultDegreeBound (x₀ : F) (R : F[X][X][Y]) (H : F[X]
 are regular `βₜ ∈ 𝒪` realizing the Hensel lift `αₜ = βₜ / (W^{t+1} ξ^{eₜ})`, with
 `eₜ = max(0, 2t-1)` and
 
-* `Λ(βₜ) ≤ 1 + (t+1)Λ(W) + eₜΛ(ξ)` (the sharp bound, the one that telescopes), and
-* `Λ(βₜ) ≤ (2t+1)·d·D` (the loose bound, which is what consumers usually want).
+* `Λ(βₜ) ≤ numeratorShapeSharpContent x₀ R H D t` (the corrected sharp bound), and
+* `Λ(βₜ) ≤ (2t+1)·(d+1)·D` (the conservative loose bound).
 
-The regularity of `ξ` and the bound `Λ(ξ) ≤ (d-1)(D - dH + 1)` are `xi_regular` and `xi_weight_le`.
+The regularity of `ξ` and its content-aware bound are `xi_regular` and `xi_weight_le`.
 Use `exists_hensel_numerator_sequence` (existence only) when defining data: this bundled form
 carries the weight conjuncts and hence their proof dependencies. -/
 theorem exists_hensel_numerators_with_weight_bounds (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y])

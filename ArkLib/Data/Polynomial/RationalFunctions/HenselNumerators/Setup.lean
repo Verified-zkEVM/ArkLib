@@ -56,7 +56,7 @@ the equivalent form "this happens if `discY Ri (x0, Y, Z) ≠ 0`".
 It is *not* `Polynomial.Separable` over the coefficient ring `F[Z]`.  Mathlib's `Separable f` is
 `IsCoprime f f.derivative` in the ambient ring, which over a non-field base forces the
 discriminant to be a **unit** rather than merely nonzero.  That is strictly stronger than the
-paper's hypothesis and unsatisfiable in the intended application: at a legitimate Claim 5.6 point
+paper's hypothesis and excludes legitimate inputs: at a Claim 5.6 point
 the specialization may acquire a content factor, e.g. over `𝔽₅` the irreducible
 `R = Z·Y² + Z·Y + (Z + X)` has `discY R = Z(-3Z - 4X)`, so `x₀ = 0` is admissible, yet
 `R(0, Y, Z) = Z·(Y² + Y + 1)` shares the factor `Z` with its `Y`-derivative and is therefore not
