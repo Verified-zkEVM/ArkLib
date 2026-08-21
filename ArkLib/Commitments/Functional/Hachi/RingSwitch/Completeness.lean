@@ -3,6 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 
 /-!
@@ -68,7 +69,7 @@ reshapes an Eq. (20) transcript claim into the unstructured linear claim `R^lin`
 
 `noncomputable` only because `rlinStmt` is (it is assembled through the `stack`/`unstack` reshapes
 of `Rlin.lean`); nothing probabilistic or classical enters the protocol. -/
-noncomputable def rlinReduction
+def rlinReduction
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ) :
     Reduction oSpec
@@ -166,16 +167,39 @@ output `(statement, t, α)` together with `w̃`.
 Note it does not mention the embedding `φF : ZMod q →+* F`: the honest prover's data is the lifted
 witness, and `φF` enters only through the *relation* `relLift` (via `liftCheckAt`), which is where
 the row identities are evaluated. Its verifier is `liftPackage`'s
+(`liftReduction_verifier`).
+
+**Computable**, and stated at the computable honest witness `honestLiftWitnessC`
+(`RingSwitch/ComputableWitness.lean`) rather than at generic `Lift.honestWitness`. That is the
+*same value* (`honestLiftWitnessC_eq_honestWitness`), so nothing about this link changes except
+that it can be run: `liftReduction_eq` re-expresses it as generic `Lift.reduction` and every
+completeness theorem below goes through that rewrite. The noncomputable
+`honestLiftWitness`/`Lift.honestWitness` remain as the spec-side definitions, and the soundness
+side (`liftPackage`) is untouched — it consumes the verifier, which is the same on the nose
 (`liftReduction_verifier`). -/
-noncomputable def liftReduction
+def liftReduction
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (hd : 0 < Φ.φ.natDegree) :
     Reduction oSpec (RlinStatement Φ n μ) (ArkLib.Lattices.PolyVec (Rq Φ) μ)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (pSpecScalar K.TCom F) :=
+  CommittedScalar.reduction K (honestLiftWitnessC Φ hd)
+
+omit [NeZero q] in
+/-- **The protocol object is the generic one.** `liftReduction` and generic `Lift.reduction`
+differ only in which honest-witness function they carry, and those are equal
+(`honestLiftWitnessC_eq_honestWitness`), so the reductions are. This is the rewrite every
+completeness theorem below uses to reach the generic execution lemmas. -/
+theorem liftReduction_eq
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (hd : 0 < Φ.φ.natDegree) :
+    haveI := isPresentation_cyclotomic Φ hd
+    liftReduction (oSpec := oSpec) (F := F) Φ bound ρBound K hd
+      = Lift.reduction (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec) K
+          (cyclotomicPresentation_modulus_natDegree Φ) := by
   haveI := isPresentation_cyclotomic Φ hd
-  Lift.reduction (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec) K
-    (cyclotomicPresentation_modulus_natDegree Φ)
+  exact congrArg _ (funext fun s => funext fun z =>
+    honestLiftWitnessC_eq_honestWitness Φ hd s z)
 
 omit [NeZero q] in
 /-- The lift's protocol object and its escape-aware soundness certificate share a verifier. Holds
@@ -184,7 +208,9 @@ by `rfl`. -/
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree) :
     (liftReduction (oSpec := oSpec) (F := F) Φ bound ρBound K hd).verifier
-      = (liftPackage (oSpec := oSpec) Φ bound ρBound K φF init impl hd).verifier :=
+      = (liftPackage (oSpec := oSpec) Φ bound ρBound K φF init impl hd).verifier := by
+  haveI := isPresentation_cyclotomic Φ hd
+  rw [liftReduction_eq]
   rfl
 
 omit [NeZero q] in
@@ -239,6 +265,7 @@ theorem liftReduction_perfectCompleteness_of_zShort [SampleableType F]
     (fun s : RlinStatement Φ n μ => bound ≤ s.bound) K
     (cyclotomicPresentation_modulus_natDegree Φ) relIn hrow hside
     (fun s z hIn => ⟨hzShort s z hIn, rhoShort_honestLiftWitness_half Φ hd s z⟩) init impl
+  rw [liftReduction_eq]
   exact h
 
 omit [NeZero q] in
@@ -267,6 +294,7 @@ theorem liftReduction_perfectCompleteness_of_matrixShort [SampleableType F] {d �
     (cyclotomicPresentation_modulus_natDegree Φ) relIn hrow hside
     (fun s z hIn => ⟨hzShort s z hIn,
       rhoShort_honestLiftWitness Φ hφ hdpos hd s z (hM s z hIn) (hzβ s z hIn)⟩) init impl
+  rw [liftReduction_eq]
   exact h
 
 end Lift

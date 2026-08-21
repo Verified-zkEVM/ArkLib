@@ -448,7 +448,7 @@ equation-compiled `roundsSpec`. -/
 
 /-- **The complete local sumcheck as one protocol object**: the zero-round bridge, the honest
 `m₀`-round loop, and the final-evaluation step, appended. -/
-noncomputable def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
+def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
     Reduction oSpec
       (NestedZeroCheckStatement Φ TCom F n μ (M + 1) m₁) (LiftedWitness Φ μ n)
       (WEvalStatement TCom F (M + 1)) (LiftedWitness Φ μ n)

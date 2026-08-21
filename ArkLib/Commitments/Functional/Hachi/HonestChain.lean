@@ -266,7 +266,7 @@ generic append instance does not reliably fire through a deeply nested `Protocol
 
 /-- The honest protocol obtained by appending every currently complete Hachi link, from the
 polynomial-level evaluation bridge through the nested zero-check. -/
-noncomputable def completePrefixReduction (P : HonestRangeParams q)
+def completePrefixReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
@@ -397,7 +397,7 @@ local notation "n₀" => rlinRows innerRows outerRows dRows
 /-- The honest Hachi protocol from the polynomial-evaluation claim through the sumcheck: the
 complete proved prefix (`completePrefixReduction`) followed by the local sumcheck
 (`sumcheckReduction`). -/
-noncomputable def completeThroughSumcheckReduction (P : HonestRangeParams q)
+def completeThroughSumcheckReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)

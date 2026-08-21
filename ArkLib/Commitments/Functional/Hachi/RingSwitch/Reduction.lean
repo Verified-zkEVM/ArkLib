@@ -55,20 +55,22 @@ import CompPoly.Univariate.ToPoly.Impl
   predicate (`liftCheckAt`), the norm bookkeeping (`vecLInftyNorm_le_of_liftShort`), and the
   resulting `liftPackage`.
 
-  ## The abstract commitment `LiftCom` and the norm bookkeeping
+  ## The commitment `LiftCom` and the norm bookkeeping
 
-  The commitment is abstract, so `LiftCom` carries nothing but `{TCom, com}` over its
-  shortness index.
+  The interface is abstract, so `LiftCom` carries nothing but `{TCom, com}` over its
+  shortness index; `hachiLiftCom` below is the concrete Ajtai instantiation the nonrecursive
+  chain runs at (see `Hachi/Concrete.lean`).
   Weak binding is **norm-conditioned**, hence that index: this chain instantiates
   `Short := liftShort bound ρBound` at the *global* norm parameters, and the short-collision set
   `LiftCom.Collision` — the target of the escape event — reads it. `relLift`
   therefore carries (i) `liftShort bound ρBound w̃` — feeding
   both the collision argument and, (ii) via the public sanity conjunct `bound ≤ s.bound`, the
   statement-level `R^lin` bound of the extraction target (assembled statements have
-  `s.bound = γ = bound`, so completeness is unaffected). The concrete instantiation — the
-  inner-outer commitment *without initial decomposition* ([NOZ26] §4.5), collision discharged by
-  `outputToModuleSIS_valid_of_verified` — and the commitment reinterpretation at the next ring
-  dimension used by the recursion handoff (`Recursion/TraceHandoff.lean`) are still to come.
+  `s.bound = γ = bound`, so completeness is unaffected). `hachiLiftCom` supplies the commitment
+  map; what is still to come is the *soundness* side of that instantiation — discharging
+  `LiftCom.Collision` by `outputToModuleSIS_valid_of_verified` ([NOZ26] §4.5) — and the
+  commitment reinterpretation at the next ring dimension used by the recursion handoff
+  (`Recursion/TraceHandoff.lean`).
 
   ## Paper-model boundary
 
@@ -158,6 +160,64 @@ example (bound ρBound : ℕ) :
     LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound) :=
   { TCom := LiftedWitness Φ μ n
     com := id }
+
+/-! ### The concrete Ajtai instantiation of `LiftCom`
+
+`hachiLiftCom` replaces the abstract commitment by the Eq. (16)-shaped Ajtai product, so the
+nonrecursive chain has a `TCom` and a `com` an implementation can actually compute. Everything
+here is a plain `def`: `Rq Φ` has a computable `CommRing` instance, `Simple.commit` is
+`matVecMul`, and the quotient rows enter through `Polynomial.coeff` (reading a Mathlib
+polynomial is computable, unlike building one).
+
+**Why the lift needs its own key.** The obvious candidate for the matrix is `pp.dMatrix`, the
+Eq. (16) short-commitment matrix that `keygen` already samples and that the `R^lin` statement's
+c1 row consumes (`rlin_linear_iff`). Its width is wrong: `PublicParamsD.dMatrix` has
+`blocks * messageDigits = rlinCW` columns — the *carrier slice* `ŵ` alone — whereas a lifted
+witness is `μ + n` ring elements (`μ = rlinCW + (rlinCT + rlinCZ)` for the `R^lin` witness `z`,
+plus one quotient row each). Committing under `pp.dMatrix` would therefore have to drop `ρ` and
+two thirds of `z`, leaving a commitment whose `LiftCom.Collision` set is enormous and which the
+deferred Module-SIS argument could never discharge. The c1 commitment and the lift's commitment
+are different objects: c1 constrains the carrier decomposition inside the statement, the lift
+binds the whole opening. So the key is taken as a parameter at the matching width; a full
+treatment would sample it in `keygen` alongside `D`, which needs a new `PublicParamsD` field. -/
+
+/-- A quotient row of a lifted witness, read back as a ring element. The rows have degree
+`≤ d − 1` (`LiftedWitness.hρ`), so the reduced representative of degree `< d` loses nothing —
+this is a change of presentation, not a reduction. Computable: `Polynomial.coeff` is a
+projection out of the `Finsupp`, and `Rq.ofFinCoeff` builds the representative directly. -/
+def rhoAsRq (p : Polynomial (ZMod q)) : Rq Φ :=
+  Rq.ofFinCoeff Φ Φ.φ.natDegree p.coeff
+
+/-- The message an Ajtai lift commitment binds: the whole lifted witness as one `Rq`-vector,
+the `R^lin` witness followed by the quotient rows. This is Figure 4's `(z, r)`; the full
+protocol's base-`b` digit decomposition of the quotient block sits between this and the paper's
+Lemma 10, and is the downstream constraint layer's business (see the paper-model boundary note
+in the module docstring). -/
+def liftMessage (w : LiftedWitness Φ μ n) : ArkLib.Lattices.PolyVec (Rq Φ) (μ + n) :=
+  Fin.append w.z (fun i => rhoAsRq Φ (w.ρ i))
+
+/-- **The concrete lift commitment**: the Ajtai product `D · (z ‖ ρ)` at a key of the matching
+width. Computable, so the whole nonrecursive chain can be run once its other links are; and a
+genuine Module-SIS shape, so the deferred escape-event argument has a real target — a member of
+`LiftCom.Collision` here is a short nonzero kernel vector of `D`. -/
+def hachiLiftCom {dRows : ℕ} (bound ρBound : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n)) :
+    LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound) where
+  TCom := Simple.Commitment Φ dRows
+  com := fun w => Simple.commit Φ D (liftMessage Φ w)
+
+/-- The concrete commitment's space is the same `PolyVec (Rq Φ) dRows` the chain already carries
+as `CarrierCom`, so `DecidableEq` is derivable and the terminal check's instance argument is
+discharged without `Classical.dec`. Holds by `rfl`. -/
+@[simp] theorem hachiLiftCom_TCom {dRows : ℕ} (bound ρBound : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n)) :
+    (hachiLiftCom Φ (n := n) (μ := μ) bound ρBound D).TCom = CarrierCom Φ dRows := rfl
+
+/-- The concrete commitment map, unfolded. Holds by `rfl`. -/
+@[simp] theorem hachiLiftCom_com {dRows : ℕ} (bound ρBound : ℕ)
+    (D : Simple.PublicParams Φ dRows (μ + n)) (w : LiftedWitness Φ μ n) :
+    (hachiLiftCom Φ (n := n) (μ := μ) bound ρBound D).com w
+      = Simple.commit Φ D (liftMessage Φ w) := rfl
 
 /-- Output statement: the input `R^lin` claim, the opening commitment, and evaluation point. -/
 abbrev LiftStatement (Φ : CyclotomicModulus (ZMod q)) (TCom F : Type) (n μ : ℕ) : Type :=

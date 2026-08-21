@@ -19,6 +19,12 @@ This directory contains various utility scripts for the ArkLib project.
 - **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
   for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
   output-oracle and exact-extractor paths
+- **`HachiRuntime.lean`** (`lake exe hachi-runtime`) - Compiled small-parameter checks that the
+  nonrecursive Hachi honest-prover path executes: the balanced committer, the computable honest
+  lift quotient, the concrete Ajtai lift commitment, and the terminal reveal-and-check. `--full`
+  additionally runs the whole composed opening and checks the verifier accepts — it passes, in
+  about six minutes, which is why it is not gated: the honest sumcheck prover dominates the cost
+  of the entire chain. `--timing` reports per-check costs
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -74,6 +80,13 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ### Toy-Problem Runtime Gate
 ```bash
 lake exe toyproblem-runtime
+```
+
+### Nonrecursive-Hachi Runtime Gate
+```bash
+lake exe hachi-runtime            # the fast checks; this is what validate.sh gates on
+lake exe hachi-runtime --full     # also runs the composed opening (slow)
+lake exe hachi-runtime --timing   # per-check timings
 ```
 
 ### Build Timing Helper

@@ -5,6 +5,7 @@
   "ArkLib.Lattices.Ajtai.InnerOuter.deriveFamily",
   "ArkLib.Lattices.Ajtai.InnerOuter.eqWeight",
   "ArkLib.Lattices.Ajtai.InnerOuter.hachi",
+  "ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveConcrete_perfectCorrectness",
   "ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursiveOpening_perfectCompleteness",
   "ArkLib.Lattices.Ajtai.InnerOuter.hachiNonrecursive_perfectCorrectness",
   "ArkLib.Lattices.Ajtai.InnerOuter.handoffExtractor",
