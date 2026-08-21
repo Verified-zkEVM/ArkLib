@@ -204,6 +204,7 @@ def hachiLiftCom {dRows : ℕ} (bound ρBound : ℕ)
   TCom := Simple.Commitment Φ dRows
   com := fun w => Simple.commit Φ D (liftMessage Φ w)
 
+omit [NeZero q] in
 /-- The concrete commitment's space is the same `PolyVec (Rq Φ) dRows` the chain already carries
 as `CarrierCom`, so `DecidableEq` is derivable and the terminal check's instance argument is
 discharged without `Classical.dec`. Holds by `rfl`. -/
@@ -211,6 +212,7 @@ discharged without `Classical.dec`. Holds by `rfl`. -/
     (D : Simple.PublicParams Φ dRows (μ + n)) :
     (hachiLiftCom Φ (n := n) (μ := μ) bound ρBound D).TCom = CarrierCom Φ dRows := rfl
 
+omit [NeZero q] in
 /-- The concrete commitment map, unfolded. Holds by `rfl`. -/
 @[simp] theorem hachiLiftCom_com {dRows : ℕ} (bound ρBound : ℕ)
     (D : Simple.PublicParams Φ dRows (μ + n)) (w : LiftedWitness Φ μ n) :

@@ -32,22 +32,25 @@ the verifier accepts, in about six minutes on one core), and `--timing` reports 
 The split is not cosmetic, and the asymmetry behind it is worth recording. The honest **sumcheck
 prover** costs, by a very wide margin, more than everything else on the path put together: the
 committer, the computable lift witness, the batching, the nested zero-check and the terminal
-check together finish in ~30 ms, while the composed run — the same chain plus the sumcheck —
-takes minutes. The reason is the shape of the summand: `sumcheckPolyZero` is a product of `bZero`
-copies of an `m₀`-variate multilinear extension, so it carries up to `(bZero + 1)^m₀` monomials,
-and `computableRoundPoly` evaluates all of them at `2^(m₀ - i)` points in round `i`. Both
-exponents are at their floor here (`m₀ = 4`, `bZero = 4`: `m₀` is bounded below by
-`(μ₀ + n₀)·deg φ ≤ 2^m₀`, and `bZero = ⌊q/2⌋ + 1` is pinned by the correctness theorem), and it
-still takes minutes — so this is the first thing to profile if the honest prover is ever wanted
-at a realistic size. Raising `α` from `0` to `1` alone (which raises `m₀` to `5`) pushes the run
-past ten minutes.
+check together finish in milliseconds, while the composed run — the same chain plus the
+sumcheck — takes minutes. The reason is the shape of the summand: `sumcheckPolyZero` is a
+product of `bZero` copies of an `m₀`-variate multilinear extension, so it carries up to
+`(bZero + 1)^m₀` monomials, and `computableRoundPoly` evaluates all of them at `2^(m₀ - i)`
+points in round `i`. Both exponents are at their floor here (`m₀ = 4`, `bZero = 4`: `m₀` is
+bounded below by `(μ₀ + n₀)·deg φ ≤ 2^m₀`, and `bZero = ⌊q/2⌋ + 1` is pinned by the
+correctness theorem), and it still takes minutes — so this is the first thing to profile if
+the honest prover is ever wanted at a realistic size. Raising `α` from `0` to `1` alone (which
+raises `m₀` to `5`) pushes the run past ten minutes.
 
-**The parameters.** `q = 5`, `α = 1` (so `Rq = Z₅[X]/(X²+1)`), digit base `b = 2` (hence
-`δ = ⌈log₂ 5⌉ = 3`), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 15`, `n₀ = 5`. The range
-parameters are the pinned ones the correctness theorem forces (`γ = ⌊q/2⌋ = 2`,
-`bZero = γ + 1 = 3`), and `M + 1 = 6` is the smallest sumcheck width satisfying
-`(μ₀ + n₀)·deg φ ≤ 2^(M+1)` (`40 ≤ 64`). Deliberately tiny: this is a code-generation check, and
-the security theorems are parametric, so nothing is learned by running it larger.
+**The parameters.** `q = 7`, `α = 0` (so `Rq = Z₇[X]/(X+1) ≅ Z₇`, ring dimension `d = 1`),
+digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`,
+`n₀ = 5`. The range parameters are the pinned ones the correctness theorem forces
+(`γ = ⌊q/2⌋ = 3`, `bZero = γ + 1 = 4`), and `M + 1 = 4` is the smallest sumcheck width
+satisfying `(μ₀ + n₀)·deg φ ≤ 2^(M+1)` (`13 ≤ 16`). Not `q = 5`, the smallest prime admitting
+honest range parameters at all: that `q` forces `b = 2`, whose `δ = ⌈log₂ 5⌉ = 3` inflates
+`μ₀ + n₀` to `20` and hence `m₀` to `5` — one sumcheck variable more, several times the composed
+run's cost. Deliberately tiny beyond that: this is a code-generation check, and the security
+theorems are parametric, so nothing is learned by running it larger.
 -/
 
 namespace HachiRuntime
@@ -58,11 +61,12 @@ open ArkLib.Lattices.CyclotomicModulus
 
 /-! ## Toy parameters -/
 
-/-- The toy modulus `q = 5`: the smallest prime for which the honest range parameters are
-satisfiable at all (they need `1 < b ≤ ⌊q/2⌋`). -/
+/-- The toy modulus `q = 7`: not the smallest prime for which the honest range parameters are
+satisfiable (they need `1 < b ≤ ⌊q/2⌋`, so `q = 5` is), but the smallest admitting `b = 3`,
+which minimizes the sumcheck width — see the parameter note in the module docstring. -/
 abbrev Q : ℕ := 7
 instance : Fact (Nat.Prime Q) := ⟨by decide⟩
-/-- `α = 1`, so the ring is `Z₅[X]/(X² + 1)` and the ring dimension is `d = 2`. -/
+/-- `α = 0`, so the ring is `Z₇[X]/(X + 1) ≅ Z₇` and the ring dimension is `d = 1`. -/
 abbrev A : ℕ := 0
 /-- The toy cyclotomic ring. -/
 abbrev Rng := Rq 𝓜(Q, A)
@@ -72,7 +76,7 @@ need a genuine extension so that `2d` distinct challenges exist. -/
 abbrev Fld := ZMod Q
 
 abbrev B : ℕ := 3   -- digit base
-abbrev Dg : ℕ := Nat.clog B Q   -- δ = 3
+abbrev Dg : ℕ := Nat.clog B Q   -- δ = 2
 abbrev IR : ℕ := 1  -- innerRows
 abbrev OR : ℕ := 1  -- outerRows
 abbrev DR : ℕ := 1  -- dRows
@@ -82,7 +86,7 @@ abbrev MM : ℕ := 3  -- sumcheck width is M + 1 = 4
 abbrev M1 : ℕ := 1  -- the nested zero-check's second block
 abbrev W : ℕ := 3   -- ℓ₁ bound on short challenges
 
-/-- `μ₀ = 15`: the `R^lin` column count at these parameters. -/
+/-- `μ₀ = 8`: the `R^lin` column count at these parameters. -/
 abbrev Mu : ℕ := rlinCols IR Dg Dg Dg Mm Rr
 /-- `n₀ = 5`: the `R^lin` row count at these parameters. -/
 abbrev Nn : ℕ := rlinRows IR OR DR
@@ -350,12 +354,15 @@ def openingAccepts : Unit → Bool := fun _ => honestVerdict () == some true
 def check (name : String) (ok : Bool) : IO Unit :=
   unless ok do throw <| IO.userError s!"Hachi runtime check failed: {name}"
 
-/-- Run a check and report how long producing its answer took. -/
+/-- Run a check and report how long producing its answer took. The call must go through
+`IO.lazyPure` to stay inside the clocked window: with a plain `let ok := f ()`, the compiler is
+free to sink the pure application to its first use — the result interpolation *after* the second
+`IO.monoMsNow` — and the six-minute composed run then reports `0 ms`. (It did.) -/
 def timedCheck (name : String) (f : Unit → Bool) : IO Unit := do
   IO.print s!"  {name} ... "
   (← IO.getStdout).flush
   let t0 ← IO.monoMsNow
-  let ok := f ()
+  let ok ← IO.lazyPure f
   let t1 ← IO.monoMsNow
   IO.println s!"{ok} ({t1 - t0} ms)"
   (← IO.getStdout).flush

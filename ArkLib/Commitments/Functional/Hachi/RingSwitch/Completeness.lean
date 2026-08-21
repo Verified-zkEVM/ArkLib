@@ -185,7 +185,7 @@ def liftReduction
       (pSpecScalar K.TCom F) :=
   CommittedScalar.reduction K (honestLiftWitnessC Φ hd)
 
-omit [NeZero q] in
+omit [NeZero q] [Field F] in
 /-- **The protocol object is the generic one.** `liftReduction` and generic `Lift.reduction`
 differ only in which honest-witness function they carry, and those are equal
 (`honestLiftWitnessC_eq_honestWitness`), so the reductions are. This is the rewrite every
