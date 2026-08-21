@@ -114,6 +114,21 @@ noncomputable def blockDistanceFromCode
   (C : Set (Fin (2 ^ n) → F)) : ℕ∞ :=
   sInf {d | ∃ v ∈ C, blockDistance k φ f v ≤ d}
 
+@[simp]
+lemma blockDistance_le :
+  Δ𞁒(k, φ, f, g) ≤ 2 ^ (n - k) := by simp [blockDistance]
+
+lemma blockDistance_symm :
+  Δ𞁒(k, φ, f, g) = Δ𞁒(k, φ, g, f) := by
+  aesop
+    (add unsafe congrArg)
+    (add simp [blockDistance, disagreementSet])
+
+lemma blockRelDistance_symm :
+  δ𞁒(k, φ, f, g) = δ𞁒(k, φ, g, f) := by
+  unfold blockRelDistance
+  rw [blockDistance_symm]
+
 /-- blockRelDistance from a set of words. -/
 noncomputable def blockRelDistanceFromCode
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f : Fin (2 ^ n) → F)
@@ -148,7 +163,7 @@ noncomputable def blockRelDistanceBall
 scoped notation "Λ𞁒("C", "k", "φ'", "f", "δ")" =>
   blockRelDistanceBall k φ' f δ C
 
-private def complDisagreementSet
+def complDisagreementSet
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
 
@@ -192,7 +207,7 @@ lemma card_disagreementSet' :
     (add simp [card_complDisagreementSet])
     (add unsafe (by rw [Nat.sub_sub_self (by simp)]))
 
-private def agreementBlockUnion
+def agreementBlockUnion
   (k : ℕ) (φ : SmoothCosetFftDomain n F)
   (f g : Fin (2 ^ n) → F) : Finset (Fin (2 ^ n)) :=
   Finset.biUnion (complDisagreementSet k φ f g) (blockIdx φ k)

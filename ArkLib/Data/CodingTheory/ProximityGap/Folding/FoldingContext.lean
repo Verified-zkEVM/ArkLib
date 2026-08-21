@@ -122,6 +122,7 @@ def oneStep {k d n : ℕ} [FoldingContext k d n] : FoldingContext 1 d n where
 
 attribute [grind →] FoldingContextLeft.k_ge_1 FoldingContextLeft.k_le_d
                           FoldingContextRight.d_le_n FoldingContextMiddle.k_le_n
+                            FoldingContextMiddle.k_ge_1
 
 attribute [grind cases] FoldingContext
 
