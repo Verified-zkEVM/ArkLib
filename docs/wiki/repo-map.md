@@ -396,9 +396,12 @@ home_page/            site assets and assembled website root
 - Vandermonde matrix utilities shared across Reed-Solomon and proximity-gap developments live in
   `ArkLib/Data/Matrix/Vandermonde.lean`, not in the Reed-Solomon file.
 - Trivariate polynomial utilities used by the BCIKS20 proximity-gap proofs
-  (`eval_on_Z`, `toRatFuncPoly`, `D_Y`, `D_YZ`, and related notation) live in
+  (`evalAtX`, `evalAtY`, `evalAtZ`, the named degree projections, `D_Y`, `D_YZ`, and related
+  notation) live in
   `ArkLib/Data/Polynomial/Trivariate.lean`, not in `ProximityGap/Basic.lean` or
-  `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
+  `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`. See
+  [`polynomial-conventions.md`](polynomial-conventions.md) before applying generic bivariate
+  operations to a trivariate value.
 - **The reusable way into `perfectCompleteness` is `Reduction.perfectCompleteness_of_run_support`
   in `Security/Basic.lean`**, not the commented-out `perfectCompleteness_forall_challenge` sketch
   a few lines below it. It reduces perfect completeness to a support statement about the

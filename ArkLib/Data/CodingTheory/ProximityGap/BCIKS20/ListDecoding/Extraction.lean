@@ -100,7 +100,7 @@ noncomputable def pg_candidatePairs
   let Rset := pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs
   Rset.biUnion (fun R =>
     (UniqueFactorizationMonoid.normalizedFactors
-        (Bivariate.evalX (Polynomial.C x₀) R)).toFinset.image (fun H => (R, H)))
+        (Trivariate.evalAtX x₀ R)).toFinset.image (fun H => (R, H)))
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_natDegree_pos_of_mem_normalizedFactors_of_separable (p : F[Z][X])
@@ -133,7 +133,7 @@ theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
     (hsep : ∀ R : F[Z][X][Y],
       R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
           (u₀ := u₀) (u₁ := u₁) h_gs →
-        (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+        (Trivariate.evalAtX x₀ R).Separable)
     {R : F[Z][X][Y]} {H : F[Z][X]}
     (hmem : (R, H) ∈ pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs)
       (Q := Q) (u₀ := u₀) (u₁ := u₁) x₀ h_gs) :
@@ -144,10 +144,10 @@ theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
           (u₀ := u₀) (u₁ := u₁) h_gs ∧
         H ∈
           UniqueFactorizationMonoid.normalizedFactors
-            (Bivariate.evalX (Polynomial.C x₀) R) := by
+            (Trivariate.evalAtX x₀ R) := by
     simpa [pg_candidatePairs] using hmem
   exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable
-    (Bivariate.evalX (Polynomial.C x₀) R) (hsep R h'.1) h'.2
+    (Trivariate.evalAtX x₀ R) (hsep R h'.1) h'.2
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Separable) :
@@ -195,16 +195,17 @@ theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Se
   simpa [s] using hfin
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
+/-- Compatibility alias for the general trivariate evaluation bridge. -/
+@[deprecated Trivariate.evalAtX_eq_map_evalRingHom (since := "2026-08-21")]
 theorem pg_evalX_eq_map_evalRingHom (x₀ : F) (R : F[Z][X][Y]) :
-    Bivariate.evalX (Polynomial.C x₀) R = R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
-  classical
-  ext n n'
-  · simp [Bivariate.evalX, Polynomial.coeff_map]
-    simp [Polynomial.coeff]
+    Bivariate.evalX (Polynomial.C x₀) R =
+      R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
+  simpa [Trivariate.evalAtX] using Trivariate.evalAtX_eq_map_evalRingHom x₀ R
 
-open scoped Polynomial.Bivariate in
-noncomputable def pg_eval_on_Z (p : F[Z][X][Y]) (z : F) : Polynomial (Polynomial F) :=
-  p.map (Polynomial.mapRingHom (Polynomial.evalRingHom z))
+/-- Compatibility alias for `Trivariate.evalAtZ`. -/
+@[deprecated Trivariate.evalAtZ (since := "2026-08-21")]
+noncomputable abbrev pg_eval_on_Z (p : F[Z][X][Y]) (z : F) : Polynomial (Polynomial F) :=
+  Trivariate.evalAtZ z p
 
 omit [DecidableEq (RatFunc F)] in
 theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
@@ -212,10 +213,10 @@ theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
   (z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁)
   (R : F[Z][X][Y]) :
   let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-  (pg_eval_on_Z (F := F) R z.1).eval P = 0 →
-  Bivariate.evalX (Polynomial.C x₀) R ≠ 0 →
+  (Trivariate.evalAtZ z.1 R).eval P = 0 →
+  Trivariate.evalAtX x₀ R ≠ 0 →
   ∃ H,
-    H ∈ UniqueFactorizationMonoid.normalizedFactors (Bivariate.evalX (Polynomial.C x₀) R) ∧
+    H ∈ UniqueFactorizationMonoid.normalizedFactors (Trivariate.evalAtX x₀ R) ∧
     (Bivariate.evalX z.1 H).eval (P.eval x₀) = 0 := by
   classical
   dsimp
@@ -228,10 +229,10 @@ theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
     simp [Bivariate.evalX, Polynomial.coeff_map]
     simp [Polynomial.coeff]
   -- abbreviate p := evalX at x₀ (this is a bivariate poly in Z,Y)
-  set p := Bivariate.evalX (Polynomial.C x₀) R with hp
+  set p := Trivariate.evalAtX x₀ R with hp
   have hp_root : (Bivariate.evalX z.1 p).eval (P.eval x₀) = 0 := by
     -- evaluate the hypothesis at x₀
-    have hx : ((pg_eval_on_Z (F := F) R z.1).eval P).eval x₀ = 0 := by
+    have hx : ((Trivariate.evalAtZ z.1 R).eval P).eval x₀ = 0 := by
       have := congrArg (fun g : F[X] => g.eval x₀) hR
       simpa using this
     -- set up abbreviations
@@ -248,18 +249,19 @@ theorem pg_exists_H_of_R_eval_zero (δ : ℚ) (x₀ : F)
     have hr : fZ r = x₀ := by
       simp [fZ, r]
     -- rewrite the left-hand evaluation using `map_mapRingHom_eval_map_eval`
-    have hcommZ : ((pg_eval_on_Z (F := F) R z.1).eval P).eval x₀ = fZ ((R.eval q).eval r) := by
+    have hcommZ : ((Trivariate.evalAtZ z.1 R).eval P).eval x₀ =
+        fZ ((R.eval q).eval r) := by
       have h := Polynomial.map_mapRingHom_eval_map_eval (f := fZ) (p := R) (q := q) r
-      simpa [pg_eval_on_Z, fZ, hqmap, hr] using h
+      simpa [Trivariate.evalAtZ, fZ, hqmap, hr] using h
     have hfz0 : fZ ((R.eval q).eval r) = 0 := by
       -- combine `hx` and `hcommZ`
       calc
-        fZ ((R.eval q).eval r) = ((pg_eval_on_Z (F := F) R z.1).eval P).eval x₀ := by
+        fZ ((R.eval q).eval r) = ((Trivariate.evalAtZ z.1 R).eval P).eval x₀ := by
           simp [hcommZ]
         _ = 0 := hx
     -- show `fZ ((R.eval q).eval r)` is the desired evaluation of `p`
     have hp_map : p = R.map (Polynomial.evalRingHom (Polynomial.C x₀)) := by
-      exact hp.trans (pg_evalX_eq_map_evalRingHom (F := F) x₀ R)
+      exact hp.trans (Trivariate.evalAtX_eq_map_evalRingHom x₀ R)
     -- commute evaluation in Y then X with evaluation in X then Y
     have hYX : (R.eval q).eval r = (p.eval (q.eval r)) := by
       have h := (Polynomial.eval₂_hom (p := R) (f := Polynomial.evalRingHom r) q)
@@ -322,23 +324,23 @@ theorem pg_exists_R_of_Q_eval_zero (δ : ℚ)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁) :
   let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-  (pg_eval_on_Z (F := F) Q z.1).eval P = 0 →
+  (Trivariate.evalAtZ z.1 Q).eval P = 0 →
   ∃ R,
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs ∧
-    (pg_eval_on_Z (F := F) R z.1).eval P = 0 := by
+    (Trivariate.evalAtZ z.1 R).eval P = 0 := by
   classical
   dsimp
   intro hQ
   set P : F[X] :=
     Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-  have hQ' : (pg_eval_on_Z (F := F) Q z.1).eval P = 0 := by
+  have hQ' : (Trivariate.evalAtZ z.1 Q).eval P = 0 := by
     simpa [P] using hQ
   -- Define the ring hom φ : F[Z][X][Y] →+* F[X]
   let evZ : F[Z][X] →+* F[X] := Polynomial.mapRingHom (Polynomial.evalRingHom z.1)
   let evZ' : F[Z][X][Y] →+* Polynomial (Polynomial F) := Polynomial.mapRingHom evZ
   let φ : F[Z][X][Y] →+* F[X] := (Polynomial.evalRingHom P).comp evZ'
   have hφQ : φ Q = 0 := by
-    simpa [φ, evZ', evZ, pg_eval_on_Z] using hQ'
+    simpa [φ, evZ', evZ, Trivariate.evalAtZ] using hQ'
   -- Use associated product of normalizedFactors
   have hassoc : Associated ((UniqueFactorizationMonoid.normalizedFactors Q).prod) Q :=
     UniqueFactorizationMonoid.prod_normalizedFactors (a := Q) h_gs.Q_ne_0
@@ -367,23 +369,23 @@ theorem pg_exists_R_of_Q_eval_zero (δ : ℚ)
   · -- show R ∈ pg_Rset = (normalizedFactors Q).toFinset
     dsimp [pg_Rset]
     exact (Multiset.mem_toFinset).2 hRmem
-  · -- show (pg_eval_on_Z R z.1).eval P = 0
-    simpa [φ, evZ', evZ, pg_eval_on_Z] using hR0
+  · -- show `(evalAtZ z R).eval P = 0`
+    simpa [φ, evZ', evZ, Trivariate.evalAtZ] using hR0
 
 omit [DecidableEq (RatFunc F)] in
 theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
     (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
   (hx0 : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
-      Bivariate.evalX (Polynomial.C x₀) R ≠ 0)
+      Trivariate.evalAtX x₀ R ≠ 0)
   (z : coeffs_of_close_proximity (F := F) k ωs δ u₀ u₁) :
   let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-  (pg_eval_on_Z (F := F) Q z.1).eval P = 0 →
+  (Trivariate.evalAtZ z.1 Q).eval P = 0 →
   ∃ R H,
     (R, H) ∈ pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
       (u₀ := u₀) (u₁ := u₁) x₀ h_gs ∧
     let P : F[X] := Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-    (pg_eval_on_Z (F := F) R z.1).eval P = 0 ∧
+    (Trivariate.evalAtZ z.1 R).eval P = 0 ∧
     (Bivariate.evalX z.1 H).eval (P.eval x₀) = 0 := by
   classical
   -- Unfold the outer `let P := ...` so we can introduce the hypothesis.
@@ -392,7 +394,7 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
   -- Name the interpolation polynomial associated to `z`.
   let P : F[X] :=
     Pz (k := k) (ωs := ωs) (δ := δ) (u₀ := u₀) (u₁ := u₁) z.2
-  have hQ' : (pg_eval_on_Z (F := F) Q z.1).eval P = 0 := by
+  have hQ' : (Trivariate.evalAtZ z.1 Q).eval P = 0 := by
     simpa [P] using hQ
   -- 1) Extract `R ∈ pg_Rset` with the same vanishing property.
   have hRfun :=
@@ -402,12 +404,12 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
         R ∈
             pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁)
               h_gs ∧
-          (pg_eval_on_Z (F := F) R z.1).eval P = 0 := by
+          (Trivariate.evalAtZ z.1 R).eval P = 0 := by
     -- `hRfun` has a `let P := ...` binder; rewrite using our local `P`.
     simpa [P] using hRfun hQ'
   obtain ⟨R, hRmem, hRzero⟩ := hR'
   -- 2) Nonzeroness of `evalX` at `x₀` from the hypothesis `hx0`.
-  have hNZ : Bivariate.evalX (Polynomial.C x₀) R ≠ 0 :=
+  have hNZ : Trivariate.evalAtX x₀ R ≠ 0 :=
     hx0 R hRmem
   -- 3) Extract a normalized factor `H` of `evalX x₀ R` with the desired vanishing.
   have hHfun :=
@@ -416,7 +418,7 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
   have hH' :
       ∃ H,
         H ∈
-            UniqueFactorizationMonoid.normalizedFactors (Bivariate.evalX (Polynomial.C x₀) R) ∧
+            UniqueFactorizationMonoid.normalizedFactors (Trivariate.evalAtX x₀ R) ∧
           (Bivariate.evalX z.1 H).eval (P.eval x₀) = 0 := by
     simpa [P] using hHfun hRzero hNZ
   obtain ⟨H, hHmem, hHzero⟩ := hH'
@@ -430,7 +432,7 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
             pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁)
               h_gs ∧
           H ∈
-            UniqueFactorizationMonoid.normalizedFactors (Bivariate.evalX (Polynomial.C x₀) R) :=
+            UniqueFactorizationMonoid.normalizedFactors (Trivariate.evalAtX x₀ R) :=
       And.intro hRmem hHmem
     simpa [pg_candidatePairs] using h'
   -- 5) Package everything.
@@ -441,12 +443,12 @@ theorem pg_exists_pair_for_z (δ : ℚ) (x₀ : F)
 
 omit [DecidableEq F] [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_natDegree_evalX_le_natDegreeY (x₀ : F) (R : F[Z][X][Y]) :
-    (Bivariate.evalX (Polynomial.C x₀) R).natDegree ≤ Bivariate.natDegreeY R := by
+    (Trivariate.evalAtX x₀ R).natDegree ≤ Trivariate.degreeInY R := by
   classical
   -- Rewrite `evalX` in terms of `map`.
-  rw [pg_evalX_eq_map_evalRingHom (x₀ := x₀) (R := R)]
+  rw [Trivariate.evalAtX_eq_map_evalRingHom]
   -- `natDegreeY` is definitional.
-  unfold Bivariate.natDegreeY
+  unfold Trivariate.degreeInY Bivariate.natDegreeY
   -- Apply the standard degree bound for `Polynomial.map`.
   simpa using
     (Polynomial.natDegree_map_le (p := R)
@@ -455,8 +457,8 @@ theorem pg_natDegree_evalX_le_natDegreeY (x₀ : F) (R : F[Z][X][Y]) :
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
     Finset.sum (pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs)
-      (fun R => Bivariate.natDegreeY R)
-    ≤ Bivariate.natDegreeY Q := by
+      (fun R => Trivariate.degreeInY R)
+    ≤ Trivariate.degreeInY Q := by
   classical
   -- Unfold the definition of `pg_Rset`.
   simp only [pg_Rset]
@@ -468,31 +470,32 @@ theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k �
   have hs0 : (0 : F[Z][X][Y]) ∉ s := by
     simpa [hs] using (UniqueFactorizationMonoid.zero_notMem_normalizedFactors (x := Q))
   have hsum_le :
-      Finset.sum s.toFinset (fun R => Bivariate.natDegreeY R)
-        ≤ Finset.sum s.toFinset (fun R => s.count R * Bivariate.natDegreeY R) := by
+      Finset.sum s.toFinset (fun R => Trivariate.degreeInY R)
+        ≤ Finset.sum s.toFinset (fun R => s.count R * Trivariate.degreeInY R) := by
     refine Finset.sum_le_sum ?_
     intro R hR
     have hmem : R ∈ s := (Multiset.mem_toFinset.1 hR)
     have hcount : 0 < s.count R := (Multiset.count_pos.2 hmem)
-    exact Nat.le_mul_of_pos_left (Bivariate.natDegreeY R) hcount
+    exact Nat.le_mul_of_pos_left (Trivariate.degreeInY R) hcount
   have hsum_count :
-      Finset.sum s.toFinset (fun R => s.count R * Bivariate.natDegreeY R) =
-        (s.map fun R => Bivariate.natDegreeY R).sum := by
+      Finset.sum s.toFinset (fun R => s.count R * Trivariate.degreeInY R) =
+        (s.map fun R => Trivariate.degreeInY R).sum := by
     simpa [Nat.nsmul_eq_mul] using
-      (Finset.sum_multiset_map_count (s := s) (f := fun R => Bivariate.natDegreeY R)).symm
+      (Finset.sum_multiset_map_count (s := s) (f := fun R => Trivariate.degreeInY R)).symm
   have hdeg_prod :
-      (s.map fun R => Bivariate.natDegreeY R).sum = Bivariate.natDegreeY s.prod := by
-    simpa [Bivariate.natDegreeY] using
+      (s.map fun R => Trivariate.degreeInY R).sum = Trivariate.degreeInY s.prod := by
+    simpa [Trivariate.degreeInY, Bivariate.natDegreeY] using
       (Polynomial.natDegree_multiset_prod (t := s) hs0).symm
   have hfinset_eq_prod :
-      Finset.sum s.toFinset (fun R => s.count R * Bivariate.natDegreeY R) =
-        Bivariate.natDegreeY s.prod := by
+      Finset.sum s.toFinset (fun R => s.count R * Trivariate.degreeInY R) =
+        Trivariate.degreeInY s.prod := by
     calc
-      Finset.sum s.toFinset (fun R => s.count R * Bivariate.natDegreeY R)
-          = (s.map fun R => Bivariate.natDegreeY R).sum := hsum_count
-      _ = Bivariate.natDegreeY s.prod := hdeg_prod
+      Finset.sum s.toFinset (fun R => s.count R * Trivariate.degreeInY R)
+          = (s.map fun R => Trivariate.degreeInY R).sum := hsum_count
+      _ = Trivariate.degreeInY s.prod := hdeg_prod
   have hleft_le_prod :
-      Finset.sum s.toFinset (fun R => Bivariate.natDegreeY R) ≤ Bivariate.natDegreeY s.prod := by
+      Finset.sum s.toFinset (fun R => Trivariate.degreeInY R) ≤
+        Trivariate.degreeInY s.prod := by
     simpa [hfinset_eq_prod] using hsum_le
   have hassoc : Associated s.prod Q := by
     -- `prod_normalizedFactors` gives association between the product of normalized factors and `Q`.
@@ -501,18 +504,18 @@ theorem pg_sum_natDegreeY_Rset_le_natDegreeY_Q (h_gs : ModifiedGuruswami m n k �
     Polynomial.degree_eq_degree_of_associated hassoc
   have hnat_assoc : (s.prod).natDegree = Q.natDegree :=
     Polynomial.natDegree_eq_natDegree (p := s.prod) (q := Q) hdeg_assoc
-  have hnatY_assoc : Bivariate.natDegreeY s.prod = Bivariate.natDegreeY Q := by
-    simp [Bivariate.natDegreeY, hnat_assoc]
+  have hnatY_assoc : Trivariate.degreeInY s.prod = Trivariate.degreeInY Q := by
+    simp [Trivariate.degreeInY, Bivariate.natDegreeY, hnat_assoc]
   simpa [hnatY_assoc] using hleft_le_prod
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
     (hsep : ∀ R : F[Z][X][Y],
     R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs →
-      (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+      (Trivariate.evalAtX x₀ R).Separable)
     :
   #(pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
-      (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Bivariate.natDegreeY Q := by
+      (u₀ := u₀) (u₁ := u₁) x₀ h_gs) ≤ Trivariate.degreeInY Q := by
   classical
   -- Shorthands for the set of candidate polynomials `R` and the corresponding set of
   -- pairs for each `R`.
@@ -520,7 +523,7 @@ theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswam
     pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs with hRset
   set t : F[Z][X][Y] → Finset (F[Z][X][Y] × F[Z][X]) := fun R =>
     (UniqueFactorizationMonoid.normalizedFactors
-        (Bivariate.evalX (Polynomial.C x₀) R)).toFinset.image (fun H => (R, H)) with ht
+        (Trivariate.evalAtX x₀ R)).toFinset.image (fun H => (R, H)) with ht
   -- Unfold `pg_candidatePairs` as a `biUnion` over `Rset`.
   have hcp :
       pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
@@ -534,7 +537,7 @@ theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswam
         ≤ ∑ R ∈ Rset, #(t R) := by
     simpa [hcp] using (Finset.card_biUnion_le (s := Rset) (t := t))
   -- Pointwise bound: for each `R ∈ Rset`, `#(t R)` is bounded by `natDegreeY R`.
-  have hpoint : ∀ R : F[Z][X][Y], R ∈ Rset → #(t R) ≤ Bivariate.natDegreeY R := by
+  have hpoint : ∀ R : F[Z][X][Y], R ∈ Rset → #(t R) ≤ Trivariate.degreeInY R := by
     intro R hR
     -- `t R` is an injective image of the factor set.
     have hinj : Function.Injective (fun H : F[Z][X] => (R, H)) := by
@@ -543,35 +546,36 @@ theorem pg_card_candidatePairs_le_natDegreeY (x₀ : F) (h_gs : ModifiedGuruswam
     have hcard_image :
         #(t R) =
           #((UniqueFactorizationMonoid.normalizedFactors
-              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset) := by
+              (Trivariate.evalAtX x₀ R)).toFinset) := by
       simpa [ht] using
         (Finset.card_image_of_injective
           (s := (UniqueFactorizationMonoid.normalizedFactors
-              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset)
+              (Trivariate.evalAtX x₀ R)).toFinset)
           (f := fun H : F[Z][X] => (R, H)) hinj)
     have hR' : R ∈
         pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q) (u₀ := u₀) (u₁ := u₁) h_gs := by
       simpa [hRset] using hR
     have hcard_nf :
         #((UniqueFactorizationMonoid.normalizedFactors
-            (Bivariate.evalX (Polynomial.C x₀) R)).toFinset)
-          ≤ (Bivariate.evalX (Polynomial.C x₀) R).natDegree :=
+            (Trivariate.evalAtX x₀ R)).toFinset)
+          ≤ (Trivariate.evalAtX x₀ R).natDegree :=
       pg_card_normalizedFactors_toFinset_le_natDegree (F := F)
-        (p := (Bivariate.evalX (Polynomial.C x₀) R)) (hp := hsep R hR')
-    have hdeg : (Bivariate.evalX (Polynomial.C x₀) R).natDegree ≤ Bivariate.natDegreeY R :=
+        (p := Trivariate.evalAtX x₀ R) (hp := hsep R hR')
+    have hdeg : (Trivariate.evalAtX x₀ R).natDegree ≤ Trivariate.degreeInY R :=
       pg_natDegree_evalX_le_natDegreeY (F := F) x₀ R
     -- Combine the bounds.
     calc
       #(t R) =
           #((UniqueFactorizationMonoid.normalizedFactors
-              (Bivariate.evalX (Polynomial.C x₀) R)).toFinset) := hcard_image
-      _ ≤ (Bivariate.evalX (Polynomial.C x₀) R).natDegree := hcard_nf
-      _ ≤ Bivariate.natDegreeY R := hdeg
-  have hsum : (∑ R ∈ Rset, #(t R)) ≤ ∑ R ∈ Rset, Bivariate.natDegreeY R := by
+              (Trivariate.evalAtX x₀ R)).toFinset) := hcard_image
+      _ ≤ (Trivariate.evalAtX x₀ R).natDegree := hcard_nf
+      _ ≤ Trivariate.degreeInY R := hdeg
+  have hsum : (∑ R ∈ Rset, #(t R)) ≤ ∑ R ∈ Rset, Trivariate.degreeInY R := by
     refine Finset.sum_le_sum ?_
     intro R hR
     exact hpoint R hR
-  have hsum_Rset_le : (∑ R ∈ Rset, Bivariate.natDegreeY R) ≤ Bivariate.natDegreeY Q := by
+  have hsum_Rset_le : (∑ R ∈ Rset, Trivariate.degreeInY R) ≤
+      Trivariate.degreeInY Q := by
     -- This is exactly the provided axiom, after rewriting `Rset`.
     simpa [hRset] using
       (pg_sum_natDegreeY_Rset_le_natDegreeY_Q (m := m) (n := n) (k := k)
