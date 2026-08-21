@@ -200,12 +200,34 @@ being checked is *not* run as an effectful `guard`/oracle computation here; inst
 output relation `oracleRelOut`. This keeps the verifier `IsPure` (so it can be a left factor in a
 CWSS composition) and sidesteps the unfinished no-failure `OracleComp` refactor. (The `guard`-based
 plain-reduction variant above is retained as a rightmost-only factor.) -/
+def outputEmbedding : OracleOutputEmbedding OStatement (!p[] : ProtocolSpec 0).Message
+    OStatement where
+  embed := Function.Embedding.inl
+  hEq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+  outputInterface_heq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
     Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => pure stmt
-  embed := Function.Embedding.inl
-  hEq := fun _ => rfl
+  outputOracle := .inl (outputEmbedding OStatement)
+
+@[simp]
+theorem oracleVerifier_materializeOutput (challenges : (!p[] : ProtocolSpec 0).Challenges)
+    (oStmt : ∀ i, OStatement i) (messages : (!p[] : ProtocolSpec 0).Messages) :
+    (oracleVerifier oSpec Statement OStatement).materializeOutput challenges oStmt messages =
+      oStmt := by
+  unfold OracleVerifier.materializeOutput oracleVerifier
+  change OracleVerifier.materializeOutputOracle (Sum.inl (outputEmbedding OStatement))
+      challenges oStmt messages = oStmt
+  simp only [OracleVerifier.materializeOutputOracle]
+  funext i
+  simp only [outputEmbedding]
+  rfl
 
 /-- The oracle reduction for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
@@ -222,11 +244,12 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     {tr : (!p[] : ProtocolSpec 0).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, oStmt⟩ := by
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure stmt : OptionT (OracleComp _) Statement)
-      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
-  congr 1
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_materializeOutput]
+  simp only [oracleVerifier]
+  simp [OptionT.run_pure, simulateQ_pure]
+  apply OptionT.ext
+  rfl
 
 /-- The `CheckClaim` oracle verifier is pure: its underlying verifier deterministically returns the
 combined statement, which discharges the deterministic-left hypothesis of the CWSS binary append. -/

@@ -373,10 +373,9 @@ theorem weight_mul (f g H : F[X][Y]) (D : ℕ) :
   have hsplit : (f * g).coeff (Nf + Ng) =
       f.coeff Nf * g.coeff Ng +
         ∑ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng), f.coeff x.1 * g.coeff x.2 := by
-    rw [Polynomial.coeff_mul]
-    exact (Finset.add_sum_erase (Finset.antidiagonal (Nf + Ng))
-      (fun x => f.coeff x.1 * g.coeff x.2)
-      (Finset.mem_antidiagonal.mpr (rfl : Nf + Ng = Nf + Ng))).symm
+    have hpair : (Nf, Ng) ∈ Finset.antidiagonal (Nf + Ng) :=
+      Finset.mem_antidiagonal.mpr rfl
+    rw [Polynomial.coeff_mul, ← Finset.add_sum_erase _ _ hpair]
   have hBdeg : (∑ x ∈ (Finset.antidiagonal (Nf + Ng)).erase (Nf, Ng),
       f.coeff x.1 * g.coeff x.2).degree < ((df + dg : ℕ) : WithBot ℕ) :=
     lt_of_le_of_lt (Polynomial.degree_sum_le _ _)

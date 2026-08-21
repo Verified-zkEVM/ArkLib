@@ -84,8 +84,16 @@ omit [∀ i, SampleableType (pSpec.Challenge i)] in
 
   The extractor is the notion's own, closed at the canonical witnessing acceptance already provides
   (`ChallengeTree.canonWitnesses`), and this costs only `[Inhabited WitIn]` — no purity, no
-  finiteness. So the leaf-witnessing input weakens nothing: it buys computable extraction while the
-  textbook statement remains available verbatim as a theorem. -/
+  finiteness. So the leaf-witnessing input costs nothing that was previously there.
+
+  Be precise about what is recovered, though. `ChallengeTree.canonWitnesses` is
+  `if h : ∃ w, … then some h.choose else none`, so closing at it plugs the choice function back in:
+  what this theorem hands back is the *non-algorithmic* reading — the pre-witnessing statement,
+  derived. That makes it the right migration receipt, not the preferred statement. For a reduction
+  the `∀ o valid` form of `Verifier.specialSound` is strictly the better one: the output witnesses
+  are a genuine input to a reduction-of-knowledge extractor, and carrying them is what lets a chain
+  of certificates compose into a runnable end-to-end extractor. The premise is an argument for the
+  interface, not an apology for it. -/
 theorem specialSound.exists_total_extractor [Inhabited WitIn] (k : pSpec.ChallengeIdx → ℕ)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
     (verifier : Verifier oSpec StmtIn StmtOut pSpec)
@@ -110,7 +118,7 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

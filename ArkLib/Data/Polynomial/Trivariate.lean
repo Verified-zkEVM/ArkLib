@@ -65,7 +65,12 @@ noncomputable def toRatFuncPoly (p : F[Z][X][Y]) : (RatFunc F)[X][Y] :=
 /-- Following [BCIKS20] this the `Y`-degree of a trivariate polynomial `Q`. -/
 noncomputable def D_Y (Q : F[Z][X][Y]) : ℕ := Bivariate.natDegreeY Q
 
-/-- The `YZ`-degree of a trivariate polynomial. -/
+/-- The `YZ`-degree of a trivariate polynomial: the total `(Y, Z)`-degree, i.e. the maximum of
+`degY + degZ` over the monomials of `Q`.
+
+Here `j` ranges over the `Y`-degrees of `Q` and `i` over the `X`-degrees occurring at `Y`-degree
+`j`, so the coefficient of `X ^ i * Y ^ j` is `Bivariate.coeff Q i j` — note that
+`Bivariate.coeff Q i j = (Q.coeff j).coeff i` takes the `X`-index first. -/
 noncomputable def D_YZ (Q : F[Z][X][Y]) : ℕ :=
   Option.getD (dflt := 0) <| Finset.max
     (Finset.image
@@ -74,7 +79,7 @@ noncomputable def D_YZ (Q : F[Z][X][Y]) : ℕ :=
                 Option.getD (
                   Finset.max (
                     Finset.image
-                      (fun k => j + (Bivariate.coeff Q j k).natDegree)
+                      (fun i => j + (Bivariate.coeff Q i j).natDegree)
                       (Q.coeff j).support
                   )
                 ) 0

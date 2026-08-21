@@ -82,13 +82,133 @@ theorem rbrKnowledgeSoundness_implies_rbrSoundness
     {rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0}
     (h : verifier.rbrKnowledgeSoundness init impl relIn relOut rbrKnowledgeError) :
     verifier.rbrSoundness init impl relIn.language relOut.language rbrKnowledgeError := by
-  unfold rbrSoundness
+  classical
   unfold rbrKnowledgeSoundness at h
-  obtain ⟨WitMid, extractor, kSF, h⟩ := h
-  refine ⟨kSF.toStateFunction, ?_⟩
-  intro stmtIn hRelIn WitIn' WitOut' witIn' prover chalIdx
-  simp_all
-  sorry
+  obtain ⟨WitMid, extractor, kSF, hkSF⟩ := h
+  by_cases hWout : Nonempty WitOut
+  · unfold rbrSoundness
+    refine ⟨kSF.toStateFunction init impl, ?_⟩
+    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
+    by_cases hWin : Nonempty WitIn
+    · let prover' : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec :=
+        { PrvState := prover.PrvState
+          input := fun _ => prover.input (stmtIn, witIn')
+          sendMessage := prover.sendMessage
+          receiveChallenge := prover.receiveChallenge
+          output := fun st => do
+            let out ← prover.output st
+            return (out.1, Classical.choice hWout) }
+      have hrun : prover'.runToRound i.1.castSucc stmtIn (Classical.choice hWin) =
+          prover.runToRound i.1.castSucc stmtIn witIn' := by rfl
+      have hrunlog : prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin) =
+          prover.runWithLogToRound i.1.castSucc stmtIn witIn' := by
+        unfold Prover.runWithLogToRound
+        rw [hrun]
+      let logGame := do
+        let s ← init
+        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+          (do
+            let ⟨⟨transcript, _⟩, proveQueryLog⟩ ←
+              prover'.runWithLogToRound i.1.castSucc stmtIn (Classical.choice hWin)
+            let challenge ← liftComp (pSpec.getChallenge i) _
+            return (transcript, challenge, proveQueryLog))).run' s
+      let plainGame := do
+        let s ← init
+        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+          (do
+            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
+            let challenge ← liftComp (pSpec.getChallenge i) _
+            return (transcript, challenge))).run' s
+      have hmap : (fun x => (x.1, x.2.1)) <$> logGame = plainGame := by
+        simp [logGame, plainGame, ← Prover.runWithLogToRound_discard_log_eq_runToRound, hrunlog]
+        rfl
+      have hk := hkSF stmtIn (Classical.choice hWin) prover' i
+      change probEvent plainGame (fun x =>
+        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
+          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) ≤ _
+      change probEvent logGame (fun x => ∃ w,
+        ¬ kSF i.1.castSucc stmtIn x.1
+            (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
+          kSF i.1.succ stmtIn (x.1.concat x.2.1) w) ≤ _ at hk
+      calc
+        _ = probEvent logGame (fun x =>
+            ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
+              ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2.1) w) := by
+              rw [← hmap, probEvent_map]
+              rfl
+        _ ≤ probEvent logGame (fun x => ∃ w,
+            ¬ kSF i.1.castSucc stmtIn x.1
+                (extractor.extractMid i.1 stmtIn (x.1.concat x.2.1) w) ∧
+              kSF i.1.succ stmtIn (x.1.concat x.2.1) w) := by
+              apply probEvent_mono
+              intro x hx hbad
+              obtain ⟨hprev, w, hnext⟩ := hbad
+              exact ⟨w, fun hw => hprev ⟨_, hw⟩, hnext⟩
+        _ ≤ _ := hk
+    · let extractToInput : (m : Fin (n + 1)) → Transcript m pSpec → WitMid m → WitIn :=
+        Fin.induction
+          (fun tr w => cast extractor.eqIn w)
+          (fun m ih tr w =>
+            ih (Fin.init tr) (extractor.extractMid m stmtIn tr w))
+      let plainGame := do
+        let s ← init
+        (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+          (do
+            let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
+            let challenge ← liftComp (pSpec.getChallenge i) _
+            return (transcript, challenge))).run' s
+      change probEvent plainGame (fun x =>
+        ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
+          ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) ≤ _
+      have hz : probEvent plainGame (fun x =>
+          ¬ (∃ w, kSF i.1.castSucc stmtIn x.1 w) ∧
+            ∃ w, kSF i.1.succ stmtIn (x.1.concat x.2) w) = 0 := by
+        rw [probEvent_eq_zero_iff]
+        intro x hx hbad
+        obtain ⟨hprev, w, hnext⟩ := hbad
+        exact hWin ⟨extractToInput i.1.succ (x.1.concat x.2) w⟩
+      rw [hz]
+      exact zero_le
+  · have hLangOut : relOut.language = ∅ := by
+      ext stmtOut
+      simp only [Set.language, Set.mem_image, Prod.exists, exists_and_right,
+        exists_eq_right, Set.mem_empty_iff_false, iff_false]
+      intro hex
+      exact hWout ⟨hex.choose⟩
+    let sF : verifier.StateFunction init impl relIn.language relOut.language :=
+      { toFun := fun m stmtIn _ => m = 0 ∧ stmtIn ∈ relIn.language
+        toFun_empty := by
+          intro stmtIn
+          simp only [true_and]
+        toFun_next := by
+          intro m hdir stmtIn tr hfalse msg htrue
+          exact Fin.succ_ne_zero m htrue.1
+        toFun_full := by
+          intro stmtIn tr hfalse
+          rw [hLangOut]
+          rw [probEvent_eq_zero_iff]
+          simp only [Set.mem_empty_iff_false, not_false_eq_true, implies_true] }
+    unfold rbrSoundness
+    refine ⟨sF, ?_⟩
+    intro stmtIn hStmtIn WitIn' WitOut' witIn' prover i
+    let plainGame := do
+      let s ← init
+      (simulateQ (impl.addLift challengeQueryImpl : QueryImpl _ (StateT σ ProbComp))
+        (do
+          let ⟨transcript, _⟩ ← prover.runToRound i.1.castSucc stmtIn witIn'
+          let challenge ← liftComp (pSpec.getChallenge i) _
+          return (transcript, challenge))).run' s
+    change probEvent plainGame (fun x =>
+      ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
+        ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)) ≤ _
+    have hz : probEvent plainGame (fun x =>
+        ¬ ((i.1.castSucc = 0) ∧ stmtIn ∈ relIn.language) ∧
+          ((i.1.succ = 0) ∧ stmtIn ∈ relIn.language)) = 0 := by
+      rw [probEvent_eq_zero_iff]
+      intro x hx hbad
+      exact Fin.succ_ne_zero i.1 hbad.2.1
+    rw [hz]
+    exact zero_le
 
 /-- Round-by-round knowledge soundness with error `rbrKnowledgeError` implies knowledge soundness
 with error `∑ i, rbrKnowledgeError i`, where the sum is over all rounds `i`. -/
@@ -267,7 +387,7 @@ namespace OracleVerifier
 open ProtocolSpec
 
 variable {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   [∀ i, OracleInterface (pSpec.Message i)]
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in

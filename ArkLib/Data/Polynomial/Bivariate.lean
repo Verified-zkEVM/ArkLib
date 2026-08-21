@@ -43,9 +43,9 @@ lemma ne_zero_iff_coeffs_ne_zero (f : F[X][Y]) : f ≠ 0 ↔ f.coeff ≠ 0 :=
   ⟩
 
 /-- The set of `Y`-degrees is non-empty. -/
-lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.support).Nonempty :=
-  Finsupp.support_nonempty_iff.mpr
-    fun h ↦ hf (Polynomial.ext (fun n => by rw [← Polynomial.toFinsupp_apply, h]; rfl))
+lemma degreesY_nonempty {f : F[X][Y]} (hf : f ≠ 0) : (f.toFinsupp.coeff.support).Nonempty := by
+  rw [Polynomial.support_toFinsupp]
+  exact Polynomial.support_nonempty.mpr hf
 
 variable {f : F[X][Y]}
 
@@ -369,26 +369,21 @@ theorem totalDegree_mul [IsDomain F] {f g : F[X][Y]} (hf : f ≠ 0) (hg : g ≠ 
 /-- Definition of a monomial when the bivariate polynomial is considered as a univariate
 polynomial in `Y`. -/
 def monomialY (n : ℕ) : F[X] →ₗ[F[X]] F[X][Y] where
-  toFun t := ⟨Finsupp.single n t⟩
-  map_add' x y := by rw [Finsupp.single_add]; aesop
-  map_smul' r x := by simp only [RingHom.id_apply, ofFinsupp_single]; rw [Polynomial.smul_monomial]
+  toFun t := Polynomial.monomial n t
+  map_add' x y := by simp
+  map_smul' r x := by simp only [RingHom.id_apply, Polynomial.smul_monomial]
 
 /-- Definition of the bivariate monomial `X^n * Y^m` -/
 def monomialXY (n m : ℕ) : F →ₗ[F] F[X][Y] where
-  toFun t := ⟨Finsupp.single m ⟨(Finsupp.single n t)⟩⟩
-  map_add' x y := by
-    simp only [ofFinsupp_single, map_add]
-  map_smul' x y := by
-    simp only [smul_eq_mul, ofFinsupp_single, RingHom.id_apply]
-    rw [Polynomial.smul_monomial, Polynomial.smul_monomial]
-    simp
+  toFun t := Polynomial.monomial m (Polynomial.monomial n t)
+  map_add' x y := by simp
+  map_smul' x y := by simp only [RingHom.id_apply, Polynomial.smul_monomial]
 
 /-- The bivariate monomial is well-defined. -/
 @[grind _=_]
 theorem monomialXY_def {n m : ℕ} {a : F} :
     monomialXY n m a = Polynomial.monomial m (Polynomial.monomial n a) := by
-  unfold monomialXY
-  simp
+  rfl
 
 /-- Adding bivariate monomials works as expected.
 In particular, `(a + b) * X^n * Y^m = a * X^n * Y^m + b * X^n * Y^m`. -/
@@ -402,12 +397,7 @@ In particular, `(a * X^n * Y^m) * (b * X^p * Y^q) = (a * b) * X^(n+p) * Y^(m+q)`
 @[grind _=_]
 theorem monomialXY_mul_monomialXY {n m p q : ℕ} {a b : F} :
     monomialXY n m a * monomialXY p q b = monomialXY (n + p) (m + q) (a * b) :=
-  toFinsupp_injective <| by
-  rw [toFinsupp_mul]
-  change AddMonoidAlgebra.single m ((Polynomial.monomial n) a) *
-    AddMonoidAlgebra.single q ((Polynomial.monomial p) b) =
-    AddMonoidAlgebra.single (m + q) ((Polynomial.monomial (n + p)) (a * b))
-  rw [AddMonoidAlgebra.single_mul_single, Polynomial.monomial_mul_monomial]
+  by simp only [monomialXY_def, Polynomial.monomial_mul_monomial]
 
 /-- Taking a bivariate monomial to a power works as expected.
 In particular, ` (a * X^n * Y^m)^k = (a^k) * X^(n * k) * Y^(m * k)`. -/
@@ -474,4 +464,84 @@ lemma evalX_mul {F : Type} [CommSemiring F] (x : F) (f g : F[X][Y]) :
   simp [evalX_eq_map]
 
 end
+/-- Shifting by any point preserves nonzeroness: `shift` is composition with unit-leading
+affine substitutions in each variable, which are injective ring maps on polynomials. -/
+theorem shift_ne_zero {R : Type} [CommRing R]
+    (f : Polynomial (Polynomial R)) (x y : R) (hf : f ≠ 0) :
+    Polynomial.Bivariate.shift f x y ≠ 0 := by
+  intro hs
+  unfold Polynomial.Bivariate.shift at hs
+  let φ : Polynomial R →+* Polynomial R :=
+    Polynomial.compRingHom (Polynomial.X + Polynomial.C x)
+  have hφ : Function.Injective φ := by
+    intro p q hpq
+    apply sub_eq_zero.mp
+    apply Polynomial.comp_X_add_C_eq_zero_iff.mp
+    change φ (p - q) = 0
+    rw [map_sub, hpq, sub_self]
+  have hcomp : f.comp (Polynomial.X + Polynomial.C (Polynomial.C y)) = 0 :=
+    (Polynomial.map_eq_zero_iff hφ).mp hs
+  exact hf (Polynomial.comp_X_add_C_eq_zero_iff.mp hcomp)
+
+/-- A nonzero bivariate polynomial has a well-defined multiplicity at the origin: some
+coefficient in the truncation grid is nonzero, so the defining `min?` is over a nonempty list. -/
+theorem rootMultiplicity₀_ne_none {R : Type} [CommSemiring R] [DecidableEq R]
+    (g : Polynomial (Polynomial R)) (hg : g ≠ 0) :
+    Polynomial.Bivariate.rootMultiplicity₀ g ≠ none := by
+  obtain ⟨t, ht⟩ : ∃ t, g.coeff t ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact hg (Polynomial.ext h)
+  obtain ⟨s, hs⟩ : ∃ s, (g.coeff t).coeff s ≠ 0 := by
+    by_contra h
+    push Not at h
+    exact ht (Polynomial.ext h)
+  have htmem : t ∈ g.support := Polynomial.mem_support_iff.mpr ht
+  have hsle : s ≤ (g.coeff t).natDegree := Polynomial.le_natDegree_of_ne_zero hs
+  have htotal : (g.coeff t).natDegree + t ≤
+      Polynomial.Bivariate.natWeightedDegree g 1 1 := by
+    simpa only [Polynomial.Bivariate.natWeightedDegree, one_mul] using
+      (Finset.le_sup (f := fun j => (g.coeff j).natDegree + j) htmem)
+  have hslt : s < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
+  have htlt : t < Polynomial.Bivariate.natWeightedDegree g 1 1 + 1 := by omega
+  intro hnone
+  simp only [Polynomial.Bivariate.rootMultiplicity₀,
+    Polynomial.Bivariate.weightedDegree_eq_natWeightedDegree] at hnone
+  have hempty := List.min?_eq_none_iff.mp hnone
+  have hmem : s + t ∈ List.filterMap
+      (fun p : ℕ × ℕ => if Polynomial.Bivariate.coeff g p.1 p.2 = 0
+        then none else some (p.1 + p.2))
+      (List.product
+        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))
+        (List.range (Polynomial.Bivariate.natWeightedDegree g 1 1 + 1))) := by
+    rw [List.mem_filterMap]
+    refine ⟨(s,t), ?_, ?_⟩
+    · exact List.mem_product.mpr ⟨List.mem_range.mpr hslt, List.mem_range.mpr htlt⟩
+    · simp only [Polynomial.Bivariate.coeff, hs, if_false]
+  rw [hempty] at hmem
+  simp at hmem
+
+/-- The `Y`-degree is controlled by the `(1, k)`-weighted degree: each unit of `Y`-degree costs
+`k` units of weight. Stated natively over `ℕ`, with no division. -/
+theorem mul_natDegreeY_le_natWeightedDegree {R : Type} [Semiring R]
+    (Q : Polynomial (Polynomial R)) (k : ℕ) :
+    k * Polynomial.Bivariate.natDegreeY Q ≤ Polynomial.Bivariate.natWeightedDegree Q 1 k := by
+  have hweight := Polynomial.Bivariate.weight_le_natWeightedDegree_of_lt_natDegree_succ
+    (f := Q) (u := 1) (v := k) (n := Q.natDegree) (Nat.lt_succ_self _)
+  exact le_trans (Nat.le_add_left _ _) hweight
+
+
+/-- The `X`-degree is a lower part of the `(1, k)`-weighted degree. -/
+theorem degreeX_le_natWeightedDegree {R : Type} [Semiring R]
+    (Q : Polynomial (Polynomial R)) (k : ℕ) :
+    Polynomial.Bivariate.degreeX Q ≤
+      Polynomial.Bivariate.natWeightedDegree Q 1 k := by
+  rw [Polynomial.Bivariate.degreeX_as_weighted_deg]
+  unfold Polynomial.Bivariate.natWeightedDegree
+  refine Finset.sup_le ?_
+  intro j hj
+  refine le_trans ?_ (Finset.le_sup
+    (f := fun t => 1 * (Q.coeff t).natDegree + k * t) hj)
+  omega
+
 end Polynomial.Bivariate

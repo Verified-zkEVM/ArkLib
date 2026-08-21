@@ -180,7 +180,7 @@ end Reduction
   message `∀ i, Witness i` (`oraclePSpec` has one round), yet the intended output oracle statements
   `OStatement ⊕ᵥ Witness` and the commented `embed` (via `FinEnum.equiv`) expect **per-index**
   oracles. Under `embed`/`hEq` an output oracle can only *select* an existing source oracle, not
-  decompose a product; this is exactly the `simOStmt` refactor noted in `OracleReduction/Basic`.
+  decompose a product; this is exactly the `simulateOutputQuery` refactor noted in `OracleReduction/Basic`.
   Two coherent designs resolve it — (a) keep the single product message and output it as one product
   oracle (which is `SendSingleWitness` at `Witness := ∀ i, Witness i`), or (b) rewrite `oraclePSpec`
   as a `FinEnum.card ιw`-round protocol so each witness is its own message (per-index oracles then
@@ -290,6 +290,11 @@ namespace SendSingleWitness
 variable {ιₛ : Type} (OStatement : ιₛ → Type) [∀ i, OracleInterface (OStatement i)]
   (Witness : Type) [OracleInterface Witness]
 
+instance instOutputOracleInterface :
+    ∀ i : ιₛ ⊕ Fin 1,
+      OracleInterface (Sum.elim OStatement (fun _ : Fin 1 => Witness) i) :=
+  fun i => OracleInterface.instRecType i
+
 @[reducible, simp]
 def oraclePSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Witness]⟩
 
@@ -313,6 +318,28 @@ def oracleProver : OracleProver oSpec
   receiveChallenge | ⟨0, h⟩ => nomatch h
   output := fun ⟨⟨stmt, oStmt⟩, wit⟩ => pure (⟨stmt, Sum.rec oStmt (fun _ => wit)⟩, ())
 
+/-- The index embedding that exposes every input oracle and the single witness
+message as output oracles. -/
+def outputIndexEmbedding : (ιₛ ⊕ Fin 1) ↪ ιₛ ⊕ (oraclePSpec Witness).MessageIdx :=
+  Function.Embedding.sumMap (.refl _)
+    (Equiv.toEmbedding (.symm (subtypeUnivEquiv (by aesop))))
+
+def outputEmbedding : OracleOutputEmbedding OStatement (oraclePSpec Witness).Message
+    (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness)) where
+  embed := outputIndexEmbedding Witness
+  hEq := by
+    intro i
+    rcases i with j | j
+    · rfl
+    · fin_cases j
+      rfl
+  outputInterface_heq := by
+    intro i
+    rcases i with j | j
+    · rfl
+    · fin_cases j
+      rfl
+
 /-- The oracle verifier for the `SendSingleWitness` oracle reduction.
 
 The verifier receives the input statement `stmt` and returns it, and also specifying the oracle
@@ -323,13 +350,24 @@ def oracleVerifier : OracleVerifier oSpec
     Statement OStatement Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Witness))
     (oraclePSpec Witness) where
   verify := fun stmt _ => pure stmt
-  embed := .sumMap (.refl _)
-    <| Equiv.toEmbedding
-    <|.symm (subtypeUnivEquiv (by aesop))
-  hEq := by
-    intro i; rcases i with j | j
-    · rfl
-    · fin_cases j; rfl
+  outputOracle := .inl (outputEmbedding OStatement Witness)
+
+@[simp]
+theorem oracleVerifier_materializeOutput
+    (challenges : (oraclePSpec Witness).Challenges)
+    (oStmt : ∀ i, OStatement i) (messages : (oraclePSpec Witness).Messages) :
+    (oracleVerifier oSpec Statement OStatement Witness).materializeOutput
+        challenges oStmt messages =
+      Sum.rec oStmt (fun i => match i with | 0 => messages ⟨0, rfl⟩) := by
+  unfold OracleVerifier.materializeOutput oracleVerifier
+  change OracleVerifier.materializeOutputOracle
+      (Sum.inl (outputEmbedding OStatement Witness)) challenges oStmt messages = _
+  simp only [OracleVerifier.materializeOutputOracle]
+  funext i
+  rcases i with j | j
+  · rfl
+  · fin_cases j
+    rfl
 
 @[inline, specialize]
 def oracleReduction : OracleReduction oSpec
@@ -354,20 +392,9 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     {tr : (oraclePSpec Witness).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement Witness).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
-  -- The oracle verifier's `verify` is `pure stmt`, so after `simulateQ_pure` reduces the simulated
-  -- pure and `pure_bind` collapses the bind, `toVerifier.run` is `pure` of the pair
-  -- `⟨stmt, oStmtOut⟩`, where `oStmtOut` reads the output oracle statements off `embed`. It remains
-  -- to identify `oStmtOut` with the explicit `Sum.rec` form, which we do coordinate-by-coordinate.
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure stmt : OptionT (OracleComp _) Statement)
-      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
-  congr 1
-  congr 1
-  funext idx
-  rcases idx with j | j
-  · rfl
-  · fin_cases j; rfl
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_materializeOutput]
+  rfl
 
 /-- The `SendSingleWitness` oracle verifier is pure: its underlying (non-oracle) verifier
 deterministically returns the statement together with the output oracle statements read off the

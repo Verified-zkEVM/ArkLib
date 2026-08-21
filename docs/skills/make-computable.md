@@ -24,6 +24,15 @@ Turn a pile of `noncomputable` markers into:
 Favor reusing verified executable algorithms already in Mathlib or the dependency packages
 (CompPoly especially) over writing a new algorithm and proving it from scratch.
 
+**Be honest about what this buys, up front.** Computability is not a stronger theorem. Unless the
+surrounding definitions bound complexity, making something executable buys `#eval`-ability and
+testability, not a better result — ArkLib's `Extractor.TreeBased` is a plain function type with no
+complexity bound, so a computable extractor is no stronger a security statement than a classical
+one. What it does buy is real but different: the *algorithm* becomes the subject of the theorem, so
+a chain of named certificates exposes a runnable end-to-end extractor instead of hiding each link's
+extraction inside an `Exists.choose`. State the claim that way, not as a security improvement.
+(Repeated under Known Pitfalls, where it is easy to miss.)
+
 ## The Three Kinds
 
 Classify every marker before touching anything. Most of the triage value is here, and the kinds

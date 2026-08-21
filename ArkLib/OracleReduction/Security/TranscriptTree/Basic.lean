@@ -633,8 +633,8 @@ theorem canonWitnesses_isValid {init : ProbComp σ}
     {impl : QueryImpl oSpec (StateT σ ProbComp)} {V : Verifier oSpec StmtIn StmtOut pSpec}
     {relOut : Set (StmtOut × WitOut)} {stmtIn : StmtIn} {tree : ChallengeTree pSpec arity 0}
     (hacc : tree.IsAccepting init impl V stmtIn relOut.language) :
-    (canonWitnesses init impl V relOut stmtIn (tree := tree)).IsValid init impl V relOut stmtIn :=
-      by
+    (canonWitnesses init impl V relOut stmtIn (tree := tree)).IsValid
+      init impl V relOut stmtIn := by
   intro p
   obtain ⟨out, hout⟩ := Verifier.outputs_nonempty_of_isAccepting hacc p
   obtain ⟨w, hw⟩ := (Set.mem_language_iff relOut _).1
@@ -727,7 +727,19 @@ def treeSpecialSoundWith (S : ChallengeTreeShape pSpec)
   escape-event disjunct: on every structured accepting tree, either the tree exhibits the escape
   event `esc` (a trusted spec — see `ChallengeTree.EscapeEvent`) or extraction succeeds on every
   valid leaf witnessing. An escaping factor owes no witness, and the disjunction is decided before
-  any witnessing is seen. -/
+  any witnessing is seen.
+
+  **The quantifier order is deliberate: do not commute it.** The disjunction sits *outside* the
+  witnessing quantifier — `esc ∨ ∀ o valid, …`, not `∀ o valid, esc ∨ …`. The two are not
+  interchangeable: this form is strictly stronger, and it is what makes the escape decision
+  independent of the supplied witnessing, so an escape cannot be conjured by feeding the reduction
+  an awkward set of output witnesses. The composition proofs depend on it —
+  `append_treeSpecialSoundWithEscape_guardedLeft` resolves both factors' escape disjuncts *before*
+  it introduces a witnessing (`refine Or.inr fun o hvalid => ?_`), which is only possible at this
+  order — and so does the unconditioned closer
+  `treeSpecialSoundWithEscape.escape_or_mem_relIn_of_isAccepting`, which passes the escape disjunct
+  through untouched. A later "simplification" pushing the `∨` inside the `∀` would silently weaken
+  every certificate in the chain. -/
 def treeSpecialSoundWithEscape (S : ChallengeTreeShape pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -758,7 +770,15 @@ def treeSpecialSound (S : ChallengeTreeShape pSpec)
   ∃ E : Extractor.TreeBased StmtIn WitIn WitOut pSpec S.arity,
     treeSpecialSoundWith init impl S relIn relOut verifier E
 
-/-- Existential closure of `Verifier.treeSpecialSoundWithEscape`. -/
+/-- Existential closure of `Verifier.treeSpecialSoundWithEscape`.
+
+  **No consumer, by design.** Before the named escape appends, this form was the right-factor
+  hypothesis of every escape composition theorem; now each of those takes a named `E₂`, so nothing
+  in the library consumes it — that is the point of the redesign, not an oversight. It is kept only
+  as the notion "*some* extractor works up to the escape event", for stating a lower bound on what a
+  reduction achieves when the algorithm is genuinely not the subject. Do not reintroduce it as a
+  composition hypothesis: forgetting the extractor there is exactly what hid every downstream link's
+  extraction inside an `Exists.choose` and made the composed chain unrunnable. -/
 def treeSpecialSoundEscape (S : ChallengeTreeShape pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -887,5 +907,38 @@ theorem treeSpecialSoundWith.mem_relIn_of_isAccepting [Inhabited WitIn]
   obtain ⟨w, hw, hrel⟩ :=
     h stmtIn tree hstr hacc _ (ChallengeTree.canonWitnesses_isValid hacc)
   simpa [hw] using hrel
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **The unconditioned reading of an escape-threaded certificate**, i.e.
+  `treeSpecialSoundWith.mem_relIn_of_isAccepting` for the notion the Hachi chain actually uses:
+  every certificate in that chain is escape-threaded, so this — not the plain closer — is the
+  statement that says nothing was lost in moving to the `∀ o valid` form.
+
+  The escape disjunct passes through untouched, which is the point of the quantifier order (see
+  `Verifier.treeSpecialSoundWithEscape`): the escape decision does not depend on the witnessing, so
+  it survives closing with the canonical one.
+
+  Note what closing does: `ChallengeTree.canonWitnesses` is
+  `if h : ∃ w, … then some h.choose else none`, so this theorem plugs the choice function back in
+  and recovers the *non-algorithmic* reading a pre-witnessing statement had. That is precisely why
+  it is the right migration receipt — it is the old statement, derived — and not a reason to prefer
+  it: for a reduction the `∀ o valid` form is the stronger and more useful statement, since it is
+  what composes into a runnable end-to-end extractor. -/
+theorem treeSpecialSoundWithEscape.escape_or_mem_relIn_of_isAccepting [Inhabited WitIn]
+    {S : ChallengeTreeShape pSpec}
+    {esc : ChallengeTree.EscapeEvent StmtIn pSpec S.arity}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec S.arity}
+    (h : treeSpecialSoundWithEscape init impl S esc relIn relOut verifier Ext) (stmtIn : StmtIn)
+    (tree : ChallengeTree pSpec S.arity 0) (hstr : tree.IsStructured S)
+    (hacc : tree.IsAccepting init impl verifier stmtIn relOut.language) :
+    esc stmtIn tree ∨
+      (stmtIn, (Ext stmtIn tree
+        (ChallengeTree.canonWitnesses init impl verifier relOut stmtIn)).getD default) ∈ relIn := by
+  rcases h stmtIn tree hstr hacc with hesc | hgood
+  · exact Or.inl hesc
+  · obtain ⟨w, hw, hrel⟩ := hgood _ (ChallengeTree.canonWitnesses_isValid hacc)
+    exact Or.inr (by simpa [hw] using hrel)
 
 end Verifier

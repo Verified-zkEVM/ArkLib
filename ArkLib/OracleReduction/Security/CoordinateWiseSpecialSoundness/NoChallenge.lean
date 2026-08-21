@@ -37,6 +37,17 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   transcript instead — so the bridges carry no purity hypothesis and the notion's validity premise
   is unused. This is the *closing* shape: such a factor placed on the right of a chain is what lets
   the whole composed extractor run as a function of `(stmtIn, tree)` alone.
+
+  **Which chains this actually closes.** A closing factor has to be *final*, and being zero-round is
+  not the same as being final. Hachi's `openingChain` ends in `handoffPackage`, whose output
+  relation is witness-carrying (`QuadEvalWitness Φ'`): one iteration is a *reduction*, so its
+  composed extractor legitimately consumes a leaf witnessing and this bridge does not close it.
+  Closure
+  arrives only when the chain is capped by a factor whose output relation needs no witness — the
+  final-evaluation piece appended after the iteration. So read the paragraph above as a statement
+  about the *shape* a closing factor must have, not as a claim that every chain built from these
+  components is already closed; a chain whose last link is a reduction is correctly left in the
+  `∀ o valid` form.
 -/
 
 open OracleComp OracleSpec ProtocolSpec
@@ -142,7 +153,7 @@ open ProtocolSpec ProtocolSpec.ChallengeTree
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n}
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

@@ -60,7 +60,7 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Figure-5 point checks | `ZeroCheck.relNestedZeroCheck` | deliberately repaired | Points are assembled directly from `m₀ + m₁` scalar challenge rounds; evaluation uses `CMlPolynomialEval.eval` directly. Also carries `liftShort` as the commitment's shortness index (see "Shortness" below); the weak-binding case is the separate escape event `nestedZeroCheckEsc`, not a conjunct of the relation. |
 | Axis-cross counterexample | `MvPolynomial.exists_nonzero_vanishing_on_axis_cross` | proven | Refutes the identity-testing step for the *prose* reading of Lemma 10 (a star of scalar coordinates). |
 | Nested zero-test kernel | `NestedEvaluationTree.eq_zero_of_vanishes_comp` (computable view `CMlPolynomialEval.eq_zero_of_polynomialVanishes_comp`/`_castAdd`/`_natAdd`; Hachi wrappers `hZero_eq_zero_of_evaluationTree`, `hAlpha_eq_zero_of_evaluationTree`) | proven, **axiom-clean** | A sibling-distinct complete `k`-ary tree with vanishing leaves forces a polynomial of individual degree `< k` to be zero, *read through a window of consecutive levels*. Mathlib-level statement in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`, computable view in `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`. Stated for general `k` (not just the multilinear `k = 2`), but with **one arity for every level**: a uniformly wider tree can certify a multilinear polynomial, whereas mixing a `k = 2` round with Lemma 9's `2d` or Lemma 11's `deg H + 1` would need per-level arity. |
-| Transcript-tree size | `NestedEvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family construction can satisfy `coordinateWiseSpecialSound` despite an impractical transcript count. But (i) these count the *adapter's* `NestedEvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
+| Transcript-tree size | `NestedEvaluationTree.numLeaves_eq_pow`, `nestedZeroCheck_numLeaves`, `nestedZeroCheck_numLeaves_lt` | proven, **axiom-clean**; two unformalized steps | `k ^ n` leaves, and `< 4·A·B` at minimal arities. Stated because `CWSSStructure` carries no size bound: an exponential-family repair (e.g. the superseded Kronecker one at `D = 2 ^ m₀`) satisfies `coordinateWiseSpecialSound` just as well. But (i) these count the *adapter's* `NestedEvaluationTree`, not the `ChallengeTree.LeafPath`s the extractor consumes, and (ii) minimality of `m₀`, `m₁` is a hypothesis of `_lt`, not enforced — `hμn`/`hn` bound the arities from below only. |
 | Lemma-10 extraction (escape-threaded) | `ZeroCheck.nestedZeroCheckExtractor`, `nestedAssembly_escape_or_mem_relBatched` | proof-sorry-free | Escape pass-through ∨ weak-binding collision ∨ common opening with both identities zero. |
 | Lemma-10 binding alternative | `ZeroCheck.nestedZeroCheckEsc` via `LiftCom.Collision` | integrated | Two **distinct short** openings of the shared `t` are a member of `K.Collision`, hence a Module-SIS break of the fixed key ([NOZ26] Lemma 7 / Remark 2). Stated as a `ChallengeTree.EscapeEvent` on `(statement, tree)` rather than an extractor output, so it cannot be satisfied trivially; the shortness both openings need is supplied by `relNestedZeroCheck`'s own `liftShort` conjunct. **No concrete `LiftCom` is instantiated yet** — see the note at the end of "Shortness" below. |
 | Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
@@ -223,6 +223,64 @@ Three caveats worth keeping in view:
   machine-checked. What the repair buys in exchange is a *deterministic* identity equivalence (the
   nested-tree zero test), which is what the CWSS framework requires.
 
+### Superseded: the one-round Kronecker-seed repair
+
+An earlier repair kept Figure 5's single challenge round but replaced the vector challenges by
+two scalar seeds `(ρ₀, ρ_α)` evaluated on Kronecker curves `κ_m(ρ) = (ρ, ρ², ρ⁴, …)`, with
+soundness parameter `D = max(2, 2^{m₀}, 2^{m₁})` and identity recovery by univariate root
+counting on the pullback `LinearMvExtension.powAlgHom`. It was superseded by the scalar-round
+design. Two facts recorded the limit of the seed-based route: for **any** `2^m − 1` seeds there
+is a nonzero multilinear polynomial vanishing at all of them, and a collision branch of that
+extractor shares an opening across only `2^m − 1` seeds — one short of the root count. Note also
+that the Kronecker rendering satisfies the Lean *definition* of CWSS just as well as the adopted
+one — what disqualified it (`D = 2^{m₀}` children in a single round, hence an exponential
+branching factor) is invisible to `CWSSStructure`, which is why the leaf-count lemmas above are
+now stated explicitly.
+
+**Nothing of this route is formalized any more.** Both its Hachi-specific declarations
+(`zeroCheckD`, `relZeroCheck`, `kroneckerPoint`-based points, `buildWitnessE`,
+`arm_eq_zero_of_family`, …) and the generic Kronecker lemmas that supported it
+(`kroneckerPoint`, `kroneckerExp`, `powAlgHom_eq_zero_iff`,
+`powAlgHom_injective_on_multilinear`, `multilinear_eq_zero_of_kronecker_roots`,
+`exists_nonzero_multilinear_vanishing_on_kronecker_seeds`) have been removed. What survives in
+`LinearMvExtension.lean` is the univariate/multilinear conversion itself — `powAlgHom`,
+`linearMvExtension`, and their degree bounds, all of which predate this audit and are used by
+`ArkLib/Data/CodingTheory/ReedSolomon/Multilinear.lean`. The axis-cross counterexample that
+motivates the whole repair survives as `MvPolynomial.exists_nonzero_vanishing_on_axis_cross`, moved
+to `ArkLib/Data/MvPolynomial/Multilinear.lean` alongside the rest of the multilinear API — it never
+depended on the univariate pullback.
+The paragraphs above are therefore a record of a rejected design, not a description of live Lean
+code.
+
+**Why it was rejected, quantitatively.** Beyond the arity objection, the seed route *degraded the
+soundness error*. For a nonzero `H₀` the univariate pullback `powAlgHom H₀` has degree
+`≤ 2^{m₀} − 1`, so a seed lands on a root with probability up to `2^{m₀}/|F_{q^k}|`. At the paper's
+Figure 9 parameters (`q ≈ 2^32`, `k = 4` so `|F_{q^k}| ≈ 2^128`; `deg φ = 2^10` and `w̃` length
+`≤ 2^26`, hence `m₀ ≈ 26`, which is also what `hμn` pins) that is `≈ 2^-102`, against `≈ 2^-123`
+for Figure 5's uniform `τ₀` by Schwartz–Zippel — a **~21-bit regression** on a `λ = 128` target.
+Buying those bits back was not cheap: `k` must divide `d/2 = 512` ([NOZ26] Lemma 1 / Theorem 1), so
+`k` is a power of two — `k = 5` would suffice numerically but is illegal, and the next legal value
+is `k = 8`, taking the sumcheck cost `26·k·32·(16+2)` bits from `≈ 7.3 KB` to `≈ 14.6 KB`, i.e.
+**double**, plus `F_{q^8}` arithmetic throughout. The adopted scalar-round design has no such
+regression: its error is `2(m₀ + m₁)/|F_{q^k}|`, a factor two off the unmodified protocol's
+Schwartz–Zippel bound (see "What the repair costs" above).
+
+Two accounting notes on that comparison, since both are easy to get wrong:
+
+- [NOZ26] Lemma 4's `ℓ·k/|S|^ℓ` must **not** be read as `2·D/|F_{q^k}|²` for the seed route. `H₀`
+  depends only on `ρ₀` and `H_α` only on `ρ_α`, so a cheating prover needs one seed bad, not both;
+  the `|S|^ℓ` denominator would price in an independence the protocol does not have. A knowledge
+  error below the direct `2^{m₀}/|F_{q^k}|` bound is in any case impossible, since knowledge error
+  dominates the success probability of a witness-less prover.
+- The comparison baseline is Figure 5's Schwartz–Zippel error `m₀/|F_{q^k}|`, not
+  `2·max(2d, 2b−1)/|F_{q^k}|²`; the latter mixes the paper's `D` with a denominator that does not
+  apply.
+
+No bound better than `2^{m₀}/|F_{q^k}|` was ever proved for that reparametrisation, and whether a
+*realisable* table attains it stayed open: the sharpness theorem gave tightness for arbitrary
+multilinears, but a protocol adversary must exhibit an `H₀` of the form `∑ᵢ eq̃(t,i)·P_b(w̃(i))`,
+which that lemma did not construct.
+
 ### Scalar-round route (correspondence with the authors)
 
 The axis-cross gap was raised with the [NOZ26] authors directly, and this subsection records that
@@ -335,7 +393,9 @@ polynomial vanishing at any single prescribed point always exists, and recoverin
 one opening needs the *complete* sibling-distinct depth-`m₀` tree — all `2^{m₀}` leaves — to
 share that opening (`eq_zero_of_vanishes_comp`). The collision branch of
 `nestedAssembly_escape_or_mem_relBatched` is by definition the case where the leaves do *not*
-share one opening, so it can never run the zero test for a *single* colliding opening.
+share one opening, so it can never run the zero test for a *single* colliding opening. (The
+superseded Kronecker-seed variant hit the same wall in sharp form — `2^m − 1` seeds never suffice —
+as recorded in "Superseded: the one-round Kronecker-seed repair" above.)
 
 Note this is **not** a weakening of the binding assumption to unconditional binding, which would
 be false for Ajtai commitments: `Collision`'s `Short` conjuncts are precisely what keeps the

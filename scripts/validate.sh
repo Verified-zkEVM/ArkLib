@@ -18,6 +18,7 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake exe toyproblem-runtime
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
   - python3 ./scripts/check-docs-integrity.py
@@ -27,7 +28,7 @@ Optional checks:
   --lint    Run ./scripts/lint-style.sh
   --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
   --site    Run ./scripts/build-web.sh (implies --docs)
-  --axioms  Run lake exe axiomsweep --check (axiom/sorry regression gate)
+  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
 EOF
 }
 
@@ -75,6 +76,10 @@ python3 ./scripts/check-warning-log.py "$build_log" \
   --label 'ArkLib/Data non-sorry warnings'
 
 echo ""
+echo "# Running toy-problem compiled runtime checks"
+lake exe toyproblem-runtime
+
+echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
 
@@ -87,6 +92,9 @@ echo "# Checking knowledge base"
 python3 ./scripts/kb/lint.py
 
 if (( run_axioms )); then
+  echo ""
+  echo "# Testing the axiom sweep tool against its fixture matrix"
+  ./scripts/test-axiomsweep.sh
   echo ""
   echo "# Checking axiom/sorry regression baseline"
   # VCVio's FFI C sources live in git submodules that Lake does not fetch,

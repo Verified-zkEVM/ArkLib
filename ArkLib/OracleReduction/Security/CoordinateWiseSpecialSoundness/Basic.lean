@@ -290,6 +290,24 @@ theorem coordinateWiseSpecialSoundWith.toCWSS {D : CWSSStructure pSpec}
     (h : coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext) :
     verifier.coordinateWiseSpecialSound init impl D relIn relOut := ⟨Ext, h⟩
 
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **The unconditioned reading of a CWSS certificate**: `treeSpecialSoundWith`'s closer at the CWSS
+  shape. Closing the named extractor with the canonical witnessing
+  (`ChallengeTree.canonWitnesses`) drops the validity premise, at the cost of `[Inhabited WitIn]`
+  and nothing else. -/
+theorem coordinateWiseSpecialSoundWith.mem_relIn_of_isAccepting [Inhabited WitIn]
+    {D : CWSSStructure pSpec}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWith init impl D relIn relOut verifier Ext) (stmtIn : StmtIn)
+    (tree : ChallengeTree pSpec (CWSSStructure.toShape D).arity 0)
+    (hstr : tree.IsStructured (CWSSStructure.toShape D))
+    (hacc : tree.IsAccepting init impl verifier stmtIn relOut.language) :
+    (stmtIn, (Ext stmtIn tree
+      (ChallengeTree.canonWitnesses init impl verifier relOut stmtIn)).getD default) ∈ relIn :=
+  treeSpecialSoundWith.mem_relIn_of_isAccepting init impl h stmtIn tree hstr hacc
+
 /-! ### Escape-threaded CWSS
 
 The CWSS-shaped instances of `Verifier.treeSpecialSoundWithEscape`: the conclusion is
@@ -308,7 +326,11 @@ def coordinateWiseSpecialSoundWithEscape (D : CWSSStructure pSpec)
   treeSpecialSoundWithEscape init impl (CWSSStructure.toShape D) esc relIn relOut verifier Ext
 
 /-- Existential closure of `coordinateWiseSpecialSoundWithEscape`. The named form is preferred in
-  advertised statements, since a composed chain then exposes a runnable end-to-end extractor. -/
+  advertised statements, since a composed chain then exposes a runnable end-to-end extractor.
+
+  **This form has no consumer, by design** — see `Verifier.treeSpecialSoundEscape`. It is not
+  "kept for plumbing": every escape append now names its right factor's extractor, and reverting
+  one to this form would break the runnable composed chain. -/
 def coordinateWiseSpecialSoundEscape (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity)
     (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
@@ -324,6 +346,31 @@ theorem coordinateWiseSpecialSoundWithEscape.toEscape {D : CWSSStructure pSpec}
     {Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape D).arity}
     (h : coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext) :
     coordinateWiseSpecialSoundEscape init impl D esc relIn relOut verifier := ⟨Ext, h⟩
+
+omit [∀ i, SampleableType (pSpec.Challenge i)] in
+/-- **The unconditioned reading of an escape-threaded CWSS certificate**, the closer for the notion
+  every Hachi link actually carries: on a structured accepting tree, either the escape event fires
+  or the recovered witness is in `relIn`, with no witnessing premise in the statement.
+
+  The escape disjunct is untouched by the closing, which is exactly what the quantifier order of
+  `Verifier.treeSpecialSoundWithEscape` buys. See
+  `Verifier.treeSpecialSoundWithEscape.escape_or_mem_relIn_of_isAccepting` for what this reading
+  does and does not say: it recovers the *non-algorithmic* statement, as a migration receipt, and
+  the `∀ o valid` form remains the stronger one. -/
+theorem coordinateWiseSpecialSoundWithEscape.escape_or_mem_relIn_of_isAccepting [Inhabited WitIn]
+    {D : CWSSStructure pSpec}
+    {esc : ChallengeTree.EscapeEvent StmtIn pSpec (CWSSStructure.toShape D).arity}
+    {relIn : Set (StmtIn × WitIn)} {relOut : Set (StmtOut × WitOut)}
+    {verifier : Verifier oSpec StmtIn StmtOut pSpec}
+    {Ext : Extractor.TreeBased StmtIn WitIn WitOut pSpec (CWSSStructure.toShape D).arity}
+    (h : coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier Ext)
+    (stmtIn : StmtIn) (tree : ChallengeTree pSpec (CWSSStructure.toShape D).arity 0)
+    (hstr : tree.IsStructured (CWSSStructure.toShape D))
+    (hacc : tree.IsAccepting init impl verifier stmtIn relOut.language) :
+    esc stmtIn tree ∨
+      (stmtIn, (Ext stmtIn tree
+        (ChallengeTree.canonWitnesses init impl verifier relOut stmtIn)).getD default) ∈ relIn :=
+  treeSpecialSoundWithEscape.escape_or_mem_relIn_of_isAccepting init impl h stmtIn tree hstr hacc
 
 omit [∀ i, SampleableType (pSpec.Challenge i)] in
 /-- **Lossless escape lift at the CWSS shape** (the entry point for the packages' kind lifts): a
@@ -368,7 +415,7 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
   {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} [∀ i, OracleInterface (OStmtIn i)]
-  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type}
+  {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} [∀ i, OracleInterface (OStmtOut i)]
   {n : ℕ} {pSpec : ProtocolSpec n} [∀ i, SampleableType (pSpec.Challenge i)]
   [∀ i, OracleInterface (pSpec.Message i)]
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -426,7 +473,9 @@ def coordinateWiseSpecialSoundWithEscape (D : CWSSStructure pSpec)
       (CWSSStructure.toShape D).arity) : Prop :=
   Verifier.coordinateWiseSpecialSoundWithEscape init impl D esc relIn relOut verifier.toVerifier Ext
 
-/-- Existential closure of the oracle-level escape-threaded CWSS. -/
+/-- Existential closure of the oracle-level escape-threaded CWSS. Like its non-oracle counterpart
+  `Verifier.coordinateWiseSpecialSoundEscape`, this has **no consumer by design**; prefer the named
+  form in advertised statements. -/
 def coordinateWiseSpecialSoundEscape (D : CWSSStructure pSpec)
     (esc : ChallengeTree.EscapeEvent (StmtIn × ∀ i, OStmtIn i) pSpec
       (CWSSStructure.toShape D).arity)

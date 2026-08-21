@@ -141,16 +141,22 @@ with no challenge-tree path machinery.
 The data half is what a guarded package needs: its composed escape event and extractor must *name*
 the left verdict map, and reading one off the `IsGuarded` class would cost `Classical.choice`.
 
-**`verify_eq` is sorried**, and it is the *only* remaining obligation of the guarded seam:
-`Verifier.IsGuarded.append` is proved from it by forgetting the data.
-Proof plan: normalize `Verifier.append`'s bind with `failure_bind`/`pure_bind`
-under the two `if`-splits, mirroring `Verifier.PureForm.append`. -/
+`verify_eq` normalizes `Verifier.append`'s bind under the two `if`-splits, mirroring
+`Verifier.PureForm.append`; `Verifier.IsGuarded.append` is proved from it by forgetting the
+data. -/
 def GuardedForm.append {V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁}
     {V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂} (G₁ : V₁.GuardedForm) (G₂ : V₂.GuardedForm) :
     (V₁.append V₂).GuardedForm where
   check := fun stmt tr => G₁.check stmt tr.fst && G₂.check (G₁.out stmt tr.fst) tr.snd
   out := fun stmt tr => G₂.out (G₁.out stmt tr.fst) tr.snd
-  verify_eq := by sorry
+  verify_eq := fun stmt tr => by
+    simp only [Verifier.append]
+    rw [G₁.verify_eq stmt tr.fst]
+    by_cases hc₁ : G₁.check stmt tr.fst = true
+    · rw [if_pos hc₁, pure_bind, G₂.verify_eq (G₁.out stmt tr.fst) tr.snd]
+      by_cases hc₂ : G₂.check (G₁.out stmt tr.fst) tr.snd = true <;> simp [hc₁, hc₂]
+    · rw [if_neg hc₁]
+      simp [hc₁]
 
 /-- Guardedness is closed under `Verifier.append`: forget the data of `GuardedForm.append`. -/
 theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
