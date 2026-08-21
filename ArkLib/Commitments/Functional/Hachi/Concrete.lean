@@ -19,7 +19,8 @@ The general theorems are untouched; both declarations here are applications of t
 ## Main definitions
 
 * `hachiNonrecursiveConcrete` — `hachiNonrecursive` at `K := hachiLiftCom …`. A plain `def`: the
-  whole honest run is computable (see `Extraction/Eval.lean` for an evaluated accepting run).
+  whole honest run is computable (see `scripts/HachiRuntime.lean` for an evaluated accepting
+  run).
 * `hachiNonrecursiveConcrete_perfectCorrectness` — perfect correctness, as a corollary of
   `hachiNonrecursive_perfectCorrectness`. It inherits that theorem's `sorryAx` dependency
   through `Reduction.append_completeness` and nothing else.
