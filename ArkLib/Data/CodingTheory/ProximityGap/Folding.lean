@@ -263,6 +263,19 @@ theorem foldWord_k_1_of_sq_roots {i : Fin (2 ^ (n - 1))} {α : F}
     field_simp
     ring
 
+lemma foldWord_k_1_eval_domain [NeZero n] {i : Fin (2 ^ (n - 1))}
+  {j : Fin (2 ^ n)} (hj : domain j ^ 2 = domain.subdomain 1 i) :
+  foldWord domain f 1 (domain j) i = f j := by
+  let j' := domain.log ⟨-domain j, by simp⟩
+  have hjj' : j ≠ j' := fun contra ↦ by
+    have := domain_implies_x_ne_neg_x (ω := domain) (x := domain j)
+    have := congrArg (f := domain) contra
+    simp only [log_right_inverse', j'] at this
+    exact domain_implies_x_ne_neg_x (ω := domain) (by simp) this
+  have := CosetFftDomainClass.domain_implies_2_ne_0 domain
+  rw [foldWord_k_1_of_sq_roots hjj'] <;>
+    aesop (add safe [(by grind), (by field_simp)])
+
 /-- The "even" part of the folding function. -/
 def foldWordEven [NeZero n] (domain : SmoothCosetFftDomain n F)
   (f : Word F (Fin (2 ^ n))) (i : Fin (2 ^ (n - 1))) : F :=

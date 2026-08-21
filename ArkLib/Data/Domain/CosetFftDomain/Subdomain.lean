@@ -584,7 +584,7 @@ lemma subdomain_comp
       (add unsafe (by ring_nf))
       (add safe [(by omega), (by grind)])
 
-@[simp, grind =]
+@[simp, grind _=_]
 theorem mem_subdomain_comp_iff_mem
   {k j : ℕ} (hk : k + j ≤ n) {x : F} :
   x ∈ subdomain (subdomain ω k) j ↔ x ∈ subdomain ω (k + j) := by

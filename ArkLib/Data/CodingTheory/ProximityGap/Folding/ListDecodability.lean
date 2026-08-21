@@ -20,7 +20,7 @@ open CosetFftDomain CosetFftDomainClass
 open BlockRelDistance
 
 variable {F : Type} [Field F] [DecidableEq F]
-variable {n k : ℕ}
+variable {n k d : ℕ}
 variable {ω : SmoothCosetFftDomain n F}
 variable {f : Word F (Fin (2 ^ n))}
 
@@ -166,18 +166,14 @@ lemma card_foldingBlockAgreement_ge [FoldingContextMiddle k n]
   (Finset.card (foldingBlockAgreement k ω α u0 u1 v) : ℝ≥0) ≥
     2 ^ (n - 1) * (1 - δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v)) := by
   rw [card_foldingBlockAgreement, card_foldingBlockAgreementAux_eq'']
-  have h : n - 1 - (k - 1) = n - k := by grind
   have : Δ𞁒(k - 1, CosetFftDomain.subdomain ω 1, u0 + α • u1, v) ≤ (2 : ℝ≥0) ^ (n - k) := by
     norm_cast
-    simp [←h]
+    grind [blockDistance_le]
   have : k - 1 + (n - k) = n - 1 := by grind
-  have : 1 ≤ k := by grind
-  have : k ≤ n := by grind
   simp [←NNReal.coe_le_coe]
-  aesop 
+  aesop
     (add simp [blockRelDistance])
     (add safe [(by grind), (by field_simp), le_of_eq])
-  norm_cast0
 
 open FoldingContext in
 lemma foldingBlockAgreement_is_agreement [FoldingContextMiddle k n]
@@ -211,9 +207,9 @@ lemma agreement_on_z_of_u0_u1_polynomials [NeZero n]
     (u₀.comp (Polynomial.X ^ 2) + Polynomial.X * u₁.comp (Polynomial.X ^ 2)).eval
       (ω j) := by
   obtain ⟨l, hlz, hl⟩ := hj
-  simp only [eval_add, eval_comp, eval_pow, eval_X, eval_mul]
   have := foldWord_k_1 (domain := ω) (f := f) (i := l) (α := ω j)
-  rw [←hl, ←hu₀ _ hlz, ←hu₁ _ hlz]
+  simp only [eval_add, eval_comp, eval_pow, eval_X, ←hl, ←hu₀ _ hlz, eval_mul, ←hu₁ _ hlz,
+    log_right_inverse']
   simp_all [foldWord_k_1_eval_domain]
 
 def foldingBlockAgreementᵣ
@@ -223,64 +219,62 @@ def foldingBlockAgreementᵣ
   pullback₂ ω 1 k <|
     complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v
 
+open FoldingContext in
 lemma mem_foldingBlockAgreementᵣ
   {u : Fin (2 ^ (n - k))} {α : F}
-  (hk : 1 ≤ k) (hkn : k ≤ n)
+  [FoldingContextMiddle k n]
   {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   u ∈ foldingBlockAgreementᵣ k ω α u0 u1 v ↔
     ∀ j ∈ blockIdx (ω.subdomain 1) (k - 1) (ω.subdomain k u),
         u0 j + α * (u1 j) = v j := by
-  rw [foldingBlockAgreementᵣ, mem_pullback₂ hk hkn, complDisagreementSet_def']
+  rw [foldingBlockAgreementᵣ, mem_pullback₂ (by grind) (by grind), complDisagreementSet_def']
   simp_all only [mem_blockIdx_iff_mem_block, mem_block, mem_self, true_and, Word, Pi.add_apply,
     Pi.smul_apply, smul_eq_mul, mem_filter, CosetFftDomainClass.mem_toFinset_iff_mem,
     and_iff_right_iff_imp]
-  rw [mem_subdomain_comp_iff_mem (by omega), show 1 + (k - 1) = k by omega]
-  simp
+  rw [mem_subdomain_comp_iff_mem (by grind), show 1 + (k - 1) = k by grind]
+  aesop (add safe (by grind))
 
 lemma mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement
   {j : Fin (2 ^ n)} {α : F}
-  (hk : 1 ≤ k) (hkn : k ≤ n)
+  [FoldingContextMiddle k n]
   {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   ω j ^ 2 ∈ ω.subdomain 1 '' foldingBlockAgreement k ω α u0 u1 v ↔
     ω j ^ 2 ^ k ∈ ω.subdomain k '' foldingBlockAgreementᵣ k ω α u0 u1 v := by
   unfold foldingBlockAgreement foldingBlockAgreementᵣ
-  rw [mem_pullback₁_iff_mem_pullback₂_l_1 hk hkn]
+  rw [mem_pullback₁_iff_mem_pullback₂_l_1] <;> grind
 
 lemma card_foldingBlockAgreementᵣ'
-  (hk : 1 ≤ k) (hkn : k ≤ n)
+  [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreementᵣ k ω α u0 u1 v) =
     Finset.card (complDisagreementSet (k - 1) (ω.subdomain 1) (u0 + α • u1) v) := by
-  rw [foldingBlockAgreementᵣ, card_pullback₂_eq hk hkn]
+  rw [foldingBlockAgreementᵣ, card_pullback₂_eq (by grind) (by grind)] 
   intro x hx
   replace hx := complDisagreementSet_sub_subdomain hx
-  rw [CosetFftDomainClass.mem_toFinset_iff_mem, 
-      mem_subdomain_comp_iff_mem (by omega), show 1 + (k - 1) = k by omega] at hx
-  simp_all
+  aesop (add safe (by grind))
 
 lemma card_foldingBlockAgreement_foldingBlockAgreementᵣ
-  (hk : 1 ≤ k) (hkn : k ≤ n)
+  [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))} :
   Finset.card (foldingBlockAgreement k ω α u0 u1 v) =
     2 ^ (k - 1) * Finset.card (foldingBlockAgreementᵣ k ω α u0 u1 v) := by
   rw [card_foldingBlockAgreement,
-      card_foldingBlockAgreementAux_eq' hk hkn,
-      card_foldingBlockAgreementᵣ' hk hkn]
-  grind
+      card_foldingBlockAgreementAux_eq',
+      card_foldingBlockAgreementᵣ']
+  ac_nf
 
 lemma card_foldingBlockAgreement_foldingBlockAgreementᵣ_le
   (δ : ℝ≥0)
-  (hk : 1 ≤ k) (hkn : k ≤ n)
+  [FoldingContextMiddle k n]
   {α : F} {u0 u1 v : Word F (Fin (2 ^ (n - 1)))}
   (h : 2 ^ (n - 1) * (1 - δ) ≤ Finset.card (foldingBlockAgreement k ω α u0 u1 v)) :
   2 ^ (n - k) * (1 - δ) ≤
     Finset.card (foldingBlockAgreementᵣ k ω α u0 u1 v) := by
-  have hkn_eq : n - k = n - 1 - (k - 1) := by omega
-  rw [card_foldingBlockAgreement_foldingBlockAgreementᵣ hk hkn] at h
+  rw [card_foldingBlockAgreement_foldingBlockAgreementᵣ] at h
   conv_lhs =>
-    rw [hkn_eq,
+    rw [←FoldingContext.n_sub_1_sub_k_sub_1_eq_n_sub_k,
         show ((2 : ℝ≥0) ^ (n - 1 - (k - 1))) = 2 ^ (n - 1) / 2 ^ (k - 1) by 
-          aesop (add safe [(by field_simp), (by omega), (by rw [←pow_add])])]
+          aesop (add safe [(by field_simp), (by grind), (by rw [←pow_add])])]
   aesop (add safe [(by field_simp), (by norm_cast)])
 
 lemma distance_of_u0_u1_polynomials [NeZero n]
@@ -305,13 +299,13 @@ lemma distance_of_u0_u1_polynomials [NeZero n]
       aesop (add simp [complDisagreementSet_def', mem_blockIdx_iff_mem_block, evalOnPoints]))
     (fun _ _ _ _ hab ↦ CosetFftDomainClass.injective _ hab)
 
-lemma mem_ball_of_u0_u1_polynomials [NeZero n]
+open FoldingContext in
+lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
   {δ : ℝ≥0} (hδ1 : δ < 1)
   {u₀ u₁ : Polynomial F}
   (hu₀_deg : u₀.degree < 2 ^ (d - 1))
   (hu₁_deg : u₁.degree < 2 ^ (d - 1))
   (z : Finset (Fin (2 ^ (n - k))))
-  (hk : 1 ≤ k) (hkd : k ≤ d)
   (hz_card : (2 ^ (n - k) * (1 - δ)) ≤ z.card)
   (hz : ∀ j, ω j ^ 2 ^ k ∈ ω.subdomain k '' z →
       f j = u₀.eval (ω j ^ 2) + (ω j) * u₁.eval (ω j ^ 2)) :

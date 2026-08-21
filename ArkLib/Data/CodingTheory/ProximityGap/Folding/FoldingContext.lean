@@ -186,6 +186,14 @@ lemma n_sub_1_sub_k_sub_1_eq_n_sub_k {k n : ℕ} [FoldingContextMiddle k n] :
   have := FoldingContextMiddle.k_le_n
   omega
 
+/-- Given a `[FoldingContextMiddle k n]` we have `k - 1 + (n - k) = n - 1`. -/
+@[grind _=_]
+lemma k_sub_1_add_n_sub_k_eq_n_sub_1 {k n : ℕ} [FoldingContextMiddle k n] :
+  k - 1 + (n - k) = n - 1 := by
+  have := FoldingContextMiddle.k_ge_1
+  have := FoldingContextMiddle.k_le_n
+  omega
+
 /-- In a group, `2 ^ n / 2 ^ k = 2 ^ (n - k)`: the folded domain size is the quotient of
   the original size by the block size. -/
 @[grind =]
