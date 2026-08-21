@@ -113,7 +113,7 @@ theorem mem_nestedRoundRel_of_relNestedZeroCheck
 `mapStmt := nestedToRoundStatement`, with the witness passed through. Its verifier is
 `nestedSumcheckBridgePackage`'s on the nose (`nestedSumcheckBridgeReduction_verifier`, stated after
 the package). -/
-noncomputable def nestedSumcheckBridgeReduction {TCom : Type} (φF : ZMod q →+* F) :
+def nestedSumcheckBridgeReduction {TCom : Type} (φF : ZMod q →+* F) :
     Reduction oSpec
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)

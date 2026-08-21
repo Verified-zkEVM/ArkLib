@@ -3,6 +3,7 @@ import ArkLib.Commitments.Functional.Basic
 import ArkLib.Commitments.Functional.Hachi
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.Concrete
 import ArkLib.Commitments.Functional.Hachi.Correctness
 import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
@@ -26,6 +27,7 @@ import ArkLib.Commitments.Functional.Hachi.Recursion.TraceHandoff
 import ArkLib.Commitments.Functional.Hachi.Recursion.ZBatchBridge
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Basic
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
@@ -238,6 +240,7 @@ import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.ClassicalWronskian
+import ArkLib.Data.Polynomial.ComputableToPoly
 import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Indicator

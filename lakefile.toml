@@ -51,6 +51,12 @@ name = "toyproblem-runtime"
 srcDir = "scripts"
 root = "ToyProblemRuntime"
 
+# Compiled code-generation and execution checks for the nonrecursive Hachi opening chain.
+[[lean_exe]]
+name = "hachi-runtime"
+srcDir = "scripts"
+root = "HachiRuntime"
+
 # Isolated executable fixtures for the axiom-sweep mutation matrix
 # (scripts/test-axiomsweep.sh). Not a default target: it deliberately contains
 # synthetic kernel taint of every shape the sweep reasons about.

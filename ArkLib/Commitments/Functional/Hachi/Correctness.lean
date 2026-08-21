@@ -252,7 +252,7 @@ nonrecursive opening), assembled explicitly like the instances above. -/
 /-- **The nonrecursive opening reduction**: the honest Hachi chain through the sumcheck
 (`completeThroughSumcheckReduction`) closed by the terminal reveal-and-check. From the
 polynomial-evaluation relation to a Boolean verdict; no recursion adapter is involved. -/
-noncomputable def nonrecursiveOpeningReduction (P : HonestRangeParams q)
+def nonrecursiveOpeningReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
@@ -513,7 +513,7 @@ local notation "n₀" => rlinRows innerRows outerRows dRows
 /-- **The complete nonrecursive opening**: input adapter ▷ chain through the sumcheck ▷ terminal
 reveal-and-check, from the commitment API's claim to a Boolean verdict, over the composed
 protocol specification. -/
-noncomputable def hachiNonrecursiveOpening (P : HonestRangeParams q)
+def hachiNonrecursiveOpening (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (δ P) outerRows (2 ^ r) (δ P) dRows)
     (K : LiftCom (LiftedWitness 𝓜(q, α) (μ₀ P) n₀) (liftShort 𝓜(q, α) P.γ (q / 2)))
     [DecidableEq K.TCom]
@@ -575,7 +575,7 @@ composed specification. Perfect correctness is `hachiNonrecursive_perfectCorrect
 The opening keys both prover and verifier by the committer key `keys.1`; honest key generation
 returns identical keys, so nothing is lost for correctness. A soundness treatment would want the
 verifier keyed by `keys.2` separately, which needs split-key plumbing in the opening. -/
-noncomputable def hachiNonrecursive (P : HonestRangeParams q)
+def hachiNonrecursive (P : HonestRangeParams q)
     [SampleableType (Simple.PublicParams 𝓜(q, α) innerRows ((2 ^ m) * Nat.clog P.b q))]
     [SampleableType
       (Simple.PublicParams 𝓜(q, α) outerRows ((2 ^ r) * (innerRows * Nat.clog P.b q)))]

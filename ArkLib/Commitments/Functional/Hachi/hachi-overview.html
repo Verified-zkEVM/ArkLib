@@ -368,8 +368,8 @@
       subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
-      <span class="chip">39 files</span>
-      <span class="chip">32 with protocol content</span>
+      <span class="chip">41 files</span>
+      <span class="chip">34 with protocol content</span>
       <span class="chip">9-link opening + 3 recursion adapters</span>
       <span class="chip">rows 1–9 sorry-free</span>
       <span class="chip">13 open sorries</span>
@@ -386,7 +386,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 32 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
+      <p>Counts are over the 34 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects real <span class="mono">sorry</span> proof terms, not the word
         appearing in a docstring.</p>
     </div>
@@ -500,11 +500,11 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 39 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 41 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 39</button>
+      <button data-f="all" aria-pressed="true">all · 41</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
@@ -528,8 +528,13 @@
     <div class="sec-head">
       <span class="eyebrow">Still to do</span>
       <h2>Beyond the current line</h2>
-      <p>Work named in the <span class="mono">Composition.lean</span> roadmap that has no file yet — the outer interface,
-        the completeness layer, the concrete commitment instantiation, and the knowledge-error accounting.</p>
+      <p>Work named in the <span class="mono">Composition.lean</span> roadmap that has no file yet — the outer interface
+        and the knowledge-error accounting. The completeness layer now has its own files
+        (<span class="mono">*/Completeness.lean</span>, <span class="mono">HonestChain.lean</span>,
+        <span class="mono">Correctness.lean</span>), and the lift's commitment is instantiated concretely in
+        <span class="mono">Concrete.lean</span> (<span class="mono">hachiLiftCom</span>); what that instantiation still
+        defers is tying <span class="mono">LiftCom.Collision</span> to Module-SIS, which belongs to the soundness
+        track.</p>
     </div>
     <div class="roadmap" id="roadmap"></div>
   </section>
@@ -666,6 +671,7 @@
   var INDEX = [
     ["","Commitment.lean","commitment-interface","§2.1/§4.1","—","wip",1],
     ["","Composition.lean","composition","§4.2–4.5","—","wip",0],
+    ["","Concrete.lean","completeness","§4.3 · Eq.16","1–9 + reveal","proven",0],
     ["","Correctness.lean","completeness","§4.2–§4.3","1–9 + reveal","proven",0],
     ["","EvalSplit.lean","infrastructure","§4 · Eq.12","—","proven",0],
     ["","HonestChain.lean","completeness","§4.2–4.3","1–9","proven",0],
@@ -687,6 +693,7 @@
     ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
     ["RingSwitch","Completeness.lean","completeness","§4.3 · Fig4 · L9","3–4","proven",0],
+    ["RingSwitch","ComputableWitness.lean","infrastructure","§4.3 · Fig4 · L9","4","proven",0],
     ["RingSwitch","QuotientNorms.lean","infrastructure","§4.3 · L9","—","proven",0],
     ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","proven",0],
