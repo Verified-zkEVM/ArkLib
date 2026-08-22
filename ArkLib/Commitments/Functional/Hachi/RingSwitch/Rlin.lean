@@ -117,6 +117,8 @@ theorem dot_matVecMul_transpose {a b : ℕ} (A : ArkLib.Lattices.PolyMatrix P a 
   simp only [splitForm] at h
   rw [h]; exact dot_comm _ _
 
+-- v4.33 respects transparency when matching implicit arguments, so the `Fin.append_left`/
+-- `_right` rewrites below no longer unify through the semireducible `PolyMatrix`/`PolyVec`.
 set_option backward.isDefEq.respectTransparency false in
 /-- `matVecMul` splits along a row-append: block rows act independently. -/
 theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P a c)
@@ -326,6 +328,8 @@ noncomputable def rlinStmt
 /-! ## The block-row equivalence -/
 
 omit [NeZero q] in
+-- Same cause as `matVecMul_append_rows`: rewriting `Fin.append _ _ *ᵥ _` into the block matrix
+-- needs `PolyMatrix`/`PolyVec` to unfold, which v4.33 blocks at implicit transparency.
 set_option backward.isDefEq.respectTransparency false in
 /-- **Linear part** (Eq. (20) rows c1–c5 ⟺ `M ζ = y`): the block matrix `rlinStmt`'s action on
 `ζ` splits — via `matVecMul_append_rows` / `dot_append` / `dot_matVecMul_transpose` /

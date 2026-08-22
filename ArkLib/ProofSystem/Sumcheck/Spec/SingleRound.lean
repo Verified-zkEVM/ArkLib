@@ -543,6 +543,8 @@ theorem oracleReduction_eq_reduction :
 
 variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
 
+-- Without this the `val2 = some` branch is left with unsolved goals: the `OptionT`/`StateT`
+-- layers around `simulateQ_pure` no longer reduce under v4.33's transparency-respecting defeq.
 set_option backward.isDefEq.respectTransparency false in
 /-- Perfect completeness for the (non-oracle) reduction -/
 theorem reduction_perfectCompleteness :

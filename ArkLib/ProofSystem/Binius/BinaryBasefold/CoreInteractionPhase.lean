@@ -388,6 +388,8 @@ def lastBlockOracleVerifier :=
     exact { verify := cur.verify, outputOracle := cur.outputOracle }
   V
 
+-- The `OracleInterface` instance is indexed by `pSpecSumcheckFold`, and matches the
+-- `seqCompose … ++ₚ pSpecLastBlock …` index only once those specs unfold — blocked in v4.33.
 set_option backward.isDefEq.respectTransparency false in
 @[reducible]
 def sumcheckFoldOracleVerifier :=
@@ -600,6 +602,8 @@ def lastBlockOracleReduction :=
       }
   V
 
+-- Same instance-index mismatch as `sumcheckFoldOracleVerifier` above; the `OracleInterface`
+-- argument only typechecks once the composed protocol specs unfold.
 set_option backward.isDefEq.respectTransparency false in
 @[reducible]
 def sumcheckFoldOracleReduction :=

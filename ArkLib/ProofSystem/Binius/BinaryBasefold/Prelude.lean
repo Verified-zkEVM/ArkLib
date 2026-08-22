@@ -235,8 +235,8 @@ lemma qMap_total_fiber_repr_coeff (i : Fin ℓ) (steps : ℕ) (h_i_add_steps : i
   -- have h_steps_ne_0 : steps ≠ 0 := by exact?
   by_cases h_steps_eq_0 : steps = 0
   · subst h_steps_eq_0
-    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, _root_.not_lt_zero,
-      tsub_zero, Fin.eta]
+    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq,
+      _root_.not_lt_zero, tsub_zero, Fin.eta]
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
     Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
 
@@ -329,8 +329,8 @@ theorem generates_quotient_point_if_is_fiber_of_y
     (h_i_add_steps := by omega) (y := y) (k := k) (j := ⟨j + steps, by simp only; omega⟩)
   simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
-  simp only [fiber_coeff, add_lt_iff_neg_right, _root_.not_lt_zero, ↓reduceDIte, add_tsub_cancel_right,
-    Fin.eta] at h_repr_x
+  simp only [fiber_coeff, add_lt_iff_neg_right, _root_.not_lt_zero, ↓reduceDIte,
+    add_tsub_cancel_right, Fin.eta] at h_repr_x
   exact h_repr_x.symm
 
 omit [CharP L 2] [NeZero ℓ] in
@@ -1245,8 +1245,8 @@ def uniqueClosestCodeword
       · -- ⊢ `2 * e < d_i = n - k + 1`
         simp only [domain_size, k]; rw [sDomain_card 𝔽q β (h_i := by omega),]
         · -- ⊢ 2 * e < 2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1
-          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.natCast_sub, cast_pow, cast_ofNat,
-            cast_one] at h_within_radius;
+          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.natCast_sub, cast_pow,
+            cast_ofNat, cast_one] at h_within_radius;
           have h_lt_eq : ↑(2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)).toNat) =
   2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) := by
             simp only [cast_mul, cast_ofNat]

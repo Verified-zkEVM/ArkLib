@@ -847,6 +847,8 @@ theorem RightProj.mem_transcripts_append :
     (pre₂ : Transcript r pSpec₂) → {tr₂ : FullTranscript pSpec₂} →
     tr₂ ∈ R.tree.transcripts pre₂ → tr₁ ++ₜ tr₂ ∈ R.src.transcripts (rightPrefix tr₁ pre₂)
   | _, .leaf, tr₁, pre₂, tr₂, htr₂ => by
+      -- `rw [htr₂]` needs `FullTranscript` and `rightRound (Fin.last n)` to reduce to the
+      -- same index; v4.33 keeps them apart at implicit transparency, so the rewrite is ill-typed.
       set_option backward.isDefEq.respectTransparency false in
         simp only [RightProj.tree, RightProj.src, transcripts, List.mem_singleton] at htr₂ ⊢
         rw [htr₂]

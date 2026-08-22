@@ -84,6 +84,8 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     simp [Pi.add_apply, Pi.smul_apply]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
+-- `convert hacc using 1` leaves a goal that `(cast_eq _ _).symm` closes only when the cast's
+-- motive reduces; v4.33 respects transparency there and the term stops typechecking.
 set_option backward.isDefEq.respectTransparency false in
 /-- **Honest completeness of the three-round toy protocol** (protocol-level form).
 

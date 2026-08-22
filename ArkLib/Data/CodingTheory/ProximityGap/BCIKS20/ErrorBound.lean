@@ -34,6 +34,8 @@ noncomputable def errorBound (δ : ℝ≥0) (deg : ℕ) (domain : ι ↪ F) : �
   else
     0
 
+-- After `unfold errorBound`, `rw [if_neg …, if_pos hδ]` has to match the `ite` together with its
+-- `Decidable` instance; v4.33 respects transparency there and the two instances stop unifying.
 set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
 /-- In the open Johnson regime, `errorBound` is its Guruswami--Sudan expression. -/

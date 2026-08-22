@@ -31,6 +31,7 @@ local instance : Fintype F := Fintype.ofFinite F
 namespace ProximityToRS
 open ReedSolomon NNReal
 
+-- Distance-bound form, proved first; the mutual-exclusion corollary `e_le_dist_over_3` follows.
 /-- **Lemma 4.4, [AHIV22] (strong form).**
 
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most
