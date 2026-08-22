@@ -562,7 +562,6 @@ theorem splitDataOfTree_src {r : Fin (m + 1)}
     (splitDataOfTree (arity₁ := arity₁) (arity₂ := arity₂) T).src = T :=
   eq_of_heq (splitDataOfTreeAux T r rfl).2
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The source law for a split rooted at the beginning of an appended protocol. -/
 theorem splitDataOfTree_src_zero
     (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0) :
@@ -663,7 +662,7 @@ theorem SplitData.sndAt_isStructured :
       have hround : leftRound (n := n) (Fin.last m) =
           rightRound (m := m) (0 : Fin (n + 1)) := by
         apply Fin.ext
-        simp [leftRound, rightRound]
+        simp [rightRound]
       simp only [SplitData.src] at hS
       apply rp.tree_isStructured
       exact hS
@@ -803,10 +802,9 @@ theorem leftPrefix_concat {i : Fin m} (pre : Transcript i.castSucc pSpec₁)
         Fin.append_left]) x : (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i)) := by
   funext idx
   refine Fin.lastCases ?_ (fun j => ?_) idx
-  · simp only [leftPrefix, Transcript.concat_last, Fin.val_last, Fin.val_castAdd, Fin.val_succ]
+  · simp only [leftPrefix, Transcript.concat_last, Fin.val_succ]
     exact (Transcript.concat_last _ _).symm
-  · simp only [leftPrefix, Transcript.concat_castSucc, Fin.val_castSucc, Fin.val_castAdd,
-      Fin.val_succ]
+  · simp only [leftPrefix, Transcript.concat_castSucc, Fin.val_castSucc, Fin.val_succ]
     rfl
 
 /-- Two casts into a common type are equal as soon as their arguments are `HEq`. Lets cast-equality
@@ -849,11 +847,10 @@ theorem RightProj.mem_transcripts_append :
     (pre₂ : Transcript r pSpec₂) → {tr₂ : FullTranscript pSpec₂} →
     tr₂ ∈ R.tree.transcripts pre₂ → tr₁ ++ₜ tr₂ ∈ R.src.transcripts (rightPrefix tr₁ pre₂)
   | _, .leaf, tr₁, pre₂, tr₂, htr₂ => by
-      with_unfolding_all change tr₂ ∈ [pre₂] at htr₂
-      have htr₂' : tr₂ = pre₂ := List.eq_of_mem_singleton htr₂
-      subst tr₂
-      with_unfolding_all change tr₁ ++ₜ pre₂ ∈ [rightPrefix tr₁ pre₂]
-      exact List.mem_singleton.mpr (rightPrefix_leaf_eq_append _ _).symm
+      set_option backward.isDefEq.respectTransparency false in
+        simp only [RightProj.tree, RightProj.src, transcripts, List.mem_singleton] at htr₂ ⊢
+        rw [htr₂]
+        exact (rightPrefix_leaf_eq_append _ _).symm
   | _, .msg i h m₂ child, tr₁, pre₂, tr₂, htr₂ => by
       simp only [RightProj.tree, transcripts] at htr₂
       simp only [RightProj.src, transcripts]

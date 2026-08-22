@@ -377,7 +377,9 @@ def lastBlockOracleVerifier :=
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := Fin.last ℓ) =
           h ▸ instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
             (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β
-            (i := ⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx := by omega)⟩) := by
+            (i := ⟨bIdx * ϑ + ϑ, by
+              apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ
+              omega⟩) := by
       apply eq_of_heq
       rw [heq_eqRec_iff]
       exact instOracleStatementBinaryBasefold_heq_of_index_eq 𝔽q β h.symm
@@ -584,7 +586,9 @@ def lastBlockOracleReduction :=
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := Fin.last ℓ) =
             h ▸ instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
               (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β
-              (i := ⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx := by omega)⟩) := by
+              (i := ⟨bIdx * ϑ + ϑ, by
+                apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ
+                omega⟩) := by
         apply eq_of_heq
         rw [heq_eqRec_iff]
         exact instOracleStatementBinaryBasefold_heq_of_index_eq 𝔽q β h.symm

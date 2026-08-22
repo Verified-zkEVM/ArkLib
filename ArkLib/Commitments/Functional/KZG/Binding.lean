@@ -403,7 +403,7 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
   rw [hkeygen]
   simp only [map_eq_bind_pure_comp]
   simp only [bind_assoc, pure_bind, Function.comp_apply]
-  with_unfolding_all change (OptionT.mk (do
+  change (OptionT.mk (do
     let τ ← sample
     (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))).run =
       (Option.map proj <$> do

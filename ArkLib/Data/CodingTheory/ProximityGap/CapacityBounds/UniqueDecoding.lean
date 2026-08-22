@@ -83,7 +83,7 @@ private noncomputable def bchks_constraint_map {ι K : Type} [Fintype ι] [Field
   map_add' := by
     intro x y
     ext i s
-    with_unfolding_all change (bchks_constraint domain u ax bx dz (x + y) i s =
+    change (bchks_constraint domain u ax bx dz (x + y) i s =
       bchks_constraint domain u ax bx dz x i s + bchks_constraint domain u ax bx dz y i s)
     simp only [bchks_constraint, Prod.fst_add, Prod.snd_add, Matrix.add_apply, add_mul,
       Finset.sum_add_distrib]

@@ -262,9 +262,7 @@ theorem simulateQ_queryInput {n : ℕ} (pSpec : ProtocolSpec n)
     simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
         (queryInput (A := A) pSpec i x) = pure (oStmt i x) := by
   simp only [MessageIdx, Message, OracleInterface.simOracle2, QueryImpl.addLift,
-    queryInput, Lean.Elab.WF.paramLet, simulateQ_query, OracleQuery.input_query,
-    add_apply_inr, add_apply_inl, OracleQuery.cont_query, QueryImpl.add_apply_inr,
-    QueryImpl.liftTarget_apply]
+    queryInput, Lean.Elab.WF.paramLet]
   change id <$> (pure (oStmt i x) : OracleComp []ₒ A) = pure (oStmt i x)
   simp only [map_pure, id_eq]
 
@@ -287,9 +285,8 @@ def outputSimulation :
     fin_cases i
     rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
     rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
-    simp only [OracleInterface.simOracle2, QueryImpl.addLift_def,
-      QueryImpl.simulateQ_add_liftM_left, simulateQ_pure]
-    with_unfolding_all rfl
+    simp only [OracleInterface.simOracle2, QueryImpl.addLift_def]
+    rfl
 
 /-- Honest prover at the oracle-reduction signature. -/
 def oracleProver :
@@ -357,7 +354,7 @@ theorem oracleVerifier_toVerifier_run_eq_pure
       pure (derivedOutput (ι := ι) (F := F) (A := A) k stmtIn
         (transcriptGamma (F := F) tr)) := by
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier,
-    outputSimulation, transcriptGamma, derivedOutput, bind_pure_comp]
+    outputSimulation, transcriptGamma, derivedOutput]
   erw [simulateQ_optionT_pure
     (OracleInterface.simOracle2 []ₒ stmtIn.2 tr.messages)
     (stmtIn.1.1, stmtIn.1.2.1 +

@@ -517,7 +517,6 @@ abbrev concat {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pS
     Transcript m.succ pSpec :=
   Fin.snoc T msg
 
-set_option backward.isDefEq.respectTransparency false in
 /-- Appending a message preserves every earlier transcript entry. -/
 @[simp]
 lemma concat_castSucc {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec)
@@ -525,7 +524,6 @@ lemma concat_castSucc {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.cas
   unfold concat
   exact @Fin.snoc_castSucc m.val (fun i => pSpec⟦:m.succ.val⟧.«Type» i) msg T i
 
-set_option backward.isDefEq.respectTransparency false in
 /-- The last entry of a transcript after appending a message is that message. -/
 @[simp]
 lemma concat_last {m : Fin n} (msg : pSpec.«Type» m) (T : Transcript m.castSucc pSpec) :

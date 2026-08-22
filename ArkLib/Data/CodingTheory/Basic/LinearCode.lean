@@ -111,24 +111,15 @@ theorem projection_injective
   have hcard_compl : @card diff (ofFinite diff) = ‖C‖₀ - 1 := by
     classical
     unfold diff
-    have hcompl : (fun i : n => i ∈ S → False) = (↑(Sᶜ : Finset n) : Set n) := by
-      funext i
-      apply propext
-      change i ∉ S ↔ i ∈ Sᶜ
-      exact (Finset.mem_compl (s := S) (a := i)).symm
-    calc
-      @card {i : n | i ∉ S} (ofFinite _) = Nat.card {i : n // i ∉ S} :=
-        (@Nat.card_eq_fintype_card _ (ofFinite _)).symm
-      _ = Nat.card ↥Sᶜ := Nat.card_congr (Equiv.setCongr hcompl)
-      _ = Fintype.card ↥Sᶜ := Nat.card_eq_fintype_card
-      _ = Sᶜ.card := Fintype.card_coe Sᶜ
-      _ = ‖C‖₀ - 1 := by
-        have hS' : S.card = card n - (‖C‖₀ - 1) := by
-          simpa only [card_coe] using hS
-        rw [Finset.card_compl, hS']
-        have stronger : ‖C‖₀ ≤ card n := by
-          apply Code.dist_le_card
-        omega
+    rw [← @Nat.card_eq_fintype_card diff (ofFinite diff)]
+    change Nat.card {i : n // i ∉ S} = ‖C‖₀ - 1
+    rw [Nat.card_eq_fintype_card]
+    rw [Fintype.card_subtype_compl (fun i : n ↦ i ∈ S)]
+    rw [Fintype.card_coe] at hS ⊢
+    rw [hS]
+    have stronger : ‖C‖₀ ≤ card n := by
+      apply Code.dist_le_card
+    omega
   have hsizes: card D ≤ @card diff (ofFinite diff) := by
     exact @Set.card_le_card _ _ _ _ (ofFinite diff) hsub
   rw[hcard_compl, hD] at hsizes

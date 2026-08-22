@@ -98,17 +98,7 @@ theorem erase_even_mem
 @[simp]
 theorem mul_by_2_mem {s : Finset ℕ} {d : ℕ} :
     d ∈ mul_by_2 s ↔ Even d ∧ (d / 2) ∈ s := by
-  simp only [mul_by_2, Finset.mem_map]
-  constructor
-  · rintro ⟨w, hw, hwd⟩
-    have hwd' : 2 * w = d := by simpa only [mulByTwoEmbedding_apply] using hwd
-    subst d
-    exact ⟨by simp, by simpa using hw⟩
-  · rintro ⟨hd, hs⟩
-    refine ⟨d / 2, hs, ?_⟩
-    rw [mulByTwoEmbedding_apply]
-    rcases hd with ⟨k, hk⟩
-    omega
+  aesop (add simp [mul_by_2, mulByTwoEmbedding_apply, Nat.even_iff], safe (by omega))
 
 @[simp]
 theorem divide_by_2_mem {s : Finset ℕ} {d : ℕ} :
