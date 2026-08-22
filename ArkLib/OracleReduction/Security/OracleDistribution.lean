@@ -31,6 +31,20 @@ import ArkLib.OracleReduction.Execution
   development.
 -/
 
+namespace OracleComp
+
+/-- `sampler.IsFreshUniformSampler impl` means that, from every initial state, evaluating
+`sampler` with `impl` has the same joint output-state distribution as a fresh uniform sample paired
+with the unchanged initial state. This simultaneously captures uniformity, independence from the
+initial state, state preservation, and absence of failure. -/
+def IsFreshUniformSampler {ι σ α : Type} {spec : OracleSpec ι} [SampleableType α]
+    (sampler : OracleComp spec α) (impl : QueryImpl spec (StateT σ ProbComp)) : Prop :=
+  ∀ state, 𝒟[(simulateQ impl sampler).run state] = 𝒟[do
+    let value ← $ᵗ α
+    return (value, state)]
+
+end OracleComp
+
 namespace OracleReduction
 
 open OracleComp OracleSpec

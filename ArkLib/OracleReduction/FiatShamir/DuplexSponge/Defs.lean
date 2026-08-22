@@ -913,11 +913,14 @@ def Prover.runToRoundDSFSSalted [∀ i, VCVCompatible (pSpec.Challenge i)] {δ :
     (prover.processRoundDSFS)
     i
 
-/-- Salted DSFS prover surface (Construction 4.3-facing). -/
+/-- Salted DSFS prover surface (Construction 4.3-facing).
+
+The salt sampler has no statement or prover-state input and uses only the ambient oracle `oSpec`;
+Lean automatically lifts it into the combined prover interface. This prevents the salt from
+depending on the statement, witness-bearing prover state, or duplex-sponge oracle answers. -/
 def Prover.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (sampleSalt : (stmt : StmtIn) → P.PrvState 0 →
-      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Vector U δ)) :
+    (sampleSalt : OracleComp oSpec (Vector U δ)) :
     NonInteractiveProver (DSSaltedProof (pSpec := pSpec) (U := U) δ)
       (oSpec + duplexSpongeChallengeOracle StmtIn U)
       StmtIn WitIn StmtOut WitOut where
@@ -926,7 +929,7 @@ def Prover.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i
     | _ => P.PrvState (Fin.last n)
   input := fun ctx => ⟨ctx.1, P.input ctx⟩
   sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
-    let salt ← sampleSalt stmtIn state
+    let salt ← sampleSalt
     let ⟨messages, _, state⟩ ← P.runToRoundDSFSSalted (salt := salt) (Fin.last n) stmtIn state
     return ⟨(salt, messages), state⟩
   receiveChallenge | ⟨0, h⟩ => nomatch h
@@ -977,8 +980,7 @@ def Verifier.duplexSpongeFiatShamirSaltedForward (δ : Nat)
 /-- Salted DSFS reduction surface (Construction 4.3-facing). -/
 def Reduction.duplexSpongeFiatShamirSalted [∀ i, VCVCompatible (pSpec.Challenge i)] (δ : Nat)
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (sampleSalt : (stmt : StmtIn) → R.prover.PrvState 0 →
-      OracleComp (oSpec + duplexSpongeChallengeOracle StmtIn U) (Vector U δ)) :
+    (sampleSalt : OracleComp oSpec (Vector U δ)) :
     NonInteractiveReduction (DSSaltedProof (pSpec := pSpec) (U := U) δ)
       (oSpec + duplexSpongeChallengeOracle StmtIn U)
       StmtIn WitIn StmtOut WitOut where

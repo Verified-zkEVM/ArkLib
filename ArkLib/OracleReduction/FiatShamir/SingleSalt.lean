@@ -30,7 +30,7 @@ import ArkLib.OracleReduction.FiatShamir.Basic
   The unsalted basic version is in `FiatShamir/Basic.lean` (see `Reduction.fiatShamir`).
 -/
 
-open ProtocolSpec OracleComp OracleSpec
+open ProtocolSpec OracleComp OracleSpec OracleReduction
 
 variable {n : ℕ} {pSpec : ProtocolSpec n} {ι : Type} {oSpec : OracleSpec ι}
   {StmtIn WitIn StmtOut WitOut : Type}
@@ -107,15 +107,14 @@ def Prover.runToRoundFSSalted {Salt : Type} [VCVCompatible Salt]
 /--
 Single-salt Fiat-Shamir transformation for the prover (CO25 Construction 3.17 prover surface).
 
-The prover samples a salt `τ ← sampleSalt stmtIn state`, then runs the underlying interactive
-prover with all FS queries keyed by the augmented statement `(τ, stmtIn)`, and packages the salt
-together with the produced messages as the non-interactive proof.
+The prover samples a salt `τ ← sampleSalt` using only the ambient oracle `oSpec`, then runs the
+underlying interactive prover with all FS queries keyed by the augmented statement `(stmtIn, τ)`,
+and packages the salt together with the produced messages as the non-interactive proof. The sampler
+cannot inspect the statement, witness-bearing prover state, or Fiat–Shamir table.
 -/
 def Prover.singleSaltFiatShamir {Salt : Type} [VCVCompatible Salt]
     (P : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (sampleSalt : (stmt : StmtIn) → P.PrvState 0 →
-      OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
-        Salt) :
+    (sampleSalt : OracleComp oSpec Salt) :
     NonInteractiveProver (FSSaltedProof pSpec Salt)
       (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
       StmtIn WitIn StmtOut WitOut where
@@ -124,7 +123,7 @@ def Prover.singleSaltFiatShamir {Salt : Type} [VCVCompatible Salt]
     | _ => P.PrvState (Fin.last n)
   input := fun ctx => ⟨ctx.1, P.input ctx⟩
   sendMessage | ⟨0, _⟩ => fun ⟨stmtIn, state⟩ => do
-    let salt ← sampleSalt stmtIn state
+    let salt ← sampleSalt
     let ⟨messages, _, state⟩ ←
       P.runToRoundFSSalted (salt := salt) (Fin.last n) stmtIn state
     return ⟨(salt, messages), state⟩
@@ -157,9 +156,7 @@ combining the salted prover and verifier surfaces.
 -/
 def Reduction.singleSaltFiatShamir {Salt : Type} [VCVCompatible Salt]
     (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
-    (sampleSalt : (stmt : StmtIn) → R.prover.PrvState 0 →
-      OracleComp (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
-        Salt) :
+    (sampleSalt : OracleComp oSpec Salt) :
     NonInteractiveReduction (FSSaltedProof pSpec Salt)
       (oSpec + fsChallengeOracle (StmtIn × Salt) pSpec)
       StmtIn WitIn StmtOut WitOut where
@@ -176,3 +173,43 @@ def fsSaltedVerify {Salt : Type} [VCVCompatible Salt]
   fun stmtIn proof =>
     (Verifier.singleSaltFiatShamir (Salt := Salt) V).verify stmtIn
       (Fin.cons proof (fun i => i.elim0))
+
+section Security
+
+noncomputable section
+
+open scoped NNReal
+
+variable [∀ i, SampleableType (pSpec.Challenge i)]
+  {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+
+/-- Completeness statement for single-salt Fiat-Shamir with a fresh uniformly sampled salt,
+matching CO25 Construction 3.17. The sampler's `OracleComp oSpec Salt` type prevents access to the
+statement, witness-bearing prover state, and Fiat–Shamir table. `sampleSalt_uniform` additionally
+says that evaluating it has the joint distribution of a fresh uniform draw and the unchanged
+ambient state. The proof is intentionally deferred. -/
+theorem singleSaltFiatShamir_completeness
+    {Salt : Type} [VCVCompatible Salt]
+    [SampleableType Salt]
+    [SampleableType (OracleFamily (srChallengeOracle (StmtIn × Salt) pSpec))]
+    (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec)
+    (sampleSalt : OracleComp oSpec Salt)
+    (sampleSalt_uniform : sampleSalt.IsFreshUniformSampler impl)
+    (relIn : Set (StmtIn × WitIn)) (relOut : Set (StmtOut × WitOut))
+    (completenessError : ℝ≥0) :
+  R.completeness init impl relIn relOut completenessError →
+    (R.singleSaltFiatShamir sampleSalt).completeness
+      (init := do
+        let challengeSpec := srChallengeOracle (StmtIn × Salt) pSpec
+        let f ← (OracleDistribution.uniform challengeSpec).sample
+        let challengeImpl : QueryImpl challengeSpec Id := fun q => f q
+        return (← init, challengeImpl))
+      (impl := (impl.addLift fsChallengeQueryImpl' :
+        QueryImpl (oSpec + srChallengeOracle (StmtIn × Salt) pSpec)
+          (StateT (σ × QueryImpl (srChallengeOracle (StmtIn × Salt) pSpec) Id) ProbComp)))
+      relIn relOut completenessError := by
+  sorry
+
+end
+
+end Security
