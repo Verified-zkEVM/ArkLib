@@ -267,7 +267,7 @@ private theorem simulateMessageQueryInl
   apply simulateQueryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
     _ q _ (messages.fst i) (messages (MessageIdx.inl i)) hab
   intro t
-  refine Eq.trans (OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
     (OracleInterface.simOracle0 OStmt₁ oStmt)
     (OracleInterface.simOracle0 _ messages)
     (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)) ?_
@@ -289,7 +289,7 @@ private theorem simulateMessageQueryInr
   apply simulateQueryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
     _ q _ (messages.snd i) (messages (MessageIdx.inr i)) hab
   intro t
-  refine Eq.trans (OracleVerifier.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
     (OracleInterface.simOracle0 OStmt₁ oStmt)
     (OracleInterface.simOracle0 _ messages)
     (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)) ?_
