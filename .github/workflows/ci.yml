@@ -52,13 +52,14 @@ jobs:
           echo "BUILD_TIMING_ARTIFACT_NAME=arklib-build-timing-data" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_BASELINE_DIR=$RUNNER_TEMP/build-timing-baseline" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_BASE_REF=" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_MERGE_BASE_SHA=" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -111,6 +112,15 @@ jobs:
         run: |
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
+
+      # `validate.sh` runs `lake exe toyproblem-runtime`, which links the native `.c.o` chain for
+      # the whole dependency graph. That work is billed here rather than to the validation wrapper:
+      # the `.lake` cache key is `hashFiles('lake-manifest.json')`, so a dependency bump misses the
+      # cache and the compile costs ~5 minutes, which used to read as a wrapper regression.
+      - name: Time native build
+        run: |
+          bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'lake build toyproblem-runtime'
 
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
@@ -295,8 +305,3 @@ jobs:
             bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
           fi
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
-          {
-            echo '<!-- arklib-build-timing-report -->'
-            echo
-            cat "$BUILD_TIMING_REPORT"
-          } > "$BUILD_TIMING_COMMENT"

@@ -183,5 +183,24 @@ capture a measurement and render a report:
 ```bash
 bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build'
+bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build toyproblem-runtime'
+bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
 ```
+
+Read the rows in that order, because they share one tree and each leaves it warmer:
+
+- `clean_build` and `warm_rebuild` bracket the incremental-build signal.
+- `native_build` carries the `.c.o` chain that `lake exe toyproblem-runtime` links. It is the row
+  that swings on `.lake` cache state, so a dependency bump shows its cost here.
+- `test_path` is therefore the cost of the validation gate itself on an already-built project,
+  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
+  `--axioms` never appear in it.
+
+A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
+Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
+whole seconds above 10s, so those figures are not accurate to two decimals.
