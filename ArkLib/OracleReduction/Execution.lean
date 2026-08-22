@@ -588,9 +588,13 @@ theorem Prover.runToRound_one_of_prover_first [ProverOnly pSpec] (stmt : StmtIn)
   split <;> rename_i hDir
   · have : Direction.P_to_V = .V_to_P := by rw [← this, hDir]
     contradiction
-  · congr; funext a; congr; simp [default, Transcript.concat]; funext i
-    have : i = 0 := by aesop
-    rw [this]; simp [Fin.snoc]
+  · congr
+    funext a
+    congr
+    funext i
+    have hi : i = Fin.last 0 := by ext; omega
+    subst i
+    exact Transcript.concat_last a.1 (default : pSpec.Transcript 0)
 
 @[simp]
 theorem Prover.runToRound_one_of_verifier_first [VerifierOnly pSpec] (stmt : StmtIn) (wit : WitIn)
@@ -608,12 +612,12 @@ theorem Prover.runToRound_one_of_verifier_first [VerifierOnly pSpec] (stmt : Stm
     funext challenge
     congr 1
     funext f
-    simp only [default, Transcript.concat, Prod.mk.injEq]
+    simp only [default, Prod.mk.injEq]
     constructor
-    · funext ⟨i, hi⟩
-      have h : i = 0 := by omega
-      subst h
-      simp [Fin.snoc]
+    · funext i
+      have hi : i = Fin.last 0 := by ext; omega
+      subst i
+      exact Transcript.concat_last challenge (default : pSpec.Transcript 0)
     · trivial
   · -- P_to_V case: contradiction
     have : Direction.V_to_P = .P_to_V := by rw [← this, hDir]

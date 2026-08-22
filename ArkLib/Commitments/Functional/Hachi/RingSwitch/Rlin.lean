@@ -117,6 +117,7 @@ theorem dot_matVecMul_transpose {a b : ℕ} (A : ArkLib.Lattices.PolyMatrix P a 
   simp only [splitForm] at h
   rw [h]; exact dot_comm _ _
 
+set_option backward.isDefEq.respectTransparency false in
 /-- `matVecMul` splits along a row-append: block rows act independently. -/
 theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P a c)
     (M₂ : ArkLib.Lattices.PolyMatrix P b c) (ζ : ArkLib.Lattices.PolyVec P c) :
@@ -124,8 +125,14 @@ theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P
       = Fin.append (M₁ *ᵥ ζ) (M₂ *ᵥ ζ) := by
   funext i
   refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-  · simp only [matVecMul_apply, Fin.append_left]
-  · simp only [matVecMul_apply, Fin.append_right]
+  · rw [Fin.append_left]
+    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.castAdd b i)) ζ =
+      ArkLib.Lattices.dot (M₁ i) ζ
+    rw [Fin.append_left]
+  · rw [Fin.append_right]
+    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.natAdd a i)) ζ =
+      ArkLib.Lattices.dot (M₂ i) ζ
+    rw [Fin.append_right]
 
 end GenericHelpers
 
@@ -319,6 +326,7 @@ noncomputable def rlinStmt
 /-! ## The block-row equivalence -/
 
 omit [NeZero q] in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Linear part** (Eq. (20) rows c1–c5 ⟺ `M ζ = y`): the block matrix `rlinStmt`'s action on
 `ζ` splits — via `matVecMul_append_rows` / `dot_append` / `dot_matVecMul_transpose` /
 `matVecMul_matMul` / `tensorGMatrix_mulVec` — into the five verification rows read at the
@@ -422,7 +430,7 @@ theorem rlin_iff_relOut
       (rlinCols innerRows messageDigits innerDigits zDigits m r)) :
     (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, ζ) ∈ relRlin Φ ↔
       (X, unstack Φ ζ) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
-  rw [relRlin, Set.mem_setOf_eq, rlin_linear_iff, rlin_norm_iff, relOut, Set.mem_setOf_eq]
+  rw [relRlin, Set.mem_ofPred_eq, rlin_linear_iff, rlin_norm_iff, relOut, Set.mem_ofPred_eq]
   tauto
 
 /-! ## The pull-back and completeness directions -/

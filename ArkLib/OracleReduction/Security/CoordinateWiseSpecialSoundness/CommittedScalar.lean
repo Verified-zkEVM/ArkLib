@@ -220,7 +220,7 @@ theorem mkWitness_mem {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (
     (hinj : Function.Injective fam) :
     escLocal K s t fam resp ∨ (s, mkWitness hk K project s t fam resp) ∈ relIn := by
   classical
-  letI : ∀ f g : Fin k → W, Decidable (∃ j, f j ≠ g j) :=
+  let : ∀ f g : Fin k → W, Decidable (∃ j, f j ≠ g j) :=
     fun _ _ => Classical.propDecidable _
   set first : Fin k := ⟨0, by omega⟩ with hfirst
   by_cases hcol : ∃ j, resp j ≠ resp first

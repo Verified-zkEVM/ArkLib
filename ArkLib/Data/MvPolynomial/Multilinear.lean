@@ -265,7 +265,7 @@ theorem is_multilinear_eq_iff_eq_evals_zeroOne (p : MvPolynomial σ R) (q : MvPo
     (hp : p ∈ R⦃≤ 1⦄[X σ]) (hq : q ∈ R⦃≤ 1⦄[X σ]) :
     p = q ↔ p.toEvalsZeroOne = q.toEvalsZeroOne := by
   classical
-  letI := Fintype.ofFinite σ
+  let := Fintype.ofFinite σ
   constructor <;> intro h
   · simp only [h]
   · unfold toEvalsZeroOne at h

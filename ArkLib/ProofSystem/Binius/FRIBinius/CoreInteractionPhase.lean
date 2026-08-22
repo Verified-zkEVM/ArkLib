@@ -566,7 +566,6 @@ noncomputable def finalSumcheckVerifier :
     hEq := fun _ => rfl
     outputInterface_heq := by
       intro oracleIdx
-      simp only [Function.Embedding.coeFn_mk]
       rfl }
 
 /-- The oracle reduction for the final sumcheck step -/

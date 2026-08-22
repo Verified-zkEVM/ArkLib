@@ -252,6 +252,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
   intro s g fam resp hcheck hresp hinj
   -- The index of the branch the assembler reads, and its opening.
   set z : Fin (max (roundDegZero b) roundDegAlpha + 1) := ⟨0, Nat.succ_pos _⟩ with hz
+  let : Decidable (∀ j, resp j = resp z) := Classical.propDecidable _
   by_cases hall : ∀ j, resp j = resp z
   case neg =>
     -- Two branches open the shared commitment `s.zc.t` differently: a short collision.

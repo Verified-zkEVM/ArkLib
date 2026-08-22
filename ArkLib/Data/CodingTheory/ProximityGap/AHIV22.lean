@@ -9,14 +9,12 @@ import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
 
 /-!
 ## Main Definitions
-- Statements of proximity results for Reed Solomon codes (`Lemma 4.3`, `Lemma 4.4` and `Lemma 4.5`
-   from `[AHIV22]`
+Statements of proximity results for Reed--Solomon codes ([AHIV22], Lemmas 4.3--4.5).
 
 ## References
 
-* [Ames, S., Hazay, C., Ishai, Y., and Venkitasubramaniam, M., *Ligero: Lightweight sublinear
-    arguments without a trusted setup*][AHIV22]
-      * NB we use version 20221118:030830
+* [Ames, S., Hazay, C., Ishai, Y., and Venkitasubramaniam, M., *Ligero: Lightweight
+    sublinear arguments without a trusted setup*][AHIV22], version 20221118:030830
 -/
 
 noncomputable section
@@ -33,8 +31,6 @@ local instance : Fintype F := Fintype.ofFinite F
 namespace ProximityToRS
 open ReedSolomon NNReal
 
--- We first prove the distance-bound form `e_le_dist_over_3_strong` and then derive the
--- mutual-exclusion corollary `e_le_dist_over_3` from it.
 /-- **Lemma 4.4, [AHIV22] (strong form).**
 
 Either all points on the affine line are `e`-close to the Reed–Solomon code, or at most
@@ -400,7 +396,17 @@ lemma e_le_dist_over_3_strong
                 · intro h
                   refine ⟨?_, h.2.symm⟩
                   simpa [h.2] using h.1
-              simp [pairs, emb, Finset.mem_sigma, h]
+              simp only [pairs, Finset.mem_filter, Finset.mem_sigma, Finset.mem_univ,
+                true_and, Finset.mem_map, emb]
+              constructor
+              · rintro ⟨hir, rfl⟩
+                exact ⟨r, hir, rfl⟩
+              · rintro ⟨a, hja, ha⟩
+                have har : a = r := congrArg Sigma.fst ha
+                have hji : j = i := congrArg Sigma.snd ha
+                subst a
+                subst i
+                exact ⟨hja, rfl⟩
             simp [this]
           have hpairs_sum :
               pairs.card = ∑ j ∈ (Finset.univ : Finset ι),
@@ -851,7 +857,17 @@ lemma dir_close_of_many_close_pts
                 · intro h
                   refine ⟨?_, h.2.symm⟩
                   simpa [h.2] using h.1
-              simp [pairs, emb, h]
+              simp only [pairs, Finset.mem_filter, Finset.mem_univ, true_and,
+                Finset.mem_map, emb]
+              constructor
+              · rintro ⟨hir, rfl⟩
+                exact ⟨r, hir, rfl⟩
+              · rintro ⟨a, hja, ha⟩
+                have har : a = r := congrArg Sigma.fst ha
+                have hji : j = i := congrArg Sigma.snd ha
+                subst a
+                subst i
+                exact ⟨hja, rfl⟩
             have hmap :
                 {p ∈ pairs | f p = j} =
                   Finset.filter (fun p : Sigma (fun _ : RS ↦ ι) ↦ p.2 = j) pairs := by
@@ -890,7 +906,15 @@ lemma dir_close_of_many_close_pts
               rcases p with ⟨r', i⟩
               by_cases hrr : r' = r
               · subst hrr
-                simp [pairs, emb]
+                simp only [pairs, Finset.mem_filter, Finset.mem_univ, true_and,
+                  Finset.mem_map, emb]
+                constructor
+                · rintro ⟨hi, _⟩
+                  exact ⟨i, hi, rfl⟩
+                · rintro ⟨a, ha, hai⟩
+                  have hia : a = i := congrArg Sigma.snd hai
+                  subst a
+                  exact ⟨ha, trivial⟩
               · constructor
                 · intro hp
                   exfalso
@@ -1103,7 +1127,7 @@ lemma prob_of_bad_pts
     (PMF.uniformOfFintype (Matrix.rowSpan U_star)).toOuterMeasure
         {w_star | Δ₀(w_star, RScodeSet α deg) ≤ e}
       ≤ (‖(RScodeSet α deg)‖₀ : ENNReal) / Fintype.card F := by
-  letI : Fintype (Matrix.rowSpan U_star) := inferInstance
+  let : Fintype (Matrix.rowSpan U_star) := inferInstance
   classical
   set RS : Set (ι → F) := RScodeSet α deg
   set d : ℕ := ‖RS‖₀
@@ -1437,7 +1461,7 @@ lemma prob_of_bad_pts
     exact_mod_cast hbad_nat
   -- Convert to a probability bound using uniformity.
   let badSet : Set S := {w | Pbad w}
-  letI : Fintype badSet := Fintype.ofFinite badSet
+  let : Fintype badSet := Fintype.ofFinite badSet
   have hprob :
       (PMF.uniformOfFintype S).toOuterMeasure badSet = Fintype.card badSet / Fintype.card S := by
     simpa using (PMF.toOuterMeasure_uniformOfFintype_apply (α := S) (s := badSet))

@@ -111,7 +111,7 @@ abbrev InterleavedSymbol := κ → A
 
 /-- A word stack is a (row-wise) matrix (κ → ι → A) where each ROW is a word -/
 @[simp]
-abbrev WordStack := Matrix κ ι A
+abbrev WordStack := κ → ι → A
 
 @[simp]
 def WordStack.getRowWord {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A κ ι)
@@ -119,16 +119,21 @@ def WordStack.getRowWord {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A 
 
 @[simp]
 def WordStack.getSymbol {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A κ ι)
-    (i : ι) : InterleavedSymbol A κ := u.transpose i
+    (i : ι) : InterleavedSymbol A κ := fun k => u k i
 
 /-- An interleaved word is a (column-wise) matrix (ι → (κ → A)) where each ROW is a word, each
   column i is a symbol (κ → A) for the interleaved code MC^⋈ κ. -/
 @[simp]
-abbrev InterleavedWord := Matrix ι κ A
+abbrev InterleavedWord := ι → κ → A
 
 @[simp]
 def InterleavedWord.getRowWord {A : Type*} {κ : Type*} {ι : Type*}
-    (v : InterleavedWord A κ ι) (k : κ) : Word A ι := v.transpose k
+    (v : InterleavedWord A κ ι) (k : κ) : Word A ι := fun i => v i k
+
+/-- Evaluating a row extracted from an interleaved word. -/
+@[simp]
+lemma InterleavedWord.getRowWord_apply {A : Type*} {κ : Type*} {ι : Type*}
+    (v : InterleavedWord A κ ι) (k : κ) (i : ι) : v.getRowWord k i = v i k := rfl
 
 @[simp]
 def InterleavedWord.getSymbol {A : Type*} {κ : Type*} {ι : Type*}
@@ -138,8 +143,8 @@ def InterleavedWord.getSymbol {A : Type*} {κ : Type*} {ι : Type*}
     This is a generic version that works for any code represented as a Set. -/
 @[simp]
 def interleavedCodeSet {A : Type*} {κ ι : Type*}
-    (C : Set (ι → A)) : Set (Matrix ι κ A) :=
-  { V : Matrix ι κ A | ∀ k : κ, V.transpose k ∈ C }
+    (C : Set (ι → A)) : Set (ι → κ → A) :=
+  { V | ∀ k : κ, (fun i => V i k) ∈ C }
 
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
@@ -246,7 +251,12 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 
 @[simp]
 def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
-    := u.transpose
+    := fun i k => u k i
+
+/-- Evaluating the interleaving of a stack of words. -/
+@[simp]
+lemma interleaveWordStack_apply {A : Type*} {κ ι : Type*} (u : WordStack A κ ι)
+    (i : ι) (k : κ) : interleaveWordStack u i k = u k i := rfl
 
 /-- Interleave a codeword stack into an interleaved codeword. -/
 @[simp]
@@ -272,7 +282,7 @@ def finMapTwoCodewords (u₀ u₁ : C) :
     CodewordStack A (κ := Fin 2) (ι := ι) C :=
   ⟨finMapTwoWords u₀ u₁, by
     simp only [WordStack, CodewordStack, codewordStackSet, Word, WordStack.getRowWord,
-      Set.mem_setOf_eq, finMapTwoWords]
+      Set.mem_ofPred_eq, finMapTwoWords]
     intro k
     match k with
     | 0 => simp only [Subtype.coe_prop]
@@ -360,7 +370,7 @@ instance : Interleavable₂ (α := C) (β := InterleavedCodeword A (κ := (Fin 2
 /-- Interleave a Set-based code into an interleaved code set. -/
 @[simp]
 instance : CodeInterleavable (Code := Set (ι → A))
-    (InterleavedCode := fun κ => Set (Matrix ι κ A)) where
+    (InterleavedCode := fun κ => Set (ι → κ → A)) where
   interleaveCode C := fun κ => interleavedCodeSet (κ := κ) C
 
 /-- Interleave a ModuleCode into an interleaved ModuleCode (preserving submodule structure). -/
@@ -372,12 +382,12 @@ instance : CodeInterleavable (Code := ModuleCode ι F A)
 
 omit [AddCommMonoid A] [Fintype κ] [Fintype ι] in
 @[simp]
-lemma interleave_wordStack_eq (u : WordStack A κ ι) : (⋈|u) = u.transpose := rfl
+lemma interleave_wordStack_eq (u : WordStack A κ ι) : (⋈|u) = fun i k => u k i := rfl
 
 omit [AddCommMonoid A] [Fintype κ] [Fintype ι] in
 @[simp]
 lemma interleave_codewordStack_val_eq (u : CodewordStack A κ ι C) :
-    (⋈| u).val = u.val.transpose := rfl
+    (⋈| u).val = fun i k => u.val k i := rfl
 
 @[simp]
 noncomputable instance instFintypeInterleavedModuleCode [Fintype A] : Fintype (MC ^⋈ κ) := by
@@ -622,7 +632,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     · intro h; ext i k; exact congrFun (h i) k
   eq_iff_all_symbols_eq := by
     intro u v; constructor
-    · intro h; exact fun k ↦ congrFun (congrArg Matrix.transpose h) k
+    · intro h i; funext k; exact congrFun (congrFun h k) i
     · intro h; ext i k; exact congrFun (h k) i
   eq_iff_all_cells_eq := by
     intro u v; constructor
@@ -638,7 +648,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     rw [mem_codewordStack_iff] at h_u_mem
     exact h_u_mem k
   ⟩
-  getSymbol u i := u.val.transpose i
+  getSymbol u i := fun k => u.val k i
   getCell u k i := u.val k i
   eq_iff_all_rows_eq := by
     intro u v; constructor
@@ -665,7 +675,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
   getCell u i k := (InterleavedWord.getRowWord u i) k
   eq_iff_all_rows_eq := by
     intro u v; constructor
-    · intro h; exact fun k ↦ congrFun (congrArg Matrix.transpose h) k
+    · intro h k; funext i; exact congrFun (congrFun h i) k
     · intro h; ext i k; exact congrFun (h k) i
   eq_iff_all_symbols_eq := by
     intro u v; constructor
@@ -681,18 +691,18 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     InterleavedStructure (α := InterleavedCodeword A κ ι C) (RowIdx := κ)
   (SymbolIdx := ι) (RowType := C) (SymbolType := InterleavedSymbol A κ) (CellTy := A) where
   -- No separate functions cuz InterleavedCodeword is a subtype
-  getRow u k := ⟨(Matrix.transpose u) k, by
+  getRow u k := ⟨fun i => u.val i k, by
     have h_u_mem := u.property
     rw [mem_interleavedCode_iff] at h_u_mem
     exact h_u_mem k
   ⟩
   getSymbol u colIdx := u.val colIdx
-  getCell u k i := Matrix.transpose u k i
+  getCell u k i := u.val i k
   eq_iff_all_rows_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i ↦ rfl
     · intro h; ext i k;
-      let res := h k; simp only [Subtype.mk.injEq] at res; exact congrFun res i
+      exact congrFun (congrArg Subtype.val (h k)) i
   eq_iff_all_symbols_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun k ↦ rfl
@@ -710,11 +720,11 @@ notation:65 "⋈⁻¹|" u => Stackifiable.stackify u
 
 @[simp]
 instance : Stackifiable (α := InterleavedWord A κ ι) (β := WordStack A κ ι) where
-  stackify u := u.transpose
+  stackify u := fun k i => u i k
 
 @[simp]
 instance : Stackifiable (α := InterleavedCodeword A κ ι C) (β := CodewordStack A κ ι C) where
-  stackify u := ⟨u.val.transpose, by
+  stackify u := ⟨fun k i => u.val i k, by
     rw [mem_codewordStack_iff]
     let h_u_mem := u.property
     rw [mem_interleavedCode_iff] at h_u_mem
@@ -907,7 +917,7 @@ theorem jointAgreement_iff_jointProximity
       exact hj_in_filter.2.symm
     -- From agreement on S, we get distance bound
     have h_dist : δᵣ(u_interleaved, v_interleaved) ≤ δ := by
-      rw [relCloseToWord_iff_exists_agreementCols]
+      apply (relCloseToWord_iff_exists_agreementCols u_interleaved v_interleaved δ).2
       use S
       rw [relDist_floor_bound_iff_complement_bound]
       constructor
@@ -942,16 +952,14 @@ theorem jointAgreement_iff_jointProximity
     have h_rel_to_nat : δᵣ(u_interleaved, interleavedCodeSet C) ≤ δ →
         ∃ v ∈ (interleavedCodeSet C), δᵣ(u_interleaved, v) ≤ δ := by
       intro h_rel
-      rw [relCloseToCode_iff_relCloseToCodeword_of_minDist] at h_rel
-      exact h_rel
+      exact (relCloseToCode_iff_relCloseToCodeword_of_minDist u_interleaved δ).1 h_rel
     have h_exists_v := h_rel_to_nat h_joint
     rcases h_exists_v with ⟨v, hv_mem, hv_dist⟩
     -- Now convert relative distance to agreement set
     -- We need: δᵣ(u_interleaved, v) ≤ δ → ∃ S, |S| ≥ (1-δ)*|ι| and agreement
     -- Convert relative distance δ to natural distance e
     have h_nat_dist : Δ₀(u_interleaved, v) ≤ e := by
-      rw [pairRelDist_le_iff_pairDist_le (δ := δ)] at hv_dist
-      exact hv_dist
+      exact (pairRelDist_le_iff_pairDist_le (u := u_interleaved) (v := v) δ).1 hv_dist
     have h_agree := Code.closeToWord_iff_exists_agreementCols
       (u := u_interleaved) (v := v) (e := e)
     have h_agree_nat := h_agree.mp h_nat_dist
@@ -969,7 +977,7 @@ theorem jointAgreement_iff_jointProximity
       intro i
       constructor
       · -- v_rows i ∈ MC
-        simp only [interleavedCodeSet, Set.mem_setOf_eq] at hv_mem
+        simp only [interleavedCodeSet, Set.mem_ofPred_eq] at hv_mem
         exact hv_mem i
       · -- S ⊆ {j | v_rows i j = u i j}
         simp only [Finset.subset_iff]

@@ -145,7 +145,7 @@ theorem common_disagreement_intersection :
         {i : ι | ∀ j, j ∈ J → i ∈ S j} := by
       ext i
       simp only [common, Finset.coe_filter, Finset.mem_univ, true_and,
-        Set.mem_setOf_eq]
+        Set.mem_ofPred_eq]
     have hncard :
         ({i : ι | ∀ j, j ∈ J → i ∈ S j} : Set ι).ncard =
           (common J).card := by
@@ -609,7 +609,7 @@ theorem deterministic_pigeonhole_bound :
   have hιpos : 0 < Fintype.card ι := by
     rw [hcard]
     exact hn
-  letI : Nonempty ι := Fintype.card_pos_iff.mp hιpos
+  let : Nonempty ι := Fintype.card_pos_iff.mp hιpos
   have hp : 0 ≤ (radius : ℝ) / n := by positivity
   have hfloor :
       Nat.floor (((radius : ℝ) / n) * Fintype.card ι) = radius := by

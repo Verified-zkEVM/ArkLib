@@ -264,8 +264,7 @@ theorem CA_split_rowwise_implies_CA
         have hRes₁ := hRes 1 ⟨rowIdx - 2 ^ ϑ, by omega⟩
         dsimp only [splitHalfRowWiseInterleavedWords, Fin.isValue, U₁] at hRes₁
         rw [←hRes₁]
-        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords,
-          Matrix.transpose_apply]
+        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
 

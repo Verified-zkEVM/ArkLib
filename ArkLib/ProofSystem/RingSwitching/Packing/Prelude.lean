@@ -491,8 +491,8 @@ existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axi
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
   decomposeColumns_spec := fun z => by
-    letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
-    letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
+    let rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+    let rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     conv_lhs => rw [← (Basis.baseChangeRight (b := β) (Right := L)).sum_repr z]
     refine Finset.sum_congr rfl fun v _ => ?_
     unfold decompose_tensor_algebra_columns

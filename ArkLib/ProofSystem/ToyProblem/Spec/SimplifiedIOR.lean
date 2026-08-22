@@ -286,8 +286,10 @@ def outputSimulation :
     rcases q with ⟨i, j⟩
     fin_cases i
     rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
-    rw [simulateQ_bind, simulateQ_queryInput, pure_bind, simulateQ_pure]
-    rfl
+    rw [simulateQ_bind, simulateQ_queryInput, pure_bind]
+    simp only [OracleInterface.simOracle2, QueryImpl.addLift_def,
+      QueryImpl.simulateQ_add_liftM_left, simulateQ_pure]
+    with_unfolding_all rfl
 
 /-- Honest prover at the oracle-reduction signature. -/
 def oracleProver :

@@ -26,6 +26,7 @@ variable {m : Type u → Type v} [Monad m]
 
 /-- Heterogeneous left fold over `Fin n` in a monad, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def dfoldlM' (n : ℕ) (α : Fin (n + 1) → Type u)
     (f : (i : Fin n) → α i.castSucc → m (α i.succ)) (init : α 0) : m (α (last n)) :=
   match n with
@@ -48,6 +49,7 @@ lemma dfoldlM'_succ {n : ℕ} {α : Fin (n + 2) → Type u}
 
 /-- Heterogeneous left fold over `Fin n`, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def dfoldl' (n : ℕ) (α : Fin (n + 1) → Type u)
     (f : (i : Fin n) → α i.castSucc → α i.succ) (init : α 0) : α (last n) :=
   dfoldlM' (m := Id) n α f init
@@ -71,10 +73,12 @@ lemma dfoldl'_succ_last {n : ℕ} {α : Fin (n + 2) → Type u}
     rw [dfoldl_zero, dfoldl'_zero]
   | succ n ih =>
     rw [dfoldl_succ_last, dfoldl'_succ_last]
-    rw [ih]
+    congr 1
+    exact ih (α ∘ castSucc) (fun i => f i.castSucc) x
 
 /-- Left fold over `Fin n`, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def foldl' {α : Type u} (n : ℕ) (f : (i : Fin n) → α → α) (init : α) : α :=
   dfoldl' n (fun _ => α) f init
 
@@ -89,6 +93,7 @@ lemma foldl'_succ {n : ℕ} {α : Type u} (f : (i : Fin (n + 1)) → α → α) 
 
 /-- Heterogeneous right fold over `Fin n` in a monad, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def dfoldrM' {m : Type u → Type v} [Monad m]
     (n : ℕ) (α : Fin (n + 1) → Type u)
     (f : (i : Fin n) → α i.succ → m (α i.castSucc)) (init : α (last n)) : m (α 0) :=
@@ -113,6 +118,7 @@ lemma dfoldrM'_succ {n : ℕ} {α : Fin (n + 1 + 1) → Type u}
 
 /-- Heterogeneous right fold over `Fin n`, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def dfoldr' (n : ℕ) (α : Fin (n + 1) → Type u)
     (f : (i : Fin n) → α i.succ → α i.castSucc) (init : α (last n)) : α 0 :=
   dfoldrM' (m := Id) n α f init
@@ -138,10 +144,12 @@ lemma dfoldr'_succ {n : ℕ} {α : Fin (n + 1 + 1) → Type u}
     rw [dfoldr_zero, dfoldr'_zero]
   | succ n ih =>
     rw [dfoldr_succ, dfoldr'_succ]
-    rw [ih]
+    congr 1
+    exact ih (α ∘ succ) (fun i => f i.succ) x
 
 /-- Right fold over `Fin n`, prime version with better defeq.
   Automatically unfolds for `0` and `n.succ`. -/
+@[implicit_reducible]
 def foldr' {α : Type u} (n : ℕ) (f : (i : Fin n) → α → α) (init : α) : α :=
   dfoldr' n (fun _ => α) f init
 

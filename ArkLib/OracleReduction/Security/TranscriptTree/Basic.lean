@@ -216,7 +216,9 @@ theorem mem_transcripts :
     {m : Fin (n + 1)} → {T : ChallengeTree pSpec arity m} →
       (path : LeafPath T) → (pre : Transcript m pSpec) →
         path.transcript pre ∈ T.transcripts pre
-  | _, _, .leaf, pre => by simp [transcript, transcripts]
+  | _, _, .leaf, pre => by
+      change pre ∈ [pre]
+      exact List.mem_cons_self
   | _, _, @LeafPath.msg _ _ _ _ _ message _ path, pre => by
       simp only [transcript, transcripts]
       exact mem_transcripts path (pre.concat message)
@@ -235,8 +237,8 @@ theorem exists_of_mem_transcripts :
       {pre : Transcript m pSpec} → {tr : FullTranscript pSpec} →
         tr ∈ T.transcripts pre → ∃ path : LeafPath T, path.transcript pre = tr
   | _, .leaf, pre, tr, h => by
-      simp only [transcripts, List.mem_singleton] at h
-      exact ⟨.leaf, h.symm⟩
+      have htr : tr = pre := List.eq_of_mem_singleton h
+      exact ⟨.leaf, htr.symm⟩
   | _, .msgNode _ _ _ child, pre, tr, h => by
       simp only [transcripts] at h
       obtain ⟨path, hpath⟩ := exists_of_mem_transcripts h

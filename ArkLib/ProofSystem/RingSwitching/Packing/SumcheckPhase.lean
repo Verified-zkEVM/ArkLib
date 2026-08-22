@@ -264,8 +264,8 @@ def iteratedSumcheckKnowledgeStateFunction (i : Fin ℓ') :
     iteratedSumcheckKStateProp κ L K P ℓ ℓ' h_l
       (i := i) (m := m) (tr := tr) (stmt := stmt) (witMid := witMid) (oStmt := oStmt)
   toFun_empty := fun _ _ => by
-    simp only [sumcheckRoundRelation, sumcheckRoundRelationProp, Fin.coe_castSucc, cast_eq,
-      Set.mem_setOf_eq, iteratedSumcheckKStateProp, masterKStateProp, true_and]
+    simp only [sumcheckRoundRelation, sumcheckRoundRelationProp, Fin.val_castSucc, cast_eq,
+      Set.mem_ofPred_eq, iteratedSumcheckKStateProp, masterKStateProp, true_and]
   toFun_next := fun m hDir stmtIn tr msg witMid => by
     obtain ⟨stmt, oStmt⟩ := stmtIn
     fin_cases m
@@ -468,7 +468,7 @@ noncomputable def finalSumcheckKnowledgeStateFunction {σ : Type} (init : ProbCo
     (m := m) (tr := tr) (stmt := stmt) (witMid := witMid) (oStmt := oStmt)
   toFun_empty := fun stmt witMid => by
     simp only [sumcheckRoundRelation, sumcheckRoundRelationProp, Fin.val_last, cast_eq,
-      Set.mem_setOf_eq, finalSumcheckKStateProp, masterKStateProp, true_and]
+      Set.mem_ofPred_eq, finalSumcheckKStateProp, masterKStateProp, true_and]
   toFun_next := fun m hDir stmt tr msg witMid h => by
     sorry
   toFun_full := fun stmt tr witOut h => by

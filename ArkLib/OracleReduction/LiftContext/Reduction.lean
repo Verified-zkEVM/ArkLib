@@ -260,7 +260,7 @@ theorem liftContext_runWithLogToRound
         return ⟨⟨transcript, ⟨prvState, outerStmtIn, outerWitIn⟩⟩, queryLog⟩ := by
   unfold runWithLogToRound
   induction i using Fin.induction with
-  | zero => simp [liftContext, Function.uncurry]
+  | zero => simp [runToRound, liftContext, Function.uncurry, simulateQ_pure]
   | succ i ih => simp [liftContext_runToRound, Function.uncurry]
 
 /-- Running the lifted outer prover is equivalent to running the inner prover on the projected
@@ -556,20 +556,20 @@ def InnerStmtIn_Test := ℤ[X] × ℤ
 
 @[simp]
 def outerRelIn_Test : Set (OuterStmtIn_Test × Unit) :=
-  setOf (fun ⟨⟨p, q, t⟩, _⟩ => ∑ x ∈ {0, 1}, (p * q).eval x = t)
+  Set.ofPred (fun ⟨⟨p, q, t⟩, _⟩ => ∑ x ∈ {0, 1}, (p * q).eval x = t)
 @[simp]
 def innerRelIn_Test : Set (InnerStmtIn_Test × Unit) :=
-  setOf (fun ⟨⟨f, t⟩, _⟩ => ∑ x ∈ {0, 1}, f.eval x = t)
+  Set.ofPred (fun ⟨⟨f, t⟩, _⟩ => ∑ x ∈ {0, 1}, f.eval x = t)
 
 def OuterStmtOut_Test := ℤ[X] × ℤ[X] × ℤ × ℤ
 def InnerStmtOut_Test := ℤ[X] × ℤ × ℤ
 
 @[simp]
 def outerRelOut_Test : Set (OuterStmtOut_Test × Unit) :=
-  setOf (fun ⟨⟨p, q, t, r⟩, _⟩ => (p * q).eval r = t)
+  Set.ofPred (fun ⟨⟨p, q, t, r⟩, _⟩ => (p * q).eval r = t)
 @[simp]
 def innerRelOut_Test : Set (InnerStmtOut_Test × Unit) :=
-  setOf (fun ⟨⟨f, t, r⟩, _⟩ => f.eval r = t)
+  Set.ofPred (fun ⟨⟨f, t, r⟩, _⟩ => f.eval r = t)
 
 @[simp]
 def testStmtLens :
@@ -591,22 +591,24 @@ def testLensE : Extractor.Lens OuterStmtIn_Test OuterStmtOut_Test InnerStmtIn_Te
 instance instTestLensComplete : testLens.IsComplete
       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨⟨p, q, _⟩, _⟩ ⟨⟨f, _⟩, _⟩ => p * q = f) where
-  proj_complete := fun ⟨p, q, t⟩ () hRelIn => by simp_all
+  proj_complete := fun ⟨p, q, t⟩ () hRelIn => by
+    simpa [outerRelIn_Test, innerRelIn_Test, testLens, testStmtLens, eval_mul] using hRelIn
   lift_complete := fun ⟨p, q, t⟩ _ ⟨f, t', r⟩ _ hCompat hRelIn hRelOut' => by
-    simp_all only [outerRelIn_Test, eval_mul, Finset.mem_singleton, zero_ne_one,
-      not_false_eq_true, Finset.sum_insert, Finset.sum_singleton, Set.mem_setOf_eq,
-      innerRelOut_Test, outerRelOut_Test, testLens, testStmtLens]
-    simp [← hRelOut', ← hCompat]
+    change (p * q).eval r = t'
+    change f.eval r = t' at hRelOut'
+    simpa [hCompat] using hRelOut'
 
-def instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
+instance instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
   proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by
-    simp_all only [outerRelOut_Test, eval_mul, Statement.Lens.lift,
-      testLensE, testStmtLens, Set.mem_setOf_eq, innerRelOut_Test]
-    simp [← h', ← h]
-  lift_knowledgeSound := fun ⟨p, q, t⟩ _ _ _ _ => by
-    simp_all
+    change f.eval r = t'
+    change (p * q).eval r = t' at h'
+    simpa [← h] using h'
+  lift_knowledgeSound := fun ⟨p, q, t⟩ _ _ _ hInner => by
+    have hInner' : (p * q).eval 0 + (p * q).eval 1 = t := by
+      simpa [innerRelIn_Test, testLensE, testStmtLens] using hInner
+    simpa [outerRelIn_Test] using hInner'
 
 end
 

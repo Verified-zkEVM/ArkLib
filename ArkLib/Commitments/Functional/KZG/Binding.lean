@@ -403,13 +403,13 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
   rw [hkeygen]
   simp only [map_eq_bind_pure_comp]
   simp only [bind_assoc, pure_bind, Function.comp_apply]
-  change (OptionT.mk (do
+  with_unfolding_all change (OptionT.mk (do
     let τ ← sample
     (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))).run =
-      ((do
+      (Option.map proj <$> do
         let τ ← sample
-        (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache)) >>=
-          pure ∘ Option.map proj)
+        (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache))
+  rw [map_eq_bind_pure_comp]
   conv_rhs => rw [bind_assoc]
   simpa only [OptionT.run, OptionT.mk, Function.comp_def, id_map] using
     congrArg OptionT.run
@@ -483,7 +483,7 @@ lemma binding_cond_le_t_sdh_cond {n : ℕ} {AuxState : Type} [SampleableType G�
   let Claim : Type :=
     G₁ × (q : OracleInterface.Query (Fin (n + 1) → ZMod p)) ×
       OracleInterface.Response q × OracleInterface.Response q × AuxState × AuxState
-  letI : ∀ i, OracleInterface (pSpec'.Challenge i) := ProtocolSpec.challengeOracleInterface
+  let : ∀ i, OracleInterface (pSpec'.Challenge i) := ProtocolSpec.challengeOracleInterface
   let RunResult : Type := (FullTranscript pSpec' × Bool × Unit) × Bool
   let spec' := unifSpec + [pSpec'.Challenge]ₒ
   let sample : ProbComp (ZMod p) := Groups.sampleNonzeroZMod (p := p)
@@ -749,12 +749,12 @@ theorem binding {g₁ : G₁} {g₂ : G₂} (hg₁ : g₁ ≠ 1)
       (g₂ := g₂) n tSdhError) :
     Commitment.binding (init := pure ∅) (impl := randomOracle)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) tSdhError := by
-  letI scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+  let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.binding]
   intro AuxState adversary
-  letI game := Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
+  let game := Commitment.bindingGame (init := pure ∅) (impl := randomOracle)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
-  letI game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
+  let game_ext := bindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   change Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game] ≤ tSdhError
   exact
     calc Pr[Commitment.bindingCondition (Data := Fin (n + 1) → ZMod p) | game]

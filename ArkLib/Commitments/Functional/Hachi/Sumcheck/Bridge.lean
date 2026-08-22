@@ -60,8 +60,8 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :
     (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
-  rw [nestedRoundRel, Set.mem_setOf_eq] at h
-  rw [relNestedZeroCheck, Set.mem_setOf_eq]
+  rw [nestedRoundRel, Set.mem_ofPred_eq] at h
+  rw [relNestedZeroCheck, Set.mem_ofPred_eq]
   rcases h with ⟨hCom, hShort, hZero, hAlpha, hBound⟩
   change K.com w = s.t at hCom
   change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b s.τ₀ w) 0

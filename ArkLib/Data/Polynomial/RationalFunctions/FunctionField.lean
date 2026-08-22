@@ -46,6 +46,15 @@ noncomputable def monicizeRatFunc (H : F[X][Y]) : Polynomial (RatFunc F) :=
   let H' := Polynomial.eval₂ (RingHom.comp Polynomial.C univPolyHom) S H
   W ^ (d - 1) * H'
 
+/-- The defining formula for `monicizeRatFunc`, stated as a rewrite lemma so clients need not
+unfold its implementation-local `let` bindings. -/
+lemma monicizeRatFunc_eq (H : F[X][Y]) :
+    monicizeRatFunc H =
+      Polynomial.C (univPolyHom (F := F) H.leadingCoeff) ^ (H.natDegree - 1) *
+        Polynomial.eval₂ (RingHom.comp Polynomial.C (univPolyHom (F := F)))
+          (Polynomial.X / Polynomial.C (univPolyHom (F := F) H.leadingCoeff)) H := by
+  rfl
+
 section FieldIrreducibility
 
 variable {F : Type} [Field F]
@@ -58,7 +67,7 @@ lemma univPolyHom_injective :
 private lemma irreducible_comp_C_mul_X_iff {K : Type} [Field K] (a : K) (ha : a ≠ 0)
     (p : K[X]) :
     Irreducible (p.comp (Polynomial.C a * Polynomial.X)) ↔ Irreducible p := by
-  letI : Invertible a := invertibleOfNonzero ha
+  let : Invertible a := invertibleOfNonzero ha
   let e : K[X] ≃ₐ[K] K[X] := Polynomial.algEquivCMulXAddC a 0
   have hp : e p = p.comp (Polynomial.C a * Polynomial.X) := by
     simp [e, ← Polynomial.comp_eq_aeval]

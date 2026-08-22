@@ -96,7 +96,7 @@ private lemma Lambda_eq_floor_div_card (C : Set (ι → F)) {δ : ℝ} (hδ : 0 
         = closeCodewordsRel C y ((⌊δ * Fintype.card ι⌋₊ : ℝ) / Fintype.card ι) := by
     intro y
     ext c
-    simp only [closeCodewordsRel, relHammingBall, Set.mem_setOf_eq, and_congr_right_iff,
+    simp only [closeCodewordsRel, relHammingBall, Set.mem_ofPred_eq, and_congr_right_iff,
       Code.relHammingDist]
     intro _
     push_cast

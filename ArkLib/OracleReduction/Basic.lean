@@ -453,7 +453,7 @@ theorem simulateQ_add_liftM_left
   intro q
   change simulateQ (QueryImpl.add impl1 impl2)
       (liftM ((spec1 + spec2).query (Sum.inl q))) = impl1 q
-  simp [QueryImpl.add]
+  rw [simulateQ_spec_query, QueryImpl.add_eq_hAdd, QueryImpl.add_apply_inl]
 
 /-- Universe-polymorphic routing through the right side of a sum implementation. -/
 theorem simulateQ_add_liftM_right
@@ -471,7 +471,7 @@ theorem simulateQ_add_liftM_right
   intro q
   change simulateQ (QueryImpl.add impl1 impl2)
       (liftM ((spec1 + spec2).query (Sum.inr q))) = impl2 q
-  simp [QueryImpl.add]
+  rw [simulateQ_spec_query, QueryImpl.add_eq_hAdd, QueryImpl.add_apply_inr]
 
 /-- Simulating a doubly lifted computation from the right-hand inner oracle
 specification agrees with simulating it directly through the right implementation. -/
@@ -587,7 +587,7 @@ theorem simulateOutputQuery_eq
         simpa only [hEmbed] using output.outputInterface_heq i
       let a : OStmtOut i := output.hEq i ▸ hEmbed ▸ oStmt j
       have hab : HEq a (oStmt j) := by
-        simp only [a, eqRec_heq_iff_heq]
+        simp only [a, eqRec_heq_iff]
         exact HEq.rfl
       apply simulateQueryAlongHEq (Oₛₒ i) (Oₛᵢ j) hType hInterface
         _ q _ a (oStmt j) hab
@@ -603,7 +603,7 @@ theorem simulateOutputQuery_eq
         simpa only [hEmbed] using output.outputInterface_heq i
       let a : OStmtOut i := output.hEq i ▸ hEmbed ▸ messages j
       have hab : HEq a (messages j) := by
-        simp only [a, eqRec_heq_iff_heq]
+        simp only [a, eqRec_heq_iff]
         exact HEq.rfl
       apply simulateQueryAlongHEq (Oₛₒ i) (Oₘ j) hType hInterface
         _ q _ a (messages j) hab
@@ -1091,13 +1091,14 @@ def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 
 theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0)
     (msg1 : pSpec.«Type» 1) :
       FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
-  unfold FullTranscript.mk2 Transcript.concat
-  simp only [default, Fin.isValue]
   funext i
-  by_cases hi : i = 0
-  · subst hi; simp [Fin.snoc]
-  · have : i = 1 := by omega
-    subst this; simp [Fin.snoc]
+  fin_cases i
+  · change msg0 = ((default : pSpec.Transcript 0).concat msg0).concat msg1
+      (Fin.castSucc (Fin.last 0))
+    rw [Transcript.concat_castSucc]
+    exact (Transcript.concat_last msg0 (default : pSpec.Transcript 0)).symm
+  · change msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 (Fin.last 1)
+    exact (Transcript.concat_last msg1 ((default : pSpec.Transcript 0).concat msg0)).symm
 
 end ProtocolSpec
 

@@ -562,6 +562,13 @@ theorem splitDataOfTree_src {r : Fin (m + 1)}
     (splitDataOfTree (arity₁ := arity₁) (arity₂ := arity₂) T).src = T :=
   eq_of_heq (splitDataOfTreeAux T r rfl).2
 
+set_option backward.isDefEq.respectTransparency false in
+/-- The source law for a split rooted at the beginning of an appended protocol. -/
+theorem splitDataOfTree_src_zero
+    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0) :
+    (splitDataOfTree (r := 0) T).src = T :=
+  @splitDataOfTree_src m n pSpec₁ pSpec₂ arity₁ arity₂ (0 : Fin (m + 1)) T
+
 section Structure
 
 variable {S₁ : ChallengeTreeShape pSpec₁} {S₂ : ChallengeTreeShape pSpec₂}
@@ -579,9 +586,7 @@ theorem RightProj.tree_isStructured :
         omega
       simp only [RightProj.src, ChallengeTree.IsStructured] at hR
       apply RightProj.tree_isStructured child
-      convert hR using 1
-      · exact hround.symm
-      · rfl
+      exact hR
   | _, .chal i h chals children, hR => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
@@ -622,9 +627,7 @@ theorem SplitData.fst_isStructured :
         rfl
       simp only [SplitData.src, ChallengeTree.IsStructured] at hS
       apply SplitData.fst_isStructured child
-      convert hS using 1
-      · exact hround.symm
-      · rfl
+      exact hS
   | _, .chal i h chals children, hS => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
@@ -663,18 +666,14 @@ theorem SplitData.sndAt_isStructured :
         simp [leftRound, rightRound]
       simp only [SplitData.src] at hS
       apply rp.tree_isStructured
-      convert hS using 1
-      · exact hround.symm
-      · rfl
+      exact hS
   | _, .msg i h m₁ child, hS, path => by
       have hround : (Fin.castAdd n i).succ = leftRound i.succ := by
         apply Fin.ext
         rfl
       simp only [SplitData.src, ChallengeTree.IsStructured] at hS
       have hS' : child.src.IsStructured (S₁.append S₂) := by
-        convert hS using 1
-        · exact hround.symm
-        · rfl
+        exact hS
       exact SplitData.sndAt_isStructured child hS' (peelMsg path)
   | _, .chal i h chals children, hS, path => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
@@ -716,7 +715,7 @@ theorem appendSplit_fst_isStructured
     (hT : T.IsStructured (S₁.append S₂)) :
       T.appendSplit.fst.IsStructured S₁ :=
   SplitData.fst_isStructured (splitDataOfTree (r := 0) T)
-    (by rw [splitDataOfTree_src]; exact hT)
+    ((splitDataOfTree_src_zero T).symm ▸ hT)
 
 /-- Every suffix tree selected by a first-stage leaf of a structured appended tree is structured. -/
 theorem appendSplit_sndAt_isStructured
@@ -725,7 +724,7 @@ theorem appendSplit_sndAt_isStructured
     (path : LeafPath T.appendSplit.fst) :
       (T.appendSplit.sndAt path).IsStructured S₂ :=
   SplitData.sndAt_isStructured (splitDataOfTree (r := 0) T)
-    (by rw [splitDataOfTree_src]; exact hT) path
+    ((splitDataOfTree_src_zero T).symm ▸ hT) path
 
 section Membership
 
@@ -803,10 +802,12 @@ theorem leftPrefix_concat {i : Fin m} (pre : Transcript i.castSucc pSpec₁)
       (leftPrefix pre).concat (cast (by simp only [Fin.vappend_eq_append,
         Fin.append_left]) x : (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i)) := by
   funext idx
-  refine Fin.lastCases ?_ (fun j => ?_) idx <;>
-    simp only [leftPrefix, Transcript.concat, Fin.snoc_last, Fin.snoc_castSucc, Fin.val_castSucc,
-      Fin.val_castAdd, Fin.val_succ] <;>
-    exact cast_eq_iff_heq.mpr (cast_heq _ _).symm
+  refine Fin.lastCases ?_ (fun j => ?_) idx
+  · simp only [leftPrefix, Transcript.concat_last, Fin.val_last, Fin.val_castAdd, Fin.val_succ]
+    exact (Transcript.concat_last _ _).symm
+  · simp only [leftPrefix, Transcript.concat_castSucc, Fin.val_castSucc, Fin.val_castAdd,
+      Fin.val_succ]
+    rfl
 
 /-- Two casts into a common type are equal as soon as their arguments are `HEq`. Lets cast-equality
 goals be discharged by reasoning about the (cast-free) underlying values. -/
@@ -839,7 +840,7 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
          first
            | rfl
            | exact HEq.rfl
-           | (exact (heq_cast_iff_heq _ _ _).mpr HEq.rfl))
+           | (exact (heq_cast_iff_heq _ _ _).mpr (cast_heq _ x)))
 
 /-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the appended
 source tree (membership form: induction on the certificate, no `LeafPath` peeling). -/
@@ -848,8 +849,11 @@ theorem RightProj.mem_transcripts_append :
     (pre₂ : Transcript r pSpec₂) → {tr₂ : FullTranscript pSpec₂} →
     tr₂ ∈ R.tree.transcripts pre₂ → tr₁ ++ₜ tr₂ ∈ R.src.transcripts (rightPrefix tr₁ pre₂)
   | _, .leaf, tr₁, pre₂, tr₂, htr₂ => by
-      simp only [RightProj.tree, RightProj.src, transcripts, List.mem_singleton] at htr₂ ⊢
-      rw [htr₂]; exact (rightPrefix_leaf_eq_append _ _).symm
+      with_unfolding_all change tr₂ ∈ [pre₂] at htr₂
+      have htr₂' : tr₂ = pre₂ := List.eq_of_mem_singleton htr₂
+      subst tr₂
+      with_unfolding_all change tr₁ ++ₜ pre₂ ∈ [rightPrefix tr₁ pre₂]
+      exact List.mem_singleton.mpr (rightPrefix_leaf_eq_append _ _).symm
   | _, .msg i h m₂ child, tr₁, pre₂, tr₂, htr₂ => by
       simp only [RightProj.tree, transcripts] at htr₂
       simp only [RightProj.src, transcripts]
@@ -915,7 +919,7 @@ theorem appendSplit_fullTranscripts_append_of_mem
     (htr₂ : tr₂ ∈ (T.appendSplit.sndAt path).fullTranscripts) :
       path.fullTranscript ++ₜ tr₂ ∈ T.fullTranscripts := by
   have key := SplitData.mem_transcripts_append (splitDataOfTree (r := 0) T) default path htr₂
-  rw [splitDataOfTree_src] at key
+  rw [splitDataOfTree_src_zero] at key
   have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
       = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by
     funext idx; exact idx.elim0

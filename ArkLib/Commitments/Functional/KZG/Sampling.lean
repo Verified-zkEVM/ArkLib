@@ -31,7 +31,7 @@ variable {p : outParam ℕ} [Fact (Nat.Prime p)]
 The implementation samples an index in `{0, ..., p - 2}` and shifts it by one, so the support is
 exactly the canonical representatives `1, ..., p - 1` modulo `p`. -/
 def sampleNonzeroZMod : ProbComp (ZMod p) :=
-  haveI : NeZero (p - 1) :=
+  have : NeZero (p - 1) :=
     ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
   (fun i : Fin (p - 1) => ((i : ℕ) + 1 : ZMod p)) <$> ($ᵗ (Fin (p - 1)))
 
@@ -42,7 +42,7 @@ lemma simulateQ_randomOracle_sampleNonzeroZMod :
       (sampleNonzeroZMod (p := p) : ProbComp (ZMod p)) :
         StateT unifSpec.QueryCache ProbComp (ZMod p))).run' ∅ =
       sampleNonzeroZMod (p := p) := by
-  haveI : NeZero (p - 1) :=
+  have : NeZero (p - 1) :=
     ⟨Nat.pos_iff_ne_zero.mp (Nat.sub_pos_of_lt (Nat.Prime.one_lt Fact.out))⟩
   unfold sampleNonzeroZMod
   cases p with

@@ -84,6 +84,7 @@ theorem accepts_of_mem_inputRelationFor {k t : ℕ}
     simp [Pi.add_apply, Pi.smul_apply]
 
 omit [Fintype ι] [DecidableEq ι] [Fintype F] [Fintype A] in
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest completeness of the three-round toy protocol** (protocol-level form).
 
 The honest oracle reduction is perfectly complete from `inputRelationFor encode`
@@ -215,7 +216,11 @@ theorem oracleReduction_perfectCompleteness
   · rename_i hreject
     exfalso
     apply hreject
-    convert hacc using 1 <;> congr 1
+    convert hacc using 1
+    · exact (cast_eq _ _).symm
+    · funext j
+      apply congrArg (fun x : F => witIn 0 j + x * witIn 1 j)
+      exact (cast_eq _ _).symm
 
 /-! ### Regression guards: both decision checks are load-bearing
 

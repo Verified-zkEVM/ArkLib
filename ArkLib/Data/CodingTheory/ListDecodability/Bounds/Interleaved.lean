@@ -625,7 +625,7 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     Lambda (interleavedCodeSet (κ := Fin m) C) δ ≤
       ((b + r).choose r : ℕ∞) * (Lambda C δ) ^ r := by
   classical
-  letI : Fintype A := Fintype.ofFinite A
+  let : Fintype A := Fintype.ofFinite A
   let n := Fintype.card ι
   let D := Code.minDist C
   let e := Nat.floor (δ * n)
@@ -638,8 +638,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
     have hn0 : n = 0 := Nat.eq_zero_of_not_pos hn
     simp [n, hn0] at hδ_ub hδ_lb
     linarith
-  letI : Nonempty ι := Fintype.card_pos_iff.mp (by simpa [n] using hn)
-  letI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
+  let : Nonempty ι := Fintype.card_pos_iff.mp (by simpa [n] using hn)
+  let : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp (by omega)
   have heR : (e : ℝ) ≤ δ * n := by
     exact_mod_cast Nat.floor_le (mul_nonneg hδ_lb (Nat.cast_nonneg n))
   have hde : e < D := by

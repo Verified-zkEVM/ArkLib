@@ -120,7 +120,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
   apply Lambda_le_of_forall_finset_card_le
   intro u T hT
   have hkpn : k + 1 < n := by omega
-  haveI : NeZero k := ⟨_hk_pos.ne'⟩
+  have : NeZero k := ⟨_hk_pos.ne'⟩
   have hTcode : ∀ c ∈ T, c ∈ Ckp := by
     intro c hc
     exact (mem_closeCodewordsRel_iff.mp (hT c hc)).1
@@ -132,7 +132,7 @@ theorem rs_Lambda_extended_le_of_epsCa_int_radius
     intro c hc
     have hmem := ReedSolomon.toPolynomial_mem_lt_deg
       (c := (⟨c, hTcode c hc⟩ : ReedSolomon.code domain (k + 1)))
-    haveI : NeZero (k + 1) := ⟨by omega⟩
+    have : NeZero (k + 1) := ⟨by omega⟩
     have hdeg := ReedSolomon.natDegree_lt_of_mem_degreeLT hmem
     simpa [p, ReedSolomon.toPolynomial_def] using hdeg
   have hp_inj : Function.Injective p := by

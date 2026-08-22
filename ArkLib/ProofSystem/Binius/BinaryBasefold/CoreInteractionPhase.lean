@@ -332,7 +332,7 @@ def nonLastBlockOracleVerifier (bIdx : Fin (ℓ / ϑ - 1)) :=
         case e'_13 hOStmt =>
           cases hOStmt
           apply eq_of_heq
-          rw [heq_eqRec_iff_heq]
+          rw [heq_eqRec_iff]
           apply instOracleStatementBinaryBasefold_heq_of_index_eq
           apply Fin.ext
           simpa only [Fin.val_succ] using h.symm
@@ -372,20 +372,21 @@ def lastBlockOracleVerifier :=
       simp only [Fin.val_last]; dsimp [bIdx];
       rw [Nat.sub_mul, one_mul, Nat.div_mul_cancel (hdiv.out)]
       rw [Nat.sub_add_cancel (by exact Nat.le_of_dvd (h:=by exact Nat.pos_of_neZero ℓ) (hdiv.out))]
-    rw! (castMode := .all) [h] at cur
-    convert cur
-    all_goals try rfl
-    case e'_12.h a a' ha =>
-      unfold pSpecLastBlock pSpecFoldRelaySequence at *
-      cases ha
-      rfl
-    case e'_13 =>
+    have hOStmt :
+        instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := Fin.last ℓ) =
+          h ▸ instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+            (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β
+            (i := ⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx := by omega)⟩) := by
       apply eq_of_heq
-      rw [heq_eqRec_iff_heq]
-      apply instOracleStatementBinaryBasefold_heq_of_index_eq
-      simpa only [Fin.val_last] using h.symm
+      rw [heq_eqRec_iff]
+      exact instOracleStatementBinaryBasefold_heq_of_index_eq 𝔽q β h.symm
+    rw! (castMode := .all) [h] at cur
+    rw! (castMode := .all) [← hOStmt] at cur
+    exact { verify := cur.verify, outputOracle := cur.outputOracle }
   V
 
+set_option backward.isDefEq.respectTransparency false in
 @[reducible]
 def sumcheckFoldOracleVerifier :=
   let stmt : Fin (ℓ / ϑ - 1 + 1) → Type :=
@@ -527,7 +528,7 @@ def nonLastBlockOracleReduction (bIdx : Fin (ℓ / ϑ - 1)) :=
         case e'_15 hOStmt =>
           cases hOStmt
           apply eq_of_heq
-          rw [heq_eqRec_iff_heq]
+          rw [heq_eqRec_iff]
           apply instOracleStatementBinaryBasefold_heq_of_index_eq
           apply Fin.ext
           simpa only [Fin.val_succ] using h.symm
@@ -578,20 +579,24 @@ def lastBlockOracleReduction :=
         rw [Nat.sub_mul, one_mul, Nat.div_mul_cancel (hdiv.out)]
         rw [Nat.sub_add_cancel
           (by exact Nat.le_of_dvd (h:=by exact Nat.pos_of_neZero ℓ) (hdiv.out))]
-      rw! (castMode := .all) [h] at cur
-      convert cur
-      all_goals try rfl
-      case e'_14.h a a' ha =>
-        unfold pSpecLastBlock pSpecFoldRelaySequence at *
-        cases ha
-        rfl
-      case e'_15 =>
+      have hOStmt :
+          instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β (i := Fin.last ℓ) =
+            h ▸ instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β
+              (i := ⟨bIdx * ϑ + ϑ, by apply lastBlockIdx_mul_ϑ_add_x_lt_ℓ_succ (hx := by omega)⟩) := by
         apply eq_of_heq
-        rw [heq_eqRec_iff_heq]
-        apply instOracleStatementBinaryBasefold_heq_of_index_eq
-        simpa only [Fin.val_last] using h.symm
+        rw [heq_eqRec_iff]
+        exact instOracleStatementBinaryBasefold_heq_of_index_eq 𝔽q β h.symm
+      rw! (castMode := .all) [h] at cur
+      rw! (castMode := .all) [← hOStmt] at cur
+      exact {
+        prover := cur.prover
+        verifier := { verify := cur.verifier.verify, outputOracle := cur.verifier.outputOracle }
+      }
   V
 
+set_option backward.isDefEq.respectTransparency false in
 @[reducible]
 def sumcheckFoldOracleReduction :=
   let stmt : Fin (ℓ / ϑ - 1 + 1) → Type :=

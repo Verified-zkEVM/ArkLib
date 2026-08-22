@@ -113,7 +113,7 @@ private lemma aeval_substFun_mem [NeZero n] {gg : F⦃≤ 1⦄[X (Fin n)]}
     aesop
   | succ m ih =>
     intro hm β
-    haveI : NeZero (n - m) := ⟨by omega⟩
+    have : NeZero (n - m) := ⟨by omega⟩
     have hq : MvPolynomial.aeval (substFun m (fun j ↦ β ⟨j.val, by omega⟩)) gg.1 ∈
       MvPolynomial.restrictDegree (Fin (n - m)) F 1 := ih (by omega) _
     have hmem :
@@ -151,7 +151,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [inst : NeZero d]
     aesop
   | succ k ih =>
     intro hk' α
-    haveI : NeZero (d - k) := ⟨by omega⟩
+    have : NeZero (d - k) := ⟨by omega⟩
     have hprev := ih (by omega) (fun j ↦ α ⟨j.val, by omega⟩)
     have hmem := aeval_substFun_mem (gg := g)
       (domain_implies_char_ne_2 domain) k (by omega)
@@ -161,7 +161,7 @@ theorem iteratedFoldWord_eq_evalOnPoints_powAlgHom [inst : NeZero d]
         (by omega) hprev,
       aeval_substFun_comp]
     funext i
-    simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, Function.Embedding.coeFn_mk]
+    simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk]
     congr 1
     exact subdomain_comp (ω := domain) (k := k) (j := 1) (by omega) rfl
 

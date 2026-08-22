@@ -121,7 +121,7 @@ theorem subspaceDesign_lambda_le
     Lambda ((C : Set (ι → Fin s → F)))
         ((L : ℝ) / (L + 1) * (1 - s * R / (s - L + 1))) ≤ (L : ℕ∞) := by
   classical
-  letI : DecidableEq (Fin s → F) := Classical.decEq _
+  let : DecidableEq (Fin s → F) := Classical.decEq _
   apply Lambda_le_of_forall_finset_card_le
   intro y T hT
   by_contra hTL
@@ -135,7 +135,7 @@ theorem subspaceDesign_lambda_le
         (L : ℝ) / (L + 1) * (1 - s * R / ((s : ℝ) - L + 1)) := by
     intro c hc
     have hcball := (hT c (hUT hc)).2
-    simpa only [Code.relHammingBall, Set.mem_setOf_eq] using hcball
+    simpa only [Code.relHammingBall, Set.mem_ofPred_eq] using hcball
   have hupper0 := agreementWeight_lt_of_subspaceDesign_rate
     _hR _h L _hL_pos _hL_le y U hUcard hUC
   have hupper : (agreementWeight y U : ℝ) <
@@ -230,7 +230,7 @@ theorem subspaceDesign_lambda_le_of_profile_le
         closeCodewordsRel ((C : Set (ι → Fin s → F))) f (1 - t - η) = ∅ := by
       intro f
       ext c
-      simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq,
+      simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq,
         Set.mem_empty_iff_false, iff_false, not_and]
       intro _ hball
       exact absurd (hball.trans_lt hrad_neg) (not_lt.mpr (by positivity))

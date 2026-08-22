@@ -155,8 +155,8 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
     have hirr : Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly) := by
       rw [hφ, show (X + 1 : (ZMod q)[X]) = X - C (-1) by rw [C_neg, C_1, sub_neg_eq_add]]
       exact irreducible_X_sub_C (-1)
-    haveI hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
-    haveI hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
+    have hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
+    have hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
       rw [modIdeal]; exact PrincipalIdealRing.isMaximal_of_irreducible hirr
     have hisfield : IsField ((powTwoCyclotomic (R := ZMod q) 0).CyclotomicRing) :=
       (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmax
@@ -217,7 +217,7 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         Irreducible g → g = X ^ (2 ^ (α - 1)) - C s → s ^ 2 = -1 → g ∣ ct →
         (q : ℤ) ∣ (Rq.l2NormSq Φ c : ℤ) := by
       intro g s hirr hgeq hs hdvdg
-      haveI : Fact (Irreducible g) := ⟨hirr⟩
+      have : Fact (Irreducible g) := ⟨hirr⟩
       have hgmonic : g.Monic := by rw [hgeq]; exact monic_X_pow_sub_C s (by positivity)
       have hgnd : g.natDegree = 2 ^ (α - 1) := by rw [hgeq, natDegree_X_pow_sub_C]
       let F := AdjoinRoot g

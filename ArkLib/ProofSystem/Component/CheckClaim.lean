@@ -87,7 +87,7 @@ theorem reduction_completeness [Nonempty σ] [DecidableEq Statement] :
     (relIn Statement pred) (relOut Statement) := by
   simp only [Reduction.perfectCompleteness, Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro stmt () valid
-  simp only [relIn, Set.mem_setOf_eq] at valid
+  simp only [relIn, Set.mem_ofPred_eq] at valid
   -- valid : pred stmt
   -- First simplify the reduction run
   have hrun : (reduction oSpec Statement pred).run stmt () =

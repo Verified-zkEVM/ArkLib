@@ -235,7 +235,7 @@ lemma qMap_total_fiber_repr_coeff (i : Fin ℓ) (steps : ℕ) (h_i_add_steps : i
   -- have h_steps_ne_0 : steps ≠ 0 := by exact?
   by_cases h_steps_eq_0 : steps = 0
   · subst h_steps_eq_0
-    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, not_lt_zero',
+    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, _root_.not_lt_zero,
       tsub_zero, Fin.eta]
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
     Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
@@ -329,7 +329,7 @@ theorem generates_quotient_point_if_is_fiber_of_y
     (h_i_add_steps := by omega) (y := y) (k := k) (j := ⟨j + steps, by simp only; omega⟩)
   simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
-  simp only [fiber_coeff, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
+  simp only [fiber_coeff, add_lt_iff_neg_right, _root_.not_lt_zero, ↓reduceDIte, add_tsub_cancel_right,
     Fin.eta] at h_repr_x
   exact h_repr_x.symm
 
@@ -907,7 +907,7 @@ theorem fold_advances_evaluation_poly
   have h_fiber_diff : x₁.val - x₀.val = 1 := by
     simp only [Fin.isValue, x₁, x₀, fiberMap]
     rw [hx₁, hx₀]
-    simp only [Fin.isValue, AddSubmonoidClass.coe_finset_sum, SetLike.val_smul]
+    simp only [Fin.isValue, AddSubmonoidClass.coe_finsetSum, SetLike.val_smul]
     have h_index : ℓ + 𝓡 - i = (ℓ + 𝓡 - (i.val + 1)) + 1 := by omega
     rw! (castMode := .all) [h_index]
     rw [Fin.sum_univ_succ, Fin.sum_univ_succ] -- (free_term + y_repr) - (free_term + y_repr) = 1
@@ -945,7 +945,7 @@ theorem fold_advances_evaluation_poly
     congr 1
     rw [sub_eq_zero]
     apply Finset.sum_congr (h := by rfl)
-    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero, one_ne_zero, and_false,
+    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero_iff, one_ne_zero, and_false,
       ↓reduceDIte, add_tsub_cancel_right, Fin.eta, imp_self, implies_true]
   set P_i_plus_1 := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
     (i := ⟨i + 1, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) new_coeffs
@@ -1168,7 +1168,7 @@ def uniqueClosestCodeword
       -- let S_nat := (fun (g : C_i) => hammingDist f g) '' Set.univ
     have hS_nonempty : S.Nonempty := Set.image_nonempty.mpr Set.univ_nonempty
     have h_coe_sinfS_eq_sinfSENat : ↑(sInf S) = sInf SENat := by
-      rw [ENat.coe_sInf (hs := hS_nonempty)]
+      rw [ENat.natCast_sInf (hs := hS_nonempty)]
       simp only [SENat, Set.image_univ, sInf_range]
       simp only [S, Set.image_univ, iInf_range]
     rcases Nat.sInf_mem hS_nonempty with ⟨g_subtype, hg_subtype, hg_min⟩
@@ -1212,14 +1212,14 @@ def uniqueClosestCodeword
             exact h_sInf_le_dist_v.trans h_dist_v_le_d'
         rw [h_distFromCode_eq_sInf, ←h_coe_sinfS_eq_sinfSENat, ←hg_min]
       rw [h_dist_eq_hamming]
-      rw [ENat.toNat_coe]
+      rw [ENat.toNat_natCast]
     -- Get the closest polynomial
     obtain ⟨p, hp_deg_lt, hp_eval⟩ : ∃ p, p ∈ Polynomial.degreeLT L k ∧
       (fun (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)) ↦ p.eval (↑x)) = g_closest := by
       simp only [Fin.eta, BBF_Code, ReedSolomon.code, ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk,
         Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk, C_i] at hg_mem
       rcases hg_mem with ⟨p_witness, hp_prop, hp_eq⟩
-      use p_witness
+      exact ⟨p_witness, by simpa [k] using hp_prop, hp_eq⟩
     have natDeg_p_lt_k : p.natDegree < k := by
       simp only [mem_degreeLT] at hp_deg_lt
       by_cases hi : i = ℓ
@@ -1245,14 +1245,14 @@ def uniqueClosestCodeword
       · -- ⊢ `2 * e < d_i = n - k + 1`
         simp only [domain_size, k]; rw [sDomain_card 𝔽q β (h_i := by omega),]
         · -- ⊢ 2 * e < 2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1
-          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.coe_sub, cast_pow, cast_ofNat,
+          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.natCast_sub, cast_pow, cast_ofNat,
             cast_one] at h_within_radius;
           have h_lt_eq : ↑(2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)).toNat) =
   2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) := by
             simp only [cast_mul, cast_ofNat]
-            rw [ENat.coe_toNat]
+            rw [ENat.natCast_toNat]
             exact h_dist_ne_top
-          apply ENat.coe_lt_coe.mp
+          apply ENat.natCast_lt_natCast.mp
           rw [h_lt_eq, hF₂.out]
           exact h_within_radius
       · -- ⊢ `k ≤ domain_size`. This holds by the problem setup.
@@ -1347,7 +1347,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
     -- and lifts to ℕ∞. We prove the `Nat` version `hammingDist f g' ≤ ...`,
     -- which is equivalent.
     change (Δ₀(f, g') : ℕ∞) ≤ ↑d_fw * ((2 ^ steps : ℕ) : ℕ∞)
-    rw [←ENat.coe_mul, ENat.coe_le_coe, h_g'_min_card]
+    rw [←ENat.natCast_mul, ENat.natCast_le_natCast, h_g'_min_card]
     -- Let ΔH be the finset of actually bad x points where f and g' disagree.
     set ΔH := Finset.filter (fun x => f x ≠ g' x) Finset.univ
     have h_dist_eq_card : hammingDist f g' = ΔH.card := by
@@ -1379,8 +1379,9 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
       -- ⊢ y_of_x ∈ Y_bad.toFinset ∧ x ∈ qMap_total_fiber(y_of_x)
       have h_elemenet_Y_bad : y_of_x ∈ Y_bad.toFinset := by
         -- ⊢ y ∈ Y_bad.toFinset
+        rw [Set.mem_toFinset]
         simp only [fiberwiseDisagreementSet, iteratedQuotientMap, ne_eq, Subtype.exists,
-          Set.toFinset_setOf, mem_filter, mem_univ, true_and, Y_bad]
+          mem_filter, mem_univ, true_and, Y_bad]
         -- one bad fiber point of y_of_x is x itself
         let X := x.val
         have h_X_in_source : X ∈ sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) := by
@@ -1481,12 +1482,12 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
 
   -- We can now work with the `Nat` value of `d_H`.
   let d_H_nat := ENat.toNat d_H
-  have h_dH_eq : d_H = d_H_nat := (ENat.coe_toNat h_dH_ne_top).symm
+  have h_dH_eq : d_H = d_H_nat := (ENat.natCast_toNat h_dH_ne_top).symm
 
   -- The calculation is now done entirely in `Nat`.
   have h_final_inequality : 2 * d_H_nat ≤ d_i - 1 := by
     have h_bridge_nat : d_H_nat ≤ d_fw * 2 ^ steps := by
-        rw [←ENat.coe_le_coe]
+        rw [←ENat.natCast_le_natCast]
         exact le_of_eq_of_le (id (Eq.symm h_dH_eq)) h_dist_bridge
     calc 2 * d_H_nat
       _ ≤ 2 * (d_fw * 2 ^ steps) := by gcongr
@@ -1499,7 +1500,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
   rw [h_dH_eq]
   -- ⊢ 2 * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, ⋯⟩)
   change ((2 : ℕ) : ℕ∞) * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, by omega⟩)
-  rw [←ENat.coe_mul, ENat.coe_lt_coe]
+  rw [←ENat.natCast_mul, ENat.natCast_lt_natCast]
   apply Nat.lt_of_le_pred (n := 2 * Δ₀(f, C_i).toNat) (m := d_i) (h := h_d_i_gt_0)
     (h_final_inequality)
 

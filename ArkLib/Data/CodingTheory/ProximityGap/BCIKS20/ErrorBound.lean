@@ -34,6 +34,22 @@ noncomputable def errorBound (δ : ℝ≥0) (deg : ℕ) (domain : ι ↪ F) : �
   else
     0
 
+set_option backward.isDefEq.respectTransparency false in
+omit [Nonempty ι] [DecidableEq ι] [DecidableEq F] in
+/-- In the open Johnson regime, `errorBound` is its Guruswami--Sudan expression. -/
+theorem errorBound_eq_johnson {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
+    (hδ : δ ∈ Set.Ioo
+      ((1 - (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0)) / 2)
+      (1 - NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0))) :
+    errorBound δ deg domain =
+      ⟨(deg ^ 2 : ℝ≥0) /
+        ((2 * min
+          (1 - NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) - δ)
+          (NNReal.sqrt (LinearCode.rate (ReedSolomon.code domain deg) : ℝ≥0) / 20)) ^ 7 *
+          (Fintype.card F : ℝ)), by positivity⟩ := by
+  unfold errorBound
+  rw [if_neg (fun h ↦ (not_le_of_gt hδ.1) h.2), if_pos hδ]
+
 omit [DecidableEq ι] in
 theorem errorBound_eq_n_div_q_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0}
     (hδ : δ ≤ relativeUniqueDecodingRadius (ι := ι) (F := F) (C := ReedSolomon.code domain deg)) :

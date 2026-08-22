@@ -88,12 +88,12 @@ theorem X_pow_card_sub_one_sub_C_irreducible {ω : F}
   have hEnu : ¬ IsUnit ((X : F[X]) ^ (Fintype.card F - 1) - C ω) :=
     not_isUnit_of_natDegree_pos _ (by omega)
   obtain ⟨g, hg, hgd⟩ := WfDvdMonoid.exists_irreducible_factor hEnu hE0
-  haveI : Fact (Irreducible g) := ⟨hg⟩
+  have : Fact (Irreducible g) := ⟨hg⟩
   have hd0 : 0 < g.natDegree := hg.natDegree_pos
   have hdle : g.natDegree ≤ Fintype.card F - 1 := hEdeg ▸ natDegree_le_of_dvd hgd hE0
-  haveI : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
-  haveI : Finite (AdjoinRoot g) := Module.finite_of_finite F
-  haveI : Fintype (AdjoinRoot g) := Fintype.ofFinite _
+  have : Module.Finite F (AdjoinRoot g) := PowerBasis.finite (AdjoinRoot.powerBasis hg.ne_zero)
+  have : Finite (AdjoinRoot g) := Module.finite_of_finite F
+  have : Fintype (AdjoinRoot g) := Fintype.ofFinite _
   have hcardK : Fintype.card (AdjoinRoot g) = Fintype.card F ^ g.natDegree := by
     rw [Module.card_eq_pow_finrank (K := F)]
     congr 1

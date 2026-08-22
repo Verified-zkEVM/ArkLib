@@ -108,13 +108,13 @@ private theorem affine_bad_witness_exists_collision_mismatch
       rw [LinearCode.mem_projectedCodeSubmod_iff]
       refine ⟨c₀.1, c₀.2, ?_⟩
       funext i
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       exact (hall i i.property).1
     · apply hj
       rw [LinearCode.mem_projectedCodeSubmod_iff]
       refine ⟨c₁.1, c₁.2, ?_⟩
       funext i
-      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      simp only [LinearCode.projectedWord, Set.domRestrict_apply]
       exact (hall i i.property).2
   obtain ⟨i, hi, hm⟩ := hmismatch
   refine ⟨i, hi, ?_, hm⟩
@@ -264,7 +264,7 @@ private theorem exists_outside_finite_union_submodules
     (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
     ∃ x : M, ∀ i ∈ s, x ∉ p i := by
   classical
-  letI := Fintype.ofFinite M
+  let := Fintype.ofFinite M
   let q := Fintype.card K
   let d := Module.finrank K M
   let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
@@ -332,11 +332,11 @@ private theorem exists_codeword_nonzero_on_active
       zero_mem' := by simp
       add_mem' := by
         intro x y hx hy
-        simp only [Set.mem_setOf_eq] at hx hy ⊢
+        simp only [Set.mem_ofPred_eq] at hx hy ⊢
         simp [hx, hy]
       smul_mem' := by
         intro a x hx
-        simp only [Set.mem_setOf_eq] at hx ⊢
+        simp only [Set.mem_ofPred_eq] at hx ⊢
         simp [hx] }
   have hp (j : {i : ι // i ∈ J}) (hj : j ∈ (Finset.univ : Finset {i : ι // i ∈ J})) :
       p j ≠ ⊤ := by
@@ -1069,10 +1069,10 @@ private theorem fixed_stack_bad_set_card_le_a
   change B.card ≤ a
   cases subsingleton_or_nontrivial C with
   | inl hsub =>
-      letI : Subsingleton C := hsub
+      let : Subsingleton C := hsub
       exact subsingleton_bad_set_card_le_a C δ hδlt a hld u B hBmem w
   | inr hnon =>
-      letI : Nontrivial C := hnon
+      let : Nontrivial C := hnon
       exact nontrivial_bad_set_card_le_a C δ hδlt a hld u B w
 
 open scoped NNReal ProbabilityTheory in
@@ -1127,7 +1127,7 @@ theorem IsLineDecodable.mcaError_le_of_budget
     (hbudget : (a : ENNReal) / (Fintype.card F : ENNReal) ≤ (ε_star : ENNReal)) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤ (ε_star : ENNReal) := by
   classical
-  letI : Fintype A := Fintype.ofFinite A
+  let : Fintype A := Fintype.ofFinite A
   exact le_trans (IsLineDecodable.mcaError_le C δ a hδ_pos hδ_lt h) hbudget
 
 end

@@ -1042,7 +1042,7 @@ theorem dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : code
               convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
               cases h' : rootMultiplicity Q (ωs i) (f i)
               · aesop
-              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
+              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_natCast, false_iff]
                 exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
           have := hQ_mult i;
           have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;
@@ -1164,7 +1164,7 @@ theorem gs_dvd_property [DecidableEq F] (hk : k + 1 ≤ n) (hm : 1 ≤ m) (p : c
               convert rootMultiplicity_le_of_coeff_ne_zero hQ_mult using 1
               cases h' : rootMultiplicity Q (ωs i) (f i)
               · aesop
-              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_coe, false_iff]
+              · simp_all only [ne_eq, WithTop.some_eq_coe, ENat.some_eq_natCast, false_iff]
                 exact_mod_cast not_le_of_gt (lt_of_lt_of_le h_lt (mod_cast h)))
           have := hQ_mult i;
           have := orderAt_eval_ge Q (toPolynomial p) (ωs i) m (by aesop); aesop;

@@ -166,7 +166,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
           exact absurd hij (not_lt_of_ge (Fin.lt_def.2 (by simp; omega) |>.le))
         | right im_ =>
           simp [U, (show im_ ≠ jm from fun hEq ↦ ne_of_gt hij (by simp [hEq]))]
-    rw [det_of_upperTriangular h_u_tri]; simp [Fin.prod_univ_add, U]
+    rw [det_of_isUpperTriangular h_u_tri]; simp [Fin.prod_univ_add, U]
   have hdet1 : M1.det = M0.det := by simp [M1, det_mul, h_u_det, M0]
   let ev : F[X] →+* F := evalRingHom x
   have hdiv_entry (i : Fin (n + m)) (j' : Fin m) : p ∣ M1 i (.natAdd n j') := by

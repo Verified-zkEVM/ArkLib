@@ -377,7 +377,7 @@ private lemma johnson_lambda_le_ell_of_radicand
   have hmem : ∀ x ∈ B0, x ∈ C ∧ ((hammingDist f x : ℝ) / n ≤ radius) := by
     intro x hx
     rw [hB0, Set.Finite.mem_toFinset, hS] at hx
-    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_setOf_eq] at hx
+    simp only [closeCodewordsRel, Code.relHammingBall, Set.mem_ofPred_eq] at hx
     refine ⟨hx.1, ?_⟩
     have h2 := hx.2
     unfold Code.relHammingDist at h2
@@ -513,7 +513,7 @@ theorem johnson_bound_lambda_le_ell
     have hsub : closeCodewordsRel C f (Jqℓ q ((1 : ℕ) : ℚ) δ_min) ⊆ {f} := by
       intro c hc
       have h2 := hc.2
-      simp only [Code.relHammingBall, Set.mem_setOf_eq] at h2
+      simp only [Code.relHammingBall, Set.mem_ofPred_eq] at h2
       rw [show Jqℓ q ((1 : ℕ) : ℚ) δ_min = 0 by exact_mod_cast h0] at h2
       -- `closeCodewordsRel` bakes in a classical `DecidableEq α`, distinct from the section
       -- instance; every step below is instance-agnostic (the instance flows out of `h2`).
@@ -636,14 +636,14 @@ theorem mds_johnson_lambda_le_of_rate_distance
       1 - ρ + 1 / Fintype.card ι) :
     (Lambda C (1 - Real.sqrt ρ - η) : ENNReal) ≤
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
-  letI : Fintype α := Fintype.ofFinite α
+  let : Fintype α := Fintype.ofFinite α
   set n : ℕ := Fintype.card ι with hn_def
   have hn_pos : 0 < n := Fintype.card_pos
   have hn_posR : (0 : ℝ) < n := by exact_mod_cast hn_pos
   have hC_nontrivial : C.Nontrivial := by
     by_contra hnot
     have hsub : C.Subsingleton := Set.not_nontrivial_iff.mp hnot
-    letI : Subsingleton C :=
+    let : Subsingleton C :=
       ⟨fun x y => Subtype.ext (hsub x.property y.property)⟩
     have hmin0 : Code.minDist C = 0 := by
       rw [← Code.dist_eq_minDist]
@@ -697,7 +697,7 @@ theorem mds_johnson_lambda_le_of_rate_distance
           rw [Set.eq_empty_iff_forall_notMem]
           intro c hc
           have hmem := hc.2
-          simp only [Code.relHammingBall, Set.mem_setOf_eq] at hmem
+          simp only [Code.relHammingBall, Set.mem_ofPred_eq] at hmem
           -- hmem : ↑(relHammingDist f c) ≤ 1 - s - η, LHS is a coerced ℚ≥0 (≥ 0)
           have hcombine : (0:ℝ) ≤ 1 - s - η := le_trans (by positivity) hmem
           linarith [hcombine, hradius_neg]
@@ -872,7 +872,7 @@ theorem mds_johnson_lambda_le
     (Lambda ((C : Set (ι → F))) (1 - Real.sqrt ρ - η) : ENNReal) ≤
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
   intro ρ
-  letI : Fintype F := Fintype.ofFinite F
+  let : Fintype F := Fintype.ofFinite F
   set n : ℕ := Fintype.card ι with hn_def
   set k : ℕ := Module.finrank F C with hk_def
   have hn_pos : 0 < n := Fintype.card_pos
@@ -930,7 +930,7 @@ theorem rs_lambda_le_johnson_mds
       ENNReal.ofReal (1 / (2 * η * ρ)) := by
   -- `DecidableEq F` is needed only to *state* `IsMDS` inside the proof, not in the conclusion.
   classical
-  letI : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
+  let : Inhabited ι := Classical.inhabited_of_nonempty ‹Nonempty ι›
   exact mds_johnson_lambda_le (ReedSolomon.code dom n) η hη_pos ReedSolomon.isMDS_code
 
 /-- The Johnson bound in `IsListDecodable` form: a code is `(δ, ℓ)`-list-decodable at every

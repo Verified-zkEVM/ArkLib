@@ -532,7 +532,7 @@ theorem rs_codimension_one_list_size
         (1 / (j + 1 : ℝ)) := by
     intro a
     rw [CodingTheory.closeCodewordsRel_eq_setOf C _ (by positivity) w]
-    simp only [Set.mem_setOf_eq]
+    simp only [Set.mem_ofPred_eq]
     refine ⟨hc a, ?_⟩
     rw [hfloor]
     unfold hammingDist
