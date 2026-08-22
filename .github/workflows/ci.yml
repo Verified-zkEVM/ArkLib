@@ -113,6 +113,17 @@ jobs:
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
+      # VCVio's FFI C sources live in git submodules that Lake does not fetch, and every
+      # root-package executable links them. Without them VCVio falls back to empty stub archives,
+      # so this has to run before anything native is built or timed: otherwise the native build
+      # links stubs, the later steps relink against the real backends, and the two measure
+      # different things.
+      - name: Fetch VCVio FFI submodules
+        run: |
+          if [ -e .lake/packages/VCVio/.git ]; then
+            git -C .lake/packages/VCVio submodule update --init --recursive
+          fi
+
       # `validate.sh` runs `lake exe toyproblem-runtime`, which links the native `.c.o` chain for
       # the whole dependency graph. That work is billed here rather than to the validation wrapper:
       # the `.lake` cache key is `hashFiles('lake-manifest.json')`, so a dependency bump misses the
@@ -133,11 +144,6 @@ jobs:
       # tool build breakage) always fail so the soak cannot silently rot.
       - name: Axiom sweep (report-only)
         run: |
-          # VCVio's FFI C sources live in git submodules that Lake does not
-          # fetch, and every root-package executable links them.
-          if [ -e .lake/packages/VCVio/.git ]; then
-            git -C .lake/packages/VCVio submodule update --init --recursive
-          fi
           status=0
           lake exe axiomsweep --check || status=$?
           if [ "$status" -eq 1 ]; then
