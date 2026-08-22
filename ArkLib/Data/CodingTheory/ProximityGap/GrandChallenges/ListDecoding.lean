@@ -5,42 +5,54 @@ Authors: AryaETHn
 -/
 
 import ArkLib.Data.CodingTheory.InterleavedCode
+import ArkLib.Data.CodingTheory.JohnsonBound.Family
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges
 
 /-!
-# Unique-decoding witnesses for the Grand List-Decoding Challenge
+# List-decoding witnesses for the Grand List-Decoding Challenge
 
 `GrandChallenges.lean` states the Grand List-Decoding Challenge on the interleaved list size
 `Λ(C^⋈m, δ)` and carries the one-sided witness types `ListLowerWitness` / `ListUpperWitness`,
-but ships no constructor for either. This module supplies the first `ListLowerWitness`
-constructor, in the unique-decoding regime.
+but ships no constructor for either. This module supplies the first two `ListLowerWitness`
+constructors, one in the unique-decoding regime and one at the Johnson radius.
 
 ## Main definitions
 
-- `ListLowerWitness.ofUniqueDecodingRange` — a one-sided Grand List-Decoding Challenge witness
-  for any code at any radius up to its relative unique-decoding radius, valid whenever the
-  threshold clears a single codeword.
+- `ListLowerWitness.ofUniqueDecodingRange` — a witness for any code at any radius up to its
+  relative unique-decoding radius, valid whenever the threshold clears a single codeword.
+- `ListLowerWitness.ofJohnsonBound` — a witness at the Johnson radius of the *interleaved*
+  code, valid whenever the threshold clears `ℓ` codewords.
 
 ## Main statements
 
 - `relUDR_interleavedCode_eq` — interleaving preserves the relative unique-decoding radius.
 - `lambda_interleavedCode_le_one_of_le_relUDR` — inside that radius the interleaved point lists
   are subsingletons, so `Λ ≤ 1`.
+- `lambda_interleavedCode_le_of_le_johnson` — at the Johnson radius, `Λ ≤ ℓ`.
 
-## Why the unique-decoding regime
+## The two regimes
 
-This mirrors `McaLowerWitness.ofUniqueDecodingRange` on the MCA side, and for the same reason:
-it is the honest floor. Nothing beneath it is admitted. Interleaving preserves minimum distance
+The unique-decoding constructor mirrors `McaLowerWitness.ofUniqueDecodingRange` on the MCA side,
+and is the honest floor: interleaving preserves minimum distance
 (`Code.minDist_interleavedCodeSet`), hence the unique-decoding radius, and inside that radius
-every point list is a subsingleton
-(`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`) — both proved in-tree.
+every point list is a subsingleton (`Code.isUniquelyDecodable_relativeUniqueDecodingRadius`).
+Both are proved in-tree, so nothing beneath it is admitted. But the radius is only half the
+minimum distance, far short of what the challenge cares about.
 
-The trade is radius for provenance, as it is there. The unique-decoding radius is half the
-minimum distance, well short of the Johnson and capacity radii the challenge cares about, so
-this is not a route to the prize thresholds. What it buys is a `Λ ≤ 1` certificate holding for
-*every* code and every interleaving width with no external admit anywhere beneath it, and the
-demand it puts on the threshold — that `ε* · |F|` clear a single codeword — is the weakest any
-nonvacuous list bound could make.
+The Johnson constructor reaches much further, and — unlike its MCA counterpart
+`McaLowerWitness.ofJohnsonRangeBound`, which rests on the external `[BCHKS25]` admit
+`rs_mcaError_le_in_johnson_range` — it is *also* admit-free:
+`CodingTheory.johnson_bound_lambda_le_ell` is stated over an arbitrary finite alphabet and is
+itself axiom-clean, so it applies to the interleaved code at alphabet `Fin m → F` directly.
+
+Note the alphabet the Johnson radius is computed at. For the interleaved code that is
+`q = |F|^m`, not `|F|`; since `q/(q-1)` decreases in `q`, interleaving widens rather than
+narrows the usable radius. The relative minimum distance is unchanged, so the whole effect of
+`m` on the bound enters through `q`.
+
+Neither constructor approaches the prize thresholds — both bound `Λ` by a constant, whereas
+`ε* = 2⁻¹²⁸` demands `ℓ ≤ ε* · |F|` — but they are the two admit-free footholds the challenge
+API previously lacked entirely.
 
 ## Implementation note
 
@@ -120,5 +132,50 @@ noncomputable def ListLowerWitness.ofUniqueDecodingRange
   ListLowerWitness.ofLe hδ_le_one
     (le_trans
       (by exact_mod_cast lambda_interleavedCode_le_one_of_le_relUDR C hm hδ) hle)
+
+/-! ## The Johnson regime -/
+
+omit [Field F] in
+/-- **The interleaved list size at the Johnson radius.** `CodingTheory.johnson_bound_lambda_le_ell`
+applied to `C^⋈(Fin m)`, with its two code-dependent inputs re-expressed on the base code: the
+alphabet size becomes `|F|^m`, and the minimum distance is unchanged
+(`Code.minDist_interleavedCodeSet`).
+
+Stating the radius on the base code is what makes this usable — a caller has `C`, not
+`C^⋈(Fin m)`, in hand. -/
+theorem lambda_interleavedCode_le_of_le_johnson (C : Set (ι → F)) {m ℓ : ℕ}
+    (hm : 0 < m) (hℓ : 1 ≤ ℓ) {δ : ℝ≥0}
+    (hδ : (δ : ℝ) ≤ JohnsonBound.Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
+            ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ))) :
+    Lambda (C^⋈(Fin m)) (δ : ℝ) ≤ (ℓ : ℕ∞) := by
+  haveI : Nonempty (Fin m) := Fin.pos_iff_nonempty.mp hm
+  have hcard : (Fintype.card (Fin m → F) : ℚ) = (Fintype.card F : ℚ) ^ m := by
+    simp
+  have hmd : (Code.minDist (C^⋈(Fin m)) : ℚ) = (Code.minDist C : ℚ) := by
+    exact_mod_cast minDist_interleavedCodeSet (κ := Fin m) C
+  refine le_trans (Lambda_mono ?_)
+    (CodingTheory.johnson_bound_lambda_le_ell (C^⋈(Fin m)) ℓ hℓ)
+  rw [hcard, hmd]
+  exact hδ
+
+/-- Builds a one-sided list-decoding witness from the Johnson bound for the interleaved code: at
+any radius up to `J_{q,ℓ}` computed at `q = |F|^m` and the base code's relative minimum distance,
+the interleaved list size is at most `ℓ`, so any threshold whose `ε_star · |F|` clears `ℓ`
+codewords is witnessed.
+
+Unlike `McaLowerWitness.ofJohnsonRangeBound` on the MCA side, nothing below this constructor is
+admitted. -/
+noncomputable def ListLowerWitness.ofJohnsonBound
+    (C : Set (ι → F)) (m ℓ : ℕ) (δ ε_star : ℝ≥0)
+    (hm : 0 < m)
+    (hℓ : 1 ≤ ℓ)
+    (hδ_le_one : δ ≤ 1)
+    (hδ : (δ : ℝ) ≤ JohnsonBound.Jqℓ ((Fintype.card F : ℚ) ^ m) (ℓ : ℚ)
+            ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ)))
+    (hle : (ℓ : ENNReal) ≤ (ε_star : ENNReal) * (Fintype.card F : ENNReal)) :
+    ListLowerWitness C m ε_star :=
+  ListLowerWitness.ofLe hδ_le_one
+    (le_trans
+      (by exact_mod_cast lambda_interleavedCode_le_of_le_johnson C hm hℓ hδ) hle)
 
 end ProximityGap.GrandChallenges

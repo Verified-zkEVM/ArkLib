@@ -91,16 +91,21 @@ manuscript, not to the original sources it cites — those get their own keys (`
   adjacent-grid and radius-one endpoint answers. `ProximityGap/Errors.lean` contains `epsPg`,
   `epsCa`, and their comparisons with affine-line `mcaError`. The information-set lower bound is
   in `InformationSetLowerBound.lean`.
-- **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds
-  `ListLowerWitness.ofUniqueDecodingRange`, the first constructor for either list witness type:
-  interleaving preserves minimum distance, hence the unique-decoding radius
-  (`relUDR_interleavedCode_eq`), and inside that radius the interleaved point lists are
-  subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. It is axiom-clean, and so is the whole of
-  `GrandChallenges.lean`. The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`,
-  and `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with
-  an oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. As on the MCA
-  side, the unique-decoding radius is far short of the Johnson and capacity radii, so none of
-  this approaches the prize thresholds; see the gap note below.
+- **§1 one-sided list witnesses.** `GrandChallenges/ListDecoding.lean` holds the two
+  `ListLowerWitness` constructors, both axiom-clean, as is the whole of `GrandChallenges.lean`.
+  `ofUniqueDecodingRange` is the floor: interleaving preserves minimum distance, hence the
+  unique-decoding radius (`relUDR_interleavedCode_eq`), and inside that radius the interleaved
+  point lists are subsingletons, so `Λ(C^⋈m, δ) ≤ 1`. `ofJohnsonBound` reaches the Johnson
+  radius, via `CodingTheory.johnson_bound_lambda_le_ell` applied to the interleaved code at
+  alphabet `Fin m → F`; the radius is computed at `q = |F|^m` rather than `|F|`, which widens
+  it, since `q/(q-1)` decreases in `q`, while the relative minimum distance is unchanged.
+  Note the asymmetry with the MCA side: `McaLowerWitness.ofJohnsonRangeBound` is sorry-tainted
+  through the external [BCHKS25] admit `rs_mcaError_le_in_johnson_range`, whereas the list-side
+  Johnson witness rests on an in-tree axiom-clean bound and needs no admit.
+  The generic shapes — `ListLowerWitness.ofLe`, `ListUpperWitness.ofGt`, and
+  `ListUpperWitness.ofEncardGt`, the last reducing an unsafe witness to a single word with an
+  oversized point list — sit alongside the MCA ones in `GrandChallenges.lean`. Both constructors
+  bound `Λ` by a constant, so neither approaches the prize thresholds; see the gap note below.
 - **§4–§5 bound catalogue.** `ProximityGap/CapacityBounds.lean` and
   `Connections/ListDecodingAndCA.lean` state the externally sourced upper/lower bounds and
   connections on the canonical error and list-size carriers. `LineDecoding.lean` uses the
@@ -284,13 +289,12 @@ guard `k ≤ ringChar F` for degree-`< k` messages.
   ever constructed, because each demands a full `GrandMcaResolution` / `GrandListResolution` —
   an exact adjacent-grid crossing, or safety at every grid point. Nothing outside
   `GrandChallenges.lean` instantiates `prizeDimension` / `prizeRate` at any `j : Fin 4`, so the
-  rates `1/4`, `1/8`, `1/16` are untouched. Two nearer gaps are ordinary formalization work: no
+  rates `1/4`, `1/8`, `1/16` are untouched. The nearer gap is ordinary formalization work: no
   `McaUpperWitness` or `ListUpperWitness` is built for a concrete code (`McaUpperWitness.ofGt`,
   `.ofEpsCaGt`, and `ListUpperWitness.ofGt`, `.ofEncardGt` are generic shapes awaiting a real
-  large-list or CA-failure construction); and no list witness yet reaches past the
-  unique-decoding radius, though `CodingTheory.johnson_bound_lambda_le_ell` is stated over an
-  arbitrary finite alphabet and is axiom-clean, so a Johnson-radius `ListLowerWitness` is
-  reachable without new admits.
+  large-list or CA-failure construction). On the safe side both list constructors now exist, at
+  the unique-decoding and Johnson radii; what neither reaches, and what a prize resolution would
+  need, is a bound of the shape `Λ ≤ ε* · |F|` rather than `Λ ≤ ℓ` for a fixed `ℓ`.
 - **L2.10.** The interleaved-code list-size comparison is present as an external `[GGR11]` leaf;
   proving it in-tree remains open.
 - **§6.** A cost model for erasure correction, without which D6.4/L6.5 carry no content; and
