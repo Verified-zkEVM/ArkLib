@@ -57,4 +57,5 @@ root = "ToyProblemRuntime"
 [[lean_lib]]
 name = "AxiomSweepTestFixtures"
 srcDir = "scripts"
+roots = []
 globs = ["AxiomSweepTestFixtures.+"]
