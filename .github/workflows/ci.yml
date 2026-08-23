@@ -17,10 +17,23 @@ jobs:
     permissions:
       actions: read
       contents: read
+      id-token: write
       issues: write
+      pages: write
       pull-requests: write
 
     steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -148,6 +161,19 @@ jobs:
         with:
           path: ./.lake
           key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+
+      # Reuse the project build above for blueprint/checkdecls validation on PRs.
+      # On pushes, the action additionally builds API docs and deploys Pages.
+      - name: Build blueprint and documentation
+        uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
+        env:
+          DISABLE_EQUATIONS: 1
+        with:
+          blueprint: true
+          homepage: home_page
+          build-page: false
+          deploy: ${{ github.event_name == 'push' }}
+          references: blueprint/src/references.bib
 
       - name: Prepare timing artifact
         if: always()

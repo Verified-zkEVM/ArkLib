@@ -166,8 +166,10 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom-sweep fixture matrix (enforcing) and the library sweep report-only, then
-  uploads timing artifacts and posts a comparison report on same-repo PRs.
+  axiom-sweep fixture matrix (enforcing) and the library sweep report-only,
+  reuses that build for blueprint and declaration validation, and builds and
+  deploys API documentation on pushes to `main`. It then uploads timing artifacts
+  and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
