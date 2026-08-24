@@ -79,12 +79,49 @@ structure BacktrackSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtI
   capacitySegment_output_eq_input : ∀ i : Fin outputState.length,
     outputState[i].capacitySegment = inputState[i.val + 1].capacitySegment
 
-  /-- **no “loops” across query and answer capacity segments**: `s_{C,in,ι} ≠ s_{C,out,ι}`
-    for all `ι < m_k`. CO25 Def 5.3 condition (e). -/
-  capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
-    inputState[i].capacitySegment ≠ outputState[i].capacitySegment
+  /-- **input capacities form a simple path**: no capacity segment occurs twice among
+    `s_{in,0}, …, s_{in,m_k}`. This strengthens CO25 Def 5.3 condition (e), which only
+    excludes adjacent self-loops, and supplies the pairwise-distinctness assumed by the
+    `BackTrack` runtime argument. Together with `capacitySegment_output_eq_input`, it implies
+    `s_{C,in,ι} ≠ s_{C,out,ι}` for every `ι < m_k`. -/
+  inputCapacities_nodup :
+    (inputState.map CanonicalSpongeState.capacitySegment).Nodup
 
 noncomputable section
+
+/-- Capacity segments visited by the input-state path of a backtrack sequence. -/
+def BacktrackSequence.inputCapacities
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {state : CanonicalSpongeState U}
+    (seq : BacktrackSequence trace state) : List (Vector U SpongeSize.C) :=
+  seq.inputState.map CanonicalSpongeState.capacitySegment
+
+/-- The original local no-self-loop condition of CO25 Def 5.3 follows from the strengthened
+simple-path condition: the output capacity at step `i` is the next input capacity. -/
+lemma BacktrackSequence.capacitySegment_input_ne_output
+    {trace : QueryLog (duplexSpongeChallengeOracle StmtIn U)}
+    {state : CanonicalSpongeState U}
+    (seq : BacktrackSequence trace state) (i : Fin seq.outputState.length) :
+    (seq.inputState[i.val]'(by
+      rw [seq.inputState_length_eq_outputState_length_succ]
+      omega)).capacitySegment ≠ seq.outputState[i].capacitySegment := by
+  have hi : i.val < seq.inputState.length := by
+    rw [seq.inputState_length_eq_outputState_length_succ]
+    omega
+  have hiSucc : i.val + 1 < seq.inputState.length := by
+    rw [seq.inputState_length_eq_outputState_length_succ]
+    omega
+  intro hLoop
+  have hAdjacent :
+      (seq.inputState.map CanonicalSpongeState.capacitySegment)[i.val]'(by simpa using hi) =
+      (seq.inputState.map CanonicalSpongeState.capacitySegment)[i.val + 1]'(by
+        simpa using hiSucc) := by
+    simpa using
+      hLoop.trans (seq.capacitySegment_output_eq_input i)
+  have hIndex : i.val = i.val + 1 :=
+    (seq.inputCapacities_nodup.getElem_inj_iff (i := i.val) (hi := by simpa using hi)
+      (j := i.val + 1) (hj := by simpa using hiSucc)).mp hAdjacent
+  omega
 
 /-- The flattened sequence of states: `[s_{in,0}, s_{out,0}, s_{in,1}, s_{out,1}, ..., s]`. -/
 def BacktrackSequence.flattenStateSequence
@@ -369,8 +406,8 @@ Downstream proofs (`BadEvents`, `AbortAnalysis`) quantify over `S_BT` as an expl
 hypothesis and never need to compute the family. -/
 
 /-- Paper §5.2 partial-cap-segment matching for `BackTrack`: enumerate all `(stateIn, stateOut)`
-pairs in `tr_∇.p` whose `stateOut.capacitySegment` equals `nextInput.capacitySegment`, with the
-no-loop guard `stateIn.cap ≠ stateOut.cap`.
+pairs in `tr_∇.p` whose `stateOut.capacitySegment` equals `nextInput.capacitySegment`.
+The linear scan separately rejects self-loops and repeated input capacities as invalid candidates.
 
 Black-box over `[LawfulTraceTable T_P ...]` via `TraceTableOps.entries`; both forward and inverse
 permutation directions already collapse into the same bidirectional `tr_∇.p`
@@ -390,9 +427,8 @@ private def predecessorCandidates
 
 The paper's Algorithm 1 enumerates all maximal sequences then post-filters. CO25 line 1056 notes
 the procedure can equivalently `look for at most one element` — i.e. abort on scan-time forks.
-A scan-time fork strictly implies an `E_fork,p`/`E_fork,h,p`/`E_fork` event, so returning `err`
-on a fork is a strict over-approximation of the paper's post-filter `err` condition and the
-soundness bound of CO25 Theorem 5.19 is preserved. -/
+The refinement proof must connect a lookup conflict to the canonical complete `S_BT` family and
+therefore to `E_fork,p`/`E_fork,h,p`; this remains an explicit obligation of Claim 5.19. -/
 
 /-- Three-way classification of lookup results, used to detect scan-time forks. -/
 private inductive LookupResult (α : Type _) where
@@ -443,8 +479,8 @@ private structure PartialBacktrackSequence (trace : QueryLog (duplexSpongeChalle
   capacitySegment_output_eq_input : ∀ i : Fin outputState.length,
     outputState[i].capacitySegment = inputState[i.val + 1].capacitySegment
 
-  capacitySegment_input_ne_output : ∀ i : Fin outputState.length,
-    inputState[i].capacitySegment ≠ outputState[i].capacitySegment
+  inputCapacities_nodup :
+    (inputState.map CanonicalSpongeState.capacitySegment).Nodup
 
 private def emptyPartialSequence (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (targetState : CanonicalSpongeState U) :
@@ -456,7 +492,7 @@ private def emptyPartialSequence (trace : QueryLog (duplexSpongeChallengeOracle 
     last_inputState_eq_state := rfl
     permute_or_inv_in_trace := by intro i; exact i.elim0
     capacitySegment_output_eq_input := by intro i; exact i.elim0
-    capacitySegment_input_ne_output := by intro i; exact i.elim0 }
+    inputCapacities_nodup := by simp }
 
 private def prependPartialSequence
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
@@ -465,7 +501,8 @@ private def prependPartialSequence
     (seq : PartialBacktrackSequence trace seq_head targetState)
     (hMatch : s_out.capacitySegment = seq_head.capacitySegment)
     (hEntry : ⟨.inr (.inl s_in), s_out⟩ ∈ trace ∨ ⟨.inr (.inr s_out), s_in⟩ ∈ trace)
-    (hNoLoop : s_in.capacitySegment ≠ s_out.capacitySegment) :
+    (hFresh : s_in.capacitySegment ∉
+      seq.inputState.map CanonicalSpongeState.capacitySegment) :
     PartialBacktrackSequence trace s_in targetState :=
   { inputState := s_in :: seq.inputState
     outputState := s_out :: seq.outputState
@@ -509,15 +546,8 @@ private def prependPartialSequence
             have hl : (s_out :: seq.outputState).length = seq.outputState.length + 1 := rfl
             omega
           exact seq.capacitySegment_output_eq_input ⟨i', hi'⟩
-    capacitySegment_input_ne_output := by
-      intro i
-      match i with
-      | ⟨0, h⟩ => exact hNoLoop
-      | ⟨i' + 1, h⟩ =>
-          have hi' : i' < seq.outputState.length := by
-            have hl : (s_out :: seq.outputState).length = seq.outputState.length + 1 := rfl
-            omega
-          exact seq.capacitySegment_input_ne_output ⟨i', hi'⟩ }
+    inputCapacities_nodup := by
+      simpa using List.nodup_cons.mpr ⟨hFresh, seq.inputCapacities_nodup⟩ }
 
 private def completeBacktrackSequence
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
@@ -547,7 +577,7 @@ private def completeBacktrackSequence
               exact hHash
     permute_or_inv_in_trace := seq.permute_or_inv_in_trace
     capacitySegment_output_eq_input := seq.capacitySegment_output_eq_input
-    capacitySegment_input_ne_output := seq.capacitySegment_input_ne_output }
+    inputCapacities_nodup := seq.inputCapacities_nodup }
 
 /-! ### Bridge lemmas: `classifyLookup` + `filterMap` → entry membership -/
 
@@ -614,8 +644,10 @@ private inductive LinearScanResult (trace : QueryLog (duplexSpongeChallengeOracl
   | done (seq : BacktrackSequence trace targetState)
 
 /-- CO25 §5.2 BackTrack linear backwards scan: from `currentState`, classify the predecessor
-candidates in `tr_∇.p`. `[]` ends the scan; `[pred]` continues; `_::_::_` is a fork → `.forkErr`.
-Loops in capacity segment are detected using `vCap` and result in `.forkErr`.
+candidates in `tr_∇.p`. `[]` ends the scan; `[pred]` continues; `_::_::_` is a fork and produces
+`.forkErr`.
+Self-loops and revisits of an input capacity violate the simple-path condition of Definition 5.3,
+so they invalidate only the current candidate and result in `.noResult`.
 Structurally recursive on `fuel`; the caller supplies `fuel = depthBound`.
 Uses a tail-recursive accumulator `acc` to build the sequence by prepending. -/
 private def linearScanBackwards
@@ -623,7 +655,6 @@ private def linearScanBackwards
     (trΔ : TraceNabla T_H T_P StmtIn U)
     (h_trΔ : trΔ.IsSubsetOfQueryLog trace)
     (fuel : Nat) (currentState targetState : CanonicalSpongeState U)
-    (vCap : List (Vector U SpongeSize.C))
     (acc : PartialBacktrackSequence trace currentState targetState) :
     LinearScanResult trace targetState :=
   match fuel with
@@ -651,11 +682,11 @@ private def linearScanBackwards
         let s_in := pred.1
         let s_out := pred.2
         if hNoLoop : s_in.capacitySegment = s_out.capacitySegment then
-          .forkErr -- Self-loop → `E_inv`
+          .noResult -- Invalid candidate: adjacent capacities must be distinct
         else
-          have hNoLoop' : s_in.capacitySegment ≠ s_out.capacitySegment := hNoLoop
-          if s_in.capacitySegment ∈ vCap then
-            .forkErr -- Cycle detected
+          if hVisited : s_in.capacitySegment ∈
+              acc.inputState.map CanonicalSpongeState.capacitySegment then
+            .noResult -- Invalid candidate: input capacities must form a simple path
           else
             have hMatch : s_out.capacitySegment = currentState.capacitySegment :=
               (pred_unique_mem_and_cap trΔ currentState.capacitySegment s_in s_out hClsPred).2
@@ -667,9 +698,8 @@ private def linearScanBackwards
               exact h_trΔ.2 _ _ hMem
             -- Prepend to sequence and continue scanning (CO25 §5.2 Step 2.b)
             let acc' := prependPartialSequence trace targetState currentState
-              s_in s_out acc hMatch hEntry hNoLoop'
-            linearScanBackwards trace trΔ h_trΔ fuel' s_in targetState
-              (s_in.capacitySegment :: vCap) acc'
+              s_in s_out acc hMatch hEntry hVisited
+            linearScanBackwards trace trΔ h_trΔ fuel' s_in targetState acc'
     | .conflict => .forkErr -- `L_p` collision → `E_fork`
 
 end S_BT_BacktrackComputation
@@ -996,11 +1026,12 @@ Performs a single backwards linear scan from `state` along `tr_∇.p`:
 - `predecessorCandidates` empty → terminate scan at the current state (chain start).
 - `predecessorCandidates` singleton → continue.
 - `predecessorCandidates` two or more → scan-time fork → return `err`.
+- A singleton that repeats an input capacity → invalid candidate → return `noResult`.
 
 After the scan, `hashAnchorCandidates` is classified the same way over `tr_∇.h`. Finally the
 existing `constructCandidateSalt` + `extractCandidate` extractors are run; their `none` becomes
-`noResult`. Scan-time forks are a strict over-approximation of CO25 `E_fork,p ∪ E_fork,h,p ⊆
-E_fork`, so the soundness bound of Theorem 5.19 is preserved. -/
+`noResult`. Proving that the remaining scan-time conflict errors imply the corresponding paper
+fork events requires the canonical-completeness/refinement argument stated in Claim 5.19. -/
 private def linearBackTrack
     (trace : QueryLog (duplexSpongeChallengeOracle StmtIn U))
     (trΔ : TraceNabla T_H T_P StmtIn U)
@@ -1010,7 +1041,7 @@ private def linearBackTrack
     ExperimentOutput (BacktrackOutput (δ := δ) (StmtIn := StmtIn) (pSpec := pSpec) (U := U)) := by
   exact
     match linearScanBackwards trace trΔ h_trΔ depthBound state state
-      [state.capacitySegment] (emptyPartialSequence trace state) with
+      (emptyPartialSequence trace state) with
     | .forkErr => ExperimentOutput.err
     | .noResult => ExperimentOutput.noResult
     | .done seq =>

@@ -139,8 +139,10 @@ end D2SQueryNoAbort
 `BackTrack(tr, tr_∇, s) ≠ err`.
 
 Paper-faithful (CO25 §5.7 Claim 5.19). `S_BT` is the backtrack-sequence family for
-`(trace, state)`; callers derive `hInv` and `hFork` via `lemma_5_12` / `lemma_5_14` (both
-The proof connects this `S_BT` to the one computed by `BackTrackNoAbort`. -/
+`(trace, state)`; callers derive `hInv` and `hFork` via `lemma_5_12` / `lemma_5_14`. Invalid
+self-loop and repeated-capacity candidates produce `noResult`, not an unexplained abort. The
+remaining proof obligation connects the complete canonical `S_BT` family to the lookup-conflict
+errors computed by `BackTrackNoAbort`. -/
 lemma claim_5_19_backTrack_noAbort [DecidableEq StmtIn] [DecidableEq U]
     {T_H : Type}
     {T_P : Type}
