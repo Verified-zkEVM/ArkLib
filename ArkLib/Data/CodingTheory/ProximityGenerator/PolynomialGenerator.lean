@@ -1,12 +1,11 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
 
 import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
 import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
-import ArkLib.Data.CodingTheory.ReedSolomon
 import Mathlib.AlgebraicTopology.SimplexCategory.Basic
 import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 
@@ -34,7 +33,7 @@ open unitInterval NNReal Probability CoreDefinitions LinearTransformations
 variable {F : Type} [Field F]
          {ι : Type} [Fintype ι] [Nonempty ι]
 
-/-- A function assinging the maximum degree in the `i`-the variable of the collection of
+/-- A function assigning the maximum degree in the `i`-th variable of the collection of
 polynomials `P`. -/
 noncomputable def deg_max {s : ℕ} {ℓ : Type} [Fintype ℓ] (P : ℓ → MvPolynomial (Fin s) F) :
     Fin s → ℕ := fun i => Finset.sup Finset.univ (fun j => (P j).degreeOf i)
@@ -162,7 +161,7 @@ variable {F : Type} [Field F]
 
 
 /-- Definition 9.1 MCA error function for Reed-Solomon codes [BCGM25]. -/
-noncomputable def ε_mca_RS [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ≥0 :=
+noncomputable def ε_MCA_RS [Fintype F] [NeZero k] (d m : ℕ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   let ρ_sqrt := ReedSolomon.sqrtRate k D
   fun γ =>
@@ -177,7 +176,7 @@ MCA for a Reed-Solomon code over a domain `D` and degree `k` with error `ε_mca_
 above.
 Lemma 9.3 [BCGM25]. -/
 lemma univariate_powers_MCA [Fintype F] [NeZero k] (d m : ℕ) (hm : 3 ≤ m) :
-    IsMCAGenerator (univariatePowersGenerator F d) (ε_mca_RS k D d m) (ReedSolomon.code D k) := by
+    IsMCAGenerator (univariatePowersGenerator F d) (ε_MCA_RS k D d m) (ReedSolomon.code D k) := by
   sorry
 
 /-- The multi-index (as a finitely supported function) associated to a bounded exponent vector. -/
@@ -200,7 +199,6 @@ the set of monomials of individual degree at most `d`. -/
 lemma exists_exponentFinsupp_eq {s : ℕ} {d : Fin s → ℕ} {mo : Fin s →₀ ℕ} (h : ∀ i, mo i ≤ d i) :
     ∃ e, exponentFinsupp (d := d) e = mo :=
   ⟨fun i => ⟨mo i, Nat.lt_succ_of_le (h i)⟩, by ext i; simp [exponentFinsupp]⟩
-
 
 /-- The `s`-fold tensor product of univariate powers generators. This is the generator defined in
 the proof of Theorem 9.2 [BCGM25].
@@ -304,18 +302,18 @@ Theorem 9.2 [BCGM25]. -/
 lemma polynomial_gen_MCA_RScode [Fintype F] [NeZero k] (m : ℕ) (hm : 3 ≤ m) {ℓ : Type} [Fintype ℓ]
     {s : ℕ} {P : ℓ → MvPolynomial (Fin s) F}
     (G : Generator ((Fin s) → F) ℓ F) (hG : IsPolynomialGeneratorOfFull G P) :
-    letI ε := ∑ i : Fin s, ε_mca_RS k D (deg_max P i) m
+    letI ε := ∑ i : Fin s, ε_MCA_RS k D (deg_max P i) m
     IsMCAGenerator G ε (ReedSolomon.code D k) := by
   classical
-  show IsMCAGenerator G (∑ i : Fin s, ε_mca_RS k D (deg_max P i) m) (ReedSolomon.code D k)
+  show IsMCAGenerator G (∑ i : Fin s, ε_MCA_RS k D (deg_max P i) m) (ReedSolomon.code D k)
   have hdeg : ∀ (j : ℓ) (i : Fin s), (P j).degreeOf i ≤ deg_max P i := by
     intro j i
     simpa [deg_max] using
       Finset.le_sup (f := fun j => (P j).degreeOf i) (Finset.mem_univ j)
   have htensor := tensorGeneratorPiUnivariate_isMCAGenerator (ReedSolomon.code D k)
-    (fun e => ε_mca_RS k D e m) (fun e => univariate_powers_MCA k D e m hm) (deg_max P)
+    (fun e => ε_MCA_RS k D e m) (fun e => univariate_powers_MCA k D e m hm) (deg_max P)
   have hmul := pseudoinverseGen (tensorGeneratorPiUnivariate (deg_max P))
-    (fun γ => ∑ i, ε_mca_RS k D (deg_max P i) m γ) (ReedSolomon.code D k) htensor
+    (fun γ => ∑ i, ε_MCA_RS k D (deg_max P i) m γ) (ReedSolomon.code D k) htensor
     (coeffMatrix P (deg_max P))
     (coeffMatrix_hasLeftPseudoInverse P (deg_max P) hdeg hG.1)
   rw [generatorByRightMul_coeffMatrix P (deg_max P) hdeg G hG.2] at hmul

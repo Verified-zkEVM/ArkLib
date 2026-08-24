@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Katerina Hristova
 -/
@@ -30,8 +30,7 @@ so the only mathematical content in this file is the two event implications
 * `mcaError_projectedGenerator_le`, `generatorSubset` — projection onto a subset of the output
   coordinates.
 
-The correspondence to [BCGM25]'s numbered statements is in
-`docs/kb/audits/bcgm25-mca-generators.md`.
+The correspondence to [BCGM25]'s numbered statements is in `docs/kb/audits/bcgm25-mca-generators.md`
 
 ## References
 
@@ -41,7 +40,7 @@ The correspondence to [BCGM25]'s numbered statements is in
 
 namespace LinearTransformations
 
-open NNReal ENNReal unitInterval LinearCode CoreDefinitions Matrix
+open NNReal unitInterval LinearCode CoreDefinitions Matrix
 open scoped ProbabilityTheory
 open Probability
 
@@ -69,8 +68,8 @@ lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] (G : Generator S ℓ F) (G' :
   exact le_iSup (fun V => Pr_{let x ←$ᵖ S}[IsMCA G MC x V δ]) (Φ U)
 
 /-- Let `G : S → 𝔽^ℓ` be a generator and let `M` be an `ℓ × ℓ'` matrix. Then `G' : S → 𝔽^ℓ'` is a
-generator defined by `x ↦ G(x) · M`.
-This is the generator whose error is bounded by `mcaError_generatorByRightMul_le`. -/
+generator defined by `x ↦ G(x) · M`. This is the generator whose error is bounded by
+`mcaError_generatorByRightMul_le`. -/
 def generatorByRightMul (G : Generator S ℓ F) (M : Matrix ℓ ℓ' F) : Generator S ℓ' F :=
     fun x ↦ Matrix.vecMul (G x) M
 
@@ -165,8 +164,8 @@ lemma mcaError_projectedGenerator_le [Nonempty S] (G : Generator S ℓ F) (MC : 
   mcaError_le_of_forall_isMCA_imp G (projectedGenerator G κ) MC γ (zeroExtend κ)
     (fun U x h => isMCA_projectedGenerator_of_isMCA MC G κ U γ x h)
 
-/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a
-subset of `ℓ`. Then the projected generator over `κ` is an MCA generator with the same error as `G`.
+/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca`, and `κ` a subset of `ℓ`.
+Then the projected generator over `κ` is an MCA generator with the same error as `G`.
 The `IsMCAGenerator` form of `mcaError_projectedGenerator_le`. -/
 lemma generatorSubset [Nonempty S] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
     (MC : ModuleCode ι F A)
@@ -188,7 +187,6 @@ lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
   classical
   intro γ
   refine iSup_le fun U => ?_
-  -- The reindexed combination is the original combination of the relabelled words `U ∘ eL`.
   have hvec : ∀ x' : S', (fun k => ∑ j', G (eS x') (eL.symm j') • U j' k)
       = fun k => ∑ j, G (eS x') j • U (eL j) k := by
     intro x'
@@ -220,10 +218,10 @@ Valued in `ℝ≥0` to match `IsMCAGenerator`; the paper's expression is a real,
 by `Real.toNNReal`. The clamp is not lossy for the intended parameter range — the expression is a
 bound on a probability, and is nonnegative wherever [BCGM25]'s hypotheses `0 < η < 1` and
 `2 ≤ ℓ` hold. -/
-noncomputable def ε_MCA_MDS [DecidableEq F] [Nonempty ι] (LC : LinearCode ι F) (ℓ s : ℕ) (η : ℝ) :
-    I → ℝ≥0 :=
+noncomputable def ε_MCA_MDS [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
+  (ℓ s : ℕ) (η : ℝ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
-  letI δ_C : ℝ := (Code.minRelHammingDistCode (LC.carrier) : ℝ)
+  letI δ_C : ℝ := (Code.minRelHammingDistCode (MC.carrier) : ℝ)
   letI ρ_C : ℝ := 1 - δ_C
   letI γ_ℓ : ℝ := 1 - (ρ_C + η) ^ (1 / ℓ : ℝ)
   fun γ =>

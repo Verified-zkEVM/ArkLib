@@ -1,5 +1,5 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
@@ -251,19 +251,6 @@ variable {ι : Type} [Fintype ι]
          {A : Type} [AddCommMonoid A] [Module F A]
          {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
          {S S' : Type} [Fintype S] [Fintype S'] [Nonempty S] [Nonempty S']
-
-/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
-generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
-is an MCA generator.
-
-The [BCGM25]-facing name for `TensorMCA.isMCAGenerator_tensorGenerator`, which is where the proof
-lives. -/
-lemma tensor_of_MCA_is_MCA (MC : ModuleCode ι F A)
-    (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (hGMCA : IsMCAGenerator G ε_mca MC)
-    (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ≥0) (hG'MCA : IsMCAGenerator G' ε_mca' MC) :
-    IsMCAGenerator (TensorGenerator_Explicit G G')
-      (ε_mca + Fintype.card ℓ • ε_mca') MC :=
-  TensorMCA.isMCAGenerator_tensorGenerator G G' ε_mca ε_mca' MC hGMCA hG'MCA
 
 /-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
