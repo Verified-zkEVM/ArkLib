@@ -41,10 +41,12 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   for any reduction of any length over any `oSpec` — so every later link in the chain can reuse it
   rather than unfolding the execution monads by hand.
 
-  A caveat about scope: the result below *assumes* membership in `relBatched`. Honest completeness
-  of the chain also needs the preceding link to produce `relBatched` — the missing
-  `relLift → relBatched` direction at the batching bridge (`ZeroCheck/Batch.lean` proves only the
-  pull-back `mem_relLift_of_relBatched`) — and then the composition of the two.
+  The preceding link is closed here too. `batchReduction` / `batchReduction_perfectCompleteness`
+  (bottom of this file) is the batching bridge as a protocol object and its perfect completeness,
+  so the honest side reaches `relBatched` from `relLift` and the two links meet. What is *not*
+  here is the composition of the two: appending completeness needs the generic
+  `Reduction.append_completeness`, still `sorry` (the appended statements live in
+  `HonestChain.lean` and carry the resulting `sorryAx`).
 
   ## Why the two directions are so unequal in difficulty
 
@@ -259,9 +261,12 @@ theorem nestedZeroCheckReduction_perfectCompleteness [SampleableType F]
 
 /-! ## The batching bridge: the honest direction, closed
 
-`Batch.lean` now has both relation directions (`mem_relLift_of_relBatched` and the new
-`mem_relBatched_of_relLift`), which is all a zero-round `ReduceClaim` link needs: the two together
-are the `hRel` *equivalence* that `ReduceClaim.reduction_completeness` consumes.
+`Batch.lean` has both relation directions (`mem_relLift_of_relBatched` and
+`mem_relBatched_of_relLift`), and a zero-round `ReduceClaim` link needs only the honest one:
+`ReduceClaim.reduction_completeness_of_imp` consumes the forward implication
+`mem_relBatched_of_relLift` alone. Taking only that direction is what keeps the range hypotheses
+in a single orientation — see `batchReduction_perfectCompleteness` below, and `HonestChain.lean`
+for what the two-sided reading would cost.
 -/
 
 /-- **The batching bridge as a protocol object**: the zero-round `ReduceClaim` reduction at

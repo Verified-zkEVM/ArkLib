@@ -18,9 +18,12 @@ eval-oracle interface (`multilinearEvalOracleInterface`), honest key generation 
 the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`, Hachi §2.1/§4.1), and the `hachi` scheme itself.
 
 The eval-oracle interface and the honest committer operations are real; the opening `Proof` is
-deferred (`sorry`, see the `TODO`). The coordinate-wise-special-sound (CWSS) composition the
-finished opening will run over lives in the sibling `Composition.lean`
-(`iteration` / `endPiece` / `evaluation`).
+deferred (`sorry`, see the `TODO`) — `hachi` is the *recursive* scheme, which still needs the §4.5
+tail. For the **nonrecursive** run the same pieces are packaged with a complete opening and proved
+perfectly correct in `Correctness.lean` (`hachiNonrecursive` /
+`hachiNonrecursive_perfectCorrectness`), using this file's `commitBalanced`. The
+coordinate-wise-special-sound (CWSS) composition the recursive opening will run over lives in the
+sibling `Composition.lean` (`iteration` / `endPiece` / `evaluation`).
 
 ## Main definitions
 
@@ -30,8 +33,11 @@ finished opening will run over lives in the sibling `Composition.lean`
   uniformly; the resulting `PublicParamsD` serves as both committer and verifier key.
 * `commit`: honest commitment — reshape the polynomial into its `2^r × 2^m` coefficient matrix,
   gadget-decompose it, and outer-commit; the decommitment is the `Decomp` data. Deterministic.
+* `commitBalanced`: the same committer at the **balanced** base-`b` digits, whose range is
+  Eq. (20)'s box `S_b` — the committer the paper-exact `QuadEval` reading and the nonrecursive
+  scheme of `Correctness.lean` are established for.
 * `hachi`: the `Commitment.Scheme` value packaging the above; its `opening` field is a documented
-  `sorry` pending the honest-prover / completeness layer (see the `TODO` block).
+  `sorry` pending the §4.5 recursion tail (see the `TODO` block).
 
 Same namespace/opens discipline as the rest of the Hachi tree
 (`namespace ArkLib.Lattices.Ajtai.InnerOuter`, `open WeakBinding`).
@@ -129,8 +135,9 @@ box's upper end `⌈b/2⌉ − 1` once `b ≥ 3`). So `commit` supports only the
 
 Both are honest and both reconstruct (`gadgetDecompose_lawful`), so `commit` is not wrong — it is
 simply the decomposition whose digits live in `[0, b − 1]` rather than in `S_b`. The scheme value
-`hachi` still uses `commit`; packaging the balanced committer into a `Commitment.Scheme` waits on
-the `opening` field (see the `TODO` block). -/
+`hachi` still uses `commit`; the balanced committer is packaged into a `Commitment.Scheme` by
+`hachiNonrecursive` (`Correctness.lean`), and switching `hachi` itself is part of the recursive
+opening work (see the `TODO` block). -/
 def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) (Nat.clog b q) outerRows (2 ^ r)
       (Nat.clog b q) dRows)
@@ -146,11 +153,12 @@ def commitBalanced [DecidableEq (ZMod q)] (hb : 1 < b)
 
 /-- **Hachi as a functional commitment** (`Commitment.Scheme`) — ⚠ **WIP scaffold.** The eval
 oracle and the honest `keygen` / `commit` are real, but the `opening` field is a placeholder
-(`sorry`, see below and the `TODO` block), so this value does **not** yet certify end-to-end
-opening correctness. It is committed now only as the target packaging the finished opening will
-slot into once the honest-prover layer lands (the follow-up tracked by the `TODO` here and in
-`Composition.lean`; the §4.3 soundness chain it will run over is finished — rows 1–9 of that file's
-seam table).
+(`sorry`, see below and the `TODO` block), so this value does **not** certify end-to-end opening
+correctness. It is the target the *recursive* opening will slot into once the §4.5 tail lands (the
+follow-up tracked by the `TODO` here and in `Composition.lean`; the §4.3 chain it will run over is
+finished in both directions — rows 1–9 of that file's seam table). End-to-end correctness for the
+**nonrecursive** run is already proved, at the separate scheme `hachiNonrecursive`
+(`Correctness.lean`), which packages `commitBalanced` with the complete composed opening.
 
 Over the multilinear data `CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable polynomial,
 with the `r`/`m` split feeding the outer/inner gadgets. It commits a polynomial directly (no
@@ -163,10 +171,11 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
-sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
-formalized (`QuadEval.prover`'s `computeV`/`computeResp` and the partial-evaluation tail's
-`computeY`; the sumcheck loop's `computeG` is now `honestComputeG`). Everything else here is
-real.
+sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once every link on the recursive path
+has an honest prover. Every link through the sumcheck now does (`QuadEval`'s
+`honestComputeV`/`honestComputeResp`, the sumcheck's `honestComputeG`, the final evaluation's
+`honestComputeY`); what is still missing is the partial-evaluation tail's `computeY`
+(`Recursion/PartialEval.lean`). Everything else here is real.
 
 ⚠ The declared `pSpec` is **not** the full opening protocol's spec: `!p[] ++ₚ pSpec …` is the
 *bridge ▷ QuadEval prefix* only (zero rounds, then Figure 3's commit/challenge round). The finished
@@ -207,7 +216,9 @@ paper-exact link has a real committer to apply to. It does **not** apply to `hac
 uses the unsigned decomposition (only the ball-relaxed reading does).
 
 This establishes that *input relation* only: the `opening` field of `hachi` is still `sorry`, so
-nothing here claims end-to-end commitment correctness (`Commitment.perfectCorrectness`). -/
+nothing **here** claims end-to-end commitment correctness (`Commitment.perfectCorrectness`) — that
+claim is made, for the nonrecursive scheme built on `commitBalanced`, by
+`hachiNonrecursive_perfectCorrectness` (`Correctness.lean`). -/
 
 section HonestBalanced
 
@@ -448,10 +459,11 @@ The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs,
      blocked on that file's sorried encoding layer (`partialEvalAt`, `deriveFamily`,
      `wTableMleEval_split`);
 2. **composition of those reductions**, blocked on the generic `Reduction.append_completeness`
-   (`OracleReduction/Composition/Sequential/Append.lean`) and `liftContext_completeness`
-   (`OracleReduction/LiftContext/Reduction.lean`), both still `sorry`. `HonestChain.lean` appends
-   the finished prefix (`completePrefixReduction`) and proves its completeness modulo exactly those
-   lemmas;
+   (`OracleReduction/Composition/Sequential/Append.lean`), still `sorry` — and on that alone: the
+   links are stated at their neighbours' relations, so nothing has to be context-lifted and
+   `liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`, also `sorry`) is not
+   involved. `HonestChain.lean` appends the finished prefix (`completePrefixReduction`) and proves
+   its completeness modulo exactly that lemma;
 3. widening this scheme's `pSpec` from the bridge ▷ QuadEval prefix to the full opening spec;
 4. only then `Commitment.perfectCorrectness` for `hachi` — and a decision on whether the packaged
    `commit` should switch to `commitBalanced`, which is what the paper-exact `QuadEval` relation

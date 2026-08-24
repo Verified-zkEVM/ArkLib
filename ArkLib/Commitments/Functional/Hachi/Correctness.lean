@@ -36,6 +36,20 @@ opening, at the cost of a witness-sized final message.
   (`completeThroughSumcheckReduction`) closed by the terminal base case: `relPolyEval` to
   `acceptRejectRel`. ⚠ Inherits `sorryAx` from the generic `Reduction.append_completeness`
   (an admitted framework dependency); every link is axiom-clean on its own.
+* `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
+  converts the commitment API's claim (an honest **balanced** commitment plus a truthful
+  evaluation claim) into `relPolyEval`, with the relation step
+  `mem_relPolyEval_of_relCommitInput`.
+* `hachiNonrecursiveOpening` / `…_perfectCompleteness`: input adapter ▷ chain through the sumcheck
+  ▷ terminal reveal-and-check — the complete opening protocol, from `relCommitInput` to
+  `acceptRejectRel`.
+* `hachiNonrecursive`: Hachi as a `Commitment.Scheme` with that opening and the balanced committer
+  `commitBalanced`; unlike `hachi` (`Commitment.lean`) every field is real and the `pSpec` is the
+  actual composed specification.
+* `hachiNonrecursive_perfectCorrectness`: `Commitment.perfectCorrectness` for it, through the
+  generic bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
+  (`Commitments/Functional/Basic.lean`). Same `sorryAx` provenance as above, and nothing else.
+  `Concrete.lean` instantiates all of this at the Ajtai lift commitment.
 
 ## References
 

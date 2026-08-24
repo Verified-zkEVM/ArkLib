@@ -71,9 +71,14 @@ Ring-switching layer:
   **Scope** (matching the "Paper-model boundary" note in `Hachi/RingSwitch/Reduction.lean`): what is
   formalized is the simplified raw-`(z, r)` Figure 4 / Lemma 9 kernel. The paper's p. 18 honest
   protocol commits `(z, r₁, …, r_log_b(q))` with per-digit norm bounds — "there is a hidden gadget
-  decomposition of `r`" — and that encoding, its reconstruction identity, and an honest-prover
-  completeness bound are **not** formalized; `RhoShort` records the resulting admissibility
-  requirement abstractly.
+  decomposition of `r`" — and that encoding and its reconstruction identity are **not** formalized.
+  Honest completeness *is* formalized at the raw kernel, and unconditionally
+  (`liftReduction_perfectCompleteness_image`, `RingSwitch/Completeness.lean`): `RhoShort` is no
+  longer an admissibility hypothesis but a discharged conclusion, at the coefficient bound
+  `RingSwitch/QuotientNorms.lean` proves — which for a Hachi `R^lin` instance is the unconditional
+  `ρBound = q/2` (`rhoShort_half`), since the matrix carries the Ajtai key. That is what the
+  paper's per-digit encoding would buy back, and what its absence costs: a zero-check range base of
+  at least `q/2 + 1` (see `Hachi/HonestChain.lean`).
 - The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
   automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
   laws for the Hachi instance.
@@ -163,11 +168,16 @@ Ring-switching layer:
   `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
 - Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
   Lemma 5's field/isomorphism conclusion.
-- Complete the remaining Hachi-specific work: the closing end-piece and the §4.5 recursion
-  adapters (partial-evaluation head, `Z`-packing bridge, trace handoff). Lemma 9, the batching
-  bridge, the corrected Lemma 10, the sumcheck bridge and its summand identities, Lemma 11 and the
-  final evaluation are all proved and axiom-clean, so the one-iteration opening certificate
-  (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free.
+- Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
+  partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
+  soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
+  proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
+  (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
+  coordinate-wise special soundness and perfect completeness, and the one-iteration soundness
+  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. Composing
+  the completeness side is blocked on the generic `Reduction.append_completeness`, still `sorry`,
+  which every composed statement inherits as a `sorryAx` dependency; the nonrecursive opening
+  (`Hachi/Correctness.lean`) is complete and perfectly correct modulo exactly that.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.

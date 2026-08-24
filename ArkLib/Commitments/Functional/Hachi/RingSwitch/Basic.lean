@@ -48,6 +48,12 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   statement's bound convention, the commitment interface, and the norm implication
   `vecLInftyNorm_le_of_liftShort`.
 
+* `RingSwitch/ComputableWitness.lean` — the computable twin `honestLiftWitnessC` of the honest
+  lifted witness, at the same signature and equal to it (`honestLiftWitnessC_eq_honestWitness`).
+  It replaces Mathlib's `/ₘ` by CompPoly's synthetic division and the noncomputable
+  `CPolynomial.toPoly` by `cToPoly`, which is what makes the whole honest path executable
+  (`Hachi/Concrete.lean`, `scripts/HachiRuntime.lean`); `Completeness.lean` re-points
+  `liftReduction` at it and transfers completeness through the agreement lemma.
 * `RingSwitch/QuotientNorms.lean` — centered coefficient bounds for the honest lift quotient. For
   `φ = X^d + 1` division by the modulus *selects* coefficients
   (`Polynomial.coeff_divByMonic_X_pow_add_one`), so the quotient bound is a row-sum coefficient
@@ -69,10 +75,10 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   `reduction_perfectCompleteness_of_relIn`, over
   `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`).
 
-This umbrella re-exports the folder (`Completeness` imports `QuotientNorms`, which imports
-`Reduction`, which imports `Rlin`). The plain `relLift` is the input of the batching bridge in
-`ZeroCheck/`; the chain is composed in `Composition.lean`, and the honest side's parameter
-bookkeeping in `HonestChain.lean`.
+This umbrella re-exports the folder (`Completeness` imports `ComputableWitness` and
+`QuotientNorms`, both of which import `Reduction`, which imports `Rlin`). The plain `relLift` is
+the input of the batching bridge in `ZeroCheck/`; the chain is composed in `Composition.lean`, and
+the honest side's parameter bookkeeping in `HonestChain.lean`.
 
 ## References
 

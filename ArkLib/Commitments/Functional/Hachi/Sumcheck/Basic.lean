@@ -57,7 +57,11 @@ a guarded/paired variant.
   `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and the output is
   the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters. Soundness is
   `finalEval_coordinateWiseSpecialSoundWith`, with its computable `finalEvalExtractor` reading
-  the unique leaf opening directly.
+  the unique leaf opening directly; the honest half (`honestComputeY`,
+  `finalEvalReduction_perfectCompleteness`) lives there too.
+* `Sumcheck/Completeness.lean` — the honest side of the loop: the computable round message
+  `honestComputeG`, one round's perfect completeness, the `m₀`-fold honest chain
+  `roundsReduction`, and `sumcheckReduction` = bridge ▷ rounds ▷ final evaluation.
 
 This umbrella re-exports the folder (`Completeness` transitively imports `FinalEval`,
 `Rounds`, `RoundPoly` and `Bridge`). The output relation `relWEvalClaim` is the seam after an
@@ -92,7 +96,10 @@ The soundness side is complete and `sorry`-free. So is the honest side, per link
   `sumcheckReduction_perfectCompleteness` (bridge ▷ rounds ▷ final evaluation) go through
   `Reduction.append_perfectCompleteness`, hence through the still-`sorry`
   `Reduction.append_completeness`, and so depend on `sorryAx`. Everything per-link is
-  axiom-clean. `Commitment.lean`'s `opening` waits on that same framework lemma.
+  axiom-clean. Downstream, `Correctness.lean`'s nonrecursive opening and its perfect correctness
+  inherit `sorryAx` from that same framework lemma and from nothing else; `hachi.opening`
+  (`Commitment.lean`) stays a `sorry` for a different reason — it is the *recursive* opening,
+  which additionally needs the §4.5 tail.
 
 Extraction here is tree-based: it yields a witness (or an escape) from a structured accepting
 tree, and says nothing about a *probability* of extraction. Turning that into a
