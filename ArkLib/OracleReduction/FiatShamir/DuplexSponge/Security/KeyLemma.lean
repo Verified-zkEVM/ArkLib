@@ -577,14 +577,13 @@ def claim5_22Bound
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
-/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55):
+/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55)):
 `(7·L·(2·t_h + 2 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
 def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
-  let Lr : ℝ := L
   let cardPow : ℝ := ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
-  (7 * Lr * (2 * (tₕ : ℝ) + 2 + 2 * (tₚ : ℝ) + Lr + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
-    - (5 * (Lr + 1)) / cardPow
+  (7 * L * (2 * (tₕ : ℝ) +  2 + 2 * (tₚ : ℝ) + L + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
+    - (5 * (L + 1)) / cardPow
 
 /-! ### Hybrid distributions `Hyb_0` … `Hyb_4` and per-step claims 5.21–5.24 (CO25 §5.8)
 
@@ -951,8 +950,9 @@ set_option linter.unusedFintypeInType false in
 (`theorem_6_2_straightline`): Construction 6.3's extractor runs the concrete `d2sTraceSalted`, so
 `Hyb₀`/`Hyb₄` must carry the *same* concrete maps for the game-match `hL1`/`hL3` to hold
 definitionally — an opaque `∃`-witness would block that defeq.  `lemma_5_1` re-packages this as the
-existential.  The body is the deep §5.8 distance bound (`claim_5_21`–`claim_5_24` triangle) +
-`D2SAlgo` query bound — the single remaining `sorry`. -/
+existential.  Its intended proof combines the §5.8 distance claims with the `D2SAlgo` query bound,
+but its current body is still a single `sorry`; none of `claim_5_21`–`claim_5_24` is wired into
+this declaration yet. -/
 theorem lemma_5_1_inner
     [DecidableEq U] [DecidableEq StmtIn] [DecidableEq ι]
     {T_H : Type} {T_P : Type}
