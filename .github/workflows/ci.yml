@@ -17,10 +17,23 @@ jobs:
     permissions:
       actions: read
       contents: read
+      id-token: write
       issues: write
+      pages: write
       pull-requests: write
 
     steps:
+      - name: Cleanup to free disk space
+        uses: jlumbroso/free-disk-space@v1.3.1
+        with:
+          tool-cache: false
+          android: true
+          dotnet: false
+          haskell: false
+          large-packages: false
+          docker-images: false
+          swap-storage: false
+
       - uses: actions/checkout@v7
         with:
           fetch-depth: 0
@@ -52,13 +65,14 @@ jobs:
           echo "BUILD_TIMING_ARTIFACT_NAME=arklib-build-timing-data" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_BASELINE_DIR=$RUNNER_TEMP/build-timing-baseline" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_REPORT=$RUNNER_TEMP/build-timing.md" >> "$GITHUB_ENV"
-          echo "BUILD_TIMING_COMMENT=$RUNNER_TEMP/build-timing-comment.md" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_SHA=$GITHUB_SHA" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_SOURCE_BRANCH=${{ github.head_ref || github.ref_name }}" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_BASE_REF=" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_MERGE_BASE_SHA=" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_NAME=Validation wrapper" >> "$GITHUB_ENV"
           echo "BUILD_TIMING_TEST_COMMAND=./scripts/validate.sh" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_NAME=Native build" >> "$GITHUB_ENV"
+          echo "BUILD_TIMING_NATIVE_COMMAND=lake build toyproblem-runtime" >> "$GITHUB_ENV"
           {
             echo "BUILD_TIMING_SOURCE_SUBJECT<<EOF"
             git log -1 --format=%s
@@ -112,6 +126,26 @@ jobs:
           bash scripts/build_timing_report.sh run warm_rebuild "$BUILD_TIMING_RESULTS" -- \
             bash -eo pipefail -c 'lake build'
 
+      # VCVio's FFI C sources live in git submodules that Lake does not fetch, and every
+      # root-package executable links them. Without them VCVio falls back to empty stub archives,
+      # so this has to run before anything native is built or timed: otherwise the native build
+      # links stubs, the later steps relink against the real backends, and the two measure
+      # different things.
+      - name: Fetch VCVio FFI submodules
+        run: |
+          if [ -e .lake/packages/VCVio/.git ]; then
+            git -C .lake/packages/VCVio submodule update --init --recursive
+          fi
+
+      # `validate.sh` runs `lake exe toyproblem-runtime`, which links the native `.c.o` chain for
+      # the whole dependency graph. That work is billed here rather than to the validation wrapper:
+      # the `.lake` cache key is `hashFiles('lake-manifest.json')`, so a dependency bump misses the
+      # cache and the compile costs ~5 minutes, which used to read as a wrapper regression.
+      - name: Time native build
+        run: |
+          bash scripts/build_timing_report.sh run native_build "$BUILD_TIMING_RESULTS" -- \
+            bash -eo pipefail -c 'lake build toyproblem-runtime'
+
       # The fixture matrix is enforcing: it certifies the sweep tool itself (gate
       # directions, native-trust floor, exit-code contract), independent of any
       # taint verdict about the library.
@@ -123,11 +157,6 @@ jobs:
       # tool build breakage) always fail so the soak cannot silently rot.
       - name: Axiom sweep (report-only)
         run: |
-          # VCVio's FFI C sources live in git submodules that Lake does not
-          # fetch, and every root-package executable links them.
-          if [ -e .lake/packages/VCVio/.git ]; then
-            git -C .lake/packages/VCVio submodule update --init --recursive
-          fi
           status=0
           lake exe axiomsweep --check || status=$?
           if [ "$status" -eq 1 ]; then
@@ -148,6 +177,19 @@ jobs:
         with:
           path: ./.lake
           key: ${{ runner.os }}-lean-ci-${{ hashFiles('lake-manifest.json') }}
+
+      # Reuse the project build above for blueprint/checkdecls validation on PRs.
+      # On pushes, the action additionally builds API docs and deploys Pages.
+      - name: Build blueprint and documentation
+        uses: leanprover-community/docgen-action@10db47458f91456d87804787d3dfcd914b9a19e3 # 2026-06-07
+        env:
+          DISABLE_EQUATIONS: 1
+        with:
+          blueprint: true
+          homepage: home_page
+          build-page: false
+          deploy: ${{ github.event_name == 'push' }}
+          references: blueprint/src/references.bib
 
       - name: Prepare timing artifact
         if: always()
@@ -295,8 +337,3 @@ jobs:
             bash scripts/build_timing_report.sh render "$BUILD_TIMING_RESULTS" > "$BUILD_TIMING_REPORT"
           fi
           cat "$BUILD_TIMING_REPORT" >> "$GITHUB_STEP_SUMMARY"
-          {
-            echo '<!-- arklib-build-timing-report -->'
-            echo
-            cat "$BUILD_TIMING_REPORT"
-          } > "$BUILD_TIMING_COMMENT"
