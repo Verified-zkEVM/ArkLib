@@ -144,6 +144,22 @@ def snd (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) : pSpec₂.Transcript ⟨k 
       (append_Type_natAdd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) ⟨i.val, by omega⟩)
       (T ⟨m + i.val, by omega⟩)
 
+/-- While a run of `pSpec₁ ++ₚ pSpec₂` is still inside the first protocol (round `k ≤ m`), the
+second protocol's half of the partial transcript is empty.
+
+This is the left-phase invariant an induction over the appended protocol's rounds needs: up to
+round `m`, an appended run carries no `pSpec₂` data at all. Stated with `HEq` because the index
+`⟨k - m, _⟩` is only propositionally `0`. -/
+theorem snd_of_le {k : Fin (m + n + 1)} (hk : k.val ≤ m)
+    (T : (pSpec₁ ++ₚ pSpec₂).Transcript k) :
+    HEq (T.snd) (default : pSpec₂.Transcript ⟨0, by omega⟩) := by
+  have h : (k.val - m) = 0 := by omega
+  have h0 : (⟨k.val - m, by omega⟩ : Fin (n + 1)) = ⟨0, by omega⟩ := Fin.ext h
+  rw! (castMode := .all) [h0]
+  apply heq_of_eq
+  funext i
+  exact Fin.elim0 i
+
 end Transcript
 
 namespace FullTranscript
@@ -224,6 +240,20 @@ theorem append_snd (T₁ : FullTranscript pSpec₁) (T₂ : FullTranscript pSpec
     (T₁ ++ₜ T₂).snd = T₂ := by
   funext i
   simp [snd, append]
+
+/-- Splitting a transcript of an appended protocol and reassembling it is the identity.
+
+This is the eta law dual to the beta laws `append_fst` / `append_snd`: those say that splitting a
+reassembled pair recovers the components, while this says every transcript of `pSpec₁ ++ₚ pSpec₂`
+*is* the append of its two halves. It is what lets an induction over the appended protocol's rounds
+reassemble its result at the end. -/
+@[simp]
+theorem append_fst_snd (T : FullTranscript (pSpec₁ ++ₚ pSpec₂)) :
+    T.fst ++ₜ T.snd = T := by
+  funext i
+  induction i using Fin.addCases
+  · rw [append, Fin.happend_left]; simp [fst]
+  · rw [append, Fin.happend_right]; simp [snd]
 
 end FullTranscript
 
@@ -527,6 +557,39 @@ instance disjointSubSpec_challenge_append_right_left :
       [pSpec₂.Challenge]ₒ [pSpec₁.Challenge]ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ where
   disjoint_onQuery t₂ t₁ h :=
     (disjointSubSpec_challenge_append_left_right.disjoint_onQuery t₁ t₂ h.symm)
+
+/-! ### Pinned lifts across `++ₚ`
+
+`liftM` chooses its `SubSpec` instance by unification. When `pSpec₁` and `pSpec₂` are the *same*
+protocol spec (e.g. a protocol that repeats an identical round structure), both
+`subSpec_challenge_append_left` and `subSpec_challenge_append_right` unify with the goal, and
+instance resolution picks the later-declared one — the *right* inclusion — even for a
+left-component computation. Statements that lift both components with a bare `liftM` are therefore
+wrong on the diagonal `pSpec ++ₚ pSpec`.
+
+The two abbreviations below pin the intended inclusion, so a statement can say which copy a
+component's challenge queries belong to. On the off-diagonal they are definitionally what `liftM`
+already produced; on the diagonal they differ, and `liftAppendLeft ≠ liftAppendRight` there. -/
+
+variable {ι : Type} {oSpec : OracleSpec ι} {α : Type}
+
+/-- Lift a left-component computation into the appended protocol, with the left challenge
+inclusion pinned. See the section note for why bare `liftM` is not safe here. -/
+abbrev liftAppendLeft (pSpec₂ : ProtocolSpec n)
+    (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) :
+    OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α :=
+  letI : [pSpec₁.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+    subSpec_challenge_append_left
+  liftM oa
+
+/-- Lift a right-component computation into the appended protocol, with the right challenge
+inclusion pinned. -/
+abbrev liftAppendRight (pSpec₁ : ProtocolSpec m)
+    (oa : OracleComp (oSpec + [pSpec₂.Challenge]ₒ) α) :
+    OracleComp (oSpec + [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ) α :=
+  letI : [pSpec₂.Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ :=
+    subSpec_challenge_append_right
+  liftM oa
 
 /-! The two lemmas below are the regression anchors for the inclusions above. Nothing in the
 `SubSpec` / `LawfulSubSpec` / `DisjointSubSpec` interface pins down the response transport — any
