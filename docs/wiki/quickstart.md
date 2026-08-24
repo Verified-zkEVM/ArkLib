@@ -53,7 +53,10 @@ If the task is specifically Lean warning cleanup, follow
 ./scripts/validate.sh --axioms
 ```
 
-This adds `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
+This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix under
+`scripts/AxiomSweepTestFixtures/` that certifies the sweep tool itself (gate directions,
+the native-trust floor, and the exit-code contract) — and then
+`lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
 against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
 `sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
@@ -63,7 +66,14 @@ intentionally add a tagged `sorry` (or close one), refresh and commit the baseli
 lake exe axiomsweep --update-baseline
 ```
 
-CI runs the same check report-only while the baseline soaks (see `ci.yml`).
+The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
+(`Lean.ofReduceBool`, `Lean.trustCompiler`, and the per-declaration
+`…._native.<tactic>.ax_<n>_<n>` axioms that `native_decide`-style tactics mint) is held to
+a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
+while such taint is present — remove the dependency instead.
+
+CI runs the fixture matrix as an enforcing step and the library check report-only while
+the baseline soaks (see `ci.yml`).
 
 ### Docstrings, blueprint, or website changes
 
@@ -87,8 +97,9 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, `./scripts/check-imports.sh`, and
-  `python3 ./scripts/check-docs-integrity.py`, plus knowledge-base linting from source inputs.
+- By default it runs `lake build`, the compiled `toyproblem-runtime` checks,
+  `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
+  knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
 - `docs/kb/_generated/**` freshness is handled by generated-files PRs from the main-branch KB
   workflow, not by ordinary PR validation.
@@ -130,9 +141,11 @@ You can still run the underlying pieces directly when debugging a specific issue
 
 ```bash
 lake build
+lake exe toyproblem-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
+./scripts/test-axiomsweep.sh
 lake exe axiomsweep --check
 ```
 
@@ -153,8 +166,10 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom sweep report-only, then uploads timing artifacts and posts a comparison
-  report on same-repo PRs.
+  axiom-sweep fixture matrix (enforcing) and the library sweep report-only,
+  reuses that build for blueprint and declaration validation, and builds and
+  deploys API documentation on pushes to `main`. It then uploads timing artifacts
+  and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
@@ -170,5 +185,24 @@ capture a measurement and render a report:
 ```bash
 bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build'
+bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build toyproblem-runtime'
+bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
 ```
+
+Read the rows in that order, because they share one tree and each leaves it warmer:
+
+- `clean_build` and `warm_rebuild` bracket the incremental-build signal.
+- `native_build` carries the `.c.o` chain that `lake exe toyproblem-runtime` links. It is the row
+  that swings on `.lake` cache state, so a dependency bump shows its cost here.
+- `test_path` is therefore the cost of the validation gate itself on an already-built project,
+  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
+  `--axioms` never appear in it.
+
+A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
+Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
+whole seconds above 10s, so those figures are not accurate to two decimals.

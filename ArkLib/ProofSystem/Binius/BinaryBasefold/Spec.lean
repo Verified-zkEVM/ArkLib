@@ -275,7 +275,11 @@ instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
 
 instance {i : Fin ℓ} :
     ∀ j, OracleInterface ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message j)
-  | ⟨0, _⟩ => by exact OracleInterface.instDefault -- oracle commitment (conditional)
+  | ⟨0, _⟩ => by
+      -- A commitment message is itself an oracle function, so its canonical interface is
+      -- point evaluation. Using the generic default interface here would make the message and
+      -- the identical output codeword answer different query types.
+      exact OracleInterface.instFunction
 
 instance : ∀ j, OracleInterface ((pSpecRelay).Message j)
   | ⟨x, hj⟩ => by exact x.elim0

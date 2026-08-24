@@ -8,9 +8,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 /-!
   # Guarded verifiers and guarded CWSS composition (`GCWSSPackage`)
 
-  **Skeleton** of coordinate-wise special soundness (CWSS) composition where the *left* factor may
-  **reject at runtime**, as needed by the Hachi sumcheck ([NOZ26]); inventoried as *generic
-  machinery* in `Commitments/Functional/Hachi/Composition.lean`.
+  Coordinate-wise special soundness (CWSS) composition where the *left* factor may **reject at
+  runtime**, as needed by the Hachi sumcheck ([NOZ26]).
 
   ## Why guarded verifiers
 
@@ -38,12 +37,19 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   * `Verifier.IsGuardedWith` / `Verifier.IsGuarded` — the guard predicate (`Bool`-valued check);
     purity is the `check := fun _ _ => true` special case
     (`IsGuarded.of_isPure`).
-  * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append` (**sorried**;
-    composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
-    `Verifier.IsPure.append`).
-  * `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` — the escape-threaded
-    guarded binary CWSS append, the *fundamental* obligation here (**sorried**; stated at
-    explicit guard data, since the composed escape event must name the left verdict map).
+  * `Verifier.IsGuarded.append` — closure of guardedness under `Verifier.append`: composite check
+    `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring `Verifier.IsPure.append`.
+  * `Verifier.append_run_guardedLeft` — the guarded twin of `append_run_pure_left`: the composite
+    run is `failure` on a rejected prefix and the right run at the left verdict otherwise.
+  * `Verifier.append_treeSpecialSoundWithEscape_of_guardedLeft` and its CWSS-shape wrapper
+    `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` — the escape-threaded
+    guarded binary append, the *fundamental* obligation here, stated at explicit guard data since
+    the composed escape event must name the left verdict map. The one step the pure proof does not
+    have is that every prefix leaf passes `check₁`: a rejected prefix would make the composite
+    `failure` on some full transcript through it (`Verifier.not_accepting_of_verify_failure`,
+    `Composition.lean`), and the witnessing suffix transcript comes from
+    `ChallengeTree.LeafPath.some` at the right shape's positive arity
+    (`CWSSStructure.arity_pos`).
   * `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` — the plain guarded append,
     **proven** as a corollary of the escape-threaded one at the never-firing events.
   * `GCWSSPackage` — the guarded analogue of `CWSSPackage` (`isPure` ↝ `isGuarded`), with
@@ -102,18 +108,48 @@ variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   {rel₁ : Set (Stmt₁ × Wit₁)} {rel₂ : Set (Stmt₂ × Wit₂)} {rel₃ : Set (Stmt₃ × Wit₃)}
 
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
 /-- Guardedness is closed under `Verifier.append`: the composite check runs the left check on the
-transcript prefix and, if it passes, the right check on the suffix from the left output.
-
-**Sorried.** Proof plan: mirror `Verifier.IsPure.append`
-(`OracleReduction/Composition/Sequential/IsPure.lean`) — destructure both guard witnesses, take
-`check := fun s tr => check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd` and
-`out := fun s tr => out₂ (out₁ s tr.fst) tr.snd`, and normalize
-`Verifier.append`'s bind with `failure_bind`/`pure_bind` under the two `if`-splits. -/
+transcript prefix and, if it passes, the right check on the suffix from the left output — so the
+composite rejects exactly when either factor does. The mirror of `Verifier.IsPure.append`. -/
 theorem IsGuarded.append (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂) (h₁ : V₁.IsGuarded) (h₂ : V₂.IsGuarded) :
     (V₁.append V₂).IsGuarded := by
-  sorry
+  obtain ⟨check₁, out₁, hV₁⟩ := h₁.is_guarded
+  obtain ⟨check₂, out₂, hV₂⟩ := h₂.is_guarded
+  refine ⟨fun stmt tr => check₁ stmt tr.fst && check₂ (out₁ stmt tr.fst) tr.snd,
+    fun stmt tr => out₂ (out₁ stmt tr.fst) tr.snd, fun stmt tr => ?_⟩
+  simp only [Verifier.append]
+  rw [hV₁ stmt tr.fst]
+  by_cases hc₁ : check₁ stmt tr.fst = true
+  · rw [if_pos hc₁, pure_bind, hV₂ (out₁ stmt tr.fst) tr.snd]
+    by_cases hc₂ : check₂ (out₁ stmt tr.fst) tr.snd = true <;> simp [hc₁, hc₂]
+  · rw [if_neg hc₁]
+    simp [hc₁]
+
+omit [∀ i, SampleableType (pSpec₁.Challenge i)] in
+/-- **Running an append with a guarded left factor.** The guarded twin of
+`Verifier.append_run_pure_left`: on a prefix the left check rejects, the whole composite is
+`failure`; otherwise it is the right verifier run at the left verdict. This is the lemma that
+turns "the composite tree is accepting" into the two facts the guarded append needs — that every
+surviving prefix passes `check₁`, and that the suffix subtree is accepting for `V₂` at
+`out₁ stmt tr₁`. -/
+theorem append_run_guardedLeft
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
+    (out₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hV₁ : V₁.IsGuardedWith check₁ out₁)
+    (stmt₁ : Stmt₁) (tr₁ : pSpec₁.FullTranscript) (tr₂ : pSpec₂.FullTranscript) :
+      (V₁.append V₂).run stmt₁ (tr₁ ++ₜ tr₂) =
+        if check₁ stmt₁ tr₁ then V₂.run (out₁ stmt₁ tr₁) tr₂ else failure := by
+  simp only [Verifier.append_run, Verifier.run, ProtocolSpec.FullTranscript.append_fst,
+    ProtocolSpec.FullTranscript.append_snd]
+  rw [hV₁ stmt₁ tr₁]
+  by_cases hc : check₁ stmt₁ tr₁ = true
+  · rw [if_pos hc, if_pos hc, pure_bind]
+  · rw [if_neg hc, if_neg hc]
+    simp
 
 /-- **Guarded binary CWSS append, escape-threaded named form (skeleton).** Escape-threaded CWSS is
 preserved by `Verifier.append` when the left factor is merely *guarded* rather than pure, at the
@@ -138,6 +174,85 @@ statements — harmless, since escape events must be honest breaks at *all* `(st
    the pure proof already extracts via `LeafPath.exists_of_mem_fullTranscripts`.)
 
 The tree machinery (`appendSplit` and friends) is untouched. -/
+theorem append_treeSpecialSoundWithEscape_of_guardedLeft
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
+    (harity₂ : ∀ i, 0 < S₂.arity i)
+    (check₁ : Stmt₁ → pSpec₁.FullTranscript → Bool)
+    (out₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hV₁ : V₁.IsGuardedWith check₁ out₁)
+    (esc₁ : ChallengeTree.EscapeEvent Stmt₁ pSpec₁ S₁.arity)
+    (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ S₂.arity)
+    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ S₁.arity)
+    (h₁ : treeSpecialSoundWithEscape init impl S₁ esc₁ rel₁ rel₂ V₁ Ext₁)
+    (h₂ : treeSpecialSoundEscape init impl S₂ esc₂ rel₂ rel₃ V₂) :
+    treeSpecialSoundWithEscape init impl
+      (S₁.append S₂) (esc₁.append esc₂ out₁) rel₁ rel₃ (V₁.append V₂)
+      (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
+  rcases h₂ with ⟨E₂, hE₂⟩
+  intro stmt tree hStructured hAccept
+  by_cases hesc : ∃ path : ChallengeTree.LeafPath tree.appendSplit.fst,
+      esc₂ (out₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
+  · exact Or.inl (Or.inr hesc)
+  · push Not at hesc
+    -- Every prefix leaf passes `check₁`: otherwise the composite would be `failure` on some full
+    -- transcript through it, contradicting acceptance. This is the one step the pure proof does
+    -- not have, and it is what `LeafPath.some` supplies the witness transcript for.
+    have hcheck : ∀ path : ChallengeTree.LeafPath tree.appendSplit.fst,
+        check₁ stmt path.fullTranscript = true := by
+      intro path
+      by_contra hc
+      have hfail : (V₁.append V₂).verify stmt
+          (path.fullTranscript ++ₜ
+            (ChallengeTree.LeafPath.some
+              harity₂
+              (tree.appendSplit.sndAt path)).fullTranscript) = failure := by
+        have := Verifier.append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt path.fullTranscript
+          (ChallengeTree.LeafPath.some
+            harity₂
+            (tree.appendSplit.sndAt path)).fullTranscript
+        rw [if_neg hc] at this
+        exact this
+      exact Verifier.not_accepting_of_verify_failure init impl (V₁.append V₂) stmt _
+        rel₃.language hfail
+        (hAccept _ (ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path
+          (ChallengeTree.LeafPath.mem_fullTranscripts _)))
+    -- From here the pure argument runs verbatim, with `out₁` in place of `verify₁`.
+    have hLang : ∀ path : ChallengeTree.LeafPath tree.appendSplit.fst,
+        out₁ stmt path.fullTranscript ∈ rel₂.language := by
+      intro path
+      have hSuffixStructured : (tree.appendSplit.sndAt path).IsStructured S₂ :=
+        ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
+      have hSuffixAccept :
+          (tree.appendSplit.sndAt path).IsAccepting init impl V₂
+            (out₁ stmt path.fullTranscript) rel₃.language := by
+        intro tr₂ htr₂
+        have hfull := hAccept _
+          (ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂)
+        rw [Verifier.append_run_guardedLeft V₁ V₂ check₁ out₁ hV₁ stmt path.fullTranscript tr₂,
+          if_pos (hcheck path)] at hfull
+        exact hfull
+      rcases hE₂ _ _ hSuffixStructured hSuffixAccept with hbad | hwit
+      · exact absurd hbad (hesc path)
+      · exact (Set.mem_language_iff rel₂ _).2 ⟨_, hwit⟩
+    have hPrefixAccept :
+        tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
+      intro tr₁ htr₁
+      obtain ⟨path, rfl⟩ := ChallengeTree.LeafPath.exists_of_mem_fullTranscripts htr₁
+      refine Verifier.pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
+        (out₁ stmt path.fullTranscript) ?_ (hLang path)
+      rw [hV₁ stmt path.fullTranscript, if_pos (hcheck path)]
+    rcases h₁ stmt tree.appendSplit.fst
+        (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hPrefixAccept with
+      hbad | hwit
+    · exact Or.inl (Or.inl hbad)
+    · exact Or.inr hwit
+
+/-- **Guarded binary CWSS append, escape-threaded named form** — the CWSS-shape wrapper of
+`append_treeSpecialSoundWithEscape_of_guardedLeft`, mirroring the pure
+`append_coordinateWiseSpecialSoundWithEscape`. The positivity of the right shape's arity, which
+the tree-level statement takes as a hypothesis, is free here: every `CWSSStructure` branches
+`ℓᵢ·(kᵢ−1)+1 ≥ 1` ways (`CWSSStructure.arity_pos`). -/
 theorem append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁) (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
@@ -151,8 +266,12 @@ theorem append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft
     (h₂ : coordinateWiseSpecialSoundEscape init impl D₂ esc₂ rel₂ rel₃ V₂) :
     coordinateWiseSpecialSoundWithEscape init impl
       (CWSSStructure.append D₁ D₂) (esc₁.append esc₂ out₁) rel₁ rel₃ (V₁.append V₂)
-      (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
-  sorry
+      (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
+  treeSpecialSoundWithEscape_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm
+    HEq.rfl HEq.rfl
+    (append_treeSpecialSoundWithEscape_of_guardedLeft init impl V₁ V₂
+      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) (fun i => D₂.arity_pos i)
+      check₁ out₁ hV₁ esc₁ esc₂ Ext₁ h₁ h₂)
 
 /-- **Guarded binary CWSS append, plain named form** — a *proven corollary* of the escape-threaded
 obligation above at `esc₁ = esc₂ = fun _ _ => False`, where the composed event is propositionally

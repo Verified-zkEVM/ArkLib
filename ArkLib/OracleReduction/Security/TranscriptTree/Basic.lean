@@ -158,6 +158,21 @@ inductive LeafPath : {m : Fin (n + 1)} → ChallengeTree pSpec arity m → Type 
 
 namespace LeafPath
 
+/-- **Every tree with positive branching has a leaf path**: descend through message nodes, and at
+each challenge node take the first child.
+
+This is what makes a subtree's transcript set inhabited, which matters as soon as verifiers are
+allowed to *reject*: to rule out a rejecting prefix one must exhibit an actual transcript of the
+subtree below it and contradict acceptance there. For pure verifiers the fact is never needed,
+which is why it appears only now. Positivity is free for every coordinate-wise structure, whose
+arity is `ℓᵢ·(kᵢ−1)+1` (`CWSSStructure.arity_pos`). -/
+def some (harity : ∀ i, 0 < arity i) :
+    {m : Fin (n + 1)} → (T : ChallengeTree pSpec arity m) → LeafPath T
+  | _, .leaf => .leaf
+  | _, .msgNode _ _ _ child => .msg (some harity child)
+  | _, .chalNode m h _ children =>
+      .chal ⟨0, harity ⟨m, h⟩⟩ (some harity (children ⟨0, harity ⟨m, h⟩⟩))
+
 /-- Read the full transcript selected by a leaf path, extending an already-accumulated prefix. -/
 def transcript :
     {m : Fin (n + 1)} → {T : ChallengeTree pSpec arity m} →
