@@ -219,6 +219,8 @@ jobs:
           BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
+          BUILD_TIMING_NATIVE_NAME: Native build
+          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime
         run: |
           baseline_dir="${{ runner.temp }}/build-timing-baseline"
           if [ -f "$baseline_dir/results.jsonl" ]; then
