@@ -71,9 +71,14 @@ Ring-switching layer:
   **Scope** (matching the "Paper-model boundary" note in `Hachi/RingSwitch/Reduction.lean`): what is
   formalized is the simplified raw-`(z, r)` Figure 4 / Lemma 9 kernel. The paper's p. 18 honest
   protocol commits `(z, r₁, …, r_log_b(q))` with per-digit norm bounds — "there is a hidden gadget
-  decomposition of `r`" — and that encoding, its reconstruction identity, and an honest-prover
-  completeness bound are **not** formalized; `RhoShort` records the resulting admissibility
-  requirement abstractly.
+  decomposition of `r`" — and that encoding and its reconstruction identity are **not** formalized.
+  Honest completeness *is* formalized at the raw kernel, and unconditionally
+  (`liftReduction_perfectCompleteness_image`, `RingSwitch/Completeness.lean`): `RhoShort` is no
+  longer an admissibility hypothesis but a discharged conclusion, at the coefficient bound
+  `RingSwitch/QuotientNorms.lean` proves — which for a Hachi `R^lin` instance is the unconditional
+  `ρBound = q/2` (`rhoShort_half`), since the matrix carries the Ajtai key. That is what the
+  paper's per-digit encoding would buy back, and what its absence costs: a zero-check range base of
+  at least `q/2 + 1` (see `Hachi/HonestChain.lean`).
 - The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
   automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
   laws for the Hachi instance.
@@ -120,8 +125,9 @@ Ring-switching layer:
   vector challenges into scalar rounds leaves the interactive protocol unchanged, and
   `ZeroCheck/Completeness.lean` proves the honest prover accepted with probability one
   (`nestedZeroCheckReduction_perfectCompleteness`, axiom-clean, error exactly zero — `relBatched`
-  asserts the identities, so both polynomials vanish wherever the challenges land). At the batching bridge, shortness is **derived** from the range
-  identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
+  asserts the identities, so both polynomials vanish wherever the challenges land). At the
+  batching bridge, shortness is **derived** from the range identity `H₀ ≡ 0`
+  (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
   At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` **do** carry a
   `liftShort` conjunct, but as the commitment's shortness index rather than as a range assumption:
   `LiftCom.Collision` is defined on pairs of distinct *short* openings, so it is what makes the
@@ -158,9 +164,15 @@ Ring-switching layer:
   `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
 - Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
   Lemma 5's field/isomorphism conclusion.
-- Complete the still-sorried Hachi-specific links, notably Lemma 9, the sumcheck bridge and
-  summands, Lemma 11, final evaluation, and recursion handoff. The corrected Lemma 10 and its
-  batching bridge are already proved.
+- Complete the still-sorried Hachi-specific links: what remains is the §4.5 recursion tail —
+  partial evaluation (Eq. (24)), the `Z`-packing bridge (Eqs. (25)–(26), which carries the flagged
+  soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
+  proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
+  (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
+  coordinate-wise special soundness and perfect completeness. Composing the completeness side is
+  blocked on the generic `Reduction.append_completeness`, still `sorry`, which every composed
+  statement inherits as a `sorryAx` dependency; the nonrecursive opening
+  (`Hachi/Correctness.lean`) is complete and perfectly correct modulo exactly that.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.

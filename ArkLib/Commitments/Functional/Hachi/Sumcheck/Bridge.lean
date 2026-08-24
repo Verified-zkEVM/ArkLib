@@ -18,9 +18,14 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
     statement alone.
 
   The statement map installs the empty challenge prefix and the initial target pair
-  `(0, zcTargetAlpha)`. The bridge is pure reshaping: soundness is the pair of algebraic
+  `(0, zcTargetAlpha)`. The bridge is pure reshaping: both directions are the pair of algebraic
   identities `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`
-  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`).
+  (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`, `ZeroCheck/Constraints.lean`), read in
+  opposite orientations — the pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` for soundness,
+  the push-forward `mem_nestedRoundRel_of_relNestedZeroCheck` for the honest side. The latter gives
+  `nestedSumcheckBridgeReduction_perfectCompleteness` (error `0`, through
+  `ReduceClaim.reduction_completeness_of_imp`), about the same verifier as the package
+  (`nestedSumcheckBridgeReduction_verifier`).
 
   ## References
 

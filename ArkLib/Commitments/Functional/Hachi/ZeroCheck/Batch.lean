@@ -34,9 +34,9 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   Boolean table, which is zero-padded beyond row `n`). It needs neither arity hypothesis and no
   property of `α`, but it needs the range-base fits in the *other* orientation
   (`bound ≤ b − 1`, `ρBound ≤ b − 1`): at the paper's `bound = ρBound = b − 1` both hold and the two
-  relations coincide. The link's perfect completeness, assembled from the two directions through
-  `ReduceClaim.reduction_completeness`, is `batchReduction_perfectCompleteness`
-  (`ZeroCheck/Completeness.lean`).
+  relations coincide. The link's perfect completeness, which uses this direction **alone** (through
+  `ReduceClaim.reduction_completeness_of_imp`, so neither arity hypothesis of the pull-back is
+  needed), is `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`).
 
   Escapes are no longer threaded through the relations as a `⊕ E` summand: weak binding enters
   the certificate as an *event on the transcript tree* whose hardness target is the

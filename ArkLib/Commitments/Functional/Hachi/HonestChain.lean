@@ -36,8 +36,10 @@ here — `completePrefixReduction_perfectCompleteness` (through the nested zero-
 `completeThroughSumcheckReduction_perfectCompleteness` (through the sumcheck, to
 `relWEvalClaim`) — but both are **`sorryAx`-tainted by construction**: appending completeness needs
 `Reduction.append_completeness` (`OracleReduction/Composition/Sequential/Append.lean`), still
-`sorry`, and the context-lifted links would additionally need `liftContext_completeness`
-(`OracleReduction/LiftContext/Reduction.lean`), also still `sorry`. Every per-link input is
+`sorry`. That is the *only* admitted dependency here — the chain is assembled so that every link
+is stated at the relations its neighbour produces, so no link has to be context-lifted and
+`liftContext_completeness` (`OracleReduction/LiftContext/Reduction.lean`, also still `sorry`)
+never enters. Every per-link input is
 axiom-clean; `Composition.lean` composes the *soundness* certificates only. Beyond
 `relWEvalClaim`, the **nonrecursive** run is closed by the terminal reveal-and-check in
 `Correctness.lean` (the recursion tail's honest layer still does not exist).

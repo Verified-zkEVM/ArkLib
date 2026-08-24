@@ -473,10 +473,13 @@ end OpeningChain
   compute functions, and all of them through the sumcheck are now instantiated with a completeness
   proof (`QuadEval`'s `honestComputeV`/`honestComputeResp`, the sumcheck's `honestComputeG` at the
   computable `computableRoundPoly`, the final evaluation's `honestComputeY`); the honest chain is
-  appended in `HonestChain.lean` up to `relWEvalClaim`. What is still open is the recursion tail's
-  `computeY` (`Recursion/PartialEval.lean`) and — for every *composed* completeness statement,
-  including `Commitment.lean`'s `opening` — the sorried generic `Reduction.append_completeness`,
-  which those statements inherit as a `sorryAx` dependency.
+  appended in `HonestChain.lean` up to `relWEvalClaim` and closed **nonrecursively** in
+  `Correctness.lean`, where a terminal reveal-and-check replaces rows 10–12 and yields a complete
+  opening protocol with `Commitment.perfectCorrectness` (`hachiNonrecursive`, instantiated
+  concretely in `Concrete.lean`). What is still open is the recursion tail's `computeY`
+  (`Recursion/PartialEval.lean`) — which is what `Commitment.lean`'s `hachi.opening` waits on —
+  and, for every *composed* completeness statement, the sorried generic
+  `Reduction.append_completeness`, which those statements inherit as a `sorryAx` dependency.
 * **Knowledge-error accounting** (FMN24 Lemma 4), `Commitment.extractability`, and Fiat–Shamir
   remain out of scope. Note what this means for the certificate above: CWSS delivers a witness (or
   an escape) from a *structured accepting tree*, with no probability attached — no per-round

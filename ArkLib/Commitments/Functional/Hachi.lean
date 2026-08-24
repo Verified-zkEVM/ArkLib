@@ -6,6 +6,8 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
 import ArkLib.Commitments.Functional.Hachi.HonestChain
+import ArkLib.Commitments.Functional.Hachi.Correctness
+import ArkLib.Commitments.Functional.Hachi.Concrete
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Commitments.Functional.Hachi.InnerOuter.Basic
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
@@ -25,12 +27,21 @@ inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^
 Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
 which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
 and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
-tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
-proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`). The completeness layer has its first two links: the zero-check (Figure 5) in
-`ZeroCheck/Completeness.lean` and the polynomial-evaluation reduction (Figure 3) in
-`QuadEval/Completeness.lean` are both proved perfectly complete. See the `TODO` blocks in
+(§4.2, Lemma 8) with its polynomial-level bridge; and the whole §4.3 opening chain — the `R^lin`
+adapter, the HMZ25 lift (Figure 4 / Lemma 9), the batching bridge, the corrected zero-check
+(Figure 5 / Lemma 10), the sumcheck loop (Figure 6 / Lemma 11) and the final evaluation — in
+**both** security directions, each link's coordinate-wise special soundness and each link's
+perfect completeness. Only the §4.5 recursion adapters remain sorried skeletons, inventoried link
+by link in `Composition.lean`; `hachi.opening` (`Commitment.lean`) is still a `sorry`, because it
+is the *recursive* opening.
+
+The honest chain is closed **nonrecursively** in `Correctness.lean`: a terminal reveal-and-check
+in place of the recursion tail turns the chain into a complete opening protocol, packaged with the
+balanced committer as the scheme `hachiNonrecursive` and proved perfectly correct
+(`hachiNonrecursive_perfectCorrectness`); `Concrete.lean` instantiates it at the Ajtai lift
+commitment, where the whole honest run is computable. Every *per-link* completeness theorem is
+axiom-clean; every *composed* one inherits `sorryAx` from the generic
+`Reduction.append_completeness`, which is still `sorry`. See the `TODO` blocks in
 `Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
@@ -53,9 +64,11 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   zero-round polynomial-level bridge (`Bridge`, itself proved in both directions:
   `bridge_coordinateWiseSpecialSoundWith` and `bridgeReduction_perfectCompleteness`).
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
-  guarded sumcheck stages of the opening chain. `RingSwitch/` and `ZeroCheck/` are proved in both
-  directions (`…/Completeness.lean` each; the lift's honest direction is conditional on the range
-  check of its honest lifted witness); `Sumcheck/` has soundness only.
+  guarded sumcheck stages of the opening chain. All three are proved in both directions
+  (`…/Completeness.lean` each). The lift's honest direction is **unconditional**: both halves of
+  `liftShort` are discharged, the quotient half by `RingSwitch/QuotientNorms.lean`. `Sumcheck/`'s
+  per-round completeness is axiom-clean; its `m₀`-fold and composed statements inherit `sorryAx`
+  from `Reduction.append_completeness`.
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
   one iteration at the next ring's plain `QuadEval.relIn` relation.
 * `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
@@ -71,6 +84,15 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   `WeakBinding.VerifiedOpening`, its box membership, and `mem_relInBox_of_honestBalanced` /
   `mem_relInBox_of_commitBalanced` — paper-exact `QuadEval`'s input relation, established for the
   balanced committer's actual output.
+* `Correctness.lean` — the **complete nonrecursive opening and its perfect correctness**: the
+  terminal reveal-and-check (`terminalCheck` and its reflection lemma) closing the chain in place
+  of the §4.5 recursion, the zero-round commitment-input adapter, their composition
+  `hachiNonrecursiveOpening`, the scheme `hachiNonrecursive`, and
+  `hachiNonrecursive_perfectCorrectness` through the generic bridge
+  `Commitment.perfectCorrectness_of_opening_perfectCompleteness`.
+* `Concrete.lean` — the same scheme at the concrete Ajtai lift commitment `D · (z ‖ ρ)`
+  (`hachiNonrecursiveConcrete`), a plain `def`: the whole honest run is computable, and
+  `scripts/HachiRuntime.lean` runs it.
 * `HonestChain.lean` — the honest side's parameter bookkeeping: `HonestRangeParams` (digit base,
   Eq. (20) ball radius, zero-check range base, with the relations the *honest* direction needs and a
   witness that they are satisfiable at a small ball radius) and the per-seam corollaries restating

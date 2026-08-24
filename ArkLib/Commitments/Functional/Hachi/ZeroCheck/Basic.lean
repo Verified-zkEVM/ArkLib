@@ -77,9 +77,11 @@ lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full an
   (`OracleReduction/Security/Basic.lean`), added there for this proof and reusable by every other
   link. The file also closes the **batching bridge** on the honest side:
   `batchReduction_perfectCompleteness` (protocol object `batchReduction`, verifier shared with
-  `batchPackage` by `rfl`), assembled from `Batch.lean`'s two relation directions through
-  `ReduceClaim.reduction_completeness`. Still missing on the honest side of the chain: only the
-  composition of the links (blocked on the sorried generic `Reduction.append_completeness`).
+  `batchPackage` by `rfl`), from `Batch.lean`'s honest direction `mem_relBatched_of_relLift`
+  through `ReduceClaim.reduction_completeness_of_imp`. Both links of this folder are therefore
+  certified in both directions; what the honest side of the *chain* still lacks is only the
+  composition of the links, which inherits `sorryAx` from the sorried generic
+  `Reduction.append_completeness` (the appended statements are in `HonestChain.lean`).
 
 The generic zero test lives in `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` (Mathlib-level,
 `k`-ary trees and individual degree `< k`) with the computable view in

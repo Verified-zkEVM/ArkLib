@@ -20,6 +20,14 @@ import ArkLib.Commitments.Functional.Hachi.Sumcheck.Rounds
   * **output** — the evaluation claim `WEvalStatement`: the commitment `t`, the sumcheck
     point `a`, and the claimed value `y′`, consumed by the `Recursion/` adapters.
 
+  The honest side is here as well: `honestComputeY := wTableMleEval` is the true evaluation, the
+  protocol object is `finalEvalReduction`, and `finalEvalReduction_perfectCompleteness` (error `0`,
+  unconditional) is its perfect completeness. This is the first Hachi link whose verifier can
+  actually reject, so "the honest run cannot fail" is *proved*, from the guard lemma
+  `finalCheck_honestComputeY`, rather than holding by construction; the relation step is
+  `mem_relWEvalClaim_of_nestedRoundRel`. Protocol object and package share a verifier
+  (`finalEvalReduction_verifier`).
+
   The step has no challenge round, so special soundness
   (`finalEval_coordinateWiseSpecialSoundWith`) reduces to a transcript-level argument:
   acceptance forces the check and exhibits a short opening `w̃` of `t` with `mle[w̃](a) = y′`;
