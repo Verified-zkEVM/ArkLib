@@ -10,7 +10,7 @@ import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 /-!
 # `Rq Φ` — the Cyclotomic Ring as a Computable `CommRing`
 
-`ArkLib/Data/Lattices/CyclotomicRing/Basic.lean` gives a *semantic* cyclotomic ring
+`ArkLib/Data/Lattices/CyclotomicRing/Core/Basic.lean` gives a *semantic* cyclotomic ring
 (`Φ.CyclotomicRing`, noncomputable) and a computable reduction `Φ.reduce`/`Φ.mul` on
 raw `CPolynomial R`. Raw `CPolynomial` is not the right element type for a commitment
 scheme: two raw polynomials can be unequal yet congruent mod `φ`, which would make the
@@ -19,8 +19,7 @@ binding reduction unsound (`s₁ - s₂` could be a nonzero multiple of `φ`).
 This file fixes that by defining `Φ.Rq`, the subtype of **canonical reduced
 representatives** `{ p : CPolynomial R // Φ.reduce p = p }`, and equipping it with a
 genuine **computable `CommRing`** structure transported from the semantic quotient
-along the injective ring map `a ↦ quotientHom a.val` (the CompPoly analogue of VCV-io's
-`instCommRingPoly`).
+along the injective ring map `a ↦ quotientHom a.val`.
 
 ## Main definitions
 
@@ -62,6 +61,23 @@ theorem degree_toPoly_lt_of_reduced {p : CPolynomial R} (hp : Φ.reduce p = p) :
   conv_lhs => rw [← hp]
   rw [reduce_toPoly]
   exact Polynomial.degree_modByMonic_lt _ (IsCyclotomic.monic (Φ := Φ))
+
+/-- A reduced representative has `CPolynomial` degree strictly below `deg φ`, provided `φ` is
+non-constant. The `natDegree` companion of `degree_toPoly_lt_of_reduced`, in the form needed
+wherever a reduced representative is read out as a length-`deg φ` coefficient vector. -/
+theorem natDegree_lt_of_reduced (hd : 0 < Φ.φ.natDegree) {p : CPolynomial R}
+    (hp : Φ.reduce p = p) : p.natDegree < Φ.φ.natDegree := by
+  have hφ : Φ.φ.toPoly ≠ 0 := by
+    intro h
+    rw [CPolynomial.natDegree_toPoly, h, Polynomial.natDegree_zero] at hd
+    exact absurd hd (lt_irrefl 0)
+  have hdeg := Φ.degree_toPoly_lt_of_reduced hp
+  rw [Polynomial.degree_eq_natDegree hφ, ← CPolynomial.natDegree_toPoly] at hdeg
+  rw [CPolynomial.natDegree_toPoly]
+  by_cases hz : p.toPoly = 0
+  · rw [hz, Polynomial.natDegree_zero]
+    exact hd
+  · exact (Polynomial.natDegree_lt_iff_degree_lt hz).mpr hdeg
 
 /-- Reduction fixes any polynomial whose degree is already below `deg φ`. -/
 theorem reduce_eq_self_of_degree_lt {p : CPolynomial R}
@@ -293,21 +309,27 @@ theorem mk_sum {ι : Type*} (s : Finset ι) (f : ι → CPolynomial R) :
   · intro a s ha ih
     rw [Finset.sum_insert ha, Finset.sum_insert ha, mk_add, ih]
 
-/-- A reduced representative of the power-of-two cyclotomic ring has `natDegree` below the ring
-dimension `2^α`. -/
-theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
-    a.1.toPoly.natDegree < (powTwoCyclotomic (R := R) α).φ.natDegree := by
+/-- A reduced representative has `natDegree` below `d = deg φ`, for **any** modulus of positive
+degree (the dimension positivity `0 < d` is an explicit hypothesis). The `powTwoCyclotomic`-pinned
+`Rq.natDegree_val_toPoly_lt` below is derived from this general version. -/
+theorem natDegree_val_toPoly_lt' (hd : 0 < Φ.φ.natDegree) (a : Rq Φ) :
+    a.1.toPoly.natDegree < Φ.φ.natDegree := by
   rcases eq_or_ne a.1.toPoly 0 with h0 | hne
-  · rw [h0, Polynomial.natDegree_zero, powTwoCyclotomic_natDegree]
-    exact pow_pos (by norm_num) α
+  · rw [h0, Polynomial.natDegree_zero]; exact hd
   · rw [CompPoly.CPolynomial.natDegree_toPoly]
-    exact Polynomial.natDegree_lt_natDegree hne
-      ((powTwoCyclotomic (R := R) α).degree_toPoly_lt_of_reduced a.2)
+    exact Polynomial.natDegree_lt_natDegree hne (Φ.degree_toPoly_lt_of_reduced a.2)
+
+/-- A reduced representative of the power-of-two cyclotomic ring has `natDegree` below the ring
+dimension `2^α` — the special case of `Rq.natDegree_val_toPoly_lt'` for `φ = X^{2^α} + 1`. -/
+theorem natDegree_val_toPoly_lt (α : ℕ) (a : Rq (powTwoCyclotomic (R := R) α)) :
+    a.1.toPoly.natDegree < (powTwoCyclotomic (R := R) α).φ.natDegree :=
+  natDegree_val_toPoly_lt' (powTwoCyclotomic (R := R) α)
+    (by rw [powTwoCyclotomic_natDegree]; exact pow_pos (by norm_num) α) a
 
 /-! ## Constant embedding and coefficient-vanishing facts
 
 General (any-modulus) degree/coefficient lemmas used by the inner-outer gadget commitment
-(`ArkLib/Commitments/Functional/Hachi/Gadget.lean`); the power-of-two special cases live in
+(`ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean`); the power-of-two special cases live in
 `Subfield/Basis.lean`. -/
 
 /-- `Φ.φ.natDegree`, the truncation length of decompositions, does not exceed `deg φ`. -/

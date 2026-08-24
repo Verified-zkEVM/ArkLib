@@ -25,6 +25,9 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   - `ChallengeTree.AppendSplit` / `ChallengeTree.appendSplit` — the split of a tree over
     `pSpec₁ ++ₚ pSpec₂` into a first-stage tree (`fst`) and a path-indexed family of suffix trees
     (`sndAt`).
+  - `ChallengeTree.EscapeEvent.append` — composition of two escape events
+    (`ChallengeTree.EscapeEvent`) along the same split: the left event on the prefix tree, or the
+    right event on some suffix tree at the left verifier's verdict on that prefix leaf.
 
   ## Main theorems
 
@@ -920,6 +923,40 @@ theorem appendSplit_fullTranscripts_append_of_mem
   exact key
 
 end Membership
+
+section EscapeEventAppend
+
+variable {arity₁ : pSpec₁.ChallengeIdx → ℕ} {arity₂ : pSpec₂.ChallengeIdx → ℕ}
+
+/-- Binary composition of escape events along a protocol append: the composed event fires iff the
+left event fires on the prefix tree, or the right event fires on the suffix tree hanging off some
+prefix leaf, at the intermediate statement `verify₁` computes on that leaf's transcript. Each
+factor's event stays self-contained, so factors may track breaks of entirely different assumptions.
+
+Where `verify₁` is unconstrained the composed event evaluates `esc₂` at intermediate statements no
+honest execution produces — harmless, since an honest event is a break at *every* `(stmt, tree)`
+pair (`ChallengeTree.EscapeEvent`). -/
+def EscapeEvent.append {Stmt₁ Stmt₂ : Type}
+    (esc₁ : EscapeEvent Stmt₁ pSpec₁ arity₁) (esc₂ : EscapeEvent Stmt₂ pSpec₂ arity₂)
+    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂) :
+    EscapeEvent Stmt₁ (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) :=
+  fun stmt tree =>
+    esc₁ stmt tree.appendSplit.fst ∨
+    ∃ path : LeafPath tree.appendSplit.fst,
+      esc₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
+
+/-- Unfolding lemma for the composed escape event (definitional; for readability at composition
+sites and `simp`-driven characterizations of composed chains' events). -/
+theorem EscapeEvent.append_apply {Stmt₁ Stmt₂ : Type}
+    (esc₁ : EscapeEvent Stmt₁ pSpec₁ arity₁) (esc₂ : EscapeEvent Stmt₂ pSpec₂ arity₂)
+    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂) (stmt : Stmt₁)
+    (tree : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0) :
+    esc₁.append esc₂ verify₁ stmt tree ↔
+      (esc₁ stmt tree.appendSplit.fst ∨
+        ∃ path : LeafPath tree.appendSplit.fst,
+          esc₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)) := Iff.rfl
+
+end EscapeEventAppend
 
 end AppendSplit
 

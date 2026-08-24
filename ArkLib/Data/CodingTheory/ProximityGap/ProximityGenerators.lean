@@ -7,6 +7,7 @@ Authors: Katerina Hristova
 import ArkLib.Data.CodingTheory.Basic.LinearCode
 import ArkLib.Data.MvPolynomial.Degrees
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
+import ArkLib.Data.Probability.Instances
 
 /-!
 # Proximity Generators fundamental definitions
@@ -23,15 +24,22 @@ probability of obtaining a zero output from a non-zero vector is bounded above b
 - `MDS generator`: A generator is MDS if the matrix whose rows are the outputs of the generator
 function is a generator matrix for an MDS code
 - `MCA generator`: A generator has mutual correlated agreement (MCA) with error `ε_mca` if the
-probability that the generator satisfies the MCA condition is bounded above by `ε_mca`.
+probability that the generator satisfies the MCA condition is bounded above by `ε_mca`. Stated
+over module codes `ModuleCode ι F A`, matching [BCGM25]'s alphabet generality (Definition 3.2).
+`mcaError` is the worst-case error *value* and is the primitive; `IsMCAGenerator` is defined as a
+bound on it, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl` rather than a bridge between two
+parallel definitions.
 - `tensor product of generators`: given two generators over a field `F` of output sizes `ℓ` and `ℓ'`
 respectively, we can define their tensor product componentwise. This is a generator on `F^ℓ ⊗ 𝔽^ℓ'`
+- `affine line generator`: A generator of the form `G : F → F²` such that `x ↦ (1,x)`.
+- `affine space generator`: A generator of the form `G : F^ℓ → F^(ℓ + 1)` such that
+ `x ↦ (1,x)`.
 
 ## References
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
-with Mutual Correlated Agreement*][BCGM25]. Full paper : https://eprint.iacr.org/2025/2051}
+    with Mutual Correlated Agreement*][BCGM25]
 -/
 
 section
@@ -54,7 +62,7 @@ abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 a zero output from a non-zero vector is bounded above by `ε_ze`.
 Definition 3.11 [BCGM25]. -/
 def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_ze : I) :
-  Prop :=
+    Prop :=
   (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
     ≤ ENNReal.ofReal ε_ze
 
@@ -84,21 +92,152 @@ Definition 3.12 [BCGM25]. -/
 def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
   Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
-/-- The condition for MCA generator. -/
-def IsMCA {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (LC : LinearCode ι F)
-  (x : S) (U : ℓ → (ι → F)) (γ : I) : Prop :=
-  let v := Matrix.vecMul (G x) (U)
-  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - γ) ∧
-  projectedWord v T ∈ projectedCode LC T ∧
-  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCode LC T
+/-- The condition for MCA generator.
 
-/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that the
-generator satisfies the MCA condition is bounded above by `ε_mca`.
-Definition 3.14 [BCGM25]. -/
-def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_mca : I → I)
-  (LC : LinearCode ι F) : Prop :=
-  ∀ U : ℓ → (ι → F), ∀ γ : I,
-    Pr_{let x ←$ᵖ S}[(IsMCA G LC x U γ)] ≤ ENNReal.ofReal (ε_mca γ)
+Stated over a module code `MC : ModuleCode ι F A`, matching [BCGM25]'s alphabet generality
+(Definition 3.2 takes `Σ` to be an arbitrary `F`-vector space): the combination
+`∑ j, G x j • U j` replaces `Matrix.vecMul (G x) U`, which requires a ring structure on the
+alphabet. At `A := F` the two agree — see `vecMul_eq_smul_sum`.
+
+The radius is `δ : ℝ`, not `I`, for the same reason `Code.Lambda`'s is: it is an *argument to a
+value*, and narrowing it only relocates a membership obligation to every call site. The size
+clause is total and honest at every real — no `T` can meet `|T| ≥ n·(1 - δ)` when `δ < 0`, and
+the clause is vacuous once `δ ≥ 1` — so nothing outside `[0,1]` is asserted that is not already
+asserted at the endpoints. [BCGM25]'s `γ ∈ [0,1]` typing is preserved where the paper puts it,
+on the *error bound*: `IsMCAGenerator` quantifies `δ : I`. See
+`docs/wiki/proximity-error-conventions.md`. -/
+def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+  (G : Generator S ℓ F) (MC : ModuleCode ι F A)
+  (x : S) (U : ℓ → (ι → A)) (δ : ℝ) : Prop :=
+  let v : ι → A := fun k => ∑ j, G x j • U j k
+  ∃ (T : Finset ι), (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
+  projectedWord v T ∈ projectedCodeSubmod MC T ∧
+  ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod MC T
+
+omit [Fintype ι] in
+/-- Over the alphabet `A := F`, the linear combination in `IsMCA` is the matrix-vector
+product used by the original `F`-alphabet definition. -/
+lemma vecMul_eq_smul_sum {S : Type} (G : Generator S ℓ F) (x : S) (U : ℓ → (ι → F)) :
+    Matrix.vecMul (G x) (Matrix.of U) = fun k => ∑ j, G x j • U j k := by
+  funext k
+  simp [Matrix.vecMul, dotProduct, smul_eq_mul]
+
+/-- At the field alphabet `A := F`, where `ModuleCode ι F F` and `LinearCode ι F` are the same
+type, `IsMCA` is the `Matrix.vecMul`-shaped predicate: the linear combination `∑ j, G x j • U j`
+is the matrix-vector product `G x ᵥ* U`.
+
+The proof is `Iff.rfl`, so the two agree definitionally and not merely propositionally. Any edit
+that weakens that breaks this declaration rather than silently changing what every field-alphabet
+consumer means. -/
+theorem isMCA_iff_vecMul {S : Type} [Nonempty S] [Fintype S]
+    (G : Generator S ℓ F) (LC : LinearCode ι F) (x : S) (U : ℓ → (ι → F)) (δ : ℝ) :
+    IsMCA G LC x U δ ↔
+      ∃ T : Finset ι, (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ∧
+        projectedWord (Matrix.vecMul (G x) (Matrix.of U)) T ∈ projectedCodeSubmod LC T ∧
+        ∃ j : ℓ, projectedWord (U j) T ∉ projectedCodeSubmod LC T :=
+  Iff.rfl
+
+/-- The mutual correlated agreement error of a generator for a module code: the worst-case,
+over families `U`, probability of the MCA event.
+
+This is the primitive of the layer: `IsMCAGenerator` is defined as a bound on it, and the generator
+transport lemmas are stated on it directly, so they mention no error function at all. A value can
+be *assigned* to a code family rather than merely bounded, which is what a claim about a specific
+code needs.
+
+The supremum is over `ℓ → (ι → A)`, which is inhabited whenever `A` is — and `A` carries `Zero`
+— so this is never a degenerate `⨆` over an empty family.
+
+The radius is `ℝ`, matching `Code.Lambda`; see `IsMCA`. -/
+noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) : ℝ → ENNReal :=
+  fun δ => ⨆ U : ℓ → (ι → A), Pr_{let x ←$ᵖ S}[IsMCA G MC x U δ]
+
+/-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
+the generator satisfies the MCA condition is bounded above by `ε_mca`.
+Definition 3.14 [BCGM25].
+
+The body is the `mcaError` bound, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`,
+`refine` and `apply` see through to the value inequality, and only `rw`/`simp` need the bridge.
+The pointwise reading — the bound at one individual family `U` — is `IsMCAGenerator.prob_le`.
+
+The radius is quantified over `I`, the closed unit interval: this is the bound, and the bound is
+where `[0,1]` belongs, while the value underneath is total in the radius. See
+`docs/wiki/proximity-error-conventions.md`. -/
+def IsMCAGenerator {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
+  (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (MC : ModuleCode ι F A) : Prop :=
+  ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal)
+
+/-- **Unfolding lemma for `IsMCAGenerator`.** It *is* the `mcaError` bound, by definition; this is
+the entry point for `rw` and `simp only`, which do not see through a semireducible `def`. -/
+lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
+    [AddCommMonoid A] [Module F A] (G : Generator S ℓ F) (ε_mca : I → ℝ≥0)
+    (MC : ModuleCode ι F A) :
+    IsMCAGenerator G ε_mca MC ↔ ∀ δ : I, mcaError G MC (δ : ℝ) ≤ (ε_mca δ : ENNReal) := Iff.rfl
+
+/-- The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the
+supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason
+the `∀ U` in [BCGM25] Definition 3.14 costs nothing after the definition is stated at the value. -/
+lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
+    [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
+    {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
+    Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)] ≤ (ε_mca δ : ENNReal) :=
+  le_trans (le_iSup (fun U => Pr_{let x ←$ᵖ S}[IsMCA G MC x U (δ : ℝ)]) U) (h δ)
+
+/-- The MCA error is a probability: it never exceeds `1`, and in particular is never `⊤`.
+
+Needed wherever the value has to cross back into `ℝ≥0` — e.g. to compare a `mcaError` against an
+`I → ℝ≥0` bound in the other direction, or to do `ENNReal` arithmetic that is only valid away
+from `⊤`. -/
+lemma mcaError_le_one {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
+    mcaError G MC δ ≤ 1 :=
+  iSup_le fun _ => PMF.coe_le_one _ True
+
+lemma mcaError_ne_top {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) (δ : ℝ) :
+    mcaError G MC δ ≠ ⊤ :=
+  ne_top_of_le_ne_top ENNReal.one_ne_top (mcaError_le_one G MC δ)
+
+/-- The MCA error is monotone in the distance: enlarging `δ` weakens the size clause
+`|T| ≥ n·(1 - δ)`, so more witness sets qualify and the bad event can only grow.
+
+Monotonicity is specific to this notion: it holds because the event carries no
+distance-*anti*monotone conjunct. Errors whose event carries a guard do, and are not monotone —
+see `docs/wiki/proximity-error-conventions.md`. -/
+lemma mcaError_mono {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ} (h : δ ≤ δ') :
+    mcaError G MC δ ≤ mcaError G MC δ' := by
+  refine iSup_mono fun U => Probability.Pr_le_Pr_of_implies _ _ _ fun x hx => ?_
+  obtain ⟨T, hT, hmem, hbad⟩ := hx
+  exact ⟨T, le_trans (mul_le_mul_of_nonneg_left (by linarith) (Nat.cast_nonneg _)) hT,
+    hmem, hbad⟩
+
+/-- The size clause `|T| ≥ n·(1 - δ)` is an *integer* condition on the complement: it says the
+`n - |T|` positions outside `T` number at most `⌊δ·n⌋`. Hence `δ` enters only through that
+floor. -/
+lemma mul_one_sub_le_card_iff_sub_card_le_floor (T : Finset ι) {δ : ℝ} (hδ : 0 ≤ δ) :
+    (T.card : ℝ) ≥ (Fintype.card ι) * (1 - δ) ↔
+      Fintype.card ι - T.card ≤ ⌊δ * (Fintype.card ι : ℝ)⌋₊ := by
+  have hTn : T.card ≤ Fintype.card ι := by
+    simpa using Finset.card_le_univ T
+  rw [Nat.le_floor_iff (by positivity), Nat.cast_sub hTn]
+  constructor <;> intro hh <;> nlinarith [hh]
+
+/-- **`mcaError` is a step function on the `1/n` grid.** Two radii with the same `⌊δ·n⌋` give the
+same error, because the size clause only ever compares `n - |T|` against that floor.
+
+So a challenge radius is really an integer grid index: a claim stated at an arbitrary real `δ` is
+either unattained or ambiguous, whereas one stated at `k/n` is neither. -/
+lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A]
+    [Module F A] (G : Generator S ℓ F) (MC : ModuleCode ι F A) {δ δ' : ℝ}
+    (hδ : 0 ≤ δ) (hδ' : 0 ≤ δ')
+    (h : ⌊δ * (Fintype.card ι : ℝ)⌋₊ = ⌊δ' * (Fintype.card ι : ℝ)⌋₊) :
+    mcaError G MC δ = mcaError G MC δ' := by
+  refine iSup_congr fun U => Probability.Pr_congr fun x => ?_
+  refine exists_congr fun T => and_congr_left fun _ => ?_
+  rw [mul_one_sub_le_card_iff_sub_card_le_floor T hδ,
+    mul_one_sub_le_card_iff_sub_card_le_floor T hδ', h]
 
 /-- Let `G : S →F^ℓ` and `G′: S′→F^ℓ` be two generators. Their tensor product is the generator
 `G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x,x′) ↦ G(x) ⊗ G′(x′)`.
@@ -136,6 +275,22 @@ theorem TensorGenerator_eq_TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ']
   simp only [Module.Basis.tensorProduct_repr_tmul_apply, Pi.basisFun_repr, smul_eq_mul]
   ring
 
+/-- Let `F` be a field.
+The affine line generator is a generator of the form `G : F → F²` such that `x ↦ (1,x)`. -/
+abbrev AffineLineGenerator (F : Type) [Field F] : Generator F (Fin 2) F :=
+  fun x => ![1, x]
+
+/-- Let `F` be a field.
+The affine space generator is a generator of the form `G : F^ℓ → F^(ℓ + 1) ` such that
+`x ↦ (1,x)`. -/
+abbrev AffineSpaceGenerator (F : Type) [Field F] (ℓ : ℕ) : Generator (Fin ℓ → F) (Fin (ℓ + 1)) F :=
+  fun x => Fin.cons 1 x
+
+/-- The univariate-powers generator `x ↦ (1, x, …, x^k)`. -/
+abbrev univariatePowersGenerator (F : Type) [Field F] (k : ℕ) :
+    Generator F (Fin (k + 1)) F :=
+  fun x i => x ^ (i : ℕ)
+
 end CoreDefinitions
 
 namespace PolynomialGenerator
@@ -143,6 +298,7 @@ namespace PolynomialGenerator
 open NNReal ENNReal unitInterval MvPolynomial LinearCombination CoreDefinitions
 open scoped ProbabilityTheory ENNReal NNReal BigOperators
 
+/-- Auxiliary lemma to prove that an error is in the unit interval. -/
 lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m) : (d / m : ℝ) ∈ I := by
   constructor
   · exact div_nonneg (Nat.cast_nonneg d) (le_of_lt (Nat.cast_pos.mpr hm_pos))
@@ -150,8 +306,8 @@ lemma error_in_unit_interval (d : ℕ) (m : ℕ) (hm_pos : 0 < m) (hdm : d ≤ m
     have hm_pos' : (0 : ℝ) < m := by exact_mod_cast hm_pos
     exact (div_le_one hm_pos').mpr hdm'
 
-/-- The minimum of the cardinality of a family of sets nonempty sets, indexed by a possibly empty
-set. Returns 1 if the indexing set is empty. -/
+/-- The minimum of the cardinality of a family of nonempty sets, indexed by a possibly empty set.
+Returns `1` if the indexing set is empty. -/
 def minSeedCard {F : Type} {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] : ℕ :=
   if h : 0 < s then
     Finset.inf' Finset.univ (Finset.univ_nonempty_iff.mpr (Fin.pos_iff_nonempty.mp h))
@@ -171,6 +327,7 @@ lemma minSeedCard_pos {F : Type} {s : ℕ} (S : Fin s → Set F)
     exact Fintype.card_pos_iff.mpr (Set.nonempty_coe_sort.2 (hne i))
   · norm_num
 
+
 /-- The minimum of the cardinality of a family of nonempty sets is smaller than the cardinality of
 each set in the family. -/
 lemma minSeedCard_le {F : Type} {s : ℕ} (S : Fin s → Set F)
@@ -184,11 +341,10 @@ noncomputable local instance {F : Type} [Fintype F] {S : Set F} : Fintype S := F
 
 /-- If `G` is a polynomial generator, then `G` is zero-evading with error the maximum of the total
 degrees of the individual polynomials divided by the size of the smallest evaluation sets `S i`.
-Remark 3.20, the version of the statement in the brackets [BCGM25].
-Note: Remark 3.20 provides two ways of viewing a polynomial generator as a zero-evading generator.
-one in terms of individual degrees, and one in terms of total degrees. We choose the total degree
-approach. Ultimately, the reasoning is the same. The difference is the version of Schwartz-Zippel
-used to obtain the upper bound. -/
+
+This is the total-degree reading. An individual-degree reading of the same fact is also available;
+the reasoning is the same and only the version of Schwartz–Zippel used for the upper bound
+differs. -/
 theorem poly_gen_is_zero_evading
   {F : Type} [Field F] [Fintype F]
   {ℓ : Type} [Fintype ℓ]

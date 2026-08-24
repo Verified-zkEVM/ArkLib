@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-import ArkLib.ProofSystem.RingSwitching.Prelude
+import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 import ArkLib.ProofSystem.Binius.BinaryBasefold.Spec
 
 /-!

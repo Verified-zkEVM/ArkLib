@@ -96,6 +96,18 @@ theorem induction_two' {motive : Fin 3 → Sort*} {zero : motive 0}
     {succ : ∀ i : Fin 2, motive i.castSucc → motive i.succ} :
       induction (motive := motive) zero succ (2 : Fin 3) = succ 1 (succ 0 zero) := by rfl
 
+/-- Three-step unfolding of `Fin.induction`, matching the `induction_two` pair. -/
+@[simp]
+theorem induction_three {motive : Fin 4 → Sort*} {zero : motive 0}
+    {succ : ∀ i : Fin 3, motive i.castSucc → motive i.succ} :
+      induction (motive := motive) zero succ (last 3) = succ 2 (succ 1 (succ 0 zero)) := rfl
+
+/-- Alternate version of `Fin.induction_three` that uses `3 : Fin 4` instead of `last 3`. -/
+@[simp]
+theorem induction_three' {motive : Fin 4 → Sort*} {zero : motive 0}
+    {succ : ∀ i : Fin 3, motive i.castSucc → motive i.succ} :
+      induction (motive := motive) zero succ (3 : Fin 4) = succ 2 (succ 1 (succ 0 zero)) := rfl
+
 /-- Heterogeneous equality on `Fin.induction` -/
 theorem induction_heq {n n' : ℕ} {motive : Fin (n + 1) → Sort u} {motive' : Fin (n' + 1) → Sort u}
     {zero : motive 0} {zero' : motive' 0}
@@ -304,6 +316,10 @@ theorem castSum_castLT {l' : List ℕ} {i : ℕ} (j : Fin i) :
 theorem castSum_castAdd {n m : ℕ} (i : Fin n) : castSum [n, m] (by simp) i = castAdd m i := by
   simp [castSum]
 
+/-- Case analysis on `Fin l.sum` by the list summand containing `i`.
+
+The recursive `natAdd` branch is still admitted (see the commented recursion sketch below),
+so anything elaborating through `sumCases` inherits `sorryAx`. -/
 def sumCases {l : List ℕ} {motive : Fin l.sum → Sort*}
     (cases : ∀ (n : ℕ) (h : n ∈ l) (i : Fin n), motive (castSum l h i))
     (i : Fin l.sum) : motive i := match l with

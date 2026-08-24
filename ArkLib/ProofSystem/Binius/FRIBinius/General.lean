@@ -6,7 +6,7 @@ Authors: Chung Thai Nguyen, Quang Dao
 
 import ArkLib.ProofSystem.Binius.BinaryBasefold.QueryPhase
 import ArkLib.ProofSystem.Binius.FRIBinius.CoreInteractionPhase
-import ArkLib.ProofSystem.RingSwitching.BatchingPhase
+import ArkLib.ProofSystem.RingSwitching.Packing.BatchingPhase
 
 /-!
 # FRI-Binius IOPCS
@@ -111,11 +111,10 @@ def batchingCoreReduction :=
 /-- The oracle verifier for the full Binary Basefold protocol -/
 @[reducible]
 noncomputable def fullOracleVerifier :
-  OracleVerifier (oSpec:=[]ₒ)
-    (StmtIn := BatchingStmtIn (L := L) (ℓ:=ℓ))
-    (OStmtIn := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
+  OracleProofVerifier (oSpec:=[]ₒ)
+    (Statement := BatchingStmtIn (L := L) (ℓ:=ℓ))
+    (OStatement := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate).OStmtIn)
     (pSpec := fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleVerifier.append (oSpec:=[]ₒ)
     (Stmt₁ := BatchingStmtIn (L := L) (ℓ:=ℓ))
@@ -127,6 +126,7 @@ noncomputable def fullOracleVerifier :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (Oₛ₃ := fun i : Empty => nomatch i)
     (V₁ := batchingCoreVerifier κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l )
     (V₂ := QueryPhase.queryOracleVerifier K β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ:=ϑ))
@@ -134,13 +134,11 @@ noncomputable def fullOracleVerifier :
 /-- The reduction for the full Binary Basefold protocol -/
 @[reducible]
 noncomputable def fullOracleReduction :
-  OracleReduction (oSpec:=[]ₒ)
-    (StmtIn := BatchingStmtIn (L := L) (ℓ:=ℓ))
-    (OStmtIn := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).OStmtIn)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (WitIn := BatchingWitIn L K ℓ ℓ')
-    (WitOut := Unit)
+  OracleProof (oSpec:=[]ₒ)
+    (Statement := BatchingStmtIn (L := L) (ℓ:=ℓ))
+    (OStatement := (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ
+      h_ℓ_add_R_rate).OStmtIn)
+    (Witness := BatchingWitIn L K ℓ ℓ')
     (pSpec := fullPspec κ L K β ℓ' 𝓡 ϑ γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
   OracleReduction.append (oSpec:=[]ₒ)
     (Stmt₁ := BatchingStmtIn (L := L) (ℓ:=ℓ))
@@ -155,6 +153,7 @@ noncomputable def fullOracleReduction :
     (OStmt₃ := fun _ : Empty => Unit)
     (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (Oₛ₃ := fun i : Empty => nomatch i)
     (R₁ := batchingCoreReduction κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l
     )
     (R₂ := QueryPhase.queryOracleReduction K β γ_repetitions
@@ -178,14 +177,13 @@ variable {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ Pro
 
 /-- Perfect completeness for the full Binary Basefold protocol (reduction) -/
 theorem fullOracleReduction_perfectCompleteness :
-  OracleReduction.perfectCompleteness
-    (oracleReduction := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
-      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l )
-    (relIn := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
-      ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
-    (relOut := acceptRejectOracleRel)
-    (init := init)
-    (impl := impl) :=
+    OracleProof.perfectCompleteness
+      (oracleProof := fullOracleReduction κ L K β ℓ ℓ' 𝓡 ϑ γ_repetitions
+        (h_ℓ_add_R_rate := h_ℓ_add_R_rate) h_l )
+      (relation := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)
+        ℓ ℓ' h_l (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate))
+      (init := init)
+      (impl := impl) :=
   OracleReduction.append_perfectCompleteness
     (R₁ := batchingCoreReduction κ L K β ℓ ℓ' 𝓡 ϑ h_ℓ_add_R_rate h_l )
     (R₂ := QueryPhase.queryOracleReduction K β γ_repetitions
@@ -197,7 +195,7 @@ theorem fullOracleReduction_perfectCompleteness :
     (Oₛ₁:= (BinaryBasefoldAbstractOStmtIn κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate).Oₛᵢ)
     (Oₛ₂:=Binius.BinaryBasefold.instOracleStatementBinaryBasefold K β
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (ϑ := ϑ) (i := Fin.last ℓ'))
-    (Oₛ₃:=by exact fun i ↦ by exact OracleInterface.instDefault)
+    (Oₛ₃ := fun i : Empty => nomatch i)
     (pSpec₁ := batchingCorePspec κ L K β ℓ' 𝓡 ϑ h_ℓ_add_R_rate)
     (pSpec₂ := BinaryBasefold.pSpecQuery K β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
     (rel₁ := BatchingPhase.batchingInputRelation κ L K (biniusProfile κ L K β)

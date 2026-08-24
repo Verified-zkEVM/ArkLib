@@ -11,8 +11,8 @@ namespace JohnsonBound
 
 open Real Finset Fintype
 
-/-- The `q`-ary Johnson bound function: `J'(q, δ) = ((q-1)/q) · (1 - √(1 - (q/(q-1)) · δ))`. -/
-noncomputable def J' (q δ : ℚ) : ℝ :=
+/-- The `q`-ary Johnson bound function `J_q`. -/
+noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
 
@@ -416,14 +416,34 @@ lemma johnson_bound₀ [Zero F]
   rw [← johnson_denom h_card, ← mul_assoc]
   exact johnson_unrefined_by_M' h_n h_B h_card
 
-/-- Johnson bound generalised to an arbitrary centre `v` via linear shift. -/
-protected lemma johnson_bound_lemma [Field F] {v : Fin n → F}
+/-- The Johnson bound at an arbitrary centre `v`.
+
+Recentering is done by a coordinatewise transport along `Equiv.piCongrRight` rather than by
+the field subtraction `x ↦ x - v`, so no field structure is needed: each `σ i` sends `v i` to
+the symbol `0` of `Fin (card F)`, and the transport preserves Hamming distance, hence `e`,
+`d`, and cardinalities. -/
+protected lemma johnson_bound_lemma {v : Fin n → F}
     (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  rw [lin_shift_e (by omega), lin_shift_d h_B, lin_shift_card (v := v)]
-  exact johnson_bound₀ h_n (lin_shift_card (B := B) ▸ h_B) h_card
+  haveI : NeZero (card F) := ⟨by omega⟩
+  set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
+  set σ : Fin n → (F ≃ Fin (card F)) :=
+    fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ
+  set B' : Finset (Fin n → Fin (card F)) := B.image (Equiv.piCongrRight σ) with hB'
+  have hv0 : Equiv.piCongrRight σ v = 0 := by
+    funext i
+    change (σ i) (v i) = 0
+    simp only [hσ, Equiv.trans_apply, Equiv.swap_apply_left]
+  have hcardF' : card (Fin (card F)) = card F := Fintype.card_fin _
+  have hcardB' : B'.card = B.card := card_image_piCongrRight σ B
+  have h_e : e B' (Equiv.piCongrRight σ v) = e B v := e_image_piCongrRight σ B v
+  have h_d : d B' = d B := d_image_piCongrRight σ B
+  rw [← h_e, ← h_d, hv0, ← hcardB']
+  -- rewrite `card F` to `card (Fin (card F))` in the numeric factors
+  rw [show (card F : ℚ) = (card (Fin (card F)) : ℚ) by rw [hcardF']]
+  exact johnson_bound₀ h_n (hcardB' ▸ h_B) (by rw [hcardF']; exact h_card)
 
 /-- The normalised Hamming distance scaled by `q/(q-1)` stays in `[-1, 1]`. -/
 protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
@@ -455,13 +475,13 @@ lemma johnson_hyp_implies_div_ineq {n d e : ℕ}
   field_simp at *
   exact_mod_cast h_mul
 
-/-- The ratio `e/n` cannot equal `J'(q, d/n)` under the Johnson hypothesis. -/
+/-- The ratio `e/n` cannot equal `J(q, d/n)` under the Johnson hypothesis. -/
 lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
     (hn_pos : 0 < n) (hd_pos : 0 < d) (hq : 1 < q)
     (h_muln : ((e : ℚ) / n : ℝ) ≤ 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt)
-    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J' q (d / n))
+    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J q (d / n))
     (hqx : q / (q - 1) * (d / n) ≤ 1) :
-    ((e : ℚ) / n : ℝ) ≠ J' q (d / n) := by
+    ((e : ℚ) / n : ℝ) ≠ J q (d / n) := by
   intro h_eq
   set δ := (d : ℚ) / n
   set frac := q / (q - 1)

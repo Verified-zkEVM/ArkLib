@@ -584,7 +584,7 @@ theorem combine_theorem
       · aesop (add simp [total_terms, block_size])
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _
-          (total_terms dstar degs - 1) dstar φ δ (le_of_lt <| by
+          (total_terms dstar degs - 1) dstar φ δ hδPos (by
             aesop (add simp [lt_min_iff, ReedSolomon.sqrtRate]))
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap

@@ -29,8 +29,9 @@ the analytic core of the norm-growth bound in the weak-binding argument.
 
 ## Open Formalization Gaps
 
-- `scalarVecMul_mul_l2NormSq_le` is currently deferred (`sorry`): the discrete Cauchy–Schwarz
-  bound over the cyclic convolution is not yet formalized.
+- The cited negacyclic product-norm layer is proved: `Rq.l2NormSq_mul_le` establishes the
+  per-entry convolution bound and `scalarVecMul_mul_l2NormSq_le` lifts it to vectors.
+- No open gap remains for the specific inequality ArkLib currently imports from `Mic07`.
 
 ## Source Access
 

@@ -15,6 +15,12 @@ Start with [`README.md`](README.md) for project overview.
 5. For docstring or docs work, `./scripts/validate.sh --docs` is a convenient add-on check.
 6. Only build site or blueprint output when touching `blueprint/` or `home_page/`:
    `./scripts/validate.sh --site`.
+7. When filling or adding a `sorry` (or anything that must stay axiom-clean), run
+   `./scripts/validate.sh --axioms`; it first certifies the sweep tool against its
+   fixture matrix (`./scripts/test-axiomsweep.sh`), then runs the regression gate.
+   Refresh `scripts/axiom_baseline.json` with `lake exe axiomsweep --update-baseline`
+   and commit the diff if the change is intentional. The baseline covers `sorryAx`
+   debt only — native-compiler trust is never allowlistable.
 
 ## Where To Work
 

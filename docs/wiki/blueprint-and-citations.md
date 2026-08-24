@@ -55,16 +55,19 @@ python3 -m pip install leanblueprint
 
 ### Continuous integration
 
-Publishing to GitHub Pages is handled by [`.github/workflows/docs.yml`](../../.github/workflows/docs.yml),
+Publishing to GitHub Pages is handled by [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml),
 which delegates to the maintained [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
-rather than a hand-rolled TeX/pygraphviz setup. That action builds the API docs
-via doc-gen4 (in an isolated `docbuild` project, the layout recommended by
-[doc-gen4](https://github.com/leanprover/doc-gen4)), builds the blueprint with
-`leanblueprint pdf` + `leanblueprint web`, runs `lake exe checkdecls blueprint/lean_decls`
-to confirm every `\lean{...}` declaration exists, and deploys the static
-`home_page/` (with `docs/` and `blueprint/` copied in). The workflow also runs on
-pull requests as a validation-only build (blueprint + `checkdecls`, no deploy), so
-LaTeX and declaration errors are caught before they reach `main`.
+rather than a hand-rolled TeX/pygraphviz setup. The action runs after CI's Lean
+build on the same runner, so blueprint validation and documentation publishing
+reuse the existing `.lake` build instead of compiling the project again. It
+builds the API docs via doc-gen4 (in an isolated `docbuild` project, the layout
+recommended by [doc-gen4](https://github.com/leanprover/doc-gen4)), builds the
+blueprint with `leanblueprint pdf` + `leanblueprint web`, runs
+`lake exe checkdecls blueprint/lean_decls` to confirm every `\lean{...}`
+declaration exists, and deploys the static `home_page/` (with `docs/` and
+`blueprint/` copied in). Pull requests run a validation-only build (blueprint +
+`checkdecls`, no deploy), so LaTeX and declaration errors are caught before they
+reach `main`.
 
 ### Blueprint LaTeX gotchas
 

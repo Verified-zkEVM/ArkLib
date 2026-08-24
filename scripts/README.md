@@ -7,10 +7,18 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
-- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, and the validation wrapper
+- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
+- **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
+  committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below
+- **`test-axiomsweep.sh`** - Executable fixture matrix certifying the axiomsweep tool itself
+  (gate directions, native-trust floor, exit-code contract), against the synthetic-taint
+  fixtures in `AxiomSweepTestFixtures/`
+- **`ToyProblemRuntime.lean`** (`lake exe toyproblem-runtime`) - Compiled small-parameter checks
+  for KoalaBear sextic arithmetic, executable interleaved-RS extraction, and the C6.9 virtual
+  output-oracle and exact-extractor paths
 - **`check-docs-integrity.py`** - Check docs links and the `CLAUDE.md` symlink
 - **`lint-style.py`** - Python-based style linting
 - **`lint-style.lean`** - Lean-based style linting
@@ -47,6 +55,9 @@ This directory contains various utility scripts for the ArkLib project.
 
 # Build site / blueprint output too
 ./scripts/validate.sh --site
+
+# Check the axiom/sorry regression baseline too
+./scripts/validate.sh --axioms
 ```
 
 ### Generate Dependency Graphs
@@ -58,6 +69,11 @@ python generate_dependency_graph.py --root ../../ --output-dir ../../dependency_
 ### Compile Only
 ```bash
 ./scripts/build-project.sh
+```
+
+### Toy-Problem Runtime Gate
+```bash
+lake exe toyproblem-runtime
 ```
 
 ### Build Timing Helper
@@ -89,13 +105,70 @@ python3 ./scripts/kb/lint.py
 python3 ./scripts/kb/review_context.py --files ArkLib/ProofSystem/Fri/Spec/SingleRound.lean
 ```
 
+### Axiom Sweep
+
+Kernel-level accounting of what every `ArkLib.*` declaration ultimately depends on — the
+same information as `#print axioms`, computed for the whole library at once from the built
+`.olean` data (so private and macro-generated declarations are included and no source
+heuristics are involved). Requires a completed `lake build`.
+
+Building the executable links VCVio's FFI static libraries, whose C sources live in git
+submodules that Lake does not fetch; `./scripts/validate.sh --axioms` and CI initialize
+them automatically, but on a direct first `lake exe axiomsweep` you may need:
+
+```bash
+git -C .lake/packages/VCVio submodule update --init --recursive
+```
+
+```bash
+# Summary: total declarations, sorryAx-tainted, non-standard-axiom-tainted
+lake exe axiomsweep
+
+# Full per-declaration report (name, module, kind, line, axioms)
+lake exe axiomsweep --out /tmp/axiom-report.json
+
+# Regression gate: fail iff a declaration is tainted that
+# scripts/axiom_baseline.json does not already list
+lake exe axiomsweep --check
+
+# Refresh the baseline (after intentionally adding a tagged sorry, or after
+# closing gaps); commit the resulting diff in the same PR
+lake exe axiomsweep --update-baseline
+```
+
+The committed baseline makes the distinction the repo cares about mechanical:
+pre-existing `sorry` gaps are allowed, *new* ones fail `--check`. The baseline is an
+allowlist for `sorryAx` debt only; native-compiler trust (`Lean.ofReduceBool`,
+`Lean.trustCompiler`, and the per-declaration `…._native.<tactic>.ax_<n>_<n>` axioms
+minted by `native_decide`-style tactics) is never allowlistable — `--check` fails on it
+regardless of the baseline, and `--update-baseline` refuses to write while it is present.
+CI runs the library check report-only; `./scripts/validate.sh --axioms` runs it enforcing.
+
+The tool itself is certified by `./scripts/test-axiomsweep.sh`, which builds the isolated
+`AxiomSweepTestFixtures` library (deliberate synthetic taint of every shape the sweep
+reasons about: direct and transitive `sorry`, axiom-in-type, mutual-inductive inheritance,
+generated native-trust names and near-miss collisions, and an unimported file) and checks
+report determinism, every gate direction, and the exit-code contract (`1` = taint verdict,
+`2` = infrastructure failure). CI runs it as an enforcing step:
+
+```bash
+lake build AxiomSweepTestFixtures
+./scripts/test-axiomsweep.sh
+```
+
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `./scripts/validate.sh` path. The CI workflow uploads
+rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
 timing-data artifacts so PR runs can compare against a previously recorded
 baseline without rerunning that baseline in the same job. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+
+The four measurements share one tree and run in order, so each leaves it warmer than the last.
+`native_build` exists to hold the `.c.o` chain that `lake exe toyproblem-runtime` links: that is
+the cost which swings on `.lake` cache state, and billing it separately keeps the validation
+wrapper's row comparable across dependency bumps. See
+[`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 
 ## Requirements
 

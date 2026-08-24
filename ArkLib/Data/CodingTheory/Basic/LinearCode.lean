@@ -8,6 +8,7 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 import ArkLib.Data.CodingTheory.Basic.DecodingRadius
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.Basic.Distance
+import Mathlib.FieldTheory.Finiteness
 import Mathlib.LinearAlgebra.FreeModule.PID
 import Mathlib.RingTheory.PicardGroup
 import Mathlib.RingTheory.RegularLocalRing.Defs
@@ -22,6 +23,8 @@ linear codes, and basic constructions and dimension/rate facts for linear codes.
 
 ## References
 
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26]
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
 * [Bordage, S., Chiesa, A., Guan, Z., Manzur, I., *All Polynomial Generators Preserve Distance
 with Mutual Correlated Agreement*][BCGM25]
@@ -237,7 +240,13 @@ def length [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
   Fintype.card ι
 
 /--
-The rate of a linear code.
+The **base-field-dimension rate** of a code: `dim MC / |ι|`, the `F`-dimension of the code
+divided by the block length alone.
+
+Over the field alphabet itself (`A = F`) this is the usual rate `ρ = k/n`. Over a module
+alphabet `A = F^s` it is *not* the alphabet-normalized rate `log_{|A|} |C| / n = dim/(s*n)`,
+since it never divides by the alphabet dimension `s`; that normalization is `alphabetRate`
+below.
 -/
 noncomputable def rate [Semiring F] {A : Type*} [AddCommMonoid A] [Module F A]
     (MC : ModuleCode ι F A) : ℚ≥0 :=
@@ -253,40 +262,84 @@ scoped syntax &"ρ" term : term
 scoped macro_rules
   | `(ρ $t:term) => `(LinearCode.rate $t)
 
+/--
+The **alphabet-normalized rate** of a code over the module alphabet `Fin s → F`:
+`dim MC / (s * |ι|)`.
+
+For a finite nontrivial field `F` and `s ≥ 1` this is `log_{|Σ|} |C| / n` for the alphabet
+`Σ = F^s`, the rate relative to the alphabet rather than to the base field. The formula is
+algebraically total: it assigns `0` when `s = 0` or the block length is zero. It agrees
+with `rate` exactly when `s = 1` (`alphabetRate_one_eq_rate`).
+-/
+noncomputable def alphabetRate [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) : ℚ≥0 :=
+  (dim MC : ℚ≥0) / (s * length MC)
+
+/-- `alphabetRate` is `rate` corrected by the alphabet dimension `s`. (`ℚ≥0`-division by
+zero makes both sides `0` at `s = 0`, so no side condition is needed.) -/
+lemma alphabetRate_eq_rate_div [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    alphabetRate MC = rate MC / s := by
+  rw [alphabetRate, rate, div_div, mul_comm]
+
+/-- Over the field alphabet itself (`s = 1`) the alphabet-normalized rate is the plain
+rate. -/
+lemma alphabetRate_one_eq_rate [Semiring F]
+    (MC : ModuleCode ι F (Fin 1 → F)) :
+    alphabetRate MC = rate MC := by
+  rw [alphabetRate_eq_rate_div, Nat.cast_one, div_one]
+
+/-- `alphabetRate` cast to `ℝ`, in the explicit form `finrank / (s * n)`. -/
+lemma alphabetRate_cast_eq [Semiring F] {s : ℕ}
+    (MC : ModuleCode ι F (Fin s → F)) :
+    (alphabetRate MC : ℝ) = (Module.finrank F MC : ℝ) / (s * Fintype.card ι) := by
+  rw [alphabetRate, dim, length]
+  push_cast
+  rfl
+
 /-- Let `c` be a word of length `ι`. For every finite `ι`-subset `T` , we define the projection of a
 word `c` to `T` as the word obtained by restricting the indexing set of `c` to `T`.
-We denote this by `c|[T]`.
 Definition 3.7 [BCGM25]. -/
 def projectedWord (c : ι → F) (T : Finset ι) : T → F := Set.restrict T c
 
-notation:60 c "|[" T "]" => projectedWord c T
-
 /-- Let `C` be a code of length `ι`. For every finite `ι`-subset `T`, we define the projected code
-`C|[T]` as the set of projected codewords `c|[T]`, for `c ∈ C`.
+as the set of projected codewords.
 Definition 3.7 [BCGM25]. -/
 def projectedCode (C : Set (ι → F)) (T : Finset ι) : Set (T → F) :=
-  {w | ∃ c ∈ C, w = c|[T]}
+  {w | ∃ c ∈ C, w = projectedWord c T}
 
-notation:60 C "|[" T "]" => projectedCode C T
+open Submodule
 
-/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code
-`C|[T]`, then so do all `F`-linear combinations of these. -/
-lemma projectedCode_linearCombination [Field F] (LC : LinearCode ι F) (T : Finset ι) {α : Type}
-    [Fintype α] (U : α → (ι → F)) (c : α → F)
-    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode LC.carrier T) :
-    projectedWord (fun k => ∑ j, c j * U j k) T ∈ projectedCode LC.carrier T := by
-  obtain ⟨w, hw⟩ : ∃ w ∈ LC, ∀ t ∈ T, w t = ∑ j, c j * U j t := by
+/-- The projected code of a module code, as a submodule of `T → A`.
+Definition 3.7 [BCGM25]. -/
+def projectedCodeSubmod [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι) :
+    Submodule F (T → A) := MC.map (LinearMap.funLeft F A (Subtype.val : T → ι))
+
+omit [Fintype ι] in
+/-- Membership in `projectedCodeSubmod` is membership in `projectedCode` of the underlying set. -/
+lemma mem_projectedCodeSubmod_iff [Semiring F] [Module F A] (MC : ModuleCode ι F A) (T : Finset ι)
+    (w : T → A) : w ∈ projectedCodeSubmod MC T ↔ w ∈ projectedCode MC.carrier T :=
+  Submodule.mem_map.trans <| exists_congr fun _ => and_congr_right fun _ => eq_comm
+
+omit [Fintype ι] in
+/-- Let `T` be a finite subset of `ι`. If every word in a collection lies in the projected code,
+then so do all `F`-linear combinations of these. -/
+lemma projectedCode_linearCombination [Semiring F] [Module F A] (MC : ModuleCode ι F A)
+    (T : Finset ι) {α : Type} [Fintype α] (U : α → (ι → A)) (c : α → F)
+    (hU : ∀ j, projectedWord (U j) T ∈ projectedCode MC.carrier T) :
+    projectedWord (fun k => ∑ j, c j • U j k) T ∈ projectedCode MC.carrier T := by
+  obtain ⟨w, hw⟩ : ∃ w ∈ MC, ∀ t ∈ T, w t = ∑ j, c j • U j t := by
     choose w hw using hU
     use ∑ j, c j • w j
     exact ⟨Submodule.sum_mem _ fun j _ => Submodule.smul_mem _ _ (hw j |>.1),
       fun t ht => by simp [show ∀ j, U j t = w j t from
         fun j => congr_fun (hw j |>.2) ⟨t, ht⟩]⟩
   exact ⟨w, hw.1, funext fun t => by
-    change (∑ j, c j * U j t.1) = w t.1
+    change (∑ j, c j • U j t.1) = w t.1
     exact Eq.symm (hw.2 t t.2)⟩
 
 /-- A linear code is maximum distance separable (MDS) if its parameters meet the singleton bound. -/
-def IsMDS {ι : Type} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
+def IsMDS {ι : Type*} [Fintype ι] [CommRing F] [DecidableEq F] (LC : LinearCode ι F) : Prop :=
   Code.dist LC.carrier = length LC - dim LC + 1
 
 /-- Every linear code over a field `F` is a finitely generated `F`-module. -/
@@ -612,6 +665,30 @@ theorem singleton_bound_linear [CommRing F] [StrongRankCondition F]
       (Nat.add_le_add_right (Nat.sub_le_sub_left hdist_le_min _) 1)
   exact h1.trans hmono'
 
+/-- Singleton bound over a module alphabet: for an `F`-linear code `C ⊆ A^n` with `A` a
+finite `F`-module, `dim_F C ≤ finrank F A * (n - (d - 1))` where `d = Code.dist C`.
+
+At `A = F` this is the `dist` form of `singleton_bound_linear`; at `A = Fin s → F`, the
+block alphabet of interleaved and folded codes, the leading factor is `s`. The proof
+compares `|C| = |F| ^ dim C` with the alphabet-general `singleton_bound`. -/
+theorem singleton_bound_module {ι : Type*} [Fintype ι] {F : Type*} [Field F] [Finite F]
+    {A : Type*} [AddCommGroup A] [Module F A] [Finite A] [DecidableEq A]
+    (C : Submodule F (ι → A)) :
+    Module.finrank F C ≤
+      Module.finrank F A * (card ι - (Code.dist (C : Set (ι → A)) - 1)) := by
+  classical
+  cases nonempty_fintype F
+  cases nonempty_fintype A
+  have hcardC : Nat.card C = Fintype.card F ^ Module.finrank F C := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hcardA : Nat.card A = Fintype.card F ^ Module.finrank F A := by
+    rw [Nat.card_eq_fintype_card]; exact Module.card_eq_pow_finrank
+  have hsb := singleton_bound (C : Set (ι → A))
+  rw [@Fintype.card_eq_nat_card _ (ofFinite _), @Fintype.card_eq_nat_card _ (ofFinite A)] at hsb
+  have hCC : Nat.card (C : Set (ι → A)) = Nat.card C := rfl
+  rw [hCC, hcardC, hcardA, ← pow_mul] at hsb
+  exact (Nat.pow_le_pow_iff_right Fintype.one_lt_card).mp hsb
+
 end
 
 section Computable
@@ -623,6 +700,49 @@ def moduleCodeDist' {F A} {ι} [Fintype ι] [Semiring F] [Fintype A] [DecidableE
   Finset.min <| ((Finset.univ (α := MC)).filter (fun v => v ≠ 0)).image (fun v => hammingNorm v.1)
 
 end Computable
+
+/-- `IsMDS` in rate-distance form: a linear code is MDS iff its relative minimum distance
+satisfies `δ_min / n = 1 - ρ + 1/n`, where `ρ = dim / n` is the rate.
+
+This is the real-valued reading of the defining `ℕ`-equation
+`Code.dist = length - dim + 1`. `[Nonempty ι]` is needed for `(Fintype.card ι : ℝ) ≠ 0`. -/
+lemma IsMDS_iff_rate_distance
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [Field F] [DecidableEq F]
+    (LC : LinearCode ι F) :
+    IsMDS LC ↔
+      (Code.minDist ((LC : Set (ι → F))) : ℝ) / Fintype.card ι =
+        1 - (Module.finrank F LC : ℝ) / Fintype.card ι + 1 / Fintype.card ι := by
+  have hn_pos : (0 : ℝ) < (Fintype.card ι : ℝ) := by exact_mod_cast Fintype.card_pos
+  have hn_ne : (Fintype.card ι : ℝ) ≠ 0 := ne_of_gt hn_pos
+  have hk_le : Module.finrank F LC ≤ Fintype.card ι := by
+    have := Submodule.finrank_le (R := F) (M := ι → F) LC
+    simpa [Module.finrank_fintype_fun_eq_card] using this
+  unfold IsMDS
+  rw [Code.dist_eq_minDist]
+  constructor
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have h1 : (length LC - dim LC + 1 : ℕ) = (Fintype.card ι - Module.finrank F LC + 1 : ℕ) :=
+        rfl
+      rw [h1] at h
+      have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+          ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by exact_mod_cast h
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one] at this
+      linarith
+    field_simp
+    linarith
+  · intro h
+    have h' : (Code.minDist ((LC : Set (ι → F))) : ℝ) =
+        (Fintype.card ι : ℝ) - (Module.finrank F LC : ℝ) + 1 := by
+      have := (div_eq_iff hn_ne).mp h
+      field_simp at this; linarith
+    have : ((Code.minDist (LC : Set (ι → F)) : ℕ) : ℝ) =
+        ((Fintype.card ι - Module.finrank F LC + 1 : ℕ) : ℝ) := by
+      rw [Nat.cast_add, Nat.cast_sub hk_le, Nat.cast_one]
+      exact h'
+    exact_mod_cast this
 
 end LinearCode
 

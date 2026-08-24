@@ -352,8 +352,9 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
           = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
-            rw [← StateT.run'_map_comm, ← simulateQ_map]
-            rfl
+            rw [← StateT.run'_map', ← simulateQ_map]
+            simp only [map_eq_bind_pure_comp]
+            congr 1
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> Groups.sampleNonzeroZMod (p := p) := by
@@ -400,15 +401,17 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
       let proof₂ : G₁ := result₂.map (fun result => result.1.1 0) |>.getD (1 : G₁)
       pure (some (τ, srs, cm, query, resp₁, resp₂, accept₁, accept₂, proof₁, proof₂))
   rw [hkeygen]
-  simp only [map_eq_bind_pure_comp, bind_assoc, pure_bind, Function.comp]
+  simp only [map_eq_bind_pure_comp]
+  simp only [bind_assoc, pure_bind, Function.comp_apply]
   change (OptionT.mk (do
     let τ ← sample
     (simulateQ impl (bodyBase τ)).run' (∅ : unifSpec.QueryCache))).run =
-      (OptionT.mk (do
+      ((do
         let τ ← sample
-        let r ← (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache)
-        pure (Option.map (proj) r))).run
-  simpa only [id_map] using
+        (simulateQ impl (bodyExt τ)).run' (∅ : unifSpec.QueryCache)) >>=
+          pure ∘ Option.map proj)
+  conv_rhs => rw [bind_assoc]
+  simpa only [OptionT.run, OptionT.mk, Function.comp_def, id_map] using
     congrArg OptionT.run
       (OptionT.map_mk_bind_eq_of_body
         (sample := sample)
@@ -417,8 +420,8 @@ lemma binding_game_ext_eq_binding_game {n : ℕ} {AuxState : Type} [SampleableTy
         (f := id) (post := fun _ => proj)
         (hBody := by
           intro τ
-          rw [← StateT.run'_map_comm (Option.map id),
-            ← StateT.run'_map_comm (Option.map proj)]
+          rw [← StateT.run'_map' (f := Option.map id),
+            ← StateT.run'_map' (f := Option.map proj)]
           apply congrArg (fun mx : StateT unifSpec.QueryCache ProbComp
             (Option (BindingOutput (p := p) n)) => mx.run' ∅)
           dsimp only [bodyBase, bodyExt]

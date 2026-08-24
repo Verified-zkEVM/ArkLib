@@ -122,7 +122,9 @@ lemma pmf_prob_le_one {α : Type} [Fintype α] [Nonempty α] (P : α → Prop) :
 
 /-- Probability of a nonzero polynomial evaluating to zero over a uniform product distribution
 is at most `d / m`, where `d` bounds the total degree and `m` bounds below the cardinality
-of each factor. This bridges `schwartz_zippel_counting` with the probability formulation. -/
+of each factor. This bridges `schwartz_zippel_counting` with the probability formulation.
+
+`prob_eval_zero_univ_le_div` below specializes it to full finite carriers. -/
 lemma prob_eval_zero_le_div
   {F : Type} [Field F]
   {s : ℕ}
@@ -141,3 +143,69 @@ lemma prob_eval_zero_le_div
     · convert congr_arg₂ (· * ·) (card_filter_eval_subtype_eq_piFinset S f) rfl
     · rw [Fintype.card_pi]
       aesop
+
+/-- Full-carrier specialization of `prob_eval_zero_le_div`, transported along the
+equivalence between a product of `Set.univ` subtypes and the ordinary function type. -/
+lemma prob_eval_zero_univ_le_div
+    {F : Type} [Field F] [Fintype F] {s d : ℕ}
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) (hd : f.totalDegree ≤ d) :
+    Pr_{let x ←$ᵖ (Fin s → F)}[MvPolynomial.eval x f = 0] ≤
+      (d : ℝ≥0∞) / Fintype.card F := by
+  classical
+  let S : Fin s → Set F := fun _ => Set.univ
+  let e : (∀ i, ↑(S i)) ≃ (Fin s → F) :=
+    Equiv.piCongrRight fun _ => Equiv.Set.univ F
+  have h := prob_eval_zero_le_div (S := S) f hf d (Fintype.card F) hd
+    Fintype.card_pos (fun i => by simp [S])
+  have heval :
+      (fun x : ∀ i, ↑(S i) => MvPolynomial.eval (e x) f = 0) =
+        (fun x : ∀ i, ↑(S i) =>
+          MvPolynomial.eval (fun i => (↑(x i) : F)) f = 0) := by
+    funext x
+    congr 2
+  rw [← ProbabilityTheory.Pr_uniform_equiv e
+    (fun x => MvPolynomial.eval x f = 0)]
+  change ((PMF.uniformOfFintype (∀ i, ↑(S i))).map
+    (fun x => MvPolynomial.eval (e x) f = 0)) True ≤ _
+  rw [heval]
+  exact h
+
+section ZeroCount
+
+open Finset
+
+/-- Counting Schwartz-Zippel over all of a finite field: a nonzero polynomial in `s` variables of
+total degree at most `D` has at most `D * |F| ^ (s - 1)` zeros in `Fin s → F`. -/
+theorem MvPolynomial.card_zeros_le_of_totalDegree_le_fin
+    {F : Type*} [Field F] [Fintype F] [DecidableEq F] {s : ℕ}
+    (f : MvPolynomial (Fin s) F) (hf : f ≠ 0) {D : ℕ} (hd : f.totalDegree ≤ D) :
+    #{x : Fin s → F | MvPolynomial.eval x f = 0} ≤ D * Fintype.card F ^ (s - 1) := by
+  classical
+  have hq : 0 < Fintype.card F := Fintype.card_pos
+  have key := schwartz_zippel_counting f hf (fun _ => Finset.univ) D (Fintype.card F) hd hq
+    (fun i => by simp)
+  simp only [Fintype.piFinset_univ, Finset.card_univ, Finset.prod_const] at key
+  match s with
+  | 0 => simpa using le_trans (Nat.le_mul_of_pos_right _ hq) (by simpa using key)
+  | (t + 1) =>
+    refine Nat.le_of_mul_le_mul_right ?_ hq
+    simpa [pow_succ, mul_assoc] using key
+
+/-- Counting Schwartz-Zippel over all of a finite field, for an arbitrary finite index type of
+variables: a nonzero polynomial in the variables `ι` of total degree at most `D` has at most
+`D * |F| ^ (|ι| - 1)` zeros in `ι → F`. -/
+theorem MvPolynomial.card_zeros_le_of_totalDegree_le
+    {F : Type*} [Field F] [Fintype F] [DecidableEq F] {ι : Type*} [Fintype ι] [DecidableEq ι]
+    (f : MvPolynomial ι F) (hf : f ≠ 0) {D : ℕ} (hd : f.totalDegree ≤ D) :
+    #{x : ι → F | MvPolynomial.eval x f = 0} ≤ D * Fintype.card F ^ (Fintype.card ι - 1) := by
+  classical
+  set e := Fintype.equivFin ι
+  have hg : MvPolynomial.rename (e : ι → Fin (Fintype.card ι)) f ≠ 0 := fun h =>
+    hf (MvPolynomial.rename_injective _ e.injective (by simpa using h))
+  have hgd : (MvPolynomial.rename (e : ι → Fin (Fintype.card ι)) f).totalDegree ≤ D :=
+    le_trans (MvPolynomial.totalDegree_rename_le _ _) hd
+  refine le_trans (le_of_eq ?_) (MvPolynomial.card_zeros_le_of_totalDegree_le_fin _ hg hgd)
+  refine Finset.card_nbij' (fun x => x ∘ e.symm) (fun y => y ∘ e) ?_ ?_ ?_ ?_ <;>
+    intro x hx <;> simp_all [MvPolynomial.eval_rename, Function.comp_assoc]
+
+end ZeroCount

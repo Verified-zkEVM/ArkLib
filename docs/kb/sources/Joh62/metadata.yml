@@ -1,0 +1,4 @@
+bibkey: Joh62
+source_kind: article
+committed_artifacts: []
+notes: "Johnson, IRE Transactions on Information Theory 8(3) 1962; the original Johnson bound, cited by ABF26 Definition 3.1 and Theorem 3.2 in JohnsonBound/Family.lean. No local artifact exists in ~/abf26-refs/ and the bib entry has no url or DOI; access via IEEE Xplore. For the derivational and textbook material on the same bound use the codingtheory and listdecoding keys instead."

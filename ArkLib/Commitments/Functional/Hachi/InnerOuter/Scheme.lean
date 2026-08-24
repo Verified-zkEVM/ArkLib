@@ -4,7 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Ordinary.Ajtai.Simple.Scheme
-import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
+import ArkLib.Commitments.Functional.Hachi.Gadget.Core
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 import VCVio
 
@@ -55,8 +55,7 @@ with the `ℓ₁` bound already pins down invertibility. The honest challenge `c
 A weak opening does not store the message: per Hachi [NOZ26, Eq. (13)] the message block is
 *derived* from `sᵢ` by applying the message gadget matrix, `mᵢ = G · sᵢ` (`derivedMessage`).
 The bundled `commitmentScheme` therefore verifies an opening against a claimed message `m` by
-checking `derivedMessage opening.toDecomp = m` (replacing the old explicit message-gadget check)
-together with `verify_weak`.
+checking `derivedMessage opening.toDecomp = m` together with `verify_weak`.
 
 ## Main definitions
 

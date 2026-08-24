@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Locally / non-interactively reduce a claim
@@ -37,6 +38,7 @@ variable {ι : Type} (oSpec : OracleSpec ι)
   {StmtIn : Type} {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type} {WitIn : Type}
   {StmtOut : Type} {ιₛₒ : Type} {OStmtOut : ιₛₒ → Type} {WitOut : Type}
   [∀ i, OracleInterface (OStmtIn i)]
+  [∀ i, OracleInterface (OStmtOut i)]
   (mapStmt : StmtIn → StmtOut) (mapWit : StmtIn → WitIn → WitOut)
 
 section Reduction
@@ -178,31 +180,43 @@ the deterministic-left hypothesis of the CWSS binary append. -/
 instance instIsPure : (verifier oSpec mapStmt).IsPure :=
   ⟨fun stmt _ => mapStmt stmt, fun _ _ => rfl⟩
 
-/-- **Coordinate-wise special soundness of `ReduceClaim`.** The verifier is pure with no challenge
-rounds, so CWSS collapses (via the no-challenge bridge) to a transcript-level obligation. Given the
-witness pull-back `mapWitInv` and the compatibility `hRel` (the same hypothesis as for RBR knowledge
-soundness), the extractor `e stmtIn := mapWitInv stmtIn witOut` — where `witOut` is any output
-witness making `mapStmt stmtIn` accepted — lands in `relIn`. Holds for any `D`. -/
-theorem verifier_coordinateWiseSpecialSound [Nonempty WitIn]
+open Classical in
+/-- **The `ReduceClaim` tree extractor**: pick (classically) any output witness that makes the
+mapped statement accepted and pull it back along `mapWitInv`; junk if none exists. The choice is
+inherent to `ReduceClaim` — it is relation-level bookkeeping with no transcript to compute from
+(the tree of the zero-round protocol carries no information). -/
+noncomputable def treeExtractor [Nonempty WitIn]
+    (mapWitInv : StmtIn → WitOut → WitIn) (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
+    Extractor.TreeBased StmtIn WitIn !p[] (CWSSStructure.toShape D).arity :=
+  fun stmtIn _ =>
+    if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
+    else Classical.ofNonempty
+
+/-- **Coordinate-wise special soundness of `ReduceClaim`, named form.** The verifier is pure with
+no challenge rounds, so CWSS collapses (via the no-challenge bridge) to a transcript-level
+obligation: given the witness pull-back `mapWitInv` and the compatibility `hRel` (the same
+hypothesis as for RBR knowledge soundness), the named `treeExtractor` lands in `relIn`. Holds for
+any `D`. -/
+theorem verifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (hRel : ∀ stmtIn witOut,
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
-    (verifier oSpec mapStmt).coordinateWiseSpecialSound init impl D relIn relOut := by
-  -- For each input statement, some candidate input witness works as soon as any output witness
-  -- makes the mapped statement accepted.
-  have hpick : ∀ stmtIn : StmtIn, ∃ witIn : WitIn,
-      (∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut) → (stmtIn, witIn) ∈ relIn := by
-    intro stmtIn
-    rcases or_not (p := ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut) with ⟨witOut, hw⟩ | h
-    · exact ⟨mapWitInv stmtIn witOut, fun _ => hRel stmtIn witOut hw⟩
-    · exact ⟨Nonempty.some inferInstance, fun hex => absurd hex h⟩
-  refine Verifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (verifier oSpec mapStmt) relIn relOut (fun stmtIn _ => (hpick stmtIn).choose) ?_
-  intro stmtIn tr hAcc
-  have hlang : mapStmt stmtIn ∈ relOut.language :=
-    Verifier.mem_of_pure_accepting init impl (verifier oSpec mapStmt) stmtIn tr
-      relOut.language (mapStmt stmtIn) rfl hAcc
-  exact (hpick stmtIn).choose_spec ((Set.mem_language_iff _ _).1 hlang)
+    Verifier.coordinateWiseSpecialSoundWith init impl D relIn relOut
+      (verifier oSpec mapStmt) (treeExtractor (mapStmt := mapStmt) relOut mapWitInv D) := by
+  classical
+  have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (verifier oSpec mapStmt) relIn relOut
+    (fun stmtIn _ =>
+      if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
+      else Classical.ofNonempty)
+    (fun stmtIn tr hAcc => by
+      have hlang : mapStmt stmtIn ∈ relOut.language :=
+        Verifier.mem_of_pure_accepting init impl (verifier oSpec mapStmt) stmtIn tr
+          relOut.language (mapStmt stmtIn) rfl hAcc
+      have hex := (Set.mem_language_iff _ _).1 hlang
+      rw [dif_pos hex]
+      exact hRel stmtIn _ hex.choose_spec)
+  exact h
 
 end Reduction
 
@@ -211,6 +225,9 @@ section OracleReduction
 variable
   -- Require map on indices to go the other way
   (embedIdx : ιₛₒ ↪ ιₛᵢ) (hEq : ∀ i, OStmtIn (embedIdx i) = OStmtOut i)
+  (hInterface : ∀ i, HEq
+    (inferInstance : OracleInterface (OStmtOut i))
+    (inferInstance : OracleInterface (OStmtIn (embedIdx i))))
 
 @[reducible, simp]
 def mapOStmt (oStmtIn : ∀ i, OStmtIn i) : ∀ i, OStmtOut i := fun i => (hEq i) ▸ oStmtIn (embedIdx i)
@@ -228,16 +245,20 @@ def oracleProver : OracleProver oSpec
 /-- The oracle verifier for the `ReduceClaim` oracle reduction. -/
 def oracleVerifier : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut !p[] where
   verify := fun stmt _ => pure (mapStmt stmt)
-  embed := .trans embedIdx .inl
-  hEq := by intro i; simp [hEq]
+  outputOracle := .inl {
+    embed := .trans embedIdx .inl
+    hEq := by intro i; simp [hEq]
+    outputInterface_heq := by
+      intro i
+      simpa using hInterface i }
 
 /-- The oracle reduction for the `ReduceClaim` oracle reduction. -/
 def oracleReduction : OracleReduction oSpec
     StmtIn OStmtIn WitIn StmtOut OStmtOut WitOut !p[] where
   prover := oracleProver oSpec mapStmt mapWit embedIdx hEq
-  verifier := oracleVerifier oSpec mapStmt embedIdx hEq
+  verifier := oracleVerifier oSpec mapStmt embedIdx hEq hInterface
 
-variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq}
+variable {oSpec} {mapStmt} {mapWit} {embedIdx} {hEq} {hInterface}
   {σ : Type} {init : ProbComp σ} {impl : QueryImpl oSpec (StateT σ ProbComp)}
   (relIn : Set ((StmtIn × (∀ i, OStmtIn i)) × WitIn))
   (relOut : Set ((StmtOut × (∀ i, OStmtOut i)) × WitOut))
@@ -252,13 +273,13 @@ theorem oracleReduction_completeness --(h : init.neverFails)
     (hRel : ∀ stmtIn oStmtIn witIn,
       ((stmtIn, oStmtIn), witIn) ∈ relIn →
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn) ∈ relOut) :
-    (oracleReduction oSpec mapStmt mapWit embedIdx hEq).perfectCompleteness init impl
+    (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).perfectCompleteness init impl
       relIn relOut := by
   simp only [OracleReduction.perfectCompleteness, Reduction.perfectCompleteness,
     Reduction.completeness, ENNReal.coe_zero, tsub_zero]
   intro ⟨stmtIn, oStmtIn⟩ witIn hIn
   -- Reduce the run to a deterministic `pure` of the expected output.
-  have hrun : (oracleReduction oSpec mapStmt mapWit embedIdx hEq).toReduction.run
+  have hrun : (oracleReduction oSpec mapStmt mapWit embedIdx hEq hInterface).toReduction.run
       ⟨stmtIn, oStmtIn⟩ witIn =
       (pure ((default,
           ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), mapWit stmtIn witIn)),
@@ -330,7 +351,7 @@ variable {mapWitInv : (StmtIn × (∀ i, OStmtIn i)) → WitOut → WitIn}
 def oracleKnowledgeStateFunction (hRel : ∀ stmtIn oStmtIn witOut,
     ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
     ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).KnowledgeStateFunction
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).KnowledgeStateFunction
       init impl relIn relOut (extractor mapWitInv) where
   toFun | ⟨0, _⟩ => fun ⟨stmtIn, oStmtIn⟩ _ witIn => ⟨⟨stmtIn, oStmtIn⟩, witIn⟩ ∈ relIn
   toFun_empty := fun stmtIn witIn => by simp
@@ -366,7 +387,8 @@ knowledge state function. -/
 theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
     ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
     ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).rbrKnowledgeSoundness init impl relIn relOut 0 := by
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).rbrKnowledgeSoundness
+      init impl relIn relOut 0 := by
   refine ⟨_, _, oracleKnowledgeStateFunction relIn relOut hRel, ?_⟩
   intro stmtIn witIn prover i
   exact Fin.elim0 i.1
@@ -375,7 +397,7 @@ theorem oracleVerifier_rbrKnowledgeSoundness (hRel : ∀ stmtIn oStmtIn witOut,
 mapped statement together with the reshaped oracle statements (`mapOStmt`). -/
 theorem oracleVerifier_toVerifier_run {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i}
     {tr : (!p[] : ProtocolSpec 0).FullTranscript} :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier.run ⟨stmt, oStmt⟩ tr =
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨mapStmt stmt, mapOStmt embedIdx hEq oStmt⟩ := by
   simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
   rfl
@@ -383,41 +405,52 @@ theorem oracleVerifier_toVerifier_run {stmt : StmtIn} {oStmt : ∀ i, OStmtIn i}
 /-- The `ReduceClaim` oracle verifier is pure, discharging the deterministic-left hypothesis of the
 CWSS binary append. -/
 instance instIsPureOracle :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier.IsPure :=
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier.IsPure :=
   ⟨fun p _ => ⟨mapStmt p.1, mapOStmt embedIdx hEq p.2⟩,
    fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
 
-/-- **Coordinate-wise special soundness of the `ReduceClaim` oracle reduction.** As in the
-non-oracle case, the verifier is pure with no challenge rounds, so CWSS collapses to a
+open Classical in
+/-- **The `ReduceClaim` oracle tree extractor**: as in the non-oracle case, pick (classically)
+any output witness that makes the mapped combined statement accepted and pull it back along
+`mapWitInv`; junk if none exists. -/
+noncomputable def oracleTreeExtractor [Nonempty WitIn]
+    (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
+    (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
+    Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn !p[]
+      (CWSSStructure.toShape D).arity :=
+  fun s _ =>
+    if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
+    then mapWitInv s h.choose else Classical.ofNonempty
+
+/-- **Coordinate-wise special soundness of the `ReduceClaim` oracle reduction, named form.** As
+in the non-oracle case, the verifier is pure with no challenge rounds, so CWSS collapses to a
 transcript-level obligation discharged by the witness pull-back `mapWitInv` and the compatibility
 `hRel` (identical to the RBR knowledge soundness hypothesis, `mapStmt` replaced by `mapStmt ⊗
-mapOStmt`). -/
-theorem oracleVerifier_coordinateWiseSpecialSound [Nonempty WitIn]
+mapOStmt`), at the named `oracleTreeExtractor`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
-    (oracleVerifier oSpec mapStmt embedIdx hEq).coordinateWiseSpecialSound init impl D
-      relIn relOut := by
-  -- For each combined input statement, some candidate input witness works as soon as any output
-  -- witness makes the mapped statement accepted.
-  have hpick : ∀ s : StmtIn × (∀ i, OStmtIn i), ∃ witIn : WitIn,
-      (∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut) →
-        (s, witIn) ∈ relIn := by
-    intro s
-    rcases or_not (p := ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut)
-      with ⟨witOut, hw⟩ | h
-    · exact ⟨mapWitInv s witOut, fun _ => hRel s.1 s.2 witOut hw⟩
-    · exact ⟨Nonempty.some inferInstance, fun hex => absurd hex h⟩
-  refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (oracleVerifier oSpec mapStmt embedIdx hEq) relIn relOut
-    (fun s _ => (hpick s).choose) ?_
-  rintro ⟨stmt, oStmt⟩ tr hAcc
-  have hlang : (mapStmt stmt, mapOStmt embedIdx hEq oStmt) ∈ relOut.language :=
-    Verifier.mem_of_pure_accepting init impl
-      (oracleVerifier oSpec mapStmt embedIdx hEq).toVerifier ⟨stmt, oStmt⟩ tr relOut.language _
-      (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  exact (hpick (stmt, oStmt)).choose_spec ((Set.mem_language_iff _ _).1 hlang)
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).coordinateWiseSpecialSoundWith
+      init impl D relIn relOut
+      (oracleTreeExtractor (mapStmt := mapStmt) (embedIdx := embedIdx) (hEq := hEq)
+        relOut mapWitInv D) := by
+  classical
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface) relIn relOut
+    (fun s _ =>
+      if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
+      then mapWitInv s h.choose else Classical.ofNonempty)
+    (fun s tr hAcc => by
+      have hlang : (mapStmt s.1, mapOStmt embedIdx hEq s.2) ∈ relOut.language :=
+        Verifier.mem_of_pure_accepting init impl
+          (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier s tr relOut.language _
+          (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      have hex := (Set.mem_language_iff _ _).1 hlang
+      rw [dif_pos hex]
+      exact hRel s.1 s.2 _ hex.choose_spec)
+  exact h
 
 end OracleReduction
 

@@ -2,7 +2,7 @@
 Copyright (c) 2024 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
-         Ilia Vlasov, Chung Thai Nguyen
+         Ilia Vlasov, Chung Thai Nguyen, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.Basic.Distance
@@ -12,6 +12,11 @@ import ArkLib.Data.CodingTheory.Basic.Distance
 
 This module contains relative Hamming distance, relative distance-to-code, and the
 finite-range/computable variants used by the coding-theory development.
+
+## References
+
+* [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
+Agreement*][ABF26]
 -/
 
 variable {n : Type*} [Fintype n] {R : Type*} [DecidableEq R]
@@ -50,6 +55,29 @@ noncomputable def relDistFromCode (u : ι → F) (C : Set (ι → F)) : ENNReal 
 /-- `δᵣ(u,C)` denotes the relative distance from u to C. This is the main standard definition
 used in statements. The NNRat version of it is `δᵣ'(u, C)`. -/
 notation "δᵣ(" u ", " C ")" => relDistFromCode u C
+
+/-- Ball of radius `r` centred at a word `y` with respect to the relative Hamming distance. -/
+def relHammingBall (y : ι → F) (r : ℝ) : Set (ι → F) :=
+  {x | δᵣ(y, x) ≤ r}
+
+omit [Nonempty ι] in
+/-- Membership in the relative Hamming ball, spelled out. -/
+@[simp]
+theorem mem_relHammingBall_iff {A : Type*} [DecidableEq A] (y x : ι → A) (r : ℝ) :
+  x ∈ relHammingBall y r ↔ (δᵣ(y, x) : ℝ) ≤ r := by
+  aesop (add simp [relHammingBall, relHammingDist])
+
+omit [Nonempty ι] in
+lemma relHammingDist_coe {u v : ι → R} :
+  (Code.relHammingDist u v : ℝ) = (Δ₀(u, v) : ℝ) / (Fintype.card ι : ℝ) := by
+  simp [Code.relHammingDist]
+
+omit [Nonempty ι] in
+/-- Post-composition with an injection preserves the relative Hamming distance. -/
+theorem relHammingDist_comp {A B : Type*} [DecidableEq A] [DecidableEq B] {e : A → B}
+  (he : Function.Injective e) (u v : ι → A) :
+  δᵣ(e ∘ u, e ∘ v) = δᵣ(u, v) := by
+  aesop (add simp [relHammingDist, hammingDist_comp'])
 
 omit [Nonempty ι] in
 /-- The relative distance to a code is at most the relative distance to any specific codeword. -/
@@ -392,16 +420,6 @@ theorem relCloseToWord_iff_exists_agreementCols
   letI : DecidableEq ι := by exact Classical.typeDecidableEq ι
   rw [closeToWord_iff_exists_agreementCols]
 
-lemma NNReal.floor_ge_Nat_of_gt
-    {r : ℝ≥0} {n : ℕ} (h : r > n) :
-    Nat.floor r ≥ n := by
-  apply (Nat.le_floor_iff (NNReal.coe_nonneg r)).mpr
-  apply le_of_lt
-  exact_mod_cast h
-
-lemma NNReal.sub_eq_zero_of_le (x y : ℝ≥0) (h : x ≤ y) : x - y = 0 := by
-  exact tsub_eq_zero_of_le h
-
 /-- The equivalence between the two lowerbound of `upperBound` in Nat and NNReal context.
 In which, `upperBound` is viewed as the size of an **agreement set** `S` (e.g. between two words,
 or between a word to a code, ...).
@@ -463,15 +481,13 @@ lemma relDist_floor_bound_iff_complement_bound (n upperBound : ℕ) (δ : ℝ≥
       -- by showing `n - m < n - r + 1 ≤ k + 1`
       linarith
   · have h_n_lt_r : n < r := by exact lt_of_not_ge h_r_le_n
-    have h_m_ge_n : m ≥ n :=
-      NNReal.floor_ge_Nat_of_gt (r := r) (n := n) (h := lt_of_not_ge h_r_le_n)
+    have h_m_ge_n : m ≥ n := Nat.le_floor (le_of_lt h_n_lt_r)
     have h_n_sub_m_eq_0 : n - m = 0 := Nat.sub_eq_zero_of_le h_m_ge_n
     have h_n_sub_r_eq_0 : (n : ENNReal) - r = 0 := by
       change ((n : NNReal) : ENNReal) - r = 0
       rw [←ENNReal.coe_sub] -- ↑((n : ℝ≥0) - r) = 0
-      have h_n_sub_r_eq_0_NNReal : (n : NNReal) - r = 0 := by
-        apply NNReal.sub_eq_zero_of_le
-        exact le_of_lt h_n_lt_r
+      have h_n_sub_r_eq_0_NNReal : (n : NNReal) - r = 0 :=
+        tsub_eq_zero_of_le (le_of_lt h_n_lt_r)
       rw [h_n_sub_r_eq_0_NNReal]
       exact rfl
     conv_lhs => -- convert ↑n - ↑m into 0
@@ -563,11 +579,15 @@ lemma finite_possibleRelHammingDists : (possibleRelHammingDists C).Finite :=
 
 open Classical in
 /-- The minimum relative Hamming distance of a code.
+
+Spelled with `Set.Finite.toFinset` rather than `Set.toFinset` under a local `Fintype`
+instance. The two are definitionally equal, but only the former lets the `Set.Finite.*`
+rewriting API fire, which the characterisation lemmas below need.
 -/
 def minRelHammingDistCode (C : Set (ι → F)) : ℚ≥0 :=
-  haveI : Fintype (possibleRelHammingDists C) := @Fintype.ofFinite _ finite_possibleRelHammingDists
   if h : (possibleRelHammingDists C).Nonempty
-  then (possibleRelHammingDists C).toFinset.min' (Set.toFinset_nonempty.2 h)
+  then finite_possibleRelHammingDists.toFinset.min'
+        ((Set.Finite.toFinset_nonempty (hs := finite_possibleRelHammingDists)).mpr h)
   else 0
 
 end
@@ -575,6 +595,112 @@ end
 /-- `δᵣ C` denotes the minimum relative Hamming distance of a code `C`.
 -/
 notation "δᵣ" C => minRelHammingDistCode C
+
+/-! ## Characterisation of `minRelHammingDistCode`
+
+`minRelHammingDistCode` is defined by a `dif` over a `Finset.min'`, so unfolding it drags in
+`Set.Finite.toFinset` and a nonemptiness proof term. The lemmas below package its universal
+property instead — which branch is taken (`_of_empty`), that the value is attained (`_mem`),
+and that it is a lower bound (`_le`) — so downstream proofs need not mention the underlying
+`Finset`. The last two determine it uniquely. -/
+
+/-- A code with no two distinct codewords has `δᵣ C = 0`, by convention. -/
+lemma minRelHammingDistCode_of_empty
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    (h : ¬ (possibleRelHammingDists C).Nonempty) :
+    minRelHammingDistCode C = 0 := by
+  unfold minRelHammingDistCode
+  rw [dif_neg h]
+
+/-- The minimum is attained: `δᵣ C` is the relative distance between some pair of distinct
+codewords. -/
+lemma minRelHammingDistCode_mem
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    (h : (possibleRelHammingDists C).Nonempty) :
+    minRelHammingDistCode C ∈ possibleRelHammingDists C := by
+  unfold minRelHammingDistCode
+  rw [dif_pos h]
+  have := Finset.min'_mem finite_possibleRelHammingDists.toFinset
+    ((Set.Finite.toFinset_nonempty (hs := finite_possibleRelHammingDists)).mpr h)
+  rwa [Set.Finite.mem_toFinset] at this
+
+/-- `δᵣ C` is a lower bound for the relative distance of every pair of distinct
+codewords. -/
+lemma minRelHammingDistCode_le
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)}
+    {q : ℚ≥0} (hq : q ∈ possibleRelHammingDists C) : minRelHammingDistCode C ≤ q := by
+  have h_ne : (possibleRelHammingDists C).Nonempty := ⟨q, hq⟩
+  unfold minRelHammingDistCode
+  rw [dif_pos h_ne]
+  exact Finset.min'_le _ _ ((Set.Finite.mem_toFinset (hs := finite_possibleRelHammingDists)).mpr hq)
+
+/-- The minimum relative Hamming distance is at most `1`; the lower bound `0 ≤ δᵣ C` is
+automatic in `ℚ≥0`. -/
+lemma minRelHammingDistCode_le_one
+    {ι : Type*} [Fintype ι] [Nonempty ι] {F : Type*} [DecidableEq F] {C : Set (ι → F)} :
+    minRelHammingDistCode C ≤ 1 := by
+  by_cases h : (possibleRelHammingDists C).Nonempty
+  · obtain ⟨p, _, hp⟩ := minRelHammingDistCode_mem h
+    exact hp ▸ relHammingDist_le_one
+  · simp [minRelHammingDistCode_of_empty h]
+
+/-- The rational quotient `Code.minDist C / n` is `δᵣ C`: both compute
+`min {hammingDist u v / n | u, v ∈ C, u ≠ v}`.
+
+Rewrite left-to-right to reason with the `minRelHammingDistCode_*` lemmas above, or
+right-to-left to reduce a `δᵣ C` goal to integer `Code.minDist` arithmetic. For a
+subsingleton `C` both sides are `0`. -/
+lemma minDist_div_card_eq_minRelHammingDistCode
+    {ι : Type*} [Fintype ι] [Nonempty ι]
+    {F : Type*} [DecidableEq F]
+    (C : Set (ι → F)) :
+    ((Code.minDist C : ℚ) / (Fintype.card ι : ℚ))
+      = ((minRelHammingDistCode C : ℚ≥0) : ℚ) := by
+  set n : ℕ := Fintype.card ι with hn_def
+  have hn_pos : 0 < n := Fintype.card_pos
+  -- Integer-valued "distinct pairs" set.
+  set S_nat : Set ℕ :=
+    {d | ∃ u ∈ C, ∃ v ∈ C, u ≠ v ∧ hammingDist u v = d} with hS_nat_def
+  -- Image identification: `possibleRelHammingDists C = (·/n) '' S_nat`.
+  have h_image : possibleRelHammingDists C = (fun d : ℕ => (d : ℚ≥0) / n) '' S_nat := by
+    ext q
+    simp only [possibleRelHammingDists, Code.possibleDists, Set.mem_setOf_eq,
+      Set.mem_offDiag, Set.mem_image, hS_nat_def]
+    constructor
+    · rintro ⟨⟨u, v⟩, ⟨hu, hv, huv⟩, hq⟩
+      refine ⟨hammingDist u v, ⟨u, hu, v, hv, huv, rfl⟩, ?_⟩
+      rw [← hq]; simp [relHammingDist, hn_def]
+    · rintro ⟨d, ⟨u, hu, v, hv, huv, hd⟩, hq⟩
+      refine ⟨(u, v), ⟨hu, hv, huv⟩, ?_⟩
+      rw [← hq, ← hd]; simp [relHammingDist, hn_def]
+  by_cases h_nonempty : S_nat.Nonempty
+  · -- Nonempty case.
+    have h_minDist_mem : Code.minDist C ∈ S_nat := Nat.sInf_mem h_nonempty
+    have h_rel_ne : (possibleRelHammingDists C).Nonempty := by
+      rw [h_image]; exact h_nonempty.image _
+    have h_min_mem := minRelHammingDistCode_mem h_rel_ne
+    rw [h_image] at h_min_mem
+    obtain ⟨d, hd_mem, hd_eq⟩ := h_min_mem
+    have h_minDist_in_rel : ((Code.minDist C : ℚ≥0) / n) ∈ possibleRelHammingDists C := by
+      rw [h_image]; exact ⟨Code.minDist C, h_minDist_mem, rfl⟩
+    have h_le : minRelHammingDistCode C ≤ (Code.minDist C : ℚ≥0) / n :=
+      minRelHammingDistCode_le h_minDist_in_rel
+    have h_ge : (Code.minDist C : ℚ≥0) / n ≤ minRelHammingDistCode C := by
+      rw [← hd_eq, div_le_div_iff_of_pos_right (by exact_mod_cast hn_pos)]
+      exact_mod_cast Nat.sInf_le hd_mem
+    have h_eq : minRelHammingDistCode C = (Code.minDist C : ℚ≥0) / n :=
+      le_antisymm h_le h_ge
+    rw [h_eq]; push_cast; rfl
+  · -- Empty case.
+    have h_minDist_zero : Code.minDist C = 0 := by
+      unfold Code.minDist
+      rw [Set.not_nonempty_iff_eq_empty] at h_nonempty
+      simp [hS_nat_def] at h_nonempty
+      simp [h_nonempty, Nat.sInf_empty]
+    have h_rel_empty : ¬ (possibleRelHammingDists C).Nonempty := by
+      rw [h_image, Set.not_nonempty_iff_eq_empty.mp h_nonempty]; simp
+    rw [h_minDist_zero, minRelHammingDistCode_of_empty h_rel_empty]
+    simp
 
 /-- The range set of possible relative Hamming distances from a vector to a code is a subset
   of the range of the relative Hamming distance function.

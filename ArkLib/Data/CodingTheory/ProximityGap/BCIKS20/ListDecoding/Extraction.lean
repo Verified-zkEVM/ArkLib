@@ -7,6 +7,19 @@ Authors: Quang Dao, Katerina Hristova, František Silváši, Julian Sutherland,
 
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.ListDecoding.Guruswami
 
+/-! # Factor extraction for the modified Guruswami-Sudan solution
+
+The unique factorization of a modified Guruswami-Sudan interpolant into a content part and
+Frobenius-twisted irreducible separable components, together with a specialization point at which
+every component has nonzero `Y`-discriminant. These are the inputs to the Hensel-lift analysis of
+the list-decoding regime.
+
+## References
+
+- [BCIKS20] Ben-Sasson, Carmon, Ishai, Kopparty, Saraf, *Proximity Gaps for Reed–Solomon Codes*
+  (ePrint 2020/654): Equation 5.12 and Claim 5.6.
+-/
+
 namespace ProximityGap
 
 open Polynomial Polynomial.Bivariate  NNReal Finset Function ProbabilityTheory Code Trivariate
@@ -22,27 +35,46 @@ variable {m : ℕ} (k : ℕ) {δ : ℚ} {x₀ : F} {u₀ u₁ : Fin n → F} {Q 
          [Finite F]
 
 omit [DecidableEq (RatFunc F)] in
-/-- Equation 5.12 from [BCIKS20]. -/
+/-- Equation 5.12 from [BCIKS20].
+
+Considering `Q` as a polynomial in `Y` over `F[X, Z]`, it factors uniquely as
+
+`Q(X, Y, Z) = C(X, Z) * ∏ i, Rᵢ(X, Y ^ (p ^ fᵢ), Z) ^ eᵢ`
+
+where `p` is the characteristic of `F`, `fᵢ ≥ 0`, `eᵢ ≥ 1`, and each `Rᵢ` is irreducible and
+separable.
+
+The three lists are indexed *together*: the `i`-th factor pairs `R[i]` with its own exponents
+`f[i]` and `e[i]`. The product is therefore a single `List.zipWith` fold, not a product over
+three independent index sets. -/
 lemma irreducible_factorization_of_gs_solution
     {k : ℕ}
   (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
   ∃ (C : F[Z][X]) (R : List F[Z][X][Y]) (f : List ℕ) (e : List ℕ),
     R.length = f.length ∧
     f.length = e.length ∧
-    ∀ eᵢ ∈ e, 1 ≤ eᵢ ∧
-    ∀ Rᵢ ∈ R, Rᵢ.Separable ∧
-    ∀ Rᵢ ∈ R, Irreducible Rᵢ ∧
+    (∀ eᵢ ∈ e, 1 ≤ eᵢ) ∧
+    (∀ Rᵢ ∈ R, Rᵢ.Separable) ∧
+    (∀ Rᵢ ∈ R, Irreducible Rᵢ) ∧
     Q = (Polynomial.C C) *
-        ∏ (Rᵢ ∈ R.toFinset) (fᵢ ∈ f.toFinset) (eᵢ ∈ e.toFinset),
-          (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ fᵢ))^eᵢ
+        (List.zipWith
+          (fun (Rᵢ : F[Z][X][Y]) (fe : ℕ × ℕ) =>
+            (Rᵢ.comp ((Polynomial.X : F[Z][X][Y]) ^ (ringChar F ^ fe.1))) ^ fe.2)
+          R (f.zip e)).prod
     := sorry
 
 omit [DecidableEq (RatFunc F)] in
-/-- Claim 5.6 of [BCIKS20]. -/
+/-- Claim 5.6 of [BCIKS20]: there exists `x₀ ∈ F` such that for every irreducible component `Rᵢ`
+of the factorization (5.12), `discY(Rᵢ(X, Y, Z))(x₀) ≠ 0` **as an element of `F[Z]`**.
+
+The specialisation is `X := x₀`. Since `Bivariate.discr_y R : F[Z][X]` carries `X` as its *outer*
+variable and `Z` as its inner one, this is `Polynomial.eval (Polynomial.C x₀)`, which leaves a
+polynomial in `Z`. (`Bivariate.evalX` evaluates the *inner* variable, so it would set `Z := x₀`
+here — the opposite of what the claim needs.) -/
 lemma discr_of_irred_components_nonzero (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    ∃ x₀,
+    ∃ x₀ : F,
       ∀ R ∈ (irreducible_factorization_of_gs_solution _h_gs).choose_spec.choose,
-      Bivariate.evalX x₀ (Bivariate.discr_y R) ≠ 0 := by sorry
+      Polynomial.eval (Polynomial.C x₀) (Bivariate.discr_y R) ≠ 0 := by sorry
 
 noncomputable def pg_Rset (_h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F[Z][X][Y] :=
   (UniqueFactorizationMonoid.normalizedFactors Q).toFinset
@@ -71,6 +103,53 @@ noncomputable def pg_candidatePairs
         (Bivariate.evalX (Polynomial.C x₀) R)).toFinset.image (fun H => (R, H)))
 
 omit [DecidableEq (RatFunc F)] [Finite F] in
+theorem pg_natDegree_pos_of_mem_normalizedFactors_of_separable (p : F[Z][X])
+    (hp : p.Separable) {H : F[Z][X]}
+    (hH : H ∈ UniqueFactorizationMonoid.normalizedFactors p) :
+    0 < H.natDegree := by
+  have hH_irred : Irreducible H :=
+    UniqueFactorizationMonoid.irreducible_of_normalized_factor H hH
+  have hH_dvd : H ∣ p :=
+    UniqueFactorizationMonoid.dvd_of_mem_normalizedFactors hH
+  have hH_sep : H.Separable :=
+    Polynomial.Separable.of_dvd hp hH_dvd
+  by_contra hHdeg
+  have hHdeg0 : H.natDegree = 0 := Nat.eq_zero_of_not_pos hHdeg
+  have hconst : H = Polynomial.C (H.coeff 0) :=
+    Polynomial.eq_C_of_natDegree_eq_zero hHdeg0
+  have hsepC : (Polynomial.C (H.coeff 0) : F[Z][X]).Separable := by
+    exact hconst ▸ hH_sep
+  have hunitCoeff : IsUnit (H.coeff 0) :=
+    (Polynomial.separable_C (H.coeff 0)).1 hsepC
+  have hunitC : IsUnit (Polynomial.C (H.coeff 0) : F[Z][X]) :=
+    (Polynomial.isUnit_C).2 hunitCoeff
+  have hunit : IsUnit H := by
+    exact hconst.symm ▸ hunitC
+  exact hH_irred.not_isUnit hunit
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
+theorem pg_candidatePairs_snd_natDegree_pos (x₀ : F)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hsep : ∀ R : F[Z][X][Y],
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs →
+        (Bivariate.evalX (Polynomial.C x₀) R).Separable)
+    {R : F[Z][X][Y]} {H : F[Z][X]}
+    (hmem : (R, H) ∈ pg_candidatePairs (m := m) (n := n) (k := k) (ωs := ωs)
+      (Q := Q) (u₀ := u₀) (u₁ := u₁) x₀ h_gs) :
+    0 < H.natDegree := by
+  classical
+  have h' :
+      R ∈ pg_Rset (m := m) (n := n) (k := k) (ωs := ωs) (Q := Q)
+          (u₀ := u₀) (u₁ := u₁) h_gs ∧
+        H ∈
+          UniqueFactorizationMonoid.normalizedFactors
+            (Bivariate.evalX (Polynomial.C x₀) R) := by
+    simpa [pg_candidatePairs] using hmem
+  exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable
+    (Bivariate.evalX (Polynomial.C x₀) R) (hsep R h'.1) h'.2
+
+omit [DecidableEq (RatFunc F)] [Finite F] in
 theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Separable) :
     #((UniqueFactorizationMonoid.normalizedFactors p).toFinset) ≤ p.natDegree := by
   classical
@@ -82,28 +161,7 @@ theorem pg_card_normalizedFactors_toFinset_le_natDegree (p : F[Z][X]) (hp : p.Se
     intro q hq
     have hq' : q ∈ UniqueFactorizationMonoid.normalizedFactors p := by
       simpa [s] using hq
-    have hq_irred : Irreducible q :=
-      UniqueFactorizationMonoid.irreducible_of_normalized_factor q hq'
-    have hq_dvd : q ∣ p :=
-      UniqueFactorizationMonoid.dvd_of_mem_normalizedFactors hq'
-    have hq_sep : q.Separable :=
-      Polynomial.Separable.of_dvd hp hq_dvd
-    have hq_natDegree_ne_zero : q.natDegree ≠ 0 := by
-      intro hdeg0
-      have hconst : q = Polynomial.C (q.coeff 0) :=
-        Polynomial.eq_C_of_natDegree_eq_zero hdeg0
-      have hsepC : (Polynomial.C (q.coeff 0) : F[Z][X]).Separable := by
-        -- rewrite `hq_sep` using `hconst`
-        exact hconst ▸ hq_sep
-      have hunitCoeff : IsUnit (q.coeff 0) :=
-        (Polynomial.separable_C (q.coeff 0)).1 hsepC
-      have hunitC : IsUnit (Polynomial.C (q.coeff 0) : F[Z][X]) :=
-        (Polynomial.isUnit_C).2 hunitCoeff
-      have hunit : IsUnit q := by
-        -- rewrite back using `hconst`
-        exact hconst.symm ▸ hunitC
-      exact hq_irred.not_isUnit hunit
-    exact Nat.one_le_iff_ne_zero.2 hq_natDegree_ne_zero
+    exact pg_natDegree_pos_of_mem_normalizedFactors_of_separable p hp hq'
   have hcard_le_sum : s.card ≤ (s.map Polynomial.natDegree).sum := by
     -- prove a general statement by induction
     have : (∀ q ∈ s, 1 ≤ q.natDegree) → s.card ≤ (s.map Polynomial.natDegree).sum := by

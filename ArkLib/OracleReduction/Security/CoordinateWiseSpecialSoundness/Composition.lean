@@ -11,14 +11,22 @@ import ArkLib.OracleReduction.Composition.Sequential.Append
   # Composition for Coordinate-Wise Special Soundness
 
   This file contains the sequential-composition API for coordinate-wise special soundness (CWSS).
-  CWSS composition is factored through the generic `ChallengeTreeShape` API:
+  Composition is deliberately **binary**: longer chains are built by iterating the binary append
+  (the `CoordinateWise` packages' `▷`), which is all the protocol formalizations need and which
+  keeps the composed extractor a nameable function rather than a transport across an `n`-ary shape
+  identity. CWSS composition is factored through the generic `ChallengeTreeShape` API:
 
-  * `CWSSStructure.append` and `CWSSStructure.seqCompose` transport intrinsic CWSS data across
-    protocol composition.
+  * `CWSSStructure.append` transports intrinsic CWSS data across protocol append.
   * `CWSSStructure.toShape_append` identifies the CWSS shape of an appended structure with the
     generic appended tree shape.
-  * `Verifier.append_treeSpecialSound` is the generic structured-tree preservation statement.
-  * `Verifier.append_coordinateWiseSpecialSound` is the CWSS-specific wrapper.
+  * `Verifier.pure_accepting_of_mem` / `Verifier.mem_of_pure_accepting` — the two directions of
+    the pure-verifier acceptance bridge, used to certify prefix leaves' verdicts (and reused by
+    the zero-round `ProofSystem/Component` reductions).
+  * `Verifier.append_treeSpecialSoundWith` is the generic structured-tree preservation statement,
+    and `Verifier.append_treeSpecialSoundWithEscape` its escape-threaded twin, whose composed escape
+    event is `ChallengeTree.EscapeEvent.append`.
+  * `Verifier.append_coordinateWiseSpecialSoundWith` / `…WithEscape` are the CWSS-specific
+    wrappers, with `OracleVerifier` versions for oracle reductions.
 -/
 
 noncomputable section
@@ -28,39 +36,14 @@ open scoped NNReal
 
 universe u v
 
-/-- Applying a `cast` of an `Equiv` (transported along equalities of its domain and codomain) agrees
-with casting the argument into the original domain and the result out of the original codomain. This
-is the single cast-commutation fact underlying the CWSS shape-composition theorems. -/
-theorem cast_equiv_apply {A B : Type u} {C D : Type v} (hAB : A = B) (hCD : C = D) (e : A ≃ C)
-    (b : B) :
-    cast (show (A ≃ C) = (B ≃ D) by rw [hAB, hCD]) e b = cast hCD (e (cast hAB.symm b)) := by
-  subst hAB; subst hCD; rfl
-
 /-- Heterogeneous congruence for `Equiv` application: two heterogeneously-equal equivalences (over
 equal domains and codomains) send heterogeneously-equal arguments to heterogeneously-equal
-results. -/
+results. This is the single cast-commutation fact underlying `CWSSStructure.toShape_append`. -/
 theorem heq_equiv_apply {A A' : Type u} {B B' : Type v} (hA : A = A') (hB : B = B')
     {e₁ : A ≃ B} {e₂ : A' ≃ B'}
     (he : HEq e₁ e₂) {a : A} {a' : A'} (ha : HEq a a') : HEq (e₁ a) (e₂ a') := by
   subst hA; subst hB
   exact heq_of_eq (by rw [eq_of_heq he, eq_of_heq ha])
-
-namespace ChallengeTreeShape
-
-variable {r : ℕ} {len : Fin r → ℕ} {pSpec : ∀ i, ProtocolSpec (len i)}
-
-/-- Sequential composition of a finite family of generic challenge-tree shapes. -/
-def seqCompose (S : ∀ i, ChallengeTreeShape (pSpec i)) :
-    ChallengeTreeShape (ProtocolSpec.seqCompose pSpec) where
-  arity := fun combinedIdx =>
-    let ij := seqComposeChallengeIdxToSigma combinedIdx
-    (S ij.1).arity ij.2
-  nodeOk := fun combinedIdx challenges =>
-    let ij := seqComposeChallengeIdxToSigma combinedIdx
-    (S ij.1).nodeOk ij.2 fun j =>
-      cast (seqCompose_challenge_eq combinedIdx) (challenges j)
-
-end ChallengeTreeShape
 
 namespace CWSSStructure
 
@@ -185,39 +168,6 @@ theorem append_decompose_inr (i₂ : pSpec₂.ChallengeIdx) :
 
 end AppendChar
 
-variable {r : ℕ} {len : Fin r → ℕ} {pSpec : ∀ i, ProtocolSpec (len i)}
-
-/-- Sequential composition of a finite family of CWSS structures. -/
-def seqCompose (D : ∀ i, CWSSStructure (pSpec i)) :
-    CWSSStructure (ProtocolSpec.seqCompose pSpec) where
-  coordIndex := fun i =>
-    let ij := seqComposeChallengeIdxToSigma i
-    (D ij.1).coordIndex ij.2
-  alphabet := fun i =>
-    let ij := seqComposeChallengeIdxToSigma i
-    (D ij.1).alphabet ij.2
-  decompose := fun i =>
-    cast (by rw [seqCompose_challenge_eq i])
-      ((D (seqComposeChallengeIdxToSigma i).1).decompose (seqComposeChallengeIdxToSigma i).2)
-  soundnessParam := fun i =>
-    let ij := seqComposeChallengeIdxToSigma i
-    (D ij.1).soundnessParam ij.2
-  arity := fun i =>
-    let ij := seqComposeChallengeIdxToSigma i
-    (D ij.1).arity ij.2
-  arity_eq := by
-    funext i
-    exact congrFun ((D (seqComposeChallengeIdxToSigma i).1).arity_eq)
-      (seqComposeChallengeIdxToSigma i).2
-
-/-- The arity of a sequentially composed CWSS structure is the component arity at the decoded
-component challenge index. -/
-theorem seqCompose_arity (D : ∀ i, CWSSStructure (pSpec i)) :
-    (seqCompose D).arity =
-      fun combinedIdx =>
-        let ij := seqComposeChallengeIdxToSigma combinedIdx
-        (D ij.1).arity ij.2 := rfl
-
 /-- The shape induced by appended CWSS data is the generic append of the component shapes. -/
 theorem toShape_append (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂) :
     CWSSStructure.toShape (append D₁ D₂) =
@@ -264,34 +214,6 @@ theorem toShape_append (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSp
     refine HEq.trans (heq_of_eq (congrArg challenges (Fin.ext ?_))) (cast_heq _ _).symm
     change j.val = j'.val
     exact (Fin.heq_ext_iff (by rw [hell, hk])).mp hj
-
-/-- The sequentially-composed `decompose`, applied, equals the decoded component's `decompose`
-applied to the cast-in challenge. The cast-commutation `cast_equiv_apply` applies directly here
-because `seqCompose.decompose` is a single cast (no case split). -/
-theorem seqCompose_decompose_apply (D : ∀ i, CWSSStructure (pSpec i))
-    (ci : (ProtocolSpec.seqCompose pSpec).ChallengeIdx)
-    (x : (ProtocolSpec.seqCompose pSpec).Challenge ci) :
-    (seqCompose D).decompose ci x =
-      (D (seqComposeChallengeIdxToSigma ci).1).decompose (seqComposeChallengeIdxToSigma ci).2
-        (cast (seqCompose_challenge_eq ci) x) :=
-  cast_equiv_apply (seqCompose_challenge_eq ci).symm rfl
-    ((D (seqComposeChallengeIdxToSigma ci).1).decompose (seqComposeChallengeIdxToSigma ci).2) x
-
-/-- The shape induced by finite sequential CWSS data is the generic sequential composition of the
-component shapes. -/
-theorem toShape_seqCompose (D : ∀ i, CWSSStructure (pSpec i)) :
-    CWSSStructure.toShape (seqCompose D) =
-      ChallengeTreeShape.seqCompose (fun i => CWSSStructure.toShape (D i)) := by
-  refine ChallengeTreeShape.ext rfl (heq_of_eq ?_)
-  funext ci challenges
-  change CWSSStructure.nodeOk (seqCompose D) ci challenges =
-    (D (seqComposeChallengeIdxToSigma ci).1).nodeOk (seqComposeChallengeIdxToSigma ci).2
-      (fun j => cast (seqCompose_challenge_eq ci) (challenges j))
-  unfold CWSSStructure.nodeOk
-  congr 1
-  funext j
-  rw [seqCompose_decompose_apply]
-  rfl
 
 end CWSSStructure
 
@@ -361,23 +283,102 @@ theorem pure_accepting_of_mem
     subst x
     exact hout
 
+/-- Converse of `pure_accepting_of_mem`: if a verifier deterministically outputs `out` on
+`(stmt, tr)` and its run is accepted into `lang` with probability one, then `out ∈ lang`. -/
+theorem mem_of_pure_accepting
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (V : Verifier oSpec Stmt₁ Stmt₂ pSpec)
+    (stmt : Stmt₁) (tr : pSpec.FullTranscript)
+    (lang : Set Stmt₂) (out : Stmt₂)
+    (hV : V.verify stmt tr = pure out)
+    (hAcc : Pr[ (· ∈ lang) |
+      OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] = 1) :
+      out ∈ lang := by
+  rw [probEvent_eq_one_iff] at hAcc
+  obtain ⟨hFail, hmem⟩ := hAcc
+  -- The underlying probabilistic computation is `init >>= fun _ => pure (some out)`.
+  have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
+      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some out)) := by
+    simp only [Verifier.run, hV]
+    congr 1
+  refine hmem out ?_
+  -- `init` has nonempty support, else the whole computation would fail with probability one.
+  have hne : (support init).Nonempty := by
+    by_contra hempty
+    rw [Set.not_nonempty_iff_eq_empty] at hempty
+    have hcfail : Pr[⊥ |
+        (init >>= fun _ => pure (some out) : ProbComp (Option Stmt₂))] = 0 := by
+      have h2 := hFail
+      rw [OptionT.probFailure_eq, OptionT.run_mk, hrun] at h2
+      exact (add_eq_zero.mp h2).1
+    have hcsupp :
+        support (init >>= fun _ => pure (some out) : ProbComp (Option Stmt₂)) = ∅ := by
+      rw [support_bind_const, support_pure]; simp [hempty]
+    rw [probFailure_eq_one hcsupp] at hcfail
+    exact one_ne_zero hcfail
+  rw [OptionT.mem_support_iff, OptionT.run_mk, hrun, support_bind_const, support_pure]
+  exact ⟨Set.mem_singleton _, hne⟩
+
+/-- **A rejecting verifier is never accepting.** If the verdict on `(stmt, tr)` is `failure`, the
+run cannot be accepted into any language with probability one.
+
+This is the third member of the acceptance bridge, alongside `pure_accepting_of_mem` and
+`mem_of_pure_accepting`, and the one that only becomes meaningful once verifiers are allowed to
+reject (`Guarded.lean`). It is what lets a *guarded* composition read "the composite tree is
+accepting" as "every surviving prefix passed its check": a `failure` leaf would drive the whole
+run's failure probability to one, contradicting acceptance.
+
+Note the argument needs no assumption on `init`: whether or not the sampling itself can fail, the
+total mass splits between failing and producing `none`, and acceptance forces *both* to vanish. -/
+theorem not_accepting_of_verify_failure
+    {n : ℕ} {pSpec : ProtocolSpec n}
+    (V : Verifier oSpec Stmt₁ Stmt₂ pSpec)
+    (stmt : Stmt₁) (tr : pSpec.FullTranscript) (lang : Set Stmt₂)
+    (hV : V.verify stmt tr = failure) :
+      Pr[ (· ∈ lang) |
+        OptionT.mk do (simulateQ impl (V.run stmt tr)).run' (← init)] ≠ 1 := by
+  intro hAcc
+  rw [probEvent_eq_one_iff] at hAcc
+  obtain ⟨hFail, -⟩ := hAcc
+  -- The underlying probabilistic computation is `init >>= fun _ => pure none`.
+  have hrun : (do (simulateQ impl (V.run stmt tr)).run' (← init) :
+      ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
+    simp only [Verifier.run, hV]
+    congr 1
+  rw [OptionT.probFailure_eq, OptionT.run_mk, hrun] at hFail
+  obtain ⟨hbase, hnone⟩ := add_eq_zero.mp hFail
+  -- All the mass sits on `none`, which acceptance has just forced to zero.
+  have htsum : (∑' x : Option Stmt₂,
+      Pr[= x | (init >>= fun _ => pure none : ProbComp (Option Stmt₂))]) = 0 := by
+    refine (tsum_eq_single none ?_).trans hnone
+    intro y hy
+    refine probOutput_eq_zero_of_not_mem_support ?_
+    rw [support_bind_const, support_pure]
+    simp [hy]
+  have htotal := probFailure_add_tsum_probOutput
+    (init >>= fun _ => pure none : ProbComp (Option Stmt₂))
+  rw [hbase, htsum] at htotal
+  simp at htotal
+
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Generic preservation of tree-special soundness under binary verifier append. -/
-theorem append_treeSpecialSound
+/-- **Named-extractor preservation of tree-special soundness under binary verifier append.** The
+composed extractor is a named function of the *left* factor's extractor alone: it runs `Ext₁` on
+the prefix tree. The right factor's extractor enters only through `rel₂.language` (certifying the
+left leaves' outputs), so it may stay existential. -/
+theorem append_treeSpecialSoundWith
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (h₁ : V₁.treeSpecialSound init impl S₁ rel₁ rel₂)
+    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ S₁.arity)
+    (h₁ : treeSpecialSoundWith init impl S₁ rel₁ rel₂ V₁ Ext₁)
     (h₂ : V₂.treeSpecialSound init impl S₂ rel₂ rel₃) :
-      (V₁.append V₂).treeSpecialSound init impl
-        (S₁.append S₂) rel₁ rel₃ := by
-  rcases h₁ with ⟨E₁, hE₁⟩
+      treeSpecialSoundWith init impl (S₁.append S₂) rel₁ rel₃ (V₁.append V₂)
+        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
   rcases h₂ with ⟨E₂, hE₂⟩
-  refine ⟨fun stmt tree => E₁ stmt tree.appendSplit.fst, ?_⟩
   intro stmt tree hStructured hAccept
-  apply hE₁ stmt tree.appendSplit.fst
+  apply h₁ stmt tree.appendSplit.fst
   · exact ChallengeTree.appendSplit_fst_isStructured tree hStructured
   · intro tr₁ htr₁
     obtain ⟨path, rfl⟩ :=
@@ -407,25 +408,107 @@ theorem append_treeSpecialSound
       (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) hLang₂
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Coordinate-wise special soundness is preserved by binary verifier append.
+/-- **Escape-threaded preservation of tree special soundness under binary verifier append.** As in
+the escape-free `append_treeSpecialSoundWith`, the composed extractor is the left extractor on the
+prefix tree and the right factor's extractor stays existential; the composed escape event is
+`ChallengeTree.EscapeEvent.append`.
 
-The deterministic first-verifier output identifies the input statement of each suffix tree consumed
-by the second verifier's extractor. -/
-theorem append_coordinateWiseSpecialSound
+The proof is the escape-free one with one extra case split up front: if some prefix leaf's suffix
+tree exhibits `esc₂`, the right disjunct of the composed event fires directly; otherwise every
+prefix leaf's verdict is certified into `rel₂.language` by the right factor's extraction (its escape
+branch being excluded by that case assumption), and the left certificate applies. -/
+theorem append_treeSpecialSoundWithEscape
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (S₁ : ChallengeTreeShape pSpec₁) (S₂ : ChallengeTreeShape pSpec₂)
+    (esc₁ : ChallengeTree.EscapeEvent Stmt₁ pSpec₁ S₁.arity)
+    (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ S₂.arity)
+    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
+    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ S₁.arity)
+    (h₁ : treeSpecialSoundWithEscape init impl S₁ esc₁ rel₁ rel₂ V₁ Ext₁)
+    (h₂ : treeSpecialSoundEscape init impl S₂ esc₂ rel₂ rel₃ V₂) :
+      treeSpecialSoundWithEscape init impl (S₁.append S₂) (esc₁.append esc₂ verify₁)
+        rel₁ rel₃ (V₁.append V₂) (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
+  rcases h₂ with ⟨E₂, hE₂⟩
+  intro stmt tree hStructured hAccept
+  by_cases hesc : ∃ path : LeafPath tree.appendSplit.fst,
+      esc₂ (verify₁ stmt path.fullTranscript) (tree.appendSplit.sndAt path)
+  · exact Or.inl (Or.inr hesc)
+  · push Not at hesc
+    have hLang : ∀ path : LeafPath tree.appendSplit.fst,
+        verify₁ stmt path.fullTranscript ∈ rel₂.language := by
+      intro path
+      have hSuffixStructured : (tree.appendSplit.sndAt path).IsStructured S₂ :=
+        ChallengeTree.appendSplit_sndAt_isStructured tree hStructured path
+      have hSuffixAccept :
+          (tree.appendSplit.sndAt path).IsAccepting init impl V₂
+            (verify₁ stmt path.fullTranscript) rel₃.language := by
+        intro tr₂ htr₂
+        have hmem :=
+          ChallengeTree.appendSplit_fullTranscripts_append_of_mem tree path htr₂
+        have hfull := hAccept _ hmem
+        simpa [append_run_pure_left V₁ V₂ verify₁ hV₁ stmt path.fullTranscript tr₂]
+          using hfull
+      rcases hE₂ _ _ hSuffixStructured hSuffixAccept with hbad | hwit
+      · exact absurd hbad (hesc path)
+      · exact (Set.mem_language_iff rel₂ _).2 ⟨_, hwit⟩
+    have hPrefixAccept :
+        tree.appendSplit.fst.IsAccepting init impl V₁ stmt rel₂.language := by
+      intro tr₁ htr₁
+      obtain ⟨path, rfl⟩ := ChallengeTree.LeafPath.exists_of_mem_fullTranscripts htr₁
+      exact pure_accepting_of_mem init impl V₁ stmt path.fullTranscript rel₂.language
+        (verify₁ stmt path.fullTranscript) (hV₁ stmt path.fullTranscript) (hLang path)
+    rcases h₁ stmt tree.appendSplit.fst
+        (ChallengeTree.appendSplit_fst_isStructured tree hStructured) hPrefixAccept with
+      hbad | hwit
+    · exact Or.inl (Or.inl hbad)
+    · exact Or.inr hwit
+
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+/-- **Named-extractor preservation of CWSS under binary verifier append**: the composed extractor
+is the left factor's extractor on the prefix tree, exactly as at the tree level
+(`append_treeSpecialSoundWith`); the right factor's extractor stays existential. The shape
+transport across `CWSSStructure.toShape_append` is `treeSpecialSoundWith_congr` — the arities of
+the two shapes are definitionally equal, so the extractor crosses by `HEq.rfl`. -/
+theorem append_coordinateWiseSpecialSoundWith
     (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
     (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
     (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
     (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
-    (h₁ : V₁.coordinateWiseSpecialSound init impl D₁ rel₁ rel₂)
+    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
+    (h₁ : coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ V₁ Ext₁)
     (h₂ : V₂.coordinateWiseSpecialSound init impl D₂ rel₂ rel₃) :
-      (V₁.append V₂).coordinateWiseSpecialSound init impl
-        (CWSSStructure.append D₁ D₂) rel₁ rel₃ := by
-  change (V₁.append V₂).treeSpecialSound init impl
-    (CWSSStructure.toShape (CWSSStructure.append D₁ D₂)) rel₁ rel₃
-  rw [CWSSStructure.toShape_append]
-  exact append_treeSpecialSound init impl V₁ V₂
-    (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ h₁ h₂
+      coordinateWiseSpecialSoundWith init impl
+        (CWSSStructure.append D₁ D₂) rel₁ rel₃ (V₁.append V₂)
+        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
+  treeSpecialSoundWith_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm HEq.rfl
+    (append_treeSpecialSoundWith init impl V₁ V₂
+      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) verify₁ hV₁ Ext₁ h₁ h₂)
+
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+/-- **Escape-threaded preservation of CWSS under binary verifier append**: the CWSS-shape wrapper of
+`append_treeSpecialSoundWithEscape`. Both the extractor and the event cross the shape equality
+`CWSSStructure.toShape_append` by `HEq.rfl`, the two shapes' arities being definitionally equal. -/
+theorem append_coordinateWiseSpecialSoundWithEscape
+    (V₁ : Verifier oSpec Stmt₁ Stmt₂ pSpec₁)
+    (V₂ : Verifier oSpec Stmt₂ Stmt₃ pSpec₂)
+    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
+    (esc₁ : ChallengeTree.EscapeEvent Stmt₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
+    (esc₂ : ChallengeTree.EscapeEvent Stmt₂ pSpec₂ (CWSSStructure.toShape D₂).arity)
+    (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
+    (Ext₁ : Extractor.TreeBased Stmt₁ Wit₁ pSpec₁ (CWSSStructure.toShape D₁).arity)
+    (h₁ : coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ V₁ Ext₁)
+    (h₂ : coordinateWiseSpecialSoundEscape init impl D₂ esc₂ rel₂ rel₃ V₂) :
+      coordinateWiseSpecialSoundWithEscape init impl (CWSSStructure.append D₁ D₂)
+        (esc₁.append esc₂ verify₁) rel₁ rel₃ (V₁.append V₂)
+        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) :=
+  treeSpecialSoundWithEscape_congr init impl (CWSSStructure.toShape_append D₁ D₂).symm
+    HEq.rfl HEq.rfl
+    (append_treeSpecialSoundWithEscape init impl V₁ V₂
+      (CWSSStructure.toShape D₁) (CWSSStructure.toShape D₂) esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂)
 
 end Verifier
 
@@ -447,22 +530,55 @@ variable {ι : Type} {oSpec : OracleSpec ι}
   {rel₃ : Set ((Stmt₃ × ∀ i, OStmt₃ i) × Wit₃)}
 
 omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
-/-- Oracle-verifier wrapper for binary CWSS append. -/
-theorem append_coordinateWiseSpecialSound
+/-- Oracle-verifier wrapper for the named binary CWSS append: the composed extractor is the left
+factor's extractor on the prefix tree. -/
+theorem append_coordinateWiseSpecialSoundWith
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
     (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
     (verify₁ :
       (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
     (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
-    (h₁ : V₁.coordinateWiseSpecialSound init impl D₁ rel₁ rel₂)
+    (Ext₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
+      (CWSSStructure.toShape D₁).arity)
+    (h₁ : V₁.coordinateWiseSpecialSoundWith init impl D₁ rel₁ rel₂ Ext₁)
     (h₂ : V₂.coordinateWiseSpecialSound init impl D₂ rel₂ rel₃) :
-      (V₁.append V₂).coordinateWiseSpecialSound init impl
-        (CWSSStructure.append D₁ D₂) rel₁ rel₃ := by
-  unfold OracleVerifier.coordinateWiseSpecialSound at h₁ h₂ ⊢
-  convert Verifier.append_coordinateWiseSpecialSound init impl V₁.toVerifier V₂.toVerifier
-    D₁ D₂ verify₁ hV₁ h₁ h₂
-  simp only [append_toVerifier]
+      (V₁.append V₂).coordinateWiseSpecialSoundWith init impl
+        (CWSSStructure.append D₁ D₂) rel₁ rel₃
+        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
+  unfold OracleVerifier.coordinateWiseSpecialSoundWith at h₁ ⊢
+  unfold OracleVerifier.coordinateWiseSpecialSound at h₂
+  rw [append_toVerifier]
+  exact Verifier.append_coordinateWiseSpecialSoundWith init impl V₁.toVerifier V₂.toVerifier
+    D₁ D₂ verify₁ hV₁ Ext₁ h₁ h₂
+
+omit [∀ i, SampleableType (pSpec₂.Challenge i)] in
+/-- Oracle-verifier wrapper for the escape-threaded binary CWSS append: the composed extractor is
+the left factor's extractor on the prefix tree and the composed event is
+`ChallengeTree.EscapeEvent.append` at the left factor's verdict map. -/
+theorem append_coordinateWiseSpecialSoundWithEscape
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
+    (D₁ : CWSSStructure pSpec₁) (D₂ : CWSSStructure pSpec₂)
+    (esc₁ : ChallengeTree.EscapeEvent (Stmt₁ × ∀ i, OStmt₁ i) pSpec₁
+      (CWSSStructure.toShape D₁).arity)
+    (esc₂ : ChallengeTree.EscapeEvent (Stmt₂ × ∀ i, OStmt₂ i) pSpec₂
+      (CWSSStructure.toShape D₂).arity)
+    (verify₁ :
+      (Stmt₁ × ∀ i, OStmt₁ i) → pSpec₁.FullTranscript → (Stmt₂ × ∀ i, OStmt₂ i))
+    (hV₁ : ∀ stmt tr, V₁.toVerifier.verify stmt tr = pure (verify₁ stmt tr))
+    (Ext₁ : Extractor.TreeBased (Stmt₁ × ∀ i, OStmt₁ i) Wit₁ pSpec₁
+      (CWSSStructure.toShape D₁).arity)
+    (h₁ : V₁.coordinateWiseSpecialSoundWithEscape init impl D₁ esc₁ rel₁ rel₂ Ext₁)
+    (h₂ : V₂.coordinateWiseSpecialSoundEscape init impl D₂ esc₂ rel₂ rel₃) :
+      (V₁.append V₂).coordinateWiseSpecialSoundWithEscape init impl
+        (CWSSStructure.append D₁ D₂) (esc₁.append esc₂ verify₁) rel₁ rel₃
+        (fun stmt tree => Ext₁ stmt tree.appendSplit.fst) := by
+  unfold OracleVerifier.coordinateWiseSpecialSoundWithEscape at h₁ ⊢
+  unfold OracleVerifier.coordinateWiseSpecialSoundEscape at h₂
+  rw [append_toVerifier]
+  exact Verifier.append_coordinateWiseSpecialSoundWithEscape init impl V₁.toVerifier V₂.toVerifier
+    D₁ D₂ esc₁ esc₂ verify₁ hV₁ Ext₁ h₁ h₂
 
 end OracleVerifier
 

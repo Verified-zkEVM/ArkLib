@@ -56,6 +56,7 @@ DECL_RE = re.compile(
         (?:private\s+|protected\s+|noncomputable\s+|partial\s+|mutual\s+)*
         (?P<kind>theorem|lemma|def|abbrev|alias|structure|inductive
                  |instance|class|opaque|axiom)
+        (?![A-Za-z0-9_'])
         (?:\s+(?P<name>[A-Za-z_][\w.'']*))?
         (?P<tail>.*)$
     """,

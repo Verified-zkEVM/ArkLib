@@ -3,7 +3,7 @@ Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
-import ArkLib.Commitments.Functional.Hachi.QuadEval
+import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
 import ArkLib.Commitments.Functional.Basic
 
 /-!
@@ -20,7 +20,7 @@ the paper's width `δ = ⌈log_b q⌉ = Nat.clog b q`, Hachi §2.1/§4.1), and t
 The eval-oracle interface and the honest committer operations are real; the opening `Proof` is
 deferred (`sorry`, see the `TODO`). The coordinate-wise-special-sound (CWSS) composition the
 finished opening will run over lives in the sibling `Composition.lean`
-(`evalChain` / `eval_coordinateWiseSpecialSound`).
+(`evalChain` / `eval_coordinateWiseSpecialSoundWithEscape`).
 
 ## Main definitions
 
@@ -31,7 +31,7 @@ finished opening will run over lives in the sibling `Composition.lean`
 * `commit`: honest commitment — reshape the polynomial into its `2^r × 2^m` coefficient matrix,
   gadget-decompose it, and outer-commit; the decommitment is the `Decomp` data. Deterministic.
 * `hachi`: the `Commitment.Scheme` value packaging the above; its `opening` field is a documented
-  `sorry` pending the §4.3+ subprotocols (see the `TODO` block).
+  `sorry` pending the honest-prover / completeness layer (see the `TODO` block).
 
 Same namespace/opens discipline as the rest of the Hachi tree
 (`namespace ArkLib.Lattices.Ajtai.InnerOuter`, `open WeakBinding`).
@@ -117,8 +117,9 @@ def commit [DecidableEq (ZMod q)] (hb : 1 < b)
 oracle and the honest `keygen` / `commit` are real, but the `opening` field is a placeholder
 (`sorry`, see below and the `TODO` block), so this value does **not** yet certify end-to-end
 opening correctness. It is committed now only as the target packaging the finished opening will
-slot into once the §4.3+ subprotocols and the honest-prover layer land (the follow-up tracked by
-the `TODO` here and in `Composition.lean`).
+slot into once the honest-prover layer lands (the follow-up tracked by the `TODO` here and in
+`Composition.lean`; the §4.3 soundness chain it will run over is finished — rows 1–9 of that file's
+seam table).
 
 Over the multilinear data `CMlPolynomial (Rq 𝓜(q,α)) (r + m)` — an `(r + m)`-variable polynomial,
 with the `r`/`m` split feeding the outer/inner gadgets. It commits a polynomial directly (no
@@ -131,10 +132,11 @@ only parameters are the gadget base `b` and `1 < b`; the scheme carries the eval
 
 The `opening` field — the complete opening `Proof` (a `Reduction … Bool Unit`) — is **provisional**
 (`sorry`): its boolean verdict is Hachi Eq. (20) membership (`relOut`), which depends on the never-
-sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only after the remaining §4.3+ subprotocols
-and their honest-prover layer (`QuadEval.prover`'s `computeV`/`computeResp`) are formalized.
-Everything else here is real. The stated `pSpec` is the composed evaluation protocol spec
-(`!p[] ++ₚ pSpec …`), i.e. the shape the finished opening will run over — see the `TODO` block. -/
+sent triple `(ŵ, t̂, ẑ)`; it becomes verifier-computable only once the honest-prover layer is
+formalized (`QuadEval.prover`'s `computeV`/`computeResp`, the sumcheck loop's `computeG`, the
+tail's `computeY`). Everything else here is real. The stated `pSpec` is the composed evaluation
+protocol spec (`!p[] ++ₚ pSpec …`), i.e. the shape the finished opening will run over — see the
+`TODO` block. -/
 def hachi [DecidableEq (ZMod q)] (hb : 1 < b) :
     Commitment.Scheme unifSpec
       (CMlPolynomial (Rq 𝓜(q, α)) (r + m))
@@ -155,8 +157,17 @@ end FunctionalCommitment
 /-! ## TODO — completeness / honest-prover layer
 
 The `opening` field of `hachi` is provisional (`sorry`). Materializing it needs the honest-prover
-layer: instantiate `QuadEval.prover`'s `computeV` / `computeResp` from the `QuadEval.Gadgets`
-carrier/decomposition definitions (`carrierCommit`, `zDecomp`), discharging
+layer, which is open for every link of the chain:
+
+* `QuadEval.prover`'s `computeV` / `computeResp`, from the `QuadEval.Gadgets`
+  carrier/decomposition definitions (`carrierCommit`, `zDecomp`);
+* the sumcheck loop's `computeG` (`Sumcheck/Rounds.lean`) — the honest round-polynomial pair. This
+  one needs new infrastructure first: a *computable* `CPolynomial`-valued partial sum in the free
+  coordinate, plus its agreement lemma against the proof-side `roundPoly`
+  (`Sumcheck/RoundPoly.lean`, Computability section);
+* the final-evaluation and partial-evaluation tails' `computeY`;
+
+and then a completeness/forward direction at each seam, discharging
 `Commitment.perfectCorrectness` for `hachi`. -/
 
 end ArkLib.Lattices.Ajtai.InnerOuter

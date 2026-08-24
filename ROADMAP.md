@@ -41,14 +41,15 @@ It would be nice to use the theories in ArkLib to prove foundational results suc
 
 ## Supporting Operations
 
-The below are content for an older version of the roadmap. Some of these contents are being actively worked on (especially computable polynomials).
+The below are lower-priority supporting items. Some of these are being actively worked on (especially computable polynomials).
 
-  - [ ] [Computable Univariate Polynomials](ArkLib/Data/UniPoly)
+  - [ ] Computable Univariate Polynomials — now developed upstream in the `CompPoly` project; local
+    additions live in [`ArkLib/ToCompPoly/Univariate/`](ArkLib/ToCompPoly/Univariate)
     - [x] Define `UniPoly` as the type of univariate polynomials with computable representations (interally as an `Array` of coefficients). Define operations on `UniPoly` as operations on the underlying `Array` of coefficients.
     - [x] Define an equivalence relation on `UniPoly` that says two `UniPoly`s are equivalent iff they are equal up to zero-padding. Show that this is an equivalence relation.
     - [ ] Show that operations on `UniPoly` descends to the quotient (i.e. are the same up to zero-padding). Show that the quotient is isomorphic as semirings to `Polynomial` in `Mathlib`. Show that the same functions (e.g. `eval`) on `UniPoly` are the same as those of `Polynomial`.
     - [ ] For more efficient evaluation, and use in univariate-based SNARKs, define the coefficient representation of `UniPoly` (on `2`-adic roots of unity), and show conversions between the coefficient and evaluation representations.
-  - [ ] [Computable Multilinear Polynomials](ArkLib/Data/MlPoly)
+  - [ ] Computable Multilinear Polynomials — now developed upstream in the `CompPoly` project
     - [ ] Define `MlPoly` as the type of multilinear polynomials with computable representations (internally as an `Array` of coefficients). Define operations on `MlPoly` as operations on the underlying `Array` of coefficients.
     - [ ] Define alternative definition of `MlPoly` where the evaluations on the hypercube are stored instead of the coefficients. Define conversions between the two definitions, and show that they commute with basic operations.
       - [ ] Will need to expand `Mathlib`'s support for indexing by bits (i.e. further develop `BitVec`).
@@ -63,9 +64,11 @@ The below are content for an older version of the roadmap. Some of these content
     - [ ] Define and develop basic results on linear codes.
     - [ ] Define basic codes such as Reed-Solomon.
     - [ ] Prove proximity gap and interleaved distance results (up to one-third of the unique decoding distance).
-  - [ ] [Binary Tower Fields](ArkLib/Data/BinaryTowerField)
+  - [ ] Binary Tower Fields — now developed upstream in the `CompPoly` project
+    (`CompPoly/Fields/Binary/Tower/`)
     - [ ] Define iterated quadratic extensions of the binary field (Wiedermann construction), and prove that the resulting ring is a field.
     - [ ] Define efficient representation of elements in a binary tower field (using `BitVec`), efficient operations on them (see Binius paper), and prove that the resulting structure is a field isomorphic to the definition above.
-  - [ ] [Large Scalar Fields used in Curves](ArkLib/Data/ScalarPrimeField)
+  - [ ] Large Scalar Fields used in Curves — prime fields now developed upstream in the `CompPoly`
+    project (`CompPoly/Fields/`)
     - [ ] Low-priority for now.
     - [ ] Development on this should be done over at [`FFaCiL`](https://github.com/argumentcomputer/FFaCiL.lean/tree/main).

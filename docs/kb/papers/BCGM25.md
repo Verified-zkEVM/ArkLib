@@ -12,6 +12,9 @@ related_concepts:
 related_modules:
   - ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean
   - ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean
+  - ArkLib/Data/CodingTheory/ProximityGap/Separation.lean
 ---
 
 # BCGM25
@@ -29,13 +32,22 @@ with Reed-Solomon refinements up to the Johnson bound.
   [`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean).
 - MCA generator definitions and linear-transformation closure statements in
   [`ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean).
+- Tensor-generator MCA bounds in
+  [`ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean).
+- The affine-line-to-affine-space MCA implication in
+  [`ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean).
 - The broader formalization target that polynomial-generator MCA bounds should become reusable
   coding-theory infrastructure rather than WHIR-only assumptions.
+
+The per-statement correspondence, including where the formalization departs from the paper as
+printed, is in [`../audits/bcgm25-mca-generators.md`](../audits/bcgm25-mca-generators.md).
 
 ## Main ArkLib Touchpoints
 
 - [`ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
 - [`ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean)
+- [`ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean)
 
 ## Version Notes
 

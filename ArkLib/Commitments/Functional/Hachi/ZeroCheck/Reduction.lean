@@ -1,57 +1,97 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Tobias Rothmann
+Authors: Tobias Rothmann, Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
 
 /-!
-  # Zero-check — Hachi Figure 5 / **corrected** Lemma 10 — skeleton (milestone F6)
+  # Zero-check — Hachi Figure 5 / Lemma 10
 
-  One challenge round reducing the batched polynomial identities `H₀ ≡ 0 ∧ H_α ≡ 0` to their
-  evaluations at random points: the verifier samples the points, and the (never-sent) committed
-  `w̃` must make both evaluations zero.
+  A sequence of scalar challenge rounds reducing the batched polynomial identities
+  `H₀ ≡ 0 ∧ H_α ≡ 0` (`relBatched`, `ZeroCheck/Batch.lean`) to evaluations at direct points; the
+  two
+  evaluation claims then seed the sumcheck (`Sumcheck/Bridge.lean`). It is stated over the lifted
+  witness `LiftedWitness Φ μ n` and the weak-binding `LiftCom`, and composes into the §4.3 opening
+  chain (`Composition.lean`).
 
-  ## ⚠ The paper's Lemma 10 is not provable as stated — this file implements the repair
+  ## Deviation from the paper's Lemma 10
 
-  Hachi's Lemma 10 claims CWSS of this round from an `SS(F, 2, max(2d, 2b−1))` star of
-  transcripts with **uniform vector challenges** `(τ₀, τ₁) ∈ F^{m₀} × F^{m₁}`. That claim is
-  **false**: a coordinate-wise star certifies only that the multilinear `H` vanishes on the
-  *axis cross* through the star's center, and for `m ≥ 2` cross-vanishing does not imply
-  `H ≡ 0` — `H(t₁,t₂) = (t₁−a)(t₂−b)` vanishes on every axis line through `(a,b)` yet is
-  nonzero, and an adversary can realize exactly this shape against the paper's own range check
-  with a single out-of-range entry. No choice of the paper's parameter `D` helps. Full analysis,
-  protocol-level counterexample, and the repair space: [`HACHI_LEMMA10_GAP.md`](../../../../../
-  HACHI_LEMMA10_GAP.md) (plan risk R7).
+  What fails in [NOZ26] is not Figure 5 but its proof: the attempt to certify the polynomial
+  identity `H₀ ≡ 0` *deterministically*, from a coordinate-wise star of accepting transcripts. Two
+  things go wrong at once (full analysis in `docs/kb/audits/noz26-zero-check-lemma10.md`):
 
-  **Adopted repair (one round, Kronecker curve):** sample two independent scalar **seeds**
-  `(ρ₀, ρ_α) ← F²` and derive the evaluation points on the Kronecker curves
+  * *Shape.* `SS(S, ℓ, k)` is star-shaped by definition, so a coordinate-wise family only certifies
+    that a multilinear `H` vanishes on the axis cross through the family's center — which for two
+    or more variables does not imply `H ≡ 0`
+    (`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`), and putting more points on the
+    same arms does not help. Under the lemma's own `ℓ = 2` reading the arms carry arbitrary distinct
+    challenge *vectors* rather than collinear points, so the axis cross does not apply directly;
+    there the objection is a dimension count — `D` points cannot pin down the `2 ^ m₀`-dimensional
+    space of multilinears — which is *not* formalized here.
+  * *Degree.* Lemma 10's `D = max (2 * d) (2 * b - 1)` is a degree in `α` (Lemma 9) and in the
+    witness value `w̃(u, ℓ)` respectively; neither is a degree in a coordinate of `τ`. In `τ` both
+    batching polynomials are multilinear, so two distinct labels per coordinate suffice. The
+    printed lemma thus over-asks in `D` and under-asks in tree shape.
 
-  `τ₀ := κ_{m₀}(ρ₀) = (ρ₀, ρ₀², ρ₀⁴, …)`, `τ_α := κ_{m₁}(ρ_α)`.
+  Since `w̃` is committed before `τ` is drawn, the *protocol* is fine: Schwartz–Zippel gives
+  knowledge error `≈ (m₀ + m₁) / |F|` for Figure 5 exactly as printed. That argument is
+  probabilistic, so it does not fit the coordinate-wise special-soundness framework this chain
+  composes in ([FMN24], `CWSSPackage`), which is why the repair below is stated instead.
 
-  The pullback of an `m`-variate multilinear polynomial along `κ_m` is univariate of degree
-  `< 2^m` and the pullback is **injective** (binary expansion of exponents:
-  `LinearMvExtension.powAlgHom`), so ordinary univariate root counting becomes
-  information-complete. The challenge is modeled as the **seed pair** `F × F` with an
-  `(ℓ, k) = (2, D)` CWSS structure, `D := max 2 (max 2^{m₀} 2^{m₁})`: an `SS(F, 2, D)` star has
-  `2D − 1` members — `D` distinct seeds on each arm — and each arm interpolates one pullback.
-  The checked equations, `H₀`/`H_α`, and all downstream sumcheck formulas are unchanged; what
-  changes is the challenge *distribution* (curve-supported rather than uniform) and the error
-  scale (`D/|F|` rather than `m/|F|` — requires `D ≤ |F|`, i.e. a large enough extension field).
-  **This is the one place the formalization deliberately changes the paper's protocol to repair
-  its proof.**
+  ## What the repair changes, and what it does not
 
-  ## Protocol shape
+  This formalization draws the coordinates of `τ₀` and `τα` as `m₀ + m₁` consecutive scalar
+  rounds. Since **no prover message separates them** (`pSpecNestedScalar` has no `P_to_V` round),
+  the *interactive* protocol is unchanged: the verifier map, the prover, and the uniform
+  distribution on `F^{m₀ + m₁}` are the same as Figure 5's. What changes is the shape of transcript
+  tree the extractor is handed — a path-dependent complete binary tree instead of a star — plus,
+  under Fiat–Shamir, the requirement that the challenge coordinates be hashed *sequentially* rather
+  than drawn from one atomic hash call.
 
-  A single `V_to_P` round carrying `(ρ₀, ρ_α) : F × F`; no prover message. The verifier is a
-  pure pass-through extending the lift statement by the seeds (`ZeroCheckStatement`); the
-  evaluation claims constrain the never-sent `w̃` and live in `relZeroCheck`. This block runs at
-  the *fixed* `α` produced by the lift — the lift's `α`-fork remains a separate, earlier CWSS
-  node (one flat three-coordinate star over `(α, ρ₀, ρ_α)` would recreate the missing-corners
-  problem for the mixed `(α, ρ_α)`-dependence of `H_α`).
+  Path dependence is more than is needed here (a product grid of challenge vectors in the single
+  original round would do, and is obtainable by rewinding a one-round prover). Round splitting is
+  what lets `SS(S, ℓ, k)` and [FMN24] Lemma 4 be reused verbatim; expressing a product-shaped
+  family instead would need a new soundness notion and new composition theorems.
 
-  **Sorried**: the CWSS theorem `zeroCheck_coordinateWiseSpecialSound` (the corrected Lemma 10;
-  Kronecker injectivity + univariate root counting + the weak-binding escape).
+  ## Coordinate-wise special soundness
+
+  `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reads the complete binary transcript tree
+  and lands in one of two cases:
+
+  1. Two leaves carry **distinct** openings of the shared commitment `t`. Both are short (the
+     `liftShort` conjunct of `relNestedZeroCheck`), so the pair is a member of `LiftCom.Collision`
+     and the escape event `nestedZeroCheckEsc` fires — a Module-SIS break of the fixed key by
+     [NOZ26] Lemma 7 / Remark 2. Weak binding is **not** a field of `LiftCom` and not an extractor
+     output: it is an event on `(statement, tree)`, which is what keeps it from being trivially
+     satisfiable (a compressing commitment's collision set is never empty).
+  2. All leaves carry one opening `w̃`: `H₀` is read through the first `m₀` levels of the *one*
+     evaluation tree and `H_α` through its last `m₁` levels
+     (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
+     `relBatched` membership.
+
+  **This is weaker than Lemma 10, which claims an efficient deterministic algorithm.**
+  `nestedPathResponse` does not read a witness off the transcript — there is none to read, since
+  `w̃` is the witness of the output relation rather than a protocol message. It selects, by
+  classical choice, *some* witness satisfying `relNestedZeroCheck` at each leaf. Two consequences:
+  "all leaves carry one opening" constrains the selected witnesses, not a prover's replies; and
+  the collision case fires when choice happens to select different openings, so the binding horn
+  is discharged by the escape event's existence statement rather than by a reduction that produces
+  the Module-SIS solution from an adversary. Tree size: `nestedZeroCheck_numLeaves`/`_lt`.
+
+  ## Where the norm sits
+
+  `relNestedZeroCheck` carries `liftShort` because that predicate is the commitment's *shortness
+  index*: `LiftCom.Collision` is defined on pairs of distinct **short** openings, which is what an
+  Ajtai-style scheme's binding actually gives — a collision of two long openings is no Module-SIS
+  solution. So the conjunct is what makes the escape event sound, not a range assumption smuggled
+  in ahead of its proof.
+
+  The range claim proper — `RhoShort`, the `‖ρ‖∞ ≤ b − 1` half — is still **derived**, at the
+  batching bridge, from `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), and `relBatched` remains
+  norm-free. That separation is what this seam has to preserve, because it genuinely cannot
+  recover the range identity: a single evaluation `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
 
   ## References
 
@@ -61,135 +101,543 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Batch
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open CompPoly ArkLib.Lattices.CyclotomicModulus
-open OracleComp OracleSpec ProtocolSpec CoordinateWise
+open CompPoly CPoly ArkLib.Lattices.CyclotomicModulus
+open OracleComp OracleSpec ProtocolSpec
+open CoordinateWise
 
-/-- The zero-check's wire format: one verifier challenge carrying the **Kronecker seed pair**
-`(ρ₀, ρ_α) ∈ F × F` (corrected Lemma 10; the batching points are derived on the curves). -/
-@[reducible] def pSpecZeroCheck (F : Type) : ProtocolSpec 1 :=
-  ⟨!v[.V_to_P], !v[F × F]⟩
+/-! ## Wire format and CWSS structure -/
 
-section Instances
+/-! ### Nested scalar-round wire format -/
 
-variable {F : Type} [SampleableType F]
+/-- A flat sequence of `r` scalar verifier challenges. -/
+@[reducible] def pSpecNestedScalar (F : Type) (r : ℕ) : ProtocolSpec r :=
+  ⟨fun _ => .V_to_P, fun _ => F⟩
 
-instance : ∀ i, SampleableType ((pSpecZeroCheck F).Challenge i)
-  | ⟨0, _⟩ => (inferInstance : SampleableType (F × F))
+/-- One scalar verifier challenge for each coordinate of `τ₀`, followed by one for each
+coordinate of `τα`.  There are no prover-message rounds between challenges: ArkLib's
+transcript-tree syntax supports consecutive verifier rounds directly. -/
+@[reducible] def pSpecNestedZeroCheck (F : Type) (m₀ m₁ : ℕ) : ProtocolSpec (m₀ + m₁) :=
+  pSpecNestedScalar F (m₀ + m₁)
 
-end Instances
+instance instSampleableTypeChallengePSpecNestedZeroCheck
+    {F : Type} [SampleableType F] {m₀ m₁ : ℕ} :
+    ∀ i, SampleableType ((pSpecNestedZeroCheck F m₀ m₁).Challenge i) := by
+  intro i
+  change SampleableType F
+  infer_instance
 
-/-- **The corrected Lemma 10 CWSS structure**: the seed-pair challenge decomposes into `ℓ = 2`
-scalar coordinates over the alphabet `F`, with soundness parameter
-`k = D := max 2 (max 2^{m₀} 2^{m₁})` — the maximum padded constraint-table size (NOT the
-paper's `max(2d, 2b−1)`, whose provenance is the Lemma 9 interpolation resp. the Lemma 11 round
-degree). Star arity `2·(D−1)+1 = 2D−1`. -/
-def zeroCheckStructure (F : Type) (m₀ m₁ : ℕ) : CWSSStructure (pSpecZeroCheck F) where
-  coordIndex := fun _ => ⟨2, by omega⟩
-  alphabet := fun _ => F
-  decompose := fun i => match i with
-    | ⟨0, _⟩ => (piFinTwoEquiv fun _ => F).symm
-  soundnessParam := fun _ => ⟨max 2 (max (2 ^ m₀) (2 ^ m₁)), le_max_left _ _⟩
-  arity := fun _ => 2 * (max 2 (max (2 ^ m₀) (2 ^ m₁)) - 1) + 1
-  arity_eq := rfl
+/-- Binary special-soundness shape for the zero-check: every scalar verifier round has
+one coordinate and soundness parameter two, hence exactly two pairwise-distinct children. -/
+@[reducible] def nestedZeroCheckStructure (F : Type) (m₀ m₁ : ℕ) :
+    CWSSStructure (pSpecNestedZeroCheck F m₀ m₁) :=
+  CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)
+
+/-! ### Size of the transcript tree
+
+`CWSSStructure` carries no size bound, so `coordinateWiseSpecialSound` alone cannot tell a usable
+repair from one whose family is exponential in the witness length. The two facts below record the
+size, but note what they do and do not establish.
+
+* `nestedZeroCheck_numLeaves` counts the leaves of the *adapter's* `NestedEvaluationTree`. The
+quantity the extractor actually consumes is the number of `ChallengeTree.LeafPath`s of the
+structured transcript tree; that the two agree is evident from the adapter but is **not
+formalized**.
+* `nestedZeroCheck_numLeaves_lt` is arithmetic on naturals. Minimality of `m₀`, `m₁` enters as its
+  hypotheses and is **not enforced** anywhere in this development: `hμn` and `hn` bound the arities
+  from below only, so an instantiation with oversized `m₀` satisfies every theorem here while
+  blowing up the tree.
+
+Concretely, at [NOZ26]'s `ℓ = 30` parameters (Fig. 9) the `H₀` table has `(μ + n) * deg φ ≈ 2 ^ 26`
+entries, so `m₀ = 26`, and `rlinRows = 5` rows gives `m₁ = 3`: about `2 ^ 29` transcripts, against
+the `2 * D - 1 = 4095` of the printed Lemma 10's `SS(F, 2, D)` family at
+`D = max (2 * d) (2 * b - 1) = 2048`. Polynomial in the witness dimensions, but roughly `2 ^ 17`
+times the paper's family — and since CWSS leaf counts multiply across rounds, that factor is what
+the composed §4.3 chain (`Composition.lean`) inherits; no aggregate bound is stated there.
+
+Only `2 ^ m₀ + 2 ^ m₁ - 1` leaves are *used* (`H₀` needs one accepting continuation per
+`τ₀`-prefix, `H_α` one complete `m₁`-subtree), while `ChallengeTree.IsStructured` demands the
+complete tree. For [FMN24] Lemma 4 to convert coordinate-wise special soundness into knowledge
+soundness one needs `K = poly(λ)`; that lemma is not formalized in ArkLib, so nothing below is
+connected to a knowledge-error statement. -/
+
+/-- The evaluation tree the adapter produces has exactly `2 ^ (m₀ + m₁)` leaves: `m₀ + m₁` challenge
+rounds, two pairwise-distinct children each. -/
+theorem nestedZeroCheck_numLeaves {F : Type} {m₀ m₁ : ℕ}
+    (tree : NestedEvaluationTree F 2 (m₀ + m₁)) : tree.numLeaves = 2 ^ (m₀ + m₁) :=
+  tree.numLeaves_eq_pow
+
+/-- With the two arities chosen *minimally* for their pins — `2 ^ m₀ < 2 * A` for
+`A := (μ + n) * deg φ` (the `H₀` table size, cf. `hμn`) and `2 ^ m₁ < 2 * B` for `B := n` (the row
+count, cf. `hn`) — the leaf count is below `4 * A * B`, hence polynomial in the witness dimensions.
+Both hypotheses are assumptions on the instantiation; see the caveats above. -/
+theorem nestedZeroCheck_numLeaves_lt {m₀ m₁ A B : ℕ}
+    (hm₀ : 2 ^ m₀ < 2 * A) (hm₁ : 2 ^ m₁ < 2 * B) : 2 ^ (m₀ + m₁) < 4 * A * B := by
+  calc 2 ^ (m₀ + m₁) = 2 ^ m₀ * 2 ^ m₁ := pow_add 2 m₀ m₁
+    _ < 2 * A * (2 * B) := Nat.mul_lt_mul_of_lt_of_lt hm₀ hm₁
+    _ = 4 * A * B := by ring
+
+/-- Forget transcript-tree bookkeeping and retain its path-dependent scalar challenge labels as a
+binary evaluation tree.
+
+The two depth equations below are the only arithmetic in this file: ArkLib's `ChallengeTree` is
+indexed by the *current round*, so an adapter must convert "rounds remaining" into a depth. The
+zero test itself needs no depth arithmetic — `NestedEvaluationTree.eq_zero_of_vanishes_comp` reads
+each polynomial through a window of levels instead of projecting the tree. -/
+theorem nestedRemainingDepth_last (r : ℕ) : r - (Fin.last r).val = 0 := by
+  simp only [Fin.val_last, Nat.sub_self]
+
+theorem nestedRemainingDepth_succ {r : ℕ} (m : Fin r) :
+    r - m.castSucc.val = (r - m.succ.val) + 1 := by
+  simp only [Fin.val_castSucc, Fin.val_succ]
+  omega
+
+def nestedTreeToEvaluationTree (F : Type) (r : ℕ) :
+    {i : Fin (r + 1)} →
+      ChallengeTree (pSpecNestedScalar F r)
+        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i →
+        NestedEvaluationTree F 2 (r - i.val)
+  | _, .leaf =>
+      (nestedRemainingDepth_last r).symm ▸ (NestedEvaluationTree.leaf : NestedEvaluationTree F 2 0)
+  | _, .msgNode _ h _ _ => nomatch h
+  | _, .chalNode m _ challenges children =>
+      (nestedRemainingDepth_succ m).symm ▸
+        .node challenges (fun j => nestedTreeToEvaluationTree F r (children j))
+
+/-- The suffix of a full scalar-round transcript beginning at round `i`. -/
+def nestedTranscriptSuffix {F : Type} {r : ℕ} (i : Fin (r + 1))
+    (tr : (pSpecNestedScalar F r).FullTranscript) : Fin (r - i.val) → F :=
+  fun j => tr ⟨i.val + j, by omega⟩
+
+/-- Extending a scalar transcript along a leaf path preserves every entry already present in its
+prefix. -/
+theorem nestedLeafPath_transcript_prefix {F : Type} {r : ℕ} {i : Fin (r + 1)}
+    {arity : (pSpecNestedScalar F r).ChallengeIdx → ℕ}
+    {tree : ChallengeTree (pSpecNestedScalar F r) arity i}
+    (path : ChallengeTree.LeafPath tree) (pre : Transcript i (pSpecNestedScalar F r))
+    (j : Fin i.val) :
+    path.transcript pre ⟨j.val, by omega⟩ = pre ⟨j.val, j.isLt⟩ := by
+  induction path with
+  | leaf => rfl
+  | msg path ih =>
+      rename_i m h message child
+      change Direction.V_to_P = Direction.P_to_V at h
+      contradiction
+  | chal challenge path ih =>
+      rename_i m h challenges children
+      rw [ChallengeTree.LeafPath.transcript]
+      let j' : Fin m.succ.val := ⟨j.val, by
+        simp only [Fin.val_castSucc, Fin.val_succ] at j ⊢
+        omega⟩
+      convert ih (pre.concat (challenges challenge)) j' using 1
+      simp [j', Transcript.concat, Fin.snoc]
+      rfl
+
+/-- If an evaluation function vanishes on every transcript below a scalar challenge tree, it
+vanishes on the corresponding CompPoly evaluation tree. -/
+theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
+    {i : Fin (r + 1)} →
+      (tree : ChallengeTree (pSpecNestedScalar F r)
+        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i) →
+      (pre : Transcript i (pSpecNestedScalar F r)) →
+      (evalAt : (Fin (r - i.val) → F) → F) →
+      (∀ path : ChallengeTree.LeafPath tree,
+        evalAt (nestedTranscriptSuffix i (path.transcript pre)) = 0) →
+      (nestedTreeToEvaluationTree F r tree).Vanishes evalAt
+  | _, .leaf, pre, evalAt, h => by
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast,
+        NestedEvaluationTree.Vanishes]
+      convert h .leaf using 1
+      congr 1
+      funext i
+      exact (Fin.cast (nestedRemainingDepth_last r) i).elim0
+  | _, .msgNode _ h _ _, _, _, _ => nomatch h
+  | _, .chalNode m hm challenges children, pre, evalAt, h => by
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.vanishes_cast,
+        NestedEvaluationTree.Vanishes]
+      intro j
+      apply nestedTreeToEvaluationTree_vanishes (children j) (pre.concat (challenges j))
+      intro path
+      convert h (ChallengeTree.LeafPath.chal j path) using 1
+      congr 1
+      funext i
+      let i' := Fin.cast (nestedRemainingDepth_succ m) i
+      change (Fin.cons (challenges j)
+          (nestedTranscriptSuffix m.succ (path.transcript (pre.concat (challenges j)))) :
+          Fin ((r - m.succ.val) + 1) → F) i' = _
+      by_cases hz : i'.val = 0
+      · have hi' : i' = 0 := Fin.ext hz
+        let izero : Fin (r - m.castSucc.val) := ⟨0, by
+          simp only [Fin.val_castSucc]
+          omega⟩
+        have hi : i = izero := by
+          apply Fin.ext
+          simpa [i', izero] using hz
+        rw [hi]
+        rw [hi']
+        simp only [Fin.cons_zero, nestedTranscriptSuffix,
+          ChallengeTree.LeafPath.transcript]
+        simp only [izero, Fin.val_mk, Nat.add_zero]
+        symm
+        have hp := nestedLeafPath_transcript_prefix path (pre.concat (challenges j))
+          ⟨m.val, by simp only [Fin.val_succ]; omega⟩
+        convert hp using 1
+        · congr 1
+        · rw [show (⟨m.val, by simp only [Fin.val_succ]; omega⟩ : Fin m.succ.val) =
+            Fin.last m.val by apply Fin.ext; rfl]
+          simp [Transcript.concat, Fin.snoc]
+      · let k : Fin (r - m.succ.val) := ⟨i'.val - 1, by
+          have := i'.isLt
+          simp only [Fin.val_succ] at this ⊢
+          omega⟩
+        have hi' : i' = k.succ := by
+          apply Fin.ext
+          simp only [Fin.val_succ, k]
+          omega
+        rw [hi', Fin.cons_succ]
+        simp only [nestedTranscriptSuffix, ChallengeTree.LeafPath.transcript]
+        congr 1
+        apply Fin.ext
+        have hcast : i'.val = i.val := rfl
+        have hval : i.val = k.val + 1 := by
+          have := congrArg Fin.val hi'
+          simp only [Fin.val_succ] at this
+          omega
+        simp only [Fin.val_castSucc, Fin.val_succ]
+        omega
+
+/-- Structured scalar challenge trees convert to sibling-distinct CompPoly evaluation trees. -/
+theorem nestedTreeToEvaluationTree_isDistinct (F : Type) (r : ℕ) :
+    {i : Fin (r + 1)} →
+      (tree : ChallengeTree (pSpecNestedScalar F r)
+        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i) →
+      tree.IsStructured
+        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).toShape →
+      (nestedTreeToEvaluationTree F r tree).IsDistinct
+  | _, .leaf, _ => by
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast]
+      trivial
+  | _, .msgNode _ h _ _, _ => nomatch h
+  | _, .chalNode _ _ challenges children, h => by
+      simp only [nestedTreeToEvaluationTree, NestedEvaluationTree.isDistinct_cast,
+        NestedEvaluationTree.IsDistinct]
+      have hFamily : IsSpecialSoundFamily 1 2
+          (fun j => (Equiv.funUnique (Fin 1) F).symm (challenges j)) := h.1
+      have hVectors := (isSpecialSoundFamily_one_iff_injective _).mp hFamily
+      refine ⟨?_, fun j => nestedTreeToEvaluationTree_isDistinct F r (children j) (h.2 j)⟩
+      intro a b hab
+      apply hVectors
+      exact congrArg (Equiv.funUnique (Fin 1) F).symm hab
+
+variable {F : Type} {m₀ m₁ : ℕ}
+
+/-- Read all scalar challenges from a completed zero-check transcript. -/
+def nestedZeroCheckChallenges
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin (m₀ + m₁) → F :=
+  fun i => tr i
+
+/-- The first `m₀` transcript challenges, assembled as the direct point `τ₀`. -/
+def nestedZeroCheckTauZero
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin m₀ → F :=
+  fun i => nestedZeroCheckChallenges tr (Fin.castAdd m₁ i)
+
+/-- The final `m₁` transcript challenges, assembled as the direct point `τα`. -/
+def nestedZeroCheckTauAlpha
+    (tr : (pSpecNestedZeroCheck F m₀ m₁).FullTranscript) : Fin m₁ → F :=
+  fun i => nestedZeroCheckChallenges tr (Fin.natAdd m₀ i)
 
 section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {E : Type} {F : Type} [Field F]
+variable {n μ : ℕ} {E : Type} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- The zero-check verifier (corrected Figure 5): a pure pass-through extending the lift
-statement by the two Kronecker seeds. The evaluation claims constrain the never-sent `w̃` and
-live in `relZeroCheck`. -/
-def zeroCheckVerifier {TCom : Type} :
-    Verifier oSpec (LiftStatement Φ TCom F n μ) (ZeroCheckStatement Φ TCom F n μ)
-      (pSpecZeroCheck F) where
-  verify := fun stmt tr =>
-    pure ⟨stmt.1, stmt.2.1, stmt.2.2,
-      (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩
+/-! ### Scalar-round protocol -/
 
-/-- The zero-check prover (trivial: the round is challenge-only; the honest prover just absorbs
-the seeds and carries its lifted witness forward as the output witness). -/
-def zeroCheckProver {TCom : Type} :
-    Prover oSpec (LiftStatement Φ TCom F n μ) (LiftedWitness Φ μ n)
-      (ZeroCheckStatement Φ TCom F n μ) (LiftedWitness Φ μ n) (pSpecZeroCheck F) where
-  PrvState
-    | 0 => LiftStatement Φ TCom F n μ × LiftedWitness Φ μ n
-    | 1 => (LiftStatement Φ TCom F n μ × LiftedWitness Φ μ n) × (F × F)
-  input := id
-  sendMessage
-    | ⟨0, h⟩ => nomatch h
-  receiveChallenge
-    | ⟨0, _⟩ => fun st => pure fun c => (st, c)
-  output := fun ⟨⟨stmt, wit⟩, c⟩ =>
-    pure (⟨stmt.1, stmt.2.1, stmt.2.2, c.1, c.2⟩, wit)
+/-- Extend the lift statement by the direct evaluation points assembled from the
+scalar-round transcript. -/
+def nestedZcMapStmt {TCom : Type} (stmt : LiftStatement Φ TCom F n μ)
+    (τ₀ : Fin m₀ → F) (τα : Fin m₁ → F) :
+    NestedZeroCheckStatement Φ TCom F n μ m₀ m₁ :=
+  ⟨stmt.1, stmt.2.1, stmt.2.2, τ₀, τα⟩
 
-/-- **The zero-check's output relation** (corrected Figure 5 residual claims): `w̃` opens `t`,
-and both batched constraint polynomials vanish **at the derived Kronecker points**
-`τ₀ = κ_{m₀}(ρ₀)`, `τ_α = κ_{m₁}(ρ_α)`. -/
-def relZeroCheck (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+/-- Figure-5 verifier: read `m₀ + m₁` consecutive scalar challenges, split them into
+the direct points `τ₀` and `τα`, and append those points to the statement. -/
+def nestedZeroCheckVerifier {TCom : Type} :
+    Verifier oSpec (LiftStatement Φ TCom F n μ)
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) (pSpecNestedZeroCheck F m₀ m₁) where
+  verify := fun stmt tr => pure (nestedZcMapStmt Φ m₀ m₁ stmt
+    (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr))
+
+/-- Figure-5 honest prover. Since all rounds are verifier challenges, its state is the
+input statement/witness together with the scalar prefix received so far. The stage is generic in
+the witness type — it only transports whatever the commitment's openings are.
+
+Nothing in this development references it: `CWSSPackage` bundles only the verifier, so the honest
+provers of every link (`liftProver`, `roundProver`, …) are likewise unconsumed. It is kept for the
+completeness direction, which for this link is `eval 0 = 0` plus the agreement of this prover's
+`castAdd`/`natAdd` split with `nestedZeroCheckVerifier`'s, and is still missing (see the audit
+page). -/
+def nestedZeroCheckProver {TCom Wit : Type} :
+    Prover oSpec (LiftStatement Φ TCom F n μ) Wit
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
+      (pSpecNestedZeroCheck F m₀ m₁) where
+  PrvState i := (LiftStatement Φ TCom F n μ × Wit) × (Fin i → F)
+  input := fun stmtWit => ⟨stmtWit, fun i => i.elim0⟩
+  sendMessage := fun ⟨_, h⟩ => nomatch h
+  receiveChallenge := fun _ st => pure fun c => ⟨st.1, Fin.snoc st.2 c⟩
+  output := fun ⟨⟨stmt, wit⟩, challenges⟩ => pure
+    (nestedZcMapStmt Φ m₀ m₁ stmt
+      (fun i => challenges (Fin.castAdd m₁ i))
+      (fun i => challenges (Fin.natAdd m₀ i)), wit)
+
+
+/-- Figure-5 point relation: an opening of `t` at which the two computable batching polynomials
+vanish at the direct points carried by the statement.
+
+The `liftShort` conjunct is the commitment's **shortness index**, not a range assumption smuggled
+in: it is what makes a pair of colliding branch openings a member of `LiftCom.Collision`, hence a
+Module-SIS break under [NOZ26] Lemma 7 / Remark 2. Its `RhoShort` half — the range claim Lemma 10
+exists to establish — is still *derived*, at the batching bridge, from `H₀ ≡ 0`
+(`hZero_eq_zero_imp_liftShort`); it is never assumed here. What this seam genuinely cannot
+recover, and does not pretend to, is the range identity itself: a single evaluation
+`H₀(τ₀) = 0` never implies `H₀ ≡ 0`
+(`MvPolynomial.exists_nonzero_vanishing_on_axis_cross`). -/
+def relNestedZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Set (ZeroCheckStatement Φ K.TCom F n μ × LiftedWitness Φ μ n) :=
+    Set (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁ × LiftedWitness Φ μ n) :=
   {p |
     K.com p.2 = p.1.t ∧
-    MvPolynomial.eval (kroneckerPoint m₀ p.1.seed₀) (hZero Φ m₀ φF b p.2) = 0 ∧
-    MvPolynomial.eval (kroneckerPoint m₁ p.1.seedα)
-      (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) = 0 ∧
+    liftShort Φ bound ρBound p.2 ∧
+    CMlPolynomialEval.eval (hZero Φ m₀ φF b p.2) (Vector.ofFn p.1.τ₀) = 0 ∧
+    CMlPolynomialEval.eval
+        (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) (Vector.ofFn p.1.τα) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
-/-- Escape-threaded zero-check relation — the sumcheck bridge's seam. -/
-def relZeroCheckE (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+/-! ## The witness assembler -/
+
+open Classical in
+/-- Classically select an output-relation witness for a leaf, with an arbitrary nonempty fallback
+outside accepting trees. -/
+noncomputable def nestedPathResponse
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
+    {arity : (pSpecNestedZeroCheck F m₀ m₁).ChallengeIdx → ℕ}
+    (tree : ChallengeTree (pSpecNestedZeroCheck F m₀ m₁) arity 0)
+    (path : ChallengeTree.LeafPath tree) : LiftedWitness Φ μ n :=
+  if h : ∃ w, (nestedZcMapStmt Φ m₀ m₁ stmt
+      (nestedZeroCheckTauZero path.fullTranscript)
+      (nestedZeroCheckTauAlpha path.fullTranscript), w) ∈
+        relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b then
+    h.choose
+  else Classical.ofNonempty
+
+/-- The canonical all-left leaf: the extractor's output branch, and the comparison base of the
+collision case. -/
+def nestedLeftPath {r : ℕ} :
+    {i : Fin (r + 1)} →
+      (tree : ChallengeTree (pSpecNestedScalar F r)
+        (CWSSStructure.ofSpecialSound (fun _ => 2) (fun _ => by omega)).arity i) →
+      ChallengeTree.LeafPath tree
+  | _, .leaf => .leaf
+  | _, .msgNode _ h _ _ => nomatch h
+  | _, .chalNode _ _ _ children => .chal 0 (nestedLeftPath (children 0))
+
+/-- Tree-based extractor for the scalar-round zero-check: the opening selected at the all-left
+leaf.
+
+There is no case analysis to do, exactly as in `CommittedScalar.mkWitness`. On trees whose leaves
+do **not** share an opening the escape event `nestedZeroCheckEsc` fires and the certificate's left
+disjunct carries the conclusion, so the choice of leaf is soundness-irrelevant; on trees that do
+share one, every leaf gives the same answer. -/
+noncomputable def nestedZeroCheckExtractor
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    Set (ZeroCheckStatement Φ K.TCom F n μ × (LiftedWitness Φ μ n ⊕ E)) :=
-  (relZeroCheck Φ m₀ m₁ bound ρBound K φF b).withEscape K.esc
+    Extractor.TreeBased (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (pSpecNestedZeroCheck F m₀ m₁) (nestedZeroCheckStructure F m₀ m₁).arity :=
+  fun stmt tree =>
+    nestedPathResponse Φ m₀ m₁ bound ρBound K φF b stmt tree (nestedLeftPath tree)
 
-variable [SampleableType F]
+/-! ## The weak-binding escape event -/
 
-/-- **Corrected Hachi Lemma 10 (skeleton): one-round Kronecker-seed CWSS of the zero-check.**
+/-- **The zero-check's escape event** (the weak-binding case of the corrected Lemma 10): the tree
+admits per-leaf `relNestedZeroCheck`-responses among which two are **distinct short openings** of
+the statement's commitment `t` — a member of `LiftCom.Collision`, hence a Module-SIS break of the
+fixed key by [NOZ26] Lemma 7.
 
-**Sorried (F6).** Extraction plan (`HACHI_LEMMA10_GAP.md` §3.K.3): an `SS(F, 2, D)` star of
-`2D − 1` accepting branches has `D` pairwise-distinct `ρ₀`-values on its first arm (the second
-coordinate held at the center) and `D` pairwise-distinct `ρ_α`-values on its second arm. If two
-branch witnesses are escapes or distinct openings of `t`, pass through resp. invoke
-`K.collision_mem` (all openings are... short by the downstream range extraction — precisely, the
-collision escape here reuses the same weak-binding route as Lemma 9's). Otherwise all branches
-share one `w̃`: the univariate pullback `K₀(T) := H₀^{w̃}(κ_{m₀}(T))` has degree `< 2^{m₀} ≤ D`
-(multilinearity `hZero_degreeOf_le` + `LinearMvExtension.powAlgHom` degree bound) and `D`
-distinct roots on the first arm, hence `K₀ = 0`; **Kronecker injectivity** of the pullback on
-multilinear polynomials (the still-missing `powAlgHom_injective_on_multilinear`) gives
-`H₀^{w̃} ≡ 0`. The second arm gives `H_α^{w̃} ≡ 0` identically. The axis-cross counterexample
-of the gap file cannot survive: its pullback is a nonzero univariate of degree `< 2^{m₀}`. -/
-theorem zeroCheck_coordinateWiseSpecialSound
+Against the `ChallengeTree.EscapeEvent` contract: the collision conjunct is an unconditional break
+at *every* `(statement, tree)`; it mentions neither the extractor, nor acceptance, nor the
+sampling; and the responses are pinned to the **output** relation, which is what keeps the event
+tight — it cannot fire on trees where all leaves share one opening, which is exactly where
+extraction succeeds. Both openings automatically open `t`: `relNestedZeroCheck`'s first conjunct
+pins `K.com w = t` and every leaf's output statement carries the same `t`. -/
+def nestedZeroCheckEsc (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) :
+    ChallengeTree.EscapeEvent (LiftStatement Φ K.TCom F n μ)
+      (pSpecNestedZeroCheck F m₀ m₁) (nestedZeroCheckStructure F m₀ m₁).arity :=
+  fun stmt tree =>
+    ∃ resp : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n,
+      (∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
+          (nestedZeroCheckTauZero path.fullTranscript)
+          (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
+        relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) ∧
+      ∃ p p', (resp p, resp p') ∈ K.Collision
+
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
+/-- **Correctness core of the nested-tree assembly.**
+
+Either two leaves carry distinct openings — and then, both being short openings of the shared
+commitment `t`, they are a member of `K.Collision` and the escape event fires — or every leaf
+carries one opening `w̃`, and the single evaluation tree of depth `m₀ + m₁` reads `H₀` through its
+first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`), so both
+computable batching polynomials vanish identically and `w̃ ∈ relBatched`.
+
+Every conjunct the collision side needs is supplied by `relNestedZeroCheck` itself: commitment
+agreement and `liftShort` for each leaf. -/
+theorem nestedAssembly_escape_or_mem_relBatched
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
+    {arity : (pSpecNestedZeroCheck F m₀ m₁).ChallengeIdx → ℕ}
+    (tree : ChallengeTree (pSpecNestedZeroCheck F m₀ m₁) arity 0)
+    (resp : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n)
+    (base : ChallengeTree.LeafPath tree)
+    (hrel : ∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
+        (nestedZeroCheckTauZero path.fullTranscript)
+        (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
+      relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+    (evTree : NestedEvaluationTree F 2 (m₀ + m₁)) (hDistinct : evTree.IsDistinct)
+    (hVanishes₀ : (∀ path, resp path = resp base) →
+      CMlPolynomialEval.PolynomialVanishes evTree (hZero Φ m₀ φF b (resp base)) (Fin.castAdd m₁))
+    (hVanishesα : (∀ path, resp path = resp base) →
+      CMlPolynomialEval.PolynomialVanishes evTree
+        (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 (resp base)) (Fin.natAdd m₀)) :
+    (∃ resp' : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n,
+        (∀ path, (nestedZcMapStmt Φ m₀ m₁ stmt
+            (nestedZeroCheckTauZero path.fullTranscript)
+            (nestedZeroCheckTauAlpha path.fullTranscript), resp' path) ∈
+          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) ∧
+        ∃ p p', (resp' p, resp' p') ∈ K.Collision) ∨
+      (stmt, resp base) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b := by
+  classical
+  by_cases hcol : ∃ p, resp p ≠ resp base
+  · -- two leaves disagree: their openings are a short collision of the shared `t`
+    obtain ⟨p, hp⟩ := hcol
+    refine Or.inl ⟨resp, hrel, p, base, hp, ?_, (hrel p).2.1, (hrel base).2.1⟩
+    exact (hrel p).1.trans (hrel base).1.symm
+  · -- all leaves share one opening: the tree zero test gives both identities
+    push_neg at hcol
+    refine Or.inr ⟨(hrel base).1, ?_, ?_, (hrel base).2.2.2.2⟩
+    · exact hZero_eq_zero_of_evaluationTree Φ m₀ (le_refl 2) φF b (resp base) evTree hDistinct
+        (hVanishes₀ hcol)
+    · exact hAlpha_eq_zero_of_evaluationTree Φ m₁ (le_refl 2) φF b stmt.1 stmt.2.2 (resp base)
+        evTree hDistinct (hVanishesα hcol)
+
+/-- **Escape-threaded coordinate-wise special soundness of the nested scalar-round zero-check**
+(the corrected Hachi Lemma 10), at the named extractor `nestedZeroCheckExtractor`.
+
+The weak-binding failure mode is the escape disjunct `nestedZeroCheckEsc`; the extraction side is
+the evaluation-tree zero test through the two windows of one depth-`m₀ + m₁` tree. Tree size is
+machine-checked by `nestedZeroCheck_numLeaves`/`_lt`. -/
+theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    (zeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
-        (TCom := K.TCom)).coordinateWiseSpecialSound init impl
-      (zeroCheckStructure F m₀ m₁)
-      (relBatchedE Φ m₀ m₁ bound ρBound K φF b)
-      (relZeroCheckE Φ m₀ m₁ bound ρBound K φF b) := by
-  sorry
+    Verifier.coordinateWiseSpecialSoundWithEscape init impl
+      (nestedZeroCheckStructure F m₀ m₁)
+      (nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b)
+      (relBatched Φ m₀ m₁ bound ρBound K φF b)
+      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
+      (nestedZeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
+        (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom))
+      (nestedZeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b) := by
+  classical
+  intro stmt tree hStruct hAcc
+  set resp := nestedPathResponse Φ m₀ m₁ bound ρBound K φF b stmt tree with hrespdef
+  have hmem : ∀ path : ChallengeTree.LeafPath tree, ∃ w,
+      (nestedZcMapStmt Φ m₀ m₁ stmt
+        (nestedZeroCheckTauZero path.fullTranscript)
+        (nestedZeroCheckTauAlpha path.fullTranscript), w) ∈
+          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+    intro path
+    apply (Set.mem_language_iff _ _).1
+    apply Verifier.mem_of_pure_accepting init impl
+      (nestedZeroCheckVerifier (oSpec := oSpec) (n := n) (μ := μ) (F := F)
+        (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) Φ) stmt path.fullTranscript
+      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b).language
+      (nestedZcMapStmt Φ m₀ m₁ stmt
+        (nestedZeroCheckTauZero path.fullTranscript)
+        (nestedZeroCheckTauAlpha path.fullTranscript))
+    · rfl
+    · exact hAcc _ path.mem_fullTranscripts
+  have hrel : ∀ path : ChallengeTree.LeafPath tree,
+      (nestedZcMapStmt Φ m₀ m₁ stmt
+        (nestedZeroCheckTauZero path.fullTranscript)
+        (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
+          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+    intro path
+    simp only [hrespdef, nestedPathResponse]
+    rw [dif_pos (hmem path)]
+    exact (hmem path).choose_spec
+  let evTree : NestedEvaluationTree F 2 (m₀ + m₁) := by
+    simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
+  have hDistinct : evTree.IsDistinct := by
+    simpa [evTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
+  refine nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound ρBound K φF b stmt tree resp
+    (nestedLeftPath tree) hrel evTree hDistinct ?_ ?_
+  · -- `H₀` reads the first `m₀` levels of the one tree.
+    intro hall
+    simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
+    apply nestedTreeToEvaluationTree_vanishes tree default
+    intro path
+    have hp := hrel path
+    rw [hall path] at hp
+    convert hp.2.2.1 using 1
+    congr 2
+    funext i
+    simp only [Function.comp_apply, nestedTranscriptSuffix,
+      ChallengeTree.LeafPath.fullTranscript]
+    congr 1
+    apply Fin.ext
+    simp only [Fin.val_zero, Nat.zero_add, Fin.val_castAdd]
+  · -- `H_α` reads the last `m₁` levels of the same tree.
+    intro hall
+    simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
+    apply nestedTreeToEvaluationTree_vanishes tree default
+    intro path
+    have hp := hrel path
+    rw [hall path] at hp
+    convert hp.2.2.2.1 using 1
+    congr 2
+    funext i
+    simp only [Function.comp_apply, nestedTranscriptSuffix,
+      ChallengeTree.LeafPath.fullTranscript]
+    congr 1
+    apply Fin.ext
+    simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd]
 
-/-- **The zero-check as a `CWSSPackage`** (corrected Hachi Figure 5 / Lemma 10): the one-round
-seed-pair verifier with the `(ℓ, k) = (2, D)` Kronecker structure, reducing `relBatchedE` to
-`relZeroCheckE`. The certificate is the sorried `zeroCheck_coordinateWiseSpecialSound`. -/
-def zeroCheckPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) E (liftShort Φ bound ρBound))
+/-- The nested scalar-round zero-check bundled for sequential composition, in the **escape-aware**
+corner of the package lattice: the verifier is `pure (…)` and never fails, so it is a valid left
+factor, while the weak-binding case needs the `esc` field. -/
+noncomputable def nestedZeroCheckPackage (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
-    CWSSPackage init impl
-      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (ZeroCheckStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n ⊕ E)
-      (pSpecZeroCheck F) where
-  verifier := zeroCheckVerifier (oSpec := oSpec) Φ
-  struct := zeroCheckStructure F m₀ m₁
-  relIn := relBatchedE Φ m₀ m₁ bound ρBound K φF b
-  relOut := relZeroCheckE Φ m₀ m₁ bound ρBound K φF b
-  isPure := ⟨fun stmt tr =>
-    ⟨stmt.1, stmt.2.1, stmt.2.2, (tr.challenges ⟨0, rfl⟩).1, (tr.challenges ⟨0, rfl⟩).2⟩,
-    fun _ _ => rfl⟩
-  isCWSS := zeroCheck_coordinateWiseSpecialSound Φ m₀ m₁ bound ρBound init impl K φF b
+    EscapeCWSSPackage init impl
+      (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
+      (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
+      (pSpecNestedZeroCheck F m₀ m₁) where
+  verifier := nestedZeroCheckVerifier (oSpec := oSpec) (n := n) (μ := μ) (F := F)
+    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) Φ
+  struct := nestedZeroCheckStructure F m₀ m₁
+  relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
+  relOut := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
+  isPure := ⟨fun stmt tr => nestedZcMapStmt Φ m₀ m₁ stmt
+    (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr), fun _ _ => rfl⟩
+  esc := nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b
+  extractor := nestedZeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b
+  isCWSS := nestedZeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound
+    init impl K φF b
 
 end Protocol
 

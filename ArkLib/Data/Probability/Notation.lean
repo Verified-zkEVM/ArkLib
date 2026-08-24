@@ -77,6 +77,44 @@ scoped macro_rules (kind := prStx)
   | `(Pr_{$items*}[$t]) => `((((do $items:doSeqItem*
                                      return $t:term) True) : ENNReal))
 
+/-- Unfold a single-sample event as an indicator-weighted `tsum` over the `PMF`. -/
+lemma Pr_eq_tsum_indicator {α : Type} (p : PMF α) (P : α → Prop)
+    [DecidablePred P] :
+    Pr_{ let a ← p }[P a] =
+      ∑' a, p a * (if P a then (1 : ENNReal) else 0) := by
+  simp only [Bind.bind, Pure.pure, PMF.bind, PMF.pure, DFunLike.coe,
+    eq_iff_iff, true_iff]
+
+/-- Uniform probability is invariant under an equivalence of finite sample spaces. -/
+lemma Pr_uniform_equiv {α β : Type} [Fintype α] [Nonempty α]
+    [Fintype β] [Nonempty β] (e : α ≃ β) (P : β → Prop) :
+    Pr_{let a ← $ᵖ α}[P (e a)] = Pr_{let b ← $ᵖ β}[P b] := by
+  classical
+  have hmap : (PMF.uniformOfFintype α).map e = PMF.uniformOfFintype β := by
+    ext b
+    simp only [PMF.map_apply, PMF.uniformOfFintype_apply,
+      Fintype.card_congr e, tsum_fintype]
+    have hs :
+        Finset.univ.sum (fun a : α =>
+            if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0) =
+          Finset.univ.sum (fun b' : β =>
+            if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0) := by
+      simpa using
+        (Fintype.sum_equiv e
+          (fun a : α => if b = e a then (Fintype.card β : ENNReal)⁻¹ else 0)
+          (fun b' : β => if b = b' then (Fintype.card β : ENNReal)⁻¹ else 0)
+          (by intro a; rfl))
+    exact hs.trans (by simp)
+  change
+    (PMF.uniformOfFintype α).map (P ∘ e) True =
+      (PMF.uniformOfFintype β).map P True
+  have hcomp :
+      (PMF.uniformOfFintype α).map (P ∘ e) =
+        ((PMF.uniformOfFintype α).map e).map P := by
+    simpa [Function.comp] using
+      (PMF.map_comp (p := PMF.uniformOfFintype α) (f := e) (g := P)).symm
+  exact congrArg (fun q : PMF Prop => q True) (hcomp.trans (by rw [hmap]))
+
 end ProbabilityTheory
 
 example {F} [Fintype F] [Nonempty F] :

@@ -17,18 +17,18 @@ inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^
 Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
 which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
 and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge. Still to come: the remaining §4.3+/§4.5
-subprotocols and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`) is the one documented `sorry` in the tree; see the `TODO` blocks in
-`Composition.lean` and `Commitment.lean`.
+(§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
+tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
+proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
+`Commitment.lean`). See the `TODO` blocks in `Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 
-The folder `Hachi/` is organized by paper section, each subfolder carrying an umbrella `.lean`
-re-export next to it (as this file does for the whole folder):
+The folder `Hachi/` is organized by paper section. Each subfolder carries a `Basic.lean`
+umbrella re-export inside the folder (as this file does for the whole Hachi development):
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
-  `G⁻¹` (`Basic`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
+  `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
 * `EvalSplit.lean` (§4, Eq. (12)) — multilinear evaluation as the vector–matrix–vector product
   `mb(xl) ⬝ᵥ (toMatrix p *ᵥ mb(xh))`; kept top-level because the future §3 packing head reuses
   it over the subfield.
@@ -38,10 +38,15 @@ re-export next to it (as this file does for the whole folder):
 * `QuadEval/` (§4.2, Figure 3) — the quadratic polynomial-evaluation reduction: gadget algebra
   (`Gadgets`), protocol data and relations (`Reduction`), Hachi Lemma 8 coordinate-wise special
   soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
-* `Composition.lean` — the CWSS composition home: the finished core
-  `evalChain = bridgePackage ▷ quadEvalPackage` with its certificate
-  `eval_coordinateWiseSpecialSound`; every further subprotocol lands as one more `CWSSPackage`
-  `▷`-appended there.
+* `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
+  guarded sumcheck stages of the opening chain.
+* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
+  one iteration at the next ring's plain `QuadEval.relIn` relation.
+* `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
+  quadEvalPackage`, followed by the opening subprotocols. Every package exposes the ordinary
+  `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
+  break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,
+  entering each certificate as a disjunct of its conclusion.
 * `Commitment.lean` — Hachi as a `Commitment.Scheme`: the multilinear eval-oracle interface and
   the honest `keygen` / `commit` (the opening `Proof` is a documented `sorry` pending the
   remaining subprotocols).

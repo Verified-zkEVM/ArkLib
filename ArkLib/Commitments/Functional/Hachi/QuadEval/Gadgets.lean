@@ -18,7 +18,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   provides the definitions those equations are stated in and the subtraction/isolation identities
   the extraction step relies on; the protocol itself lives in `QuadEval/Reduction.lean`.
 
-  Throughout, `G` is the base-`b` gadget matrix `I ⊗ [1, b, …]` of `Gadget/Basic.lean` and `G⁻¹`
+  Throughout, `G` is the base-`b` gadget matrix `I ⊗ [1, b, …]` of `Gadget/Core.lean` and `G⁻¹`
   its digit decomposition, with `G *ᵥ G⁻¹(x) = x`.
 
   ## Main definitions

@@ -10,6 +10,7 @@ import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 import Mathlib.LinearAlgebra.AffineSpace.Combination
 import Mathlib.RingTheory.Henselian
 
+
 /-! # Coding-Theory Preliminaries -/
 
 section TensorCombination
@@ -34,6 +35,7 @@ def multilinearCombine {ϑ : ℕ} {ι : Type*}
     (u : (Fin (2 ^ ϑ)) → ι → A) (r : Fin ϑ → F) : (ι → A) :=
   fun colIdx => ∑ rowIdx : Fin (2^ϑ), ((multilinearWeight r rowIdx) : F) • ((u rowIdx colIdx) : A)
 notation:20 r " |⨂| " u => multilinearCombine (u := u) (r := r)
+
 end TensorCombination
 noncomputable section
 
@@ -44,7 +46,12 @@ variable {F : Type*}
 
 namespace Matrix
 
-/-- The set of column indices where two matrices differ. -/
+/-- The set of column indices where two matrices differ.
+
+This is the matrix-shaped form of `Code.disagreementCols`: reading a matrix as a word over
+the alphabet of its columns, `neqCols U V = Code.disagreementCols Uᵀ Vᵀ`. The bridge is
+`Matrix.neqCols_eq_disagreementCols_transpose`, stated downstream in `Basic/Distance.lean`.
+Prefer `Code.disagreementCols` for plain pointwise disagreement. -/
 def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' := {j | ∃ i : ι, V i j ≠ U i j}
 
 section
@@ -296,6 +303,28 @@ noncomputable instance instFintypeAffineSubspace {V : Type*} [AddCommGroup V]
 instance instNonemptyAffineSubspace_mk' {V : Type*} [AddCommGroup V] [Module F V]
     (p : V) (direction : Submodule F V) : Nonempty (AffineSubspace.mk' p direction) :=
   nonempty_subtype.mpr ⟨p, AffineSubspace.self_mem_mk' p direction⟩
+
+/-- The affine-space combination of module-valued codewords `U` at seed `x`:
+`U 0 + ∑ i, x i • U (i+1)`. -/
+abbrev affineComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (x : Fin s → F) : ι → A :=
+  fun k => U 0 k + ∑ i, x i • U i.succ k
+
+/-- The linear combination `∑ i, l i • U (i+1)` of the module-valued direction codewords. -/
+abbrev linComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (l : Fin s → F) : ι → A :=
+  fun k => ∑ i, l i • U i.succ k
+
+omit [Fintype ι] [DecidableEq F] [Fintype F] in
+/-- The affine combination along the line `x ↦ v + t • lam` in seed space. -/
+lemma affineComb_line [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (v lam : Fin s → F) (t : F) :
+    affineComb U (v + t • lam) = affineComb U v + t • (linComb U lam) := by
+  ext k
+  simp only [affineComb, linComb, Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_smul, mul_smul,
+    Finset.smul_sum]
+  rw [Finset.sum_add_distrib]
+  abel
 
 end
 end Affine

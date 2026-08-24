@@ -5,7 +5,8 @@ Authors: Quang Dao
 -/
 
 import ArkLib.OracleReduction.Security.RoundByRound
-import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
+import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
 
 /-!
   # Simple (Oracle) Reduction: Check if a predicate / claim on a statement is satisfied
@@ -23,21 +24,18 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.SeqCompose
      relation `oracleRelOut P relIn := relIn ∩ {x | P x.1.1 x.1.2}`. Acceptance is exactly
      membership in `oracleRelOut.language`, i.e. `P` holding.
 
-  ## Breaking change (oracle version)
+  ## Why the oracle verifier is pure
 
-  The oracle verifier's contract changed. **Previously** it took the predicate as a `pred :
-  ReaderT Statement (OracleComp [OStatement]ₒ) Prop` argument, ran it as an effectful oracle
-  computation, and could *fail* (`guard`) after querying the oracle statements. **Now** it takes no
-  predicate argument, never fails, and is `OracleVerifier.toVerifier.IsPure` — which is what lets it
-  be a left factor in a coordinate-wise-special-soundness / tree-soundness `append`. The predicate
-  has been moved from the runtime `guard` into `oracleRelOut`. This relation-level design is the
-  canonical one; the old effectful oracle verifier is intentionally obsolete and is not preserved.
-  (The `guard`-based *plain* reduction above is retained, since it can only be a rightmost factor.)
+  The oracle verifier takes no predicate argument, never fails, and is
+  `OracleVerifier.toVerifier.IsPure` — which is what lets it be a left factor in a
+  coordinate-wise-special-soundness / tree-soundness `append`. The predicate lives in
+  `oracleRelOut` rather than in a runtime `guard`. The `guard`-based *plain* reduction above keeps
+  its runtime check, since it can only ever be a rightmost factor.
 
-  Consequently, the oracle output relation is no longer trivial: it is `oracleRelOut P relIn`, which
+  As a result, the oracle output relation is no longer trivial: it is `oracleRelOut P relIn`, which
   refines `relIn` by `P`. Completeness therefore holds under the explicit hypothesis that every
   `relIn` input already satisfies `P` (`oracleReduction_completeness`), and soundness is captured by
-  `oracleVerifier_coordinateWiseSpecialSound`.
+  `oracleVerifier_coordinateWiseSpecialSoundWith`.
 
   Note: with the pure pass-through oracle verifier (and the refactor to disallow failure in
   `OracleComp`), this oracle reduction is a special case of `ReduceClaim` (identity maps).
@@ -202,12 +200,34 @@ being checked is *not* run as an effectful `guard`/oracle computation here; inst
 output relation `oracleRelOut`. This keeps the verifier `IsPure` (so it can be a left factor in a
 CWSS composition) and sidesteps the unfinished no-failure `OracleComp` refactor. (The `guard`-based
 plain-reduction variant above is retained as a rightmost-only factor.) -/
+def outputEmbedding : OracleOutputEmbedding OStatement (!p[] : ProtocolSpec 0).Message
+    OStatement where
+  embed := Function.Embedding.inl
+  hEq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+  outputInterface_heq := by
+    intro i
+    rw [show Function.Embedding.inl i = Sum.inl i from rfl]
+
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
     Statement OStatement Statement OStatement !p[] where
   verify := fun stmt _ => pure stmt
-  embed := Function.Embedding.inl
-  hEq := fun _ => rfl
+  outputOracle := .inl (outputEmbedding OStatement)
+
+@[simp]
+theorem oracleVerifier_materializeOutput (challenges : (!p[] : ProtocolSpec 0).Challenges)
+    (oStmt : ∀ i, OStatement i) (messages : (!p[] : ProtocolSpec 0).Messages) :
+    (oracleVerifier oSpec Statement OStatement).materializeOutput challenges oStmt messages =
+      oStmt := by
+  unfold OracleVerifier.materializeOutput oracleVerifier
+  change OracleVerifier.materializeOutputOracle (Sum.inl (outputEmbedding OStatement))
+      challenges oStmt messages = oStmt
+  simp only [OracleVerifier.materializeOutputOracle]
+  funext i
+  simp only [outputEmbedding]
+  rfl
 
 /-- The oracle reduction for the `CheckClaim` oracle reduction. -/
 @[inline, specialize]
@@ -224,11 +244,12 @@ theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatem
     {tr : (!p[] : ProtocolSpec 0).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement).toVerifier.run ⟨stmt, oStmt⟩ tr =
       pure ⟨stmt, oStmt⟩ := by
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure stmt : OptionT (OracleComp _) Statement)
-      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
-  congr 1
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_materializeOutput]
+  simp only [oracleVerifier]
+  simp [OptionT.run_pure, simulateQ_pure]
+  apply OptionT.ext
+  rfl
 
 /-- The `CheckClaim` oracle verifier is pure: its underlying verifier deterministically returns the
 combined statement, which discharges the deterministic-left hypothesis of the CWSS binary append. -/
@@ -248,7 +269,7 @@ def oracleRelOut : Set ((Statement × ∀ i, OStatement i) × Unit) :=
   relIn ∩ {x | P x.1.1 x.1.2}
 
 /-- **Perfect completeness of the pure pass-through `CheckClaim` oracle reduction.** Because the
-verifier no longer checks `P` at runtime (it is a pure pass-through, with `P` living in
+verifier does not check `P` at runtime (it is a pure pass-through, with `P` living in
 `oracleRelOut`), completeness needs the explicit hypothesis `hP` that every `relIn` input already
 satisfies `P`. Under `hP`, the prover forwards `⟨stmt, oStmt⟩` unchanged and the verifier returns it
 deterministically, so the output `⟨⟨stmt, oStmt⟩, ()⟩` lies in `oracleRelOut P relIn = relIn ∩ {x |
@@ -302,23 +323,26 @@ theorem oracleReduction_completeness
     cases hx
     exact ⟨⟨hIn, hP stmt oStmt hIn⟩, rfl⟩
 
-/-- **Coordinate-wise special soundness of `CheckClaim`.** The verifier is a pure pass-through with
-no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
-`coordinateWiseSpecialSound_of_isEmpty_challengeIdx`) to a transcript-level obligation. The
-extractor is trivial (`e := fun _ _ => ()`, there is no witness); since the pass-through output
-equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language` forces
-the input into `relIn`. Holds for any coordinate-wise structure `D`. -/
-theorem oracleVerifier_coordinateWiseSpecialSound (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSound init impl D relIn
-      (oracleRelOut P relIn) := by
-  refine OracleVerifier.coordinateWiseSpecialSound_of_isEmpty_challengeIdx init impl D
-    (oracleVerifier oSpec Statement OStatement) relIn (oracleRelOut P relIn) (fun _ _ => ()) ?_
-  rintro ⟨stmt, oStmt⟩ tr hAcc
-  have hmem := Verifier.mem_of_pure_accepting init impl
-    (oracleVerifier oSpec Statement OStatement).toVerifier ⟨stmt, oStmt⟩ tr
-    (oracleRelOut P relIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-  obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
-  exact hu.1
+/-- **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure
+pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge
+`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) to a transcript-level obligation. The
+named extractor is trivial (`fun _ _ => ()`, there is no witness); since the pass-through output
+equals the input and `oracleRelOut P relIn ⊆ relIn`, accepting into `oracleRelOut.language`
+forces the input into `relIn`. Holds for any coordinate-wise structure `D`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith
+    (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
+    (oracleVerifier oSpec Statement OStatement).coordinateWiseSpecialSoundWith init impl D relIn
+      (oracleRelOut P relIn)
+      (fun _ _ => ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+    (oracleVerifier oSpec Statement OStatement) relIn (oracleRelOut P relIn) (fun _ _ => ())
+    (fun s tr hAcc => by
+      have hmem := Verifier.mem_of_pure_accepting init impl
+        (oracleVerifier oSpec Statement OStatement).toVerifier s tr
+        (oracleRelOut P relIn).language _ (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
+      obtain ⟨_, hu⟩ := (Set.mem_language_iff _ _).1 hmem
+      exact hu.1)
+  exact h
 
 end OracleReduction
 
