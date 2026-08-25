@@ -7,7 +7,7 @@ This directory contains various utility scripts for the ArkLib project.
 ### Build and Validation
 - **`validate.sh`** - Recommended convenience wrapper for routine local validation
 - **`build-project.sh`** - Compile-only helper (`lake build`)
-- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, and the validation wrapper
+- **`build_timing_report.sh`** - CI timing/report helper for clean builds, warm rebuilds, the native build, and the validation wrapper
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Check if ArkLib.lean is up to date with all imports
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
@@ -172,10 +172,17 @@ lake build AxiomSweepTestFixtures
 ### `build_timing_report.sh`
 
 Helper used by CI to measure and render build timings for clean builds, warm
-rebuilds, and the `./scripts/validate.sh` path. The CI workflow uploads
+rebuilds, the native build, and the `./scripts/validate.sh` path. The CI workflow uploads
 timing-data artifacts so PR runs can compare against a previously recorded
 baseline without rerunning that baseline in the same job. This supports
 [`../.github/workflows/ci.yml`](../.github/workflows/ci.yml).
+
+The four measurements share one tree and run in order, so each leaves it warmer than the last.
+`native_build` exists to hold the `.c.o` chain that the compiled executables link
+(`toyproblem-runtime` and `hachi-runtime`): that is the cost which swings on `.lake` cache state,
+and billing it separately keeps the validation wrapper's row comparable across dependency bumps.
+Any new compiled executable run by `validate.sh` has to be added to that command as well. See
+[`../docs/wiki/quickstart.md`](../docs/wiki/quickstart.md) for how to read the rows.
 
 ## Requirements
 

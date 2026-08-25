@@ -35,7 +35,8 @@ opening, at the cost of a witness-sized final message.
 * `nonrecursiveOpeningReduction` / `…_perfectCompleteness`: the honest chain through the sumcheck
   (`completeThroughSumcheckReduction`) closed by the terminal base case: `relPolyEval` to
   `acceptRejectRel`. ⚠ Inherits `sorryAx` from the generic `Reduction.append_completeness`
-  (an admitted framework dependency); every link is axiom-clean on its own.
+  (an admitted framework dependency), which is also the sole provenance of the sumcheck link's own
+  internal taint; the remaining links are axiom-clean on their own.
 * `relCommitInput` / `commitInputReduction` / `…_perfectCompleteness`: the zero-round head that
   converts the commitment API's claim (an honest **balanced** commitment plus a truthful
   evaluation claim) into `relPolyEval`, with the relation step

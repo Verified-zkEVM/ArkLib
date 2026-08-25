@@ -195,8 +195,10 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom-sweep fixture matrix (enforcing) and the library sweep report-only, then
-  uploads timing artifacts and posts a comparison report on same-repo PRs.
+  axiom-sweep fixture matrix (enforcing) and the library sweep report-only,
+  reuses that build for blueprint and declaration validation, and builds and
+  deploys API documentation on pushes to `main`. It then uploads timing artifacts
+  and posts a comparison report on same-repo PRs.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
@@ -212,5 +214,26 @@ capture a measurement and render a report:
 ```bash
 bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'rm -rf .lake/build && lake build'
+bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build'
+bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
+bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
+  bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
 ```
+
+Read the rows in that order, because they share one tree and each leaves it warmer:
+
+- `clean_build` and `warm_rebuild` bracket the incremental-build signal.
+- `native_build` carries the `.c.o` chain that the compiled executables link — currently
+  `toyproblem-runtime` and `hachi-runtime`. It is the row that swings on `.lake` cache state, so a
+  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
+  adding it to this command too**, or its link cost lands in `test_path` instead.
+- `test_path` is therefore the cost of the validation gate itself on an already-built project,
+  not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
+  `--axioms` never appear in it.
+
+A row whose measurement could not be taken renders as `measurement failed`, not as a missing row.
+Per-target times are printed with the precision Lake reported (`22`, `3.5`, `0.770`); Lake emits
+whole seconds above 10s, so those figures are not accurate to two decimals.

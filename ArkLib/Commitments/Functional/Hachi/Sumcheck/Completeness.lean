@@ -406,7 +406,6 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
       (roundReduction Φ m₁ b hb φF count (by omega))
       (roundsReductionAux_perfectCompleteness init impl K hb φF count (by omega))
       (roundReduction_perfectCompleteness Φ m₁ bound ρBound b init impl K hb φF count (by omega))
--- DIAGNOSTIC MARKER
 
 set_option linter.unusedSectionVars false in
 /-- Perfect completeness of `roundsReduction`, the exposed form of
