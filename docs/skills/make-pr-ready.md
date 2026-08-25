@@ -242,11 +242,22 @@ Work through these in order. Do not stop until every item is complete.
   frontmatter. Running `kb/regenerate.py` after adding a new cited key also **scaffolds** a new
   `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`; stage those too.
 
-### 4. Clean up references to deleted files
+### 4. Clean up references to what the branch removed
+
+**Do not gate this whole step on file deletions.** Only the *path* sweep below needs a deleted,
+moved, or renamed file. The **declaration**, **status-flip**, **docstring-section** and
+**planning-code** sweeps that follow are unconditional whenever a refactor renames or removes
+*declarations*, *table rows*, or *docstring sections* — which happens constantly on branches that
+touch no file at all. On a real run `git diff --name-status -M` returned **zero** deleted paths
+while the branch had removed six top-level declarations and cut a chain table from 12 rows to 9;
+every one of the 24 confirmed findings came from the un-gated sweeps, and an agent that read the
+old opening sentence as a gate would have skipped the entire step with a green `validate.sh`.
+
+Do this near the end of the pass — step 0's plan-file strip and step 1's refactors both create
+deletions.
 
 If this branch deletes, moves, or renames **any** file, sweep the whole library for references to
-the old path and fix them. Do this near the end of the pass — step 0's plan-file strip and step 1's
-refactors both create deletions.
+the old path and fix them.
 
 **Assume nothing catches this for you.** Coverage is much thinner than it looks:
 
@@ -368,6 +379,38 @@ unresolvable from the root. Before reporting a name as dead, find where it is ac
 (`git grep -nE '^[[:space:]]*(structure|def|theorem) <leaf>' -- 'ArkLib/**'`, then read the
 enclosing `namespace`) and re-probe with the full path. On a real run this made a live structure
 field look like a dead reference.
+
+**Sweep the *un*-sorrying direction too — proving something out orphans status prose.** Step 4
+instinctively hunts for things the branch *deleted*, but a branch that *finishes* a proof leaves
+just as many false sentences behind, and no check catches them. When a branch takes a file from
+sorried to proven, grep the tree for prose still calling it a `skeleton` / `sorried` / `WIP` /
+`(**sorried**)` / "not yet proven". On a real run the branch proved `Guarded.lean` out (2 sorries
+→ 0) and updated three files to say so, while a fourth still described the same file as "the only
+composition machinery it consumes is `Guarded.lean`'s skeleton". Note `skeleton` is this repo's
+sorriedness marker, not a neutral word — treat every occurrence as a status claim:
+
+```bash
+git grep -nE 'skeleton|sorried|\(\*\*sorried\*\*\)|still open|not yet proven' -- 'ArkLib/**' \
+  | grep -iE '<file-or-decl-the-branch-proved-out>'
+```
+
+**Deleting a docstring *section* strands cross-file pointers to it by name.** A `/-! ## TODO … -/`
+or `## References` block removed from one module is invisible to every checker, yet other modules
+say "see the `TODO` blocks in `Foo.lean`". On a real run one deleted TODO block broke pointers in
+two sibling Lean files *and* a `docs/kb/audits/` page. Whenever a diff removes a named docstring
+section, grep for prose naming it, and prefer **restoring a trimmed section** over deleting three
+pointers — the pointers usually exist because the work is still open:
+
+```bash
+git grep -nE '`?TODO`? (block|section)|see the .*(TODO|References)' -- 'ArkLib/**' 'docs/**'
+```
+
+**Dangling row/link numbers hide behind three spellings.** After cutting rows from a table, grep
+for `row N`, `row-N`, and `row&nbsp;N` (and the `rows N–M` forms, en-dash *and* hyphen). A sweep
+written as `grep -E 'row 1[0-2]|row&nbsp;1[0-2]'` silently missed a live `row-11` reference in a
+page footer. Also check the **reverse legend direction**: deleting the last row that carried a
+status leaves a legend entry defining a status no data uses — and its text usually names the row
+number that was just deleted.
 
 **Bare internal planning codes are as dead as the plan file that defined them.** Step 0 strips plan
 *files* and step 3 forbids citing them, but the *codes* survive every automated check and every path

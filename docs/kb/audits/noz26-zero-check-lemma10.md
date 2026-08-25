@@ -12,7 +12,7 @@ section re-checked against the tree; every `#print axioms` claim below re-run).
 > formalized *inside* the escape-threaded opening chain: `nestedZeroCheckPackage` reduces
 > `relBatched → relNestedZeroCheck` and is composed as
 > `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` in `Composition.lean`
-> (`openCore`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is
+> (inside `iteration`). The CWSS theorem `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` is
 > **`sorry`-free and axiom-clean** (the `H_α`/`H₀` values used by the theorem are concrete), and
 > the link-5 batching bridge's
 > un-batching pull-back `mem_relLift_of_relBatched` is likewise **proven and axiom-clean relative
@@ -68,7 +68,7 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Honest completeness of this link | no declaration | **missing** | The forward direction is `eval 0 = 0` (a few lines) and is the only statement tying `nestedZeroCheckProver`'s `castAdd`/`natAdd` split to the verifier's. `nestedZeroCheckProver` is currently referenced nowhere. |
 | Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
 | Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLift` witness satisfies `relBatched`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
-| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (`openCore`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
+| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (inside `iteration`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
 
 ## Polynomial representation: multilinear value vectors and proof views
 
@@ -402,7 +402,7 @@ be false for Ajtai commitments: `Collision`'s `Short` conjuncts are precisely wh
 regime conditional. The remaining obligation is to exhibit a concrete `LiftCom` whose collision
 set really is a Module-SIS target — the inner-outer commitment, with the escape discharged by
 `outputToModuleSIS_valid_of_verified` (`InnerOuter/Security.lean`). That instantiation is **not
-done**; `Composition.lean`'s closing note lists it as open work, and the only `LiftCom` value in
+done**; `Composition.lean`'s closing `TODO` block lists it as open work, and the only `LiftCom` value in
 the tree is the injective `com := id` example that witnesses non-vacuity by having an empty
 collision set. Until it exists, "`liftShort` is the right binding regime for Hachi" is an
 assumption of this chain, not a theorem of it. The range identity of `relBatched` is
@@ -447,7 +447,7 @@ discharged over the family by the binary-evaluation-tree zero test
     derives shortness rather than assuming it. The reconciliation with
     `liftShort`'s two bounds is the pair of hypotheses `b − 1 ≤ γ` (z-side) and `b − 1 ≤ ρBound`
     (r-side), together with the column-encoding arity
-    `(μ+n)·deg φ ≤ 2^{m₀}`; these are threaded through `batchPackage` and `openCore`.
+    `(μ+n)·deg φ ≤ 2^{m₀}`; these are threaded through `batchPackage` and `iteration`.
   `K.com` and the bound conjunct are carried verbatim. That `hAlpha` is the polynomial constructed
   in paper Eq. (22) is proved separately by `alphaDefect_wTable` /
   `hAlpha_eq_zero_iff_alphaDefect`. **Still missing:** the forward/honest-completeness theorem

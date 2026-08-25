@@ -30,8 +30,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   The result is a polynomial-level input relation `relPolyEval` (a weak `VerifiedOpening` whose
   *extracted polynomial* evaluates to `y` at `xl ++ xh`) that
   `QuadEval`'s two-round reduction refines to Hachi Eq. (20). `Composition.lean` chains the bridge
-  before `QuadEval` (`evalChain = bridgePackage ▷ quadEvalPackage`), yielding the sorry-free
-  `eval_coordinateWiseSpecialSoundWithEscape`.
+  before `QuadEval` at the head of the `iteration` (`bridgePackage ▷ quadEvalPackage ▷ …`); this
+  two-link front is sorry-free.
 
   ## Main definitions
 

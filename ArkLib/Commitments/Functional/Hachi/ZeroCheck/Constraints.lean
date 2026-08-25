@@ -1173,7 +1173,7 @@ omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
 
 The two hypotheses are the ones that make the table encoding faithful, and both are already
-carried by the composition (`Composition.openingChain`'s `hd` and `hcov`): `hd` is what lets the
+carried by the composition (`Composition.iteration`'s `hd` and `hcov`): `hd` is what lets the
 flat cube index be split as `(row, column)`, and `hμn` is what makes every coefficient position a
 genuine cube point. Without them the cube contraction of `M̃_α`, `w̃` and `α̃` does **not**
 reproduce the ring-level row defect that `H_α` stores — the block would overflow the cube — so

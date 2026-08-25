@@ -39,9 +39,9 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Basic
   the whole composed extractor run as a function of `(stmtIn, tree)` alone.
 
   **Which chains this actually closes.** A closing factor has to be *final*, and being zero-round is
-  not the same as being final. Hachi's `openingChain` ends in `handoffPackage`, whose output
-  relation is witness-carrying (`QuadEvalWitness Φ'`): one iteration is a *reduction*, so its
-  composed extractor legitimately consumes a leaf witnessing and this bridge does not close it.
+  not the same as being final. Hachi's `iteration` ends in a witness-carrying evaluation claim
+  (`relWEvalClaim`): one iteration is a *reduction*, so its composed extractor legitimately
+  consumes a leaf witnessing and this bridge does not close it.
   Closure
   arrives only when the chain is capped by a factor whose output relation needs no witness — the
   final-evaluation piece appended after the iteration. So read the paragraph above as a statement

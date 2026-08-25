@@ -44,8 +44,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
     since its composed escape event must *name* the left verdict map.
   * `Verifier.GuardedForm.append` — closure of guardedness **data** under `Verifier.append`:
     composite check `check₁ s tr.fst && check₂ (out₁ s tr.fst) tr.snd`, mirroring
-    `Verifier.PureForm.append`. Its `verify_eq` is the file's one remaining **sorry**;
-    `Verifier.IsGuarded.append` is the forgetful corollary.
+    `Verifier.PureForm.append`; `Verifier.IsGuarded.append` is the forgetful corollary.
   * `Verifier.append_treeSpecialSoundWith_guardedLeft` / `…WithEscape_guardedLeft` and their CWSS
     wrappers `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` / `…WithEscape…` — the
     guarded binary appends at the witness-only extractor, **proved**. The guarded seam lemmas they
