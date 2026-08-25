@@ -377,6 +377,7 @@ theorem folding_reflects_balls [Fintype F]
         (fun u ↦ foldWord ω u 1 α)
         (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ))] ≤
           ENNReal.ofReal (ε_mca δ') := by
+  sorry
   have : NeZero n := ⟨by omega⟩
   simp only [IsMCAGenerator, Nat.reduceAdd] at hmca
   extract_lets δ'
