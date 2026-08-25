@@ -2,7 +2,7 @@
   "counts": {
     "files_with_citations": 215,
     "keys_cited": 65,
-    "total_citation_edges": 355
+    "total_citation_edges": 356
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -21,6 +21,7 @@
       "NS24"
     ],
     "ArkLib/Commitments/Functional/Hachi/Composition.lean": [
+      "FMN24",
       "HMZ25",
       "LS18",
       "NOZ26",
@@ -1023,6 +1024,7 @@
       "ArkLib/Data/CodingTheory/ListDecodability/Bounds.lean"
     ],
     "FMN24": [
+      "ArkLib/Commitments/Functional/Hachi/Composition.lean",
       "ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean",
       "ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness.lean"

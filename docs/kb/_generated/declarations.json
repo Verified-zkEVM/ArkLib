@@ -351,67 +351,94 @@
     "ArkLib/Commitments/Functional/Hachi/Composition.lean": {
       "declarations": [
         {
-          "doc": "The polynomial bridge followed by `QuadEval`, along a single relation seam. The bridge is escape-free and `QuadEval` escape-aware, so the universal `\u25b7` lifts the bridge at the never-firing event and the composed event fires exactly when `QuadEval`'s own event fires on the suffix tree.",
-          "kind": "def",
-          "line": 202,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter.evalChain",
-          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "evalChain",
-          "signature": "def evalChain (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
+          "doc": "",
+          "kind": "theorem",
+          "line": 113,
+          "name": "_anon_theorem_113",
+          "namespace": "",
+          "short_name": "_anon_theorem_113",
+          "signature": "theorem theorem, the single-round escape assembly and `quadEval_coordinateWiseSpecialSoundWithEscape` are"
         },
         {
-          "doc": "**Hachi evaluation reduction \u2014 escape-threaded coordinate-wise special soundness (Hachi [NOZ26, \u00a74.2, Figure 3], `Rq`-level), `sorry`-free, at the chain's named extractor.** The endpoint relations are `relPolyEval` and `relOut`, and the extractor is the composed algorithm `(evalChain \u2026).extractor` (the bridge's pull-back run on the prefix tree of `QuadEval`'s Lemma 8 extractor). The reduction's Module-SIS(B/D) failure mode is the certificate's escape disjunct `(evalChain \u2026).esc`, which by `ChallengeTree.EscapeEvent.append` reduces to `QuadEval`'s own event on the suffix tree at the bridge's ve",
+          "doc": "The wire format of the `iteration`'s pure prefix (rows 1\u20137): bridge (0) \u29fa `QuadEval` (2) \u29fa R^lin adapter (0) \u29fa lift (2) \u29fa batching (0) \u29fa zero-check (m\u2080+m\u2081) \u29fa sumcheck bridge (0), right-associated as `\u25b7` composes them.",
+          "kind": "abbrev",
+          "line": 178,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.coreSpec",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "coreSpec",
+          "signature": "abbrev coreSpec (\u03c9 m\u2080 m\u2081 : \u2115) (TCom F : Type) :="
+        },
+        {
+          "doc": "Sampleability of the rows 1\u20137 prefix's challenges, assembled **by name** from the per-link instances (the generic append instance does not fire through the reducible `++\u209a` \u2014 its discrimination keys degenerate \u2014 so compound wire formats get their instances built explicitly; same workaround as `roundsSpecSampleable`). Requires a sampler for the fold challenges (`ShortChallenge`), which the repo does not yet provide as an instance.",
+          "kind": "def",
+          "line": 191,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.coreSpecSampleable",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "coreSpecSampleable",
+          "signature": "def coreSpecSampleable (\u03c9 m\u2080 m\u2081 : \u2115) (TCom F : Type) [SampleableType F]"
+        },
+        {
+          "doc": "**Hachi evaluation front \u2014 escape-threaded coordinate-wise special soundness (Hachi [NOZ26, \u00a74.2, Figure 3], `Rq`-level), `sorry`-free and axiom-clean, at the chain's named extractor.** Rows 1\u20132 of the table: the polynomial-level bridge followed by `QuadEval`, along a single relation seam. The bridge is escape-free and `QuadEval` escape-aware, so the universal `\u25b7` lifts the bridge at the never-firing event and the composed event fires exactly when `QuadEval`'s own event fires on the suffix tree. The endpoint relations are `relPolyEval` and `relOut`, and the extractor is the composed algorithm ",
           "kind": "theorem",
-          "line": 231,
+          "line": 228,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.eval_coordinateWiseSpecialSoundWithEscape",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "eval_coordinateWiseSpecialSoundWithEscape",
           "signature": "theorem eval_coordinateWiseSpecialSoundWithEscape (init : ProbComp \u03c3)"
         },
         {
-          "doc": "The wire format of the pure prefix `openCore` (rows 1\u20137): bridge (0) \u29fa `QuadEval` (2) \u29fa R^lin adapter (0) \u29fa lift (2) \u29fa batching (0) \u29fa zero-check (1) \u29fa sumcheck bridge (0), right-associated as `\u25b7` composes them.",
-          "kind": "abbrev",
-          "line": 268,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter.openCoreSpec",
-          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "openCoreSpec",
-          "signature": "abbrev openCoreSpec (\u03c9 m\u2080 m\u2081 : \u2115) (TCom F : Type) :="
-        },
-        {
-          "doc": "Sampleability of the pure prefix's challenges, assembled **by name** from the per-link instances (the generic append instance does not fire through the reducible `++\u209a` \u2014 its discrimination keys degenerate \u2014 so compound wire formats get their instances built explicitly; same workaround as `roundsSpecSampleable`). Requires a sampler for the fold challenges (`ShortChallenge`), which the repo does not yet provide as an instance.",
+          "doc": "**One Hachi evaluation iteration** (rows 1\u20139 of the chain table): the concatenation of the subprotocols, in one line of `\u25b7`s \u2014 bridge \u25b7 `QuadEval` \u25b7 `R^lin` adapter \u25b7 HMZ25 lift \u25b7 batching bridge \u25b7 (corrected-Lemma-10) zero-check \u25b7 sumcheck bridge (rows 1\u20137, pure verifiers, every relation seam definitional) \u2014 closed by the guarded sumcheck tail: the `m\u2080` paired sumcheck rounds (Lemma 11, guarded on the round checks) and the final-evaluation step (guarded on the target checks). Every relation seam is definitional \u2014 `roundsChain` re-pins the loop's relations to the round-`0`/round-`m\u2080` seam rela",
           "kind": "def",
-          "line": 281,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter.openCoreSpecSampleable",
+          "line": 270,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.iteration",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "openCoreSpecSampleable",
-          "signature": "def openCoreSpecSampleable (\u03c9 m\u2080 m\u2081 : \u2115) (TCom F : Type) [SampleableType F]"
+          "short_name": "iteration",
+          "signature": "def iteration (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
         },
         {
-          "doc": "**The pure prefix of one Hachi opening iteration** (rows 1\u20137 of the chain table): the escape-aware evaluation front (`evalChain` = bridge \u25b7 `QuadEval`) extended by the \u00a74.3 stages with pure verifiers \u2014 the `R^lin` adapter, the HMZ25 lift, the batching bridge, the (corrected-Lemma-10) zero-check, and the sumcheck bridge. Every relation seam is definitional (`rfl`). The public result reduces `relPolyEval` to the round-`0` `nestedRoundRel`; the composite's escape event is the `EscapeEvent.append`-nesting of the honest factor events (`QuadEval`'s Module-SIS break in row 2, the lift's weak-binding ",
-          "kind": "def",
-          "line": 308,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter.openCore",
-          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "openCore",
-          "signature": "def openCore (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
-        },
-        {
-          "doc": "**One full Hachi opening iteration** (rows 1\u201312 of the chain table): the pure prefix `openCore` composed with the guarded tail: the `m\u2080` paired sumcheck rounds (Lemma 11, guarded on the round checks), the final-evaluation step (guarded on the target checks), and the \u00a74.5 recursion adapters (the pure partial-evaluation head, the \u26a0 `Z`-packing bridge with the open row-11 soundness question, and the guarded trace handoff). Pure factors (`openCore`, `partialEvalPackage`, `zBatchPackage`) stay pure escape packages and are lifted into the escape-guarded world by the mixed appends behind the universa",
-          "kind": "def",
-          "line": 355,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter.openingChain",
-          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "openingChain",
-          "signature": "def openingChain (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
-        },
-        {
-          "doc": "**Hachi one-iteration opening \u2014 escape-threaded coordinate-wise special soundness (skeleton certificate), at the chain's named extractor.** The composed verifier of rows 1\u201312 is CWSS over the endpoint relations `relPolyEval` (over the current ring `\ud835\udcdc(q, \u03b1)`) and `relIn` (over `\u03a6'`), at the composed extraction algorithm `(openingChain \u2026).extractor`, with the composed escape event `(openingChain \u2026).esc` as the certificate's disjunct \u2014 the `EscapeEvent.append`-nesting of the honest per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just `openingChain.isCWSS`; its assumpt",
+          "doc": "**Hachi one-iteration evaluation reduction \u2014 escape-threaded coordinate-wise special soundness, `sorry`-free and axiom-clean, at the chain's named extractor.** The composed verifier of rows 1\u20139 is CWSS over the endpoint relations `relPolyEval` and the evaluation claim `relWEvalClaim`, at the composed extraction algorithm `(iteration \u2026).extractor`, with the composed escape event `(iteration \u2026).esc` as the certificate's disjunct \u2014 the `EscapeEvent.append`-nesting of the honest per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just `iteration.isCWSS`, and every one of i",
           "kind": "theorem",
-          "line": 416,
+          "line": 335,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.hachi_iteration_coordinateWiseSpecialSoundWithEscape",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "hachi_iteration_coordinateWiseSpecialSoundWithEscape",
           "signature": "theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp \u03c3)"
+        },
+        {
+          "doc": "The end-piece wire format: one prover message sending the reduced (end) witness itself.",
+          "kind": "def",
+          "line": 363,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.pSpecEndPiece",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "pSpecEndPiece",
+          "signature": "def pSpecEndPiece (Wit : Type) : ProtocolSpec 1 :="
+        },
+        {
+          "doc": "The end-piece has no challenge round: its `ChallengeIdx` is empty.",
+          "kind": "instance",
+          "line": 367,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter._anon_instance_367",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "_anon_instance_367",
+          "signature": "instance instance {Wit : Type} : IsEmpty (pSpecEndPiece Wit).ChallengeIdx :="
+        },
+        {
+          "doc": "**The end-piece (sorried skeleton)** \u2014 the closing component of the evaluation. It ends a (possible run of) iteration(s): the prover sends the reduced (end) witness `w\u0303` itself as its one message, and the verifier checks the reduced claim `relWEvalClaim` against it directly (recompute the commitment, evaluate the multilinear extension at the point) \u2014 necessarily a **guarded** check, since the trivial output statement drops everything the check reads. Nothing is left to reduce, so the output relation is the full relation on `Unit`. **Sorried** \u2014 the verifier (the direct claim check), its guarde",
+          "kind": "def",
+          "line": 384,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.endPiece",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "endPiece",
+          "signature": "def endPiece (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
+        },
+        {
+          "doc": "**The complete Hachi evaluation** (the opening argument of the commitment scheme): a single `iteration` concatenated with the `endPiece`. The composed reduction takes the polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: after the end-piece the verifier has checked the reduced witness against the reduced claim itself, so nothing is left to reduce. The certificate is `(evaluation \u2026).isCWSS`; its one skeletal factor is the sorried `endPiece` \u2014 `iteration` is discharged, so this is where `sorryAx` enters the development.",
+          "kind": "def",
+          "line": 406,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter.evaluation",
+          "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
+          "short_name": "evaluation",
+          "signature": "def evaluation (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
         }
       ]
     },
@@ -2751,10 +2778,10 @@
         {
           "doc": "",
           "kind": "theorem",
-          "line": 68,
-          "name": "_anon_theorem_68",
+          "line": 69,
+          "name": "_anon_theorem_69",
           "namespace": "",
-          "short_name": "_anon_theorem_68",
+          "short_name": "_anon_theorem_69",
           "signature": "theorem theorem. The missing ingredient is a computable round message \u2014 a `CPolynomial`-valued"
         }
       ]
@@ -2992,7 +3019,7 @@
         {
           "doc": "A round message: the pair of computable univariate round polynomials `(g_i^{(0)}, g_i^{(\u03b1)})`, of degree `\u2264 roundDegZero b = 2b` resp. `\u2264 roundDegAlpha = 2`. `CPolynomial.degreeLE_toPoly` connects each component to Mathlib's `Polynomial.degreeLE` when a proof needs the Mathlib API.",
           "kind": "def",
-          "line": 62,
+          "line": 63,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.RoundMsg",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "RoundMsg",
@@ -3001,7 +3028,7 @@
         {
           "doc": "The concatenated wire format of `count` paired sumcheck rounds (each round is `pSpecScalar (RoundMsg F b) F`: one message pair, one scalar challenge).",
           "kind": "def",
-          "line": 68,
+          "line": 69,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsSpec",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsSpec",
@@ -3010,7 +3037,7 @@
         {
           "doc": "Challenges of the concatenated rounds are sampleable (by recursion over the append instance, applied by name \u2014 the append instance does not fire automatically on the equation-compiled `roundsSpec`).",
           "kind": "instance",
-          "line": 75,
+          "line": 76,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsSpecSampleable",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsSpecSampleable",
@@ -3019,7 +3046,7 @@
         {
           "doc": "The round check: both round polynomials sum to the current targets over `{0, 1}`. `Bool`-valued and phrased with `==` (as `finalCheck` in `Sumcheck/FinalEval.lean`), so a passed check unpacks with `beq_iff_eq`.",
           "kind": "def",
-          "line": 97,
+          "line": 98,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundCheck",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundCheck",
@@ -3028,7 +3055,7 @@
         {
           "doc": "The `i`-th round's output map: extend the challenge prefix by `a_i` and replace the two targets by the round polynomials' values there. Named once so that the verifier, its guard witness, the escape event and the extractor all refer to the same map.",
           "kind": "def",
-          "line": 106,
+          "line": 107,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundOut",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundOut",
@@ -3037,7 +3064,7 @@
         {
           "doc": "The `i`-th round's verifier: on a passing `roundCheck`, apply `roundOut`; otherwise `failure`.",
           "kind": "def",
-          "line": 113,
+          "line": 114,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundVerifier",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundVerifier",
@@ -3046,7 +3073,7 @@
         {
           "doc": "The round verifier is guarded **with** the round check and `roundOut` \u2014 definitionally. This is the form the guarded scalar-round engine consumes.",
           "kind": "theorem",
-          "line": 125,
+          "line": 126,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundVerifier_isGuardedWith",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundVerifier_isGuardedWith",
@@ -3055,7 +3082,7 @@
         {
           "doc": "The round verifier is guarded \u2014 definitionally, by `roundCheck`.",
           "kind": "theorem",
-          "line": 135,
+          "line": 136,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundVerifier_isGuarded",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundVerifier_isGuarded",
@@ -3064,7 +3091,7 @@
         {
           "doc": "The `i`-th round's honest prover skeleton: the round-polynomial pair is computed by the parameter `computeG` (honestly: the partial hypercube sums of the two sumcheck polynomials in the free variable), and the witness is carried through unchanged.",
           "kind": "def",
-          "line": 143,
+          "line": 144,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundProver",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundProver",
@@ -3073,7 +3100,7 @@
         {
           "doc": "The round's soundness parameter `k = max (2b) 2 + 1` is at least `2`. Named once so that the extractor, the escape event and the soundness theorem below share the same structure (and hence the same arity).",
           "kind": "theorem",
-          "line": 168,
+          "line": 169,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.round_two_le_k",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "round_two_le_k",
@@ -3082,7 +3109,7 @@
         {
           "doc": "The per-round escape event: the tree's message pair and challenge family admit per-branch responses for the round-`(i+1)` relation, two of which are distinct short openings of the shared commitment `stmt.zc.t` \u2014 a `LiftCom.Collision`, and hence a Module-SIS break of the commitment key. Responses are taken at the branch's guard-output statement (the `\u2026OfValid` form), since the round verifier replaces the targets rather than extending the statement.",
           "kind": "def",
-          "line": 177,
+          "line": 178,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundEsc",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundEsc",
@@ -3091,7 +3118,7 @@
         {
           "doc": "The per-round extraction algorithm: the guarded scalar-round tree extractor at `roundOut`, returning the first branch's opening. On an accepting tree the `k` branch openings either disagree \u2014 then `roundEsc` fires \u2014 or all agree, so any branch's opening satisfies the round-`i` claim; the work is in `round_coordinateWiseSpecialSoundWithEscape`, not here.",
           "kind": "def",
-          "line": 194,
+          "line": 195,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundExtractor",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundExtractor",
@@ -3100,7 +3127,7 @@
         {
           "doc": "Per-round coordinate-wise special soundness of the paired sumcheck round at `k = max (2b) 2 + 1`, with extractor `roundExtractor` and escape event `roundEsc`. The `k` accepting branches of a tree node share the message pair `(g^{(0)}, g^{(\u03b1)})` and carry pairwise-distinct challenges. If two branch openings differ, both open the same commitment `stmt.zc.t` and both are short, so the pair is a `LiftCom.Collision` and `roundEsc` fires. Otherwise all branches share one opening `w\u0303`; for each summand the partial cube sum in the free coordinate is a univariate of degree `\u2264 2b` resp. `\u2264 2` (`roundPol",
           "kind": "theorem",
-          "line": 232,
+          "line": 233,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.round_coordinateWiseSpecialSoundWithEscape",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "round_coordinateWiseSpecialSoundWithEscape",
@@ -3109,7 +3136,7 @@
         {
           "doc": "The `i`-th paired sumcheck round as a guarded `EscapeGCWSSPackage`: the guarded round verifier with the `k = max (2b) 2 + 1` special-soundness structure, reducing the round-`i` relation to the round-`(i+1)` relation, with escape event `roundEsc`. The `i < m\u2080` and `0 < b` hypotheses come from `round_coordinateWiseSpecialSoundWithEscape`.",
           "kind": "def",
-          "line": 314,
+          "line": 315,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundPackage",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundPackage",
@@ -3118,43 +3145,43 @@
         {
           "doc": "The empty round loop has no challenges.",
           "kind": "instance",
-          "line": 332,
-          "name": "ArkLib.Lattices.Ajtai.InnerOuter._anon_instance_332",
+          "line": 333,
+          "name": "ArkLib.Lattices.Ajtai.InnerOuter._anon_instance_333",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
-          "short_name": "_anon_instance_332",
+          "short_name": "_anon_instance_333",
           "signature": "instance instance : IsEmpty (roundsSpec F b 0).ChallengeIdx := \u27e8fun i => Fin.elim0 i.1\u27e9"
         },
         {
           "doc": "The composed sumcheck loop together with its relation invariant: `count` paired rounds chained by recursion over the binary guarded append (base case: the zero-round identity package), bundled with proofs that the composite's `relIn`/`relOut` are the round-`0` and round-`count` relations. The invariant must ride along because the recursion's endpoints are definitional only per instance, not for an open `count`. The composite's escape event is whatever the recursion built \u2014 a nested disjunction of the per-round `roundEsc`s.",
           "kind": "def",
-          "line": 340,
+          "line": 341,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsChainAux",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsChainAux",
           "signature": "def roundsChainAux (init : ProbComp \u03c3)"
         },
         {
-          "doc": "The composed sumcheck loop, from the round-`0` relation (installed by the sumcheck bridge) to the round-`count` relation (consumed by the final-evaluation step). Instantiated at `count := m\u2080` in the composition.",
+          "doc": "The composed sumcheck loop, from the round-`0` relation (installed by the sumcheck bridge) to the round-`count` relation (consumed by the final-evaluation step). Instantiated at `count := m\u2080` in the composition. The recursion's own relation fields are stuck terms for an open `count`, so this wrapper **re-pins them definitionally** to the round-`0`/round-`count` seam relations, transporting the certificate along the recursion invariant once and for all. Downstream compositions can then discharge both seams by `rfl`, i.e. compose with the universal `\u25b7` instead of the explicit `appendEscapeGuarde",
           "kind": "def",
-          "line": 378,
+          "line": 385,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsChain",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsChain",
           "signature": "def roundsChain (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
         },
         {
-          "doc": "The loop's input relation is the round-`0` relation (used when composing after the sumcheck bridge).",
+          "doc": "The loop's input relation is the round-`0` relation (used when composing after the sumcheck bridge) \u2014 definitional, by the re-pinning in `roundsChain`.",
           "kind": "theorem",
-          "line": 390,
+          "line": 401,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsChain_relIn",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsChain_relIn",
           "signature": "theorem roundsChain_relIn (init : ProbComp \u03c3) (impl : QueryImpl oSpec (StateT \u03c3 ProbComp))"
         },
         {
-          "doc": "The loop's output relation is the round-`count` relation (used when composing with the final-evaluation step).",
+          "doc": "The loop's output relation is the round-`count` relation (used when composing with the final-evaluation step) \u2014 definitional, by the re-pinning in `roundsChain`.",
           "kind": "theorem",
-          "line": 400,
+          "line": 411,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.roundsChain_relOut",
           "namespace": "ArkLib.Lattices.Ajtai.InnerOuter",
           "short_name": "roundsChain_relOut",
@@ -3443,7 +3470,7 @@
           "signature": "theorem wTable_rRow (\u03c6F : ZMod q \u2192+* F) (b : \u2115) (w : LiftedWitness \u03a6 \u03bc n)"
         },
         {
-          "doc": "**Range-side soundness (F5).** If the batched range polynomial `H\u2080^{w\u0303}` vanishes identically then `w\u0303` is short. Each committed coefficient is a table entry (`wTable`), hence a root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `\u2264 b \u2212 1` (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`); the norm bounds follow because the declared bounds dominate the range base (`b \u2212 1 \u2264 bound`, `b \u2212 1 \u2264 \u03c1Bound`). The arity `(\u03bc + n)\u00b7deg \u03c6 \u2264 2^{m\u2080}` guarantees every coefficient position is a genuine cube point. This is the derivation that makes the range machinery load-bearing: `lift",
+          "doc": "**Range-side soundness.** If the batched range polynomial `H\u2080^{w\u0303}` vanishes identically then `w\u0303` is short. Each committed coefficient is a table entry (`wTable`), hence a root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `\u2264 b \u2212 1` (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`); the norm bounds follow because the declared bounds dominate the range base (`b \u2212 1 \u2264 bound`, `b \u2212 1 \u2264 \u03c1Bound`). The arity `(\u03bc + n)\u00b7deg \u03c6 \u2264 2^{m\u2080}` guarantees every coefficient position is a genuine cube point. This is the derivation that makes the range machinery load-bearing: `liftShort",
           "kind": "theorem",
           "line": 405,
           "name": "ArkLib.Lattices.Ajtai.InnerOuter.hZero_eq_zero_imp_liftShort",
@@ -49511,7 +49538,7 @@
           "signature": "def _root_.CoordinateWise.EscapeCWSSPackage.toGuarded"
         },
         {
-          "doc": "**Compose two guarded escape-aware packages along a matching relation seam.** As in `EscapeCWSSPackage.append`, but the composed event is taken at the guard's output map `out\u2081`, which `IsGuardedWith` leaves unconstrained on rejected prefixes \u2014 harmless, since escape events must be honest at *all* `(stmt, tree)` pairs. Certificate: `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft` (sorried). Written infix as `L\u2081 \u25b7 L\u2082` (explicit synonym `\u25b7\u2091\u1d4d`).",
+          "doc": "**Compose two guarded escape-aware packages along a matching relation seam.** As in `EscapeCWSSPackage.append`, but the composed event is taken at the guard's output map `out\u2081`, which `IsGuardedWith` leaves unconstrained on rejected prefixes \u2014 harmless, since escape events must be honest at *all* `(stmt, tree)` pairs. Certificate: `Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft`. Written infix as `L\u2081 \u25b7 L\u2082` (explicit synonym `\u25b7\u2091\u1d4d`).",
           "kind": "def",
           "line": 172,
           "name": "CoordinateWise.EscapeGCWSSPackage.append",
@@ -49704,9 +49731,9 @@
           "signature": "theorem append_run_guardedLeft"
         },
         {
-          "doc": "**Guarded binary CWSS append, escape-threaded named form (skeleton).** Escape-threaded CWSS is preserved by `Verifier.append` when the left factor is merely *guarded* rather than pure, at the same composed extractor and event as the pure append. Stated at **explicit guard data** `(check\u2081, out\u2081, hV\u2081)` rather than at the bare `V\u2081.IsGuarded`, because the composed event has to *name* the left verdict map `out\u2081`. On rejected prefixes `out\u2081` is unconstrained by `IsGuardedWith`, so the composed event may evaluate `esc\u2082` at junk intermediate statements \u2014 harmless, since escape events must be honest br",
+          "doc": "**Guarded binary CWSS append, escape-threaded named form.** Escape-threaded CWSS is preserved by `Verifier.append` when the left factor is merely *guarded* rather than pure, at the same composed extractor and event as the pure append. Stated at **explicit guard data** `(check\u2081, out\u2081, hV\u2081)` rather than at the bare `V\u2081.IsGuarded`, because the composed event has to *name* the left verdict map `out\u2081`. On rejected prefixes `out\u2081` is unconstrained by `IsGuardedWith`, so the composed event may evaluate `esc\u2082` at junk intermediate statements \u2014 harmless, since escape events must be honest breaks at *al",
           "kind": "theorem",
-          "line": 177,
+          "line": 170,
           "name": "Verifier.append_treeSpecialSoundWithEscape_of_guardedLeft",
           "namespace": "Verifier",
           "short_name": "append_treeSpecialSoundWithEscape_of_guardedLeft",
@@ -49715,7 +49742,7 @@
         {
           "doc": "**Guarded binary CWSS append, escape-threaded named form** \u2014 the CWSS-shape wrapper of `append_treeSpecialSoundWithEscape_of_guardedLeft`, mirroring the pure `append_coordinateWiseSpecialSoundWithEscape`. The positivity of the right shape's arity, which the tree-level statement takes as a hypothesis, is free here: every `CWSSStructure` branches `\u2113\u1d62\u00b7(k\u1d62\u22121)+1 \u2265 1` ways (`CWSSStructure.arity_pos`).",
           "kind": "theorem",
-          "line": 256,
+          "line": 249,
           "name": "Verifier.append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft",
           "namespace": "Verifier",
           "short_name": "append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft",
@@ -49724,7 +49751,7 @@
         {
           "doc": "**Guarded binary CWSS append, plain named form** \u2014 a *proven corollary* of the escape-threaded obligation above at `esc\u2081 = esc\u2082 = fun _ _ => False`, where the composed event is propositionally never-firing and so eliminable. This is why the escape-threaded theorem, not this one, is the fundamental obligation.",
           "kind": "theorem",
-          "line": 280,
+          "line": 273,
           "name": "Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft",
           "namespace": "Verifier",
           "short_name": "append_coordinateWiseSpecialSoundWith_of_guardedLeft",
@@ -49733,7 +49760,7 @@
         {
           "doc": "A **bundled guarded coordinate-wise-special-sound reduction**: `CWSSPackage` with the purity witness relaxed to a guardedness witness. Guarded packages compose with `GCWSSPackage.append` (infix `\u25b7`, explicit synonym `\u25b7\u1d4d`); a pure package enters the guarded world via `CWSSPackage.toGuarded`, or automatically through the mixed `\u25b7` overloads below.",
           "kind": "structure",
-          "line": 314,
+          "line": 307,
           "name": "CoordinateWise.GCWSSPackage",
           "namespace": "CoordinateWise",
           "short_name": "GCWSSPackage",
@@ -49742,7 +49769,7 @@
         {
           "doc": "Forget purity: every (pure) `CWSSPackage` is a `GCWSSPackage` with the trivially-true check; extractor and certificate carry over unchanged.",
           "kind": "def",
-          "line": 341,
+          "line": 334,
           "name": "CoordinateWise.GCWSSPackage._root_.CoordinateWise.CWSSPackage.toGuarded",
           "namespace": "CoordinateWise.GCWSSPackage",
           "short_name": "_root_.CoordinateWise.CWSSPackage.toGuarded",
@@ -49751,7 +49778,7 @@
         {
           "doc": "**Compose two guarded packages along a matching seam** (`hseam` discharged by `rfl`): the guarded analogue of `CWSSPackage.append`/`\u25b7`. The composed verdict is guarded by the conjunction of both checks (`Verifier.IsGuarded.append`), the composed extractor is the left extractor on the prefix tree, and the composed certificate is the guarded binary append theorem `Verifier.append_coordinateWiseSpecialSoundWith_of_guardedLeft` \u2014 this definition is the *interface* the Hachi chain composes through. Written infix as `L\u2081 \u25b7 L\u2082` (explicit synonym `\u25b7\u1d4d`).",
           "kind": "def",
-          "line": 360,
+          "line": 353,
           "name": "CoordinateWise.GCWSSPackage.append",
           "namespace": "CoordinateWise.GCWSSPackage",
           "short_name": "append",
@@ -49760,7 +49787,7 @@
         {
           "doc": "**Compose a pure left factor with a guarded right factor.** The left package is lifted with `CWSSPackage.toGuarded`; only the relation seam `hRel` remains (discharged by `rfl`). Dispatched by the universal `\u25b7`.",
           "kind": "def",
-          "line": 402,
+          "line": 395,
           "name": "CoordinateWise.CWSSPackage.appendGuarded",
           "namespace": "CoordinateWise",
           "short_name": "CWSSPackage.appendGuarded",
@@ -49769,7 +49796,7 @@
         {
           "doc": "**Compose a guarded left factor with a pure right factor.** The right package is lifted with `CWSSPackage.toGuarded`; only the relation seam `hRel` remains (discharged by `rfl`). Dispatched by the universal `\u25b7`.",
           "kind": "def",
-          "line": 414,
+          "line": 407,
           "name": "CoordinateWise.GCWSSPackage.appendPure",
           "namespace": "CoordinateWise",
           "short_name": "GCWSSPackage.appendPure",
@@ -64583,7 +64610,7 @@
   },
   "stats": {
     "ArkLib": {
-      "declarations": 7000,
+      "declarations": 7003,
       "files": 402
     }
   }

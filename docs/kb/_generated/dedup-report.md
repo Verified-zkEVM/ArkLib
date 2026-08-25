@@ -4,7 +4,7 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 402 files, 7000 declarations
+- `ArkLib` — 402 files, 7003 declarations
 
 ## Same short-name across multiple files (196 groups)
 
@@ -150,7 +150,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def CWSSStructure.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean:67](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean#L67) — Binary append of coordinate-wise special-soundness structures. On left challenge rounds this is `D₁`
 - `def CoordinateWise.EscapeCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean:97](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean#L97) — **Compose two escape-aware packages along a matching relation seam** `hRel` (discharged by `rfl` whe
 - `def CoordinateWise.EscapeGCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean:172](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean#L172) — **Compose two guarded escape-aware packages along a matching relation seam.** As in `EscapeCWSSPacka
-- `def CoordinateWise.GCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean:360](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean#L360) — **Compose two guarded packages along a matching seam** (`hseam` discharged by `rfl`): the guarded an
+- `def CoordinateWise.GCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean:353](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean#L353) — **Compose two guarded packages along a matching seam** (`hseam` discharged by `rfl`): the guarded an
 - `def CoordinateWise.CWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean:94](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean#L94) — **Compose two packages along a matching seam.** Given a left package `L₁ : relIn ⇒ mid`, a right pac
 - `def ProtocolSpec.ChallengeTreeShape.append` [ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean:99](../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean#L99) — Append two protocol-generic tree shapes along sequential protocol append.
 
