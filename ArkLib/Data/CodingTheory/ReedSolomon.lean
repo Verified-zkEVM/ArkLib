@@ -590,6 +590,20 @@ lemma agree_lt_of_mem_code {F : Type*} [Fintype ι] [Field F] [DecidableEq F]
       have := Code.agree_add_hammingDist (u := c) (v := c')
       by_cases! hn : n ≤ Fintype.card ι <;> grind
 
+/-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
+  are equal. -/
+lemma eq_of_agree_of_card_le {ι : Type} [Finite ι] [Field F]
+  {α : ι ↪ F} {n : ℕ} {c c' : ι → F}
+  (hc : c ∈ code α n) (hc' : c' ∈ code α n)
+  {T : Finset ι} (hT : n ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
+  classical
+  have := Fintype.ofFinite
+  by_contra hne
+  have hlt := ReedSolomon.agree_lt_of_mem_code hc hc' hne
+  have hsub : T ⊆ ({i | c i = c' i} : Finset _) := fun t ht ↦ by simpa using hagree t ht
+  have := Finset.card_le_card hsub
+  grind [Code.agree]
+
 /-- Reed-Solomon codes are maximum distance separable (MDS). -/
 lemma isMDS_code {ι : Type*} [Fintype ι] [Inhabited ι] [Field F] [DecidableEq F]
   {α : ι ↪ F} [NeZero n] : LinearCode.IsMDS (ReedSolomon.code α n) := by

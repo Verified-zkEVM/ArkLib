@@ -361,12 +361,10 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
 
 omit [DecidableEq F] in
 /-- The rate of the Reed-Solomon code of degree `2 ^ d` on the halved domain, in closed form. -/
-lemma rate_folded_eq :
+private lemma rate_folded_eq :
   (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d)) : ℝ≥0)
     = ((min (2 ^ d) (2 ^ (n - 1)) : ℕ) : ℝ≥0) / ((2 : ℝ≥0) ^ (n - 1)) := by
-  rw [ReedSolomon.rateOfLinearCode_eq_min_div]
-  push_cast
-  simp
+  aesop (add simp ReedSolomon.rateOfLinearCode_eq_min_div) 
 
 omit [DecidableEq F] in
 /-- A word whose projection to `T` lies in the projected Reed-Solomon code agrees on `T`
@@ -397,19 +395,6 @@ lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
       (Nat.pow_le_pow_right (by norm_num) (by omega))
   exact_mod_cast Nat.cast_le.2 h1
 
-/-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
-  are equal. -/
-lemma eq_of_agree_of_card_le {ι : Type} [Fintype ι] [DecidableEq ι]
-  {dom : ι ↪ F} {m : ℕ} {c c' : ι → F}
-  (hc : c ∈ code dom m) (hc' : c' ∈ code dom m)
-  {T : Finset ι} (hT : m ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
-  by_contra hne
-  have hlt := ReedSolomon.agree_lt_of_mem_code hc hc' hne
-  have hsub : T ⊆ ({i | c i = c' i} : Finset _) := fun t ht => by simpa using hagree t ht
-  have := Finset.card_le_card hsub
-  simp only [Code.agree] at hlt
-  omega
-
 open CoreDefinitions unitInterval in
 theorem folding_reflects_balls [Fintype F]
   {ε_mca : I → ℝ≥0}
@@ -417,7 +402,7 @@ theorem folding_reflects_balls [Fintype F]
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   (hk : 1 ≤ k) (hkd : k ≤ d) (hdn : d ≤ n)
   {δ : ℝ≥0}
-  (δ_gt_0 : 0 < δ)
+  (δ_gt_0 : 0 < δ) -- not used but should be
   (δ_lt : δ <
     (1 - (LinearCode.rate (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d))))) :
   let δ' : I := ⟨δ, by aesop, by {
@@ -454,16 +439,13 @@ theorem folding_reflects_balls [Fintype F]
     have hsum : u0 + α • u1 = foldWord ω f 1 α :=
       foldWord_k_1_eq_foldWordEven_add_foldWordOdd.symm
     set T := foldingBlockAgreement k ω α u0 u1 v with hTdef
-    have hTagree : ∀ i ∈ T, u0 i + α * u1 i = v i := fun i hi =>
+    have hTagree : ∀ i ∈ T, u0 i + α * u1 i = v i := fun i hi ↦
       foldingBlockAgreement_is_agreement hi
-    have hvdist' : δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v) ≤ δ := by
-      rw [hsum]; exact hvdist
-    have hTcard : (2 : ℝ≥0) ^ (n - 1) * (1 - δ) ≤ (T.card : ℝ≥0) := by
-      refine le_trans ?_ card_foldingBlockAgreement_ge
-      gcongr
+    have hvdist' : δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v) ≤ δ := by aesop
+    have hTcard : (2 : ℝ≥0) ^ (n - 1) * (1 - δ) ≤ (T.card : ℝ≥0) := 
+      le_trans' card_foldingBlockAgreement_ge (by gcongr)
     have hcomb : ∀ i ∈ T,
-        (∑ j, univariatePowersGenerator F 1 α j • ![u0, u1] j i) = v i := by
-      intro i hi
+        (∑ j, univariatePowersGenerator F 1 α j • ![u0, u1] j i) = v i := fun i hi ↦ by
       simpa [Fin.sum_univ_two, univariatePowersGenerator] using hTagree i hi
     refine ⟨T, ?_, ?_, ?_⟩
     · have h := NNReal.coe_le_coe.2 hTcard
@@ -522,6 +504,5 @@ theorem folding_reflects_balls [Fintype F]
       exact hvimg ⟨_, huball, hfoldw.trans hwv⟩
   exact le_trans (Probability.Pr_le_Pr_of_implies _ _ _ key)
     (by simpa using hmca.prob_le _ δ')
-
 
 end ProximityGap
