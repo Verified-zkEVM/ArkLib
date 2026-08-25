@@ -359,34 +359,6 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       field_simp
       exact le_trans hδ (by simp)
 
-/-- Folding the evaluation of `p₀(X²) + X * p₁(X²)` with randomness `α` gives the evaluation
-  of `p₀ + α * p₁` on the halved domain. -/
-lemma foldWord_evalOnPoints_split [NeZero n] {p₀ p₁ : Polynomial F} {α : F}
-  {i : Fin (2 ^ (n - 1))} :
-  foldWord ω (evalOnPoints (ω : Fin (2 ^ n) ↪ F)
-      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2))) 1 α i =
-    p₀.eval (ω.subdomain 1 i) + α * p₁.eval (ω.subdomain 1 i) := by
-  rw [foldWord_k_1]
-  extract_lets x a b
-  have h2 : (2 : F) ≠ 0 := CosetFftDomainClass.domain_implies_2_ne_0 ω
-  have ha : ω a = (x : F) := by simp [a]
-  have hxne : (x : F) ≠ 0 := ha ▸ CosetFftDomainClass.ne_zero ω a
-  have hb : ω b = -(x : F) := by simp [b]
-  have hx2 : (x : F) ^ 2 = ω.subdomain 1 i := by
-    simpa using CosetFftDomain.twoNthRoot_correct_one (x := ⟨ω.subdomain 1 i, by simp⟩)
-  have hva : evalOnPoints (ω : Fin (2 ^ n) ↪ F)
-      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) a =
-      p₀.eval ((x : F) ^ 2) + (x : F) * p₁.eval ((x : F) ^ 2) := by
-    simp [evalOnPoints, ha]
-  have hvb : evalOnPoints (ω : Fin (2 ^ n) ↪ F)
-      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) b =
-      p₀.eval ((x : F) ^ 2) - (x : F) * p₁.eval ((x : F) ^ 2) := by
-    simp [evalOnPoints, hb]
-    ring
-  rw [hva, hvb, ← hx2]
-  field_simp
-  ring
-
 omit [DecidableEq F] in
 /-- The rate of the Reed-Solomon code of degree `2 ^ d` on the halved domain, in closed form. -/
 lemma rate_folded_eq :

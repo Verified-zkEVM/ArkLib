@@ -301,6 +301,27 @@ lemma foldWord_k_1_eq_foldWordEven_add_foldWordOdd [NeZero n] {α : F} :
     foldWordEven domain f + α • foldWordOdd domain f := by
   aesop (add simp [foldWord_k_1, foldWordEven, foldWordOdd])
 
+/-- Folding the evaluation of `p₀(X²) + X * p₁(X²)` with randomness `α` gives the evaluation
+  of `p₀ + α * p₁` on the halved domain. -/
+@[simp]
+lemma foldWord_evalOnPoints_split [NeZero n] {p₀ p₁ : Polynomial F} {α : F}
+  {i : Fin (2 ^ (n - 1))} :
+  foldWord domain (evalOnPoints (domain : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2))) 1 α i =
+    p₀.eval (domain.subdomain 1 i) + α * p₁.eval (domain.subdomain 1 i) := by
+  rw [foldWord_k_1]
+  extract_lets x a b
+  have hva : evalOnPoints (domain : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) a =
+      p₀.eval ((x : F) ^ 2) + (x : F) * p₁.eval ((x : F) ^ 2) := by
+    aesop (add simp evalOnPoints)
+  have hvb : evalOnPoints (domain : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) b =
+      p₀.eval ((x : F) ^ 2) - (x : F) * p₁.eval ((x : F) ^ 2) := by
+    aesop (add simp evalOnPoints) (add safe (by grind))
+  have : (2 : F) ≠ 0 := CosetFftDomainClass.domain_implies_2_ne_0 domain
+  aesop (add safe [(by field_simp), (by grind)])
+
 /-- The version of a folding where
   k steps are achieved via iterated application
   of k=1 folding. -/
