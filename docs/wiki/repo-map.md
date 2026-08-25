@@ -118,10 +118,9 @@ home_page/            site assets and assembled website root
     subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
-    escape *event*) for the links whose extraction can break an assumption. Its soundness side is
-    **complete**: rows 1–9 of the seam table in `Composition.lean` are sorry-free and axiom-clean.
-    The remaining skeleton is the §4.5 `Recursion/` tail, and the honest-prover/completeness layer
-    is open for the whole chain.
+    escape *event*) for the links whose extraction can break an assumption. The nine-link
+    iteration's soundness side is now **complete and axiom-clean**; its remaining work is the
+    honest-prover/completeness layer and the separate `endPiece` skeleton.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -152,33 +151,37 @@ home_page/            site assets and assembled website root
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
     zero-check's point claims into the initial hypercube sums; `Sumcheck/RoundPoly` is the
-    proof-side round-polynomial layer (cube split, the partial sum as a univariate with its
+    proof-side round-polynomial layer (cube split, the partial sum as a univariate, and its
     evaluation and degree lemmas); `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck
     (Lemma 11, loop by recursion over `▷ᵍ`); `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)`
-    (Figure 7 tail) landing on the recursion's evaluation claim. `Sumcheck/Basic.lean` re-exports
-    the folder and records why this round layer is *not* built on the generic
-    `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
-    extraction, and neither carries a soundness certificate to inherit). The honest provers are
-    skeletons: their round message is a parameter, awaiting the completeness layer.
-  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+    (Figure 7 tail) landing on the short-opening evaluation claim `relWEvalClaim`.
+    `Sumcheck/Basic.lean` re-exports the folder and records why this round layer is not built on
+    the generic `ProofSystem/Sumcheck/` modes: their rejection convention conflicts with
+    tree-based extraction, and neither carries a soundness certificate to inherit. The honest
+    provers remain skeletons, with their round message waiting on the completeness layer.
+  - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
+    `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
     (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder.
-  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the
-    `bridgePackage ▷ quadEvalPackage` chain and `eval_coordinateWiseSpecialSoundWithEscape` is its
-    composed named-extractor CWSS certificate (`sorryAx`-free). `openCore` chains the pure §4.3 links
-    (rows 1–7 of the header's seam table, `sorryAx`-free), and `openingChain` /
-    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` compose the guarded tail (sumcheck loop,
-    final eval, recursion adapters) into the full one-iteration certificate; every `sorryAx` it
-    carries comes from rows 10–12, and the provenance is inventoried in the module header. Escape
-    events compose along the chain by `ChallengeTree.EscapeEvent.append`, so only relation seams
-    have to match.
+    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
+    it so the umbrella reaches every folder it documents.
+  - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
+    links (rows 1–9 of the header's seam table) into one evaluation iteration, and
+    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
+    certificate (`sorry`-free and axiom-clean). `eval_coordinateWiseSpecialSoundWithEscape` states
+    the same for the rows 1–2 front alone — the paper's Figure 3 reduction. `roundsChain` re-pins
+    the sumcheck loop's relation seams definitionally, so the guarded tail composes with the
+    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` is
+    the sorried skeleton closing a run of iterations (the prover reveals the reduced witness and
+    the verifier checks the reduced claim against it directly), and `evaluation` is
+    `iteration ▷ endPiece` — the complete opening argument. Escape events compose along the chain
+    by `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the §4.5 recursion
-    tail and the honest-prover/completeness layer).
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece and
+    honest-prover/completeness layers).
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).
@@ -333,8 +336,8 @@ home_page/            site assets and assembled website root
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
   **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded`, the guarded package
-  `GCWSSPackage` with its append `▷ᵍ`, the escape-threaded guarded binary CWSS append
-  theorem, and the plain guarded append derived from it at the never-firing events. The umbrella
+  `GCWSSPackage` with its append `▷ᵍ`, the escape-threaded guarded binary CWSS append theorem,
+  and the plain guarded append derived from it at the never-firing events. The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.

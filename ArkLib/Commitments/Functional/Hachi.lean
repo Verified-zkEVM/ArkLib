@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -16,11 +17,17 @@ inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^
 **This development is in progress.** Finished and `sorry`-free — axiom-clean down to the
 Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
 which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
-and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge. The §4.3/§4.5 opening subprotocols are in the
-tree as sorried skeletons, inventoried link by link in `Composition.lean`; still to come are their
-proofs and the completeness layer — the honest-prover `opening` (`hachi.opening` in
-`Commitment.lean`). See the `TODO` blocks in `Composition.lean` and `Commitment.lean`.
+and the weak-binding reduction to Module-SIS, the polynomial-evaluation reduction
+(§4.2, Lemma 8) with its polynomial-level bridge, and **the whole §4.3 opening chain** — the
+`R^lin` adapter, the HMZ25 lift (Lemma 9), the batching bridge, the corrected zero-check
+(Lemma 10), the sumcheck bridge, the paired sumcheck rounds (Lemma 11) and the final evaluation —
+together with their composite, the one-iteration certificate
+`hachi_iteration_coordinateWiseSpecialSoundWithEscape`. What is still open: the closing `endPiece`
+that consumes that iteration's evaluation claim (the sole sorried link of `evaluation`), the
+completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`) — and the
+§4.5 `Recursion/` adapters, separate future work with their own sorries and a documented soundness
+gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.lean` and
+`Commitment.lean`.
 
 ## Folder structure
 
@@ -40,10 +47,12 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
   guarded sumcheck stages of the opening chain.
-* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that close
-  one iteration at the next ring's plain `QuadEval.relIn` relation.
-* `Composition.lean` — the CWSS composition home: `evalChain = bridgePackage ▷
-  quadEvalPackage`, followed by the opening subprotocols. Every package exposes the ordinary
+* `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that would
+  close one iteration at the next ring's plain `QuadEval.relIn` relation (future recursion work;
+  not yet composed in `Composition.lean`).
+* `Composition.lean` — the CWSS composition home: the `iteration` (the chained subprotocols,
+  rows 1–9), the still-sorried `endPiece` skeleton (send the reduced witness), and the complete
+  `evaluation` = iteration ⧺ end-piece. Every package exposes the ordinary
   `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
   break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,
   entering each certificate as a disjunct of its conclusion.
