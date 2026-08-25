@@ -1,12 +1,13 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: František Silváši, Ilia Vlasov
+Authors: František Silváši, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.Basic.BlockRelDistance
 import ArkLib.Data.CodingTheory.ProximityGap.Folding
 import ArkLib.Data.CodingTheory.ProximityGap.Folding.FoldingContext
+import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
 import ArkLib.Data.Domain.CosetFftDomain.Pullback
 
 namespace ProximityGap
@@ -106,8 +107,9 @@ theorem folding_preserves_block_balls {d : ℕ} [FoldingContext k d n] {α : F} 
     (fun u ↦ foldWord ω u 1 α)
     (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ)) ⊆
       Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
-         k - 1, ω.subdomain 1, foldWord ω f 1 α, δ) := fun x hx ↦ by
-  aesop (add unsafe folding_block_rel_ball)
+         k - 1, ω.subdomain 1, foldWord ω f 1 α, δ) := by
+  rintro x ⟨u, hu, rfl⟩
+  exact folding_block_rel_ball hu
 
 open Domain Pullback
 
@@ -357,14 +359,93 @@ lemma mem_ball_of_u0_u1_polynomials [FoldingContext k d n]
       field_simp
       exact le_trans hδ (by simp)
 
-open CoreDefinitions in
+/-- Folding the evaluation of `p₀(X²) + X * p₁(X²)` with randomness `α` gives the evaluation
+  of `p₀ + α * p₁` on the halved domain. -/
+lemma foldWord_evalOnPoints_split [NeZero n] {p₀ p₁ : Polynomial F} {α : F}
+  {i : Fin (2 ^ (n - 1))} :
+  foldWord ω (evalOnPoints (ω : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2))) 1 α i =
+    p₀.eval (ω.subdomain 1 i) + α * p₁.eval (ω.subdomain 1 i) := by
+  rw [foldWord_k_1]
+  extract_lets x a b
+  have h2 : (2 : F) ≠ 0 := CosetFftDomainClass.domain_implies_2_ne_0 ω
+  have ha : ω a = (x : F) := by simp [a]
+  have hxne : (x : F) ≠ 0 := ha ▸ CosetFftDomainClass.ne_zero ω a
+  have hb : ω b = -(x : F) := by simp [b]
+  have hx2 : (x : F) ^ 2 = ω.subdomain 1 i := by
+    simpa using CosetFftDomain.twoNthRoot_correct_one (x := ⟨ω.subdomain 1 i, by simp⟩)
+  have hva : evalOnPoints (ω : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) a =
+      p₀.eval ((x : F) ^ 2) + (x : F) * p₁.eval ((x : F) ^ 2) := by
+    simp [evalOnPoints, ha]
+  have hvb : evalOnPoints (ω : Fin (2 ^ n) ↪ F)
+      (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2)) b =
+      p₀.eval ((x : F) ^ 2) - (x : F) * p₁.eval ((x : F) ^ 2) := by
+    simp [evalOnPoints, hb]
+    ring
+  rw [hva, hvb, ← hx2]
+  field_simp
+  ring
+
+omit [DecidableEq F] in
+/-- The rate of the Reed-Solomon code of degree `2 ^ d` on the halved domain, in closed form. -/
+lemma rate_folded_eq :
+  (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d)) : ℝ≥0)
+    = ((min (2 ^ d) (2 ^ (n - 1)) : ℕ) : ℝ≥0) / ((2 : ℝ≥0) ^ (n - 1)) := by
+  rw [ReedSolomon.rateOfLinearCode_eq_min_div]
+  push_cast
+  simp
+
+omit [DecidableEq F] in
+/-- A word whose projection to `T` lies in the projected Reed-Solomon code agrees on `T`
+  with the evaluation of a polynomial of degree `< m`. -/
+lemma exists_poly_of_projectedWord_mem {ι : Type}
+  {dom : ι ↪ F} {m : ℕ} {w : ι → F} {T : Finset ι}
+  (h : LinearCode.projectedWord w T ∈ LinearCode.projectedCodeSubmod (code dom m) T) :
+  ∃ p : Polynomial F, p.degree < m ∧ ∀ t ∈ T, w t = p.eval (dom t) := by
+  rw [LinearCode.mem_projectedCodeSubmod_iff] at h
+  obtain ⟨c, hc, hcw⟩ := h
+  replace hc : c ∈ code dom m := hc
+  rw [ReedSolomon.mem_code_iff_exists_polynomial] at hc
+  obtain ⟨p, hp, rfl⟩ := hc
+  refine ⟨p, hp, fun t ht => ?_⟩
+  have := congrFun hcw ⟨t, ht⟩
+  simpa [LinearCode.projectedWord, evalOnPoints] using this
+
+omit [DecidableEq F] in
+/-- The rate of the degree-`2 ^ d` code on the halved domain accounts for at least `2 ^ (d-1)`
+  positions. -/
+lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
+  ((2 : ℝ≥0) ^ (d - 1)) ≤
+    2 ^ (n - 1) *
+      (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d)) : ℝ≥0) := by
+  rw [rate_folded_eq, mul_div_cancel₀ _ (by positivity)]
+  have h1 : (2 : ℕ) ^ (d - 1) ≤ min (2 ^ d) (2 ^ (n - 1)) :=
+    le_min (Nat.pow_le_pow_right (by norm_num) (by omega))
+      (Nat.pow_le_pow_right (by norm_num) (by omega))
+  exact_mod_cast Nat.cast_le.2 h1
+
+/-- Two Reed-Solomon codewords of degree `< m` that agree on at least `m` positions
+  are equal. -/
+lemma eq_of_agree_of_card_le {ι : Type} [Fintype ι] [DecidableEq ι]
+  {dom : ι ↪ F} {m : ℕ} {c c' : ι → F}
+  (hc : c ∈ code dom m) (hc' : c' ∈ code dom m)
+  {T : Finset ι} (hT : m ≤ T.card) (hagree : ∀ t ∈ T, c t = c' t) : c = c' := by
+  by_contra hne
+  have hlt := ReedSolomon.agree_lt_of_mem_code hc hc' hne
+  have hsub : T ⊆ ({i | c i = c' i} : Finset _) := fun t ht => by simpa using hagree t ht
+  have := Finset.card_le_card hsub
+  simp only [Code.agree] at hlt
+  omega
+
+open CoreDefinitions unitInterval in
 theorem folding_reflects_balls [Fintype F]
-  {ε_mca : I → ℝ}
-  (hmca : IsMCAGenerator (UnivariatePowers 1) ε_mca
+  {ε_mca : I → ℝ≥0}
+  (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
   (hk : 1 ≤ k) (hkd : k ≤ d) (hdn : d ≤ n)
   {δ : ℝ≥0}
-  (δ_gt_0 : 0 < δ) -- this one is not used but should be.
+  (δ_gt_0 : 0 < δ)
   (δ_lt : δ <
     (1 - (LinearCode.rate (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d))))) :
   let δ' : I := ⟨δ, by aesop, by {
@@ -377,98 +458,98 @@ theorem folding_reflects_balls [Fintype F]
         (fun u ↦ foldWord ω u 1 α)
         (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ))] ≤
           ENNReal.ofReal (ε_mca δ') := by
-  sorry
-  have : NeZero n := ⟨by omega⟩
-  simp only [IsMCAGenerator, Nat.reduceAdd] at hmca
-  extract_lets δ'
-  let u0 := foldWordEven ω f 
-  let u1 := foldWordOdd ω f
-  specialize hmca (fun j i ↦ match j with | 0 => u0 i | 1 => u1 i) δ'
-  simp only [bind_pure_comp, Functor.map,
-        PMF.bind_apply,
-        PMF.uniformOfFintype_apply,
-        comp_apply, PMF.pure_apply, eq_iff_iff, true_iff,
-        mul_ite, mul_one, mul_zero, tsum_fintype] at hmca ⊢
-  exact le_trans' hmca <| Finset.sum_le_sum <| fun α _ ↦ by
-    split_ifs with h₁ h₂ <;> try rfl
-    · simp only [Word, eq_iff_iff, true_iff] at h₁
-      exfalso
-      apply h₁
-      clear h₁
-      simp only [eq_iff_iff, true_iff] at h₂
-      intro v hv
-      simp only [mem_blockRelDistanceBall, SetLike.mem_coe] at hv
-      simp only [IsMCA, Fintype.card_fin, Nat.cast_pow, Nat.cast_ofNat, ge_iff_le,
-        LinearCode.projectedWord, Fin.exists_fin_two,
-        not_exists, not_and, not_or, not_not] at h₂
-      let z := foldingBlockAgreement k ω α u0 u1 v
-      have hz : 2 ^ (n - 1) * ((1 : ℝ) - ↑δ') ≤ ↑(#z) := by {
-        simp only [z]
-        exact le_trans' (card_foldingBlockAgreement_ge hk (by omega)) <| by
-          norm_cast
-          rw [NNReal.val_eq_coe, NNReal.coe_mul]
-          conv_lhs =>
-            lhs
-            rw [show (Nat.cast (R := ℝ) _) = 2 ^ (n - 1) by simp]
-          conv_rhs =>
-            lhs
-            rw [show (NNReal.toReal _) = 2 ^ (n - 1) by simp]
-          field_simp
-          have : u0 + α • u1 = foldWord ω f 1 α := by 
-            aesop (add simp [foldWord_k_1'])
-          rw [NNReal.coe_sub (by simp), show toReal 1 = 1 by simp,
-              sub_le_sub_iff_left]
-          aesop 
-            (add simp [div_le_div_iff_left])
-            (add unsafe (by rw [blockRelDistance_symm]))
-      }
-      specialize h₂ z hz (by {
-        simpa using 
-          LinearCode.restrict_mem_projectedCode_of_codeword_eq v hv.1 <| fun i hi ↦ by
-            simp_all [z, Matrix.vecMul, UnivariatePowers, 
-                      foldingBlockAgreement_is_agreement hk (by omega) hi]
-      })
-      simp only [LinearCode.mem_projectedCode_submod, LinearCode.mem_projectedCode, SetLike.mem_coe,
-        Set.restrict_apply] at h₂
-      obtain ⟨⟨u₀ᵣ, hu₀⟩, ⟨u₁ᵣ, hu₁⟩⟩ := h₂
-      rw [mem_code_iff_exists_polynomial] at hu₀ hu₁
-      obtain ⟨⟨u₀ₚ, hu₀ₚ⟩, hu₀⟩ := hu₀
-      obtain ⟨⟨u₁ₚ, hu₁ₚ⟩, hu₁⟩ := hu₁
-      have δ1 : δ < 1 := lt_of_lt_of_le δ_lt (by simp)
-      have hball := mem_ball_of_u0_u1_polynomials
-          (u₀ := u₀ₚ) (u₁ := u₁ₚ) (ω := ω) (f := f) (δ := δ)
-          δ1 (d := d) (k := k) (z := foldingBlockAgreementᵣ k ω α u0 u1 v)
-          (by grind) (by grind) hk hkd
-          (card_foldingBlockAgreement_foldingBlockAgreementᵣ_le _ hk (n := n) (by omega) <| by
-            simp only [z, δ'] at hz
-            rw [←NNReal.coe_le_coe, NNReal.coe_mul, NNReal.coe_sub (le_of_lt δ1)]
-            norm_num
-            exact hz )
-      specialize hball (fun j hj ↦ by
-        rw [agreement_on_z_of_u0_u1_polynomials (ω := ω) (f := f) (u₀ := u₀ₚ) (u₁ := u₁ₚ) (z := z)]
-        · simp
-        · aesop (add simp [foldWordEven, evalOnPoints])
-        · aesop (add simp [foldWordOdd, evalOnPoints])
-        · rw [mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement hk (by omega)]
-          exact hj)
-      simp only [_root_.map_add, evalOnPoints_mul, evalOnPoints_X, Embedding.coeFn_mk,
-        mem_blockRelDistanceBall, SetLike.mem_coe, Set.mem_image] at hball ⊢
-      exists (evalOnPoints (ω : Fin (2 ^ n) ↪ F) (u₀ₚ.comp (Y ^ 2) + Y * u₁ₚ.comp (Y ^ 2)))
-      constructor
-      · constructor
-        · convert hball.1
-          simp
-        · convert hball.2
-          simp
-      · rw [foldWord_evalOnPoints (by omega) (by {
-          exact lt_of_le_of_lt (Polynomial.degree_add_le _ _) <| by
-            simp only [degree_pow, degree_X, nsmul_eq_mul, Nat.cast_ofNat, mul_one, Nat.ofNat_pos,
-              degree_comp, degree_mul, sup_lt_iff]
-            
-})] 
-        sorry -- no idea
-    · simp
-
+  intro δ'
+  haveI : FoldingContext k d n := FoldingContext.mk' hk hkd hdn
+  haveI : NeZero n := ⟨by omega⟩
+  haveI : FoldingContextMiddle k n := ⟨hk, le_trans hkd hdn⟩
+  have hδ1 : δ < 1 := lt_of_lt_of_le δ_lt (by simp)
+  have hrate := two_pow_d_sub_one_le_rate_mul (ω := ω) (d := d) (by omega) hdn
+  have key : ∀ α : F,
+      ¬ (blockRelDistanceBall (k - 1) (ω.subdomain 1) (foldWord ω f 1 α) δ
+            (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))) ⊆
+          Set.image (fun u ↦ foldWord ω u 1 α)
+            (blockRelDistanceBall k ω f δ (code (ω : Fin (2 ^ n) ↪ F) (2 ^ d))) →
+      IsMCA (univariatePowersGenerator F 1)
+        (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))) α
+        ![foldWordEven ω f, foldWordOdd ω f] (δ : ℝ) := by
+    intro α hbad
+    rw [Set.not_subset] at hbad
+    obtain ⟨v, hv, hvimg⟩ := hbad
+    simp only [blockRelDistanceBall, SetLike.mem_coe] at hv
+    obtain ⟨hvC, hvdist⟩ := hv
+    set u0 := foldWordEven ω f with hu0def
+    set u1 := foldWordOdd ω f with hu1def
+    have hsum : u0 + α • u1 = foldWord ω f 1 α :=
+      foldWord_k_1_eq_foldWordEven_add_foldWordOdd.symm
+    set T := foldingBlockAgreement k ω α u0 u1 v with hTdef
+    have hTagree : ∀ i ∈ T, u0 i + α * u1 i = v i := fun i hi =>
+      foldingBlockAgreement_is_agreement hi
+    have hvdist' : δ𞁒(k - 1, ω.subdomain 1, u0 + α • u1, v) ≤ δ := by
+      rw [hsum]; exact hvdist
+    have hTcard : (2 : ℝ≥0) ^ (n - 1) * (1 - δ) ≤ (T.card : ℝ≥0) := by
+      refine le_trans ?_ card_foldingBlockAgreement_ge
+      gcongr
+    have hcomb : ∀ i ∈ T,
+        (∑ j, univariatePowersGenerator F 1 α j • ![u0, u1] j i) = v i := by
+      intro i hi
+      simpa [Fin.sum_univ_two, univariatePowersGenerator] using hTagree i hi
+    refine ⟨T, ?_, ?_, ?_⟩
+    · have h := NNReal.coe_le_coe.2 hTcard
+      rw [NNReal.coe_mul, NNReal.coe_sub hδ1.le] at h
+      simpa using h
+    · rw [LinearCode.mem_projectedCodeSubmod_iff]
+      refine ⟨v, hvC, ?_⟩
+      funext t
+      simp only [LinearCode.projectedWord, Set.restrict_apply]
+      exact hcomb t.1 t.2
+    · by_contra hcon
+      push Not at hcon
+      have h0 := hcon 0
+      have h1 := hcon 1
+      simp only [Matrix.cons_val_zero, Matrix.cons_val_one] at h0 h1
+      obtain ⟨p₀, hp₀deg, hp₀⟩ := exists_poly_of_projectedWord_mem h0
+      obtain ⟨p₁, hp₁deg, hp₁⟩ := exists_poly_of_projectedWord_mem h1
+      have hzcard := card_foldingBlockAgreement_foldingBlockAgreementᵣ_le δ hTcard
+      have hz : ∀ j : Fin (2 ^ n),
+          ω j ^ 2 ^ k ∈ ω.subdomain k '' (foldingBlockAgreementᵣ k ω α u0 u1 v) →
+          f j = p₀.eval (ω j ^ 2) + ω j * p₁.eval (ω j ^ 2) := by
+        intro j hj
+        rw [← mem_foldingBlockAgreementᵣ_of_mem_foldingBlockAgreement] at hj
+        have hagr := agreement_on_z_of_u0_u1_polynomials (ω := ω) (f := f) (u₀ := p₀) (u₁ := p₁)
+          T (fun i hi => by simpa [hu0def, foldWordEven, log_right_inverse'] using hp₀ i hi)
+          (fun i hi => by simpa [hu1def, foldWordOdd, log_right_inverse'] using hp₁ i hi) hj
+        simpa using hagr
+      have huball := mem_ball_of_u0_u1_polynomials (ω := ω) (f := f) (k := k) (d := d)
+        hδ1 hp₀deg hp₁deg (foldingBlockAgreementᵣ k ω α u0 u1 v) hzcard hz
+      set w := evalOnPoints (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (p₀ + α • p₁) with hwdef
+      have hwcode : w ∈ code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)) :=
+        ReedSolomon.evalOnPoints_mem_code_of_degree_lt
+          (lt_of_le_of_lt (Polynomial.degree_add_le _ _)
+            (max_lt hp₀deg (lt_of_le_of_lt (Polynomial.degree_smul_le _ _) hp₁deg)))
+      have hfoldw : foldWord ω (evalOnPoints (ω : Fin (2 ^ n) ↪ F)
+          (p₀.comp (Polynomial.X ^ 2) + Polynomial.X * p₁.comp (Polynomial.X ^ 2))) 1 α = w := by
+        funext i
+        rw [foldWord_evalOnPoints_split]
+        simp [hwdef, evalOnPoints]
+      have hTdeg : 2 ^ (d - 1) ≤ T.card := by
+        have hrate' :
+          (LinearCode.rate (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d)) : ℝ≥0)
+            ≤ 1 - δ := le_of_lt (lt_tsub_comm.mp δ_lt)
+        have h1 : ((2 : ℝ≥0) ^ (d - 1)) ≤ (T.card : ℝ≥0) := by
+          refine le_trans hrate (le_trans ?_ hTcard)
+          gcongr
+        exact_mod_cast h1
+      have hwv : w = v := by
+        refine eq_of_agree_of_card_le hwcode hvC (T := T) hTdeg ?_
+        intro t ht
+        have hwt : w t = u0 t + α * u1 t := by
+          rw [hp₀ t ht, hp₁ t ht, hwdef]
+          simp [evalOnPoints]
+        rw [hwt]
+        exact hTagree t ht
+      exact hvimg ⟨_, huball, hfoldw.trans hwv⟩
+  exact le_trans (Probability.Pr_le_Pr_of_implies _ _ _ key)
+    (by simpa using hmca.prob_le _ δ')
 
 
 end ProximityGap
