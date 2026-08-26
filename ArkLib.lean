@@ -1,6 +1,6 @@
 import ArkLib.AGM.Basic
 import ArkLib.Commitments.Functional.Basic
-import ArkLib.Commitments.Functional.Hachi
+import ArkLib.Commitments.Functional.Hachi.Basic
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
 import ArkLib.Commitments.Functional.Hachi.EvalSplit
@@ -195,6 +195,7 @@ import ArkLib.Data.Lattices.CyclotomicRing.Galois.FixedSubring
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Group
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Order
 import ArkLib.Data.Lattices.CyclotomicRing.Galois.Trace
+import ArkLib.Data.Lattices.CyclotomicRing.Inverse
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
 import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.LsCore

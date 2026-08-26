@@ -32,7 +32,8 @@ gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.l
 ## Folder structure
 
 The folder `Hachi/` is organized by paper section. Each subfolder carries a `Basic.lean`
-umbrella re-export inside the folder (as this file does for the whole Hachi development):
+umbrella re-export inside the folder, and this file is that umbrella for the whole Hachi
+development:
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
   `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).

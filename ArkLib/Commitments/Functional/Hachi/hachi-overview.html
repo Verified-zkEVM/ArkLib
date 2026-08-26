@@ -372,6 +372,7 @@
       <span class="chip">25 with protocol content</span>
       <span class="chip">9-link opening chain</span>
       <span class="chip">rows 1–9 no sorried certificate · all axiom-clean</span>
+      <span class="chip">composed extractor computable</span>
       <span class="chip">14 open Hachi sorries</span>
     </div>
   </div>
@@ -602,7 +603,7 @@
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
         files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"m₀+m₁ scalar rounds", cwss:"k = 2 per round",
         relIn:"relBatched", relOut:"relNestedZeroCheck", status:"repaired", sorry:0, badges:["repair","proven"],
-        desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; the tree has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters, vs 2D−1=4095 for the printed lemma), and the extractor is non-constructive, so this is weaker than Lemma 10's <em>efficient deterministic</em> algorithm. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
+        desc:"Each coordinate of τ₀ and τ_α is its own scalar challenge round; a structured transcript tree is a path-dependent complete binary evaluation tree. <b>Corrected Lemma 10</b> — Figure 5 is sound as printed (Schwartz–Zippel gives it error ≈(m₀+m₁)/|F|); what fails is the paper’s <em>deterministic</em> star extraction, refuted by <code>exists_nonzero_vanishing_on_axis_cross</code> (a star only certifies vanishing on an axis cross, however many points each arm carries). The common-opening branch derives both identities from <b>one</b> tree via the window zero test <code>EvaluationTree.eq_zero_of_vanishes_comp</code> (<code>Data/MvPolynomial/NestedEvaluationTree.lean</code>, computable view in <code>ToCompPoly/</code>): H₀ reads its first m₀ levels, H_α its last m₁. CWSS (<code>nestedZeroCheck_coordinateWiseSpecialSoundWithEscape</code>) is sorry-free and axiom-clean; <code>ChallengeTree.LeafWitnesses</code> supplies an <code>Option</code> candidate output witness at every leaf, and the named extractor directly returns the all-left entry without a runtime relation search (classical choice is proof-local). The tree has 2^(m₀+m₁) leaves (≈2^29 at the ℓ=30 parameters, vs 2D−1=4095 for the printed lemma) and requires sequential Fiat–Shamir hashing. The point relation carries <code>liftShort</code> as the commitment’s <b>shortness index</b> — <code>LiftCom.Collision</code> is defined on pairs of distinct <em>short</em> openings, so it is what makes the weak-binding branch (the escape event <code>nestedZeroCheckEsc</code>) a Module-SIS break. <code>relBatched</code> itself stays norm-free: the range claim is <em>derived</em> there from H₀ ≡ 0 at the batching bridge, so nothing derives shortness from an assumption of shortness." },
     ]},
     { zt:"Sumcheck Loop", zref:"§4.3 · Figures 6–7 · Lemma 11",
       znote:"Runs m₀ paired sumcheck rounds down to a single evaluation of the committed table w̃, then reveals it. The guarded tail of the pure prefix.",
@@ -614,11 +615,11 @@
       { n:8, kind:"step", name:"Paired sumcheck rounds ×m₀", sub:"Sumcheck", fn:"Rounds.lean",
         files:[["Sumcheck","Rounds.lean"],["Sumcheck","RoundPoly.lean"]], ref:"§4.3 · Fig 6 · Lemma 11", rounds:"per round: (g-pair ; aᵢ)", cwss:"ℓ = 1, k = 2b+1",
         relIn:"nestedRoundRel 0", relOut:"nestedRoundRel m₀", status:"proven", sorry:0, badges:["guarded","proven"],
-        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Lemma&nbsp;11's named extractor and CWSS theorem are now proved through the guarded scalar-round engine and the new proof-side <code>RoundPoly.lean</code> layer. The weak-binding failure mode is <code>roundEsc</code>. The loop is composed recursively and <b>re-pins its input/output seams definitionally</b>, so <code>Composition.lean</code> appends the guarded tail with the universal <code>▷</code>, with the non-vacuous range-degree condition <code>0 &lt; b</code>." },
+        desc:"Each round sends the univariate pair (gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾) under a shared challenge aᵢ; the guarded check is gᵢ(0)+gᵢ(1) = targetᵢ₋₁. Lemma&nbsp;11's CWSS theorem is proved through the guarded scalar-round engine and the proof-side <code>RoundPoly.lean</code> layer, at a <b>computable</b> <code>roundExtractor</code> that reads the supplied branch openings directly. The weak-binding failure mode is <code>roundEsc</code>. The loop is composed recursively and <b>re-pins its input/output seams definitionally</b>, so <code>Composition.lean</code> appends the guarded tail with the universal <code>▷</code>, with the non-vacuous range-degree condition <code>0 &lt; b</code>." },
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"proven", sorry:0, badges:["guarded","proven"],
-        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Its executable <code>finalCheck</code>, named extractor, and no-challenge CWSS proof are complete. Output is the short-opening evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
+        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Its executable <code>finalCheck</code>, <b>computable</b> <code>finalEvalExtractor</code> (returning the opening in the unique supplied leaf witness), and no-challenge CWSS proof are complete. Output is the short-opening evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
     ]},
   ];
 
@@ -677,7 +678,7 @@
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
     ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","wip",0],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
-    ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
+    ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
     ["Sumcheck","RoundPoly.lean","proof-side round-polynomial layer","§4.3 · Fig6","8","proven",0],

@@ -266,8 +266,12 @@ composite's escape event is the `EscapeEvent.append`-nesting of the honest facto
 (rows 2, 4, 6, 8), each on its own subtree.
 
 The certificate `iteration.isCWSS` is the one-iteration CWSS statement — every factor discharged,
-`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header. -/
-noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header.
+
+**Computable**: every factor carries its verdict/guard maps as data (`Verifier.PureForm` /
+`Verifier.GuardedForm`), so the composed extractor `(iteration …).extractor` is an executable
+algorithm — no `Classical.choice` laundering at any seam. -/
+def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
@@ -448,8 +452,10 @@ end Evaluation
   dependency order: complete `endPiece` above, then instantiate `LiftCom` with the inner-outer
   commitment (without re-decomposition, with its collision escape via
   `outputToModuleSIS_valid_of_verified`).
-* **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
-  tracked with @ErVinuelas.
+* **Computability.** `iteration` is computable: guard and verdict maps ride along as data
+  (`Verifier.PureForm` / `Verifier.GuardedForm`), so the composed extractor executes. `endPiece`
+  and `evaluation` remain `noncomputable` only because `endPiece`'s data fields are sorried;
+  filling them with executable definitions makes the whole `evaluation` computable.
 * **§3 packing head (external extension-field claims).** The paper's headline
   multilinear-over-`F_{q^k}` interface (§3.1/§3.2) wraps an extension-field evaluation claim in
   front of `relPolyEval`; it is planned as an instance of the generalized `RingSwitching`
