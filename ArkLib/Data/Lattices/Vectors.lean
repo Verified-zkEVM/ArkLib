@@ -28,6 +28,11 @@ relate `dot` to `Finset.sum`.
 * `PolyVec` / `PolyMatrix` — `Fin`-indexed function-vector / matrix.
 * `dot` / `matVecMul` / `scalarVecMul` — computable `⟨u,v⟩`, `M *ᵥ v`, `c • v`.
 * `PolyVec.flattenBlocks` — flatten `blocks` equal-width blocks into one vector.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 open scoped BigOperators

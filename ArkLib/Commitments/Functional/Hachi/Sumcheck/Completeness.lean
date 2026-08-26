@@ -86,6 +86,7 @@ def honestComputeG {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (
         stmt.zc.τα w ⟨i, hi⟩ stmt.challenges⟩)
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- The honest range component's values are the round-`(i+1)` partial sums of `F_{0,τ₀}`. -/
 theorem honestComputeG_fst_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F)
     (i : ℕ) (hi : i < M + 1)
@@ -96,6 +97,7 @@ theorem honestComputeG_fst_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
   computableRoundPoly_eval _ _ _ T
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- The honest linear component's values are the round-`(i+1)` partial sums of `F_{α,τα}`. -/
 theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F)
     (i : ℕ) (hi : i < M + 1)
@@ -107,6 +109,7 @@ theorem honestComputeG_snd_eval {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F
   computableRoundPoly_eval _ _ _ T
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **The honest round message passes the round check.** For each summand the round-`i` claim of
 `nestedRoundRel` *is* the partial cube sum, which splits into its two Boolean extensions
 (`hypercubeSum_succ`); those two are the honest polynomial's values at `0` and `1`
@@ -134,6 +137,7 @@ theorem roundCheck_honestComputeG
   exact ⟨hZero, hAlpha⟩
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Relation preservation of one honest round.** At *every* challenge `a`, the round-`(i+1)`
 relation holds at the honest output statement: the commitment, shortness and bound-sanity
 conjuncts are carried over from the round-`i` relation, and the two new targets are by
@@ -181,6 +185,7 @@ Holds by `rfl`. -/
   rfl
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Honest execution of a round's two rounds.** Running the round prover to the end draws the
 challenge `a` and ends with the transcript `⟨g, a⟩` and the state `((stmt, wit), a)`: the message
 round appends `g = computeG stmt wit` and leaves the state untouched, the challenge round appends
@@ -221,6 +226,7 @@ lemma roundProver_runToRound_last {TCom Wit : Type} (i : ℕ)
   rfl
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **The honest round prover's run in closed form**: draw `a`, then emit the transcript `⟨g, a⟩`,
 the output statement `roundOut stmt g a` and the witness unchanged. Everything about the run is a
 function of the one challenge. -/
@@ -239,6 +245,7 @@ lemma roundProver_run_eq {TCom Wit : Type} (i : ℕ)
   rfl
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Honest-run characterization of one round.** Every outcome of an honest run is the single
 success determined by the drawn challenge `a`: prover and verifier both output
 `roundOut stmt g a` at the honest message `g`, and the witness is passed through.
@@ -286,6 +293,7 @@ lemma roundReduction_run_support
   exact hx
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of one paired sumcheck round**, error exactly `0`.
 
 The honest message passes the round check (`roundCheck_honestComputeG`) and the output statement
@@ -374,6 +382,7 @@ theorem roundsReduction_verifier (init : ProbComp σ)
       (roundsReduction_verifier init impl K hb φF count (by omega))
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of the honest round chain**, by recursion on `count`: the zero-round
 base is `ReduceClaim` at the identity map, and each step appends one
 `roundReduction_perfectCompleteness`.
@@ -409,6 +418,7 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
 -- DIAGNOSTIC MARKER
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- Perfect completeness of `roundsReduction`, the exposed form of
 `roundsReductionAux_perfectCompleteness`. ⚠ Inherits `sorryAx` for the same reason. -/
 theorem roundsReduction_perfectCompleteness (init : ProbComp σ)
@@ -458,6 +468,7 @@ def sumcheckReduction {TCom : Type} (hb : 0 < b) (φF : ZMod q →+* F) :
       (finalEvalReduction Φ (M + 1) m₁ bound b φF))
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of the local Hachi sumcheck**, from `relNestedZeroCheck` to
 `relWEvalClaim`, error `0`.
 

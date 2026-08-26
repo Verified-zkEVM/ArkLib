@@ -85,6 +85,7 @@ def hachiNonrecursiveConcrete (P : HonestRangeParams q)
     (nonrecursiveLiftCom (α := α) P D) hd hbZero φF
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect correctness of nonrecursive Hachi at the concrete commitment** — the corollary of
 `hachiNonrecursive_perfectCorrectness` at `K := nonrecursiveLiftCom P D`. Same hypotheses, same
 proof; the general theorem is what carries the content, and instantiating it is all that is

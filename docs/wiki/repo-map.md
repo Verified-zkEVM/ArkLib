@@ -247,9 +247,9 @@ home_page/            site assets and assembled website root
   - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
     chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
     reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
-    `relWEvalClaim` predicate on it (`terminalCheck`, reflection lemma
-    `terminalCheck_eq_true_iff`, both axiom-clean — the quotient range check needs only the
-    coefficient window up to `deg φ`, by the witness's own degree bound). A zero-round
+    `relWEvalClaim` predicate on it by returning `endPieceCheck` — the very check the guarded
+    `EndPiece/` verifier guards on, with reflection lemma `endPieceCheck_eq_true_iff`, both
+    axiom-clean — as its Boolean verdict (`terminalVerifier_verify_eq_endPieceCheck`). A zero-round
     **input adapter** (`commitInputReduction`, honest lemma `mem_relPolyEval_of_relCommitInput`)
     converts the commitment API's claim into `relPolyEval` for the balanced committer. Adapter ▷
     chain-through-sumcheck ▷ terminal compose into `hachiNonrecursiveOpening`, packaged with

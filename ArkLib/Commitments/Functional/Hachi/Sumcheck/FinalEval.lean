@@ -140,8 +140,10 @@ theorem finalEvalVerifier_isGuarded {TCom : Type} (φF : ZMod q →+* F) :
    fun stmt tr => ⟨stmt.zc.t, stmt.challenges, tr 0⟩,
    fun _ _ => rfl⟩
 
-/-- The honest final-evaluation prover skeleton: sends `y′ := mle[w̃](a)` (the parameter
-`computeY`, honestly `wTableMleEval`) and carries `w̃` forward as the output witness. -/
+/-- The final-evaluation prover shell, parametric in the claimed evaluation: sends
+`y′ := computeY stmt wit` and carries `w̃` forward as the output witness. The honest
+instantiation is `computeY := honestComputeY` (i.e. `wTableMleEval`), packaged as
+`finalEvalReduction` with perfect completeness. -/
 def finalEvalProver {TCom Wit : Type}
     (computeY : NestedRoundStatement Φ TCom F n μ m₀ m₁ m₀ →
       Wit → F) :
