@@ -120,9 +120,9 @@ home_page/            site assets and assembled website root
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
     escape *event*) for the links whose extraction can break an assumption. The nine-link
-    iteration's soundness side is now **complete and axiom-clean**, with a **computable**
-    composed extractor; its remaining work is the honest-prover/completeness layer and the
-    separate `endPiece` skeleton.
+    iteration's soundness side is **complete and axiom-clean**, with a **computable**
+    composed extractor — as is the closing `EndPiece/` — so the remaining work is the
+    honest-prover/completeness layer.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -165,6 +165,13 @@ home_page/            site assets and assembled website root
     the generic `ProofSystem/Sumcheck/` modes: their rejection convention conflicts with
     tree-based extraction, and neither carries a soundness certificate to inherit. The honest
     provers remain skeletons, with their round message waiting on the completeness layer.
+  - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
+    reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
+    (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
+    reduce. Escape-free — it re-reads data just sent, so no hardness assumption is consulted — and
+    **`sorry`-free and axiom-clean**: extraction is the identity on the transcript message
+    (`endPieceWitness`), and CWSS closes through the challenge-free bridge plus guarded
+    acceptance. `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
   - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
     `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
@@ -179,11 +186,11 @@ home_page/            site assets and assembled website root
     certificate (`sorry`-free and axiom-clean). `eval_coordinateWiseSpecialSoundWithEscape` states
     the same for the rows 1–2 front alone — the paper's Figure 3 reduction. `roundsChain` re-pins
     the sumcheck loop's relation seams definitionally, so the guarded tail composes with the
-    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` is
-    the sorried skeleton closing a run of iterations (the prover reveals the reduced witness and
-    the verifier checks the reduced claim against it directly), and `evaluation` is
-    `iteration ▷ endPiece` — the complete opening argument. Escape events compose along the chain
-    by `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
+    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` (imported
+    from `EndPiece/`, `sorry`-free and axiom-clean) closes a run of iterations, and `evaluation`
+    is `iteration ▷ endPiece` — the complete opening argument, with no sorried factor left.
+    Escape events compose along the chain by `ChallengeTree.EscapeEvent.append`, so only relation
+    seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
     `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece and

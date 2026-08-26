@@ -368,12 +368,12 @@
       subfolders, and shows exactly what is proven, repaired, or in progress.
     </p>
     <div class="hero-meta">
-      <span class="chip">32 files</span>
-      <span class="chip">25 with protocol content</span>
+      <span class="chip">34 files</span>
+      <span class="chip">26 with protocol content</span>
       <span class="chip">9-link opening chain</span>
-      <span class="chip">rows 1–9 no sorried certificate · all axiom-clean</span>
-      <span class="chip">composed extractor computable</span>
-      <span class="chip">14 open Hachi sorries</span>
+      <span class="chip">rows 1–9 + end-piece no sorried certificate · all axiom-clean</span>
+      <span class="chip">evaluation computable end to end</span>
+      <span class="chip">13 open Hachi sorries</span>
     </div>
   </div>
 </header>
@@ -387,7 +387,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 25 files carrying definitions or theorems (the seven folder <span class="mono">umbrella</span>
+      <p>Counts are over the 26 files carrying definitions or theorems (the eight folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects declarations that actually use
         <span class="mono">sorry</span>, not the word appearing in a docstring.</p>
     </div>
@@ -443,7 +443,7 @@
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
-          <span class="txt">Not finished — but for two different reasons, so read the <span class="mono">sorry</span> column. <span class="mono">sorry&nbsp;&gt;&nbsp;0</span> is a real skeleton: types, relations, verifier and package typecheck, but a proof (and sometimes an encoding def) is still <span class="mono">sorry</span> — the end-piece in <span class="mono">Composition.lean</span> and the opening <span class="mono">Proof</span> in <span class="mono">Commitment.lean</span>. <span class="mono">sorry&nbsp;0</span> means the soundness side is proved and only the <b>honest-completeness direction</b> is missing — link&nbsp;5 (<span class="mono">relLift → relBatched</span>) and the encoding home it shares with rows&nbsp;6–9.</span>
+          <span class="txt">Not finished — but for two different reasons, so read the <span class="mono">sorry</span> column. <span class="mono">sorry&nbsp;&gt;&nbsp;0</span> is a real skeleton: types, relations, verifier and package typecheck, but a proof (and sometimes an encoding def) is still <span class="mono">sorry</span> — the opening <span class="mono">Proof</span> in <span class="mono">Commitment.lean</span>. <span class="mono">sorry&nbsp;0</span> means the soundness side is proved and only the <b>honest-completeness direction</b> is missing — link&nbsp;5 (<span class="mono">relLift → relBatched</span>) and the encoding home it shares with rows&nbsp;6–9.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill gap">gap</span></span>
@@ -516,11 +516,11 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 32 files, including the seven folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 34 files, including the eight folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 32</button>
+      <button data-f="all" aria-pressed="true">all · 34</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
@@ -554,10 +554,11 @@
       (future work, off the composed line). The composition
       and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
       directly from this source snapshot; the open-sorry count counts <em>declarations</em> that use
-      <code>sorry</code> inside <code>Hachi/</code> (Lean's <code>declaration uses 'sorry'</code> warnings), so
-      <code>Composition.lean</code>'s single <code>endPiece</code> skeleton counts once despite having four sorried fields.
+      <code>sorry</code> inside <code>Hachi/</code> (Lean's <code>declaration uses 'sorry'</code> warnings).
+      The end-piece lives in <code>EndPiece/</code> and is fully proven, so
+      <code>Composition.lean</code> contributes no sorry of its own.
       The generic guarded-append machinery under
-      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> is now proved and sorry-free.
+      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> is proved and sorry-free.
     </p>
   </div>
 </footer>
@@ -636,8 +637,10 @@
       desc:"Guarded composition is complete: <code>IsGuarded.append</code> conjoins the checks, and <code>append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft</code> lifts escape-aware CWSS through a guarded left factor. An accepting composed tree forces every left check to pass — every CWSS suffix has a leaf, while a failed guard runs to <code>failure</code> — so the ordinary extraction argument applies. The sumcheck, final-evaluation, and end-piece seams now compose through proved generic machinery." },
   ];
   var PCS_ASSEMBLY = [
-    { name:"Composition", ref:"the certificate", files:[["","Composition.lean"]], status:"wip", sorry:1,
-      desc:"Imports every subprotocol's package and chains them: the <code>iteration</code> (rows 1–9, the subprotocol chain closed by the guarded sumcheck tail), the sorried <code>endPiece</code> skeleton (send the reduced witness; to move to its own file once filled), and the complete <code>evaluation</code> = iteration ⧺ end-piece. Its <code>isCWSS</code> fields are the certificates; the file's one sorry is the end-piece skeleton." },
+    { name:"Composition", ref:"the certificate", files:[["","Composition.lean"]], status:"proven", sorry:0,
+      desc:"Imports every subprotocol's package and chains them: the <code>iteration</code> (rows 1–9, the subprotocol chain closed by the guarded sumcheck tail), the <code>endPiece</code> (now imported from <code>EndPiece/</code>), and the complete <code>evaluation</code> = iteration ⧺ end-piece. Its <code>isCWSS</code> fields are the certificates. The file hosts no protocol of its own and carries no sorry; with rows 1–9 and the end-piece all discharged, <code>evaluation</code> inherits no <code>sorryAx</code>." },
+    { name:"End-piece", ref:"the closing link", files:[["EndPiece","Basic.lean"],["EndPiece","Reduction.lean"]], status:"proven", sorry:0,
+      desc:"The terminal link, split out of <code>Composition.lean</code> and filled: the prover sends the reduced witness <code>w̃</code> and the guarded verifier checks <code>relWEvalClaim</code> against it directly. Escape-free (it re-reads data just sent, so no hardness assumption is consulted) and <strong>sorry-free and axiom-clean</strong> — extraction is the identity on the transcript message, and CWSS closes through the challenge-free bridge plus the guarded-acceptance lemma." },
     { name:"Honest provers and correctness", ref:"the prerequisite", files:[], status:"plan", note:"planned prerequisite",
       desc:"Implement each opening subprotocol's honest prover and prove its completeness/correctness at its relation seam. Then compose those results along the full opening chain to establish correctness of the complete Hachi polynomial commitment scheme — the prerequisite for its <code>Commitment.Scheme</code> instantiation." },
     { name:"Commitment Scheme instantiation", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
@@ -656,7 +659,7 @@
   /* full index: [subfolder, filename, role, ref, row, status, sorry] */
   var INDEX = [
     ["","Commitment.lean","commitment-interface","§2.1/§4.1","—","wip",1],
-    ["","Composition.lean","composition","§4.2–4.3","—","wip",1],
+    ["","Composition.lean","composition","§4.2–4.3","—","proven",0],
     ["","EvalSplit.lean","infrastructure","§4 · Eq.12","—","proven",0],
     ["Gadget","Basic.lean","umbrella","§2.1","—","umbrella",0],
     ["Gadget","Core.lean","infrastructure","§2.1","—","proven",0],
@@ -678,11 +681,13 @@
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
     ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","wip",0],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
-    ["","Sumcheck.lean","umbrella","§4.3","—","umbrella",0],
+    ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
     ["Sumcheck","RoundPoly.lean","proof-side round-polynomial layer","§4.3 · Fig6","8","proven",0],
     ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","proven",0],
+    ["EndPiece","Basic.lean","umbrella","§4.3 · close","—","umbrella",0],
+    ["EndPiece","Reduction.lean","subprotocol","§4.3 · close","—","proven",0],
     ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
     ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","—","plan",6],
     ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","—","plan",2],
@@ -710,9 +715,9 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations and the soundness certificate of all nine chain links." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations, the soundness certificate of all nine chain links, the closing end-piece, and their composition." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: row 5's completeness direction, the end-piece, and the scheme." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: row 5's completeness direction and the scheme." },
     { cls:"plan", n:counts.plan, lbl:"Future work", sub:"The three §4.5 recursion adapters close the next-iteration loop; their target skeletons and gap are tracked in the roadmap below." },
   ];
   var tilesEl = document.getElementById("tiles");

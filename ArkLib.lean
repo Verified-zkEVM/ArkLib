@@ -3,6 +3,8 @@ import ArkLib.Commitments.Functional.Basic
 import ArkLib.Commitments.Functional.Hachi.Basic
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
+import ArkLib.Commitments.Functional.Hachi.EndPiece.Reduction
 import ArkLib.Commitments.Functional.Hachi.EvalSplit
 import ArkLib.Commitments.Functional.Hachi.Gadget.Basic
 import ArkLib.Commitments.Functional.Hachi.Gadget.Core

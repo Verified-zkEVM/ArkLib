@@ -12,7 +12,7 @@ Umbrella module for `Hachi/Sumcheck/`: the sumcheck loop that finishes Hachi's o
 (§4.3 of [NOZ26]). It reduces the zero-check's point-evaluation claims
 `H₀(τ₀) = 0 ∧ H_α(τ_α) = 0` to hypercube-sum claims, runs `m₀` sumcheck rounds down to a
 single evaluation of the committed table `w̃`, and closes with the final-evaluation step that
-hands the resulting short-opening evaluation claim to `Composition.lean`'s `endPiece` (and, in
+hands the resulting short-opening evaluation claim to `EndPiece/`'s `endPiece` (and, in
 future work, to the recursion adapters). It operates on the
 batched-constraint encoding of `ZeroCheck/Constraints.lean` (the sumcheck polynomials
 `F_{0,τ₀}`/`F_{α,τ₁}` and `nestedRoundRel`).
