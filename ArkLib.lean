@@ -243,7 +243,6 @@ import ArkLib.Data.MvPolynomial.RestrictDegreeVar
 import ArkLib.Data.MvPolynomial.SchwartzZippelCounting
 import ArkLib.Data.Polynomial.Bivariate
 import ArkLib.Data.Polynomial.ClassicalWronskian
-import ArkLib.Data.Polynomial.ComputableToPoly
 import ArkLib.Data.Polynomial.FoldedWronskian
 import ArkLib.Data.Polynomial.FoldingPolynomial
 import ArkLib.Data.Polynomial.Indicator
