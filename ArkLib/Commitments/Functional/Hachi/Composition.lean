@@ -22,7 +22,7 @@ which a witness is extracted from a suitably structured tree of accepting transc
 **imports those packages and chains them** with the universal append `▷`, which dispatches on
 the factors' package kinds and lifts each to the join automatically (both lifts are lossless). Only
 the ordinary relation seam has to match — escape events compose without a seam. The composed
-chain's `isCWSS` field is the CWSS certificate for the whole reduction. Every link is now imported,
+chain's `isCWSS` field is the CWSS certificate for the whole reduction. Every link is imported,
 the end-piece included (`EndPiece/Reduction.lean`); this file hosts no protocol of its own.
 (Hachi as a `Commitment.Scheme` — the honest committer `keygen`/`commit` and the `hachi` functional
 commitment — lives in the sibling `Commitment.lean`.)
@@ -275,8 +275,12 @@ composite's escape event is the `EscapeEvent.append`-nesting of the honest facto
 (rows 2, 4, 6, 8), each on its own subtree.
 
 The certificate `iteration.isCWSS` is the one-iteration CWSS statement — every factor discharged,
-`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header. -/
-noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header.
+
+**Computable**: every factor carries its verdict/guard maps as data (`Verifier.PureForm` /
+`Verifier.GuardedForm`), so the composed extractor `(iteration …).extractor` is an executable
+algorithm — no `Classical.choice` laundering at any seam. -/
+def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
@@ -338,7 +342,7 @@ CWSS over the endpoint relations `relPolyEval` and the evaluation claim `relWEva
 composed extraction algorithm `(iteration …).extractor`, with the composed escape event
 `(iteration …).esc` as the certificate's disjunct — the `EscapeEvent.append`-nesting of the honest
 per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just
-`iteration.isCWSS`, and every one of its factors is now discharged (see the module header's sorry
+`iteration.isCWSS`, and every one of its factors is discharged (see the module header's sorry
 inventory), so this is the end-to-end one-iteration certificate. -/
 theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -377,7 +381,7 @@ polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: afte
 the verifier has checked the reduced witness against the reduced claim itself, so nothing is left
 to reduce. The certificate is `(evaluation …).isCWSS`; with the iteration's rows 1–9 discharged
 and the `endPiece` factor `sorry`-free, axiom-clean and escape-free, no factor is skeletal. -/
-noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
@@ -422,8 +426,10 @@ end Evaluation
 * **Instantiating `LiftCom`.** The end-piece and every iteration link are done; what remains is
   instantiating `LiftCom` with the inner-outer commitment (without re-decomposition, with its
   collision escape via `outputToModuleSIS_valid_of_verified`).
-* **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
-  tracked with @ErVinuelas.
+* **Computability.** `iteration` is computable: guard and verdict maps ride along as data
+  (`Verifier.PureForm` / `Verifier.GuardedForm`), so the composed extractor executes. The
+  end-piece's fields are executable as well (`EndPiece/Reduction.lean`), so `evaluation` is
+  computable end to end.
 * **§3 packing head (external extension-field claims).** The paper's headline
   multilinear-over-`F_{q^k}` interface (§3.1/§3.2) wraps an extension-field evaluation claim in
   front of `relPolyEval`; it is planned as an instance of the generalized `RingSwitching`

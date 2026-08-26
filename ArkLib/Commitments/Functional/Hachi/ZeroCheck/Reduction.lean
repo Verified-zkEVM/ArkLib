@@ -71,14 +71,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
      (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), yielding both polynomial identities, hence
      `relBatched` membership.
 
-  **This is weaker than Lemma 10, which claims an efficient deterministic algorithm.**
-  `nestedPathResponse` does not read a witness off the transcript — there is none to read, since
-  `w̃` is the witness of the output relation rather than a protocol message. It selects, by
-  classical choice, *some* witness satisfying `relNestedZeroCheck` at each leaf. Two consequences:
-  "all leaves carry one opening" constrains the selected witnesses, not a prover's replies; and
-  the collision case fires when choice happens to select different openings, so the binding horn
-  is discharged by the escape event's existence statement rather than by a reduction that produces
-  the Module-SIS solution from an adversary. Tree size: `nestedZeroCheck_numLeaves`/`_lt`.
+  This is a repaired scalar-round CWSS route rather than the paper's printed star extraction. Its
+  complete tree has `2 ^ (m₀ + m₁)` leaves, and Fiat–Shamir must hash its coordinates sequentially.
+  The extractor itself is executable: `ChallengeTree.LeafWitnesses` supplies an `Option` candidate
+  output witness at every leaf, and `nestedZeroCheckExtractor` returns the all-left entry without
+  searching the output relation. The certificate proves this lookup correct for *every* valid leaf
+  witnessing. Classical choice is confined to the proof, where it assembles a total response family
+  from validity witnesses in order to invoke the evaluation-tree argument. Tree size:
+  `nestedZeroCheck_numLeaves`/`_lt`.
 
   ## Where the norm sits
 
@@ -359,7 +359,7 @@ variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 scalar-round transcript. -/
 def nestedZcMapStmt {TCom : Type} (stmt : LiftStatement Φ TCom F n μ)
     (τ₀ : Fin m₀ → F) (τα : Fin m₁ → F) :
-    NestedZeroCheckStatement Φ TCom F n μ m₀ m₁ :=
+  NestedZeroCheckStatement Φ TCom F n μ m₀ m₁ :=
   ⟨stmt.1, stmt.2.1, stmt.2.2, τ₀, τα⟩
 
 /-- Figure-5 verifier: read `m₀ + m₁` consecutive scalar challenges, split them into
@@ -369,6 +369,16 @@ def nestedZeroCheckVerifier {TCom : Type} :
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) (pSpecNestedZeroCheck F m₀ m₁) where
   verify := fun stmt tr => pure (nestedZcMapStmt Φ m₀ m₁ stmt
     (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr))
+
+/-- The nested scalar-round verifier's purity as executable data.  Sequential composition runs
+this verdict at its seam, so the package stores a `PureForm` rather than recovering a function
+from a propositional purity witness. -/
+def nestedZeroCheckVerifierPureForm {TCom : Type} :
+    (nestedZeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
+      (m₀ := m₀) (m₁ := m₁) (TCom := TCom)).PureForm where
+  verify := fun stmt tr => nestedZcMapStmt Φ m₀ m₁ stmt
+    (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr)
+  verify_eq := fun _ _ => rfl
 
 /-- Figure-5 honest prover. Since all rounds are verifier challenges, its state is the
 input statement/witness together with the scalar prefix received so far. The stage is generic in
@@ -415,24 +425,6 @@ def relNestedZeroCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound 
         (hAlpha Φ m₁ φF b p.1.rlin p.1.α p.2) (Vector.ofFn p.1.τα) = 0 ∧
     bound ≤ p.1.rlin.bound}
 
-/-! ## The witness assembler -/
-
-open Classical in
-/-- Classically select an output-relation witness for a leaf, with an arbitrary nonempty fallback
-outside accepting trees. -/
-noncomputable def nestedPathResponse
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (stmt : LiftStatement Φ K.TCom F n μ)
-    {arity : (pSpecNestedZeroCheck F m₀ m₁).ChallengeIdx → ℕ}
-    (tree : ChallengeTree (pSpecNestedZeroCheck F m₀ m₁) arity 0)
-    (path : ChallengeTree.LeafPath tree) : LiftedWitness Φ μ n :=
-  if h : ∃ w, (nestedZcMapStmt Φ m₀ m₁ stmt
-      (nestedZeroCheckTauZero path.fullTranscript)
-      (nestedZeroCheckTauAlpha path.fullTranscript), w) ∈
-        relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b then
-    h.choose
-  else Classical.ofNonempty
-
 /-- The canonical all-left leaf: the extractor's output branch, and the comparison base of the
 collision case. -/
 def nestedLeftPath {r : ℕ} :
@@ -444,20 +436,14 @@ def nestedLeftPath {r : ℕ} :
   | _, .msgNode _ h _ _ => nomatch h
   | _, .chalNode _ _ _ children => .chal 0 (nestedLeftPath (children 0))
 
-/-- Tree-based extractor for the scalar-round zero-check: the opening selected at the all-left
-leaf.
-
-There is no case analysis to do, exactly as in `CommittedScalar.mkWitness`. On trees whose leaves
-do **not** share an opening the escape event `nestedZeroCheckEsc` fires and the certificate's left
-disjunct carries the conclusion, so the choice of leaf is soundness-irrelevant; on trees that do
-share one, every leaf gives the same answer. -/
-noncomputable def nestedZeroCheckExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) :
-    Extractor.TreeBased (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
-      (pSpecNestedZeroCheck F m₀ m₁) (nestedZeroCheckStructure F m₀ m₁).arity :=
-  fun stmt tree =>
-    nestedPathResponse Φ m₀ m₁ bound ρBound K φF b stmt tree (nestedLeftPath tree)
+/-- Tree-based extractor for the scalar-round zero-check: directly return the caller-supplied
+output witness at the canonical all-left leaf. It neither searches the output relation nor
+branches on acceptance. -/
+def nestedZeroCheckExtractor {TCom : Type} :
+    Extractor.TreeBased (LiftStatement Φ TCom F n μ) (LiftedWitness Φ μ n)
+      (LiftedWitness Φ μ n) (pSpecNestedZeroCheck F m₀ m₁)
+      (nestedZeroCheckStructure F m₀ m₁).arity :=
+  fun _ tree leafWits => leafWits (nestedLeftPath tree)
 
 /-! ## The weak-binding escape event -/
 
@@ -526,13 +512,14 @@ theorem nestedAssembly_escape_or_mem_relBatched
     refine Or.inl ⟨resp, hrel, p, base, hp, ?_, (hrel p).2.1, (hrel base).2.1⟩
     exact (hrel p).1.trans (hrel base).1.symm
   · -- all leaves share one opening: the tree zero test gives both identities
-    push_neg at hcol
+    push Not at hcol
     refine Or.inr ⟨(hrel base).1, ?_, ?_, (hrel base).2.2.2.2⟩
     · exact hZero_eq_zero_of_evaluationTree Φ m₀ (le_refl 2) φF b (resp base) evTree hDistinct
         (hVanishes₀ hcol)
     · exact hAlpha_eq_zero_of_evaluationTree Φ m₁ (le_refl 2) φF b stmt.1 stmt.2.2 (resp base)
         evTree hDistinct (hVanishesα hcol)
 
+omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
 /-- **Escape-threaded coordinate-wise special soundness of the nested scalar-round zero-check**
 (the corrected Hachi Lemma 10), at the named extractor `nestedZeroCheckExtractor`.
 
@@ -550,76 +537,86 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
       (nestedZeroCheckVerifier (oSpec := oSpec) Φ (n := n) (μ := μ) (F := F)
         (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom))
-      (nestedZeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b) := by
+      (nestedZeroCheckExtractor (Φ := Φ) (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁)
+        (TCom := K.TCom)) := by
   classical
   intro stmt tree hStruct hAcc
-  set resp := nestedPathResponse Φ m₀ m₁ bound ρBound K φF b stmt tree with hrespdef
-  have hmem : ∀ path : ChallengeTree.LeafPath tree, ∃ w,
-      (nestedZcMapStmt Φ m₀ m₁ stmt
-        (nestedZeroCheckTauZero path.fullTranscript)
-        (nestedZeroCheckTauAlpha path.fullTranscript), w) ∈
-          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
-    intro path
-    apply (Set.mem_language_iff _ _).1
-    apply Verifier.mem_of_pure_accepting init impl
-      (nestedZeroCheckVerifier (oSpec := oSpec) (n := n) (μ := μ) (F := F)
-        (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) Φ) stmt path.fullTranscript
-      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b).language
-      (nestedZcMapStmt Φ m₀ m₁ stmt
-        (nestedZeroCheckTauZero path.fullTranscript)
-        (nestedZeroCheckTauAlpha path.fullTranscript))
-    · rfl
-    · exact hAcc _ path.mem_fullTranscripts
-  have hrel : ∀ path : ChallengeTree.LeafPath tree,
-      (nestedZcMapStmt Φ m₀ m₁ stmt
-        (nestedZeroCheckTauZero path.fullTranscript)
-        (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
-          relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
-    intro path
-    simp only [hrespdef, nestedPathResponse]
-    rw [dif_pos (hmem path)]
-    exact (hmem path).choose_spec
-  let evTree : NestedEvaluationTree F 2 (m₀ + m₁) := by
-    simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
-  have hDistinct : evTree.IsDistinct := by
-    simpa [evTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
-  refine nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound ρBound K φF b stmt tree resp
-    (nestedLeftPath tree) hrel evTree hDistinct ?_ ?_
-  · -- `H₀` reads the first `m₀` levels of the one tree.
-    intro hall
-    simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
-    apply nestedTreeToEvaluationTree_vanishes tree default
-    intro path
-    have hp := hrel path
-    rw [hall path] at hp
-    convert hp.2.2.1 using 1
-    congr 2
-    funext i
-    simp only [Function.comp_apply, nestedTranscriptSuffix,
-      ChallengeTree.LeafPath.fullTranscript]
-    congr 1
-    apply Fin.ext
-    simp only [Fin.val_zero, Nat.zero_add, Fin.val_castAdd]
-  · -- `H_α` reads the last `m₁` levels of the same tree.
-    intro hall
-    simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
-    apply nestedTreeToEvaluationTree_vanishes tree default
-    intro path
-    have hp := hrel path
-    rw [hall path] at hp
-    convert hp.2.2.2.1 using 1
-    congr 2
-    funext i
-    simp only [Function.comp_apply, nestedTranscriptSuffix,
-      ChallengeTree.LeafPath.fullTranscript]
-    congr 1
-    apply Fin.ext
-    simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd]
+  by_cases hEsc : nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b stmt tree
+  · exact Or.inl hEsc
+  · refine Or.inr ?_
+    intro leafWits hValid
+    let pureForm := nestedZeroCheckVerifierPureForm (oSpec := oSpec) Φ
+      (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
+    have hne : (support init).Nonempty :=
+      Verifier.support_init_nonempty_of_accepting hAcc (nestedLeftPath tree)
+    have hValidPure : ∀ path : ChallengeTree.LeafPath tree, ∃ w,
+        leafWits path = some w ∧
+          (pureForm.verify stmt path.fullTranscript, w) ∈
+            relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b :=
+      (ChallengeTree.LeafWitnesses.isValid_iff_pure init impl pureForm.verify pureForm.verify_eq
+        hne (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) stmt leafWits).mp hValid
+    let resp : ChallengeTree.LeafPath tree → LiftedWitness Φ μ n :=
+      fun path => (hValidPure path).choose
+    have hrel : ∀ path : ChallengeTree.LeafPath tree,
+        (nestedZcMapStmt Φ m₀ m₁ stmt
+          (nestedZeroCheckTauZero path.fullTranscript)
+          (nestedZeroCheckTauAlpha path.fullTranscript), resp path) ∈
+            relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+      intro path
+      simpa [pureForm, nestedZeroCheckVerifierPureForm, resp] using
+        (hValidPure path).choose_spec.2
+    have hLeft : leafWits (nestedLeftPath tree) = some (resp (nestedLeftPath tree)) := by
+      simpa [resp] using (hValidPure (nestedLeftPath tree)).choose_spec.1
+    let evTree : NestedEvaluationTree F 2 (m₀ + m₁) := by
+      simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
+    have hDistinct : evTree.IsDistinct := by
+      simpa [evTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
+    have hVanishes₀ : (∀ path, resp path = resp (nestedLeftPath tree)) →
+        CMlPolynomialEval.PolynomialVanishes evTree (hZero Φ m₀ φF b (resp (nestedLeftPath tree)))
+          (Fin.castAdd m₁) := by
+      -- `H₀` reads the first `m₀` levels of the one tree.
+      intro hall
+      simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
+      apply nestedTreeToEvaluationTree_vanishes tree default
+      intro path
+      have hp := hrel path
+      rw [hall path] at hp
+      convert hp.2.2.1 using 1
+      congr 2
+      funext i
+      simp only [Function.comp_apply, nestedTranscriptSuffix,
+        ChallengeTree.LeafPath.fullTranscript]
+      congr 1
+      apply Fin.ext
+      simp only [Fin.val_zero, Nat.zero_add, Fin.val_castAdd]
+    have hVanishesα : (∀ path, resp path = resp (nestedLeftPath tree)) →
+        CMlPolynomialEval.PolynomialVanishes evTree
+          (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 (resp (nestedLeftPath tree))) (Fin.natAdd m₀) := by
+      -- `H_α` reads the last `m₁` levels of the same tree.
+      intro hall
+      simp only [evTree, CMlPolynomialEval.PolynomialVanishes]
+      apply nestedTreeToEvaluationTree_vanishes tree default
+      intro path
+      have hp := hrel path
+      rw [hall path] at hp
+      convert hp.2.2.2.1 using 1
+      congr 2
+      funext i
+      simp only [Function.comp_apply, nestedTranscriptSuffix,
+        ChallengeTree.LeafPath.fullTranscript]
+      congr 1
+      apply Fin.ext
+      simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd]
+    rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound ρBound K φF b stmt tree resp
+      (nestedLeftPath tree) hrel evTree hDistinct hVanishes₀ hVanishesα with hEsc' | hBatched
+    · exact (hEsc hEsc').elim
+    · refine ⟨resp (nestedLeftPath tree), ?_, hBatched⟩
+      simpa [nestedZeroCheckExtractor] using hLeft
 
 /-- The nested scalar-round zero-check bundled for sequential composition, in the **escape-aware**
 corner of the package lattice: the verifier is `pure (…)` and never fails, so it is a valid left
 factor, while the weak-binding case needs the `esc` field. -/
-noncomputable def nestedZeroCheckPackage (init : ProbComp σ)
+def nestedZeroCheckPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) :
@@ -632,10 +629,11 @@ noncomputable def nestedZeroCheckPackage (init : ProbComp σ)
   struct := nestedZeroCheckStructure F m₀ m₁
   relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
   relOut := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
-  isPure := ⟨fun stmt tr => nestedZcMapStmt Φ m₀ m₁ stmt
-    (nestedZeroCheckTauZero tr) (nestedZeroCheckTauAlpha tr), fun _ _ => rfl⟩
+  isPure := nestedZeroCheckVerifierPureForm (oSpec := oSpec) Φ
+    (n := n) (μ := μ) (F := F) (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
   esc := nestedZeroCheckEsc Φ m₀ m₁ bound ρBound K φF b
-  extractor := nestedZeroCheckExtractor Φ m₀ m₁ bound ρBound K φF b
+  extractor := nestedZeroCheckExtractor (Φ := Φ) (n := n) (μ := μ) (F := F)
+    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom)
   isCWSS := nestedZeroCheck_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound
     init impl K φF b
 

@@ -180,43 +180,44 @@ the deterministic-left hypothesis of the CWSS binary append. -/
 instance instIsPure : (verifier oSpec mapStmt).IsPure :=
   ⟨fun stmt _ => mapStmt stmt, fun _ _ => rfl⟩
 
-open Classical in
-/-- **The `ReduceClaim` tree extractor**: pick (classically) any output witness that makes the
-mapped statement accepted and pull it back along `mapWitInv`; junk if none exists. The choice is
-inherent to `ReduceClaim` — it is relation-level bookkeeping with no transcript to compute from
-(the tree of the zero-round protocol carries no information). -/
-noncomputable def treeExtractor [Nonempty WitIn]
-    (mapWitInv : StmtIn → WitOut → WitIn) (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    Extractor.TreeBased StmtIn WitIn !p[] (CWSSStructure.toShape D).arity :=
-  fun stmtIn _ =>
-    if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
-    else Classical.ofNonempty
+/-- **The `ReduceClaim` tree extractor**, witness-only: the zero-round tree has a single
+root-to-leaf path (`onlyPath`) and carries no information of its own, so extraction is exactly the
+pull-back of that leaf's output witness along `mapWitInv`.
+
+Computable and `Classical.choice`-free: the output witness arrives as data, on the leaf witnessing
+the downstream reduction supplies, rather than being *invented* by inverting `relOut` at the mapped
+statement. `ReduceClaim` is therefore an **open** link: it
+declines (`none`) exactly when its witnessing declines, rather than fabricating junk. -/
+def treeExtractor (mapWitInv : StmtIn → WitOut → WitIn)
+    (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
+    Extractor.TreeBased StmtIn WitIn WitOut !p[] (CWSSStructure.toShape D).arity :=
+  fun stmtIn tree o => (o tree.onlyPath).map (mapWitInv stmtIn)
 
 /-- **Coordinate-wise special soundness of `ReduceClaim`, named form.** The verifier is pure with
-no challenge rounds, so CWSS collapses (via the no-challenge bridge) to a transcript-level
-obligation: given the witness pull-back `mapWitInv` and the compatibility `hRel` (the same
-hypothesis as for RBR knowledge soundness), the named `treeExtractor` lands in `relIn`. Holds for
-any `D`. -/
-theorem verifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
+no challenge rounds, so its verdict pins the statement at which the leaf witness must certify:
+the notion's validity premise collapses through `LeafWitnesses.isValid_iff_pure` at `mapStmt` to
+"the single leaf's witness lies in `relOut` over `mapStmt stmtIn`". Given the witness pull-back
+`mapWitInv` and the compatibility `hRel` (the same hypothesis as for RBR knowledge soundness), the
+named `treeExtractor` returns that witness pulled back, in `relIn`. Holds for any `D`.
+
+This is **real** extraction: the returned witness is `mapWitInv stmtIn` of the witness supplied at
+the leaf, not a choice-selected stand-in. -/
+theorem verifier_coordinateWiseSpecialSoundWith
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (hRel : ∀ stmtIn witOut,
       (mapStmt stmtIn, witOut) ∈ relOut → (stmtIn, mapWitInv stmtIn witOut) ∈ relIn) :
     Verifier.coordinateWiseSpecialSoundWith init impl D relIn relOut
-      (verifier oSpec mapStmt) (treeExtractor (mapStmt := mapStmt) relOut mapWitInv D) := by
-  classical
-  have h := Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
-    (verifier oSpec mapStmt) relIn relOut
-    (fun stmtIn _ =>
-      if h : ∃ witOut, (mapStmt stmtIn, witOut) ∈ relOut then mapWitInv stmtIn h.choose
-      else Classical.ofNonempty)
-    (fun stmtIn tr hAcc => by
-      have hlang : mapStmt stmtIn ∈ relOut.language :=
-        Verifier.mem_of_pure_accepting init impl (verifier oSpec mapStmt) stmtIn tr
-          relOut.language (mapStmt stmtIn) rfl hAcc
-      have hex := (Set.mem_language_iff _ _).1 hlang
-      rw [dif_pos hex]
-      exact hRel stmtIn _ hex.choose_spec)
-  exact h
+      (verifier oSpec mapStmt) (treeExtractor mapWitInv D) := by
+  intro stmtIn tree _ hAcc o hvalid
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc tree.onlyPath
+  have hvalid' := (ProtocolSpec.ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+    (fun s _ => mapStmt s) (fun _ _ => rfl) hne relOut stmtIn o).mp hvalid
+  obtain ⟨w, hw, hrel⟩ := hvalid' tree.onlyPath
+  have hrel' : (mapStmt stmtIn, w) ∈ relOut := hrel
+  refine ⟨mapWitInv stmtIn w, ?_, hRel stmtIn w hrel'⟩
+  change (o tree.onlyPath).map (mapWitInv stmtIn) = some (mapWitInv stmtIn w)
+  rw [hw]; rfl
 
 end Reduction
 
@@ -409,48 +410,40 @@ instance instIsPureOracle :
   ⟨fun p _ => ⟨mapStmt p.1, mapOStmt embedIdx hEq p.2⟩,
    fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
 
-open Classical in
-/-- **The `ReduceClaim` oracle tree extractor**: as in the non-oracle case, pick (classically)
-any output witness that makes the mapped combined statement accepted and pull it back along
-`mapWitInv`; junk if none exists. -/
-noncomputable def oracleTreeExtractor [Nonempty WitIn]
-    (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
+/-- **The `ReduceClaim` oracle tree extractor**, witness-only: as in the non-oracle case, pull the
+single leaf's output witness back along `mapWitInv`. Computable and `Classical.choice`-free.
+
+As for the non-oracle engine, the tree carries no information of its own, so the output witness
+arrives on the leaf witnessing rather than being invented by inverting `relOut`. -/
+def oracleTreeExtractor (mapWitInv : StmtIn × (∀ i, OStmtIn i) → WitOut → WitIn)
     (D : CWSSStructure (!p[] : ProtocolSpec 0)) :
-    Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn !p[]
+    Extractor.TreeBased (StmtIn × (∀ i, OStmtIn i)) WitIn WitOut !p[]
       (CWSSStructure.toShape D).arity :=
-  fun s _ =>
-    if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
-    then mapWitInv s h.choose else Classical.ofNonempty
+  fun s tree o => (o tree.onlyPath).map (mapWitInv s)
 
 /-- **Coordinate-wise special soundness of the `ReduceClaim` oracle reduction, named form.** As
-in the non-oracle case, the verifier is pure with no challenge rounds, so CWSS collapses to a
-transcript-level obligation discharged by the witness pull-back `mapWitInv` and the compatibility
-`hRel` (identical to the RBR knowledge soundness hypothesis, `mapStmt` replaced by `mapStmt ⊗
-mapOStmt`), at the named `oracleTreeExtractor`. -/
-theorem oracleVerifier_coordinateWiseSpecialSoundWith [Nonempty WitIn]
+in the non-oracle case, the oracle verifier is pure with no challenge rounds, so validity collapses
+through `LeafWitnesses.isValid_iff_pure` at its verdict `mapStmt ⊗ mapOStmt`, and the single leaf's
+witness — pulled back by `mapWitInv` — lands in `relIn` by the compatibility `hRel` (identical to
+the RBR knowledge soundness hypothesis). At the named `oracleTreeExtractor`. -/
+theorem oracleVerifier_coordinateWiseSpecialSoundWith
     (D : CWSSStructure (!p[] : ProtocolSpec 0))
     (hRel : ∀ stmtIn oStmtIn witOut,
       ((mapStmt stmtIn, mapOStmt embedIdx hEq oStmtIn), witOut) ∈ relOut →
       ((stmtIn, oStmtIn), mapWitInv (stmtIn, oStmtIn) witOut) ∈ relIn) :
     (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).coordinateWiseSpecialSoundWith
-      init impl D relIn relOut
-      (oracleTreeExtractor (mapStmt := mapStmt) (embedIdx := embedIdx) (hEq := hEq)
-        relOut mapWitInv D) := by
-  classical
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
-    (oracleVerifier oSpec mapStmt embedIdx hEq hInterface) relIn relOut
-    (fun s _ =>
-      if h : ∃ witOut, ((mapStmt s.1, mapOStmt embedIdx hEq s.2), witOut) ∈ relOut
-      then mapWitInv s h.choose else Classical.ofNonempty)
-    (fun s tr hAcc => by
-      have hlang : (mapStmt s.1, mapOStmt embedIdx hEq s.2) ∈ relOut.language :=
-        Verifier.mem_of_pure_accepting init impl
-          (oracleVerifier oSpec mapStmt embedIdx hEq hInterface).toVerifier s tr relOut.language _
-          (oracleVerifier_toVerifier_run (oSpec := oSpec)) hAcc
-      have hex := (Set.mem_language_iff _ _).1 hlang
-      rw [dif_pos hex]
-      exact hRel s.1 s.2 _ hex.choose_spec)
-  exact h
+      init impl D relIn relOut (oracleTreeExtractor mapWitInv D) := by
+  intro s tree _ hAcc o hvalid
+  have hne : (support init).Nonempty :=
+    Verifier.support_init_nonempty_of_accepting hAcc tree.onlyPath
+  have hvalid' := (ProtocolSpec.ChallengeTree.LeafWitnesses.isValid_iff_pure init impl
+    (fun p _ => (mapStmt p.1, mapOStmt embedIdx hEq p.2))
+    (fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)) hne relOut s o).mp hvalid
+  obtain ⟨w, hw, hrel⟩ := hvalid' tree.onlyPath
+  have hrel' : ((mapStmt s.1, mapOStmt embedIdx hEq s.2), w) ∈ relOut := hrel
+  refine ⟨mapWitInv s w, ?_, hRel s.1 s.2 w hrel'⟩
+  change (o tree.onlyPath).map (mapWitInv s) = some (mapWitInv s w)
+  rw [hw]; rfl
 
 end OracleReduction
 
