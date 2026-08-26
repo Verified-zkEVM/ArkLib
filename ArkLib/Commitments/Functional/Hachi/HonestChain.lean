@@ -235,7 +235,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r m₀ m₁ : Nat} {ω : ℕ}
-variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
 local notation "n₀" => rlinRows innerRows outerRows dRows
@@ -393,7 +393,7 @@ variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZM
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 variable {innerRows messageDigits outerRows innerDigits dRows zDigits m r M m₁ : Nat} {ω : ℕ}
-variable {F : Type} [Field F] [BEq F] [LawfulBEq F] [SampleableType F]
+variable {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F] [SampleableType F]
 
 local notation "μ₀" => rlinCols innerRows messageDigits innerDigits zDigits m r
 local notation "n₀" => rlinRows innerRows outerRows dRows

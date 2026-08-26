@@ -19,7 +19,7 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   the claims changes, which separates the batching algebra from the transcript-tree zero test.
   Shortness is **not** a conjunct of `relBatched`: the range identity `H₀^{w̃} ≡ 0`
   already forces every committed coefficient into `[−(b−1), b−1]`, so `liftShort` is *derived*, not
-  assumed — the range machinery is load-bearing (review PR #656, resolution option 1).
+  assumed — the range machinery is load-bearing.
 
   The reduction's content is the pull-back `mem_relLift_of_relBatched` from `relBatched` to
   `relLift`: the per-row equation is recovered from `H_α ≡ 0` via `hAlpha_eq_zero_iff`
@@ -38,8 +38,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   `ReduceClaim.reduction_completeness_of_imp`, so neither arity hypothesis of the pull-back is
   needed), is `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`).
 
-  Escapes are no longer threaded through the relations as a `⊕ E` summand: weak binding enters
-  the certificate as an *event on the transcript tree* whose hardness target is the
+  Weak binding enters the certificate as an *event on the transcript tree*, rather than as a
+  `⊕ E` relation summand; its hardness target is the
   short-collision set `LiftCom.Collision`. This bridge has no challenge round, so it carries no
   escape at all and composes with escape-aware neighbours through `CWSSPackage.toEscape`.
 
@@ -121,9 +121,9 @@ theorem mem_relLift_of_relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShor
       = cEvalAt φF X.2.2 (cRowSum Φ X.1 w.z i) := by
     rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
     simp only [Presentation.rowSum, cyclotomicPresentation]
-  have hy : evalAt φF X.2.2 ((cyclotomicPresentation Φ).rep (X.1.yvec i))
+  have hy : evalAt φF X.2.2 ((cyclotomicPresentation Φ).rep (X.1.yvec i)).toPoly
       = cEvalAt φF X.2.2 (X.1.yvec i).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
-  have hmod : evalAt φF X.2.2 (cyclotomicPresentation Φ).modulus
+  have hmod : evalAt φF X.2.2 (cyclotomicPresentation Φ).modulus.toPoly
       = cEvalAt φF X.2.2 Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
   rw [hrow, hy, hmod]
   linear_combination hi
@@ -192,8 +192,9 @@ this link's completeness error is `0`. The three `evalAt`/`cEvalAt` bridges are 
 theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
     (w : LiftedWitness Φ μ n)
     (hrows : ∀ i, evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z i)
-      = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i))
-        + evalAt φF α (cyclotomicPresentation Φ).modulus * evalAt φF α (w.ρ i)) :
+      = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i)).toPoly
+        + evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+          * evalAt φF α ((w.ρ i)).toPoly) :
     hAlpha Φ m₁ φF b s α w = 0 := by
   rw [hAlpha_eq_zero_iff]
   intro x
@@ -204,9 +205,9 @@ theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (s : RlinStateme
         = cEvalAt φF α (cRowSum Φ s w.z ⟨_, hlt⟩) := by
       rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
       simp only [Presentation.rowSum, cyclotomicPresentation]
-    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩))
+    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩)).toPoly
         = cEvalAt φF α (s.yvec ⟨_, hlt⟩).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
-    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus
+    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
         = cEvalAt φF α Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
     rw [hrow, hy, hmod] at hi
     linear_combination hi
@@ -236,13 +237,25 @@ theorem mem_relBatched_of_relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShor
     hAlpha_eq_zero_of_rows Φ m₁ φF b X.1 X.2.2 w hrows,
     hside⟩
 
-/-- The batching bridge packaged as a `CWSSPackage`: a zero-round `ReduceClaim` at `mapStmt := id`
-reducing `relLift` to `relBatched` with no soundness error, its correctness supplied by
-`mem_relLift_of_relBatched`.
+/-- **The batching bridge verifier's purity as data** (`Verifier.PureForm`): the statement map is
+`id`, so the verdict is the input statement itself and `verify_eq` is `rfl`.
 
-The bridge has no challenge round, so it carries no escape event; it lands in the plain corner of
-the package lattice and lifts to the escape-aware one through `CWSSPackage.toEscape`. -/
-noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def batchVerifierPureForm
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
+    (ReduceClaim.verifier oSpec
+      (id : LiftStatement Φ K.TCom F n μ → LiftStatement Φ K.TCom F n μ)).PureForm where
+  verify := fun stmt _ => stmt
+  verify_eq := fun _ _ => rfl
+
+/-- **The batching bridge as a (plain) `CWSSPackage`**: zero-round `ReduceClaim` at
+`mapStmt := id`,
+reducing `relLift` to `relBatched` with no soundness error. Its completed un-batching pull-back
+is `mem_relLift_of_relBatched`. The bridge has no challenge round, so it carries no escape event
+and lifts to the escape-aware package lattice through `CWSSPackage.toEscape`. -/
+def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
     (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
@@ -255,9 +268,8 @@ noncomputable def batchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
   struct := CWSSStructure.ofIsEmpty
   relIn := relLift Φ bound ρBound K φF
   relOut := relBatched Φ m₀ m₁ bound ρBound K φF b
-  isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := id)
-    (relBatched Φ m₀ m₁ bound ρBound K φF b) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isPure := batchVerifierPureForm Φ bound ρBound K
+  extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relLift Φ bound ρBound K φF)
     (relOut := relBatched Φ m₀ m₁ bound ρBound K φF b)

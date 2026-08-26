@@ -80,13 +80,13 @@ below `deg φ` by the definition of `Rq.lInftyNorm`, at or above it because repr
 degree-reduced (`Rq.natDegree_val_toPoly_lt'`). -/
 theorem valMinAbs_natAbs_coeff_rep_le (hd : 0 < Φ.φ.natDegree) {β : ℕ} {a : Rq Φ}
     (h : Rq.lInftyNorm Φ a ≤ β) (k : ℕ) :
-    (((cyclotomicPresentation Φ).rep a).coeff k).valMinAbs.natAbs ≤ β := by
+    ((((cyclotomicPresentation Φ).rep a).toPoly).coeff k).valMinAbs.natAbs ≤ β := by
   by_cases hk : k < Φ.φ.natDegree
-  · have hcoeff : ((cyclotomicPresentation Φ).rep a).coeff k = a.1.coeff k :=
+  · have hcoeff : ((cyclotomicPresentation Φ).rep a).toPoly.coeff k = a.1.coeff k :=
       (CPolynomial.coeff_toPoly a.1 k).symm
     rw [hcoeff]
     exact Rq.valMinAbs_natAbs_coeff_le_of_lInftyNorm_le Φ h hk
-  · have hzero : ((cyclotomicPresentation Φ).rep a).coeff k = 0 :=
+  · have hzero : ((cyclotomicPresentation Φ).rep a).toPoly.coeff k = 0 :=
       Polynomial.coeff_eq_zero_of_natDegree_lt
         (lt_of_lt_of_le (Rq.natDegree_val_toPoly_lt' Φ hd a) (by omega))
     rw [hzero, ZMod.valMinAbs_zero, Int.natAbs_zero]
@@ -105,8 +105,8 @@ theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM β
     (((cyclotomicPresentation Φ).rowSum M z i).coeff m).valMinAbs.natAbs
       ≤ μ * ((m + 1) * (βM * βz)) := by
   have hterm : ∀ j : Fin μ,
-      ((((cyclotomicPresentation Φ).rep (M i j) *
-          (cyclotomicPresentation Φ).rep (z j)).coeff m)).valMinAbs.natAbs
+      (((((cyclotomicPresentation Φ).rep (M i j)).toPoly *
+          ((cyclotomicPresentation Φ).rep (z j)).toPoly).coeff m)).valMinAbs.natAbs
         ≤ (m + 1) * (βM * βz) := by
     intro j
     rw [Polynomial.coeff_mul]
@@ -116,8 +116,8 @@ theorem valMinAbs_natAbs_coeff_rowSum_le (hd : 0 < Φ.φ.natDegree) {n μ βM β
           (valMinAbs_natAbs_coeff_rep_le Φ hd (hz j) x.2))
     · rw [Finset.Nat.card_antidiagonal]
   calc (((cyclotomicPresentation Φ).rowSum M z i).coeff m).valMinAbs.natAbs
-      = ((∑ j : Fin μ, ((cyclotomicPresentation Φ).rep (M i j) *
-            (cyclotomicPresentation Φ).rep (z j)).coeff m)).valMinAbs.natAbs := by
+      = ((∑ j : Fin μ, (((cyclotomicPresentation Φ).rep (M i j)).toPoly *
+            ((cyclotomicPresentation Φ).rep (z j)).toPoly).coeff m)).valMinAbs.natAbs := by
         rw [Presentation.rowSum, Polynomial.finsetSum_coeff]
     _ ≤ (Finset.univ : Finset (Fin μ)).card * ((m + 1) * (βM * βz)) :=
         valMinAbs_natAbs_sum_le_card_mul _ _ (fun j _ => hterm j)
@@ -147,13 +147,14 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
     rw [CPolynomial.natDegree_toPoly, hφ, ← Polynomial.C_1, Polynomial.natDegree_X_pow_add_C]
   haveI : Lift.IsPresentation (cyclotomicPresentation Φ) :=
     isPresentation_cyclotomic Φ (by omega)
-  have hmod : (cyclotomicPresentation Φ).modulus = Polynomial.X ^ d + 1 := hφ
+  have hmod : (cyclotomicPresentation Φ).modulus.toPoly = Polynomial.X ^ d + 1 := hφ
   -- The dividend and its degree.
   set p : Polynomial (ZMod q) :=
-    (cyclotomicPresentation Φ).rowSum M z i - (cyclotomicPresentation Φ).rep (y i) with hp
-  have hmd : (cyclotomicPresentation Φ).modulus.natDegree = d := by
+    (cyclotomicPresentation Φ).rowSum M z i
+      - ((cyclotomicPresentation Φ).rep (y i)).toPoly with hp
+  have hmd : (cyclotomicPresentation Φ).modulus.toPoly.natDegree = d := by
     rw [hmod, ← Polynomial.C_1, Polynomial.natDegree_X_pow_add_C]
-  have hrepdeg : ((cyclotomicPresentation Φ).rep (y i)).natDegree < d := by
+  have hrepdeg : ((cyclotomicPresentation Φ).rep (y i)).toPoly.natDegree < d := by
     have h2 := Lift.IsPresentation.natDegree_rep_lt (P := cyclotomicPresentation Φ) (y i)
     rw [hmd] at h2
     exact h2
@@ -168,7 +169,7 @@ theorem valMinAbs_natAbs_coeff_quotient_le {d : ℕ} (hφ : Φ.φ.toPoly = Polyn
   rw [hquot]
   by_cases hk : k < d
   · -- Inside the quotient's degree range: the row-sum bound, since `rep yᵢ` vanishes there.
-    have hy : ((cyclotomicPresentation Φ).rep (y i)).coeff (d + k) = 0 :=
+    have hy : ((cyclotomicPresentation Φ).rep (y i)).toPoly.coeff (d + k) = 0 :=
       Polynomial.coeff_eq_zero_of_natDegree_lt (by omega)
     have hpk : p.coeff (d + k) = ((cyclotomicPresentation Φ).rowSum M z i).coeff (d + k) := by
       rw [hp, Polynomial.coeff_sub, hy, sub_zero]
@@ -191,7 +192,7 @@ construction rather than laziness: `rlinStmt` assembles its matrix from the Ajta
 available without assuming a short commitment key. Downstream consequence, documented at the
 batching bridge: a zero-check range base `b` with `ρBound ≤ b − 1` must then satisfy `b − 1 ≥ q/2`,
 so the single-`b` range table of `ZeroCheck/Constraints` cannot check the quotient half tightly. -/
-theorem rhoShort_half {n : ℕ} (ρ : Fin n → Polynomial (ZMod q)) : RhoShort (q / 2) ρ :=
+theorem rhoShort_half {n : ℕ} (ρ : Fin n → CPolynomial (ZMod q)) : RhoShort (q / 2) ρ :=
   fun _ _ => ZMod.natAbs_valMinAbs_le _
 
 end ArkLib.Lattices.Ajtai.InnerOuter

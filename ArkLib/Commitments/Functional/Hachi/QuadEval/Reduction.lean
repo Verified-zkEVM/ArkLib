@@ -151,6 +151,13 @@ which never checks the challenge); extraction recovers `‖cᵢ‖₁ ≤ ω` fr
 def ShortChallenge (Φ : CyclotomicModulus (ZMod q)) (ω : ℕ) : Type :=
   {c : Rq Φ // Rq.l1Norm Φ c ≤ ω}
 
+/-- The challenge space has decidable equality (inherited from `Rq Φ`, whose representatives are
+canonical). This is the alphabet-side hypothesis of the star-center search
+(`CoordinateWise.SingleRound.central`/`sib`), so it is what keeps extraction executable; `Type` is
+opaque to instance search through a plain `def`, hence the explicit instance. -/
+instance (Φ : CyclotomicModulus (ZMod q)) (ω : ℕ) : DecidableEq (ShortChallenge Φ ω) :=
+  Subtype.instDecidableEq
+
 variable {Φ : CyclotomicModulus (ZMod q)} [IsCyclotomic Φ] {ω : ℕ}
 
 namespace ShortChallenge
@@ -397,6 +404,18 @@ def verifier :
         CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
       (pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r) where
   verify := fun stmt tr => pure (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
+
+/-- **The pass-through verifier's purity as data** (`Verifier.PureForm`): the verdict is the
+pass-through triple itself, so `verify_eq` is `rfl`.
+
+The `QuadEval` package carries this instead of a `Verifier.IsPure` instance, because a composed
+chain must *run* the left verdict at the seam to know which statement to extract the right factor
+at, and reading that function off the `IsPure` existential would cost `Classical.choice`. -/
+def verifierPureForm : (verifier (oSpec := oSpec) (ω := ω) Φ
+    (innerRows := innerRows) (messageDigits := messageDigits) (outerRows := outerRows)
+    (innerDigits := innerDigits) (dRows := dRows) (m := m) (r := r)).PureForm where
+  verify := fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
+  verify_eq := fun _ _ => rfl
 
 /-- The honest prover (Hachi §4.2, Figure 3; completeness is out of scope for Lemma 8): round 0
 sends the carrier commitment `v`, round 1 receives the challenge vector, and the output witness

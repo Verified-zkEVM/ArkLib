@@ -14,8 +14,8 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Reduction
   * `relIn = relNestedZeroCheck` — `H₀^{w̃}(τ₀) = 0 ∧ H_α^{w̃}(τα) = 0` at the direct points;
   * `relOut = nestedRoundRel 0` — `∑_{x ∈ {0,1}^{m₀}} F_{0,τ₀}(x) = 0` and
     `∑_{x ∈ {0,1}^{m₀}} F_{α,τ_α}(x) = a`, where the initial linear target
-    `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the
-    statement alone.
+    `a := zcTargetAlpha = ∑ᵢ eq̃(τ_α, i)·ŷᵢ(α)` is computed by the verifier from the statement
+    alone.
 
   The statement map installs the empty challenge prefix and the initial target pair
   `(0, zcTargetAlpha)`. The bridge is pure reshaping: both directions are the pair of algebraic
@@ -59,9 +59,10 @@ shortness and bound-sanity conjuncts are shared verbatim. -/
 theorem mem_relNestedZeroCheck_of_nestedRoundRel
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
     (w : LiftedWitness Φ μ n)
+    (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :
     (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
@@ -148,14 +149,28 @@ theorem nestedSumcheckBridgeReduction_perfectCompleteness
     (fun s w h =>
       mem_nestedRoundRel_of_relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b hd hμn s w h)
 
+/-- The nested sumcheck bridge verifier's purity as computable data (`Verifier.PureForm`): the
+verdict is `nestedToRoundStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq`
+is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def nestedSumcheckBridgeVerifierPureForm
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F) :
+    (ReduceClaim.verifier oSpec
+      (nestedToRoundStatement (TCom := K.TCom) (n := n) (μ := μ) Φ m₀ m₁ φF)).PureForm where
+  verify := fun stmt _ => nestedToRoundStatement Φ m₀ m₁ φF stmt
+  verify_eq := fun _ _ => rfl
+
 /-- The sumcheck bridge as a (plain) `CWSSPackage`: zero-round `ReduceClaim` at
 `mapStmt := nestedToRoundStatement`, reducing `relNestedZeroCheck` to the round-`0`
 `nestedRoundRel`. -/
-noncomputable def nestedSumcheckBridgePackage (init : ProbComp σ)
+def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     CWSSPackage init impl
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
@@ -164,15 +179,14 @@ noncomputable def nestedSumcheckBridgePackage (init : ProbComp σ)
   struct := CWSSStructure.ofIsEmpty
   relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
   relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
-  isPure :=
-    ⟨fun stmt _ => nestedToRoundStatement Φ m₀ m₁ φF stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := nestedToRoundStatement Φ m₀ m₁ φF)
-    (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isPure := nestedSumcheckBridgeVerifierPureForm Φ m₀ m₁ bound ρBound K φF
+  extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
     (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
-    (mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b hd hμn)
+    (fun s w =>
+      mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b s w hd hμn)
 
 set_option linter.unusedSectionVars false in
 /-- The bridge's protocol object and its certificate speak about the same verifier. Holds by

@@ -45,11 +45,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
   ## Where weak binding lives
 
   The commitment is only binding on short openings, so the certificate is the **escape-threaded**
-  one: `package` is an `EscapeCWSSPackage` whose event is `CommittedScalar.escEvent`, i.e. "the
-  tree's branch openings exhibit a short collision of the committed value". Relations and the
-  extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a
-  plain `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on
-  `(statement, tree)` rather than an extractor output.
+  one: `package` is an `EscapeCWSSPackage` whose event is `CommittedScalar.escEvent`, i.e.
+  "the tree's branch openings exhibit a short collision of the committed value". Relations and the
+  extractor stay ordinary — nothing here is widened by a sum type, and the extractor returns a plain
+  `Fin μ → S`. See `CommittedScalar.lean` for why the break has to be an event on `(statement,
+  tree)` rather than an extractor output.
 
   ## Statement-type genericity
 
@@ -67,24 +67,29 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.CommittedS
 namespace RingSwitching.Lift
 
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.ScalarRound
-open ArkLib.Lattices
+open ArkLib.Lattices CompPoly
 
 /-- The lifted witness of `Lift`: the `S`-witness `z` of the linear
-relation and one quotient polynomial per row, degree-bounded by the presentation degree
-(`d − 1`; honest quotients satisfy the tighter `d − 2`). The degree `d` is a plain parameter
-so that instances can state it against their own degree expression. -/
+relation and one **computable** quotient polynomial per row, degree-bounded by the presentation
+degree (`d − 1`; honest quotients satisfy the tighter `d − 2`). The degree `d` is a plain
+parameter so that instances can state it against their own degree expression.
+
+`ρ` carries `CPolynomial` data and the bound speaks about its `toPoly` semantics, uniformly
+with the `IsPresentation` laws — which is what makes concrete lifted witnesses constructible at
+all (no Mathlib `Polynomial` value compiles). -/
 structure LiftedWitness (R : Type) [Semiring R] (S : Type) (d μ n : ℕ) where
   /-- The witness `z ∈ S^μ` of the linear relation. -/
   z : Fin μ → S
-  /-- Per-row quotient polynomials in `R[X]`. -/
-  ρ : Fin n → Polynomial R
-  /-- Degree bound on the quotients. -/
-  hρ : ∀ i, (ρ i).natDegree ≤ d - 1
+  /-- Per-row quotient polynomials, computable. -/
+  ρ : Fin n → CPolynomial R
+  /-- Degree bound on the quotients (semantic form). -/
+  hρ : ∀ i, (ρ i).toPoly.natDegree ≤ d - 1
 
 /-- The all-zero lifted witness. -/
 instance {R : Type} [Semiring R] {S : Type} [Zero S] {d μ n : ℕ} :
     Nonempty (LiftedWitness R S d μ n) :=
-  ⟨⟨fun _ => 0, fun _ => 0, fun _ => by simp⟩⟩
+  ⟨⟨fun _ => 0, fun _ => 0, fun _ => by
+    rw [CPolynomial.toPoly_zero, Polynomial.natDegree_zero]; exact Nat.zero_le _⟩⟩
 
 variable {R S : Type} [CommRing R] [CommRing S]
 variable {n μ d : ℕ} {F : Type} {Stmt : Type}
@@ -107,8 +112,8 @@ def checkAt (P : Presentation R S) (φF : R →+* F)
     (sideCond : Stmt → Prop)
     (s : Stmt) (a : F) (w : LiftedWitness R S d μ n) : Prop :=
   (∀ i, evalAt φF a (P.rowSum (getM s) w.z i) =
-      evalAt φF a (P.rep (getY s i)) +
-        evalAt φF a P.modulus * evalAt φF a (w.ρ i)) ∧
+      evalAt φF a ((P.rep (getY s i)).toPoly) +
+        evalAt φF a (P.modulus.toPoly) * evalAt φF a ((w.ρ i).toPoly)) ∧
     sideCond s
 
 end CheckAt
@@ -149,14 +154,17 @@ with the per-row honest quotients `ρᵢ := (rowSumᵢ − rep yᵢ) /ₘ φ` (`
 This is the honest prover's `computeW`, and it is total: the degree field is discharged by the
 *unconditional* `Presentation.natDegree_quotient_le`, so no validity of the input statement is
 needed to build the witness — validity is what makes it satisfy `checkAt`
-(`checkAt_honestWitness`). Necessarily `noncomputable`: the quotients are Mathlib polynomials
-obtained by division, so an executable prover would have to be restated over a computable
-polynomial representation. -/
-noncomputable def honestWitness [IsPresentation P] (hd : P.modulus.natDegree = d)
+(`checkAt_honestWitness`). `noncomputable` as stated: the quotients are Mathlib polynomials
+obtained by division (`Presentation.quotient`), repackaged as canonical coefficient arrays by
+`Polynomial.toImpl`; an executable prover restates the division over `CPolynomial` (e.g. Hachi's
+`honestLiftWitnessC`) and transfers by an agreement lemma. -/
+noncomputable def honestWitness [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d)
     (s : Stmt) (z : PolyVec S μ) : LiftedWitness R S d μ n where
   z := z
-  ρ := fun i => P.quotient (getM s) z (getY s) i
+  ρ := fun i => ⟨(P.quotient (getM s) z (getY s) i).toImpl,
+    CPolynomial.Raw.isCanonical_toImpl _⟩
   hρ := fun i => by
+    rw [CPolynomial.toPoly_mk_toImpl]
     have h := P.natDegree_quotient_le (getM s) z (getY s) i
     omega
 
@@ -168,12 +176,13 @@ survives evaluation at *any* point `a`.
 Quantifying over all `a` is what makes the completeness error of a quotient-evaluation switch
 exactly `0`: the honest prover has nothing to fear from the challenge. The `sideCond` conjunct is
 statement-level and is passed straight through. -/
-theorem checkAt_honestWitness [IsPresentation P] (hd : P.modulus.natDegree = d)
+theorem checkAt_honestWitness [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d)
     (s : Stmt) (z : PolyVec S μ) (hz : getM s *ᵥ z = getY s) (hside : sideCond s) (a : F) :
     checkAt P φF getM getY sideCond s a (honestWitness P getM getY hd s z) := by
   refine ⟨fun i => ?_, hside⟩
   rw [show (honestWitness P getM getY hd s z).z = z from rfl,
-    show (honestWitness P getM getY hd s z).ρ i = P.quotient (getM s) z (getY s) i from rfl,
+    show ((honestWitness P getM getY hd s z).ρ i).toPoly
+      = P.quotient (getM s) z (getY s) i from CPolynomial.toPoly_mk_toImpl _,
     P.rowSum_eq_of_mulVec_eq (congrFun hz i), map_add, map_mul]
 
 /-- **The generic recovery theorem** (the [NOZ26] Lemma 9 obligation, discharged once): a
@@ -181,7 +190,7 @@ short opening passing the local check at `2d` pairwise-distinct challenges recov
 input relation. The linear part is the presentation's interpolation engine per row; the
 admissibility part is the instance's `short_zOk` implication. -/
 theorem recover [IsPresentation P] (hφF : Function.Injective φF)
-    (hd : P.modulus.natDegree = d)
+    (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ (s : Stmt) (w : LiftedWitness R S d μ n),
       wShort w → sideCond s → zOk s w.z)
     (s : Stmt) (w : LiftedWitness R S d μ n) (fam : Fin (2 * d) → F)
@@ -197,7 +206,7 @@ theorem recover [IsPresentation P] (hφF : Function.Injective φF)
 /-- The switch's **escape event**: the committed-scalar collision event at this switch's output
 relation — the tree's branch openings exhibit a short collision of the committed lifted witness.
 This is the only place weak binding enters the certificate. -/
-def escEvent [IsPresentation P] (hd : P.modulus.natDegree = d) :
+def escEvent [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
     ChallengeTree.EscapeEvent Stmt (pSpecScalar K.TCom F)
       (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
         (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
@@ -205,21 +214,24 @@ def escEvent [IsPresentation P] (hd : P.modulus.natDegree = d) :
     (by have := hd ▸ P.natDegree_modulus_pos; omega) K (checkAt P φF getM getY sideCond)
 
 /-- The switch's named extractor: the committed-scalar assembler, projecting the common opening to
-its `z`-component. -/
-noncomputable def treeExtractor [IsPresentation P] (hd : P.modulus.natDegree = d) :
-    Extractor.TreeBased Stmt (PolyVec S μ) (pSpecScalar K.TCom F)
+its `z`-component.
+
+**Computable.** The `k = 2d` branch openings arrive on the leaf witnessing rather than being
+recovered by inverting the output relation, so this takes no `checkAt` argument and pulls in no
+`Classical.choice`. -/
+def treeExtractor [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
+    Extractor.TreeBased Stmt (PolyVec S μ) (LiftedWitness R S d μ n) (pSpecScalar K.TCom F)
       (CWSSStructure.toShape (scalarStructure (Msg := K.TCom) (C := F) (2 * d)
         (by have := hd ▸ P.natDegree_modulus_pos; omega))).arity :=
   CommittedScalar.treeExtractor
-    (by have := hd ▸ P.natDegree_modulus_pos; omega) K
-    (checkAt P φF getM getY sideCond) (fun w => w.z)
+    (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
 
 /-- **CWSS of `Lift`**, escape-threaded, at plain `k = 2d` special soundness: on every structured
 accepting tree, either the tree exhibits a short collision of the commitment (`escEvent`) or
 `treeExtractor` produces a witness of the input linear relation. Straight from the generic
 committed-scalar certificate at `recover`. -/
 theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function.Injective φF)
-    (hd : P.modulus.natDegree = d)
+    (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl
@@ -227,7 +239,7 @@ theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function
       (escEvent P φF getM getY sideCond K hd)
       (relLin getM getY zOk) (relOut P φF getM getY sideCond K)
       (verifier (oSpec := oSpec) (F := F) K)
-      (treeExtractor P φF getM getY sideCond K hd) :=
+      (treeExtractor P K hd) :=
   CommittedScalar.coordinateWiseSpecialSoundWithEscape
     (by have := hd ▸ P.natDegree_modulus_pos; omega) K (fun w => w.z)
     (checkAt P φF getM getY sideCond) (relLin getM getY zOk)
@@ -239,14 +251,14 @@ theorem coordinateWiseSpecialSoundWithEscape [IsPresentation P] (hφF : Function
 statement-extending verifier, i.e. the committed-scalar protocol of this phase. Its verifier is
 `verifier K` on the nose (`reduction_verifier`), the verifier `package` certifies, so the two
 security directions of the switch cannot drift onto different verifiers. -/
-noncomputable def reduction [IsPresentation P] (hd : P.modulus.natDegree = d) :
+noncomputable def reduction [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
     Reduction oSpec Stmt (PolyVec S μ) (CommittedScalar.Statement Stmt K.TCom F)
       (LiftedWitness R S d μ n) (pSpecScalar K.TCom F) :=
   CommittedScalar.reduction K (honestWitness P getM getY hd)
 
 omit [Field F] in
 /-- The protocol object's verifier is the certified one. Holds by `rfl`. -/
-@[simp] theorem reduction_verifier [IsPresentation P] (hd : P.modulus.natDegree = d) :
+@[simp] theorem reduction_verifier [IsPresentation P] (hd : P.modulus.toPoly.natDegree = d) :
     (reduction (oSpec := oSpec) P getM getY K hd).verifier = verifier (oSpec := oSpec) (F := F) K :=
   rfl
 
@@ -275,7 +287,7 @@ Everything else — commitment consistency, the check at every challenge, the im
 failure — is discharged by `CommittedScalar.reduction_perfectCompleteness` and
 `checkAt_honestWitness`. Error `0` because `checkAt_honestWitness` holds at every challenge. -/
 theorem reduction_perfectCompleteness_of_relIn [IsPresentation P] [SampleableType F]
-    (hd : P.modulus.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
+    (hd : P.modulus.toPoly.natDegree = d) (relIn : Set (Stmt × PolyVec S μ))
     (hrow : ∀ s z, (s, z) ∈ relIn → getM s *ᵥ z = getY s)
     (hside : ∀ s z, (s, z) ∈ relIn → sideCond s)
     (hshort : ∀ s z, (s, z) ∈ relIn → wShort (honestWitness P getM getY hd s z))
@@ -294,7 +306,7 @@ to be supplied for every `relLin` member, which for a statement-carried side con
 too strong to be satisfiable — prefer the general form at a seam relation that carries the
 condition. -/
 theorem reduction_perfectCompleteness [IsPresentation P] [SampleableType F]
-    (hd : P.modulus.natDegree = d)
+    (hd : P.modulus.toPoly.natDegree = d)
     (hside : ∀ s z, (s, z) ∈ relLin getM getY zOk → sideCond s)
     (hshort : ∀ s z, (s, z) ∈ relLin getM getY zOk →
       wShort (honestWitness P getM getY hd s z))
@@ -304,9 +316,12 @@ theorem reduction_perfectCompleteness [IsPresentation P] [SampleableType F]
   reduction_perfectCompleteness_of_relIn P φF getM getY sideCond K hd
     (relLin getM getY zOk) (fun _ _ h => h.1) hside hshort init impl
 
-/-- `Lift` as a composable escape-aware CWSS package. -/
-noncomputable def package [IsPresentation P] (hφF : Function.Injective φF)
-    (hd : P.modulus.natDegree = d)
+/-- `Lift` as a composable escape-aware CWSS package.
+
+Computable: the purity field carries the verdict function as data (`PureForm`), and the extractor
+is the witness-only committed-scalar assembler. -/
+def package [IsPresentation P] (hφF : Function.Injective φF)
+    (hd : P.modulus.toPoly.natDegree = d)
     (short_zOk : ∀ s w, wShort w → sideCond s → zOk s w.z)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     EscapeCWSSPackage init impl Stmt (PolyVec S μ)
@@ -317,9 +332,8 @@ noncomputable def package [IsPresentation P] (hφF : Function.Injective φF)
   relIn := relLin getM getY zOk
   relOut := relOut P φF getM getY sideCond K
   esc := escEvent P φF getM getY sideCond K hd
-  isPure := ⟨fun stmt tr =>
-    (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  extractor := treeExtractor P φF getM getY sideCond K hd
+  isPure := CommittedScalar.verifierPureForm K
+  extractor := treeExtractor P K hd
   isCWSS := coordinateWiseSpecialSoundWithEscape P φF getM getY zOk sideCond K hφF hd
     short_zOk init impl
 

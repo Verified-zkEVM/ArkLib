@@ -342,10 +342,10 @@ def terminalHonest : WEvalStatement K.TCom Fld (MM + 1) :=
     value := wTableMleEval 𝓜(Q, A) (MM + 1) (RingHom.id (ZMod Q)) P.bZero wToy (fun _ => 0) }
 
 def terminalAcceptsHonest : Unit → Bool := fun _ =>
-  terminalCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
+  endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
 
 def terminalRejectsPerturbed : Unit → Bool := fun _ =>
-  !terminalCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q))
+  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q))
     { terminalHonest with value := terminalHonest.value + 1 } wToy
 
 /-- **The composed honest run is accepted.** -/

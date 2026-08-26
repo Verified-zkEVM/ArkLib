@@ -28,8 +28,10 @@ family into a path-dependent complete binary evaluation tree on which vanishing 
 multilinear polynomial. No prover message separates those rounds, so the interactive protocol is
 unchanged.
 
-That file's header states the deviation, its costs, and the two ways this is weaker than the printed
-lemma (non-constructive extractor, `2 ^ (m₀ + m₁)` transcripts); the full analysis is
+That file's header states the deviation, the witness-fed extractor interface, and the genuine costs
+of the repaired route: `ChallengeTree.LeafWitnesses` supplies candidate output witnesses at the
+leaves, `nestedZeroCheckExtractor` reads the all-left entry without a relation search, and the full
+tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
 `docs/kb/audits/noz26-zero-check-lemma10.md`.
 
 ## Folder structure

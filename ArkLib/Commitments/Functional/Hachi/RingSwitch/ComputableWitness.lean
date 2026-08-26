@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
-import ArkLib.Data.Polynomial.ComputableToPoly
 import CompPoly.Univariate.DivisionCorrectness
 
 /-!
@@ -12,18 +11,15 @@ import CompPoly.Univariate.DivisionCorrectness
 
 `honestLiftWitness` (`RingSwitch/Completeness.lean`) is the one *essentially* noncomputable step
 on Hachi's honest-prover path: the quotient rows are produced by Mathlib's `/ₘ`
-(`Presentation.quotient`), and the noncomputable `CPolynomial.toPoly` stands between the
-computable coefficient arrays and the `Polynomial (ZMod q)` that `LiftedWitness` stores. Since
-the lifted witness is carried by every later link and revealed by the terminal message, nothing
-downstream can be run until this is fixed.
+(`Presentation.quotient`), then repackaged into the `CPolynomial (ZMod q)` rows `LiftedWitness`
+stores through the noncomputable `Polynomial.toImpl`. Since the lifted witness is carried by
+every later link and revealed by the terminal message, nothing downstream can be run until this
+is fixed.
 
-Both halves are fixable without changing a definition or a statement:
-
-* the division is synthetic division by a monic divisor, which CompPoly implements as
-  `CPolynomial.divByMonic` with `divByMonic_toPoly_eq_divByMonic` as its correctness statement;
-* producing the Mathlib polynomial goes through `cToPoly`
-  (`Data/Polynomial/ComputableToPoly.lean`), which is `toPoly` built out of `ofFinsupp` instead
-  of a noncomputable ring fold.
+The fix changes no definition and no statement: the division is synthetic division by a monic
+divisor, which CompPoly implements as `CPolynomial.divByMonic` with
+`divByMonic_toPoly_eq_divByMonic` as its correctness statement, operating on the canonical
+coefficient arrays directly — no Mathlib polynomial is ever built.
 
 So `honestLiftWitnessC` is a computable `def` at the *same signature and same type* as generic
 `Lift.honestWitness` at `cyclotomicPresentation` — which is exactly what Hachi's
@@ -93,10 +89,10 @@ nothing at runtime: `hρ` is a `Prop` and is erased by compilation. -/
 def honestLiftWitnessC (hd : 0 < Φ.φ.natDegree)
     (s : RlinStatement Φ n μ) (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) : LiftedWitness Φ μ n where
   z := z
-  ρ := fun i => CPolynomial.cToPoly (cQuotient Φ s z i)
+  ρ := fun i => cQuotient Φ s z i
   hρ := fun i => by
     haveI := isPresentation_cyclotomic Φ hd
-    rw [CPolynomial.cToPoly_eq_toPoly, cQuotient_toPoly]
+    rw [cQuotient_toPoly]
     have h := (cyclotomicPresentation Φ).natDegree_quotient_le s.M z s.yvec i
     rw [cyclotomicPresentation_modulus_natDegree] at h
     omega
@@ -112,9 +108,10 @@ private theorem liftedWitness_eq_of {w w' : LiftedWitness Φ μ n}
 omit [NeZero q] in
 /-- **The agreement lemma**: the computable honest lifted witness *is* the generic honest
 witness at the cyclotomic presentation — hence, by `honestLiftWitness`'s definition, Hachi's own
-honest lifted witness. Field by field: `z` by `rfl`, `ρ` by `cToPoly_eq_toPoly` followed by
-`cQuotient_toPoly`, and the propositional `hρ` by proof irrelevance. Every completeness theorem
-stated at the spec witness therefore transfers by rewriting; nothing is restated or weakened. -/
+honest lifted witness. Field by field: `z` by `rfl`, `ρ` by injectivity of `toPoly` through
+`cQuotient_toPoly` against `toPoly_mk_toImpl`, and the propositional `hρ` by proof irrelevance.
+Every completeness theorem stated at the spec witness therefore transfers by rewriting; nothing
+is restated or weakened. -/
 theorem honestLiftWitnessC_eq_honestWitness (hd : 0 < Φ.φ.natDegree)
     (s : RlinStatement Φ n μ) (z : ArkLib.Lattices.PolyVec (Rq Φ) μ) :
     haveI := isPresentation_cyclotomic Φ hd
@@ -123,9 +120,14 @@ theorem honestLiftWitnessC_eq_honestWitness (hd : 0 < Φ.φ.natDegree)
           (cyclotomicPresentation_modulus_natDegree Φ) s z := by
   haveI := isPresentation_cyclotomic Φ hd
   refine liftedWitness_eq_of Φ rfl (funext fun i => ?_)
-  rw [show (honestLiftWitnessC Φ hd s z).ρ i
-        = CPolynomial.cToPoly (cQuotient Φ s z i) from rfl,
-    CPolynomial.cToPoly_eq_toPoly, cQuotient_toPoly]
-  rfl
+  refine CPolynomial.toPolyLinearEquiv.injective ?_
+  show (cQuotient Φ s z i).toPoly
+    = ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
+        (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly
+  rw [cQuotient_toPoly,
+    show ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
+        (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly
+      = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
+      from CPolynomial.toPoly_mk_toImpl _]
 
 end ArkLib.Lattices.Ajtai.InnerOuter

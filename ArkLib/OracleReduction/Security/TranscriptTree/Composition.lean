@@ -25,9 +25,16 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
   - `ChallengeTree.AppendSplit` / `ChallengeTree.appendSplit` — the split of a tree over
     `pSpec₁ ++ₚ pSpec₂` into a first-stage tree (`fst`) and a path-indexed family of suffix trees
     (`sndAt`).
+  - `ChallengeTree.AppendSplit.gluePath` — the split undone *on paths*: a first-stage leaf path
+    together with a leaf path of the suffix tree below it names one leaf path of the original tree.
+    This is the only path machinery composition needs, and it runs at runtime, inside every composed
+    extractor.
   - `ChallengeTree.EscapeEvent.append` — composition of two escape events
     (`ChallengeTree.EscapeEvent`) along the same split: the left event on the prefix tree, or the
     right event on some suffix tree at the left verifier's verdict on that prefix leaf.
+  - `Extractor.TreeBased.append` — the composed extraction algorithm itself: the left extractor on
+    the prefix tree, fed per prefix leaf with the right extractor's output on the suffix tree below
+    it, at the intermediate statement the left verifier's verdict function names.
 
   ## Main theorems
 
@@ -39,37 +46,45 @@ import ArkLib.OracleReduction.Security.TranscriptTree.Basic
     transcript onto any leaf transcript of the second-stage tree it selects gives back a leaf
     transcript of the original appended tree. This is the bridge from "extract on each stage" to
     "extract on the whole protocol".
+  - `AppendSplit.fullTranscript_gluePath` — the same recombination at the level of paths: a glued
+    path reads exactly the concatenation of the two transcripts. This is what lets a composed
+    extractor hand each factor the leaf data belonging to that factor's own leaves.
 
   ## Implementation
 
   The mathematical split is simple: read the appended tree until the `pSpec₁` part ends, then view
-  each remaining subtree as a `pSpec₂` tree. The Lean implementation is longer because
-  `ChallengeTree` is indexed by its current round `Fin (n + 1)`. A round of the appended protocol is
-  propositionally, but usually not definitionally, the same as the corresponding round of
-  `pSpec₁` or `pSpec₂`, so directly doing `cases` on a tree or `LeafPath` can leave Lean with an
-  unresolvable dependent index equation.
+  each remaining subtree as a `pSpec₂` tree. The work is in the indices: `ChallengeTree` is indexed
+  by its current round, and a round of the appended protocol is propositionally — but usually not
+  definitionally — the corresponding round of `pSpec₁` or `pSpec₂`.
 
-  To make the split visible to Lean, the file uses small certificate types. `RightProj` certifies
-  that an appended subtree is already in the right-hand protocol, and `SplitData` certifies the
-  left-hand prefix together with a `RightProj` at every boundary leaf. Each certificate has a `src`
-  function reconstructing the original appended tree, so the auxiliary builders always return both
-  the certificate and the proof that this reconstruction is faithful.
+  The design is organised around one observation. `Fin.castSucc`, `Fin.succ` and `Fin.last` are not
+  constructors, so index unification never fires on them and `cases` on a tree or `LeafPath` at such
+  an index stalls on an unresolvable dependent equation. `Fin.mk` *is* the sole constructor of
+  `Fin`, and proofs are definitionally irrelevant. So the builders take the round as a **raw `ℕ`
+  plus its bound**, never as a `Fin`: then `Fin.castSucc ⟨rv, _⟩ ≡ ⟨rv, _⟩`, `Fin.succ ⟨rv, _⟩ ≡
+  ⟨rv + 1, _⟩` and `Fin.last k ≡ ⟨k, _⟩` all hold by `rfl`. Every constructor lands on its target
+  index with no transport, boundary detection is a plain `dite` on `rv < m` rather than a
+  dependent-motive `Fin.lastCases`, and each builder is an ordinary structurally recursive
+  definition — hence *computable*, which the extraction algorithms downstream depend on
+  (`CoordinateWise.CWSSPackage.append` and friends run `appendSplit` on the prefix tree).
 
-  Most of the technical code is then just dependent bookkeeping. The builders and `LeafPath`
-  peelers (`peelMsg`, `chalPeel`) recurse with the round and tree still general, only specializing
-  after matching the actual constructor; this is the usual convoy pattern. Bundling the
-  reconstruction equation into the same recursion ensures that the proof obligations mention
-  concrete constructors rather than an opaque recursive call. The reducible helpers `rightRound`
-  and `leftRound` make the appended round indices line up by computation, leaving only the expected
-  casts for directions, message/challenge types, and arities.
+  Two consequences worth knowing when editing this file. Only `SplitData` remains as a certificate
+  type, recording the left-hand prefix with the suffix tree stored at each boundary leaf; the
+  right-hand side needs no certificate, since `embedRight`/`unembedRight` convert directly between a
+  `pSpec₂` tree and an appended tree already past the boundary, with `embedRight_unembedRight` as
+  the round trip. And when proving anything by recursion here, hoist the induction hypothesis with a
+  `have` *before* any `obtain rfl`/`subst` on a tree index: `subst` reverts and reintroduces the
+  child, severing it from the termination argument, and the recursion then fails to elaborate.
+
+  The reducible helpers `rightRound` and `leftRound` make the appended round indices line up by
+  computation, leaving only the expected casts for directions, message/challenge types, and arities;
+  those casts are supplied by the named transport lemmas at the top of the `AppendSplit` section.
 
   ## Limitation
 
   Composition is binary and sequential (a single append `pSpec₁ ++ₚ pSpec₂`); `n`-ary composition
   is obtained by iterating.
 -/
-
-noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec
 open scoped NNReal
@@ -143,161 +158,170 @@ projection — important for `simp`/`Fin.snoc` lemmas in the membership proof. -
 @[reducible] def leftRound (r : Fin (m + 1)) : Fin (m + n + 1) :=
   ⟨r.val, Nat.lt_of_lt_of_le r.isLt (by omega)⟩
 
-/-- An appended subtree that is already in the right protocol, as an internal certificate indexed
-by the right-protocol round. -/
-inductive RightProj
-    (arity₁ : pSpec₁.ChallengeIdx → ℕ) (arity₂ : pSpec₂.ChallengeIdx → ℕ) :
-    Fin (n + 1) → Type where
-  | leaf : RightProj arity₁ arity₂ (Fin.last n)
-  | msg (i : Fin n) (h : pSpec₂.dir i = .P_to_V) (msg : pSpec₂.Message ⟨i, h⟩)
-      (child : RightProj arity₁ arity₂ i.succ) : RightProj arity₁ arity₂ i.castSucc
-  | chal (i : Fin n) (h : pSpec₂.dir i = .V_to_P)
-      (challenges : Fin (arity₂ ⟨i, h⟩) → pSpec₂.Challenge ⟨i, h⟩)
-      (children : Fin (arity₂ ⟨i, h⟩) → RightProj arity₁ arity₂ i.succ) :
-      RightProj arity₁ arity₂ i.castSucc
+/-! ### Transport across the protocol append
 
-/-- The right-protocol tree represented by a `RightProj` certificate. -/
-def RightProj.tree : {r : Fin (n + 1)} → RightProj arity₁ arity₂ r →
-    ChallengeTree pSpec₂ arity₂ r
-  | _, .leaf => .leaf
-  | _, .msg _ h m₂ child => .msgNode _ h m₂ child.tree
-  | _, .chal _ h challenges children => .chalNode _ h challenges fun j => (children j).tree
+The appended protocol agrees with its factors on directions and message/challenge types once the
+round index is routed through `Fin.castAdd`/`Fin.natAdd`. These named lemmas supply the casts that
+the constructors below need; keeping them named (rather than inlining `simpa`) is what makes the
+builders readable. -/
 
-/-- The appended source tree represented by a `RightProj` certificate. Thanks to `rightRound`
-being reducible, every constructor index lands on the nose; only the `dir`/`Type`/arity transports
-require casts. -/
-def RightProj.src : {r : Fin (n + 1)} → RightProj arity₁ arity₂ r →
+/-- A right-hand round of the appended protocol has `pSpec₂`'s direction. -/
+theorem appendDir_right (i : Fin n) :
+    (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = pSpec₂.dir i := by
+  simp [Fin.vappend_eq_append, Fin.append_right]
+
+/-- A right-hand round of the appended protocol has `pSpec₂`'s type. -/
+theorem appendType_right (i : Fin n) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.natAdd m i) = pSpec₂.«Type» i := by
+  simp [Fin.vappend_eq_append, Fin.append_right]
+
+/-- A left-hand round of the appended protocol has `pSpec₁`'s direction. -/
+theorem appendDir_left (i : Fin m) :
+    (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = pSpec₁.dir i := by
+  simp [Fin.vappend_eq_append, Fin.append_left]
+
+/-- A left-hand round of the appended protocol has `pSpec₁`'s type. -/
+theorem appendType_left (i : Fin m) :
+    (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i) = pSpec₁.«Type» i := by
+  simp [Fin.vappend_eq_append, Fin.append_left]
+
+/-- The appended arity at a right-hand challenge round is `arity₂`'s. -/
+theorem appendArity_right {i : Fin n} {h : pSpec₂.dir i = .V_to_P}
+    (hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P) :
+    appendArity arity₁ arity₂ ⟨Fin.natAdd m i, hApp⟩ = arity₂ ⟨i, h⟩ := by
+  rw [show (⟨Fin.natAdd m i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
+      = ChallengeIdx.inr ⟨i, h⟩ from by ext; rfl]
+  simpa [appendArity] using congrArg (Sum.elim arity₁ arity₂)
+    (ChallengeIdx.sumEquiv_symm_inr (pSpec₁ := pSpec₁) ⟨i, h⟩)
+
+/-- The appended arity at a left-hand challenge round is `arity₁`'s. -/
+theorem appendArity_left {i : Fin m} {h : pSpec₁.dir i = .V_to_P}
+    (hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P) :
+    appendArity arity₁ arity₂ ⟨Fin.castAdd n i, hApp⟩ = arity₁ ⟨i, h⟩ := by
+  rw [show (⟨Fin.castAdd n i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
+      = ChallengeIdx.inl ⟨i, h⟩ from by ext; rfl]
+  simpa [appendArity] using congrArg (Sum.elim arity₁ arity₂)
+    (ChallengeIdx.sumEquiv_symm_inl (pSpec₂ := pSpec₂) ⟨i, h⟩)
+
+/-! ### The right-hand side of the split
+
+Past the boundary an appended tree *is* a `pSpec₂` tree, up to index transport. `embedRight` and
+`unembedRight` witness that in both directions and `embedRight_unembedRight` is the round trip, so
+the right-hand side needs no certificate type at all. -/
+
+/-- Embed a `pSpec₂`-tree as the tail of a tree over the appended protocol. -/
+def embedRight : {r : Fin (n + 1)} → ChallengeTree pSpec₂ arity₂ r →
     ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (rightRound r)
   | _, .leaf => .leaf
-  | _, .msg i h m₂ child =>
-      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .P_to_V := by
-        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
-      .msgNode (Fin.natAdd m i) hApp
-        (cast (by simp [ProtocolSpec.Message, Fin.vappend_eq_append,
-          Fin.append_right]) m₂) child.src
-  | _, .chal i h challenges children =>
-      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P := by
-        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
-      have hIdx : (⟨Fin.natAdd m i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-          = ChallengeIdx.inr ⟨i, h⟩ := by ext; rfl
-      have hAr : appendArity arity₁ arity₂ ⟨Fin.natAdd m i, hApp⟩ = arity₂ ⟨i, h⟩ := by
-        rw [hIdx]; simpa [appendArity] using
-          congrArg (Sum.elim arity₁ arity₂)
-            (ChallengeIdx.sumEquiv_symm_inr (pSpec₁ := pSpec₁) ⟨i, h⟩)
+  | _, .msgNode i h msg child =>
+      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .P_to_V :=
+        (appendDir_right i).trans h
+      .msgNode (Fin.natAdd m i) hApp (cast (appendType_right i).symm msg) (embedRight child)
+  | _, .chalNode i h chals children =>
+      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P :=
+        (appendDir_right i).trans h
+      have hAr : appendArity arity₁ arity₂ ⟨Fin.natAdd m i, hApp⟩ = arity₂ ⟨i, h⟩ :=
+        appendArity_right hApp
       .chalNode (Fin.natAdd m i) hApp
-        (fun j => cast (by simp [ProtocolSpec.Challenge, Fin.vappend_eq_append,
-          Fin.append_right]) (challenges (Fin.cast hAr j)))
-        (fun j => (children (Fin.cast hAr j)).src)
+        (fun j => cast (appendType_right i).symm (chals (Fin.cast hAr j)))
+        (fun j => embedRight (children (Fin.cast hAr j)))
 
-/-- Build a `RightProj` certificate from an appended tree, **bundled with the proof** that its
-`src` recovers the original tree. Bundling is essential: the round-trip equation is discharged in
-the same convoy recursion that builds the certificate, so every obligation is about a literal
-constructor (the recursor-defined function never needs to be reduced under a variable index). -/
-def rightProjOfTreeAux : {a : Fin (m + n + 1)} →
+/-- Index bookkeeping: the successor of a right-hand round, as a raw-`ℕ` round equation. -/
+theorem rightSucc {i : Fin (m + n)} {rv : ℕ} (hv : (i : ℕ) = m + rv) (hlt : rv + 1 < n + 1) :
+    i.succ = rightRound ⟨rv + 1, hlt⟩ :=
+  Fin.ext (by simp only [Fin.val_succ, rightRound, Fin.val_natAdd]; omega)
+
+/-- Read a `pSpec₂`-tree off an appended tree that has already entered the right protocol.
+
+The round is passed as a raw `ℕ` (`rv`) plus its bound, so the index equations of the
+`ChallengeTree` constructors hold definitionally and no `Fin.lastCases` motive, `▸` or `convert` is
+needed — see this file's `## Implementation`. -/
+def unembedRight : {a : Fin (m + n + 1)} →
+    ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a →
+    (rv : ℕ) → (hlt : rv < n + 1) → a = rightRound ⟨rv, hlt⟩ →
+    ChallengeTree pSpec₂ arity₂ ⟨rv, hlt⟩
+  | _, .leaf, rv, hlt, h => by
+      obtain rfl : rv = n := by
+        have hv := congrArg Fin.val h
+        simp only [Fin.val_last, rightRound, Fin.val_natAdd] at hv; omega
+      exact .leaf
+  | _, .msgNode i hd msg child, rv, hlt, h =>
+      have hv : (i : ℕ) = m + rv := by
+        have hv := congrArg Fin.val h; simpa [rightRound] using hv
+      have hrn : rv < n := by have := i.isLt; omega
+      have hi : i = Fin.natAdd m (⟨rv, hrn⟩ : Fin n) := Fin.ext (by simpa using hv)
+      have hdir : pSpec₂.dir ⟨rv, hrn⟩ = .P_to_V := by
+        rw [← appendDir_right (pSpec₁ := pSpec₁), ← hi]; exact hd
+      .msgNode ⟨rv, hrn⟩ hdir (cast (by subst hi; exact appendType_right _) msg)
+        (unembedRight child (rv + 1) (by omega) (rightSucc hv (by omega)))
+  | _, .chalNode i hd chals children, rv, hlt, h =>
+      have hv : (i : ℕ) = m + rv := by
+        have hv := congrArg Fin.val h; simpa [rightRound] using hv
+      have hrn : rv < n := by have := i.isLt; omega
+      have hi : i = Fin.natAdd m (⟨rv, hrn⟩ : Fin n) := Fin.ext (by simpa using hv)
+      have hdir : pSpec₂.dir ⟨rv, hrn⟩ = .V_to_P := by
+        rw [← appendDir_right (pSpec₁ := pSpec₁), ← hi]; exact hd
+      have hAr : appendArity arity₁ arity₂ ⟨i, hd⟩ = arity₂ ⟨⟨rv, hrn⟩, hdir⟩ := by
+        subst hi; exact appendArity_right _
+      .chalNode ⟨rv, hrn⟩ hdir
+        (fun j => cast (by subst hi; exact appendType_right _) (chals (Fin.cast hAr.symm j)))
+        (fun j => unembedRight (children (Fin.cast hAr.symm j)) (rv + 1) (by omega)
+          (rightSucc hv (by omega)))
+
+/-- `unembedRight` at a `Fin`-valued round: the form consumers use. -/
+def unembedRight' {r : Fin (n + 1)}
+    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (rightRound r)) :
+    ChallengeTree pSpec₂ arity₂ r := unembedRight T r.val r.isLt rfl
+
+/-- `embedRight` recovers the appended tree that `unembedRight` read.
+
+Note the shape of the inductive branches: the induction hypothesis is hoisted by a `have` *before*
+the `obtain rfl` on `i`, because `subst` would sever `child` from the termination argument. -/
+theorem embedRight_unembedRight : {a : Fin (m + n + 1)} →
     (t : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a) →
-    (r : Fin (n + 1)) → (heq : a = rightRound r) →
-    { R : RightProj arity₁ arity₂ r // HEq R.src t } := fun {a} t =>
-  ChallengeTree.rec
-    (motive := fun a t => (r : Fin (n + 1)) → (heq : a = rightRound r) →
-      { R : RightProj arity₁ arity₂ r // HEq R.src t })
-    (fun r heq => by
-      have hr : r = Fin.last n := by
-        apply Fin.ext
-        have hv := congrArg Fin.val heq
-        unfold rightRound at hv
-        simp only [Fin.val_last, Fin.val_natAdd] at hv ⊢
-        omega
-      subst hr
-      exact ⟨.leaf, HEq.rfl⟩)
-    (fun m' h' m₂ child ih r heq =>
-      r.lastCases
-        (motive := fun r => (heq : m'.castSucc = rightRound r) →
-          { R : RightProj arity₁ arity₂ r // HEq R.src (ChallengeTree.msgNode m' h' m₂ child) })
-        (fun heq => by
-          exfalso
-          have hv := congrArg Fin.val heq
-          unfold rightRound at hv
-          simp only [Fin.val_castSucc, Fin.val_natAdd, Fin.val_last] at hv
-          have := m'.isLt; omega)
-        (fun r₀ heq => by
-          have hm' : m' = Fin.natAdd m r₀ := by
-            apply Fin.ext
-            have hv := congrArg Fin.val heq
-            unfold rightRound at hv
-            simp only [Fin.val_castSucc, Fin.val_natAdd] at hv ⊢
-            omega
-          subst hm'
-          have hdir : pSpec₂.dir r₀ = .P_to_V := by
-            simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h'
-          refine ⟨.msg r₀ hdir
-            (cast (by simp [ProtocolSpec.Message, Fin.vappend_eq_append,
-              Fin.append_right]) m₂)
-            (ih r₀.succ rfl).1, ?_⟩
-          have hchild : ((ih r₀.succ rfl).1).src = child := eq_of_heq (ih r₀.succ rfl).2
-          apply heq_of_eq
-          simp only [RightProj.src]
-          rw [hchild]
-          congr 1
-          simp [cast_cast])
-        heq)
-    (fun m' h' chals children ih r heq =>
-      r.lastCases
-        (motive := fun r => (heq : m'.castSucc = rightRound r) →
-          { R : RightProj arity₁ arity₂ r //
-            HEq R.src (ChallengeTree.chalNode m' h' chals children) })
-        (fun heq => by
-          exfalso
-          have hv := congrArg Fin.val heq
-          unfold rightRound at hv
-          simp only [Fin.val_castSucc, Fin.val_natAdd, Fin.val_last] at hv
-          have := m'.isLt; omega)
-        (fun r₀ heq => by
-          have hm' : m' = Fin.natAdd m r₀ := by
-            apply Fin.ext
-            have hv := congrArg Fin.val heq
-            unfold rightRound at hv
-            simp only [Fin.val_castSucc, Fin.val_natAdd] at hv ⊢
-            omega
-          subst hm'
-          have hdir : pSpec₂.dir r₀ = .V_to_P := by
-            simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h'
-          have hIdx : (⟨Fin.natAdd m r₀, h'⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-              = ChallengeIdx.inr ⟨r₀, hdir⟩ := by ext; rfl
-          have hAr : appendArity arity₁ arity₂ ⟨Fin.natAdd m r₀, h'⟩ = arity₂ ⟨r₀, hdir⟩ := by
-            rw [hIdx]; simpa [appendArity] using
-              congrArg (Sum.elim arity₁ arity₂)
-                (ChallengeIdx.sumEquiv_symm_inr (pSpec₁ := pSpec₁) ⟨r₀, hdir⟩)
-          refine ⟨.chal r₀ hdir
-            (fun j => cast (by simp [ProtocolSpec.Challenge, Fin.vappend_eq_append,
-              Fin.append_right]) (chals (Fin.cast hAr.symm j)))
-            (fun j => (ih (Fin.cast hAr.symm j) r₀.succ rfl).1), ?_⟩
-          apply heq_of_eq
-          simp only [RightProj.src]
-          congr 1
-          · funext j
-            simp [cast_cast]
-          · funext j
-            exact eq_of_heq (ih _ r₀.succ rfl).2)
-        heq)
-    t
+    (rv : ℕ) → (hlt : rv < n + 1) → (h : a = rightRound ⟨rv, hlt⟩) →
+    HEq (embedRight (arity₁ := arity₁) (unembedRight t rv hlt h)) t
+  | _, .leaf, rv, hlt, h => by
+      obtain rfl : rv = n := by
+        have hv := congrArg Fin.val h
+        simp only [Fin.val_last, rightRound, Fin.val_natAdd] at hv; omega
+      rfl
+  | _, .msgNode i hd msg child, rv, hlt, h => by
+      have hv : (i : ℕ) = m + rv := by
+        have hv := congrArg Fin.val h; simpa [rightRound] using hv
+      have hrn : rv < n := by have := i.isLt; omega
+      have ih := embedRight_unembedRight child (rv + 1) (by omega) (rightSucc hv (by omega))
+      obtain rfl : i = Fin.natAdd m (⟨rv, hrn⟩ : Fin n) := Fin.ext (by simpa using hv)
+      simp only [unembedRight, embedRight]
+      apply heq_of_eq
+      congr 1
+      · simp [cast_cast]
+      · exact eq_of_heq ih
+  | _, .chalNode i hd chals children, rv, hlt, h => by
+      have hv : (i : ℕ) = m + rv := by
+        have hv := congrArg Fin.val h; simpa [rightRound] using hv
+      have hrn : rv < n := by have := i.isLt; omega
+      have ih := fun j =>
+        embedRight_unembedRight (children j) (rv + 1) (by omega) (rightSucc hv (by omega))
+      obtain rfl : i = Fin.natAdd m (⟨rv, hrn⟩ : Fin n) := Fin.ext (by simpa using hv)
+      simp only [unembedRight, embedRight]
+      apply heq_of_eq
+      congr 1
+      · funext j; simp [cast_cast]
+      · funext j; exact eq_of_heq (ih _)
 
-/-- Build a `RightProj` certificate from an appended tree already in the right protocol. -/
-def rightProjOfTree {r : Fin (n + 1)}
+/-- The round trip at a `Fin`-valued round. -/
+theorem embedRight_unembedRight' {r : Fin (n + 1)}
     (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (rightRound r)) :
-    RightProj arity₁ arity₂ r := (rightProjOfTreeAux T r rfl).1
+    embedRight (arity₁ := arity₁) (unembedRight' T) = T :=
+  eq_of_heq (embedRight_unembedRight T r.val r.isLt rfl)
 
-/-- The `RightProj` certificate built from an appended tree faithfully represents it. -/
-theorem rightProjOfTree_src {r : Fin (n + 1)}
-    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (rightRound r)) :
-    (rightProjOfTree (arity₁ := arity₁) (arity₂ := arity₂) T).src = T :=
-  eq_of_heq (rightProjOfTreeAux T r rfl).2
-
-/-- A split certificate for the first `m` rounds. At the boundary it stores a `RightProj` at right
-round `0`; before that it mirrors the appended tree's left-protocol structure. -/
+/-- A split certificate for the first `m` rounds. At the boundary it stores the suffix tree itself;
+before that it mirrors the appended tree's left-protocol structure. -/
 inductive SplitData
     (arity₁ : pSpec₁.ChallengeIdx → ℕ) (arity₂ : pSpec₂.ChallengeIdx → ℕ) :
     Fin (m + 1) → Type where
-  | boundary (rp : RightProj arity₁ arity₂ (0 : Fin (n + 1))) :
+  | boundary (t₂ : ChallengeTree pSpec₂ arity₂ (0 : Fin (n + 1))) :
       SplitData arity₁ arity₂ (Fin.last m)
   | msg (i : Fin m) (h : pSpec₁.dir i = .P_to_V) (msg : pSpec₁.Message ⟨i, h⟩)
       (child : SplitData arity₁ arity₂ i.succ) : SplitData arity₁ arity₂ i.castSucc
@@ -313,12 +337,12 @@ def SplitData.fst {r : Fin (m + 1)} : SplitData arity₁ arity₂ r →
   | .msg _ h m₁ child => .msgNode _ h m₁ child.fst
   | .chal _ h challenges children => .chalNode _ h challenges fun j => (children j).fst
 
-/-- The appended source tree represented by a `SplitData` certificate. As with `RightProj.src`,
-every constructor index lands on the nose (`leftRound` reducible); the boundary reuses
-`RightProj.src` since `leftRound (Fin.last m)` is defeq `rightRound 0`. -/
+/-- The appended source tree represented by a `SplitData` certificate. Every constructor index
+lands on the nose (`leftRound` reducible); the boundary reuses `embedRight` since
+`leftRound (Fin.last m)` is defeq `rightRound 0`. -/
 def SplitData.src : {r : Fin (m + 1)} → SplitData arity₁ arity₂ r →
     ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (leftRound r)
-  | _, .boundary rp => rp.src
+  | _, .boundary t₂ => embedRight t₂
   | _, .msg i h m₁ child =>
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .P_to_V := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
@@ -339,69 +363,66 @@ def SplitData.src : {r : Fin (m + 1)} → SplitData arity₁ arity₂ r →
           (challenges (Fin.cast hAr j)))
         (fun j => (children (Fin.cast hAr j)).src)
 
-/-- Peel the child path from a `LeafPath` at a message node. Inverting a `LeafPath` at a fixed
-`castSucc`-indexed tree fails (the round equation `↑k = m'` is unsolvable for `cases`); instead we
-recurse via `LeafPath.rec` with the round/tree free and route the cases by the hypotheses
-`k.castSucc = ρ` and `HEq τ (.msgNode …)` — the same convoy trick as the `…OfTree` builders. -/
-def peelMsgAux {k : Fin m} {h : pSpec₁.dir k = .P_to_V} {msg : pSpec₁.Message ⟨k, h⟩}
-    {child : ChallengeTree pSpec₁ arity₁ k.succ} (p : LeafPath (.msgNode k h msg child)) :
-    { p' : LeafPath child // HEq p (@LeafPath.msg _ _ _ k h msg child p') } :=
-  LeafPath.rec
-    (motive := fun {ρ} {τ} q => ∀ (k : Fin m) (h : pSpec₁.dir k = .P_to_V)
-      (msg : pSpec₁.Message ⟨k, h⟩) (child : ChallengeTree pSpec₁ arity₁ k.succ),
-      k.castSucc = ρ → HEq τ (ChallengeTree.msgNode k h msg child) →
-      { p' : LeafPath child // HEq q (@LeafPath.msg _ _ _ k h msg child p') })
-    (fun k h msg child hρ _ => by
-      exfalso; have := congrArg Fin.val hρ
-      simp only [Fin.val_castSucc, Fin.val_last] at this; have := k.isLt; omega)
-    (fun path _ k h msg child hρ hτ => by
-      obtain rfl : k = _ := Fin.castSucc_injective _ hρ
-      injection eq_of_heq hτ with _ hmsg hchild
+/-- Peel the child path from a `LeafPath` at a message node, bundled with the reconstruction
+`p = .msg p'`.
+
+Inverting a `LeafPath` at a fixed `castSucc`-indexed tree fails (the round equation `↑k = m'` is
+unsolvable for `cases`), so the round and tree stay general and the cases are routed by the
+hypotheses `ρ = k.castSucc` and `HEq T (.msgNode …)`. This is a plain `match` — note there is no
+recursion here at all, and hence no termination obligation. -/
+def peelMsgAux : {ρ : Fin (m + 1)} → {T : ChallengeTree pSpec₁ arity₁ ρ} → (p : LeafPath T) →
+    (k : Fin m) → (h : pSpec₁.dir k = .P_to_V) → (msg : pSpec₁.Message ⟨k, h⟩) →
+    (child : ChallengeTree pSpec₁ arity₁ k.succ) →
+    ρ = k.castSucc → HEq T (ChallengeTree.msgNode k h msg child) →
+    { p' : LeafPath child // HEq p (@LeafPath.msg _ _ _ k h msg child p') }
+  | _, _, .leaf, k, _, _, _, hρ, _ => by
+      exfalso
+      have hv := congrArg Fin.val hρ
+      simp only [Fin.val_last, Fin.val_castSucc] at hv
+      have := k.isLt; omega
+  | _, _, @LeafPath.msg _ _ _ k' _ _ _ path, k, h, msg, child, hρ, hT => by
+      obtain rfl : k' = k := Fin.castSucc_injective _ hρ
+      injection eq_of_heq hT with _ hmsg hchild
       subst hmsg; subst hchild
-      exact ⟨path, HEq.rfl⟩)
-    (fun j path _ k h msg child hρ hτ => by
-      obtain rfl : k = _ := Fin.castSucc_injective _ hρ
-      exact absurd (eq_of_heq hτ) (by simp))
-    p k h msg child rfl HEq.rfl
+      exact ⟨path, HEq.rfl⟩
+  | _, _, @LeafPath.chal _ _ _ k' _ _ _ _ _, k, h, msg, child, hρ, hT => by
+      obtain rfl : k' = k := Fin.castSucc_injective _ hρ
+      exact absurd (eq_of_heq hT) (by simp)
 
 /-- The child path obtained by peeling a `LeafPath` at a message node (the bundled certificate
 `peelMsgAux` dropped to its underlying path). -/
 def peelMsg {k : Fin m} {h : pSpec₁.dir k = .P_to_V} {msg : pSpec₁.Message ⟨k, h⟩}
     {child : ChallengeTree pSpec₁ arity₁ k.succ} (p : LeafPath (.msgNode k h msg child)) :
-    LeafPath child := (peelMsgAux p).1
+    LeafPath child := (peelMsgAux p k h msg child rfl HEq.rfl).1
 
 /-- A `LeafPath` at a message node is `.msg` of its peel. -/
 theorem peelMsg_spec {k : Fin m} {h : pSpec₁.dir k = .P_to_V} {msg : pSpec₁.Message ⟨k, h⟩}
     {child : ChallengeTree pSpec₁ arity₁ k.succ} (p : LeafPath (.msgNode k h msg child)) :
-    p = @LeafPath.msg _ _ _ k h msg child (peelMsg p) := eq_of_heq (peelMsgAux p).2
+    p = @LeafPath.msg _ _ _ k h msg child (peelMsg p) :=
+  eq_of_heq (peelMsgAux p k h msg child rfl HEq.rfl).2
 
 /-- Peel the branch index and child path from a `LeafPath` at a challenge node, bundled with the
-reconstruction `p = .chal j p'`. -/
-def chalPeelAux {k : Fin m} {h : pSpec₁.dir k = .V_to_P}
-    {challenges : Fin (arity₁ ⟨k, h⟩) → pSpec₁.Challenge ⟨k, h⟩}
-    {children : Fin (arity₁ ⟨k, h⟩) → ChallengeTree pSpec₁ arity₁ k.succ}
-    (p : LeafPath (.chalNode k h challenges children)) :
+reconstruction `p = .chal j p'`. Non-recursive, like `peelMsgAux`. -/
+def chalPeelAux : {ρ : Fin (m + 1)} → {T : ChallengeTree pSpec₁ arity₁ ρ} → (p : LeafPath T) →
+    (k : Fin m) → (h : pSpec₁.dir k = .V_to_P) →
+    (challenges : Fin (arity₁ ⟨k, h⟩) → pSpec₁.Challenge ⟨k, h⟩) →
+    (children : Fin (arity₁ ⟨k, h⟩) → ChallengeTree pSpec₁ arity₁ k.succ) →
+    ρ = k.castSucc → HEq T (ChallengeTree.chalNode k h challenges children) →
     { jp : (j : Fin (arity₁ ⟨k, h⟩)) × LeafPath (children j) //
-      HEq p (@LeafPath.chal _ _ _ k h challenges children jp.1 jp.2) } :=
-  LeafPath.rec
-    (motive := fun {ρ} {τ} q => ∀ (k : Fin m) (h : pSpec₁.dir k = .V_to_P)
-      (challenges : Fin (arity₁ ⟨k, h⟩) → pSpec₁.Challenge ⟨k, h⟩)
-      (children : Fin (arity₁ ⟨k, h⟩) → ChallengeTree pSpec₁ arity₁ k.succ),
-      k.castSucc = ρ → HEq τ (ChallengeTree.chalNode k h challenges children) →
-      { jp : (j : Fin (arity₁ ⟨k, h⟩)) × LeafPath (children j) //
-        HEq q (@LeafPath.chal _ _ _ k h challenges children jp.1 jp.2) })
-    (fun k h challenges children hρ _ => by
-      exfalso; have := congrArg Fin.val hρ
-      simp only [Fin.val_castSucc, Fin.val_last] at this; have := k.isLt; omega)
-    (fun path _ k h challenges children hρ hτ => by
-      obtain rfl : k = _ := Fin.castSucc_injective _ hρ
-      exact absurd (eq_of_heq hτ) (by simp))
-    (fun j path _ k h challenges children hρ hτ => by
-      obtain rfl : k = _ := Fin.castSucc_injective _ hρ
-      injection eq_of_heq hτ with _ hchal hchildren
+      HEq p (@LeafPath.chal _ _ _ k h challenges children jp.1 jp.2) }
+  | _, _, .leaf, k, _, _, _, hρ, _ => by
+      exfalso
+      have hv := congrArg Fin.val hρ
+      simp only [Fin.val_last, Fin.val_castSucc] at hv
+      have := k.isLt; omega
+  | _, _, @LeafPath.msg _ _ _ k' _ _ _ _, k, h, challenges, children, hρ, hT => by
+      obtain rfl : k' = k := Fin.castSucc_injective _ hρ
+      exact absurd (eq_of_heq hT) (by simp)
+  | _, _, @LeafPath.chal _ _ _ k' _ _ _ j path, k, h, challenges, children, hρ, hT => by
+      obtain rfl : k' = k := Fin.castSucc_injective _ hρ
+      injection eq_of_heq hT with _ hchal hchildren
       subst hchal; subst hchildren
-      exact ⟨⟨j, path⟩, HEq.rfl⟩)
-    p k h challenges children rfl HEq.rfl
+      exact ⟨⟨j, path⟩, HEq.rfl⟩
 
 /-- The branch index and child path obtained by peeling a `LeafPath` at a challenge node (the
 bundled certificate `chalPeelAux` dropped to its underlying index/path pair). -/
@@ -409,7 +430,8 @@ def chalPeel {k : Fin m} {h : pSpec₁.dir k = .V_to_P}
     {challenges : Fin (arity₁ ⟨k, h⟩) → pSpec₁.Challenge ⟨k, h⟩}
     {children : Fin (arity₁ ⟨k, h⟩) → ChallengeTree pSpec₁ arity₁ k.succ}
     (p : LeafPath (.chalNode k h challenges children)) :
-    (j : Fin (arity₁ ⟨k, h⟩)) × LeafPath (children j) := (chalPeelAux p).1
+    (j : Fin (arity₁ ⟨k, h⟩)) × LeafPath (children j) :=
+  (chalPeelAux p k h challenges children rfl HEq.rfl).1
 
 /-- A `LeafPath` at a challenge node is `.chal` of its peeled index and child path. -/
 theorem chalPeel_spec {k : Fin m} {h : pSpec₁.dir k = .V_to_P}
@@ -417,7 +439,7 @@ theorem chalPeel_spec {k : Fin m} {h : pSpec₁.dir k = .V_to_P}
     {children : Fin (arity₁ ⟨k, h⟩) → ChallengeTree pSpec₁ arity₁ k.succ}
     (p : LeafPath (.chalNode k h challenges children)) :
     p = @LeafPath.chal _ _ _ k h challenges children (chalPeel p).1 (chalPeel p).2 :=
-      eq_of_heq (chalPeelAux p).2
+  eq_of_heq (chalPeelAux p k h challenges children rfl HEq.rfl).2
 
 /-- A `LeafPath` at a leaf tree is `.leaf`. Direct `cases`/`match` fails the dependent-elimination
 round equation (`m = ↑m'`), so route via `LeafPath.rec`, discharging the message/challenge branches
@@ -457,152 +479,152 @@ theorem transcript_chal {k : Fin m} {h : pSpec₁.dir k = .V_to_P}
   rfl
 
 /-- The second-stage suffix tree selected below a given first-stage leaf path. Following the path
-down the certificate, the boundary's stored `RightProj` yields the right-protocol tree; message and
-challenge nodes recurse into the peeled child certificate. -/
+down the certificate, the boundary hands back the suffix tree it stores; message and challenge nodes
+recurse into the peeled child certificate. -/
 def SplitData.sndAt {r : Fin (m + 1)} :
     (S : SplitData arity₁ arity₂ r) → LeafPath S.fst → ChallengeTree pSpec₂ arity₂ 0
-  | .boundary rp, _ => rp.tree
+  | .boundary t₂, _ => t₂
   | .msg _ _ _ child, path => child.sndAt (peelMsg path)
   | .chal _ _ _ children, path => (children (chalPeel path).1).sndAt (chalPeel path).2
 
-/-- Build a `SplitData` certificate from an appended tree, bundled with the round-trip proof. The
-boundary case delegates to `rightProjOfTreeAux`; `leftRound (Fin.last m)` is defeq `rightRound 0`
-so the same `heq` is reused. -/
-def splitDataOfTreeAux : {a : Fin (m + n + 1)} →
-    (t : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a) →
-    (r : Fin (m + 1)) → (heq : a = leftRound r) →
-    { S : SplitData arity₁ arity₂ r // HEq S.src t } := fun {a} t =>
-  ChallengeTree.rec
-    (motive := fun a t => (r : Fin (m + 1)) → (heq : a = leftRound r) →
-      { S : SplitData arity₁ arity₂ r // HEq S.src t })
-    (fun r heq =>
-      r.lastCases
-        (motive := fun r => (heq : Fin.last (m + n) = leftRound r) →
-          { S : SplitData arity₁ arity₂ r // HEq S.src ChallengeTree.leaf })
-        (fun heq => ⟨.boundary (rightProjOfTreeAux .leaf 0 heq).1,
-          (rightProjOfTreeAux .leaf 0 heq).2⟩)
-        (fun r₀ heq => by
-          exfalso
-          have hv := congrArg Fin.val heq
-          unfold leftRound at hv
-          simp only [Fin.val_last, Fin.val_castSucc] at hv
-          have := r₀.isLt; omega)
-        heq)
-    (fun m' h' m₁ child ih r heq =>
-      r.lastCases
-        (motive := fun r => (heq : m'.castSucc = leftRound r) →
-          { S : SplitData arity₁ arity₂ r // HEq S.src (ChallengeTree.msgNode m' h' m₁ child) })
-        (fun heq => ⟨.boundary (rightProjOfTreeAux (.msgNode m' h' m₁ child) 0 heq).1,
-          (rightProjOfTreeAux (.msgNode m' h' m₁ child) 0 heq).2⟩)
-        (fun r₀ heq => by
-          have hm' : m' = Fin.castAdd n r₀ := by
-            apply Fin.ext
-            have hv := congrArg Fin.val heq
-            unfold leftRound at hv
-            simp only [Fin.val_castSucc, Fin.val_castAdd] at hv ⊢
-            omega
-          subst hm'
-          have hdir : pSpec₁.dir r₀ = .P_to_V := by
-            simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h'
-          refine ⟨.msg r₀ hdir
-            (cast (by simp [ProtocolSpec.Message, Fin.vappend_eq_append, Fin.append_left]) m₁)
-            (ih r₀.succ rfl).1, ?_⟩
-          have hchild : ((ih r₀.succ rfl).1).src = child := eq_of_heq (ih r₀.succ rfl).2
-          apply heq_of_eq
-          simp only [SplitData.src]
-          rw [hchild]
-          congr 1
-          simp [cast_cast])
-        heq)
-    (fun m' h' chals children ih r heq =>
-      r.lastCases
-        (motive := fun r => (heq : m'.castSucc = leftRound r) →
-          { S : SplitData arity₁ arity₂ r //
-            HEq S.src (ChallengeTree.chalNode m' h' chals children) })
-        (fun heq => ⟨.boundary (rightProjOfTreeAux (.chalNode m' h' chals children) 0 heq).1,
-          (rightProjOfTreeAux (.chalNode m' h' chals children) 0 heq).2⟩)
-        (fun r₀ heq => by
-          have hm' : m' = Fin.castAdd n r₀ := by
-            apply Fin.ext
-            have hv := congrArg Fin.val heq
-            unfold leftRound at hv
-            simp only [Fin.val_castSucc, Fin.val_castAdd] at hv ⊢
-            omega
-          subst hm'
-          have hdir : pSpec₁.dir r₀ = .V_to_P := by
-            simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h'
-          have hIdx : (⟨Fin.castAdd n r₀, h'⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-              = ChallengeIdx.inl ⟨r₀, hdir⟩ := by ext; rfl
-          have hAr : appendArity arity₁ arity₂ ⟨Fin.castAdd n r₀, h'⟩ = arity₁ ⟨r₀, hdir⟩ := by
-            rw [hIdx]; simpa [appendArity] using
-              congrArg (Sum.elim arity₁ arity₂)
-                (ChallengeIdx.sumEquiv_symm_inl (pSpec₂ := pSpec₂) ⟨r₀, hdir⟩)
-          refine ⟨.chal r₀ hdir
-            (fun j => cast (by simp [ProtocolSpec.Challenge, Fin.vappend_eq_append,
-              Fin.append_left]) (chals (Fin.cast hAr.symm j)))
-            (fun j => (ih (Fin.cast hAr.symm j) r₀.succ rfl).1), ?_⟩
-          apply heq_of_eq
-          simp only [SplitData.src]
-          congr 1
-          · funext j
-            simp [cast_cast]
-          · funext j
-            exact eq_of_heq (ih _ r₀.succ rfl).2)
-        heq)
-    t
+/-- Index bookkeeping: the successor of a left-hand round, as a raw-`ℕ` round equation. -/
+theorem leftSucc {i : Fin (m + n)} {rv : ℕ} (hv : (i : ℕ) = rv) (hlt : rv + 1 < m + 1) :
+    i.succ = leftRound ⟨rv + 1, hlt⟩ :=
+  Fin.ext (by simp only [Fin.val_succ]; omega)
+
+/-- At the boundary round (`a` is round `m` of the appended protocol) the tree has already entered
+the right protocol, so `unembedRight` reads it off directly. Kept as a named definition so that the
+three boundary branches of `splitOf` share one proof obligation, and so elaboration can infer
+`pSpec₁`/`arity₁` from the argument's type. -/
+def boundaryOf {a : Fin (m + n + 1)}
+    (t : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a)
+    (hb : (a : ℕ) = m) : SplitData arity₁ arity₂ (Fin.last m) :=
+  .boundary (unembedRight t 0 (by omega) (Fin.ext (by simp [rightRound]; omega)))
+
+/-- Build the split certificate for an appended tree at left round `rv`.
+
+Boundary detection is a plain `dite` on `rv < m` — no `Fin.lastCases` motive — and every
+constructor lands on its index without transport, because the round travels as a raw `ℕ`. -/
+def splitOf : {a : Fin (m + n + 1)} →
+    ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a →
+    (rv : ℕ) → (hlt : rv < m + 1) → a = leftRound ⟨rv, hlt⟩ → SplitData arity₁ arity₂ ⟨rv, hlt⟩
+  | _, .leaf, rv, hlt, h => by
+      have hv : m + n = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      obtain rfl : rv = m := by omega
+      exact boundaryOf .leaf (by simp only [Fin.val_last]; omega)
+  | _, .msgNode i hd msg child, rv, hlt, h =>
+      have hv : (i : ℕ) = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      if hrm : rv < m then
+        have hi : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
+        have hdir : pSpec₁.dir ⟨rv, hrm⟩ = .P_to_V := by
+          rw [← appendDir_left (pSpec₂ := pSpec₂), ← hi]; exact hd
+        .msg ⟨rv, hrm⟩ hdir (cast (by subst hi; exact appendType_left _) msg)
+          (splitOf child (rv + 1) (by omega) (leftSucc hv (by omega)))
+      else by
+        obtain rfl : rv = m := by omega
+        exact boundaryOf (.msgNode i hd msg child) (by simp only [Fin.val_castSucc]; omega)
+  | _, .chalNode i hd chals children, rv, hlt, h =>
+      have hv : (i : ℕ) = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      if hrm : rv < m then
+        have hi : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
+        have hdir : pSpec₁.dir ⟨rv, hrm⟩ = .V_to_P := by
+          rw [← appendDir_left (pSpec₂ := pSpec₂), ← hi]; exact hd
+        have hAr : appendArity arity₁ arity₂ ⟨i, hd⟩ = arity₁ ⟨⟨rv, hrm⟩, hdir⟩ := by
+          subst hi; exact appendArity_left _
+        .chal ⟨rv, hrm⟩ hdir
+          (fun j => cast (by subst hi; exact appendType_left _) (chals (Fin.cast hAr.symm j)))
+          (fun j => splitOf (children (Fin.cast hAr.symm j)) (rv + 1) (by omega)
+            (leftSucc hv (by omega)))
+      else by
+        obtain rfl : rv = m := by omega
+        exact boundaryOf (.chalNode i hd chals children)
+          (by simp only [Fin.val_castSucc]; omega)
 
 /-- Build a `SplitData` certificate from an appended tree. -/
 def splitDataOfTree {r : Fin (m + 1)}
     (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (leftRound r)) :
-    SplitData arity₁ arity₂ r := (splitDataOfTreeAux T r rfl).1
+    SplitData arity₁ arity₂ r := splitOf T r.val r.isLt rfl
+
+/-- `splitOf` is faithful: reassembling its certificate returns the tree it was built from. All
+three boundary branches reduce to the single `embedRight`/`unembedRight` round trip — the payoff of
+splitting the two builders apart. As in `embedRight_unembedRight`, the induction hypothesis is
+hoisted before `obtain rfl` so that the recursion still elaborates. -/
+theorem src_splitOf : {a : Fin (m + n + 1)} →
+    (t : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) a) →
+    (rv : ℕ) → (hlt : rv < m + 1) → (h : a = leftRound ⟨rv, hlt⟩) →
+    HEq (splitOf t rv hlt h).src t
+  | _, .leaf, rv, hlt, h => by
+      have hv : m + n = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      obtain rfl : rv = m := by omega
+      simp only [splitOf, boundaryOf, SplitData.src]
+      exact embedRight_unembedRight _ 0 _ _
+  | _, .msgNode i hd msg child, rv, hlt, h => by
+      have hv : (i : ℕ) = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      by_cases hrm : rv < m
+      · have ih := src_splitOf child (rv + 1) (by omega) (leftSucc hv (by omega))
+        obtain rfl : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
+        simp only [splitOf, dif_pos hrm, SplitData.src]
+        apply heq_of_eq
+        congr 1
+        · simp [cast_cast]
+        · exact eq_of_heq ih
+      · obtain rfl : rv = m := by omega
+        simp only [splitOf, dif_neg hrm, boundaryOf, SplitData.src]
+        exact embedRight_unembedRight _ 0 _ _
+  | _, .chalNode i hd chals children, rv, hlt, h => by
+      have hv : (i : ℕ) = rv := by
+        have hv := congrArg Fin.val h; simpa [leftRound] using hv
+      by_cases hrm : rv < m
+      · have ih := fun j => src_splitOf (children j) (rv + 1) (by omega) (leftSucc hv (by omega))
+        obtain rfl : i = Fin.castAdd n (⟨rv, hrm⟩ : Fin m) := Fin.ext (by simpa using hv)
+        simp only [splitOf, dif_pos hrm, SplitData.src]
+        apply heq_of_eq
+        congr 1
+        · funext j; simp [cast_cast]
+        · funext j; exact eq_of_heq (ih _)
+      · obtain rfl : rv = m := by omega
+        simp only [splitOf, dif_neg hrm, boundaryOf, SplitData.src]
+        exact embedRight_unembedRight _ 0 _ _
 
 /-- The `SplitData` certificate built from an appended tree faithfully represents it. -/
 theorem splitDataOfTree_src {r : Fin (m + 1)}
     (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) (leftRound r)) :
     (splitDataOfTree (arity₁ := arity₁) (arity₂ := arity₂) T).src = T :=
-  eq_of_heq (splitDataOfTreeAux T r rfl).2
+  eq_of_heq (src_splitOf T r.val r.isLt rfl)
 
 section Structure
 
 variable {S₁ : ChallengeTreeShape pSpec₁} {S₂ : ChallengeTreeShape pSpec₂}
 
-/-- If the appended source tree of a `RightProj` is structured then so is its right-protocol
-tree. -/
-theorem RightProj.tree_isStructured :
-    {r : Fin (n + 1)} → (R : RightProj S₁.arity S₂.arity r) →
-    R.src.IsStructured (S₁.append S₂) → R.tree.IsStructured S₂
+/-- If a `pSpec₂`-tree embeds into a structured appended tree then it is itself structured.
+The message case is a direct `exact`, since `embedRight`'s constructor indices are definitionally
+the ones `IsStructured` expects. -/
+theorem embedRight_isStructured :
+    {r : Fin (n + 1)} → (t : ChallengeTree pSpec₂ S₂.arity r) →
+    (embedRight (arity₁ := S₁.arity) t).IsStructured (S₁.append S₂) → t.IsStructured S₂
   | _, .leaf, _ => trivial
-  | _, .msg i h m₂ child, hR => by
-      have hround : (Fin.natAdd m i).succ = rightRound i.succ := by
-        apply Fin.ext
-        simp only [Fin.val_succ, Fin.val_natAdd, rightRound]
-        omega
-      simp only [RightProj.src, ChallengeTree.IsStructured] at hR
-      apply RightProj.tree_isStructured child
-      convert hR using 1
-      · exact hround.symm
-      · rfl
-  | _, .chal i h chals children, hR => by
-      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P := by
-        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
-      have hIdx : (⟨Fin.natAdd m i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-          = ChallengeIdx.inr ⟨i, h⟩ := by ext; rfl
-      have hAr : appendArity S₁.arity S₂.arity ⟨Fin.natAdd m i, hApp⟩ = S₂.arity ⟨i, h⟩ := by
-        rw [hIdx]; simpa [appendArity] using
-          congrArg (Sum.elim S₁.arity S₂.arity)
-            (ChallengeIdx.sumEquiv_symm_inr (pSpec₁ := pSpec₁) ⟨i, h⟩)
-      have hR' := hR
-      simp only [RightProj.src, ChallengeTree.IsStructured] at hR'
-      refine ⟨?_, fun j => RightProj.tree_isStructured (children j) (hR'.2 (Fin.cast hAr.symm j))⟩
+  | _, .msgNode i h m₂ child, hR => by
+      simp only [embedRight, ChallengeTree.IsStructured] at hR
+      exact embedRight_isStructured child hR
+  | _, .chalNode i h chals children, hR => by
+      simp only [embedRight, ChallengeTree.IsStructured] at hR
+      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P :=
+        (appendDir_right i).trans h
+      refine ⟨?_, fun j => embedRight_isStructured (children j) (hR.2 (Fin.cast
+        (appendArity_right (arity₁ := S₁.arity) (h := h) hApp).symm j))⟩
       -- `hsymm` is quantified over the dir proof so `simp` rewrites the `match` scrutinee
-      -- regardless
-      -- of which (proof-irrelevant) proof term `RightProj.src` inlined.
+      -- regardless of which (proof-irrelevant) proof term `embedRight` inlined.
       have hsymm : ∀ (P : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P),
           ChallengeIdx.sumEquiv.symm (⟨Fin.natAdd m i, P⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
             = Sum.inr ⟨i, h⟩ := fun P => by
         rw [show (⟨Fin.natAdd m i, P⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx) = ChallengeIdx.inr ⟨i, h⟩
           from by ext; rfl, ChallengeIdx.sumEquiv_symm_inr]
-      have hR1 := hR'.1
+      have hR1 := hR.1
       simp only [ChallengeTreeShape.append] at hR1
       split at hR1
       · rename_i i₁ heqs; exact absurd (heqs.symm.trans (hsymm _)) (by simp)
@@ -656,16 +678,7 @@ theorem SplitData.sndAt_isStructured :
     {r : Fin (m + 1)} → (S : SplitData S₁.arity S₂.arity r) →
     S.src.IsStructured (S₁.append S₂) → (path : LeafPath S.fst) →
     (S.sndAt path).IsStructured S₂
-  | _, .boundary rp, hS, _ => by
-      have hround : leftRound (n := n) (Fin.last m) =
-          rightRound (m := m) (0 : Fin (n + 1)) := by
-        apply Fin.ext
-        simp [leftRound, rightRound]
-      simp only [SplitData.src] at hS
-      apply rp.tree_isStructured
-      convert hS using 1
-      · exact hround.symm
-      · rfl
+  | _, .boundary t₂, hS, _ => embedRight_isStructured t₂ hS
   | _, .msg i h m₁ child, hS, path => by
       have hround : (Fin.castAdd n i).succ = leftRound i.succ := by
         apply Fin.ext
@@ -841,47 +854,45 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
            | exact HEq.rfl
            | (exact (heq_cast_iff_heq _ _ _).mpr HEq.rfl))
 
-/-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the appended
-source tree (membership form: induction on the certificate, no `LeafPath` peeling). -/
-theorem RightProj.mem_transcripts_append :
-    {r : Fin (n + 1)} → (R : RightProj arity₁ arity₂ r) → (tr₁ : FullTranscript pSpec₁) →
+/-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the embedded
+appended tree. Induction is on the `pSpec₂`-tree itself — the right-hand side of the split carries
+no certificate, so no `LeafPath` peeling is involved. -/
+theorem embedRight_mem_transcripts_append :
+    {r : Fin (n + 1)} → (t : ChallengeTree pSpec₂ arity₂ r) → (tr₁ : FullTranscript pSpec₁) →
     (pre₂ : Transcript r pSpec₂) → {tr₂ : FullTranscript pSpec₂} →
-    tr₂ ∈ R.tree.transcripts pre₂ → tr₁ ++ₜ tr₂ ∈ R.src.transcripts (rightPrefix tr₁ pre₂)
+    tr₂ ∈ t.transcripts pre₂ →
+    tr₁ ++ₜ tr₂ ∈ (embedRight (arity₁ := arity₁) t).transcripts (rightPrefix tr₁ pre₂)
   | _, .leaf, tr₁, pre₂, tr₂, htr₂ => by
-      simp only [RightProj.tree, RightProj.src, transcripts, List.mem_singleton] at htr₂ ⊢
+      simp only [embedRight, transcripts, List.mem_singleton] at htr₂ ⊢
       rw [htr₂]; exact (rightPrefix_leaf_eq_append _ _).symm
-  | _, .msg i h m₂ child, tr₁, pre₂, tr₂, htr₂ => by
-      simp only [RightProj.tree, transcripts] at htr₂
-      simp only [RightProj.src, transcripts]
+  | _, .msgNode i h m₂ child, tr₁, pre₂, tr₂, htr₂ => by
+      simp only [transcripts] at htr₂
+      simp only [embedRight, transcripts]
       rw [← rightPrefix_concat]
-      exact RightProj.mem_transcripts_append child tr₁ (pre₂.concat m₂) htr₂
-  | _, .chal i h chals children, tr₁, pre₂, tr₂, htr₂ => by
-      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P := by
-        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right] using h
-      have hAr : appendArity arity₁ arity₂ ⟨Fin.natAdd m i, hApp⟩ = arity₂ ⟨i, h⟩ := by
-        rw [show (⟨Fin.natAdd m i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
-          = ChallengeIdx.inr ⟨i, h⟩ from by ext; rfl]
-        simpa [appendArity] using
-          congrArg (Sum.elim arity₁ arity₂)
-            (ChallengeIdx.sumEquiv_symm_inr (pSpec₁ := pSpec₁) ⟨i, h⟩)
-      simp only [RightProj.tree, transcripts, List.mem_flatMap, List.mem_finRange] at htr₂
+      exact embedRight_mem_transcripts_append child tr₁ (pre₂.concat m₂) htr₂
+  | _, .chalNode i h chals children, tr₁, pre₂, tr₂, htr₂ => by
+      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.natAdd m i) = .V_to_P :=
+        (appendDir_right i).trans h
+      have hAr : appendArity arity₁ arity₂ ⟨Fin.natAdd m i, hApp⟩ = arity₂ ⟨i, h⟩ :=
+        appendArity_right hApp
+      simp only [transcripts, List.mem_flatMap, List.mem_finRange] at htr₂
       obtain ⟨j, _, hj⟩ := htr₂
-      simp only [RightProj.src, transcripts, List.mem_flatMap, List.mem_finRange]
+      simp only [embedRight, transcripts, List.mem_flatMap, List.mem_finRange]
       refine ⟨Fin.cast hAr.symm j, trivial, ?_⟩
       rw [← rightPrefix_concat]
-      exact RightProj.mem_transcripts_append (children j) tr₁ (pre₂.concat (chals j)) hj
+      exact embedRight_mem_transcripts_append (children j) tr₁ (pre₂.concat (chals j)) hj
 
 /-- A first-stage path transcript, suffixed by a leaf of the right tree it selects, is a transcript
 of the appended source tree. Induction on the certificate, threading the first-stage path via the
-`transcript`/peel lemmas; boundary delegates to `RightProj.mem_transcripts_append`. -/
+`transcript`/peel lemmas; boundary delegates to `embedRight_mem_transcripts_append`. -/
 theorem SplitData.mem_transcripts_append :
     {r : Fin (m + 1)} → (S : SplitData arity₁ arity₂ r) → (pre₁ : Transcript r pSpec₁) →
     (path₁ : LeafPath S.fst) → {tr₂ : FullTranscript pSpec₂} →
     tr₂ ∈ (S.sndAt path₁).fullTranscripts →
     (path₁.transcript pre₁) ++ₜ tr₂ ∈ S.src.transcripts (leftPrefix pre₁)
-  | _, .boundary rp, pre₁, path₁, tr₂, htr₂ => by
+  | _, .boundary t₂, pre₁, path₁, tr₂, htr₂ => by
       rw [leafPeel_spec path₁, leftPrefix_last_eq_rightPrefix_default]
-      exact RightProj.mem_transcripts_append rp pre₁ default htr₂
+      exact embedRight_mem_transcripts_append t₂ pre₁ default htr₂
   | _, .msg i h m₁ child, pre₁, path₁, tr₂, htr₂ => by
       rw [show path₁.transcript pre₁ = (peelMsg path₁).transcript (pre₁.concat m₁)
           from transcript_msg path₁ pre₁]
@@ -924,6 +935,137 @@ theorem appendSplit_fullTranscripts_append_of_mem
 
 end Membership
 
+section LeafPathGlue
+
+/-! ### Leaf-path glue: recombining a prefix path with a suffix path
+
+`appendSplit` cuts a tree; sequential composition needs the inverse **on paths**. Given a
+first-stage leaf path `p₁` and a leaf path `p₂` of the suffix tree hanging below it,
+`AppendSplit.gluePath` returns the leaf path of the original appended tree that the two jointly
+select, and `AppendSplit.fullTranscript_gluePath` identifies the transcript it reads as the
+concatenation `p₁.fullTranscript ++ₜ p₂.fullTranscript`.
+
+This is the *only* path machinery sequential composition needs, and it is needed in one direction
+only: a composed extractor consults the whole tree's leaf data at glued paths, and nothing ever
+**un-glues** a path. The glue therefore sits on the runtime path of every composed extraction, so —
+like the builders above — it is an ordinary structural recursion rather than a transport-heavy
+inverse. -/
+
+/-- Embed a leaf path of a `pSpec₂`-tree into the `embedRight`-embedded appended tree: past the
+boundary an appended tree *is* a `pSpec₂` tree, and this is that fact for paths. The branch index at
+a challenge node is transported along `appendArity_right`, exactly as `embedRight` transports the
+children it indexes. -/
+def LeafPath.embedRight : {r : Fin (n + 1)} → {t : ChallengeTree pSpec₂ arity₂ r} →
+    LeafPath t → LeafPath (ChallengeTree.embedRight (arity₁ := arity₁) t)
+  | _, _, .leaf => .leaf
+  | _, _, .msg p => .msg p.embedRight
+  | _, .chalNode i h _ _, .chal j p =>
+      .chal (Fin.cast (appendArity_right (arity₁ := arity₁) (h := h)
+        ((appendDir_right i).trans h)).symm j) p.embedRight
+
+/-- Glue a first-stage leaf path with a suffix leaf path into a leaf path of the source tree. The
+recursion follows the certificate: at the boundary the suffix path is embedded
+(`LeafPath.embedRight`), and message/challenge nodes rebuild the node around the glue of the peeled
+child path. -/
+def SplitData.gluePath : {r : Fin (m + 1)} → (S : SplitData arity₁ arity₂ r) →
+    (p₁ : LeafPath S.fst) → LeafPath (S.sndAt p₁) → LeafPath S.src
+  | _, .boundary _, _, p₂ => p₂.embedRight
+  | _, .msg _ _ _ child, p₁, p₂ => .msg (child.gluePath (peelMsg p₁) p₂)
+  | _, .chal i h _ children, p₁, p₂ =>
+      have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
+        simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
+      have hAr : appendArity arity₁ arity₂ ⟨Fin.castAdd n i, hApp⟩ = arity₁ ⟨i, h⟩ := by
+        rw [show (⟨Fin.castAdd n i, hApp⟩ : (pSpec₁ ++ₚ pSpec₂).ChallengeIdx)
+            = ChallengeIdx.inl ⟨i, h⟩ from by ext; rfl]
+        simpa [appendArity] using
+          congrArg (Sum.elim arity₁ arity₂)
+            (ChallengeIdx.sumEquiv_symm_inl (pSpec₂ := pSpec₂) ⟨i, h⟩)
+      .chal (Fin.cast hAr.symm (chalPeel p₁).1)
+        ((children (chalPeel p₁).1).gluePath (chalPeel p₁).2 p₂)
+
+/-- Transcript spec of the embedding: an embedded suffix path, read from a prefix consisting of a
+full left transcript, produces that transcript followed by what the suffix path reads. -/
+theorem LeafPath.transcript_embedRight :
+    {r : Fin (n + 1)} → {t : ChallengeTree pSpec₂ arity₂ r} → (p₂ : LeafPath t) →
+    (tr₁ : FullTranscript pSpec₁) → (pre₂ : Transcript r pSpec₂) →
+    (p₂.embedRight (arity₁ := arity₁)).transcript (rightPrefix tr₁ pre₂)
+      = tr₁ ++ₜ p₂.transcript pre₂
+  | _, _, .leaf, tr₁, pre₂ => by
+      simp only [LeafPath.embedRight, LeafPath.transcript]
+      exact rightPrefix_leaf_eq_append _ _
+  | _, _, @LeafPath.msg _ _ _ _ _ message _ path, tr₁, pre₂ => by
+      simp only [LeafPath.embedRight, LeafPath.transcript]
+      rw [← rightPrefix_concat]
+      exact LeafPath.transcript_embedRight path tr₁ (pre₂.concat message)
+  | _, _, @LeafPath.chal _ _ _ i h chals children j path, tr₁, pre₂ => by
+      have ih := LeafPath.transcript_embedRight path tr₁ (pre₂.concat (chals j))
+      rw [rightPrefix_concat] at ih
+      simp only [LeafPath.embedRight, LeafPath.transcript]
+      exact ih
+
+/-- Transcript spec of the glue: the glued path reads the prefix path's transcript followed by the
+suffix path's. The certificate-level statement behind `AppendSplit.fullTranscript_gluePath`. -/
+theorem SplitData.transcript_gluePath :
+    {r : Fin (m + 1)} → (S : SplitData arity₁ arity₂ r) → (pre₁ : Transcript r pSpec₁) →
+    (p₁ : LeafPath S.fst) → (p₂ : LeafPath (S.sndAt p₁)) →
+    (S.gluePath p₁ p₂).transcript (leftPrefix pre₁)
+      = (p₁.transcript pre₁) ++ₜ p₂.fullTranscript
+  | _, .boundary t₂, pre₁, p₁, p₂ => by
+      rw [leafPeel_spec p₁, leftPrefix_last_eq_rightPrefix_default]
+      exact LeafPath.transcript_embedRight p₂ pre₁ default
+  | _, .msg i h m₁ child, pre₁, p₁, p₂ => by
+      have ih := SplitData.transcript_gluePath child (pre₁.concat m₁) (peelMsg p₁) p₂
+      rw [show p₁.transcript pre₁ = (peelMsg p₁).transcript (pre₁.concat m₁)
+        from transcript_msg p₁ pre₁]
+      simp only [SplitData.gluePath, LeafPath.transcript]
+      rw [← leftPrefix_concat]
+      exact ih
+  | _, .chal i h chals children, pre₁, p₁, p₂ => by
+      have ih := SplitData.transcript_gluePath (children (chalPeel p₁).1)
+        (pre₁.concat (chals (chalPeel p₁).1)) (chalPeel p₁).2 p₂
+      rw [show p₁.transcript pre₁
+          = (chalPeel p₁).2.transcript (pre₁.concat (chals (chalPeel p₁).1))
+        from transcript_chal p₁ pre₁]
+      simp only [SplitData.gluePath, LeafPath.transcript]
+      rw [← leftPrefix_concat]
+      exact ih
+
+/-- Transport a leaf path along an equality of trees. Needed once, to move the glue built over a
+certificate's `src` onto the tree the certificate was read from (`splitDataOfTree_src`). -/
+def LeafPath.transport {r : Fin (m + 1)} {T T' : ChallengeTree pSpec₁ arity₁ r}
+    (h : T = T') (p : LeafPath T) : LeafPath T' := h ▸ p
+
+/-- Transporting a path along an equality of trees does not change the transcript it reads. -/
+theorem LeafPath.fullTranscript_transport {T T' : ChallengeTree pSpec₁ arity₁ 0}
+    (h : T = T') (p : LeafPath T) :
+    (p.transport h).fullTranscript = p.fullTranscript := by subst h; rfl
+
+/-- Path-level recombination for `appendSplit`: the leaf path of `T` selected by a first-stage leaf
+path together with a leaf path of the suffix tree below it. -/
+def AppendSplit.gluePath
+    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0)
+    (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) : LeafPath T :=
+  ((splitDataOfTree (r := 0) T).gluePath p₁ p₂).transport
+    (splitDataOfTree_src (r := 0) (arity₁ := arity₁) (arity₂ := arity₂) T)
+
+/-- The glued path reads exactly the concatenation of the two transcripts. This is the path-level
+counterpart of `appendSplit_fullTranscripts_append_of_mem`, and the lemma that carries leaf data
+across the seam of a composed reduction. -/
+theorem AppendSplit.fullTranscript_gluePath
+    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0)
+    (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) :
+    (AppendSplit.gluePath T p₁ p₂).fullTranscript
+      = p₁.fullTranscript ++ₜ p₂.fullTranscript := by
+  rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
+  have key := SplitData.transcript_gluePath (splitDataOfTree (r := 0) T) default p₁ p₂
+  have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
+      = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by
+    funext idx; exact idx.elim0
+  rw [hpre] at key
+  exact key
+
+end LeafPathGlue
+
 section EscapeEventAppend
 
 variable {arity₁ : pSpec₁.ChallengeIdx → ℕ} {arity₂ : pSpec₂.ChallengeIdx → ℕ}
@@ -963,3 +1105,36 @@ end AppendSplit
 end ChallengeTree
 
 end ProtocolSpec
+
+/-! ## Sequential composition of tree-based extractors -/
+
+namespace Extractor
+
+open ProtocolSpec ProtocolSpec.ChallengeTree
+
+variable {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
+  {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
+  {arity₁ : pSpec₁.ChallengeIdx → ℕ} {arity₂ : pSpec₂.ChallengeIdx → ℕ}
+
+/-- **Sequential composition of witness-only tree extractors.** Split the appended tree
+(`ChallengeTree.appendSplit`) and run the left extractor on the prefix tree, feeding it — per prefix
+leaf — the right extractor's output on the suffix tree hanging below that leaf. The intermediate
+statement the right extractor runs at is computed by `verify₁`, the **left verifier's verdict
+function**, passed as data; a package reads it off its `Verifier.PureForm` / `Verifier.GuardedForm`
+field, which is exactly why those fields carry the verdict as data rather than as an existential.
+
+The right extractor's own witnessing input is the top-level witnessing read at the glued path
+(`ChallengeTree.AppendSplit.gluePath`), and that glue is the *only* path machinery a composed
+extraction runs: extractors attribute no output statements, so nothing ever un-glues a path.
+Declining propagates — if the top witnessing declines at some glued leaf the right extractor may
+decline, hence so may the left. -/
+def TreeBased.append (verify₁ : Stmt₁ → pSpec₁.FullTranscript → Stmt₂)
+    (E₁ : TreeBased Stmt₁ Wit₁ Wit₂ pSpec₁ arity₁)
+    (E₂ : TreeBased Stmt₂ Wit₂ Wit₃ pSpec₂ arity₂) :
+    TreeBased Stmt₁ Wit₁ Wit₃ (pSpec₁ ++ₚ pSpec₂) (ChallengeTree.appendArity arity₁ arity₂) :=
+  fun stmt tree o =>
+    E₁ stmt tree.appendSplit.fst fun p₁ =>
+      E₂ (verify₁ stmt p₁.fullTranscript) (tree.appendSplit.sndAt p₁)
+        fun p₂ => o (ChallengeTree.AppendSplit.gluePath tree p₁ p₂)
+
+end Extractor

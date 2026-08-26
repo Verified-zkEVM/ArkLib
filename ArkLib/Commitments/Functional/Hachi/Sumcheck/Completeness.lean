@@ -60,7 +60,7 @@ section Rounds
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ M : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
+variable {n μ M : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
 variable (m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 

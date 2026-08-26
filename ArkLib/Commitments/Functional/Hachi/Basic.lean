@@ -30,27 +30,28 @@ and the weak-binding reduction to Module-SIS, the polynomial-evaluation reductio
 (§4.2, Lemma 8) with its polynomial-level bridge, and **the whole §4.3 opening chain** — the
 `R^lin` adapter, the HMZ25 lift (Lemma 9), the batching bridge, the corrected zero-check
 (Lemma 10), the sumcheck bridge, the paired sumcheck rounds (Lemma 11) and the final evaluation —
-in **both** security directions: each link's coordinate-wise special soundness, together with
+in **both** security directions: each link's coordinate-wise special soundness together with
 their composite, the one-iteration certificate
-`hachi_iteration_coordinateWiseSpecialSoundWithEscape`, and each link's perfect completeness.
-What is still open on the soundness side: the closing `endPiece` that consumes that iteration's
-evaluation claim (the sole sorried link of `evaluation`), and the §4.5 `Recursion/` adapters,
-separate future work with their own sorries and a documented soundness gap described in
-`Recursion/Basic.lean`.
+`hachi_iteration_coordinateWiseSpecialSoundWithEscape`, the closing `endPiece` (`EndPiece/`)
+that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
+composite `evaluation` — and each link's perfect completeness.
 
 The honest chain is closed **nonrecursively** in `Correctness.lean`: a terminal reveal-and-check
 in place of the recursion tail turns the chain into a complete opening protocol, packaged with the
 balanced committer as the scheme `hachiNonrecursive` and proved perfectly correct
 (`hachiNonrecursive_perfectCorrectness`); `Concrete.lean` instantiates it at the Ajtai lift
 commitment, where the whole honest run is computable. The *recursive* `hachi.opening`
-(`Commitment.lean`) is still a `sorry`. Every *per-link* completeness theorem is axiom-clean;
-every *composed* one inherits `sorryAx` from the generic `Reduction.append_completeness`, which is
-still `sorry`. See the `TODO` blocks in `Composition.lean` and `Commitment.lean`.
+(`Commitment.lean`) is still a `sorry`, as are the §4.5 `Recursion/` adapters, separate future
+work with their own sorries and a documented soundness gap described in `Recursion/Basic.lean`.
+Every *per-link* completeness theorem is axiom-clean; every *composed* one inherits `sorryAx`
+from the generic `Reduction.append_completeness`, which is still `sorry`. See the `TODO` blocks
+in `Composition.lean` and `Commitment.lean`.
 
 ## Folder structure
 
 The folder `Hachi/` is organized by paper section. Each subfolder carries a `Basic.lean`
-umbrella re-export inside the folder (as this file does for the whole Hachi development):
+umbrella re-export inside the folder, and this file is that umbrella for the whole Hachi
+development:
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
   `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
@@ -72,11 +73,14 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   `liftShort` are discharged, the quotient half by `RingSwitch/QuotientNorms.lean`. `Sumcheck/`'s
   per-round completeness is axiom-clean; its `m₀`-fold and composed statements inherit `sorryAx`
   from `Reduction.append_completeness`.
+* `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
+  guarded verifier checks the evaluation claim against it directly. Escape-free, `sorry`-free and
+  axiom-clean (`Reduction`, re-exported by `Basic`).
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that would
   close one iteration at the next ring's plain `QuadEval.relIn` relation (future recursion work;
   not yet composed in `Composition.lean`).
 * `Composition.lean` — the CWSS composition home: the `iteration` (the chained subprotocols,
-  rows 1–9), the still-sorried `endPiece` skeleton (send the reduced witness), and the complete
+  rows 1–9), the imported `endPiece`, and the complete
   `evaluation` = iteration ⧺ end-piece. Every package exposes the ordinary
   `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
   break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,
@@ -90,7 +94,8 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   `mem_relInBox_of_commitBalanced` — paper-exact `QuadEval`'s input relation, established for the
   balanced committer's actual output.
 * `Correctness.lean` — the **complete nonrecursive opening and its perfect correctness**: the
-  terminal reveal-and-check (`terminalCheck` and its reflection lemma) closing the chain in place
+  terminal reveal-and-check (returning `endPieceCheck` — the guarded `EndPiece/` verifier's own
+  decision procedure — as its verdict) closing the chain in place
   of the §4.5 recursion, the zero-round commitment-input adapter, their composition
   `hachiNonrecursiveOpening`, the scheme `hachiNonrecursive`, and
   `hachiNonrecursive_perfectCorrectness` through the generic bridge

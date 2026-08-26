@@ -4,6 +4,7 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.QuadEval.Basic
+import ArkLib.Commitments.Functional.Hachi.EndPiece.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Composition
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChallenge
@@ -21,11 +22,10 @@ which a witness is extracted from a suitably structured tree of accepting transc
 **imports those packages and chains them** with the universal append `▷`, which dispatches on
 the factors' package kinds and lifts each to the join automatically (both lifts are lossless). Only
 the ordinary relation seam has to match — escape events compose without a seam. The composed
-chain's `isCWSS` field is the CWSS certificate for the whole reduction. The sole non-imported
-resident is the sorried `endPiece` skeleton, hosted here until it is completed and moves to its
-own file/folder like the other subprotocols. (Hachi as a `Commitment.Scheme` —
-the honest committer `keygen`/`commit` and the `hachi` functional commitment — lives in the
-sibling `Commitment.lean`.)
+chain's `isCWSS` field is the CWSS certificate for the whole reduction. Every link is imported,
+the end-piece included (`EndPiece/Reduction.lean`); this file hosts no protocol of its own.
+(Hachi as a `Commitment.Scheme` — the honest committer `keygen`/`commit` and the `hachi` functional
+commitment — lives in the sibling `Commitment.lean`.)
 
 ## Iteration, end-piece, evaluation
 
@@ -34,9 +34,11 @@ The Hachi evaluation (opening) protocol decomposes into three pieces:
 1. **Iteration** (`iteration`): the concatenation of the subprotocols — rows 1–9 of the chain
    table below. One iteration reduces the polynomial-evaluation claim `relPolyEval` to the
    short-opening evaluation claim `relWEvalClaim` (`mle[w̃](a) = y′`) on the committed table.
-2. **End-piece** (`endPiece`, sorried skeleton): the closing component that ends a (possible run
-   of) iteration(s): the prover sends the reduced (end) witness itself to the verifier, who
-   checks the reduced claim against it directly.
+2. **End-piece** (`endPiece`, `EndPiece/`): the closing component that ends a (possible
+   run of) iteration(s): the prover sends the reduced (end) witness itself to the verifier, who
+   checks the reduced claim against it directly. **Finished** — check, verifier, guardedness,
+   extractor and the CWSS certificate `endPiece_coordinateWiseSpecialSoundWith` are all complete,
+   `sorry`-free and axiom-clean.
 3. **Evaluation** (`evaluation`): a single iteration concatenated with the end-piece — the
    complete evaluation protocol of the Hachi commitment scheme.
 
@@ -138,9 +140,16 @@ Figure 3 reduction on its own — is additionally exported as a named certificat
 * row 9, the final evaluation: `finalEval_coordinateWiseSpecialSoundWith`, the named
   `finalEvalExtractor`, and the executable `finalCheck` encoding.
 
-The **end-piece** is now the sole sorried composition skeleton (`endPiece`: verifier, guard,
-extractor and certificate — its wire format, relations and challenge-free structure are pinned).
-Every sorried encoding def carries an in-situ `**Sorried**` docstring.
+*The end-piece is finished.* `EndPiece/Reduction.lean` — its check (`endPieceCheck`), verifier,
+guardedness (`endPieceVerifier_isGuarded`, by `rfl`), extraction algorithm
+(`endPieceWitness`/`endPieceExtractor`) and CWSS certificate
+`endPiece_coordinateWiseSpecialSoundWith` are all complete, `sorry`-free and **axiom-clean**
+(`propext`/`Classical.choice`/`Quot.sound` only). Extraction is the identity on the transcript
+message, and CWSS follows from the challenge-free bridge
+(`coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx`) composed with guarded acceptance
+(`check_eq_true_of_guarded_accepting`). It is also escape-free, so it adds no disjunct to the
+composite event. With the iteration's rows 1–9 discharged as well, the composite `evaluation`
+below carries no sorried factor.
 
 ## References
 
@@ -266,8 +275,12 @@ composite's escape event is the `EscapeEvent.append`-nesting of the honest facto
 (rows 2, 4, 6, 8), each on its own subtree.
 
 The certificate `iteration.isCWSS` is the one-iteration CWSS statement — every factor discharged,
-`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header. -/
-noncomputable def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+`sorry`-free and axiom-clean; the provenance of each link is inventoried in the module header.
+
+**Computable**: every factor carries its verdict/guard maps as data (`Verifier.PureForm` /
+`Verifier.GuardedForm`), so the composed extractor `(iteration …).extractor` is an executable
+algorithm — no `Classical.choice` laundering at any seam. -/
+def iteration (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
@@ -329,9 +342,8 @@ CWSS over the endpoint relations `relPolyEval` and the evaluation claim `relWEva
 composed extraction algorithm `(iteration …).extractor`, with the composed escape event
 `(iteration …).esc` as the certificate's disjunct — the `EscapeEvent.append`-nesting of the honest
 per-row events (rows 2, 4, 6, 8), each on its own subtree. The proof term is just
-`iteration.isCWSS`, and every one of its factors is now discharged (see the module header's sorry
-inventory), so this is the end-to-end one-iteration certificate: `sorryAx` enters the development
-only at `endPiece`, i.e. at `evaluation` below. -/
+`iteration.isCWSS`, and every one of its factors is discharged (see the module header's sorry
+inventory), so this is the end-to-end one-iteration certificate. -/
 theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
@@ -359,54 +371,21 @@ theorem hachi_iteration_coordinateWiseSpecialSoundWithEscape (init : ProbComp σ
   (iteration (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl hq5 hκ hτ
     K pp φF hd hb hbpos hρ hcov hn).isCWSS
 
-/-- The end-piece wire format: one prover message sending the reduced (end) witness itself. -/
-@[reducible] def pSpecEndPiece (Wit : Type) : ProtocolSpec 1 :=
-  ⟨!v[.P_to_V], !v[Wit]⟩
-
-/-- The end-piece has no challenge round: its `ChallengeIdx` is empty. -/
-instance {Wit : Type} : IsEmpty (pSpecEndPiece Wit).ChallengeIdx :=
-  ⟨fun ⟨0, h⟩ => nomatch h⟩
-
-/- The end-piece lives here only while it is a skeleton: once completed/filled it should move to
-a separate file/folder as a subprotocol in its own right, exporting its package the same way as
-the other subprotocols (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`, `Sumcheck/`). -/
-
-/-- **The end-piece (sorried skeleton)** — the closing component of the evaluation. It ends a
-(possible run of) iteration(s): the prover sends the reduced (end) witness `w̃` itself as its one
-message, and the verifier checks the reduced claim `relWEvalClaim` against it directly (recompute
-the commitment, evaluate the multilinear extension at the point) — necessarily a **guarded**
-check, since the trivial output statement drops everything the check reads. Nothing is left to
-reduce, so the output relation is the full relation on `Unit`.
-
-**Sorried** — the verifier (the direct claim check), its guardedness, the extractor (return the
-sent witness) and the CWSS certificate. The wire format, the relations and the challenge-free
-structure are pinned, so `evaluation` below is stated at the honest seam. -/
-noncomputable def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (m₀ b : ℕ) {γ ρBound : ℕ}
-    (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
-    (φF : ZMod q →+* F) :
-    GCWSSPackage init impl
-      (WEvalStatement K.TCom F m₀) (LiftedWitness 𝓜(q, α) μ₀ n₀)
-      Unit Unit
-      (pSpecEndPiece (LiftedWitness 𝓜(q, α) μ₀ n₀)) where
-  verifier := sorry
-  struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaim 𝓜(q, α) m₀ γ ρBound b K φF
-  relOut := Set.univ
-  isGuarded := sorry
-  extractor := sorry
-  isCWSS := sorry
+/- The end-piece lives in `EndPiece/` as a subprotocol in its own right, exporting its
+`GCWSSPackage` the same way as the other subprotocols (`QuadEval/`, `RingSwitch/`, `ZeroCheck/`,
+`Sumcheck/`). Only its use in `evaluation` remains here. -/
 
 /-- **The complete Hachi evaluation** (the opening argument of the commitment scheme): a single
 `iteration` concatenated with the `endPiece`. The composed reduction takes the
 polynomial-evaluation claim `relPolyEval` all the way to the trivial claim: after the end-piece
 the verifier has checked the reduced witness against the reduced claim itself, so nothing is left
-to reduce. The certificate is `(evaluation …).isCWSS`; its one skeletal factor is the sorried
-`endPiece` — `iteration` is discharged, so this is where `sorryAx` enters the development. -/
-noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+to reduce. The certificate is `(evaluation …).isCWSS`; with the iteration's rows 1–9 discharged
+and the `endPiece` factor `sorry`-free, axiom-clean and escape-free, no factor is skeletal. -/
+def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hq5 : q % 8 = 5) {b ω γ ρBound m₀ m₁ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
     [SampleableType (ShortChallenge 𝓜(q, α) ω)]
     (K : LiftCom (LiftedWitness 𝓜(q, α) μ₀ n₀) (liftShort 𝓜(q, α) γ ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom]
     (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
       innerDigits dRows)
     (φF : ZMod q →+* F)
@@ -437,19 +416,20 @@ noncomputable def evaluation (init : ProbComp σ) (impl : QueryImpl oSpec (State
       (h₂ := instSampleableTypeChallengePSpecFinalEval)
   let iter := iteration (b := b) (zDigits := zDigits) (ω := ω) (m₀ := m₀) (m₁ := m₁) init impl
     hq5 hκ hτ K pp φF hd hb hbpos hρ hcov hn
-  let closing := endPiece init impl m₀ b K φF
+  let closing := endPiece 𝓜(q, α) m₀ γ ρBound b init impl K φF
   iter ▷ closing
 
 end Evaluation
 
 /-! ## TODO — growing the composition
 
-* **Discharging the skeleton.** Work through the sorry inventory in the module header in
-  dependency order: complete `endPiece` above, then instantiate `LiftCom` with the inner-outer
-  commitment (without re-decomposition, with its collision escape via
-  `outputToModuleSIS_valid_of_verified`).
-* **Computability.** `iteration` and `evaluation` are `noncomputable`; making them computable is
-  tracked with @ErVinuelas.
+* **Instantiating `LiftCom`.** The end-piece and every iteration link are done; what remains is
+  instantiating `LiftCom` with the inner-outer commitment (without re-decomposition, with its
+  collision escape via `outputToModuleSIS_valid_of_verified`).
+* **Computability.** `iteration` is computable: guard and verdict maps ride along as data
+  (`Verifier.PureForm` / `Verifier.GuardedForm`), so the composed extractor executes. The
+  end-piece's fields are executable as well (`EndPiece/Reduction.lean`), so `evaluation` is
+  computable end to end.
 * **§3 packing head (external extension-field claims).** The paper's headline
   multilinear-over-`F_{q^k}` interface (§3.1/§3.2) wraps an extension-field evaluation claim in
   front of `relPolyEval`; it is planned as an instance of the generalized `RingSwitching`

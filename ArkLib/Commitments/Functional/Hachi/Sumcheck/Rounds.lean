@@ -17,7 +17,7 @@ import CompPoly.Univariate.Linear
 
   The two sumchecks (for `H₀` and `H_α`) run with shared challenges: each round's message is
   the pair of univariate round polynomials `(g_i^{(0)}, g_i^{(α)})` (degrees
-  `roundDegZero b = 2b` resp. `roundDegAlpha = 2`), answered by one scalar challenge
+  `roundDegZero b = 2b` resp. `roundDegAlpha = 2`), followed by one scalar challenge
   `a_i ← F` — the `pSpecScalar (RoundMsg F b) F` wire format.
 
   The round check `g_i(0) + g_i(1) = target_{i−1}` (for both components) reads the previous
@@ -32,7 +32,8 @@ import CompPoly.Univariate.Linear
   same commitment, the escape event `roundEsc` — or all branches share one witness, whose
   partial sums agree with the round polynomials at `k` distinct challenges and hence
   everywhere; evaluating at `0` and `1` and using the round check recovers the previous
-  round's claim.
+  round's claim. The computable extractor reads the designated branch opening from the
+  supplied valid leaf witnessing.
 
   The loop `roundsChain` composes the rounds by recursion over the binary guarded append, and
   **re-pins the relation seams definitionally** — `roundsChain_relIn` / `roundsChain_relOut`
@@ -89,7 +90,7 @@ section Protocol
 
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
-variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
+variable {n μ : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
 variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
@@ -121,6 +122,23 @@ def roundVerifier {TCom : Type} (i : ℕ) :
       pure (roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩))
     else failure
 
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The round verifier's guardedness as computable data (`Verifier.GuardedForm`): the guard is
+`roundCheck` and the verdict is the extended-prefix / re-targeted statement, so `verify_eq` is
+`rfl`.
+
+The round package carries this instead of a `Verifier.IsGuarded` instance, because a composed chain
+must *run* the left verdict at the seam to know which statement to extract the right factor at (and
+the composed escape event must name it too); reading either off the `IsGuarded` existential would
+cost `Classical.choice`. -/
+def roundVerifierGuardedForm {TCom : Type} (i : ℕ) :
+    (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
+      (F := F) i).GuardedForm where
+  check := fun stmt tr => roundCheck Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩)
+  out := fun stmt tr => roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩)
+    (tr.challenges ⟨1, rfl⟩)
+  verify_eq := fun _ _ => rfl
+
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The round verifier is guarded **with** the round check and `roundOut` — definitionally. This is
 the form the guarded scalar-round engine consumes. -/
@@ -128,8 +146,8 @@ theorem roundVerifier_isGuardedWith {TCom : Type} (i : ℕ) :
     (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (n := n) (μ := μ) (TCom := TCom)
       (F := F) i).IsGuardedWith
       (fun stmt tr => roundCheck Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩))
-      (fun stmt tr =>
-        roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩) (tr.challenges ⟨1, rfl⟩)) :=
+      (fun stmt tr => roundOut Φ m₀ m₁ b stmt (tr.messages ⟨0, rfl⟩)
+        (tr.challenges ⟨1, rfl⟩)) :=
   fun _ _ => rfl
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
@@ -190,25 +208,22 @@ def roundEsc
         nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
     (fun _ _ _ resp => ∃ j j', (resp j, resp j') ∈ K.Collision)
 
-/-- The per-round extraction algorithm: the guarded scalar-round tree extractor at `roundOut`,
-returning the first branch's opening. On an accepting tree the `k` branch openings either
-disagree — then `roundEsc` fires — or all agree, so any branch's opening satisfies the
-round-`i` claim; the work is in `round_coordinateWiseSpecialSoundWithEscape`, not here. -/
-noncomputable def roundExtractor
+/-- The per-round extraction algorithm reads the first branch's opening from the supplied valid
+leaf witnessing at `roundOut`. On an accepting tree the `k` branch openings either disagree —
+then `roundEsc` fires — or all agree, so that branch's opening satisfies the round-`i` claim;
+the work is in `round_coordinateWiseSpecialSoundWithEscape`, not here. -/
+def roundExtractor
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (i : ℕ) :
     Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ i) (LiftedWitness Φ μ n)
-      (pSpecScalar (RoundMsg F b) F)
+      (LiftedWitness Φ μ n) (pSpecScalar (RoundMsg F b) F)
       (CWSSStructure.toShape
         (scalarStructure (max (roundDegZero b) roundDegAlpha + 1) (round_two_le_k b))).arity :=
   ScalarRound.treeExtractorScalarOfValid (round_two_le_k b)
-    (fun stmt g a => roundOut Φ m₀ m₁ b stmt g a)
-    (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1))
     (fun _ _ _ resp => resp ⟨0, Nat.succ_pos _⟩)
 
-omit [NeZero q] [SampleableType F] in
 /-- Per-round coordinate-wise special soundness of the paired sumcheck round at
-`k = max (2b) 2 + 1`, with extractor `roundExtractor` and escape event `roundEsc`.
+`k = max (2b) 2 + 1`, with computable extractor `roundExtractor` and escape event `roundEsc`.
 
 The `k` accepting branches of a tree node share the message pair `(g^{(0)}, g^{(α)})` and
 carry pairwise-distinct challenges. If two branch openings differ, both open the same
@@ -244,7 +259,6 @@ theorem round_coordinateWiseSpecialSoundWithEscape
       (roundVerifier (oSpec := oSpec) Φ m₀ m₁ b (TCom := K.TCom) i)
       (roundExtractor Φ m₀ m₁ bound ρBound b K φF i) := by
   classical
-  -- A round exists only when a cube coordinate is left to fold, so `m₀` is a successor.
   obtain ⟨M, rfl⟩ : ∃ M, m₀ = M + 1 := ⟨m₀ - 1, by omega⟩
   refine ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar_guarded
     init impl (round_two_le_k b) _
@@ -252,22 +266,18 @@ theorem round_coordinateWiseSpecialSoundWithEscape
     (fun stmt g a => roundOut Φ (M + 1) m₁ b stmt g a)
     (roundVerifier_isGuardedWith Φ (M + 1) m₁ b i) _ _ _ _ ?_
   intro s g fam resp hcheck hresp hinj
-  -- The index of the branch the assembler reads, and its opening.
   set z : Fin (max (roundDegZero b) roundDegAlpha + 1) := ⟨0, Nat.succ_pos _⟩ with hz
   by_cases hall : ∀ j, resp j = resp z
   case neg =>
-    -- Two branches open the shared commitment `s.zc.t` differently: a short collision.
     refine Or.inl ?_
     push Not at hall
     obtain ⟨j, hj⟩ := hall
     exact ⟨j, z, hj, ((hresp j).1).trans ((hresp z).1).symm, (hresp j).2.1, (hresp z).2.1⟩
   case pos =>
-  -- The guard fact, unpacked once: both round polynomials sum to the round-`i` targets on `{0,1}`.
   have hguard := hcheck z
   simp only [roundCheck, Bool.and_eq_true, beq_iff_eq] at hguard
   refine Or.inr ⟨(hresp z).1, (hresp z).2.1, ?_, ?_, (hresp z).2.2.2.2⟩
-  · -- The range sumcheck claim.
-    have hdefect : roundPoly (sumcheckPolyZero Φ (M + 1) φF b s.zc.τ₀ (resp z))
+  · have hdefect : roundPoly (sumcheckPolyZero Φ (M + 1) φF b s.zc.τ₀ (resp z))
         ⟨i, hi⟩ s.challenges = (g.1.1).toPoly := by
       refine Polynomial.eq_of_natDegree_lt_card_of_eval_eq _ _ hinj (fun j => ?_) ?_
       · rw [roundPoly_eval, ← CPolynomial.eval_toPoly]
@@ -286,8 +296,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
         ← CPolynomial.eval_toPoly, ← CPolynomial.eval_toPoly]
       exact hguard.1
     exact key
-  · -- The linear sumcheck claim, at the `roundDegAlpha = 2` pin.
-    have hdefect : roundPoly
+  · have hdefect : roundPoly
         (sumcheckPolyAlpha Φ (M + 1) m₁ φF b s.zc.rlin s.zc.α s.zc.τα (resp z))
         ⟨i, hi⟩ s.challenges = (g.2.1).toPoly := by
       refine Polynomial.eq_of_natDegree_lt_card_of_eval_eq _ _ hinj (fun j => ?_) ?_
@@ -314,7 +323,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
 verifier with the `k = max (2b) 2 + 1` special-soundness structure, reducing the round-`i`
 relation to the round-`(i+1)` relation, with escape event `roundEsc`. The `i < m₀` and
 `0 < b` hypotheses come from `round_coordinateWiseSpecialSoundWithEscape`. -/
-noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (hb : 0 < b) (i : ℕ) (hi : i < m₀) :
     EscapeGCWSSPackage init impl
@@ -326,7 +335,7 @@ noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
   relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b i
   relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b (i + 1)
   esc := roundEsc Φ m₀ m₁ bound ρBound b K φF i
-  isGuarded := roundVerifier_isGuarded Φ m₀ m₁ b i
+  isGuarded := roundVerifierGuardedForm Φ m₀ m₁ b i
   extractor := roundExtractor Φ m₀ m₁ bound ρBound b K φF i
   isCWSS :=
     round_coordinateWiseSpecialSoundWithEscape Φ m₀ m₁ bound ρBound b init impl K φF hb i hi
@@ -334,13 +343,27 @@ noncomputable def roundPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Sta
 /-- The empty round loop has no challenges. -/
 instance : IsEmpty (roundsSpec F b 0).ChallengeIdx := ⟨fun i => Fin.elim0 i.1⟩
 
+/-- The computable purity data of the round loop's base case (`Verifier.GuardedForm`'s pure
+sibling): the zero-round identity package at the head of `roundsChainAux` is a `ReduceClaim`
+head at `mapStmt := id`, so its verdict is the input statement itself and `verify_eq` is `rfl`.
+
+The recursion's base package carries this rather than a `Verifier.IsPure` instance, for the reason
+every link in the chain does: the composed extractor must *run* the left verdict at the seam, and
+reading it off the `IsPure` existential would cost `Classical.choice`. -/
+def roundsBaseVerifierPureForm {TCom : Type} :
+    (ReduceClaim.verifier oSpec
+      (id : NestedRoundStatement Φ TCom F n μ m₀ m₁ 0 →
+        NestedRoundStatement Φ TCom F n μ m₀ m₁ 0)).PureForm where
+  verify := fun stmt _ => stmt
+  verify_eq := fun _ _ => rfl
+
 /-- The composed sumcheck loop together with its relation invariant: `count` paired rounds
 chained by recursion over the binary guarded append (base case: the zero-round identity
 package), bundled with proofs that the composite's `relIn`/`relOut` are the round-`0` and
 round-`count` relations. The invariant must ride along because the recursion's endpoints are
 definitional only per instance, not for an open `count`. The composite's escape event is
 whatever the recursion built — a nested disjunction of the per-round `roundEsc`s. -/
-noncomputable def roundsChainAux (init : ProbComp σ)
+def roundsChainAux (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (hb : 0 < b) :
@@ -358,10 +381,8 @@ noncomputable def roundsChainAux (init : ProbComp σ)
         relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
         relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
         esc := fun _ _ => False
-        isPure := ⟨fun stmt _ => stmt, fun _ _ => rfl⟩
-        extractor := ReduceClaim.treeExtractor (mapStmt := id)
-          (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) (fun _ w => w)
-          CWSSStructure.ofIsEmpty
+        isPure := roundsBaseVerifierPureForm Φ m₀ m₁
+        extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
         isCWSS := Verifier.coordinateWiseSpecialSoundWith.withEscape init impl _
           (ReduceClaim.verifier_coordinateWiseSpecialSoundWith
             (relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
@@ -384,7 +405,7 @@ The recursion's own relation fields are stuck terms for an open `count`, so this
 certificate along the recursion invariant once and for all. Downstream compositions can then
 discharge both seams by `rfl`, i.e. compose with the universal `▷` instead of the explicit
 `appendEscapeGuarded`/`appendGuarded` at a named seam lemma. -/
-noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) (hb : 0 < b) (count : ℕ) (hcount : count ≤ m₀) :
     EscapeGCWSSPackage init impl
@@ -397,7 +418,6 @@ noncomputable def roundsChain (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
     relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b count
     isCWSS := by have h := aux.1.isCWSS; rw [aux.2.1, aux.2.2] at h; exact h }
 
-omit [NeZero q] in
 /-- The loop's input relation is the round-`0` relation (used when composing after the
 sumcheck bridge) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -407,7 +427,6 @@ theorem roundsChain_relIn (init : ProbComp σ) (impl : QueryImpl oSpec (StateT �
       nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 :=
   rfl
 
-omit [NeZero q] in
 /-- The loop's output relation is the round-`count` relation (used when composing with the
 final-evaluation step) — definitional, by the re-pinning in `roundsChain`. -/
 theorem roundsChain_relOut (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))

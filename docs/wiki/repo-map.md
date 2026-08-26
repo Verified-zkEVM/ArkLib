@@ -73,7 +73,7 @@ home_page/            site assets and assembled website root
   the Greyhound [NS24] / Hachi [NOZ26] *inner-outer* Ajtai lattice commitment over a cyclotomic
   ring `Rq Φ`. **This development is in progress.** The folder is organized by paper section;
   every subfolder carries its umbrella as `Basic.lean` inside that subfolder.
-  `ArkLib/Commitments/Functional/Hachi.lean` is the folder-level landing page, with the full
+  `ArkLib/Commitments/Functional/Hachi/Basic.lean` is the folder-level landing page, with the full
   folder map in its module docstring. Layout:
   - `Gadget/` (§2.1) — `Gadget/Core` is the base-`b` gadget matrix `G` and its norm-reducing digit
     decomposition `G⁻¹`; `Gadget/Norms` is the centered `ℓ₂²`/`ℓ∞` shortness bounds for both
@@ -108,7 +108,8 @@ home_page/            site assets and assembled website root
     the composable `quadEvalPackage`, and the reduction's derived norm constants
     `quadEvalZL2SqBound` = `B_z` / `quadEvalBetaSq` = `4·B_z` (the generic tree plumbing lives in
     `Security/CoordinateWiseSpecialSoundness/SingleRound`; the supporting norm growth is in
-    `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `Gadget/Norms`). `QuadEval/Bridge` is the
+    `Data/Lattices/CyclotomicRing/NormBounds/Basic` and `Gadget/Norms`; the executable division
+    the extraction divides by is `Data/Lattices/CyclotomicRing/Inverse`). `QuadEval/Bridge` is the
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
@@ -138,8 +139,9 @@ home_page/            site assets and assembled website root
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
     escape *event*) for the links whose extraction can break an assumption. The nine-link
-    iteration's soundness side is now **complete and axiom-clean**; its remaining work is the
-    honest-prover/completeness layer and the separate `endPiece` skeleton.
+    iteration's soundness side is **complete and axiom-clean**, with a **computable**
+    composed extractor — as is the closing `EndPiece/` — so the remaining work is the
+    honest-prover/completeness layer.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -181,9 +183,11 @@ home_page/            site assets and assembled website root
     corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
     `k`-ary, individual degree `< k` — with the computable view in
-    `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; the weak-binding failure mode is the
-    escape event `nestedZeroCheckEsc`, whose hardness target is `LiftCom.Collision`). Its module
-    docstring carries the counterexample and the repair; the full analysis is
+    `ArkLib/ToCompPoly/Multilinear/NestedEvaluationTree.lean`; its named
+    `nestedZeroCheckExtractor` is an executable all-left lookup into
+    `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode
+    is the escape event `nestedZeroCheckEsc`, whose hardness target is `LiftCom.Collision`). Its
+    module docstring carries the counterexample and the repair; the full analysis is
     `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Completeness` is the honest direction
     (`nestedZeroCheckReduction_perfectCompleteness`, proven and axiom-clean, with error exactly
     zero — `relBatched` asserts the identities, so nothing about the challenge distribution is
@@ -196,16 +200,29 @@ home_page/            site assets and assembled website root
     round-polynomial layer (cube split, the partial sum as a univariate with its evaluation and
     degree lemmas — proof-side in Mathlib's `Polynomial`, plus the computable `computableRoundPoly`
     the prover sends and the transfer lemma tying the two together); `Sumcheck/Rounds` is the
-    `m₀`-round guarded paired sumcheck (Lemma 11, loop by recursion over `▷ᵍ`);
-    `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail) landing on the
-    recursion's evaluation claim; `Sumcheck/Completeness` is the honest side — `honestComputeG`,
-    one round's perfect completeness (axiom-clean), the `m₀`-fold honest chain sharing its
-    verifier with `roundsChain`, and `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
+    `m₀`-round guarded paired sumcheck (Lemma 11, loop by recursion over `▷ᵍ`) with a computable
+    extractor that reads the supplied branch openings; `Sumcheck/FinalEval` is the guarded reveal
+    of `w̃(a)` (Figure 7 tail) landing on the short-opening evaluation claim `relWEvalClaim`,
+    whose computable extractor reads the unique leaf opening; `Sumcheck/Completeness` is the
+    honest side — `honestComputeG`, one round's perfect completeness (axiom-clean), the `m₀`-fold
+    honest chain sharing its verifier with `roundsChain`, and
+    `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
     re-exports the folder and records why this round layer is *not* built on the generic
     `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
     extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
     side: every *folded* completeness statement inherits `sorryAx` from the generic
     `Reduction.append_completeness`, which is still `sorry`.
+  - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
+    reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
+    (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
+    reduce. Escape-free — it re-reads data just sent, so no hardness assumption is consulted — and
+    **`sorry`-free and axiom-clean**: extraction is the identity on the transcript message
+    (`endPieceWitness`), and CWSS closes through the challenge-free bridge plus guarded
+    acceptance. Certified in both directions about the same verifier: `endPieceReduction` /
+    `endPieceReduction_perfectCompleteness` is the honest side, and the full reflection lemma
+    `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
+    (`Correctness.lean`), so the closing link has one decision procedure.
+    `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
   - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
     `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
@@ -220,11 +237,11 @@ home_page/            site assets and assembled website root
     certificate (`sorry`-free and axiom-clean). `eval_coordinateWiseSpecialSoundWithEscape` states
     the same for the rows 1–2 front alone — the paper's Figure 3 reduction. `roundsChain` re-pins
     the sumcheck loop's relation seams definitionally, so the guarded tail composes with the
-    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` is
-    the sorried skeleton closing a run of iterations (the prover reveals the reduced witness and
-    the verifier checks the reduced claim against it directly), and `evaluation` is
-    `iteration ▷ endPiece` — the complete opening argument. Escape events compose along the chain
-    by `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
+    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` (imported
+    from `EndPiece/`, `sorry`-free and axiom-clean) closes a run of iterations, and `evaluation`
+    is `iteration ▷ endPiece` — the complete opening argument, with no sorried factor left.
+    Escape events compose along the chain by `ChallengeTree.EscapeEvent.append`, so only relation
+    seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
     `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece, the §4.5
@@ -420,10 +437,15 @@ home_page/            site assets and assembled website root
 - Transcript-tree infrastructure for special-soundness-style notions lives in
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,
-  `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound` (a
-  tree-based extractor recovering a witness from every `S`-structured accepting tree). `Basic` also
-  defines the **escape layer**: `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full
-  challenge trees, with the trusted-spec contract in its docstring) and
+  `Extractor.TreeBased`, and the shape-generic soundness core `Verifier.treeSpecialSound`. The
+  extractor is **witness-only**: it consumes the tree *and* one candidate output witness per leaf
+  (`ChallengeTree.LeafWitnesses`, honest when each answer certifies in `relOut` some statement the
+  verifier can actually output there — `LeafWitnesses.IsValid`), and returns `Option WitIn`. The
+  notion says extraction succeeds on every `S`-structured accepting tree at every valid witnessing;
+  the unconditioned reading follows by closing the extractor at `ChallengeTree.canonWitnesses`
+  (`treeSpecialSoundWith.mem_relIn_of_isAccepting`). `Basic` also defines the **escape layer**:
+  `ChallengeTree.EscapeEvent` (a statement-indexed predicate on full challenge trees, with the
+  trusted-spec contract in its docstring) and
   `Verifier.treeSpecialSoundWithEscape`, whose conclusion is `esc stmt tree ∨ extraction succeeds`;
   the plain notion is the never-firing event (`treeSpecialSoundWithEscape_false_iff`) and every plain
   certificate lifts losslessly (`treeSpecialSoundWith.withEscape`). `Composition`
@@ -485,9 +507,10 @@ home_page/            site assets and assembled website root
   **event** field), the lossless kind lifts `toEscape`/`toGuarded`, all mixed appends, and the
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
-  **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded`, the guarded package
-  `GCWSSPackage` with its append `▷ᵍ`, the escape-threaded guarded binary CWSS append theorem,
-  and the plain guarded append derived from it at the never-firing events. The umbrella
+  **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded` and their data form
+  `Verifier.GuardedForm` (check and verdict map as fields, which keeps composed extractors
+  computable), the guarded package `GCWSSPackage` with its append `▷ᵍ`, the guarded seam
+  lemmas, and both guarded binary CWSS append theorems (plain and escape-threaded). The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.
