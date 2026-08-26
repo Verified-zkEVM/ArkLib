@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Commitment
 import ArkLib.Commitments.Functional.Hachi.Composition
+import ArkLib.Commitments.Functional.Hachi.Recursion.Basic
 
 /-!
 # Hachi: a Lattice-Based Multilinear Polynomial Commitment
@@ -16,13 +17,18 @@ inner-outer Ajtai commitment over the power-of-two cyclotomic ring `Z_q[X] / (X^
 **This development is in progress.** Finished and `sorry`-free — axiom-clean down to the
 Lyubashevsky–Seiler short-element invertibility (`isUnit_of_l1Norm_le`) the soundness rests on,
 which is itself proven, not deferred: the inner-outer commitment (§4.1) with perfect correctness
-and the weak-binding reduction to Module-SIS, and the polynomial-evaluation reduction
-(§4.2, Lemma 8) with its polynomial-level bridge. The §4.3 opening subprotocols are in the tree as
-sorried skeletons, inventoried link by link in `Composition.lean`; the §4.5 `Recursion/` adapters
-are separate future work, with their own sorries and a documented soundness gap described in
-`Recursion/Basic.lean`. Still to come are their proofs and the completeness layer — the
-honest-prover `opening` (`hachi.opening` in `Commitment.lean`). See the `TODO` blocks in
-`Composition.lean` and `Commitment.lean`.
+and the weak-binding reduction to Module-SIS, the polynomial-evaluation reduction
+(§4.2, Lemma 8) with its polynomial-level bridge, and **the whole §4.3 opening chain** — the
+`R^lin` adapter, the HMZ25 lift (Lemma 9), the batching bridge, the corrected zero-check
+(Lemma 10), the sumcheck bridge, the paired sumcheck rounds (Lemma 11) and the final evaluation —
+together with their composite, the one-iteration certificate
+`hachi_iteration_coordinateWiseSpecialSoundWithEscape`, and the closing `endPiece` (`EndPiece/`)
+that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
+composite `evaluation`. What is still open: the
+completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`) — and the
+§4.5 `Recursion/` adapters, separate future work with their own sorries and a documented soundness
+gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.lean` and
+`Commitment.lean`.
 
 ## Folder structure
 

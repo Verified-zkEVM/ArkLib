@@ -22,6 +22,13 @@ dimensions.
 - [CS25] Crites--Stewart, Theorem 2.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -33,7 +40,7 @@ variable {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
 
 open scoped NNReal in
-private def rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
+private theorem rs_eps_ca_ne_top (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) :
     ProximityGap.epsCa (F := F) (A := F) C δ_fld δ_int ≠ ⊤ := by
   classical
   refine ne_top_of_le_ne_top ENNReal.one_ne_top ?_
@@ -47,16 +54,16 @@ private def rs_reciprocal_stack (domain : ι ↪ F) (u : ι → F) (a : F) :
     Code.WordStack F (Fin 2) ι :=
   fun j i => Fin.cases (u i / (domain i - a)) (fun _ => -1 / (domain i - a)) j
 
-private def rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
+private theorem rs_reciprocal_stack_one_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 1 i = -1 / (domain i - a) := by
   rfl
 
-private def rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
+private theorem rs_reciprocal_stack_zero_apply (domain : ι ↪ F) (u : ι → F) (a : F) (i : ι) :
     rs_reciprocal_stack domain u a 0 i = u i / (domain i - a) := by
   rfl
 
 open scoped NNReal ProbabilityTheory in
-private def rs_fold_probability_le_eps_ca_of_not_joint
+private theorem rs_fold_probability_le_eps_ca_of_not_joint
     (C : Set (ι → F)) (δ_fld δ_int : ℝ≥0) (v : Code.WordStack F (Fin 2) ι)
     (hnot : ¬ Code.jointProximity C (u := v) δ_int) :
     Pr_{let γ ← $ᵖ F}[Code.relDistFromCode (v 0 + γ • v 1) C ≤ δ_fld] ≤

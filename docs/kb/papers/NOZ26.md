@@ -154,9 +154,11 @@ Ring-switching layer:
   `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
 - Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
   Lemma 5's field/isomorphism conclusion.
-- Complete the still-sorried Hachi-specific links, notably Lemma 9, the sumcheck bridge and
-  summands, Lemma 11, final evaluation, and recursion handoff. The corrected Lemma 10 and its
-  batching bridge are already proved.
+- Complete the remaining Hachi-specific work: the closing end-piece and the §4.5 recursion
+  adapters (partial-evaluation head, `Z`-packing bridge, trace handoff). Lemma 9, the batching
+  bridge, the corrected Lemma 10, the sumcheck bridge and its summand identities, Lemma 11 and the
+  final evaluation are all proved and axiom-clean, so the one-iteration opening certificate
+  (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
   proved in their respective modules.

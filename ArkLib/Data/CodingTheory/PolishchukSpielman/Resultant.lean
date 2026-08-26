@@ -286,7 +286,8 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
             omega)
       have hdegBQ : (B * Q).natDegree < n + m := by
         by_cases hm0 : m = 0
-        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]; rfl]; simp; omega
+        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]]
+          simpa using hnmpos
         · have hndeg : B.natDegree ≤ n := by simpa [natDegreeY] using hn
           have hQnat : Q.natDegree < m := by
             simpa [hQ_ofFn] using

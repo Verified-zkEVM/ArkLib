@@ -23,6 +23,13 @@ finite-family incidence estimate.
 - [GCXK25] Theorem 3.
 -/
 
+-- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
+-- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
+-- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
+set_option linter.unusedFintypeInType false
+set_option linter.unusedDecidableInType false
+set_option linter.unusedSectionVars false
+
 namespace CodingTheory
 
 open scoped NNReal
@@ -44,7 +51,7 @@ private noncomputable def large_family_high {κ ι π : Type} [Fintype κ] [Fint
   exact Finset.univ \ large_family_low A D
 
 open scoped BigOperators in
-private def large_family_sum_card_eq_sum_incidence
+private theorem large_family_sum_card_eq_sum_incidence
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) :
     (∑ x : κ, ((A x).card : ℝ)) =
@@ -65,7 +72,7 @@ private def large_family_sum_card_eq_sum_incidence
           exact Finset.sum_boole (R := ℝ) (fun x : κ => i ∈ A x) Finset.univ
 
 open scoped BigOperators in
-private def large_family_sum_sq_incidence_eq_sum_inter
+private theorem large_family_sum_sq_incidence_eq_sum_inter
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) :
     (∑ i : ι,
@@ -121,7 +128,7 @@ private def large_family_sum_sq_incidence_eq_sum_inter
 private def linear_mca_affine_agreement (u : Fin 2 → ι → F) (x : F) (c : ι → F) : Finset ι :=
   Finset.univ.filter fun i => u 0 i + x * u 1 i = c i
 
-private def linear_mca_affine_two_agreements (C : LinearCode ι F)
+private theorem linear_mca_affine_two_agreements (C : LinearCode ι F)
     (u : Fin 2 → ι → F) (x y : F) (hxy : x ≠ y)
     (cx cy : ι → F) (hcx : cx ∈ C) (hcy : cy ∈ C) (S : Finset ι)
     (hx : ∀ i ∈ S, u 0 i + x * u 1 i = cx i)
@@ -159,7 +166,7 @@ private noncomputable def linear_mca_bad_scalars
     IsMCA (AffineLineGenerator F) C x u
       (1 - (1 - p + η) ^ ((1 : ℝ) / 2))
 
-private def linear_mca_high_algebra (m p η s : ℝ)
+private theorem linear_mca_high_algebra (m p η s : ℝ)
     (hp_lt : p < 1) (hη_pos : 0 < η)
     (hs_sq : s ^ 2 = 1 - p + η)
     (hineq : m * s ^ 2 ≤ 1 + (m - 1) * (1 - p)) :
@@ -168,7 +175,7 @@ private def linear_mca_high_algebra (m p η s : ℝ)
   nlinarith
 
 open scoped BigOperators in
-private def large_family_sparse_card_lt
+private theorem large_family_sparse_card_lt
     {κ ι : Type} [Fintype κ] [Fintype ι] [DecidableEq ι]
     (A : κ → Finset ι) (p η s : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ)) (hp_lt : p < 1)
@@ -263,7 +270,7 @@ private def large_family_sparse_card_lt
     nlinarith
   exact linear_mca_high_algebra m p η s hp_lt hη_pos hs_sq hineq
 
-private def large_family_high_card_le_of_domains
+private theorem large_family_high_card_le_of_domains
     {κ ι π : Type} [Fintype κ] [Fintype ι] [Fintype π] [DecidableEq ι]
     (A : κ → Finset ι) (D : π → Finset ι) (δ η s : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ)) (hδ_lt : δ < 1)
@@ -302,7 +309,7 @@ private def large_family_high_card_le_of_domains
     simpa [H] using hsparse
   exact hcard.le
 
-private def linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
     [DecidableEq S] [DecidableEq α]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -340,7 +347,7 @@ private def linear_mca_low_family_card_le {α S : Type} [Fintype S] [Nonempty S]
     nlinarith
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
-private def linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
+private theorem linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] [Nonempty S]
     [DecidableEq S] [DecidableEq α]
     (B : Finset α) (A : α → Finset S) (D : Finset S) (p : ℝ)
     (hproper : ∀ a ∈ B, D ⊂ A a)
@@ -380,7 +387,7 @@ private def linear_mca_low_family_card_le_of_disjoint {α S : Type} [Fintype S] 
   exact (by exact_mod_cast hcardNat : (B.card : ℝ) ≤ (Dᶜ.card : ℝ)).trans hcompR
 
 open scoped BigOperators in
-private def large_family_low_card_le_of_domains
+private theorem large_family_low_card_le_of_domains
     {κ ι π : Type} [Fintype κ] [Fintype ι] [Fintype π] [DecidableEq ι]
     (A : κ → Finset ι) (D : π → Finset ι) (δ : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ))
@@ -479,7 +486,7 @@ private def large_family_low_card_le_of_domains
         ring
 
 open scoped BigOperators in
-private def large_family_card_le_of_domains
+private theorem large_family_card_le_of_domains
     {κ ι π : Type} [Fintype κ] [Fintype ι] [Fintype π] [DecidableEq ι]
     (A : κ → Finset ι) (D : π → Finset ι) (δ η s : ℝ)
     (hn : 0 < (Fintype.card ι : ℝ))
@@ -531,7 +538,7 @@ private noncomputable def linear_mca_relevant_pairs (C : LinearCode ι F)
     (Fintype.card ι : ℝ) * (1 - p) ≤
       (linear_mca_pair_agreement u ![d.1, d.2]).card
 
-private def linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
+private theorem linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p : ℝ)
     (hΛ : Lambda ((C : Set (ι → F))) p ≤ (L : ℕ∞))
     (u : Fin 2 → ι → F) :
     (linear_mca_relevant_pairs C u p).card ≤ L ^ 2 := by
@@ -555,7 +562,7 @@ private def linear_mca_relevant_pairs_card_le (C : LinearCode ι F) (L : ℕ) (p
     _ ≤ L * L := Nat.mul_le_mul hrow0 hrow1
     _ = L ^ 2 := by ring
 
-private def linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ)
+private theorem linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ)
     (hp_dist : p < (Code.minDist ((C : Set (ι → F))) : ℝ) / Fintype.card ι)
     (c d : ι → F) (hc : c ∈ C) (hd : d ∈ C) (S : Finset ι)
     (hS : (Fintype.card ι : ℝ) * (1 - p) ≤ S.card)
@@ -582,7 +589,7 @@ private def linear_codeword_eq_of_large_agreement (C : LinearCode ι F) (p : ℝ
     exact_mod_cast lt_of_le_of_lt hcomp hpn
 
 open scoped BigOperators in
-private def linear_mca_error_le_of_lambda_le_aux
+private theorem linear_mca_error_le_of_lambda_le_aux
     (C : LinearCode ι F) (L : ℕ) (δ η : ℝ)
     (_hδ_pos : 0 < δ) (_hδ_lt : δ < 1)
     (_hδ_lt_dist :

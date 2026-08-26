@@ -44,19 +44,18 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   Because the check only re-reads data the prover just sent, no hardness assumption is involved and
   the package carries no escape event.
 
-  ## Known gap at the `relWEvalClaim` seam
+  ## The shortness conjunct
 
-  `endPieceCheck` decides the two conjuncts that `relWEvalClaim` currently has. The chain needs a
-  third. `nestedRoundRel` (`ZeroCheck/Constraints.lean`) lists `liftShort Φ bound ρBound` among its
-  components, and that relation is what the *preceding* link's extractor has to produce out of an
-  accepting `relWEvalClaim`; a norm-free `relWEvalClaim` cannot supply it, and that link's verifier
-  cannot either, since it only ever sees `y′` and never `w̃`.
-
-  The end-piece is the natural place to close the gap, being the one step that receives `w̃`. Adding
-  `liftShort` to `endPieceCheck` is not purely mechanical: `vecLInftyNorm Φ w.z ≤ bound` is already
+  `relWEvalClaim` carries three conjuncts: the commitment opens, the opening is **short**
+  (`liftShort Φ bound ρBound`), and the table's multilinear extension takes the claimed value.
+  The shortness conjunct is what the *preceding* link's extractor has to produce out of an
+  accepting `relWEvalClaim` (`nestedRoundRel` in `ZeroCheck/Constraints.lean` lists it among its
+  components), and the end-piece is the one step that receives `w̃`, so its check decides all
+  three. Deciding shortness is not purely mechanical: `vecLInftyNorm Φ w.z ≤ bound` is already
   decidable, but `RhoShort ρBound ρ = ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound` ranges over
-  every `k : ℕ` and must first be cut down to `Finset.range ((ρ i).natDegree + 1)`, with the tail
-  discharged by `Polynomial.coeff_eq_zero_of_natDegree_lt`.
+  every `k : ℕ` and is first cut down to `Finset.range ((ρ i).natDegree + 1)` (`rhoShortCheck`),
+  with the tail discharged by `Polynomial.coeff_eq_zero_of_natDegree_lt`
+  (`rhoShortCheck_eq_true_iff`).
 
   ## References
 
@@ -89,13 +88,44 @@ variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
 variable (m₀ : ℕ) (bound ρBound : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
+/-- Decides `RhoShort` by checking coefficients only up to the degree bound: beyond `natDegree`
+every coefficient is `0` and satisfies the bound vacuously (`rhoShortCheck_eq_true_iff`). -/
+def rhoShortCheck (ρ : Fin n → Polynomial (ZMod q)) : Bool :=
+  decide (∀ i, ∀ k < (ρ i).natDegree + 1, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound)
+
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- The truncated check decides exactly `RhoShort`: coefficients past `natDegree` vanish
+(`Polynomial.coeff_eq_zero_of_natDegree_lt`), and `0` satisfies any bound. -/
+theorem rhoShortCheck_eq_true_iff (ρ : Fin n → Polynomial (ZMod q)) :
+    rhoShortCheck ρBound ρ = true ↔ RhoShort ρBound ρ := by
+  rw [rhoShortCheck, decide_eq_true_iff]
+  constructor
+  · intro h i k
+    by_cases hk : k ≤ (ρ i).natDegree
+    · exact h i k (Nat.lt_succ_of_le hk)
+    · rw [Polynomial.coeff_eq_zero_of_natDegree_lt (Nat.lt_of_not_le hk)]
+      simp
+  · exact fun h i k _ => h i k
+
+/-- Decides `liftShort`: the `ℓ∞` bound on `z` plus the truncated `RhoShort` check. -/
+def liftShortCheck (w : LiftedWitness Φ μ n) : Bool :=
+  decide (vecLInftyNorm Φ w.z ≤ bound) && rhoShortCheck ρBound w.ρ
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `liftShortCheck` decides exactly `liftShort`. -/
+theorem liftShortCheck_eq_true_iff (w : LiftedWitness Φ μ n) :
+    liftShortCheck Φ bound ρBound w = true ↔ liftShort Φ bound ρBound w := by
+  rw [liftShortCheck, Bool.and_eq_true, decide_eq_true_iff, rhoShortCheck_eq_true_iff]
+  rfl
+
 /-- Decides `relWEvalClaim` on the witness the prover sent: the commitment recomputes to the
-claimed `t`, and the table's multilinear extension takes the claimed value at the sumcheck
-point. -/
+claimed `t`, the opening is short (`liftShortCheck`), and the table's multilinear extension takes
+the claimed value at the sumcheck point. -/
 def endPieceCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     [BEq K.TCom] (φF : ZMod q →+* F)
     (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) : Bool :=
-  (K.com w == stmt.t) && (wTableMleEval Φ m₀ φF b w stmt.point == stmt.value)
+  (K.com w == stmt.t) && liftShortCheck Φ bound ρBound w &&
+    (wTableMleEval Φ m₀ φF b w stmt.point == stmt.value)
 
 /-- Accepts when `endPieceCheck` passes, rejects otherwise. The output statement is trivial. -/
 def endPieceVerifier (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -157,7 +187,7 @@ theorem endPiece_coordinateWiseSpecialSoundWith
   intro stmtIn tr hAcc
   have hcheck := Verifier.check_eq_true_of_guarded_accepting init impl _ _ _ hGuard stmtIn tr _ hAcc
   simp only [endPieceCheck, Bool.and_eq_true, beq_iff_eq] at hcheck
-  exact ⟨hcheck.1, hcheck.2⟩
+  exact ⟨hcheck.1.1, (liftShortCheck_eq_true_iff Φ bound ρBound _).mp hcheck.1.2, hcheck.2⟩
 
 /-- The end-piece packaged for composition: a guarded one-message verifier over the empty
 challenge structure, taking `relWEvalClaim` to the trivial claim. No escape event — the check reads
