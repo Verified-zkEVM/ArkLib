@@ -521,6 +521,28 @@ theorem minDist_interleavedCodeSet
       rw [hempty, Nat.sInf_empty]
     rw [hbase, hinter]
 
+/-- Interleaving over a nonempty row index preserves the *relative* minimum distance:
+`δᵣ (MC ^⋈ κ) = δᵣ MC`. The relative form of `minDist_interleavedCodeSet`, via the bridge
+`minDist_div_card_eq_minRelHammingDistCode`: both codes have block length `ι`, so equal
+absolute distances give equal relative ones. -/
+lemma minRelHammingDistCode_moduleInterleavedCode
+    {ι F A κ : Type*} [Fintype ι] [Nonempty ι] [Semiring F]
+    [AddCommMonoid A] [Module F A] [DecidableEq A] [Fintype κ] [Nonempty κ]
+    (MC : ModuleCode ι F A) :
+    minRelHammingDistCode (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier
+      = minRelHammingDistCode MC.carrier := by
+  have hmd : minDist ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+      = minDist (MC.carrier : Set (ι → A)) :=
+    minDist_interleavedCodeSet (κ := κ) (MC.carrier : Set (ι → A))
+  have h1 := minDist_div_card_eq_minRelHammingDistCode
+    ((ModuleCode.moduleInterleavedCode F A κ ι MC).carrier)
+  have h2 := minDist_div_card_eq_minRelHammingDistCode (MC.carrier : Set (ι → A))
+  have hq : ((minRelHammingDistCode
+        (ModuleCode.moduleInterleavedCode F A κ ι MC).carrier : ℚ≥0) : ℚ)
+      = ((minRelHammingDistCode MC.carrier : ℚ≥0) : ℚ) := by
+    rw [← h1, ← h2, hmd]
+  exact_mod_cast hq
+
 section Finrank
 
 /-! ### Structure and dimension of an interleaved module code -/

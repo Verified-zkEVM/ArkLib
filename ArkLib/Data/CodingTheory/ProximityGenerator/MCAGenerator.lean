@@ -238,14 +238,27 @@ noncomputable def ε_MCA_MDS [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC :
         else
         1
 
+/-- `ε_MCA_MDS` reads the code only through the block length `ι` and the relative distance
+`δᵣ`: two module codes over the same index set with equal `δᵣ` get the same error function,
+regardless of their alphabets. In particular the error is unchanged under interleaving
+(`Code.minRelHammingDistCode_moduleInterleavedCode`), which is what lets Theorem 6.1 feed the
+interleaved-hypothesis tensor lemma. -/
+lemma ε_MCA_MDS_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A]
+    [AddCommMonoid A'] [Module F A'] [DecidableEq A']
+    (MC : ModuleCode ι F A) (MC' : ModuleCode ι F A') (ℓ s : ℕ) (η : ℝ)
+    (hδ : Code.minRelHammingDistCode MC'.carrier = Code.minRelHammingDistCode MC.carrier) :
+    ε_MCA_MDS MC' ℓ s η = ε_MCA_MDS MC ℓ s η := by
+  unfold ε_MCA_MDS
+  rw [hδ]
+
 /-- Theorem 6.1 (MCA for MDS generators) [BCGM25]. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
-    [Nonempty ι]
+    [DecidableEq A] [Nonempty ι]
     (G : Generator S ℓ F)
     (hG : IsMDSGenerator G)
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (η : ℝ) (hη : 0 < η ∧ η < 1) (hℓ : 2 ≤ Fintype.card ℓ)
-    (LC : LinearCode ι F) :
-  IsMCAGenerator G (ε_MCA_MDS LC (Fintype.card ℓ) (Fintype.card S) η) LC := by sorry
+    (MC : ModuleCode ι F A) :
+  IsMCAGenerator G (ε_MCA_MDS MC (Fintype.card ℓ) (Fintype.card S) η) MC := by sorry
 
 end LinearTransformations
