@@ -395,12 +395,11 @@ lemma two_pow_d_sub_one_le_rate_mul (hkd : 1 ≤ d) (hdn : d ≤ n) :
       (Nat.pow_le_pow_right (by norm_num) (by omega))
   exact_mod_cast Nat.cast_le.2 h1
 
-open CoreDefinitions unitInterval in
-theorem folding_reflects_balls [Fintype F]
+open CoreDefinitions unitInterval FoldingContext in
+theorem folding_reflects_balls [Fintype F] [FoldingContext k d n]
   {ε_mca : I → ℝ≥0}
   (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
     (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
-  (hk : 1 ≤ k) (hkd : k ≤ d) (hdn : d ≤ n)
   {δ : ℝ≥0}
   (δ_gt_0 : 0 < δ) -- not used but should be
   (δ_lt : δ <
@@ -416,11 +415,9 @@ theorem folding_reflects_balls [Fintype F]
         (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ))] ≤
           ENNReal.ofReal (ε_mca δ') := by
   intro δ'
-  haveI : FoldingContext k d n := FoldingContext.mk' hk hkd hdn
-  haveI : NeZero n := ⟨by omega⟩
-  haveI : FoldingContextMiddle k n := ⟨hk, le_trans hkd hdn⟩
   have hδ1 : δ < 1 := lt_of_lt_of_le δ_lt (by simp)
-  have hrate := two_pow_d_sub_one_le_rate_mul (ω := ω) (d := d) (by omega) hdn
+  have hrate := two_pow_d_sub_one_le_rate_mul (ω := ω) (d := d) (by grind) 
+    (by grind)
   have key : ∀ α : F,
       ¬ (blockRelDistanceBall (k - 1) (ω.subdomain 1) (foldWord ω f 1 α) δ
             (code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)))) ⊆
@@ -504,5 +501,31 @@ theorem folding_reflects_balls [Fintype F]
       exact hvimg ⟨_, huball, hfoldw.trans hwv⟩
   exact le_trans (Probability.Pr_le_Pr_of_implies _ _ _ key)
     (by simpa using hmca.prob_le _ δ')
+
+open CoreDefinitions unitInterval in
+theorem folding_reflects_balls' [Fintype F] [FoldingContext k d n]
+  {ε_mca : I → ℝ≥0}
+  (hmca : IsMCAGenerator (univariatePowersGenerator F 1) ε_mca
+    (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1))))
+  {δ : ℝ≥0}
+  (δ_gt_0 : 0 < δ) -- not used but should be
+  (δ_lt : δ <
+    (1 - (LinearCode.rate (ReedSolomon.code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ d))))) :
+  let δ' : I := ⟨δ, by aesop, by {
+              rw [show 1 = NNReal.toReal 1 by norm_cast, ←NNReal.toReal_le]
+              exact le_trans (le_of_lt δ_lt) (by simp)}⟩
+  Pr_{ let α ←$ᵖ F}[
+    (Λ𞁒(code (ω.subdomain 1 : Fin (2 ^ (n - 1)) ↪ F) (2 ^ (d - 1)),
+             k - 1, ω.subdomain 1, foldWord ω f 1 α, δ)) ≠
+      Set.image
+        (fun u ↦ foldWord ω u 1 α)
+        (Λ𞁒(code (ω : Fin (2 ^ n) ↪ F) (2 ^ d), k, ω, f, δ))] ≤
+          ENNReal.ofReal (ε_mca δ') := by 
+  extract_lets δ'
+  refine le_trans'
+    (folding_reflects_balls (f := f) hmca δ_gt_0 δ_lt)
+    (Probability.Pr_le_Pr_of_implies _ _ _ ?_)
+  intro α hne hsub
+  exact hne (Set.Subset.antisymm hsub folding_preserves_block_balls)
 
 end ProximityGap
