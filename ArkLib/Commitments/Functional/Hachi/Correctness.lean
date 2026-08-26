@@ -254,6 +254,7 @@ def nonrecursiveOpeningReduction (P : HonestRangeParams q)
     (nonrecursiveTerminalReduction (oSpec := oSpec) Φ (M + 1) P.γ (q / 2) P.bZero K φF)
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of the nonrecursive opening**, from `relPolyEval` to
 `acceptRejectRel`, error `0`. The hypotheses are exactly those of
 `completeThroughSumcheckReduction_perfectCompleteness`; the terminal link needs nothing.
@@ -515,6 +516,7 @@ def hachiNonrecursiveOpening (P : HonestRangeParams q)
       𝓜(q, α) P pp (Nat.le_pow_clog P.hb q) (Nat.le_pow_clog P.hb q) K hd hbZero φF)
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of the complete nonrecursive opening**, from `relCommitInput` (the
 honest balanced commitment plus a truthful evaluation claim) to `acceptRejectRel`, error `0`.
 
@@ -583,6 +585,7 @@ def hachiNonrecursive (P : HonestRangeParams q)
     hachiNonrecursiveOpening (F := F) (ω := ω) (M := M) (m₁ := m₁) P keys.1 K hd hbZero φF
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect correctness of the nonrecursive Hachi commitment scheme**: for every committed
 multilinear polynomial and every evaluation query, the honest run — key generation, balanced
 commitment, and the complete composed opening — is accepted with probability `1`.

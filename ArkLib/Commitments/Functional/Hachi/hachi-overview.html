@@ -388,10 +388,12 @@
       table — followed by three §4.5 adapters (rows 10–12) that hand that claim to the next
       iteration. This map places every protocol-bearing file on that line, marks the bridges and
       subfolders, and shows exactly what is proven, repaired, in progress — or blocked on an
-      <a href="#gap">open soundness gap in the paper's own argument</a>. The soundness side also now
-      carries the closing <strong>end-piece</strong> skeleton (send the reduced witness) in
-      <span class="mono">Composition.lean</span>, whose completed <span class="mono">evaluation</span> =
-      iteration &#8846; end-piece mirrors the completeness layer's terminal reveal-and-check.
+      <a href="#gap">open soundness gap in the paper's own argument</a>. The soundness side is closed by the proven
+      <strong>end-piece</strong> (send the reduced witness, <span class="mono">EndPiece/</span>):
+      <span class="mono">evaluation</span> = iteration &#8846; end-piece in
+      <span class="mono">Composition.lean</span> mirrors the completeness layer's terminal
+      reveal-and-check, and both run the same decision procedure
+      <span class="mono">endPieceCheck</span>.
     </p>
     <div class="hero-meta">
       <span class="chip">44 files</span>
@@ -400,7 +402,7 @@
       <span class="chip">rows 1–9 + end-piece no sorried certificate · all axiom-clean</span>
       <span class="chip">evaluation computable end to end</span>
       <span class="chip">complete nonrecursive opening, proved correct</span>
-      <span class="chip">14 open sorries</span>
+      <span class="chip">13 open sorries</span>
     </div>
   </div>
 </header>
@@ -691,7 +693,9 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
       walked through at reading pace in the <a href="#gap">explainer section</a> above. The composition
       home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
       directly from the working tree — a build plus <code>#print axioms</code> on each
-      link's package, not from docstrings. The open-sorry count counts genuine proof terms inside <code>Hachi/</code>.
+      link's package, not from docstrings. The open-sorry count counts <em>declarations</em> that
+      use <code>sorry</code> inside <code>Hachi/</code> (Lean's <code>declaration uses 'sorry'</code>
+      warnings).
       The end-piece lives in <code>EndPiece/</code> and is fully proven, so
       <code>Composition.lean</code> contributes no sorry of its own.
       The generic CWSS machinery under <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> (the escape layer, the
@@ -760,7 +764,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
         desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets against the public factors evaluated at the point — <code>eq̃(τ₀,a)·P_b(y′) = target₀</code> and <code>y′·Ã(a) = target_α</code> — so no R_q multiplication is needed. Output is the short-opening evaluation claim <code>mle[w̃](a) = y′</code>, the currency the end-piece (and, in the future, the §4.5 recursion) consumes. <b>Proven and axiom-clean</b> (<code>finalEval_coordinateWiseSpecialSoundWith</code>, at the <b>computable</b> <code>finalEvalExtractor</code> returning the opening in the unique supplied leaf witness): with no challenge round, CWSS collapses through the no-challenge bridge to a transcript-level argument — acceptance forces the guard (a <code>failure</code> verdict has acceptance probability 0) and exhibits the opening the emitted claim asserts; at i = m₀ the two round claims are plain evaluations (<code>hypercubeSum_of_le</code>) that factor through <code>mle[w̃](a)</code> (<code>eval_sumcheckPolyZero</code>/<code>eval_sumcheckPolyAlpha</code>), so substituting y′ turns them into exactly the guard equations. Shortness is the one conjunct no guard can resupply — the verifier never sees w̃ — so <code>relWEvalClaim</code> carries it." },
     ]},
     { zt:"Recursion Adapters", zref:"§4.5 · Eqs. 24–28",
-      znote:"Off the nine-link opening and onto the next iteration: peel the top κ variables of the evaluation claim, pack them, and hand an Rq-quadratic statement to <code>QuadEval</code> over the next ring Φ′ — the loop's closing seam. This is the <b>whole of the remaining skeleton</b> (13 of the 14 open sorries; the other is the recursive opening), and row 11 is design-blocked (<a href=\"#gap\">explained end to end below</a>), so the honest order of work is: decide the row-11 repair first, then rows 10 and 12.",
+      znote:"Off the nine-link opening and onto the next iteration: peel the top κ variables of the evaluation claim, pack them, and hand an Rq-quadratic statement to <code>QuadEval</code> over the next ring Φ′ — the loop's closing seam. This is the <b>whole of the remaining skeleton</b> (12 of the 13 open sorries; the other is the recursive opening), and row 11 is design-blocked (<a href=\"#gap\">explained end to end below</a>), so the honest order of work is: decide the row-11 repair first, then rows 10 and 12.",
       rows:[
       { n:10, kind:"step", name:"Partial evaluations", sub:"Recursion", fn:"PartialEval.lean",
         files:[["Recursion","PartialEval.lean"]], ref:"§4.5 · Eq. 24", rounds:"msg (yᵢ)_{i≠0}", cwss:"any (pure)",
@@ -768,7 +772,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
         desc:"Writing a = (a₀, a₁) with a₁ ∈ F^κ, Eq.&nbsp;(24) factors y′ = ∑ᵢ eq(i, a₁)·yᵢ. The prover sends all but one partial evaluation and the verifier <em>derives</em> y₀ (paper footnote&nbsp;10), which keeps this head pure and the consistency true by construction. The seam is sound with zero error, but the encoding defs (<code>partialEvalAt</code>, <code>deriveFamily</code>, <code>wTableMleEval_split</code>) and the CWSS theorem are <span class=\"mono\">sorry</span>. One design wrinkle to settle: the derivation divides by eq(0, a₁), which can vanish." },
       { n:11, kind:"bridge", name:"Z-packing bridge", sub:"Recursion", fn:"ZBatchBridge.lean",
         files:[["Recursion","ZBatchBridge.lean"]], ref:"§4.5 · Eqs. 25–26", rounds:"0 rounds", cwss:"any",
-        relIn:"relPartialEval", relOut:"relHatEval", status:"gap", sorry:3, badges:["bridge","gap"],
+        relIn:"relPartialEval", relOut:"relHatEval", status:"gap", sorry:2, badges:["bridge","gap"],
         desc:"Collapses the per-i claims into the single Z-packed claim of Eq.&nbsp;(26). Completeness is a substitution; <b>extraction appears to be false as stated</b> — the packed claim pins only one F-linear combination ∑ᵢ Z^{⟨i⟩}(pᵢ − yᵢ) = 0 of the per-i defects, whose F_q-kernel has dimension (k−1)·k for k = 2^κ ≥ 2. The explicit κ = 1 counterexample is in the module docstring. Candidate repairs (a batching challenge over the peeled index, or the generic §3.1 packing) all deviate from the paper and change the protocol content of rows 10–12, so the sorry is kept as the record of where the paper's argument stands. The <a href=\"#gap\">explainer below</a> walks the whole step — the cheat, its scope, and the repairs — at reading pace." },
       { n:12, kind:"step", name:"Trace handoff", sub:"Recursion", fn:"TraceHandoff.lean",
         files:[["Recursion","TraceHandoff.lean"]], ref:"§4.5 · Eqs. 27–28", rounds:"msg p ∈ R′q", cwss:"any",
@@ -863,7 +867,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
     ["Sumcheck","Completeness.lean","completeness","§4.3 · Fig6–7","7–9","proven",0],
     ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
     ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","10","wip",6],
-    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","11","gap",3],
+    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","11","gap",2],
     ["Recursion","TraceHandoff.lean","subprotocol","§4.5 · Eqs27–28","12","wip",4],
   ];
 

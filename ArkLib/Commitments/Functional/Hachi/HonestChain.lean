@@ -71,7 +71,12 @@ decomposition of r"), and Eq. (21)'s table — the one `ZeroCheck/Constraints` i
 post-omission fiction in which the quotient sits in the table undecomposed. In the paper's actual
 protocol every row of `w̃` is a digit bounded by `b − 1`, one small range base suffices, and none
 of the above costs arise. Reworking `w̃` to the digit-decomposed table is the tracked follow-up;
-until then, read every composed statement below as being about the simplified variant. -/
+until then, read every composed statement below as being about the simplified variant.
+
+## References
+
+* [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26] -/
 
 open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift
@@ -292,6 +297,7 @@ def completePrefixReduction (P : HonestRangeParams q)
       (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
         (Wit := LiftedWitness Φ μ₀ n₀) Φ m₀ m₁)))))
 
+omit [DecidableEq F] in
 /-- **Perfect completeness of the complete currently proved Hachi prefix**, from the
 polynomial-level evaluation relation through `relNestedZeroCheck`.
 
@@ -439,6 +445,7 @@ generic append instance does not fire reliably through a deeply nested `Protocol
     (h₁ := completePrefixSpecSampleable Φ) (h₂ := sumcheckSpecSampleable bZero (M + 1))
 
 set_option linter.unusedSectionVars false in
+omit [DecidableEq F] in
 /-- **Perfect completeness of the honest Hachi chain through the sumcheck**, from `relPolyEval` to
 the evaluation claim `relWEvalClaim`, error `0`.
 

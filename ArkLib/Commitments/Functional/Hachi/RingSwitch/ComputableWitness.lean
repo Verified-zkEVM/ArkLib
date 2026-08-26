@@ -120,14 +120,14 @@ theorem honestLiftWitnessC_eq_honestWitness (hd : 0 < Φ.φ.natDegree)
           (cyclotomicPresentation_modulus_natDegree Φ) s z := by
   haveI := isPresentation_cyclotomic Φ hd
   refine liftedWitness_eq_of Φ rfl (funext fun i => ?_)
-  refine CPolynomial.toPolyLinearEquiv.injective ?_
-  show (cQuotient Φ s z i).toPoly
-    = ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
-        (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly
-  rw [cQuotient_toPoly,
-    show ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
-        (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly
-      = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
-      from CPolynomial.toPoly_mk_toImpl _]
+  have h : (cQuotient Φ s z i).toPoly
+      = ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
+          (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly := by
+    rw [cQuotient_toPoly,
+      show ((Lift.honestWitness (cyclotomicPresentation Φ) (fun s => s.M) (fun s => s.yvec)
+          (cyclotomicPresentation_modulus_natDegree Φ) s z).ρ i).toPoly
+        = (cyclotomicPresentation Φ).quotient s.M z s.yvec i
+        from CPolynomial.toPoly_mk_toImpl _]
+  exact CPolynomial.toPolyLinearEquiv.injective h
 
 end ArkLib.Lattices.Ajtai.InnerOuter
