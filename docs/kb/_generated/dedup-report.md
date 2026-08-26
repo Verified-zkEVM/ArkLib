@@ -4,9 +4,9 @@ Generated from `docs/kb/_generated/declarations.json`. **Eyeball, do not auto-re
 
 ## Stats
 
-- `ArkLib` — 402 files, 7000 declarations
+- `ArkLib` — 405 files, 7102 declarations
 
-## Same short-name across multiple files (196 groups)
+## Same short-name across multiple files (202 groups)
 
 Each group lists declarations sharing a short name across ≥2 files. Most are legitimate (overloaded interface, paper-shape vs general form), but the list is the right anchor to look for duplicates.
 
@@ -15,10 +15,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def CheckClaim.oracleReduction` [ArkLib/ProofSystem/Component/CheckClaim.lean:234](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L234) — The oracle reduction for the `CheckClaim` oracle reduction.
 - `def DoNothing.oracleReduction` [ArkLib/ProofSystem/Component/DoNothing.lean:82](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L82) — The oracle reduction for the `DoNothing` oracle reduction. - Prover simply returns the (non-oracle a
 - `def RandomQuery.oracleReduction` [ArkLib/ProofSystem/Component/RandomQuery.lean:119](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L119) — Combine the trivial prover and this verifier to form the `RandomQuery` oracle reduction: the input o
-- `def ReduceClaim.oracleReduction` [ArkLib/ProofSystem/Component/ReduceClaim.lean:256](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L256) — The oracle reduction for the `ReduceClaim` oracle reduction.
+- `def ReduceClaim.oracleReduction` [ArkLib/ProofSystem/Component/ReduceClaim.lean:257](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L257) — The oracle reduction for the `ReduceClaim` oracle reduction.
 - `def SendChallenge.oracleReduction` [ArkLib/ProofSystem/Component/SendChallenge.lean:97](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L97) — The oracle reduction for `SendChallenge`.
 - `def SendClaim.oracleReduction` [ArkLib/ProofSystem/Component/SendClaim.lean:116](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L116) — The oracle reduction for `SendClaim`.
-- `def SendSingleWitness.oracleReduction` [ArkLib/ProofSystem/Component/SendWitness.lean:369](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L369) — (no docstring)
+- `def SendSingleWitness.oracleReduction` [ArkLib/ProofSystem/Component/SendWitness.lean:373](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L373) — (no docstring)
 - `def Sumcheck.Spec.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:180](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L180) — The sum-check protocol as an oracle reduction
 - `def Sumcheck.Spec.SingleRound.Simpler.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:300](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L300) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.oracleReduction` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:447](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L447) — (no docstring)
@@ -29,14 +29,14 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `verifier` (14 declarations, 12 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.verifier` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:384](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L384) — The reduction's verifier (Hachi §4.2, Figure 3) is a **pure pass-through**: it re-emits the statemen
+- `def ArkLib.Lattices.Ajtai.InnerOuter.verifier` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:391](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L391) — The reduction's verifier (Hachi §4.2, Figure 3) is a **pure pass-through**: it re-emits the statemen
 - `def CoordinateWise.CommittedScalar.verifier` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:132](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L132) — Pure statement-extending verifier shared by committed scalar phases.
 - `def CheckClaim.verifier` [ArkLib/ProofSystem/Component/CheckClaim.lean:65](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L65) — The verifier for the `CheckClaim` reduction.
 - `def DoNothing.verifier` [ArkLib/ProofSystem/Component/DoNothing.lean:34](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L34) — The verifier for the `DoNothing` reduction.
 - `def NoInteraction.verifier` [ArkLib/ProofSystem/Component/NoInteraction.lean:53](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L53) — The verifier in a no-interaction reduction takes an empty transcript, and hence reduce to a function
 - `def ReduceClaim.verifier` [ArkLib/ProofSystem/Component/ReduceClaim.lean:55](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L55) — The verifier for the `ReduceClaim` reduction.
 - `def SendWitness.verifier` [ArkLib/ProofSystem/Component/SendWitness.lean:73](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L73) — (no docstring)
-- `def RingSwitching.Lift.verifier` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:133](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L133) — The switch's pure statement-extending verifier, from the committed-scalar shell.
+- `def RingSwitching.Lift.verifier` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:138](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L138) — The switch's pure statement-extending verifier, from the committed-scalar shell.
 - `def Sumcheck.Spec.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:149](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L149) — The verifier for the (full) sum-check protocol
 - `def Sumcheck.Spec.SingleRound.Simple.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:404](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L404) — The verifier for the simple description of a single round of sum-check
 - `def Sumcheck.Spec.SingleRound.verifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1013](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1013) — The verifier for the `i`-th round of the sum-check protocol
@@ -49,10 +49,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def CheckClaim.oracleVerifier` [ArkLib/ProofSystem/Component/CheckClaim.lean:214](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L214) — (no docstring)
 - `def DoNothing.oracleVerifier` [ArkLib/ProofSystem/Component/DoNothing.lean:72](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L72) — The oracle verifier for the `DoNothing` oracle reduction.
 - `def RandomQuery.oracleVerifier` [ArkLib/ProofSystem/Component/RandomQuery.lean:86](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L86) — The oracle verifier simply returns the challenge, and performs no checks.
-- `def ReduceClaim.oracleVerifier` [ArkLib/ProofSystem/Component/ReduceClaim.lean:246](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L246) — The oracle verifier for the `ReduceClaim` oracle reduction.
+- `def ReduceClaim.oracleVerifier` [ArkLib/ProofSystem/Component/ReduceClaim.lean:247](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L247) — The oracle verifier for the `ReduceClaim` oracle reduction.
 - `def SendChallenge.oracleVerifier` [ArkLib/ProofSystem/Component/SendChallenge.lean:77](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L77) — (no docstring)
 - `def SendClaim.oracleVerifier` [ArkLib/ProofSystem/Component/SendClaim.lean:108](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L108) — (no docstring)
-- `def SendSingleWitness.oracleVerifier` [ArkLib/ProofSystem/Component/SendWitness.lean:345](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L345) — The oracle verifier for the `SendSingleWitness` oracle reduction. The verifier receives the input st
+- `def SendSingleWitness.oracleVerifier` [ArkLib/ProofSystem/Component/SendWitness.lean:349](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L349) — The oracle verifier for the `SendSingleWitness` oracle reduction. The verifier receives the input st
 - `def RingSwitching.BatchingPhase.oracleVerifier` [ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean:167](../../../ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean#L167) — The batching-phase verifier as an instance of the family-shared check-then-update scalar-round verif
 - `def Sumcheck.Spec.oracleVerifier` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:158](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L158) — The oracle verifier for the (full) sum-check protocol
 - `def Sumcheck.Spec.SingleRound.Simple.oracleVerifier` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:426](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L426) — (no docstring)
@@ -78,14 +78,14 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `prover` (12 declarations, 11 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.prover` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:398](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L398) — The honest prover (Hachi §4.2, Figure 3; completeness is out of scope for Lemma 8): round 0 sends th
+- `def ArkLib.Lattices.Ajtai.InnerOuter.prover` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:417](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L417) — The honest prover (Hachi §4.2, Figure 3; completeness is out of scope for Lemma 8): round 0 sends th
 - `def CoordinateWise.CommittedScalar.prover` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:142](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L142) — Honest prover shell for a committed scalar phase. The commitment is derived from `computeW`; the API
 - `def CheckClaim.prover` [ArkLib/ProofSystem/Component/CheckClaim.lean:54](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L54) — The prover for the `CheckClaim` reduction.
 - `def DoNothing.prover` [ArkLib/ProofSystem/Component/DoNothing.lean:30](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L30) — The prover for the `DoNothing` reduction.
 - `def NoInteraction.prover` [ArkLib/ProofSystem/Component/NoInteraction.lean:43](../../../ArkLib/ProofSystem/Component/NoInteraction.lean#L43) — The prover in a no-interaction reduction can be specified by a tuple of functions: - `mapStmt : Stmt
 - `def ReduceClaim.prover` [ArkLib/ProofSystem/Component/ReduceClaim.lean:47](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L47) — The prover for the `ReduceClaim` reduction.
 - `def SendWitness.prover` [ArkLib/ProofSystem/Component/SendWitness.lean:63](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L63) — (no docstring)
-- `def RingSwitching.Lift.prover` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:139](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L139) — Honest prover shell. Its commitment is definitionally derived from the output opening.
+- `def RingSwitching.Lift.prover` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:144](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L144) — Honest prover shell. Its commitment is definitionally derived from the output opening.
 - `def Sumcheck.Spec.SingleRound.Simple.prover` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:382](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L382) — The prover in the simple description of a single round of sum-check. Takes in input `target : R` and
 - `def Sumcheck.Spec.SingleRound.Unfolded.prover` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1263](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1263) — The overall prover for the `i`-th round of the sum-check protocol, where `i < n`. This is only well-
 - `def ToyProblem.Spec.prover` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:361](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L361) — Honest prover for the toy protocol. After receiving the combination randomness `γ`, the prover sends
@@ -93,7 +93,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `pSpec` (12 declarations, 10 files)
 
-- `def CoordinateWise.SingleRound.pSpec` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:55](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L55) — The two-round single-challenge-round protocol (instantiated by Hachi's `QuadEval` reduction): the pr
+- `def CoordinateWise.SingleRound.pSpec` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:53](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L53) — The two-round single-challenge-round protocol (instantiated by Hachi's `QuadEval` reduction): the pr
 - `def RandomQuery.pSpec` [ArkLib/ProofSystem/Component/RandomQuery.lean:53](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L53) — (no docstring)
 - `def SendChallenge.pSpec` [ArkLib/ProofSystem/Component/SendChallenge.lean:49](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L49) — One `V_to_P` challenge round carrying the fold challenge vector `c : Fin ℓ → C`.
 - `def SendClaim.pSpec` [ArkLib/ProofSystem/Component/SendClaim.lean:58](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L58) — One prover→verifier message carrying the claim of type `Message`.
@@ -111,11 +111,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def CheckClaim.oracleProver` [ArkLib/ProofSystem/Component/CheckClaim.lean:189](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L189) — The oracle prover for the `CheckClaim` oracle reduction: it forwards the statement and all oracle st
 - `def DoNothing.oracleProver` [ArkLib/ProofSystem/Component/DoNothing.lean:67](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L67) — The oracle prover for the `DoNothing` oracle reduction.
 - `def RandomQuery.oracleProver` [ArkLib/ProofSystem/Component/RandomQuery.lean:66](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L66) — The prover is trivial: it has no messages to send.  It only receives the verifier's challenge `q`, a
-- `def ReduceClaim.oracleProver` [ArkLib/ProofSystem/Component/ReduceClaim.lean:236](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L236) — The oracle prover for the `ReduceClaim` oracle reduction.
+- `def ReduceClaim.oracleProver` [ArkLib/ProofSystem/Component/ReduceClaim.lean:237](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L237) — The oracle prover for the `ReduceClaim` oracle reduction.
 - `def SendChallenge.oracleProver` [ArkLib/ProofSystem/Component/SendChallenge.lean:54](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L54) — The oracle prover receives the challenge `c` and appends it to the statement (the oracle statements
 - `def SendClaim.oracleProver` [ArkLib/ProofSystem/Component/SendClaim.lean:74](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L74) — The oracle prover for `SendClaim`: it computes the claim `f stmt oStmt` and sends it as the only ora
-- `def SendWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:209](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L209) — The oracle prover for the `SendWitness` oracle reduction. For each round `i : Fin (FinEnum.card ιw)`
-- `def SendSingleWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:307](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L307) — The oracle prover for the `SendSingleWitness` oracle reduction. The prover sends the witness `wit` t
+- `def SendWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:213](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L213) — The oracle prover for the `SendWitness` oracle reduction. For each round `i : Fin (FinEnum.card ιw)`
+- `def SendSingleWitness.oracleProver` [ArkLib/ProofSystem/Component/SendWitness.lean:311](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L311) — The oracle prover for the `SendSingleWitness` oracle reduction. The prover sends the witness `wit` t
 - `def RingSwitching.BatchingPhase.oracleProver` [ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean:114](../../../ArkLib/ProofSystem/RingSwitching/Packing/BatchingPhase.lean#L114) — (no docstring)
 - `def ToyProblem.Spec.oracleProver` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:464](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L464) — Same as `prover` but exposed at the `OracleProver` signature. The underlying `Prover` is identical (
 - `def ToyProblem.SimplifiedIOR.oracleProver` [ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean:293](../../../ArkLib/ProofSystem/ToyProblem/Spec/SimplifiedIOR.lean#L293) — Honest prover at the oracle-reduction signature.
@@ -135,24 +135,13 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `theorem DoNothing.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/DoNothing.lean:98](../../../ArkLib/ProofSystem/Component/DoNothing.lean#L98) — The `DoNothing` oracle verifier is perfectly round-by-round knowledge sound.
 - `theorem RandomQuery.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/RandomQuery.lean:303](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L303) — The `RandomQuery` oracle reduction is round-by-round knowledge sound. The key fact governing the sou
-- `theorem ReduceClaim.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:387](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L387) — The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness. Note that s
+- `theorem ReduceClaim.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:388](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L388) — The `ReduceClaim` oracle reduction satisfies perfect round-by-round knowledge soundness. Note that s
 - `theorem Sumcheck.Spec.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Sumcheck/Spec/General.lean:217](../../../ArkLib/ProofSystem/Sumcheck/Spec/General.lean#L217) — Round-by-round knowledge soundness with error `deg / \|R\|` per challenge for the (full) sum-check pro
 - `theorem Sumcheck.Spec.SingleRound.Simpler.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:338](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L338) — (no docstring)
 - `theorem Sumcheck.Spec.SingleRound.Simple.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:786](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L786) — Round-by-round knowledge soundness for the oracle verifier
 - `theorem Sumcheck.Spec.SingleRound.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:1157](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L1157) — Round-by-round knowledge soundness theorem for single-round of sum-check, obtained by transporting t
 - `theorem ToyProblem.Impl.IRS.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean:1036](../../../ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean#L1036) — Existential averaged RBR knowledge soundness, retained as a compatibility corollary of the exact-obj
 - `theorem ToyProblem.Spec.oracleVerifier_rbrKnowledgeSoundness` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:1411](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L1411) — Averaged round-by-round knowledge soundness, retained under the established public API name as a cor
-
-### `append` (8 declarations, 6 files)
-
-- `abbrev ProtocolSpec.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:36](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L36) — Appending two `ProtocolSpec`s
-- `def ProtocolSpec.FullTranscript.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:152](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L152) — Appending two transcripts for two `ProtocolSpec`s
-- `def CWSSStructure.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean:67](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean#L67) — Binary append of coordinate-wise special-soundness structures. On left challenge rounds this is `D₁`
-- `def CoordinateWise.EscapeCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean:97](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean#L97) — **Compose two escape-aware packages along a matching relation seam** `hRel` (discharged by `rfl` whe
-- `def CoordinateWise.EscapeGCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean:172](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Escape.lean#L172) — **Compose two guarded escape-aware packages along a matching relation seam.** As in `EscapeCWSSPacka
-- `def CoordinateWise.GCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean:360](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean#L360) — **Compose two guarded packages along a matching seam** (`hseam` discharged by `rfl`): the guarded an
-- `def CoordinateWise.CWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean:94](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean#L94) — **Compose two packages along a matching seam.** Given a left package `L₁ : relIn ⇒ mid`, a right pac
-- `def ProtocolSpec.ChallengeTreeShape.append` [ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean:99](../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean#L99) — Append two protocol-generic tree shapes along sequential protocol append.
 
 ### `relation` (7 declarations, 6 files)
 
@@ -193,6 +182,15 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def Sumcheck.Spec.SingleRound.Simpler.inputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:242](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L242) — (no docstring)
 - `def Sumcheck.Spec.SingleRound.Simple.inputRelation` [ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean:367](../../../ArkLib/ProofSystem/Sumcheck/Spec/SingleRound.lean#L367) — (no docstring)
 
+### `append` (6 declarations, 5 files)
+
+- `abbrev ProtocolSpec.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:36](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L36) — Appending two `ProtocolSpec`s
+- `def ProtocolSpec.FullTranscript.append` [ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean:152](../../../ArkLib/OracleReduction/ProtocolSpec/SeqCompose.lean#L152) — Appending two transcripts for two `ProtocolSpec`s
+- `def CWSSStructure.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean:73](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Composition.lean#L73) — Binary append of coordinate-wise special-soundness structures. On left challenge rounds this is `D₁`
+- `def CoordinateWise.GCWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean:621](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Guarded.lean#L621) — **Compose two guarded packages along a matching seam** — the guarded canonical `▷`. The seam verdict
+- `def CoordinateWise.CWSSPackage.append` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean:102](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Package.lean#L102) — **Compose two packages along a matching seam** — the `▷` of pure packages. Every composed field is *
+- `def ProtocolSpec.ChallengeTreeShape.append` [ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean:114](../../../ArkLib/OracleReduction/Security/TranscriptTree/Composition.lean#L114) — Append two protocol-generic tree shapes along sequential protocol append.
+
 ### `instIsPure` (6 declarations, 5 files)
 
 - `instance CheckClaim.instIsPure` [ArkLib/ProofSystem/Component/CheckClaim.lean:256](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L256) — The `CheckClaim` oracle verifier is pure: its underlying verifier deterministically returns the comb
@@ -200,7 +198,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `instance SendChallenge.instIsPure` [ArkLib/ProofSystem/Component/SendChallenge.lean:121](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L121) — The `SendChallenge` oracle verifier is pure: it deterministically appends the (transcript-read) chal
 - `instance SendClaim.instIsPure` [ArkLib/ProofSystem/Component/SendClaim.lean:157](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L157) — The `SendClaim` oracle verifier is pure, discharging the deterministic-left hypothesis of the CWSS b
 - `instance SendWitness.instIsPure` [ArkLib/ProofSystem/Component/SendWitness.lean:92](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L92) — The `SendWitness` verifier is pure: it deterministically returns `⟨stmt, transcript 0⟩`. This discha
-- `instance SendSingleWitness.instIsPure` [ArkLib/ProofSystem/Component/SendWitness.lean:398](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L398) — The `SendSingleWitness` oracle verifier is pure: its underlying (non-oracle) verifier deterministica
+- `instance SendSingleWitness.instIsPure` [ArkLib/ProofSystem/Component/SendWitness.lean:402](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L402) — The `SendSingleWitness` oracle verifier is pure: its underlying (non-oracle) verifier deterministica
 
 ### `oracleVerifier_materializeOutput` (5 declarations, 5 files)
 
@@ -208,15 +206,15 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `theorem RandomQuery.oracleVerifier_materializeOutput` [ArkLib/ProofSystem/Component/RandomQuery.lean:103](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L103) — (no docstring)
 - `theorem SendChallenge.oracleVerifier_materializeOutput` [ArkLib/ProofSystem/Component/SendChallenge.lean:83](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L83) — (no docstring)
 - `theorem SendClaim.oracleVerifier_materializeOutput` [ArkLib/ProofSystem/Component/SendClaim.lean:126](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L126) — (no docstring)
-- `theorem SendSingleWitness.oracleVerifier_materializeOutput` [ArkLib/ProofSystem/Component/SendWitness.lean:352](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L352) — (no docstring)
+- `theorem SendSingleWitness.oracleVerifier_materializeOutput` [ArkLib/ProofSystem/Component/SendWitness.lean:356](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L356) — (no docstring)
 
 ### `oracleVerifier_toVerifier_run` (5 declarations, 5 files)
 
 - `theorem CheckClaim.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/CheckClaim.lean:243](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L243) — The pure pass-through oracle verifier's underlying non-oracle verifier returns the combined input st
-- `theorem ReduceClaim.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/ReduceClaim.lean:398](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L398) — The `ReduceClaim` oracle verifier's underlying non-oracle verifier deterministically returns the map
+- `theorem ReduceClaim.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/ReduceClaim.lean:399](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L399) — The `ReduceClaim` oracle verifier's underlying non-oracle verifier deterministically returns the map
 - `theorem SendChallenge.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendChallenge.lean:110](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L110) — The pure verifier's underlying non-oracle verifier returns the statement together with the sampled c
 - `theorem SendClaim.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendClaim.lean:144](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L144) — The pure pass-through oracle verifier's underlying non-oracle verifier returns the statement togethe
-- `theorem SendSingleWitness.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendWitness.lean:387](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L387) — (no docstring)
+- `theorem SendSingleWitness.oracleVerifier_toVerifier_run` [ArkLib/ProofSystem/Component/SendWitness.lean:391](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L391) — (no docstring)
 
 ### `outputRelation` (7 declarations, 4 files)
 
@@ -246,22 +244,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `theorem CheckClaim.oracleReduction_completeness` [ArkLib/ProofSystem/Component/CheckClaim.lean:278](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L278) — **Perfect completeness of the pure pass-through `CheckClaim` oracle reduction.** Because the verifie
 - `theorem RandomQuery.oracleReduction_completeness` [ArkLib/ProofSystem/Component/RandomQuery.lean:133](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L133) — The `RandomQuery` oracle reduction is perfectly complete.
-- `theorem ReduceClaim.oracleReduction_completeness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:272](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L272) — The `ReduceClaim` oracle reduction satisfies perfect completeness for any relation. Proof strategy m
-- `theorem SendSingleWitness.oracleReduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:414](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L414) — The `SendSingleWitness` oracle reduction satisfies perfect completeness.
+- `theorem ReduceClaim.oracleReduction_completeness` [ArkLib/ProofSystem/Component/ReduceClaim.lean:273](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L273) — The `ReduceClaim` oracle reduction satisfies perfect completeness for any relation. Proof strategy m
+- `theorem SendSingleWitness.oracleReduction_completeness` [ArkLib/ProofSystem/Component/SendWitness.lean:418](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L418) — The `SendSingleWitness` oracle reduction satisfies perfect completeness.
 
 ### `oracleVerifier_coordinateWiseSpecialSoundWith` (4 declarations, 4 files)
 
-- `theorem CheckClaim.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/CheckClaim.lean:332](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L332) — **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure pass-throu
-- `theorem ReduceClaim.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/ReduceClaim.lean:430](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L430) — **Coordinate-wise special soundness of the `ReduceClaim` oracle reduction, named form.** As in the n
+- `theorem CheckClaim.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/CheckClaim.lean:335](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L335) — **Coordinate-wise special soundness of `CheckClaim`, named form.** The verifier is a pure pass-throu
+- `theorem ReduceClaim.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/ReduceClaim.lean:429](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L429) — **Coordinate-wise special soundness of the `ReduceClaim` oracle reduction, named form.** As in the n
 - `theorem SendClaim.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/SendClaim.lean:183](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L183) — **Coordinate-wise special soundness of `SendClaim`, named form.** The verifier is a pure pass-throug
-- `theorem SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/SendWitness.lean:441](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L441) — **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier has no
+- `theorem SendSingleWitness.oracleVerifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/SendWitness.lean:445](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L445) — **Coordinate-wise special soundness of `SendSingleWitness`, named form.** The oracle verifier has no
 
 ### `outputEmbedding` (4 declarations, 4 files)
 
 - `def CheckClaim.outputEmbedding` [ArkLib/ProofSystem/Component/CheckClaim.lean:203](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L203) — The oracle verifier for the `CheckClaim` oracle reduction is a **pure pass-through**: it returns the
 - `def SendChallenge.outputEmbedding` [ArkLib/ProofSystem/Component/SendChallenge.lean:67](../../../ArkLib/ProofSystem/Component/SendChallenge.lean#L67) — The oracle verifier samples the challenge `c` (as the `V_to_P` round), reads it off the transcript,
 - `def SendClaim.outputEmbedding` [ArkLib/ProofSystem/Component/SendClaim.lean:91](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L91) — (no docstring)
-- `def SendSingleWitness.outputEmbedding` [ArkLib/ProofSystem/Component/SendWitness.lean:323](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L323) — (no docstring)
+- `def SendSingleWitness.outputEmbedding` [ArkLib/ProofSystem/Component/SendWitness.lean:327](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L327) — (no docstring)
 
 ### `reduction_completeness` (4 declarations, 4 files)
 
@@ -272,17 +270,17 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `relOut` (4 declarations, 4 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.relOut` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:251](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L251) — **`relOut` — Hachi Eq. (20) (rows c1–c5 verbatim) plus a symmetric-`ℓ∞`-ball model of the `S_b` rang
+- `def ArkLib.Lattices.Ajtai.InnerOuter.relOut` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:258](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L258) — **`relOut` — Hachi Eq. (20) (rows c1–c5 verbatim) plus a symmetric-`ℓ∞`-ball model of the `S_b` rang
 - `def CheckClaim.relOut` [ArkLib/ProofSystem/Component/CheckClaim.lean:78](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L78) — (no docstring)
 - `def RandomQuery.relOut` [ArkLib/ProofSystem/Component/RandomQuery.lean:49](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L49) — The output relation states that if the verifier's single query was `q`, then `a` and `b` agree on th
-- `def RingSwitching.Lift.relOut` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:125](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L125) — The anchored output relation of the switch, from the committed-scalar shell: commitment consistency,
+- `def RingSwitching.Lift.relOut` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:130](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L130) — The anchored output relation of the switch, from the committed-scalar shell: commitment consistency,
 
 ### `treeExtractor` (4 declarations, 4 files)
 
-- `def CoordinateWise.CommittedScalar.treeExtractor` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:198](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L198) — The committed-scalar named extractor: `mkWitness` transported along `ScalarRound.treeExtractorScalar
-- `def CoordinateWise.SingleRound.treeExtractor` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:349](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L349) — The tree extractor, generic over separate witness types: `relOut` relates the extended statement to
-- `def ReduceClaim.treeExtractor` [ArkLib/ProofSystem/Component/ReduceClaim.lean:188](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L188) — **The `ReduceClaim` tree extractor**: pick (classically) any output witness that makes the mapped st
-- `def RingSwitching.Lift.treeExtractor` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:174](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L174) — The switch's named extractor: the committed-scalar assembler, projecting the common opening to its `
+- `def CoordinateWise.CommittedScalar.treeExtractor` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:202](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L202) — The committed-scalar named extractor: `mkWitness` transported along `ScalarRound.treeExtractorScalar
+- `def CoordinateWise.SingleRound.treeExtractor` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:419](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L419) — **The single-round tree extractor**, generic over separate witness types: read the shared message an
+- `def ReduceClaim.treeExtractor` [ArkLib/ProofSystem/Component/ReduceClaim.lean:191](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L191) — **The `ReduceClaim` tree extractor**, witness-only: the zero-round tree has a single root-to-leaf pa
+- `def RingSwitching.Lift.treeExtractor` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:183](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L183) — The switch's named extractor: the committed-scalar assembler, projecting the common opening to its `
 
 ### `oracleReduction_perfectCompleteness` (6 declarations, 3 files)
 
@@ -317,10 +315,10 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `coordinateWiseSpecialSoundWithEscape` (4 declarations, 3 files)
 
-- `def Verifier.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:275](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L275) — **Escape-threaded CWSS, named form**: `Verifier.treeSpecialSoundWithEscape` at the CWSS shape `D.toS
-- `def OracleVerifier.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:386](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L386) — Escape-threaded CWSS of an oracle reduction, **named form**: the non-oracle escape notion of the und
-- `theorem CoordinateWise.CommittedScalar.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:238](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L238) — **Generic escape-threaded CWSS certificate for committed scalar phases.** All protocol-independent e
-- `theorem RingSwitching.Lift.coordinateWiseSpecialSoundWithEscape` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:186](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L186) — **CWSS of `Lift`**, escape-threaded, at plain `k = 2d` special soundness: on every structured accept
+- `def Verifier.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:321](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L321) — **Escape-threaded CWSS, named form**: `Verifier.treeSpecialSoundWithEscape` at the CWSS shape `D.toS
+- `def OracleVerifier.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:466](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L466) — Escape-threaded CWSS of an oracle reduction, **named form**: the non-oracle escape notion of the und
+- `theorem CoordinateWise.CommittedScalar.coordinateWiseSpecialSoundWithEscape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:249](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L249) — **Generic escape-threaded CWSS certificate for committed scalar phases.** All protocol-independent e
+- `theorem RingSwitching.Lift.coordinateWiseSpecialSoundWithEscape` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:194](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L194) — **CWSS of `Lift`**, escape-threaded, at plain `k = 2d` special soundness: on every structured accept
 
 ### `drop` (4 declarations, 3 files)
 
@@ -401,8 +399,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `escEvent` (3 declarations, 3 files)
 
 - `def CoordinateWise.CommittedScalar.escEvent` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:188](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L188) — The tree-level escape event of a committed scalar phase: `escLocal` transported along `ScalarRound.e
-- `def CoordinateWise.SingleRound.escEvent` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:371](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L371) — The tree-level escape event induced by a **local** (per-star) event `escLocal`: the tree's own messa
-- `def RingSwitching.Lift.escEvent` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:165](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L165) — The switch's **escape event**: the committed-scalar collision event at this switch's output relation
+- `def CoordinateWise.SingleRound.escEvent` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:437](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L437) — The tree-level escape event induced by a **local** (per-star) event `escLocal`: the tree's own messa
+- `def RingSwitching.Lift.escEvent` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:170](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L170) — The switch's **escape event**: the committed-scalar collision event at this switch's output relation
 
 ### `finalSumcheckKStateProp` (3 declarations, 3 files)
 
@@ -490,7 +488,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `relIn` (3 declarations, 3 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.relIn` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:366](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L366) — **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u` under the
+- `def ArkLib.Lattices.Ajtai.InnerOuter.relIn` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:373](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L373) — **`relIn` — the ordinary input relation of `QuadEval`**: a weak `VerifiedOpening` for `u` under the
 - `def CheckClaim.relIn` [ArkLib/ProofSystem/Component/CheckClaim.lean:75](../../../ArkLib/ProofSystem/Component/CheckClaim.lean#L75) — (no docstring)
 - `def RandomQuery.relIn` [ArkLib/ProofSystem/Component/RandomQuery.lean:41](../../../ArkLib/ProofSystem/Component/RandomQuery.lean#L41) — The input relation is that the two oracles are equal.
 
@@ -632,7 +630,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `instance SendClaim.instIsEmptyChallengeIdx` [ArkLib/ProofSystem/Component/SendClaim.lean:66](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L66) — `SendClaim` is a single `P_to_V` message, so it has no challenge rounds. This makes its coordinate-w
 - `instance SendWitness.instIsEmptyChallengeIdx` [ArkLib/ProofSystem/Component/SendWitness.lean:60](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L60) — The `SendWitness` protocol is a single `P_to_V` message, so it has no challenge rounds. This is what
-- `instance SendSingleWitness.instIsEmptyChallengeIdx` [ArkLib/ProofSystem/Component/SendWitness.lean:299](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L299) — The `SendSingleWitness` protocol is a single `P_to_V` message, so it has no challenge rounds. This i
+- `instance SendSingleWitness.instIsEmptyChallengeIdx` [ArkLib/ProofSystem/Component/SendWitness.lean:303](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L303) — The `SendSingleWitness` protocol is a single `P_to_V` message, so it has no challenge rounds. This i
 
 ### `mem_toFinset_iff_mem` (3 declarations, 2 files)
 
@@ -669,8 +667,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `LiftedWitness` (2 declarations, 2 files)
 
-- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:131](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L131) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
-- `structure RingSwitching.Lift.LiftedWitness` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:76](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L76) — The lifted witness of `Lift`: the `S`-witness `z` of the linear relation and one quotient polynomial
+- `abbrev ArkLib.Lattices.Ajtai.InnerOuter.LiftedWitness` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:133](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L133) — Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient polynomial per row
+- `structure RingSwitching.Lift.LiftedWitness` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:80](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L80) — The lifted witness of `Lift`: the `S`-witness `z` of the linear relation and one **computable** quot
 
 ### `MessageIdx` (2 declarations, 2 files)
 
@@ -744,33 +742,38 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `branchPath` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.branchPath` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:219](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L219) — The root-to-leaf path through `tree2` selecting branch `j` of the challenge node.
-- `def CoordinateWise.SingleRound.branchPath` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:191](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L191) — The root-to-leaf path through `tree2` selecting branch `j` of the challenge node. Defined separately
+- `def CoordinateWise.ScalarRound.branchPath` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:220](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L220) — The root-to-leaf path through `tree2` selecting branch `j` of the challenge node.
+- `def CoordinateWise.SingleRound.branchPath` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:189](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L189) — The root-to-leaf path through `tree2` selecting branch `j` of the challenge node. Defined separately
+
+### `branchPathOf` (2 declarations, 2 files)
+
+- `def CoordinateWise.ScalarRound.branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:284](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L284) — The root-to-leaf path of branch `j` of an **arbitrary** full scalar-round tree — the index at which
+- `def CoordinateWise.SingleRound.branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:255](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L255) — The root-to-leaf path of branch `j` of an **arbitrary** full single-round tree — the index at which
 
 ### `branchTr` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.branchTr` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:226](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L226) — The full transcript of branch `j` of the star tree: message `v`, challenge `challenges j`.
-- `def CoordinateWise.SingleRound.branchTr` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:198](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L198) — The full transcript of branch `j` of the star tree: message `v`, challenge `challenges j`.
+- `def CoordinateWise.ScalarRound.branchTr` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:227](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L227) — The full transcript of branch `j` of the star tree: message `v`, challenge `challenges j`.
+- `def CoordinateWise.SingleRound.branchTr` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:196](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L196) — The full transcript of branch `j` of the star tree: message `v`, challenge `challenges j`.
 
 ### `branch_challenge` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.branch_challenge` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:232](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L232) — Branch `j`'s transcript carries challenge `challenges j` at round 1.
-- `theorem CoordinateWise.SingleRound.branch_challenge` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:204](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L204) — Branch `j`'s transcript carries challenge `challenges j` at round 1.
+- `theorem CoordinateWise.ScalarRound.branch_challenge` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:233](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L233) — Branch `j`'s transcript carries challenge `challenges j` at round 1.
+- `theorem CoordinateWise.SingleRound.branch_challenge` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:202](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L202) — Branch `j`'s transcript carries challenge `challenges j` at round 1.
 
 ### `branch_mem` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:250](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L250) — Branch `j`'s transcript is one of the star tree's leaf transcripts.
-- `theorem CoordinateWise.SingleRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:222](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L222) — Branch `j`'s transcript is one of the star tree's leaf transcripts.
+- `theorem CoordinateWise.ScalarRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:251](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L251) — Branch `j`'s transcript is one of the star tree's leaf transcripts.
+- `theorem CoordinateWise.SingleRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:220](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L220) — Branch `j`'s transcript is one of the star tree's leaf transcripts.
 
 ### `branch_pre` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:241](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L241) — Branch `j`'s transcript carries the shared message `v` at round 0.
-- `theorem CoordinateWise.SingleRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:213](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L213) — Branch `j`'s transcript carries the shared message `v` at round 0.
+- `theorem CoordinateWise.ScalarRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:242](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L242) — Branch `j`'s transcript carries the shared message `v` at round 0.
+- `theorem CoordinateWise.SingleRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:211](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L211) — Branch `j`'s transcript carries the shared message `v` at round 0.
 
 ### `branch_relOut_language` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:300](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L300) — Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
-- `theorem CoordinateWise.SingleRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:326](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L326) — Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
+- `theorem CoordinateWise.ScalarRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:348](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L348) — Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
+- `theorem CoordinateWise.SingleRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:379](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L379) — Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
 
 ### `certifiedExtractorError` (2 declarations, 2 files)
 
@@ -782,15 +785,20 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def ToyProblem.Impl.IRS.certifiedGammaError` [ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean:662](../../../ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean#L662) — The certified combination-round error for the executable interleaved-RS extractor.  This is the fini
 - `def ToyProblem.certifiedGammaError` [ArkLib/ProofSystem/ToyProblem/SoundnessBounds.lean:1271](../../../ArkLib/ProofSystem/ToyProblem/SoundnessBounds.lean#L1271) — The finite nonnegative-real reflection of the executable extractor's canonical affine-line MCA-plus-
 
+### `chalPathAux` (2 declarations, 2 files)
+
+- `def CoordinateWise.ScalarRound.chalPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:272](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L272) — Index-generic round-1 branch path: descend into sibling `j` of the challenge node.
+- `def CoordinateWise.SingleRound.chalPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:243](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L243) — Index-generic round-1 branch path: descend into sibling `j` of the challenge node.
+
 ### `chal_shape` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:177](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L177) — Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
-- `theorem CoordinateWise.SingleRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:145](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L145) — Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
+- `theorem CoordinateWise.ScalarRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:178](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L178) — Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
+- `theorem CoordinateWise.SingleRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:143](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L143) — Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
 
 ### `chalsAux` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.chalsAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:120](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L120) — Index-generic round-1 reader: peel the sibling-challenge family off a `chalNode` at any index `a` to
-- `def CoordinateWise.SingleRound.chalsAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:88](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L88) — Index-generic round-1 reader: peel the sibling-challenge family off a `chalNode` at any index `a` to
+- `def CoordinateWise.ScalarRound.chalsAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:121](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L121) — Index-generic round-1 reader: peel the sibling-challenge family off a `chalNode` at any index `a` to
+- `def CoordinateWise.SingleRound.chalsAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:86](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L86) — Index-generic round-1 reader: peel the sibling-challenge family off a `chalNode` at any index `a` to
 
 ### `coe_certifiedGammaError` (2 declarations, 2 files)
 
@@ -806,6 +814,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `theorem ArkLib.Lattices.CyclotomicModulus.Rq.coeffHom_apply` [ArkLib/Data/Lattices/CyclotomicRing/Rq.lean:265](../../../ArkLib/Data/Lattices/CyclotomicRing/Rq.lean#L265) — (no docstring)
 - `theorem CompPoly.CPolynomial.coeffHom_apply` [ArkLib/ToCompPoly/Univariate/Basic.lean:291](../../../ArkLib/ToCompPoly/Univariate/Basic.lean#L291) — (no docstring)
+
+### `collect_branch_data` (2 declarations, 2 files)
+
+- `theorem CoordinateWise.ScalarRound.collect_branch_data` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:432](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L432) — **Extraction core, scalar round.** Validity at the pure verdicts yields the `k` per-branch responses
+- `theorem CoordinateWise.SingleRound.collect_branch_data` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:460](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L460) — **Extraction core.** A leaf witnessing that is valid *at the verifier's verdicts* yields the per-bra
 
 ### `computeRoundPoly` (2 declarations, 2 files)
 
@@ -879,8 +892,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `eq_leaf` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:167](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L167) — Shape recovery, level 2: every subtree at the last round is a leaf.
-- `theorem CoordinateWise.SingleRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:135](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L135) — Shape recovery, level 2: every subtree at the last round is a leaf.
+- `theorem CoordinateWise.ScalarRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:168](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L168) — Shape recovery, level 2: every subtree at the last round is a leaf.
+- `theorem CoordinateWise.SingleRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:133](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L133) — Shape recovery, level 2: every subtree at the last round is a leaf.
 
 ### `finalSumcheckKnowledgeError` (2 declarations, 2 files)
 
@@ -906,6 +919,11 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 - `def Binius.BinaryBasefold.FullBinaryBasefold.fullRbrKnowledgeError` [ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean:135](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/General.lean#L135) — Combined RBR knowledge soundness error for the full protocol
 - `def RingSwitching.FullRingSwitching.fullRbrKnowledgeError` [ArkLib/ProofSystem/RingSwitching/Packing/General.lean:156](../../../ArkLib/ProofSystem/RingSwitching/Packing/General.lean#L156) — (no docstring)
+
+### `fullTranscript_branchPathOf` (2 declarations, 2 files)
+
+- `theorem CoordinateWise.ScalarRound.fullTranscript_branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:299](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L299) — The branch path's transcript **is** the branch transcript — definitional on the star tree.
+- `theorem CoordinateWise.SingleRound.fullTranscript_branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:271](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L271) — The branch path's transcript **is** the branch transcript — definitional on the star tree, since the
 
 ### `gamma` (2 declarations, 2 files)
 
@@ -950,7 +968,12 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `instOutputOracleInterface` (2 declarations, 2 files)
 
 - `instance SendClaim.instOutputOracleInterface` [ArkLib/ProofSystem/Component/SendClaim.lean:60](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L60) — (no docstring)
-- `instance SendSingleWitness.instOutputOracleInterface` [ArkLib/ProofSystem/Component/SendWitness.lean:289](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L289) — (no docstring)
+- `instance SendSingleWitness.instOutputOracleInterface` [ArkLib/ProofSystem/Component/SendWitness.lean:293](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L293) — (no docstring)
+
+### `lastPathAux` (2 declarations, 2 files)
+
+- `def CoordinateWise.ScalarRound.lastPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:265](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L265) — Index-generic: at the last round every tree is a leaf, so its only path is the empty one.
+- `def CoordinateWise.SingleRound.lastPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:236](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L236) — Index-generic: at the last round every tree is a leaf, so its only path is the empty one.
 
 ### `leftpad` (2 declarations, 2 files)
 
@@ -1015,7 +1038,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `outputIndexEmbedding` (2 declarations, 2 files)
 
 - `def SendClaim.outputIndexEmbedding` [ArkLib/ProofSystem/Component/SendClaim.lean:87](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L87) — The oracle verifier for `SendClaim` is a **pure pass-through**: it returns the statement and exposes
-- `def SendSingleWitness.outputIndexEmbedding` [ArkLib/ProofSystem/Component/SendWitness.lean:319](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L319) — The index embedding that exposes every input oracle and the single witness message as output oracles
+- `def SendSingleWitness.outputIndexEmbedding` [ArkLib/ProofSystem/Component/SendWitness.lean:323](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L323) — The index embedding that exposes every input oracle and the single witness message as output oracles
 
 ### `outputRelationFor` (2 declarations, 2 files)
 
@@ -1044,8 +1067,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `package` (2 declarations, 2 files)
 
-- `def CoordinateWise.CommittedScalar.package` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:261](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L261) — Bundled committed scalar phase, ready for CWSS composition. This lands in the **pure, escape-aware**
-- `def RingSwitching.Lift.package` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:204](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L204) — `Lift` as a composable escape-aware CWSS package.
+- `def CoordinateWise.CommittedScalar.package` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:273](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L273) — Bundled committed scalar phase, ready for CWSS composition. This lands in the **pure, escape-aware**
+- `def RingSwitching.Lift.package` [ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean:215](../../../ArkLib/ProofSystem/RingSwitching/Lift/Reduction.lean#L215) — `Lift` as a composable escape-aware CWSS package. Computable: the purity field carries the verdict f
 
 ### `perfectlyCorrect` (2 declarations, 2 files)
 
@@ -1084,23 +1107,23 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `readChallenges` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:132](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L132) — Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
-- `def CoordinateWise.SingleRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:100](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L100) — Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
+- `def CoordinateWise.ScalarRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:133](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L133) — Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
+- `def CoordinateWise.SingleRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:98](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L98) — Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
 
 ### `readChallenges_tree2` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:162](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L162) — The round-1 reader computes on the star tree.
-- `theorem CoordinateWise.SingleRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:130](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L130) — The round-1 reader computes on the star tree.
+- `theorem CoordinateWise.ScalarRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:163](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L163) — The round-1 reader computes on the star tree.
+- `theorem CoordinateWise.SingleRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:128](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L128) — The round-1 reader computes on the star tree.
 
 ### `readPre` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.readPre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:114](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L114) — Read the round-0 message (the pre-challenge prover message) off a full tree.
-- `def CoordinateWise.SingleRound.readPre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:81](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L81) — Read the round-0 message (the pre-challenge carrier commitment) off a full tree.
+- `def CoordinateWise.ScalarRound.readPre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:115](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L115) — Read the round-0 message (the pre-challenge prover message) off a full tree.
+- `def CoordinateWise.SingleRound.readPre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:79](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L79) — Read the round-0 message (the pre-challenge carrier commitment) off a full tree.
 
 ### `readPre_tree2` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:157](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L157) — The round-0 reader computes on the star tree.
-- `theorem CoordinateWise.SingleRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:125](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L125) — The round-0 reader computes on the star tree.
+- `theorem CoordinateWise.ScalarRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:158](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L158) — The round-0 reader computes on the star tree.
+- `theorem CoordinateWise.SingleRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:123](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L123) — The round-0 reader computes on the star tree.
 
 ### `reduction_verifier_eq_verifier` (2 declarations, 2 files)
 
@@ -1124,8 +1147,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `rowSum` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.rowSum` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:185](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L185) — Mathlib view of `cRowSum`, retained for degree and root-counting proofs.
-- `def RingSwitching.Lift.Presentation.rowSum` [ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean:213](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean#L213) — The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on canonical representatives (e
+- `def ArkLib.Lattices.Ajtai.InnerOuter.rowSum` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean:187](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Reduction.lean#L187) — Mathlib view of `cRowSum`, retained for degree and root-counting proofs.
+- `def RingSwitching.Lift.Presentation.rowSum` [ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean:242](../../../ArkLib/ProofSystem/RingSwitching/Lift/Presentation.lean#L242) — The `i`-th lifted row's left-hand side `∑ⱼ rep(Mᵢⱼ)·rep(zⱼ) ∈ R[X]`, on the semantics of canonical r
 
 ### `run` (2 declarations, 2 files)
 
@@ -1165,7 +1188,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 ### `toORelOut` (2 declarations, 2 files)
 
 - `def SendClaim.toORelOut` [ArkLib/ProofSystem/Component/SendClaim.lean:171](../../../ArkLib/ProofSystem/Component/SendClaim.lean#L171) — The output relation of `SendClaim`: the input relation (read off the pass-through oracles at `inl`)
-- `def SendSingleWitness.toORelOut` [ArkLib/ProofSystem/Component/SendWitness.lean:407](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L407) — (no docstring)
+- `def SendSingleWitness.toORelOut` [ArkLib/ProofSystem/Component/SendWitness.lean:411](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L411) — (no docstring)
 
 ### `toPolynomial` (2 declarations, 2 files)
 
@@ -1174,8 +1197,8 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `topMsgAux` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:103](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L103) — Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
-- `def CoordinateWise.SingleRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:70](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L70) — Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
+- `def CoordinateWise.ScalarRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:104](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L104) — Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
+- `def CoordinateWise.SingleRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:68](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L68) — Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
 
 ### `transitionStraightlineExtractor` (2 declarations, 2 files)
 
@@ -1184,22 +1207,22 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 
 ### `tree2` (2 declarations, 2 files)
 
-- `def CoordinateWise.ScalarRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:151](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L151) — The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
-- `def CoordinateWise.SingleRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:119](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L119) — The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
+- `def CoordinateWise.ScalarRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:152](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L152) — The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
+- `def CoordinateWise.SingleRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:117](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L117) — The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
 
 ### `tree_shape` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.tree_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:211](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L211) — **Shape recovery.** Every full tree of the two-round scalar `pSpecScalar` is a star tree — one messa
-- `theorem CoordinateWise.SingleRound.tree_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:181](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L181) — **Shape recovery.** Every full tree of the two-round `pSpec` is a star tree. This is the rewrite tha
+- `theorem CoordinateWise.ScalarRound.tree_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:212](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L212) — **Shape recovery.** Every full tree of the two-round scalar `pSpecScalar` is a star tree — one messa
+- `theorem CoordinateWise.SingleRound.tree_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:179](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L179) — **Shape recovery.** Every full tree of the two-round `pSpec` is a star tree. This is the rewrite tha
 
 ### `tree_shape_aux` (2 declarations, 2 files)
 
-- `theorem CoordinateWise.ScalarRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:195](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L195) — Shape recovery, level 0: every tree at round 0 is a `tree2`.
-- `theorem CoordinateWise.SingleRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:163](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L163) — Shape recovery, level 0: every tree at round 0 is a `tree2`.
+- `theorem CoordinateWise.ScalarRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:196](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L196) — Shape recovery, level 0: every tree at round 0 is a `tree2`.
+- `theorem CoordinateWise.SingleRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:161](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L161) — Shape recovery, level 0: every tree at round 0 is a `tree2`.
 
 ### `unflatten` (2 declarations, 2 files)
 
-- `def ArkLib.Lattices.Ajtai.InnerOuter.unflatten` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean:181](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean#L181) — Un-flatten a row-major block vector into blocks — the inverse of `PolyVec.flattenBlocks`.
+- `def ArkLib.Lattices.Ajtai.InnerOuter.unflatten` [ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean:182](../../../ArkLib/Commitments/Functional/Hachi/RingSwitch/Rlin.lean#L182) — Un-flatten a row-major block vector into blocks — the inverse of `PolyVec.flattenBlocks`.
 - `def ToyProblem.Impl.IRS.unflatten` [ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean:83](../../../ArkLib/ProofSystem/ToyProblem/Impl/IRS.lean#L83) — Split a length-`k` scalar message into `s` rows of length `k / s`.
 
 ### `vecL2NormSq` (2 declarations, 2 files)
@@ -1207,10 +1230,15 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `def ArkLib.Lattices.CyclotomicModulus.vecL2NormSq` [ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean:91](../../../ArkLib/Data/Lattices/CyclotomicRing/NormBounds/Basic.lean#L91) — Centered squared-`ℓ₂` norm of a vector: the sum of entrywise norms.
 - `def ArkLib.Lattices.CenteredCoeffView.vecL2NormSq` [ArkLib/Data/Lattices/CyclotomicRing/Norms.lean:80](../../../ArkLib/Data/Lattices/CyclotomicRing/Norms.lean#L80) — Vector squared `ℓ₂` norm: the sum of entrywise squared `ℓ₂` norms.
 
+### `verifierPureForm` (2 declarations, 2 files)
+
+- `def ArkLib.Lattices.Ajtai.InnerOuter.verifierPureForm` [ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean:405](../../../ArkLib/Commitments/Functional/Hachi/QuadEval/Reduction.lean#L405) — **The pass-through verifier's purity as data** (`Verifier.PureForm`): the verdict is the pass-throug
+- `def CoordinateWise.CommittedScalar.verifierPureForm` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean:241](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean#L241) — The committed-scalar verifier's purity **as data**: its verdict is the input statement extended by t
+
 ### `verifier_coordinateWiseSpecialSoundWith` (2 declarations, 2 files)
 
-- `theorem ReduceClaim.verifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/ReduceClaim.lean:200](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L200) — **Coordinate-wise special soundness of `ReduceClaim`, named form.** The verifier is pure with no cha
-- `theorem SendWitness.verifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/SendWitness.lean:154](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L154) — **Coordinate-wise special soundness of `SendWitness`, named form.** The verifier has no challenge ro
+- `theorem ReduceClaim.verifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/ReduceClaim.lean:205](../../../ArkLib/ProofSystem/Component/ReduceClaim.lean#L205) — **Coordinate-wise special soundness of `ReduceClaim`, named form.** The verifier is pure with no cha
+- `theorem SendWitness.verifier_coordinateWiseSpecialSoundWith` [ArkLib/ProofSystem/Component/SendWitness.lean:158](../../../ArkLib/ProofSystem/Component/SendWitness.lean#L158) — **Coordinate-wise special soundness of `SendWitness`, named form.** The verifier has no challenge ro
 
 ### `verify` (2 declarations, 2 files)
 
@@ -1227,7 +1255,7 @@ Each group lists declarations sharing a short name across ≥2 files. Most are l
 - `lemma ToyProblem.Spec.Pr_eq_zero_of_forall_not` [ArkLib/ProofSystem/ToyProblem/Spec/General.lean:1084](../../../ArkLib/ProofSystem/ToyProblem/Spec/General.lean#L1084) — `Pr_{x ← D}[P x] = 0` for a never-satisfied predicate `P`.
 - `theorem ToyProblem.Spec.Pr_eq_zero_of_forall_not` [ArkLib/ProofSystem/ToyProblem/Spec/KnowledgeSoundness.lean:57](../../../ArkLib/ProofSystem/ToyProblem/Spec/KnowledgeSoundness.lean#L57) — A predicate false at every point has probability zero.
 
-## Near-duplicate docstrings (Jaccard ≥ 0.85, 70 cross-file pairs)
+## Near-duplicate docstrings (Jaccard ≥ 0.85, 74 cross-file pairs)
 
 Each pair has docstrings sharing a high fraction of (4+-letter) words, in different files. Most are unrelated coincidences in boilerplate; look for pairs where the *concept* matches.
 
@@ -1321,37 +1349,43 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **1.00** `Binius.FRIBinius.CoreInteractionPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:618](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L618) vs `RingSwitching.SumcheckPhase.finalSumcheckRbrExtractor` [ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean:408](../../../ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean#L408)
     - a: The round-by-round extractor for the final sumcheck step
     - b: The round-by-round extractor for the final sumcheck step
-- **1.00** `CoordinateWise.ScalarRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:250](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L250) vs `CoordinateWise.SingleRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:222](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L222)
+- **1.00** `CoordinateWise.ScalarRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:251](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L251) vs `CoordinateWise.SingleRound.branch_mem` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:220](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L220)
     - a: Branch `j`'s transcript is one of the star tree's leaf transcripts.
     - b: Branch `j`'s transcript is one of the star tree's leaf transcripts.
-- **1.00** `CoordinateWise.ScalarRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:241](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L241) vs `CoordinateWise.SingleRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:213](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L213)
+- **1.00** `CoordinateWise.ScalarRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:242](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L242) vs `CoordinateWise.SingleRound.branch_pre` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:211](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L211)
     - a: Branch `j`'s transcript carries the shared message `v` at round 0.
     - b: Branch `j`'s transcript carries the shared message `v` at round 0.
-- **1.00** `CoordinateWise.ScalarRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:300](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L300) vs `CoordinateWise.SingleRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:326](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L326)
+- **1.00** `CoordinateWise.ScalarRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:348](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L348) vs `CoordinateWise.SingleRound.branch_relOut_language` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:379](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L379)
     - a: Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
     - b: Acceptance of the star tree specializes, per branch `j`, to membership of the branch's verifier outp
-- **1.00** `CoordinateWise.ScalarRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:177](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L177) vs `CoordinateWise.SingleRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:145](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L145)
+- **1.00** `CoordinateWise.ScalarRound.chalPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:272](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L272) vs `CoordinateWise.SingleRound.chalPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:243](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L243)
+    - a: Index-generic round-1 branch path: descend into sibling `j` of the challenge node.
+    - b: Index-generic round-1 branch path: descend into sibling `j` of the challenge node.
+- **1.00** `CoordinateWise.ScalarRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:178](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L178) vs `CoordinateWise.SingleRound.chal_shape` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:143](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L143)
     - a: Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
     - b: Shape recovery, level 1: every subtree at round 1 is a `chalNode` over leaves.
-- **1.00** `CoordinateWise.ScalarRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:167](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L167) vs `CoordinateWise.SingleRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:135](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L135)
+- **1.00** `CoordinateWise.ScalarRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:168](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L168) vs `CoordinateWise.SingleRound.eq_leaf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:133](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L133)
     - a: Shape recovery, level 2: every subtree at the last round is a leaf.
     - b: Shape recovery, level 2: every subtree at the last round is a leaf.
-- **1.00** `CoordinateWise.ScalarRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:132](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L132) vs `CoordinateWise.SingleRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:100](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L100)
+- **1.00** `CoordinateWise.ScalarRound.lastPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:265](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L265) vs `CoordinateWise.SingleRound.lastPathAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:236](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L236)
+    - a: Index-generic: at the last round every tree is a leaf, so its only path is the empty one.
+    - b: Index-generic: at the last round every tree is a leaf, so its only path is the empty one.
+- **1.00** `CoordinateWise.ScalarRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:133](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L133) vs `CoordinateWise.SingleRound.readChallenges` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:98](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L98)
     - a: Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
     - b: Read the round-1 sibling-challenge family off a full tree: a two-level peel — the round-0 helper str
-- **1.00** `CoordinateWise.ScalarRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:162](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L162) vs `CoordinateWise.SingleRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:130](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L130)
+- **1.00** `CoordinateWise.ScalarRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:163](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L163) vs `CoordinateWise.SingleRound.readChallenges_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:128](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L128)
     - a: The round-1 reader computes on the star tree.
     - b: The round-1 reader computes on the star tree.
-- **1.00** `CoordinateWise.ScalarRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:157](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L157) vs `CoordinateWise.SingleRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:125](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L125)
+- **1.00** `CoordinateWise.ScalarRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:158](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L158) vs `CoordinateWise.SingleRound.readPre_tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:123](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L123)
     - a: The round-0 reader computes on the star tree.
     - b: The round-0 reader computes on the star tree.
-- **1.00** `CoordinateWise.ScalarRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:103](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L103) vs `CoordinateWise.SingleRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:70](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L70)
+- **1.00** `CoordinateWise.ScalarRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:104](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L104) vs `CoordinateWise.SingleRound.topMsgAux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:68](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L68)
     - a: Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
     - b: Index-generic round-0 message reader: peel the top `msgNode` of a tree at any index `a` together wit
-- **1.00** `CoordinateWise.ScalarRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:151](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L151) vs `CoordinateWise.SingleRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:119](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L119)
+- **1.00** `CoordinateWise.ScalarRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:152](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L152) vs `CoordinateWise.SingleRound.tree2` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:117](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L117)
     - a: The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
     - b: The star tree: one message node carrying `v`, one challenge node carrying the sibling family, leaves
-- **1.00** `CoordinateWise.ScalarRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:195](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L195) vs `CoordinateWise.SingleRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:163](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L163)
+- **1.00** `CoordinateWise.ScalarRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:196](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L196) vs `CoordinateWise.SingleRound.tree_shape_aux` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:161](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L161)
     - a: Shape recovery, level 0: every tree at round 0 is a `tree2`.
     - b: Shape recovery, level 0: every tree at round 0 is a `tree2`.
 - **1.00** `Groups.exists_zmod_power_of_generator` [ArkLib/Commitments/Functional/KZG/Algebra.lean:105](../../../ArkLib/Commitments/Functional/KZG/Algebra.lean#L105) vs `KZG.CommitmentScheme.binding_exists_zmod_power_of_generator` [ArkLib/Commitments/Functional/KZG/Binding.lean:167](../../../ArkLib/Commitments/Functional/KZG/Binding.lean#L167)
@@ -1378,7 +1412,7 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **1.00** `Prover.runToRoundFS` [ArkLib/OracleReduction/FiatShamir/Basic.lean:100](../../../ArkLib/OracleReduction/FiatShamir/Basic.lean#L100) vs `Prover.runToRoundDSFS` [ArkLib/OracleReduction/FiatShamir/DuplexSponge/Defs.lean:197](../../../ArkLib/OracleReduction/FiatShamir/DuplexSponge/Defs.lean#L197)
     - a: Run the prover in an interactive reduction up to round index `i`, via first inputting the statement
     - b: Run the prover in an interactive reduction up to round index `i`, via first inputting the statement
-- **1.00** `Verifier.coordinateWiseSpecialSound_iff_exists` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:251](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L251) vs `Verifier.treeSpecialSound_iff_exists` [ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean:398](../../../ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean#L398)
+- **1.00** `Verifier.coordinateWiseSpecialSound_iff_exists` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean:278](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/Basic.lean#L278) vs `Verifier.treeSpecialSound_iff_exists` [ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean:791](../../../ArkLib/OracleReduction/Security/TranscriptTree/Basic.lean#L791)
     - a: The existential notion is definitionally the existential closure of the named one.
     - b: The existential notion is definitionally the existential closure of the named one.
 - **1.00** `coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean:781](../../../ArkLib/ProofSystem/Binius/BinaryBasefold/CoreInteractionPhase.lean#L781) vs `Binius.FRIBinius.CoreInteractionPhase.coreInteractionOracleReduction` [ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean:754](../../../ArkLib/ProofSystem/Binius/FRIBinius/CoreInteractionPhase.lean#L754)
@@ -1417,6 +1451,12 @@ Each pair has docstrings sharing a high fraction of (4+-letter) words, in differ
 - **0.88** `OracleVerifier.knowledgeSoundnessWith` [ArkLib/OracleReduction/Security/Basic.lean:459](../../../ArkLib/OracleReduction/Security/Basic.lean#L459) vs `OracleVerifier.rbrKnowledgeSoundness` [ArkLib/OracleReduction/Security/RoundByRound.lean:735](../../../ArkLib/OracleReduction/Security/RoundByRound.lean#L735)
     - a: Knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
     - b: Round-by-round knowledge soundness of an oracle reduction is the same as for non-oracle reductions.
+- **0.87** `ArkLib.Lattices.Ajtai.InnerOuter.partialEvalExtractor` [ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean:187](../../../ArkLib/Commitments/Functional/Hachi/Recursion/PartialEval.lean#L187) vs `ArkLib.Lattices.Ajtai.InnerOuter.handoffExtractor` [ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean:179](../../../ArkLib/Commitments/Functional/Hachi/Recursion/TraceHandoff.lean#L179)
+    - a: **The partial-evaluation extraction algorithm.** **Sorried** — this def is the extraction *algorithm
+    - b: **The trace-handoff extraction algorithm.** **Sorried** — this def is the extraction *algorithm* its
+- **0.86** `CoordinateWise.ScalarRound.branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean:284](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/ScalarRound.lean#L284) vs `CoordinateWise.SingleRound.branchPathOf` [ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean:255](../../../ArkLib/OracleReduction/Security/CoordinateWiseSpecialSoundness/SingleRound.lean#L255)
+    - a: The root-to-leaf path of branch `j` of an **arbitrary** full scalar-round tree — the index at which
+    - b: The root-to-leaf path of branch `j` of an **arbitrary** full single-round tree — the index at which
 - **0.86** `Domain.CosetFftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/CosetFftDomain/Ops.lean:116](../../../ArkLib/Data/Domain/CosetFftDomain/Ops.lean#L116) vs `Domain.FftDomainClass.domain_implies_char_ne_2` [ArkLib/Data/Domain/FftDomain/Ops.lean:161](../../../ArkLib/Data/Domain/FftDomain/Ops.lean#L161)
     - a: The existence of a nontrivial smooth coset FFT domain rules out characteristic `2`.
     - b: The existence of a nontrivial smooth FFT domain rules out characteristic `2`.
