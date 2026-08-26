@@ -198,11 +198,11 @@ lemma tensorGeneratorPi_isMCAGenerator_tight {δ₀ : ℚ≥0} :
       Fin.consEquiv ℓ with heL
     -- the (ℓ 0)-fold interleaving has the same δᵣ, so the anchored hypotheses apply there
     have hδI : Code.minRelHammingDistCode
-        (ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC).carrier = δ₀ := by
+        (Code.ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC).carrier = δ₀ := by
       rw [Code.minRelHammingDistCode_moduleInterleavedCode]; exact hδ
     have hTail := ih (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G) (Fin.tail ε)
       (fun i {A'} _ _ _ MC' hMC' => hmca i.succ MC' hMC')
-      (ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC) hδI
+      (Code.ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC) hδI
     have hBin := TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
       (G 0) (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G))
       (ε 0) (fun γ => ∑ i, Fin.tail ε i γ) MC
