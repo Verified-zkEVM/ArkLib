@@ -22,9 +22,8 @@ deferred (`sorry`, see the `TODO`) — `hachi` is the *recursive* scheme, which 
 tail. For the **nonrecursive** run the same pieces are packaged with a complete opening and proved
 perfectly correct in `Correctness.lean` (`hachiNonrecursive` /
 `hachiNonrecursive_perfectCorrectness`), using this file's `commitBalanced`. The
-coordinate-wise-special-sound (CWSS) composition the
-recursive opening will run over lives in the sibling `Composition.lean`
-(`evalChain` / `eval_coordinateWiseSpecialSoundWithEscape`).
+coordinate-wise-special-sound (CWSS) composition the recursive opening will run over lives in the
+sibling `Composition.lean` (`iteration` / `endPiece` / `evaluation`).
 
 ## Main definitions
 

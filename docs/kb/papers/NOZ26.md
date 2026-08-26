@@ -169,9 +169,10 @@ Ring-switching layer:
   soundness gap below), and the trace handoff (Eqs. (27)–(28)). Everything through the sumcheck is
   proved in **both** directions: Lemma 8, the corrected Lemma 10 and its batching bridge, Lemma 9
   (the lift), the sumcheck bridge and summands, Lemma 11, and the final evaluation, each with
-  coordinate-wise special soundness and perfect completeness. Composing the completeness side is
-  blocked on the generic `Reduction.append_completeness`, still `sorry`, which every composed
-  statement inherits as a `sorryAx` dependency; the nonrecursive opening
+  coordinate-wise special soundness and perfect completeness, and the one-iteration soundness
+  certificate (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free. Composing
+  the completeness side is blocked on the generic `Reduction.append_completeness`, still `sorry`,
+  which every composed statement inherits as a `sorryAx` dependency; the nonrecursive opening
   (`Hachi/Correctness.lean`) is complete and perfectly correct modulo exactly that.
 - Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
   Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also

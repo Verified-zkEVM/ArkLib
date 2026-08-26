@@ -137,10 +137,9 @@ home_page/            site assets and assembled website root
     subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
     and guarded-check links, `EscapeCWSSPackage`/`EscapeGCWSSPackage` (plain relations plus an
-    escape *event*) for the links whose extraction can break an assumption. Its soundness side is
-    **complete**: rows 1–9 of the seam table in `Composition.lean` are sorry-free and axiom-clean.
-    The remaining skeleton is the §4.5 `Recursion/` tail, and the honest-prover/completeness layer
-    is open for the whole chain.
+    escape *event*) for the links whose extraction can break an assumption. The nine-link
+    iteration's soundness side is now **complete and axiom-clean**; its remaining work is the
+    honest-prover/completeness layer and the separate `endPiece` skeleton.
   - `RingSwitch/` (§4.3 entry, Figure 4 / Lemma 9) — the HMZ25 **ring-switching lift** reducing
     `R^lin` to a claim about the committed lifted witness evaluated at a random `α`.
     `RingSwitch/Rlin` is the zero-round Eq. (20) → `R^lin` adapter (a plain `CWSSPackage`, pure
@@ -207,25 +206,29 @@ home_page/            site assets and assembled website root
     extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
     side: every *folded* completeness statement inherits `sorryAx` from the generic
     `Reduction.append_completeness`, which is still `sorry`.
-  - `Recursion/` (§4.5) — the recursion adapters: `PartialEval` (Eq. (24) peeling, pure
+  - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
+    `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
     partial-evaluation soundness gap, analyzed in its module docstring), `TraceHandoff`
     (Eqs. (27)–(28)
     — guarded trace check, lands on the next iteration's `QuadEval` seam over `Φ'`).
-    `Recursion/Basic.lean` re-exports the folder.
-  - `Composition.lean` — the **CWSS composition home**: `evalChain` is the
-    `bridgePackage ▷ quadEvalPackage` chain and `eval_coordinateWiseSpecialSoundWithEscape` is its
-    composed named-extractor CWSS certificate (`sorryAx`-free). `openCore` chains the pure §4.3 links
-    (rows 1–7 of the header's seam table, `sorryAx`-free), and `openingChain` /
-    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` compose the guarded tail (sumcheck loop,
-    final eval, recursion adapters) into the full one-iteration certificate; every `sorryAx` it
-    carries comes from rows 10–12, and the provenance is inventoried in the module header. Escape
-    events compose along the chain by `ChallengeTree.EscapeEvent.append`, so only relation seams
-    have to match.
+    `Recursion/Basic.lean` re-exports the folder, and the top-level `Hachi.lean` umbrella imports
+    it so the umbrella reaches every folder it documents.
+  - `Composition.lean` — the **CWSS composition home**: `iteration` chains all nine subprotocol
+    links (rows 1–9 of the header's seam table) into one evaluation iteration, and
+    `hachi_iteration_coordinateWiseSpecialSoundWithEscape` states its composed named-extractor CWSS
+    certificate (`sorry`-free and axiom-clean). `eval_coordinateWiseSpecialSoundWithEscape` states
+    the same for the rows 1–2 front alone — the paper's Figure 3 reduction. `roundsChain` re-pins
+    the sumcheck loop's relation seams definitionally, so the guarded tail composes with the
+    universal `▷` rather than with explicit appends at named seam lemmas. `endPiece` is
+    the sorried skeleton closing a run of iterations (the prover reveals the reduced witness and
+    the verifier checks the reduced claim against it directly), and `evaluation` is
+    `iteration ▷ endPiece` — the complete opening argument. Escape events compose along the chain
+    by `ChallengeTree.EscapeEvent.append`, so only relation seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the §4.5 recursion
-    tail and the honest-prover/completeness layer). It also carries the **honest-committer facts**
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece, the §4.5
+    recursion tail, and the recursive honest-prover layer). It also carries the **honest-committer facts**
     the honest chain needs: `verifiedOpening_honestOpening` (the committer's own output is a
     `WeakBinding.VerifiedOpening` — it lives here, not in `InnerOuter/Correctness`, because
     `InnerOuter/Security` imports that file), `vecInSb_honestInnerDecomp_balanced`, and
@@ -253,8 +256,11 @@ home_page/            site assets and assembled website root
     `bound, ρBound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
     `γ` stays free. The collapse `γ = q/2 = bZero − 1` applies only to a *single* parameterization
     that also serves the bridge's pull-back
-    (`HonestRangeParams.pinned_of_soundness_orientations`); removing it needs a two-range table in
-    `ZeroCheck/Constraints`.
+    (`HonestRangeParams.pinned_of_soundness_orientations`). The collapse is an artifact of the
+    simplified table: NOZ26 §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
+    before committing (a decomposition the paper then hides from its notation), so the tracked fix
+    is the digit-decomposed `w̃` in `ZeroCheck/Constraints`, at which every row is honestly
+    `≤ b − 1` and nothing degenerates.
   - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
     chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
     reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
@@ -480,8 +486,8 @@ home_page/            site assets and assembled website root
   universal `▷` elaborator dispatching over the 2×2 grid escape? × guarded?. Since escapes are
   events on `(statement, tree)`, composition matches only relation seams. `Guarded` is the
   **proven** runtime-rejection layer: `Verifier.IsGuardedWith`/`IsGuarded`, the guarded package
-  `GCWSSPackage` with its append `▷ᵍ`, the escape-threaded guarded binary CWSS append
-  theorem, and the plain guarded append derived from it at the never-firing events. The umbrella
+  `GCWSSPackage` with its append `▷ᵍ`, the escape-threaded guarded binary CWSS append theorem,
+  and the plain guarded append derived from it at the never-firing events. The umbrella
   `CoordinateWiseSpecialSoundness.lean` re-exports the core files.
 - Active areas are often grouped by paper or protocol family, for example
   `Data/CodingTheory/ProximityGap/BCIKS20/...` or `ProofSystem/Binius/...`.

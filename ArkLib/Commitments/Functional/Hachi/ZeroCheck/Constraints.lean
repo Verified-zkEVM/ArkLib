@@ -401,7 +401,7 @@ theorem wTable_rRow (φF : ZMod q →+* F) (b : ℕ) (w : LiftedWitness Φ μ n)
   simp only [Nat.add_sub_cancel_left, Fin.eta]
 
 omit [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
-/-- **Range-side soundness (F5).** If the batched range polynomial `H₀^{w̃}` vanishes
+/-- **Range-side soundness.** If the batched range polynomial `H₀^{w̃}` vanishes
 identically then `w̃` is short. Each committed coefficient is a table entry (`wTable`), hence a
 root of `P_b` (`hZero_eq_zero_iff`), hence a centered residue of absolute value `≤ b − 1`
 (`valMinAbs_natAbs_le_of_rangeProduct_eq_zero`); the norm bounds follow because the declared
@@ -1182,7 +1182,7 @@ omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
 
 The two hypotheses are the ones that make the table encoding faithful, and both are already
-carried by the composition (`Composition.openingChain`'s `hd` and `hcov`): `hd` is what lets the
+carried by the composition (`Composition.iteration`'s `hd` and `hcov`): `hd` is what lets the
 flat cube index be split as `(row, column)`, and `hμn` is what makes every coefficient position a
 genuine cube point. Without them the cube contraction of `M̃_α`, `w̃` and `α̃` does **not**
 reproduce the ring-level row defect that `H_α` stores — the block would overflow the cube — so
