@@ -396,8 +396,8 @@
       <span class="mono">endPieceCheck</span>.
     </p>
     <div class="hero-meta">
-      <span class="chip">44 files</span>
-      <span class="chip">35 with protocol content</span>
+      <span class="chip">45 files</span>
+      <span class="chip">36 with protocol content</span>
       <span class="chip">9-link opening + end-piece + 3 recursion adapters</span>
       <span class="chip">rows 1–9 + end-piece no sorried certificate · all axiom-clean</span>
       <span class="chip">evaluation computable end to end</span>
@@ -416,7 +416,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 35 files carrying definitions or theorems (the nine folder <span class="mono">umbrella</span>
+      <p>Counts are over the 36 files carrying definitions or theorems (the nine folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects declarations that actually use
         <span class="mono">sorry</span>, not the word appearing in a docstring.</p>
     </div>
@@ -654,7 +654,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 44 files, including the nine folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 45 files, including the nine folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
@@ -740,8 +740,8 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
       rows:[
       { n:5, kind:"bridge", name:"Batching bridge", sub:"ZeroCheck", fn:"Batch.lean",
         files:[["ZeroCheck","Batch.lean"],["ZeroCheck","Constraints.lean"]], ref:"§4.3 · Eqs. 21–23", rounds:"0 rounds", cwss:"any",
-        relIn:"relLift", relOut:"relBatched", status:"wip", sorry:0, badges:["bridge"],
-        desc:"The <b>un-batching pull-back <code>mem_relLift_of_relBatched</code> is proof-sorry-free and axiom-clean</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, so shortness is derived rather than assumed. The <b>Eq.&nbsp;(22) half is now a faithful paper-to-Lean bridge</b>: the public <code>M̃_α</code>/<code>α̃</code> contraction against the committed table is constructed (<code>mAlphaTilde</code>, <code>alphaTilde</code>, <code>alphaContract</code>) and <b>proved</b> equal to the per-row α-defect that <code>hAlphaEvals</code> stores (<code>alphaDefect_wTable</code>, axiom-clean), with the relation-level form <code>hAlpha_eq_zero_iff_alphaDefect</code>. Link&nbsp;5 remains WIP for one reason only: there is still no forward/honest-completeness theorem <code>relLift → relBatched</code>. <code>ZeroCheck/Constraints.lean</code> is the shared encoding home spanning rows 5–9; its two sumcheck identities are now proved, so the downstream soundness chain is axiom-clean. The 0-sorry figure on this card is link 5's own certificate." },
+        relIn:"relLift", relOut:"relBatched", status:"proven", sorry:0, badges:["bridge"],
+        desc:"The <b>un-batching pull-back <code>mem_relLift_of_relBatched</code> is proof-sorry-free and axiom-clean</b>. Its range half is substantive: <code>H₀ ≡ 0</code> ⇒ <code>liftShort</code> via <code>hZero_eq_zero_imp_liftShort</code>, at a <em>single</em> norm bound, so shortness is derived rather than assumed. The <b>Eq.&nbsp;(22) half is now a faithful paper-to-Lean bridge</b>: the public <code>M̃_α</code>/<code>α̃</code> contraction against the committed table is constructed (<code>mAlphaTilde</code>, <code>alphaTilde</code>, <code>alphaContract</code>) and <b>proved</b> equal to the per-row α-defect that <code>hAlphaEvals</code> stores (<code>alphaDefect_wTable</code>, axiom-clean), with the relation-level form <code>hAlpha_eq_zero_iff_alphaDefect</code>. The <b>forward/honest direction is proved too</b> (<code>mem_relBatched_of_relLift</code>, packaged as <code>batchReduction_perfectCompleteness</code>), so the bridge is certified both ways. Both directions run against the <b>digit-decomposed</b> table: the quotient block of w̃ holds the base-b digits of ρ ([NOZ26] §4.3's hidden gadget decomposition), which are ⌊b/2⌋-bounded for every quotient, so the quotient half of <code>liftShort</code> costs nothing in either direction. <code>ZeroCheck/Constraints.lean</code> is the shared encoding home spanning rows 5–9; its two sumcheck identities are proved, so the downstream soundness chain is axiom-clean. The 0-sorry figure on this card is link 5's own certificate." },
       { n:6, kind:"step", name:"Zero-check reduction", sub:"ZeroCheck", fn:"Reduction.lean",
         files:[["ZeroCheck","Reduction.lean"]], ref:"§4.3 · Fig 5 · Lemma 10*", rounds:"m₀+m₁ scalar rounds", cwss:"k = 2 per round",
         relIn:"relBatched", relOut:"relNestedZeroCheck", status:"repaired", sorry:0, badges:["repair","proven"],
@@ -795,7 +795,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
   ];
   var PCS_ASSEMBLY = [
     { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"proven", sorry:0,
-      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands have concrete computable bodies and the file is <b>sorry-free</b>. ⚠ The table follows the paper's <em>simplified presentation</em>: NOZ26 §4.3 (p.&nbsp;19) gadget-decomposes the quotient into base-b digits before committing, and reworking w̃ to that digit table — which removes the pinned parameters and the degree-q range polynomial — is the tracked follow-up." },
+      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands have concrete computable bodies and the file is <b>sorry-free</b>. The table follows the paper's <em>actual</em> protocol: NOZ26 §4.3 (p.&nbsp;19) gadget-decomposes the quotient into base-b digits before committing, and w̃'s quotient block is those digits (<code>rhoDigits</code>, n·δ rows, δ = clog_b q). Since the digits are ⌊b/2⌋-bounded for every quotient, the range base can be the digit base itself: the range polynomial has degree 2b = O(1), and the parameters pin at γ = bZero−1 &lt; q/2 instead of collapsing to q/2." },
     { name:"Composition", ref:"the certificate", files:[["","Composition.lean"]], status:"proven", sorry:0,
       desc:"Imports every subprotocol's package and chains them: the <code>iteration</code> (rows 1–9, the subprotocol chain closed by the guarded sumcheck tail), the <code>endPiece</code> (now imported from <code>EndPiece/</code>), and the complete <code>evaluation</code> = iteration ⧺ end-piece. Its <code>isCWSS</code> fields are the certificates. The file hosts no protocol of its own and carries no sorry; with rows 1–9 and the end-piece all discharged, <code>evaluation</code> inherits no <code>sorryAx</code>." },
     { name:"End-piece", ref:"the closing link", files:[["EndPiece","Basic.lean"],["EndPiece","Reduction.lean"]], status:"proven", sorry:0,
@@ -809,14 +809,12 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
   var ROADMAP = [
     { title:"Row-11 repair decision — the §4.5/§3.2 counterexample", tag:"gap",
       body:"The one design-blocked item, and it sits upstream of every recursive goal: write the κ&nbsp;=&nbsp;1 cheat up as a short Lean-independent note, raise it with the [NOZ26] authors, and pick the repair — a fresh batching challenge over the peeled index (one extra round, Schwartz–Zippel error ≈ k/|F|) or the generic §3.1 packing (κ extra variables, a different norm/extraction story). Either choice rewrites the protocol content of rows 10–12, which is why those rows stay skeletal until it lands. The full walkthrough is in <a href=\"#gap\">the gap explainer</a>." },
-    { title:"Digit-decomposed range table — unpinning the honest parameters", tag:"planned",
-      body:"Rework <code>ZeroCheck/Constraints.lean</code>'s w̃ to the paper's actual protocol (NOZ26 §4.3 p.&nbsp;19: the quotient enters the table as base-b <em>digits</em>, a decomposition the paper then hides from its notation). This removes the pinned parameterization γ = q/2 = bZero−1, makes the composed completeness hold at the paper's parameters, and collapses the degree-q range polynomial to degree-b — also fixing the six-minute honest sumcheck run." },
     { title:"§3 packing head — external extension-field claims", tag:"planned",
       body:"Wrap an <code>F_{q^k}</code> evaluation claim in front of <code>relPolyEval</code>, as an instance of the generalized <code>RingSwitching</code> packing phase — a separate track, not a Hachi-local head." },
     { title:"Recursion-tail completeness &amp; the recursive opening", tag:"planned",
       body:"Only the honest layer's <em>remainder</em> — the layer itself is done, not planned: per-link completeness theorems composed in <code>HonestChain.lean</code>, closed <em>nonrecursively</em> by the terminal reveal-and-check of <code>Correctness.lean</code> and instantiated concretely in <code>Concrete.lean</code>, all sorry-free modulo the admitted generic <code>Reduction.append_completeness</code>. What is actually open: the §4.5 recursion tail's honest layer (<code>PartialEval</code>'s <code>computeY</code> and its encoding defs), discharging <code>append_completeness</code> itself, and <code>hachi.opening</code> — the succinct, recursive opening." },
     { title:"LiftCom instantiation — making the escapes concrete", tag:"planned",
-      body:"The chain is stated at an abstract weak-binding commitment; <code>Concrete.lean</code> already pins the commitment map itself (<code>hachiLiftCom</code>) on the honest side, so what remains is the soundness half: the escape events of rows 4/6/8 point at <code>LiftCom.Collision</code> without yet being tied to the inner-outer commitment. Discharging that tie is what turns those escapes into concrete Module-SIS breaks." },
+      body:"The chain is stated at an abstract weak-binding commitment; <code>Concrete.lean</code> already pins the commitment map itself (<code>hachiLiftCom</code>) on the honest side, so what remains is the soundness half: the escape events of rows 4/6/8 point at <code>LiftCom.Collision</code> without yet being tied to the inner-outer commitment. Half the work is already done — <code>moduleSIS_relation_of_mem_Collision</code> shows a short collision satisfies <code>ModuleSIS.relation</code> for the Ajtai key at radius 2·bound (nonzero, short, in the kernel), the nonzero conjunct coming from <code>liftMessage_injective</code>. That is a real Module-SIS instance only because the quotient block is committed as digits. What remains is that <code>D</code> is a <em>parameter</em> of <code>hachiLiftCom</code> rather than something <code>keygen</code> samples alongside the inner-outer key — so the collision-to-Module-SIS step is closed locally, while the end-to-end integration through <code>outputToModuleSIS_valid_of_verified</code> is not." },
     { title:"Rust extraction &amp; verified optimization", tag:"planned",
       body:"Build an AI-driven optimization loop around the Hachi specifications: let AI generate and optimize both Lean definitions and Rust verifier/prover code; extract the Rust through Aeneas/Hax into a derived Lean model; then prove each operation succeeds and is equivalent to—or commutes with—the specification. Rust benchmarks against frozen baselines provide the fitness signal for the next round. Adapt the running <a href=\"https://github.com/tobias-rothmann/AeneasCompPoly\">AeneasCompPoly</a> prototype for CompPoly to Hachi; <code>hachiNonrecursiveConcrete</code> and the compiled <code>hachi-runtime</code> gate are the extraction target and its executability half." },
     { title:"Knowledge-error accounting · extractability · Fiat–Shamir", tag:"planned",
@@ -852,6 +850,7 @@ parameters (k = 4), two of the four yᵢ stay completely free even after both ch
     ["RingSwitch","Completeness.lean","completeness","§4.3 · Fig4 · L9","3–4","proven",0],
     ["RingSwitch","ComputableWitness.lean","infrastructure","§4.3 · Fig4 · L9","4","proven",0],
     ["RingSwitch","QuotientNorms.lean","infrastructure","§4.3 · L9","—","proven",0],
+    ["RingSwitch","RhoDigits.lean","infrastructure","§4.3 p.19 · hidden gadget","4","proven",0],
     ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","proven",0],
     ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","proven",0],

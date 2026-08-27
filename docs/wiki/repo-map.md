@@ -156,18 +156,30 @@ home_page/            site assets and assembled website root
     `rlinReduction_perfectCompleteness_image` lands in the *image* seam `relRlinImage` (the pairs
     that came from the adapter: `p = (rlinStmt X, stack w)` with `(X, w) ∈ relOut`), and
     `liftReduction_perfectCompleteness_image` consumes exactly that, discharging **both** halves of
-    `liftShort`: the `z`-bound from seam membership, the quotient bound from
-    `RingSwitch/QuotientNorms`. Nothing is assumed. Why the honest side uses a different relation
+    `liftShort`: the `z`-bound from seam membership, the quotient bound from the digit encoding
+    (`rhoDigitsShort_of_digitBaseOk`), which needs no hypothesis on the witness. Nothing is
+    assumed. Why the honest side uses a different relation
     than soundness: `relRlin` forgets the matrix provenance, the value of `s.bound`, and hence the
     protocol-level `z`-bound — and `∀ s, bound ≤ s.bound` is *false* for positive `bound`
     (`s.bound = 0` is a legal statement), so the condition must be carried by the seam. The seam
     refines `relRlin` (`mem_relRlin_of_mem_relRlinImage`), so no relation is weakened.
-    `RingSwitch/QuotientNorms` is the quotient bound: for `φ = X^d + 1` division *selects*
-    coefficients (`Polynomial.coeff_divByMonic_X_pow_add_one`, in
-    `ToMathlib/Polynomial/DivByXPowAddOne`), so the honest quotient inherits any coefficient bound
-    on the row sum — `μ · 2d · βM · βz`, with **no wraparound hypothesis**. For the Hachi chain the
-    only honest `βM` is `q/2` (the `R^lin` matrix carries the Ajtai key and gadget powers), so the
-    chain runs at `ρBound = q/2` (`rhoShort_half`) — see `HonestChain.lean` for what that costs.
+    `RingSwitch/RhoDigits` is [NOZ26] §4.3's **hidden gadget decomposition** of the quotient:
+    `rhoDigits` splits each quotient row into `δ = clog_b q` balanced base-`b` digits, with the
+    reconstruction identity `rhoDigits_reconstruct` / `rhoDigits_evalAt` and the unconditional
+    per-digit bound `rhoDigits_valMinAbs_natAbs_le` (`⌊b/2⌋`, for *any* quotient). This is what
+    `liftMessage` commits — a vector of width `μ + n·δ`, not `μ + n` — and what makes
+    `LiftCom.Collision` a genuine Module-SIS instance: `moduleSIS_relation_of_mem_Collision`
+    proves a short collision satisfies `ModuleSIS.relation` for the Ajtai key at radius `2·bound`,
+    its nonzero conjunct coming from `liftMessage_injective` (the digits reconstruct the
+    quotient, so the committed vector determines the opening).
+    `RingSwitch/QuotientNorms` is the bound on the **raw** quotient: for `φ = X^d + 1` division
+    *selects* coefficients (`Polynomial.coeff_divByMonic_X_pow_add_one`, in
+    `ToMathlib/Polynomial/DivByXPowAddOne`), so it inherits any coefficient bound on the row sum —
+    `μ · 2d · βM · βz`, with **no wraparound hypothesis**. For the Hachi chain the only honest `βM`
+    is `q/2` (the `R^lin` matrix carries the Ajtai key and gadget powers), so an *undecomposed*
+    quotient can only be bounded by `q/2` (`rhoShort_half`); that is precisely why the digit
+    encoding is necessary rather than decorative, and `HonestChain.lean` records the parameter
+    collapse it removes.
     `RingSwitch/Basic.lean` re-exports the folder. (The §3 packing reduction is a distinct
     algebraic construction —
     `ProofSystem/RingSwitching/Packing/` — which does not use the committed-scalar seam; the two
@@ -261,23 +273,26 @@ home_page/            site assets and assembled website root
     scheme `hachiNonrecursive` in `Correctness.lean` is where the balanced committer is packaged
     with a complete opening and perfect correctness is actually proved.
   - `HonestChain.lean` — the honest side's **parameter interface** and prefix composition:
-    `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero`,
-    with the box→ball condition and the batching bridge's *honest-direction* inequalities only, plus
-    `HonestRangeParams.ofDigitBase` witnessing them at `γ = ⌊b/2⌋`), one named corollary per seam,
+    `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero` —
+    which is also the base of the quotient's hidden gadget decomposition — with the box→ball
+    condition, the batching bridge's *honest-direction* inequality, and the digit-base
+    admissibility triple `DigitBaseOk q γ bZero`, plus two witnesses that are **not**
+    interchangeable: `HonestRangeParams.ofDigitBase` at `γ = ⌊b/2⌋`, `bZero = b`, which is
+    honest-direction-only, and `ofPinnedDigitBase` at `γ = b − 1`, which also meets the pull-back
+    orientation and so realizes the two-sided regime), one named corollary per seam,
     and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
     zero-check protocol, whose completeness is proved **modulo the sorried generic
     `Reduction.append_completeness` / `liftContext_completeness`** (so it is `sorryAx`-tainted, by
     design and recorded in the baseline; the per-link theorems it composes are not). What the
-    non-short honest lift quotient costs is a *zero-check range base* of at least `q/2 + 1`, **not**
-    a large ball radius — honest completeness of the batching bridge needs only
-    `bound, ρBound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
-    `γ` stays free. The collapse `γ = q/2 = bZero − 1` applies only to a *single* parameterization
-    that also serves the bridge's pull-back
-    (`HonestRangeParams.pinned_of_soundness_orientations`). The collapse is an artifact of the
-    simplified table: NOZ26 §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
-    before committing (a decomposition the paper then hides from its notation), so the tracked fix
-    is the digit-decomposed `w̃` in `ZeroCheck/Constraints`, at which every row is honestly
-    `≤ b − 1` and nothing degenerates.
+    non-short honest lift quotient *used to* cost was a zero-check range base of at least
+    `q/2 + 1`, and — with the pull-back orientations — the collapse `γ = q/2 = bZero − 1`. Since
+    `ZeroCheck/Constraints`'s `w̃` carries the quotient's base-`bZero` **digits** (NOZ26 §4.3's
+    hidden gadget decomposition, `rhoDigits`), which are `⌊bZero/2⌋`-bounded for every quotient,
+    that cost is gone: honest completeness of the batching bridge needs only
+    `bound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
+    `γ` stays free. Adding the pull-back's reverse orientation pins the parameters, and
+    `HonestRangeParams.pinned_of_soundness_orientations` now lands at the **healthy** point
+    `γ = bZero − 1 < q/2`.
   - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
     chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
     reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole

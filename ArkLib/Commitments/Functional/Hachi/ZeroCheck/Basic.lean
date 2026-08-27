@@ -50,7 +50,8 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   from `H_α ≡ 0` (via `hAlpha_eq_zero_iff` and `hAlphaEvals_rowPoint`, arity `n ≤ 2 ^ m₁`; the
   identification of `H_α` with paper Eq. (22) is `hAlpha_eq_zero_iff_alphaDefect`) and
   **derives shortness `liftShort` from `H₀ ≡ 0`** (via `hZero_eq_zero_imp_liftShort`, arity
-  `(μ + n)·deg φ ≤ 2 ^ m₀` and range-base fits `b − 1 ≤ γ, ρBound`) — so shortness is proved,
+  `(μ + n·δ)·deg φ ≤ 2 ^ m₀`, range-base fit `b − 1 ≤ γ`, digit-base admissibility) — so
+  shortness is proved,
   not assumed (`relBatched` carries no `liftShort` conjunct). The point relations below it
   *do* carry one, but as the commitment's **shortness index**, not as a range assumption:
   `LiftCom.Collision` is defined on pairs of distinct *short* openings, so the conjunct is what
@@ -60,7 +61,7 @@ tree has `2 ^ (m₀ + m₁)` leaves. The full analysis is
   `mem_relBatched_of_relLift` lives here too (`hZero_eq_zero_of_liftShort` +
   `hAlpha_eq_zero_of_rows`), so the bridge is settled both ways; it needs neither arity hypothesis,
   but the range-base fits in the opposite orientation, which pins the paper's
-  `bound = ρBound = b − 1`.
+  `bound = b − 1`.
 * `ZeroCheck/Reduction.lean` — Hachi Figure 5 / Lemma 10: `m₀ + m₁` scalar challenge rounds
   assemble the direct points `τ₀` and `τα`. The coordinate-wise special soundness theorem
   `nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` reduces `relBatched` to

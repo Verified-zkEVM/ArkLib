@@ -91,15 +91,19 @@ abbrev Mu : ℕ := rlinCols IR Dg Dg Dg Mm Rr
 /-- `n₀ = 5`: the `R^lin` row count at these parameters. -/
 abbrev Nn : ℕ := rlinRows IR OR DR
 
-/-- The pinned honest range parameters: `γ = ⌊q/2⌋` and `bZero = γ + 1`, which is what the two
-reverse orientations of `hachiNonrecursive_perfectCorrectness` force. -/
+/-- The pinned honest range parameters, at the **healthy** point the gadget decomposition buys:
+`bZero = b = 3` and `γ = bZero − 1 = 2`, so `γ < ⌊q/2⌋ = 3` and Eq. (20)'s ball check is a real
+constraint. Before the refactor the quotient's raw `q/2` bound forced `bZero = ⌊q/2⌋ + 1 = 4` and
+`γ = 3 = ⌊q/2⌋`, at which that check was vacuous. -/
 def P : HonestRangeParams Q where
-  b := B; γ := 3; bZero := 4
+  b := B; γ := 2; bZero := 3
   hb := by decide
   hbq := by decide
   hbγ := by decide
   hγZero := by decide
-  hρZero := by decide
+  hbZero := by decide
+  hbZeroq := by decide
+  hbZeroγ := by decide
 
 /-- A ring element from two coefficients. -/
 def rr (a b : ℕ) : Rng := Rq.mk _ (CPolynomial.ofArray #[(a : ZMod Q), (b : ZMod Q)])
@@ -111,9 +115,10 @@ def pp : Hachi.PublicParamsD 𝓜(Q, A) IR (2 ^ Mm) Dg OR (2 ^ Rr) Dg DR where
   outerMatrix := fun _ j => rr (j.val + 2) 1
   dMatrix := fun _ j => rr 1 (j.val + 1)
 
-/-- The lift commitment's own key: `dRows × (μ₀ + n₀)`, the width a whole lifted witness needs
-(see the note above `hachiLiftCom`). -/
-def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn) :=
+/-- The lift commitment's own key: `dRows × (μ₀ + n₀·δ)`, the width a whole lifted witness needs
+once the quotient block is committed as its base-`bZero` digits (see the note above
+`hachiLiftCom`). `δ = clog_{bZero} Q`. -/
+def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn * rhoDigitCount Q P.bZero) :=
   fun _ j => rr (j.val + 1) (j.val * 2 + 1)
 
 /-- The committed multilinear polynomial. -/
@@ -124,7 +129,7 @@ def toyPoly : CMlPolynomial Rng (Rr + Mm) :=
 def cd := commitBalanced (α := A) B (by decide) pp toyPoly
 
 /-- The concrete lift commitment of the chain. -/
-abbrev K : LiftCom (LiftedWitness 𝓜(Q, A) Mu Nn) (liftShort 𝓜(Q, A) P.γ (Q / 2)) :=
+abbrev K : LiftCom (LiftedWitness 𝓜(Q, A) Mu Nn) (liftShort 𝓜(Q, A) P.γ P.bZero) :=
   nonrecursiveLiftCom (α := A) (innerRows := IR) (outerRows := OR) (dRows := DR)
     (m := Mm) (r := Rr) P dMat
 
@@ -342,10 +347,10 @@ def terminalHonest : WEvalStatement K.TCom Fld (MM + 1) :=
     value := wTableMleEval 𝓜(Q, A) (MM + 1) (RingHom.id (ZMod Q)) P.bZero wToy (fun _ => 0) }
 
 def terminalAcceptsHonest : Unit → Bool := fun _ =>
-  endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
+  endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q)) terminalHonest wToy
 
 def terminalRejectsPerturbed : Unit → Bool := fun _ =>
-  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ (Q / 2) P.bZero K (RingHom.id (ZMod Q))
+  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q))
     { terminalHonest with value := terminalHonest.value + 1 } wToy
 
 /-- **The composed honest run is accepted.** -/

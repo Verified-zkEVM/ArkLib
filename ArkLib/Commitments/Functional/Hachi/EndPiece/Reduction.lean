@@ -62,14 +62,14 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   ## The shortness conjunct
 
   `relWEvalClaim` carries three conjuncts: the commitment opens, the opening is **short**
-  (`liftShort Φ bound ρBound`), and the table's multilinear extension takes the claimed value.
+  (`liftShort Φ bound bDig`), and the table's multilinear extension takes the claimed value.
   The shortness conjunct is what the *preceding* link's extractor has to produce out of an
   accepting `relWEvalClaim` (`nestedRoundRel` in `ZeroCheck/Constraints.lean` lists it among its
   components), and the end-piece is the one step that receives `w̃`, so its check decides all
   three. Deciding shortness is not purely mechanical: `vecLInftyNorm Φ w.z ≤ bound` is already
-  decidable, but `RhoShort ρBound ρ = ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound` ranges over
-  every `k : ℕ` and is first cut down to `k < (ρ i).natDegree + 1` (`rhoShortCheck`), with the
-  tail discharged by `CPolynomial.le_natDegree_of_ne_zero` (`rhoShortCheck_eq_true_iff`).
+  decidable, but `RhoDigitsShort` quantifies over every `k : ℕ`. It is cut down to `k < deg φ`
+  (`rhoDigitsShortCheck`), the tail being discharged by the truncation built into `rhoDigits`
+  (`rhoDigits_coeff`, used by `rhoDigitsShortCheck_eq_true_iff`).
 
   ## References
 
@@ -99,58 +99,74 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (m₀ : ℕ) (bound bDig : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
-/-- Decides `RhoShort` by checking coefficients only up to the degree bound: beyond `natDegree`
-every coefficient is `0` and satisfies the bound vacuously (`rhoShortCheck_eq_true_iff`). -/
-def rhoShortCheck (ρ : Fin n → CPolynomial (ZMod q)) : Bool :=
-  decide (∀ i, ∀ k < (ρ i).natDegree + 1, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound)
+/-- Decides `RhoDigitsShort` by checking only the `δ` digit indices and the `d` coefficient
+positions a digit actually occupies: `rhoDigits` truncates at `deg φ`, so every coefficient beyond
+it is `0` and satisfies the bound vacuously (`rhoDigitsShortCheck_eq_true_iff`).
 
-omit [NeZero q] in
-/-- The truncated check decides exactly `RhoShort`: coefficients past `natDegree` vanish
-(`CPolynomial.le_natDegree_of_ne_zero`, contraposed), and `0` satisfies any bound. -/
-theorem rhoShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
-    rhoShortCheck ρBound ρ = true ↔ RhoShort ρBound ρ := by
-  rw [rhoShortCheck, decide_eq_true_iff]
+It range-checks the committed digits rather than the raw quotient rows, which is what lets it pass
+at a small bound: a raw quotient is only `q/2`-bounded (`rhoShort_half`). -/
+def rhoDigitsShortCheck (ρ : Fin n → CPolynomial (ZMod q)) : Bool :=
+  decide (∀ i, ∀ u < rhoDigitCount q bDig, ∀ k < Φ.φ.natDegree,
+    ((rhoDigits Φ bDig (ρ i) u).coeff k).valMinAbs.natAbs ≤ bound)
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The truncated check decides exactly `RhoDigitsShort`: `rhoDigits` is supported below `deg φ`
+(`rhoDigits_coeff`), and `0` satisfies any bound. -/
+theorem rhoDigitsShortCheck_eq_true_iff (ρ : Fin n → CPolynomial (ZMod q)) :
+    rhoDigitsShortCheck Φ bound bDig ρ = true ↔ RhoDigitsShort Φ bound bDig ρ := by
+  rw [rhoDigitsShortCheck, decide_eq_true_iff]
   constructor
-  · intro h i k
-    by_cases hk : k ≤ (ρ i).natDegree
-    · exact h i k (Nat.lt_succ_of_le hk)
-    · have hzero : (ρ i).coeff k = 0 := by
-        by_contra hne
-        exact hk (CPolynomial.le_natDegree_of_ne_zero hne)
-      rw [hzero]
+  · intro h i u k
+    by_cases hk : k < Φ.φ.natDegree
+    · exact h i u u.isLt k hk
+    · rw [rhoDigits_coeff, if_neg hk]
       simp
-  · exact fun h i k _ => h i k
+  · exact fun h i u hu k _ => h i ⟨u, hu⟩ k
 
-/-- Decides `liftShort`: the `ℓ∞` bound on `z` plus the truncated `RhoShort` check. -/
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **The digit conjunct of `liftShortCheck` always passes** at an admissible digit base: the
+committed digits are `⌊bDig/2⌋`-bounded for every quotient (`rhoDigitsShort_of_digitBaseOk`).
+
+So at the chain's parameters `liftShortCheck` is effectively the `z`-norm check alone. It is kept
+as a conjunct because the check must decide `liftShort` *as stated* — with no side condition on the
+base — and because the soundness side reads `liftShort` at whatever regime the commitment is
+indexed by. The corresponding conjunct on raw quotient rows would be `RhoShort`, which
+`rhoShort_half` shows can only be met at `q/2`. -/
+theorem rhoDigitsShortCheck_eq_true_of_digitBaseOk (h : DigitBaseOk q bound bDig)
+    (ρ : Fin n → CPolynomial (ZMod q)) :
+    rhoDigitsShortCheck Φ bound bDig ρ = true :=
+  (rhoDigitsShortCheck_eq_true_iff Φ bound bDig ρ).mpr (rhoDigitsShort_of_digitBaseOk Φ h ρ)
+
+/-- Decides `liftShort`: the `ℓ∞` bound on `z` plus the truncated digit check. -/
 def liftShortCheck (w : LiftedWitness Φ μ n) : Bool :=
-  decide (vecLInftyNorm Φ w.z ≤ bound) && rhoShortCheck ρBound w.ρ
+  decide (vecLInftyNorm Φ w.z ≤ bound) && rhoDigitsShortCheck Φ bound bDig w.ρ
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- `liftShortCheck` decides exactly `liftShort`. -/
 theorem liftShortCheck_eq_true_iff (w : LiftedWitness Φ μ n) :
-    liftShortCheck Φ bound ρBound w = true ↔ liftShort Φ bound ρBound w := by
-  rw [liftShortCheck, Bool.and_eq_true, decide_eq_true_iff, rhoShortCheck_eq_true_iff]
+    liftShortCheck Φ bound bDig w = true ↔ liftShort Φ bound bDig w := by
+  rw [liftShortCheck, Bool.and_eq_true, decide_eq_true_iff, rhoDigitsShortCheck_eq_true_iff]
   rfl
 
 /-- Decides `relWEvalClaim` on the witness the prover sent: the commitment recomputes to the
 claimed `t`, the opening is short (`liftShortCheck`), and the table's multilinear extension takes
 the claimed value at the sumcheck point. -/
-def endPieceCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def endPieceCheck (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] (φF : ZMod q →+* F)
     (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) : Bool :=
-  (K.com w == stmt.t) && liftShortCheck Φ bound ρBound w &&
+  (K.com w == stmt.t) && liftShortCheck Φ bound bDig w &&
     (wTableMleEval Φ m₀ φF b w stmt.point == stmt.value)
 
 /-- Accepts when `endPieceCheck` passes, rejects otherwise. The output statement is trivial. -/
-def endPieceVerifier (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def endPieceVerifier (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] (φF : ZMod q →+* F) :
     Verifier oSpec (WEvalStatement K.TCom F m₀) Unit
       (pSpecEndPiece (LiftedWitness Φ μ n)) where
   verify := fun stmt tr =>
-    if endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0) then pure () else failure
+    if endPieceCheck Φ m₀ bound bDig b K φF stmt (tr 0) then pure () else failure
 
 omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The end-piece verifier's guardedness as computable data (`Verifier.GuardedForm`): the guard is
@@ -158,10 +174,10 @@ omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 instead of a bare `Verifier.IsGuarded` instance, because a composed chain must *run* the left
 verdict at the seam; reading it off the `IsGuarded` existential would cost `Classical.choice`. -/
 def endPieceVerifierGuardedForm
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] (φF : ZMod q →+* F) :
-    (endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF).GuardedForm where
-  check := fun stmt tr => endPieceCheck Φ m₀ bound ρBound b K φF stmt (tr 0)
+    (endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF).GuardedForm where
+  check := fun stmt tr => endPieceCheck Φ m₀ bound bDig b K φF stmt (tr 0)
   out := fun _ _ => ()
   verify_eq := fun _ _ => rfl
 
@@ -169,10 +185,10 @@ omit [NeZero q] [IsCyclotomic Φ] [LawfulBEq F] in
 /-- The verifier is guarded, with `endPieceCheck` as its check. True by definition: the verifier
 is literally `if endPieceCheck … then pure () else failure`. -/
 theorem endPieceVerifier_isGuarded
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] (φF : ZMod q →+* F) :
-    (endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF).IsGuarded :=
-  (endPieceVerifierGuardedForm Φ m₀ bound ρBound b K φF).isGuarded
+    (endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF).IsGuarded :=
+  (endPieceVerifierGuardedForm Φ m₀ bound bDig b K φF).isGuarded
 
 /-- The witness read off a transcript: the prover's single message. Kept apart from
 `endPieceExtractor` so that the extraction itself is a computable function of the transcript. -/
@@ -184,7 +200,7 @@ def endPieceWitness {TCom : Type} (_stmt : WEvalStatement TCom F m₀)
 (`ChallengeTree.onlyPath`, structural recursion) — computable, and independent of the leaf
 witnessing, since the extracted witness *is* the transcript's one message. -/
 def endPieceExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) :
     Extractor.TreeBased (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Unit
       (pSpecEndPiece (LiftedWitness Φ μ n))
       (CWSSStructure.toShape (CWSSStructure.ofIsEmpty
@@ -202,24 +218,24 @@ have passed — a rejected check makes the verifier run `failure`, refuted by
 `endPieceWitness` returns. -/
 theorem endPiece_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (relWEvalClaim Φ m₀ bound ρBound b K φF)
+      (relWEvalClaim Φ m₀ bound bDig b K φF)
       (Set.univ : Set (Unit × Unit))
-      (endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF)
-      (endPieceExtractor Φ m₀ bound ρBound K) := by
+      (endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF)
+      (endPieceExtractor Φ m₀ bound bDig K) := by
   refine Verifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
     CWSSStructure.ofIsEmpty _ _ _ (endPieceWitness Φ m₀) ?_
   intro stmtIn tr hAcc
-  have hcheck : endPieceCheck Φ m₀ bound ρBound b K φF stmtIn (tr 0) = true := by
+  have hcheck : endPieceCheck Φ m₀ bound bDig b K φF stmtIn (tr 0) = true := by
     by_contra hc
     exact Verifier.not_accepting_of_failure
-      (V := endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF)
+      (V := endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF)
       (stmt := stmtIn) (tr := tr) (by simp [endPieceVerifier, hc]) hAcc
   simp only [endPieceCheck, Bool.and_eq_true, beq_iff_eq] at hcheck
-  exact ⟨hcheck.1.1, (liftShortCheck_eq_true_iff Φ bound ρBound _).mp hcheck.1.2, hcheck.2⟩
+  exact ⟨hcheck.1.1, (liftShortCheck_eq_true_iff Φ bound bDig _).mp hcheck.1.2, hcheck.2⟩
 
 /-! ## The honest direction -/
 
@@ -230,11 +246,11 @@ guards on it, and the nonrecursive scheme's verdict-returning terminal verifier
 (`Correctness.lean`) returns it — so the two security directions of the closing link cannot
 drift onto different checks. -/
 theorem endPieceCheck_eq_true_iff
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F)
     (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) :
-    endPieceCheck Φ m₀ bound ρBound b K φF stmt w = true ↔
-      (stmt, w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF := by
+    endPieceCheck Φ m₀ bound bDig b K φF stmt w = true ↔
+      (stmt, w) ∈ relWEvalClaim Φ m₀ bound bDig b K φF := by
   rw [endPieceCheck, Bool.and_eq_true, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
     liftShortCheck_eq_true_iff]
   constructor
@@ -262,12 +278,12 @@ def endPieceProver {TCom : Type} :
 The verifier field is `endPiece`'s on the nose (`endPieceReduction_verifier`), so the two security
 directions of the closing link speak about the same object. Perfect completeness is
 `endPieceReduction_perfectCompleteness`. -/
-def endPieceReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def endPieceReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] (φF : ZMod q →+* F) :
     Reduction oSpec (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Unit Unit
       (pSpecEndPiece (LiftedWitness Φ μ n)) where
   prover := endPieceProver Φ m₀
-  verifier := endPieceVerifier Φ m₀ bound ρBound b K φF
+  verifier := endPieceVerifier Φ m₀ bound bDig b K φF
 
 set_option linter.unusedSectionVars false in
 omit [NeZero q] [IsCyclotomic Φ] in
@@ -300,31 +316,31 @@ omit [NeZero q] [IsCyclotomic Φ] in
 the witness in the transcript and trivial outputs. Failure is excluded because a witness in
 `relWEvalClaim` passes `endPieceCheck` (`endPieceCheck_eq_true_iff`), the guard of the verifier. -/
 lemma endPieceReduction_run_support
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F)
     (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF) :
-    ∀ x ∈ support ((endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b
+    (h : (stmt, w) ∈ relWEvalClaim Φ m₀ bound bDig b K φF) :
+    ∀ x ∈ support ((endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b
         K φF).run stmt w).run,
       ∃ tr, x = some ((tr, (), ()), ()) := by
-  have hg : endPieceCheck Φ m₀ bound ρBound b K φF stmt w = true :=
-    (endPieceCheck_eq_true_iff Φ m₀ bound ρBound b K φF stmt w).mpr h
+  have hg : endPieceCheck Φ m₀ bound bDig b K φF stmt w = true :=
+    (endPieceCheck_eq_true_iff Φ m₀ bound bDig b K φF stmt w).mpr h
   intro x hx
   unfold Reduction.run at hx
   simp only [OptionT.run_bind, Option.elimM] at hx
   rw [mem_support_bind_iff] at hx
   obtain ⟨prOpt, hpr, hx⟩ := hx
   rw [show ((liftM (Prover.run stmt w
-        (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover) :
+        (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover) :
         OptionT (OracleComp _) _)).run
       = (Prover.run stmt w
-          (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover)
+          (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover)
         >>= fun a => pure (some a) from rfl] at hpr
   rw [mem_support_bind_iff] at hpr
   obtain ⟨pr, hpr, hprOpt⟩ := hpr
   rw [mem_support_pure_iff] at hprOpt
   subst hprOpt
-  rw [show (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover
+  rw [show (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).prover
       = endPieceProver (TCom := K.TCom) Φ m₀ from rfl] at hpr
   obtain ⟨hmsg, hout⟩ :=
     endPieceProver_run_support (oSpec := oSpec) (TCom := K.TCom) Φ m₀ stmt w pr hpr
@@ -343,15 +359,15 @@ Together with `endPiece_coordinateWiseSpecialSoundWith` — stated about the sam
 (`endPieceReduction_verifier`) — the closing link is certified in both directions. -/
 theorem endPieceReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
-    (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b
+    (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b
         K φF).perfectCompleteness init impl
-      (relWEvalClaim Φ m₀ bound ρBound b K φF)
+      (relWEvalClaim Φ m₀ bound bDig b K φF)
       (Set.univ : Set (Unit × Unit)) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt w h x hx
-  obtain ⟨tr, hx'⟩ := endPieceReduction_run_support Φ m₀ bound ρBound b K φF stmt w h x hx
+  obtain ⟨tr, hx'⟩ := endPieceReduction_run_support Φ m₀ bound bDig b K φF stmt w h x hx
   exact ⟨_, hx', Set.mem_univ _, rfl⟩
 
 /-- The end-piece packaged for composition: a guarded one-message verifier over the empty
@@ -360,29 +376,29 @@ only what the prover just sent, so no hardness assumption is involved. Every fie
 the guardedness rides along as data (`endPieceVerifierGuardedForm`) and the extractor reads the
 tree's unique path. -/
 def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
     GCWSSPackage init impl
       (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n)
       Unit Unit
       (pSpecEndPiece (LiftedWitness Φ μ n)) where
-  verifier := endPieceVerifier (oSpec := oSpec) Φ m₀ bound ρBound b K φF
+  verifier := endPieceVerifier (oSpec := oSpec) Φ m₀ bound bDig b K φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaim Φ m₀ bound ρBound b K φF
+  relIn := relWEvalClaim Φ m₀ bound bDig b K φF
   relOut := Set.univ
-  isGuarded := endPieceVerifierGuardedForm Φ m₀ bound ρBound b K φF
-  extractor := endPieceExtractor Φ m₀ bound ρBound K
-  isCWSS := endPiece_coordinateWiseSpecialSoundWith Φ m₀ bound ρBound b init impl K φF
+  isGuarded := endPieceVerifierGuardedForm Φ m₀ bound bDig b K φF
+  extractor := endPieceExtractor Φ m₀ bound bDig K
+  isCWSS := endPiece_coordinateWiseSpecialSoundWith Φ m₀ bound bDig b init impl K φF
 
 omit [NeZero q] [IsCyclotomic Φ] in
 /-- The end-piece's protocol object and its soundness package share a verifier. Holds by
 `rfl`. -/
 @[simp] theorem endPieceReduction_verifier (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
-    (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).verifier
-      = (endPiece Φ m₀ bound ρBound b init impl K φF).verifier :=
+    (endPieceReduction (oSpec := oSpec) Φ m₀ bound bDig b K φF).verifier
+      = (endPiece Φ m₀ bound bDig b init impl K φF).verifier :=
   rfl
 
 

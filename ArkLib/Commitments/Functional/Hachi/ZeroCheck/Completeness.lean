@@ -70,7 +70,7 @@ import ArkLib.ToCompPoly.Multilinear.Basic
   does *not* assume. It is derived here exactly as on the soundness side
   (`mem_relLift_of_relBatched`): from the range identity `H₀ ≡ 0` via
   `hZero_eq_zero_imp_liftShort`, which is what the arithmetic hypotheses `hd`, `hμn`, `hbound`,
-  `hρBound` pay for.
+  the digit-base admissibility pay for.
 -/
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
@@ -81,7 +81,7 @@ open OracleComp OracleSpec ProtocolSpec
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
+variable (m₀ m₁ : ℕ) (bound bDig : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 -- `[IsCyclotomic Φ]` is needed only to synthesize the `Rq`/`wTable` instances inside the `hZero`
@@ -99,19 +99,20 @@ are combined in `nestedZeroCheckReduction_perfectCompleteness`.
 Stated for arbitrary `τ₀`, `τα` rather than for the transcript's points, so that the
 execution-level proof can instantiate it at whatever the challenges assemble. -/
 theorem mem_relNestedZeroCheck_of_relBatched
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound)
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hdig : DigitBaseOk q bound bDig)
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
-    (h : (X, w) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b)
+    (h : (X, w) ∈ relBatched Φ m₀ m₁ bound bDig K φF b)
     (τ₀ : Fin m₀ → F) (τα : Fin m₁ → F) :
     (nestedZcMapStmt Φ m₀ m₁ X τ₀ τα, w)
-      ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+      ∈ relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b := by
   simp only [relBatched, Set.mem_setOf_eq] at h
   obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
   refine ⟨hcom, ?_, ?_, ?_, hbound'⟩
-  · exact hZero_eq_zero_imp_liftShort Φ m₀ φF b bound ρBound hd hμn hbound hρBound w hZeroZ
+  · exact ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hd hμn hbound w hZeroZ).1,
+      rhoDigitsShort_of_digitBaseOk Φ hdig w.ρ⟩
   · rw [hZeroZ, CMlPolynomialEval.eval_zero]
   · simp only [nestedZcMapStmt]
     rw [hAlphaZ, CMlPolynomialEval.eval_zero]
@@ -244,19 +245,19 @@ the challenges, not for any property of their distribution — the proof quantif
 support of the run. -/
 theorem nestedZeroCheckReduction_perfectCompleteness [SampleableType F]
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound) :
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hdig : DigitBaseOk q bound bDig) :
     (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
         (Wit := LiftedWitness Φ μ n) Φ m₀ m₁).perfectCompleteness init impl
-      (relBatched Φ m₀ m₁ bound ρBound K φF b)
-      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) := by
+      (relBatched Φ m₀ m₁ bound bDig K φF b)
+      (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro X w hBatched x hx
   obtain ⟨tr, rfl⟩ := nestedZeroCheckReduction_run_support Φ m₀ m₁ X w x hx
   exact ⟨_, rfl,
-    mem_relNestedZeroCheck_of_relBatched Φ m₀ m₁ bound ρBound K φF b hd hμn hbound hρBound
+    mem_relNestedZeroCheck_of_relBatched Φ m₀ m₁ bound bDig K φF b hd hμn hbound hdig
       X w hBatched _ _, rfl⟩
 
 /-! ## The batching bridge: the honest direction, closed
@@ -273,7 +274,7 @@ for what the two-sided reading would cost.
 `mapStmt := id` and the identity witness map — the honest prover of a bridge that only changes how
 the claims are *read* does nothing at all. Its verifier is `batchPackage`'s
 (`batchReduction_verifier`), so the two security directions of the link cannot drift apart. -/
-def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) :
+def batchReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) :
     Reduction oSpec
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
@@ -284,12 +285,12 @@ set_option linter.unusedSectionVars false in
 /-- The bridge's protocol object and its soundness certificate share a verifier. Holds by `rfl`. -/
 @[simp] theorem batchReduction_verifier
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hbound : b - 1 ≤ bound) (hρBound : b - 1 ≤ ρBound) :
-    (batchReduction (oSpec := oSpec) Φ bound ρBound K).verifier
-      = (batchPackage Φ m₀ m₁ bound ρBound init impl K φF b hn hd hμn hbound hρBound).verifier :=
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
+    (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (hn : n ≤ 2 ^ m₁) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hbound : b - 1 ≤ bound) (hdig : DigitBaseOk q bound bDig) :
+    (batchReduction (oSpec := oSpec) Φ bound bDig K).verifier
+      = (batchPackage Φ m₀ m₁ bound bDig init impl K φF b hb hn hd hμn hbound hdig).verifier :=
   rfl
 
 set_option linter.unusedSectionVars false in
@@ -301,21 +302,21 @@ statements being equal for the trivial reason that both are the input statement.
 
 **Only the honest direction is used**, via `ReduceClaim.reduction_completeness_of_imp`: the content
 is `mem_relBatched_of_relLift` alone, so the range hypotheses appear in one orientation only
-(`bound ≤ b − 1`, `ρBound ≤ b − 1` — the declared norm bounds are dominated by the range base), and
-the pull-back's arity conditions `n ≤ 2 ^ m₁` and `(μ + n)·deg φ ≤ 2 ^ m₀` are not needed at all.
+(`bound ≤ b − 1` — the declared norm bound is dominated by the range base), and
+the pull-back's arity conditions `n ≤ 2 ^ m₁` and `(μ + n·δ)·deg φ ≤ 2 ^ m₀` are not needed at all.
 
 That matters for the chain: a *single* parameterization serving both directions is pinned to
-`bound = ρBound = b − 1` (the pull-back needs the reverse orientation); honest completeness alone
+`bound = b − 1` (the pull-back needs the reverse orientation); honest completeness alone
 leaves `bound` free below `b − 1`. See `HonestChain.lean`. -/
 theorem batchReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
-    (hbound : bound ≤ b - 1) (hρBound : ρBound ≤ b - 1) :
-    (batchReduction (oSpec := oSpec) Φ bound ρBound K).perfectCompleteness init impl
-      (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b) :=
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
+    (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hbound : bound ≤ b - 1) (hbase : DigitBaseOk q (b - 1) b) :
+    (batchReduction (oSpec := oSpec) Φ bound bDig K).perfectCompleteness init impl
+      (relLift Φ bound bDig K φF) (relBatched Φ m₀ m₁ bound bDig K φF b) :=
   ReduceClaim.reduction_completeness_of_imp
-    (relLift Φ bound ρBound K φF) (relBatched Φ m₀ m₁ bound ρBound K φF b)
-    (fun X w h => mem_relBatched_of_relLift Φ m₀ m₁ bound ρBound K φF b hd hbound hρBound X w h)
+    (relLift Φ bound bDig K φF) (relBatched Φ m₀ m₁ bound bDig K φF b)
+    (fun X w h => mem_relBatched_of_relLift Φ m₀ m₁ bound bDig K φF b hb hd hbound hbase X w h)
 
 end ArkLib.Lattices.Ajtai.InnerOuter

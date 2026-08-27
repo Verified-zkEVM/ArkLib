@@ -79,7 +79,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (mLow κ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (mLow κ : ℕ) (bound bDig : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The `i`-th true partial evaluation of the table (Eq. (24)):
@@ -166,12 +166,12 @@ claim is the `Recursion/ZBatchBridge.lean` step (⚠ see there).
 The `liftShort` conjunct is the commitment's shortness index, carried unchanged from
 `relWEvalClaim` (see there for why a norm-free seam is not an option) and consumed at the §4.5
 handoff, whose output must exhibit the *next* iteration's `Short`. -/
-def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def relPartialEval (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Set (PartialEvalStatement K.TCom F mLow κ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     ∀ i, partialEvalAt Φ mLow κ φF p.2 p.1.pointLow i = p.1.partials i}
 
 variable [SampleableType F]
@@ -185,7 +185,7 @@ No `noncomputable` marker: the gap here is the missing algorithm, not an archite
 so the marker set stays a record of *computability* debt only. Until the `sorry` is filled the
 generated code panics when run. -/
 def partialEvalExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Extractor.TreeBased (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
       (LiftedWitness Φ μ n) (pSpecPartialEval F κ)
@@ -206,14 +206,14 @@ statement, the mle splitting identity `wTableMleEval_split` plus the derivation 
 membership. -/
 theorem partialEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (relWEvalClaim Φ (mLow + κ) bound ρBound b K φF)
-      (relPartialEval Φ mLow κ bound ρBound K φF)
+      (relWEvalClaim Φ (mLow + κ) bound bDig b K φF)
+      (relPartialEval Φ mLow κ bound bDig K φF)
       (partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F))
-      (partialEvalExtractor Φ mLow κ bound ρBound K φF) := by
+      (partialEvalExtractor Φ mLow κ bound bDig K φF) := by
   sorry
 
 /-- **The partial-evaluation head as a (plain) `CWSSPackage`** (Hachi §4.5, Eq. (24)): the
@@ -222,7 +222,7 @@ pure one-message derive-`y₀` head with the empty challenge structure, reducing
 escape-free. -/
 def partialEvalPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     CWSSPackage init impl
       (WEvalStatement K.TCom F (mLow + κ)) (LiftedWitness Φ μ n)
@@ -230,11 +230,11 @@ def partialEvalPackage (init : ProbComp σ)
       (pSpecPartialEval F κ) where
   verifier := partialEvalVerifier (oSpec := oSpec) mLow κ (TCom := K.TCom) (F := F)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relWEvalClaim Φ (mLow + κ) bound ρBound b K φF
-  relOut := relPartialEval Φ mLow κ bound ρBound K φF
+  relIn := relWEvalClaim Φ (mLow + κ) bound bDig b K φF
+  relOut := relPartialEval Φ mLow κ bound bDig K φF
   isPure := partialEvalVerifierPureForm mLow κ
-  extractor := partialEvalExtractor Φ mLow κ bound ρBound K φF
-  isCWSS := partialEval_coordinateWiseSpecialSoundWith Φ mLow κ bound ρBound b init impl K φF
+  extractor := partialEvalExtractor Φ mLow κ bound bDig K φF
+  isCWSS := partialEval_coordinateWiseSpecialSoundWith Φ mLow κ bound bDig b init impl K φF
 
 end Protocol
 

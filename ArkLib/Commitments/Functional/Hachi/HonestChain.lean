@@ -25,9 +25,9 @@ paper-exact QuadEval  relInBox        → paperRelOut b    (balanced digits)
       ↓  paperRelOut ⊆ relOut γ      (needs ⌊b/2⌋ ≤ γ)
 R^lin adapter         relOut γ        → relRlinImage γ   (image seam, provenance kept)
       ↓  identity
-HMZ25 lift            relRlinImage γ  → relLift γ (q/2)  (bound = γ forced by the seam)
+HMZ25 lift            relRlinImage γ  → relLift γ bZero  (bound = γ forced by the seam)
       ↓  identity
-batching bridge       relLift γ (q/2) → relBatched bZero (γ, q/2 ≤ bZero − 1)
+batching bridge       relLift γ bZero → relBatched bZero (γ ≤ bZero − 1)
 ```
 
 ## The composed reductions, and what they cost
@@ -48,30 +48,28 @@ sole provenance. `Composition.lean` composes the *soundness* certificates only. 
 `relWEvalClaim`, the **nonrecursive** run is closed by the terminal reveal-and-check in
 `Correctness.lean` (the recursion tail's honest layer still does not exist).
 
-## What the non-short honest quotient costs
+## Why the quotient is committed as digits
 
-The honest lift quotient is **not short**: for a Hachi `R^lin` instance the matrix carries the Ajtai
-key blocks and the gadget powers, so `ρBound = q/2` is its true bound (`rhoShort_half`). Since the
-batching bridge range-checks the `z` **and** quotient halves of the table `w̃` against a *single*
-base `bZero` (`ZeroCheck/Constraints`), the honest direction needs `q/2 ≤ bZero − 1`: the zero-check
-range base must be at least `q/2 + 1`, hence a range polynomial of degree linear in `q`.
+The honest lift quotient is **not** short: for a Hachi `R^lin` instance the matrix carries the Ajtai
+key blocks and the gadget powers, so `q/2` is its true bound (`rhoShort_half`, whose docstring
+records why nothing sharper is available). A committed table `w̃` holding the **raw** quotient rows
+would therefore force `q/2 ≤ bZero − 1` on the batching bridge's honest direction — a zero-check
+range base of at least `q/2 + 1`, hence a range polynomial of degree linear in `q` — and, with the
+bridge's *pull-back* orientations, `γ = q/2 = bZero − 1`, at which Eq. (20)'s ball check and the
+Module-SIS escape target are both empty of content.
 
-It does **not** force a large Eq. (20) ball radius. Honest completeness of the batching bridge uses
-only `bound ≤ bZero − 1` and `ρBound ≤ bZero − 1` (`batchReduction_perfectCompleteness`, via
-`ReduceClaim.reduction_completeness_of_imp`), so `γ` stays free — `HonestRangeParams.ofDigitBase`
-witnesses the parameters at `γ = ⌊b/2⌋`, where Eq. (20)'s `c6` check is a real constraint. The
-collapse `γ = q/2 = bZero − 1` appears only if one insists on a *single* parameterization that also
-serves the bridge's pull-back, which needs the reverse orientations; that is
-`HonestRangeParams.pinned_of_soundness_orientations`.
+So `ZeroCheck/Constraints`'s `w̃` carries the quotient's balanced base-`bZero` **digits**
+([NOZ26] §4.3's hidden gadget decomposition, `rhoDigits`), which are `⌊bZero/2⌋`-bounded for
+*every* quotient with no hypothesis at all (`rhoDigits_valMinAbs_natAbs_le`). The quotient half of
+both directions is then free at the small base, and what `HonestRangeParams` carries for it is the
+digit-base admissibility triple `hbZero`/`hbZeroq`/`hbZeroγ` (`DigitBaseOk`), satisfiable at
+`bZero = b = O(1)`. Adding the soundness orientations pins at `γ = bZero − 1 < q/2` — see
+`pinned_of_soundness_orientations`.
 
-All of this is a faithful cost analysis of the **simplified presentation** the table `w̃`
-formalizes, not of the paper's protocol: [NOZ26] §4.3 (p. 19) gadget-decomposes the quotient into
-base-`b` digits before committing ("we omit the subscript u … there is a hidden gadget
-decomposition of r"), and Eq. (21)'s table — the one `ZeroCheck/Constraints` implements — is the
-post-omission fiction in which the quotient sits in the table undecomposed. In the paper's actual
-protocol every row of `w̃` is a digit bounded by `b − 1`, one small range base suffices, and none
-of the above costs arise. Reworking `w̃` to the digit-decomposed table is the tracked follow-up;
-until then, read every composed statement below as being about the simplified variant.
+This is the paper's own presentation: [NOZ26] §4.3 (p. 19) gadget-decomposes the
+quotient into base-`b` digits before committing ("we omit the subscript u … there is a hidden
+gadget decomposition of r"); Eq. (21)'s simplified table, which omits the decomposition, is a
+presentational convenience of the paper rather than its protocol.
 
 ## References
 
@@ -92,14 +90,17 @@ direction only*.
 * `γ` — Eq. (20)'s `c6` ball radius, the `R^lin` statement's public bound (`rlinStmt` sets
   `bound := γ`) and, forced by the honest seam, the lift's own `bound`. `hbγ` is the box→ball
   transport condition of `paperRelOut_subset_relOut`.
-* `bZero` — the zero-check range base of `relBatched`. `hγZero` and `hρZero` are the two conditions
-  the batching bridge's *honest* direction needs, at `ρBound = q/2`.
+* `bZero` — the zero-check range base of `relBatched`, and (the same number, deliberately) the
+  base of the quotient's hidden gadget decomposition, so that the digits `w̃` range-checks are the
+  digits the commitment binds. `hγZero` is the batching bridge's honest `z`-half condition;
+  `hbZero`/`hbZeroq`/`hbZeroγ` are the digit-base admissibility triple `DigitBaseOk q γ bZero`,
+  satisfiable at `bZero = b`.
 
-Note what is **not** here: the reverse (soundness) orientations `bZero − 1 ≤ γ` and
-`bZero − 1 ≤ q/2`. They are what would pin the parameters; honest completeness does not need them
+Note what is **not** here: the reverse (soundness) orientation `bZero − 1 ≤ γ`. It is what pins the
+parameters; honest completeness does not need it
 (`batchReduction_perfectCompleteness` goes through `ReduceClaim.reduction_completeness_of_imp`), so
-`γ` stays free — see `ofDigitBase` for a witness with `γ = ⌊b/2⌋`, arbitrarily small. The pinning
-statement, and the parameterization it applies to, is `pinned_of_soundness_orientations`. -/
+`γ` stays free — see `ofDigitBase` for a witness with `γ = ⌊b/2⌋`. The pinning statement is
+`pinned_of_soundness_orientations`, which lands at `γ = bZero − 1 < q/2`. -/
 structure HonestRangeParams (q : ℕ) where
   /-- Balanced digit base (also Eq. (20)'s box base `S_b`). -/
   b : ℕ
@@ -115,50 +116,105 @@ structure HonestRangeParams (q : ℕ) where
   hbγ : b / 2 ≤ γ
   /-- Batching bridge, honest direction, `z` half. -/
   hγZero : γ ≤ bZero - 1
-  /-- Batching bridge, honest direction, quotient half (at `ρBound = q/2`). -/
-  hρZero : q / 2 ≤ bZero - 1
+  /-- The quotient's digit base is nontrivial. -/
+  hbZero : 1 < bZero
+  /-- Anti-wraparound for the quotient digits: they are centered representatives. -/
+  hbZeroq : bZero ≤ q / 2
+  /-- The quotient digit radius fits Eq. (20)'s ball: `⌊bZero/2⌋ ≤ γ`. -/
+  hbZeroγ : bZero / 2 ≤ γ
 
 namespace HonestRangeParams
 
 variable {q : ℕ}
 
-/-- **The honest parameters are satisfiable with a small `γ`.** At `γ = ⌊b/2⌋` — the radius the
-balanced digits actually meet, so Eq. (20)'s `c6` check is a real constraint — everything holds,
-with `bZero = q/2 + 1`.
+/-- **The honest parameters are satisfiable with a small `γ` *and* a small `bZero`.** At
+`γ = ⌊b/2⌋` — the radius the balanced digits actually meet, so Eq. (20)'s `c6` check is a real
+constraint — and `bZero = b`, everything holds.
 
-This is the accurate form of the chain's cost: what the non-short honest quotient forces is a large
-*zero-check range base* (`bZero − 1 ≥ q/2`, hence a range polynomial of degree linear in `q`),
-**not** a large Eq. (20) ball radius. -/
+Because the quotient digits are `⌊b/2⌋`-bounded unconditionally, the zero-check range base can be
+the digit base itself, so the range polynomial has degree `2·b = O(1)` ([NOZ26] §4.4). Range-
+checking raw quotient rows instead would force `bZero = q/2 + 1` here, and a range polynomial of
+degree linear in `q`.
+
+⚠ This witness takes `γ` as small as the *honest* side allows, and `γ = ⌊b/2⌋ < bZero − 1` for
+`b > 2`, so it does **not** satisfy the batching bridge's pull-back orientation
+`bZero − 1 ≤ γ`. That is deliberate: `HonestRangeParams` is honest-direction-only, and keeping `γ`
+free is the point of `ofDigitBase`. For a witness of the *two-sided* regime — the one
+`pinned_of_soundness_orientations` describes — use `ofPinnedDigitBase`. -/
 def ofDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangeParams q where
   b := b
   γ := b / 2
-  bZero := q / 2 + 1
+  bZero := b
   hb := hb
   hbq := hbq
   hbγ := le_refl _
   hγZero := by omega
-  hρZero := by omega
+  hbZero := hb
+  hbZeroq := hbq
+  hbZeroγ := le_refl _
+
+/-- **The two-sided regime is satisfiable at `O(b)`.** `ofDigitBase`'s sibling at
+`γ = bZero − 1 = b − 1`, the value the batching bridge's *pull-back* orientation `bZero − 1 ≤ γ`
+forces on top of the honest inequalities. So the pinned point of
+`pinned_of_soundness_orientations` is not merely consistent — it is realized, at a `γ` and a range
+base that are both `O(b)` and, since `b ≤ q/2`, strictly below `q/2`.
+
+This is what a single parameterization serving *both* directions of the bridge costs after the
+gadget decomposition. Range-checking raw quotient rows instead makes the same demand unsatisfiable
+below `q/2`: `rhoShort_half` forces `bZero ≥ q/2 + 1`, hence `γ = q/2`. -/
+def ofPinnedDigitBase (b : ℕ) (hb : 1 < b) (hbq : b ≤ q / 2) : HonestRangeParams q where
+  b := b
+  γ := b - 1
+  bZero := b
+  hb := hb
+  hbq := hbq
+  hbγ := by omega
+  hγZero := le_refl _
+  hbZero := hb
+  hbZeroq := hbq
+  hbZeroγ := by omega
 
 variable (P : HonestRangeParams q)
 
-/-- **The pinch, correctly attributed.** *If* one insists on a single parameterization that also
-serves the batching bridge's pull-back — which needs the reverse orientations `bZero − 1 ≤ bound`
-and `bZero − 1 ≤ ρBound` (`mem_relLift_of_relBatched`) — then, at the honest chain's `bound = γ` and
-`ρBound = q/2`, all three quantities collapse: `γ = q/2 = bZero − 1`, and Eq. (20)'s ball check
-becomes vacuous.
+/-- **Where the parameters pin, after the repair.** Adding the batching bridge's *pull-back*
+orientation `bZero − 1 ≤ γ` — the one `HonestRangeParams` deliberately omits, because honest
+completeness does not need it — forces `γ = bZero − 1`, and that value is **strictly below** `q/2`.
 
-That is a statement about *two-sided* parameterizations, not about honest completeness: the
-hypotheses below are exactly the two soundness-side inequalities that `HonestRangeParams`
-deliberately omits. The collapse is an artifact of the simplified table: [NOZ26] §4.3 (p. 19)
-commits the quotient's base-`b` **digits** (a decomposition the paper then hides from its
-notation), and at that table every row is honestly `≤ b − 1`, so both orientations meet at the
-small base and nothing degenerates. Reworking `ZeroCheck/Constraints`'s `w̃` to the digit table is
-the tracked follow-up. -/
-theorem pinned_of_soundness_orientations (hγ' : P.bZero - 1 ≤ P.γ) (hρ' : P.bZero - 1 ≤ q / 2) :
-    P.γ = q / 2 ∧ P.bZero - 1 = q / 2 := by
+Both `γ` and the range box `[−(bZero−1), bZero−1]` are therefore real constraints, and at
+`ofPinnedDigitBase b` the pinned point is `γ = b − 1 = O(1)`. Were `w̃` to carry raw quotient
+rows, the same step would force `γ = q/2 = bZero − 1`, at which Eq. (20)'s ball check
+`‖·‖∞ ≤ γ` and the range box are both vacuous over `ZMod q`, and `LiftCom.Collision` would place
+no effective norm restriction on the quotient block. -/
+theorem pinned_of_soundness_orientations (hγ' : P.bZero - 1 ≤ P.γ) :
+    P.γ = P.bZero - 1 ∧ P.γ < q / 2 := by
   have h1 := P.hγZero
-  have h2 := P.hρZero
+  have h2 := P.hbZero
+  have h3 := P.hbZeroq
   exact ⟨by omega, by omega⟩
+
+/-- The pinned point is **realized**, not merely consistent: `ofPinnedDigitBase b` satisfies the
+pull-back orientation, so the two-sided regime holds there at `γ = b − 1 = O(b)`, strictly below
+`q/2`. This is the statement the gadget decomposition exists to make true; with raw quotient rows
+the same regime forces `γ = q/2`. -/
+example {b : ℕ} (hb : 1 < b) (hbq : b ≤ q / 2) :
+    (ofPinnedDigitBase (q := q) b hb hbq).γ = (ofPinnedDigitBase (q := q) b hb hbq).bZero - 1 ∧
+      (ofPinnedDigitBase (q := q) b hb hbq).γ < q / 2 :=
+  pinned_of_soundness_orientations _ (le_refl _)
+
+/-- **The zero-check range base is nontrivial**, as a named projection. Needed wherever the digit
+encoding appears: the balanced base-`bZero` decomposition of the quotient is a decomposition only
+for `1 < bZero` ([NOZ26] §2.1, `rhoDigits_reconstruct`). -/
+theorem one_lt_bZero : 1 < P.bZero := P.hbZero
+
+/-- The quotient's digit base is admissible at the chain's own norm bound `γ` — the bundled form
+`DigitBaseOk`, which is what the lift and the batching bridge consume. -/
+theorem digitBaseOk : DigitBaseOk q P.γ P.bZero :=
+  ⟨P.hbZero, P.hbZeroq, P.hbZeroγ⟩
+
+/-- The same admissibility at the *range* bound `bZero − 1`, the form the batching bridge's honest
+direction consumes: `⌊bZero/2⌋ ≤ bZero − 1` holds for every base `> 1`. -/
+theorem digitBaseOk_range : DigitBaseOk q (P.bZero - 1) P.bZero :=
+  ⟨P.hbZero, P.hbZeroq, by have := P.hbZero; omega⟩
 
 end HonestRangeParams
 
@@ -184,21 +240,23 @@ theorem rlinReduction_perfectCompleteness_params (P : HonestRangeParams q)
   rlinReduction_perfectCompleteness_image Φ init impl pp base ω P.γ
 
 omit [NeZero q] in
-/-- **Seam 2 — the lift consumes that seam, at `bound = γ` and `ρBound = q/2`.** Unconditional: both
-halves of `liftShort` are discharged (`liftReduction_perfectCompleteness_image`). -/
+/-- **Seam 2 — the lift consumes that seam, at `bound = γ` and digit base `bDig = bZero`.** Both
+halves of `liftShort` are discharged by `liftReduction_perfectCompleteness_image`; the quotient
+half is unconditional in the digits (`rhoDigitsShort_of_half_le`). -/
 theorem liftReduction_perfectCompleteness_params {F : Type} [Field F] [SampleableType F]
     (P : HonestRangeParams q)
     (K : LiftCom
       (LiftedWitness Φ (rlinCols innerRows messageDigits innerDigits zDigits m r)
         (rlinRows innerRows outerRows dRows))
-      (liftShort Φ P.γ (q / 2)))
+      (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) (hd : 0 < Φ.φ.natDegree)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) :
-    (liftReduction (oSpec := oSpec) (F := F) Φ P.γ (q / 2) K hd).perfectCompleteness init impl
-      (relRlinImage (zDigits := zDigits) Φ pp base ω P.γ) (relLift Φ P.γ (q / 2) K φF) :=
-  liftReduction_perfectCompleteness_image Φ K φF init impl hd pp base ω
+    (liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).perfectCompleteness init impl
+      (relRlinImage (zDigits := zDigits) Φ pp base ω P.γ) (relLift Φ P.γ P.bZero K φF) :=
+  liftReduction_perfectCompleteness_image Φ P.hbZero P.hbZeroq P.hbZeroγ K φF init impl hd
+    pp base ω
 
 omit [NeZero q] in
 /-- **Seam 3 — the lift's output feeds the batching bridge**, at the bundled `bZero`. The bridge's
@@ -208,13 +266,13 @@ side (they belong to the pull-back). -/
 theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [LawfulBEq F]
     {n μ m₀ m₁ : ℕ} (P : HonestRangeParams q)
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ P.γ P.bZero))
     (φF : ZMod q →+* F) (hd : 0 < Φ.φ.natDegree) :
-    (batchReduction (oSpec := oSpec) Φ P.γ (q / 2) K).perfectCompleteness init impl
-      (relLift Φ P.γ (q / 2) K φF)
-      (relBatched Φ m₀ m₁ P.γ (q / 2) K φF P.bZero) :=
-  batchReduction_perfectCompleteness Φ m₀ m₁ P.γ (q / 2) init impl K φF P.bZero hd
-    P.hγZero P.hρZero
+    (batchReduction (oSpec := oSpec) Φ P.γ P.bZero K).perfectCompleteness init impl
+      (relLift Φ P.γ P.bZero K φF)
+      (relBatched Φ m₀ m₁ P.γ P.bZero K φF P.bZero) :=
+  batchReduction_perfectCompleteness Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero
+    P.one_lt_bZero hd P.hγZero P.digitBaseOk_range
 
 end Seams
 
@@ -276,7 +334,7 @@ def completePrefixReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
@@ -292,8 +350,8 @@ def completePrefixReduction (P : HonestRangeParams q)
       (balancedZmodDigitDecomposition P.b messageDigits P.hb hqm)
       (balancedZmodDigitDecomposition P.b zDigits P.hb hqz)).append
     ((rlinReduction (oSpec := oSpec) (zDigits := zDigits) Φ pp (P.b : ZMod q) ω P.γ).append
-    ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ (q / 2) K hd).append
-    ((batchReduction (oSpec := oSpec) Φ P.γ (q / 2) K).append
+    ((liftReduction (oSpec := oSpec) (F := F) Φ P.γ P.bZero K hd).append
+    ((batchReduction (oSpec := oSpec) Φ P.γ P.bZero K).append
       (nestedZeroCheckReduction (oSpec := oSpec) (TCom := K.TCom)
         (Wit := LiftedWitness Φ μ₀ n₀) Φ m₀ m₁)))))
 
@@ -301,9 +359,10 @@ omit [DecidableEq F] in
 /-- **Perfect completeness of the complete currently proved Hachi prefix**, from the
 polynomial-level evaluation relation through `relNestedZeroCheck`.
 
-The two reverse range hypotheses are needed only by the last link, as explained above. Together
-with `P.hγZero` and `P.hρZero` they imply the pinned parameterization; this theorem does not conceal
-that cost. All individual links have error zero, so the composed prefix has error zero as well. -/
+The reverse range hypothesis is needed only by the last link, as explained above. Together with
+`P.hγZero` it pins `γ = P.bZero − 1` (`HonestRangeParams.pinned_of_soundness_orientations`); this
+theorem does not conceal that. All individual links have error zero, so the composed prefix has
+error zero as well. -/
 theorem completePrefixReduction_perfectCompleteness
     [∀ i, SampleableType
       ((CoordinateWise.SingleRound.pSpec
@@ -314,14 +373,14 @@ theorem completePrefixReduction_perfectCompleteness
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
-    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀) * Φ.φ.natDegree ≤ 2 ^ m₀)
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
+    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completePrefixReduction (oSpec := oSpec) (F := F) (ω := ω) (m₀ := m₀) (m₁ := m₁)
       Φ P pp hqm hqz K hd).perfectCompleteness init impl
       (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
-      (relNestedZeroCheck Φ m₀ m₁ P.γ (q / 2) K φF P.bZero) := by
+      (relNestedZeroCheck Φ m₀ m₁ P.γ P.bZero K φF P.bZero) := by
   have hBridge :=
     bridgeReduction_perfectCompleteness Φ init impl pp (P.b : ZMod q) βSq P.γ κ
   have hQuad := quadEvalReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
@@ -336,7 +395,7 @@ theorem completePrefixReduction_perfectCompleteness
   have hBatch := batchReduction_perfectCompleteness_params (m₀ := m₀) (m₁ := m₁)
     Φ P init impl K φF hd
   have hZero := nestedZeroCheckReduction_perfectCompleteness
-    Φ m₀ m₁ P.γ (q / 2) init impl K φF P.bZero hd hμn hZeroγ hZeroρ
+    Φ m₀ m₁ P.γ P.bZero init impl K φF P.bZero hd hμn hZeroγ P.digitBaseOk
   letI sampleEmptyNested : ∀ i, SampleableType
       (((!p[] : ProtocolSpec 0) ++ₚ pSpecNestedZeroCheck F m₀ m₁).Challenge i) :=
     ProtocolSpec.instSampleableTypeChallengeAppend
@@ -411,7 +470,7 @@ def completeThroughSumcheckReduction (P : HonestRangeParams q)
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows)
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
     (hd : 0 < Φ.φ.natDegree) (hbZero : 0 < P.bZero) (φF : ZMod q →+* F) : Reduction oSpec
       (PolyEvalStatement Φ innerRows messageDigits outerRows innerDigits dRows m r)
       (QuadEvalWitness Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits)
@@ -469,19 +528,20 @@ theorem completeThroughSumcheckReduction_perfectCompleteness
     (hqm : q ≤ P.b ^ messageDigits) (hqz : q ≤ P.b ^ zDigits)
     (hmd : 0 < messageDigits) (hτ : 0 < zDigits) (hd : 0 < Φ.φ.natDegree)
     (hbZero : 0 < P.bZero)
-    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ (q / 2)))
-    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
-    (hZeroγ : P.bZero - 1 ≤ P.γ) (hZeroρ : P.bZero - 1 ≤ q / 2)
+    (K : LiftCom (LiftedWitness Φ μ₀ n₀) (liftShort Φ P.γ P.bZero))
+    (φF : ZMod q →+* F) (hμn : (μ₀ + n₀ * rhoDigitCount q P.bZero) * Φ.φ.natDegree ≤ 2 ^ (M + 1))
+    (hZeroγ : P.bZero - 1 ≤ P.γ)
     {βSq κ : ℕ} :
     (completeThroughSumcheckReduction (oSpec := oSpec) (F := F) (ω := ω) (M := M) (m₁ := m₁)
       Φ P pp hqm hqz K hd hbZero φF).perfectCompleteness init impl
       (relPolyEval Φ pp (P.b : ZMod q) βSq P.γ κ)
-      (relWEvalClaim Φ (M + 1) P.γ (q / 2) P.bZero K φF) :=
+      (relWEvalClaim Φ (M + 1) P.γ P.bZero P.bZero K φF) :=
   Reduction.append_perfectCompleteness _ _
     (completePrefixReduction_perfectCompleteness (zDigits := zDigits) (ω := ω)
       (m₀ := M + 1) (m₁ := m₁) (βSq := βSq) (κ := κ)
-      Φ P init impl pp hqm hqz hmd hτ hd K φF hμn hZeroγ hZeroρ)
-    (sumcheckReduction_perfectCompleteness Φ m₁ P.γ (q / 2) P.bZero init impl K hbZero φF hd hμn)
+      Φ P init impl pp hqm hqz hmd hτ hd K φF hμn hZeroγ)
+    (sumcheckReduction_perfectCompleteness Φ m₁ P.γ P.bZero P.bZero init impl K hbZero
+      P.one_lt_bZero φF hd hμn)
 
 end ThroughSumcheck
 
