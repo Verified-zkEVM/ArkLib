@@ -82,7 +82,7 @@ section Protocol
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (m₀ m₁ : ℕ) (bound bDig : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The final check: both final sumcheck targets against the public factors evaluated at the
@@ -101,7 +101,7 @@ def finalCheck {TCom : Type} (m₁ bound b : ℕ) (φF : ZMod q →+* F)
   ((cEqualityPolynomial m₀ stmt.zc.τ₀).eval stmt.challenges * rangeProduct b y'
       == stmt.target₀) &&
     (y' * (cMultilinearExtension m₀
-        (alphaPublicEvals Φ m₀ m₁ φF stmt.zc.rlin stmt.zc.α stmt.zc.τα)).eval stmt.challenges
+        (alphaPublicEvals Φ m₀ m₁ φF b stmt.zc.rlin stmt.zc.α stmt.zc.τα)).eval stmt.challenges
       == stmt.targetα) &&
     decide (bound ≤ stmt.zc.rlin.bound)
 
@@ -164,12 +164,12 @@ def finalEvalProver {TCom Wit : Type}
 input: `w̃` is a *short* opening of `t` and its table's multilinear extension evaluates to
 the claimed value at the point. The shortness conjunct lives in the relation because the
 verifier never sees `w̃`, so no check can supply it. -/
-def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+def relWEvalClaim (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Set (WEvalStatement K.TCom F m₀ × (LiftedWitness Φ μ n)) :=
   {p |
     K.com p.2 = p.1.t ∧
-    liftShort Φ bound ρBound p.2 ∧
+    liftShort Φ bound bDig p.2 ∧
     wTableMleEval Φ m₀ φF b p.2 p.1.point = p.1.value}
 
 variable [SampleableType F]
@@ -177,7 +177,7 @@ variable [SampleableType F]
 /-- The final-evaluation extraction algorithm reads the opening from the unique valid leaf
 witness. -/
 def finalEvalExtractor
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Extractor.TreeBased (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
       (LiftedWitness Φ μ n) (pSpecFinalEval F)
@@ -196,14 +196,14 @@ evaluations (`hypercubeSum_of_le`) that factor through `mle[w̃](a)`
 exactly the two check equations. -/
 theorem finalEval_coordinateWiseSpecialSoundWith
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     Verifier.coordinateWiseSpecialSoundWith init impl
       CWSSStructure.ofIsEmpty
-      (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀)
-      (relWEvalClaim Φ m₀ bound ρBound b K φF)
+      (nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀)
+      (relWEvalClaim Φ m₀ bound bDig b K φF)
       (finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF)
-      (finalEvalExtractor Φ m₀ m₁ bound ρBound K φF) := by
+      (finalEvalExtractor Φ m₀ m₁ bound bDig K φF) := by
   intro stmt tree _ hAcc o hvalid
   obtain ⟨w, hw, out, hout, hrel⟩ := hvalid tree.onlyPath
   have hacc := hAcc _ tree.onlyPath.mem_fullTranscripts
@@ -274,9 +274,9 @@ relation.
 This is the first completeness obligation in the Hachi tree where the verifier can actually
 *reject*: every earlier link had a pure pass-through verifier. -/
 theorem finalCheck_honestComputeY
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀) :
     finalCheck Φ m₀ m₁ bound b φF stmt (honestComputeY Φ m₀ m₁ b φF stmt w) = true := by
   obtain ⟨-, -, hZero, hAlpha, hBound⟩ := h
   change hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b stmt.zc.τ₀ w) m₀ stmt.challenges
@@ -298,11 +298,11 @@ relation makes the emitted evaluation claim `⟨t, a, mle[w̃](a)⟩` satisfy `r
 commitment and shortness conjuncts are carried over verbatim, and the value conjunct holds by
 definition of `honestComputeY`. -/
 theorem mem_relWEvalClaim_of_nestedRoundRel
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀) :
     ((⟨stmt.zc.t, stmt.challenges, honestComputeY Φ m₀ m₁ b φF stmt w⟩ :
-        WEvalStatement K.TCom F m₀), w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF :=
+        WEvalStatement K.TCom F m₀), w) ∈ relWEvalClaim Φ m₀ bound bDig b K φF :=
   ⟨h.1, h.2.1, rfl⟩
 
 set_option linter.unusedSectionVars false in
@@ -348,9 +348,9 @@ Failure is excluded by `finalCheck_honestComputeY` — this is the first link of
 has to be *proved* rather than being impossible by construction, since `finalEvalVerifier` is
 `if finalCheck … then … else failure`. -/
 lemma finalEvalReduction_run_support
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F)
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F)
     (stmt : NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀) :
     ∀ x ∈ support ((finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b
         (TCom := K.TCom) φF).run stmt w).run,
       ∃ tr, x = some ((tr,
@@ -358,7 +358,7 @@ lemma finalEvalReduction_run_support
               WEvalStatement K.TCom F m₀), w),
           (⟨stmt.zc.t, stmt.challenges, honestComputeY Φ m₀ m₁ b φF stmt w⟩ :
             WEvalStatement K.TCom F m₀)) := by
-  have hg := finalCheck_honestComputeY Φ m₀ m₁ bound ρBound b K φF stmt w h
+  have hg := finalCheck_honestComputeY Φ m₀ m₁ bound bDig b K φF stmt w h
   intro x hx
   unfold Reduction.run at hx
   simp only [OptionT.run_bind, Option.elimM] at hx
@@ -402,22 +402,22 @@ bound-sanity conjunct `bound ≤ rlin.bound` that `finalCheck` tests is *carried
 relation*, not assumed — the same discipline the lift's honest seam needed. -/
 theorem finalEvalReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F) :
     (finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b
         (TCom := K.TCom) φF).perfectCompleteness init impl
-      (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀)
-      (relWEvalClaim Φ m₀ bound ρBound b K φF) := by
+      (nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀)
+      (relWEvalClaim Φ m₀ bound bDig b K φF) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt w h x hx
-  obtain ⟨tr, hx'⟩ := finalEvalReduction_run_support Φ m₀ m₁ bound ρBound b K φF stmt w h x hx
+  obtain ⟨tr, hx'⟩ := finalEvalReduction_run_support Φ m₀ m₁ bound bDig b K φF stmt w h x hx
   refine ⟨_, hx', ?_, rfl⟩
-  exact mem_relWEvalClaim_of_nestedRoundRel Φ m₀ m₁ bound ρBound b K φF stmt w h
+  exact mem_relWEvalClaim_of_nestedRoundRel Φ m₀ m₁ bound bDig b K φF stmt w h
 
 /-- The final-evaluation step as a guarded `GCWSSPackage`: the guarded one-message verifier
 with the empty challenge structure, reducing the round-`m₀` relation to the evaluation claim
 `relWEvalClaim`; no challenge round, hence no escape event. -/
 def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     GCWSSPackage init impl
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ m₀) (LiftedWitness Φ μ n)
@@ -425,21 +425,21 @@ def finalEvalPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ Pro
       (pSpecFinalEval F) where
   verifier := finalEvalVerifier (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF
   struct := CWSSStructure.ofIsEmpty
-  relIn := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b m₀
-  relOut := relWEvalClaim Φ m₀ bound ρBound b K φF
+  relIn := nestedRoundRel Φ m₀ m₁ bound bDig K φF b m₀
+  relOut := relWEvalClaim Φ m₀ bound bDig b K φF
   isGuarded := finalEvalVerifierGuardedForm Φ m₀ m₁ bound b φF
-  extractor := finalEvalExtractor Φ m₀ m₁ bound ρBound K φF
-  isCWSS := finalEval_coordinateWiseSpecialSoundWith Φ m₀ m₁ bound ρBound b init impl K φF
+  extractor := finalEvalExtractor Φ m₀ m₁ bound bDig K φF
+  isCWSS := finalEval_coordinateWiseSpecialSoundWith Φ m₀ m₁ bound bDig b init impl K φF
 
 set_option linter.unusedSectionVars false in
 /-- The final-evaluation step's protocol object and its certificate speak about the same verifier.
 Holds by `rfl`. -/
 @[simp] theorem finalEvalReduction_verifier (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) :
     (finalEvalReduction (oSpec := oSpec) Φ m₀ m₁ bound b (TCom := K.TCom) φF).verifier
-      = (finalEvalPackage Φ m₀ m₁ bound ρBound b init impl K φF).verifier :=
+      = (finalEvalPackage Φ m₀ m₁ bound bDig b init impl K φF).verifier :=
   rfl
 
 end Protocol

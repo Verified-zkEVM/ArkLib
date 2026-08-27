@@ -68,17 +68,38 @@ Ring-switching layer:
   and events compose along the chain without a seam; the witness type carries `deg ρᵢ ≤ d − 1`
   (the paper's `Z_q^{<d}`); the extraction target is `R^lin` over `R_q`, equivalent to the
   paper's `Z_q[X]` identity by the quotient-witness correspondence.
-  **Scope** (matching the "Paper-model boundary" note in `Hachi/RingSwitch/Reduction.lean`): what is
-  formalized is the simplified raw-`(z, r)` Figure 4 / Lemma 9 kernel. The paper's p. 18 honest
+  **Scope** (matching the "Paper-model boundary — closed" note in
+  `Hachi/RingSwitch/Reduction.lean`): the generic Figure 4 / Lemma 9 kernel is the simplified
+  raw-`(z, r)` one, but the **Hachi instance now commits the digits**. The paper's p. 18 honest
   protocol commits `(z, r₁, …, r_log_b(q))` with per-digit norm bounds — "there is a hidden gadget
-  decomposition of `r`" — and that encoding and its reconstruction identity are **not** formalized.
-  Honest completeness *is* formalized at the raw kernel, and unconditionally
-  (`liftReduction_perfectCompleteness_image`, `RingSwitch/Completeness.lean`): `RhoShort` is no
-  longer an admissibility hypothesis but a discharged conclusion, at the coefficient bound
-  `RingSwitch/QuotientNorms.lean` proves — which for a Hachi `R^lin` instance is the unconditional
-  `ρBound = q/2` (`rhoShort_half`), since the matrix carries the Ajtai key. That is what the
-  paper's per-digit encoding would buy back, and what its absence costs: a zero-check range base of
-  at least `q/2 + 1` (see `Hachi/HonestChain.lean`).
+  decomposition of `r`" — and that encoding *is* formalized, at the Hachi boundary:
+  `rhoDigits` (`Hachi/RingSwitch/RhoDigits.lean`) with the reconstruction identity
+  `rhoDigits_reconstruct` / `rhoDigits_evalAt`, committed by `liftMessage` at width `μ + n·δ`,
+  `δ = clog_b q`. Honest completeness is unconditional
+  (`liftReduction_perfectCompleteness_image`, `RingSwitch/Completeness.lean`): the quotient half of
+  `liftShort` is a discharged conclusion at radius `⌊b/2⌋`, for an *arbitrary* quotient
+  (`rhoDigits_valMinAbs_natAbs_le`, `rhoDigitsShort_of_digitBaseOk`).
+
+  Committing the raw quotient instead admits only the unconditional bound `q/2`
+  (`rhoShort_half`) — sharp, since the `R^lin` matrix carries the Ajtai key — forcing a zero-check
+  range base of at least `q/2 + 1` and, with the batching bridge's pull-back orientations, the
+  collapse `γ = q/2 = bZero − 1`. Two witnesses separate the regimes, and they are **not**
+  interchangeable:
+
+  * `HonestRangeParams.ofDigitBase b` — `bZero = b`, `γ = ⌊b/2⌋`. The *honest-direction* witness;
+    `γ` is as small as completeness allows, and for `b > 2` it does **not** satisfy the pull-back
+    orientation `bZero − 1 ≤ γ`.
+  * `HonestRangeParams.ofPinnedDigitBase b` — `bZero = b`, `γ = b − 1`. The *two-sided* witness,
+    which does satisfy it; `pinned_of_soundness_orientations` applied to it gives
+    `γ = bZero − 1 ∧ γ < q/2`, checked as an `example` in `HonestChain.lean`. This — not
+    `ofDigitBase` — is what carries the conclusion that the pinned regime is realizable at `O(b)`.
+
+  `moduleSIS_relation_of_mem_Collision` states the payoff: `LiftCom.Collision` satisfies
+  `ModuleSIS.relation` for the lift's Ajtai key at radius `2·bound` (nonzero via
+  `liftMessage_injective`, short, in the kernel). Scope: that key is a *parameter* of
+  `hachiLiftCom`, not yet sampled by `keygen` alongside the inner-outer commitment's own — so the
+  collision-to-Module-SIS reduction is complete locally, while the end-to-end security integration
+  ([NOZ26] §4.5, `outputToModuleSIS_valid_of_verified`) is not.
 - The packing-layer instantiation: `L = R_q`, carrier `A = R_q`, `φ₀ = id`, `φ₁ = σ₋₁` (order-two
   automorphism), basis `ψ` from its **Theorem 2** — which discharges the profile's reconstruction
   laws for the Hachi instance.
@@ -151,12 +172,12 @@ Ring-switching layer:
   further places, each deliberate and each because the paper is internally inconsistent there. The
   range summand carries **no `1_{≤μ}` indicator**: `F_{0,τ₀}` on p. 22 has one but Eq. (23)'s `H₀`
   does not, and the bullet above Eq. (23) constrains `u ∈ [μ + n]`, so the paper's own
-  `∑_{u,ℓ} F_{0,τ₀} = H₀(τ₀)` is false as printed; ArkLib follows Eq. (23) and range-checks the `r`
+  `∑_{u,ℓ} F_{0,τ₀} = H₀(τ₀)` is false as printed; ArkLib follows Eq. (23) and range-checks the quotient-digit
   rows as well as the `z` rows. Lemma 10 asks for `D` transcripts from `SS(F_{q^k}, 2, D)` although
   that family has `ℓ(k−1)+1 = 2D − 1` elements, and ArkLib uses `2D − 1`. The prose above Lemma 10
   treats `(τ₀, τ₁)` as `log μ + log d + log n` coordinates, contradicting the lemma's own `ℓ = 2`,
   and `τ₀`'s stated domain `F^{log μ + log d}` on p. 20 disagrees with `w̃`'s domain
-  `[μ + n] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n) + log d`.
+  `[μ + n·δ] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n·δ) + log d`.
 
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made

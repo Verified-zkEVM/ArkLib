@@ -41,7 +41,7 @@ open OracleComp OracleSpec ProtocolSpec CoordinateWise
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ : ℕ} {F : Type} [Field F] [BEq F] [LawfulBEq F]
-variable (m₀ m₁ : ℕ) (bound ρBound : ℕ)
+variable (m₀ m₁ : ℕ) (bound bDig : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- The bridge's statement map. It retains the independently sampled scalar-round
@@ -57,15 +57,15 @@ the zero-check's direct point-evaluation claims, through the identities
 `∑ F_{0,τ₀} = H₀(τ₀)` and `∑ F_{α,τ_α} = H_α(τ_α) + zcTargetAlpha`. The commitment,
 shortness and bound-sanity conjuncts are shared verbatim. -/
 theorem mem_relNestedZeroCheck_of_nestedRoundRel
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
     (w : LiftedWitness Φ μ n)
-    (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (h : (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
-      nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :
-    (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b := by
+      nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0) :
+    (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b := by
   rw [nestedRoundRel, Set.mem_ofPred_eq] at h
   rw [relNestedZeroCheck, Set.mem_ofPred_eq]
   rcases h with ⟨hCom, hShort, hZero, hAlpha, hBound⟩
@@ -80,7 +80,7 @@ theorem mem_relNestedZeroCheck_of_nestedRoundRel
     rw [sum_sumcheckPolyZero' Φ m₀ φF b s.τ₀ w] at hZero
     exact hZero
   · rw [hAlpha_eval_eq]
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w hd hμn] at hAlpha
+    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn] at hAlpha
     exact add_eq_right.mp hAlpha
 
 /-! ## The honest direction -/
@@ -95,14 +95,15 @@ initial target `zcTargetAlpha`. Commitment, shortness and bound sanity pass thro
 with the pull-back this makes `nestedRoundRel 0` at the mapped statement *equivalent* to
 `relNestedZeroCheck`. -/
 theorem mem_nestedRoundRel_of_relNestedZeroCheck
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀)
+    (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀)
     (s : NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁)
     (w : LiftedWitness Φ μ n)
-    (h : (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b) :
+    (h : (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) :
     (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
-      nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0 := by
+      nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0 := by
   rw [relNestedZeroCheck, Set.mem_setOf_eq] at h
   rcases h with ⟨hCom, hShort, hZero, hAlpha, hBound⟩
   rw [hZero_eval_eq] at hZero
@@ -113,7 +114,7 @@ theorem mem_nestedRoundRel_of_relNestedZeroCheck
     exact hZero
   · change hypercubeSum m₀ (sumcheckPolyAlpha Φ m₀ m₁ φF b s.rlin s.α s.τα w) 0
       (fun j => j.elim0) = zcTargetAlpha Φ m₁ φF s.rlin s.α s.τα
-    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b s.rlin s.α s.τα w hd hμn, hAlpha, zero_add]
+    rw [sum_sumcheckPolyAlpha' Φ m₀ m₁ φF b hb s.rlin s.α s.τα w hd hμn, hAlpha, zero_add]
 
 /-- **The sumcheck bridge as a protocol object**: the zero-round `ReduceClaim` reduction at
 `mapStmt := nestedToRoundStatement`, with the witness passed through. Its verifier is
@@ -129,25 +130,26 @@ def nestedSumcheckBridgeReduction {TCom : Type} (φF : ZMod q →+* F) :
 omit [NeZero q] in
 /-- **Perfect completeness of the zero-round sumcheck bridge**, error `0` and unconditional beyond
 the two arity/positivity conditions the sum identities need (`0 < deg φ`,
-`(μ + n)·deg φ ≤ 2^{m₀}`).
+`(μ + n·δ)·deg φ ≤ 2^{m₀}`).
 
 All of the content is `mem_nestedRoundRel_of_relNestedZeroCheck`; a zero-round `ReduceClaim` head
 draws no challenge and performs no check, so `ReduceClaim.reduction_completeness_of_imp` discharges
 the execution layer. -/
 theorem nestedSumcheckBridgeReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     (nestedSumcheckBridgeReduction (oSpec := oSpec) (TCom := K.TCom)
         Φ m₀ m₁ φF).perfectCompleteness init impl
-      (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
-      (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0) :=
+      (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
+      (nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0) :=
   ReduceClaim.reduction_completeness_of_imp
-    (relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
-    (nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
+    (relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
+    (nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0)
     (fun s w h =>
-      mem_nestedRoundRel_of_relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b hd hμn s w h)
+      mem_nestedRoundRel_of_relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b hb hd hμn s w h)
 
 /-- The nested sumcheck bridge verifier's purity as computable data (`Verifier.PureForm`): the
 verdict is `nestedToRoundStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq`
@@ -157,7 +159,7 @@ The package carries this instead of a `Verifier.IsPure` instance, because the co
 *run* this verdict at the seam and reading it off the `IsPure` existential would cost
 `Classical.choice`. -/
 def nestedSumcheckBridgeVerifierPureForm
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound)) (φF : ZMod q →+* F) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig)) (φF : ZMod q →+* F) :
     (ReduceClaim.verifier oSpec
       (nestedToRoundStatement (TCom := K.TCom) (n := n) (μ := μ) Φ m₀ m₁ φF)).PureForm where
   verify := fun stmt _ => nestedToRoundStatement Φ m₀ m₁ φF stmt
@@ -168,36 +170,37 @@ def nestedSumcheckBridgeVerifierPureForm
 `nestedRoundRel`. -/
 def nestedSumcheckBridgePackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
-    (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
+    (φF : ZMod q →+* F) (b : ℕ) (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     CWSSPackage init impl
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (NestedRoundStatement Φ K.TCom F n μ m₀ m₁ 0) (LiftedWitness Φ μ n)
       (!p[] : ProtocolSpec 0) where
   verifier := ReduceClaim.verifier oSpec (nestedToRoundStatement Φ m₀ m₁ φF)
   struct := CWSSStructure.ofIsEmpty
-  relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b
-  relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0
-  isPure := nestedSumcheckBridgeVerifierPureForm Φ m₀ m₁ bound ρBound K φF
+  relIn := relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b
+  relOut := nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0
+  isPure := nestedSumcheckBridgeVerifierPureForm Φ m₀ m₁ bound bDig K φF
   extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
-    (relIn := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b)
-    (relOut := nestedRoundRel Φ m₀ m₁ bound ρBound K φF b 0)
+    (relIn := relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b)
+    (relOut := nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0)
     (mapWitInv := fun _ w => w) (D := CWSSStructure.ofIsEmpty)
     (fun s w =>
-      mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound ρBound K φF b s w hd hμn)
+      mem_relNestedZeroCheck_of_nestedRoundRel Φ m₀ m₁ bound bDig K φF b s w hb hd hμn)
 
 set_option linter.unusedSectionVars false in
 /-- The bridge's protocol object and its certificate speak about the same verifier. Holds by
 `rfl`. -/
 @[simp] theorem nestedSumcheckBridgeReduction_verifier (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (φF : ZMod q →+* F) (b : ℕ)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) :
+    (hb : 1 < b) (hd : 0 < Φ.φ.natDegree)
+    (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ m₀) :
     (nestedSumcheckBridgeReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₀ m₁ φF).verifier
-      = (nestedSumcheckBridgePackage Φ m₀ m₁ bound ρBound init impl K φF b hd hμn).verifier :=
+      = (nestedSumcheckBridgePackage Φ m₀ m₁ bound bDig init impl K φF b hb hd hμn).verifier :=
   rfl
 
 end ArkLib.Lattices.Ajtai.InnerOuter

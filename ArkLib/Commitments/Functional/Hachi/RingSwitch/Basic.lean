@@ -65,10 +65,11 @@ By contrast, **Packing** groups a basis-sized block of small-field coefficients 
   `rlinReduction_perfectCompleteness_image` (into the honest seam `relRlinImage`, unconditional)
   with `rlinReduction_perfectCompleteness` as its coarsening to `relRlin`, and
   `liftReduction_perfectCompleteness_image` — **unconditional** perfect completeness of the lift at
-  `bound = γ`, `ρBound = q/2`, error `0`: both halves of `liftShort` are discharged (the `z` half
-  from seam membership, the quotient half from `QuotientNorms`), so no `hshort` and no `hbound`
-  remain. `…_of_zShort` / `…_of_matrixShort` are the parameterized forms, the latter at the sharp
-  quotient bound. Both protocol objects share their package's verifier by `rfl`. The lift consumes
+  `bound = γ` and an admissible digit base, error `0`: both halves of
+  `liftShort` are discharged (the `z` half from seam membership, the quotient half from the digit
+  encoding, `rhoDigitsShort_of_digitBaseOk`), so no `hshort` and no `hbound` remain.
+  `…_of_zShort` is the parameterized form over an arbitrary input relation.
+  Both protocol objects share their package's verifier by `rfl`. The lift consumes
   `relRlinImage`, not `relRlin`: the honest side needs the Eq. (20) provenance that the soundness
   relation deliberately discards (see `relRlinImage`). The execution and algebra are generic
   (`RingSwitching.Lift.honestWitness` / `checkAt_honestWitness` /

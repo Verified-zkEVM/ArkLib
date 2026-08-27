@@ -61,7 +61,7 @@ section Rounds
 variable {q : ℕ} [NeZero q] [Fact (Nat.Prime q)] [BEq (ZMod q)] [LawfulBEq (ZMod q)]
   (Φ : CyclotomicModulus (ZMod q)) [IsCyclotomic Φ]
 variable {n μ M : ℕ} {F : Type} [Field F] [DecidableEq F] [BEq F] [LawfulBEq F]
-variable (m₁ : ℕ) (bound ρBound : ℕ) (b : ℕ)
+variable (m₁ : ℕ) (bound bDig : ℕ) (b : ℕ)
 variable {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
 
 /-- **The honest round message.** Both components are the computable partial hypercube sum of the
@@ -119,10 +119,10 @@ omit [DecidableEq F] in
 Holds for every statement in the round-`i` relation, with no condition beyond `0 < b` (needed
 only to *type* the message). -/
 theorem roundCheck_honestComputeG
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1)
     (stmt : NestedRoundStatement Φ K.TCom F n μ (M + 1) m₁ i) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b i) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i) :
     roundCheck Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) = true := by
   obtain ⟨-, -, hZero, hAlpha, -⟩ := h
   change hypercubeSum (M + 1) (sumcheckPolyZero Φ (M + 1) φF b stmt.zc.τ₀ w) i
@@ -147,12 +147,12 @@ the extended prefix (`computableRoundPoly_eval`).
 That this holds for *every* `a` — no property of the challenge distribution — is why the round's
 completeness error is exactly `0`. -/
 theorem mem_nestedRoundRel_roundOut_honestComputeG
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1)
     (stmt : NestedRoundStatement Φ K.TCom F n μ (M + 1) m₁ i) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b i) (a : F) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i) (a : F) :
     (roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a, w) ∈
-      nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b (i + 1) := by
+      nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b (i + 1) := by
   obtain ⟨hcom, hshort, -, -, hbound⟩ := h
   refine ⟨hcom, hshort, ?_, ?_, hbound⟩
   · exact (honestComputeG_fst_eval Φ m₁ b hb φF i hi stmt w a).symm
@@ -178,10 +178,10 @@ set_option linter.unusedSectionVars false in
 Holds by `rfl`. -/
 @[simp] theorem roundReduction_verifier (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1) :
     (roundReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF i hi).verifier
-      = (roundPackage Φ (M + 1) m₁ bound ρBound b init impl K φF hb i hi).verifier :=
+      = (roundPackage Φ (M + 1) m₁ bound bDig b init impl K φF hb i hi).verifier :=
   rfl
 
 set_option linter.unusedSectionVars false in
@@ -258,18 +258,18 @@ success determined by the drawn challenge `a`: prover and verifier both output
 Failure is excluded by `roundCheck_honestComputeG` — the round verifier is
 `if roundCheck … then … else failure`, and the honest message passes it. -/
 lemma roundReduction_run_support
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1)
     (hdir : (pSpecScalar (RoundMsg F b) F).dir 1 = .V_to_P)
     (stmt : NestedRoundStatement Φ K.TCom F n μ (M + 1) m₁ i) (w : LiftedWitness Φ μ n)
-    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b i) :
+    (h : (stmt, w) ∈ nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i) :
     ∀ x ∈ support ((roundReduction (oSpec := oSpec) (TCom := K.TCom)
         Φ m₁ b hb φF i hi).run stmt w).run,
       ∃ a : F,
         x = some ((FullTranscript.mk2 (honestComputeG Φ m₁ b hb φF i hi stmt w) a,
               roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a, w),
             roundOut Φ (M + 1) m₁ b stmt (honestComputeG Φ m₁ b hb φF i hi stmt w) a) := by
-  have hg := roundCheck_honestComputeG Φ m₁ bound ρBound b K hb φF i hi stmt w h
+  have hg := roundCheck_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h
   intro x hx
   unfold Reduction.run at hx
   simp only [OptionT.run_bind, Option.elimM] at hx
@@ -311,18 +311,18 @@ Hypotheses: `0 < b` (the range factor's degree bound, which the message's type c
 theorem carries. -/
 theorem roundReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (i : ℕ) (hi : i < M + 1) :
     (roundReduction (oSpec := oSpec) (TCom := K.TCom)
         Φ m₁ b hb φF i hi).perfectCompleteness init impl
-      (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b i)
-      (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b (i + 1)) := by
+      (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b i)
+      (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b (i + 1)) := by
   apply Reduction.perfectCompleteness_of_run_support
   intro stmt w h x hx
   obtain ⟨a, hx'⟩ :=
-    roundReduction_run_support Φ m₁ bound ρBound b K hb φF i hi rfl stmt w h x hx
+    roundReduction_run_support Φ m₁ bound bDig b K hb φF i hi rfl stmt w h x hx
   refine ⟨_, hx', ?_, rfl⟩
-  exact mem_nestedRoundRel_roundOut_honestComputeG Φ m₁ bound ρBound b K hb φF i hi stmt w h a
+  exact mem_nestedRoundRel_roundOut_honestComputeG Φ m₁ bound bDig b K hb φF i hi stmt w h a
 
 /-! ## The honest round chain
 
@@ -376,11 +376,11 @@ has to be taken explicitly (`Reduction.append` and `EscapeGCWSSPackage.append` b
 `Verifier.append` of the two component verifiers). -/
 theorem roundsReduction_verifier (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) :
     ∀ (count : ℕ) (hcount : count ≤ M + 1),
       (roundsReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ b hb φF count hcount).verifier
-        = (roundsChain Φ (M + 1) m₁ bound ρBound b init impl K φF hb count hcount).verifier
+        = (roundsChain Φ (M + 1) m₁ bound bDig b init impl K φF hb count hcount).verifier
   | 0, _ => rfl
   | count + 1, hcount =>
     congrArg (fun V => Verifier.append V (roundVerifier Φ (M + 1) m₁ b (TCom := K.TCom) count))
@@ -396,13 +396,13 @@ base is `ReduceClaim` at the identity map, and each step appends one
 still-unproved generic `Reduction.append_completeness`. The per-round input is axiom-clean. -/
 theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) :
     ∀ (count : ℕ) (hcount : count ≤ M + 1),
       (roundsReductionAux (oSpec := oSpec) (TCom := K.TCom)
           Φ m₁ b hb φF count hcount).perfectCompleteness init impl
-        (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b 0)
-        (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b count)
+        (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b 0)
+        (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b count)
   | 0, _ => by
     -- The zero-round base. Not `ReduceClaim.reduction_completeness_of_imp`: that theorem is
     -- stated at the empty spec `!p[]`, whose `SampleableType` instance is *not* the loop's
@@ -419,7 +419,7 @@ theorem roundsReductionAux_perfectCompleteness (init : ProbComp σ)
       (roundsReductionAux Φ m₁ b hb φF count (by omega))
       (roundReduction Φ m₁ b hb φF count (by omega))
       (roundsReductionAux_perfectCompleteness init impl K hb φF count (by omega))
-      (roundReduction_perfectCompleteness Φ m₁ bound ρBound b init impl K hb φF count (by omega))
+      (roundReduction_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF count (by omega))
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
@@ -427,13 +427,13 @@ omit [DecidableEq F] in
 `roundsReductionAux_perfectCompleteness`. ⚠ Inherits `sorryAx` for the same reason. -/
 theorem roundsReduction_perfectCompleteness (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
     (hb : 0 < b) (φF : ZMod q →+* F) (count : ℕ) (hcount : count ≤ M + 1) :
     (roundsReduction (oSpec := oSpec) (TCom := K.TCom)
         Φ m₁ b hb φF count hcount).perfectCompleteness init impl
-      (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b 0)
-      (nestedRoundRel Φ (M + 1) m₁ bound ρBound K φF b count) :=
-  roundsReductionAux_perfectCompleteness Φ m₁ bound ρBound b init impl K hb φF count hcount
+      (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b 0)
+      (nestedRoundRel Φ (M + 1) m₁ bound bDig K φF b count) :=
+  roundsReductionAux_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF count hcount
 
 /-! ## The local sumcheck, composed
 
@@ -479,7 +479,7 @@ omit [DecidableEq F] in
 The three links meet on the nose: the bridge installs `nestedRoundRel 0`, the loop carries it to
 `nestedRoundRel m₀`, and the final-evaluation step turns that into `relWEvalClaim`. Hypotheses are
 exactly the union of the links' own — `0 < b` (rounds), `0 < deg φ` and
-`(μ + n)·deg φ ≤ 2^{m₀}` (the bridge's sum identities) — plus the standing field, sampling and
+`(μ + n·δ)·deg φ ≤ 2^{m₀}` (the bridge's sum identities) — plus the standing field, sampling and
 commitment assumptions. No hypothesis is needed for the final-evaluation step: its bound-sanity
 conjunct is *carried* by the round relation.
 
@@ -489,19 +489,19 @@ conjunct is *carried* by the round relation.
 `finalEvalReduction_perfectCompleteness`. -/
 theorem sumcheckReduction_perfectCompleteness
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
-    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
-    (hb : 0 < b) (φF : ZMod q →+* F)
-    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ (M + 1)) :
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound bDig))
+    (hb : 0 < b) (hb1 : 1 < b) (φF : ZMod q →+* F)
+    (hd : 0 < Φ.φ.natDegree) (hμn : (μ + n * rhoDigitCount q b) * Φ.φ.natDegree ≤ 2 ^ (M + 1)) :
     (sumcheckReduction (oSpec := oSpec) (TCom := K.TCom) Φ m₁ bound b hb
         φF).perfectCompleteness init impl
-      (relNestedZeroCheck Φ (M + 1) m₁ bound ρBound K φF b)
-      (relWEvalClaim Φ (M + 1) bound ρBound b K φF) :=
+      (relNestedZeroCheck Φ (M + 1) m₁ bound bDig K φF b)
+      (relWEvalClaim Φ (M + 1) bound bDig b K φF) :=
   Reduction.append_perfectCompleteness _ _
-    (nestedSumcheckBridgeReduction_perfectCompleteness Φ (M + 1) m₁ bound ρBound init impl K φF b
-      hd hμn)
+    (nestedSumcheckBridgeReduction_perfectCompleteness Φ (M + 1) m₁ bound bDig init impl K φF b
+      hb1 hd hμn)
     (Reduction.append_perfectCompleteness _ _
-      (roundsReduction_perfectCompleteness Φ m₁ bound ρBound b init impl K hb φF (M + 1) le_rfl)
-      (finalEvalReduction_perfectCompleteness Φ (M + 1) m₁ bound ρBound b init impl K φF))
+      (roundsReduction_perfectCompleteness Φ m₁ bound bDig b init impl K hb φF (M + 1) le_rfl)
+      (finalEvalReduction_perfectCompleteness Φ (M + 1) m₁ bound bDig b init impl K φF))
 
 end Rounds
 

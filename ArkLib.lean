@@ -32,6 +32,7 @@ import ArkLib.Commitments.Functional.Hachi.RingSwitch.Completeness
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.ComputableWitness
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.QuotientNorms
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Reduction
+import ArkLib.Commitments.Functional.Hachi.RingSwitch.RhoDigits
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Basic
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.Bridge
