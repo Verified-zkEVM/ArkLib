@@ -345,6 +345,14 @@ lemma iteratedFoldWord_succ {α : Fin (k + 1) → F} :
     foldWord (domain.subdomain k)
       (iteratedFoldWord domain f k (fun i ↦ α ⟨i.val, by omega⟩)) 1 (α ⟨k, by omega⟩) := by aesop
 
+/-- Unfolding one round of `iteratedFoldWord` from the last round, with the randomness of the
+  earlier rounds spelled as a restriction along `Fin.castSucc`. -/
+lemma iteratedFoldWord_succ'
+    {f : Word F (Fin (2 ^ n))} {α : Fin (k + 1) → F} :
+    iteratedFoldWord domain f (k + 1) α =
+      foldWord (domain.subdomain k) (iteratedFoldWord domain f k (fun i ↦ α i.castSucc)) 1
+        (α (Fin.last k)) := rfl
+
 omit [DecidableEq F] in
 /-- TODO: this will go once this https://github.com/Verified-zkEVM/CompPoly/pull/203
   is merged. -/

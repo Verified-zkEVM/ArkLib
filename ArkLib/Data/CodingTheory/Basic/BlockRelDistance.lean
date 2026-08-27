@@ -183,6 +183,13 @@ lemma not_mem_blockRelDistanceBall {g : Fin (2 ^ n) → F}
   f ∉ Λ𞁒(C, k, φ, g, δ) ↔ f ∉ C ∨ δ < δ𞁒(k, φ, f, g) := by
   aesop (add safe (by grind))
 
+/-- The `0`-wise block relative distance list is the ordinary list of codewords within relative
+  Hamming distance `δ`. -/
+lemma blockRelDistanceBall_zero {n : ℕ} {ω : SmoothCosetFftDomain n F}
+    (C : Set (Fin (2 ^ n) → F)) (g : Fin (2 ^ n) → F) (δ : ℝ≥0) :
+    Λ𞁒(C, 0, ω, g, δ) = {u | u ∈ C ∧ ((δᵣ(g, u) : ℚ≥0) : ℝ≥0) ≤ δ} := by
+  aesop (add simp blockRelDistanceBall)
+
 def complDisagreementSet
   (k : ℕ) (φ : SmoothCosetFftDomain n F) (f g : Fin (2 ^ n) → F) : Finset F :=
   (φ.subdomain k).toFinset \ disagreementSet k φ f g
