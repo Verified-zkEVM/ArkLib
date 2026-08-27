@@ -1063,7 +1063,11 @@ theorem AppendSplit.fullTranscript_gluePath
     (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) :
     (AppendSplit.gluePath T p₁ p₂).fullTranscript
       = p₁.fullTranscript ++ₜ p₂.fullTranscript := by
-  rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
+  -- Unfolding `gluePath` exposes `T.splitDataOfTree`, whose round index is `0` here but
+  -- `leftRound 0` in `splitDataOfTree`'s own signature. v4.33 keeps the two apart at implicit
+  -- transparency, so the goal is not type-correct there and `rw` cannot match the transport.
+  set_option backward.isDefEq.respectTransparency false in
+    rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
   have key := SplitData.transcript_gluePath (splitDataOfTree (r := 0) T) default p₁ p₂
   have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
       = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by
