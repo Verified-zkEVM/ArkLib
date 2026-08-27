@@ -989,6 +989,26 @@ class Reduction.IsPure (R : Reduction oSpec StmtIn WitIn StmtOut WitOut pSpec) w
     prover_is_pure : R.prover.IsPure
     verifier_is_pure : R.verifier.IsPure
 
+/-- A **purity witness carrying its verdict function as data**: the bundled form of
+  `Verifier.IsPure`, playing the role `Equiv` plays for `Function.Bijective`.
+
+  `IsPure` only asserts that *some* deterministic verdict function exists, so reading that
+  function off an `IsPure` instance costs `Classical.choice`. Consumers that need the verdict as
+  *data* — sequential composition, which must run the right factor at the statement the left
+  verifier outputs at the seam — carry a `PureForm` instead. Purity data
+  composes computably (`Verifier.PureForm.append`), and `Verifier.PureForm.isPure` forgets back to
+  the class, so the class and all of its instances stay untouched. -/
+structure Verifier.PureForm (V : Verifier oSpec StmtIn StmtOut pSpec) where
+  /-- The verdict: the statement the verifier outputs on `(stmtIn, transcript)`. -/
+  verify : StmtIn → pSpec.FullTranscript → StmtOut
+  /-- The verifier computes exactly that verdict. -/
+  verify_eq : ∀ stmtIn transcript, V.verify stmtIn transcript = pure (verify stmtIn transcript)
+
+/-- Forget the data: a `Verifier.PureForm` yields the `Verifier.IsPure` class. -/
+theorem Verifier.PureForm.isPure {V : Verifier oSpec StmtIn StmtOut pSpec} (P : V.PureForm) :
+    V.IsPure :=
+  ⟨P.verify, P.verify_eq⟩
+
 end IsPure
 
 end Classes

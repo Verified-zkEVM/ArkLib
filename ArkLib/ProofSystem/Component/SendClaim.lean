@@ -176,15 +176,17 @@ def toORelOut :
 
 /-- **Coordinate-wise special soundness of `SendClaim`, named form.** The verifier is a pure
 pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge) to
-a transcript-level obligation. The named extractor is trivial (`fun _ _ => ()`, there is no
-witness); since the output oracle statements at `inl` are the input oracles unchanged and
-`toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language` forces the input into
-`relIn`. Holds for any `D`. -/
+a transcript-level obligation. The named extractor is trivial (`fun _ _ _ => some ()`, there is no
+witness) and **witnessing-agnostic**; since the output oracle statements at `inl` are the input
+oracles unchanged and `toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language`
+forces the input into `relIn`. Holds for any `D`. -/
 theorem oracleVerifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Message)) :
-    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init impl
+    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init
+      impl
       D relIn (toORelOut relIn P)
-      (fun _ _ => ()) := by
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+      (fun _ _ _ => some ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
+    D
     (oracleVerifier oSpec Statement OStatement Message) relIn (toORelOut relIn P)
     (fun _ _ => ())
     (fun s tr hAcc => by

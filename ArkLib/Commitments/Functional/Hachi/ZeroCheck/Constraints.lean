@@ -159,7 +159,7 @@ noncomputable def hAlphaEvals (φF : ZMod q →+* F) (_b : ℕ) (s : RlinStateme
     if h : ((finFunctionFinEquiv pt : Fin (2 ^ m₁)) : ℕ) < n then
       cEvalAt φF α (cRowSum Φ s w.z ⟨_, h⟩)
         - cEvalAt φF α (s.yvec ⟨_, h⟩).1
-        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ ⟨_, h⟩)
+        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ ⟨_, h⟩).toPoly
     else 0
 
 omit [NeZero q] [IsCyclotomic Φ] [BEq F] [LawfulBEq F] in
@@ -170,7 +170,7 @@ theorem hAlphaEvals_rowPoint (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement
     (w : LiftedWitness Φ μ n) (hn : n ≤ 2 ^ m₁) (i : Fin n) :
     hAlphaEvals Φ m₁ φF b s α w (rowPoint m₁ hn i) =
       cEvalAt φF α (cRowSum Φ s w.z i) - cEvalAt φF α (s.yvec i).1
-        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i) := by
+        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly := by
   simp only [hAlphaEvals, rowPoint, Equiv.apply_symm_apply, Fin.eta, i.isLt, dif_pos]
 
 /-! ## The batched constraint polynomials -/
@@ -440,8 +440,9 @@ theorem hZero_eq_zero_imp_liftShort (φF : ZMod q →+* F) (b bound ρBound : �
       exact le_trans (valMinAbs_natAbs_le_of_rangeProduct_eq_zero φF hval) hρBound
     · -- `k ≥ deg φ`: the coefficient is zero, so trivially short
       have hz : (w.ρ i).coeff k = 0 := by
+        rw [CPolynomial.coeff_toPoly]
         apply Polynomial.coeff_eq_zero_of_natDegree_lt
-        have := w.hρ i; omega
+        exact lt_of_le_of_lt (w.hρ i) (by omega)
       rw [hz]; simp [ZMod.valMinAbs_zero]
 
 /-! ## Eq. (22) in the paper's table form: the `M̃_α`/`w̃`/`α̃` contraction
@@ -572,18 +573,20 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
     (hμn : (μ + n) * Φ.φ.natDegree ≤ 2 ^ m₀) (i : Fin n) :
     alphaDefect Φ m₀ φF s α hμn (wTable Φ m₀ φF b w) i =
       cEvalAt φF α (cRowSum Φ s w.z i) - cEvalAt φF α (s.yvec i).1
-        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i) := by
+        - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly := by
   -- Column contraction (`α̃`): a reduced representative is its `d` coefficients against `α^ℓ`.
   have hzcol : ∀ j : Fin μ, cEvalAt φF α (w.z j).1
       = ∑ ℓ : Fin Φ.φ.natDegree, φF ((w.z j).1.coeff (ℓ : ℕ)) * α ^ (ℓ : ℕ) := fun j => by
     rw [cEvalAt_eq_sum_range φF α (Φ.natDegree_lt_of_reduced hd (w.z j).2)]
     exact (Fin.sum_univ_eq_sum_range _ _).symm
-  have hrcol : evalAt φF α (w.ρ i)
+  have hrcol : evalAt φF α (w.ρ i).toPoly
       = ∑ ℓ : Fin Φ.φ.natDegree, φF ((w.ρ i).coeff (ℓ : ℕ)) * α ^ (ℓ : ℕ) := by
-    have hdeg : (w.ρ i).natDegree < Φ.φ.natDegree := by have := w.hρ i; omega
+    have hdeg : (w.ρ i).toPoly.natDegree < Φ.φ.natDegree := by
+      exact lt_of_le_of_lt (w.hρ i) (by omega)
     rw [evalAt, Polynomial.coe_eval₂RingHom,
       Polynomial.eval₂_eq_sum_range' φF hdeg α]
-    exact (Fin.sum_univ_eq_sum_range _ _).symm
+    rw [← Fin.sum_univ_eq_sum_range]
+    exact Finset.sum_congr rfl fun ℓ _ => by rw [CPolynomial.coeff_toPoly]
   -- Row contraction (`M̃_α`'s `z` block): the public matrix against the witness entries.
   have hrow : cEvalAt φF α (cRowSum Φ s w.z i)
       = ∑ j : Fin μ, cEvalAt φF α (s.M i j).1 * cEvalAt φF α (w.z j).1 := by
@@ -608,7 +611,7 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
   have hr : ∀ k : Fin n, (∑ ℓ : Fin Φ.φ.natDegree,
       mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) *
         wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.natAdd μ k) ℓ) * alphaTilde α (ℓ : ℕ))
-      = if k = i then -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i)) else 0 := by
+      = if k = i then -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly) else 0 := by
     intro k
     have hkv : ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) = μ + (k : ℕ) := rfl
     have hlow : ¬ ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) < μ := by rw [hkv]; omega
@@ -636,7 +639,7 @@ theorem alphaDefect_wTable (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement �
   have hrsum : (∑ k : Fin n, ∑ ℓ : Fin Φ.φ.natDegree,
       mAlphaTilde Φ φF s α i ((Fin.natAdd μ k : Fin (μ + n)) : ℕ) *
         wTable Φ m₀ φF b w (wTablePoint Φ m₀ hμn (Fin.natAdd μ k) ℓ) * alphaTilde α (ℓ : ℕ))
-      = -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i)) :=
+      = -(cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly) :=
     (Finset.sum_congr rfl fun k _ => hr k).trans (by simp)
   simp only [alphaDefect, alphaContract, Fin.sum_univ_add]
   rw [hzsum, hrsum]
@@ -1170,7 +1173,7 @@ omit [NeZero q] in
 /-- **The full-cube sum of the linear summand `F_{α,τ₁}` equals `H_α(τ₁) + zcTargetAlpha`.**
 
 The two hypotheses are the ones that make the table encoding faithful, and both are already
-carried by the composition (`Composition.openingChain`'s `hd` and `hcov`): `hd` is what lets the
+carried by the composition (`Composition.iteration`'s `hd` and `hcov`): `hd` is what lets the
 flat cube index be split as `(row, column)`, and `hμn` is what makes every coefficient position a
 genuine cube point. Without them the cube contraction of `M̃_α`, `w̃` and `α̃` does **not**
 reproduce the ring-level row defect that `H_α` stores — the block would overflow the cube — so
@@ -1216,7 +1219,7 @@ theorem sum_sumcheckPolyAlpha (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatemen
   rw [hL]
   simp only [hAlphaML, eval_MLE_eq_sum, hAlphaEvals, zcTargetAlpha]
   rw [sum_cube_rowIndexed m₁ τ₁ (fun i => cEvalAt φF α (cRowSum Φ s w.z i)
-      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i)),
+      - cEvalAt φF α (s.yvec i).1 - cEvalAt φF α Φ.φ * evalAt φF α (w.ρ i).toPoly),
     ← Finset.sum_add_distrib]
   refine Finset.sum_congr rfl fun i _ => ?_
   by_cases hi : (i : ℕ) < 2 ^ m₁

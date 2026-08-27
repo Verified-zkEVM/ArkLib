@@ -22,8 +22,9 @@ and the weak-binding reduction to Module-SIS, the polynomial-evaluation reductio
 `R^lin` adapter, the HMZ25 lift (Lemma 9), the batching bridge, the corrected zero-check
 (Lemma 10), the sumcheck bridge, the paired sumcheck rounds (Lemma 11) and the final evaluation —
 together with their composite, the one-iteration certificate
-`hachi_iteration_coordinateWiseSpecialSoundWithEscape`. What is still open: the closing `endPiece`
-that consumes that iteration's evaluation claim (the sole sorried link of `evaluation`), the
+`hachi_iteration_coordinateWiseSpecialSoundWithEscape`, and the closing `endPiece` (`EndPiece/`)
+that consumes that iteration's evaluation claim — `sorry`-free and axiom-clean, as is the
+composite `evaluation`. What is still open: the
 completeness layer — the honest-prover `opening` (`hachi.opening` in `Commitment.lean`) — and the
 §4.5 `Recursion/` adapters, separate future work with their own sorries and a documented soundness
 gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.lean` and
@@ -32,7 +33,8 @@ gap described in `Recursion/Basic.lean`. See the `TODO` blocks in `Composition.l
 ## Folder structure
 
 The folder `Hachi/` is organized by paper section. Each subfolder carries a `Basic.lean`
-umbrella re-export inside the folder (as this file does for the whole Hachi development):
+umbrella re-export inside the folder, and this file is that umbrella for the whole Hachi
+development:
 
 * `Gadget/` (§2.1) — the base-`b` Ajtai gadget matrix `G` and its digit-decomposition inverse
   `G⁻¹` (`Core`), with centered `ℓ∞` / `ℓ₂²` norm bounds for both directions (`Norms`).
@@ -47,11 +49,14 @@ umbrella re-export inside the folder (as this file does for the whole Hachi deve
   soundness (`Soundness`), and the zero-round polynomial-level bridge (`Bridge`).
 * `RingSwitch/`, `ZeroCheck/`, and `Sumcheck/` (§4.3) — the lift, corrected zero-check, and
   guarded sumcheck stages of the opening chain.
+* `EndPiece/` (§4.3, closing) — the terminal link: the prover reveals the reduced witness and the
+  guarded verifier checks the evaluation claim against it directly. Escape-free, `sorry`-free and
+  axiom-clean (`Reduction`, re-exported by `Basic`).
 * `Recursion/` (§4.5) — the partial-evaluation, packing, and trace-handoff adapters that would
   close one iteration at the next ring's plain `QuadEval.relIn` relation (future recursion work;
   not yet composed in `Composition.lean`).
 * `Composition.lean` — the CWSS composition home: the `iteration` (the chained subprotocols,
-  rows 1–9), the still-sorried `endPiece` skeleton (send the reduced witness), and the complete
+  rows 1–9), the imported `endPiece`, and the complete
   `evaluation` = iteration ⧺ end-piece. Every package exposes the ordinary
   `relIn` / `relOut` flow; the cryptographic failure modes of extraction (`QuadEval`'s Module-SIS
   break, the weak-binding collisions of Figures 4–6) are **escape events** on the transcript tree,

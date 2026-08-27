@@ -116,12 +116,25 @@ theorem mem_relPartialEval_of_relHatEval (zpow : Fin (2 ^ κ) → F)
     (s, w) ∈ relPartialEval Φ mLow κ bound ρBound K φF := by
   sorry
 
-/-- **The `Z`-packing bridge as a (plain) `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)): zero-round
+/-- **The `Z`-packing bridge verifier's purity as data** (`Verifier.PureForm`): the verdict is
+`toHatEvalStatement`, read off the zero-round `ReduceClaim` head, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def zBatchVerifierPureForm {TCom : Type} (zpow : Fin (2 ^ κ) → F) :
+    (ReduceClaim.verifier oSpec
+      (toHatEvalStatement (TCom := TCom) mLow κ zpow)).PureForm where
+  verify := fun stmt _ => toHatEvalStatement mLow κ zpow stmt
+  verify_eq := fun _ _ => rfl
+
+/-- **The `Z`-packing bridge as a (plain) `CWSSPackage`** (Hachi §4.5, Eqs. (25)–(26)):
+    zero-round
 `ReduceClaim` at `mapStmt := toHatEvalStatement`, reducing `relPartialEval` to `relHatEval`. A pure
 statement repacking, hence escape-free.
 ⚠ Its certificate rests on the sorried — and expectedly unprovable as stated — un-packing
 pull-back; see the module docstring. -/
-noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (zpow : Fin (2 ^ κ) → F)
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
@@ -133,9 +146,8 @@ noncomputable def zBatchPackage (init : ProbComp σ) (impl : QueryImpl oSpec (St
   struct := CWSSStructure.ofIsEmpty
   relIn := relPartialEval Φ mLow κ bound ρBound K φF
   relOut := relHatEval Φ mLow κ bound ρBound zpow K φF
-  isPure := ⟨fun stmt _ => toHatEvalStatement mLow κ zpow stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor (mapStmt := toHatEvalStatement mLow κ zpow)
-    (relHatEval Φ mLow κ bound ρBound zpow K φF) (fun _ w => w) CWSSStructure.ofIsEmpty
+  isPure := zBatchVerifierPureForm mLow κ zpow
+  extractor := ReduceClaim.treeExtractor (fun _ w => w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relPartialEval Φ mLow κ bound ρBound K φF)
     (relOut := relHatEval Φ mLow κ bound ρBound zpow K φF)
