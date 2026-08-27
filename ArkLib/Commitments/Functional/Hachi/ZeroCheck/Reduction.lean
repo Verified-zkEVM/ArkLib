@@ -88,9 +88,11 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Package
   solution. So the conjunct is what makes the escape event sound, not a range assumption smuggled
   in ahead of its proof.
 
-  The range claim proper — `RhoShort`, the `‖ρ‖∞ ≤ b − 1` half — is still **derived**, at the
+  The range claim proper — the `‖z‖∞ ≤ bound` half of `liftShort` — is still **derived**, at the
   batching bridge, from `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), and `relBatched` remains
-  norm-free. That separation is what this seam has to preserve, because it genuinely cannot
+  norm-free. (Its quotient half needs no derivation: the committed block holds base-`b` digits,
+  which are `⌊b/2⌋`-bounded by construction.) That separation is what this seam has to preserve,
+  because it genuinely cannot
   recover the range identity: a single evaluation `H₀(τ₀) = 0` never implies `H₀ ≡ 0`.
 
   ## References

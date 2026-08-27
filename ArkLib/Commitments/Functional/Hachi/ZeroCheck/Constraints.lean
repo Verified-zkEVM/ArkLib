@@ -1125,14 +1125,23 @@ i.e. on the `r` rows as well, consistent with the earlier requirement `‖z‖�
 readings are not equivalent, so the paper's own `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as
 printed**: the two sides differ exactly by the indicator.
 
-This file follows the Eq. (23) reading — no indicator, and the range constraint applied to both the
-`z` and the `r` rows. That is not just the self-consistent choice but the paper's *intended*
-protocol: §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits before committing
-("there is a hidden gadget decomposition of r"), and committing `w̃` without re-decomposition
-(§4.5) requires **every** row short, digit rows included — so the indicator-free `H₀` is the
+This file follows the Eq. (23) reading — no indicator, and the range constraint applied to **every**
+row of `w̃`, the `n·δ` quotient-digit rows included. That is not just the self-consistent choice but
+the paper's *intended* protocol: §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
+before committing ("there is a hidden gadget decomposition of r"), and committing `w̃` without
+re-decomposition (§4.5) requires every committed row short — so the indicator-free `H₀` is the
 correct object and the `1_{≤μ}` in `F_{0,τ₀}` is the leftover of the paper's simplified
-presentation. It is visible downstream: `wTable` fills both row blocks (`wTable_zRow`,
-`wTable_rRow`), and `hZero_eq_zero_imp_liftShort` discharges a `z`-side *and* an `r`-side bound.
+presentation.
+
+Where the two blocks *differ* is in what the constraint buys, and it is worth being exact.
+`wTable` fills both (`wTable_zRow`, `wTable_rRow`), and `hZero_eq_zero_imp_liftShort` reads both.
+But the digit rows are in range **by construction** — `wTable` computes them with `rhoDigits`, and
+`rhoDigits_valMinAbs_natAbs_le` bounds every digit by `⌊b/2⌋` for an arbitrary quotient — so `H₀`'s
+substantive soundness content is the `z` block. The digit half is a consistency condition on the
+encoding, not a constraint that can fail. That is the point of committing digits: the bound on the
+quotient block is supplied at radius `⌊b/2⌋` by the encoding rather than extracted from `H₀` at
+radius `q/2` (`rhoShort_half`), which is what keeps `LiftCom.Collision` a real Module-SIS instance.
+
 Anyone comparing this statement against Figure 5 should read the absent indicator as intentional
 rather than as a bug. -/
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)

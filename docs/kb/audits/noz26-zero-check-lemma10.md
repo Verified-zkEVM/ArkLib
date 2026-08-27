@@ -109,7 +109,7 @@ evaluations.
 | `H_α`, Eq. (22) | `hAlpha : CMlPolynomialEval F m₁` | `hAlphaML` | `hAlpha_eq_zero_iff`, `hAlphaML_eq_zero_iff` |
 | Public matrix `M̃_α`, power vector `α̃` | `mAlphaTilde`, `alphaTilde` | — | `alphaDefect_wTable` (contraction = row defect), `hAlpha_eq_zero_iff_alphaDefect` |
 | `mle[w̃]` and its opening | `cWTableMle`, `wTableMleEval` | — | `wTableMleEval_eq` |
-| Sumcheck summands `F_{0,τ₀}`, `F_{α,τ₁}` | `sumcheckPolyZero`, `sumcheckPolyAlpha` (via `cEqualityPolynomial`, `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`) | `hZeroML`/`hAlphaML` in the sum identities | `sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` (**both still `sorry`**) |
+| Sumcheck summands `F_{0,τ₀}`, `F_{α,τ₁}` | `sumcheckPolyZero`, `sumcheckPolyAlpha` (via `cEqualityPolynomial`, `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`) | `hZeroML`/`hAlphaML` in the sum identities | `sum_sumcheckPolyZero`, `sum_sumcheckPolyAlpha` (**both proven, axiom-clean**) |
 | Round message `(g⁽⁰⁾, g⁽ᵅ⁾)` | `CPolynomial.degreeLE` subtypes | `Polynomial.degreeLE` | `CPolynomial.degreeLE_toPoly` |
 
 Consequences worth recording:
@@ -122,17 +122,17 @@ Consequences worth recording:
   evaluates the primary vectors directly; `hZero_eval_eq`/`hAlpha_eval_eq` cross to the Mathlib
   views where needed, while their zero identities remain equivalent to the primary vector
   identities.
-- **The sumcheck summands are now concrete; only their sum identities remain `sorry`.** The
+- **The sumcheck summands are concrete and their sum identities are proved.** The
   definitions `sumcheckPolyZero` (`F_{0,τ₀} = eq̃(τ₀, ·) · P_b(mle[w̃])`, per-variable degree
   `2b = roundDegZero b`), `sumcheckPolyAlpha` (the paper's
   `F_{α,τ₁} = mle[w̃] · mle[α̃(·) · ∑ᵢ eq̃(τ₁, i)·M̃_α(i, ·)]`, per-variable degree
   `2 = roundDegAlpha`), the public target `zcTargetAlpha = ∑ᵢ eq̃(τ₁, i)·yᵢ(α)` and the prover
   fold `hypercubeSum` all have concrete computable bodies (via `cEqualityPolynomial`,
-  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). What remains `sorry`
-  are the two full-cube sum identities `sum_sumcheckPolyZero`
-  (`∑ F_{0,τ₀} = H₀(τ₀)`) and `sum_sumcheckPolyAlpha` (`∑ F_{α,τ₁} = H_α(τ₁) + zcTargetAlpha`).
-  The sumcheck bridge's proved pull-back invokes exactly these two, which is where its `sorryAx`
-  comes from.
+  `cRangeProduct`, `cMultilinearExtension`, `alphaPublicEvals`). The two full-cube sum identities
+  `sum_sumcheckPolyZero` (`∑ F_{0,τ₀} = H₀(τ₀)`) and `sum_sumcheckPolyAlpha`
+  (`∑ F_{α,τ₁} = H_α(τ₁) + zcTargetAlpha`) are **proven and axiom-clean**; the latter runs the
+  `M̃_α` contraction over the `n·δ` digit columns and closes it with `rhoDigits_evalAt`. The
+  sumcheck bridge's pull-back invokes exactly these two and is therefore axiom-clean as well.
 - **The `m₀`-cube signature of `sumcheckPolyAlpha` is correct — there is no arity mismatch here.**
   Worth stating positively, because the pairing of the return type `CMvPolynomial m₀ F` with the
   batching point `τ₁ : Fin m₁ → F` invites the worry that the `m₀`-cube sum over-counts the
@@ -332,9 +332,10 @@ formalization against the printed paper will otherwise read them as bugs.
   "for each `u ∈ [μ + n]` and `ℓ ∈ [d]`" — i.e. on the `r` rows too, consistent with the earlier
   `‖z‖∞, ‖r‖∞ ≤ b − 1`. The two readings differ exactly by the indicator, so the paper's own
   `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) = H₀(τ₀)` is **false as printed**. ArkLib follows the Eq. (23) reading: no
-  indicator, range constraint on both row blocks. Visible in `wTable_zRow`/`wTable_rRow` and in
-  `hZero_eq_zero_imp_liftShort` discharging a `z`-side *and* an `r`-side bound. Recorded in the
-  `sum_sumcheckPolyZero` docstring.
+  indicator, range constraint on every row of `w̃`, the `n·δ` quotient-digit rows included. Visible
+  in `wTable_zRow`/`wTable_rRow` and in `hZero_eq_zero_imp_liftShort` reading both blocks — though
+  only the `z` block is substantive there, the digit rows being in range by construction
+  (`rhoDigits_valMinAbs_natAbs_le`). Recorded in the `sum_sumcheckPolyZero` docstring.
 - **`D` vs `2D − 1` transcripts.** Lemma 10 asks for "`D` valid transcripts … `∈ SS(F_{q^k}, 2, D)`",
   but `SS(S, ℓ, k)` is defined with `ℓ(k−1)+1` elements, so at `(ℓ, k) = (2, D)` the family has
   `2D − 1` transcripts. This is now a paper-side reading note only: the active
@@ -438,7 +439,7 @@ discharged over the family by the binary-evaluation-tree zero test
 
 ## Residual gaps (out of Lemma-10 scope)
 
-- **Constraint encoding — the two identities are complete; only the sumcheck summands remain.** `hZero`
+- **Constraint encoding — complete: the two identities and both sum identities are proved.** `hZero`
   and `hAlpha` are genuine multilinear extensions, both coefficient functions are concrete (no
   longer `sorry`), and both now correspond to the paper's own construction:
   - `hAlphaEvals` = the `α`-evaluated per-row lift defect, row-encoded into the `m₁`-cube via
@@ -476,8 +477,8 @@ discharged over the family by the binary-evaluation-tree zero test
   `ChallengeTree.LeafWitnesses` for the evaluation-tree argument). The standalone kernel
   `NestedEvaluationTree.eq_zero_of_vanishes_comp` is likewise axiom-clean.
   **Range-side soundness `H₀ ≡ 0 ⇒ liftShort` is now proven** (`hZero_eq_zero_imp_liftShort`,
-  see Link 5). The remaining out-of-scope obligations are the two sum identities
-  `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` (the summand *definitions* are now concrete).
+  see Link 5). The two full-cube sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`
+  are proved and axiom-clean too, so this file carries no remaining obligation.
 - **Link 5 (batching bridge).** The un-batching pull-back `mem_relLift_of_relBatched`
   (`relBatched → relLift`, `ZeroCheck/Batch.lean`) is **proof-`sorry`-free and axiom-clean**
   (`#print axioms` = `propext`/`Classical.choice`/`Quot.sound`, no `sorryAx`). It establishes both
