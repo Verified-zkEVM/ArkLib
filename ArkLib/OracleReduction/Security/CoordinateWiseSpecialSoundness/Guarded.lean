@@ -231,7 +231,7 @@ theorem outputs_guarded_subsingleton
     (hV₁ : V₁.IsGuardedWith check₁ out₁)
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) {out : Stmt₂}
     (hout : out ∈ Outputs init impl V₁ stmt tr) : out = out₁ stmt tr := by
-  simp only [Outputs, Set.mem_setOf_eq, Verifier.run, hV₁ stmt tr] at hout
+  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr] at hout
   by_cases hc : check₁ stmt tr
   · rw [if_pos hc] at hout
     have : (do (simulateQ impl
@@ -239,14 +239,14 @@ theorem outputs_guarded_subsingleton
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (out₁ stmt tr))) := by
       congr 1
     rw [this] at hout
-    simp only [support_bind_const, support_pure, Set.mem_setOf_eq] at hout
+    simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
     exact Option.some.inj hout.1
   · rw [if_neg (by simpa using hc)] at hout
     have : (do (simulateQ impl (failure : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
         ProbComp (Option Stmt₂)) = (init >>= fun _ => pure none) := by
       congr 1
     rw [this] at hout
-    simp only [support_bind_const, support_pure, Set.mem_setOf_eq] at hout
+    simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
     exact absurd hout.1 (by simp)
 
 /-- A guarded verifier accepts a transcript whose verdict lies in the language, **provided its guard
@@ -276,7 +276,7 @@ theorem guarded_verdict_mem_outputs
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) (hc : check₁ stmt tr = true) :
       out₁ stmt tr ∈ Outputs init impl V₁ stmt tr := by
   obtain ⟨s, hs⟩ := hinit
-  simp only [Outputs, Set.mem_setOf_eq, Verifier.run, hV₁ stmt tr]
+  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁ stmt tr]
   rw [if_pos hc]
   have heq : (do (simulateQ impl
       (pure (out₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :

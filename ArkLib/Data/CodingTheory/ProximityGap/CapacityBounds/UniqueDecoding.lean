@@ -23,6 +23,9 @@ distance and the finite-length half-distance boundary.
 - [BCHKS25] Theorem 1.3.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 namespace CodingTheory
 
 open scoped NNReal

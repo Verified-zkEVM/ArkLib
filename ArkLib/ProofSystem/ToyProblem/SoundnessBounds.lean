@@ -50,6 +50,9 @@ message pair accounts for at most one affine challenge.
   Correlated Agreement*][ABF26], Section 6.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 namespace ToyProblem
 
 open Code InterleavedCode ProximityGap CoreDefinitions

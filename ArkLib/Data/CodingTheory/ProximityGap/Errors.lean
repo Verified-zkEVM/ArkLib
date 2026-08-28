@@ -37,6 +37,10 @@ comparison theorems used by the grand-challenge API.
   Decodability*][Jo26]
 -/
 
+-- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
+-- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.
+set_option backward.isDefEq.respectTransparency false
+
 namespace ProximityGap
 
 open NNReal Code CoreDefinitions unitInterval LinearCode
@@ -199,7 +203,10 @@ lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
   obtain ⟨v, hv⟩ := hC
   have hne : (interleavedCodeSet (κ := Fin 2) (C := C)).Nonempty := by
     refine ⟨fun i (_ : Fin 2) => v i, fun k => ?_⟩
-    simpa using hv
+    have hrow : Matrix.transpose (fun i (_ : Fin 2) => v i) k = v := by
+      funext i
+      rw [Matrix.transpose_apply]
+    rwa [hrow]
   exact relDistFromCode_le_of_one_le hne _ hδ
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in

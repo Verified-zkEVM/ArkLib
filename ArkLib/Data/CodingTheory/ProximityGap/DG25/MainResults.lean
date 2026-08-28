@@ -13,6 +13,10 @@ This module contains the main interleaved and tensor proximity-gap lemmas from t
 formalization, up to the generic tensor-gap lifting theorem.
 -/
 
+-- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
+-- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter
@@ -160,7 +164,7 @@ def constructInterleavedCodewordsAndRowWiseCA
         have h_row_eq : affineLineEvaluation u₀ u₁ r = getRow Uᵣ rowIdx := by
           ext j;
           simp only [affineLineEvaluation, Word, Pi.add_apply, Pi.smul_apply, getRow,
-            InterleavedWord.getRowWord, Uᵣ]
+            InterleavedWord.getRowWord, Matrix.transpose_apply, Uᵣ]
           have h_u₀_j : u₀ j = U₀ j rowIdx := by rfl
           have h_u₁_j : u₁ j = U₁ j rowIdx := by rfl
           rw [h_u₀_j, h_u₁_j]

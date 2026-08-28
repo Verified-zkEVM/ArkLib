@@ -111,7 +111,7 @@ abbrev InterleavedSymbol := κ → A
 
 /-- A word stack is a (row-wise) matrix (κ → ι → A) where each ROW is a word -/
 @[simp]
-abbrev WordStack := κ → ι → A
+abbrev WordStack := Matrix κ ι A
 
 @[simp]
 def WordStack.getRowWord {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A κ ι)
@@ -119,16 +119,16 @@ def WordStack.getRowWord {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A 
 
 @[simp]
 def WordStack.getSymbol {A : Type*} {κ : Type*} {ι : Type*} (u : WordStack A κ ι)
-    (i : ι) : InterleavedSymbol A κ := fun k => u k i
+    (i : ι) : InterleavedSymbol A κ := u.transpose i
 
 /-- An interleaved word is a (column-wise) matrix (ι → (κ → A)) where each ROW is a word, each
   column i is a symbol (κ → A) for the interleaved code MC^⋈ κ. -/
 @[simp]
-abbrev InterleavedWord := ι → κ → A
+abbrev InterleavedWord := Matrix ι κ A
 
 @[simp]
 def InterleavedWord.getRowWord {A : Type*} {κ : Type*} {ι : Type*}
-    (v : InterleavedWord A κ ι) (k : κ) : Word A ι := fun i => v i k
+    (v : InterleavedWord A κ ι) (k : κ) : Word A ι := v.transpose k
 
 /-- Evaluating a row extracted from an interleaved word. -/
 @[simp]
@@ -143,8 +143,8 @@ def InterleavedWord.getSymbol {A : Type*} {κ : Type*} {ι : Type*}
     This is a generic version that works for any code represented as a Set. -/
 @[simp]
 def interleavedCodeSet {A : Type*} {κ ι : Type*}
-    (C : Set (ι → A)) : Set (ι → κ → A) :=
-  { V | ∀ k : κ, (fun i => V i k) ∈ C }
+    (C : Set (ι → A)) : Set (Matrix ι κ A) :=
+  { V : Matrix ι κ A | ∀ k : κ, V.transpose k ∈ C }
 
 /-- If C is finite and membership is decidable, then interleavedCodeSet C is finite. -/
 @[simp]
@@ -251,7 +251,7 @@ abbrev CodewordStack := codewordStackSet (κ := κ) (C := C)
 
 @[simp]
 def interleaveWordStack {A : Type*} {κ ι : Type*} (u : WordStack A κ ι) : InterleavedWord A κ ι
-    := fun i k => u k i
+    := u.transpose
 
 /-- Evaluating the interleaving of a stack of words. -/
 @[simp]
@@ -307,7 +307,7 @@ def finMapCodewordStacksAppend {κ₁ κ₂ : Type*}
     match s with
     | Sum.inl k₁ => u.val k₁
     | Sum.inr k₂ => v.val k₂, by
-    simp only [WordStack, CodewordStack, mem_codewordStack_iff]
+    simp only [WordStack, CodewordStack]
     intro s
     match s with
     | Sum.inl k₁ =>
@@ -370,7 +370,7 @@ instance : Interleavable₂ (α := C) (β := InterleavedCodeword A (κ := (Fin 2
 /-- Interleave a Set-based code into an interleaved code set. -/
 @[simp]
 instance : CodeInterleavable (Code := Set (ι → A))
-    (InterleavedCode := fun κ => Set (ι → κ → A)) where
+    (InterleavedCode := fun κ => Set (Matrix ι κ A)) where
   interleaveCode C := fun κ => interleavedCodeSet (κ := κ) C
 
 /-- Interleave a ModuleCode into an interleaved ModuleCode (preserving submodule structure). -/
@@ -382,12 +382,12 @@ instance : CodeInterleavable (Code := ModuleCode ι F A)
 
 omit [AddCommMonoid A] [Fintype κ] [Fintype ι] in
 @[simp]
-lemma interleave_wordStack_eq (u : WordStack A κ ι) : (⋈|u) = fun i k => u k i := rfl
+lemma interleave_wordStack_eq (u : WordStack A κ ι) : (⋈|u) = u.transpose := rfl
 
 omit [AddCommMonoid A] [Fintype κ] [Fintype ι] in
 @[simp]
 lemma interleave_codewordStack_val_eq (u : CodewordStack A κ ι C) :
-    (⋈| u).val = fun i k => u.val k i := rfl
+    (⋈| u).val = u.val.transpose := rfl
 
 @[simp]
 noncomputable instance instFintypeInterleavedModuleCode [Fintype A] : Fintype (MC ^⋈ κ) := by
@@ -632,7 +632,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     · intro h; ext i k; exact congrFun (h i) k
   eq_iff_all_symbols_eq := by
     intro u v; constructor
-    · intro h i; funext k; exact congrFun (congrFun h k) i
+    · intro h; exact fun k ↦ congrFun (congrArg Matrix.transpose h) k
     · intro h; ext i k; exact congrFun (h k) i
   eq_iff_all_cells_eq := by
     intro u v; constructor
@@ -648,7 +648,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     rw [mem_codewordStack_iff] at h_u_mem
     exact h_u_mem k
   ⟩
-  getSymbol u i := fun k => u.val k i
+  getSymbol u i := u.val.transpose i
   getCell u k i := u.val k i
   eq_iff_all_rows_eq := by
     intro u v; constructor
@@ -675,7 +675,7 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
   getCell u i k := (InterleavedWord.getRowWord u i) k
   eq_iff_all_rows_eq := by
     intro u v; constructor
-    · intro h k; funext i; exact congrFun (congrFun h i) k
+    · intro h; exact fun k ↦ congrFun (congrArg Matrix.transpose h) k
     · intro h; ext i k; exact congrFun (h k) i
   eq_iff_all_symbols_eq := by
     intro u v; constructor
@@ -691,13 +691,13 @@ export InterleavedStructure (eq_iff_all_rows_eq eq_iff_all_symbols_eq eq_iff_all
     InterleavedStructure (α := InterleavedCodeword A κ ι C) (RowIdx := κ)
   (SymbolIdx := ι) (RowType := C) (SymbolType := InterleavedSymbol A κ) (CellTy := A) where
   -- No separate functions cuz InterleavedCodeword is a subtype
-  getRow u k := ⟨fun i => u.val i k, by
+  getRow u k := ⟨(Matrix.transpose u) k, by
     have h_u_mem := u.property
     rw [mem_interleavedCode_iff] at h_u_mem
     exact h_u_mem k
   ⟩
   getSymbol u colIdx := u.val colIdx
-  getCell u k i := u.val i k
+  getCell u k i := Matrix.transpose u k i
   eq_iff_all_rows_eq := by
     intro u v; constructor
     · intro h; rw [h]; exact fun i ↦ rfl
@@ -720,11 +720,11 @@ notation:65 "⋈⁻¹|" u => Stackifiable.stackify u
 
 @[simp]
 instance : Stackifiable (α := InterleavedWord A κ ι) (β := WordStack A κ ι) where
-  stackify u := fun k i => u i k
+  stackify u := u.transpose
 
 @[simp]
 instance : Stackifiable (α := InterleavedCodeword A κ ι C) (β := CodewordStack A κ ι C) where
-  stackify u := ⟨fun k i => u.val i k, by
+  stackify u := ⟨u.val.transpose, by
     rw [mem_codewordStack_iff]
     let h_u_mem := u.property
     rw [mem_interleavedCode_iff] at h_u_mem

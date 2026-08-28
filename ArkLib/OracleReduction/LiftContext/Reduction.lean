@@ -598,7 +598,7 @@ instance instTestLensComplete : testLens.IsComplete
     change f.eval r = t' at hRelOut'
     simpa [hCompat] using hRelOut'
 
-instance instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
+theorem instTestLensKnowledgeSound : testLensE.IsKnowledgeSound
       outerRelIn_Test innerRelIn_Test outerRelOut_Test innerRelOut_Test
       (fun ⟨p, q, _⟩ ⟨f, _⟩ => p * q = f) (fun _ _ => True) where
   proj_knowledgeSound := fun ⟨p, q, t⟩ ⟨f, t', r⟩ _ h h' => by

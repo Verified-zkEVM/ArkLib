@@ -13,6 +13,9 @@ This module specializes the DG25 proximity-gap framework to Reed-Solomon codes a
 the resulting affine-line and tensor-gap corollaries.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 noncomputable section
 
 open Code LinearCode InterleavedCode ReedSolomon ProximityGap ProbabilityTheory Filter

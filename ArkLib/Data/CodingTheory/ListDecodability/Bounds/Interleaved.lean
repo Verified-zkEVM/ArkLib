@@ -655,7 +655,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
         simp [Code.relHammingDist, hδ_lb]
       exact (Set.one_le_encard_iff_nonempty.mpr ⟨c₀, hcclose⟩).trans
         (encard_closeCodewordsRel_le_Lambda C δ c₀)
-    rw [Lambda_le_iff_forall_encard_le]
+    set_option backward.isDefEq.respectTransparency false in
+      rw [Lambda_le_iff_forall_encard_le]
     intro U
     have hcloseFinite : (closeCodewordsRel (interleavedCodeSet (κ := Fin m) C) U δ).Finite :=
       Set.toFinite _
@@ -785,7 +786,8 @@ theorem lambda_interleaved_le_choose_mul_pow {ι A : Type} [Fintype ι] [Finite 
       · exact red_count_le_ceil hn (by simpa [D, n] using hδ_ub) heR hnat.2
   · have hCempty : C = ∅ := Set.not_nonempty_iff_eq_empty.mp hC
     subst C
-    rw [Lambda_le_iff_forall_encard_le]
+    set_option backward.isDefEq.respectTransparency false in
+      rw [Lambda_le_iff_forall_encard_le]
     intro U
     have hpoint : closeCodewordsRel
         (interleavedCodeSet (κ := Fin m) (∅ : Set (ι → A))) U δ = ∅ := by

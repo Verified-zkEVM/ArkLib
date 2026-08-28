@@ -23,6 +23,9 @@ a first/second-moment estimate over subfield interpolation data.
 - [CS25] Crites--Stewart, Theorem 3.
 -/
 
+-- Elaborate the legacy proximity API through its public Matrix aliases under Lean 4.33.
+set_option backward.isDefEq.respectTransparency false
+
 -- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
 -- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
 -- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.

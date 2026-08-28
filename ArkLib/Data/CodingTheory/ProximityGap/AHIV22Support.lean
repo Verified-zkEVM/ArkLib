@@ -366,8 +366,8 @@ lemma dist_interleaved_code_to_code_lb
     by_contra hjD
     apply hj
     funext k
-    have := h_dist_rows k j hjD
-    simpa [V] using this
+    change U_star k j = V k j
+    exact h_dist_rows k j hjD
   have h_dist_to_code : Δ₀(⋈|U_star, (L^⋈κ)) ≤ e := by
     exact le_trans
       (Code.distFromCode_le_dist_to_mem (C := (L^⋈κ)) (u := (⋈|U_star)) (v := (⋈|V))
