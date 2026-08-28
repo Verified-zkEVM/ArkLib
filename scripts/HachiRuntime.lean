@@ -42,21 +42,26 @@ check together finish in milliseconds, while the composed run — the same chain
 sumcheck — takes minutes. The reason is the shape of the summand: `sumcheckPolyZero` is a
 product of `bZero` copies of an `m₀`-variate multilinear extension, so it carries up to
 `(bZero + 1)^m₀` monomials, and `computableRoundPoly` evaluates all of them at `2^(m₀ - i)`
-points in round `i`. Both exponents are at their floor here (`m₀ = 4`, `bZero = 4`: `m₀` is
-bounded below by `(μ₀ + n₀)·deg φ ≤ 2^m₀`, and `bZero = ⌊q/2⌋ + 1` is pinned by the
-correctness theorem), and it still takes minutes — so this is the first thing to profile if
-the honest prover is ever wanted at a realistic size. Raising `α` from `0` to `1` alone (which
-raises `m₀` to `5`) pushes the run past ten minutes.
+points in round `i`. Here `m₀ = 5` is the floor the digit-committed table forces — the table
+is `(μ₀ + n₀·δ)·d = 18` rows once the quotient block is committed as digits, and a `16`-point
+cube cannot hold it (`cubeCoversTable` certifies `18 ≤ 32` at compile time) — and `bZero = 3`,
+and the run still takes minutes — so this is the first thing to profile if the honest prover is
+ever wanted at a realistic size. Raising `α` from `0` to `1` alone doubles `d`, pushing the
+table width to `36 > 2^5` and hence `m₀` to `6` — several times the composed run's cost.
 
 **The parameters.** `q = 7`, `α = 0` (so `Rq = Z₇[X]/(X+1) ≅ Z₇`, ring dimension `d = 1`),
-digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`,
-`n₀ = 5`. The range parameters are the pinned ones the correctness theorem forces
-(`γ = ⌊q/2⌋ = 3`, `bZero = γ + 1 = 4`), and `M + 1 = 4` is the smallest sumcheck width
-satisfying `(μ₀ + n₀)·deg φ ≤ 2^(M+1)` (`13 ≤ 16`). Not `q = 5`, the smallest prime admitting
-honest range parameters at all: that `q` forces `b = 2`, whose `δ = ⌈log₂ 5⌉ = 3` inflates
-`μ₀ + n₀` to `20` and hence `m₀` to `5` — one sumcheck variable more, several times the composed
-run's cost. Deliberately tiny beyond that: this is a code-generation check, and the security
-theorems are parametric, so nothing is learned by running it larger.
+digit base `b = 3` (hence `δ = ⌈log₃ 7⌉ = 2`, for the message digits and — since `bZero = b` —
+also for the quotient digits), one inner/outer/`D` row, `m = r = 0`, `μ₀ = 8`, `n₀ = 5`. The
+range parameters sit at the healthy point the gadget decomposition buys — `bZero = b = 3` and
+`γ = bZero − 1 = 2 < ⌊q/2⌋ = 3`, so Eq. (20)'s ball check is a real constraint (see `P` below) —
+and the committed table is `μ₀ + n₀·δ = 18` rows wide, making `M + 1 = 5` the smallest sumcheck
+width satisfying `(μ₀ + n₀·δ)·deg φ ≤ 2^(M+1)` (`18 ≤ 32`, `cubeCoversTable`). Not `q = 5`, the
+smallest prime admitting honest range parameters at all: that `q` forces `b = bZero = 2`, whose
+`δ = ⌈log₂ 5⌉ = 3` inflates the table to `15 + 5·3 = 30` — it fits the same `32`-point cube but
+nearly saturates it (one more row would force `m₀ = 6`), and the toy data below (keys,
+witnesses, the separating pair of `liftComDistinguishes`) is built over `Z₇`. Deliberately tiny
+beyond that: this is a code-generation check, and the security theorems are parametric, so
+nothing is learned by running it larger.
 -/
 
 namespace HachiRuntime
@@ -69,7 +74,8 @@ open ArkLib.Lattices.CyclotomicModulus
 
 /-- The toy modulus `q = 7`: not the smallest prime for which the honest range parameters are
 satisfiable (they need `1 < b ≤ ⌊q/2⌋`, so `q = 5` is), but the smallest admitting `b = 3`,
-which minimizes the sumcheck width — see the parameter note in the module docstring. -/
+which keeps the digit count at `δ = 2` and the committed table well inside the sumcheck
+cube — see the parameter note in the module docstring. -/
 abbrev Q : ℕ := 7
 instance : Fact (Nat.Prime Q) := ⟨by decide⟩
 /-- `α = 0`, so the ring is `Z₇[X]/(X + 1) ≅ Z₇` and the ring dimension is `d = 1`. -/
@@ -88,7 +94,7 @@ abbrev OR : ℕ := 1  -- outerRows
 abbrev DR : ℕ := 1  -- dRows
 abbrev Mm : ℕ := 0  -- m
 abbrev Rr : ℕ := 0  -- r
-abbrev MM : ℕ := 3  -- sumcheck width is M + 1 = 4
+abbrev MM : ℕ := 4  -- sumcheck width is M + 1 = 5; pinned by `cubeCoversTable` below
 abbrev M1 : ℕ := 1  -- the nested zero-check's second block
 abbrev W : ℕ := 3   -- ℓ₁ bound on short challenges
 
@@ -126,6 +132,24 @@ once the quotient block is committed as its base-`bZero` digits (see the note ab
 `hachiLiftCom`). `δ = clog_{bZero} Q`. -/
 def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn * rhoDigitCount Q P.bZero) :=
   fun _ j => rr (j.val + 1) (j.val * 2 + 1)
+
+/-- **The sumcheck cube covers the committed table** — the coverage hypothesis (`hμn`/`hcov`) of
+the chain's theorems, certified at the toy parameters so that this executable stays a model of
+them. This is what pins `MM`: the digit-committed table is `μ₀ + n₀·δ = 8 + 5·2 = 18` rows, so
+the cube needs `18·d ≤ 2^(M+1)` (`M + 1 = 4` sufficed only before the quotient block was
+committed as digits). Without it the checks can silently run on a truncated table: `wTable`
+returns `0` off-cube, so every off-cube row would escape the range check and the `M̃_α`
+contraction. -/
+theorem cubeCoversTable :
+    (Mu + Nn * rhoDigitCount Q P.bZero) * 𝓜(Q, A).φ.natDegree ≤ 2 ^ (MM + 1) := by
+  have hb : (1 : ℕ) < 3 := by norm_num
+  have hδ : Nat.clog 3 7 = 2 := by
+    have h1 : Nat.clog 3 7 ≤ 2 := (Nat.clog_le_iff_le_pow hb).mpr (by norm_num)
+    have h2 : ¬ Nat.clog 3 7 ≤ 1 := fun h =>
+      absurd ((Nat.clog_le_iff_le_pow hb).mp h) (by norm_num)
+    omega
+  have hd : 𝓜(Q, A).φ.natDegree = 1 := by simp
+  simp [Mu, Nn, rlinCols, rlinRows, rhoDigitCount, Dg, P, IR, OR, DR, hδ, hd, MM]
 
 /-- The committed multilinear polynomial. -/
 def toyPoly : CMlPolynomial Rng (Rr + Mm) :=
