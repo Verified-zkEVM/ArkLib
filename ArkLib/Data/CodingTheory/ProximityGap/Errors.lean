@@ -37,6 +37,10 @@ comparison theorems used by the grand-challenge API.
   Decodability*][Jo26]
 -/
 
+-- Keep the public `WordStack`/`InterleavedWord` Matrix aliases transparent while elaborating the
+-- legacy proximity API under Lean 4.33's stricter backwards-definitional-equality behavior.
+set_option backward.isDefEq.respectTransparency false
+
 namespace ProximityGap
 
 open NNReal Code CoreDefinitions unitInterval LinearCode
@@ -67,7 +71,7 @@ theorem mcaError_le_moduleInterleavedCode
     (ht : 0 < t) (hδ_le : δ ≤ 1) :
     mcaError (AffineLineGenerator F) C (δ : ℝ) ≤
       mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) := by
-  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
+  let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
   let ε : I → ℝ≥0 := fun γ =>
     ENNReal.toNNReal (mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (γ : ℝ))
   have hInterleaved : IsMCAGenerator (AffineLineGenerator F) ε (C ^⋈ (Fin t)) := by
@@ -199,11 +203,10 @@ lemma jointProximity_of_one_le {C : Set (ι → A)} (hC : C.Nonempty)
   obtain ⟨v, hv⟩ := hC
   have hne : (interleavedCodeSet (κ := Fin 2) (C := C)).Nonempty := by
     refine ⟨fun i (_ : Fin 2) => v i, fun k => ?_⟩
-    have heq : Matrix.transpose (fun i (_ : Fin 2) => v i) k = v := by
+    have hrow : Matrix.transpose (fun i (_ : Fin 2) => v i) k = v := by
       funext i
-      rfl
-    rw [heq]
-    exact hv
+      rw [Matrix.transpose_apply]
+    rwa [hrow]
   exact relDistFromCode_le_of_one_le hne _ hδ
 
 omit [DecidableEq ι] [DecidableEq F] [Fintype A] in
@@ -351,7 +354,7 @@ lemma isMCA_affineLine_of_line_close_of_not_jointProximity
   · rw [LinearCode.mem_projectedCodeSubmod_iff]
     refine ⟨w, hw, ?_⟩
     funext i
-    simp only [LinearCode.projectedWord, Set.restrict_apply]
+    simp only [LinearCode.projectedWord, Set.domRestrict_apply]
     simpa [AffineLineGenerator] using (hagree i).1 i.property
   · by_contra hall
     push Not at hall
@@ -932,7 +935,7 @@ private lemma exists_forall_notMem_of_card_le
     (hp : ∀ i ∈ s, p i ≠ ⊤) (hs : s.card ≤ Fintype.card K) :
     ∃ x : M, ∀ i ∈ s, x ∉ p i := by
   classical
-  letI := Fintype.ofFinite M
+  let := Fintype.ofFinite M
   let q := Fintype.card K
   let d := Module.finrank K M
   let nz (i : α) := Finset.univ.filter fun x : M => x ∈ p i ∧ x ≠ 0
@@ -996,7 +999,7 @@ theorem mcaError_interleaved_le
     mcaError (AffineLineGenerator F) (C ^⋈ (Fin t)) (δ : ℝ) ≤
       mcaError (AffineLineGenerator F) C (δ : ℝ) := by
   classical
-  letI : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
+  let : Nonempty (Fin t) := Fin.pos_iff_nonempty.mp ht
   unfold mcaError
   refine iSup_le fun U => ?_
   let isBad (x : F) := IsMCA (AffineLineGenerator F) (C ^⋈ (Fin t)) x U (δ : ℝ)
@@ -1068,7 +1071,7 @@ theorem mcaError_interleaved_le
         (fun i k => ∑ j, AffineLineGenerator F x j • U j k i) l
         (fun i => (mem_projectedCodeSubmod_iff C (T x) _).mp (hrows i)) using 1
       ext k
-      simp only [projectedWord, Set.restrict_apply, V, rowComb, Finset.smul_sum, smul_smul]
+      simp only [projectedWord, Set.domRestrict_apply, V, rowComb, Finset.smul_sum, smul_smul]
       rw [Finset.sum_comm]
       apply Finset.sum_congr rfl
       intro i _

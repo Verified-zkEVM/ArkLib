@@ -53,6 +53,10 @@ home_page/            site assets and assembled website root
   belongs beside its consumers in core instead; generalise first, then move. Files whose contents
   have gone upstream are kept as import-only compatibility shells rather than deleted. See
   [`ArkLib/ToVCVio/README.md`](../../ArkLib/ToVCVio/README.md) for the upstream-then-delete rule.
+- Across the PolyFun/VCVio boundary, import generic polynomial-functor and handler structure from
+  PolyFun and oracle/probability specializations from VCVio. Dependency internals are not an ArkLib
+  proof surface: if an ordinary import is missing a usable law, stage that law in `ToVCVio` or
+  upstream it rather than reaching through the module boundary.
 - `ArkLib/Commitments/` splits into two families by *what an opening proves*:
   - `Ordinary/` — standard commitments that only **commit and open** (reveal the committed
     message). These reuse the VCV-io `CommitmentScheme` definition rather than redefining it;

@@ -265,6 +265,7 @@ theorem round_coordinateWiseSpecialSoundWithEscape
     (roundVerifier_isGuardedWith Φ (M + 1) m₁ b i) _ _ _ _ ?_
   intro s g fam resp hcheck hresp hinj
   set z : Fin (max (roundDegZero b) roundDegAlpha + 1) := ⟨0, Nat.succ_pos _⟩ with hz
+  let : Decidable (∀ j, resp j = resp z) := Classical.propDecidable _
   by_cases hall : ∀ j, resp j = resp z
   case neg =>
     refine Or.inl ?_

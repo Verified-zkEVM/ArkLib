@@ -140,7 +140,7 @@ class SpongeUnit (α : Type) extends Zero α, Serde α ByteArray, HasSize α UIn
       let units := bytes.mapM deserialize
       if h : units.isSome
         then return units.get h
-        else IO.throwServerError "Failed to read units"
+        else throw <| IO.userError "Failed to read units"
 
 /-- Type class for types that can be used as a duplex sponge, with respect to the sponge unit type
   `U`.

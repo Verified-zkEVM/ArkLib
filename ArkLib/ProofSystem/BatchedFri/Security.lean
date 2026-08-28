@@ -132,17 +132,12 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
   unfold Function.Bijective
   apply And.intro
   · intros a b h
-    simp only [finRangeTo.eq_1, Subtype.mk.injEq] at h
-    simp only [mul_eq_mul_left_iff] at h
-    rcases h with h | h
-    · have h := FftDomain.injective h
-      aesop
-    · rcases s₀ with ⟨s₀, hs₀⟩
-      subst h
-      simp only [finRangeTo.eq_1, evalDomainSigma] at hs₀
-      rw [CosetFftDomainClass.mem_toFinset_iff_mem] at hs₀
-      have hs₀ := CosetFftDomainClass.not_zero_mem hs₀
-      simp at hs₀
+    have h := congr_arg (fun x ↦ (x.1.1 : 𝔽)) h
+    simp only [cosetEnum', cosetEnum, finRangeTo.eq_1] at h
+    have hs₀_ne : (s₀ : 𝔽) ≠ 0 := CosetFftDomainClass.ne_zero_dep s₀
+    have h := mul_left_cancel₀ hs₀_ne h
+    have h := FftDomain.injective h
+    exact Fin.ext (by simpa using h)
   · rintro ⟨⟨y, h'⟩, h⟩
     simp only [finRangeTo.eq_1, Subtype.mk.injEq]
     simp only [cosetG, k_le_n, ↓reduceDIte] at h
@@ -151,6 +146,7 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
     simp only [finRangeTo.eq_1, cosetEnum] at ha
     exact ⟨a, by aesop⟩
 
+@[instance_reducible]
 def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s₀) := by
   haveI : NeZero (VDM n s s₀).det := by
     constructor
@@ -172,9 +168,10 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
         simp_all only [lt_self_iff_false]
       intros contra
       apply this
-      rw [sub_eq_zero, cosetEnum, cosetEnum] at contra
+      rw [sub_eq_zero] at contra
+      unfold cosetEnum at contra
       simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
-        Set.mem_setOf_eq, mul_eq_mul_left_iff] at contra
+        Set.mem_ofPred_eq, mul_eq_mul_left_iff] at contra
       rcases contra with contra | contra
       · have h := FftDomain.injective contra
         simp only [Fin.mk.injEq] at h

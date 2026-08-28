@@ -193,7 +193,7 @@ lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
     evalY y f = evalX y (swap f) := by
-  letI : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
+  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
   convert aveal_eq_map_swap y f using 1
   · unfold evalY; simp [Polynomial.aeval_def]
   · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
@@ -361,7 +361,7 @@ lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) :
     degreeX P ≤ b_x - a_x ∧ natDegreeY P ≤ b_y - a_y := by
   classical
-  letI : DecidableEq F := Classical.decEq F
+  let : DecidableEq F := Classical.decEq F
   by_cases hB0 : B = 0
   · have hP0 : P = 0 := by
       rcases mul_eq_zero.mp (hBA ▸ hB0 : P * A = 0) with h | h

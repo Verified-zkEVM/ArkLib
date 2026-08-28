@@ -198,7 +198,7 @@ private theorem linear_bgks_closest_codeword_mem
     (C : LinearCode ι F) (u : Code.WordStack F (Fin 2) ι) (x : F) :
     linear_bgks_closest_codeword C u x ∈ C := by
   classical
-  letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
+  let : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   simp [linear_bgks_closest_codeword]
 
 private theorem linear_bgks_collision_numeric (e M : ℝ) (he : 0 < e) (he3 : e < 1 / 3)
@@ -232,7 +232,7 @@ private theorem linear_bgks_agreement_set_card_gt
   have hxclose :
       δᵣ(u 0 + x • u 1, (C : Set (ι → F))) < (δ_src : ENNReal) :=
     (Finset.mem_filter.mp hx).2
-  letI : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
+  let : Nonempty (C : Set (ι → F)) := ⟨⟨0, C.zero_mem⟩⟩
   rw [Code.relDistFromPickRelClosestCodeword_of_Nonempty_Code] at hxclose
   have hpair :
       ((δᵣ(u 0 + x • u 1, linear_bgks_closest_codeword C u x) : ℚ≥0) : ENNReal) <
@@ -816,7 +816,7 @@ private theorem linear_bgks_dense_triples_card_gt
   have hMposR : 0 < (good.card : ℝ) :=
     lt_trans (by positivity : 0 < 2 / (η : ℝ) ^ 2) (by simpa [good] using hgood)
   have hMpos : 0 < good.card := by exact_mod_cast hMposR
-  letI : Nonempty α := Finset.nonempty_coe_sort.mpr (Finset.card_pos.mp hMpos)
+  let : Nonempty α := Finset.nonempty_coe_sort.mpr (Finset.card_pos.mp hMpos)
   have hnR : 0 < (n : ℝ) := by
     dsimp [n]
     exact_mod_cast Fintype.card_pos

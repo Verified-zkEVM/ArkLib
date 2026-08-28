@@ -389,7 +389,7 @@ theorem choiceTransition_failure_sample_le {k : ℕ}
           (winningSetRatio x : ENNReal) := by
         rw [prob_uniform_eq_card_filter_div_card, winningSetRatio, hWin,
           Set.ncard_eq_toFinset_card',
-        Set.toFinset_setOf,
+        Set.toFinset_ofPred,
         ENNReal.coe_div (Nat.cast_ne_zero.mpr Fintype.card_ne_zero),
         ENNReal.coe_natCast, ENNReal.coe_natCast]
       _ ≤ (winningSetDensity encode δ : ENNReal) := by

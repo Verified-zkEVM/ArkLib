@@ -47,6 +47,8 @@ When `x + 0 = x` definitionally in `α`, we have the following definitional equa
 def vprod [CommMonoid α] {n : ℕ} (a : Fin n → α) : α :=
   Fin.dfoldr' n (fun _ => α) (fun i acc => a i * acc) 1
 
+attribute [implicit_reducible] vprod vsum
+
 variable {n : ℕ}
 
 @[to_additive (attr := simp) vsum_zero]
@@ -85,6 +87,7 @@ variable {m : ℕ} {n : Fin m → ℕ}
 
 /-- Embed nested indices `(i : Fin m, j : Fin (n i))` into a single index `Fin (vsum n)`. This
   converts from nested indexing to indexing into the vector sum, preserving lexicographic order. -/
+@[implicit_reducible]
 def embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) : Fin (vsum n) := match m with
   | 0 => i
   | _ + 1 => match i with
@@ -125,6 +128,7 @@ theorem val_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
 
 /-- Split a vector sum index `k : Fin (vsum n)` into nested indices `(i : Fin m) × Fin (n i)`.
 This converts from indexing into the vector sum back to nested indexing, inverse of `embedSum`. -/
+@[implicit_reducible]
 def splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) : (i : Fin m) × Fin (n i) := match m with
   | 0 => Fin.elim0 k
   | _ + 1 => Fin.dappend
@@ -153,7 +157,6 @@ theorem embedSum_splitSum {m : ℕ} {n : Fin m → ℕ} (k : Fin (vsum n)) :
     | right k₁ =>
       rw [splitSum_succ]; erw [dappend_right]
       simp only [embedSum_succ_succ, ih]
-      rfl
 
 @[simp]
 theorem splitSum_embedSum {m : ℕ} {n : Fin m → ℕ} (i : Fin m) (j : Fin (n i)) :
@@ -186,7 +189,7 @@ variable {α : Sort*}
 `(k : Fin (vsum n)) → motive k`, preserving element order.
 
 This is meant to replace nested iteration for dependent families with a unified motive. -/
-@[elab_as_elim]
+@[elab_as_elim, implicit_reducible]
 def dflatten {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum n)) → Sort*}
     (v : (i : Fin m) → (j : Fin (n i)) → motive (embedSum i j)) (k : Fin (vsum n)) : motive k :=
   match m with
@@ -234,7 +237,9 @@ theorem dflatten_embedSum {m : ℕ} {n : Fin m → ℕ} {motive : (k : Fin (vsum
   | zero => exact Fin.elim0 i
   | succ m ih =>
     induction i using induction with
-    | zero => simp
+    | zero =>
+      simp only [embedSum_succ_zero, dflatten_succ]
+      erw [dappend_left]
     | succ i ih' =>
       simp only [embedSum_succ_succ, dflatten_succ]
       erw [dappend_right]

@@ -101,9 +101,11 @@ theorem isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
   -- rows of the `G'`-combination of `w` are the `W`-rows
   have hrow : ∀ (x' : S') (i : ℓ),
       InterleavedWord.getRowWord (fun k => ∑ j, G' x' j • w j k) i = W x' i := by
-    intro x' i
-    funext k
-    simp [hw, hW, InterleavedWord.getRowWord, Finset.sum_apply]
+    set_option backward.isDefEq.respectTransparency false in
+      intro x' i
+      funext k
+      rw [InterleavedWord.getRowWord_apply]
+      simp [hw, hW]
   -- the case split: the tensor event implies one of the two MCA events
   have himp : ∀ p : S × S', IsMCA (TensorGenerator_Explicit G G') MC p U δ →
       IsMCA G MC p.1 (W p.2) δ ∨
@@ -114,14 +116,17 @@ theorem isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
     · exact Or.inl ⟨T, hT, hcomb, hcase⟩
     · push Not at hcase
       refine Or.inr ⟨T, hT, ?_, j₀, fun hmem => hbad ?_⟩
-      · rw [projectedCodeSubmod_moduleInterleavedCode_iff]
+      · set_option backward.isDefEq.respectTransparency false in
+          rw [projectedCodeSubmod_moduleInterleavedCode_iff]
         intro i
         rw [hrow x' i]
         exact hcase i
       · have h := (projectedCodeSubmod_moduleInterleavedCode_iff
           F A ℓ ι MC (w j₀) T).mp hmem i₀
         have hwrow : InterleavedWord.getRowWord (w j₀) i₀ = U (i₀, j₀) := by
-          funext k; simp [hw, InterleavedWord.getRowWord]
+          funext k
+          change U (i₀, j₀) k = U (i₀, j₀) k
+          rfl
         rwa [hwrow] at h
   -- assemble: implication, union bound, and the two marginal bounds
   have hA : Pr_{let p ← $ᵖ (S × S')}[IsMCA G MC p.1 (W p.2) δ]
@@ -162,19 +167,24 @@ theorem isMCAGenerator_of_moduleInterleavedCode [Nonempty ℓ] (G' : Generator S
   refine le_trans (Pr_le_Pr_of_implies _ _ _ fun x' => ?_) (hG'.prob_le (fun j k _ => U j k) δ)
   rintro ⟨T, hT, hcomb, j₀, hbad⟩
   refine ⟨T, hT, ?_, j₀, fun hmem => hbad ?_⟩
-  · rw [projectedCodeSubmod_moduleInterleavedCode_iff]
+  · set_option backward.isDefEq.respectTransparency false in
+      rw [projectedCodeSubmod_moduleInterleavedCode_iff]
     intro i
     have : InterleavedWord.getRowWord (fun k => ∑ j, G' x' j • (fun k _ => U j k : ι → ℓ → A) k) i
         = fun k => ∑ j, G' x' j • U j k := by
-      funext k
-      simp [InterleavedWord.getRowWord, Finset.sum_apply]
+      set_option backward.isDefEq.respectTransparency false in
+        funext k
+        rw [InterleavedWord.getRowWord_apply]
+        simp
     rw [this]
     exact hcomb
   · obtain ⟨i⟩ := ‹Nonempty ℓ›
     have h := (projectedCodeSubmod_moduleInterleavedCode_iff
       F A ℓ ι MC (fun k _ => U j₀ k) T).mp hmem i
     have hrow : InterleavedWord.getRowWord (fun k (_ : ℓ) => U j₀ k) i = U j₀ := by
-      funext k; simp [InterleavedWord.getRowWord]
+      funext k
+      change U j₀ k = U j₀ k
+      rfl
     rwa [hrow] at h
 
 /-- If `G` and `G'` both have mutual correlated agreement for `MC` itself, the tensor generator has

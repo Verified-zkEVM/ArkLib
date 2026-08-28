@@ -717,10 +717,11 @@ theorem combine_theorem
         rw [Polynomial.degree_lt_iff_coeff_zero] at master_lemma
         exact (master_lemma _ hj)
       · intro x hx
-        simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, mem_filter, mem_univ, true_and]
         specialize (hv i ⟨0, hf i⟩)
         have hv := hv.2 x hx
         simp only [pow_zero, one_mul] at hv
-        exact hv
+        apply mem_filter.mpr
+        refine ⟨mem_univ x, ?_⟩
+        simpa only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk] using hv
 
 end Combine

@@ -427,7 +427,7 @@ protected lemma johnson_bound_lemma {v : Fin n → F}
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  haveI : NeZero (card F) := ⟨by omega⟩
+  have : NeZero (card F) := ⟨by omega⟩
   set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
   set σ : Fin n → (F ≃ Fin (card F)) :=
     fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ

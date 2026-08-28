@@ -86,6 +86,10 @@ def linearMvExtensionLMap :
     map_add' := by simp
     map_smul' := by simp
 
+@[simp]
+lemma linearMvExtensionLMap_apply (p : Polynomial.degreeLT F (2 ^ m)) :
+    linearMvExtensionLMap p = linearMvExtension p := rfl
+
 /-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
   partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
   and returns a (m-k)-variate polynomial. -/
@@ -115,7 +119,7 @@ lemma powAlgHom_of_restrict_degree_natDegree {p : MvPolynomial.restrictDegree (F
       (∑ j : Fin m, d j * 2 ^ j.val) ≤ ∑ j : Fin m, 2 ^ j.val := by
       have h_deg {j : Fin m} : d j ≤ 1 := by
         have := p.2
-        simp_all only [restrictDegree, mem_support_iff, ne_eq, SetLike.coe_mem, ge_iff_le]
+        simp_all only [restrictDegree, mem_support_iff, ne_eq, ge_iff_le]
         have := p.2
         rw [mem_restrictDegree] at this
         exact this d (by aesop) j
@@ -180,6 +184,10 @@ def powContraction :
     MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
   powAlgHom.toLinearMap
 
+@[simp]
+lemma powContraction_apply (p : MvPolynomial (Fin m) F) :
+    powContraction p = powAlgHom p := rfl
+
 private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
     ∑ j ∈ Finset.range m, (if Nat.testBit i j then 2 ^ j else 0) = i := by
   induction m generalizing i with
@@ -212,8 +220,8 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
     · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr hdeg
   have h_comp : powContraction (linearMvExtensionLMap p) =
       ∑ i ∈ Finset.range (2 ^ m), p.val.coeff i • Polynomial.X ^ i := by
-    unfold powContraction linearMvExtensionLMap linearMvExtension
-    simp +decide only [LinearMap.coe_mk, AddHom.coe_mk, AlgHom.toLinearMap_apply, powAlgHom]
+    rw [powContraction_apply, linearMvExtensionLMap_apply]
+    unfold linearMvExtension powAlgHom
     rw [MvPolynomial.aeval_def]
     have h_sum_range :
         (p : Polynomial F).sum (fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a) =

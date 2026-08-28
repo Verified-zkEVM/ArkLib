@@ -62,7 +62,10 @@ def toSubgroup (ω : D) : Subgroup Fˣ where
   one_mem' := by {
     simp only [Finset.coe_image, CosetFftDomainClass.mkSubgroupUnit]
     exists 0
-    aesop
+    refine ⟨Finset.mem_univ 0, ?_⟩
+    apply Units.ext
+    simp only [CosetFftDomainClass.mkSubgroupUnit, FftDomainClass.generator_eq_one,
+      inv_one, one_mul, Units.val_one]
   }
   inv_mem' {x} hx := by {
     simp_all only [Finset.coe_image, Finset.coe_univ, Set.image_univ, Set.mem_range]

@@ -560,7 +560,7 @@ lemma prob_schwartz_zippel_mv_polynomial_of_totalDegree_le
     Pr_{ let r ←$ᵖ (Fin n → R) }[ MvPolynomial.eval r P = 0 ] ≤
       (d : ℝ≥0) / (Fintype.card R : ℝ≥0) := by
   classical
-  letI : Field R := Fintype.fieldOfDomain R
+  let : Field R := Fintype.fieldOfDomain R
   exact prob_eval_zero_univ_le_div P h_nonzero h_deg
 
 /-- **Schwartz-Zippel**, in probability form at the degree bound `n`: the `d := n`

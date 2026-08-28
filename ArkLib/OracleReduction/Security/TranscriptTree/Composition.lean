@@ -597,6 +597,12 @@ theorem splitDataOfTree_src {r : Fin (m + 1)}
     (splitDataOfTree (arity₁ := arity₁) (arity₂ := arity₂) T).src = T :=
   eq_of_heq (src_splitOf T r.val r.isLt rfl)
 
+/-- The source law for a split rooted at the beginning of an appended protocol. -/
+theorem splitDataOfTree_src_zero
+    (T : ChallengeTree (pSpec₁ ++ₚ pSpec₂) (appendArity arity₁ arity₂) 0) :
+    (splitDataOfTree (r := 0) T).src = T :=
+  @splitDataOfTree_src m n pSpec₁ pSpec₂ arity₁ arity₂ (0 : Fin (m + 1)) T
+
 section Structure
 
 variable {S₁ : ChallengeTreeShape pSpec₁} {S₂ : ChallengeTreeShape pSpec₂}
@@ -644,9 +650,7 @@ theorem SplitData.fst_isStructured :
         rfl
       simp only [SplitData.src, ChallengeTree.IsStructured] at hS
       apply SplitData.fst_isStructured child
-      convert hS using 1
-      · exact hround.symm
-      · rfl
+      exact hS
   | _, .chal i h chals children, hS => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
         simpa [ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left] using h
@@ -685,9 +689,7 @@ theorem SplitData.sndAt_isStructured :
         rfl
       simp only [SplitData.src, ChallengeTree.IsStructured] at hS
       have hS' : child.src.IsStructured (S₁.append S₂) := by
-        convert hS using 1
-        · exact hround.symm
-        · rfl
+        exact hS
       exact SplitData.sndAt_isStructured child hS' (peelMsg path)
   | _, .chal i h chals children, hS, path => by
       have hApp : (pSpec₁ ++ₚ pSpec₂).dir (Fin.castAdd n i) = .V_to_P := by
@@ -729,7 +731,7 @@ theorem appendSplit_fst_isStructured
     (hT : T.IsStructured (S₁.append S₂)) :
       T.appendSplit.fst.IsStructured S₁ :=
   SplitData.fst_isStructured (splitDataOfTree (r := 0) T)
-    (by rw [splitDataOfTree_src]; exact hT)
+    ((splitDataOfTree_src_zero T).symm ▸ hT)
 
 /-- Every suffix tree selected by a first-stage leaf of a structured appended tree is structured. -/
 theorem appendSplit_sndAt_isStructured
@@ -738,7 +740,7 @@ theorem appendSplit_sndAt_isStructured
     (path : LeafPath T.appendSplit.fst) :
       (T.appendSplit.sndAt path).IsStructured S₂ :=
   SplitData.sndAt_isStructured (splitDataOfTree (r := 0) T)
-    (by rw [splitDataOfTree_src]; exact hT) path
+    ((splitDataOfTree_src_zero T).symm ▸ hT) path
 
 section Membership
 
@@ -816,10 +818,11 @@ theorem leftPrefix_concat {i : Fin m} (pre : Transcript i.castSucc pSpec₁)
       (leftPrefix pre).concat (cast (by simp only [Fin.vappend_eq_append,
         Fin.append_left]) x : (pSpec₁ ++ₚ pSpec₂).«Type» (Fin.castAdd n i)) := by
   funext idx
-  refine Fin.lastCases ?_ (fun j => ?_) idx <;>
-    simp only [leftPrefix, Transcript.concat, Fin.snoc_last, Fin.snoc_castSucc, Fin.val_castSucc,
-      Fin.val_castAdd, Fin.val_succ] <;>
-    exact cast_eq_iff_heq.mpr (cast_heq _ _).symm
+  refine Fin.lastCases ?_ (fun j => ?_) idx
+  · simp only [leftPrefix, Transcript.concat_last, Fin.val_succ]
+    exact (Transcript.concat_last _ _).symm
+  · simp only [leftPrefix, Transcript.concat_castSucc, Fin.val_castSucc, Fin.val_succ]
+    rfl
 
 /-- Two casts into a common type are equal as soon as their arguments are `HEq`. Lets cast-equality
 goals be discharged by reasoning about the (cast-free) underlying values. -/
@@ -852,7 +855,7 @@ theorem rightPrefix_concat (tr₁ : FullTranscript pSpec₁) {i : Fin n}
          first
            | rfl
            | exact HEq.rfl
-           | (exact (heq_cast_iff_heq _ _ _).mpr HEq.rfl))
+           | (exact (heq_cast_iff_heq _ _ _).mpr (cast_heq _ x)))
 
 /-- A right-suffix transcript, prefixed by a full left transcript, is a transcript of the embedded
 appended tree. Induction is on the `pSpec₂`-tree itself — the right-hand side of the split carries
@@ -863,8 +866,12 @@ theorem embedRight_mem_transcripts_append :
     tr₂ ∈ t.transcripts pre₂ →
     tr₁ ++ₜ tr₂ ∈ (embedRight (arity₁ := arity₁) t).transcripts (rightPrefix tr₁ pre₂)
   | _, .leaf, tr₁, pre₂, tr₂, htr₂ => by
-      simp only [embedRight, transcripts, List.mem_singleton] at htr₂ ⊢
-      rw [htr₂]; exact (rightPrefix_leaf_eq_append _ _).symm
+      -- `rw [htr₂]` needs `FullTranscript` and `rightRound (Fin.last n)` to reduce to the
+      -- same index; v4.33 keeps them apart at implicit transparency, so the rewrite is ill-typed.
+      set_option backward.isDefEq.respectTransparency false in
+        simp only [embedRight, transcripts, List.mem_singleton] at htr₂ ⊢
+        rw [htr₂]
+        exact (rightPrefix_leaf_eq_append _ _).symm
   | _, .msgNode i h m₂ child, tr₁, pre₂, tr₂, htr₂ => by
       simp only [transcripts] at htr₂
       simp only [embedRight, transcripts]
@@ -926,7 +933,7 @@ theorem appendSplit_fullTranscripts_append_of_mem
     (htr₂ : tr₂ ∈ (T.appendSplit.sndAt path).fullTranscripts) :
       path.fullTranscript ++ₜ tr₂ ∈ T.fullTranscripts := by
   have key := SplitData.mem_transcripts_append (splitDataOfTree (r := 0) T) default path htr₂
-  rw [splitDataOfTree_src] at key
+  rw [splitDataOfTree_src_zero] at key
   have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
       = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by
     funext idx; exact idx.elim0
@@ -1056,7 +1063,11 @@ theorem AppendSplit.fullTranscript_gluePath
     (p₁ : LeafPath T.appendSplit.fst) (p₂ : LeafPath (T.appendSplit.sndAt p₁)) :
     (AppendSplit.gluePath T p₁ p₂).fullTranscript
       = p₁.fullTranscript ++ₜ p₂.fullTranscript := by
-  rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
+  -- Unfolding `gluePath` exposes `T.splitDataOfTree`, whose round index is `0` here but
+  -- `leftRound 0` in `splitDataOfTree`'s own signature. v4.33 keeps the two apart at implicit
+  -- transparency, so the goal is not type-correct there and `rw` cannot match the transport.
+  set_option backward.isDefEq.respectTransparency false in
+    rw [AppendSplit.gluePath, LeafPath.fullTranscript_transport]
   have key := SplitData.transcript_gluePath (splitDataOfTree (r := 0) T) default p₁ p₂
   have hpre : leftPrefix (default : Transcript (0 : Fin (m + 1)) pSpec₁)
       = (default : Transcript (0 : Fin (m + n + 1)) (pSpec₁ ++ₚ pSpec₂)) := by

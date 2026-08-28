@@ -97,7 +97,7 @@ theorem mem_relLift_of_relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShor
     (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
     (h : (X, w) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b) :
     (X, w) ∈ relLift Φ bound ρBound K φF := by
-  simp only [relBatched, Set.mem_setOf_eq] at h
+  simp only [relBatched, Set.mem_ofPred_eq] at h
   obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
   have hshort : liftShort Φ bound ρBound w :=
     hZero_eq_zero_imp_liftShort Φ m₀ φF b bound ρBound hd hμn hbound hρBound w hZeroZ

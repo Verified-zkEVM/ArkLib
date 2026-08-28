@@ -53,7 +53,7 @@ private theorem kkh_card_signedChoice (n k : ℕ) :
 
 private theorem kkh_exists_generator {q h : ℕ} [Fact q.Prime] (H : Subgroup (ZMod q)ˣ)
     (hHcard : Nat.card H = h) : ∃ g : H, orderOf g = h := by
-  letI : IsCyclic H := isCyclic_subgroup_units H
+  let : IsCyclic H := isCyclic_subgroup_units H
   obtain ⟨g, hg⟩ := IsCyclic.exists_ofOrder_eq_natCard (α := H)
   exact ⟨g, hg.trans hHcard⟩
 
@@ -303,18 +303,17 @@ theorem two_pow_mul_choose_le_card_sumSet {q : ℕ} [Fact q.Prime] {h khat : ℕ
     split <;> simp
   have hPnorm (x : KKHSignedChoice (h / 2) khat) (z : ℂ) (hz : ‖z‖ = 1) :
       ‖((P x).map (Int.castRingHom ℂ)).eval z‖ ≤ (khat : ℝ) := by
-    rcases x with ⟨⟨I, hI⟩, eps⟩
-    rw [hPevalC]
+    rw [hPevalC x z]
     calc
-      ‖∑ i ∈ I.attach, if eps i then -(z ^ i.1.val) else z ^ i.1.val‖
-          ≤ ∑ i ∈ I.attach,
-              ‖if eps i then -(z ^ i.1.val) else z ^ i.1.val‖ := norm_sum_le _ _
-      _ = ∑ _i ∈ I.attach, (1 : ℝ) := by
+      ‖∑ i ∈ x.1.1.attach, if x.2 i then -(z ^ i.1.val) else z ^ i.1.val‖
+          ≤ ∑ i ∈ x.1.1.attach,
+              ‖if x.2 i then -(z ^ i.1.val) else z ^ i.1.val‖ := norm_sum_le _ _
+      _ = ∑ _i ∈ x.1.1.attach, (1 : ℝ) := by
         apply Finset.sum_congr rfl
         intro i hi
         split <;> simp [norm_pow, hz]
       _ = (khat : ℝ) := by
-        rw [Finset.sum_const, nsmul_eq_mul, Finset.card_attach, hI]
+        rw [Finset.sum_const, nsmul_eq_mul, Finset.card_attach, x.1.2]
         norm_num
   let PhiC : ℂ[X] := (cyclotomic h ℤ).map (Int.castRingHom ℂ)
   have hPhiCne : PhiC ≠ 0 := by
@@ -495,7 +494,7 @@ theorem two_pow_mul_choose_le_card_sumSet {q : ℕ} [Fact q.Prime] {h khat : ℕ
     have hRzero := hRzero_of_resultant x y hreszero
     apply hPinj
     exact sub_eq_zero.mp hRzero
-  letI : Fintype (KKHSignedChoice (h / 2) khat) := by
+  let : Fintype (KKHSignedChoice (h / 2) khat) := by
     unfold KKHSignedChoice
     infer_instance
   have hcardim : Fintype.card (KKHSignedChoice (h / 2) khat) ≤

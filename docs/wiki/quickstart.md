@@ -112,6 +112,11 @@ python3 -m pip install leanblueprint
   **aborts the script before `--docs`**. To exercise the docgen gate, run
   `./scripts/validate.sh --docs` on its own. When checking that a branch adds no new style lint,
   compare the `(file, error-kind)` multiset against the merge-base rather than the total count.
+  That comparison is deliberately coarse: it is blind to *additional* violations of a kind the
+  file already had, so a branch that adds a third over-long line to a file that already had one
+  registers as zero delta. For line length specifically, also diff the per-file counts, e.g.
+  `git diff --name-only <merge-base>... -- 'ArkLib/**/*.lean'` piped through
+  `awk 'length($0) > 100'` on both sides.
 
 ## Checking axiom hygiene correctly
 

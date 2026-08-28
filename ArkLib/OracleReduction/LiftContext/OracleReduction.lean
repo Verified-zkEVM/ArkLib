@@ -69,8 +69,7 @@ private theorem OracleVerifier.simulateLiftContextQueryImpl
   rcases q with q | q
   · simp only [liftContextQueryImpl, QueryImpl.addLift_def,
       QueryImpl.add_apply_inl, QueryImpl.liftTarget_apply]
-    simp only [simulateQ_query, OracleQuery.input_query, OracleQuery.cont_query,
-      OracleInterface.simOracle2, QueryImpl.addLift, QueryImpl.add_apply_inl,
+    simp only [OracleInterface.simOracle2, QueryImpl.addLift, QueryImpl.add_apply_inl,
       QueryImpl.liftTarget_apply]
     rfl
   · rcases q with q | q
@@ -83,19 +82,16 @@ private theorem OracleVerifier.simulateLiftContextQueryImpl
             (lens.simulateInput outerStmt ⟨i, q⟩)) := by
             rw [QueryImpl.addLift_def]
             change simulateQ
-                (QueryImpl.add
-                  ((QueryImpl.id oSpec).liftTarget
-                    (OracleComp oSpec))
-                  ((QueryImpl.add
-                    (OracleInterface.simOracle0 OuterOStmtIn outerOStmt)
-                    (OracleInterface.simOracle0 pSpec.Message messages)).liftTarget
-                      (OracleComp oSpec)))
+                (((QueryImpl.id oSpec).liftTarget (OracleComp oSpec))
+                  + ((OracleInterface.simOracle0 OuterOStmtIn outerOStmt
+                      + OracleInterface.simOracle0 pSpec.Message messages).liftTarget
+                        (OracleComp oSpec)))
                 (liftM
                   (liftM (lens.simulateInput outerStmt ⟨i, q⟩) :
                     OracleComp ([OuterOStmtIn]ₒ + [pSpec.Message]ₒ) _) :
                   OracleComp (oSpec + ([OuterOStmtIn]ₒ + [pSpec.Message]ₒ)) _) = _
-            rw [simulateQ_add_liftM_right, simulateQ_liftTarget,
-              simulateQ_add_liftM_left]
+            rw [QueryImpl.simulateQ_add_liftM_right, simulateQ_liftTarget,
+              QueryImpl.simulateQ_add_liftM_left]
         _ = _ := by
           rw [lens.simulateInput_eq outerStmt outerOStmt ⟨i, q⟩]
           rfl
@@ -108,19 +104,16 @@ private theorem OracleVerifier.simulateLiftContextQueryImpl
             (QueryImpl.id' [pSpec.Message]ₒ ⟨i, q⟩)) := by
             rw [QueryImpl.addLift_def]
             change simulateQ
-                (QueryImpl.add
-                  ((QueryImpl.id oSpec).liftTarget
-                    (OracleComp oSpec))
-                  ((QueryImpl.add
-                    (OracleInterface.simOracle0 OuterOStmtIn outerOStmt)
-                    (OracleInterface.simOracle0 pSpec.Message messages)).liftTarget
-                      (OracleComp oSpec)))
+                (((QueryImpl.id oSpec).liftTarget (OracleComp oSpec))
+                  + ((OracleInterface.simOracle0 OuterOStmtIn outerOStmt
+                      + OracleInterface.simOracle0 pSpec.Message messages).liftTarget
+                        (OracleComp oSpec)))
                 (liftM
                   (liftM (QueryImpl.id' [pSpec.Message]ₒ ⟨i, q⟩) :
                     OracleComp ([OuterOStmtIn]ₒ + [pSpec.Message]ₒ) _) :
                   OracleComp (oSpec + ([OuterOStmtIn]ₒ + [pSpec.Message]ₒ)) _) = _
-            rw [simulateQ_add_liftM_right, simulateQ_liftTarget,
-              simulateQ_add_liftM_right]
+            rw [QueryImpl.simulateQ_add_liftM_right, simulateQ_liftTarget,
+              QueryImpl.simulateQ_add_liftM_right]
         _ = _ := rfl
 
 private theorem OracleVerifier.simulateLiftContextQueryImplComp

@@ -208,6 +208,16 @@ def nestedTranscriptSuffix {F : Type} {r : ℕ} (i : Fin (r + 1))
     (tr : (pSpecNestedScalar F r).FullTranscript) : Fin (r - i.val) → F :=
   fun j => tr ⟨i.val + j, by omega⟩
 
+@[simp]
+theorem nestedTranscriptSuffix_zero {F : Type} {r : ℕ}
+    (tr : (pSpecNestedScalar F r).FullTranscript) :
+    nestedTranscriptSuffix (0 : Fin (r + 1)) tr = tr := by
+  funext i
+  unfold nestedTranscriptSuffix
+  congr 1
+  apply Fin.ext
+  simp only [Fin.val_zero, Nat.zero_add]
+
 /-- Extending a scalar transcript along a leaf path preserves every entry already present in its
 prefix. -/
 theorem nestedLeafPath_transcript_prefix {F : Type} {r : ℕ} {i : Fin (r + 1)}
@@ -277,14 +287,15 @@ theorem nestedTreeToEvaluationTree_vanishes {F : Type} [Zero F] {r : ℕ} :
         simp only [Fin.cons_zero, nestedTranscriptSuffix,
           ChallengeTree.LeafPath.transcript]
         simp only [izero, Fin.val_mk, Nat.add_zero]
-        symm
-        have hp := nestedLeafPath_transcript_prefix path (pre.concat (challenges j))
-          ⟨m.val, by simp only [Fin.val_succ]; omega⟩
-        convert hp using 1
-        · congr 1
-        · rw [show (⟨m.val, by simp only [Fin.val_succ]; omega⟩ : Fin m.succ.val) =
-            Fin.last m.val by apply Fin.ext; rfl]
-          simp [Transcript.concat, Fin.snoc]
+        let jm : Fin m.succ.val := Fin.last m.val
+        have hp := nestedLeafPath_transcript_prefix path (pre.concat (challenges j)) jm
+        have hidx :
+            (⟨m.castSucc.val, by omega⟩ : Fin r) = ⟨jm.val, by omega⟩ := by
+          apply Fin.ext
+          simp only [Fin.val_castSucc, jm, Fin.val_last]
+        rw [hidx, hp]
+        simp [Transcript.concat, Fin.snoc, jm]
+        exact eq_of_heq (cast_heq _ _).symm
       · let k : Fin (r - m.succ.val) := ⟨i'.val - 1, by
           have := i'.isLt
           simp only [Fin.val_succ] at this ⊢
@@ -506,6 +517,7 @@ theorem nestedAssembly_escape_or_mem_relBatched
         ∃ p p', (resp' p, resp' p') ∈ K.Collision) ∨
       (stmt, resp base) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b := by
   classical
+  let : Decidable (∃ p, resp p ≠ resp base) := Classical.propDecidable _
   by_cases hcol : ∃ p, resp p ≠ resp base
   · -- two leaves disagree: their openings are a short collision of the shared `t`
     obtain ⟨p, hp⟩ := hcol
@@ -567,10 +579,9 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
         (hValidPure path).choose_spec.2
     have hLeft : leafWits (nestedLeftPath tree) = some (resp (nestedLeftPath tree)) := by
       simpa [resp] using (hValidPure (nestedLeftPath tree)).choose_spec.1
-    let evTree : NestedEvaluationTree F 2 (m₀ + m₁) := by
-      simpa using nestedTreeToEvaluationTree F (m₀ + m₁) tree
-    have hDistinct : evTree.IsDistinct := by
-      simpa [evTree] using nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
+    let evTree := nestedTreeToEvaluationTree F (m₀ + m₁) tree
+    have hDistinct : evTree.IsDistinct :=
+      nestedTreeToEvaluationTree_isDistinct F (m₀ + m₁) tree hStruct
     have hVanishes₀ : (∀ path, resp path = resp (nestedLeftPath tree)) →
         CMlPolynomialEval.PolynomialVanishes evTree (hZero Φ m₀ φF b (resp (nestedLeftPath tree)))
           (Fin.castAdd m₁) := by
@@ -583,12 +594,10 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.1 using 1
       congr 2
+      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
+        nestedTranscriptSuffix_zero]
       funext i
-      simp only [Function.comp_apply, nestedTranscriptSuffix,
-        ChallengeTree.LeafPath.fullTranscript]
-      congr 1
-      apply Fin.ext
-      simp only [Fin.val_zero, Nat.zero_add, Fin.val_castAdd]
+      rfl
     have hVanishesα : (∀ path, resp path = resp (nestedLeftPath tree)) →
         CMlPolynomialEval.PolynomialVanishes evTree
           (hAlpha Φ m₁ φF b stmt.1 stmt.2.2 (resp (nestedLeftPath tree))) (Fin.natAdd m₀) := by
@@ -601,12 +610,10 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
       rw [hall path] at hp
       convert hp.2.2.2.1 using 1
       congr 2
+      simp only [Function.comp_apply, ChallengeTree.LeafPath.fullTranscript,
+        nestedTranscriptSuffix_zero]
       funext i
-      simp only [Function.comp_apply, nestedTranscriptSuffix,
-        ChallengeTree.LeafPath.fullTranscript]
-      congr 1
-      apply Fin.ext
-      simp only [Fin.val_zero, Nat.zero_add, Fin.val_natAdd]
+      rfl
     rcases nestedAssembly_escape_or_mem_relBatched Φ m₀ m₁ bound ρBound K φF b stmt tree resp
       (nestedLeftPath tree) hrel evTree hDistinct hVanishes₀ hVanishesα with hEsc' | hBatched
     · exact (hEsc hEsc').elim

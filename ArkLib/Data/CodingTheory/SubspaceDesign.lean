@@ -368,7 +368,7 @@ private lemma pow_dvd_foldedWronskian {F : Type*} [Field F] {σ : ℕ} {ω : F}
     (Polynomial.X - Polynomial.C p) ^ (Module.finrank F N)
       ∣ Polynomial.foldedWronskian σ ω (fun j => (bas j : Polynomial F)) := by
   classical
-  haveI : Module.Finite F B := Module.Finite.of_basis bas
+  have : Module.Finite F B := Module.Finite.of_basis bas
   have hrkB : Module.finrank F B = σ := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   set N' : Submodule F B := N.comap B.subtype with hN'
@@ -432,7 +432,7 @@ private lemma pow_dvd_classicalWronskian {F : Type*} [Field F] {σ s : ℕ}
         ((s - σ + 1) * Module.finrank F N) ∣
       Polynomial.classicalWronskian σ (fun j => (bas j : Polynomial F)) := by
   classical
-  haveI : Module.Finite F B := Module.Finite.of_basis bas
+  have : Module.Finite F B := Module.Finite.of_basis bas
   have hrkB : Module.finrank F B = σ := by
     rw [Module.finrank_eq_card_basis bas, Fintype.card_fin]
   set N' : Submodule F B := N.comap B.subtype with hN'
@@ -679,7 +679,7 @@ theorem isSubspaceDesign_frsCode_sub_one
       simp
     rw [hσdef, hAbot]
     exact finrank_bot F _
-  haveI : NeZero k := ⟨by omega⟩
+  have : NeZero k := ⟨by omega⟩
   -- `k ≤ q − 1`: the `n·s` folded points are distinct and nonzero (for `s ≥ 2`);
   -- for `s = 1` this is `hFn` directly.
   have hns_q : Fintype.card ι * s ≤ Fintype.card F - 1 := by
@@ -738,10 +738,10 @@ theorem isSubspaceDesign_frsCode_sub_one
     rw [hσdef]
     exact LinearMap.finrank_eq_of_map_eq enc B A
       (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
-  haveI : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
+  have : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
     FiniteDimensional.of_injective (Polynomial.degreeLTEquiv F k).toLinearMap
       (Polynomial.degreeLTEquiv F k).injective
-  haveI : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
+  have : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
       (S₂ := Polynomial.degreeLT F k) (by rw [hBdef]; exact inf_le_left)
   -- A basis of `B`, viewed as a family of low-degree polynomials.
   set bas : Module.Basis (Fin σ) F ↥B := (Module.finBasis F ↥B).reindex (finCongr hrkB) with hbas
@@ -1072,7 +1072,7 @@ theorem isSubspaceDesign_umCode_sub_one
       rw [Submodule.mem_bot, ← hpa, hp, map_zero]
     rw [hσdef, hAbot]
     exact finrank_bot F _
-  haveI : NeZero k := ⟨by omega⟩
+  have : NeZero k := ⟨by omega⟩
   set enc := ReedSolomon.Multiplicity.umEvalOnPoints domain s with henc
   have hencinj := ReedSolomon.Multiplicity.umEvalOnPoints_domRestrict_injective
     (k := k) (s := s) domain hchar hk_le
@@ -1104,10 +1104,10 @@ theorem isSubspaceDesign_umCode_sub_one
     rw [hσdef]
     exact LinearMap.finrank_eq_of_map_eq enc B A
       (fun p hp h0 => hker p ((hBmem p).mp hp).1 h0) hBmap
-  haveI : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
+  have : FiniteDimensional F ↥(Polynomial.degreeLT F k) :=
     FiniteDimensional.of_injective (Polynomial.degreeLTEquiv F k).toLinearMap
       (Polynomial.degreeLTEquiv F k).injective
-  haveI : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
+  have : FiniteDimensional F ↥B := Submodule.finiteDimensional_of_le
       (S₂ := Polynomial.degreeLT F k) (by rw [hBdef]; exact inf_le_left)
   set bas : Module.Basis (Fin σ) F ↥B :=
     (Module.finBasis F ↥B).reindex (finCongr hrkB) with hbas

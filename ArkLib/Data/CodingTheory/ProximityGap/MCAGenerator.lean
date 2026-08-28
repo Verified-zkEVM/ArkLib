@@ -79,7 +79,7 @@ def generatorByRightMul (G : Generator S ℓ F) (M : Matrix ℓ ℓ' F) : Genera
 given by `κ`.
 This is the generator whose error is bounded by `mcaError_projectedGenerator_le`. -/
 def projectedGenerator (G : Generator S ℓ F) (κ : Set ℓ) : Generator S κ F :=
-    fun x ↦ Set.restrict κ (G x)
+    fun x ↦ Set.domRestrict κ (G x)
 
 /-- Let `U : ℓ' → (ι → A)` be a family of `ℓ'` words over `A^ι`. Obtain a family of `ℓ`
 words by acting on `U` by left multiplication with an `ℓ × ℓ'` matrix `M` over `F`. -/
@@ -108,7 +108,7 @@ lemma isMCA_generatorByRightMul_of_isMCA [DecidableEq ℓ'] [Nonempty S] (G : Ge
     convert LinearCode.projectedCode_linearCombination MC T (fun i => matrixMulCodewords M U i)
       (fun i => B j i) (fun i => hj i) using 1
     ext k
-    simp only [projectedWord, Set.restrict_apply, matrixMulCodewords, Finset.smul_sum,
+    simp only [projectedWord, Set.domRestrict_apply, matrixMulCodewords, Finset.smul_sum,
       smul_smul]
     rw [Finset.sum_comm]
     simp [← Finset.sum_smul, ← Matrix.mul_apply, hB, Matrix.one_apply]

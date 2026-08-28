@@ -259,7 +259,9 @@ theorem mem_transcripts :
     {m : Fin (n + 1)} → {T : ChallengeTree pSpec arity m} →
       (path : LeafPath T) → (pre : Transcript m pSpec) →
         path.transcript pre ∈ T.transcripts pre
-  | _, _, .leaf, pre => by simp [transcript, transcripts]
+  | _, _, .leaf, pre => by
+      change pre ∈ [pre]
+      exact List.mem_cons_self
   | _, _, @LeafPath.msg _ _ _ _ _ message _ path, pre => by
       simp only [transcript, transcripts]
       exact mem_transcripts path (pre.concat message)
@@ -278,8 +280,8 @@ theorem exists_of_mem_transcripts :
       {pre : Transcript m pSpec} → {tr : FullTranscript pSpec} →
         tr ∈ T.transcripts pre → ∃ path : LeafPath T, path.transcript pre = tr
   | _, .leaf, pre, tr, h => by
-      simp only [transcripts, List.mem_singleton] at h
-      exact ⟨.leaf, h.symm⟩
+      have htr : tr = pre := List.eq_of_mem_singleton h
+      exact ⟨.leaf, htr.symm⟩
   | _, .msgNode _ _ _ child, pre, tr, h => by
       simp only [transcripts] at h
       obtain ⟨path, hpath⟩ := exists_of_mem_transcripts h
@@ -449,7 +451,7 @@ theorem support_init_nonempty_of_accepting {init : ProbComp σ}
   rw [Set.not_nonempty_iff_eq_empty] at hempty
   refine not_isAccepting_of_no_outputs init impl V stmtIn p lang ?_ hacc
   ext out
-  simp only [Outputs, Set.mem_setOf_eq, Set.mem_empty_iff_false, iff_false]
+  simp only [Outputs, Set.mem_ofPred_eq, Set.mem_empty_iff_false, iff_false]
   intro hmem
   rw [mem_support_bind_iff] at hmem
   obtain ⟨s, hs, -⟩ := hmem
@@ -464,13 +466,13 @@ theorem outputs_pure_subsingleton {Stmt₁ Stmt₂ : Type} {m : ℕ} {pSpec₁ :
     (hV₁ : ∀ stmt tr, V₁.verify stmt tr = pure (verify₁ stmt tr))
     (stmt : Stmt₁) (tr : pSpec₁.FullTranscript) {out : Stmt₂}
     (hout : out ∈ Outputs init impl V₁ stmt tr) : out = verify₁ stmt tr := by
-  simp only [Outputs, Set.mem_setOf_eq, Verifier.run, hV₁] at hout
+  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV₁] at hout
   have : (do (simulateQ impl
       (pure (verify₁ stmt tr) : OptionT (OracleComp oSpec) Stmt₂)).run' (← init) :
       ProbComp (Option Stmt₂)) = (init >>= fun _ => pure (some (verify₁ stmt tr))) := by
     congr 1
   rw [this] at hout
-  simp only [support_bind_const, support_pure, Set.mem_setOf_eq] at hout
+  simp only [support_bind_const, support_pure, Set.mem_ofPred_eq] at hout
   exact Option.some.inj hout.1
 
 /-- A pure verifier's verdict **is** reachable, as soon as the sampling can produce a seed. -/
@@ -481,7 +483,7 @@ theorem pure_verdict_mem_outputs (init : ProbComp σ)
     (hinit : (support init).Nonempty) (stmtIn : StmtIn) (tr : pSpec.FullTranscript) :
     verify stmtIn tr ∈ Outputs init impl V stmtIn tr := by
   obtain ⟨s, hs⟩ := hinit
-  simp only [Outputs, Set.mem_setOf_eq, Verifier.run, hV]
+  simp only [Outputs, Set.mem_ofPred_eq, Verifier.run, hV]
   have heq : (do (simulateQ impl
       (pure (verify stmtIn tr) : OptionT (OracleComp oSpec) StmtOut)).run' (← init) :
       ProbComp (Option StmtOut)) = (init >>= fun _ => pure (some (verify stmtIn tr))) := by

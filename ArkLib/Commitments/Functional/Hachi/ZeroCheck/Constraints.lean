@@ -779,7 +779,7 @@ Two consumers, in opposite directions:
   `round_coordinateWiseSpecialSoundWithEscape` (`Sumcheck/Rounds.lean`) carries `i < m₀`. -/
 theorem hypercubeSum_of_le (H : CMvPolynomial m₀ F) {i : ℕ} (hi : m₀ ≤ i) (cs : Fin i → F) :
     hypercubeSum m₀ H i cs = H.eval (fun j => cs ⟨j, lt_of_lt_of_le j.isLt hi⟩) := by
-  haveI : IsEmpty (Fin (m₀ - i)) := ⟨fun j => absurd j.isLt (by omega)⟩
+  have : IsEmpty (Fin (m₀ - i)) := ⟨fun j => absurd j.isLt (by omega)⟩
   rw [hypercubeSum, Fintype.sum_unique]
   congr 1
   funext j

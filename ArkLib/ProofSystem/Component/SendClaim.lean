@@ -170,7 +170,7 @@ membership in `toORelOut.language`; the `P` check is enforced here rather than a
 @[reducible, simp]
 def toORelOut :
     Set ((Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Message) i)) × Unit) :=
-  setOf (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
+  Set.ofPred (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
     (⟨⟨stmt, fun i => oStmtAndMsg (Sum.inl i)⟩, ()⟩ ∈ relIn) ∧
       P stmt (fun i => oStmtAndMsg (Sum.inl i)) (oStmtAndMsg (Sum.inr 0)))
 

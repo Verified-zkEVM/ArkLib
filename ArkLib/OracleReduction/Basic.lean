@@ -431,136 +431,6 @@ private theorem simulateQueryAlongHEq {A B : Type}
   cases eq_of_heq hab
   exact hImpl q
 
-universe uQuery uTarget
-
-/-- Universe-polymorphic routing through the left side of a sum implementation.
-
-VCVio's corresponding convenience lemma currently fixes the return universe to
-`Type 0`.  Oracle interfaces may have queries and responses in higher
-universes, so adapter proofs use this formulation instead. -/
-theorem simulateQ_add_liftM_left
-    {iota1 iota2 : Type*} {spec1 : OracleSpec iota1} {spec2 : OracleSpec iota2}
-    {target : Type uQuery → Type uTarget} [Monad target] [LawfulMonad target]
-    (impl1 : QueryImpl spec1 target) (impl2 : QueryImpl spec2 target)
-    {A : Type uQuery} (x : OracleComp spec1 A) :
-    simulateQ (QueryImpl.add impl1 impl2)
-        (liftM x : OracleComp (spec1 + spec2) A) =
-      simulateQ impl1 x := by
-  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_def,
-    ← QueryImpl.simulateQ_compose]
-  apply congrArg (fun impl => simulateQ impl x)
-  apply QueryImpl.ext
-  intro q
-  change simulateQ (QueryImpl.add impl1 impl2)
-      (liftM ((spec1 + spec2).query (Sum.inl q))) = impl1 q
-  simp [QueryImpl.add]
-
-/-- Universe-polymorphic routing through the right side of a sum implementation. -/
-theorem simulateQ_add_liftM_right
-    {iota1 iota2 : Type*} {spec1 : OracleSpec iota1} {spec2 : OracleSpec iota2}
-    {target : Type uQuery → Type uTarget} [Monad target] [LawfulMonad target]
-    (impl1 : QueryImpl spec1 target) (impl2 : QueryImpl spec2 target)
-    {A : Type uQuery} (x : OracleComp spec2 A) :
-    simulateQ (QueryImpl.add impl1 impl2)
-        (liftM x : OracleComp (spec1 + spec2) A) =
-      simulateQ impl2 x := by
-  rw [← OracleComp.liftComp_eq_liftM, OracleComp.liftComp_def,
-    ← QueryImpl.simulateQ_compose]
-  apply congrArg (fun impl => simulateQ impl x)
-  apply QueryImpl.ext
-  intro q
-  change simulateQ (QueryImpl.add impl1 impl2)
-      (liftM ((spec1 + spec2).query (Sum.inr q))) = impl2 q
-  simp [QueryImpl.add]
-
-/-- Simulating a doubly lifted computation from the right-hand inner oracle
-specification agrees with simulating it directly through the right implementation. -/
-lemma simulateQ_addLift_add_liftM_right
-    {ι ι₁ ι₂ : Type*} {spec : OracleSpec ι} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {target : Type uQuery → Type uTarget}
-    [Monad target] [LawfulMonad target]
-    {source₀ : Type uQuery → Type*} [MonadLiftT source₀ target]
-    {source : Type uQuery → Type*} [Monad source] [LawfulMonad source]
-    [MonadLiftT source target] [LawfulMonadLiftT source target]
-    (impl : QueryImpl spec source₀) (impl₁ : QueryImpl spec₁ source)
-    (impl₂ : QueryImpl spec₂ source) {α : Type uQuery} (x : OracleComp spec₂ α) :
-    simulateQ
-      (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂) :
-        QueryImpl (spec + (spec₁ + spec₂)) target)
-      (liftM (liftM x : OracleComp (spec₁ + spec₂) α) :
-        OracleComp (spec + (spec₁ + spec₂)) α) =
-      (liftM (simulateQ impl₂ x) : target α) := by
-  rw [QueryImpl.addLift_def]
-  change simulateQ
-      (QueryImpl.add (impl.liftTarget target)
-        ((QueryImpl.add impl₁ impl₂).liftTarget target))
-      (liftM (liftM x)) = _
-  rw [simulateQ_add_liftM_right,
-    simulateQ_liftTarget, simulateQ_add_liftM_right]
-
-/-- Simulating a doubly lifted computation from the left-hand inner oracle
-specification agrees with simulating it directly through the left implementation. -/
-lemma simulateQ_addLift_add_liftM_left
-    {ι ι₁ ι₂ : Type*} {spec : OracleSpec ι} {spec₁ : OracleSpec ι₁}
-    {spec₂ : OracleSpec ι₂} {target : Type uQuery → Type uTarget}
-    [Monad target] [LawfulMonad target]
-    {source₀ : Type uQuery → Type*} [MonadLiftT source₀ target]
-    {source : Type uQuery → Type*} [Monad source] [LawfulMonad source]
-    [MonadLiftT source target] [LawfulMonadLiftT source target]
-    (impl : QueryImpl spec source₀) (impl₁ : QueryImpl spec₁ source)
-    (impl₂ : QueryImpl spec₂ source) {α : Type uQuery} (x : OracleComp spec₁ α) :
-    simulateQ
-      (QueryImpl.addLift impl (QueryImpl.add impl₁ impl₂) :
-        QueryImpl (spec + (spec₁ + spec₂)) target)
-      (liftM (liftM x : OracleComp (spec₁ + spec₂) α) :
-        OracleComp (spec + (spec₁ + spec₂)) α) =
-      (liftM (simulateQ impl₁ x) : target α) := by
-  rw [QueryImpl.addLift_def]
-  change simulateQ
-      (QueryImpl.add (impl.liftTarget target)
-        ((QueryImpl.add impl₁ impl₂).liftTarget target))
-      (liftM (liftM x)) = _
-  rw [simulateQ_add_liftM_right,
-    simulateQ_liftTarget, simulateQ_add_liftM_left]
-
-/-- Simulation of a computation lifted into the left side of an added query
-implementation. -/
-theorem simulateQ_addLift_liftM_left
-    {iota1 iota2 : Type*} {spec1 : OracleSpec iota1} {spec2 : OracleSpec iota2}
-    {target : Type uQuery → Type uTarget} [Monad target] [LawfulMonad target]
-    {source1 source2 : Type uQuery → Type*}
-    [Monad source1] [LawfulMonad source1] [Monad source2] [LawfulMonad source2]
-    [MonadLiftT source1 target] [LawfulMonadLiftT source1 target]
-    [MonadLiftT source2 target]
-    (impl1 : QueryImpl spec1 source1) (impl2 : QueryImpl spec2 source2)
-    {A : Type uQuery} (x : OracleComp spec1 A) :
-    simulateQ (QueryImpl.addLift impl1 impl2 : QueryImpl (spec1 + spec2) target)
-        (liftM x) =
-      (liftM (simulateQ impl1 x) : target A) := by
-  rw [QueryImpl.addLift_def]
-  change simulateQ (QueryImpl.add (impl1.liftTarget target) (impl2.liftTarget target))
-      (liftM x) = _
-  rw [simulateQ_add_liftM_left, simulateQ_liftTarget]
-
-/-- Simulation of a computation lifted into the right side of an added query
-implementation. -/
-theorem simulateQ_addLift_liftM_right
-    {iota1 iota2 : Type*} {spec1 : OracleSpec iota1} {spec2 : OracleSpec iota2}
-    {target : Type uQuery → Type uTarget} [Monad target] [LawfulMonad target]
-    {source1 source2 : Type uQuery → Type*}
-    [Monad source1] [LawfulMonad source1] [Monad source2] [LawfulMonad source2]
-    [MonadLiftT source1 target]
-    [MonadLiftT source2 target] [LawfulMonadLiftT source2 target]
-    (impl1 : QueryImpl spec1 source1) (impl2 : QueryImpl spec2 source2)
-    {A : Type uQuery} (x : OracleComp spec2 A) :
-    simulateQ (QueryImpl.addLift impl1 impl2 : QueryImpl (spec1 + spec2) target)
-        (liftM x) =
-      (liftM (simulateQ impl2 x) : target A) := by
-  rw [QueryImpl.addLift_def]
-  change simulateQ (QueryImpl.add (impl1.liftTarget target) (impl2.liftTarget target))
-      (liftM x) = _
-  rw [simulateQ_add_liftM_right, simulateQ_liftTarget]
-
 /-- Querying the semantic output family agrees with materializing that family,
 for both embedded and virtual output representations. -/
 theorem simulateOutputQuery_eq
@@ -587,12 +457,12 @@ theorem simulateOutputQuery_eq
         simpa only [hEmbed] using output.outputInterface_heq i
       let a : OStmtOut i := output.hEq i ▸ hEmbed ▸ oStmt j
       have hab : HEq a (oStmt j) := by
-        simp only [a, eqRec_heq_iff_heq]
+        simp only [a, eqRec_heq_iff]
         exact HEq.rfl
       apply simulateQueryAlongHEq (Oₛₒ i) (Oₛᵢ j) hType hInterface
         _ q _ a (oStmt j) hab
       intro t
-      exact simulateQ_addLift_add_liftM_left (QueryImpl.id oSpec)
+      exact QueryImpl.simulateQ_addLift_add_liftM_left (QueryImpl.id oSpec)
         (OracleInterface.simOracle0 OStmtIn oStmt)
         (OracleInterface.simOracle0 pSpec.Message messages)
         (([OStmtIn]ₒ).query ⟨j, t⟩)
@@ -603,12 +473,12 @@ theorem simulateOutputQuery_eq
         simpa only [hEmbed] using output.outputInterface_heq i
       let a : OStmtOut i := output.hEq i ▸ hEmbed ▸ messages j
       have hab : HEq a (messages j) := by
-        simp only [a, eqRec_heq_iff_heq]
+        simp only [a, eqRec_heq_iff]
         exact HEq.rfl
       apply simulateQueryAlongHEq (Oₛₒ i) (Oₘ j) hType hInterface
         _ q _ a (messages j) hab
       intro t
-      exact simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+      exact QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
         (OracleInterface.simOracle0 OStmtIn oStmt)
         (OracleInterface.simOracle0 pSpec.Message messages)
         (([pSpec.Message]ₒ).query ⟨j, t⟩)
@@ -1091,13 +961,14 @@ def FullTranscript.mk2 {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0) (msg1 
 theorem FullTranscript.mk2_eq_snoc_snoc {pSpec : ProtocolSpec 2} (msg0 : pSpec.«Type» 0)
     (msg1 : pSpec.«Type» 1) :
       FullTranscript.mk2 msg0 msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 := by
-  unfold FullTranscript.mk2 Transcript.concat
-  simp only [default, Fin.isValue]
   funext i
-  by_cases hi : i = 0
-  · subst hi; simp [Fin.snoc]
-  · have : i = 1 := by omega
-    subst this; simp [Fin.snoc]
+  fin_cases i
+  · change msg0 = ((default : pSpec.Transcript 0).concat msg0).concat msg1
+      (Fin.castSucc (Fin.last 0))
+    rw [Transcript.concat_castSucc]
+    exact (Transcript.concat_last msg0 (default : pSpec.Transcript 0)).symm
+  · change msg1 = ((default : pSpec.Transcript 0).concat msg0).concat msg1 (Fin.last 1)
+    exact (Transcript.concat_last msg1 ((default : pSpec.Transcript 0).concat msg0)).symm
 
 end ProtocolSpec
 
