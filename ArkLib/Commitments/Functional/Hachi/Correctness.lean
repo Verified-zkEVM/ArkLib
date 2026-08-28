@@ -592,8 +592,10 @@ multilinear polynomial and every evaluation query, the honest run — key genera
 commitment, and the complete composed opening — is accepted with probability `1`.
 
 Hypotheses, by role: the chain's own parameter conditions
-(`completeThroughSumcheckReduction_perfectCompleteness`'s, including the two reverse range
-orientations of the nested zero-check seam, which pin `P.γ = q/2 = P.bZero − 1`); and the two
+(`completeThroughSumcheckReduction_perfectCompleteness`'s, including the reverse range
+orientation `hZeroγ` of the nested zero-check seam, which together with the bundled digit-base
+facts pins `P.γ = P.bZero − 1 < q/2` — `pinned_of_soundness_orientations`, realized at every
+digit base by `ofPinnedDigitBase`); and the two
 genuinely necessary environment conditions `hInit`/`hKeygen` — the ambient state and the
 simulated key-generation sampling must never fail (an adversarial `impl` could fail, and then no
 scheme is correct).

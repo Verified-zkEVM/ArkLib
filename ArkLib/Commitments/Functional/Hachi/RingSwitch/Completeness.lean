@@ -245,9 +245,10 @@ theorem rhoShort_honestLiftWitness_half (hd : 0 < Φ.φ.natDegree) (s : RlinStat
 omit [NeZero q] in
 /-- **Perfect completeness of Hachi's lift from an honest seam, at the digit base `bDig`** —
 error `0`,
-and with **no admissibility hypothesis**: the `ρ`-half of `liftShort` is discharged outright
-(`rhoShort_honestLiftWitness_half`), so the only premises are the three facts the seam relation
-supplies about its own members.
+and with **no admissibility hypothesis on the witness**: the quotient half of `liftShort` is
+discharged for an *arbitrary* quotient (`rhoDigitsShort_of_half_le`), so beyond the
+parameter-level digit-base facts `hb`/`hbq`/`hdig` (the `DigitBaseOk` triple, unbundled) the
+only premises are the three facts the seam relation supplies about its own members.
 
 * `hrow` — the linear system `M z = y`;
 * `hside` — the statement-level side condition `bound ≤ s.bound`;

@@ -260,7 +260,7 @@ theorem liftReduction_perfectCompleteness_params {F : Type} [Field F] [Sampleabl
 
 omit [NeZero q] in
 /-- **Seam 3 — the lift's output feeds the batching bridge**, at the bundled `bZero`. The bridge's
-two honest range hypotheses are exactly the bundled ones, and `relLift γ (q/2)` is *literally* the
+two honest range hypotheses are exactly the bundled ones, and `relLift γ bZero` is *literally* the
 bridge's input relation, so the two links meet on the nose. No arity conditions are needed on this
 side (they belong to the pull-back). -/
 theorem batchReduction_perfectCompleteness_params {F : Type} [Field F] [BEq F] [LawfulBEq F]

@@ -340,13 +340,28 @@ def quotientIdentityHolds : Unit → Bool := fun _ =>
 def quotientNonzero : Unit → Bool := fun _ =>
   List.any (List.finRange 1) fun i => !(cQuotient 𝓜(Q, A2) s2 z2 i == 0)
 
-/-- The concrete lift commitment runs, and is deterministic on equal witnesses. -/
-def liftComRuns : Unit → Bool := fun _ => K.com wToy == K.com wToy
+/-- A second `R^lin` opening, differing from `zToy` in exactly coordinate `1`, giving a second
+honest lifted witness for the commitment checks below. The differing coordinate is chosen with
+some care: the commitments differ exactly when the key hits the witness difference, and at these
+parameters `dMat`'s column `0` is `rr 1 1 = 0`, while a *constant* difference across the `z`
+block is also annihilated (those key entries are `−j mod 7` for `j < 8`, summing to `−28 ≡ 0`).
+Column `1`'s key entry is nonzero, so this pair genuinely separates. -/
+def zToy' : PolyVec Rng Mu := fun j =>
+  if j.val = 1 then rr (j.val + 2) (j.val + 2) else rr (j.val + 1) (j.val + 2)
+
+def wToy' : LiftedWitness 𝓜(Q, A) Mu Nn := honestLiftWitnessC 𝓜(Q, A) hdToy sToy zToy'
+
+/-- **The concrete lift commitment distinguishes witnesses.** `K.com` maps the two honest
+witnesses to different commitments. Strictly stronger than merely running `K.com`: a `com` that
+crashed, diverged, or collapsed to a constant all fail here. (Not implied by any theorem — Ajtai
+commitments do have collisions, this check just certifies the code doesn't produce one at this
+particular pair.) -/
+def liftComDistinguishes : Unit → Bool := fun _ => K.com wToy != K.com wToy'
 
 /-- **The terminal check decides.** It accepts the honest `(statement, witness)` pair it is
 handed — the commitment matches, both halves of `liftShort` hold, and the claimed evaluation is
-the one `wTableMleEval` computes — and rejects when the claimed value is perturbed. Both
-directions are checked, so an unconditionally-`true` check would fail here. -/
+the one `wTableMleEval` computes — and rejects when the claimed value or the commitment is
+perturbed. Both directions are checked, so an unconditionally-`true` check would fail here. -/
 def terminalHonest : WEvalStatement K.TCom Fld (MM + 1) :=
   { t := K.com wToy
     point := fun _ => 0
@@ -358,6 +373,15 @@ def terminalAcceptsHonest : Unit → Bool := fun _ =>
 def terminalRejectsPerturbed : Unit → Bool := fun _ =>
   !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q))
     { terminalHonest with value := terminalHonest.value + 1 } wToy
+
+/-- The terminal check also rejects when the statement's commitment is not the witness's own —
+the reject direction of `endPieceCheck`'s commitment clause. `terminalAcceptsHonest` cannot
+exercise it, because `terminalHonest.t` is *defined as* `K.com wToy`, so its commitment
+comparison holds by construction. The wrong commitment is the other witness's, which
+`liftComDistinguishes` has certified is genuinely different. -/
+def terminalRejectsWrongCommitment : Unit → Bool := fun _ =>
+  !endPieceCheck 𝓜(Q, A) (MM + 1) P.γ P.bZero P.bZero K (RingHom.id (ZMod Q))
+    { terminalHonest with t := K.com wToy' } wToy
 
 /-- **The composed honest run is accepted.** -/
 def openingAccepts : Unit → Bool := fun _ => honestVerdict () == some true
@@ -384,9 +408,10 @@ def runFast : IO Unit := do
   check "balanced committer runs and reconstructs" (commitRuns ())
   check "computable honest quotient satisfies the row identity" (quotientIdentityHolds ())
   check "computable honest quotient is nonzero (non-vacuity)" (quotientNonzero ())
-  check "concrete lift commitment runs" (liftComRuns ())
+  check "concrete lift commitment distinguishes witnesses" (liftComDistinguishes ())
   check "terminal check accepts the honest claim" (terminalAcceptsHonest ())
   check "terminal check rejects a perturbed claim" (terminalRejectsPerturbed ())
+  check "terminal check rejects a wrong commitment" (terminalRejectsWrongCommitment ())
   IO.println "Hachi nonrecursive runtime checks passed"
 
 /-- The composed run, behind `--full`. Separated from `runFast` because the sumcheck's honest
@@ -400,9 +425,10 @@ def runTiming : IO Unit := do
   timedCheck "commitBalanced" commitRuns
   timedCheck "computable quotient identity" quotientIdentityHolds
   timedCheck "computable quotient non-vacuity" quotientNonzero
-  timedCheck "concrete lift commitment" liftComRuns
+  timedCheck "concrete lift commitment (distinguishes)" liftComDistinguishes
   timedCheck "terminal check (accept)" terminalAcceptsHonest
-  timedCheck "terminal check (reject)" terminalRejectsPerturbed
+  timedCheck "terminal check (reject value)" terminalRejectsPerturbed
+  timedCheck "terminal check (reject commitment)" terminalRejectsWrongCommitment
   timedCheck "composed opening (prefix + sumcheck + terminal)" openingAccepts
 
 end HachiRuntime
