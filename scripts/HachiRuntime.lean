@@ -5,6 +5,12 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.Concrete
 
+-- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
+-- no longer resolve, because the concrete `K.TCom` projection only reduces past
+-- `nonrecursiveLiftCom` at default transparency. File-scoped, as in
+-- `Data/CodingTheory/ProximityGap/Errors.lean`.
+set_option backward.isDefEq.respectTransparency false
+
 /-!
 # Compiled nonrecursive-Hachi runtime checks
 

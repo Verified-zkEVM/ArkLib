@@ -314,6 +314,11 @@ section Execution
 
 variable (K : BindingCommitment W Short) (computeW : Stmt → WitIn → W)
 
+-- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
+-- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`, and
+-- the closing `rfl` no longer sees `Transcript.concat`/`Fin.snoc` and `FullTranscript.mk2`'s
+-- match form as definitionally equal.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest execution of both rounds.** Running the prover shell to the last round appends the
 commitment `K.com (computeW stmt wit)` (round 0, a message round that leaves the state untouched),
 then draws the challenge `c` (round 1) and stores it, ending at the transcript `⟨K.com w, c⟩`

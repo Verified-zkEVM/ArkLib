@@ -306,6 +306,9 @@ theorem mem_relWEvalClaim_of_nestedRoundRel
   ⟨h.1, h.2.1, rfl⟩
 
 set_option linter.unusedSectionVars false in
+-- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
+-- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`.
+set_option backward.isDefEq.respectTransparency false in
 /-- **The honest prover's run, characterized.** One message round and no challenge, so the run is a
 single `pure`: the transcript's only slot holds `y′ = computeY stmt wit`, and the output is the
 claim `⟨t, a, y′⟩` with the witness passed through.

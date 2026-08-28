@@ -250,6 +250,11 @@ private abbrev qePSpec (Φ : CyclotomicModulus (ZMod q)) (dRows ω r : ℕ) : Pr
   pSpec (CarrierCom Φ dRows) (ShortChallenge Φ ω) r
 
 set_option linter.unusedSectionVars false in
+-- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
+-- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`, and
+-- the closing `rfl` no longer sees `Transcript.concat`/`Fin.snoc` and `FullTranscript.mk2`'s
+-- match form as definitionally equal.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest execution of both rounds.** Running the Figure-3 prover to the last round draws the
 challenge vector `c` and ends with the transcript `⟨v, c⟩` (`FullTranscript.mk2`) and the state
 `((X, w), c)`: round 0 appends the carrier commitment `v = computeV X w` and leaves the state

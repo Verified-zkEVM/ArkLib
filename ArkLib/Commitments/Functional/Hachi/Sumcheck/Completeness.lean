@@ -186,6 +186,11 @@ Holds by `rfl`. -/
 
 set_option linter.unusedSectionVars false in
 omit [DecidableEq F] in
+-- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
+-- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`, and
+-- the closing `rfl` no longer sees `Transcript.concat`/`Fin.snoc` and `FullTranscript.mk2`'s
+-- match form as definitionally equal.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Honest execution of a round's two rounds.** Running the round prover to the end draws the
 challenge `a` and ends with the transcript `⟨g, a⟩` and the state `((stmt, wit), a)`: the message
 round appends `g = computeG stmt wit` and leaves the state untouched, the challenge round appends
