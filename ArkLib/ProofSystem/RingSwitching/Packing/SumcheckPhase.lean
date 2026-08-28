@@ -4,13 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Chung Thai Nguyen, Quang Dao
 -/
 
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean
 import ArkLib.ProofSystem.RingSwitching.Packing.Prelude
 import ArkLib.ProofSystem.RingSwitching.Packing.Spec
-========
-import ArkLib.ProofSystem.RingSwitching.Prelude
-import ArkLib.ProofSystem.RingSwitching.Spec
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean
 import ArkLib.OracleReduction.Composition.Sequential.General
 import ArkLib.OracleReduction.Composition.Sequential.Append
 import ArkLib.OracleReduction.Security.RoundByRound
@@ -73,11 +68,7 @@ namespace RingSwitching.SumcheckPhase
 noncomputable section
 
 variable (κ : ℕ) [NeZero κ]
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/SumcheckPhase.lean
 variable (L : Type) [CommRing L] [Nontrivial L] [Fintype L] [DecidableEq L]
-========
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L]
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/SumcheckPhase.lean
   [SampleableType L]
 variable (K : Type) [CommRing K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]

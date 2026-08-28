@@ -8,11 +8,8 @@ import ArkLib.Data.MvPolynomial.Multilinear
 import ArkLib.OracleReduction.Basic
 import ArkLib.OracleReduction.Security.RoundByRound
 import CompPoly.Fields.Binary.Tower.TensorAlgebra
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean
 import ArkLib.ProofSystem.RingSwitching.Packing.Profile
 import ArkLib.ProofSystem.RingSwitching.Transport.Coeffs
-========
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/Prelude.lean
 import ArkLib.ProofSystem.Sumcheck.Structured
 import Mathlib.Data.Fintype.Basic
 import Mathlib.Data.Matrix.Basic
@@ -63,13 +60,8 @@ open Sumcheck.Structured
 section Preliminaries
 
 variable (κ : ℕ) [NeZero κ]
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean
 variable (L : Type) [CommRing L] [Fintype L] [DecidableEq L]
 variable (K : Type) [CommRing K] [Fintype K] [DecidableEq K]
-========
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L]
-variable (K : Type) [Field K] [Fintype K] [DecidableEq K]
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/Prelude.lean
 variable [Algebra K L]
 variable (ℓ ℓ' : ℕ) [NeZero ℓ] [NeZero ℓ']
 variable (h_l : ℓ = ℓ' + κ)
@@ -323,11 +315,7 @@ section Relations
 open Module
 
 variable (κ : ℕ) [NeZero κ]
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean
 variable (L : Type) [CommRing L] [Nontrivial L] [Fintype L] [DecidableEq L]
-========
-variable (L : Type) [Field L] [Fintype L] [DecidableEq L]
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/Prelude.lean
   [SampleableType L]
 variable (K : Type) [CommRing K] [Fintype K] [DecidableEq K]
 variable [Algebra K L]
@@ -475,7 +463,6 @@ def sumcheckRoundRelation (aOStmtIn : AbstractOStmtIn L ℓ') (i : Fin (ℓ' + 1
 
 end Relations
 
-<<<<<<<< HEAD:ArkLib/ProofSystem/RingSwitching/Packing/Prelude.lean
 open Module in
 /-- The Binius (binary-tower) instantiation of `RingSwitchingProfile`, built from the tensor-algebra
 definitions above: `A := L ⊗[K] L`, embeddings `φ₀ = · ⊗ 1` / `φ₁ = 1 ⊗ ·`, and the decompositions
@@ -515,7 +502,4 @@ existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axi
       (Algebra.TensorProduct.includeRight).toRingHom.comp (algebraMap L L) by rfl]
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
-
-========
->>>>>>>> 01f2d3d7 (proofsystem/ringswitch):ArkLib/ProofSystem/RingSwitching/Prelude.lean
 end RingSwitching
