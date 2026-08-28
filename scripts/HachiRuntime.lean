@@ -5,12 +5,6 @@ Authors: Pablo Martín Vinuelas
 -/
 import ArkLib.Commitments.Functional.Hachi.Concrete
 
--- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
--- no longer resolve, because the concrete `K.TCom` projection only reduces past
--- `nonrecursiveLiftCom` at default transparency. File-scoped, as in
--- `Data/CodingTheory/ProximityGap/Errors.lean`.
-set_option backward.isDefEq.respectTransparency false
-
 /-!
 # Compiled nonrecursive-Hachi runtime checks
 
@@ -63,6 +57,12 @@ witnesses, the separating pair of `liftComDistinguishes`) is built over `Z₇`. 
 beyond that: this is a code-generation check, and the security theorems are parametric, so
 nothing is learned by running it larger.
 -/
+
+-- v4.33 respects transparency when synthesizing instances: `DecidableEq K.TCom` / `BEq K.TCom`
+-- no longer resolve, because the concrete `K.TCom` projection only reduces past
+-- `nonrecursiveLiftCom` at default transparency. File-scoped, as in
+-- `Data/CodingTheory/ProximityGap/Errors.lean`.
+set_option backward.isDefEq.respectTransparency false
 
 namespace HachiRuntime
 
@@ -136,8 +136,8 @@ def dMat : Ajtai.Simple.PublicParams 𝓜(Q, A) DR (Mu + Nn * rhoDigitCount Q P.
 /-- **The sumcheck cube covers the committed table** — the coverage hypothesis (`hμn`/`hcov`) of
 the chain's theorems, certified at the toy parameters so that this executable stays a model of
 them. This is what pins `MM`: the digit-committed table is `μ₀ + n₀·δ = 8 + 5·2 = 18` rows, so
-the cube needs `18·d ≤ 2^(M+1)` (`M + 1 = 4` sufficed only before the quotient block was
-committed as digits). Without it the checks can silently run on a truncated table: `wTable`
+the cube needs `18·d ≤ 2^(M+1)` — a `16`-point cube holds an undigited table's `13` rows but
+not these `18`. Without it the checks can silently run on a truncated table: `wTable`
 returns `0` off-cube, so every off-cube row would escape the range check and the `M̃_α`
 contraction. -/
 theorem cubeCoversTable :
