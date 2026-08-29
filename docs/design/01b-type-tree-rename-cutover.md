@@ -1,5 +1,9 @@
 # 01b — Type-Tree True-Sight Rename Cutover
 
+> **Current status (2026-08-29).** The generic `Interaction.TypeTree` rename and its cursor/append
+> substrate have landed in PolyFun. This document remains the naming contract for ArkLib's
+> oracle-specific refinement. It no longer describes pending generic PolyFun rename work.
+
 **Normative naming decision and operational PR map.** This document fixes the names of the
 sequential interaction carrier and its oracle-reduction refinement, and specifies the complete
 cross-repository cutover. It complements the semantic inventory in `01` and the landing train in
@@ -174,9 +178,10 @@ PF-6R would make the sequential cutover non-mechanical.
 ### 3.5 No compatibility facade
 
 The final PR contains no deprecated aliases for `Interaction.Spec`, `Spec.Transcript`, old module
-paths, or old specialization names. This foundation stack is not yet frozen, and keeping aliases
-would preserve two vocabularies throughout every downstream theorem. Git history and the explicit
-rename table above provide migration history.
+paths, or old specialization names. The generic `TypeTree` cutover has now landed in PolyFun;
+ArkLib's oracle-specific specialization remains an implementation contract rather than a frozen
+API. Keeping aliases would preserve two vocabularies throughout every downstream theorem. Git
+history and the explicit rename table above provide migration history.
 
 The PR is semantically conservative: underlying `FreeM` representations, universes, reducibility,
 `@[match_pattern]` behavior, constructor equations, append, path splitting, substitution-monoid

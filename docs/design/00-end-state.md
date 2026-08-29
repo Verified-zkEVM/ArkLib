@@ -9,17 +9,16 @@ relativized relations that query the model's own random oracle, and other execut
 new semantics; the architecture must leave seams for them without pretending that the classical
 core already covers them.
 
-The design is being developed on `design/oracle-reduction-v2`, but that branch is documentation and
-prototype provenance, **not an implementation base**. At the 2026-07-13 audit it forked from ArkLib
-at `9f6e989`, while current ArkLib `main` was `e2c3710`; it also carried the older core-rebuild tree.
-Every implementation PR described in [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) starts
-from the then-current default branch. Prototype declarations may be transplanted only as reviewed
-source material.
+The original design was developed on `design/oracle-reduction-v2`. That branch and the preserved
+`archive/oracle-reduction-v2-pre-split` branch are documentation and prototype provenance,
+**not implementation bases**. At the 2026-07-13 audit the design branch forked from ArkLib at
+`9f6e989` and carried the older core-rebuild tree. Prototype declarations may be transplanted only
+as reviewed source material onto the current default branch.
 
-There is already a separate Lean 4.31 migration candidate, `quang/bump-v4.31.0` at `55a9ccc` after
-merging current `main`. It pins VCVio `cbd4144b` and VCVio's tested PolyFun revision `04a12b6`.
-AR-0 should review, rebase, validate, and land that work (or its successor), not recreate the
-migration from scratch; candidate-branch existence is not itself an acceptance result.
+The supported toolchain and exact PolyFun/VCVio revisions are recorded in
+[`00-current-status.md`](00-current-status.md). That status page supersedes the original Lean 4.31
+migration candidate and July dependency inventory; the historical hashes remain useful only for
+interpreting the archived prototype.
 
 ## 1. The ambition
 

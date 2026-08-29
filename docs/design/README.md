@@ -1,10 +1,17 @@
 # ArkLib Oracle Reduction Design Suite (v2)
 
-**Date:** 2026-07-13. **Status:** normative architecture, pre-implementation.
+**Initial design:** 2026-07-13. **Last status refresh:** 2026-08-29.
+**Status:** normative architecture, staged implementation.
 **Provenance:** the original Sol/Fable adversarial and literature audits plus a fresh source-level
 audit of current ArkLib, VCVio, and PolyFun default branches. The raw audit history remains on the
 preserved [`archive/oracle-reduction-v2-pre-split`](https://github.com/Verified-zkEVM/ArkLib/tree/archive/oracle-reduction-v2-pre-split/docs/design/archive)
 branch; the current-tree findings are incorporated into `00`, `01`, and `01a`.
+
+Start with [`00-current-status.md`](00-current-status.md). It records the supported dependency
+baseline, the foundations that have landed since July, the remaining upstream gaps, and the first
+ArkLib implementation train. The numbered design documents remain normative for semantic intent;
+their original dependency inventories and PR identifiers are retained as provenance where the
+status page supersedes them.
 
 ## The design in one paragraph
 
@@ -23,6 +30,7 @@ compilers. Compilation factors into represent/lower/transport/Fiat–Shamir pass
 
 | Doc | Contents | Stability |
 |---|---|---|
+| [`00-current-status.md`](00-current-status.md) | Supported baseline, landed/missing APIs, and first PR train | **operational source of truth** |
 | [`00-end-state.md`](00-end-state.md) | The ambition: all of SNARKs, and what we write down now to enable it | directional |
 | [`01-foundations.md`](01-foundations.md) | Ownership by parametricity; current inventory; precise semantic deltas | **normative** |
 | [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md) | Exact PolyFun, VCVio, and ArkLib PR slices and release train | operational |
@@ -32,7 +40,8 @@ compilers. Compilation factors into represent/lower/transport/Fiat–Shamir pass
 | [`04-oracle-elimination-compiler.md`](04-oracle-elimination-compiler.md) | The compiler passes, commitment capability records, BCS/Nova, guarantee transport | normative interfaces, fluid internals |
 | [`05-roadmap.md`](05-roadmap.md) | Phases, slices, gates, parallel tracks, risks, re-direction principles | fluid by design |
 
-Reading order for a new contributor: 00 → 01 → 01a overview → 01b → 02 → 03 → 04 → 05.
+Reading order for a new contributor: current status → 00 → 01 → 01a overview → 01b → 02 → 03 →
+04 → 05.
 
 ## Resolved decisions (log)
 

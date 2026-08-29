@@ -4,6 +4,15 @@
 semantic center. Medium or large proof payloads are acceptable; mixed ownership, speculative
 frameworks, and unrelated migrations are not.
 
+> **2026-08-29 status refresh.** [`00-current-status.md`](00-current-status.md) is authoritative for
+> the supported revisions and the next ArkLib PR order. PF-1, PF-2, PF-3, PF-6R, and PF-6B have
+> landed, together with a broader PolyFun interaction and realizability substrate. VCVio now has
+> kernel-first responders, measure semantics, structured resource profiles, cost-aware reductions,
+> strict-PPT handler certificates, and repaired shared-ROM Merkle extractability. PF-5 and the
+> planned generic runtime-artifact/outcome/conditioning boundaries remain open. The detailed PF,
+> VCV, and AR entries below preserve the original decomposition and acceptance criteria; they are
+> not a claim that those exact module names or PRs remain unimplemented.
+
 ## 0. Rules of execution
 
 1. **Fresh bases.** Every implementation PR starts from the repository's current default branch.
@@ -11,7 +20,8 @@ frameworks, and unrelated migrations are not.
 2. **One semantic addition.** A PR may add the definitions, laws, tests, and documentation needed
    for one coherent abstraction. It must not also migrate unrelated protocols.
 3. **Mechanical changes are isolated.** Dependency pin/toolchain PRs (`VCV-0`, `AR-0`) are explicit
-   non-semantic exceptions and contain no API redesign.
+   non-semantic exceptions and contain no API redesign. They may update design status documentation
+   when that documentation records the newly supported baseline.
 4. **Reuse before wrapping.** A new type that overlaps an existing one requires an equivalence or a
    written reason why the old carrier cannot express the new semantics.
 5. **Client acceptance.** Local toy tests are necessary but insufficient for a foundation freeze;
@@ -460,11 +470,10 @@ branch are source banks; declarations are reintroduced in reviewable slices.
 **Prerequisites.** Exact candidate revisions of PolyFun/VCVio known to build together; this does not
 wait for every foundation PR or a post-client stable tag.
 
-Start by reviewing and rebasing the existing `quang/bump-v4.31.0` candidate (`55a9ccc` at the
-2026-07-13 audit), which already pins VCVio `cbd4144b` and its tested PolyFun `04a12b6`; do not
-duplicate its compatibility fixes. Update Lean/Mathlib, VCVio, CompPoly, and documentation dependencies; eliminate any direct PolyFun
-override inconsistent with VCVio; refresh the manifest; add CI checks for resolved revisions and
-duplicate packages. Cold clone, cache fetch, full build, lint, and tests must pass. Later runtime and
+Pin VCVio at `f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24` and accept its tested PolyFun
+revision `c0c923693fc827a41d17116579a0c16ed4873b19` transitively. Do not add a direct ArkLib PolyFun
+override. Refresh the manifest and design status together so the documented API baseline matches
+the resolved graph. A full repository validation must pass. Later runtime, transducer, outcome, and
 security candidate revisions arrive in separate mechanical bump PRs.
 
 ### AR-1 — `feat(interaction): plain dependent reduction kernel`

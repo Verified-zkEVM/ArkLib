@@ -25,21 +25,25 @@
 
 ## Phase 0 — Release-train alignment [M]
 
-Land the required PolyFun PRs and compatible revision, then the VCVio pin/runtime PRs and compatible
-revision, then ArkLib AR-0. The current mismatch is material: ArkLib is on Lean 4.30 while current
-PolyFun/VCVio are on 4.31, and the design worktree pins older incompatible revisions.
-Reuse and rebase the existing `quang/bump-v4.31.0` candidate rather than replaying its migration
-fixes; its current manifest alignment is evidence to validate, not a substitute for the gate.
-**Gate:** cold-clone builds in all three repositories; exactly one resolved PolyFun revision; no
-default-branch dependency and no ArkLib override inconsistent with VCVio.
+The common toolchain is now Lean 4.33.1. The alignment PR pins ArkLib to VCVio
+`f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24`; VCVio selects PolyFun
+`c0c923693fc827a41d17116579a0c16ed4873b19`. ArkLib does not override that transitive revision.
+The same PR refreshes this design suite because the supported API baseline and the design status
+must agree.
+
+**Gate:** a full ArkLib validation run; exactly one resolved PolyFun revision; no ArkLib override
+inconsistent with VCVio; [`00-current-status.md`](00-current-status.md) identifies landed and
+missing foundations without presenting target interfaces as implemented.
 
 ## Phase 1 — Elaborating substrate (T-C; AR-1 through AR-6B) [L]
 
-Reintroduce the plain reduction kernel, oracle syntax/observation split, concrete message access,
-resource schema/context morphisms, virtual substitution, and claims/runner-derived closing as the
-separate
-AR PRs in `01a`. `SourceCtx` stays extensional; resource identity/origin/guarantee metadata lives in
-`ResourceSchema`.
+Port the plain reduction kernel and oracle syntax/observation split onto current PolyFun
+`TypeTree`, node contexts, strategies, and runners. Then add concrete message access, resource
+schema/context morphisms, virtual substitution, and claims/runner-derived closing as separate AR
+PRs. Reuse the archived prototype as a source bank, not a merge base. Adapt the current
+`OracleOutputSimulation` surface into the new virtual-oracle representation so existing clients can
+migrate without a flag day. `SourceCtx` stays extensional; resource identity/origin/guarantee
+metadata lives in `ResourceSchema`.
 **Gate:** each PR's local laws and client tests; zero new sorries; legacy untouched; record signatures
 remain provisional until the sumcheck slice.
 
@@ -61,9 +65,12 @@ alignment remains AR-10B in Phase 4.
 
 ## Phase 4 — Execution artifact + outcomes + ordinary security [L]
 
-Needs AR-9A/9B/10B, VCV-1/2/3/5A/5B/9/10, and PF-1/2/3.
+Needs AR-9A/9B/10B and the still-missing generic runtime-artifact and outcome boundaries. PF-1/2/3
+and substantial VCVio responder/resource foundations have landed; see `00-current-status.md` for
+the exact reusable APIs.
 
-Adapt the VCVio runner-produced artifact and outcome boundary; add cursor-backed reachable prefixes;
+Add or upstream the VCVio runner-produced artifact and outcome boundary; add cursor-backed reachable
+prefixes;
 `ClaimSchema`/`Problem`; closed-claim relations; completeness and **ordinary-soundness composition**
 (output admissibility + conditional suffix theorem) in a parallel security namespace; per-protocol
 bridges for the three slices. Use existing VCVio resource/cost carriers and the VCV-10 reduction
@@ -107,8 +114,8 @@ PF/VCV PR train → AR-0 → Phase 1 → 2 → 3
 ## Risk register (top five)
 
 1. **Phase-4 bridge failure** → designed tripwire; diagnose, don't route around.
-2. **Foundation/release slippage** → semantic ArkLib work begins only after AR-0; independent PF and
-   VCV probability/reduction PRs proceed in parallel; temporary adapters obey `01` §3.
+2. **Runtime-boundary slippage** → typed claims and the first protocol slice proceed on the landed
+   PolyFun/VCVio substrate; general security waits for the runner artifact and outcome boundary.
 3. **`ClaimWith`/dependent-index friction** → Phase-2 fallback ready.
 4. **Trace-slicing proof burden** (list-partition obligations everywhere) → use VCV-1 trace regions
    and PF-5/VCV-4 transducers; resist theorem-local plumbing.

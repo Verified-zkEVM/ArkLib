@@ -1,21 +1,23 @@
 # 01 — Foundations: Ownership, Existing Substrate, and Required Deltas
 
 **Normative architectural contract.** This document says what belongs in each library, records the
-foundation that already exists, and isolates the semantic deltas ArkLib actually needs. The
+foundation inventory behind the design, and isolates the semantic deltas ArkLib actually needs. The
 PR-by-PR landing plan is [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md). The normative
 true-sight naming cutover is
 [`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md).
 
-The inventory was checked on 2026-07-13 against:
+The original inventory was checked on 2026-07-13 against:
 
 - ArkLib `main` at `e2c3710` (Lean 4.30 dependency train);
 - ArkLib's active Lean 4.31 migration candidate `quang/bump-v4.31.0` at `55a9ccc`;
 - VCVio `main` at `cbd4144b` (Lean 4.31; PolyFun pinned at `04a12b6`);
 - PolyFun `main` at `2ed730d` (Lean 4.31).
 
-These hashes are audit evidence, not dependency pins. Candidate integration uses exact revisions;
-only revisions validated by downstream clients receive stable tags. See `01a`. The candidate
-branch is implementation evidence for AR-0, not a fourth semantic baseline.
+These hashes are historical audit evidence, not dependency pins. The 2026-08-29 source audit found
+that the `TypeTree`, cursor, handler, strategy, responder, resource, kernel, and ranked-execution
+foundations described below have substantially advanced. The supported revisions and the precise
+landed/missing split are maintained in [`00-current-status.md`](00-current-status.md); that page is
+authoritative whenever this document's original availability notes differ from current code.
 
 ## 0. Ownership is determined by parametricity, not nouns
 
@@ -69,13 +71,14 @@ Do not rebuild the following:
   (historically under `Interaction.Spec` before PF-6R).
 - `Interaction.Concurrent.Front` and process prefixes for concurrent semantics.
 
-Three existing “prefix-like” objects have different meanings and must not be conflated:
+The original audit distinguished three “prefix-like” objects that must not be conflated:
 
 1. `FreeM.Path s` is a **complete syntactic path** to a leaf.
 2. `DynSystem.Prefix sys st n` is a **finite operational orbit** of fixed length.
 3. `Concurrent.Front S` is a **currently enabled structural event and one-step residual**.
 
-None is the missing partial syntactic path through an arbitrary `FreeM` tree.
+PolyFun has since added free-monad cursors for the missing partial syntactic path. The three objects
+above still have distinct meanings and must not be substituted for that cursor API.
 
 ### 1.2 Required PolyFun deltas
 
@@ -332,13 +335,14 @@ projection, and guarantee transport prose-only.
 
 ## 5. Release and branch discipline
 
-Foundation implementation advances in compatible candidates, not one serialized mega-release:
+Foundation implementation advances in compatible candidates, not one serialized mega-release.
+The current release train is:
 
 ```text
-base Lean-4.31 PolyFun/VCVio candidate → ArkLib AR-0 and AR-1…AR-8
-PF cursor/transducer candidates → VCVio candidate pin → AR-10A / VCV-4 clients
-VCVio runtime candidate → AR-9A/9B and AR-10B
-VCVio security/ROM/reduction candidate → state restoration and compiler work
+Lean 4.33.1 + VCVio f9dc47d9 + VCVio-selected PolyFun c0c92369 → ArkLib alignment
+landed TypeTree/cursor/strategy and responder/resource/kernel APIs → AR-1…AR-8
+missing transducer/runtime-artifact/outcome APIs → AR-9A/9B and AR-10B
+conditioning/dynamic-programming APIs → state restoration and compiler work
 ```
 
 - Every PR starts from its repository's current default branch.
