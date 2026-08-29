@@ -1,388 +1,239 @@
-# 01 — Foundations: Ownership, Existing Substrate, and Required Deltas
+# Foundations: ownership, available substrate, and remaining gaps
 
-**Normative architectural contract.** This document says what belongs in each library, records the
-foundation inventory behind the design, and isolates the semantic deltas ArkLib actually needs. The
-PR-by-PR landing plan is [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md). The normative
-true-sight naming cutover is
-[`01b-type-tree-rename-cutover.md`](01b-type-tree-rename-cutover.md).
+This document is the normative cross-library contract for the typed oracle-reduction work. It says
+which library owns each abstraction, which supported APIs ArkLib must reuse, and which integration
+boundaries are genuinely absent.
 
-The original inventory was checked on 2026-07-13 against:
+The exact supported revisions live in [`00-current-status.md`](00-current-status.md). The live PR
+sequence lives in [`01a-foundation-pr-plan.md`](01a-foundation-pr-plan.md). Historical July
+proposals remain in the archive and are not repeated here as future work.
 
-- ArkLib `main` at `e2c3710` (Lean 4.30 dependency train);
-- ArkLib's active Lean 4.31 migration candidate `quang/bump-v4.31.0` at `55a9ccc`;
-- VCVio `main` at `cbd4144b` (Lean 4.31; PolyFun pinned at `04a12b6`);
-- PolyFun `main` at `2ed730d` (Lean 4.31).
+## 1. Ownership follows parametricity
 
-These hashes are historical audit evidence, not dependency pins. The 2026-08-29 source audit found
-that the `TypeTree`, cursor, handler, strategy, responder, resource, kernel, and ranked-execution
-foundations described below have substantially advanced. The supported revisions and the precise
-landed/missing split are maintained in [`00-current-status.md`](00-current-status.md); that page is
-authoritative whenever this document's original availability notes differ from current code.
+The useful boundary is not “trees in PolyFun, worlds in VCVio, protocols in ArkLib.” All three
+libraries contain things called runs, traces, or games. Ownership follows the structure an object
+needs:
 
-## 0. Ownership is determined by parametricity, not nouns
+> **PolyFun owns domain- and effect-independent interaction structure. VCVio owns
+> oracle-specialized probabilistic execution and cryptographic resource semantics. ArkLib owns
+> protocol meaning, claims, relations, security notions, backend adapters, and compilers.**
 
-The old slogan—trees in PolyFun, worlds/traces in VCVio, protocols in ArkLib—was too coarse.
-Current PolyFun already contains generic runs, games, traces, handlers, and phased machines. The
-rule is:
-
-> **PolyFun owns domain- and effect-independent structural interaction semantics (monad
-> polymorphism is strong evidence, not a necessary condition). VCVio owns
-> oracle-specialized probabilistic execution, worlds, probability, and cryptographic resource
-> semantics. ArkLib owns protocol meaning: roles, claims, relations, security notions, commitment
-> adapters, and compilers.**
-
-Mixed notions split vertically rather than being assigned wholesale:
+Mixed notions split vertically:
 
 | Concern | PolyFun | VCVio | ArkLib |
 |---|---|---|---|
-| Partial execution | syntactic `FreeM.Cursor`; generic dynamical prefixes | query/world execution prefix | reachable protocol prefix and verifier fork |
-| Trace | generic list/free-monoid and relabel/filter algebra | dependent query/answer log, probabilistic instrumentation | verifier view, SR moves, compiler segmentation |
-| Transducer | pure causal stream/list transducer | query-log specialization and resource certificate | hash-chain, Merkle, and SR adapters |
-| Phases | generic sequential machine/game wiring | persistent probabilistic world session/checkpoint | commit/open, preprocessing, and extractor games |
-| Budget | generic additive/preordered algebra where useful | oracle query/cost profiles and probability bounds | protocol labels and feasibility constraints |
-| Commitment | no cryptographic content | standalone primitive algorithms/games/theorems | backend capability adapter and compiler transfer |
+| Partial execution | `FreeM.Cursor`; generic dynamical prefixes | query/world execution state | reachable protocol prefix and verifier forks |
+| Trace | generic list/free-monoid structure | dependent query/answer logs and instrumentation | verifier views, state-restoration moves, compiler segments |
+| Transducer | generic causal finite-trace algebra | query-log specialization and resource certificate | hash-chain, Merkle, and extractor adapters |
+| Phases | generic sequential machine wiring | persistent probabilistic handler state | commit/open, preprocessing, and extractor games |
+| Budget | generic ordered/additive algebra | query, cost, and resource profiles | protocol labels and feasibility refinements |
+| Commitment | no cryptographic content | primitive algorithms, games, and theorems | compiler-facing capability and transfer theorem |
 
-Dependency direction remains strict:
+The dependency direction is strict:
 
 ```text
 PolyFun  ←  VCVio  ←  ArkLib
 ```
 
-PolyFun imports neither VCVio nor ArkLib. VCVio imports no ArkLib. ArkLib is the integration layer.
-If a proposed object would reverse an arrow, split its structural and specialized parts.
+If a proposed object reverses an arrow, split its structural and specialized parts.
 
-## 1. PolyFun contract
+## 2. PolyFun contract
 
-### 1.1 What is already present
+### 2.1 Available at the supported pin
 
-Do not rebuild the following:
+The structural train envisioned by the original design has landed. The merged lineage is:
 
-- `PFunctor.FreeM.Path` and `PathAlong` for terminal root-to-leaf paths, with extensive dependent
-  append split/pack/unpack laws (`PFunctor/Free/Path.lean`).
-- displayed data and decoration maps, dependent `Over.map`, base transport, identity/composition,
-  and append naturality (`PFunctor/Free/Displayed/Decoration.lean` and `.../Append.lean`).
-- `DynSystem.Prefix`, `Run`, events/tickets, reachability, and generic execution
-  (`PFunctor/Dynamical/Run.lean`).
-- `PointedMachine.seqComp`, handler-parametric execution, responder/game wiring, simulation, and
-  refinement (`PFunctor/Dynamical/*`).
-- `Control.Trace` and `PFunctor.Trace` stateless monoid/list emitters, including the polynomial
-  list/free-monoid carrier, relabel/filter operations, and sum projections.
-- `Interaction.TypeTree.Chain` and `TypeTree.StateChain` as existing n-ary/telescope candidates
-  (historically under `Interaction.Spec` before PF-6R).
-- `Interaction.Concurrent.Front` and process prefixes for concurrent semantics.
+| Capability | Merged source | Final supported surface |
+|---|---|---|
+| Partial syntactic paths | [PolyFun #43](https://github.com/Verified-zkEVM/PolyFun/pull/43), `08fd558` | `PFunctor.FreeM.Cursor`, residuals, composition, extensions, terminal bridges |
+| Displayed restriction | [PolyFun #58](https://github.com/Verified-zkEVM/PolyFun/pull/58), `609fbc0` | `Displayed.Algebra.ChildProjection`, dependent `Over.Algebra.ChildProjection`, decoration restriction |
+| Cursor decomposition through append | [PolyFun #59](https://github.com/Verified-zkEVM/PolyFun/pull/59), `33e673a` | `Cursor.liftAppend`, `Cursor.joinRight`, `Cursor.AppendView`, split/join laws |
+| Polynomial normalization and TypeTree naming | [PolyFun #64](https://github.com/Verified-zkEVM/PolyFun/pull/64), `45e4f2c` | `Interaction.TypeTree`, `TypeTree.Path`, substitution and chain foundations |
+| Dependent chain concatenation | [PolyFun #66](https://github.com/Verified-zkEVM/PolyFun/pull/66), `ff457e0` | `TypeTree.Chain.then`, flattening, path equivalence, strategy composition, reassociation |
 
-The original audit distinguished three “prefix-like” objects that must not be conflated:
+There was no separate merged “PF-6A at PR #62” foundation. PR #62 is a later telescope cleanup;
+the normalization and rename landed together in PR #64. Live documentation must cite the merged
+history above.
 
-1. `FreeM.Path s` is a **complete syntactic path** to a leaf.
-2. `DynSystem.Prefix sys st n` is a **finite operational orbit** of fixed length.
-3. `Concurrent.Front S` is a **currently enabled structural event and one-step residual**.
+ArkLib must also reuse the broader supported interaction surface:
 
-PolyFun has since added free-monad cursors for the missing partial syntactic path. The three objects
-above still have distinct meanings and must not be substituted for that cursor API.
+- `TypeTree.Node.Context`, `TypeTree.Node.Schema`, context morphisms, and decorations;
+- `SyntaxOver`, `ShapeOver`, `StrategyOver`, and `InteractionOver`;
+- two-party roles, focal and counterpart strategies, dependent composition, and execution
+  factorization;
+- `FreeM.Path` append/split laws and the `Cursor` occurrence/rewind APIs;
+- handler folds and handler composition;
+- qualitative and quantitative realizability, ranked execution, and admitted-answer leaf
+  contracts.
 
-### 1.2 Required PolyFun deltas
+These are foundations to consume, not abstractions to wrap under ArkLib names.
 
-**PF-1 — Syntactic `FreeM.Cursor` (required).** A cursor selects any residual subtree, including the
-root and internal nodes. It has structural descent, residual, composition, unit/associativity laws,
-an immediate-edge/witness-bearing extension relation, and an equivalence between terminal cursors
-and `Path`. It is not called `Prefix` or `Front`.
+### 2.2 Distinct notions that must stay distinct
 
-Indicative shape:
+Four nearby path-like objects serve different purposes:
+
+1. `FreeM.Path s` is a complete syntactic path to a leaf.
+2. `FreeM.Cursor s` selects any residual syntactic subtree, including the root or an internal node.
+3. `DynSystem.Prefix sys st n` is a finite operational orbit of fixed length.
+4. `Interaction.Concurrent.Front S` is a currently enabled concurrent event and residual.
+
+ArkLib's later `FullPrefixAt` combines a cursor with protocol decorations, concrete message data,
+and reachability. It does not replace any of these generic objects.
+
+### 2.3 Remaining PolyFun gaps
+
+Only two generic proposals remain relevant:
+
+#### Causal finite-trace transducer
+
+The compiler and extractor pipeline eventually needs an effect-free, stateful transducer whose
+output chunk depends on the current state and consumed input. The minimum useful contract is:
 
 ```lean
-inductive FreeM.Cursor : (s : FreeM P α) → Type _
-  | root (s) : Cursor s
-  | down {a k} (b : P.B a) (tail : Cursor (k b)) : Cursor (.roll a k)
-
-def Cursor.residual : Cursor s → FreeM P α
-def Cursor.comp (c : Cursor s) : Cursor c.residual → Cursor s
+structure Transducer (Input Output : Type*) where
+  State : Type*
+  init  : State
+  step  : State → Input → State × List Output
 ```
 
-**PF-2 — Cursor restriction (required).** A completely arbitrary `Displayed.Shape` cannot be
-restricted along a cursor: from an unconstrained value in `D.node a child` there is no canonical way
-to recover `child b`. Add `Displayed.Shape.ChildProjection`, its dependent
-`Displayed.OverShape.ChildProjection` counterpart, and define the cursor-spine traversal once
-against that capability. Supply the canonical specializations for `Decoration` and
-`Decoration.Over`; prove naturality with existing maps and base transport. Restriction returns data
-on the cursor's **future residual subtree** only. It does not recover data along the visited spine.
-ArkLib separately folds the cursor spine and pairs it with concrete hidden-message prefix data in
-`FullPrefixAt`.
+It should provide open execution, append/streaming laws, identity, composition, prefix causality,
+and behavioral equivalence. A terminal finalizer is separate because flushing can violate ordinary
+prefix monotonicity. Cost remains an external certificate supplied by VCVio or ArkLib.
 
-**PF-3 — Cursor decomposition through append (required).** Classify a cursor of dependent
-`FreeM.append s k` as either:
+This API is **missing** at the supported pin. It does not block typed claims or the first Sumcheck
+slice; it blocks the generic compiled-layer trace pipeline.
 
-- a cursor in `s` whose residual is explicitly witnessed to be an internal `.roll`; or
-- a completed `p : Path s` plus a cursor in `k p`.
+#### Operational-prefix concatenation
 
-`Cursor.liftAppend` transports the first case through append; `Cursor.joinRight` follows a complete
-prefix path into the second case; an `AppendView` packages the disjoint classification. Split/join
-must be inverse, expose residual equations, commute with cursor composition, agree with terminal
-`Path.append`, and transport decoration restriction. This is the foundation RBR and reduction
-composition actually need.
+Dependent concatenation for `DynSystem.Prefix` remains **client-gated**. Ordinary oracle phases can
+sequence monadic computations and append query logs. Add a dynamical prefix operation only when a
+concrete operational-machine client needs endpoint-preserving segment composition and cannot use
+that simpler route.
 
-**PF-4 — Operational-prefix concatenation (gated).** If a concrete interaction-machine runtime needs
-it, extend `DynSystem.Prefix` with dependent append/segment and endpoint/event/ticket laws. Ordinary
-VCVio `OracleComp` phase traces concatenate through monadic execution and `QueryLog.append`; they do
-not depend on this PR. The client must specify the phase-boundary witness and any required endpoint
-transport before PF-4 is promoted.
+### 2.4 Composition boundary
 
-**PF-5 — Pure causal transducers (required before compiler trace pipelines).** Add an effect-free
-stateful Kleisli–Mealy companion to the existing stateless `Control.Trace`/`PFunctor.Trace` APIs:
-`Control.Transducer ι ο` with state, `runFrom`/`runOpen`, identity, and sequential composition. Reuse
-the existing list/free-monoid trace carriers and relabel/filter algebra rather than introducing a
-second trace representation. Do not encode this as a `MooreMachine`: Moore output is a state
-observation made before an input, whereas a transducer's finite output chunk depends jointly on the
-current state and consumed input. Ordered-prefix causality follows from `runOpen_append`; it is not
-an arbitrary proof field. Terminal `finish` output is a separate `Finalizer`, because flushing can
-violate ordinary prefix monotonicity. Cost is an external certificate owned by the specialized
-client. Identity and associativity are stated under explicit behavioral equivalence
-(`∀ xs, T.runOpen xs = U.runOpen xs`) or a named state isomorphism, not structure equality across
-existential state carriers.
+PolyFun's current factorization theorem intentionally distinguishes pure and effectful suffix
+construction. A pure suffix factors under a lawful monad. A general effectful suffix requires
+`LawfulCommMonad`; ordinary `StateT` does not qualify.
 
-**PF-6A — Polynomial interaction normalization (land before the naming cutover).** Identify the
-undecorated type-tree polynomial with the free polynomial and expose its substitution-monoid,
-finite-chain, stopping-tree, fold, and uniqueness structure. This is PR #62; it deliberately keeps
-the historical names so the algebraic change remains reviewable.
+This is a mathematical constraint, not an API inconvenience. ArkLib's stateful security theorems
+must thread the actual prefix state and quantify the suffix theorem over reachable histories. Two
+standalone stateful reduction theorems do not imply a theorem about their sequential composition.
 
-**PF-6R — Type-tree true-sight naming (required before further interaction foundations).** Perform
-the complete `Interaction.Spec → Interaction.TypeTree` and `Spec.Transcript → TypeTree.Path`
-cutover, including module paths, namespace-owned APIs, specialization names, tests, maintained
-documentation, and generated imports. Do not retain compatibility aliases. The representation and
-all computation/universal-property statements remain unchanged. See `01b` for the exact map and
-downstream train.
+### 2.5 ArkLib acceptance evidence
 
-**PF-6B — N-ary presentation/coherence (gated).** Do **not** add a new
-`TypeTree.Presentation` datatype as foundation work. First use existing
-`TypeTree.Chain`/`TypeTree.StateChain`; when a concrete three-reduction client needs operational
-reassociation, try dependent `Chain.then`, path join/split, and typed reassociation. A new
-presentation type requires a recorded failed client and design note.
+The PolyFun substrate is accepted for ArkLib only when real clients demonstrate:
 
-### 1.3 PolyFun acceptance
+- a plain dependent reduction whose execution and composition reuse the PolyFun runner;
+- an oracle type tree whose public and execution paths remain distinct;
+- cursor restriction on role and oracle decorations;
+- cursor decomposition across a two-stage reduction;
+- `TypeTree.Chain.then` and `reassoc` are sufficient for the first multi-stage client, or a concrete
+  failure explains the smallest missing generic law.
 
-PF-1/2/3/5 are accepted only when both local laws and a downstream client pass. PF-6R additionally
-requires the exact negative-search and definitional-behavior gates in `01b`:
+## 3. VCVio contract
 
-- constructor and residual equations reduce by `rfl` where promised;
-- cursor restriction along composition equals direct restriction;
-- append cursor split/join is inverse on a genuinely dependent heterogeneous tree;
-- no cast-freedom claim relies on `#print axioms` (`Eq.rec` is not an axiom); use `rfl`, `simp only`,
-  and source-level absence of proof-generated transports;
-- ArkLib defines one `FullPrefixAt` with PF-1/2 and decomposes composition with PF-3;
-- VCVio specializes PF-5 to a query/world trace and proves one resource-transport theorem.
+### 3.1 Available at the supported pin
 
-## 2. VCVio contract
+VCVio already owns the semantics ArkLib should build on:
 
-### 2.1 Existing semantic center
+| Area | Supported surface | ArkLib rule |
+|---|---|---|
+| Oracle programs | `OracleSpec`, `OracleComp`, `QueryImpl`, `simulateQ` | do not define a second oracle free monad or evaluator |
+| Handler algebra | construction, composition, linking, stateful execution, query-preserving laws | express source routing and substitution through these laws |
+| Instrumentation | tracing before/after a query, logging, caching, counting, weighted cost | reuse erasure, failure, support, and bound-transfer theorems |
+| Resources | query bounds, `ResourceProfile`, `QueryCost`, `CostModel` | refine with protocol labels; do not create a parallel ledger |
+| Probability | measure denotation and kernels; `evalSPMF` compatibility bridge | new observation boundaries use measures; legacy discrete games may retain `Pr[...]` |
+| Responders | `ProbResponder`, oracle strategies and machines, wired runs | reuse for probabilistic interaction execution |
+| Complexity | ranked certificates, strict oracle-PPT witnesses, `HandlerCertificate` | keep backend-relative evidence explicit |
+| Reductions | `SecurityGame` and `ReductionWithCost` | reuse cost transforms; add error transport only when a client needs it |
+| Merkle | shared-ROM execution and extractability theorem | adapt as a backend capability instead of restating the primitive game |
 
-The following are landed foundations, not missing abstractions:
+`ReductionWithCost` records an adversary map and a monotone cost transform. Its generic security
+theorem assumes an advantage-preserving inequality supplied separately. It does not yet package the
+additive or substitution-style error transforms required by the final compiler calculus.
 
-- `OracleComp`, `QueryImpl`, `simulateQ`, sum/subspec coercions, `evalDist`, and `ProbComp`.
-- `QueryImpl.Stateful I E σ`, state-separated frames, `run`/`runState`, state transport, linking, and
-  parallel composition (`SimSemantics/StateT/StateSeparating.lean`).
-- `SPMFSemantics` as interpretation plus observation, and existing state-oracle/UC runners.
-- ordered dependent `QueryLog spec := List ((q : spec.Domain) × spec.Range q)`, logging/tracing
-  transformers, output-marginal and failure bridge laws, cache/log projections.
-- structural query bounds, per-index bounds, `ResourceProfile`, `CostModel`, pathwise/expected cost,
-  and profile substitution.
-- caching, lazy/eager random-oracle equivalence, programming policies, replay and seeded forking.
-- TV distance, bind/bad-event bounds, birthday/collision kernels, deferred sampling, and many ROM
-  probability lemmas.
-- `NeverFail` and missing-mass algebra.
-- abstract-advantage `SecurityGame`, negligibility, hybrid/reduction theorems, and composable
-  `ReductionWithCost`.
-- standalone commitment/Merkle algorithms and security theorems, including two-phase extraction.
+### 3.2 Missing integration boundaries
 
-Consequently V4/V7/V8/V9/V10 below are **consolidation or repair**, not greenfield replacements.
+The following are current gaps, not July-era greenfield rewrites.
 
-### 2.2 Required VCVio deltas
+#### Runner-produced resumable artifact
 
-**V1 — Thin world/session package.** Package existing stateful semantics without creating a second
-evaluator. A world contains a surface oracle interface, hidden state, setup computation, and
-`QueryImpl.Stateful`; running delegates to `runState`/`simulateQ`. Observation and trace
-instrumentation are orthogonal adapters, not fields of the core world.
+ArkLib needs one execution result that packages the returned value, final handler state, ordered
+query trace or named trace regions, and the evidence used to close derived claims. Resumption must
+continue from that final state, and two sequential regions must agree with one sequential run.
 
-One heterogeneous interface plus one shared state already represents correlated logical oracles.
-Product-state construction and independence are deferred until a client supplies explicit joint
-initialization/routing semantics; sequencing two initializers through one imported oracle can itself
-correlate them. Initial distributions are setup computations. The first API retains VCVio's current universe-0 runtime boundary;
-universe generalization is a separate PR.
+VCVio has the component stateful runners and instrumentation laws, but no single supported artifact
+with this contract. The first general security client should add the smallest package upstream or a
+thin ArkLib adapter that is explicitly temporary.
 
-**V2 — Query-event regions and traced execution.** Name the existing dependent event type, add
-list-boundary/region operations (`take`, `drop`, interval, phase split), and projection along a named
-interface embedding. Query position is derived from a list boundary, not stored in every event.
-The oracle-domain tag supplies identity within a given interface. Globally stable resource identity
-across reassociation is client schema data (ArkLib `ResourceSchema`), mapped into/out of VCVio
-events by an adapter.
+#### One terminal failure boundary
 
-The traced runner returns output, final state, and trace from one execution. Erasure to the ordinary
-runner, failure preservation, trace concatenation, and projection laws are mandatory.
+Missing probability mass retains VCVio's existing failure or nontermination meaning. Protocol
+rejection and explicit model faults are returned values. The desired bridge materializes missing
+mass only when a caller supplies the named fault value; otherwise the caller proves `NeverFail`
+before decoding a terminal outcome.
 
-**V3 — World-trace transducer specialization.** Specialize PolyFun PF-5; do not define another generic
-transducer. Add external certificates relating input/output event counts or `ResourceProfile`s and
-prove certificate composition. Hash/Merkle/SR transducer instances remain ArkLib/backend code.
+No supported generic accept/reject/fault materialization currently provides this boundary.
 
-**V4 — Resource transport consolidation.** Keep `ResourceProfile`, `QueryBound`, `CostModel`, and
-`ReductionWithCost` as the vocabulary. Add named bridges from per-handler step bounds to linked
-runtime imported-query bounds, from traced artifacts to profile inequalities, and through
-instrumentation/transducer composition. Do not introduce a parallel `Budget` or `Ledger` hierarchy.
+#### Certified query-trace transducers
 
-**V5 — Persistent probabilistic phase artifact.** VCVio VCV-3 implements the common
-oracle-computation case: `resume` continues from final handler state and the old trace length becomes
-the next region boundary. A separate adapter to PolyFun operational machines/PF-4 is gated on a real
-client. This is not a universal “phased adversary” record; commit/open and five-phase interfaces
-remain ArkLib or primitive-specific.
+VCVio should specialize the future PolyFun transducer to dependent query logs and attach external
+length, query-bound, or `ResourceProfile` certificates. It must not introduce a second generic
+transducer carrier.
 
-**V6 — Auditable dynamic programming.** Preserve existing static `ProgrammingPolicy`, caching,
-replay, and fork kernels. Add a dynamic program command with an explicit result
-(`fresh`, `alreadyProgrammed`, `queriedBeforeProgram`, conflict according to policy), an audit event,
-and preservation/freshness laws. Add replay-policy adapters only where an actual extractor theorem
-needs them; do not replace working replay implementations with a taxonomy.
+#### Conditioning and auditable dynamic programming
 
-**V7 — Error-bearing reduction composition.** Extend existing `SecurityGame` and
-`ReductionWithCost` with a bundled composable security reduction carrying advantage error and cost
-transform. Add additive and substitution-style composition for error functions. Do not make
-failure probability an intrinsic field of every adversary, and do not stabilize a universal
-`AdvCharacteristics` until two non-CY clients demand it. CY-specific extraction-time recurrences
-remain ArkLib theorems over generic function algebra initially.
+VCVio contains concrete conditioned arguments and random-oracle programming tools, but the reusable
+finite-partition, query-before-program, and state-restoration interfaces remain incomplete. Add only
+the general lemmas demanded by a real salted state-restoration game.
 
-**V8 — Probability facade and repairs.** Add a scalar conditional-probability facade and finite
-partition lemmas, and only the generic lemmas demanded by real games. Existing exact birthday bounds and lazy/eager
-equivalence count as delivered. Before claiming the ROM kit adequate, repair or quarantine the
-currently trivial `probEvent_unqueried_match_le` and the vacuous `Unique ι` collision-win theorem in
-`QueryTracking/Unpredictability.lean`.
+#### Error-bearing cost-aware reductions
 
-**V9 — One failure boundary.** Preserve the existing meaning: missing `SPMF` mass is monadic
-failure/nontermination. An explicit protocol `fault` is a returned value, not silently identified
-with missing mass. Provide one named `materialize (onMissing : RuntimeFault)` bridge to
-`Outcome α RuntimeFault`. The default
-ArkLib path must either prove `NeverFail` before decoding a `Terminal`, or explicitly choose and
-name `onMissing`. For `α = Terminal Claim ProtocolFault`, runtime failure and returned protocol fault
-remain two distinct branches. No second semantics is introduced.
+The compiler eventually needs a composable reduction object that carries both the existing cost
+transform and an explicit advantage error transform. Additive and substitution-style composition
+must be separate operations. Failure probability remains experiment-specific; it is not a field of
+every adversary.
 
-**V10 — Complete existing game/reduction calculus.** Keep `SecurityGame Adv` and abstract adversary
-class predicates. Add the bundled reduction from V7, dependent/parameter-indexed adversary support
-only if a concrete game cannot use the current form, and setup/keygen inside concrete experiments.
-Do not add the proposed Boolean-only `GameFamily Params experiment` in parallel. Uniformity,
-nonuniformity, and advice are properties of the adversary representation/class, not fields guessed
-by the generic game record.
+### 3.3 VCVio acceptance evidence
 
-### 2.3 VCVio acceptance
+The VCVio boundary is ready for general ArkLib security when real clients show:
 
-The Γ foundation is adequate for ArkLib's first security phase when:
+1. a correlated heterogeneous oracle world runs without a special joint-world primitive;
+2. traced execution erases to the same output semantics and failure behavior;
+3. resumption preserves state and trace order across two phases;
+4. query and resource bounds transport through one linked handler and one trace transducer;
+5. dynamic programming distinguishes query-before-program from fresh insertion;
+6. a reduction composes both cost and advantage error;
+7. terminal decoding crosses exactly one named missing-mass boundary;
+8. ArkLib adapts the supported Merkle theorem without restating its primitive experiment.
 
-1. a heterogeneous correlated world runs through V1 with no special joint-world primitive;
-2. its traced run erases to the same output distribution and failure mass;
-3. two resumed phases produce the same final semantics as sequential execution, and their regions
-   concatenate in order;
-4. query/profile bounds transport through one linked stateful simulation and one PF-5 transducer;
-5. dynamic programming distinguishes query-before-program and preserves unprogrammed answers;
-6. one error-bearing `SecurityReduction` composes both advantage loss and cost transformation;
-7. a finite conditioned bad-event proof uses the V8 facade;
-8. both defective ROM statements named above are repaired or removed from the advertised kit;
-9. an explicit-fault game proves `NeverFail` before ArkLib terminal decoding;
-10. the existing Merkle extraction theorem can be adapted by ArkLib without restating its primitive
-    experiment.
+## 4. ArkLib contract
 
-## 3. ArkLib contract
+ArkLib owns the structures that give the generic foundations protocol meaning:
 
-ArkLib owns and must build:
+- the public/oracle node distinction and its decorations;
+- typed prover and verifier packages over PolyFun strategies;
+- extensional source contexts, virtual output programs, and substitution;
+- resource identity, origin, aliasing, and guarantee schemas;
+- open and closed claims, relations, and run-derived closing;
+- ordinary, knowledge, round-by-round, and state-restoration security notions;
+- commitment-backend adapters and oracle-elimination passes;
+- protocol-specific error, feasibility, and running-time theorems.
 
-- protocol syntax and the public/oracle observation split;
-- concrete oracle-message access and execution;
-- extensional source contexts plus a separate resource schema for identity, origin, aliasing, and
-  ideal guarantees, with later backend assignment indexed by that schema;
-- virtual-oracle interpretation, substitution, claims, and runner-derived closing (`02`);
-- protocol security games, relations, extractors, implication maps, and state restoration (`03`);
-- commitment-backend adapters, guarantee transport, compiler passes, and concrete proof systems
-  (`04`);
-- legacy bridges and migration ledgers.
+ArkLib does not own a second handler algebra, probability denotation, generic query log, resource
+profile, or causal transducer.
 
-ArkLib must not define private replacements for PolyFun cursor/transducer algebra or VCVio
-world/probability/resource/game semantics. A temporary adapter is allowed only when it has:
+## 5. Release and migration discipline
 
-1. a named upstream issue/PR dependency;
-2. no new theorem stated solely in the temporary vocabulary;
-3. a deletion/migration test in the consuming ArkLib PR.
+- Every implementation PR starts from its repository's current default branch.
+- ArkLib uses one VCVio pin and accepts the PolyFun revision selected by VCVio.
+- Mechanical dependency changes stay separate from semantic API changes.
+- A temporary downstream adapter names its upstream destination and carries a deletion test.
+- The archived prototype is a proof and API source bank, never a merge base.
+- Legacy ArkLib consumers remain until a concrete protocol has a proved two-way bridge.
+- Interface names freeze only after a real downstream client exercises all observable components.
 
-Standalone primitive theorems may remain in VCVio even when ArkLib consumes them. For example,
-Merkle extraction is a VCVio cryptographic theorem; the ArkLib object is a `CommitBackend` adapter
-and transfer proof.
-
-## 4. Resource identity and the real/virtual boundary
-
-Two layers are both necessary:
-
-- `SourceCtx` is the extensional handler presentation used to interpret virtual query programs.
-- `ResourceSchema` records stable client identity, origin, guarantee, and sharing/aliasing.
-- `BackendAssignment` is a later compiler object indexed by a `ResourceSchema`; it is not intrinsic
-  ideal-resource data.
-
-Pure `SourceHom` routes extensional handlers. `SchemaHom` lies over a `SourceHom` and proves identity,
-sharing, origin, and guarantee coherence. Virtual-oracle substitution depends only on `SourceHom`;
-compiler and trace theorems use `SchemaHom`.
-
-Every reified guarantee descriptor also carries a coherence witness relating it to the slot's
-actual ideal object/refined type. Metadata that merely *claims* a degree/codeword guarantee without
-this witness is ill formed.
-
-VCVio query events are tagged by the currently executed oracle interface. ArkLib proves that its
-schema routing maps those tags coherently across context morphisms. Neither VCVio instrumentation
-nor reassociation of nested sum types can manufacture globally stable identity by itself.
-
-This separation is a foundation decision. Enriching `SourceCtx` directly with all compiler metadata
-would contaminate semantic substitution; omitting `ResourceSchema` would make aliasing, trace
-projection, and guarantee transport prose-only.
-
-## 5. Release and branch discipline
-
-Foundation implementation advances in compatible candidates, not one serialized mega-release.
-The current release train is:
-
-```text
-Lean 4.33.1 + VCVio f9dc47d9 + VCVio-selected PolyFun c0c92369 → ArkLib alignment
-landed TypeTree/cursor/strategy and responder/resource/kernel APIs → AR-1…AR-8
-missing transducer/runtime-artifact/outcome APIs → AR-9A/9B and AR-10B
-conditioning/dynamic-programming APIs → state restoration and compiler work
-```
-
-- Every PR starts from its repository's current default branch.
-- The design branch is never merged as an implementation batch.
-- Lake manifests use exact/tagged compatible revisions; ArkLib must not override PolyFun with a
-  revision inconsistent with the one VCVio was tested against.
-- Mechanical toolchain/pin changes are isolated from semantic PRs.
-- Candidate revisions are exact commits used for downstream validation; stable tags/frozen
-  interfaces are published only after the named clients pass. This avoids a circular requirement
-  that an upstream API be frozen before the downstream acceptance client can build.
-- CI checks the resolved PolyFun revision and rejects duplicate/inconsistent package instances.
-
-## 6. Freeze discipline
-
-An item freezes only after:
-
-1. its local laws and tests pass;
-2. the first downstream client named in `01a` passes;
-3. adapters to the pre-existing vocabulary are proved;
-4. no parallel type with the same semantics remains unexplained.
-
-The design equations in `02` are **provisional signature sketches** until universe-polymorphic Lean
-declarations and two concrete clients elaborate. Directional principles may be stable while field
-layouts remain fluid. Changes to an accepted interface require a decision-log entry; unimplemented
-or client-unvalidated names do not.
-
-## 7. Cross-library contract tests
-
-The release train is accepted only when these end-to-end checks pass:
-
-1. `restrict (restrict d c) e = restrict d (c.comp e)` and cursor-spine accumulation composes;
-2. append cursor split/join is inverse and is consumed by a composite ArkLib reduction;
-3. VCVio query tracing erases to the same output distribution and missing mass;
-4. ArkLib resource identity survives context routing and maps coherently to VCVio event tags;
-5. query/profile bounds transport through `simulateQ`, linked handlers, and a virtual-oracle
-   substitution client;
-6. world phase regions concatenate in execution order;
-7. explicit fault and missing mass cross exactly one named boundary;
-8. VCVio Merkle extraction instantiates an ArkLib backend capability without duplicating its game;
-9. security experiments are defined over the actual `runArtifact execute` distribution; any theorem
-   about an arbitrary artifact requires support/`GeneratedBy` evidence, and the game API exposes no
-   split-parts experiment constructor;
-10. repository imports preserve `PolyFun ← VCVio ← ArkLib` with no cycle.
+We have enough foundation to begin. The remaining work is no longer “build an interaction theory
+somewhere upstream”; it is to land the smallest ArkLib semantics that make virtual claims,
+run-derived closing, and honest composition unavoidable in the types.

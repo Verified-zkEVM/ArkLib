@@ -1,128 +1,218 @@
-# 05 — Implementation Roadmap
+# Implementation roadmap
 
-**Fluid by design.** Phases have exit gates, decision points, and fallbacks; the course is charted, not forced. Tracks run in parallel where dependencies allow. Effort words: S ≈ days, M ≈ 1–3 weeks, L ≈ 1–2 months, XL ≈ open-ended program.
+**Fluid by design.** The destination is ambitious, but each phase has a falsifiable exit gate and
+a concrete reason to exist. When Lean or a real protocol contradicts a proposed record layout, the
+architecture follows the evidence while preserving the semantic invariants in `02` through `04`.
 
-## 0. Standing rules
+Effort words are planning signals: S is days, M is roughly one to three weeks, L is roughly one to
+two months, and XL is an open-ended program.
 
-- Nothing security-shaped changes without its bridge/comparison theorem (per protocol, not global — there is no generic legacy bridge).
-- The legacy security namespace lives until the last consumer is bridged; new work in `Security.V2`-style parallel namespaces. **No flag days.**
-- Foundation gaps found mid-phase are routed by `01`'s parametricity rule and added as explicit PR
-  dependencies in `01a`. Temporary adapters need an upstream issue, no adapter-only theorems, and a
-  deletion test.
-- The design branch is documentation/prototype provenance. All implementation PRs start from the
-  current default branch; there is no bulk merge of the prototype tree.
-- `grep sorry ArkLib/Interaction/` budget: ≤ 1 (the pre-existing ClaimTree lemma) through Phase 4.
-- Every phase ends with a short written retro appended to this file: what redirected, which interfaces moved.
+## 1. Standing rules
 
-## Tracks
+- Every implementation PR starts from current `main`; the archived prototype is a source bank.
+- The legacy security namespace remains until each migrated protocol has a proved correspondence.
+- Security-shaped changes include the exact game, observation, failure boundary, budget, and loss.
+- Foundation gaps go to the lowest owning library. A temporary adapter names its upstream
+  destination and includes a deletion test.
+- A compiler pass does not land before the execution and trace facts used by its security proof.
+- Each completed phase updates `00-current-status.md` and this roadmap in the same PR.
 
-- **T-F (Foundation train):** the exact PF/VCV PRs in `01a`, with existing APIs consolidated rather
-  than rebuilt. [L, parallel where the dependency graph permits]
-- **T-C (Core, ArkLib Δ):** `02` objects and laws.
-- **T-X (Execution/Security, ArkLib Γ):** `03` objects and games.
-- **T-K (Compiler):** `04`.
-- **T-P (Protocols):** ports exercising everything above.
+## 2. Starting point
 
-## Phase 0 — Release-train alignment [M]
+The alignment slice fixes the supported train at Lean 4.33.1, VCVio
+`f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24`, and the PolyFun revision selected by VCVio,
+`c0c923693fc827a41d17116579a0c16ed4873b19`.
 
-The common toolchain is now Lean 4.33.1. The alignment PR pins ArkLib to VCVio
-`f9dc47d9dacfc5cb51dae9f92f1e34cb5ce2cc24`; VCVio selects PolyFun
-`c0c923693fc827a41d17116579a0c16ed4873b19`. ArkLib does not override that transitive revision.
-The same PR refreshes this design suite because the supported API baseline and the design status
-must agree.
+The key result is permission to start, not another planning dependency. `TypeTree`, cursors,
+displayed restriction, append decomposition, strategies, handlers, and dependent chain
+concatenation are available. The remaining upstream gaps are isolated to the later execution,
+state-restoration, and compiler tracks.
 
-**Gate:** a full ArkLib validation run; exactly one resolved PolyFun revision; no ArkLib override
-inconsistent with VCVio; [`00-current-status.md`](00-current-status.md) identifies landed and
-missing foundations without presenting target interfaces as implemented.
+**Alignment gate:** the exact dependency train validates; current and historical documentation are
+separated; no new interaction-layer API is mixed into the pin change.
 
-## Phase 1 — Elaborating substrate (T-C; AR-1 through AR-6B) [L]
+## 3. Parallel tracks
 
-Port the plain reduction kernel and oracle syntax/observation split onto current PolyFun
-`TypeTree`, node contexts, strategies, and runners. Then add concrete message access, resource
-schema/context morphisms, virtual substitution, and claims/runner-derived closing as separate AR
-PRs. Reuse the archived prototype as a source bank, not a merge base. Adapt the current
-`OracleOutputSimulation` surface into the new virtual-oracle representation so existing clients can
-migrate without a flag day. `SourceCtx` stays extensional; resource identity/origin/guarantee
-metadata lives in `ResourceSchema`.
-**Gate:** each PR's local laws and client tests; zero new sorries; legacy untouched; record signatures
-remain provisional until the sumcheck slice.
+| Track | Purpose | Current dependency |
+|---|---|---|
+| Core semantics | typed reductions, oracle trees, sources, virtual claims, closing | unblocked |
+| Protocol evidence | Sumcheck first, then FRI and Spartan | follows the relevant core slice |
+| Execution and ordinary security | world-backed artifacts, outcomes, admissibility-aware composition | VCVio artifact and outcome gaps |
+| State restoration | causal trace calculus, salted games, extractor views | PolyFun transducer and VCVio specialization/conditioning gaps |
+| Compiler | guarantee transport and backend adapters | core composition plus state-restoration evidence |
 
-## Phase 2 — Minimum viable slice (AR-7/AR-8) [M] ← D3
+The tracks are coordinated by consumers, not by waiting for a synchronized three-repository mega
+release.
 
-**Programmatic single-round sumcheck perfect completeness through `closeWith`**: query-derived scalar `stmt`, passthrough oracle slot with its degree-bounded message type (D1 exercised), honest-data realization, real `TerminalOutput`. No Spartan, no FRI, no soundness, no associativity.
-**Gate:** the theorem, sorry-free, with the D1 pattern documented in code.
-**Decision point:** if `ClaimWith` indexing fights elaboration here, fall back to three concrete records + morphisms (the unification is a convenience, not a wall).
+## Phase 1 — Typed core [L]
 
-## Phase 3 — Two more semantic slices and composition [L; cost needs VCV-5A/B]
+Land AR-1 through AR-6B in the order described in `01a`:
 
-Build on AR-4A/B and AR-5 rather than adding the substitution algebra here. Add terminal-routing simplification
-in programmatic composition and the Spartan/FRI slices. Semantic laws use extensional equivalence;
-operational trace/cost preservation waits for VCV-3/5A/5B and the ArkLib execution-artifact adapter.
-Land AR-10A and exercise PF-3 cursor/append decomposition in the two-round composite; Γ trace
-alignment remains AR-10B in Phase 4.
-**Gate:** boundary-as-`subst` demonstrated; constructors land with `eval` lemmas.
-**Fallback:** if `retargetMonads`-as-`subst`-action fights Lean, keep it hand-written; the claim algebra carries the proofs regardless.
+1. plain dependent reductions;
+2. oracle type trees, path projections, and decorations;
+3. accumulated oracle access and execution;
+4. extensional sources and resource schemas;
+5. virtual substitution;
+6. open/closed claims and run-derived closing.
 
-## Phase 4 — Execution artifact + outcomes + ordinary security [L]
+The archived implementation may donate proof ideas and small coherent definitions. Each port is
+rewritten against the supported PolyFun API and reviewed at its new abstraction boundary.
 
-Needs AR-9A/9B/10B and the still-missing generic runtime-artifact and outcome boundaries. PF-1/2/3
-and substantial VCVio responder/resource foundations have landed; see `00-current-status.md` for
-the exact reusable APIs.
+**Gate:** public equations are usable; no new `sorry`; the legacy layer is unchanged; no caller can
+close a claim with an unrelated handler.
 
-Add or upstream the VCVio runner-produced artifact and outcome boundary; add cursor-backed reachable
-prefixes;
-`ClaimSchema`/`Problem`; closed-claim relations; completeness and **ordinary-soundness composition**
-(output admissibility + conditional suffix theorem) in a parallel security namespace; per-protocol
-bridges for the three slices. Use existing VCVio resource/cost carriers and the VCV-10 reduction
-calculus rather than new ledger/characteristics types.
-**Gate:** slice bridges proved two-way; soundness composition theorem sorry-free; no legacy consumer broken.
-**Risk:** this is the semantic heart; if a bridge fails, *stop and diagnose the quantifier* — that is the audit's designed tripwire, not an obstacle.
+## Phase 2 — Minimum viable protocol [M]
 
-## Phase 5 — State restoration + trace calculus [L] ← D5: before compiler
+Port one programmatic single-round Sumcheck. Its output includes a query-derived scalar and a
+degree-bounded oracle slot. Prove perfect completeness through the actual execution and closing
+path, then prove a two-way protocol-specific bridge to the legacy presentation.
 
-Needs PF-5, VCV-4/6/7A/7B/8A/8B/8C/10, and Phase 4. PF-4 is added only if a
-PolyFun operational-machine adapter becomes an actual client.
+This is the first moment the new abstraction earns its name. Before this theorem, record layouts
+are informed hypotheses. After it, they are an API with evidence.
 
-Salted SR games and traces; ArkLib segmentation/backtracking/SR adapters over PolyFun transducers and
-VCVio resource certificates; straightline and rewinding SRKS; extractor taxonomy; constrained
-execution trees over `FreeM.Cursor`; `CY*` vs `Ark*` RBR notions and bridges. Dynamic programming and
-conditioned ROM bounds come from the repaired VCVio APIs, not theorem-local worlds.
-**Gate:** the full bridge set — `RBR→SR`; `ArkRBRK → CYRBRK → {ordinary KS, SRKS}`; single- and multi-round special soundness → ordinary KS and SRKS, each under explicit replay, entropy, budget, and error hypotheses; the KS-composition non-theorem documented with its three valid strengthenings.
+**Gate:** AR-7 and AR-8 are sorry-free; the guarantee representation is exercised; the bridge is
+two-way; no generic migration theorem is claimed.
 
-## Phase 6 — Compiler, staged (T-K, needs Phases 3+5 and accepted backend adapters) [XL]
+**Fallback:** if a unified dependent claim record fights elaboration, use a small family of
+concrete records connected by explicit morphisms. Uniform packaging is a convenience, not a reason
+to obscure the semantics.
 
-Order (**interfaces before passes**): capability/game adapters + guarantee descriptors/backend
-assignment → typed read plans → represent/lower/transport passes → concrete adapters. The Merkle
-adapter must consume VCVio's existing primitive extraction theorem rather than restating its game;
-Pedersen uses the Nova conformance slice. Then iBCS transfer, Fiat–Shamir, exact BCS soundness, and
-BCS-KS through the extractor pipeline.
-**Gate per stage:** its row of the `04` security matrix plus the cross-library Checkpoint D in `01a`.
-Guarantee-transport obligations are surfaced by backend assignment from the first stage.
+## Phase 3 — Composition and two contrasting protocols [L]
 
-## Phase 7+ — Widening [XL, prioritize by demand]
+Add a two-round composite that exercises cursor decomposition, `TypeTree.Chain.then`, virtual
+substitution, and explicit source routing. Then port one FRI slice and one Spartan-like slice so the
+design sees both a derived virtual view and a fresh prover message.
 
-ZK/WI (programmable worlds, salting, local-view simulators); preprocessing/holography (five-phase games); parallel/shared-prefix combinators; **computational backends** (needs VCV-10): curve (KZG/Pedersen/IPA capability records — Nova generalizes) and lattice, with a gate: *one DLOG/AGM- or SIS-based backend theorem proved end-to-end through a `SecurityReduction`*; indifferentiability; full L6 refinement obligations from `00`; reduction-level associativity via gated PF-6B only if a client demands it.
+Semantic composition is proved up to extensional equivalence. Operational trace and cost
+preservation wait for the world-backed execution artifact; they are not asserted from syntax alone.
 
-## Dependency sketch
+**Gate:** the middle boundary is visibly handler substitution; public constructors have evaluation
+laws; a three-stage example uses existing chain reassociation or records the exact missing upstream
+law.
 
+## Parallel upstream lane — Close only demonstrated gaps [M–L]
+
+The first downstream clients drive four focused foundation additions:
+
+1. a VCVio runner-produced resumable artifact with state and named trace regions;
+2. a VCVio accept/reject/fault materialization boundary;
+3. a PolyFun causal finite-trace transducer plus VCVio query-log certificates;
+4. VCVio conditioning/dynamic-programming and error-bearing reduction APIs required by the first
+   state-restoration or compiler theorem.
+
+Do not implement all four speculatively. The early typed-core work proceeds while these interfaces
+are designed against their actual consumers.
+
+**Gate per addition:** the owning repository's tests and laws pass, and the named ArkLib client uses
+the API without a parallel local abstraction.
+
+## Phase 4 — World-backed execution and ordinary security [L]
+
+Add AR-9A, AR-9B, AR-10A, and AR-10B. One supported artifact now relates the core run, persistent
+world state, ordered query trace, protocol prefix, and resource profile. Terminal decoding crosses
+one named missing-mass boundary.
+
+Prove ordinary soundness composition in its honest form:
+
+- the first reduction is sound;
+- its output is admissible except with explicit error;
+- the suffix is sound for every reachable intermediate claim and actual prefix history;
+- sequential execution preserves order and state;
+- the total error includes soundness, inadmissibility, suffix, and fault terms.
+
+**Gate:** the Sumcheck, FRI, and Spartan slices have two-way legacy bridges; the composition theorem
+is sorry-free; no theorem recreates unrestricted stateful composition.
+
+## Phase 5 — State restoration and extractor calculus [L]
+
+Build salted state-restoration games, world-trace views, causal segmentation and backtracking,
+straightline and rewinding extractors, and the exact implication map between ArkLib's stronger
+round-by-round notions and the Chiesa–Yogev-compatible notions.
+
+The transducer pipeline is explicit:
+
+```text
+segment Fiat–Shamir events
+  → stateful multi-configuration Merkle extraction
+  → hash-chain backtracking
+  → state-restoration trace adaptation
+  → inner IOP extractor
 ```
-PF/VCV PR train → AR-0 → Phase 1 → 2 → 3
-                       ↘ AR-9A/B, AR-10A/B → Phase 4 → 5 → 6 → 7+
-                         (protocol slices feed every freeze gate)
+
+Each arrow carries causality, trace-order, resource, error, and running-time evidence. The
+stateful online Merkle extractor remains a backend capability rather than being flattened into a
+pure list pass.
+
+**Gate:** prove the named RBR-to-SR and knowledge implications under explicit replay, entropy,
+budget, and error hypotheses. Document the non-theorem that terminal offline knowledge soundness
+does not compose without a stronger intermediate interface.
+
+## Phase 6 — Oracle-elimination compiler [XL]
+
+Land interfaces before passes:
+
+1. reified oracle guarantees and resource metadata;
+2. backend assignments and complete capability games;
+3. typed finite or staged read plans;
+4. represent, lower, and boundary-transport passes;
+5. concrete Merkle and homomorphic adapters;
+6. interactive BCS and Fiat–Shamir security transfer;
+7. exact BCS knowledge soundness through the extractor pipeline.
+
+The first Merkle adapter consumes VCVio's supported shared-ROM extraction theorem. The first
+homomorphic conformance case uses Nova/Pedersen-style commitment action. Unsupported capabilities
+remain absent rather than being filled with placeholder propositions.
+
+**Gate per pass:** functional correctness, ordinary soundness, extraction, and privacy obligations
+are classified exactly as in `04`; every ideal guarantee either reaches a backend proof or produces
+an explicit assignment failure.
+
+## Phase 7 and beyond — Widening [XL]
+
+Widen only after the core compiler path works:
+
+- zero knowledge and witness indistinguishability with programmable worlds and local-view
+  simulators;
+- preprocessing and holography with persistent five-phase games;
+- parallel and shared-prefix combinators;
+- KZG, Pedersen, IPA, and lattice-backed capability records;
+- indifferentiability and alternative oracle models;
+- executable refinement, representation correctness, and resource-trace correspondence;
+- quantum access through a separate linear execution model.
+
+A new backend is complete only when one scheme theorem travels end to end through its actual
+security reduction and resource transform.
+
+## 4. Current dependency sketch
+
+```text
+alignment
+  → typed core → Sumcheck bridge → typed composition
+                                      │
+VCVio artifact + outcome ───────────┘→ ordinary security
+
+PolyFun transducer
+  → VCVio query-log certificates + conditioning
+  → state restoration
+  → compiler
+  → widening
 ```
 
-## Risk register (top five)
+## 5. Risks and redirection
 
-1. **Phase-4 bridge failure** → designed tripwire; diagnose, don't route around.
-2. **Runtime-boundary slippage** → typed claims and the first protocol slice proceed on the landed
-   PolyFun/VCVio substrate; general security waits for the runner artifact and outcome boundary.
-3. **`ClaimWith`/dependent-index friction** → Phase-2 fallback ready.
-4. **Trace-slicing proof burden** (list-partition obligations everywhere) → use VCV-1 trace regions
-   and PF-5/VCV-4 transducers; resist theorem-local plumbing.
-5. **Scope gravity toward the compiler** → Phases 4–5 are the value; the compiler without them is the `main`-branch failure mode again.
+1. **Claim-index friction.** Prefer several honest records and explicit morphisms over one opaque
+   dependent bundle.
+2. **Runner-boundary slippage.** Early typed work proceeds, but general security waits for one
+   execution-derived artifact.
+3. **Trace plumbing growth.** Land generic causality and certified specialization before copying
+   list-partition proofs across compiler passes.
+4. **Security quantifier drift.** Treat a failed composition bridge as evidence about the theorem,
+   not an invitation to weaken its name.
+5. **Compiler gravity.** The compiler is valuable only after claims, closing, ordinary security,
+   and state restoration are real APIs.
+6. **Over-general upstream work.** Every new foundation names its first consumer and the mutation or
+   counterexample its laws reject.
 
-## Re-direction principles
-
-When implementation contradicts this plan: (a) accepted interfaces move only with a decision-log
-entry; unvalidated signature sketches remain fluid; (b) consolidations that delete parallel objects
-are favored; (c) if two phases want the same structure, route it by `01`'s parametricity rule.
+When implementation redirects the plan, preserve the reason in the owning normative document and
+update the status page. Do not accumulate an alternative architecture beside the one the clients
+actually use.

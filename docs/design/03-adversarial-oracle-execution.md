@@ -73,9 +73,11 @@ Malformed parses/openings fail **closed** (reject); `fault` is model failure, `P
 Quantifier order is part of a notion's identity and its **name**. The registry (per README ground rule 5) records for each game: sampling order, adversary phases, trace visibility, budget type, error/time functional signature.
 
 - **Adaptive vs. static:** `H ← O; (x, π) ← A^H` vs. `x` fixed before sampling. Both constructors provided; NARG-level defaults to adaptive (CY).
-- **Phased games**: PolyFun supplies generic machine wiring; ordinary VCVio oracle phases use
-  `resume` plus monadic execution and `QueryLog.append` (PF-4 is needed only by a future operational
-  machine adapter); ArkLib defines the commit/open or five-phase adversary game. Preprocessing keeps
+- **Phased games**: PolyFun supplies generic machine wiring. Ordinary VCVio oracle phases sequence
+  monadic execution while threading the stateful handler and accumulating one ordered query log.
+  The missing reusable execution artifact must package that state and the phase boundaries; generic
+  `DynSystem.Prefix` concatenation is needed only if a later operational-machine client cannot use
+  the monadic route. ArkLib defines the commit/open or five-phase adversary game. Preprocessing keeps
   the *honest indexer inside the same runtime* between adversary phases.
 - **Soundness:** `Pr[accept out ∧ out ∈ Language R_out]`-style events over artifact projections, for admissible false inputs; **output-admissibility** is a separate probabilistic obligation of each reduction (`ε_adm`). The exact composition contract (normative, common-case scope: finite classical trees, deterministic read-only Δ, no terminal-view Γ queries, explicit challenge kernels, order-preserving sequential decomposition, fail-closed parsing):
 
@@ -107,7 +109,7 @@ structure SRMove (Π : PublicCoinIOP) where
 -- SRTrace : the move-response log (a WorldTrace instance).
 ```
 
-`SRSoundness(s, N, B)`, straightline and **rewinding** `SRKnowledgeSoundness` (extractor gets the SR trace; rewinding adds black-box access; error/time are explicit functions of the prover's experiment-specific failure probability and runtime, transported through VCV-10 reductions). SR is *not* checkpoint/restore (different request type); bridges from RBR (`(B+r)·ε_RBR`), from special soundness, and to Fiat–Shamir are registry entries with named losses.
+`SRSoundness(s, N, B)`, straightline and **rewinding** `SRKnowledgeSoundness` (extractor gets the SR trace; rewinding adds black-box access; error/time are explicit functions of the prover's experiment-specific failure probability and runtime). Cost transport reuses VCVio's `ReductionWithCost`; additive or substitution-style advantage error uses the future error-bearing extension described in `01`. SR is *not* checkpoint/restore (different request type); bridges from RBR (`(B+r)·ε_RBR`), from special soundness, and to Fiat–Shamir are registry entries with named losses.
 
 ## 6. Extractors: taxonomy + composition calculus
 
@@ -118,7 +120,7 @@ Axes (orthogonal, per round-3): adversary access / execution control / oracle ev
 - `Extractor.OfflineLoggedExecution` — eats `WorldTrace`s (adversary's and verifier's); the CY compiled-layer straightline notion. **Never silently substitute the former for the latter: doing so assumes away Merkle extraction** (round-4 correction).
 - `Extractor.QueryOnly`, `BlackBox.{OnePass, PrefixOracle, CheckpointRestore}`, `PrefixWitnessTransport`, `SpecialSoundnessTree`, `RBRTranscriptTree` — each a capability-record product, with view-reduction implications proved where they exist.
 
-**Composition calculus (the round-4 gap):** compiled-layer extractors are causal transducer pipelines ending in an inner extractor — CY's BCS-KS extractor is `segment-at-FS-events → stateful multi-config Merkle extraction → hash-chain backtrack → SR-trace adapter → E_IOP-SR`. The pure transducer and causality algebra is PolyFun PF-5; VCVio specializes it to query logs and supplies external resource certificates; ArkLib supplies the concrete adapters, extractor composition, black-box transport, and substitution of inflated error/time functions. Stateful *online* extraction remains with the Merkle backend (`04`) and consumes the shared runtime artifacts.
+**Composition calculus (the round-4 gap):** compiled-layer extractors are causal transducer pipelines ending in an inner extractor — CY's BCS-KS extractor is `segment-at-FS-events → stateful multi-config Merkle extraction → hash-chain backtrack → SR-trace adapter → E_IOP-SR`. The generic pure transducer and causality algebra is still missing in PolyFun; VCVio must specialize it to query logs and attach external resource certificates. ArkLib then supplies the concrete adapters, extractor composition, black-box transport, and substitution of inflated error/time functions. Stateful *online* extraction remains with the Merkle backend (`04`) and consumes the shared runtime artifacts.
 
 ## 7. RBR, trees, and the implication map
 
