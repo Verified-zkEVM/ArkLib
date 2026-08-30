@@ -11,9 +11,9 @@ import Mathlib.Algebra.Polynomial.Reverse
 /-!
 # `R_q^H` is a Field Isomorphic to `F_{q^k}` (Hachi §3, Lemma 5)
 
-This is the one piece of Hachi [NOZ26, §3] not yet covered by the rest of `Subfield/`: upgrading
-the fixed subring `R_q^H` from "a `Subring` of cardinality `q^k`" (`card_fixedSubring_eq`) to "a
-field isomorphic to `F_{q^k}`".
+This file completes the Hachi [NOZ26, §3] Lemma 5 chain by upgrading the fixed subring `R_q^H`
+from "a `Subring` of cardinality `q^k`" (`card_fixedSubring_eq`) to "a field isomorphic to
+`F_{q^k}`".
 
 The route (blueprint `blueprint/src/lattices/hachi_subfield.tex`, Phases 4–5):
 
@@ -593,7 +593,7 @@ theorem conjFixedSubring_isField (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α) :
 `R_q^H ⊆ R_q^{σ_{-1}}` (`fixedSubring_le_conjFixedSubring`) and the latter is a field
 (`conjFixedSubring_isField`), `R_q^H` is a finite integral domain, hence a field.
 
-Proven modulo `conjFixedSubring_isField`: the inclusion `R_q^H ↪ R_q^{σ_{-1}}` is an injective
+Proof idea: the inclusion `R_q^H ↪ R_q^{σ_{-1}}` is an injective
 ring hom into a field, so `R_q^H` is an integral domain (`Function.Injective.isDomain`); being
 finite (`fixedSubring.fintype`) it is therefore a field (`Finite.isField_of_domain`). -/
 theorem fixedSubring_isField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 ≤ α) :
@@ -625,7 +625,7 @@ the fixed subring is ring-isomorphic to `GaloisField q (2^κ)` (`= F_{q^{2^κ}}`
 `fixedSubring_isField` with `card_fixedSubring_eq` (`|R_q^H| = q^{2^κ}`) and the classification of
 finite fields by cardinality.
 
-Proven modulo `conjFixedSubring_isField` (via `fixedSubring_isField`): equip `R_q^H` with the
+Proof idea (via `fixedSubring_isField`): equip `R_q^H` with the
 field structure from `fixedSubring_isField`, compute both cardinalities as `q^{2^κ}`
 (`card_fixedSubring_eq` and `GaloisField.card`), and invoke the uniqueness of finite fields
 (`FiniteField.ringEquivOfCardEq`). -/
