@@ -55,5 +55,12 @@ def multiConstrainedCode
         let g := linearMvExtension <| toPolynomialLT ⟨f, h⟩
         ∀ i : Fin t, weightConstraint g (w i) (σ i)}
 
+omit [DecidableEq F] in
+lemma rs_code_is_multi_constrained
+  {domain : SmoothCosetFftDomain n F} {d : ℕ} :
+  (code domain (2 ^ d)).carrier = 
+    multiConstrainedCode domain d 0 (fun _ ↦ 0) (fun _ ↦ 0) := by 
+  simp [multiConstrainedCode]
+
 end ReedSolomon
 
