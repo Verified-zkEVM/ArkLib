@@ -166,7 +166,7 @@ lemma ps_resultant_dvd_pow_eval_x {F : Type} [Field F]
           exact absurd hij (not_lt_of_ge (Fin.lt_def.2 (by simp; omega) |>.le))
         | right im_ =>
           simp [U, (show im_ ≠ jm from fun hEq ↦ ne_of_gt hij (by simp [hEq]))]
-    rw [det_of_upperTriangular h_u_tri]; simp [Fin.prod_univ_add, U]
+    rw [det_of_isUpperTriangular h_u_tri]; simp [Fin.prod_univ_add, U]
   have hdet1 : M1.det = M0.det := by simp [M1, det_mul, h_u_det, M0]
   let ev : F[X] →+* F := evalRingHom x
   have hdiv_entry (i : Fin (n + m)) (j' : Fin m) : p ∣ M1 i (.natAdd n j') := by
@@ -286,7 +286,8 @@ lemma ps_resultant_ne_zero_of_is_rel_prime {F : Type} [Field F]
             omega)
       have hdegBQ : (B * Q).natDegree < n + m := by
         by_cases hm0 : m = 0
-        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]; rfl]; simp; omega
+        · rw [show Q = 0 from by simp [hm0, hQ_ofFn, ofFn]]
+          simpa using hnmpos
         · have hndeg : B.natDegree ≤ n := by simpa [natDegreeY] using hn
           have hQnat : Q.natDegree < m := by
             simpa [hQ_ofFn] using

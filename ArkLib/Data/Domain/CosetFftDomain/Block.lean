@@ -98,6 +98,11 @@ lemma card_block_le :
 theorem disjoint_block {x y : F} (hxy : x ≠ y) :
   Disjoint (block ω k x) (block ω k y) := by aesop (add simp [disjoint_iff])
 
+@[simp]
+theorem pairwise_disjoint_block {s : Set F} :
+  s.PairwiseDisjoint (block ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_block])
+
 /-- The set of indices of a block of `ω` at `x` of the degree `k`. -/
 def blockIdx (ω : D) (k : ℕ) (x : F) : Finset ι :=
   {i | ω i ^ 2 ^ k = x}
@@ -134,21 +139,36 @@ lemma blockIdx_eq_preimage_block :
   blockIdx ω k x =
     preimage
       (block ω k x) ω
-      (fun _ _ _ _ h ↦ CosetFftDomainClass.injective _ h) := by
-  aesop (add simp [mem_blockIdx_iff_mem_block])
+      (CosetFftDomainClass.injective ω).injOn := by
+  ext i
+  rw [mem_blockIdx_iff_mem_block]
+  exact Finset.mem_preimage.symm
 
 /-- The cardinality of `blockIdx` is that of `block`. -/
 @[simp]
 lemma card_blockIdx :
   (blockIdx ω k x).card = (block ω k x).card := by
-  aesop
-    (add simp [blockIdx_eq_preimage_block, card_preimage])
-    (add unsafe congrArg)
+  rw [blockIdx_eq_preimage_block, Finset.card_preimage]
+  congr 1
+  ext y
+  simp only [Finset.mem_filter]
+  constructor
+  · exact And.left
+  · intro hy
+    refine ⟨hy, ?_⟩
+    rw [mem_block] at hy
+    rw [CosetFftDomainClass.mem_def] at hy
+    exact hy.1
 
 /-- The sets of indices of blocks corresponding to different points are disjoint. -/
 theorem disjoint_blockIdx {x y : F} (hxy : x ≠ y) :
   Disjoint (blockIdx ω k x) (blockIdx ω k y) := by
   aesop (add simp [disjoint_iff_ne, mem_blockIdx_iff_mem_block])
+
+@[simp]
+theorem pairwise_disjoint_blockIdx {s : Set F} :
+  s.PairwiseDisjoint (blockIdx ω k) := fun _ _ _ _ _ ↦ by
+  aesop (add simp [Function.onFun, disjoint_blockIdx])
 
 end CosetFftDomainClass
 

@@ -93,14 +93,15 @@ lemma Rhs_add_one : Rhs (e + 1) ωs f = fun i ↦ Rhs e ωs f i * ωs i := by
   ring
 
 noncomputable def E_and_Q_to_a_solution (e : ℕ) (E Q : Polynomial F) (i : Fin n) : F :=
-  if i < e then E.toFinsupp i else Q.toFinsupp (i - e)
+  if i < e then E.coeff i else Q.coeff (i - e)
 
 @[simp]
 lemma E_and_Q_to_a_solution_coeff :
     E_and_Q_to_a_solution e E Q i = if i < e then E.coeff i else Q.coeff (i - e) := rfl
 
 def truncate (p : Polynomial F) (n : ℕ) : Polynomial F :=
-  ⟨⟨p.1.1 ∩ Finset.range n, fun i ↦ if i < n then p.1.2 i else 0, by aesop⟩⟩
+  Polynomial.ofFinsupp <| AddMonoidAlgebra.ofCoeff
+    ⟨p.support ∩ Finset.range n, fun i ↦ if i < n then p.coeff i else 0, by aesop⟩
 
 @[simp]
 lemma coeff_truncate : (truncate p n).coeff k = if k < n then p.coeff k else 0 := rfl
@@ -130,10 +131,10 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
   IsBerlekampWelchSolution e k ωs f (E_and_Q_to_a_solution e E Q) := by
   rcases h with ⟨h_cond, h_E_deg, h_E_coeff, h_Q_deg⟩
   refine is_berlekamp_welch_solution_ext fun i ↦ ?p₁
-  letI bound := 2 * e + k
+  let bound := 2 * e + k
   generalize eq : BerlekampWelchMatrix _ _ _ f = M₁
-  letI leftσ : Finset _ := {j : Fin bound | j < e}
-  letI rightσ : Finset _ := univ (α := Fin bound) \ leftσ
+  let leftσ : Finset _ := {j : Fin bound | j < e}
+  let rightσ : Finset _ := univ (α := Fin bound) \ leftσ
   generalize eq₁ : ∑ j ∈ leftσ, E.coeff j * (ωs i)^j.1 = σ₁
   generalize eq₂ : ∑ j ∈ rightσ, Q.coeff (j - e) * -(ωs i)^(j - e) = σ₂
   calc _ = ∑ j : Fin bound, if ↑j < e
@@ -157,7 +158,7 @@ private lemma BerlekampWelchCondition_to_Solution [NeZero n]
                              apply sum_nbij (i := Fin.val) <;>
                                try intros a _; aesop (add safe (by existsi ⟨a, by omega⟩))
                                                      (add simp Set.InjOn)
-  letI δσ := {j | j < e + k}.toFinset
+  let δσ := {j | j < e + k}.toFinset
   replace eq₂ : -eval (ωs i) Q = σ₂ := calc
                 _              = -∑ j ∈ δσ.attach, ωs i ^ j.1 * Q.coeff j := by
                   rw [

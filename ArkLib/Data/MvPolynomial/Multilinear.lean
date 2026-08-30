@@ -12,6 +12,15 @@ import ArkLib.Data.MvPolynomial.Interpolation
 
   This is the special case of polynomial interpolation, when we consider multilinear polynomials and
   evaluation on the hypercube `σ → Fin 2`.
+
+  Besides the multilinear extension `MLE` and its characterizations, the file records the negative
+  companion `exists_nonzero_vanishing_on_axis_cross`: vanishing on a coordinate-wise star does
+  *not* determine a multilinear polynomial, in contrast with `MLE_eq_zero_iff` on the hypercube.
+
+  ## References
+
+  * [Nguyen, N. K., O'Rourke, G., and Zhang, J., *Hachi: Efficient Lattice-Based Multilinear
+    Polynomial Commitments over Extension Fields*][NOZ26]
 -/
 
 noncomputable section
@@ -212,7 +221,41 @@ theorem MLE_degreeOf (evals : (σ → Fin 2) → R) (i : σ) : degreeOf i (MLE e
 
 end DegreeOf
 
+/-- **Nondegeneracy of the `eq̃`-basis batching**: a multilinear extension is the zero polynomial
+iff every hypercube evaluation vanishes. Used to read batched zero-checks (e.g. Hachi's Eqs.
+(22)–(23)) back as per-constraint statements. -/
+theorem MLE_eq_zero_iff (evals : (σ → Fin 2) → R) : MLE evals = 0 ↔ ∀ x, evals x = 0 := by
+  constructor
+  · intro h x
+    have heval := MLE_eval_zeroOne (R := R) x evals
+    rw [h, map_zero] at heval
+    exact heval.symm
+  · intro h
+    simp [MLE, h]
+
 -- TODO: add lemmas about the uniqueness of multilinear polynomials up to evaluations on hypercube
+
+/-! ### Axis-cross vanishing does not determine a multilinear polynomial
+
+Evaluations on a coordinate-wise *star* — a center point plus, for each coordinate, further points
+differing from it in that coordinate alone — do not pin down a multilinear polynomial, however many
+points each arm carries, in contrast with `MLE_eq_zero_iff` above. Identity testing therefore needs
+a genuine grid of points, such as the leaves of a nested evaluation tree
+(`NestedEvaluationTree.eq_zero_of_vanishes_comp` in
+`ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean`).
+-/
+
+/-- A checked counterexample to the uniform-vector argument in Hachi [NOZ26, Lemma 10]. For any
+axis-cross center `(a, b)`, the nonzero multilinear polynomial
+`(X₀ - a) * (X₁ - b)` vanishes whenever either coordinate is fixed at the center. Thus arbitrarily
+many evaluations along the two arms of a coordinate-wise star do not imply a polynomial identity. -/
+theorem exists_nonzero_vanishing_on_axis_cross [Nontrivial R] (a b : R) :
+    ∃ H : MvPolynomial (Fin 2) R,
+      H ≠ 0 ∧ (∀ y, eval ![a, y] H = 0) ∧ ∀ x, eval ![x, b] H = 0 := by
+  refine ⟨(X 0 - C a) * (X 1 - C b), ?_, fun y => by simp, fun x => by simp⟩
+  intro h
+  have he := congrArg (eval ![a + 1, b + 1]) h
+  simp at he
 
 variable [DecidableEq R] [IsDomain R]
 
@@ -222,7 +265,7 @@ theorem is_multilinear_eq_iff_eq_evals_zeroOne (p : MvPolynomial σ R) (q : MvPo
     (hp : p ∈ R⦃≤ 1⦄[X σ]) (hq : q ∈ R⦃≤ 1⦄[X σ]) :
     p = q ↔ p.toEvalsZeroOne = q.toEvalsZeroOne := by
   classical
-  letI := Fintype.ofFinite σ
+  let := Fintype.ofFinite σ
   constructor <;> intro h
   · simp only [h]
   · unfold toEvalsZeroOne at h

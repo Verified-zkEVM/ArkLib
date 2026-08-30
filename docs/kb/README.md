@@ -14,8 +14,7 @@ It should help with:
 - understanding what a cited paper contributes to ArkLib;
 - mapping a Lean citation key to a repository-local summary page;
 - giving review workflows a stable repository path for paper context;
-- recording durable paper-to-ArkLib audits and comparisons;
-- filing high-value answers that would otherwise be lost in chat history.
+- recording durable paper-to-ArkLib audits and comparisons.
 
 ## Quick Start
 
@@ -52,7 +51,8 @@ You usually do not need to update `docs/kb/` for:
 
 - purely local refactors that do not change paper context;
 - small proof edits in a paper-backed file where the KB page remains accurate;
-- transient scratch notes that are not worth preserving.
+- transient scratch notes that are not worth preserving;
+- review records, session logs, or plans tied to one commit or one pull request.
 
 ## Canonical Identifier
 
@@ -73,7 +73,6 @@ If a paper is cited in Lean as `[KEY]`, the preferred landing page for it is:
 - [`papers/`](papers/README.md) - canonical paper pages for cited or active BibTeX keys.
 - [`concepts/`](concepts/README.md) - cross-paper topic pages.
 - [`audits/`](audits/README.md) - source-to-ArkLib comparison artifacts.
-- [`queries/`](queries/README.md) - filed answers to recurring research/review questions.
 - [`sources/`](sources/README.md) - metadata and optional local source artifacts.
 - [`_generated/references.json`](_generated/references.json) - normalized bibliography export.
 - [`_generated/lean-citations.json`](_generated/lean-citations.json) - generated citation map from
@@ -95,7 +94,9 @@ If you are unsure where to start, use [`index.md`](index.md) first.
 - `blueprint/src/references.bib` remains the bibliographic source of truth.
 - `docs/kb/` is the source of truth for ArkLib-specific synthesis and cross-linking.
 - Paper pages should describe what ArkLib uses from a paper, not merely restate the abstract.
-- Prefer stable, reviewable markdown over ad hoc scratch notes.
+- Prefer stable, reviewable markdown over ad hoc scratch notes. Review verdicts, fix logs, and
+  other commit-specific snapshots do not belong in the knowledge base: fold whatever outlives the
+  session into the relevant paper page, audit page, or wiki page, and let the rest go.
 - If a PR introduces a new paper citation key that matters to active work, add or scaffold the
   corresponding paper page in the same PR only when you are adding ArkLib-specific content.
   Stub-only pages are proposed by generated-files PRs after merge.
@@ -208,4 +209,5 @@ This should resolve the relevant paper keys and generate a `/review` comment blo
 1. Regenerate the bibliography and citation indexes.
 2. Check for cited keys without paper pages.
 3. Check for stale or missing source metadata.
-4. File durable comparisons or review results under `audits/` or `queries/`.
+4. File durable paper-to-ArkLib comparisons under `audits/`, and cross-paper synthesis under
+   `concepts/`.

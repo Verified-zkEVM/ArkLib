@@ -37,9 +37,7 @@ def isCommitmentRound (i : Fin ℓ) : Prop :=
 omit [NeZero ϑ] hdiv in
 lemma toOutCodewordsCountOf0 : toOutCodewordsCount ℓ ϑ 0 = 1 := by
   unfold toOutCodewordsCount
-  simp only [Fin.coe_ofNat_eq_mod, zero_mod, Nat.zero_div, zero_add, ite_eq_left_iff, not_lt,
-    nonpos_iff_eq_zero, zero_ne_one, imp_false]
-  exact NeZero.ne ℓ
+  simp [Nat.pos_of_ne_zero (NeZero.ne ℓ)]
 
 instance : ∀ i, NeZero (toOutCodewordsCount ℓ ϑ i) := by
   intro i
@@ -104,7 +102,7 @@ lemma toOutCodewordsCount_succ_eq_add_one_iff (i : Fin ℓ) :
         apply h_i_transition.2
         exact h_eq
     -- Simplify the expression using the known inequalities
-    simp only [Fin.coe_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ]
+    simp only [Fin.val_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ]
     ring_nf
     simp only [Fin.val_succ] at h_succ_lt_l
     rw [add_comm] at h_succ_lt_l
@@ -149,7 +147,7 @@ lemma toOutCodewordsCount_succ_eq_add_one_iff (i : Fin ℓ) :
     · -- Prove ϑ ∣ ↑i.succ
       unfold toOutCodewordsCount at h_eq
       have h_i_lt_l : i.val < ℓ := i.isLt
-      simp only [Fin.coe_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ] at h_eq
+      simp only [Fin.val_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ] at h_eq
       -- We have: i / ϑ + 1 + 1 = (i + 1) / ϑ + (if i + 1 < ℓ then 1 else 0)
       by_cases h_succ_lt_l : i.val + 1 < ℓ
       · -- Case: i.succ < ℓ
@@ -194,7 +192,7 @@ lemma toOutCodewordsCount_succ_eq_add_one_iff (i : Fin ℓ) :
       -- Now check if the equation can hold
       unfold toOutCodewordsCount at h_eq
       have h_i_lt_l : i.val < ℓ := i.isLt
-      simp only [Fin.coe_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ] at h_eq
+      simp only [Fin.val_castSucc, h_i_lt_l, ↓reduceIte, Fin.val_succ] at h_eq
       -- We know that i.succ.val = ℓ, so i.val + 1 = ℓ, which means i.val + 1 ≮ ℓ
       have h_not_lt : ¬(i.val + 1 < ℓ) := by
         have h_succ_val : i.succ.val = i.val + 1 := by
@@ -259,7 +257,7 @@ lemma toOutCodewordsCount_succ_eq (i : Fin ℓ) :
     have h_i_lt_ℓ: i.castSucc.val < ℓ := by
       change i.val < ℓ
       omega
-    simp only [Fin.val_succ, Fin.coe_castSucc, Fin.is_lt, ↓reduceIte]
+    simp only [Fin.val_succ, Fin.val_castSucc, Fin.is_lt, ↓reduceIte]
     rw [div_add_one_eq_if_dvd]
     by_cases hv_div_succ: ϑ ∣ i.val + 1
     · simp only [hv_div_succ, ↓reduceIte, Nat.add_eq_left, ite_eq_right_iff, one_ne_zero,
@@ -301,7 +299,7 @@ TODO: double check why this is still correct when replacing `hCR` with `ϑ | i +
 lemma toOutCodewordsCount_mul_ϑ_eq_i_succ (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
   (toOutCodewordsCount ℓ ϑ i.castSucc) * ϑ = i.val + 1 := by
   unfold toOutCodewordsCount
-  simp only [Fin.coe_castSucc, i.isLt, ↓reduceIte]
+  simp only [Fin.val_castSucc, i.isLt, ↓reduceIte]
   have h_mod : i.val % ϑ = ϑ - 1 := by
     refine (mod_eq_sub_iff ?_ ?_).mpr hCR.1
     · omega
@@ -674,10 +672,8 @@ def snoc_oracle {i : Fin ℓ}
         have h_ne_v_div_i_succ := hi (by omega)
         have h_count_eq: toOutCodewordsCount ℓ ϑ i.castSucc =
           toOutCodewordsCount ℓ ϑ i.succ := by
-          rw [h]; simp only [isCommitmentRound, ne_eq, right_eq_ite_iff, Nat.left_eq_add,
-            one_ne_zero, imp_false, not_and, Decidable.not_not];
-          intro hv_div_i_succ
-          exact False.elim (hi (by omega) (hv_div_i_succ))
+          rw [h]
+          simp [isCommitmentRound, h_ne_v_div_i_succ]
         have hj_lt: j.val < toOutCodewordsCount ℓ ϑ i.castSucc := by
           rw [h_count_eq]
           exact j.isLt
@@ -710,7 +706,7 @@ def getFirstOracle {i : Fin (ℓ + 1)}
     (oStmt : (∀ j, OracleStatement 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) ϑ i j)) :
     sDomain 𝔽q β h_ℓ_add_R_rate 0 → L := by
   let rawf₀ := oStmt ⟨0, by
-    letI := instNeZeroNatToOutCodewordsCount ℓ ϑ i
+    let := instNeZeroNatToOutCodewordsCount ℓ ϑ i
     exact pos_of_neZero (toOutCodewordsCount ℓ ϑ i)
   ⟩
   simp only [OracleStatement, zero_mul, Fin.mk_zero'] at rawf₀
@@ -730,10 +726,10 @@ lemma getFoldingChallenges_init_succ_eq (i : Fin ℓ)
     getFoldingChallenges (r := r) (𝓡 := 𝓡) (ϑ := ϑ) i.castSucc (Fin.init challenges) (↑j * ϑ)
       (h := by omega) =
     getFoldingChallenges (r := r) (𝓡 := 𝓡) i.succ challenges (↑j * ϑ)
-      (h := by simp only [Fin.val_succ]; simp only [Fin.coe_castSucc] at h; omega) := by
+      (h := by simp only [Fin.val_succ]; simp only [Fin.val_castSucc] at h; omega) := by
   unfold getFoldingChallenges
   ext cId
-  simp only [Fin.init, Fin.coe_castSucc, Fin.castSucc_mk, Fin.val_succ]
+  simp only [Fin.init, Fin.val_castSucc, Fin.castSucc_mk, Fin.val_succ]
 
 omit hdiv in
 /-- The base index k = j * ϑ is less than ℓ for valid oracle indices -/
@@ -792,10 +788,39 @@ def BBF_SumcheckMultiplierParam : SumcheckMultiplierParam L ℓ (SumcheckBaseCon
     degCombinator := 1
     combinator_natDegree_le := by intro _; exact Polynomial.natDegree_X_le }
 
+/-- The [DP24] coefficient vector of a multilinear witness `t`: its Boolean-hypercube table,
+read in the LSB-first bit order of `Nat.binaryFinMapToNat` (`ω = ∑ⱼ 2^j·wⱼ`, so coefficient `ω`
+is `t` at the point `w j = getBit j ω`). This is the inverse of the index mapping used by the
+novel-coefficients decoder above (`hypercube_evals`, via `Nat.binaryFinMapToNat`).
+
+This explicit map avoids the silent coercion in the old spelling `fun ω => t.val.eval ω`, which
+evaluated `t` at the constant point `fun _ => ↑ω` instead of at the Boolean cube point. -/
+def witnessNovelCoeffs (t : L⦃≤ 1⦄[X Fin ℓ]) : Fin (2^ℓ) → L :=
+  fun ω => t.val.eval (fun j => (Nat.getBit j.val ω.val : L))
+
+-- Regression probe: the old diagonal encoding mapped `X 0` and `X 1` to the same table. The
+-- cube-table encoding distinguishes them at `ω = 1`, whose first two bits are `(1, 0)`.
+example :
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨0, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ ≠
+    witnessNovelCoeffs (L := L) (ℓ := 2)
+      ⟨MvPolynomial.X ⟨1, by omega⟩, by
+        rw [MvPolynomial.mem_restrictDegree_iff_degreeOf_le]
+        intro j; rw [MvPolynomial.degreeOf_X]; split <;> omega⟩
+      ⟨1, by norm_num⟩ := by
+  have h0 : Nat.getBit 0 1 = 1 := rfl
+  have h1 : Nat.getBit 1 1 = 0 := rfl
+  simp only [witnessNovelCoeffs, MvPolynomial.eval_X, h0, h1, Nat.cast_one, Nat.cast_zero]
+  exact one_ne_zero
+
 /-- This condition ensures that the folding witness `f` is properly generated from `t` -/
 def getMidCodewords {i : Fin (ℓ + 1)} (t : L⦃≤ 1⦄[X Fin ℓ]) -- original polynomial t
     (challenges : Fin i → L) : (sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) → L) :=
-  let P₀ : L⦃< 2^ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
+  let P₀ : L⦃< 2^ℓ⦄[X] :=
+    polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (witnessNovelCoeffs (L := L) t)
   let f₀ : (sDomain 𝔽q β h_ℓ_add_R_rate 0) → L := fun x => P₀.val.eval x.val
   let fᵢ := iterated_fold 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
     (i := 0)
@@ -829,7 +854,8 @@ export Sumcheck.Structured (sumcheckConsistencyProp)
     evaluated on the initial domain S^(0), must be close within unique decoding radius to f^(0) -/
 def firstOracleWitnessConsistencyProp (t : MultilinearPoly L ℓ)
     (f₀ : sDomain 𝔽q β h_ℓ_add_R_rate 0 → L) : Prop :=
-  let P₀ : L⦃< 2 ^ ℓ⦄[X] := polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (fun ω => t.val.eval ω)
+  let P₀ : L⦃< 2 ^ ℓ⦄[X] :=
+    polynomialFromNovelCoeffsF₂ 𝔽q β ℓ (by omega) (witnessNovelCoeffs (L := L) t)
   -- The constraint: P_0 evaluated on S^(0) is close within unique decoding radius to f^(0)
   2 * hammingDist (fun x => P₀.val.eval x.val) f₀ < BBF_CodeDistance ℓ 𝓡 ⟨0, by omega⟩
 

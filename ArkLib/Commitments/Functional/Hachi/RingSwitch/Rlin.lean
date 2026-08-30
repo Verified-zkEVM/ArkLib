@@ -35,7 +35,8 @@ import ArkLib.Data.Lattices.CyclotomicRing.NormBounds.Basic
   `S_b` range checks, becomes the single `‖ζ‖∞ ≤ bound` conjunct, equivalent by
   `vecLInftyNorm_append`.) This file is the zero-round `ReduceClaim` bridge realizing that
   reading — **statement reshaping only**: no soundness error, CWSS for any structure, pure
-  verifier — assembled sorry-free from `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
+  verifier — assembled sorry-free from
+  `ReduceClaim.verifier_coordinateWiseSpecialSoundWith`.
 
   The substance is the block-row equivalence `rlin_iff_relOut` (`M ζ = y ∧ ‖ζ‖∞ ≤ γ`, at the
   assembled statement, ⟺ the Eq. (20) relation `relOut` at the un-stacked response), proved via
@@ -117,6 +118,9 @@ theorem dot_matVecMul_transpose {a b : ℕ} (A : ArkLib.Lattices.PolyMatrix P a 
   simp only [splitForm] at h
   rw [h]; exact dot_comm _ _
 
+-- v4.33 respects transparency when matching implicit arguments, so the `Fin.append_left`/
+-- `_right` rewrites below no longer unify through the semireducible `PolyMatrix`/`PolyVec`.
+set_option backward.isDefEq.respectTransparency false in
 /-- `matVecMul` splits along a row-append: block rows act independently. -/
 theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P a c)
     (M₂ : ArkLib.Lattices.PolyMatrix P b c) (ζ : ArkLib.Lattices.PolyVec P c) :
@@ -124,8 +128,14 @@ theorem matVecMul_append_rows {a b c : ℕ} (M₁ : ArkLib.Lattices.PolyMatrix P
       = Fin.append (M₁ *ᵥ ζ) (M₂ *ᵥ ζ) := by
   funext i
   refine Fin.addCases (fun i => ?_) (fun i => ?_) i
-  · simp only [matVecMul_apply, Fin.append_left]
-  · simp only [matVecMul_apply, Fin.append_right]
+  · rw [Fin.append_left]
+    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.castAdd b i)) ζ =
+      ArkLib.Lattices.dot (M₁ i) ζ
+    rw [Fin.append_left]
+  · rw [Fin.append_right]
+    change ArkLib.Lattices.dot (Fin.append M₁ M₂ (Fin.natAdd a i)) ζ =
+      ArkLib.Lattices.dot (M₂ i) ζ
+    rw [Fin.append_right]
 
 end GenericHelpers
 
@@ -270,7 +280,7 @@ omit [NeZero q] [IsCyclotomic Φ] in
 /-- **Statement assembly** (the bridge's `mapStmt`): build the Eq. (20) block matrix and
 right-hand side from `QuadEval`'s output statement `(stmt, v, c)` — rows c1–c5 as in the module
 docstring, right-hand side `(v, u, y, 0, 0)`, `bound := γ`. -/
-noncomputable def rlinStmt
+def rlinStmt
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ)
     (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
@@ -319,6 +329,9 @@ noncomputable def rlinStmt
 /-! ## The block-row equivalence -/
 
 omit [NeZero q] in
+-- Same cause as `matVecMul_append_rows`: rewriting `Fin.append _ _ *ᵥ _` into the block matrix
+-- needs `PolyMatrix`/`PolyVec` to unfold, which v4.33 blocks at implicit transparency.
+set_option backward.isDefEq.respectTransparency false in
 /-- **Linear part** (Eq. (20) rows c1–c5 ⟺ `M ζ = y`): the block matrix `rlinStmt`'s action on
 `ζ` splits — via `matVecMul_append_rows` / `dot_append` / `dot_matVecMul_transpose` /
 `matVecMul_matMul` / `tensorGMatrix_mulVec` — into the five verification rows read at the
@@ -422,7 +435,7 @@ theorem rlin_iff_relOut
       (rlinCols innerRows messageDigits innerDigits zDigits m r)) :
     (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, ζ) ∈ relRlin Φ ↔
       (X, unstack Φ ζ) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
-  rw [relRlin, Set.mem_setOf_eq, rlin_linear_iff, rlin_norm_iff, relOut, Set.mem_setOf_eq]
+  rw [relRlin, Set.mem_ofPred_eq, rlin_linear_iff, rlin_norm_iff, relOut, Set.mem_ofPred_eq]
   tauto
 
 /-! ## The pull-back and completeness directions -/
@@ -461,12 +474,25 @@ theorem mem_relRlin_of_relOut
 
 /-! ## The package -/
 
-/-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the zero-round
-`ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to `relRlin`.
-Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
+/-- **The `R^lin` adapter verifier's purity as data** (`Verifier.PureForm`): the verdict is
+`rlinStmt`, read off the zero-round `ReduceClaim` head, so `verify_eq` is `rfl`.
+
+The package carries this instead of a `Verifier.IsPure` instance, because the composed chain must
+*run* this verdict at the seam and reading it off the `IsPure` existential would cost
+`Classical.choice`. -/
+def rlinVerifierPureForm
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ) :
+    (ReduceClaim.verifier oSpec (rlinStmt (zDigits := zDigits) Φ pp base ω γ)).PureForm where
+  verify := fun stmt _ => rlinStmt (zDigits := zDigits) Φ pp base ω γ stmt
+  verify_eq := fun _ _ => rfl
+
+/-- **The `R^lin` adapter as a (plain) `CWSSPackage`** (Hachi [NOZ26] §4.3 entry): the
+zero-round `ReduceClaim` head `rlinStmt` with the empty challenge structure, reducing `relOut` to
+`relRlin`. Pure statement reshaping with no cryptographic content, hence escape-free. Assembled from
 `ReduceClaim.verifier_coordinateWiseSpecialSoundWith` at the proven block-row pull-back
 `mem_relOut_of_relRlin` — sorry-free. -/
-noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
       dRows) (base : ZMod q) (ω γ : ℕ) :
     CWSSPackage init impl
@@ -482,10 +508,8 @@ noncomputable def rlinPackage (init : ProbComp σ) (impl : QueryImpl oSpec (Stat
   struct := CWSSStructure.ofIsEmpty
   relIn := relOut (zDigits := zDigits) Φ pp base ω γ
   relOut := relRlin Φ
-  isPure := ⟨fun stmt _ => rlinStmt (zDigits := zDigits) Φ pp base ω γ stmt, fun _ _ => rfl⟩
-  extractor := ReduceClaim.treeExtractor
-    (mapStmt := rlinStmt (zDigits := zDigits) Φ pp base ω γ)
-    (relRlin Φ) (fun _ w => unstack Φ w) CWSSStructure.ofIsEmpty
+  isPure := rlinVerifierPureForm Φ pp base ω γ
+  extractor := ReduceClaim.treeExtractor (fun _ w => unstack Φ w) CWSSStructure.ofIsEmpty
   isCWSS := ReduceClaim.verifier_coordinateWiseSpecialSoundWith
     (relIn := relOut (zDigits := zDigits) Φ pp base ω γ)
     (relOut := relRlin Φ)

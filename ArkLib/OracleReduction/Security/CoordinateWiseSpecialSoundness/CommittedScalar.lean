@@ -30,7 +30,7 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   transcript tree (`ChallengeTree.EscapeEvent`), never a value the extractor returns. Concretely
   `escLocal` says *"two of the tree's branch openings are a short collision of the round-0
   commitment"*, and the certificate `coordinateWiseSpecialSoundWithEscape` concludes
-  `escEvent stmt tree ∨ (stmt, treeExtractor stmt tree) ∈ relIn`.
+  `escEvent stmt tree ∨ extraction succeeds on every valid leaf witnessing`.
 
   Making this an event rather than an extractor output is forced: `BindingCommitment.Collision` is
   nonempty for every compressing commitment, so a certificate whose escape branch were an
@@ -56,6 +56,8 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
   * `CommittedScalar.mkWitness_mem` — the disjunctive correctness theorem, parameterized by the
     single instance-specific `recover` hypothesis (one common short opening satisfying `checkAt` at
     `k` pairwise-distinct challenges recovers the input relation).
+  * `CommittedScalar.verifierPureForm` — the verifier's purity as data, which the package carries
+    so that composition reads the seam statement without choice.
   * `CommittedScalar.coordinateWiseSpecialSoundWithEscape` / `CommittedScalar.package` — the
     generic certificate at `scalarStructure k` and its `EscapeCWSSPackage` bundle, ready for `▷`
     composition against packages of any of the four kinds.
@@ -109,8 +111,6 @@ theorem mem_Collision (K : BindingCommitment W Short) (w w' : W) :
 end BindingCommitment
 
 namespace CommittedScalar
-
-noncomputable section
 
 open OracleComp OracleSpec ProtocolSpec ScalarRound
 
@@ -194,13 +194,16 @@ def escEvent {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
 
 /-- The committed-scalar named extractor: `mkWitness` transported along
 `ScalarRound.treeExtractorScalar`, which reads the commitment and the `k` sibling challenges off
-the tree through the same `readPre` / `readFam` the escape event uses. -/
-def treeExtractor [Nonempty W] {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
-    (checkAt : Stmt → Challenge → W → Prop) (project : W → WitIn) :
-    Extractor.TreeBased Stmt WitIn (pSpecScalar K.TCom Challenge)
+the tree through the same `readPre` / `readFam` the escape event uses, and the `k` branch openings
+off the leaf witnessing.
+
+Computable, and not parameterized by `checkAt`: the openings are supplied by the witnessing
+rather than recovered by inverting `rel K checkAt`. -/
+def treeExtractor {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (project : W → WitIn) :
+    Extractor.TreeBased Stmt WitIn W (pSpecScalar K.TCom Challenge)
       (CWSSStructure.toShape
         (scalarStructure (Msg := K.TCom) (C := Challenge) k hk)).arity :=
-  ScalarRound.treeExtractorScalar hk (rel K checkAt) (mkWitness hk K project)
+  ScalarRound.treeExtractorScalar hk (mkWitness hk K project)
 
 /-- **Correctness of the committed-scalar assembly**, parameterized by the only
 construction-specific fact `recover`: one common short opening satisfying `checkAt` at `k` distinct
@@ -220,7 +223,7 @@ theorem mkWitness_mem {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (
     (hinj : Function.Injective fam) :
     escLocal K s t fam resp ∨ (s, mkWitness hk K project s t fam resp) ∈ relIn := by
   classical
-  letI : ∀ f g : Fin k → W, Decidable (∃ j, f j ≠ g j) :=
+  let : ∀ f g : Fin k → W, Decidable (∃ j, f j ≠ g j) :=
     fun _ _ => Classical.propDecidable _
   set first : Fin k := ⟨0, by omega⟩ with hfirst
   by_cases hcol : ∃ j, resp j ≠ resp first
@@ -232,10 +235,18 @@ theorem mkWitness_mem {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short) (
     exact Or.inr (recover s (resp first) fam hinj
       (fun j => hcol j ▸ (hresp j).2.1) (hresp first).2.2)
 
+/-- The committed-scalar verifier's purity **as data**: its verdict is the input statement extended
+by the transcript's commitment and challenge. This is the `PureForm` the package carries, so that
+composition can read the seam statement without `Classical.choice`. -/
+def verifierPureForm {ι : Type} {oSpec : OracleSpec ι} (K : BindingCommitment W Short) :
+    (verifier (oSpec := oSpec) (Stmt := Stmt) (Challenge := Challenge) K).PureForm where
+  verify := fun stmt tr => (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩)
+  verify_eq := fun _ _ => rfl
+
 /-- **Generic escape-threaded CWSS certificate for committed scalar phases.** All
 protocol-independent extraction and tree reasoning is reused from `ScalarRound`; `recover` is the
 instance's substantive algebra. -/
-theorem coordinateWiseSpecialSoundWithEscape [Nonempty W] {ι : Type} {oSpec : OracleSpec ι}
+theorem coordinateWiseSpecialSoundWithEscape {ι : Type} {oSpec : OracleSpec ι}
     {σ : Type} {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
     (project : W → WitIn) (checkAt : Stmt → Challenge → W → Prop)
     (relIn : Set (Stmt × WitIn))
@@ -245,8 +256,9 @@ theorem coordinateWiseSpecialSoundWithEscape [Nonempty W] {ι : Type} {oSpec : O
     (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp)) :
     Verifier.coordinateWiseSpecialSoundWithEscape init impl (scalarStructure k hk)
       (escEvent hk K checkAt) relIn (rel K checkAt)
-      (verifier (oSpec := oSpec) K) (treeExtractor hk K checkAt project) :=
-  ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar init impl hk (verifier K)
+      (verifier (oSpec := oSpec) K) (treeExtractor hk K project) :=
+  ScalarRound.coordinateWiseSpecialSoundWithEscape_of_mkWitness_scalar init impl hk
+    (verifier K)
     (fun _ _ => rfl) relIn (rel K checkAt) (mkWitness hk K project) (escLocal K)
     (fun s t fam resp hbranch hinj =>
       mkWitness_mem hk K project checkAt relIn recover s t fam resp hbranch hinj)
@@ -258,7 +270,7 @@ and never `failure`, so it is a valid left factor, while the commitment's escape
 `esc` field. Escape-free neighbours compose against it for free through the universal `▷`
 (`CWSSPackage.toEscape`), so no separate plain-`CWSSPackage` variant is needed — at an injective
 `com` the event simply never fires. -/
-def package [Nonempty W] {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+def package {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
     {k : ℕ} (hk : 2 ≤ k) (K : BindingCommitment W Short)
     (project : W → WitIn) (checkAt : Stmt → Challenge → W → Prop)
     (relIn : Set (Stmt × WitIn))
@@ -273,12 +285,9 @@ def package [Nonempty W] {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   relIn := relIn
   relOut := rel K checkAt
   esc := escEvent hk K checkAt
-  isPure := ⟨fun stmt tr =>
-    (stmt, tr.messages ⟨0, rfl⟩, tr.challenges ⟨1, rfl⟩), fun _ _ => rfl⟩
-  extractor := treeExtractor hk K checkAt project
+  isPure := verifierPureForm K
+  extractor := treeExtractor hk K project
   isCWSS := coordinateWiseSpecialSoundWithEscape hk K project checkAt relIn recover init impl
-
-end
 
 end CommittedScalar
 

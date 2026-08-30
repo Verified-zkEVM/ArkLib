@@ -1,52 +1,83 @@
 /-
 Copyright (c) 2024-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Tobias Rothmann
+Authors: Pablo Martín Vinuelas, Tobias Rothmann
 -/
 import ArkLib.Commitments.Functional.Hachi.Sumcheck.FinalEval
 
 /-!
-# Hachi Sumcheck Loop (Figure 6 / Lemma 11 + Figure 7 tail)
+# Hachi Sumcheck Loop
 
-Umbrella module for `Hachi/Sumcheck/`: the sumcheck loop that finishes Hachi's [NOZ26, §4.3]
-opening. It
-reduces the zero-check's point-evaluation claims `H₀(τ₀) = 0 ∧ H_α(τ_α) = 0` to hypercube-sum
-claims, runs `m₀` sumcheck rounds down to a single evaluation of the committed table `w̃`, and
-closes with the final-evaluation tail that hands the resulting evaluation claim to the §4.5
-recursion (`Recursion/`). It operates on the shared batched-constraint encoding of
-`ZeroCheck/Constraints.lean` (the sumcheck polynomials `F_{0,τ₀}`/`F_{α,τ₁}` and `roundRel`).
+Umbrella module for `Hachi/Sumcheck/`: the sumcheck loop that finishes Hachi's opening
+(§4.3 of [NOZ26]). It reduces the zero-check's point-evaluation claims
+`H₀(τ₀) = 0 ∧ H_α(τ_α) = 0` to hypercube-sum claims, runs `m₀` sumcheck rounds down to a
+single evaluation of the committed table `w̃`, and closes with the final-evaluation step that
+hands the resulting short-opening evaluation claim to `EndPiece/`'s `endPiece` (and, in
+future work, to the recursion adapters). It operates on the
+batched-constraint encoding of `ZeroCheck/Constraints.lean` (the sumcheck polynomials
+`F_{0,τ₀}`/`F_{α,τ₁}` and `nestedRoundRel`).
 
-## TODO — reuse the existing structured sum-check
+## Relation to `ArkLib/ProofSystem/Sumcheck`
 
-This subprotocol should be **rebased onto `ArkLib/ProofSystem/Sumcheck/Structured`** rather than
-carrying bespoke round machinery. Concretely: the round polynomials `F_{0,τ₀}`/`F_{α,τ₁}` are
-instances of `Sumcheck.Structured.computeRoundPoly` via `SumcheckMultiplierParam` (identity
-combinator for the degree-2 linear check `F_α`; the range combinator `∏ⱼ (X − j)` of degree `2b`
-for `F₀` — the multiplier docstring in `Structured.lean` already anticipates exactly this Hachi
-case); the round consistency is `Sumcheck.Structured.sumcheckConsistencyProp` over
-`SumcheckDomain.boolDomain`; the per-round data is `Structured.Statement`/`SumcheckWitness`. The
-**exact CWSS round verifier is left `sorry` for now** (`Sumcheck/Rounds.lean`): wiring the
-structured round into the CWSS chain first needs the wire format (`!v[...]`) and the
-record-then-bridge convention reconciled with the structured round's `![...]` RBR verifier
-(`Structured/SingleRound.lean`'s `roundOracleVerifier`), which is deferred.
+This folder is a self-contained round layer, deliberately not built on either generic
+sumcheck in `ProofSystem/Sumcheck/`:
+
+* the structured (witness-mode) round rejects by returning a dummy statement
+  (`Structured/SingleRound.lean`'s `roundOracleVerifier`), a convention the extraction
+  argument here cannot use — all `k` siblings of a tree node share the message pair, so a
+  dummy output collapses every branch onto the same statement and destroys extractability.
+  Hence the `failure`-guarded `roundVerifier` (see `Sumcheck/Rounds.lean`);
+* the wire object differs (`CPolynomial.degreeLE` here, the Mathlib subtype `L⦃≤ d⦄[X]`
+  there), as does the shape: Hachi sends the *pair* `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under one shared
+  challenge, and its verifier is a plain `Verifier` (the round polynomials go in the clear),
+  not an `OracleVerifier`;
+* neither generic mode carries a soundness proof to inherit.
+
+If this material is ever generalized, the natural direction is to promote the guarded round
+and the round-polynomial layer (`Sumcheck/RoundPoly.lean`) into the generic sumcheck layer as
+a guarded/paired variant.
 
 ## Folder structure
 
-* `Sumcheck/Bridge.lean` — the zero-round **entry bridge**: from the zero-check's point-evaluation
-  claims to the *initial* sumcheck hypercube-sum claims (`∑ F_{0,τ₀} = 0`, `∑ F_{α,τ_α} = a` with
-  the linear target `a` computed by the verifier); the paper's "finish the proof using sumcheck
-  protocols" step. Pure reshaping through the batching identities.
-* `Sumcheck/Rounds.lean` — **Hachi Figure 6 / Lemma 11**: the `m₀`-round paired sumcheck loop
-  (each round sends the univariate pair `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under a shared challenge `aᵢ`), with
-  **guarded** round verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`), composed by recursion over the binary
-  guarded append. CWSS theorem `round_coordinateWiseSpecialSoundWithEscape` (**sorried**).
-* `Sumcheck/FinalEval.lean` — **Hachi Figure 7 tail**: the closing step — the prover sends the
-  claimed evaluation `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and
-  the output is the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters.
+* `Sumcheck/Bridge.lean` — the zero-round entry bridge: from the zero-check's
+  point-evaluation claims to the initial sumcheck hypercube-sum claims (`∑ F_{0,τ₀} = 0`,
+  `∑ F_{α,τ_α} = a` with the linear target `a` computed by the verifier). Pure reshaping
+  through the batching identities.
+* `Sumcheck/RoundPoly.lean` — the round-polynomial layer the round soundness runs on: the
+  cube split `hypercubeSum_succ`, the partial sum as a univariate `roundPoly` with its
+  evaluation and degree lemmas, and the two degree instances at Hachi's summands (`≤ 2b` and
+  `≤ 2`). Proof-side only: `roundPoly` is `noncomputable`, the wire object stays computable.
+* `Sumcheck/Rounds.lean` — the `m₀`-round paired sumcheck loop: each round sends the
+  univariate pair `(gᵢ⁽⁰⁾, gᵢ⁽ᵅ⁾)` under a shared challenge `aᵢ`, checked by guarded round
+  verifiers (`gᵢ(0)+gᵢ(1) = targetᵢ₋₁`) and composed by recursion over the binary guarded
+  append. Soundness is `round_coordinateWiseSpecialSoundWithEscape`, with the computable
+  `roundExtractor` reading a supplied branch opening directly and the two load-bearing side
+  conditions `i < m₀` and `0 < b`.
+* `Sumcheck/FinalEval.lean` — the closing step: the prover sends the claimed evaluation
+  `y′ = w̃(a)`, the guarded verifier checks the two final sumcheck targets, and the output is
+  the evaluation claim `mle[w̃](a) = y′` consumed by the `Recursion/` adapters. Soundness is
+  `finalEval_coordinateWiseSpecialSoundWith`, with its computable `finalEvalExtractor` reading
+  the unique leaf opening directly.
 
-This umbrella re-exports the folder (`FinalEval` transitively imports `Rounds` and `Bridge`).
-The plain output relation `relWEvalClaim` is the input of the §4.5 recursion; the full chain,
-including its guarded tail, is composed in `Composition.lean`.
+This umbrella re-exports the folder (`FinalEval` transitively imports `Rounds`, `RoundPoly`
+and `Bridge`). The output relation `relWEvalClaim` is the seam after an iteration; the full
+chain is composed in `Composition.lean`.
+
+## Status
+
+The soundness side is complete and `sorry`-free. What is *not* here is the honest-prover /
+completeness layer: `roundProver` and `finalEvalProver` are skeletons parameterized by
+`computeG`/`computeY`, nothing instantiates them honestly, and there is no completeness
+theorem. The missing ingredient is a computable round message — a `CPolynomial`-valued
+partial sum in the free coordinate, together with its agreement lemma against the
+noncomputable `roundPoly` (see the Computability section of `Sumcheck/RoundPoly.lean`). That
+layer is also what `Commitment.lean`'s `opening` waits on.
+
+Extraction here is tree-based: it yields a witness (or an escape) from a structured accepting
+tree, and says nothing about a *probability* of extraction. Turning that into a
+knowledge-soundness error — the per-round Schwartz–Zippel `2b/|F|`, and the `(2b+1)^{m₀}`
+leaf count the composed structure demands — needs a Lemma-4-style bridge in the sense of
+FMN24, which the repo does not have for any protocol yet.
 
 ## References
 

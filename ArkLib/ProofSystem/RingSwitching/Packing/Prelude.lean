@@ -271,32 +271,28 @@ structure MLIOPCS extends (AbstractOStmtIn L ℓ') where
   pSpec : ProtocolSpec numRounds
   Oₘ: ∀ j, OracleInterface (pSpec.Message j)
   O_challenges: ∀ (i : pSpec.ChallengeIdx), SampleableType (pSpec.Challenge i)
-  -- /-- The evaluation protocol Π' as an OracleReduction -/
-  oracleReduction : OracleReduction (oSpec:=[]ₒ)
-    (StmtIn := MLPEvalStatement L ℓ') (OStmtIn:= OStmtIn)
-    (StmtOut := Bool) (OStmtOut := fun _: Empty => Unit)
-    (WitIn := WitMLP L ℓ') (WitOut := Unit)
+  /-- The evaluation protocol Π' as an oracle proof. -/
+  oracleReduction : OracleProof (oSpec := []ₒ)
+    (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
+    (Witness := WitMLP L ℓ')
     (pSpec := pSpec)
   -- Security properties
   perfectCompleteness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)},
-    OracleReduction.perfectCompleteness (oSpec:=[]ₒ)
-      (StmtIn:=MLPEvalStatement L ℓ') (OStmtIn:=OStmtIn)
-      (StmtOut:=Bool) (OStmtOut:=fun _: Empty => Unit)
-      (WitIn:=WitMLP L ℓ') (WitOut:=Unit) (pSpec:=pSpec) (init:=init) (impl:=impl)
-      (relIn := toAbstractOStmtIn.toRelInput)
-      (relOut := acceptRejectOracleRel)
-      (oracleReduction := oracleReduction)
+    OracleProof.perfectCompleteness (oSpec := []ₒ)
+      (Statement := MLPEvalStatement L ℓ') (OStatement := OStmtIn)
+      (Witness := WitMLP L ℓ') (pSpec := pSpec) (init := init) (impl := impl)
+      (relation := toAbstractOStmtIn.toRelInput)
+      (oracleProof := oracleReduction)
   -- RBR knowledge error function for the MLIOPCS
   rbrKnowledgeError : pSpec.ChallengeIdx → ℝ≥0
   -- RBR knowledge soundness property
   rbrKnowledgeSoundness : ∀ {σ : Type} {init : ProbComp σ} {impl : QueryImpl []ₒ (StateT σ ProbComp)
   },
-    OracleVerifier.rbrKnowledgeSoundness
-      (verifier := oracleReduction.verifier)
+    OracleProof.rbrKnowledgeSoundness
+      (verifier := oracleReduction.toOracleVerifier)
       (init := init)
       (impl := impl)
       (relIn := toAbstractOStmtIn.toRelInput)
-      (relOut := acceptRejectOracleRel)
       (rbrKnowledgeError := rbrKnowledgeError)
 
 end MLIOPCS
@@ -495,8 +491,8 @@ existing `rfl`/instance-driven Binius proofs (and the byte-identical `#print axi
     unfold φ₀ φ₁
     simp [Algebra.TensorProduct.tmul_mul_tmul]
   decomposeColumns_spec := fun z => by
-    letI rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
-    letI rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
+    let rightAlgebra : Algebra L (L ⊗[K] L) := Algebra.TensorProduct.rightAlgebra
+    let rightModule : Module L (L ⊗[K] L) := rightAlgebra.toModule
     conv_lhs => rw [← (Basis.baseChangeRight (b := β) (Right := L)).sum_repr z]
     refine Finset.sum_congr rfl fun v _ => ?_
     unfold decompose_tensor_algebra_columns

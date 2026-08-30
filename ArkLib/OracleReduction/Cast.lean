@@ -20,6 +20,11 @@ import ArkLib.OracleReduction.Security.RoundByRound
 
   We also show that casting preserves execution (up to casting of the transcripts) and thus security
   properties.
+
+  **Verified vs. admitted.** The *execution* lemmas (including the oracle-side
+  `OracleVerifier.cast_toVerifier`) and the round-by-round knowledge-soundness transfer
+  (`Verifier.cast_rbrKnowledgeSoundness` and its oracle-side corollary) are proven. The
+  completeness transfer lemmas are commented out entirely and remain future work.
 -/
 
 open OracleComp
@@ -54,7 +59,9 @@ theorem cast_id :
     Prover.cast rfl rfl = (id : Prover oSpec StmtIn WitIn StmtOut WitOut pSpec₁ → _) := by
   funext; simp [Prover.cast]; ext <;> simp
   · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 instance instDCast₂ : DCast₂ Nat ProtocolSpec
@@ -114,7 +121,6 @@ namespace OracleVerifier
 variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   [Oₘ₂ : ∀ i, OracleInterface (pSpec₂.Message i)]
 
-open Function in
 /-- Casting the oracle verifier of a non-oracle reduction across an equality of `ProtocolSpec`s.
 
 TODO: need a cast of the oracle interfaces as well (i.e. the oracle interface instance is not
@@ -122,22 +128,23 @@ necessarily unique for every type) -/
 protected def cast
     (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
     (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
-    OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ where
-  verify := fun stmt challenges =>
-    let impl : QueryImpl (oSpec + ([OStmtIn]ₒ + [pSpec₁.Message]ₒ))
-      (OracleComp (oSpec + ([OStmtIn]ₒ + [pSpec₂.Message]ₒ))) := sorry
-    simulateQ impl (V.verify stmt (dcast₂ hn.symm (dcast_symm hn hSpec) challenges))
-  embed := V.embed.trans
-    (Embedding.sumMap
-      (Equiv.refl _).toEmbedding
-      ⟨MessageIdx.cast hn hSpec, MessageIdx.cast_injective hn hSpec⟩)
-  hEq := fun i => by
-    simp [Embedding.sumMap, Equiv.refl]
-    have := V.hEq i
-    rw [this]
-    split
-    next a b h' => simp [h']
-    next a b h' => simp [h']; exact (Message.cast_idx hSpec).symm
+    OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₂ := by
+  cases hn
+  rw [show pSpec₁.cast rfl = pSpec₁ from rfl] at hSpec
+  cases hSpec
+  have hs : hSpec = rfl := Subsingleton.elim _ _
+  cases hs
+  have hInterfaces : Oₘ₁ = Oₘ₂ := by
+    funext i
+    have hi : i.cast rfl rfl = i := by
+      apply Subtype.ext
+      rfl
+    have h := hOₘ i
+    cases hi
+    simpa [MessageIdx.cast, Message.cast_idx, ProtocolSpec.cast_Type_idx,
+      dcast_eq_root_cast, ProtocolSpec.cast] using h
+  subst hInterfaces
+  exact V
 
 variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.cast hn hSpec)))
 
@@ -156,7 +163,22 @@ variable (hOₘ : ∀ i, Oₘ₁ i = dcast (Message.cast_idx hSpec) (Oₘ₂ (i.
 @[simp]
 theorem cast_toVerifier (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁) :
     (OracleVerifier.cast hn hSpec hOₘ V).toVerifier = Verifier.cast hn hSpec V.toVerifier := by
-  sorry
+  cases hn
+  rw [show pSpec₁.cast rfl = pSpec₁ from rfl] at hSpec
+  cases hSpec
+  have hs : hSpec = rfl := Subsingleton.elim _ _
+  cases hs
+  have hInterfaces : Oₘ₁ = Oₘ₂ := by
+    funext i
+    have hi : i.cast rfl rfl = i := by
+      apply Subtype.ext
+      rfl
+    have h := hOₘ i
+    cases hi
+    simpa [MessageIdx.cast, Message.cast_idx, ProtocolSpec.cast_Type_idx,
+      dcast_eq_root_cast, ProtocolSpec.cast] using h
+  subst hInterfaces
+  rfl
 
 end OracleVerifier
 
@@ -239,7 +261,9 @@ theorem cast_processRound (j : Fin n₁)
           (cast (by subst_vars; simp [Prover.cast]; rfl) currentResult)) := by
   subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
   · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
@@ -249,7 +273,9 @@ theorem cast_runToRound (j : Fin (n₁ + 1)) (stmt : StmtIn) (wit : WitIn)
         ((P.cast hn hSpec).runToRound (Fin.cast (congrArg (· + 1) hn) j) stmt wit) := by
   subst hn; subst hSpec; congr 1; ext <;> simp [Prover.cast]
   · funext _ _; simp [MessageIdx.cast, bind_pure]
-  · funext _ _; simp [ChallengeIdx.cast]
+  · apply heq_of_eq
+    funext _ _
+    simp [ChallengeIdx.cast]
   · rfl
 
 theorem cast_run (stmt : StmtIn) (wit : WitIn)
@@ -268,9 +294,9 @@ variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 @[simp]
 theorem cast_run (stmt : StmtIn) (transcript : FullTranscript pSpec₁) :
     V.run stmt transcript = (V.cast hn hSpec).run stmt (transcript.cast hn hSpec) := by
-  simp only [Verifier.run, Verifier.cast, FullTranscript.cast, dcast₂]
-  unfold Transcript.cast
-  simp
+  cases hn
+  cases hSpec
+  rfl
 
 end Verifier
 
@@ -320,12 +346,86 @@ namespace Verifier
 
 variable (V : Verifier oSpec StmtIn StmtOut pSpec₁)
 
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast.
+This is the base case that `OracleVerifier.cast_rbrKnowledgeSoundness` reduces to. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :
     (V.cast hn hSpec).rbrKnowledgeSoundness init impl relIn relOut
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
-  sorry
+  -- After `subst`, the cast is definitionally trivial and the only residual difference is the
+  -- `Finite` instance on each challenge type; `uniformSample`'s distribution is
+  -- instance-irrelevant, so the two games have equal `evalDist` and the bound transports.
+  subst hn
+  simp only [ProtocolSpec.cast_id, id_eq] at hSpec
+  subst hSpec
+  change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ init impl relIn relOut V ε
+  have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
+      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] =
+      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] := by
+    intro t s
+    cases t with
+    | inl t => rfl
+    | inr t =>
+      rcases t with ⟨i, q⟩
+      cases q
+      have huni :
+          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
+          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
+        let : Fintype (pSpec₁.Challenge i) := Fintype.ofFinite _
+        apply evalDist_ext
+        intro x
+        exact (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₁ i) this x).trans
+          (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₂ i) this x).symm
+      change
+        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
+            StateT σ ProbComp (pSpec₁.Challenge i)).run s] =
+        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
+            StateT σ ProbComp (pSpec₁.Challenge i)).run s]
+      rw [OracleComp.liftM_run_StateT, OracleComp.liftM_run_StateT]
+      rw [evalDist_bind, evalDist_bind]
+      exact congrArg
+        (fun d : SPMF (pSpec₁.Challenge i) =>
+          d >>= fun x => 𝒟[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
+  have hsim : ∀ {α : Type} (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) (s : σ),
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] =
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] := by
+    intro α oa s
+    exact evalDist_simulateQ_run_congr _ _ hhandler oa s
+  unfold rbrKnowledgeSoundness at hRbrKs ⊢
+  obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
+  refine ⟨WitMid, extractor, kSF, ?_⟩
+  intro stmtIn witIn prover i
+  let game := do
+    let ⟨⟨transcript, _⟩, proveQueryLog⟩ ← prover.runWithLogToRound i.1.castSucc stmtIn witIn
+    let challenge ← (pSpec₁.getChallenge i).liftComp (oSpec + [pSpec₁.Challenge]ₒ)
+    return (transcript, challenge, proveQueryLog)
+  have hrun (s : σ) :
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] =
+      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] := by
+    simp only [StateT.run'_eq, evalDist_map]
+    exact congrArg (Functor.map Prod.fst) (hsim game s)
+  have heval :
+      𝒟[(do
+        let s ← init
+        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] =
+      𝒟[(do
+        let s ← init
+        (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+          QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] := by
+    rw [evalDist_bind, evalDist_bind]
+    apply bind_congr
+    intro s
+    exact (hrun s).symm
+  exact (probEvent_congr' (fun _ _ => Iff.rfl) heval).trans_le
+    (hbound stmtIn witIn prover i)
 
 end Verifier
 
@@ -361,6 +461,8 @@ namespace OracleVerifier
 
 variable (V : OracleVerifier oSpec StmtIn OStmtIn StmtOut OStmtOut pSpec₁)
 
+/-- Round-by-round knowledge soundness transfers across a `ProtocolSpec` cast, on the oracle
+side; reduces to `Verifier.cast_rbrKnowledgeSoundness`. -/
 @[simp]
 theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     (hRbrKs : V.rbrKnowledgeSoundness init impl relIn relOut ε) :

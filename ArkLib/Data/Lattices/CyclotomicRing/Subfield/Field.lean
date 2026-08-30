@@ -70,7 +70,7 @@ theorem mk_reverse_eq_galoisAutₛ_mul (α : ℕ) (p : (ZMod q)[X]) :
   have hx2d : x ^ (2 ^ (α + 1)) = 1 := by rw [hxdef, ← map_pow]; exact mk_X_pow_conductor_eq_one α
   have hcx : x ^ (conjExp α) * x = 1 := by
     rw [← pow_succ, conjExp, Nat.sub_add_cancel Nat.one_le_two_pow, hx2d]
-  letI invx : Invertible x := ⟨x ^ (conjExp α), hcx, by rw [mul_comm]; exact hcx⟩
+  let invx : Invertible x := ⟨x ^ (conjExp α), hcx, by rw [mul_comm]; exact hcx⟩
   set i : ZMod q →+* (powTwoCyclotomic (R := ZMod q) α).CyclotomicRing := mk.comp C with hidef
   have heval_mk : ∀ r : (ZMod q)[X], eval₂ i x r = mk r := by
     have hext : (Polynomial.eval₂RingHom i x) = mk := by
@@ -101,7 +101,7 @@ theorem exists_irreducible_factorization (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 �
     intro h
     have hq2 : q ∣ 2 := Nat.Prime.dvd_of_dvd_pow Fact.out h
     have := Nat.le_of_dvd (by norm_num) hq2; omega
-  haveI : NeZero ((2 ^ (α + 1) : ℕ) : ZMod q) :=
+  have : NeZero ((2 ^ (α + 1) : ℕ) : ZMod q) :=
     ⟨by rw [Ne, ZMod.natCast_eq_zero_iff]; exact hqcop⟩
   set f : (ZMod q)[X] := cyclotomic (2 ^ (α + 1)) (ZMod q) with hf
   have hfne : f ≠ 0 := cyclotomic_ne_zero _ _
@@ -537,7 +537,7 @@ core unit lemma `galoisAutₛ_fixed_isUnit`. The inverse of a `σ_{-1}`-fixed un
 (apply `σ_{-1}` to `a·a⁻¹ = 1` and cancel the unit). -/
 theorem conjFixedSubring_isField (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α) :
     IsField (conjFixedSubring (R := ZMod q) α) := by
-  haveI hntC : Nontrivial (powTwoCyclotomic (R := ZMod q) α).CyclotomicRing := by
+  have hntC : Nontrivial (powTwoCyclotomic (R := ZMod q) α).CyclotomicRing := by
     refine ⟨0, 1, fun h => ?_⟩
     rw [show (1 : (powTwoCyclotomic (R := ZMod q) α).CyclotomicRing)
           = Ideal.Quotient.mk _ 1 from (map_one _).symm, eq_comm,
@@ -547,12 +547,12 @@ theorem conjFixedSubring_isField (hq5 : q % 8 = 5) {α : ℕ} (hα : 1 ≤ α) :
     rw [Polynomial.natDegree_one, show (X ^ (2 ^ α) + 1 : (ZMod q)[X]) = X ^ (2 ^ α) + C 1 by
       rw [map_one], Polynomial.natDegree_X_pow_add_C] at hdeg
     exact absurd hdeg (Nat.not_le.mpr (by positivity))
-  haveI : Nontrivial (Rq (powTwoCyclotomic (R := ZMod q) α)) := by
+  have : Nontrivial (Rq (powTwoCyclotomic (R := ZMod q) α)) := by
     refine ⟨0, 1, fun h => ?_⟩
     have h2 := congrArg (Rq.equivQuotient (powTwoCyclotomic (R := ZMod q) α)) h
     rw [map_zero, map_one] at h2
     exact zero_ne_one h2
-  haveI : Nontrivial (conjFixedSubring (R := ZMod q) α) := inferInstance
+  have : Nontrivial (conjFixedSubring (R := ZMod q) α) := inferInstance
   refine ⟨exists_pair_ne _, mul_comm, ?_⟩
   intro a ha
   set Ψ := Rq.equivQuotient (powTwoCyclotomic (R := ZMod q) α) with hΨ
@@ -602,8 +602,8 @@ theorem fixedSubring_isField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 ≤ α) :
   have hle := fixedSubring_le_conjFixedSubring (R := ZMod q) α (2 ^ κ)
   -- Derive `Nontrivial`/`NoZeroDivisors` on `R_q^{σ_{-1}}` from the `IsField` *Prop* directly,
   -- avoiding the instance diamond that `IsField.toField` would create on the subring carrier.
-  haveI : Nontrivial (conjFixedSubring (R := ZMod q) α) := ⟨hconjF.exists_pair_ne⟩
-  haveI : NoZeroDivisors (conjFixedSubring (R := ZMod q) α) := by
+  have : Nontrivial (conjFixedSubring (R := ZMod q) α) := ⟨hconjF.exists_pair_ne⟩
+  have : NoZeroDivisors (conjFixedSubring (R := ZMod q) α) := by
     refine ⟨fun {a b} hab => ?_⟩
     by_cases ha : a = 0
     · exact Or.inl ha
@@ -612,12 +612,12 @@ theorem fixedSubring_isField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 ≤ α) :
       have h0 : a' * (a * b) = 0 := by rw [hab, mul_zero]
       rwa [← mul_assoc, mul_comm a' a, haa', one_mul] at h0
   -- Pull the domain structure back along the injective inclusion `R_q^H ↪ R_q^{σ_{-1}}`.
-  haveI : Nontrivial (fixedSubring (R := ZMod q) α (2 ^ κ)) :=
+  have : Nontrivial (fixedSubring (R := ZMod q) α (2 ^ κ)) :=
     (Subring.inclusion hle).domain_nontrivial
-  haveI : NoZeroDivisors (fixedSubring (R := ZMod q) α (2 ^ κ)) :=
+  have : NoZeroDivisors (fixedSubring (R := ZMod q) α (2 ^ κ)) :=
     Function.Injective.noZeroDivisors (Subring.inclusion hle) (Subring.inclusion_injective hle)
       (Subring.inclusion hle).map_zero (fun x y => (Subring.inclusion hle).map_mul x y)
-  haveI : IsDomain (fixedSubring (R := ZMod q) α (2 ^ κ)) := NoZeroDivisors.to_isDomain _
+  have : IsDomain (fixedSubring (R := ZMod q) α (2 ^ κ)) := NoZeroDivisors.to_isDomain _
   exact Finite.isField_of_domain _
 
 /-- **Hachi [NOZ26, §3, Lemma 5]: `R_q^H ≅ F_{q^k}`.** For `q ≡ 5 (mod 8)` and `2·2^κ ∣ 2^α`,
@@ -636,8 +636,8 @@ theorem fixedSubringEquivGaloisField (hq5 : q % 8 = 5) {α κ : ℕ} (hα : 1 �
   have h2 : (2 : ZMod q) ≠ 0 := by
     have h2' : ((2 : ℕ) : ZMod q) ≠ 0 := by rw [Ne, ZMod.natCast_eq_zero_iff]; exact hq2
     simpa using h2'
-  letI : Field (fixedSubring (R := ZMod q) α (2 ^ κ)) := (fixedSubring_isField q hq5 hα).toField
-  haveI : Fintype (GaloisField q (2 ^ κ)) := Fintype.ofFinite _
+  let : Field (fixedSubring (R := ZMod q) α (2 ^ κ)) := (fixedSubring_isField q hq5 hα).toField
+  have : Fintype (GaloisField q (2 ^ κ)) := Fintype.ofFinite _
   have hcardK : Fintype.card (fixedSubring (R := ZMod q) α (2 ^ κ)) = q ^ 2 ^ κ := by
     rw [card_fixedSubring_eq q α κ h2 hk, ZMod.card q]
   have hcardG : Fintype.card (GaloisField q (2 ^ κ)) = q ^ 2 ^ κ := by

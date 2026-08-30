@@ -41,6 +41,13 @@ variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
+private theorem instFunction_heq_of_domain_eq {α α' β : Type}
+    (h : α = α') : HEq
+      (OracleInterface.instFunction (α := α) (β := β))
+      (OracleInterface.instFunction (α := α') (β := β)) := by
+  subst h
+  rfl
+
 section SingleIteratedSteps
 variable {Context : Type} {mp : SumcheckMultiplierParam L ℓ Context} -- Sumcheck context
 section FoldStep
@@ -190,17 +197,22 @@ noncomputable def foldOracleVerifier (i : Fin ℓ) :
     }
 
     pure stmtOut
-  embed := ⟨fun j => by
-    if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
-      exact Sum.inl ⟨j.val, by omega⟩
-    else omega -- never happens
-  , by
-    intro a b h_ab_eq
-    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
-    exact h_ab_eq
-  ⟩
-  hEq := fun oracleIdx => by
-    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
+  outputOracle := .inl {
+    embed := ⟨fun j => by
+      if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
+        exact Sum.inl ⟨j.val, by omega⟩
+      else omega -- never happens
+    , by
+      intro a b h_ab_eq
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
+      exact h_ab_eq
+    ⟩
+    hEq := fun oracleIdx => by
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
+    outputInterface_heq := fun oracleIdx => by
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta,
+        Function.Embedding.coeFn_mk]
+      rfl }
 
 /-- The oracle reduction that is the `i`-th round of Binary Foldfold. -/
 noncomputable def foldOracleReduction (i : Fin ℓ) :
@@ -487,42 +499,74 @@ noncomputable def commitOracleVerifier (i : Fin ℓ) (hCR : isCommitmentRound �
   verify := fun stmtIn pSpecChallenges => do
     pure stmtIn
 
-  embed := ⟨fun j => by
-    classical
-    if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
-      exact Sum.inl ⟨j.val, by omega⟩
-    else
-      exact Sum.inr ⟨0, by rfl⟩
-  , by
-    intro a b h_ab_eq
-    simp only [MessageIdx, Fin.isValue] at h_ab_eq
-    split_ifs at h_ab_eq with h_ab_eq_l h_ab_eq_r
-    · simp at h_ab_eq; apply Fin.eq_of_val_eq; exact h_ab_eq
-    · have ha_lt : a < toOutCodewordsCount ℓ ϑ i.succ := by omega
-      have hb_lt : b < toOutCodewordsCount ℓ ϑ i.succ := by omega
-      conv_rhs at ha_lt => rw [toOutCodewordsCount_succ_eq ℓ ϑ i]
-      conv_rhs at hb_lt => rw [toOutCodewordsCount_succ_eq ℓ ϑ i]
-      simp only [hCR, ↓reduceIte] at ha_lt hb_lt
-      have h_a : a = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
-      have h_b : b = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
-      omega
-  ⟩
-  hEq := fun oracleIdx => by
-    unfold OracleStatement pSpecCommit
-    simp only [MessageIdx, Fin.isValue, Function.Embedding.coeFn_mk, Message,
-      Matrix.cons_val_fin_one]
-    by_cases hlt : oracleIdx.val < toOutCodewordsCount ℓ ϑ i.castSucc
-    · -- oracleIdx maps to an existing prior-oracle index
-      simp only [hlt, ↓reduceDIte]
-    · -- oracleIdx is out of previous range, check commitment round
-      simp only [hlt, ↓reduceDIte, Fin.isValue]
-      have hOracleIdx_lt : oracleIdx.val < toOutCodewordsCount ℓ ϑ i.succ := by omega
-      simp only [toOutCodewordsCount_succ_eq ℓ ϑ i, hCR, ↓reduceIte] at hOracleIdx_lt
-      have hOracleIdx : oracleIdx = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
-      simp_rw [hOracleIdx];
-      have h := toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
-      rw! [h]
-      rfl
+  outputOracle := .inl {
+    embed := ⟨fun j => by
+      classical
+      if hj : j.val < toOutCodewordsCount ℓ ϑ i.castSucc then
+        exact Sum.inl ⟨j.val, by omega⟩
+      else
+        exact Sum.inr ⟨0, by rfl⟩
+    , by
+      intro a b h_ab_eq
+      simp only [MessageIdx, Fin.isValue] at h_ab_eq
+      split_ifs at h_ab_eq with h_ab_eq_l h_ab_eq_r
+      · simp at h_ab_eq; apply Fin.eq_of_val_eq; exact h_ab_eq
+      · have ha_lt : a < toOutCodewordsCount ℓ ϑ i.succ := by omega
+        have hb_lt : b < toOutCodewordsCount ℓ ϑ i.succ := by omega
+        conv_rhs at ha_lt => rw [toOutCodewordsCount_succ_eq ℓ ϑ i]
+        conv_rhs at hb_lt => rw [toOutCodewordsCount_succ_eq ℓ ϑ i]
+        simp only [hCR, ↓reduceIte] at ha_lt hb_lt
+        have h_a : a = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
+        have h_b : b = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
+        omega
+    ⟩
+    hEq := fun oracleIdx => by
+      unfold OracleStatement pSpecCommit
+      simp only [MessageIdx, Fin.isValue, Function.Embedding.coeFn_mk, Message,
+        Matrix.cons_val_fin_one]
+      by_cases hlt : oracleIdx.val < toOutCodewordsCount ℓ ϑ i.castSucc
+      · simp only [hlt, ↓reduceDIte]
+      · simp only [hlt, ↓reduceDIte, Fin.isValue]
+        have hOracleIdx_lt : oracleIdx.val < toOutCodewordsCount ℓ ϑ i.succ := by omega
+        simp only [toOutCodewordsCount_succ_eq ℓ ϑ i, hCR, ↓reduceIte] at hOracleIdx_lt
+        have hOracleIdx : oracleIdx = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
+        simp_rw [hOracleIdx]
+        have h := toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
+        rw! [h]
+        rfl
+    outputInterface_heq := fun oracleIdx => by
+      simp only [Function.Embedding.coeFn_mk]
+      split_ifs
+      · rfl
+      · change instOracleStatementBinaryBasefold 𝔽q β oracleIdx ≍
+          (OracleInterface.instFunction : OracleInterface
+            ((pSpecCommit 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i).Message ⟨0, rfl⟩))
+        have hOracleIdx_lt : oracleIdx.val < toOutCodewordsCount ℓ ϑ i.succ := by omega
+        simp only [toOutCodewordsCount_succ_eq ℓ ϑ i, hCR, ↓reduceIte] at hOracleIdx_lt
+        have hOracleIdx_val : oracleIdx.val = toOutCodewordsCount ℓ ϑ i.castSucc := by omega
+        have hVal : oracleIdx.val * ϑ = i.val + 1 := by
+          rw [hOracleIdx_val]
+          exact toOutCodewordsCount_mul_ϑ_eq_i_succ ℓ ϑ (i := i) (hCR := hCR)
+        let idxOut : Fin r := ⟨oracleIdx.val * ϑ, by
+          calc
+            oracleIdx.val * ϑ < ℓ :=
+              toCodewordsCount_mul_ϑ_lt_ℓ ℓ ϑ i.succ oracleIdx
+            _ < r := by omega⟩
+        let idxMsg : Fin r := ⟨i.val + 1, by omega⟩
+        have hIndex : idxOut = idxMsg := by
+          apply Fin.ext
+          exact hVal
+        have hDomain : (sDomain 𝔽q β h_ℓ_add_R_rate idxOut : Type) =
+            (sDomain 𝔽q β h_ℓ_add_R_rate idxMsg : Type) :=
+          congrArg (fun j : Fin r => (sDomain 𝔽q β h_ℓ_add_R_rate j : Type)) hIndex
+        have hCanonical : HEq
+            (instOracleStatementBinaryBasefold (𝓡 := 𝓡) (ϑ := ϑ)
+              (h_ℓ_add_R_rate := h_ℓ_add_R_rate) 𝔽q β oracleIdx)
+            (OracleInterface.instFunction
+              (α := (sDomain 𝔽q β h_ℓ_add_R_rate idxOut : Type)) (β := L)) := by
+          rfl
+        simpa only [pSpecCommit, Message, Matrix.cons_val_fin_one, idxMsg] using
+          hCanonical.trans (instFunction_heq_of_domain_eq hDomain) }
 
 /-- The oracle reduction that is the `i`-th round of Binary commitmentfold. -/
 noncomputable def commitOracleReduction (i : Fin ℓ) (hCR : isCommitmentRound ℓ ϑ i) :
@@ -603,7 +647,7 @@ def commitKStateProp (i : Fin ℓ) (m : Fin (1 + 1))
   | ⟨0, _⟩ => -- same as relIn
     masterKStateProp (mp := mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
       (stmtIdx := i.succ) (oracleIdx := i.castSucc)
-      (h_le := by simp only [Fin.coe_castSucc, Fin.val_succ, le_add_iff_nonneg_right, zero_le])
+      (h_le := by simp only [Fin.val_castSucc, Fin.val_succ, le_add_iff_nonneg_right, zero_le])
       (stmt := stmtIn) (wit := witMid) (oStmt := oStmtIn)
       (localChecks := True)
   | ⟨1, _⟩ => -- implied by relOut
@@ -700,17 +744,19 @@ noncomputable def relayOracleVerifier (i : Fin ℓ) (hNCR : ¬ isCommitmentRound
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i.succ)
     (pSpec := pSpecRelay) where
   verify := fun stmtIn _ => pure stmtIn
-  embed := ⟨fun j => by
-    have h_oracle_size_eq : toOutCodewordsCount ℓ ϑ i.castSucc =
-      toOutCodewordsCount ℓ ϑ i.succ := by
-      simp only [toOutCodewordsCount_succ_eq, hNCR, ↓reduceIte]
-    exact Sum.inl ⟨j.val, by rw [h_oracle_size_eq]; omega⟩
-  , by
-    intro a b h_ab_eq
-    simp only [MessageIdx, Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
-    exact Fin.ext h_ab_eq
-  ⟩
-  hEq := fun oracleIdx => by rfl
+  outputOracle := .inl {
+    embed := ⟨fun j => by
+      have h_oracle_size_eq : toOutCodewordsCount ℓ ϑ i.castSucc =
+        toOutCodewordsCount ℓ ϑ i.succ := by
+        simp only [toOutCodewordsCount_succ_eq, hNCR, ↓reduceIte]
+      exact Sum.inl ⟨j.val, by rw [h_oracle_size_eq]; omega⟩
+    , by
+      intro a b h_ab_eq
+      simp only [MessageIdx, Sum.inl.injEq, Fin.mk.injEq] at h_ab_eq
+      exact Fin.ext h_ab_eq
+    ⟩
+    hEq := fun oracleIdx => by rfl
+    outputInterface_heq := fun oracleIdx => by rfl }
 
 /-- The oracle reduction that is the `i`-th round of Binary relayfold. -/
 noncomputable def relayOracleReduction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ ϑ i) :
@@ -799,9 +845,9 @@ def relayKnowledgeStateFunction (i : Fin ℓ) (hNCR : ¬ isCommitmentRound ℓ �
     relayKStateProp (mp:=mp) 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
        i hNCR stmtIn witMid oStmtIn
   toFun_empty := fun ⟨stmtIn, oStmtIn⟩ witIn => by
-    simp only [foldStepRelOut, foldStepRelOutProp, cast_eq, Set.mem_setOf_eq, relayKStateProp]
+    simp only [foldStepRelOut, foldStepRelOutProp, cast_eq, Set.mem_ofPred_eq, relayKStateProp]
     unfold masterKStateProp
-    simp only [Fin.val_succ, Fin.coe_castSucc, Fin.take_eq_init, true_and, Fin.take_eq_self]
+    simp only [Fin.val_succ, Fin.val_castSucc, Fin.take_eq_init, true_and, Fin.take_eq_self]
     have hRight := oracleWitnessConsistency_relay_preserved (mp := mp) 𝔽q β i
       hNCR stmtIn witIn oStmtIn
     rw [hRight]
@@ -930,17 +976,22 @@ noncomputable def finalSumcheckVerifier :
     }
     pure stmtOut
 
-  embed := ⟨fun j => by
-    if hj : j.val < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) then
-      exact Sum.inl ⟨j.val, by omega⟩
-    else omega -- never happens
-  , by
-    intro a b h_ab_eq
-    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
-    exact h_ab_eq
-  ⟩
-  hEq := fun oracleIdx => by
-    simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
+  outputOracle := .inl {
+    embed := ⟨fun j => by
+      if hj : j.val < toOutCodewordsCount ℓ ϑ (Fin.last ℓ) then
+        exact Sum.inl ⟨j.val, by omega⟩
+      else omega -- never happens
+    , by
+      intro a b h_ab_eq
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Sum.inl.injEq] at h_ab_eq
+      exact h_ab_eq
+    ⟩
+    hEq := fun oracleIdx => by
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta, Function.Embedding.coeFn_mk]
+    outputInterface_heq := fun oracleIdx => by
+      simp only [MessageIdx, Fin.is_lt, ↓reduceDIte, Fin.eta,
+        Function.Embedding.coeFn_mk]
+      rfl }
 
 /-- The oracle reduction for the final sumcheck step -/
 noncomputable def finalSumcheckOracleReduction :

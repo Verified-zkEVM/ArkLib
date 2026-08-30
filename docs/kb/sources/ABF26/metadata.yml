@@ -1,0 +1,5 @@
+bibkey: ABF26
+source_kind: manuscript
+canonical_url: https://proximityprize.org/
+committed_artifacts: []
+notes: "Arnon-Boneh-Fenzi survey accompanying the Ethereum Foundation Proximity Prize; the source paper for the whole ABF26 layer of ArkLib/Data/CodingTheory. Manuscript only, no ePrint number, so cite by key plus statement number. Reference PDF (not committed, not redistributable) is ~/abf26-refs/ABF26.pdf, PDF creation date 2026-04-08; that build predates upstream corrections, notably Definition 3.1's Johnson list factor, so check the authors' current source before treating a PDF mismatch as an ArkLib error."

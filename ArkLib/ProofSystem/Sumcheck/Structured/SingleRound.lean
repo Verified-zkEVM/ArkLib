@@ -28,9 +28,17 @@ This file collects single-round primitives for the structured (witness-mode) sum
 These were originally housed in `Binius.BinaryBasefold.Prelude`,
 `RingSwitching.Packing.Spec`, and `RingSwitching.Packing.SumcheckPhase`. They are fully
 generic (no binary-tower or ring-switching dependencies) and have been promoted here so
-that other protocols (Hachi's §4.3 sumcheck, Galois-ring PCS) can reuse them without
+that other protocols (e.g. a Galois-ring PCS) can reuse them without
 depending on `Binius.*`. `RingSwitching.Packing.SumcheckPhase` retains thin `@[reducible]`
 wrappers that specialize `Context` and `OStmtIn` back to the DP24 ring-switching types.
+
+Note on rejection: `roundOracleVerifier` below rejects by emitting a **dummy statement** rather
+than `failure`. That is fine for a round-by-round soundness argument, but it is not usable for
+tree-based (coordinate-wise special soundness) extraction, where all siblings of a node share the
+prover message and a dummy output collapses every branch onto the same statement. Protocols that
+need the latter use a `failure`-guarded verifier instead — Hachi's §4.3 round
+(`Commitments/Functional/Hachi/Sumcheck/Rounds.lean`) is the worked example, and generalizing it
+here is the natural way to give this layer a CWSS certificate.
 -/
 
 namespace Sumcheck.Structured
@@ -98,7 +106,7 @@ variable (L : Type) [Semiring L]
 /-- Protocol spec for one round of the structured sumcheck:
 P sends a degree-≤`d` univariate `h_i(X) ∈ L⦃≤ d⦄[X]`; V samples a challenge `r'_i ∈ L`.
 `d` is explicit (no privileged instantiation): the `H = P · t` case passes `d := 2`, Hachi's
-smallness check passes `d := 2b+1`. -/
+smallness check passes `d := 2b` (its range combinator has degree `2b − 1`). -/
 @[reducible]
 def pSpecSumcheckRound (d : ℕ) : ProtocolSpec 2 :=
   ⟨![Direction.P_to_V, Direction.V_to_P], ![L⦃≤ d⦄[X], L]⟩
@@ -142,8 +150,8 @@ variable {L : Type} [CommRing L] [DecidableEq L] (ℓ : ℕ) [NeZero ℓ] (D : S
 variable (Context : Type) {ιₛᵢ : Type} {OStmtIn : ιₛᵢ → Type}
   [Oₛᵢ : ∀ j, OracleInterface (OStmtIn j)]
 -- Round-polynomial degree bound. `d = 2` for the `H = P · t` case (Binius, ring-switching);
--- `d = 2b+1` for Hachi's degree-`2b` smallness combinator. Threaded explicitly (Lean `variable`
--- has no default), so callers pass `(d := 2)` / `(d := 2b+1)`.
+-- `d = 2b` for Hachi's degree-`(2b−1)` range combinator. Threaded explicitly (Lean `variable`
+-- has no default), so callers pass `(d := 2)` / `(d := 2 * b)`.
 variable (d : ℕ)
 
 /-- State machine for the per-round prover of the structured sumcheck.
@@ -270,8 +278,12 @@ def roundOracleVerifier (i : Fin ℓ) :
       challenges := Fin.snoc stmtIn.challenges r_i'
     }
     pure stmtOut
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun _ => rfl
+  outputOracle := .inl {
+    embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+    hEq := fun _ => rfl
+    outputInterface_heq := by
+      intro j
+      rfl }
 
 /-- The oracle reduction bundling the per-round prover and verifier. -/
 def roundOracleReduction (i : Fin ℓ) :
@@ -284,7 +296,8 @@ def roundOracleReduction (i : Fin ℓ) :
     (WitOut := SumcheckWitness L ℓ i.succ d)
     (pSpec := pSpecSumcheckRound L d) where
   prover := roundOracleProver (L := L) ℓ D Context (OStmtIn := OStmtIn) d i
-  verifier := roundOracleVerifier (L := L) ℓ D Context (OStmtIn := OStmtIn) d i
+  verifier := roundOracleVerifier (L := L) (ℓ := ℓ) (D := D)
+    (Context := Context) (OStmtIn := OStmtIn) (d := d) i
 
 end SingleRound
 

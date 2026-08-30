@@ -31,8 +31,11 @@ module codes over (scalar) rings.
 
 ## TODOs
 - weighted correlated agreement
-- mutual correlated agreement
 - generalize the CA definitions using proximity generator?
+
+(Mutual correlated agreement lives in `ProximityGenerators.lean` (`IsMCA`/`IsMCAGenerator`/
+`mcaError`, module-alphabet general) with preservation lemmas in `MCAGenerator.lean`,
+`AffineGenerator.lean` and `TensorGenerator.lean`.)
 
 ## References
 

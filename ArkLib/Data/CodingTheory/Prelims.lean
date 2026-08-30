@@ -46,7 +46,12 @@ variable {F : Type*}
 
 namespace Matrix
 
-/-- The set of column indices where two matrices differ. -/
+/-- The set of column indices where two matrices differ.
+
+This is the matrix-shaped form of `Code.disagreementCols`: reading a matrix as a word over
+the alphabet of its columns, `neqCols U V = Code.disagreementCols Uᵀ Vᵀ`. The bridge is
+`Matrix.neqCols_eq_disagreementCols_transpose`, stated downstream in `Basic/Distance.lean`.
+Prefer `Code.disagreementCols` for plain pointwise disagreement. -/
 def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' := {j | ∃ i : ι, V i j ≠ U i j}
 
 section
@@ -271,7 +276,7 @@ omit [Fintype F] in
 /-- The affine span of a finite set of vectors is finite over a finite field. -/
 lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
     (AffSpanSet u).Finite := by
-  letI : Fintype F := Fintype.ofFinite F
+  let : Fintype F := Fintype.ofFinite F
   unfold AffSpanSet
   exact Set.toFinite _
 
@@ -299,28 +304,27 @@ instance instNonemptyAffineSubspace_mk' {V : Type*} [AddCommGroup V] [Module F V
     (p : V) (direction : Submodule F V) : Nonempty (AffineSubspace.mk' p direction) :=
   nonempty_subtype.mpr ⟨p, AffineSubspace.self_mem_mk' p direction⟩
 
-/-- The affine-space combination of codewords `U` at seed `x`:
-`U 0 + ∑ i, x i • U (i+1)`, i.e. `vecMul (1, x) U`. -/
-abbrev affineComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (x : Fin s → F) : ι → F :=
-  Matrix.vecMul (Fin.cons 1 x) U
+/-- The affine-space combination of module-valued codewords `U` at seed `x`:
+`U 0 + ∑ i, x i • U (i+1)`. -/
+abbrev affineComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (x : Fin s → F) : ι → A :=
+  fun k => U 0 k + ∑ i, x i • U i.succ k
 
-/-- The linear combination `∑ i, l i • U (i+1)` of the "direction" codewords. -/
-abbrev linComb {s : ℕ} (U : Fin (s + 1) → (ι → F)) (l : Fin s → F) : ι → F :=
-  fun k => ∑ i, l i * U i.succ k
+/-- The linear combination `∑ i, l i • U (i+1)` of the module-valued direction codewords. -/
+abbrev linComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (l : Fin s → F) : ι → A :=
+  fun k => ∑ i, l i • U i.succ k
 
 omit [Fintype ι] [DecidableEq F] [Fintype F] in
 /-- The affine combination along the line `x ↦ v + t • lam` in seed space. -/
-lemma affineComb_line {s : ℕ} (U : Fin (s + 1) → (ι → F)) (v lam : Fin s → F) (t : F) :
+lemma affineComb_line [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (v lam : Fin s → F) (t : F) :
     affineComb U (v + t • lam) = affineComb U v + t • (linComb U lam) := by
-  have hsplit : (Fin.cons 1 (v + t • lam) : Fin (s + 1) → F) =
-      Fin.cons 1 v + t • (Fin.cons (0 : F) lam : Fin (s + 1) → F) := by
-    ext i
-    refine Fin.cases ?_ ?_ i <;> simp
-  have hlin : Matrix.vecMul (Fin.cons (0 : F) lam : Fin (s + 1) → F) U = linComb U lam := by
-    ext k
-    simp [Matrix.vecMul, dotProduct, Fin.sum_univ_succ, linComb]
-  change Matrix.vecMul (Fin.cons 1 (v + t • lam) : Fin (s + 1) → F) U = _
-  rw [hsplit, Matrix.add_vecMul, Matrix.smul_vecMul, hlin]
+  ext k
+  simp only [affineComb, linComb, Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_smul, mul_smul,
+    Finset.smul_sum]
+  rw [Finset.sum_add_distrib]
+  abel
 
 end
 end Affine
@@ -384,9 +388,10 @@ namespace sInf
 lemma sInf_UB_of_le_UB {S : Set ℕ} {i : ℕ} : (∀ s ∈ S, s ≤ i) → sInf S ≤ i := fun h ↦ by
   by_cases S_empty : S.Nonempty
   · classical
-    rw [Nat.sInf_def S_empty, Nat.find_le_iff]
-    choose s hs using S_empty
-    aesop
+    rcases S_empty with ⟨s, hs⟩
+    have hne : ∃ n, n ∈ S := ⟨s, hs⟩
+    rw [Nat.sInf_def hne]
+    exact (Nat.find_le_iff hne i).2 ⟨s, h s hs, hs⟩
   · aesop (add simp (show S = ∅ by aesop (add simp Set.Nonempty)))
 
 /-- If `i` is a lower bound for all elements in a nonempty set, then `i` is at most the infimum. -/

@@ -65,6 +65,7 @@ without importing ArkLib core.
 
 open OracleComp OracleSpec ProtocolSpec ProbabilityTheory
 open scoped ENNReal
+open Probability
 
 namespace ProtocolSpec
 

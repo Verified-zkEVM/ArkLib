@@ -6,6 +6,7 @@ Authors: Quang Dao, Katerina Hristova
 
 import Mathlib.Algebra.MvPolynomial.Degrees
 import Mathlib.Algebra.MvPolynomial.Equiv
+import Mathlib.Algebra.Polynomial.Roots
 import Mathlib.Algebra.Group.Action.Pointwise.Finset
 import CompPoly.Data.MvPolynomial.Notation
 
@@ -200,6 +201,19 @@ theorem totalDegree_le_card_mul_of_mem_restrictDegree [Fintype σ] (p : MvPolyno
     _ ≤ ∑ _i : σ, n := Finset.sum_le_sum (fun i _ => hp s hs i)
     _ = Fintype.card σ * n := by simp [Finset.sum_const, mul_comm]
 
+/-- If every variable's degree in `P` is strictly less than `d`, the total degree is at most
+`m * (d - 1)` for `m` variables. Strict-inequality corollary of
+`totalDegree_le_card_mul_of_mem_restrictDegree`. -/
+theorem totalDegree_le_of_degreeOf_lt
+    {R : Type*} [CommSemiring R] {m d : ℕ}
+    (P : MvPolynomial (Fin m) R)
+    (h_indiv_deg : ∀ i, P.degreeOf i < d) :
+    P.totalDegree ≤ m * (d - 1) := by
+  have h := totalDegree_le_card_mul_of_mem_restrictDegree P (d - 1)
+    ((mem_restrictDegree_iff_degreeOf_le P (d - 1)).mpr
+      fun i => Nat.le_sub_one_of_lt (h_indiv_deg i))
+  simpa using h
+
 end DegreeOf
 
 section Equiv
@@ -241,6 +255,26 @@ end CommSemiring
 section CommRing
 
 variable [CommRing R]
+
+/-- **Head-variable root count.** View `p` as a univariate polynomial in `X 0` with coefficients in
+`R[X Fin n]`. If its individual degree in `X 0` is below `#T` and every `x ∈ T` is a root, then
+`p = 0`.
+
+This is the inductive step shared by the two multivariate zero tests over a domain: the
+Cartesian-grid one (`eq_zero_of_degreeOf_lt_card_of_eval_eq_zero_of_fin`, taking `T = S 0`) and
+the path-dependent nested-tree one (`NestedEvaluationTree.eq_zero_of_vanishes_comp`, taking `T` to
+be the sibling labels of the head node). They differ only in how `hT` is produced — from a product
+set in the first case, from `k` subtrees in the second. -/
+theorem eq_zero_of_degreeOf_zero_lt_card_of_eval_C_eq_zero [IsDomain R] {n : ℕ}
+    {p : MvPolynomial (Fin (n + 1)) R} (T : Finset R) (hDegree : p.degreeOf 0 < T.card)
+    (hT : ∀ x ∈ T, Polynomial.eval (C x) (finSuccEquiv R n p) = 0) : p = 0 := by
+  have hq : finSuccEquiv R n p = 0 :=
+    Polynomial.eq_zero_of_natDegree_lt_card_of_eval_eq_zero' _ (T.map CEmbedding)
+      (fun x hx => by
+        obtain ⟨y, hy, rfl⟩ := Finset.mem_map.mp hx
+        exact hT y hy)
+      (by rw [Finset.card_map, natDegree_finSuccEquiv]; exact hDegree)
+  exact EmbeddingLike.map_eq_zero_iff.mp hq
 
 end CommRing
 

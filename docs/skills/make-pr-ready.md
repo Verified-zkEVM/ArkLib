@@ -37,6 +37,11 @@ Work through these in order. Do not stop until every item is complete.
   Compute the real PR surface as the **union** of `git diff --stat origin/main...HEAD` (committed)
   and `git diff --stat HEAD` (uncommitted), and audit/lint every file in that union — not just the
   committed ones. The whole-tree view is `git diff --stat origin/main`.
+  - **An empty three-dot diff does not mean there is nothing to review.** A branch can sit exactly
+    at the base (`git rev-parse HEAD origin/main` prints the same SHA) with the entire PR staged
+    but not yet committed — the normal state when the work was just finished. Then
+    `origin/main...HEAD` is empty and `git diff origin/main` (two-dot) *is* the whole PR. Confirm
+    which case you are in with that `rev-parse` before concluding the scope is empty.
 - **Check for an in-progress merge before trusting any of the above.** Run
   `cat .git/MERGE_HEAD 2>/dev/null`. If it exists, the author is mid-merge with the resolution
   staged, and the union formula **over-reports badly**: every file the base changed since the
@@ -61,6 +66,14 @@ Work through these in order. Do not stop until every item is complete.
   **not** audit or "fix" those files here: it is redundant with the sibling PR and any edit invites
   a merge conflict. Scope the audit/lint/warning-fix work to files this branch actually authored or
   extended (differs from both `origin/main` and the sibling branch).
+- **Test for committed `_generated/` drift explicitly — a clean `git status` does not rule it out.**
+  If the branch committed regenerated outputs, the working tree is clean and nothing in the default
+  `validate.sh` complains, yet CI's first job fails. One line settles it, and it belongs in step 0:
+
+  ```bash
+  git diff --stat origin/main HEAD -- docs/kb/_generated/   # any output = the guard will fail
+  ```
+
 - **If `_generated/` drift is already committed** (the branch committed regenerated outputs, not
   just dirtied the working tree), `git checkout origin/main -- docs/kb/_generated/` stages a
   *revert*, and you must **commit it** for the guard to pass — the guard compares the committed
@@ -182,6 +195,12 @@ Work through these in order. Do not stop until every item is complete.
   If your branch has already diverged in `docs/kb/_generated/` (drift, an accidental delete, or a
   regenerate that got committed), restore it the same way: `git fetch origin main` then
   `git checkout origin/main -- docs/kb/_generated/`, and commit so the guard passes.
+
+  **Expect the local regenerate to surface drift that is not yours.** `main`'s `_generated/` is
+  refreshed only after merge, so it routinely lags `main`'s own sources: the regenerated diff will
+  mix your new citations with citation edges from recently-merged PRs whose refresh has not landed.
+  Read the diff to confirm *your* keys resolve, attribute the rest, and revert the whole directory
+  regardless — a bigger-than-expected diff is not evidence your revert failed.
 - Confirm the regenerated files are consistent (no dangling keys, no missing entries), but stage
   **only** your source changes plus any scaffolded `docs/kb/papers/` / `docs/kb/sources/` pages
   (those are *not* under `_generated/` and are allowed in feature PRs) — never the `_generated/`
@@ -223,11 +242,22 @@ Work through these in order. Do not stop until every item is complete.
   frontmatter. Running `kb/regenerate.py` after adding a new cited key also **scaffolds** a new
   `docs/kb/papers/<KEY>.md` + `docs/kb/sources/<KEY>/`; stage those too.
 
-### 4. Clean up references to deleted files
+### 4. Clean up references to what the branch removed
+
+**Do not gate this whole step on file deletions.** Only the *path* sweep below needs a deleted,
+moved, or renamed file. The **declaration**, **status-flip**, **docstring-section** and
+**planning-code** sweeps that follow are unconditional whenever a refactor renames or removes
+*declarations*, *table rows*, or *docstring sections* — which happens constantly on branches that
+touch no file at all. On a real run `git diff --name-status -M` returned **zero** deleted paths
+while the branch had removed six top-level declarations and cut a chain table from 12 rows to 9;
+every one of the 24 confirmed findings came from the un-gated sweeps, and an agent that read the
+old opening sentence as a gate would have skipped the entire step with a green `validate.sh`.
+
+Do this near the end of the pass — step 0's plan-file strip and step 1's refactors both create
+deletions.
 
 If this branch deletes, moves, or renames **any** file, sweep the whole library for references to
-the old path and fix them. Do this near the end of the pass — step 0's plan-file strip and step 1's
-refactors both create deletions.
+the old path and fix them.
 
 **Assume nothing catches this for you.** Coverage is much thinner than it looks:
 
@@ -282,6 +312,10 @@ Three false-positive traps, the first two of which fire routinely on this repo's
    mention ambiguous. Before touching a basename-only hit, run `git ls-files | grep <basename>`:
    if a namesake survives, the prose may be correctly pointing at it — read the surrounding
    sentence and decide, do not bulk-delete.
+   The degenerate case is `README.md` / `index.md`: deleting one directory's README makes the
+   basename half of the pattern return every README cross-link in the repo — on a real run, two
+   deleted READMEs produced ~60 hits, none of them real. Drop the basename pattern entirely for
+   these names and match the full path only.
 3. **This file matches its own examples.** Hits in `docs/skills/make-pr-ready.md` are the sample
    paths quoted above, not stale references. Same for any changelog or migration note that
    deliberately records an old path.
@@ -338,6 +372,46 @@ printf 'import ArkLib.<Module>\n#check @<Full.Declaration.Name>\n' > /tmp/probe.
 lake env lean /tmp/probe.lean
 ```
 
+**The probe's own `unknown identifier` is ambiguous** — it fires both for a genuinely dead
+declaration and for *your* wrong guess at the namespace, and the two look identical. A docstring is
+read in its file's `open` context, so a backticked `` `Foo.bar` `` may be correct there while
+unresolvable from the root. Before reporting a name as dead, find where it is actually declared
+(`git grep -nE '^[[:space:]]*(structure|def|theorem) <leaf>' -- 'ArkLib/**'`, then read the
+enclosing `namespace`) and re-probe with the full path. On a real run this made a live structure
+field look like a dead reference.
+
+**Sweep the *un*-sorrying direction too — proving something out orphans status prose.** Step 4
+instinctively hunts for things the branch *deleted*, but a branch that *finishes* a proof leaves
+just as many false sentences behind, and no check catches them. When a branch takes a file from
+sorried to proven, grep the tree for prose still calling it a `skeleton` / `sorried` / `WIP` /
+`(**sorried**)` / "not yet proven". On a real run the branch proved `Guarded.lean` out (2 sorries
+→ 0) and updated three files to say so, while a fourth still described the same file as "the only
+composition machinery it consumes is `Guarded.lean`'s skeleton". Note `skeleton` is this repo's
+sorriedness marker, not a neutral word — treat every occurrence as a status claim:
+
+```bash
+git grep -nE 'skeleton|sorried|\(\*\*sorried\*\*\)|still open|not yet proven' -- 'ArkLib/**' \
+  | grep -iE '<file-or-decl-the-branch-proved-out>'
+```
+
+**Deleting a docstring *section* strands cross-file pointers to it by name.** A `/-! ## TODO … -/`
+or `## References` block removed from one module is invisible to every checker, yet other modules
+say "see the `TODO` blocks in `Foo.lean`". On a real run one deleted TODO block broke pointers in
+two sibling Lean files *and* a `docs/kb/audits/` page. Whenever a diff removes a named docstring
+section, grep for prose naming it, and prefer **restoring a trimmed section** over deleting three
+pointers — the pointers usually exist because the work is still open:
+
+```bash
+git grep -nE '`?TODO`? (block|section)|see the .*(TODO|References)' -- 'ArkLib/**' 'docs/**'
+```
+
+**Dangling row/link numbers hide behind three spellings.** After cutting rows from a table, grep
+for `row N`, `row-N`, and `row&nbsp;N` (and the `rows N–M` forms, en-dash *and* hyphen). A sweep
+written as `grep -E 'row 1[0-2]|row&nbsp;1[0-2]'` silently missed a live `row-11` reference in a
+page footer. Also check the **reverse legend direction**: deleting the last row that carried a
+status leaves a legend entry defining a status no data uses — and its text usually names the row
+number that was just deleted.
+
 **Bare internal planning codes are as dead as the plan file that defined them.** Step 0 strips plan
 *files* and step 3 forbids citing them, but the *codes* survive every automated check and every path
 grep, because they are not paths: `milestone F2.0`, `design D5`, `Phase-G`, `(B4)`, `(D12 / R6)`,
@@ -347,10 +421,23 @@ and re-anchoring the disclosure to a paper locator (`[NOZ26] §4.5`) or plain pr
 ("closing this gap") rather than the internal process:
 
 ```bash
-C='(B|C|D|F|G|R|S)-?[0-9]+(\.[0-9]+)?'
-CODE="\(${C}( ?/ ?${C})?( [a-z]+)?\)"
-git grep -nE "milestone|design [DG][0-9]|Phase-[A-Z]|${CODE}" -- 'ArkLib/**' 'blueprint/src/**'
+C='(B|C|D|E|F|G|M|R|S)-?[0-9]+(\.[0-9]+)?'
+git grep -nE "milestone|prototype|design [DG][0-9]|Phase-[A-Z]|§[0-9]+ [A-Z][0-9]|\b${C}\b" \
+  -- ArkLib/ blueprint/src/
+grep -rnE "[^A-Za-z_]${C}[^A-Za-z_0-9.]" --include='*.lean' ArkLib/   # \b-free fallback, see below
 ```
+
+**Do not require the code to open a parenthesis.** An earlier version of this sweep matched only
+`\(CODE\)`, and on a real run it missed two of the four sites present: `` (whence `harity₂`, D5) ``
+(parenthesized, but the code is not the first token) and `(§10 R3)` (a section-plus-code pair). Match
+the bare code with word boundaries instead, then eyeball the hits.
+
+The bare-code pattern is noisy by construction, so filter rather than narrow: expect `Array.prototype`
+in vendored HTML/JS, `(L9)`/`(L11)`-style *paper* lemma tags, and math like `(S-1)·(D - dY)`. Paper
+section references (`§4.5`, `Figure 3`, `[NOZ26] Lemma 8`) are exactly what step 4 tells you to
+re-anchor *to* — never strip those. And remember `git grep -E` does not honor `\b`: if a code is
+present but the git grep comes back empty, re-run with plain `grep -rn --include='*.lean'` before
+concluding the file is clean.
 
 **Hand-maintained dashboards drift silently and loudly.** A status page under `ArkLib/` (this repo
 has `Hachi/hachi-overview.html`) hard-codes file counts, per-file `sorry` counts, row spans, and a
@@ -363,6 +450,23 @@ in the legend, and any "rows N–M" claim must match the rows actually carrying 
 row with a different status in the middle makes a range wrong — enumerate rather than assume). On a
 real run this page was understating open `sorry`s by 40%, was three files and one umbrella behind,
 and used a status with no legend entry.
+
+**A name that still resolves can still be dead.** The sweeps above find names with no declaration.
+They cannot find a declaration whose *name* encodes a migration that is over: after the shim layer
+was deleted, `Verifier.treeSpecialSoundWith.old_of_new` and `Verifier.specialSound.old_of_new` still
+compiled and still had accurate statements, but nothing in the tree defined what "old" or "new"
+meant. Same for docstring prose that narrates the library's own history rather than its content —
+"the classical version had to *invent*", "the statement that used to sit behind X's `sorry`", "the
+certificate is **now** proved", "no longer existential", "as before the carrier change". None of it
+is checkable by a reader of the merged tree. Sweep for it on any branch that finishes a refactor:
+
+```bash
+git grep -nEi "used to |no longer|formerly|previously|the old |is now |now \*\*|the classical (version|form|notion|reading)|\bshim\b|migration" -- ArkLib/
+```
+
+Then keep the fact and drop the history (`used to be the fundamental sorried obligation` → `is the
+fundamental composition obligation`). Filter out the ordinary senses first — "used to define",
+"the goal is now", and protocol-level "the old target" are not findings.
 
 **Re-derive any number or span a subagent reports.** Counts and row ranges are exactly where
 parallel reviewers disagree with each other and with the source; two reviewers of the same page
@@ -391,7 +495,8 @@ Only consider the PR ready when:
 
 1. `./scripts/validate.sh` (with `--lint` / `--docs` as appropriate) succeeds.
 2. `ReadLints` is clean for every changed `.lean` file.
-3. Citation metadata is regenerated and consistent.
+3. Citation metadata is consistent, and `docs/kb/_generated/` matches the PR base exactly (step 3
+   — it is checked locally, never committed).
 4. The deleted-file sweep in step 4 comes back clean — no reference anywhere in the tree points at
    a path this branch removed. A green `validate.sh` does **not** imply this.
 5. You have reported any suggested improvements to this skill.

@@ -10,22 +10,25 @@ cd "$REPO_ROOT"
 run_lint=0
 run_docs=0
 run_site=0
+run_axioms=0
 
 usage() {
   cat <<'EOF'
-Usage: ./scripts/validate.sh [--lint] [--docs] [--site]
+Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 
 Default checks:
   - lake build
+  - lake exe toyproblem-runtime
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
   - python3 ./scripts/check-docs-integrity.py
   - python3 ./scripts/kb/lint.py
 
 Optional checks:
-  --lint   Run ./scripts/lint-style.sh
-  --docs   Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
-  --site   Run ./scripts/build-web.sh (implies --docs)
+  --lint    Run ./scripts/lint-style.sh
+  --docs    Run DISABLE_EQUATIONS=1 lake build ArkLib:docs
+  --site    Run ./scripts/build-web.sh (implies --docs)
+  --axioms  Test the axiomsweep tool, then run the axiom/sorry regression gate
 EOF
 }
 
@@ -40,6 +43,9 @@ for arg in "$@"; do
     --site)
       run_docs=1
       run_site=1
+      ;;
+    --axioms)
+      run_axioms=1
       ;;
     -h|--help)
       usage
@@ -70,6 +76,10 @@ python3 ./scripts/check-warning-log.py "$build_log" \
   --label 'ArkLib/Data non-sorry warnings'
 
 echo ""
+echo "# Running toy-problem compiled runtime checks"
+lake exe toyproblem-runtime
+
+echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
 
@@ -80,6 +90,20 @@ python3 ./scripts/check-docs-integrity.py
 echo ""
 echo "# Checking knowledge base"
 python3 ./scripts/kb/lint.py
+
+if (( run_axioms )); then
+  echo ""
+  echo "# Testing the axiom sweep tool against its fixture matrix"
+  ./scripts/test-axiomsweep.sh
+  echo ""
+  echo "# Checking axiom/sorry regression baseline"
+  # VCVio's FFI C sources live in git submodules that Lake does not fetch,
+  # and every root-package executable links them.
+  if [ -e .lake/packages/VCVio/.git ]; then
+    git -C .lake/packages/VCVio submodule update --init --recursive --quiet
+  fi
+  lake exe axiomsweep --check
+fi
 
 if (( run_lint )); then
   echo ""

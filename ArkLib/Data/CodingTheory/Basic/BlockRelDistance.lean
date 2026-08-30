@@ -1,7 +1,8 @@
 /-
 Copyright (c) 2025-2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Poulami Das (Least Authority), Alexander Hicks, Ilia Vlasov
+Authors: Poulami Das (Least Authority), Alexander Hicks, Ilia Vlasov,
+         Aristotle (Harmonic)
 -/
 
 import Mathlib.Data.Finset.Union
@@ -29,7 +30,7 @@ as is done in the reference paper, as they are more general.
 
 namespace BlockRelDistance
 
-open Domain ListDecodable NNReal ReedSolomon CosetFftDomainClass
+open Domain Code NNReal ReedSolomon CosetFftDomainClass
 
 variable {F : Type} [Field F] [DecidableEq F]
          {n k : ℕ}
@@ -208,12 +209,8 @@ lemma card_agreementBlockUnion
   (agreementBlockUnion k φ f g).card =
     2 ^ k * (complDisagreementSet k φ f g).card := by
   unfold agreementBlockUnion
-  rw [Finset.card_biUnion (by
-    aesop
-      (add simp [Set.PairwiseDisjoint, Set.Pairwise])
-      (add safe disjoint_blockIdx)
-  )]
-  rw [Finset.sum_equiv
+  rw [Finset.card_biUnion (by simp),
+      Finset.sum_equiv
         (Equiv.refl _)
         (g := fun _ ↦ 2 ^ k)
         (t := complDisagreementSet k φ f g)
@@ -304,7 +301,7 @@ lemma listBlock_subset_listHamming (hkn : k ≤ n) (δ : ℝ≥0) (C : Set (Fin 
   refine ⟨hu.1, ?_⟩
   have h1 := relHammingDist_le_blockRelDistance
               (φ := φ) (k := k) (f := f) (g := u) hkn
-  simp only [relHammingBall, Set.mem_setOf_eq, ge_iff_le]
+  simp only [Code.relHammingBall, Set.mem_ofPred_eq, ge_iff_le]
   apply le_trans (b := NNRat.cast δ𞁒(k, φ, f, u))
   · rewrite [NNRat.cast_le]
     convert h1

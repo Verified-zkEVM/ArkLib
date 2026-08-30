@@ -6,13 +6,15 @@ year: "2026"
 bib_source: blueprint/src/references.bib
 canonical_url: https://eprint.iacr.org/2026/156
 source_metadata: ../sources/NOZ26/metadata.yml
-status: seeded
+status: active-audit
 related_modules:
+  - ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean
   - ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean
   - ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean
   - ArkLib/Commitments/Functional/Hachi/Gadget/Core.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Scheme.lean
   - ArkLib/Commitments/Functional/Hachi/InnerOuter/Security.lean
+  - ArkLib/Commitments/Functional/Hachi/ZeroCheck/Reduction.lean
 ---
 
 # NOZ26
@@ -37,6 +39,12 @@ Commitment layer:
 
 Ring-switching layer:
 
+- The §3 subfield layer: `R_q^H`, its cardinality `q^k`, the packing bijection `ψ`, the trace
+  inner-product identity, and Lemma 6's norm bound. The final Lemma 5 field/isomorphism
+  declarations retain one explicit proof gap; see the dedicated audit below.
+- The **extension-field → cyclotomic-ring reduction**: Hachi reduces evaluation proofs over `F_{q^k}`
+  to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the ring-switching
+  shape ArkLib factors out as `RingSwitchingProfile`.
 - The **extension-field → cyclotomic-ring reduction** (§3): Hachi reduces evaluation proofs over
   `F_{q^k}` to equivalent statements over a power-of-two cyclotomic ring `R_q`. This is the
   ring-switching shape ArkLib factors out as `RingSwitchingProfile`.
@@ -75,6 +83,8 @@ Ring-switching layer:
 
 ## Main ArkLib Touchpoints
 
+- [`ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Subfield.lean)
+  — umbrella for Lemma 5, Theorem 2, and Lemma 6.
 - [`../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean`](../../../ArkLib/ProofSystem/RingSwitching/Packing/Profile.lean)
 - [`ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean`](../../../ArkLib/Data/Lattices/CyclotomicRing/Core/Modulus.lean)
   — `powTwoCyclotomic`.
@@ -86,12 +96,59 @@ Ring-switching layer:
 
 ## Known Divergences From ArkLib
 
-- ArkLib has not yet built the **§3 packing** ring-switching instance (`RingSwitchingProfile`); that
-  abstraction is designed to admit it but only the Binius instance is implemented. The §4.3 `HMZ25`
-  lift *is* built — see the Lemma 9 entry above.
+- ArkLib has not yet built the Hachi ring-switching instance; the abstraction is designed to admit
+  it but only the Binius instance is implemented.
+- Hachi Lemma 5 is only **conditionally complete**: `fixedSubring_isField` and
+  `fixedSubringEquivGaloisField` depend on the sorried factor-swap lemma
+  `no_selfReciprocal_factor`. Eq. (7), the fixed-subring cardinality, Theorem 2, and Lemma 6 do
+  not depend on that gap. Lemma 6 is fully proved, under the weaker odd-characteristic
+  assumption actually used by its coefficient argument.
 - `R_q` is **not an integral domain**, so the generic `[IsDomain L]` Schwartz–Zippel soundness
-  theorem does not instantiate Hachi. Hachi's **§3 packing** soundness (a CWSS-style argument) is a
-  separate theorem with a different error and is out of scope for the current ring-switching module.
+  theorem does not instantiate Hachi. Hachi soundness (a CWSS-style argument) is a separate theorem
+  with a different error and is out of scope for the current ring-switching module.
+- Hachi Lemma 10's uniform-vector CWSS argument is invalid for multivariate multilinear
+  polynomials: a coordinate-wise star supplies only an axis cross, which does not determine the
+  polynomial. ArkLib's zero-check (`ZeroCheck/Reduction.lean`) draws each of the `m₀ + m₁`
+  coordinates in its own two-child scalar round and extracts with the nested-tree zero test
+  (`NestedEvaluationTree.eq_zero_of_vanishes_comp`), whose leaves form a genuine `2^(m₀+m₁)`-point grid
+  rather than a star. (An earlier rendering restricted the two evaluation points to Kronecker
+  curves at `D = max(2, 2^{m₀}, 2^{mα})`; it was superseded — its branching factor is exponential,
+  and it also cost ~21 bits of soundness — and is no longer formalized. The quantitative record is
+  in `docs/kb/audits/noz26-zero-check-lemma10.md`, "Superseded: the one-round Kronecker-seed
+  repair".) The corrected CWSS theorem is proof-`sorry`-free and is composed into the
+  escape-threaded opening chain (`Composition.lean`). Its named extractor is executable:
+  `ChallengeTree.LeafWitnesses`
+  supplies an `Option` candidate opening for each leaf and it directly returns the all-left entry,
+  while classical choice remains proof-local to the certificate. The weak-binding disjunct is
+  discharged through `LiftCom`'s norm-conditioned collision. At the batching bridge, shortness is
+  **derived** from the range
+  identity `H₀ ≡ 0` (`hZero_eq_zero_imp_liftShort`), so `relBatched` drops the shortness conjunct.
+  At the point-check and sumcheck seams, `relNestedZeroCheck`/`nestedRoundRel` **do** carry a
+  `liftShort` conjunct, but as the commitment's shortness index rather than as a range assumption:
+  `LiftCom.Collision` is defined on pairs of distinct *short* openings, so it is what makes the
+  weak-binding branch a Module-SIS break. Since `relBatched` is norm-free, shortness is never
+  derived from an assumption of shortness.
+  The identities themselves are represented and point-evaluated as `CMlPolynomialEval`
+  Boolean-value vectors, matching the paper's multilinear `H₀` and `Hα`; Mathlib `MvPolynomial`
+  appears only inside the zero test's proof, reached through
+  `CMlPolynomialEval.eval_eq_MvPolynomial_MLE`. Eq. (22)'s public
+  contraction `∑_{u,ℓ} M̃_α(i,u)·w̃(u,ℓ)·α̃(ℓ)` is built (`mAlphaTilde`, `alphaTilde`,
+  `alphaContract`) and **proved** equal to the per-row `α`-defect that `H_α`'s table stores
+  (`alphaDefect_wTable`, `hAlpha_eq_zero_iff_alphaDefect`), so §4.3's "represent the constraints by
+  polynomials" step is derived rather than assumed.
+  See
+  [`../audits/noz26-zero-check-lemma10.md`](../audits/noz26-zero-check-lemma10.md).
+- Separately from the axis-cross repair, ArkLib's zero-check diverges from the printed §4.3 in three
+  further places, each deliberate and each because the paper is internally inconsistent there. The
+  range summand carries **no `1_{≤μ}` indicator**: `F_{0,τ₀}` on p. 22 has one but Eq. (23)'s `H₀`
+  does not, and the bullet above Eq. (23) constrains `u ∈ [μ + n]`, so the paper's own
+  `∑_{u,ℓ} F_{0,τ₀} = H₀(τ₀)` is false as printed; ArkLib follows Eq. (23) and range-checks the `r`
+  rows as well as the `z` rows. Lemma 10 asks for `D` transcripts from `SS(F_{q^k}, 2, D)` although
+  that family has `ℓ(k−1)+1 = 2D − 1` elements, and ArkLib uses `2D − 1`. The prose above Lemma 10
+  treats `(τ₀, τ₁)` as `log μ + log d + log n` coordinates, contradicting the lemma's own `ℓ = 2`,
+  and `τ₀`'s stated domain `F^{log μ + log d}` on p. 20 disagrees with `w̃`'s domain
+  `[μ + n] × [d]`; ArkLib takes `ℓ = 2` and pins `m₀` to `log(μ + n) + log d`.
+
 - ArkLib phrases the definition over its own IOR machinery (`ProtocolSpec`, `Verifier`,
   `ChallengeTree`) rather than the paper's interactive-argument syntax. The transcript tree is made
   arity-indexed and challenge-branching only, abstracting away the commitment scheme of the paper.
@@ -99,16 +156,26 @@ Ring-switching layer:
 ## Open Formalization Gaps
 
 - Construct `hachiProfile : RingSwitchingProfile R_qH R_q κ_pack` and discharge
-  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`
-  (the §3 packing head; the §4.3 HMZ25 lift, Lemma 9, is done — see above).
-- Formalize Hachi-specific soundness separately (does not reuse the field/domain soundness
-  theorem): done through Lemma 9 (rows 1–4 of the opening chain); Lemmas 10–11 and the
-  recursion adapters remain skeletons (see `Hachi/Composition.lean`'s inventory).
-- The norm-growth and short-element invertibility inputs (`Mic07`, `LS18`) are deferred.
+  `decomposeRows_spec` / `decomposeColumns_spec` via Theorem 2, with `2^κ_pack = d/k`.
+- Close `no_selfReciprocal_factor`, the sole local gap preventing an unconditional proof of
+  Lemma 5's field/isomorphism conclusion.
+- Complete the remaining Hachi-specific work: the closing end-piece and the §4.5 recursion
+  adapters (partial-evaluation head, `Z`-packing bridge, trace handoff). Lemma 9, the batching
+  bridge, the corrected Lemma 10, the sumcheck bridge and its summand identities, Lemma 11 and the
+  final evaluation are all proved and axiom-clean, so the one-iteration opening certificate
+  (`hachi_iteration_coordinateWiseSpecialSoundWithEscape`) is `sorry`-free.
+- Lemma 6's packing norm growth is complete. The separate Micciancio product-norm and
+  Lyubashevsky–Seiler short-invertibility inputs used by the commitment security layer are also
+  proved in their respective modules.
+- Resolve the flagged `Z`-packing/partial-evaluation knowledge-soundness gap in the recursion chain.
+
+Detailed Lemma 5–6 correspondence and proof status:
+[`../audits/noz26-subfield-lemmas5-6.md`](../audits/noz26-subfield-lemmas5-6.md).
 
 ## Version Notes
 
-- Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the ePrint version.
+- Cryptology ePrint Archive, Paper 2026/156. ArkLib tracks the January 30, 2026 ePrint version for
+  the zero-check audit.
 - Read together with [`FMN24.md`](FMN24.md), which introduces coordinate-wise special soundness.
 - Builds on the ring-switching idea of Huang–Mao–Zhang (ePrint 2025) and integrates Greyhound
   (CRYPTO 2024); track which version is cited if proof obligations depend on exact statements.

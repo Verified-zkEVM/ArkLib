@@ -88,8 +88,12 @@ def messageRoundOracleVerifier
     unless check stmt msg do
       return reject stmt msg
     return accept stmt msg
-  embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-  hEq := fun i => rfl
+  outputOracle := .inl {
+    embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+    hEq := fun i => rfl
+    outputInterface_heq := by
+      intro i
+      rfl }
 
 /-- Check-then-update verifier for the message-then-scalar-challenge round: query the message,
 run the deterministic local `check` (reject on failure), then update the statement from the
@@ -107,8 +111,12 @@ def scalarRoundOracleVerifier
       unless check stmt msg do
         return reject stmt msg
       return accept stmt msg (chals ⟨1, rfl⟩)
-    embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
-    hEq := fun i => rfl }
+    outputOracle := .inl {
+      embed := ⟨fun j => Sum.inl j, fun a b h => by cases h; rfl⟩
+      hEq := fun i => rfl
+      outputInterface_heq := by
+        intro i
+        rfl } }
 
 end Combinators
 

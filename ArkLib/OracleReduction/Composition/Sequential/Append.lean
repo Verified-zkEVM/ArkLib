@@ -38,6 +38,29 @@ open ProtocolSpec
 variable {ι : Type} {oSpec : OracleSpec ι} {Stmt₁ Wit₁ Stmt₂ Wit₂ Stmt₃ Wit₃ : Type}
   {m n : ℕ} {pSpec₁ : ProtocolSpec m} {pSpec₂ : ProtocolSpec n}
 
+private theorem heqFunApply {A A' : Sort u} {B B' : Sort v}
+    (hA : A = A') (hB : B = B') {f : A → B} {f' : A' → B'}
+    (hf : HEq f f') {a : A} {a' : A'} (ha : HEq a a') : HEq (f a) (f' a') := by
+  subst hA
+  subst hB
+  exact heq_of_eq (by rw [eq_of_heq hf, eq_of_heq ha])
+
+private theorem simulateQueryAlongHEq {A B : Type}
+    (OA : OracleInterface A) (OB : OracleInterface B)
+    (hType : A = B) (hInterface : HEq OA OB)
+    {ι' : Type} {spec : OracleSpec ι'}
+    (impl : (q : OB.Query) → OracleComp spec (OB.Response q))
+    (q : OA.Query) {ι'' : Type} {targetSpec : OracleSpec ι''}
+    (sim : QueryImpl spec (OracleComp targetSpec))
+    (a : A) (b : B) (hab : HEq a b)
+    (hImpl : ∀ q, simulateQ sim (impl q) = pure (OB.answer b q)) :
+    simulateQ sim (OracleVerifier.queryAlongHEq OA OB hType hInterface impl q) =
+      pure (OA.answer a q) := by
+  cases hType
+  cases eq_of_heq hInterface
+  cases eq_of_heq hab
+  exact hImpl q
+
 /--
 Appending two provers corresponding to two reductions, where the output statement & witness type for
 the first prover is equal to the input statement & witness type for the second prover. We also
@@ -145,50 +168,355 @@ variable [Oₘ₁ : ∀ i, OracleInterface (pSpec₁.Message i)]
   {ιₛ₂ : Type} {OStmt₂ : ιₛ₂ → Type} [Oₛ₂ : ∀ i, OracleInterface (OStmt₂ i)]
   {ιₛ₃ : Type} {OStmt₃ : ιₛ₃ → Type} [Oₛ₃ : ∀ i, OracleInterface (OStmt₃ i)]
 
-open Function Embedding in
+private theorem messageInterfaceInl (i : pSpec₁.MessageIdx) : HEq (Oₘ₁ i)
+    (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i))) := by
+  rcases i with ⟨i, hi⟩
+  let u : (i : Fin m) →
+      (h : pSpec₁.dir i = .P_to_V) → OracleInterface (pSpec₁.«Type» i) :=
+    fun i h => Oₘ₁ ⟨i, h⟩
+  let v : (i : Fin n) →
+      (h : pSpec₂.dir i = .P_to_V) → OracleInterface (pSpec₂.«Type» i) :=
+    fun i h => Oₘ₂ ⟨i, h⟩
+  have hf : HEq
+      (Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+        (_ : dir = Direction.P_to_V) → OracleInterface type)
+        u v (Fin.castAdd n i))
+      (u i) := by
+    rw [Fin.fappend₂_left]
+    exact cast_heq _ _
+  have hDomain : (pSpec₁.dir i = Direction.P_to_V) =
+      ((Fin.vappend pSpec₁.dir pSpec₂.dir) (Fin.castAdd n i) = Direction.P_to_V) :=
+    congrArg (· = Direction.P_to_V) (Fin.vappend_left pSpec₁.dir pSpec₂.dir i).symm
+  have ha : HEq hi (MessageIdx.inl ⟨i, hi⟩).property :=
+    (cast_heq hDomain hi).symm.trans (heq_of_eq (Subsingleton.elim _ _))
+  change HEq (Oₘ₁ ⟨i, hi⟩)
+    ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+      (_ : dir = Direction.P_to_V) → OracleInterface type)
+      u v (Fin.castAdd n i)) (MessageIdx.inl ⟨i, hi⟩).property)
+  exact heqFunApply hDomain
+    (congrArg OracleInterface (Fin.vappend_left pSpec₁.«Type» pSpec₂.«Type» i).symm)
+    hf.symm ha
+
+private theorem messageInterfaceInr (i : pSpec₂.MessageIdx) : HEq (Oₘ₂ i)
+    (inferInstance : OracleInterface ((pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i))) := by
+  rcases i with ⟨i, hi⟩
+  let u : (i : Fin m) →
+      (h : pSpec₁.dir i = .P_to_V) → OracleInterface (pSpec₁.«Type» i) :=
+    fun i h => Oₘ₁ ⟨i, h⟩
+  let v : (i : Fin n) →
+      (h : pSpec₂.dir i = .P_to_V) → OracleInterface (pSpec₂.«Type» i) :=
+    fun i h => Oₘ₂ ⟨i, h⟩
+  have hf : HEq
+      (Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+        (_ : dir = Direction.P_to_V) → OracleInterface type)
+        u v (Fin.natAdd m i))
+      (v i) := by
+    rw [Fin.fappend₂_right]
+    exact cast_heq _ _
+  have hDomain : (pSpec₂.dir i = Direction.P_to_V) =
+      ((Fin.vappend pSpec₁.dir pSpec₂.dir) (Fin.natAdd m i) = Direction.P_to_V) :=
+    congrArg (· = Direction.P_to_V) (Fin.vappend_right pSpec₁.dir pSpec₂.dir i).symm
+  have ha : HEq hi (MessageIdx.inr ⟨i, hi⟩).property :=
+    (cast_heq hDomain hi).symm.trans (heq_of_eq (Subsingleton.elim _ _))
+  change HEq (Oₘ₂ ⟨i, hi⟩)
+    ((Fin.fappend₂ (F := fun (dir : Direction) (type : Type) =>
+      (_ : dir = Direction.P_to_V) → OracleInterface type)
+      u v (Fin.natAdd m i)) (MessageIdx.inr ⟨i, hi⟩).property)
+  exact heqFunApply hDomain
+    (congrArg OracleInterface (Fin.vappend_right pSpec₁.«Type» pSpec₂.«Type» i).symm)
+    hf.symm ha
+
+private abbrev AppendSpec :=
+  oSpec + ([OStmt₁]ₒ + [(pSpec₁ ++ₚ pSpec₂).Message]ₒ)
+
+private def messageQueryInl : QueryImpl [pSpec₁.Message]ₒ (OracleComp
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
+  fun q => by
+    rcases q with ⟨i, q⟩
+    have hType : pSpec₁.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i) := by
+      simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left]
+    exact OracleVerifier.queryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
+      (fun t => ((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
+        (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
+          ⟨MessageIdx.inl i, t⟩) q
+
+private def messageQueryInr : QueryImpl [pSpec₂.Message]ₒ (OracleComp
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁) (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
+  fun q => by
+    rcases q with ⟨i, q⟩
+    have hType : pSpec₂.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i) := by
+      simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
+    exact OracleVerifier.queryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
+      (fun t => ((QueryImpl.id' [(pSpec₁ ++ₚ pSpec₂).Message]ₒ).liftTarget
+        (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁))))
+          ⟨MessageIdx.inr i, t⟩) q
+
+private theorem simulateMessageQueryInl
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    (q : [pSpec₁.Message]ₒ.Domain) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (messageQueryInl (oSpec := oSpec) (OStmt₁ := OStmt₁) q) =
+      pure ((Oₘ₁ q.1).answer (messages.fst q.1) q.2) := by
+  rcases q with ⟨i, q⟩
+  have hType : pSpec₁.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inl i) := by
+    simp [MessageIdx.inl, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_left]
+  have hab : HEq (messages.fst i) (messages (MessageIdx.inl i)) := by
+    unfold Messages.fst
+    exact cast_heq _ _
+  unfold messageQueryInl
+  apply simulateQueryAlongHEq (Oₘ₁ i) inferInstance hType (messageInterfaceInl i)
+    _ q _ (messages.fst i) (messages (MessageIdx.inl i)) hab
+  intro t
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inl i, t⟩)) ?_
+  rfl
+
+private theorem simulateMessageQueryInr
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    (q : [pSpec₂.Message]ₒ.Domain) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (messageQueryInr (oSpec := oSpec) (OStmt₁ := OStmt₁) q) =
+      pure ((Oₘ₂ q.1).answer (messages.snd q.1) q.2) := by
+  rcases q with ⟨i, q⟩
+  have hType : pSpec₂.Message i = (pSpec₁ ++ₚ pSpec₂).Message (MessageIdx.inr i) := by
+    simp [MessageIdx.inr, ProtocolSpec.append, Fin.vappend_eq_append, Fin.append_right]
+  have hab : HEq (messages.snd i) (messages (MessageIdx.inr i)) := by
+    unfold Messages.snd
+    exact cast_heq _ _
+  unfold messageQueryInr
+  apply simulateQueryAlongHEq (Oₘ₂ i) inferInstance hType (messageInterfaceInr i)
+    _ q _ (messages.snd i) (messages (MessageIdx.inr i)) hab
+  intro t
+  refine Eq.trans (QueryImpl.simulateQ_addLift_add_liftM_right (QueryImpl.id oSpec)
+    (OracleInterface.simOracle0 OStmt₁ oStmt)
+    (OracleInterface.simOracle0 _ messages)
+    (([(pSpec₁ ++ₚ pSpec₂).Message]ₒ).query ⟨MessageIdx.inr i, t⟩)) ?_
+  rfl
+
+private def firstQueryImpl : QueryImpl (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))
+    (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+      (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
+  ((QueryImpl.id' oSpec).liftTarget (OracleComp
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+      (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)))) +
+    (((QueryImpl.id' [OStmt₁]ₒ).liftTarget (OracleComp
+      (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+        (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)))) +
+      messageQueryInl (oSpec := oSpec) (OStmt₁ := OStmt₁)
+        (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
+
+private theorem simulateFirstQueryImpl
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    (q : (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ)).Domain) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁) q) =
+      OracleInterface.simOracle2 oSpec oStmt messages.fst q := by
+  rcases q with q | q
+  · simp [firstQueryImpl, OracleInterface.simOracle2]
+  · rcases q with q | q
+    · rcases q with ⟨i, q⟩
+      rfl
+    · exact simulateMessageQueryInl oStmt messages q
+
+private theorem simulateFirstQueryImplComp
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    {α : Type} (oa : OracleComp (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ)) α) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (simulateQ (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁)) oa) =
+      simulateQ (OracleInterface.simOracle2 oSpec oStmt messages.fst) oa := by
+  rw [← QueryImpl.simulateQ_compose]
+  apply congrArg (fun impl => simulateQ impl oa)
+  apply QueryImpl.ext
+  exact simulateFirstQueryImpl oStmt messages
+
+private theorem simulateFirstQueryImplOptionTComp
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    {α : Type} (oa : OptionT
+      (OracleComp (oSpec + ([OStmt₁]ₒ + [pSpec₁.Message]ₒ))) α) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (simulateQ (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁)) oa) =
+      simulateQ (OracleInterface.simOracle2 oSpec oStmt messages.fst) oa := by
+  apply OptionT.ext
+  exact simulateFirstQueryImplComp oStmt messages oa.run
+
+private theorem simulateOutputQueryEq
+    (V : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
+    (messages : pSpec₁.Messages) (q : [OStmt₂]ₒ.Domain) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (V.simulateOutputQuery challenges q) =
+      pure ((Oₛ₂ q.1).answer (V.materializeOutput challenges oStmt messages q.1) q.2) := by
+  exact V.simulateOutputQuery_eq challenges oStmt messages q
+
+private def secondQueryImpl
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (challenges : pSpec₁.Challenges) :
+    QueryImpl (oSpec + ([OStmt₂]ₒ + [pSpec₂.Message]ₒ))
+      (OracleComp (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+        (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))) :=
+  ((QueryImpl.id' oSpec).liftTarget (OracleComp
+    (AppendSpec (oSpec := oSpec) (OStmt₁ := OStmt₁)
+      (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂)))) +
+    ((fun q => simulateQ
+      (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁)
+        (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
+      (V₁.simulateOutputQuery challenges q)) +
+      messageQueryInr (oSpec := oSpec) (OStmt₁ := OStmt₁)
+        (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂))
+
+private theorem simulateSecondQueryImpl
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
+    (messages : (pSpec₁ ++ₚ pSpec₂).Messages)
+    (q : (oSpec + ([OStmt₂]ₒ + [pSpec₂.Message]ₒ)).Domain) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (secondQueryImpl V₁ challenges q) =
+      OracleInterface.simOracle2 oSpec
+        (V₁.materializeOutput challenges oStmt messages.fst) messages.snd q := by
+  rcases q with q | q
+  · simp [secondQueryImpl, OracleInterface.simOracle2]
+  · rcases q with q | q
+    · rcases q with ⟨i, q⟩
+      change simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+          (simulateQ (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁))
+            (V₁.simulateOutputQuery challenges ⟨i, q⟩)) =
+        pure ((Oₛ₂ i).answer
+          (V₁.materializeOutput challenges oStmt messages.fst i) q)
+      rw [simulateFirstQueryImplComp]
+      exact simulateOutputQueryEq V₁ challenges oStmt messages.fst ⟨i, q⟩
+    · exact simulateMessageQueryInr oStmt messages q
+
+private theorem simulateSecondQueryImplComp
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
+    (messages : (pSpec₁ ++ₚ pSpec₂).Messages) {α : Type}
+    (oa : OracleComp (oSpec + ([OStmt₂]ₒ + [pSpec₂.Message]ₒ)) α) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (simulateQ (secondQueryImpl V₁ challenges) oa) =
+      simulateQ (OracleInterface.simOracle2 oSpec
+        (V₁.materializeOutput challenges oStmt messages.fst) messages.snd) oa := by
+  rw [← QueryImpl.simulateQ_compose]
+  apply congrArg (fun impl => simulateQ impl oa)
+  apply QueryImpl.ext
+  exact simulateSecondQueryImpl V₁ challenges oStmt messages
+
+private theorem simulateSecondQueryImplOptionTComp
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (challenges : pSpec₁.Challenges) (oStmt : ∀ i, OStmt₁ i)
+    (messages : (pSpec₁ ++ₚ pSpec₂).Messages) {α : Type}
+    (oa : OptionT (OracleComp (oSpec + ([OStmt₂]ₒ + [pSpec₂.Message]ₒ))) α) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        (simulateQ (secondQueryImpl V₁ challenges) oa) =
+      simulateQ (OracleInterface.simOracle2 oSpec
+        (V₁.materializeOutput challenges oStmt messages.fst) messages.snd) oa := by
+  apply OptionT.ext
+  exact simulateSecondQueryImplComp V₁ challenges oStmt messages oa.run
+
+private def appendOutputSimulation
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂) :
+    OracleOutputSimulation oSpec OStmt₁ OStmt₃ (pSpec₁ ++ₚ pSpec₂) where
+  materializeOutput := fun challenges oStmt messages =>
+    V₂.materializeOutput challenges.snd
+      (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd
+  simulateOutputQuery := fun challenges q =>
+    simulateQ (secondQueryImpl V₁ challenges.fst)
+      (V₂.simulateOutputQuery challenges.snd q)
+  simulateOutputQuery_eq := by
+    intro challenges oStmt messages q
+    rw [simulateSecondQueryImplComp]
+    exact simulateOutputQueryEq V₂ challenges.snd
+      (V₁.materializeOutput challenges.fst oStmt
+        (Messages.fst (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) messages))
+      (Messages.snd (pSpec₁ := pSpec₁) (pSpec₂ := pSpec₂) messages) q
+
 def OracleVerifier.append (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂) :
       OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₃ OStmt₃ (pSpec₁ ++ₚ pSpec₂) where
-  verify := fun stmt challenges => by
-    -- First, invoke the first oracle verifier, handling queries as necessary
-    have := V₁.verify stmt (fun chal => sorry)
-    simp at this
-    -- Then, invoke the second oracle verifier, handling queries as necessary
-    -- Return the final output statement
-    sorry
+  verify := fun stmt challenges => do
+    let stmt₂ ← simulateQ
+      (firstQueryImpl (oSpec := oSpec) (OStmt₁ := OStmt₁))
+      (V₁.verify stmt challenges.fst)
+    simulateQ (secondQueryImpl V₁ challenges.fst)
+      (V₂.verify stmt₂ challenges.snd)
 
-  -- Need to provide an embedding `ιₛ₃ ↪ ιₛ₁ ⊕ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
-  embed :=
-    -- `ιₛ₃ ↪ ιₛ₂ ⊕ pSpec₂.MessageIdx`
-    .trans V₂.embed <|
-    -- `ιₛ₂ ⊕ pSpec₂.MessageIdx ↪ (ιₛ₁ ⊕ pSpec₁.MessageIdx) ⊕ pSpec₂.MessageIdx`
-    .trans (.sumMap V₁.embed (.refl _)) <|
-    -- re-associate the sum `_ ↪ ιₛ₁ ⊕ (pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx)`
-    .trans (Equiv.sumAssoc _ _ _).toEmbedding <|
-    -- use the equivalence `pSpec₁.MessageIdx ⊕ pSpec₂.MessageIdx ≃ (pSpec₁ ++ₚ pSpec₂).MessageIdx`
-    .sumMap (.refl _) MessageIdx.sumEquiv.toEmbedding
+  outputOracle := .inr (appendOutputSimulation V₁ V₂)
 
-  hEq := fun i => by
-    rcases h : V₂.embed i with j | j
-    · rcases h' : V₁.embed j with k | k
-      · have h1 := V₁.hEq j
-        have h2 := V₂.hEq i
-        simp [h, h'] at h1 h2 ⊢
-        exact h2.trans h1
-      · have h1 := V₁.hEq j
-        have h2 := V₂.hEq i
-        simp [h, h', MessageIdx.inl] at h1 h2 ⊢
-        exact h2.trans h1
-    · have := V₂.hEq i
-      simp [h] at this ⊢
-      simp [this, MessageIdx.inr]
+private theorem append_materializeOutput
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
+    (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges) (oStmt : ∀ i, OStmt₁ i)
+    (messages : (pSpec₁ ++ₚ pSpec₂).Messages) :
+    (OracleVerifier.append V₁ V₂).materializeOutput challenges oStmt messages =
+      V₂.materializeOutput challenges.snd
+        (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd := by
+  rfl
+
+private theorem append_verify_simulate
+    (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
+    (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂)
+    (stmt : Stmt₁) (challenges : (pSpec₁ ++ₚ pSpec₂).Challenges)
+    (oStmt : ∀ i, OStmt₁ i) (messages : (pSpec₁ ++ₚ pSpec₂).Messages) :
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt messages)
+        ((OracleVerifier.append V₁ V₂).verify stmt challenges) = ((do
+      let stmt₂ ← simulateQ (OracleInterface.simOracle2 oSpec oStmt messages.fst)
+        (V₁.verify stmt challenges.fst)
+      simulateQ (OracleInterface.simOracle2 oSpec
+        (V₁.materializeOutput challenges.fst oStmt messages.fst) messages.snd)
+        (V₂.verify stmt₂ challenges.snd)) : OptionT (OracleComp oSpec) Stmt₃) := by
+  unfold OracleVerifier.append
+  rw [simulateQ_optionT_bind, simulateFirstQueryImplOptionTComp]
+  simp_rw [simulateSecondQueryImplOptionTComp]
 
 @[simp]
 lemma OracleVerifier.append_toVerifier
     (V₁ : OracleVerifier oSpec Stmt₁ OStmt₁ Stmt₂ OStmt₂ pSpec₁)
     (V₂ : OracleVerifier oSpec Stmt₂ OStmt₂ Stmt₃ OStmt₃ pSpec₂) :
       (OracleVerifier.append V₁ V₂).toVerifier =
-        Verifier.append V₁.toVerifier V₂.toVerifier := sorry
+        Verifier.append V₁.toVerifier V₂.toVerifier := by
+  ext ⟨stmt, oStmt⟩ transcript
+  simp only [OracleVerifier.toVerifier, Verifier.append]
+  rw [show
+    simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.messages)
+        ((OracleVerifier.append V₁ V₂).verify stmt transcript.challenges).run =
+      ((do
+        let stmt₂ ← simulateQ
+          (OracleInterface.simOracle2 oSpec oStmt (Messages.fst transcript.messages))
+          (V₁.verify stmt (Challenges.fst transcript.challenges))
+        simulateQ (OracleInterface.simOracle2 oSpec
+          (V₁.materializeOutput (Challenges.fst transcript.challenges) oStmt
+            (Messages.fst transcript.messages))
+          (Messages.snd transcript.messages))
+          (V₂.verify stmt₂ (Challenges.snd transcript.challenges))) :
+            OptionT (OracleComp oSpec) Stmt₃).run from
+      congrArg OptionT.run (append_verify_simulate V₁ V₂ stmt
+        transcript.challenges oStmt transcript.messages),
+    append_materializeOutput]
+  rw [show Challenges.fst transcript.challenges = transcript.fst.challenges from rfl,
+    show Challenges.snd transcript.challenges = transcript.snd.challenges from rfl,
+    show Messages.fst transcript.messages = transcript.fst.messages from rfl,
+    show Messages.snd transcript.messages = transcript.snd.messages from rfl]
+  simp [OptionT.run_bind, Option.elimM, Function.comp_def]
+  rw [show
+    OptionT.run (simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.fst.messages)
+      (V₁.verify stmt transcript.fst.challenges) :
+        OptionT (OracleComp oSpec) Stmt₂) =
+      simulateQ (OracleInterface.simOracle2 oSpec oStmt transcript.fst.messages)
+        (V₁.verify stmt transcript.fst.challenges).run from rfl]
+  simp_rw [show ∀ stmt₂,
+    OptionT.run (simulateQ (OracleInterface.simOracle2 oSpec
+      (V₁.materializeOutput transcript.fst.challenges oStmt transcript.fst.messages)
+      transcript.snd.messages) (V₂.verify stmt₂ transcript.snd.challenges) :
+        OptionT (OracleComp oSpec) Stmt₃) =
+      simulateQ (OracleInterface.simOracle2 oSpec
+        (V₁.materializeOutput transcript.fst.challenges oStmt transcript.fst.messages)
+        transcript.snd.messages) (V₂.verify stmt₂ transcript.snd.challenges).run from
+    fun _ => rfl]
+  apply bind_congr
+  intro result
+  cases result <;> simp
 
 /-- Sequential composition of oracle reductions is just the sequential composition of the oracle
   provers and oracle verifiers. -/
@@ -331,8 +659,18 @@ variable {P₁ : Prover oSpec Stmt₁ Wit₁ Stmt₂ Wit₂ pSpec₁}
 
 -- theorem append_runToRound
 
-instance : [(pSpec₁).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
-instance : [(pSpec₂).Challenge]ₒ ⊂ₒ [(pSpec₁ ++ₚ pSpec₂).Challenge]ₒ := sorry
+-- The challenge-oracle inclusions that `append_run`'s statement lifts along are provided
+-- (proved) by `ProtocolSpec.subSpec_challenge_append_left` / `..._right` in
+-- `ProtocolSpec/SeqCompose.lean`, with their `LawfulSubSpec` instances and the `@[simp]` lemmas
+-- `liftM_getChallenge_append_inl` / `_inr` that compute the lifted challenge query.
+--
+-- Scope of what lawfulness buys: `support_liftComp` / `mem_support_liftComp_iff` apply directly.
+-- `evalDist_liftComp` / `probEvent_liftComp` do NOT apply at this shape — they additionally
+-- require `IsUniformSpec` on both specs, and `oSpec` here is arbitrary. The security definitions
+-- below measure after `simulateQ pImpl`, so relating the two sides at the distribution level will
+-- need `simulateQ_liftM_eq_of_query` plus the fact that `challengeQueryImpl` for the appended
+-- protocol, precomposed with the lift, agrees with `challengeQueryImpl` for the component — a
+-- `SampleableType`-compatibility fact across the transport that is not yet proved.
 
 /--
 States that running an appended prover `P₁.append P₂` with an initial statement `stmt₁` and
@@ -404,6 +742,15 @@ end Execution
 section Security
 
 open scoped NNReal
+
+/-! ### Admitted security-composition boundary
+
+The virtual-output execution semantics and the `append_toVerifier` commutation theorem above are
+proved. The generic completeness and security theorems below remain admitted because appended
+execution orders both prover phases before both verifier phases, while sequential execution
+interleaves each prover with its verifier. Their unrestricted `StateT` statements must therefore
+not be treated as established composition security. Standalone protocol theorems that do not invoke
+these declarations are outside this inherited trust boundary. -/
 
 section Protocol
 

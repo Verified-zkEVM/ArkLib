@@ -242,7 +242,8 @@ lemma function_binding_game_ext_eq_function_binding_game {n L : ℕ} {AuxState :
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> (simulateQ randomOracle (Groups.sampleNonzeroZMod (p := p))).run' ∅ := by
             rw [← StateT.run'_map', ← simulateQ_map]
-            rfl
+            simp only [map_eq_bind_pure_comp]
+            congr 1
       _ = (fun a => (Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a,
               Groups.PowerSrs.generate (g₁ := g₁) (g₂ := g₂) n a))
               <$> Groups.sampleNonzeroZMod (p := p) := by
@@ -641,13 +642,13 @@ theorem function_binding {g₁ : G₁} {g₂ : G₂}
     Commitment.functionBinding (L := L) (init := pure ∅) (impl := randomOracle)
       (hn := rfl)
       (kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)) arsdhError := by
-  letI := Classical.decEq G₁
-  letI scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
+  let := Classical.decEq G₁
+  let scheme := kzg (n := n) (g₁ := g₁) (g₂ := g₂) (pairing := pairing)
   simp only [Commitment.functionBinding]
   intro AuxState adversary
-  letI game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
+  let game := Commitment.functionBindingGame (init := pure ∅) (impl := randomOracle) (hn := rfl)
     (AuxState := AuxState) (scheme := scheme) (adversary := adversary)
-  letI game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
+  let game_ext := functionBindingGameExt (g₁ := g₁) (g₂ := g₂) AuxState adversary scheme
   change Pr[Commitment.functionBindingCondition (Data := Fin (n + 1) → ZMod p) | game]
     ≤ arsdhError
   exact

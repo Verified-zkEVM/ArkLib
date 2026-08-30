@@ -6,6 +6,7 @@ Authors: Tobias Rothmann
 import ArkLib.Commitments.Functional.Hachi.RingSwitch.Rlin
 import ArkLib.Data.Lattices.CyclotomicRing.QuotientLift
 import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
+import CompPoly.Univariate.ToPoly.Impl
 
 /-!
   # Hachi's `Lift` instance (Figure 4 / Lemma 9)
@@ -85,7 +86,7 @@ import ArkLib.ProofSystem.RingSwitching.Lift.Reduction
 
 namespace ArkLib.Lattices.Ajtai.InnerOuter
 
-open ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
+open CompPoly ArkLib.Lattices ArkLib.Lattices.CyclotomicModulus
 open RingSwitching RingSwitching.Lift
 open OracleComp OracleSpec ProtocolSpec CoordinateWise CoordinateWise.ScalarRound
 
@@ -97,15 +98,17 @@ variable {n μ : ℕ}
 
 /-- `Rq Φ` presented by the cyclotomic modulus with canonical (reduced) representatives —
 Hachi's instance of the generic `Lift.Presentation` data.  Proof-free, like
-`CyclotomicModulus` itself; the laws are `isPresentation_cyclotomic`. -/
-noncomputable def cyclotomicPresentation : Lift.Presentation (ZMod q) (Rq Φ) where
-  modulus := Φ.φ.toPoly
-  rep a := a.1.toPoly
+`CyclotomicModulus` itself; the laws are `isPresentation_cyclotomic`.
+
+Two projections, hence a plain (computable) `def` — `CPolynomial` data all the way down. -/
+def cyclotomicPresentation : Lift.Presentation (ZMod q) (Rq Φ) where
+  modulus := Φ.φ
+  rep a := a.1
 
 omit [NeZero q] in
-/-- The presentation degree is the ring dimension. -/
+/-- The presentation degree is the ring dimension: `modulus` is `Φ.φ`, read through `toPoly`. -/
 theorem cyclotomicPresentation_modulus_natDegree :
-    (cyclotomicPresentation Φ).modulus.natDegree = Φ.φ.natDegree :=
+    (cyclotomicPresentation Φ).modulus.toPoly.natDegree = Φ.φ.natDegree :=
   (CompPoly.CPolynomial.natDegree_toPoly Φ.φ).symm
 
 omit [NeZero q] in
@@ -125,7 +128,7 @@ theorem isPresentation_cyclotomic (hd : 0 < Φ.φ.natDegree) :
 /-! ## Hachi witness and relation instance -/
 
 /-- Hachi Eq. (21)'s lifted witness: the `R^lin` witness `z ∈ Rq^μ` and one quotient
-polynomial per row in `ZMod q[X]` of degree at most `d − 1` (honest quotients satisfy the
+polynomial per row over `ZMod q` of degree at most `d − 1` (honest quotients satisfy the
 tighter `d − 2`) — the generic lifted witness at the cyclotomic degree. -/
 abbrev LiftedWitness (Φ : CyclotomicModulus (ZMod q)) (μ n : ℕ) :=
   Lift.LiftedWitness (ZMod q) (Rq Φ) Φ.φ.natDegree μ n
@@ -136,7 +139,7 @@ Not consumed by any proof in this file: `liftPackage` discharges the generic `sh
 through `vecLInftyNorm_le_of_liftShort`, which needs only the `z`-side conjunct of `liftShort`.
 `RhoShort` is a forward-compatibility hook modelling Figure 4's `‖r‖∞ ≤ b − 1` check, carried
 through `relOut` for the digit layer (Lemma 10) that re-derives it. -/
-def RhoShort (ρBound : ℕ) (ρ : Fin n → Polynomial (ZMod q)) : Prop :=
+def RhoShort (ρBound : ℕ) (ρ : Fin n → CPolynomial (ZMod q)) : Prop :=
   ∀ i k, ((ρ i).coeff k).valMinAbs.natAbs ≤ ρBound
 
 /-- Hachi's norm-conditioned admissibility predicate for a lifted opening. -/
@@ -170,6 +173,45 @@ def liftCheckAt (φF : ZMod q →+* F) (s : RlinStatement Φ n μ) (a : F)
   Lift.checkAt (cyclotomicPresentation Φ) φF (fun s => s.M) (fun s => s.yvec)
     (fun s => bound ≤ s.bound) s a w
 
+/-- The computable `i`-th lifted row
+`∑ⱼ Mᵢⱼ(X)·zⱼ(X) ∈ Zq[X]`, formed from the canonical `CPolynomial` representatives. -/
+def cRowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    CPolynomial (ZMod q) :=
+  ∑ j, (s.M i j).1 * (z j).1
+
+/-- Computable evaluation of a `Zq[X]` polynomial at `a ∈ F` through the base-field embedding. -/
+def cEvalAt (φF : ZMod q →+* F) (a : F) (p : CPolynomial (ZMod q)) : F :=
+  p.eval₂ φF a
+
+/-- Mathlib view of `cRowSum`, retained for degree and root-counting proofs. -/
+noncomputable def rowSum (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    Polynomial (ZMod q) :=
+  (cRowSum Φ s z i).toPoly
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- `rowSum` is the expected Mathlib sum of products of canonical representatives. -/
+theorem rowSum_eq_sum_toPoly (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    rowSum Φ s z i = ∑ j, (s.M i j).1.toPoly * (z j).1.toPoly := by
+  unfold rowSum cRowSum
+  rw [CPolynomial.toPoly_sum]
+  exact Finset.sum_congr rfl fun j _ => CPolynomial.toPoly_mul _ _
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The computable and Mathlib row-sum evaluations agree. The Mathlib side is the generic
+`RingSwitching.evalAt` that `Lift.checkAt` is stated against, so this is the bridge between the
+computable row encoding and the presentation layer. -/
+theorem cEvalAt_cRowSum_eq_evalAt (φF : ZMod q →+* F) (a : F)
+    (s : RlinStatement Φ n μ) (z : PolyVec (Rq Φ) μ) (i : Fin n) :
+    cEvalAt φF a (cRowSum Φ s z i) = evalAt φF a (rowSum Φ s z i) := by
+  exact CPolynomial.eval₂_toPoly φF a (cRowSum Φ s z i)
+
+omit [NeZero q] [BEq (ZMod q)] [LawfulBEq (ZMod q)] in
+/-- Evaluation of any computable polynomial agrees with evaluation of its Mathlib image. -/
+theorem cEvalAt_eq_evalAt_toPoly (φF : ZMod q →+* F) (a : F)
+    (p : CPolynomial (ZMod q)) :
+    cEvalAt φF a p = evalAt φF a p.toPoly := by
+  exact CPolynomial.eval₂_toPoly φF a p
+
 /-- The Hachi output relation, instantiated from the generic anchored committed-scalar relation. -/
 def relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
     (φF : ZMod q →+* F) :
@@ -199,17 +241,17 @@ theorem vecLInftyNorm_le_of_liftShort (s : RlinStatement Φ n μ) (w : LiftedWit
 (`vecLInftyNorm_le_of_liftShort`); the CWSS certificate is `liftPackage.isCWSS`.
 
 **Why the certificate is a package field, not a standalone theorem.** `isCWSS` is the uniform
-`EscapeCWSSPackage` field (`OracleReduction/.../Package.lean`), and it is the field — not any named
-theorem — that the chain composition operator `▷` consumes: every link in the Hachi opening chain
-(`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
-`ZeroCheck/Reduction.lean`, `Recursion/PartialEval.lean`, …) exposes its certificate the same way,
-and `openingChain.isCWSS` is assembled from them in `Composition.lean`. Because this package is
+`EscapeCWSSPackage` field (`.../CoordinateWiseSpecialSoundness/Escape.lean`), and it is the field —
+not any named theorem — that the chain composition operator `▷` consumes: every link in the Hachi
+opening chain (`QuadEval/Bridge.lean`, `QuadEval/Soundness.lean`, `Sumcheck/Rounds.lean`,
+`ZeroCheck/Reduction.lean`, …) exposes its certificate the same way,
+and `iteration.isCWSS` is assembled from them in `Composition.lean`. Because this package is
 built wholesale from generic `Lift.package`, its certificate already arrives in that shape, stated
 in the generic `Lift` vocabulary. Restating it as a standalone theorem over Hachi's own
-`relRlin`/`relLift` at `Rq Φ`
-would duplicate the proposition without adding content and would sit outside the composition
+`relRlin`/`relLift` at `Rq Φ` would duplicate the proposition without adding content and would sit
+outside the composition
 interface, so nothing would consume it. -/
-noncomputable def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+def liftPackage (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
     (hd : 0 < Φ.φ.natDegree) :
     EscapeCWSSPackage init impl
       (RlinStatement Φ n μ) (PolyVec (Rq Φ) μ)

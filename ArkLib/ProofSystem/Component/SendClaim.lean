@@ -57,6 +57,10 @@ variable {ι : Type} (oSpec : OracleSpec ι) (Statement : Type)
 @[reducible, simp]
 def pSpec : ProtocolSpec 1 := ⟨!v[.P_to_V], !v[Message]⟩
 
+instance instOutputOracleInterface :
+    ∀ i : ιₛᵢ ⊕ Fin 1, OracleInterface (Sum.elim OStatement (fun _ : Fin 1 => Message) i) :=
+  fun i => OracleInterface.instRecType i
+
 /-- `SendClaim` is a single `P_to_V` message, so it has no challenge rounds. This makes its
 coordinate-wise special soundness reduce to the no-challenge bridge. -/
 instance instIsEmptyChallengeIdx : IsEmpty (pSpec Message).ChallengeIdx :=
@@ -80,18 +84,32 @@ def oracleProver : OracleProver oSpec
 /-- The oracle verifier for `SendClaim` is a **pure pass-through**: it returns the statement and
 exposes the input oracle statements together with the prover's message as the output oracles. The
 claim predicate is enforced in `toORelOut`, not at runtime, keeping the verifier `IsPure`. -/
+def outputIndexEmbedding : (ιₛᵢ ⊕ Fin 1) ↪ ιₛᵢ ⊕ (pSpec Message).MessageIdx :=
+  Function.Embedding.sumMap (.refl _)
+    (Equiv.toEmbedding (.symm (subtypeUnivEquiv (by aesop))))
+
+def outputEmbedding : OracleOutputEmbedding OStatement (pSpec Message).Message
+    (OStatement ⊕ᵥ (fun _ : Fin 1 => Message)) where
+  embed := outputIndexEmbedding Message
+  hEq := by
+    intro i
+    rcases i with j | j
+    · rfl
+    · fin_cases j
+      rfl
+  outputInterface_heq := by
+    intro i
+    rcases i with j | j
+    · rfl
+    · fin_cases j
+      rfl
+
 @[inline, specialize]
 def oracleVerifier : OracleVerifier oSpec
     Statement OStatement Statement (OStatement ⊕ᵥ (fun _ : Fin 1 => Message))
     (pSpec Message) where
   verify := fun stmt _ => pure stmt
-  embed := .sumMap (.refl _)
-    <| Equiv.toEmbedding
-    <| .symm (subtypeUnivEquiv (by aesop))
-  hEq := by
-    intro i; rcases i with j | j
-    · rfl
-    · fin_cases j; rfl
+  outputOracle := .inl (outputEmbedding OStatement Message)
 
 /-- The oracle reduction for `SendClaim`. -/
 @[inline, specialize]
@@ -104,28 +122,41 @@ def oracleReduction : OracleReduction oSpec
 
 variable {Statement} {OStatement} {Message}
 
+@[simp]
+theorem oracleVerifier_materializeOutput
+    (challenges : (pSpec Message).Challenges) (oStmt : ∀ i, OStatement i)
+    (messages : (pSpec Message).Messages) :
+    (oracleVerifier oSpec Statement OStatement Message).materializeOutput
+        challenges oStmt messages =
+      Sum.rec oStmt (fun _ : Fin 1 => messages default) := by
+  unfold OracleVerifier.materializeOutput oracleVerifier
+  change OracleVerifier.materializeOutputOracle
+      (Sum.inl (outputEmbedding OStatement Message)) challenges oStmt messages = _
+  simp only [OracleVerifier.materializeOutputOracle]
+  funext idx
+  rcases idx with j | j
+  · rfl
+  · fin_cases j
+    rfl
+
 /-- The pure pass-through oracle verifier's underlying non-oracle verifier returns the statement
 together with the output oracle statements (input oracles at `inl`, the message at `inr 0`). -/
 theorem oracleVerifier_toVerifier_run {stmt : Statement} {oStmt : ∀ i, OStatement i}
     {tr : (pSpec Message).FullTranscript} :
     (oracleVerifier oSpec Statement OStatement Message).toVerifier.run ⟨stmt, oStmt⟩ tr =
-      pure ⟨stmt, Sum.rec oStmt (fun i => match i with | 0 => tr 0)⟩ := by
-  simp only [Verifier.run, OracleVerifier.toVerifier, oracleVerifier]
-  rw [show simulateQ (OracleInterface.simOracle2 oSpec oStmt tr.messages)
-        (pure stmt : OptionT (OracleComp _) Statement)
-      = (pure stmt : OptionT (OracleComp oSpec) Statement) from rfl, pure_bind]
-  congr 1
-  congr 1
-  funext idx
-  rcases idx with j | j
-  · rfl
-  · fin_cases j; rfl
+      pure ⟨stmt, Sum.rec oStmt (fun _ => tr.messages default)⟩ := by
+  simp only [Verifier.run, OracleVerifier.toVerifier]
+  rw [oracleVerifier_materializeOutput]
+  simp only [oracleVerifier]
+  apply OptionT.ext
+  simp only [OptionT.run_mk, OptionT.run_pure, simulateQ_pure, map_pure,
+    Option.map_some]
 
 /-- The `SendClaim` oracle verifier is pure, discharging the deterministic-left hypothesis of the
 CWSS binary append. -/
 instance instIsPure :
     (oracleVerifier oSpec Statement OStatement Message).toVerifier.IsPure :=
-  ⟨fun p tr => ⟨p.1, Sum.rec p.2 (fun i => match i with | 0 => tr 0)⟩,
+  ⟨fun p tr => ⟨p.1, Sum.rec p.2 (fun _ => tr.messages default)⟩,
    fun ⟨_, _⟩ _ => oracleVerifier_toVerifier_run (oSpec := oSpec)⟩
 
 variable {σ : Type} (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
@@ -139,21 +170,23 @@ membership in `toORelOut.language`; the `P` check is enforced here rather than a
 @[reducible, simp]
 def toORelOut :
     Set ((Statement × (∀ i, (Sum.elim OStatement fun _ : Fin 1 => Message) i)) × Unit) :=
-  setOf (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
+  Set.ofPred (fun ⟨⟨stmt, oStmtAndMsg⟩, _⟩ =>
     (⟨⟨stmt, fun i => oStmtAndMsg (Sum.inl i)⟩, ()⟩ ∈ relIn) ∧
       P stmt (fun i => oStmtAndMsg (Sum.inl i)) (oStmtAndMsg (Sum.inr 0)))
 
 /-- **Coordinate-wise special soundness of `SendClaim`, named form.** The verifier is a pure
 pass-through with no challenge rounds, so CWSS collapses (via the oracle no-challenge bridge) to
-a transcript-level obligation. The named extractor is trivial (`fun _ _ => ()`, there is no
-witness); since the output oracle statements at `inl` are the input oracles unchanged and
-`toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language` forces the input into
-`relIn`. Holds for any `D`. -/
+a transcript-level obligation. The named extractor is trivial (`fun _ _ _ => some ()`, there is no
+witness) and **witnessing-agnostic**; since the output oracle statements at `inl` are the input
+oracles unchanged and `toORelOut relIn P` refines `relIn`, accepting into `toORelOut.language`
+forces the input into `relIn`. Holds for any `D`. -/
 theorem oracleVerifier_coordinateWiseSpecialSoundWith (D : CWSSStructure (pSpec Message)) :
-    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init impl
+    (oracleVerifier oSpec Statement OStatement Message).coordinateWiseSpecialSoundWith init
+      impl
       D relIn (toORelOut relIn P)
-      (fun _ _ => ()) := by
-  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl D
+      (fun _ _ _ => some ()) := by
+  have h := OracleVerifier.coordinateWiseSpecialSoundWith_of_isEmpty_challengeIdx init impl
+    D
     (oracleVerifier oSpec Statement OStatement Message) relIn (toORelOut relIn P)
     (fun _ _ => ())
     (fun s tr hAcc => by

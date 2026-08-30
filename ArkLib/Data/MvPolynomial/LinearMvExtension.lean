@@ -4,10 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Ilia Vlasov, Mirco Richter (Least Authority), Aristotle (Harmonic)
 -/
 
-import ArkLib.Data.CodingTheory.Basic.DecodingRadius
-import ArkLib.Data.CodingTheory.Basic.Distance
-import ArkLib.Data.CodingTheory.Basic.LinearCode
-import ArkLib.Data.CodingTheory.Basic.RelativeDistance
 import ArkLib.Data.MvPolynomial.Multilinear
 import Mathlib.Algebra.MvPolynomial.Eval
 import Mathlib.Algebra.Polynomial.Eval.Defs
@@ -43,12 +39,12 @@ def linearMvExtension (p : Polynomial.degreeLT F (2 ^ m)) : MvPolynomial (Fin m)
 
 @[simp]
 lemma linearMvExtension_add_comm {p q : Polynomial.degreeLT F (2 ^ m)} :
-  linearMvExtension (p + q) = linearMvExtension p + linearMvExtension q := by
+    linearMvExtension (p + q) = linearMvExtension p + linearMvExtension q := by
   simp [linearMvExtension, Polynomial.sum_add_index]
 
 @[simp]
 lemma linearMvExtension_smul_comm {c : F} {p : Polynomial.degreeLT F (2 ^ m)} :
-  linearMvExtension (c • p) = c • linearMvExtension p := by
+    linearMvExtension (c • p) = c • linearMvExtension p := by
   simp only [linearMvExtension, SetLike.val_smul]
   rw [Polynomial.sum_smul_index _ _ _ (by simp)]
   aesop
@@ -58,14 +54,14 @@ lemma linearMvExtension_smul_comm {c : F} {p : Polynomial.degreeLT F (2 ^ m)} :
         Finset.smul_sum])
 
 lemma bitExpo_apply (i : ℕ) (j : Fin m) :
-  (bitExpo i : Fin m →₀ ℕ) j = if Nat.testBit i j.1 then 1 else 0 := by
+    (bitExpo i : Fin m →₀ ℕ) j = if Nat.testBit i j.1 then 1 else 0 := by
   simp [bitExpo, Finsupp.onFinset_apply]
 
 lemma bitExpo_le_one (i : ℕ) (j : Fin m) :
-  (bitExpo i : Fin m →₀ ℕ) j ≤ 1 := by aesop (add simp [bitExpo_apply])
+    (bitExpo i : Fin m →₀ ℕ) j ≤ 1 := by aesop (add simp [bitExpo_apply])
 
 lemma linearMvExtension_degreeOf_lt {p : Polynomial.degreeLT F (2 ^ m)} {i : Fin m} :
-  MvPolynomial.degreeOf i (linearMvExtension p) ≤ 1 := by
+    MvPolynomial.degreeOf i (linearMvExtension p) ≤ 1 := by
   have h_monomial_degrees {x} (hx : x ∈ p.val.support) :
       (degreeOf i (monomial (bitExpo x) (p.val.coeff x))) ≤ 1 := by
     aesop (add simp [degreeOf_eq_sup, bitExpo_le_one])
@@ -90,6 +86,10 @@ def linearMvExtensionLMap :
     map_add' := by simp
     map_smul' := by simp
 
+@[simp]
+lemma linearMvExtensionLMap_apply (p : Polynomial.degreeLT F (2 ^ m)) :
+    linearMvExtensionLMap p = linearMvExtension p := rfl
+
 /-- `partialEval` takes a m-variate polynomial f and a k-vector α as input,
   partially evaluates f(X_0, X_1,..X_(m-1)) at {X_0 = α_0, X_1 = α_1,.., X_{k-1} = α_{k-1}}
   and returns a (m-k)-variate polynomial. -/
@@ -113,13 +113,13 @@ def powAlgHom :
    aeval fun j => Polynomial.X ^ (2 ^ (j : ℕ))
 
 lemma powAlgHom_of_restrict_degree_natDegree {p : MvPolynomial.restrictDegree (Fin m) F 1} :
-  (powAlgHom p.1).natDegree ≤ (2 ^ m - 1) := by
+    (powAlgHom p.1).natDegree ≤ (2 ^ m - 1) := by
   have h_monomial_deg : ∀ d ∈ p.val.support, (∑ j : Fin m, d j * 2 ^ j.val) ≤ 2 ^ m - 1 := by
     have h_deg {d} (hd : d ∈ p.val.support) :
       (∑ j : Fin m, d j * 2 ^ j.val) ≤ ∑ j : Fin m, 2 ^ j.val := by
       have h_deg {j : Fin m} : d j ≤ 1 := by
         have := p.2
-        simp_all only [restrictDegree, mem_support_iff, ne_eq, SetLike.coe_mem, ge_iff_le]
+        simp_all only [restrictDegree, mem_support_iff, ne_eq, ge_iff_le]
         have := p.2
         rw [mem_restrictDegree] at this
         exact this d (by aesop) j
@@ -137,7 +137,7 @@ lemma powAlgHom_of_restrict_degree_natDegree {p : MvPolynomial.restrictDegree (F
     exact fun N hN ↦ ne_of_gt (lt_of_le_of_lt h_monomial_deg hN)
 
 lemma powAlgHom_natDegree {p : MvPolynomial (Fin m) F} :
-  (powAlgHom p).natDegree ≤ p.totalDegree * (2 ^ m - 1) := by
+    (powAlgHom p).natDegree ≤ p.totalDegree * (2 ^ m - 1) := by
   have h_deg {d} (hd : d ∈ p.support) :
     (powAlgHom (MvPolynomial.monomial d (p.coeff d))).natDegree ≤
         d.sum (fun i k => 2^i.val * k) := by
@@ -175,7 +175,7 @@ lemma powAlgHom_natDegree {p : MvPolynomial (Fin m) F} :
   exact h_sum_le.trans (Finset.sup_le (fun d hd ↦ h_le hd))
 
 lemma powAlgHom_degree {p : MvPolynomial (Fin m) F} :
-  (powAlgHom p).degree ≤ ↑(p.totalDegree * (2 ^ m - 1)) := by
+    (powAlgHom p).degree ≤ ↑(p.totalDegree * (2 ^ m - 1)) := by
   rw [←Polynomial.natDegree_le_iff_degree_le]
   exact powAlgHom_natDegree
 
@@ -183,6 +183,10 @@ lemma powAlgHom_degree {p : MvPolynomial (Fin m) F} :
 def powContraction :
     MvPolynomial (Fin m) F →ₗ[F] Polynomial F :=
   powAlgHom.toLinearMap
+
+@[simp]
+lemma powContraction_apply (p : MvPolynomial (Fin m) F) :
+    powContraction p = powAlgHom p := rfl
 
 private lemma binary_repr_sum (m i : ℕ) (hi : i < 2 ^ m) :
     ∑ j ∈ Finset.range m, (if Nat.testBit i j then 2 ^ j else 0) = i := by
@@ -216,8 +220,8 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
     · exact (Polynomial.natDegree_lt_iff_degree_lt hp).mpr hdeg
   have h_comp : powContraction (linearMvExtensionLMap p) =
       ∑ i ∈ Finset.range (2 ^ m), p.val.coeff i • Polynomial.X ^ i := by
-    unfold powContraction linearMvExtensionLMap linearMvExtension
-    simp +decide only [LinearMap.coe_mk, AddHom.coe_mk, AlgHom.toLinearMap_apply, powAlgHom]
+    rw [powContraction_apply, linearMvExtensionLMap_apply]
+    unfold linearMvExtension powAlgHom
     rw [MvPolynomial.aeval_def]
     have h_sum_range :
         (p : Polynomial F).sum (fun i a => MvPolynomial.monomial (bitExpo (m := m) i) a) =
@@ -241,8 +245,8 @@ lemma powContraction_is_right_inverse_to_linearMvExtension
   simp +decide [Polynomial.smul_eq_C_mul, ← Polynomial.C_mul_X_pow_eq_monomial]
 
 lemma powAlgHom_is_right_inverse_to_linearMvExtension
-  (p : Polynomial.degreeLT F (2 ^ m)) :
-  powAlgHom (linearMvExtension p) = p := by
+    (p : Polynomial.degreeLT F (2 ^ m)) :
+    powAlgHom (linearMvExtension p) = p := by
   rw [←powContraction_is_right_inverse_to_linearMvExtension]
   rfl
 
