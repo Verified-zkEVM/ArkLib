@@ -550,44 +550,37 @@ lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply [NeZero n] {i : ℕ
   sqFoldMapGen (i := i) j = sqFoldMapGen j' :=
   CosetFftDomainClass.injective (subdomain ω i) <| by simp_all
 
-private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
-    (a : Fin (2 ^ (n - k - 1)))
-    (i : Fin (2 ^ (n - (k + 1)))) (hai : (a : ℕ) = (i : ℕ)) :
+private lemma subdomain_embed_comp {k j : ℕ} (hk : k + j ≤ n)
+    (a : Fin (2 ^ (n - k - j)))
+    (i : Fin (2 ^ (n - (k + j)))) (hai : (a : ℕ) = (i : ℕ)) :
     CosetFftDomainClass.subdomain_embed (n := n) k
-        (CosetFftDomainClass.subdomain_embed (n := n - k) 1 a) =
-        CosetFftDomainClass.subdomain_embed (n := n) (k + 1) i := by
+        (CosetFftDomainClass.subdomain_embed (n := n - k) j a) =
+        CosetFftDomainClass.subdomain_embed (n := n) (k + j) i := by
   ext
-  by_cases hk1 : k + 1 = n
-  · have hnk : n - k = 1 := by omega
-    simp only [CosetFftDomainClass.subdomain_embed, hnk, ge_iff_le,
-      show ¬n ≤ k by omega, show n ≤ k + 1 by omega, le_refl,
+  by_cases hkj : k + j = n
+  · simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
+      show n - k ≤ j by omega, show n ≤ k + j by omega,
       ↓reduceDIte, Fin.val_zero, mul_zero]
-  · have hk1' : k + 1 < n := by omega
-    simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
-      show ¬n ≤ k by omega, show ¬n ≤ k + 1 by omega, show ¬n - k ≤ 1 by omega,
-      ↓reduceDIte, Fin.val_mk, pow_one]
-    rw [hai, pow_succ]
-    ring
+    by_cases hnk : n ≤ k
+    · simp only [hnk, ↓reduceDIte, Fin.val_zero]
+    · simp only [hnk, ↓reduceDIte]
+  · simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
+      show ¬n ≤ k by omega, show ¬n ≤ k + j by omega, show ¬n - k ≤ j by omega,
+      ↓reduceDIte, Fin.val_mk]
+    rw [hai, pow_add]
+    ring_nf
 
-/-- Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain
-  (pointwise, under the index identification `n - k - 1 = n - (k + 1)`). -/
+/-- Taking the `j`th subdomain of the `k`th subdomain gives the `(k + j)`th subdomain
+pointwise, under the canonical index identification. -/
 lemma subdomain_comp
   {k j : ℕ} (hk : k + j ≤ n)
   {a : Fin (2 ^ (n - k - j))} {i : Fin (2 ^ (n - (k + j)))}
   (hai : a.val = i.val) :
   subdomain (subdomain ω k) j a = subdomain ω (k + j) i := by
-  by_cases h : n ≤ k <;> by_cases h' : n - k ≤ j
-  · have hk : k = n := by omega
-    have hj : j = 0 := by omega
-    simp_all [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed]
-  · simp_all
-  · have : n = k + j := by omega
-    simp_all [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed,
-      pow_add, pow_mul]
-  · aesop
-      (add simp [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed])
-      (add unsafe (by ring_nf))
-      (add safe [(by omega), (by grind)])
+  simp only [subdomain_apply, mkSubgroupUnit]
+  rw [subdomain_embed_comp hk a i hai]
+  simp only [CosetFftDomainClass.subdomain_embed_zero, pow_add, pow_mul]
+  field_simp
 
 @[simp]
 theorem mem_subdomain_comp_iff_mem
