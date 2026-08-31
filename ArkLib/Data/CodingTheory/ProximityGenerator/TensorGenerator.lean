@@ -266,13 +266,13 @@ variable {ι : Type} [Fintype ι]
 generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
 is an MCA generator with error `ε_mca + ε_mca'`.
 
-This is [BCGM25]'s printed Lemma 4.4, whose hypothesis is MCA for `MC` itself. It remains open:
+Sorried, and its status is open rather than routine: with the hypothesis of MCA for `MC` itself,
 `TensorMCA.isMCAGenerator_tensorGenerator` reaches the added error only with the inner term scaled
 by `Fintype.card ℓ`, and `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`
 reaches the unscaled sum only under the strictly stronger hypothesis of MCA for the `ℓ`-fold
-interleaving of `MC`. See `docs/kb/audits/bcgm25-mca-generators.md` for why the paper's own proof
-does not close this gap. -/
-lemma tensor_of_MCA_is_MCA_tight (MC : ModuleCode ι F A)
+interleaving of `MC`. See `docs/kb/audits/bcgm25-mca-generators.md` for what is known about the
+gap between those two forms and this statement. -/
+lemma isMCAGenerator_tensorGenerator_tight (MC : ModuleCode ι F A)
     (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (hGMCA : IsMCAGenerator G ε_mca MC)
     (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ≥0) (hG'MCA : IsMCAGenerator G' ε_mca' MC) :
     IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε_mca') MC := by

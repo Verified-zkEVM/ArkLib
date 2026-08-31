@@ -35,6 +35,9 @@ respectively, we can define their tensor product componentwise. This is a genera
 - `affine space generator`: A generator of the form `G : F^ℓ → F^(ℓ + 1)` such that
  `x ↦ (1,x)`.
 
+The correspondence to [BCGM25]'s numbered statements is in
+`docs/kb/audits/bcgm25-mca-generators.md`.
+
 ## References
 
 * [Guruswami, V., Rudra, A., Sudan M., *Essential Coding Theory*, online copy][GRS25]
@@ -54,13 +57,11 @@ variable {ι : Type} [Fintype ι]
          {ℓ : Type} [Fintype ℓ]
 
 /-- The type of generators, where a generator `G` over a field `F` with output size `ℓ` is a
-function that maps a seed `x` in a set `S` to a coefficient vector in `F^ℓ`.
-Definition 3.10 [BCGM25]. -/
+function that maps a seed `x` in a set `S` to a coefficient vector in `F^ℓ`. -/
 abbrev Generator (S ℓ F : Type) : Type := S → (ℓ → F)
 
 /-- A generator `G` is zero-evading with a zero-evading error `ε_ze` if the probability of obtaining
-a zero output from a non-zero vector is bounded above by `ε_ze`.
-Definition 3.11 [BCGM25]. -/
+a zero output from a non-zero vector is bounded above by `ε_ze`. -/
 def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) (ε_ze : I) :
     Prop :=
   (sSup {y | ∃ v : ℓ → F, v ≠ 0 ∧ y = Pr_{let x ←$ᵖ S}[dotProduct (G x) v = 0]})
@@ -68,12 +69,13 @@ def IsZeroEvadingGenerator {S : Type} [Nonempty S] [Fintype S] (G : Generator S 
 
 /-- Let the set `S` be a product of `s` subsets of `F`. A polynomial generator is a generator if
 there exist `ℓ` linearly independent multivariate polynomials, such that the output is an evaluation
-of the seed at each of these polynomials.
-Definition 3.19 [BCGM25]. -/
+of the seed at each of these polynomials. -/
 def IsPolynomialGenerator {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ i, S i) ℓ F) : Prop :=
   ∃ P : ℓ → MvPolynomial (Fin s) F, LinearIndependent F P ∧
   ∀ x : (∀ i, S i), G x = MvPolynomial.eval (fun i ↦ (x i : F)) ∘ P
 
+/-- The generator `G` evaluates the given linearly independent family of polynomials `P`:
+the witness-carrying form of `IsPolynomialGenerator`. -/
 def IsPolynomialGeneratorOf {s : ℕ} (S : Fin s → Set F) (G : Generator (∀ i, S i) ℓ F)
   (P : ℓ → MvPolynomial (Fin s) F) : Prop :=
   LinearIndependent F P ∧ ∀ x : (∀ i, S i), G x = MvPolynomial.eval (fun i ↦ (x i : F)) ∘ P
@@ -83,8 +85,7 @@ def IsPolynomialGeneratorOfFull {s : ℕ} (G : Generator (Fin s → F) ℓ F)
     (P : ℓ → MvPolynomial (Fin s) F) : Prop :=
   LinearIndependent F P ∧ ∀ x : Fin s → F, G x = MvPolynomial.eval x ∘ P
 
-/-- A matrix whose rows are the outputs of the generator function.
-Defined inside Definition 3.12 [BCGM25]. -/
+/-- The matrix whose rows are the outputs of the generator function. -/
 def M_G {S : Type} [Nonempty S] [Fintype S] (G : Generator S ℓ F) : Matrix S ℓ F :=
   Matrix.of G
 
@@ -92,15 +93,14 @@ noncomputable example {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : G
   LinearCode S F := LinearCode.fromColGenMat (M_G G)
 
 /-- A generator `G` is MDS if the matrix `M_G` whose rows are the outputs of the generator
-function is a generator matrix for an MDS code.
-Definition 3.12 [BCGM25]. -/
+function is a generator matrix for an MDS code. -/
 def IsMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F] (G : Generator S ℓ F) :
   Prop := LinearCode.IsMDS (LinearCode.fromColGenMat (M_G G))
 
 /-- The condition for MCA generator.
 
-Stated over a module code `MC : ModuleCode ι F A`, matching [BCGM25]'s alphabet generality
-(Definition 3.2 takes `Σ` to be an arbitrary `F`-vector space): the combination
+Stated over a module code `MC : ModuleCode ι F A`, so the alphabet may be any `F`-module: the
+combination
 `∑ j, G x j • U j` replaces `Matrix.vecMul (G x) U`, which requires a ring structure on the
 alphabet. At `A := F` the two agree — see `vecMul_eq_smul_sum`.
 
@@ -108,8 +108,8 @@ The radius is `δ : ℝ`, not `I`, for the same reason `Code.Lambda`'s is: it is
 value*, and narrowing it only relocates a membership obligation to every call site. The size
 clause is total and honest at every real — no `T` can meet `|T| ≥ n·(1 - δ)` when `δ < 0`, and
 the clause is vacuous once `δ ≥ 1` — so nothing outside `[0,1]` is asserted that is not already
-asserted at the endpoints. [BCGM25]'s `γ ∈ [0,1]` typing is preserved where the paper puts it,
-on the *error bound*: `IsMCAGenerator` quantifies `δ : I`. See
+asserted at the endpoints. The `[0,1]` typing lives on the *error bound*: `IsMCAGenerator`
+quantifies `δ : I`. See
 `docs/wiki/proximity-error-conventions.md`. -/
 def IsMCA {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCommMonoid A] [Module F A]
   (G : Generator S ℓ F) (MC : ModuleCode ι F A)
@@ -160,7 +160,6 @@ noncomputable def mcaError {S : Type} [Nonempty S] [Fintype S] {A : Type} [AddCo
 
 /-- A generator has mutual correlated agreement (MCA) with error `ε_mca` if the probability that
 the generator satisfies the MCA condition is bounded above by `ε_mca`.
-Definition 3.14 [BCGM25].
 
 The body is the `mcaError` bound, so `isMCAGenerator_iff_mcaError_le` is `Iff.rfl`: `exact`,
 `refine` and `apply` see through to the value inequality, and only `rw`/`simp` need the bridge.
@@ -182,7 +181,7 @@ lemma isMCAGenerator_iff_mcaError_le {S : Type} [Nonempty S] [Fintype S] {A : Ty
 
 /-- The pointwise reading: an MCA bound holds at each individual family `U`, not merely at the
 supremum. This is the form every consumer of an `IsMCAGenerator` hypothesis wants, and the reason
-the `∀ U` in [BCGM25] Definition 3.14 costs nothing after the definition is stated at the value. -/
+quantifying over `U` inside the definition costs nothing after it is stated at the value. -/
 lemma IsMCAGenerator.prob_le {S : Type} [Nonempty S] [Fintype S] {A : Type}
     [AddCommMonoid A] [Module F A] {G : Generator S ℓ F} {ε_mca : I → ℝ≥0}
     {MC : ModuleCode ι F A} (h : IsMCAGenerator G ε_mca MC) (U : ℓ → (ι → A)) (δ : I) :
@@ -245,16 +244,14 @@ lemma mcaError_eq_of_floor_eq {S : Type} [Nonempty S] [Fintype S] {A : Type} [Ad
     mul_one_sub_le_card_iff_sub_card_le_floor T hδ', h]
 
 /-- Let `G : S → F^ℓ` and `G′: S′ → F^ℓ` be two generators. Their tensor product is the generator
-`G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x , x′) ↦ G(x) ⊗ G′(x′)`.
-Definition 4.3 [BCGM25]. -/
+`G ⊗ G′: S × S′→ F^ℓ ⊗ F^ℓ′` defined by `(x , x′) ↦ G(x) ⊗ G′(x′)`. -/
 def TensorGenerator {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
   (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
   (S × S') → TensorProduct F (ℓ → F) (ℓ' → F)
 | (x, x') => TensorProduct.tmul F (G x) (G' x')
 
 /-- Explicit construction of the tensor generator. The output type here is a generator
-`G ⊗ G′: S × S′→ F^(ℓ * ℓ')`.
-Definition 4.3 [BCGM25]. -/
+`G ⊗ G′: S × S′→ F^(ℓ * ℓ')`. -/
 def TensorGenerator_Explicit {ℓ' : Type} [Fintype ℓ'] {S S' : Type}
     (G : Generator S ℓ F) (G' : Generator S' ℓ' F) :
     Generator (S × S') (ℓ × ℓ') F
@@ -378,20 +375,20 @@ theorem poly_gen_is_zero_evading
     and_imp]
   intros b x hx hb
   rw [hb]
-  convert prob_eval_zero_le_div (∑ j, x j • P j) _ (maxTotalDegree P) (minSeedCard S) _ _ _ using 1
-  any_goals intro i; exact minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i
-  any_goals assumption
-  · rfl
-  · convert rfl
-    ext
-    simp [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]
-  · have := @ENNReal.ofReal_div_of_pos
-    rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
-    exact minSeedCard_pos S
-  · exact LinearCombination.linearCombination_ne_zero hG.1 hx
-  · exact MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
-                Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j)
-  · exact minSeedCard_pos S
+  change ((fun a => G a ⬝ᵥ x = 0) <$> $ᵖ ((i : Fin s) → ↥(S i))) True ≤ _
+  rw [show (fun a => G a ⬝ᵥ x = 0) = fun a =>
+      MvPolynomial.eval (fun i => (a i : F)) (∑ j, x j • P j) = 0 by
+    funext a
+    simp +decide [MvPolynomial.dotProduct_eq_eval_linearCombination, hG.2]]
+  refine (prob_eval_zero_le_div (∑ j, x j • P j)
+    (LinearCombination.linearCombination_ne_zero hG.1 hx)
+    (maxTotalDegree P) (minSeedCard S)
+    (MvPolynomial.totalDegree_linearCombination_le _ _ _ fun j =>
+      Finset.le_sup (f := fun j => (P j |> MvPolynomial.totalDegree)) (Finset.mem_univ j))
+    (minSeedCard_pos S)
+    (fun i => minSeedCard_le S (Fin.pos_iff_nonempty.mpr ⟨i⟩) i)).trans_eq ?_
+  rw [ENNReal.ofReal_div_of_pos] <;> norm_cast
+  exact minSeedCard_pos S
 
 end PolynomialGenerator
 

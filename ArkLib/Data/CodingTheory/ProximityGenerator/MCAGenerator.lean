@@ -30,7 +30,8 @@ so the only mathematical content in this file is the two event implications
 * `mcaError_projectedGenerator_le`, `generatorSubset` — projection onto a subset of the output
   coordinates.
 
-The correspondence to [BCGM25]'s numbered statements is in `docs/kb/audits/bcgm25-mca-generators.md`
+The correspondence to [BCGM25]'s numbered statements is in
+`docs/kb/audits/bcgm25-mca-generators.md`.
 
 ## References
 
@@ -54,10 +55,10 @@ variable {ι : Type} [Fintype ι]
 bad event for `G` on some reindexed family `Φ U`, at the same radius and over the same seed space,
 then `G'`'s MCA error value is bounded by `G`'s.
 
-This is the transport skeleton behind every [BCGM25] generator-preservation lemma (4.1, 4.2, and
-the tensor and reindexing arguments to come): the mathematical content of each is exactly the
-event implication, and everything else is this lemma. Stating it once at the *value* keeps `ε_mca`
-out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
+This is the transport skeleton behind every generator-preservation lemma in this directory
+(right multiplication, projection, tensoring, reindexing): the mathematical content of each is
+exactly the event implication, and everything else is this lemma. Stating it once at the *value*
+keeps `ε_mca` out of the statement of each transport lemma; the `IsMCAGenerator` forms follow by
 `isMCAGenerator_iff_mcaError_le` and transitivity. -/
 lemma mcaError_le_of_forall_isMCA_imp [Nonempty S] (G : Generator S ℓ F) (G' : Generator S ℓ' F)
     (MC : ModuleCode ι F A) (δ : ℝ) (Φ : (ℓ' → (ι → A)) → (ℓ → (ι → A)))
@@ -212,13 +213,15 @@ lemma isMCAGenerator_reindex {S' : Type} [Fintype S'] [Nonempty S'] [Nonempty S]
         rw [prob_uniform_eq_ofReal, prob_uniform_eq_ofReal, hcard, Fintype.card_congr eS]
     _ ≤ (ε_mca γ : ENNReal) := hGMCA.prob_le _ γ
 
-/-- The MCA error function for MDS codes, as defined in Theorem 6.1 [BCGM25].
+/-- The MCA error function of an MDS generator with output size `ℓ` and `s` seeds, for a module
+code `MC`, at slack parameter `η`. As a function of the proximity parameter `γ` it is a step
+function with three regimes: a unique-decoding bound below `δ_C / (ℓ + 1)`, a list-decoding
+bound up to `1 - (ρ_C + η) ^ (1 / (ℓ + 1))`, and the trivial bound `1` beyond.
 
-Valued in `ℝ≥0` to match `IsMCAGenerator`; the paper's expression is a real, and is clamped at `0`
-by `Real.toNNReal`. The clamp is not lossy for the intended parameter range — the expression is a
-bound on a probability, and is nonnegative wherever [BCGM25]'s hypotheses `0 < η < 1` and
-`2 ≤ ℓ` hold. -/
-noncomputable def ε_MCA_MDS [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
+Valued in `ℝ≥0` to match `IsMCAGenerator`, clamping the underlying real expression at `0` by
+`Real.toNNReal`. The clamp is not lossy for the intended parameter range — the expression is a
+bound on a probability, and is nonnegative wherever `0 < η < 1` and `2 ≤ ℓ` hold. -/
+noncomputable def mdsMCAError [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC : ModuleCode ι F A)
   (ℓ s : ℕ) (η : ℝ) : I → ℝ≥0 :=
   letI n : ℝ := Fintype.card ι
   letI δ_C : ℝ := (Code.minRelHammingDistCode (MC.carrier) : ℝ)
@@ -238,20 +241,24 @@ noncomputable def ε_MCA_MDS [DecidableEq F] [DecidableEq A] [Nonempty ι] (MC :
         else
         1
 
-/-- `ε_MCA_MDS` reads the code only through the block length `ι` and the relative distance
+/-- `mdsMCAError` reads the code only through the block length `ι` and the relative distance
 `δᵣ`: two module codes over the same index set with equal `δᵣ` get the same error function,
 regardless of their alphabets. In particular the error is unchanged under interleaving
-(`Code.minRelHammingDistCode_moduleInterleavedCode`), which is what lets Theorem 6.1 feed the
-interleaved-hypothesis tensor lemma. -/
-lemma ε_MCA_MDS_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A]
+(`Code.minRelHammingDistCode_moduleInterleavedCode`), which is what lets
+`isMCAGenerator_of_isMDSGenerator` feed the interleaved-hypothesis tensor lemma. -/
+lemma mdsMCAError_congr [DecidableEq F] [Nonempty ι] {A' : Type} [DecidableEq A]
     [AddCommMonoid A'] [Module F A'] [DecidableEq A']
     (MC : ModuleCode ι F A) (MC' : ModuleCode ι F A') (ℓ s : ℕ) (η : ℝ)
     (hδ : Code.minRelHammingDistCode MC'.carrier = Code.minRelHammingDistCode MC.carrier) :
-    ε_MCA_MDS MC' ℓ s η = ε_MCA_MDS MC ℓ s η := by
-  unfold ε_MCA_MDS
+    mdsMCAError MC' ℓ s η = mdsMCAError MC ℓ s η := by
+  unfold mdsMCAError
   rw [hδ]
 
-/-- Theorem 6.1 (MCA for MDS generators) [BCGM25]. -/
+/-- Every MDS generator whose code has full dimension `ℓ ≥ 2` has MCA for every module code
+`MC`, with error `mdsMCAError MC ℓ |S| η`, for every slack `0 < η < 1`. The generator-matrix
+hypotheses constrain `G` over the base field only; the tested code's alphabet is any `F`-module.
+
+Sorried: neither decoding-regime argument is formalized yet. -/
 theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [DecidableEq F]
     [DecidableEq A] [Nonempty ι]
     (G : Generator S ℓ F)
@@ -259,6 +266,6 @@ theorem isMCAGenerator_of_isMDSGenerator {S : Type} [Nonempty S] [Fintype S] [De
     (hdim : LinearCode.dim (LinearCode.fromColGenMat (M_G G)) = Fintype.card ℓ)
     (η : ℝ) (hη : 0 < η ∧ η < 1) (hℓ : 2 ≤ Fintype.card ℓ)
     (MC : ModuleCode ι F A) :
-  IsMCAGenerator G (ε_MCA_MDS MC (Fintype.card ℓ) (Fintype.card S) η) MC := by sorry
+  IsMCAGenerator G (mdsMCAError MC (Fintype.card ℓ) (Fintype.card S) η) MC := by sorry
 
 end LinearTransformations
