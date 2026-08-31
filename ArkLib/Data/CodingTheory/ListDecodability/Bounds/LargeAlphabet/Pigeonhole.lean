@@ -853,14 +853,15 @@ theorem barrier_density_real_gaps
     nlinarith
   have hxiLt : ξ < p / (ℓ : ℝ) := hxiLe.trans_lt hpDivStrict
   have hxiMul : ξ * (1 - p) ≤ ξ := by
-    nlinarith [mul_nonneg hXi.le hp.le]
+    rw [mul_sub, mul_one]
+    exact sub_le_self _ (mul_nonneg hXi.le hp.le)
   have hxiMulLt : ξ * (1 - p) < p / (ℓ : ℝ) :=
     hxiMul.trans_lt hxiLt
   have hgapOne :
       β * (1 - p) - R =
         η + p / (ℓ : ℝ) - ξ * (1 - p) := by
     dsimp only [β, barrierBetaDensity]
-    nlinarith [hbalance]
+    linear_combination -hbalance
   have hpowMono : p₀ ^ ℓ ≤ p ^ ℓ :=
     pow_le_pow_left₀ hp₀.le hp₀le ℓ
   have hfourXi : 4 * ξ ≤ p ^ ℓ / (2 * (ℓ : ℝ)) := by
@@ -938,13 +939,13 @@ theorem rounded_barrier_basic_bounds
   have hcross := (lt_div_iff₀ hden).mp hηSecondStrict
   have hKeta :
       (barrierK ℓ B + 1) * η < smallRadius ℓ R / 2 := by
-    nlinarith
+    nlinarith only [hcross]
   have hKetaN :
       (barrierK ℓ B + 1) * η * n <
         smallRadius ℓ R / 2 * n :=
     mul_lt_mul_of_pos_right hKeta hnR
   have hhalfP : smallRadius ℓ R / 2 < relRadius ℓ R η := by
-    nlinarith [hpMinLe]
+    nlinarith only [hpMin, hpMinLe]
   have hhalfPN : smallRadius ℓ R / 2 * n <
       relRadius ℓ R η * n :=
     mul_lt_mul_of_pos_right hhalfP hnR
@@ -1163,7 +1164,8 @@ theorem rounded_barrier_quotient_bounds
   have hbalance := relRadius_balance ℓ hℓpos R η
   have hpDiv : 0 < relRadius ℓ R η / (ℓ : ℝ) :=
     div_pos hp hℓR
-  have hRp : R + relRadius ℓ R η < 1 := by linarith
+  have hRp : R + relRadius ℓ R η < 1 := by
+    linarith only [hbalance, hpDiv, hηpos]
   have hRfloor : (Nat.floor (R * n) : ℝ) ≤ R * n :=
     Nat.floor_le (mul_nonneg hRpos.le hnR.le)
   have hPfloor : (Nat.floor (relRadius ℓ R η * n) : ℝ) ≤
