@@ -227,7 +227,7 @@ theorem rs_lambda_large_prime
     have hceil : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) < A * (p : ℝ) ^ α + 1 :=
       Nat.ceil_lt_add_one (mul_nonneg hA.le hxpos.le)
     have haAx : (⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (A + 1) * (p : ℝ) ^ α := by
-      nlinarith [hx.1]
+      nlinarith only [hceil, hx.1]
     have hpowprod : (p : ℝ) ^ s * (p : ℝ) ^ α = (p : ℝ) ^ (α + s) := by
       rw [mul_comm, ← Real.rpow_add hpR]
     have haPow : (2 * ⌈A * (p : ℝ) ^ α⌉₊ : ℝ) ≤ (p : ℝ) ^ (α + s) := by
@@ -244,9 +244,11 @@ theorem rs_lambda_large_prime
       have hx2 := hx.2
       have hscale : α + s + 1 ≤ β * (p : ℝ) ^ α / 4 := by
         have hh := (div_le_iff₀ _hβ_pos).mp hx2
-        nlinarith
+        linarith only [hh]
       have hmul := mul_lt_mul_of_pos_left hceil (add_pos _hα_pos hs)
-      nlinarith [hsA]
+      have hsAx := mul_le_mul_of_nonneg_right hsA hxpos.le
+      have hAeqx := congrArg (fun z : ℝ => z * (p : ℝ) ^ α) hAeq
+      nlinarith only [hk, hscale, hmul, hsAx, hAeqx]
     have hpowhalf : (p : ℝ) ^ α * (p : ℝ) ^ (1 - α) = (p : ℝ) := by
       rw [← Real.rpow_add hpR]
       convert Real.rpow_one (p : ℝ) using 2
@@ -298,7 +300,7 @@ theorem rs_lambda_large_prime
         push_cast
         have ha2 : 2 * a ≤ p := by omega
         have ha2R : (2 : ℝ) * a ≤ p := by exact_mod_cast ha2
-        nlinarith
+        linarith only [ha2R]
       have hnum : ((p : ℝ) / 2) ^ a ≤ ((p + 1 - a : ℕ) : ℝ) ^ a :=
         pow_le_pow_left₀ (by positivity) hbase a
       have hfac : ((a.factorial : ℕ) : ℝ) ≤ (a : ℝ) ^ a := by
@@ -328,7 +330,7 @@ theorem rs_lambda_large_prime
       have hlog0 := Real.one_sub_inv_le_log_of_pos hrpos
       have hcalc : -2 ≤ (p : ℝ) * (1 - (1 - 1 / (p : ℝ))⁻¹) := by
         field_simp
-        nlinarith
+        nlinarith only [hp2R]
       have hlog : -2 ≤ (p : ℝ) * Real.log (1 - 1 / (p : ℝ)) :=
         hcalc.trans (mul_le_mul_of_nonneg_left hlog0 hpR.le)
       have hratio : Real.exp (-2) ≤ (1 - 1 / (p : ℝ)) ^ p := by
