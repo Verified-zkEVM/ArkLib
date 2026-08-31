@@ -141,9 +141,6 @@ private lemma block_idx_eq_max
     (block_end_le_block_start ha)
 
 omit [DecidableEq F] in
-set_option maxRecDepth 4000 in
-set_option synthInstance.maxHeartbeats 20000 in
-set_option synthInstance.maxSize 128 in
 private lemma combine_eq_flat
   (φ : ι ↪ F) (dstar : ℕ) (r : F)
   (fs : Fin m → ι → F) (degs : Fin m → ℕ) :
@@ -403,7 +400,6 @@ private lemma even_more_glorious_lemma
  push_cast
  ring
 
-set_option maxHeartbeats 0 in
 omit [DecidableEq F] [Fintype F] in
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
 lemma master_lemma
@@ -447,17 +443,9 @@ lemma master_lemma
     specialize ih (j + 1) h_fin (by omega)
     let q : Polynomial F := Polynomial.X * v i ⟨j, hj⟩
     have hq_deg : q.degree < dstar + 1 := by
-      rw [WithBot.lt_def]
-      by_cases hv: v i ⟨j, hj⟩ = 0
-      · aesop
-      · right
-        simp only [Polynomial.degree_mul, Polynomial.degree_X, q]
-        rw [Polynomial.degree_eq_natDegree hv]
-        exists (1 + (v i ⟨j ,hj⟩).natDegree)
-        aesop
-          (add unsafe (by rw [add_comm]))
-          (add unsafe forward [Nat.add_lt_add_right])
-          (add simp [Polynomial.natDegree_lt_iff_degree_lt])
+      simp only [q]
+      rw [Polynomial.degree_mul, Polynomial.degree_X, add_comm 1]
+      exact WithBot.add_lt_add_right (by simp) (hv_deg i ⟨j, hj⟩)
     have hq_coincide :
       ∀ x ∈ S, q.eval (φ x) = (v i ⟨j + 1, h_fin⟩).eval (φ x) := by
       aesop
@@ -500,7 +488,6 @@ lemma master_lemma
     rw [←add_assoc, add_comm 1] at ih
     exact (WithBot.add_lt_add_iff_right (by simp)).mp ih
 
-set_option maxHeartbeats 0 in
 open LinearCode Classical ProbabilityTheory ReedSolomon STIR in
 /-- Lemma 4.13
   Let `dstar` be the target degree, `f₁,...,f_{m-1} : ι → F`,

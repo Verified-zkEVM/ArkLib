@@ -609,12 +609,13 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
     have hkey : (1:ℝ)/(2 * η * s ^ 2) - 1 = (1 - 2 * η * s ^ 2)/(2 * η * s ^ 2) := by field_simp
     rw [hkey] at hℓ_ge
     rw [div_le_iff₀ h2ηρpos] at hℓ_ge
-    nlinarith [hℓ_ge]
+    nlinarith only [hℓ_ge]
   have hLHS : 1 - (1 - 1 / (ℓ:ℝ)) * (1 - s ^ 2 + 1 / n) ≤ s ^ 2 + (1 / ℓ) * (1 - s ^ 2) := by
     have h1n : (0:ℝ) < 1 / n := by positivity
     have hfac : (0:ℝ) ≤ (1 - 1 / (ℓ:ℝ)) := by
       rw [sub_nonneg, div_le_one hℓpos]; linarith
-    nlinarith [hfac, h1n, mul_nonneg (le_of_lt (by positivity : (0:ℝ) < 1 / (ℓ:ℝ))) h1n.le]
+    have hprod : 0 ≤ (1 - 1 / (ℓ : ℝ)) * (1 / n) := mul_nonneg hfac h1n.le
+    nlinarith only [hprod]
   have hbound : (1 / (ℓ:ℝ)) * (1 - s ^ 2) ≤ 2 * η * s + η^2 := by
     have h1ρ : (0:ℝ) ≤ 1 - s ^ 2 := by linarith
     calc (1 / (ℓ:ℝ)) * (1 - s ^ 2) ≤ ((2 * η * s ^ 2)/(1-2 * η * s ^ 2))*(1-s ^ 2) :=
@@ -623,8 +624,8 @@ private lemma domination_core (s η : ℝ) (ℓ : ℕ) (n : ℕ)
           rw [div_mul_eq_mul_div, div_le_iff₀ h1m2ηρ]
           nlinarith [sq_nonneg (2*s-1), sq_nonneg (s-1), mul_nonneg hs0.le h1ρ, h2ηρ, hη, hs0,
                      mul_pos hη hs0]
-      _ ≤ 2 * η * s + η^2 := by nlinarith [sq_nonneg η]
-  linarith [hLHS, hbound]
+      _ ≤ 2 * η * s + η^2 := le_add_of_nonneg_right (sq_nonneg η)
+  linarith only [hLHS, hbound]
 
 /-- List-size bound just below the Johnson radius of an MDS code: for a code `C` over a
 finite alphabet, a rate `0 < ρ ≤ 1` satisfying the MDS rate-distance equation

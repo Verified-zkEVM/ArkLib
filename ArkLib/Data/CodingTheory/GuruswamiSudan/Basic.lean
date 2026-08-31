@@ -145,17 +145,17 @@ lemma card_weightBoundIndices_eq_sum (D : ℕ) (hk : 1 < k) :
     have h_inner : ∀ j ∈ range (D / (k - 1) + 1), ∑ i ∈ range (D + 1),
         (if i + (k - 1) * j ≤ D then 1 else 0) = (D - (k - 1) * j) + 1 := by
       intro j hj
+      have hjle : j ≤ D / (k - 1) := Nat.lt_succ_iff.mp (mem_range.mp hj)
+      have hcj : (k - 1) * j ≤ D := by
+        calc
+          (k - 1) * j ≤ (k - 1) * (D / (k - 1)) := Nat.mul_le_mul_left _ hjle
+          _ ≤ D := Nat.mul_div_le D (k - 1)
       have h_filter : filter (fun i ↦ i + (k - 1) * j ≤ D) (range (D + 1)) =
           Icc 0 (D - (k - 1) * j) := by
         ext i
         simp only [mem_filter, mem_range, mem_Icc, zero_le, true_and]
-        refine ⟨fun h ↦ Nat.le_sub_of_add_le <| by linarith, fun h ↦ ⟨by
-            nlinarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-              nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]], by
-                  linarith [Nat.sub_add_cancel <| show (k - 1) * j ≤ D from by
-                    nlinarith [Nat.sub_add_cancel <| show j ≤ D / (k - 1) from by
-                      linarith [mem_range.mp hj], Nat.div_mul_le_self D (k - 1)]]⟩⟩
+        exact ⟨fun h ↦ Nat.le_sub_of_add_le h.2, fun hi ↦
+          ⟨Nat.lt_succ_of_le (hi.trans (Nat.sub_le _ _)), Nat.add_le_of_le_sub hcj hi⟩⟩
       simp_all
     exact h_split.trans (sum_congr rfl h_inner)
 
@@ -586,7 +586,7 @@ lemma polySol_ne_zero :
       have : Function.Injective (linearCombination F
         (fun p : weightBoundIndices k (proximity_gap_degree_bound k n m) ↦
           monomial (F := F) p.1.1 p.1.2)) :=
-        linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
+        linearIndependent_monomials.comp _ (fun _ _ h ↦ Subtype.ext h)
       exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ this.1 <| h_inj <| by simpa [polySol] using h
 
