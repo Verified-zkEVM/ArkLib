@@ -47,7 +47,6 @@ Its main components are:
 - [KKH26] Krachun, Kazanin, Haböck. *Failure of proximity gaps close to capacity*. ePrint 2026/782.
 -/
 
-set_option linter.unusedVariables false
 
 open Polynomial Finset Code ProximityGap Real Filter Topology
 open scoped NNReal BigOperators
@@ -89,7 +88,7 @@ theorem choose_ge_div_pow (s t : ℕ) (ht : 1 ≤ t) (hts : t ≤ s) :
 
 /-- Analytic core: `(2^K)^{cp} ≤ (2^b / khat)^{khat}` when `khat ≈ ρ·2^b` and
 `cp·K·log 2 ≤ ρ·log(1/ρ)·2^b - 2`. -/
-theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (hρ1 : ρ < 1) (cp : ℕ) (hcp : 1 ≤ cp)
+theorem core_ineq (ρ : ℝ) (hρ0 : 0 < ρ) (_hρ1 : ρ < 1) (cp : ℕ) (_hcp : 1 ≤ cp)
     (b K khat : ℕ) (hkhat1 : 1 ≤ khat)
     (hkhat_lo : ρ * 2 ^ b < (khat : ℝ)) (hkhat_hi : (khat : ℝ) ≤ ρ * 2 ^ b + 2)
     (hkhat_lt : (khat : ℝ) < 2 ^ b) (hbig : (2 : ℝ) ≤ (1 - ρ) * 2 ^ b)
