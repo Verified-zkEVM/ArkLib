@@ -330,7 +330,7 @@ private lemma combine_eq_flat'''
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
       smul_eq_mul, mul_comm, one_mul, add_tsub_cancel_left, mul_assoc, mul_left_comm,
       mul_eq_mul_left_iff]
-    rw [show filter _ _ = Finset.Iio i by aesop]
+    rw [show filter _ _ = Finset.Iio i by ext j; simp]
     aesop (add safe (by ring))
 
 omit [DecidableEq F] in
