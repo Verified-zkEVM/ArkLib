@@ -202,8 +202,7 @@ theorem interleaved_listDecodable {F : Type*} [Field F]
   have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
   have hs : 0 < (ReedSolomon.sqrtRate m domain : ℝ) := ReedSolomon.sqrtRate_pos hm
   have hηR : (0 : ℝ) < (η : ℝ) := by exact_mod_cast hη
-  rw [Code.isListDecodable_iff_forall_finset_card_le]
-  intro y T hT
+  refine Code.isListDecodable_of_forall_finset_card_le fun y T hT => ?_
   have hpair : ∀ c ∈ Code.interleavedCodeSet (κ := Fin k)
       (ReedSolomon.code domain m : Set (ι → F)), ∀ c' ∈ Code.interleavedCodeSet (κ := Fin k)
       (ReedSolomon.code domain m : Set (ι → F)), c ≠ c' →
