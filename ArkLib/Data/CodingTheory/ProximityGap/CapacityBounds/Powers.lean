@@ -24,13 +24,6 @@ codewords from interpolation seeds, and bounds the exceptional seeds by double c
 - [BCGM25] Bafna, Choudhary, Guruswami, and Mardia. Theorem 8.2 and Definition 8.1.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -309,9 +302,10 @@ private theorem powers_bad_seed_final_arithmetic
 open scoped ProbabilityTheory in
 private theorem powers_bad_seed_probability_le_card
     {S : Type} [Fintype S] [Nonempty S]
-    (P : S → Prop) [DecidablePred P] (B : ℝ)
+    (P : S → Prop) (B : ℝ)
     (hB : (Set.ncard {x : S | P x} : ℝ) ≤ B) :
     (PMF.uniformOfFintype S).map P True ≤ ENNReal.ofReal (B / Fintype.card S) := by
+  classical
   change Pr_{let x ← $ᵖ S}[P x] ≤ ENNReal.ofReal (B / Fintype.card S)
   rw [Probability.prob_uniform_eq_ofReal]
   apply ENNReal.ofReal_le_ofReal
