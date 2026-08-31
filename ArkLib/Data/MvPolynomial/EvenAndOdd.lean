@@ -169,9 +169,10 @@ private lemma formula_generic
         substMinus (monomial m (p.coeff m))) * C (2⁻¹) +
           X 0 * ((substPlus (monomial m (p.coeff m)) -
           substMinus (monomial m (p.coeff m))) * C (2⁻¹)) = monomial m (p.coeff m) :=
-   by aesop
-        (add unsafe [formula_for_monomial])
-        (add simp [mem_restrictDegree])
+    by
+      intro m hm
+      exact formula_for_monomial h2ne0 m (p.coeff m)
+        (fun i ↦ (mem_restrictDegree _ p 1).mp hp m hm i)
   rw [MvPolynomial.as_sum p]
   convert Finset.sum_congr rfl h_expand using 1
   simp only [substPlus, aeval_eq_bind₁, support_sum_monomial_coeff, substMinus, mul_comm, mul_add,
