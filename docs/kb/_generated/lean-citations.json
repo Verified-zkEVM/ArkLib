@@ -1,8 +1,8 @@
 {
   "counts": {
-    "files_with_citations": 227,
+    "files_with_citations": 228,
     "keys_cited": 65,
-    "total_citation_edges": 370
+    "total_citation_edges": 371
   },
   "files": {
     "ArkLib/AGM/Basic.lean": [
@@ -369,9 +369,6 @@
     "ArkLib/Data/CodingTheory/ProximityGap/AHIV22Support.lean": [
       "AHIV22"
     ],
-    "ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean": [
-      "BCGM25"
-    ],
     "ArkLib/Data/CodingTheory/ProximityGap/BCIKS20/AffineLines/Main.lean": [
       "BCIKS20"
     ],
@@ -475,17 +472,23 @@
       "ABF26",
       "GG25"
     ],
-    "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean": [
-      "BCGM25"
-    ],
-    "ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean": [
-      "BCGM25"
-    ],
     "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean": [
       "ABF26",
       "BCGM25"
     ],
-    "ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean": [
+    "ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/PolynomialGenerator.lean": [
+      "BCGM25"
+    ],
+    "ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean": [
       "BCGM25"
     ],
     "ArkLib/Data/CodingTheory/ReedSolomon.lean": [
@@ -934,12 +937,13 @@
     "BCGM25": [
       "ArkLib/Data/CodingTheory/Basic/LinearCode.lean",
       "ArkLib/Data/CodingTheory/InterleavedCode.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/AffineGenerator.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/CapacityBounds/Powers.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean",
       "ArkLib/Data/CodingTheory/ProximityGap/Separation.lean",
-      "ArkLib/Data/CodingTheory/ProximityGap/TensorGenerator.lean"
+      "ArkLib/Data/CodingTheory/ProximityGenerator/AffineGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/PolynomialGenerator.lean",
+      "ArkLib/Data/CodingTheory/ProximityGenerator/TensorGenerator.lean"
     ],
     "BCHKS25": [
       "ArkLib/Data/CodingTheory/Connections/ListDecodingAndCA/BCHKS25.lean",
