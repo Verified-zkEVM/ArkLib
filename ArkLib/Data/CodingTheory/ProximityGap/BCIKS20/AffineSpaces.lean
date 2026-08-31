@@ -1392,32 +1392,32 @@ private lemma gs_degree_bound_le_inv_mu
   have hdeg1_cast_eq : (↑(deg - 1 : ℕ) : ℝ) = (deg : ℝ) - 1 := by
     rw [Nat.cast_sub (by omega : 1 ≤ deg), Nat.cast_one]
   have hdeg1_ge : (↑(deg - 1 : ℕ) : ℝ) ≥ (deg : ℝ) / 2 := by
-    rw [hdeg1_cast_eq]; linarith [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
+    rw [hdeg1_cast_eq]
+    linarith only [show (2 : ℝ) ≤ deg from by exact_mod_cast hdeg]
   have h_num : (↑m + 1/2) * s * (n : ℝ) ≤
       (deg : ℝ) / (2 * η) + 5 * (deg : ℝ) / (2 * s) := by
     have h1 : (↑m + 1/2) * s * (n : ℝ) ≤
         (s / (2 * η) + 5/2) * s * (n : ℝ) := by
-        have : (0 : ℝ) ≤ s * n := mul_nonneg hs_pos.le hn_pos.le
-        nlinarith [mul_le_mul_of_nonneg_right
-          (mul_le_mul_of_nonneg_right hm_bound hs_pos.le) hn_pos.le]
+      exact mul_le_mul_of_nonneg_right
+        (mul_le_mul_of_nonneg_right hm_bound hs_pos.le) hn_pos.le
     have hsqn : s ^ 2 * (n : ℝ) = (deg : ℝ) := by
-      have := hs_sq; field_simp at this; linarith
+      rw [hs_sq, div_mul_cancel₀ _ hn_pos.ne']
     have h2 : (s / (2 * η) + 5/2) * s * (n : ℝ) =
         (deg : ℝ) / (2 * η) + 5 * (deg : ℝ) / (2 * s) := by
       have hs_ne : s ≠ 0 := ne_of_gt hs_pos
       have hη_ne : η ≠ 0 := ne_of_gt hη_pos
       field_simp
-      nlinarith [hsqn, mul_comm s (n : ℝ)]
-    linarith
+      nlinarith only [hsqn]
+    linarith only [h1, h2]
   have hdeg_le_2d1 : (deg : ℝ) ≤ 2 * ↑(deg - 1 : ℕ) := by linarith [hdeg1_ge]
   have h3 : (deg : ℝ) / (2 * η) / (↑(deg - 1 : ℕ) : ℝ) ≤ 1 / η := by
     have hd1_pos : (0 : ℝ) < ↑(deg - 1 : ℕ) := by exact_mod_cast hdeg1
     rw [div_div, div_le_div_iff₀ (mul_pos (by positivity) hd1_pos) hη_pos, one_mul]
-    nlinarith
+    nlinarith only [mul_le_mul_of_nonneg_right hdeg_le_2d1 hη_pos.le]
   have h4 : 5 * (deg : ℝ) / (2 * s) / (↑(deg - 1 : ℕ) : ℝ) ≤ 5 / s := by
     have hd1_pos : (0 : ℝ) < ↑(deg - 1 : ℕ) := by exact_mod_cast hdeg1
     rw [div_div, div_le_div_iff₀ (mul_pos (by positivity) hd1_pos) hs_pos]
-    nlinarith
+    nlinarith only [mul_le_mul_of_nonneg_right hdeg_le_2d1 hs_pos.le]
   have h5 : 1 / η ≤ 1 / μ := by
     rw [div_le_div_iff₀ hη_pos hμ_pos]; linarith [hμ_le_η]
   have h6 : 5 / s ≤ 1 / (4 * μ) := by
