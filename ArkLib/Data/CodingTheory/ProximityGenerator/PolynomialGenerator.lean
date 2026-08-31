@@ -13,7 +13,10 @@ import Mathlib.RingTheory.MvPolynomial.IrreducibleQuadratic
 ## Main Results
 
 - Definition 8.1 (MCA error for univariate powers) [BCGM25].
-- Theorem 8.2 (MCA for polynomial generators) [BCGM25].
+- Theorem 8.2 (MCA for polynomial generators) [BCGM25] — proved assuming only Theorem 6.1
+(`isMCAGenerator_of_isMDSGenerator`): the tensor induction routes through the proved
+interleaved-hypothesis lemma (`tensorGeneratorPi_isMCAGenerator_tight`), so the open
+`tensor_of_MCA_is_MCA_tight` is not on its path.
 - Statement of Lemma 9.3 [BCGM25] - sorried out. It depends on the Guruswami-Sudan part of Proximity
 Gaps.
 - Definition 9.1 MCA error function for Reed-Solomon codes [BCGM25].
@@ -127,6 +130,83 @@ lemma tensorGeneratorPi_isMCAGenerator {A : Type} [AddCommMonoid A] [Module F A]
       (fun γ => ∑ i, Fin.tail ε i γ)
       (ih (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G) (Fin.tail ε)
         (fun i => hmca (Fin.succ i)))
+    have hR := isMCAGenerator_reindex MC
+      (TensorGenerator_Explicit (G 0)
+        (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)))
+      _ hBin eS eL
+    have hgen : (fun (x' : ∀ i : Fin (s + 1), α i) (j' : ∀ i : Fin (s + 1), ℓ i) =>
+        TensorGenerator_Explicit (G 0)
+          (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)) (eS x') (eL.symm j'))
+        = tensorGeneratorPi G := by
+      funext x' j'
+      rw [heS, heL]
+      simp only [TensorGenerator_Explicit, tensorGeneratorPi, Fin.tail, Fin.prod_univ_succ]
+      simp_all only [eS, eL]
+      rfl
+    have herr : ((ε 0) + fun γ => ∑ i, Fin.tail ε i γ) = (fun γ => ∑ i, ε i γ) := by
+      funext γ
+      simp only [Pi.add_apply, Fin.sum_univ_succ]
+      rfl
+    rw [hgen, herr] at hR
+    exact hR
+
+/-- The tight `s`-fold tensor induction, on the *proved* interleaved-hypothesis binary lemma
+`TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode` instead of the open
+`tensor_of_MCA_is_MCA_tight`.
+
+The factor hypothesis is anchored on a distance value `δ₀` and quantified over alphabets: each
+factor must have MCA, with its fixed error `ε i`, for *every* module code over `ι` of relative
+distance `δ₀`. That is exactly what Theorem 6.1 provides — its error reads the code only through
+`n` and `δᵣ` (`ε_MCA_MDS_congr`) — and it is closed under the interleavings the induction steps
+through (`Code.minRelHammingDistCode_moduleInterleavedCode`), so, unlike
+`tensorGeneratorPi_isMCAGenerator`, this form needs no open-problem input. -/
+lemma tensorGeneratorPi_isMCAGenerator_tight {δ₀ : ℚ≥0} :
+    ∀ {s : ℕ} {α : Fin s → Type} {ℓ : Fin s → Type}
+      [∀ i, Fintype (α i)] [∀ i, Nonempty (α i)] [∀ i, Fintype (ℓ i)] [∀ i, Nonempty (ℓ i)]
+      (G : ∀ i, Generator (α i) (ℓ i) F) (ε : Fin s → I → ℝ≥0),
+      (∀ i, ∀ {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
+        (MC : ModuleCode ι F A), Code.minRelHammingDistCode MC.carrier = δ₀ →
+        IsMCAGenerator (G i) (ε i) MC) →
+      ∀ {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A]
+        (MC : ModuleCode ι F A), Code.minRelHammingDistCode MC.carrier = δ₀ →
+        IsMCAGenerator (tensorGeneratorPi G) (fun γ => ∑ i, ε i γ) MC := by
+  intro s
+  induction s with
+  | zero =>
+    intro α ℓ _ _ _ _ G ε _ A _ _ _ MC _ γ
+    classical
+    refine iSup_le fun U => ?_
+    have hfalse : ∀ x : (∀ i : Fin 0, α i), ¬ IsMCA (tensorGeneratorPi G) MC x U (γ : ℝ) := by
+      rintro x ⟨T, hT, hmem, j, hj⟩
+      apply hj
+      have hvec : (fun k => ∑ j', tensorGeneratorPi G x j' • U j' k) = U j := by
+        funext w
+        rw [Fintype.sum_subsingleton _ j]
+        simp [tensorGeneratorPi]
+      rwa [hvec] at hmem
+    rw [prob_uniform_eq_ofReal, Finset.filter_false_of_mem fun x _ => hfalse x]
+    simp
+  | succ s ih =>
+    intro α ℓ _ _ _ _ G ε hmca A _ _ _ MC hδ
+    letI : ∀ i : Fin s, Fintype (Fin.tail α i) := fun i => inferInstanceAs (Fintype (α i.succ))
+    letI : ∀ i : Fin s, Nonempty (Fin.tail α i) := fun i => inferInstanceAs (Nonempty (α i.succ))
+    letI : ∀ i : Fin s, Fintype (Fin.tail ℓ i) := fun i => inferInstanceAs (Fintype (ℓ i.succ))
+    letI : ∀ i : Fin s, Nonempty (Fin.tail ℓ i) := fun i => inferInstanceAs (Nonempty (ℓ i.succ))
+    set eS : (∀ i : Fin (s + 1), α i) ≃ (α 0 × (∀ i : Fin s, Fin.tail α i)) :=
+      (Fin.consEquiv α).symm with heS
+    set eL : (ℓ 0 × (∀ i : Fin s, Fin.tail ℓ i)) ≃ (∀ i : Fin (s + 1), ℓ i) :=
+      Fin.consEquiv ℓ with heL
+    -- the (ℓ 0)-fold interleaving has the same δᵣ, so the anchored hypotheses apply there
+    have hδI : Code.minRelHammingDistCode
+        (Code.ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC).carrier = δ₀ := by
+      rw [Code.minRelHammingDistCode_moduleInterleavedCode]; exact hδ
+    have hTail := ih (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G) (Fin.tail ε)
+      (fun i {A'} _ _ _ MC' hMC' => hmca i.succ MC' hMC')
+      (Code.ModuleCode.moduleInterleavedCode F A (ℓ 0) ι MC) hδI
+    have hBin := TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode
+      (G 0) (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G))
+      (ε 0) (fun γ => ∑ i, Fin.tail ε i γ) MC
+      (hmca 0 MC hδ) hTail
     have hR := isMCAGenerator_reindex MC
       (TensorGenerator_Explicit (G 0)
         (tensorGeneratorPi (α := Fin.tail α) (ℓ := Fin.tail ℓ) (Fin.tail G)))
@@ -353,22 +433,27 @@ lemma UnivariatePowersOn.isMDSGenerator [DecidableEq F] (s : Set F) [Fintype s] 
   rw [UnivariatePowersOn.code_eq_reedSolomon]
   exact ReedSolomon.isMDS_code
 
-/-- The restricted univariate powers generator has MCA for every linear code with error `ξ`.
-For `d ≥ 1` this is Theorem 6.1 (`IsMDSGenerator.isMCAGenerator`) together with the identification
-`ε_MCA_MDS = ξ` (`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is vacuous, so the error `0 ≤ ξ`
-suffices. -/
+/-- The restricted univariate powers generator has MCA, with error `ξ LC`, for every module
+code over `ι` whose relative distance equals that of `LC` — in particular for `LC` itself
+(`MC := LC`, `hδ := rfl`) and for every iterated interleaving of `LC`.
+For `d ≥ 1` this is Theorem 6.1 (`isMCAGenerator_of_isMDSGenerator`) together with the
+identifications `ε_MCA_MDS MC = ε_MCA_MDS LC` (`ε_MCA_MDS_congr`, as `ε_MCA_MDS` reads the code
+only through `δᵣ`) and `ε_MCA_MDS LC = ξ LC` (`ε_MCA_MDS_eq_ξ`); for `d = 0` the MCA event is
+vacuous at any alphabet, so the error `0 ≤ ξ` suffices. -/
 lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
     (s : Set F) [Fintype s] [Inhabited s]
     (LC : LinearCode ι F) (d : ℕ) (η : ℝ) (hη : 0 < η ∧ η < 1)
-    (h : d + 1 ≤ Fintype.card ↥s) :
-    IsMCAGenerator (UnivariatePowersOn s d) (ξ LC d (Fintype.card ↥s) η) LC := by
+    (h : d + 1 ≤ Fintype.card ↥s)
+    {A : Type} [AddCommMonoid A] [Module F A] [DecidableEq A] (MC : ModuleCode ι F A)
+    (hδ : Code.minRelHammingDistCode MC.carrier = Code.minRelHammingDistCode LC.carrier) :
+    IsMCAGenerator (UnivariatePowersOn s d) (ξ LC d (Fintype.card ↥s) η) MC := by
   rcases Nat.eq_zero_or_pos d with hd | hd
   · subst hd
     classical
     haveI : Subsingleton (Fin (0 + 1)) := inferInstanceAs (Subsingleton (Fin 1))
     intro γ
     refine iSup_le fun U => ?_
-    have hfalse : ∀ x : ↥s, ¬ IsMCA (UnivariatePowersOn s 0) LC x U (γ : ℝ) := by
+    have hfalse : ∀ x : ↥s, ¬ IsMCA (UnivariatePowersOn s 0) MC x U (γ : ℝ) := by
       rintro x ⟨T, hT, hmem, j, hj⟩
       apply hj
       have hvec : (fun k => ∑ j', UnivariatePowersOn s 0 x j' • U j' k) = U j := by
@@ -383,8 +468,9 @@ lemma UnivariatePowersOn.isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι] [
         = Fintype.card (Fin (d + 1)) := by
       rw [UnivariatePowersOn.code_eq_reedSolomon, ReedSolomon.dim_eq_deg_of_le h, Fintype.card_fin]
     have hmca := isMCAGenerator_of_isMDSGenerator (UnivariatePowersOn s d)
-      (UnivariatePowersOn.isMDSGenerator s d) hdim η hη hℓ LC
-    rwa [Fintype.card_fin, ε_MCA_MDS_eq_ξ] at hmca
+      (UnivariatePowersOn.isMDSGenerator s d) hdim η hη hℓ MC
+    rwa [Fintype.card_fin, ε_MCA_MDS_congr LC MC (d + 1) (Fintype.card ↥s) η hδ,
+      ε_MCA_MDS_eq_ξ] at hmca
 
 /-- The `s`-fold tensor product of restricted univariate powers generators, over the product seed
 space `∏ᵢ Sᵢ`: `(x₁, …, xₛ) ↦ ⊗ᵢ (1, xᵢ, …, xᵢ^{dᵢ})`. -/
@@ -393,18 +479,24 @@ def tensorGeneratorPiUnivariateOn {s : ℕ} (S : Fin s → Set F) (d : Fin s →
   fun x j => ∏ i, ((x i) : F) ^ (j i : ℕ)
 
 /-- The tensor product of the restricted univariate powers generators has MCA for any linear code
-`LC`, with error the sum `∑ᵢ ξ (dᵢ)` of the factors' errors.  This is the `s`-fold iteration of
-Lemma 4.4 (`tensor_of_MCA_is_MCA_tight`) [BCGM25], with each factor's MCA supplied by
-`UnivariatePowersOn.isMCAGenerator`. -/
+`LC`, with error the sum `∑ᵢ ξ (dᵢ)` of the factors' errors — the tight bound of Lemma 4.4
+[BCGM25], reached through `tensorGeneratorPi_isMCAGenerator_tight`: Theorem 6.1 supplies each
+factor's MCA at every module code of relative distance `δᵣ LC`, which covers the iterated
+interleavings the induction routes through, so the open `tensor_of_MCA_is_MCA_tight` is not
+needed. -/
 lemma tensorGeneratorPiUnivariateOn_isMCAGenerator {ι : Type} [Fintype ι] [Nonempty ι]
     [DecidableEq F] (LC : LinearCode ι F) (η : ℝ) (hη : 0 < η ∧ η < 1)
     {s : ℕ} (S : Fin s → Set F) [∀ i, Fintype ↥(S i)] [∀ i, Inhabited ↥(S i)]
     (d : Fin s → ℕ) (hcard : ∀ i, d i + 1 ≤ Fintype.card ↥(S i)) :
     IsMCAGenerator (tensorGeneratorPiUnivariateOn S d)
       (fun γ => ∑ i, ξ LC (d i) (Fintype.card ↥(S i)) η γ) LC :=
-  tensorGeneratorPi_isMCAGenerator LC (fun i => UnivariatePowersOn (S i) (d i))
+  tensorGeneratorPi_isMCAGenerator_tight
+    (δ₀ := Code.minRelHammingDistCode LC.carrier)
+    (fun i => UnivariatePowersOn (S i) (d i))
     (fun i => ξ LC (d i) (Fintype.card ↥(S i)) η)
-    (fun i => UnivariatePowersOn.isMCAGenerator (S i) LC (d i) η hη (hcard i))
+    (fun i {_A} _ _ _ MC hMC =>
+      UnivariatePowersOn.isMCAGenerator (S i) LC (d i) η hη (hcard i) MC hMC)
+    LC rfl
 
 /-- The polynomial generator `G` is the right multiplication of the restricted tensor generator by
 the coefficient matrix (`G = G̃ · Aᵀ` in the proof of Theorem 8.2 [BCGM25]). -/
@@ -427,7 +519,11 @@ lemma generatorByRightMul_coeffMatrix_sub {s : ℕ} {ℓ : Type} [Fintype ℓ]
     _ = (MvPolynomial.eval xc ∘ P) := congrFun hgbm _
     _ = G x := (hG x).symm
 
-/-- Theorem 8.2 (MCA for polynomial generators) [BCGM25]. -/
+/-- Theorem 8.2 (MCA for polynomial generators) [BCGM25].
+
+Its only `sorry` ancestry is Theorem 6.1 (`isMCAGenerator_of_isMDSGenerator`): the tensor stage
+is `tensorGeneratorPi_isMCAGenerator_tight`, which reaches the unscaled error sum through the
+proved interleaved-hypothesis lemma rather than the open `tensor_of_MCA_is_MCA_tight`. -/
 theorem polynomial_gen_MCA {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq F]
     {ℓ : Type} [Fintype ℓ] (LC : LinearCode ι F)
     (η : ℝ) (hη : 0 < η ∧ η < 1)
