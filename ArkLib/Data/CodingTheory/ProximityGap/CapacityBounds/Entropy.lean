@@ -186,7 +186,7 @@ private theorem cs25OverlapSum_le_exp_two_sqrt
             intro ℓ hℓ
             positivity
           have hexp : 0 < Real.exp x := Real.exp_pos x
-          nlinarith
+          nlinarith only [hsum, hsum_nonneg, hexp]
     _ = Real.exp (2 * Real.sqrt ((f : ℝ) * (n - f : ℕ) / q)) := by
           rw [pow_two, ← Real.exp_add]
           congr 1
@@ -385,9 +385,9 @@ private theorem cs25_quadratic_entropy_gap_proof
     rw [cs25EntropyGapFn_deriv2_proof q y hy0 hy1]
     have hp : 0 < y * (1 - y) := mul_pos hy.1 (sub_pos.mpr hy1lt)
     have hquad : y * (1 - y) ≤ 1 / 4 := by
-      nlinarith [sq_nonneg (y - 1 / 2)]
+      nlinarith only [sq_nonneg (y - 1 / 2)]
     have hmul : 8 * (y * (1 - y)) < Real.log (q : ℝ) := by
-      nlinarith
+      nlinarith only [hquad, hloggt]
     have hdiv : 8 < Real.log (q : ℝ) / (y * (1 - y)) :=
       (lt_div_iff₀ hp).2 hmul
     linarith
@@ -421,15 +421,15 @@ private theorem cs25_shell_factor_lt_q
   apply (Real.sqrt_lt' hqR).2
   let x : ℝ := (f : ℝ) / n
   have hquad : x * (1 - x) ≤ 1 / 4 := by
-    nlinarith [sq_nonneg (x - 1 / 2)]
+    nlinarith only [sq_nonneg (x - 1 / 2)]
   have hmul : (n : ℝ) * (x * (1 - x)) ≤ (n : ℝ) * (1 / 4) :=
     mul_le_mul_of_nonneg_left hquad hnR.le
   have hA : 8 * (n : ℝ) * x * (1 - x) ≤ 2 * n := by
-    nlinarith
+    nlinarith only [hmul]
   have hnqR : (n : ℝ) ≤ q := by exact_mod_cast hnq
   have hq10R : (10 : ℝ) ≤ q := by exact_mod_cast hq
   dsimp [x] at hA ⊢
-  nlinarith
+  nlinarith only [hA, hnqR, hq10R]
 
 private theorem cs25_shell_power_bound
     (q n f : ℕ) (hq : 10 ≤ q) (hnq : n ≤ q)
@@ -1131,7 +1131,7 @@ private theorem rs_entropy_rate_d_le_kf_proof
       _ ≤ k := hkn
   have hreal : (n : ℝ) < 2 * ((k : ℝ) + f) := by
     field_simp [hnR.ne'] at hgap_scaled
-    nlinarith
+    nlinarith only [hgap_scaled, hkn', hs]
   have hnat : n < 2 * (k + f) := by exact_mod_cast hreal
   omega
 
@@ -1161,7 +1161,7 @@ private theorem rs_entropy_rate_parameter_facts
   have hslackR : (k : ℝ) + f + 2 ≤ n := by
     have h := mul_le_mul_of_nonneg_right hhi hnR.le
     field_simp at h
-    nlinarith
+    nlinarith only [h]
   have hslack : k + f + 2 ≤ n := by exact_mod_cast hslackR
   have hfpos : 0 < f := by
     by_contra hf
@@ -1169,7 +1169,7 @@ private theorem rs_entropy_rate_parameter_facts
     subst f
     simp only [Nat.cast_zero, zero_div, qEntropy_zero, sub_zero, one_div] at hlo hhi
     have htwo : (0 : ℝ) < 2 / n := div_pos (by norm_num) hnR
-    linarith
+    linarith only [hlo, hhi, htwo]
   have hflt : f < n := by omega
   let s : ℝ :=
     ((qEntropy q ((f : ℝ) / n) - (f : ℝ) / n) / (n : ℝ)) ^ ((1 : ℝ) / 2)
@@ -1184,10 +1184,10 @@ private theorem rs_entropy_rate_parameter_facts
   have hgap : 4 / (n : ℝ) + s ≤
       qEntropy q ((f : ℝ) / n) - (f : ℝ) / n := by
     rw [show 4 / (n : ℝ) = 2 / (n : ℝ) + 2 / (n : ℝ) by ring]
-    linarith [hcomp]
+    linarith only [hcomp]
   have hfour : (0 : ℝ) < 4 / n := div_pos (by norm_num) hnR
   have hdiff : 0 < qEntropy q ((f : ℝ) / n) - (f : ℝ) / n :=
-    lt_of_lt_of_le (by linarith : 0 < 4 / (n : ℝ) + s) hgap
+    lt_of_lt_of_le (by linarith only [hfour, hs_nonneg] : 0 < 4 / (n : ℝ) + s) hgap
   exact ⟨hslack, hfpos, hflt, hdiff⟩
 
 private theorem rs_entropy_rate_exponent_slack
@@ -1228,7 +1228,7 @@ private theorem rs_entropy_rate_exponent_slack
         (n : ℝ) * qEntropy q ((f : ℝ) / n) - f := by
     field_simp
   rw [hdcast, hrhs]
-  linarith
+  linarith only [hkn']
 
 private theorem rs_entropy_rate_full_parameter_facts_proof
     (q n k f : ℕ) (hq : 10 ≤ q) (hn : 0 < n)
@@ -1804,7 +1804,7 @@ private theorem cs25_overlap_exp_le_entropy_power_proof
   have hlogpos : 0 < Real.log (q : ℝ) := Real.log_pos (by exact_mod_cast hq2)
   have hh : 0 ≤ h := by
     have hleft : 0 < 4 * x * (1 - x) := by positivity
-    nlinarith [sq_nonneg (Real.log (q : ℝ))]
+    nlinarith only [hgap, hleft, sq_nonneg (Real.log (q : ℝ))]
   have hy_nonneg : 0 ≤ y := by dsimp [y]; positivity
   have hnum_nonneg : 0 ≤ (f : ℝ) * (n - f : ℕ) := by positivity
   have hy_le : y ≤ (n : ℝ) * x * (1 - x) := by
@@ -1821,7 +1821,7 @@ private theorem cs25_overlap_exp_le_entropy_power_proof
   have hsq_bound : 4 * y ≤
       (Real.log (q : ℝ)) ^ 2 * (n : ℝ) * h := by
     have hm := mul_le_mul_of_nonneg_left hgap hnR.le
-    nlinarith
+    nlinarith only [hm, hy_le]
   have hs_nonneg : 0 ≤ s := by
     dsimp [s]
     rw [← Real.sqrt_eq_rpow]
@@ -1929,7 +1929,7 @@ private theorem cs25_second_momentA_small_of_entropy_rate_proof
       (((n - f - k : ℕ) : ℝ) + (n : ℝ) * s + ((f + 2 : ℕ) : ℝ)) ≤
         (n : ℝ) * H := by
     norm_num at hexp ⊢
-    nlinarith
+    nlinarith only [hexp, hid]
   have hshell0 := cs25_entropy_shell_le_choose_proof q n f hq hn hfpos hflt
   have hshell :
       (q : ℝ) ^ ((n : ℝ) * H) ≤ (Nat.choose n f : ℝ) * B := by
