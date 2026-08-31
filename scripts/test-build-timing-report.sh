@@ -4,6 +4,10 @@ set -euo pipefail
 repo_root="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$repo_root"
 
+# The workflow exports the production artifact path globally. Fixtures must resolve metadata next
+# to their synthetic results instead of accidentally reading that workflow-owned file.
+unset BUILD_TIMING_METADATA_PATH
+
 fixture_tmp="$(mktemp -d)"
 trap 'rm -rf "$fixture_tmp"' EXIT
 
