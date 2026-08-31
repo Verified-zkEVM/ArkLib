@@ -104,7 +104,7 @@ theorem mem_nestedRoundRel_of_relNestedZeroCheck
     (h : (s, w) ∈ relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b) :
     (nestedToRoundStatement Φ m₀ m₁ φF s, w) ∈
       nestedRoundRel Φ m₀ m₁ bound bDig K φF b 0 := by
-  rw [relNestedZeroCheck, Set.mem_setOf_eq] at h
+  rw [relNestedZeroCheck, Set.mem_ofPred_eq] at h
   rcases h with ⟨hCom, hShort, hZero, hAlpha, hBound⟩
   rw [hZero_eval_eq] at hZero
   rw [hAlpha_eval_eq] at hAlpha

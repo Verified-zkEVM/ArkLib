@@ -108,7 +108,7 @@ theorem mem_relNestedZeroCheck_of_relBatched
     (τ₀ : Fin m₀ → F) (τα : Fin m₁ → F) :
     (nestedZcMapStmt Φ m₀ m₁ X τ₀ τα, w)
       ∈ relNestedZeroCheck Φ m₀ m₁ bound bDig K φF b := by
-  simp only [relBatched, Set.mem_setOf_eq] at h
+  simp only [relBatched, Set.mem_ofPred_eq] at h
   obtain ⟨hcom, hZeroZ, hAlphaZ, hbound'⟩ := h
   refine ⟨hcom, ?_, ?_, ?_, hbound'⟩
   · exact ⟨(hZero_eq_zero_imp_liftShort Φ m₀ φF b bound hd hμn hbound w hZeroZ).1,
