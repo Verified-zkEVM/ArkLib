@@ -232,7 +232,8 @@ theorem subspaceDesign_tau_lower_of_ne_bot
         rw [eq_bot_iff]
         rintro y ⟨hyA, hyk⟩
         obtain ⟨c, rfl⟩ := Submodule.mem_span_singleton.mp hyA
-        have hc0 : c • a i = 0 := by simpa [LinearMap.mem_ker] using hyk
+        change c • a i = 0 at hyk
+        have hc0 : c • a i = 0 := hyk
         rcases smul_eq_zero.mp hc0 with hc | hzero
         · simp [hc]
         · exact absurd hzero hai
