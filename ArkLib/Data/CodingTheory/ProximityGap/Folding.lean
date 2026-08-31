@@ -197,9 +197,8 @@ lemma foldValue_k_1 [NeZero n] {i : Fin (2 ^ (n - 1))} {α : F} :
     let i := domain.log x
     let i' := domain.log ⟨-x.1, by obtain ⟨x, hx⟩ := x; simpa using hx⟩
     ((f i + f i') / 2) + α * ((f i - f i') / (2 * x)) := by
-  aesop
-    (add simp [foldValue, foldWordAux_of_k_2])
-    (add safe (by grind))
+  simp [foldValue, foldWordAux_of_k_2]
+  ring
 
 /-- Fold a word. Takes a word `f` over `Fin (2 ^ n)` and randomness
   `a`, and returns a word over `Fin (2 ^ (n - k))`. -/
