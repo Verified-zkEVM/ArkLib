@@ -22,6 +22,7 @@ Default checks:
   - lake exe hachi-runtime
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
+  - ./scripts/test-build-timing-report.sh
   - python3 ./scripts/check-docs-integrity.py
   - python3 ./scripts/kb/lint.py
 
@@ -89,6 +90,10 @@ lake exe hachi-runtime
 echo ""
 echo "# Checking umbrella imports"
 ./scripts/check-imports.sh
+
+echo ""
+echo "# Testing build timing report fixtures"
+./scripts/test-build-timing-report.sh
 
 echo ""
 echo "# Checking docs integrity"
