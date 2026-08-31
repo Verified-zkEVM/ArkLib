@@ -1095,6 +1095,30 @@ noncomputable instance {α : Type} (s : Set α) [inst : Finite s] : Fintype s :=
 noncomputable def coeffs_of_close_proximity (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
     : Finset F := Set.toFinset { z | ∃ v : ReedSolomon.code ωs (k + 1), δᵣ(u₀ + z • u₁, v) ≤ δ}
 
+/-- The standing numerical hypotheses for [BCIKS20] §5.2.
+
+The paper works throughout with `m ≥ 3`, rate strictly below one, `δ` in the list-decoding
+radius, and the quantitative lower bound (5.8) on the set `S`.  Those assumptions were previously
+dropped from the individual Lean statements.  In particular, replacing (5.8) merely by `0 < #S`
+does not justify Claims 5.6, 5.7, or 5.11.
+
+The last field is a conservative, content-aware strengthening of (5.8): the paper has
+`2·D_Y³·D_X·D_YZ`, while the proved Appendix A bound currently costs
+`2·D_Y²·(D_Y+1)·D_X·D_YZ`.  This is sufficient for the repaired weight estimate; no claim is
+made that the extra `+1` is necessary. -/
+structure Section5Regime
+    (m n k : ℕ) (ωs : Fin n ↪ F) (Q : F[Z][X][Y]) (u₀ u₁ : Fin n → F) (δ : ℚ)
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Prop where
+  m_ge_three : 3 ≤ m
+  rate_lt_one : k + 1 < n
+  delta_nonnegative : 0 ≤ δ
+  delta_le_radius : (δ : ℝ) ≤ _root_.proximity_gap_johnson (k + 1) n m
+  D_Y_pos : 0 < Trivariate.D_Y Q
+  S_large :
+    (#(coeffs_of_close_proximity k ωs δ u₀ u₁) : ℝ) >
+      2 * Trivariate.D_Y Q ^ 2 * (Trivariate.D_Y Q + 1) *
+        D_X ((k + 1 : ℚ) / n) n m * Trivariate.D_YZ Q
+
 open Polynomial
 
 omit [DecidableEq (RatFunc F)] in
@@ -1131,12 +1155,13 @@ that set, with `degX P ≤ k` and `degZ P ≤ 1`.
 The three conjuncts are (5.9), (5.10) and (5.11) of [BCIKS20]. Note that (5.11) is *not* under the
 `∀ z ∈ S'` binder in the paper, and that (5.9) is a division of reals; both are reflected here.
 
-Still missing relative to the paper: the standing hypothesis on `#S` from Theorem 5.1 (eq. 5.3).
-Without it the statement is false whenever `coeffs_of_close_proximity = ∅` — then `S' ⊆ ∅` forces
-`#S' = 0`, while (5.9) demands `#S' > 0`. Separately, `ModifiedGuruswami` permits `D_Y Q = 0`, and
-there `2 * D_Y Q = 0` makes the right-hand side of (5.9) zero rather than the paper's `+∞`. -/
+The `Section5Regime` argument restores the standing hypotheses that §5.2 inherits from Theorem
+5.1.  It is load-bearing: nonemptiness alone neither supplies the counting inequalities used later
+nor rules out `D_Y Q = 0`.  The latter case makes real division in (5.9) evaluate to zero and makes
+the downstream factor/Hensel argument collapse. -/
 lemma exists_a_set_and_a_matching_polynomial
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hReg : Section5Regime m n k ωs Q u₀ u₁ δ h_gs) :
     ∃ S', ∃ (h_sub : S' ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁), ∃ P : F[Z][X],
      (#S' : ℝ) > #(coeffs_of_close_proximity k ωs δ u₀ u₁) / (2 * D_Y Q) ∧
      (∀ z : S', Pz (h_sub z.2) = P.map (Polynomial.evalRingHom z.1)) ∧
@@ -1144,17 +1169,19 @@ lemma exists_a_set_and_a_matching_polynomial
      Bivariate.degreeX P ≤ 1 := by
     sorry
 
-/-- The subset `S'` extracted from Proprosition 5.5 [BCIKS20]. -/
+/-- The subset `S'` extracted from Proposition 5.5 [BCIKS20]. -/
 noncomputable def matching_set (ωs : Fin n ↪ F) (δ : ℚ) (u₀ u₁ : Fin n → F)
-  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) : Finset F :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose
+  (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+  (hReg : Section5Regime m n k ωs Q u₀ u₁ δ h_gs) : Finset F :=
+  (exists_a_set_and_a_matching_polynomial k h_gs hReg (δ := δ)).choose
 
 omit [DecidableEq (RatFunc F)] in
 /-- `S'` is indeed a subset of `S` -/
 lemma matching_set_is_a_sub_of_coeffs_of_close_proximity
-    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁) :
-    matching_set k ωs δ u₀ u₁ h_gs ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
-  (exists_a_set_and_a_matching_polynomial k h_gs (δ := δ)).choose_spec.choose
+    (h_gs : ModifiedGuruswami m n k ωs Q u₀ u₁)
+    (hReg : Section5Regime m n k ωs Q u₀ u₁ δ h_gs) :
+    matching_set k ωs δ u₀ u₁ h_gs hReg ⊆ coeffs_of_close_proximity k ωs δ u₀ u₁ :=
+  (exists_a_set_and_a_matching_polynomial k h_gs hReg (δ := δ)).choose_spec.choose
 
 end BCIKS20ProximityGapSection5
 

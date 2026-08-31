@@ -46,10 +46,25 @@ variable {F : Type} [Field F] {R : F[X][X][Y]} {H : F[X][Y]}
 /-! ### Hypotheses and derivative setup -/
 
 /-- The algebraic hypotheses for the Hensel lift, after specializing
-`R` at `X = x₀`. -/
+`R` at `X = x₀`.
+
+`separable_evalX` is separability **over the fraction field** `F(Z)`, which is what [BCIKS20]
+means by "separable in `Y`": Appendix A.4 spells it out as having no double roots "not only \dots
+over the fields over which they are defined, but over any extension field as well", and §5 records
+the equivalent form "this happens if `discY Ri (x0, Y, Z) ≠ 0`".
+
+It is *not* `Polynomial.Separable` over the coefficient ring `F[Z]`.  Mathlib's `Separable f` is
+`IsCoprime f f.derivative` in the ambient ring, which over a non-field base forces the
+discriminant to be a **unit** rather than merely nonzero.  That is strictly stronger than the
+paper's hypothesis and excludes legitimate inputs: at a Claim 5.6 point
+the specialization may acquire a content factor, e.g. over `𝔽₅` the irreducible
+`R = Z·Y² + Z·Y + (Z + X)` has `discY R = Z(-3Z - 4X)`, so `x₀ = 0` is admissible, yet
+`R(0, Y, Z) = Z·(Y² + Y + 1)` shares the factor `Z` with its `Y`-derivative and is therefore not
+ring-`Separable`. -/
 structure Hypotheses (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : Prop where
   dvd_evalX : H ∣ Bivariate.evalX (Polynomial.C x₀) R
-  separable_evalX : (Bivariate.evalX (Polynomial.C x₀) R).Separable
+  separable_evalX :
+    ((Bivariate.evalX (Polynomial.C x₀) R).map (univPolyHom (F := F))).Separable
 
 private lemma evalX_natDegree_le {K : Type} [CommSemiring K] (x : K) (P : K[X][Y]) :
     (Bivariate.evalX x P).natDegree ≤ P.natDegree := by
@@ -58,11 +73,12 @@ private lemma evalX_natDegree_le {K : Type} [CommSemiring K] (x : K) (P : K[X][Y
   have hcoeff : P.coeff n = 0 := Polynomial.coeff_eq_zero_of_natDegree_lt hn
   simp [Bivariate.evalX_eq_map, Polynomial.coeff_map, hcoeff]
 
-/-- `R(x₀,·,Z)` is nonzero, since it is separable by hypothesis. -/
+/-- `R(x₀,·,Z)` is nonzero, since its image over `F(Z)` is separable by hypothesis. -/
 lemma evalX_ne_zero_of_hypotheses {x₀ : F} {R : F[X][X][Y]} {H : F[X][Y]}
     (hHyp : Hypotheses x₀ R H) :
-    Bivariate.evalX (Polynomial.C x₀) R ≠ 0 :=
-  hHyp.separable_evalX.ne_zero
+    Bivariate.evalX (Polynomial.C x₀) R ≠ 0 := by
+  intro h
+  exact hHyp.separable_evalX.ne_zero (by rw [h, Polynomial.map_zero])
 
 /-- `dH ≤ d`: the factor `H` cannot have larger `Y`-degree than `R`, since it divides
 `R(x₀,·,Z)`. -/
@@ -619,85 +635,76 @@ noncomputable def xiPreTop (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : F[X][Y] :
   let W : F[X] := H.leadingCoeff
   Polynomial.C (P.coeff (d - 1) / W) * Polynomial.X ^ (d - 1)
 
+/-- The `Z`-degree contributed by the top coefficient of the explicit representative of `ξ`.
+
+Writing `R(x₀,·,Z) = H · Q`, in the case `dH = d` this is `deg_Z (d · Q₀)`: the `Z`-degree of the
+**content** that specializing `X := x₀` leaves in front of `H`, over and above the `Λ(W)` already
+charged for `H`'s own leading coefficient.
+
+## Why the term is there
+
+[BCIKS20] Claim A.2 states `Λ(ξ) ≤ (D - 1) + (d - 2)Λ(W) ≤ (d - 1)(D - dH + 1)`, with no such
+summand.  That chain needs `Λ(W) = D - dH`.  With `Λ(T) = D + 1 - dH` fixed by the `Λ`-grading of
+Appendix A.2, passing from the `T ^ j` term of `ξ` to the `T ^ (j + 1)` term changes the estimate
+by `-1 + Λ(T) - Λ(W) ≥ 0`, with equality exactly when `Λ(W) = D - dH`.  The paper proves only
+`Λ(W) ≤ D - dH`, so the `j = d - 1` term — the one whose `W`-power is negative, freed by
+`leadingCoeff_dvd_evalX_derivative_coeff_pred` — can dominate, exceeding the stated bound by
+precisely this content degree.
+
+Over `𝔽₅` take `R = Z·Y² + Z·Y + (Z + X)`, `x₀ = 0`, `H = Y² + Y + 1`, `D = 3`.  Every hypothesis
+of A.4 holds: `R` is irreducible, `discY R = Z(-3Z - 4X)` is nonzero at `x₀ = 0` so the point is a
+legitimate Claim 5.6 choice, and `D` bounds both total `Y, Z`-degrees.  The representative of `ξ`
+is `Z + 2Z·T`, of weight `3`, against a stated bound of `2`.
+
+The same error one level down is already corrected by `numeratorShapeSharp`'s `(t - 1)(D - dY)`
+summand; see its docstring for the identical "a saved `W` is only worth its exact degree"
+accounting.  Ring-level `Polynomial.Separable` in `Hypotheses` used to mask this one, since it
+forces the content to be a unit — see that structure's docstring. -/
+noncomputable def contentWeight (x₀ : F) (R : F[X][X][Y]) (H : F[X][Y]) : ℕ :=
+  ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
+    H.leadingCoeff).natDegree
+
 omit H_irreducible H_natDegree_pos in
-/-- When `dH = d` the top coefficient `P_{d-1} / W` is a constant, so the top term contributes no
-`Z`-degree. -/
-theorem xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree (x₀ : F) (hH : 0 < H.natDegree)
-    (hHyp : Hypotheses x₀ R H)
-    (hRdeg : 2 ≤ R.natDegree) (heq : H.natDegree = R.natDegree) :
-    ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
-      H.leadingCoeff).natDegree = 0 := by
+/-- The content degree is bounded by `D - dY`.
+
+The top coefficient of `ξ` is `P_{d-1} / W` with `P_{d-1} = d · R_d` the `d`-th `Y`-coefficient of
+`R(x₀,·,Z)` scaled by `d`, so the total-degree bound on `R(x₀,·,Z)` caps its `Z`-degree at
+`D - dY`; dividing by `W` can only lower it. -/
+theorem contentWeight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
+    (hRdeg : 2 ≤ R.natDegree) {D : ℕ}
+    (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
+    contentWeight x₀ R H ≤ D - R.natDegree := by
   classical
-  set P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R with hP_def
-  rcases hHyp.dvd_evalX with ⟨Q, hQ⟩
-  have hP_ne : P ≠ 0 := by
-    rw [hP_def]
-    exact evalX_ne_zero_of_hypotheses hHyp
-  have hQ_ne : Q ≠ 0 := by
-    intro h0
-    apply hP_ne
-    rw [hP_def, hQ, h0, mul_zero]
-  have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
-  have hdegP : P.natDegree ≤ R.natDegree := by
-    rw [hP_def]
-    exact evalX_natDegree_le (Polynomial.C x₀) R
-  have hQdeg : Q.natDegree = 0 := by
-    have hmuldeg : (H * Q).natDegree = H.natDegree + Q.natDegree := by
-      exact Polynomial.natDegree_mul hH_ne hQ_ne
-    have hPdeg_eq : P.natDegree = (H * Q).natDegree := by
-      rw [hP_def, hQ]
-    omega
-  let q : F[X] := Q.coeff 0
-  have hQ_C : Q = Polynomial.C q := by
-    exact Polynomial.eq_C_of_natDegree_le_zero (p := Q) (by omega)
-  have hsepHQ : (H * Polynomial.C q).Separable := by
-    rw [← hQ_C]
-    rw [← hQ, ← hP_def]
-    exact hHyp.separable_evalX
-  have hq_unit : IsUnit q := by
-    rw [Polynomial.separable_def'] at hsepHQ
-    rcases hsepHQ with ⟨A, B, hAB⟩
-    have hderiv : (H * Polynomial.C q).derivative = H.derivative * Polynomial.C q := by
-      simp [Polynomial.derivative_mul]
-    have hfactor : (A * H + B * H.derivative) * Polynomial.C q = (1 : F[X][Y]) := by
-      calc
-        (A * H + B * H.derivative) * Polynomial.C q
-            = A * (H * Polynomial.C q) + B * (H.derivative * Polynomial.C q) := by ring
-        _ = A * (H * Polynomial.C q) + B * (H * Polynomial.C q).derivative := by rw [hderiv]
-        _ = 1 := hAB
-    have hCunit : IsUnit (Polynomial.C q : F[X][Y]) := by
-      exact IsUnit.of_mul_eq_one (A * H + B * H.derivative) (by simpa [mul_comm] using hfactor)
-    exact (Polynomial.isUnit_C.mp hCunit)
   have hsucc : R.natDegree - 1 + 1 = R.natDegree := by omega
-  have hPtop : (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree = H.leadingCoeff * q := by
-    rw [hQ, hQ_C]
-    rw [← heq]
-    simp [Polynomial.coeff_natDegree]
-  have htop_coeff :
-      (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) =
-        H.leadingCoeff * (q * (R.natDegree : F[X])) := by
-    rw [derivative_evalX_coeff, hsucc, hPtop]
-    ring
-  have hW_ne : H.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hH_ne
-  have hdiv : H.leadingCoeff ∣
-      (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) :=
-    leadingCoeff_dvd_evalX_derivative_coeff_pred hHyp
-  have hquot :
-      (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
-          H.leadingCoeff = q * (R.natDegree : F[X]) := by
-    exact (EuclideanDomain.div_eq_iff_eq_mul_of_dvd
-      ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1))
-      H.leadingCoeff (q * (R.natDegree : F[X])) hW_ne hdiv).2 htop_coeff
-  rw [hquot]
-  have hqdeg0 : q.natDegree = 0 := Polynomial.natDegree_eq_zero_of_isUnit hq_unit
-  have hndeg0 : ((R.natDegree : F[X]).natDegree = 0) := by
+  have hcoeff : (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) =
+      (Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree * ((R.natDegree : ℕ) : F[X]) := by
+    rw [derivative_evalX_coeff, hsucc]
+  have htop : ((Bivariate.evalX (Polynomial.C x₀) R).coeff R.natDegree).natDegree
+      ≤ D - R.natDegree := by
+    by_cases hmem : R.natDegree ∈ (Bivariate.evalX (Polynomial.C x₀) R).support
+    · have hle := Bivariate.coeff_totalDegree_le (Bivariate.evalX (Polynomial.C x₀) R) hmem
+      omega
+    · rw [Polynomial.notMem_support_iff.mp hmem]
+      simp
+  have hcast : (((R.natDegree : ℕ) : F[X])).natDegree = 0 := by
     rw [← Polynomial.C_eq_natCast, Polynomial.natDegree_C]
-  have hle : (q * (R.natDegree : F[X])).natDegree ≤ 0 := by
-    calc
-      (q * (R.natDegree : F[X])).natDegree ≤ q.natDegree + ((R.natDegree : F[X]).natDegree) :=
-        Polynomial.natDegree_mul_le
-      _ = 0 := by rw [hqdeg0, hndeg0, Nat.zero_add]
-  omega
+  have hcdeg : ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff
+      (R.natDegree - 1)).natDegree ≤ D - R.natDegree := by
+    rw [hcoeff]
+    refine le_trans Polynomial.natDegree_mul_le ?_
+    omega
+  unfold contentWeight
+  by_cases hc0 : (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) = 0
+  · simp [hc0]
+  · have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
+    have hW_ne : H.leadingCoeff ≠ 0 := Polynomial.leadingCoeff_ne_zero.mpr hH_ne
+    have hdvd := leadingCoeff_dvd_evalX_derivative_coeff_pred (H := H) hHyp
+    have hmul := EuclideanDomain.mul_div_cancel' hW_ne hdvd
+    have hqdvd : ((Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) /
+        H.leadingCoeff) ∣
+        (Bivariate.evalX (Polynomial.C x₀) R.derivative).coeff (R.natDegree - 1) :=
+      Dvd.intro_left _ hmul
+    exact le_trans (Polynomial.natDegree_le_of_dvd hqdvd hc0) hcdeg
 
 omit H_irreducible H_natDegree_pos in
 /-- When `dH < d` the top term must be reduced modulo `H̃` before weighing, and the reduction obeys
@@ -864,42 +871,41 @@ theorem xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree (x₀ : F) (h
           rw [hsum]
 
 omit H_irreducible H_natDegree_pos in
-/-- The `𝒪`-weight of the top term, covering both `dH = d` and `dH < d`. -/
+/-- The `𝒪`-weight of the top term, covering both `dH = d` and `dH < d`.
+
+The `contentWeight` summand is charged only because the `dH = d` case needs it; see that
+definition's docstring.  In the `dH < d` case the reduction modulo `H̃` already absorbs the top
+term and the summand is pure slack. -/
 theorem xiPreTop_weight_over_𝒪_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H)
     (hRdeg : 2 ≤ R.natDegree)
     {D : ℕ} (hD_H : Bivariate.totalDegree H ≤ D)
     (hD_Rx0 : Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R) ≤ D) :
     regularWeight hH
       (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H) D
-      ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1)) := by
+      ≤ WithBot.some ((R.natDegree - 1) * (D - H.natDegree + 1) + contentWeight x₀ R H) := by
   classical
   have hHleR : H.natDegree ≤ R.natDegree := natDegree_H_le_natDegree_R_of_hypotheses hHyp
   rcases lt_or_eq_of_le hHleR with hlt | heq
-  · exact xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt
+  · exact le_trans
+      (xiPreTop_weight_over_𝒪_le_of_H_natDegree_lt_R_natDegree x₀ hH hHyp hRdeg hD_H hD_Rx0 hlt)
+      (by exact_mod_cast Nat.le_add_right _ (contentWeight x₀ R H))
   · have hH_ne : H ≠ 0 := Polynomial.ne_zero_of_natDegree_gt hH
     have hH_in : H.natDegree ∈ H.support :=
       Polynomial.mem_support_iff.mpr (Polynomial.leadingCoeff_ne_zero.mpr hH_ne)
     have hHleD : H.natDegree ≤ D := by
       have hcoeff_total := Bivariate.coeff_totalDegree_le H hH_in
       omega
-    have hRleD : R.natDegree ≤ D := by omega
-    have hsub : D + 1 - R.natDegree = D - R.natDegree + 1 := by omega
+    have hEq : D + 1 - Bivariate.natDegreeY H = D - H.natDegree + 1 := by
+      rw [Bivariate.natDegreeY]; omega
     unfold xiPreTop
     let P : F[X][Y] := Bivariate.evalX (Polynomial.C x₀) R.derivative
     let d : ℕ := R.natDegree
     let W : F[X] := H.leadingCoeff
-    have hcoeff0 : (P.coeff (d - 1) / W).natDegree = 0 := by
-      dsimp [P, d, W]
-      exact xiPreTop_coeff_natDegree_zero_of_H_natDegree_eq_R_natDegree x₀ hH hHyp hRdeg heq
     refine le_trans (regularWeight_mk_le hD_H hH _) ?_
     refine le_trans (weight_C_mul_X_pow_le H D (P.coeff (d - 1) / W) (d - 1)) ?_
-    rw [WithBot.coe_le_coe]
-    dsimp [P, d, W]
-    rw [hcoeff0]
-    rw [Bivariate.natDegreeY]
-    rw [heq]
-    rw [hsub]
-    omega
+    rw [WithBot.coe_le_coe, hEq]
+    dsimp only [P, d, W, contentWeight]
+    exact le_rfl
 
 omit H_irreducible H_natDegree_pos in
 /-- The explicit representative of `ξ` splits as low part plus top term; this is how its weight
@@ -909,7 +915,11 @@ theorem xiPre_eq_lower_add_top (x₀ : F) (hRdeg : 2 ≤ R.natDegree) :
   simp only [xiPre, xiPreLower, xiPreTop, hRdeg, if_pos]
 
 
-/-- The weight bound `Λ(ξ) ≤ (dY - 1)·(D - dH + 1)`.
+/-- The weight bound `Λ(ξ) ≤ (dY - 1)·(D - dH + 1) + contentWeight`.
+
+[BCIKS20] Claim A.2 states this without the `contentWeight` summand; that form is false, and
+`contentWeight`'s docstring carries the counterexample and the reason the paper's chain needs
+`Λ(W) = D - dH` rather than the `Λ(W) ≤ D - dH` it proves.
 
 The explicit hypothesis `2 ≤ R.natDegree` is needed because the paper uses `W^(d-2)`, while
 Lean's natural-number exponent would otherwise totalize the low-degree cases by truncation. -/
@@ -918,7 +928,8 @@ lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H
     {D : ℕ} (hD_H : D ≥ Bivariate.totalDegree H)
     (hD_Rx0 : D ≥ Bivariate.totalDegree (Bivariate.evalX (Polynomial.C x₀) R)) :
     regularWeight hH (xi x₀ R H hHyp) D ≤
-    WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1)) := by
+    WithBot.some ((Bivariate.natDegreeY R - 1) * (D - Bivariate.natDegreeY H + 1) +
+      contentWeight x₀ R H) := by
   have hRdeg' : 2 ≤ R.natDegree := by
     simpa [Bivariate.natDegreeY] using hRdeg
   have hD_H' : Bivariate.totalDegree H ≤ D := hD_H
@@ -929,8 +940,11 @@ lemma xi_weight_le (x₀ : F) (hH : 0 < H.natDegree) (hHyp : Hypotheses x₀ R H
     (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreLower x₀ R H) : 𝒪 H)
     (Ideal.Quotient.mk (Ideal.span {monicize H}) (xiPreTop x₀ R H) : 𝒪 H)).trans ?_
   apply max_le
-  · exact (regularWeight_mk_le hD_H' hH (xiPreLower x₀ R H)).trans
-      (by simpa [Bivariate.natDegreeY] using xiPreLower_weight_le x₀ hHyp hH hRdeg' hD_H' hD_Rx0')
+  · refine (regularWeight_mk_le hD_H' hH (xiPreLower x₀ R H)).trans ?_
+    refine (xiPreLower_weight_le x₀ hHyp hH hRdeg' hD_H' hD_Rx0').trans ?_
+    rw [WithBot.coe_le_coe, show Bivariate.natDegreeY R = R.natDegree from rfl,
+      show Bivariate.natDegreeY H = H.natDegree from rfl]
+    exact Nat.le_add_right _ _
   · simpa [Bivariate.natDegreeY] using
       (xiPreTop_weight_over_𝒪_le x₀ hH hHyp hRdeg' hD_H' hD_Rx0')
 

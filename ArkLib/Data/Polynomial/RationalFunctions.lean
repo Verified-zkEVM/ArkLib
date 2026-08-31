@@ -57,8 +57,8 @@ the specialization `R(x₀, Y, Z)`.
 * `HenselNumerators.IsHenselNumeratorSequence.unique` — uniqueness of the lift, which A.4 asserts
   and [BCIKS20] §5 invokes in Claim 5.9. It makes `betaSeq` canonical rather than an arbitrary
   choice.
-* `HenselNumerators.exists_hensel_numerators_with_weight_bounds` — Claim A.2 as the paper states
-  it: existence together with both weight bounds.
+* `HenselNumerators.exists_hensel_numerators_with_weight_bounds` — the corrected Claim A.2
+  package: existence together with the content-aware sharp and conservative loose bounds.
 
 Everything in this package is proved: no `sorry`, and no axioms beyond `propext`,
 `Classical.choice` and `Quot.sound`.
@@ -72,8 +72,24 @@ Everything in this package is proved: no `sorry`, and no axioms beyond `propext`
    `Λ(ξ) = 1` against a claimed bound of `0`. Consumers must case-split on `deg_Y R`.
 2. `numeratorShapeSharp` carries a correction term relative to the inequality A.4 states, because
    a factor of `W` that the recursion *saves* is worth only `deg W` while one it *charges* costs
-   the bound `D - dH`. The loose bound `(2t+1)·d·D` is unaffected, so consumers of that bound see
-   no difference. See `numeratorShapeSharp`'s docstring for the full accounting.
+   the bound `D - dH`. See `numeratorShapeSharp`'s docstring for the full accounting.
+3. `xi_weight_le` carries a `contentWeight` summand that A.2's `Λ(ξ) ≤ (d-1)(D - dH + 1)` omits,
+   and the proved uniform loose bound is consequently `(2t+1)·(d+1)·D` rather than the paper's
+   `(2t+1)·d·D`.
+   This is the same disease as item 2 one level up: A.2's chain needs `Λ(W) = D - dH`, while the
+   paper proves only `Λ(W) ≤ D - dH`, so the term of `ξ` whose `W`-power is negative can dominate.
+   The gap is real, not an artefact of the formalization: over `𝔽₅` with
+   `R = Z·Y² + Z·Y + (Z + X)`, `x₀ = 0`, `H = Y² + Y + 1`, `D = 3` — every A.4 hypothesis holds and
+   `discY R = Z(-3Z - 4X)` makes `x₀ = 0` a legitimate Claim 5.6 point — the representative of `ξ`
+   is `Z + 2Z·T`, of weight `3` against a stated bound of `2`. Consumers of the loose bound must
+   currently use the proved `d + 1` form; this conservative weakening is not claimed to be optimal.
+   The affected §5 statements and their standing largeness assumption have been adjusted. See
+   `contentWeight`.
+
+   Ring-level `Polynomial.Separable` in `Hypotheses` used to hide this, since it forces the
+   content of the specialization to be a unit.  That hypothesis is strictly stronger than the
+   intended application and excludes legitimate instances, so `Hypotheses` now asks for
+   separability over `F(Z)`, the paper's actual meaning.
 
 ## References
 

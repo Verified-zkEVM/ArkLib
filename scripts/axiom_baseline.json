@@ -206,7 +206,7 @@
   "ProximityGap.correlatedAgreement_affine_curves",
   "ProximityGap.correlatedAgreement_affine_spaces",
   "ProximityGap.discr_of_irred_components_nonzero",
-  "ProximityGap.evalX_R_separable",
+  "ProximityGap.evalX_R_separable_over_ratFunc",
   "ProximityGap.exists_a_set_and_a_matching_polynomial",
   "ProximityGap.exists_factors_with_large_common_root_set",
   "ProximityGap.exists_points_with_large_matching_subset",
