@@ -302,7 +302,13 @@ lemma eval_solutionToQ_zero {x : F} {v} : eval x (solutionToQ 0 k v) =
 lemma solutionToE_and_Q_E_and_Q_to_a_solution :
     E_and_Q_to_a_solution e (solutionToE e k v) (solutionToQ e k v) = v := by
   ext i
-  aesop (add simp liftF) (add safe (by omega))
+  by_cases hi : i.1 < e
+  · have hne : i.1 ≠ e := Nat.ne_of_lt hi
+    simp [E_and_Q_to_a_solution, liftF, hi, hne]
+  · have hei : e ≤ i.1 := Nat.le_of_not_gt hi
+    have hsub : i.1 - e < e + k := by omega
+    have hadd : e + (i.1 - e) = i.1 := Nat.add_sub_of_le hei
+    simp [E_and_Q_to_a_solution, liftF, hi, hsub, hadd]
 
 @[simp]
 lemma solutionToQ_zero {v : Fin (2 * 0 + 0) → F} :
