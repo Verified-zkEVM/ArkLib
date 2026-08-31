@@ -38,6 +38,7 @@ def withAutoparam (n : Nat := by admit) := n
 -- sorry native_decide example axiom
 /- outer sorry /- nested admit -/ Lean.trustCompiler -/
 def message := "sorry native_decide"
+def rawMessage := r##"quoted " sorry native_decide example axiom"##
 def «sorry» := 1
 def quoted := `sorry
 def quotedNative := `native_decide

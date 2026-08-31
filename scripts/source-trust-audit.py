@@ -124,6 +124,21 @@ def mask_noncode(text: str) -> str:
             blank(i + 1)
             block_depth = 1
             i += 2
+        elif char == "r":
+            # Lean raw strings are delimited by r"...", r#"..."#, and so on.
+            cursor = i + 1
+            while cursor < len(text) and text[cursor] == "#":
+                cursor += 1
+            if cursor < len(text) and text[cursor] == '"':
+                hashes = text[i + 1 : cursor]
+                closing = '"' + hashes
+                end = text.find(closing, cursor + 1)
+                raw_end = len(text) if end < 0 else end + len(closing)
+                while i < raw_end:
+                    blank(i)
+                    i += 1
+            else:
+                i += 1
         elif char == '"':
             blank(i)
             string = True
