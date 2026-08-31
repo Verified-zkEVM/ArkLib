@@ -120,7 +120,6 @@ import ArkLib.Data.CodingTheory.PolishchukSpielman.Resultant
 import ArkLib.Data.CodingTheory.Prelims
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22
 import ArkLib.Data.CodingTheory.ProximityGap.AHIV22Support
-import ArkLib.Data.CodingTheory.ProximityGap.AffineGenerator
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.BWMatrix
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.GoodCoeffs
 import ArkLib.Data.CodingTheory.ProximityGap.BCIKS20.AffineLines.JointAgreement
@@ -159,10 +158,12 @@ import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.CapacityBounds
 import ArkLib.Data.CodingTheory.ProximityGap.GrandChallenges.UniqueDecoding
 import ArkLib.Data.CodingTheory.ProximityGap.InformationSetLowerBound
 import ArkLib.Data.CodingTheory.ProximityGap.LineDecoding
-import ArkLib.Data.CodingTheory.ProximityGap.MCAGenerator
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
 import ArkLib.Data.CodingTheory.ProximityGap.Separation
-import ArkLib.Data.CodingTheory.ProximityGap.TensorGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.AffineGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
+import ArkLib.Data.CodingTheory.ProximityGenerator.MCAGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.PolynomialGenerator
+import ArkLib.Data.CodingTheory.ProximityGenerator.TensorGenerator
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.ReedSolomon.Folded
 import ArkLib.Data.CodingTheory.ReedSolomon.Interleaved
