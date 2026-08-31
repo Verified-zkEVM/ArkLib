@@ -35,7 +35,7 @@ section Fri
 open OracleComp OracleSpec ProtocolSpec ReedSolomon Domain
 open NNReal Finset Function ProbabilityTheory
 
-variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽] [Nontrivial 𝔽]
+variable {𝔽 : Type} [NonBinaryField 𝔽] [Fintype 𝔽] [DecidableEq 𝔽]
 variable (n : ℕ)
 variable (g : 𝔽ˣ) {k : ℕ}
 variable (s : Fin (k + 1) → ℕ+) (d : ℕ+)
@@ -133,17 +133,15 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
   apply And.intro
   · intros a b h
     have h := congr_arg (fun x ↦ (x.1.1 : 𝔽)) h
-    simp only [cosetEnum', cosetEnum, finRangeTo.eq_1] at h
     have hs₀_ne : (s₀ : 𝔽) ≠ 0 := CosetFftDomainClass.ne_zero_dep s₀
     have h := mul_left_cancel₀ hs₀_ne h
     have h := FftDomain.injective h
     exact Fin.ext (by simpa using h)
   · rintro ⟨⟨y, h'⟩, h⟩
-    simp only [finRangeTo.eq_1, Subtype.mk.injEq]
     simp only [cosetG, k_le_n, ↓reduceDIte] at h
     obtain ⟨a, -, ha⟩ := Finset.mem_image.mp h
     have ha := congr_arg Subtype.val ha
-    simp only [finRangeTo.eq_1, cosetEnum] at ha
+    simp only [cosetEnum] at ha
     exact ⟨a, by aesop⟩
 
 @[instance_reducible]
@@ -170,8 +168,7 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
       apply this
       rw [sub_eq_zero] at contra
       unfold cosetEnum at contra
-      simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
-        Set.mem_ofPred_eq, mul_eq_mul_left_iff] at contra
+      simp only [finRangeTo, mul_eq_mul_left_iff] at contra
       rcases contra with contra | contra
       · have h := FftDomain.injective contra
         simp only [Fin.mk.injEq] at h
@@ -179,8 +176,7 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
         exact (symm h)
       · rcases s₀ with ⟨s₀, hs₀⟩
         subst contra
-        simp only [Nat.succ_eq_add_one, finRangeTo.eq_1, Fin.ofNat_eq_cast, Fin.val_natCast,
-          evalDomainSigma] at hs₀
+        simp only [evalDomainSigma] at hs₀
         rw [CosetFftDomainClass.mem_toFinset_iff_mem] at hs₀
         have hs₀ := CosetFftDomainClass.not_zero_mem hs₀
         simp at hs₀
@@ -216,35 +212,34 @@ noncomputable def f_succ'
     ∃ s₀ : (ω.subdomain (∑ j' ∈ finRangeTo _ (i.1), (s j').1)).toFinset,
       s₀.1 ^ (2 ^ (s i).1) = s₀'.1 := by
     rcases s₀' with ⟨s₀', hs₀'⟩
-    simp only [Fin.val_natCast]
     simp only [evalDomainSigma] at hs₀'
     rw [CosetFftDomain.mem_toFinset_iff_mem] at hs₀'
     rw [CosetFftDomainClass.mem_subdomain_of_eq_vals
       (ω := ω)
       (j := (∑ j' ∈ finRangeTo (k + 1) ↑i, (s j').1 + (s i).1))
-      (by {
+      (by
         rw [←sum_finRangeTo_add_one]
         rfl
-    })] at hs₀'
+      )] at hs₀'
     have h := CosetFftDomainClass.root_exists (ω := ω)
       (i := (∑ j' ∈ finRangeTo (k + 1) ↑i, ↑(s j')))
       (j := (s i).1)
-      (by {
+      (by
         trans (∑ j' ∈ finRangeTo _ (i.1 + 1), (s j').1)
-        rw [sum_finRangeTo_add_one]
-        rfl
-        apply (swap le_trans) k_le_n
-        apply Finset.sum_le_sum_of_subset (by simp)
-      })
+        · rw [sum_finRangeTo_add_one]
+          rfl
+        · apply (swap le_trans) k_le_n
+          apply Finset.sum_le_sum_of_subset (by simp))
       hs₀'
     rcases h with ⟨y, ⟨h1, h2⟩⟩
-    exists ⟨y, by {
+    exists ⟨y, by
       rw [CosetFftDomain.mem_toFinset_iff_mem]
       exact h1
-    }⟩
+    ⟩
   let s₀ := Classical.choose this
   (pows z _ *ᵥ VDMInv n s s₀ k_le_n *ᵥ Finset.restrict (cosetG n s s₀) f) ()
 
+omit [Fintype 𝔽] in
 /-- This theorem asserts that given an appropriate codeword,
   `f` of an appropriate Reed-Solomon code, the result of honestly folding the corresponding
   polynomial is then itself a member of the next Reed-Solomon code.
@@ -276,7 +271,6 @@ def Fₛ {ι : Type} [Fintype ι] {t : ℕ} (f : Fin t.succ → (ι → 𝔽)) :
   f 0 +ᵥ affineSpan 𝔽 (Finset.univ.image (f ∘ Fin.succ))
 
 noncomputable def correlated_agreement_density {ι : Type} [Fintype ι]
-  [Fintype 𝔽]
   (Fₛ : AffineSubspace 𝔽 (ι → 𝔽)) (V : Submodule 𝔽 (ι → 𝔽)) : ℝ :=
   haveI : Fintype Fₛ.carrier := Set.Finite.fintype (Set.toFinite _)
   haveI : Fintype V.carrier := Set.Finite.fintype (Set.toFinite _)
@@ -344,6 +338,7 @@ instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype
 noncomputable instance {l : ℕ} : IsUniformSpec ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) :=
   IsUniformSpec.ofFintypeInhabited _
 
+omit [Fintype 𝔽] in
 open ENNReal in
 noncomputable def εC
     (𝔽 : Type) [Fintype 𝔽] (n : ℕ) {k : ℕ} (s : Fin (k + 1) → ℕ+) (m : ℕ) (ρ_sqrt : ℝ≥0) : ℝ≥0∞ :=
@@ -354,7 +349,8 @@ noncomputable def εC
 
 private abbrev fullChallengeProtocol (t l : ℕ) (ω : SmoothCosetFftDomain n 𝔽) :=
   (BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
-    (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ Spec.QueryRound.pSpec l (ω := ω))
+    (Spec.pSpecFold k (ω := ω) s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+      Spec.QueryRound.pSpec l (ω := ω))
 
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ∀ j,
@@ -758,7 +754,8 @@ lemma fri_soundness
           OracleReduction.run () f ()
             ⟨
               prov,
-              (BatchedFri.Spec.batchedFRIreduction (ω := ω) (n := n) k s d domain_size_cond l t).verifier
+              (BatchedFri.Spec.batchedFRIreduction
+                (ω := ω) (n := n) k s d domain_size_cond l t).verifier
             ⟩
         ] > εC 𝔽 n s m ρ_sqrt + α ^ l) →
       Code.jointAgreement
