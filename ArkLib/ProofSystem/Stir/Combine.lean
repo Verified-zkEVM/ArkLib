@@ -457,9 +457,10 @@ lemma master_lemma
       exact WithBot.add_lt_add_right (by simp) (hv_deg i ⟨j, hj⟩)
     have hq_coincide :
       ∀ x ∈ S, q.eval (φ x) = (v i ⟨j + 1, h_fin⟩).eval (φ x) := by
-      aesop
-        (add simp [q])
-        (add safe (by ring_nf))
+      intro x hx
+      simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
+      rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
+      ring
     have hq_coincide :=
       Polynomial.eq_of_eval_eq_degree
         (q := v i ⟨j + 1, h_fin⟩)
@@ -470,7 +471,7 @@ lemma master_lemma
           aesop
         ) (Finset.image φ S) (by {
           simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ (fun x y hxy ↦ by aesop)]
+          rw [Finset.card_image_of_injective _ φ.injective]
           have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
             glorious_lemma
               (by simpa using hδLt)
@@ -490,7 +491,10 @@ lemma master_lemma
               hS_card
           norm_cast at h
         })
-        (by aesop)
+        (by
+          intro y hy
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
+          exact hq_coincide x hx)
     simp only [q] at hq_coincide
     rw [←hq_coincide] at ih
     simp only [Polynomial.degree_mul, Polynomial.degree_X, WithBot.coe_add, WithBot.coe_one] at ih
@@ -590,7 +594,7 @@ theorem combine_theorem
                 ext x
                 rw [Nat.sub_add_comm (hdegs x)]
               rw [show ∑ x, (dstar - degs x + 1) = total + 1 by
-                aesop (add simp [total_terms, block_size])]
+                simpa only [total_terms, block_size] using htotal]
               simp
             · exact lt_of_lt_of_le hProb <| le_of_eq <| by
                 congr
@@ -653,9 +657,9 @@ theorem combine_theorem
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
           _ _ _ _ hdegs _
-          hδLt _ (by aesop) (v := v) (fs := fs)
-        (by aesop)
-        (by aesop)
+          hδLt _ hS_card (v := v) (fs := fs)
+          (fun i j => (hv i j).1)
+          (fun i j x hx => (hv i j).2 x hx)
       exists S
       simp only [ge_iff_le, hS_card, true_and]
       have hf : ∀ i, 0 < block_size dstar degs i := by simp [block_size]
