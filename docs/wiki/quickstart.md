@@ -58,9 +58,10 @@ This first runs `./scripts/test-axiomsweep.sh` — the executable fixture matrix
 the native-trust floor, and the exit-code contract) — and then
 `lake exe axiomsweep --check`: a kernel-level sweep of every `ArkLib.*`
 declaration's axiom dependencies (the `#print axioms` information, library-wide) diffed
-against the committed baseline `scripts/axiom_baseline.json`. It fails only on *new*
-`sorryAx` or non-standard-axiom taint, so pre-existing gaps stay allowed. If you
-intentionally add a tagged `sorry` (or close one), refresh and commit the baseline:
+against the committed baseline `scripts/axiom_baseline.json`. It fails on *new* `sorryAx`
+or non-standard-axiom taint, while reporting closed gaps without blocking cleanup. If you
+intentionally add a tagged `sorry` (or close one), refresh and commit the reviewed baseline
+diff:
 
 ```bash
 lake exe axiomsweep --update-baseline
@@ -72,8 +73,12 @@ The baseline is an allowlist for `sorryAx` debt only. Native-compiler trust
 a zero-debt rule: no baseline edit can green it, and `--update-baseline` refuses to write
 while such taint is present — remove the dependency instead.
 
-CI runs the fixture matrix as an enforcing step and the library check report-only while
-the baseline soaks (see `ci.yml`).
+CI enforces both the fixture matrix and the library regression check (see `ci.yml`).
+It also runs `scripts/source-trust-audit.py` over every tracked `ArkLib/**/*.lean` file.
+That deterministic, comment/string-aware inventory reports source-only constructs that an
+environment sweep cannot see reliably: admissions in examples or defaults/autoparams and
+constructs in files outside the imported roots. Source inventory changes are review evidence,
+not a global `sorry` ban; the kernel sweep remains the taint verdict.
 
 ### Docstrings, blueprint, or website changes
 
@@ -171,10 +176,13 @@ python3 -m pip install leanblueprint
 - [`../../.github/workflows/ci.yml`](../../.github/workflows/ci.yml)
   runs the timing-enabled main build on PRs and pushes to `main`, measures a
   clean build, a warm rebuild, and the `./scripts/validate.sh` path, runs the
-  axiom-sweep fixture matrix (enforcing) and the library sweep report-only,
-  reuses that build for blueprint and declaration validation, and builds and
-  deploys API documentation on pushes to `main`. It then uploads timing artifacts
-  and posts a comparison report on same-repo PRs.
+  source trust inventory plus axiom-sweep fixture matrix and library regression baseline
+  (all axiom verdicts enforcing), and reuses that build for blueprint/declaration
+  validation and API-documentation generation. The PR-head job has read-only contents
+  permission; on pushes, a separate job deploys its generated static-site artifact with
+  Pages/OIDC permission. It uploads timing artifacts consumed by the trusted
+  [`../../.github/workflows/build-timing-report.yml`](../../.github/workflows/build-timing-report.yml)
+  workflow, which computes the baseline comparison and posts the PR report.
 - [`../../.github/workflows/check-imports.yml`](../../.github/workflows/check-imports.yml)
   checks that `ArkLib.lean` matches the tracked source tree.
 - [`../../.github/workflows/docs-integrity.yml`](../../.github/workflows/docs-integrity.yml)
