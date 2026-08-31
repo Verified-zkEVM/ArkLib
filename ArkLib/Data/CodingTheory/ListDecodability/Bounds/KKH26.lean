@@ -57,12 +57,6 @@ Reed--Solomon lower bounds.
   ePrint 2026/782.
 -/
 
--- The statements deliberately carry `[Fintype F]` / `[DecidableEq _]` (finite-field codes,
--- decidable filters) even where a statement's *type* does not mention them; matching the
--- idiom of `ProximityGap/Errors.lean`.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-
 open Polynomial Finset Code ProximityGap
 open scoped NNReal BigOperators
 
@@ -249,22 +243,21 @@ lemma relHammingDist_le_of_sub_eq_vanishing (domain : ι ↪ F) {d h : ℕ}
         push_cast
         field_simp
 
-omit [DecidableEq ι] in
-set_option linter.unusedVariables false in
+omit [DecidableEq ι] [Fintype F] in
 /-- Let the evaluation domain have size `n = d·h`, let `H : Finset F` with `|H| = h` be
 `d`-regularly covered by `x ↦ x^d`, let `𝒮` be a `(H, k̂, c)`-useful family with `c < k̂`, and let
-`(k̂ - c - 1)·d < k ≤ k̂·d`. Then there is a word `f` with
+`(k̂ - c - 1)·d < k`. Then there is a word `f` with
 `|List(RS[F, L, k], 1 - k̂/h, f)| ≥ |𝒮|`.
 
 The witness is `f(x) = ∑_{i=0}^{c} (-1)^i λ_i x^{(k̂-i)d}`; each `S ∈ 𝒮` contributes the
 codeword `w_S := f - V_S(x^d) = -p_S(x^d)`, which agrees with `f` on the `k̂·d` points
 `{x : x^d ∈ S}`. -/
-theorem usefulFamily_list_lower_bound (domain : ι ↪ F) {d h khat c k : ℕ}
+theorem usefulFamily_list_lower_bound (domain : ι ↪ F) [Finite F] {d h khat c k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
     {𝒮 : Finset (Finset F)} (hU : IsUsefulFamily H khat c 𝒮) (hck : c < khat)
-    (hk1 : (khat - c - 1) * d < k) (hk2 : k ≤ khat * d) :
+    (hk1 : (khat - c - 1) * d < k) :
     ∃ f : ι → F, 𝒮.card ≤
       (closeCodewordsRel (↑(ReedSolomon.code domain k) : Set (ι → F)) f
         (1 - (khat : ℝ) / (h : ℝ))).ncard := by
@@ -692,7 +685,7 @@ lemma minRelDist_sub_eq (domain : ι ↪ F) {d h khat k : ℕ}
   field_simp
   ring
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- For a Reed--Solomon code over a domain of size
 `n = d·h` projecting `d`-regularly onto `H` (`|H| = h`), with `1 ≤ k̂ < h` and
 `(k̂-1)·d < k ≤ k̂·d`:
@@ -700,7 +693,7 @@ omit [DecidableEq ι] in
 
 This instantiates the useful-family template with the `(H, k̂, 0)`-useful family of all
 `k̂`-subsets of `H`. -/
-theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) {d h khat k : ℕ}
+theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) [Finite F] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
@@ -721,7 +714,7 @@ theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) {d h khat k : ℕ}
     obtain rfl : i = 0 := Nat.le_zero.mp hi
     simp [Multiset.esymm]
   obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU hkhat
-    (by simpa using hk1) hk2
+    (by simpa using hk1)
   refine le_iSup_of_le f ?_
   have hcard𝒮 : (H.powersetCard khat).card = h.choose khat := by
     rw [Finset.card_powersetCard, hHcard]
@@ -729,7 +722,7 @@ theorem choose_le_Lambda_rs_vanilla (domain : ι ↪ F) {d h khat k : ℕ}
   rw [← (Set.toFinite _).cast_ncard_eq]
   exact_mod_cast hf
 
-omit [Fintype F] in
+omit [Fintype F] [DecidableEq F] in
 /-- Any finite set closed under negation and without `-`-fixed points splits into
 antipodal pairs: there is a transversal `P` picking exactly one of `{y, -y}` for each
 pair, so `2·|P| = |H|`. -/
@@ -820,7 +813,7 @@ omit [Fintype F] [DecidableEq F] in
 private lemma esymm_zero_eq_one (S : Finset F) : S.1.esymm 0 = 1 := by
   simp [Multiset.esymm]
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- If additionally `H = -H` with no
 `-`-fixed points (supplied for smooth domains by `Smooth.exists_pow_projection_structure`
 when `h` is even) and `k̂` is even, `(k̂-2)·d < k ≤ k̂·d`, then
@@ -828,7 +821,7 @@ when `h` is even) and `k̂` is even, `(k̂-2)·d < k ≤ k̂·d`, then
 
 This instantiates the useful-family template with the `(H, k̂, 1)`-useful family of unions of
 `k̂/2` antipodal pairs (common sum `0`). -/
-theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) {d h khat k : ℕ}
+theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) [Finite F] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
@@ -926,7 +919,7 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) {d h khat k : ℕ
       rw [esymm_one_eq_sum, hΨsum T hT]
   -- Apply the general template.
   obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
-    (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1) hk2
+    (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1)
   refine le_iSup_of_le f ?_
   -- Count: `|𝒮| = C(h/2, k̂/2)`.
   have hcard𝒮 : 𝒮.card = (h / 2).choose (khat / 2) := by
@@ -937,13 +930,13 @@ theorem choose_le_Lambda_rs_antipodal_even (domain : ι ↪ F) {d h khat k : ℕ
   rw [← (Set.toFinite _).cast_ncard_eq]
   exact_mod_cast hf
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- The odd-cardinality version of `choose_le_Lambda_rs_antipodal_even`:
 `|List(C, δ_min(C) - (k̂d - k + 1)/n)| ≥ C(h/2 - 1, (k̂-1)/2)`.
 
 This instantiates the useful-family template with the `(H, k̂, 1)`-useful family
 `{α₀} ∪ (k̂-1)/2` antipodal pairs avoiding `±α₀` (common sum `α₀`). -/
-theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) {d h khat k : ℕ}
+theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) [Finite F] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h)
     {H : Finset F} (hHcard : H.card = h)
     (hfib : ∀ y ∈ H, (Finset.univ.filter fun i => domain i ^ d = y).card = d)
@@ -973,7 +966,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) {d h khat k : ℕ}
       obtain rfl : i = 0 := Nat.le_zero.mp hi
       exact esymm_zero_eq_one _
     obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU
-      (by norm_num) (by simpa using hk0) hk2
+      (by norm_num) (by simpa using hk0)
     refine le_iSup_of_le f ?_
     have hcard𝒮 : 𝒮.card = (h / 2 - 1).choose ((1 - 1) / 2) := by
       rw [h𝒮def, Finset.card_singleton]; simp
@@ -1111,7 +1104,7 @@ theorem choose_le_Lambda_rs_antipodal_odd (domain : ι ↪ F) {d h khat k : ℕ}
       · simp only [Nat.one_ne_zero, if_false]
         rw [esymm_one_eq_sum, hΨsum T hT]
     obtain ⟨f, hf⟩ := usefulFamily_list_lower_bound domain hn hHcard hfib hU h1lt
-      (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1) hk2
+      (show (khat - 1 - 1) * d < k by rw [Nat.sub_sub]; exact hk1)
     refine le_iSup_of_le f ?_
     have hcard𝒮 : 𝒮.card = (h / 2 - 1).choose ((khat - 1) / 2) := by
       rw [h𝒮def, Finset.card_image_of_injOn hΨinj, Finset.card_powersetCard, hPcard']
@@ -1327,9 +1320,9 @@ theorem Smooth.exists_pow_projection_structure (domain : ι ↪ F)
       rw [← hHFcard]; exact le_trans (Finset.card_le_card hsub2) hcards
     omega
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_vanilla` specialized to a smooth evaluation domain. -/
-theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F)
+theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hkhat : 1 ≤ khat) (hkh : khat < h)
     (hk1 : (khat - 1) * d < k) (hk2 : k ≤ khat * d) :
@@ -1340,9 +1333,9 @@ theorem choose_le_Lambda_rs_vanilla_of_smooth (domain : ι ↪ F)
   obtain ⟨H, hHcard, -, hfib, -⟩ := Smooth.exists_pow_projection_structure domain hn
   exact choose_le_Lambda_rs_vanilla domain hn hHcard hfib hkhat hkh hk1 hk2
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_antipodal_even` specialized to a smooth domain with even `h`. -/
-theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F)
+theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
     (hkhat : 1 ≤ khat) (hkh : khat < h) (hkeven : Even khat)
@@ -1355,9 +1348,9 @@ theorem choose_le_Lambda_rs_antipodal_even_of_smooth (domain : ι ↪ F)
   exact choose_le_Lambda_rs_antipodal_even domain hn hHcard hfib (hanti hheven).1
     (hanti hheven).2 hkhat hkh hkeven hk1 hk2
 
-omit [DecidableEq ι] in
+omit [DecidableEq ι] [Fintype F] in
 /-- `choose_le_Lambda_rs_antipodal_odd` specialized to a smooth domain with even `h`. -/
-theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F)
+theorem choose_le_Lambda_rs_antipodal_odd_of_smooth (domain : ι ↪ F) [Finite F]
     [ReedSolomon.Smooth domain] {d h khat k : ℕ}
     (hn : Fintype.card ι = d * h) (hheven : Even h)
     (hkhat : 1 ≤ khat) (hkh : khat < h) (hkodd : Odd khat)
