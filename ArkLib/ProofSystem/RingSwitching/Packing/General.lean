@@ -64,11 +64,11 @@ def batchingCoreVerifier :=
 /-- The oracle verifier for the full DP24 ring-switching protocol -/
 @[reducible]
 def fullOracleVerifier :=
-  OracleVerifier.append (oSpec:=[]ₒ)
-    (V₁:=batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
-    (pSpec₁:=pSpecLargeFieldReduction κ L K P ℓ')
-    (V₂:=mlIOPCS.oracleReduction.toOracleVerifier)
-    (pSpec₂:=mlIOPCS.pSpec)
+  OracleVerifier.append (oSpec := []ₒ)
+    (V₁ := batchingCoreVerifier κ L K P ℓ ℓ' h_l mlIOPCS)
+    (pSpec₁ := pSpecLargeFieldReduction κ L K P ℓ')
+    (V₂ := mlIOPCS.oracleReduction.toOracleVerifier)
+    (pSpec₂ := mlIOPCS.pSpec)
     (Oₛ₃ := fun i : Empty => nomatch i)
 
 def batchingCoreReduction :=
@@ -158,8 +158,6 @@ def fullRbrKnowledgeError (i : (fullPspec κ L K P ℓ' mlIOPCS).ChallengeIdx) :
   (g:=mlIOPCS.rbrKnowledgeError)
   (ChallengeIdx.sumEquiv.symm i)
 
-variable [SampleableType L]
-
 /-- Round-by-round knowledge soundness for the full ring-switching oracle verifier -/
 theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
     OracleProof.rbrKnowledgeSoundness
@@ -198,7 +196,7 @@ theorem fullOracleVerifier_rbrKnowledgeSoundness [IsDomain L] :
       · sorry
     )
   convert res
-  · simp only [ChallengeIdx, Challenge, instSampleableTypeChallengeFullPspec]
+  · simp only [ChallengeIdx]
     sorry
 
 end SecurityProperties
