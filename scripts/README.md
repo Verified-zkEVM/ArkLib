@@ -11,8 +11,8 @@ This directory contains various utility scripts for the ArkLib project.
 - **`update-lib.sh`** - Update ArkLib.lean with all imports from source files
 - **`check-imports.sh`** - Reject blanket package-root imports and check whether `ArkLib.lean` is
   up to date with all tracked source modules
-- **`test-check-blanket-imports.sh`** - Focused fixtures for legacy and module-system import-header
-  spellings accepted by the blanket-import scanner
+- **`test-check-blanket-imports.sh`** - Focused fixtures for multiline/commented legacy and
+  module-system import-header spellings accepted by the blanket-import scanner
 - **`check-warning-log.py`** - Fail on scoped warning classes found in a captured build log
 - **`AxiomSweep.lean`** (`lake exe axiomsweep`) - Kernel-level axiom/`sorry` accounting with a
   committed regression baseline (`axiom_baseline.json`); see "Axiom Sweep" below

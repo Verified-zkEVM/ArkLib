@@ -1,4 +1,0 @@
-import VCVio.OracleComp.OracleSpec
-public meta import Mathlib.Tactic
-import all CompPoly.Univariate.Basic
-private import PolyFun.PFunctor.Basic Batteries.Data.List.Basic

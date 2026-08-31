@@ -19,7 +19,7 @@ done < <(git ls-files -- 'ArkLib/**/*.lean')
 
 blanket_status=0
 blanket_imports="$(
-  awk -f scripts/check-blanket-imports.awk "${tracked_lean_files[@]}"
+  python3 scripts/check-blanket-imports.py "${tracked_lean_files[@]}"
 )" || blanket_status=$?
 
 if (( blanket_status > 1 )); then
