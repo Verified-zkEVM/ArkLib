@@ -22,6 +22,8 @@ For reusable cross-cutting workflows that are not tied to one repo area, see
   correlated-agreement, and mutual-correlated-agreement APIs and their numeric types.
 - [`probability-conventions.md`](probability-conventions.md) - namespace and export conventions
   for reusable helpers in `ArkLib/Data/Probability/`.
+- [`../design/README.md`](../design/README.md) - normative typed interaction and oracle-reduction
+  architecture, current implementation status, and staged migration plan.
 - [`../kb/audits/open-problems-list-decoding-and-correlated-agreement.md`](../kb/audits/open-problems-list-decoding-and-correlated-agreement.md)
   - paper-to-ArkLib status matrix for *Open Problems in List Decoding and Correlated Agreement*.
 

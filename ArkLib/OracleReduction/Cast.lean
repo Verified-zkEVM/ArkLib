@@ -355,15 +355,15 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       (ε ∘ (ChallengeIdx.cast hn.symm (cast_symm hSpec))) := by
   -- After `subst`, the cast is definitionally trivial and the only residual difference is the
   -- `Finite` instance on each challenge type; `uniformSample`'s distribution is
-  -- instance-irrelevant, so the two games have equal `evalDist` and the bound transports.
+  -- instance-irrelevant, so the two games have equal `evalSPMF` and the bound transports.
   subst hn
   simp only [ProtocolSpec.cast_id, id_eq] at hSpec
   subst hSpec
   change @rbrKnowledgeSoundness ι oSpec StmtIn WitIn StmtOut WitOut n₁ pSpec₁ inst₂ σ init impl relIn relOut V ε
   have hhandler : ∀ (t : (oSpec + [pSpec₁.Challenge]ₒ).Domain) (s : σ),
-      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] =
-      𝒟[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[((impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) t).run s] := by
     intro t s
     cases t with
@@ -372,30 +372,30 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
       rcases t with ⟨i, q⟩
       cases q
       have huni :
-          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
-          𝒟[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
+          𝒮[@uniformSample (pSpec₁.Challenge i) (inst₁ i)] =
+          𝒮[@uniformSample (pSpec₁.Challenge i) (inst₂ i)] := by
         let : Fintype (pSpec₁.Challenge i) := Fintype.ofFinite _
-        apply evalDist_ext
+        apply evalSPMF_ext
         intro x
         exact (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₁ i) this x).trans
           (@probOutput_uniformSample (pSpec₁.Challenge i) (inst₂ i) this x).symm
       change
-        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
+        𝒮[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₁ i)) :
             StateT σ ProbComp (pSpec₁.Challenge i)).run s] =
-        𝒟[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
+        𝒮[(liftM (@uniformSample (pSpec₁.Challenge i) (inst₂ i)) :
             StateT σ ProbComp (pSpec₁.Challenge i)).run s]
       rw [OracleComp.liftM_run_StateT, OracleComp.liftM_run_StateT]
-      rw [evalDist_bind, evalDist_bind]
+      rw [evalSPMF_bind, evalSPMF_bind]
       exact congrArg
         (fun d : SPMF (pSpec₁.Challenge i) =>
-          d >>= fun x => 𝒟[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
+          d >>= fun x => 𝒮[(pure (x, s) : ProbComp (pSpec₁.Challenge i × σ))]) huni
   have hsim : ∀ {α : Type} (oa : OracleComp (oSpec + [pSpec₁.Challenge]ₒ) α) (s : σ),
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] =
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) oa).run s] := by
     intro α oa s
-    exact evalDist_simulateQ_run_congr _ _ hhandler oa s
+    exact evalSPMF_simulateQ_run_congr _ _ hhandler oa s
   unfold rbrKnowledgeSoundness at hRbrKs ⊢
   obtain ⟨WitMid, extractor, kSF, hbound⟩ := hRbrKs
   refine ⟨WitMid, extractor, kSF, ?_⟩
@@ -405,22 +405,22 @@ theorem cast_rbrKnowledgeSoundness (ε : pSpec₁.ChallengeIdx → ℝ≥0)
     let challenge ← (pSpec₁.getChallenge i).liftComp (oSpec + [pSpec₁.Challenge]ₒ)
     return (transcript, challenge, proveQueryLog)
   have hrun (s : σ) :
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] =
-      𝒟[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
+      𝒮[(simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s] := by
-    simp only [StateT.run'_eq, evalDist_map]
+    simp only [StateT.run'_eq, evalSPMF_map]
     exact congrArg (Functor.map Prod.fst) (hsim game s)
   have heval :
-      𝒟[(do
+      𝒮[(do
         let s ← init
         (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₂) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] =
-      𝒟[(do
+      𝒮[(do
         let s ← init
         (simulateQ (impl.addLift (@challengeQueryImpl n₁ pSpec₁ inst₁) :
           QueryImpl (oSpec + [pSpec₁.Challenge]ₒ) (StateT σ ProbComp)) game).run' s)] := by
-    rw [evalDist_bind, evalDist_bind]
+    rw [evalSPMF_bind, evalSPMF_bind]
     apply bind_congr
     intro s
     exact (hrun s).symm
