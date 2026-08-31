@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao, Tobias Rothmann
 -/
 
-import VCVio
 import ArkLib.OracleReduction.Security.Basic
 import ArkLib.Data.Fin.Fold
 import ArkLib.ToVCVio.EvalDist.Instances.OptionT
