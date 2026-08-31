@@ -375,13 +375,18 @@ lemma list_agreement_on_curve_implies_correlated_agreement_bound
       (l + 1 : ℝ) / S'.card <
         (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ)) := by
     rw [div_lt_div_iff₀ hcard_pos hgap_pos]
-    nlinarith
-  have hcancel : ((l + 1 : ℝ) / S'.card) * S'.card = l + 1 := by
-    field_simp
+    exact mul_lt_mul_of_pos_left (sub_lt_self _ (by positivity)) (by positivity)
   have hcommon_lower :
       (α : ℝ) - (l + 1 : ℝ) / S'.card ≤ mu_set μ common := by
-    nlinarith [hcore, hcancel]
-  exact lt_of_lt_of_le (by linarith [hfraction]) hcommon_lower
+    apply sub_le_iff_le_add.mpr
+    calc
+      (α : ℝ) = ((S'.card : ℝ) * (α : ℝ)) / S'.card := by
+        rw [mul_div_cancel_left₀ _ hcard_pos.ne']
+      _ ≤ ((S'.card : ℝ) * mu_set μ common + (l + 1 : ℝ)) / S'.card :=
+        div_le_div_of_nonneg_right hcore hcard_pos.le
+      _ = mu_set μ common + (l + 1 : ℝ) / S'.card := by
+        rw [add_div, mul_div_cancel_left₀ _ hcard_pos.ne']
+  exact lt_of_lt_of_le (sub_lt_sub_left hfraction _) hcommon_lower
 
 /-- Lemma 7.6 in [BCIKS20].
 This is the "integral-weight" strengthening of the list-agreement-on-a-curve =>
@@ -504,13 +509,13 @@ lemma sufficiently_large_list_agreement_on_curve_implies_correlated_agreement
     have hcast :
         (((M * Fintype.card ι + 1) * (l + 1) : ℕ) : ℝ) ≤ S'.card := by
       exact_mod_cast hS'_card₁
-    norm_num [Nat.cast_mul] at hcast ⊢
-    nlinarith
+    apply le_sub_iff_add_le.mpr
+    simpa only [Nat.cast_mul, Nat.cast_add, Nat.cast_one, add_mul, one_mul] using hcast
   have herror_le_grid :
       (l + 1 : ℝ) / ((S'.card : ℝ) - (l + 1 : ℝ)) ≤
         1 / ((M * Fintype.card ι : ℕ) : ℝ) := by
     rw [div_le_div_iff₀ hdenom_pos hd_pos]
-    nlinarith
+    simpa only [one_mul, mul_comm] using hdenom_large
   linarith
 
 end ListAgreementLemmas
