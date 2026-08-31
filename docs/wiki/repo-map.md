@@ -117,8 +117,27 @@ home_page/            site assets and assembled website root
     **polynomial-level bridge**: a zero-round `ReduceClaim` head (`bridgeVerifier`) reinterpreting a
     `CMlPolynomial`-level `PolyEvalStatement` as a `QuadEvalStatement` via the monomial tensor bases
     (`toQuadEvalStatement`), the pulled-back input relation `relPolyEval`, and its CWSS
-    `bridge_coordinateWiseSpecialSoundWith`. `QuadEval/Basic.lean` re-exports the reduction, its
-    soundness, and the bridge.
+    `bridge_coordinateWiseSpecialSoundWith`. That link is proved in **both** directions too: the
+    computable protocol object `bridgeReduction` (verifier `= bridgeVerifier` by
+    `bridgeReduction_verifier`), the converse relation step `mem_relIn_of_relPolyEval` — which makes
+    `relPolyEval` exactly the pull-back of `relIn` — and `bridgeReduction_perfectCompleteness`
+    (error `0`, straight from the generic `ReduceClaim.reduction_completeness`: a zero-round
+    `ReduceClaim` head draws no challenge and performs no check, so all of its content is that
+    relation equivalence). `QuadEval/Completeness` is the **honest direction**, in
+    two readings that must not be conflated. *Ball-relaxed*
+    (`quadEvalReduction_perfectCompleteness`, `…_zmodDigits` at the unsigned base-`b` digits)
+    reaches ArkLib's `relOut`, whose c6 is the symmetric ball, **not** Eq. (20)'s box `S_b` — the
+    containment
+    `paperRelOut ⊆ relOut` transports *soundness* to the paper's verifier and is useless in the
+    honest direction. *Paper-exact* (`…_paperRelOut`, `…_balancedDigits`) reaches `paperRelOut`
+    itself, using the balanced digits `balancedZmodDigitDecomposition` whose range *is* `S_b`
+    (`balancedZmodDigit_valMinAbs_mem`), from the box-carrying input relation `relInBox`;
+    `…_relOut_of_balancedDigits` then derives the relaxed conclusion, making the containment's
+    direction explicit. Shared linear content: `honestRows_of_relIn` (rows c1–c5 at every challenge
+    vector — hence error `0`). The certificate is tied to the same verifier by
+    `quadEvalPackage_verifier_eq_quadEvalReduction_verifier`.
+    `QuadEval/Basic.lean` re-exports the reduction, its soundness, its completeness,
+    and the bridge.
   - §4.3 (Hachi's sumcheck-based opening, Figures 4–7) is split into one flat folder per paper
     subprotocol figure (peers of `QuadEval/`), each file exporting a CWSS package
     in the weakest kind it honestly lives in: plain `CWSSPackage`/`GCWSSPackage` for the reshaping
@@ -136,8 +155,25 @@ home_page/            site assets and assembled website root
     generic `checkAt`, and the generic interpolation/descent engine, assembled through the
     committed-scalar shell (`k = 2d`, abstract `w̃`-commitment `LiftCom` with its short-collision
     set `LiftCom.Collision`; the weak-binding escape event is `CommittedScalar.escEvent`, so this
-    link is an `EscapeCWSSPackage`; **proven** Lemma 9 CWSS). `RingSwitch/Basic.lean` re-exports
-    the folder. (The §3 packing reduction is a distinct algebraic construction —
+    link is an `EscapeCWSSPackage`; **proven** Lemma 9 CWSS). `RingSwitch/Completeness` is the
+    honest direction of **both** links, proven and axiom-clean and now **unconditional**:
+    `rlinReduction_perfectCompleteness_image` lands in the *image* seam `relRlinImage` (the pairs
+    that came from the adapter: `p = (rlinStmt X, stack w)` with `(X, w) ∈ relOut`), and
+    `liftReduction_perfectCompleteness_image` consumes exactly that, discharging **both** halves of
+    `liftShort`: the `z`-bound from seam membership, the quotient bound from
+    `RingSwitch/QuotientNorms`. Nothing is assumed. Why the honest side uses a different relation
+    than soundness: `relRlin` forgets the matrix provenance, the value of `s.bound`, and hence the
+    protocol-level `z`-bound — and `∀ s, bound ≤ s.bound` is *false* for positive `bound`
+    (`s.bound = 0` is a legal statement), so the condition must be carried by the seam. The seam
+    refines `relRlin` (`mem_relRlin_of_mem_relRlinImage`), so no relation is weakened.
+    `RingSwitch/QuotientNorms` is the quotient bound: for `φ = X^d + 1` division *selects*
+    coefficients (`Polynomial.coeff_divByMonic_X_pow_add_one`, in
+    `ToMathlib/Polynomial/DivByXPowAddOne`), so the honest quotient inherits any coefficient bound
+    on the row sum — `μ · 2d · βM · βz`, with **no wraparound hypothesis**. For the Hachi chain the
+    only honest `βM` is `q/2` (the `R^lin` matrix carries the Ajtai key and gadget powers), so the
+    chain runs at `ρBound = q/2` (`rhoShort_half`) — see `HonestChain.lean` for what that costs.
+    `RingSwitch/Basic.lean` re-exports the folder. (The §3 packing reduction is a distinct
+    algebraic construction —
     `ProofSystem/RingSwitching/Packing/` — which does not use the committed-scalar seam; the two
     constructions share the ring-switching folder's top-level verifier skeletons and transport
     algebra.)
@@ -145,7 +181,8 @@ home_page/            site assets and assembled website root
     `H₀ ≡ 0 ∧ H_α ≡ 0` to random-point evaluations. `ZeroCheck/Constraints` is the **shared**
     encoding (Eqs. (21)–(23): the table `w̃`, `H₀`/`H_α`, the sumcheck polynomials, degree pins,
     per-round seam `nestedRoundRel`), consumed by both this zero-check and `Sumcheck/`;
-    `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge (proven, and the place
+    `ZeroCheck/Batch` is the per-row/range ⇄ `H₀/H_α ≡ 0` batching bridge (proven **both ways** —
+    `mem_relLift_of_relBatched` and `mem_relBatched_of_relLift` — and the place
     `liftShort` is *derived* from `H₀ ≡ 0` rather than assumed); `ZeroCheck/Reduction` is the
     corrected Lemma 10 (`m₀ + m₁` scalar challenge rounds with `k = 2` each, extracted through the
     nested evaluation tree of `ArkLib/Data/MvPolynomial/NestedEvaluationTree.lean` — Mathlib-level,
@@ -155,27 +192,41 @@ home_page/            site assets and assembled website root
     `ChallengeTree.LeafWitnesses`, with no runtime relation search; the weak-binding failure mode
     is the escape event `nestedZeroCheckEsc`, whose hardness target is `LiftCom.Collision`). Its
     module docstring carries the counterexample and the repair; the full analysis is
-    `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Basic.lean` re-exports the folder.
+    `docs/kb/audits/noz26-zero-check-lemma10.md`. `ZeroCheck/Completeness` is the honest direction
+    (`nestedZeroCheckReduction_perfectCompleteness`, proven and axiom-clean, with error exactly
+    zero — `relBatched` asserts the identities, so nothing about the challenge distribution is
+    used). It also carries `batchReduction_perfectCompleteness`, the batching bridge's honest
+    direction, so both links of this folder are certified in both directions.
+    `ZeroCheck/Basic.lean` re-exports the folder.
   - `Sumcheck/` (§4.3, Figure 6 / Lemma 11 + Figure 7 tail) — the sumcheck loop finishing the
     opening, **proven and axiom-clean throughout** (rows 7–9). `Sumcheck/Bridge` reshapes the
     zero-check's point claims into the initial hypercube sums; `Sumcheck/RoundPoly` is the
-    proof-side round-polynomial layer (cube split, the partial sum as a univariate, and its
-    evaluation and degree lemmas); `Sumcheck/Rounds` is the `m₀`-round guarded paired sumcheck
-    (Lemma 11, loop by recursion over `▷ᵍ`) with a computable extractor that reads the supplied
-    branch openings; `Sumcheck/FinalEval` is the guarded reveal of `w̃(a)` (Figure 7 tail)
-    landing on the short-opening evaluation claim `relWEvalClaim`, whose computable extractor
-    reads the unique leaf opening.
-    `Sumcheck/Basic.lean` re-exports the folder and records why this round layer is not built on
-    the generic `ProofSystem/Sumcheck/` modes: their rejection convention conflicts with
-    tree-based extraction, and neither carries a soundness certificate to inherit. The honest
-    provers remain skeletons, with their round message waiting on the completeness layer.
+    round-polynomial layer (cube split, the partial sum as a univariate with its evaluation and
+    degree lemmas — proof-side in Mathlib's `Polynomial`, plus the computable `computableRoundPoly`
+    the prover sends and the transfer lemma tying the two together); `Sumcheck/Rounds` is the
+    `m₀`-round guarded paired sumcheck (Lemma 11, loop by recursion over `▷ᵍ`) with a computable
+    extractor that reads the supplied branch openings; `Sumcheck/FinalEval` is the guarded reveal
+    of `w̃(a)` (Figure 7 tail) landing on the short-opening evaluation claim `relWEvalClaim`,
+    whose computable extractor reads the unique leaf opening; `Sumcheck/Completeness` is the
+    honest side — `honestComputeG`, one round's perfect completeness (axiom-clean), the `m₀`-fold
+    honest chain sharing its verifier with `roundsChain`, and
+    `bridge ▷ rounds ▷ final evaluation`. `Sumcheck/Basic.lean`
+    re-exports the folder and records why this round layer is *not* built on the generic
+    `ProofSystem/Sumcheck/` modes (their rejection convention is incompatible with tree-based
+    extraction, and neither carries a soundness certificate to inherit). Caveat on the honest
+    side: every *folded* completeness statement inherits `sorryAx` from the generic
+    `Reduction.append_completeness`, which is still `sorry`.
   - `EndPiece/` (§4.3, closing) — the **terminal link** of the opening: the prover sends the
     reduced witness `w̃` and the guarded verifier checks `relWEvalClaim` against it directly
     (recompute the commitment, evaluate the table MLE at the sumcheck point), leaving nothing to
     reduce. Escape-free — it re-reads data just sent, so no hardness assumption is consulted — and
     **`sorry`-free and axiom-clean**: extraction is the identity on the transcript message
     (`endPieceWitness`), and CWSS closes through the challenge-free bridge plus guarded
-    acceptance. `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
+    acceptance. Certified in both directions about the same verifier: `endPieceReduction` /
+    `endPieceReduction_perfectCompleteness` is the honest side, and the full reflection lemma
+    `endPieceCheck_eq_true_iff` is shared with the nonrecursive scheme's terminal verdict
+    (`Correctness.lean`), so the closing link has one decision procedure.
+    `EndPiece/Basic.lean` re-exports `EndPiece/Reduction.lean`.
   - `Recursion/` (§4.5) — the recursion adapters, **formalized but not composed into
     `Composition.lean`'s chain** (future recursion work): `PartialEval` (Eq. (24) peeling, pure
     derive-`y₀`), `ZBatchBridge` (Eqs. (25)–(26) `Z`-packing — ⚠ carries the open
@@ -197,8 +248,57 @@ home_page/            site assets and assembled website root
     seams have to match.
   - `Commitment.lean` — **Hachi as a `Commitment.Scheme`**: the eval `OracleInterface`, honest
     `keygen`/`commit` (canonical base-`b` gadget decomposition at width `δ = ⌈log_b q⌉`), and the
-    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece and
-    honest-prover/completeness layers).
+    `hachi` scheme value (its opening `Proof` is a documented `sorry` pending the end-piece, the §4.5
+    recursion tail, and the recursive honest-prover layer). It also carries the **honest-committer facts**
+    the honest chain needs: `verifiedOpening_honestOpening` (the committer's own output is a
+    `WeakBinding.VerifiedOpening` — it lives here, not in `InnerOuter/Correctness`, because
+    `InnerOuter/Security` imports that file), `vecInSb_honestInnerDecomp_balanced`, and
+    `mem_relInBox_of_honestBalanced` / `mem_relInBox_of_commitBalanced`: with
+    `balancedZmodDigitDecomposition` the honest opening satisfies paper-exact `QuadEval`'s input
+    relation `relInBox`, given Eq. (15) evaluation consistency — the second one at the actual
+    output of `commitBalanced`. **The packaged `hachi.commit` uses unsigned digits**, so the
+    paper-exact link does not apply to it (only the ball-relaxed reading does); switching the
+    scheme's committer is part of the opening work. Weak-opening validity, evaluation consistency
+    and box membership stay separate, and establishing that input relation is **not** a claim about
+    `Commitment.perfectCorrectness` (`hachi.opening` is still `sorry`, and the declared `pSpec`
+    covers only the bridge ▷ QuadEval prefix, not the full opening protocol). The **nonrecursive**
+    scheme `hachiNonrecursive` in `Correctness.lean` is where the balanced committer is packaged
+    with a complete opening and perfect correctness is actually proved.
+  - `HonestChain.lean` — the honest side's **parameter interface** and prefix composition:
+    `HonestRangeParams` (digit base `b`, Eq. (20) ball radius `γ`, zero-check range base `bZero`,
+    with the box→ball condition and the batching bridge's *honest-direction* inequalities only, plus
+    `HonestRangeParams.ofDigitBase` witnessing them at `γ = ⌊b/2⌋`), one named corollary per seam,
+    and `completePrefixReduction` — the appended bridge ▷ QuadEval ▷ `R^lin` ▷ lift ▷ batching ▷
+    zero-check protocol, whose completeness is proved **modulo the sorried generic
+    `Reduction.append_completeness` / `liftContext_completeness`** (so it is `sorryAx`-tainted, by
+    design and recorded in the baseline; the per-link theorems it composes are not). What the
+    non-short honest lift quotient costs is a *zero-check range base* of at least `q/2 + 1`, **not**
+    a large ball radius — honest completeness of the batching bridge needs only
+    `bound, ρBound ≤ bZero − 1` (it goes through `ReduceClaim.reduction_completeness_of_imp`), so
+    `γ` stays free. The collapse `γ = q/2 = bZero − 1` applies only to a *single* parameterization
+    that also serves the bridge's pull-back
+    (`HonestRangeParams.pinned_of_soundness_orientations`). The collapse is an artifact of the
+    simplified table: NOZ26 §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits
+    before committing (a decomposition the paper then hides from its notation), so the tracked fix
+    is the digit-decomposed `w̃` in `ZeroCheck/Constraints`, at which every row is honestly
+    `≤ b − 1` and nothing degenerates.
+  - `Correctness.lean` — **the complete nonrecursive opening and its perfect correctness**. The
+    chain is closed without the §4.5 recursion adapters by a `SendWitness`-style **terminal
+    reveal-and-check**: the prover sends the final `LiftedWitness`, the verifier decides the whole
+    `relWEvalClaim` predicate on it by returning `endPieceCheck` — the very check the guarded
+    `EndPiece/` verifier guards on, with reflection lemma `endPieceCheck_eq_true_iff`, both
+    axiom-clean — as its Boolean verdict (`terminalVerifier_verify_eq_endPieceCheck`). A zero-round
+    **input adapter** (`commitInputReduction`, honest lemma `mem_relPolyEval_of_relCommitInput`)
+    converts the commitment API's claim into `relPolyEval` for the balanced committer. Adapter ▷
+    chain-through-sumcheck ▷ terminal compose into `hachiNonrecursiveOpening`, packaged with
+    `commitBalanced` as the scheme `hachiNonrecursive`, and
+    `hachiNonrecursive_perfectCorrectness` proves `Commitment.perfectCorrectness` via the generic
+    bridge `Commitment.perfectCorrectness_of_opening_perfectCompleteness`
+    (`Commitments/Functional/Basic.lean`, axiom-clean, on the new
+    `OptionT.probEvent_eq_one_bind`). The three composed theorems inherit `sorryAx` from the
+    admitted generic `Reduction.append_completeness` only (recorded in the baseline); every link,
+    the adapter, the terminal step, and the bridge are individually axiom-clean. Recursion
+    (`PartialEval`/`ZBatchBridge`/`TraceHandoff`) is deliberately not involved.
 - Merkle trees live upstream in VCV-io under `VCVio/CryptoFoundations/MerkleTree/`: the vector
   commitment in `Vector/` (namespace `MerkleTree`) and the inductive tree in `Inductive/`
   (namespace `InductiveMerkleTree`).
@@ -284,6 +384,60 @@ home_page/            site assets and assembled website root
   (`eval_on_Z`, `toRatFuncPoly`, `D_Y`, `D_YZ`, and related notation) live in
   `ArkLib/Data/Polynomial/Trivariate.lean`, not in `ProximityGap/Basic.lean` or
   `ProximityGap/BCIKS20/ListDecoding/Guruswami.lean`.
+- **The reusable way into `perfectCompleteness` is `Reduction.perfectCompleteness_of_run_support`
+  in `Security/Basic.lean`**, not the commented-out `perfectCompleteness_forall_challenge` sketch
+  a few lines below it. It reduces perfect completeness to a support statement about the
+  *unsimulated* `(Reduction.run …).run`: show every element of that support is a success whose
+  output pair is in the output relation and whose two output statements agree, and the probability
+  obligation is discharged (through VCVio's
+  `OptionT.probEvent_eq_one_of_simulateQ_support_bind`, which handles the sampled initial state and
+  the oracle implementation uniformly). It applies to any reduction, of any length, over any
+  `oSpec` — no determinism or single-round hypotheses. The worked example is Hachi's zero-check
+  (`Commitments/Functional/Hachi/ZeroCheck/Completeness.lean`), where the per-link work reduces to
+  a prover-state induction, an output lemma, a run-support lemma, and the relation lemma. Before
+  hand-peeling `OptionT`/`liftM`/`simulateQ` layers for a new protocol, check whether this covers
+  it. (`Commitments/Functional/KZG/Correctness.lean` predates the lemma and still peels by hand.)
+  The second worked example is `QuadEval` (`.../Hachi/QuadEval/Completeness.lean`), which adds the
+  message-round case: there the run-support half is a closed-form computation of `Prover.run`
+  (`prover_runToRound_last` / `prover_run_eq`) rather than an induction.
+- **For a zero-round `ReduceClaim` link, do not use `perfectCompleteness_of_run_support` at all.**
+  `ReduceClaim.reduction_completeness` (`ProofSystem/Component/ReduceClaim.lean`, proven) discharges
+  the whole execution layer; its `hRel` is an **iff**
+  (`(stmtIn, witIn) ∈ relIn ↔ (mapStmt stmtIn, mapWit stmtIn witIn) ∈ relOut`), so the only real
+  obligation is the converse of the pull-back the soundness side already needed. Three links are
+  done this way — `bridgeReduction_perfectCompleteness` (`QuadEval/Bridge.lean`),
+  `rlinReduction_perfectCompleteness` (`RingSwitch/Completeness.lean`) and
+  `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`) — each in a few lines once
+  the relation converse exists. Budget zero-round heads in hours, not days.
+- **The two-round commit-then-challenge execution is owned generically** by
+  `CoordinateWise.CommittedScalar.reduction_perfectCompleteness`
+  (`Security/CoordinateWiseSpecialSoundness/CommittedScalar.lean`): supply `computeW` plus the two
+  facts `rel K checkAt` asks for that are not definitional — the challenge-local check at *every*
+  challenge, and admissibility of the computed opening — and the run/probability layer is free.
+  Commitment consistency is definitional, because the prover shell derives its round-0 message from
+  `computeW`. Consumers: the generic ring-switching lift and, through it, Hachi's Figure 4. Any new
+  link of that shape (`pSpecScalar`) should go through it rather than repeating `QuadEval`'s
+  hand-unfolding.
+- **Unfolding a fixed-length `Prover.runToRound` by hand: ascribe the round indices, do not rewrite
+  them.** `Prover.runToRound_succ` is stated at `i.succ` with the recursive call at `i.castSucc`,
+  but a concrete run starts from `Fin.last n`, and `Fin.last 2`, `Fin.succ 1`, `Fin.castSucc 1` and
+  `(1 : Fin 3)` are equal only after `Fin.val`/`Nat.mod` arithmetic. Consequences, all hit while
+  proving `QuadEval` completeness:
+  - `rw` on the index itself (`show Fin.last 2 = Fin.succ 1 from rfl`) fails with "motive is not
+    type correct", and `rw [Prover.runToRound_succ 1]` fails to match `runToRound (Fin.last 2)`.
+  - The working shape is to *state* each unfolding as a `have` at the index that literally occurs
+    (`Fin.last 2`, then `(1 : Fin 2).castSucc`, then `(0 : Fin 2).castSucc`) and prove it by the
+    framework lemma — the `have`'s type ascription is checked at full transparency, so the indices
+    reconcile there instead of inside `rw`. Chain them with `Eq.trans` / `rw`.
+  - At index `castSucc 0` the `Unique (Transcript 0 pSpec)` instance is not found; write the empty
+    transcript as `fun i => Fin.elim0 i` instead of `default`.
+  - Pass the direction proof (`pSpec.dir 1 = .V_to_P`) as a *named hypothesis*, not `rfl`:
+    `⟨1, rfl⟩` makes the surrounding term ill-typed at `instances` transparency, which silently
+    stops both `rw` matching and `simp` congruence.
+  - Once the rounds are unfolded, `simp [monad_norm, liftM, monadLift, MonadLift.monadLift]`
+    followed by `rfl` closes the monadic bookkeeping; `FullTranscript.mk2` and
+    `FullTranscript.mk2_eq_snoc_snoc` are the bridge between the `Transcript.concat` chain the
+    prover builds and the two transcript slots the verifier reads.
 - Transcript-tree infrastructure for special-soundness-style notions lives in
   `Security/TranscriptTree/`: `Basic` defines `ChallengeTree`, `LeafPath`,
   `ChallengeTreeShape`, `ChallengeTree.IsStructured`, `ChallengeTree.IsAccepting`,

@@ -47,6 +47,18 @@ import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.NoChalleng
   (`endPieceVerifierGuardedForm : Verifier.GuardedForm`), so composition can run the verdict map
   at the seam without `Classical.choice` — every field of `endPiece` is executable.
 
+  ## The honest direction
+
+  The link is certified in **both** directions about the same verifier: `endPieceReduction` pairs
+  the honest reveal (`endPieceProver`) with `endPieceVerifier` — the package's verifier on the
+  nose (`endPieceReduction_verifier`) — and `endPieceReduction_perfectCompleteness` (error `0`,
+  axiom-clean) shows a witness in `relWEvalClaim` passes the guard, by the full reflection lemma
+  `endPieceCheck_eq_true_iff`. That reflection lemma also serves the *nonrecursive scheme*
+  (`Correctness.lean`): the `Commitment.Scheme` interface fixes the `Proof` shape to a `Bool`
+  verdict, so the scheme's terminal verifier cannot be the guarded one — instead it **returns**
+  `endPieceCheck` as its verdict, the very check guarded here
+  (`terminalVerifier_verify_eq_endPieceCheck`), so the two shapes share one decision procedure.
+
   ## The shortness conjunct
 
   `relWEvalClaim` carries three conjuncts: the commitment opens, the opening is **short**
@@ -209,6 +221,142 @@ theorem endPiece_coordinateWiseSpecialSoundWith
   simp only [endPieceCheck, Bool.and_eq_true, beq_iff_eq] at hcheck
   exact ⟨hcheck.1.1, (liftShortCheck_eq_true_iff Φ bound ρBound _).mp hcheck.1.2, hcheck.2⟩
 
+/-! ## The honest direction -/
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Full reflection**: `endPieceCheck` decides exactly `relWEvalClaim`. This is the *single*
+decision procedure of the terminal claim: the guarded soundness verifier (`endPieceVerifier`)
+guards on it, and the nonrecursive scheme's verdict-returning terminal verifier
+(`Correctness.lean`) returns it — so the two security directions of the closing link cannot
+drift onto different checks. -/
+theorem endPieceCheck_eq_true_iff
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F)
+    (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n) :
+    endPieceCheck Φ m₀ bound ρBound b K φF stmt w = true ↔
+      (stmt, w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF := by
+  rw [endPieceCheck, Bool.and_eq_true, Bool.and_eq_true, beq_iff_eq, beq_iff_eq,
+    liftShortCheck_eq_true_iff]
+  constructor
+  · rintro ⟨⟨hcom, hshort⟩, hval⟩
+    exact ⟨hcom, hshort, hval⟩
+  · rintro ⟨hcom, hshort, hval⟩
+    exact ⟨⟨hcom, hshort⟩, hval⟩
+
+/-- The end-piece honest prover: sends the witness `w̃` in the clear. Nothing remains to compute —
+the output statement and witness are trivial. -/
+def endPieceProver {TCom : Type} :
+    Prover oSpec (WEvalStatement TCom F m₀) (LiftedWitness Φ μ n) Unit Unit
+      (pSpecEndPiece (LiftedWitness Φ μ n)) where
+  PrvState
+    | 0 => LiftedWitness Φ μ n
+    | 1 => LiftedWitness Φ μ n
+  input := fun st => st.2
+  sendMessage
+    | ⟨0, _⟩ => fun w => pure (w, w)
+  receiveChallenge
+    | ⟨0, h⟩ => nomatch h
+  output := fun _ => pure ((), ())
+
+/-- **The end-piece as a protocol object**: the honest reveal paired with the guarded verifier.
+The verifier field is `endPiece`'s on the nose (`endPieceReduction_verifier`), so the two security
+directions of the closing link speak about the same object. Perfect completeness is
+`endPieceReduction_perfectCompleteness`. -/
+def endPieceReduction (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] (φF : ZMod q →+* F) :
+    Reduction oSpec (WEvalStatement K.TCom F m₀) (LiftedWitness Φ μ n) Unit Unit
+      (pSpecEndPiece (LiftedWitness Φ μ n)) where
+  prover := endPieceProver Φ m₀
+  verifier := endPieceVerifier Φ m₀ bound ρBound b K φF
+
+set_option linter.unusedSectionVars false in
+omit [NeZero q] [IsCyclotomic Φ] in
+-- v4.33 respects transparency when matching implicit arguments: `rw` no longer unifies
+-- `Prover.processRound 0` against a target whose transcript is already reduced to `Fin 0`.
+set_option backward.isDefEq.respectTransparency false in
+/-- **The honest prover's run, characterized**: one message round and no challenge, so the run is
+a single `pure` whose only transcript slot holds the witness, with trivial outputs. Proved by the
+framework round-unfolding at the index that literally occurs, as in
+`finalEvalProver_run_support`. -/
+lemma endPieceProver_run_support {TCom : Type}
+    (stmt : WEvalStatement TCom F m₀) (wit : LiftedWitness Φ μ n) :
+    ∀ x ∈ support ((endPieceProver (oSpec := oSpec) (TCom := TCom) Φ m₀).run stmt wit),
+      x.1 0 = wit ∧ x.2 = ((), ()) := by
+  have step1 : (endPieceProver (oSpec := oSpec) (TCom := TCom) Φ m₀).runToRound
+        (Fin.last 1) stmt wit
+      = (endPieceProver (oSpec := oSpec) (TCom := TCom) Φ m₀).processRound (0 : Fin 1)
+          ((endPieceProver (oSpec := oSpec) (TCom := TCom) Φ m₀).runToRound
+            ((0 : Fin 1).castSucc) stmt wit) :=
+    Prover.runToRound_succ (0 : Fin 1) stmt wit _
+  have step0 : (endPieceProver (oSpec := oSpec) (TCom := TCom) Φ m₀).runToRound
+        ((0 : Fin 1).castSucc) stmt wit
+      = pure ((fun i => Fin.elim0 i), wit) := rfl
+  intro x hx
+  unfold Prover.run at hx
+  rw [step1, step0, Prover.processRound_of_dir_eq_P_to_V (0 : Fin 1) rfl] at hx
+  simp only [endPieceProver, Fin.isValue, Fin.vcons_of_one] at hx
+  subst hx
+  exact ⟨rfl, rfl⟩
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Honest-run characterization.** Every outcome of an honest run is the single success with
+the witness in the transcript and trivial outputs. Failure is excluded because a witness in
+`relWEvalClaim` passes `endPieceCheck` (`endPieceCheck_eq_true_iff`), the guard of the verifier. -/
+lemma endPieceReduction_run_support
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F)
+    (stmt : WEvalStatement K.TCom F m₀) (w : LiftedWitness Φ μ n)
+    (h : (stmt, w) ∈ relWEvalClaim Φ m₀ bound ρBound b K φF) :
+    ∀ x ∈ support ((endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b
+        K φF).run stmt w).run,
+      ∃ tr, x = some ((tr, (), ()), ()) := by
+  have hg : endPieceCheck Φ m₀ bound ρBound b K φF stmt w = true :=
+    (endPieceCheck_eq_true_iff Φ m₀ bound ρBound b K φF stmt w).mpr h
+  intro x hx
+  unfold Reduction.run at hx
+  simp only [OptionT.run_bind, Option.elimM] at hx
+  rw [mem_support_bind_iff] at hx
+  obtain ⟨prOpt, hpr, hx⟩ := hx
+  rw [show ((liftM (Prover.run stmt w
+        (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover) :
+        OptionT (OracleComp _) _)).run
+      = (Prover.run stmt w
+          (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover)
+        >>= fun a => pure (some a) from rfl] at hpr
+  rw [mem_support_bind_iff] at hpr
+  obtain ⟨pr, hpr, hprOpt⟩ := hpr
+  rw [mem_support_pure_iff] at hprOpt
+  subst hprOpt
+  rw [show (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).prover
+      = endPieceProver (TCom := K.TCom) Φ m₀ from rfl] at hpr
+  obtain ⟨hmsg, hout⟩ :=
+    endPieceProver_run_support (oSpec := oSpec) (TCom := K.TCom) Φ m₀ stmt w pr hpr
+  refine ⟨pr.1, ?_⟩
+  simp only [Option.elim_some, endPieceReduction, endPieceVerifier, Verifier.run, hmsg, hg,
+    if_true] at hx
+  simp only [OptionT.run_pure, liftM_pure, ProgrammingPolicy.empty_apply, pure_bind,
+    Option.elim_some, Option.getM_some, support_pure, Set.mem_singleton_iff] at hx
+  have hpr : pr = (pr.1, (), ()) := Prod.ext rfl hout
+  rw [hx, hpr]
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- **Perfect completeness of the end-piece**, error exactly `0`: a witness in `relWEvalClaim`
+passes the guard by the reflection lemma, and the trivial output relation asks nothing more.
+Together with `endPiece_coordinateWiseSpecialSoundWith` — stated about the same verifier
+(`endPieceReduction_verifier`) — the closing link is certified in both directions. -/
+theorem endPieceReduction_perfectCompleteness
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
+    (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b
+        K φF).perfectCompleteness init impl
+      (relWEvalClaim Φ m₀ bound ρBound b K φF)
+      (Set.univ : Set (Unit × Unit)) := by
+  apply Reduction.perfectCompleteness_of_run_support
+  intro stmt w h x hx
+  obtain ⟨tr, hx'⟩ := endPieceReduction_run_support Φ m₀ bound ρBound b K φF stmt w h x hx
+  exact ⟨_, hx', Set.mem_univ _, rfl⟩
+
 /-- The end-piece packaged for composition: a guarded one-message verifier over the empty
 challenge structure, taking `relWEvalClaim` to the trivial claim. No escape event — the check reads
 only what the prover just sent, so no hardness assumption is involved. Every field is executable:
@@ -228,6 +376,18 @@ def endPiece (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
   isGuarded := endPieceVerifierGuardedForm Φ m₀ bound ρBound b K φF
   extractor := endPieceExtractor Φ m₀ bound ρBound K
   isCWSS := endPiece_coordinateWiseSpecialSoundWith Φ m₀ bound ρBound b init impl K φF
+
+omit [NeZero q] [IsCyclotomic Φ] in
+/-- The end-piece's protocol object and its soundness package share a verifier. Holds by
+`rfl`. -/
+@[simp] theorem endPieceReduction_verifier (init : ProbComp σ)
+    (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    [BEq K.TCom] [LawfulBEq K.TCom] (φF : ZMod q →+* F) :
+    (endPieceReduction (oSpec := oSpec) Φ m₀ bound ρBound b K φF).verifier
+      = (endPiece Φ m₀ bound ρBound b init impl K φF).verifier :=
+  rfl
+
 
 end Protocol
 

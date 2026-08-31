@@ -395,11 +395,9 @@ def nestedZeroCheckVerifierPureForm {TCom : Type} :
 input statement/witness together with the scalar prefix received so far. The stage is generic in
 the witness type — it only transports whatever the commitment's openings are.
 
-Nothing in this development references it: `CWSSPackage` bundles only the verifier, so the honest
-provers of every link (`liftProver`, `roundProver`, …) are likewise unconsumed. It is kept for the
-completeness direction, which for this link is `eval 0 = 0` plus the agreement of this prover's
-`castAdd`/`natAdd` split with `nestedZeroCheckVerifier`'s, and is still missing (see the audit
-page). -/
+It is consumed by `nestedZeroCheckReduction`, the protocol object this link's completeness is
+stated about; the `castAdd`/`natAdd` split below is deliberately the same one
+`nestedZeroCheckVerifier` performs on the transcript, which is what makes the two agree. -/
 def nestedZeroCheckProver {TCom Wit : Type} :
     Prover oSpec (LiftStatement Φ TCom F n μ) Wit
       (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
@@ -413,6 +411,20 @@ def nestedZeroCheckProver {TCom Wit : Type} :
       (fun i => challenges (Fin.castAdd m₁ i))
       (fun i => challenges (Fin.natAdd m₀ i)), wit)
 
+/-- The Figure-5 zero-check **protocol**: the honest prover paired with the verifier.
+
+This is the primary object of the link, and it is deliberately computable — it is what an honest
+execution runs, what completeness is stated about (`ZeroCheck/Completeness.lean`), and what the
+extraction rail consumes. The soundness certificate `nestedZeroCheckPackage` is a statement
+*about* it: that package's `verifier` field is defined as this reduction's verifier, so the two
+security directions cannot drift apart onto different verifiers. The certificate stays
+`noncomputable` because it carries an extractor; nothing of that leaks into the protocol. -/
+def nestedZeroCheckReduction {TCom Wit : Type} :
+    Reduction oSpec (LiftStatement Φ TCom F n μ) Wit
+      (NestedZeroCheckStatement Φ TCom F n μ m₀ m₁) Wit
+      (pSpecNestedZeroCheck F m₀ m₁) where
+  prover := nestedZeroCheckProver Φ m₀ m₁
+  verifier := nestedZeroCheckVerifier Φ m₀ m₁
 
 /-- Figure-5 point relation: an opening of `t` at which the two computable batching polynomials
 vanish at the direct points carried by the statement.
@@ -622,7 +634,11 @@ theorem nestedZeroCheck_coordinateWiseSpecialSoundWithEscape
 
 /-- The nested scalar-round zero-check bundled for sequential composition, in the **escape-aware**
 corner of the package lattice: the verifier is `pure (…)` and never fails, so it is a valid left
-factor, while the weak-binding case needs the `esc` field. -/
+factor, while the weak-binding case needs the `esc` field.
+
+The verifier is taken from `nestedZeroCheckReduction` rather than restated, so this certificate is
+by construction a statement about the same protocol whose completeness is proved in
+`ZeroCheck/Completeness.lean`. -/
 def nestedZeroCheckPackage (init : ProbComp σ)
     (impl : QueryImpl oSpec (StateT σ ProbComp))
     (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
@@ -631,8 +647,8 @@ def nestedZeroCheckPackage (init : ProbComp σ)
       (LiftStatement Φ K.TCom F n μ) (LiftedWitness Φ μ n)
       (NestedZeroCheckStatement Φ K.TCom F n μ m₀ m₁) (LiftedWitness Φ μ n)
       (pSpecNestedZeroCheck F m₀ m₁) where
-  verifier := nestedZeroCheckVerifier (oSpec := oSpec) (n := n) (μ := μ) (F := F)
-    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) Φ
+  verifier := (nestedZeroCheckReduction (oSpec := oSpec) (n := n) (μ := μ) (F := F)
+    (m₀ := m₀) (m₁ := m₁) (TCom := K.TCom) (Wit := LiftedWitness Φ μ n) Φ).verifier
   struct := nestedZeroCheckStructure F m₀ m₁
   relIn := relBatched Φ m₀ m₁ bound ρBound K φF b
   relOut := relNestedZeroCheck Φ m₀ m₁ bound ρBound K φF b

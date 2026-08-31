@@ -326,6 +326,19 @@ def rlinStmt
           (Fin.append (fun _ : Fin 1 => (0 : Rq Φ)) (fun _ : Fin innerRows => (0 : Rq Φ)))))
   bound := γ
 
+omit [NeZero q] in
+/-- The assembled statement's public bound is the range parameter `γ`. This is what lets the honest
+chain's seam relation `relRlinImage` pin the lift's `sideCond` and its `z`-bound to `γ`. Holds by
+`rfl`. -/
+@[simp] theorem rlinStmt_bound
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+          dRows ×
+        CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω)) :
+    (rlinStmt (zDigits := zDigits) Φ pp base ω γ X).bound = γ :=
+  rfl
+
 /-! ## The block-row equivalence -/
 
 omit [NeZero q] in
@@ -471,6 +484,113 @@ theorem mem_relRlin_of_relOut
   have hun : (X, unstack Φ (stack Φ w)) ∈ relOut (zDigits := zDigits) Φ pp base ω γ := by
     rw [unstack_stack]; exact h
   exact (rlin_iff_relOut Φ pp base ω γ X (stack Φ w)).mpr hun
+
+/-! ## The honest seam: the image of the adapter -/
+
+/-- **`relRlinImage` — the honest chain's seam relation at the `R^lin` interface**: the *image* of
+the Eq. (20) output relation under the adapter's two maps. A pair belongs to it exactly when it
+*came from* an Eq.-(20)-valid transcript, `p = (rlinStmt X, stack w)` with `(X, w) ∈ relOut`.
+
+**Why the honest side needs this and soundness does not.** The two directions of a link consume
+relations with opposite variance: soundness must be stated at the *broadest* input a malicious
+prover could produce (here `relRlin`, which constrains only `M ζ = y` and `‖ζ‖∞ ≤ s.bound`), while
+completeness may — and often must — assume everything the honest predecessor actually established.
+`relRlin` deliberately forgets three things the lift's honest prover needs:
+
+* the *provenance* of the matrix, hence any bound on its coefficients (an arbitrary
+  `RlinStatement` has an arbitrary `M`, so nothing can be said about the honest quotient);
+* the value of the public bound (`s.bound` is a free field, so `bound ≤ s.bound` is not derivable
+  and, quantified over all statements, is false for positive `bound` — `s.bound = 0` is legal);
+* consequently, the *protocol-level* norm bound on `z`: `relRlin` gives `‖ζ‖∞ ≤ s.bound`, which
+  says nothing about the lift's own `bound` until `s.bound` is known.
+
+Taking the image fixes all three at once, and it is the strongest honest seam available: it is
+exactly what the adapter proves (`rlinReduction_perfectCompleteness_image`). Recorded consequences:
+`mem_relRlin_of_mem_relRlinImage`, `bound_eq_of_mem_relRlinImage`,
+`vecLInftyNorm_le_of_mem_relRlinImage`, `matVecMul_eq_of_mem_relRlinImage`.
+
+`relRlinImage ⊆ relRlin` (first lemma), so nothing about the soundness abstraction is weakened. -/
+def relRlinImage
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ) :
+    Set (RlinStatement Φ (rlinRows innerRows outerRows dRows)
+          (rlinCols innerRows messageDigits innerDigits zDigits m r) ×
+        ArkLib.Lattices.PolyVec (Rq Φ)
+          (rlinCols innerRows messageDigits innerDigits zDigits m r)) :=
+  { p | ∃ (X : QuadEvalStatement Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+              dRows ×
+            CarrierCom Φ dRows × (Fin (2 ^ r) → ShortChallenge Φ ω))
+          (w : QuadEvalResponse Φ innerRows (2 ^ m) messageDigits (2 ^ r) innerDigits zDigits),
+        (X, w) ∈ relOut (zDigits := zDigits) Φ pp base ω γ ∧
+          p = (rlinStmt (zDigits := zDigits) Φ pp base ω γ X, stack Φ w) }
+
+omit [NeZero q] in
+/-- The honest seam refines the soundness relation: `relRlinImage ⊆ relRlin`. Immediate from the
+block-row pull-back `mem_relRlin_of_relOut`, and the reason the two directions of the lift can be
+stated around the same protocol object without any relation being weakened. -/
+theorem mem_relRlin_of_mem_relRlinImage
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    {p : RlinStatement Φ (rlinRows innerRows outerRows dRows)
+          (rlinCols innerRows messageDigits innerDigits zDigits m r) ×
+        ArkLib.Lattices.PolyVec (Rq Φ)
+          (rlinCols innerRows messageDigits innerDigits zDigits m r)}
+    (h : p ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ) :
+    p ∈ relRlin Φ := by
+  obtain ⟨X, w, hrel, rfl⟩ := h
+  exact mem_relRlin_of_relOut Φ pp base ω γ X w hrel
+
+omit [NeZero q] in
+/-- On the honest seam the statement's public bound **is** the range parameter `γ`: the assembled
+statement is `rlinStmt`, whose `bound` field is `γ` (`rlinStmt_bound`). This is what turns
+`relRlin`'s `‖ζ‖∞ ≤ s.bound` into a *protocol-level* bound.
+
+Stated with the statement and witness as separate arguments (rather than an implicit pair) so that
+consumers never force the unifier to solve `?p.1 =?= s` at the chain's large dimension
+expressions. -/
+theorem bound_eq_of_mem_relRlinImage
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    (s : RlinStatement Φ (rlinRows innerRows outerRows dRows)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (z : ArkLib.Lattices.PolyVec (Rq Φ)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (h : (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ) :
+    s.bound = γ := by
+  obtain ⟨X, w, -, heq⟩ := h
+  rw [(Prod.mk.injEq _ _ _ _).mp heq |>.1]
+  exact rlinStmt_bound Φ pp base ω γ X
+
+omit [NeZero q] in
+/-- **The `z`-bound the lift needs**, read off the seam: the witness is `ℓ∞`-bounded by the
+Eq. (20) range parameter `γ`. Via `relRlin` at the seam's own public bound
+(`bound_eq_of_mem_relRlinImage`). -/
+theorem vecLInftyNorm_le_of_mem_relRlinImage
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    (s : RlinStatement Φ (rlinRows innerRows outerRows dRows)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (z : ArkLib.Lattices.PolyVec (Rq Φ)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (h : (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ) :
+    vecLInftyNorm Φ z ≤ γ := by
+  have hb : s.bound = γ := bound_eq_of_mem_relRlinImage Φ pp base ω γ s z h
+  have hz : vecLInftyNorm Φ z ≤ s.bound :=
+    (mem_relRlin_of_mem_relRlinImage Φ pp base ω γ h).2
+  rwa [hb] at hz
+
+omit [NeZero q] in
+/-- The linear system holds on the seam (the lift's `hrow`). -/
+theorem matVecMul_eq_of_mem_relRlinImage
+    (pp : Hachi.PublicParamsD Φ innerRows (2 ^ m) messageDigits outerRows (2 ^ r) innerDigits
+      dRows) (base : ZMod q) (ω γ : ℕ)
+    (s : RlinStatement Φ (rlinRows innerRows outerRows dRows)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (z : ArkLib.Lattices.PolyVec (Rq Φ)
+      (rlinCols innerRows messageDigits innerDigits zDigits m r))
+    (h : (s, z) ∈ relRlinImage (zDigits := zDigits) Φ pp base ω γ) :
+    s.M *ᵥ z = s.yvec :=
+  (mem_relRlin_of_mem_relRlinImage Φ pp base ω γ h).1
 
 /-! ## The package -/
 

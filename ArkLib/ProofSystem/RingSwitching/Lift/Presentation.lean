@@ -285,30 +285,54 @@ theorem mulVec_eq_of_rowSum_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
   convert h3 using 1
   ring
 
-/-- **Quotient witness** (the `⇒`/honest direction): a row equation over `S` lifts to an
-`R[X]` identity with an explicit quotient polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ` of degree
-`≤ d − 2`. -/
-theorem exists_rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
+/-- The **honest quotient** of row `i`: the explicit polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ`
+that witnesses the lift of the row equation. The honest prover of a quotient-evaluation switch
+computes exactly this (it is the `ρ` produced by `exists_rowSum_eq_of_mulVec_eq`, named so that a
+prover can be *defined* rather than only shown to exist), and its two properties are
+`natDegree_quotient_le` (unconditional) and `rowSum_eq_of_mulVec_eq` (at a valid row). -/
+noncomputable def quotient (M : PolyMatrix S n μ) (z : PolyVec S μ) (y : PolyVec S n)
+    (i : Fin n) : Polynomial R :=
+  (P.rowSum M z i - (P.rep (y i)).toPoly) /ₘ P.modulus.toPoly
+
+/-- Degree bound of the honest quotient: `≤ d − 2`, and note this holds **unconditionally** —
+the row equation is not needed, only the structural degree bounds of the row sum and of `rep`.
+That is what lets a prover carry the `LiftedWitness` degree field for any input. -/
+theorem natDegree_quotient_le (M : PolyMatrix S n μ) (z : PolyVec S μ) (y : PolyVec S n)
+    (i : Fin n) : (P.quotient M z y i).natDegree ≤ P.modulus.toPoly.natDegree - 2 := by
+  rw [quotient, Polynomial.natDegree_divByMonic _ (IsPresentation.monic (P := P))]
+  have h1 := P.natDegree_rowSum_le M z i
+  have h2 := IsPresentation.natDegree_rep_lt (P := P) (y i)
+  have h3 := Polynomial.natDegree_sub_le (P.rowSum M z i) ((P.rep (y i)).toPoly)
+  have h4 := P.natDegree_modulus_pos
+  omega
+
+/-- **Quotient witness, explicit form** (the `⇒`/honest direction): at a valid row the lift
+identity holds with the honest quotient. This is the fact an honest prover's `checkAt` obligation
+reduces to, after applying `evalAt`. -/
+theorem rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
     {y : PolyVec S n} {i : Fin n} (h : (M *ᵥ z) i = y i) :
-    ∃ ρ : Polynomial R, ρ.natDegree ≤ P.modulus.toPoly.natDegree - 2 ∧
-      P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * ρ := by
+    P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * P.quotient M z y i := by
   have hdvd : P.modulus.toPoly ∣ P.rowSum M z i - (P.rep (y i)).toPoly := by
     have h1 := P.modulus_dvd_rep_mulVec_sub_rowSum M z i
     rw [h] at h1
     simpa [neg_sub] using dvd_neg.mpr h1
-  refine ⟨(P.rowSum M z i - (P.rep (y i)).toPoly) /ₘ P.modulus.toPoly, ?_, ?_⟩
-  · rw [Polynomial.natDegree_divByMonic _ (IsPresentation.monic (P := P))]
-    have h1 := P.natDegree_rowSum_le M z i
-    have h2 := IsPresentation.natDegree_rep_lt (P := P) (y i)
-    have h3 := Polynomial.natDegree_sub_le (P.rowSum M z i) ((P.rep (y i)).toPoly)
-    have h4 := P.natDegree_modulus_pos
-    omega
-  · have hmod : (P.rowSum M z i - (P.rep (y i)).toPoly) %ₘ P.modulus.toPoly = 0 :=
-      (Polynomial.modByMonic_eq_zero_iff_dvd (IsPresentation.monic (P := P))).mpr hdvd
-    have hdiv := Polynomial.modByMonic_add_div
-      (P.rowSum M z i - (P.rep (y i)).toPoly) P.modulus.toPoly
-    rw [hmod, zero_add] at hdiv
-    linear_combination -hdiv
+  have hmod : (P.rowSum M z i - (P.rep (y i)).toPoly) %ₘ P.modulus.toPoly = 0 :=
+    (Polynomial.modByMonic_eq_zero_iff_dvd (IsPresentation.monic (P := P))).mpr hdvd
+  have hdiv := Polynomial.modByMonic_add_div
+    (P.rowSum M z i - (P.rep (y i)).toPoly) P.modulus.toPoly
+  rw [hmod, zero_add] at hdiv
+  rw [quotient]
+  linear_combination -hdiv
+
+/-- **Quotient witness** (the `⇒`/honest direction): a row equation over `S` lifts to an
+`R[X]` identity with an explicit quotient polynomial `ρ := (rowSum − rep yᵢ) /ₘ φ` of degree
+`≤ d − 2`. The witness is `P.quotient`; this existential form is what the descent argument
+consumes. -/
+theorem exists_rowSum_eq_of_mulVec_eq {M : PolyMatrix S n μ} {z : PolyVec S μ}
+    {y : PolyVec S n} {i : Fin n} (h : (M *ᵥ z) i = y i) :
+    ∃ ρ : Polynomial R, ρ.natDegree ≤ P.modulus.toPoly.natDegree - 2 ∧
+      P.rowSum M z i = (P.rep (y i)).toPoly + P.modulus.toPoly * ρ :=
+  ⟨P.quotient M z y i, P.natDegree_quotient_le M z y i, P.rowSum_eq_of_mulVec_eq h⟩
 
 /-- **The per-row recovery engine**, over an arbitrary presentation: if a row's lifted
 equation (with quotient `ρ` of degree `≤ d − 1`) holds under `evalAt` at `2d`

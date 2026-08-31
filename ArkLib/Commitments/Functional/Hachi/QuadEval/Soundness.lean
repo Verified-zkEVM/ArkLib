@@ -633,6 +633,29 @@ def quadEvalPackage {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
   extractor := treeExtractor (quadEvalMkWitness (outerRows := outerRows) 𝓜(q, α) (b : ZMod q))
   isCWSS := quadEval_coordinateWiseSpecialSoundWithEscape init impl hq5 hκ hτ pp
 
+/-- **Protocol/certificate coupling.** The Lemma-8 certificate `quadEvalPackage` and the honest
+protocol object `quadEvalReduction` (`QuadEval/Reduction.lean`) verify with *the same* verifier, by
+`rfl` — so soundness and the perfect-completeness theorem of `QuadEval/Completeness.lean` cannot
+drift onto different verifiers.
+
+Unlike `nestedZeroCheckPackage`, the coupling is a lemma rather than the package's `verifier` field
+being written as `(quadEvalReduction …).verifier`: naming the reduction requires honest-prover data
+(the commitment key's `D` block and the two digit decompositions), which has no business appearing
+in a soundness certificate's signature. Both sides reference the single `verifier` definition, and
+this lemma is what checks that they still do. -/
+theorem quadEvalPackage_verifier_eq_quadEvalReduction_verifier
+    {ι : Type} {oSpec : OracleSpec ι} {σ : Type}
+    (init : ProbComp σ) (impl : QueryImpl oSpec (StateT σ ProbComp))
+    (hq5 : q % 8 = 5) {b ω γ : ℕ} (hκ : (2 * ω) ^ 2 < q) (hτ : 0 < zDigits)
+    (pp : Hachi.PublicParamsD 𝓜(q, α) innerRows (2 ^ m) messageDigits outerRows (2 ^ r)
+      innerDigits dRows)
+    {base : ZMod q} (ddCarrier : DigitDecomposition base messageDigits)
+    (ddZ : DigitDecomposition base zDigits) :
+    (quadEvalPackage (zDigits := zDigits) (b := b) (γ := γ) init impl hq5 hκ hτ pp).verifier
+      = (quadEvalReduction (oSpec := oSpec) (zDigits := zDigits) (ω := ω)
+          𝓜(q, α) pp ddCarrier ddZ).verifier :=
+  rfl
+
 -- An `OracleVerifier` wrapper is deliberately not included: it needs an `OracleInterface`
 -- instance for `Simple.Commitment` (a query-model design decision that does not exist in the
 -- repo yet) and the still-sorried oracle-level append theorem. The plain-`Verifier` statement

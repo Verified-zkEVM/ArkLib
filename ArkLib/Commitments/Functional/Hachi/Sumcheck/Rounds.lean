@@ -39,8 +39,9 @@ import CompPoly.Univariate.Linear
   **re-pins the relation seams definitionally** — `roundsChain_relIn` / `roundsChain_relOut`
   hold by `rfl`, so the loop composes with the universal `▷`.
   The honest prover `roundProver` is a skeleton parameterized by the round-message function
-  `computeG`; the completeness layer that instantiates it is not written yet (see
-  `Sumcheck/Basic.lean`).
+  `computeG`; `Sumcheck/Completeness.lean` instantiates it at `honestComputeG` (the computable
+  partial hypercube sums of `Sumcheck/RoundPoly.lean`) and proves one round's perfect
+  completeness.
 
   ## References
 
@@ -157,8 +158,9 @@ theorem roundVerifier_isGuarded {TCom : Type} (i : ℕ) :
   ⟨_, _, roundVerifier_isGuardedWith Φ m₀ m₁ b i⟩
 
 /-- The `i`-th round's honest prover skeleton: the round-polynomial pair is computed by the
-parameter `computeG` (honestly: the partial hypercube sums of the two sumcheck polynomials in
-the free variable), and the witness is carried through unchanged. -/
+parameter `computeG` (honestly `honestComputeG`, `Sumcheck/Completeness.lean`: the computable
+partial hypercube sums of the two sumcheck polynomials in the free variable), and the witness is
+carried through unchanged. -/
 def roundProver {TCom Wit : Type} (i : ℕ)
     (computeG : NestedRoundStatement Φ TCom F n μ m₀ m₁ i → Wit → RoundMsg F b) :
     Prover oSpec (NestedRoundStatement Φ TCom F n μ m₀ m₁ i) Wit

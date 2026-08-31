@@ -5,10 +5,11 @@ based on the January 30, 2026 ePrint version of Nguyen–O'Rourke–Zhang, *Hach
 Lattice-Based Multilinear Polynomial Commitments over Extension Fields* (`NOZ26`, §4.3,
 Figure 5 and Lemma 10).
 
-Last revalidated against the formalization: **7 August 2026** (declaration names and the shortness
+Last revalidated against the formalization: **18 August 2026** (declaration names and the shortness
 section re-checked against the tree; every `#print axioms` claim below re-run).
 
-> **Status (integrated; link-5 completeness direction still open).** The corrected Lemma 10 is
+> **Status (integrated; links 5, 6 and 7 all certified in both directions).**
+> The corrected Lemma 10 is
 > formalized *inside* the escape-threaded opening chain: `nestedZeroCheckPackage` reduces
 > `relBatched → relNestedZeroCheck` and is composed as
 > `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` in `Composition.lean`
@@ -19,13 +20,26 @@ section re-checked against the tree; every `#print axioms` claim below re-run).
 > to those definitions**. **Paper Eq. (22) is now formalized**: `mAlphaTilde` (`M̃_α`),
 > `alphaTilde` (`α̃`) and `alphaContract` build the paper's public contraction against the committed
 > table, and `alphaDefect_wTable` / `hAlpha_eq_zero_iff_alphaDefect` prove it equal to the per-row
-> defect that `hAlphaEvals` writes down directly (axiom-clean). The residual link-5 obligation is
-> the forward/honest-completeness theorem `relLift → relBatched`, which is still absent.
+> defect that `hAlphaEvals` writes down directly (axiom-clean).
+>
+> **Link 6's honest direction is now closed too.** `nestedZeroCheckReduction_perfectCompleteness`
+> (`ZeroCheck/Completeness.lean`) proves perfect completeness of Figure 5 relative to `relBatched`,
+> `sorry`-free and axiom-clean. The completeness error is exactly zero, because `relBatched`
+> asserts the polynomial identities and so both polynomials vanish wherever the challenges happen
+> to land; nothing about the challenge distribution is used. So link 6 is now certified in both
+> directions — and so is link 5: its forward theorem `relLift → relBatched` is
+> `mem_relBatched_of_relLift` (`ZeroCheck/Batch.lean`), packaged as
+> `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`, through
+> `ReduceClaim.reduction_completeness_of_imp`). What a completeness statement for the *chain*
+> still waits on is not a Hachi theorem but the generic `Reduction.append_completeness`, which is
+> still `sorry`; the appended honest chain and the `sorryAx` it inherits are in `HonestChain.lean`.
 > Downstream, the link-7 sumcheck-bridge pull-back `mem_relNestedZeroCheck_of_nestedRoundRel`
-> is now **proved**, but `#print axioms` shows it inherits `sorryAx` from the two still-`sorry`
-> sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`.
-> **The range half is load-bearing:** shortness (`liftShort`) is *derived* from the range
-> identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`),
+> and the two sum identities `sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha` it rests on are now
+> proved and axiom-clean, and the bridge is settled in the honest direction too
+> (`mem_nestedRoundRel_of_relNestedZeroCheck`,
+> `nestedSumcheckBridgeReduction_perfectCompleteness`).
+> **The range half is now load-bearing:** shortness (`liftShort`) is *derived* from the range
+> identity `H₀ ≡ 0` at the batching bridge (`hZero_eq_zero_imp_liftShort`, resolution *option 1*),
 > not carried as a free conjunct of `relBatched`.
 >
 > **The point seams carry `liftShort`, as the commitment's shortness index.**
@@ -65,10 +79,10 @@ says the final instantiation should use the inner-outer commitment's weak bindin
 | Lemma-10 binding alternative | `ZeroCheck.nestedZeroCheckEsc` via `LiftCom.Collision` | integrated | Two **distinct short** openings of the shared `t` are a member of `K.Collision`, hence a Module-SIS break of the fixed key ([NOZ26] Lemma 7 / Remark 2). Stated as a `ChallengeTree.EscapeEvent` on `(statement, tree)` rather than an extractor output, so it cannot be satisfied trivially; the shortness both openings need is supplied by `relNestedZeroCheck`'s own `liftShort` conjunct. **No concrete `LiftCom` is instantiated yet** — see the note at the end of "Shortness" below. |
 | Corrected Lemma 10 CWSS | `ZeroCheck.nestedZeroCheck_coordinateWiseSpecialSoundWithEscape` | sorry-free, **axiom-clean** | `m₀ + m₁` scalar rounds with `k = 2`; the structured transcript tree is converted to **one** evaluation tree of depth `m₀ + m₁`, with `H₀` read through its first `m₀` levels (`Fin.castAdd`) and `H_α` through its last `m₁` (`Fin.natAdd`); `#print axioms` = `propext`/`Classical.choice`/`Quot.sound` only. |
 | Knowledge error (`∑ᵢ ℓᵢkᵢ/|Sᵢ|^{ℓᵢ}`, [FMN24] Lemma 4) | no declaration | **missing (repo-wide)** | ArkLib has no CWSS-to-knowledge-soundness theorem, so the *quantitative* content of both the paper's claim and this repair — `2(m₀+m₁)/|F_{q^k}|`, negligible — exists only in prose. This is the layer in which the repair's cost over the Schwartz–Zippel bound for unmodified Figure 5 would become visible. |
-| Honest completeness of this link | no declaration | **missing** | The forward direction is `eval 0 = 0` (a few lines) and is the only statement tying `nestedZeroCheckProver`'s `castAdd`/`natAdd` split to the verifier's. `nestedZeroCheckProver` is currently referenced nowhere. |
-| Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`; what remains missing for link 5 is only the forward/honest-completeness direction. |
-| Link-5 forward/completeness direction | no declaration | **missing** | There is no theorem showing that an honest `relLift` witness satisfies `relBatched`, nor an honest-completeness result for `batchPackage`. This is separate from CWSS, whose direction only needs the pull-back. |
-| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (inside `iteration`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This does not close link 5's paper-encoding or honest-completeness obligations. |
+| Honest completeness of this link | `ZeroCheck.nestedZeroCheckReduction_perfectCompleteness` | proven, **axiom-clean** | Full `Reduction.perfectCompleteness`, for arbitrary `oSpec`/`init`/`impl`. Two halves: `mem_relNestedZeroCheck_of_relBatched` is the algebra (`eval 0 = 0` at *arbitrary* points, hence zero error), and `nestedZeroCheckReduction_run_support` is the execution — an honest run cannot fail, and prover and verifier emit the same statement because both apply the same `castAdd`/`natAdd` split to the same transcript. An earlier revision of this row estimated the whole obligation at "a few lines"; that was true only of the algebra. The execution half needed a new framework lemma, `Reduction.perfectCompleteness_of_run_support` (`OracleReduction/Security/Basic.lean`), since ArkLib had no way to reach `perfectCompleteness` for a challenge-only protocol of arbitrary length. That lemma is generic and every later link can reuse it. |
+| Link-5 un-batching pull-back | `ZeroCheck.mem_relLift_of_relBatched` (`batchPackage`) | **the theorem is proven and axiom-clean; paper correspondence is partial** | `relBatched → relLift`; `H_α ≡ 0 ⇒` per-row eqs via `hAlpha_eq_zero_iff` + `hAlphaEvals_rowPoint` (arity pin `n ≤ 2 ^ m₁`); **`H₀ ≡ 0 ⇒ liftShort`** via `hZero_eq_zero_imp_liftShort` (arity pin `(μ+n)·deg φ ≤ 2^{m₀}`, `hd`, range-base fits `b−1 ≤ γ`, `b−1 ≤ ρBound`). The obligation to derive the `H_α` table from paper Eq. (22) is discharged separately by `alphaDefect_wTable`. The forward/honest-completeness direction is the row below. |
+| Link-5 forward/completeness direction | `ZeroCheck.mem_relBatched_of_relLift`; `ZeroCheck.batchReduction_perfectCompleteness` | proven, **axiom-clean** | An honest `relLift` witness satisfies `relBatched`: `hZero_eq_zero_of_liftShort` puts every table entry among `P_b`'s roots, and `hAlpha_eq_zero_of_rows` covers the whole Boolean table (zero-padded beyond row `n`). It needs neither arity hypothesis and nothing about `α`, but the range-base fits in the **opposite** orientation (`bound ≤ b − 1`, `ρBound ≤ b − 1`) — so a single two-sided parameterization is pinned to the paper's `bound = ρBound = b − 1`. `batchReduction` is the link as a protocol object (verifier shared with `batchPackage` by `rfl`); its completeness uses this direction alone, via `ReduceClaim.reduction_completeness_of_imp`. |
+| Link-5/link-6/link-7 composition | `batchPackage ▷ nestedZeroCheckPackage ▷ nestedSumcheckBridgePackage` (inside `iteration`) | **defined, compiles as a CWSS chain** | The seam relations match by `rfl`. This is the *soundness* composition; it does not close link 5's paper-encoding obligation. The honest counterpart — appending the three links' completeness — is in `HonestChain.lean` and is `sorryAx`-tainted through the generic `Reduction.append_completeness`. |
 
 ## Polynomial representation: multilinear value vectors and proof views
 
@@ -450,8 +464,11 @@ discharged over the family by the binary-evaluation-tree zero test
     `(μ+n)·deg φ ≤ 2^{m₀}`; these are threaded through `batchPackage` and `iteration`.
   `K.com` and the bound conjunct are carried verbatim. That `hAlpha` is the polynomial constructed
   in paper Eq. (22) is proved separately by `alphaDefect_wTable` /
-  `hAlpha_eq_zero_iff_alphaDefect`. **Still missing:** the forward/honest-completeness theorem
-  `relLift → relBatched`.
+  `hAlpha_eq_zero_iff_alphaDefect`. The forward/honest-completeness theorem `relLift → relBatched`
+  is now proved as well (`mem_relBatched_of_relLift`, packaged as
+  `batchReduction_perfectCompleteness`), so this link — like link 6 — is certified in both
+  directions; what an end-to-end completeness statement still hits is the generic
+  `Reduction.append_completeness`, not a Hachi obligation.
 - **Executable witness-fed extraction.** `nestedZeroCheckExtractor` is an ordinary executable
   function: `ChallengeTree.LeafWitnesses` supplies an `Option` candidate output witness at each
   leaf, and the extractor returns the all-left entry unchanged, including `none`. Under the CWSS
@@ -464,12 +481,12 @@ discharged over the family by the binary-evaluation-tree zero test
   complete transcript tree has `2 ^ (m₀ + m₁)` leaves.
 - **Sumcheck seam.** `nestedRoundRel` carries `liftShort` on the same shortness-index grounds as
   `relNestedZeroCheck` (see above), and the sumcheck
-  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved** — but
-  `#print axioms` shows it inherits `sorryAx` from the two `sorry` sum identities above, so the
-  bridge inherits those two gaps. Further down the chain (out of Lemma-10 scope), the
+  bridge's pull-back `mem_relNestedZeroCheck_of_nestedRoundRel` is now **proved and axiom-clean**,
+  the two sum identities it rests on (`sum_sumcheckPolyZero` / `sum_sumcheckPolyAlpha`) having
+  been discharged. Further down the chain (out of Lemma-10 scope), the
   per-round CWSS `round_coordinateWiseSpecialSoundWithEscape` (Lemma 11) and the
   final-evaluation step (`finalCheck` / `finalEval_coordinateWiseSpecialSoundWith`)
-  remain `sorry`.
+  are proved and axiom-clean as well.
 
 ## Design choices
 

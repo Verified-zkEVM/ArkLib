@@ -19,6 +19,7 @@ Usage: ./scripts/validate.sh [--lint] [--docs] [--site] [--axioms]
 Default checks:
   - lake build
   - lake exe toyproblem-runtime
+  - lake exe hachi-runtime
   - fail on non-`sorry` warnings under ArkLib/Data/
   - ./scripts/check-imports.sh
   - python3 ./scripts/check-docs-integrity.py
@@ -78,6 +79,12 @@ python3 ./scripts/check-warning-log.py "$build_log" \
 echo ""
 echo "# Running toy-problem compiled runtime checks"
 lake exe toyproblem-runtime
+
+echo ""
+echo "# Running nonrecursive-Hachi compiled runtime checks"
+# Default target only: the composed opening run (`--full`) is dominated by the honest sumcheck
+# prover and is far too slow to gate on. See scripts/HachiRuntime.lean.
+lake exe hachi-runtime
 
 echo ""
 echo "# Checking umbrella imports"

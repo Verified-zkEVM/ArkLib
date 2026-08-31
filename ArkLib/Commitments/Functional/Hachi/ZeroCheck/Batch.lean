@@ -27,6 +27,17 @@ import ArkLib.Commitments.Functional.Hachi.ZeroCheck.Constraints
   hypotheses are the arity bounds `n ≤ 2 ^ m₁` and `(μ + n)·deg φ ≤ 2 ^ m₀`, positivity
   `0 < deg φ`, and the range-base fits `b − 1 ≤ bound`, `b − 1 ≤ ρBound`.
 
+  The **honest direction** `mem_relBatched_of_relLift` is proved here too, so the bridge is settled
+  both ways: a lift-valid short witness satisfies the two identities. Its halves are
+  `hZero_eq_zero_of_liftShort` (shortness puts every table entry among `P_b`'s roots — the converse
+  of the range-side soundness) and `hAlpha_eq_zero_of_rows` (the `n` row equations are the *whole*
+  Boolean table, which is zero-padded beyond row `n`). It needs neither arity hypothesis and no
+  property of `α`, but it needs the range-base fits in the *other* orientation
+  (`bound ≤ b − 1`, `ρBound ≤ b − 1`): at the paper's `bound = ρBound = b − 1` both hold and the two
+  relations coincide. The link's perfect completeness, which uses this direction **alone** (through
+  `ReduceClaim.reduction_completeness_of_imp`, so neither arity hypothesis of the pull-back is
+  needed), is `batchReduction_perfectCompleteness` (`ZeroCheck/Completeness.lean`).
+
   Weak binding enters the certificate as an *event on the transcript tree*, rather than as a
   `⊕ E` relation summand; its hardness target is the
   short-collision set `LiftCom.Collision`. This bridge has no challenge round, so it carries no
@@ -116,6 +127,115 @@ theorem mem_relLift_of_relBatched (K : LiftCom (LiftedWitness Φ μ n) (liftShor
       = cEvalAt φF X.2.2 Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
   rw [hrow, hy, hmod]
   linear_combination hi
+
+/-! ## The honest direction: `relLift → relBatched` -/
+
+omit [IsCyclotomic Φ] [BEq (ZMod q)] [LawfulBEq (ZMod q)] [BEq F] [LawfulBEq F] in
+/-- **Converse of `valMinAbs_natAbs_le_of_rangeProduct_eq_zero`**: a residue with a small centered
+representative is a root of the range factor. Writing `c.valMinAbs = ±j` with `j ≤ b − 1`, the
+embedded value `φF c` is `±(j : F)`, one of `P_b`'s listed roots. -/
+theorem rangeProduct_eq_zero_of_valMinAbs_natAbs_le (φF : ZMod q →+* F) {b : ℕ} {c : ZMod q}
+    (h : (c.valMinAbs).natAbs ≤ b - 1) : rangeProduct b (φF c) = 0 := by
+  rw [rangeProduct_eq_zero_iff]
+  -- Name the centered absolute value, so that rewriting `c` cannot loop through `c.valMinAbs`.
+  obtain ⟨j, hj⟩ : ∃ j : ℕ, (c.valMinAbs).natAbs = j := ⟨_, rfl⟩
+  have hc : ((j : ℕ) : ZMod q) = if c.val ≤ q / 2 then c else -c := by
+    rw [← hj]; exact ZMod.natCast_natAbs_valMinAbs c
+  rw [hj] at h
+  refine ⟨j, h, ?_⟩
+  by_cases hval : c.val ≤ q / 2
+  · rw [if_pos hval] at hc
+    exact Or.inl (by rw [← hc, map_natCast])
+  · rw [if_neg hval] at hc
+    refine Or.inr ?_
+    have hc' : c = -((j : ℕ) : ZMod q) := by rw [hc]; ring
+    rw [hc', _root_.map_neg, map_natCast]
+
+set_option linter.unusedSectionVars false in
+/-- **Range side of the honest direction**: a short witness makes the range polynomial vanish
+identically. Every entry of the table `w̃` is either a committed coefficient — bounded by `bound`
+or `ρBound`, hence by `b − 1`, hence a root of `P_b` — or the zero padding, at which `P_b(0) = 0`.
+
+The hypotheses are the mirror image of `hZero_eq_zero_imp_liftShort`'s: there the declared bounds
+had to *dominate* the range base (`b − 1 ≤ bound`), here they must be *dominated* by it
+(`bound ≤ b − 1`). At the paper's parameters both hold simultaneously, `bound = ρBound = b − 1`,
+which is what makes `relLift` and `relBatched` equivalent rather than merely comparable.
+
+Note also what is *not* needed: no arity hypothesis. `hZero_eq_zero_imp_liftShort` needs
+`(μ + n)·deg φ ≤ 2 ^ m₀` to know every coefficient position is a genuine cube point; the honest
+direction quantifies over cube points instead, and the table is zero-padded, so any surplus cube
+points take care of themselves. -/
+theorem hZero_eq_zero_of_liftShort (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hbound : bound ≤ b - 1) (hρBound : ρBound ≤ b - 1)
+    (w : LiftedWitness Φ μ n) (h : liftShort Φ bound ρBound w) :
+    hZero Φ m₀ φF b w = 0 := by
+  rw [hZero_eq_zero_iff]
+  intro x
+  simp only [wTable]
+  split_ifs with hz hr
+  · exact rangeProduct_eq_zero_of_valMinAbs_natAbs_le φF
+      (le_trans (Rq.valMinAbs_natAbs_coeff_le_of_vecLInftyNorm_le Φ h.1 _
+        (Nat.mod_lt _ hd)) hbound)
+  · exact rangeProduct_eq_zero_of_valMinAbs_natAbs_le φF
+      (le_trans (h.2 _ _) hρBound)
+  · simp only [rangeProduct, zero_mul]
+
+set_option linter.unusedSectionVars false in
+/-- **Linear side of the honest direction**: the per-row `α`-evaluated lift equations make the
+batched constraint polynomial vanish identically.
+
+`H_α`'s Boolean table is zero-padded beyond row `n` (`hAlphaEvals`), so `H_α ≡ 0` needs exactly the
+`n` row equations `relLift` provides and nothing more — in particular no `n ≤ 2 ^ m₁` arity
+hypothesis, and no property of `α`: the identity holds at *every* evaluation point, which is why
+this link's completeness error is `0`. The three `evalAt`/`cEvalAt` bridges are the same ones
+`mem_relLift_of_relBatched` uses, run in the opposite direction. -/
+theorem hAlpha_eq_zero_of_rows (φF : ZMod q →+* F) (b : ℕ) (s : RlinStatement Φ n μ) (α : F)
+    (w : LiftedWitness Φ μ n)
+    (hrows : ∀ i, evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z i)
+      = evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec i)).toPoly
+        + evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+          * evalAt φF α ((w.ρ i)).toPoly) :
+    hAlpha Φ m₁ φF b s α w = 0 := by
+  rw [hAlpha_eq_zero_iff]
+  intro x
+  simp only [hAlphaEvals]
+  split_ifs with hlt
+  · have hi := hrows ⟨_, hlt⟩
+    have hrow : evalAt φF α ((cyclotomicPresentation Φ).rowSum s.M w.z ⟨_, hlt⟩)
+        = cEvalAt φF α (cRowSum Φ s w.z ⟨_, hlt⟩) := by
+      rw [cEvalAt_cRowSum_eq_evalAt, rowSum_eq_sum_toPoly]
+      simp only [Presentation.rowSum, cyclotomicPresentation]
+    have hy : evalAt φF α ((cyclotomicPresentation Φ).rep (s.yvec ⟨_, hlt⟩)).toPoly
+        = cEvalAt φF α (s.yvec ⟨_, hlt⟩).1 := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
+    have hmod : evalAt φF α (cyclotomicPresentation Φ).modulus.toPoly
+        = cEvalAt φF α Φ.φ := (cEvalAt_eq_evalAt_toPoly _ _ _).symm
+    rw [hrow, hy, hmod] at hi
+    linear_combination hi
+  · rfl
+
+set_option linter.unusedSectionVars false in
+/-- **The honest direction of the batching bridge** (converse of `mem_relLift_of_relBatched`): a
+lift-valid, short witness satisfies the two batched polynomial identities.
+
+Together with the pull-back this makes `relBatched` *equivalent* to `relLift` at the paper's
+parameters (`bound = ρBound = b − 1`), so the bridge loses nothing in either direction: the range
+identity `H₀ ≡ 0` is exactly the shortness of the committed data (`hZero_eq_zero_of_liftShort` /
+`hZero_eq_zero_imp_liftShort`), and the constraint identity `H_α ≡ 0` is exactly the `n` row
+equations (`hAlpha_eq_zero_of_rows` / `hAlphaEvals_rowPoint`). The `K.com` and bound conjuncts are
+shared verbatim, the latter being the `sideCond` of `liftCheckAt`.
+
+This direction needs neither arity hypothesis (`hn`, `hμn`) — see the two lemmas above. -/
+theorem mem_relBatched_of_relLift (K : LiftCom (LiftedWitness Φ μ n) (liftShort Φ bound ρBound))
+    (φF : ZMod q →+* F) (b : ℕ) (hd : 0 < Φ.φ.natDegree)
+    (hbound : bound ≤ b - 1) (hρBound : ρBound ≤ b - 1)
+    (X : LiftStatement Φ K.TCom F n μ) (w : LiftedWitness Φ μ n)
+    (h : (X, w) ∈ relLift Φ bound ρBound K φF) :
+    (X, w) ∈ relBatched Φ m₀ m₁ bound ρBound K φF b := by
+  obtain ⟨hcom, ⟨hrows, hside⟩, hshort⟩ := h
+  exact ⟨hcom,
+    hZero_eq_zero_of_liftShort Φ m₀ bound ρBound φF b hd hbound hρBound w hshort,
+    hAlpha_eq_zero_of_rows Φ m₁ φF b X.1 X.2.2 w hrows,
+    hside⟩
 
 /-- **The batching bridge verifier's purity as data** (`Verifier.PureForm`): the statement map is
 `id`, so the verdict is the input statement itself and `verify_eq` is `rfl`.

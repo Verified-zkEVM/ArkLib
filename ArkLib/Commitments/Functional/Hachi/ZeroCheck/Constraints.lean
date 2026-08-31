@@ -121,8 +121,15 @@ zero.
 
 The coefficients are read directly rather than gadget-decomposed, so the range polynomial `H₀`
 constrains the committed data itself: `H₀ ≡ 0` says every committed coefficient lies in
-`[−(b−1), b−1]`. The `b` argument is unused here and kept for signature compatibility with
-`hZero`. -/
+`[−(b−1), b−1]`.
+
+⚠ This follows the paper's **simplified presentation** (Eq. (21)), not its protocol: [NOZ26] §4.3
+(p. 19) gadget-decomposes the quotient into base-`b` digits before committing and then omits the
+digit subscript from all later notation ("there is a hidden gadget decomposition of r"). With the
+quotient undecomposed, the honest `r` rows carry coefficients up to `q/2` (`rhoShort_half`), so
+honest completeness forces the range base up to `q/2 + 1` — see `HonestChain.lean`'s cost
+analysis. Reworking this table to the digit-decomposed rows is the tracked follow-up. The `b`
+argument is unused here and kept for signature compatibility with `hZero`. -/
 def wTable (φF : ZMod q →+* F) (_b : ℕ) (w : LiftedWitness Φ μ n) :
     (Fin m₀ → Fin 2) → F :=
   fun pt =>
@@ -991,10 +998,15 @@ readings are not equivalent, so the paper's own `∑_{u,ℓ} F_{0,τ₀}(u,ℓ) 
 printed**: the two sides differ exactly by the indicator.
 
 This file follows the Eq. (23) reading — no indicator, and the range constraint applied to both the
-`z` and the `r` rows. That is the self-consistent choice, and it is visible downstream:
-`wTable` fills both row blocks (`wTable_zRow`, `wTable_rRow`), and
-`hZero_eq_zero_imp_liftShort` discharges a `z`-side *and* an `r`-side bound. Anyone comparing this
-statement against Figure 5 should read the absent indicator as intentional rather than as a bug. -/
+`z` and the `r` rows. That is not just the self-consistent choice but the paper's *intended*
+protocol: §4.3 (p. 19) gadget-decomposes the quotient into base-`b` digits before committing
+("there is a hidden gadget decomposition of r"), and committing `w̃` without re-decomposition
+(§4.5) requires **every** row short, digit rows included — so the indicator-free `H₀` is the
+correct object and the `1_{≤μ}` in `F_{0,τ₀}` is the leftover of the paper's simplified
+presentation. It is visible downstream: `wTable` fills both row blocks (`wTable_zRow`,
+`wTable_rRow`), and `hZero_eq_zero_imp_liftShort` discharges a `z`-side *and* an `r`-side bound.
+Anyone comparing this statement against Figure 5 should read the absent indicator as intentional
+rather than as a bug. -/
 theorem sum_sumcheckPolyZero (φF : ZMod q →+* F) (b : ℕ) (τ₀ : Fin m₀ → F)
     (w : LiftedWitness Φ μ n) :
     hypercubeSum m₀ (sumcheckPolyZero Φ m₀ φF b τ₀ w) 0 (fun j => j.elim0) =

@@ -97,7 +97,7 @@ python3 -m pip install leanblueprint
 ## Important Notes
 
 - `./scripts/validate.sh` is the recommended convenience wrapper for routine local validation.
-- By default it runs `lake build`, the compiled `toyproblem-runtime` checks,
+- By default it runs `lake build`, the compiled `toyproblem-runtime` and `hachi-runtime` checks,
   `./scripts/check-imports.sh`, and `python3 ./scripts/check-docs-integrity.py`, plus
   knowledge-base linting from source inputs.
 - The lower-level scripts remain valid when you only want one specific check.
@@ -140,6 +140,34 @@ When reporting results, prefer "axiom-clean against the baseline" over "axiom-fr
 counting basis (public / source-level / all-non-internal) — declaration totals are not comparable
 across differently-written probes, whereas the set of `sorryAx` carriers is.
 
+## Compiled execution checks
+
+Some things a theorem cannot state — that a definition compiles to code at all, and that running
+it gives the expected answer — are checked by compiled executables under `scripts/`, declared as
+`lean_exe` targets in `lakefile.toml` and run by `validate.sh`:
+
+| target | file | what it certifies |
+| --- | --- | --- |
+| `toyproblem-runtime` | `scripts/ToyProblemRuntime.lean` | the toy-problem launch cone |
+| `hachi-runtime` | `scripts/HachiRuntime.lean` | the nonrecursive Hachi honest-prover path |
+
+**Put them here, not under `ArkLib/`.** A file under `ArkLib/` is picked up by the generated
+library root, so a `#eval` in one is paid on every build by everyone; and `#eval` runs in the
+interpreter, which is far slower than compiled code. The pattern each file follows is a
+`check : String → Bool → IO Unit` that throws on failure, a `run : IO Unit` listing the checks,
+and `def main := run`.
+
+Two things to get right when adding one:
+
+- **Make each check lazy** — `def myCheck : Unit → Bool := fun _ => …`, not `def myCheck : Bool`.
+  Top-level values of non-function type are evaluated at *module initialization*, so an eager
+  check runs before `main` does. A slow one then hangs the executable before it can print
+  anything, and per-check timings all read zero because the work already happened.
+- **Keep the gated checks fast, and put slow ones behind a flag.** `hachi-runtime` gates on its
+  millisecond checks and hides its composed protocol run behind `--full` (that run passes, but
+  takes about six minutes — the honest sumcheck prover dominates), with `--timing` for per-check
+  costs.
+
 ## Optional Direct Commands
 
 You can still run the underlying pieces directly when debugging a specific issue:
@@ -147,6 +175,7 @@ You can still run the underlying pieces directly when debugging a specific issue
 ```bash
 lake build
 lake exe toyproblem-runtime
+lake exe hachi-runtime
 ./scripts/check-imports.sh
 python3 ./scripts/check-docs-integrity.py
 python3 ./scripts/kb/lint.py
@@ -193,7 +222,7 @@ bash scripts/build_timing_report.sh run clean_build /tmp/build-timing.jsonl -- \
 bash scripts/build_timing_report.sh run warm_rebuild /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c 'lake build'
 bash scripts/build_timing_report.sh run native_build /tmp/build-timing.jsonl -- \
-  bash -eo pipefail -c 'lake build toyproblem-runtime'
+  bash -eo pipefail -c 'lake build toyproblem-runtime hachi-runtime'
 bash scripts/build_timing_report.sh run test_path /tmp/build-timing.jsonl -- \
   bash -eo pipefail -c './scripts/validate.sh'
 bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
@@ -202,8 +231,10 @@ bash scripts/build_timing_report.sh render /tmp/build-timing.jsonl
 Read the rows in that order, because they share one tree and each leaves it warmer:
 
 - `clean_build` and `warm_rebuild` bracket the incremental-build signal.
-- `native_build` carries the `.c.o` chain that `lake exe toyproblem-runtime` links. It is the row
-  that swings on `.lake` cache state, so a dependency bump shows its cost here.
+- `native_build` carries the `.c.o` chain that the compiled executables link — currently
+  `toyproblem-runtime` and `hachi-runtime`. It is the row that swings on `.lake` cache state, so a
+  dependency bump shows its cost here. **Adding a compiled executable to `validate.sh` means
+  adding it to this command too**, or its link cost lands in `test_path` instead.
 - `test_path` is therefore the cost of the validation gate itself on an already-built project,
   not of a cold `./scripts/validate.sh`. CI passes no flags, so `--lint`, `--docs`, `--site` and
   `--axioms` never appear in it.

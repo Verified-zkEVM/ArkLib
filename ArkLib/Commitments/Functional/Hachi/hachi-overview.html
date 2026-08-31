@@ -264,6 +264,27 @@
   .sub-card .sc-desc b{ color:var(--ink); font-weight:600; }
   .assembly-head { margin-top:46px; }
 
+  /* ---------- gap explainer ---------- */
+  .grid.cols3 { grid-template-columns:repeat(3,1fr); }
+  .cheat {
+    margin-top:24px; background:var(--surface); border:1px solid color-mix(in srgb,var(--bad) 38%,var(--line));
+    border-radius:14px; box-shadow:var(--shadow); overflow:hidden;
+  }
+  .cheat .cheat-cap {
+    padding:13px 18px; border-bottom:1px solid var(--line-soft);
+    display:flex; gap:8px 14px; align-items:baseline; flex-wrap:wrap;
+  }
+  .cheat .cheat-cap b { font-size:14.5px; letter-spacing:-.01em; }
+  .cheat .cheat-cap .src { font-family:var(--font-mono); font-size:11.5px; color:var(--muted); }
+  .cheat pre {
+    margin:0; padding:15px 18px; overflow-x:auto; background:var(--surface-2);
+    font-family:var(--font-mono); font-size:12.8px; line-height:1.8; color:var(--ink-soft);
+  }
+  .cheat pre b { color:var(--ink); font-weight:600; }
+  .cheat pre .cm { color:var(--muted); }
+  .cheat pre .okm { color:var(--ok); font-weight:700; }
+  .cheat pre .badm { color:var(--bad); font-weight:700; }
+
   /* ---------- index table ---------- */
   .tablewrap { overflow-x:auto; border:1px solid var(--line); border-radius:14px; box-shadow:var(--shadow); background:var(--surface); }
   table { border-collapse:collapse; width:100%; min-width:720px; font-size:13.5px; }
@@ -334,6 +355,7 @@
     .tiles{ grid-template-columns:repeat(2,1fr); }
     .howto{ grid-template-columns:1fr; }
     .grid{ grid-template-columns:1fr; }
+    .grid.cols3{ grid-template-columns:1fr; }
     footer .refs{ grid-template-columns:1fr; }
   }
   @media (max-width:560px){
@@ -362,18 +384,25 @@
       Hachi <span class="mono">[NOZ26]</span> is a lattice-based multilinear polynomial commitment over the
       power-of-two cyclotomic ring <span class="mono">Z_q[X]/(X^{2^α}+1)</span>. The core of one
       opening is a <strong>single line of nine reductions</strong> — from the quadratic-form
-      evaluation (<strong>QuadEval</strong>) to a short-opening multilinear-evaluation claim on the committed
-      table, which the closing <strong>end-piece</strong> then checks against the revealed witness.
-      This map places every protocol-bearing file on that line, marks the bridges and
-      subfolders, and shows exactly what is proven, repaired, or in progress.
+      evaluation (<strong>QuadEval</strong>) to a bare multilinear-evaluation claim on the committed
+      table — followed by three §4.5 adapters (rows 10–12) that hand that claim to the next
+      iteration. This map places every protocol-bearing file on that line, marks the bridges and
+      subfolders, and shows exactly what is proven, repaired, in progress — or blocked on an
+      <a href="#gap">open soundness gap in the paper's own argument</a>. The soundness side is closed by the proven
+      <strong>end-piece</strong> (send the reduced witness, <span class="mono">EndPiece/</span>):
+      <span class="mono">evaluation</span> = iteration &#8846; end-piece in
+      <span class="mono">Composition.lean</span> mirrors the completeness layer's terminal
+      reveal-and-check, and both run the same decision procedure
+      <span class="mono">endPieceCheck</span>.
     </p>
     <div class="hero-meta">
-      <span class="chip">34 files</span>
-      <span class="chip">26 with protocol content</span>
-      <span class="chip">9-link opening chain</span>
+      <span class="chip">44 files</span>
+      <span class="chip">35 with protocol content</span>
+      <span class="chip">9-link opening + end-piece + 3 recursion adapters</span>
       <span class="chip">rows 1–9 + end-piece no sorried certificate · all axiom-clean</span>
       <span class="chip">evaluation computable end to end</span>
-      <span class="chip">13 open Hachi sorries</span>
+      <span class="chip">complete nonrecursive opening, proved correct</span>
+      <span class="chip">13 open sorries</span>
     </div>
   </div>
 </header>
@@ -387,7 +416,7 @@
     <div class="sec-head">
       <span class="eyebrow">At a glance</span>
       <h2>Where the formalization stands</h2>
-      <p>Counts are over the 26 files carrying definitions or theorems (the eight folder <span class="mono">umbrella</span>
+      <p>Counts are over the 35 files carrying definitions or theorems (the nine folder <span class="mono">umbrella</span>
         re-export files are excluded). Status reflects declarations that actually use
         <span class="mono">sorry</span>, not the word appearing in a docstring.</p>
     </div>
@@ -435,15 +464,15 @@
         <h3>Proof status</h3>
         <div class="legend-row">
           <span class="key"><span class="pill proven">proven</span></span>
-          <span class="txt">Sorry-free and complete. Every link of the nine-row chain is <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span> — and so is their composite <span class="mono">iteration</span>, verified by <span class="mono">lake exe axiomsweep</span>.</span>
+          <span class="txt">Sorry-free on the soundness side. Every proven link of the opening line (rows 1–9) is <b>axiom-clean</b> — only <span class="mono">propext / Classical.choice / Quot.sound</span> — and they compose that way: <span class="mono">iteration</span>, <span class="mono">roundsChain</span> and <span class="mono">finalEvalPackage</span> carry no <span class="mono">sorryAx</span>. The <b>honest-prover / completeness layer</b> is tracked in its own files (the <span class="mono">*/Completeness.lean</span> files, <span class="mono">HonestChain.lean</span>, <span class="mono">Correctness.lean</span> — all sorry-free, with composition inheriting the admitted <span class="mono">append_completeness</span>), so a <span class="mono">proven</span> pill on a spine row means the CWSS certificate, not the forward direction.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill repaired">repaired</span></span>
-          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by per-coordinate scalar rounds with a nested binary-evaluation-tree zero test, at the cost of a temporary <span class="mono">liftShort</span> assumption. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
+          <span class="txt">Sorry-free, but <b>deliberately not the paper's claim</b>: the printed statement is false or unprovable as written, and what is proved here is a corrected variant. The theorem is real — the divergence is what this pill flags, so it is <em>not</em> counted as <span class="mono">proven</span>. Row&nbsp;6 (Lemma&nbsp;10) is the only one: the uniform-vector extraction is refuted by <span class="mono">exists_nonzero_vanishing_on_axis_cross</span> and replaced by per-coordinate scalar rounds with a nested binary-evaluation-tree zero test, with <span class="mono">liftShort</span> carried at the point seams as the commitment's shortness index, not assumed — it is <em>derived</em> from the range identity <span class="mono">H₀ ≡ 0</span> one link earlier. Each such divergence is recorded in <span class="mono">docs/kb/audits/</span>.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill wip">wip</span></span>
-          <span class="txt">Not finished — but for two different reasons, so read the <span class="mono">sorry</span> column. <span class="mono">sorry&nbsp;&gt;&nbsp;0</span> is a real skeleton: types, relations, verifier and package typecheck, but a proof (and sometimes an encoding def) is still <span class="mono">sorry</span> — the opening <span class="mono">Proof</span> in <span class="mono">Commitment.lean</span>. <span class="mono">sorry&nbsp;0</span> means the soundness side is proved and only the <b>honest-completeness direction</b> is missing — link&nbsp;5 (<span class="mono">relLift → relBatched</span>) and the encoding home it shares with rows&nbsp;6–9.</span>
+          <span class="txt">A real skeleton: types, relations, verifier and package are defined and typecheck; the CWSS proof (and sometimes the encoding defs) are <span class="mono">sorry</span>. It sits in the §4.5 recursion tail (rows&nbsp;10&nbsp;and&nbsp;12), which is <b>currently deferred</b> (recursion is not being pursued for now), plus <span class="mono">Commitment.lean</span>'s single sorry — the <em>recursive</em> <span class="mono">opening</span> placeholder.</span>
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill gap">gap</span></span>
@@ -451,7 +480,7 @@
         </div>
         <div class="legend-row">
           <span class="key"><span class="pill plan">planned</span></span>
-          <span class="txt">Future work beyond the current opening line: recursive iteration, future heads and tails, and their target skeletons. These are not counted as current-line WIP.</span>
+          <span class="txt">Named in the composition roadmap but not yet a file — the §3 packing head, the §4.4/§4.5 termination tails, and the knowledge-error accounting. (The completeness layer is no longer among them: it is delivered, in the <span class="mono">*/Completeness.lean</span> files, <span class="mono">HonestChain.lean</span>, <span class="mono">Correctness.lean</span> and <span class="mono">Concrete.lean</span>.)</span>
         </div>
       </div>
     </div>
@@ -475,6 +504,115 @@
         <span class="mono">mle[w̃](a) = y′</span> on the committed table.</p>
     </div>
     <div id="spine"></div>
+  </section>
+
+  <hr class="rule"/>
+
+  <!-- ===================== THE GAP, EXPLAINED ===================== -->
+  <section id="gap">
+    <div class="sec-head">
+      <span class="eyebrow">The open gap, explained</span>
+      <h2>Why the recursion is on hold — the §4.5 partial-evaluation gap</h2>
+      <p>Row 9 ends the proven line with a single claim on the committed table:
+        <span class="mono">mle[w̃](a) = y′</span>, where <span class="mono">a</span> is the vector of random sumcheck
+        challenges (in the extension field <span class="mono">F ≅ F_{q^k}</span>) and <span class="mono">y′</span> is
+        pinned by the transcript — everything the iteration proved funnels into that one claim. The
+        <b>nonrecursive</b> opening simply reveals <span class="mono">w̃</span> and checks it; that path is proven
+        (<span class="mono">Correctness.lean</span>, <span class="mono">Concrete.lean</span>). Recursion (§4.5)
+        instead replaces the reveal with a proof by a smaller instance, in three moves — and the middle move
+        appears not to be knowledge-sound as the paper states it.</p>
+    </div>
+
+    <div class="grid cols3">
+      <div class="sub-card">
+        <div class="sc-top"><div><div class="sc-name">① Peel — the partial evaluations</div><div class="sc-ref">§4.5 · Eq. 24 · row 10</div></div><span class="pill wip">wip</span></div>
+        <div class="sc-desc">Split the point <span class="mono">a = (a₀, a₁)</span> with <span class="mono">a₁</span>
+          the last κ coordinates, <span class="mono">k = 2^κ</span> the extension degree. The claim factors as
+          <span class="mono">y′ = ∑ᵢ eq(i,a₁)·yᵢ</span> over the <b>partial evaluations</b>
+          <span class="mono">yᵢ := ∑ⱼ w̃_{j‖i}·eq(j,a₀)</span>, which the prover sends (the verifier derives one).
+          Residual claims: each <span class="mono">yᵢ</span> matches the <em>committed</em> table. As a reduction,
+          this seam is sound with zero error.</div>
+      </div>
+      <div class="sub-card" style="border-color:color-mix(in srgb,var(--bad) 40%,var(--line))">
+        <div class="sc-top"><div><div class="sc-name">② Pack — one claim instead of k</div><div class="sc-ref">§4.5 · Eqs. 25–26 · row 11</div></div><span class="pill gap">gap</span></div>
+        <div class="sc-desc">Merge the k sub-tables into one <span class="mono">F</span>-entried table
+          <span class="mono">ŵⱼ := ∑ᵢ w̃_{j‖i}·Z^{⟨i⟩}</span> along the power basis of
+          <span class="mono">F/F_q</span>, and replace the k residual claims by the <b>single</b> packed claim
+          <span class="mono">∑ⱼ ŵⱼ·eq(j,a₀) = ∑ᵢ yᵢ·Z^{⟨i⟩}</span>, whose right side is public. This one equation
+          is all the next iteration ever enforces — and it is strictly weaker than the k claims it stands for.</div>
+      </div>
+      <div class="sub-card">
+        <div class="sc-top"><div><div class="sc-name">③ Hand off — into the next ring</div><div class="sc-ref">§4.5 · Eqs. 27–28 · row 12</div></div><span class="pill wip">wip</span></div>
+        <div class="sc-desc">Convert the packed <span class="mono">F</span>-claim into the next iteration's
+          <span class="mono">R′q</span>-quadratic statement through ψ and the Theorem-2 trace identity, re-entering
+          at QuadEval over Φ′ — with no new commitment: <span class="mono">t</span> is re-read at ring dimension d′
+          through the ψ/Z-packing bijection. This seam is pinned exactly by the trace, no slack; its open items are
+          norm-parameter design (an inverse-ψ bound, linked regimes), not the soundness of the step itself.</div>
+      </div>
+    </div>
+
+    <div class="howto" style="margin-top:24px">
+      <div class="legend-card">
+        <h3>What the paper's step relies on</h3>
+        <div class="legend-row"><span class="txt">Below Eq. (26) the packing is read as an <b>equivalence</b>: proving the single packed claim should be the same as proving all k partial-evaluation claims.</span></div>
+        <div class="legend-row"><span class="txt">The forward direction is a substitution — swap two finite sums — and holds for the honest prover, so completeness is untouched.</span></div>
+        <div class="legend-row"><span class="txt">The reverse direction leans on a basis intuition: <span class="mono">1, Z, …, Z^{k−1}</span> is a basis of <span class="mono">F</span> over <span class="mono">F_q</span>, so a vanishing combination should force every coefficient to vanish. That is <em>true</em> — and it is exactly why the packing is lossless for the <b>table entries</b>, which genuinely live in <span class="mono">F_q</span>.</span></div>
+      </div>
+      <div class="legend-card">
+        <h3>Why extraction fails anyway</h3>
+        <div class="legend-row"><span class="txt">Write <span class="mono">δᵢ := pᵢ − yᵢ</span> for the defects against the true partials. The packed claim says exactly <span class="mono">∑ᵢ δᵢ·Z^{⟨i⟩} = 0</span>.</span></div>
+        <div class="legend-row"><span class="txt">But the defects are <b>not</b> in <span class="mono">F_q</span>: <span class="mono">pᵢ</span> involves <span class="mono">eq(j,a₀)</span> at a random extension-field point — the sumcheck <em>must</em> run over <span class="mono">F</span> for its own soundness — so <span class="mono">δᵢ ∈ F</span>. Over <span class="mono">F</span> this is one linear equation in k unknowns: a solution space of <span class="mono">F_q</span>-dimension (k−1)·k. Multiplying a defect by Z slides it from one slot into the next.</span></div>
+        <div class="legend-row"><span class="txt"><b>The one-line analogy:</b> base-10 <em>digits</em> make a representation unique because each digit is &lt;&nbsp;10; sums of multiples of powers of 10 with <em>arbitrary</em> coefficients are not unique — 30 = 3·10 + 0 = 2·10 + 10. The packing quietly switches from the first situation (entries) to the second (evaluations).</span></div>
+      </div>
+    </div>
+
+    <div class="cheat">
+      <div class="cheat-cap"><b>The explicit cheat at κ = 1 (k = 2)</b><span class="src">Recursion/ZBatchBridge.lean · the docstring's counterexample, in eq-weights</span></div>
+      <pre>
+<span class="cm">honest partials  p₀, p₁ ∈ F   ·   peeled challenge  a ∈ F   ·   any desired offset  Δ ≠ 0</span>
+
+prover sends     <b>y₀ := p₀ + Z·δ</b>     <b>y₁ := p₁ − δ</b>       with  δ := Δ / ((1−a)·Z − a)
+
+packed check     y₀ + Z·y₁  =  p₀ + Z·p₁               <span class="okm">✓ passes</span>  <span class="cm">— the Z·δ terms cancel; row 12 and the
+                                                                   whole next iteration are satisfied</span>
+reconstructed    (1−a)·y₀ + a·y₁  =  truth + Δ         <span class="badm">✗ cheats</span>  <span class="cm">— the pinned y′ is met for a FALSE
+                                                                   evaluation of the committed table</span>
+
+<span class="cm">timing: the yᵢ are sent after every sumcheck challenge, so a is known when δ is chosen (Fiat–Shamir
+preserves the order) · fails only at a = Z/(1+Z), one challenge value in q^k · at the paper's concrete
+parameters (k = 4), two of the four yᵢ stay completely free even after both checks</span>
+</pre>
+    </div>
+
+    <div class="grid" style="margin-top:14px">
+      <div class="sub-card" style="border-left:3px solid var(--bad)">
+        <div class="sc-top"><div><div class="sc-name">What a cheating prover gains</div><div class="sc-ref">knowledge soundness of the recursive opening</div></div></div>
+        <div class="sc-desc">Commit to any short table, run rows 1–9 for a <em>false</em> statement, and absorb the
+          entire mismatch inside the k partial evaluations. Everything proven upstream — weak binding, the corrected
+          Lemma&nbsp;10, Lemma&nbsp;11, the exact range proof — funnels through this one seam, and the seam leaks:
+          none of it transports to the recursive opening. The same pattern with monomial weights
+          <span class="mono">xⁱ</span> in place of eq-weights is §3.2's optimized <span class="mono">F_q</span> path
+          (Eq. 11, Fig. 2 row 2), so the gap is <b>not recursion-specific</b>.</div>
+      </div>
+      <div class="sub-card" style="border-left:3px solid var(--ok)">
+        <div class="sc-top"><div><div class="sc-name">What stays sound</div><div class="sc-ref">rows 1–9 · completeness · §3.1</div></div></div>
+        <div class="sc-desc">The <b>nonrecursive opening</b> (rows 1–9 plus the reveal —
+          <span class="mono">Correctness.lean</span>, <span class="mono">Concrete.lean</span>) never forms the yᵢ:
+          the table itself is revealed, so Lemma&nbsp;11 applies literally. <b>Completeness</b> is untouched
+          everywhere — the honest yᵢ are the true partials. The <b>generic §3.1 transformation</b> (Fig. 2 row 1) is
+          unaffected: it introduces no prover-chosen intermediate values and pins the whole packed evaluation
+          <span class="mono">Y ∈ Rq</span> coefficient-by-coefficient. The paper's benchmarks are first-round-only
+          and never exercise the step.</div>
+      </div>
+    </div>
+
+    <div class="legend-card" style="margin-top:14px">
+      <h3>Root cause &amp; the two known repairs</h3>
+      <div class="legend-row"><span class="txt"><b>The tension:</b> the sumcheck needs its challenges in the big field <span class="mono">F</span> for soundness; the packing's basis argument needs the packed coefficients in the small field <span class="mono">F_q</span>. §4.5 needs both at once, on the same objects. The step is one sentence in the paper (“…is <em>equivalent</em> to proving (26)”) with no lemma behind it — the honest direction is true and the basis intuition is true for entries, so the failure only shows once the extraction statement is typed precisely. That is how the formalization surfaced it.</span></div>
+      <div class="legend-row"><span class="txt"><b>Repair A — a fresh batching challenge</b> over the peeled index: sample ρ <em>after</em> the yᵢ arrive and prove the ρ-weighted combination instead of the fixed Z-weighted one; a nonzero defect vector then survives with probability ≈ k/|F| (Schwartz–Zippel). One extra round, machinery close to row 5's batching bridge.</span></div>
+      <div class="legend-row"><span class="txt"><b>Repair B — drop the optimization</b>: use the generic §3.1 packing (Fig. 2 row 1), which never forms the yᵢ, at the cost of κ extra variables and a different extraction/norm story for rows 10–12.</span></div>
+      <div class="legend-row"><span class="txt">Both deviate from the printed protocol, so the decision sits <b>upstream of any Lean work</b>: write the counterexample up as a short note for the [NOZ26] authors, adopt whichever repair they take, then unblock rows 10 and 12. Until then, row 11's pull-back <span class="mono">sorry</span> stands — deliberately — as the record of where the paper's argument stands.</span></div>
+    </div>
   </section>
 
   <hr class="rule"/>
@@ -516,14 +654,15 @@
     <div class="sec-head">
       <span class="eyebrow">Complete accounting</span>
       <h2>Every file in <span class="mono">Hachi/</span></h2>
-      <p>All 34 files, including the eight folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
+      <p>All 44 files, including the nine folder umbrellas. Filter by status; the <span class="mono">row</span> column is the
         position on the reduction line above.</p>
     </div>
     <div class="tfilter" id="tfilter" role="group" aria-label="Filter files by status">
-      <button data-f="all" aria-pressed="true">all · 34</button>
+      <button data-f="all" aria-pressed="true">all · 44</button>
       <button data-f="proven" aria-pressed="false">proven</button>
       <button data-f="repaired" aria-pressed="false">repaired</button>
       <button data-f="wip" aria-pressed="false">wip</button>
+      <button data-f="gap" aria-pressed="false">gap</button>
       <button data-f="plan" aria-pressed="false">future work</button>
       <button data-f="umbrella" aria-pressed="false">umbrella</button>
     </div>
@@ -550,15 +689,17 @@
     </div>
     <p class="foot-note">
       Design notes live in the module docstrings themselves — the corrected Lemma&nbsp;10 in
-      <code>ZeroCheck/Reduction.lean</code> and the open §4.5 Z-packing gap in <code>Recursion/ZBatchBridge.lean</code>
-      (future work, off the composed line). The composition
-      and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
-      directly from this source snapshot; the open-sorry count counts <em>declarations</em> that use
-      <code>sorry</code> inside <code>Hachi/</code> (Lean's <code>declaration uses 'sorry'</code> warnings).
+      <code>ZeroCheck/Reduction.lean</code> and the open row-11 gap in <code>Recursion/ZBatchBridge.lean</code>; the latter is
+      walked through at reading pace in the <a href="#gap">explainer section</a> above. The composition
+      home and its certificate provenance are documented in the <code>Composition.lean</code> module header. Status was read
+      directly from the working tree — a build plus <code>#print axioms</code> on each
+      link's package, not from docstrings. The open-sorry count counts <em>declarations</em> that
+      use <code>sorry</code> inside <code>Hachi/</code> (Lean's <code>declaration uses 'sorry'</code>
+      warnings).
       The end-piece lives in <code>EndPiece/</code> and is fully proven, so
       <code>Composition.lean</code> contributes no sorry of its own.
-      The generic guarded-append machinery under
-      <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> is proved and sorry-free.
+      The generic CWSS machinery under <code>OracleReduction/Security/CoordinateWiseSpecialSoundness/</code> (the escape layer, the
+      scalar-round engines and the guarded append) is itself sorry-free.
     </p>
   </div>
 </footer>
@@ -620,7 +761,23 @@
       { n:9, kind:"step", name:"Final evaluation", sub:"Sumcheck", fn:"FinalEval.lean",
         files:[["Sumcheck","FinalEval.lean"]], ref:"§4.3 · Fig 7 tail", rounds:"msg y′ ∈ F", cwss:"any",
         relIn:"nestedRoundRel m₀", relOut:"relWEvalClaim", status:"proven", sorry:0, badges:["guarded","proven"],
-        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets. Its executable <code>finalCheck</code>, <b>computable</b> <code>finalEvalExtractor</code> (returning the opening in the unique supplied leaf witness), and no-challenge CWSS proof are complete. Output is the short-opening evaluation claim <code>mle[w̃](a) = y′</code> — the final currency the opening yields." },
+        desc:"The prover sends the claimed evaluation y′ = w̃(a) in the clear; the guarded verifier checks both final sumcheck targets against the public factors evaluated at the point — <code>eq̃(τ₀,a)·P_b(y′) = target₀</code> and <code>y′·Ã(a) = target_α</code> — so no R_q multiplication is needed. Output is the short-opening evaluation claim <code>mle[w̃](a) = y′</code>, the currency the end-piece (and, in the future, the §4.5 recursion) consumes. <b>Proven and axiom-clean</b> (<code>finalEval_coordinateWiseSpecialSoundWith</code>, at the <b>computable</b> <code>finalEvalExtractor</code> returning the opening in the unique supplied leaf witness): with no challenge round, CWSS collapses through the no-challenge bridge to a transcript-level argument — acceptance forces the guard (a <code>failure</code> verdict has acceptance probability 0) and exhibits the opening the emitted claim asserts; at i = m₀ the two round claims are plain evaluations (<code>hypercubeSum_of_le</code>) that factor through <code>mle[w̃](a)</code> (<code>eval_sumcheckPolyZero</code>/<code>eval_sumcheckPolyAlpha</code>), so substituting y′ turns them into exactly the guard equations. Shortness is the one conjunct no guard can resupply — the verifier never sees w̃ — so <code>relWEvalClaim</code> carries it." },
+    ]},
+    { zt:"Recursion Adapters", zref:"§4.5 · Eqs. 24–28",
+      znote:"Off the nine-link opening and onto the next iteration: peel the top κ variables of the evaluation claim, pack them, and hand an Rq-quadratic statement to <code>QuadEval</code> over the next ring Φ′ — the loop's closing seam. This is the <b>whole of the remaining skeleton</b> (12 of the 13 open sorries; the other is the recursive opening), and row 11 is design-blocked (<a href=\"#gap\">explained end to end below</a>), so the honest order of work is: decide the row-11 repair first, then rows 10 and 12.",
+      rows:[
+      { n:10, kind:"step", name:"Partial evaluations", sub:"Recursion", fn:"PartialEval.lean",
+        files:[["Recursion","PartialEval.lean"]], ref:"§4.5 · Eq. 24", rounds:"msg (yᵢ)_{i≠0}", cwss:"any (pure)",
+        relIn:"relWEvalClaim", relOut:"relPartialEval", status:"wip", sorry:6, badges:[],
+        desc:"Writing a = (a₀, a₁) with a₁ ∈ F^κ, Eq.&nbsp;(24) factors y′ = ∑ᵢ eq(i, a₁)·yᵢ. The prover sends all but one partial evaluation and the verifier <em>derives</em> y₀ (paper footnote&nbsp;10), which keeps this head pure and the consistency true by construction. The seam is sound with zero error, but the encoding defs (<code>partialEvalAt</code>, <code>deriveFamily</code>, <code>wTableMleEval_split</code>) and the CWSS theorem are <span class=\"mono\">sorry</span>. One design wrinkle to settle: the derivation divides by eq(0, a₁), which can vanish." },
+      { n:11, kind:"bridge", name:"Z-packing bridge", sub:"Recursion", fn:"ZBatchBridge.lean",
+        files:[["Recursion","ZBatchBridge.lean"]], ref:"§4.5 · Eqs. 25–26", rounds:"0 rounds", cwss:"any",
+        relIn:"relPartialEval", relOut:"relHatEval", status:"gap", sorry:2, badges:["bridge","gap"],
+        desc:"Collapses the per-i claims into the single Z-packed claim of Eq.&nbsp;(26). Completeness is a substitution; <b>extraction appears to be false as stated</b> — the packed claim pins only one F-linear combination ∑ᵢ Z^{⟨i⟩}(pᵢ − yᵢ) = 0 of the per-i defects, whose F_q-kernel has dimension (k−1)·k for k = 2^κ ≥ 2. The explicit κ = 1 counterexample is in the module docstring. Candidate repairs (a batching challenge over the peeled index, or the generic §3.1 packing) all deviate from the paper and change the protocol content of rows 10–12, so the sorry is kept as the record of where the paper's argument stands. The <a href=\"#gap\">explainer below</a> walks the whole step — the cheat, its scope, and the repairs — at reading pace." },
+      { n:12, kind:"step", name:"Trace handoff", sub:"Recursion", fn:"TraceHandoff.lean",
+        files:[["Recursion","TraceHandoff.lean"]], ref:"§4.5 · Eqs. 27–28", rounds:"msg p ∈ R′q", cwss:"any",
+        relIn:"relHatEval", relOut:"relIn (Φ′)", status:"wip", sorry:4, badges:["guarded"],
+        desc:"Converts the packed F-claim into the <b>next iteration's</b> Rq-quadratic statement, re-entering at the QuadEval seam over Φ′. The guard is the Theorem-2 trace equation (it reads the packed value, which the pinned next-iteration statement type drops); no new commitment is made — the next iteration's commitment <em>is</em> t, re-read at ring dimension d′ through the ψ/Z-packing bijection. Unlike row&nbsp;11 this seam is pinned exactly by the trace, with no slack; but its <code>Short</code> obligation is <b>false as the adapter is parameterized today</b> and needs two new ingredients: an inverse-ψ norm bound, and hypotheses tying the next iteration's norm parameters to this one's through ψ." },
     ]},
   ];
 
@@ -637,30 +794,44 @@
       desc:"Guarded composition is complete: <code>IsGuarded.append</code> conjoins the checks, and <code>append_coordinateWiseSpecialSoundWithEscape_of_guardedLeft</code> lifts escape-aware CWSS through a guarded left factor. An accepting composed tree forces every left check to pass — every CWSS suffix has a leaf, while a failed guard runs to <code>failure</code> — so the ordinary extraction argument applies. The sumcheck, final-evaluation, and end-piece seams now compose through proved generic machinery." },
   ];
   var PCS_ASSEMBLY = [
+    { name:"Shared constraint encoding", ref:"§4.3 · Eqs. 21–23", files:[["ZeroCheck","Constraints.lean"]], status:"proven", sorry:0,
+      desc:"The table w̃, the constraint polynomials H₀/H_α, their sumcheck summands, and the per-round seam relations. Consumed by <b>both</b> the zero-check (row 6) and the sumcheck loop (rows 7–9). <code>wTable</code> is concrete and <b>range-side soundness H₀⇒liftShort is proven</b> (<code>hZero_eq_zero_imp_liftShort</code>, axiom-clean). <code>hAlphaEvals</code> is concrete as a per-row defect, and the paper's Eq.&nbsp;(22) contraction from <code>M̃_α</code>, <code>w̃</code>, and <code>α̃</code> is now built and <b>proved equivalent</b> to it (<code>alphaDefect_wTable</code>, <code>hAlpha_eq_zero_iff_alphaDefect</code>, axiom-clean). The sumcheck summands have concrete computable bodies and the file is <b>sorry-free</b>. ⚠ The table follows the paper's <em>simplified presentation</em>: NOZ26 §4.3 (p.&nbsp;19) gadget-decomposes the quotient into base-b digits before committing, and reworking w̃ to that digit table — which removes the pinned parameters and the degree-q range polynomial — is the tracked follow-up." },
     { name:"Composition", ref:"the certificate", files:[["","Composition.lean"]], status:"proven", sorry:0,
       desc:"Imports every subprotocol's package and chains them: the <code>iteration</code> (rows 1–9, the subprotocol chain closed by the guarded sumcheck tail), the <code>endPiece</code> (now imported from <code>EndPiece/</code>), and the complete <code>evaluation</code> = iteration ⧺ end-piece. Its <code>isCWSS</code> fields are the certificates. The file hosts no protocol of its own and carries no sorry; with rows 1–9 and the end-piece all discharged, <code>evaluation</code> inherits no <code>sorryAx</code>." },
     { name:"End-piece", ref:"the closing link", files:[["EndPiece","Basic.lean"],["EndPiece","Reduction.lean"]], status:"proven", sorry:0,
-      desc:"The terminal link, split out of <code>Composition.lean</code> and filled: the prover sends the reduced witness <code>w̃</code> and the guarded verifier checks <code>relWEvalClaim</code> against it directly. Escape-free (it re-reads data just sent, so no hardness assumption is consulted) and <strong>sorry-free and axiom-clean</strong> — extraction is the identity on the transcript message, and CWSS closes through the challenge-free bridge plus the guarded-acceptance lemma." },
-    { name:"Honest provers and correctness", ref:"the prerequisite", files:[], status:"plan", note:"planned prerequisite",
-      desc:"Implement each opening subprotocol's honest prover and prove its completeness/correctness at its relation seam. Then compose those results along the full opening chain to establish correctness of the complete Hachi polynomial commitment scheme — the prerequisite for its <code>Commitment.Scheme</code> instantiation." },
+      desc:"The terminal link, split out of <code>Composition.lean</code> and filled: the prover sends the reduced witness <code>w̃</code> and the guarded verifier checks <code>relWEvalClaim</code> against it directly. Escape-free (it re-reads data just sent, so no hardness assumption is consulted) and <strong>sorry-free and axiom-clean</strong> — extraction is the identity on the transcript message, and CWSS closes through the challenge-free bridge plus the guarded-acceptance lemma. Certified <b>in both directions</b> about the same verifier (<code>endPieceReduction_perfectCompleteness</code>), with one decision procedure <code>endPieceCheck</code> shared with the nonrecursive scheme's terminal verdict (<code>Correctness.lean</code>)." },
+    { name:"Honest provers and correctness", ref:"delivered · nonrecursive", files:[["","HonestChain.lean"],["","Correctness.lean"],["","Concrete.lean"]], status:"proven", sorry:0,
+      desc:"<b>Delivered, not planned</b>: every link's honest prover is instantiated with a perfect-completeness proof (the <code>*/Completeness.lean</code> files), composed in <code>HonestChain.lean</code> up to <code>relWEvalClaim</code>, and closed <em>nonrecursively</em> by the terminal reveal-and-check of <code>Correctness.lean</code> — <code>hachiNonrecursive</code> carries a real <code>opening</code> and <code>hachiNonrecursive_perfectCorrectness</code> proves <code>Commitment.perfectCorrectness</code>, instantiated concretely in <code>Concrete.lean</code>. All sorry-free; every <em>composed</em> statement inherits <code>sorryAx</code> from the admitted generic <code>Reduction.append_completeness</code> only." },
     { name:"Commitment Scheme instantiation", ref:"the packaging", files:[["","Commitment.lean"]], status:"wip", sorry:1,
-      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof, pending the preceding honest-prover and correctness results for every opening subprotocol and their composition into the complete scheme." },
+      desc:"Hachi as a <code>Commitment.Scheme</code>: the multilinear eval-oracle, honest <code>keygen</code> and <code>commit</code> are real. The single sorry is the <code>opening</code> proof — the <em>succinct, recursive</em> opening, <b>deferred</b> with the end-piece and the §4.5 recursion tail it depends on. The scheme is not blocked on it: the nonrecursive packaging is already closed in <code>Correctness.lean</code> and instantiated in <code>Concrete.lean</code>." },
   ];
 
   var ROADMAP = [
+    { title:"Row-11 repair decision — the §4.5/§3.2 counterexample", tag:"gap",
+      body:"The one design-blocked item, and it sits upstream of every recursive goal: write the κ&nbsp;=&nbsp;1 cheat up as a short Lean-independent note, raise it with the [NOZ26] authors, and pick the repair — a fresh batching challenge over the peeled index (one extra round, Schwartz–Zippel error ≈ k/|F|) or the generic §3.1 packing (κ extra variables, a different norm/extraction story). Either choice rewrites the protocol content of rows 10–12, which is why those rows stay skeletal until it lands. The full walkthrough is in <a href=\"#gap\">the gap explainer</a>." },
+    { title:"Digit-decomposed range table — unpinning the honest parameters", tag:"planned",
+      body:"Rework <code>ZeroCheck/Constraints.lean</code>'s w̃ to the paper's actual protocol (NOZ26 §4.3 p.&nbsp;19: the quotient enters the table as base-b <em>digits</em>, a decomposition the paper then hides from its notation). This removes the pinned parameterization γ = q/2 = bZero−1, makes the composed completeness hold at the paper's parameters, and collapses the degree-q range polynomial to degree-b — also fixing the six-minute honest sumcheck run." },
+    { title:"§3 packing head — external extension-field claims", tag:"planned",
+      body:"Wrap an <code>F_{q^k}</code> evaluation claim in front of <code>relPolyEval</code>, as an instance of the generalized <code>RingSwitching</code> packing phase — a separate track, not a Hachi-local head." },
+    { title:"Recursion-tail completeness &amp; the recursive opening", tag:"planned",
+      body:"Only the honest layer's <em>remainder</em> — the layer itself is done, not planned: per-link completeness theorems composed in <code>HonestChain.lean</code>, closed <em>nonrecursively</em> by the terminal reveal-and-check of <code>Correctness.lean</code> and instantiated concretely in <code>Concrete.lean</code>, all sorry-free modulo the admitted generic <code>Reduction.append_completeness</code>. What is actually open: the §4.5 recursion tail's honest layer (<code>PartialEval</code>'s <code>computeY</code> and its encoding defs), discharging <code>append_completeness</code> itself, and <code>hachi.opening</code> — the succinct, recursive opening." },
+    { title:"LiftCom instantiation — making the escapes concrete", tag:"planned",
+      body:"The chain is stated at an abstract weak-binding commitment; <code>Concrete.lean</code> already pins the commitment map itself (<code>hachiLiftCom</code>) on the honest side, so what remains is the soundness half: the escape events of rows 4/6/8 point at <code>LiftCom.Collision</code> without yet being tied to the inner-outer commitment. Discharging that tie is what turns those escapes into concrete Module-SIS breaks." },
     { title:"Rust extraction &amp; verified optimization", tag:"planned",
-      body:"Build an AI-driven optimization loop around the Hachi specifications: let AI generate and optimize both Lean definitions and Rust verifier/prover code; extract the Rust through Aeneas/Hax into a derived Lean model; then prove each operation succeeds and is equivalent to—or commutes with—the specification. Rust benchmarks against frozen baselines provide the fitness signal for the next round, so repeated Lean and Rust optimizations produce faster code without losing the proof connection. Adapt the running <a href=\"https://github.com/tobias-rothmann/AeneasCompPoly\">AeneasCompPoly</a> prototype for CompPoly to Hachi." },
-    { title:"Recursive iteration loop (§3 / §4.5)", tag:"planned",
-      body:"The §3 packing head accepts an external <code>F_{q^k}</code> evaluation claim, then the current nine-link opening reaches an evaluation claim whose §4.5 adapters turn it into the next ring's <code>QuadEval</code> input. Repeating Hachi evaluation rounds in this loop progressively shrinks the remaining polynomial-evaluation task before a final base case, making the eventual proof smaller. The target adapters are outside the current line; their skeletons include the documented Z-packing soundness gap." },
+      body:"Build an AI-driven optimization loop around the Hachi specifications: let AI generate and optimize both Lean definitions and Rust verifier/prover code; extract the Rust through Aeneas/Hax into a derived Lean model; then prove each operation succeeds and is equivalent to—or commutes with—the specification. Rust benchmarks against frozen baselines provide the fitness signal for the next round. Adapt the running <a href=\"https://github.com/tobias-rothmann/AeneasCompPoly\">AeneasCompPoly</a> prototype for CompPoly to Hachi; <code>hachiNonrecursiveConcrete</code> and the compiled <code>hachi-runtime</code> gate are the extraction target and its executability half." },
     { title:"Knowledge-error accounting · extractability · Fiat–Shamir", tag:"planned",
       body:"FMN24 Lemma 4 knowledge-error, <code>Commitment.extractability</code>, and the Fiat–Shamir transform remain out of scope by design." },
   ];
 
   /* full index: [subfolder, filename, role, ref, row, status, sorry] */
   var INDEX = [
+    ["","Basic.lean","umbrella","whole development","—","umbrella",0],
     ["","Commitment.lean","commitment-interface","§2.1/§4.1","—","wip",1],
     ["","Composition.lean","composition","§4.2–4.3","—","proven",0],
+    ["","Concrete.lean","completeness","§4.3 · Eq.16","1–9 + reveal","proven",0],
+    ["","Correctness.lean","completeness","§4.2–§4.3","1–9 + reveal","proven",0],
     ["","EvalSplit.lean","infrastructure","§4 · Eq.12","—","proven",0],
+    ["","HonestChain.lean","completeness","§4.2–4.3","1–9","proven",0],
     ["Gadget","Basic.lean","umbrella","§2.1","—","umbrella",0],
     ["Gadget","Core.lean","infrastructure","§2.1","—","proven",0],
     ["Gadget","Norms.lean","infrastructure","§2.1","—","proven",0],
@@ -671,16 +842,21 @@
     ["InnerOuter","Security.lean","infrastructure","§4.1","—","proven",0],
     ["QuadEval","Basic.lean","umbrella","§4.2","—","umbrella",0],
     ["QuadEval","Bridge.lean","bridge","§4.2 · Eq.12","1","proven",0],
+    ["QuadEval","Completeness.lean","completeness","§4.2 · L8","2","proven",0],
     ["QuadEval","Gadgets.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["QuadEval","Reduction.lean","subprotocol","§4.2 · Fig3","2","proven",0],
     ["QuadEval","Soundness.lean","subprotocol","§4.2 · L8","2","proven",0],
     ["RingSwitch","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["RingSwitch","Rlin.lean","bridge","§4.3","3","proven",0],
     ["RingSwitch","Reduction.lean","subprotocol","§4.3 · Fig4 · L9","4","proven",0],
+    ["RingSwitch","Completeness.lean","completeness","§4.3 · Fig4 · L9","3–4","proven",0],
+    ["RingSwitch","ComputableWitness.lean","infrastructure","§4.3 · Fig4 · L9","4","proven",0],
+    ["RingSwitch","QuotientNorms.lean","infrastructure","§4.3 · L9","—","proven",0],
     ["ZeroCheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
-    ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","wip",0],
-    ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","wip",0],
+    ["ZeroCheck","Batch.lean","bridge","§4.3 · Eq22–23","5","proven",0],
+    ["ZeroCheck","Constraints.lean","shared ZeroCheck/sumcheck encoding","§4.3 · Eq21–23","5–9","proven",0],
     ["ZeroCheck","Reduction.lean","subprotocol","§4.3 · Fig5 · L10*","6","repaired",0],
+    ["ZeroCheck","Completeness.lean","completeness","§4.3 · Fig5","5–6","proven",0],
     ["Sumcheck","Basic.lean","umbrella","§4.3","—","umbrella",0],
     ["Sumcheck","Bridge.lean","bridge","§4.3","7","proven",0],
     ["Sumcheck","Rounds.lean","subprotocol","§4.3 · Fig6 · L11","8","proven",0],
@@ -688,10 +864,11 @@
     ["Sumcheck","FinalEval.lean","subprotocol","§4.3 · Fig7","9","proven",0],
     ["EndPiece","Basic.lean","umbrella","§4.3 · close","—","umbrella",0],
     ["EndPiece","Reduction.lean","subprotocol","§4.3 · close","—","proven",0],
+    ["Sumcheck","Completeness.lean","completeness","§4.3 · Fig6–7","7–9","proven",0],
     ["Recursion","Basic.lean","umbrella","§4.5","—","umbrella",0],
-    ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","—","plan",6],
-    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","—","plan",2],
-    ["Recursion","TraceHandoff.lean","subprotocol","§4.5 · Eqs27–28","—","plan",4],
+    ["Recursion","PartialEval.lean","subprotocol","§4.5 · Eq24","10","wip",6],
+    ["Recursion","ZBatchBridge.lean","bridge","§4.5 · Eqs25–26","11","gap",2],
+    ["Recursion","TraceHandoff.lean","subprotocol","§4.5 · Eqs27–28","12","wip",4],
   ];
 
   /* ---------------- HELPERS ---------------- */
@@ -705,7 +882,7 @@
   /* Every status appearing in INDEX must have a key here, or it is invisible in the tiles and the
      bar and `total` stops matching the file count. Unrepresented statuses are reported loudly
      rather than dropped silently. */
-  var counts = { proven:0, repaired:0, wip:0, plan:0 };
+  var counts = { proven:0, repaired:0, wip:0, gap:0, plan:0 };
   var uncounted = [];
   INDEX.forEach(function(r){
     if(r[2]==="umbrella") return;
@@ -715,10 +892,11 @@
     console.warn("hachi-overview: status missing from counts/tiles/bar: "+uncounted.join(", "));
   }
   var tiles = [
-    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free &amp; complete — the foundations, the soundness certificate of all nine chain links, the closing end-piece, and their composition." },
+    { cls:"ok", n:counts.proven, lbl:"Proven", sub:"Sorry-free — all foundations, the whole opening line rows 1–9 (QuadEval, the HMZ25 lift, the batching bridge, and the sumcheck loop with its final evaluation), the closing end-piece with the composed <code>evaluation</code>, and the honest completeness layer through the nonrecursive opening." },
     { cls:"rep", n:counts.repaired, lbl:"Repaired", sub:"Sorry-free, but a corrected variant of a paper claim that is false as printed — row 6 (Lemma&nbsp;10)." },
-    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: row 5's completeness direction and the scheme." },
-    { cls:"plan", n:counts.plan, lbl:"Future work", sub:"The three §4.5 recursion adapters close the next-iteration loop; their target skeletons and gap are tracked in the roadmap below." },
+    { cls:"warn", n:counts.wip, lbl:"In progress", sub:"Real skeletons: the deferred §4.5 recursion adapters (rows 10 and 12) and the packaging file that inherits from them (the recursive opening in <code>Commitment.lean</code>)." },
+    { cls:"bad", n:counts.gap, lbl:"Open gap", sub:"A step whose soundness appears to fail as the paper states it — row&nbsp;11's Z-packing bridge, awaiting a repair decision. <a href=\"#gap\">Explained in full below.</a>" },
+    { cls:"plan", n:ROADMAP.filter(function(r){ return r.tag!=="gap"; }).length, lbl:"Planned", sub:"Genuinely open roadmap work — the packing head, the recursion tail's completeness &amp; the recursive opening, the LiftCom→Module-SIS tie &amp; the knowledge-error bridge. (The row-11 repair decision is tracked separately, as the gap.)" },
   ];
   var tilesEl = document.getElementById("tiles");
   tiles.forEach(function(t){
@@ -728,9 +906,9 @@
     tilesEl.appendChild(d);
   });
   /* status bar (files, excluding umbrellas) */
-  var total = counts.proven+counts.repaired+counts.wip+counts.plan;
+  var total = counts.proven+counts.repaired+counts.wip+counts.gap+counts.plan;
   var bar = document.getElementById("statusBar");
-  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip],["var(--plan)",counts.plan]].forEach(function(seg){
+  [["var(--ok)",counts.proven],["var(--rep)",counts.repaired],["var(--warn)",counts.wip],["var(--bad)",counts.gap],["var(--plan)",counts.plan]].forEach(function(seg){
     var s=el("span"); s.style.background=seg[0]; s.style.width=(100*seg[1]/total)+"%"; bar.appendChild(s);
   });
 
