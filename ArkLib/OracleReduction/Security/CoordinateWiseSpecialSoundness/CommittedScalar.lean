@@ -5,6 +5,7 @@ Authors: Tobias Rothmann
 -/
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.ScalarRound
 import ArkLib.OracleReduction.Security.CoordinateWiseSpecialSoundness.Escape
+import VCVio.OracleComp.QueryTracking.ProgrammingOracle
 
 /-!
   # Committed scalar phase (generic commit-then-challenge CWSS shell)
