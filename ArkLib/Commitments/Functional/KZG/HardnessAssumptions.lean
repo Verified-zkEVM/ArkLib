@@ -4,7 +4,6 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Tobias Rothmann
 -/
 
-import VCVio
 import ArkLib.Commitments.Functional.KZG.Algebra
 import ArkLib.Commitments.Functional.KZG.Sampling
 import ArkLib.Data.GroupTheory.PrimeOrder

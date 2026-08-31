@@ -4,7 +4,8 @@ Released under Apache 2.0 license as described in the file LICENSE.
 Authors: Quang Dao
 -/
 
-import VCVio
+import VCVio.OracleComp.OracleContext
+import VCVio.OracleComp.SimSemantics.ReaderT.Basic
 import CompPoly.Data.MvPolynomial.Notation
 import Mathlib.Algebra.Polynomial.Roots
 import ArkLib.Data.MvPolynomial.Degrees
