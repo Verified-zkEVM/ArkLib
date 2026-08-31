@@ -224,8 +224,7 @@ theorem liftContext_processRound
   simp only [bind_pure_comp]
   congr 1; funext ⟨tr, ps, outerStmtIn', outerWitIn'⟩
   simp only [pure_bind]
-  split <;> simp [Functor.map_map, Function.comp, liftM_map, map_bind,
-    bind_assoc, pure_bind, bind_map_left, bind_pure_comp]
+  split <;> simp [Functor.map_map, liftM_map, map_bind]
 
 
 theorem liftContext_runToRound
@@ -309,9 +308,11 @@ theorem liftContext_run
         return ⟨⟨fullTranscript, lens.lift (outerStmtIn, outerWitIn) innerCtxOut⟩ ,
                 lens.stmt.lift outerStmtIn verInnerStmtOut⟩ := by
   unfold run
-  simp [liftContext, Prover.liftContext_run, Verifier.liftContext, Verifier.run, Function.uncurry]
+  simp only [ChallengeIdx, Challenge, liftContext, Verifier.liftContext, bind_pure_comp,
+    Prover.liftContext_run, Function.uncurry, liftM_map, Verifier.run, OptionT.run_map,
+    bind_map_left, map_bind, Functor.map_map]
   congr 1; funext ⟨_, _⟩; congr 1; funext a_1
-  simp [Functor.map_map, Function.comp]
+  simp
   cases a_1 <;> simp [Option.getM, map_pure]
 
 theorem liftContext_runWithLog
@@ -408,7 +409,12 @@ theorem liftContext_soundness [Inhabited InnerStmtOut]
   unfold soundness Reduction.run at h ⊢
   -- Note: there is no distinction between `Outer` and `Inner` here
   intro WitIn WitOut outerWitIn outerP outerStmtIn hOuterStmtIn
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    OptionT.run_monadLift, monadLift_self, ProgrammingPolicy.empty_apply,
+    OptionT.run_map, Option.elimM_map, Option.elim_some, simulateQ_bind,
+    simulateQ_option_elimM, simulateQ_pure, simulateQ_map, StateT.run'_eq,
+    StateT.run_bind, map_bind, OptionT.mk_bind] at h ⊢
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
     PrvState := outerP.PrvState
     input := fun _ => outerP.input (outerStmtIn, outerWitIn)
@@ -454,7 +460,11 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
   obtain ⟨E, h'⟩ := h
   refine ⟨E.liftContext ⟨stmtLens, witLens⟩, ?_⟩
   intro outerStmtIn outerWitIn outerP
-  simp [Extractor.Straightline.liftContext]
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, Extractor.Straightline.liftContext,
+    bind_pure_comp, OptionT.run_map, liftM_map, Functor.map_map, OptionT.run_bind,
+    ProgrammingPolicy.empty_apply, simulateQ_option_elimM, simulateQ_pure,
+    simulateQ_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def, Prod.mk.eta]
   let innerP : Prover oSpec InnerStmtIn InnerWitIn InnerStmtOut InnerWitOut pSpec :=
     {
       PrvState := outerP.PrvState
@@ -467,9 +477,18 @@ theorem liftContext_knowledgeSoundness [Inhabited InnerStmtOut] [Inhabited Inner
     }
   have h_innerP_input {innerStmtIn} {innerWitIn} :
       innerP.input (innerStmtIn, innerWitIn) = outerP.input (outerStmtIn, outerWitIn) := rfl
-  simp at h'
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, bind_pure_comp, OptionT.run_bind,
+    ProgrammingPolicy.empty_apply, OptionT.run_map, simulateQ_option_elimM,
+    simulateQ_pure, simulateQ_map, StateT.run'_eq, OptionT.mk_bind, Option.mem_def,
+    Prod.mk.eta] at h'
   have hR := h' (stmtLens.proj outerStmtIn) default innerP
-  simp [Reduction.runWithLog, Verifier.liftContext, Verifier.run] at hR ⊢
+  simp only [Reduction.runWithLog, ChallengeIdx, Challenge, run, bind_pure_comp,
+    OptionT.run_bind, OptionT.run_monadLift, monadLift_self,
+    ProgrammingPolicy.empty_apply, OptionT.run_map, Option.elimM_map, Option.elim_some,
+    simulateQ_bind, simulateQ_option_elimM, simulateQ_pure, simulateQ_map,
+    Option.elimM_bind, StateT.run_bind, map_bind, OptionT.mk_bind, liftContext,
+    ge_iff_le] at hR ⊢
   have h_innerP_runWithLog {innerStmtIn} {innerWitIn} :
       innerP.runWithLog innerStmtIn innerWitIn
       = do
@@ -499,7 +518,10 @@ theorem liftContext_rbr_soundness [Inhabited InnerStmtOut]
       (V.liftContext lens).rbrSoundness init impl outerLangIn outerLangOut rbrSoundnessError := by
   unfold rbrSoundness at h ⊢
   obtain ⟨stF, h⟩ := h
-  simp at h ⊢
+  simp only [ChallengeIdx, Challenge, QueryImpl.addLift_def,
+    PFunctor.Handler.liftTarget_self, HasQuery.instOfMonadLift_query, bind_pure_comp,
+    simulateQ_bind, simulateQ_map, StateT.run'_eq, StateT.run_bind, StateT.run_map,
+    map_bind, Functor.map_map, Subtype.forall] at h ⊢
   refine ⟨stF.liftContext lens (lensSound := lensSound), ?_⟩
   intro outerStmtIn hOuterStmtIn WitIn WitOut witIn outerP roundIdx hDir
   have innerP : Prover oSpec InnerStmtIn WitIn InnerStmtOut WitOut pSpec := {
