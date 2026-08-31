@@ -6,6 +6,7 @@ Authors: Quang Dao
 
 import ArkLib.OracleReduction.ProtocolSpec.SeqCompose
 import ArkLib.OracleReduction.Security.RoundByRound
+import VCVio.OracleComp.SimSemantics.OptionT.Basic
 
 /-!
   # Sequential Composition of Two (Oracle) Reductions
