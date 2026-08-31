@@ -218,7 +218,10 @@ private def F2i (B : Finset (Fin n → F)) (i : Fin n) (α : F) :
 lemma F2i_disjoint : Set.PairwiseDisjoint Set.univ (F2i B i) := by
   intros a _ b _ hab
   simp only [disjoint_left, Prod.forall]
-  unfold F2i; aesop
+  intro x y hxa hxb
+  simp only [F2i, Finset.mem_filter, Finset.mem_univ, true_and,
+    Finset.mem_product] at hxa hxb
+  exact hab (hxa.2.2.1.symm.trans hxb.2.2.1)
 
 /-- `|F2i B i α| = K(α) · (K(α) - 1)`. -/
 lemma F2i_card {α : F} : (F2i B i α).card = K B i α * (K B i α - 1) := by
@@ -235,7 +238,15 @@ private def Bi (B : Finset (Fin n → F)) (i : Fin n) :=
   {x ∈ B ×ˢ B | x.1 ≠ x.2 ∧ x.1 i = x.2 i}
 
 /-- `Bi` decomposes as a disjoint union of `F2i` over all field elements. -/
-lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by unfold Bi F2i; ext; aesop
+lemma Bi_biUnion_F2i : Bi B i = univ.biUnion (F2i B i) := by
+  ext x
+  simp only [Bi, F2i, Finset.mem_filter, Finset.mem_product, Finset.mem_biUnion,
+    Finset.mem_univ, true_and]
+  constructor
+  · rintro ⟨hmem, hne, heq⟩
+    exact ⟨x.1 i, hmem, hne, rfl, heq.symm⟩
+  · rintro ⟨a, hmem, hne, hxa, hya⟩
+    exact ⟨hmem, hne, hxa.trans hya.symm⟩
 
 /-- `|Bi B i| = ∑ α, K(α) · (K(α) - 1)`. -/
 lemma Bi_card : (Bi B i).card = ∑ α : F, K B i α * (K B i α - 1) := by

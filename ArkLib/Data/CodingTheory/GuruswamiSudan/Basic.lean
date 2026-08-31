@@ -172,13 +172,14 @@ lemma numVars_eq_of_gt_one {D : ℕ} (hk : 1 < k) :
               ∑ j ∈ range (D / (k - 1) + 1), (k - 1) * j := by
           exact eq_tsub_of_add_eq <| by
             rw [← sum_add_distrib]
-            exact sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le <| by
-              nlinarith [mem_range.mp hx, Nat.div_mul_le_self D (k - 1)]
-        simp_all only [mul_comm, sum_const, card_range, smul_eq_mul]
-        exact congrArg _ (Eq.symm <| Nat.div_eq_of_eq_mul_left zero_lt_two <| by
-          rw [← sum_mul _ _ _]
-          exact (D / (k - 1)).recOn (by norm_num) fun n ih ↦ by
-            norm_num [range_add_one] at *; linarith)
+            refine sum_congr rfl fun x hx ↦ tsub_add_cancel_of_le ?_
+            exact (Nat.mul_le_mul_left _ (Nat.lt_succ_iff.mp (mem_range.mp hx))).trans
+              (Nat.mul_div_le D (k - 1))
+        rw [h_simp, ← Finset.mul_sum, Finset.sum_range_id]
+        simp only [sum_const, card_range, smul_eq_mul]
+        simp only [Nat.add_sub_cancel]
+        rw [Nat.mul_comm (D / (k - 1) + 1) (D / (k - 1)), ← Nat.mul_div_assoc]
+        exact even_iff_two_dvd.mp (by simpa [parity_simps] using Nat.even_or_odd (D / (k - 1)))
       rw [sum_add_distrib]
       simp only [sum_const, card_range, smul_eq_mul, mul_one]
       rw [h_simp]

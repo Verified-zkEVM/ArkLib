@@ -217,73 +217,48 @@ private lemma fin_nsmul_val {m : ℕ} (k : ℕ) (a : Fin (2 ^ m)) :
 private lemma subdomain_embed_val {i : ℕ} (hi : i < n) (k : Fin (2 ^ (n - i))) :
   (CosetFftDomainClass.subdomain_embed (n := n) i k).val = 2 ^ i * k.val := by grind +locals
 
+/-- Evaluation in a subdomain commutes with the corresponding power map. -/
+private lemma subdomain_eval_pow_core {i j : ℕ} (hij : i + j ≤ n)
+    (k : Fin (2 ^ (n - i))) :
+    ((subdomain ω i) k) ^ (2 ^ j) =
+      (subdomain ω (i + j)) ⟨k.val % 2 ^ (n - (i + j)), Nat.mod_lt _ (Nat.two_pow_pos _)⟩ := by
+  have h_subdomain_embedding :
+    2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k) =
+      CosetFftDomainClass.subdomain_embed (n := n) (i + j) ⟨k.val % 2 ^ (n - (i + j)),
+    Nat.mod_lt _ (by positivity)⟩ := by
+    all_goals generalize_proofs at *
+    have h_subdomain_embedding :
+      (2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k)).val =
+        (2 ^ (i + j) * (k.val % 2 ^ (n - (i + j)))) % 2 ^ n := by
+      rw [fin_nsmul_val]
+      by_cases hi : i < n
+      · rw [subdomain_embed_val hi k]
+        exact nat_mul_pow_mod hij
+      · simp_all only [not_lt, CosetFftDomainClass.subdomain_embed, ge_iff_le, ↓reduceDIte,
+        Fin.coe_ofNat_eq_mod, Nat.zero_mod, mul_zero]
+        norm_num [show i = n by linarith, show j = 0 by linarith]
+    rw [←Fin.val_inj]
+    simp_all only
+      [CosetFftDomainClass.subdomain_embed, ge_iff_le, smul_dite, nsmul_zero]
+    split_ifs <;> simp_all +decide only [Nat.sub_eq_zero_of_le, pow_zero, Order.lt_one_iff,
+      mul_zero, Order.lt_two_iff, pow_pos, Nat.mod_eq_of_lt, Fin.val_eq_zero_iff, dite_eq_left_iff,
+      not_le, Fin.coe_ofNat_eq_mod]
+    rw [Nat.mod_eq_of_lt]
+    exact lt_of_lt_of_le
+      (Nat.mul_lt_mul_of_pos_left ‹_› (pow_pos (by decide) _))
+      (by rw [←pow_add, Nat.add_sub_of_le (by linarith)])
+  rw [subdomain_apply, subdomain_apply, mul_pow, mkSubgroupUnit_pow,
+    h_subdomain_embedding]
+  congr 1
+  rw [← pow_mul, ← pow_add]
+
 /-- If `x` lies in the `j`th subdomain,
   then `x ^ 2 ^ i` lies in the `(j + i)`th subdomain, provided `j + i ≤ n`. -/
 theorem pow_mem_of_mem {i j : ℕ} (hsum : j + i ≤ n) (h : x ∈ subdomain ω j) :
   x ^ 2 ^ i ∈ subdomain ω (j + i) := by
-  obtain ⟨k, hk⟩ :
-    ∃ k : Fin (2 ^ (n - j)), x =
-      (mkSubgroupUnit ω (CosetFftDomainClass.subdomain_embed j k) : F) * (ω 0) ^ 2 ^ j := by
-    obtain ⟨k, rfl⟩ := h
-    exact ⟨k, mul_comm _ _⟩
-  have hx_pow :
-    x ^ 2 ^ i =
-      ((ω 0) ^ 2 ^ (j + i)) *
-        (mkSubgroupUnit ω (2 ^ i • CosetFftDomainClass.subdomain_embed j k) : F) := by
-    convert congr_arg (· ^ 2 ^ i) hk using 1
-    ring_nf
-    simp [←mkSubgroupUnit_pow]
-  have h_mod :
-    (2 ^ i • CosetFftDomainClass.subdomain_embed j k).val =
-      (2 ^ (j + i) *
-        (k.val % 2 ^ (n - (j + i)))) % 2 ^ n := by
-    have h_mod :
-      (2 ^ i • CosetFftDomainClass.subdomain_embed j k).val =
-        (2 ^ i *
-          (CosetFftDomainClass.subdomain_embed j k).val) % 2 ^ n := by
-      convert fin_nsmul_val _ _
-    by_cases hj : j < n
-    · simp_all only [CosetFftDomainClass.subdomain_embed, ge_iff_le, smul_dite, nsmul_zero]
-      split_ifs
-      · simp_all only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, mul_zero]
-        linarith
-      · simp_all only [↓reduceDIte, pow_add, mul_assoc]
-        convert nat_mul_pow_mod (show j + i ≤ n from hsum) using 1
-        ring_nf
-    · have : n = j := by linarith
-      aesop
-        (add simp [CosetFftDomainClass.subdomain_embed, Nat.mod_one])
-  have h_subdomain :
-    (CosetFftDomainClass.subdomain_embed
-      (n := n) (j + i) ⟨k.val % 2 ^ (n - (j + i)),
-    Nat.mod_lt _ (by positivity)⟩).val =
-    2 ^ (j + i) * (k.val % 2 ^ (n - (j + i))) := by
-    by_cases hi : j + i ≥ n
-      <;> aesop
-            (add simp [CosetFftDomainClass.subdomain_embed, Nat.mod_one])
-            (add safe (by grind))
-  generalize_proofs at *
-  have h_eq :
-    2 ^ i • CosetFftDomainClass.subdomain_embed j k =
-      CosetFftDomainClass.subdomain_embed
-        (j + i) ⟨k.val % 2 ^ (n - (j + i)), by assumption⟩ := Fin.ext <| by
-      simpa [Nat.mod_eq_of_lt (show 2 ^ (j + i) * (k.val % 2 ^ (n - (j + i))) <
-        2 ^ n from lt_of_lt_of_le
-          (Nat.mul_lt_mul_of_pos_left ‹_› (pow_pos (by decide) _))
-          (by rw [← pow_add, Nat.add_sub_of_le hsum]))]
-      using h_mod.trans <| h_subdomain.symm ▸
-        Nat.mod_eq_of_lt
-          (show 2 ^ (j + i) * (k.val % 2 ^ (n - (j + i))) < 2 ^ n from
-            lt_of_lt_of_le
-              (Nat.mul_lt_mul_of_pos_left ‹_› (pow_pos (by decide) _))
-              (by rw [← pow_add, Nat.add_sub_of_le hsum]))
-  generalize_proofs at *
-  use Multiplicative.ofAdd ⟨k.val % 2 ^ (n - (j + i)), by assumption⟩
-  generalize_proofs at *
-  convert hx_pow.symm using 1
-  exact Eq.symm
-    (Mathlib.Tactic.CancelDenoms.derive_trans₂
-      rfl (congrArg Units.val (congrArg (mkSubgroupUnit ω) h_eq)) rfl)
+  obtain ⟨k, rfl⟩ := h
+  refine ⟨Multiplicative.ofAdd ⟨k.val % 2 ^ (n - (j + i)), Nat.mod_lt _ (by positivity)⟩, ?_⟩
+  exact (subdomain_eval_pow_core (ω := ω) (i := j) (j := i) hsum k).symm
 
 /-- If `x` lies in the original domain, then `x ^ 2 ^ i` lies in the `i`th subdomain. -/
 lemma pow_mem_subdomain_of_mem_subdomain_0 {i : ℕ} (hi : i ≤ n)
@@ -337,35 +312,7 @@ private lemma subdomain_eval_pow' {i j : ℕ} (hij : i + j ≤ n)
     (k : Fin (2 ^ (n - i))) :
     ((subdomain ω i) k) ^ (2 ^ j) =
       (subdomain ω (i + j)) ⟨k.val % 2 ^ (n - (i + j)), Nat.mod_lt _ (Nat.two_pow_pos _)⟩ := by
-  have h_subdomain_embedding :
-    2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k) =
-      CosetFftDomainClass.subdomain_embed (n := n) (i + j) ⟨k.val % 2 ^ (n - (i + j)),
-    Nat.mod_lt _ (by positivity)⟩ := by
-    all_goals generalize_proofs at *
-    have h_subdomain_embedding :
-      (2 ^ j • (CosetFftDomainClass.subdomain_embed (n := n) i k)).val =
-        (2 ^ (i + j) * (k.val % 2 ^ (n - (i + j)))) % 2 ^ n := by
-      rw [fin_nsmul_val]
-      by_cases hi : i < n
-      · simp_all only [CosetFftDomainClass.subdomain_embed, ge_iff_le]
-        grind +suggestions
-      · simp_all only [not_lt, CosetFftDomainClass.subdomain_embed, ge_iff_le, ↓reduceDIte,
-        Fin.coe_ofNat_eq_mod, Nat.zero_mod, mul_zero]
-        norm_num [show i = n by linarith, show j = 0 by linarith]
-    rw [←Fin.val_inj]
-    simp_all only
-      [CosetFftDomainClass.subdomain_embed, ge_iff_le, smul_dite, nsmul_zero]
-    split_ifs <;> simp_all +decide only [Nat.sub_eq_zero_of_le, pow_zero, Order.lt_one_iff,
-      mul_zero, Order.lt_two_iff, pow_pos, Nat.mod_eq_of_lt, Fin.val_eq_zero_iff, dite_eq_left_iff,
-      not_le, Fin.coe_ofNat_eq_mod]
-    rw [Nat.mod_eq_of_lt]
-    exact lt_of_lt_of_le
-      (Nat.mul_lt_mul_of_pos_left ‹_› (pow_pos (by decide) _))
-      (by rw [←pow_add, Nat.add_sub_of_le (by linarith)])
-  rw [subdomain_apply, subdomain_apply, mul_pow, mkSubgroupUnit_pow,
-    h_subdomain_embedding]
-  congr 1
-  rw [← pow_mul, ← pow_add]
+  exact subdomain_eval_pow_core hij k
 
 private lemma card_fin_filter_mod_eq {a j : ℕ} (hj : j ≤ a) (c : ℕ) (hc : c < 2 ^ (a - j)) :
   (Finset.univ.filter (fun k : Fin (2 ^ a) => k.val % 2 ^ (a - j) = c)).card = 2 ^ j := by
@@ -550,44 +497,37 @@ lemma sqFoldMapGen_eq_sqFoldMapGen_of_pow_apply_eq_pow_apply [NeZero n] {i : ℕ
   sqFoldMapGen (i := i) j = sqFoldMapGen j' :=
   CosetFftDomainClass.injective (subdomain ω i) <| by simp_all
 
-private lemma subdomain_embed_comp {k : ℕ} (hk : k + 1 ≤ n)
-    (a : Fin (2 ^ (n - k - 1)))
-    (i : Fin (2 ^ (n - (k + 1)))) (hai : (a : ℕ) = (i : ℕ)) :
+private lemma subdomain_embed_comp {k j : ℕ} (hk : k + j ≤ n)
+    (a : Fin (2 ^ (n - k - j)))
+    (i : Fin (2 ^ (n - (k + j)))) (hai : (a : ℕ) = (i : ℕ)) :
     CosetFftDomainClass.subdomain_embed (n := n) k
-        (CosetFftDomainClass.subdomain_embed (n := n - k) 1 a) =
-        CosetFftDomainClass.subdomain_embed (n := n) (k + 1) i := by
+        (CosetFftDomainClass.subdomain_embed (n := n - k) j a) =
+        CosetFftDomainClass.subdomain_embed (n := n) (k + j) i := by
   ext
-  by_cases hk1 : k + 1 = n
-  · have hnk : n - k = 1 := by omega
-    simp only [CosetFftDomainClass.subdomain_embed, hnk, ge_iff_le,
-      show ¬n ≤ k by omega, show n ≤ k + 1 by omega, le_refl,
+  by_cases hkj : k + j = n
+  · simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
+      show n - k ≤ j by omega, show n ≤ k + j by omega,
       ↓reduceDIte, Fin.val_zero, mul_zero]
-  · have hk1' : k + 1 < n := by omega
-    simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
-      show ¬n ≤ k by omega, show ¬n ≤ k + 1 by omega, show ¬n - k ≤ 1 by omega,
-      ↓reduceDIte, Fin.val_mk, pow_one]
-    rw [hai, pow_succ]
-    ring
+    by_cases hnk : n ≤ k
+    · simp only [hnk, ↓reduceDIte, Fin.val_zero]
+    · simp only [hnk, ↓reduceDIte]
+  · simp only [CosetFftDomainClass.subdomain_embed, ge_iff_le,
+      show ¬n ≤ k by omega, show ¬n ≤ k + j by omega, show ¬n - k ≤ j by omega,
+      ↓reduceDIte, Fin.val_mk]
+    rw [hai, pow_add]
+    ring_nf
 
-/-- Composing the `k`th subdomain with one more folding step gives the `(k+1)`th subdomain
-  (pointwise, under the index identification `n - k - 1 = n - (k + 1)`). -/
+/-- Taking the `j`th subdomain of the `k`th subdomain gives the `(k + j)`th subdomain
+pointwise, under the canonical index identification. -/
 lemma subdomain_comp
   {k j : ℕ} (hk : k + j ≤ n)
   {a : Fin (2 ^ (n - k - j))} {i : Fin (2 ^ (n - (k + j)))}
   (hai : a.val = i.val) :
   subdomain (subdomain ω k) j a = subdomain ω (k + j) i := by
-  by_cases h : n ≤ k <;> by_cases h' : n - k ≤ j
-  · have hk : k = n := by omega
-    have hj : j = 0 := by omega
-    simp_all [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed]
-  · simp_all
-  · have : n = k + j := by omega
-    simp_all [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed,
-      pow_add, pow_mul]
-  · aesop
-      (add simp [subdomain_apply, mkSubgroupUnit, CosetFftDomainClass.subdomain_embed])
-      (add unsafe (by ring_nf))
-      (add safe [(by omega), (by grind)])
+  simp only [subdomain_apply, mkSubgroupUnit]
+  rw [subdomain_embed_comp hk a i hai]
+  simp only [CosetFftDomainClass.subdomain_embed_zero, pow_add, pow_mul]
+  field_simp
 
 @[simp, grind =]
 theorem mem_subdomain_comp_iff_mem

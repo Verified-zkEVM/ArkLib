@@ -287,7 +287,7 @@ private lemma combine_eq_flat''
       let k := l - block_start dstar degs i
       r ^ (i + ∑ j < i, (dstar - degs j)) *
         fs i x * (φ x * r) ^ k := by
-  aesop (add safe combine_eq_flat')
+  simpa only [ri] using combine_eq_flat' φ dstar r fs degs
 
 omit [DecidableEq F] in
 private lemma combine_eq_flat'''
@@ -330,7 +330,7 @@ private lemma combine_eq_flat'''
     simp only [block_start, Nat.succ_eq_add_one, block_size, sum_add_distrib, sum_const,
       smul_eq_mul, mul_comm, one_mul, add_tsub_cancel_left, mul_assoc, mul_left_comm,
       mul_eq_mul_left_iff]
-    rw [show filter _ _ = Finset.Iio i by aesop]
+    rw [show filter _ _ = Finset.Iio i by ext j; simp]
     aesop (add safe (by ring))
 
 omit [DecidableEq F] in
@@ -344,14 +344,23 @@ private lemma combine_eq_flat_final
           let k := l - block_start dstar degs i
           fs i x * (φ x) ^ k) :=
   match m with
-  | 0 => by aesop (add simp Option.elim)
+  | 0 => by
+    have htotal : total_terms dstar degs = 0 := by simp [total_terms]
+    rw [combine_eq_flat, htotal]
+    simp [Option.elim]
+    rfl
   | Nat.succ m => by
     have h {l : Fin (total_terms dstar degs)} :
       Finset.max {j | block_start dstar degs j ≤ ↑l} =
         Finset.max' {j | block_start dstar degs j ≤ ↑l}
           block_start_filter_nonempty := by
-            aesop (add simp [Finset.max, Finset.max'])
-    aesop (add simp [Option.elim, combine_eq_flat'''])
+      aesop (add simp [Finset.max, Finset.max'])
+    rw [combine_eq_flat''' φ dstar r fs degs]
+    funext x
+    simp only [Finset.sum_apply, Pi.smul_apply, smul_eq_mul]
+    exact Finset.sum_congr rfl fun l _ ↦ by
+      rw [h]
+      rfl
 
 -- def DegCor
 
@@ -448,9 +457,10 @@ lemma master_lemma
       exact WithBot.add_lt_add_right (by simp) (hv_deg i ⟨j, hj⟩)
     have hq_coincide :
       ∀ x ∈ S, q.eval (φ x) = (v i ⟨j + 1, h_fin⟩).eval (φ x) := by
-      aesop
-        (add simp [q])
-        (add safe (by ring_nf))
+      intro x hx
+      simp only [q, Polynomial.eval_mul, Polynomial.eval_X]
+      rw [hv_eval i ⟨j, hj⟩ x hx, hv_eval i ⟨j + 1, h_fin⟩ x hx]
+      ring
     have hq_coincide :=
       Polynomial.eq_of_eval_eq_degree
         (q := v i ⟨j + 1, h_fin⟩)
@@ -461,7 +471,7 @@ lemma master_lemma
           aesop
         ) (Finset.image φ S) (by {
           simp only [Nat.cast_id, ge_iff_le, Order.add_one_le_iff]
-          rw [Finset.card_image_of_injective _ (fun x y hxy ↦ by aesop)]
+          rw [Finset.card_image_of_injective _ φ.injective]
           have h : ↑(rate (code φ dstar)) + 1 / ↑(Fintype.card ι) < 1 - δ :=
             glorious_lemma
               (by simpa using hδLt)
@@ -481,7 +491,10 @@ lemma master_lemma
               hS_card
           norm_cast at h
         })
-        (by aesop)
+        (by
+          intro y hy
+          obtain ⟨x, hx, rfl⟩ := Finset.mem_image.mp hy
+          exact hq_coincide x hx)
     simp only [q] at hq_coincide
     rw [←hq_coincide] at ih
     simp only [Polynomial.degree_mul, Polynomial.degree_X, WithBot.coe_add, WithBot.coe_one] at ih
@@ -581,7 +594,7 @@ theorem combine_theorem
                 ext x
                 rw [Nat.sub_add_comm (hdegs x)]
               rw [show ∑ x, (dstar - degs x + 1) = total + 1 by
-                aesop (add simp [total_terms, block_size])]
+                simpa only [total_terms, block_size] using htotal]
               simp
             · exact lt_of_lt_of_le hProb <| le_of_eq <| by
                 congr
@@ -644,9 +657,9 @@ theorem combine_theorem
       have master_lemma :=
         @master_lemma _ _ _ _ hempty
           _ _ _ _ hdegs _
-          hδLt _ (by aesop) (v := v) (fs := fs)
-        (by aesop)
-        (by aesop)
+          hδLt _ hS_card (v := v) (fs := fs)
+          (fun i j => (hv i j).1)
+          (fun i j x hx => (hv i j).2 x hx)
       exists S
       simp only [ge_iff_le, hS_card, true_and]
       have hf : ∀ i, 0 < block_size dstar degs i := by simp [block_size]

@@ -453,7 +453,7 @@ private theorem linear_bgks_numeric_setup
   let a : ℝ := 1 - (δ_min : ℝ) + (η : ℝ)
   have ha : 0 < a := by
     dsimp [a]
-    nlinarith
+    exact add_pos_of_nonneg_of_pos (sub_nonneg.mpr hdmin_le) heta
   let r : ℝ := a ^ ((1 : ℝ) / 3)
   have hr0 : 0 ≤ r := by
     exact Real.rpow_nonneg (le_of_lt ha) _
@@ -467,20 +467,21 @@ private theorem linear_bgks_numeric_setup
   have hcube : a < (1 - (δ_src : ℝ)) ^ 3 := by
     rw [← hrpow]
     exact pow_lt_pow_left₀ hr_lt hr0 (by norm_num)
-  have heta_lt_one : (η : ℝ) < 1 := by nlinarith
-  have heta_cube_lt : (η : ℝ) ^ 3 < (η : ℝ) := by
-    nlinarith [sq_pos_of_pos heta]
+  have heta_lt_one : (η : ℝ) < 1 := hη_lt_third.trans (by norm_num)
+  have heta_cube_lt : (η : ℝ) ^ 3 < (η : ℝ) :=
+    pow_lt_self_of_lt_one₀ heta heta_lt_one (by norm_num)
   have heta_le_a : (η : ℝ) ≤ a := by
     dsimp [a]
-    nlinarith
+    exact le_add_of_nonneg_left (sub_nonneg.mpr hdmin_le)
   have heta_lt_r : (η : ℝ) < r := by
     by_contra hnot
     have hr_le : r ≤ (η : ℝ) := le_of_not_gt hnot
     have hpow_le : r ^ 3 ≤ (η : ℝ) ^ 3 :=
       pow_le_pow_left₀ hr0 hr_le 3
-    nlinarith [hrpow, heta_cube_lt, heta_le_a]
+    rw [hrpow] at hpow_le
+    exact (not_lt_of_ge hpow_le) (heta_cube_lt.trans_le heta_le_a)
   refine ⟨hdmin_le, ha, hcube, ?_⟩
-  nlinarith [hr_lt, heta_lt_r]
+  simpa [add_comm] using (lt_sub_iff_add_lt.mp (heta_lt_r.trans hr_lt))
 
 private theorem linear_bgks_repeated_triples_card_le
     {α : Type} [Fintype α] [DecidableEq α] :
@@ -503,11 +504,14 @@ private theorem linear_bgks_repeated_triples_card_le
       simpa [R] using (Finset.mem_filter.mp hp).2
     rcases hrep with hxb | hxg | hbg
     · subst b
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inl
+        (Finset.mem_image.mpr ⟨(x, g), Finset.mem_univ _, rfl⟩))))
     · subst g
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inl (Finset.mem_union.mpr (Or.inr
+        (Finset.mem_image.mpr ⟨(x, b), Finset.mem_univ _, rfl⟩))))
     · subst g
-      simp [E01, E02, E12]
+      exact Finset.mem_union.mpr (Or.inr
+        (Finset.mem_image.mpr ⟨(x, b), Finset.mem_univ _, rfl⟩))
   have hE01 : E01.card ≤ (Fintype.card α) ^ 2 := by
     calc
       E01.card ≤ (Finset.univ : Finset (α × α)).card := by
@@ -987,7 +991,22 @@ private theorem linear_bgks_distinct_dense_triples_card_gt
   have hneg : D.filter (fun p => ¬ P p) = B := by
     ext p
     simp only [B, P, Finset.mem_filter]
-    tauto
+    constructor
+    · rintro ⟨hp, hnot⟩
+      refine ⟨hp, ?_⟩
+      by_cases h01 : p.1 = p.2.1
+      · exact Or.inl h01
+      by_cases h02 : p.1 = p.2.2
+      · exact Or.inr (Or.inl h02)
+      by_cases h12 : p.2.1 = p.2.2
+      · exact Or.inr (Or.inr h12)
+      exact (hnot ⟨h01, h02, h12⟩).elim
+    · rintro ⟨hp, hrep⟩
+      refine ⟨hp, fun hall => ?_⟩
+      rcases hrep with h01 | h02 | h12
+      · exact hall.1 h01
+      · exact hall.2.1 h02
+      · exact hall.2.2 h12
   have hpartNat : (D.filter P).card + B.card = D.card := by
     rw [← hneg]
     exact Finset.card_filter_add_card_filter_not P
@@ -1002,8 +1021,13 @@ private theorem linear_bgks_distinct_dense_triples_card_gt
     exact Finset.mem_filter.mpr ⟨Finset.mem_univ p, hrep⟩
   have hR :
       (R.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
-    have h := linear_bgks_repeated_triples_card_le (α := α)
-    simpa [R, α] using h
+    have h :
+        (R.card : ℝ) ≤ 3 * (Fintype.card α : ℝ) ^ 2 := by
+      change (((Finset.univ.filter fun p : α × α × α =>
+        p.1 = p.2.1 ∨ p.1 = p.2.2 ∨ p.2.1 = p.2.2).card : ℝ)) ≤
+          3 * (Fintype.card α : ℝ) ^ 2
+      exact linear_bgks_repeated_triples_card_le (α := α)
+    simpa [α] using h
   have hB :
       (B.card : ℝ) ≤ 3 * (good.card : ℝ) ^ 2 := by
     have hcardNat : B.card ≤ R.card := Finset.card_le_card hBsub
