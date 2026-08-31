@@ -27,13 +27,6 @@ capacity regime, via an affine-line collision-counting argument and a subspace-d
   Reed-Solomon Codes*, ePrint 2025/2054. Corollary 4.10.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -118,7 +111,7 @@ private theorem boosted_frs_radius_le_list_radius
   nlinarith only [mul_nonneg hR0 hc, hbse]
 
 private theorem exists_finset_lift_image_eq_injOn
-    {α β : Type} [DecidableEq α] [DecidableEq β]
+    {α β : Type} [DecidableEq β]
     (f : α → β) (s : Set α) (t : Finset β)
     (h : (↑t : Set β) ⊆ f '' s) :
     ∃ u : Finset α, (↑u : Set α) ⊆ s ∧ Set.InjOn f (↑u : Set α) ∧
@@ -130,15 +123,17 @@ private theorem exists_finset_lift_image_eq_injOn
 
 open scoped BigOperators in
 private theorem exists_seed_pairwise_distinct_affine_lines
-    {ι : Type} [Fintype ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι : Type} [Finite ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (P : Finset ((ι → A) × (ι → A)))
     (hcard : P.card ^ 2 < Fintype.card F) :
     ∃ γ : F,
       Set.InjOn (fun p : (ι → A) × (ι → A) => p.1 + γ • p.2)
         (↑P : Set ((ι → A) × (ι → A))) := by
   classical
+  let _ := Fintype.ofFinite ι
+  let _ := Fintype.ofFinite A
   let Q := (P.product P).filter (fun pq => pq.1 ≠ pq.2)
   let B := Q.biUnion (fun pq =>
     affineLineCollisionSeeds (F := F) pq.1.1 pq.1.2 pq.2.1 pq.2.2)
@@ -176,7 +171,7 @@ private theorem exists_seed_pairwise_distinct_affine_lines
 
 open scoped BigOperators in
 private theorem finset_card_sdiff_biUnion_ge
-    {α β : Type} [DecidableEq α] [DecidableEq β]
+    {α β : Type} [DecidableEq β]
     (P : Finset α) (T : Finset β) (K : α → Finset β)
     (n L a : ℕ)
     (hsub : ∀ p ∈ P, K p ⊆ T)
@@ -590,8 +585,8 @@ open scoped BigOperators in
 open scoped NNReal in
 open Code in
 private theorem aligned_affineLine_global_close
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Finite F] [DecidableEq F]
     {s b : ℕ} (hb : 1 < b)
     (f₀ f₁ u₀ u₁ : ι → Fin s → F) (T : Finset F)
     (hTcard : T.card = b) (δ : ℝ)
@@ -601,6 +596,7 @@ private theorem aligned_affineLine_global_close
     (Code.relHammingDist (f₀ + γ • f₁) (u₀ + γ • u₁) : ℝ) ≤
       δ * (b : ℝ) / ((b : ℝ) - 1) := by
   classical
+  let _ := Fintype.ofFinite F
   let U : F → ι → Fin s → F := fun α => u₀ + α • u₁
   have hlower := lineClose_sum_agreement_lower f₀ f₁ U δ T (by
     intro α hα
@@ -730,13 +726,14 @@ private theorem linePinnedSeedsOn_insert_card_le
 open _root_.CoreDefinitions in
 open _root_.ProximityGap in
 private theorem mcaError_affineLine_zero_le_inv_card
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
-    {A : Type} [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
+    {A : Type} [Finite A] [AddCommGroup A] [Module F A]
     (C : ModuleCode ι F A) :
     mcaError (AffineLineGenerator F) C 0 ≤
       ENNReal.ofReal (1 / (Fintype.card F : ℝ)) := by
   classical
+  let _ := Fintype.ofFinite A
   have mem_of_proj_univ (w : ι → A)
       (h : LinearCode.projectedWord w Finset.univ ∈
         LinearCode.projectedCodeSubmod C Finset.univ) : w ∈ C := by
@@ -811,7 +808,7 @@ private theorem mcaError_eq_zero_of_neg_radius
     {ι : Type} [Fintype ι] [Nonempty ι]
     {F : Type} [Field F]
     {ℓ : Type} [Fintype ℓ]
-    {S : Type} [Fintype S] [Nonempty S] [DecidableEq S]
+    {S : Type} [Fintype S] [Nonempty S]
     {A : Type} [AddCommMonoid A] [Module F A]
     (G : Generator S ℓ F) (C : ModuleCode ι F A)
     {δ : ℝ} (hδ : δ < 0) :
@@ -855,8 +852,8 @@ private noncomputable def sharpSubspaceProfile
   else 1
 
 private theorem isSubspaceDesign_frsCode_sharpProfile
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (hFn : Fintype.card ι < Fintype.card F)
     (hadm : ReedSolomon.Folded.Admissible (Finset.univ.map domain) s ω)
@@ -867,6 +864,7 @@ private theorem isSubspaceDesign_frsCode_sharpProfile
       (sharpSubspaceProfile (ι := ι) s
         ((k : ℝ) / (s * Fintype.card ι)))
       (ReedSolomon.Folded.frsCode domain k s ω) := by
+  classical
   have hrate : (LinearCode.alphabetRate
       (ReedSolomon.Folded.frsCode domain k s ω) : ℝ) =
       (k : ℝ) / (s * Fintype.card ι) := by
@@ -1875,8 +1873,8 @@ private theorem strongLineDecodable_two_mul_of_profile_le
 open scoped NNReal in
 open Code in
 private theorem frs_mcaError_le_proof
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
@@ -1889,6 +1887,7 @@ private theorem frs_mcaError_le_proof
     mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
         (1 - ρ - 2 / (t : ℝ)) ≤
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
+  classical
   dsimp
   classical
   let R : ℝ := (k : ℝ) / ((s : ℝ) * Fintype.card ι)
@@ -2012,7 +2011,6 @@ private theorem frs_mcaError_le_proof
     norm_num only [one_mul]
     exact_mod_cast hqP
 
-set_option linter.unusedDecidableInType false in
 /-- A capacity-regime MCA bound for an admissibly folded Reed--Solomon code. For an integer
 `t > 0` and folding parameter `s > 4t²`,
 
@@ -2023,8 +2021,8 @@ The rate is alphabet-normalized as `ρ = k/(s·n)`. The hypotheses require a gen
 subspace-design argument. The integer parameter is kept explicit rather than replaced by an
 unrounded real expression. -/
 theorem frs_mcaError_le
-    {ι : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    {F : Type} [Field F] [Fintype F] [DecidableEq F]
+    {ι : Type} [Fintype ι] [Nonempty ι]
+    {F : Type} [Field F] [Fintype F]
     (domain : ι ↪ F) (k s : ℕ) (ω : F)
     (_hω : ω ≠ 0)
     (_hω_gen : orderOf ω = Fintype.card F - 1)
@@ -2037,6 +2035,7 @@ theorem frs_mcaError_le
     mcaError (AffineLineGenerator F) (ReedSolomon.Folded.frsCode domain k s ω)
         (1 - ρ - 2 / (t : ℝ)) ≤
       ENNReal.ofReal ((n * t + 3 * (t : ℝ) ^ 3) / Fintype.card F) := by
+  classical
   exact frs_mcaError_le_proof domain k s ω _hω _hω_gen _hadm _hcard t _ht_pos _hs_gt
 
 /-- Threshold form of `frs_mcaError_le`: any target `ε_star` that the explicit

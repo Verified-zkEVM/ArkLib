@@ -23,13 +23,6 @@ linearized polynomials, and Schwartz--Zippel.
 - [BCHKS25] Corollary 1.7.
 -/
 
--- The proof-term statements below carry unused `Fintype`/`DecidableEq`/section hypotheses
--- (surfaced by the 4.32 linters when these proposition-valued `def`s became `theorem`s);
--- silenced file-wide to match the `CapacityBounds.lean` umbrella, scoped narrowly on revisit.
-set_option linter.unusedFintypeInType false
-set_option linter.unusedDecidableInType false
-set_option linter.unusedSectionVars false
-
 namespace CodingTheory
 
 open scoped NNReal
@@ -1025,9 +1018,9 @@ private noncomputable def binary_tuple_linear_map {K : Type} [Field K] [CharP K 
 
 open scoped NNReal ProbabilityTheory in
 private theorem eps_ca_lower_of_finset_witness
-    {ι F A : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
-    [Fintype A] [DecidableEq A] [AddCommGroup A] [Module F A]
+    {ι F A : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Fintype F]
+    [Finite A] [DecidableEq A] [AddCommGroup A] [Module F A]
     (C : Set (ι → A)) (δ_fld δ_int : ℝ≥0)
     (u : Code.WordStack A (Fin 2) ι) (S : Finset F)
     (hnot : ¬ Code.jointProximity C (u := u) δ_int)
@@ -1035,6 +1028,7 @@ private theorem eps_ca_lower_of_finset_witness
     (S.card : ENNReal) / (Fintype.card F : ENNReal) ≤
       ProximityGap.epsCa (F := F) (A := A) C δ_fld δ_int := by
   classical
+  let _ := Fintype.ofFinite A
   unfold ProximityGap.epsCa
   refine le_trans ?_ (le_iSup _ u)
   rw [if_neg hnot]
@@ -1190,10 +1184,11 @@ private theorem mapped_binary_matrix_direct_configuration_separator_ne_zero
     (binary_matrix_lambda_mv_injective hb)
 
 private theorem mv_polynomial_fin_exists_eval_ne_zero_of_total_degree_lt_card
-    {n : ℕ} {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {n : ℕ} {K : Type} [Field K] [Fintype K]
     (p : MvPolynomial (Fin n) K) (hp : p ≠ 0)
     (hdeg : p.totalDegree < Fintype.card K) :
     ∃ t : Fin n → K, MvPolynomial.eval t p ≠ 0 := by
+  classical
   by_contra hall
   push Not at hall
   have hsz := MvPolynomial.schwartz_zippel_totalDegree hp (Finset.univ : Finset K)
@@ -1217,13 +1212,14 @@ private theorem mv_polynomial_total_degree_map_le
 
 open scoped BigOperators in
 private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
-    {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {K : Type} [Field K] [Fintype K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
     ∃ t : Fin (b + 2) → K,
       MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t
-        (binary_matrix_direct_configuration_separator b) ≠ 0 := by
+      (binary_matrix_direct_configuration_separator b) ≠ 0 := by
+  classical
   have horig :
       (binary_matrix_direct_configuration_separator b).totalDegree < Fintype.card K := by
     unfold binary_matrix_separator_threshold at hcard
@@ -1245,7 +1241,7 @@ private theorem exists_binary_matrix_direct_configuration_separator_eval_ne_zero
 
 open scoped BigOperators in
 private theorem exists_binary_matrix_generic_tuple
-    {K : Type} [Field K] [Fintype K] [DecidableEq K]
+    {K : Type} [Field K] [Fintype K]
     [CharP K 2] [Algebra (ZMod 2) K]
     (b : ℕ) (hb : 0 < b)
     (hcard : binary_matrix_separator_threshold b ≤ Fintype.card K) :
@@ -1253,6 +1249,7 @@ private theorem exists_binary_matrix_generic_tuple
       Function.Injective (binary_product_tuple_linear_map t) ∧
       Function.Injective (fun M : Fin 2 → Fin b → ZMod 2 =>
         MvPolynomial.eval₂ (algebraMap (ZMod 2) K) t (binary_matrix_lambda_mv M)) := by
+  classical
   obtain ⟨t, ht⟩ :=
     exists_binary_matrix_direct_configuration_separator_eval_ne_zero b hb hcard
   exact ⟨t, binary_matrix_generic_tuple_of_separator_eval_ne_zero t ht⟩
@@ -1461,8 +1458,8 @@ private theorem binary_matrix_johnson_raw
 
 open scoped NNReal in
 private theorem rs_fold_close_of_graph_agreement
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Finite F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ)
     (hcard : Fintype.card ι = 16 * d)
     (γ : F) (S : Finset ι) (p : Polynomial F)
@@ -1474,6 +1471,7 @@ private theorem rs_fold_close_of_graph_agreement
         γ • (fun i => domain i ^ (2 * d)),
       (ReedSolomon.code domain (d + 1) : Set (ι → F))) ≤ (3 / 4 : ℝ≥0) := by
   classical
+  let _ := Fintype.ofFinite F
   let w : ι → F := fun i => p.eval (domain i)
   have hw : w ∈ (ReedSolomon.code domain (d + 1) : Set (ι → F)) :=
     ReedSolomon.mem_code_of_polynomial_of_natDegree_lt_of_eval p hpdeg
@@ -1507,8 +1505,8 @@ private theorem rs_fold_close_of_graph_agreement
       exact (hagree i hi).symm
 
 private theorem rs_monomial_agreement_card_le_two_mul
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Finite ι] [Nonempty ι]
+    [Field F] [Finite F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
     (v : ι → F)
     (hv : v ∈ (ReedSolomon.code domain (d + 1) : Set (ι → F)))
@@ -1516,6 +1514,8 @@ private theorem rs_monomial_agreement_card_le_two_mul
     (hagree : ∀ i ∈ S, v i = domain i ^ (2 * d)) :
     S.card ≤ 2 * d := by
   classical
+  let _ := Fintype.ofFinite ι
+  let _ := Fintype.ofFinite F
   let : NeZero (d + 1) := ⟨by omega⟩
   obtain ⟨p, hpdeg, hpeval⟩ :=
     ReedSolomon.mem_code_iff_eval_of_ne_zero.mp hv
@@ -1546,8 +1546,8 @@ private theorem rs_monomial_agreement_card_le_two_mul
 
 open scoped NNReal in
 private theorem binary_monomial_stack_not_joint
-    {ι F : Type} [Fintype ι] [Nonempty ι] [DecidableEq ι]
-    [Field F] [Fintype F] [DecidableEq F]
+    {ι F : Type} [Fintype ι] [Nonempty ι]
+    [Field F] [Finite F] [DecidableEq F]
     (domain : ι ↪ F) (d : ℕ) (hd : 0 < d)
     (hcard : Fintype.card ι = 16 * d)
     (δ_int : ℝ≥0) (hδ : (δ_int : ℝ) < 7 / 8) :
@@ -1557,6 +1557,7 @@ private theorem binary_monomial_stack_not_joint
         (fun i => domain i ^ (4 * d))
         (fun i => domain i ^ (2 * d))) δ_int := by
   classical
+  let _ := Fintype.ofFinite F
   intro hj
   rw [← Code.jointAgreement_iff_jointProximity] at hj
   obtain ⟨S, hScard, v, hv⟩ := hj
@@ -1575,11 +1576,12 @@ private theorem binary_monomial_stack_not_joint
 
 private theorem rs_relative_min_dist_fifteen_sixteen
     {ι K : Type} [Fintype ι] [Nonempty ι]
-    [Field K] [Fintype K] [DecidableEq K]
+    [Field K] [Finite K] [DecidableEq K]
     (domain : ι ↪ K) (t : ℕ) (ht : 0 < t)
     (hcard : Fintype.card ι = 16 * t) :
     (Code.minDist ((ReedSolomon.code domain (t + 1) : Set (ι → K))) : ℝ) /
         Fintype.card ι = (15 : ℝ) / 16 := by
+  let _ := Fintype.ofFinite K
   have hkpos : 0 < t + 1 := by omega
   let : NeZero (t + 1) := ⟨hkpos.ne'⟩
   have hk : t + 1 ≤ Fintype.card ι := by
