@@ -379,10 +379,10 @@ lemma card_block_of_mem_subdomain [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n
   have hsub : n - (i + j) = n - i - j := by omega
   exact card_fin_filter_mod_eq (by omega) m.val (hsub ▸ m.isLt)
 
-set_option linter.unusedDecidableInType false in -- false alert
 /-- Every element of the `(i + j)`th subdomain has a `2 ^ j`th root in the `i`th subdomain. -/
-lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
+lemma root_exists {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ subdomain ω (i + j)) :
   ∃ y ∈ subdomain ω i, y ^ 2 ^ j = x := by
+  classical
   have h' : Finset.Nonempty {y ∈ (subdomain ω i).toFinset | y ^ 2 ^ j = x} := by
     have := card_block_of_mem_subdomain hij h
     aesop
@@ -390,12 +390,12 @@ lemma root_exists [DecidableEq F] {i j : ℕ} (hij : i + j ≤ n) (h : x ∈ sub
       (add unsafe (by rw [←Finset.card_ne_zero]))
   simpa [Finset.Nonempty] using h'
 
-set_option linter.unusedDecidableInType false in -- false alert
 /-- Any square root of an element of the `(i + 1)`th subdomain lies in the `i`th subdomain. -/
-lemma sq_root_mem_subdomain [DecidableEq F] {i : ℕ} (hi : i < n) {y : F}
+lemma sq_root_mem_subdomain {i : ℕ} (hi : i < n) {y : F}
   (hx : x ∈ subdomain ω (i + 1))
   (hy : y ^ 2 = x) :
   y ∈ subdomain ω i := by
+  classical
   have : NeZero (n - i) := ⟨by omega⟩
   obtain ⟨y', hy'_mem, hy'_pow⟩ := root_exists (by omega) hx
   rw [pow_one] at hy'_pow

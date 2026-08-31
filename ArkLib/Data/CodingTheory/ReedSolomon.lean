@@ -758,11 +758,12 @@ lemma toPolynomial_eval_at_domain
     (add simp [toPolynomial_def, Lagrange.eval_interpolate_at_node])
     (add safe cases Function.Embedding)
 
-set_option linter.unusedDecidableInType false in -- false alarm
+omit [DecidableEq ι] in
 lemma mem_code_iff_exists_polynomial' {n : ℕ} {α : ι ↪ F} {f : ι → F} :
   f ∈ code α n ↔
     ∃ p : Polynomial F, p.degree < min n (Fintype.card ι) ∧
       f = evalOnPoints α p := by
+  classical
   constructor
   · intro h
     by_cases hd : n ≤ Fintype.card ι

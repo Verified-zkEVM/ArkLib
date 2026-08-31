@@ -1022,18 +1022,20 @@ def cpolyFoldAux (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : ℕ → CompPo
 def cpolyFold (p : CompPoly.CPolynomial F) (k : ℕ) (r : F) : CompPoly.CPolynomial F :=
   cpolyFoldAux p k r p.natDegree
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq F] in
 private lemma toPoly_iterate_divX (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).toPoly = Polynomial.divX^[k] p.toPoly := by
+  classical
   induction k generalizing p with
   | zero => simp
   | succ k ih =>
     rw [Function.iterate_succ', Function.comp_apply, Function.iterate_succ',
         Function.comp_apply, CompPoly.CPolynomial.divX_toPoly, ih]
 
-set_option linter.unusedDecidableInType false in
+omit [DecidableEq F] in
 private lemma natDegree_iterate_divX_le (p : CompPoly.CPolynomial F) (k : ℕ) :
     (CompPoly.CPolynomial.divX^[k] p).natDegree ≤ p.natDegree - k := by
+  classical
   have h_p : p.natDegree = p.toPoly.natDegree := CompPoly.CPolynomial.natDegree_toPoly p
   have h_iter : (CompPoly.CPolynomial.divX^[k] p).natDegree
       = (Polynomial.divX^[k] p.toPoly).natDegree := by
