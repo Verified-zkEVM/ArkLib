@@ -577,12 +577,12 @@ def claim5_22Bound
   (θStar tₕ tₚ tₚᵢ : ℝ) * iSup (fun i => (εcodec i : ℝ))
     + ∑ i, (εcodec i : ℝ)
 
-/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55)):
-`(7·L·(2·t_h + 2 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
+/-- CO25 Claim 5.24. Statistical-distance bound for `Hyb_3` vs `Hyb_4` (Eq. 55):
+`(7·(L+1)·(2·t_h + 1 + 2·t_p + L + 2·t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`. -/
 def claim5_24Bound (U : Type) [SpongeUnit U] [Fintype U]
     (tₕ tₚ tₚᵢ L : ℕ) : ℝ :=
   let cardPow : ℝ := ((Fintype.card U : ℕ) : ℝ) ^ SpongeSize.C
-  (7 * L * (2 * (tₕ : ℝ) +  2 + 2 * (tₚ : ℝ) + L + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
+  (7 * (L + 1) * (2 * (tₕ : ℝ) + 1 + 2 * (tₚ : ℝ) + L + 2 * (tₚᵢ : ℝ))) / (2 * cardPow)
     - (5 * (L + 1)) / cardPow
 
 /-! ### Hybrid distributions `Hyb_0` … `Hyb_4` and per-step claims 5.21–5.24 (CO25 §5.8)
@@ -863,7 +863,7 @@ def hyb_4
     V (d2sAlgoTransform maliciousProver)
 
 /-- CO25 Claim 5.24.
-`Δ(Hyb_3, Hyb_4) ≤ (7·L·(2t_h+2+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
+`Δ(Hyb_3, Hyb_4) ≤ (7·(L+1)·(2t_h+1+2t_p+L+2t_{p⁻¹})) / (2·|Σ|^c) − 5·(L+1) / |Σ|^c`.
 `Hyb_3` and `Hyb_4` use the *same* eager salted FS oracle (`D_IP_salted`,
 matching CO25 line 1784); only the prover/verifier algorithm differs. -/
 theorem claim_5_24
