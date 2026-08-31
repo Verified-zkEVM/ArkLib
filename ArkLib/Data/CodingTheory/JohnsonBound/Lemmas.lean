@@ -11,8 +11,8 @@ namespace JohnsonBound
 
 open Real Finset Fintype
 
-/-- The `q`-ary Johnson bound function: `J'(q, δ) = ((q-1)/q) · (1 - √(1 - (q/(q-1)) · δ))`. -/
-noncomputable def J' (q δ : ℚ) : ℝ :=
+/-- The `q`-ary Johnson bound function `J_q`. -/
+noncomputable def J (q δ : ℚ) : ℝ :=
   let frac := q / (q - 1)
   (1 / frac) * (1 - √(1 - frac * δ))
 
@@ -35,7 +35,6 @@ private abbrev K (B : Finset (Fin n → F)) (i : Fin n) (α : F) : ℕ :=
   (Fi B i α).card
 
 /-- The sets `Fi B i α` partition `B` as `α` ranges over `F`. -/
-@[simp]
 lemma Fis_cover_B : B = univ.biUnion (Fi B i) := by aesop (add simp [Fi])
 
 /-- The sets `Fi B i α` are pairwise disjoint. -/
@@ -78,7 +77,7 @@ lemma sum_choose_K' [Zero F] (h_card : 2 ≤ card F) :
       (∑ x with x ≠ 0, (fun _ ↦ x1⁻¹) x • (Nat.cast (R := ℚ) ∘ x2) x) ≤
       ∑ α with α ≠ 0, choose_2 ↑(x2 α) by
     simp only [ne_eq, Function.comp_apply, smul_eq_mul] at this; convert this
-    rw [sum_eq_sum_diff_singleton_add (i := 0) (by simp)]
+    rw [sum_eq_sum_sdiff_singleton_add (i := 0) (by simp)]
     ring_nf; rw [sum_mul]
     apply Finset.sum_congr (ext _)
     all_goals grind only [= mem_filter, = mem_sdiff, ← mem_univ, = mem_singleton]
@@ -105,7 +104,7 @@ lemma le_sum_choose_K [Zero F] (h_card : 2 ≤ card F) :
   simp only [sum_choose_K_i]
   have : ∑ α, choose_2 ↑(K B i α) =
       choose_2 ↑(K B i 0) + ∑ α with α ≠ 0, choose_2 ↑(K B i α) := by
-    rw [sum_eq_sum_diff_singleton_add (i := (0 : F)) (by simp), add_comm]
+    rw [sum_eq_sum_sdiff_singleton_add (i := (0 : F)) (by simp), add_comm]
     exact congr_arg _ (sum_congr
       (by ext x; simp [mem_sdiff, mem_singleton, mem_filter]) fun _ _ ↦ rfl)
   linarith [sum_choose_K' h_card (B := B) (i := i)]
@@ -343,7 +342,9 @@ lemma almost_johnson_lhs_div_B_card [Zero F] (h_n : 0 < n) (h_B : 2 ≤ B.card) 
     (1 - e B 0 / n) ^ 2 * B.card + B.card * (e B 0) ^ 2 / ((card F - 1) * n ^ 2) - 1 := by
   set E := (n - e B 0) / n
   generalize eqrhs : (_ + _ - 1 : ℚ) = rhs
-  have eqE : E = k B / B.card := by grind only [= k_and_e']
+  have eqE : E = k B / B.card := by
+    simpa only [E] using
+      (k_and_e' (B := B) h_n.ne' (by omega)).symm
   suffices (B.card * E - 1) * E +
       ((B.card - B.card * E) / (card F - 1) - 1) * (1 - E) = rhs by
     rw [eqE, mul_div_cancel₀ _ (by simp only [ne_eq, Rat.natCast_eq_zero_iff]; omega)] at this
@@ -363,9 +364,11 @@ lemma johnson_unrefined [Zero F]
   have h_rewrite : (k B * (k B - 1) + (B.card - k B) *
       ((B.card - k B) / (card F - 1) - 1)) / B.card ≤ (B.card - 1) *
       (1 - d B / n) := by
-    have := almost_johnson_choose_2_elimed h_n h_B h_card; (
-    rw [div_le_iff₀] <;> first | positivity | convert this using 1; ring_nf
-    simpa [h_n.ne'] using by ring)
+    have this := almost_johnson_choose_2_elimed h_n h_B h_card
+    rw [div_le_iff₀ (by positivity)]
+    convert this using 1
+    · rfl
+    · field_simp [h_n.ne']
   convert h_rewrite using 1
   convert almost_johnson_lhs_div_B_card h_n h_B |> Eq.symm using 1
 
@@ -402,7 +405,14 @@ lemma johnson_denom [Zero F] (h_card : 2 ≤ card F) :
   have n₂ : c1 ≠ 0 := by simp [c1, c, sub_eq_zero]; grind only
   suffices c / c1 * (d B / n - 2 * e B 0 / n + c / c1 * e B 0 ^ 2 / n ^ 2) =
       (1 - c / c1 * (e B 0 / n)) ^ 2 - (1 - c / c1 * (d B / n)) by
-    rw [← this]; have : c / c1 = 1 + 1 / c1 := by grind only
+    rw [← this]
+    have : c / c1 = 1 + 1 / c1 := by
+      calc
+        c / c1 = (c1 + 1) / c1 := by
+          congr 1
+          simp only [c1]
+          ring
+        _ = 1 + 1 / c1 := by rw [add_div, div_self n₂]
     grind only [= e.eq_1]
   grind only
 
@@ -415,14 +425,34 @@ lemma johnson_bound₀ [Zero F]
   rw [← johnson_denom h_card, ← mul_assoc]
   exact johnson_unrefined_by_M' h_n h_B h_card
 
-/-- Johnson bound generalised to an arbitrary centre `v` via linear shift. -/
-protected lemma johnson_bound_lemma [Field F] {v : Fin n → F}
+/-- The Johnson bound at an arbitrary centre `v`.
+
+Recentering is done by a coordinatewise transport along `Equiv.piCongrRight` rather than by
+the field subtraction `x ↦ x - v`, so no field structure is needed: each `σ i` sends `v i` to
+the symbol `0` of `Fin (card F)`, and the transport preserves Hamming distance, hence `e`,
+`d`, and cardinalities. -/
+protected lemma johnson_bound_lemma {v : Fin n → F}
     (h_n : 0 < n) (h_B : 2 ≤ B.card) (h_card : 2 ≤ card F) :
     B.card * ((1 - ((card F : ℚ) / (card F - 1)) * (e B v / n)) ^ 2 -
       (1 - ((card F : ℚ) / (card F - 1)) * (d B / n))) ≤
     ((card F : ℚ) / (card F - 1)) * d B / n := by
-  rw [lin_shift_e (by omega), lin_shift_d h_B, lin_shift_card (v := v)]
-  exact johnson_bound₀ h_n (lin_shift_card (B := B) ▸ h_B) h_card
+  have : NeZero (card F) := ⟨by omega⟩
+  set eF : F ≃ Fin (card F) := Fintype.equivFin F with heF
+  set σ : Fin n → (F ≃ Fin (card F)) :=
+    fun i => eF.trans (Equiv.swap (eF (v i)) 0) with hσ
+  set B' : Finset (Fin n → Fin (card F)) := B.image (Equiv.piCongrRight σ) with hB'
+  have hv0 : Equiv.piCongrRight σ v = 0 := by
+    funext i
+    change (σ i) (v i) = 0
+    simp only [hσ, Equiv.trans_apply, Equiv.swap_apply_left]
+  have hcardF' : card (Fin (card F)) = card F := Fintype.card_fin _
+  have hcardB' : B'.card = B.card := card_image_piCongrRight σ B
+  have h_e : e B' (Equiv.piCongrRight σ v) = e B v := e_image_piCongrRight σ B v
+  have h_d : d B' = d B := d_image_piCongrRight σ B
+  rw [← h_e, ← h_d, hv0, ← hcardB']
+  -- rewrite `card F` to `card (Fin (card F))` in the numeric factors
+  rw [show (card F : ℚ) = (card (Fin (card F)) : ℚ) by rw [hcardF']]
+  exact johnson_bound₀ h_n (hcardB' ▸ h_B) (by rw [hcardF']; exact h_card)
 
 /-- The normalised Hamming distance scaled by `q/(q-1)` stays in `[-1, 1]`. -/
 protected lemma abs_one_sub_div_le_one {v a : Fin n → F}
@@ -454,22 +484,25 @@ lemma johnson_hyp_implies_div_ineq {n d e : ℕ}
   field_simp at *
   exact_mod_cast h_mul
 
-/-- The ratio `e/n` cannot equal `J'(q, d/n)` under the Johnson hypothesis. -/
+/-- The ratio `e/n` cannot equal `J(q, d/n)` under the Johnson hypothesis. -/
 lemma johnson_e_div_ne_J {n d e : ℕ} {q : ℚ}
     (hn_pos : 0 < n) (hd_pos : 0 < d) (hq : 1 < q)
     (h_muln : ((e : ℚ) / n : ℝ) ≤ 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt)
-    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J' q (d / n))
+    (h_J_bound : 1 - ((1 - (d : ℚ) / n) : ℝ).sqrt ≤ J q (d / n))
     (hqx : q / (q - 1) * (d / n) ≤ 1) :
-    ((e : ℚ) / n : ℝ) ≠ J' q (d / n) := by
+    ((e : ℚ) / n : ℝ) ≠ J q (d / n) := by
   intro h_eq
   set δ := (d : ℚ) / n
   set frac := q / (q - 1)
   have h_frac_pos : 1 < frac := by rw [lt_div_iff₀] <;> linarith
   have h_sqrt_eq : 1 - √(1 - δ) = (1 / frac) * (1 - √(1 - frac * δ)) := by
-    convert h_eq using 1
-    rw [le_antisymm h_muln]
-    · norm_cast
-    · aesop
+    rw [show (1 : ℝ) - √(1 - (δ : ℝ)) = (e : ℚ) / n from
+      by
+        dsimp [δ] at h_muln h_J_bound h_eq ⊢
+        norm_cast at h_muln h_J_bound h_eq ⊢
+        exact le_antisymm (h_J_bound.trans_eq h_eq.symm) h_muln]
+    rw [h_eq]
+    rfl
   have h_frac_eq : 1 - √(1 - δ) = δ / (1 + √(1 - δ)) ∧ (1 / frac) *
       (1 - √(1 - frac * δ)) = δ / (1 + √(1 - frac * δ)) := by
     constructor

@@ -36,7 +36,6 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-variable {𝓑 : Fin 2 ↪ L}
 variable [hdiv : Fact (ϑ ∣ ℓ)]
 
 open scoped NNReal
@@ -53,9 +52,9 @@ and ensuring both implementations follow the same logic.
 def extractNextSuffixFromChallenge (v : sDomain 𝔽q β h_ℓ_add_R_rate ⟨0, by omega⟩)
     (i : ℕ) (h_i_add_ϑ_le_ℓ : i + ϑ ≤ ℓ) :
     (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i + ϑ, by omega⟩ := by
-  let val := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i:=0) (k:=i + ϑ) (h_bound:=by
-      simp only [Fin.coe_ofNat_eq_mod, Nat.zero_mod, zero_add]; exact h_i_add_ϑ_le_ℓ) (x:=v)
-  simp only [Fin.val_zero, zero_add] at val
+  let val := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+    (i := 0) (destIdx := ⟨i + ϑ, by omega⟩) (k := i + ϑ)
+    (h_destIdx := by simp) (h_destIdx_le := h_i_add_ϑ_le_ℓ) (x := v)
   exact val
 
 /-- This proposition declaratively captures the iterative logic of the verifier. For each repetition
@@ -102,7 +101,6 @@ def proximityChecksSpec (γ_challenges :
       let f_i_on_fiber : Fin (2^ϑ) → L := fun u =>
         let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
           let fiber_point_num_repr := Nat.joinBits (low := u) (high := next_suffix_of_v_fin)
-          simp at fiber_point_num_repr
           have h: 2 ^ (ℓ + 𝓡 - (i + ϑ) + ϑ) = 2 ^ (ℓ + 𝓡 - i) := by
             simp only [Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
               pow_right_inj₀]
@@ -151,8 +149,7 @@ def queryCodeword (j : Fin (toOutCodewordsCount ℓ ϑ (Fin.last ℓ)))
   OracleComp ([OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
   Fin.last ℓ)]ₒ) L :=
       OracleComp.lift <| by
-        simpa using
-          OracleSpec.query
+        exact OracleSpec.query
             (show
                 [OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ)]ₒ.Domain from
               ⟨⟨j, by omega⟩, point⟩)
@@ -192,15 +189,19 @@ noncomputable def queryOracleProver :
     pure (⟨true, fun _ => ()⟩, ())
 
 noncomputable def queryOracleVerifier :
-  OracleVerifier
+  OracleProofVerifier
     (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
+    (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
+    (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  verify := fun (stmt: FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleProofVerifier.ofVerify
+    (oSpec := []ₒ)
+    (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
+    (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ)
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (Fin.last ℓ))
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (fun (stmt: FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
     (challenges: (pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)).Challenges) => do
     -- Get all γ challenges from the second message (final sumcheck already checked earlier).
     let c := stmt.final_constant
@@ -255,7 +256,6 @@ noncomputable def queryOracleVerifier :
         let f_i_on_fiber ← (List.finRange (2^ϑ)).mapM (fun (u : Fin (2^ϑ)) => do
           let x: Fin (2 ^ (ℓ + 𝓡 - i)) := by
             let fiber_point_num_repr := Nat.joinBits (low := u) (high := next_suffix_of_v_fin)
-            simp at fiber_point_num_repr
             have h: 2 ^ (ℓ + 𝓡 - (i + ϑ) + ϑ) = 2 ^ (ℓ + 𝓡 - i) := by
               simp only [Nat.ofNat_pos, ne_eq, OfNat.ofNat_ne_one, not_false_eq_true,
                 pow_right_inj₀]
@@ -298,24 +298,20 @@ noncomputable def queryOracleVerifier :
         return false
 
   -- If all repetitions and all checks pass, the verifier accepts.
-    return true
-  embed := ⟨Empty.elim, fun a b => Empty.elim a⟩
-  hEq := fun i => Empty.elim i
+    return true)
 
 /-- The oracle reduction for the final query phase. -/
 noncomputable def queryOracleReduction :
-  OracleReduction
+  OracleProof
     (oSpec := []ₒ)
-    (StmtIn := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
-    (OStmtIn := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
+    (Statement := FinalSumcheckStatementOut (L:=L) (ℓ:=ℓ))
+    (OStatement := OracleStatement 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate) (
     Fin.last ℓ))
-    (WitIn := Unit)
-    (StmtOut := Bool)
-    (OStmtOut := fun _ : Empty => Unit)
-    (WitOut := Unit)
-    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
-  prover := queryOracleProver 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
-  verifier := queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
+    (Witness := Unit)
+    (pSpec := pSpecQuery 𝔽q β γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) :=
+  OracleReduction.mk (Oₛₒ := fun i => nomatch i)
+    (queryOracleProver 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
 
 /-- The final query round as an `OracleProof` (since it outputs Bool and no oracle statements). -/
 noncomputable def queryOracleProof : OracleProof
@@ -388,10 +384,11 @@ else
 /-- The knowledge state function for the query phase -/
 noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-  (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).KnowledgeStateFunction init impl
-  (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-  (relOut := acceptRejectOracleRel)
-  (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
+  OracleProof.KnowledgeStateFunction init impl
+    (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
+    (verifier := queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions)
+    (extractor := queryRbrExtractor 𝔽q β (ϑ:=ϑ) γ_repetitions
+      (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) where
   toFun := fun m ⟨stmt, oStmt⟩ tr witMid =>
     queryKStateProp 𝔽q β (ϑ:=ϑ) (γ_repetitions:=γ_repetitions)
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)
@@ -405,9 +402,9 @@ noncomputable def queryKnowledgeStateFunction {σ : Type} (init : ProbComp σ)
 /-- Round-by-round knowledge soundness for the oracle verifier (query phase) -/
 theorem queryOracleVerifier_rbrKnowledgeSoundness [Fintype L] {σ : Type} (init : ProbComp σ)
     (impl : QueryImpl []ₒ (StateT σ ProbComp)) :
-    (queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions).rbrKnowledgeSoundness init impl
+    OracleProof.rbrKnowledgeSoundness init impl
     (relIn := finalSumcheckRelOut 𝔽q β (ϑ:=ϑ) (h_ℓ_add_R_rate := h_ℓ_add_R_rate))
-    (relOut := acceptRejectOracleRel)
+    (verifier := queryOracleVerifier 𝔽q β (ϑ:=ϑ) γ_repetitions)
     (rbrKnowledgeError := queryRbrKnowledgeError 𝔽q β γ_repetitions
       (h_ℓ_add_R_rate := h_ℓ_add_R_rate)) := by
   use fun _ => Unit

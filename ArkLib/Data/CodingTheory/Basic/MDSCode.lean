@@ -46,8 +46,8 @@ lemma minWt_ge_of_MDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n) F}
         obtain ⟨s, hs⟩ : ∃ s : Finset (Fin n), s.card = k ∧ ∀ j ∈ s, c j = 0 := by
           exact Exists.elim (Finset.exists_subset_card_eq h) fun s hs => ⟨s, hs.2, fun j hj =>
           Finset.mem_filter.mp ( hs.1 hj ) |>.2⟩
-        exact ⟨⟨fun j => s.orderEmbOfFin (by aesop) j, fun j j' h => by aesop⟩,
-          fun j => hs.2 _ (by aesop)⟩
+        exact ⟨(s.orderEmbOfFin hs.1).toEmbedding,
+          fun j => hs.2 _ (Finset.orderEmbOfFin_mem s hs.1 j)⟩
       obtain ⟨σ, hσ⟩ := h_contra
       have h_det : Matrix.det (Matrix.submatrix G id σ) = 0 := by
         have h_contra : ∃ v : Fin k → F, v ≠ 0 ∧ Matrix.vecMul v (Matrix.submatrix G id σ) = 0 := by
@@ -106,8 +106,7 @@ lemma IsMDS_of_matrix_IsMDS [Field F] [DecidableEq F] {G : Matrix (Fin k) (Fin n
       refine le_trans (h_dist_ge (u - v) ?_ ?_) ?_
       · exact Submodule.sub_mem _ hu hv
       · exact sub_ne_zero_of_ne huv
-      · convert hd using 1
-        exact congr_arg Finset.card (Finset.filter_congr fun x _ => by simp [sub_eq_zero])
+      · simpa only [hammingNorm, hammingDist, Pi.sub_apply, sub_ne_zero] using hd
   have h_dist_le : Code.dist (fromRowGenMat G).carrier ≤ n - k + 1 := by
     contrapose! h_singleton_bound
     rw [tsub_add_eq_add_tsub ]

@@ -104,7 +104,6 @@ private lemma negacyc_reindex {n : ℕ} {i : ℕ} (hi : i < n) (b : ℕ → ℤ)
   · intro a _; simp only [Finset.mem_range]; exact Nat.mod_lt _ (by omega)
   · intro a _; simp only [Finset.mem_range]; exact Nat.mod_lt _ (by omega)
   · intro a ha; simp only [Finset.mem_range] at ha
-    change ((a + n - i) % n + i) % n = a
     by_cases h : i ≤ a
     · rw [show a + n - i = (a - i) + n by omega, Nat.add_mod_right,
           Nat.mod_eq_of_lt (show a - i < n by omega), Nat.sub_add_cancel h, Nat.mod_eq_of_lt ha]
@@ -112,7 +111,6 @@ private lemma negacyc_reindex {n : ℕ} {i : ℕ} (hi : i < n) (b : ℕ → ℤ)
       rw [Nat.mod_eq_of_lt (show a + n - i < n by omega),
           show a + n - i + i = a + n by omega, Nat.add_mod_right, Nat.mod_eq_of_lt ha]
   · intro a ha; simp only [Finset.mem_range] at ha
-    change ((a + i) % n + n - i) % n = a
     by_cases h : a + i < n
     · rw [Nat.mod_eq_of_lt h, show a + i + n - i = a + n by omega, Nat.add_mod_right,
           Nat.mod_eq_of_lt ha]

@@ -10,6 +10,7 @@ import Mathlib.LinearAlgebra.AffineSpace.Pointwise
 import Mathlib.LinearAlgebra.AffineSpace.Combination
 import Mathlib.RingTheory.Henselian
 
+
 /-! # Coding-Theory Preliminaries -/
 
 section TensorCombination
@@ -34,6 +35,7 @@ def multilinearCombine {ϑ : ℕ} {ι : Type*}
     (u : (Fin (2 ^ ϑ)) → ι → A) (r : Fin ϑ → F) : (ι → A) :=
   fun colIdx => ∑ rowIdx : Fin (2^ϑ), ((multilinearWeight r rowIdx) : F) • ((u rowIdx colIdx) : A)
 notation:20 r " |⨂| " u => multilinearCombine (u := u) (r := r)
+
 end TensorCombination
 noncomputable section
 
@@ -44,7 +46,12 @@ variable {F : Type*}
 
 namespace Matrix
 
-/-- The set of column indices where two matrices differ. -/
+/-- The set of column indices where two matrices differ.
+
+This is the matrix-shaped form of `Code.disagreementCols`: reading a matrix as a word over
+the alphabet of its columns, `neqCols U V = Code.disagreementCols Uᵀ Vᵀ`. The bridge is
+`Matrix.neqCols_eq_disagreementCols_transpose`, stated downstream in `Basic/Distance.lean`.
+Prefer `Code.disagreementCols` for plain pointwise disagreement. -/
 def neqCols [DecidableEq F] (U V : Matrix ι ι' F) : Finset ι' := {j | ∃ i : ι, V i j ≠ U i j}
 
 section
@@ -119,6 +126,7 @@ lemma full_row_rank_via_rank_subLeftFull (h : m ≤ n) :
            _ ≤ U.cRank := by exact Matrix.cRank_submatrix_le U id (Fin.castLE h)
    simp [h_cRank]
 
+omit [Nontrivial F] in
 /-- A square matrix over an integral domain has full rank if its determinant is nonzero. -/
 lemma rank_eq_if_det_ne_zero {U : Matrix (Fin n) (Fin n) F} [IsDomain F] :
     Matrix.det U ≠ 0 → U.rank = n  := by
@@ -268,11 +276,9 @@ omit [Fintype F] in
 /-- The affine span of a finite set of vectors is finite over a finite field. -/
 lemma AffSpanSet.instFinite [Finite F] [NeZero k] (u : Fin k → ι → F) :
     (AffSpanSet u).Finite := by
-  letI : Fintype F := Fintype.ofFinite F
+  let : Fintype F := Fintype.ofFinite F
   unfold AffSpanSet
   exact Set.toFinite _
-
-attribute [instance] AffSpanSet.instFinite
 
 /-- The affine span as a `Finset`, using `AffSpanFinite` to convert from the set. -/
 noncomputable def AffSpanFinset [NeZero k] (U : Fin k → ι → F) : Finset (ι → F) :=
@@ -297,6 +303,28 @@ noncomputable instance instFintypeAffineSubspace {V : Type*} [AddCommGroup V]
 instance instNonemptyAffineSubspace_mk' {V : Type*} [AddCommGroup V] [Module F V]
     (p : V) (direction : Submodule F V) : Nonempty (AffineSubspace.mk' p direction) :=
   nonempty_subtype.mpr ⟨p, AffineSubspace.self_mem_mk' p direction⟩
+
+/-- The affine-space combination of module-valued codewords `U` at seed `x`:
+`U 0 + ∑ i, x i • U (i+1)`. -/
+abbrev affineComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (x : Fin s → F) : ι → A :=
+  fun k => U 0 k + ∑ i, x i • U i.succ k
+
+/-- The linear combination `∑ i, l i • U (i+1)` of the module-valued direction codewords. -/
+abbrev linComb [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (l : Fin s → F) : ι → A :=
+  fun k => ∑ i, l i • U i.succ k
+
+omit [Fintype ι] [DecidableEq F] [Fintype F] in
+/-- The affine combination along the line `x ↦ v + t • lam` in seed space. -/
+lemma affineComb_line [AddCommMonoid A] [Module F A] {s : ℕ}
+    (U : Fin (s + 1) → (ι → A)) (v lam : Fin s → F) (t : F) :
+    affineComb U (v + t • lam) = affineComb U v + t • (linComb U lam) := by
+  ext k
+  simp only [affineComb, linComb, Pi.add_apply, Pi.smul_apply, smul_eq_mul, add_smul, mul_smul,
+    Finset.smul_sum]
+  rw [Finset.sum_add_distrib]
+  abel
 
 end
 end Affine
@@ -360,9 +388,10 @@ namespace sInf
 lemma sInf_UB_of_le_UB {S : Set ℕ} {i : ℕ} : (∀ s ∈ S, s ≤ i) → sInf S ≤ i := fun h ↦ by
   by_cases S_empty : S.Nonempty
   · classical
-    rw [Nat.sInf_def S_empty, Nat.find_le_iff]
-    choose s hs using S_empty
-    aesop
+    rcases S_empty with ⟨s, hs⟩
+    have hne : ∃ n, n ∈ S := ⟨s, hs⟩
+    rw [Nat.sInf_def hne]
+    exact (Nat.find_le_iff hne i).2 ⟨s, h s hs, hs⟩
   · aesop (add simp (show S = ∅ by aesop (add simp Set.Nonempty)))
 
 /-- If `i` is a lower bound for all elements in a nonempty set, then `i` is at most the infimum. -/
@@ -416,7 +445,7 @@ theorem card_univ_filter_eq {e : α} :
     #{x : α | x ≠ e} = #(Finset.univ (α := α)) - 1 := by
   rw [
     Finset.filter_congr (q := (· ∉ ({e} : Finset _))) (by simp),
-    ←Finset.sdiff_eq_filter, Finset.card_univ_diff
+    ←Finset.sdiff_eq_filter, Finset.card_univ_sdiff
   ]
   simp
 

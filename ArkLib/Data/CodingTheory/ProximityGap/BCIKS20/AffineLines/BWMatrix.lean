@@ -583,15 +583,15 @@ theorem RS_BW_bound_of_le_relUDR {deg : ℕ} {domain : ι ↪ F} {δ : ℝ≥0} 
   have hdist_ne : (‖(ReedSolomon.code domain deg : Set (ι → F))‖₀) ≠ 0 := by
     have hdist_eq : ‖(ReedSolomon.code domain deg : Set (ι → F))‖₀ = n - deg + 1 := by
       simpa [n] using
-        (ReedSolomon.dist_eq' (ι := ι) (F := F) (α := domain) (n := deg) hdeg)
+        (ReedSolomon.dist_eq_of_le (ι := ι) (F := F) (α := domain) (n := deg) hdeg)
     simp [hdist_eq]
-  haveI : NeZero (‖(ReedSolomon.code domain deg : Set (ι → F))‖₀) := ⟨hdist_ne⟩
+  have : NeZero (‖(ReedSolomon.code domain deg : Set (ι → F))‖₀) := ⟨hdist_ne⟩
   have htwo : 2 * e < ‖(ReedSolomon.code domain deg : Set (ι → F))‖₀ := by
     exact (Code.UDRClose_iff_two_mul_proximity_lt_d_UDR
       (C := (ReedSolomon.code domain deg : Set (ι → F))) (e := e)).1 he_le_UDR
   have hdist_eq : ‖(ReedSolomon.code domain deg : Set (ι → F))‖₀ = n - deg + 1 := by
     simpa [n] using
-      (ReedSolomon.dist_eq' (ι := ι) (F := F) (α := domain) (n := deg) hdeg)
+      (ReedSolomon.dist_eq_of_le (ι := ι) (F := F) (α := domain) (n := deg) hdeg)
   simpa [n, e, hdist_eq] using htwo
 
 open Matrix in
@@ -1143,9 +1143,11 @@ theorem RS_exists_nonzero_kernelVec_of_det_eq_zero_natDegree_le_one (e : ℕ)
         ext irow jcol
         cases irow using Fin.lastCases with
         | last =>
-            simp [B, I', Ii, b, Matrix.updateRow]
+            simp only [Matrix.updateRow_apply, if_pos, b, Matrix.submatrix_apply,
+              Ii, Fin.Embedding.snoc_last]
         | cast t =>
-            simp [B, I', Ii, b, Matrix.updateRow]
+            simp only [Matrix.updateRow_apply, Fin.castSucc_ne_last, if_false, B, I', Ii,
+              Matrix.submatrix_apply, Fin.Embedding.snoc_castSucc]
       have hdetBi : Matrix.det (K.submatrix Ii J') = 0 := by
         by_contra h
         exact hnotP_succ ⟨Ii, J', h⟩
@@ -1176,7 +1178,7 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
   let n : ℕ := e + 1
   let P : ℕ → Prop := fun r =>
     ∃ (I : Fin r ↪ ι) (J : Fin r ↪ Fin n), Matrix.det (K.submatrix I J) ≠ (0 : F[X])
-  letI : DecidablePred P := Classical.decPred _
+  let : DecidablePred P := Classical.decPred _
   have P0 : P 0 := by
     refine ⟨Function.Embedding.ofIsEmpty, Function.Embedding.ofIsEmpty, ?_⟩
     simp
@@ -1194,7 +1196,11 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
     have hdet_sub : Matrix.det (A.submatrix (Function.Embedding.refl _) J0) = 0 :=
       RS_det_submatrix_eq_zero_of_det_eq_zero n A hdetA (Function.Embedding.refl _) J0
     have hdetK : Matrix.det (K.submatrix I0 J0) = 0 := by
-      simpa [A] using hdet_sub
+      have hmatrix : K.submatrix I0 J0 = A.submatrix (Function.Embedding.refl _) J0 := by
+        ext i j
+        rfl
+      rw [hmatrix]
+      exact hdet_sub
     exact hdet0 hdetK
   have hrle : r ≤ n := by
     simpa [r] using (Nat.findGreatest_le (P := P) n)
@@ -1334,7 +1340,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
         simp [haj]
       · intro t
         simp [ha_on t]
-    simpa [Matrix.mulVec] using hsum.symm
+    change (∑ j, K i j * a j) = ∑ t, K i (J' t) * u t
+    exact hsum.symm
   have hmulVec : Matrix.mulVec K a = 0 := by
     funext i
     by_cases hi : i ∈ Set.range I
@@ -1343,7 +1350,8 @@ theorem RS_exists_nonzero_kernelVec_of_det_submatrix_eq_zero_natDegree_le_one (e
         have := congrArg (fun v : Fin (r + 1) → F[X] => v (Fin.castSucc t)) hBu
         simpa using this
       have hrow' : (∑ x : Fin (r + 1), K (I t) (J' x) * u x) = 0 := by
-        simpa [Matrix.mulVec, B, I', J'] using hrow
+        change (∑ x, B (Fin.castSucc t) x * u x) = 0 at hrow
+        simpa [B, I', J'] using hrow
       rw [hmul_formula (i := I t)]
       simpa using hrow'
     · -- i ∉ range I

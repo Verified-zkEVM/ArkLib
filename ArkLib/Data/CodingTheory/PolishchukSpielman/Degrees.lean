@@ -135,7 +135,7 @@ private lemma ps_degree_x_swap_le {F : Type} [CommRing F] (f : F[X][Y]) :
   obtain ⟨m, hm⟩ : ∃ m > f.natDegree, ((swap f).coeff n).coeff m ≠ 0 := by
     exact ⟨((swap f).coeff n).natDegree, hn.2.2.2, by aesop⟩
   have h_coeff_swap : ((swap f).coeff n).coeff m = (f.coeff m).coeff n := by
-    convert ps_swap_coeff f m n using 1
+    convert ps_swap_coeff f m n using 1 <;> rfl
   exact hm.2 (h_coeff_swap.symm ▸ by rw [coeff_eq_zero_of_natDegree_lt hm.1]; aesop)
 
 private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f ≠ 0) :
@@ -147,7 +147,7 @@ private lemma ps_degree_x_swap_ge {F : Type} [CommRing F] (f : F[X][Y]) (hf : f 
     contrapose! hN; aesop;
   have h_swap_coeff_nonzero : ((swap f).coeff n).coeff N ≠ 0 := by
     convert hn.2 using 1;
-    convert ps_swap_coeff f N n using 1
+    convert ps_swap_coeff f N n using 1 <;> rfl
   have h_swap_coeff_nonzero_natDegree : (swap f).coeff n ≠ 0 :=
     (ne_of_apply_ne Polynomial.coeff fun a ↦ h_swap_coeff_nonzero (congrFun a.symm N)).symm
   have h_swap_coeff_nonzero_natDegree_le : Nat.max (((swap f).coeff n).natDegree)
@@ -193,7 +193,7 @@ lemma ps_eval_x_eq_map {F : Type} [CommSemiring F]
 lemma ps_eval_y_eq_eval_x_swap {F : Type} [CommRing F]
     (y : F) (f : F[X][Y]) :
     evalY y f = evalX y (swap f) := by
-  letI : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
+  let : Algebra F[X] F[X] := Polynomial.algebra (R := F) (A := F)
   convert aveal_eq_map_swap y f using 1
   · unfold evalY; simp [Polynomial.aeval_def]
   · -- By definition of `evalX`, we have `evalX y (swap f) = (swap f).map (evalRingHom y)`.
@@ -225,6 +225,7 @@ lemma ps_exists_x_preserve_nat_degree_y {F : Type} [Field F]
     simp
   · refine le_natDegree_of_ne_zero ?_
     convert hx.2 using 1
+    all_goals rfl
 
 lemma ps_exists_y_preserve_degree_x {F : Type} [Field F]
     (B : F[X][Y]) (hB : B ≠ 0) (P_y : Finset F) (hcard : P_y.card > natDegreeY B) :
@@ -360,7 +361,7 @@ lemma ps_degree_bounds_of_mul {F : Type} [Field F]
     (h_le_1 : 1 > (b_x : ℚ) / (n_x : ℚ) + (b_y : ℚ) / (n_y : ℚ)) :
     degreeX P ≤ b_x - a_x ∧ natDegreeY P ≤ b_y - a_y := by
   classical
-  letI : DecidableEq F := Classical.decEq F
+  let : DecidableEq F := Classical.decEq F
   by_cases hB0 : B = 0
   · have hP0 : P = 0 := by
       rcases mul_eq_zero.mp (hBA ▸ hB0 : P * A = 0) with h | h

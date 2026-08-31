@@ -2,4 +2,4 @@ bibkey: NOZ26
 source_kind: bibliography-only
 canonical_url: https://eprint.iacr.org/2026/156
 committed_artifacts: []
-notes: "Scaffolded from references.bib for Hachi: Efficient Lattice-Based Multilinear Polynomial Commitments over Extension Fields."
+notes: "Hachi (ePrint 2026/156): lattice-based multilinear PCS over extension fields. ArkLib formalizes its commitment-layer building blocks (power-of-two cyclotomic modulus, gadget decomposition, inner-outer commitment) and treats it as the intended cyclotomic-ring (R_q) instance of the generic ring-switching abstraction."

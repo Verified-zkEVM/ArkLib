@@ -71,8 +71,23 @@ lemma log_right_inverse' {ω : D} {x : ω} :
     induction fuel generalizing i with
     | zero => simp_all
     | succ fuel ih =>
-      simp [logAux]
-      grind
+      by_cases hfuel : fuel < 2 ^ n
+      · by_cases hfound : ω (⟨fuel, hfuel⟩ : Fin (2 ^ n)) = x
+        · simp [logAux, hfuel, hfound]
+        · rw [show logAux ω x (fuel + 1) = logAux ω x fuel by simp [logAux, hfuel, hfound]]
+          apply ih i
+          · have hi_ne : i.val ≠ fuel := by
+              intro hval
+              apply hfound
+              have hfin : i = (⟨fuel, hfuel⟩ : Fin (2 ^ n)) := Fin.ext hval
+              rw [← hfin]
+              exact hx
+            omega
+          · exact hx
+      · rw [show logAux ω x (fuel + 1) = logAux ω x fuel by simp [logAux, hfuel]]
+        apply ih i
+        · exact lt_of_lt_of_le i.isLt (Nat.le_of_not_gt hfuel)
+        · exact hx
   exact h_log_aux _ _ (Fin.is_lt i) hi
 
 /-- The logarithm is a right inverse to the subtype-valued parametrization of the domain. -/

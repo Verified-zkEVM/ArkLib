@@ -17,9 +17,9 @@ relies on:
 * `NormBounds.Basic` — the centered `ℓ₁`/`ℓ₂²` norms, the bound expressions
   (`subL2NormSqBound`, `scalarVecMulMulL2NormSqBound`), and the proven subtraction bound
   `sub_l2NormSq_le`.
-* `NormBounds.MicciancioYoung` — the product bound `scalarVecMul_mul_l2NormSq_le` (deferred).
+* `NormBounds.MicciancioYoung` — the proved product bound `scalarVecMul_mul_l2NormSq_le`.
 * `NormBounds.LyubashevskySeiler` — short-element invertibility `isUnit_of_l1Norm_le`
-  (deferred).
+  (proved).
 
 ## References
 

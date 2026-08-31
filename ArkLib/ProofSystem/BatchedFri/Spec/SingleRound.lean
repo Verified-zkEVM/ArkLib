@@ -53,6 +53,30 @@ instance : ∀ j, OracleInterface (OracleStatement m ω j) :=
 
 namespace BatchingRound
 
+/-- View a coordinate of FRI's initial domain as a coordinate of the batched
+input domain.  The two domains have the same carrier; spelling out the bridge
+here keeps the virtual-oracle implementation independent of proof terms in the
+two subtype presentations. -/
+def initialDomainPoint (j : Fin 1)
+    (v : (ω.subdomain
+      (∑ j' ∈ finRangeTo (k + 1) j.1, s j')).toFinset) : ω.toFinset := by
+  rcases j with ⟨j, hj⟩
+  have hj0 : j = 0 := by omega
+  subst j
+  rcases v with ⟨v, hv⟩
+  refine ⟨v, ?_⟩
+  simp only [CosetFftDomainClass.mem_toFinset_iff_mem] at hv ⊢
+  exact CosetFftDomainClass.mem_subdomain_0_iff_mem.mp hv
+
+/-- The random linear combination of the input codewords, represented at the
+exact oracle type consumed by the first FRI round. -/
+def combinedOracle (cs : Fin m → F) (oStmt : ∀ j, OracleStatement m ω j) :
+    ∀ j, Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)) j :=
+  fun j v =>
+    oStmt 0 (initialDomainPoint (s := s) j v) +
+      ((List.finRange m).map fun (i : Fin m) =>
+        cs i * oStmt i.succ (initialDomainPoint (s := s) j v)).sum
+
 def inputRelation :
     Set
       (
@@ -104,12 +128,32 @@ noncomputable instance : ∀ j, Fintype ((batchSpec F m).Challenge j) := by
   subst h_j_eq_0
   simpa [batchSpec, Challenge] using (inferInstance : Fintype (Fin m → F))
 
+/-- Query one batched input codeword in the verifier's full oracle context. -/
+def queryInput (i : Fin (m + 1)) (x : ω.toFinset) :
+    OracleComp ([]ₒ + ([OracleStatement m ω]ₒ + [(batchSpec F m).Message]ₒ)) F :=
+  liftM <| OracleSpec.query
+    (show ([]ₒ + ([OracleStatement m ω]ₒ + [(batchSpec F m).Message]ₒ)).Domain from
+      Sum.inr (Sum.inl ⟨i, x⟩))
+
+omit [Fintype F] in
+@[simp]
+theorem simulateQ_queryInput
+    (oStmt : ∀ i, OracleStatement m ω i) (messages : (batchSpec F m).Messages)
+    (i : Fin (m + 1)) (x : ω.toFinset) :
+    simulateQ (OracleInterface.simOracle2 []ₒ oStmt messages)
+        (queryInput (F := F) m i x) = pure (oStmt i x) := by
+  simp only [MessageIdx, Message, OracleInterface.simOracle2, QueryImpl.addLift,
+    queryInput, Lean.Elab.WF.paramLet]
+  change id <$> (pure (oStmt i x) : OracleComp []ₒ F) = pure (oStmt i x)
+  simp only [map_pure, id_eq]
+
 /-- The batching round oracle prover. -/
 def batchProver :
   OracleProver []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
-    ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1)))
-      (OracleStatement m ω) (Fri.Spec.Witness F s d (0 : Fin (k + 2)))
+    (Fri.Spec.Statement F (0 : Fin (k + 1)))
+      (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
+      (Fri.Spec.Witness F s d (0 : Fin (k + 2)))
     (batchSpec F m) where
   PrvState
   | 0 => (∀j, OracleStatement m ω j) × Witness F s d m
@@ -184,33 +228,50 @@ def batchProver :
       ⟩
 
   output := fun ⟨cs, os, p⟩ => pure <|
-    ⟨⟨⟨cs, Fin.elim0⟩, os⟩, p⟩
+    ⟨⟨Fin.elim0, combinedOracle (s := s) m cs os⟩, p⟩
+
+/-- Virtual implementation of the random-linear-combination codeword.  Every
+downstream coordinate query is answered by querying the corresponding
+coordinate of all batched input codewords. -/
+def outputSimulation :
+    OracleOutputSimulation []ₒ (OracleStatement m ω)
+      (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1))) (batchSpec F m) where
+  materializeOutput := fun challenges oStmt _ =>
+    combinedOracle (s := s) m (challenges ⟨0, by simp⟩) oStmt
+  simulateOutputQuery := fun challenges q => do
+    let x := initialDomainPoint (s := s) q.1 q.2
+    let f₀ ← queryInput (F := F) m 0 x
+    let fs ← (List.finRange m).mapM fun (i : Fin m) => do
+      let fi ← queryInput (F := F) m i.succ x
+      pure (challenges ⟨0, by simp⟩ i * fi)
+    pure (f₀ + fs.sum)
+  simulateOutputQuery_eq := by
+    intro challenges oStmt messages q
+    rcases q with ⟨j, v⟩
+    simp only [simulateQ_bind, simulateQ_queryInput, simulateQ_list_mapM,
+      List.mapM_pure, pure_bind, simulateQ_pure]
+    rfl
 
 /-- The batching round oracle verifier. -/
 def batchVerifier :
   OracleVerifier []ₒ
     Unit (OracleStatement m ω)
-    ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1)))
-    (OracleStatement m ω)
+    (Fri.Spec.Statement F (0 : Fin (k + 1)))
+    (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
     (batchSpec F m) where
-  verify := fun _ chals => pure ⟨chals ⟨0, by simp⟩, Fin.elim0⟩
-  embed :=
-    ⟨
-      fun i => Sum.inl i,
-      by intros _; aesop
-    ⟩
-  hEq := by simp
+  verify := fun _ _ => pure Fin.elim0
+  outputOracle := .inr (outputSimulation (s := s) m)
 
 /-- The batching round oracle reduction. -/
 def batchOracleReduction :
   OracleReduction []ₒ
     Unit (OracleStatement m ω) (Witness F s d m)
-    ((Fin m → F) × Fri.Spec.Statement F (0 : Fin (k + 1)))
-    (OracleStatement m ω)
+    (Fri.Spec.Statement F (0 : Fin (k + 1)))
+    (Fri.Spec.OracleStatement s ω (0 : Fin (k + 1)))
     (Fri.Spec.Witness F s d (0 : Fin (k + 2)))
     (batchSpec F m) where
   prover := batchProver s d m
-  verifier := batchVerifier (k := k) m
+  verifier := batchVerifier s m
 
 end BatchingRound
 

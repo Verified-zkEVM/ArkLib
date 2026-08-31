@@ -17,7 +17,7 @@ import ArkLib.ProofSystem.Stir.ProximityBound
     with fewer queries*][ACFY24stir]
 -/
 
-open BigOperators Finset ListDecodable NNReal ReedSolomon VectorIOP OracleComp LinearCode STIR
+open BigOperators Finset Code NNReal ReedSolomon VectorIOP OracleComp LinearCode STIR
 
 namespace StirIOP
 
@@ -69,7 +69,7 @@ structure Distances (M : ℕ) where
 structure CodeParams (P : Params ι F) (Dist : Distances M) where
   C : ∀ i : Fin (M + 1), Set ((ι i) → F)
   h_code : ∀ i : Fin (M + 1), C i = code (P.φ i) (degree ι P i)
-  h_listDecode : ∀ i : Fin (M + 1), i ≠ 0 → listDecodable (C i) (Dist.δ i) (Dist.l i)
+  h_listDecode : ∀ i : Fin (M + 1), i ≠ 0 → IsListDecodable (C i) (Dist.δ i) (Dist.l i)
 
 section MainTheorem
 

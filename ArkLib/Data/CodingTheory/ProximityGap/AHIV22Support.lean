@@ -79,7 +79,7 @@ private lemma exists_common_support_of_wt_le
     (hF : Fintype.card F > e) :
     ∃ D : Finset ι, D.card ≤ e ∧ ∀ x : E, ∀ j, j ∉ D → (x : ι → F) j = 0 := by
   classical
-  letI : Fintype E := Fintype.ofFinite E
+  let : Fintype E := Fintype.ofFinite E
   let f : E → ℕ := fun x ↦ (vecSupport (F := F) (x : ι → F)).card
   have huniv : (Finset.univ : Finset E).Nonempty := Finset.univ_nonempty
   obtain ⟨x0, hx0⟩ := Finset.exists_maximalFor (f := f) (s := (Finset.univ : Finset E)) huniv
@@ -152,7 +152,7 @@ private lemma exists_common_support_of_wt_le
       lt_of_le_of_lt hbad0_card_le_D hD_lt_cardF
     have h_nonempty : (Finset.univ \ bad0 : Finset F).Nonempty := by
       have : 0 < (Finset.univ \ bad0 : Finset F).card := by
-        simpa [Finset.card_univ_diff] using Nat.sub_pos_of_lt hbad0_lt_cardF
+        simpa [Finset.card_univ_sdiff] using Nat.sub_pos_of_lt hbad0_lt_cardF
       exact Finset.card_pos.mp this
     rcases h_nonempty with ⟨a, ha⟩
     have ha_not_bad0 : a ∉ bad0 := (Finset.mem_sdiff.mp ha).2
@@ -267,20 +267,22 @@ lemma dist_interleaved_code_to_code_lb
       have h2 : Δ₀((v + w : ι → F), dec v + dec w) ≤ 2 * e := by
         have hv :
             Δ₀((v + w : ι → F), (v : ι → F) + dec w) = Δ₀((w : ι → F), dec w) := by
-          simpa [Pi.add_apply] using
-            (hammingDist_comp (f := fun i ↦ fun t : F ↦ (v : ι → F) i + t)
+          change Δ₀((fun i => (v : ι → F) i + (w : ι → F) i),
+            fun i => (v : ι → F) i + dec w i) = Δ₀((w : ι → F), dec w)
+          exact hammingDist_comp (f := fun i ↦ fun t : F ↦ (v : ι → F) i + t)
               (x := (w : ι → F)) (y := dec w)
               (hf := fun _ ↦ by
                 intro a b hab
-                exact add_left_cancel hab))
+                exact add_left_cancel hab)
         have hw :
             Δ₀((v : ι → F) + dec w, dec v + dec w) = Δ₀((v : ι → F), dec v) := by
-          simpa [Pi.add_apply] using
-            (hammingDist_comp (f := fun i ↦ fun t : F ↦ t + dec w i)
+          change Δ₀((fun i => (v : ι → F) i + dec w i),
+            fun i => dec v i + dec w i) = Δ₀((v : ι → F), dec v)
+          exact hammingDist_comp (f := fun i ↦ fun t : F ↦ t + dec w i)
               (x := (v : ι → F)) (y := dec v)
               (hf := fun _ ↦ by
                 intro a b hab
-                exact add_right_cancel hab))
+                exact add_right_cancel hab)
         have : Δ₀((v + w : ι → F), dec v + dec w)
             ≤ Δ₀((v + w : ι → F), (v : ι → F) + dec w)
               + Δ₀((v : ι → F) + dec w, dec v + dec w) := by
@@ -343,7 +345,8 @@ lemma dist_interleaved_code_to_code_lb
     refine (Code.mem_moduleInterleavedCode_iff (F := F) (A := F) (κ := κ) (ι := ι) (MC := L)
       (v := (⋈|V))).2 ?_
     intro k
-    simpa [V] using hdec_mem ⟨U_star k, h_row_in_span k⟩
+    change dec ⟨U_star k, h_row_in_span k⟩ ∈ L
+    exact hdec_mem ⟨U_star k, h_row_in_span k⟩
   have h_dist_rows : ∀ k j, j ∉ D → U_star k j = V k j := by
     intro k j hj
     have hz :
@@ -363,8 +366,8 @@ lemma dist_interleaved_code_to_code_lb
     by_contra hjD
     apply hj
     funext k
-    have := h_dist_rows k j hjD
-    simpa [V] using this
+    change U_star k j = V k j
+    exact h_dist_rows k j hjD
   have h_dist_to_code : Δ₀(⋈|U_star, (L^⋈κ)) ≤ e := by
     exact le_trans
       (Code.distFromCode_le_dist_to_mem (C := (L^⋈κ)) (u := (⋈|U_star)) (v := (⋈|V))

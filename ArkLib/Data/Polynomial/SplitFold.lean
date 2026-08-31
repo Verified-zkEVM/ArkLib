@@ -1,7 +1,7 @@
 /-
 Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Julian Sutherland, Ilia Vlasov
+Authors: Julian Sutherland, Ilia Vlasov, Aristotle (Harmonic)
 -/
 import Mathlib.Algebra.Polynomial.BigOperators
 
@@ -17,9 +17,9 @@ This file defines n-way splitting and folding operations on polynomials.
 * `Polynomial.splitNth f n i`: Splits polynomial `f` into `n` component polynomials,
   where `splitNth f n i` extracts coefficients at positions `j ≡ i (mod n)`.
 
-* `Polynomial.foldNth n f α`: Recombines the n-way split of `f` using powers of `α`,
-  computing `∑ i : Fin n, α^i * splitNth f n i`. This is the core operation in
-  FRI-style polynomial commitment schemes.
+* `FoldingPolynomial.polyFold f n r`: Recombines the n-way split of `f` using powers of `r`,
+  computing `∑ i : Fin n, r^i * splitNth f n i` (see `polyFold_eq_sum_of_splitNth`). This is
+  the core operation in FRI-style polynomial commitment schemes.
 
 ## Implementation notes
 
@@ -33,7 +33,7 @@ open Polynomial
 
 namespace Polynomial
 
-variable {𝔽 : Type} [CommSemiring 𝔽] [NoZeroDivisors 𝔽]
+variable {𝔽 : Type} [CommSemiring 𝔽]
 
 /--
 Splits a polynomial into `n` component polynomials based on coefficient indices modulo `n`.
@@ -42,289 +42,213 @@ For a polynomial `f = ∑ⱼ aⱼ Xʲ` and index `i : Fin n`, returns the polyno
 coefficients are extracted from positions `j ≡ i (mod n)`, reindexed by `j / n`.
 Formally: `splitNth f n i = ∑_{j ≡ i (mod n)} aⱼ X^(j/n)`.
 -/
-def splitNth (f : 𝔽[X]) (n : ℕ) [inst : NeZero n] : Fin n → 𝔽[X] :=
-  fun i =>
-    let sup :=
-      Finset.filterMap (fun x => if x % n = i.1 then .some (x / n) else .none)
+def splitNth (f : 𝔽[X]) (n : ℕ) (i : Fin n) : 𝔽[X] :=
+  if hn : n = 0 then f else -- unreachable: `Fin 0` is uninhabited
+  Polynomial.ofFinsupp
+    ⟨
+      Finset.filterMap (fun x ↦ if x % n = i.1 then .some (x / n) else .none)
       f.support
-      (by
-        intros a a' b
-        simp only [Option.mem_def, Option.ite_none_right_eq_some, Option.some.injEq, and_imp]
-        intros h g h' g'
-        rw [Eq.symm (Nat.div_add_mod' a n), Eq.symm (Nat.div_add_mod' a' n)]
-        rw [h, g, h', g'])
-    Polynomial.ofFinsupp
-      ⟨
-        sup,
-        fun e => f.coeff (e * n + i.1),
-        by
-          intros a
-          dsimp [sup]
-          simp only [Finset.mem_filterMap, mem_support_iff, ne_eq, Option.ite_none_right_eq_some,
-            Option.some.injEq]
-          apply Iff.intro
-          · rintro ⟨a', g⟩
-            have : a' = a * n + i.1 := by
-              rw [Eq.symm (Nat.div_add_mod' a' n)]
-              rw [g.2.1, g.2.2]
-            rw [this.symm]
-            exact g.1
-          · intros h
-            exists (a * n + i.1)
-            apply And.intro h
-            rw [Nat.mul_add_mod_self_right, Nat.mod_eq_of_lt i.2]
-            apply And.intro rfl
-            have {a b : ℕ} : (a * n + b) / n = a + (b / n) := by
-              have := inst.out
-              have ne_zero : 0 < n := by omega
-              rw [Nat.add_div ne_zero, Nat.mul_mod_left, zero_add, Nat.mul_div_cancel a ne_zero]
-              have : ¬ (n ≤ b % n) := by
-                simp only [not_le]
-                exact Nat.mod_lt b ne_zero
-              simp [this]
-            simp [this]
-      ⟩
+      (fun a a' b ↦ by
+        have := Nat.div_add_mod' a n
+        have := Nat.div_add_mod' a' n
+        aesop),
+      fun e ↦ f.coeff (e * n + i.1),
+      fun a ↦ by
+        simp only [Finset.mem_filterMap, mem_support_iff, ne_eq, Option.ite_none_right_eq_some,
+          Option.some.injEq]
+        constructor
+        · rintro ⟨a', g⟩
+          have : a' = a * n + i.1 := by
+            have := Nat.div_add_mod' a' n
+            aesop
+          aesop
+        · intros h
+          exists (a * n + i.1)
+          have {a b : ℕ} : (a * n + b) / n = a + (b / n) := by
+            have := Nat.zero_lt_of_ne_zero hn
+            have := Nat.mod_lt b this
+            aesop (add simp [Nat.add_div])
+          aesop (add simp [Nat.mul_add_mod_self_right, Nat.mod_eq_of_lt])
+    ⟩
 
-/- Proof of key identity `splitNth` has to satisfy. -/
-omit [NoZeroDivisors 𝔽] in
-lemma splitNth_def (n : ℕ) (f : 𝔽[X]) [inst : NeZero n] :
+/-- Non-computable helper definition. -/
+private noncomputable def splitNthNoncomputable (f : 𝔽[X]) (n : ℕ) (i : Fin n) : 𝔽[X] :=
+  if n = 0 then f else
+  ∑ k ∈ f.support,
+    if k % n = i.1 then Polynomial.C (f.coeff k) * Polynomial.X ^ (k / n) else 0
+
+@[simp]
+private lemma splitNthNoncomputable_of_neZero {f : 𝔽[X]} {n : ℕ} [inst : NeZero n] {i : Fin n} :
+  splitNthNoncomputable f n i =
+    ∑ k ∈ f.support,
+      if k % n = i.1 then Polynomial.C (f.coeff k) * Polynomial.X ^ (k / n) else 0 := by
+  have := inst.out
+  aesop (add simp splitNthNoncomputable)
+
+/-- Coefficient formula for `splitNth`: the `e`-th coefficient of the `i`-th component
+  is the coefficient of `f` at position `e * n + i`. -/
+@[simp]
+lemma splitNth_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :
+  (splitNth f n i).coeff m = f.coeff (m * n + i.1) := by
+  aesop
+    (add unsafe [cases Fin])
+    (add simp [splitNth, Polynomial.coeff_ofFinsupp])
+
+@[simp]
+private lemma splitNthNoncomputable_coeff {n : ℕ} {f : 𝔽[X]} (i : Fin n) (m : ℕ) :
+    (splitNthNoncomputable f n i).coeff m = f.coeff (m * n + i.1) := by
+  by_cases! hn : n ≠ 0
+  · simp only [splitNthNoncomputable, hn, ↓reduceIte, finsetSum_coeff]
+    have hi : i.1 < n := i.2
+    have hdiv : (m * n + i.1) / n = m := by
+      rw [mul_comm, Nat.mul_add_div (Nat.pos_of_ne_zero hn), Nat.div_eq_of_lt hi, Nat.add_zero]
+    have hmod : (m * n + i.1) % n = i.1 := by
+      rw [mul_comm, Nat.mul_add_mod, Nat.mod_eq_of_lt hi]
+    have key : ∀ k ∈ f.support,
+        (if k % n = i.1 then Polynomial.C (f.coeff k) * Polynomial.X ^ (k / n) else 0).coeff m
+          = if k = m * n + i.1 then f.coeff k else 0 := by
+      intro k hk
+      have hdm : n * (k / n) + k % n = k := Nat.div_add_mod k n
+      by_cases h : k % n = i.1
+      · simp only [h, if_true]
+        rw [Polynomial.coeff_C_mul, Polynomial.coeff_X_pow]
+        by_cases hm : m = k / n <;> grind
+      · aesop
+    rw [Finset.sum_congr rfl key]
+    by_cases hmem : m * n + i.1 ∈ f.support <;>
+      aesop (add simp [Finset.sum_eq_single,
+                       Finset.sum_eq_zero,
+                       Polynomial.mem_support_iff])
+  · aesop (add safe [cases Fin, (by omega)])
+
+private lemma splitNth_eq_splitNthNoncomputable {n : ℕ} {f : 𝔽[X]} :
+  splitNth f n = splitNthNoncomputable f n := by aesop
+
+/-- The key identity `splitNth` satisfies: `f` is recovered from its `n` components. -/
+lemma eq_sum_splitNth (n : ℕ) [inst : NeZero n] (f : 𝔽[X]) :
     f =
       ∑ i : Fin n,
         (Polynomial.X ^ i.1) *
           Polynomial.eval₂ Polynomial.C (Polynomial.X ^ n) (splitNth f n i) := by
-  ext e
-  rw [Polynomial.finsetSum_coeff]
-  have h₀ {b e : ℕ} {f : 𝔽[X]} : (X ^ b * f).coeff e = if e < b then 0 else f.coeff (e - b) := by
-    rw [Polynomial.coeff_X_pow_mul' f b e]
+  rw [splitNth_eq_splitNthNoncomputable]
+  have hn : 0 < n := Nat.pos_of_ne_zero inst.out
+  conv_lhs => rw [Polynomial.as_sum_support_C_mul_X_pow f]
+  simp only [splitNthNoncomputable_of_neZero, eval₂_finsetSum, Finset.mul_sum]
+  rw [Finset.sum_comm]
+  apply Finset.sum_congr rfl
+  intro k hk
+  have hstep : ∀ i : Fin n, X ^ i.1 * eval₂ C (X ^ n)
+      (if k % n = i.1 then C (f.coeff k) * X ^ (k / n) else 0)
+      = if k % n = i.1 then C (f.coeff k) * X ^ k else (0 : 𝔽[X]) := fun i ↦ by
+    have := Nat.div_add_mod k n
+    have : X ^ i.1 * (C (f.coeff k) * X ^ (n * (k / n))) =
+      C (f.coeff k) * X ^ (i.1 + n * (k / n)) := by ring
     aesop
-  have h₁ {e : ℕ} {f : 𝔽[X]}  :
-    (eval₂ C (X ^ n) f).coeff e =
-      if e % n = 0
-      then f.coeff (e / n)
-      else 0 := by
-    rw [Polynomial.eval₂_def, Polynomial.coeff_sum, Polynomial.sum_def]
-    conv =>
-      lhs
-      congr
-      · skip
-      ext n
-      rw [←pow_mul, Polynomial.coeff_C_mul_X_pow]
-    by_cases h : e % n = 0 <;> simp only [h, ↓reduceIte]
-    · rw [Finset.sum_eq_single (e / n)]
-      · have : e = n * (e / n) :=
-          Nat.eq_mul_of_div_eq_right
-            (Nat.dvd_of_mod_eq_zero h) rfl
-        rw [if_pos]
-        exact this
-      · intros b h₀ h₁
-        have : ¬ (e = n * b) := by
-          intros h'
-          apply h₁
-          rw [h']
-          exact Nat.eq_div_of_mul_eq_right inst.out rfl
-        simp [this]
-      · intros h'
-        split_ifs with h''
-        · exact notMem_support_iff.mp h'
-        · rfl
-    · have {α : Type} {a b : α} : ∀ m, (if e = n * m then a else b) = b := by aesop
-      conv =>
-        lhs
-        congr
-        · skip
-        ext m
-        rw [this m]
-      rw [Finset.sum_const_zero]
-  conv =>
-    rhs
-    congr
-    · skip
-    · ext b
-      rw [h₀, h₁]
-  unfold splitNth
-  simp only [coeff_ofFinsupp, Finsupp.coe_mk]
-  rw [Finset.sum_eq_single ⟨e % n, by refine Nat.mod_lt e (by have := inst.out; omega)⟩]
-  · simp only
-    have h₁ : ¬ (e < e % n) := by
-      by_cases h : e < n
-      · rw [Nat.mod_eq_of_lt h]
-        simp
-      · simp only [not_lt] at h ⊢
-        exact Nat.mod_le e n
-    have h₂ : (e - e % n) % n = 0 := Nat.sub_mod_eq_zero_of_mod_eq (by simp)
-    simp only [h₁, h₂, Eq.symm Nat.div_eq_sub_mod_div, Nat.div_add_mod' e n, ↓reduceIte]
-  · rintro ⟨b, h⟩ _
-    simp only [ne_eq, Fin.mk.injEq, ite_eq_left_iff, not_lt, ite_eq_right_iff]
-    intros h₀ h₁ h₂
-    exfalso
-    apply h₀
-    have : e % n = b % n := by
-      have h₁' := h₁
-      rw [←Nat.div_add_mod' e n, ←Nat.div_add_mod' b n] at h₁ h₂
-      by_cases h' : e % n ≥ b % n
-      · have : e / n * n + e % n - (b / n * n + b % n) =
-                ((e / n - b / n) * n) + (e % n - b % n) := by
-          have : e / n * n + e % n - (b / n * n + b % n) =
-                  e / n * n + e % n - b / n * n - b % n := by
-            omega
-          rw [this]
-          have : e / n * n + e % n - b / n * n = ((e / n) - (b / n)) * n + e % n := by
-            have : e / n * n + e % n - b / n * n = (e / n * n - b / n * n) + e % n :=
-              Nat.sub_add_comm (Nat.mul_le_mul (Nat.div_le_div_right h₁') (by rfl))
-            rw [this, ←Nat.sub_mul]
-          rw [this]
-          exact Nat.add_sub_assoc h' ((e / n - b / n) * n)
-        rw [
-          this, Nat.mul_add_mod_self_right,
-          Nat.mod_eq_of_lt (Nat.sub_lt_of_lt (Nat.mod_lt _ (by linarith)))
-        ] at h₂
-        omega
-      · simp only [ge_iff_le, not_le] at h'
-        have : e / n * n + e % n - (b / n * n + b % n) =
-                ((e / n - b / n - 1) * n) + (n - (b % n - e % n)) := by
-          have : e / n * n + e % n - (b / n * n + b % n) =
-                  e / n * n + e % n - b / n * n - b % n := by
-            omega
-          rw [this]
-          have : e / n * n + e % n - b / n * n = ((e / n) - (b / n)) * n + e % n := by
-            have : e / n * n + e % n - b / n * n = (e / n * n - b / n * n) + e % n :=
-              Nat.sub_add_comm (Nat.mul_le_mul (Nat.div_le_div_right h₁') (by rfl))
-            rw [this, ←Nat.sub_mul]
-          rw [this]
-          have : e / n - b / n = (e / n - b / n - 1) + 1 := by
-            refine Eq.symm (Nat.sub_add_cancel ?_)
-            rw [Nat.one_le_iff_ne_zero]
-            intros h
-            have h := Nat.le_of_sub_eq_zero h
-            nlinarith
-          rw (occs := .pos [1]) [this]
-          rw
-            [
-              right_distrib, one_mul, add_assoc,
-              Nat.add_sub_assoc (Nat.le_add_right_of_le (Nat.le_of_lt (Nat.mod_lt_of_lt h)))
-            ]
-          congr 1
-          grind
-        rw [this, Nat.mul_add_mod_self_right] at h₂
-        have {a : ℕ} : (n - a) % n = 0 ∧ a < n → a = 0 := by
-          intros h
-          rcases exists_eq_mul_left_of_dvd (Nat.dvd_of_mod_eq_zero h.1) with ⟨c, h'⟩
-          have : a = (1 - c)*n := by
-            have : n = a + c * n := by omega
-            have : n - c * n = a := by omega
-            rw [←this]
-            have : n = 1 * n := by rw [one_mul]
-            rewrite (occs := .pos [1]) [this]
-            exact Eq.symm (Nat.sub_mul 1 c n)
-          have h' := this ▸ h.2
-          rw [this]
-          have : 1 - c = 0 := by
-            have : n = 1 * n := by rw [one_mul]
-            rw (occs := .pos [2]) [this] at h'
-            have h' := Nat.lt_of_mul_lt_mul_right h'
-            omega
-          simp [this]
-        exfalso
-        have h₂ := this ⟨h₂, by apply Nat.sub_lt_of_lt; apply Nat.mod_lt; linarith⟩
-        omega
-    rw [this]
-    exact Eq.symm (Nat.mod_eq_of_lt h)
-  · intros h
-    simp at h
+      (add simp [eval₂_mul, eval₂_C, eval₂_X_pow])
+      (add unsafe (by rw [← pow_mul]))
+      (add safe (by omega))
+  rw [Finset.sum_congr rfl (fun i _ => hstep i),
+      Finset.sum_eq_single (⟨k % n, Nat.mod_lt k hn⟩ : Fin n)] <;> aesop
 
-/- Lemma bounding degree of each `n`-split polynomial. -/
-omit [NoZeroDivisors 𝔽] in
-lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] :
-    ∀ {i}, (splitNth f n i).natDegree ≤ f.natDegree / n := by
-    intros i
-    unfold splitNth Polynomial.natDegree Polynomial.degree
-    simp only [support_ofFinsupp]
-    rw [WithBot.unbotD_le_iff (by simp)]
-    simp only [Finset.max_le_iff, Finset.mem_filterMap, mem_support_iff, ne_eq,
-      Option.ite_none_right_eq_some, Option.some.injEq, WithBot.coe_le_coe, forall_exists_index,
-      and_imp]
-    intros _ _ h _ h'
-    rw [←h']
-    refine Nat.div_le_div ?_ (Nat.le_refl n) inst.out
-    exact le_natDegree_of_ne_zero h
+/-- Lemma bounding degree of each `n`-split polynomial. -/
+lemma splitNth_degree_le {n : ℕ} {f : 𝔽[X]} [inst : NeZero n] {i : Fin n} :
+  (splitNth f n i).natDegree ≤ f.natDegree / n := by
+  have hn := inst.out
+  rw [Polynomial.natDegree_le_iff_coeff_eq_zero]
+  intro j hj
+  have hjn : j * n - 1 < j * n := Nat.sub_one_lt (by aesop)
+  rw [Nat.div_lt_iff_lt_mul (by omega),
+      Nat.lt_iff_le_pred (by omega),
+      Polynomial.natDegree_le_iff_coeff_eq_zero] at hj
+  simp only [splitNth_coeff]
+  exact hj _ (by omega)
 
 /-- `foldingPolynomial` in terms of `splitNth`
     when `q = X ^ n`. -/
-@[simp]
-lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽]
-  {f : Polynomial 𝔽} {n : ℕ}
-  [inst : NeZero n] :
+@[simp low]
+lemma folding_polynomial_eq_sum_splitNth {𝔽 : Type} [Field 𝔽] {f : Polynomial 𝔽}
+  {n : ℕ} [inst : NeZero n] :
   FoldingPolynomial.foldingPolynomial (X ^ n) f =
     ∑ i, C (splitNth f n i) * (X ^ i.val) := by
   symm
   apply FoldingPolynomial.folding_polynomial_is_unique'
-  · conv =>
-      rhs
-      rw [splitNth_def (f := f) (inst := inst)]
-    rw [
-      Polynomial.map_sum,
-      Polynomial.eval_finsetSum]
-    simp only [Polynomial.map_mul, map_C, coe_compRingHom, Polynomial.map_pow, map_X,
-    eval_mul, eval_C, eval_pow, eval_X]
-    simp only [comp]
-    conv =>
-      lhs
-      rhs
-      ext x
-      rw [mul_comm]
-      rfl
-  · simp only [Bivariate.degreeX, finsetSum_coeff, coeff_C_mul, coeff_X_pow, mul_ite, mul_one,
-    mul_zero, natDegree_pow, natDegree_X]
-    simp only [Finset.sup_le_iff, mem_support_iff, finsetSum_coeff, coeff_C_mul, coeff_X_pow,
-    mul_ite, mul_one, mul_zero, ne_eq]
-    intro b hb
-    apply natDegree_sum_le_of_forall_le
-    rintro ⟨i, hi⟩ _
-    by_cases heq: b = i
-    · simp only [heq, ↓reduceIte]
-      exact splitNth_degree_le
-    · simp [heq]
+  · conv_rhs => rw [eq_sum_splitNth (f := f) (inst := inst)]
+    rw [Polynomial.map_sum, Polynomial.eval_finsetSum]
+    aesop
+      (add simp [comp])
+      (add safe (by ac_nf))
+  · aesop
+      (add simp [Bivariate.degreeX, splitNth_degree_le])
+      (add safe natDegree_sum_le_of_forall_le)
   · simp only [Bivariate.natDegreeY, natDegree_pow, natDegree_X, mul_one]
-    apply Nat.lt_of_le_pred (by {
-      apply Nat.zero_lt_of_ne_zero
-      aesop
-    })
-    apply Polynomial.natDegree_sum_le_of_forall_le
-    intro i _
-    apply Nat.le_trans Polynomial.natDegree_mul_le
-    rcases i with ⟨i, hi⟩
-    simp
-    omega
+    exact Nat.lt_of_le_pred (by aesop (add unsafe Nat.zero_lt_of_ne_zero)) <| by
+      exact Polynomial.natDegree_sum_le_of_forall_le _ _ <| fun i _ ↦
+        Nat.le_trans Polynomial.natDegree_mul_le <| by aesop (add safe (by omega))
 
 /-- `polyFold` in terms of `splitNth`. -/
-@[simp]
+@[simp low]
 lemma polyFold_eq_sum_of_splitNth {𝔽 : Type} [Field 𝔽]
-  {f : 𝔽[X]} {n : ℕ} {r : 𝔽}
-  [inst : NeZero n] :
+  {f : 𝔽[X]} {n : ℕ} {r : 𝔽} [inst : NeZero n] :
   FoldingPolynomial.polyFold f n r =
     ∑ i, C (r ^ i.val) * splitNth f n i := by
-  simp only [FoldingPolynomial.polyFold, folding_polynomial_eq_sum_splitNth, map_pow]
-  rw [Polynomial.eval_finsetSum]
-  simp only [eval_mul, eval_C, eval_pow, eval_X]
-  conv =>
-    lhs
-    rhs
-    ext x
-    rw [mul_comm]
+  aesop
+    (add simp [FoldingPolynomial.polyFold, Polynomial.eval_finsetSum])
+    (add safe (by grind))
 
-omit [NoZeroDivisors 𝔽] in
+/-- `splitNth` is the left inverse of the `n`-way recombination: splitting the polynomial
+  `∑ j, X^j * (u j)(X^n)` recovers `u i` for each component `i`. -/
+@[simp]
+lemma splitNth_of_sum_comp {n : ℕ} [inst : NeZero n] (u : Fin n → 𝔽[X]) (i : Fin n) :
+    splitNth (∑ j : Fin n, X ^ (j : ℕ) * (u j).comp (X ^ n)) n i = u i := by
+  have hn : 0 < n := Nat.pos_of_ne_zero inst.out
+  ext e
+  rw [splitNth_coeff, finsetSum_coeff, Finset.sum_eq_single i]
+  · aesop (add unsafe (by rw [←expand_eq_comp_X_pow]))
+  · intro j _ hj
+    rw [coeff_X_pow_mul']
+    by_cases hle : (j : ℕ) ≤ e * n + i
+    · rw [if_pos hle, ←expand_eq_comp_X_pow, coeff_expand hn, if_neg]
+      intro hdvd
+      have hmod := (Nat.modEq_iff_dvd' hle).mpr hdvd
+      aesop
+        (add safe cases Fin)
+        (add simp [Nat.ModEq, Nat.mod_eq_of_lt])
+    · simp_all
+  · aesop
+
+/-- `foldingPolynomial` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
+    bivariate polynomial `∑ i, X^i * C (u i)`, i.e. its `Y`-coefficients are exactly the
+    components `u i`. -/
+@[simp high]
+theorem foldingPolynomial_sum {𝔽 : Type} [Field 𝔽]
+  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+  FoldingPolynomial.foldingPolynomial (X ^ n)
+    (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) =
+      ∑ i, Polynomial.X ^ i.val * C (u i) := by simp_all
+
+/-- `polyFold` of an `n`-way recombination `∑ i, X^i * (u i)(X^n)` is the
+    polynomial `∑ i, r^i * u i`. -/
+@[simp high]
+theorem polyFold_sum {𝔽 : Type} [Field 𝔽] {r : 𝔽}
+  {n : ℕ} {u : Fin n → 𝔽[X]} [inst : NeZero n] :
+  FoldingPolynomial.polyFold
+    (∑ i, Polynomial.X ^ i.val * (u i).comp (Polynomial.X ^ n)) n r =
+      ∑ i, r ^ i.val • (u i) := by
+  aesop
+    (add simp [FoldingPolynomial.polyFold,
+               Polynomial.eval_finsetSum,
+               Polynomial.smul_eq_C_mul])
+    (add safe (by grind))
+
 /--
-Lemma bridges the coefficient-level identity `splitNth_def` and
-evaluation-level reasoning about `splitNth` and `foldNth`.
+Lemma bridges the coefficient-level identity `eq_sum_splitNth` and
+evaluation-level reasoning about `splitNth` and `polyFold`.
 -/
 lemma splitNth_eval_comp_pow {n : ℕ} [NeZero n] (f : 𝔽[X]) (x : 𝔽) (i : Fin n) :
     (eval₂ C (X ^ n) (splitNth f n i)).eval x = (splitNth f n i).eval (x ^ n) := by
   rw [eval₂_eq_sum]
   unfold Polynomial.eval
   rw [Polynomial.eval₂_sum, eval₂_eq_sum]
-  congr
-  ext e a
-  rw [← eval]
-  simp
+  simp_all
 
 end Polynomial

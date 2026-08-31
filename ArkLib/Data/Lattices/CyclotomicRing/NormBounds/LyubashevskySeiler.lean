@@ -155,8 +155,8 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
     have hirr : Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly) := by
       rw [hφ, show (X + 1 : (ZMod q)[X]) = X - C (-1) by rw [C_neg, C_1, sub_neg_eq_add]]
       exact irreducible_X_sub_C (-1)
-    haveI hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
-    haveI hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
+    have hfact : Fact (Irreducible ((powTwoCyclotomic (R := ZMod q) 0).φ.toPoly)) := ⟨hirr⟩
+    have hmax : ((powTwoCyclotomic (R := ZMod q) 0).modIdeal).IsMaximal := by
       rw [modIdeal]; exact PrincipalIdealRing.isMaximal_of_irreducible hirr
     have hisfield : IsField ((powTwoCyclotomic (R := ZMod q) 0).CyclotomicRing) :=
       (Ideal.Quotient.maximal_ideal_iff_isField_quotient _).mp hmax
@@ -201,7 +201,9 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
       have hh := Rq.not_isUnit_toQuotientHom_of_not_isUnit
         (powTwoCyclotomic (R := ZMod q) α) hc
       rw [Rq.toQuotientHom] at hh
-      simpa only [Rq.toQuotient, quotientHom_apply, modIdeal, hct] using hh
+      change ¬ IsUnit (Ideal.Quotient.mk
+        (Ideal.span {(powTwoCyclotomic (R := ZMod q) α).φ.toPoly}) c.1.toPoly) at hh
+      simpa only [hct] using hh
     have hdvd : g1 ∣ ct ∨ g2 ∣ ct := by
       by_contra hcon
       rw [not_or] at hcon
@@ -215,7 +217,7 @@ theorem q_dvd_l2NormSq_of_not_isUnit (hq5 : q % 8 = 5) {c : Rq Φ} (hc : ¬ IsUn
         Irreducible g → g = X ^ (2 ^ (α - 1)) - C s → s ^ 2 = -1 → g ∣ ct →
         (q : ℤ) ∣ (Rq.l2NormSq Φ c : ℤ) := by
       intro g s hirr hgeq hs hdvdg
-      haveI : Fact (Irreducible g) := ⟨hirr⟩
+      have : Fact (Irreducible g) := ⟨hirr⟩
       have hgmonic : g.Monic := by rw [hgeq]; exact monic_X_pow_sub_C s (by positivity)
       have hgnd : g.natDegree = 2 ^ (α - 1) := by rw [hgeq, natDegree_X_pow_sub_C]
       let F := AdjoinRoot g
@@ -340,7 +342,7 @@ Over the power-of-two cyclotomic modulus `powTwoCyclotomic α` (`φ = X^{2^α}+1
 `≤ κ` and `κ² < q` is a unit: by the algebraic core a non-unit forces `q ∣ ‖c‖₂²`, while
 `‖c‖₂² ≤ ‖c‖₁² ≤ κ² < q`, so `‖c‖₂² = 0`, forcing `c = 0` against `‖c‖₁ > 0`. -/
 theorem isUnit_of_l1Norm_le (hq5 : q % 8 = 5) {c : Rq Φ} {κ : ℕ}
-    (hpos : 0 < Rq.l1Norm Φ c) (hle : Rq.l1Norm Φ c ≤ κ) (hκ : κ ^ 2 < q) :
+    (hpos : 0 < ‖c‖₁) (hle : ‖c‖₁ ≤ κ) (hκ : κ ^ 2 < q) :
     IsUnit c := by
   by_contra hc
   -- Algebraic core: a non-unit has `q ∣ ‖c‖₂²`.

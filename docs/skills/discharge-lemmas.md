@@ -50,7 +50,7 @@ the rating and placement decisions are what keep the result maintainable.
   - general-purpose extensions meant for upstreaming → `ArkLib/ToMathlib/`
   - IOR core / security theory → `ArkLib/OracleReduction/`
   - protocol-specific → `ArkLib/ProofSystem/`
-  - commitment-specific → `ArkLib/CommitmentScheme/`
+  - commitment-specific → `ArkLib/Commitments/`
 - Prefer keeping a lemma next to the definitions it is about, not next to the theorem that happens
   to need it. A reusable algebraic fact about an existing structure usually belongs in `Data/` or
   `ToMathlib/`, not buried in a protocol file.
@@ -134,3 +134,6 @@ Only consider the task complete when:
   size, not reflexively.
 - Re-rate honestly: if a "sub-6" proof balloons, stop, mark it deferred with the new rating, and
   say so in the summary rather than forcing a brittle proof.
+- A sorried definition is also `noncomputable` (because `sorryAx` is). That marker is a symptom of
+  the gap you are filling here, not separate work — see [`make-computable.md`](make-computable.md)
+  if the task is actually about executability.

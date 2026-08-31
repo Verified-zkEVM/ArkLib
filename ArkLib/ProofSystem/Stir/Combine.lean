@@ -112,6 +112,16 @@ private lemma block_start_zero
   {dstar : ℕ} {degs : Fin m.succ → ℕ} :
   block_start dstar degs 0 = 0 := by simp [block_start]
 
+private lemma block_end_le_block_start
+  {dstar : ℕ} {degs : Fin m → ℕ} {i j : Fin m} (hij : i < j) :
+  block_start dstar degs i + block_size dstar degs i ≤ block_start dstar degs j := by
+  unfold block_start
+  rw [add_comm, ← Finset.sum_insert (by simp)]
+  apply Finset.sum_le_sum_of_subset
+  intro k hk
+  simp only [mem_insert, mem_filter, mem_univ, true_and] at hk ⊢
+  exact hk.elim (fun hki ↦ hki ▸ hij) (fun hki ↦ lt_trans hki hij)
+
 private lemma block_start_filter_nonempty
   {dstar : ℕ} {degs : Fin m.succ → ℕ} {l : ℕ} :
   (univ.filter (fun j ↦ block_start dstar degs j ≤ l)).Nonempty := by
@@ -127,21 +137,10 @@ private lemma block_idx_eq_max
   norm_num [Finset.le_max]
   intro a ha
   contrapose! ha
-  exact lt_of_lt_of_le (Nat.add_lt_add_left (Fin.is_lt j) _) <| by
-    unfold block_start block_size
-    have h : (Finset.univ.filter fun j ↦ j < a) =
-      Finset.univ.filter (fun j ↦ j < i) ∪ {i} ∪ Finset.univ.filter (fun j ↦ i < j ∧ j < a) := by
-      grind
-    rw [h,
-        Finset.sum_union (by
-          aesop
-            (add simp [Finset.disjoint_left])
-            (add safe (by grind))),
-        Finset.sum_union (by simp)]
-    simp
+  exact lt_of_lt_of_le (Nat.add_lt_add_left (Fin.is_lt j) _)
+    (block_end_le_block_start ha)
 
 omit [DecidableEq F] in
-set_option maxHeartbeats 0 in
 set_option maxRecDepth 4000 in
 set_option synthInstance.maxHeartbeats 20000 in
 set_option synthInstance.maxSize 128 in
@@ -232,25 +231,12 @@ private lemma combine_eq_flat
               by simp +decide⟩
         · simp only [mem_Ico, and_imp]
           intro a ha₁ ha₂
-          rw [show Finset.max
-              (Finset.filter (block_start dstar degs · ≤ a) Finset.univ) = ↑i from ?_]
-          apply le_antisymm
-          · simp only [Finset.max, Finset.sup_le_iff, mem_filter, mem_univ, true_and,
-            WithBot.coe_le_coe]
-            intro j hj₁
-            contrapose! hj₁
-            apply lt_of_lt_of_le ha₂
-            unfold block_start block_size
-            rw [show (Finset.univ.filter fun k => k < j) =
-                  Finset.univ.filter (fun k => k < i) ∪
-                      {i} ∪ Finset.univ.filter (fun k => i < k ∧ k < j) from ?_,
-                Finset.sum_union, Finset.sum_union] <;> norm_num
-            · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ ↦
-                lt_asymm (Finset.mem_filter.mp hx₁ |>.2) (Finset.mem_filter.mp hx₂ |>.2.1)
-            · grind
-          · simp only [Finset.max, WithBot.bot_lt_coe, Finset.le_sup_iff, mem_filter, mem_univ,
-            true_and, WithBot.coe_le_coe]
-            exact ⟨i, ha₁, le_rfl⟩
+          have hk : a - block_start dstar degs i < block_size dstar degs i := by omega
+          have hmax := block_idx_eq_max
+            (dstar := dstar) (degs := degs) (i := i)
+            (j := ⟨a - block_start dstar degs i, hk⟩)
+          rw [show block_start dstar degs i + (a - block_start dstar degs i) = a by omega] at hmax
+          rw [hmax]
       })
     · intro i _ j _ hij
       have h_disjoint :
@@ -258,35 +244,9 @@ private lemma combine_eq_flat
           block_start dstar degs i + block_size dstar degs i ∨
         block_start dstar degs i ≥
           block_start dstar degs j + block_size dstar degs j := by
-        cases lt_or_gt_of_ne hij
-        · simp_all only [block_start, block_size, coe_univ, Set.mem_univ, ne_eq, ge_iff_le]
-          left
-          apply
-            (Function.swap le_trans <|
-              Finset.sum_le_sum_of_subset
-                (show Finset.filter (· < i) Finset.univ ∪ {i} ⊆
-                  Finset.filter (· < j) Finset.univ from _))
-          · rw [Finset.sum_union] <;> simp [*, Finset.sum_singleton]
-          · simp only [union_singleton, subset_iff, mem_insert, mem_filter, mem_univ, true_and,
-            forall_eq_or_imp, *]
-            exact fun a ha ↦ lt_trans ha ‹_›
-        · simp_all only [block_start, block_size]
-          rw [show (Finset.univ.filter fun x => x < i) =
-            Finset.univ.filter (· < j) ∪ {j} ∪
-              (Finset.univ.filter (· < i) \
-                (Finset.univ.filter (· < j) ∪ {j})) from ?_,
-            Finset.sum_union, Finset.sum_union]
-          · simp
-          · simp
-          · exact fun x hx₁ hx₂ a ha ↦ by
-              specialize hx₁ ha
-              specialize hx₂ ha
-              simp_all
-          · simp only [union_singleton, union_sdiff_self_eq_union, insert_union, mem_union,
-            mem_filter, mem_univ, lt_self_iff_false, and_false, and_self, or_true, insert_eq_of_mem,
-            right_eq_union, *]
-            exact fun x hx ↦ Finset.mem_filter.mpr
-              ⟨Finset.mem_univ _, lt_trans (Finset.mem_filter.mp hx |>.2) ‹_›⟩
+        rcases lt_or_gt_of_ne hij with hij | hji
+        · exact Or.inl (block_end_le_block_start hij)
+        · exact Or.inr (block_end_le_block_start hji)
       cases h_disjoint
       · exact Finset.disjoint_left.mpr fun x hx₁ hx₂ ↦ by
           linarith [Finset.mem_Ico.mp hx₁, Finset.mem_Ico.mp hx₂]
@@ -414,8 +374,9 @@ lemma degreeCor_eq {F : Type u_1} [Field F] [DecidableEq F] {ι : Type u_2} (φ 
     then f x * (1 - q^(dstar - degree + 1)) / (1 - q)
     else f x * (dstar - degree + 1) := by
   convert congr_arg _ (geom_sum_cases (φ x * r) (dstar - degree)) using 1
-  rw [Nat.cast_add, Nat.cast_sub hd, Nat.cast_one]
-  split_ifs <;> ring
+  · rfl
+  · rw [Nat.cast_add, Nat.cast_sub hd, Nat.cast_one]
+    split_ifs <;> ring
 
 variable {F : Type} [Field F] [Fintype F] [DecidableEq F]
          {ι : Type} [Fintype ι]
@@ -582,7 +543,7 @@ theorem combine_theorem
       · aesop (add simp [total_terms, block_size])
     · have proximity_gap :=
         @ProximityGap.correlatedAgreement_affine_curves ι _ _ F _ _ _
-          (total_terms dstar degs - 1) dstar φ δ (le_of_lt <| by
+          (total_terms dstar degs - 1) dstar φ δ hδPos (by
             aesop (add simp [lt_min_iff, ReedSolomon.sqrtRate]))
       simp only [ProximityGap.δ_ε_correlatedAgreementCurves] at proximity_gap
       specialize proximity_gap
@@ -715,10 +676,11 @@ theorem combine_theorem
         rw [Polynomial.degree_lt_iff_coeff_zero] at master_lemma
         exact (master_lemma _ hj)
       · intro x hx
-        simp only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk, mem_filter, mem_univ, true_and]
         specialize (hv i ⟨0, hf i⟩)
         have hv := hv.2 x hx
         simp only [pow_zero, one_mul] at hv
-        exact hv
+        apply mem_filter.mpr
+        refine ⟨mem_univ x, ?_⟩
+        simpa only [evalOnPoints, LinearMap.coe_mk, AddHom.coe_mk] using hv
 
 end Combine

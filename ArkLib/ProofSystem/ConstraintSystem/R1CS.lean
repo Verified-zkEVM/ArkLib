@@ -106,7 +106,7 @@ theorem pad_preserves_relation (sz₁ sz₂ : Size)
             Fin.rightpad_apply_lt _ _ _ _ (show j - sz₂.n_x < sz₁.n_w by omega),
             Fin.append_right_of_not_lt j _ hx]
         exact congrArg wit (Fin.ext (show j - sz₂.n_x = j - sz₁.n_x by omega))
-    · push_neg at hlt; conv_rhs => rw [Fin.rightpad_apply_ge _ _ _ _ hlt]
+    · push Not at hlt; conv_rhs => rw [Fin.rightpad_apply_ge _ _ _ _ hlt]
       simp only [𝕫, Function.comp, Fin.cast_mk]
       rw [Fin.append_right_of_not_lt j _ (by omega : ¬ j < sz₂.n_x),
           Fin.rightpad_apply_ge _ _ _ _ (show sz₁.n_w ≤ j - sz₂.n_x by omega)]

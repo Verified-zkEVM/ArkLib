@@ -54,21 +54,24 @@ lemma shift_left_def {s : Finset ℕ} :
     (by aesop)
  := rfl
 
-def mul_by_2 (s : Finset ℕ) : Finset ℕ :=
-  s.map ⟨fun n => 2 * n, by {
+/-- The embedding of natural numbers given by multiplication by two. -/
+def mulByTwoEmbedding : ℕ ↪ ℕ :=
+  ⟨fun n => 2 * n, by
     intro a b
-    simp
-  }⟩
+    simp⟩
+
+@[simp]
+lemma mulByTwoEmbedding_apply (n : ℕ) : mulByTwoEmbedding n = 2 * n := rfl
+
+def mul_by_2 (s : Finset ℕ) : Finset ℕ :=
+  s.map mulByTwoEmbedding
 
 @[simp]
 lemma mul_by_empty :
     mul_by_2 ∅ = ∅ := rfl
 
 lemma mul_by_2_def {s : Finset ℕ} :
-    mul_by_2 s = s.map ⟨fun n => 2 * n, by {
-      intro a b
-      simp
-    }⟩  := rfl
+    mul_by_2 s = s.map mulByTwoEmbedding := rfl
 
 def divide_by_2 (s : Finset ℕ) : Finset ℕ :=
   (erase_odd s).image (fun n => n / 2)
@@ -95,7 +98,7 @@ theorem erase_even_mem
 @[simp]
 theorem mul_by_2_mem {s : Finset ℕ} {d : ℕ} :
     d ∈ mul_by_2 s ↔ Even d ∧ (d / 2) ∈ s := by
-  aesop (add simp [mul_by_2, Nat.even_iff], safe (by omega))
+  aesop (add simp [mul_by_2, mulByTwoEmbedding_apply, Nat.even_iff], safe (by omega))
 
 @[simp]
 theorem divide_by_2_mem {s : Finset ℕ} {d : ℕ} :

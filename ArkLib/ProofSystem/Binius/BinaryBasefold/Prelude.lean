@@ -8,8 +8,14 @@ import ArkLib.Data.CodingTheory.BerlekampWelch.BerlekampWelch
 import ArkLib.Data.CodingTheory.ReedSolomon
 import CompPoly.Fields.Binary.AdditiveNTT.AdditiveNTT
 import ArkLib.Data.MvPolynomial.Multilinear
+import ArkLib.Data.MvPolynomial.RestrictDegree
 import CompPoly.Data.Vector.Basic
 import ArkLib.ProofSystem.Sumcheck.Spec.SingleRound
+import ArkLib.ProofSystem.Sumcheck.Structured.SingleRound
+
+-- This established protocol prelude predates the default 1500-line cap. The VCVio compatibility
+-- migration in this PR changes dependent-argument spellings without adding a new subsystem.
+set_option linter.style.longFile 1700
 
 namespace Binius.BinaryBasefold
 
@@ -34,7 +40,7 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
   suffices (Finset.filter (fun i₁ => x (g i₁) ≠ y (g i₁)) Finset.univ).card ≤ D₂.card by
     unfold hammingDist; simp only [this, D₂]
   -- The cardinality of a preimage is at most the cardinalit
-    --  of the original set for an injective function.
+    -- of the original set for an injective function.
   -- ⊢ #{i₁ | x (g i₁) ≠ y (g i₁)} ≤ #D₂
    -- First, we state that the set on the left is the `preimage` of D₂ under g.
   have h_preimage : Finset.filter (fun i₁ => x (g i₁) ≠ y (g i₁)) Finset.univ
@@ -56,7 +62,7 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
       have res := Set.mapsTo_image (f := g) (s := D₁)
       convert res
       simp only [coe_image]
-      --  (D₁.image g : Set ι₂)
+      -- (D₁.image g : Set ι₂)
     · -- Goal 2 : Prove that `g` is injective on the set `D₁`.
       -- This is true because our main hypothesis `hg` states that `g` is injective everywhere.
       exact Function.Injective.injOn hg
@@ -66,155 +72,26 @@ theorem hammingDist_le_of_outer_comp_injective {ι₁ ι₂ : Type*} [Fintype ι
     simp [D₁, Finset.image_preimage]
 
   -- Step 3 : By combining these two facts, we get our result.
-  -- |D₁| ≤ |image g(D₁)|  (from Step 1)
+  -- |D₁| ≤ |image g(D₁)| (from Step 1)
   -- and |image g(D₁)| ≤ |D₂| (since it's a subset)
   exact h_card_le_image.trans (Finset.card_le_card h_image_subset)
 
 variable {L : Type} [CommRing L] (ℓ : ℕ) [NeZero ℓ]
-variable (𝓑 : Fin 2 ↪ L)
 
-/-- Fixes the first `v` variables of a `ℓ`-variate multivariate polynomial.
-`t` -> `H_i` derivation
--/
-noncomputable def fixFirstVariablesOfMQP (v : Fin (ℓ + 1))
-  (H : MvPolynomial (Fin ℓ) L) (challenges : Fin v → L) : MvPolynomial (Fin (ℓ - v)) L :=
-  have h_l_eq : ℓ = (ℓ - v) + v := by rw [Nat.add_comm]; exact (Nat.add_sub_of_le v.is_le).symm
-  -- Step 1 : Rename L[X Fin ℓ] to L[X (Fin (ℓ - v) ⊕ Fin v)]
-  let finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
-  let H_sum : L[X (Fin (ℓ - v) ⊕ Fin v)] := by
-    apply MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) H
-  -- Step 2 : Convert to (L[X Fin v])[X Fin (ℓ - v)] via sumAlgEquiv
-  let H_forward : L[X Fin v][X Fin (ℓ - v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
-  -- Step 3 : Evaluate the poly at the point challenges to get a final L[X Fin (ℓ - v)]
-  let eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
-  MvPolynomial.map (f := eval_map) (σ := Fin (ℓ - v)) H_forward
-
-private lemma sumToIter_monomial_aux {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (m : (S₁ ⊕ S₂) →₀ ℕ) (c : R) :
-    MvPolynomial.sumToIter R S₁ S₂ (MvPolynomial.monomial m c) =
-      MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn)
-        (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn) c) := by
-  simp +decide only [MvPolynomial.sumToIter, MvPolynomial.eval₂Hom_monomial]
-  simp +decide [Finsupp.prod, Finsupp.comapDomain]
-  convert congr_arg₂ (· * ·) rfl ?_ using 1
-  rotate_left
-  exact ∏ x ∈ m.support,
-    Sum.rec (fun a => MvPolynomial.X a)
-      (fun b => MvPolynomial.C (MvPolynomial.X b)) x ^ m x
-  · rfl
-  · simp +decide [MvPolynomial.monomial_eq, Finset.prod_ite]
-    simp +decide [mul_assoc, Finsupp.prod]
-    rw [← Finset.prod_filter_mul_prod_filter_not m.support (fun x => x.isRight)]
-    congr! 2
-    · exact Finset.prod_bij (fun x hx => Sum.inr x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-    · exact Finset.prod_bij (fun x hx => Sum.inl x) (by aesop) (by aesop)
-        (by aesop) (by aesop)
-
-private lemma sumAlgEquiv_mem_restrictDegree {R : Type*} [CommSemiring R]
-    {S₁ S₂ : Type*}
-    (p : MvPolynomial (S₁ ⊕ S₂) R) (n : ℕ)
-    (hp : p ∈ MvPolynomial.restrictDegree (S₁ ⊕ S₂) R n) :
-    (MvPolynomial.sumAlgEquiv R S₁ S₂) p ∈
-      MvPolynomial.restrictDegree S₁ (MvPolynomial S₂ R) n := by
-  intro s hs
-  obtain ⟨m, hm⟩ : ∃ m : (S₁ ⊕ S₂) →₀ ℕ,
-      m ∈ p.support ∧ s = m.comapDomain Sum.inl Sum.inl_injective.injOn := by
-    have h_sum : (MvPolynomial.sumAlgEquiv R S₁ S₂) p =
-        ∑ m ∈ p.support,
-          (MvPolynomial.monomial (m.comapDomain Sum.inl Sum.inl_injective.injOn))
-            (MvPolynomial.monomial (m.comapDomain Sum.inr Sum.inr_injective.injOn)
-              (p.coeff m)) := by
-      conv_lhs => rw [p.as_sum]
-      rw [map_sum]
-      exact Finset.sum_congr rfl fun _ _ => sumToIter_monomial_aux _ _
-    contrapose! hs
-    simp +decide [h_sum]
-    erw [Finsupp.finset_sum_apply]
-    refine Finset.sum_eq_zero fun x hx => ?_
-    erw [AddMonoidAlgebra.lsingle_apply, AddMonoidAlgebra.lsingle_apply]; aesop
-  aesop
-
-private lemma rename_equiv_mem_restrictDegree {R : Type*} [CommSemiring R]
-    {σ τ : Type*}
-    (e : σ ≃ τ) (p : MvPolynomial σ R) (n : ℕ)
-    (hp : p ∈ MvPolynomial.restrictDegree σ R n) :
-    (MvPolynomial.rename e p) ∈ MvPolynomial.restrictDegree τ R n := by
-  intro m hm
-  obtain ⟨n', hn', hm_eq⟩ : ∃ n' ∈ p.support, m = n'.mapDomain e := by
-    simp +zetaDelta at *
-    rw [MvPolynomial.rename_eq] at hm
-    contrapose! hm
-    rw [Finsupp.mapDomain]
-    rw [Finsupp.sum, Finsupp.finset_sum_apply]
-    exact Finset.sum_eq_zero fun x hx =>
-      Finsupp.single_eq_of_ne (hm x (by aesop))
-  aesop
-
-omit [NeZero ℓ] in
-/-- Auxiliary lemma for proving that the polynomial sent by the honest prover is of degree at most
-`deg` -/
-theorem fixFirstVariablesOfMQP_degreeLE {deg : ℕ} (v : Fin (ℓ + 1)) {challenges : Fin v → L}
-    {poly : L[X Fin ℓ]} (hp : poly ∈ L⦃≤ deg⦄[X Fin ℓ]) :
-    fixFirstVariablesOfMQP ℓ v poly challenges ∈ L⦃≤ deg⦄[X Fin (ℓ - v)] := by
-  -- The goal is to prove the totalDegree of the result is ≤ deg.
-  rw [MvPolynomial.mem_restrictDegree]
-  unfold fixFirstVariablesOfMQP
-  dsimp only
-  intro term h_term_in_support i
-  -- ⊢ term i ≤ deg
-  have h_l_eq : ℓ = (ℓ - v) + v := (Nat.sub_add_cancel v.is_le).symm
-  set finEquiv := finSumFinEquiv (m := ℓ - v) (n := v).symm
-  set H_sum := MvPolynomial.rename (f := (finCongr h_l_eq).trans finEquiv) poly
-  set H_grouped : L[X Fin ↑v][X Fin (ℓ - ↑v)] := (sumAlgEquiv L (Fin (ℓ - v)) (Fin v)) H_sum
-  set eval_map : L[X Fin ↑v] →+* L := (eval challenges : MvPolynomial (Fin v) L →+* L)
-  have h_Hgrouped_degreeLE : H_grouped ∈ (L[X Fin ↑v])⦃≤ deg⦄[X Fin (ℓ - ↑v)] := by
-    exact Binius.BinaryBasefold.sumAlgEquiv_mem_restrictDegree H_sum deg
-      (Binius.BinaryBasefold.rename_equiv_mem_restrictDegree
-        ((finCongr h_l_eq).trans finEquiv) poly deg hp)
-  have h_mem_support_max_deg_LE := MvPolynomial.mem_restrictDegree (R := L[X Fin ↑v]) (n := deg)
-    (σ := Fin (ℓ - ↑v)) (p := H_grouped).mp (h_Hgrouped_degreeLE)
-  have h_term_in_Hgrouped_support : term ∈ H_grouped.support := by
-    have h_support_map_subset : ((MvPolynomial.map eval_map) H_grouped).support
-      ⊆ H_grouped.support := by apply MvPolynomial.support_map_subset
-    exact (h_support_map_subset) h_term_in_support
-  -- h_Hgrouped_degreeLE
-  let res : term i ≤ deg := h_mem_support_max_deg_LE term h_term_in_Hgrouped_support i
-  exact res
-
-/- `H_i(X_i, ..., X_{ℓ-1})` -> `g_i(X)` derivation -/
-noncomputable def getSumcheckRoundPoly (i : Fin ℓ) (h : ↥L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc)])
-    : L⦃≤ 2⦄[X] := by
-  have h_i_lt_ℓ : ℓ - ↑i.castSucc > 0 := by
-    have hi := i.2
-    exact Nat.zero_lt_sub_of_lt hi
-  have h_count_eq : ℓ - ↑i.castSucc - 1 + 1 = ℓ - ↑i.castSucc := by
-    omega
-  let challenges : Fin 0 → L := fun (j : Fin 0) => j.elim0
-  let curH_cast : L[X Fin ((ℓ - ↑i.castSucc - 1) + 1)] := by
-    convert h.val
-  let g := ∑ x ∈ (univ.map 𝓑) ^ᶠ (ℓ - ↑i.castSucc - 1), curH_cast ⸨X ⦃0⦄, challenges, x⸩' (by omega)
-  exact ⟨g, by
-    have h_deg_le_2 : g ∈ L⦃≤ 2⦄[X] := by
-      simp only [g]
-      let hDegIn := Sumcheck.Spec.SingleRound.sumcheck_roundPoly_degreeLE
-        (R := L) (D := 𝓑) (n := ℓ - ↑i.castSucc - 1) (deg := 2) (i := ⟨0, by omega⟩)
-        (challenges := fun j => j.elim0) (poly := curH_cast)
-      have h_in_degLE : curH_cast ∈ L⦃≤ 2⦄[X Fin (ℓ - ↑i.castSucc - 1 + 1)] := by
-        rw! (castMode := .all) [h_count_eq]
-        dsimp only [Fin.coe_castSucc, eq_mpr_eq_cast, curH_cast]
-        rw [eqRec_eq_cast, cast_cast, cast_eq]
-        exact h.property
-      let res := hDegIn h_in_degLE
-      exact res
-    rw [mem_degreeLE] at h_deg_le_2 ⊢
-    exact h_deg_le_2
-  ⟩
+-- `fixFirstVariablesOfMQP` and `fixFirstVariablesOfMQP_degreeLE` (plus three private
+-- helper lemmas) were lifted to `ArkLib.Data.MvPolynomial.RestrictDegree`, and
+-- `getSumcheckRoundPoly` was lifted to `ArkLib.ProofSystem.Sumcheck.Structured.SingleRound`,
+-- so the structured sumcheck (`ArkLib.ProofSystem.Sumcheck.Structured`) and any future
+-- ring-switching protocol can use them without depending on `Binius.BinaryBasefold`.
+-- They are accessible here unqualified via `open MvPolynomial` / `open Sumcheck.Structured`
+-- above; we also export them under the `Binius.BinaryBasefold` namespace for any
+-- fully-qualified callers.
+export MvPolynomial (fixFirstVariablesOfMQP fixFirstVariablesOfMQP_degreeLE)
+export Sumcheck.Structured (getSumcheckRoundPoly)
 
 end Preliminaries
 
-noncomputable section       -- expands with 𝔽q in front
+noncomputable section -- expands with 𝔽q in front
 variable {r : ℕ} [NeZero r]
 variable {L : Type} [Field L] [Fintype L] [DecidableEq L] [CharP L 2]
 variable (𝔽q : Type) [Field 𝔽q] [Fintype 𝔽q] [DecidableEq 𝔽q]
@@ -224,7 +101,6 @@ variable (β : Fin r → L) [hβ_lin_indep : Fact (LinearIndependent 𝔽q β)]
   [h_β₀_eq_1 : Fact (β 0 = 1)]
 variable {ℓ 𝓡 ϑ : ℕ} (γ_repetitions : ℕ) [NeZero ℓ] [NeZero 𝓡] [NeZero ϑ] -- Should we allow ℓ = 0?
 variable {h_ℓ_add_R_rate : ℓ + 𝓡 < r} -- ℓ ∈ {1, ..., r-1}
-variable {𝓑 : Fin 2 ↪ L}
 
 section Essentials
 -- In this section, we ue notation `ϑ` for the folding steps, along with `(hdiv : ϑ ∣ ℓ)`
@@ -327,7 +203,7 @@ noncomputable def qMap_total_fiber
             rw [←Nat.sub_sub]; apply Nat.sub_lt_sub_right;
             · exact Nat.le_of_not_lt hj_lt_steps
             · exact j.isLt
-          ⟩  -- Shift indices to match y's basis
+          ⟩ -- Shift indices to match y's basis
       exact basis_x.repr.symm ((Finsupp.equivFunOnFinite).symm x_coeffs)
 
 /- TODO : state that the fiber of y is the set of all 2 ^ steps points in the
@@ -359,8 +235,8 @@ lemma qMap_total_fiber_repr_coeff (i : Fin ℓ) (steps : ℕ) (h_i_add_steps : i
   -- have h_steps_ne_0 : steps ≠ 0 := by exact?
   by_cases h_steps_eq_0 : steps = 0
   · subst h_steps_eq_0
-    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq, not_lt_zero',
-      tsub_zero, Fin.eta]
+    simp only [qMap_total_fiber, ↓reduceDIte, Nat.add_zero, eq_mp_eq_cast, cast_eq,
+      _root_.not_lt_zero, tsub_zero, Fin.eta]
   · simp only [qMap_total_fiber, h_steps_eq_0, ↓reduceDIte, Module.Basis.repr_symm_apply,
     Module.Basis.repr_linearCombination, Finsupp.equivFunOnFinite_symm_apply_apply]
 
@@ -417,7 +293,7 @@ lemma qMap_total_fiber_one_level_eq (i : Fin ℓ) (h_i_add_1 : i.val + 1 ≤ ℓ
       simp only [basis_repr_of_sDomain_lift, add_tsub_cancel_left, zero_lt_one, ↓reduceDIte]
   · have hj_ne_zero : j ≠ ⟨0, by omega⟩ := by omega
     have hj_val_ne_zero : j.val ≠ 0 := by
-      change j.val ≠ ((⟨0, by omega⟩ :  Fin (ℓ + 𝓡 - ↑i)).val)
+      change j.val ≠ ((⟨0, by omega⟩ : Fin (ℓ + 𝓡 - ↑i)).val)
       apply Fin.val_ne_of_ne
       exact hj_ne_zero
     simp only [hj_val_ne_zero, ↓reduceDIte, Finsupp.single, Fin.isValue, ite_eq_left_iff,
@@ -438,7 +314,9 @@ theorem generates_quotient_point_if_is_fiber_of_y
     (hx_is_fiber : ∃ (k : Fin (2 ^ steps)), x = qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩)
       (steps := steps) (h_i_add_steps := by
         simp only; exact fin_ℓ_steps_lt_ℓ_add_R i steps h_i_add_steps) (y := y) k) :
-    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps) (h_bound := h_i_add_steps) x := by
+    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+      (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x := by
  -- Get the fiber index `k` and the equality from the hypothesis.
   rcases hx_is_fiber with ⟨k, hx_eq⟩
   let basis_y := sDomain_basis 𝔽q β h_ℓ_add_R_rate
@@ -451,8 +329,8 @@ theorem generates_quotient_point_if_is_fiber_of_y
     (h_i_add_steps := by omega) (y := y) (k := k) (j := ⟨j + steps, by simp only; omega⟩)
   simp only at h_repr_x
   rw [←hx_eq] at h_repr_x
-  simp only [fiber_coeff, add_lt_iff_neg_right, not_lt_zero', ↓reduceDIte, add_tsub_cancel_right,
-    Fin.eta] at h_repr_x
+  simp only [fiber_coeff, add_lt_iff_neg_right, _root_.not_lt_zero, ↓reduceDIte,
+    add_tsub_cancel_right, Fin.eta] at h_repr_x
   exact h_repr_x.symm
 
 omit [CharP L 2] [NeZero ℓ] in
@@ -465,7 +343,9 @@ theorem is_fiber_iff_generates_quotient_point (i : Fin ℓ) (steps : ℕ)
       (h_i_add_steps := by simp only; exact fin_ℓ_steps_lt_ℓ_add_R i steps h_i_add_steps) (y := y)
     let k := pointToIterateQuotientIndex (i := ⟨i, by omega⟩) (steps := steps)
       (h_i_add_steps := h_i_add_steps) (x := x)
-    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps) (h_bound := h_i_add_steps) x ↔
+    y = iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+      (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x ↔
     qMapFiber k = x := by
   let basis_x := sDomain_basis 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩
     (by simp only; omega)
@@ -504,8 +384,10 @@ theorem is_fiber_iff_generates_quotient_point (i : Fin ℓ) (steps : ℕ)
       simp only [basis_x]
       -- ⊢ Here we compare coeffs, not the basis elements
       simp only [h_x_generates_y]
-      have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i (k := steps)
-        (h_bound := by omega) x (j := ⟨j - steps, by -- TODO : make this index bound proof cleaner
+      have h_res := getSDomainBasisCoeff_of_iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := ⟨i, by omega⟩) (k := steps) (destIdx := ⟨i.val + steps, by omega⟩)
+        (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x
+        (j := ⟨j - steps, by -- TODO : make this index bound proof cleaner
           simp only; rw [←Nat.sub_sub]; -- ⊢ ↑j - steps < ℓ + 𝓡 - ↑i - steps
           apply Nat.sub_lt_sub_right;
           · exact Nat.le_of_not_lt h_j
@@ -680,8 +562,9 @@ theorem qMap_total_fiber_disjoint
   have iteratedQuotientMap_of_qMap_total_fiber_eq_self
     (y : sDomain 𝔽q β h_ℓ_add_R_rate ⟨i.val + steps, by omega⟩)
     (k : Fin (2 ^ steps)) :
-    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) (k := steps)
-      (h_bound := by omega)
+    iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+      (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps)
       (qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
         (h_i_add_steps := by apply Nat.lt_add_of_pos_right_of_le; omega) (y := y) k) = y := by
       have h := generates_quotient_point_if_is_fiber_of_y
@@ -709,19 +592,24 @@ theorem qMap_total_fiber_disjoint
     use k; exact h_eq.symm
 
   have h_y₁_eq_quotient_x : y₁ =
-      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i steps h_i_add_steps x := by
+      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+        (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x := by
     apply generates_quotient_point_if_is_fiber_of_y (hx_is_fiber := by exact h_exists_k₁)
 
   have h_y₂_eq_quotient_x : y₂ =
-      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i steps h_i_add_steps x := by
+      iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+        (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x := by
     apply generates_quotient_point_if_is_fiber_of_y (hx_is_fiber := by exact h_exists_k₂)
 
   let kQuotientIndex := pointToIterateQuotientIndex (i := ⟨i, by omega⟩) (steps := steps)
     (h_i_add_steps := by omega) (x := x)
 
   -- Since `x` is in the fiber of `y₁`, applying the forward map to `x` yields `y₁`.
-  have h_map_x_eq_y₁ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)
-      (k := steps) (h_bound := by omega) x = y₁ := by
+  have h_map_x_eq_y₁ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+      (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x = y₁ := by
     have h := iteratedQuotientMap_of_qMap_total_fiber_eq_self (y := y₁) (k := kQuotientIndex)
     have hx₁ : x = qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
         (h_i_add_steps := by apply Nat.lt_add_of_pos_right_of_le; omega) y₁ kQuotientIndex := by
@@ -732,8 +620,9 @@ theorem qMap_total_fiber_disjoint
     exact iteratedQuotientMap_of_qMap_total_fiber_eq_self y₁ kQuotientIndex
 
   -- Similarly, since `x` is in the fiber of `y₂`, applying the forward map yields `y₂`.
-  have h_map_x_eq_y₂ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)
-      (k := steps) (h_bound := by omega) x = y₂ := by
+  have h_map_x_eq_y₂ : iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+      (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x = y₂ := by
     -- have h := iteratedQuotientMap_of_qMap_total_fiber_eq_self (y := y₂) (k := kQuotientIndex)
     have hx₂ : x = qMap_total_fiber 𝔽q β (i := ⟨i, by omega⟩) (steps := steps)
         (h_i_add_steps := by apply Nat.lt_add_of_pos_right_of_le; omega) y₂ kQuotientIndex := by
@@ -854,7 +743,7 @@ def challengeTensorProduct (steps : ℕ) (r_challenges : Fin steps → L) : Vect
     -- Recursive case : compute tensor product iteratively
     Nat.rec
       (motive := fun k => k ≤ steps → Vector L (2^k))
-      (fun _ => ⟨#[1], rfl⟩)  -- Base : empty tensor product = [1]
+      (fun _ => ⟨#[1], rfl⟩) -- Base : empty tensor product = [1]
       (fun k ih h_k_le =>
         -- Inductive step : extend tensor product by one more challenge
         let prev_vec := ih (Nat.le_trans (Nat.le_succ k) h_k_le)
@@ -943,9 +832,8 @@ omit [CharP L 2] [NeZero ℓ] in
 theorem fold_advances_evaluation_poly
   (i : Fin (ℓ)) (h_i_succ_lt : i + 1 < ℓ + 𝓡)
   (coeffs : Fin (2 ^ (ℓ - ↑i)) → L) (r_chal : L) :
-  let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by
-    exact Nat.lt_trans (n := i) (k := ℓ+1) (m := ℓ) (h₁ := i.isLt) (by exact Nat.lt_add_one ℓ)
-  ⟩) coeffs
+  let P_i : L[X] := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) coeffs
   let f_i := fun (x : (sDomain 𝔽q β h_ℓ_add_R_rate)
       ⟨i, by exact Nat.lt_trans (n := i) (k := r) (m := ℓ) (h₁ := by omega) (by omega)⟩) =>
     P_i.eval (x.val : L)
@@ -961,7 +849,8 @@ theorem fold_advances_evaluation_poly
         (i := 1) (by omega) (by omega)
     ⟩)
   let P_i_plus_1 :=
-    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i+1, by omega⟩) new_coeffs
+    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i + 1, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) new_coeffs
   ∀ (y : (sDomain 𝔽q β h_ℓ_add_R_rate)
     ⟨i+1, by omega⟩), f_i_plus_1 y = P_i_plus_1.eval y.val := by
   simp only
@@ -970,7 +859,8 @@ theorem fold_advances_evaluation_poly
     (h_i_add_steps := by simp only; omega) (y := y)
   set x₀ := fiberMap 0
   set x₁ := fiberMap 1
-  set P_i := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) coeffs
+  set P_i := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) coeffs
   set new_coeffs := fun j : Fin (2^(ℓ - (i + 1))) =>
     (1 - r_chal) * (coeffs ⟨j.val * 2, by
       have h : j.val * 2 < 2^(ℓ - (i + 1)) * 2 := by omega
@@ -987,17 +877,23 @@ theorem fold_advances_evaluation_poly
       · omega
       · omega
     ⟩)
-  have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩).eval x₀.val = y := by
-    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate i (by omega) x₀
-    simp only [Subtype.eq_iff] at h
+  have h_eval_qMap_x₀ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
+      (by simp only [Fin.val_mk]; omega)).eval x₀.val = y := by
+    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i + 1, by omega⟩)
+      (h_destIdx := by simp) (h_destIdx_le := by simp only [Fin.val_mk]; omega) x₀
+    simp only [Subtype.ext_iff] at h
     rw [h.symm]
     have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) (by omega)
       (x := x₀) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
     rw [h_res]
     -- exact qMap_eval_fiber_eq_self ⟦L⟧ ⟨i + 1, by omega⟩ (by simp only; omega) h_i_succ_lt y 0
-  have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩).eval x₁.val = y := by
-    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate i (by omega) x₁
-    simp only [Subtype.eq_iff] at h
+  have h_eval_qMap_x₁ : (AdditiveNTT.qMap 𝔽q β ⟨i, by omega⟩
+      (by simp only [Fin.val_mk]; omega)).eval x₁.val = y := by
+    have h := iteratedQuotientMap_k_eq_1_is_qMap 𝔽q β h_ℓ_add_R_rate
+      (i := ⟨i, by omega⟩) (destIdx := ⟨i + 1, by omega⟩)
+      (h_destIdx := by simp) (h_destIdx_le := by simp only [Fin.val_mk]; omega) x₁
+    simp only [Subtype.ext_iff] at h
     rw [h.symm]
     have h_res := is_fiber_iff_generates_quotient_point 𝔽q β i (steps := 1) (by omega)
       (x := x₁) (y := y).mpr (by rw [pointToIterateQuotientIndex_qMap_total_fiber_eq_self])
@@ -1011,7 +907,7 @@ theorem fold_advances_evaluation_poly
   have h_fiber_diff : x₁.val - x₀.val = 1 := by
     simp only [Fin.isValue, x₁, x₀, fiberMap]
     rw [hx₁, hx₀]
-    simp only [Fin.isValue, AddSubmonoidClass.coe_finset_sum, SetLike.val_smul]
+    simp only [Fin.isValue, AddSubmonoidClass.coe_finsetSum, SetLike.val_smul]
     have h_index : ℓ + 𝓡 - i = (ℓ + 𝓡 - (i.val + 1)) + 1 := by omega
     rw! (castMode := .all) [h_index]
     rw [Fin.sum_univ_succ, Fin.sum_univ_succ] -- (free_term + y_repr) - (free_term + y_repr) = 1
@@ -1049,10 +945,10 @@ theorem fold_advances_evaluation_poly
     congr 1
     rw [sub_eq_zero]
     apply Finset.sum_congr (h := by rfl)
-    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero, one_ne_zero, and_false,
+    simp only [mem_univ, congr_eqRec, Fin.val_succ, Nat.add_eq_zero_iff, one_ne_zero, and_false,
       ↓reduceDIte, add_tsub_cancel_right, Fin.eta, imp_self, implies_true]
-  set P_i_plus_1 :=
-    intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate (i := ⟨i+1, by omega⟩) new_coeffs
+  set P_i_plus_1 := intermediateEvaluationPoly 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i + 1, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) new_coeffs
   -- Set up the even and odd refinement polynomials
   set P₀_coeffs := fun j : Fin (2^(ℓ - (i + 1))) => coeffs ⟨j.val * 2, by
     have h1 : ℓ - (i + 1) + 1 = ℓ - i := by omega
@@ -1064,9 +960,12 @@ theorem fold_advances_evaluation_poly
     have h2 : 2^(ℓ - (i + 1) + 1) = 2^(ℓ - i) := by rw [h1]
     have h3 : 2^(ℓ - (i + 1)) * 2 = 2^(ℓ - (i + 1) + 1) := by rw [pow_succ]
     rw [← h2, ← h3]; omega⟩
-  set P₀ := evenRefinement 𝔽q β h_ℓ_add_R_rate i coeffs
-  set P₁ := oddRefinement 𝔽q β h_ℓ_add_R_rate i coeffs
-  have h_P_i_eval := evaluation_poly_split_identity 𝔽q β h_ℓ_add_R_rate ⟨i, by omega⟩ coeffs
+  set P₀ := evenRefinement 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) coeffs
+  set P₁ := oddRefinement 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) coeffs
+  have h_P_i_eval := evaluation_poly_split_identity 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (h_i := by simp only [Fin.val_mk]; omega) coeffs
   -- Equation 39 : P^(i)(X) = P₀^(i+1)(q^(i)(X)) + X · P₁^(i+1)(q^(i)(X))
   have h_equation_39_x₀ : P_i.eval x₀.val = P₀.eval y.val + x₀.val * P₁.eval y.val := by
     simp only [h_P_i_eval, Fin.eta, Polynomial.eval_add, eval_comp,
@@ -1135,10 +1034,9 @@ def extractMiddleFinMask (v : (sDomain 𝔽q β h_ℓ_add_R_rate) ⟨0, by exact
   let middleBits := Nat.getMiddleBits (offset := i.val) (len := steps) (n := vToFin.val)
   exact ⟨middleBits, Nat.getMiddleBits_lt_two_pow⟩
 
-/-- The equality polynomial eq̃(r, r') that evaluates to 1 when r = r' and 0 otherwise.
-This is used in the final sumcheck identity : s_ℓ = c · eq̃(r, r') -/
-def eqTilde {L : Type} [CommRing L] {ℓ : ℕ} (r r' : Fin ℓ → L) : L :=
-  MvPolynomial.eval r' (MvPolynomial.eqPolynomial r)
+-- `eqTilde` is now defined generically in `ArkLib.Data.MvPolynomial.Multilinear` as
+-- `MvPolynomial.eqTilde r r' := eval r' (eqPolynomial r)`, accessible here unqualified via the
+-- file-level `open MvPolynomial`.
 
 end Essentials
 
@@ -1183,8 +1081,10 @@ def fiberwiseDisagreementSet (i : Fin ℓ) (steps : ℕ) [NeZero steps]
   Set ((sDomain 𝔽q β h_ℓ_add_R_rate) ⟨i.val + steps, by omega⟩) :=
   -- The set of points `y ∈ S^{i+steps}` that there exists a
     -- point `x` in its fiber where `f x ≠ g x`
-  {y | ∃ x, iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate (i := i)
-    (k := steps) (h_bound := by omega) x = y ∧ f x ≠ g x}
+  {y | ∃ x, iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+    (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+    (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x = y ∧
+      f x ≠ g x}
 
 /-- Fiber-wise distance d^(i) : The minimum size of the fiber-wise disagreement set
 between f^(i) and any codeword in C^(i). -/
@@ -1235,7 +1135,7 @@ def uniqueClosestCodeword
     simp only [h_dist_eq_top, ne_eq, OfNat.ofNat_ne_zero, not_false_eq_true, ENat.mul_top]
       at h_within_radius
     exact not_top_lt h_within_radius
-  let k : ℕ := 2^(ℓ - i.val)  -- degree bound from BBF_Code definition
+  let k : ℕ := 2^(ℓ - i.val) -- degree bound from BBF_Code definition
   -- Convert domain to Fin format for Berlekamp-Welch
   let domain_to_fin : (sDomain 𝔽q β h_ℓ_add_R_rate)
     ⟨i, by omega⟩ ≃ Fin domain_size := by
@@ -1268,7 +1168,7 @@ def uniqueClosestCodeword
       -- let S_nat := (fun (g : C_i) => hammingDist f g) '' Set.univ
     have hS_nonempty : S.Nonempty := Set.image_nonempty.mpr Set.univ_nonempty
     have h_coe_sinfS_eq_sinfSENat : ↑(sInf S) = sInf SENat := by
-      rw [ENat.coe_sInf (hs := hS_nonempty)]
+      rw [ENat.natCast_sInf (hs := hS_nonempty)]
       simp only [SENat, Set.image_univ, sInf_range]
       simp only [S, Set.image_univ, iInf_range]
     rcases Nat.sInf_mem hS_nonempty with ⟨g_subtype, hg_subtype, hg_min⟩
@@ -1312,14 +1212,14 @@ def uniqueClosestCodeword
             exact h_sInf_le_dist_v.trans h_dist_v_le_d'
         rw [h_distFromCode_eq_sInf, ←h_coe_sinfS_eq_sinfSENat, ←hg_min]
       rw [h_dist_eq_hamming]
-      rw [ENat.toNat_coe]
+      rw [ENat.toNat_natCast]
     -- Get the closest polynomial
     obtain ⟨p, hp_deg_lt, hp_eval⟩ : ∃ p, p ∈ Polynomial.degreeLT L k ∧
       (fun (x : sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩)) ↦ p.eval (↑x)) = g_closest := by
       simp only [Fin.eta, BBF_Code, ReedSolomon.code, ReedSolomon.evalOnPoints, Function.Embedding.coeFn_mk,
         Submodule.mem_map, LinearMap.coe_mk, AddHom.coe_mk, C_i] at hg_mem
       rcases hg_mem with ⟨p_witness, hp_prop, hp_eq⟩
-      use p_witness
+      exact ⟨p_witness, by simpa [k] using hp_prop, hp_eq⟩
     have natDeg_p_lt_k : p.natDegree < k := by
       simp only [mem_degreeLT] at hp_deg_lt
       by_cases hi : i = ℓ
@@ -1345,14 +1245,14 @@ def uniqueClosestCodeword
       · -- ⊢ `2 * e < d_i = n - k + 1`
         simp only [domain_size, k]; rw [sDomain_card 𝔽q β (h_i := by omega),]
         · -- ⊢ 2 * e < 2 ^ (ℓ + 𝓡 - ↑i) - 2 ^ (ℓ - ↑i) + 1
-          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.coe_sub, cast_pow, cast_ofNat,
-            cast_one] at h_within_radius;
+          simp only [hammingClose, BBF_CodeDistance, cast_add, ENat.natCast_sub, cast_pow,
+            cast_ofNat, cast_one] at h_within_radius;
           have h_lt_eq : ↑(2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)).toNat) =
   2 * Δ₀(f, ↑(BBF_Code 𝔽q β (h_ℓ_add_R_rate := h_ℓ_add_R_rate) i)) := by
             simp only [cast_mul, cast_ofNat]
-            rw [ENat.coe_toNat]
+            rw [ENat.natCast_toNat]
             exact h_dist_ne_top
-          apply ENat.coe_lt_coe.mp
+          apply ENat.natCast_lt_natCast.mp
           rw [h_lt_eq, hF₂.out]
           exact h_within_radius
       · -- ⊢ `k ≤ domain_size`. This holds by the problem setup.
@@ -1447,7 +1347,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
     -- and lifts to ℕ∞. We prove the `Nat` version `hammingDist f g' ≤ ...`,
     -- which is equivalent.
     change (Δ₀(f, g') : ℕ∞) ≤ ↑d_fw * ((2 ^ steps : ℕ) : ℕ∞)
-    rw [←ENat.coe_mul, ENat.coe_le_coe, h_g'_min_card]
+    rw [←ENat.natCast_mul, ENat.natCast_le_natCast, h_g'_min_card]
     -- Let ΔH be the finset of actually bad x points where f and g' disagree.
     set ΔH := Finset.filter (fun x => f x ≠ g' x) Finset.univ
     have h_dist_eq_card : hammingDist f g' = ΔH.card := by
@@ -1472,13 +1372,16 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
       simp only [ΔH, Finset.mem_filter] at hx_in_ΔH
       -- Now we actually apply iterated qMap into x to get y_of_x,
       -- then x ∈ qMap_total_fiber(y_of_x) by definition
-      let y_of_x := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate i steps h_i_add_steps x
+      let y_of_x := iteratedQuotientMap 𝔽q β h_ℓ_add_R_rate
+        (i := ⟨i, by omega⟩) (destIdx := ⟨i.val + steps, by omega⟩) (k := steps)
+        (h_destIdx := by simp) (h_destIdx_le := h_i_add_steps) x
       apply Finset.mem_biUnion.mpr; use y_of_x
       -- ⊢ y_of_x ∈ Y_bad.toFinset ∧ x ∈ qMap_total_fiber(y_of_x)
-      have h_elemenet_Y_bad :  y_of_x ∈ Y_bad.toFinset := by
+      have h_elemenet_Y_bad : y_of_x ∈ Y_bad.toFinset := by
         -- ⊢ y ∈ Y_bad.toFinset
+        rw [Set.mem_toFinset]
         simp only [fiberwiseDisagreementSet, iteratedQuotientMap, ne_eq, Subtype.exists,
-          Set.toFinset_setOf, mem_filter, mem_univ, true_and, Y_bad]
+          mem_filter, mem_univ, true_and, Y_bad]
         -- one bad fiber point of y_of_x is x itself
         let X := x.val
         have h_X_in_source : X ∈ sDomain 𝔽q β h_ℓ_add_R_rate (i := ⟨i, by omega⟩) := by
@@ -1487,8 +1390,8 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
         use h_X_in_source
         -- ⊢ Ŵ_steps⁽ⁱ⁾(X) = y (iterated quotient map) ∧ ¬f ⟨X, ⋯⟩ = g' ⟨X, ⋯⟩
         have h_forward_iterated_qmap : Polynomial.eval X
-            (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate ⟨↑i, by omega⟩
-              ⟨steps, by simp only; omega⟩) = y_of_x := by
+            (intermediateNormVpoly 𝔽q β h_ℓ_add_R_rate (i := ⟨↑i, by omega⟩)
+              (k := steps) (h_k := h_i_add_steps)) = y_of_x := by
           simp only [iteratedQuotientMap, X, y_of_x];
         have h_eval_diff : f ⟨X, by omega⟩ ≠ g' ⟨X, by omega⟩ := by
           unfold X
@@ -1579,12 +1482,12 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
 
   -- We can now work with the `Nat` value of `d_H`.
   let d_H_nat := ENat.toNat d_H
-  have h_dH_eq : d_H = d_H_nat := (ENat.coe_toNat h_dH_ne_top).symm
+  have h_dH_eq : d_H = d_H_nat := (ENat.natCast_toNat h_dH_ne_top).symm
 
   -- The calculation is now done entirely in `Nat`.
   have h_final_inequality : 2 * d_H_nat ≤ d_i - 1 := by
     have h_bridge_nat : d_H_nat ≤ d_fw * 2 ^ steps := by
-        rw [←ENat.coe_le_coe]
+        rw [←ENat.natCast_le_natCast]
         exact le_of_eq_of_le (id (Eq.symm h_dH_eq)) h_dist_bridge
     calc 2 * d_H_nat
       _ ≤ 2 * (d_fw * 2 ^ steps) := by gcongr
@@ -1597,7 +1500,7 @@ theorem fiberwise_dist_lt_imp_dist_lt_unique_decoding_radius (i : Fin ℓ) (step
   rw [h_dH_eq]
   -- ⊢ 2 * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, ⋯⟩)
   change ((2 : ℕ) : ℕ∞) * ↑Δ₀(f, C_i).toNat < ↑(BBF_CodeDistance ℓ 𝓡 ⟨↑i, by omega⟩)
-  rw [←ENat.coe_mul, ENat.coe_lt_coe]
+  rw [←ENat.natCast_mul, ENat.natCast_lt_natCast]
   apply Nat.lt_of_le_pred (n := 2 * Δ₀(f, C_i).toNat) (m := d_i) (h := h_d_i_gt_0)
     (h_final_inequality)
 

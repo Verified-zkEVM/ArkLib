@@ -1,0 +1,136 @@
+\section{Ring Switching}\label{sec:ring_switching}
+
+\emph{Ring switching} is a reduction that turns a multilinear evaluation claim over a \emph{small}
+coefficient ring $B$ into an evaluation claim over a \emph{large} extension $L$, paying only an
+additive $O(1/\lvert L\rvert)$ soundness cost and \emph{without re-committing} over $L$. It is the
+technique that lets a polynomial commitment scheme commit cheaply over a tiny ring (a binary-tower
+field, $\mathbb{F}_2$, or a cyclotomic ring $R_q$) while running sum-check and the final opening over
+a field large enough for soundness. It was introduced for binary towers in \cite{DP24}; the same
+shape underlies Hachi's extension-field-to-cyclotomic-ring reduction \cite{NOZ26}.
+
+ArkLib formalizes ring switching \emph{once}, as a generic oracle reduction parameterized by a
+\emph{packing profile}, with the binary-tower (Binius) construction as one instance.
+
+\subsection{The packing profile}
+
+The data and algebraic laws that every ring-switching reduction abstracts over are collected into a
+single structure.
+
+\begin{definition}[Ring-switching profile]
+  \lean{RingSwitching.RingSwitchingProfile}
+  \label{def:ring_switching_profile}
+  Fix commutative rings $B$ (small) and $L$ (large) with $L$ a $B$-algebra, and $\kappa \in
+  \mathbb{N}$. A \emph{ring-switching profile} consists of:
+  \begin{itemize}
+    \item a rank-$2^\kappa$ $B$-basis $\beta = (\beta_u)_{u \in \{0,1\}^\kappa}$ of $L$;
+    \item a commutative \emph{pack/trace carrier} $A$ that is an $L$-algebra (the type sent on the
+      wire);
+    \item two ring homomorphisms $\varphi_0, \varphi_1 : L \to A$ (the \emph{column} and \emph{row}
+      embeddings);
+    \item coordinate maps $\mathrm{decomposeColumns}, \mathrm{decomposeRows} : A \to (\{0,1\}^\kappa
+      \to L)$;
+    \item subject to the two \emph{reconstruction laws}
+      \begin{align}
+        z &= \textstyle\sum_{u} \varphi_0(\mathrm{decomposeRows}(z)_u)\cdot \varphi_1(\beta_u),
+          \label{eq:rs_rows}\\
+        z &= \textstyle\sum_{v} \varphi_1(\mathrm{decomposeColumns}(z)_v)\cdot \varphi_0(\beta_v)
+          \label{eq:rs_cols}
+      \end{align}
+      for all $z \in A$.
+  \end{itemize}
+\end{definition}
+
+Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} are the e\~q/trace structural identity of
+\cite[\S2.5]{DP24}: they pin the two coordinate maps to $\varphi_0,\varphi_1,\beta$ and are precisely
+what the completeness and soundness proofs consume. They also rule out degenerate profiles (e.g.
+$\mathrm{decomposeColumns} \equiv 0$), so the protocol's security statements are non-vacuous.
+
+\begin{definition}[Binius instance]
+  \lean{RingSwitching.binaryTowerProfile}
+  \uses{def:ring_switching_profile, def:binary_tower_field}
+  \label{def:binary_tower_profile}
+  For binary-tower fields $B = K$, $L$ a degree-$2^\kappa$ extension, the profile takes the
+  \emph{tensor carrier} $A := L \otimes_K L$, with $\varphi_0(\alpha) = \alpha \otimes 1$,
+  $\varphi_1(\alpha) = 1 \otimes \alpha$, and the coordinate maps given by the $K$-basis coordinates
+  for the left ($\beta.\mathrm{baseChange}\,L$) and right ($\mathrm{baseChangeRight}\,\beta$)
+  $L$-module structures on $A$. Laws \eqref{eq:rs_rows}--\eqref{eq:rs_cols} hold by
+  \texttt{Basis.sum\_repr} on these bases and are proven in ArkLib.
+\end{definition}
+
+The Hachi construction \cite{NOZ26} is the intended second instance: $L = R_q$ a cyclotomic ring,
+$A = R_q$ itself, $\varphi_0 = \mathrm{id}$, $\varphi_1 = \sigma_{-1}$ (the order-two automorphism),
+and $\beta = \psi$ from its Theorem~2. Because $R_q$ is not an integral domain, the Schwartz--Zippel
+soundness statement below does not apply to it; Hachi soundness is a separate argument.
+
+\subsection{Packing the witness}
+
+\begin{definition}[Multilinear packing]
+  \lean{RingSwitching.packMLE}
+  \uses{def:ring_switching_profile}
+  \label{def:pack_mle}
+  With $\ell = \ell' + \kappa$, a small-field multilinear $t$ in $\ell$ variables is packed into a
+  large-field multilinear $t'$ in $\ell'$ variables by bundling each block of $2^\kappa$ coefficients
+  into one $L$-element:
+  \[
+    t'(w) \;=\; \sum_{v \in \{0,1\}^\kappa} t(v, w)\,\beta_v, \qquad w \in \{0,1\}^{\ell'}.
+  \]
+\end{definition}
+
+\subsection{The reduction}
+
+The full reduction is a sequential composition of three phases, ending in a call to an underlying
+large-field multilinear IOPCS over $L$.
+
+\begin{enumerate}
+  \item \textbf{Batching} (\lean{RingSwitching.BatchingPhase.batchingOracleReduction}). The prover
+    sends the folded element $\hat s \in A$. The verifier checks the original claim against its
+    column-decomposition, $s = \sum_v \tilde{\mathrm{eq}}(v, r_{0..\kappa-1})\cdot
+    \mathrm{decomposeColumns}(\hat s)_v$, then sends a batching challenge $r'' \in L^\kappa$,
+    collapsing the $\kappa$ packed coordinates into a single sum-check target $s_0 = \sum_u
+    \tilde{\mathrm{eq}}(u, r'')\cdot \mathrm{decomposeRows}(\hat s)_u$. (Soundness loss
+    $\kappa/\lvert L\rvert$.)
+  \item \textbf{Sum-check} (\lean{RingSwitching.SumcheckPhase.coreInteractionOracleReduction}). A
+    degree-$2$ multilinear sum-check over $L$ on $H = A_{\mathrm{MLE}} \cdot t'$, over $\ell'$ rounds
+    plus a final round, reducing the sum claim to a single evaluation of $t'$ at a random point.
+    (Loss $2/\lvert L\rvert$ per round, $1/\lvert L\rvert$ final.)
+  \item \textbf{Opening}. The residual evaluation claim about $t'$ over $L$ is discharged by the
+    underlying large-field multilinear IOPCS.
+\end{enumerate}
+
+\begin{definition}[Full ring-switching reduction]
+  \lean{RingSwitching.FullRingSwitching.fullOracleReduction}
+  \uses{def:ring_switching_profile, def:pack_mle}
+  \label{def:full_ring_switching}
+  The composition of the batching phase, the core sum-check interaction, and the large-field IOPCS
+  invocation.
+\end{definition}
+
+\subsection{Security}
+
+\begin{theorem}[Perfect completeness]
+  \lean{RingSwitching.FullRingSwitching.fullOracleReduction_perfectCompleteness}
+  \uses{def:full_ring_switching}
+  \label{thm:ring_switching_completeness}
+  The full ring-switching oracle reduction is perfectly complete: an honest prover holding a witness
+  in the input relation always produces a transcript accepted into the output relation. The honest
+  prover's folded $\hat s$ satisfies the verifier's column check by reconstruction law
+  \eqref{eq:rs_cols}.
+\end{theorem}
+
+\begin{theorem}[Round-by-round knowledge soundness]
+  \lean{RingSwitching.FullRingSwitching.fullOracleVerifier_rbrKnowledgeSoundness}
+  \uses{def:full_ring_switching}
+  \label{thm:ring_switching_soundness}
+  When $L$ is an integral domain, the full reduction is round-by-round knowledge sound, with the
+  additive error
+  \[
+    \frac{\kappa}{\lvert L\rvert} \;+\; \sum_{\text{rounds}} \frac{2}{\lvert L\rvert} \;+\;
+    \frac{1}{\lvert L\rvert} \;+\; \varepsilon_{\mathrm{IOPCS}},
+  \]
+  matching \cite[\S3.1--3.2]{DP24}. The integral-domain hypothesis is exactly the Schwartz--Zippel
+  ingredient (a nonzero degree-$d$ univariate over $L$ has at most $d$ roots).
+\end{theorem}
+
+\noindent The leaf completeness and soundness proofs are in progress; the statements above are
+final and instance-independent, and instantiate to end-to-end Binius security via
+Definition~\ref{def:binary_tower_profile}.

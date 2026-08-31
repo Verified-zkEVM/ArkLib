@@ -18,7 +18,7 @@ import ArkLib.Data.CodingTheory.Prelims
 import Mathlib.Algebra.Lie.OfAssociative
 import Mathlib.Data.Finset.BooleanAlgebra
 import Mathlib.Data.Real.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.Data.Set.Defs
 import Mathlib.Probability.Distributions.Uniform
 import Mathlib.RingTheory.Henselian
@@ -85,7 +85,7 @@ each pair of words `u_0` and `u_1` in `F^n`, if
 holds, then `d^2((u_i)_{i=0}^1, C^2) ≤ e` also does.
 -/
 def e_ε_correlatedAgreementAffineLinesNat
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
     (C : Set (ι → A)) (e ε : ℕ) : Prop :=
   ∀ (u₀ u₁ : Word A ι),
     Pr_{let r ← $ᵖ F}[Δ₀(affineLineEvaluation (F := F) u₀ u₁ r, C) ≤ e]
@@ -126,8 +126,8 @@ theorem dist_affineCombination_le_dist_interleaved₂
 section TensorProximityGapDefinitions -- CommRing scalar set
 variable {F : Type} [CommRing F] [Module F A] [Fintype F]
 
-def δ_ε_multilinearCorrelatedAgreement_Nat [CommRing F]
-    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι] [Module F A]
+def δ_ε_multilinearCorrelatedAgreement_Nat
+    {ι : Type*} [Fintype ι] [Nonempty ι] [DecidableEq ι]
   (C : Set (ι → A)) (ϑ : ℕ) (e : ℕ) (ε : ℕ) : Prop :=
   ∀ (u : WordStack A (Fin (2^ϑ)) ι),
     Pr_{let r ← $ᵖ (Fin ϑ → F)}[ -- This syntax only works with (A : Type 0)
@@ -197,6 +197,9 @@ lemma eq_splitHalf_iff_merge_eq {ϑ : ℕ}
         Fin.eta] at res
       exact res
 
+-- Preserve the public `Matrix` aliases for interleaved words. Lean v4.33 otherwise refuses
+-- to unfold them while matching the proof's implicit word types.
+set_option backward.isDefEq.respectTransparency false in
 omit [Nonempty ι] [DecidableEq ι] [Fintype A] [AddCommMonoid A] in
 /-- NOTE: This could be generalized to 2 * N instead of 2 ^ (ϑ + 1).
 Also, this can be proved for `↔` instead of `→`. -/
@@ -264,8 +267,8 @@ theorem CA_split_rowwise_implies_CA
         have hRes₁ := hRes 1 ⟨rowIdx - 2 ^ ϑ, by omega⟩
         dsimp only [splitHalfRowWiseInterleavedWords, Fin.isValue, U₁] at hRes₁
         rw [←hRes₁]
-        simp only [Interleavable.interleave, interleaveWordStack, finMapTwoWords,
-          Matrix.transpose_apply]
+        simp only [Interleavable.interleave, interleaveWordStack, Matrix.transpose_apply,
+          finMapTwoWords]
         rw! [Nat.sub_add_cancel (h := by omega)]
         rfl
 

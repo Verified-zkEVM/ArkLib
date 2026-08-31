@@ -40,6 +40,8 @@ For substantial contributions, discuss the blueprint-first workflow described in
 
 ## Build And Publish Checks
 
+For a local preview of the docs + blueprint website:
+
 ```bash
 DISABLE_EQUATIONS=1 lake build ArkLib:docs
 ./scripts/build-web.sh
@@ -50,3 +52,30 @@ If blueprint output matters and `leanblueprint` is missing:
 ```bash
 python3 -m pip install leanblueprint
 ```
+
+### Continuous integration
+
+Publishing to GitHub Pages is handled by [`.github/workflows/ci.yml`](../../.github/workflows/ci.yml),
+which delegates to the maintained [`leanprover-community/docgen-action`](https://github.com/leanprover-community/docgen-action)
+rather than a hand-rolled TeX/pygraphviz setup. The action runs after CI's Lean
+build on the same runner, so blueprint validation and documentation publishing
+reuse the existing `.lake` build instead of compiling the project again. It
+builds the API docs via doc-gen4 (in an isolated `docbuild` project, the layout
+recommended by [doc-gen4](https://github.com/leanprover/doc-gen4)), builds the
+blueprint with `leanblueprint pdf` + `leanblueprint web`, runs
+`lake exe checkdecls blueprint/lean_decls` to confirm every `\lean{...}`
+declaration exists, and deploys the static `home_page/` (with `docs/` and
+`blueprint/` copied in). Pull requests run a validation-only build (blueprint +
+`checkdecls`, no deploy), so LaTeX and declaration errors are caught before they
+reach `main`.
+
+### Blueprint LaTeX gotchas
+
+These break the PDF build (and therefore the whole publish workflow):
+
+- Math in `\section`/`\subsection` titles reaches hyperref's PDF bookmarks, where
+  commands such as `\cong` raise a fatal `Improper alphabetic constant`. Wrap any
+  math in a title with `\texorpdfstring{$...$}{plain-text fallback}`.
+- Every `@key{...}` in `blueprint/src/references.bib` must be unique; a duplicate
+  key makes BibTeX error out and leaves all citations unresolved.
+- Only use macros that are defined in `blueprint/src/macros/`.

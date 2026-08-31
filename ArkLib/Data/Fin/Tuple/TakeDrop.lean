@@ -134,15 +134,19 @@ theorem ofFn_rtake_get {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length)
 /-- `Fin.rtake` intertwines with `List.rtake` via `List.get`. -/
 theorem get_rtake_eq_rtake_get_comp_cast {α : Type*} {m : ℕ} (l : List α) (h : m ≤ l.length) :
     (l.rtake m).get = rtake m h l.get ∘ Fin.cast (by simp [List.rtake]; omega) := by
-  ext i
-  simp [List.rtake, natAdd, Fin.cast]
+  rw! (castMode := .all) [← ofFn_rtake_get l h]
+  funext i
+  rw [List.get_ofFn]
+  rfl
 
 /-- Alternative version with `v : Fin n → α` instead of `l : List α`. -/
 theorem get_rtake_ofFn_eq_rtake_comp_cast {α : Type*} {m : ℕ} (v : Fin n → α) (h : m ≤ n) :
     ((List.ofFn v).rtake m).get =
       rtake m h v ∘ Fin.cast (by simp [List.rtake]; omega) := by
-  ext i
-  simp [List.rtake, natAdd, Fin.cast]
+  rw! (castMode := .all) [← ofFn_rtake_eq_rtake_ofFn h v]
+  funext i
+  rw [List.get_ofFn]
+  rfl
 
 /-
 * `Fin.drop`: Given `h : m ≤ n`, `Fin.drop m h v` for a `n`-tuple `v = (v 0, ..., v (n - 1))` is the
@@ -232,7 +236,9 @@ theorem drop_update_of_ge (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) (i 
   next h_1 =>
     subst h_1
     simp_all only [add_tsub_cancel_right, Fin.eta, ↓reduceDIte]
-    sorry
+    simp only [dcast, eqRec_eq_cast]
+    rw [_root_.cast_cast]
+    exact (cast_eq _ x).symm
   next h_1 =>
     simp_all only [right_eq_dite_iff]
     intro h_2
@@ -356,7 +362,8 @@ theorem take_drop_addCases' (m : ℕ) (h : m ≤ n) (v : (i : Fin n) → α i) :
   · simp
   · have : i.val - m + m = i.val := by omega
     rw! [this]
-    sorry
+    simp only [eqRec_eq_cast]
+    rw [_root_.cast_cast]
 
 /-- The concatenation of the first `m` elements and the last `n - m` elements of a tuple is the
 same as the original tuple. -/

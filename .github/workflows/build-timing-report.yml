@@ -9,18 +9,16 @@ concurrency:
   group: ${{ github.workflow }}-${{ github.event.workflow_run.id }}
   cancel-in-progress: false
 
-permissions:
-  actions: read
-  contents: read
-  issues: write
-  pull-requests: read
-
 jobs:
   report:
     if: >-
       github.event.workflow_run.event == 'pull_request' &&
       github.event.workflow_run.conclusion == 'success'
     runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      pull-requests: write
     steps:
       - name: Locate pull request and timing artifact
         id: timing-context
@@ -87,7 +85,7 @@ jobs:
 
       - name: Check out reporting scripts
         if: steps.timing-context.outputs.should-report == 'true'
-        uses: actions/checkout@v6
+        uses: actions/checkout@v7
         with:
           ref: ${{ steps.timing-context.outputs.base-ref }}
 
@@ -221,6 +219,8 @@ jobs:
           BUILD_TIMING_BASELINE_SHA: ${{ steps.timing-baseline.outputs.sha }}
           BUILD_TIMING_TEST_NAME: Validation wrapper
           BUILD_TIMING_TEST_COMMAND: ./scripts/validate.sh
+          BUILD_TIMING_NATIVE_NAME: Native build
+          BUILD_TIMING_NATIVE_COMMAND: lake build toyproblem-runtime
         run: |
           baseline_dir="${{ runner.temp }}/build-timing-baseline"
           if [ -f "$baseline_dir/results.jsonl" ]; then
@@ -247,26 +247,61 @@ jobs:
             const body = fs.readFileSync(process.env.BUILD_TIMING_COMMENT, 'utf8');
             const { owner, repo } = context.repo;
             const issue_number = Number('${{ steps.timing-context.outputs.pr-number }}');
-            const comments = await github.paginate(
-              github.rest.issues.listComments,
-              { owner, repo, issue_number, per_page: 100 }
-            );
+
+            const expectedCommentApiStatuses = new Set([403, 404, 410, 422, 429]);
+            const warnExpectedCommentApiFailure = (operation, error) => {
+              if (!Number.isInteger(error.status) ||
+                  !expectedCommentApiStatuses.has(error.status)) {
+                throw error;
+              }
+
+              const apiMessage = error.response?.data?.message || error.message || 'unknown error';
+              const permissionHint = error.status === 403
+                ? ' Check that the report job has `pull-requests: write` and that ' +
+                  'repository or organization Actions settings permit requested workflow permissions.'
+                : '';
+              core.warning(
+                `Could not ${operation} the build timing PR comment ` +
+                `(HTTP ${error.status}: ${apiMessage}).${permissionHint} ` +
+                'The report is still available in the job summary above.'
+              );
+            };
+
+            let comments;
+            try {
+              comments = await github.paginate(
+                github.rest.issues.listComments,
+                { owner, repo, issue_number, per_page: 100 }
+              );
+            } catch (error) {
+              warnExpectedCommentApiFailure('list existing comments for', error);
+              return;
+            }
+
             const existing = comments.find(comment =>
               comment.user?.type === 'Bot' && comment.body?.includes(marker)
             );
 
             if (existing) {
-              await github.rest.issues.updateComment({
-                owner,
-                repo,
-                comment_id: existing.id,
-                body,
-              });
+              try {
+                await github.rest.issues.updateComment({
+                  owner,
+                  repo,
+                  comment_id: existing.id,
+                  body,
+                });
+              } catch (error) {
+                warnExpectedCommentApiFailure('update', error);
+              }
             } else {
-              await github.rest.issues.createComment({
-                owner,
-                repo,
-                issue_number,
-                body,
-              });
+              try {
+                await github.rest.issues.createComment({
+                  owner,
+                  repo,
+                  issue_number,
+                  body,
+                });
+              } catch (error) {
+                warnExpectedCommentApiFailure('create', error);
+              }
             }

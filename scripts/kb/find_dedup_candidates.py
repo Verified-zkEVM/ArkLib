@@ -124,7 +124,7 @@ def render_short_name_report(groups: dict[str, list[dict]], min_group: int) -> l
                      f"{len({d['file'] for d in ds})} files)")
         lines.append("")
         for d in sorted(ds, key=lambda x: (x["file"], x["line"])):
-            doc = d["doc"][:100].replace("|", "\\|")
+            doc = d["doc"][:100].replace("|", "\\|").rstrip()
             lines.append(
                 f"- `{d['kind']} {d['name']}` "
                 f"[{d['file']}:{d['line']}](../../../{d['file']}#L{d['line']}) "
@@ -199,8 +199,8 @@ def render_doc_similarity_report(data: dict, threshold: float) -> list[str]:
             f"vs `{b['name']}` "
             f"[{b['file']}:{b['line']}](../../../{b['file']}#L{b['line']})"
         )
-        lines.append(f"    - a: {a['doc'][:100]}")
-        lines.append(f"    - b: {b['doc'][:100]}")
+        lines.append(f"    - a: {a['doc'][:100].rstrip()}")
+        lines.append(f"    - b: {b['doc'][:100].rstrip()}")
     lines.append("")
     return lines
 

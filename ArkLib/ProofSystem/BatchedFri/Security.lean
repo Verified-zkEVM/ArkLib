@@ -63,7 +63,7 @@ def cosetEnum (s₀ : evalDomainSigma s ω i) (k_le_n : ∑ j', (s j').1 ≤ n)
         by
           have s_i_lim : (s i).1 < n + 1 := by
             apply Nat.lt_succ_of_le
-            rw [Finset.sum_eq_sum_diff_singleton_add (i := i) (by simp)] at k_le_n
+            rw [Finset.sum_eq_sum_sdiff_singleton_add (i := i) (by simp)] at k_le_n
             apply (swap <| Nat.le_trans) k_le_n
             omega
           rcases j with ⟨j, h⟩
@@ -132,18 +132,12 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
   unfold Function.Bijective
   apply And.intro
   · intros a b h
-    simp only [finRangeTo.eq_1, Subtype.mk.injEq] at h
-    have h := congr_arg Subtype.val h
-    simp only [mul_eq_mul_left_iff] at h
-    rcases h with h | h
-    · have h := FftDomain.injective h
-      aesop
-    · rcases s₀ with ⟨s₀, hs₀⟩
-      subst h
-      simp only [finRangeTo.eq_1, evalDomainSigma] at hs₀
-      rw [CosetFftDomainClass.mem_toFinset_iff_mem] at hs₀
-      have hs₀ := CosetFftDomainClass.not_zero_mem hs₀
-      simp at hs₀
+    have h := congr_arg (fun x ↦ (x.1.1 : 𝔽)) h
+    simp only [cosetEnum', cosetEnum, finRangeTo.eq_1] at h
+    have hs₀_ne : (s₀ : 𝔽) ≠ 0 := CosetFftDomainClass.ne_zero_dep s₀
+    have h := mul_left_cancel₀ hs₀_ne h
+    have h := FftDomain.injective h
+    exact Fin.ext (by simpa using h)
   · rintro ⟨⟨y, h'⟩, h⟩
     simp only [finRangeTo.eq_1, Subtype.mk.injEq]
     simp only [cosetG, k_le_n, ↓reduceDIte] at h
@@ -152,6 +146,7 @@ noncomputable def fin_equiv_coset (s₀ : evalDomainSigma s ω ↑i)
     simp only [finRangeTo.eq_1, cosetEnum] at ha
     exact ⟨a, by aesop⟩
 
+@[instance_reducible]
 def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s₀) := by
   haveI : NeZero (VDM n s s₀).det := by
     constructor
@@ -173,9 +168,10 @@ def invertibleDomain (s₀ : evalDomainSigma s ω ↑i) : Invertible (VDM n s s�
         simp_all only [lt_self_iff_false]
       intros contra
       apply this
-      rw [sub_eq_zero, cosetEnum, cosetEnum] at contra
+      rw [sub_eq_zero] at contra
+      unfold cosetEnum at contra
       simp only [Nat.succ_eq_add_one, finRangeTo, Fin.ofNat_eq_cast, Fin.val_natCast,
-        Set.mem_setOf_eq, mul_eq_mul_left_iff] at contra
+        Set.mem_ofPred_eq, mul_eq_mul_left_iff] at contra
       rcases contra with contra | contra
       · have h := FftDomain.injective contra
         simp only [Fin.mk.injEq] at h
@@ -330,7 +326,7 @@ noncomputable def oracleImpl
           (query (spec := [(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ) ⟨i, t⟩)
 
 instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabited where
-  inhabited_B := by
+  inhabitedB := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
     have : i.1.1 = 0 := by omega
@@ -338,7 +334,7 @@ instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Inhabit
     simp at h
 
 instance {l : ℕ} : ([(Spec.QueryRound.pSpec l (ω := ω)).Message]ₒ).Fintype where
-  fintype_B := by
+  fintypeB := by
     intro i
     unfold Spec.QueryRound.pSpec MessageIdx at i
     have : i.1.1 = 0 := by omega
@@ -509,7 +505,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([(fullChallengeProtocol
         n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Inhabited where
-  inhabited_B := by
+  inhabitedB := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
@@ -520,7 +516,7 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
 noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
     ([(fullChallengeProtocol
         n (𝔽 := 𝔽) (ω := ω) (k := k) (s := s) t l).Challenge]ₒ).Fintype where
-  fintype_B := by
+  fintypeB := by
     intro q
     rcases q with ⟨i, u⟩
     cases u
@@ -574,13 +570,16 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
           (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
               Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Inhabited where
-  inhabited_B := by
+  inhabitedB := by
     intro q
     cases q with
     | inl q => exact PEmpty.elim q
     | inr q =>
-        simpa using
-          (inferInstance :
+        change Inhabited
+          (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+              (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+                Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q)
+        exact (inferInstance :
             Inhabited
               (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
                   (Spec.pSpecFold (ω := ω) k s ++ₚ
@@ -593,13 +592,16 @@ noncomputable instance {t l : ℕ} {ω : SmoothCosetFftDomain n 𝔽} :
           (Spec.pSpecFold (ω := ω) k s ++ₚ
             Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
               Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Fintype where
-  fintype_B := by
+  fintypeB := by
     intro q
     cases q with
     | inl q => exact PEmpty.elim q
     | inr q =>
-        simpa using
-          (inferInstance :
+        change Fintype
+          (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
+              (Spec.pSpecFold (ω := ω) k s ++ₚ Spec.FinalFoldPhase.pSpec 𝔽 ++ₚ
+                Spec.QueryRound.pSpec (ω := ω) l)).Challenge]ₒ).Range q)
+        exact (inferInstance :
             Fintype
               (([((BatchedFri.Spec.BatchingRound.batchSpec 𝔽 t) ++ₚ
                   (Spec.pSpecFold (ω := ω) k s ++ₚ

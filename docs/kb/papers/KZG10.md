@@ -8,7 +8,7 @@ canonical_url: https://www.iacr.org/archive/asiacrypt2010/6477178/6477178.pdf
 source_metadata: ../sources/KZG10/metadata.yml
 status: seeded
 related_modules:
-  - ArkLib/CommitmentScheme/KZG/Basic.lean
+  - ArkLib/Commitments/Functional/KZG/Basic.lean
 ---
 
 # KZG10
@@ -25,7 +25,7 @@ core KZG definitions.
 
 ## Main ArkLib Touchpoints
 
-- [`ArkLib/CommitmentScheme/KZG/Basic.lean`](../../../ArkLib/CommitmentScheme/KZG/Basic.lean)
+- [`ArkLib/Commitments/Functional/KZG/Basic.lean`](../../../ArkLib/Commitments/Functional/KZG/Basic.lean)
   cites `KZG10` directly.
 
 ## Version Notes

@@ -1,0 +1,4 @@
+bibkey: GR08
+source_kind: article
+committed_artifacts: []
+notes: "Guruswami-Rudra, IEEE Transactions on Information Theory 54(1) 2008; the original folded Reed-Solomon paper and the source of ABF26 Definition 2.15. Reference PDF (not committed) is ~/abf26-refs/GuruswamiR08.pdf, the arXiv preprint cs/0511072v2 (8 Oct 2007), from which ArkLib's quotations of Definition 2.1 are taken."

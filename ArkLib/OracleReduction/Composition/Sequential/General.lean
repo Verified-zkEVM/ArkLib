@@ -438,10 +438,14 @@ theorem seqCompose_rbrSoundness
           rbrSoundnessError ij.1 ij.2) := by
   induction m with
   | zero =>
-    simp
-    convert Verifier.id_rbrSoundness init impl using 1
-    funext ⟨i, _⟩
-    exact Fin.elim0 i
+    have herr : (fun combinedIdx =>
+        letI ij := seqComposeChallengeIdxToSigma combinedIdx
+        rbrSoundnessError ij.1 ij.2) = 0 := by
+      funext i
+      exact Fin.elim0 i.val
+    rw [herr]
+    rw [Verifier.seqCompose_zero]
+    exact Verifier.id_rbrSoundness init impl
   | succ m ih =>
     simp
     have := ih (fun i => lang i.succ) (fun i => V i.succ)
@@ -466,10 +470,14 @@ theorem seqCompose_rbrKnowledgeSoundness
           rbrKnowledgeError ij.1 ij.2) := by
   induction m with
   | zero =>
-    simp
-    convert Verifier.id_rbrKnowledgeSoundness init impl using 1
-    funext ⟨i, _⟩
-    exact Fin.elim0 i
+    have herr : (fun combinedIdx =>
+        letI ij := seqComposeChallengeIdxToSigma combinedIdx
+        rbrKnowledgeError ij.1 ij.2) = 0 := by
+      funext i
+      exact Fin.elim0 i.val
+    rw [herr]
+    rw [Verifier.seqCompose_zero]
+    exact Verifier.id_rbrKnowledgeSoundness init impl
   | succ m ih =>
     simp
     have := ih (fun i => rel i.succ) (fun i => V i.succ)
@@ -503,9 +511,10 @@ theorem seqCompose_perfectCompleteness
     (h : ∀ i, (R i).perfectCompleteness init impl (rel i.castSucc) (rel i.succ)) :
       (OracleReduction.seqCompose Stmt OStmt Wit R).perfectCompleteness
         init impl (rel 0) (rel (Fin.last m)) := by
-  unfold perfectCompleteness Reduction.perfectCompleteness
-  convert seqCompose_completeness rel R 0 h
-  simp
+  change (OracleReduction.seqCompose Stmt OStmt Wit R).completeness
+    init impl (rel 0) (rel (Fin.last m)) 0
+  have hc := seqCompose_completeness rel R 0 h
+  simpa using hc
 
 end OracleReduction
 

@@ -140,7 +140,7 @@ class SpongeUnit (α : Type) extends Zero α, Serde α ByteArray, HasSize α UIn
       let units := bytes.mapM deserialize
       if h : units.isSome
         then return units.get h
-        else IO.throwServerError "Failed to read units"
+        else throw <| IO.userError "Failed to read units"
 
 /-- Type class for types that can be used as a duplex sponge, with respect to the sponge unit type
   `U`.
@@ -211,7 +211,7 @@ variable [sz : SpongeSize]
 /-- The capacity of the sponge, defined as `N - R`, the width minus the rate. -/
 def C : Nat := sz.N - sz.R
 
-instance [sz : SpongeSize] : NeZero sz.C where
+instance : NeZero sz.C where
   out := by
     have := sz.R_lt_N
     simp [C]; omega
@@ -294,7 +294,7 @@ def capacitySegment (state : CanonicalSpongeState U) : Vector U SpongeSize.C :=
   Vector.drop state SpongeSize.R
 
 /-- The canonical sponge state satisfies the `SpongeState` type class -/
-instance {U : Type} [SpongeUnit U] [SpongeSize] :
+instance :
     SpongeState U (Vector U SpongeSize.N) where
   -- PROBLEM: no canonical implementation of this. We temporarily set it to the all-zero vector
   new := fun _ => 0

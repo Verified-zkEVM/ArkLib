@@ -6,7 +6,7 @@ Authors: František Silváši, Ilia Vlasov, Elias Judin
 
 import Mathlib.Algebra.Field.Basic
 import Mathlib.Algebra.Polynomial.Basic
-import Mathlib.Data.Real.Sqrt
+import Mathlib.Analysis.Real.Sqrt
 import Mathlib.RingTheory.Polynomial.Basic
 
 import ArkLib.Data.CodingTheory.BerlekampWelch.Sorries
@@ -1001,7 +1001,7 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
   · -- ne_zero
     have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
       have : Function.Injective (linearCombination F
-        (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+        (fun p : weightBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
         linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
       exact this.comp (LinearEquiv.injective _)
     exact fun h ↦ hc_ne <| h_inj <| by simpa using h
@@ -1021,7 +1021,7 @@ theorem gs_existence (k n : ℕ) (ωs : Fin n ↪ F) (f : Fin n → F)
     apply rootMultiplicity_ge_of_shift_zero
     · have h_inj : Function.Injective (coeffsToPoly (F := F) k D) := by
         have : Function.Injective (linearCombination F
-          (fun p : weigthBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
+          (fun p : weightBoundIndices k D ↦ monomial (F := F) p.1.1 p.1.2)) :=
           linearIndependent_monomials.comp _ (fun p q h ↦ by aesop)
         exact this.comp (LinearEquiv.injective _)
       exact fun h ↦ hc_ne <| h_inj <| by simpa using h

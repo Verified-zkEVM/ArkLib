@@ -40,7 +40,7 @@ instance : DFunEquiv (∀ a : α, β a) α β where
 /-- The forward direction of the equivalence is a `DFunLike`. -/
 instance : DFunLike F α β where
   coe := DFunEquiv.equiv.toFun
-  coe_injective' := DFunEquiv.equiv.injective
+  coe_injective := DFunEquiv.equiv.injective
 
 /-- Coercion from the dependent function type `∀ a : α, β a` to another type `F` that has a
 `DFunEquiv` instance.

@@ -66,7 +66,7 @@ lemma generalised_round_consistency_completeness
     rw [←eval]
     simp
   simp only [polyFold_eq_sum_of_splitNth, map_pow]
-  rw [eval_finset_sum]
+  rw [eval_finsetSum]
   conv =>
     rhs
     rhs
@@ -101,8 +101,8 @@ lemma generalised_round_consistency_completeness
     ext i
     conv =>
       lhs
-      rw [splitNth_def n f]
-    rw [eval_finset_sum, eval_finset_sum]
+      rw [eq_sum_splitNth n f]
+    rw [eval_finsetSum, eval_finsetSum]
     conv =>
       lhs
       rhs
@@ -117,7 +117,7 @@ lemma generalised_round_consistency_completeness
       simp
       rw [←one_mul (s₀ ^ n), ←h i]
     rw [mul_pow]
-  · rw [eval_finset_sum]
+  · rw [eval_finsetSum]
     conv =>
       lhs
       rhs

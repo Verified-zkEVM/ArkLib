@@ -11,6 +11,7 @@ Edit the source of truth, not the output.
 | `blueprint/src/print.pdf` | generated blueprint PDF inside source tree | No | `leanblueprint pdf` |
 | `home_page/docs/` | copied API docs for the site | No | `./scripts/build-web.sh` |
 | `dependency_graphs/` | generated dependency visualizations | No | rerun scripts under `scripts/dependency_analysis/` |
+| `scripts/axiom_baseline.json` | kernel-level axiom/`sorry` regression baseline | No | `lake exe axiomsweep --update-baseline` after a built `lake build`; commit the diff in the PR that intentionally adds or removes taint. The update refuses to write while never-allowlistable native-trust taint is present |
 | `docs/kb/_generated/references.json` | normalized bibliography export | No | `python3 ./scripts/kb/sync_from_bib.py` |
 | `docs/kb/_generated/lean-citations.json` | generated map from Lean files to cited keys | No | `python3 ./scripts/kb/extract_lean_citations.py` |
 | `docs/kb/_generated/declarations.json` | declaration catalog across `ArkLib/` (file, line, kind, namespace, name, brief signature, docstring head) | No | `python3 ./scripts/kb/extract_declarations.py` |
@@ -18,8 +19,8 @@ Edit the source of truth, not the output.
 
 ## Important Notes
 
-- `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files and now fails fast if
-  untracked Lean files would be skipped.
+- `./scripts/update-lib.sh` only uses tracked `ArkLib/**/*.lean` files, and fails fast if
+  untracked Lean files would be skipped. `git add` new paths before running validation.
 - Do not commit `docs/kb/_generated/**` changes from ordinary feature PRs. They are proposed by
   generated-files PRs opened from `.github/workflows/kb-generated.yml`.
 - Missing cited-paper stubs under `docs/kb/papers/` and `docs/kb/sources/` are also scaffolded by
