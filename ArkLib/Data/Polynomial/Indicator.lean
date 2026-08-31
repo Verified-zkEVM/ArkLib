@@ -36,6 +36,14 @@ noncomputable def indicator (pos neg : Finset F) : F[X] :=
   Lagrange.interpolate (pos ∪ neg) id
     (fun x ↦ if x ∈ pos then 1 else 0)
 
+private lemma indicator_eval_of_mem_union {pos neg : Finset F} {x : F}
+    (hx : x ∈ pos ∪ neg) :
+    (indicator pos neg).eval x = if x ∈ pos then 1 else 0 := by
+  unfold indicator
+  simpa only [id_eq] using
+    Lagrange.eval_interpolate_at_node (fun y : F => if y ∈ pos then 1 else 0)
+      Function.injective_id.injOn hx
+
 /-- The indicator polynomial is a constant zero polynomial
   if the set `pos` is empty.
 
@@ -50,79 +58,44 @@ lemma indicator_eq_1_of_neg_empty_empty_of_pos_nonempty
   {pos : Finset F}
   (h_pos : pos.Nonempty) :
   indicator pos ∅ = 1 := by
-  unfold indicator
   rw [Finset.nonempty_iff_ne_empty] at h_pos
   apply Polynomial.eq_of_degree_sub_lt_of_eval_finset_eq (pos ∪ ∅) _ _
   · apply lt_of_le_of_lt (Polynomial.degree_sub_le _ _) (max_lt _ _)
-    · convert Lagrange.degree_interpolate_lt _ _
+    · unfold indicator
+      convert Lagrange.degree_interpolate_lt _ _
       aesop
     · simpa using Finset.card_pos.mpr (Finset.nonempty_of_ne_empty h_pos)
-  · have {x} {y} (hy : y ∈ pos.erase x) :
-      (x - y)⁻¹ * (x - y) = 1 :=
-        inv_mul_cancel₀ (sub_ne_zero_of_ne (by aesop))
-    aesop
-      (add simp
-        [Polynomial.eval_prod,
-          Finset.prod_eq_zero_iff,
-          Lagrange.basis,
-          Lagrange.basisDivisor,
-          Finset.prod_eq_one])
-      (add safe [(by rw
-        [Polynomial.eval_finsetSum,
-        Finset.sum_eq_single x])])
+  · intro x hx
+    have hxpos : x ∈ pos := by simpa using hx
+    have heval := indicator_eval_of_mem_union (pos := pos) (neg := ∅) hx
+    simpa [hxpos] using heval
 
 /-- If `pos` is non-empty then the indicator polynomial is the constant
   zero polynomial. -/
 lemma indicator_ne_zero_of_pos_nonempty {pos neg : Finset F}
   (h : pos.Nonempty) :
   indicator pos neg ≠ 0 := by
-  unfold indicator
-  intro contra
+  intro hzero
   obtain ⟨x, hx⟩ := h
-  have := congr_arg (Polynomial.eval x) contra
-  simp only [Lagrange.interpolate_apply, MonoidWithZeroHom.map_ite_one_zero, ite_mul, one_mul,
-    zero_mul, Finset.sum_ite_mem, Finset.union_inter_cancel_left, eval_zero] at this
-  rw [Polynomial.eval_finsetSum, Finset.sum_eq_single x] at this
-    <;> aesop
-    (add simp
-      [Lagrange.basis,
-       sub_eq_zero,
-       Finset.prod_eq_zero_iff,
-       Finset.mem_erase_of_ne_of_mem,
-       Finset.mem_union_left,
-       Lagrange.basisDivisor,
-       Polynomial.eval_prod])
-    (add safe (by apply Finset.prod_eq_zero))
+  have heval := indicator_eval_of_mem_union (neg := neg) (Finset.mem_union_left neg hx)
+  rw [if_pos hx, hzero, eval_zero] at heval
+  exact zero_ne_one heval
 
 /-- Indicator evaluated on an element of `pos` is equal to 1. -/
 lemma indicator_eq_1_on_pos {pos neg : Finset F} {x : F}
   (h_pos : x ∈ pos) :
   (indicator pos neg).eval x = 1 := by
-  unfold indicator
-  have {x} {y} (hy : y ∈ (pos ∪ neg).erase x) :
-    (x - y)⁻¹ * (x - y) = 1 :=
-      inv_mul_cancel₀ (sub_ne_zero_of_ne (by aesop))
-  rw [Polynomial.eval]
-  aesop
-      (add simp
-        [Polynomial.eval_prod,
-          Polynomial.eval₂_finsetSum,
-          Lagrange.basis,
-          Finset.prod_eq_zero_iff,
-          Lagrange.basis,
-          Lagrange.basisDivisor,
-          Finset.prod_eq_one])
-      (add safe [(by rw [Finset.sum_eq_single x])])
+  simpa [h_pos] using
+    indicator_eval_of_mem_union (neg := neg) (Finset.mem_union_left neg h_pos)
 
 /-- The indicator polynomial is zero on `neg \ pos`. -/
 lemma indicator_eq_0_on_neg_sub_pos {pos neg : Finset F} {x : F}
   (h_pos : x ∈ neg \ pos) :
   (indicator pos neg).eval x = 0 := by
-  have h_basis_zero : ∀ y ∈ pos, Polynomial.eval x (Lagrange.basis (pos ∪ neg) id y) = 0 := by
-    aesop
-      (add simp [Finset.mem_sdiff, Lagrange.basis, id_eq, eval_prod])
-      (add safe [(by rw [Finset.prod_eq_zero])])
-  aesop (add simp [indicator, Polynomial.eval_finsetSum, Finset.sum_eq_zero])
+  have hmem := Finset.mem_sdiff.mp h_pos
+  simpa [hmem.2] using
+    indicator_eval_of_mem_union (pos := pos) (neg := neg)
+      (Finset.mem_union_right pos hmem.1)
 
 /-- The degree of the indicator polynomial
   is less than `#(pos ∪ neg)`. -/
