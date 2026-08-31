@@ -8,7 +8,7 @@ cd "$repo_root"
 # instead of accidentally reading workflow state that is absent in a developer shell.
 while IFS='=' read -r variable _; do
   case "$variable" in
-    BUILD_TIMING_*) unset "$variable" ;;
+    BUILD_TIMING_* | GITHUB_REF_NAME | GITHUB_REPOSITORY) unset "$variable" ;;
   esac
 done < <(env)
 
