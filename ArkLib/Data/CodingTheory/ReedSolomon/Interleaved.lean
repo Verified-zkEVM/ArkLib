@@ -1,11 +1,13 @@
 /-
 Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
-Authors: Alexander Hicks
+Authors: Alexander Hicks, Ilia Vlasov, Aristotle (Harmonic)
 -/
 
 import ArkLib.Data.CodingTheory.ReedSolomon
 import ArkLib.Data.CodingTheory.InterleavedCode
+import ArkLib.Data.CodingTheory.ListDecodability
+import ArkLib.Data.CodingTheory.ListDecodability.AgreementBound
 
 /-!
 # Interleaved Reed-Solomon codes
@@ -36,6 +38,8 @@ column-wise, so that the code lives over the alphabet `Fin s → F`.
 
 * [Arnon, G., Boneh, D., and Fenzi, G., *Open Problems in List Decoding and Correlated
     Agreement*][ABF26]
+* [Arnon, G., Chiesa, A., Fenzi, G., and Yogev, E., *WHIR: Reed–Solomon Proximity Testing
+      with Super-Fast Verification*][ACFY24]
 -/
 
 namespace ReedSolomon
@@ -158,6 +162,63 @@ lemma interleavedCodeSet_rsCode_eq_irsCode {ι : Type*} {F : Type*} [Field F]
       = ((irsCode domain (s * k') s : Submodule F (ι → Fin s → F)) : Set (ι → Fin s → F)) := by
   rw [irsCode, Nat.mul_div_cancel_left k' hs]
   rfl
+
+/-- Two distinct interleaved Reed-Solomon codewords agree in fewer than `m` positions.
+They differ in some entry, hence in some row `j`, and a position where the two `Fin k`-tuples
+agree is in particular a position where the `j`-th rows agree; those rows are distinct
+codewords of `ReedSolomon.code domain m`, so they agree in fewer than `m` positions. -/
+lemma agree_lt_of_mem_interleavedCodeSet {ι : Type*} [Fintype ι] {F : Type*} [Field F]
+    [DecidableEq F] {domain : ι ↪ F} {m k : ℕ} {c c' : ι → Fin k → F}
+    (hc : c ∈ Code.interleavedCodeSet (κ := Fin k) (ReedSolomon.code domain m : Set (ι → F)))
+    (hc' : c' ∈ Code.interleavedCodeSet (κ := Fin k) (ReedSolomon.code domain m : Set (ι → F)))
+    (hne : c ≠ c') : Code.agree c c' < m := by
+  classical
+  obtain ⟨i, hi⟩ := Function.ne_iff.mp hne
+  obtain ⟨j, hj⟩ := Function.ne_iff.mp hi
+  have hrow : (fun i ↦ c i j) ≠ (fun i ↦ c' i j) := fun h ↦ hj (congrFun h i)
+  have hle : Code.agree c c' ≤ Code.agree (fun i ↦ c i j) (fun i ↦ c' i j) := by
+    refine Finset.card_le_card ?_
+    intro i' hi'
+    simp only [Finset.mem_filter, Finset.mem_univ, true_and] at hi' ⊢
+    exact congrFun hi' j
+  exact lt_of_le_of_lt hle (ReedSolomon.agree_lt_of_mem_code (hc j) (hc' j) hrow)
+
+open NNReal in
+/-- The `k`-fold interleave of the Reed-Solomon code `RS[F, domain, m]` of rate `ρ` is
+  `(1 - √ρ - η, 1/(2η√ρ))`-list decodable, for every `η > 0`: the same Johnson-type bound as for
+  the base code, at the same list size.
+
+  This appears as lemma 4.4 in [ACFY24].
+-/
+theorem interleaved_listDecodable {F : Type*} [Field F]
+  {ι : Type*} [Fintype ι] [Nonempty ι]
+  (domain : ι ↪ F) (m k : ℕ) (hm : 0 < m)
+  (η : ℝ≥0) (hη : 0 < η) :
+  Code.IsListDecodable
+    (Code.interleavedCodeSet (κ := Fin k) (ReedSolomon.code domain m : Set (ι → F)))
+    (1 - (ReedSolomon.sqrtRate m domain) - η)
+    (1 / (2 * η * (ReedSolomon.sqrtRate m domain))) := by
+  classical
+  have hnpos : (0 : ℝ) < Fintype.card ι := by exact_mod_cast Fintype.card_pos
+  have hs : 0 < (ReedSolomon.sqrtRate m domain : ℝ) := ReedSolomon.sqrtRate_pos hm
+  have hηR : (0 : ℝ) < (η : ℝ) := by exact_mod_cast hη
+  rw [Code.isListDecodable_iff_forall_finset_card_le]
+  intro y T hT
+  have hpair : ∀ c ∈ Code.interleavedCodeSet (κ := Fin k)
+      (ReedSolomon.code domain m : Set (ι → F)), ∀ c' ∈ Code.interleavedCodeSet (κ := Fin k)
+      (ReedSolomon.code domain m : Set (ι → F)), c ≠ c' →
+      (Code.agree c c' : ℝ)
+        ≤ (ReedSolomon.sqrtRate m domain : ℝ) ^ 2 * (Fintype.card ι : ℝ) := by
+    intro c hc c' hc' hne
+    have h1 : Code.agree c c' ≤ min m (Fintype.card ι) :=
+      le_min (le_of_lt (agree_lt_of_mem_interleavedCodeSet hc hc' hne)) Code.agree_le_card
+    have h2 : (Code.agree c c' : ℝ) ≤ (min m (Fintype.card ι) : ℝ) := by exact_mod_cast h1
+    rw [ReedSolomon.sqrtRate_sq, div_mul_cancel₀ _ (ne_of_gt hnpos)]
+    exact h2
+  have hbound := Code.card_le_of_pairwise_agree_le hs hηR hpair y T hT
+  refine hbound.trans (le_of_eq ?_)
+  push_cast
+  ring
 
 end Interleaved
 end ReedSolomon
