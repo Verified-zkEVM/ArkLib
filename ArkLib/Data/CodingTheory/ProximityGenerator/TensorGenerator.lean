@@ -1,10 +1,10 @@
 /-
-Copyright (c) 2024-2025 ArkLib Contributors. All rights reserved.
+Copyright (c) 2026 ArkLib Contributors. All rights reserved.
 Released under Apache 2.0 license as described in the file LICENSE.
 Authors: ArkLib Contributors
 -/
 
-import ArkLib.Data.CodingTheory.ProximityGap.ProximityGenerators
+import ArkLib.Data.CodingTheory.ProximityGenerator.Basic
 import ArkLib.Data.CodingTheory.InterleavedCode
 import ArkLib.Data.Probability.Instances
 
@@ -251,3 +251,31 @@ theorem isMCAGenerator_tensorGenerator (G : Generator S ℓ F) (G' : Generator S
           ENNReal.coe_natCast]
 
 end TensorMCA
+
+namespace LinearTransformations
+
+open NNReal unitInterval CoreDefinitions LinearCode
+
+variable {ι : Type} [Fintype ι]
+         {F : Type} [Field F]
+         {A : Type} [AddCommMonoid A] [Module F A]
+         {ℓ ℓ' : Type} [Fintype ℓ] [Fintype ℓ']
+         {S S' : Type} [Fintype S] [Fintype S'] [Nonempty S] [Nonempty S']
+
+/-- Let `G : S → 𝔽^ℓ` be an MCA generator with error `ε_mca` and `G' : S' → 𝔽^ℓ'` be an MCA
+generator with error `ε_mca'`. Then the (explicit) tensor generator `G ⊗ G' : S × S' → 𝔽^(ℓ × ℓ')`
+is an MCA generator with error `ε_mca + ε_mca'`.
+
+Sorried, and its status is open rather than routine: with the hypothesis of MCA for `MC` itself,
+`TensorMCA.isMCAGenerator_tensorGenerator` reaches the added error only with the inner term scaled
+by `Fintype.card ℓ`, and `TensorMCA.isMCAGenerator_tensorGenerator_of_moduleInterleavedCode`
+reaches the unscaled sum only under the strictly stronger hypothesis of MCA for the `ℓ`-fold
+interleaving of `MC`. See `docs/kb/audits/bcgm25-mca-generators.md` for what is known about the
+gap between those two forms and this statement. -/
+lemma isMCAGenerator_tensorGenerator_tight (MC : ModuleCode ι F A)
+    (G : Generator S ℓ F) (ε_mca : I → ℝ≥0) (hGMCA : IsMCAGenerator G ε_mca MC)
+    (G' : Generator S' ℓ' F) (ε_mca' : I → ℝ≥0) (hG'MCA : IsMCAGenerator G' ε_mca' MC) :
+    IsMCAGenerator (TensorGenerator_Explicit G G') (ε_mca + ε_mca') MC := by
+  sorry
+
+end LinearTransformations
