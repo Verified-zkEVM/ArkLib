@@ -2,6 +2,8 @@ import ArkLib.OracleReduction.Basic
 import ArkLib.Data.Fin.Basic
 import ArkLib.ToMathlib.Control.MonadLift
 import ArkLib.ToVCVio.OracleComp.EvalDist
+import VCVio.OracleComp.Constructions.Replicate
+import VCVio.OracleComp.QueryTracking.LoggingOracle
 
 /-!
   # Execution Semantics of Interactive Oracle Reductions
