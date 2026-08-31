@@ -34,6 +34,7 @@ EMPTY_BASELINE="$FIXTURE_TMP/empty.json"
 INVALID_BASELINE="$FIXTURE_TMP/invalid.json"
 MISSING_BASELINE="$FIXTURE_TMP/missing.json"
 COVERING_BASELINE="$FIXTURE_TMP/covering.json"
+SORRY_BASELINE="$FIXTURE_TMP/sorry-growth.json"
 CLEAN_REPORT="$FIXTURE_TMP/clean.json"
 TAINTED_REPORT="$FIXTURE_TMP/tainted.json"
 TAINTED_REPORT_2="$FIXTURE_TMP/tainted-2.json"
@@ -162,6 +163,16 @@ expect_status 2 unwritable-out \
     --out "$FIXTURE_TMP/no-such-dir/report.json"
 
 # --- baseline writing -------------------------------------------------------------------
+
+# Intentional `sorryAx` debt can be written explicitly, reviewed, and then passes the check.
+cp "$EMPTY_BASELINE" "$SORRY_BASELINE"
+expect_status 0 allow-sorry-growth \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted.DirectSorry \
+    --update-baseline --baseline "$SORRY_BASELINE"
+grep -q 'directSorry' "$SORRY_BASELINE"
+expect_status 0 covered-sorry \
+  lake exe axiomsweep --root AxiomSweepTestFixtures.Tainted.DirectSorry \
+    --check --baseline "$SORRY_BASELINE"
 
 # Shrinking is allowed once the debt is gone.
 cp "$COVERING_BASELINE" "$FIXTURE_TMP/shrink.json"
