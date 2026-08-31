@@ -494,7 +494,8 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
       have hrmul : (↑(Fintype.card ι) : ℝ) * (r : ℝ) ≤ (deg : ℝ) := by
         exact_mod_cast hrmul_nnreal
       have hrmul_div : (↑(Fintype.card ι) : ℝ) * ((r : ℝ) / 100) ≤ (deg : ℝ) / 100 := by
-        nlinarith [hrmul]
+        rw [← mul_div_assoc]
+        exact div_le_div_of_nonneg_right hrmul (by norm_num)
       have hdeg_sq : (deg : ℝ) / 100 ≤ (↑deg ^ 2 : ℝ) := by
         have hdeg1_nat : 1 ≤ deg := Nat.one_le_of_lt hdeg
         have hdeg1 : (1 : ℝ) ≤ (deg : ℝ) := by
@@ -502,9 +503,12 @@ theorem errorBound_ge_const {ι : Type} [Fintype ι] [Nonempty ι]
         have hdeg_nonneg : 0 ≤ (deg : ℝ) := by
           exact_mod_cast (Nat.zero_le deg)
         have hdeg_le_sq : (deg : ℝ) ≤ (deg : ℝ) ^ 2 := by
-          nlinarith [hdeg1]
+          calc
+            (deg : ℝ) = (deg : ℝ) * 1 := by ring
+            _ ≤ (deg : ℝ) * deg := mul_le_mul_of_nonneg_left hdeg1 hdeg_nonneg
+            _ = (deg : ℝ) ^ 2 := by ring
         have hdiv_le : (deg : ℝ) / 100 ≤ (deg : ℝ) := by
-          nlinarith [hdeg_nonneg]
+          exact div_le_self hdeg_nonneg (by norm_num)
         -- rewrite `(deg : ℝ) ^ 2` as `↑deg ^ 2` at the end
         have : (deg : ℝ) / 100 ≤ (deg : ℝ) ^ 2 := hdiv_le.trans hdeg_le_sq
         simpa using this
