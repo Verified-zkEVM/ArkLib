@@ -98,9 +98,9 @@ private theorem boosted_frs_radius_le_list_radius
   have htR3 : (3 : ℝ) ≤ t := by exact_mod_cast ht
   have htR : (0 : ℝ) < t := by nlinarith
   have hsR : (4 : ℝ) * (t : ℝ) ^ 2 < s := by exact_mod_cast hs
-  have ha : (0 : ℝ) < 2 * t - 1 := by nlinarith
+  have ha : (0 : ℝ) < 2 * t - 1 := by nlinarith only [htR3]
   have hb : (0 : ℝ) < t + 1 := by positivity
-  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by nlinarith
+  have hd : (0 : ℝ) < (s : ℝ) - t + 1 := by nlinarith only [hsR, htR3]
   rw [div_le_iff₀ ha]
   rw [div_mul_eq_mul_div]
   rw [div_mul_eq_mul_div]
@@ -112,10 +112,10 @@ private theorem boosted_frs_radius_le_list_radius
   have ht2 : (0 : ℝ) ≤ (t : ℝ) ^ 2 := sq_nonneg (t : ℝ)
   have ht3nonneg : (0 : ℝ) ≤ (t : ℝ) ^ 3 := by positivity
   have hc : (0 : ℝ) ≤ 3 * s * t - 2 * (t : ℝ) ^ 3 + 2 * t := by
-    nlinarith
+    nlinarith only [hgap_t, ht3nonneg, htR.le]
   have hbse : (0 : ℝ) ≤ s * t + 4 * s - (t : ℝ) ^ 2 - 3 * t + 4 := by
-    nlinarith [mul_nonneg hgap (show (0 : ℝ) ≤ t + 4 by positivity)]
-  nlinarith [mul_nonneg hR0 hc]
+    nlinarith only [mul_nonneg hgap (show (0 : ℝ) ≤ t + 4 by positivity), ht2, htR3]
+  nlinarith only [mul_nonneg hR0 hc, hbse]
 
 private theorem exists_finset_lift_image_eq_injOn
     {α β : Type} [DecidableEq α] [DecidableEq β]
