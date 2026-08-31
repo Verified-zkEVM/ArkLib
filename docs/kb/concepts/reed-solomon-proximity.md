@@ -29,8 +29,8 @@ coding-theory machinery as formalized in ArkLib.
 - [`../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/Basic.lean)
 - [`../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20`](../../../ArkLib/Data/CodingTheory/ProximityGap/BCIKS20)
 - [`../../../ArkLib/Data/CodingTheory/ProximityGap/DG25`](../../../ArkLib/Data/CodingTheory/ProximityGap/DG25)
-- [`../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/ProximityGenerators.lean)
-- [`../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGap/MCAGenerator.lean)
+- [`../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/Basic.lean)
+- [`../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean`](../../../ArkLib/Data/CodingTheory/ProximityGenerator/MCAGenerator.lean)
 - [`../../../ArkLib/Data/CodingTheory/ReedSolomon.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon.lean)
   and the code families beside it:
   [`ReedSolomon/Folded.lean`](../../../ArkLib/Data/CodingTheory/ReedSolomon/Folded.lean),
