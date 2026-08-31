@@ -447,7 +447,7 @@ private theorem subfield_ca_reciprocal_stack_not_joint
   have hTcardNatR : ((Fintype.card ι -
       ⌊(δ : ℝ) * Fintype.card ι⌋₊ : ℕ) : ℝ) ≤ (T.card : ℝ) := by
     rw [Nat.cast_sub hf_le, hint]
-    nlinarith [hTcardR]
+    nlinarith only [hTcardR]
   have hTcardNat : Fintype.card ι - ⌊(δ : ℝ) * Fintype.card ι⌋₊ ≤ T.card := by
     exact_mod_cast hTcardNatR
   have hkT : k < T.card := by omega
@@ -1944,16 +1944,14 @@ private theorem subfield_ca_support_algebra
     hfirst.trans (mul_le_mul_of_nonneg_left hsecond hH)
   have hchainN := mul_le_mul_of_nonneg_right hchain hN.le
   field_simp [hN.ne'] at hchainN
-  have herror : H * A * G * N ≤ N * A * G * N := by
-    exact mul_le_mul_of_nonneg_right
-      (mul_le_mul_of_nonneg_right
-        (mul_le_mul_of_nonneg_right hHN hA.le) hG) hN.le
+  have herror : H * (N * G) ≤ N * (N * G) :=
+    mul_le_mul_of_nonneg_right hHN (mul_nonneg hN.le hG)
   have hcross : A * N ≤ H * A + N ^ 2 * G := by
-    nlinarith [hchainN, herror]
+    nlinarith only [hchainN, herror]
   apply (le_div_iff₀ hN).2
   apply le_of_mul_le_mul_right (a := A) ?_ hA
   field_simp [hA.ne']
-  nlinarith [hcross]
+  nlinarith only [hcross]
 
 open scoped BigOperators in
 private theorem subfield_ca_support_card_eq_sum_good_scalars
@@ -2391,7 +2389,8 @@ private theorem subfield_radius_parameter_facts
   have hδ_one : (δ : ℝ) < 1 :=
     lt_of_lt_of_le hδ_lt (sub_le_self 1 hkdiv_nonneg)
   have hδR_pos : (0 : ℝ) < δ := by exact_mod_cast hδ_pos
-  have hkdiv_lt : (k : ℝ) / Fintype.card ι < 1 := by linarith
+  have hkdiv_lt : (k : ℝ) / Fintype.card ι < 1 := by
+    linarith only [hδ_lt, hδR_pos]
   have hkR : (k : ℝ) < Fintype.card ι :=
     (div_lt_one hnR).mp hkdiv_lt
   have hk : k < Fintype.card ι := by exact_mod_cast hkR
@@ -2399,7 +2398,8 @@ private theorem subfield_radius_parameter_facts
     rw [h_int]
     exact mul_pos hδR_pos hnR
   have hf : 0 < ⌊(δ : ℝ) * Fintype.card ι⌋₊ := by exact_mod_cast hfR
-  have hadddiv : (δ : ℝ) + (k : ℝ) / Fintype.card ι < 1 := by linarith
+  have hadddiv : (δ : ℝ) + (k : ℝ) / Fintype.card ι < 1 := by
+    linarith only [hδ_lt]
   have hquot :
       ((k : ℝ) + (δ : ℝ) * Fintype.card ι) / Fintype.card ι < 1 := by
     calc
